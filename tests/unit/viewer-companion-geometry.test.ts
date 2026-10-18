@@ -3,6 +3,7 @@ import { createCompanionGeometryIdentity, observeCompanionPlatforms, safeCompani
 import type { Platform } from "@/lib/ui/viewer-companion/brain";
 import { COMPANION_HOME_FLOOR_FOOD, placeCompanionFood, type CompanionFoodDropSupport } from "@/lib/ui/viewer-companion/food";
 import { COMPANION_PANEL_SIDE_SELECTOR } from "@/lib/ui/viewer-companion/panel-play";
+import { firstCompanionSupportBelow } from "@/lib/ui/viewer-companion/support-landing";
 
 const viewport = { width: 1000, height: 800 };
 const text = (left: number, top: number, right: number, bottom: number): CompanionTextRect => ({ left, top, right, bottom });
@@ -121,6 +122,99 @@ function addStructuralSurfaces(fixture: ReturnType<typeof geometryFixture>, band
 }
 
 afterEach(() => { vi.unstubAllGlobals(); });
+
+describe("121 deliberate native floors and ribbon contact", () => {
+  it("catches a released creature on the first real ribbon without adding glyphs to manual landings", () => {
+    const f = geometryFixture(), band = new FixtureElement(), control = new FixtureElement();
+    band.rect = box(100, 420, 400, 22); addStructuralSurfaces(f, [band]);
+    control.rect = box(260, 360, 44, 60); control.parentElement = f.sourceRoot; f.controls.push(control);
+    const sub = observeCompanionPlatforms(f.root, () => {}, { size: 92 }); f.flush();
+    const ribbons = sub.landings().filter(p => /-band-top(?:-\d+)?$/.test(p.id));
+    expect(ribbons.length).toBeGreaterThan(0); expect(ribbons.every(p => p.manualOnly && p.y === 417)).toBe(true);
+    expectClear(ribbons, [control.rect], 92 * .76);
+    const hit = firstCompanionSupportBelow({ x: 150, y: 360 }, sub.landings())!;
+    expect(hit.id).toMatch(/-band-top/); expect(sub.anchor(hit.id)?.element).toBe(band);
+    expect(sub.landings().some(p => p.id === "date-1")).toBe(false); sub();
+  });
+  it("excludes only free toy entities while keeping the home toy control input protected", () => {
+    const f = geometryFixture(), band = new FixtureElement(), toy = new FixtureElement(), button = new FixtureElement();
+    band.rect = box(100, 420, 400, 22); addStructuralSurfaces(f, [band]);
+    toy.rect = box(100, 360, 44, 44); toy.closest = selector => selector.includes(".vc-toys") ? toy : null;
+    button.rect = box(260, 360, 44, 60); button.getAttribute = key => key === "data-home-action" ? "toys" : null;
+    toy.parentElement = button.parentElement = f.sourceRoot; f.controls.push(toy, button);
+    const sub = observeCompanionPlatforms(f.root, () => {}, { size: 92 }); f.flush();
+    const ribbons = sub.landings().filter(p => /-band-top(?:-\d+)?$/.test(p.id));
+    expect(ribbons.some(p => p.x <= 120 && p.x + p.width >= 120)).toBe(true);
+    expectClear(ribbons, [button.rect], 92 * .76); sub();
+  });
+  it("publishes native day/panel bottom edges for manual pet and food use with text/control guards", () => {
+    const f = geometryFixture(), panel = new FixtureElement(), control = new FixtureElement();
+    const dayElement = f.day as unknown as Element;
+    f.day.rect = box(100, 300, 350, 350); f.day.matches = selector => selector.includes(".public-day");
+    panel.parentElement = f.sourceRoot; panel.rect = box(600, 300, 300, 350); panel.matches = selector => selector === ".avatar-dock-inner";
+    control.rect = box(220, 590, 44, 58); control.parentElement = f.day; f.controls.push(control);
+    const query = f.sourceRoot.querySelectorAll;
+    f.sourceRoot.querySelectorAll = selector => selector.endsWith(",.avatar-dock-inner") ? [f.day, panel] : query(selector);
+    let roaming: Platform[] = [];
+    const sub = observeCompanionPlatforms(f.root, next => { roaming = next; }, { size: 92 }); f.flush();
+    const floors = sub.landings().filter(p => /(?:date-\d+-floor|companion-panel-floor)(?:-\d+)?$/.test(p.id));
+    expect(floors.some(p => sub.anchor(p.id)?.element === dayElement)).toBe(true);
+    expect(floors.some(p => p.id === "companion-panel-floor")).toBe(true);
+    expect(floors.every(p => p.manualOnly && p.y === 647)).toBe(true);
+    expect(roaming.some(p => floors.some(floor => floor.id === p.id))).toBe(false);
+    expectClear(floors, [control.rect, f.date.rect, f.title.rect], 92 * .76);
+    for (const p of floors) {
+      const source = sub.anchor(p.id)!;
+      expect(p.x - 92 * .38).toBeGreaterThanOrEqual(source.left - 1e-8);
+      expect(p.x + p.width + 92 * .38).toBeLessThanOrEqual(source.left + source.width! + 1e-8);
+    }
+    const food = sub.landings(32).filter(p => /-floor-food/.test(p.id));
+    expect(food.some(p => sub.anchor(p.id)?.element === dayElement)).toBe(true);
+    expect(food.some(p => p.id === "companion-panel-floor-food")).toBe(true); sub();
+  });
+  it("follows fractional native width and bottom changes without new Range/style scans", () => {
+    const f = geometryFixture(); f.day.rect = box(100, 300, 350, 350); f.day.matches = selector => selector.includes(".public-day");
+    const sub = observeCompanionPlatforms(f.root, () => {}, { size: 92 }); f.flush();
+    const floor = sub.landings().find(p => /date-\d+-floor$/.test(p.id))!;
+    const calls = [f.range.getClientRects.mock.calls.length, f.win.getComputedStyle.mock.calls.length];
+    f.day.rect = box(700.125, 50.25, 280, 280);
+    const sample = sub.follow([floor.id])[0];
+    expect(sample.platform.x).toBeCloseTo(700.125 + (floor.x - 100) * .8, 10);
+    expect(sample.platform.width).toBeCloseTo(floor.width * .8, 10); expect(sample.platform.y).toBe(327.25);
+    expect(sample.sourceFrame).toEqual({ left: 100, top: 300, width: 350, height: 350 });
+    expect(sample.currentFrame).toEqual({ left: 700.125, top: 50.25, width: 280, height: 280 });
+    (sample.sourceFrame as { left: number }).left = -9999;
+    expect(sub.follow([floor.id])[0].sourceFrame?.left).toBe(100);
+    expect([f.range.getClientRects.mock.calls.length, f.win.getComputedStyle.mock.calls.length]).toEqual(calls); sub();
+  });
+  it("rebinds only the same panel-floor identity after side remount and fails closed on removal", () => {
+    const f = geometryFixture(); let panel = new FixtureElement();
+    const make = (node: FixtureElement, left: number) => { node.rect = box(left, 300, 300, 350); node.parentElement = f.sourceRoot; node.matches = selector => selector === ".avatar-dock-inner"; };
+    make(panel, 600); const query = f.sourceRoot.querySelectorAll;
+    f.sourceRoot.querySelectorAll = selector => selector.endsWith(",.avatar-dock-inner") ? [panel] : query(selector);
+    const sub = observeCompanionPlatforms(f.root, () => {}, { size: 92 }); f.flush();
+    expect(sub.anchor("companion-panel-floor")?.element).toBe(panel);
+    panel.isConnected = false; const replacement = new FixtureElement(); make(replacement, 100); panel = replacement;
+    f.win.emit("scroll"); f.advance(120);
+    expect(sub.anchor("companion-panel-floor")?.element).toBe(replacement);
+    expect(sub.follow(["companion-panel-floor"])[0].anchorX).toBe(100);
+    replacement.closest = selector => selector.includes("[inert]") ? replacement : null;
+    expect(sub.anchor("companion-panel-floor")).toBeUndefined(); expect(sub.follow(["companion-panel-floor"])).toEqual([]);
+    replacement.isConnected = false; expect(sub.follow(["companion-panel-floor"])).toEqual([]); sub();
+  });
+  it("never recycles an old calendar date anchor even if React retains the native element", () => {
+    const f = geometryFixture(); let date = "2026-10-19";
+    f.day.getAttribute = key => key === "data-date" ? date : null;
+    let platforms: Platform[] = [];
+    const sub = observeCompanionPlatforms(f.root, next => { platforms = next; }); f.flush();
+    const old = platforms.find(p => p.kind === "date")!.id;
+    expect(sub.anchor(old)?.identity).toBe(date);
+    date = "2026-11-19"; expect(sub.anchor(old)).toBeUndefined(); expect(sub.follow([old])).toEqual([]);
+    f.win.emit("scroll"); f.advance(120);
+    const fresh = platforms.find(p => p.kind === "date")!.id;
+    expect(fresh).not.toBe(old); expect(sub.anchor(fresh)?.identity).toBe(date); sub();
+  });
+});
 
 describe("companion geometry anchor subscription", () => {
   it("delivers a replacement home source even when every numeric safe span is unchanged", () => {
@@ -315,13 +409,13 @@ describe("companion geometry anchor subscription", () => {
     expect(floor.length).toBeGreaterThan(0);
     expect(floor.every(p => p.y === 654 && p.kind === "floor" && p.manualOnly)).toBe(true);
     expect(autonomous.some(p => p.id.startsWith("companion-home-floor"))).toBe(false);
-    expect(subscription.anchor(floor[0].id)).toEqual({ element: house.floor, left: 110, top: 624 });
+    expect(subscription.anchor(floor[0].id)).toEqual({ element: house.floor, left: 110, top: 624, width: 340, height: 36 });
     expectClear(floor, [text(350, 590, 398, 652), text(406, 596, 450, 652)], 92 * .76);
     const foodFloors = subscription.landings(32).filter(p => p.id.startsWith(COMPANION_HOME_FLOOR_FOOD));
     expect(foodFloors.length).toBeGreaterThan(0);
     expect(foodFloors.every(p => p.y === 654 && p.x >= 132 && p.x + p.width <= 428)).toBe(true);
     expectClear(foodFloors, [text(350, 590, 398, 652), text(406, 596, 450, 652)], 44);
-    expect(subscription.anchor(foodFloors[0].id)).toEqual({ element: house.floor, left: 110, top: 624 });
+    expect(subscription.anchor(foodFloors[0].id)).toEqual({ element: house.floor, left: 110, top: 624, width: 340, height: 36 });
     const dropped = placeCompanionFood({ id: "falling", kind: "apple", x: 300, y: 580 }, { x: 300, y: 580 }, subscription.landings(32));
     expect(dropped).toMatchObject({ x: 300, y: 654, platformId: foodFloors[0].id });
     const ranges = fixture.range.getClientRects.mock.calls.length; house.floor.getBoundingClientRect.mockClear();
@@ -343,7 +437,7 @@ describe("companion geometry anchor subscription", () => {
     expect(bands().every(p => !p.manualOnly && p.kind === "card" && (p.y === 417 || p.y === 547))).toBe(true);
     expectClear(bands(), [fixture.date.rect, fixture.title.rect, support.rect, period.rect], 92 * .76);
     const first = bands().find(p => p.y === 417)!;
-    expect(subscription.anchor(first.id)).toEqual({ element: support, left: 100, top: 420 });
+    expect(subscription.anchor(first.id)).toEqual({ element: support, left: 100, top: 420, width: 300, height: 22 });
     expect(support.getBoundingClientRect).toHaveBeenCalledTimes(1); // Control and structural edge share their rect.
     const ranges = fixture.range.getClientRects.mock.calls.length;
     support.rect = box(110, 440, 300, 22);
@@ -381,7 +475,7 @@ describe("companion geometry anchor subscription", () => {
     expect(headers().length).toBeGreaterThan(0);
     expect(headers().every(p => p.y === 127 && p.kind === "date" && !p.manualOnly)).toBe(true);
     expectClear(headers(), [fixture.date.rect, control.rect], 92 * .76);
-    expect(subscription.anchor(headers()[0].id)).toEqual({ element: header, left: 100, top: 70 });
+    expect(subscription.anchor(headers()[0].id)).toEqual({ element: header, left: 100, top: 70, width: 800, height: 60 });
     header.rect = box(100, 0, 800, 80); fixture.win.emit("resize"); fixture.advance(120); expect(headers()).toEqual([]);
     header.rect = box(100, 70, 800, 60); header.hasAttribute = name => name === "hidden"; fixture.win.emit("resize"); fixture.advance(120); expect(headers()).toEqual([]);
     subscription();
@@ -418,7 +512,7 @@ describe("companion geometry anchor subscription", () => {
     expect(card).toMatchObject({ x: 470, y: 427, width: 260, kind: "card", manualOnly: true });
     expect(landings.some(p => p.kind === "floor")).toBe(true); expect(landings.some(p => p.id === "companion-home")).toBe(true);
     expect(landings.every(p => p.kind === "floor" || p.id === "companion-home" || p.id.includes("-top"))).toBe(true);
-    expect(subscription.anchor(card.id)).toEqual({ element: fixture.card, left: 470, top: 430 });
+    expect(subscription.anchor(card.id)).toEqual({ element: fixture.card, left: 470, top: 430, width: 260, height: 60 });
     const ranges = fixture.range.getClientRects.mock.calls.length;
     fixture.card.rect = box(480, 450, 260, 60);
     expect(subscription.follow([card.id])[0]).toMatchObject({ platform: { x: 480, y: 447 }, anchorX: 480, anchorY: 450 });
@@ -468,7 +562,7 @@ describe("companion geometry anchor subscription", () => {
     expect(subscription.landings().find(p => p.id === card.id)?.x).toBe(470);
     fixture.card.rect = box(480, 440, 260, 60); fixture.win.emit("resize"); fixture.advance(120);
     expect(deliveries).toBe(2); expect(latest.find(p => p.id === card.id)).toMatchObject({ x: 480, y: 437 });
-    expect(subscription.anchor(card.id)).toEqual({ element: fixture.card, left: 480, top: 440 });
+    expect(subscription.anchor(card.id)).toEqual({ element: fixture.card, left: 480, top: 440, width: 260, height: 60 });
     subscription();
   });
   it("does not invent a visible landing through a hidden card or full control cover", () => {
@@ -489,7 +583,7 @@ describe("companion geometry anchor subscription", () => {
     expect(subscription.landings().some(p => p.id.includes("-top"))).toBe(false);
     const food = subscription.landings(32).find(p => p.id.includes("-food-top"))!;
     expect(food).toMatchObject({ x: 100, y: 59, width: 90, manualOnly: true });
-    expect(subscription.anchor(food.id)).toEqual({ element: fixture.card, left: 100, top: 62 });
+    expect(subscription.anchor(food.id)).toEqual({ element: fixture.card, left: 100, top: 62, width: 90, height: 30 });
     const rects = fixture.card.getBoundingClientRect.mock.calls.length, ranges = fixture.range.getClientRects.mock.calls.length;
     subscription.landings(32); subscription.landings(); subscription.anchor(food.id);
     expect(fixture.card.getBoundingClientRect).toHaveBeenCalledTimes(rects); expect(fixture.range.getClientRects).toHaveBeenCalledTimes(ranges);
@@ -546,7 +640,7 @@ describe("companion geometry anchor subscription", () => {
     expect(identity.ids.get(fixture.date as unknown as Element)).toBe("date-1");
   });
 
-  it("follows only two actual anchors with absolute deltas, including heart coordinates", () => {
+  it("follows occupied, destination and attention anchors with absolute deltas, including heart coordinates", () => {
     const fixture = geometryFixture(); let platforms: Platform[] = [];
     const subscription = observeCompanionPlatforms(fixture.root, next => { platforms = next; }, { home: fixture.home as unknown as HTMLElement });
     fixture.flush();
@@ -555,10 +649,10 @@ describe("companion geometry anchor subscription", () => {
     const rangeCalls = fixture.range.getClientRects.mock.calls.length, styleCalls = fixture.win.getComputedStyle.mock.calls.length;
     fixture.title.getBoundingClientRect.mockClear(); fixture.home.getBoundingClientRect.mockClear(); fixture.date.getBoundingClientRect.mockClear();
     const result = subscription.follow([source.id, "companion-home", "date-1"]);
-    expect(result).toHaveLength(2);
-    expect(result[0]).toEqual({ platform: { ...source, x: source.x + 25, y: source.y - 40, heart: { ...source.heart!, x: source.heart!.x + 25, y: source.heart!.y - 40 } }, anchorX: 525, anchorY: 410 });
+    expect(result).toHaveLength(3);
+    expect(result[0]).toEqual({ platform: { ...source, x: source.x + 25, y: source.y - 40, heart: { ...source.heart!, x: source.heart!.x + 25, y: source.heart!.y - 40 } }, anchorX: 525, anchorY: 410, sourceFrame: { left: 500, top: 450, width: 200, height: 20 }, currentFrame: { left: 525, top: 410, width: 200, height: 20 } });
     expect(result[1]).toMatchObject({ platform: { id: "companion-home", x: 210 + 76 * .38 + 3, y: 620 }, anchorX: 210, anchorY: 620 });
-    expect(fixture.title.getBoundingClientRect).toHaveBeenCalledTimes(1); expect(fixture.home.getBoundingClientRect).toHaveBeenCalledTimes(1); expect(fixture.date.getBoundingClientRect).not.toHaveBeenCalled();
+    expect(fixture.title.getBoundingClientRect).toHaveBeenCalledTimes(1); expect(fixture.home.getBoundingClientRect).toHaveBeenCalledTimes(1); expect(fixture.date.getBoundingClientRect).toHaveBeenCalledTimes(1);
     expect(fixture.range.getClientRects).toHaveBeenCalledTimes(rangeCalls); expect(fixture.win.getComputedStyle).toHaveBeenCalledTimes(styleCalls);
     expect(subscription.follow([source.id])[0]).toEqual(result[0]);
     source.x = -10000; source.heart!.x = -10000;
@@ -566,6 +660,25 @@ describe("companion geometry anchor subscription", () => {
     subscription();
   });
 
+  it("bounds one pet and four toy follows to seven identities with one native read each and no full scan", () => {
+    const f = geometryFixture(), bands = [100, 180, 260, 540, 620, 700].map(y => { const band = new FixtureElement(); band.rect = box(50, y, 280, 20); return band; });
+    addStructuralSurfaces(f, bands);
+    let platforms: Platform[] = [];
+    const sub = observeCompanionPlatforms(f.root, next => { platforms = next; }, { home: f.home as unknown as HTMLElement }); f.flush();
+    const seen = new Set<Element>(), ids = platforms.flatMap(platform => {
+      const element = sub.anchor(platform.id)?.element;
+      if (!element || seen.has(element)) return []; seen.add(element); return [platform.id];
+    }).slice(0, 8);
+    expect(ids).toHaveLength(8);
+    const reads = [...bands, f.home, f.date, f.title];
+    for (const element of reads) { element.rect = box(element.rect.left + 12, element.rect.top - 8, element.rect.width, element.rect.height); element.getBoundingClientRect.mockClear(); }
+    const ranges = f.range.getClientRects.mock.calls.length, styles = f.win.getComputedStyle.mock.calls.length;
+    const result = sub.follow([ids[0], ids[0], ...ids.slice(1)]);
+    expect(result.map(sample => sample.platform.id)).toEqual(ids.slice(0, 7));
+    expect(result.every(sample => sample.currentFrame!.left - sample.sourceFrame!.left === 12 && sample.currentFrame!.top - sample.sourceFrame!.top === -8)).toBe(true);
+    expect(reads.reduce((count, element) => count + element.getBoundingClientRect.mock.calls.length, 0)).toBe(7);
+    expect(f.range.getClientRects).toHaveBeenCalledTimes(ranges); expect(f.win.getComputedStyle).toHaveBeenCalledTimes(styles); sub();
+  });
   it("publishes a fresh baseline before onChange, avoiding a second scroll delta", () => {
     const fixture = geometryFixture(); let delivered: Platform[] = [], followed: CompanionFollowSample[] = [];
     const subscription: CompanionGeometrySubscription = observeCompanionPlatforms(fixture.root, next => { delivered = next; followed = subscription.follow(["date-1"]); });

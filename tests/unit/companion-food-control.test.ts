@@ -4,7 +4,7 @@ import type { CompanionFoodControl } from "@/components/poster/viewer-companion/
 import type { CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
 import type { Platform } from "@/lib/ui/viewer-companion/brain";
 
-const harness = vi.hoisted(() => ({ states: [] as unknown[], state: 0, refs: [] as { current: unknown }[], ref: 0, effects: [] as (() => void | (() => void))[], layouts: [] as (() => void | (() => void))[], api: undefined as CompanionFoodControl | undefined, commits: 0, graphics: "full" as "full" | "off", activity: vi.fn() }));
+const harness = vi.hoisted(() => ({ states: [] as unknown[], state: 0, refs: [] as { current: unknown }[], ref: 0, effects: [] as (() => void | (() => void))[], layouts: [] as (() => void | (() => void))[], api: undefined as CompanionFoodControl | undefined, commits: 0, graphics: "full" as "full" | "off", activity: vi.fn(), discarded: vi.fn() }));
 vi.mock("react", async original => ({ ...await original<typeof import("react")>(),
   forwardRef: (render: unknown) => render,
   useState: (initial: unknown) => {
@@ -53,7 +53,7 @@ async function render(enabled = true, blocked = false) {
   vi.stubGlobal("React", await import("react"));
   harness.state = 0; harness.ref = 0; harness.effects = []; harness.layouts = [];
   const { CompanionFood } = await import("@/components/poster/viewer-companion/companion-food");
-  tree = (CompanionFood as unknown as (props: unknown, ref: unknown) => ReactNode)({ enabled, blocked, monthKey: "2026-10", returnFocus: vi.fn() }, {});
+  tree = (CompanionFood as unknown as (props: unknown, ref: unknown) => ReactNode)({ enabled, blocked, monthKey: "2026-10", returnFocus: vi.fn(), onDiscard: harness.discarded }, {});
   for (const item of elements(tree).filter(item => item.props["data-food"])) {
     const id = String(item.props["data-food"]), button = nodeById.get(id) ?? node(); button.dataset.food = id; nodeById.set(id, button);
     (item.props.ref as (node: unknown) => void)(button);
@@ -71,7 +71,7 @@ function event(id: string, extra: Record<string, unknown> = {}) {
 function invoke(id: string, name: string, extra?: Record<string, unknown>) { (tile(id).props[name] as (event: unknown) => void)(event(id, extra)); }
 
 beforeEach(async () => {
-  harness.states = []; harness.refs = []; harness.commits = 0; harness.graphics = "full"; harness.activity.mockReset();
+  harness.states = []; harness.refs = []; harness.commits = 0; harness.graphics = "full"; harness.activity.mockReset(); harness.discarded.mockReset();
   clock = 1000; frameSerial = 0; hidden = false; reduce = false; frames = new Map(); nodeById = new Map(); windowEvents = new Map(); documentEvents = new Map();
   vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
   vi.stubGlobal("innerWidth", 1000); vi.stubGlobal("innerHeight", 800); vi.stubGlobal("scrollX", 0); vi.stubGlobal("scrollY", 0);
@@ -86,6 +86,63 @@ beforeEach(async () => {
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 describe("actual food-controller carry and physical scatter callbacks", () => {
+  it("uses a decorative aria-hidden outlet while still hiding snacks with its hidden room ancestor", async () => {
+    let hiddenRoom = false;
+    const source = node(); source.attributes.set("aria-hidden", "true");
+    const outlet = Object.assign(source, {
+      closest: (selector: string) => selector.includes("aria-hidden") ? source : null,
+      parentElement: { closest: () => hiddenRoom ? source : null },
+    });
+    const id = api().spawn("apple", { x: 560, y: 420 }, outlet as unknown as HTMLElement)!;
+    await render(); api().sync([floor]);
+    expect(nodeById.get(id)!.hidden).toBe(false); expect(api().foods()[0].id).toBe(id);
+    hiddenRoom = true; api().sync([floor]);
+    expect(nodeById.get(id)!.hidden).toBe(true); expect(api().foods()).toHaveLength(0);
+    hiddenRoom = false; api().sync([floor]);
+    expect(nodeById.get(id)!.hidden).toBe(false); expect(api().foods()[0].id).toBe(id);
+  });
+  it("notifies each actually removed human Delete/clear food once without sending its id to activity", async () => {
+    const first = await spawn(200), second = await spawn(280), third = await spawn(360);
+    harness.activity.mockClear();
+    invoke(first, "onKeyDown", { key: "Delete" }); invoke(first, "onKeyDown", { key: "Backspace" });
+    expect(harness.discarded.mock.calls).toEqual([[first]]);
+    api().clear(); api().clear();
+    expect(harness.discarded.mock.calls).toEqual([[first], [second], [third]]);
+    expect(harness.activity.mock.calls).toEqual([["ui.click", { target: "companion-food-discard" }], ["ui.click", { target: "companion-food-clear" }]]);
+    expect(JSON.stringify(harness.activity.mock.calls)).not.toContain(first);
+  });
+  it("notifies native trash only after dwell and actual removal, never a cancelled gesture", async () => {
+    const id = await spawn(), bin = node(); bin.attributes.set("data-companion-trash", "");
+    vi.spyOn(document, "querySelectorAll").mockReturnValue([bin] as unknown as NodeListOf<HTMLElement>);
+    invoke(id, "onPointerDown"); invoke(id, "onPointerMove", { clientX: 622, clientY: 420 }); frame(1017);
+    invoke(id, "onPointerCancel"); frame(1500); vi.advanceTimersByTime(500);
+    expect(harness.discarded).not.toHaveBeenCalled(); expect(api().contains(id)).toBe(true);
+    invoke(id, "onPointerDown"); invoke(id, "onPointerMove", { clientX: 622, clientY: 420 }); frame(1517);
+    invoke(id, "onPointerUp", { clientX: 622, clientY: 420 }); frame(1837);
+    expect(harness.discarded).not.toHaveBeenCalled(); expect(api().contains(id)).toBe(true);
+    vi.advanceTimersByTime(180);
+    expect(harness.discarded.mock.calls).toEqual([[id]]); expect(api().contains(id)).toBe(false);
+  });
+  it("excludes consumption, pocket capture, autonomous trash and lifecycle clearing from human discard", async () => {
+    const eaten = await spawn(); expect(api().consume(eaten)).toBe(true);
+    const stashed = await spawn(); expect(api().stash(stashed)).toBe(true);
+    const carried = await spawn(), bin = node(); bin.attributes.set("data-companion-trash", "");
+    expect(api().beginCarry(carried)).toBe(true); api().carry(carried, { x: 622, y: 435 });
+    expect(api().discardCarry(carried, bin as unknown as HTMLElement)).toBe(true); vi.advanceTimersByTime(180);
+    await spawn(); harness.effects[0]();
+    expect(api().foods()).toHaveLength(0); expect(harness.discarded).not.toHaveBeenCalled();
+  });
+  it("rejects invalid native card/day/panel snapshots before a delayed scan while retaining the true viewport floor", async () => {
+    const stale: Platform[] = [{ id: "card-1-food-top", kind: "card", x: 100, y: 400, width: 500 }, { id: "date-2-floor-food", kind: "floor", x: 100, y: 450, width: 500 }, { id: "companion-panel-floor-food", kind: "floor", x: 100, y: 500, width: 500 }];
+    api().sync([...stale, floor], () => undefined);
+    const id = await spawn(300, 300);
+    invoke(id, "onPointerDown", { clientX: 300, clientY: 284 });
+    invoke(id, "onPointerMove", { clientX: 310, clientY: 300 }); frame(1017);
+    invoke(id, "onPointerUp", { clientX: 310, clientY: 300 }); frame(3000);
+    expect(api().foods()[0]).toMatchObject({ id, platformId: floor.id, y: floor.y });
+    expect(nodeById.get(id)!.dataset.platform).toBe(floor.id);
+    expect(api().foods().some(food => stale.some(support => support.id === food.platformId))).toBe(false);
+  });
   const outlet = { x: 264.515625, y: 421.46875 }, recipient = { x: 172.25875, y: 430.65625 };
   const room: Platform = { id: "companion-home-floor-food", kind: "floor", x: 41, y: recipient.y, width: 179 };
   function roomSource() {
@@ -204,7 +261,9 @@ describe("actual food-controller carry and physical scatter callbacks", () => {
     const id = await spawn(); api().beginCarry(id); api().carry(id, { x: 330, y: 260 }); api().pause(true);
     expect(api().carried()).toBeUndefined(); expect(api().contains(id)).toBe(true); expect(frames.size).toBe(0);
     await render(); api().pause(false); await render(); expect(api().beginCarry(id)).toBe(true);
-    const dispose = harness.effects[2]() as () => void; hidden = true; documentEvents.get("visibilitychange")!();
+    // Enabled cleanup, month rebinding and blocked pause precede the native
+    // document input/visibility subscription in this component adapter.
+    const dispose = harness.effects[3]() as () => void; hidden = true; documentEvents.get("visibilitychange")!();
     expect(api().carried()).toBeUndefined(); expect(frames.size).toBe(0); hidden = false;
     expect(api().beginCarry(id)).toBe(true); dispose(); expect(api().carried()).toBeUndefined(); expect(frames.size).toBe(0);
     await render(); expect(api().beginCarry(id)).toBe(true); harness.effects[0]();

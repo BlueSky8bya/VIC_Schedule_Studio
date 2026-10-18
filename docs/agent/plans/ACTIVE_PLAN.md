@@ -2,8 +2,7 @@
 
 | ID | Status | Record |
 |---|---|---|
-| PLAN-20261019-120 | In progress; collection/wardrobe redesign and targeted eye/outline repair | [Gallery and eye contour](PLAN-20261019-120-companion-gallery-and-eye-contour.md) |
-| COMPANION-SCENE-SELECTION | Awaiting user selection; proposals only, no new gameplay authorized | [36 concrete scenes](../verification/COMPANION_SCENARIO_PROPOSALS-20261018.md) |
+| PLAN-20261019-121 | Local gates PASS; authorized commit/deploy pending, all36 connected scenes | [Lived-in home and scenes](PLAN-20261019-121-companion-lived-in-home-and-scenes.md) |
 | PRIVACY-20260921 | Deployed containment verified; historical Git exposure, realtime/provider and retention follow-up remain | [Privacy audit](../verification/PRIVACY-20260921.md) |
 | DARK-HARMONY-20260919 | Ribbon editor dark controls corrected; local verification and authorized push follow-up. Production unverified (prior release staged) | [Dark palette follow-up](../../ux/dark-mode-palette.md) |
 | MARINE-RESUME | Paused by owner | [Resume handoff](../handoffs/20260916-marine-biomes-resume.md) |

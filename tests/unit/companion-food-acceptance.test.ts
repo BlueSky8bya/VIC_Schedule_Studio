@@ -43,8 +43,9 @@ describe("actual consumed food family acceptance", () => {
   it("raises hunger willingness strongly and continuously while retaining species/personality caution and finite limits", () => {
     for (const animalMode of ["default", "cat", "dog"] as const) for (const personality of ["curious", "affectionate", "sleepy"] as const) {
       const settings = { ...prefs, animalMode, personality }, full = companionFoodAcceptance("bagel", .1, settings), hungry = companionFoodAcceptance("bagel", .95, settings);
-      expect(hungry.chance - full.chance).toBeCloseTo(.52); expect(hungry.chance).toBeLessThan(1);
-      expect(hungry.maxEncounters).toBeLessThan(full.maxEncounters);
+      expect(hungry.chance).toBeCloseTo(Math.min(.96, full.chance + .52)); expect(hungry.chance).toBeLessThan(1);
+      if (animalMode === "dog") expect([full.maxEncounters, hungry.maxEncounters]).toEqual([1, 1]);
+      else expect(hungry.maxEncounters).toBeLessThan(full.maxEncounters);
       let previous = 0;
       for (let level = 0; level <= 100; level++) { const chance = companionFoodAcceptance("bagel", level / 100, settings).chance; expect(chance).toBeGreaterThanOrEqual(previous); previous = chance; }
     }

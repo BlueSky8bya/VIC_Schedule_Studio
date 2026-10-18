@@ -3,7 +3,7 @@
 import { ArrowDownToLine, EyeOff, Gauge, Grab, Heart, Leaf, PanelTopOpen, PartyPopper, Pointer, Sparkles, Volume1, Volume2, VolumeX } from "lucide-react";
 import { useId, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { RowLabel, SettingsSegment, Switch } from "@/components/shared/settings-controls";
-import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
+import { COMPANION_PERSONALITIES, COMPANION_PERSONALITY_NAMES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_SOUND_CATEGORY_NAMES, previewCompanionSound } from "@/lib/ui/viewer-companion/companion-sound";
 import { resetCompanionHabits } from "@/lib/ui/viewer-companion/care";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -18,8 +18,9 @@ const companionTabs = [
   { key: "sound", label: "소리", icon: <Volume2 size={16} /> }
 ] as const;
 type CompanionTab = typeof companionTabs[number]["key"];
-type CompanionToggle = "roam" | "jump" | "sleep" | "heartPrank" | "cardPrank" | "ambientPrank" | "panelPrank" | "rarePrank" | "drag" | "petting" | "feeding" | "learnFromYou";
+type CompanionToggle = "activeWhileVisible" | "roam" | "jump" | "sleep" | "heartPrank" | "cardPrank" | "ambientPrank" | "panelPrank" | "rarePrank" | "drag" | "petting" | "feeding" | "learnFromYou";
 const companionToggleActions: Record<CompanionToggle, string> = {
+  activeWhileVisible: "companion-active-visible",
   roam: "companion-roam", jump: "companion-jump", sleep: "companion-sleep",
   heartPrank: "companion-heart-prank", cardPrank: "companion-card-prank", ambientPrank: "companion-hide", panelPrank: "companion-panel-prank", rarePrank: "companion-rare-prank",
   drag: "companion-drag-enabled", petting: "companion-petting-enabled", feeding: "companion-feeding-enabled", learnFromYou: "companion-learning-enabled"
@@ -62,7 +63,8 @@ export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn
       <div className="rhh-group-card">
         {row("roam", "돌아다니기", <Pointer size={15} />)}
         {row("jump", "깡충 뛰기", <Sparkles size={15} />)}
-        {row("sleep", "낮잠", <EyeOff size={15} />)}
+        {row("activeWhileVisible", "다른 창 작업 중에도 활동", <Pointer size={15} />)}
+        {row("sleep", "자동 잠자기", <EyeOff size={15} />)}
         <div className="role-help-haptics rhh-stack-sm">
           <RowLabel icon={<Gauge size={15} />} tone="leaf">걸음</RowLabel>
           <SettingsSegment ariaLabel="빅타민 걸음" dataAct="companion-speed" onChange={speed => onChange({ speed })} options={[{ value: "relaxed", label: "느긋하게" }, { value: "normal", label: "보통" }, { value: "lively", label: "발랄하게" }]} value={preferences.speed} />
@@ -103,7 +105,7 @@ export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn
         </div>
         <div className="role-help-haptics rhh-stack-sm">
           <RowLabel icon={<Sparkles size={15} />} tone="leaf">기본 성격</RowLabel>
-          <SettingsSegment ariaLabel="빅타민 성격" dataAct="companion-personality" onChange={personality => onChange({ personality })} options={[{ value: "curious", label: "호기심" }, { value: "affectionate", label: "애교쟁이" }, { value: "sleepy", label: "잠꾸러기" }, { value: "tidy", label: "깔끔이" }, { value: "mischievous", label: "사고뭉치" }]} value={preferences.personality} />
+          <SettingsSegment ariaLabel="빅타민 성격" columns={4} dataAct="companion-personality" onChange={personality => onChange({ personality })} options={COMPANION_PERSONALITIES.map(value => ({ value, label: COMPANION_PERSONALITY_NAMES[value] }))} value={preferences.personality} />
         </div>
         {row("learnFromYou", "함께 지내며 배우기", <Heart size={15} />)}
       </div>

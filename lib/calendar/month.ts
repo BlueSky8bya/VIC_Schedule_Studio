@@ -31,6 +31,11 @@ export function kstDayKey(at: number | Date = Date.now()): string {
   return new Date(ms + 9 * 3_600_000).toISOString().slice(0, 10);
 }
 
+/** Coarse device-local routine bucket; never infer a user's sleep schedule. */
+export function kstHour(at: number | Date = Date.now()): number {
+  return new Date((typeof at === "number" ? at : at.getTime()) + 9 * 3_600_000).getUTCHours();
+}
+
 // KST 기준 오늘 날짜(YYYY-MM-DD)
 export function getTodayKst(): string {
   return new Intl.DateTimeFormat("en-CA", {

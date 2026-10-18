@@ -1,6 +1,6 @@
 import type { KeyboardEvent, ReactElement, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
+import { COMPANION_PERSONALITIES, COMPANION_PERSONALITY_NAMES, DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 import { COMPANION_BEHAVIOR_IDS, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_SITUATION_IDS } from "@/lib/ui/viewer-companion/moments";
@@ -70,6 +70,17 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("actual shared profile navigation callbacks", () => {
+  it("shows all eight shared personality names with a readable description of their current behavior", async () => {
+    for (const personality of COMPANION_PERSONALITIES) {
+      await render(true, { ...DEFAULT_COMPANION_PREFERENCES, personality });
+      const meta = find(node => node.props.className === "rhh-profile-meta");
+      const text = nodes(meta).flatMap(node => Array.isArray(node.props.children) ? node.props.children.filter(value => typeof value === "string") : typeof node.props.children === "string" ? [node.props.children] : []).join("");
+      expect(text).toContain(COMPANION_PERSONALITY_NAMES[personality]);
+      expect(text).toContain("요.");
+      expect(text).not.toContain("undefined");
+    }
+    expect(harness.activity).not.toHaveBeenCalled();
+  });
   it("removes passive cards, instructions and storage chatter while retaining the real portrait, facts and useful empty state", async () => {
     await render();
     expect(nodes(tree).filter(node => ["rhh-profile-action-grid", "rhh-profile-action", "rhh-profile-try", "rhh-profile-motion-note", "rhh-trait-note"].includes(String(node.props.className)))).toHaveLength(0);

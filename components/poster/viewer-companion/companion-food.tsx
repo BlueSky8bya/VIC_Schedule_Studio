@@ -3,8 +3,9 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 import { logActivity } from "@/lib/activity/client";
 import type { CompanionFood as Food, Platform } from "@/lib/ui/viewer-companion/brain";
-import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET, COMPANION_TRASH_DISCARD_MS, MAX_COMPANION_FOOD, attachCompanionFood, companionFoodJostle, companionTrashProgress, followCompanionFood, followCompanionViewportFloorFood, isCompanionHomeFloorFoodSupport, isCompanionViewportFloorFoodSupport, placeCompanionFood, presentCompanionFood, rebaseCompanionFoodSupport, receiveCompanionHomeFloorFood, type CompanionFoodAttachment, type CompanionFoodDropSupport, type CompanionFoodPresentation } from "@/lib/ui/viewer-companion/food";
-import type { CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
+import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET, COMPANION_TRASH_DISCARD_MS, MAX_COMPANION_FOOD, attachCompanionFood, companionFoodJostle, companionTrashProgress, followCompanionFood, followCompanionViewportFloorFood, isCompanionHomeFloorFoodSupport, isCompanionViewportFloorFoodSupport, placeCompanionFood, presentCompanionFood, rebaseCompanionFoodSupport, receiveCompanionHomeFloorFood, safeCompanionAttachedFood, type CompanionFoodAttachment, type CompanionFoodDropSupport, type CompanionFoodPresentation } from "@/lib/ui/viewer-companion/food";
+import { companionCalendarAnchorIdentity, isCompanionPanelFloor, type CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
+import { companionLayoutMotionMs } from "@/lib/ui/viewer-companion/element-anchor";
 import { createCompanionFoodGravity, createCompanionFoodToss } from "@/lib/ui/viewer-companion/food-gravity";
 import { planCompanionDispenserEjection, planCompanionFoodToss } from "@/lib/ui/viewer-companion/food-toss";
 import { nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
@@ -33,14 +34,14 @@ export type CompanionFoodControl = {
   scatter: (point: Point, radius: number, strength?: number) => number;
   clear: () => void;
 };
-type Props = { enabled: boolean; blocked: boolean; monthKey: string; returnFocus: () => void; onLanded?: () => void };
+type Props = { enabled: boolean; blocked: boolean; monthKey: string; returnFocus: () => void; onLanded?: () => void; onDiscard?: (id: string) => void };
 type Drag = { id: string; pointer: number; node: HTMLButtonElement; start: Point; point: Point; offset: Point; moved: boolean; wasFalling: boolean; startHome?: HomeAnchor };
 type Hover = { id: string; bin: HTMLElement; point: Point; since: number; pinned: boolean };
 type Discard = { id: string; bin: HTMLElement; node: HTMLElement; animation?: Animation; timer: ReturnType<typeof setTimeout> };
 type Jostle = { node: HTMLElement; animation: Animation };
 type HomeAnchor = "tray" | "floor";
-type FoodAttachment = { element?: Element; position: CompanionFoodAttachment; home?: HomeAnchor; viewportFloor?: { x: number } };
-type AttachmentRead = { food: Food; bound?: FoodAttachment; rect?: DOMRect; controls?: readonly DOMRect[]; unavailable?: boolean };
+type FoodAttachment = { element?: Element; position: CompanionFoodAttachment; home?: HomeAnchor; panel?: boolean; identity?: string; viewportFloor?: { x: number } };
+type AttachmentRead = { food: Food; bound?: FoodAttachment; rect?: DOMRect; controls?: readonly DOMRect[]; supports?: readonly CompanionFoodDropSupport[]; unavailable?: boolean };
 const homeSelector = (kind: HomeAnchor) => kind === "floor" ? ".vc-home .vc-home-floor" : ".vc-home .vc-dispenser-slot";
 const homeFoodId = (kind?: HomeAnchor) => kind === "floor" ? COMPANION_HOME_FLOOR_FOOD : undefined;
 const homeControlRects = (element: Element, measured = new Map<Element, DOMRect>()) => [...element.closest(".vc-home")!.querySelectorAll<HTMLElement>("button,a[href],input,select,textarea,[role=button]")].filter(node => !node.matches(".vc-cushion-button")).map(node => {
@@ -56,8 +57,11 @@ const transform = (point: Point) => `translate3d(${point.x.toFixed(3)}px,${point
  * presentation only write transforms; React commits placement/removal. Native
  * capture owns only real drag/trash gestures. Pointer taps never arm a global
  * placement mode; keyboard grab/arrow/put-down remains an explicit alternative. */
-export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function CompanionFood({ enabled, blocked, monthKey, returnFocus, onLanded }, ref) {
+export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function CompanionFood({ enabled, blocked, monthKey, returnFocus, onLanded, onDiscard }, ref) {
   const landed = useRef(onLanded); landed.current = onLanded;
+  // This local scene notification marks an actual human removal only. Food
+  // IDs never enter activity metadata, discovery or the autonomous trash path.
+  const discarded = useRef(onDiscard); discarded.current = onDiscard;
   const [foods, setFoods] = useState<Food[]>([]), [selected, setSelected] = useState<string | null>(null), [paused, setPaused] = useState(blocked);
   const [message, setMessage] = useState("");
   const current = useRef<Food[]>([]), selection = useRef<string | null>(null), platforms = useRef<readonly CompanionFoodDropSupport[]>([]), layer = useRef<HTMLDivElement>(null);
@@ -112,6 +116,10 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   const paint = useCallback((food: Food, presentation?: CompanionFoodPresentation) => {
     const node = nodes.current.get(food.id); if (!node || discard.current?.id === food.id) return;
     const hidden = visibility.current.get(food.id) === false;
+    // Like the resident's data-platform, expose only the anonymous current
+    // physical support for native contact diagnostics, never a date/event ID.
+    const platform = food.platformId ?? "";
+    if (node.dataset.platform !== platform) node.dataset.platform = platform;
     if (hidden) cancelJostle(food.id);
     if (node.hidden !== hidden) node.hidden = hidden;
     if (node.hasAttribute("data-falling") !== drops.current.has(food.id)) node.toggleAttribute("data-falling", drops.current.has(food.id));
@@ -180,18 +188,21 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     paint(placed); followHome.current(); return placed;
   }, [paint]);
   const measureSupports = useCallback(() => {
-    const measured = new Map<Element, DOMRect>(), sources = new Map<string, { element: Element; origin: Point }>();
+    const measured = new Map<Element, DOMRect>(), sources = new Map<string, { element: Element; origin: Point & { width: number; height: number }; identity?: string }>();
     // Rebase the bounded existing platform list once at deliberate release.
     // Choosing from stale pre-scroll heights could otherwise select a ledge
     // that is now above the pointer. No selector walk or Range scan is needed.
     const available = platforms.current.slice(0, 200).flatMap(support => {
       const source = anchorFor.current?.(support.id);
-      if (!source?.element) return [support];
+      // An installed native resolver can reject a recycled date/closed panel
+      // before its coalesced scan. That rejection must not become a stale
+      // document-space landing. Only the real viewport plane lacks a source.
+      if (!source?.element) return !anchorFor.current || isCompanionViewportFloorFoodSupport(support.id) ? [support] : [];
       if (!source.element.isConnected || source.element.closest("[data-panel-collapsed]")) return [];
       let rect = measured.get(source.element);
       if (!rect) { rect = source.element.getBoundingClientRect(); measured.set(source.element, rect); }
       if (rect.width <= 0 || rect.height <= 0) return [];
-      sources.set(support.id, { element: source.element, origin: { x: rect.left, y: rect.top } });
+      sources.set(support.id, { element: source.element, origin: { x: rect.left, y: rect.top, width: rect.width, height: rect.height }, ...(source.identity ? { identity: source.identity } : {}) });
       const rebased = rebaseCompanionFoodSupport(support, source, rect);
       return rebased ? [rebased] : [];
     });
@@ -204,7 +215,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     // Bind to the current origin once. A subsequent scroll reads only this
     // retained source, never applies a second baseline delta or picks a day.
     const position = attachCompanionFood(placed, { x: scrollX, y: scrollY }, origin);
-    attachments.current.set(food.id, { element: source?.element, position, ...(houseFloor ? { home: "floor" as const } : {}), ...(isCompanionViewportFloorFoodSupport(placed.platformId) ? { viewportFloor: { x: point.x } } : {}) }); visibility.current.set(food.id, true);
+    attachments.current.set(food.id, { element: source?.element, position, ...(source?.identity ? { identity: source.identity } : {}), ...(isCompanionPanelFloor(placed.platformId) ? { panel: true } : {}), ...(houseFloor ? { home: "floor" as const } : {}), ...(isCompanionViewportFloorFoodSupport(placed.platformId) ? { viewportFloor: { x: point.x } } : {}) }); visibility.current.set(food.id, true);
     drops.current.delete(food.id); presentations.current.delete(food.id);
   }, []);
   const settleFood = useCallback((food: Food, point: Point, release?: Point) => {
@@ -261,18 +272,34 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       if (bound.viewportFloor) return { food, bound };
       if (bound.home && !bound.element?.isConnected) bound.element = document.querySelector<HTMLElement>(homeSelector(bound.home)) ?? undefined;
       if (bound.home && !bound.element) return { food, bound, unavailable: true };
-      if (bound.element && !bound.element.isConnected) { bound.element = undefined; food = { ...food, platformId: undefined }; }
+      if (bound.panel && food.platformId) {
+        const replacement = anchorFor.current?.(food.platformId);
+        if (replacement?.element?.isConnected) bound.element = replacement.element;
+      }
+      // A deleted/recycled date is not a document-space fallback or another
+      // day. Only the same explicit panel/home family may replace native DOM.
+      if (bound.element && (!bound.element.isConnected || bound.identity !== companionCalendarAnchorIdentity(bound.element))) return { food, bound, unavailable: true };
       let rect: DOMRect | undefined;
       if (bound.element) {
         rect = measured.get(bound.element);
         if (!rect) { rect = bound.element.getBoundingClientRect(); measured.set(bound.element, rect); }
-        if (rect.width <= 0 || rect.height <= 0 || bound.element.closest("[data-panel-collapsed]")) return { food, bound, unavailable: true };
+        // The outlet/floor is decorative aria-hidden ink, yet remains a real
+        // measured recipient. Its enclosing room still fails closed when
+        // hidden, inert or folded; calendar/panel sources include themselves.
+        const visibilitySource = bound.home ? bound.element.parentElement : bound.element;
+        if (rect.width <= 0 || rect.height <= 0 || visibilitySource?.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]")) return { food, bound, unavailable: true };
         if (bound.home === "floor" && !controls.has(bound.element)) controls.set(bound.element, homeControlRects(bound.element, measured));
       }
-      return { food, bound, rect, controls: bound.element ? controls.get(bound.element) : undefined };
+      const supports = bound.element && rect && !bound.home ? platforms.current.flatMap(support => {
+        const source = anchorFor.current?.(support.id);
+        if (!source || source.element !== bound.element) return [];
+        const rebased = rebaseCompanionFoodSupport(support, source, rect!);
+        return rebased ? [rebased] : [];
+      }) : undefined;
+      return { food, bound, rect, controls: bound.element ? controls.get(bound.element) : undefined, supports };
     });
     const paintIds = new Set<string>(), unavailableIds = new Set<string>();
-    current.current = readings.map(({ food, bound, rect, controls: obstacles, unavailable }) => {
+    current.current = readings.map(({ food, bound, rect, controls: obstacles, supports, unavailable }) => {
       if (!bound) return food;
       paintIds.add(food.id);
       if (unavailable) { unavailableIds.add(food.id); visibility.current.set(food.id, false); return food; }
@@ -287,6 +314,11 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         return followed;
       }
       let followed = followCompanionFood(bound.position, scroll, rect, bound.home === "tray" ? false : bound.home === "floor" ? "floor" : true);
+      if (supports) {
+        const safe = safeCompanionAttachedFood(followed.point, supports);
+        if (!safe) { unavailableIds.add(food.id); visibility.current.set(food.id, false); return food; }
+        followed = { point: safe, attachment: { ...followed.attachment, documentX: safe.x + scroll.x, documentY: safe.y + scroll.y } };
+      }
       if (bound.home === "floor" && rect && bound.element) {
         const safe = receiveCompanionHomeFloorFood(followed.point, { x: followed.point.x, y: rect.top + rect.height - 2 }, rect, obstacles ?? [], true);
         if (!safe) { unavailableIds.add(food.id); visibility.current.set(food.id, false); return food; }
@@ -387,9 +419,10 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     const timer = setTimeout(() => {
       if (discard.current?.id !== id) return;
       discard.current = null; clearBin(bin); animation?.cancel();
+      const removed = current.current.some(food => food.id === id);
       if ((document.activeElement as HTMLElement | null)?.dataset.food === id) focusReturn.current();
       presentations.current.delete(id); update(current.current.filter(food => food.id !== id)); setMessage("밥을 휴지통에 버렸어요.");
-      if (human) logActivity("ui.click", { target: "companion-food-discard" });
+      if (human && removed) { discarded.current?.(id); logActivity("ui.click", { target: "companion-food-discard" }); }
     }, COMPANION_TRASH_DISCARD_MS);
     discard.current = { id, bin, node, animation, timer };
     return true;
@@ -564,7 +597,14 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         animation.onfinish = done; animation.oncancel = done;
       }
     },
-    clear() { const hadFood = current.current.length > 0; interrupt(); if ((document.activeElement as HTMLElement | null)?.closest(".vc-food")) focusReturn.current(); update([]); choose(null); setMessage("남은 밥을 치웠어요."); if (hadFood) logActivity("ui.click", { target: "companion-food-clear" }); },
+    clear() {
+      interrupt();
+      const removed = current.current.map(food => food.id);
+      if ((document.activeElement as HTMLElement | null)?.closest(".vc-food")) focusReturn.current();
+      update([]); choose(null); setMessage("남은 밥을 치웠어요.");
+      for (const id of removed) discarded.current?.(id);
+      if (removed.length) logActivity("ui.click", { target: "companion-food-clear" });
+    },
   }));
   useLayoutEffect(() => {
     // Only a changed React transform prop can overwrite the imperative pose.
@@ -578,7 +618,17 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     for (const food of current.current) paint(food, presentations.current.get(food.id));
   });
   useLayoutEffect(() => { if (selected) nodes.current.get(selected)?.focus({ preventScroll: true }); }, [selected]);
-  useEffect(() => { interrupt(); update([]); choose(null); setMessage(""); }, [monthKey, enabled, choose, interrupt, update]);
+  useEffect(() => { interrupt(); update([]); choose(null); setMessage(""); }, [enabled, choose, interrupt, update]);
+  const foodMonth = useRef(monthKey);
+  useEffect(() => {
+    if (foodMonth.current === monthKey) return;
+    foodMonth.current = monthKey;
+    interrupt();
+    // The new calendar never inherits yesterday's anonymous day/card source.
+    // Actual home/panel/current screen-floor food belongs to that live plane.
+    update(current.current.filter(food => { const bound = attachments.current.get(food.id); return Boolean(bound?.home || bound?.panel || bound?.viewportFloor); }));
+    choose(null); setMessage("");
+  }, [monthKey, choose, interrupt, update]);
   useEffect(() => { if (blocked) interrupt(); setPaused(blocked); }, [blocked, interrupt]);
   useEffect(() => {
     if (!enabled) return;
@@ -619,7 +669,11 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     // retains its local tray origin; no idle observer or perpetual rAF runs.
     const schedule = (event?: Event) => {
       if (!operating.current || document.hidden) return;
-      if ((!event || event.type.startsWith("vic:")) && (event?.type === COMPANION_CARD_PLAY_EVENT || [...attachments.current.values()].some(bound => bound.home)) && !reduced() && graphics.current !== "off") followUntil.current = performance.now() + FLIP_MS + 80;
+      const sources = [...new Set([...attachments.current.values()].flatMap(bound => bound.element ? [bound.element] : []))];
+      const motionEvent = event?.type === "vic:layout-motion" || event?.type === "animationstart" || event?.type === "transitionrun";
+      const duration = companionLayoutMotionMs(event, sources, event?.type === "scroll" ? 180 : FLIP_MS);
+      if (motionEvent && !duration) return;
+      if (sources.length && duration && !reduced() && graphics.current !== "off") followUntil.current = Math.max(followUntil.current, performance.now() + duration + 80);
       if (followFrame.current) return;
       // The event can run later than this frame's rAF timestamp. Always carry
       // its first frame, then use that same clock for the finite follow tail.
@@ -627,7 +681,9 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       const frame = (now: number) => {
         followFrame.current = 0;
         if (!operating.current || document.hidden) return;
-        const deadline = lastPaint === undefined ? now : nextCompanionPaint(now, lastPaint, graphics.current === "full" ? 60 : 30);
+        // Full mode follows each real display frame. A second60Hz threshold
+        // would skip16.5ms CSS frames while the native calendar keeps moving.
+        const deadline = lastPaint === undefined || graphics.current === "full" ? now : nextCompanionPaint(now, lastPaint, 30);
         // A live fall already follows every attachment at the same cadence.
         // Yield its reads/paint to that owner, then resume the finite tail.
         if (deadline !== null) { lastPaint = deadline; if (!drops.current.size) followAttachments(now); }
@@ -640,6 +696,8 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     window.visualViewport?.addEventListener("scroll", schedule, { passive: true }); window.visualViewport?.addEventListener("resize", schedule, { passive: true });
     window.addEventListener("vic:panel-section", schedule); window.addEventListener("vic:companion-home", schedule); window.addEventListener("vic:side-panel", schedule);
     window.addEventListener(COMPANION_CARD_PLAY_EVENT, schedule);
+    window.addEventListener("vic:layout-motion", schedule);
+    document.addEventListener("animationstart", schedule, true); document.addEventListener("transitionrun", schedule, true);
     document.addEventListener("visibilitychange", schedule);
     return () => {
       cancelAnimationFrame(followFrame.current); followFrame.current = 0;
@@ -648,6 +706,8 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       window.visualViewport?.removeEventListener("scroll", schedule); window.visualViewport?.removeEventListener("resize", schedule);
       window.removeEventListener("vic:panel-section", schedule); window.removeEventListener("vic:companion-home", schedule); window.removeEventListener("vic:side-panel", schedule); document.removeEventListener("visibilitychange", schedule);
       window.removeEventListener(COMPANION_CARD_PLAY_EVENT, schedule);
+      window.removeEventListener("vic:layout-motion", schedule);
+      document.removeEventListener("animationstart", schedule, true); document.removeEventListener("transitionrun", schedule, true);
     };
   }, [enabled, followAttachments]);
 
@@ -704,7 +764,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         event.preventDefault(); event.stopPropagation();
         if (carried.current === food.id) carried.current = undefined;
         if (event.key === "Escape") { const moved = selection.current === food.id && keyboardMoved.current; cancelHover(); if (discard.current?.id === food.id) cancelDiscard(); release(); const point = rebasePresentation(food.id); update(current.current.map(item => item.id === food.id ? settleFood(item, point ?? item) : item)); choose(null); if (moved) logActivity("ui.click", { target: "companion-food-move" }); return; }
-        if (["Delete", "Backspace"].includes(event.key)) { if (!current.current.some(item => item.id === food.id)) return; cancelHover(); if (discard.current?.id === food.id) cancelDiscard(); focusReturn.current(); presentations.current.delete(food.id); update(current.current.filter(item => item.id !== food.id)); choose(null); setMessage("밥을 치웠어요."); logActivity("ui.click", { target: "companion-food-discard" }); return; }
+        if (["Delete", "Backspace"].includes(event.key)) { if (!current.current.some(item => item.id === food.id)) return; cancelHover(); if (discard.current?.id === food.id) cancelDiscard(); focusReturn.current(); presentations.current.delete(food.id); update(current.current.filter(item => item.id !== food.id)); choose(null); setMessage("밥을 치웠어요."); discarded.current?.(food.id); logActivity("ui.click", { target: "companion-food-discard" }); return; }
         if (["Enter", " "].includes(event.key)) { if (!event.repeat) { if (selection.current === food.id) drop(food.id); else { rebasePresentation(food.id); choose(food.id); } } return; }
         rebasePresentation(food.id); attachments.current.delete(food.id); visibility.current.set(food.id, true); choose(food.id);
         update(current.current.map(item => {

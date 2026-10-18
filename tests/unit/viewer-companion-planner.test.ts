@@ -175,7 +175,7 @@ describe("environment-driven finite companion intentions", () => {
 
   it("plans a real route home when tired and cancels it when sleep is disabled", () => {
     const home = { ...mid, id: "companion-home", kind: "date" as const };
-    const context = { ...world, platforms: [floor, low, home] }, tired = { ...fresh(), energy: .25 };
+    const context = { ...world, platforms: [floor, low, home] }, tired = { ...fresh(), energy: .2 };
     const action = getAction(tired, context, prefs, 0, () => .5);
     expect(action.intention).toMatchObject({ kind: "rest", targetId: home.id });
     const continued = getAction(commitAction(tired, action, 0), context, { ...prefs, sleep: false }, 5000, () => .5);

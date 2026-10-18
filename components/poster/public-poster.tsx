@@ -4138,6 +4138,7 @@ export function PublicPoster({
       <div className="pm-ambient-shell" data-pm-exit="4">{!showAgenda ? <AmbientLayer force={ambientForce} month={view.month} slug={schedule.calendar.slug} worldForce={ambientWorldForce} year={view.year} /> : null}</div>
       <ShowcaseExit />
       {companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed ? <ViewerCompanion onOpenBook={() => { setCompanionBook(true); setSheet("settings"); }} root={posterRootRef} preferences={settingsPrefs.companionPrefs}
+        context={{ slug: schedule.calendar.slug, year: view.year, month: view.month, season: pickAmbient(ambientWorldForce?.month ?? view.month, ambientForce ?? null).season, force: ambientWorldForce }}
         positionMemory={positionMemory}
               blocked={Boolean(monthPick || giftCard || gachaOpen)}
               overlayOpen={Boolean(sheet || dayVodPop || agendaDetail)}

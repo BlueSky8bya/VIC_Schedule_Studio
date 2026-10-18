@@ -3,6 +3,7 @@ import { advanceBrain, cancelCompanionTravelGoal, commitAction, createBrain, get
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { createCompanionLife, experienceCompanionLife } from "@/lib/ui/viewer-companion/life";
 import { companionFoodApproachScale, COMPANION_LIVING_COOLDOWN, getLivingAction } from "@/lib/ui/viewer-companion/living";
+import { getCompanionBehaviorProfile } from "@/lib/ui/viewer-companion/behavior-profile";
 
 const prefs = { ...DEFAULT_COMPANION_PREFERENCES }, now = 120000;
 const brain = (): CompanionBrain => ({ ...createBrain(0, () => .5), life: createCompanionLife(() => 0), activeMs: now, hunger: .1 });
@@ -19,7 +20,7 @@ describe("finite living actions on the actual occupied support", () => {
     expect(ask.play).toBe("ask-petting"); expect(ask.kind).toBe("play"); expect(ask.duration).toBeGreaterThan(0);
     const waiting = commitAction(committed, ask, end);
     expect(waiting.affection).toBe(state.affection); expect(waiting.life).toEqual(state.life);
-    expect(waiting.pendingLiving).toBeUndefined(); expect(waiting.cooldowns.living).toBe(end + ask.duration + COMPANION_LIVING_COOLDOWN);
+    expect(waiting.pendingLiving).toBeUndefined(); expect(waiting.cooldowns.living).toBe(end + ask.duration + getCompanionBehaviorProfile(prefs).livingCooldownMs);
     expect(getLivingAction(waiting, scene, prefs, end + ask.duration, () => 0)).toBeUndefined();
   });
 
@@ -173,14 +174,15 @@ describe("life affects existing planning without duplicating experience rewards"
     expect(state.life).toEqual(stored);
   });
 
-  it.each([.1, .9])("uses the default home-rest choice with learning off without erasing learned comfort %s", comfort => {
+  it.each([.1, .9])("rests at home only for current fatigue, without learned comfort causing healthy sleep: %s", comfort => {
     const state = brain(), scene = world();
     state.life!.comfort = comfort;
     scene.platformId = "companion-home"; scene.platforms = [{ ...scene.platforms[0], id: scene.platformId, manualOnly: true }];
     const stored = structuredClone(state.life);
 
-    expect(getLivingAction(state, scene, { ...prefs, learnFromYou: true }, now, () => .9)?.play).toBe(comfort < .6 ? undefined : "cozy-nest");
+    expect(getLivingAction(state, scene, { ...prefs, learnFromYou: true }, now, () => .9)).toBeUndefined();
     expect(getLivingAction(state, scene, { ...prefs, learnFromYou: false }, now, () => .9)).toBeUndefined();
+    for (const learnFromYou of [false, true]) expect(getLivingAction({ ...state, energy: .21 }, scene, { ...prefs, learnFromYou }, now, () => .9)?.play).toBe("doze-curl");
     expect(state.life).toEqual(stored);
   });
 

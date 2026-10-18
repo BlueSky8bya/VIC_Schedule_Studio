@@ -2,6 +2,7 @@ import type { Platform } from "./brain";
 import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET, type CompanionFoodDropSupport } from "./food";
 import { companionSofaSeat } from "./sofa";
 import { COMPANION_PANEL_SIDE_SELECTOR } from "./panel-play";
+import { attachCompanionElementPoint, followCompanionElementPoint, type CompanionAnchorFrame } from "./element-anchor";
 
 const STUDIO_CARD_SELECTOR = "[data-companion-event='ordinary'][data-eventid]";
 const STUDIO_BAND_SELECTOR = "[data-companion-band='public'][data-supportid]";
@@ -12,6 +13,7 @@ const HEADER_SELECTOR = `.weekday-row,.public-calendar-header,.agenda-header,${S
 // A day is a large clickable container on both surfaces, not one giant control
 // obstacle. Its nested edit/delete/private-card controls remain protected.
 const DAY_SELECTOR = ".public-day,.agenda-day,.studio-day";
+const PANEL_FLOOR_SELECTOR = ".avatar-dock-inner";
 const DATE_TEXT_SELECTOR = ".public-day .day-strip > strong,.agenda-day .agenda-when > strong,.studio-day .studio-day-head > strong";
 const CARD_TEXT_SELECTOR = `.public-event .event-main p,.public-event .event-subs li,.agenda-event .agenda-title-text,.agenda-event .agenda-subs li,.agenda-item .agenda-title-text,.agenda-item .agenda-title,.agenda-item .agenda-subs li,${STUDIO_CARD_SELECTOR} .pill-main strong,${STUDIO_CARD_SELECTOR} .pill-subs li,${STUDIO_CARD_SELECTOR} .pill-sub-last .pill-sub-text,${STUDIO_CARD_SELECTOR} .agenda-title-text,${STUDIO_CARD_SELECTOR} .agenda-subs li`;
 const TEXT_SURFACE_SELECTOR = `${DATE_TEXT_SELECTOR},${CARD_TEXT_SELECTOR}`;
@@ -27,18 +29,24 @@ const FOOD_FOOTPRINT = { width: 44, height: 38 };
 export type CompanionTextRect = { left: number; right: number; top: number; bottom: number };
 export type CompanionSurface = { x: number; y: number; width: number };
 export type CompanionFootprint = { width: number; height: number };
-export type CompanionGeometryIdentity = { ids: WeakMap<Element, string>; serial: number };
+export type CompanionGeometryIdentity = { ids: WeakMap<Element, string>; dates?: WeakMap<Element, string>; serial: number };
 export type CompanionGeometryOptions = { size?: number; home?: HTMLElement | null; getHome?: () => HTMLElement | null; identity?: CompanionGeometryIdentity; onInvalidate?: () => void };
-export type CompanionFollowSample = { platform: Platform; anchorX: number; anchorY: number };
-export type CompanionGeometryAnchor = { element?: Element; left: number; top: number };
+export type CompanionFollowSample = { platform: Platform; anchorX: number; anchorY: number; sourceFrame?: CompanionAnchorFrame; currentFrame?: CompanionAnchorFrame };
+export type CompanionGeometryAnchor = { element?: Element; left: number; top: number; width?: number; height?: number; identity?: string };
 export type CompanionGeometrySubscription = (() => void) & { follow: (ids: readonly string[]) => CompanionFollowSample[]; anchor: (id: string) => CompanionGeometryAnchor | undefined; landings: (size?: number) => readonly Platform[]; revalidate: (notifyUnchanged?: boolean) => void };
 
 /** A renderer can retain anonymous anchor identity while its observers sleep. */
 export function createCompanionGeometryIdentity(): CompanionGeometryIdentity {
-  return { ids: new WeakMap<Element, string>(), serial: 0 };
+  return { ids: new WeakMap<Element, string>(), dates: new WeakMap<Element, string>(), serial: 0 };
 }
 
-type AnchorSnapshot = { platform: Platform; anchor?: Element; rect?: { left: number; top: number } };
+type AnchorSnapshot = { platform: Platform; anchor?: Element; rect?: CompanionAnchorFrame; identity?: string };
+const frameOf = (rect: DOMRect): CompanionAnchorFrame => ({ left: rect.left, top: rect.top, width: rect.width, height: rect.height });
+export function companionCalendarAnchorIdentity(element: Element): string | undefined {
+  const day = element.matches(DAY_SELECTOR) ? element : element.closest(DAY_SELECTOR), date = day?.getAttribute("data-date") ?? day?.getAttribute("data-isodate");
+  return date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined;
+}
+export const isCompanionPanelFloor = (id?: string) => /^companion-panel-floor(?:-food)?(?:-\d+)?$/.test(id ?? "");
 const copyPlatform = (platform: Platform): Platform => ({ id: platform.id, x: platform.x, y: platform.y, width: platform.width, kind: platform.kind, ...(platform.manualOnly ? { manualOnly: true } : {}), ...(platform.heart ? { heart: { ...platform.heart } } : {}), ...(platform.panelSide ? { panelSide: platform.panelSide } : {}) });
 const copyFoodSupport = (platform: CompanionFoodDropSupport): CompanionFoodDropSupport => ({ ...copyPlatform(platform), ...(platform.dropSurface ? { dropSurface: { ...platform.dropSurface } } : {}) });
 
@@ -107,7 +115,10 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
   // transparent hairline padding must not eliminate every narrow agenda ledge.
   const footprint = { width: size * .76, height: size * .76 };
   const identity = options.identity ?? createCompanionGeometryIdentity();
+  identity.dates ??= new WeakMap<Element, string>();
   const idFor = (element: Element, kind: "card" | "date") => {
+    const date = companionCalendarAnchorIdentity(element), previousDate = identity.dates!.get(element);
+    if (date !== previousDate) { identity.ids.delete(element); if (date) identity.dates!.set(element, date); else identity.dates!.delete(element); }
     let id = identity.ids.get(element);
     if (!id) { id = `${kind}-${++identity.serial}`; identity.ids.set(element, id); }
     return id;
@@ -162,13 +173,13 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     const remember = (platform: Platform, anchor?: Element, rect?: DOMRect) => {
       platforms.push(platform);
       if ((platform.kind === "floor" || platform.kind === "control" || platform.id === "companion-home") && landings.length < MAX_PLATFORMS) landings.push(copyPlatform(platform));
-      nextAnchors.set(platform.id, { platform, anchor, rect: rect ? { left: rect.left, top: rect.top } : undefined });
+      nextAnchors.set(platform.id, { platform, anchor, rect: rect ? frameOf(rect) : undefined, identity: anchor ? companionCalendarAnchorIdentity(anchor) : undefined });
     };
     const rememberFood = (id: string, spans: readonly CompanionSurface[], kind: Platform["kind"], anchor?: Element, rect?: DOMRect, dropSurfaces?: readonly NonNullable<CompanionFoodDropSupport["dropSurface"]>[]) => {
       for (let i = 0; i < spans.length && foodLandings.length < MAX_PLATFORMS; i++) {
         const dropSurface = dropSurfaces?.find(surface => spans[i].x >= surface.x - .5 && spans[i].x + spans[i].width <= surface.x + surface.width + .5);
         const platform: CompanionFoodDropSupport = { id: i ? `${id}-${i}` : id, ...spans[i], kind, manualOnly: true, ...(dropSurface ? { dropSurface: { ...dropSurface } } : {}) };
-        foodLandings.push(platform); nextAnchors.set(platform.id, { platform, anchor, rect: rect ? { left: rect.left, top: rect.top } : undefined });
+        foodLandings.push(platform); nextAnchors.set(platform.id, { platform, anchor, rect: rect ? frameOf(rect) : undefined, identity: anchor ? companionCalendarAnchorIdentity(anchor) : undefined });
       }
     };
     const nextObserved = new Set<Element>([root]);
@@ -317,7 +328,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       const measuredControls = new Map<Element, DOMRect>();
       for (const element of root.ownerDocument.querySelectorAll<HTMLElement>(".vc-home-launcher,.vc-home button")) controlElements.add(element);
       for (const element of controlElements) {
-        if (!visible(element) || element.matches(`${CARD_SELECTOR},${DAY_SELECTOR}`) || element.closest(".vc-companion,.vc-cushion-button")) continue;
+        if (!visible(element) || element.matches(`${CARD_SELECTOR},${DAY_SELECTOR}`) || element.closest(".vc-companion,.vc-cushion-button,.vc-toys,.vc-toy")) continue;
         const rect = rectFor(element), clip = clipping(element.parentElement);
         measuredControls.set(element, rect);
         const bounds = { left: Math.max(rect.left, clip.left), right: Math.min(rect.right, clip.right), top: Math.max(rect.top, clip.top), bottom: Math.min(rect.bottom, clip.bottom) };
@@ -378,7 +389,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
           ? safeCompanionSurfaces({ x, y, width: right - x }, homeObstacles, size, viewport, footprint) : [];
         for (let i = 0; i < spans.length && landings.length < MAX_PLATFORMS; i++) {
           const platform: Platform = { id: i ? `companion-home-floor-${i}` : "companion-home-floor", ...spans[i], kind: "floor", manualOnly: true };
-          landings.push(platform); nextAnchors.set(platform.id, { platform, anchor: homeFloor, rect: { left: rect.left, top: rect.top } });
+          landings.push(platform); nextAnchors.set(platform.id, { platform, anchor: homeFloor, rect: frameOf(rect) });
         }
         // A drop from above uses the same real floor as a direct room release.
         // The food's smaller footprint remains independent of the pet tier.
@@ -403,6 +414,14 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
           if (rect.width <= 0 || rect.height <= 0 || edge < clip.top || edge > clip.bottom || right <= x) continue;
           const id = `${idFor(element, surface.kind)}-${surface.edge === "top" ? "band" : "header"}`;
           addSurface(id, surface.kind, { x, y: edge - CLEARANCE, width: right - x }, element, rect);
+          if (surface.edge === "top") {
+            const dropObstacles = houseBounds ? [...controls, houseBounds] : controls;
+            const spans = safeCompanionSurfaces({ x, y: edge - CLEARANCE, width: right - x }, dropObstacles, size, viewport, footprint);
+            for (let i = 0; i < spans.length && landings.length < MAX_PLATFORMS; i++) {
+              const platform: Platform = { id: `${id}-top${i ? `-${i}` : ""}`, ...spans[i], kind: "card", manualOnly: true };
+              landings.push(platform); nextAnchors.set(platform.id, { platform, anchor: element, rect: frameOf(rect), identity: companionCalendarAnchorIdentity(element) });
+            }
+          }
           if (surface.edge === "top" && foodLandings.length < MAX_PLATFORMS) {
             // Public support/period ribbons have the same physical first edge
             // as cards. Their own labels sit below this plane; nearby complete
@@ -413,6 +432,28 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
             rememberFood(`${id}-food-top`, foodSpans, "card", element, rect, contacts);
           }
         }
+      }
+      // A deliberate drop may use the actual lower edge of a day or the
+      // existing empty panel box. These never enter the roaming graph.
+      for (const element of root.querySelectorAll<HTMLElement>(`${DAY_SELECTOR},${PANEL_FLOOR_SELECTOR}`)) {
+        nextObserved.add(element);
+        if (!visible(element) || !supportVisible(element)) continue;
+        const rect = rectFor(element), clip = clipping(element.parentElement), panel = element.matches(PANEL_FLOOR_SELECTOR);
+        const x = Math.max(rect.left, clip.left), right = Math.min(rect.right, clip.right), y = rect.bottom - CLEARANCE;
+        if (rect.width <= 0 || rect.height <= 0 || y < clip.top || y >= clip.bottom || right <= x) continue;
+        const petSpans = safeCompanionSurfaces({ x: x + footprint.width / 2, y, width: right - x - footprint.width }, ordinaryObstacles, size, viewport, footprint);
+        const foodSpans = safeCompanionSurfaces({ x: x + FOOD_FOOTPRINT.width / 2, y, width: right - x - FOOD_FOOTPRINT.width }, ordinaryObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT);
+        if (!petSpans.length && !foodSpans.length) continue;
+        const id = panel ? "companion-panel-floor" : `${idFor(element, "date")}-floor`;
+        const addManual = (spans: CompanionSurface[], food: boolean) => {
+          for (let i = 0; i < spans.length && (food ? foodLandings : landings).length < MAX_PLATFORMS; i++) {
+            const platform: CompanionFoodDropSupport = { id: `${id}${food ? "-food" : ""}${i ? `-${i}` : ""}`, ...spans[i], kind: "floor", manualOnly: true };
+            (food ? foodLandings : landings).push(platform);
+            nextAnchors.set(platform.id, { platform, anchor: element, rect: frameOf(rect), identity: companionCalendarAnchorIdentity(element) });
+          }
+        };
+        addManual(petSpans, false);
+        addManual(foodSpans, true);
       }
       const cardPlatforms = new Map<HTMLElement, Platform[]>();
       for (const [element, rects] of lines) {
@@ -454,7 +495,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
             const id = `${baseId}-top`;
             for (let i = 0; i < spans.length && landings.length < MAX_PLATFORMS; i++) {
               const platform: Platform = { id: i ? `${id}-${i}` : id, ...spans[i], kind: "card", manualOnly: true };
-              landings.push(platform); nextAnchors.set(platform.id, { platform, anchor: element, rect: { left: rect.left, top: rect.top } });
+              landings.push(platform); nextAnchors.set(platform.id, { platform, anchor: element, rect: frameOf(rect), identity: companionCalendarAnchorIdentity(element) });
             }
             // Opaque house ink can hide the physical edge itself. Unlike a
             // nearby control's input-safe gap, that covered edge must not
@@ -596,17 +637,20 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     // or doing an additional selector/Range/rect read.
     anchor(id: string): CompanionGeometryAnchor | undefined {
       const snapshot = anchors.get(id);
-      return snapshot ? { element: snapshot.anchor, left: snapshot.rect?.left ?? 0, top: snapshot.rect?.top ?? 0 } : undefined;
+      if (!snapshot || snapshot.anchor && (snapshot.identity !== companionCalendarAnchorIdentity(snapshot.anchor) || isCompanionPanelFloor(id) && snapshot.anchor.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]"))) return;
+      return { element: snapshot.anchor, left: snapshot.rect?.left ?? 0, top: snapshot.rect?.top ?? 0, ...(snapshot.rect ? { width: snapshot.rect.width, height: snapshot.rect.height } : {}), ...(snapshot.identity ? { identity: snapshot.identity } : {}) };
     },
     follow(requested: readonly string[]): CompanionFollowSample[] {
       if (!root.isConnected) { anchors.clear(); followedIds = []; retainedIds.clear(); landingSnapshot = []; foodLandingSnapshot = []; return []; }
-      followedIds = [...new Set(requested)].slice(0, 2);
+      followedIds = [...new Set(requested)].slice(0, 7);
       for (const id of retainedIds) {
         if (!followedIds.includes(id)) { anchors.delete(id); retainedIds.delete(id); }
       }
       const result: CompanionFollowSample[] = [];
       const measured = new Map<Element, DOMRect>();
-      // Only the occupied support and the current destination are followed.
+      // The pet's occupied/destination/attention supports and at most four
+      // real toys share this bounded identity list; each native rect is read
+      // once even when several of those seven identities use the same source.
       // No Range, selector walk, style read or autonomous rAF lives here.
       // A parked renderer may explicitly follow the final snapshot after
       // unsubscribe; the caller owns that bounded lifetime until effect GC.
@@ -616,15 +660,21 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         const platform = copyPlatform(snapshot.platform);
         let anchorX = 0, anchorY = 0;
         if (snapshot.anchor) {
-          if (!snapshot.anchor.isConnected || typeof snapshot.anchor.getBoundingClientRect !== "function") { anchors.delete(id); retainedIds.delete(id); continue; }
+          if (!snapshot.anchor.isConnected || snapshot.identity !== companionCalendarAnchorIdentity(snapshot.anchor) || isCompanionPanelFloor(id) && snapshot.anchor.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]") || typeof snapshot.anchor.getBoundingClientRect !== "function") { anchors.delete(id); retainedIds.delete(id); continue; }
           let rect = measured.get(snapshot.anchor);
           if (!rect) { rect = snapshot.anchor.getBoundingClientRect(); measured.set(snapshot.anchor, rect); }
           if (rect.width <= 0 || rect.height <= 0 || !snapshot.rect) continue;
-          const dx = rect.left - snapshot.rect.left, dy = rect.top - snapshot.rect.top;
-          if (!Number.isFinite(dx) || !Number.isFinite(dy)) continue;
+          const attached = attachCompanionElementPoint({ x: platform.x, y: platform.y }, snapshot.rect);
+          const moved = attached && followCompanionElementPoint(attached, frameOf(rect));
+          if (!moved) continue;
           anchorX = rect.left; anchorY = rect.top;
-          platform.x += dx; platform.y += dy;
-          if (platform.heart) { platform.heart.x += dx; platform.heart.y += dy; }
+          platform.x = moved.x; platform.y = moved.y; platform.width *= rect.width / snapshot.rect.width;
+          if (platform.heart) {
+            const point = attachCompanionElementPoint(platform.heart, snapshot.rect), heart = point && followCompanionElementPoint(point, frameOf(rect));
+            if (heart) { platform.heart.x = heart.x; platform.heart.y = heart.y; }
+          }
+          result.push({ platform, anchorX, anchorY, sourceFrame: { ...snapshot.rect }, currentFrame: frameOf(rect) });
+          continue;
         }
         result.push({ platform, anchorX, anchorY });
       }

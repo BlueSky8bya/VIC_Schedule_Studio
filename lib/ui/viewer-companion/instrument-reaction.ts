@@ -42,6 +42,9 @@ export function createCompanionInstrumentInbox() {
         }
       }
       pending = { pulse, quality, expires: now + 6000 };
+      // Boundary listeners observe this admitted onset immediately, even if
+      // the one-slot visual response is replaced while another scene runs.
+      return pending;
     },
     take(now: number) { const next = pending; pending = undefined; return next && now <= next.expires ? next : undefined; },
     clear() { anchor = pending = undefined; },

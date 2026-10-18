@@ -1730,6 +1730,9 @@ html[data-theme="dark"] .vic-settings .rhh-companion-settings .rhh-switch.on { b
 .vic-settings .rhh-companion-settings .rhh-seg button { display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 44px; min-height: 44px; border-radius: var(--r-md); padding: 7px 10px; color: var(--companion-soft); font-size: var(--text-body, 13.5px); font-weight: 600; white-space: normal; }
 .vic-settings .rhh-companion-settings .rhh-seg button.on { color: var(--companion-ink); }
 .vic-settings .rhh-companion-settings .rhh-seg-thumb { inset-block: 4px; left: 4px; width: calc((100% - 8px) / var(--n, 3)); border-radius: var(--r-md); background: var(--companion-paper); box-shadow: var(--elev-1); }
+.rhh-seg[data-multiline] { --seg-inset: 2px; --seg-gap: 2px; grid-auto-rows: minmax(44px, 1fr); }
+.vic-settings .rhh-companion-settings .rhh-seg[data-multiline] { --seg-inset: 4px; }
+.rhh-seg[data-multiline] > .rhh-seg-thumb { top: var(--seg-inset); bottom: auto; left: var(--seg-inset); width: calc((100% - 2 * var(--seg-inset) - (var(--n) - 1) * var(--seg-gap)) / var(--n)); height: calc((100% - 2 * var(--seg-inset) - (var(--rows) - 1) * var(--seg-gap)) / var(--rows)); transform: translate(calc(var(--i, 0) * (100% + var(--seg-gap))), calc(var(--row, 0) * (100% + var(--seg-gap)))); }
 .rhh-companion-settings .rhh-companion-nav { width: 100%; }
 .rhh-companion-nav button > span, .rhh-profile-nav button > span:not(.vc-collection-art) { display: inline-flex; flex: none; }
 .rhh-companion-settings .rhh-profile-playful { padding: var(--space-4); border-color: var(--companion-line); border-radius: var(--r-xl); background: var(--companion-ground); color: var(--companion-ink); box-shadow: inset 0 1px 0 rgb(255 255 255 / 35%); }

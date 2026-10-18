@@ -102,6 +102,10 @@ export function planCompanionGoal(brain: CompanionBrain, world: CompanionWorld, 
     const action = pursue({ kind: "rest", targetId: home.id, offset: .5, remaining: 12, stage: "travel" });
     if (action) return { action, outcomes };
   }
+  if (prefs.personality === "homebody" && home && home.id !== current.id && activeMs >= 15000) {
+    const action = pursue({ kind: "explore", targetId: home.id, offset: .5, remaining: 12, stage: "travel" });
+    if (action) return { action, outcomes };
+  }
   if (!prefs.jump || brain.energy < profile.exploreEnergy || brain.curiosity < profile.exploreCuriosity) return { outcomes };
   // Keep a proven expedition, but do not launch a new one over a social cue.
   // The local utility can approach/sniff/invite play on the real current ledge.

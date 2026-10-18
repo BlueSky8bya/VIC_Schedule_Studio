@@ -2,9 +2,10 @@ import { describe, expect, it } from "vitest";
 import { ACT, describeTarget, sortAreas } from "@/lib/activity/labels";
 import { sanitizeMeta, sanitizeTarget } from "@/lib/activity/kinds";
 import { buildGist, buildStory, type NarrativeItem } from "@/lib/activity/narrative";
+import { COMPANION_PERSONALITY_NAMES, COMPANION_PERSONALITIES } from "@/lib/ui/viewer-companion/preferences";
 
 const TOGGLES = [
-  "companion-enabled", "companion-roam", "companion-jump", "companion-sleep",
+  "companion-enabled", "companion-active-visible", "companion-roam", "companion-jump", "companion-sleep",
   "companion-heart-prank", "companion-card-prank", "companion-hide", "companion-panel-prank",
   "companion-drag-enabled", "companion-petting-enabled", "companion-feeding-enabled", "companion-learning-enabled",
   "companion-sound-enabled", "companion-sound-care", "companion-sound-motion", "companion-sound-keepsakes", "companion-radio-enabled", "companion-radio-react"
@@ -14,6 +15,7 @@ const SETTINGS = [
 ] as const;
 const ACTIONS = [
   "companion-home-open", "companion-home-close", "companion-home-fold", "companion-home-call",
+  "companion-home-toys", "companion-toy-grab", "companion-toy-drop", "companion-toy-return",
   "companion-food-spawn", "companion-food-move", "companion-food-discard", "companion-food-clear",
   "companion-pet", "companion-drag", "companion-throw", "companion-shake", "companion-bonk", "companion-rest",
   "companion-find", "companion-extract", "companion-heart-clear", "companion-card-restore"
@@ -55,6 +57,26 @@ const COLLECTION = [
 ] as const;
 
 describe("빅타민 행동 기록 이름과 저장 경계", () => {
+  it("활동·자동 잠자기·여덟 성격·직접 장난감 조작이 같은 현재 이름으로 읽힌다", () => {
+    const examples = [
+      ["companion-active-visible#on", "빅타민 다른 창 작업 중에도 활동 · 켜기"],
+      ["companion-active-visible#off", "빅타민 다른 창 작업 중에도 활동 · 끄기"],
+      ["companion-sleep#off", "빅타민 자동 잠자기 · 끄기"],
+      ...COMPANION_PERSONALITIES.map(value => [`companion-personality#${value}`, `빅타민 성격 · ${COMPANION_PERSONALITY_NAMES[value]}`]),
+      ["companion-home-toys", "빅타민 장난감 상자 열기"], ["companion-toy-grab", "빅타민 장난감 집기"],
+      ["companion-toy-drop", "빅타민 장난감 놓기"], ["companion-toy-return", "빅타민 장난감 상자에 넣기"]
+    ];
+    const items: NarrativeItem[] = examples.map(([target], index) => ({ t: Date.UTC(2026, 9, 19, 3, 0, index * 3), kind: "ui.click", target, targetLabel: null, meta: null, durMs: null, source: "client" }));
+    const story = buildStory(items).join(" ");
+    for (const [target, name] of examples) {
+      expect(sanitizeTarget(target)).toBe(target);
+      expect(describeTarget("ui.click", target)).toMatchObject({ name });
+      expect(story).toContain(name);
+      expect(describeTarget("ui.click", target).unnamed).toBeUndefined();
+    }
+    for (const excluded of ["companion-scene-start", "companion-toy-visit", "companion-personality-learned"]) expect(sanitizeTarget(excluded)).toBeNull();
+    for (const target of ["companion-home-toys", "companion-toy-grab", "companion-toy-drop", "companion-toy-return"]) expect(sanitizeTarget(`${target}#private-toy-id`)).toBe(target);
+  });
   it("패널과 최초공개의 새 고정 조작도 이름·선택값을 잃지 않는다", () => {
     for (const target of ["tag-filter-fold#open", "tag-filter-fold#close", "season-panel-fold#open", "season-panel-fold#close", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-exit#dismiss", "premiere-read", "premiere-cheer", "premiere-rehearsal"]) {
       expect(sanitizeTarget(target), target).toBe(target);

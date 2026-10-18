@@ -145,7 +145,7 @@ describe("independent companion species, motivation and gait", () => {
 
   it("lets sleepy pets seek a real bed earlier and rest longer without bypassing the sleep switch", () => {
     const home = { id: "companion-home", x: 560, y: 600, width: 150, kind: "date" as const };
-    const context = { ...world, platforms: [floor, home] }, brain = { ...healthy(), energy: .65 };
+    const context = { ...world, platforms: [floor, home] }, brain = { ...healthy(), energy: .35 };
     const action = getAction(brain, context, { ...prefs, personality: "sleepy" }, 100000, () => .5);
     expect(action.intention).toMatchObject({ kind: "rest", targetId: home.id });
     expect(getAction(brain, context, prefs, 100000, () => .5).intention?.kind).not.toBe("rest");

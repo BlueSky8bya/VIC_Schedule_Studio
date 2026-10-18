@@ -44,7 +44,10 @@ const COLLECTION_ACTIONS = [
   "companion-collection-inspect#food", "companion-collection-inspect#behavior", "companion-collection-inspect#moment", "companion-accessory-select",
   "companion-sound-enabled#on", "companion-sound-volume", "companion-sound-care#off",
   "companion-sound-motion#on", "companion-sound-keepsakes#off", "companion-sound-preview#motion",
-  "companion-gift-open", "companion-accessory-equip#on", "companion-accessory-equip#off", "companion-gift-dismiss"
+  "companion-gift-open", "companion-accessory-equip#on", "companion-accessory-equip#off", "companion-gift-dismiss",
+  "companion-active-visible#on", "companion-active-visible#off", "companion-sleep#off",
+  "companion-personality#gourmet", "companion-personality#performer", "companion-personality#homebody",
+  "companion-home-toys", "companion-toy-grab", "companion-toy-drop", "companion-toy-return"
 ] as const;
 type DataRow = Record<string, unknown>;
 type Read = { table: string; columns: string; filters: { method: string; args: unknown[] }[] };

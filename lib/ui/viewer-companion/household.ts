@@ -14,9 +14,9 @@ type Job = { serial: number; kind: "tidy" | "mischief"; stage: "seek" | "deliver
  * successful effect is acknowledged by the real food owner. This planner
  * never creates snacks, collection rewards, human logs or imaginary ledges. */
 export function createCompanionHousehold(rng: () => number = Math.random) {
-  let job: Job | undefined, serial = 0, retryAt = 8000, lastNow = 0;
+  let job: Job | undefined, serial = 0, retryAt = 0, lastNow = 0, cooldownMs = 35000;
   const handled = new Map<string, number>();
-  const finish = (now: number) => { job = undefined; retryAt = now + 35000; };
+  const finish = (now: number) => { job = undefined; retryAt = now + cooldownMs; };
   const routeBetween = (origin: Point, target: Point, platforms: readonly Platform[], allowJump: boolean) => {
     const plane = platforms.find(p => p.id === origin.platformId && p.id === target.platformId);
     // Manual room floors exclude ordinary wandering, but their measured spans
@@ -40,11 +40,11 @@ export function createCompanionHousehold(rng: () => number = Math.random) {
     && (!brain.intention || brain.intention.kind === "explore" && (brain.intention.stage !== "travel" || brain.intention.remaining <= 0));
   const begin = (input: Input) => {
     if (input.now < retryAt || !eligible(input)) return;
-    retryAt = input.now + 8000;
     const profile = getCompanionBehaviorProfile(input.preferences, input.brain.habits);
+    retryAt = input.now + profile.householdRetryMs;
     const foods = (input.world.foods ?? []).filter(food => (handled.get(food.id) ?? -Infinity) < input.now);
     const ordered = foods.slice().sort((a, b) => Math.hypot(a.x - input.world.x, a.y - input.world.y) - Math.hypot(b.x - input.world.x, b.y - input.world.y));
-    if (input.brain.hunger < .35 && foods.length >= 2 && rng() < profile.tidyWeight * .8) {
+    if (input.brain.hunger < .35 && foods.length >= (input.preferences.personality === "tidy" ? 1 : 2) && rng() < profile.tidyWeight * .8) {
       for (const food of ordered) {
         const source = pointFor(food, input.world.platforms);
         if (!source || !route(input, source)) continue;
@@ -76,6 +76,7 @@ export function createCompanionHousehold(rng: () => number = Math.random) {
   };
   const next = (input: Input): CompanionHouseholdAction | undefined => {
     lastNow = input.now;
+    cooldownMs = getCompanionBehaviorProfile(input.preferences, input.brain.habits).householdCooldownMs;
     if (job && (!eligible(input, true) || input.now >= job.deadline || --job.budget < 0)) finish(input.now);
     if (!job) begin(input);
     if (!job) return;
@@ -106,13 +107,14 @@ export function createCompanionHousehold(rng: () => number = Math.random) {
   return {
     next,
     active: () => Boolean(job),
+    currentCleanup: () => job?.kind === "tidy" && job.foodId ? { foodId: job.foodId, point: job.destination ? { ...job.destination } : undefined, discard: job.discard } : undefined,
     cancel: () => { if (job) finish(lastNow); },
     resolve(beat: CompanionHouseholdBeat, result: boolean | string, now: number) {
       if (!job || beat.serial !== job.serial || !beat.effect) return;
       if (!result) { finish(now); return; }
       if (beat.effect === "pick") { job.stage = "deliver"; return; }
       if (beat.effect === "spawn" && typeof result === "string") { job.foodId = result; job.stage = "waiting"; return; }
-      if (job.foodId) { handled.set(job.foodId, now + 180000); if (handled.size > 24) handled.delete(handled.keys().next().value!); }
+      if (job.foodId) { handled.set(job.foodId, now + (job.kind === "mischief" ? 8000 : 180000)); if (handled.size > 24) handled.delete(handled.keys().next().value!); }
       finish(now);
     },
   };

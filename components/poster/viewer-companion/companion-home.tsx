@@ -6,9 +6,47 @@ import { flipSpring } from "@/lib/ui/flip-motion";
 import { PanelSection } from "@/components/shared/panel-section";
 import type { CompanionCare } from "@/lib/ui/viewer-companion/care";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
+import type { CompanionHomeEnvironment } from "@/lib/ui/viewer-companion/home-environment";
 
 export type CompanionHomeAction = "home" | "feed" | "clearFood" | "radio" | "book";
-type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?: boolean; owner?: string; radioPlaying?: boolean; unreadCollection?: boolean; onAction: (action: CompanionHomeAction) => void; onClose?: () => void };
+type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?: boolean; owner?: string; radioPlaying?: boolean; unreadCollection?: boolean; onAction: (action: CompanionHomeAction) => void; onClose?: () => void; onToyBox?: () => void; toyCount?: number; environment?: CompanionHomeEnvironment };
+
+function HomeWindow({ id, environment }: { id: string; environment?: CompanionHomeEnvironment }) {
+  const weather = environment?.weather ?? "clear", night = environment?.night ?? false;
+  return <svg className="vc-home-window" width="100" height="90" viewBox="0 0 108 96" fill="none" aria-hidden="true" focusable="false" data-season={environment?.season ?? "spring"} data-weather={weather} data-night={night || undefined}>
+    <defs>
+      <linearGradient id={`${id}-window`} x1=".15" x2=".85" y2="1"><stop stopColor="var(--vc-wood-light)" /><stop offset=".5" stopColor="var(--vc-wood)" /><stop offset="1" stopColor="var(--vc-wood-edge)" /></linearGradient>
+      <linearGradient id={`${id}-window-sky`} x2="0" y2="1"><stop stopColor="var(--vc-window-sky-top)" /><stop offset="1" stopColor="var(--vc-window-sky-bottom)" /></linearGradient>
+      <linearGradient id={`${id}-curtain`} x2="1" y2=".5"><stop stopColor="var(--vc-linen-edge)" /><stop offset=".45" stopColor="var(--vc-linen)" /><stop offset="1" stopColor="var(--vc-linen-edge)" /></linearGradient>
+      <clipPath id={`${id}-window-pane`}><rect x="11" y="10" width="86" height="72" rx="7" /></clipPath>
+    </defs>
+    <rect className="vc-window-shadow" x="4" y="8" width="100" height="82" rx="13" />
+    <rect className="vc-window-frame" x="4" y="4" width="100" height="82" rx="12" fill={`url(#${id}-window)`} />
+    <g clipPath={`url(#${id}-window-pane)`}>
+      <rect x="11" y="10" width="86" height="72" fill={`url(#${id}-window-sky)`} />
+      {weather !== "rain" && weather !== "snow" && weather !== "fog" && (night
+        ? <path className="vc-window-moon" d="M80 18a9 9 0 1 0 9 13 9 9 0 0 1-9-13Z" />
+        : <circle className="vc-window-sun" cx="80" cy="24" r="7" />)}
+      {night && <path className="vc-window-stars" d="M43 19v3m-1.5-1.5h3M64 34v2m-1-1h2M87 45v2m-1-1h2" />}
+      {weather !== "clear" && <path className="vc-window-cloud" d="M37 31c-8 0-8-10-1-11 1-9 15-10 18-2 9-5 18 1 16 8 7 1 5 9-1 9H40Z" />}
+      <path className="vc-window-hill" d="M10 65c14-15 27-9 39-12 21-13 37-3 50 2v29H10Z" />
+      <path className="vc-window-ground" d="M10 76c23-12 40-4 56-8 15-3 28 1 33 5v13H10Z" />
+      <path className="vc-window-tree" d="M25 72V34m0 14-7-8m7 17 10-13M89 68V47m0 10-5-6" />
+      <path className="vc-window-foliage" d="M10 35c-1-10 8-17 17-15 11-1 17 9 14 17 2 11-13 18-21 11-9 2-16-5-10-13Zm69 13c-3-8 5-15 12-12 11-1 17 13 8 19-7 8-21 3-20-7Z" />
+      <g className="vc-window-blossoms"><circle cx="16" cy="30" r="2" /><circle cx="31" cy="25" r="2.5" /><circle cx="35" cy="40" r="2" /><circle cx="21" cy="43" r="2.5" /><circle cx="86" cy="44" r="2" /></g>
+      {weather === "rain" && <path className="vc-window-rain" d="m43 42-3 7m14-10-3 7m15-6-3 7m14-7-3 7M35 56l-3 7m17-7-3 7m15-8-3 7m16-5-3 7m15-8-3 7" />}
+      {weather === "snow" && <g className="vc-window-snow"><circle cx="38" cy="43" r="1.6" /><circle cx="56" cy="51" r="1.8" /><circle cx="74" cy="42" r="1.5" /><circle cx="83" cy="62" r="1.7" /><circle cx="31" cy="64" r="1.4" /><path d="M62 31v6m-3-3h6M45 65v5m-2.5-2.5h5" /></g>}
+      {weather === "wind" && <path className="vc-window-wind" d="M39 43h31c8 0 8-8 2-8M47 51h34c8 0 8 8 2 8M32 61h19" />}
+      {weather === "fog" && <path className="vc-window-fog" d="M16 48h75M11 58h86M20 68h74" />}
+    </g>
+    <path className="vc-window-mullion-shadow" d="M55 11v70M12 47h84" />
+    <path className="vc-window-mullion" d="M54 10v72M11 46h86" />
+    <path className="vc-window-curtain" fill={`url(#${id}-curtain)`} d="M10 9h17c-1 17-6 29-17 35Zm88 0H81c1 17 6 29 17 35Z" />
+    <path className="vc-window-curtain-fold" d="M18 12c0 10-3 18-6 26m78-26c0 10 3 18 6 26" />
+    <rect className="vc-window-sill" x="1" y="83" width="106" height="7" rx="3" fill={`url(#${id}-window)`} />
+    <rect className="vc-window-edge" x="6" y="6" width="96" height="78" rx="10" />
+  </svg>;
+}
 
 // The open U is shared by the room drawing and the separate foreground layer.
 // Its centre begins at54/100: the actual seat stays behind14–18px of cloth at
@@ -43,31 +81,15 @@ export function CompanionBedForeground({ idPrefix = "companion-front" }: { idPre
 
 /** One small room, shared by the desktop rail and compact portal. The cushion
  * is a real landing anchor; food and care stay in the existing single runtime. */
-export function CompanionHome({ care, preferences, inactive, owner, radioPlaying = false, unreadCollection = false, onAction, onClose }: Props) {
+export function CompanionHome({ care, preferences, inactive, owner, radioPlaying = false, unreadCollection = false, onAction, onClose, onToyBox, toyCount = 0, environment }: Props) {
   const room = useRef<HTMLElement>(null);
   const bedId = useId().replace(/:/g, "");
   // Its host already owns the panel FLIP. A tiny entry never resizes the room,
   // repeats on care changes, or creates an autonomous animation loop.
   useLayoutEffect(() => { if (room.current) flipSpring(room.current, "translateY(3px)"); }, []);
   return <PanelSection inert={inactive ? true : undefined} aria-hidden={inactive ? true : undefined} ref={room} title="빅타민 집" sectionKey="companion-home" headingAction="companion-home-fold" collapsible={!onClose} headingData={{ "data-home-action": "fold" }} actions={onClose ? <button type="button" data-home-action="close" data-act="companion-home-close" data-tip="닫기" className="vc-home-close" onClick={onClose} aria-label="빅타민 집 닫기"><X size={15} strokeWidth={1.7} /></button> : undefined} className="vc-home" aria-label="빅타민 집" data-home-presentation={onClose ? "compact" : "panel"} data-size={preferences.size} data-sfx="off" data-pm-exit="5" data-companion-home-owner={owner}>
-    <div className="vc-home-room">
-      <svg className="vc-home-window" width="64" height="56" viewBox="0 0 76 66" fill="none" aria-hidden="true" focusable="false">
-        <defs>
-          <linearGradient id={`${bedId}-window`} x1=".15" x2=".85" y2="1"><stop stopColor="var(--vc-wood-light)" /><stop offset=".5" stopColor="var(--vc-wood)" /><stop offset="1" stopColor="var(--vc-wood-edge)" /></linearGradient>
-          <linearGradient id={`${bedId}-curtain`} x2="1" y2=".5"><stop stopColor="var(--vc-linen-edge)" /><stop offset=".45" stopColor="var(--vc-linen)" /><stop offset="1" stopColor="var(--vc-linen-edge)" /></linearGradient>
-        </defs>
-        <rect className="vc-window-shadow" x="3" y="6" width="70" height="56" rx="12" />
-        <rect className="vc-window-frame" x="3" y="3" width="70" height="58" rx="12" fill={`url(#${bedId}-window)`} />
-        <rect className="vc-window-sky" x="8" y="8" width="60" height="48" rx="8" />
-        <circle className="vc-window-sun" cx="50" cy="23" r="6.5" />
-        <path className="vc-window-hill" d="M10 44c13-14 20-4 29-6 11-11 20-8 27-5v11c0 6-5 9-12 9H22c-8 0-12-3-12-9Z" />
-        <path className="vc-window-mullion-shadow" d="M39 9v46M9 33h58" />
-        <path className="vc-window-mullion" d="M38 8v47M8 32h60" />
-        <path className="vc-window-curtain" fill={`url(#${bedId}-curtain)`} d="M8 8h14c-1 13-5 22-14 26Zm60 0H54c1 13 5 22 14 26Z" />
-        <path className="vc-window-curtain-fold" d="M15 10c0 7-2 14-5 19m51-19c0 7 2 14 5 19" />
-        <rect className="vc-window-sill" x="1" y="57" width="74" height="5" rx="2" fill={`url(#${bedId}-window)`} />
-        <rect className="vc-window-edge" x="4.5" y="4.5" width="67" height="54" rx="10.5" />
-      </svg>
+    <div className="vc-home-room" data-season={environment?.season} data-weather={environment?.weather} data-night={environment?.night || undefined}>
+      <HomeWindow id={bedId} environment={environment} />
       <div className="vc-home-shelf">
       <svg className="vc-home-shelf-art" width="108" height="55" viewBox="0 0 108 55" fill="none" aria-hidden="true" focusable="false">
         <defs>
@@ -78,7 +100,7 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
         <rect className="vc-shelf-board" x="3" y="37" width="102" height="7" rx="2.5" fill={`url(#${bedId}-shelf)`} />
       </svg>
       <button type="button" className="vc-book-button" data-home-action="book" data-act="companion-book-open" data-sfx="off" data-tip="빅타민 수첩" data-unread={unreadCollection || undefined} aria-label="빅타민 수첩 열기" aria-describedby={unreadCollection ? `${bedId}-unread` : undefined} onClick={() => onAction("book")}>
-        <svg width="34" height="38" viewBox="0 0 38 42" fill="none" aria-hidden="true" focusable="false">
+        <svg className="vc-object-paint" width="34" height="38" viewBox="0 0 38 42" fill="none" aria-hidden="true" focusable="false">
           <path d="M7 3h23a3 3 0 0 1 3 3v31H8a5 5 0 0 1-5-5V7a4 4 0 0 1 4-4Z" className="vc-book-cover" />
           <path d="M9 3v29M8 32h25v5H8a2.5 2.5 0 0 1 0-5Z" className="vc-book-pages" />
           <path d="M25 3v11l-3-2-3 2V3" className="vc-book-ribbon" />
@@ -93,7 +115,7 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
         {unreadCollection && <><span className="vc-book-unread" aria-hidden="true">!</span><span className="sr-only" id={`${bedId}-unread`}>새 발견이 있어요</span></>}
       </button>
       <button type="button" className="vc-radio-button" data-home-action="radio" data-activity-manual="" data-sfx="off" data-tip={radioPlaying ? "라디오 끄기" : "라디오 켜기"} aria-label={radioPlaying ? "라디오 끄기" : "라디오 켜기"} aria-pressed={radioPlaying} onClick={() => onAction("radio")}>
-        <svg width="44" height="40" viewBox="0 0 48 40" fill="none" aria-hidden="true" focusable="false">
+        <svg className="vc-object-paint" width="44" height="40" viewBox="0 0 48 40" fill="none" aria-hidden="true" focusable="false">
           <defs><linearGradient id={`${bedId}-radio`} x2=".15" y2="1"><stop stopColor="var(--vc-wood-light)" /><stop offset=".6" stopColor="var(--vc-wood)" /><stop offset="1" stopColor="var(--vc-wood-edge)" /></linearGradient></defs>
           <ellipse className="vc-radio-shadow" cx="24" cy="36" rx="20" ry="3" />
           <path className="vc-radio-antenna" d="m36 10 7-8M13 9V7c0-4 18-4 18 0v2" />
@@ -134,9 +156,28 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
         </svg>
         <span className="vc-home-cushion" aria-hidden="true" />
       </button>
+      <button type="button" data-home-action="toys" data-act="companion-home-toys" data-activity-manual="" data-tip="장난감 상자" className="vc-toy-box" onClick={onToyBox} disabled={!onToyBox} aria-label="장난감 상자 열기" data-toy-count={Math.max(0, Math.trunc(toyCount))}>
+        <svg className="vc-object-paint" width="58" height="52" viewBox="0 0 64 56" fill="none" aria-hidden="true" focusable="false">
+          <defs><linearGradient id={`${bedId}-toys`} x2=".25" y2="1"><stop stopColor="var(--vc-wood-light)" /><stop offset="1" stopColor="var(--vc-wood)" /></linearGradient></defs>
+          <ellipse className="vc-object-ground" cx="32" cy="51" rx="27" ry="3" />
+          <path className="vc-toy-box-inside" d="m5 25 8-7h38l8 7-7 17H12Z" />
+          <path className="vc-toy-star" d="m22 7 3.5 6.5 7.5 1-5.5 5.5 1 7.5-6.5-3.5-6.5 3.5 1-7.5-5.5-5.5 7.5-1Z" />
+          <circle className="vc-toy-ball" cx="43" cy="23" r="10" /><path className="vc-toy-ball-seam" d="M35 17c7 0 13 8 11 15m-12-9c7 4 14 1 17-3" />
+          <path className="vc-toy-box-front" fill={`url(#${bedId}-toys)`} d="M5 25h54l-4 22c-.4 3-3 4-7 4H16c-4 0-6.6-1-7-4Z" />
+          <path className="vc-toy-box-rim" d="M6 27h52" /><rect className="vc-toy-box-handle" x="24" y="32" width="16" height="5" rx="2.5" />
+          <path className="vc-toy-box-mark" d="m29 42 3-3 3 3-3 3Z" />
+        </svg>
+      </button>
       {preferences.feeding ? <>
-        <button type="button" data-home-action="feed" data-activity-manual="" data-tip="밥 꺼내기" className="vc-dispenser" onClick={() => onAction("feed")} aria-label="밥 꺼내기"><svg className="vc-dispenser-container" width="48" height="62" fill="none" viewBox="0 0 48 62" aria-hidden="true" focusable="false"><defs><linearGradient id={`${bedId}-dispenser`} x2=".8" y2="1"><stop stopColor="var(--vc-container-light)" /><stop offset=".5" stopColor="var(--vc-container)" /><stop offset="1" stopColor="var(--vc-container-edge)" /></linearGradient></defs><ellipse className="vc-object-ground" cx="24" cy="58" rx="21" ry="3" /><rect className="vc-dispenser-body" fill={`url(#${bedId}-dispenser)`} x="2" y="2" width="44" height="58" rx="11" /><path className="vc-dispenser-top" d="M10 6h28" /><rect className="vc-dispenser-panel" x="9" y="11" width="30" height="29" rx="7" /><path className="vc-dispenser-base" d="M8 56h32" /></svg><span className="vc-dispenser-face" aria-hidden="true"><Utensils size={19} strokeWidth={1.5} /><span className="vc-dispenser-dot" /></span><span className="vc-dispenser-slot" aria-hidden="true" /></button>
-        <button type="button" data-home-action="clearFood" data-activity-manual="" data-companion-trash="" data-tip="음식 버리기" className="vc-home-trash" onClick={() => onAction("clearFood")} aria-label="음식 버리기"><svg width="36" height="44" fill="none" viewBox="0 0 28 32" aria-hidden="true" focusable="false"><defs><linearGradient id={`${bedId}-basket`} x2=".8" y2="1"><stop stopColor="var(--vc-bin-light)" /><stop offset=".5" stopColor="var(--vc-bin)" /><stop offset="1" stopColor="var(--vc-bin-edge)" /></linearGradient></defs><ellipse className="vc-object-ground" cx="14" cy="29" rx="11" ry="2" /><path className="vc-trash-body" fill={`url(#${bedId}-basket)`} d="M4 11h20l-1 14c0 3-3 4-9 4s-9-1-9-4Z" /><path className="vc-trash-rim" d="M5 12h18" /><g className="vc-trash-lid"><path className="vc-trash-handle" d="M10 7c0-5 8-5 8 0" /><path className="vc-trash-lid-surface" fill={`url(#${bedId}-basket)`} d="M4 6h20a2 2 0 0 1 2 2v2H2V8a2 2 0 0 1 2-2Z" /><path className="vc-trash-lid-edge" d="M5 7.5h18" /></g></svg><span className="vc-trash-progress" aria-hidden="true" /></button>
+        <button type="button" data-home-action="feed" data-activity-manual="" data-tip="밥 꺼내기" className="vc-dispenser" onClick={() => onAction("feed")} aria-label="밥 꺼내기">
+          <span className="vc-dispenser-paint vc-object-paint" aria-hidden="true">
+            <svg className="vc-dispenser-container" width="48" height="62" fill="none" viewBox="0 0 48 62" focusable="false"><defs><linearGradient id={`${bedId}-dispenser`} x2=".8" y2="1"><stop stopColor="var(--vc-container-light)" /><stop offset=".5" stopColor="var(--vc-container)" /><stop offset="1" stopColor="var(--vc-container-edge)" /></linearGradient></defs><ellipse className="vc-object-ground" cx="24" cy="58" rx="21" ry="3" /><rect className="vc-dispenser-body" fill={`url(#${bedId}-dispenser)`} x="2" y="2" width="44" height="58" rx="11" /><path className="vc-dispenser-top" d="M10 6h28" /><rect className="vc-dispenser-panel" x="9" y="11" width="30" height="29" rx="7" /><path className="vc-dispenser-base" d="M8 56h32" /></svg>
+            <span className="vc-dispenser-face"><Utensils size={19} strokeWidth={1.5} /><span className="vc-dispenser-dot" /></span><span className="vc-dispenser-slot-paint" />
+          </span>
+          {/* Actual outlet geometry stays fixed while the complete paint moves. */}
+          <span className="vc-dispenser-slot" aria-hidden="true" />
+        </button>
+        <button type="button" data-home-action="clearFood" data-activity-manual="" data-companion-trash="" data-tip="음식 버리기" className="vc-home-trash" onClick={() => onAction("clearFood")} aria-label="음식 버리기"><svg className="vc-object-paint" width="36" height="44" fill="none" viewBox="0 0 28 32" aria-hidden="true" focusable="false"><defs><linearGradient id={`${bedId}-basket`} x2=".8" y2="1"><stop stopColor="var(--vc-bin-light)" /><stop offset=".5" stopColor="var(--vc-bin)" /><stop offset="1" stopColor="var(--vc-bin-edge)" /></linearGradient></defs><ellipse className="vc-object-ground" cx="14" cy="29" rx="11" ry="2" /><path className="vc-trash-body" fill={`url(#${bedId}-basket)`} d="M4 11h20l-1 14c0 3-3 4-9 4s-9-1-9-4Z" /><path className="vc-trash-rim" d="M5 12h18" /><g className="vc-trash-lid"><path className="vc-trash-handle" d="M10 7c0-5 8-5 8 0" /><path className="vc-trash-lid-surface" fill={`url(#${bedId}-basket)`} d="M4 6h20a2 2 0 0 1 2 2v2H2V8a2 2 0 0 1 2-2Z" /><path className="vc-trash-lid-edge" d="M5 7.5h18" /></g></svg><span className="vc-trash-progress" aria-hidden="true" /></button>
       </> : null}
     </div>
     <div className="sr-only"><meter min="0" max="1" value={care.affection} aria-label="빅타민 친밀도" /><meter min="0" max="1" value={1 - care.hunger} aria-label="빅타민 포만감" /><meter min="0" max="1" value={care.energy} aria-label="빅타민 기력" /></div>

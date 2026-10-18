@@ -60,4 +60,30 @@ describe("shared companion room presentation", () => {
       expect(room(compact, false, true, false)).not.toContain('class="vc-radio-notes"');
     }
   });
+
+  it("makes the toy box a real callback-owned control without changing old home actions", () => {
+    const pending = room(true).match(/<button[^>]*data-home-action="toys"[^>]*>/)?.[0];
+    expect(pending).toContain('disabled=""');
+    const html = renderToStaticMarkup(React.createElement(CompanionHome, {
+      care: DEFAULT_COMPANION_CARE, preferences: DEFAULT_COMPANION_PREFERENCES,
+      onAction: () => undefined, onToyBox: () => undefined, toyCount: 3,
+    }));
+    const ready = html.match(/<button[^>]*data-home-action="toys"[^>]*>/)?.[0];
+    expect(ready).toContain('data-act="companion-home-toys"');
+    expect(ready).toContain('data-toy-count="3"');
+    expect(ready).not.toContain("disabled");
+    for (const action of ["home", "feed", "clearFood", "radio", "book"]) expect(html).toContain(`data-home-action="${action}"`);
+  });
+
+  it("renders the supplied world weather and season without running its own environment", () => {
+    const html = renderToStaticMarkup(React.createElement(CompanionHome, {
+      care: DEFAULT_COMPANION_CARE, preferences: DEFAULT_COMPANION_PREFERENCES, onAction: () => undefined,
+      environment: { date: { y: 2027, m: 1, d: 1 }, season: "winter", hour: 23, band: "night", night: true, weather: "snow" },
+    }));
+    expect(html).toContain('data-season="winter" data-weather="snow" data-night="true"');
+    expect(html).toContain('class="vc-window-snow"');
+    expect(html).not.toContain('class="vc-window-rain"');
+    expect(html).not.toContain('class="vc-window-sun"');
+    expect(html).toContain('class="vc-home-cushion"');
+  });
 });

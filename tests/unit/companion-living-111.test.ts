@@ -41,11 +41,14 @@ describe("111 existing-asset stories and exact runtime food metadata", () => {
   });
   it("returns to a still-present familiar resting ledge and forgets removed/failed candidates", () => {
     const current = { id: "current", x: 50, y: 600, width: 300, kind: "card" as const }, known = { id: "known", x: 50, y: 500, width: 300, kind: "card" as const };
-    const brain = { ...createBrain(0), energy: .35, places: [{ id: known.id, visits: 4, failures: 0, retryAfter: 0 }] };
+    const brain = { ...createBrain(0), energy: .2, places: [{ id: known.id, visits: 4, failures: 0, retryAfter: 0 }] };
     const world: CompanionWorld = { x: 100, y: current.y, platformId: current.id, platforms: [current, known], width: 1000, height: 800 };
     const ports = { route: () => [{ kind: "jump" as const, target: { x: 150, y: 500, platformId: known.id } }], landingX: (_p: unknown, x: number) => x, reachable: () => [] };
     expect(planCompanionGoal(brain, world, preferences, ports).action?.intention).toMatchObject({ kind: "rest", targetId: known.id });
     expect(planCompanionGoal(brain, { ...world, platforms: [current] }, preferences, ports).action).toBeUndefined();
+    // Ordinary pets now stay visibly active at35% energy; actual exhaustion
+    // still chooses the learned ledge and never a removed support.
+    expect(planCompanionGoal({ ...brain, energy: .35 }, world, preferences, ports).action?.intention?.kind).not.toBe("rest");
   });
 });
 

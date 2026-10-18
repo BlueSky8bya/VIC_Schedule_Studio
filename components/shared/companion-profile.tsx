@@ -10,7 +10,7 @@ import { COMPANION_ACCESSORY_NAMES } from "@/lib/ui/viewer-companion/gifts";
 import { DEFAULT_COMPANION_HABITS } from "@/lib/ui/viewer-companion/habits";
 import { getCompanionFoodArtFrame } from "@/lib/ui/viewer-companion/food-art";
 import { DEFAULT_COMPANION_LIFE, type CompanionLifeReason } from "@/lib/ui/viewer-companion/life";
-import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
+import { COMPANION_PERSONALITY_NAMES, type CompanionPersonality, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_FOOD_NAMES } from "@/lib/ui/viewer-companion/snacks";
 import { playSfx } from "@/lib/ui/sfx";
 import { logActivity } from "@/lib/activity/client";
@@ -28,6 +28,12 @@ const recentReasons: Record<CompanionLifeReason, string> = {
   "food-mishap": "간식 앞에서 깜짝", "cozy-rest": "포근한 휴식",
   "discovered-taste": "새 최애 간식", "variety": "다른 간식 맛보기",
   "reassured": "놀란 뒤 쓰다듬기", "rested": "푹 쉬기"
+};
+const personalityNotes: Readonly<Record<CompanionPersonality, string>> = {
+  curious: "새로운 자리와 소품을 살펴봐요.", affectionate: "마우스를 따라가며 교감을 청해요.",
+  sleepy: "느긋하게 놀다 일찍 쉬어요.", tidy: "흩어진 밥을 모으고 정리해요.",
+  mischievous: "장난과 움직임을 자주 바꿔요.", gourmet: "배고프면 간식을 먼저 찾아요.",
+  performer: "안전한 자리에서 재롱을 즐겨요.", homebody: "집 근처에서 편하게 지내요."
 };
 
 /** One event-coalesced paint, never a cursor or animation loop. */
@@ -104,7 +110,7 @@ export function CompanionProfile({ preferences, active, environment }: { prefere
   const effects = learnedEffects(preferences, care), unread = getCompanionUnreadCounts(collection);
   const pageUnread = (key: ProfilePage) => key === "discover" ? unread.foods + unread.memories > 0 : key === "dress" && unread.accessories > 0;
   const mode = { default: "빅타민", cat: "고양이", dog: "강아지" }[preferences.animalMode];
-  const personality = { curious: "호기심", affectionate: "애교쟁이", sleepy: "잠꾸러기", tidy: "깔끔이", mischievous: "사고뭉치" }[preferences.personality];
+  const personality = COMPANION_PERSONALITY_NAMES[preferences.personality];
   return <div className="rhh-companion-settings rhh-companion-profile rhh-profile-playful rhh-companion-experience" data-paged={active && (page === "discover" || page === "dress") || undefined} {...spotlight}>
     <span className="sr-only" id={`${id}-unread`}>새로 발견한 항목</span>
     <div aria-label="빅타민 프로필" className="rhh-seg rhh-profile-nav" ref={nav} role="tablist" style={{ "--n": pages.length, "--i": pages.findIndex(item => item.key === page) } as CSSProperties}>
@@ -118,7 +124,7 @@ export function CompanionProfile({ preferences, active, environment }: { prefere
           {favoriteFood && <span aria-label={favoriteFoodLabel} className="rhh-companion-interest" role="img" title={favoriteFoodLabel}><span aria-hidden="true" className="vc-collection-art" style={favoriteFoodStyle} /></span>}
           <span className="rhh-companion-portrait-link"><Shirt aria-hidden="true" size={16} />옷장</span>
         </button>
-        <div className="rhh-companion-summary-copy"><span className="rhh-companion-presence" data-awake={preferences.enabled || undefined}>{preferences.enabled ? "함께 지내는 중" : "쉬는 중"}</span><h3 id={`${id}-traits-title`}>빅타민 특성</h3><p className="rhh-profile-meta">{mode} 모드 · {personality}</p>
+        <div className="rhh-companion-summary-copy"><span className="rhh-companion-presence" data-awake={preferences.enabled || undefined}>{preferences.enabled ? "함께 지내는 중" : "쉬는 중"}</span><h3 id={`${id}-traits-title`}>빅타민 특성</h3><p className="rhh-profile-meta">{mode} 모드 · {personality}<br /><span>{personalityNotes[preferences.personality]}</span></p>
           <dl className="rhh-companion-facts"><div><dt><Leaf aria-hidden="true" size={16} />좋아하는 간식</dt><dd>{care ? COMPANION_FOOD_NAMES[life.favoriteFood] : "알아가는 중"}</dd></div><div><dt><Shirt aria-hidden="true" size={16} />지금 모습</dt><dd>{collection?.gifts.equipped ? COMPANION_ACCESSORY_NAMES[collection.gifts.equipped] : "기본 모습"}</dd></div></dl>
         </div>
       </section>

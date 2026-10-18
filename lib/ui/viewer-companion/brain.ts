@@ -47,6 +47,8 @@ export type CompanionAction = {
   /** Finite local performance; its target remains the occupied real support. */
   play?: CompanionPlay;
   living?: CompanionLivingKind;
+  /** Authored living invitations share the same existing decision clock. */
+  livingCooldownMs?: number;
   /** An equipped prop's finite gesture on this same stable support. */
   accessory?: import("./gifts").CompanionAccessoryId;
   cozySettled?: boolean;
@@ -232,14 +234,16 @@ export function createBrain(now = 0, rng: () => number = Math.random): Companion
 
 /** Call only for visible, active elapsed time. A long tab sleep cannot make the
  * character exhausted or force a catch-up action on return. */
-export function advanceBrain(brain: CompanionBrain, elapsedMs: number, learning = true): CompanionBrain {
+export function advanceBrain(brain: CompanionBrain, elapsedMs: number, learning = true, prefs?: CompanionBehaviorPreferences): CompanionBrain {
   const seconds = clamp(Number.isFinite(elapsedMs) ? elapsedMs / 1000 : 0, 0, 30);
+  const profile = prefs && getCompanionBehaviorProfile(prefs);
+  const quietAwake = prefs?.sleep === false && ["idle", "look", "stretch"].includes(brain.recent.at(-1) ?? "idle");
   return {
     ...brain,
-    energy: unit(brain.energy - seconds / 1400),
+    energy: unit(brain.energy + (quietAwake ? seconds / 240 : -seconds / 1400 * (profile?.fatigueScale ?? 1))),
     affection: unit(brain.affection - seconds / 2400),
     curiosity: unit(brain.curiosity + seconds / 650),
-    hunger: unit(brain.hunger + seconds / 900),
+    hunger: unit(brain.hunger + seconds / 900 * (profile?.hungerScale ?? 1)),
     activeMs: (brain.activeMs ?? 0) + seconds * 1000,
     affect: advanceCompanionAffect(brain.affect ?? createCompanionAffect(), seconds * 1000),
     habits: advanceCompanionHabits(brain.habits, seconds * 1000, learning),
@@ -292,7 +296,7 @@ export function commitAction(brain: CompanionBrain, action: CompanionAction, now
     episode: action.episode ? { ...action.episode, remaining: Math.max(0, Math.min(24, action.episode.remaining) - 1) } : undefined,
     recent: [...brain.recent, action.kind].slice(-8),
     visited: action.target.platformId ? [...brain.visited.filter(id => id !== action.target.platformId), action.target.platformId].slice(-8) : [...brain.visited],
-    cooldowns: { ...brain.cooldowns, [action.kind]: now + action.duration + (action.foodId && ["walk", "jump"].includes(action.kind) ? 300 : cooldownMs[action.kind]), ...(action.kind === "look" && Number.isFinite(action.placeCheckMs) ? { look: now + Math.max(action.duration + cooldownMs.look, clamp(action.placeCheckMs!, 0, 8000)) } : {}), ...(mishap ? { mishap: now + action.duration + cooldownMs.play } : {}), ...(action.episode?.phase === "notice" ? { episode: now + 45000 } : {}), ...(action.living && action.kind !== "walk" ? { living: now + action.duration + COMPANION_LIVING_COOLDOWN } : {}) },
+    cooldowns: { ...brain.cooldowns, [action.kind]: now + action.duration + (action.foodId && ["walk", "jump"].includes(action.kind) ? 300 : cooldownMs[action.kind]), ...(action.kind === "look" && Number.isFinite(action.placeCheckMs) ? { look: now + Math.max(action.duration + cooldownMs.look, clamp(action.placeCheckMs!, 0, 8000)) } : {}), ...(mishap ? { mishap: now + action.duration + cooldownMs.play } : {}), ...(action.episode?.phase === "notice" ? { episode: now + 45000 } : {}), ...(action.living && action.kind !== "walk" ? { living: now + action.duration + (Number.isFinite(action.livingCooldownMs) ? clamp(action.livingCooldownMs!, 4000, COMPANION_LIVING_COOLDOWN) : COMPANION_LIVING_COOLDOWN) } : {}) },
     intention: action.intention ? { ...action.intention, remaining: Math.max(0, action.intention.remaining - 1) } : undefined,
     foodGoal: action.foodId && remaining !== undefined ? { foodId: action.foodId, remaining, retryAfter: remaining === 0 ? (brain.activeMs ?? 0) + COMPANION_FEED_RETRY_MS : 0 } : brain.foodGoal,
     places: rememberCompanionOutcomes(brain.places ?? [], action.outcomes ?? [], brain.activeMs ?? 0),
@@ -401,7 +405,8 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
   const mobility = (recovery ? .16 : 1) * (tired ? .38 : 1) * profile.movementWeight;
   const pointer = world.pointer && [world.pointer.x, world.pointer.y].every(Number.isFinite) ? world.pointer : undefined;
   const follows = pointer && profile.socialPull > 0 && Math.abs(pointer.y - world.y) < 160 && !(prefs.learnFromYou !== false && (brain.habits?.confidence ?? 0) <= -.12);
-  add("idle", .14 + (1 - brain.energy) * .25 + sleepy + (recovery ? 1.15 : 0), ((recovery ? 1000 : 550) + random(rng) * (recovery ? 700 : 650)) * profile.pauseScale);
+  const homebodyAtHome = prefs.personality === "homebody" && (current.id === "companion-home" || /^companion-home-floor(?:-\d+)?$/.test(current.id));
+  add("idle", .14 + (1 - brain.energy) * .25 + sleepy + (homebodyAtHome ? 1.4 : 0) + (recovery ? 1.15 : 0), Math.max(350, ((recovery || homebodyAtHome ? 1000 : 550) + random(rng) * (recovery ? 700 : 650)) * profile.pauseScale));
   add("look", (.2 + brain.curiosity * .25 + curious * .45 + (recovery ? .45 : 0)) * profile.lookWeight, (COMPANION_TIMING.lookMin + random(rng) * COMPANION_TIMING.lookRange) * profile.lookScale);
   add("stretch", .12 + (1 - brain.energy) * .2 + (recovery ? .3 : 0), COMPANION_TIMING.stretchMin + random(rng) * COMPANION_TIMING.stretchRange);
   add("shake", .13 + brain.energy * .1 + (dog ? .18 : 0), COMPANION_TIMING.shakeMin + random(rng) * COMPANION_TIMING.shakeRange);
@@ -412,7 +417,7 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
   if (current && current.id === world.platformId && Math.abs(current.y - world.y) <= 18) {
     if (cat) add("play", profile.playWeight, companionPlayDuration("groom"), stationary, undefined, { play: "groom" });
     else if (dog) add("play", profile.playWeight * (follows ? 1.7 : 1), companionPlayDuration("bow"), stationary, undefined, { play: "bow" });
-    else if ((brain.affect?.joy ?? 0) >= .18 || affectionate && follows) add("play", profile.playWeight * 1.5, companionPlayDuration("celebrate"), stationary, undefined, { play: "celebrate" });
+    else if ((brain.affect?.joy ?? 0) >= .18 || affectionate && follows || prefs.personality === "performer") add("play", profile.playWeight * 1.5, companionPlayDuration("celebrate"), stationary, undefined, { play: "celebrate" });
     if (cat && prefs.roam && prefs.jump && !current.manualOnly && current.width >= 100 && follows && !tired) add("play", profile.playWeight * .8, companionPlayDuration("pounce"), stationary, undefined, { play: "pounce" });
   }
   if (prefs.roam && current && Math.abs(current.y - world.y) <= 18) {

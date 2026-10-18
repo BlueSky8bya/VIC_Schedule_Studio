@@ -1,6 +1,10 @@
 /** Device-local companion preferences. No account, schedule data or server calls. */
+export const COMPANION_PERSONALITIES = ["curious", "affectionate", "sleepy", "tidy", "mischievous", "gourmet", "performer", "homebody"] as const;
+export type CompanionPersonality = typeof COMPANION_PERSONALITIES[number];
+export const COMPANION_PERSONALITY_NAMES: Readonly<Record<CompanionPersonality, string>> = Object.freeze({ curious: "호기심", affectionate: "애교쟁이", sleepy: "잠꾸러기", tidy: "깔끔이", mischievous: "사고뭉치", gourmet: "먹보", performer: "재롱둥이", homebody: "집돌이" });
 export type CompanionPreferences = {
   enabled: boolean;
+  activeWhileVisible: boolean;
   roam: boolean;
   jump: boolean;
   sleep: boolean;
@@ -26,13 +30,14 @@ export type CompanionPreferences = {
   speed: "relaxed" | "normal" | "lively";
   /** Legacy values remain readable; normalization always selects the 92px size. */
   size: "small" | "normal" | "large";
-  personality: "curious" | "affectionate" | "sleepy" | "tidy" | "mischievous";
+  personality: CompanionPersonality;
 };
 
 export const COMPANION_PREFERENCES_KEY = "vic.viewerCompanion";
 export const COMPANION_PREFERENCES_EVENT = "vic:viewer-companion";
 export const DEFAULT_COMPANION_PREFERENCES: Readonly<CompanionPreferences> = Object.freeze({
   enabled: true,
+  activeWhileVisible: true,
   roam: true,
   jump: true,
   sleep: true,
@@ -56,7 +61,7 @@ export const DEFAULT_COMPANION_PREFERENCES: Readonly<CompanionPreferences> = Obj
   personality: "curious"
 });
 
-const booleanKeys = ["enabled", "roam", "jump", "sleep", "heartPrank", "cardPrank", "ambientPrank", "panelPrank", "rarePrank", "drag", "petting", "feeding", "learnFromYou", "sound", "soundCare", "soundMotion", "soundKeepsakes"] as const;
+const booleanKeys = ["enabled", "activeWhileVisible", "roam", "jump", "sleep", "heartPrank", "cardPrank", "ambientPrank", "panelPrank", "rarePrank", "drag", "petting", "feeding", "learnFromYou", "sound", "soundCare", "soundMotion", "soundKeepsakes"] as const;
 const soundKeys = ["sound", "soundVolume", "soundCare", "soundMotion", "soundKeepsakes"] as const;
 /** A live mix change never restarts the creature's movement/interaction world. */
 export function companionWorldPreferencesKey(preferences: Readonly<CompanionPreferences>): string {
@@ -77,7 +82,7 @@ export function normalizeCompanionPreferences(value: unknown, base: Readonly<Com
   for (const key of booleanKeys) if (typeof source[key] === "boolean") next[key] = source[key];
   if (typeof source.soundVolume === "number" && Number.isFinite(source.soundVolume)) next.soundVolume = Math.min(100, Math.max(0, Math.round(source.soundVolume)));
   if (source.speed === "relaxed" || source.speed === "normal" || source.speed === "lively") next.speed = source.speed;
-  if (source.personality === "curious" || source.personality === "affectionate" || source.personality === "sleepy" || source.personality === "tidy" || source.personality === "mischievous") next.personality = source.personality;
+  if (COMPANION_PERSONALITIES.some(personality => personality === source.personality)) next.personality = source.personality as CompanionPersonality;
   if (source.animalMode === "default" || source.animalMode === "cat" || source.animalMode === "dog") next.animalMode = source.animalMode;
   return next;
 }

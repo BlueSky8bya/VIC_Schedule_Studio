@@ -10,6 +10,7 @@
 // 원래 값은 개발자 모드/복사본에만 남긴다.
 
 import { FONT_OPTIONS } from "@/lib/ui/font-prefs";
+import { COMPANION_PERSONALITY_NAMES } from "@/lib/ui/viewer-companion/preferences";
 
 export type TargetLabel = {
   name: string;
@@ -657,9 +658,10 @@ export const ACT: Record<string, TargetLabel> = {
   "companion-radio-license": { name: "빅타민 라디오 음악 이용 조건", area: "설정" },
   "companion-wardrobe-preview": { name: "빅타민 장신구 미리보기", area: "설정" },
   "companion-enabled": { name: "AI 빅타민", area: "설정", opts: { on: "켜기", off: "끄기" } },
+  "companion-active-visible": { name: "빅타민 다른 창 작업 중에도 활동", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-roam": { name: "빅타민 돌아다니기", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-jump": { name: "빅타민 깡충 뛰기", area: "설정", opts: { on: "켜기", off: "끄기" } },
-  "companion-sleep": { name: "빅타민 낮잠", area: "설정", opts: { on: "켜기", off: "끄기" } },
+  "companion-sleep": { name: "빅타민 자동 잠자기", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-heart-prank": { name: "빅타민 하트 콩", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-card-prank": { name: "빅타민 일정 기울이기", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-hide": { name: "빅타민 숨바꼭질", area: "설정", opts: { on: "켜기", off: "끄기" } },
@@ -670,7 +672,7 @@ export const ACT: Record<string, TargetLabel> = {
   "companion-feeding-enabled": { name: "빅타민 밥주기", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-speed": { name: "빅타민 걸음", area: "설정", opts: { relaxed: "느긋하게", normal: "보통", lively: "발랄하게" } },
   "companion-animal": { name: "빅타민 동물 모드", area: "설정", opts: { default: "빅타민", cat: "고양이", dog: "강아지" } },
-  "companion-personality": { name: "빅타민 성격", area: "설정", opts: { curious: "호기심", affectionate: "애교쟁이", sleepy: "잠꾸러기", tidy: "깔끔이", mischievous: "사고뭉치" } },
+  "companion-personality": { name: "빅타민 성격", area: "설정", opts: { ...COMPANION_PERSONALITY_NAMES } },
   "companion-learning-enabled": { name: "빅타민 함께 지내며 배우기", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-learning-reset": { name: "빅타민 배운 습관 초기화", area: "설정" },
   "companion-home-open": { name: "빅타민 집 열기", area: "빅타민" },
@@ -679,6 +681,10 @@ export const ACT: Record<string, TargetLabel> = {
   "companion-home-close": { name: "빅타민 집 닫기", area: "빅타민" },
   "companion-home-fold": { name: "빅타민 집", area: "빅타민", opts: { open: "펴기", close: "접기" } },
   "companion-home-call": { name: "빅타민 집으로 부르기", area: "빅타민" },
+  "companion-home-toys": { name: "빅타민 장난감 상자 열기", area: "빅타민", hint: "직접 상자를 눌러 장난감을 꺼낸 조작만 세요." },
+  "companion-toy-grab": { name: "빅타민 장난감 집기", area: "빅타민", hint: "직접 장난감을 집은 조작만 세요." },
+  "companion-toy-drop": { name: "빅타민 장난감 놓기", area: "빅타민", hint: "직접 장난감을 놓은 조작만 세요." },
+  "companion-toy-return": { name: "빅타민 장난감 상자에 넣기", area: "빅타민", hint: "직접 상자에 돌려놓은 조작만 세요." },
   "companion-food-spawn": { name: "빅타민 밥 꺼내기", area: "빅타민" },
   "companion-food-move": { name: "빅타민 밥 옮기기", area: "빅타민" },
   "companion-food-discard": { name: "빅타민 밥 버리기", area: "빅타민" },

@@ -8,6 +8,7 @@ export function getCompanionBehaviorProfile(prefs: Pick<CompanionPreferences, "a
   const cat = prefs.animalMode === "cat", dog = prefs.animalMode === "dog";
   const affectionate = prefs.personality === "affectionate", sleepy = prefs.personality === "sleepy";
   const tidy = prefs.personality === "tidy", mischievous = prefs.personality === "mischievous";
+  const gourmet = prefs.personality === "gourmet", performer = prefs.personality === "performer", homebody = prefs.personality === "homebody";
   const gait = prefs.speed === "relaxed"
     ? { speed: 45, step: 28, range: 52, pause: 1.4, scoot: .12, hop: 22, activity: .8 }
     : prefs.speed === "lively"
@@ -17,26 +18,34 @@ export function getCompanionBehaviorProfile(prefs: Pick<CompanionPreferences, "a
     walkSpeed: gait.speed,
     stepMin: gait.step,
     stepRange: gait.range + (dog ? 20 : 0),
-    pauseScale: gait.pause * (sleepy ? 1.4 : 1),
+    pauseScale: gait.pause * (sleepy ? 1.25 : mischievous ? .6 : performer ? .75 : homebody ? 1.15 : 1),
     lookScale: (cat ? .85 : dog ? .8 : 1) * gait.pause,
     walkScale: cat ? 1.25 : dog ? 1 : 1.1,
     scootChance: cat ? 0 : gait.scoot * (sleepy ? .35 : 1),
     hopHeight: gait.hop,
-    movementWeight: (cat ? .82 : dog ? 1.12 : 1.25) * (sleepy ? .42 : affectionate ? .85 : mischievous ? 1.35 : 1) * gait.activity,
+    movementWeight: (cat ? .82 : dog ? 1.3 : 1.25) * (sleepy ? .55 : affectionate ? 1.2 : mischievous ? 1.8 : homebody ? .55 : gourmet ? 1.15 : performer ? 1.2 : 1) * gait.activity,
     lookWeight: cat ? 1.85 : dog ? .85 : 1,
-    socialPull: (dog ? 1.25 : cat ? .2 : 0) + (affectionate ? 1.1 : 0),
-    pointerGap: (cat ? 75 : dog ? 28 : 44) * (affectionate ? .65 : 1),
+    socialPull: (dog ? 1.6 : cat ? .2 : 0) + (affectionate ? 1.2 : performer ? .5 : 0),
+    pointerGap: (cat ? 75 : dog ? 28 : 44) * (affectionate ? .45 : 1),
     pointerStep: Math.min(180, (cat ? 100 : dog ? 140 : 110) * (prefs.speed === "relaxed" ? .8 : 1)),
     highPlaceWeight: cat ? .85 : .05,
-    noveltyWeight: prefs.personality === "curious" ? 2.4 : mischievous ? 2 : affectionate ? 1.15 : tidy ? .7 : .85,
+    noveltyWeight: prefs.personality === "curious" ? 4 : mischievous ? 3 : performer ? 2 : gourmet ? 1.8 : affectionate ? 1.15 : tidy ? .7 : homebody ? .3 : .85,
     exploreEnergy: sleepy ? .62 : .4,
     exploreCuriosity: sleepy ? .65 : affectionate ? .5 : .35,
-    restEnergy: sleepy ? .7 : .4,
-    restedEnergy: sleepy ? .86 : .62,
-    sleepEnergy: sleepy ? .86 : .62,
-    playWeight: (cat ? .5 : dog ? .7 : .32) * (sleepy ? .45 : affectionate ? 1.5 : mischievous ? 2.4 : tidy ? .65 : 1),
+    restEnergy: sleepy ? .42 : .22,
+    restedEnergy: sleepy ? .78 : .62,
+    sleepEnergy: sleepy ? .55 : .32,
+    playWeight: (cat ? .5 : dog ? .9 : .32) * (sleepy ? .5 : affectionate ? 2 : mischievous ? 3 : performer ? 5 : tidy ? .65 : 1),
     tidyWeight: tidy ? 1 : sleepy ? .18 : .08,
     mischiefWeight: mischievous ? 1 : prefs.animalMode === "default" && prefs.personality === "curious" ? .24 : .06,
+    noticeMs: dog ? 750 : affectionate ? 900 : mischievous ? 900 : gourmet ? 1200 : 2000,
+    activityCadenceMs: mischievous ? 6000 : performer ? 8000 : affectionate ? 10000 : 15000,
+    fatigueScale: sleepy ? 1 : mischievous ? .45 : performer ? .5 : .6,
+    hungerScale: gourmet ? 1.5 : dog ? 1.15 : 1,
+    livingCooldownMs: affectionate ? 8000 : performer ? 8000 : mischievous ? 6000 : dog ? 10000 : 45000,
+    homeWeight: homebody ? 2.5 : sleepy ? 1.3 : .1,
+    householdRetryMs: tidy ? 1500 : mischievous ? 2000 : 8000,
+    householdCooldownMs: tidy ? 6000 : mischievous ? 4500 : 35000,
     // Cartoon clumsiness belongs mostly to the fictional pompom mascot.
     // These are per-eligible-burst chances, never per-frame probabilities.
     accidentChance: Math.min(.24, (cat ? .015 : dog ? .055 : .18) * (tidy ? .4 : mischievous ? 1.3 : 1) * (prefs.speed === "lively" ? 1.3 : prefs.speed === "relaxed" ? .5 : 1)),

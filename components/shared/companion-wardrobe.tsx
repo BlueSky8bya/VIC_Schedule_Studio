@@ -11,6 +11,7 @@ import { playCompanionSound } from "@/lib/ui/viewer-companion/companion-sound";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { hapticSuccess } from "@/lib/ui/haptics";
 import { companionAccessoryCopy } from "@/lib/ui/viewer-companion/accessory-copy";
+import { COMPANION_WARDROBE_PREFERENCE, emitCompanionSceneSignal, validCompanionWardrobePreference } from "@/lib/ui/viewer-companion/scene-signals";
 
 const CompanionWardrobePreview = dynamic(() => import("./companion-wardrobe-preview").then(module => module.CompanionWardrobePreview));
 
@@ -29,6 +30,17 @@ export function CompanionWardrobe({ collection, preferences, active }: { collect
   const focusAccessory = selectedAccessory ?? COMPANION_WEARABLE_IDS[page.offset];
   const ownedCount = COMPANION_WEARABLE_IDS.filter(accessory => gifts?.unlocked.includes(accessory)).length;
   const copy = selectedAccessory && owned ? companionAccessoryCopy(selectedAccessory) : undefined;
+  useEffect(() => {
+    if (!active || !preferences.learnFromYou || !gifts) return;
+    const receive = (event: Event) => {
+      const id: unknown = (event as CustomEvent).detail;
+      if (touched.current || !validCompanionWardrobePreference(id) || !gifts.unlocked.includes(id)) return;
+      setSelectedAccessory(id); setPreviewChoice(id); setPageAnchor(COMPANION_WEARABLE_IDS.indexOf(id));
+    };
+    window.addEventListener(COMPANION_WARDROBE_PREFERENCE, receive);
+    emitCompanionSceneSignal({ kind: "wardrobe-opened" });
+    return () => window.removeEventListener(COMPANION_WARDROBE_PREFERENCE, receive);
+  }, [active, preferences.learnFromYou, gifts]);
   useEffect(() => {
     if (!touched.current) {
       setSelectedAccessory(collection?.gifts.equipped ?? null);

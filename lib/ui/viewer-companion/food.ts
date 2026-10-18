@@ -1,5 +1,6 @@
 import { platformLandingX, type CompanionFood, type Platform } from "./brain";
 import { firstCompanionSupportBelow } from "./support-landing";
+import { attachCompanionElementPoint, followCompanionElementPoint, type CompanionElementPoint } from "./element-anchor";
 
 export { MAX_COMPANION_FOOD } from "./food-capacity";
 /** Retired attachment id, recognized only to reject stale seat targets. */
@@ -22,7 +23,7 @@ export function isCompanionFoodBedSupport(id?: string): boolean {
 export const COMPANION_TRASH_DWELL_MS = 320;
 export const COMPANION_TRASH_DISCARD_MS = 180;
 export type CompanionFoodPresentation = { x: number; y: number; scale: number; rotation: number; scaleX?: number; scaleY?: number };
-export type CompanionFoodAttachment = { documentX: number; documentY: number; offsetX: number; offsetY: number };
+export type CompanionFoodAttachment = { documentX: number; documentY: number; offsetX: number; offsetY: number; elementPoint?: CompanionElementPoint };
 /** Food-only manual collision bounds. The safe centre span can be split around
  * nearby controls while its actual card still occupies the intervening gap.
  * Pet routing and anonymous shared Platform objects do not use this metadata. */
@@ -34,14 +35,24 @@ type HomeFoodRect = { left: number; top: number; width: number; height: number }
 /** Pair a cached food span and its card bounds with one current DOM origin at
  * deliberate release. Scrolling applies the same delta once to both, including
  * before the coalesced full geometry scan has delivered its next snapshot. */
-export function rebaseCompanionFoodSupport(support: CompanionFoodDropSupport, source: { left: number; top: number }, rect: { left: number; top: number; width: number }): CompanionFoodDropSupport | undefined {
+export function rebaseCompanionFoodSupport(support: CompanionFoodDropSupport, source: AnchorRect, rect: AnchorRect & { width: number }): CompanionFoodDropSupport | undefined {
   if (![support.x, support.y, support.width, source.left, source.top, rect.left, rect.top, rect.width].every(Number.isFinite) || support.width <= 0 || rect.width <= 0) return;
-  const dx = rect.left - source.left, dy = rect.top - source.top;
-  const x = Math.max(rect.left, support.x + dx), right = Math.min(rect.left + rect.width, support.x + support.width + dx);
+  if (source.width !== undefined && (!Number.isFinite(source.width) || source.width <= 0) || source.height !== undefined && (!Number.isFinite(source.height) || source.height <= 0) || rect.height !== undefined && (!Number.isFinite(rect.height) || rect.height <= 0)) return;
+  const dy = rect.top - source.top;
+  const scale = source.width && source.width > 0 ? rect.width / source.width : 1;
+  const mappedX = rect.left + (support.x - source.left) * scale;
+  // Native floor/control positions resize; the snack's44px hit plane does
+  // not. Restore its fixed half-width at every safe-fragment edge, including
+  // gaps beside internal controls, before clipping to the new native floor.
+  const inset = support.kind === "floor" ? 22 : 0;
+  const insetDelta = inset * (1 - scale);
+  const x = Math.max(rect.left + inset, mappedX + insetDelta), right = Math.min(rect.left + rect.width - inset, mappedX + support.width * scale - insetDelta);
   if (right <= x) return;
-  const result = { ...support, x, y: support.y + dy, width: right - x };
+  const elementPoint = source.width && source.height && rect.height ? attachCompanionElementPoint(support, { ...source, width: source.width, height: source.height }) : undefined;
+  const mapped = elementPoint && rect.height ? followCompanionElementPoint(elementPoint, { ...rect, height: rect.height }) : undefined;
+  const result = { ...support, x, y: mapped?.y ?? support.y + dy, width: right - x };
   if (support.dropSurface) {
-    const left = Math.max(rect.left, support.dropSurface.x + dx), end = Math.min(rect.left + rect.width, support.dropSurface.x + support.dropSurface.width + dx);
+    const left = Math.max(rect.left, rect.left + (support.dropSurface.x - source.left) * scale), end = Math.min(rect.left + rect.width, rect.left + (support.dropSurface.x + support.dropSurface.width - source.left) * scale);
     result.dropSurface = { x: left, width: end - left };
   }
   return result;
@@ -81,8 +92,9 @@ export function receiveCompanionHomeFloorFood(point: Point, release: Point, floo
 
 /** A local attachment contains only coordinates. DOM identity stays with the
  * presentation layer; visibility never chooses a replacement support. */
-export function attachCompanionFood(point: Point, scroll: Point, origin?: Point): CompanionFoodAttachment {
-  return { documentX: point.x + scroll.x, documentY: point.y + scroll.y, offsetX: origin ? point.x - origin.x : 0, offsetY: origin ? point.y - origin.y : 0 };
+export function attachCompanionFood(point: Point, scroll: Point, origin?: Point & { width?: number; height?: number }): CompanionFoodAttachment {
+  const elementPoint = origin?.width && origin.height ? attachCompanionElementPoint(point, { left: origin.x, top: origin.y, width: origin.width, height: origin.height }) : undefined;
+  return { documentX: point.x + scroll.x, documentY: point.y + scroll.y, offsetX: origin ? point.x - origin.x : 0, offsetY: origin ? point.y - origin.y : 0, ...(elementPoint ? { elementPoint } : {}) };
 }
 
 export function followCompanionFood(attachment: CompanionFoodAttachment, scroll: Point, rect?: AnchorRect, clampToSource: boolean | "floor" = true): { point: Point; attachment: CompanionFoodAttachment } {
@@ -91,6 +103,8 @@ export function followCompanionFood(attachment: CompanionFoodAttachment, scroll:
   // A dispenser tray deliberately sits outside the tiny outlet rectangle.
   // Its local home offset survives topology changes without a glyph clamp.
   let localX = attachment.offsetX, localY = attachment.offsetY;
+  const projected = attachment.elementPoint && rect?.width && rect.height ? followCompanionElementPoint(attachment.elementPoint, { ...rect, width: rect.width, height: rect.height }) : undefined;
+  if (projected && rect) { localX = projected.x - rect.left; localY = projected.y - rect.top; }
   if (clampToSource && rect) {
     if (rect.width !== undefined) localX = Math.min(localX, Math.max(0, rect.width));
     if (rect.height !== undefined) localY = Math.min(localY, clampToSource === "floor" ? rect.height : Math.max(-3, rect.height - 3));
@@ -98,6 +112,18 @@ export function followCompanionFood(attachment: CompanionFoodAttachment, scroll:
   }
   const point = rect ? { x: rect.left + localX, y: rect.top + localY } : { x: attachment.documentX - scroll.x, y: attachment.documentY - scroll.y };
   return { point, attachment: { ...attachment, documentX: point.x + scroll.x, documentY: point.y + scroll.y } };
+}
+
+/** Reflow can move a control across a retained native fraction. Stay on that
+ * same measured source/plane and keep the intended fraction for regrowth. */
+export function safeCompanionAttachedFood(point: Point, supports: readonly CompanionFoodDropSupport[]): Point | undefined {
+  let best: Point | undefined, distance = Infinity;
+  for (const support of supports) {
+    if (![support.x, support.y, support.width, point.x, point.y].every(Number.isFinite) || support.width <= 0 || Math.abs(support.y - point.y) > 2) continue;
+    const x = Math.max(support.x, Math.min(support.x + support.width, point.x)), delta = Math.abs(x - point.x);
+    if (delta < distance) { best = { x, y: support.y }; distance = delta; }
+  }
+  return best;
 }
 
 /** Logical support coordinates stay unchanged while the separate presentation

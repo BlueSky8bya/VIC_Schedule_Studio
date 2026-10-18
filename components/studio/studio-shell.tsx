@@ -7276,6 +7276,7 @@ export function StudioShell({
       ref={setShellRef}
     >
       {companionDesktop && companionPrefs.enabled ? <ViewerCompanion onOpenBook={() => { setCompanionBook(true); setModal("settings"); }} root={shellRef} preferences={companionPrefs}
+        context={{ slug: schedule.calendar.slug, year: view.year, month: view.month, season: pickAmbient(worldForce?.month ?? view.month, ambientForce ?? devSeason).season, force: worldForce }}
         positionMemory={staffCompanionPositionMemory}
         blocked={Boolean(monthPick || passcodeModal || navMsg)}
         workspaceBusy={Boolean(dragEventId || spanDrag)}

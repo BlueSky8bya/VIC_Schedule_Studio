@@ -18,10 +18,10 @@ async function fixture() {
   });
   const logger = await import("@/lib/activity/client");
   logger.startClickTracking();
-  const click = (manual: boolean, purple: boolean, pressed = false, id = "companion-food-spawn") => {
+  const click = (manual: boolean, purple: boolean, pressed = false, id = "companion-food-spawn", option: string | null = null) => {
     const element = {
       hasAttribute: (name: string) => manual && name === "data-activity-manual",
-      getAttribute: (name: string) => name === "data-act" ? id : name === "aria-pressed" ? String(pressed) : null,
+      getAttribute: (name: string) => name === "data-act" ? id : name === "data-act-opt" ? option : name === "aria-pressed" ? String(pressed) : null,
       matches: () => purple && !pressed
     };
     handlers.get("click")!({ target: { closest: () => element } });
@@ -43,6 +43,23 @@ async function fixture() {
 }
 
 describe("completed companion input owns its activity event", () => {
+  it("captures visible activity and new personality choices while completed toy gestures count once without IDs", async () => {
+    const f = await fixture();
+    f.click(false, false, false, "companion-active-visible", "off");
+    for (const personality of ["gourmet", "performer", "homebody"]) f.click(false, false, false, "companion-personality", personality);
+    for (const target of ["companion-home-toys", "companion-toy-grab", "companion-toy-drop", "companion-toy-return"]) {
+      f.click(true, false, false, target);
+      f.logger.logActivity("ui.click", { target, meta: { toyId: "private-toy-id", personality: "private-trait", date: "2026-10-19", count: 12 }, durMs: 1000 });
+      f.click(true, false, false, target);
+    }
+    const events = await f.events();
+    expect(events.map((event: { target: string }) => event.target)).toEqual([
+      "companion-active-visible#off", "companion-personality#gourmet", "companion-personality#performer", "companion-personality#homebody",
+      "companion-home-toys", "companion-toy-grab", "companion-toy-drop", "companion-toy-return"
+    ]);
+    expect(events.every((event: { meta: unknown; durMs: unknown }) => event.meta == null && event.durMs == null)).toBe(true);
+    for (const value of ["private-toy-id", "private-trait", "2026-10-19"]) expect(JSON.stringify(events)).not.toContain(value);
+  });
   it("manual controls suppress synthetic clicks; a committed gesture counts once", async () => {
     const f = await fixture();
     f.click(true, false); // cancelled/incomplete pointer gesture has no event

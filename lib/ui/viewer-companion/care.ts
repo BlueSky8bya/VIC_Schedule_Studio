@@ -1,6 +1,7 @@
 import { DEFAULT_COMPANION_HABITS, normalizeCompanionHabits, type CompanionHabits } from "./habits";
 import { createCompanionLife, DEFAULT_COMPANION_LIFE, normalizeCompanionLife, resetCompanionLife, summarizeCompanionLife, type CompanionLife } from "./life";
 import { getCompanionLearnedEffectDirections } from "./behavior-profile";
+import { COMPANION_PERSONALITIES } from "./preferences";
 
 /** Device-local needs only. No identity, schedule text, dates or elapsed-away
  * timestamp is retained: an absent owner never incurs hunger or care debt. */
@@ -34,7 +35,7 @@ const lifeSignature = (life: CompanionLife) => {
   const category = (value: number) => value <= .35 ? "low" : value >= .65 ? "high" : "balanced";
   return JSON.stringify([life.generation, summary.favoriteFood, ...[summary.play, summary.comfort, summary.social, summary.curiosity].map(category), life.social >= .4, life.comfort >= .6, life.play >= .45, life.curiosity >= .4, life.recent]);
 };
-const effectPreferences = (["default", "cat", "dog"] as const).flatMap(animalMode => (["curious", "affectionate", "sleepy", "tidy", "mischievous"] as const).flatMap(personality => (["relaxed", "normal", "lively"] as const).map(speed => ({ animalMode, personality, speed }))));
+const effectPreferences = (["default", "cat", "dog"] as const).flatMap(animalMode => COMPANION_PERSONALITIES.flatMap(personality => (["relaxed", "normal", "lively"] as const).map(speed => ({ animalMode, personality, speed }))));
 
 /** Injectable store keeps quota failures and throttling testable without a DOM.
  * An external clear/change wins; an unchanged stale value after a failed write

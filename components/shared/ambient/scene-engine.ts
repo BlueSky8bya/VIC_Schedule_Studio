@@ -17,9 +17,10 @@
 
 import { createDepthBudget, type DepthTier } from "@/components/shared/ambient/world/depth";
 import { gfxPref } from "@/lib/ui/gfx";
-import { kstToday, type SeasonKey } from "@/components/shared/ambient/registry";
-import { kstHour, worldTime, worldTimeOfBand, type DayBand, type WorldTime } from "@/components/shared/ambient/world/time";
-import { weatherAt, weatherOptionsForMonth, type DayWeather, type Weather } from "@/components/shared/ambient/world/weather";
+import { type SeasonKey } from "@/components/shared/ambient/registry";
+import { worldTime, type DayBand, type WorldTime } from "@/components/shared/ambient/world/time";
+import { weatherOptionsForMonth, type DayWeather, type Weather } from "@/components/shared/ambient/world/weather";
+import { readAmbientEnvironment } from "@/components/shared/ambient/world/environment";
 import { pendingLoads } from "@/components/shared/ambient/loading";
 import { monthTraces, type Trace } from "@/components/shared/ambient/world/traces";
 import {drawFogField} from "@/components/shared/ambient/world/fog";
@@ -296,12 +297,6 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     lightStable: true,
     windDir: 1 // 시드가 정해진 뒤 아래에서 덮어쓴다(라운드 14)
   };
-  // 보고 있는 달에 쓸 '날' — 날씨 시드에만 쓴다(흔적은 달만 본다). 현재 달은 오늘, 과거 달은 말일, 미래 달은 1일.
-  const viewDay = (y: number, m: number, today: { y: number; m: number; d: number }) => {
-    if (y === today.y && m === today.m) return today.d;
-    if (y < today.y || (y === today.y && m < today.m)) return new Date(Date.UTC(y, m, 0)).getUTCDate();
-    return 1;
-  };
   // 조명 목표·보간(GRAMMAR 원칙 4 "전이는 부드럽게" — 띠·마디 경계에서 3초에 걸쳐 lerp). 첫 값과 얼린 엔진은 즉시.
   let lightTgt: Light = NEUTRAL_LIGHT;
   let lightFrom: Light = NEUTRAL_LIGHT;
@@ -309,20 +304,13 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
   let lightKey = "";
   let lightInit = false;
   const refreshWorld = () => {
-    const today = kstToday();
-    const y = Math.max(1900,Math.min(2100,Math.trunc(worldForce?.year ?? world.year)));
-    const m = Math.max(1,Math.min(12,Math.trunc(worldForce?.month ?? world.month)));
-    const d = Math.max(1,Math.min(new Date(Date.UTC(y,m,0)).getUTCDate(),Math.trunc(worldForce?.day ?? viewDay(y,m,today))));
-    frame.date = { y, m, d };
+    const environment = readAmbientEnvironment({ ...world, force: worldForce });
+    const { y, m } = environment.date;
+    frame.date = environment.date;
     frame.skyEvent = worldForce?.skyEvent ?? null;
     frame.skyBearing = worldForce?.skyBearing ?? 'south';
-    frame.time = worldForce?.band
-      ? worldTimeOfBand(world.season, worldForce.band, frame.date)
-      : worldTime(world.season, worldForce?.hour ?? kstHour(), frame.date);
-    const hour = frame.time.hour;
-    frame.weather = worldForce?.weather
-      ? { now: worldForce.weather, prev: worldForce.weather, segment: 0, until: 24 }
-      : weatherAt(world.slug, y, m, d, hour);
+    frame.time = environment.time;
+    frame.weather = environment.weather;
     // 조명은 **두 거점을 섞은 연속 값**이다(2026-09-07, PLAN-006). 위상 표류는 이미 연속이라 그대로 반영하고,
     // 3초 전이는 **불연속 변화**(날씨가 바뀌거나 구간이 넘어갈 때)에만 건다 — 매 갱신마다 전이를 새로 걸면
     // lightStable이 영원히 false가 되어 소품 그림자를 다시 굽지 못한다.

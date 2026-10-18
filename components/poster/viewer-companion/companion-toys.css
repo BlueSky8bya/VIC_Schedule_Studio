@@ -1,0 +1,10 @@
+.vc-toys{position:fixed;inset:0;pointer-events:none;z-index:var(--z-companion,76)}
+.vc-toy{position:absolute;left:0;top:0;width:44px;height:44px;padding:8px 8px 0;border:0;background:transparent;box-shadow:none;pointer-events:auto;cursor:grab;touch-action:none;transform-origin:50% 100%;will-change:transform}
+.vc-toy>svg{display:block;width:28px;height:28px;filter:drop-shadow(0 2px 1px #5d422528);pointer-events:none}
+.vc-toy:hover>svg,.vc-toy:focus-visible>svg{transform:scale(1.12)}
+.vc-toy:focus-visible{outline:2px solid var(--accent,#5077aa);outline-offset:-3px;border-radius:12px}
+.vc-toy[data-held=true]{cursor:grabbing}
+.vc-toy[data-carried=true]{pointer-events:none}
+.vc-toy:disabled{opacity:1}
+[data-gfx=off] .vc-toy>svg,[data-reduce-motion] .vc-toy>svg{filter:none}
+@media(prefers-reduced-motion:reduce){.vc-toy>svg{transition:none}}

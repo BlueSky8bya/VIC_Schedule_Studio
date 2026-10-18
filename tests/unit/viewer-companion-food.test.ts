@@ -1,11 +1,61 @@
 import { describe, expect, it } from "vitest";
-import { COMPANION_HOME_FLOOR_FOOD, COMPANION_TRASH_DISCARD_MS, COMPANION_TRASH_DWELL_MS, attachCompanionFood, companionFoodJostle, companionTrashProgress, followCompanionFood, followCompanionViewportFloorFood, isCompanionFoodBedSupport, isCompanionHomeFloorFoodSupport, isCompanionViewportFloorFoodSupport, placeCompanionFood, presentCompanionFood, rebaseCompanionFoodSupport, receiveCompanionHomeFloorFood, reconcileCompanionFood, type CompanionFoodDropSupport } from "@/lib/ui/viewer-companion/food";
+import { COMPANION_HOME_FLOOR_FOOD, COMPANION_TRASH_DISCARD_MS, COMPANION_TRASH_DWELL_MS, attachCompanionFood, companionFoodJostle, companionTrashProgress, followCompanionFood, followCompanionViewportFloorFood, isCompanionFoodBedSupport, isCompanionHomeFloorFoodSupport, isCompanionViewportFloorFoodSupport, placeCompanionFood, presentCompanionFood, rebaseCompanionFoodSupport, receiveCompanionHomeFloorFood, reconcileCompanionFood, safeCompanionAttachedFood, type CompanionFoodDropSupport } from "@/lib/ui/viewer-companion/food";
 import type { CompanionFood, Platform } from "@/lib/ui/viewer-companion/brain";
 
 const floor: Platform = { id: "floor", x: 12, y: 782, width: 976, kind: "floor" };
 const card: Platform = { id: "card", x: 100, y: 350, width: 200, kind: "card" };
 const apple: CompanionFood = { id: "apple", x: 200, y: 340, kind: "apple" };
 const viewport = { width: 1000, height: 800 };
+
+describe("121 fractional native food support", () => {
+  it("retains native x fraction across calendar zoom and fixed3px top clearance", () => {
+    const before = { x: 100.25, y: 350.125, width: 320.5, height: 40 };
+    const attached = attachCompanionFood({ x: before.x + before.width * .37, y: before.y - 3 }, { x: 0, y: 200 }, before);
+    const rect = { left: 700.5, top: 280.25, width: 256.4, height: 32 };
+    const moved = followCompanionFood(attached, { x: 0, y: 270 }, rect);
+    expect(moved.point.x).toBeCloseTo(rect.left + rect.width * .37, 10); expect(moved.point.y).toBe(277.25);
+    expect(moved.attachment.elementPoint).toEqual(attached.elementPoint);
+    expect(followCompanionFood(moved.attachment, { x: 0, y: 200 }, { left: before.x, top: before.y, width: before.width, height: before.height }).point).toEqual({ x: before.x + before.width * .37, y: before.y - 3 });
+  });
+  it("rebases the actual first-contact span and collision bounds with native width, once", () => {
+    const support = { ...card, x: 150, width: 100, y: 347, dropSurface: { x: 100, width: 400 } };
+    const result = rebaseCompanionFoodSupport(support, { left: 100, top: 350, width: 400, height: 100 }, { left: 700.125, top: 200.25, width: 200, height: 50 })!;
+    expect(result).toEqual({ ...support, x: 725.125, width: 50, y: 197.25, dropSurface: { x: 700.125, width: 200 } });
+    expect(placeCompanionFood(apple, { x: 740, y: 180 }, [result, floor]).platformId).toBe(card.id);
+    expect(support.x).toBe(150);
+  });
+  it("keeps the same native plane clear of new controls while preserving the intended fraction for regrowth", () => {
+    const attached = attachCompanionFood({ x: 250, y: 647 }, { x: 0, y: 0 }, { x: 100, y: 300, width: 300, height: 350 });
+    const point = followCompanionFood(attached, { x: 0, y: 0 }, { left: 600, top: 100, width: 240, height: 280 }).point;
+    expect(point).toEqual({ x: 720, y: 377 });
+    expect(safeCompanionAttachedFood(point, [{ ...floor, x: 622, y: 377, width: 50 }, { ...floor, x: 770, y: 377, width: 48 }])).toEqual({ x: 672, y: 377 });
+    expect(safeCompanionAttachedFood(point, [{ ...floor, y: 600 }])).toBeUndefined();
+    expect(safeCompanionAttachedFood(point, [])).toBeUndefined();
+    expect(followCompanionFood(attached, { x: 0, y: 0 }, { left: 100, top: 300, width: 300, height: 350 }).point).toEqual({ x: 250, y: 647 });
+  });
+  it("retains fixed22px floor hit clearance during pre-scan shrink and rejects a source narrower than the snack", () => {
+    const support = { ...floor, x: 122, y: 497, width: 156 };
+    const source = { left: 100, top: 300, width: 200, height: 200 };
+    const shrunk = rebaseCompanionFoodSupport(support, source, { left: 600, top: 100, width: 100, height: 100 })!;
+    expect(shrunk).toMatchObject({ x: 622, width: 56, y: 197 });
+    for (const x of [shrunk.x, shrunk.x + shrunk.width]) { expect(x - 22).toBeGreaterThanOrEqual(600); expect(x + 22).toBeLessThanOrEqual(700); }
+    expect(rebaseCompanionFoodSupport(support, source, { left: 600, top: 100, width: 43, height: 100 })).toBeUndefined();
+    expect(rebaseCompanionFoodSupport(support, source, { ...source })).toEqual(support);
+  });
+  it("preserves fixed hit clearance beside an internal control and rejects a fragment too narrow after shrink", () => {
+    const source = { left: 100, top: 300, width: 200, height: 200 }, rect = { left: 100, top: 100, width: 100, height: 100 };
+    // An old control at180 leaves a safe centre span122..155. Its new left
+    // edge140 leaves only40px of floor: no44px snack can fit in that gap.
+    expect(rebaseCompanionFoodSupport({ ...floor, x: 122, width: 33, y: 497 }, source, rect)).toBeUndefined();
+    const roomy = rebaseCompanionFoodSupport({ ...floor, x: 122, width: 93, y: 497 }, source, rect)!;
+    // A farther old control at240 moves to170. The retained snack's hit
+    // stays entirely left of it, even before the next full geometry scan.
+    expect(roomy).toMatchObject({ x: 122, width: 24.5, y: 197 });
+    expect(roomy.x + roomy.width + 22).toBeLessThanOrEqual(170);
+    const right = rebaseCompanionFoodSupport({ ...floor, x: 185, width: 93, y: 497 }, source, rect)!;
+    expect(right.x - 22).toBeGreaterThanOrEqual(130);
+  });
+});
 
 describe("companion food support", () => {
   it("catches the first real crossed card across a safe-span gap before any lower exact-x card or floor", () => {
