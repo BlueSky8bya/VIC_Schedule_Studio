@@ -1,5 +1,5 @@
 import { COMPANION_FOOD_KINDS, isCompanionFoodKind, type CompanionFoodKind } from "./snacks";
-import { advanceCompanionGifts, isCompanionAccessoryId, normalizeCompanionGifts, type CompanionAccessoryId, type CompanionGiftState } from "./gifts";
+import { advanceCompanionGifts, COMPANION_WEARABLE_IDS, isCompanionAccessoryId, normalizeCompanionGifts, type CompanionAccessoryId, type CompanionGiftState } from "./gifts";
 import { COMPANION_SITUATION_IDS, observedCompanionSituation, type CompanionSituationId, type CompanionSituationObservation } from "./moments";
 export { COMPANION_SITUATION_IDS, COMPANION_SITUATION_NAMES, COMPANION_SITUATION_HINTS, type CompanionSituationId } from "./moments";
 
@@ -11,7 +11,26 @@ export const COMPANION_BEHAVIOR_IDS = Object.freeze(["ask-petting", "lean-nuzzle
 export type CompanionBehaviorId = typeof COMPANION_BEHAVIOR_IDS[number];
 export const COMPANION_BEHAVIOR_NAMES: Readonly<Record<CompanionBehaviorId, string>> = Object.freeze({ "ask-petting": "쓰담해 줘", "lean-nuzzle": "부비부비", "paper-knead": "꾹꾹이", "paper-nest": "자리 만들기", "cheer-rehearsal": "으쌰으쌰", "doze-curl": "꾸벅꾸벅", groom: "몸단장", bow: "꾸벅 인사", pounce: "폴짝!", tumble: "데굴데굴", dizzy: "빙글빙글", stretch: "쭉쭉" });
 export const COMPANION_BEHAVIOR_HINTS: Readonly<Record<CompanionBehaviorId, string>> = Object.freeze({ "ask-petting": "안전한 곳에서 가까이 머물러 보세요.", "lean-nuzzle": "쓰다듬으며 다정해진 빅타민 곁에 머물러 보세요.", "paper-knead": "쿠션으로 돌아가 편히 쉬게 해 주세요.", "paper-nest": "쿠션에서 자리를 고르는 모습을 지켜보세요.", "cheer-rehearsal": "활기찬 빅타민과 오래 함께 지내 보세요.", "doze-curl": "피곤한 빅타민이 집에서 쉬는 모습을 지켜보세요.", groom: "고양이 모드의 편안한 모습을 지켜보세요.", bow: "강아지 모드로 함께 지내 보세요.", pounce: "고양이 모드에서 다가와 놀 때를 기다려 보세요.", tumble: "활기차게 이동하는 모습을 지켜보세요.", dizzy: "장난을 마치고 어지럼을 가라앉히는 모습을 지켜보세요.", stretch: "쉬고 일어난 빅타민을 지켜보세요." });
-export type CompanionCollection = { version: 1; foods: CompanionFoodKind[]; behaviors: CompanionBehaviorId[]; situations: CompanionSituationId[]; gifts: CompanionGiftState };
+export type CompanionCollectionSeen = { foods: CompanionFoodKind[]; behaviors: CompanionBehaviorId[]; situations: CompanionSituationId[]; accessories: CompanionAccessoryId[] };
+export type CompanionCollectionKind = "food" | "behavior" | "moment" | "accessory";
+export type CompanionCollection = { version: 1; foods: CompanionFoodKind[]; behaviors: CompanionBehaviorId[]; situations: CompanionSituationId[]; gifts: CompanionGiftState; seen?: CompanionCollectionSeen };
+/** Missing seen state acknowledges history without a migration write. The
+ * first new discovery freezes that baseline before adding the new item. */
+const collectionSeen = (value: CompanionCollection): CompanionCollectionSeen => value.seen ?? { foods: value.foods, behaviors: value.behaviors, situations: value.situations, accessories: value.gifts.unlocked.filter(id => COMPANION_WEARABLE_IDS.includes(id)) };
+const seenKey = { food: "foods", behavior: "behaviors", moment: "situations", accessory: "accessories" } as const;
+const collectedIds = (value: CompanionCollection, kind: CompanionCollectionKind): readonly string[] => kind === "accessory" ? COMPANION_WEARABLE_IDS.filter(id => value.gifts.unlocked.includes(id)) : value[seenKey[kind]];
+export function isCompanionCollectionUnread(value: CompanionCollection | null | undefined, kind: CompanionCollectionKind, id: string): boolean {
+  return Boolean(value && Object.hasOwn(seenKey, kind) && collectedIds(value, kind).includes(id) && !(collectionSeen(value)[seenKey[kind]] as readonly string[]).includes(id));
+}
+export function getCompanionUnreadCounts(value: CompanionCollection | null | undefined) {
+  if (!value) return { foods: 0, memories: 0, accessories: 0, total: 0 };
+  const seen = collectionSeen(value);
+  const count = (owned: readonly string[], acknowledged: readonly string[]) => { const read = new Set(acknowledged); return owned.filter(id => !read.has(id)).length; };
+  const foods = count(value.foods, seen.foods);
+  const memories = count(value.behaviors, seen.behaviors) + count(value.situations, seen.situations);
+  const accessories = count(COMPANION_WEARABLE_IDS.filter(id => value.gifts.unlocked.includes(id)), seen.accessories);
+  return { foods, memories, accessories, total: foods + memories + accessories };
+}
 const behaviorRows: Readonly<Record<number, CompanionBehaviorId>> = Object.freeze({ 33: "ask-petting", 34: "lean-nuzzle", 35: "paper-knead", 36: "paper-nest", 39: "cheer-rehearsal", 40: "doze-curl", 30: "groom", 29: "bow", 31: "pounce", 21: "tumble", 22: "dizzy", 16: "stretch" });
 export type CompanionBehaviorObservation = { requestedRow: number; requestedIndex: number; adoptedIndex?: number; requestedSrc: string; adoptedSrc?: string; decoded: boolean; visible: boolean };
 /** A requested semantic row cannot stamp an old retained fallback image. */
@@ -23,11 +42,21 @@ export function normalizeCompanionCollection(value: unknown): CompanionCollectio
   const source = value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
   // First installation and old care versions do not invent past discoveries.
   if (source.version !== 1) return { version: 1, foods: [], behaviors: [], situations: [], gifts: normalizeCompanionGifts(undefined) };
-  return { version: 1, foods: COMPANION_FOOD_KINDS.filter(id => Array.isArray(source.foods) && source.foods.includes(id)), behaviors: COMPANION_BEHAVIOR_IDS.filter(id => Array.isArray(source.behaviors) && source.behaviors.includes(id)), situations: COMPANION_SITUATION_IDS.filter(id => Array.isArray(source.situations) && source.situations.includes(id)), gifts: normalizeCompanionGifts(source.gifts) };
+  const collection: CompanionCollection = { version: 1, foods: COMPANION_FOOD_KINDS.filter(id => Array.isArray(source.foods) && source.foods.includes(id)), behaviors: COMPANION_BEHAVIOR_IDS.filter(id => Array.isArray(source.behaviors) && source.behaviors.includes(id)), situations: COMPANION_SITUATION_IDS.filter(id => Array.isArray(source.situations) && source.situations.includes(id)), gifts: normalizeCompanionGifts(source.gifts) };
+  if (source.seen && typeof source.seen === "object" && !Array.isArray(source.seen)) {
+    const seen = source.seen as Record<string, unknown>;
+    collection.seen = {
+      foods: collection.foods.filter(id => !Array.isArray(seen.foods) || seen.foods.includes(id)),
+      behaviors: collection.behaviors.filter(id => !Array.isArray(seen.behaviors) || seen.behaviors.includes(id)),
+      situations: collection.situations.filter(id => !Array.isArray(seen.situations) || seen.situations.includes(id)),
+      accessories: COMPANION_WEARABLE_IDS.filter(id => collection.gifts.unlocked.includes(id) && (!Array.isArray(seen.accessories) || seen.accessories.includes(id))),
+    };
+  }
+  return collection;
 }
 type CollectionStorage = Pick<Storage, "getItem" | "setItem">;
-const semanticSignature = (value: CompanionCollection) => JSON.stringify([value.foods, value.behaviors, value.situations, value.gifts.pending, value.gifts.unlocked, value.gifts.equipped]);
-const copy = (value: CompanionCollection): CompanionCollection => ({ version: 1, foods: [...value.foods], behaviors: [...value.behaviors], situations: [...value.situations], gifts: { ...value.gifts, unlocked: [...value.gifts.unlocked] } });
+const semanticSignature = (value: CompanionCollection) => JSON.stringify([value.foods, value.behaviors, value.situations, value.gifts.pending, value.gifts.unlocked, value.gifts.equipped, collectionSeen(value)]);
+const copy = (value: CompanionCollection): CompanionCollection => ({ version: 1, foods: [...value.foods], behaviors: [...value.behaviors], situations: [...value.situations], gifts: { ...value.gifts, unlocked: [...value.gifts.unlocked] }, ...(value.seen ? { seen: { foods: [...value.seen.foods], behaviors: [...value.seen.behaviors], situations: [...value.seen.situations], accessories: [...value.seen.accessories] } } : {}) });
 
 /** One cached local store. Active ticks never read storage or notify React;
  * only first discoveries, gift arrival/opening and explicit equipment do. */
@@ -74,7 +103,7 @@ export function createCompanionCollectionStore(storage?: CollectionStorage, cloc
     recordFood(kind: CompanionFoodKind, consumed: boolean) {
       ensure(); if (!consumed || !isCompanionFoodKind(kind)) return false;
       refresh();
-      const discovered = !memory.foods.includes(kind) && commit({ ...memory, foods: COMPANION_FOOD_KINDS.filter(id => id === kind || memory.foods.includes(id)) }, true);
+      const discovered = !memory.foods.includes(kind) && commit({ ...memory, seen: collectionSeen(memory), foods: COMPANION_FOOD_KINDS.filter(id => id === kind || memory.foods.includes(id)) }, true);
       // This local transient witness follows a completed meal, including a
       // familiar taste. It is not inferred from a spawn, save or remote tab.
       if (memory.foods.includes(kind)) {
@@ -86,12 +115,20 @@ export function createCompanionCollectionStore(storage?: CollectionStorage, cloc
     recordBehavior(observation: CompanionBehaviorObservation) {
       ensure(); const id = observedCompanionBehavior(observation); if (!id || memory.behaviors.includes(id)) return false;
       refresh(); if (memory.behaviors.includes(id)) return false;
-      return commit({ ...memory, behaviors: COMPANION_BEHAVIOR_IDS.filter(item => item === id || memory.behaviors.includes(item)) }, true);
+      return commit({ ...memory, seen: collectionSeen(memory), behaviors: COMPANION_BEHAVIOR_IDS.filter(item => item === id || memory.behaviors.includes(item)) }, true);
     },
     recordSituation(observation: CompanionSituationObservation) {
       ensure(); const id = observedCompanionSituation(observation); if (!id || memory.situations.includes(id)) return false;
       refresh(); if (memory.situations.includes(id)) return false;
-      return commit({ ...memory, situations: COMPANION_SITUATION_IDS.filter(item => item === id || memory.situations.includes(item)) }, true);
+      return commit({ ...memory, seen: collectionSeen(memory), situations: COMPANION_SITUATION_IDS.filter(item => item === id || memory.situations.includes(item)) }, true);
+    },
+    acknowledge(kind: CompanionCollectionKind, id: string) {
+      refresh();
+      if (!Object.hasOwn(seenKey, kind) || !isCompanionCollectionUnread(memory, kind, id)) return false;
+      const key = seenKey[kind], seen = collectionSeen(memory);
+      // Refresh before this synchronous read/write so a stale settings tab
+      // cannot replace another tab's discoveries, equipment or acknowledgments.
+      return commit({ ...memory, seen: { ...seen, [key]: collectedIds(memory, kind).filter(item => item === id || (seen[key] as readonly string[]).includes(item)) } as CompanionCollectionSeen }, true);
     },
     interaction() {
       refresh(); if (memory.gifts.interactionCredit === 1) return;
@@ -108,7 +145,7 @@ export function createCompanionCollectionStore(storage?: CollectionStorage, cloc
       refresh(); const id = memory.gifts.pending; if (!id) return null;
       // Opening is itself the explicit witnessed outcome, including inside
       // settings while the world is paused. Saved ownership never infers it.
-      commit({ ...memory, situations: COMPANION_SITUATION_IDS.filter(item => item === "gift-opened" || memory.situations.includes(item)), gifts: { ...memory.gifts, pending: null, unlocked: [...memory.gifts.unlocked, id], activeMs: 0, interactionCredit: 0 } }, true);
+      commit({ ...memory, seen: collectionSeen(memory), situations: COMPANION_SITUATION_IDS.filter(item => item === "gift-opened" || memory.situations.includes(item)), gifts: { ...memory.gifts, pending: null, unlocked: [...memory.gifts.unlocked, id], activeMs: 0, interactionCredit: 0 } }, true);
       return id;
     },
     equip(id: CompanionAccessoryId | null) {
@@ -131,6 +168,7 @@ function store() {
 export const loadCompanionCollection = (): CompanionCollection => store()?.load() ?? normalizeCompanionCollection(undefined);
 export const openCompanionGift = (): CompanionAccessoryId | null => store()?.openGift() ?? null;
 export const equipCompanionAccessory = (id: CompanionAccessoryId | null): boolean => store()?.equip(id) ?? false;
+export const acknowledgeCompanionCollection = (kind: CompanionCollectionKind, id: string): boolean => store()?.acknowledge(kind, id) ?? false;
 export const recordCompanionConsumedFood = (kind: CompanionFoodKind, consumed: boolean) => store()?.recordFood(kind, consumed) ?? false;
 export const getCompanionRecentFood = (): CompanionConsumedFood | null => store()?.recentFood() ?? null;
 export function subscribeCompanionConsumedFood(listener: (value: CompanionConsumedFood) => void): () => void {

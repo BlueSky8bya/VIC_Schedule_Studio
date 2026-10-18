@@ -8,7 +8,7 @@ import type { CompanionCare } from "@/lib/ui/viewer-companion/care";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 
 export type CompanionHomeAction = "home" | "feed" | "clearFood" | "radio" | "book";
-type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?: boolean; owner?: string; radioPlaying?: boolean; onAction: (action: CompanionHomeAction) => void; onClose?: () => void };
+type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?: boolean; owner?: string; radioPlaying?: boolean; unreadCollection?: boolean; onAction: (action: CompanionHomeAction) => void; onClose?: () => void };
 
 // The open U is shared by the room drawing and the separate foreground layer.
 // Its centre begins at54/100: the actual seat stays behind14–18px of cloth at
@@ -43,7 +43,7 @@ export function CompanionBedForeground({ idPrefix = "companion-front" }: { idPre
 
 /** One small room, shared by the desktop rail and compact portal. The cushion
  * is a real landing anchor; food and care stay in the existing single runtime. */
-export function CompanionHome({ care, preferences, inactive, owner, radioPlaying = false, onAction, onClose }: Props) {
+export function CompanionHome({ care, preferences, inactive, owner, radioPlaying = false, unreadCollection = false, onAction, onClose }: Props) {
   const room = useRef<HTMLElement>(null);
   const bedId = useId().replace(/:/g, "");
   // Its host already owns the panel FLIP. A tiny entry never resizes the room,
@@ -77,7 +77,7 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
         <rect className="vc-shelf-board-shadow" x="4" y="42" width="100" height="7" rx="3.5" />
         <rect className="vc-shelf-board" x="3" y="37" width="102" height="7" rx="2.5" fill={`url(#${bedId}-shelf)`} />
       </svg>
-      <button type="button" className="vc-book-button" data-home-action="book" data-act="companion-book-open" data-sfx="off" data-tip="빅타민 수첩" aria-label="빅타민 수첩 열기" onClick={() => onAction("book")}>
+      <button type="button" className="vc-book-button" data-home-action="book" data-act="companion-book-open" data-sfx="off" data-tip="빅타민 수첩" data-unread={unreadCollection || undefined} aria-label="빅타민 수첩 열기" aria-describedby={unreadCollection ? `${bedId}-unread` : undefined} onClick={() => onAction("book")}>
         <svg width="34" height="38" viewBox="0 0 38 42" fill="none" aria-hidden="true" focusable="false">
           <path d="M7 3h23a3 3 0 0 1 3 3v31H8a5 5 0 0 1-5-5V7a4 4 0 0 1 4-4Z" className="vc-book-cover" />
           <path d="M9 3v29M8 32h25v5H8a2.5 2.5 0 0 1 0-5Z" className="vc-book-pages" />
@@ -90,6 +90,7 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
           </svg>
           <path d="M15 35h15" className="vc-book-line" />
         </svg>
+        {unreadCollection && <><span className="vc-book-unread" aria-hidden="true">!</span><span className="sr-only" id={`${bedId}-unread`}>새 발견이 있어요</span></>}
       </button>
       <button type="button" className="vc-radio-button" data-home-action="radio" data-activity-manual="" data-sfx="off" data-tip={radioPlaying ? "라디오 끄기" : "라디오 켜기"} aria-label={radioPlaying ? "라디오 끄기" : "라디오 켜기"} aria-pressed={radioPlaying} onClick={() => onAction("radio")}>
         <svg width="44" height="40" viewBox="0 0 48 40" fill="none" aria-hidden="true" focusable="false">

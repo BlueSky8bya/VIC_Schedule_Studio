@@ -45,7 +45,7 @@ import { companionGripProfile } from "@/lib/ui/viewer-companion/contact-grip";
 import { DEFAULT_COMPANION_CARE, loadCompanionCare, saveCompanionCare, subscribeCompanionHabits, subscribeCompanionLife } from "@/lib/ui/viewer-companion/care";
 import { learnCompanionHabits, type CompanionExperience } from "@/lib/ui/viewer-companion/habits";
 import { experienceCompanionLife, type CompanionLifeExperience } from "@/lib/ui/viewer-companion/life";
-import { advanceCompanionCollection, equipCompanionAccessory, flushCompanionCollection, loadCompanionCollection, openCompanionGift, recordCompanionConsumedFood, recordCompanionGiftInteraction, recordCompanionObservedBehavior, recordCompanionObservedSituation, subscribeCompanionCollection } from "@/lib/ui/viewer-companion/collection";
+import { advanceCompanionCollection, equipCompanionAccessory, flushCompanionCollection, getCompanionUnreadCounts, loadCompanionCollection, openCompanionGift, recordCompanionConsumedFood, recordCompanionGiftInteraction, recordCompanionObservedBehavior, recordCompanionObservedSituation, subscribeCompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { createCompanionHearts } from "@/lib/ui/viewer-companion/hearts";
 import { boundCompanionHangingPose, createCompanionMotion, nextCompanionPaint, sampleCompanionTravel } from "@/lib/ui/viewer-companion/motion";
 import { createCompanionPresence } from "@/lib/ui/viewer-companion/presence";
@@ -159,17 +159,18 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
   overlayRef.current = overlayOpen;
   const [homeExpanded, setHomeExpanded] = useState(false), [suspended, setSuspended] = useState(true);
   const [care, setCare] = useState({ ...DEFAULT_COMPANION_CARE }), [announcement, setAnnouncement] = useState("");
-  const [ready, setReady] = useState(false);
+  const [ready, setReady] = useState(false), [unreadCollection, setUnreadCollection] = useState(false);
   const compactActive = ready && !suspended && !blocked && !(homeVisible && homeHost) && !!launcherHost && !!compactHost;
   const homeShelf = useHomeShelf({ active: compactActive, expanded: homeExpanded, monthKey, host: compactHost, launcher: homeLauncher, room: compactHome, setExpanded: setHomeExpanded });
   const [geometryIdentity] = useState(createCompanionGeometryIdentity);
   useEffect(() => { setReady(true); }, []);
   useEffect(() => {
     if (!ready || !preferences.enabled) {
-      wardrobe.current = { equipped: null, pending: null }; setPendingGift(null); setOpenedGift(null); refreshWardrobe.current(); return;
+      wardrobe.current = { equipped: null, pending: null }; setUnreadCollection(false); setPendingGift(null); setOpenedGift(null); refreshWardrobe.current(); return;
     }
     const read = (value: ReturnType<typeof loadCompanionCollection>) => {
       const prior = wardrobe.current;
+      setUnreadCollection(getCompanionUnreadCounts(value).total > 0);
       wardrobe.current = { equipped: value.gifts.equipped, pending: value.gifts.pending };
       if (value.gifts.pending && prior.pending !== value.gifts.pending) situationSink.current("gift-arrival");
       setPendingGift(value.gifts.pending); setOpenedGift(current => current && value.gifts.unlocked.includes(current) ? current : null); refreshWardrobe.current();
@@ -3094,7 +3095,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
   };
   const act = (kind: CompanionHomeAction) => { if (kind === "book") { onOpenBook(); return; } control.current?.[kind](); };
   const performanceActive = Boolean(premiereCue?.generation && premiereCue.phase !== "idle" && (premiereCue.phase === "return" || premiereCue.target - syncedNow() <= 166000));
-  const house = <CompanionHome care={care} preferences={preferences} inactive={overlayOpen || performanceActive} owner={premiereCue?.owner} radioPlaying={radioPlaying} onAction={act} onClose={homeVisible ? undefined : closeHome} />;
+  const house = <CompanionHome care={care} preferences={preferences} inactive={overlayOpen || performanceActive} owner={premiereCue?.owner} unreadCollection={unreadCollection} radioPlaying={radioPlaying} onAction={act} onClose={homeVisible ? undefined : closeHome} />;
   return createPortal(<>
     {firstTaste && preferences.enabled && !blocked && !overlayOpen && <span className="vc-first-taste" ref={tasteStamp} aria-hidden="true"><CompanionCollectionArt kind="food-stamp" id={firstTaste.kind} /></span>}
     <div className="vc-companion" ref={body} hidden data-sfx="off" data-size="large" data-overlay={overlayOpen ? "quiet" : undefined} data-workspace-busy={workspaceBusy ? "" : undefined}>

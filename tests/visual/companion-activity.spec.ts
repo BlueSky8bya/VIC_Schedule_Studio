@@ -7,7 +7,7 @@ import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "@/lib/
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 import { COMPANION_RADIO_TRACKS } from "@/lib/ui/viewer-companion/radio-catalog";
-import { COMPANION_BEHAVIOR_IDS } from "@/lib/ui/viewer-companion/collection";
+import { COMPANION_BEHAVIOR_IDS, COMPANION_COLLECTION_KEY } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_SITUATION_IDS } from "@/lib/ui/viewer-companion/moments";
 import { PREMIERE_STAGE_KEY, SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { describeTarget } from "@/lib/activity/labels";
@@ -593,4 +593,24 @@ test("110 developer views show book and unified memory uses while old radio mood
   await timeline.getByText(bookCloseName, { exact: true }).scrollIntoViewIfNeeded();
   await usage.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `${auditPrefix}-110-timeline-and-usage.png` });
+});
+
+
+for (const surface of ["viewer", "studio"] as const) test(`113 ${surface}: inspecting the current unread tile with Home records once`, async ({ page }) => {
+  // Seeded local acquisition receipt; actual confirmation and queue are native.
+  // The production acquisition path is verified separately by the meal case.
+  await page.addInitScript(({ key, food }) => localStorage.setItem(key, JSON.stringify({ version: 1, foods: [food], behaviors: [], situations: [], gifts: { pending: null, unlocked: [], equipped: null, activeMs: 0, interactionCredit: 0 }, seen: { foods: [], behaviors: [], situations: [], accessories: [] } })), { key: COMPANION_COLLECTION_KEY, food: COMPANION_FOOD_KINDS[0] });
+  await setup(page, surface);
+  const home = await openCompanionHome(page), book = home.getByRole("button", { name: "빅타민 수첩 열기", exact: true });
+  await expect(book).toHaveAttribute("data-unread", "true"); await book.click();
+  const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
+  await waitForOverlayEntrance(dialog); await dialog.getByRole("tab", { name: "도감", exact: true }).click();
+  const tile = dialog.locator('.rhh-food-grid [data-food-index="0"]');
+  await expect(tile).toHaveAttribute("data-unread", "true"); await tile.focus(); await tile.press("Home");
+  await expect(tile).not.toHaveAttribute("data-unread"); await tile.press("Home");
+  await flush(page, [{ target: "companion-collection-inspect#food" }]);
+  expect(count(page, "companion-collection-inspect#food")).toBe(1);
+  expect(JSON.stringify(capture.get(page)!.events)).not.toContain(COMPANION_FOOD_KINDS[0]);
+  await tile.press("Enter"); await flush(page, [{ target: "companion-collection-inspect#food", n: 2 }]);
+  expect(count(page, "companion-collection-inspect#food")).toBe(2);
 });

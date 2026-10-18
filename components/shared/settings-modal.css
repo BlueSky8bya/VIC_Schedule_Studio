@@ -1912,3 +1912,11 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
   .rhh-companion-settings .rhh-collection-book .rhh-collection-tile > .vc-collection-art:not(.rhh-collection-stamp) { width: 42px; height: 42px; }
 }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companion-settings [data-discovery-cue] :is(.rhh-collection-stamp, .rhh-collection-recent) { animation: none; }
+
+/*113: a quiet persistent discovery mark; never a pulse or another loop. */
+.rhh-companion-settings .rhh-collection-unread[data-unread] { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 50%; background: var(--companion-ink); color: var(--companion-ground); font-size: 12px; font-weight: 800; line-height: 1; pointer-events: none; }
+.rhh-companion-settings .rhh-collection-heading > .rhh-collection-unread { margin-left: 0; }
+.rhh-companion-settings .rhh-collection-tile > .rhh-collection-unread { position: absolute; top: 7px; left: 7px; z-index: 1; }
+.rhh-companion-settings .rhh-collection-tile[data-unread][data-recent]::after { display: none; }
+.rhh-companion-settings .rhh-profile-nav button, .rhh-companion-settings .rhh-collection-switch button { position: relative; }
+.rhh-companion-settings .rhh-profile-nav button > .rhh-collection-unread { position: absolute; top: 5px; right: 7px; }

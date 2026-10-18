@@ -5,7 +5,7 @@ import { BookOpen, Heart, Leaf, Moon, PartyPopper, Settings2, Shirt, Sparkles } 
 import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { getCompanionLearnedEffectDirections } from "@/lib/ui/viewer-companion/behavior-profile";
 import { loadCompanionCare, subscribeCompanionHabits, subscribeCompanionLife, type CompanionMemory } from "@/lib/ui/viewer-companion/care";
-import { loadCompanionCollection, subscribeCompanionCollection, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
+import { getCompanionUnreadCounts, loadCompanionCollection, subscribeCompanionCollection, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_ACCESSORY_NAMES } from "@/lib/ui/viewer-companion/gifts";
 import { DEFAULT_COMPANION_HABITS } from "@/lib/ui/viewer-companion/habits";
 import { getCompanionInterest } from "@/lib/ui/viewer-companion/interest";
@@ -103,7 +103,8 @@ export function CompanionProfile({ preferences, active, environment }: { prefere
   const interestLabel = interest ? { food: "지금은 간식 생각", rest: "지금은 졸려요", social: "지금은 쓰다듬기", play: "지금은 놀고 싶어요", explore: "지금은 둘러보는 중" }[interest] : "";
   const interestFood = interest === "food" ? getCompanionFoodArtFrame(life.favoriteFood) : undefined;
   const interestFoodStyle = interestFood ? { backgroundImage: `url("${interestFood.src}")`, backgroundSize: `${interestFood.atlasWidth / interestFood.width * 100}% ${interestFood.atlasHeight / interestFood.height * 100}%`, backgroundPosition: `${interestFood.atlasWidth === interestFood.width ? 0 : interestFood.x / (interestFood.atlasWidth - interestFood.width) * 100}% ${interestFood.atlasHeight === interestFood.height ? 0 : interestFood.y / (interestFood.atlasHeight - interestFood.height) * 100}%` } : undefined;
-  const effects = learnedEffects(preferences, care);
+  const effects = learnedEffects(preferences, care), unread = getCompanionUnreadCounts(collection);
+  const pageUnread = (key: ProfilePage) => key === "discover" ? unread.foods + unread.memories > 0 : key === "dress" && unread.accessories > 0;
   const mode = { default: "빅타민", cat: "고양이", dog: "강아지" }[preferences.animalMode];
   const personality = { curious: "호기심", affectionate: "애교쟁이", sleepy: "잠꾸러기" }[preferences.personality];
   const actions = [
@@ -113,9 +114,10 @@ export function CompanionProfile({ preferences, active, environment }: { prefere
     { name: "으쌰으쌰 응원", icon: <PartyPopper size={20} />, effect: !preferences.roam ? "돌아다니기를 켜 주세요." : effectiveLife.play >= .45 && effectiveLife.curiosity >= .4 ? "기운이 있으면 응원을 연습하기도 해요." : "응원 연습은 아직 뜸해요.", try: "넓고 안전한 자리에서 기다려 보세요." }
   ];
   return <div className="rhh-companion-settings rhh-companion-profile rhh-profile-playful rhh-companion-experience" data-paged={active && (page === "discover" || page === "dress") || undefined} {...spotlight}>
+    <span className="sr-only" id={`${id}-unread`}>새로 발견한 항목</span>
     <div aria-label="빅타민 프로필" className="rhh-seg rhh-profile-nav" ref={nav} role="tablist" style={{ "--n": pages.length, "--i": pages.findIndex(item => item.key === page) } as CSSProperties}>
       <span aria-hidden="true" className="rhh-seg-thumb" />
-      {pages.map(item => <button aria-controls={`${id}-${item.key}-panel`} aria-selected={page === item.key} className={page === item.key ? "on" : ""} data-act="companion-profile-page" data-act-opt={item.key} data-profile-page={item.key} id={`${id}-${item.key}-tab`} key={item.key} onClick={() => changePage(item.key)} onKeyDown={onTabKey} role="tab" tabIndex={page === item.key ? 0 : -1} type="button"><item.icon aria-hidden="true" size={17} />{item.label}</button>)}
+      {pages.map(item => <button aria-describedby={pageUnread(item.key) ? `${id}-unread` : undefined} data-unread={pageUnread(item.key) || undefined} aria-controls={`${id}-${item.key}-panel`} aria-selected={page === item.key} className={page === item.key ? "on" : ""} data-act="companion-profile-page" data-act-opt={item.key} data-profile-page={item.key} id={`${id}-${item.key}-tab`} key={item.key} onClick={() => changePage(item.key)} onKeyDown={onTabKey} role="tab" tabIndex={page === item.key ? 0 : -1} type="button"><item.icon aria-hidden="true" size={17} />{item.label}{pageUnread(item.key) && <span aria-hidden="true" className="rhh-collection-unread" data-unread="">!</span>}</button>)}
     </div>
     <div aria-labelledby={`${id}-together-tab`} hidden={page !== "together"} id={`${id}-together-panel`} role="tabpanel" tabIndex={0}>
       <section aria-labelledby={`${id}-traits-title`} className="rhh-trait-card rhh-companion-summary">

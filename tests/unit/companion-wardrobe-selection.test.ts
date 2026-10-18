@@ -1,10 +1,10 @@
-import type { ReactElement, ReactNode } from "react";
+import type { KeyboardEvent, ReactElement, ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_WEARABLE_IDS } from "@/lib/ui/viewer-companion/gifts";
 import type { CompanionCollection } from "@/lib/ui/viewer-companion/collection";
 
-const harness = vi.hoisted(() => ({ states: [] as unknown[], state: 0, refs: [] as { current: unknown }[], ref: 0, equip: vi.fn(), gift: vi.fn() }));
+const harness = vi.hoisted(() => ({ states: [] as unknown[], state: 0, refs: [] as { current: unknown }[], ref: 0, equip: vi.fn(), gift: vi.fn(), acknowledge: vi.fn() }));
 vi.mock("react", async original => ({ ...await original<typeof import("react")>(),
   useState: (initial: unknown) => {
     const index = harness.state++;
@@ -12,9 +12,10 @@ vi.mock("react", async original => ({ ...await original<typeof import("react")>(
     return [harness.states[index], (value: unknown) => { harness.states[index] = typeof value === "function" ? value(harness.states[index]) : value; }];
   },
   useRef: (initial: unknown) => harness.refs[harness.ref++] ?? (harness.refs[harness.ref - 1] = { current: initial }),
+  useId: () => "wardrobe-unread",
   useEffect: () => {},
 }));
-vi.mock("@/lib/ui/viewer-companion/collection", async original => ({ ...await original<typeof import("@/lib/ui/viewer-companion/collection")>(), equipCompanionAccessory: harness.equip, openCompanionGift: harness.gift }));
+vi.mock("@/lib/ui/viewer-companion/collection", async original => ({ ...await original<typeof import("@/lib/ui/viewer-companion/collection")>(), equipCompanionAccessory: harness.equip, openCompanionGift: harness.gift, acknowledgeCompanionCollection: harness.acknowledge }));
 vi.mock("@/lib/ui/viewer-companion/companion-sound", () => ({ playCompanionSound: vi.fn() }));
 vi.mock("@/lib/ui/haptics", () => ({ hapticSuccess: vi.fn() }));
 
@@ -35,12 +36,27 @@ async function render(active = true) {
   tree = CompanionWardrobe({ collection, preferences: DEFAULT_COMPANION_PREFERENCES, active });
 }
 beforeEach(() => {
-  harness.states = []; harness.refs = []; harness.equip.mockReset(); harness.gift.mockReset();
+  harness.states = []; harness.refs = []; harness.equip.mockReset(); harness.gift.mockReset(); harness.acknowledge.mockReset();
   collection = { version: 1, foods: [], behaviors: ["groom"], situations: [], gifts: { pending: null, unlocked: ["sunglasses", "beret"], equipped: "sunglasses", activeMs: 0, interactionCredit: 0 } };
   harness.equip.mockImplementation(accessory => { collection = { ...collection, gifts: { ...collection.gifts, equipped: accessory } }; return true; });
 });
 
 describe("actual wardrobe selection and equipment callbacks", () => {
+  it("keeps unread badges through opening and paging, acknowledging only the intentionally selected owned tile", async () => {
+    collection.gifts.unlocked = [...COMPANION_WEARABLE_IDS];
+    collection.seen = { foods: [], behaviors: [], situations: [], accessories: [] };
+    await render(); expect(harness.acknowledge).not.toHaveBeenCalled();
+    expect(find(element => element.props["data-accessory"] === "sunglasses").props["data-unread"]).toBe(true);
+    click(find(element => element.props["data-act"] === "companion-collection-page" && element.props["data-act-opt"] === "next")); await render();
+    expect(harness.acknowledge).not.toHaveBeenCalled();
+    const first = find(element => element.props["data-accessory"] === COMPANION_WEARABLE_IDS[4]); click(first);
+    expect(harness.acknowledge.mock.calls).toEqual([["accessory", COMPANION_WEARABLE_IDS[4]]]);
+    harness.acknowledge.mockClear(); vi.stubGlobal("getComputedStyle", () => ({ gridTemplateColumns: "1fr 1fr 1fr 1fr" }));
+    const event = { key: "Home", preventDefault: vi.fn(), stopPropagation: vi.fn(), currentTarget: { dataset: { act: "companion-accessory-select" }, closest: () => ({ querySelectorAll: () => [] }) } };
+    (first.props.onKeyDown as (event: KeyboardEvent<HTMLButtonElement>) => void)(event as unknown as KeyboardEvent<HTMLButtonElement>);
+    expect(harness.acknowledge.mock.calls).toEqual([["accessory", "sunglasses"]]);
+    vi.unstubAllGlobals();
+  });
   it("immediately previews actual equipment, and removing clears the selected try-on in the same update", async () => {
     await render(); expect(preview().accessory).toBe("sunglasses"); expect(preview().behaviors).toEqual(["groom"]);
     click(find(element => element.props["data-act"] === "companion-accessory-equip")); await render();

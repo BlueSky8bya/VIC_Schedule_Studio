@@ -68,6 +68,7 @@
 .vc-book-bunny { fill: var(--vc-container-light); stroke: var(--vc-wood-edge); stroke-width: .9; }
 .vc-book-eyes { stroke: var(--ink); stroke-width: 2; stroke-linecap: round; }
 .vc-book-line { stroke: var(--vc-thread); stroke-width: .7; }
+.vc-book-unread { position: absolute; top: 1px; right: 2px; display: grid; place-items: center; width: 17px; height: 17px; border: 2px solid var(--vc-linen); border-radius: 50%; background: #a34d39; color: #fffaf2; font: 800 11px/1 var(--font-ui, sans-serif); pointer-events: none; }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-book-button > svg { transform: none; transition: none; }
 .vc-shelf-board-shadow { fill: var(--vc-soft-shadow); }
 /* Expand only the hit plane around its existing centre. One screen pixel of

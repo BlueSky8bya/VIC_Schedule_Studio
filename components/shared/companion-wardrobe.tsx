@@ -2,10 +2,10 @@
 
 import dynamic from "next/dynamic";
 import { Check, ChevronLeft, ChevronRight, Shirt } from "lucide-react";
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { CompanionCollectionArt } from "@/components/poster/viewer-companion/companion-collection-art";
 import { companionCollectionPage, onCollectionKey, useCompanionCollectionLayout } from "./companion-collection-navigation";
-import { equipCompanionAccessory, openCompanionGift, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
+import { acknowledgeCompanionCollection, getCompanionUnreadCounts, isCompanionCollectionUnread, equipCompanionAccessory, openCompanionGift, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_WEARABLE_IDS, COMPANION_ACCESSORY_NAMES, type CompanionAccessoryId } from "@/lib/ui/viewer-companion/gifts";
 import { playCompanionSound } from "@/lib/ui/viewer-companion/companion-sound";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
@@ -20,6 +20,7 @@ export function CompanionWardrobe({ collection, preferences, active }: { collect
   const [previewChoice, setPreviewChoice] = useState<CompanionAccessoryId | null | undefined>(undefined), [announcement, setAnnouncement] = useState("");
   const [pageAnchor, setPageAnchor] = useState(Math.max(0, COMPANION_WEARABLE_IDS.indexOf(collection?.gifts.equipped ?? COMPANION_WEARABLE_IDS[0])));
   const host = useRef<HTMLDivElement>(null), grid = useRef<HTMLUListElement>(null), touched = useRef(false), pendingFocus = useRef<CompanionAccessoryId | null>(null);
+  const unreadDescription = useId(), unread = getCompanionUnreadCounts(collection);
   const layout = useCompanionCollectionLayout(grid, active), page = companionCollectionPage(pageAnchor, COMPANION_WEARABLE_IDS.length, layout.size);
   const gifts = collection?.gifts, owned = selectedAccessory !== null && Boolean(gifts?.unlocked.includes(selectedAccessory));
   const previewCandidate = previewChoice === undefined ? gifts?.equipped ?? null : previewChoice;
@@ -39,10 +40,12 @@ export function CompanionWardrobe({ collection, preferences, active }: { collect
     host.current?.querySelector<HTMLButtonElement>(`[data-accessory="${item}"]`)?.focus({ preventScroll: true });
     pendingFocus.current = null;
   }, [active, collection, selectedAccessory, page.offset]);
-  const select = (accessory: CompanionAccessoryId) => {
+  const select = (accessory: CompanionAccessoryId, inspect = false) => {
+    const acknowledged = inspect && isCompanionCollectionUnread(collection, "accessory", accessory) && acknowledgeCompanionCollection("accessory", accessory);
     touched.current = true; setSelectedAccessory(accessory);
     setPageAnchor(COMPANION_WEARABLE_IDS.indexOf(accessory));
     setPreviewChoice(gifts?.unlocked.includes(accessory) ? accessory : null);
+    return acknowledged;
   };
   const openGift = () => {
     const received = openCompanionGift();
@@ -60,9 +63,10 @@ export function CompanionWardrobe({ collection, preferences, active }: { collect
     hapticSuccess(); playCompanionSound(accessory ? "equip" : "unequip", preferences);
     setAnnouncement(accessory ? `${COMPANION_ACCESSORY_NAMES[accessory]} 장착` : "액세서리를 벗었어요.");
   };
-  const selectIndex = (index: number, focus = false) => { const accessory = COMPANION_WEARABLE_IDS[index]; if (focus) pendingFocus.current = accessory; select(accessory); };
+  const selectIndex = (index: number, focus = false, inspect = false) => { const accessory = COMPANION_WEARABLE_IDS[index]; if (focus) pendingFocus.current = accessory; return select(accessory, inspect); };
   return active ? <div className="rhh-companion-wardrobe rhh-collection-book" ref={host}>
-    <div className="rhh-collection-heading"><Shirt aria-hidden="true" size={23} /><h3>옷장</h3><span>{ownedCount}/{COMPANION_WEARABLE_IDS.length}</span></div>
+    <span className="sr-only" id={unreadDescription}>새로 발견한 항목</span>
+    <div className="rhh-collection-heading"><Shirt aria-hidden="true" size={23} /><h3>옷장</h3>{unread.accessories > 0 && <span aria-label="새로 발견한 항목" className="rhh-collection-unread" data-unread="" role="img">!</span>}<span>{ownedCount}/{COMPANION_WEARABLE_IDS.length}</span></div>
     {gifts?.pending && <div className="rhh-gift-arrival"><CompanionCollectionArt kind="gift" /><strong>선물이 도착했어요</strong><button className="rhh-link" data-act="companion-gift-open" data-sfx="off" onClick={openGift} type="button">선물 열기</button></div>}
     <div className="rhh-collection-detail rhh-wardrobe-detail">
       <CompanionWardrobePreview accessory={previewAccessory} behaviors={collection?.behaviors ?? []} enabled={preferences.enabled} />
@@ -70,8 +74,8 @@ export function CompanionWardrobe({ collection, preferences, active }: { collect
     </div>
     <ul aria-label="옷장 소품" className="rhh-collection-grid rhh-accessory-grid" ref={grid} style={{ "--collection-columns": layout.columns, "--collection-rows": layout.rows } as CSSProperties}>{COMPANION_WEARABLE_IDS.slice(page.offset, page.end).map((accessory, localIndex) => {
       const index = page.offset + localIndex;
-      const found = gifts?.unlocked.includes(accessory) ?? false;
-      return <li key={accessory}><button aria-label={found ? `${COMPANION_ACCESSORY_NAMES[accessory]} · ${gifts?.equipped === accessory ? "장착 중" : "받은 선물"}` : `??? · ${index + 1}`} aria-pressed={selectedAccessory === accessory} data-accessory={accessory} className="rhh-collection-tile" data-act="companion-accessory-select" data-found={found || undefined} onClick={() => select(accessory)} onKeyDown={event => onCollectionKey(event, index, COMPANION_WEARABLE_IDS.length, next => selectIndex(next, true), page.offset)} tabIndex={focusAccessory === accessory ? 0 : -1} type="button"><CompanionCollectionArt kind="accessory" id={accessory} /><span>{found ? COMPANION_ACCESSORY_NAMES[accessory] : "???"}</span>{found && <span className="rhh-collection-state">{gifts?.equipped === accessory ? "장착 중" : "받은 선물"}</span>}</button></li>;
+      const found = gifts?.unlocked.includes(accessory) ?? false, unreadItem = isCompanionCollectionUnread(collection, "accessory", accessory);
+      return <li key={accessory}><button aria-label={found ? `${COMPANION_ACCESSORY_NAMES[accessory]} · ${gifts?.equipped === accessory ? "장착 중" : "받은 선물"}` : `??? · ${index + 1}`} aria-describedby={unreadItem ? unreadDescription : undefined} data-unread={unreadItem || undefined} aria-pressed={selectedAccessory === accessory} data-accessory={accessory} className="rhh-collection-tile" data-act="companion-accessory-select" data-found={found || undefined} onClick={() => select(accessory, true)} onKeyDown={event => onCollectionKey(event, index, COMPANION_WEARABLE_IDS.length, next => selectIndex(next, true, true), page.offset)} tabIndex={focusAccessory === accessory ? 0 : -1} type="button">{unreadItem && <span aria-hidden="true" className="rhh-collection-unread" data-unread="">!</span>}<CompanionCollectionArt kind="accessory" id={accessory} /><span>{found ? COMPANION_ACCESSORY_NAMES[accessory] : "???"}</span>{found && <span className="rhh-collection-state">{gifts?.equipped === accessory ? "장착 중" : "받은 선물"}</span>}</button></li>;
     })}</ul>
     <nav aria-label="옷장 페이지" className="rhh-collection-pages"><button aria-label="이전 소품" className="rhh-link" data-act="companion-collection-page" data-act-opt="prev" disabled={page.page === 0} onClick={event => selectIndex((page.page - 1) * layout.size, event.detail === 0)} type="button"><ChevronLeft aria-hidden="true" size={17} />이전</button><span aria-live="polite">{page.offset + 1}–{page.end} <span>/ {COMPANION_WEARABLE_IDS.length}</span></span><button aria-label="다음 소품" className="rhh-link" data-act="companion-collection-page" data-act-opt="next" disabled={page.page + 1 >= page.count} onClick={event => selectIndex((page.page + 1) * layout.size, event.detail === 0)} type="button">다음<ChevronRight aria-hidden="true" size={17} /></button></nav>
     {gifts?.equipped && gifts.equipped !== selectedAccessory && <p className="rhh-equipped-current">지금 장착: {COMPANION_ACCESSORY_NAMES[gifts.equipped]} <button className="rhh-link" data-act="companion-accessory-equip" data-act-opt="off" data-sfx="off" onClick={() => equip(null)} type="button">벗기기</button></p>}

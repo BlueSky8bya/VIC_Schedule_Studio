@@ -2,10 +2,10 @@ import type { KeyboardEvent, ReactElement, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
-import { COMPANION_BEHAVIOR_IDS } from "@/lib/ui/viewer-companion/collection";
+import { COMPANION_BEHAVIOR_IDS, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_SITUATION_IDS } from "@/lib/ui/viewer-companion/moments";
 
-const harness = vi.hoisted(() => ({ states: [] as unknown[], state: 0, refs: [] as { current: unknown }[], ref: 0, activity: vi.fn() }));
+const harness = vi.hoisted(() => ({ states: [] as unknown[], state: 0, refs: [] as { current: unknown }[], ref: 0, activity: vi.fn(), acknowledge: vi.fn() }));
 vi.mock("react", async importOriginal => ({ ...await importOriginal<typeof import("react")>(),
   useState: (initial: unknown) => {
     const index = harness.state++;
@@ -20,17 +20,19 @@ vi.mock("react", async importOriginal => ({ ...await importOriginal<typeof impor
   useEffect: () => {},
 }));
 vi.mock("@/lib/activity/client", () => ({ logActivity: harness.activity }));
+vi.mock("@/lib/ui/viewer-companion/collection", async original => ({ ...await original<typeof import("@/lib/ui/viewer-companion/collection")>(), acknowledgeCompanionCollection: harness.acknowledge }));
 vi.mock("@/lib/ui/sfx", async importOriginal => ({ ...await importOriginal<typeof import("@/lib/ui/sfx")>(), playSfx: vi.fn() }));
 
 type Element = ReactElement<Record<string, unknown>>;
 let tree: Element;
 let discoveryRendering = false;
+let discoveryCollection: CompanionCollection | null = null;
 async function render(active = true) {
   vi.stubGlobal("React", await import("react"));
   harness.state = 0; harness.ref = 0;
   if (discoveryRendering) {
     const { CompanionDiscovery } = await import("@/components/shared/companion-discovery");
-    tree = CompanionDiscovery({ collection: null, active }) as Element;
+    tree = CompanionDiscovery({ collection: discoveryCollection, active }) as Element;
   } else {
     const { CompanionProfile } = await import("@/components/shared/companion-profile");
     tree = CompanionProfile({ preferences: DEFAULT_COMPANION_PREFERENCES, active });
@@ -60,12 +62,29 @@ function key(element: Element, value: string) {
   (element.props.onKeyDown as (event: KeyboardEvent<HTMLButtonElement>) => void)(event as unknown as KeyboardEvent<HTMLButtonElement>);
 }
 beforeEach(() => {
-  harness.states = []; harness.refs = []; harness.activity.mockReset(); discoveryRendering = false;
+  harness.states = []; harness.refs = []; harness.activity.mockReset(); harness.acknowledge.mockReset(); discoveryRendering = false; discoveryCollection = null;
   vi.stubGlobal("getComputedStyle", () => ({ gridTemplateColumns: "1fr 1fr 1fr 1fr" }));
 });
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("actual shared profile navigation callbacks", () => {
+  it("acknowledges only deliberate unread tile inspection, not mounting, category changes or paging", async () => {
+    harness.acknowledge.mockReturnValue(true);
+    discoveryCollection = { version: 1, foods: [...COMPANION_FOOD_KINDS.slice(0, 10)], behaviors: ["ask-petting"], situations: ["meal-finished"], gifts: { pending: null, unlocked: [], equipped: null, activeMs: 0, interactionCredit: 0 }, seen: { foods: [], behaviors: [], situations: [], accessories: [] } };
+    await render(); await discover(); expect(harness.acknowledge).not.toHaveBeenCalled();
+    expect(foods()[0].props["data-unread"]).toBe(true); expect(foods()[0].props["aria-describedby"]).toBe("unit-profile");
+    click(find(node => node.props["data-act"] === "companion-collection-page" && node.props["data-act-opt"] === "next")); await render();
+    expect(foods()[0].props["data-food-index"]).toBe(4); expect(harness.acknowledge).not.toHaveBeenCalled();
+    key(foods()[0], "ArrowRight"); await render(); expect(harness.acknowledge.mock.calls).toEqual([["food", COMPANION_FOOD_KINDS[5]]]);
+    click(foods()[0]); expect(harness.acknowledge.mock.calls.at(-1)).toEqual(["food", COMPANION_FOOD_KINDS[4]]);
+    key(foods()[0], "Home"); await render(); harness.acknowledge.mockClear(); harness.activity.mockClear();
+    key(foods()[0], "Home"); expect(harness.acknowledge.mock.calls).toEqual([["food", "apple"]]); expect(harness.activity.mock.calls).toEqual([["ui.click", { target: "companion-collection-inspect#food" }]]);
+    harness.activity.mockClear(); harness.acknowledge.mockReturnValue(false); key(foods()[0], "Home"); expect(harness.activity).not.toHaveBeenCalled();
+    click(find(node => node.props["data-act"] === "companion-collection-category" && node.props["data-act-opt"] === "behavior")); await render(); harness.acknowledge.mockClear();
+    expect(harness.acknowledge).not.toHaveBeenCalled();
+    click(find(node => node.props["data-collection-index"] === 0)); expect(harness.acknowledge.mock.calls).toEqual([["behavior", "ask-petting"]]);
+    harness.acknowledge.mockClear(); click(find(node => node.props["data-collection-index"] === 1)); expect(harness.acknowledge).not.toHaveBeenCalled();
+  });
   it("leads with a live portrait and keeps all operational controls on the last page", async () => {
     await render();
     const pages = nodes(tree).filter(node => node.props["data-profile-page"]);
