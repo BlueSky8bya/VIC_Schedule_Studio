@@ -11,6 +11,7 @@ vi.mock("next/server", () => ({ after: () => { throw new Error("No request lifec
 import { recordActivityBatch } from "@/lib/activity/record";
 import { getActivityDayAction, getActivityUsageAction } from "@/lib/activity/query";
 import { accountHashOf } from "@/lib/insights/account-hash";
+import { ACT, isCompanionActivityTarget } from "@/lib/activity/labels";
 
 // These tests execute the real writer/query functions with synthetic actors and
 // an in-memory Supabase boundary. They never prove production login or DB RLS.
@@ -137,7 +138,7 @@ describe("companion activity writer boundary", () => {
     expect(await recordActivityBatch([valid, forged], { device: CANARY })).toBe(1);
     expect(db.writes[0].rows).toEqual([{ day: DAY, visit_key: null,
       account_hash: accountHashOf("synthetic-actor@example.test"), role: "developer", device: "desktop",
-      source: "client", kind: "ui.click", target: "companion-pet", meta: { on: true }, dur_ms: 42, diag: false }]);
+      source: "client", kind: "ui.click", target: "companion-pet", meta: null, dur_ms: null, diag: false }]);
     expect(JSON.stringify(db.writes)).not.toContain(CANARY);
   });
 
@@ -170,6 +171,54 @@ describe("companion activity writer boundary", () => {
     expect(await recordActivityBatch(targets.map(target => ({ ...click(target), meta: { title: CANARY, count: 32, on: true }, durMs: 9876 })))).toBe(8);
     expect(db.writes[0].rows.map(row => ({ target: row.target, meta: row.meta, dur_ms: row.dur_ms }))).toEqual(targets.map(target => ({ target: target.startsWith("companion-radio-react") || target.startsWith("companion-radio-mood") ? target : target.split("#")[0], meta: null, dur_ms: null })));
     for (const value of [CANARY, "radio-01", "radio-02", "tumble", "9876"]) expect(JSON.stringify(db.writes)).not.toContain(value);
+  });
+
+  it.each(["developer", "viewer", "anon"] as const)("seals every current companion control before %s persistence", async role => {
+    mocks.actor.mockResolvedValue(actor(role === "anon" ? "viewer" : role, role !== "anon"));
+    const controls = Object.entries(ACT).filter(([key]) => isCompanionActivityTarget(key));
+    const targets = controls.flatMap(([key, label]) => [key, ...Object.keys(label.opts ?? {}).map(option => `${key}#${option}`)]);
+    const events = targets.map(target => ({ ...click(target), meta: { count: 180, on: true, date: DAY, scope: "public", title: CANARY, trackId: "radio-01", favorite: "peach" }, durMs: 9876 }));
+    // The real API batches at most50 events. Exercise every current option
+    // through those same bounded writes instead of inventing a second catalog.
+    for (let index = 0; index < events.length; index += 50) expect(await recordActivityBatch(events.slice(index, index + 50))).toBe(Math.min(50, events.length - index));
+    if (role === "developer") {
+      expect(db.rpc).not.toHaveBeenCalled();
+      const rows = db.writes.flatMap(write => write.rows);
+      expect(rows.map(row => row.target)).toEqual(targets);
+      expect(rows.every(row => row.meta === null && row.dur_ms === null)).toBe(true);
+    } else {
+      expect(db.writes).toEqual([]);
+      const rows = db.rpc.mock.calls.flatMap(([, args]) => (args as { p_rows: DataRow[] }).p_rows);
+      expect(rows.map(row => row.target)).toEqual(targets);
+      expect(rows.every(row => Object.keys(row).sort().join(",") === "day,kind,n,role,target")).toBe(true);
+      expect(JSON.stringify(rows)).not.toContain(VISIT);
+    }
+    for (const value of [CANARY, "radio-01", "peach", "9876"]) expect(JSON.stringify({ writes: db.writes, rpc: db.rpc.mock.calls })).not.toContain(value);
+  });
+
+  it("rejects an unknown companion operation instead of turning its private payload into an untargeted count", async () => {
+    expect(await recordActivityBatch([{ ...click(`companion-unregistered-${CANARY}`), meta: { count: 180, on: true }, durMs: 9876 }])).toBe(0);
+    expect(db.writes).toEqual([]);
+    expect(db.rpc).not.toHaveBeenCalled();
+  });
+
+  it.each(["developer", "viewer"] as const)("seals legacy automatic companion aliases for %s as canonical fixed controls", async role => {
+    mocks.actor.mockResolvedValue(actor(role));
+    const targets = ["auto:companion-enabled", "auto:.companion-enabled", "auto:companion-food-spawn#apple", "auto:.settings-companion-tab#personality"];
+    expect(await recordActivityBatch(targets.map(target => ({ ...click(target), meta: { count: 180, on: true, date: DAY }, durMs: 9876 })))).toBe(4);
+    const expected = ["companion-enabled", "companion-enabled", "companion-food-spawn", "settings-companion-tab#personality"];
+    if (role === "developer") {
+      expect(db.writes[0].rows.map(row => row.target)).toEqual(expected);
+      expect(db.writes[0].rows.every(row => row.meta === null && row.dur_ms === null)).toBe(true);
+    } else {
+      expect(db.writes).toEqual([]);
+      expect(db.rpc).toHaveBeenCalledExactlyOnceWith("bump_activity_counts", { p_rows: [
+        { day: DAY, role, kind: "ui.click", target: "companion-enabled", n: 2 },
+        { day: DAY, role, kind: "ui.click", target: "companion-food-spawn", n: 1 },
+        { day: DAY, role, kind: "ui.click", target: "settings-companion-tab#personality", n: 1 }
+      ] });
+    }
+    for (const value of ["auto:", "apple", "9876", "180"]) expect(JSON.stringify({ writes: db.writes, rpc: db.rpc.mock.calls })).not.toContain(value);
   });
 
   it.each(["viewer", "anon"] as const)("counts %s collection clicks without a collection/account/session payload", async role => {

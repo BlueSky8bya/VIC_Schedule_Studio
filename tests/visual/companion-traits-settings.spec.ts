@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { mkdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
@@ -9,6 +9,44 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { settlePanelLayout } from "./helpers/panel-layout";
 
 test.use({ viewport: { width: 1440, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
+
+async function assertCompanionAppearance(dialog: Locator) {
+  const companion = dialog.locator(".rhh-companion-settings");
+  const profile = companion.locator(".rhh-companion-profile");
+  const nav = companion.getByRole("tablist", { name: "빅타민 설정", exact: true });
+  await expect(nav.getByRole("tab")).toHaveText(["프로필", "움직임", "장난", "교감", "소리"]);
+  await expect(nav.getByRole("tab", { name: "프로필", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect.poll(() => nav.locator(".rhh-seg-thumb").evaluate(node => node.getAnimations().filter(animation => animation.playState === "running").length)).toBe(0);
+  const appearance = await companion.evaluate(root => {
+    const canvas = document.createElement("canvas"); canvas.width = canvas.height = 1;
+    const context = canvas.getContext("2d")!;
+    const rgba = (value: string) => { context.clearRect(0, 0, 1, 1); context.fillStyle = value; context.fillRect(0, 0, 1, 1); return [...context.getImageData(0, 0, 1, 1).data]; };
+    const luminance = (rgb: number[]) => rgb.slice(0, 3).map(channel => { const value = channel / 255; return value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4; }).reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0);
+    const contrast = (first: number[], second: number[]) => { const a = luminance(first), b = luminance(second); return (Math.max(a, b) + .05) / (Math.min(a, b) + .05); };
+    const reading = [...root.querySelectorAll(".rhh-companion-profile h3,.rhh-companion-profile h4,.rhh-companion-profile p,.rhh-companion-profile li,.rhh-trait-favorite-copy strong")].filter(element => element.getBoundingClientRect().width > 0).map(element => {
+      let background = [255, 255, 255]; const ancestors: Element[] = [];
+      for (let current: Element | null = element; current; current = current.parentElement) ancestors.unshift(current);
+      for (const current of ancestors) { const color = rgba(getComputedStyle(current).backgroundColor), alpha = color[3] / 255; background = background.map((channel, index) => color[index] * alpha + channel * (1 - alpha)); }
+      const foreground = rgba(getComputedStyle(element).color), alpha = foreground[3] / 255;
+      return { text: element.textContent, contrast: contrast(foreground.slice(0, 3).map((channel, index) => channel * alpha + background[index] * (1 - alpha)), background) };
+    });
+    const action = root.querySelector(".rhh-profile-action")!, panel = root.querySelector(".rhh-companion-profile")!, controls = root.querySelector(".rhh-profile-controls")!;
+    const selected = root.querySelector('.rhh-companion-nav [aria-selected="true"]')!.getBoundingClientRect(), thumb = root.querySelector(".rhh-companion-nav .rhh-seg-thumb")!.getBoundingClientRect();
+    const switches = [...root.querySelectorAll(".rhh-switch")].filter(element => element.getBoundingClientRect().width > 0).map(element => { const style = getComputedStyle(element), track = getComputedStyle(element, "::before"); return { name: element.getAttribute("aria-label"), on: element.classList.contains("on"), backgroundAlpha: rgba(style.backgroundColor)[3], shadow: style.boxShadow, trackHeight: parseFloat(track.height) }; });
+    return { reading, switches, surfaceContrast: contrast(rgba(getComputedStyle(action).backgroundColor), rgba(getComputedStyle(panel).backgroundColor)), basicBeforeProfile: controls.getBoundingClientRect().top < panel.getBoundingClientRect().top, basicPaper: rgba(getComputedStyle(controls).backgroundColor), expectedPaper: rgba(getComputedStyle(root).getPropertyValue("--companion-paper")), masterTint: rgba(getComputedStyle(root.querySelector(".rhh-companion-master")!).backgroundColor), thumbAlpha: rgba(getComputedStyle(root.querySelector(".rhh-companion-nav .rhh-seg-thumb")!).backgroundColor)[3], thumbAlignment: Math.abs(selected.x + selected.width / 2 - thumb.x - thumb.width / 2), controls: [...root.querySelectorAll("button")].filter(element => element.getBoundingClientRect().width > 0).map(element => { const rect = element.getBoundingClientRect(); return { name: element.getAttribute("aria-label") || element.textContent, width: rect.width, height: rect.height }; }) };
+  });
+  expect(appearance.basicBeforeProfile).toBe(true);
+  expect(appearance.basicPaper).toEqual(appearance.expectedPaper); expect(appearance.masterTint).not.toEqual(appearance.basicPaper);
+  expect(appearance.thumbAlpha).toBe(255);
+  expect(appearance.thumbAlignment).toBeLessThanOrEqual(2);
+  expect(appearance.surfaceContrast).toBeGreaterThanOrEqual(1.08);
+  expect(appearance.reading.length).toBeGreaterThan(12);
+  for (const row of appearance.reading) expect(row.contrast, row.text ?? "visible companion text").toBeGreaterThanOrEqual(4.5);
+  for (const control of appearance.controls) { expect(control.height, control.name ?? "control height").toBeGreaterThanOrEqual(44); expect(control.width, control.name ?? "control width").toBeGreaterThanOrEqual(44); }
+  expect(appearance.switches.map(control => control.on)).toEqual([false, true]);
+  for (const control of appearance.switches) { expect(control.backgroundAlpha, control.name ?? "transparent switch hit plane").toBe(0); expect(control.shadow, control.name ?? "switch hit plane shadow").toBe("none"); expect(control.trackHeight, control.name ?? "switch visual track").toBe(24); }
+  await expect(profile).toBeVisible();
+}
 
 async function openTraits(page: Page) {
   await settlePanelLayout(page);
@@ -55,12 +93,13 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await page.bringToFront(); await settlePanelLayout(page);
     if (surface === "preview") { await page.locator(".io-preview").click(); await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible(); }
     const { dialog, traits } = await openTraits(page);
+    await assertCompanionAppearance(dialog);
     await expect(traits.locator(".rhh-trait-favorite strong")).toHaveText("복숭아");
     const actions = traits.locator(".rhh-profile-action");
-    await expect(actions.locator("h4")).toHaveText(["마우스 곁에서 교감", "좋아하는 맛 고르기", "집에서 포근하게", "응원과 작은 장난"]);
-    await expect(actions.nth(0)).toContainText("쓰다듬기를 부탁하거나 몸을 기대기도 해요");
+    await expect(actions.locator("h4")).toHaveText(["다가와 교감", "좋아하는 맛", "포근한 휴식", "으쌰으쌰 응원"]);
+    await expect(actions.nth(0)).toContainText("쓰다듬기를 부탁하고 몸을 기대기도 해요");
     await expect(actions.nth(1)).toContainText("거리와 좋아하는 맛을 함께");
-    await expect(actions.nth(2)).toContainText("피곤하지 않아도");
+    await expect(actions.nth(2)).toContainText("덜 피곤해도");
     await expect(actions.nth(3)).toContainText("응원을 연습");
     await expect(actions.locator(".rhh-profile-try")).toHaveCount(4);
     for (const hint of await actions.locator(".rhh-profile-try").allTextContents()) expect(hint.replace("해보기", "").trim().length).toBeGreaterThan(10);
@@ -73,9 +112,10 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     expect(new Set(layout.tiles.map(tile => tile.x)).size).toBe(2);
     expect(new Set(layout.tiles.map(tile => tile.y)).size).toBe(2);
     expect(layout.fruit).toBe(40);
-    mkdirSync(".scratch-pw/companion-107-settings", { recursive: true });
+    mkdirSync(".scratch-pw/companion-109-settings", { recursive: true });
     const profile = dialog.locator(".rhh-companion-profile");
-    await profile.screenshot({ path: `.scratch-pw/companion-107-settings/${surface}-${theme}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-109-settings/viewport-profile-${surface}-${theme}.png` });
+    await profile.screenshot({ path: `.scratch-pw/companion-109-settings/${surface}-${theme}.png` });
     if (surface === "viewer" && theme === "light") {
       // A second real same-origin tab exercises the browser's storage event;
       // no model callback, event dispatch, state or geometry is substituted.
@@ -103,7 +143,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
       expect(narrow.overflow).toBeLessThanOrEqual(1);
       expect(narrow.rows.length).toBeGreaterThan(8);
       for (const row of narrow.rows) { expect(row.overflow).toBeLessThanOrEqual(1); expect(row.font).toBeGreaterThanOrEqual(13.5); }
-      await profile.screenshot({ path: ".scratch-pw/companion-107-settings/narrow-desktop.png" });
+      await profile.screenshot({ path: ".scratch-pw/companion-109-settings/narrow-desktop.png" });
       await page.setViewportSize({ width: 1440, height: 1100 });
       await settlePanelLayout(page);
     }
@@ -111,7 +151,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await learning.click(); await expect(learning).toHaveAttribute("aria-checked", "false");
     await expect(dialog.locator(".rhh-habit-paused")).toContainText("배우기 끔 · 기억은 보관");
     // OFF preserves stored memories while effects use the neutral defaults.
-    await expect(actions.nth(0)).toContainText("쓰다듬기를 부탁하거나 몸을 기대기도 해요");
+    await expect(actions.nth(0)).toContainText("쓰다듬기를 부탁하고 몸을 기대기도 해요");
     await expect(actions.nth(1)).toContainText("가까운 간식부터");
     await expect(actions.nth(2)).toContainText("피곤하면 집에서 몸을 모아 쉬어요");
     await expect(actions.nth(3)).toContainText("응원을 연습");

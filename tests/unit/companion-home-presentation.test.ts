@@ -10,13 +10,13 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 beforeEach(() => vi.stubGlobal("React", React));
 afterEach(() => vi.unstubAllGlobals());
 
-function room(compact: boolean, inactive = false) {
+function room(compact: boolean, inactive = false, radioPlaying = false, enabled = true) {
   return renderToStaticMarkup(React.createElement(CompanionHome, {
     care: DEFAULT_COMPANION_CARE,
-    preferences: DEFAULT_COMPANION_PREFERENCES,
+    preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled },
     onAction: () => undefined,
     onClose: compact ? () => undefined : undefined,
-    inactive
+    inactive, radioPlaying
   }));
 }
 
@@ -47,5 +47,17 @@ describe("shared companion room presentation", () => {
     expect(html).toContain('aria-hidden="true"');
     expect(html).toContain('class="vc-home-room"');
     expect(html).not.toContain("data-panel-collapsible");
+  });
+
+  it("mounts three decorative notes only for actual playback in an active enabled room", () => {
+    for (const compact of [false, true]) {
+      expect(room(compact)).not.toContain('class="vc-radio-notes"');
+      const playing = room(compact, false, true);
+      expect(playing).toContain('class="vc-radio-notes" aria-hidden="true"');
+      expect(playing.match(/class="vc-radio-note"/g)).toHaveLength(3);
+      expect(playing).toContain('aria-label="라디오 끄기" aria-pressed="true"');
+      expect(room(compact, true, true)).not.toContain('class="vc-radio-notes"');
+      expect(room(compact, false, true, false)).not.toContain('class="vc-radio-notes"');
+    }
   });
 });

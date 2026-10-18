@@ -28,7 +28,7 @@ import { projectCompanionSofaBody, projectCompanionSpritePoint } from "@/lib/ui/
 import { createCompanionAccessoryPainter } from "@/lib/ui/viewer-companion/accessory";
 import { canStartCompanionAccessoryMotion, COMPANION_ACCESSORY_MOTION_MS, isCompanionHat, sampleCompanionAccessoryMotion } from "@/lib/ui/viewer-companion/accessory-motion";
 import { playCompanionSound, type CompanionSoundMoment } from "@/lib/ui/viewer-companion/companion-sound";
-import { getCompanionRadioSnapshot, stopCompanionRadio, subscribeCompanionRadio, toggleCompanionRadio } from "@/lib/ui/viewer-companion/radio-player";
+import { getCompanionRadioSnapshot, getCompanionRadioToggleIntent, stopCompanionRadio, subscribeCompanionRadio, toggleCompanionRadio } from "@/lib/ui/viewer-companion/radio-player";
 import { getCompanionRadioPreferences, subscribeCompanionRadioPreferences } from "@/lib/ui/viewer-companion/radio-preferences";
 import { canStartCompanionRadioReaction, companionRadioFoodPriority, COMPANION_RADIO_REACTION_MS, createCompanionRadioReactionInbox, getCompanionRadioReaction, sampleCompanionRadioReaction, type CompanionRadioReaction } from "@/lib/ui/viewer-companion/radio-reaction";
 import { companionRunContactSituation, type CompanionSituationId } from "@/lib/ui/viewer-companion/moments";
@@ -233,7 +233,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       persistCare(true);
       return true;
     };
-    const transferred = () => { experience("played"); logActivity("ui.click", { target: "companion-drag" }); };
+    const transferred = (thrown = false) => { experience("played"); logActivity("ui.click", { target: thrown ? "companion-throw" : "companion-drag" }); };
     const publishCare = () => {
       const { hunger, affection, energy, curiosity } = brain.current;
       const next = { hunger: Math.round(hunger * 100) / 100, affection: Math.round(affection * 100) / 100, energy: Math.round(energy * 100) / 100, curiosity: Math.round(curiosity * 100) / 100 };
@@ -1189,7 +1189,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         else startRest();
       } },
       home: () => { if (hiding || pause || overlayActive || premiereActive || !document.hasFocus()) return; playCompanionSound("cushion", preferencesRef.current); recallHome(); },
-      radio: () => { if (!pause && !overlayActive && !premiereActive && !workspaceBusyRef.current && document.hasFocus() && !document.hidden) { logActivity("ui.click", { target: radioState.playing ? "companion-radio-stop" : "companion-radio-play" }); void toggleCompanionRadio(); } },
+      radio: () => { if (!pause && !overlayActive && !premiereActive && !workspaceBusyRef.current && document.hasFocus() && !document.hidden) { logActivity("ui.click", { target: getCompanionRadioToggleIntent() === "stop" ? "companion-radio-stop" : "companion-radio-play" }); void toggleCompanionRadio(); } },
       feed: () => {
         radioInbox.clear();
         pendingHomeRecall = undefined;
@@ -2343,7 +2343,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         if (!thrown) settle({ x, y });
         shakenReleasePending = shaken && action?.kind === "jump" ? { column: releasedColumn } : undefined;
         if (thrown) paint(COMPANION_THROW_ROW, 0, "jump");
-        if (!held.cancelled && event.type !== "pointercancel") transferred();
+        if (!held.cancelled && event.type === "pointerup") transferred(thrown);
       }
       else if (!held.cancelled && !held.grabbed && event.type !== "pointercancel") {
         const reaction = preferences.petting ? companionTapReaction({ elapsed: performance.now() - held.at, moved: Math.hypot(event.clientX - held.x, event.clientY - held.y), cancelled: held.cancelled, recentMishap: performance.now() < mishapUntil }) : null;

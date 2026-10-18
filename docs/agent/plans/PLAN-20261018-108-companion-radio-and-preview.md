@@ -1,6 +1,6 @@
 # 108 — 간식 형태·집 라디오·옷장 미리보기
 
-2026-10-18 KST. Status: verification. Current owner request governs.
+2026-10-18 KST. Status: complete. Current owner request governs.
 
 ## Scope
 
@@ -19,6 +19,6 @@ Parallel art/food, preview/settings, world/reaction and root audio/provenance im
 
 ## Current evidence
 
-Post-release rendered review found a narrow cascade defect: six new radio mood/playback targets inherit the more specific shared32px rule instead of intended44px; mood pills inherit10px radius. Exactly two selectors now use the settings scope, preserving shared material/selected colors. Independent review,2,391units/type/lint/build/harness277 and16targeted native cases PASS on `0-Iz9tEa7Wd6lmWkH9hFp`; actual6-button heights/pill radii pass viewer/studio/preview. Follow-up push and deployed verification remain. Previous9f97982c evidence below is retained for that revision; it does not by itself pass the follow-up release.
+Post-release rendered review found a narrow cascade defect: six new radio mood/playback targets inherit the more specific shared32px rule instead of intended44px; mood pills inherit10px radius. Exactly two selectors now use the settings scope, preserving shared material/selected colors. Independent review,2,391units/type/lint/build/harness277 and16targeted native cases PASS on `0-Iz9tEa7Wd6lmWkH9hFp`; actual6-button heights/pill radii pass viewer/studio/preview. Follow-up `253453e6cb50fa38cf7b03c07be16123a3f9ba54` is pushed/deployed; all13remote quality39110765660steps/Vercel and exact deployed SHA/public canaries/guarded anonymous actual radio/wardrobe/house UI PASS. Previous9f97982c evidence below remains scoped to that initial revision. Post-release bookkeeping stays local.
 
 Implementation and independent reviews complete; reported P2issues corrected. Final frozen build `L6BToox6wi3oSekYDh0U4`, full229unit files/2,391tests, type/lint/build and harness277 PASS. All51 current-build native cases (runtime9, including32 real recordings, plus UI42) PASS. Pushed/deployed `9f97982cc67972fe6e277640d8cc5519486c15fa`: all13remote quality steps, Vercel, full deployed SHA/public canaries and actual guarded anonymous radio/wardrobe/house UI PASS. Details: [108 record](../verification/COMPANION_RADIO_PREVIEW-20261018.md). OS-window hidden visibility remains a separately stated environment limit; actual effect cancellation has unit evidence. No owner preference reset, collection grant, production schedule edit or broadcaster-PC claim. Post-release bookkeeping stays local.

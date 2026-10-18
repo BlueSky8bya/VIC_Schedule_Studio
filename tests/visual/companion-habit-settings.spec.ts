@@ -89,9 +89,9 @@ for (const surface of ["viewer", "studio"] as const) for (const theme of ["light
     expect(balance.positionSpread).toBeLessThanOrEqual(1);
     expect(["start", "left"]).toContain(balance.alignment);
     expect(balance.paddingDifference).toBeLessThanOrEqual(1);
-    mkdirSync(".scratch-pw/companion-107-settings", { recursive: true });
-    await habits.screenshot({ path: `.scratch-pw/companion-107-settings/habits-${surface}-${theme}.png` });
-    await dialog.screenshot({ path: `.scratch-pw/companion-107-settings/dialog-${surface}-${theme}.png` });
+    mkdirSync(".scratch-pw/companion-109-settings", { recursive: true });
+    await habits.screenshot({ path: `.scratch-pw/companion-109-settings/habits-${surface}-${theme}.png` });
+    await dialog.screenshot({ path: `.scratch-pw/companion-109-settings/dialog-${surface}-${theme}.png` });
     const learning = dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true });
     await learning.click(); await expect(learning).toHaveAttribute("aria-checked", "false");
     await expect(dialog.locator(".rhh-habit-paused")).toHaveText("배우기 끔 · 기억은 보관해요.");

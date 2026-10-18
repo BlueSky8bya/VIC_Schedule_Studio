@@ -80,6 +80,18 @@ html :is(.poster-page,[data-companion-event="ordinary"]) .event-heart[data-compa
 .vc-food[data-eating] .vc-fruit > ellipse { opacity: 0; }
 html[data-reduce-motion] .vc-companion[data-heart-result="blocked"] .vc-effect { animation: none; }
 
+/* Playback owns these three decorative glyphs. CSS transforms keep the
+   shared room and radio hit plane stationary without a second frame loop. */
+.vc-radio-notes { position: absolute; left: -22px; top: 1px; width: 28px; height: 40px; color: var(--ink-soft); pointer-events: none; }
+.vc-radio-note { position: absolute; left: 2px; top: 17px; display: block; fill: currentColor; opacity: 0; animation: vc-radio-note-float 2.6s var(--ease) infinite; }
+.vc-radio-note:nth-child(2) { left: 14px; top: 8px; animation-delay: -.85s; }
+.vc-radio-note:nth-child(3) { left: 8px; top: 28px; animation-delay: -1.7s; }
+@keyframes vc-radio-note-float { 0% { opacity: 0; transform: translate3d(0,2px,0) rotate(-7deg); } 22% { opacity: .8; } 55% { transform: translate3d(1px,-7px,0) rotate(5deg); } 76% { opacity: .65; transform: translate3d(-1px,-6px,0) rotate(-3deg); } 100% { opacity: 0; transform: translate3d(1px,-13px,0) rotate(4deg); } }
+html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-radio-notes,
+:is([hidden], [inert], .vc-home[aria-hidden="true"]) .vc-radio-notes { display: none; }
+html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-radio-note,
+:is([hidden], [inert], .vc-home[aria-hidden="true"]) .vc-radio-note { animation: none; }
+
 /* A contact cue belongs to the support plane, never the flying sprite. The
    renderer projects this ellipse back to that plane as jump height changes. */
 .vc-contact-shadow { position: absolute; width: 52%; height: 9%; left: 24%; bottom: -4%; border-radius: 50%; background: radial-gradient(ellipse, #4c5846 5%, #69735a80 48%, transparent 74%); pointer-events: none; transform-origin: center; }

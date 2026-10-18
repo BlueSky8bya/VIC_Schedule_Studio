@@ -9,7 +9,16 @@ Unrun checks are NOT VERIFIED. Scope results to the tested revision/environment;
 - Documentation/harness changes: `npm run harness:verify` and relevant harness tests. A prose-only change does not require unrelated product build/visual runs.
 - Recheck affected public/private boundary, exact role permissions, KST assumptions, nearby interactions and a reversible recovery path.
 - Record failures and coverage limits rather than adding a new permission request merely because a test is unavailable.
+- Feature/control additions, changes and removals automatically include the G-22 action-timeline/least-used-feature audit: semantic fixed targets, current readable labels, pointer/keyboard capture, deduplication and actual display. Document excluded autonomous/private events. Never add collection/food/song IDs or learned traits to metadata, or bypass analytics automation guards.
 - Before L2 (structural) or L3 (critical) implementation, record the plan in ACTIVE_PLAN. Preserve the current authorized branch and user changes; when a new implementation branch is needed, branch from main. Commit and push remain separate actions governed by the current request.
+
+## Review responsibilities
+
+G-21 responsibilities remain unchanged: planner checks boundary/roles/unlock/KST; builder preserves server checks; security reviews DTO/RLS/grant lifetime; UI reviews viewer clarity/studio practicality/readability/mobile; QA checks leakage/routes/rendered interactions. Independent reviews precede integration. The root points here to preserve its bounded startup budget, not to retire any responsibility.
+
+## Activity contract
+
+G-22 applies automatically to every feature/control addition, change or removal: update or explicitly audit both developer views, action timeline and least-used features. Keep semantic fixed targets, current labels/catalogue and keyboard/pointer interactions aligned; test capture through display and prevent duplicates. Record appropriate exclusions rather than inventing human actions for autonomous behavior. Preserve automation guards, aggregate-only public analytics and G-07/G-20; never log food/song IDs, discovered collections or learned personal traits. No repeat user reminder is required.
 
 ## Viewer/poster
 

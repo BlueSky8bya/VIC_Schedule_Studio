@@ -7,15 +7,15 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const edition = process.argv.includes('--edition=108') ? 108 : process.argv.includes('--edition=107') ? 107 : 106;
-const runs = { 106: 'art-src/빅타민/수집/작업회차/20261018-도감과선물', 107: 'art-src/빅타민/수집/작업회차/20261018-먹거리와추억', 108: 'art-src/빅타민/수집/작업회차/20261018-먹거리일치와삼각김밥' };
+const edition = process.argv.includes('--edition=109') ? 109 : process.argv.includes('--edition=108') ? 108 : process.argv.includes('--edition=107') ? 107 : 106;
+const runs = { 106: 'art-src/빅타민/수집/작업회차/20261018-도감과선물', 107: 'art-src/빅타민/수집/작업회차/20261018-먹거리와추억', 108: 'art-src/빅타민/수집/작업회차/20261018-먹거리일치와삼각김밥', 109: 'art-src/빅타민/수집/작업회차/20261018-간식백스무종' };
 const run = runs[edition];
 const destination = 'public/companion/collection';
 const registryPath = 'lib/ui/viewer-companion/collection-art.ts';
 const receiptPath = run + '/정리본/패킹기록.json';
 const check = process.argv.includes('--check');
 const available = process.argv.includes('--available');
-if (process.argv.slice(2).some(arg => !['--check', '--available', '--edition=107', '--edition=108'].includes(arg)) || process.argv.filter(arg => arg.startsWith('--edition=')).length > 1) throw Error('Usage: node scripts/prepare-companion-collection.mjs [--edition=107|--edition=108] [--available] [--check]');
+if (process.argv.slice(2).some(arg => !['--check', '--available', '--edition=107', '--edition=108', '--edition=109'].includes(arg)) || process.argv.filter(arg => arg.startsWith('--edition=')).length > 1) throw Error('Usage: node scripts/prepare-companion-collection.mjs [--edition=107|--edition=108|--edition=109] [--available] [--check]');
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const round = value => Math.round(value * 1e6) / 1e6;
 const behaviorIds = ['ask-petting', 'lean-nuzzle', 'paper-knead', 'paper-nest', 'cheer-rehearsal', 'doze-curl', 'groom', 'bow', 'pounce', 'tumble', 'dizzy', 'stretch'];
@@ -39,6 +39,7 @@ const editions = {
     { id: 'accessory-107', kind: 'accessory', file: 'accessories-107-v1.webp', cell: 128, columns: 6, rows: 4 },
   ],
   108: [{ id: 'food-108', kind: 'food', file: 'rice-ball-108-v1.webp', cell: 96, columns: 1, rows: 1 }],
+  109: Array.from({ length: 6 }, (_, index) => ({ id: `food-109-${index + 1}`, kind: 'food', file: `foods-109-${index + 1}-v1.webp`, cell: 80, columns: 5, rows: 4 })),
 };
 const definitions = editions[edition], foodAtlas = edition === 107 ? 'food-107' : 'food', stampAtlas = edition === 107 ? 'food-stamp-107' : 'food-stamp', accessoryAtlas = edition === 107 ? 'accessory-107' : 'accessory';
 const buckets = Object.fromEntries(definitions.map(item => [item.id, []]));
@@ -139,6 +140,58 @@ function disjointCutouts(data, width, height, columns, rows, groups) {
   return { cutouts, sourcePixels, copiedPixels, components: parts.length };
 }
 
+// Some new generator outputs connect separate visible icons with alpha1..16
+// antialias wisps. Strong components identify complete objects; a multi-source
+// flood assigns the wisps without deleting, recoloring or repairing any pixel.
+// This is offline source attribution only, never runtime work or alpha cleanup.
+function seededCutouts(data, width, height, columns, rows, groups) {
+  const count = width * height, owner = new Int16Array(count).fill(-1), queue = new Int32Array(count);
+  const nearest = (x, y) => {
+    let chosen = 0, distance = Infinity;
+    groups.forEach((g, index) => { const d = Math.hypot(Math.max(g.left - x, 0, x - g.right), Math.max(g.top - y, 0, y - g.bottom)); if (d < distance) { distance = d; chosen = index; } });
+    return chosen;
+  };
+  let head = 0, tail = 0, sourcePixels = 0;
+  // Every strong pixel belongs to its complete source object. Group bounds
+  // can overlap; only non-overlapping strong components seed the attribution.
+  const seen = new Uint8Array(count), component = new Int32Array(count);
+  for (let start = 0; start < count; start++) {
+    if (seen[start] || data[start * 4 + 3] <= 16) continue;
+    let first = 0, end = 1, left = width, right = 0, top = height, bottom = 0;
+    component[0] = start; seen[start] = 1;
+    while (first < end) {
+      const p = component[first++], x = p % width, y = Math.floor(p / width);
+      left = Math.min(left, x); right = Math.max(right, x + 1); top = Math.min(top, y); bottom = Math.max(bottom, y + 1);
+      for (let yy = Math.max(0, y - 1); yy <= Math.min(height - 1, y + 1); yy++) for (let xx = Math.max(0, x - 1); xx <= Math.min(width - 1, x + 1); xx++) {
+        const next = yy * width + xx; if (!seen[next] && data[next * 4 + 3] > 16) { seen[next] = 1; component[end++] = next; }
+      }
+    }
+    const cx = (left + right) / 2, cy = (top + bottom) / 2;
+    const label = end >= 16 ? Math.min(rows - 1, Math.floor(cy / (height / rows))) * columns + Math.min(columns - 1, Math.floor(cx / (width / columns))) : nearest(cx, cy);
+    for (let i = 0; i < end; i++) { const p = component[i]; owner[p] = label; queue[tail++] = p; }
+  }
+  while (head < tail) {
+    const p = queue[head++], x = p % width, y = Math.floor(p / width);
+    for (let yy = Math.max(0, y - 1); yy <= Math.min(height - 1, y + 1); yy++) for (let xx = Math.max(0, x - 1); xx <= Math.min(width - 1, x + 1); xx++) {
+      const next = yy * width + xx; if (owner[next] < 0 && data[next * 4 + 3] > 0) { owner[next] = owner[p]; queue[tail++] = next; }
+    }
+  }
+  const boxes = groups.map(() => ({ left: width, top: height, right: 0, bottom: 0, pixels: 0, strong: 0 }));
+  for (let p = 0; p < count; p++) {
+    if (!data[p * 4 + 3]) continue; sourcePixels++;
+    const x = p % width, y = Math.floor(p / width); if (owner[p] < 0) owner[p] = nearest(x, y);
+    const b = boxes[owner[p]]; b.left = Math.min(b.left, x); b.right = Math.max(b.right, x + 1); b.top = Math.min(b.top, y); b.bottom = Math.max(b.bottom, y + 1); b.pixels++; if (data[p * 4 + 3] > 16) b.strong++;
+  }
+  const cutouts = boxes.map((b, index) => { if (b.strong < 200) throw Error('Missing strong complete food: ' + index); const crop = { left: b.left, top: b.top, width: b.right - b.left, height: b.bottom - b.top }; return { crop, raw: Buffer.alloc(crop.width * crop.height * 4) }; });
+  let copiedPixels = 0;
+  for (let p = 0; p < count; p++) if (data[p * 4 + 3] > 0) {
+    const { crop, raw } = cutouts[owner[p]], x = p % width, y = Math.floor(p / width), target = ((y - crop.top) * crop.width + x - crop.left) * 4;
+    data.copy(raw, target, p * 4, p * 4 + 4); copiedPixels++;
+  }
+  if (copiedPixels !== sourcePixels) throw Error('Incomplete source attribution');
+  return { cutouts, sourcePixels, copiedPixels, components: groups.length };
+}
+
 async function sheet(relative, columns, rows, disjoint = false) {
   if (!await exists(relative)) { if (available) return null; throw Error('Missing native sheet: ' + relative); }
   const bytes = await read(relative), info = await sharp(bytes).metadata();
@@ -151,9 +204,9 @@ async function sheet(relative, columns, rows, disjoint = false) {
   if (!zero || !visible) throw Error('Missing genuinely transparent gutter/visible artwork: ' + relative);
   const groups = sourceGroups(data, info.width, info.height, columns, rows);
   if (disjoint) {
-    const separated = disjointCutouts(data, info.width, info.height, columns, rows, groups);
+    const separated = disjoint === 'seeded' ? seededCutouts(data, info.width, info.height, columns, rows, groups) : disjointCutouts(data, info.width, info.height, columns, rows, groups);
     if (separated.sourcePixels !== info.width * info.height - zero) throw Error('Native alpha pixels were not completely attributed');
-    sources.push({ path: relative, sha256: digest, width: info.width, height: info.height, columns, rows, transparentPixels: zero, visiblePixels: visible, sourceBytesUnchanged: true, cutoutMethod: 'Complete alpha>0 connected components; all nontransparent pixels attributed exactly once, unchanged RGBA.', sourceNontransparentPixels: separated.sourcePixels, copiedNontransparentPixels: separated.copiedPixels, components: separated.components });
+    sources.push({ path: relative, sha256: digest, width: info.width, height: info.height, columns, rows, transparentPixels: zero, visiblePixels: visible, sourceBytesUnchanged: true, cutoutMethod: disjoint === 'seeded' ? 'Complete alpha>16 component seeds; alpha>0 wisps assigned by bounded multi-source flood/nearest source group; every nontransparent RGBA pixel copied exactly once, none deleted/edited.' : 'Complete alpha>0 connected components; all nontransparent pixels attributed exactly once, unchanged RGBA.', sourceNontransparentPixels: separated.sourcePixels, copiedNontransparentPixels: separated.copiedPixels, components: separated.components });
     return { bytes, crops: separated.cutouts.map(item => item.crop), cutouts: separated.cutouts, path: relative };
   }
   const crops = groups.map((group, index) => {
@@ -197,7 +250,23 @@ async function pixelSource(relative) {
 }
 
 const foodIds = [], batches = edition === 107 ? [4, 5] : [1, 2, 3];
-if (edition === 108) {
+if (edition === 109) {
+  const request = JSON.parse(await read(run + '/request.json'));
+  if (request.targetAdded !== 120 || request.sheets.length !== 6) throw Error('Expected six explicitly requested20-food sheets');
+  for (const [batch, spec] of request.sheets.entries()) {
+    const observed = JSON.parse(await read(run + '/정리본/생성기록' + String(batch + 1).padStart(2, '0') + '.json'));
+    if (spec.columns !== 5 || spec.rows !== 4 || spec.requestedFoodIds.length !== 20 || JSON.stringify(spec.requestedFoodIds) !== JSON.stringify(observed.observedCellFoodIds)) throw Error('Requested and observed source-cell identities must agree');
+    // Dessert neighbours have overlapping rectangular bounds while their
+    // actual alpha components are separate. Preserve/attribute every RGBA
+    // pixel exactly once instead of cutting either icon at a grid seam.
+    const source = await sheet(run + '/원본/' + spec.file, 5, 4, batch === 5 ? 'seeded' : false);
+    if (!source) throw Error('Every requested109 food source is required');
+    for (const [index, id] of observed.observedCellFoodIds.entries()) {
+      if (foodIds.includes(id)) throw Error('Duplicate new food ID: ' + id);
+      foodIds.push(id); await add(source, index, `food-109-${batch + 1}`, id, index);
+    }
+  }
+} else if (edition === 108) {
   const source = await sheet(run + '/원본/한국편의점삼각김밥.png', 1, 1);
   if (!source) throw Error('The explicit108 replacement requires its actual new native source');
   await add(source, 0, 'food-108', 'rice-ball', 0); foodIds.push('rice-ball');
@@ -238,14 +307,15 @@ for (const definition of definitions) {
   const entries = buckets[definition.id];
   if (!entries.length) continue;
   const width = definition.cell * definition.columns, height = definition.cell * definition.rows;
-  const bytes = await sharp({ create: { width, height, channels: 4, background: '#0000' } }).composite(entries.map(entry => ({ input: entry.data, raw: { width: definition.cell, height: definition.cell, channels: 4 }, left: entry.x, top: entry.y }))).webp({ lossless: true, effort: 6 }).toBuffer();
+  const bytes = await sharp({ create: { width, height, channels: 4, background: '#0000' } }).composite(entries.map(entry => ({ input: entry.data, raw: { width: definition.cell, height: definition.cell, channels: 4 }, left: entry.x, top: entry.y }))).webp(edition === 109 ? { quality: 82, alphaQuality: 100, effort: 6 } : { lossless: true, effort: 6 }).toBuffer();
   await writeOrCheck(destination + '/' + definition.file, bytes);
   atlases[definition.id] = { src: '/companion/collection/' + definition.file, width, height, cell: definition.cell, columns: definition.columns, rows: definition.rows, sha256: hash(bytes) };
 }
 const receipt = { version: 1, method: 'Complete alpha-gap source crops, or complete alpha>0 connected components where rectangular bounds overlap; trim only alpha0; preserve all nontransparent RGBA exactly once before isotropic Lanczos resize; center in transparent cells; lossless WebP. Alpha>16 is segmentation/measurement only, never a pixel deletion rule.' + (edition === 107 ? ' Four original pixel SVG views use nearest-neighbor resizing to preserve exact flat black/white square edges.' : ''), sources, atlases, cells,
   ...(edition === 108 ? { overrides: [{ kind: 'food', id: 'rice-ball', previousAtlas: 'food-107', atlas: 'food-108', purpose: 'Requested Korean convenience-store packaged triangular gimbap; previous native and atlas pixels remain preserved.' }] } : {}) };
+if (edition === 109) { receipt.method = receipt.method.replace('lossless WebP', 'WebP quality82 with alphaQuality100;80px cells,64px content'); receipt.delivery = { cell: 80, padding: 8, quality: 82, alphaQuality: 100, sourcePreserved: true, pairedStamps: 'same live-food frame, no separate raster' }; }
 const receipts = [];
-for (const current of [106, 107, 108]) {
+for (const current of [106, 107, 108, 109]) {
   const item = current === edition ? receipt : await read(runs[current] + '/정리본/패킹기록.json').then(bytes => JSON.parse(bytes)).catch(error => { if (error.code === 'ENOENT' && current > edition) return null; throw error; });
   if (!item) continue;
   if (current !== edition) for (const atlas of Object.values(item.atlases)) {
@@ -259,19 +329,25 @@ for (const { edition: current, item } of receipts) {
     if (combinedAtlases[id]) throw Error('Duplicate immutable atlas ID: ' + id);
     combinedAtlases[id] = atlas;
   }
-  for (const cell of [...item.cells].sort((left, right) => left.index - right.index)) {
+  //109 has six additive food atlases with local0..19 slots. Keep its frozen
+  // catalogue order; sorting those local indices would interleave six pages.
+  for (const cell of current === 109 ? item.cells : [...item.cells].sort((left, right) => left.index - right.index)) {
     const definition = Object.values(editions).flat().find(row => row.id === cell.atlas);
     if (!definition || !item.atlases[cell.atlas]) throw Error('Unregistered receipt cell atlas: ' + cell.atlas);
     const kind = definition.kind ?? (cell.id.startsWith('book-') ? 'book' : 'gift');
     if (frames[kind][cell.id] && !(current === 108 && kind === 'food' && cell.id === 'rice-ball' && cell.atlas === 'food-108' && frames[kind][cell.id].atlas === 'food-107' && item.overrides?.length === 1 && item.overrides[0].kind === kind && item.overrides[0].id === cell.id && item.overrides[0].previousAtlas === 'food-107' && item.overrides[0].atlas === cell.atlas)) throw Error('An additive edition cannot replace a previous collection ID without the exact108 rice-ball override: ' + cell.id);
     frames[kind][cell.id] = Object.fromEntries(['id', 'atlas', 'index', 'x', 'y', 'width', 'height', 'content'].map(key => [key, cell[key]]));
+    if (current === 109 && kind === 'food') {
+      if (frames['food-stamp'][cell.id]) throw Error('New food stamp cannot replace preserved collection art: ' + cell.id);
+      frames['food-stamp'][cell.id] = frames[kind][cell.id];
+    }
   }
 }
 const registry = [
   '// Generated by scripts/prepare-companion-collection.mjs; source cutouts remain unchanged.',
   'export type CompanionCollectionArtKind = "food" | "food-stamp" | "behavior-stamp" | "accessory" | "book" | "gift" | "situation-stamp";',
   'export type CompanionAccessoryView = "front" | "quarter" | "side" | "back";',
-  'type AtlasId = Exclude<CompanionCollectionArtKind, "book" | "gift"> | "book-gift" | "food-107" | "food-stamp-107" | "accessory-107" | "food-108";',
+  'type AtlasId = Exclude<CompanionCollectionArtKind, "book" | "gift"> | "book-gift" | "food-107" | "food-stamp-107" | "accessory-107" | "food-108" | `food-109-${1 | 2 | 3 | 4 | 5 | 6}`;',
   'export type CompanionCollectionAtlas = Readonly<{ src: string; width: number; height: number; cell: number; columns: number; rows: number; sha256: string }>;',
   'export type CompanionCollectionFrame = Readonly<{ id: string; atlas: AtlasId; index: number; x: number; y: number; width: number; height: number; content: Readonly<{ x: number; y: number; width: number; height: number }> }>;',
   'export type CompanionCollectionArtFrame = CompanionCollectionFrame & Readonly<{ src: string; atlasWidth: number; atlasHeight: number }>;',
@@ -288,4 +364,13 @@ const registry = [
 ].join('\n');
 await writeOrCheck(registryPath, registry);
 await writeOrCheck(receiptPath, JSON.stringify(receipt, null, 2) + '\n');
+if (edition === 109) {
+  const request = JSON.parse(await read(run + '/request.json'));
+  const items = request.sheets.flatMap(spec => spec.items.map(({ id, name, rarity, category }) => ({ id, name, rarity, category })));
+  if (JSON.stringify(items.map(item => item.id)) !== JSON.stringify(foodIds)) throw Error('Food domain and observed native cells disagree');
+  const domain = '// Generated from the frozen109 food request by scripts/prepare-companion-collection.mjs.\n'
+    + 'export const COMPANION_SNACK_EXPANSION = ' + JSON.stringify(items, null, 2) + ' as const;\n'
+    + 'export type ExpandedCompanionFoodKind = typeof COMPANION_SNACK_EXPANSION[number]["id"];\n';
+  await writeOrCheck('lib/ui/viewer-companion/snack-expansion.ts', domain);
+}
 console.log(JSON.stringify({ status: check ? 'REPRODUCED' : 'PACKED', edition, stagedAvailableOnly: available, sources: sources.length, foods: foodIds.length, atlases: Object.keys(atlases), cells: cells.length, registry: registryPath, receipt: receiptPath }));

@@ -1,0 +1,37 @@
+{
+  "tool": "image_gen.imagegen",
+  "intent": "generate",
+  "sheet": 1,
+  "prompt": "Create ONE transparent game food icon atlas, exactly FIVE columns by FOUR rows, twenty isolated complete icons, ordered left to right then top to bottom. Match only the warm cute food painting style in the references: clean warm-brown medium outlines, simplified soft shading, appetizing bright colors, clear silhouettes that remain legible at 32px. Reference badges, plates behind plain ingredients, and brown background must NOT be copied. New sheet has genuinely transparent background. No badges, stamps, labels, text, shadows behind the whole sheet, scene, decorative extras, or character faces. Each icon is centered in its own equal cell with at least 15% empty padding on every side, no crossing or touching cells. Small cream dishes only where a bowl/plate is explicitly requested. Keep natural shape proportions. Each listed item appears exactly once in this exact order:\n1. small mandarin orange with a green leaf\n2. three tiny oval kumquats\n3. bumpy yellow yuzu citrus\n4. a small green grape bunch\n5. a plump black-purple blackberry\n6. three glossy red cranberries\n7. pink lychee fruit with one white peeled half\n8. tan longan fruit with one white peeled half\n9. a purple passion fruit half with golden seeded flesh\n10. orange papaya half with dark seeds\n11. green guava half with pink flesh\n12. red pomegranate half with ruby seeds\n13. yellow starfruit whole and one star slice\n14. red hairy rambutan with a white peeled fruit\n15. purple mangosteen cut to white segments\n16. green spiky durian half with yellow flesh\n17. avocado half with a brown pit\n18. two glossy reddish brown jujubes\n19. knobbly golden quince with a small leaf\n20. orange hallabong with distinctive raised top knob\nExactly20icons,5columns,4rows,evenly spaced,full transparent gutters. All objects fully visible.",
+  "promptSha256": "c62329c402d2dbe510dea9ad60c2545abbe1180fc9b371826dcc27fe7dc58254",
+  "references": [
+    "art-src/빅타민/수집/작업회차/20261018-먹거리와추억/원본/먹거리04_생성과도장.png",
+    "art-src/빅타민/수집/작업회차/20261018-먹거리와추억/원본/먹거리05_생성과도장.png"
+  ],
+  "transparent_background": true,
+  "nativeFilename": "exec-ab008947-058b-4114-a5db-97b558ff8c5f.png",
+  "archived": "원본/간식01_새과일.png",
+  "observedCellFoodIds": [
+    "mandarin",
+    "kumquat",
+    "yuzu",
+    "green-grape",
+    "blackberry",
+    "cranberry",
+    "lychee",
+    "longan",
+    "passion-fruit",
+    "papaya",
+    "guava",
+    "pomegranate",
+    "starfruit",
+    "rambutan",
+    "mangosteen",
+    "durian",
+    "avocado",
+    "jujube",
+    "quince",
+    "hallabong"
+  ],
+  "observation": "Generator observed twenty complete matching foods in5columns4rows; no independent expert/owner approval implied."
+}

@@ -64,7 +64,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) {
     await page.bringToFront(); await settlePanelLayout(page);
     if (surface === "preview") { await page.locator(".io-preview").click(); await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible(); }
     let { dialog, nav, sound } = await openSound(page);
-    await expect(nav.getByRole("tab")).toHaveText(["움직임", "장난", "교감", "프로필", "소리"]);
+    await expect(nav.getByRole("tab")).toHaveText(["프로필", "움직임", "장난", "교감", "소리"]);
     await beginAuditions(page);
     const preview = sound.getByRole("button", { name: "돌보기 소리 미리 듣기", exact: true });
     await preview.click(); await expect.poll(() => trace(page)).toEqual(["pet"]);
@@ -81,9 +81,9 @@ for (const surface of ["viewer", "studio", "preview"] as const) {
     expect(await trace(page)).toEqual(["pet", "discover"]);
     await sound.getByRole("switch", { name: "빅타민 움직임 소리 켜기/끄기", exact: true }).click();
     expect(await saved(page)).toMatchObject({ enabled: true, sound: false, soundVolume: 5, soundCare: true, soundMotion: false, soundKeepsakes: true });
-    mkdirSync(".scratch-pw/companion-107-settings", { recursive: true });
-    await sound.screenshot({ path: `.scratch-pw/companion-107-settings/audio-${surface}.png` });
-    await page.screenshot({ path: `.scratch-pw/companion-107-settings/viewport-audio-${surface}.png` });
+    mkdirSync(".scratch-pw/companion-109-settings", { recursive: true });
+    await sound.screenshot({ path: `.scratch-pw/companion-109-settings/audio-${surface}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-109-settings/viewport-audio-${surface}.png` });
     // Native sibling storage event exercises shared controls without forging
     // a browser event or invoking the model's setters from the test.
     if (surface === "viewer") {

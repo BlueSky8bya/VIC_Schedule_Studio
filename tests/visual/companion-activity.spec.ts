@@ -4,6 +4,8 @@ import { resolve } from "node:path";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
+import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
+import { COMPANION_RADIO_TRACKS } from "@/lib/ui/viewer-companion/radio-catalog";
 import { PREMIERE_STAGE_KEY, SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { describeTarget } from "@/lib/activity/labels";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
@@ -11,20 +13,21 @@ import { openCompanionHome } from "./helpers/companion-home";
 
 type Surface = "viewer" | "studio";
 type Event = { kind: string; target?: string | null; meta?: unknown; durMs?: number | null };
-type Capture = { events: Event[]; mutations: string[]; unexpected: string[]; errors: string[]; reads: string[] };
+type Capture = { events: Event[]; mutations: string[]; unexpected: string[]; errors: string[]; reads: string[]; projectile?: { phase: string; vx: number; vy: number; state: string } };
 const capture = new WeakMap<Page, Capture>();
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
 const targets = (page: Page) => capture.get(page)!.events.filter(event => event.kind === "ui.click").map(event => event.target);
 const count = (page: Page, target: string) => targets(page).filter(value => value === target).length;
-const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal"];
+const new109Targets = ["companion-radio-list#open", "companion-radio-list#close", "companion-radio-volume", "companion-collection-page#prev", "companion-collection-page#next", "companion-collection-inspect#food", "companion-profile-page#discover", "companion-throw"];
+const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets];
 const at = Date.parse("2026-06-10T03:00:00Z");
 const auditPrefix = process.env.VIC_ACTIVITY_AUDIT_PREFIX ?? ".scratch-pw/companion-activity";
 
 // A loopback alias and test-only WebDriver getter let the real client queue
 // run. EVERY mutation is fulfilled locally before navigation: no event,
 // presence, visit or server action can reach the application/production DB.
-test.use({ baseURL: "http://127.0.0.2:3100", viewport: { width: 1920, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
+test.use({ baseURL: process.env.VIC_ACTIVITY_BASE_URL ?? "http://127.0.0.2:3100", viewport: { width: 1920, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
 test.beforeEach(async ({ page }) => {
   mkdirSync(".scratch-pw", { recursive: true });
   const result: Capture = { events: [], mutations: [], unexpected: [], errors: [], reads: [] }; capture.set(page, result);
@@ -66,7 +69,7 @@ test.afterEach(async ({ page }, info) => {
 
 function mockedRead(name?: string): unknown {
   if (name === "getPublicPreviewAction") return samplePublicScheduleData;
-  if (name === "getActivityDayAction") return { ok: true, total: sampleTargets.length, visits: [{ key: "synthetic-companion-visit", account: "계정 #1", role: "developer", device: "desktop", startMs: at, endMs: at + 60000, items: sampleTargets.map((target, index) => ({ t: at + index * 5000, kind: "ui.click", label: "누름", source: "client", target, targetLabel: null, meta: null, durMs: null })) }] };
+  if (name === "getActivityDayAction") return { ok: true, total: sampleTargets.length, visits: [{ key: "synthetic-companion-visit", account: "계정 #1", role: "developer", device: "desktop", startMs: at, endMs: at + sampleTargets.length * 5000, items: sampleTargets.map((target, index) => ({ t: at + index * 5000, kind: "ui.click", label: "누름", source: "client", target, targetLabel: null, meta: null, durMs: null })) }] };
   if (name === "getActivityUsageAction") return { ok: true, days: 30, since: "2026-05-12", until: "2026-06-10", rows: sampleTargets.map((target, index) => ({ kind: "ui.click", label: "누름", target, roles: index ? { viewer: 1, anon: 1 } : { developer: 1 }, total: index ? 2 : 1, auto: false })) };
   if (name === "getDayVisitDetailAction") {
     const summary = { visitors: 0, sessions: 0, glances: 0, avgSeconds: 0, totalSeconds: 0, peakConcurrent: 0 };
@@ -303,6 +306,73 @@ for (const surface of ["viewer", "studio"] as const) {
     for (const target of ["settings-tab#companion", "companion-animal#cat", "companion-personality#sleepy", "companion-speed#lively", "companion-learning-reset"]) expect(count(page, target), target).toBe(1);
     expect(targets(page).filter(target => target?.startsWith("companion-") && !target.includes("#"))).toEqual(["companion-learning-reset"]);
   });
+
+  test(`109 ${surface}: native radio, range, food pages and throw emit fixed uses once`, async ({ page }) => {
+    test.setTimeout(60_000);
+    // This109 path does not install a clock or alter RNG, media, geometry,
+    // planner state or callbacks. All mutations still terminate at the local
+    // collector above; this is not a production DB/RLS test.
+    await setup(page, surface);
+    await page.getByRole("button", { name: "설정", exact: true }).click();
+    const dialog = page.getByRole("dialog", { name: "설정", exact: true });
+    await waitForOverlayEntrance(dialog);
+    await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
+    const panel = dialog.locator("#rhh-tab-companion-panel");
+    await panel.getByRole("tab", { name: "소리", exact: true }).click();
+    const radio = panel.locator(".rhh-companion-radio"), details = radio.locator("details"), summary = details.locator("summary");
+    await summary.focus(); await summary.press("Enter"); await expect(details).toHaveAttribute("open", "");
+    await summary.press("Enter"); await expect(details).not.toHaveAttribute("open");
+    const volume = radio.getByRole("slider", { name: "라디오 음량", exact: true });
+    const beforeVolume = Number(await volume.inputValue());
+    await volume.focus(); await volume.press("ArrowRight"); await volume.press("Tab");
+    await expect(volume).toHaveValue(String(beforeVolume + 5));
+
+    await panel.getByRole("tab", { name: "프로필", exact: true }).click();
+    const profile = panel.locator(".rhh-companion-profile"), profileTabs = profile.getByRole("tablist", { name: "빅타민 프로필", exact: true });
+    await profileTabs.getByRole("tab", { name: "함께 지내기", exact: true }).focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(profileTabs.getByRole("tab", { name: "도감", exact: true })).toHaveAttribute("aria-selected", "true");
+    const foodGrid = profile.locator(".rhh-food-grid"); await expect(foodGrid.locator("button")).toHaveCount(24);
+    await profile.getByRole("button", { name: "다음 간식", exact: true }).click();
+    await expect(foodGrid.locator("button").first()).toHaveAttribute("data-food-index", "24");
+    await foodGrid.locator("button").first().focus(); await page.keyboard.press("ArrowRight");
+    await expect(foodGrid.locator('[data-food-index="25"]')).toBeFocused();
+    await page.keyboard.press("Home"); await expect(foodGrid.locator('[data-food-index="0"]')).toBeFocused();
+    await page.keyboard.press("End");
+    const lastIndex = COMPANION_FOOD_KINDS.length - 1;
+    await expect(foodGrid.locator(`[data-food-index="${lastIndex}"]`)).toBeFocused();
+    await expect(foodGrid.locator("button")).toHaveCount(COMPANION_FOOD_KINDS.length % 24 || 24);
+    await profile.getByRole("button", { name: "이전 간식", exact: true }).click();
+    await flush(page, [{ target: "companion-radio-list#close" }, { target: "companion-radio-volume" }, { target: "companion-collection-page#prev" }]);
+    for (const target of ["companion-radio-list#open", "companion-radio-list#close", "companion-radio-volume", "companion-profile-page#discover", "companion-collection-page#next", "companion-collection-page#prev"]) expect(count(page, target), target).toBe(1);
+    expect(count(page, "companion-collection-inspect#food")).toBe(3);
+
+    await page.keyboard.press("Escape"); await expect(dialog).toHaveCount(0);
+    await expect(actor(page)).toBeVisible(); await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
+    const beforeDrag = count(page, "companion-drag"), beforeThrow = count(page, "companion-throw");
+    const box = await actor(page).boundingBox(); expect(box).not.toBeNull();
+    const start = { x: box!.x + box!.width / 2, y: box!.y + box!.height * .45 };
+    const direction = start.x > 1600 ? -1 : 1;
+    await page.mouse.move(start.x, start.y); await page.mouse.down();
+    await page.mouse.move(start.x + direction * 90, Math.max(180, start.y - 70), { steps: 8 });
+    await expect(pet(page)).toHaveAttribute("data-state", "held");
+    await page.mouse.move(start.x + direction * 220, Math.max(120, start.y - 170), { steps: 6 });
+    await page.mouse.up();
+    await expect(pet(page)).toHaveAttribute("data-throw-phase", /^(launch|rise|apex|fall|landing)$/);
+    capture.get(page)!.projectile = await pet(page).evaluate(node => {
+      const element = node as HTMLElement;
+      return { phase: element.dataset.throwPhase ?? "", vx: Number(element.dataset.throwVx), vy: Number(element.dataset.throwVy), state: element.dataset.state ?? "" };
+    });
+    await page.mouse.move(4, 4); await flush(page, [{ target: "companion-throw", n: beforeThrow + 1 }]);
+    expect(count(page, "companion-throw")).toBe(beforeThrow + 1); expect(count(page, "companion-drag")).toBe(beforeDrag);
+    const companionEvents = capture.get(page)!.events.filter(event => event.kind === "ui.click" && (event.target?.startsWith("companion-") || event.target?.startsWith("settings-companion-tab")));
+    expect(companionEvents.every(event => event.meta === null && event.durMs === null)).toBe(true);
+    const options = companionEvents.map(event => event.target?.split("#")[1]);
+    for (const id of [...COMPANION_FOOD_KINDS, ...COMPANION_RADIO_TRACKS.map(track => track.id)]) expect(options).not.toContain(id);
+    for (const field of ["favoriteFood", "foodId", "trackId", "life", "habits", "volume"]) expect(companionEvents.every(event => !event.meta || !Object.hasOwn(event.meta, field))).toBe(true);
+    expect(targets(page).filter(target => target?.startsWith("auto:.vc-"))).toEqual([]);
+    await page.screenshot({ path: `${auditPrefix}-109-${surface}-controls.png` });
+  });
 }
 
 test("premiere buttons record named actions and count only successful manual cheers", async ({ page }) => {
@@ -344,6 +414,7 @@ test("developer timeline and low-use list render companion features from synthet
   await expect(page.getByRole("button", { name: /행동 타임라인/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /적게 쓰인 기능/ })).toBeVisible();
   const usage = page.locator(".vcard").filter({ has: page.locator('[data-act="usage-open"]') });
+  const showAll = usage.locator('[data-act="usage-show-all"]'); if (await showAll.isVisible()) await showAll.click();
   for (const target of sampleTargets) await expect(usage.locator(".usage-list > li").filter({ hasText: describeTarget("ui.click", target).name })).toBeVisible();
   await page.locator('[data-act="activity-expand-all"]').click();
   const timeline = page.locator(".vcard").filter({ has: page.locator('[data-act="activity-open"]') });
@@ -355,4 +426,27 @@ test("developer timeline and low-use list render companion features from synthet
   expect(capture.get(page)!.reads).toEqual(expect.arrayContaining(["getDayVisitDetailAction", "getActivityDayAction", "getActivityUsageAction"]));
   await usage.scrollIntoViewIfNeeded();
   await page.screenshot({ path: `${auditPrefix}-timeline-and-usage.png` });
+});
+
+test("109 developer timeline and least-used list show the new fixed controls from synthetic reads", async ({ page }) => {
+  await setup(page, "studio");
+  await page.locator('[data-act="calendar-cell"][aria-label^="2026-06-10 "]').dblclick({ position: { x: 14, y: 20 } });
+  await page.locator('[data-act="open-day-visit"]').click();
+  const usage = page.locator(".vcard").filter({ has: page.locator('[data-act="usage-open"]') });
+  const timeline = page.locator(".vcard").filter({ has: page.locator('[data-act="activity-open"]') });
+  await expect(usage.getByRole("button", { name: /적게 쓰인 기능/ })).toBeVisible();
+  await expect(timeline.getByRole("button", { name: /행동 타임라인/ })).toBeVisible();
+  await usage.locator('[data-act="usage-show-all"]').click();
+  await page.locator('[data-act="activity-expand-all"]').click();
+  await timeline.locator(".act-lines > summary").click();
+  for (const target of new109Targets) {
+    const name = describeTarget("ui.click", target).name;
+    await expect(usage.locator(".usage-list > li").filter({ hasText: name })).toBeVisible();
+    await expect(timeline.getByText(name, { exact: true })).toBeVisible();
+  }
+  await expect(usage.locator(".usage-list")).not.toContainText("companion-");
+  await expect(timeline.locator(".act-gist-open")).toContainText("빅타민");
+  await expect(timeline.locator(".act-gist-open")).not.toContainText("둘러보기만");
+  expect(capture.get(page)!.reads).toEqual(expect.arrayContaining(["getActivityDayAction", "getActivityUsageAction"]));
+  await page.screenshot({ path: `${auditPrefix}-109-timeline-and-usage.png` });
 });

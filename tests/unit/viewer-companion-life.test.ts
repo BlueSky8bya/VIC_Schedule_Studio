@@ -10,7 +10,7 @@ const earned = (life = fresh(), event: CompanionLifeExperience = { kind: "petted
 describe("bounded device-local companion life", () => {
   it("draws one initial favorite and normalizes/resets without drawing again", () => {
     const rng = vi.fn(() => .7), life = createCompanionLife(rng);
-    expect(rng).toHaveBeenCalledTimes(1); expect(life.favoriteFood).toBe("sandwich");
+    expect(rng).toHaveBeenCalledTimes(1); expect(life.favoriteFood).toBe("salad");
     expect(normalizeCompanionLife(JSON.parse(JSON.stringify(life)))).toEqual(life);
     const reset = resetCompanionLife(earned(life), 3);
     expect(reset.seedFood).toBe(life.seedFood); expect(reset.favoriteFood).toBe(life.seedFood); expect(reset.generation).toBe(3);
@@ -42,13 +42,24 @@ describe("bounded device-local companion life", () => {
     expect(normalizeCompanionLife(JSON.parse(JSON.stringify(migrated)))).toEqual(migrated);
   });
 
-  it("adds the new24 foods without replacing an existing36-food seed or low earned favorite", () => {
+  it("adds later foods without replacing an existing36-food seed or low earned favorite", () => {
     const oldFoods = COMPANION_FOOD_KINDS.slice(0, 36), foodScores = Object.fromEntries(oldFoods.map(food => [food, food === "sweet-potato" ? .39 : .2])), familiarity = Object.fromEntries(oldFoods.map((food, index) => [food, index / 100]));
     const life = normalizeCompanionLife({ ...fresh(), seedFood: "dragon-fruit", favoriteFood: "sweet-potato", foodScores, familiarity });
     expect(life.seedFood).toBe("dragon-fruit"); expect(life.favoriteFood).toBe("sweet-potato");
     for (const food of oldFoods) { expect(life.foodScores[food]).toBe(foodScores[food]); expect(life.familiarity[food]).toBe(familiarity[food]); }
     for (const food of COMPANION_FOOD_KINDS.slice(36)) { expect(life.foodScores[food]).toBeLessThanOrEqual(.39); expect(life.familiarity[food]).toBe(0); }
     expect(normalizeCompanionLife(JSON.parse(JSON.stringify(life)))).toEqual(life);
+  });
+
+  it("expands a saved60-food life to180 without rerolling or replacing low earned tastes", () => {
+    const oldFoods = COMPANION_FOOD_KINDS.slice(0, 60);
+    const foodScores = Object.fromEntries(oldFoods.map(food => [food, food === "macaron" ? .31 : .2]));
+    const familiarity = Object.fromEntries(oldFoods.map((food, index) => [food, index / 100]));
+    const life = normalizeCompanionLife({ ...fresh(), seedFood: "rice-ball", favoriteFood: "macaron", foodScores, familiarity });
+    expect(life.seedFood).toBe("rice-ball"); expect(life.favoriteFood).toBe("macaron");
+    for (const food of oldFoods) { expect(life.foodScores[food]).toBe(foodScores[food]); expect(life.familiarity[food]).toBe(familiarity[food]); }
+    for (const food of COMPANION_FOOD_KINDS.slice(60)) { expect(life.foodScores[food]).toBeLessThanOrEqual(.31); expect(life.familiarity[food]).toBe(0); }
+    expect(Object.keys(life.foodScores)).toEqual([...COMPANION_FOOD_KINDS]);
   });
 
   it("diminishes repeated-food reward and recovers a food accident through active time", () => {

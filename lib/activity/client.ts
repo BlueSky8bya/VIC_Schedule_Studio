@@ -1,6 +1,7 @@
 "use client";
 
-import { foldDigits, isClientKind, type ClientKind } from "@/lib/activity/kinds";
+import { foldDigits, isClientKind, sanitizeTarget, type ClientKind } from "@/lib/activity/kinds";
+import { isCompanionActivityTarget } from "@/lib/activity/labels";
 import { skipAnalyticsClient } from "@/lib/analytics/guard";
 
 // 클라 행동 기록(0062) — 열람·시선처럼 서버 왕복이 없어 지금까지 전혀 안 보이던 것들을 남긴다.
@@ -131,6 +132,10 @@ function autoId(el: HTMLElement): string {
   return `auto:${el.tagName.toLowerCase()}`;
 }
 
+function isCompanionRange(el: HTMLElement): boolean {
+  return el.tagName === "INPUT" && el.getAttribute("type") === "range" && isCompanionActivityTarget(el.getAttribute("data-act"));
+}
+
 function wireClicks(): void {
   if (typeof document === "undefined") return;
   // capture 단계 — 핸들러가 stopPropagation을 해도 놓치지 않는다(드래그·오버레이가 흔히 쓴다).
@@ -149,6 +154,9 @@ function wireClicks(): void {
       if (el.matches(".event-heart[data-companion-hearted]:not([aria-pressed='true'])")) return;
       // 비활성 컨트롤은 '눌렀다'가 아니다.
       if (el.hasAttribute("disabled") || el.getAttribute("aria-disabled") === "true") return;
+      // A committed native change covers pointer and keyboard equally. Its
+      // following click must not count the same range edit a second time.
+      if (isCompanionRange(el)) return;
       const explicit = el.getAttribute("data-act");
       // 값을 고르는 컨트롤(세그먼트·칩·드롭다운 항목)은 **고른 값까지** id에 담는다 —
       // 하나로 뭉치면 "계절 배경 상태 고르기 54번"만 남아 켜기·흐리게·끄기 중 무엇이 안 쓰이는지
@@ -166,6 +174,12 @@ function wireClicks(): void {
     },
     true
   );
+  document.addEventListener("change", (event) => {
+    const el = event.target as HTMLElement | null;
+    if (!el || typeof el.getAttribute !== "function" || !isCompanionRange(el)) return;
+    if (el.hasAttribute("data-activity-manual") || el.hasAttribute("disabled") || el.getAttribute("aria-disabled") === "true") return;
+    logActivity("ui.click", { target: el.getAttribute("data-act") });
+  }, true);
 }
 
 /** 행동 1건 기록. 부수효과만 있고 아무것도 기다리지 않는다. */
@@ -175,13 +189,18 @@ export function logActivity(
 ): void {
   if (typeof window === "undefined") return;
   if (!isClientKind(kind)) return; // 서버 kind 사칭 차단(진실 로그 오염 방지)
+  const companion = kind === "ui.click" && isCompanionActivityTarget(opts.target ?? null);
+  const target = companion ? sanitizeTarget(opts.target) : opts.target ?? null;
+  // Reject unknown companion controls and strip accidental item/track/learned
+  // payloads before transport, in addition to the server's storage boundary.
+  if (companion && !target) return;
   wire();
   if (buffer.length >= MAX_BUFFER) buffer.shift(); // 가장 오래된 것부터 버린다
   buffer.push({
     kind,
-    target: opts.target ?? null,
-    meta: opts.meta ?? null,
-    durMs: typeof opts.durMs === "number" ? opts.durMs : null,
+    target,
+    meta: companion ? null : opts.meta ?? null,
+    durMs: !companion && typeof opts.durMs === "number" ? opts.durMs : null,
     visitKey: currentVisitKey()
   });
   if (firstAt === 0) firstAt = Date.now();

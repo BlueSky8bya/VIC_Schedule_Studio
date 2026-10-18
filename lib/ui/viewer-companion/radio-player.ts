@@ -13,6 +13,9 @@ let request = 0;
 let teardown: (() => void) | null = null;
 let pendingTrackId: string | null = null;
 export const getCompanionRadioSnapshot = () => snapshot;
+/** The next real toggle also stops an in-flight play request. Activity uses
+ * this same intent rather than mistaking a not-yet-playing request for play. */
+export const getCompanionRadioToggleIntent = (): "play" | "stop" => snapshot.playing || pendingTrackId !== null ? "stop" : "play";
 export function subscribeCompanionRadio(listener: () => void): () => void { listeners.add(listener); return () => { listeners.delete(listener); }; }
 function emit(next: CompanionRadioSnapshot) { snapshot = next; for (const listener of listeners) listener(); }
 function allowed() {
@@ -87,6 +90,6 @@ export function nextCompanionRadio(): Promise<boolean> {
   return play(choices[Math.floor(Math.random() * choices.length)]);
 }
 export function toggleCompanionRadio(): Promise<boolean> {
-  if (snapshot.playing || pendingTrackId !== null) { stopCompanionRadio(); return Promise.resolve(false); }
+  if (getCompanionRadioToggleIntent() === "stop") { stopCompanionRadio(); return Promise.resolve(false); }
   return nextCompanionRadio();
 }

@@ -632,6 +632,7 @@ export const ACT: Record<string, TargetLabel> = {
   "companion-profile-page": { name: "빅타민 프로필 보기", area: "설정", opts: { together: "함께 지내기", discover: "도감", dress: "옷장" } },
   "companion-collection-category": { name: "빅타민 도감 종류", area: "설정", opts: { food: "냠냠 도감", behavior: "재롱", moment: "특별한 순간" } },
   "companion-collection-inspect": { name: "빅타민 도감 항목 살펴보기", area: "설정", opts: { food: "냠냠 도감", behavior: "재롱", moment: "특별한 순간" } },
+  "companion-collection-page": { name: "빅타민 도감 넘기기", area: "설정", opts: { prev: "이전", next: "다음" } },
   "companion-accessory-select": { name: "빅타민 장신구 살펴보기", area: "설정" },
   "companion-gift-open": { name: "빅타민 선물 열기", area: "빅타민" },
   "companion-accessory-equip": { name: "빅타민 장신구", area: "설정", opts: { on: "착용하기", off: "벗기" } },
@@ -647,6 +648,7 @@ export const ACT: Record<string, TargetLabel> = {
   "companion-radio-react": { name: "빅타민 음악 반응", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-radio-mood": { name: "빅타민 라디오 분위기", area: "설정", opts: { lively: "신나게", graceful: "우아하게", calm: "잔잔하게" } },
   "companion-radio-track-toggle": { name: "빅타민 라디오 곡 고르기", area: "설정" },
+  "companion-radio-list": { name: "빅타민 라디오 곡 목록", area: "설정", opts: { open: "펴기", close: "접기" } },
   "companion-radio-play": { name: "빅타민 라디오 재생", area: "빅타민" },
   "companion-radio-next": { name: "빅타민 라디오 다음 곡", area: "설정" },
   "companion-radio-stop": { name: "빅타민 라디오 정지", area: "설정" },
@@ -677,6 +679,7 @@ export const ACT: Record<string, TargetLabel> = {
   "companion-food-clear": { name: "빅타민 남은 밥 치우기", area: "빅타민" },
   "companion-pet": { name: "빅타민 쓰다듬기", area: "빅타민" },
   "companion-drag": { name: "빅타민 집어 옮기기", area: "빅타민" },
+  "companion-throw": { name: "빅타민 던지기", area: "빅타민", hint: "직접 집어 던진 동작만 세요." },
   "companion-bonk": { name: "빅타민 딱밤", area: "빅타민" },
   "companion-rest": { name: "빅타민 낮잠 재우기", area: "빅타민" },
   "companion-find": { name: "숨은 빅타민 찾기", area: "빅타민" },
@@ -1038,18 +1041,15 @@ export function roleBreakdown(roles: Record<string, number>): string {
   return parts.join(" · ") || "기록 없음";
 }
 
-const COMPANION_COLLECTION_CONTROLS: ReadonlySet<string> = new Set([
-  "companion-profile-page", "companion-collection-category", "companion-collection-inspect",
-  "companion-accessory-select", "companion-gift-open", "companion-accessory-equip", "companion-gift-dismiss",
-  "companion-sound-enabled", "companion-sound-volume", "companion-sound-care", "companion-sound-motion",
-  "companion-sound-keepsakes", "companion-sound-preview", "companion-radio-enabled", "companion-radio-volume",
-  "companion-radio-react", "companion-radio-mood", "companion-radio-track-toggle", "companion-radio-play",
-  "companion-radio-next", "companion-radio-stop", "companion-wardrobe-preview"
-]);
-
-/** These controls count a fixed UI operation, never a personal collection. */
-export function isCompanionCollectionActivityTarget(target: string | null): boolean {
-  return target !== null && COMPANION_COLLECTION_CONTROLS.has(target.split("#", 1)[0]);
+/** This namespace counts explicit operations, never personal contents. Unknown
+ * controls still require registeredActivityTarget before they may be sent. */
+export function isCompanionActivityTarget(target: string | null): boolean {
+  if (target === null) return false;
+  // Older delegated clicks could infer an ACT entry from a class. These
+  // aliases have the same privacy boundary as the explicit control.
+  const control = target.startsWith("auto:") ? target.slice(5).replace(/^\./, "") : target;
+  const base = control.split("#", 1)[0];
+  return base.startsWith("companion-") || base === "settings-companion-tab";
 }
 
 /** Storage allowlist shares the reviewed UI dictionary. Unknown options collapse to their control. */
@@ -1063,6 +1063,7 @@ export function registeredActivityTarget(target: string): string | null {
   if (Object.hasOwn(OPTION_NAME, target)) return target;
   if (target.startsWith("auto:")) {
     const raw = target.slice(5);
+    if (isCompanionActivityTarget(target)) return registeredActivityTarget(raw.replace(/^\./, ""));
     if (Object.hasOwn(AUTO, raw) || Object.hasOwn(ACT, raw.replace(/^\./, ""))) return target;
     return null;
   }
@@ -1070,7 +1071,7 @@ export function registeredActivityTarget(target: string): string | null {
   if (separator > 0) {
     const base = target.slice(0, separator), option = target.slice(separator + 1);
     if (!Object.hasOwn(ACT, base)) return null;
-    if (isCompanionCollectionActivityTarget(base)) return Object.hasOwn(ACT[base].opts ?? {}, option) ? target : base;
+    if (isCompanionActivityTarget(base)) return Object.hasOwn(ACT[base].opts ?? {}, option) ? target : base;
     return Object.hasOwn(ACT[base].opts ?? {}, option) || Object.hasOwn(OPTION_NAME, option) ? target : base;
   }
   return null;

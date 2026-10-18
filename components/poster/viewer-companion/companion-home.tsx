@@ -97,6 +97,9 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
           <circle className="vc-radio-light" cx="31" cy="21" r="1" />
         </svg>
       </button>
+      {radioPlaying && preferences.enabled && !inactive && <span className="vc-radio-notes" aria-hidden="true">
+        {[0, 1, 2].map(note => <svg className="vc-radio-note" key={note} width="9" height="14" viewBox="0 0 12 18" focusable="false"><path d="M5 3v10c-1.1-.4-3.1.1-3.8 1.3-.7 1.3 0 2.4 1.5 2.4 1.7 0 3.7-1.3 3.7-3V6l4-1V1.8Z" /></svg>)}
+      </span>}
       </div>
       <span className="vc-home-light" aria-hidden="true" />
       <span className="vc-home-floor" aria-hidden="true" />

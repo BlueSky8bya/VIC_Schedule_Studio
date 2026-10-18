@@ -47,6 +47,20 @@ const saved = (page: Page) => page.evaluate(key => JSON.parse(localStorage.getIt
 async function assertRadioButtonGeometry(radio: Locator) {
   const buttons = radio.locator(".rhh-radio-moods > button, .rhh-radio-actions > button");
   await expect(buttons).toHaveCount(6);
+  const readLifecycle = () => buttons.first().evaluate(element => {
+    const rect = element.getBoundingClientRect(), style = getComputedStyle(element), ancestors = [];
+    for (let ancestor: Element | null = element; ancestor; ancestor = ancestor.parentElement) {
+      const computed = getComputedStyle(ancestor);
+      ancestors.push({ tag: ancestor.tagName, className: ancestor.className, transform: computed.transform, zoom: computed.zoom, animations: ancestor.getAnimations().map(animation => ({ state: animation.playState, currentTime: animation.currentTime, endTime: animation.effect?.getComputedTiming().endTime })) });
+    }
+    return { width: rect.width, height: rect.height, cssHeight: style.height, minHeight: style.minHeight, dpr: devicePixelRatio, physicalHeight: rect.height * devicePixelRatio, ancestors };
+  });
+  const before = await readLifecycle();
+  // Dialog/tab transforms can still be finishing after the native tab clicks.
+  // Measure the44px contract only once those real finite animations complete.
+  await settlePanelLayout(radio.page());
+  const after = await readLifecycle();
+  await test.info().attach("radio-geometry-lifecycle", { body: JSON.stringify({ before, after }, null, 2), contentType: "application/json" });
   for (const button of await buttons.all()) {
     await expect(button).toHaveCSS("min-height", "44px");
     const geometry = await button.evaluate(element => {
@@ -54,6 +68,7 @@ async function assertRadioButtonGeometry(radio: Locator) {
       return { label: element.textContent, width: rect.width, height: rect.height, radius: parseFloat(style.borderTopLeftRadius), mood: element.parentElement?.classList.contains("rhh-radio-moods") };
     });
     expect(geometry.height, `${geometry.label}: physical target height, including inherited studio zoom`).toBeGreaterThanOrEqual(44);
+    expect(geometry.width, `${geometry.label}: physical target width`).toBeGreaterThanOrEqual(44);
     if (geometry.mood) expect(geometry.radius, `${geometry.label}: pill radius`).toBeGreaterThanOrEqual(Math.min(geometry.width, geometry.height) / 2);
   }
 }
@@ -92,10 +107,10 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`${surface}
     await sibling.close(); await page.bringToFront();
     await expect(volume).toHaveValue("25"); selections.volume = 25;
   }
-  mkdirSync(".scratch-pw/companion-108-settings", { recursive: true });
-  await page.screenshot({ path: `.scratch-pw/companion-108-settings/radio-${surface}.png` });
+  mkdirSync(".scratch-pw/companion-109-settings", { recursive: true });
+  await page.screenshot({ path: `.scratch-pw/companion-109-settings/radio-${surface}.png` });
   const targetAttributes = await radio.locator("[data-act]").evaluateAll(nodes => nodes.map(node => [node.getAttribute("data-act"), node.getAttribute("data-act-opt")]));
-  expect(targetAttributes.every(([key, opt]) => key?.startsWith("companion-radio-") && (!opt || ["on", "off", "lively", "graceful", "calm"].includes(opt)))).toBe(true);
+  expect(targetAttributes.every(([key, opt]) => key?.startsWith("companion-radio-") && (!opt || ["on", "off", "open", "close", "lively", "graceful", "calm"].includes(opt)))).toBe(true);
   await page.reload();
   if (surface === "preview" && !await page.locator(".viewer-fullscreen").count()) await page.locator(".io-preview").click();
   ({ radio } = await openRadio(page));

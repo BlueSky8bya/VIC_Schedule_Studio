@@ -1,0 +1,37 @@
+{
+  "tool": "image_gen.imagegen",
+  "intent": "generate",
+  "sheet": 6,
+  "prompt": "Create ONE transparent game food icon atlas, exactly FIVE columns by FOUR rows, twenty isolated complete icons, ordered left to right then top to bottom. Match only the warm cute food painting style in the references: clean warm-brown medium outlines, simplified soft shading, appetizing bright colors, clear silhouettes that remain legible at 32px. Reference badges, plates behind plain ingredients, and brown background must NOT be copied. New sheet has genuinely transparent background. No badges, stamps, labels, text, shadows behind the whole sheet, scene, decorative extras, or character faces. Each icon is centered in its own equal cell with at least 15% empty padding on every side, no crossing or touching cells. Small cream dishes only where a bowl/plate is explicitly requested. Keep natural shape proportions. Each listed item appears exactly once in this exact order:\n1. golden Korean fish-shaped red bean pastry\n2. round golden Korean sweet pancake with one syrup-filled cut\n3. three small walnut-shaped Korean pastries\n4. glossy amber Korean flower-shaped honey cookie\n5. three small pastel Korean pressed tea cookies with stamped patterns\n6. three puffed Korean rice confections in white and pink\n7. three beige soybean-powder rice cake cubes\n8. three Korean crescent rice cakes in white green and pink\n9. three tiny round white and green Korean honey rice cakes\n10. small golden croissant waffle with a butter pat\n11. round pink mochi cut to white ice cream\n12. pastel pink and vanilla ice cream in a cone\n13. small strawberry and cream popsicle on a wooden stick\n14. small cream cup layered with fruit and cream\n15. small bowl of shaved ice with red beans and rice cakes\n16. three colorful fruit jelly candies\n17. small plain yogurt cup with blueberries\n18. small cream cheesecake wedge with a golden base\n19. small cocoa-dusted layered tiramisu square\n20. small brown chocolate bar with one broken square\nExactly20icons,5columns,4rows,evenly spaced,full transparent gutters. All objects fully visible.",
+  "promptSha256": "906c88bd99512cb51dd7082ae2fe86aac4d9a297f4851a641d3748007084838d",
+  "references": [
+    "art-src/빅타민/수집/작업회차/20261018-먹거리와추억/원본/먹거리04_생성과도장.png",
+    "art-src/빅타민/수집/작업회차/20261018-먹거리와추억/원본/먹거리05_생성과도장.png"
+  ],
+  "transparent_background": true,
+  "nativeFilename": "exec-1e96d4be-f367-40ca-9fb7-1213b71a160e.png",
+  "archived": "원본/간식06_달콤디저트.png",
+  "observedCellFoodIds": [
+    "bungeoppang",
+    "hotteok",
+    "hodu-gwaja",
+    "yakgwa",
+    "dasik",
+    "hangwa",
+    "injeolmi",
+    "songpyeon",
+    "honey-rice-cake",
+    "croffle",
+    "mochi-icecream",
+    "icecream-cone",
+    "popsicle",
+    "fruit-parfait",
+    "bingsu",
+    "jelly",
+    "yogurt",
+    "cheesecake",
+    "tiramisu",
+    "chocolate"
+  ],
+  "observation": "Generator observed twenty complete matching desserts in5columns4rows; no independent expert/owner approval implied."
+}

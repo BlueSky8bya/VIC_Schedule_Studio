@@ -15,7 +15,7 @@ const SETTINGS = [
 const ACTIONS = [
   "companion-home-open", "companion-home-close", "companion-home-fold", "companion-home-call",
   "companion-food-spawn", "companion-food-move", "companion-food-discard", "companion-food-clear",
-  "companion-pet", "companion-drag", "companion-bonk", "companion-rest",
+  "companion-pet", "companion-drag", "companion-throw", "companion-bonk", "companion-rest",
   "companion-find", "companion-extract", "companion-heart-clear", "companion-card-restore"
 ] as const;
 const COLLECTION = [
@@ -28,6 +28,8 @@ const COLLECTION = [
   ["companion-collection-inspect#food", "빅타민 도감 항목 살펴보기 · 냠냠 도감"],
   ["companion-collection-inspect#behavior", "빅타민 도감 항목 살펴보기 · 재롱"],
   ["companion-collection-inspect#moment", "빅타민 도감 항목 살펴보기 · 특별한 순간"],
+  ["companion-collection-page#prev", "빅타민 도감 넘기기 · 이전"],
+  ["companion-collection-page#next", "빅타민 도감 넘기기 · 다음"],
   ["companion-sound-enabled#on", "빅타민 효과음 · 켜기"],
   ["companion-sound-volume", "빅타민 음량"],
   ["companion-sound-care#off", "빅타민 돌보기 소리 · 끄기"],
@@ -39,6 +41,8 @@ const COLLECTION = [
   ["companion-radio-react#off", "빅타민 음악 반응 · 끄기"],
   ["companion-radio-mood#graceful", "빅타민 라디오 분위기 · 우아하게"],
   ["companion-radio-track-toggle", "빅타민 라디오 곡 고르기"],
+  ["companion-radio-list#open", "빅타민 라디오 곡 목록 · 펴기"],
+  ["companion-radio-list#close", "빅타민 라디오 곡 목록 · 접기"],
   ["companion-radio-play", "빅타민 라디오 재생"],
   ["companion-radio-next", "빅타민 라디오 다음 곡"],
   ["companion-radio-stop", "빅타민 라디오 정지"],
@@ -138,7 +142,7 @@ describe("빅타민 행동 기록 이름과 저장 경계", () => {
       expect(story).toContain(name);
     }
     expect(story).not.toContain("companion-");
-    expect(buildGist(items)).toBe("빅타민 설정 27번 사용 · 빅타민과 2번 상호작용");
+    expect(buildGist(items)).toBe("빅타민 설정 31번 사용 · 빅타민과 2번 상호작용");
   });
 
   it("신규 버튼은 실제 음식·행동·장신구·선물 ID와 미등록/전역 옵션을 저장하지 않는다", () => {
@@ -165,5 +169,23 @@ describe("빅타민 행동 기록 이름과 저장 경계", () => {
     expect(sanitizeTarget(`companion-${canary}`)).toBeNull();
     expect(sanitizeTarget(`auto:.${canary}`)).toBeNull();
     expect(sanitizeMeta({ title: canary, body: canary, foodId: canary, eventId: canary, x: 123, y: 456, nickname: canary })).toBeNull();
+  });
+
+  it("모든 빅타민 조작은 자기에게 등록된 선택지만 허용한다", () => {
+    for (const [base, control] of Object.entries(ACT).filter(([key]) => key.startsWith("companion-") || key === "settings-companion-tab")) {
+      for (const option of ["public", "spring", "food", "on", "curious", "apple", "radio-01", "__proto__"]) {
+        expect(sanitizeTarget(`${base}#${option}`), `${base} must not inherit an unrelated global option`).toBe(Object.hasOwn(control.opts ?? {}, option) ? `${base}#${option}` : base);
+      }
+    }
+  });
+
+  it("예전 자동 추정 빅타민 별칭도 같은 고정 키·허용 선택지로 접는다", () => {
+    for (const prefix of ["auto:", "auto:."]) {
+      expect(sanitizeTarget(`${prefix}companion-enabled`)).toBe("companion-enabled");
+      expect(sanitizeTarget(`${prefix}companion-enabled#off`)).toBe("companion-enabled#off");
+      expect(sanitizeTarget(`${prefix}companion-food-spawn#apple`)).toBe("companion-food-spawn");
+      expect(sanitizeTarget(`${prefix}companion-unregistered-sensitive@example.test`)).toBeNull();
+    }
+    expect(sanitizeTarget("auto:.month-nav-btn")).toBe("auto:.month-nav-btn");
   });
 });

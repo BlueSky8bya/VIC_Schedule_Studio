@@ -45,7 +45,9 @@ The product is a public broadcast schedule, owner/developer studio, teaser gate,
 | Verification gaps | [Open checks](docs/agent/verification/OPEN_CHECKS.md) |
 | Decision context | [Decision index](docs/agent/decisions/DECISION_INDEX.md), only relevant decisions |
 
-G-21: Planner checks boundary/roles/unlock/KST; builder preserves server checks; security reviews DTO/RLS/grant lifetime; UI reviews viewer clarity/studio practicality/readability/mobile; QA checks leakage/routes/rendered interactions. Independent reviews precede integration.
+G-21: Independent role/boundary/UX/QA reviews before integration; [roles](docs/agent/DEFINITION_OF_DONE.md#review-responsibilities).
+
+G-22: Feature/control changes always audit timeline and least-used features; [DoD](docs/agent/DEFINITION_OF_DONE.md#activity-contract).
 
 ## Communication
 

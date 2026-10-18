@@ -19,7 +19,7 @@ import {
   type ActivitySource
 } from "@/lib/activity/kinds";
 import { kstDayKey } from "@/lib/calendar/month";
-import { isCompanionCollectionActivityTarget } from "@/lib/activity/labels";
+import { isCompanionActivityTarget } from "@/lib/activity/labels";
 
 // KST 날짜(방문 기록과 같은 규칙) — 범위 조회·보존 청소의 기준. 계산은 단일 출처를 쓴다.
 const kstDayString = (): string => kstDayKey();
@@ -67,7 +67,8 @@ async function buildRow(input: ActivityInput): Promise<Row | null> {
   }
 
   const target = sanitizeTarget(input.target);
-  const collectionControl = source === "client" && input.kind === "ui.click" && isCompanionCollectionActivityTarget(target);
+  const companionControl = source === "client" && input.kind === "ui.click" && isCompanionActivityTarget(input.target ?? null);
+  if (companionControl && !target) return null;
   return {
     day: kstDayString(),
     visit_key: sanitizeVisitKey(input.visitKey),
@@ -80,9 +81,9 @@ async function buildRow(input: ActivityInput): Promise<Row | null> {
     target,
     // Even otherwise allowed metadata/durations must not encode discoveries,
     // ownership, gift contents or preferences for these fixed-count controls.
-    meta: collectionControl ? null : sanitizeMeta(input.meta),
+    meta: companionControl ? null : sanitizeMeta(input.meta),
     dur_ms:
-      !collectionControl && typeof input.durMs === "number" && Number.isFinite(input.durMs)
+      !companionControl && typeof input.durMs === "number" && Number.isFinite(input.durMs)
         ? Math.max(0, Math.round(input.durMs))
         : null,
     diag: isDiagKind(input.kind)

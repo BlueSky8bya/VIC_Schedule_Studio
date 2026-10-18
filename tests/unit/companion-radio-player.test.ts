@@ -41,10 +41,13 @@ it("cancels a late play success on hidden without publishing a dance or replayin
   doc.hidden = false; doc.dispatchEvent(new Event("visibilitychange")); expect(created[0].play).toHaveBeenCalledTimes(1);
 });
 it("a second radio click cancels pending playback even before a playing snapshot exists", async () => {
+  expect(radio.getCompanionRadioToggleIntent()).toBe("play");
   shouldWait = true; const pending = radio.toggleCompanionRadio(); await Promise.resolve(); await Promise.resolve();
   expect(playResolve).not.toBe(null); expect(radio.getCompanionRadioSnapshot().playing).toBe(false);
+  expect(radio.getCompanionRadioToggleIntent()).toBe("stop");
   expect(await radio.toggleCompanionRadio()).toBe(false); playResolve!(); expect(await pending).toBe(false);
   expect(radio.getCompanionRadioSnapshot().generation).toBe(0); expect(state.prefs).toHaveLength(0); expect(created[0].src).toBe("");
+  expect(radio.getCompanionRadioToggleIntent()).toBe("play");
 });
 it("stops immediately on master/creature/radio/mood changes and premiere entry", async () => {
   await radio.nextCompanionRadio(); state.volume = 0; window.dispatchEvent(new Event("vic:sound")); expect(radio.getCompanionRadioSnapshot().playing).toBe(false);

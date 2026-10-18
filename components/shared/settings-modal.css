@@ -1639,3 +1639,174 @@ html[data-reduce-motion] .rhh-sound-tile.playing::after {
     margin-inline: auto;
   }
 }
+
+/* 109: companion-only paper layers. The surrounding shared settings shell,
+   standard control behavior and world/preview animation budgets stay shared. */
+.rhh-companion-settings {
+  --companion-paper: #fff;
+  --companion-ground: #f0f3f7;
+  --companion-line: #d6dde6;
+  --companion-ink: #263246;
+  --companion-soft: #536079;
+  --companion-peach: #fff0e5;
+  --companion-mint: #eaf5ef;
+  --companion-lilac: #f1edfb;
+  --companion-blue: #eaf2fd;
+  --companion-accent: #3d6191;
+  --companion-accent-fill: #e2edfc;
+  container: companion-settings / inline-size;
+  display: grid;
+  gap: var(--space-4);
+  min-width: 0;
+  color: var(--companion-ink);
+  font-size: var(--text-body, 13.5px);
+  line-height: 1.6;
+}
+html[data-theme="dark"] .rhh-companion-settings {
+  --companion-paper: #303845;
+  --companion-ground: #222934;
+  --companion-line: #566173;
+  --companion-ink: #f2f4f8;
+  --companion-soft: #c0cbdd;
+  --companion-peach: #493b34;
+  --companion-mint: #2e443e;
+  --companion-lilac: #3d3750;
+  --companion-blue: #303f56;
+  --companion-accent: #b7d4ff;
+  --companion-accent-fill: #344d70;
+}
+.vic-settings .rhh-companion-settings .rhh-group-card {
+  border: 1px solid var(--companion-line);
+  border-radius: var(--r-xl);
+  background: var(--companion-paper);
+  padding-inline: var(--space-4);
+  box-shadow: var(--elev-1);
+}
+.vic-settings .rhh-companion-settings .role-help-haptics { min-height: 64px; gap: var(--space-3); border-color: var(--companion-line); }
+.vic-settings .rhh-companion-settings .rhh-label { color: var(--companion-ink); font-size: var(--text-ui, 15px); }
+.vic-settings .rhh-companion-settings .rhh-ico { width: 30px; height: 30px; border-radius: var(--r-sm); box-shadow: inset 0 1px 0 rgb(255 255 255 / 22%); }
+.vic-settings .rhh-companion-settings .rhh-companion-master { background: var(--companion-mint); }
+html[data-theme="dark"] .vic-settings .rhh-companion-settings .rhh-group-card { border-color: var(--companion-line); background: var(--companion-paper); }
+html[data-theme="dark"] .vic-settings .rhh-companion-settings .rhh-companion-master { background: var(--companion-mint); }
+html[data-theme="dark"] .vic-settings .rhh-companion-settings .role-help-haptics { border-color: var(--companion-line); }
+.rhh-companion-master-copy { display: grid; gap: 1px; }
+.rhh-companion-master-copy > strong { font-size: var(--text-title, 18px); font-weight: 700; }
+.rhh-companion-master-copy > span { color: var(--companion-soft); font-size: var(--text-body, 13.5px); font-weight: 400; }
+.rhh-companion-settings > [role="tabpanel"]:not([hidden]) { display: grid; gap: var(--space-4); min-width: 0; }
+.rhh-companion-settings .rhh-group-foot { color: var(--companion-soft); font-size: var(--text-body, 13.5px); }
+.rhh-companion-settings .rhh-companion-card-title { margin: 0; padding-block: 14px 4px; color: var(--companion-soft); font-size: var(--text-body, 13.5px); font-weight: 600; }
+.rhh-companion-settings .rhh-profile-controls { margin-top: 0; }
+.vic-settings .rhh-companion-settings .rhh-link {
+  justify-content: center;
+  gap: 6px;
+  min-width: 44px;
+  min-height: 44px;
+  border-color: var(--companion-line);
+  border-radius: var(--r-md);
+  background: var(--companion-paper);
+  color: var(--companion-ink);
+  box-shadow: var(--elev-1);
+  cursor: pointer;
+  transition: transform var(--dur-2) var(--spring-smooth), box-shadow var(--dur-2) var(--ease), background var(--dur-2) var(--ease);
+}
+.vic-settings .rhh-companion-settings .rhh-link:hover:not(:disabled) { background: var(--companion-blue); box-shadow: var(--elev-2); }
+.vic-settings .rhh-companion-settings .rhh-link:active:not(:disabled) { transform: scale(var(--press-scale)); box-shadow: var(--elev-1); }
+.vic-settings .rhh-companion-settings .rhh-link:disabled { opacity: .48; cursor: default; box-shadow: none; }
+.vic-settings .rhh-companion-settings .rhh-companion-primary { border-color: var(--companion-accent); background: var(--companion-accent); color: var(--companion-paper); }
+.vic-settings .rhh-companion-settings .rhh-companion-primary:hover:not(:disabled) { background: var(--companion-accent); }
+.vic-settings .rhh-companion-settings :is(button, summary, input):focus-visible { outline: 2px solid var(--companion-accent); outline-offset: 3px; }
+/* The switch keeps its familiar24px track inside a real44px button. */
+.vic-settings .rhh-companion-settings .rhh-switch { height: 44px; min-height: 44px; background: transparent; }
+html[data-theme="dark"] .vic-settings .rhh-companion-settings .rhh-switch,
+html[data-theme="dark"] .vic-settings .rhh-companion-settings .rhh-switch.on { background: transparent; box-shadow: none; }
+.vic-settings .rhh-companion-settings .rhh-switch::before { position: absolute; inset: 10px 0; border-radius: inherit; background: var(--companion-line); transition: background var(--dur-2) var(--ease); content: ""; }
+.vic-settings .rhh-companion-settings .rhh-switch.on::before { background: var(--status-success, #53a870); }
+.vic-settings .rhh-companion-settings .rhh-knob { top: 12px; }
+.rhh-companion-settings .rhh-volume input[type="range"] { height: 44px; }
+.vic-settings .rhh-companion-settings .rhh-seg { min-width: 0; padding: 4px; border: 1px solid var(--companion-line); border-radius: var(--r-lg); background: var(--companion-ground); }
+.vic-settings .rhh-companion-settings .rhh-seg button { display: flex; align-items: center; justify-content: center; gap: 6px; min-width: 44px; min-height: 44px; border-radius: var(--r-md); padding: 7px 10px; color: var(--companion-soft); font-size: var(--text-body, 13.5px); font-weight: 600; white-space: normal; }
+.vic-settings .rhh-companion-settings .rhh-seg button.on { color: var(--companion-ink); }
+.vic-settings .rhh-companion-settings .rhh-seg-thumb { inset-block: 4px; left: 4px; width: calc((100% - 8px) / var(--n, 3)); border-radius: var(--r-md); background: var(--companion-paper); box-shadow: var(--elev-1); }
+.rhh-companion-settings .rhh-companion-nav { width: 100%; }
+.rhh-companion-nav button > span, .rhh-profile-nav button > span:not(.vc-collection-art) { display: inline-flex; flex: none; }
+.rhh-companion-settings .rhh-profile-playful { padding: var(--space-4); border-color: var(--companion-line); border-radius: var(--r-xl); background: var(--companion-ground); color: var(--companion-ink); box-shadow: inset 0 1px 0 rgb(255 255 255 / 35%); }
+.rhh-companion-settings .rhh-profile-playful::before { background: radial-gradient(260px circle at var(--profile-spot-x, 50%) var(--profile-spot-y, 50%), var(--companion-blue), transparent 80%); }
+.rhh-companion-settings .rhh-profile-nav { margin-bottom: var(--space-4); }
+.rhh-companion-settings .rhh-profile-top { gap: var(--space-3); border-radius: var(--r-lg); background: var(--companion-paper); padding: var(--space-4); box-shadow: var(--elev-1); }
+.rhh-companion-settings .rhh-profile-mark { width: 44px; height: 44px; border: 0; border-radius: var(--r-md); background: var(--companion-lilac); color: var(--companion-accent); }
+.rhh-companion-settings .rhh-profile-meta, .rhh-companion-settings .rhh-trait-favorite-copy > span { color: var(--companion-soft); }
+.rhh-companion-settings .rhh-trait-favorite { gap: 8px; border-left: 0; border-radius: var(--r-md); background: var(--companion-peach); padding: 8px 10px; }
+.rhh-companion-settings .rhh-profile-action-grid { gap: var(--space-3); margin-block: var(--space-4); }
+.rhh-companion-settings .rhh-profile-action { border: 1px solid var(--companion-line); border-radius: var(--r-lg); background: var(--companion-paper); padding: var(--space-4); box-shadow: var(--elev-1); transition: transform var(--dur-spring-smooth) var(--spring-smooth), box-shadow var(--dur-2) var(--ease); }
+.rhh-companion-settings .rhh-profile-action:hover { border-color: var(--companion-line); background: var(--companion-paper); transform: translateY(-2px); box-shadow: var(--elev-2); }
+.rhh-companion-settings .rhh-profile-action h4 { gap: 10px; font-weight: 700; }
+.rhh-companion-settings .rhh-profile-action h4 > span { display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--r-md); background: var(--companion-peach); color: var(--companion-ink); }
+.rhh-companion-settings .rhh-profile-action[data-tone="1"] h4 > span { background: var(--companion-mint); }
+.rhh-companion-settings .rhh-profile-action[data-tone="2"] h4 > span { background: var(--companion-lilac); }
+.rhh-companion-settings .rhh-profile-action[data-tone="3"] h4 > span { background: var(--companion-blue); }
+.rhh-companion-settings .rhh-profile-action .rhh-profile-try { display: block; margin-top: 12px; color: var(--companion-soft); }
+.rhh-companion-settings .rhh-profile-try > span { display: inline; margin-right: 6px; color: var(--companion-accent); }
+.rhh-companion-settings .rhh-profile-habits { border: 1px solid var(--companion-line); border-radius: var(--r-lg); background: var(--companion-paper); padding: var(--space-4); }
+.rhh-companion-settings .rhh-profile-learned { gap: 10px; padding-left: 1.2em; }
+.rhh-companion-settings .rhh-profile-learned li::marker { color: var(--companion-accent); }
+.rhh-companion-settings :is(.rhh-habit-empty, .rhh-habit-paused, .rhh-profile-caption, .rhh-trait-note, .rhh-trait-reset-note) { color: var(--companion-soft); }
+.rhh-companion-settings .rhh-trait-reason { grid-template-columns: minmax(0, 1fr); gap: 4px; border-top: 0; border-radius: var(--r-md); background: var(--companion-lilac); padding: var(--space-3); }
+.rhh-companion-settings .rhh-trait-reason > span:first-child { color: var(--companion-soft); }
+.rhh-companion-settings .rhh-habit-actions { border-color: var(--companion-line); }
+.rhh-companion-settings .rhh-collection-heading { gap: var(--space-2); margin-bottom: var(--space-3); }
+.rhh-companion-settings .rhh-collection-heading > .vc-collection-art { width: 44px; height: 44px; }
+.rhh-companion-settings .rhh-collection-heading h3 { font-size: var(--text-title, 18px); font-weight: 700; }
+.rhh-companion-settings .rhh-collection-switch { gap: var(--space-2); }
+.rhh-companion-settings .rhh-collection-switch > button { min-height: 44px; border-color: var(--companion-line); border-radius: var(--r-md); background: var(--companion-paper); color: var(--companion-ink); box-shadow: var(--elev-1); }
+.rhh-companion-settings .rhh-collection-switch > button[aria-pressed="true"] { border-color: var(--companion-accent); background: var(--companion-accent-fill); }
+.rhh-companion-settings .rhh-collection-switch > button > span { color: var(--companion-soft); }
+.rhh-companion-settings .rhh-collection-detail { gap: 6px; border: 1px solid var(--companion-line); border-radius: var(--r-lg); background: var(--companion-paper); padding: var(--space-3) var(--space-4); box-shadow: var(--elev-2); }
+.rhh-companion-settings .rhh-collection-detail > strong { font-size: var(--text-title, 18px); }
+.rhh-companion-settings :is(.rhh-collection-detail > span, .rhh-collection-detail p, .rhh-collection-state, .rhh-collection-rarity) { color: var(--companion-soft); }
+.rhh-companion-settings .rhh-collection-pages { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-3); }
+.rhh-companion-settings .rhh-collection-pages > span { color: var(--companion-ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rhh-companion-settings .rhh-collection-pages > span > span { color: var(--companion-soft); }
+.rhh-companion-settings .rhh-collection-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.rhh-companion-settings .rhh-collection-tile { min-height: 128px; border-color: var(--companion-line); border-radius: var(--r-lg); background: var(--companion-paper); padding: 12px 8px; color: var(--companion-ink); box-shadow: var(--elev-1); }
+.rhh-companion-settings .rhh-collection-tile:not([data-found]) { background: color-mix(in srgb, var(--companion-paper) 55%, var(--companion-ground)); }
+.rhh-companion-settings .rhh-collection-tile:hover { background: var(--companion-blue); box-shadow: var(--elev-2); }
+.rhh-companion-settings .rhh-collection-tile[aria-pressed="true"] { border-color: var(--companion-accent); background: var(--companion-accent-fill); box-shadow: inset 0 0 0 1px var(--companion-accent), var(--elev-1); }
+.rhh-companion-settings .rhh-collection-tile > .vc-collection-art { width: 64px; height: 64px; }
+.rhh-companion-settings .rhh-collection-tile > .rhh-collection-stamp { width: 24px; height: 24px; }
+.rhh-companion-settings .rhh-collection-tile > span:not(.vc-collection-art) { font-weight: 600; }
+.rhh-companion-settings :is(.rhh-accessory-grid, .rhh-behavior-grid) { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.rhh-companion-settings .rhh-wardrobe-detail { grid-template-columns: 180px minmax(0, 1fr); gap: var(--space-4); padding: var(--space-4); }
+.rhh-companion-settings .rhh-wardrobe-preview-wrap { padding-top: 0; }
+.rhh-companion-settings .rhh-wardrobe-preview { width: 160px; height: 160px; }
+.rhh-companion-settings .rhh-wardrobe-preview::before { position: absolute; inset: 10% 0 0; border-radius: 50%; background: radial-gradient(ellipse at 50% 70%, var(--companion-peach) 0 45%, transparent 70%); pointer-events: none; content: ""; }
+.rhh-companion-settings .rhh-wardrobe-detail-copy { gap: var(--space-2); }
+.rhh-companion-settings .rhh-wardrobe-detail-copy > strong { font-size: var(--text-title, 18px); font-weight: 700; }
+.rhh-companion-settings .rhh-wardrobe-status { color: var(--companion-soft); }
+.rhh-companion-settings .rhh-accessory-grid .rhh-collection-tile { scroll-margin-block-start: 280px; }
+.rhh-companion-settings .rhh-gift-arrival { border-color: var(--companion-line); background: var(--companion-peach); padding: var(--space-4); }
+.rhh-companion-settings .rhh-radio-now { margin-block: var(--space-2); border-radius: var(--r-md); background: var(--companion-blue); padding: var(--space-3); }
+.rhh-companion-settings .rhh-radio-playlist { border-color: var(--companion-line); }
+.rhh-companion-settings .rhh-radio-playlist > summary { color: var(--companion-ink); font-weight: 600; }
+.rhh-companion-settings .rhh-radio-playlist li { border-color: var(--companion-line); }
+.rhh-companion-settings .rhh-radio-playlist label > span > span { color: var(--companion-soft); }
+.vic-settings .rhh-companion-settings .rhh-radio-moods > button { border-radius: var(--r-pill); }
+.vic-settings .rhh-companion-settings .rhh-radio-moods > button[aria-pressed="true"] { border-color: var(--companion-accent); background: var(--companion-accent-fill); }
+@container companion-settings (max-width: 480px) {
+  .rhh-companion-settings .rhh-companion-nav button { flex-direction: column; gap: 2px; padding-inline: 4px; }
+  .rhh-companion-settings .rhh-profile-top { grid-template-columns: minmax(0, 1fr); }
+  .rhh-companion-settings .rhh-trait-favorite { width: fit-content; }
+  .rhh-companion-settings .rhh-collection-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .rhh-companion-settings .rhh-wardrobe-detail { grid-template-columns: 136px minmax(0, 1fr); gap: var(--space-3); padding: var(--space-3); }
+  .rhh-companion-settings .rhh-wardrobe-preview { width: 132px; height: 132px; }
+}
+@container rhh-habits (max-width: 360px) {
+  .rhh-companion-settings .rhh-profile-nav button { flex-direction: column; gap: 2px; padding-inline: 3px; }
+  .rhh-companion-settings .rhh-profile-action-grid { grid-template-columns: minmax(0, 1fr); }
+  .rhh-companion-settings .rhh-collection-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .rhh-companion-settings .rhh-wardrobe-detail { grid-template-columns: 112px minmax(0, 1fr); gap: var(--space-2); }
+  .rhh-companion-settings .rhh-wardrobe-preview { width: 112px; height: 112px; }
+  .rhh-companion-settings .rhh-wardrobe-status { font-size: var(--text-body, 13.5px); }
+}
+html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companion-settings :is(.rhh-link, .rhh-profile-action, .rhh-collection-tile, .rhh-collection-switch > button) { transform: none; transition: none; }
+html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companion-settings :is(.rhh-seg-thumb, .rhh-switch, .rhh-knob),
+html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companion-settings .rhh-switch::before { transition: none; }

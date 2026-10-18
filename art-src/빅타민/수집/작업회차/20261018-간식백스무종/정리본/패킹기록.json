@@ -1,0 +1,4822 @@
+{
+  "version": 1,
+  "method": "Complete alpha-gap source crops, or complete alpha>0 connected components where rectangular bounds overlap; trim only alpha0; preserve all nontransparent RGBA exactly once before isotropic Lanczos resize; center in transparent cells; WebP quality82 with alphaQuality100;80px cells,64px content. Alpha>16 is segmentation/measurement only, never a pixel deletion rule.",
+  "sources": [
+    {
+      "path": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sha256": "acb97878197d52df5f0789268aef1ada0b3d69768a2eb963336bb8058bbe131e",
+      "width": 1402,
+      "height": 1122,
+      "columns": 5,
+      "rows": 4,
+      "transparentPixels": 719513,
+      "visiblePixels": 782142,
+      "sourceBytesUnchanged": true
+    },
+    {
+      "path": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sha256": "facb811c43f0bf8744af998e6d7630ca5c18457fd4d0b00e2766b22a0056a47a",
+      "width": 1402,
+      "height": 1122,
+      "columns": 5,
+      "rows": 4,
+      "transparentPixels": 756530,
+      "visiblePixels": 734236,
+      "sourceBytesUnchanged": true
+    },
+    {
+      "path": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sha256": "722203703194d44286deb4483b86ce08efb34f2ab27ea4a2aa859639e63d4035",
+      "width": 1536,
+      "height": 1024,
+      "columns": 5,
+      "rows": 4,
+      "transparentPixels": 762526,
+      "visiblePixels": 742838,
+      "sourceBytesUnchanged": true
+    },
+    {
+      "path": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sha256": "8f5b6ab75e6c6a7d12fa922c49097d3456b2691f8626d35f53fe33bdb89d295e",
+      "width": 1536,
+      "height": 1024,
+      "columns": 5,
+      "rows": 4,
+      "transparentPixels": 659784,
+      "visiblePixels": 846973,
+      "sourceBytesUnchanged": true
+    },
+    {
+      "path": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sha256": "783a2bb4c182f8e5c19d55353f563e67321d118b8bd357b141cd51f5ab3fc11c",
+      "width": 1536,
+      "height": 1024,
+      "columns": 5,
+      "rows": 4,
+      "transparentPixels": 685960,
+      "visiblePixels": 816853,
+      "sourceBytesUnchanged": true
+    },
+    {
+      "path": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sha256": "66b1827d65ff6de69d4d2b380d3ff0e63198a5ed9424682cdc1e1cbb3e42b7c3",
+      "width": 1536,
+      "height": 1024,
+      "columns": 5,
+      "rows": 4,
+      "transparentPixels": 795889,
+      "visiblePixels": 710875,
+      "sourceBytesUnchanged": true,
+      "cutoutMethod": "Complete alpha>16 component seeds; alpha>0 wisps assigned by bounded multi-source flood/nearest source group; every nontransparent RGBA pixel copied exactly once, none deleted/edited.",
+      "sourceNontransparentPixels": 776975,
+      "copiedNontransparentPixels": 776975,
+      "components": 20
+    }
+  ],
+  "atlases": {
+    "food-109-1": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 400,
+      "height": 320,
+      "cell": 80,
+      "columns": 5,
+      "rows": 4,
+      "sha256": "4bc6af73abb568125f38fb419605fa500d5bd57304bcc2648aa10ddd7fa3c648"
+    },
+    "food-109-2": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 400,
+      "height": 320,
+      "cell": 80,
+      "columns": 5,
+      "rows": 4,
+      "sha256": "302e0885d0dc56a41c03f0adb98f591b72e28265b050246b2713399b76d48396"
+    },
+    "food-109-3": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 400,
+      "height": 320,
+      "cell": 80,
+      "columns": 5,
+      "rows": 4,
+      "sha256": "3c3677ef6270838957446391138bb795e3885666d3d24b2488a95cd092512bfc"
+    },
+    "food-109-4": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 400,
+      "height": 320,
+      "cell": 80,
+      "columns": 5,
+      "rows": 4,
+      "sha256": "17dd34da8122106b4f480519d756d93fd39cb6e93ccbcccbe6a2fc00fc8cbac0"
+    },
+    "food-109-5": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 400,
+      "height": 320,
+      "cell": 80,
+      "columns": 5,
+      "rows": 4,
+      "sha256": "fb7727adc248414d35c5356c1993ff7a1f5f12fe529aa80c7feda29a37247bcd"
+    },
+    "food-109-6": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 400,
+      "height": 320,
+      "cell": 80,
+      "columns": 5,
+      "rows": 4,
+      "sha256": "2a15dcc793b527e5fedc79bb7a9f95b67fa7f2aa05feb8067465634c3940d2f9"
+    }
+  },
+  "cells": [
+    {
+      "id": "mandarin",
+      "atlas": "food-109-1",
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 15,
+        "width": 61,
+        "height": 50
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 0,
+      "sourceBox": {
+        "left": 0,
+        "top": 0,
+        "width": 311,
+        "height": 313
+      },
+      "alphaTrim": {
+        "x": 31,
+        "y": 37,
+        "width": 277,
+        "height": 276
+      },
+      "resized": {
+        "width": 64,
+        "height": 64
+      },
+      "scale": 0.231047,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "92b266d04576d310289232ca717ce57c947b7b7b25e82ccbee8971058eb962dc"
+    },
+    {
+      "id": "kumquat",
+      "atlas": "food-109-1",
+      "index": 1,
+      "x": 80,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 11,
+        "y": 21,
+        "width": 58,
+        "height": 48
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 1,
+      "sourceBox": {
+        "left": 311,
+        "top": 0,
+        "width": 263,
+        "height": 293
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 27,
+        "width": 251,
+        "height": 254
+      },
+      "resized": {
+        "width": 63,
+        "height": 64
+      },
+      "scale": 0.251969,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "b9e3132a821e93a3a255dd2905579ef9ee78b39e8fed18cdc3102a19283f73aa"
+    },
+    {
+      "id": "yuzu",
+      "atlas": "food-109-1",
+      "index": 2,
+      "x": 160,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 12,
+        "y": 15,
+        "width": 56,
+        "height": 52
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 2,
+      "sourceBox": {
+        "left": 574,
+        "top": 0,
+        "width": 282,
+        "height": 309
+      },
+      "alphaTrim": {
+        "x": 15,
+        "y": 27,
+        "width": 253,
+        "height": 282
+      },
+      "resized": {
+        "width": 57,
+        "height": 64
+      },
+      "scale": 0.22695,
+      "padding": {
+        "left": 11,
+        "top": 8
+      },
+      "rgbaSha256": "520722ae164e36813a1a40d1349bd216959b6627b2001162b6ab4a0114d0871f"
+    },
+    {
+      "id": "green-grape",
+      "atlas": "food-109-1",
+      "index": 3,
+      "x": 240,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 13,
+        "y": 9,
+        "width": 54,
+        "height": 62
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 3,
+      "sourceBox": {
+        "left": 856,
+        "top": 0,
+        "width": 271,
+        "height": 313
+      },
+      "alphaTrim": {
+        "x": 11,
+        "y": 33,
+        "width": 237,
+        "height": 272
+      },
+      "resized": {
+        "width": 56,
+        "height": 64
+      },
+      "scale": 0.235294,
+      "padding": {
+        "left": 12,
+        "top": 8
+      },
+      "rgbaSha256": "785f06abf53be027f28d1102b1b1ed12bcc4f4b076698c50d9803a19b87435f1"
+    },
+    {
+      "id": "blackberry",
+      "atlas": "food-109-1",
+      "index": 4,
+      "x": 320,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 12,
+        "y": 10,
+        "width": 55,
+        "height": 62
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 4,
+      "sourceBox": {
+        "left": 1127,
+        "top": 0,
+        "width": 275,
+        "height": 301
+      },
+      "alphaTrim": {
+        "x": 10,
+        "y": 45,
+        "width": 245,
+        "height": 244
+      },
+      "resized": {
+        "width": 64,
+        "height": 64
+      },
+      "scale": 0.261224,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "63f46f89a2c4b12e7e25fae581408e06a1bcdeba121549cd90303831f7fdff67"
+    },
+    {
+      "id": "cranberry",
+      "atlas": "food-109-1",
+      "index": 5,
+      "x": 0,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 16,
+        "y": 16,
+        "width": 55,
+        "height": 46
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 5,
+      "sourceBox": {
+        "left": 0,
+        "top": 313,
+        "width": 285,
+        "height": 244
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 23,
+        "width": 275,
+        "height": 217
+      },
+      "resized": {
+        "width": 64,
+        "height": 51
+      },
+      "scale": 0.232727,
+      "padding": {
+        "left": 8,
+        "top": 14
+      },
+      "rgbaSha256": "5cf8e1856df52ba9b2e35217d05d6a42d9bd40b70513f6d0f8b0134aba783fd4"
+    },
+    {
+      "id": "lychee",
+      "atlas": "food-109-1",
+      "index": 6,
+      "x": 80,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 15,
+        "width": 61,
+        "height": 55
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 6,
+      "sourceBox": {
+        "left": 285,
+        "top": 293,
+        "width": 285,
+        "height": 258
+      },
+      "alphaTrim": {
+        "x": 10,
+        "y": 0,
+        "width": 270,
+        "height": 255
+      },
+      "resized": {
+        "width": 64,
+        "height": 60
+      },
+      "scale": 0.237037,
+      "padding": {
+        "left": 8,
+        "top": 10
+      },
+      "rgbaSha256": "becdcfa3a692fdd64005832cebbe4e6c796a479ba062529596718f79989d17b0"
+    },
+    {
+      "id": "longan",
+      "atlas": "food-109-1",
+      "index": 7,
+      "x": 160,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 15,
+        "width": 62,
+        "height": 52
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 7,
+      "sourceBox": {
+        "left": 570,
+        "top": 309,
+        "width": 282,
+        "height": 249
+      },
+      "alphaTrim": {
+        "x": 9,
+        "y": 0,
+        "width": 260,
+        "height": 248
+      },
+      "resized": {
+        "width": 64,
+        "height": 61
+      },
+      "scale": 0.246154,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "21fa6d0aca0e82014e4c8c1c8fe0076a63edf2cbb17e6c78c416caa174dcc7a9"
+    },
+    {
+      "id": "passion-fruit",
+      "atlas": "food-109-1",
+      "index": 8,
+      "x": 240,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 10,
+        "width": 63,
+        "height": 58
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 8,
+      "sourceBox": {
+        "left": 852,
+        "top": 313,
+        "width": 267,
+        "height": 245
+      },
+      "alphaTrim": {
+        "x": 14,
+        "y": 15,
+        "width": 244,
+        "height": 230
+      },
+      "resized": {
+        "width": 64,
+        "height": 60
+      },
+      "scale": 0.262295,
+      "padding": {
+        "left": 8,
+        "top": 10
+      },
+      "rgbaSha256": "f2b271c476a2fdbe99fd17d8a3f10a0590eb489e3ef17fc96c99041019912c4a"
+    },
+    {
+      "id": "papaya",
+      "atlas": "food-109-1",
+      "index": 9,
+      "x": 320,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 8,
+        "width": 62,
+        "height": 62
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 9,
+      "sourceBox": {
+        "left": 1119,
+        "top": 301,
+        "width": 283,
+        "height": 257
+      },
+      "alphaTrim": {
+        "x": 12,
+        "y": 12,
+        "width": 244,
+        "height": 245
+      },
+      "resized": {
+        "width": 64,
+        "height": 64
+      },
+      "scale": 0.261224,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "d76f656e3ad411501719635dee8d4954fbccd5a9c36b073bd1bd850ffbd89c82"
+    },
+    {
+      "id": "guava",
+      "atlas": "food-109-1",
+      "index": 10,
+      "x": 0,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 11,
+        "width": 62,
+        "height": 58
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 10,
+      "sourceBox": {
+        "left": 0,
+        "top": 557,
+        "width": 294,
+        "height": 254
+      },
+      "alphaTrim": {
+        "x": 32,
+        "y": 14,
+        "width": 258,
+        "height": 240
+      },
+      "resized": {
+        "width": 64,
+        "height": 60
+      },
+      "scale": 0.248062,
+      "padding": {
+        "left": 8,
+        "top": 10
+      },
+      "rgbaSha256": "c9990ceee2f3ef3453a017567f060e4b169369bbd03a9836ce0da25d61d3bd72"
+    },
+    {
+      "id": "pomegranate",
+      "atlas": "food-109-1",
+      "index": 11,
+      "x": 80,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 8,
+        "width": 61,
+        "height": 62
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 11,
+      "sourceBox": {
+        "left": 294,
+        "top": 551,
+        "width": 276,
+        "height": 271
+      },
+      "alphaTrim": {
+        "x": 11,
+        "y": 5,
+        "width": 265,
+        "height": 265
+      },
+      "resized": {
+        "width": 64,
+        "height": 64
+      },
+      "scale": 0.241509,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "4f703304bfb7759845d2f628c0df62c1f3d2f7869bbe317b3813ddd9e44c4e0e"
+    },
+    {
+      "id": "starfruit",
+      "atlas": "food-109-1",
+      "index": 12,
+      "x": 160,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 10,
+        "y": 13,
+        "width": 62,
+        "height": 54
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 12,
+      "sourceBox": {
+        "left": 570,
+        "top": 558,
+        "width": 285,
+        "height": 270
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 2,
+        "width": 285,
+        "height": 256
+      },
+      "resized": {
+        "width": 64,
+        "height": 57
+      },
+      "scale": 0.224561,
+      "padding": {
+        "left": 8,
+        "top": 11
+      },
+      "rgbaSha256": "88fbc8157061d35bce171e995241b764720b1673d66bcf966f226a3efc77f0eb"
+    },
+    {
+      "id": "rambutan",
+      "atlas": "food-109-1",
+      "index": 13,
+      "x": 240,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 10,
+        "width": 62,
+        "height": 61
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 13,
+      "sourceBox": {
+        "left": 855,
+        "top": 558,
+        "width": 276,
+        "height": 274
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 275,
+        "height": 274
+      },
+      "resized": {
+        "width": 64,
+        "height": 64
+      },
+      "scale": 0.232727,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "f58f03d381b65ebd05951ed833ad0c5c8d206babecf5aeb0ecc3c136e98a43bb"
+    },
+    {
+      "id": "mangosteen",
+      "atlas": "food-109-1",
+      "index": 14,
+      "x": 320,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 11,
+        "y": 10,
+        "width": 58,
+        "height": 60
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 14,
+      "sourceBox": {
+        "left": 1131,
+        "top": 558,
+        "width": 271,
+        "height": 262
+      },
+      "alphaTrim": {
+        "x": 4,
+        "y": 0,
+        "width": 238,
+        "height": 260
+      },
+      "resized": {
+        "width": 59,
+        "height": 64
+      },
+      "scale": 0.246154,
+      "padding": {
+        "left": 10,
+        "top": 8
+      },
+      "rgbaSha256": "c1529670eeb3531049a12b02c69c6d1d6c9f626c4af1caa1723c528ae2fdd242"
+    },
+    {
+      "id": "durian",
+      "atlas": "food-109-1",
+      "index": 15,
+      "x": 0,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 14,
+        "y": 10,
+        "width": 57,
+        "height": 54
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 15,
+      "sourceBox": {
+        "left": 0,
+        "top": 811,
+        "width": 318,
+        "height": 311
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 310,
+        "height": 295
+      },
+      "resized": {
+        "width": 64,
+        "height": 61
+      },
+      "scale": 0.206452,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "8b1aa13c88c37f190f4575cd5c18372d79addaaad8c6883b716d5d1c5b011c0e"
+    },
+    {
+      "id": "avocado",
+      "atlas": "food-109-1",
+      "index": 16,
+      "x": 80,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 16,
+        "y": 9,
+        "width": 48,
+        "height": 52
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 16,
+      "sourceBox": {
+        "left": 318,
+        "top": 822,
+        "width": 249,
+        "height": 300
+      },
+      "alphaTrim": {
+        "x": 7,
+        "y": 6,
+        "width": 224,
+        "height": 294
+      },
+      "resized": {
+        "width": 49,
+        "height": 64
+      },
+      "scale": 0.217687,
+      "padding": {
+        "left": 15,
+        "top": 8
+      },
+      "rgbaSha256": "23eb138f1dcb52f62583d4ba2e21aa0e613ec5170465d0ba8445c0fe08bf3521"
+    },
+    {
+      "id": "jujube",
+      "atlas": "food-109-1",
+      "index": 17,
+      "x": 160,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 13,
+        "y": 11,
+        "width": 59,
+        "height": 50
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 17,
+      "sourceBox": {
+        "left": 567,
+        "top": 828,
+        "width": 285,
+        "height": 294
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 9,
+        "width": 273,
+        "height": 261
+      },
+      "resized": {
+        "width": 64,
+        "height": 61
+      },
+      "scale": 0.234432,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "19dbffe7f5f3c882922321736bcb5afaebda0b2962e0aa3e7d009b5992d08bf0"
+    },
+    {
+      "id": "quince",
+      "atlas": "food-109-1",
+      "index": 18,
+      "x": 240,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 9,
+        "width": 59,
+        "height": 60
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 18,
+      "sourceBox": {
+        "left": 852,
+        "top": 832,
+        "width": 268,
+        "height": 290
+      },
+      "alphaTrim": {
+        "x": 14,
+        "y": 0,
+        "width": 254,
+        "height": 254
+      },
+      "resized": {
+        "width": 64,
+        "height": 64
+      },
+      "scale": 0.251969,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "80014a08815a655318cd95e5cf8713661aeb687d7430179593ef930bc8fe31ef"
+    },
+    {
+      "id": "hallabong",
+      "atlas": "food-109-1",
+      "index": 19,
+      "x": 320,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 8,
+        "width": 61,
+        "height": 62
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식01_새과일.png",
+      "sourceIndex": 19,
+      "sourceBox": {
+        "left": 1120,
+        "top": 820,
+        "width": 282,
+        "height": 302
+      },
+      "alphaTrim": {
+        "x": 14,
+        "y": 9,
+        "width": 244,
+        "height": 246
+      },
+      "resized": {
+        "width": 63,
+        "height": 64
+      },
+      "scale": 0.260163,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "e5742da05667e6ac6d2d36989cb2940a4b6b6eb28f23c3715a50f2c5709d16f9"
+    },
+    {
+      "id": "spinach",
+      "atlas": "food-109-2",
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 12,
+        "y": 8,
+        "width": 56,
+        "height": 60
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 0,
+      "sourceBox": {
+        "left": 0,
+        "top": 0,
+        "width": 286,
+        "height": 313
+      },
+      "alphaTrim": {
+        "x": 30,
+        "y": 38,
+        "width": 246,
+        "height": 275
+      },
+      "resized": {
+        "width": 57,
+        "height": 64
+      },
+      "scale": 0.232727,
+      "padding": {
+        "left": 11,
+        "top": 8
+      },
+      "rgbaSha256": "283ea5d1d4f04b63bfede5bb46d34dbe78c2872c61c6dca05f4bf5f4f04578c0"
+    },
+    {
+      "id": "lettuce",
+      "atlas": "food-109-2",
+      "index": 1,
+      "x": 80,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 10,
+        "y": 15,
+        "width": 59,
+        "height": 56
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 1,
+      "sourceBox": {
+        "left": 286,
+        "top": 0,
+        "width": 284,
+        "height": 302
+      },
+      "alphaTrim": {
+        "x": 1,
+        "y": 25,
+        "width": 277,
+        "height": 268
+      },
+      "resized": {
+        "width": 64,
+        "height": 62
+      },
+      "scale": 0.231047,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "a9d0474b8c2d120e3c82209b4fd9daf85c18efbd13b7e6116e6b68a0b3818f1e"
+    },
+    {
+      "id": "bok-choy",
+      "atlas": "food-109-2",
+      "index": 2,
+      "x": 160,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 10,
+        "y": 8,
+        "width": 59,
+        "height": 63
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 2,
+      "sourceBox": {
+        "left": 570,
+        "top": 0,
+        "width": 270,
+        "height": 303
+      },
+      "alphaTrim": {
+        "x": 9,
+        "y": 43,
+        "width": 257,
+        "height": 260
+      },
+      "resized": {
+        "width": 63,
+        "height": 64
+      },
+      "scale": 0.246154,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "5c8ba7620b10917936953e22adb960230e182a6a10eab3a40047bb682dfda389"
+    },
+    {
+      "id": "celery",
+      "atlas": "food-109-2",
+      "index": 3,
+      "x": 240,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 10,
+        "y": 10,
+        "width": 57,
+        "height": 60
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 3,
+      "sourceBox": {
+        "left": 840,
+        "top": 0,
+        "width": 277,
+        "height": 318
+      },
+      "alphaTrim": {
+        "x": 12,
+        "y": 31,
+        "width": 261,
+        "height": 282
+      },
+      "resized": {
+        "width": 59,
+        "height": 64
+      },
+      "scale": 0.22695,
+      "padding": {
+        "left": 10,
+        "top": 8
+      },
+      "rgbaSha256": "42823477848a8da495273880daeb3ac934141e5221ebab4406b5156c37dfd927"
+    },
+    {
+      "id": "asparagus",
+      "atlas": "food-109-2",
+      "index": 4,
+      "x": 320,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 62,
+        "height": 64
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 4,
+      "sourceBox": {
+        "left": 1117,
+        "top": 0,
+        "width": 285,
+        "height": 305
+      },
+      "alphaTrim": {
+        "x": 12,
+        "y": 48,
+        "width": 257,
+        "height": 257
+      },
+      "resized": {
+        "width": 64,
+        "height": 64
+      },
+      "scale": 0.249027,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "d59696789fd7e0ca08f2e81a97ad74c403490a3ebbbea91ca2bb611daf960e26"
+    },
+    {
+      "id": "cauliflower",
+      "atlas": "food-109-2",
+      "index": 5,
+      "x": 0,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 14,
+        "y": 14,
+        "width": 56,
+        "height": 50
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 5,
+      "sourceBox": {
+        "left": 0,
+        "top": 313,
+        "width": 292,
+        "height": 255
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 15,
+        "width": 292,
+        "height": 233
+      },
+      "resized": {
+        "width": 64,
+        "height": 51
+      },
+      "scale": 0.219178,
+      "padding": {
+        "left": 8,
+        "top": 14
+      },
+      "rgbaSha256": "71d98b3c29a41c23650109104e9bf088b22e75a67179540e42c99ce004f51649"
+    },
+    {
+      "id": "beet",
+      "atlas": "food-109-2",
+      "index": 6,
+      "x": 80,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 8,
+        "width": 61,
+        "height": 64
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 6,
+      "sourceBox": {
+        "left": 292,
+        "top": 302,
+        "width": 273,
+        "height": 269
+      },
+      "alphaTrim": {
+        "x": 8,
+        "y": 8,
+        "width": 248,
+        "height": 253
+      },
+      "resized": {
+        "width": 63,
+        "height": 64
+      },
+      "scale": 0.252964,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "4fb47ee63e2afff334dca8faeddefd502d2593704ae0ba82bc701171557b6b2f"
+    },
+    {
+      "id": "turnip",
+      "atlas": "food-109-2",
+      "index": 7,
+      "x": 160,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 11,
+        "y": 9,
+        "width": 58,
+        "height": 63
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 7,
+      "sourceBox": {
+        "left": 565,
+        "top": 303,
+        "width": 267,
+        "height": 268
+      },
+      "alphaTrim": {
+        "x": 16,
+        "y": 0,
+        "width": 245,
+        "height": 261
+      },
+      "resized": {
+        "width": 60,
+        "height": 64
+      },
+      "scale": 0.245211,
+      "padding": {
+        "left": 10,
+        "top": 8
+      },
+      "rgbaSha256": "0819a5fe8583e9ac914fbbdd7efaaaf674957846d99e8fa36a790f8a4249e961"
+    },
+    {
+      "id": "lotus-root",
+      "atlas": "food-109-2",
+      "index": 8,
+      "x": 240,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 11,
+        "width": 62,
+        "height": 54
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 8,
+      "sourceBox": {
+        "left": 832,
+        "top": 318,
+        "width": 288,
+        "height": 257
+      },
+      "alphaTrim": {
+        "x": 5,
+        "y": 15,
+        "width": 273,
+        "height": 242
+      },
+      "resized": {
+        "width": 64,
+        "height": 57
+      },
+      "scale": 0.234432,
+      "padding": {
+        "left": 8,
+        "top": 11
+      },
+      "rgbaSha256": "697cf12d233aa2865bbcff2aa3db466edb84eac74960d0802df60e9bca03d3c0"
+    },
+    {
+      "id": "bamboo-shoot",
+      "atlas": "food-109-2",
+      "index": 9,
+      "x": 320,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 11,
+        "y": 8,
+        "width": 49,
+        "height": 63
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 9,
+      "sourceBox": {
+        "left": 1120,
+        "top": 305,
+        "width": 282,
+        "height": 262
+      },
+      "alphaTrim": {
+        "x": 13,
+        "y": 0,
+        "width": 245,
+        "height": 262
+      },
+      "resized": {
+        "width": 60,
+        "height": 64
+      },
+      "scale": 0.244275,
+      "padding": {
+        "left": 10,
+        "top": 8
+      },
+      "rgbaSha256": "9cb8038bc5c1bedb26d2bea5d891749c090dd38e64c8f8e0678dca8cb2003dde"
+    },
+    {
+      "id": "okra",
+      "atlas": "food-109-2",
+      "index": 10,
+      "x": 0,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 10,
+        "width": 63,
+        "height": 59
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 10,
+      "sourceBox": {
+        "left": 0,
+        "top": 568,
+        "width": 282,
+        "height": 253
+      },
+      "alphaTrim": {
+        "x": 25,
+        "y": 10,
+        "width": 250,
+        "height": 240
+      },
+      "resized": {
+        "width": 64,
+        "height": 61
+      },
+      "scale": 0.256,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "75634ecae9a9f8fbe6e742d2d8e959ad908d7bdc157a65aafb3ba93fad8e681f"
+    },
+    {
+      "id": "green-beans",
+      "atlas": "food-109-2",
+      "index": 11,
+      "x": 80,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 13,
+        "width": 63,
+        "height": 54
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 11,
+      "sourceBox": {
+        "left": 282,
+        "top": 571,
+        "width": 281,
+        "height": 248
+      },
+      "alphaTrim": {
+        "x": 7,
+        "y": 3,
+        "width": 274,
+        "height": 241
+      },
+      "resized": {
+        "width": 64,
+        "height": 56
+      },
+      "scale": 0.233577,
+      "padding": {
+        "left": 8,
+        "top": 12
+      },
+      "rgbaSha256": "5e77f14fc5b9183369e31815c07c6346ace34bcf212e01f90cf373e2e4388bcd"
+    },
+    {
+      "id": "edamame",
+      "atlas": "food-109-2",
+      "index": 12,
+      "x": 160,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 12,
+        "width": 62,
+        "height": 55
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 12,
+      "sourceBox": {
+        "left": 563,
+        "top": 571,
+        "width": 275,
+        "height": 240
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 5,
+        "width": 269,
+        "height": 232
+      },
+      "resized": {
+        "width": 64,
+        "height": 55
+      },
+      "scale": 0.237918,
+      "padding": {
+        "left": 8,
+        "top": 12
+      },
+      "rgbaSha256": "35c4a8bfbe32bc5ef4d5c1b0d2a4dcf2300e2fc668237243ab9a965753c38840"
+    },
+    {
+      "id": "brussels-sprout",
+      "atlas": "food-109-2",
+      "index": 13,
+      "x": 240,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 15,
+        "width": 61,
+        "height": 52
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 13,
+      "sourceBox": {
+        "left": 838,
+        "top": 575,
+        "width": 277,
+        "height": 242
+      },
+      "alphaTrim": {
+        "x": 7,
+        "y": 1,
+        "width": 268,
+        "height": 230
+      },
+      "resized": {
+        "width": 64,
+        "height": 55
+      },
+      "scale": 0.238806,
+      "padding": {
+        "left": 8,
+        "top": 12
+      },
+      "rgbaSha256": "dcbcde5619feaed228cb5c101a32691c5f7b9ecf91b6643dcf8e2c60abd9dcae"
+    },
+    {
+      "id": "kale",
+      "atlas": "food-109-2",
+      "index": 14,
+      "x": 320,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 10,
+        "width": 60,
+        "height": 60
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 14,
+      "sourceBox": {
+        "left": 1115,
+        "top": 567,
+        "width": 287,
+        "height": 257
+      },
+      "alphaTrim": {
+        "x": 10,
+        "y": 0,
+        "width": 265,
+        "height": 256
+      },
+      "resized": {
+        "width": 64,
+        "height": 62
+      },
+      "scale": 0.241509,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "cd805bdaa8ce88df27daef1451486335658885ecb246ec9548e827a9248378db"
+    },
+    {
+      "id": "zucchini",
+      "atlas": "food-109-2",
+      "index": 15,
+      "x": 0,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 61,
+        "height": 57
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 15,
+      "sourceBox": {
+        "left": 0,
+        "top": 821,
+        "width": 290,
+        "height": 301
+      },
+      "alphaTrim": {
+        "x": 25,
+        "y": 8,
+        "width": 263,
+        "height": 267
+      },
+      "resized": {
+        "width": 63,
+        "height": 64
+      },
+      "scale": 0.2397,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "026ee2324372b9b22a76f43c3c147dcaec989ff9047c8a5df1246d65c86c254f"
+    },
+    {
+      "id": "red-cabbage",
+      "atlas": "food-109-2",
+      "index": 16,
+      "x": 80,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 10,
+        "y": 8,
+        "width": 59,
+        "height": 57
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 16,
+      "sourceBox": {
+        "left": 290,
+        "top": 819,
+        "width": 277,
+        "height": 303
+      },
+      "alphaTrim": {
+        "x": 5,
+        "y": 10,
+        "width": 261,
+        "height": 273
+      },
+      "resized": {
+        "width": 61,
+        "height": 64
+      },
+      "scale": 0.234432,
+      "padding": {
+        "left": 9,
+        "top": 8
+      },
+      "rgbaSha256": "823e47d03b7baf849b4bb0c9683671e5279b81e9003efb3ce74a0e6c0552ff0f"
+    },
+    {
+      "id": "onion",
+      "atlas": "food-109-2",
+      "index": 17,
+      "x": 160,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 10,
+        "y": 8,
+        "width": 57,
+        "height": 63
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 17,
+      "sourceBox": {
+        "left": 567,
+        "top": 811,
+        "width": 267,
+        "height": 311
+      },
+      "alphaTrim": {
+        "x": 14,
+        "y": 6,
+        "width": 239,
+        "height": 259
+      },
+      "resized": {
+        "width": 59,
+        "height": 64
+      },
+      "scale": 0.247104,
+      "padding": {
+        "left": 10,
+        "top": 8
+      },
+      "rgbaSha256": "10d86fc5a3305953f4b3e7f1eb96f9a427a2a09c280a0a4436595b8fca8e9bf0"
+    },
+    {
+      "id": "garlic",
+      "atlas": "food-109-2",
+      "index": 18,
+      "x": 240,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 10,
+        "y": 8,
+        "width": 59,
+        "height": 63
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 18,
+      "sourceBox": {
+        "left": 834,
+        "top": 817,
+        "width": 268,
+        "height": 305
+      },
+      "alphaTrim": {
+        "x": 21,
+        "y": 12,
+        "width": 239,
+        "height": 253
+      },
+      "resized": {
+        "width": 60,
+        "height": 64
+      },
+      "scale": 0.252964,
+      "padding": {
+        "left": 10,
+        "top": 8
+      },
+      "rgbaSha256": "9964f47bd3b7f08e3f78bf093e09f794b3b6077fe2d3f62e620be8736d57dfc5"
+    },
+    {
+      "id": "leek",
+      "atlas": "food-109-2",
+      "index": 19,
+      "x": 320,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 10,
+        "y": 10,
+        "width": 61,
+        "height": 58
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식02_초록채소.png",
+      "sourceIndex": 19,
+      "sourceBox": {
+        "left": 1102,
+        "top": 824,
+        "width": 300,
+        "height": 298
+      },
+      "alphaTrim": {
+        "x": 5,
+        "y": 5,
+        "width": 279,
+        "height": 259
+      },
+      "resized": {
+        "width": 64,
+        "height": 59
+      },
+      "scale": 0.229391,
+      "padding": {
+        "left": 8,
+        "top": 10
+      },
+      "rgbaSha256": "dff2e5f1e7967073ca958e7a6bc4f2e7308badfe6248506b5af60a1def7070dc"
+    },
+    {
+      "id": "button-mushroom",
+      "atlas": "food-109-3",
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 15,
+        "y": 21,
+        "width": 55,
+        "height": 44
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 0,
+      "sourceBox": {
+        "left": 0,
+        "top": 0,
+        "width": 340,
+        "height": 272
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 9,
+        "width": 326,
+        "height": 253
+      },
+      "resized": {
+        "width": 64,
+        "height": 50
+      },
+      "scale": 0.196319,
+      "padding": {
+        "left": 8,
+        "top": 15
+      },
+      "rgbaSha256": "2595f70c898217e0c94ab94d383f6e54b4ea859494a09c2a80d72f04c566dc61"
+    },
+    {
+      "id": "shiitake",
+      "atlas": "food-109-3",
+      "index": 1,
+      "x": 80,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 14,
+        "width": 62,
+        "height": 53
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 1,
+      "sourceBox": {
+        "left": 340,
+        "top": 0,
+        "width": 301,
+        "height": 276
+      },
+      "alphaTrim": {
+        "x": 19,
+        "y": 39,
+        "width": 263,
+        "height": 220
+      },
+      "resized": {
+        "width": 64,
+        "height": 54
+      },
+      "scale": 0.243346,
+      "padding": {
+        "left": 8,
+        "top": 13
+      },
+      "rgbaSha256": "4e3c3d8152aa85565244903e36510d4232432a13d8267e9e6d5dc988e5265005"
+    },
+    {
+      "id": "enoki",
+      "atlas": "food-109-3",
+      "index": 2,
+      "x": 160,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 10,
+        "y": 13,
+        "width": 58,
+        "height": 57
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 2,
+      "sourceBox": {
+        "left": 641,
+        "top": 0,
+        "width": 278,
+        "height": 280
+      },
+      "alphaTrim": {
+        "x": 16,
+        "y": 17,
+        "width": 261,
+        "height": 257
+      },
+      "resized": {
+        "width": 64,
+        "height": 63
+      },
+      "scale": 0.245211,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "9d9bc926f83a536098312db6349a4fa856d41f9f8b7e60a1c9c285c059faa54a"
+    },
+    {
+      "id": "oyster-mushroom",
+      "atlas": "food-109-3",
+      "index": 3,
+      "x": 240,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 11,
+        "y": 15,
+        "width": 59,
+        "height": 49
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 3,
+      "sourceBox": {
+        "left": 919,
+        "top": 0,
+        "width": 318,
+        "height": 282
+      },
+      "alphaTrim": {
+        "x": 4,
+        "y": 32,
+        "width": 309,
+        "height": 242
+      },
+      "resized": {
+        "width": 64,
+        "height": 50
+      },
+      "scale": 0.20712,
+      "padding": {
+        "left": 8,
+        "top": 15
+      },
+      "rgbaSha256": "35ec4c8d0ce2144d9609772ed8b3fcf2d250786b08dcb304aa39293770ae7c9a"
+    },
+    {
+      "id": "king-oyster",
+      "atlas": "food-109-3",
+      "index": 4,
+      "x": 320,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 10,
+        "y": 9,
+        "width": 62,
+        "height": 61
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 4,
+      "sourceBox": {
+        "left": 1237,
+        "top": 0,
+        "width": 299,
+        "height": 280
+      },
+      "alphaTrim": {
+        "x": 10,
+        "y": 32,
+        "width": 256,
+        "height": 248
+      },
+      "resized": {
+        "width": 64,
+        "height": 62
+      },
+      "scale": 0.25,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "98b859d8e8734c230a3539f810c9d621fa17038fc9d4fbe3c402ba2d46914de1"
+    },
+    {
+      "id": "walnut",
+      "atlas": "food-109-3",
+      "index": 5,
+      "x": 0,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 18,
+        "y": 17,
+        "width": 54,
+        "height": 45
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 5,
+      "sourceBox": {
+        "left": 0,
+        "top": 272,
+        "width": 327,
+        "height": 238
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 11,
+        "width": 310,
+        "height": 219
+      },
+      "resized": {
+        "width": 64,
+        "height": 45
+      },
+      "scale": 0.206452,
+      "padding": {
+        "left": 8,
+        "top": 17
+      },
+      "rgbaSha256": "fcf76ef795cd165c6306273635b042a2b78d0be088c2904054ca7ee18d68dec7"
+    },
+    {
+      "id": "almond",
+      "atlas": "food-109-3",
+      "index": 6,
+      "x": 80,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 18,
+        "width": 63,
+        "height": 46
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 6,
+      "sourceBox": {
+        "left": 327,
+        "top": 276,
+        "width": 303,
+        "height": 227
+      },
+      "alphaTrim": {
+        "x": 16,
+        "y": 1,
+        "width": 271,
+        "height": 221
+      },
+      "resized": {
+        "width": 64,
+        "height": 52
+      },
+      "scale": 0.236162,
+      "padding": {
+        "left": 8,
+        "top": 14
+      },
+      "rgbaSha256": "08c8a691aca042b9a5bec9df5f29cc24f70b828a3f6da135a8aebfe893873193"
+    },
+    {
+      "id": "cashew",
+      "atlas": "food-109-3",
+      "index": 7,
+      "x": 160,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 11,
+        "y": 17,
+        "width": 58,
+        "height": 46
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 7,
+      "sourceBox": {
+        "left": 630,
+        "top": 280,
+        "width": 288,
+        "height": 218
+      },
+      "alphaTrim": {
+        "x": 3,
+        "y": 5,
+        "width": 277,
+        "height": 209
+      },
+      "resized": {
+        "width": 64,
+        "height": 48
+      },
+      "scale": 0.231047,
+      "padding": {
+        "left": 8,
+        "top": 16
+      },
+      "rgbaSha256": "e5d0eb70dbb2bdde9d46a3b133df9c56292cddbd3f69844d1379f102a6ca2c17"
+    },
+    {
+      "id": "pistachio",
+      "atlas": "food-109-3",
+      "index": 8,
+      "x": 240,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 19,
+        "width": 60,
+        "height": 41
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 8,
+      "sourceBox": {
+        "left": 918,
+        "top": 282,
+        "width": 312,
+        "height": 220
+      },
+      "alphaTrim": {
+        "x": 13,
+        "y": 9,
+        "width": 297,
+        "height": 201
+      },
+      "resized": {
+        "width": 64,
+        "height": 43
+      },
+      "scale": 0.215488,
+      "padding": {
+        "left": 8,
+        "top": 18
+      },
+      "rgbaSha256": "7499557bea852022d6b15348c4b2a5586de6c8498fb04cfeee0d0d69ed725a14"
+    },
+    {
+      "id": "peanut",
+      "atlas": "food-109-3",
+      "index": 9,
+      "x": 320,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 13,
+        "width": 62,
+        "height": 52
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 9,
+      "sourceBox": {
+        "left": 1230,
+        "top": 280,
+        "width": 306,
+        "height": 236
+      },
+      "alphaTrim": {
+        "x": 13,
+        "y": 0,
+        "width": 261,
+        "height": 230
+      },
+      "resized": {
+        "width": 64,
+        "height": 56
+      },
+      "scale": 0.245211,
+      "padding": {
+        "left": 8,
+        "top": 12
+      },
+      "rgbaSha256": "5526d9aed57c542fde1946fbd085ed5f81cd53c02f192dd28533a0d9977d2460"
+    },
+    {
+      "id": "chestnut",
+      "atlas": "food-109-3",
+      "index": 10,
+      "x": 0,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 16,
+        "width": 63,
+        "height": 49
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 10,
+      "sourceBox": {
+        "left": 0,
+        "top": 510,
+        "width": 332,
+        "height": 240
+      },
+      "alphaTrim": {
+        "x": 40,
+        "y": 5,
+        "width": 274,
+        "height": 221
+      },
+      "resized": {
+        "width": 64,
+        "height": 52
+      },
+      "scale": 0.233577,
+      "padding": {
+        "left": 8,
+        "top": 14
+      },
+      "rgbaSha256": "4215a6e2dd82134c3949af1cd1de48f28572e8c131c40df3af645ef4bc76a55d"
+    },
+    {
+      "id": "hazelnut",
+      "atlas": "food-109-3",
+      "index": 11,
+      "x": 80,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 15,
+        "width": 58,
+        "height": 49
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 11,
+      "sourceBox": {
+        "left": 332,
+        "top": 503,
+        "width": 305,
+        "height": 247
+      },
+      "alphaTrim": {
+        "x": 20,
+        "y": 8,
+        "width": 284,
+        "height": 227
+      },
+      "resized": {
+        "width": 64,
+        "height": 51
+      },
+      "scale": 0.225352,
+      "padding": {
+        "left": 8,
+        "top": 14
+      },
+      "rgbaSha256": "7df85c89363dcff766a803eaf81f5669ad8aca7d6341ded39cff8d3ea4b479e3"
+    },
+    {
+      "id": "acorn",
+      "atlas": "food-109-3",
+      "index": 12,
+      "x": 160,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 14,
+        "y": 12,
+        "width": 57,
+        "height": 56
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 12,
+      "sourceBox": {
+        "left": 637,
+        "top": 498,
+        "width": 287,
+        "height": 248
+      },
+      "alphaTrim": {
+        "x": 2,
+        "y": 7,
+        "width": 259,
+        "height": 233
+      },
+      "resized": {
+        "width": 64,
+        "height": 58
+      },
+      "scale": 0.247104,
+      "padding": {
+        "left": 8,
+        "top": 11
+      },
+      "rgbaSha256": "7cc91e0d081a8f509de6ee96cda852272d12b9a4e5a5176971cca8f781d84b3a"
+    },
+    {
+      "id": "tofu",
+      "atlas": "food-109-3",
+      "index": 13,
+      "x": 240,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 11,
+        "y": 15,
+        "width": 58,
+        "height": 51
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 13,
+      "sourceBox": {
+        "left": 924,
+        "top": 502,
+        "width": 301,
+        "height": 252
+      },
+      "alphaTrim": {
+        "x": 19,
+        "y": 1,
+        "width": 273,
+        "height": 247
+      },
+      "resized": {
+        "width": 64,
+        "height": 58
+      },
+      "scale": 0.234432,
+      "padding": {
+        "left": 8,
+        "top": 11
+      },
+      "rgbaSha256": "6958ea2658e0d172dbbef04e3755aa4142e0700c4f4eaddf8b01bbd918d014e0"
+    },
+    {
+      "id": "soybean",
+      "atlas": "food-109-3",
+      "index": 14,
+      "x": 320,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 16,
+        "width": 64,
+        "height": 49
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 14,
+      "sourceBox": {
+        "left": 1225,
+        "top": 516,
+        "width": 311,
+        "height": 226
+      },
+      "alphaTrim": {
+        "x": 23,
+        "y": 3,
+        "width": 256,
+        "height": 219
+      },
+      "resized": {
+        "width": 64,
+        "height": 55
+      },
+      "scale": 0.25,
+      "padding": {
+        "left": 8,
+        "top": 12
+      },
+      "rgbaSha256": "7e84aa84c03965f197037bb433164561c19328d58b345c983a71c3b784eea331"
+    },
+    {
+      "id": "black-bean",
+      "atlas": "food-109-3",
+      "index": 15,
+      "x": 0,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 16,
+        "y": 15,
+        "width": 53,
+        "height": 38
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 15,
+      "sourceBox": {
+        "left": 0,
+        "top": 750,
+        "width": 335,
+        "height": 274
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 17,
+        "width": 334,
+        "height": 257
+      },
+      "resized": {
+        "width": 64,
+        "height": 49
+      },
+      "scale": 0.191617,
+      "padding": {
+        "left": 8,
+        "top": 15
+      },
+      "rgbaSha256": "3a64339ada984e67961ce6f889c237183f004e4cc7229f4e25fdd7aeee0ac9d3"
+    },
+    {
+      "id": "kidney-bean",
+      "atlas": "food-109-3",
+      "index": 16,
+      "x": 80,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 12,
+        "y": 17,
+        "width": 59,
+        "height": 47
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 16,
+      "sourceBox": {
+        "left": 335,
+        "top": 750,
+        "width": 286,
+        "height": 274
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 3,
+        "width": 273,
+        "height": 221
+      },
+      "resized": {
+        "width": 64,
+        "height": 52
+      },
+      "scale": 0.234432,
+      "padding": {
+        "left": 8,
+        "top": 14
+      },
+      "rgbaSha256": "56fdb8b8bab2454a9d5ed3e787be39c1d276e3dd6756487ef325d3d8a8f86f9b"
+    },
+    {
+      "id": "chickpea",
+      "atlas": "food-109-3",
+      "index": 17,
+      "x": 160,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 11,
+        "y": 14,
+        "width": 60,
+        "height": 53
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 17,
+      "sourceBox": {
+        "left": 621,
+        "top": 746,
+        "width": 288,
+        "height": 278
+      },
+      "alphaTrim": {
+        "x": 8,
+        "y": 5,
+        "width": 265,
+        "height": 226
+      },
+      "resized": {
+        "width": 64,
+        "height": 55
+      },
+      "scale": 0.241509,
+      "padding": {
+        "left": 8,
+        "top": 12
+      },
+      "rgbaSha256": "17cd5d89fa8e0cdc5d3ceb35c0dd4214cff898b0547bb108ce24ca3df3b9af91"
+    },
+    {
+      "id": "lentil",
+      "atlas": "food-109-3",
+      "index": 18,
+      "x": 240,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 17,
+        "width": 63,
+        "height": 43
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 18,
+      "sourceBox": {
+        "left": 909,
+        "top": 754,
+        "width": 331,
+        "height": 270
+      },
+      "alphaTrim": {
+        "x": 19,
+        "y": 14,
+        "width": 294,
+        "height": 222
+      },
+      "resized": {
+        "width": 64,
+        "height": 48
+      },
+      "scale": 0.217687,
+      "padding": {
+        "left": 8,
+        "top": 16
+      },
+      "rgbaSha256": "9f0603ae50a9f5ea5fcc9e25aecaec665f7ec499377c510edb586018ae1bc84e"
+    },
+    {
+      "id": "boiled-egg",
+      "atlas": "food-109-3",
+      "index": 19,
+      "x": 320,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 12,
+        "y": 9,
+        "width": 56,
+        "height": 52
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식03_버섯과견과.png",
+      "sourceIndex": 19,
+      "sourceBox": {
+        "left": 1240,
+        "top": 742,
+        "width": 296,
+        "height": 282
+      },
+      "alphaTrim": {
+        "x": 9,
+        "y": 9,
+        "width": 259,
+        "height": 273
+      },
+      "resized": {
+        "width": 61,
+        "height": 64
+      },
+      "scale": 0.234432,
+      "padding": {
+        "left": 9,
+        "top": 8
+      },
+      "rgbaSha256": "f097910612b1bcd40624d03c4824456e50e5a1e8939ebef6de2bd84038c4b4d2"
+    },
+    {
+      "id": "gimbap",
+      "atlas": "food-109-4",
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 12,
+        "width": 63,
+        "height": 56
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 0,
+      "sourceBox": {
+        "left": 0,
+        "top": 0,
+        "width": 306,
+        "height": 282
+      },
+      "alphaTrim": {
+        "x": 31,
+        "y": 43,
+        "width": 259,
+        "height": 229
+      },
+      "resized": {
+        "width": 64,
+        "height": 57
+      },
+      "scale": 0.247104,
+      "padding": {
+        "left": 8,
+        "top": 11
+      },
+      "rgbaSha256": "e2333397f85f6b61ce7d10d0413bb711f485c2a3fe3a50bdd5a187c2b4e31067"
+    },
+    {
+      "id": "salad",
+      "atlas": "food-109-4",
+      "index": 1,
+      "x": 80,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 13,
+        "width": 63,
+        "height": 55
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 1,
+      "sourceBox": {
+        "left": 306,
+        "top": 0,
+        "width": 300,
+        "height": 280
+      },
+      "alphaTrim": {
+        "x": 16,
+        "y": 34,
+        "width": 269,
+        "height": 239
+      },
+      "resized": {
+        "width": 64,
+        "height": 57
+      },
+      "scale": 0.237918,
+      "padding": {
+        "left": 8,
+        "top": 11
+      },
+      "rgbaSha256": "5efbe9d5b74f4b9992ff431319b0509026367e16a12c45b8277952724d885f9c"
+    },
+    {
+      "id": "bibimbap",
+      "atlas": "food-109-4",
+      "index": 2,
+      "x": 160,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 11,
+        "y": 15,
+        "width": 60,
+        "height": 51
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 2,
+      "sourceBox": {
+        "left": 606,
+        "top": 0,
+        "width": 314,
+        "height": 282
+      },
+      "alphaTrim": {
+        "x": 5,
+        "y": 25,
+        "width": 301,
+        "height": 249
+      },
+      "resized": {
+        "width": 64,
+        "height": 53
+      },
+      "scale": 0.212625,
+      "padding": {
+        "left": 8,
+        "top": 13
+      },
+      "rgbaSha256": "5a4e91ce671b5e13402c5660fec045c2c4c0c5e711c04edb91a48275e4c12a3c"
+    },
+    {
+      "id": "japchae",
+      "atlas": "food-109-4",
+      "index": 3,
+      "x": 240,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 19,
+        "width": 61,
+        "height": 40
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 3,
+      "sourceBox": {
+        "left": 920,
+        "top": 0,
+        "width": 316,
+        "height": 279
+      },
+      "alphaTrim": {
+        "x": 11,
+        "y": 74,
+        "width": 301,
+        "height": 196
+      },
+      "resized": {
+        "width": 64,
+        "height": 42
+      },
+      "scale": 0.212625,
+      "padding": {
+        "left": 8,
+        "top": 19
+      },
+      "rgbaSha256": "f89548490f78f1ebca2306a7c9df71e71ea82fc1031f5e5882e44076bfae92f2"
+    },
+    {
+      "id": "tteokbokki",
+      "atlas": "food-109-4",
+      "index": 4,
+      "x": 320,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 13,
+        "width": 62,
+        "height": 51
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 4,
+      "sourceBox": {
+        "left": 1236,
+        "top": 0,
+        "width": 300,
+        "height": 282
+      },
+      "alphaTrim": {
+        "x": 10,
+        "y": 48,
+        "width": 274,
+        "height": 234
+      },
+      "resized": {
+        "width": 64,
+        "height": 55
+      },
+      "scale": 0.233577,
+      "padding": {
+        "left": 8,
+        "top": 12
+      },
+      "rgbaSha256": "710fe57fc0f1e59a2ba71972899ea2571e68785218cb86958b7376f7d40d3e71"
+    },
+    {
+      "id": "fish-cake-skewer",
+      "atlas": "food-109-4",
+      "index": 5,
+      "x": 0,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 15,
+        "width": 63,
+        "height": 50
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 5,
+      "sourceBox": {
+        "left": 0,
+        "top": 282,
+        "width": 304,
+        "height": 234
+      },
+      "alphaTrim": {
+        "x": 19,
+        "y": 9,
+        "width": 272,
+        "height": 219
+      },
+      "resized": {
+        "width": 64,
+        "height": 52
+      },
+      "scale": 0.235294,
+      "padding": {
+        "left": 8,
+        "top": 14
+      },
+      "rgbaSha256": "7e5b141684f7fcc5d901e2cfea51b8b7bd264409c5da0d32a056b4403aa6a0bf"
+    },
+    {
+      "id": "pajeon",
+      "atlas": "food-109-4",
+      "index": 6,
+      "x": 80,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 16,
+        "width": 63,
+        "height": 46
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 6,
+      "sourceBox": {
+        "left": 304,
+        "top": 280,
+        "width": 310,
+        "height": 223
+      },
+      "alphaTrim": {
+        "x": 11,
+        "y": 8,
+        "width": 290,
+        "height": 212
+      },
+      "resized": {
+        "width": 64,
+        "height": 47
+      },
+      "scale": 0.22069,
+      "padding": {
+        "left": 8,
+        "top": 16
+      },
+      "rgbaSha256": "c5c327be18d0f54dae471af854e77326720f43850ee7b69a5c389e38dff21758"
+    },
+    {
+      "id": "kimchi-pancake",
+      "atlas": "food-109-4",
+      "index": 7,
+      "x": 160,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 17,
+        "width": 62,
+        "height": 46
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 7,
+      "sourceBox": {
+        "left": 614,
+        "top": 282,
+        "width": 306,
+        "height": 223
+      },
+      "alphaTrim": {
+        "x": 11,
+        "y": 7,
+        "width": 285,
+        "height": 213
+      },
+      "resized": {
+        "width": 64,
+        "height": 48
+      },
+      "scale": 0.224561,
+      "padding": {
+        "left": 8,
+        "top": 16
+      },
+      "rgbaSha256": "4f498afcf5add3f0a8678ca6d6cd7bee185a1313681aebac34919cca14b007a6"
+    },
+    {
+      "id": "egg-roll",
+      "atlas": "food-109-4",
+      "index": 8,
+      "x": 240,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 17,
+        "width": 62,
+        "height": 45
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 8,
+      "sourceBox": {
+        "left": 920,
+        "top": 279,
+        "width": 317,
+        "height": 233
+      },
+      "alphaTrim": {
+        "x": 11,
+        "y": 13,
+        "width": 297,
+        "height": 218
+      },
+      "resized": {
+        "width": 64,
+        "height": 47
+      },
+      "scale": 0.215488,
+      "padding": {
+        "left": 8,
+        "top": 16
+      },
+      "rgbaSha256": "bb58ac6f132038961b97f050eca4964f8db90c7cb100242db84e67bf7ae398f9"
+    },
+    {
+      "id": "fried-rice",
+      "atlas": "food-109-4",
+      "index": 9,
+      "x": 320,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 11,
+        "y": 18,
+        "width": 60,
+        "height": 46
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 9,
+      "sourceBox": {
+        "left": 1237,
+        "top": 282,
+        "width": 299,
+        "height": 218
+      },
+      "alphaTrim": {
+        "x": 4,
+        "y": 0,
+        "width": 277,
+        "height": 218
+      },
+      "resized": {
+        "width": 64,
+        "height": 50
+      },
+      "scale": 0.231047,
+      "padding": {
+        "left": 8,
+        "top": 15
+      },
+      "rgbaSha256": "ad9d63569f53df5e999863695959a8d30638cf6694b541c3c4600f6b0acfc442"
+    },
+    {
+      "id": "kimchi-fried-rice",
+      "atlas": "food-109-4",
+      "index": 10,
+      "x": 0,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 15,
+        "width": 62,
+        "height": 48
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 10,
+      "sourceBox": {
+        "left": 0,
+        "top": 516,
+        "width": 312,
+        "height": 226
+      },
+      "alphaTrim": {
+        "x": 18,
+        "y": 7,
+        "width": 286,
+        "height": 219
+      },
+      "resized": {
+        "width": 64,
+        "height": 49
+      },
+      "scale": 0.223776,
+      "padding": {
+        "left": 8,
+        "top": 15
+      },
+      "rgbaSha256": "08f6275896e07736606b654615171f0c5020644e92d5d9cfa45ecacaf7086e3d"
+    },
+    {
+      "id": "seaweed-soup",
+      "atlas": "food-109-4",
+      "index": 11,
+      "x": 80,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 13,
+        "width": 63,
+        "height": 53
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 11,
+      "sourceBox": {
+        "left": 312,
+        "top": 503,
+        "width": 299,
+        "height": 241
+      },
+      "alphaTrim": {
+        "x": 9,
+        "y": 6,
+        "width": 276,
+        "height": 228
+      },
+      "resized": {
+        "width": 64,
+        "height": 53
+      },
+      "scale": 0.231884,
+      "padding": {
+        "left": 8,
+        "top": 13
+      },
+      "rgbaSha256": "b49e253ed2fc57b58451610e4d977c6d917e160f6eed6e6d177b670b0d9e2460"
+    },
+    {
+      "id": "rice-porridge",
+      "atlas": "food-109-4",
+      "index": 12,
+      "x": 160,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 14,
+        "width": 61,
+        "height": 50
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 12,
+      "sourceBox": {
+        "left": 611,
+        "top": 505,
+        "width": 311,
+        "height": 236
+      },
+      "alphaTrim": {
+        "x": 13,
+        "y": 4,
+        "width": 289,
+        "height": 232
+      },
+      "resized": {
+        "width": 64,
+        "height": 51
+      },
+      "scale": 0.221453,
+      "padding": {
+        "left": 8,
+        "top": 14
+      },
+      "rgbaSha256": "b4152b5d2da9e4f98916ea64af95eb4b9264dc86ab70db8f5836d57818e7aa49"
+    },
+    {
+      "id": "scorched-rice",
+      "atlas": "food-109-4",
+      "index": 13,
+      "x": 240,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 15,
+        "width": 62,
+        "height": 49
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 13,
+      "sourceBox": {
+        "left": 922,
+        "top": 512,
+        "width": 303,
+        "height": 229
+      },
+      "alphaTrim": {
+        "x": 19,
+        "y": 8,
+        "width": 275,
+        "height": 217
+      },
+      "resized": {
+        "width": 64,
+        "height": 51
+      },
+      "scale": 0.232727,
+      "padding": {
+        "left": 8,
+        "top": 14
+      },
+      "rgbaSha256": "04114b68f2c14d47d84c033c10b713cf4fe63b108f15d07ddd8948687ebad6de"
+    },
+    {
+      "id": "ramyeon",
+      "atlas": "food-109-4",
+      "index": 14,
+      "x": 320,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 14,
+        "width": 63,
+        "height": 53
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 14,
+      "sourceBox": {
+        "left": 1225,
+        "top": 500,
+        "width": 311,
+        "height": 244
+      },
+      "alphaTrim": {
+        "x": 10,
+        "y": 0,
+        "width": 287,
+        "height": 244
+      },
+      "resized": {
+        "width": 64,
+        "height": 54
+      },
+      "scale": 0.222997,
+      "padding": {
+        "left": 8,
+        "top": 13
+      },
+      "rgbaSha256": "e36df2999bf39ecc220fc0dfe2fd5cb53afb4912d57f58f66464a1ed480f6fd2"
+    },
+    {
+      "id": "udon",
+      "atlas": "food-109-4",
+      "index": 15,
+      "x": 0,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 14,
+        "width": 62,
+        "height": 52
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 15,
+      "sourceBox": {
+        "left": 0,
+        "top": 742,
+        "width": 311,
+        "height": 282
+      },
+      "alphaTrim": {
+        "x": 15,
+        "y": 0,
+        "width": 289,
+        "height": 242
+      },
+      "resized": {
+        "width": 64,
+        "height": 54
+      },
+      "scale": 0.221453,
+      "padding": {
+        "left": 8,
+        "top": 13
+      },
+      "rgbaSha256": "992a531964c177befdceed87bcca0862954ac1218ae4cc1145f0e11472dd6ac9"
+    },
+    {
+      "id": "hotdog",
+      "atlas": "food-109-4",
+      "index": 16,
+      "x": 80,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 15,
+        "width": 63,
+        "height": 50
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 16,
+      "sourceBox": {
+        "left": 311,
+        "top": 744,
+        "width": 305,
+        "height": 280
+      },
+      "alphaTrim": {
+        "x": 8,
+        "y": 8,
+        "width": 289,
+        "height": 228
+      },
+      "resized": {
+        "width": 64,
+        "height": 50
+      },
+      "scale": 0.221453,
+      "padding": {
+        "left": 8,
+        "top": 15
+      },
+      "rgbaSha256": "85bf1d9874e69dfc1d86f5d993c1531a34902fe40b5c7fa576601fdd219ca783"
+    },
+    {
+      "id": "burger",
+      "atlas": "food-109-4",
+      "index": 17,
+      "x": 160,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 12,
+        "width": 63,
+        "height": 56
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 17,
+      "sourceBox": {
+        "left": 616,
+        "top": 741,
+        "width": 301,
+        "height": 283
+      },
+      "alphaTrim": {
+        "x": 7,
+        "y": 0,
+        "width": 278,
+        "height": 253
+      },
+      "resized": {
+        "width": 64,
+        "height": 58
+      },
+      "scale": 0.230216,
+      "padding": {
+        "left": 8,
+        "top": 11
+      },
+      "rgbaSha256": "7bea54fbc2a6000f72c05a6bd7cad03ab975feaf4e790b1b3856f37f38ef18c5"
+    },
+    {
+      "id": "fried-chicken",
+      "atlas": "food-109-4",
+      "index": 18,
+      "x": 240,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 10,
+        "y": 11,
+        "width": 61,
+        "height": 55
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 18,
+      "sourceBox": {
+        "left": 917,
+        "top": 741,
+        "width": 301,
+        "height": 283
+      },
+      "alphaTrim": {
+        "x": 8,
+        "y": 5,
+        "width": 278,
+        "height": 246
+      },
+      "resized": {
+        "width": 64,
+        "height": 57
+      },
+      "scale": 0.230216,
+      "padding": {
+        "left": 8,
+        "top": 11
+      },
+      "rgbaSha256": "e6e54fc34f219bec7545013a3dbc1c7e9f352a3b8743648fe74b7b29fa663c56"
+    },
+    {
+      "id": "corn-dog",
+      "atlas": "food-109-4",
+      "index": 19,
+      "x": 320,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 12,
+        "width": 63,
+        "height": 55
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식04_한입식사.png",
+      "sourceIndex": 19,
+      "sourceBox": {
+        "left": 1218,
+        "top": 744,
+        "width": 318,
+        "height": 280
+      },
+      "alphaTrim": {
+        "x": 17,
+        "y": 0,
+        "width": 285,
+        "height": 247
+      },
+      "resized": {
+        "width": 64,
+        "height": 55
+      },
+      "scale": 0.224561,
+      "padding": {
+        "left": 8,
+        "top": 12
+      },
+      "rgbaSha256": "f119d51e840c566702b21c916c0cffa14eb3efaeb5df7e0b24bb32944ae0467b"
+    },
+    {
+      "id": "salt-bread",
+      "atlas": "food-109-5",
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 15,
+        "width": 61,
+        "height": 49
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 0,
+      "sourceBox": {
+        "left": 0,
+        "top": 0,
+        "width": 324,
+        "height": 276
+      },
+      "alphaTrim": {
+        "x": 33,
+        "y": 49,
+        "width": 275,
+        "height": 221
+      },
+      "resized": {
+        "width": 64,
+        "height": 51
+      },
+      "scale": 0.232727,
+      "padding": {
+        "left": 8,
+        "top": 14
+      },
+      "rgbaSha256": "04a8531e0e8f395b37e81514c1afc04a26ec9682d456b1fd78fa417a57cb32ae"
+    },
+    {
+      "id": "soboro-bread",
+      "atlas": "food-109-5",
+      "index": 1,
+      "x": 80,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 13,
+        "width": 62,
+        "height": 52
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 1,
+      "sourceBox": {
+        "left": 324,
+        "top": 0,
+        "width": 300,
+        "height": 277
+      },
+      "alphaTrim": {
+        "x": 17,
+        "y": 45,
+        "width": 267,
+        "height": 228
+      },
+      "resized": {
+        "width": 64,
+        "height": 55
+      },
+      "scale": 0.2397,
+      "padding": {
+        "left": 8,
+        "top": 12
+      },
+      "rgbaSha256": "04f0ac1fd179192a72d9bfff6130cc74cad9aac52ddb24cd86725cb3d522a8ac"
+    },
+    {
+      "id": "melon-bun",
+      "atlas": "food-109-5",
+      "index": 2,
+      "x": 160,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 12,
+        "width": 62,
+        "height": 53
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 2,
+      "sourceBox": {
+        "left": 624,
+        "top": 0,
+        "width": 293,
+        "height": 274
+      },
+      "alphaTrim": {
+        "x": 17,
+        "y": 46,
+        "width": 263,
+        "height": 226
+      },
+      "resized": {
+        "width": 64,
+        "height": 55
+      },
+      "scale": 0.243346,
+      "padding": {
+        "left": 8,
+        "top": 12
+      },
+      "rgbaSha256": "d90de44a0aeb33c7c03d5f2cc3f48013893c1610a1c97d5667f6b7e281dc19c0"
+    },
+    {
+      "id": "red-bean-bun",
+      "atlas": "food-109-5",
+      "index": 3,
+      "x": 240,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 15,
+        "width": 60,
+        "height": 47
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 3,
+      "sourceBox": {
+        "left": 917,
+        "top": 0,
+        "width": 305,
+        "height": 275
+      },
+      "alphaTrim": {
+        "x": 12,
+        "y": 48,
+        "width": 289,
+        "height": 227
+      },
+      "resized": {
+        "width": 64,
+        "height": 50
+      },
+      "scale": 0.221453,
+      "padding": {
+        "left": 8,
+        "top": 15
+      },
+      "rgbaSha256": "4749574f52fdf0ae7d4897fe3e84c1265b79473deebfc95085125299175f8e18"
+    },
+    {
+      "id": "cream-bun",
+      "atlas": "food-109-5",
+      "index": 4,
+      "x": 320,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 14,
+        "width": 61,
+        "height": 50
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 4,
+      "sourceBox": {
+        "left": 1222,
+        "top": 0,
+        "width": 314,
+        "height": 275
+      },
+      "alphaTrim": {
+        "x": 13,
+        "y": 44,
+        "width": 281,
+        "height": 227
+      },
+      "resized": {
+        "width": 64,
+        "height": 52
+      },
+      "scale": 0.227758,
+      "padding": {
+        "left": 8,
+        "top": 14
+      },
+      "rgbaSha256": "f3d4fe13e42ceef5b37e78ebed1a86417eb86521db6ec8cdb0c69925646395a8"
+    },
+    {
+      "id": "steamed-bun",
+      "atlas": "food-109-5",
+      "index": 5,
+      "x": 0,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 15,
+        "width": 61,
+        "height": 49
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 5,
+      "sourceBox": {
+        "left": 0,
+        "top": 276,
+        "width": 315,
+        "height": 225
+      },
+      "alphaTrim": {
+        "x": 33,
+        "y": 10,
+        "width": 269,
+        "height": 210
+      },
+      "resized": {
+        "width": 64,
+        "height": 50
+      },
+      "scale": 0.237918,
+      "padding": {
+        "left": 8,
+        "top": 15
+      },
+      "rgbaSha256": "7743d2a553e9799b15f25c444ffa84fae4679b8900db172f241bd232f7d76862"
+    },
+    {
+      "id": "mocha-bun",
+      "atlas": "food-109-5",
+      "index": 6,
+      "x": 80,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 15,
+        "width": 63,
+        "height": 51
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 6,
+      "sourceBox": {
+        "left": 315,
+        "top": 277,
+        "width": 299,
+        "height": 227
+      },
+      "alphaTrim": {
+        "x": 20,
+        "y": 2,
+        "width": 267,
+        "height": 220
+      },
+      "resized": {
+        "width": 64,
+        "height": 53
+      },
+      "scale": 0.2397,
+      "padding": {
+        "left": 8,
+        "top": 13
+      },
+      "rgbaSha256": "4b17a3c4fdd33d702d8464a66aeb945095dba1a4e9d6f4096a33f35043234147"
+    },
+    {
+      "id": "garlic-bread",
+      "atlas": "food-109-5",
+      "index": 7,
+      "x": 160,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 10,
+        "y": 15,
+        "width": 61,
+        "height": 48
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 7,
+      "sourceBox": {
+        "left": 614,
+        "top": 274,
+        "width": 302,
+        "height": 240
+      },
+      "alphaTrim": {
+        "x": 7,
+        "y": 8,
+        "width": 289,
+        "height": 230
+      },
+      "resized": {
+        "width": 64,
+        "height": 51
+      },
+      "scale": 0.221453,
+      "padding": {
+        "left": 8,
+        "top": 14
+      },
+      "rgbaSha256": "f924a48ec941a4fd6a49774daec3fe9784db23e77c662ded12f2e242f558b4fc"
+    },
+    {
+      "id": "cheese-bread",
+      "atlas": "food-109-5",
+      "index": 8,
+      "x": 240,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 19,
+        "width": 62,
+        "height": 42
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 8,
+      "sourceBox": {
+        "left": 916,
+        "top": 275,
+        "width": 322,
+        "height": 226
+      },
+      "alphaTrim": {
+        "x": 5,
+        "y": 0,
+        "width": 307,
+        "height": 224
+      },
+      "resized": {
+        "width": 64,
+        "height": 47
+      },
+      "scale": 0.208469,
+      "padding": {
+        "left": 8,
+        "top": 16
+      },
+      "rgbaSha256": "a4b1e7eb7c5453d8038dbc0233fe5e7d77cca7098a039d57a38ffaae6bc4f95d"
+    },
+    {
+      "id": "egg-tart",
+      "atlas": "food-109-5",
+      "index": 9,
+      "x": 320,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 16,
+        "width": 58,
+        "height": 47
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 9,
+      "sourceBox": {
+        "left": 1238,
+        "top": 275,
+        "width": 298,
+        "height": 233
+      },
+      "alphaTrim": {
+        "x": 11,
+        "y": 6,
+        "width": 279,
+        "height": 223
+      },
+      "resized": {
+        "width": 64,
+        "height": 51
+      },
+      "scale": 0.229391,
+      "padding": {
+        "left": 8,
+        "top": 14
+      },
+      "rgbaSha256": "1be6f656a0137af6e5716a95078ba9f6dbe847543e8e60b0e6a59d2bbb337461"
+    },
+    {
+      "id": "apple-pie",
+      "atlas": "food-109-5",
+      "index": 10,
+      "x": 0,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 14,
+        "width": 63,
+        "height": 51
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 10,
+      "sourceBox": {
+        "left": 0,
+        "top": 501,
+        "width": 328,
+        "height": 243
+      },
+      "alphaTrim": {
+        "x": 28,
+        "y": 9,
+        "width": 286,
+        "height": 234
+      },
+      "resized": {
+        "width": 64,
+        "height": 52
+      },
+      "scale": 0.223776,
+      "padding": {
+        "left": 8,
+        "top": 14
+      },
+      "rgbaSha256": "2e167ea30a698e5acb5fb1dc25d88a7fdcd0f7ff8158dbb286291951930cebac"
+    },
+    {
+      "id": "cream-puff",
+      "atlas": "food-109-5",
+      "index": 11,
+      "x": 80,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 11,
+        "width": 60,
+        "height": 57
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 11,
+      "sourceBox": {
+        "left": 328,
+        "top": 504,
+        "width": 280,
+        "height": 240
+      },
+      "alphaTrim": {
+        "x": 15,
+        "y": 5,
+        "width": 259,
+        "height": 235
+      },
+      "resized": {
+        "width": 64,
+        "height": 58
+      },
+      "scale": 0.247104,
+      "padding": {
+        "left": 8,
+        "top": 11
+      },
+      "rgbaSha256": "e6aab15ba599f395c2cd7ad22cd75eaf73f8375ead517d99d7613ded13dda491"
+    },
+    {
+      "id": "eclair",
+      "atlas": "food-109-5",
+      "index": 12,
+      "x": 160,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 10,
+        "y": 19,
+        "width": 62,
+        "height": 42
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 12,
+      "sourceBox": {
+        "left": 608,
+        "top": 514,
+        "width": 340,
+        "height": 220
+      },
+      "alphaTrim": {
+        "x": 12,
+        "y": 5,
+        "width": 308,
+        "height": 214
+      },
+      "resized": {
+        "width": 64,
+        "height": 44
+      },
+      "scale": 0.207792,
+      "padding": {
+        "left": 8,
+        "top": 18
+      },
+      "rgbaSha256": "194ef0203f51a8ddb5a516df2ae8979a5255090263f00c642bfa2da8067e9c3a"
+    },
+    {
+      "id": "canele",
+      "atlas": "food-109-5",
+      "index": 13,
+      "x": 240,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 10,
+        "y": 9,
+        "width": 61,
+        "height": 60
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 13,
+      "sourceBox": {
+        "left": 948,
+        "top": 501,
+        "width": 265,
+        "height": 234
+      },
+      "alphaTrim": {
+        "x": 13,
+        "y": 8,
+        "width": 233,
+        "height": 226
+      },
+      "resized": {
+        "width": 64,
+        "height": 62
+      },
+      "scale": 0.274678,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "14ebfdeb2db2080f6efd44d64cb5de4530fb25796dfe715c4049e7a51c0c9ba6"
+    },
+    {
+      "id": "financier",
+      "atlas": "food-109-5",
+      "index": 14,
+      "x": 320,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 17,
+        "width": 61,
+        "height": 46
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 14,
+      "sourceBox": {
+        "left": 1213,
+        "top": 508,
+        "width": 323,
+        "height": 228
+      },
+      "alphaTrim": {
+        "x": 21,
+        "y": 9,
+        "width": 288,
+        "height": 217
+      },
+      "resized": {
+        "width": 64,
+        "height": 48
+      },
+      "scale": 0.222222,
+      "padding": {
+        "left": 8,
+        "top": 16
+      },
+      "rgbaSha256": "63cada0ceb0ed0f71c68b553ce8440fb0d53b31e47c7addec36e7ba1273d1ea8"
+    },
+    {
+      "id": "madeleine",
+      "atlas": "food-109-5",
+      "index": 15,
+      "x": 0,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 10,
+        "y": 10,
+        "width": 57,
+        "height": 53
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 15,
+      "sourceBox": {
+        "left": 0,
+        "top": 744,
+        "width": 308,
+        "height": 280
+      },
+      "alphaTrim": {
+        "x": 31,
+        "y": 0,
+        "width": 271,
+        "height": 280
+      },
+      "resized": {
+        "width": 62,
+        "height": 64
+      },
+      "scale": 0.228571,
+      "padding": {
+        "left": 9,
+        "top": 8
+      },
+      "rgbaSha256": "bf725550e200a1d2a6b399ac11abe5fac2d165d5e45447bde6bb4e9e4add21c8"
+    },
+    {
+      "id": "scone",
+      "atlas": "food-109-5",
+      "index": 16,
+      "x": 80,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 10,
+        "y": 10,
+        "width": 61,
+        "height": 56
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 16,
+      "sourceBox": {
+        "left": 308,
+        "top": 744,
+        "width": 295,
+        "height": 280
+      },
+      "alphaTrim": {
+        "x": 17,
+        "y": 3,
+        "width": 267,
+        "height": 253
+      },
+      "resized": {
+        "width": 64,
+        "height": 61
+      },
+      "scale": 0.2397,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "8a4ef8d3546e5a84a1a6dfbe83bcb5adcc2173ca1bc869fd31df1a98c0224c5f"
+    },
+    {
+      "id": "churros",
+      "atlas": "food-109-5",
+      "index": 17,
+      "x": 160,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 10,
+        "width": 64,
+        "height": 51
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 17,
+      "sourceBox": {
+        "left": 603,
+        "top": 734,
+        "width": 318,
+        "height": 290
+      },
+      "alphaTrim": {
+        "x": 16,
+        "y": 2,
+        "width": 294,
+        "height": 288
+      },
+      "resized": {
+        "width": 64,
+        "height": 63
+      },
+      "scale": 0.217687,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "f846c434cded88de8c97cc72a0fc74c9be30a32b956d0952d1f059522a5ad6ce"
+    },
+    {
+      "id": "roll-cake",
+      "atlas": "food-109-5",
+      "index": 18,
+      "x": 240,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 10,
+        "width": 61,
+        "height": 51
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 18,
+      "sourceBox": {
+        "left": 921,
+        "top": 735,
+        "width": 309,
+        "height": 289
+      },
+      "alphaTrim": {
+        "x": 6,
+        "y": 0,
+        "width": 301,
+        "height": 289
+      },
+      "resized": {
+        "width": 64,
+        "height": 61
+      },
+      "scale": 0.212625,
+      "padding": {
+        "left": 8,
+        "top": 9
+      },
+      "rgbaSha256": "d54b11766cb0bc8c7528c711e66d507096f8511beeea0aee83cb5798feb18546"
+    },
+    {
+      "id": "castella",
+      "atlas": "food-109-5",
+      "index": 19,
+      "x": 320,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 11,
+        "y": 8,
+        "width": 58,
+        "height": 54
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식05_빵집간식.png",
+      "sourceIndex": 19,
+      "sourceBox": {
+        "left": 1230,
+        "top": 736,
+        "width": 306,
+        "height": 288
+      },
+      "alphaTrim": {
+        "x": 13,
+        "y": 6,
+        "width": 261,
+        "height": 282
+      },
+      "resized": {
+        "width": 59,
+        "height": 64
+      },
+      "scale": 0.22695,
+      "padding": {
+        "left": 10,
+        "top": 8
+      },
+      "rgbaSha256": "b6d5cfc339a0bfd3a62abb48029de6322a6297abf6558bed62bbda61e08913fb"
+    },
+    {
+      "id": "bungeoppang",
+      "atlas": "food-109-6",
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 18,
+        "width": 64,
+        "height": 47
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 0,
+      "sourceBox": {
+        "left": 41,
+        "top": 41,
+        "width": 278,
+        "height": 221
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 278,
+        "height": 221
+      },
+      "resized": {
+        "width": 64,
+        "height": 51
+      },
+      "scale": 0.230216,
+      "padding": {
+        "left": 8,
+        "top": 14
+      },
+      "rgbaSha256": "bd62e792d0f08ad1023649d714b8a5f791f74dba2cf01f85df5c30b293631e1c"
+    },
+    {
+      "id": "hotteok",
+      "atlas": "food-109-6",
+      "index": 1,
+      "x": 80,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 16,
+        "width": 63,
+        "height": 48
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 1,
+      "sourceBox": {
+        "left": 336,
+        "top": 61,
+        "width": 260,
+        "height": 197
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 260,
+        "height": 197
+      },
+      "resized": {
+        "width": 64,
+        "height": 48
+      },
+      "scale": 0.246154,
+      "padding": {
+        "left": 8,
+        "top": 16
+      },
+      "rgbaSha256": "31a416e715da7b04edf09faa2982da8c46aab724ee4a5380c590c47fb0a6ae0c"
+    },
+    {
+      "id": "hodu-gwaja",
+      "atlas": "food-109-6",
+      "index": 2,
+      "x": 160,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 13,
+        "width": 59,
+        "height": 52
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 2,
+      "sourceBox": {
+        "left": 649,
+        "top": 47,
+        "width": 263,
+        "height": 225
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 263,
+        "height": 225
+      },
+      "resized": {
+        "width": 64,
+        "height": 55
+      },
+      "scale": 0.243346,
+      "padding": {
+        "left": 8,
+        "top": 12
+      },
+      "rgbaSha256": "47a2d641e4d6f00046dd9489070fc3155ae4b15c10a929943628c21802c28c62"
+    },
+    {
+      "id": "yakgwa",
+      "atlas": "food-109-6",
+      "index": 3,
+      "x": 240,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 12,
+        "width": 61,
+        "height": 56
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 3,
+      "sourceBox": {
+        "left": 960,
+        "top": 58,
+        "width": 239,
+        "height": 215
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 239,
+        "height": 215
+      },
+      "resized": {
+        "width": 64,
+        "height": 58
+      },
+      "scale": 0.267782,
+      "padding": {
+        "left": 8,
+        "top": 11
+      },
+      "rgbaSha256": "52ce26cf56f65c431e75ddb5c8b867b7bcedf552016205b2c852e03a5815e48f"
+    },
+    {
+      "id": "dasik",
+      "atlas": "food-109-6",
+      "index": 4,
+      "x": 320,
+      "y": 0,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 18,
+        "width": 64,
+        "height": 51
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 4,
+      "sourceBox": {
+        "left": 1244,
+        "top": 27,
+        "width": 248,
+        "height": 231
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 248,
+        "height": 231
+      },
+      "resized": {
+        "width": 64,
+        "height": 60
+      },
+      "scale": 0.258065,
+      "padding": {
+        "left": 8,
+        "top": 10
+      },
+      "rgbaSha256": "e9af6d52dfed455521bbe8a474ff36a074405be91dd40adedbec9e4801ffa653"
+    },
+    {
+      "id": "hangwa",
+      "atlas": "food-109-6",
+      "index": 5,
+      "x": 0,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 15,
+        "width": 63,
+        "height": 49
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 5,
+      "sourceBox": {
+        "left": 42,
+        "top": 285,
+        "width": 276,
+        "height": 215
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 276,
+        "height": 215
+      },
+      "resized": {
+        "width": 64,
+        "height": 50
+      },
+      "scale": 0.231884,
+      "padding": {
+        "left": 8,
+        "top": 15
+      },
+      "rgbaSha256": "0e00994b20d0e2feb69e6bd01710a5b6a6afba3149702ef9756c7cb46194e6c6"
+    },
+    {
+      "id": "injeolmi",
+      "atlas": "food-109-6",
+      "index": 6,
+      "x": 80,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 10,
+        "y": 14,
+        "width": 60,
+        "height": 50
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 6,
+      "sourceBox": {
+        "left": 339,
+        "top": 277,
+        "width": 267,
+        "height": 221
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 267,
+        "height": 221
+      },
+      "resized": {
+        "width": 64,
+        "height": 53
+      },
+      "scale": 0.2397,
+      "padding": {
+        "left": 8,
+        "top": 13
+      },
+      "rgbaSha256": "048b25419853439457dd967448e622ef0efe1cc24b13ea9f8a3dc71b6152aa38"
+    },
+    {
+      "id": "songpyeon",
+      "atlas": "food-109-6",
+      "index": 7,
+      "x": 160,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 11,
+        "y": 20,
+        "width": 57,
+        "height": 39
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 7,
+      "sourceBox": {
+        "left": 607,
+        "top": 288,
+        "width": 329,
+        "height": 210
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 329,
+        "height": 210
+      },
+      "resized": {
+        "width": 64,
+        "height": 41
+      },
+      "scale": 0.194529,
+      "padding": {
+        "left": 8,
+        "top": 19
+      },
+      "rgbaSha256": "6e5b331f3e3ca0fb114a01710cb4a4a8b5ffb5ddbab38fa1ed0a71077c7db3a7"
+    },
+    {
+      "id": "honey-rice-cake",
+      "atlas": "food-109-6",
+      "index": 8,
+      "x": 240,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 13,
+        "y": 16,
+        "width": 59,
+        "height": 49
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 8,
+      "sourceBox": {
+        "left": 943,
+        "top": 295,
+        "width": 244,
+        "height": 191
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 244,
+        "height": 191
+      },
+      "resized": {
+        "width": 64,
+        "height": 50
+      },
+      "scale": 0.262295,
+      "padding": {
+        "left": 8,
+        "top": 15
+      },
+      "rgbaSha256": "5f58b09c9f788c44364bf0acd5f078628feca2d0bc98a4d0309978c49d3ee22d"
+    },
+    {
+      "id": "croffle",
+      "atlas": "food-109-6",
+      "index": 9,
+      "x": 320,
+      "y": 80,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 17,
+        "width": 63,
+        "height": 45
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 9,
+      "sourceBox": {
+        "left": 1218,
+        "top": 287,
+        "width": 284,
+        "height": 207
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 284,
+        "height": 207
+      },
+      "resized": {
+        "width": 64,
+        "height": 47
+      },
+      "scale": 0.225352,
+      "padding": {
+        "left": 8,
+        "top": 16
+      },
+      "rgbaSha256": "84cf1ab7189ebb242403910ad35d2120788cb2271edb1ac026597a354a9a35eb"
+    },
+    {
+      "id": "mochi-icecream",
+      "atlas": "food-109-6",
+      "index": 10,
+      "x": 0,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 15,
+        "width": 63,
+        "height": 48
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 10,
+      "sourceBox": {
+        "left": 45,
+        "top": 519,
+        "width": 277,
+        "height": 225
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 277,
+        "height": 225
+      },
+      "resized": {
+        "width": 64,
+        "height": 52
+      },
+      "scale": 0.231047,
+      "padding": {
+        "left": 8,
+        "top": 14
+      },
+      "rgbaSha256": "9d63fd880ff3ff23180afd2085709d37b056d8c7ad3c11c61c654cb6c43078f2"
+    },
+    {
+      "id": "icecream-cone",
+      "atlas": "food-109-6",
+      "index": 11,
+      "x": 80,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 19,
+        "y": 9,
+        "width": 44,
+        "height": 63
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 11,
+      "sourceBox": {
+        "left": 391,
+        "top": 475,
+        "width": 187,
+        "height": 263
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 187,
+        "height": 263
+      },
+      "resized": {
+        "width": 46,
+        "height": 64
+      },
+      "scale": 0.243346,
+      "padding": {
+        "left": 17,
+        "top": 8
+      },
+      "rgbaSha256": "51375e4b5f3da988616054b4f3eac54817f636a3dda01c8ff9d32cb1cf91fec9"
+    },
+    {
+      "id": "popsicle",
+      "atlas": "food-109-6",
+      "index": 12,
+      "x": 160,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 10,
+        "y": 10,
+        "width": 58,
+        "height": 62
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 12,
+      "sourceBox": {
+        "left": 658,
+        "top": 496,
+        "width": 222,
+        "height": 242
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 222,
+        "height": 242
+      },
+      "resized": {
+        "width": 59,
+        "height": 64
+      },
+      "scale": 0.264463,
+      "padding": {
+        "left": 10,
+        "top": 8
+      },
+      "rgbaSha256": "2f38ac9c6c64402dacf54889e3a3e1214abfd1282d1d6fcd683601aa81d0c75a"
+    },
+    {
+      "id": "fruit-parfait",
+      "atlas": "food-109-6",
+      "index": 13,
+      "x": 240,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 10,
+        "width": 56,
+        "height": 60
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 13,
+      "sourceBox": {
+        "left": 957,
+        "top": 495,
+        "width": 253,
+        "height": 248
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 253,
+        "height": 248
+      },
+      "resized": {
+        "width": 64,
+        "height": 63
+      },
+      "scale": 0.252964,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "c6e83a2dc12ed1bd0f4bb94459dfcaaef55538089a4d55620b2198d231ab2092"
+    },
+    {
+      "id": "bingsu",
+      "atlas": "food-109-6",
+      "index": 14,
+      "x": 320,
+      "y": 160,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 11,
+        "width": 61,
+        "height": 56
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 14,
+      "sourceBox": {
+        "left": 1237,
+        "top": 510,
+        "width": 265,
+        "height": 236
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 265,
+        "height": 236
+      },
+      "resized": {
+        "width": 64,
+        "height": 57
+      },
+      "scale": 0.241509,
+      "padding": {
+        "left": 8,
+        "top": 11
+      },
+      "rgbaSha256": "2dc83c8c06d68f89fb4c723b847e64a9d29948cdbe5da5b1477d4f221bb0a65b"
+    },
+    {
+      "id": "jelly",
+      "atlas": "food-109-6",
+      "index": 15,
+      "x": 0,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 17,
+        "width": 63,
+        "height": 46
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 15,
+      "sourceBox": {
+        "left": 44,
+        "top": 766,
+        "width": 277,
+        "height": 198
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 277,
+        "height": 198
+      },
+      "resized": {
+        "width": 64,
+        "height": 46
+      },
+      "scale": 0.231047,
+      "padding": {
+        "left": 8,
+        "top": 17
+      },
+      "rgbaSha256": "95403c8f1d52ad8523033af8a098985001fe9d3c7afc9c4812367d74acdefd7c"
+    },
+    {
+      "id": "yogurt",
+      "atlas": "food-109-6",
+      "index": 16,
+      "x": 80,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 10,
+        "y": 9,
+        "width": 57,
+        "height": 61
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 16,
+      "sourceBox": {
+        "left": 357,
+        "top": 744,
+        "width": 237,
+        "height": 238
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 237,
+        "height": 238
+      },
+      "resized": {
+        "width": 64,
+        "height": 64
+      },
+      "scale": 0.268908,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "67ec227126da7d5266b756a34f8b9e9382468bcb06b7a43ce25aee307d2438ac"
+    },
+    {
+      "id": "cheesecake",
+      "atlas": "food-109-6",
+      "index": 17,
+      "x": 160,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 10,
+        "width": 60,
+        "height": 49
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 17,
+      "sourceBox": {
+        "left": 631,
+        "top": 743,
+        "width": 277,
+        "height": 261
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 277,
+        "height": 261
+      },
+      "resized": {
+        "width": 64,
+        "height": 60
+      },
+      "scale": 0.231047,
+      "padding": {
+        "left": 8,
+        "top": 10
+      },
+      "rgbaSha256": "24c8b405ee6405adf2d61bc14147f019c990e01dfc96956955d7de93cab3126a"
+    },
+    {
+      "id": "tiramisu",
+      "atlas": "food-109-6",
+      "index": 18,
+      "x": 240,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 9,
+        "y": 12,
+        "width": 63,
+        "height": 56
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 18,
+      "sourceBox": {
+        "left": 939,
+        "top": 743,
+        "width": 261,
+        "height": 233
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 261,
+        "height": 233
+      },
+      "resized": {
+        "width": 64,
+        "height": 57
+      },
+      "scale": 0.245211,
+      "padding": {
+        "left": 8,
+        "top": 11
+      },
+      "rgbaSha256": "a93e67f098b01e2578c26654b0aea799277c903b2fda0f4c256dcd3b20a406e3"
+    },
+    {
+      "id": "chocolate",
+      "atlas": "food-109-6",
+      "index": 19,
+      "x": 320,
+      "y": 240,
+      "width": 80,
+      "height": 80,
+      "content": {
+        "x": 8,
+        "y": 13,
+        "width": 64,
+        "height": 49
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-간식백스무종/원본/간식06_달콤디저트.png",
+      "sourceIndex": 19,
+      "sourceBox": {
+        "left": 1228,
+        "top": 760,
+        "width": 278,
+        "height": 230
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 0,
+        "width": 278,
+        "height": 230
+      },
+      "resized": {
+        "width": 64,
+        "height": 53
+      },
+      "scale": 0.230216,
+      "padding": {
+        "left": 8,
+        "top": 13
+      },
+      "rgbaSha256": "bc2fadaf7cf6d39d70d97412c64113828d2c2f40bde30354a07a50c2dd08c69e"
+    }
+  ],
+  "delivery": {
+    "cell": 80,
+    "padding": 8,
+    "quality": 82,
+    "alphaQuality": 100,
+    "sourcePreserved": true,
+    "pairedStamps": "same live-food frame, no separate raster"
+  }
+}

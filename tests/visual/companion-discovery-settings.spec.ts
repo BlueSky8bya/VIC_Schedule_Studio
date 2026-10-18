@@ -6,16 +6,16 @@ import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_COLLECTION_KEY, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { createCompanionLife } from "@/lib/ui/viewer-companion/life";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
-import { companionFoodChance } from "@/lib/ui/viewer-companion/snacks";
+import { companionFoodChance, COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { settlePanelLayout } from "./helpers/panel-layout";
 
 test.use({ viewport: { width: 1440, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
 type Surface = "viewer" | "studio" | "preview";
-type FixtureOptions = { theme?: "light" | "dark"; collection?: CompanionCollection; reduce?: boolean; graphics?: "max" | "off" | "soft" };
+type FixtureOptions = { theme?: "light" | "dark"; collection?: CompanionCollection; reduce?: boolean; graphics?: "max" | "off" | "soft"; enabled?: boolean };
 const seededCollection: CompanionCollection = { version: 1, situations: ["meal-finished"], foods: ["apple", "peach"], behaviors: ["ask-petting", "doze-curl"], gifts: { pending: "beret", unlocked: ["sunglasses"], equipped: "sunglasses", activeMs: 300000, interactionCredit: 1 } };
 
-async function installFixture(page: Page, { theme = "light", collection, reduce = true, graphics = "max" }: FixtureOptions = {}) {
+async function installFixture(page: Page, { theme = "light", collection, reduce = true, graphics = "max", enabled = false }: FixtureOptions = {}) {
   const writes: string[] = [], errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   const manifest = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
@@ -28,16 +28,16 @@ async function installFixture(page: Page, { theme = "light", collection, reduce 
     if (request.method() === "GET" && (pathname === "/" || pathname === "/studio")) return route.fulfill({ status: 200, contentType: "text/plain", body: "" });
     return route.continue();
   });
-  await page.addInitScript(({ prefs, care, life, key, epoch, theme, collection, collectionKey, reduce, graphics }) => {
+  await page.addInitScript(({ prefs, care, life, key, epoch, theme, collection, collectionKey, reduce, graphics, enabled }) => {
     if (localStorage.getItem("fixture.discovery107")) return;
     localStorage.setItem("fixture.discovery107", "seeded");
     for (const [name, value] of Object.entries({ [key]: epoch, "vic.dark": theme === "dark" ? "on" : "off", "vic.sound": "off", "vic.ambient": "off", "vic.reduceMotion": reduce ? "on" : "off", "vic.gfxPref": graphics === "soft" ? "auto" : graphics })) localStorage.setItem(name, value);
     if (graphics === "soft") localStorage.setItem("vic.gfx", JSON.stringify({ mode: "soft", at: Date.now(), v: 3 }));
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: false }));
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled, roam: false, jump: false, sleep: false, feeding: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...care, hunger: .23, affection: .64, habits: { sociability: .6, playfulness: .3, confidence: .5, credit: 0, generation: 0 }, life }));
     if (collection) localStorage.setItem(collectionKey, JSON.stringify(collection));
     else localStorage.removeItem(collectionKey);
-  }, { prefs: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE, life: createCompanionLife(() => 0), key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, theme, collection, collectionKey: COMPANION_COLLECTION_KEY, reduce, graphics });
+  }, { prefs: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE, life: createCompanionLife(() => 0), key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, theme, collection, collectionKey: COMPANION_COLLECTION_KEY, reduce, graphics, enabled });
   return { writes, errors };
 }
 
@@ -69,7 +69,7 @@ const readCollection = (page: Page) => page.evaluate(key => JSON.parse(localStor
 for (const surface of ["viewer", "studio", "preview"] as const) for (const theme of ["light", "dark"] as const) {
   test(`${surface} ${theme}: real mini-nav discovers, opens, equips and retains local keepsakes`, async ({ page, context }) => {
     const safety = await installFixture(page, { theme, collection: seededCollection });
-    mkdirSync(".scratch-pw/companion-107-settings", { recursive: true });
+    mkdirSync(".scratch-pw/companion-109-settings", { recursive: true });
     await visitSurface(page, surface);
     let { dialog, profile, nav } = await openProfile(page);
     await expect(nav.getByRole("tab")).toHaveText(["함께 지내기", "도감", "옷장"]);
@@ -81,8 +81,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await nav.getByRole("tab", { name: "도감", exact: true }).click();
     await expect(nav.locator('[data-collection-art-id="book-open"]')).toHaveCount(1);
     const foods = profile.locator(".rhh-collection-grid:not(.rhh-behavior-grid):not(.rhh-accessory-grid)");
-    await expect(foods.getByRole("button")).toHaveCount(60);
-    await expect(profile.getByRole("button", { name: "냠냠 도감 2/60", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(foods.getByRole("button")).toHaveCount(Math.min(24, COMPANION_FOOD_KINDS.length));
+    await expect(profile.getByRole("button", { name: `냠냠 도감 2/${COMPANION_FOOD_KINDS.length}`, exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect(foods.locator("button[data-found]")).toHaveCount(2);
     await expect(foods.locator('[data-collection-art="food-stamp"]')).toHaveCount(2);
     await expect(foods.locator(".rhh-collection-rarity")).toHaveCount(2);
@@ -99,8 +99,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await expect(profile.locator(".rhh-collection-detail")).toBeInViewport();
     await expect(profile.locator(".rhh-collection-detail .rhh-collection-rarity")).toHaveText("흔한");
     await expect(profile.locator(".rhh-collection-chance")).toHaveText(`기본 등장 ${(companionFoodChance("apple") * 100).toFixed(1)}% · 직전 간식 제외 시 달라져요.`);
-    await dialog.screenshot({ path: `.scratch-pw/companion-107-settings/food-detail-${surface}-${theme}.png` });
-    await page.screenshot({ path: `.scratch-pw/companion-107-settings/viewport-food-${surface}-${theme}.png` });
+    await dialog.screenshot({ path: `.scratch-pw/companion-109-settings/food-detail-${surface}-${theme}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-109-settings/viewport-food-${surface}-${theme}.png` });
     await foods.getByRole("button", { name: "??? · 17", exact: true }).click();
     await expect(profile.locator(".rhh-collection-detail .rhh-collection-rarity")).toHaveCount(0);
     await expect(profile.locator(".rhh-collection-chance")).toHaveCount(0);
@@ -108,10 +108,29 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     expect(companionFoodChance("blueberry")).toBeLessThan(companionFoodChance("apple"));
     const fixedTargets = await profile.locator('[data-act="companion-collection-inspect"]').evaluateAll(elements => elements.map(element => element.getAttribute("data-act-opt")));
     expect(new Set(fixedTargets)).toEqual(new Set(["food"]));
-    await foods.getByRole("button", { name: "??? · 60", exact: true }).click();
+    await foods.getByRole("button", { name: "??? · 17", exact: true }).focus();
+    await page.keyboard.press("End");
+    const lastFood = foods.locator(`[data-food-index="${COMPANION_FOOD_KINDS.length - 1}"]`);
+    await expect(lastFood).toBeFocused();
+    await expect(foods.getByRole("button")).toHaveCount(COMPANION_FOOD_KINDS.length % 24 || 24);
+    await expect(lastFood).toHaveAttribute("aria-label", `??? · ${COMPANION_FOOD_KINDS.length}`);
     await expect(profile.locator(".rhh-collection-detail")).toBeInViewport({ ratio: 1 });
     await expect(profile.locator(".rhh-collection-detail strong")).toHaveText("???");
-    await page.screenshot({ path: `.scratch-pw/companion-107-settings/viewport-food-deep-${surface}-${theme}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-109-settings/viewport-food-deep-${surface}-${theme}.png` });
+    await page.keyboard.press("Home");
+    await expect(foods.locator('[data-food-index="0"]')).toBeFocused();
+    await profile.getByRole("button", { name: "다음 간식", exact: true }).click();
+    await expect(foods.locator('[data-food-index="24"]')).toHaveAttribute("aria-pressed", "true");
+    await foods.locator('[data-food-index="24"]').focus(); await page.keyboard.press("ArrowLeft");
+    await expect(foods.locator('[data-food-index="23"]')).toBeFocused();
+    await page.keyboard.press("ArrowRight"); await expect(foods.locator('[data-food-index="24"]')).toBeFocused();
+    await expect(foods.getByRole("button")).toHaveCount(24);
+    await profile.getByRole("button", { name: "이전 간식", exact: true }).click();
+    await expect(foods.locator('[data-food-index="0"]')).toHaveAttribute("aria-pressed", "true");
+    await profile.getByRole("button", { name: "다음 간식", exact: true }).focus(); await page.keyboard.press("Enter");
+    await expect(foods.locator('[data-food-index="24"]')).toBeFocused();
+    await profile.getByRole("button", { name: "이전 간식", exact: true }).focus(); await page.keyboard.press("Enter");
+    await expect(foods.locator('[data-food-index="0"]')).toBeFocused();
 
     await profile.getByRole("button", { name: "추억 도감 3/24", exact: true }).click();
     const behaviors = profile.locator(".rhh-behavior-grid");
@@ -130,8 +149,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await expect(profile.locator(".rhh-collection-detail")).toBeInViewport({ ratio: 1 });
     expect(await behaviors.getByRole("button", { name: "??? · 12", exact: true }).evaluate(node => { const r = node.getBoundingClientRect(); return node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })).toBe(true);
     await expect(behaviors.locator('[tabindex="0"]')).toHaveCount(1);
-    mkdirSync(".scratch-pw/companion-107-settings", { recursive: true });
-    await dialog.screenshot({ path: `.scratch-pw/companion-107-settings/discovery-${surface}-${theme}.png` });
+    mkdirSync(".scratch-pw/companion-109-settings", { recursive: true });
+    await dialog.screenshot({ path: `.scratch-pw/companion-109-settings/discovery-${surface}-${theme}.png` });
     await profile.getByRole("button", { name: "특별한 순간", exact: true }).click();
     await expect(behaviors.getByRole("button")).toHaveCount(12);
     await expect(behaviors.locator("button[data-found]")).toHaveCount(1);
@@ -143,8 +162,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await expect(profile.locator(".rhh-collection-detail")).not.toContainText("아직 발견");
     await expect(profile.locator(".rhh-collection-detail")).toBeInViewport({ ratio: 1 });
     expect(new Set(await profile.locator('[data-act="companion-collection-inspect"]').evaluateAll(elements => elements.map(element => element.getAttribute("data-act-opt"))))).toEqual(new Set(["moment"]));
-    await dialog.screenshot({ path: `.scratch-pw/companion-107-settings/moments-${surface}-${theme}.png` });
-    await page.screenshot({ path: `.scratch-pw/companion-107-settings/viewport-moments-deep-${surface}-${theme}.png` });
+    await dialog.screenshot({ path: `.scratch-pw/companion-109-settings/moments-${surface}-${theme}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-109-settings/viewport-moments-deep-${surface}-${theme}.png` });
 
     await nav.getByRole("tab", { name: "옷장", exact: true }).click();
     const accessories = profile.locator(".rhh-accessory-grid");
@@ -157,7 +176,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await accessories.getByRole("button", { name: "??? · 12", exact: true }).click();
     await expect(profile.locator(".rhh-collection-detail")).toBeInViewport({ ratio: 1 });
     await expect(profile.locator(".rhh-collection-detail strong")).toHaveText("???");
-    await page.screenshot({ path: `.scratch-pw/companion-107-settings/viewport-wardrobe-deep-${surface}-${theme}.png` });
+    await page.screenshot({ path: `.scratch-pw/companion-109-settings/viewport-wardrobe-deep-${surface}-${theme}.png` });
     await profile.getByRole("button", { name: "선물 열기", exact: true }).click();
     await expect(profile.getByRole("button", { name: "선물 열기", exact: true })).toHaveCount(0);
     await expect(accessories.locator('[data-accessory="beret"]')).toBeFocused();
@@ -171,7 +190,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     expect((await readCollection(page)).gifts.equipped).toBeNull();
     await accessories.locator('[data-accessory="beret"]').click();
     await profile.locator(".rhh-collection-detail").getByRole("button", { name: "장착하기", exact: true }).click();
-    await dialog.screenshot({ path: `.scratch-pw/companion-107-settings/gifts-${surface}-${theme}.png` });
+    await dialog.screenshot({ path: `.scratch-pw/companion-109-settings/gifts-${surface}-${theme}.png` });
 
     const keepsakes = await readCollection(page);
     await nav.getByRole("tab", { name: "함께 지내기", exact: true }).click();
@@ -201,7 +220,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
       await sibling.close(); await page.bringToFront();
       await expect(accessories.getByRole("button", { name: "리본 · 장착 중", exact: true })).toBeVisible();
       await nav.getByRole("tab", { name: "도감", exact: true }).click();
-      await expect(profile.getByRole("button", { name: "냠냠 도감 3/60", exact: true })).toBeVisible();
+      await expect(profile.getByRole("button", { name: `냠냠 도감 3/${COMPANION_FOOD_KINDS.length}`, exact: true })).toBeVisible();
       await expect(profile.getByRole("button", { name: "추억 도감 6/24", exact: true })).toBeVisible();
     }
     const persisted = await readCollection(page);
@@ -220,11 +239,12 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
 }
 
 test("fresh local discovery starts empty and never manufactures a pending gift", async ({ page }) => {
+  expect(COMPANION_FOOD_KINDS).toHaveLength(180);
   const safety = await installFixture(page);
   await visitSurface(page, "viewer");
   const { profile, nav } = await openProfile(page);
   await nav.getByRole("tab", { name: "도감", exact: true }).click();
-  await expect(profile.getByRole("button", { name: "냠냠 도감 0/60", exact: true })).toBeVisible();
+  await expect(profile.getByRole("button", { name: `냠냠 도감 0/${COMPANION_FOOD_KINDS.length}`, exact: true })).toBeVisible();
   await expect(profile.getByRole("button", { name: "추억 도감 0/24", exact: true })).toBeVisible();
   await expect(profile.locator("button[data-found]")).toHaveCount(0);
   await expect(profile.locator('[data-collection-art-id="discovery-seal"]')).toHaveCount(1);
@@ -238,16 +258,16 @@ test("fresh local discovery starts empty and never manufactures a pending gift",
   expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
 });
 
-for (const mode of ["normal", "reduce", "off", "soft"] as const) {
+for (const mode of ["normal", "disabled", "reduce", "off", "soft"] as const) {
   test(`profile cursor ${mode}: native input respects saved motion and graphics without changing flags`, async ({ page }) => {
-    const safety = await installFixture(page, { reduce: mode === "reduce", graphics: mode === "off" || mode === "soft" ? mode : "max" });
+    const safety = await installFixture(page, { reduce: mode === "reduce", graphics: mode === "off" || mode === "soft" ? mode : "max", enabled: mode !== "disabled" });
     await visitSurface(page, "viewer");
     const { dialog, profile, nav } = await openProfile(page);
     const flags = () => page.evaluate(() => ({ reduce: document.documentElement.hasAttribute("data-reduce-motion"), graphics: document.documentElement.getAttribute("data-gfx"), savedReduce: localStorage.getItem("vic.reduceMotion"), savedGraphics: localStorage.getItem("vic.gfxPref"), enabled: JSON.parse(localStorage.getItem("vic.viewerCompanion")!).enabled }));
     const before = await flags();
     expect(before.reduce).toBe(mode === "reduce");
     expect(before.graphics).toBe(mode === "off" || mode === "soft" ? mode : null);
-    expect(before.enabled).toBe(false);
+    expect(before.enabled).toBe(mode !== "disabled");
     await profile.hover({ position: { x: 25, y: 25 } });
     if (mode === "normal") {
       await expect(profile).toHaveAttribute("data-spotlight", "");
@@ -255,12 +275,13 @@ for (const mode of ["normal", "reduce", "off", "soft"] as const) {
       await page.mouse.move(0, 0); await expect(profile).not.toHaveAttribute("data-spotlight");
     } else {
       await expect(profile).not.toHaveAttribute("data-spotlight");
-      expect(await profile.evaluate(element => getComputedStyle(element, "::before").display)).toBe("none");
+      if (mode === "disabled") expect(await profile.evaluate(element => getComputedStyle(element, "::before").opacity)).toBe("0");
+      else expect(await profile.evaluate(element => getComputedStyle(element, "::before").display)).toBe("none");
     }
     await nav.getByRole("tab", { name: "도감", exact: true }).click();
     const tile = profile.locator(".rhh-collection-tile").first();
     await tile.hover();
-    if (mode !== "normal") expect(await tile.evaluate(element => getComputedStyle(element).transform)).toBe("none");
+    if (mode !== "normal" && mode !== "disabled") expect(await tile.evaluate(element => getComputedStyle(element).transform)).toBe("none");
     await dialog.getByRole("button", { name: "닫기", exact: true }).click();
     const reopened = await openProfile(page);
     await expect(reopened.profile).not.toHaveAttribute("data-spotlight");

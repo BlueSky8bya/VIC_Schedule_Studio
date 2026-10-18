@@ -1,6 +1,6 @@
 # 108 — 집 라디오·옷장 미리보기·음식 형태
 
-2026-10-18 KST. Deployed revision `9f97982cc67972fe6e277640d8cc5519486c15fa` verified. Post-release evidence is local bookkeeping; no extra deployment is needed for this record alone.
+2026-10-18 KST. Final deployed revision `253453e6cb50fa38cf7b03c07be16123a3f9ba54` verified after the narrow target-size follow-up below. Initial108 revision9f97982c evidence is retained separately. Post-release evidence is local bookkeeping; no extra deployment is needed for this record alone.
 
 ## Result and boundaries
 
@@ -36,7 +36,7 @@ The independent boundary review follows the fixed-target dictionary through meta
 
 No genuine-user preference reset, collection grant or production schedule edit is authorized for verification. Actual broadcaster PC, speaker listening, real-login RLS and provider quota effects remain outside these fixture results.
 
-## Final verification
+## Initial108 verification —9f97982c
 
 | Check | Current result |
 | --- | --- |
@@ -71,4 +71,12 @@ The first deployed harness run misclassified an initial POST read as a write: th
 
 Only two product selectors gain `.vic-settings`: radio mood buttons and playback buttons. Their specificity now exceeds the shared32px/radius10px rule. Declarations, shared metallic material, selected-mood colors, food, audio pipeline and world runtime are unchanged. An independent read-only review finds no remaining P1/P2.
 
-Follow-up build `0-Iz9tEa7Wd6lmWkH9hFp` passes the full229unit files/2,391tests, typecheck, lint, build and harness277. Targeted native16/16 PASS, zero failures/retries/skips,160.8s: radio4 plus wardrobe12. Each of viewer/studio/preview now checks all6actual screen targets are at least44px and mood corners are pills. Settled light/dark screenshots were directly reviewed. Evidence: `.scratch-pw/companion-108-ui-followup-report.json` (SHA256 `7A95E2B1DFFC8C344CEF81D943925F19FDF5F857C922873F121F53AA207B2B1B`) and `companion-108-ui-followup-results`. Known native hidden-window1 stays excluded/unverified. Earlier51 remain evidence for9f97982c, not16additional current-build cases. Follow-up authorized push and exact deployed checks are pending.
+Follow-up build `0-Iz9tEa7Wd6lmWkH9hFp` passes the full229unit files/2,391tests, typecheck, lint, build and harness277. Targeted native16/16 PASS, zero failures/retries/skips,160.8s: radio4 plus wardrobe12. Each of viewer/studio/preview now checks all6actual screen targets are at least44px and mood corners are pills. Settled light/dark screenshots were directly reviewed. Evidence: `.scratch-pw/companion-108-ui-followup-report.json` (SHA256 `7A95E2B1DFFC8C344CEF81D943925F19FDF5F857C922873F121F53AA207B2B1B`) and `companion-108-ui-followup-results`. Known native hidden-window1 stays excluded/unverified. Earlier51 remain evidence for9f97982c, not16additional current-build cases.
+
+Follow-up pushed/deployed SHA `253453e6cb50fa38cf7b03c07be16123a3f9ba54`: all13 [remote quality39110765660](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39110765660) steps and Vercel succeed. Production returns that exact full SHA. The same public clock/warm/anonymous-developer/fixture-body canaries pass (`deployed-canaries-followup.json`). Fresh guarded anonymous production UI also passes: no autoplay, all32rows, actual206 playback/explicit stop, neutral empty wardrobe/concealed discoveries, visible house radio and identical new food bytes. Six radio buttons measure44px, mood radii999px. No page errors or unknown writes; every POST remains aborted, including the source-identified saved-heart read. Settled production screenshots were directly reviewed. Results under `.scratch-pw/companion-108/production/`; initial deployed artifacts are preserved under `production-9f97982c/`. The task-owned local fixture server and test browsers are closed. Protected user art-note bytes remain unchanged and excluded from both commits. No further product change was made after the follow-up checks.
+
+## Historical verification safety correction —109 source audit
+
+The108 scripts used a real GET to `/api/soop-live` for deployed SHA proof and allowed the public browser's live polling. Source review during109 establishes that a cache-miss GET can schedule `recordLiveTick`, timeline synchronization and VOD synchronization through `after()`. The108 POST/PUT/PATCH/DELETE interception proves only that those browser requests were aborted; it does not establish absence of every server-side write. The historical evidence does not show whether a particular request reached a cache miss or caused a write. No particular past write, absence of writes or broader safety conclusion is asserted. Earlier UI/asset observations remain scoped to what they measured.
+
+The replacement109 checker prohibits that GET in its top-level fetch helper and intercepts it with an explicitly offline public DTO in the anonymous browser. That stub is not revision proof. Exact full SHA proof instead reads the actual public HTML and its public static JavaScript, without private manifests or Server Action invocation. On2026-10-18 at08:59:41UTC, this read-only extraction confirmed full `253453e6cb50fa38cf7b03c07be16123a3f9ba54` in two literals of `/_next/static/chunks/559-e68f4ab162a2ef7e.js` (SHA256 `9f3d3b05382077c7c86a78d4471a95ec32d3d2d0d587832192e8002e68a05d37`). Only the root HTML and24actual public chunks were fetched; no browser or live-state GET ran in this extraction. Evidence: `.scratch-pw/companion-109/current-108-public-release-proof.json`. The109 browser/canary scripts remain unexecuted at this correction and require the deployed revision and execution handoff.

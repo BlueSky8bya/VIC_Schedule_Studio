@@ -252,6 +252,7 @@ for (const surface of ["viewer", "studio"] as const) {
       await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
       const radio = page.getByRole("button", { name: "라디오 켜기", exact: true });
       await expect(radio).toHaveAttribute("aria-pressed", "false");
+      await expect(page.locator(".vc-radio-notes")).toHaveCount(0);
       const hit = (await radio.boundingBox())!; expect(hit.width).toBeGreaterThanOrEqual(44); expect(hit.height).toBeGreaterThanOrEqual(44);
       const radioGeometry = await radio.evaluate(node => {
         const shelf = node.closest(".vc-home-shelf")!.getBoundingClientRect(), svg = node.querySelector("svg")!.getBoundingClientRect(), button = node.getBoundingClientRect();
@@ -268,6 +269,18 @@ for (const surface of ["viewer", "studio"] as const) {
       // player still selects the actual song with its untouched RNG/media.
       await radio.click(); const stop = page.getByRole("button", { name: "라디오 끄기", exact: true });
       await expect(stop).toHaveAttribute("aria-pressed", "true", { timeout: 10000 });
+      const notes = page.locator(".vc-radio-note"); await expect(notes).toHaveCount(3);
+      await expect(notes.first()).toHaveCSS("animation-name", "vc-radio-note-float");
+      const noteBefore = await notes.evaluateAll(nodes => nodes.map(node => { const style = getComputedStyle(node); return { transform: style.transform, opacity: style.opacity }; }));
+      await page.waitForTimeout(180);
+      const noteAfter = await notes.evaluateAll(nodes => nodes.map(node => { const style = getComputedStyle(node); return { transform: style.transform, opacity: style.opacity }; }));
+      expect(noteAfter.some((note, index) => note.transform !== noteBefore[index].transform || note.opacity !== noteBefore[index].opacity)).toBe(true);
+      evidence.get(page)!.care.push({ phase: "actual-playback-only-css-notes", noteBefore, noteAfter });
+      if (mode === "radio-lively") {
+        const room = (await page.locator(".vc-home-room").boundingBox())!;
+        mkdirSync(output, { recursive: true });
+        await page.screenshot({ path: `${output}/${surface}-radio-notes-native.png`, clip: room, scale: "css", animations: "allow" });
+      }
       await expect.poll(() => evidence.get(page)!.media.some(item => [200, 206].includes(item.status))).toBe(true);
       const selected = [...new Set(evidence.get(page)!.media.map(item => item.path))]; expect(selected).toHaveLength(1);
       const track = COMPANION_RADIO_TRACKS.find(item => item.src === selected[0]); expect(track).toBeDefined();
@@ -315,6 +328,7 @@ for (const surface of ["viewer", "studio"] as const) {
         await surfaceRoot.evaluate(node => node.setAttribute("data-companion-premiere-owner", "fixture-108-radio-guard"));
         try { await expect(page.getByRole("button", { name: "라디오 켜기", exact: true })).toHaveAttribute("aria-pressed", "false"); }
         finally { await surfaceRoot.evaluate(node => node.removeAttribute("data-companion-premiere-owner")); }
+        await expect(page.locator(".vc-radio-notes")).toHaveCount(0);
         await waitVisibleFocused(page, 1200);
         await expect(page.getByRole("button", { name: "라디오 켜기", exact: true })).toHaveAttribute("aria-pressed", "false");
         evidence.get(page)!.care.push({ phase: "rendered-premiere-owner-stop-and-no-replay", surface, media: [...evidence.get(page)!.media] });
@@ -323,9 +337,15 @@ for (const surface of ["viewer", "studio"] as const) {
         await expect.poll(() => new Set(evidence.get(page)!.media.map(item => item.path)).size).toBe(2);
       }
       await stop.click(); await expect(page.getByRole("button", { name: "라디오 켜기", exact: true })).toHaveAttribute("aria-pressed", "false");
+      await expect(page.locator(".vc-radio-notes")).toHaveCount(0);
       await expect(pet(page)).not.toHaveAttribute("data-radio-reaction");
       // The actual cushion command owns exactly one plush cue. Revalidation
       // and the later arrival do not manufacture another button interaction.
+      // A genuine held interval prevents an autonomous landing/discovery cue
+      // from competing with this isolated assertion's existing burst guard.
+      await actor(page).focus(); await actor(page).press("Space");
+      await expect(pet(page)).toHaveAttribute("data-state", "held");
+      await waitVisibleFocused(page, 1400);
       const offset = (await sounds(page)).length, cushion = page.getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true });
       await cushion.focus(); await cushion.press("Enter");
       await expect.poll(async () => (await sounds(page)).slice(offset).filter(cue => cue === "cushion").length).toBe(1);

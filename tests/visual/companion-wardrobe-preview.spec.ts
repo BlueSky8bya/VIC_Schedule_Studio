@@ -56,6 +56,22 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
   await profile.locator('[data-accessory="beret"]').click();
   await expect(profile.locator(".rhh-wardrobe-detail-copy strong")).toHaveText("베레모");
   await expect(preview.locator(".vc-wearable-front")).toBeVisible();
+  // Measure the final selected style after its real finite transitions. The
+  // native click intentionally starts from the previous unselected colors.
+  await expect.poll(() => profile.locator('[data-accessory="beret"]').evaluate(element => element.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))).length)).toBe(0);
+  const selection = await profile.locator('[data-accessory="beret"]').evaluate(element => {
+    const selected = getComputedStyle(element), other = getComputedStyle(element.closest("ul")!.querySelector('[data-accessory="sunglasses"]')!);
+    const canvas = document.createElement("canvas"); canvas.width = canvas.height = 1;
+    const context = canvas.getContext("2d")!;
+    // CSS transitions may serialize modern color() values; let the browser
+    // resolve them instead of assuming every computed color is 255-based rgb.
+    const channels = (value: string) => { context.clearRect(0, 0, 1, 1); context.fillStyle = value; context.fillRect(0, 0, 1, 1); return [...context.getImageData(0, 0, 1, 1).data].slice(0, 3); };
+    const luminance = (values: number[]) => values.map(channel => { const value = channel / 255; return value <= .04045 ? value / 12.92 : ((value + .055) / 1.055) ** 2.4; }).reduce((sum, value, index) => sum + value * [.2126, .7152, .0722][index], 0);
+    const border = luminance(channels(selected.borderTopColor)), background = luminance(channels(selected.backgroundColor));
+    return { background: selected.backgroundColor, otherBackground: other.backgroundColor, border: selected.borderTopColor, otherBorder: other.borderTopColor, shadow: selected.boxShadow, boundaryContrast: (Math.max(border, background) + .05) / (Math.min(border, background) + .05) };
+  });
+  expect(selection.background).not.toBe(selection.otherBackground); expect(selection.border).not.toBe(selection.otherBorder);
+  expect(selection.shadow).toContain("inset"); expect(selection.boundaryContrast).toBeGreaterThanOrEqual(3);
   // The real world may persist its pre-dialog active milliseconds within the
   // existing5s budget. Settle that pending write before checking preview purity.
   await page.waitForTimeout(5500);
@@ -74,8 +90,9 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
   const tile = profile.locator('[data-accessory="leaf-umbrella"]');
   expect(await tile.evaluate(node => { const r = node.getBoundingClientRect(); return node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })).toBe(true);
   await profile.locator('[data-accessory="beret"]').click();
-  mkdirSync(".scratch-pw/companion-108-settings", { recursive: true });
-  await page.screenshot({ path: `.scratch-pw/companion-108-settings/wardrobe-${surface}-${theme}.png` });
+  await settlePanelLayout(page);
+  mkdirSync(".scratch-pw/companion-109-settings", { recursive: true });
+  await page.screenshot({ path: `.scratch-pw/companion-109-settings/wardrobe-${surface}-${theme}.png` });
   await profile.getByRole("tab", { name: "함께 지내기", exact: true }).click();
   await expect(preview).toHaveCount(0); expect(await saved(page)).toEqual(before);
   expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
@@ -108,12 +125,20 @@ test("narrow desktop keeps the real preview and deep selection visible, and oute
   await expect(profile.locator(".rhh-wardrobe-detail")).toBeInViewport({ ratio: 1 });
   expect(await profile.evaluate(node => node.scrollWidth <= node.clientWidth + 1)).toBe(true);
   expect(await last.evaluate(node => { const r = node.getBoundingClientRect(); return node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })).toBe(true);
-  mkdirSync(".scratch-pw/companion-108-settings", { recursive: true });
-  await page.screenshot({ path: ".scratch-pw/companion-108-settings/wardrobe-narrow.png" });
+  mkdirSync(".scratch-pw/companion-109-settings", { recursive: true });
+  await page.screenshot({ path: ".scratch-pw/companion-109-settings/wardrobe-narrow.png" });
   await dialog.locator('[data-tab="sound"]').click();
   await expect(preview).toHaveCount(0);
   await dialog.locator('[data-tab="companion"]').click();
   await expect(preview).toHaveAttribute("data-preview-ready", "");
+  await dialog.getByRole("button", { name: "닫기", exact: true }).click();
+  await expect(preview).toHaveCount(0);
+  await page.getByRole("button", { name: "설정", exact: true }).click();
+  const reopenedDialog = page.getByRole("dialog", { name: "설정", exact: true });
+  await reopenedDialog.getByRole("tab", { name: "빅타민", exact: true }).click();
+  await reopenedDialog.getByRole("tab", { name: "프로필", exact: true }).click();
+  await reopenedDialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "옷장", exact: true }).click();
+  await expect(reopenedDialog.getByRole("img", { name: "빅타민 미리보기", exact: true })).toHaveAttribute("data-preview-ready", "");
   expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
 });
 
