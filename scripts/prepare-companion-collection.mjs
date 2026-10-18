@@ -1,4 +1,4 @@
-// Deterministic alpha-preserving packing of additive106/107 collection cutouts.
+// Deterministic alpha-preserving packing of106/107 cutouts and the explicit108 rice-ball replacement.
 // No image generation, color-keying, redraw, opacity repair or source edits.
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -7,15 +7,15 @@ import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const edition = process.argv.includes('--edition=107') ? 107 : 106;
-const runs = { 106: 'art-src/빅타민/수집/작업회차/20261018-도감과선물', 107: 'art-src/빅타민/수집/작업회차/20261018-먹거리와추억' };
+const edition = process.argv.includes('--edition=108') ? 108 : process.argv.includes('--edition=107') ? 107 : 106;
+const runs = { 106: 'art-src/빅타민/수집/작업회차/20261018-도감과선물', 107: 'art-src/빅타민/수집/작업회차/20261018-먹거리와추억', 108: 'art-src/빅타민/수집/작업회차/20261018-먹거리일치와삼각김밥' };
 const run = runs[edition];
 const destination = 'public/companion/collection';
 const registryPath = 'lib/ui/viewer-companion/collection-art.ts';
 const receiptPath = run + '/정리본/패킹기록.json';
 const check = process.argv.includes('--check');
 const available = process.argv.includes('--available');
-if (process.argv.slice(2).some(arg => !['--check', '--available', '--edition=107'].includes(arg))) throw Error('Usage: node scripts/prepare-companion-collection.mjs [--edition=107] [--available] [--check]');
+if (process.argv.slice(2).some(arg => !['--check', '--available', '--edition=107', '--edition=108'].includes(arg)) || process.argv.filter(arg => arg.startsWith('--edition=')).length > 1) throw Error('Usage: node scripts/prepare-companion-collection.mjs [--edition=107|--edition=108] [--available] [--check]');
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
 const round = value => Math.round(value * 1e6) / 1e6;
 const behaviorIds = ['ask-petting', 'lean-nuzzle', 'paper-knead', 'paper-nest', 'cheer-rehearsal', 'doze-curl', 'groom', 'bow', 'pounce', 'tumble', 'dizzy', 'stretch'];
@@ -38,6 +38,7 @@ const editions = {
     { id: 'situation-stamp', kind: 'situation-stamp', file: 'situation-stamps-107-v1.webp', cell: 128, columns: 4, rows: 3 },
     { id: 'accessory-107', kind: 'accessory', file: 'accessories-107-v1.webp', cell: 128, columns: 6, rows: 4 },
   ],
+  108: [{ id: 'food-108', kind: 'food', file: 'rice-ball-108-v1.webp', cell: 96, columns: 1, rows: 1 }],
 };
 const definitions = editions[edition], foodAtlas = edition === 107 ? 'food-107' : 'food', stampAtlas = edition === 107 ? 'food-stamp-107' : 'food-stamp', accessoryAtlas = edition === 107 ? 'accessory-107' : 'accessory';
 const buckets = Object.fromEntries(definitions.map(item => [item.id, []]));
@@ -196,6 +197,11 @@ async function pixelSource(relative) {
 }
 
 const foodIds = [], batches = edition === 107 ? [4, 5] : [1, 2, 3];
+if (edition === 108) {
+  const source = await sheet(run + '/원본/한국편의점삼각김밥.png', 1, 1);
+  if (!source) throw Error('The explicit108 replacement requires its actual new native source');
+  await add(source, 0, 'food-108', 'rice-ball', 0); foodIds.push('rice-ball');
+} else {
 for (const [batch, number] of batches.entries()) {
   const label = String(number).padStart(2, '0');
   const source = await sheet(run + '/원본/먹거리' + label + '_생성과도장.png', 6, 4);
@@ -225,6 +231,7 @@ if (edition === 106) {
   if (bookGiftSheet) for (const [index, id] of bookGiftIds.entries()) await add(bookGiftSheet, index, 'book-gift', id, index);
 }
 if (!available && foodIds.length !== batches.length * 12) throw Error('All requested food/stamp pairs required');
+}
 
 const atlases = {};
 for (const definition of definitions) {
@@ -235,23 +242,28 @@ for (const definition of definitions) {
   await writeOrCheck(destination + '/' + definition.file, bytes);
   atlases[definition.id] = { src: '/companion/collection/' + definition.file, width, height, cell: definition.cell, columns: definition.columns, rows: definition.rows, sha256: hash(bytes) };
 }
-const receipt = { version: 1, method: 'Complete alpha-gap source crops, or complete alpha>0 connected components where rectangular bounds overlap; trim only alpha0; preserve all nontransparent RGBA exactly once before isotropic Lanczos resize; center in transparent cells; lossless WebP. Alpha>16 is segmentation/measurement only, never a pixel deletion rule.' + (edition === 107 ? ' Four original pixel SVG views use nearest-neighbor resizing to preserve exact flat black/white square edges.' : ''), sources, atlases, cells };
-const otherEdition = edition === 107 ? 106 : 107;
-const other = await read(runs[otherEdition] + '/정리본/패킹기록.json').then(bytes => JSON.parse(bytes)).catch(error => { if (error.code === 'ENOENT' && edition === 106) return null; throw error; });
-if (other) for (const atlas of Object.values(other.atlases)) {
-  if (!atlas.src.startsWith('/companion/collection/') || hash(await read('public' + atlas.src)) !== atlas.sha256) throw Error('Previously registered atlas bytes changed: ' + atlas.src);
+const receipt = { version: 1, method: 'Complete alpha-gap source crops, or complete alpha>0 connected components where rectangular bounds overlap; trim only alpha0; preserve all nontransparent RGBA exactly once before isotropic Lanczos resize; center in transparent cells; lossless WebP. Alpha>16 is segmentation/measurement only, never a pixel deletion rule.' + (edition === 107 ? ' Four original pixel SVG views use nearest-neighbor resizing to preserve exact flat black/white square edges.' : ''), sources, atlases, cells,
+  ...(edition === 108 ? { overrides: [{ kind: 'food', id: 'rice-ball', previousAtlas: 'food-107', atlas: 'food-108', purpose: 'Requested Korean convenience-store packaged triangular gimbap; previous native and atlas pixels remain preserved.' }] } : {}) };
+const receipts = [];
+for (const current of [106, 107, 108]) {
+  const item = current === edition ? receipt : await read(runs[current] + '/정리본/패킹기록.json').then(bytes => JSON.parse(bytes)).catch(error => { if (error.code === 'ENOENT' && current > edition) return null; throw error; });
+  if (!item) continue;
+  if (current !== edition) for (const atlas of Object.values(item.atlases)) {
+    if (!atlas.src.startsWith('/companion/collection/') || hash(await read('public' + atlas.src)) !== atlas.sha256) throw Error('Previously registered atlas bytes changed: ' + atlas.src);
+  }
+  receipts.push({ edition: current, item });
 }
 const combinedAtlases = {}, frames = { food: {}, 'food-stamp': {}, 'behavior-stamp': {}, accessory: {}, book: {}, gift: {}, 'situation-stamp': {} };
-for (const item of (edition === 106 ? [receipt, other] : [other, receipt]).filter(Boolean)) {
+for (const { edition: current, item } of receipts) {
   for (const [id, atlas] of Object.entries(item.atlases)) {
     if (combinedAtlases[id]) throw Error('Duplicate immutable atlas ID: ' + id);
     combinedAtlases[id] = atlas;
   }
   for (const cell of [...item.cells].sort((left, right) => left.index - right.index)) {
-    const definition = [...editions[106], ...editions[107]].find(row => row.id === cell.atlas);
+    const definition = Object.values(editions).flat().find(row => row.id === cell.atlas);
     if (!definition || !item.atlases[cell.atlas]) throw Error('Unregistered receipt cell atlas: ' + cell.atlas);
     const kind = definition.kind ?? (cell.id.startsWith('book-') ? 'book' : 'gift');
-    if (frames[kind][cell.id]) throw Error('An additive edition cannot replace a previous collection ID: ' + cell.id);
+    if (frames[kind][cell.id] && !(current === 108 && kind === 'food' && cell.id === 'rice-ball' && cell.atlas === 'food-108' && frames[kind][cell.id].atlas === 'food-107' && item.overrides?.length === 1 && item.overrides[0].kind === kind && item.overrides[0].id === cell.id && item.overrides[0].previousAtlas === 'food-107' && item.overrides[0].atlas === cell.atlas)) throw Error('An additive edition cannot replace a previous collection ID without the exact108 rice-ball override: ' + cell.id);
     frames[kind][cell.id] = Object.fromEntries(['id', 'atlas', 'index', 'x', 'y', 'width', 'height', 'content'].map(key => [key, cell[key]]));
   }
 }
@@ -259,7 +271,7 @@ const registry = [
   '// Generated by scripts/prepare-companion-collection.mjs; source cutouts remain unchanged.',
   'export type CompanionCollectionArtKind = "food" | "food-stamp" | "behavior-stamp" | "accessory" | "book" | "gift" | "situation-stamp";',
   'export type CompanionAccessoryView = "front" | "quarter" | "side" | "back";',
-  'type AtlasId = Exclude<CompanionCollectionArtKind, "book" | "gift"> | "book-gift" | "food-107" | "food-stamp-107" | "accessory-107";',
+  'type AtlasId = Exclude<CompanionCollectionArtKind, "book" | "gift"> | "book-gift" | "food-107" | "food-stamp-107" | "accessory-107" | "food-108";',
   'export type CompanionCollectionAtlas = Readonly<{ src: string; width: number; height: number; cell: number; columns: number; rows: number; sha256: string }>;',
   'export type CompanionCollectionFrame = Readonly<{ id: string; atlas: AtlasId; index: number; x: number; y: number; width: number; height: number; content: Readonly<{ x: number; y: number; width: number; height: number }> }>;',
   'export type CompanionCollectionArtFrame = CompanionCollectionFrame & Readonly<{ src: string; atlasWidth: number; atlasHeight: number }>;',

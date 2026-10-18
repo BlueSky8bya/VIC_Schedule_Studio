@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "work": "108",
+  "asset": "rice-ball",
+  "native": "원본/한국편의점삼각김밥.png",
+  "requestSha256": "f3c7f49f44d79021551a471ee1c308c441a8a951032e403971ec2be8c84a9755",
+  "references": [
+    {
+      "path": "art-src/빅타민/수집/작업회차/20261018-도감과선물/원본/먹거리01_생성과도장.png",
+      "sha256": "254df9f1b8c0f01ef9293a2330a3990855b005b0a0fdb47f4d662ebbed002b71",
+      "authority": "Existing shipped food rendering style only, not requested package geometry or character design."
+    },
+    {
+      "path": "art-src/빅타민/수집/작업회차/20261018-먹거리와추억/원본/먹거리05_생성과도장.png",
+      "sha256": "0335c8947c2334a8c8e1cdc511c06d28a85c4fc20c81c50c7c83cbc39dcca426",
+      "authority": "Existing shipped food rendering style only, not requested package geometry or character design."
+    }
+  ],
+  "generation": "PREPARED_NOT_EXECUTED",
+  "callsAuthorized": 1,
+  "containsMascot": false,
+  "sourcePolicy": "Preserve106/107 original and runtime atlas bytes. New rice-ball override only; food stamps use the exact live food pixels with a code-native seal.",
+  "approval": "NONE"
+}

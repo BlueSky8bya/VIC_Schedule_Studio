@@ -642,6 +642,15 @@ export const ACT: Record<string, TargetLabel> = {
   "companion-sound-motion": { name: "빅타민 움직임 소리", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-sound-keepsakes": { name: "빅타민 발견·선물 소리", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-sound-preview": { name: "빅타민 소리 미리 듣기", area: "설정", opts: { care: "돌보기", motion: "움직임", keepsakes: "발견·선물" } },
+  "companion-radio-enabled": { name: "빅타민 집 라디오", area: "설정", opts: { on: "켜기", off: "끄기" } },
+  "companion-radio-volume": { name: "빅타민 라디오 음량", area: "설정" },
+  "companion-radio-react": { name: "빅타민 음악 반응", area: "설정", opts: { on: "켜기", off: "끄기" } },
+  "companion-radio-mood": { name: "빅타민 라디오 분위기", area: "설정", opts: { lively: "신나게", graceful: "우아하게", calm: "잔잔하게" } },
+  "companion-radio-track-toggle": { name: "빅타민 라디오 곡 고르기", area: "설정" },
+  "companion-radio-play": { name: "빅타민 라디오 재생", area: "빅타민" },
+  "companion-radio-next": { name: "빅타민 라디오 다음 곡", area: "설정" },
+  "companion-radio-stop": { name: "빅타민 라디오 정지", area: "설정" },
+  "companion-wardrobe-preview": { name: "빅타민 장신구 미리보기", area: "설정" },
   "companion-enabled": { name: "AI 빅타민", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-roam": { name: "빅타민 돌아다니기", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-jump": { name: "빅타민 깡충 뛰기", area: "설정", opts: { on: "켜기", off: "끄기" } },
@@ -1033,7 +1042,9 @@ const COMPANION_COLLECTION_CONTROLS: ReadonlySet<string> = new Set([
   "companion-profile-page", "companion-collection-category", "companion-collection-inspect",
   "companion-accessory-select", "companion-gift-open", "companion-accessory-equip", "companion-gift-dismiss",
   "companion-sound-enabled", "companion-sound-volume", "companion-sound-care", "companion-sound-motion",
-  "companion-sound-keepsakes", "companion-sound-preview"
+  "companion-sound-keepsakes", "companion-sound-preview", "companion-radio-enabled", "companion-radio-volume",
+  "companion-radio-react", "companion-radio-mood", "companion-radio-track-toggle", "companion-radio-play",
+  "companion-radio-next", "companion-radio-stop", "companion-wardrobe-preview"
 ]);
 
 /** These controls count a fixed UI operation, never a personal collection. */

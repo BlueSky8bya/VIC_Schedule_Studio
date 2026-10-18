@@ -7,7 +7,7 @@ const TOGGLES = [
   "companion-enabled", "companion-roam", "companion-jump", "companion-sleep",
   "companion-heart-prank", "companion-card-prank", "companion-hide", "companion-panel-prank",
   "companion-drag-enabled", "companion-petting-enabled", "companion-feeding-enabled", "companion-learning-enabled",
-  "companion-sound-enabled", "companion-sound-care", "companion-sound-motion", "companion-sound-keepsakes"
+  "companion-sound-enabled", "companion-sound-care", "companion-sound-motion", "companion-sound-keepsakes", "companion-radio-enabled", "companion-radio-react"
 ] as const;
 const SETTINGS = [
   "settings-companion-tab", ...TOGGLES, "companion-speed", "companion-animal", "companion-personality", "companion-learning-reset"
@@ -34,6 +34,15 @@ const COLLECTION = [
   ["companion-sound-motion#on", "빅타민 움직임 소리 · 켜기"],
   ["companion-sound-keepsakes#off", "빅타민 발견·선물 소리 · 끄기"],
   ["companion-sound-preview#motion", "빅타민 소리 미리 듣기 · 움직임"],
+  ["companion-radio-enabled#on", "빅타민 집 라디오 · 켜기"],
+  ["companion-radio-volume", "빅타민 라디오 음량"],
+  ["companion-radio-react#off", "빅타민 음악 반응 · 끄기"],
+  ["companion-radio-mood#graceful", "빅타민 라디오 분위기 · 우아하게"],
+  ["companion-radio-track-toggle", "빅타민 라디오 곡 고르기"],
+  ["companion-radio-play", "빅타민 라디오 재생"],
+  ["companion-radio-next", "빅타민 라디오 다음 곡"],
+  ["companion-radio-stop", "빅타민 라디오 정지"],
+  ["companion-wardrobe-preview", "빅타민 장신구 미리보기"],
   ["companion-accessory-select", "빅타민 장신구 살펴보기"],
   ["companion-gift-open", "빅타민 선물 열기"],
   ["companion-accessory-equip#on", "빅타민 장신구 · 착용하기"],
@@ -125,11 +134,11 @@ describe("빅타민 행동 기록 이름과 저장 경계", () => {
       expect(sanitizeTarget(target)).toBe(target);
       const label = describeTarget("ui.click", target);
       expect(label.name).toBe(name); expect(label.unnamed).toBeUndefined(); expect(label.retired).toBeUndefined();
-      expect(label.area).toBe(target === "companion-gift-open" ? "빅타민" : "설정");
+      expect(label.area).toBe(["companion-gift-open", "companion-radio-play"].includes(target) ? "빅타민" : "설정");
       expect(story).toContain(name);
     }
     expect(story).not.toContain("companion-");
-    expect(buildGist(items)).toBe("빅타민 설정 19번 사용 · 빅타민과 1번 상호작용");
+    expect(buildGist(items)).toBe("빅타민 설정 27번 사용 · 빅타민과 2번 상호작용");
   });
 
   it("신규 버튼은 실제 음식·행동·장신구·선물 ID와 미등록/전역 옵션을 저장하지 않는다", () => {

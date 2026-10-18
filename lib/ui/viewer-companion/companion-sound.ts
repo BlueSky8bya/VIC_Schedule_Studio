@@ -1,12 +1,13 @@
-import { playCompanionVoice, type CompanionSoundNote } from "@/lib/ui/sfx";
+import { playCompanionVoice, playCompanionSample, type CompanionSoundNote } from "@/lib/ui/sfx";
 import { getCompanionPreferences, type CompanionPreferences } from "./preferences";
 
-export const COMPANION_SOUND_MOMENTS = ["feed", "land", "eat", "pet", "lift", "dizzy", "tumble", "sleep", "play", "discover", "gift", "equip", "unequip"] as const;
+export const COMPANION_SOUND_MOMENTS = ["feed", "land", "eat", "pet", "lift", "dizzy", "tumble", "sleep", "play", "discover", "gift", "equip", "unequip", "cushion"] as const;
 export type CompanionSoundMoment = typeof COMPANION_SOUND_MOMENTS[number];
 export type CompanionSoundCategory = "care" | "motion" | "keepsakes";
 export const COMPANION_SOUND_CATEGORY_NAMES = { care: "돌보기", motion: "움직임", keepsakes: "발견·선물" } as const;
 type Cue = Readonly<{ category: CompanionSoundCategory; cooldown: number; notes: readonly CompanionSoundNote[] }>;
 const cues: Readonly<Record<CompanionSoundMoment, Cue>> = {
+  cushion: { category: "care", cooldown: 450, notes: [{ f: 100, glideTo: 65, tau: .04, vol: .22 }, { f: 180, glideTo: 110, at: .025, tau: .035, vol: .09 }] },
   feed: { category: "care", cooldown: 250, notes: [{ f: 240, glideTo: 330, tau: .025, vol: .22 }, { f: 390, at: .065, tau: .025, vol: .17 }] },
   land: { category: "care", cooldown: 650, notes: [{ f: 150, glideTo: 100, tau: .018, vol: .15 }] },
   eat: { category: "care", cooldown: 1300, notes: [{ f: 340, tau: .02, vol: .15 }, { f: 420, at: .07, tau: .02, vol: .13 }, { f: 510, at: .14, tau: .025, vol: .13 }] },
@@ -41,7 +42,10 @@ function play(moment: CompanionSoundMoment, preferences: CompanionPreferences): 
   const cue = cues[moment], enabled = { care: preferences.soundCare, motion: preferences.soundMotion, keepsakes: preferences.soundKeepsakes }[cue.category];
   if (!enabled || cue.category === "motion" && (document.documentElement.hasAttribute("data-reduce-motion") || ["off", "soft"].includes(document.documentElement.dataset.gfx ?? ""))) return false;
   const now = performance.now();
-  if (!budget.allows(moment, now) || !playCompanionVoice(cue.notes, preferences.soundVolume)) return false;
+  if (!budget.allows(moment, now)) return false;
+  const sample = moment === "cushion" && playCompanionSample("/companion/audio/cushion.ogg", preferences.soundVolume);
+  if (!sample && !playCompanionVoice(cue.notes, preferences.soundVolume)) return false;
+  if (moment === "cushion" && !sample) playCompanionSample("/companion/audio/cushion.ogg", 0.001);
   budget.played(moment, now);
   document.documentElement.dataset.companionSfxLast = moment;
   const trace = (window as Window & { __companionSfxTrace?: CompanionSoundMoment[] }).__companionSfxTrace;

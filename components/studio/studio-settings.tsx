@@ -28,6 +28,9 @@ import { Clock3 } from "lucide-react";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { CompanionProfile } from "@/components/shared/companion-profile";
 import { COMPANION_SOUND_CATEGORY_NAMES, previewCompanionSound } from "@/lib/ui/viewer-companion/companion-sound";
+import { COMPANION_RADIO_MOOD_NAMES, COMPANION_RADIO_TRACKS } from "@/lib/ui/viewer-companion/radio-catalog";
+import { getCompanionRadioPreferences, setCompanionRadioPreferences, subscribeCompanionRadioPreferences, type CompanionRadioPreferences } from "@/lib/ui/viewer-companion/radio-preferences";
+import { getCompanionRadioSnapshot, nextCompanionRadio, playCompanionRadioTrack, stopCompanionRadio, subscribeCompanionRadio, toggleCompanionRadio } from "@/lib/ui/viewer-companion/radio-player";
 import { logActivity } from "@/lib/activity/client";
 
 /** 개발자 세계 시간 여행(2026-09-04 소유자: "개발자는 시간대에 영향받지 않고 마음대로 왔다갔다 오류 확인") — 세션 한정, 저장 안 함. */
@@ -251,8 +254,40 @@ const companionToggleActions: Record<CompanionToggle, string> = {
   drag: "companion-drag-enabled", petting: "companion-petting-enabled", feeding: "companion-feeding-enabled", learnFromYou: "companion-learning-enabled"
 };
 
+function CompanionRadioSettings({ companionAudible, globalSoundOn }: { companionAudible: boolean; globalSoundOn: boolean }) {
+  const [preferences, setPreferences] = useState<CompanionRadioPreferences | null>(null);
+  const [snapshot, setSnapshot] = useState<ReturnType<typeof getCompanionRadioSnapshot> | null>(null);
+  const [pending, setPending] = useState(false), requestToken = useRef(0);
+  useEffect(() => {
+    const requests = requestToken;
+    const readPreferences = () => setPreferences(getCompanionRadioPreferences()), readPlayer = () => setSnapshot(getCompanionRadioSnapshot());
+    readPreferences(); readPlayer();
+    const offPreferences = subscribeCompanionRadioPreferences(readPreferences), offPlayer = subscribeCompanionRadio(readPlayer);
+    return () => { requests.current++; offPreferences(); offPlayer(); };
+  }, []);
+  if (!preferences) return null;
+  const change = (patch: Partial<CompanionRadioPreferences>) => setPreferences(setCompanionRadioPreferences(patch));
+  const play = (start: () => Promise<boolean>) => { const token = ++requestToken.current; setPending(true); void start().finally(() => { if (requestToken.current === token) setPending(false); }); };
+  const stop = () => { requestToken.current++; setPending(false); stopCompanionRadio(); };
+  const selected = COMPANION_RADIO_TRACKS.filter(track => !preferences.excludedIds.includes(track.id));
+  const pool = selected.filter(track => preferences.moods[track.mood]);
+  const blocked = !globalSoundOn || !companionAudible || !preferences.enabled || preferences.volume === 0;
+  const currentTrack = COMPANION_RADIO_TRACKS.find(track => track.id === snapshot?.trackId);
+  return <div className="rhh-group-card rhh-companion-radio">
+    <div className="role-help-haptics"><RowLabel icon={<Volume2 size={15} />} tone="water">집 라디오</RowLabel><Switch dataAct="companion-radio-enabled" dataActOpt={preferences.enabled ? "off" : "on"} label="빅타민 라디오 켜기/끄기" on={preferences.enabled} onToggle={() => change({ enabled: !preferences.enabled })} /></div>
+    <div className="role-help-haptics rhh-stack-sm"><RowLabel icon={<Volume1 size={15} />} tone="water">라디오 음량</RowLabel><div className="rhh-volume"><VolumeX aria-hidden="true" size={15} /><input aria-label="라디오 음량" aria-valuetext={`${preferences.volume}%`} data-act="companion-radio-volume" data-sfx="off" max={100} min={0} onChange={event => change({ volume: Number(event.currentTarget.value) })} step={5} style={{ "--vol": `${preferences.volume}%` } as CSSProperties} type="range" value={preferences.volume} /><Volume2 aria-hidden="true" size={15} /><b className="rhh-vol-num">{preferences.volume}</b></div></div>
+    <div className="role-help-haptics"><RowLabel icon={<Sparkles size={15} />} tone="leaf">음악에 반응하기</RowLabel><Switch dataAct="companion-radio-react" dataActOpt={preferences.react ? "off" : "on"} label="빅타민 음악 반응 켜기/끄기" on={preferences.react} onToggle={() => change({ react: !preferences.react })} /></div>
+    <div aria-label="라디오 분위기" className="rhh-radio-moods" role="group">{(Object.keys(COMPANION_RADIO_MOOD_NAMES) as (keyof typeof COMPANION_RADIO_MOOD_NAMES)[]).map(mood => <button aria-pressed={preferences.moods[mood]} className="rhh-link" data-act="companion-radio-mood" data-act-opt={mood} data-sfx="off" key={mood} onClick={() => change({ moods: { ...preferences.moods, [mood]: !preferences.moods[mood] } })} type="button">{COMPANION_RADIO_MOOD_NAMES[mood]}</button>)}</div>
+    <div className="rhh-radio-now"><p aria-live="polite">{pending ? "준비 중" : snapshot?.playing && currentTrack ? currentTrack.title : pool.length ? "재생 대기" : "선택한 곡이 없어요."}</p><div className="rhh-radio-actions"><button className="rhh-link" data-act="companion-radio-play" data-sfx="off" disabled={blocked || !pool.length || pending || snapshot?.playing} onClick={() => play(toggleCompanionRadio)} type="button">재생</button><button className="rhh-link" data-act="companion-radio-next" data-sfx="off" disabled={blocked || !pool.length || pending} onClick={() => play(nextCompanionRadio)} type="button">다음 곡</button><button className="rhh-link" data-act="companion-radio-stop" data-sfx="off" disabled={!snapshot?.playing && !pending} onClick={stop} type="button">정지</button></div></div>
+    <details className="rhh-radio-playlist"><summary>곡 고르기 <span>{selected.length}/{COMPANION_RADIO_TRACKS.length}</span></summary><ul>{COMPANION_RADIO_TRACKS.map(track => {
+      const included = !preferences.excludedIds.includes(track.id);
+      return <li key={track.id}><label><input checked={included} data-act="companion-radio-track-toggle" data-sfx="off" onChange={() => change({ excludedIds: included ? [...preferences.excludedIds, track.id] : preferences.excludedIds.filter(id => id !== track.id) })} type="checkbox" /><span><strong>{track.title}</strong><span>{track.creator} · {COMPANION_RADIO_MOOD_NAMES[track.mood]}</span></span></label><button aria-label={`${track.title} 재생`} className="rhh-link" data-act="companion-radio-play" data-sfx="off" disabled={blocked || pending || !included || !preferences.moods[track.mood]} onClick={() => play(() => playCompanionRadioTrack(track.id))} type="button"><Volume1 aria-hidden="true" size={17} /></button></li>;
+    })}</ul></details>
+  </div>;
+}
+
 /** Shared setting controls stay editable while OFF, so a quiet preset can be prepared first. */
-function CompanionSettings({ preferences, onChange, globalSoundOn }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; globalSoundOn: boolean }) {
+function CompanionSettings({ preferences, onChange, globalSoundOn, globalSoundVolume, active }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; globalSoundOn: boolean; globalSoundVolume: number; active: boolean }) {
   const [tab, setTab] = useState<CompanionTab>("motion");
   const id = useId();
   const nav = useRef<HTMLDivElement>(null);
@@ -319,9 +354,10 @@ function CompanionSettings({ preferences, onChange, globalSoundOn }: { preferenc
         {([{ category: "care", key: "soundCare", action: "companion-sound-care" }, { category: "motion", key: "soundMotion", action: "companion-sound-motion" }, { category: "keepsakes", key: "soundKeepsakes", action: "companion-sound-keepsakes" }] as const).map(({ category, key, action }) => <div className="role-help-haptics" key={category}><RowLabel icon={category === "care" ? <Heart size={15} /> : category === "motion" ? <Sparkles size={15} /> : <PartyPopper size={15} />} tone="water">{COMPANION_SOUND_CATEGORY_NAMES[category]}</RowLabel><div className="rhh-companion-sound-actions"><button aria-label={`${COMPANION_SOUND_CATEGORY_NAMES[category]} 소리 미리 듣기`} className="rhh-link" data-act="companion-sound-preview" data-act-opt={category} data-sfx="off" disabled={!globalSoundOn || !preferences.enabled || !preferences.sound || !preferences[key] || preferences.soundVolume === 0} onClick={() => previewCompanionSound(category, preferences)} type="button"><Volume1 aria-hidden="true" size={16} /></button><Switch dataAct={action} dataActOpt={preferences[key] ? "off" : "on"} label={`빅타민 ${COMPANION_SOUND_CATEGORY_NAMES[category]} 소리 켜기/끄기`} on={preferences[key]} onToggle={() => onChange({ [key]: !preferences[key] })} /></div></div>)}
       </div>
       {!globalSoundOn && <p className="rhh-group-foot">전체 효과음이 꺼져 있어요.</p>}
+      {active && tab === "sound" && <CompanionRadioSettings companionAudible={preferences.enabled && preferences.sound && preferences.soundVolume > 0} globalSoundOn={globalSoundOn && globalSoundVolume > 0} />}
     </div>
     <div aria-labelledby={`${id}-personality`} hidden={tab !== "personality"} id={`${id}-personality-panel`} role="tabpanel" tabIndex={0}>
-      <CompanionProfile active={tab === "personality"} preferences={preferences} />
+      <CompanionProfile active={active && tab === "personality"} preferences={preferences} />
       <div className="rhh-group-card rhh-profile-controls">
         <div className="role-help-haptics rhh-stack-sm">
           <RowLabel icon={<Sparkles size={15} />} tone="leaf">동물 모드</RowLabel>
@@ -898,7 +934,7 @@ export function StudioSettingsList({
       {/* 계절 배경·배경 효과 — 모바일(≤640)엔 배경이 없어 묶음째 숨긴다(.rhh-web). */}
       {companionAvailable ? <section {...pane("companion")}>
         <h3 className="rhh-group-title" id="rhh-tab-companion-title">빅타민</h3>
-        <CompanionSettings globalSoundOn={sound.on} preferences={companionPrefs} onChange={onCompanionChange} />
+        <CompanionSettings active={current === "companion"} globalSoundOn={sound.on} globalSoundVolume={sound.vol} preferences={companionPrefs} onChange={onCompanionChange} />
       </section> : null}
 
       <section {...pane("bg", "rhh-web")}>

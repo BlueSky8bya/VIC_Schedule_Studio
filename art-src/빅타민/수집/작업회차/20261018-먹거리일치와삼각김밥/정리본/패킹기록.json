@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "method": "Complete alpha-gap source crops, or complete alpha>0 connected components where rectangular bounds overlap; trim only alpha0; preserve all nontransparent RGBA exactly once before isotropic Lanczos resize; center in transparent cells; lossless WebP. Alpha>16 is segmentation/measurement only, never a pixel deletion rule.",
+  "sources": [
+    {
+      "path": "art-src/빅타민/수집/작업회차/20261018-먹거리일치와삼각김밥/원본/한국편의점삼각김밥.png",
+      "sha256": "f45788da7beba1517ae81c1ed72181b7989482a7e76fbe376ef20b7ee50116c1",
+      "width": 1254,
+      "height": 1254,
+      "columns": 1,
+      "rows": 1,
+      "transparentPixels": 937163,
+      "visiblePixels": 624073,
+      "sourceBytesUnchanged": true
+    }
+  ],
+  "atlases": {
+    "food-108": {
+      "src": "/companion/collection/rice-ball-108-v1.webp",
+      "width": 96,
+      "height": 96,
+      "cell": 96,
+      "columns": 1,
+      "rows": 1,
+      "sha256": "66c55160b614d47367cb8d4e85c5f4abf1c2c5fcc6b5964caade683c019654ee"
+    }
+  },
+  "cells": [
+    {
+      "id": "rice-ball",
+      "atlas": "food-108",
+      "index": 0,
+      "x": 0,
+      "y": 0,
+      "width": 96,
+      "height": 96,
+      "content": {
+        "x": 12,
+        "y": 11,
+        "width": 73,
+        "height": 72
+      },
+      "source": "art-src/빅타민/수집/작업회차/20261018-먹거리일치와삼각김밥/원본/한국편의점삼각김밥.png",
+      "sourceIndex": 0,
+      "sourceBox": {
+        "left": 0,
+        "top": 0,
+        "width": 1254,
+        "height": 1254
+      },
+      "alphaTrim": {
+        "x": 0,
+        "y": 22,
+        "width": 1240,
+        "height": 1232
+      },
+      "resized": {
+        "width": 80,
+        "height": 79
+      },
+      "scale": 0.064516,
+      "padding": {
+        "left": 8,
+        "top": 8
+      },
+      "rgbaSha256": "9e5c11087de9e30ee9169a4aa0d33e4d0d6abf517ebc6d06f085333dd74c465f"
+    }
+  ],
+  "overrides": [
+    {
+      "kind": "food",
+      "id": "rice-ball",
+      "previousAtlas": "food-107",
+      "atlas": "food-108",
+      "purpose": "Requested Korean convenience-store packaged triangular gimbap; previous native and atlas pixels remain preserved."
+    }
+  ]
+}

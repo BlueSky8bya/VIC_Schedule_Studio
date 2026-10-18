@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 
 const voice = vi.hoisted(() => vi.fn(() => true));
-vi.mock("@/lib/ui/sfx", () => ({ playCompanionVoice: voice }));
+vi.mock("@/lib/ui/sfx", () => ({ playCompanionVoice: voice, playCompanionSample: vi.fn(() => false) }));
 import { COMPANION_SOUND_MOMENTS, createCompanionSoundBudget, playCompanionSound, previewCompanionSound } from "@/lib/ui/viewer-companion/companion-sound";
 
 let now = 0;
@@ -39,7 +39,7 @@ describe("finite companion event sound", () => {
     }
     expect(voice).toHaveBeenCalledTimes(3);
   });
-  it("uses thirteen short distinct authored cues, at most three voices and no legacy category gate", () => {
+  it("uses fourteen short distinct authored cues, at most three voices and no legacy category gate", () => {
     const signatures = [];
     for (const moment of COMPANION_SOUND_MOMENTS) {
       now += 20000;

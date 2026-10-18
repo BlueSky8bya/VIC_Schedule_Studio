@@ -28,6 +28,9 @@ import { projectCompanionSofaBody, projectCompanionSpritePoint } from "@/lib/ui/
 import { createCompanionAccessoryPainter } from "@/lib/ui/viewer-companion/accessory";
 import { canStartCompanionAccessoryMotion, COMPANION_ACCESSORY_MOTION_MS, isCompanionHat, sampleCompanionAccessoryMotion } from "@/lib/ui/viewer-companion/accessory-motion";
 import { playCompanionSound, type CompanionSoundMoment } from "@/lib/ui/viewer-companion/companion-sound";
+import { getCompanionRadioSnapshot, stopCompanionRadio, subscribeCompanionRadio, toggleCompanionRadio } from "@/lib/ui/viewer-companion/radio-player";
+import { getCompanionRadioPreferences, subscribeCompanionRadioPreferences } from "@/lib/ui/viewer-companion/radio-preferences";
+import { canStartCompanionRadioReaction, companionRadioFoodPriority, COMPANION_RADIO_REACTION_MS, createCompanionRadioReactionInbox, getCompanionRadioReaction, sampleCompanionRadioReaction, type CompanionRadioReaction } from "@/lib/ui/viewer-companion/radio-reaction";
 import { companionRunContactSituation, type CompanionSituationId } from "@/lib/ui/viewer-companion/moments";
 import { COMPANION_ACCESSORY_NAMES, type CompanionAccessoryId } from "@/lib/ui/viewer-companion/gifts";
 import { advanceCompanionMealWait, projectCompanionMouth } from "@/lib/ui/viewer-companion/mouth";
@@ -69,6 +72,7 @@ import "./viewer-companion.css";
 
 type Props = { root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; workspaceBusy?: boolean; agenda: boolean; monthKey: string; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; launcherHost?: HTMLElement | null; compactHost?: HTMLElement | null; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void; positionMemory?: CompanionPositionMemory };
 type Control = Record<CompanionHomeAction | "place" | "rest", () => void>;
+type RuntimeAction = CompanionAction & { radio?: { generation: number; reaction: CompanionRadioReaction; bpm: number } };
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const COMPANION_SIZE = 92;
@@ -92,6 +96,12 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
   const refreshWardrobe = useRef<() => void>(() => {});
   const situationSink = useRef<(id: CompanionSituationId) => void>(() => {});
   const [pendingGift, setPendingGift] = useState<CompanionAccessoryId | null>(null), [openedGift, setOpenedGift] = useState<CompanionAccessoryId | null>(null);
+  const [radioPlaying, setRadioPlaying] = useState(false);
+  useEffect(() => {
+    const update = () => setRadioPlaying(getCompanionRadioSnapshot().playing);
+    const off = subscribeCompanionRadio(update); update();
+    return () => { off(); stopCompanionRadio(); };
+  }, []);
   const contact = useRef<HTMLSpanElement>(null);
   const inertia = useRef<HTMLSpanElement>(null);
   const bedForeground = useRef<HTMLDivElement>(null);
@@ -263,7 +273,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     let raf = 0, timer: ReturnType<typeof setTimeout> | undefined, lastPaint = 0, lastTick = performance.now(), lastNeeds = lastTick, lastCare = lastTick, stopped = false, sleeping = false;
     let inputPaintQueued = false, interactionUntil = 0;
     let pause = true, started = false, nextDecision = 0, needsLanding = false, afterPetLanding = false, restAfterLanding = false;
-    let action: CompanionAction | null = null, began = 0, origin = { x, y }, travel = 0, total = 0, petUntil = 0, placing = false, keyboardHeld = false, keyboardMoved = false, consumePlacementClick = false;
+    let action: RuntimeAction | null = null, began = 0, origin = { x, y }, travel = 0, total = 0, petUntil = 0, placing = false, keyboardHeld = false, keyboardMoved = false, consumePlacementClick = false;
     let sofaTravelActive = false;
     let sofaFlightShape: CompanionSofaTravelShape | undefined, ballisticCoefficient: number | null = null;
     let jumpRecoveryContext: Pick<CompanionAction, "foodId" | "intention" | "episode"> | undefined;
@@ -477,6 +487,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     let paintedSelection: ReturnType<typeof selectCompanionSprite> | undefined;
     const pendingSituations = new Map<CompanionSituationId, { rows?: readonly number[]; expires: number; actionAt?: number }>();
     let pendingCue: CompanionSoundMoment | undefined;
+    let radioState = getCompanionRadioSnapshot(), radioPreferences = getCompanionRadioPreferences();
+    const radioInbox = createCompanionRadioReactionInbox(radioState.generation);
     const queueSituation = (id: CompanionSituationId, rows?: readonly number[], actionAt?: number) => pendingSituations.set(id, { rows, actionAt, expires: performance.now() + 12000 });
     situationSink.current = id => { queueSituation(id); };
     if (wardrobe.current.pending) queueSituation("gift-arrival");
@@ -530,6 +542,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       }
       lastPoseSample = { row, frame, status };
       if (!action?.accessory) { el.removeAttribute("data-accessory-trick"); el.removeAttribute("data-accessory-beat"); }
+      if (!action?.radio) { el.removeAttribute("data-radio-reaction"); el.removeAttribute("data-radio-generation"); }
       // Cursor presence belongs to a valid hover, not the pressure/reward
       // envelopes. Existing paints also release it when the world moves away.
       if (hoverPoint && (!canHover(hoverPoint) || !hoverTarget?.isConnected || isOtherControl(hoverTarget))) stopHover();
@@ -604,6 +617,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         shape.bob -= accessoryMotion.bodyLift; shape.tilt += accessoryMotion.bodyLean;
         shape.scaleX *= 1 + accessoryMotion.squash * .5; shape.scaleY *= 1 - accessoryMotion.squash;
       }
+      const radioMotion = action?.radio && status === "look" ? sampleCompanionRadioReaction(action.radio.reaction, performance.now() - began, action.radio.bpm) : undefined;
+      if (radioMotion) {
+        shape.bob += radioMotion.bob; shape.tilt += radioMotion.tilt;
+        shape.scaleX *= 1 + radioMotion.squash * .5; shape.scaleY *= 1 - radioMotion.squash;
+      }
       if (neutralVerticalRecovery) Object.assign(shape, { bob: 0, tilt: 0, scaleX: 1, scaleY: 1 });
       style(inertiaLayer, "transform", `rotate(${sway.tilt.toFixed(3)}deg) scale(${(1 - sway.stretch * .35).toFixed(4)},${(1 + sway.stretch).toFixed(4)})`);
       const pressure = touch.sample(performance.now(), reduced || gfxMode() === "off" || neutralVerticalRecovery);
@@ -670,7 +688,9 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       const observed = { requestedRow: drawingRow, requestedIndex: selected.physicalIndex, adoptedIndex: paintedSelection?.physicalIndex, requestedSrc: selected.src, adoptedSrc: paintedSelection?.src,
         decoded: Boolean(paintedTexture?.complete && paintedTexture.naturalWidth && paintedTexture.parentElement === image && paintedTexture.getAttribute("src") === selected.src),
         visible: !el.hidden && !document.hidden && displayOpacity > .05 };
-      let discovered = recordCompanionObservedBehavior(observed), giftDiscovered = false;
+      // Listening is a local performance, not a newly witnessed authored
+      // behavior or a care reward. Keep ordinary collection truth separate.
+      let discovered = !action?.radio && recordCompanionObservedBehavior(observed), giftDiscovered = false;
       const projection = { size, display, shape, pressure, response, facing: sample.facing, sway, chew,
         poseOrigin: heldPivot || presentationNow - releasedPivotAt < 100 ? { x: sample.facing < 0 ? size - grip.x : grip.x, y: grip.y } : undefined,
         inertiaOrigin: grip };
@@ -686,7 +706,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (shadow.current) {
         const progress = action ? clamp((performance.now() - began) / total, 0, 1) : 0;
         const ground = playFalling ? action!.target.y : action?.kind === "jump" ? lerp(origin.y, action.target.y, progress) : supportById(support)?.y ?? y;
-        const altitude = Math.max(0, ground - y - response.lift + (accessoryMotion?.bodyLift ?? 0)), scale = clamp(1 - altitude / 260, .35, 1);
+        const altitude = Math.max(0, ground - y - response.lift + (accessoryMotion?.bodyLift ?? 0) - (radioMotion?.bob ?? 0)), scale = clamp(1 - altitude / 260, .35, 1);
         style(shadow.current, "transform", `translate3d(0,${Math.max(0, ground - y).toFixed(2)}px,0) scale(${scale.toFixed(3)})`);
         style(shadow.current, "opacity", pressed?.grabbed || keyboardHeld ? "0" : String(.24 * scale));
       }
@@ -838,7 +858,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (isHomeSupport(support) || pressed || keyboardHeld || reduced || gfxMode() === "off") supportMotion.reset(now);
       return Boolean(dx || dy || bedMoved);
     };
-    const continuousMotion = () => Boolean(performance.now() < interactionUntil || homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && (action.accessory || ["walk", "jump", "heart", "hide", "stretch", "shake", "eat", "play"].includes(action.kind)));
+    const continuousMotion = () => Boolean(performance.now() < interactionUntil || homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && (action.accessory || action.radio || ["walk", "jump", "heart", "hide", "stretch", "shake", "eat", "play"].includes(action.kind)));
     const followLayout = (event?: Event) => {
       if (premiereActive && event?.target === window.visualViewport) { viewportResized(); return; }
       // A compact room can unmount while the creature is parked. Drop its
@@ -999,6 +1019,14 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       const headroom = Math.min(y, ...platforms.filter(p => p.id !== support && p.y < y - 2 && x + size / 2 > p.x && x - size / 2 < p.x + p.width).map(p => y - p.y));
       return canStartCompanionAccessoryMotion({ id, roam: effective.roam, stable: supportedNow(), safe: Boolean(occupied && !occupied.manualOnly && !isHomeSupport(support) && !["hide", "control"].includes(occupied.kind ?? "")), headroom, edgeClearance: occupied ? Math.min(x - occupied.x, occupied.x + occupied.width - x) : 0, energy: brain.current.energy });
     };
+    const radioAllowed = () => preferences.enabled && radioPreferences.enabled && radioPreferences.volume > 0 && radioPreferences.react && effective.roam && document.hasFocus() && !document.hidden && !pause && !overlayActive && !overlayRef.current && !workspaceBusyRef.current && !blocked && !reduced && !["off", "soft"].includes(gfxMode()) && !premiereActive && !premiereBounce && !(premiereRef.current.cue?.generation && premiereRef.current.cue.phase !== "idle") && presence.phase === "active";
+    const radioSpace = (foodCount: number) => {
+      const occupied = supportById(support);
+      const headroom = Math.min(y, ...platforms.filter(p => p.id !== support && p.y < y - 2 && x + size / 2 > p.x && x - size / 2 < p.x + p.width).map(p => y - p.y));
+      const mealPriority = companionRadioFoodPriority({ feeding: effective.feeding, hunger: brain.current.hunger, availableFoods: foodCount });
+      const busy = Boolean(action && !action.radio || pressed || keyboardHeld || placing || overlayDrag || overlayPlacing || hoverPetting || performance.now() < petUntil || homeJourney || pendingHomeRecall || returning || pendingMonth || waitingForSupport || afterPetLanding || restAfterLanding || mealPriority || brain.current.hunger >= .75 || brain.current.foodGoal || brain.current.intention || brain.current.episode);
+      return radioAllowed() && paintedTexture?.complete && paintedTexture.naturalWidth > 0 && canStartCompanionRadioReaction({ enabled: preferences.enabled, react: radioPreferences.react, roam: effective.roam, focused: document.hasFocus(), hidden: document.hidden, reduced, graphics: gfxMode(), stable: supportedNow(), safe: Boolean(occupied && (!occupied.manualOnly || support === "companion-home") && !["hide", "control"].includes(occupied.kind ?? "")), busy, headroom, edgeClearance: occupied ? Math.min(x - occupied.x, occupied.x + occupied.width - x) : 0, energy: brain.current.energy });
+    };
     const releaseHold = () => { resetInertia(); const held = pressed; pressed = null; keyboardHeld = false; if (held && button.hasPointerCapture(held.id)) button.releasePointerCapture(held.id); };
     const startRest = () => {
       const cozy = isHomeSupport(support) && !reduced && gfxMode() !== "off";
@@ -1115,6 +1143,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       return candidate;
     };
     const recallHome = (allowRevalidation = true) => {
+      radioInbox.clear();
       pendingHomeRecall = undefined;
       if (hiding || pause || overlayActive || premiereActive) return;
       // Parked sleep disposes its subscription. Reconnect before using cached
@@ -1150,18 +1179,21 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     };
     control.current = {
       place: () => { if (!hiding && !isDetailGuest() && preferences.drag) {
+        radioInbox.clear();
         cancelHomeJourney();
         if (overlayActive) { overlayPlacing = true; el.dataset.placing = ""; setAnnouncement("빅타민을 놓을 곳을 한 번 눌러 주세요."); return; }
         interruptReturn(); stopHover(); awaitingAtX = false; pendingMonth = false; clearAction(); releaseHold(); petUntil = 0; afterPetLanding = false; restAfterLanding = false; placing = true; el.dataset.placing = "";
       } },
-      rest: () => { if (!hiding && preferences.sleep) { cancelHomeJourney(); interruptReturn(); pendingMonth = false; clearAction(); releaseHold(); afterPetLanding = false; restAfterLanding = false; petUntil = 0;
+      rest: () => { if (!hiding && preferences.sleep) { radioInbox.clear(); cancelHomeJourney(); interruptReturn(); pendingMonth = false; clearAction(); releaseHold(); afterPetLanding = false; restAfterLanding = false; petUntil = 0;
         if (!supportedNow()) { settle({ x, y }); if (reduced) startRest(); else restAfterLanding = true; }
         else startRest();
       } },
-      home: () => recallHome(),
+      home: () => { if (hiding || pause || overlayActive || premiereActive || !document.hasFocus()) return; playCompanionSound("cushion", preferencesRef.current); recallHome(); },
+      radio: () => { if (!pause && !overlayActive && !premiereActive && !workspaceBusyRef.current && document.hasFocus() && !document.hidden) { logActivity("ui.click", { target: radioState.playing ? "companion-radio-stop" : "companion-radio-play" }); void toggleCompanionRadio(); } },
       feed: () => {
+        radioInbox.clear();
         pendingHomeRecall = undefined;
-        if (action?.accessory) { clearAction(); nextDecision = performance.now(); }
+        if (action?.accessory || action?.radio) { clearAction(); nextDecision = performance.now(); }
         const kind = randomCompanionFood(lastFood.current); lastFood.current = kind;
         const slot = document.querySelector<HTMLElement>(".vc-dispenser-slot");
         const outlet = slot?.getBoundingClientRect();
@@ -1190,7 +1222,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         if (plan.state === "travel") return { id: floor.id, action: plan.action };
       }
     };
-    const launch = (next: CompanionAction, now: number) => {
+    const launch = (next: RuntimeAction, now: number) => {
       accessoryWitnessed = 0; accessoryLanded = false;
       verticalRecoveryX = undefined;
       let passage = sampleSofaRoute(next, { x, y }, .5);
@@ -1514,14 +1546,22 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
         // and user-opened detail bridge protect studio editing and data.
         hideCandidate = effective.ambientPrank && occupied?.kind === "card" && now - brain.current.createdAt >= 45000 ? collectCompanionHideTargets(page).find(target => target.element === source) : undefined;
         const world = { x, y, platformId: support, platforms: worldPlatforms, width: innerWidth, height: innerHeight, hideAvailable: Boolean(hideCandidate), foods: availableFood, pointer: pointer ? { ...pointer, stableMs: Math.max(0, now - pointerStableSince) } : undefined, animated: !reduced && gfxMode() !== "off" };
+        const offeredRadio = radioInbox.peek(radioState, now);
+        const reaction = offeredRadio?.mood && radioSpace(availableFood.length) ? getCompanionRadioReaction({ mood: offeredRadio.mood, preferences: effective, habits: brain.current.habits, life: brain.current.life, energy: brain.current.energy }) : undefined;
+        if (reaction) radioInbox.take(radioState, now);
+        const musical: RuntimeAction | undefined = reaction && reaction !== "ignore" && offeredRadio ? { kind: "look", radio: { generation: offeredRadio.generation, reaction, bpm: offeredRadio.bpm }, target: { x, y, platformId: support }, duration: COMPANION_RADIO_REACTION_MS } : undefined;
         const equipped = wardrobe.current.equipped;
-        const safeTrick = equipped && effective.roam && wardrobePainter?.accessoryReady() && paintedTexture?.complete && paintedTexture.naturalWidth > 0 && brain.current.activeMs >= accessoryReadyAt && !availableFood.length && brain.current.hunger < .75 && !brain.current.foodGoal && !brain.current.intention && !brain.current.episode && !returning && !pendingMonth && !reduced && !["off", "soft"].includes(gfxMode()) && (!isCompanionHat(equipped) || effective.jump)
+        const safeTrick = !musical && equipped && effective.roam && wardrobePainter?.accessoryReady() && paintedTexture?.complete && paintedTexture.naturalWidth > 0 && brain.current.activeMs >= accessoryReadyAt && !availableFood.length && brain.current.hunger < .75 && !brain.current.foodGoal && !brain.current.intention && !brain.current.episode && !returning && !pendingMonth && !reduced && !["off", "soft"].includes(gfxMode()) && (!isCompanionHat(equipped) || effective.jump)
           && accessorySpace(equipped);
-        const chosen: CompanionAction = safeTrick ? { kind: "look", accessory: equipped!, target: { x, y, platformId: support }, duration: COMPANION_ACCESSORY_MOTION_MS } : getAction(brain.current, world, effective, now);
+        const chosen: RuntimeAction = musical ?? (safeTrick ? { kind: "look", accessory: equipped!, target: { x, y, platformId: support }, duration: COMPANION_ACCESSORY_MOTION_MS } : getAction(brain.current, world, effective, now));
+        if (musical?.radio) {
+          const rows = musical.radio.reaction === "bored" ? [10, 1] : musical.radio.reaction === "sway" ? [1, 9] : musical.radio.reaction === "bounce" ? [9] : [1];
+          rows.forEach(row => spriteSources[row].forEach(src => requestSprite.current(src)));
+        }
         if (safeTrick) { accessoryReadyAt = brain.current.activeMs + 45000; pendingCue = "play"; (isCompanionHat(equipped!) ? [3, 4] : [9]).forEach(row => spriteSources[row].forEach(src => requestSprite.current(src))); }
         const chosenFood = availableFood.find(item => item.id === chosen.foodId);
         if (chosenFood) lastFoodPoint = { id: chosenFood.id, x: chosenFood.x, y: chosenFood.y };
-        launch(safeTrick ? chosen : deliberateCompanionAction(brain.current, world, effective, chosen, !reduced && gfxMode() !== "off"), now);
+        launch(musical || safeTrick ? chosen : deliberateCompanionAction(brain.current, world, effective, chosen, !reduced && gfxMode() !== "off"), now);
         if (hiding) { paint(14, 0, "hide"); schedule(); return; }
       }
       let row = 0, frame = 0, status = "idle";
@@ -1674,6 +1714,11 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
               food.current?.jostle({ x, y }, 100);
             }
           }
+        } else if (action.kind === "look" && action.radio) {
+          const mealFoods = companionRadioFoodPriority({ feeding: effective.feeding, hunger: brain.current.hunger, availableFoods: liveFoods.length }) ? accessibleCompanionFoods(liveFoods, [...platforms, ...landingPlatforms]).length : 0;
+          if (!radioState.playing || radioState.generation !== action.radio.generation || !radioSpace(mealFoods)) { clearAction(); nextDecision = now + 60; paint(0, 0, "idle"); schedule(); return; }
+          const musical = sampleCompanionRadioReaction(action.radio.reaction, age, action.radio.bpm); row = musical.row; frame = musical.frame;
+          data("radioReaction", action.radio.reaction); data("radioGeneration", String(action.radio.generation));
         } else if (action.kind === "look" && action.accessory) {
           if (!effective.roam || action.accessory !== wardrobe.current.equipped || overlayActive || workspaceBusyRef.current || brain.current.foodGoal || liveFoods.length || !accessorySpace(action.accessory) || reduced || ["off", "soft"].includes(gfxMode())) { clearAction(); nextDecision = now + 60; paint(0, 0, "idle"); schedule(); return; }
           const trick = sampleCompanionAccessoryMotion(action.accessory, age); row = trick.row; frame = trick.frame;
@@ -1751,7 +1796,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (mood === "disappointed" || mood === "sulky") {
         const moodRow = mood === "sulky" ? 19 : 18;
         spriteSources[moodRow].forEach(src => requestSprite.current(src));
-        if (["idle", "look"].includes(status) && !action?.attention) { row = moodRow; frame = reduced ? 0 : clamp((presentationNow - moodStarted) / (COMPANION_CLIP_TIMING[moodRow].duration ?? 1400), 0, 1) * 15; }
+        if (["idle", "look"].includes(status) && !action?.attention && !action?.radio) { row = moodRow; frame = reduced ? 0 : clamp((presentationNow - moodStarted) / (COMPANION_CLIP_TIMING[moodRow].duration ?? 1400), 0, 1) * 15; }
       }
       data("mood", mood);
       paint(row, frame, status); schedule();
@@ -2034,6 +2079,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     };
     const sync = () => {
       graphicsMode = readGfxMode();
+      if (!radioAllowed()) { radioInbox.clear(); if (action?.radio) clearAction(); }
       if (graphicsMode === "off" || blocked || document.hidden || overlayRef.current || workspaceBusyRef.current || premiereRef.current.cue?.phase && !["idle", "return", "prelude"].includes(premiereRef.current.cue.phase)) cancelEpisode();
       if (blocked || document.hidden || overlayRef.current || premiereRef.current.cue?.phase && !["idle", "return", "prelude"].includes(premiereRef.current.cue.phase)) cardPlay.clear();
       if (syncPremiere()) return;
@@ -2129,7 +2175,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       else { presence.focus(!overlayActive && (homeJourney === "called" || document.hasFocus()), lastTick, !overlayActive && homeJourney === "called"); if (overlayActive) updateOverlayPerch(); else connectGeometry(); hearts.pause(overlayActive || presence.phase === "parked"); if (needsLanding) { needsLanding = false; settle({ x, y }); } nextDecision = performance.now() + 600; if (presence.phase !== "parked") schedule(); armPrelude(); }
     };
     const focusChanged = () => {
-      if (!document.hasFocus()) { cancelEpisode(); pointer = pointerAnchor = undefined; pointerStableSince = 0; }
+      if (!document.hasFocus()) { radioInbox.clear(); if (action?.radio) clearAction(); cancelEpisode(); pointer = pointerAnchor = undefined; pointerStableSince = 0; }
       if (premiereActive) return;
       if (pause) return;
       if (isDetailGuest()) { if (!document.hasFocus()) { cancelGuestInput(); paint(9, 0, "watch"); } lastTick = lastNeeds = lastCare = performance.now(); return; }
@@ -2204,6 +2250,8 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       // A new hand owns a fresh grip, not the previous release's spring tail.
       resetInertia();
       if (action?.accessory) y -= sampleCompanionAccessoryMotion(action.accessory, now - began).bodyLift;
+      if (action?.radio) y += sampleCompanionRadioReaction(action.radio.reaction, now - began, action.radio.bpm).bob;
+      radioInbox.clear();
       grip = { x: clamp(event.clientX - x + size / 2, 0, size), y: clamp(event.clientY - y + size, 0, size) };
       style(inertiaLayer, "transform-origin", `${grip.x}px ${grip.y}px`);
       clearAction(); pressed = { id: event.pointerId, x: event.clientX, y: event.clientY, at: performance.now(), dx: event.clientX - x, dy: event.clientY - y, dragged: false, grabbed: false, cancelled: false };
@@ -2341,6 +2389,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       el.removeAttribute("data-pointer-focus");
       if (pause || overlayActive) return;
       const owns = event.key === "Escape" || event.key === "Enter" && preferences.petting || (event.key === " " || event.key.toLowerCase() === "p") && preferences.drag || event.key.toLowerCase() === "n" && preferences.sleep || keyboardHeld && event.key.startsWith("Arrow");
+      if (owns) radioInbox.clear();
       if (owns) { event.preventDefault(); event.stopPropagation(); }
       if (owns) { interruptReturn(); homeDeparture = undefined; }
       if (owns) stopHover();
@@ -2349,7 +2398,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
       if (event.key === "Enter" && preferences.petting) { event.preventDefault(); affection(); }
       else if (event.key.toLowerCase() === "p" && preferences.drag && !event.repeat) control.current?.place();
       else if (event.key.toLowerCase() === "n" && preferences.sleep && !event.repeat) { control.current?.rest(); logActivity("ui.click", { target: "companion-rest" }); }
-      else if (event.key === " " && preferences.drag) { event.preventDefault(); cancelHomeJourney(); awaitingAtX = false; pendingMonth = false; if (!keyboardHeld && action?.accessory) y -= sampleCompanionAccessoryMotion(action.accessory, performance.now() - began).bodyLift; clearAction(); supportMotion.reset(); keyboardHeld = !keyboardHeld; if (keyboardHeld) playCompanionSound("lift", preferencesRef.current); else { settle({ x, y }); if (keyboardMoved) transferred(); } keyboardMoved = false; }
+      else if (event.key === " " && preferences.drag) { event.preventDefault(); cancelHomeJourney(); awaitingAtX = false; pendingMonth = false; if (!keyboardHeld && action?.accessory) y -= sampleCompanionAccessoryMotion(action.accessory, performance.now() - began).bodyLift; if (!keyboardHeld && action?.radio) y += sampleCompanionRadioReaction(action.radio.reaction, performance.now() - began, action.radio.bpm).bob; clearAction(); supportMotion.reset(); keyboardHeld = !keyboardHeld; if (keyboardHeld) playCompanionSound("lift", preferencesRef.current); else { settle({ x, y }); if (keyboardMoved) transferred(); } keyboardMoved = false; }
       else if (event.key === "Escape") { event.preventDefault(); const moved = keyboardHeld && keyboardMoved; pendingMonth = false; keyboardHeld = false; keyboardMoved = false; placing = false; delete el.dataset.placing; settle({ x, y }); if (moved) transferred(); }
       else if (keyboardHeld && event.key.startsWith("Arrow")) { event.preventDefault(); const previous = { x, y }; x = clamp(x + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0), size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(y + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0), size + 8, innerHeight - 12); keyboardMoved ||= x !== previous.x || y !== previous.y; }
       if (owns) { cancelAnimationFrame(raf); clearTimeout(timer); lastTick = lastNeeds = lastPaint = performance.now(); schedule(); }
@@ -2754,7 +2803,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     };
     const spriteDecoded = () => { if (!pause) paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status); };
     const workspaceChanged = () => {
-      if (workspaceBusyRef.current) { cancelEpisode(); stopHover(); cardPlay.clear(); return; }
+      if (workspaceBusyRef.current) { radioInbox.clear(); if (action?.radio) clearAction(); cancelEpisode(); stopHover(); cardPlay.clear(); return; }
       if (pause || overlayActive || hiding || premiereActive) return;
       offGeometry?.(); offGeometry = undefined; connectGeometry();
       cancelAnimationFrame(raf); clearTimeout(timer);
@@ -2814,6 +2863,18 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-showcase", "data-ambient-pause", "data-gfx", "data-theme", "data-eye-comfort"] });
     observer.observe(page, { attributes: true, attributeFilter: ["inert", "data-companion-premiere-owner"] });
     document.addEventListener("visibilitychange", sync); document.addEventListener("pointerdown", place, true); window.addEventListener("click", click, true);
+    const radioChanged = () => {
+      radioState = getCompanionRadioSnapshot();
+      if (action?.radio && (!radioState.playing || action.radio.generation !== radioState.generation || !radioAllowed())) { clearAction(); nextDecision = performance.now() + 60; }
+      radioInbox.offer(radioState, performance.now(), radioAllowed());
+      if (!stopped && radioAllowed()) { cancelAnimationFrame(raf); clearTimeout(timer); schedule(); }
+    };
+    const radioPreferencesChanged = () => {
+      radioPreferences = getCompanionRadioPreferences();
+      if (!radioAllowed()) { radioInbox.clear(); if (action?.radio) { clearAction(); nextDecision = performance.now() + 60; } }
+      if (!stopped && !pause && presence.phase === "active") { cancelAnimationFrame(raf); clearTimeout(timer); schedule(); }
+    };
+    const offRadio = subscribeCompanionRadio(radioChanged), offRadioPreferences = subscribeCompanionRadioPreferences(radioPreferencesChanged);
     window.addEventListener("blur", focusChanged); window.addEventListener("focus", focusChanged);
     window.addEventListener("vic:companion-overlay", sync);
     window.addEventListener("vic:companion-workspace", workspaceChanged);
@@ -2843,6 +2904,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
     return () => {
       offHabits();
       offLife();
+      offRadio(); offRadioPreferences(); radioInbox.clear();
       refreshWardrobe.current = () => {}; situationSink.current = () => {}; pendingSituations.clear(); wardrobePainter?.clear();
       lastPose.current = { x, y, monthKey, seeded: worldSeeded || Boolean(supportById(support)), atHome: isHomeSupport(support) && (homeOccluded || supportedNow()) && !pressed && !keyboardHeld && action?.kind !== "jump" && !playFalling, homeSupportId: isHomeSupport(support) ? support : undefined };
       if (capturePosition.current === captureForSurface) capturePosition.current = null;
@@ -2887,7 +2949,7 @@ export default function ViewerCompanion({ root, preferences, blocked, overlayOpe
   };
   const act = (kind: CompanionHomeAction) => { control.current?.[kind](); };
   const performanceActive = Boolean(premiereCue?.generation && premiereCue.phase !== "idle" && (premiereCue.phase === "return" || premiereCue.target - syncedNow() <= 166000));
-  const house = <CompanionHome care={care} preferences={preferences} inactive={overlayOpen || performanceActive} owner={premiereCue?.owner} onAction={act} onClose={homeVisible ? undefined : closeHome} />;
+  const house = <CompanionHome care={care} preferences={preferences} inactive={overlayOpen || performanceActive} owner={premiereCue?.owner} radioPlaying={radioPlaying} onAction={act} onClose={homeVisible ? undefined : closeHome} />;
   return createPortal(<><div className="vc-companion" ref={body} hidden data-sfx="off" data-size="large" data-overlay={overlayOpen ? "quiet" : undefined} data-workspace-busy={workspaceBusy ? "" : undefined}>
     <span className="vc-contact-shadow" ref={shadow} aria-hidden="true" />
     <button id={actorId} className="vc-actor" ref={actor} type="button" tabIndex={overlayOpen ? -1 : 0} data-sfx="off" data-activity-manual="" aria-label="빅타민 · 쓰다듬고 옮기기" aria-describedby="vc-help" aria-keyshortcuts="Enter Space P N ArrowUp ArrowDown ArrowLeft ArrowRight Escape" onDoubleClick={event => { event.preventDefault(); event.stopPropagation(); }}>

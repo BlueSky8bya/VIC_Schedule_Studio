@@ -56,6 +56,12 @@ export function isCompanionSpriteDecoded(src: string): boolean {
   return decoded.has(src);
 }
 
+/** Synchronously borrow pixels for an isolated canvas paint. Do not retain or
+ * move this node: its live host and the shared LRU/decode budget stay untouched. */
+export function peekDecodedCompanionSprite(src: string): HTMLImageElement | undefined {
+  return decoded.get(src);
+}
+
 /** A connected presentation owns its exact decoded node. Cold callers yield
  * without queueing/failure poisoning when all three retained nodes are owned.
  * An ordinary later paint may retry after a host releases one; no polling

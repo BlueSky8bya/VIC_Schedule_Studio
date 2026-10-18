@@ -453,6 +453,17 @@ html[data-theme="dark"] .rhh-collection-tile:not([data-found]) > .vc-collection-
 .rhh-behavior-grid .rhh-collection-tile, .rhh-accessory-grid .rhh-collection-tile { min-height: 126px; }
 .rhh-behavior-grid .rhh-collection-tile > .vc-collection-art, .rhh-accessory-grid .rhh-collection-tile > .vc-collection-art { width: 64px; height: 64px; }
 .rhh-accessory-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: var(--space-3); }
+.rhh-wardrobe-detail { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: var(--space-4); }
+.rhh-wardrobe-detail-copy { display: grid; justify-items: start; gap: var(--space-3); min-width: 0; }
+.rhh-wardrobe-detail-copy > strong { font-size: var(--text-ui, 15px); font-weight: 600; overflow-wrap: anywhere; }
+.rhh-wardrobe-preview-wrap { display: grid; justify-items: center; gap: 2px; padding-top: 12px; }
+.rhh-wardrobe-preview { position: relative; width: 132px; height: 132px; }
+.rhh-wardrobe-preview > .vc-pose { position: relative; visibility: hidden; }
+.rhh-wardrobe-preview[data-preview-ready] > .vc-pose { visibility: visible; }
+.rhh-wardrobe-preview .vc-sprite > canvas { display: block; width: 100%; height: 100%; }
+.rhh-wardrobe-preview-wrap > .rhh-link { min-height: 44px; }
+.rhh-wardrobe-preview-paused { position: absolute; inset: 0; display: grid; place-items: center; color: var(--ink-soft); }
+.rhh-accessory-grid .rhh-collection-tile { scroll-margin-block-start: 240px; }
 .rhh-gift-arrival { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-3); border: 1px solid var(--line); border-radius: var(--r-md); background: rgb(var(--glass-cell) / 76%); padding: var(--space-3); }
 .rhh-gift-arrival > .vc-collection-art { flex: none; width: 56px; height: 56px; }
 .rhh-gift-arrival > strong { flex: 1; min-width: 120px; }
@@ -460,6 +471,24 @@ html[data-theme="dark"] .rhh-collection-tile:not([data-found]) > .vc-collection-
 .rhh-memory-switch { max-width: 320px; margin-top: var(--space-3); }
 .rhh-companion-sound-actions { display: flex; flex: none; align-items: center; gap: var(--space-2); }
 .rhh-companion-sound-actions > .rhh-link { display: grid; width: 44px; height: 44px; place-items: center; }
+.rhh-radio-moods { display: flex; flex-wrap: wrap; gap: var(--space-2); padding-block: var(--space-2); }
+.rhh-radio-moods > button { min-height: 44px; border: 1px solid var(--line); border-radius: var(--r-pill); padding-inline: var(--space-3); }
+.rhh-radio-moods > button[aria-pressed="true"] { border-color: var(--selection-border); background: var(--selection-fill); }
+.rhh-radio-now { display: grid; gap: var(--space-2); padding-block: var(--space-3); }
+.rhh-radio-now > p { margin: 0; font-weight: 600; }
+.rhh-radio-actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.rhh-radio-actions > button { min-height: 44px; }
+.rhh-radio-playlist { border-top: 1px solid var(--line); padding-top: var(--space-2); }
+.rhh-radio-playlist > summary { cursor: pointer; min-height: 44px; align-content: center; }
+.rhh-radio-playlist > summary > span { margin-left: var(--space-2); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.rhh-radio-playlist > ul { display: grid; gap: var(--space-2); list-style: none; margin: var(--space-2) 0 0; padding: 0; }
+.rhh-radio-playlist li { display: flex; align-items: center; gap: var(--space-2); border-top: 1px solid var(--line); padding-block: var(--space-2); }
+.rhh-radio-playlist label { display: flex; flex: 1; align-items: center; gap: var(--space-3); min-width: 0; min-height: 44px; cursor: pointer; }
+.rhh-radio-playlist input { flex: none; width: 18px; height: 18px; accent-color: var(--selection-border); }
+.rhh-radio-playlist label > span { display: grid; gap: 3px; min-width: 0; overflow-wrap: anywhere; }
+.rhh-radio-playlist label strong { font-weight: 500; }
+.rhh-radio-playlist label > span > span { color: var(--ink-soft); }
+.rhh-radio-playlist li > button { display: grid; flex: none; width: 44px; height: 44px; place-items: center; }
 .rhh-equipped-current { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); margin: var(--space-3) 0 0; }
 @container rhh-habits (max-width: 360px) {
   .rhh-profile-nav > button { gap: 2px; padding-inline: 4px; }
@@ -467,6 +496,8 @@ html[data-theme="dark"] .rhh-collection-tile:not([data-found]) > .vc-collection-
   .rhh-profile-action-grid { grid-template-columns: minmax(0, 1fr); }
   .rhh-behavior-grid, .rhh-accessory-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .rhh-collection-switch > button { flex-wrap: wrap; gap: 2px 6px; }
+  .rhh-wardrobe-preview { width: 112px; height: 112px; }
+  .rhh-wardrobe-detail { gap: var(--space-3); }
 }
 html[data-reduce-motion] .rhh-profile-playful::before,
 html[data-gfx="off"] .rhh-profile-playful::before,

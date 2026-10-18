@@ -1,6 +1,6 @@
 # 107 — 빅타민 소리·추억·옷장
 
-2026-10-18 KST. Status: local gates and36 native cases verified; authorized release verification pending. [Plan](../plans/PLAN-20261018-107-companion-sounds-moments-and-wardrobe.md).
+2026-10-18 KST. Status: complete; authorized release/exact deployed UI verified. [Plan](../plans/PLAN-20261018-107-companion-sounds-moments-and-wardrobe.md).
 
 ## Result and boundaries
 
@@ -39,6 +39,12 @@ Food-trip/running-tumble cause preservation and resuming the same meal after mis
 
 ## Release
 
-Pending authorized scoped commit/push, remote quality/Vercel result, full deployed SHA/public boundary checks and actual authenticated UI observation. No production collection grants, care resets or schedule writes are needed for proof.
+Authorized main commit/push: `66cca4dcca8f4195f88d94898f38c7dab242e8e9` (`feat: add companion sounds and moment stamps`), scoped66 files. Protected user art-note SHA remains unchanged. Private original requests/contracts/reference copies, attachments and unrelated drafts/configuration were excluded. No force/reset/cleanup was used.
+
+[Remote quality39106642196](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39106642196) completed successfully, all13 steps including full units, isolated SQL contracts, harness, production build, typecheck and lint. Vercel succeeded for this exact commit. At2026-10-18 16:13 KST the deployed public build endpoint returned the full SHA above. Clock200/no-store, warm204, anonymous developer presence401/error-only/no-store and production fixture nonexposure passed. The streamed fixture response is HTTP200 with the404 fallback marker; it is not claimed as HTTP404. Local evidence: `.scratch-pw/companion-107/deployed-canaries.json`.
+
+Actual authenticated developer-studio tab was reloaded and displayed badge `66cca4d`. Native settings→빅타민 confirmed the enabled saved choice, dedicated sound master/volume60/three categories, food60, combined memories24 with separate situation12 panel, unknown identities and twelve wardrobe entries. No production collection grant, care reset, sound/preferences toggle or schedule edit was used for proof. Existing preferences were retained. Screenshots `.scratch-pw/companion-107/deployed-{sound,moments,wardrobe}.jpg` record actual production UI. Dialog closed; original November2026/right-folded panel restored.
+
+This post-release bookkeeping remains local until the next authorized product commit, avoiding a documentation-only second deployment. Actual broadcaster hardware, speaker listening, genuine-login/RLS and provider quota coverage remain separate from these checks.
 
 Actual broadcaster-PC/OBS hardware validation remains deferred by the owner. Fixture tests do not establish real-user RLS/device/provider quota coverage. Public boundary canaries and exact deployed SHA/UI are required after authorized release.

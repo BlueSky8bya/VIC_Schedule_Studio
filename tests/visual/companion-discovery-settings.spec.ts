@@ -153,7 +153,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await expect(profile.getByRole("button", { name: "선물 열기", exact: true })).toBeVisible();
     expect(await readCollection(page)).toEqual(seededCollection);
     await accessories.getByRole("button", { name: "??? · 3", exact: true }).click();
-    await expect(profile.locator(".rhh-collection-detail").getByRole("button")).toHaveCount(0);
+    await expect(profile.locator(".rhh-collection-detail").getByRole("button", { name: /^(장착하기|벗기기)$/ })).toHaveCount(0);
     await accessories.getByRole("button", { name: "??? · 12", exact: true }).click();
     await expect(profile.locator(".rhh-collection-detail")).toBeInViewport({ ratio: 1 });
     await expect(profile.locator(".rhh-collection-detail strong")).toHaveText("???");
@@ -232,7 +232,8 @@ test("fresh local discovery starts empty and never manufactures a pending gift",
   await expect(profile.getByRole("button", { name: "선물 열기", exact: true })).toHaveCount(0);
   await expect(profile.locator(".rhh-accessory-grid button")).toHaveCount(12);
   await expect(profile.locator(".rhh-accessory-grid button[data-found]")).toHaveCount(0);
-  await expect(profile.locator(".rhh-collection-detail").getByRole("button")).toHaveCount(0);
+  await expect(profile.locator(".rhh-collection-detail").getByRole("button", { name: /^(장착하기|벗기기)$/ })).toHaveCount(0);
+  await expect(profile.getByRole("button", { name: "다시 보기", exact: true })).toBeDisabled();
   expect(await page.evaluate(key => localStorage.getItem(key), COMPANION_COLLECTION_KEY)).toBeNull();
   expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
 });

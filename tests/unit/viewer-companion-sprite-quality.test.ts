@@ -96,6 +96,25 @@ describe("bounded decoded reference lifetime", () => {
     return { images, held, release, connect };
   }
 
+  it("borrows live pixels without moving the owner, decoding or changing eviction order", async () => {
+    vi.resetModules();
+    const fixture = imageFixture(), owner = {} as HTMLElement;
+    try {
+      const { acquireDecodedCompanionSprite: acquire, decodeCompanionSprite: decode, peekDecodedCompanionSprite: peek } = await import("@/lib/ui/viewer-companion/sprite-quality");
+      expect(peek("cold")).toBeUndefined(); expect(fixture.images).toHaveLength(0);
+      await decode("live"); fixture.connect(acquire("live", owner)!, owner);
+      await decode("old"); await decode("recent");
+      const live = peek("live")!;
+      expect(live).toBe(fixture.images[0]); expect(live.parentElement).toBe(owner);
+      expect(peek("old")).toBe(fixture.images[1]);
+      await decode("next");
+      // A preview read is not a cache touch; the old unowned packet still goes.
+      expect(peek("old")).toBeUndefined(); expect(peek("recent")).toBeDefined();
+      expect(peek("live")).toBe(live); expect(live.parentElement).toBe(owner);
+      expect(fixture.images).toHaveLength(4); expect(fixture.images.every(image => image.srcWrites === 1)).toBe(true);
+    } finally { vi.unstubAllGlobals(); }
+  });
+
   it("presents the exact prepared Image without a second source assignment or stealing a live owner", async () => {
     vi.resetModules();
     const fixture = imageFixture(), owner = {} as HTMLElement, foreignOwner = {} as HTMLElement;

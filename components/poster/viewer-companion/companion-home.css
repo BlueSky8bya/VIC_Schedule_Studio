@@ -57,11 +57,23 @@
 .vc-window-sill { stroke: var(--vc-wood-edge); stroke-width: .6; }
 .vc-window-edge { fill: none; stroke: var(--vc-wood-light); stroke-width: .7; opacity: .65; }
 .vc-home-shelf { position: absolute; top: 9px; right: 7%; width: 34%; max-width: 108px; height: 55px; fill: none; stroke: none; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
-.vc-shelf-frame-shadow, .vc-shelf-board-shadow { fill: var(--vc-soft-shadow); }
-.vc-shelf-frame { stroke: var(--vc-wood-edge); stroke-width: .8; }
-.vc-shelf-picture-base { fill: var(--vc-container-light); stroke: var(--vc-thread); stroke-width: .7; }
-.vc-shelf-picture { fill: var(--vc-sage); stroke: none; }
-.vc-shelf-picture-sun { fill: color-mix(in srgb, rgb(var(--glass-panel)) 24%, #e4d9a8); stroke: none; }
+.vc-home-shelf-art { display: block; width: 100%; height: 100%; pointer-events: none; }
+.vc-shelf-board-shadow { fill: var(--vc-soft-shadow); }
+/* Expand only the hit plane around its existing centre. One screen pixel of
+   allowance keeps inverse zoom above 44 pixels after subpixel rounding. */
+.vc-radio-button { --vc-radio-base-hit: max(44px, var(--control-hit)); --vc-radio-hit: calc((var(--vc-radio-base-hit) + 1px) / var(--shell-zoom, 1)); position: absolute; top: calc(-3px + (var(--vc-radio-base-hit) - var(--vc-radio-hit)) / 2); left: calc((var(--vc-radio-base-hit) - var(--vc-radio-hit)) / 2); display: grid; place-items: center; width: var(--vc-radio-hit); height: var(--vc-radio-hit); padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--ink); pointer-events: auto; cursor: pointer; }
+.vc-radio-button > svg { display: block; pointer-events: none; transform-origin: 50% 85%; transition: transform var(--dur-spring-smooth) var(--spring-smooth, var(--ease-spring)); }
+.vc-radio-button:active > svg { transform: scale(var(--press-scale)); }
+.vc-radio-shadow { fill: var(--vc-soft-shadow); }
+.vc-radio-body { stroke: var(--vc-wood-edge); stroke-width: .9; }
+.vc-radio-antenna { stroke: var(--vc-wood-edge); stroke-width: 1.5; stroke-linecap: round; }
+.vc-radio-speaker { fill: var(--vc-linen-edge); stroke: var(--vc-thread); stroke-width: .8; }
+.vc-radio-grille { stroke: var(--vc-wood-edge); stroke-width: .9; opacity: .75; }
+.vc-radio-tuner { fill: var(--vc-container-light); stroke: var(--vc-wood-edge); stroke-width: .6; }
+.vc-radio-needle, .vc-radio-dial { stroke: var(--vc-wood-edge); stroke-width: 1.1; stroke-linecap: round; }
+.vc-radio-knob { fill: var(--vc-ceramic-light); stroke: var(--vc-wood-edge); stroke-width: .8; }
+.vc-radio-light { fill: var(--muted); opacity: .45; }
+.vc-radio-button[aria-pressed="true"] .vc-radio-light { fill: var(--accent); opacity: 1; }
 .vc-shelf-stem { fill: none; stroke: var(--vc-leaf-shade); stroke-width: 2; }
 .vc-shelf-leaf { stroke: var(--vc-leaf-shade); stroke-width: .5; }
 .vc-shelf-leaf-vein { fill: none; stroke: var(--vc-leaf-light); stroke-width: .7; }
@@ -99,7 +111,7 @@ body:has(.vc-cushion-button:active) .vc-bed-foreground .vc-sofa-feedback { --vc-
 .vc-bed-front-shape { stroke: none; }
 .vc-bed-front-ribs { fill: none; stroke: var(--vc-bed-light); stroke-width: 4.2; stroke-linecap: round; opacity: .5; }
 .vc-bed-front-welt { fill: none; stroke: var(--vc-bed-light); stroke-width: 1.8; stroke-linecap: round; opacity: var(--vc-sofa-feedback-welt-opacity, .45); }
-.vc-home .vc-cushion-button:active { transform: none; }
+.vc-home :is(.vc-cushion-button, .vc-radio-button):active { transform: none; }
 .vc-dispenser { position: absolute; z-index: 2; right: 61px; bottom: 8px; width: 48px; height: 62px; box-sizing: border-box; padding: 0; border: 1px solid transparent; border-radius: var(--r-md); background: transparent; color: var(--muted); cursor: pointer; }
 /* Keep the1px border and actual slot/control rectangles: food owns the
    unchanged five-pixel slot anchor inside this matte container drawing. */
@@ -128,13 +140,14 @@ body:has(.vc-cushion-button:active) .vc-bed-foreground .vc-sofa-feedback { --vc-
 .vc-trash-progress { position: absolute; bottom: 4px; left: 10px; right: 10px; height: 2px; border-radius: var(--r-pill); background: var(--muted); transform: scaleX(var(--vc-trash-progress)); transform-origin: left; }
 .vc-home button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .vc-home button:disabled { opacity: .38; cursor: default; }
-.vc-home button:not(.vc-cushion-button):active { transform: scale(var(--press-scale)); }
+.vc-home button:not(.vc-cushion-button, .vc-radio-button):active { transform: scale(var(--press-scale)); }
 .vc-home-close, .vc-dispenser, .vc-home-trash, .vc-trash-lid { transition: transform var(--dur-spring-smooth) var(--spring-smooth, var(--ease-spring)), color var(--dur-1) var(--ease), background-color var(--dur-1) var(--ease); }
 .vc-home button:active { transition-duration: .07s; }
 html[data-reduce-motion] .vc-home button, html[data-reduce-motion] .vc-plush-bed, html[data-reduce-motion] .vc-trash-lid,
 html[data-gfx="off"] .vc-home button, html[data-gfx="off"] .vc-plush-bed, html[data-gfx="off"] .vc-trash-lid,
 html[data-gfx="soft"] .vc-home button, html[data-gfx="soft"] .vc-plush-bed, html[data-gfx="soft"] .vc-trash-lid { transition: none; }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-sofa-feedback { transform: none; transition: none; }
+html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-radio-button > svg { transform: none; transition: none; }
 html[data-reduce-motion] .vc-home button:active, html[data-reduce-motion] .vc-cushion-button:active .vc-plush-bed,
 html[data-gfx="off"] .vc-home button:active, html[data-gfx="off"] .vc-cushion-button:active .vc-plush-bed,
 html[data-gfx="soft"] .vc-home button:active, html[data-gfx="soft"] .vc-cushion-button:active .vc-plush-bed { transform: none; }

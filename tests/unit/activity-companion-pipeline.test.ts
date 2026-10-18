@@ -165,6 +165,12 @@ describe("companion activity writer boundary", () => {
     const stored = JSON.stringify(db.writes);
     for (const value of [CANARY, "apple", "ask-petting", "sunglasses", "beret", "giftContents", "11234"]) expect(stored).not.toContain(value);
   });
+  it("stores radio and wardrobe previews as fixed operations without a personal playlist or discovered action", async () => {
+    const targets = ["companion-radio-volume#35", "companion-radio-react#on", "companion-radio-mood#graceful", "companion-radio-track-toggle#radio-01", "companion-radio-play#radio-02", "companion-radio-next", "companion-radio-stop", "companion-wardrobe-preview#tumble"];
+    expect(await recordActivityBatch(targets.map(target => ({ ...click(target), meta: { title: CANARY, count: 32, on: true }, durMs: 9876 })))).toBe(8);
+    expect(db.writes[0].rows.map(row => ({ target: row.target, meta: row.meta, dur_ms: row.dur_ms }))).toEqual(targets.map(target => ({ target: target.startsWith("companion-radio-react") || target.startsWith("companion-radio-mood") ? target : target.split("#")[0], meta: null, dur_ms: null })));
+    for (const value of [CANARY, "radio-01", "radio-02", "tumble", "9876"]) expect(JSON.stringify(db.writes)).not.toContain(value);
+  });
 
   it.each(["viewer", "anon"] as const)("counts %s collection clicks without a collection/account/session payload", async role => {
     mocks.actor.mockResolvedValue(actor("viewer", role !== "anon"));

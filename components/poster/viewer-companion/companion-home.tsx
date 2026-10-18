@@ -7,8 +7,8 @@ import { PanelSection } from "@/components/shared/panel-section";
 import type { CompanionCare } from "@/lib/ui/viewer-companion/care";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 
-export type CompanionHomeAction = "home" | "feed" | "clearFood";
-type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?: boolean; owner?: string; onAction: (action: CompanionHomeAction) => void; onClose?: () => void };
+export type CompanionHomeAction = "home" | "feed" | "clearFood" | "radio";
+type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?: boolean; owner?: string; radioPlaying?: boolean; onAction: (action: CompanionHomeAction) => void; onClose?: () => void };
 
 // The open U is shared by the room drawing and the separate foreground layer.
 // Its centre begins at54/100: the actual seat stays behind14–18px of cloth at
@@ -43,7 +43,7 @@ export function CompanionBedForeground({ idPrefix = "companion-front" }: { idPre
 
 /** One small room, shared by the desktop rail and compact portal. The cushion
  * is a real landing anchor; food and care stay in the existing single runtime. */
-export function CompanionHome({ care, preferences, inactive, owner, onAction, onClose }: Props) {
+export function CompanionHome({ care, preferences, inactive, owner, radioPlaying = false, onAction, onClose }: Props) {
   const room = useRef<HTMLElement>(null);
   const bedId = useId().replace(/:/g, "");
   // Its host already owns the panel FLIP. A tiny entry never resizes the room,
@@ -68,17 +68,13 @@ export function CompanionHome({ care, preferences, inactive, owner, onAction, on
         <rect className="vc-window-sill" x="1" y="57" width="74" height="5" rx="2" fill={`url(#${bedId}-window)`} />
         <rect className="vc-window-edge" x="4.5" y="4.5" width="67" height="54" rx="10.5" />
       </svg>
-      <svg className="vc-home-shelf" width="108" height="55" viewBox="0 0 108 55" fill="none" aria-hidden="true" focusable="false">
+      <div className="vc-home-shelf">
+      <svg className="vc-home-shelf-art" width="108" height="55" viewBox="0 0 108 55" fill="none" aria-hidden="true" focusable="false">
         <defs>
           <linearGradient id={`${bedId}-shelf`} x2=".15" y2="1"><stop stopColor="var(--vc-wood-light)" /><stop offset=".5" stopColor="var(--vc-wood)" /><stop offset="1" stopColor="var(--vc-wood-edge)" /></linearGradient>
           <linearGradient id={`${bedId}-pot`} x2=".8" y2="1"><stop stopColor="var(--vc-ceramic-light)" /><stop offset=".65" stopColor="var(--vc-ceramic)" /><stop offset="1" stopColor="var(--vc-ceramic-edge)" /></linearGradient>
           <linearGradient id={`${bedId}-leaf`} x2="1" y2="1"><stop stopColor="var(--vc-leaf-light)" /><stop offset=".55" stopColor="var(--vc-sage)" /><stop offset="1" stopColor="var(--vc-leaf-shade)" /></linearGradient>
         </defs>
-        <rect className="vc-shelf-frame-shadow" x="10" y="6" width="28" height="33" rx="4" />
-        <rect className="vc-shelf-frame" x="10" y="3" width="28" height="34" rx="4" fill={`url(#${bedId}-shelf)`} />
-        <rect className="vc-shelf-picture-base" x="14" y="7" width="20" height="26" rx="2" />
-        <path className="vc-shelf-picture" d="M16 26c4-9 7-9 10-2 3-5 5-5 7-2v5c0 3-2 4-5 4h-7c-4 0-5-1-5-5Z" />
-        <circle className="vc-shelf-picture-sun" cx="28" cy="14" r="3" />
         <path className="vc-shelf-stem" d="M76 32c0-8-2-15-1-22m1 15 8-8m-9 8-8-5" />
         <path className="vc-shelf-leaf" fill={`url(#${bedId}-leaf)`} d="M73 23c-10 0-15-6-14-13 9 1 15 5 14 13Zm4-3c-2-9 3-14 11-16 1 9-2 15-11 16Zm2 7c1-7 6-11 15-10-3 8-8 11-15 10Z" />
         <path className="vc-shelf-leaf-vein" d="m63 14 7 7m15-12-6 8m11 4-8 4" />
@@ -88,6 +84,20 @@ export function CompanionHome({ care, preferences, inactive, owner, onAction, on
         <rect className="vc-shelf-board-shadow" x="4" y="42" width="100" height="7" rx="3.5" />
         <rect className="vc-shelf-board" x="3" y="37" width="102" height="7" rx="2.5" fill={`url(#${bedId}-shelf)`} />
       </svg>
+      <button type="button" className="vc-radio-button" data-home-action="radio" data-activity-manual="" data-sfx="off" data-tip={radioPlaying ? "라디오 끄기" : "라디오 켜기"} aria-label={radioPlaying ? "라디오 끄기" : "라디오 켜기"} aria-pressed={radioPlaying} onClick={() => onAction("radio")}>
+        <svg width="44" height="40" viewBox="0 0 48 40" fill="none" aria-hidden="true" focusable="false">
+          <defs><linearGradient id={`${bedId}-radio`} x2=".15" y2="1"><stop stopColor="var(--vc-wood-light)" /><stop offset=".6" stopColor="var(--vc-wood)" /><stop offset="1" stopColor="var(--vc-wood-edge)" /></linearGradient></defs>
+          <ellipse className="vc-radio-shadow" cx="24" cy="36" rx="20" ry="3" />
+          <path className="vc-radio-antenna" d="m36 10 7-8M13 9V7c0-4 18-4 18 0v2" />
+          <rect className="vc-radio-body" x="4" y="9" width="40" height="26" rx="5" fill={`url(#${bedId}-radio)`} />
+          <rect className="vc-radio-speaker" x="8" y="13" width="19" height="18" rx="3" />
+          <path className="vc-radio-grille" d="M11 17h13m-13 4h13m-13 4h13m-13 3h13" />
+          <rect className="vc-radio-tuner" x="30" y="14" width="10" height="4" rx="1" /><path className="vc-radio-needle" d="M36 14v4" />
+          <circle className="vc-radio-knob" cx="35" cy="26" r="4.5" /><path className="vc-radio-dial" d="m35 23 1 3" />
+          <circle className="vc-radio-light" cx="31" cy="21" r="1" />
+        </svg>
+      </button>
+      </div>
       <span className="vc-home-light" aria-hidden="true" />
       <span className="vc-home-floor" aria-hidden="true" />
       <button type="button" data-home-action="home" data-activity-manual="" data-tip="집으로 부르기" className="vc-cushion-button" onClick={() => onAction("home")} aria-label="쿠션으로 돌아가 쉬기">

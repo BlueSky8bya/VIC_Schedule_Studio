@@ -1,6 +1,6 @@
 # 107 — Companion sounds, moments and wardrobe
 
-Date:2026-10-18 KST. Status:local gates and36 native cases verified; authorized release verification pending. See [verification](../verification/COMPANION_SOUNDS_MOMENTS-20261018.md).
+Date:2026-10-18 KST. Status:complete; released `66cca4dcca8f4195f88d94898f38c7dab242e8e9`, exact deployed UI/boundaries verified. See [verification](../verification/COMPANION_SOUNDS_MOMENTS-20261018.md). Post-release bookkeeping stays local until the next authorized product commit.
 
 ## Current owner request
 

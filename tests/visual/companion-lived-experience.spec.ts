@@ -7,17 +7,19 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { COMPANION_FOOD_NAMES, type CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { COMPANION_COLLECTION_KEY, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { type CompanionAccessoryId } from "@/lib/ui/viewer-companion/gifts";
+import { COMPANION_RADIO_PREFERENCES_KEY } from "@/lib/ui/viewer-companion/radio-preferences";
+import { COMPANION_RADIO_TRACKS } from "@/lib/ui/viewer-companion/radio-catalog";
 import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 
 type Surface = "viewer" | "studio";
-type Mode = "meal" | "social" | "cozy" | "cheer" | "nuzzle" | "accessory";
-type Frame = { at: number; visibleFocusedMs: number; focused: boolean; hidden: boolean; state: string; living: string; play: string; requestedRow: number; row: number; pose: number; atlas: number; platform: string; foodGoal: string; episodeFood: string; dreaming: boolean; decoded: boolean; registered: boolean; src: string; expectedSrc: string; srcMatches: boolean; same: boolean; count: number; x: number; y: number; trick: string; beat: string; journey: string; accessoryPose: number; bodyBob: number; wearable: { hidden: boolean; top: string; left: string; transform: string; background: string } };
+type Mode = "meal" | "social" | "cozy" | "cheer" | "nuzzle" | "accessory" | "radio-lively" | "radio-graceful" | "radio-calm" | "radio-off";
+type Frame = { at: number; visibleFocusedMs: number; focused: boolean; hidden: boolean; state: string; living: string; play: string; requestedRow: number; row: number; pose: number; atlas: number; platform: string; foodGoal: string; episodeFood: string; dreaming: boolean; decoded: boolean; registered: boolean; src: string; expectedSrc: string; srcMatches: boolean; same: boolean; count: number; x: number; y: number; trick: string; beat: string; journey: string; accessoryPose: number; bodyBob: number; radio: string; radioGeneration: number; bodyTilt: number; wearable: { hidden: boolean; top: string; left: string; transform: string; background: string } };
 type Input = { type: string; key: string; target: string; trusted: boolean };
 type Probe = { frames: Frame[]; inputs: Input[]; began: number; lastSample: number; lastActive: boolean; visibleFocusedMs: number; raf: number; previous: string; node: HTMLElement; input: (event: Event) => void };
 type ProbeWindow = Window & { livedExperience104?: Probe; __companionSfxTrace?: string[] };
-type Evidence = { writes: string[]; errors: string[]; care: unknown[]; probe?: unknown };
+type Evidence = { writes: string[]; errors: string[]; care: unknown[]; media: Array<{ path: string; status: number }>; probe?: unknown };
 const evidence = new WeakMap<Page, Evidence>();
 const output = process.env.LIVED_EXPERIENCE_OUTPUT ?? ".scratch-pw/104-lived-experience";
 const pet = (page: Page) => page.locator(".vc-companion");
@@ -27,8 +29,9 @@ const collection = (page: Page) => page.evaluate(key => { const raw = localStora
 
 test.use({ viewport: { width: 1920, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
 test.beforeEach(async ({ page }) => {
-  const proof: Evidence = { writes: [], errors: [], care: [] }; evidence.set(page, proof);
+  const proof: Evidence = { writes: [], errors: [], care: [], media: [] }; evidence.set(page, proof);
   page.on("pageerror", error => proof.errors.push(error.message));
+  page.on("response", response => { const path = new URL(response.url()).pathname; if (path.startsWith("/companion/audio/radio/")) proof.media.push({ path, status: response.status() }); });
   const config = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "required-server-files.json"), "utf8"));
   await page.route("**/*", route => {
     const request = route.request(), path = new URL(request.url()).pathname;
@@ -61,26 +64,33 @@ test.afterEach(async ({ page }, info) => {
 });
 
 async function seed(page: Page, mode: Mode, accessory?: CompanionAccessoryId) {
+  const radio = mode.startsWith("radio-");
   const life = mode === "social" || mode === "nuzzle" ? normalizeCompanionLife({ ...DEFAULT_COMPANION_LIFE, social: .85, curiosity: .2 })
     : mode === "cheer" ? normalizeCompanionLife({ ...DEFAULT_COMPANION_LIFE, play: .9, curiosity: .9, social: .1, comfort: .2 })
-    : mode === "accessory" ? normalizeCompanionLife({ ...DEFAULT_COMPANION_LIFE, play: .2, curiosity: .1, social: .1, comfort: .2 }) : null;
-  await page.addInitScript(({ epoch, key, prefs, care, habits, life, mode, accessory, collectionKey }) => {
+    : mode === "accessory" ? normalizeCompanionLife({ ...DEFAULT_COMPANION_LIFE, play: .2, curiosity: .1, social: .1, comfort: .2 })
+    : radio ? normalizeCompanionLife({ ...DEFAULT_COMPANION_LIFE, play: mode === "radio-calm" ? .2 : .8, curiosity: .2, social: .7, comfort: mode === "radio-calm" ? .8 : .4 }) : null;
+  await page.addInitScript(({ epoch, key, prefs, care, habits, life, mode, accessory, collectionKey, radio, radioKey }) => {
     // Passive successful-cue evidence only; no AudioContext, clock or cue is replaced.
     (window as unknown as ProbeWindow).__companionSfxTrace = [];
     if (localStorage.getItem("fixture.lived104")) return;
     localStorage.setItem("fixture.lived104", mode);
-    for (const [name, value] of Object.entries({ [key]: epoch, "vic.gfxPref": "max", "vic.reduceMotion": "off", "vic.ambient": "off", "vic.sound": mode === "meal" || mode === "accessory" ? "on" : "off", "vic.soundVol": "45", "vic.premiereStage": "off", "vic_avatar_side": "left" })) localStorage.setItem(name, value);
+    for (const [name, value] of Object.entries({ [key]: epoch, "vic.gfxPref": "max", "vic.reduceMotion": "off", "vic.ambient": "off", "vic.sound": mode === "meal" || mode === "accessory" || radio ? "on" : "off", "vic.soundVol": "45", "vic.premiereStage": "off", "vic_avatar_side": "left" })) localStorage.setItem(name, value);
     // Established saved care/preferences only. Meal/cozy deliberately use the
     // legacy snapshot so the real first-install migration chooses its own
     // random favorite. No RNG, focus, clock, brain or geometry is replaced.
     // A saved dog preference gives a genuine post-meal bow to witness. The
     // ordinary episode chooses/performs it; no requested frame is supplied.
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, animalMode: mode === "meal" ? "dog" : prefs.animalMode, roam: mode !== "cozy", jump: mode === "accessory", sleep: mode === "cozy", feeding: mode === "meal", petting: mode !== "cheer" && mode !== "accessory", drag: true, personality: "affectionate", speed: "relaxed", heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, learnFromYou: true }));
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, animalMode: mode === "meal" ? "dog" : prefs.animalMode, roam: mode !== "cozy", jump: mode === "accessory", sleep: mode === "cozy", feeding: mode === "meal" || mode === "radio-lively", petting: mode !== "cheer" && mode !== "accessory", drag: true, personality: "affectionate", speed: "relaxed", heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, learnFromYou: true }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: life ? 3 : 2, ...care, hunger: mode === "meal" ? .65 : .1, affection: mode === "nuzzle" ? .7 : .15, energy: mode === "cozy" ? .16 : .9, curiosity: mode === "cheer" ? .1 : care.curiosity, habits, ...(life ? { life } : {}) }));
     localStorage.setItem("vic.panelSections", JSON.stringify({ version: 1, "tag-filter": false, season: false, "companion-home": true }));
     if (accessory) localStorage.setItem(collectionKey, JSON.stringify({ version: 1, foods: [], behaviors: [], situations: [], gifts: { pending: null, unlocked: [accessory], equipped: null, activeMs: 0, interactionCredit: 0 } }));
+    if (radio) {
+      const mood = mode === "radio-off" ? "lively" : mode.slice(6);
+      localStorage.setItem(radioKey, JSON.stringify({ enabled: true, volume: 35, react: mode !== "radio-off", moods: { lively: mood === "lively", graceful: mood === "graceful", calm: mood === "calm" }, excludedIds: [] }));
+      localStorage.setItem(collectionKey, JSON.stringify({ version: 1, foods: [], behaviors: [], situations: [], gifts: { pending: null, unlocked: [], equipped: null, activeMs: 0, interactionCredit: 0 } }));
+    }
     localStorage.removeItem("vic_panel_collapsed");
-  }, { epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY, prefs: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE, habits: DEFAULT_COMPANION_MEMORY.habits, life, mode, accessory, collectionKey: COMPANION_COLLECTION_KEY });
+  }, { epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY, prefs: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE, habits: DEFAULT_COMPANION_MEMORY.habits, life, mode, accessory, collectionKey: COMPANION_COLLECTION_KEY, radio, radioKey: COMPANION_RADIO_PREFERENCES_KEY });
 }
 async function setup(page: Page, surface: Surface, mode: Mode, accessory?: CompanionAccessoryId) {
   await seed(page, mode, accessory);
@@ -108,14 +118,14 @@ async function startProbe(page: Page) {
       const image = el.querySelector<HTMLImageElement>(".vc-texture"), requestedRow = Math.round(parseFloat(el.style.getPropertyValue("--vc-row")) * (rows.length - 1) / 100), pose = Number(el.dataset.pose), row = rows.findIndex(group => group.includes(pose)), m = new DOMMatrixReadOnly(el.style.transform), size = parseFloat(el.style.getPropertyValue("--vc-size"));
       const adopted = Number.isInteger(pose) && pose >= 0 ? frames[pose] : undefined, atlas = adopted ? atlases[adopted.atlas] : undefined;
       const src = image?.currentSrc ?? "", expectedSrc = atlas ? new URL(atlas.src, document.baseURI).href : "", srcMatches = Boolean(src && expectedSrc && src === expectedSrc);
-      const wearable = el.querySelector<HTMLElement>(".vc-wearable-front"), body = el.querySelector<HTMLElement>(".vc-pose"), bodyBob = body ? new DOMMatrixReadOnly(body.style.transform).m42 : 0;
+      const wearable = el.querySelector<HTMLElement>(".vc-wearable-front"), body = el.querySelector<HTMLElement>(".vc-pose"), bodyMatrix = body ? new DOMMatrixReadOnly(body.style.transform) : new DOMMatrixReadOnly(), bodyBob = bodyMatrix.m42;
       // CSS tracks the requested semantic row. Until a packet decodes, the
       // renderer safely retains an already adopted frame. Observe its actual
       // registered data-pose rather than mislabelling that20ms fallback. A
       // row membership alone is insufficient: its metadata frame must point
       // to the atlas actually adopted by the live image's currentSrc.
-      const frame: Frame = { at: now - p.began, visibleFocusedMs: p.visibleFocusedMs, focused, hidden, state: el.dataset.state ?? "", living: el.dataset.living ?? "", play: el.dataset.play ?? "", requestedRow, row, pose, atlas: adopted?.atlas ?? -1, platform: el.dataset.platform ?? "", foodGoal: el.dataset.foodGoal ?? "", episodeFood: el.dataset.episodeFood ?? "", dreaming: el.hasAttribute("data-dreaming"), decoded: Boolean(image?.complete && image.naturalWidth), registered: Boolean(adopted && rows[row]?.includes(pose) && srcMatches), src, expectedSrc, srcMatches, same: el.isConnected && el === document.querySelector(".vc-companion"), count: document.querySelectorAll(".vc-companion").length, x: m.m41 + size / 2, y: m.m42 + size, trick: el.dataset.accessoryTrick ?? "", beat: el.dataset.accessoryBeat ?? "", journey: el.dataset.journey ?? "", accessoryPose: Number(el.dataset.accessoryPose ?? -1), bodyBob, wearable: { hidden: !wearable || wearable.hidden, top: wearable?.style.top ?? "", left: wearable?.style.left ?? "", transform: wearable?.style.transform ?? "", background: wearable?.style.backgroundImage ?? "" } };
-      const signature = JSON.stringify([frame.state, frame.living, frame.play, frame.requestedRow, frame.row, frame.pose, frame.platform, frame.foodGoal, frame.dreaming, frame.decoded, frame.registered, frame.src, focused, hidden, frame.trick, frame.beat, frame.trick ? [frame.bodyBob, frame.wearable] : null]);
+      const frame: Frame = { at: now - p.began, visibleFocusedMs: p.visibleFocusedMs, focused, hidden, state: el.dataset.state ?? "", living: el.dataset.living ?? "", play: el.dataset.play ?? "", requestedRow, row, pose, atlas: adopted?.atlas ?? -1, platform: el.dataset.platform ?? "", foodGoal: el.dataset.foodGoal ?? "", episodeFood: el.dataset.episodeFood ?? "", dreaming: el.hasAttribute("data-dreaming"), decoded: Boolean(image?.complete && image.naturalWidth), registered: Boolean(adopted && rows[row]?.includes(pose) && srcMatches), src, expectedSrc, srcMatches, same: el.isConnected && el === document.querySelector(".vc-companion"), count: document.querySelectorAll(".vc-companion").length, x: m.m41 + size / 2, y: m.m42 + size, trick: el.dataset.accessoryTrick ?? "", beat: el.dataset.accessoryBeat ?? "", journey: el.dataset.journey ?? "", accessoryPose: Number(el.dataset.accessoryPose ?? -1), bodyBob, radio: el.dataset.radioReaction ?? "", radioGeneration: Number(el.dataset.radioGeneration ?? 0), bodyTilt: Math.atan2(bodyMatrix.m12, bodyMatrix.m11) * 180 / Math.PI, wearable: { hidden: !wearable || wearable.hidden, top: wearable?.style.top ?? "", left: wearable?.style.left ?? "", transform: wearable?.style.transform ?? "", background: wearable?.style.backgroundImage ?? "" } };
+      const signature = JSON.stringify([frame.state, frame.living, frame.play, frame.requestedRow, frame.row, frame.pose, frame.platform, frame.foodGoal, frame.dreaming, frame.decoded, frame.registered, frame.src, focused, hidden, frame.trick, frame.beat, frame.trick ? [frame.bodyBob, frame.wearable] : null, frame.radio, frame.radioGeneration, frame.radio ? [frame.bodyBob, frame.bodyTilt] : null]);
       if (signature !== p.previous) { p.frames.push(frame); p.previous = signature; }
       p.raf = requestAnimationFrame(sample);
     };
@@ -181,7 +191,148 @@ async function openTraits(page: Page) {
   return dialog.getByRole("region", { name: "빅타민 특성", exact: true });
 }
 
+test("viewer: the complete radio corpus plays every real selected track through one shared media graph", async ({ page, context }) => {
+  test.setTimeout(120000);
+  const inspector = await context.newCDPSession(page), contexts = new Set<string>(), mediaSources = new Set<string>(), mediaErrors: unknown[] = [];
+  inspector.on("WebAudio.contextCreated", ({ context }) => contexts.add(context.contextId));
+  inspector.on("WebAudio.audioNodeCreated", ({ node }) => { if (/MediaElement/i.test(node.nodeType)) mediaSources.add(node.nodeId); });
+  inspector.on("Media.playerErrorsRaised", event => mediaErrors.push(event));
+  await inspector.send("WebAudio.enable"); await inspector.send("Media.enable");
+  try {
+    await setup(page, "viewer", "radio-off"); await openTraits(page);
+    const dialog = page.getByRole("dialog", { name: "설정", exact: true });
+    await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "소리", exact: true }).click();
+    const radio = dialog.locator(".rhh-companion-radio");
+    for (const mood of ["우아하게", "잔잔하게"]) await radio.getByRole("button", { name: mood, exact: true }).click();
+    await radio.getByText("곡 고르기", { exact: false }).click();
+    expect(evidence.get(page)!.media).toEqual([]); expect(COMPANION_RADIO_TRACKS).toHaveLength(32);
+    const played: Array<{ id: string; src: string; title: string; status: number[] }> = [];
+    for (const [index, track] of COMPANION_RADIO_TRACKS.entries()) {
+      await radio.getByRole("button", { name: `${track.title} 재생`, exact: true }).click();
+      await expect(radio.locator(".rhh-radio-now > p")).toHaveText(track.title);
+      const stop = radio.getByRole("button", { name: "정지", exact: true }); await expect(stop).toBeEnabled();
+      await expect.poll(() => evidence.get(page)!.media.some(item => item.path === track.src && [200, 206].includes(item.status))).toBe(true);
+      // Only selected past/current tracks may have a request; later songs
+      // never preload. DevTools observes the actual browser graph read-only.
+      expect(new Set(evidence.get(page)!.media.map(item => item.path))).toEqual(new Set(COMPANION_RADIO_TRACKS.slice(0, index + 1).map(item => item.src)));
+      await page.waitForTimeout(220);
+      played.push({ id: track.id, src: track.src, title: track.title, status: evidence.get(page)!.media.filter(item => item.path === track.src).map(item => item.status) });
+      await stop.click(); await expect(stop).toBeDisabled();
+      await expect(radio.locator(".rhh-radio-now > p")).toHaveText("재생 대기");
+    }
+    expect(played).toHaveLength(32); expect(contexts.size).toBe(1); expect(mediaSources.size).toBe(1); expect(mediaErrors).toEqual([]);
+    evidence.get(page)!.care.push({ phase: "actual-32-track-selection-and-shared-graph", played, contextIds: [...contexts], mediaSourceIds: [...mediaSources], mediaErrors, limit: "Browser playback/graph evidence; no human listening or OBS hardware assertion." });
+  } finally { await inspector.detach(); }
+});
+
 for (const surface of ["viewer", "studio"] as const) {
+  for (const [mode, expected] of [["radio-lively", "bounce"], ["radio-graceful", "bored"], ["radio-calm", "calm"], ["radio-off", null]] as const) {
+    test(`${surface}: ${mode} starts only on its real home click, respects actual temperament and stops without discovery rewards`, async ({ page }) => {
+      test.setTimeout(45000);
+      const identity = await setup(page, surface, mode);
+      await openCompanionHome(page, "keyboard"); const floor = await placeAndHold(page, 0, 170);
+      let ignoredFood: { id: string; kind: CompanionFoodKind } | undefined;
+      if (mode === "radio-lively") {
+        await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click();
+        const food = page.locator(".vc-food"); await expect(food).toHaveCount(1);
+        ignoredFood = { id: (await food.getAttribute("data-food"))!, kind: (await food.getAttribute("data-kind"))! as CompanionFoodKind };
+        const landingCueOffset = (await sounds(page)).length;
+        await dragFoodToFeet(page, food, { x: floor.x + 24, y: floor.y - 70 });
+        await expect.poll(async () => (await sounds(page)).slice(landingCueOffset)).toContain("land");
+        await expect.poll(() => food.evaluate((node, floor) => {
+          const m = new DOMMatrixReadOnly((node as HTMLElement).style.transform);
+          return Math.abs(m.m41 - floor.x - 24) < 2 && Math.abs(m.m42 - floor.y) < 2;
+        }, floor)).toBe(true);
+        expect((await memory(page)).hunger).toBeLessThan(.35);
+      }
+      // Releasing a held pet is a real direct command and correctly discards
+      // an earlier music offer. Finish that input before the radio click.
+      await actor(page).focus(); await actor(page).press("Space"); await page.mouse.move(2, 2);
+      await expect(pet(page)).not.toHaveAttribute("data-state", "held");
+      await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
+      const radio = page.getByRole("button", { name: "라디오 켜기", exact: true });
+      await expect(radio).toHaveAttribute("aria-pressed", "false");
+      const hit = (await radio.boundingBox())!; expect(hit.width).toBeGreaterThanOrEqual(44); expect(hit.height).toBeGreaterThanOrEqual(44);
+      const radioGeometry = await radio.evaluate(node => {
+        const shelf = node.closest(".vc-home-shelf")!.getBoundingClientRect(), svg = node.querySelector("svg")!.getBoundingClientRect(), button = node.getBoundingClientRect();
+        const zoom = Number(getComputedStyle(node).getPropertyValue("--shell-zoom")) || 1;
+        return { zoom, width: button.width, height: button.height, svgWidth: svg.width, svgHeight: svg.height, buttonDx: button.x + button.width / 2 - shelf.x - 22 * zoom, buttonDy: button.y + button.height / 2 - shelf.y - 19 * zoom, svgDx: svg.x + svg.width / 2 - shelf.x - 22 * zoom, svgDy: svg.y + svg.height / 2 - shelf.y - 19 * zoom };
+      });
+      expect(Math.abs(radioGeometry.svgWidth - 44 * radioGeometry.zoom)).toBeLessThan(.1);
+      expect(Math.abs(radioGeometry.svgHeight - 40 * radioGeometry.zoom)).toBeLessThan(.1);
+      for (const delta of [radioGeometry.buttonDx, radioGeometry.buttonDy, radioGeometry.svgDx, radioGeometry.svgDy]) expect(Math.abs(delta)).toBeLessThan(.1);
+      evidence.get(page)!.care.push({ phase: "real-radio-hit-and-preserved-art-centre", radioGeometry });
+      expect(evidence.get(page)!.media).toEqual([]);
+      const before = await memory(page), discoveries = await collection(page);
+      // Saved mood filters express an ordinary user choice. The shipping
+      // player still selects the actual song with its untouched RNG/media.
+      await radio.click(); const stop = page.getByRole("button", { name: "라디오 끄기", exact: true });
+      await expect(stop).toHaveAttribute("aria-pressed", "true", { timeout: 10000 });
+      await expect.poll(() => evidence.get(page)!.media.some(item => [200, 206].includes(item.status))).toBe(true);
+      const selected = [...new Set(evidence.get(page)!.media.map(item => item.path))]; expect(selected).toHaveLength(1);
+      const track = COMPANION_RADIO_TRACKS.find(item => item.src === selected[0]); expect(track).toBeDefined();
+      expect(track!.mood).toBe(mode === "radio-off" ? "lively" : mode.slice(6));
+      if (expected) {
+        await expect(pet(page)).toHaveAttribute("data-radio-reaction", expected, { timeout: 8000 });
+        const generation = Number(await pet(page).getAttribute("data-radio-generation")); expect(generation).toBeGreaterThan(0);
+        const box = (await pet(page).boundingBox())!, viewport = page.viewportSize()!, left = Math.max(0, box.x - 30), top = Math.max(0, box.y - 30);
+        mkdirSync(output, { recursive: true });
+        await page.screenshot({ path: `${output}/${surface}-${mode}-native92.png`, clip: { x: left, y: top, width: Math.min(viewport.width - left, box.width + 60), height: Math.min(viewport.height - top, box.height + 60) }, scale: "css" });
+        await expect(pet(page)).not.toHaveAttribute("data-radio-reaction", { timeout: 8000 });
+        const afterListening = await collection(page), performed = (await frames(page)).filter(frame => frame.radioGeneration === generation && frame.radio === expected);
+        expect(performed.length).toBeGreaterThan(20);
+        expect(performed.at(-1)!.at - performed[0].at).toBeGreaterThan(4700);
+        expect(performed.at(-1)!.at - performed[0].at).toBeLessThan(6500);
+        const adopted = performed.filter(frame => frame.registered && frame.decoded);
+        expect(adopted.length).toBeGreaterThan(20);
+        expect(adopted.every(frame => frame.same && frame.count === 1 && frame.focused && !frame.hidden && frame.srcMatches && [0, 1, 9, 10].includes(frame.row) && /^viewport-floor/.test(frame.platform))).toBe(true);
+        expect(Math.max(...performed.map(frame => frame.x)) - Math.min(...performed.map(frame => frame.x))).toBeLessThan(1);
+        expect(Math.max(...performed.map(frame => frame.y)) - Math.min(...performed.map(frame => frame.y))).toBeLessThan(1);
+        expect(Math.max(...performed.map(frame => Math.abs(frame.bodyTilt)))).toBeGreaterThan(expected === "calm" ? .7 : 1.5);
+        expect(afterListening?.behaviors).toEqual(discoveries?.behaviors); expect(afterListening?.situations).toEqual(discoveries?.situations);
+        const after = await memory(page);
+        for (const trait of ["sociability", "playfulness", "confidence"] as const) expect(after.habits[trait]).toBe(before.habits[trait]);
+        expect(after.life.play).toBe(before.life.play); expect(after.life.recent).toEqual(before.life.recent);
+        if (ignoredFood) {
+          await expect(page.locator(`.vc-food[data-food="${ignoredFood.id}"]`)).toHaveCount(1);
+          expect(afterListening?.foods).toEqual([]);
+          expect(performed.every(frame => !frame.foodGoal && !frame.episodeFood)).toBe(true);
+          expect(after.life.familiarity[ignoredFood.kind]).toBe(before.life.familiarity[ignoredFood.kind]);
+          expect(Math.abs(after.life.foodScores[ignoredFood.kind] - before.life.foodScores[ignoredFood.kind])).toBeLessThan(.001);
+        }
+        evidence.get(page)!.care.push({ phase: "actual-radio-finite", mode, generation, track, before, after, ignoredFood, collection: afterListening });
+      } else {
+        await waitVisibleFocused(page, 6500);
+        expect((await frames(page)).some(frame => frame.radio)).toBe(false);
+        await expect(stop).toHaveAttribute("aria-pressed", "true");
+      }
+      if (mode === "radio-lively") {
+        // Rendered-owner integration probe, distinct from a real timed
+        // premiere: the shipping observer must revoke actual playback on
+        // both surface roots. No clock, audio method or geometry is replaced.
+        const surfaceRoot = page.locator(surface === "viewer" ? ".poster-page" : ".studio-shell").first();
+        expect(await surfaceRoot.getAttribute("data-companion-premiere-owner")).toBeNull();
+        await surfaceRoot.evaluate(node => node.setAttribute("data-companion-premiere-owner", "fixture-108-radio-guard"));
+        try { await expect(page.getByRole("button", { name: "라디오 켜기", exact: true })).toHaveAttribute("aria-pressed", "false"); }
+        finally { await surfaceRoot.evaluate(node => node.removeAttribute("data-companion-premiere-owner")); }
+        await waitVisibleFocused(page, 1200);
+        await expect(page.getByRole("button", { name: "라디오 켜기", exact: true })).toHaveAttribute("aria-pressed", "false");
+        evidence.get(page)!.care.push({ phase: "rendered-premiere-owner-stop-and-no-replay", surface, media: [...evidence.get(page)!.media] });
+        await page.getByRole("button", { name: "라디오 켜기", exact: true }).click();
+        await expect(stop).toHaveAttribute("aria-pressed", "true", { timeout: 10000 });
+        await expect.poll(() => new Set(evidence.get(page)!.media.map(item => item.path)).size).toBe(2);
+      }
+      await stop.click(); await expect(page.getByRole("button", { name: "라디오 켜기", exact: true })).toHaveAttribute("aria-pressed", "false");
+      await expect(pet(page)).not.toHaveAttribute("data-radio-reaction");
+      // The actual cushion command owns exactly one plush cue. Revalidation
+      // and the later arrival do not manufacture another button interaction.
+      const offset = (await sounds(page)).length, cushion = page.getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true });
+      await cushion.focus(); await cushion.press("Enter");
+      await expect.poll(async () => (await sounds(page)).slice(offset).filter(cue => cue === "cushion").length).toBe(1);
+      expect(await identity.evaluate(node => node.isConnected && node === document.querySelector(".vc-companion"))).toBe(true);
+    });
+  }
+
   test(`${surface}: a native meal changes only the consumed food and retains its discoveries and real first seed through reload and settings`, async ({ page }) => {
     test.setTimeout(75000);
     await setup(page, surface, "meal"); const initial = await memory(page);

@@ -1,0 +1,10 @@
+{
+  "creator": "Kenney",
+  "license": "CC0-1.0",
+  "sourceUrl": "https://kenney.nl/assets/impact-sounds",
+  "originalFile": "Audio/footstep_carpet_000.ogg",
+  "sourceSha256": "b9524658b52a99a20590f8feefc103088637fd13ea8ec35811aee785e1f2f330",
+  "sha256": "b6d8b3f3c0abdd419ab128b2bb058f7a6e6dec25bf11d26a54567e8c424c5f26",
+  "processing": "Opus48k; loudnorm -25 LUFS/-4 dBTP",
+  "originalLicenseSha256": "b49aa9c56b04528b95913de13e506a0f7c5e807b9925db9bfef86af1f91120db"
+}

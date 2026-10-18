@@ -1,0 +1,1249 @@
+{
+  "work": 108,
+  "scope": "Food intrinsic shape and immutable source verification; static SVG raster evidence, not native browser or owner approval.",
+  "cause": "The previous independently generated seal interior differed from the live food silhouette. The original120 cutouts used isotropic resizing; maximum observed integer-size ratio rounding was0.795756 percent.",
+  "method": "The real shared component renders a code-native paper seal behind the exact current food atlas and full square crop. Both axes have the same scale; no food-specific stretch, repaint or stamp raster is used.",
+  "native": {
+    "path": "art-src/빅타민/수집/작업회차/20261018-먹거리일치와삼각김밥/원본/한국편의점삼각김밥.png",
+    "sha256": "f45788da7beba1517ae81c1ed72181b7989482a7e76fbe376ef20b7ee50116c1",
+    "width": 1254,
+    "height": 1254,
+    "alphaBounds": {
+      "left": 0,
+      "top": 22,
+      "right": 1240,
+      "bottom": 1254,
+      "pixels": 635353,
+      "gutter": {
+        "left": 0,
+        "top": 22,
+        "right": 14,
+        "bottom": 0
+      }
+    },
+    "visibleBoundsAbove16": {
+      "left": 67,
+      "top": 85,
+      "right": 1189,
+      "bottom": 1185,
+      "pixels": 626953,
+      "gutter": {
+        "left": 67,
+        "top": 85,
+        "right": 65,
+        "bottom": 69
+      }
+    },
+    "requestedSafeGutterPercent": 15,
+    "observation": "The provided object is whole, but its requested15 percent source gutter was not met. Preserve all alpha>0 pixels, trim only alpha0, and contain isotropically inside an8px transparent final gutter.",
+    "resized": {
+      "width": 80,
+      "height": 79
+    },
+    "cell": 96,
+    "padding": {
+      "left": 8,
+      "top": 8
+    }
+  },
+  "preserved": [
+    {
+      "receipt": "art-src/빅타민/수집/작업회차/20261018-도감과선물/정리본/패킹기록.json",
+      "sha256": "c4788d426874b1209295ada280c02875858843307a52c3d042e28cce9865c423",
+      "sourceCount": 6,
+      "atlasCount": 5
+    },
+    {
+      "receipt": "art-src/빅타민/수집/작업회차/20261018-먹거리와추억/정리본/패킹기록.json",
+      "sha256": "afa505cbddb19e0882428bbcae4f51fe28bb1be7ab18a09dc10cf4a30c404ef7",
+      "sourceCount": 8,
+      "atlasCount": 4
+    }
+  ],
+  "inspectedFoodPairs": 60,
+  "foods": [
+    {
+      "id": "apple",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 0,
+        "y": 0,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 0.9743589743589743,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "lemon",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 96,
+        "y": 0,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.0303030303030303,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "strawberry",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 192,
+        "y": 0,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 0.9315068493150684,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "raspberry",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 288,
+        "y": 0,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 0.9722222222222222,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "watermelon",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 384,
+        "y": 0,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.1159420289855073,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "tomato",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 480,
+        "y": 0,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.027027027027027,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "grapefruit",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 576,
+        "y": 0,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.1044776119402986,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "peach",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 672,
+        "y": 0,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.1515151515151516,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "plum",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 0,
+        "y": 96,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 0.9866666666666667,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "orange",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 96,
+        "y": 96,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.04,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "persimmon",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 192,
+        "y": 96,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.1,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "apricot",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 288,
+        "y": 96,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "pear",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 384,
+        "y": 96,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 0.9605263157894737,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "banana",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 480,
+        "y": 96,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.1176470588235294,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "grape",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 576,
+        "y": 96,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 0.9358974358974359,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "cherry",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 672,
+        "y": 96,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 0.9342105263157895,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "blueberry",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 0,
+        "y": 192,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.2580645161290323,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "mango",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 96,
+        "y": 192,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.1176470588235294,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "kiwi",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 192,
+        "y": 192,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.0135135135135136,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "pineapple",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 288,
+        "y": 192,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 0.6363636363636364,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "coconut",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 384,
+        "y": 192,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.0833333333333333,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "fig",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 480,
+        "y": 192,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 0.9324324324324325,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "dragon-fruit",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 576,
+        "y": 192,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.0277777777777777,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "melon",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 672,
+        "y": 192,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.044776119402985,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "carrot",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 0,
+        "y": 288,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 0.935064935064935,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "cucumber",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 96,
+        "y": 288,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.1666666666666667,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "broccoli",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 192,
+        "y": 288,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "pumpkin",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 288,
+        "y": 288,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.1,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "corn",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 384,
+        "y": 288,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 0.9736842105263158,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "sweet-potato",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 480,
+        "y": 288,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.0704225352112675,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "potato",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 576,
+        "y": 288,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.25,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "cabbage",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 672,
+        "y": 288,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.0684931506849316,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "eggplant",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 0,
+        "y": 384,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 0.9866666666666667,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "bell-pepper",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 96,
+        "y": 384,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 0.8846153846153846,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "radish",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 192,
+        "y": 384,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.0149253731343284,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "peas",
+      "source": "/companion/collection/foods-106-v1.webp",
+      "sourceRectangle": {
+        "x": 288,
+        "y": 384,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.1014492753623188,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "bread",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 0,
+        "y": 0,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.1492537313432836,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "croissant",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 96,
+        "y": 0,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.0138888888888888,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "baguette",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 192,
+        "y": 0,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.1538461538461537,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "bagel",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 288,
+        "y": 0,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.1323529411764706,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "pretzel",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 384,
+        "y": 0,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.1194029850746268,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "sandwich",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 480,
+        "y": 0,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.1343283582089552,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "toast",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 576,
+        "y": 0,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.140625,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "pancake",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 672,
+        "y": 0,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.203125,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "waffle",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 0,
+        "y": 96,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.3508771929824561,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "doughnut",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 96,
+        "y": 96,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.1194029850746268,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "muffin",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 192,
+        "y": 96,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 0.9863013698630136,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "cupcake",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 288,
+        "y": 96,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 0.782051282051282,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "rice-ball",
+      "source": "/companion/collection/rice-ball-108-v1.webp",
+      "sourceRectangle": {
+        "x": 0,
+        "y": 0,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.0138888888888888,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "rice-cake",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 480,
+        "y": 96,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.2,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "dumpling",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 576,
+        "y": 96,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.2586206896551724,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "pizza",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 672,
+        "y": 96,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.1126760563380282,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "pasta",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 0,
+        "y": 192,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.2586206896551724,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "omelet",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 96,
+        "y": 192,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.4807692307692308,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "soup",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 192,
+        "y": 192,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.1666666666666667,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "curry",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 288,
+        "y": 192,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.54,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "sushi",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 384,
+        "y": 192,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.3508771929824561,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "pudding",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 480,
+        "y": 192,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.309090909090909,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "cookie",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 576,
+        "y": 192,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 1.0806451612903225,
+      "intrinsicFoodSourceShared": true
+    },
+    {
+      "id": "macaron",
+      "source": "/companion/collection/foods-107-v1.webp",
+      "sourceRectangle": {
+        "x": 672,
+        "y": 192,
+        "width": 96,
+        "height": 96
+      },
+      "stampFoodViewport": {
+        "x": 16,
+        "y": 16,
+        "width": 96,
+        "height": 96,
+        "preserveAspectRatio": "xMidYMid meet"
+      },
+      "contentAspect": 0.8571428571428571,
+      "intrinsicFoodSourceShared": true
+    }
+  ],
+  "code": [
+    {
+      "path": "components/poster/viewer-companion/companion-collection-art.tsx",
+      "sha256": "1513f96b7a57a13b1ee190bce6d1f284317355dd029102d68dd386a94e22dc8c"
+    },
+    {
+      "path": "lib/ui/viewer-companion/collection-art.ts",
+      "sha256": "a9782d22e58195e8facda9364a78dbe527ebf4379bafcdd722260a333eae2aa6"
+    },
+    {
+      "path": "scripts/prepare-companion-collection.mjs",
+      "sha256": "8ceba21576cfd6f48bbd7b54afc0aabb5adf9b6ae7295cd7516c56f430013c62"
+    },
+    {
+      "path": "tests/unit/viewer-companion-food-assets.test.ts",
+      "sha256": "17c928453ef96c89549fcb8d0d24c3bd47973d649be12d72dd6b2865c3520a30"
+    }
+  ],
+  "sheets": [
+    {
+      "path": ".scratch-pw/companion-108/food-audit/same-source-1.png",
+      "sha256": "75388d9fea60588be9b680eed1cc25fbe4178155235fa11b180c26d5a2e02809",
+      "kind": "Actual shared-component SVG rendering,20 live food/composed-stamp pairs; WebP decoded losslessly to PNG only for the offline SVG renderer."
+    },
+    {
+      "path": ".scratch-pw/companion-108/food-audit/same-source-2.png",
+      "sha256": "6ac458331dd4369f07a787be11a9855705374615620f0204d9199288688aebe8",
+      "kind": "Actual shared-component SVG rendering,20 live food/composed-stamp pairs; WebP decoded losslessly to PNG only for the offline SVG renderer."
+    },
+    {
+      "path": ".scratch-pw/companion-108/food-audit/same-source-3.png",
+      "sha256": "80a6a20144299ee7e553cb95914f1c9d3e98349b64451fd6f55139eb771ef3b6",
+      "kind": "Actual shared-component SVG rendering,20 live food/composed-stamp pairs; WebP decoded losslessly to PNG only for the offline SVG renderer."
+    }
+  ],
+  "verification": {
+    "assetUnit": "16/16 PASS",
+    "reproduction": "106/107/108 --check PASS",
+    "scopedLint": "PASS",
+    "projectTypecheck": "PENDING: concurrent radio-player imports and cushion cue are not complete",
+    "nativeBrowser": "NOT_RUN",
+    "ownerApproval": "NONE"
+  }
+}

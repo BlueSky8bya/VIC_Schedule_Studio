@@ -1,8 +1,12 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import sharp from "sharp";
+import React, { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { CompanionCollectionArt } from "@/components/poster/viewer-companion/companion-collection-art";
+import { CompanionFruit } from "@/components/poster/viewer-companion/companion-fruit";
 import { COMPANION_FOOD_KINDS, LEGACY_COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 import { COMPANION_COLLECTION_ATLASES, COMPANION_COLLECTION_FRAMES, getCompanionCollectionArtFrame } from "@/lib/ui/viewer-companion/collection-art";
 import { COMPANION_BEHAVIOR_IDS } from "@/lib/ui/viewer-companion/collection";
@@ -186,7 +190,9 @@ describe("code-native107 pixel sunglasses", () => {
 
 describe("additive107 native collection assets", () => {
   it("preserves four native PNGs and four authored SVGs in an84-cell source receipt", async () => {
-    const receipt = JSON.parse(readFileSync(join(process.cwd(), "art-src/빅타민/수집/작업회차/20261018-먹거리와추억/정리본/패킹기록.json"), "utf8")) as {
+    const receiptBytes = readFileSync(join(process.cwd(), "art-src/빅타민/수집/작업회차/20261018-먹거리와추억/정리본/패킹기록.json"));
+    expect(createHash("sha256").update(receiptBytes).digest("hex")).toBe("afa505cbddb19e0882428bbcae4f51fe28bb1be7ab18a09dc10cf4a30c404ef7");
+    const receipt = JSON.parse(receiptBytes.toString("utf8")) as {
       sources: { path: string; sha256: string; sourceBytesUnchanged: boolean; format?: string; columns?: number; rows?: number }[];
       cells: { atlas: string; index: number; source: string; sourceIndex: number }[];
     };
@@ -228,8 +234,11 @@ describe("additive107 native collection assets", () => {
     expect(Object.keys(COMPANION_COLLECTION_FRAMES["behavior-stamp"])).toEqual([...COMPANION_BEHAVIOR_IDS]);
     for (const [index, id] of COMPANION_FOOD_KINDS.slice(36).entries()) {
       const food = getCompanionCollectionArtFrame("food", id)!, stamp = getCompanionCollectionArtFrame("food-stamp", id)!;
-      expect(food.index).toBe(index); expect(stamp.index).toBe(index);
-      expect(food.src).toBe("/companion/collection/foods-107-v1.webp"); expect(stamp.src).toBe("/companion/collection/food-stamps-107-v1.webp");
+      expect(stamp.index).toBe(index); expect(stamp.src).toBe("/companion/collection/food-stamps-107-v1.webp");
+      // The108 owner request replaces only the live rice-ball drawing. The
+      // complete original107 atlas and source receipt remain checked below.
+      expect(food.index).toBe(id === "rice-ball" ? 0 : index);
+      expect(food.src).toBe(id === "rice-ball" ? "/companion/collection/rice-ball-108-v1.webp" : "/companion/collection/foods-107-v1.webp");
     }
     for (const [row, view] of (["front", "quarter", "side", "back"] as const).entries()) for (const [column, id] of COMPANION_ACCESSORY_IDS.slice(6).entries()) {
       const frame = getCompanionCollectionArtFrame("accessory", id, view)!;
@@ -239,18 +248,56 @@ describe("additive107 native collection assets", () => {
   });
 
   it("ships the four independently checked107 atlases with complete transparent cell gutters", async () => {
+    const receipt = JSON.parse(readFileSync(join(process.cwd(), "art-src/빅타민/수집/작업회차/20261018-먹거리와추억/정리본/패킹기록.json"), "utf8")) as { cells: { atlas: string; x: number; y: number; content: { width: number; height: number } }[] };
     for (const [id, count] of [["food-107", 24], ["food-stamp-107", 24], ["accessory-107", 24], ["situation-stamp", 12]] as const) {
       const atlas = COMPANION_COLLECTION_ATLASES[id]!;
       const bytes = readFileSync(join(process.cwd(), "public", atlas.src));
       expect(createHash("sha256").update(bytes).digest("hex")).toBe(atlas.sha256); expect(bytes.includes(Buffer.from("VP8L"))).toBe(true);
       const { data, info } = await sharp(bytes).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
       expect(info.width).toBe(atlas.cell * atlas.columns); expect(info.height).toBe(atlas.cell * atlas.rows);
-      const frames = Object.values(COMPANION_COLLECTION_FRAMES).flatMap(entries => Object.values(entries)).filter(frame => frame.atlas === id);
+      const frames = receipt.cells.filter(frame => frame.atlas === id);
       expect(frames).toHaveLength(count);
       for (const frame of frames) {
         expect(frame.content.width).toBeGreaterThan(10); expect(frame.content.height).toBeGreaterThan(10);
         for (let offset = 0; offset < atlas.cell; offset++) for (const [x, y] of [[frame.x + offset, frame.y], [frame.x + offset, frame.y + atlas.cell - 1], [frame.x, frame.y + offset], [frame.x + atlas.cell - 1, frame.y + offset]]) expect(data[(y * info.width + x) * 4 + 3]).toBe(0);
       }
     }
+  });
+});
+
+describe("same-source108 food stamps", () => {
+  beforeEach(() => vi.stubGlobal("React", React));
+  afterEach(() => vi.unstubAllGlobals());
+  it("renders all60 stamps from the exact live food crop with square meet geometry and no independently drawn stamp food", () => {
+    for (const id of COMPANION_FOOD_KINDS) {
+      const frame = getCompanionCollectionArtFrame("food", id)!;
+      const stamp = renderToStaticMarkup(createElement(CompanionCollectionArt, { kind: "food-stamp", id }));
+      const live = renderToStaticMarkup(createElement(CompanionFruit, { kind: id }));
+      expect(frame.width).toBe(frame.height);
+      expect(stamp).toContain('data-collection-art="food-stamp"'); expect(stamp).toContain('viewBox="0 0 128 128"');
+      expect(stamp).toContain(`x="16" y="16" width="96" height="96" viewBox="${frame.x} ${frame.y} ${frame.width} ${frame.height}" preserveAspectRatio="xMidYMid meet"`);
+      expect(stamp.match(/<image\s[^>]*>/g)).toEqual(live.match(/<image\s[^>]*>/g));
+      expect(stamp).not.toContain("food-stamps-"); expect(stamp).not.toMatch(/scale\(|preserveAspectRatio="none"/);
+    }
+    expect(renderToStaticMarkup(createElement(CompanionCollectionArt, { kind: "food-stamp", id: "unknown-food" }))).toBe("");
+  });
+
+  it("registers one explicit packaged rice-ball replacement while retaining its stable collection ID and previous sources", async () => {
+    const frame = getCompanionCollectionArtFrame("food", "rice-ball")!;
+    expect(frame.atlas).toBe("food-108"); expect(frame.index).toBe(0);
+    expect(COMPANION_FOOD_KINDS.filter(id => id === "rice-ball")).toHaveLength(1);
+    const receipt = JSON.parse(readFileSync(join(process.cwd(), "art-src/빅타민/수집/작업회차/20261018-먹거리일치와삼각김밥/정리본/패킹기록.json"), "utf8")) as { sources: { path: string; sha256: string; sourceBytesUnchanged: boolean }[]; cells: { id: string; atlas: string }[]; overrides: { kind: string; id: string; previousAtlas: string; atlas: string }[] };
+    expect(receipt.sources).toHaveLength(1); expect(receipt.cells).toHaveLength(1);
+    expect(receipt.cells[0]).toMatchObject({ id: "rice-ball", atlas: "food-108" });
+    expect(receipt.overrides).toHaveLength(1); expect(receipt.overrides[0]).toMatchObject({ kind: "food", id: "rice-ball", previousAtlas: "food-107", atlas: "food-108" });
+    const source = receipt.sources[0], bytes = readFileSync(join(process.cwd(), source.path));
+    expect(source.sha256).toBe("f45788da7beba1517ae81c1ed72181b7989482a7e76fbe376ef20b7ee50116c1");
+    expect(createHash("sha256").update(bytes).digest("hex")).toBe(source.sha256); expect(source.sourceBytesUnchanged).toBe(true);
+    const atlas = COMPANION_COLLECTION_ATLASES["food-108"]!, packed = readFileSync(join(process.cwd(), "public", atlas.src));
+    expect(createHash("sha256").update(packed).digest("hex")).toBe(atlas.sha256);
+    const info = await sharp(packed).metadata(); expect(info.width).toBe(96); expect(info.height).toBe(96); expect(info.hasAlpha).toBe(true);
+    const rgba = await sharp(packed).ensureAlpha().raw().toBuffer();
+    for (let y = 0; y < 96; y++) for (let x = 0; x < 96; x++) if (x < 8 || x >= 88 || y < 8 || y >= 88) expect(rgba[(y * 96 + x) * 4 + 3]).toBe(0);
+    expect(getCompanionCollectionArtFrame("food-stamp", "rice-ball")?.src).toBe("/companion/collection/food-stamps-107-v1.webp");
   });
 });

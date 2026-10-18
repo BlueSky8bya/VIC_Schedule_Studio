@@ -1,4 +1,5 @@
-// 효과음(2026-10-06) — 파일 없이 Web Audio로 짧게 합성한다(에셋·네트워크 0, 1초 미만).
+// 짧은 UI 효과음은 Web Audio로 합성한다. 빅타민 라디오·폭신한 쿠션은
+// 출처/녹음 라이선스를 확인한 로컬 파일도 이 동일한 context/bus에 연결한다.
 // 앱의 모든 소리는 이 한 곳을 거친다(진동의 lib/ui/haptics.ts와 같은 '두꺼비집' 구조).
 //
 // 통과해야 울리는 자물쇠:
@@ -949,6 +950,39 @@ function playNow(name: SfxName, opts: { force?: boolean } = {}): void {
 }
 
 export type CompanionSoundNote = Readonly<{ f: number; at?: number; vol?: number; tau?: number; glideTo?: number }>;
+/** One media decoder joins the existing context/bus; never constructs a second
+ * context or preloads a playlist. Called only from an explicit radio gesture. */
+export function connectCompanionMedia(element: HTMLMediaElement): { context: AudioContext; gain: GainNode } | null {
+  if (typeof document === "undefined" || document.hidden || !soundEnabled() || soundVolume() <= 0 || !(navigator.userActivation?.hasBeenActive ?? performance.now() - lastTrustedSoundInput < 700)) return null;
+  const context = audio();
+  if (!context) return null;
+  try {
+    const source = context.createMediaElementSource(element), gain = context.createGain();
+    gain.gain.value = 0;
+    source.connect(gain).connect(masterBus(context));
+    return { context, gain };
+  } catch { return null; }
+}
+const companionSamples = new Map<string, AudioBuffer | Promise<void>>();
+/** Tiny licensed tactile samples share the same bounded output. First use
+ * plays the immediate synthesized fallback while decoding for the next use. */
+export function playCompanionSample(src: "/companion/audio/cushion.ogg", volume: number): boolean {
+  if (typeof document === "undefined" || document.hidden || !soundEnabled() || soundVolume() <= 0 || volume <= 0 || !ctx || ctx.state !== "running") return false;
+  const ac = ctx, cached = companionSamples.get(src);
+  if (!cached) {
+    const pending = fetch(src).then(response => { if (!response.ok) throw new Error("sample"); return response.arrayBuffer(); }).then(bytes => ac.decodeAudioData(bytes)).then(buffer => { companionSamples.set(src, buffer); }).catch(() => { companionSamples.delete(src); });
+    companionSamples.set(src, pending);
+    return false;
+  }
+  if (cached instanceof Promise) return false;
+  const source = ac.createBufferSource(), out = ac.createGain();
+  source.buffer = cached;
+  out.gain.value = Math.pow(soundVolume() / 100, 1.6) * Math.pow(Math.min(100, volume) / 100, 1.6) * .6;
+  source.connect(out).connect(masterBus(ac));
+  source.onended = () => { source.disconnect(); out.disconnect(); };
+  source.start();
+  return true;
+}
 /** Finite companion cues reuse this one context/output bus. Autonomous cues
  * never create/resume audio before a real input and never queue a replay. */
 export function playCompanionVoice(notes: readonly CompanionSoundNote[], volume: number): boolean {
