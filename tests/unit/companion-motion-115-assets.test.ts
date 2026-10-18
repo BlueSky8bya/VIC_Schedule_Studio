@@ -39,6 +39,7 @@ describe("115 whole-pose continuity derivatives", () => {
   });
 
   it("keeps every logical action and the bounded3-packet decoder while removing the forced half-stride wink", () => {
+    const eye120 = json<typeof expression119>("art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/패킹파생기록.json");
     expect(receipt.slots).toHaveLength(520); expect(companionSpriteMetadata.rows).toHaveLength(41); expect(receipt.coverage.distinctWholeKeysUsed).toBe(60);
     expect(expression119.packets.map(({ atlas, family, localAtlas, packet }) => ({ atlas, family, localAtlas, src: packet.src }))).toEqual([
       { atlas: 0, family: "hd-motion-sprite", localAtlas: 0, src: "/companion/hd/vitamin-action-00-expression-119-v1.webp" },
@@ -48,6 +49,12 @@ describe("115 whole-pose continuity derivatives", () => {
       { atlas: 32, family: "living-motion-sprite", localAtlas: 0, src: "/companion/hd/vitamin-episodes-00-expression-119-v1.webp" },
     ]);
     expect(expression119.registrationChanges).toEqual([496, 497, 498, 499]);
+    expect(eye120.packets.map(({ atlas, family, localAtlas, packet }) => ({ atlas, family, localAtlas, src: packet.src }))).toEqual([
+      { atlas: 0, family: "hd-motion-sprite", localAtlas: 0, src: "/companion/hd/vitamin-action-00-eye-contour-120-v1.webp" },
+      { atlas: 16, family: "hd-motion-sprite", localAtlas: 16, src: "/companion/hd/vitamin-action-16-eye-contour-120-v1.webp" },
+      { atlas: 32, family: "living-motion-sprite", localAtlas: 0, src: "/companion/hd/vitamin-episodes-00-eye-contour-120-v1.webp" },
+    ]);
+    expect(eye120.registrationChanges).toEqual([]);
     const names = ["hd-motion-sprite", "play-motion-sprite", "living-motion-sprite"] as const;
     for (const [family, name] of names.entries()) {
       const before = json<{ rows: number[][] }>(`${run}/고정입력/${name}.json`), current = json<{ rows: number[][] }>(`lib/ui/viewer-companion/${name}.json`);
@@ -55,12 +62,13 @@ describe("115 whole-pose continuity derivatives", () => {
       const frozen = json<{ rows: number[][]; frames: Frame[]; atlases: Atlas[] }>(receipt.stagedMetadata[name]);
       const active = json<typeof frozen>(`lib/ui/viewer-companion/${name}.json`);
       // The immutable115 evidence below still checks every historical pixel.
-      // Current119 owns exactly five packet replacements and four body fits.
-      expect(readFileSync(`lib/ui/viewer-companion/${name}.json`).equals(readFileSync(expression119.stagedMetadata[name]))).toBe(true);
+      // Current120 replaces only three119 packets, keeping the four119 body
+      // fits and every immutable115 source/packet assertion below intact.
+      expect(readFileSync(`lib/ui/viewer-companion/${name}.json`).equals(readFileSync(eye120.stagedMetadata[name]))).toBe(true);
       expect({ ...active, atlases: frozen.atlases, frames: frozen.frames }).toEqual(frozen);
       expect(active.atlases).toHaveLength(frozen.atlases.length); expect(active.frames).toHaveLength(frozen.frames.length);
       for (const [index, atlas] of active.atlases.entries()) {
-        const replacement = expression119.packets.find(packet => packet.family === name && packet.localAtlas === index);
+        const replacement = eye120.packets.find(packet => packet.family === name && packet.localAtlas === index) ?? expression119.packets.find(packet => packet.family === name && packet.localAtlas === index);
         expect(atlas).toEqual(replacement?.packet ?? (name === "hd-motion-sprite" && index === 4 ? jump117.packet : frozen.atlases[index]));
       }
       for (const [index, frame] of active.frames.entries()) {

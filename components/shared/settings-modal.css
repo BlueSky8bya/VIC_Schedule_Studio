@@ -1807,13 +1807,13 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 .rhh-companion-experience { container-name: companion-settings rhh-habits; overflow: visible; padding: 0; border: 0; background: transparent; }
 .rhh-companion-experience > .rhh-profile-nav { margin-block: 0 var(--space-4); min-height: 54px; }
 .rhh-companion-experience > .rhh-profile-nav button { display: flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; font-weight: 650; }
-.rhh-companion-experience .rhh-companion-summary { display: grid; grid-template-columns: minmax(164px, .85fr) minmax(0, 1.15fr); align-items: stretch; gap: var(--space-4); margin-bottom: var(--space-4); border: 1px solid var(--companion-line); border-radius: var(--r-xl); background: var(--companion-paper); padding: var(--space-4); box-shadow: var(--elev-2); }
+.rhh-companion-experience .rhh-companion-summary { display: grid; grid-template-columns: minmax(calc(var(--companion-preview-size, 180px) + 18px), .85fr) minmax(0, 1.15fr); align-items: stretch; gap: var(--space-4); margin-bottom: var(--space-4); border: 1px solid var(--companion-line); border-radius: var(--r-xl); background: var(--companion-paper); padding: var(--space-4); box-shadow: var(--elev-2); }
 .rhh-companion-experience .rhh-companion-portrait { position: relative; display: grid; place-items: center; min-width: 0; min-height: 218px; border: 1px solid var(--companion-line); border-radius: var(--r-lg); background: var(--companion-peach); padding: 14px 8px 36px; color: var(--companion-ink); cursor: pointer; overflow: hidden; transition: transform var(--dur-spring-smooth) var(--spring-smooth), box-shadow var(--dur-2) var(--ease); }
 .rhh-companion-experience .rhh-companion-portrait:hover { transform: translateY(-3px); box-shadow: var(--elev-2); }
 .rhh-companion-experience .rhh-companion-portrait:active { transform: translateY(0) scale(.97); }
 .rhh-companion-experience .rhh-companion-portrait:focus-visible { outline: 2px solid var(--companion-accent); outline-offset: 4px; }
 .rhh-companion-portrait .rhh-wardrobe-preview-wrap { width: 100%; }
-.rhh-companion-experience .rhh-companion-portrait .rhh-wardrobe-preview { width: 164px; height: 164px; margin-inline: auto; }
+.rhh-companion-experience .rhh-companion-portrait .rhh-wardrobe-preview { width: var(--companion-preview-size, 180px); height: var(--companion-preview-size, 180px); margin-inline: auto; }
 .rhh-companion-portrait-link { position: absolute; right: 10px; bottom: 10px; display: flex; align-items: center; gap: 5px; border-radius: var(--r-pill); background: var(--companion-paper); padding: 5px 10px; font-size: var(--text-body); font-weight: 650; }
 .rhh-companion-interest { position: absolute; top: 10px; right: 10px; display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--companion-line); border-radius: 16px; background: var(--companion-paper); color: var(--companion-accent); box-shadow: var(--elev-1); }
 .rhh-companion-interest > .vc-collection-art { width: 34px; height: 34px; }
@@ -1837,9 +1837,9 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 .rhh-companion-settings .rhh-radio-attribution a { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; padding-inline: 4px; color: var(--companion-ink); text-underline-offset: 3px; }
 .rhh-companion-settings .rhh-radio-attribution small { font: inherit; }
 @container rhh-habits (max-width: 440px) {
-  .rhh-companion-experience .rhh-companion-summary { grid-template-columns: 136px minmax(0, 1fr); gap: var(--space-3); padding: var(--space-3); }
+  .rhh-companion-experience .rhh-companion-summary { gap: var(--space-3); padding: var(--space-3); }
   .rhh-companion-experience .rhh-companion-portrait { min-height: 202px; }
-  .rhh-companion-experience .rhh-companion-portrait .rhh-wardrobe-preview { width: 132px; height: 132px; }
+  .rhh-companion-experience .rhh-companion-portrait .rhh-wardrobe-preview { width: var(--companion-preview-size, 148px); height: var(--companion-preview-size, 148px); }
   .rhh-companion-experience > .rhh-profile-nav button { flex-direction: column; gap: 3px; padding-inline: 4px; }
 }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companion-experience .rhh-companion-portrait { transform: none; transition: none; }
@@ -1863,7 +1863,11 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 .rhh-companion-settings .rhh-collection-book .rhh-collection-grid > li { display: flex; min-height: 0; }
 .rhh-companion-settings .rhh-collection-book .rhh-collection-tile { height: 100%; min-height: 0; align-content: center; gap: 3px; border-radius: var(--r-md); padding: 6px 4px; line-height: 1.3; box-shadow: none; scroll-margin: 0; }
 .rhh-companion-settings .rhh-collection-book .rhh-collection-tile[aria-pressed="true"] { box-shadow: inset 0 0 0 1px var(--companion-accent); }
-.rhh-companion-settings .rhh-collection-book .rhh-collection-tile > .vc-collection-art { width: 48px; height: 48px; }
+.rhh-companion-settings .rhh-collection-book .rhh-collection-tile > .vc-collection-art { width: 60px; height: 60px; }
+.rhh-companion-settings .rhh-collection-book .rhh-food-grid .rhh-collection-tile > .vc-collection-art { width: 56px; height: 56px; }
+.rhh-companion-settings .rhh-collection-book .rhh-behavior-grid .rhh-collection-tile > .vc-collection-art { width: 72px; height: 72px; }
+.rhh-companion-settings .rhh-collection-book :is(.rhh-food-grid, .rhh-behavior-grid) .rhh-collection-tile { gap: 1px; padding-block: 2px; line-height: 1.25; }
+.rhh-companion-settings .rhh-collection-book .rhh-food-grid .rhh-collection-rarity { line-height: 1.25; }
 .rhh-companion-settings .rhh-collection-book .rhh-collection-tile > .rhh-collection-stamp { width: 20px; height: 20px; }
 .rhh-companion-settings .rhh-collection-book .rhh-collection-tile > :is(.rhh-collection-rarity, .rhh-collection-state) { font-size: var(--text-caption); }
 .rhh-companion-settings .rhh-collection-book .rhh-collection-pages { min-height: 44px; padding-top: 2px; }
@@ -1873,19 +1877,59 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 .rhh-companion-settings [data-discovery-cue] .rhh-collection-tile[data-recent] .rhh-collection-stamp,
 .rhh-companion-settings [data-discovery-cue] .rhh-collection-recent { animation: rhh-discovery-stamp 750ms var(--spring-bouncy) both; }
 @keyframes rhh-discovery-stamp { from { opacity: 0; transform: scale(1.6) rotate(-15deg); } 55% { opacity: 1; transform: scale(.9) rotate(4deg); } to { opacity: 1; transform: none; } }
-.rhh-companion-settings .rhh-collection-book .rhh-wardrobe-detail { grid-template-columns: 140px minmax(0, 1fr); gap: 12px; padding: 8px 12px; }
-.rhh-companion-settings .rhh-collection-book .rhh-wardrobe-preview { width: 124px; height: 124px; }
+.rhh-companion-settings .rhh-collection-book .rhh-wardrobe-detail { display: grid; flex: 1; grid-template-columns: minmax(calc(var(--companion-preview-size, 180px) + 16px), .95fr) minmax(0, 1fr); align-items: center; justify-items: stretch; min-height: 204px; gap: 20px; padding: 16px 20px; overflow: hidden; }
+.rhh-companion-settings .rhh-collection-book .rhh-wardrobe-preview { width: var(--companion-preview-size, 180px); height: var(--companion-preview-size, 180px); }
+.rhh-companion-experience { --companion-preview-size: 180px; }
+.rhh-companion-settings .rhh-collection-book .rhh-wardrobe-fitting-stage { position: relative; display: grid; align-self: stretch; place-items: center; width: 100%; min-width: 0; box-sizing: border-box; border-radius: var(--r-lg); background: var(--companion-peach); padding: 8px; }
+.rhh-companion-settings .rhh-collection-book .rhh-wardrobe-preview-wrap { display: grid; justify-items: center; gap: 0; }
+/* Fitting-stage controls occupy the transparent upper corners, not canvas rows. */
+.rhh-companion-settings .rhh-wardrobe-fitting-stage .rhh-wardrobe-preview-wrap > .rhh-link { position: absolute; top: 4px; right: 4px; z-index: 2; display: grid; place-items: center; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; background: var(--companion-paper); }
+.rhh-companion-settings .rhh-wardrobe-fitting-stage .rhh-wardrobe-replay-label { display: none; }
+.rhh-companion-settings .rhh-collection-book .rhh-wardrobe-fitting-stage .rhh-equipped-current { position: absolute; top: 4px; left: 4px; z-index: 2; max-width: calc(100% - 8px); }
+.rhh-companion-settings .rhh-wardrobe-fitting-stage .rhh-equipped-current > .rhh-link { position: relative; display: grid; place-items: center; width: 44px; min-width: 44px; height: 44px; min-height: 44px; padding: 0; background: var(--companion-paper); }
+.rhh-wardrobe-remove-mark { position: absolute; right: 4px; bottom: 4px; background: var(--companion-paper); }
+.rhh-companion-settings .rhh-collection-book .rhh-wardrobe-detail-copy { align-content: center; min-width: 0; gap: 10px; }
+.rhh-companion-settings .rhh-collection-book .rhh-wardrobe-detail-copy > strong { font-size: clamp(18px, 2.6cqw, 24px); line-height: 1.3; }
+.rhh-companion-settings .rhh-collection-book .rhh-wardrobe-description { max-width: 30ch; margin: 0; font-size: var(--text-body); line-height: 1.6; }
+.rhh-wardrobe-kind { display: inline-flex; align-items: center; gap: 5px; width: fit-content; border-radius: var(--r-pill); background: var(--companion-ground); padding: 5px 9px; color: var(--companion-soft); font-size: var(--text-caption); }
+.rhh-companion-settings .rhh-collection-book .rhh-accessory-grid { flex: none; height: 114px; }
+.rhh-companion-settings .rhh-collection-book .rhh-accessory-grid .rhh-collection-tile { gap: 1px; padding-block: 2px; }
+.rhh-companion-settings .rhh-collection-book .rhh-accessory-grid .rhh-collection-tile > .vc-collection-art { width: 56px; height: 56px; }
+.rhh-companion-settings .rhh-collection-book .rhh-collection-gallery-detail { display: grid; grid-template-columns: 144px minmax(0, 1fr); align-items: center; gap: 20px; padding: 14px 20px 14px 14px; }
+.rhh-collection-art-stage { display: grid; place-items: center; aspect-ratio: 1; min-width: 0; border: 1px solid var(--companion-line); border-radius: var(--r-lg); background: var(--companion-peach); overflow: hidden; }
+.rhh-memory-detail .rhh-collection-art-stage { background: var(--companion-lilac); }
+.rhh-collection-art-stage > .vc-collection-art { width: 124px; height: 124px; transition: transform var(--dur-spring-smooth) var(--spring-smooth); }
+.rhh-collection-art-stage:hover > .vc-collection-art { transform: translateY(-2px) rotate(-3deg) scale(1.04); }
+.rhh-collection-gallery-detail:not([data-found]) .rhh-collection-art-stage > .vc-collection-art { filter: brightness(0); opacity: .18; }
+.rhh-collection-detail-copy { display: grid; align-content: center; gap: 9px; min-width: 0; }
+.rhh-companion-settings .rhh-collection-detail-copy .rhh-collection-detail-title > strong { font-size: var(--text-title, 18px); line-height: 1.3; }
+.rhh-companion-settings .rhh-collection-detail-copy p { margin: 0; line-height: 1.6; }
+.rhh-collection-detail-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; color: var(--companion-soft); font-size: var(--text-caption); }
+.rhh-collection-detail-meta .rhh-collection-recent, .rhh-collection-keepsake { display: inline-flex; align-items: center; gap: 4px; width: fit-content; margin: 0; border-radius: var(--r-pill); background: var(--companion-mint); padding: 4px 8px; color: var(--companion-ink); font-size: var(--text-caption); }
+.rhh-collection-keepsake { background: var(--companion-lilac); }
 .rhh-companion-settings .rhh-collection-book .rhh-gift-arrival { flex-wrap: nowrap; gap: 8px; padding: 6px 10px; }
 .rhh-companion-settings .rhh-collection-book .rhh-gift-arrival > .vc-collection-art { width: 38px; height: 38px; }
 .rhh-companion-settings .rhh-collection-book .rhh-gift-arrival > strong { min-width: 0; font-size: var(--text-body); }
 .rhh-companion-settings .rhh-collection-book .rhh-equipped-current { display: flex; align-items: center; justify-content: flex-end; gap: 8px; font-size: var(--text-caption); }
 @media (max-height: 700px) {
-  .rhh-companion-settings .rhh-collection-book { gap: 6px; }
+  .rhh-companion-experience > [role="tabpanel"] { --companion-preview-size: 148px; }
+  .rhh-companion-settings .rhh-collection-book { gap: 5px; }
   .rhh-companion-settings .rhh-collection-book .rhh-collection-heading { display: none; }
-  .rhh-companion-settings .rhh-collection-book .rhh-wardrobe-detail { grid-template-columns: 100px minmax(0, 1fr); padding-block: 4px; }
-  .rhh-companion-settings .rhh-collection-book .rhh-wardrobe-preview { width: 96px; height: 96px; }
-  .rhh-companion-settings .rhh-collection-book .rhh-collection-tile > .vc-collection-art:not(.rhh-collection-stamp) { width: 42px; height: 42px; }
+  .rhh-companion-settings .rhh-collection-book .rhh-wardrobe-detail { min-height: 182px; gap: 12px; padding: 8px 12px; }
+  .rhh-companion-settings .rhh-collection-book .rhh-wardrobe-detail-copy { gap: 6px; }
+  .rhh-companion-settings .rhh-collection-book .rhh-wardrobe-kind { display: none; }
+  .rhh-companion-settings .rhh-collection-book .rhh-gift-arrival { padding-block: 0; }
+  .rhh-companion-settings .rhh-collection-book .rhh-collection-gallery-detail { grid-template-columns: 106px minmax(0, 1fr); gap: 12px; padding: 10px 12px; }
+  .rhh-collection-art-stage > .vc-collection-art { width: 96px; height: 96px; }
+  .rhh-companion-settings .rhh-collection-book .rhh-accessory-grid { height: 114px; }
 }
+@container companion-settings (max-width: 480px) {
+  .rhh-companion-experience > [role="tabpanel"] { --companion-preview-size: 148px; }
+  .rhh-companion-settings .rhh-collection-book .rhh-wardrobe-detail { gap: 12px; padding-inline: 10px; }
+  .rhh-companion-settings .rhh-collection-book .rhh-collection-gallery-detail { grid-template-columns: 106px minmax(0, 1fr); gap: 12px; padding: 10px; }
+  .rhh-collection-art-stage > .vc-collection-art { width: 96px; height: 96px; }
+}
+html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-collection-art-stage > .vc-collection-art { transform: none; transition: none; }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companion-settings [data-discovery-cue] :is(.rhh-collection-stamp, .rhh-collection-recent) { animation: none; }
 
 /*113: a quiet persistent discovery mark; never a pulse or another loop. */

@@ -1,0 +1,58 @@
+{
+  "scope": "120_ART_PREPARATION_ONLY_NO_NEW_VISUAL_VERDICT",
+  "status": "TWO_TARGETED_REVIEW_PACKETS_READY",
+  "human_capture": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\원문근거.json",
+    "sha256": "90EB2FA126FCDFC3955E70DD1BFCF0982B0722AD3D5083A4660BB743AE7E963B"
+  },
+  "actual_six_attachment_bytes_verified": true,
+  "candidate": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\현재요청3칸_원크기.png",
+    "sha256": "8B596D8BA7592FB2E08E95DAB4D2DDC362A0CAE7F906AB3FE6D48D4EE8326086"
+  },
+  "cycle": "E04160D795189EB8FD21",
+  "plan": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-eye-contour-120\\plan.json",
+    "sha256": "F693BB44F1C20861210F6DB2D961020D0CD1051B46705DD6D6F18A7BA7019161"
+  },
+  "contract": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수계약.json",
+    "sha256": "66DE280319E10E16601D8370D9EB2D047D0F1315898B479390E76DC75B819ED7"
+  },
+  "handoff": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수인계.json",
+    "sha256": "57C2B2104AB0A7CAE054C5112F460F8093FB18E7FDCE67D0A7ED6BE1121FC1C0"
+  },
+  "role_packets": {
+    "face_identity": {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\face_identity.json",
+      "sha256": "369860BA0BE74FCD4F2BBC70E7AD6D0520FA406ACF79B9D7D2C00977CE35AA39"
+    },
+    "scene_render": {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\scene_render.json",
+      "sha256": "261E87BFABC7EC9612134655F901C616443EEF8596C7BA546C507087EEB15EB9"
+    }
+  },
+  "preparer_actions": {
+    "capture_actual_turn": 1,
+    "record_normalized_feedback": 1,
+    "cycle_plan": 1,
+    "prepare_review": 1,
+    "imagegen": 0,
+    "imagegen_claim": 0,
+    "review_claim": 0,
+    "register": 0,
+    "independent_professional_review": 0
+  },
+  "verified_path_sha_pairs": 55,
+  "registered119_sample_RGBA_matches_technical_evidence": true,
+  "existing_original114_and_source119_keys_preserved": true,
+  "generation_contract": "cozyonly177words3inputs draft; not preflighted or claimed. Eyes reuse119 source if findings support. Root must bind working parent and actual openings before generation preflight; this is not a user-permission gate.",
+  "preserved_boundaries": [
+    "UI screenshots1..3 excluded from imagegen",
+    "all other keys and unusedphysical257/160..175 protected",
+    "new36behaviors remain unimplemented",
+    "no whole80/body review or automatic post-generation specialist review",
+    "no product/runtime/source-original edits or current_artwork selection/approval mutation by preparer"
+  ]
+}

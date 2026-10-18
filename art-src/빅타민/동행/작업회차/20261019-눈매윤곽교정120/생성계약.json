@@ -1,0 +1,178 @@
+{
+  "schema_version": 1,
+  "workflow_mode": "user_directed_cycle",
+  "work_id": "vitamin-eye-contour-120",
+  "operation": "targeted_parent_edit",
+  "subjects": [
+    "victamin"
+  ],
+  "generator_id": "/root",
+  "purpose": "Only if the requested scene_render finding requires new pixels: one cozy contour/material-edge cleanup; existing119 eye strokes are separate source-bound derivations.",
+  "user_cycle": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-eye-contour-120\\plan.json",
+    "sha256": "F693BB44F1C20861210F6DB2D961020D0CD1051B46705DD6D6F18A7BA7019161"
+  },
+  "inputs": [
+    {
+      "id": "current-cozy-parent",
+      "kind": "edit_target",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\포근잠_현재115입력.png",
+      "sha256": "C1EDC19C958ADF87370BC2475DBCA77ABF66AD5FDE753A8D773BFC2EDE6E8AAC",
+      "role": "current115_source_cozy_sleep_native78_physical519_only"
+    },
+    {
+      "id": "REF-016",
+      "kind": "original",
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4",
+      "role": "original_mascot_paper_construction_and_palette_authority"
+    },
+    {
+      "id": "selected-normal099",
+      "kind": "render_reference",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png",
+      "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68",
+      "role": "selected_crisp_line_and_palette_reference_only_not_open_eye_transfer"
+    }
+  ],
+  "authorities": {
+    "face": "REF-016",
+    "body": "REF-016",
+    "mascot": "REF-016"
+  },
+  "opened_files": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\포근잠_현재115입력.png",
+      "sha256": "C1EDC19C958ADF87370BC2475DBCA77ABF66AD5FDE753A8D773BFC2EDE6E8AAC",
+      "opened_by": "/root",
+      "basis": "Root explicitly reported actual opening of these three exact inputs before generation preflight."
+    },
+    {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4",
+      "opened_by": "/root",
+      "basis": "Root explicitly reported actual opening of these three exact inputs before generation preflight."
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png",
+      "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68",
+      "opened_by": "/root",
+      "basis": "Root explicitly reported actual opening of these three exact inputs before generation preflight."
+    }
+  ],
+  "edit_authorization": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-7b9d2aa7b2ff7a6bc1bac8a9.json",
+    "sha256": "729A087350935A81E55267B99774BD6ED838B78C7FF9F0D04A70C36462A10584",
+    "excerpt": "그리고 4번째 첨부 사진에 있는 빅타민 표정에서 눈매가 그 아래 보조개 종이? 부분에 가려진 것 같은데? \n5번째 첨부 사진은 왼쪽 눈매 가운데가 살짝 파여있는 것 같고. \n게다가 6번째 첨부 사진은 외곽도 지저번하고 색도 겹쳐있잖아. 제발 이런 건 한번에 검수좀 해"
+  },
+  "protected_parent": {
+    "artwork_id": "vitamin-eye-contour-120",
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\포근잠_현재115입력.png",
+    "sha256": "C1EDC19C958ADF87370BC2475DBCA77ABF66AD5FDE753A8D773BFC2EDE6E8AAC"
+  },
+  "edit_mask": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\포근잠_검수반영_최종편집영역.png",
+    "sha256": "E7DA3152AE778C7D2C6F29DFD6BE57BFEA8155DC040391BDC80BBFCE2BBAF05B",
+    "mode": "L",
+    "width": 119,
+    "height": 85,
+    "editable_pixels": 2377,
+    "review_roi_boxes_xyxy_exclusive": [
+      [
+        8,
+        34,
+        24,
+        53
+      ],
+      [
+        22,
+        71,
+        104,
+        84
+      ],
+      [
+        8,
+        43,
+        31,
+        72
+      ],
+      [
+        91,
+        45,
+        116,
+        73
+      ],
+      [
+        28,
+        67,
+        98,
+        80
+      ]
+    ],
+    "source": "Narrowed existing proposed contour/seam mask to scene_render requested findings only; ears y<34 and complete face rectangle remain protected."
+  },
+  "edit_scope": [
+    "COZY-CONTOUR-01: left flank x8..23/y34..52 and lower contour x22..103/y71..83, only existing visible dark/ochre boundary cleanup.",
+    "COZY-MATERIAL-02: current front-cream/rear-yellow contacts at left x8..30/y43..71, right x91..115/y45..72, bottom x28..97/y67..79. Preserve actual paper corners/count/order/volume."
+  ],
+  "protected_scope": [
+    "existingcozy sleepingface/mouth/cheeks, twofoldedear pose, bodyvolume and squarepaper construction",
+    "all physicalframes except519; yawn266 and blink9/10 are not this generation target",
+    "114original/117jump/118rejection/119raw and source/current keys remain immutable",
+    "UI attachments1..3 and new36behaviors are excluded",
+    "All folded-ear pixels y<34 and complete face region [37,38,96,66] are byte-protected during final masked derivative.",
+    "No blanket low-alpha deletion, global recolor, blur, sharpening, paper repositioning or whole provider sprite replacement."
+  ],
+  "source_mapping": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\원화배치계보.json",
+    "sha256": "61F1AAA6CC247A6A175344A683B9DDCDBD9852557BB14A1208B11F7BCEFE3835"
+  },
+  "pre_review_mask_scope": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수부위계약.json",
+    "sha256": "44349D94D3F09CF3C66079DA24A149541703D5CB2C8AE119540B0FA0D145D036"
+  },
+  "generation_budget": {
+    "per_work_per_actual_user_turn": 1,
+    "conditional_cozy_imagegen_calls": 1,
+    "eye_imagegen_calls": 0,
+    "actual_visual_inputs": 3,
+    "no_retry": true,
+    "decision": "Both requested findings received; one cozy-only generation warranted. Existing119 eye pixels reused without eye generation."
+  },
+  "status": "READY_FOR_ROOT_PREFLIGHT",
+  "preflight": "ROOT_TO_EXECUTE_BEFORE_IMAGEGEN_CLAIM",
+  "current_parent_binding_note": "Exact user-requested existing cozy parent is now bound as working source/draft only; no visual approval added; all55 previous registry entries preserved.",
+  "requested_independent_roles": [
+    "face_identity",
+    "scene_render"
+  ],
+  "post_generation_art_review_calls": 0,
+  "generator_must_review_entire_result_once_as_creator_observation": true,
+  "preparer_claims_or_registration_calls": 0,
+  "prompt_words": 177,
+  "root_decides_after_two_requested_findings": false,
+  "requested_specialist_reports": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\얼굴검수결과.json",
+      "sha256": "C328581525E03E46D8C57E4429CC62004FFC66523B9B8C6740522B1B9DF43834"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\윤곽검수결과.json",
+      "sha256": "53A8896C0C3F8E431B4A16615E8C644E8CB6AEAA38F923843029DDDC68409581"
+    }
+  ],
+  "specialist_review_record": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\전문검수등록결과120.json",
+    "sha256": "5BD2012B9C9C6BAC7520BEBA7D7B742C266532B99D6D2D27CA95E252F62EFCD0"
+  },
+  "review_contract_immutable": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수계약.json",
+    "sha256": "66DE280319E10E16601D8370D9EB2D047D0F1315898B479390E76DC75B819ED7"
+  },
+  "current_parent_binding_receipt": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-eye-contour-120\\working_parent_binding_receipt.json",
+    "sha256": "CE35F9E5DF0CADCC5AF2ACC746A734796CC4C09F1F6E7CB213434171E8DCC43D"
+  },
+  "preparer_generation_claims": 0,
+  "specialist_report_serialization_only": true
+}

@@ -1,0 +1,8 @@
+{
+  "status": "BLOCKED",
+  "errors": [
+    "issues[0]: subjects must name victory and/or victamin",
+    "issues[1]: subjects must name victory and/or victamin",
+    "issues[2]: subjects must name victory and/or victamin"
+  ]
+}

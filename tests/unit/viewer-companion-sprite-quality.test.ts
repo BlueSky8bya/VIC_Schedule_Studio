@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import { companionMotionClips, companionSpriteMetadata, companionSpriteSources, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { createCompanionMotion } from "@/lib/ui/viewer-companion/motion";
 import { sampleCompanionPlay } from "@/lib/ui/viewer-companion/play";
@@ -43,13 +44,15 @@ describe("one high-resolution pipeline for every companion action", () => {
     expect(sprites.rows.slice(0, 18)).toEqual(legacy.rows);
     expect(sprites.rows[18]).toEqual(Array.from({ length: 16 }, (_, index) => 272 + index));
     expect(sprites.rows[19]).toEqual(Array.from({ length: 16 }, (_, index) => 288 + index));
-    // Keep117 rise and only the exact119 expression replacements active.
+    // Keep117 rise, the119 body packets and only three120 replacements active.
     const replacements: Partial<Record<number, string>> = {
-      0: "/companion/hd/vitamin-action-00-expression-119-v1.webp",
+      0: "/companion/hd/vitamin-action-00-eye-contour-120-v1.webp",
       4: "/companion/hd/vitamin-action-04-tuft-117-v1.webp",
-      16: "/companion/hd/vitamin-action-16-expression-119-v1.webp",
+      16: "/companion/hd/vitamin-action-16-eye-contour-120-v1.webp",
     };
-    for (const replacement of expression119.packets) expect(companionSpriteMetadata.atlases[replacement.atlas]).toEqual(replacement.packet);
+    const eye120 = JSON.parse(readFileSync("art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/패킹파생기록.json", "utf8")) as typeof expression119;
+    expect(eye120.packets.map(packet => packet.atlas)).toEqual([0, 16, 32]);
+    for (const replacement of expression119.packets) expect(companionSpriteMetadata.atlases[replacement.atlas]).toEqual(eye120.packets.find(packet => packet.atlas === replacement.atlas)?.packet ?? replacement.packet);
     for (let index = 0; index < sprites.frames.length; index++) {
       const selected = selectCompanionSprite(index);
       expect(selected).toMatchObject({ atlas: "hd", physicalIndex: index, index: index % 16, grid: 8, gridRows: 2 });
@@ -105,7 +108,7 @@ describe("registered living keys", () => {
   it("maps all eight poses to one packet without altering prior actions", () => {
     expect(companionSpriteMetadata.rows).toHaveLength(41);
     expect(living.rows).toHaveLength(8);
-    expect(living.atlases[0].src).toBe("/companion/hd/vitamin-episodes-00-expression-119-v1.webp");
+    expect(living.atlases[0].src).toBe("/companion/hd/vitamin-episodes-00-eye-contour-120-v1.webp");
     for (let row = 33; row < 41; row++) {
       const index = companionSpriteMetadata.rows[row][0], selected = selectCompanionSprite(index, row, 0);
       expect(companionSpriteSources(row)).toEqual([living.atlases[0].src]);

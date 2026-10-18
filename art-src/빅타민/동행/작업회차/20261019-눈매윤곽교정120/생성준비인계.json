@@ -1,0 +1,32 @@
+{
+  "status": "READY_FOR_ROOT_PREFLIGHT_AND_SINGLE_COZY_GENERATION",
+  "contract": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\생성계약.json",
+    "sha256": "2E7DD8C05F5FA26E68F52F5A28C2B959CE8B913794C0C4C3F00A5591F4BD4931"
+  },
+  "request": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\생성요청.json",
+    "sha256": "C9A0263DCD4721BF6EFC161F545852E607F8BF6D093C7C7EEA915E1D710B7355"
+  },
+  "mask": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\포근잠_검수반영_최종편집영역.png",
+    "sha256": "E7DA3152AE778C7D2C6F29DFD6BE57BFEA8155DC040391BDC80BBFCE2BBAF05B"
+  },
+  "specialist_review_record": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\전문검수등록결과120.json",
+    "sha256": "5BD2012B9C9C6BAC7520BEBA7D7B742C266532B99D6D2D27CA95E252F62EFCD0"
+  },
+  "immutable_review_contract": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수계약.json",
+    "sha256": "66DE280319E10E16601D8370D9EB2D047D0F1315898B479390E76DC75B819ED7"
+  },
+  "working_parent_binding": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-eye-contour-120\\working_parent_binding_receipt.json",
+    "sha256": "CE35F9E5DF0CADCC5AF2ACC746A734796CC4C09F1F6E7CB213434171E8DCC43D"
+  },
+  "prompt_words": 177,
+  "visual_inputs": 3,
+  "generation_claims_by_preparer": 0,
+  "new_art_reviews_by_preparer": 0,
+  "notes": "Original specialist reports remain immutable FAIL findings on current parent. No later independent PASS or user approval asserted."
+}

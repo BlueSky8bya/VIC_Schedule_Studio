@@ -162,7 +162,9 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} actual fir
   const grid = dialog.locator(".rhh-food-grid"), recent = grid.locator("[data-recent][data-found]");
   await expect(recent).toHaveCount(1); await expect(recent).toHaveAttribute("data-food-index", String(COMPANION_FOOD_KINDS.indexOf(kind))); await expect(recent).toHaveAttribute("aria-pressed", "true");
   await expect(dialog.locator(".rhh-food-detail[data-recent] strong")).toHaveText(COMPANION_FOOD_NAMES[kind]);
-  await expect(recent.locator('[data-collection-art="food-stamp"]')).toHaveAttribute("data-collection-art-id", kind);
+  await expect(recent.locator('[data-collection-art="food-stamp"]')).toHaveCount(0);
+  await expect(dialog.locator('.rhh-food-detail [data-collection-art="food"]')).toHaveAttribute("data-collection-art-id", kind);
+  await expect(dialog.locator(".rhh-food-detail .rhh-collection-recent")).toHaveText("방금 맛봤어요");
   proofs.get(page)!.samples.push({ actualConsumedKind: kind, index: COMPANION_FOOD_KINDS.indexOf(kind), reload: false, nativeRngUnchanged: true });
 });
 for (const [surface, kind] of [["viewer", "period"], ["studio", "period"], ["studio", "up"]] as const) test(`${surface} ${kind} band catches the first food ray and retains its source on scroll`, async ({ page }) => {

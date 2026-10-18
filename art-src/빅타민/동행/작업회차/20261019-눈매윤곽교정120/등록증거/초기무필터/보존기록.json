@@ -1,0 +1,37 @@
+{
+  "status": "SUPERSEDED_POINT_BILINEAR_DERIVATION_PRESERVED",
+  "reason": "Root creator found aliased cozy contour from point bilinear downsampling; replace derivative with scale-aware premultiplied Lanczos3 using same provider/mask; no new generation or art review.",
+  "records": [
+    {
+      "originalPath": "art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\합성파생기록.json",
+      "snapshotPath": "art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\등록증거\\초기무필터\\합성파생기록.json",
+      "sha256": "52ff02be8e05f4284e2008e7bc0228749f3c001ca505a886950cb2db6b539c2e"
+    },
+    {
+      "originalPath": "art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\정리본\\빅타민_120_키78.png",
+      "snapshotPath": "art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\등록증거\\초기무필터\\빅타민_120_키78.png",
+      "sha256": "f8dc3172c54aa7e3ef95e91e1a6d6cb2cab74210aaddbdf6f5072896d9a9f2bd"
+    },
+    {
+      "originalPath": "art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\정리본\\키78_실효편집영역.png",
+      "snapshotPath": "art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\등록증거\\초기무필터\\키78_실효편집영역.png",
+      "sha256": "2513b980093f813127164bdaca6b02db72218623ce9a6a05c4132c945915c2df"
+    },
+    {
+      "originalPath": "art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\정리본\\포근잠_등록후마스크전.png",
+      "snapshotPath": "art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\등록증거\\초기무필터\\포근잠_등록후마스크전.png",
+      "sha256": "9136f58d18df13a8c6a3c1fa63096e393a328efb4257492b377b33a533f8d22a"
+    },
+    {
+      "originalPath": "art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\정리본\\빅타민_눈매윤곽120.png",
+      "snapshotPath": "art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\등록증거\\초기무필터\\빅타민_눈매윤곽120.png",
+      "sha256": "cf904718d86f46f38ec0d450d17b1bc49dd1a59066ea011258063724fd4ee7ec"
+    },
+    {
+      "originalPath": "scripts\\prepare-companion-eye-contour-targets-120.mjs",
+      "snapshotPath": "art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\등록증거\\초기무필터\\prepare-companion-eye-contour-targets-120.mjs",
+      "sha256": "3d3f284245831ddd8460fbfd5a4cd66649f50f24df5f45e007a69318051f84a7"
+    }
+  ],
+  "semanticProtectionLimit": "The initial receipt phrase foldedEarsAndFaceRgbaIdentical only had mechanical evidence for mask-exterior plus y<34 and face box[37,38,96,66]. It did not itself establish semantic ear segmentation."
+}

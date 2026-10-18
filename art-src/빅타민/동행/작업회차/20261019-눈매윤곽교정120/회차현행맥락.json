@@ -1,0 +1,634 @@
+{
+  "workflow_mode": "user_directed_cycle",
+  "limits": {
+    "default_imagegen_calls_per_work_per_user_request": 1,
+    "automatic_review_roles": [],
+    "targeted_review_rounds": 1,
+    "repair_calls_per_requested_cycle": 1,
+    "automatic_post_repair_review_rounds": 0
+  },
+  "guide": "C:\\Users\\im917\\.codex\\skills\\vic-illustration-constitution\\references\\user-directed-cycles.md",
+  "selected": null,
+  "source_paths": {
+    "reference_catalog.json": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\reference_catalog.json",
+    "design_library/index.json": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\design_library\\index.json",
+    "character_profile.json": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\character_profile.json",
+    "feedback_memory.json": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_memory.json"
+  },
+  "conditional_paths": {
+    "background_edit_policy": {
+      "default_preservation_mode": "outside_explicit_background_regions",
+      "reference": "C:\\Users\\im917\\.codex\\skills\\vic-illustration-constitution\\references\\background-continuity.md",
+      "helper": "C:\\Users\\im917\\.codex\\skills\\vic-illustration-constitution\\scripts\\vic_background_regions.py",
+      "complete_objects_and_adjoining_planes": true,
+      "restore_old_background_rectangle_through_objects": false,
+      "whole_parent_baseline_outside_edit_mask": true,
+      "character_segmentation": false,
+      "native_and_derived_final_separate": true,
+      "whole_canvas_legacy": "only explicit whole-frame preservation or historic replay",
+      "visual_pass_from_pixel_match": false,
+      "provider_mask_argument_available_in_builtin": false,
+      "evidence": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\BIRTHDAY50-R01-20261012\\completion_audit.json",
+      "approved_whole_subject_background_replacement": {
+        "authorization": {
+          "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-07d518c8b00cead55777f19b.json",
+          "sha256": "5EA83E2BDC940A602EE049B3DFA8E2B65C4A8539991D4071F811C12084A414B4",
+          "excerpt": "인물 전체 보존 합성"
+        },
+        "scope": "this R02 current numbers 1–27; preserve one entire connected original person and held props at scale1/translation0",
+        "helper": "C:\\Users\\im917\\OneDrive\\문서\\ChatGPT\\VIC 축전카드\\tools\\birthday50_r02_backgrounds.py",
+        "matte_helper": "C:\\Users\\im917\\OneDrive\\문서\\ChatGPT\\VIC 축전카드\\tools\\birthday50_r02_mattes.py",
+        "models": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\BIRTHDAY50-R02-20261012\\runtime",
+        "empty_human_background_plate": true,
+        "foreground_core_rgb_equal_required": true,
+        "final_whole_open_required": true,
+        "face_body_part_grafting": false,
+        "no_old_background_rectangle_restore": true,
+        "method_approval_is_not_visual_pass": true,
+        "cache_index": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\BIRTHDAY50-R02-20261012\\foreground_cache_index.json",
+        "status": "HISTORICAL_R02_METHOD_SUPERSEDED_FOR_CURRENT_1_27",
+        "superseded_by": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\BIRTHDAY50-R03-20261012\\human.json",
+        "reuse_on_current_1_27": false
+      },
+      "explicit_same_scene_whole_regeneration": {
+        "scope": "Only human-requested full scene rerolls; R03 current 1–27",
+        "scene_only_input_kind": "scene_only_reference",
+        "requires_current_composition_recipe_and_human_proof": true,
+        "original_character_authorities_required": true,
+        "no_foreground_cutout_or_old_rgb_rectangle": true,
+        "generator_helper": "C:\\Users\\im917\\OneDrive\\문서\\ChatGPT\\VIC 축전카드\\tools\\birthday50_r03.py",
+        "max_calls_per_number_per_turn": 1,
+        "automatic_reviewers": 0,
+        "automatic_retry": false
+      }
+    },
+    "external_wardrobe_archive": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\design_library\\external_wardrobe\\index.json",
+    "latest_birthday_revision": {
+      "state": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\BIRTHDAY50-R36-09-SOURCE-PRINTS-CORD-CONTOUR-20261015\\state.json",
+      "completion": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\BIRTHDAY50-R36-09-SOURCE-PRINTS-CORD-CONTOUR-20261015\\completion_audit.json",
+      "status": "PARTIAL_SOURCE_GRAPHIC_EDIT_DELIVERED_GENERATIVE_OUTPUT_BLOCKED",
+      "changed_count": 1,
+      "requested_review_count": 0,
+      "human_source": {
+        "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-c4f11af9d84cc5909ed4d67a.json",
+        "sha256": "CAD79FC163CCD58BF099195A8CF5AC858C4553ECD1C044CE3530D50CACF2EB0A",
+        "excerpt": "이미지 1:\n1. (x: 28.1%, y: 38.6%) ACM 로고랑 웃는 네모 로고 원본과 크기와 기울기 다시 확인 후 수정\n2. (x: 28.5%, y: 76.8%) 흰공팔찌 끈 노란색 아님 다시 확인, 그리고 흰 공끼리 간격도 레퍼 보고 다시 맞출것\n3. (x: 50.9%, y: 43.8%) 탭 아래 소매 외곽만 깔끔하게 다듬어주길 바람\n\nCodex could not read the local image at `/C:/Users/im917/.codex/generated_images/01a10dc7-2cf0-7780-a180-1e82f7f91c77/exec-390ec0f8-625d-457a-91b7-b4049311cf12.png`: 파일 이름, 디렉터리 이름 또는 볼륨 레이블 구문이 잘못되었습니다. (os error 123)"
+      },
+      "prompt_manifest": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\BIRTHDAY50-R36-09-SOURCE-PRINTS-CORD-CONTOUR-20261015\\prompt_manifest.json",
+      "remaining_findings": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\BIRTHDAY50-R36-09-SOURCE-PRINTS-CORD-CONTOUR-20261015\\09\\remaining_findings.json"
+    }
+  },
+  "diversity_rows": [
+    {
+      "id": "AI-005",
+      "number": 4,
+      "setting": "별빛나무집_생일카드",
+      "action": "In a starry treehouse Victory sits comfortably with a birthday card and the official character c",
+      "head_view": null,
+      "outfit": "A0",
+      "hair": "H3",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "AI-006",
+      "number": 5,
+      "setting": "바람개비언덕_생일피크닉",
+      "action": "Same sunny windmill-hill birthday picnic. Victory stands beside a low picnic table, original low",
+      "head_view": null,
+      "outfit": "WEB-R07-cotton-jersey-rugby-shirt-bb2ws26s",
+      "hair": "H1",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "AI-011",
+      "number": 7,
+      "setting": "별밤옥상_생일미니콘서트",
+      "action": "NEW night rooftop mini-concert. Three-quarter turned upright Victory as in the full original, mi",
+      "head_view": null,
+      "outfit": "WEB-R07-cotton-easy-skirt-be20v26s",
+      "hair": "H3",
+      "basis": "INTENT_WITH_ACTUAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "AI-012",
+      "number": 8,
+      "setting": "가을정원_바보책낭독",
+      "action": "Golden autumn birthday reading terrace. Victory reads Happiness of BABO Everyday and directs a c",
+      "head_view": null,
+      "outfit": "B",
+      "hair": "H2",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "AI-013",
+      "number": 9,
+      "setting": "별똥선물관_진열장",
+      "action": "In the deep blue meteor-gift museum Victory points at a Victamin peeking among gifts inside a co",
+      "head_view": null,
+      "outfit": "A",
+      "hair": "H3",
+      "basis": "USER_REQUESTED_PARTIAL_REVISION_WITH_GENERATOR_OBSERVATION_ONLY"
+    },
+    {
+      "id": "AI-014",
+      "number": 10,
+      "setting": "수정나비온실_생일빛",
+      "action": "In the blue crystal butterfly conservatory Victory turns to follow a glowing butterfly with a ha",
+      "head_view": null,
+      "outfit": "C",
+      "hair": "H3",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "AI-015",
+      "number": 11,
+      "setting": "등나무정원_꽃왕관",
+      "action": "Wisteria vineyard terrace birthday flower-crown making. Victory stands beside a low wooden garde",
+      "head_view": null,
+      "outfit": "CUSTOM_FLORAL_DRESS",
+      "hair": "H3",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "AI-016",
+      "number": 12,
+      "setting": "호숫가카페_생일차",
+      "action": "Same lakeside birthday tea cafe. A Victamin peeking beside a teapot has nudged a neat stack of m",
+      "head_view": null,
+      "outfit": "CUSTOM_BLOUSE_GREEN_SKIRT",
+      "hair": "H2",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "AI-017",
+      "number": 13,
+      "setting": "이동제과점_생일크림",
+      "action": "Inside the sunny mobile bakery Victory pipes icing onto one cupcake supported on a small stable ",
+      "head_view": null,
+      "outfit": "A",
+      "hair": "H1",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "AI-018",
+      "number": 14,
+      "setting": "등불항구_생일선물",
+      "action": "Same warm sunset lantern-harbor birthday gift scene. Victory stands obliquely beside a pier benc",
+      "head_view": null,
+      "outfit": "WEB-R07-linen-shirt-dress-bc2px26s",
+      "hair": "H1",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "AI-020",
+      "number": 15,
+      "setting": "우주휴게실_생일게임",
+      "action": "In the warm spacecraft game lounge Victory celebrates a game victory with raised open hands, dog",
+      "head_view": null,
+      "outfit": "D",
+      "hair": "HOOD_OCCLUDED",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "AI-022",
+      "number": 16,
+      "setting": "운하행진_생일전망대",
+      "action": "On the golden canal parade balcony Victory in her white/navy sailor outfit rests a hand on a con",
+      "head_view": null,
+      "outfit": "CUSTOM_SAILOR",
+      "hair": "H1",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "AI-023",
+      "number": 17,
+      "setting": "야간열기구_생일촬영",
+      "action": "NEW constellation-rooftop birthday phone scene. Victory sits sideways on a wide wooden bench wit",
+      "head_view": null,
+      "outfit": "WEB-DRESS",
+      "hair": "H1",
+      "basis": "INTENT_WITH_ACTUAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "AI-024",
+      "number": 18,
+      "setting": "아르데코살롱_생일축하",
+      "action": "NEW art-deco birthday gift-ribbon escape. Victory stands shallow-frontally like the full origina",
+      "head_view": null,
+      "outfit": "A",
+      "hair": "H1",
+      "basis": "INTENT_WITH_ACTUAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "AI-025",
+      "number": 19,
+      "setting": "옥상허브정원_생일브런치",
+      "action": "At the sunny rooftop herb brunch Victory turns toward the viewer from a birthday basket, playful",
+      "head_view": null,
+      "outfit": "C",
+      "hair": "H3",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "AI-028",
+      "number": 20,
+      "setting": "시트러스시장_생일바구니",
+      "action": "In the warm covered citrus market Victory carries a fruit basket and holds up a small glass wish",
+      "head_view": null,
+      "outfit": "A",
+      "hair": "H3",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "AI-030",
+      "number": 21,
+      "setting": "생일거리_응원퍼레이드",
+      "action": "NEW sunny flower-market birthday banner scene. Victory turns shallow-three-quarter as in the ori",
+      "head_view": null,
+      "outfit": "A",
+      "hair": "H3",
+      "basis": "INTENT_WITH_ACTUAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "AI-035",
+      "number": 24,
+      "setting": "캠핑카휴식_생일담요",
+      "action": "Bright meadow campervan birthday rest. Victory in dog-ear hood sits obliquely on one built-in pa",
+      "head_view": null,
+      "outfit": "D",
+      "hair": "H1_HOOD_VISIBLE",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "AI-038",
+      "number": 26,
+      "setting": "노을음악제_생일바이닐",
+      "action": "At the warm sunset vinyl listening booth Victory listens to BABO REMIX with a small offended pou",
+      "head_view": null,
+      "outfit": "B",
+      "hair": "H2",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "AI-001",
+      "number": 1,
+      "setting": "루프톱방송실_생일응원",
+      "action": "A NEW rooftop birthday radio broadcast, afternoon. Shallow three-quarter standing beside a diago",
+      "head_view": null,
+      "outfit": "WEB-R07-linen-shirt-jacket-bd12926s",
+      "hair": "H2",
+      "basis": "INTENT_WITH_ACTUAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "AI-002",
+      "number": 2,
+      "setting": "생일열차_창가편지",
+      "action": "At a mountain railway letter booth Victory turns from a counter with a birthday letter. Show her",
+      "head_view": null,
+      "outfit": "C",
+      "hair": "H3",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "AI-004",
+      "number": 3,
+      "setting": "관람차캡슐_하늘케이크",
+      "action": "In a Ferris-wheel cake capsule Victory supports a cupcake plate with both hands while a surprise",
+      "head_view": null,
+      "outfit": "A",
+      "hair": "H2",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "AI-010",
+      "number": 6,
+      "setting": "여행박물관_생일기록",
+      "action": "At the travel-memory museum Victory opens a birthday scrapbook of scenic travel postcards. Lean ",
+      "head_view": null,
+      "outfit": "B",
+      "hair": "H2",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "AI-031",
+      "number": 22,
+      "setting": "대나무축제_투호놀이",
+      "action": "At the warm bamboo tuho festival Victory in hanbok holds a throwing arrow and leans playfully to",
+      "head_view": null,
+      "outfit": "E",
+      "hair": "H2",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "AI-034",
+      "number": 23,
+      "setting": "소나무무대_생일부채",
+      "action": "On the sunny pine-forest birthday fan stage Victory dances with two unfolded fans, open delighte",
+      "head_view": null,
+      "outfit": "E",
+      "hair": "H2",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "AI-037",
+      "number": 25,
+      "setting": "페이퍼라이트전_생일바람",
+      "action": "NEW wind-ribbon birthday gallery. Original shallow three-quarter wink, torso only slightly tilte",
+      "head_view": null,
+      "outfit": "WEB-R07-cool-touch-skirt-pants-be20326s",
+      "hair": "H3",
+      "basis": "INTENT_WITH_ACTUAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "AI-040",
+      "number": 27,
+      "setting": "해변볼링장_생일스트라이크",
+      "action": "Bright seaside vintage bowling birthday lane. Victory leans very slightly toward the viewer with",
+      "head_view": null,
+      "outfit": "A0",
+      "hair": "H1",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "ART-SBO-SENDOFF-20261011",
+      "number": null,
+      "setting": "dugout_threshold_baseball_field",
+      "action": "dugout_departure_grateful_glance_carrying_glove_closeup",
+      "head_view": "shallow_three_quarter_screen_left",
+      "outfit": "A",
+      "hair": "H1",
+      "basis": null
+    },
+    {
+      "id": "ART-BIRTHDAY-BUBBLE-20261012",
+      "number": 28,
+      "setting": "soap_bubble_workshop_terrace",
+      "action": "diagonal_body_star_wand_film_open_hand",
+      "head_view": "near_frontal_tilt",
+      "outfit": "A0",
+      "hair": "H1",
+      "basis": null
+    },
+    {
+      "id": "BDAY50-029",
+      "number": 29,
+      "setting": "단풍역_끝없이쏟아지는생일승차권",
+      "action": "NEW autumn mountain-station birthday ticket spill. Original near-front O-mouth surprise, one sho",
+      "head_view": null,
+      "outfit": "WEB-R07-high-twist-cotton-cardigan-ba1px26s",
+      "hair": "H2",
+      "basis": "INTENT_WITH_ACTUAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "BDAY50-030",
+      "number": 30,
+      "setting": "산골잼공방_블루베리소동",
+      "action": "NEW farm jam-kitchen birthday mishap. Shallow side-three-quarter head and torso like original, e",
+      "head_view": null,
+      "outfit": "WEB-OVERALL",
+      "hair": "H1",
+      "basis": "INTENT_WITH_ACTUAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "BDAY50-031",
+      "number": 31,
+      "setting": "mountain suspension bridge",
+      "action": "구름다리_생일배달",
+      "head_view": "near front with diagonal framing",
+      "outfit": "D",
+      "hair": "H1",
+      "basis": "INTENT_WITH_ACTUAL_FINAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "BDAY50-032",
+      "number": 32,
+      "setting": "tide pools",
+      "action": "NEW rocky tide-pool birthday shell discovery. Victory sits on a broad stable flat rock, torso up",
+      "head_view": null,
+      "outfit": "A0",
+      "hair": "H3",
+      "basis": "INTENT_WITH_ACTUAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "BDAY50-033",
+      "number": 33,
+      "setting": "옥상미니골프_선물홀인원",
+      "action": "NEW rooftop miniature-golf birthday victory. Victory turns shallow-three-quarter like original, ",
+      "head_view": null,
+      "outfit": "C",
+      "hair": "H3",
+      "basis": "INTENT_WITH_ACTUAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "BDAY50-034",
+      "number": 34,
+      "setting": "한지공방_연꽃등안의깜짝선물",
+      "action": "Completely new story: in a traditional paper-lantern workshop, Victory sits sideways on a low cu",
+      "head_view": null,
+      "outfit": "E",
+      "hair": null,
+      "basis": "INTENT_WITH_ACTUAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "BDAY50-035",
+      "number": 35,
+      "setting": "submarine cabin",
+      "action": "잠수정_물고기축하행렬",
+      "head_view": "seated near front diagonal",
+      "outfit": "D",
+      "hair": "H1",
+      "basis": "INTENT_WITH_ACTUAL_FINAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "BDAY50-036",
+      "number": 36,
+      "setting": "bioluminescent cave",
+      "action": "발광동굴_몰래먹은별과자",
+      "head_view": "near front diagonal",
+      "outfit": "D",
+      "hair": "H1",
+      "basis": "INTENT_WITH_ACTUAL_FINAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "BDAY50-037",
+      "number": 37,
+      "setting": "대나무물길_면발구출",
+      "action": "New bamboo-flume birthday noodle race. Victory crouches sideways at the stream with torso/head t",
+      "head_view": null,
+      "outfit": "E",
+      "hair": null,
+      "basis": "INTENT_WITH_ACTUAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "BDAY50-038",
+      "number": 38,
+      "setting": "glider hangar",
+      "action": "글라이더격납고_리본날개",
+      "head_view": "three-quarter side",
+      "outfit": "C",
+      "hair": "H3",
+      "basis": "INTENT_WITH_ACTUAL_FINAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "BDAY50-039",
+      "number": 39,
+      "setting": "giant music box workshop",
+      "action": "Same giant music-box workshop birthday melody. Victory with EXACT original bob/closed-eye laugh ",
+      "head_view": null,
+      "outfit": "WEB-R07-kapok-blend-twill-dress-bc2s026s",
+      "hair": "H1",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "BDAY50-040",
+      "number": 40,
+      "setting": "skate park party prep",
+      "action": "스케이트장_헬멧소동",
+      "head_view": "seated near front with side framing",
+      "outfit": "A",
+      "hair": "H1",
+      "basis": "INTENT_WITH_ACTUAL_FINAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "BDAY50-041",
+      "number": 41,
+      "setting": "outdoor hot spring foot bath",
+      "action": "NEW autumn footbath birthday game. Victory sits sideways on a broad bench, head and torso at ori",
+      "head_view": null,
+      "outfit": "A0",
+      "hair": "H1",
+      "basis": "INTENT_WITH_ACTUAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "BDAY50-042",
+      "number": 42,
+      "setting": "해변연구소_바람선물배",
+      "action": "Victory laughs with closed eyes like input1 on a coastal weather-station deck, lifting a colorfu",
+      "head_view": null,
+      "outfit": "WEB-OVERALL",
+      "hair": null,
+      "basis": "INTENT_WITH_ACTUAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "BDAY50-043",
+      "number": 43,
+      "setting": "빅타민네컷_생일사진관",
+      "action": "Birthday four-photo booth with Victory and limbless Victamins taking pictures TOGETHER. Complete",
+      "head_view": null,
+      "outfit": "B",
+      "hair": "H3",
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "BDAY50-044",
+      "number": 44,
+      "setting": "snow lodge block tower",
+      "action": "눈내린산장_젠가붕괴",
+      "head_view": "near front close scene with diagonal action",
+      "outfit": "D",
+      "hair": "H1",
+      "basis": "INTENT_WITH_ACTUAL_FINAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "BDAY50-045",
+      "number": 45,
+      "setting": "숲속우편소_마음을읽는생일편지",
+      "action": "Keep the woodland birthday post office concept but reroll all staging and expression. Victory si",
+      "head_view": null,
+      "outfit": "WEB-DRESS",
+      "hair": null,
+      "basis": "INTENT_WITH_ACTUAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "BDAY50-046",
+      "number": 46,
+      "setting": "성벽마카롱_생일발사카운트다운",
+      "action": "Keep the miniature macaron catapult birthday concept but change all pose, scene arrangement, exp",
+      "head_view": null,
+      "outfit": "C",
+      "hair": null,
+      "basis": "INTENT_WITH_ACTUAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "BDAY50-047",
+      "number": 47,
+      "setting": "숲속해먹_선물받기소동",
+      "action": "Same forest hammock / birthday gift zipline concept, new side viewpoint. Victory sits sideways o",
+      "head_view": null,
+      "outfit": "B",
+      "hair": null,
+      "basis": "GENERATOR_OBSERVATION_AWAITING_USER_FEEDBACK"
+    },
+    {
+      "id": "BDAY50-048",
+      "number": 48,
+      "setting": "paper boat canal market",
+      "action": "종이배시장_먹물생일카드",
+      "head_view": "three-quarter side",
+      "outfit": "E",
+      "hair": "H3",
+      "basis": "INTENT_WITH_ACTUAL_FINAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "BDAY50-049",
+      "number": 49,
+      "setting": "inflatable bounce house",
+      "action": "바운스하우스_축하점프",
+      "head_view": "seated near front with dynamic tilt",
+      "outfit": "A",
+      "hair": "H1",
+      "basis": "INTENT_WITH_ACTUAL_FINAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "BDAY50-050",
+      "number": 50,
+      "setting": "temple rooftop fireworks",
+      "action": "기와지붕_불꽃생일편지",
+      "head_view": "three-quarter view",
+      "outfit": "E",
+      "hair": "H1",
+      "basis": "INTENT_WITH_ACTUAL_FINAL_WHOLE_OBSERVATION"
+    },
+    {
+      "id": "vitamin-jump-tuft-117",
+      "number": null,
+      "setting": "transparent_companion_sprite",
+      "action": "existing jump rise key, same tilt and expression",
+      "head_view": "existing tilted front",
+      "outfit": null,
+      "hair": null,
+      "basis": "USER_REQUESTED_DRAFT_EDIT_PARENT_NOT_VISUAL_APPROVAL"
+    },
+    {
+      "id": "vitamin-face-alignment-118",
+      "number": null,
+      "setting": "transparent_companion_sprite_sheet",
+      "action": "current used mascot expressions",
+      "head_view": null,
+      "outfit": null,
+      "hair": null,
+      "basis": "USER_REQUESTED_FACE_REVIEW_PARENT_NO_VISUAL_APPROVAL"
+    },
+    {
+      "id": "vitamin-face-alignment-118-yawn-parent",
+      "number": null,
+      "setting": "transparent_companion_sprite",
+      "action": "current yawn key11 eye-mouth alignment requested repair",
+      "head_view": null,
+      "outfit": null,
+      "hair": null,
+      "basis": "REQUESTED_CROP_EDIT_PARENT_NOT_VISUAL_APPROVAL"
+    },
+    {
+      "id": "vitamin-expression-volume-119",
+      "number": null,
+      "setting": "transparent_companion_6_pose_edit_sheet",
+      "action": "requested five expressions and one volume comparison",
+      "head_view": null,
+      "outfit": null,
+      "hair": null,
+      "basis": "REQUESTED_REPAIR_PARENT_NOT_VISUAL_APPROVAL"
+    }
+  ],
+  "read_only_relevant_sources": "Open chosen originals and their short design cards; expand details only where visible, ambiguous, or requested. History and full numeric profiles are not the default prompt."
+}

@@ -98,8 +98,18 @@ async function writeFromOtherTab(page: Page, context: BrowserContext, next: Rece
   await other.close(); await page.bringToFront();
 }
 async function turnUntil(dialog: Locator, target: Locator, next: string) {
+  const grid = dialog.locator(".rhh-collection-grid:visible");
+  await expect(grid).toBeVisible();
+  await settlePanelLayout(dialog.page());
+  const firstItem = () => grid.locator("button").first().evaluate(node => node.getAttribute("data-collection-index") ?? node.getAttribute("data-accessory"));
   for (let attempt = 0; attempt < 100 && !await target.isVisible(); attempt++) {
-    const button = dialog.getByRole("button", { name: next, exact: true }); await expect(button).toBeEnabled(); await button.click();
+    const before = await firstItem(), button = dialog.getByRole("button", { name: next, exact: true });
+    await expect(button).toBeEnabled();
+    if (await target.isVisible()) break;
+    await button.click();
+    // A native click may resolve before React/ResizeObserver commits the new
+    // measured page. Wait for that page before deciding to advance again.
+    await expect.poll(async () => await target.isVisible() || await firstItem() !== before).toBe(true);
   }
   await expect(target).toBeVisible();
 }

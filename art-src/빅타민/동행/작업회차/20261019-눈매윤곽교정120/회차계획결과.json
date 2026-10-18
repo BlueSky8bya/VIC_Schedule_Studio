@@ -1,0 +1,43 @@
+{
+  "status": "PLANNED_USER_DIRECTED_CYCLE",
+  "plan_path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-eye-contour-120\\plan.json",
+  "plan_sha256": "F693BB44F1C20861210F6DB2D961020D0CD1051B46705DD6D6F18A7BA7019161",
+  "plan": {
+    "schema_version": 1,
+    "workflow_mode": "user_directed_cycle",
+    "cycle_id": "E04160D795189EB8FD21",
+    "run_dir": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-eye-contour-120\\cycle_E04160D795189EB8FD21",
+    "action_budget_dir": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-eye-contour-120\\user_actions_D2785AD31BDB914D2D6F",
+    "work_id": "vitamin-eye-contour-120",
+    "phase": "review_repair",
+    "user_source": {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-7b9d2aa7b2ff7a6bc1bac8a9.json",
+      "sha256": "729A087350935A81E55267B99774BD6ED838B78C7FF9F0D04A70C36462A10584",
+      "excerpt": "그리고 4번째 첨부 사진에 있는 빅타민 표정에서 눈매가 그 아래 보조개 종이? 부분에 가려진 것 같은데? \n5번째 첨부 사진은 왼쪽 눈매 가운데가 살짝 파여있는 것 같고. \n게다가 6번째 첨부 사진은 외곽도 지저번하고 색도 겹쳐있잖아. 제발 이런 건 한번에 검수좀 해"
+    },
+    "role_focus": {
+      "face_identity": [
+        "Only attachment4 yawn119 native10/physical266 and attachment5 blink119 native1/physical9,10: inspect eye-line continuity against the actual orange-cheek/paper contact and the small centre notch. Compare current exact source with existing119 provider native and the same uniform-cheek registered, pre-mask proposal. Determine if restoring omitted119 stroke/contact pixels through one connected120 mask suffices, preserving the existing chosen closed-eye design, mouth and actual cheek bulk. Do not redesign eyes or review other keys/body. Prior119 protection holes and feather zero-gain boundaries are technical evidence, not semantic proof."
+      ],
+      "scene_render": [
+        "Only attachment6 cozy native78/currentphysical519: inspect external contour and overlapping material-color boundaries, respecting the existing folded ears, sleepy face, paper layers, pose and volume. Current519 matches115 alpha/visibleRGB; distinguish actual visible artifacts from hiddenRGB/low-alpha encoding. Recommend bounded source cleanup if needed, with no whole80-key/body review. Only cozy may need the single120 image generation; eye2 reuse of119 is separate source-bound derivation."
+      ]
+    },
+    "force_review": true,
+    "candidate": {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\현재요청3칸_원크기.png",
+      "sha256": "8B596D8BA7592FB2E08E95DAB4D2DDC362A0CAE7F906AB3FE6D48D4EE8326086"
+    },
+    "policy_sha256": "2153332C2BC33B0FECA8D689FEFADEF131A26B1F518FDFBE666ACEBD07766F91",
+    "request_turn_id": "msg_01a14fc5-7b7f-7202-9d35-0858db283882",
+    "limits": {
+      "imagegen_calls": 1,
+      "review_rounds": 1,
+      "repair_calls": 1,
+      "post_repair_agent_rounds": 0
+    },
+    "next_action": "requested_roles_once_then_one_repair_if_needed_and_show",
+    "automatic_full_review": false,
+    "user_approval_is_visual_not_numeric_certification": true
+  }
+}

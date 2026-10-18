@@ -1,0 +1,262 @@
+{
+  "version": 1,
+  "status": "SCOPED_DERIVATION_AWAITING_CREATOR_OBSERVATION_AND_USER_FEEDBACK",
+  "generationCalls": 1,
+  "generationCallsByThisScript": 0,
+  "eyeGenerationCalls120": 0,
+  "reused119EyeRaw": {
+    "path": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/원본/표정체적6키_생성원본.png",
+    "sha256": "ec389e3364a77ddb4f6999a8b94087544b9543a731d0b4af04947f84ed638682"
+  },
+  "nativeRaw": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/원본/포근잠_윤곽생성원본.png",
+  "rawSha256": "7802574d873ec7faec46bf01b867d9552876c7c6036b77e699b6840f54c25d7b",
+  "requestedSpecialistReviews": 2,
+  "independentArtReviewsByThisScript": 0,
+  "postGenerationArtReviews": 0,
+  "ownerApproval": false,
+  "requestedReports": [
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/검수/얼굴검수결과.json",
+      "sha256": "c328581525e03e46d8c57e4429cc62004ffc66523b9b8c6740522b1b9df43834"
+    },
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/검수/윤곽검수결과.json",
+      "sha256": "53a8896c0c3f8e431b4a16615e8c644e8cb6aeaa38f923843029dddc68409581"
+    }
+  ],
+  "final": {
+    "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/빅타민_눈매윤곽120.png",
+    "sha256": "cf904718d86f46f38ec0d450d17b1bc49dd1a59066ea011258063724fd4ee7ec",
+    "width": 432,
+    "height": 144,
+    "composition": "Exact RGBA row copies; no alpha compositing or resampling of native crops."
+  },
+  "keys": [
+    {
+      "nativeCell": 10,
+      "parentPath": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/고정입력/하품_현재119.png",
+      "parentSha256": "7661015edb0d67f298c469b1509ee51faf87090a961654f301e7c890adb1abb2",
+      "correctedPath": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/빅타민_120_키10.png",
+      "correctedSha256": "9b5097a9616e31407abcac4e897d0f1112758941089070191a60c5d2c0d98429",
+      "maskPath": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/키10_실효편집영역.png",
+      "maskSha256": "d2937d339ec8229755a40e5de40f092908379e91d56f07adf311b22e617da2fa",
+      "width": 108,
+      "height": 100,
+      "physicalIndices": [
+        266
+      ],
+      "sourceChangedPixels": 5,
+      "sourceChangedChannels": 15,
+      "sourceAlphaChangedPixels": 0,
+      "alphaPreserved": true,
+      "protectedMouthPixels": 80,
+      "mouthProtection": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/고정입력/키10_기존실제입보호.png",
+        "sha256": "dd45c957b94a92b4cbd21fa453371ed6eb223befef4998821040436072804f5b"
+      },
+      "registration": {
+        "scale": 0.26306090649299474,
+        "angle": 0.028888780249185286,
+        "sourceCheeks": [
+          [
+            235.0968448729185,
+            304.1099912357581
+          ],
+          [
+            395.7891036906854,
+            291.280316344464
+          ]
+        ],
+        "targetCheeks": [
+          [
+            42.28313253012048,
+            62.596385542168676
+          ],
+          [
+            84.63483146067416,
+            60.443820224719104
+          ]
+        ],
+        "kind": "uniform_similarity_no_nonuniform_face_warp",
+        "reused119ExistingRegisteredPixels": true,
+        "new120ImagegenCalls": 0
+      },
+      "registeredSource": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/고정입력/119등록후_키10_마스크전.png",
+        "sha256": "15060d8568f0ca60d9121299280e7ab1c77c66b297b15dbbfd4da757f858c11c"
+      },
+      "adoptedEyeCoordinates": [
+        [
+          45,
+          58
+        ],
+        [
+          46,
+          59
+        ],
+        [
+          78,
+          57
+        ],
+        [
+          79,
+          57
+        ],
+        [
+          78,
+          58
+        ]
+      ],
+      "adoption": "Direct RGB copy at reviewer-confirmed contact pixels only; current alpha and every other RGBA sample preserved.",
+      "continuousExistingStrokeScope": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/키10_연결눈선범위.png",
+        "sha256": "7be5c4adf99273e9e75a19337f7bb94ebe745186891f07752149bc235d56ec2b",
+        "unchangedConnectorsAdopted": false
+      },
+      "outsideEffectiveMaskRgbaIdentical": true
+    },
+    {
+      "nativeCell": 1,
+      "parentPath": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/고정입력/깜빡임_현재119.png",
+      "parentSha256": "0e678a9ac430994ed20c647065763c4943d19ea2463add3cbefacb57a07beecb",
+      "correctedPath": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/빅타민_120_키1.png",
+      "correctedSha256": "03a4ffaa9a2ae6d7d8232b657dbfa7780f9394488d03bd9b166b5ee6cbe83429",
+      "maskPath": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/키1_실효편집영역.png",
+      "maskSha256": "07836bb88ce5174510a280b9e58dda7c9f3f07f8c50fb0f556e88d9b97c8dcf1",
+      "width": 104,
+      "height": 106,
+      "physicalIndices": [
+        9,
+        10
+      ],
+      "sourceChangedPixels": 6,
+      "sourceChangedChannels": 18,
+      "sourceAlphaChangedPixels": 0,
+      "alphaPreserved": true,
+      "protectedMouthPixels": 17,
+      "mouthProtection": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/고정입력/키1_기존실제입보호.png",
+        "sha256": "4b9c2b1d7e81b62f718db2a7c063a5b81785353b9e77af95ecddad5e8e820423"
+      },
+      "registration": {
+        "scale": 0.2701856975415165,
+        "angle": -0.009694068327443732,
+        "sourceCheeks": [
+          [
+            205.25094696969697,
+            321.43465909090907
+          ],
+          [
+            355.25178753830437,
+            317.3314606741573
+          ]
+        ],
+        "targetCheeks": [
+          [
+            36.53529411764706,
+            69.9
+          ],
+          [
+            77.05072463768116,
+            68.39855072463769
+          ]
+        ],
+        "kind": "uniform_similarity_no_nonuniform_face_warp",
+        "reused119ExistingRegisteredPixels": true,
+        "new120ImagegenCalls": 0
+      },
+      "registeredSource": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/고정입력/119등록후_키1_마스크전.png",
+        "sha256": "d6de4037cf8e1fff3ec58d5cae62173072ccaecc95740f9b025951701d1ef9b2"
+      },
+      "adoptedEyeCoordinates": [
+        [
+          39,
+          64
+        ],
+        [
+          39,
+          65
+        ],
+        [
+          39,
+          66
+        ],
+        [
+          73,
+          63
+        ],
+        [
+          74,
+          64
+        ],
+        [
+          70,
+          66
+        ]
+      ],
+      "adoption": "Direct RGB copy at reviewer-confirmed contact pixels only; current alpha and every other RGBA sample preserved.",
+      "continuousExistingStrokeScope": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/키1_연결눈선범위.png",
+        "sha256": "37073ca19bac4811af194c5b59aec72b6ca3043d126c96f7d3be8d29d6c62db2",
+        "unchangedConnectorsAdopted": false
+      },
+      "outsideEffectiveMaskRgbaIdentical": true
+    },
+    {
+      "nativeCell": 78,
+      "parentPath": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/고정입력/포근잠_현재115입력.png",
+      "parentSha256": "c1edc19c958adf87370bc2475dbca77abf66ad5fde753a8d773bfc2ede6e8aac",
+      "correctedPath": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/빅타민_120_키78.png",
+      "correctedSha256": "f8dc3172c54aa7e3ef95e91e1a6d6cb2cab74210aaddbdf6f5072896d9a9f2bd",
+      "maskPath": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/키78_실효편집영역.png",
+      "maskSha256": "2513b980093f813127164bdaca6b02db72218623ce9a6a05c4132c945915c2df",
+      "width": 119,
+      "height": 85,
+      "physicalIndices": [
+        519
+      ],
+      "sourceChangedPixels": 2303,
+      "sourceChangedChannels": 8395,
+      "sourceAlphaChangedPixels": 1843,
+      "alphaPreserved": false,
+      "registration": {
+        "kind": "uniform_similarity_no_nonuniform_warp",
+        "scale": 0.08956821323139041,
+        "angle": -0.008237631620653926,
+        "sourceCheeks": [
+          [
+            587.2576385292595,
+            607.5306404281029
+          ],
+          [
+            1055.4202440126526,
+            570.3843199277
+          ]
+        ],
+        "targetCheeks": [
+          [
+            46.66483516483517,
+            52.93956043956044
+          ],
+          [
+            88.56849315068493,
+            49.26712328767123
+          ]
+        ]
+      },
+      "registeredSource": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/포근잠_등록후마스크전.png",
+        "sha256": "9136f58d18df13a8c6a3c1fa63096e393a328efb4257492b377b33a533f8d22a"
+      },
+      "rawSource": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/원본/포근잠_윤곽생성원본.png",
+        "sha256": "7802574d873ec7faec46bf01b867d9552876c7c6036b77e699b6840f54c25d7b"
+      },
+      "adoption": "New120 cozy pixels inside narrow specialist-bound contour/material mask only; parent ears/complete face retained byte-exact.",
+      "outsideEffectiveMaskRgbaIdentical": true,
+      "foldedEarsAndFaceRgbaIdentical": true,
+      "noGlobalAlphaThresholdOrColorReplacement": true
+    }
+  ]
+}

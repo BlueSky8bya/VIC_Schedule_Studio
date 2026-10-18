@@ -1,0 +1,38 @@
+{
+  "final_sha256": "78C5DCDA60162AEFDBE40FB329D5FF2EBDD73D9E822B974791C837A2FDC64E49",
+  "whole_visual_inspection": true,
+  "reviewer_id": "/root",
+  "inspection_type": "CREATOR_OBSERVATION_NOT_INDEPENDENT_REVIEW",
+  "opened_files": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\포근잠_현재115입력.png",
+      "sha256": "C1EDC19C958ADF87370BC2475DBCA77ABF66AD5FDE753A8D773BFC2EDE6E8AAC",
+      "opened_by": "/root",
+      "basis": "Root explicitly reported actual opening of these three exact inputs before generation preflight."
+    },
+    {
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4",
+      "opened_by": "/root",
+      "basis": "Root explicitly reported actual opening of these three exact inputs before generation preflight."
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png",
+      "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68",
+      "opened_by": "/root",
+      "basis": "Root explicitly reported actual opening of these three exact inputs before generation preflight."
+    },
+    {
+      "path": "C:/Projects/VIC Schedule studio/art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/빅타민_120_키78.png",
+      "sha256": "78C5DCDA60162AEFDBE40FB329D5FF2EBDD73D9E822B974791C837A2FDC64E49"
+    }
+  ],
+  "findings": [
+    "Root viewed the complete bounded cozy correction and three-key comparison. Same one provider raw was downfiltered with scale-aware premultiplied Lanczos3 to eliminate bilinear point-sampling aliasing. Existing sleeping face/folded ears and all outside-mask parent bytes remain; no global recolor or facial transfer. Separate two closed-eye contact repairs reuse eleven preserved119 registered RGB pixels. No owner visual approval or independent post-generation PASS is claimed."
+  ],
+  "source_recipe": {
+    "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/합성파생기록.json",
+    "sha256": "0d4b6557c6ff2fdba97af9ec1441927f2f02a2d31beb000a0bbf810189f9b90f"
+  },
+  "post_generation_specialist_reviews": 0
+}

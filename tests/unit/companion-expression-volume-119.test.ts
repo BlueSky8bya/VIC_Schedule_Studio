@@ -77,7 +77,8 @@ describe("119 masked expression/body packet conservation", () => {
   it("changes exactly five packet references and preserves all metadata except optional body67 registration", () => {
     const receipt = readJson<Receipt>(`${run}/패킹파생기록.json`);
     const parents = names.map(name => readJson<Metadata>(`${run}/고정입력/${name}.json`));
-    const active = names.map(name => readJson<Metadata>(`lib/ui/viewer-companion/${name}.json`));
+    //119 remains immutable evidence after120 takes active packet ownership.
+    const active = names.map(name => readJson<Metadata>(`${run}/정리본/${name}.json`));
     const before = combine(parents), after = combine(active);
     expect(after.rows).toEqual(before.rows);
     expect(after.atlases).toHaveLength(33); expect(after.frames).toHaveLength(520);
@@ -153,12 +154,12 @@ describe("119 masked expression/body packet conservation", () => {
   });
 
   it("preserves all504 non-target anchor records and leaves regeneration to the separate anchor step", () => {
-    const receipt = readJson<Receipt>(`${run}/패킹파생기록.json`), parent = readJson<Anchors>(`${run}/고정입력/accessory-anchors.json`), current = readJson<Anchors>("lib/ui/viewer-companion/accessory-anchors.json");
+    const receipt = readJson<Receipt>(`${run}/패킹파생기록.json`), parent = readJson<Anchors>(`${run}/고정입력/accessory-anchors.json`), current = readJson<Anchors>(`${run}/정리본/accessory-anchors.json`);
     expect(receipt.frozenAnchors.regeneratedByThisScript).toBe(false);
     expect(hash(readFileSync(receipt.frozenAnchors.path))).toBe(receipt.frozenAnchors.sha256);
     expect(current.frames).toHaveLength(520); expect(current.rows).toEqual(parent.rows);
     for (let index = 0; index < 520; index++) if (!expectedPhysical.includes(index)) expect(current.frames[index], `untargeted anchor${index}`).toEqual(parent.frames[index]);
-    const active = combine(names.map(name => readJson<Metadata>(`lib/ui/viewer-companion/${name}.json`)));
+    const active = combine(names.map(name => readJson<Metadata>(`${run}/정리본/${name}.json`)));
     expect(current.sources).toEqual(active.atlases.map(({ src, sha256, bytes }) => ({ src, sha256, bytes })));
     expect(current.rows).toEqual(active.rows);
   });
@@ -189,8 +190,12 @@ describe("119 masked expression/body packet conservation", () => {
     const receipt = readJson<Receipt>(`${run}/패킹파생기록.json`);
     const protectedPaths = [...names.map(name => `lib/ui/viewer-companion/${name}.json`), ...receipt.packets.map(packet => `public${packet.packet.src}`), ...receipt.immutableParentPackets.map(packet => `public${packet.src}`), `${run}/패킹파생기록.json`];
     const before = protectedPaths.map(filename => hash(readFileSync(filename)));
-    const report = JSON.parse(execFileSync(process.execPath, ["scripts/prepare-companion-expression-volume-119.mjs", "--check"], { encoding: "utf8" }));
-    expect(report).toMatchObject({ check: true, packets: 5, physicalIndices: expectedPhysical, parentPacketsPreserved: 33, anchorsRegenerated: false });
+    const report = JSON.parse(execFileSync(process.execPath, ["scripts/prepare-companion-expression-volume-119.mjs", "--check", "--artifacts-only"], { encoding: "utf8" }));
+    expect(report).toMatchObject({ check: true, artifactsOnly: true, packets: 5, physicalIndices: expectedPhysical, parentPacketsPreserved: 33, anchorsRegenerated: false });
     expect(protectedPaths.map(filename => hash(readFileSync(filename)))).toEqual(before);
   }, 30_000);
+
+  it("requires --check for the historical artifacts-only flag", () => {
+    expect(() => execFileSync(process.execPath, ["scripts/prepare-companion-expression-volume-119.mjs", "--artifacts-only"], { encoding: "utf8", stdio: "pipe" })).toThrow(/--artifacts-only requires --check/);
+  });
 });

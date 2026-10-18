@@ -6,7 +6,7 @@
   "metadata": [
     {
       "path": "lib/ui/viewer-companion/hd-motion-sprite.json",
-      "sha256": "890fe2fe5baf9aaa027020a55a1a7498e11c41dbc6ab90645cf50ba7dea566ea"
+      "sha256": "971e8de5307819805061740ae683ed5eee3a9e39ca92ea27820671b1b3c59ba2"
     },
     {
       "path": "lib/ui/viewer-companion/play-motion-sprite.json",
@@ -14,14 +14,14 @@
     },
     {
       "path": "lib/ui/viewer-companion/living-motion-sprite.json",
-      "sha256": "c5e02c23d5cd3536c05400de677063121b9a21aea6a4973a3a4edd6932ec4eea"
+      "sha256": "70828fba1f636d0b4ff2732e0b4dde0156d2c8472ffff18964aca71d6225e74b"
     }
   ],
   "sources": [
     {
-      "src": "/companion/hd/vitamin-action-00-expression-119-v1.webp",
-      "sha256": "77a33184dc3e8fd70e8a4169585f61214d8bfbb652e107b5ab056c1eee18969b",
-      "bytes": 416936
+      "src": "/companion/hd/vitamin-action-00-eye-contour-120-v1.webp",
+      "sha256": "0ae8841d45d0aed2f1838d7bf9effb193153d64e58dd570e1ad9eaa60392d460",
+      "bytes": 416708
     },
     {
       "src": "/companion/hd/vitamin-action-01-motion-115-v1.webp",
@@ -99,9 +99,9 @@
       "bytes": 182094
     },
     {
-      "src": "/companion/hd/vitamin-action-16-expression-119-v1.webp",
-      "sha256": "cd843900c6ffad194c336c0a5a07293230434c5d012d5f54c546bd7bb1fb6003",
-      "bytes": 410430
+      "src": "/companion/hd/vitamin-action-16-eye-contour-120-v1.webp",
+      "sha256": "39c0f80b9b03d25d9be087f4f19fcd7c4f1088f4f4faa64da83c8a8797800747",
+      "bytes": 410432
     },
     {
       "src": "/companion/hd/vitamin-action-17-motion-115-v1.webp",
@@ -179,9 +179,9 @@
       "bytes": 162878
     },
     {
-      "src": "/companion/hd/vitamin-episodes-00-expression-119-v1.webp",
-      "sha256": "9874a6c3fbe8b5f2d27de0975e2d9719116eeecbbce0dee3c5a0634e9758321e",
-      "bytes": 223938
+      "src": "/companion/hd/vitamin-episodes-00-eye-contour-120-v1.webp",
+      "sha256": "5ea159d3bca15819d3ef5f119397f9da3ffdb2ba715b9fb4e54d6da43eee2e58",
+      "bytes": 222634
     }
   ],
   "coordinates": "logical80 cell before frame.x/y; x right/y down; clockwise authored roll in degrees; parent motion/facing chain remains authoritative",
@@ -1363,34 +1363,34 @@
       "index": 9,
       "orientation": "front",
       "face": {
-        "x": 42.583281,
-        "y": 52.629635,
-        "width": 21.039574,
-        "roll": -2.205432
+        "x": 42.525136,
+        "y": 52.629303,
+        "width": 21.288623,
+        "roll": -2.054418
       },
       "head": {
-        "x": 41.925517,
-        "y": 39.632635,
-        "width": 8.827268,
-        "roll": 0.388016
+        "x": 41.920936,
+        "y": 39.632731,
+        "width": 8.826509,
+        "roll": 0.356339
       },
       "chest": {
-        "x": 42.899778,
-        "y": 60.847978,
-        "width": 52.14096,
-        "roll": -2.205432
+        "x": 42.820702,
+        "y": 60.868834,
+        "width": 52.526002,
+        "roll": -2.054418
       },
       "sideChest": {
-        "x": 61.431598,
-        "y": 60.134297,
-        "width": 52.14096,
-        "roll": -2.205432
+        "x": 61.77494,
+        "y": 60.188913,
+        "width": 52.526002,
+        "roll": -2.054418
       },
       "sideBody": {
-        "x": 59.334913,
-        "y": 65.478836,
-        "width": 48.377703,
-        "roll": -2.205432
+        "x": 59.263466,
+        "y": 65.604583,
+        "width": 48.376951,
+        "roll": -2.054418
       },
       "bodyBounds": [
         12.916667,
@@ -1401,11 +1401,11 @@
       "eyes": [
         {
           "center": [
-            35.568694,
-            52.899775
+            35.385417,
+            52.885417
           ],
           "bounds": [
-            33.333333,
+            32.916667,
             51.25,
             37.916667,
             54.166667
@@ -1413,8 +1413,8 @@
         },
         {
           "center": [
-            49.597868,
-            52.359496
+            49.664855,
+            52.373188
           ],
           "bounds": [
             47.083333,
@@ -1431,34 +1431,34 @@
       "index": 10,
       "orientation": "front",
       "face": {
-        "x": 42.450658,
-        "y": 52.620614,
-        "width": 20.945528,
-        "roll": -2.072743
+        "x": 42.422827,
+        "y": 52.608204,
+        "width": 21.960746,
+        "roll": -1.905385
       },
       "head": {
-        "x": 41.729389,
-        "y": 39.641997,
-        "width": 8.459715,
-        "roll": 0.4367
+        "x": 41.728574,
+        "y": 39.641783,
+        "width": 8.458159,
+        "roll": 0.421944
       },
       "chest": {
-        "x": 42.74841,
-        "y": 60.847641,
-        "width": 52.52593,
-        "roll": -2.072743
+        "x": 42.697921,
+        "y": 60.877373,
+        "width": 52.526388,
+        "roll": -1.905385
       },
       "sideChest": {
-        "x": 61.835393,
-        "y": 60.156845,
-        "width": 52.52593,
-        "roll": -2.072743
+        "x": 61.657292,
+        "y": 60.246642,
+        "width": 52.526388,
+        "roll": -1.905385
       },
       "sideBody": {
-        "x": 59.362363,
-        "y": 65.486159,
-        "width": 49.194778,
-        "roll": -2.072743
+        "x": 58.63749,
+        "y": 65.840327,
+        "width": 47.945589,
+        "roll": -1.905385
       },
       "bodyBounds": [
         12.916667,
@@ -1469,11 +1469,11 @@
       "eyes": [
         {
           "center": [
-            35.482456,
-            52.872807
+            35.238095,
+            52.847222
           ],
           "bounds": [
-            32.916667,
+            32.5,
             51.25,
             37.916667,
             54.166667
@@ -1481,13 +1481,13 @@
         },
         {
           "center": [
-            49.41886,
-            52.368421
+            49.607558,
+            52.369186
           ],
           "bounds": [
             47.083333,
             51.25,
-            51.666667,
+            52.083333,
             53.333333
           ]
         }
@@ -18839,34 +18839,34 @@
       "index": 10,
       "orientation": "front",
       "face": {
-        "x": 44.842448,
-        "y": 51.932292,
-        "width": 21.433823,
-        "roll": -3.060915
+        "x": 44.834084,
+        "y": 51.982608,
+        "width": 21.908032,
+        "roll": -2.843861
       },
       "head": {
-        "x": 44.215401,
-        "y": 40.215612,
-        "width": 9.059643,
-        "roll": -1.825935
+        "x": 44.217338,
+        "y": 40.216842,
+        "width": 9.065263,
+        "roll": -1.833203
       },
       "chest": {
-        "x": 45.293794,
-        "y": 60.372788,
-        "width": 54.28963,
-        "roll": -3.060915
+        "x": 45.248117,
+        "y": 60.317349,
+        "width": 54.265339,
+        "roll": -2.843861
       },
       "sideChest": {
-        "x": 62.620824,
-        "y": 59.446244,
-        "width": 54.28963,
-        "roll": -3.060915
+        "x": 62.534877,
+        "y": 59.45862,
+        "width": 54.265339,
+        "roll": -2.843861
       },
       "sideBody": {
-        "x": 61.318392,
-        "y": 64.882001,
-        "width": 51.748698,
-        "roll": -3.060915
+        "x": 60.743758,
+        "y": 65.031356,
+        "width": 51.310919,
+        "roll": -2.843861
       },
       "bodyBounds": [
         12.083333,
@@ -18877,8 +18877,8 @@
       "eyes": [
         {
           "center": [
-            37.927083,
-            52.302083
+            37.680556,
+            52.337963
           ],
           "bounds": [
             35,
@@ -18889,8 +18889,8 @@
         },
         {
           "center": [
-            51.757813,
-            51.5625
+            51.987613,
+            51.627252
           ],
           "bounds": [
             49.166667,
@@ -35932,26 +35932,26 @@
       "chest": {
         "x": 44.917172,
         "y": 65.846077,
-        "width": 52.66448,
+        "width": 52.72643,
         "roll": -4.263307
       },
       "sideChest": {
         "x": 64.123801,
         "y": 64.414292,
-        "width": 52.66448,
+        "width": 52.72643,
         "roll": -4.263307
       },
       "sideBody": {
-        "x": 57.534767,
-        "y": 69.974347,
-        "width": 41.383659,
+        "x": 58.777859,
+        "y": 69.881679,
+        "width": 43.045714,
         "roll": -4.263307
       },
       "bodyBounds": [
         12.5,
         36.25,
         67.916667,
-        75
+        75.833333
       ],
       "eyes": [
         {

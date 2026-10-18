@@ -1,0 +1,389 @@
+{
+  "schema_version": 1,
+  "final_sha256": "8B596D8BA7592FB2E08E95DAB4D2DDC362A0CAE7F906AB3FE6D48D4EE8326086",
+  "specialist_reviews": {
+    "face_identity": {
+      "final_sha256": "8B596D8BA7592FB2E08E95DAB4D2DDC362A0CAE7F906AB3FE6D48D4EE8326086",
+      "role": "face_identity",
+      "reviewer_id": "independent-face-review-120-/root/face_review_120",
+      "status": "FAIL",
+      "review_scope": "Attachment4 yawn native10 physical266 and attachment5 blink native1 physical9/10 only: existing chosen closed-eye line continuity at orange-cheek/paper contacts and small notch. No other key/body/full-art review.",
+      "findings": [
+        {
+          "id": "F120-EYE-YAWN-CONTACT",
+          "status": "FAIL",
+          "native": 10,
+          "physical": [
+            266
+          ],
+          "coordinates_native_xy": [
+            [
+              45,
+              58
+            ],
+            [
+              46,
+              59
+            ],
+            [
+              78,
+              57
+            ],
+            [
+              79,
+              57
+            ],
+            [
+              78,
+              58
+            ]
+          ],
+          "observation": "Current yawn left eye loses its lower outer contact at(45,58),(46,59); right eye loses the outer contact at(78,57),(79,57),(78,58). These are bright/orange interruptions exactly where119 registered dark eyelid continues into the cheek/paper edge. In the actual current and registered diagnostic crops the missing pixels belong to the existing closed-eye stroke, not to the protected bulk of orange cheek.",
+          "required_correction": "Restore the corresponding existing119 registered stroke/contact RGB at these five confirmed pixels as part of the continuous existing eyelid/contact mask. Preserve current alpha, full mouth and the orange cheek outside actual stroke contact. No eye redesign.",
+          "evidence": "얼굴_누락좌표_진단.png rows1/2; current/native119 provider full and uniform registered source were actually opened."
+        },
+        {
+          "id": "F120-EYE-BLINK-CONTACT-NOTCH",
+          "status": "FAIL",
+          "native": 1,
+          "physical": [
+            9,
+            10
+          ],
+          "coordinates_native_xy": [
+            [
+              39,
+              64
+            ],
+            [
+              39,
+              65
+            ],
+            [
+              39,
+              66
+            ],
+            [
+              73,
+              63
+            ],
+            [
+              74,
+              64
+            ],
+            [
+              70,
+              66
+            ]
+          ],
+          "observation": "Current blink left eye has a pale/orange cut through its outer stroke at(39,64..66). Right eye loses two outer-contact dark pixels at(73,63),(74,64), and(70,66) creates the visible pale notch in the lower continuous arc. Registered119 carries one uninterrupted closed-eye curve through all six positions. The rest of the chosen closed-eye expression is retained and supplies the intended shape.",
+          "required_correction": "Restore these six existing119 registered stroke pixels through the corresponding eyelid/contact mask. Do not flatten, enlarge, replace or redraw either curve; do not copy the whole registered cheek/face.",
+          "evidence": "얼굴_누락좌표_진단.png rows3/4; registered119 pair and provider raw actual view."
+        },
+        {
+          "id": "F120-MOUTH-PROTECTION",
+          "status": "PROTECTED_NOT_AN_EYE_FINDING",
+          "native": 10,
+          "coordinates_native_xy": [
+            [
+              67,
+              60
+            ],
+            [
+              67,
+              61
+            ]
+          ],
+          "observation": "The blue positions lie beside the actual yawn mouth in the mouth component plus one-pixel preservation zone, well medial/below the right eye. Existing119 registered dark pixels there would enlarge/alter the chosen mouth if blindly unlocked with all zero-gain positions.",
+          "required_correction": "Keep both current(67,60) and(67,61), and the complete existing mouth protection mask, byte-identical. They are excluded from the eleven reviewer-confirmed eye restoration pixels.",
+          "evidence": "얼굴_누락좌표_진단.png row2 blue boxes; existing actual-mouth protection reproduction."
+        }
+      ],
+      "bounded_restoration_guidance": {
+        "existing119_pixels_sufficient_for_requested_eye_faults": true,
+        "basis": "Current and same uniform-cheek registered119 show the same selected closed-eye design; the visible target faults are local missing stroke/contact samples. Existing provider pixels already contain the needed continuation. No new eye generation or new geometry is needed.",
+        "allowed_source": "Existing119 uniform registration before mask, exact source SHA1288EC1BFDCEF91AD914CCDFFEB251347FF75460C3E7AD4C168D6763A2E4E2ED for paired reference; per-key registered source files bound by119기존눈등록_재현계보.json.",
+        "minimum_confirmed_adoption": {
+          "native10": [
+            [
+              45,
+              58
+            ],
+            [
+              46,
+              59
+            ],
+            [
+              78,
+              57
+            ],
+            [
+              79,
+              57
+            ],
+            [
+              78,
+              58
+            ]
+          ],
+          "native1": [
+            [
+              39,
+              64
+            ],
+            [
+              39,
+              65
+            ],
+            [
+              39,
+              66
+            ],
+            [
+              73,
+              63
+            ],
+            [
+              74,
+              64
+            ],
+            [
+              70,
+              66
+            ]
+          ]
+        },
+        "mask_boundary": "Use one120 adoption-mask record with each existing eyelid and its actual immediate cheek/paper contact treated continuously. Include the eleven confirmed holes rather than the old coarse orange exclusion rectangles. Existing unchanged stroke samples may connect the local mask; a mask connector is not permission to replace intervening paper, mouth or cheek bulk. Additional color/AA replacement is bounded to the actual immediate stroke edge and is not an authority to adopt a whole rectangular face patch.",
+        "protected": "Current source alpha; mouth components plus existing one-pixel protections including native10(67,60..61); cheek bulk beyond actual eye contacts; native1 tiny mouth; chosen eye curve dimensions/placement; all other keys/body/ears/poses.",
+        "not_authorized": "Whole registered provider face/cheeks/body adoption, new eye design, new eye imagegen, other-key correction, new global80 review or post-repair specialist pass.",
+        "limits": "This is one requested independent visual review of current exact SHA. The proposed restoration has not been applied or given a later independent PASS. No numerical identity certification or overall character/artwork PASS is asserted."
+      },
+      "opened_files": [
+        {
+          "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\현재요청3칸_원크기.png",
+          "sha256": "8B596D8BA7592FB2E08E95DAB4D2DDC362A0CAE7F906AB3FE6D48D4EE8326086",
+          "kind": "edit_target",
+          "opened_with": "view_image",
+          "scope": "whole source / requested eye-contact evidence only"
+        },
+        {
+          "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+          "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4",
+          "kind": "original",
+          "opened_with": "view_image",
+          "scope": "whole source / requested eye-contact evidence only"
+        },
+        {
+          "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png",
+          "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68",
+          "kind": "render_reference",
+          "opened_with": "view_image",
+          "scope": "whole source / requested eye-contact evidence only"
+        },
+        {
+          "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-표정체적교정119\\원본\\표정체적6키_생성원본.png",
+          "sha256": "EC389E3364A77DDB4F6999A8B94087544B9543A731D0B4AF04947F84ED638682",
+          "kind": "render_reference",
+          "opened_with": "view_image",
+          "scope": "whole source / requested eye-contact evidence only"
+        },
+        {
+          "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\119눈2종_등록후마스크전.png",
+          "sha256": "1288EC1BFDCEF91AD914CCDFFEB251347FF75460C3E7AD4C168D6763A2E4E2ED",
+          "kind": "render_reference",
+          "opened_with": "view_image",
+          "scope": "whole source / requested eye-contact evidence only"
+        },
+        {
+          "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\얼굴_현재119등록대조_진단.png",
+          "sha256": "946988BE828DEA7381A29A57CA4ECD19A3DA76A3E19B3A6BED28FD6551A3C0C4",
+          "kind": "diagnostic_crop_only",
+          "opened_with": "view_image",
+          "derivation": "Unedited current versus119 registered native eye/contact crops, nearest-neighbor enlargement; pink boxes identify review coordinates and blue identifies protected mouth neighbors."
+        },
+        {
+          "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\얼굴_누락좌표_진단.png",
+          "sha256": "73A11319FBF8055F75175F31190BAE02CDF4BC7A2742DF09A8EE6FBD343985D1",
+          "kind": "diagnostic_crop_only",
+          "opened_with": "view_image",
+          "derivation": "Unedited current versus119 registered native eye/contact crops, nearest-neighbor enlargement; pink boxes identify review coordinates and blue identifies protected mouth neighbors."
+        },
+        {
+          "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\face_identity.json",
+          "sha256": "369860BA0BE74FCD4F2BBC70E7AD6D0520FA406ACF79B9D7D2C00977CE35AA39",
+          "kind": "supporting_scope_or_technical_evidence",
+          "opened_with": "read_text",
+          "semantic_authority": false
+        },
+        {
+          "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\기술계보_전문판정아님.json",
+          "sha256": "75D9C829F9FEC710C88B358D5A208A1034AF785B7C3283555F75E3A991A347C7",
+          "kind": "supporting_scope_or_technical_evidence",
+          "opened_with": "read_text",
+          "semantic_authority": false
+        },
+        {
+          "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\기존입보호_재현계보.json",
+          "sha256": "9D67B79326122B5098DA1034A3E627F93B0EAAB1256F715C4C0FBC0A95F424FA",
+          "kind": "supporting_scope_or_technical_evidence",
+          "opened_with": "read_text",
+          "semantic_authority": false
+        },
+        {
+          "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\119기존눈등록_재현계보.json",
+          "sha256": "7292579C77BBB9E3D240995042625E1074BE9576294B37179561394850A837F5",
+          "kind": "supporting_scope_or_technical_evidence",
+          "opened_with": "read_text",
+          "semantic_authority": false
+        },
+        {
+          "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수부위계약.json",
+          "sha256": "44349D94D3F09CF3C66079DA24A149541703D5CB2C8AE119540B0FA0D145D036",
+          "kind": "scope_or_mapping_evidence",
+          "opened_with": "read_text"
+        },
+        {
+          "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\원화배치계보.json",
+          "sha256": "61F1AAA6CC247A6A175344A683B9DDCDBD9852557BB14A1208B11F7BCEFE3835",
+          "kind": "scope_or_mapping_evidence",
+          "opened_with": "read_text"
+        }
+      ]
+    },
+    "scene_render": {
+      "final_sha256": "8B596D8BA7592FB2E08E95DAB4D2DDC362A0CAE7F906AB3FE6D48D4EE8326086",
+      "role": "scene_render",
+      "reviewer_id": "/root/contour_review_120",
+      "status": "FAIL",
+      "scope": "Only cozy native78 / physical519 / attachment6: visible outer contour and material-color contacts. No eye redesign, other key, whole80-key, or body review.",
+      "findings": [
+        {
+          "id": "COZY-CONTOUR-01",
+          "area": "cozy native119x85; approximate left flank x8..23,y34..52 and bottom silhouette x22..103,y71..83",
+          "status": "FAIL",
+          "observation": "크림/짙은 배경 두 합성에서 좌측 몸통의 갈색 외곽이 군데군데 뭉치고, 하단 외곽에는 갈색·황토색 띠가 넓게 번져 선의 두께가 불규칙하게 읽힌다. 단순 투명뷰의 노란 점을 지적하는 것이 아니다.",
+          "evidence": [
+            "현재3칸_크림배경4배.png rightmost cozy",
+            "현재3칸_짙은배경4배.png rightmost cozy",
+            "contour-review-cozy-two-background-8x.png"
+          ],
+          "bounded_fix": "기존 종이 끝점·굴곡 위치를 유지한 채 몸통 외곽의 진한 선과 인접 색 띠만 정리. 하단 부피·종이 돌출 길이·겹침 순서 변경 금지."
+        },
+        {
+          "id": "COZY-MATERIAL-02",
+          "area": "cozy side/lower contacts between rear yellow/orange sheets and front cream sheets; approximate x8..30,y43..71; x91..115,y45..72; bottom contact x28..97,y67..79",
+          "status": "FAIL",
+          "observation": "측면과 하단의 노랑/주황 뒤종이와 크림 앞종이가 만나는 접점에서 황갈색 전이띠와 흐린 경계가 붙어 있어, 종이별 색 면이 선택099의 또렷한 렌더보다 탁하게 합쳐져 보인다. 종이가 실제 겹친 구조나 주황 볼 자체는 결함으로 세지 않는다.",
+          "evidence": [
+            "포근잠_현재115입력.png",
+            "선택눈099.png (crisp paper-render reference only)",
+            "contour-review-cozy-two-background-8x.png"
+          ],
+          "bounded_fix": "동일한 겹침선의 좁은 접점만 다시 정돈하여 앞 크림 면·뒤 노랑/주황 면을 분리. 노랑/주황 조각 제거, 종이 위치 재배치, 전체 색보정·블러·샤픈 금지."
+        }
+      ],
+      "non_findings_and_limits": [
+        "투명 원본 뷰의 많은 노란 점은 명시 배경 합성에서 뚜렷한 얼룩으로 남지 않는다. hiddenRGB와 alpha2..31 수치만으로 시각 FAIL을 만들지 않았다.",
+        "115/current519 visibleRGBA 동일성은 기술계보 근거다. 기존115이므로 이번 사용자 지적이 무효라는 뜻은 아니다.",
+        "현재 접힌 두 귀, 졸린 얼굴, 종이 겹침 설계·포즈·부피는 교정 보호 범위다. 원본 정상 세로 귀나 선택099의 열린 눈으로 바꾸지 않는다.",
+        "좌표는 실제119x85 native에 대한 대략적인 시각 부위이며 채택용 exact mask가 아니다.",
+        "이 판정은 지정 scene_render 1회다. 수정후 전문 재검수와 전체 PASS는 수행/주장하지 않는다."
+      ],
+      "bounded_correction_recommendation": {
+        "preferred_action": "single120_builtin_imagegen_for_cozy_only_then_bounded_adoption",
+        "why_source_alpha_cleanup_alone_is_insufficient": "보이는 갈색/황색 전이와 뭉침에는 높은 alpha의 RGB가 포함된다. 예: native(15,43) RGBA146,105,37,232 / (16,42)99,55,5,236. 전체 저alpha 삭제는 정상 안티앨리어싱까지 깎으면서 내부 색 접점의 흐림을 해결하지 못한다.",
+        "imagegen_warranted": true,
+        "generation_limit": 1,
+        "adoption_scope": "기존 cozy 몸통 외곽 및 위 finding의 같은 재질 접점만. 최종 실효 mask는 root가 현행 구조를 기준으로 한정하고 보호 얼굴·귀 구조·종이 안쪽 면·포즈·볼륨·다른 모든 키를 보존.",
+        "preserve": [
+          "folded ear design and positions",
+          "entire sleepy face and cheeks",
+          "paper layer count/order/corner positions",
+          "cozy pose and body volume",
+          "all noncozy keys"
+        ],
+        "do_not": [
+          "blanket alpha threshold",
+          "hiddenRGB cleanup presented as visual repair",
+          "global recolor or sharpen",
+          "new open-eye design",
+          "whole-key/body review",
+          "postrepair specialist review"
+        ]
+      },
+      "opened_files": [
+        {
+          "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\현재요청3칸_원크기.png",
+          "sha256": "8B596D8BA7592FB2E08E95DAB4D2DDC362A0CAE7F906AB3FE6D48D4EE8326086",
+          "opening_basis": "Exact path declared opened in unchanged original scene_render report; SHA added for helper serialization only, not a new opening/review."
+        },
+        {
+          "path": "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/03_도식/스크린샷 2026-10-06 025419.png",
+          "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4",
+          "opening_basis": "Exact path declared opened in unchanged original scene_render report; SHA added for helper serialization only, not a new opening/review."
+        },
+        {
+          "path": "C:/Projects/VIC Schedule studio/art-src/빅타민/동행/작업회차/20261018-포즈통일114/고정입력/선택눈099.png",
+          "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68",
+          "opening_basis": "Exact path declared opened in unchanged original scene_render report; SHA added for helper serialization only, not a new opening/review."
+        },
+        {
+          "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\현재3칸_크림배경4배.png",
+          "sha256": "F4453BF8159A14A4522917A3470402BB23A9CAAFEFF645267BC72596A17854C2",
+          "opening_basis": "Exact path declared opened in unchanged original scene_render report; SHA added for helper serialization only, not a new opening/review."
+        },
+        {
+          "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\현재3칸_짙은배경4배.png",
+          "sha256": "6B29C8A4C25775B2822586DCABEC562599899F01EA0855EEB46860BD673DD390",
+          "opening_basis": "Exact path declared opened in unchanged original scene_render report; SHA added for helper serialization only, not a new opening/review."
+        },
+        {
+          "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\포근잠_현재115입력.png",
+          "sha256": "C1EDC19C958ADF87370BC2475DBCA77ABF66AD5FDE753A8D773BFC2EDE6E8AAC",
+          "opening_basis": "Exact path declared opened in unchanged original scene_render report; SHA added for helper serialization only, not a new opening/review."
+        },
+        {
+          "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\포근잠_114원본추출.png",
+          "sha256": "37A25B0724A6300C334B831ABB91923D19F9F35DE8583C88279A1EC6F3A33E4E",
+          "opening_basis": "Exact path declared opened in unchanged original scene_render report; SHA added for helper serialization only, not a new opening/review."
+        },
+        {
+          "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\사용자첨부_06.png",
+          "sha256": "F83FD678310CCE61A3552387FD65AE214CF2A14695AE7307AAE4B468F4957C30",
+          "opening_basis": "Exact path declared opened in unchanged original scene_render report; SHA added for helper serialization only, not a new opening/review."
+        },
+        {
+          "path": "C:/Projects/VIC Schedule studio/.scratch-pw/companion-120/technical/contour-review-cozy-two-background-8x.png",
+          "sha256": "CB6BF7E729644F732C18C008B0C4226C26BD4287BB16CAA97B801F56BE1FE6A6",
+          "opening_basis": "Exact path declared opened in unchanged original scene_render report; SHA added for helper serialization only, not a new opening/review."
+        }
+      ],
+      "reviewer_operations": {
+        "generation": 0,
+        "claim": 0,
+        "registration": 0,
+        "product_edits": 0,
+        "visual_qa_derivatives": 1
+      },
+      "serialization_normalization": {
+        "source_report": {
+          "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\윤곽검수결과.json",
+          "sha256": "53A8896C0C3F8E431B4A16615E8C644E8CB6AEAA38F923843029DDDC68409581"
+        },
+        "only_change": "opened_files declared strings expanded to current path/SHA objects; no finding/status/visual judgment changed"
+      }
+    }
+  },
+  "original_reports": {
+    "face_identity": {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\얼굴검수결과.json",
+      "sha256": "C328581525E03E46D8C57E4429CC62004FFC66523B9B8C6740522B1B9DF43834"
+    },
+    "scene_render": {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\윤곽검수결과.json",
+      "sha256": "53A8896C0C3F8E431B4A16615E8C644E8CB6AEAA38F923843029DDDC68409581"
+    }
+  },
+  "not_new_professional_review": true,
+  "no_reclassification_of_FAIL": true
+}

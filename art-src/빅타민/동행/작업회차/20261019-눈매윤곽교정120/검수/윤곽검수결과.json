@@ -1,0 +1,80 @@
+{
+  "final_sha256": "8B596D8BA7592FB2E08E95DAB4D2DDC362A0CAE7F906AB3FE6D48D4EE8326086",
+  "role": "scene_render",
+  "reviewer_id": "/root/contour_review_120",
+  "status": "FAIL",
+  "scope": "Only cozy native78 / physical519 / attachment6: visible outer contour and material-color contacts. No eye redesign, other key, whole80-key, or body review.",
+  "findings": [
+    {
+      "id": "COZY-CONTOUR-01",
+      "area": "cozy native119x85; approximate left flank x8..23,y34..52 and bottom silhouette x22..103,y71..83",
+      "status": "FAIL",
+      "observation": "크림/짙은 배경 두 합성에서 좌측 몸통의 갈색 외곽이 군데군데 뭉치고, 하단 외곽에는 갈색·황토색 띠가 넓게 번져 선의 두께가 불규칙하게 읽힌다. 단순 투명뷰의 노란 점을 지적하는 것이 아니다.",
+      "evidence": [
+        "현재3칸_크림배경4배.png rightmost cozy",
+        "현재3칸_짙은배경4배.png rightmost cozy",
+        "contour-review-cozy-two-background-8x.png"
+      ],
+      "bounded_fix": "기존 종이 끝점·굴곡 위치를 유지한 채 몸통 외곽의 진한 선과 인접 색 띠만 정리. 하단 부피·종이 돌출 길이·겹침 순서 변경 금지."
+    },
+    {
+      "id": "COZY-MATERIAL-02",
+      "area": "cozy side/lower contacts between rear yellow/orange sheets and front cream sheets; approximate x8..30,y43..71; x91..115,y45..72; bottom contact x28..97,y67..79",
+      "status": "FAIL",
+      "observation": "측면과 하단의 노랑/주황 뒤종이와 크림 앞종이가 만나는 접점에서 황갈색 전이띠와 흐린 경계가 붙어 있어, 종이별 색 면이 선택099의 또렷한 렌더보다 탁하게 합쳐져 보인다. 종이가 실제 겹친 구조나 주황 볼 자체는 결함으로 세지 않는다.",
+      "evidence": [
+        "포근잠_현재115입력.png",
+        "선택눈099.png (crisp paper-render reference only)",
+        "contour-review-cozy-two-background-8x.png"
+      ],
+      "bounded_fix": "동일한 겹침선의 좁은 접점만 다시 정돈하여 앞 크림 면·뒤 노랑/주황 면을 분리. 노랑/주황 조각 제거, 종이 위치 재배치, 전체 색보정·블러·샤픈 금지."
+    }
+  ],
+  "non_findings_and_limits": [
+    "투명 원본 뷰의 많은 노란 점은 명시 배경 합성에서 뚜렷한 얼룩으로 남지 않는다. hiddenRGB와 alpha2..31 수치만으로 시각 FAIL을 만들지 않았다.",
+    "115/current519 visibleRGBA 동일성은 기술계보 근거다. 기존115이므로 이번 사용자 지적이 무효라는 뜻은 아니다.",
+    "현재 접힌 두 귀, 졸린 얼굴, 종이 겹침 설계·포즈·부피는 교정 보호 범위다. 원본 정상 세로 귀나 선택099의 열린 눈으로 바꾸지 않는다.",
+    "좌표는 실제119x85 native에 대한 대략적인 시각 부위이며 채택용 exact mask가 아니다.",
+    "이 판정은 지정 scene_render 1회다. 수정후 전문 재검수와 전체 PASS는 수행/주장하지 않는다."
+  ],
+  "bounded_correction_recommendation": {
+    "preferred_action": "single120_builtin_imagegen_for_cozy_only_then_bounded_adoption",
+    "why_source_alpha_cleanup_alone_is_insufficient": "보이는 갈색/황색 전이와 뭉침에는 높은 alpha의 RGB가 포함된다. 예: native(15,43) RGBA146,105,37,232 / (16,42)99,55,5,236. 전체 저alpha 삭제는 정상 안티앨리어싱까지 깎으면서 내부 색 접점의 흐림을 해결하지 못한다.",
+    "imagegen_warranted": true,
+    "generation_limit": 1,
+    "adoption_scope": "기존 cozy 몸통 외곽 및 위 finding의 같은 재질 접점만. 최종 실효 mask는 root가 현행 구조를 기준으로 한정하고 보호 얼굴·귀 구조·종이 안쪽 면·포즈·볼륨·다른 모든 키를 보존.",
+    "preserve": [
+      "folded ear design and positions",
+      "entire sleepy face and cheeks",
+      "paper layer count/order/corner positions",
+      "cozy pose and body volume",
+      "all noncozy keys"
+    ],
+    "do_not": [
+      "blanket alpha threshold",
+      "hiddenRGB cleanup presented as visual repair",
+      "global recolor or sharpen",
+      "new open-eye design",
+      "whole-key/body review",
+      "postrepair specialist review"
+    ]
+  },
+  "opened_files": [
+    "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\현재요청3칸_원크기.png",
+    "G:/내 드라이브/01_TMP/VIC/일러스트/AI/레퍼런스/07_빅타민/03_도식/스크린샷 2026-10-06 025419.png",
+    "C:/Projects/VIC Schedule studio/art-src/빅타민/동행/작업회차/20261018-포즈통일114/고정입력/선택눈099.png",
+    "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\현재3칸_크림배경4배.png",
+    "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\현재3칸_짙은배경4배.png",
+    "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\포근잠_현재115입력.png",
+    "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\포근잠_114원본추출.png",
+    "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\사용자첨부_06.png",
+    "C:/Projects/VIC Schedule studio/.scratch-pw/companion-120/technical/contour-review-cozy-two-background-8x.png"
+  ],
+  "reviewer_operations": {
+    "generation": 0,
+    "claim": 0,
+    "registration": 0,
+    "product_edits": 0,
+    "visual_qa_derivatives": 1
+  }
+}

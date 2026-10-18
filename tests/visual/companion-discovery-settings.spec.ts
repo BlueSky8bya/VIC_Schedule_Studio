@@ -262,7 +262,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     expect(await foods.getByRole("button").count()).toBeLessThanOrEqual(24);
     await expect(profile.getByRole("button", { name: `냠냠 도감 2/${COMPANION_FOOD_KINDS.length}`, exact: true })).toHaveAttribute("aria-pressed", "true");
     await expect(foods.locator("button[data-found]")).toHaveCount(2);
-    await expect(foods.locator('[data-collection-art="food-stamp"]')).toHaveCount(2);
+    await expect(foods.locator('[data-collection-art="food-stamp"]')).toHaveCount(0);
     await expect(foods.locator(".rhh-collection-rarity")).toHaveCount(2);
     for (const tile of await foods.locator("button:not([data-found])").all()) {
       await expect(tile).toHaveText("???");

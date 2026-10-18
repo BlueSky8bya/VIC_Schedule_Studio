@@ -1,0 +1,612 @@
+{
+  "scope": "Technical source/mask/alpha evidence only, not professional artwork certification",
+  "faces": [
+    {
+      "nativeCell": 1,
+      "source": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/정리본/빅타민_119_키1.png",
+      "alphaChanges": 0,
+      "eyes": [
+        {
+          "eye": 0,
+          "box": [
+            36,
+            58,
+            53,
+            71
+          ],
+          "excludedProviderInk": [
+            {
+              "x": 39,
+              "y": 64,
+              "mask": 0,
+              "gain": 1,
+              "registered": [
+                46,
+                20,
+                4,
+                253
+              ],
+              "before": [
+                246,
+                222,
+                178,
+                253
+              ],
+              "after": [
+                246,
+                222,
+                178,
+                253
+              ],
+              "orangeProtection": 255,
+              "authoredBaseMask": 0
+            },
+            {
+              "x": 39,
+              "y": 65,
+              "mask": 0,
+              "gain": 1,
+              "registered": [
+                45,
+                21,
+                5,
+                253
+              ],
+              "before": [
+                202,
+                131,
+                75,
+                253
+              ],
+              "after": [
+                202,
+                131,
+                75,
+                253
+              ],
+              "orangeProtection": 255,
+              "authoredBaseMask": 0
+            },
+            {
+              "x": 39,
+              "y": 66,
+              "mask": 0,
+              "gain": 1,
+              "registered": [
+                103,
+                47,
+                13,
+                253
+              ],
+              "before": [
+                215,
+                116,
+                50,
+                253
+              ],
+              "after": [
+                215,
+                116,
+                50,
+                253
+              ],
+              "orangeProtection": 255,
+              "authoredBaseMask": 0
+            }
+          ],
+          "partialBlendProviderInk": [],
+          "brightResidue": [
+            {
+              "x": 39,
+              "y": 64,
+              "mask": 0,
+              "gain": 1,
+              "registered": [
+                46,
+                20,
+                4,
+                253
+              ],
+              "before": [
+                246,
+                222,
+                178,
+                253
+              ],
+              "after": [
+                246,
+                222,
+                178,
+                253
+              ]
+            }
+          ]
+        },
+        {
+          "eye": 1,
+          "box": [
+            62,
+            58,
+            78,
+            70
+          ],
+          "excludedProviderInk": [
+            {
+              "x": 73,
+              "y": 63,
+              "mask": 0,
+              "gain": 1,
+              "registered": [
+                65,
+                41,
+                25,
+                253
+              ],
+              "before": [
+                183,
+                146,
+                113,
+                253
+              ],
+              "after": [
+                183,
+                146,
+                113,
+                253
+              ],
+              "orangeProtection": 255,
+              "authoredBaseMask": 0
+            },
+            {
+              "x": 74,
+              "y": 64,
+              "mask": 0,
+              "gain": 1,
+              "registered": [
+                95,
+                53,
+                24,
+                253
+              ],
+              "before": [
+                211,
+                138,
+                82,
+                253
+              ],
+              "after": [
+                211,
+                138,
+                82,
+                253
+              ],
+              "orangeProtection": 255,
+              "authoredBaseMask": 0
+            },
+            {
+              "x": 70,
+              "y": 66,
+              "mask": 0,
+              "gain": 1,
+              "registered": [
+                57,
+                29,
+                9,
+                253
+              ],
+              "before": [
+                229,
+                204,
+                168,
+                253
+              ],
+              "after": [
+                229,
+                204,
+                168,
+                253
+              ],
+              "orangeProtection": 255,
+              "authoredBaseMask": 0
+            }
+          ],
+          "partialBlendProviderInk": [],
+          "brightResidue": [
+            {
+              "x": 70,
+              "y": 66,
+              "mask": 0,
+              "gain": 1,
+              "registered": [
+                57,
+                29,
+                9,
+                253
+              ],
+              "before": [
+                229,
+                204,
+                168,
+                253
+              ],
+              "after": [
+                229,
+                204,
+                168,
+                253
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "nativeCell": 10,
+      "source": "art-src/빅타민/동행/작업회차/20261019-표정체적교정119/정리본/빅타민_119_키10.png",
+      "alphaChanges": 0,
+      "eyes": [
+        {
+          "eye": 0,
+          "box": [
+            42,
+            52,
+            58,
+            63
+          ],
+          "excludedProviderInk": [
+            {
+              "x": 45,
+              "y": 58,
+              "mask": 0,
+              "gain": 1,
+              "registered": [
+                63,
+                30,
+                9,
+                253
+              ],
+              "before": [
+                216,
+                138,
+                63,
+                253
+              ],
+              "after": [
+                216,
+                138,
+                63,
+                253
+              ],
+              "orangeProtection": 255,
+              "authoredBaseMask": 0
+            },
+            {
+              "x": 46,
+              "y": 59,
+              "mask": 0,
+              "gain": 1,
+              "registered": [
+                61,
+                29,
+                7,
+                253
+              ],
+              "before": [
+                255,
+                175,
+                94,
+                253
+              ],
+              "after": [
+                255,
+                175,
+                94,
+                253
+              ],
+              "orangeProtection": 255,
+              "authoredBaseMask": 0
+            }
+          ],
+          "partialBlendProviderInk": [],
+          "brightResidue": [
+            {
+              "x": 46,
+              "y": 59,
+              "mask": 0,
+              "gain": 1,
+              "registered": [
+                61,
+                29,
+                7,
+                253
+              ],
+              "before": [
+                255,
+                175,
+                94,
+                253
+              ],
+              "after": [
+                255,
+                175,
+                94,
+                253
+              ]
+            }
+          ]
+        },
+        {
+          "eye": 1,
+          "box": [
+            67,
+            52,
+            84,
+            62
+          ],
+          "excludedProviderInk": [
+            {
+              "x": 78,
+              "y": 57,
+              "mask": 0,
+              "gain": 1,
+              "registered": [
+                48,
+                23,
+                7,
+                253
+              ],
+              "before": [
+                178,
+                153,
+                125,
+                252
+              ],
+              "after": [
+                178,
+                153,
+                125,
+                252
+              ],
+              "orangeProtection": 255,
+              "authoredBaseMask": 0
+            },
+            {
+              "x": 79,
+              "y": 57,
+              "mask": 0,
+              "gain": 1,
+              "registered": [
+                51,
+                23,
+                6,
+                253
+              ],
+              "before": [
+                235,
+                199,
+                155,
+                252
+              ],
+              "after": [
+                235,
+                199,
+                155,
+                252
+              ],
+              "orangeProtection": 255,
+              "authoredBaseMask": 0
+            },
+            {
+              "x": 78,
+              "y": 58,
+              "mask": 0,
+              "gain": 1,
+              "registered": [
+                67,
+                38,
+                18,
+                253
+              ],
+              "before": [
+                255,
+                199,
+                143,
+                252
+              ],
+              "after": [
+                255,
+                199,
+                143,
+                252
+              ],
+              "orangeProtection": 255,
+              "authoredBaseMask": 0
+            },
+            {
+              "x": 67,
+              "y": 60,
+              "mask": 0,
+              "gain": 0,
+              "registered": [
+                101,
+                69,
+                45,
+                253
+              ],
+              "before": [
+                219,
+                213,
+                198,
+                253
+              ],
+              "after": [
+                219,
+                213,
+                198,
+                253
+              ],
+              "orangeProtection": 0,
+              "authoredBaseMask": 255
+            },
+            {
+              "x": 67,
+              "y": 61,
+              "mask": 0,
+              "gain": 0,
+              "registered": [
+                83,
+                48,
+                22,
+                253
+              ],
+              "before": [
+                241,
+                235,
+                218,
+                253
+              ],
+              "after": [
+                241,
+                235,
+                218,
+                253
+              ],
+              "orangeProtection": 0,
+              "authoredBaseMask": 255
+            }
+          ],
+          "partialBlendProviderInk": [],
+          "brightResidue": [
+            {
+              "x": 79,
+              "y": 57,
+              "mask": 0,
+              "gain": 1,
+              "registered": [
+                51,
+                23,
+                6,
+                253
+              ],
+              "before": [
+                235,
+                199,
+                155,
+                252
+              ],
+              "after": [
+                235,
+                199,
+                155,
+                252
+              ]
+            },
+            {
+              "x": 78,
+              "y": 58,
+              "mask": 0,
+              "gain": 1,
+              "registered": [
+                67,
+                38,
+                18,
+                253
+              ],
+              "before": [
+                255,
+                199,
+                143,
+                252
+              ],
+              "after": [
+                255,
+                199,
+                143,
+                252
+              ]
+            },
+            {
+              "x": 67,
+              "y": 60,
+              "mask": 0,
+              "gain": 0,
+              "registered": [
+                101,
+                69,
+                45,
+                253
+              ],
+              "before": [
+                219,
+                213,
+                198,
+                253
+              ],
+              "after": [
+                219,
+                213,
+                198,
+                253
+              ]
+            },
+            {
+              "x": 67,
+              "y": 61,
+              "mask": 0,
+              "gain": 0,
+              "registered": [
+                83,
+                48,
+                22,
+                253
+              ],
+              "before": [
+                241,
+                235,
+                218,
+                253
+              ],
+              "after": [
+                241,
+                235,
+                218,
+                253
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "cozy": {
+    "nativeCell": 78,
+    "physical": 519,
+    "sourceBox": {
+      "left": 859,
+      "top": 1230,
+      "width": 119,
+      "height": 85
+    },
+    "rawAlpha1": 530,
+    "rawAlpha2to31": 866,
+    "rawAlpha32to127": 241,
+    "rawAlpha128to199": 163,
+    "currentVs115": {
+      "alphaDiff": 0,
+      "visibleRgbDiff": 0
+    },
+    "fringe": {
+      "alpha2to31": 1088,
+      "alpha32to127": 352,
+      "alpha128to199": 249,
+      "saturatedOuterPixels": []
+    },
+    "currentPackingInput": {
+      "path": ".scratch-pw/companion-120/technical/cozy-runtime-input-cleaned.png",
+      "pngSha256": "c1edc19c958adf87370bc2475dbca77abf66ad5fde753a8d773bfc2ede6e8aac",
+      "rgbaSha256": "41a4b4edbccb4b041b2ea8211a92e5f018c45a2c2946012e69786ccd20d72460",
+      "onlyAlpha1Cleared": 530,
+      "expected115RgbaSha256": "41a4b4edbccb4b041b2ea8211a92e5f018c45a2c2946012e69786ccd20d72460"
+    }
+  }
+}

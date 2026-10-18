@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "work_id": "vitamin-eye-contour-120",
+  "candidate": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\현재요청3칸_원크기.png",
+    "sha256": "8B596D8BA7592FB2E08E95DAB4D2DDC362A0CAE7F906AB3FE6D48D4EE8326086"
+  },
+  "layout": "3columns1row,144px cells,432x144 RGBA,raw row-copy; no resampling/over-composite",
+  "mapping": [
+    {
+      "order": 1,
+      "user_attachment": 4,
+      "key": "yawn",
+      "native_cell_zero_based": 10,
+      "physical_indices": [
+        266
+      ],
+      "actual_source": {
+        "path": "C:\\Projects\\VIC Schedule studio\\.scratch-pw\\companion-120\\technical\\yawn-current-source.png",
+        "sha256": "7661015EDB0D67F298C469B1509EE51FAF87090A961654F301E7C890ADB1ABB2"
+      },
+      "frozen_native": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\하품_현재119.png",
+        "sha256": "7661015EDB0D67F298C469B1509EE51FAF87090A961654F301E7C890ADB1ABB2"
+      },
+      "native_size": [
+        108,
+        100
+      ],
+      "sheet_box": [
+        18,
+        22,
+        126,
+        122
+      ],
+      "rgba_bytes_sha256": "6FD723E8A093E045FF3D58320DFBC7503D3565AFCA640E65CF7D47CB0B24EAE2",
+      "resampling": "none"
+    },
+    {
+      "order": 2,
+      "user_attachment": 5,
+      "key": "blink",
+      "native_cell_zero_based": 1,
+      "physical_indices": [
+        9,
+        10
+      ],
+      "actual_source": {
+        "path": "C:\\Projects\\VIC Schedule studio\\.scratch-pw\\companion-120\\technical\\blink-current-source.png",
+        "sha256": "0E678A9AC430994ED20C647065763C4943D19EA2463ADD3CBEFACB57A07BEECB"
+      },
+      "frozen_native": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\깜빡임_현재119.png",
+        "sha256": "0E678A9AC430994ED20C647065763C4943D19EA2463ADD3CBEFACB57A07BEECB"
+      },
+      "native_size": [
+        104,
+        106
+      ],
+      "sheet_box": [
+        164,
+        19,
+        268,
+        125
+      ],
+      "rgba_bytes_sha256": "7DC70B8AE7B110737A8C4FA4566726AAB40E94939A00EE5F681334EC933938B1",
+      "resampling": "none"
+    },
+    {
+      "order": 3,
+      "user_attachment": 6,
+      "key": "cozy",
+      "native_cell_zero_based": 78,
+      "physical_indices": [
+        519
+      ],
+      "actual_source": {
+        "path": "C:\\Projects\\VIC Schedule studio\\.scratch-pw\\companion-120\\technical\\cozy-runtime-input-cleaned.png",
+        "sha256": "C1EDC19C958ADF87370BC2475DBCA77ABF66AD5FDE753A8D773BFC2EDE6E8AAC"
+      },
+      "frozen_native": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\포근잠_현재115입력.png",
+        "sha256": "C1EDC19C958ADF87370BC2475DBCA77ABF66AD5FDE753A8D773BFC2EDE6E8AAC"
+      },
+      "native_size": [
+        119,
+        85
+      ],
+      "sheet_box": [
+        300,
+        29,
+        419,
+        114
+      ],
+      "rgba_bytes_sha256": "41A4B4EDBCCB4B041B2EA8211A92E5F018C45A2C2946012E69786CCD20D72460",
+      "resampling": "none"
+    }
+  ],
+  "cozy_original114_crop": {
+    "crop_box": [
+      859,
+      1230,
+      978,
+      1315
+    ],
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\포근잠_114원본추출.png",
+    "sha256": "37A25B0724A6300C334B831ABB91923D19F9F35DE8583C88279A1EC6F3A33E4E",
+    "existing115_derivation": "Only530 source alpha1 pixels set to0; unchanged RGB and all other alpha; actual119/current519 still uses this115input.",
+    "current519_and115_alpha_and_visibleRGB_equal": true
+  },
+  "UI_attachments_excluded_from_generation": [
+    1,
+    2,
+    3
+  ],
+  "all_untargeted_physical_frames_protected": "all except9,10,266,519; unused257 and160..175 remain excluded",
+  "imagegen_review_claim_registration_calls_by_preparer": 0
+}

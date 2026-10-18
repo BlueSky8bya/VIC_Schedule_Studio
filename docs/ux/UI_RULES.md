@@ -1,8 +1,10 @@
 # Current UI rules
 
-Updated: 2026-10-18. Read only sections affected by the task. Shared security, KST and authorization rules live in [AGENTS](../../AGENTS.md). This file preserves standing UI constraints formerly mixed with history in CLAUDE; historical explanations remain in git and dated reports.
+Updated: 2026-10-19. Read only sections affected by the task. Shared security, KST and authorization rules live in [AGENTS](../../AGENTS.md). This file preserves standing UI constraints formerly mixed with history in CLAUDE; historical explanations remain in git and dated reports.
 
 ## Shared companion follow-up (2026-10-16)
+
+도감·옷장 갤러리(2026-10-19 최신 소유자): [PLAN-120](../agent/plans/PLAN-20261019-120-companion-gallery-and-eye-contour.md)은112의 작은 반복 음식 배지와 좁은 옷장 미리보기를 대체한다. 선택 상세는 큰 음식 그림 또는 추억 도장 한 개와 읽기 쉬운 설명을 함께 보여 준다. 음식 목록의 중복 미니 도장은 제거하며 실제 첫맛 등록 연출·최근 선택·113의 미확인 !는 유지한다. 추억 목록도 도장을 더 크게 보여 주고, 옷장은 프로필과 같은 크기의 착용 무대 및 한 줄 소품 목록으로 구성한다. 실제 폭·높이에 따라 유한 페이지당 항목 수를 줄이며 선택 정체·키보드·44px 제어·한 화면 안 표시를 보존한다. 미발견 이름/설명은???와 공통 문구만, 미리보기는 소유한 소품·발견한 행동만 사용한다. 새 상시 루프·전체 원본 preload·분석 식별자를 추가하지 않는다. 시청자·편집실·미리보기와 수첩·설정에 같은 구현을 쓴다.
 
 새 발견 표시(2026-10-18 최신 소유자): [PLAN-113](../agent/plans/PLAN-20261018-113-companion-art-and-unread-collection.md)은 새 음식·행동·상황·받은 소품을 로컬 미확인 상태로 보존한다. 기존 저장자료의 과거 수집품은 읽음으로 이전하며, 새 항목의 !는 해당 타일을 직접 선택할 때만 해제한다. 수첩 열기·탭·페이지 이동·자동 최근 음식 선택은 일괄 읽음 처리가 아니다. 같은 공유 상태로 집의 책·프로필·분류·타일을 표시하고 새 항목의 이름/정체는 발견 전까지 감춘다. 별도 반복 애니메이션·타이머·분석 메타데이터를 추가하지 않으며 기존 inspect/select 행동 기록을 재사용한다. 정면 포즈/20종 소품 비교는 현행 런타임 원본의 읽기 전용 검토이며 새 아트 승인이나 교체가 아니다.
 

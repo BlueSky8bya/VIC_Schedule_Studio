@@ -110,7 +110,7 @@ async function sheet112(page: Page, name: string) {
   expect(geometry.gridOverflow).toBeLessThanOrEqual(2); expect(geometry.detailPosition).toBe("static");
   expect(geometry.ancestors.filter(item => item.overflow > 2)).toEqual([]);
   expect(geometry.tiles).toBeGreaterThan(0); expect(geometry.tiles).toBeLessThanOrEqual(24);
-  for (const stamp of await sheet.locator(".rhh-collection-stamp").all()) { const rect = (await stamp.boundingBox())!; expect(rect.width).toBe(20); expect(rect.height).toBe(20); }
+  await expect(sheet.locator(".rhh-collection-stamp")).toHaveCount(0);
   for (const button of geometry.buttons) { expect(button.rect.width, button.text ?? "button").toBeGreaterThanOrEqual(43.9); expect(button.rect.height, button.text ?? "button").toBeGreaterThanOrEqual(43.9); expect(button.rect.bottom).toBeLessThanOrEqual(geometry.height - 8); }
   const before = geometry.ancestors.map(item => item.scroll);
   await sheet.locator(".rhh-collection-grid").hover(); await page.mouse.wheel(0, 900);

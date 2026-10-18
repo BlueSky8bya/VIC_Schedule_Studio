@@ -1,0 +1,58 @@
+{
+  "thread_id": "01a13862-7fb6-7a73-839b-079df9dbbea2",
+  "actual_item_id": "msg_01a14fc5-7b7f-7202-9d35-0858db283882",
+  "received_at_utc": "2026-10-18T16:08:24.704Z",
+  "source_line": 11578,
+  "source_line_sha256": "DB3D44118C9D883E95EE7A031A84141B41FD4397436E57BAFEAB5CCBA8D4693E",
+  "attachments": [
+    {
+      "order": 1,
+      "source_path": "C:\\Users\\im917\\AppData\\Local\\Temp\\codex-clipboard-022cd870-b09d-46a7-b8d6-9944235f93c7.png",
+      "frozen_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\사용자첨부_01.png",
+      "sha256": "A4A8389F8DCC0C1A8E417DF32B9C235BF48279F07DA6A2E33161D2007360327A",
+      "embedded_actual_image_matches_source_bytes": true,
+      "purpose": "UI request evidence only; excluded from imagegen inputs"
+    },
+    {
+      "order": 2,
+      "source_path": "C:\\Users\\im917\\AppData\\Local\\Temp\\codex-clipboard-7e583fcc-87ca-4a7e-b5bf-0e9933421a6d.png",
+      "frozen_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\사용자첨부_02.png",
+      "sha256": "793C21B7CFDAD3A065334241A1E043C2BC3D04B2EBE93232088AC196D272EE77",
+      "embedded_actual_image_matches_source_bytes": true,
+      "purpose": "UI request evidence only; excluded from imagegen inputs"
+    },
+    {
+      "order": 3,
+      "source_path": "C:\\Users\\im917\\AppData\\Local\\Temp\\codex-clipboard-cfabadfe-73b1-426f-95d9-f668b2cef2e3.png",
+      "frozen_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\사용자첨부_03.png",
+      "sha256": "CB0AD70EA0E0E6B2C9E70E48D12BDB7610684B2302D07A45C4DA2F920C7AE930",
+      "embedded_actual_image_matches_source_bytes": true,
+      "purpose": "UI request evidence only; excluded from imagegen inputs"
+    },
+    {
+      "order": 4,
+      "source_path": "C:\\Users\\im917\\AppData\\Local\\Temp\\codex-clipboard-74f674d2-b387-4091-8f77-697281c72dae.png",
+      "frozen_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\사용자첨부_04.png",
+      "sha256": "52B78A71E21390EF8E4E0648569FB3CD62ABADE33F22ED5DC95E134281D17DF7",
+      "embedded_actual_image_matches_source_bytes": true,
+      "purpose": "Requested art issue localization; not substitute design authority"
+    },
+    {
+      "order": 5,
+      "source_path": "C:\\Users\\im917\\AppData\\Local\\Temp\\codex-clipboard-d2229601-1901-44ca-993b-30a1e3b2526c.png",
+      "frozen_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\사용자첨부_05.png",
+      "sha256": "108E3590145FC0C8D91E08ACD4EA94289FE16CD6E161CCA0CDA532421474DBCC",
+      "embedded_actual_image_matches_source_bytes": true,
+      "purpose": "Requested art issue localization; not substitute design authority"
+    },
+    {
+      "order": 6,
+      "source_path": "C:\\Users\\im917\\AppData\\Local\\Temp\\codex-clipboard-dbe586c3-a491-415c-af1b-da99d57280e4.png",
+      "frozen_path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\사용자첨부_06.png",
+      "sha256": "F83FD678310CCE61A3552387FD65AE214CF2A14695AE7307AAE4B468F4957C30",
+      "embedded_actual_image_matches_source_bytes": true,
+      "purpose": "Requested art issue localization; not substitute design authority"
+    }
+  ],
+  "source_user_files_unchanged": true
+}

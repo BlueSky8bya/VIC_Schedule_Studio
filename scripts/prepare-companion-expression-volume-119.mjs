@@ -58,7 +58,7 @@ function alphaBounds(bytes, width, height) {
   return { left, top, right, bottom, width: right - left, height: bottom - top };
 }
 
-function shapeFor(proof, rgba) {
+export function shapeFor(proof, rgba) {
   const { box, body: absolute } = proof;
   const body = { ...absolute, left: absolute.left - box.left, right: absolute.right - box.left, top: absolute.top - box.top, bottom: absolute.bottom - box.top };
   const featureBounds = { left: body.left + body.width * .2, right: body.right - body.width * .15, top: body.top + body.height * .35, bottom: body.bottom - body.height * .1 };
@@ -72,7 +72,7 @@ async function resizedFamilyBody(shape, fit) {
   return body;
 }
 
-async function bakePair(shape, beforeRaw, afterRaw, slot) {
+export async function bakePair(shape, beforeRaw, afterRaw, slot) {
   if (slot.rig) return {
     before: bakeEyeStyleKey({ ...shape, rgba: beforeRaw }, slot.rig, slot.fit.scale, slot.fit.offset).data,
     after: bakeEyeStyleKey({ ...shape, rgba: afterRaw }, slot.rig, slot.fit.scale, slot.fit.offset).data,
@@ -109,7 +109,8 @@ function extractCell(packet, index) {
 
 async function main() {
   const check = process.argv.includes('--check');
-  assert(process.argv.slice(2).every(arg => arg === '--check'), 'Usage: --check');
+  const artifactsOnly = process.argv.includes('--artifacts-only');
+  assert(process.argv.slice(2).every(arg => arg === '--check' || arg === '--artifacts-only') && (!artifactsOnly || check), 'Usage: --check [--artifacts-only]; --artifacts-only requires --check');
   const proof = await read(`${prior}/패킹파생기록.json`), proof118 = await read(`${prior118}/패킹파생기록.json`), composite = await read(`${run}/합성파생기록.json`);
   const nativeBytes = await fs.readFile(proof.native.path), generatedBytes = await fs.readFile(composite.nativeRaw);
   assert(hash(nativeBytes) === proof.native.sha256, 'Immutable114 native changed');
@@ -222,10 +223,17 @@ async function main() {
   for (let family = 0; family < metadata.length; family++) outputs.push([`lib/ui/viewer-companion/${names[family]}.json`, json(metadata[family])], [`${run}/정리본/${names[family]}.json`, json(metadata[family])]);
   outputs.push([`${run}/패킹파생기록.json`, json(receipt)]);
   // No mkdir, packet, metadata, snapshot or receipt write precedes this guard.
-  const active = await Promise.all(names.map(name => read(`lib/ui/viewer-companion/${name}.json`)));
-  assertCompanionMetadataSetOwnership(active, parentMetadata, metadata);
+  // Later scoped repairs own active metadata. Historical artifact checks still
+  // reproduce every119 packet, source, staged snapshot and receipt exactly.
+  if (!artifactsOnly) {
+    const active = await Promise.all(names.map(name => read(`lib/ui/viewer-companion/${name}.json`)));
+    assertCompanionMetadataSetOwnership(active, parentMetadata, metadata);
+  }
   if (check) {
-    for (const [filename, bytes] of outputs) assert((await fs.readFile(filename)).equals(bytes), `Derived output differs: ${filename}`);
+    for (const [filename, bytes] of outputs) {
+      if (artifactsOnly && filename.startsWith('lib/ui/viewer-companion/')) continue;
+      assert((await fs.readFile(filename)).equals(bytes), `Derived output differs: ${filename}`);
+    }
   } else {
     // Existing named delivery files are never replaced by a different result.
     for (const [filename, bytes] of outputs) {
@@ -234,7 +242,7 @@ async function main() {
     }
     for (const [filename, bytes] of outputs) { await fs.mkdir(path.dirname(filename), { recursive: true }); await fs.writeFile(filename, bytes); }
   }
-  console.log(JSON.stringify({ check, packets: outputPackets.length, physicalIndices: receipt.physicalIndices, registrationChanges, parentPacketsPreserved: immutablePackets.length, anchorsRegenerated: false }));
+  console.log(JSON.stringify({ check, ...(artifactsOnly ? { artifactsOnly: true } : {}), packets: outputPackets.length, physicalIndices: receipt.physicalIndices, registrationChanges, parentPacketsPreserved: immutablePackets.length, anchorsRegenerated: false }));
 }
 
 if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) await main();

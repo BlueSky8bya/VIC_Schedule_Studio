@@ -6,9 +6,9 @@
   "gridRows": 2,
   "atlases": [
     {
-      "src": "/companion/hd/vitamin-action-00-expression-119-v1.webp",
-      "sha256": "77a33184dc3e8fd70e8a4169585f61214d8bfbb652e107b5ab056c1eee18969b",
-      "bytes": 416936,
+      "src": "/companion/hd/vitamin-action-00-eye-contour-120-v1.webp",
+      "sha256": "0ae8841d45d0aed2f1838d7bf9effb193153d64e58dd570e1ad9eaa60392d460",
+      "bytes": 416708,
       "width": 1536,
       "height": 384
     },
@@ -118,9 +118,9 @@
       "height": 384
     },
     {
-      "src": "/companion/hd/vitamin-action-16-expression-119-v1.webp",
-      "sha256": "cd843900c6ffad194c336c0a5a07293230434c5d012d5f54c546bd7bb1fb6003",
-      "bytes": 410430,
+      "src": "/companion/hd/vitamin-action-16-eye-contour-120-v1.webp",
+      "sha256": "39c0f80b9b03d25d9be087f4f19fcd7c4f1088f4f4faa64da83c8a8797800747",
+      "bytes": 410432,
       "width": 1536,
       "height": 384
     },

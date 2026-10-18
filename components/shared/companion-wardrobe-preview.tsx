@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { RotateCcw } from "lucide-react";
 import type { CompanionAccessoryId } from "@/lib/ui/viewer-companion/gifts";
 import { createCompanionMotion, nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
 import { companionMaterialScale } from "@/lib/ui/viewer-companion/material-scale";
@@ -114,6 +115,6 @@ export function CompanionWardrobePreview({ accessory, behaviors, enabled, intera
       <span aria-hidden="true" className="vc-pose" ref={pose}><span className="vc-wearable vc-wearable-back" ref={back} /><span className="vc-sprite" ref={sprite}><canvas height={192} ref={canvas} width={192} /></span><span className="vc-wearable vc-wearable-front" ref={front} /><span className="vc-wearable vc-gift-prop" ref={gift} /></span>
     </div>
     {!enabled && interactive && <span className="rhh-wardrobe-preview-paused">쉬는 중</span>}
-    {interactive && <button className="rhh-link" data-act="companion-wardrobe-preview" data-sfx="off" disabled={!enabled || quiet || !chooseCompanionPreviewBehavior(behaviors, null, () => 0)} onClick={() => setReplay(value => value + 1)} type="button">다시 보기</button>}
+    {interactive && <button aria-label="다시 보기" className="rhh-link" data-act="companion-wardrobe-preview" data-sfx="off" disabled={!enabled || quiet || !chooseCompanionPreviewBehavior(behaviors, null, () => 0)} onClick={() => setReplay(value => value + 1)} title="다시 보기" type="button"><RotateCcw aria-hidden="true" size={17} /><span className="rhh-wardrobe-replay-label">다시 보기</span></button>}
   </div>;
 }

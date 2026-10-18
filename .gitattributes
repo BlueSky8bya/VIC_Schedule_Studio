@@ -13,6 +13,8 @@ art-src/빅타민/동행/작업회차/20261019-얼굴정렬교정118/**/*.json -
 art-src/빅타민/동행/작업회차/20261019-얼굴정렬교정118/사용자원문.txt -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
 art-src/빅타민/동행/작업회차/20261019-표정체적교정119/**/*.json -text whitespace=cr-at-eol
 art-src/빅타민/동행/작업회차/20261019-표정체적교정119/사용자원문.txt -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
+art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/**/*.json -text whitespace=cr-at-eol
+art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/사용자원문.txt -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
 art-src/빅타민/수집/작업회차/20261018-먹거리와추억/**/*.json -text whitespace=cr-at-eol
 art-src/빅타민/수집/작업회차/20261018-먹거리와추억/원본/*.svg -text whitespace=cr-at-eol
 art-src/빅타민/수집/작업회차/20261018-먹거리일치와삼각김밥/**/*.json -text whitespace=cr-at-eol

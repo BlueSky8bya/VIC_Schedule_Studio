@@ -1,0 +1,16 @@
+{
+  "status": "RECORDED_USER_FEEDBACK",
+  "event_id": "vitamin-eye-contour-120-current-request",
+  "feedback_memory": {
+    "status": "SYNCHRONIZED_USER_FEEDBACK",
+    "errors": [],
+    "archived_events": 393,
+    "normalized_rule_count": 202,
+    "active_rule_count": 41,
+    "conflict_count": 1,
+    "changed_files": 2,
+    "memory_path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_memory.json",
+    "projection_path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\recurring-feedback.md",
+    "limitations": "Explicit normalizer declarations; not semantic verification, historical full coverage, or automatic visual measurement."
+  }
+}

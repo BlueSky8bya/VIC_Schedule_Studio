@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "status": "PRE_REVIEW_SCOPE_PROPOSAL_NOT_FINAL_ADOPTION_MASK",
+  "candidate": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\현재요청3칸_원크기.png",
+    "sha256": "8B596D8BA7592FB2E08E95DAB4D2DDC362A0CAE7F906AB3FE6D48D4EE8326086"
+  },
+  "edit_mask": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\검수전_편집가능영역.png",
+    "sha256": "02B9DA0CD92CB0ADE92A4FD8711DDE1444E28C22E3397C9DBC2FC92FF10FD80C"
+  },
+  "protection_mask": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\검수전_보호영역.png",
+    "sha256": "AFC4EFDF4BFD0272B0EE5F47A4E0027A691029FC015656B23C442B913C92B16B"
+  },
+  "details": [
+    {
+      "key": "yawn",
+      "source_native": 10,
+      "draft_scope": [
+        [
+          35,
+          44,
+          62,
+          67
+        ],
+        [
+          61,
+          44,
+          90,
+          67
+        ]
+      ],
+      "edited_upper_bound_pixels": 1039,
+      "protected_pixels": 246,
+      "known_eye_contact_pixels_unlocked": [
+        [
+          45,
+          58
+        ],
+        [
+          46,
+          59
+        ],
+        [
+          78,
+          57
+        ],
+        [
+          79,
+          57
+        ],
+        [
+          78,
+          58
+        ]
+      ],
+      "mouth_preservation": "Exact119 original actual component+1px,17/80 pixels; not a guessed rectangle",
+      "not_semantic_pass": true
+    },
+    {
+      "key": "blink",
+      "source_native": 1,
+      "draft_scope": [
+        [
+          30,
+          50,
+          58,
+          74
+        ],
+        [
+          58,
+          50,
+          84,
+          74
+        ]
+      ],
+      "edited_upper_bound_pixels": 1147,
+      "protected_pixels": 162,
+      "known_eye_contact_pixels_unlocked": [
+        [
+          39,
+          64
+        ],
+        [
+          39,
+          65
+        ],
+        [
+          39,
+          66
+        ],
+        [
+          73,
+          63
+        ],
+        [
+          74,
+          64
+        ],
+        [
+          70,
+          66
+        ]
+      ],
+      "mouth_preservation": "Exact119 original actual component+1px,17/80 pixels; not a guessed rectangle",
+      "not_semantic_pass": true
+    },
+    {
+      "key": "cozy",
+      "source_native": 78,
+      "draft_scope": [
+        "4px band around alpha>16 silhouette",
+        "1px source-material seam band (RGB gradient>18)",
+        "existing low alpha2..31 cleanup scope; not automatic deletion prescription"
+      ],
+      "edited_upper_bound_pixels": 4606,
+      "protected_pixels": 3536,
+      "known_eye_contact_pixels_unlocked": [],
+      "mouth_preservation": "Wholeexisting face protected",
+      "not_semantic_pass": true
+    }
+  ],
+  "scope_semantics": [
+    "Eyes2 preserve existing119 closed-eye design; proposed path is reuse of existing119 provider registered stroke/contact after specialist confirmation, no new eye generation.",
+    "Cheek bulk protected separately from eye/paper contact; coarse orange bounding rectangle is not a protection authority. Existing mouth is protected, including yawn67,60..61; those are not blindly classified as missing-eye pixels.",
+    "Cozy contour/material cleanup only; existing face, ears pose and body volume/design remain unchanged. Alpha1 removal already belongs to115 and alpha2..31 is not automatically a visible error.",
+    "Root may refine final effective mask based on the two requested findings; this is preparation, not an independent visual assessment or approval."
+  ],
+  "generation_split": "One120 imagegen budget only if cozy requires new pixels; eye2 are119-source-bound derivations. UI1..3 excluded."
+}

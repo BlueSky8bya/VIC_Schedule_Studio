@@ -1,0 +1,1925 @@
+{
+  "version": 1,
+  "generationCalls": 1,
+  "generationCallsByThisScript": 0,
+  "independentArtReviewsByThisScript": 0,
+  "ownerApproval": false,
+  "parentNative": {
+    "path": "art-src/빅타민/동행/작업회차/20261018-포즈통일114/원본/빅타민_통일80키.png",
+    "sha256": "8cfa1fd98c63eff8b06dba9d0950391509e60d194c878b5881a16176be245ba4",
+    "width": 1122,
+    "height": 1402,
+    "originalPreserved": true
+  },
+  "generatedNative": {
+    "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/원본/포근잠_윤곽생성원본.png",
+    "sha256": "7802574d873ec7faec46bf01b867d9552876c7c6036b77e699b6840f54c25d7b"
+  },
+  "reused119EyeProposal": true,
+  "compositePath": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/합성파생기록.json",
+  "sources": [
+    {
+      "nativeCell": 10,
+      "parentPath": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/고정입력/하품_현재119.png",
+      "parentSha256": "7661015edb0d67f298c469b1509ee51faf87090a961654f301e7c890adb1abb2",
+      "correctedPath": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/빅타민_120_키10.png",
+      "correctedSha256": "9b5097a9616e31407abcac4e897d0f1112758941089070191a60c5d2c0d98429",
+      "maskPath": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/키10_실효편집영역.png",
+      "maskSha256": "d2937d339ec8229755a40e5de40f092908379e91d56f07adf311b22e617da2fa",
+      "width": 108,
+      "height": 100,
+      "physicalIndices": [
+        266
+      ],
+      "sourceChangedPixels": 5,
+      "sourceChangedChannels": 15,
+      "sourceAlphaChangedPixels": 0,
+      "alphaPreserved": true,
+      "protectedMouthPixels": 80,
+      "mouthProtection": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/고정입력/키10_기존실제입보호.png",
+        "sha256": "dd45c957b94a92b4cbd21fa453371ed6eb223befef4998821040436072804f5b"
+      },
+      "registration": {
+        "scale": 0.26306090649299474,
+        "angle": 0.028888780249185286,
+        "sourceCheeks": [
+          [
+            235.0968448729185,
+            304.1099912357581
+          ],
+          [
+            395.7891036906854,
+            291.280316344464
+          ]
+        ],
+        "targetCheeks": [
+          [
+            42.28313253012048,
+            62.596385542168676
+          ],
+          [
+            84.63483146067416,
+            60.443820224719104
+          ]
+        ],
+        "kind": "uniform_similarity_no_nonuniform_face_warp",
+        "reused119ExistingRegisteredPixels": true,
+        "new120ImagegenCalls": 0
+      },
+      "registeredSource": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/고정입력/119등록후_키10_마스크전.png",
+        "sha256": "15060d8568f0ca60d9121299280e7ab1c77c66b297b15dbbfd4da757f858c11c"
+      },
+      "adoptedEyeCoordinates": [
+        [
+          45,
+          58
+        ],
+        [
+          46,
+          59
+        ],
+        [
+          78,
+          57
+        ],
+        [
+          79,
+          57
+        ],
+        [
+          78,
+          58
+        ]
+      ],
+      "adoption": "Direct RGB copy at reviewer-confirmed contact pixels only; current alpha and every other RGBA sample preserved.",
+      "continuousExistingStrokeScope": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/키10_연결눈선범위.png",
+        "sha256": "7be5c4adf99273e9e75a19337f7bb94ebe745186891f07752149bc235d56ec2b",
+        "unchangedConnectorsAdopted": false
+      },
+      "outsideEffectiveMaskRgbaIdentical": true,
+      "original115CropRgbaSha256": "23dc695ac3deb2e76ed8fa1cd412403b57d829c2b88652c4f32213b902ec2ed3",
+      "original115CleanedRgbaSha256": "adbf6f75b243c713ed73258b1857b6ac3b6b4dc4a80fd25e4b01861af7885772"
+    },
+    {
+      "nativeCell": 1,
+      "parentPath": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/고정입력/깜빡임_현재119.png",
+      "parentSha256": "0e678a9ac430994ed20c647065763c4943d19ea2463add3cbefacb57a07beecb",
+      "correctedPath": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/빅타민_120_키1.png",
+      "correctedSha256": "03a4ffaa9a2ae6d7d8232b657dbfa7780f9394488d03bd9b166b5ee6cbe83429",
+      "maskPath": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/키1_실효편집영역.png",
+      "maskSha256": "07836bb88ce5174510a280b9e58dda7c9f3f07f8c50fb0f556e88d9b97c8dcf1",
+      "width": 104,
+      "height": 106,
+      "physicalIndices": [
+        9,
+        10
+      ],
+      "sourceChangedPixels": 6,
+      "sourceChangedChannels": 18,
+      "sourceAlphaChangedPixels": 0,
+      "alphaPreserved": true,
+      "protectedMouthPixels": 17,
+      "mouthProtection": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/고정입력/키1_기존실제입보호.png",
+        "sha256": "4b9c2b1d7e81b62f718db2a7c063a5b81785353b9e77af95ecddad5e8e820423"
+      },
+      "registration": {
+        "scale": 0.2701856975415165,
+        "angle": -0.009694068327443732,
+        "sourceCheeks": [
+          [
+            205.25094696969697,
+            321.43465909090907
+          ],
+          [
+            355.25178753830437,
+            317.3314606741573
+          ]
+        ],
+        "targetCheeks": [
+          [
+            36.53529411764706,
+            69.9
+          ],
+          [
+            77.05072463768116,
+            68.39855072463769
+          ]
+        ],
+        "kind": "uniform_similarity_no_nonuniform_face_warp",
+        "reused119ExistingRegisteredPixels": true,
+        "new120ImagegenCalls": 0
+      },
+      "registeredSource": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/고정입력/119등록후_키1_마스크전.png",
+        "sha256": "d6de4037cf8e1fff3ec58d5cae62173072ccaecc95740f9b025951701d1ef9b2"
+      },
+      "adoptedEyeCoordinates": [
+        [
+          39,
+          64
+        ],
+        [
+          39,
+          65
+        ],
+        [
+          39,
+          66
+        ],
+        [
+          73,
+          63
+        ],
+        [
+          74,
+          64
+        ],
+        [
+          70,
+          66
+        ]
+      ],
+      "adoption": "Direct RGB copy at reviewer-confirmed contact pixels only; current alpha and every other RGBA sample preserved.",
+      "continuousExistingStrokeScope": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/키1_연결눈선범위.png",
+        "sha256": "37073ca19bac4811af194c5b59aec72b6ca3043d126c96f7d3be8d29d6c62db2",
+        "unchangedConnectorsAdopted": false
+      },
+      "outsideEffectiveMaskRgbaIdentical": true,
+      "original115CropRgbaSha256": "d7cc4a8717e0b95128fc10f753efbee319dbc409f6812734bcfb2aa3d7317347",
+      "original115CleanedRgbaSha256": "8e7c96e2fba6661b5bf1429998f0796ea5aa44633d82a75e3029327dce0f8854"
+    },
+    {
+      "nativeCell": 78,
+      "parentPath": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/고정입력/포근잠_현재115입력.png",
+      "parentSha256": "c1edc19c958adf87370bc2475dbca77abf66ad5fde753a8d773bfc2ede6e8aac",
+      "correctedPath": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/빅타민_120_키78.png",
+      "correctedSha256": "78c5dcda60162aefdbe40fb329d5ff2ebdd73d9e822b974791c837a2fdc64e49",
+      "maskPath": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/키78_실효편집영역.png",
+      "maskSha256": "2513b980093f813127164bdaca6b02db72218623ce9a6a05c4132c945915c2df",
+      "width": 119,
+      "height": 85,
+      "physicalIndices": [
+        519
+      ],
+      "sourceChangedPixels": 2354,
+      "sourceChangedChannels": 8624,
+      "sourceAlphaChangedPixels": 1885,
+      "alphaPreserved": false,
+      "registration": {
+        "kind": "uniform_similarity_no_nonuniform_warp",
+        "scale": 1,
+        "angle": -0.008237631620653926,
+        "sourceCheeks": [
+          [
+            52.599617389551504,
+            54.415433946467495
+          ],
+          [
+            94.53210546445136,
+            51.08830439112584
+          ]
+        ],
+        "targetCheeks": [
+          [
+            46.66483516483517,
+            52.93956043956044
+          ],
+          [
+            88.56849315068493,
+            49.26712328767123
+          ]
+        ],
+        "prefilter": {
+          "kind": "scale-aware separable Lanczos3 in premultiplied RGBA; identical real-valued scale on both axes; no new paint",
+          "scale": 0.08956821323139041,
+          "sourceWidth": 1484,
+          "sourceHeight": 1060,
+          "filteredWidth": 133,
+          "filteredHeight": 95,
+          "originalSourceCheeks": [
+            [
+              587.2576385292595,
+              607.5306404281029
+            ],
+            [
+              1055.4202440126526,
+              570.3843199277
+            ]
+          ],
+          "originalOverallScale": 0.08956821323139041,
+          "noNonuniformWarp": true
+        }
+      },
+      "registeredSource": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/포근잠_등록후마스크전.png",
+        "sha256": "059925ef4d122fa67f650bf64950c689e86ebbd346028207f9e4b173ec423c51"
+      },
+      "rawSource": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/원본/포근잠_윤곽생성원본.png",
+        "sha256": "7802574d873ec7faec46bf01b867d9552876c7c6036b77e699b6840f54c25d7b"
+      },
+      "adoption": "Scale-aware premultiplied Lanczos3 reduction and uniform similarity of the same one120 provider; new pixels inside the same narrow specialist-bound mask only.",
+      "outsideEffectiveMaskRgbaIdentical": true,
+      "protectedPixelRegionsRgbaIdentical": {
+        "upperRowsYExclusive": 34,
+        "completeFaceBoxXyxyExclusive": [
+          37,
+          38,
+          96,
+          66
+        ],
+        "maskExterior": true
+      },
+      "semanticEarPreservationRequiresCreatorObservation": true,
+      "noGlobalAlphaThresholdOrColorReplacement": true,
+      "original115CropRgbaSha256": "8b80b9c134fe31b305869a0fe4d6ca395d442850243001657bd488eae2a1e637",
+      "original115CleanedRgbaSha256": "41a4b4edbccb4b041b2ea8211a92e5f018c45a2c2946012e69786ccd20d72460"
+    }
+  ],
+  "packets": [
+    {
+      "atlas": 0,
+      "family": "hd-motion-sprite",
+      "localAtlas": 0,
+      "parentPacket": {
+        "src": "/companion/hd/vitamin-action-00-expression-119-v1.webp",
+        "sha256": "77a33184dc3e8fd70e8a4169585f61214d8bfbb652e107b5ab056c1eee18969b",
+        "bytes": 416936,
+        "width": 1536,
+        "height": 384
+      },
+      "packet": {
+        "src": "/companion/hd/vitamin-action-00-eye-contour-120-v1.webp",
+        "sha256": "0ae8841d45d0aed2f1838d7bf9effb193153d64e58dd570e1ad9eaa60392d460",
+        "bytes": 416708,
+        "width": 1536,
+        "height": 384
+      },
+      "physicalIndices": [
+        9,
+        10
+      ],
+      "visibleChangedPixels": 61,
+      "alphaChangedPixels": 0,
+      "invisibleRgbChannelsNormalized": 0
+    },
+    {
+      "atlas": 16,
+      "family": "hd-motion-sprite",
+      "localAtlas": 16,
+      "parentPacket": {
+        "src": "/companion/hd/vitamin-action-16-expression-119-v1.webp",
+        "sha256": "cd843900c6ffad194c336c0a5a07293230434c5d012d5f54c546bd7bb1fb6003",
+        "bytes": 410430,
+        "width": 1536,
+        "height": 384
+      },
+      "packet": {
+        "src": "/companion/hd/vitamin-action-16-eye-contour-120-v1.webp",
+        "sha256": "39c0f80b9b03d25d9be087f4f19fcd7c4f1088f4f4faa64da83c8a8797800747",
+        "bytes": 410432,
+        "width": 1536,
+        "height": 384
+      },
+      "physicalIndices": [
+        266
+      ],
+      "visibleChangedPixels": 23,
+      "alphaChangedPixels": 0,
+      "invisibleRgbChannelsNormalized": 0
+    },
+    {
+      "atlas": 32,
+      "family": "living-motion-sprite",
+      "localAtlas": 0,
+      "parentPacket": {
+        "src": "/companion/hd/vitamin-episodes-00-expression-119-v1.webp",
+        "sha256": "9874a6c3fbe8b5f2d27de0975e2d9719116eeecbbce0dee3c5a0634e9758321e",
+        "bytes": 223938,
+        "width": 1536,
+        "height": 384
+      },
+      "packet": {
+        "src": "/companion/hd/vitamin-episodes-00-eye-contour-120-v1.webp",
+        "sha256": "5ea159d3bca15819d3ef5f119397f9da3ffdb2ba715b9fb4e54d6da43eee2e58",
+        "bytes": 222634,
+        "width": 1536,
+        "height": 384
+      },
+      "physicalIndices": [
+        519
+      ],
+      "visibleChangedPixels": 3734,
+      "alphaChangedPixels": 2821,
+      "invisibleRgbChannelsNormalized": 2796
+    }
+  ],
+  "frames": [
+    {
+      "physicalIndex": 9,
+      "nativeCell": 1,
+      "atlas": 0,
+      "cell": 9,
+      "parentFrame": {
+        "atlas": 0,
+        "index": 9,
+        "x": 0.208333,
+        "y": 6.666667,
+        "clip": [
+          14.666667,
+          9.666667,
+          3.416667,
+          9.25
+        ]
+      },
+      "frame": {
+        "atlas": 0,
+        "index": 9,
+        "x": 0.208333,
+        "y": 6.666667,
+        "clip": [
+          14.666667,
+          9.666667,
+          3.416667,
+          9.25
+        ]
+      },
+      "registrationChanged": false,
+      "bakeChangedPixels": 29,
+      "changedBounds": {
+        "left": 78,
+        "top": 122,
+        "right": 127,
+        "bottom": 129
+      },
+      "deltaRows": [
+        [
+          122,
+          123,
+          125
+        ],
+        [
+          123,
+          123,
+          125
+        ],
+        [
+          124,
+          78,
+          80
+        ],
+        [
+          124,
+          123,
+          127
+        ],
+        [
+          125,
+          78,
+          80
+        ],
+        [
+          125,
+          124,
+          127
+        ],
+        [
+          126,
+          78,
+          80
+        ],
+        [
+          126,
+          119,
+          121
+        ],
+        [
+          127,
+          78,
+          80
+        ],
+        [
+          127,
+          119,
+          122
+        ],
+        [
+          128,
+          78,
+          80
+        ],
+        [
+          128,
+          119,
+          122
+        ]
+      ],
+      "frozenFit": {
+        "requestedScale": 1.3265306122448979,
+        "scale": 1.3265306122448979,
+        "safetyCapped": false,
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
+        "protectedBounds": {
+          "left": 23.141969447527398,
+          "top": 37.097279740586714,
+          "right": 166.80697516856742,
+          "bottom": 182.24178499513633
+        }
+      }
+    },
+    {
+      "physicalIndex": 10,
+      "nativeCell": 1,
+      "atlas": 0,
+      "cell": 10,
+      "parentFrame": {
+        "atlas": 0,
+        "index": 10,
+        "x": 0.208333,
+        "y": 6.666667,
+        "clip": [
+          14.666667,
+          9.666667,
+          3,
+          9.25
+        ]
+      },
+      "frame": {
+        "atlas": 0,
+        "index": 10,
+        "x": 0.208333,
+        "y": 6.666667,
+        "clip": [
+          14.666667,
+          9.666667,
+          3,
+          9.25
+        ]
+      },
+      "registrationChanged": false,
+      "bakeChangedPixels": 32,
+      "changedBounds": {
+        "left": 77,
+        "top": 122,
+        "right": 127,
+        "bottom": 129
+      },
+      "deltaRows": [
+        [
+          122,
+          123,
+          125
+        ],
+        [
+          123,
+          123,
+          126
+        ],
+        [
+          124,
+          77,
+          80
+        ],
+        [
+          124,
+          123,
+          126
+        ],
+        [
+          125,
+          77,
+          80
+        ],
+        [
+          125,
+          124,
+          127
+        ],
+        [
+          126,
+          77,
+          80
+        ],
+        [
+          126,
+          119,
+          121
+        ],
+        [
+          127,
+          77,
+          80
+        ],
+        [
+          127,
+          119,
+          121
+        ],
+        [
+          128,
+          77,
+          80
+        ],
+        [
+          128,
+          119,
+          121
+        ]
+      ],
+      "frozenFit": {
+        "requestedScale": 1.3265306122448979,
+        "scale": 1.3265306122448979,
+        "safetyCapped": false,
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
+        "protectedBounds": {
+          "left": 22.790483988019993,
+          "top": 36.81201819157809,
+          "right": 166.66024716001328,
+          "bottom": 182.48477086701408
+        }
+      }
+    },
+    {
+      "physicalIndex": 266,
+      "nativeCell": 10,
+      "atlas": 16,
+      "cell": 10,
+      "parentFrame": {
+        "atlas": 16,
+        "index": 10,
+        "x": -0.208333,
+        "y": 6.666667,
+        "clip": [
+          18.833333,
+          8.833333,
+          3.416667,
+          8.833333
+        ]
+      },
+      "frame": {
+        "atlas": 16,
+        "index": 10,
+        "x": -0.208333,
+        "y": 6.666667,
+        "clip": [
+          18.833333,
+          8.833333,
+          3.416667,
+          8.833333
+        ]
+      },
+      "registrationChanged": false,
+      "bakeChangedPixels": 23,
+      "changedBounds": {
+        "left": 84,
+        "top": 123,
+        "right": 131,
+        "bottom": 128
+      },
+      "deltaRows": [
+        [
+          123,
+          127,
+          131
+        ],
+        [
+          124,
+          127,
+          131
+        ],
+        [
+          125,
+          84,
+          86
+        ],
+        [
+          125,
+          127,
+          131
+        ],
+        [
+          126,
+          84,
+          88
+        ],
+        [
+          126,
+          127,
+          129
+        ],
+        [
+          127,
+          85,
+          88
+        ]
+      ],
+      "frozenFit": {
+        "requestedScale": 1.3265306122448979,
+        "scale": 1.3055555555510345,
+        "safetyCapped": true,
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
+        "protectedBounds": {
+          "left": 23.500000000244142,
+          "top": 47.44444444489653,
+          "right": 168.49999999975586,
+          "bottom": 182
+        }
+      }
+    },
+    {
+      "physicalIndex": 519,
+      "nativeCell": 78,
+      "atlas": 32,
+      "cell": 7,
+      "parentFrame": {
+        "atlas": 0,
+        "index": 7,
+        "x": -0.208333,
+        "y": 5,
+        "clip": [
+          32.583333,
+          8.833333,
+          1.75,
+          8.833333
+        ]
+      },
+      "frame": {
+        "atlas": 0,
+        "index": 7,
+        "x": -0.208333,
+        "y": 5,
+        "clip": [
+          32.583333,
+          8.833333,
+          1.75,
+          8.833333
+        ]
+      },
+      "registrationChanged": false,
+      "bakeChangedPixels": 3742,
+      "changedBounds": {
+        "left": 34,
+        "top": 122,
+        "right": 165,
+        "bottom": 183
+      },
+      "deltaRows": [
+        [
+          122,
+          39,
+          49
+        ],
+        [
+          122,
+          50,
+          51
+        ],
+        [
+          123,
+          34,
+          35
+        ],
+        [
+          123,
+          36,
+          50
+        ],
+        [
+          124,
+          34,
+          35
+        ],
+        [
+          124,
+          36,
+          51
+        ],
+        [
+          125,
+          34,
+          35
+        ],
+        [
+          125,
+          36,
+          53
+        ],
+        [
+          125,
+          54,
+          55
+        ],
+        [
+          126,
+          34,
+          35
+        ],
+        [
+          126,
+          36,
+          53
+        ],
+        [
+          126,
+          54,
+          55
+        ],
+        [
+          127,
+          34,
+          35
+        ],
+        [
+          127,
+          36,
+          56
+        ],
+        [
+          128,
+          36,
+          56
+        ],
+        [
+          129,
+          34,
+          35
+        ],
+        [
+          129,
+          36,
+          56
+        ],
+        [
+          130,
+          34,
+          35
+        ],
+        [
+          130,
+          36,
+          56
+        ],
+        [
+          131,
+          34,
+          35
+        ],
+        [
+          131,
+          36,
+          56
+        ],
+        [
+          132,
+          34,
+          35
+        ],
+        [
+          132,
+          36,
+          55
+        ],
+        [
+          132,
+          58,
+          59
+        ],
+        [
+          132,
+          60,
+          61
+        ],
+        [
+          133,
+          34,
+          35
+        ],
+        [
+          133,
+          36,
+          56
+        ],
+        [
+          134,
+          34,
+          35
+        ],
+        [
+          134,
+          36,
+          38
+        ],
+        [
+          134,
+          39,
+          63
+        ],
+        [
+          135,
+          34,
+          64
+        ],
+        [
+          135,
+          143,
+          147
+        ],
+        [
+          135,
+          148,
+          160
+        ],
+        [
+          135,
+          161,
+          163
+        ],
+        [
+          136,
+          34,
+          54
+        ],
+        [
+          136,
+          56,
+          64
+        ],
+        [
+          136,
+          138,
+          163
+        ],
+        [
+          137,
+          34,
+          54
+        ],
+        [
+          137,
+          55,
+          63
+        ],
+        [
+          137,
+          138,
+          163
+        ],
+        [
+          138,
+          34,
+          52
+        ],
+        [
+          138,
+          53,
+          65
+        ],
+        [
+          138,
+          138,
+          163
+        ],
+        [
+          138,
+          164,
+          165
+        ],
+        [
+          139,
+          34,
+          65
+        ],
+        [
+          139,
+          139,
+          163
+        ],
+        [
+          140,
+          34,
+          56
+        ],
+        [
+          140,
+          57,
+          63
+        ],
+        [
+          140,
+          64,
+          65
+        ],
+        [
+          140,
+          140,
+          163
+        ],
+        [
+          141,
+          34,
+          56
+        ],
+        [
+          141,
+          57,
+          63
+        ],
+        [
+          141,
+          64,
+          65
+        ],
+        [
+          141,
+          138,
+          163
+        ],
+        [
+          142,
+          34,
+          56
+        ],
+        [
+          142,
+          58,
+          64
+        ],
+        [
+          142,
+          138,
+          141
+        ],
+        [
+          142,
+          142,
+          163
+        ],
+        [
+          142,
+          164,
+          165
+        ],
+        [
+          143,
+          34,
+          56
+        ],
+        [
+          143,
+          58,
+          64
+        ],
+        [
+          143,
+          139,
+          141
+        ],
+        [
+          143,
+          142,
+          163
+        ],
+        [
+          143,
+          164,
+          165
+        ],
+        [
+          144,
+          34,
+          56
+        ],
+        [
+          144,
+          58,
+          65
+        ],
+        [
+          144,
+          139,
+          141
+        ],
+        [
+          144,
+          142,
+          163
+        ],
+        [
+          144,
+          164,
+          165
+        ],
+        [
+          145,
+          34,
+          56
+        ],
+        [
+          145,
+          58,
+          59
+        ],
+        [
+          145,
+          61,
+          63
+        ],
+        [
+          145,
+          142,
+          163
+        ],
+        [
+          145,
+          164,
+          165
+        ],
+        [
+          146,
+          34,
+          55
+        ],
+        [
+          146,
+          144,
+          163
+        ],
+        [
+          146,
+          164,
+          165
+        ],
+        [
+          147,
+          34,
+          62
+        ],
+        [
+          147,
+          144,
+          165
+        ],
+        [
+          148,
+          34,
+          55
+        ],
+        [
+          148,
+          56,
+          62
+        ],
+        [
+          148,
+          143,
+          165
+        ],
+        [
+          149,
+          34,
+          49
+        ],
+        [
+          149,
+          50,
+          55
+        ],
+        [
+          149,
+          56,
+          62
+        ],
+        [
+          149,
+          140,
+          165
+        ],
+        [
+          150,
+          34,
+          49
+        ],
+        [
+          150,
+          50,
+          62
+        ],
+        [
+          150,
+          139,
+          140
+        ],
+        [
+          150,
+          141,
+          165
+        ],
+        [
+          151,
+          34,
+          62
+        ],
+        [
+          151,
+          139,
+          165
+        ],
+        [
+          152,
+          35,
+          61
+        ],
+        [
+          152,
+          138,
+          165
+        ],
+        [
+          153,
+          34,
+          62
+        ],
+        [
+          153,
+          138,
+          150
+        ],
+        [
+          153,
+          151,
+          165
+        ],
+        [
+          154,
+          34,
+          61
+        ],
+        [
+          154,
+          138,
+          165
+        ],
+        [
+          155,
+          35,
+          61
+        ],
+        [
+          155,
+          138,
+          165
+        ],
+        [
+          156,
+          34,
+          61
+        ],
+        [
+          156,
+          138,
+          165
+        ],
+        [
+          157,
+          34,
+          59
+        ],
+        [
+          157,
+          60,
+          62
+        ],
+        [
+          157,
+          138,
+          165
+        ],
+        [
+          158,
+          34,
+          63
+        ],
+        [
+          158,
+          138,
+          165
+        ],
+        [
+          159,
+          34,
+          63
+        ],
+        [
+          159,
+          138,
+          165
+        ],
+        [
+          160,
+          34,
+          53
+        ],
+        [
+          160,
+          54,
+          63
+        ],
+        [
+          160,
+          141,
+          164
+        ],
+        [
+          161,
+          34,
+          53
+        ],
+        [
+          161,
+          54,
+          68
+        ],
+        [
+          161,
+          69,
+          80
+        ],
+        [
+          161,
+          81,
+          82
+        ],
+        [
+          161,
+          98,
+          99
+        ],
+        [
+          161,
+          101,
+          106
+        ],
+        [
+          161,
+          125,
+          132
+        ],
+        [
+          161,
+          138,
+          163
+        ],
+        [
+          162,
+          34,
+          83
+        ],
+        [
+          162,
+          98,
+          108
+        ],
+        [
+          162,
+          124,
+          133
+        ],
+        [
+          162,
+          135,
+          163
+        ],
+        [
+          163,
+          34,
+          83
+        ],
+        [
+          163,
+          98,
+          108
+        ],
+        [
+          163,
+          121,
+          122
+        ],
+        [
+          163,
+          124,
+          163
+        ],
+        [
+          164,
+          34,
+          85
+        ],
+        [
+          164,
+          86,
+          87
+        ],
+        [
+          164,
+          92,
+          93
+        ],
+        [
+          164,
+          95,
+          96
+        ],
+        [
+          164,
+          97,
+          108
+        ],
+        [
+          164,
+          120,
+          163
+        ],
+        [
+          165,
+          34,
+          96
+        ],
+        [
+          165,
+          97,
+          108
+        ],
+        [
+          165,
+          115,
+          116
+        ],
+        [
+          165,
+          118,
+          163
+        ],
+        [
+          166,
+          34,
+          107
+        ],
+        [
+          166,
+          117,
+          163
+        ],
+        [
+          166,
+          164,
+          165
+        ],
+        [
+          167,
+          34,
+          108
+        ],
+        [
+          167,
+          114,
+          133
+        ],
+        [
+          167,
+          135,
+          163
+        ],
+        [
+          168,
+          36,
+          108
+        ],
+        [
+          168,
+          109,
+          163
+        ],
+        [
+          169,
+          35,
+          163
+        ],
+        [
+          170,
+          51,
+          151
+        ],
+        [
+          170,
+          154,
+          155
+        ],
+        [
+          171,
+          51,
+          149
+        ],
+        [
+          172,
+          51,
+          149
+        ],
+        [
+          173,
+          51,
+          148
+        ],
+        [
+          174,
+          51,
+          146
+        ],
+        [
+          175,
+          52,
+          144
+        ],
+        [
+          176,
+          52,
+          142
+        ],
+        [
+          177,
+          51,
+          138
+        ],
+        [
+          177,
+          140,
+          141
+        ],
+        [
+          177,
+          142,
+          143
+        ],
+        [
+          178,
+          52,
+          53
+        ],
+        [
+          178,
+          54,
+          135
+        ],
+        [
+          178,
+          136,
+          140
+        ],
+        [
+          179,
+          54,
+          56
+        ],
+        [
+          179,
+          57,
+          113
+        ],
+        [
+          179,
+          114,
+          131
+        ],
+        [
+          179,
+          132,
+          133
+        ],
+        [
+          179,
+          134,
+          136
+        ],
+        [
+          180,
+          57,
+          59
+        ],
+        [
+          180,
+          62,
+          117
+        ],
+        [
+          180,
+          118,
+          133
+        ],
+        [
+          181,
+          62,
+          63
+        ],
+        [
+          181,
+          64,
+          131
+        ],
+        [
+          182,
+          62,
+          129
+        ]
+      ],
+      "frozenFit": {
+        "requestedScale": 1.3265306122448979,
+        "scale": 1.1848739495682674,
+        "safetyCapped": true,
+        "offset": {
+          "x": 0,
+          "y": 0
+        },
+        "protectedBounds": {
+          "left": 23.50000000068809,
+          "top": 80.84033613540207,
+          "right": 168.4999999993119,
+          "bottom": 185.5546218487048
+        }
+      },
+      "fixedTemplatePlacement": {
+        "left": 26,
+        "top": 83,
+        "afterOffsetCompensation": {
+          "x": 0.5,
+          "y": 2
+        }
+      }
+    }
+  ],
+  "physicalIndices": [
+    9,
+    10,
+    266,
+    519
+  ],
+  "unchangedOther516VisibleCells": true,
+  "allUnaffectedVisibleRgbAndAlphaPreserved": true,
+  "transparentRgbNormalization": "Only alpha0 RGB may normalize under lossless encoding; counted per packet.",
+  "registrationChanges": [],
+  "sameOriginalFitAndTemplatePlacement": true,
+  "immutableParentPackets": [
+    {
+      "atlas": 0,
+      "src": "/companion/hd/vitamin-action-00-expression-119-v1.webp",
+      "sha256": "77a33184dc3e8fd70e8a4169585f61214d8bfbb652e107b5ab056c1eee18969b",
+      "bytes": 416936,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 1,
+      "src": "/companion/hd/vitamin-action-01-motion-115-v1.webp",
+      "sha256": "a4fb475886e13f597883851aaa2990868848ccf74371c4d3c90c05f64abb1a19",
+      "bytes": 178160,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 2,
+      "src": "/companion/hd/vitamin-action-02-motion-115-v1.webp",
+      "sha256": "2d42987867f83ae696b06935471825addbd54fb06615302f44538a1ce6f97370",
+      "bytes": 188292,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 3,
+      "src": "/companion/hd/vitamin-action-03-motion-115-v1.webp",
+      "sha256": "8309dc44823ca1b19743e6862b8e8b374af25e4d53198f57690dbbe8a92f2597",
+      "bytes": 169674,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 4,
+      "src": "/companion/hd/vitamin-action-04-tuft-117-v1.webp",
+      "sha256": "f76289f26fa772382ab1b1d638c71a9aaa6cf26eaa9a11ad681039aaad7ccc8d",
+      "bytes": 426660,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 5,
+      "src": "/companion/hd/vitamin-action-05-motion-115-v1.webp",
+      "sha256": "231447687ccdf4f016a52b5e73667d19764fde2429f8f2ff385b82bbfb012d12",
+      "bytes": 183914,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 6,
+      "src": "/companion/hd/vitamin-action-06-motion-115-v1.webp",
+      "sha256": "9e5fb14d82995bbf03398f3baea1e55fb537c4c163ac7690075d3e4793e8810f",
+      "bytes": 160014,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 7,
+      "src": "/companion/hd/vitamin-action-07-motion-115-v1.webp",
+      "sha256": "d4b7571deb7dfddcc8949a9f21eb0c179997b1689f4210881dbef10686955fca",
+      "bytes": 181454,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 8,
+      "src": "/companion/hd/vitamin-action-08-motion-115-v1.webp",
+      "sha256": "3a63b44c1ed3e1ee3fd4da2ca19d27cadbbde352da4f3025c25bb6aacf4c56f2",
+      "bytes": 188834,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 9,
+      "src": "/companion/hd/vitamin-action-09-motion-115-v1.webp",
+      "sha256": "1d6e0208c5c37b2d3081a0b9635968b5130b1cf5a6292b726e24f8122ab93444",
+      "bytes": 177716,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 10,
+      "src": "/companion/hd/vitamin-action-10-motion-115-v1.webp",
+      "sha256": "f34c90faf915f3bd1ad918ee5578947a635070af0a49ed3cd7ed0478e97c63bc",
+      "bytes": 173586,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 11,
+      "src": "/companion/hd/vitamin-action-11-motion-115-v1.webp",
+      "sha256": "423d11cd938bb22c1bd57c7b57aaf00b2578b8709e49a3b00297c5ec8ff84189",
+      "bytes": 162480,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 12,
+      "src": "/companion/hd/vitamin-action-12-motion-115-v1.webp",
+      "sha256": "89342020b0f59b1942e1300193158d828fdbfcc43ec7123e602911fd13a2f79b",
+      "bytes": 184054,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 13,
+      "src": "/companion/hd/vitamin-action-13-motion-115-v1.webp",
+      "sha256": "d07c8f4d6e1c22f7a434687921b506cf33f61d08a29f8b033bd1dd0ad5ad55ba",
+      "bytes": 188094,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 14,
+      "src": "/companion/hd/vitamin-action-14-motion-115-v1.webp",
+      "sha256": "69efbfb85a0e7fb157d059ef23848f8bd1c96171f75597c033ecc9dafb1f18ed",
+      "bytes": 150920,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 15,
+      "src": "/companion/hd/vitamin-action-15-motion-115-v1.webp",
+      "sha256": "9ef892aab49024b09c32416ac0ad48236802d0c9cba111577b0225622d186a40",
+      "bytes": 182094,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 16,
+      "src": "/companion/hd/vitamin-action-16-expression-119-v1.webp",
+      "sha256": "cd843900c6ffad194c336c0a5a07293230434c5d012d5f54c546bd7bb1fb6003",
+      "bytes": 410430,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 17,
+      "src": "/companion/hd/vitamin-action-17-motion-115-v1.webp",
+      "sha256": "a8f367189abdd6427cd229139d00a81200666eac57ef1c01fcb150b6ef5b0a6b",
+      "bytes": 174982,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 18,
+      "src": "/companion/hd/vitamin-action-18-motion-115-v1.webp",
+      "sha256": "ee4d9f844b183fbe43040d35c69eef90d327cc9469b74a628ed5aaff7e4e353d",
+      "bytes": 138246,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 19,
+      "src": "/companion/hd/vitamin-play-00-motion-115-v1.webp",
+      "sha256": "977e0a047d92c6a3ba3426058805d000f6ee6c1d1ab86bfca28f50a32f42fa6e",
+      "bytes": 165222,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 20,
+      "src": "/companion/hd/vitamin-play-01-motion-115-v1.webp",
+      "sha256": "098e64532c469fcb54ffbaff48bb9bc55fcd1cd6de899d3fffe82e863323858d",
+      "bytes": 156312,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 21,
+      "src": "/companion/hd/vitamin-play-02-motion-115-v1.webp",
+      "sha256": "0de81d9b157d46ef8a5b402a4e3807141b5c1024379d47b35590588f709cfa80",
+      "bytes": 144466,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 22,
+      "src": "/companion/hd/vitamin-play-03-expression-119-v1.webp",
+      "sha256": "da09c0c607da35f5f7802568040fc654a868d06356013258074d3b9a01766450",
+      "bytes": 172514,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 23,
+      "src": "/companion/hd/vitamin-play-04-motion-115-v1.webp",
+      "sha256": "b2e701cd2e403c402f61126404a6435cdde40e3810584262693605765cac6cda",
+      "bytes": 128930,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 24,
+      "src": "/companion/hd/vitamin-play-05-motion-115-v1.webp",
+      "sha256": "e92d09cae67082d1839b88d5edbd8985f9935121b440dc2cdba5082388ca4621",
+      "bytes": 146216,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 25,
+      "src": "/companion/hd/vitamin-play-06-motion-115-v1.webp",
+      "sha256": "a5fc6045daee6d0629c2152b509ffd4862a2fbdd6f83437f0710ab5eef2f24d9",
+      "bytes": 137384,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 26,
+      "src": "/companion/hd/vitamin-play-07-motion-115-v1.webp",
+      "sha256": "a9c6fde71d01a7950e2526e98402152c830cc376d41b0fc112af09bf31605d6c",
+      "bytes": 141228,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 27,
+      "src": "/companion/hd/vitamin-play-08-motion-115-v1.webp",
+      "sha256": "bf6a95fe60d6ae7e107b8314c2ce372721f18780fdc5815a725cedd032bba5fe",
+      "bytes": 120040,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 28,
+      "src": "/companion/hd/vitamin-play-09-motion-115-v1.webp",
+      "sha256": "4cd30d750518e755eab9fec005aec6c03ff7a2dbfb2d4733539ae212eef5446e",
+      "bytes": 151170,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 29,
+      "src": "/companion/hd/vitamin-play-10-motion-115-v1.webp",
+      "sha256": "470a91d49a60b7cf5b0b14a55d168bc67664fe425185ad15e02b168aab9120d6",
+      "bytes": 153752,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 30,
+      "src": "/companion/hd/vitamin-play-11-motion-115-v1.webp",
+      "sha256": "ea49bcfdba18d05d963c18cf8303631ce3874f68b8ff31101307041d8be7d5a5",
+      "bytes": 149896,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 31,
+      "src": "/companion/hd/vitamin-play-12-expression-119-v1.webp",
+      "sha256": "67d24e1a51c3f3b0b65a33be063aea3a333ca0e1b45b8c9d3a24c7e70866fec4",
+      "bytes": 162878,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 32,
+      "src": "/companion/hd/vitamin-episodes-00-expression-119-v1.webp",
+      "sha256": "9874a6c3fbe8b5f2d27de0975e2d9719116eeecbbce0dee3c5a0634e9758321e",
+      "bytes": 223938,
+      "width": 1536,
+      "height": 384
+    }
+  ],
+  "prior117PacketPreserved": {
+    "atlas": 4,
+    "src": "/companion/hd/vitamin-action-04-tuft-117-v1.webp",
+    "sha256": "f76289f26fa772382ab1b1d638c71a9aaa6cf26eaa9a11ad681039aaad7ccc8d",
+    "bytes": 426660,
+    "width": 1536,
+    "height": 384
+  },
+  "prior119BodyPacketsPreserved": [
+    {
+      "atlas": 22,
+      "src": "/companion/hd/vitamin-play-03-expression-119-v1.webp",
+      "sha256": "da09c0c607da35f5f7802568040fc654a868d06356013258074d3b9a01766450",
+      "bytes": 172514,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "atlas": 31,
+      "src": "/companion/hd/vitamin-play-12-expression-119-v1.webp",
+      "sha256": "67d24e1a51c3f3b0b65a33be063aea3a333ca0e1b45b8c9d3a24c7e70866fec4",
+      "bytes": 162878,
+      "width": 1536,
+      "height": 384
+    }
+  ],
+  "frozenAnchors": {
+    "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/고정입력/accessory-anchors.json",
+    "sha256": "8501cc74e23861bc80d89cd231b38c330189dfdc268f75a52abacb4b28cd0e17",
+    "regeneratedByThisScript": false
+  },
+  "stagedMetadata": {
+    "hd-motion-sprite": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/hd-motion-sprite.json",
+    "play-motion-sprite": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/play-motion-sprite.json",
+    "living-motion-sprite": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/정리본/living-motion-sprite.json"
+  }
+}

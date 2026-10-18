@@ -1,0 +1,29 @@
+[
+  {
+    "native": 1,
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\키1_기존실제입보호.png",
+    "sha256": "4B9C2B1D7E81B62F718DB2A7C063A5B81785353B9E77AF95ECDDAD5E8E820423",
+    "protected_pixels": 17,
+    "source_method": "Exact119 original-parent8-neighbor component and1px dilation; count matches frozen119 receipt. Not a new mouth drawing or art judgment.",
+    "mouth_center": [
+      55.5,
+      67.16666666666667
+    ],
+    "test_67_60_61": null
+  },
+  {
+    "native": 10,
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\키10_기존실제입보호.png",
+    "sha256": "DD45C957B94A92B4CBD21FA453371ED6EB223BEFEF4998821040436072804F5B",
+    "protected_pixels": 80,
+    "source_method": "Exact119 original-parent8-neighbor component and1px dilation; count matches frozen119 receipt. Not a new mouth drawing or art judgment.",
+    "mouth_center": [
+      63.369565217391305,
+      60.02173913043478
+    ],
+    "test_67_60_61": [
+      255,
+      255
+    ]
+  }
+]

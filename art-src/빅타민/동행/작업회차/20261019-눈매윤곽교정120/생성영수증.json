@@ -1,0 +1,22 @@
+{
+  "tool": "image_gen.imagegen",
+  "mode": "builtin",
+  "calls": 1,
+  "retries": 0,
+  "contract": {
+    "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/생성계약.json",
+    "sha256": "2e7dd8c05f5fa26e68f52f5a28c2b959ce8b913794c0c4c3f00a5591f4bd4931"
+  },
+  "request": {
+    "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/생성요청.json",
+    "sha256": "c9a0263dcd4721bf6efc161f545852e607f8bf6d093c7c7eea915e1d710b7355"
+  },
+  "raw": {
+    "path": "art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/원본/포근잠_윤곽생성원본.png",
+    "sha256": "7802574d873ec7faec46bf01b867d9552876c7c6036b77e699b6840f54c25d7b",
+    "originalPath": "C:/Users/im917/.codex/generated_images/01a13862-7fb6-7a73-839b-079df9dbbea2/exec-ec1c6851-a6bf-490d-8d21-f0534a68177f.png"
+  },
+  "creatorObservation": "Root opened the complete generated cozy sprite. It has a clear dark outer contour and readable cream/yellow paper edges. Generated eye/ear interior details are not accepted wholesale: final bounded derivation preserves current sleeping face, ears, paper interiors and pose outside the frozen edit region. No independent post-generation art review or owner visual approval.",
+  "postGenerationSpecialistReviews": 0,
+  "ownerApproval": false
+}

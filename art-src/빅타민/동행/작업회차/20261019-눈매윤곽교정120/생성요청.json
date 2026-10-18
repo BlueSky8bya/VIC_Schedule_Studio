@@ -1,0 +1,12 @@
+{
+  "tool": "image_gen.imagegen",
+  "args": {
+    "prompt": "Edit only the first image, the existing cozy sleeping Victamin sprite. Preserve its exact sleeping pose, body width and height, two folded ears, ear placement, closed eyes, small mouth, orange square cheeks, overlapping cream square-paper layers, silhouette landmarks and existing palette. Use the second image as original character construction authority and the third for crisp paper edges and rendering only; do not copy its open eyes or upright pose.\nClean only the requested messy external contour and unintended doubled or overlapping color boundaries. Keep one continuous, clear dark outline with smooth anti-aliasing and readable cream/yellow material joins. Preserve intentional layered paper edges and ear folds. Remove detached edge specks, translucent color contamination and duplicated outlines only where they are visible defects. No glow, shadow backdrop, extra marks, limbs, decorations or new facial features.\nThe current small native face and protected ear/body interiors must remain unchanged. Retain the transparent background and the same original-size composition. This request concerns one cozy sleeping sprite only; the separate yawn and blink will reuse existing119 source pixels and are not generation targets.",
+    "referenced_image_paths": [
+      "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\포근잠_현재115입력.png",
+      "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png"
+    ],
+    "transparent_background": true
+  }
+}

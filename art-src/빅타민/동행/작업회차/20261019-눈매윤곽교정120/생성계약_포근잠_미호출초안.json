@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "workflow_mode": "user_directed_cycle",
+  "work_id": "vitamin-eye-contour-120",
+  "operation": "targeted_parent_edit",
+  "subjects": [
+    "victamin"
+  ],
+  "generator_id": "/root",
+  "purpose": "Only if the requested scene_render finding requires new pixels: one cozy contour/material-edge cleanup; existing119 eye strokes are separate source-bound derivations.",
+  "user_cycle": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\runs\\vitamin-eye-contour-120\\plan.json",
+    "sha256": "F693BB44F1C20861210F6DB2D961020D0CD1051B46705DD6D6F18A7BA7019161"
+  },
+  "inputs": [
+    {
+      "id": "current-cozy-parent",
+      "kind": "edit_target",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\포근잠_현재115입력.png",
+      "sha256": "C1EDC19C958ADF87370BC2475DBCA77ABF66AD5FDE753A8D773BFC2EDE6E8AAC",
+      "role": "current115_source_cozy_sleep_native78_physical519_only"
+    },
+    {
+      "id": "REF-016",
+      "kind": "original",
+      "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\레퍼런스\\07_빅타민\\03_도식\\스크린샷 2026-10-06 025419.png",
+      "sha256": "F2B29FBB9D09EFB4156A7FA23EB9A43FC59F950FE372E6BD3E1D408F9CEFADA4",
+      "role": "original_mascot_paper_construction_and_palette_authority"
+    },
+    {
+      "id": "selected-normal099",
+      "kind": "render_reference",
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261018-포즈통일114\\고정입력\\선택눈099.png",
+      "sha256": "83FD71B3BAFDC72587F786BDBA800FFB52D7034FC6E66AA1205ECF8B3E5EEA68",
+      "role": "selected_crisp_line_and_palette_reference_only_not_open_eye_transfer"
+    }
+  ],
+  "authorities": {
+    "face": "REF-016",
+    "body": "REF-016",
+    "mascot": "REF-016"
+  },
+  "opened_files": [],
+  "edit_authorization": {
+    "path": "G:\\내 드라이브\\01_TMP\\VIC\\일러스트\\AI\\_project\\feedback_sources\\user_turns\\user-turn-7b9d2aa7b2ff7a6bc1bac8a9.json",
+    "sha256": "729A087350935A81E55267B99774BD6ED838B78C7FF9F0D04A70C36462A10584",
+    "excerpt": "그리고 4번째 첨부 사진에 있는 빅타민 표정에서 눈매가 그 아래 보조개 종이? 부분에 가려진 것 같은데? \n5번째 첨부 사진은 왼쪽 눈매 가운데가 살짝 파여있는 것 같고. \n게다가 6번째 첨부 사진은 외곽도 지저번하고 색도 겹쳐있잖아. 제발 이런 건 한번에 검수좀 해"
+  },
+  "protected_parent": {
+    "artwork_id": "vitamin-eye-contour-120",
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\포근잠_현재115입력.png",
+    "sha256": "C1EDC19C958ADF87370BC2475DBCA77ABF66AD5FDE753A8D773BFC2EDE6E8AAC"
+  },
+  "edit_mask": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\포근잠_생성가능영역_검수전.png",
+    "sha256": "6F4FEEB6C6E137803E60AD2E46D598D4323D3F698841034321944FCD87B78474",
+    "mode": "L"
+  },
+  "edit_scope": [
+    "cozy native78/currentphysical519 external contour and adjacent material-color seams only, subject to requested scene_render finding"
+  ],
+  "protected_scope": [
+    "existingcozy sleepingface/mouth/cheeks, twofoldedear pose, bodyvolume and squarepaper construction",
+    "all physicalframes except519; yawn266 and blink9/10 are not this generation target",
+    "114original/117jump/118rejection/119raw and source/current keys remain immutable",
+    "UI attachments1..3 and new36behaviors are excluded"
+  ],
+  "source_mapping": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\원화배치계보.json",
+    "sha256": "61F1AAA6CC247A6A175344A683B9DDCDBD9852557BB14A1208B11F7BCEFE3835"
+  },
+  "pre_review_mask_scope": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수부위계약.json",
+    "sha256": "44349D94D3F09CF3C66079DA24A149541703D5CB2C8AE119540B0FA0D145D036"
+  },
+  "generation_budget": {
+    "per_work_per_actual_user_turn": 1,
+    "conditional_cozy_imagegen_calls": 1,
+    "eye_imagegen_calls": 0,
+    "actual_visual_inputs": 3,
+    "no_retry": true
+  },
+  "status": "PREPARED_DRAFT_ONLY_NOT_GENERATION_READY",
+  "preflight": "NOT_RUN_PENDING_REQUESTED_FINDINGS_ACTUAL_ROOT_OPENINGS_AND_CURRENT_PARENT_BINDING",
+  "current_parent_binding_note": "No current_artworks mutation by preparer. Root must bind this exact requested cozy parent as working source, without inventing user approval, before formal generation preflight.",
+  "requested_independent_roles": [
+    "face_identity",
+    "scene_render"
+  ],
+  "post_generation_art_review_calls": 0,
+  "generator_must_review_entire_result_once_as_creator_observation": true,
+  "preparer_claims_or_registration_calls": 0,
+  "prompt_words": 177,
+  "root_decides_after_two_requested_findings": true
+}

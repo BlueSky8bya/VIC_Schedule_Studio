@@ -1,0 +1,22 @@
+{
+  "candidate": {
+    "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\고정입력\\현재요청3칸_원크기.png",
+    "sha256": "8B596D8BA7592FB2E08E95DAB4D2DDC362A0CAE7F906AB3FE6D48D4EE8326086"
+  },
+  "audit_only": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\현재3칸_크림배경4배.png",
+      "sha256": "F4453BF8159A14A4522917A3470402BB23A9CAAFEFF645267BC72596A17854C2"
+    },
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\현재3칸_짙은배경4배.png",
+      "sha256": "6B29C8A4C25775B2822586DCABEC562599899F01EA0855EEB46860BD673DD390"
+    }
+  ],
+  "method": "Straight alpha compositing against two explicit solid backgrounds, then nearest4x for current visible-edge reading. Does not alter source candidate and is not a new artwork/generation or art judgment.",
+  "UI_images_not_generation_targets": [
+    1,
+    2,
+    3
+  ]
+}

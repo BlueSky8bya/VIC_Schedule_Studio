@@ -1,0 +1,22 @@
+{
+  "status": "PREPARED_TARGETED_REVIEW",
+  "review_plan": {
+    "schema_version": 1,
+    "user_directed": true,
+    "role_packets": {
+      "face_identity": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\face_identity.json",
+        "sha256": "369860BA0BE74FCD4F2BBC70E7AD6D0520FA406ACF79B9D7D2C00977CE35AA39"
+      },
+      "scene_render": {
+        "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-눈매윤곽교정120\\검수\\scene_render.json",
+        "sha256": "261E87BFABC7EC9612134655F901C616443EEF8596C7BA546C507087EEB15EB9"
+      }
+    },
+    "required_roles": [
+      "face_identity",
+      "scene_render"
+    ]
+  },
+  "automatic_extra_roles": []
+}

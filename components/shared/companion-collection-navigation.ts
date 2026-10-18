@@ -3,16 +3,18 @@ import { logActivity } from "@/lib/activity/client";
 
 /** One measured page. Resizing preserves the selected identity; it changes
  * only how many neighbours fit, with at most24 mounted collection tiles. */
-export function companionCollectionLayout(width: number, height: number) {
-  const columns = Math.max(2, Math.min(6, Math.floor(((Number.isFinite(width) ? Math.max(0, width) : 0) + 8) / 102)));
-  const rows = Math.max(1, Math.min(4, Math.floor(((Number.isFinite(height) ? Math.max(0, height) : 0) + 8) / 104)));
+type CollectionLayout = "default" | "memory" | "wardrobe";
+export function companionCollectionLayout(width: number, height: number, kind: CollectionLayout = "default") {
+  const columns = Math.max(2, Math.min(kind === "memory" ? 5 : 6, Math.floor(((Number.isFinite(width) ? Math.max(0, width) : 0) + 8) / (kind === "memory" ? 120 : 102))));
+  const rowHeight = 116;
+  const rows = kind === "wardrobe" ? 1 : Math.max(1, Math.min(4, Math.floor(((Number.isFinite(height) ? Math.max(0, height - 4) : 0) + 8) / (rowHeight + 8))));
   return { columns, rows, size: Math.min(24, columns * rows) };
 }
 export function companionCollectionPage(index: number, length: number, size: number) {
   const count = Math.max(1, Math.ceil(length / size)), page = Math.min(count - 1, Math.floor(Math.max(0, index) / size));
   return { page, count, offset: page * size, end: Math.min((page + 1) * size, length) };
 }
-export function useCompanionCollectionLayout(grid: RefObject<HTMLUListElement | null>, active: boolean) {
+export function useCompanionCollectionLayout(grid: RefObject<HTMLUListElement | null>, active: boolean, kind: CollectionLayout = "default") {
   const [layout, setLayout] = useState({ columns: 4, rows: 1, size: 4 });
   useEffect(() => {
     if (!active || !grid.current) return;
@@ -21,7 +23,7 @@ export function useCompanionCollectionLayout(grid: RefObject<HTMLUListElement | 
     const measure = () => {
       frame = 0;
       if (!element.isConnected) return;
-      const rect = element.getBoundingClientRect(), next = companionCollectionLayout(rect.width, rect.height);
+      const rect = element.getBoundingClientRect(), next = companionCollectionLayout(rect.width, rect.height, kind);
       if (!rect.width || !rect.height) return;
       setLayout(previous => previous.columns === next.columns && previous.rows === next.rows ? previous : next);
     };
@@ -29,7 +31,7 @@ export function useCompanionCollectionLayout(grid: RefObject<HTMLUListElement | 
     measure();
     const observer = new ResizeObserver(changed); observer.observe(element);
     return () => { observer.disconnect(); if (frame) cancelAnimationFrame(frame); };
-  }, [active, grid]);
+  }, [active, grid, kind]);
   return layout;
 }
 

@@ -23,7 +23,7 @@ const COLLECTION = [
   ["companion-profile-page#discover", "빅타민 프로필 보기 · 도감"],
   ["companion-profile-page#dress", "빅타민 프로필 보기 · 옷장"],
   ["companion-collection-category#food", "빅타민 도감 종류 · 냠냠 도감"],
-  ["companion-collection-category#behavior", "빅타민 도감 종류 · 재롱"],
+  ["companion-collection-category#behavior", "빅타민 도감 종류 · 추억 도감"],
   ["companion-collection-category#moment", "빅타민 도감 종류 · 특별한 순간"],
   ["companion-collection-inspect#food", "빅타민 도감 항목 살펴보기 · 냠냠 도감"],
   ["companion-collection-inspect#behavior", "빅타민 도감 항목 살펴보기 · 재롱"],
