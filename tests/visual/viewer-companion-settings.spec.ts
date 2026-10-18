@@ -27,7 +27,7 @@ test("dedicated companion settings preserve detailed choices across master OFF a
   await panel.getByRole("tab", { name: "장난", exact: true }).click();
   await expect(panel.getByRole("tabpanel")).toContainText("하트 콩은 실제 하트 수를 바꾸지 않아요.");
   await panel.getByRole("switch", { name: "빅타민 하트 콩 켜기/끄기", exact: true }).click();
-  await panel.getByRole("tab", { name: "성격", exact: true }).click();
+  await panel.getByRole("tab", { name: "프로필", exact: true }).click();
   const animalMode = panel.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true });
   await expect(animalMode.getByRole("radio", { name: "빅타민", exact: true })).toBeChecked();
   await animalMode.getByRole("radio", { name: "고양이", exact: true }).click();
@@ -50,7 +50,7 @@ test("dedicated companion settings preserve detailed choices across master OFF a
   await expect(panel.getByRole("radio", { name: "느긋하게", exact: true })).toBeChecked();
   await panel.getByRole("tab", { name: "장난", exact: true }).click();
   await expect(panel.getByRole("switch", { name: "빅타민 하트 콩 켜기/끄기", exact: true })).not.toBeChecked();
-  await panel.getByRole("tab", { name: "성격", exact: true }).click();
+  await panel.getByRole("tab", { name: "프로필", exact: true }).click();
   await expect(panel.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "강아지", exact: true })).toBeChecked();
   await panel.getByRole("tab", { name: "교감", exact: true }).click();
   await expect(panel.getByRole("switch", { name: "빅타민 밥주기 켜기/끄기", exact: true })).not.toBeChecked();
@@ -65,7 +65,7 @@ test("companion subtabs support arrows, Home and End with one keyboard stop", as
   await page.keyboard.press("ArrowRight");
   await expect(panel.getByRole("tab", { name: "장난", exact: true })).toBeFocused();
   await page.keyboard.press("End");
-  const personality = panel.getByRole("tab", { name: "성격", exact: true });
+  const personality = panel.getByRole("tab", { name: "프로필", exact: true });
   await expect(personality).toBeFocused();
   await expect(personality).toHaveAttribute("aria-selected", "true");
   await expect(panel.getByRole("tabpanel")).toHaveCount(1);

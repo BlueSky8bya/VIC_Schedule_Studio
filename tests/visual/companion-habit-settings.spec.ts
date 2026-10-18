@@ -14,7 +14,7 @@ async function openHabits(page: Page) {
   await settings.click();
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  await dialog.getByRole("tab", { name: "성격", exact: true }).click();
+  await dialog.getByRole("tab", { name: "프로필", exact: true }).click();
   return { dialog, habits: dialog.getByRole("region", { name: "배운 습관", exact: true }) };
 }
 
@@ -71,35 +71,34 @@ for (const surface of ["viewer", "studio"] as const) for (const theme of ["light
         return normalized <= .04045 ? normalized / 12.92 : ((normalized + .055) / 1.055) ** 2.4;
       }).reduce((sum, channel, i) => sum + channel * [.2126, .7152, .0722][i], 0);
       const bgLuminance = luminance(background);
-      return Array.from(region.querySelectorAll("dt, dd, .rhh-habit-intro")).map(element => {
+      return Array.from(region.querySelectorAll("dt, dd")).map(element => {
         const style = getComputedStyle(element), color = rgb(style.color), foreground = color.channels.map((channel, i) => channel * color.alpha + background[i] * (1 - color.alpha));
         const fgLuminance = luminance(foreground);
         return { fontSize: parseFloat(style.fontSize), contrast: (Math.max(bgLuminance, fgLuminance) + .05) / (Math.min(bgLuminance, fgLuminance) + .05), fits: element.scrollWidth <= element.clientWidth + 1 };
       });
     });
-    expect(reading).toHaveLength(7);
+    expect(reading).toHaveLength(6);
     for (const item of reading) { expect(item.fontSize).toBeGreaterThanOrEqual(13.5); expect(item.contrast).toBeGreaterThanOrEqual(4.5); expect(item.fits).toBe(true); }
     const balance = await habits.evaluate(region => {
-      const box = region.getBoundingClientRect(), center = (box.left + box.right) / 2, style = getComputedStyle(region);
+      const style = getComputedStyle(region);
       const tiles = Array.from(region.querySelectorAll(".rhh-habit-item")).map(element => element.getBoundingClientRect());
       const widths = tiles.map(tile => tile.width);
-      const centered = Array.from(region.querySelectorAll("h3, .rhh-habit-intro, .rhh-habit-actions button")).map(element => {
-        const rect = element.getBoundingClientRect(); return Math.abs((rect.left + rect.right) / 2 - center);
-      });
-      centered.push(Math.abs((tiles[0].left + tiles.at(-1)!.right) / 2 - center));
-      centered.push(Math.abs(parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)));
-      return { widthSpread: Math.max(...widths) - Math.min(...widths), centerOffsets: centered };
+      const labels = Array.from(region.querySelectorAll("dt")).map(element => element.getBoundingClientRect().left);
+      const descriptions = Array.from(region.querySelectorAll("dd")).map(element => element.getBoundingClientRect().left);
+      return { widthSpread: Math.max(...widths) - Math.min(...widths), labelSpread: Math.max(...labels) - Math.min(...labels), descriptionSpread: Math.max(...descriptions) - Math.min(...descriptions), paddingDifference: Math.abs(parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)) };
     });
     expect(balance.widthSpread).toBeLessThanOrEqual(1);
-    for (const offset of balance.centerOffsets) expect(offset).toBeLessThanOrEqual(1);
-    mkdirSync(".scratch-pw", { recursive: true });
-    await habits.screenshot({ path: `.scratch-pw/companion-086-habits-${surface}-${theme}.png` });
-    await dialog.screenshot({ path: `.scratch-pw/companion-086-settings-${surface}-${theme}.png` });
+    expect(balance.labelSpread).toBeLessThanOrEqual(1);
+    expect(balance.descriptionSpread).toBeLessThanOrEqual(1);
+    expect(balance.paddingDifference).toBeLessThanOrEqual(1);
+    mkdirSync(".scratch-pw/companion-105-settings", { recursive: true });
+    await habits.screenshot({ path: `.scratch-pw/companion-105-settings/habits-${surface}-${theme}.png` });
+    await dialog.screenshot({ path: `.scratch-pw/companion-105-settings/dialog-${surface}-${theme}.png` });
     const learning = dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true });
     await learning.click(); await expect(learning).toHaveAttribute("aria-checked", "false");
-    await expect(habits.getByText(/배우기 끔 · 습관은 보관, 행동은 고른 성격대로/)).toBeVisible();
+    await expect(dialog.getByText(/배우기 끔 · 습관은 보관, 행동은 고른 성격대로/)).toBeVisible();
     await expect(habits.locator("dd")).toHaveCount(3);
-    await habits.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
+    await dialog.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
     await expect(habits.getByText(/아직 뚜렷한 습관은 없어요/)).toBeVisible();
     await expect(habits.locator("dd")).toHaveCount(0);
     const saved = await page.evaluate(() => ({ care: JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!), prefs: JSON.parse(localStorage.getItem("vic.viewerCompanion")!) }));

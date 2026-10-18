@@ -164,7 +164,7 @@ async function openTraits(page: Page) {
   const expand = page.getByRole("button", { name: "패널 펼치기", exact: true }), settings = page.getByRole("button", { name: "설정", exact: true });
   if (!await settings.isVisible() && await expand.isVisible()) await expand.click();
   await settings.click(); const dialog = page.getByRole("dialog", { name: "설정", exact: true });
-  await dialog.getByRole("tab", { name: "빅타민", exact: true }).click(); await dialog.getByRole("tab", { name: "성격", exact: true }).click();
+  await dialog.getByRole("tab", { name: "빅타민", exact: true }).click(); await dialog.getByRole("tab", { name: "프로필", exact: true }).click();
   return dialog.getByRole("region", { name: "빅타민 특성", exact: true });
 }
 
@@ -195,7 +195,7 @@ for (const surface of ["viewer", "studio"] as const) {
     await startProbe(page);
     const reopened = await memory(page); expect(reopened.life.seedFood).toBe(initial.life.seedFood); expect(reopened.life.foodScores[kind]).toBeGreaterThan(before.life.foodScores[kind] + .001);
     const traits = await openTraits(page); await expect(traits.locator(".rhh-trait-favorite strong")).toHaveText(COMPANION_FOOD_NAMES[reopened.life.favoriteFood]);
-    await expect(traits.locator(".rhh-trait-reason")).not.toContainText("아직은 여러 맛과 놀이를 알아가는 중이에요.");
+    await expect(page.getByRole("dialog", { name: "설정", exact: true }).locator(".rhh-trait-reason")).toContainText(/익숙한 맛을 즐겼어요|다른 맛도 골고루 맛보고 있어요|새로운 과일 맛을 알아가고 있어요|마음에 드는 과일을 찾았어요/);
   });
 
   test(`${surface}: a stable native pointer invites row33 contact and only real Enter petting earns affection`, async ({ page }) => {

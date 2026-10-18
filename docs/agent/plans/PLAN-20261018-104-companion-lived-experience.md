@@ -1,6 +1,6 @@
 #104 — Companion lived experience
 
-Date:2026-10-18 KST. Status:local verified; authorized release verification next.
+Date:2026-10-18 KST. Status:complete.
 
 ## Authorization and intended behavior
 
@@ -31,4 +31,4 @@ One local implementation across viewer/studio/preview/anonymous; mobile companio
 
 The five ideas, shared traits UI, v3 allowlisted local memory and eight mapped new pose keys are integrated. Independent source/privacy/performance reviews completed. Final production-build scope:2,236 unit tests, typecheck/lint/build/art-packing checks and43 unique rendered cases PASS after preserving/correcting documented harness assumptions. Exact coverage, original failures, scoped reruns and hardware limits are in [the104 verification record](../verification/COMPANION_LIVED_EXPERIENCE-20261018.md).
 
-Remaining:commit/push the scoped release, then verify remote quality/provider status, exact full deployed SHA/public boundaries and actual production UI. Actual broadcaster-PC validation remains explicitly deferred by the user.
+Release verified:`4b4dc01fa21fb55acee9707c536ffe435b0909af`; remote quality39097811041/all13 steps and Vercel success, exact full deployed SHA/public boundaries/asset SHA and actual authenticated developer-studio traits card verified. The original month/right-folded panel was restored. No required implementation/release work remains. Actual broadcaster-PC validation remains explicitly deferred by the user. Post-release metadata stays local for the next authorized product commit.

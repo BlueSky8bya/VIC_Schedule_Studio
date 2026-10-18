@@ -288,7 +288,7 @@ for (const surface of ["viewer", "studio"] as const) {
       const toggle = panel.locator(`[data-act="${id}"]`); const checked = await toggle.isChecked();
       await toggle.click(); await expect(toggle).toBeChecked({ checked: !checked }); await toggle.click(); await expect(toggle).toBeChecked({ checked });
     }
-    await panel.getByRole("tab", { name: "성격", exact: true }).click();
+    await panel.getByRole("tab", { name: "프로필", exact: true }).click();
     await panel.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "고양이", exact: true }).click();
     await panel.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name: "잠꾸러기", exact: true }).click();
     const learning = panel.locator('[data-act="companion-learning-enabled"]');

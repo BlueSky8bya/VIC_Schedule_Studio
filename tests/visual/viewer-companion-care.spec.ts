@@ -208,7 +208,7 @@ test("settings pause food, feeding OFF clears it, and changing month removes tem
   expect(await storedCare(page)).toEqual(pausedCare);
   await settings.getByRole("tab", { name: "빅타민", exact: true }).click();
   const tabs = settings.getByRole("tablist", { name: "빅타민 설정", exact: true });
-  await tabs.getByRole("tab", { name: "성격", exact: true }).click();
+  await tabs.getByRole("tab", { name: "프로필", exact: true }).click();
   await settings.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "강아지", exact: true }).click();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!).animalMode)).toBe("dog");
   await tabs.getByRole("tab", { name: "교감", exact: true }).click();

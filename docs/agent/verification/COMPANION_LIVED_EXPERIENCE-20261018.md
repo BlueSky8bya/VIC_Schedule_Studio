@@ -30,7 +30,7 @@ Product source was frozen before the final production build. Build ID:`l1lFmW6o5
 - `npm run test`:216 files /2,236 tests PASS.
 - `npm run typecheck`, `npm run lint`, `npm run build`:exit0.
 - `node scripts/prepare-companion-episodes.mjs --check`:PASS.
-- Documentation harness:267 documents PASS; final pre-commit rerun follows the local result update.
+- Documentation harness:267 documents PASS, including the final pre-commit rerun.
 - Independent core/runtime/privacy/performance source reviews:PASS after correcting the exact qualitative notification thresholds and completed-rest handling. The existing brief physical safety-place memory may outlive a learning-toggle change for up to8 active seconds; newly learned caution/invitations immediately follow the selected learning setting.
 - Shared traits native6/6 PASS on this build:viewer/studio/preview ×light/dark; actual inputs, OFF/reset/reload/needs preservation and real cross-tab storage delivery. All six final screenshots were visually inspected.
 - Lived behavior10/10 final scoped witnesses PASS:viewer/studio actual meal learning/seed/reload; stable pointer approach/request with real Enter petting; saved-affection nuzzle without invented touch rewards; actual cushion recall→knead/nest/curl/sleep/wake with completed energy/rest learning; naturally occurring connected cheer. All eight new native poses512–519 were decoded/adopted from the real new packet. Cheer occurred after144.1s/98.5s of measured visible focused time, without RNG/clock/brain/geometry overrides. Initial harness failures and the corrected6/6 run are retained separately.
@@ -45,4 +45,10 @@ New behavior witness preparation exposed additional test assumptions, retained s
 
 ## Release
 
-Commit, remote quality, provider status, exact full deployed SHA/API boundaries and actual production UI are pending. The untouched user-authored premiere art log and prior unrelated drafts are excluded from this release.
+Released commit:`4b4dc01fa21fb55acee9707c536ffe435b0909af` (`feat: add evolving companion life and stories`). Main push completed. [Remote quality39097811041](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39097811041) completed successfully with all13 steps, including unit/isolated SQL/harness/build/generated-route types/lint. [Vercel deployment](https://vercel.com/bluesky-s-project3/vic-schedule-studio/Fvs3P5o4RNe6off3nsZ1FG3Sj2E9) reports success.
+
+Production GET verification returned the exact full commit through `/api/soop-live`; public clock200/no-store, warm204, anonymous developer presence401/error-only/no-store, and fixture nonexposure remain intact. The shipped WebP returns200,89,414 bytes and exact SHA`c8a66edbb01cc423ecebe0bf37b5a8ac3233fa7ae22c9a6735a8b85854771d6c`.
+
+Actual authenticated developer studio was reloaded after full-SHA verification. After normal hydration it showed `4b4dc01`, one companion and one home launcher. Real panel/settings/companion/personality controls opened the new640px traits card with actual local fruit/four tendencies and zero horizontal overflow. The full card and its surrounding production UI were visually inspected and captured locally. No care reset, preference toggle, schedule/heart/auth action or account change was made. The settings window was closed and the original November2026/right-side folded panel restored. The initial settings lookup correctly found no accessible settings control while its containing panel was folded; the real panel expansion resolved it.
+
+Local fixture writes were intercepted and analytics were guarded by localhost/automation. Some older continuity suites allowed ordinary public-page prefetch reads; these were read-only, not real-DB mutation tests or RLS evidence. The fixture server was stopped. The untouched user-authored premiere art log retained its pre-commit SHA and is excluded, alongside prior unrelated drafts. This post-release metadata remains local for the next authorized product commit rather than triggering a second docs-only deployment.

@@ -83,7 +83,7 @@ async function openPersonality(page: Page) {
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  await dialog.locator("#rhh-tab-companion-panel").getByRole("tab", { name: "성격", exact: true }).click();
+  await dialog.locator("#rhh-tab-companion-panel").getByRole("tab", { name: "프로필", exact: true }).click();
   await waitForOverlayEntrance(dialog);
   return dialog;
 }

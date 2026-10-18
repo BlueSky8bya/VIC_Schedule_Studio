@@ -320,64 +320,77 @@ html[data-reduce-motion] .vic-settings .rhh-menu { animation-duration: 1ms;
   font-size: var(--text-body, 13.5px);
   line-height: 1.6;
 }
-.rhh-habit-head {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.rhh-habit-head h3 { margin: 0; font: inherit; }
-.rhh-habit-intro { margin: 10px 0 16px; color: var(--ink-soft, #3b4255); text-align: center; text-wrap: balance; }
+.rhh-companion-profile { margin-top: 0; }
+.rhh-profile-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-4); }
+.rhh-profile-identity { display: flex; align-items: center; gap: var(--space-3); min-width: 0; }
+.rhh-profile-mark { display: grid; flex: none; place-items: center; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: var(--r-md); background: rgb(var(--glass-cell) / 76%); color: var(--ink-soft); }
+.rhh-profile-name { min-width: 0; }
+.rhh-profile-name h3 { margin: 0; font-size: var(--text-title, 18px); font-weight: 600; line-height: 1.4; }
+.rhh-profile-meta { display: grid; gap: 2px; margin: 4px 0 0; color: var(--ink-soft); }
+.rhh-profile-meta span { overflow-wrap: anywhere; }
+.rhh-habit-head { display: flex; align-items: center; justify-content: flex-start; }
+.rhh-habit-head h3 { margin: 0; font-size: var(--text-ui, 15px); font-weight: 600; }
 .rhh-habit-list {
   display: grid;
-  grid-template-columns: repeat(var(--habit-count), minmax(0, 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: 0;
-  margin: 0;
-  border-top: 1px solid var(--line, #ece0c9);
+  margin: 8px 0 0;
 }
 .rhh-habit-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 16px 12px 4px;
-  text-align: center;
+  display: grid;
+  grid-template-columns: 88px minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: 7px 0;
+  text-align: left;
 }
-.rhh-habit-item + .rhh-habit-item { border-left: 1px solid var(--line, #ece0c9); }
+.rhh-habit-item + .rhh-habit-item { border-top: 1px solid var(--line-soft, #f0e7d5); }
 .rhh-habit-item dt { color: var(--ink-soft, #3b4255); font-weight: 600; }
-.rhh-habit-item dd { margin: 0; word-break: keep-all; overflow-wrap: anywhere; text-wrap: balance; font-weight: 500; }
-.rhh-habit-empty { margin: 0; border-top: 1px solid var(--line, #ece0c9); padding-top: 16px; text-align: center; }
+.rhh-habit-item dd { margin: 0; word-break: keep-all; overflow-wrap: anywhere; font-weight: 500; }
+.rhh-habit-empty { margin: 8px 0 0; color: var(--ink-soft); }
 .rhh-habit-paused {
-  margin: 14px 0 0;
-  border-top: 1px solid var(--line, #ece0c9);
-  padding-top: 12px;
+  margin: 10px 0 0;
   color: var(--ink-soft, #3b4255);
-  text-align: center;
-  text-wrap: balance;
 }
 .rhh-habit-actions {
   display: flex;
-  justify-content: center;
-  margin-top: 18px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: 12px;
+  border-top: 1px solid var(--line, #ece0c9);
+  padding-top: 12px;
 }
-@container rhh-habits (max-width: 360px) {
-  .rhh-habit-list { grid-template-columns: minmax(0, 1fr); }
-  .rhh-habit-item { gap: 4px; padding: 12px 0; }
-  .rhh-habit-item + .rhh-habit-item { border-left: 0; border-top: 1px solid var(--line, #ece0c9); }
-}
-/* A read-only portrait of the same local pet on every desktop surface.
-   Use prose and the existing settings material instead of score meters. */
-.rhh-trait-intro { margin: 10px 0 16px; color: var(--ink-soft); text-align: center; text-wrap: balance; }
-.rhh-trait-favorite { display: grid; justify-items: center; gap: var(--space-1); padding: var(--space-3); border: 1px solid var(--line); border-radius: var(--r-md); background: rgb(var(--glass-cell) / 76%); text-align: center; }
-.rhh-trait-favorite > span { color: var(--ink-soft); }
-.rhh-trait-favorite .vc-fruit { display: block; width: 40px; height: 40px; }
-.rhh-trait-favorite > strong { font-size: var(--text-title); font-weight: 600; overflow-wrap: anywhere; }
-.rhh-trait-reason { display: grid; gap: var(--space-1); margin: var(--space-3) 0; text-align: center; text-wrap: balance; }
-.rhh-trait-reason > span { color: var(--ink-soft); font-weight: 600; }
-.rhh-trait-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-2); margin: 0; }
-.rhh-trait-item { display: grid; align-content: start; gap: var(--space-1); min-width: 0; padding: var(--space-3); border: 1px solid var(--line); border-radius: var(--r-sm); text-align: center; }
+.rhh-habit-actions .rhh-link { flex: none; }
+/* Compact field hierarchy inspired by Catbook/Grumboire; the existing local
+   model supplies every label. No score meters, portraits or new asset loads. */
+.rhh-trait-favorite { display: flex; align-items: center; gap: var(--space-2); min-width: 0; border-left: 1px solid var(--line); padding-left: var(--space-4); }
+.rhh-trait-favorite .vc-fruit { display: block; flex: none; width: 40px; height: 40px; }
+.rhh-trait-favorite-copy { display: grid; gap: 2px; min-width: 0; }
+.rhh-trait-favorite-copy > span { color: var(--ink-soft); }
+.rhh-trait-favorite-copy > strong { font-size: var(--text-ui, 15px); font-weight: 600; overflow-wrap: anywhere; }
+.rhh-trait-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--space-4); margin: 14px 0 0; border-top: 1px solid var(--line); }
+.rhh-trait-item { display: grid; align-content: start; gap: 2px; min-width: 0; padding: 12px 0; text-align: left; }
+.rhh-trait-item:nth-child(n + 3) { border-top: 1px solid var(--line-soft, #f0e7d5); }
 .rhh-trait-item dt { color: var(--ink-soft); font-weight: 600; }
-.rhh-trait-item dd { margin: 0; word-break: keep-all; overflow-wrap: anywhere; text-wrap: balance; }
-.rhh-trait-note, .rhh-trait-reset-note { margin: var(--space-3) 0 0; color: var(--ink-soft); text-align: center; text-wrap: balance; }
-@container rhh-habits (max-width: 360px) { .rhh-trait-list { grid-template-columns: minmax(0, 1fr); } }
+.rhh-trait-item dd { display: grid; gap: 2px; margin: 0; word-break: keep-all; overflow-wrap: anywhere; }
+.rhh-trait-state { color: var(--ink); font-size: var(--text-ui, 15px); font-weight: 600; }
+.rhh-trait-description { color: var(--ink-soft); }
+.rhh-profile-habits { border-top: 1px solid var(--line); padding-top: 14px; }
+.rhh-trait-reason { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: var(--space-3); margin: 12px 0 0; border-top: 1px solid var(--line); padding-top: 12px; }
+.rhh-trait-reason > span:first-child { color: var(--ink-soft); font-weight: 600; }
+.rhh-trait-reason > span:last-child { word-break: keep-all; overflow-wrap: anywhere; }
+.rhh-trait-note { margin: 8px 0 0; color: var(--ink-soft); }
+.rhh-trait-reset-note { flex: 1; margin: 0; color: var(--ink-soft); }
+.rhh-profile-controls { margin-top: 16px; }
+@container rhh-habits (max-width: 360px) {
+  .rhh-profile-top, .rhh-trait-list, .rhh-trait-reason { grid-template-columns: minmax(0, 1fr); }
+  .rhh-trait-favorite { border-left: 0; padding-left: 0; }
+  .rhh-trait-item + .rhh-trait-item { border-top: 1px solid var(--line-soft, #f0e7d5); }
+  .rhh-habit-item { grid-template-columns: minmax(0, 1fr); gap: 2px; }
+  .rhh-habit-actions { align-items: flex-start; flex-direction: column; }
+  .rhh-trait-reason { gap: 2px; }
+}
 .rhh-ico {
   display: inline-grid;
   flex: none;

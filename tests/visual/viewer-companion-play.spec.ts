@@ -192,7 +192,7 @@ test("viewer and studio expose all three independent behavior axes through the s
     const dialog = page.getByRole("dialog", { name: "설정", exact: true }); await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
     await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
     const panel = dialog.locator("#rhh-tab-companion-panel");
-    await panel.getByRole("tab", { name: "성격", exact: true }).click();
+    await panel.getByRole("tab", { name: "프로필", exact: true }).click();
     const groups = [
       { name: "빅타민 동물 모드", key: "animalMode", options: [["고양이", "cat"], ["강아지", "dog"], ["빅타민", "default"]] },
       { name: "빅타민 성격", key: "personality", options: [["잠꾸러기", "sleepy"], ["애교쟁이", "affectionate"], ["호기심", "curious"]] },

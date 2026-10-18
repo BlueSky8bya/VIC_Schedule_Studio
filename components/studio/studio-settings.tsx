@@ -244,7 +244,7 @@ const companionTabs = [
   { key: "motion", label: "움직임" },
   { key: "pranks", label: "장난" },
   { key: "affection", label: "교감" },
-  { key: "personality", label: "성격" }
+  { key: "personality", label: "프로필" }
 ] as const;
 type CompanionTab = typeof companionTabs[number]["key"];
 type CompanionToggle = "roam" | "jump" | "sleep" | "heartPrank" | "cardPrank" | "ambientPrank" | "panelPrank" | "drag" | "petting" | "feeding" | "learnFromYou";
@@ -257,7 +257,7 @@ const companionToggleActions: Record<CompanionToggle, string> = {
 const companionLifeReasons: Record<CompanionLifeReason, string> = {
   "favorite-food": "좋아하는 과일을 먹으며 익숙한 맛을 즐겼어요.",
   "new-flavor": "새로운 과일 맛을 알아가고 있어요.",
-  "kind-touch": "부드럽게 쓰다듬어 준 느낌이 남아 있어요.",
+  "kind-touch": "쓰다듬으며 더 가까워졌어요.",
   "play-together": "함께 놀며 장난기가 조금 자랐어요.",
   "food-mishap": "밥 먹다 놀란 뒤 조금 신중해졌어요.",
   "cozy-rest": "편히 쉬며 마음이 느긋해졌어요.",
@@ -271,10 +271,10 @@ const companionLifeReasons: Record<CompanionLifeReason, string> = {
  * reconstruction of a person's behavior or its instantaneous needs. */
 function companionTraitDescriptions(life: ReturnType<typeof summarizeCompanionLife>) {
   return [
-    { label: "교감", description: life.social >= .65 ? "곁에서 지내는 게 좋아요" : life.social <= .35 ? "조금 떨어져 지켜봐요" : "조금씩 가까워지는 중" },
-    { label: "놀이", description: life.play >= .65 ? "장난칠 거리를 찾아요" : life.play <= .35 ? "느긋하게 쉬어 가요" : "놀고 쉬며 균형을 잡아요" },
-    { label: "호기심", description: life.curiosity >= .65 ? "새로운 곳이 궁금해요" : life.curiosity <= .35 ? "익숙한 곳을 살펴요" : "주변을 천천히 살펴요" },
-    { label: "편안함", description: life.comfort >= .65 ? "편안한 리듬으로 지내요" : life.comfort <= .35 ? "조심스럽게 살피는 중" : "편한 리듬을 찾아가는 중" }
+    { label: "교감", state: life.social >= .65 ? "친근해요" : life.social <= .35 ? "천천히 교감" : "알아가요", description: life.social >= .65 ? "곁에서 지내는 게 좋아요" : life.social <= .35 ? "조금 떨어져 지켜봐요" : "조금씩 가까워지는 중" },
+    { label: "놀이", state: life.play >= .65 ? "놀기 좋아요" : life.play <= .35 ? "느긋해요" : "고르게 지내요", description: life.play >= .65 ? "장난칠 거리를 찾아요" : life.play <= .35 ? "느긋하게 쉬어 가요" : "놀고 쉬며 균형을 잡아요" },
+    { label: "호기심", state: life.curiosity >= .65 ? "새로움 선호" : life.curiosity <= .35 ? "익숙함 선호" : "둘러봐요", description: life.curiosity >= .65 ? "새로운 곳이 궁금해요" : life.curiosity <= .35 ? "익숙한 곳을 살펴요" : "주변을 천천히 살펴요" },
+    { label: "편안함", state: life.comfort >= .65 ? "편안해요" : life.comfort <= .35 ? "조심스러워요" : "적응 중", description: life.comfort >= .65 ? "편안한 리듬으로 지내요" : life.comfort <= .35 ? "조심스럽게 살피는 중" : "편한 리듬을 찾아가는 중" }
   ];
 }
 
@@ -293,6 +293,8 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
   const habitDescriptions = companionHabitDescriptions(care?.habits ?? DEFAULT_COMPANION_HABITS);
   const life = care ? summarizeCompanionLife(care.life) : null;
   const traits = life ? companionTraitDescriptions(life) : [];
+  const modeLabel = { default: "빅타민 모드", cat: "고양이 모드", dog: "강아지 모드" }[preferences.animalMode];
+  const personalityLabel = { curious: "호기심", affectionate: "애교쟁이", sleepy: "잠꾸러기" }[preferences.personality];
   const nav = useRef<HTMLDivElement>(null);
   const row = (key: CompanionToggle, label: string, icon: ReactNode) => (
     <div className="role-help-haptics" key={key}>
@@ -353,48 +355,52 @@ function CompanionSettings({ preferences, onChange }: { preferences: CompanionPr
       <p className="rhh-group-foot">집 자판기에서 여러 과일을 꺼내 건넬 수 있어요.</p>
     </div>
     <div aria-labelledby={`${id}-personality`} hidden={tab !== "personality"} id={`${id}-personality-panel`} role="tabpanel" tabIndex={0}>
-      <div className="rhh-group-card">
+      <div className="rhh-habit-card rhh-companion-profile">
+        <section aria-labelledby={`${id}-traits-title`} className="rhh-trait-card">
+          <div className="rhh-profile-top">
+            <div className="rhh-profile-identity">
+              <span aria-hidden="true" className="rhh-profile-mark"><Sparkles size={26} /></span>
+              <div className="rhh-profile-name">
+                <h3 id={`${id}-traits-title`}>빅타민 특성</h3>
+                <p className="rhh-profile-meta"><span>{modeLabel}</span><span>기본 성격 · {personalityLabel}</span></p>
+              </div>
+            </div>
+            <div className="rhh-trait-favorite">
+              {life && <CompanionFruit kind={life.favoriteFood} />}
+              <div className="rhh-trait-favorite-copy"><span>요즘 좋아하는 과일</span><strong>{life?.favoriteLabel ?? "취향을 알아가는 중"}</strong></div>
+            </div>
+          </div>
+          {traits.length > 0 && <dl className="rhh-trait-list">
+            {traits.map(trait => <div className="rhh-trait-item" key={trait.label}><dt>{trait.label}</dt><dd><strong className="rhh-trait-state">{trait.state}</strong><span className="rhh-trait-description">{trait.description}</span></dd></div>)}
+          </dl>}
+        </section>
+        <section aria-labelledby={`${id}-habits-title`} className="rhh-profile-habits">
+          <div className="rhh-habit-head">
+            <h3 id={`${id}-habits-title`}><RowLabel icon={<BookA size={15} />} tone="leaf">배운 습관</RowLabel></h3>
+          </div>
+          {habitDescriptions.length ? <dl className="rhh-habit-list">
+            {habitDescriptions.map(item => <div className="rhh-habit-item" key={item.key}><dt>{item.label}</dt><dd>{item.description}</dd></div>)}
+          </dl> : <p className="rhh-habit-empty">{COMPANION_HABITS_EMPTY}</p>}
+        </section>
+        <p className="rhh-trait-reason"><span>최근 남은 경험</span><span>{life?.recentReason ? companionLifeReasons[life.recentReason] : "여러 맛과 놀이를 알아가고 있어요."}</span></p>
+        {!preferences.learnFromYou && <p className="rhh-habit-paused">배우기 끔 · 습관은 보관, 행동은 고른 성격대로</p>}
+        <p className="rhh-trait-note">이 브라우저에 기억해요. 함께 지내며 취향과 특성이 조금씩 달라져요.</p>
+        <div className="rhh-habit-actions">
+          <p className="rhh-trait-reset-note" id={`${id}-reset-note`}>초기화하면 배운 습관과 경험으로 달라진 특성을 함께 되돌려요.</p>
+          <button aria-describedby={`${id}-reset-note`} aria-label="배운 습관 초기화" className="rhh-link" data-act="companion-learning-reset" onClick={() => { resetCompanionHabits(); hapticTick(); playSfx("tab"); }} type="button">초기화</button>
+        </div>
+      </div>
+      <div className="rhh-group-card rhh-profile-controls">
         <div className="role-help-haptics rhh-stack-sm">
           <RowLabel icon={<Sparkles size={15} />} tone="leaf">동물 모드</RowLabel>
           <SettingsSegment ariaLabel="빅타민 동물 모드" dataAct="companion-animal" onChange={animalMode => onChange({ animalMode })} options={[{ value: "default", label: "빅타민" }, { value: "cat", label: "고양이" }, { value: "dog", label: "강아지" }]} value={preferences.animalMode} />
         </div>
         <div className="role-help-haptics rhh-stack-sm">
-          <RowLabel icon={<Sparkles size={15} />} tone="leaf">성격</RowLabel>
+          <RowLabel icon={<Sparkles size={15} />} tone="leaf">기본 성격</RowLabel>
           <SettingsSegment ariaLabel="빅타민 성격" dataAct="companion-personality" onChange={personality => onChange({ personality })} options={[{ value: "curious", label: "호기심" }, { value: "affectionate", label: "애교쟁이" }, { value: "sleepy", label: "잠꾸러기" }]} value={preferences.personality} />
         </div>
         {row("learnFromYou", "함께 지내며 배우기", <Heart size={15} />)}
       </div>
-      <section aria-labelledby={`${id}-traits-title`} className="rhh-habit-card rhh-trait-card">
-        <div className="rhh-habit-head">
-          <h3 id={`${id}-traits-title`}><RowLabel icon={<Sparkles size={15} />} tone="leaf">빅타민 특성</RowLabel></h3>
-        </div>
-        <p className="rhh-trait-intro">경험과 함께 지낸 시간에 따라 조금씩 달라져요.</p>
-        <div className="rhh-trait-favorite">
-          <span>요즘 좋아하는 과일</span>
-          {life && <CompanionFruit kind={life.favoriteFood} />}
-          <strong>{life?.favoriteLabel ?? "취향을 알아가는 중"}</strong>
-        </div>
-        <p className="rhh-trait-reason"><span>최근 남은 경험</span>{life?.recentReason ? companionLifeReasons[life.recentReason] : "아직은 여러 맛과 놀이를 알아가는 중이에요."}</p>
-        {traits.length > 0 && <dl className="rhh-trait-list">
-          {traits.map(trait => <div className="rhh-trait-item" key={trait.label}><dt>{trait.label}</dt><dd>{trait.description}</dd></div>)}
-        </dl>}
-        <p className="rhh-trait-note">함께한 경험을 짧게 풀어 쓴 모습이에요. 이 브라우저 안에서 기억하고, 앞으로의 경험에 따라 다시 달라져요.</p>
-        {!preferences.learnFromYou && <p className="rhh-habit-paused">배우기를 다시 켜면 취향과 특성이 이어서 자라요.</p>}
-      </section>
-      <section aria-labelledby={`${id}-habits-title`} className="rhh-habit-card">
-        <div className="rhh-habit-head">
-          <h3 id={`${id}-habits-title`}><RowLabel icon={<BookA size={15} />} tone="leaf">배운 습관</RowLabel></h3>
-        </div>
-        <p className="rhh-habit-intro">쓰다듬기·밥주기·놀이로 달라지는 취향</p>
-        {habitDescriptions.length ? <dl className="rhh-habit-list" style={{ "--habit-count": habitDescriptions.length } as CSSProperties}>
-          {habitDescriptions.map(item => <div className="rhh-habit-item" key={item.key}><dt>{item.label}</dt><dd>{item.description}</dd></div>)}
-        </dl> : <p className="rhh-habit-empty">{COMPANION_HABITS_EMPTY}</p>}
-        {!preferences.learnFromYou && <p className="rhh-habit-paused">배우기 끔 · 습관은 보관, 행동은 고른 성격대로</p>}
-        <div className="rhh-habit-actions">
-          <button aria-label="배운 습관 초기화" className="rhh-link" data-act="companion-learning-reset" onClick={() => { resetCompanionHabits(); hapticTick(); playSfx("tab"); }} type="button">초기화</button>
-        </div>
-        <p className="rhh-trait-reset-note">초기화하면 배운 습관과 경험으로 달라진 특성을 함께 되돌려요.</p>
-      </section>
     </div>
   </>;
 }

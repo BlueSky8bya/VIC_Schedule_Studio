@@ -202,7 +202,7 @@ for (const surface of ["viewer", "studio"] as const) {
     await page.getByRole("button", { name: "설정", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "설정", exact: true });
     await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-    await dialog.getByRole("tab", { name: "성격", exact: true }).click();
+    await dialog.getByRole("tab", { name: "프로필", exact: true }).click();
     await expect(dialog.getByText("쓰다듬기와 곁에 있기", { exact: true })).toBeVisible();
     await expect(dialog.getByText("장난치고 탐험하기", { exact: true })).toBeVisible();
     await expect(dialog.getByText("낯선 곳도 씩씩하게", { exact: true })).toBeVisible();

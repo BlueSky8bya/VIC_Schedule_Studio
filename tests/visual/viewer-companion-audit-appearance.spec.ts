@@ -115,7 +115,7 @@ test.describe("desktop dark appearance", () => {
     const settings = page.getByRole("dialog", { name: "설정", exact: true }); await waitForOverlayEntrance(settings);
     await settings.getByRole("tab", { name: "빅타민", exact: true }).click();
     const pane = settings.locator("#rhh-tab-companion-panel");
-    for (const name of ["움직임", "장난", "교감", "성격"]) {
+    for (const name of ["움직임", "장난", "교감", "프로필"]) {
       await pane.getByRole("tab", { name, exact: true }).click(); await settle(page);
       const content = pane.getByRole("tabpanel"); await expect(content).toHaveCount(1); await expect(content).toBeVisible();
       const labels = content.locator(".rhh-label"); expect(await labels.count()).toBeGreaterThan(0);
