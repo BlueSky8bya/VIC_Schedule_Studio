@@ -5,7 +5,7 @@ import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
+import { chooseCompanionPersonality, openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 
 const output = resolve(process.env.COMPANION_HOUSEHOLD_131_OUTPUT ?? ".scratch-pw/companion-131/household-native");
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
@@ -15,7 +15,7 @@ const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰
 type Point = { x: number; y: number };
 type Rect = Point & { width: number; height: number };
 type Item = Point & { id: string; kind: string; food: boolean; carried: boolean; held: boolean; falling: boolean; eating: boolean; nibble?: number; discarding: boolean; hidden: boolean; platform: string; rect: Rect };
-type Frame = { at: number; focused: boolean; hidden: boolean; state: string; household: string; toyAction: string; actor: Point & { platform: string; hidden: boolean; decoded: boolean }; floor: Rect | null; bin: Point | null; opening: Point | null; items: Item[] };
+type Frame = { at: number; focused: boolean; hidden: boolean; state: string; household: string; toyAction: string; actor: Point & { platform: string; hidden: boolean; decoded: boolean; painted: Point | null }; floor: Rect | null; bin: Point | null; opening: Point | null; items: Item[] };
 type ProbeWindow = Window & { household131?: { frames: Frame[]; stop: () => void } };
 type Proof = { writes: string[]; foreign: string[]; errors: string[]; notes: unknown[] };
 const proofs = new WeakMap<Page, Proof>();
@@ -51,8 +51,8 @@ test.afterEach(async ({ page }, info) => {
 });
 
 async function ready(page: Page, mode: "toy" | "full-nonfavorite" | "liked" | "mid-hunger" | "hungry") {
-  // This is deliberately initial saved fixture state. Nothing changes care,
-  // tastes, personality or the product clock after the real page has mounted.
+  // Care/tastes are initial saved fixture state. The personality is confirmed
+  // through its actual control; a fresh unselected document draws randomly.
   const life = structuredClone(DEFAULT_COMPANION_MEMORY.life);
   life.seedFood = life.favoriteFood = "durian";
   for (const kind of COMPANION_FOOD_KINDS) life.foodScores[kind] = mode === "liked" ? .8 : kind === "durian" ? .9 : .1;
@@ -66,6 +66,7 @@ async function ready(page: Page, mode: "toy" | "full-nonfavorite" | "liked" | "m
   }, { epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, preferences: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, life, mode });
   await page.goto("/visual-fixture/studio?role=owner&y=2025&m=11"); await page.bringToFront(); await page.evaluate(() => document.fonts.ready);
   await expect(pet(page)).toBeVisible(); const room = await openCompanionHome(page);
+  await chooseCompanionPersonality(page, "tidy");
   await room.evaluate(async element => Promise.all(element.getAnimations({ subtree: true }).filter(animation => Number.isFinite(animation.effect?.getComputedTiming().endTime)).map(animation => animation.finished.catch(() => {}))));
   await placeCompanionOnHomeFloor(page);
   // A fresh resident can already occupy this point. Both the actual floor
@@ -89,10 +90,10 @@ async function probe(page: Page) {
     const sample = (at: number) => {
       if (stopped) return;
       if (at - last >= 16) {
-        last = at; const actor = document.querySelector<HTMLElement>(".vc-companion"), r = actor?.getBoundingClientRect(), texture = actor?.querySelector<HTMLImageElement>(".vc-texture");
+        last = at; const actor = document.querySelector<HTMLElement>(".vc-companion"), r = actor?.getBoundingClientRect(), texture = actor?.querySelector<HTMLImageElement>(".vc-texture"), painted = actor?.querySelector(".vc-actor")?.getBoundingClientRect();
         const bin = box(document.querySelector(".vc-home [data-companion-trash]")), opening = box(document.querySelector(".vc-home .vc-toy-box-opening"));
         frames.push({ at, focused: document.hasFocus(), hidden: document.hidden, state: actor?.dataset.state ?? "", household: actor?.dataset.household ?? "", toyAction: actor?.dataset.toyAction ?? "",
-          actor: { x: r ? r.left + r.width / 2 : -1, y: r?.bottom ?? -1, platform: actor?.dataset.platform ?? "", hidden: !actor || actor.hidden, decoded: Boolean(texture?.complete && texture.naturalWidth) },
+          actor: { x: r ? r.left + r.width / 2 : -1, y: r?.bottom ?? -1, platform: actor?.dataset.platform ?? "", hidden: !actor || actor.hidden, decoded: Boolean(texture?.complete && texture.naturalWidth), painted: painted ? { x: painted.left + painted.width / 2, y: painted.bottom } : null },
           floor: box(document.querySelector(".vc-home .vc-home-floor")), bin: bin && { x: bin.x + bin.width / 2, y: bin.y + bin.height * .35 }, opening: opening && { x: opening.x + opening.width / 2, y: opening.y + opening.height },
           items: [...document.querySelectorAll<HTMLElement>(".vc-food,.vc-toy")].map(node => {
             const food = node.matches(".vc-food"), rect = box(node)!, matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform), translation = node.style.transform.match(/^translate3d\(([-\d.]+)px,\s*([-\d.]+)px/);
@@ -232,13 +233,19 @@ test("131 hungry sofa resident exits to the actual floor then eats and earns the
   const firstMeal = meal[0], floorArrival = trace.find(frame => frame.at < firstMeal.at && /^companion-home-floor(?:-\d+)?$/.test(frame.actor.platform) && frame.state !== "held");
   expect(trace.some(frame => frame.actor.platform === "companion-home")).toBe(true);
   expect(floorArrival, "the real sofa exit must reach the measured floor before eating").toBeDefined();
-  expect(Math.abs(floorArrival!.actor.x - bed.x - bed.width / 2)).toBeLessThan(3);
+  expect(floorArrival!.actor.x).toBeGreaterThanOrEqual(floorArrival!.floor!.x);
+  expect(floorArrival!.actor.x).toBeLessThanOrEqual(floorArrival!.floor!.x + floorArrival!.floor!.width);
   expect(Math.abs(floorArrival!.actor.y - floorArrival!.floor!.y - floorArrival!.floor!.height + 6)).toBeLessThan(2);
-  expect(trace.some(frame => frame.at > floorArrival!.at && frame.at < firstMeal.at && frame.state === "walk" && /^companion-home-floor(?:-\d+)?$/.test(frame.actor.platform)
-    && Math.abs(frame.actor.x - floorArrival!.actor.x) > 30), "the visible manual home-floor approach must follow the exit").toBe(true);
+  // The actual meal planner can prove a direct jump from the cushion to the
+  // meal's safe floor point. Observe the painted body along that journey,
+  // rather than requiring the household planner's old centre-then-walk path.
+  const approach = trace.filter(frame => frame.at < firstMeal.at && ["walk", "jump"].includes(frame.state) && frame.actor.painted && !frame.hidden && !frame.actor.hidden && frame.actor.decoded);
+  const paintedX = approach.map(frame => frame.actor.painted!.x), left = Math.min(...paintedX), right = Math.max(...paintedX);
+  expect(right - left, "a decoded visible approach must travel, not teleport from sofa to food").toBeGreaterThan(30);
+  expect(approach.some(frame => frame.actor.painted!.x > left + 10 && frame.actor.painted!.x < right - 10), "the real body has intermediate painted approach positions").toBe(true);
   expect(trace.some(frame => frame.items.some(item => item.id === id && (item.discarding || item.carried)))).toBe(false);
   await expect.poll(async () => (await frames(page)).some(frame => frame.at > meal.at(-1)!.at && !frame.items.some(item => item.id === id))).toBe(true);
   proofs.get(page)!.notes.push({ initialNativeCushion: { bed, seat }, actualFood: { id, kind, sourceFood }, syntheticPriorHunger: .9, learnFromYou: false,
     firstActualFloorArrival: floorArrival, firstMeal: meal[0], lastMeal: meal.at(-1), decodedNibbleFrames: meal.length, distinctNibbleScales: new Set(meal.map(frame => frame.items.find(item => item.id === id)!.nibble)).size,
-    result: "actual sofa exit, real home-floor walk, painted eating, food absence and newly earned kind discovery; no carry/discard substitution" });
+    result: "actual sofa exit and painted approach onto the measured floor, painted eating, food absence and newly earned kind discovery; no carry/discard substitution" });
 });

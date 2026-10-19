@@ -1,4 +1,4 @@
-import { findPlatformRoute, platformLandingX, type CompanionAction, type CompanionBrain, type CompanionPlay, type CompanionWorld, type Platform } from "./brain";
+import { COMPANION_JUMP_LIMITS, COMPANION_ROUTE_LIMITS, findPlatformRoute, platformLandingX, type CompanionAction, type CompanionBrain, type CompanionPlay, type CompanionWorld, type Platform } from "./brain";
 import type { CompanionPreferences } from "./preferences";
 import { getCompanionBehaviorProfile } from "./behavior-profile";
 import { COMPANION_FULL_THRESHOLD } from "./care";
@@ -7,6 +7,7 @@ import { shouldDeclineCompanionToy, type CompanionTastes } from "./toy-tastes";
 import { isCompanionHomeFloorFoodSupport } from "./food";
 import { createCompanionFoodGravity } from "./food-gravity";
 import { compareCompanionItemLandings, rankCompanionItemLandings, type CompanionItemLanding, type CompanionItemPoint } from "./item-landing";
+import { COMPANION_TIMING } from "./timing";
 export { COMPANION_TOY_KINDS, COMPANION_TOY_NAMES, type CompanionToyKind } from "./toy-catalog";
 
 export const MAX_COMPANION_TOYS = 4;
@@ -17,7 +18,7 @@ export function companionToyBoxDropReady(rect: { left: number; right: number; to
 }
 type Point = { x: number; y: number; platformId?: string };
 export type CompanionToy = Point & { id: string; kind: CompanionToyKind; angle: number; held: boolean; carried: boolean; fraction?: number; hidden?: boolean; stance?: Point };
-type Flight = { at: number; lastAt: number; x: number; y: number; vx: number; vy: number; previous: Point; homeEmission?: boolean; target?: Point; targetFraction?: number; recovery?: ReturnType<typeof createCompanionFoodGravity> };
+type Flight = { at: number; lastAt: number; x: number; y: number; vx: number; vy: number; previous: Point; homeEmission?: boolean; autonomousToss?: boolean; target?: Point; targetFraction?: number; recovery?: ReturnType<typeof createCompanionFoodGravity> };
 const clamp = (n: number, low: number, high: number) => Math.max(low, Math.min(high, n));
 const valid = (point: Point) => [point.x, point.y].every(Number.isFinite);
 // The pet's transparent panel support is an attachment, not an object ledge.
@@ -98,6 +99,38 @@ export function createCompanionToys(rng: () => number = Math.random) {
     waiting.delete(toy.id);
     flights.set(toy.id, { at: began, lastAt: began, x: toy.x, y: toy.y, vx: Number.isFinite(velocity.x) ? clamp(velocity.x, -260, 260) : 0, vy: Number.isFinite(velocity.y) ? clamp(velocity.y, -220, 140) : 0, previous: { x: toy.x, y: toy.y } });
   };
+  const safeToss = (point: Point, support: Platform, impulse = { vy: -160, dx: serial % 2 ? 48 : -48, speed: 160 }) => {
+    const contacts = roomContact(support) ? homeContacts(platforms).filter(p => Math.abs(p.y - support.y) <= .5).slice(0, 8) : [support];
+    const body = roomFloor(support) ? support : roomContact(support) ? platforms.filter(p => roomFloor(p) && Math.abs(p.y - support.y) <= .5 && Math.abs(platformLandingX(p, point.x) - point.x) <= 48)
+      .sort((a, b) => Math.abs(platformLandingX(a, point.x) - point.x) - Math.abs(platformLandingX(b, point.x) - point.x))[0] : support;
+    if (!body) return;
+    const physical = platforms.filter(floor), { vy, speed } = impulse, desired = point.x + impulse.dx;
+    for (const contact of contacts) {
+      const discriminant = vy * vy + 1800 * (contact.y - point.y);
+      if (discriminant < 0) continue;
+      const seconds = (-vy + Math.sqrt(discriminant)) / 900;
+      if (seconds <= 0 || seconds > .75) continue;
+      const low = Math.max(platformLandingX(contact, contact.x, 9), roomFloor(body) ? platformLandingX(body, body.x) - 48 : body.x + Math.min(9, body.width / 2), point.x - speed * seconds);
+      const high = Math.min(platformLandingX(contact, contact.x + contact.width, 9), roomFloor(body) ? platformLandingX(body, body.x + body.width) + 48 : body.x + body.width - Math.min(9, body.width / 2), point.x + speed * seconds);
+      if (low > high) continue;
+      const x = clamp(desired, low, high), vx = (x - point.x) / seconds;
+      if (!Number.isFinite(vx)) continue;
+      const first = firstHomeContact(point, vx, vy, physical, seconds);
+      if (!first || first.p.id !== contact.id || Math.abs(first.x - x) > 1e-6) continue;
+      return { vx, vy, target: { x: first.x, y: first.p.y, platformId: first.p.id } };
+    }
+  };
+  const tossOntoSupport = (toy: CompanionToy, point: Point, support: Platform, at: number, impulse?: { vy: number; dx: number; speed: number }) => {
+    const arc = safeToss(point, support, impulse);
+    if (arc) {
+      release(toy, at, { x: arc.vx, y: arc.vy });
+      const flight = flights.get(toy.id)!, target = platforms.find(p => p.id === arc.target.platformId)!;
+      flight.autonomousToss = true; flight.target = arc.target; flight.targetFraction = (arc.target.x - target.x) / target.width;
+    } else {
+      // A blocked/narrow arc keeps the same object on its actual support.
+      toy.carried = false; bind(toy, support, point.x);
+    }
+  };
   const remove = (id: string) => { waiting.delete(id); flights.delete(id); return objects.delete(id); };
   const recover = (toy: CompanionToy, at: number) => {
     // A protected button can leave a hole in the floor below a captured grip.
@@ -139,7 +172,7 @@ export function createCompanionToys(rng: () => number = Math.random) {
       // restarting gravity. Native user throws have no such destination.
       for (const [id, flight] of flights) {
         if (!flight.target || flight.targetFraction === undefined) continue;
-        const support = platforms.find(p => p.id === flight.target!.platformId && (flight.recovery ? viewportFloor(p) : roomContact(p)));
+        const support = platforms.find(p => p.id === flight.target!.platformId && (flight.recovery ? viewportFloor(p) : flight.autonomousToss ? floor(p) : roomContact(p)));
         const toy = objects.get(id);
         if (!support || !toy) { if (toy && flight.recovery) recover(toy, at); else { flight.target = undefined; flight.targetFraction = undefined; } continue; }
         const x = platformLandingX(support, support.x + support.width * flight.targetFraction, 9), y = support.y;
@@ -221,11 +254,12 @@ export function createCompanionToys(rng: () => number = Math.random) {
         // A chest emission is in front of the sofa and calendar, on the same
         // measured floor plane as food. Human throws retain every real ledge.
         const physical = floor;
-        const swept = !flight.homeEmission && falling ? platforms.filter(p => physical(p) && p.y >= flight.previous.y - .1 && p.y <= next.y + .1)
+        const swept = !flight.homeEmission && !flight.autonomousToss && falling ? platforms.filter(p => physical(p) && p.y >= flight.previous.y - .1 && p.y <= next.y + .1)
           .map(p => ({ p, t: dy > .01 ? clamp((p.y - flight.previous.y) / dy, 0, 1) : 0 }))
           .filter(({ p, t }) => { const x = flight.previous.x + (next.x - flight.previous.x) * t; return x >= p.x && x <= p.x + p.width; })
           .sort((a, b) => a.t - b.t)[0] : undefined;
-        const homeLanding = flight.homeEmission ? firstHomeContact(flight, flight.vx, flight.vy, emissionContacts, age, Math.max(0, (flight.lastAt - flight.at) / 1000)) : undefined;
+        const exactContacts = flight.homeEmission ? emissionContacts : flight.autonomousToss ? platforms.filter(floor) : undefined;
+        const homeLanding = exactContacts ? firstHomeContact(flight, flight.vx, flight.vy, exactContacts, age, Math.max(0, (flight.lastAt - flight.at) / 1000)) : undefined;
         const landing = homeLanding ?? (swept && { p: swept.p, x: flight.previous.x + (next.x - flight.previous.x) * swept.t });
         if (landing) { bind(toy, landing.p, landing.x); toy.angle = 0; flights.delete(id); }
         else {
@@ -241,8 +275,32 @@ export function createCompanionToys(rng: () => number = Math.random) {
     drop(id: string, at: number, velocity?: { x: number; y: number }) { const toy = objects.get(id); if (pausedAt !== undefined || !toy?.held || !Number.isFinite(at)) return false; release(toy, at, velocity); return true; },
     pick(id: string, point: Point) { const toy = objects.get(id); if (pausedAt !== undefined || !toy || toy.hidden || !valid(point) || toy.held || toy.carried || flights.has(id) || waiting.has(id) || Math.hypot(toy.x - point.x, toy.y - point.y) > 48) return false; toy.carried = true; toy.platformId = undefined; return true; },
     carry(id: string, point: Point) { const toy = objects.get(id); if (pausedAt !== undefined || !toy?.carried || !valid(point)) return false; toy.x = point.x; toy.y = point.y; return true; },
-    put(id: string, point: Point, at: number, toss = false) { const toy = objects.get(id); if (pausedAt !== undefined || !toy?.carried || !valid(point) || !Number.isFinite(at)) return false; toy.x = point.x; toy.y = point.y; if (toss) release(toy, at, { x: serial % 2 ? 160 : -160, y: -160 }); else { toy.carried = false; const support = platforms.find(p => p.id === point.platformId && floor(p)); if (support) bind(toy, support, point.x); else release(toy, at); } return true; },
-    nudge(id: string, point: Point, at: number) { const toy = objects.get(id); if (pausedAt !== undefined || !toy || toy.hidden || toy.held || toy.carried || flights.has(id) || waiting.has(id) || !valid(point) || !Number.isFinite(at) || Math.hypot(toy.x - point.x, toy.y - point.y) > 48) return false; release(toy, at, { x: toy.x < point.x ? -120 : 120, y: -80 }); return true; },
+    put(id: string, point: Point, at: number, toss = false) {
+      const toy = objects.get(id);
+      if (pausedAt !== undefined || !toy?.carried || !valid(point) || !Number.isFinite(at)) return false;
+      const support = platforms.find(p => p.id === point.platformId && floor(p)) ?? (toss && !point.platformId
+        ? platforms.filter(p => floor(p) && point.x >= p.x && point.x <= p.x + p.width && p.y >= point.y - 2 && p.y - point.y <= 64)
+          .sort((a, b) => Math.abs(a.y - point.y) - Math.abs(b.y - point.y))[0] : undefined);
+      // This is the creature's placement API. Human drop/throw retains its
+      // original free sweep. Reserve a short real landing before releasing a
+      // carried toy, rather than throwing it from a high room to the viewport.
+      if (toss && (!support || point.x < support.x || point.x > support.x + support.width || point.y > support.y + 2 || support.y - point.y > 64)) return false;
+      toy.x = point.x; toy.y = point.y;
+      if (toss && support) tossOntoSupport(toy, point, support, at);
+      else {
+        toy.carried = false;
+        if (support) bind(toy, support, point.x); else release(toy, at);
+      }
+      return true;
+    },
+    nudge(id: string, point: Point, at: number) {
+      const toy = objects.get(id);
+      if (pausedAt !== undefined || !toy || toy.hidden || toy.held || toy.carried || flights.has(id) || waiting.has(id) || !valid(point) || !Number.isFinite(at) || Math.hypot(toy.x - point.x, toy.y - point.y) > 48) return false;
+      const support = platforms.find(p => p.id === toy.platformId && floor(p));
+      if (!support) return false;
+      tossOntoSupport(toy, { x: toy.x, y: toy.y, platformId: support.id }, support, at, { vy: -80, dx: toy.x < point.x ? -24 : 24, speed: 120 });
+      return true;
+    },
     stash(id: string) { const toy = objects.get(id); return Boolean(pausedAt === undefined && toy?.carried && !toy.held && remove(id)); },
     returnHeld(id: string) { return pausedAt === undefined && objects.get(id)?.held ? remove(id) : false; },
     releaseCarry(at: number) { if (Number.isFinite(at)) for (const toy of objects.values()) if (toy.carried) release(toy, at); },
@@ -276,9 +334,26 @@ export type CompanionToyBeat = { serial: number; kind: "tidy" | "play"; effect?:
 export type CompanionToyAction = CompanionAction & { toy: CompanionToyBeat };
 /** A real meal or committed care intention always keeps ownership. Shared by
  * both planning and the carried-toy continuation so neither can cut in. */
+const mealRouteProofs = new Map<string, { at: number; until: number; reachable: boolean }>();
 export function companionToyFoodPriority(brain: CompanionBrain, world: CompanionWorld, preferences: CompanionPreferences) {
-  return Boolean(brain.foodGoal || brain.intention && brain.intention.kind !== "explore" || brain.episode && brain.episode.remaining > 0
-    || preferences.feeding && brain.hunger >= COMPANION_FULL_THRESHOLD && world.foods?.length);
+  if (brain.foodGoal && brain.foodGoal.remaining > 0 || brain.intention && brain.intention.kind !== "explore" && brain.intention.remaining > 0
+    || brain.episode && brain.episode.remaining > 0) return true;
+  if (!preferences.feeding || brain.hunger < COMPANION_FULL_THRESHOLD || !world.foods?.length) return false;
+  // New world wrappers need not re-run8 graph searches on each notice. The
+  // exact source,8 food positions and current geometry invalidate immediately;
+  // only route facts are cached, never hunger/permissions/owned work. Eight
+  // entries expire on the existing active clock, without a timer or polling.
+  const foods = world.foods.slice(0, 8), at = Number.isFinite(brain.activeMs) ? brain.activeMs : 0;
+  const key = JSON.stringify([world.x, world.y, world.platformId, preferences.jump,
+    foods.map(food => [food.id, food.kind, food.x, food.y, food.platformId]),
+    world.platforms.map(p => [p.id, p.x, p.y, p.width, p.kind, p.manualOnly, p.bodyOnly])]);
+  const cached = mealRouteProofs.get(key);
+  if (cached && cached.at <= at && at <= cached.until) return cached.reachable;
+  // A visible but unreachable snack cannot starve every real toy errand.
+  const reachable = foods.some(food => food.id && valid(food) && findPlatformRoute(world, food, world.platforms, preferences.jump, food.platformId)) === true;
+  mealRouteProofs.delete(key); mealRouteProofs.set(key, { at, until: at + 6000, reachable });
+  if (mealRouteProofs.size > 8) mealRouteProofs.delete(mealRouteProofs.keys().next().value!);
+  return reachable;
 }
 export function companionToyMotivation(p: CompanionPreferences, brain: CompanionBrain, world: CompanionWorld) {
   const social = p.personality === "affectionate" && p.petting && world.pointer && (world.pointer.stableMs ?? 0) >= 900
@@ -288,7 +363,7 @@ export function companionToyMotivation(p: CompanionPreferences, brain: Companion
     curious: { spawn: true, cooldown: 14000, play: "pounce", gentle: false, interested: true },
     affectionate: { spawn: false, cooldown: 20000, play: "lean-nuzzle", gentle: true, interested: !social },
     sleepy: { spawn: false, cooldown: 24000, play: "groom", gentle: true, interested: brain.energy >= .55 },
-    tidy: { spawn: false, cooldown: 1200, play: "groom", gentle: true, interested: brain.hunger < COMPANION_FULL_THRESHOLD },
+    tidy: { spawn: false, cooldown: 1200, play: "groom", gentle: true, interested: true },
     mischievous: { spawn: true, cooldown: 5000, play: "pounce", gentle: false, interested: true },
     gourmet: { spawn: false, cooldown: 30000, play: "bow", gentle: true, interested: brain.hunger < .2 },
     performer: { spawn: true, cooldown: 12000, play: "celebrate", gentle: false, interested: true },
@@ -313,6 +388,25 @@ export function createCompanionToyPlanner() {
   const routeBetween = (input: Input, from: Point, target: Point) => {
     return findCompanionToyRoute(from, target, input.world.platforms, input.preferences.jump);
   };
+  const returnAllowance = (input: Input, approach: NonNullable<ReturnType<typeof findPlatformRoute>>, back: NonNullable<ReturnType<typeof findPlatformRoute>>, point: Point) => {
+    // A proved leg has at most12 jumps,12 takeoff walks and one final walk.
+    // Reserve both real legs once; remaining budget never grows on replan.
+    const steps = [...approach, ...back], maximum = (COMPANION_ROUTE_LIMITS.maxHops * 2 + 1) * 2;
+    const speed = getCompanionBehaviorProfile(input.preferences, input.brain.habits).walkSpeed;
+    let previous = input.world, elapsed = 0;
+    for (let index = 0; index < steps.length; index++) {
+      if (index === approach.length) previous = { ...input.world, ...point };
+      const step = steps[index], dy = step.target.y - previous.y;
+      // The renderer replaces a jump's placeholder900ms with this existing
+      // physical flight plus anticipation/landing. Include its decision gap.
+      const { gravity, maxRise } = COMPANION_JUMP_LIMITS, impulse = Math.sqrt(2 * gravity * maxRise);
+      elapsed += step.kind === "jump" ? COMPANION_TIMING.jumpAnticipation + COMPANION_TIMING.jumpLanding
+        + (impulse + Math.sqrt(Math.max(0, impulse * impulse + 2 * gravity * dy))) / gravity * 1000
+        : Math.max(220, Math.abs(step.target.x - previous.x) / speed * 1000);
+      elapsed += 350; previous = { ...input.world, ...step.target };
+    }
+    return { budget: Math.max(18, Math.min(maximum + 4, steps.length + 4)), deadline: input.now + Math.min(60000, Math.max(30000, elapsed * 1.25 + 3000)) };
+  };
   const preference = (input: Input, toy: CompanionToy) => {
     if (input.preferences.personality === "tidy") return 0;
     const favorites: Record<CompanionPreferences["personality"], readonly CompanionToyKind[]> = { curious: ["paper-plane", "pinwheel", "feather", "spinning-top", "kaleidoscope", "toy-rocket"], affectionate: ["spool", "bell", "duck", "plush-fish", "ribbon-ball"], sleepy: ["spool", "feather", "plush-fish", "rocking-horse"], tidy: [], mischievous: ["ball", "blocks", "hoop", "toy-car", "dice", "squeaky-carrot", "ribbon-ball"], gourmet: ["bell", "spool", "duck", "squeaky-carrot"], performer: ["pinwheel", "bell", "hoop", "star-wand", "tambourine", "maraca", "yo-yo", "toy-rocket"], homebody: ["blocks", "spool", "train", "rocking-horse", "stacking-rings", "kaleidoscope"], balanced: [] };
@@ -335,9 +429,9 @@ export function createCompanionToyPlanner() {
     },
     notice(input: Input & { action: (CompanionAction & { scene?: { id: number }; toy?: unknown; household?: unknown; radio?: unknown }) | null; active: boolean; grounded: boolean; held?: boolean; commanded?: boolean; busy?: boolean }) {
       const { action, now, preferences: p } = input;
-      if (job || !eligible(input) || !input.active || !input.grounded || input.held || input.commanded || input.busy
+      if (job || !input.active || !input.grounded || input.held || input.commanded || input.busy
         || !action || !["idle", "look", "walk"].includes(action.kind) || action.toy || action.household || action.radio || action.accessory || action.living
-        || action.scene && ![31, 32, 33, 35].includes(action.scene.id) || p.personality === "tidy" && (!input.box || input.brain.hunger >= COMPANION_FULL_THRESHOLD)) return false;
+        || action.scene && ![31, 32, 33, 35].includes(action.scene.id) || p.personality === "tidy" && !input.box || !eligible(input)) return false;
       for (const toy of candidates(input)) {
         if ((noticed.get(toy.id) ?? -Infinity) > now) continue;
         // Failed route proofs consume this cue too. Pixel motion does not
@@ -351,10 +445,11 @@ export function createCompanionToyPlanner() {
     },
     next(input: Input): CompanionToyAction | undefined {
       const { world, brain, preferences: p, now, box } = input;
-      if (!eligible(input) || p.personality === "tidy" && (!box || brain.hunger >= COMPANION_FULL_THRESHOLD)) { if (job) stop(now, 1000); return; }
+      if (!eligible(input) || p.personality === "tidy" && !box) { if (job) stop(now, 1000); return; }
       const here = { x: world.x, y: world.y, platformId: world.platformId };
       const routeTo = (target: Point) => routeBetween(input, here, target);
       let preparedRoute: ReturnType<typeof findPlatformRoute> | undefined;
+      let preparedReturn: ReturnType<typeof findPlatformRoute> | undefined;
       if (job && (now >= job.deadline || job.budget <= 0 || job.stage === "deliver" && "carriedId" in input && input.carriedId !== job.toyId)) fail(now);
       const continuation = job?.kind === "tidy" && job.stage === "seek" && !job.toyId;
       if (!job || continuation) {
@@ -362,8 +457,13 @@ export function createCompanionToyPlanner() {
         const tidy = p.personality === "tidy", motivation = companionToyMotivation(p, brain, world);
         // At most four real objects: an unreachable nearest toy cannot hide
         // another reachable one. Reuse its proved first route in this beat.
-        const target = input.intent?.mode === "spawn" ? undefined : candidates(input).find(toy => { const route = routeTo(toy.stance ?? toy); if (!route || tidy && !routeBetween(input, toy.stance ?? toy, box!)) { rememberFailure(toy.id, now); return false; } preparedRoute = route; return true; });
-        if (target) job = { serial: ++serial, kind: tidy ? "tidy" : "play", stage: input.tastes && shouldDeclineCompanionToy(target.kind, input.tastes, p, brain) ? "decline" : "seek", toyId: target.id, deadline: now + 30_000, budget: 18, ...motivation };
+        const target = input.intent?.mode === "spawn" ? undefined : candidates(input).find(toy => {
+          const route = routeTo(toy.stance ?? toy), back = tidy ? routeBetween(input, toy.stance ?? toy, box!) : undefined;
+          if (!route || tidy && !back) { rememberFailure(toy.id, now); return false; }
+          preparedRoute = route; preparedReturn = back; return true;
+        });
+        if (target) job = { serial: ++serial, kind: tidy ? "tidy" : "play", stage: input.tastes && shouldDeclineCompanionToy(target.kind, input.tastes, p, brain) ? "decline" : "seek", toyId: target.id,
+          ...(tidy && preparedRoute && preparedReturn ? returnAllowance(input, preparedRoute, preparedReturn, target.stance ?? target) : { deadline: now + 30_000, budget: 18 }), ...motivation };
         else if ((!input.intent || input.intent.mode === "spawn") && motivation.spawn && box && input.count < MAX_COMPANION_TOYS && p.ambientPrank) job = { serial: ++serial, kind: "play", stage: "box", deadline: now + 25_000, budget: 16, ...motivation };
         else { stop(now, 1000); return; }
       }

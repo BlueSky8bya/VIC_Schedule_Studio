@@ -56,7 +56,7 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   // P05 계기: 짧은 공연을 실제로 마친 직후 사용자가 쓰다듬어 주었으며, 교감 기능이 허용돼 있다.
   { id: "P05", label: "앵콜은 딱 한 번, 다른 재롱으로", personality: "performer", major: true, triggers: ["pet"], steps: [p("celebrate"), p("bow"), p("groom")] },
   { id: "P06", label: "공과 맞춰 통통", personality: "performer", major: false, triggers: ["toy"], steps: [t("toss", ["ball"]), w(700), g("toy"), p("celebrate"), p("bow")] },
-  { id: "P07", label: "기차 옆 행진", personality: "performer", major: false, triggers: ["toy"], steps: [t("play", ["train"]), g("toy"), p("bow")] },
+  { id: "P07", label: "기차 옆 행진", personality: "performer", major: false, triggers: ["toy"], steps: [t("nudge", ["train"]), g("toy"), p("bow")] },
   { id: "P08", label: "별 지팡이 소개", personality: "performer", major: false, triggers: ["toy"], steps: [t("inspect", ["star-wand"]), p("cheer-rehearsal"), p("bow"), t("return", ["star-wand"])] },
   { id: "P09", label: "굴러도 마지막 인사", personality: "performer", major: false, triggers: ["recovered"], steps: [p("shake"), p("bow")] },
   { id: "P10", label: "새로 입은 액세서리 자랑", personality: "performer", major: false, triggers: ["outfit"], steps: [p("celebrate"), p("bow"), p("groom")] },
@@ -72,7 +72,7 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   { id: "C04", label: "TV 다섯 채널 중 한 번 비교하기", personality: "curious", major: true, triggers: ["tv"], steps: [g("sofa"), tv("nature"), w(1400), tv("next"), w(3000), p("bow")] },
   // C05 계기: 실제 월 이동·레이아웃 변경이 끝나 새 안전 구간이 확인됐으며 사용자의 입력이 끝났다.
   { id: "C05", label: "달력이 바뀐 뒤 안전한 새 자리 하나", personality: "curious", major: true, triggers: ["layout"], steps: [p("sniff"), g("novel-place"), p("stretch"), p("bow")] },
-  { id: "C06", label: "멈춘 공을 늦게 톡", personality: "curious", major: false, triggers: ["toy", "toy-settled"], steps: [w(500), g("toy"), t("play", ["ball"]), p("bow")] },
+  { id: "C06", label: "멈춘 공을 늦게 톡", personality: "curious", major: false, triggers: ["toy", "toy-settled"], steps: [w(500), g("toy"), t("nudge", ["ball"]), p("bow")] },
   { id: "C07", label: "만화경 가까이 보기", personality: "curious", major: false, triggers: ["toy"], steps: [t("inspect", ["kaleidoscope"]), p("sniff"), t("return", ["kaleidoscope"])] },
   { id: "C08", label: "팽이 앞 갸웃", personality: "curious", major: false, triggers: ["toy"], steps: [t("inspect", ["spinning-top"]), p("bow"), t("return", ["spinning-top"])] },
   { id: "C09", label: "덜 논 실물 선택", personality: "curious", major: false, triggers: ["toy"], steps: [t("inspect"), t("play"), p("bow")] },
@@ -174,7 +174,7 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   { id: "H04", label: "접혔다 열린 집으로 실제 귀가", personality: "homebody", major: true, triggers: ["layout"], steps: [g("sofa"), p("sniff"), p("bow"), p("groom")] },
   // H05 계기: 집 안 활동 하나를 실제 마쳤고, 쿠션과 바닥 등 둘 이상의 안전한 생활 자리가 있다.
   { id: "H05", label: "쿠션·바닥·창가로 바뀌는 작은 일상", personality: "homebody", major: true, triggers: ["free"], steps: [g("sofa"), p("groom"), g("floor"), p("stretch"), g("window"), curtain("open"), w(1800)] },
-  { id: "H06", label: "집 앞 기차 왕복", personality: "homebody", major: false, triggers: ["toy"], steps: [t("play", ["train"]), g("toy"), t("return", ["train"]), g("sofa")] },
+  { id: "H06", label: "집 앞 기차 왕복", personality: "homebody", major: false, triggers: ["toy"], steps: [t("nudge", ["train"]), g("toy"), t("return", ["train"]), g("sofa")] },
   { id: "H07", label: "고리 쌓기 소품 감상", personality: "homebody", major: false, triggers: ["toy"], steps: [t("inspect", ["stacking-rings"]), p("sniff"), t("return", ["stacking-rings"])] },
   { id: "H08", label: "좋아하는 음식 집 보관", personality: "homebody", major: false, triggers: ["food"], steps: [f("tidy"), p("groom")] },
   { id: "H09", label: "새로 펼친 방 둘러보기", personality: "homebody", major: false, triggers: ["layout"], steps: [g("sofa"), p("sniff"), p("bow")] },

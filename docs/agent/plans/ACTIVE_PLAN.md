@@ -2,7 +2,7 @@
 
 | ID | Status | Record |
 |---|---|---|
-| COMPANION-MANUAL-139 | Local verified; deployed full SHA/native confirmation pending | [139 plan](PLAN-20261020-139-manual-personality-book.md) |
+| COMPANION-EXECUTION-140 | Local verification complete; main deployment and anonymous actual cleanup proof pending | [140 plan](PLAN-20261020-140-personality-execution-audit.md) |
 | PRIVACY-20260921 | Deployed containment verified; historical Git exposure, realtime/provider and retention follow-up remain | [Privacy audit](../verification/PRIVACY-20260921.md) |
 | DARK-HARMONY-20260919 | Ribbon editor dark controls corrected; local verification and authorized push follow-up. Production unverified (prior release staged) | [Dark palette follow-up](../../ux/dark-mode-palette.md) |
 | MARINE-RESUME | Paused by owner | [Resume handoff](../handoffs/20260916-marine-biomes-resume.md) |

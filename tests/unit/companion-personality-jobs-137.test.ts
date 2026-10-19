@@ -34,7 +34,7 @@ function fixture(id: string, count = 1, firstKind: CompanionToyKind = "star-wand
   const scene: PersonalitySceneInput = {
     world, brain: { ...createBrain(0, () => .5), life: createCompanionLife(() => 0), hunger: .1, energy: .9 },
     preferences: { ...DEFAULT_COMPANION_PREFERENCES, personality: recipe.personality }, now: 3000,
-    home: { floor: { x: 280, y: floor.y, platformId: floor.id }, window: { x: 500, y: floor.y, platformId: floor.id }, box, dispenser: { x: 600, y: floor.y, platformId: floor.id } },
+    home: { floor: { x: 280, y: floor.y, platformId: floor.id }, sofa: { x: 180, y: floor.y, platformId: floor.id }, window: { x: 500, y: floor.y, platformId: floor.id }, box, dispenser: { x: 600, y: floor.y, platformId: floor.id } },
     toys: [], tv: "off", favoriteFood: "apple",
   };
   const trace: Trace[] = [], originalIds = toys.ids(), pantry = { x: 500, y: floor.y, platformId: floor.id };
@@ -134,6 +134,30 @@ function fixture(id: string, count = 1, firstKind: CompanionToyKind = "star-wand
 }
 
 describe("137 authored jobs use the physical owners", () => {
+  it.each([
+    ["P08", "star-wand"], ["C07", "kaleidoscope"], ["A03", "duck"],
+    ["S03", "ball"], ["T01", "ball"], ["M02", "toy-car"],
+    ["G12", "ball"], ["H07", "stacking-rings"], ["B01", "ball"],
+  ] as const)("140 %s completes its actual toy owner and return at middle hunger, without deleting or substituting its item", (scene, kind) => {
+    const host = fixture(scene, 1, kind), id = host.originalIds[0];
+    host.scene.brain.hunger = .5;
+    host.scene.world.pointer = { x: 440, y: floor.y, stableMs: 1000 };
+    host.run();
+    expect(host.trace.some(event => event.kind === "toy:pick" && event.id === id)).toBe(true);
+    expect(host.trace.filter(event => event.kind === "toy:stash").map(event => event.id)).toEqual([id]);
+    expect(host.toys.count()).toBe(0);
+    expect(host.toys.carried()).toBeUndefined();
+  });
+
+  it.each(["P07", "H06"])("140 %s nudges its actual train and follows it instead of throwing it", scene => {
+    const host = fixture(scene, 1, "train"), id = host.originalIds[0];
+    host.scene.brain.hunger = .5; host.run();
+    expect(host.trace.filter(event => event.kind === "toy:nudge").map(event => event.id)).toEqual([id]);
+    expect(host.trace.some(event => event.kind === "toy:toss")).toBe(false);
+    if (scene === "H06") expect(host.trace.filter(event => event.kind === "toy:stash").map(event => event.id)).toEqual([id]);
+    else expect(host.toys.ids()).toEqual([id]);
+  });
+
   it("P08 actually picks its star wand, carries the same ID through the performance and paints it into the real box before stash ACK", () => {
     const host = fixture("P08", 2), wand = host.toys.items().find(toy => toy.kind === "star-wand")!;
     expect(wand).toBeTruthy();

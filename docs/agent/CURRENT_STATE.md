@@ -7,7 +7,7 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Current139: slightly enlarge the shared room book; preserve explicit personality choices across reload while never-selected documents continue random selection.
+Current140: reproduce the reported outside-room tidy stall and audit all nine personalities' primary and secondary scenes through real completion.
 
 Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user.125 explicitly authorizes unnecessary Vercel deployment cleanup/optimization; unrelated cleanup, bulk DB UPDATE, paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
 
@@ -17,7 +17,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| COMPANION-MANUAL-139 | Local verified | Check deployed full SHA/native random→manual pin and book48; 3476 units/15 browser checks PASS | [139 plan](plans/PLAN-20261020-139-manual-personality-book.md) |
+| COMPANION-EXECUTION-140 | Releasing | Build6 all-nine native primary/secondary and three far returns passed; build7 affected13/13 passed. Confirm main deployment/fullSHA and actual anonymous four-ID cleanup | [140 plan](plans/PLAN-20261020-140-personality-execution-audit.md) |
 | OPS-VERCEL-QUOTA | Open | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
@@ -45,6 +45,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 5. PRIVACY-20260921: resolve remaining visit/recurring retention policy and restricted local recovery-backup removal after its2026-10-24 window. No automatic future run is scheduled.
 ## Last Verified
 
-Current product release `41e73e05904d60b7effea1a70a6d141ad71376fd`: [138 shared room scroll, theme and refresh personality](plans/PLAN-20261019-138-companion-scroll-room-random.md#출시-확인). Same-delivery sofa/resident scroll, shared dark weekdays and common lower furniture anchors; fresh personality per document while ordinary OFF/settings and same-document manual selection persist. Local3458 units/303 files/type/lint/build/harness338 and55 distinct native checks PASS, including all9 personalities, actual four-toy returns/eating/washing/TV/light/curtain, editor ACK/OFF and G22 both developer views. Vercel success and fresh anonymous actual fullSHA/chunk/native controls/light reload/6 random refreshes/dark weekday PASS00:30 KST; errors0/production mutation0/live-state GET0/private-manifest0. Protected art preserved. Remote quality39277952042 pending; real-login/RLS/OBS/screen-reader and human visual recognition/art approval remain separate.
+Current product release `a0e7d07e813bbb307b6b33f0dcc6dd06fa209c54`: [139 explicit personality memory and larger room book](plans/PLAN-20261020-139-manual-personality-book.md#출시-확인). Direct personality choices persist across reload/tabs; unselected documents keep random draws even after ordinary settings changes. Same-value pointer/keyboard confirmation also pins. Shared book42→48px with proportional cover and real hit area. Local3476 units/303 files/type/lint/build/harness339 and15 distinct browser checks PASS, including viewer/studio/actual preview reloads, physical controls and G22 both developer views. Vercel success and fresh anonymous actual fullSHA/chunk proof,6 unselected documents/5 personalities→native choice→3 pinned reloads/book48/light/TV/dark weekday PASS00:55~00:56 KST; errors0/production mutation0/live-state GET0/private-manifest0. Protected art preserved. Remote quality39281249552 completed/success; real-login/RLS/OBS/screen-reader and human visual recognition/art approval remain separate.
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.

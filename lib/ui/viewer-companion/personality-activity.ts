@@ -6,6 +6,10 @@ import type { CompanionFoodKind } from "./snacks";
 
 type PersonalityAction = CompanionAction & { foodRefusal?: { foodId: string; kind: CompanionFoodKind }; personalitySignature?: CompanionPreferences["personality"] };
 type Activity = PersonalityAction & { scene?: { id: number }; toy?: unknown; household?: unknown; radio?: unknown };
+/** Preparation and legacy fallbacks obey the same explicit interaction flags. */
+export function companionPersonalityPlayAllowed(play: CompanionPlay, preferences: Pick<CompanionPreferences, "petting" | "jump">): boolean {
+  return (preferences.petting || !["ask-petting", "lean-nuzzle"].includes(play)) && (preferences.jump || play !== "pounce");
+}
 /** Reserve a due fitting expression before creating a new secondary job.
  * The caller may still choose real radio/direct care first; only launch
  * records this candidate. Existing owned goals keep their current action. */
@@ -43,7 +47,7 @@ export function createCompanionPersonalityActivity(rng: () => number = Math.rand
   };
   const clips: Record<CompanionPreferences["personality"], readonly CompanionPlay[]> = {
     curious: ["pounce", "bow", "celebrate"], affectionate: ["ask-petting", "lean-nuzzle", "bow"], sleepy: ["groom", "ask-petting", "lean-nuzzle"],
-    tidy: ["groom", "bow", "ask-petting"], mischievous: ["bow", "pounce", "celebrate"], gourmet: ["ask-petting", "bow", "groom"],
+    tidy: ["groom", "bow"], mischievous: ["bow", "pounce", "celebrate"], gourmet: ["ask-petting", "bow", "groom"],
     performer: ["cheer-rehearsal", "celebrate", "bow"], homebody: ["lean-nuzzle", "groom", "ask-petting"], balanced: ["bow", "groom", "celebrate", "ask-petting"],
   };
   return {
@@ -83,8 +87,9 @@ export function createCompanionPersonalityActivity(rng: () => number = Math.rand
       const support = world.platforms.find(platform => platform.id === world.platformId);
       if (!support || ["control", "hide"].includes(support.kind) || ![world.x, world.y, support.x, support.y, support.width].every(Number.isFinite)
         || Math.abs(world.y - support.y) > 2 || world.x < support.x || world.x > support.x + support.width) return;
-      const choices = clips[preferences.personality].filter(play => play !== previousPlay && (preferences.jump || play !== "pounce")), draw = rng();
-      const play = choices[Math.min(choices.length - 1, Math.max(0, Math.floor((Number.isFinite(draw) ? draw : 0) * choices.length)))];
+      const allowed = clips[preferences.personality].filter(play => companionPersonalityPlayAllowed(play, preferences));
+      const different = allowed.filter(play => play !== previousPlay), choices = different.length ? different : allowed, draw = rng();
+      const play = choices[Math.min(choices.length - 1, Math.max(0, Math.floor((Number.isFinite(draw) ? draw : 0) * choices.length)))] ?? "bow";
       return { kind: "play", play, personalitySignature: preferences.personality, target: { x: world.x, y: world.y, platformId: support.id }, duration: companionPlayDuration(play) };
     },
     refuseFood(brain: CompanionBrain, world: CompanionWorld, preferences: CompanionPreferences, tastes: CompanionTastes | null, known: readonly CompanionFoodKind[], now: number): PersonalityAction | undefined {

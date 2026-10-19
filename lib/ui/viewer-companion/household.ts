@@ -119,8 +119,15 @@ export function createCompanionHousehold(rng: () => number = Math.random) {
     cancel: () => { if (job) finish(lastNow); },
     resolve(beat: CompanionHouseholdBeat, result: boolean | string, now: number) {
       if (!job || beat.serial !== job.serial || !beat.effect) return;
+      if (beat.effect === "pick" && (job.stage !== "seek" || beat.foodId !== job.foodId)) return;
       if (!result) { finish(now); return; }
-      if (beat.effect === "pick") { job.stage = "deliver"; return; }
+      if (beat.effect === "pick") {
+        // Reaching a real snack cannot consume the carried leg's allowance.
+        // Keep the same bounded delivery window/decisions, starting only at
+        // the food owner's successful pickup ACK. A failed/stale ACK never
+        // renews this budget, and every route/permission is still rechecked.
+        job.stage = "deliver"; job.deadline = now + 45000; job.budget = 32; return;
+      }
       if (beat.effect === "spawn" && typeof result === "string") { if (job.feedOnly) { finish(now); return; } job.foodId = result; job.stage = "waiting"; return; }
       if (job.foodId) { handled.set(job.foodId, now + (job.kind === "mischief" ? 8000 : 180000)); if (handled.size > 24) handled.delete(handled.keys().next().value!); }
       finish(now);

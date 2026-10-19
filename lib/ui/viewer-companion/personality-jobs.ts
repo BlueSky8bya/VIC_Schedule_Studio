@@ -15,6 +15,14 @@ type Input = {
   toyCount: number; foodCount: number; occupied?: readonly CompanionItemPoint[]; tastes?: CompanionTastes;
 };
 
+/** Basic care may replace a nonmeal scene, but never a carried object, an
+ * existing job, the entry greeting or the personality's own meal sequence. */
+export function getCompanionPersonalityMeal(director: ReturnType<typeof createCompanionPersonalityDirector>, proposal: PersonalitySceneProposal | undefined,
+  input: Pick<Input, "world" | "brain" | "preferences" | "now" | "carriedToy" | "carriedFood"> & { ownedJob?: boolean }): CompanionAction | undefined {
+  if (!input.world.animated || !input.preferences.roam || input.ownedJob || input.carriedToy || input.carriedFood || proposal?.meta.id.startsWith("entry-") || director.plansMeal()) return;
+  return getFoodAction(input.brain, input.world, input.preferences, input.now);
+}
+
 /** Connect an authored request to the existing real object planners. It never
  * mutates objects or supplies a successful effect; the renderer owns ACKs. */
 export function createCompanionPersonalityJobs(director: ReturnType<typeof createCompanionPersonalityDirector>, household: ReturnType<typeof createCompanionHousehold>, toys: ReturnType<typeof createCompanionToyPlanner>) {

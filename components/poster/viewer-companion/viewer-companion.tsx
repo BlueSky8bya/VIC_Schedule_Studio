@@ -12,8 +12,8 @@ import { companionRunTripContact, companionToyTripExperience, planCompanionRomp,
 import { cancelCompanionEpisode, companionEpisodeHopAvailable, companionEpisodeMishap, companionEpisodeRunHop, companionEpisodeRunTrip, companionRollProgress } from "@/lib/ui/viewer-companion/episodes";
 import { companionAttentionPoint, deliberateCompanionAction } from "@/lib/ui/viewer-companion/deliberation";
 import { advanceBrain, cancelCompanionTravelGoal, commitAction, createBrain, getAction, getFoodAction, getCompanionMood, nearestPlatform, platformLandingX, recordCompanionEvent, type CompanionAction, type CompanionPlay, type Platform } from "@/lib/ui/viewer-companion/brain";
-import { createCompanionPersonalityDirector, type PersonalitySceneBeat, type PersonalityHome } from "@/lib/ui/viewer-companion/personality-director";
-import { createCompanionPersonalityJobs } from "@/lib/ui/viewer-companion/personality-jobs";
+import { createCompanionPersonalityDirector, nextCompanionPersonalityScene, type PersonalitySceneBeat, type PersonalityHome } from "@/lib/ui/viewer-companion/personality-director";
+import { createCompanionPersonalityJobs, getCompanionPersonalityMeal } from "@/lib/ui/viewer-companion/personality-jobs";
 import { canCompanionSetHomeTv, companionHomeTvControl, getCompanionHomeTv, setCompanionHomeTv } from "@/lib/ui/viewer-companion/home-room-media";
 import { canCompanionSetHomeLight, getCompanionHomeLight, setCompanionHomeLight } from "@/lib/ui/viewer-companion/home-light";
 import { COMPANION_THROW_LIMITS, createCompanionThrow, createCompanionThrowVelocity, stepCompanionThrow, type CompanionThrowState, type CompanionThrowVelocity } from "@/lib/ui/viewer-companion/throw";
@@ -36,7 +36,7 @@ import { canStartCompanionAccessoryMotion, COMPANION_ACCESSORY_MOTION_MS, isComp
 import { playCompanionSound, type CompanionSoundMoment } from "@/lib/ui/viewer-companion/companion-sound";
 import { getCompanionRadioSnapshot, getCompanionRadioToggleIntent, stopCompanionRadio, subscribeCompanionRadio, toggleCompanionRadio } from "@/lib/ui/viewer-companion/radio-player";
 import { getCompanionRadioPreferences, subscribeCompanionRadioPreferences } from "@/lib/ui/viewer-companion/radio-preferences";
-import { canStartCompanionRadioReaction, companionRadioFoodPriority, COMPANION_RADIO_REACTION_MS, createCompanionRadioReactionInbox, getCompanionRadioReaction, sampleCompanionRadioReaction, type CompanionRadioReaction } from "@/lib/ui/viewer-companion/radio-reaction";
+import { canStartCompanionRadioReaction, companionRadioFoodPriority, COMPANION_RADIO_REACTION_MS, createCompanionRadioReactionInbox, getCompanionRadioReaction, sampleCompanionRadioReaction, type CompanionRadioReaction, type CompanionRadioMood } from "@/lib/ui/viewer-companion/radio-reaction";
 import { COMPANION_INSTRUMENT_EVENT, type CompanionInstrumentPulse } from "@/lib/ui/viewer-companion/instrument-music";
 import { createCompanionInstrumentInbox, getCompanionInstrumentReaction, sampleCompanionInstrumentReaction, type CompanionInstrumentReaction } from "@/lib/ui/viewer-companion/instrument-reaction";
 import { companionRunContactSituation, type CompanionSituationId } from "@/lib/ui/viewer-companion/moments";
@@ -301,12 +301,16 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     }
     const scenes = createCompanionScenes(sceneStore.current.load(preferences.learnFromYou));
     const personalityDirector = createCompanionPersonalityDirector();
+    let personalityMusic: { source: "radio" | "instrument"; at: number; mood?: CompanionRadioMood } | undefined;
     const sceneEvent = (event: CompanionSceneEvent) => {
       scenes.event(event, brain.current.activeMs, preferences.learnFromYou);
       const at = brain.current.activeMs;
       if (event.kind === "encounter" || event.kind === "home-called") personalityDirector.event("arrival", at);
       if (event.kind === "petted") personalityDirector.event("pet", at);
-      if (event.kind === "radio" || event.kind === "instrument") personalityDirector.event("music", at);
+      if ((event.kind === "radio" && radioAllowed()) || event.kind === "instrument") {
+        personalityMusic = { source: event.kind, at, mood: event.mood };
+        personalityDirector.event("music", at);
+      }
       if (event.kind === "rested" || event.kind === "manual-land" && event.recovered) personalityDirector.event("recovered", at);
       if (event.kind === "layout" || event.kind === "month") personalityDirector.event("layout", at);
       if (event.kind === "accessory") personalityDirector.event("outfit", at);
@@ -2168,10 +2172,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         const actualToyIds = toys.current?.ids() ?? [];
         if (deferredPersonalityToy && !actualToyIds.includes(deferredPersonalityToy)) deferredPersonalityToy = undefined;
         for (const id of storedPersonalityFoods) if (!liveFoods.some(food => food.id === id) && food.current?.carried() !== id) storedPersonalityFoods.delete(id);
-        const urgentMeal = !food.current?.carried() && !toys.current?.carried() && !household.active() && !toyPlanner.active() && brain.current.hunger >= .78
+        let priorityMeal = !food.current?.carried() && !toys.current?.carried() && !household.active() && !toyPlanner.active() && brain.current.hunger >= .78
           ? getFoodAction(brain.current, householdWorld, effective, brain.current.activeMs) : undefined;
         let foodSupply: RuntimeAction | undefined;
-        if (!urgentMeal && !liveFoods.length && !food.current?.carried() && !toys.current?.carried() && !household.active() && !toyPlanner.active()
+        if (!priorityMeal && !liveFoods.length && !food.current?.carried() && !toys.current?.carried() && !household.active() && !toyPlanner.active()
           && householdHome.dispenser && brain.current.hunger >= (effective.personality === "gourmet" ? COMPANION_FULL_THRESHOLD : .65) && brain.current.activeMs >= nextSupplyAt) {
           nextSupplyAt = brain.current.activeMs + 2000;
           household.wake(brain.current.activeMs);
@@ -2180,21 +2184,32 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           if (foodSupply) personalityDirector.cancel();
         }
         const sceneMemory = effective.learnFromYou ? scenes.checkpoint() : undefined;
-        const authoredOffer = !urgentMeal && !foodSupply && (personalityDirector.active() || !household.active() && !toyPlanner.active() && !food.current?.carried() && !toys.current?.carried() && !brain.current.foodGoal && !(brain.current.episode && brain.current.episode.remaining > 0 && brain.current.episode.phase !== "finish")) && !overlayActive && !premiereActive && !pendingMonth && !returning && !reduced && gfxMode() !== "off"
-          ? personalityDirector.next({ world: toyWorld, brain: brain.current, preferences: effective, now: brain.current.activeMs, home: personalityHome, toys: settledToys,
+        // The actual audible source supplies mood; coarse local listening
+        // familiarity never borrows unrelated food/toy experience.
+        const music = radioState.playing && radioState.mood && radioAllowed() ? { mood: radioState.mood }
+          : personalityMusic?.source === "instrument" && brain.current.activeMs - personalityMusic.at < 9000 && musicAllowed() && !radioState.playing ? { mood: personalityMusic.mood } : undefined;
+        let authoredOffer = !priorityMeal && !foodSupply && (personalityDirector.active() || !household.active() && !toyPlanner.active() && !food.current?.carried() && !toys.current?.carried() && !brain.current.foodGoal && !(brain.current.episode && brain.current.episode.remaining > 0 && brain.current.episode.phase !== "finish")) && !overlayActive && !premiereActive && !pendingMonth && !returning && !reduced && gfxMode() !== "off"
+          ? nextCompanionPersonalityScene(personalityDirector, { world: toyWorld, brain: brain.current, preferences: effective, now: brain.current.activeMs, home: personalityHome, toys: settledToys,
             curtainPhase: curtainProjection.current.phase, lightLit: getCompanionHomeLight(), toyPlayCounts: effective.learnFromYou ? Object.fromEntries(Object.entries(toyTastes.current?.toyTastes ?? {}).map(([kind, taste]) => [kind, taste?.accepted ?? 0])) : undefined, familiarHour: (sceneMemory?.hours[Math.floor(environment.current.hour)] ?? 0) >= 3, learnedMorning: Boolean(sceneMemory?.hours.slice(7, 11).some(n => n >= 3)),
             favoriteToy: effective.learnFromYou ? summarizeCompanionToyTastes(toyTastes.current).favorite : null, toyCount: actualToyIds.length, carriedToyId: toys.current?.carried(), deferredToyId: deferredPersonalityToy, interruptedItemId: interruptedPersonalityItem,
             tv: getCompanionHomeTv(), canTv: canCompanionSetHomeTv(), environment: environment.current, favoriteFood: brain.current.life?.favoriteFood,
+            music: music && { ...music, familiar: Boolean(effective.learnFromYou && music.mood && (sceneMemory?.music[music.mood] ?? 0) >= 3) },
             learnedSocial: effective.learnFromYou && Boolean(brain.current.life?.recent.some(reason => reason === "kind-touch" || reason === "reassured")), equipped: Boolean(wardrobe.current.equipped), hasExperience: effective.learnFromYou && Boolean(loadCompanionCollection().foods.length || Object.keys(toyTastes.current?.toyTastes ?? {}).length),
             yieldedItem: Boolean(yieldedPersonalityItem && brain.current.activeMs - humanToyAt < 8000), yieldedItemId: yieldedPersonalityItem, storedFoodIds: [...storedPersonalityFoods] }) : undefined;
+        let yieldedMeal = false;
+        if (!priorityMeal && !foodSupply) {
+          priorityMeal = getCompanionPersonalityMeal(personalityDirector, authoredOffer, { world: householdWorld, brain: brain.current, preferences: effective,
+            now: brain.current.activeMs, carriedToy: toys.current?.carried(), carriedFood: food.current?.carried(), ownedJob: household.active() || toyPlanner.active() });
+          if (priorityMeal) { yieldedMeal = true; personalityDirector.cancel(); authoredOffer = undefined; }
+        }
         const authored = authoredOffer ? personalityJobs.next(authoredOffer, { world: toyWorld, brain: brain.current, preferences: effective, now: brain.current.activeMs,
           home: householdHome, box: toyBox, toys: settledToys, toyIds: toys.current?.ids(), carriedToy: toys.current?.carried(), carriedFood: food.current?.carried(),
           toyCount: toys.current?.count() ?? 0, foodCount: liveFoods.length + (food.current?.carried() ? 1 : 0), occupied: toys.current?.occupied(), tastes: toyTastes.current ?? undefined }) : undefined;
-        const errand = !foodSupply && !authoredOffer && !urgentMeal && !signatureFirst && !scenes.current() && !toyPlanner.active() && !overlayActive && !premiereActive && !pendingMonth && !returning && !reduced && gfxMode() !== "off"
+        const errand = !foodSupply && !authoredOffer && !priorityMeal && !signatureFirst && !scenes.current() && !toyPlanner.active() && !overlayActive && !premiereActive && !pendingMonth && !returning && !reduced && gfxMode() !== "off"
           ? household.next({ brain: brain.current, world: householdWorld, visibleFoods: liveFoods, preferences: effective, now: brain.current.activeMs, home: householdHome, count: liveFoods.length + (food.current?.carried() ? 1 : 0), carried: food.current?.carried(), occupied: toys.current?.occupied() }) : undefined;
         if (!authoredOffer && !errand && !scenes.current() && food.current?.carried()) food.current.releaseCarry(food.current.carried()!);
         if (toyMealPriority && toyPlanner.active() && !authoredOffer) { toyPlanner.cancel(brain.current.activeMs); toys.current?.cancel(now); }
-        const toyErrand = !foodSupply && !authoredOffer && !urgentMeal && !signatureFirst && !toyMealPriority && !errand && !scenes.current() && !overlayActive && !premiereActive && !pendingMonth && !returning && !reduced && gfxMode() !== "off"
+        const toyErrand = !foodSupply && !authoredOffer && !priorityMeal && !signatureFirst && !toyMealPriority && !errand && !scenes.current() && !overlayActive && !premiereActive && !pendingMonth && !returning && !reduced && gfxMode() !== "off"
           ? toyPlanner.playfulCarry({ x, y, platformId: support }) ?? toyPlanner.next({ world: toyWorld, brain: brain.current, preferences: effective, now: brain.current.activeMs, toys: settledToys, existingIds: toys.current?.ids(), carriedId: toys.current?.carried(), count: toys.current?.count() ?? 0, box: toyBox, tastes: toyTastes.current ?? undefined }) : undefined;
         const offeredRadio = radioInbox.peek(radioState, now);
         const reaction = !errand && offeredRadio?.mood && radioSpace(availableFood.length) ? getCompanionRadioReaction({ mood: offeredRadio.mood, preferences: effective, habits: brain.current.habits, life: brain.current.life, energy: brain.current.energy }) : undefined;
@@ -2215,7 +2230,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           ? scenes.next({ brain: brain.current, world: householdWorld, preferences: effective, now: brain.current.activeMs, pantry: householdHome.pantry, bin: householdHome.bin, visibleFoods: liveFoods, occupied: toys.current?.occupied(), knownFoods: loadCompanionCollection().foods, knownBehaviors: loadCompanionCollection().behaviors, owned: loadCompanionCollection().gifts.unlocked, equipped, radio: radioState, environment: environment.current, home: supportById("companion-home") ? { x: platformLandingX(supportById("companion-home")!, supportById("companion-home")!.x + supportById("companion-home")!.width / 2), y: supportById("companion-home")!.y, platformId: "companion-home" } : undefined, toyCount: toys.current?.count() ?? 0, carriedFoodId: food.current?.carried() }) : undefined;
         const validStory = story?.accessory && !accessorySpace(story.accessory) ? undefined : story;
         if (story && !validStory) scenes.cancel();
-        const offered: RuntimeAction = urgentMeal ?? foodSupply ?? authored ?? errand ?? toyErrand ?? refusal ?? validStory ?? musical ?? signature ?? (safeTrick ? { kind: "look", accessory: equipped!, target: { x, y, platformId: support }, duration: COMPANION_ACCESSORY_MOTION_MS } : getAction(brain.current, world, effective, now));
+        const offered: RuntimeAction = priorityMeal ?? foodSupply ?? authored ?? errand ?? toyErrand ?? refusal ?? validStory ?? musical ?? signature ?? (safeTrick ? { kind: "look", accessory: equipped!, target: { x, y, platformId: support }, duration: COMPANION_ACCESSORY_MOTION_MS } : getAction(brain.current, world, effective, now));
         const chosen = personalityActivity.boundWander(offered, world, effective, brain.current.activeMs);
         if (chosen !== offered) cancelTravelGoal();
         if (chosen.radio && reaction) radioInbox.take(radioState, now);
@@ -2231,7 +2246,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         const curiousMeal = !errand && !toyErrand && !validStory && !musical && !safeTrick && !reduced && gfxMode() !== "off"
           ? foodCuriosity.consider(chosen, chosenFood, Boolean(chosenFood && consumedFoods.includes(chosenFood.kind)), brain.current.hunger, effective, consumedFoods) : chosen;
         const curiousIntent = curiousMeal.foodCuriosity === "tease" && pointer ? { ...curiousMeal, direction: pointer.x < x ? -1 as const : 1 as const, attention: { kind: "social" as const, point: { ...pointer } } } : curiousMeal;
-        launch(urgentMeal || foodSupply || authored || errand || toyErrand || refusal || validStory || musical || safeTrick || signature ? chosen : deliberateCompanionAction(brain.current, world, effective, curiousIntent, !reduced && gfxMode() !== "off"), now);
+        // A nonurgent meal inherited from the ordinary planner keeps its
+        // bounded first-food inspection. Urgent care/authored jobs still own
+        // their existing actions, and no encounter is silently consumed.
+        const ownedIntent = yieldedMeal ? curiousIntent : chosen;
+        launch(priorityMeal || foodSupply || authored || errand || toyErrand || refusal || validStory || musical || safeTrick || signature ? ownedIntent : deliberateCompanionAction(brain.current, world, effective, curiousIntent, !reduced && gfxMode() !== "off"), now);
         if (hiding) { paint(14, 0, "hide"); schedule(); return; }
       }
       let row = 0, frame = 0, status = "idle";

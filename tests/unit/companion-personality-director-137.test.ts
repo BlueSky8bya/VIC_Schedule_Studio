@@ -40,6 +40,7 @@ const matrixInput = (recipe: PersonalitySceneRecipe): PersonalitySceneInput => {
     home: { sofa: { x: 80, y: 560, platformId: sofa.id }, floor: point(300), window: point(260), pad: point(520), box: point(470), dispenser: point(400), tv: point(210), light: point(400), curtain: point(260) },
     toys: kinds.slice(0, 3).map((kind, i) => ({ ...ball, id: `real-${kind}-${i}`, kind, x: 140 + i * 45 })),
     tv: recipe.id === "X-P-house" ? "music" : "nature", canTv: true, lightLit: true, familiarHour: true, learnedMorning: true, equipped: true, hasExperience: true, learnedSocial: true,
+    music: { mood: recipe.id === "X-S-music" ? "calm" : "lively", familiar: true },
     favoriteFood: "carrot", favoriteToy: kinds[0], storedFoodIds: ["real-carrot"], yieldedItem: true, yieldedItemId: "real-yielded-toy",
     environment: { date: { y: 2026, m: 10, d: 19 }, season: "autumn", hour: 22, band: "night", night: true, weather: "rain", sunlight: 0 },
   });
@@ -48,6 +49,7 @@ const matrixInput = (recipe: PersonalitySceneRecipe): PersonalitySceneInput => {
   scene.brain.energy = recipe.personality === "sleepy" || recipe.id === "M05" ? .1 : .6;
   if (recipe.id === "T06") scene.world.foods = scene.world.foods!.map((food, i) => i === 1 ? { ...food, x: 205 } : food);
   if (["T05", "X-T-house"].includes(recipe.id)) scene.toys = [];
+  if (recipe.id === "T07") { scene.toys = []; scene.world.foods = []; }
   if (recipe.id === "G04") { scene.preferences.learnFromYou = true; scene.brain.life!.tastedFoods = ["potato"]; }
   if (recipe.id === "X-P-house") scene.tv = "music";
   if (recipe.id === "T09") scene.deferredToyId = scene.toys[0]?.id;
@@ -208,7 +210,7 @@ describe("137 one personality scene director", () => {
   });
 
   it("holds the same real toy through toss, route and the next effect; unrelated/stale ACKs do nothing", () => {
-    const { director, scene } = ready("mischievous", { toys: [{ ...ball }] }); scene.now = 1;
+    const { director, scene } = ready("mischievous", { toys: [{ ...ball }], home: { box: { x: 500, y: floor.y, platformId: floor.id } } }); scene.now = 1;
     let proposal = director.next(scene)!;
     expect(proposal.meta.id).toBe("M01"); expect(proposal.delegate).toMatchObject({ kind: "toy", mode: "toss", kinds: ["ball"] });
     director.complete(proposal.meta);
@@ -226,7 +228,7 @@ describe("137 one personality scene director", () => {
   });
 
   it("cancels instead of substituting another toy after the user takes the locked object", () => {
-    const { director, scene } = ready("mischievous", { toys: [{ ...ball }, { ...ball, id: "other-real-ball", x: 240 }] });
+    const { director, scene } = ready("mischievous", { toys: [{ ...ball }, { ...ball, id: "other-real-ball", x: 240 }], home: { box: { x: 500, y: floor.y, platformId: floor.id } } });
     scene.now = 1; const proposal = director.next(scene)!; director.resolve(proposal.meta, true, ball.id);
     scene.toys = [{ ...ball, held: true }, { ...ball, id: "other-real-ball", x: 240 }]; scene.now = 500;
     const yielded = director.next(scene);
@@ -236,7 +238,7 @@ describe("137 one personality scene director", () => {
   });
 
   it("abandons an effect with no actual progress after7.5 active seconds without marking success", () => {
-    const { director, scene } = ready("mischievous", { toys: [{ ...ball }] }); scene.now = 1;
+    const { director, scene } = ready("mischievous", { toys: [{ ...ball }], home: { box: { x: 500, y: floor.y, platformId: floor.id } } }); scene.now = 1;
     const effect = director.next(scene)!; expect(effect.meta.id).toBe("M01");
     scene.now = 7400; expect(director.next(scene)?.meta.id).toBe("M01");
     scene.now = 7602; const retried = director.next(scene);
@@ -318,7 +320,7 @@ describe("137 one personality scene director", () => {
   });
 
   it("C01 crosses to the opposite safe side of its same toy and follows that one side's fraction through layout movement", () => {
-    const recipe = COMPANION_PERSONALITY_SCENES.find(scene => scene.id === "C01")!, director = createCompanionPersonalityDirector([recipe]), scene = input("curious", { toys: [{ ...ball }] });
+    const recipe = COMPANION_PERSONALITY_SCENES.find(scene => scene.id === "C01")!, director = createCompanionPersonalityDirector([recipe]), scene = input("curious", { toys: [{ ...ball }], home: { box: { x: 500, y: floor.y, platformId: floor.id } } });
     director.next(scene); director.event("toy-settled", 0);
     const firstLook = director.next(scene)!; director.complete(firstLook.meta); scene.now += firstLook.action!.duration;
     const approach = director.next(scene)!; scene.world = { ...scene.world, ...approach.action!.target }; scene.now += approach.action!.duration;

@@ -508,18 +508,38 @@ test("premiere buttons record named actions and count only successful manual che
 });
 
 test("autonomous companion movement never records human feature use", async ({ page }) => {
-  await setup(page, "viewer", true);
+  test.setTimeout(60_000);
+  // A fresh document may legitimately show a stationary signature. Create a
+  // real finite cleanup task through native controls before measuring logs.
+  await setup(page, "viewer", false, undefined, { sleep: false, feeding: false, petting: false, learnFromYou: false, activeWhileVisible: true });
+  const home = await openCompanionHome(page); await placeCompanionOnHomeFloor(page);
+  await home.getByRole("button", { name: "장난감 상자 열기", exact: true }).click();
+  const toy = page.locator(".vc-toy"); await expect(toy).toHaveCount(1);
+  await expect(toy).toHaveAttribute("data-falling", "false", { timeout: 6000 });
+  const id = await toy.getAttribute("data-toy-id"); expect(id).toBeTruthy();
+  await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
+  const tidy = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name: "깔끔이", exact: true });
+  await tidy.click(); await expect(tidy).toHaveAttribute("aria-checked", "true");
+  await dialog.getByRole("tab", { name: "움직임", exact: true }).click();
+  await dialog.locator('[data-act="companion-roam"]').setChecked(true);
+  await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toHaveCount(0);
   await page.mouse.move(4, 4);
-  const origin = await pet(page).boundingBox(); expect(origin).not.toBeNull();
-  let autonomous = false;
+  await flush(page, [{ target: "companion-home-toys" }, { target: "companion-personality#tidy" }, { target: "companion-roam#on" }, { target: "companion-book-close" }]);
+  const baseline = capture.get(page)!.events.length;
+  const actualToy = page.locator(`.vc-toy[data-toy-id="${id}"]`);
   await expect.poll(async () => {
-    const point = await pet(page).evaluate(node => ({ state: (node as HTMLElement).dataset.state, x: node.getBoundingClientRect().x }));
-    autonomous ||= ["walk", "jump", "play"].includes(point.state ?? "");
-    return autonomous && Math.abs(point.x - origin!.x) > 12;
-  }, { timeout: 10000, intervals: [80] }).toBe(true);
+    return await actualToy.count() === 1 && await actualToy.getAttribute("data-carried") === "true";
+  }, { timeout: 10000, intervals: [40] }).toBe(true);
+  await expect(actualToy).toHaveCount(0, { timeout: 15000 });
   await flush(page);
   expect(capture.get(page)!.events.some(event => event.kind === "route.enter")).toBe(true);
-  expect(targets(page).filter(target => target?.startsWith("companion-"))).toEqual([]);
+  // All human setup actions have already reached the intercepted queue. The
+  // same actual object's autonomous pickup/return must add no feature use.
+  const automatic = capture.get(page)!.events.slice(baseline);
+  expect(automatic.filter(event => event.kind === "ui.click")).toEqual([]);
+  expect(automatic.filter(event => event.target?.startsWith("companion-"))).toEqual([]);
 });
 
 test("developer timeline and low-use list render companion features from synthetic reads", async ({ page }) => {
