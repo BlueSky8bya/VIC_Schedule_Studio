@@ -69,3 +69,5 @@ root의 별도 무시드 공개 probe는 fresh soft click/Enter에서snack1/2 �
 같은 native source identity·월·설정 snapshot이 아니면 실행하지 않는다. source 숨김/분리/접힘, modal·pause·document hidden·작업중·premiere·설정 변경·effect cleanup·명시적 음식 비우기는 대기를 취소한다. body 접근 증명·actual source/floor·기존 capacity·fixed semantic activity는 보존한다. 새 observer 종류·timer·상시 geometry loop·per-frame DOM read·서버/analytics payload를 추가하지 않았다. 기존 event 소유 observer의 완료만 이용한다.
 
 후속 focused11 files **162/162 unit PASS**, 변경3 files **lint PASS**. 새8개 단위는 빈 body의 실패→fresh pair의 실제 계획, burst FIFO8 상한, 월/설정/source/modal 취소와 단 한 번 소진을 검증한다. native·full gates·운영 재검증은 root 담당이며 이 수정의 실물 결과는 아직 대기 중이다.
+
+Root 후속 확인: build `jJKzis3mftzbAUx-sbEnq`에서 full/quiet 첫 급식·8개 순서 보존과 혼합 낙하·resize/반납9/9 native PASS, full3,070unit/type/lint/build/harness322 PASS. 최종17de1eb2 실제 공개 fullSHA/98 assets와 food2/toy2 실제floor 접촉 PASS11:43:29 KST, remote quality39191066436 success11:44:19. 기존 실패/시드 없는 운영 probe를 그대로 보존하며 [통합 납품 기록](COMPANION_FLOOR_CURTAIN_LAYERS-20261019.md#release)에 정확한 환경·한계를 결속한다.

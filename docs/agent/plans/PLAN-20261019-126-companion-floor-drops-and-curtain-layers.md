@@ -1,6 +1,6 @@
 # PLAN-126 — 실제 집 바닥 배출과 겹치는 커튼
 
-Status: Local validation complete; authorized release verification. Authorization: latest owner request, 2026-10-19 KST; existing scoped release authorization persists.
+Status: Complete. Authorization: latest owner request, 2026-10-19 KST; existing scoped release authorization persists.
 
 ## Scope and supersession
 
@@ -22,3 +22,4 @@ No server loader/DTO/role/unlock/API/DB changes. Preserve viewed-month season, s
 - Shared floor emission, bounded cross-item packing, grounded dispenser/larger chest/raised window, five generated curtain overlays and finite adjacent transitions implemented. Real resize observations additionally corrected source-bound sofa contact, near-floor throw horizon and current-opening carry return.
 - Independent non-author source reviews complete, with no remaining scoped P1/P2. Final production build `9TXTtfEnaPLF5HBcpt4q4`, explicit typecheck/lint,3,062 units, affected16 native cases and harness322 PASS. Actual release verification remains in progress; [integration evidence](../verification/COMPANION_FLOOR_CURTAIN_LAYERS-20261019.md) preserves earlier failures and scoped unchanged22-case evidence.
 - Initial actual public98-asset check passed on8622c083, but post-settings first-feed verification failed and was reproduced in full/quiet native cases. A bounded existing-geometry completion FIFO corrects this command-preparation edge without weakening body/landing proof. Follow-up build `jJKzis3mftzbAUx-sbEnq`, explicit type/lint,3,070 units and affected nine native cases PASS; final public release check remains in progress.
+- Final `17de1eb295eb6f99902c0ccff4e36800cb385ba8`: Vercel Ready11:42:26 KST; actual anonymous public full-SHA/98 exact assets/UI/source-floor spawn PASS11:43:29; remote quality39191066436 success11:44:19. [Release evidence](../verification/COMPANION_FLOOR_CURTAIN_LAYERS-20261019.md#release). No production mutations, seeded tastes/discoveries, private-manifest or actual live-state GET; source/user art preserved. Actual broadcaster hardware remains deferred. Completion bookkeeping stays local for the next product commit to avoid a documentation-only redeploy.

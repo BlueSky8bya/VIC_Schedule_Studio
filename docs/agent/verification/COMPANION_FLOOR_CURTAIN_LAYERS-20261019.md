@@ -1,6 +1,6 @@
 # 126 — 실제 바닥 배출·가구·커튼 층
 
-2026-10-19 KST. Local implementation, independent source review and required local gates complete; authorized release verification in progress. No126 release claim yet. [Plan](../plans/PLAN-20261019-126-companion-floor-drops-and-curtain-layers.md).
+2026-10-19 KST. Local implementation, independent source review, required local gates, actual public release verification and remote quality complete. [Plan](../plans/PLAN-20261019-126-companion-floor-drops-and-curtain-layers.md).
 
 ## Reproduced problem and implementation
 
@@ -44,3 +44,11 @@ Follow-up build `jJKzis3mftzbAUx-sbEnq` exits0. Explicit full typecheck/lint and
 ## Scope
 
 No server route/DTO/role/unlock/DB/provider changes. Fixtures intercept writes and live state. G-22 retains existing semantic spawn/return/home controls and both developer views; autonomous placement/curtains add no human events, IDs, tastes or traits. Actual broadcaster-PC/OBS and genuine-login/RLS remain outside this fixture evidence, as deferred by the owner.
+
+## Release
+
+Follow-up `17de1eb295eb6f99902c0ccff4e36800cb385ba8` is deployed at the public production origin. VercelBJctA4crgGFeBVMiGYexZTLTRi3v reports Ready at2026-10-19 **11:42:26 KST**. Actual anonymous public verification completed at **11:43:29 KST**: exact full SHA in actual public client chunks, browser-delivered chunk parity and **98/98 exact committed assets PASS**. All guards stayed active; actual soop-live GET/private-manifest reads/production mutations0, initial preference/care/discovery/taste seeds0, unexpected requests and page errors0. The blocked saved-heart read POST and telemetry scripts are intentional and retained separately.
+
+The formerly failing post-settings native source-floor sequence now emits two real foods and two real toys. All four IDs were observed falling and then contacting the actual home floor at y306; food centres194/172 and toy centres150.015/134.577 are distinct. First source errors were12.684/0.00045px for foods and0.00050px for toys. The public graphics policy reported soft/quiet, so these samples are not promoted to full-motion policy coverage; local full-motion source/fall/contact assertions are separate. The same public packet verifies six physical targets, floor feeder/no ledge, raised window, five decoded overlays outside the still-mounted glass, native captured whole-box return, actual new-toy discovery/acknowledgment, galleries/profile/wardrobe, radio media, shared settings, mobile exclusion and safe404.
+
+GitHub [quality39191066436](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39191066436) for the exact follow-up SHA completed **success at11:44:19 KST**: full unit/isolated SQL/harness/build/type/lint. No second documentation-only deploy is created merely to record the product commit's own release evidence. Source20-file freeze and unrelated protected user-art bytes remain unchanged. Post-release status bookkeeping is left locally for the next authorized product commit.

@@ -156,7 +156,7 @@ for (const [surface, width, dark] of [["viewer", 1100, false], ["viewer", 1440, 
   expect(data.sofa.width).toBeGreaterThanOrEqual(119.99);
   expect(data.sofa.width / data.scale).toBeLessThanOrEqual(150.05);
   expect(data.sofa.width / data.sofa.height).toBeCloseTo(1.8, 2);
-  //126 moves the dispenser to the floor. Only the shelf reserves wall width;
+  //127 moves the dispenser beside the curtain. Only the shelf reserves wall width;
   // enlarging the chest no longer squeezes the window down to a tiny square.
   const expectedWindow = Math.min(narrow ? 126 : 152, data.cssWidth - (data.shelf.width / data.scale + (narrow ? 26 : 28)));
   expect(data.window.width / data.scale).toBeCloseTo(expectedWindow, 1);
@@ -171,7 +171,12 @@ for (const [surface, width, dark] of [["viewer", 1100, false], ["viewer", 1440, 
   expect(data.floor.bottom).toBeCloseTo(data.room.bottom, 2);
   expect(data.floor.y - data.window.bottom, "the frame and sill have wall space above the floor").toBeGreaterThan(8 * data.scale);
   const feeder = data.controls.find(control => control.action === "feed")!;
-  expect(data.room.bottom - feeder.bottom).toBeCloseTo((narrow ? 89 : 6) * data.scale, 1);
+  expect(data.room.bottom - feeder.bottom).toBeCloseTo(Math.max(86 * data.scale, 79), 1);
+  expect(data.floor.bottom - 6 - feeder.bottom, "the unscaled92px body keeps its real floor clearance").toBeGreaterThanOrEqual(72.92);
+  const chest = data.controls.find(control => control.action === "toys")!;
+  expect(data.room.right - chest.right).toBeCloseTo(6 * data.scale, 1);
+  expect(feeder.right).toBeLessThanOrEqual(chest.x);
+  expect(feeder.bottom).toBeLessThanOrEqual(sofaHit.y - 2 * data.scale);
   expect(await page.locator(".vc-dispenser").evaluate(node => getComputedStyle(node, "::before").content)).toBe("none");
   expect(data.controls.find(control => control.action === "toys")!.width / data.scale).toBeGreaterThanOrEqual(data.cssWidth >= 330 ? 130 : 104);
   expect(data.sofa.bottom - data.seat.bottom).toBeCloseTo(20.28 * data.scale, 1);
@@ -204,7 +209,9 @@ for (const [surface, width, dark] of [["viewer", 1100, false], ["viewer", 1440, 
     expect(picture.visible.x).toBeGreaterThanOrEqual(hit.x - .1); expect(picture.visible.right).toBeLessThanOrEqual(hit.right + .1);
     expect(picture.visible.y).toBeGreaterThanOrEqual(hit.y - .1); expect(picture.visible.bottom).toBeLessThanOrEqual(hit.bottom + .1);
     const overlapsGlass = picture.visible.x < data.glass.right && picture.visible.right > data.glass.x && picture.visible.y < data.glass.bottom && picture.visible.bottom > data.glass.y;
-    expect(overlapsGlass, picture.action + " leaves the actual landscape glass visible").toBe(false);
+    //127 explicitly allows the feeder to sit in front of the lower curtain.
+    // Other furniture retains its existing landscape clearance.
+    if (picture.action !== "feed") expect(overlapsGlass, picture.action + " leaves the actual landscape glass visible").toBe(false);
   }
   //125 creator-visible landmarks in the new frontal source images. Static
   // openings must follow the same contain scale as their respective art.
