@@ -29,7 +29,7 @@ export type CompanionFoodControl = {
   pause: (paused: boolean) => void;
   jostle: (point: Point, radius: number, strength?: number) => void;
   beginCarry: (id: string) => boolean;
-  carry: (id: string, point: Point) => boolean;
+  carry: (id: string, point: Point, onPaint?: (point: Point) => void) => boolean;
   releaseCarry: (id: string, point?: Point) => boolean;
   discardCarry: (id: string, bin: HTMLElement) => boolean;
   carried: () => string | undefined;
@@ -553,12 +553,14 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       current.current = current.current.map(item => item.id === id ? { ...item, platformId: undefined } : item);
       paint(food); return true;
     },
-    carry(id, point) {
+    carry(id, point, onPaint) {
       if (!operating.current || document.hidden || carried.current !== id || ![point.x, point.y].every(Number.isFinite)) return false;
-      const food = current.current.find(item => item.id === id); if (!food) return false;
+      const food = current.current.find(item => item.id === id), node = nodes.current.get(id); if (!food || !node?.isConnected) return false;
       const next = { ...food, x: clamp(point.x, 24, innerWidth - 24), y: clamp(point.y, 0, innerHeight - 24), platformId: undefined };
       current.current = current.current.map(item => item.id === id ? next : item);
-      paint(next); return true;
+      paint(next);
+      if (!node.hidden) onPaint?.({ x: Number(next.x.toFixed(3)), y: Number(next.y.toFixed(3)) });
+      return true;
     },
     releaseCarry,
     discardCarry(id, bin) {

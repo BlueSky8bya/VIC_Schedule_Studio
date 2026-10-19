@@ -7,7 +7,7 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Current product work: [128 storage baseline](verification/COMPANION_STORAGE_BASELINE-20261019.md), ground the feeder/chest and balance their right-side placement. Provider quota comparison/recovery and the listed evidence follow-ups remain. Shared clock/KST, physical contacts, sofa art and public/private boundaries remain mandatory.
+Current product work: [129 item support and clarity](verification/COMPANION_ITEM_SUPPORT-20261019.md), reproduce midair stops and verify mixed packing/tidy paths and toy rendering quality. Provider quota comparison/recovery and listed evidence follow-ups remain. Shared clock/KST, physical contacts, sofa art and public/private boundaries remain mandatory.
 
 Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user.125 explicitly authorizes unnecessary Vercel deployment cleanup/optimization; unrelated cleanup, bulk DB UPDATE, paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
 
@@ -17,7 +17,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| UI-128 | Validation | Ground actual painted bases, validate spacing/physical interactions and authorized release | [Record](verification/COMPANION_STORAGE_BASELINE-20261019.md) |
+| UI-129 | Release validation | Local21 native/3,101 units/type/lint/build passed; verify deployed SHA, public inputs/assets and remote quality | [Record](verification/COMPANION_ITEM_SUPPORT-20261019.md) |
 | OPS-VERCEL-QUOTA | Open | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
@@ -46,6 +46,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Last Verified
 
-Current release `ba0863f3fc97f9c6c2351d01621187d98f37a097`: [127 furniture placement](verification/COMPANION_FURNITURE_PLACEMENT-20261019.md#release). Local3,070 units/type/lint/build/harness323 and final16/16 native PASS; initial failures and physical-clearance correction retained separately. Actual anonymous fullSHA/98 exact assets/UI/source-floor spawn PASS at2026-10-19 12:02:26 KST; Vercel6VPLKaTyHZh9AadSSCM5ZFE3mQcW Ready12:01:16, remote quality39192514482 success12:03:46. No production mutation/live-state GET/private manifest/seeded care/preferences/tastes/discovery. Protected user art preserved. No owner art approval, same-period quota resolution or actual broadcaster hardware claim.
+Current release `92399f77e2e39af4b19623b171420f30890d0ca3`: [128 storage baseline](verification/COMPANION_STORAGE_BASELINE-20261019.md#release). Local3,075 units/type/lint/build/harness324 PASS; all16 native scenarios verified across15/16 main run plus corrected tidy2/2. Actual product failure and final-observation test race are retained separately in the record. Actual anonymous fullSHA/98 exact assets/UI/source-floor spawn PASS at2026-10-19 12:28:27 KST; Vercel5UEqPJ9Vck7zqzA7KeSVupZn7wCA Ready12:27:31, remote quality39194628030 success12:30:00. No production mutation/live-state GET/private manifest/seeded care/preferences/tastes/discovery. Protected user art preserved. No owner art approval, same-period quota resolution or actual broadcaster hardware claim.
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.

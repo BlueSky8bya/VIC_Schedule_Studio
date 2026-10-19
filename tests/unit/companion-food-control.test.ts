@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CompanionFoodControl } from "@/components/poster/viewer-companion/companion-food";
 import type { CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
 import type { Platform } from "@/lib/ui/viewer-companion/brain";
+import { companionFoodDisposalDelivered } from "@/lib/ui/viewer-companion/food-disposal";
 
 const harness = vi.hoisted(() => ({ states: [] as unknown[], state: 0, refs: [] as { current: unknown }[], ref: 0, effects: [] as (() => void | (() => void))[], layouts: [] as (() => void | (() => void))[], api: undefined as CompanionFoodControl | undefined, commits: 0, graphics: "full" as "full" | "off", activity: vi.fn(), discarded: vi.fn() }));
 vi.mock("react", async original => ({ ...await original<typeof import("react")>(),
@@ -229,6 +230,18 @@ describe("actual food-controller carry and physical scatter callbacks", () => {
     expect(nodeById.get(id)!.style.transform).toBe("translate3d(419.000px,299.500px,0)");
     expect(api().carry(id, { x: NaN, y: 2 })).toBe(false); expect(api().carried()).toBe(id);
     expect(harness.activity).not.toHaveBeenCalled();
+  });
+  it("acknowledges the actual clamped native carry paint rather than an offscreen requested point", async () => {
+    const id = await spawn(), painted = vi.fn(); expect(api().beginCarry(id)).toBe(true);
+    const requested = { x: innerWidth + 1, y: 300.12345 };
+    expect(api().carry(id, requested, painted)).toBe(true);
+    const actual = painted.mock.calls[0][0];
+    expect(actual).toEqual({ x: innerWidth - 24, y: 300.123 });
+    expect(nodeById.get(id)!.style.transform).toBe(`translate3d(${actual.x.toFixed(3)}px,${actual.y.toFixed(3)}px,0)`);
+    expect(companionFoodDisposalDelivered(actual, requested)).toBe(false);
+    expect(api().foods().some(food => food.id === id)).toBe(false);
+    nodeById.get(id)!.isConnected = false; painted.mockClear();
+    expect(api().carry(id, { x: 300, y: 200 }, painted)).toBe(false); expect(painted).not.toHaveBeenCalled();
   });
   it("releases from the last actual carrying point onto the first real lower ledge with finite gravity", async () => {
     const first: Platform = { id: "card-first", kind: "card", x: 280, y: 420, width: 120 }, lower = { ...first, id: "card-lower", y: 580 };

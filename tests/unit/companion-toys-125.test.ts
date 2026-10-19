@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { COMPANION_TOY_HINTS, COMPANION_TOY_KINDS, COMPANION_TOY_NAMES, COMPANION_TOY_VISUALS, getCompanionToyArt, isCompanionToyKind, type CompanionToyKind } from "@/lib/ui/viewer-companion/toy-catalog";
 import { companionToyBoxDropReady, createCompanionToys, MAX_COMPANION_TOYS } from "@/lib/ui/viewer-companion/toys";
@@ -16,6 +17,21 @@ describe("125 twenty-four shared toy identities", () => {
       dimensions.add(`${visual.width}x${visual.height}`);
     }
     expect(dimensions.size).toBeGreaterThan(12); expect(COMPANION_TOY_VISUALS.train.width).toBeGreaterThan(COMPANION_TOY_VISUALS.dice.width);
+  });
+  it("keeps the actual contained silhouettes readable inside the native target", () => {
+    const art = JSON.parse(readFileSync("art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/제작기록/공개자료/납품명세.json", "utf8")) as { assets: { id: CompanionToyKind; runtime: { size: [number, number] }; runtime_core_bbox: [number, number, number, number] }[] };
+    expect(art.assets.map(asset => asset.id)).toEqual(COMPANION_TOY_KINDS);
+    // The frozen asset bounds catch diagonal art shrinking inside a tall,
+    // narrow box; checking only that box's height missed the tiny live toys.
+    for (const asset of art.assets) {
+      const visual = COMPANION_TOY_VISUALS[asset.id], [width, height] = asset.runtime.size, [left, top, right, bottom] = asset.runtime_core_bbox;
+      const scale = Math.min(visual.width / width, visual.height / height);
+      const paintWidth = (right - left) * scale, paintHeight = (bottom - top) * scale;
+      expect(Math.max(paintWidth, paintHeight), asset.id).toBeGreaterThanOrEqual(asset.id === "dice" ? 21 : 26);
+      expect(paintWidth * paintHeight, asset.id).toBeGreaterThanOrEqual(420);
+      expect(width * scale, asset.id).toBeLessThanOrEqual(44);
+      expect(height * scale, asset.id).toBeLessThanOrEqual(44);
+    }
   });
   it("cycles every kind through actual capacity and physical pickup/removal without consuming failed spawn serials", () => {
     const model = createCompanionToys(() => 0), kinds: string[] = [];

@@ -5,7 +5,7 @@ import { COMPANION_FULL_THRESHOLD } from "./care";
 import { COMPANION_TOY_KINDS, type CompanionToyKind } from "./toy-catalog";
 import { shouldDeclineCompanionToy, type CompanionTastes } from "./toy-tastes";
 import { isCompanionHomeFloorFoodSupport } from "./food";
-import { rankCompanionItemLandings, type CompanionItemPoint, type CompanionItemSpan } from "./item-landing";
+import { compareCompanionItemLandings, rankCompanionItemLandings, type CompanionItemLanding, type CompanionItemPoint } from "./item-landing";
 export { COMPANION_TOY_KINDS, COMPANION_TOY_NAMES, type CompanionToyKind } from "./toy-catalog";
 
 export const MAX_COMPANION_TOYS = 4;
@@ -16,12 +16,30 @@ export function companionToyBoxDropReady(rect: { left: number; right: number; to
 }
 type Point = { x: number; y: number; platformId?: string };
 export type CompanionToy = Point & { id: string; kind: CompanionToyKind; angle: number; held: boolean; carried: boolean; fraction?: number; hidden?: boolean; stance?: Point };
-type Flight = { at: number; lastAt: number; x: number; y: number; vx: number; vy: number; previous: Point; remaining: number; target?: Point; targetFraction?: number };
+type Flight = { at: number; lastAt: number; x: number; y: number; vx: number; vy: number; previous: Point; remaining: number; homeEmission?: boolean; viewportOnly?: boolean; target?: Point; targetFraction?: number };
 const clamp = (n: number, low: number, high: number) => Math.max(low, Math.min(high, n));
 const valid = (point: Point) => [point.x, point.y].every(Number.isFinite);
-const floor = (platform: Platform) => !["control", "hide"].includes(platform.kind);
+// The pet's transparent panel support is an attachment, not an object ledge.
+const panelFloor = (platform: Platform) => /^companion-panel-floor(?:-food)?(?:-\d+)?$/.test(platform.id);
+const floor = (platform: Platform) => !["control", "hide"].includes(platform.kind) && !panelFloor(platform);
 const roomFloor = (platform: Platform) => platform.kind === "floor" && /^companion-home-floor(?:-\d+)?$/.test(platform.id);
 const roomContact = (platform: Platform) => roomFloor(platform) || platform.kind === "floor" && isCompanionHomeFloorFoodSupport(platform.id);
+const viewportFloor = (platform: Platform) => platform.kind === "floor" && /^viewport-floor(?:-food)?(?:-\d+)?$/.test(platform.id);
+const homeContacts = (platforms: readonly Platform[]) => platforms.filter(p => roomContact(p)
+  && (!roomFloor(p) || !platforms.some(small => isCompanionHomeFloorFoodSupport(small.id) && Math.abs(small.y - p.y) <= .5)));
+/** Source ejections use the exact descending crossing, so a coarse host tick
+ * cannot change the reserved first contact. Human throws keep their sweep. */
+function firstHomeContact(source: Point, vx: number, vy: number, contacts: readonly Platform[], until: number, since = 0) {
+  let first: { p: Platform; x: number; t: number } | undefined;
+  for (const p of contacts) {
+    const discriminant = vy * vy + 1800 * (p.y - source.y);
+    if (discriminant < 0) continue;
+    const t = (-vy + Math.sqrt(discriminant)) / 900, x = source.x + vx * t;
+    if (t <= 0 || t < since - 1e-8 || t > until + 1e-8 || x < p.x || x > p.x + p.width) continue;
+    if (!first || t < first.t) first = { p, x, t };
+  }
+  return first;
+}
 
 /** Keep a small object's actual source/coordinates. Only the pet's separate
  * body-safe approach stance is projected within its existing48px pick reach. */
@@ -66,39 +84,37 @@ export function createCompanionToys(rng: () => number = Math.random) {
   };
   let pausedAt: number | undefined;
   let platforms: readonly Platform[] = [];
+  let emissionContacts: readonly Platform[] = [];
   const objects = new Map<string, CompanionToy>(), flights = new Map<string, Flight>();
-  const missing = new Map<string, number>();
   const bind = (toy: CompanionToy, support: Platform, x: number) => {
     toy.x = platformLandingX(support, x, 9); toy.y = support.y; toy.platformId = support.id;
     toy.fraction = support.width > 0 ? clamp((toy.x - support.x) / support.width, 0, 1) : .5;
-    toy.hidden = false; missing.delete(toy.id);
+    toy.hidden = false;
   };
   const release = (toy: CompanionToy, at: number, velocity = { x: 0, y: 0 }) => {
-    toy.held = toy.carried = false; toy.platformId = undefined; toy.fraction = undefined; toy.hidden = false; missing.delete(toy.id);
+    toy.held = toy.carried = false; toy.platformId = undefined; toy.fraction = undefined; toy.hidden = false;
     const began = pausedAt ?? at;
     flights.set(toy.id, { at: began, lastAt: began, x: toy.x, y: toy.y, vx: Number.isFinite(velocity.x) ? clamp(velocity.x, -260, 260) : 0, vy: Number.isFinite(velocity.y) ? clamp(velocity.y, -220, 140) : 0, previous: { x: toy.x, y: toy.y }, remaining: 2 });
   };
-  const remove = (id: string) => { flights.delete(id); missing.delete(id); return objects.delete(id); };
+  const remove = (id: string) => { flights.delete(id); return objects.delete(id); };
   const reconcile = (at: number) => {
     for (const toy of objects.values()) {
       if (toy.held || toy.carried || flights.has(toy.id)) continue;
       const support = platforms.find(p => p.id === toy.platformId && floor(p));
       if (support) bind(toy, support, support.x + support.width * (toy.fraction ?? .5));
-      else if (toy.platformId?.startsWith("companion-panel-floor")) {
-        if (!missing.has(toy.id)) missing.set(toy.id, at);
-        toy.hidden = true;
-      } else release(toy, at);
+      else release(toy, at);
     }
   };
   return {
     sync(next: readonly Platform[], bounds: { width: number; height: number }, at: number, smallHomeFloors: readonly Platform[] = []) {
       if (![bounds.width, bounds.height, at].every(Number.isFinite) || bounds.width <= 0 || bounds.height <= 0) return;
-      const measured = [...new Map([...smallHomeFloors.filter(p => p.kind === "floor" && isCompanionHomeFloorFoodSupport(p.id)).slice(0, 8), ...next.slice(0, 400)].filter(p => Boolean(p.id) && [p.x, p.y, p.width].every(Number.isFinite) && p.width > 0).map(p => [p.id, p])).values()];
+      const measured = [...new Map([...smallHomeFloors.filter(p => p.kind === "floor" && isCompanionHomeFloorFoodSupport(p.id)).slice(0, 8), ...next.slice(0, 400)].filter(p => Boolean(p.id) && !panelFloor(p) && [p.x, p.y, p.width].every(Number.isFinite) && p.width > 0).map(p => [p.id, p])).values()];
       const occupied = new Set([...objects.values()].map(toy => toy.platformId).filter(Boolean));
       const retained = (p: Platform) => occupied.has(p.id) || roomContact(p);
       // Ordinary and manual snapshots are independently bounded. Keep the
       // four real toy anchors and room floor before applying our200-node cap.
       platforms = [...measured.filter(retained), ...measured.filter(p => !retained(p))].slice(0, 200); width = bounds.width; height = bounds.height;
+      emissionContacts = [...homeContacts(platforms), ...platforms.filter(viewportFloor)];
       // A source-bound chest flight follows its same moving floor without
       // restarting gravity. Native user throws have no such destination.
       for (const [id, flight] of flights) {
@@ -120,38 +136,43 @@ export function createCompanionToys(rng: () => number = Math.random) {
       objects.set(id, toy);
       // The outlet is the actual source point. A support hint must not move a
       // toy to that floor before its first swept physical contact.
-      let vx = serial % 2 ? -80 : 80, reservation: Point | undefined;
+      let vx = serial % 2 ? -80 : 80, vy = -120, reservation: Point | undefined;
       const recipient = platforms.find(p => p.id === point.platformId && roomContact(p));
       if (recipient && recipient.y > point.y) {
-        // A chest ejection aims into its measured room. The ordinary native
-        // drop/toss remains unchanged, and the same sweep still owns contact.
-        const seconds = (120 + Math.sqrt(120 * 120 + 1800 * (recipient.y - point.y))) / 900;
         const desired = point.x + vx;
-        let targetX = platformLandingX(recipient, desired, 9), targetId = recipient.id;
-        const spans: CompanionItemSpan[] = [];
-        const contacts = platforms.filter(p => p.kind === "floor" && isCompanionHomeFloorFoodSupport(p.id) && Math.abs(p.y - recipient.y) <= .5).slice(0, 8);
-        if (!contacts.length && roomFloor(recipient)) contacts.push(recipient);
-        // The 44px support can extend beyond every body-safe approach. Aim
-        // inside their measured overlap, using each tier's existing inset;
-        // projection after a real swept contact then stays well within the
-        // unchanged 48px pickup radius, including ordinary coarse frames.
-        for (const body of platforms) {
-          if (!roomFloor(body) || Math.abs(body.y - recipient.y) > .5) continue;
-          for (const contact of contacts) {
-            const low = Math.max(platformLandingX(body, body.x), platformLandingX(contact, contact.x, 9), point.x - 260 * seconds);
-            const high = Math.min(platformLandingX(body, body.x + body.width), platformLandingX(contact, contact.x + contact.width, 9), point.x + 260 * seconds);
-            if (low > high) continue;
-            spans.push({ id: contact.id, x: low, y: contact.y, width: high - low });
-          }
-        }
+        const contacts = emissionContacts.filter(p => roomContact(p) && Math.abs(p.y - recipient.y) <= .5).slice(0, 8);
         const reservations = [...objects.values()].filter(item => item.id !== id && !item.hidden && !item.held && !item.carried)
           .map(item => flights.get(item.id)?.target ?? item);
-        const packed = rankCompanionItemLandings(spans, desired, [...reservations, ...occupied])[0];
-        if (packed) { targetX = packed.x; targetId = packed.platformId; }
-        const aimed = (targetX - point.x) / seconds;
-        if (Number.isFinite(aimed) && Math.abs(aimed) <= 260) { vx = aimed; reservation = { x: targetX, y: recipient.y, platformId: targetId }; }
+        const occupiedPoints = [...reservations, ...occupied];
+        let best: { landing: CompanionItemLanding; vx: number; vy: number; point: Point } | undefined;
+        // All candidates stay inside release's existing velocity limits. The
+        // longer source arc can reach real free space that -120 alone misses.
+        for (const launchY of [-120, -220, -40, 60, 140]) for (const contact of contacts) {
+          const seconds = (-launchY + Math.sqrt(launchY * launchY + 1800 * (contact.y - point.y))) / 900;
+          if (!Number.isFinite(seconds) || seconds <= 0 || seconds > 2) continue;
+          for (const body of platforms) {
+            if (!roomFloor(body) || Math.abs(body.y - contact.y) > .5) continue;
+            const reach = Math.sqrt(48 * 48 - (body.y - contact.y) ** 2);
+            const low = Math.max(platformLandingX(body, body.x) - reach, platformLandingX(contact, contact.x, 9), point.x - 260 * seconds, 10);
+            const high = Math.min(platformLandingX(body, body.x + body.width) + reach, platformLandingX(contact, contact.x + contact.width, 9), point.x + 260 * seconds, width - 10);
+            if (low > high) continue;
+            for (const packed of rankCompanionItemLandings([{ id: contact.id, x: low, y: contact.y, width: high - low }], desired, occupiedPoints)) {
+              const aimed = (packed.x - point.x) / seconds;
+              if (!Number.isFinite(aimed) || Math.abs(aimed) > 260) continue;
+              const first = firstHomeContact(point, aimed, launchY, emissionContacts, seconds);
+              if (!first || Math.abs(first.p.y - contact.y) > 1e-6 || Math.abs(first.x - packed.x) > 1e-6
+                || Math.abs(platformLandingX(first.p, first.x, 9) - first.x) > 1e-6
+                || Math.hypot(first.x - platformLandingX(body, first.x), first.p.y - body.y) > 48) continue;
+              if (!best || compareCompanionItemLandings(packed, best.landing) < 0) best = {
+                landing: packed, vx: aimed, vy: launchY, point: { x: first.x, y: first.p.y, platformId: first.p.id },
+              };
+            }
+          }
+        }
+        if (best) { vx = best.vx; vy = best.vy; reservation = best.point; }
       }
-      release(toy, at, { x: vx, y: -120 });
+      release(toy, at, { x: vx, y: vy });
+      if (recipient) flights.get(id)!.homeEmission = true;
       if (reservation) {
         const flight = flights.get(id)!, support = platforms.find(p => p.id === reservation.platformId)!;
         flight.target = reservation;
@@ -161,9 +182,6 @@ export function createCompanionToys(rng: () => number = Math.random) {
     },
     tick(at: number) {
       if (pausedAt !== undefined || !Number.isFinite(at)) return;
-      for (const [id, since] of missing) if (at - since >= 1500) {
-        const toy = objects.get(id); if (toy) release(toy, at); else missing.delete(id);
-      }
       for (const [id, flight] of flights) {
         const toy = objects.get(id); if (!toy) { flights.delete(id); continue; }
         if (at < flight.lastAt) continue;
@@ -172,21 +190,28 @@ export function createCompanionToys(rng: () => number = Math.random) {
         const falling = next.y >= flight.previous.y, dy = next.y - flight.previous.y;
         // A chest emission is in front of the sofa and calendar, on the same
         // measured floor plane as food. Human throws retain every real ledge.
-        const physical = (p: Platform) => flight.target ? roomContact(p) : floor(p);
-        const landing = falling ? platforms.filter(p => physical(p) && p.y >= flight.previous.y - .1 && p.y <= next.y + .1)
+        const physical = (p: Platform) => flight.viewportOnly ? viewportFloor(p) : floor(p);
+        const swept = !flight.homeEmission && falling ? platforms.filter(p => physical(p) && p.y >= flight.previous.y - .1 && p.y <= next.y + .1)
           .map(p => ({ p, t: dy > .01 ? clamp((p.y - flight.previous.y) / dy, 0, 1) : 0 }))
           .filter(({ p, t }) => { const x = flight.previous.x + (next.x - flight.previous.x) * t; return x >= p.x && x <= p.x + p.width; })
           .sort((a, b) => a.t - b.t)[0] : undefined;
-        if (landing) { bind(toy, landing.p, flight.previous.x + (next.x - flight.previous.x) * landing.t); toy.angle = 0; flights.delete(id); }
+        const homeLanding = flight.homeEmission ? firstHomeContact(flight, flight.vx, flight.vy, emissionContacts, age, Math.max(0, (flight.lastAt - flight.at) / 1000)) : undefined;
+        const landing = homeLanding ?? (swept && { p: swept.p, x: flight.previous.x + (next.x - flight.previous.x) * swept.t });
+        if (landing) { bind(toy, landing.p, landing.x); toy.angle = 0; flights.delete(id); }
         else {
           toy.x = clamp(next.x, 10, Math.max(10, width - 10)); toy.y = next.y; toy.angle = Math.sin(age * 5) * 30;
           flight.previous = { x: toy.x, y: toy.y };
           flight.lastAt = at;
           if (age >= 2 || toy.y > height + 40) {
-            const safe = platforms.filter(p => physical(p) && p.y >= 20 && p.y <= height && p.x <= toy.x && p.x + p.width >= toy.x).sort((a, b) => Math.abs(a.y - toy.y) - Math.abs(b.y - toy.y))[0];
-            if (safe) { bind(toy, safe, toy.x); toy.angle = 0; flights.delete(id); }
-            else if (--flight.remaining <= 0) remove(id);
-            else { flight.at = flight.lastAt = at; flight.x = toy.x; flight.y = clamp(toy.y, 20, Math.max(20, height - 20)); flight.previous = { x: flight.x, y: flight.y }; flight.vx = flight.vy = 0; }
+            const below = platforms.some(p => viewportFloor(p) && p.y >= toy.y && p.y <= height && p.x <= toy.x && p.x + p.width >= toy.x);
+            if (toy.y > height + 40 || --flight.remaining <= 0 || !below) remove(id);
+            else {
+              // A timeout cannot catch a missed upper card/panel or teleport
+              // back above the viewport. Continue only downward at current x.
+              flight.at = flight.lastAt = at; flight.x = toy.x; flight.y = toy.y; flight.previous = { x: toy.x, y: toy.y };
+              flight.vx = flight.vy = 0; flight.homeEmission = false; flight.viewportOnly = true;
+              flight.target = undefined; flight.targetFraction = undefined;
+            }
           }
         }
       }
@@ -211,7 +236,6 @@ export function createCompanionToys(rng: () => number = Math.random) {
       if (pausedAt === undefined || !Number.isFinite(at) || at < pausedAt) return;
       const gap = at - pausedAt;
       for (const flight of flights.values()) { flight.at += gap; flight.lastAt += gap; }
-      for (const [id, since] of missing) missing.set(id, since + gap);
       pausedAt = undefined; reconcile(at);
     },
     items: () => [...objects.values()].map(toy => ({ ...toy })),
@@ -224,8 +248,8 @@ export function createCompanionToys(rng: () => number = Math.random) {
     visit: (visitor: (toy: Readonly<CompanionToy>) => void) => objects.forEach(visitor),
     available: () => [...objects.values()].filter(toy => !toy.hidden && !toy.held && !toy.carried && !flights.has(toy.id)).map(toy => ({ ...toy })),
     carried: () => [...objects.values()].find(toy => toy.carried)?.id,
-    moving: () => pausedAt === undefined && (flights.size > 0 || missing.size > 0),
-    clear: () => { objects.clear(); flights.clear(); missing.clear(); },
+    moving: () => pausedAt === undefined && flights.size > 0,
+    clear: () => { objects.clear(); flights.clear(); },
   };
 }
 export type CompanionToyBeat = { serial: number; kind: "tidy" | "play"; effect?: "pick" | "stash" | "toss" | "put" | "decline" | "spawn"; toyId?: string; point?: Point };

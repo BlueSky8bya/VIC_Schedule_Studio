@@ -18,6 +18,8 @@ const DATE_TEXT_SELECTOR = ".public-day .day-strip > strong,.agenda-day .agenda-
 const CARD_TEXT_SELECTOR = `.public-event .event-main p,.public-event .event-subs li,.agenda-event .agenda-title-text,.agenda-event .agenda-subs li,.agenda-item .agenda-title-text,.agenda-item .agenda-title,.agenda-item .agenda-subs li,${STUDIO_CARD_SELECTOR} .pill-main strong,${STUDIO_CARD_SELECTOR} .pill-subs li,${STUDIO_CARD_SELECTOR} .pill-sub-last .pill-sub-text,${STUDIO_CARD_SELECTOR} .agenda-title-text,${STUDIO_CARD_SELECTOR} .agenda-subs li`;
 const TEXT_SURFACE_SELECTOR = `${DATE_TEXT_SELECTOR},${CARD_TEXT_SELECTOR}`;
 const MAX_PLATFORMS = 200;
+// One measured room floor has independently capped body and small-item tiers.
+const MAX_HOME_FLOOR_FAMILY = MAX_PLATFORMS * 2;
 const MEASUREMENT_INTERVAL_MS = 120;
 const CLEARANCE = 3;
 const DEFAULT_SIZE = 76;
@@ -50,6 +52,7 @@ export function companionCalendarAnchorIdentity(element: Element): string | unde
   return date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined;
 }
 export const isCompanionPanelFloor = (id?: string) => /^companion-panel-floor(?:-food)?(?:-\d+)?$/.test(id ?? "");
+const isHomeFloor = (id: string) => /^companion-home-floor(?:-food)?(?:-\d+)?$/.test(id);
 const copyPlatform = (platform: Platform): Platform => ({ id: platform.id, x: platform.x, y: platform.y, width: platform.width, kind: platform.kind, ...(platform.manualOnly ? { manualOnly: true } : {}), ...(platform.heart ? { heart: { ...platform.heart } } : {}), ...(platform.panelSide ? { panelSide: platform.panelSide } : {}) });
 const copyFoodSupport = (platform: CompanionFoodDropSupport): CompanionFoodDropSupport => ({ ...copyPlatform(platform), ...(platform.dropSurface ? { dropSurface: { ...platform.dropSurface } } : {}) });
 
@@ -127,6 +130,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     return id;
   };
   let anchors = new Map<string, AnchorSnapshot>();
+  let homeFloorFamilies = new Map<Element, string[]>();
   let followedIds: string[] = [];
   const retainedIds = new Set<string>();
   let disposed = false, notifyNextMeasurement = false;
@@ -162,7 +166,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     const validationOnly = pendingValidationOnly; pendingValidationOnly = false;
     const notifyUnchanged = notifyNextMeasurement; notifyNextMeasurement = false;
     if (!root.isConnected) {
-      anchors.clear(); followedIds = []; retainedIds.clear(); landingSnapshot = []; foodLandingSnapshot = [];
+      anchors.clear(); homeFloorFamilies.clear(); followedIds = []; retainedIds.clear(); landingSnapshot = []; foodLandingSnapshot = [];
       if (previous !== "[]" || notifyUnchanged) { previous = "[]"; onChange([], validationOnly); }
       return;
     }
@@ -436,8 +440,9 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
           }
         }
       }
-      // A deliberate drop may use the actual lower edge of a day or the
-      // existing empty panel box. These never enter the roaming graph.
+      // A deliberate pet placement retains the empty panel's native anchor.
+      // Its transparent wrapper is not an item floor:129 replaces121's
+      // automatic panel-item catch. Real day edges still accept both tiers.
       for (const element of root.querySelectorAll<HTMLElement>(`${DAY_SELECTOR},${PANEL_FLOOR_SELECTOR}`)) {
         nextObserved.add(element);
         if (!visible(element) || !supportVisible(element)) continue;
@@ -445,7 +450,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         const x = Math.max(rect.left, clip.left), right = Math.min(rect.right, clip.right), y = rect.bottom - CLEARANCE;
         if (rect.width <= 0 || rect.height <= 0 || y < clip.top || y >= clip.bottom || right <= x) continue;
         const petSpans = safeCompanionSurfaces({ x: x + footprint.width / 2, y, width: right - x - footprint.width }, ordinaryObstacles, size, viewport, footprint);
-        const foodSpans = safeCompanionSurfaces({ x: x + FOOD_FOOTPRINT.width / 2, y, width: right - x - FOOD_FOOTPRINT.width }, ordinaryObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT);
+        const foodSpans = panel ? [] : safeCompanionSurfaces({ x: x + FOOD_FOOTPRINT.width / 2, y, width: right - x - FOOD_FOOTPRINT.width }, ordinaryObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT);
         if (!petSpans.length && !foodSpans.length) continue;
         const id = panel ? "companion-panel-floor" : `${idFor(element, "date")}-floor`;
         const addManual = (spans: CompanionSurface[], food: boolean) => {
@@ -532,6 +537,18 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     }
     for (const element of nextObserved) {
       if (!observed.has(element)) { resizeObserver?.observe(element); observed.add(element); }
+    }
+    // Cache only this scan's real floor siblings. The two tiers share one DOM
+    // frame even when a pet/toy requests just one of their support identities.
+    // Retained offscreen sources below must not become current safe siblings.
+    homeFloorFamilies = new Map();
+    for (const platform of [...landings, ...foodLandings]) {
+      if (platform.kind !== "floor" || !isHomeFloor(platform.id)) continue;
+      const anchor = nextAnchors.get(platform.id)?.anchor;
+      if (!anchor) continue;
+      const family = homeFloorFamilies.get(anchor) ?? [];
+      if (family.length < MAX_HOME_FLOOR_FAMILY) family.push(platform.id);
+      homeFloorFamilies.set(anchor, family);
     }
     // A source can scroll outside the safe landing region during a valid
     // flight. Retain only the last explicitly followed pair for translation;
@@ -644,20 +661,27 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       return { element: snapshot.anchor, left: snapshot.rect?.left ?? 0, top: snapshot.rect?.top ?? 0, ...(snapshot.rect ? { width: snapshot.rect.width, height: snapshot.rect.height } : {}), ...(snapshot.identity ? { identity: snapshot.identity } : {}) };
     },
     follow(requested: readonly string[]): CompanionFollowSample[] {
-      if (!root.isConnected) { anchors.clear(); followedIds = []; retainedIds.clear(); landingSnapshot = []; foodLandingSnapshot = []; return []; }
+      if (!root.isConnected) { anchors.clear(); homeFloorFamilies.clear(); followedIds = []; retainedIds.clear(); landingSnapshot = []; foodLandingSnapshot = []; return []; }
       followedIds = [...new Set(requested)].slice(0, 7);
       for (const id of retainedIds) {
         if (!followedIds.includes(id)) { anchors.delete(id); retainedIds.delete(id); }
+      }
+      const sampledIds = new Set(followedIds);
+      for (const id of followedIds) {
+        const anchor = isHomeFloor(id) && anchors.get(id)?.anchor;
+        if (anchor) for (const sibling of homeFloorFamilies.get(anchor) ?? []) sampledIds.add(sibling);
       }
       const result: CompanionFollowSample[] = [];
       const measured = new Map<Element, DOMRect>();
       // The pet's occupied/destination/attention supports and at most four
       // real toys share this bounded identity list; each native rect is read
       // once even when several of those seven identities use the same source.
+      // A requested room floor also returns its capped, same-anchor body/item
+      // siblings; otherwise an unoccupied body tier can lag a moved item tier.
       // No Range, selector walk, style read or autonomous rAF lives here.
       // A parked renderer may explicitly follow the final snapshot after
       // unsubscribe; the caller owns that bounded lifetime until effect GC.
-      for (const id of followedIds) {
+      for (const id of sampledIds) {
         const snapshot = anchors.get(id);
         if (!snapshot) continue;
         const platform = copyPlatform(snapshot.platform);

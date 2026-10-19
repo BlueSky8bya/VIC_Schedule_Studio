@@ -147,7 +147,7 @@ describe("121 deliberate native floors and ribbon contact", () => {
     expect(ribbons.some(p => p.x <= 120 && p.x + p.width >= 120)).toBe(true);
     expectClear(ribbons, [button.rect], 92 * .76); sub();
   });
-  it("publishes native day/panel bottom edges for manual pet and food use with text/control guards", () => {
+  it("preserves guarded day edges and manual pet panel anchors without emitting a transparent panel item floor", () => {
     const f = geometryFixture(), panel = new FixtureElement(), control = new FixtureElement();
     const dayElement = f.day as unknown as Element;
     f.day.rect = box(100, 300, 350, 350); f.day.matches = selector => selector.includes(".public-day");
@@ -170,7 +170,21 @@ describe("121 deliberate native floors and ribbon contact", () => {
     }
     const food = sub.landings(32).filter(p => /-floor-food/.test(p.id));
     expect(food.some(p => sub.anchor(p.id)?.element === dayElement)).toBe(true);
-    expect(food.some(p => p.id === "companion-panel-floor-food")).toBe(true); sub();
+    expect(food.some(p => p.id.startsWith("companion-panel-floor"))).toBe(false);
+    expect(sub.landings(32).some(p => sub.anchor(p.id)?.element === (panel as unknown as Element))).toBe(false); sub();
+  });
+  it("lets a snack fall through the empty panel wrapper to the real viewport floor", () => {
+    const f = geometryFixture(), panel = new FixtureElement();
+    panel.parentElement = f.sourceRoot; panel.rect = box(600, 300, 300, 350); panel.matches = selector => selector === ".avatar-dock-inner";
+    const query = f.sourceRoot.querySelectorAll;
+    f.sourceRoot.querySelectorAll = selector => selector.endsWith(",.avatar-dock-inner") ? [panel] : query(selector);
+    const sub = observeCompanionPlatforms(f.root, () => {}, { size: 92 }); f.flush();
+    const point = { x: 750, y: 500 }, snack = { id: "panel-fall", kind: "apple" as const, ...point };
+    expect(firstCompanionSupportBelow(point, sub.landings())?.id).toBe("companion-panel-floor");
+    expect(placeCompanionFood(snack, point, sub.landings(32), viewport)).toMatchObject({ x: 750, y: 782, platformId: "viewport-floor-food" });
+    panel.rect = box(100, 260, 300, 350); f.win.emit("scroll"); f.advance(120);
+    expect(sub.follow(["companion-panel-floor"])[0].anchorX).toBe(100);
+    expect(sub.landings(32).some(p => p.id.startsWith("companion-panel-floor"))).toBe(false); sub();
   });
   it("follows fractional native width and bottom changes without new Range/style scans", () => {
     const f = geometryFixture(); f.day.rect = box(100, 300, 350, 350); f.day.matches = selector => selector.includes(".public-day");
@@ -197,6 +211,7 @@ describe("121 deliberate native floors and ribbon contact", () => {
     panel.isConnected = false; const replacement = new FixtureElement(); make(replacement, 100); panel = replacement;
     f.win.emit("scroll"); f.advance(120);
     expect(sub.anchor("companion-panel-floor")?.element).toBe(replacement);
+    expect(sub.landings(32).some(p => p.id.startsWith("companion-panel-floor"))).toBe(false);
     expect(sub.follow(["companion-panel-floor"])[0].anchorX).toBe(100);
     replacement.closest = selector => selector.includes("[inert]") ? replacement : null;
     expect(sub.anchor("companion-panel-floor")).toBeUndefined(); expect(sub.follow(["companion-panel-floor"])).toEqual([]);
@@ -692,6 +707,30 @@ describe("companion geometry anchor subscription", () => {
     expect(result.every(sample => sample.currentFrame!.left - sample.sourceFrame!.left === 12 && sample.currentFrame!.top - sample.sourceFrame!.top === -8)).toBe(true);
     expect(reads.reduce((count, element) => count + element.getBoundingClientRect.mock.calls.length, 0)).toBe(7);
     expect(f.range.getClientRects).toHaveBeenCalledTimes(ranges); expect(f.win.getComputedStyle).toHaveBeenCalledTimes(styles); sub();
+  });
+  it.each(["body", "small"] as const)("follows both current room-floor tiers from one requested %s identity and one native rect", tier => {
+    const f = geometryFixture(), house = addHouseFloor(f);
+    const sub = observeCompanionPlatforms(f.root, () => {}, { size: 92, home: f.home as unknown as HTMLElement }); f.flush();
+    const body = sub.landings().filter(p => /^companion-home-floor(?:-\d+)?$/.test(p.id));
+    const small = sub.landings(32).filter(p => p.id.startsWith(COMPANION_HOME_FLOOR_FOOD));
+    expect(body.length).toBeGreaterThan(0); expect(small.length).toBeGreaterThan(0);
+    const family = [...body, ...small], requested = tier === "body" ? body[0] : small[0];
+    const ranges = f.range.getClientRects.mock.calls.length, styles = f.win.getComputedStyle.mock.calls.length;
+    house.floor.rect = box(120, 624 - .984375, 340, 36); house.floor.getBoundingClientRect.mockClear();
+    const followed = sub.follow([requested.id]);
+    expect(followed.map(sample => sample.platform.id).sort()).toEqual(family.map(p => p.id).sort());
+    for (const sample of followed) {
+      const baseline = family.find(p => p.id === sample.platform.id)!;
+      expect(sample.platform).toMatchObject({ x: baseline.x + 10, y: 654 - .984375, width: baseline.width });
+      expect(sample.sourceFrame).toEqual({ left: 110, top: 624, width: 340, height: 36 });
+      expect(sample.currentFrame).toEqual({ left: 120, top: 624 - .984375, width: 340, height: 36 });
+    }
+    expect(house.floor.getBoundingClientRect).toHaveBeenCalledTimes(1);
+    expect(f.range.getClientRects).toHaveBeenCalledTimes(ranges); expect(f.win.getComputedStyle).toHaveBeenCalledTimes(styles);
+    expect([...sub.landings(), ...sub.landings(32)].filter(p => family.some(source => source.id === p.id)).every(p => p.y === 654)).toBe(true);
+    house.floor.isConnected = false; house.floor.getBoundingClientRect.mockClear();
+    expect(sub.follow([requested.id])).toEqual([]); expect(house.floor.getBoundingClientRect).not.toHaveBeenCalled();
+    sub();
   });
   it("publishes a fresh baseline before onChange, avoiding a second scroll delta", () => {
     const fixture = geometryFixture(); let delivered: Platform[] = [], followed: CompanionFollowSample[] = [];

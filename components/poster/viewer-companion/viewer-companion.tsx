@@ -58,6 +58,7 @@ import { createCompanionSceneStore } from "@/lib/ui/viewer-companion/scene-memor
 import { COMPANION_SCENE_SIGNAL, emitCompanionWardrobePreference, validCompanionSceneSignal } from "@/lib/ui/viewer-companion/scene-signals";
 import { accessibleCompanionToys, companionToyFoodPriority, createCompanionToyPlanner, type CompanionToyAction } from "@/lib/ui/viewer-companion/toys";
 import { companionToyReturnDelivered, companionToyReturnTarget, planCompanionToyBoxApproach, sampleCompanionToyReturn, validCompanionToyBoxApproach } from "@/lib/ui/viewer-companion/toy-return";
+import { companionFoodDisposalDelivered, companionFoodDisposalTarget, sampleCompanionFoodDisposal } from "@/lib/ui/viewer-companion/food-disposal";
 import { createCompanionFeedCommands, type CompanionFeedCommand } from "@/lib/ui/viewer-companion/feed-command";
 import { createCompanionPersonalityActivity, preflightCompanionPersonalityActivity } from "@/lib/ui/viewer-companion/personality-activity";
 import { companionToyUnread, loadCompanionTastes, recordCompanionFoodTaste, recordCompanionToyExperience, shouldDeclineCompanionFood, subscribeCompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
@@ -406,6 +407,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     let toyEffectApplied = false, toyPerformanceWitnessed = false, foodRefusalWitnessed = false, sceneEffectApplied = false;
     let toyReturnAim: { element: HTMLElement; point: { x: number; y: number } } | undefined;
     let toyReturnPainted: { x: number; y: number } | undefined;
+    let foodDisposalAim: { element: HTMLElement; point: { x: number; y: number } } | undefined;
+    let foodDisposalPainted: { x: number; y: number } | undefined;
+    const recordFoodDisposalPaint = (point: { x: number; y: number }) => { if (action?.household?.effect === "discard") foodDisposalPainted = point; };
     let householdEffectApplied = false;
     let curiosityTossed = false, invitedUntil = 0, lastRoughAt = -Infinity, roughInGrip = false;
     const hurtTrust = (kind: "rough-play" | "betrayed", now: number) => {
@@ -890,7 +894,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         const carryPoint = carryAnchor ? projectCompanionSpritePoint({ ...projection, cell: paintedSelection.frame }, carryAnchor) : null;
         // Transport sits on the registered upper front of the body. The
         // 32px snack foot is8px below that point, leaving real floor clearance.
-        if (carryPoint && carriedFood) food.current?.carry(carriedFood, { x: carryPoint.x, y: carryPoint.y + 8 });
+        if (carryPoint && carriedFood) {
+          let point = { x: carryPoint.x, y: carryPoint.y + 8 };
+          if (action?.household?.effect === "discard" && foodDisposalAim) point = sampleCompanionFoodDisposal(point, foodDisposalAim.point, (performance.now() - began) / total);
+          food.current?.carry(carriedFood, point, action?.household?.effect === "discard" ? recordFoodDisposalPaint : undefined);
+        }
         if (carriedToy) {
           // The adopted current pose owns transport for both kinds of object.
           // A cold landmark module keeps the same current body, never last tick.
@@ -1032,6 +1040,12 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       anchorsDirty = false;
       followedAt = now; followedKeys = keys;
       let returnMoved = false;
+      if (foodDisposalAim && action?.household?.effect === "discard") {
+        const source = foodDisposalAim.element;
+        const point = companionFoodDisposalTarget(source.getBoundingClientRect(), source.isConnected && !source.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]"));
+        if (!point) { clearAction(); returnMoved = true; }
+        else { returnMoved = point.x !== foodDisposalAim.point.x || point.y !== foodDisposalAim.point.y; foodDisposalAim.point = point; }
+      }
       if (toyReturnAim && action?.toy?.effect === "stash") {
         const source = toyReturnAim.element;
         const point = companionToyReturnTarget(source.getBoundingClientRect(), source.isConnected && !source.parentElement?.closest("[hidden],[inert],[aria-hidden='true']"));
@@ -1107,7 +1121,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, now, toyHomeContacts);
       return Boolean(dx || dy || bedMoved || returnMoved);
     };
-    const continuousMotion = () => Boolean(performance.now() < interactionUntil || toys.current?.moving() || action?.toy?.effect === "stash" && toys.current?.carried() || homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && (action.accessory || action.radio || ["walk", "jump", "heart", "hide", "stretch", "shake", "eat", "play"].includes(action.kind)));
+    const continuousMotion = () => Boolean(performance.now() < interactionUntil || toys.current?.moving() || action?.toy?.effect === "stash" && toys.current?.carried() || action?.household?.effect === "discard" && food.current?.carried() || homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && (action.accessory || action.radio || ["walk", "jump", "heart", "hide", "stretch", "shake", "eat", "play"].includes(action.kind)));
     const followLayout = (event?: Event) => {
       if (premiereActive && event?.target === window.visualViewport) { viewportResized(); return; }
       // A compact room can unmount while the creature is parked. Drop its
@@ -1187,7 +1201,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       for (const key of ["data-episode", "data-episode-phase", "data-episode-variant", "data-episode-food"]) el.removeAttribute(key);
     };
     const cancelHousehold = () => { household.cancel(); const carried = food.current?.carried(); if (carried) food.current?.releaseCarry(carried); if (action?.household) action = { ...action, household: undefined }; el.removeAttribute("data-household"); };
-    const clearAction = (preserveEpisode = false, preserveHousehold = false, preserveScene = false) => { if (!preserveScene) { scenes.cancel(); toyPlanner.cancel(brain.current.activeMs); toys.current?.cancel(performance.now()); } if (!preserveHousehold) cancelHousehold(); el.removeAttribute("data-food-curiosity"); clearThrow(); sofaTravelActive = false; sofaFlightShape = undefined; ballisticCoefficient = null; el.removeAttribute("data-sofa-flight"); if (!preserveEpisode) { jumpRecoveryContext = undefined; brain.current = { ...brain.current, episode: undefined }; el.removeAttribute("data-episode"); el.removeAttribute("data-episode-phase"); el.removeAttribute("data-episode-variant"); el.removeAttribute("data-episode-food"); el.removeAttribute("data-food-goal"); } else if (brain.current.episode) data("episodePhase", brain.current.episode.phase); if (homeDeparture?.flying) homeDeparture = undefined; action = null; toyReturnAim = undefined; toyReturnPainted = undefined; heldShake.reset(); shakenReleasePending = undefined; shakenGroundColumn = undefined; runTrip = runHop = undefined; runUpCurve = false; el.removeAttribute("data-trip"); el.removeAttribute("data-run-up"); el.removeAttribute("data-held-dizzy"); food.current?.nibble(); heartResult = null; sleeping = false; playImpact = playFalling = panelImpact = false; el.removeAttribute("data-attention"); el.removeAttribute("data-intent"); el.removeAttribute("data-play"); el.removeAttribute("data-play-beat"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
+    const clearAction = (preserveEpisode = false, preserveHousehold = false, preserveScene = false) => { if (!preserveScene) { scenes.cancel(); toyPlanner.cancel(brain.current.activeMs); toys.current?.cancel(performance.now()); } if (!preserveHousehold) cancelHousehold(); el.removeAttribute("data-food-curiosity"); clearThrow(); sofaTravelActive = false; sofaFlightShape = undefined; ballisticCoefficient = null; el.removeAttribute("data-sofa-flight"); if (!preserveEpisode) { jumpRecoveryContext = undefined; brain.current = { ...brain.current, episode: undefined }; el.removeAttribute("data-episode"); el.removeAttribute("data-episode-phase"); el.removeAttribute("data-episode-variant"); el.removeAttribute("data-episode-food"); el.removeAttribute("data-food-goal"); } else if (brain.current.episode) data("episodePhase", brain.current.episode.phase); if (homeDeparture?.flying) homeDeparture = undefined; action = null; toyReturnAim = undefined; toyReturnPainted = undefined; foodDisposalAim = undefined; foodDisposalPainted = undefined; heldShake.reset(); shakenReleasePending = undefined; shakenGroundColumn = undefined; runTrip = runHop = undefined; runUpCurve = false; el.removeAttribute("data-trip"); el.removeAttribute("data-run-up"); el.removeAttribute("data-held-dizzy"); food.current?.nibble(); heartResult = null; sleeping = false; playImpact = playFalling = panelImpact = false; el.removeAttribute("data-attention"); el.removeAttribute("data-intent"); el.removeAttribute("data-play"); el.removeAttribute("data-play-beat"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
     const clearForPetting = () => {
       const invitation = scenes.current()?.id === 10;
       if (invitation && action?.scene?.id === 10) scenes.complete(action as CompanionSceneAction);
@@ -1592,6 +1606,12 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       next = romp?.walk ?? next;
       clearAction(false, Boolean(next.household || next.scene), Boolean(next.scene || next.toy)); householdEffectApplied = false; toyEffectApplied = toyPerformanceWitnessed = foodRefusalWitnessed = sceneEffectApplied = false;
       toyReturnAim = undefined; toyReturnPainted = undefined;
+      foodDisposalAim = undefined; foodDisposalPainted = undefined;
+      if (next.household?.effect === "discard") {
+        const element = document.querySelector<HTMLElement>(".vc-home [data-companion-trash]");
+        const point = element && companionFoodDisposalTarget(element.getBoundingClientRect(), element.isConnected && !element.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]"));
+        if (element && point) foodDisposalAim = { element, point };
+      }
       if (next.toy?.effect === "stash") {
         const element = document.querySelector<HTMLElement>(".vc-home [data-home-action='toys'] .vc-toy-box-opening");
         const point = element && companionToyReturnTarget(element.getBoundingClientRect(), element.isConnected && !element.parentElement?.closest("[hidden],[inert],[aria-hidden='true']"));
@@ -1965,13 +1985,15 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           for (const [key, selector] of [["dispenser", ".vc-home .vc-dispenser"], ["bin", ".vc-home [data-companion-trash]"]] as const) {
             const control = document.querySelector<HTMLElement>(selector), rect = control?.getBoundingClientRect();
             if (!control || control.closest("[hidden],[inert],[aria-hidden='true']") || !rect || rect.width <= 0 || rect.height <= 0 || rect.bottom < 0 || rect.top > innerHeight) continue;
-            const cx = rect.left + rect.width / 2, reach = key === "dispenser" ? size + rect.width / 2 : 44;
-            const stance = householdPlatforms.filter(p => isHomeFloor(p.id) && Math.abs(platformLandingX(p, cx) - cx) <= reach && Math.abs(p.y - rect.bottom) < 100).sort((a, b) => Math.abs(platformLandingX(a, cx) - cx) - Math.abs(platformLandingX(b, cx) - cx))[0];
+            // A carried item reaches the bin through its own finite delivery
+            // arc. The body only approaches a real safe floor, never the bin.
+            const cx = rect.left + rect.width / 2, reach = size + rect.width / 2;
+            const stance = householdPlatforms.filter(p => isHomeFloor(p.id) && (key === "bin" || Math.abs(platformLandingX(p, cx) - cx) <= reach) && Math.abs(p.y - rect.bottom) < 100).sort((a, b) => Math.abs(platformLandingX(a, cx) - cx) - Math.abs(platformLandingX(b, cx) - cx))[0];
             if (stance) householdHome[key] = { x: platformLandingX(stance, cx), y: stance.y, platformId: stance.id };
           }
         }
         if (sceneOutfit !== wardrobe.current.equipped) { sceneOutfit = wardrobe.current.equipped; sceneEvent({ kind: "accessory", id: sceneOutfit }); }
-        const errand = !signatureFirst && !scenes.current() && !toyPlanner.active() && !overlayActive && !premiereActive && !pendingMonth && !returning && !reduced && gfxMode() !== "off" ? household.next({ brain: brain.current, world: householdWorld, preferences: effective, now: brain.current.activeMs, home: householdHome, count: liveFoods.length + (food.current?.carried() ? 1 : 0), carried: food.current?.carried() }) : undefined;
+        const errand = !signatureFirst && !scenes.current() && !toyPlanner.active() && !overlayActive && !premiereActive && !pendingMonth && !returning && !reduced && gfxMode() !== "off" ? household.next({ brain: brain.current, world: householdWorld, preferences: effective, now: brain.current.activeMs, home: householdHome, count: liveFoods.length + (food.current?.carried() ? 1 : 0), carried: food.current?.carried(), occupied: toys.current?.occupied() }) : undefined;
         if (!errand && !scenes.current() && food.current?.carried()) food.current.releaseCarry(food.current.carried()!);
         const box = document.querySelector<HTMLElement>(".vc-home [data-home-action='toys']"), boxRect = box?.getBoundingClientRect();
         const boxFloor = boxRect && householdPlatforms.filter(p => isHomeFloor(p.id) && Math.abs(p.y - boxRect.bottom) <= 140).sort((a, b) => Math.abs(platformLandingX(a, boxRect.left + boxRect.width / 2) - boxRect.left - boxRect.width / 2) - Math.abs(platformLandingX(b, boxRect.left + boxRect.width / 2) - boxRect.left - boxRect.width / 2))[0];
@@ -2061,14 +2083,18 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           if (success) pendingCue = "play";
         }
         const householdBeat = action.household;
-        if (householdBeat?.effect && !householdEffectApplied && p >= (action.kind === "walk" ? .82 : .48) && (householdBeat.effect !== "scatter" || !householdBeat.point || Math.hypot(x - householdBeat.point.x, y - householdBeat.point.y) <= 64)) {
+        if (householdBeat?.effect && !householdEffectApplied && p >= (action.kind === "walk" ? .82 : .48) && (householdBeat.effect !== "discard" || p >= 1 || companionFoodDisposalDelivered(foodDisposalPainted, foodDisposalAim?.point)) && (householdBeat.effect !== "scatter" || !householdBeat.point || Math.hypot(x - householdBeat.point.x, y - householdBeat.point.y) <= 64)) {
           householdEffectApplied = true;
           let result: boolean | string = false;
-          if (householdBeat.effect === "pick" && householdBeat.foodId) result = Boolean(paintedSelection && accessoryModule?.companionCarryAnchor(paintedSelection) && food.current?.beginCarry(householdBeat.foodId));
+          if (householdBeat.effect === "pick" && householdBeat.foodId) {
+            const item = liveFoods.find(item => item.id === householdBeat.foodId);
+            result = Boolean(item && Math.hypot(item.x - x, item.y - y) <= 36 && paintedSelection && accessoryModule?.companionCarryAnchor(paintedSelection) && food.current?.beginCarry(householdBeat.foodId));
+          }
           else if (householdBeat.effect === "put" && householdBeat.foodId) result = Boolean(food.current?.releaseCarry(householdBeat.foodId));
           else if (householdBeat.effect === "discard" && householdBeat.foodId) {
             const bin = document.querySelector<HTMLElement>(".vc-home [data-companion-trash]");
-            result = Boolean(bin && food.current?.discardCarry(householdBeat.foodId, bin));
+            const target = bin && companionFoodDisposalTarget(bin.getBoundingClientRect(), bin.isConnected && !bin.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]"));
+            result = Boolean(bin && bin === foodDisposalAim?.element && target && isHomeFloor(support) && supportedNow() && companionFoodDisposalDelivered(foodDisposalPainted, target) && food.current?.discardCarry(householdBeat.foodId, bin));
           } else if (householdBeat.effect === "spawn") {
             const slot = document.querySelector<HTMLElement>(".vc-home .vc-dispenser-slot"), outlet = slot?.getBoundingClientRect();
             if (slot && outlet && outlet.width > 0 && Math.abs(x - (outlet.left + outlet.width / 2)) <= size + outlet.width / 2 && Math.abs(y - outlet.bottom) < size && !slot.parentElement?.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]")) {
