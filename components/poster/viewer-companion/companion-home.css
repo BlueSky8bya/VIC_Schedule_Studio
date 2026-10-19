@@ -63,7 +63,7 @@
   --vc-storage-bottom: calc(var(--vc-storage-floor) + 3px - var(--vc-toy-paint-width) * 17 / 256);
   --vc-dispenser-paint-width: max(56px, 17.4cqw);
   --vc-bin-paint-width: 23cqw; --vc-bin-right: 4cqw; --vc-bin-bottom: calc(8cqw - var(--vc-furniture-lower));
-  --vc-window-width: min(54cqw, calc(100% - var(--vc-shelf-width) - 20px));
+  --vc-window-width: min(54cqw, calc(100cqw - var(--vc-shelf-width) - 20px));
   --vc-tv-width: max(64px, 20cqw); --vc-tv-bottom: calc(9cqw - var(--vc-furniture-lower));
   --vc-room-grade: #56371b00; --vc-room-art-grade: 1; --vc-room-daylight: 0;
   --vc-bed-cloth: #c4bcae; --vc-bed-light: #e1d9ca; --vc-bed-shade: #aaa292;
@@ -75,6 +75,11 @@
 .vc-home-room::before { content: ''; position: absolute; z-index: 0; inset: 0; background: url('/companion/home/136/room-sunlit.webp') center / 100% 100%; opacity: var(--vc-room-daylight); pointer-events: none; transition: opacity calc(var(--dur-2) * 4) var(--ease); }
 .vc-home-close { display: grid; place-items: center; width: var(--control-hit); height: var(--control-hit); margin-left: auto; padding: 0; border: 0; border-radius: var(--r-pill); color: var(--muted); background: transparent; cursor: pointer; pointer-events: auto; }
 .vc-home-close:hover { color: var(--ink); background: rgb(var(--glass-head)); }
+.vc-home-personality { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: var(--vc-object-min-hit); min-height: var(--vc-object-min-hit); padding: 0 6px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--ink); font: inherit; font-size: calc(var(--text-body) / var(--shell-zoom, 1)); cursor: pointer; }
+.vc-home-personality:hover { background: rgb(var(--glass-head)); }
+.vc-home:has(.vc-home-personality) > .panel-section-heading .panel-section-title { padding-inline: 100px; }
+.vc-home:has(.vc-home-personality) > .panel-section-heading .panel-section-toggle { padding-inline: 10px; }
+.vc-home[data-home-presentation="compact"]:has(.vc-home-personality) > .panel-section-heading .panel-section-title { padding-inline: 112px; }
 /* Storage has room-appropriate scale. The glass uses the remaining wall
    width after the enlarged native targets and their shared gap. */
 .vc-home-window { position: absolute; z-index: 1; left: var(--vc-window-left); top: 7px; box-sizing: border-box; width: var(--vc-window-width); height: auto; aspect-ratio: 38 / 25; padding: 6px; border: 1px solid color-mix(in srgb, var(--vc-wood-edge) 65%, transparent); border-radius: 14px 14px 9px 9px; background: linear-gradient(110deg, var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 3px 5px var(--vc-soft-shadow), inset 0 1px 1px #fff9; pointer-events: none; }
@@ -212,8 +217,10 @@ html[data-theme="dark"] .vc-home-object-image { opacity: .92; }
 .vc-home-lamp-cord { position: absolute; z-index: 0; top: 0; left: 50%; width: var(--vc-lamp-paint-width); height: var(--vc-lamp-cord-height); transform: translateX(-50%); filter: brightness(var(--vc-room-art-grade)); }
 .vc-home-lamp-paint > img { z-index: 1; }
 .vc-home-lamp-bulb { z-index: 2; }
-.vc-curtain-control { position: absolute; z-index: 4; left: calc(var(--vc-window-left) - 3px); top: calc(7px + var(--vc-window-width) * .37); width: var(--vc-object-min-hit); height: max(var(--vc-object-min-hit), calc(var(--vc-room-height) - 266px)); padding: 0; border: 0; border-radius: var(--r-pill); background: transparent; cursor: pointer; }
-.vc-curtain-control > span { position: absolute; left: 17px; top: 4px; width: 2px; height: max(27px, calc(var(--vc-room-height) - 275px)); background: #a57c4c; filter: brightness(var(--vc-room-art-grade)); transform-origin: top; }
+/* A single continuous rope starts at the rod. Keep its old knob height, so
+   the actual measured contact is retained rather than extending actor reach. */
+.vc-curtain-control { --vc-curtain-cord-height: calc(7px + var(--vc-window-width) * .37 + max(27px, calc(var(--vc-room-height) - 275px))); position: absolute; z-index: 4; left: calc(var(--vc-window-left) - 10px); top: 4px; width: var(--vc-object-min-hit); height: max(var(--vc-object-min-hit), var(--vc-curtain-cord-height)); padding: 0; border: 0; border-radius: var(--r-pill); background: transparent; cursor: pointer; }
+.vc-curtain-control > span { position: absolute; left: 6px; top: 0; width: 2px; height: var(--vc-curtain-cord-height); background: #a57c4c; filter: brightness(var(--vc-room-art-grade)); transform-origin: top; }
 .vc-curtain-control > span::after { content: ''; position: absolute; left: -3px; bottom: -3px; width: 8px; height: 11px; border-radius: 40%; background: #cba66d; border: 1px solid #8b6844; box-shadow: inset 1px 1px #f6e4b966; }
 .vc-curtain-control:hover > span { transform: translateY(2px); filter: brightness(1.1); }
 .vc-curtain-control:active > span { transform: translateY(4px); }
@@ -230,7 +237,7 @@ html .vc-home button:where(:hover, :focus):not(:focus-visible) { outline: none; 
 .vc-home-tv-paint { position: absolute; width: var(--vc-tv-width); height: var(--vc-tv-width); left: 50%; bottom: 0; display: block; transform: translateX(-50%); pointer-events: none; filter: drop-shadow(2px 3px 2px #795b3936); }
 .vc-home-tv-body, .vc-home-tv-projection { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
 .vc-home-tv-body { filter: brightness(var(--vc-room-art-grade)); }
-.vc-home-tv-screen { position: absolute; left: 0; top: 0; width: 100px; height: 100px; display: block; overflow: hidden; border-radius: 12%; transform-origin: 0 0; background: #fff1bb; }
+.vc-home-tv-screen { position: absolute; left: 0; top: 0; width: 100px; height: 100px; display: block; overflow: hidden; transform-origin: 0 0; background: #fff1bb; }
 .vc-home-tv-screen > img { display: block; width: 100%; height: 100%; object-fit: cover; }
 .vc-home-tv:not(:disabled):is(:hover, :focus-visible) .vc-home-tv-body { filter: brightness(calc(var(--vc-room-art-grade) * 1.1)); }
 .vc-home-tv:active .vc-home-tv-body { filter: brightness(calc(var(--vc-room-art-grade) * .94)); }

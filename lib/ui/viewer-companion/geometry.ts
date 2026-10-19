@@ -391,9 +391,10 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         nextObserved.add(homeFloor);
         const rect = rectFor(homeFloor), clip = clipping(homeFloor.parentElement);
         const x = Math.max(rect.left, clip.left), right = Math.min(rect.right, clip.right), y = rect.bottom - COMPANION_HOME_FLOOR_INSET;
-        // The room's floor is a real, separate plane. Only a deliberate food
-        // target or the occupied manual support exposes it to the brain;
-        // ordinary roaming must not start walking through house controls.
+        // The room floor is a real plane. Deliberate item targets and the
+        // bounded no-progress fallback may expose the measured main span;
+        // other manual furniture/body stances remain excluded. Both paths use
+        // these same safe surfaces and never walk through house controls.
         // The bed is the existing deliberate room prop, while its own labels
         // and every other complete control remain obstacles at the92px tier.
         const spans = rect.height > 0 && y >= clip.top && y < clip.bottom

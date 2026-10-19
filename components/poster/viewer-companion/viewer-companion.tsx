@@ -14,6 +14,8 @@ import { companionAttentionPoint, deliberateCompanionAction } from "@/lib/ui/vie
 import { advanceBrain, cancelCompanionTravelGoal, commitAction, createBrain, getAction, getFoodAction, getCompanionMood, nearestPlatform, platformLandingX, recordCompanionEvent, type CompanionAction, type CompanionPlay, type Platform } from "@/lib/ui/viewer-companion/brain";
 import { createCompanionPersonalityDirector, nextCompanionPersonalityScene, type PersonalitySceneBeat, type PersonalityHome, type PersonalitySceneInput } from "@/lib/ui/viewer-companion/personality-director";
 import { createCompanionRoutineArbiter, type CompanionRoutineEffect } from "@/lib/ui/viewer-companion/routine-arbiter";
+import { createCompanionAgentExperience, type CompanionExperienceEffect, type CompanionExperienceFamily } from "@/lib/ui/viewer-companion/agent-experience";
+import { COMPANION_AGENT_EXPERIENCE_KEY, createCompanionAgentExperienceStore, reconcileCompanionAgentExperienceGeneration, sameCompanionAgentGeneration } from "@/lib/ui/viewer-companion/agent-experience-store";
 import { createCompanionPersonalityJobs, getCompanionPersonalityMeal } from "@/lib/ui/viewer-companion/personality-jobs";
 import { canCompanionSetHomeTv, companionHomeTvControl, getCompanionHomeTv, setCompanionHomeTv } from "@/lib/ui/viewer-companion/home-room-media";
 import { canCompanionSetHomeLight, getCompanionHomeLight, setCompanionHomeLight } from "@/lib/ui/viewer-companion/home-light";
@@ -69,7 +71,7 @@ import { accessibleCompanionToys, findCompanionToyRoute, companionToyFoodPriorit
 import { companionToyReturnDelivered, companionToyReturnTarget, planCompanionToyBoxApproach, sampleCompanionToyReturn, validCompanionToyBoxApproach } from "@/lib/ui/viewer-companion/toy-return";
 import { companionFoodDisposalDelivered, companionFoodDisposalTarget, sampleCompanionFoodDisposal } from "@/lib/ui/viewer-companion/food-disposal";
 import { createCompanionFeedCommands, type CompanionFeedCommand } from "@/lib/ui/viewer-companion/feed-command";
-import { createCompanionPersonalityActivity, preflightCompanionPersonalityActivity } from "@/lib/ui/viewer-companion/personality-activity";
+import { boundCompanionStationaryProgress, companionLifePurpose, createCompanionPersonalityActivity, preflightCompanionPersonalityActivity } from "@/lib/ui/viewer-companion/personality-activity";
 import { advanceCompanionTastes, summarizeCompanionToyTastes, companionToyUnread, loadCompanionTastes, recordCompanionFoodTasteOutcome, recordCompanionToyExperience, shouldDeclineCompanionFood, subscribeCompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
 import { evaluateCompanionFoodTaste, type CompanionFoodTasteOutcome } from "@/lib/ui/viewer-companion/taste-reasons";
 import { createCompanionReactiveCues } from "@/lib/ui/viewer-companion/reactive-cues";
@@ -105,7 +107,7 @@ import { useHomeShelf } from "./use-home-shelf";
 import { companionInitialHomePoint } from "@/lib/ui/viewer-companion/home-entry";
 import "./viewer-companion.css";
 
-type Props = { onOpenBook: () => void; root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; workspaceBusy?: boolean; editing?: boolean; agenda: boolean; monthKey: string; context?: CompanionHomeEnvironmentContext; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; launcherHost?: HTMLElement | null; compactHost?: HTMLElement | null; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void; positionMemory?: CompanionPositionMemory };
+type Props = { onOpenBook: (destination?: "personality") => void; root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; workspaceBusy?: boolean; editing?: boolean; agenda: boolean; monthKey: string; context?: CompanionHomeEnvironmentContext; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; launcherHost?: HTMLElement | null; compactHost?: HTMLElement | null; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void; positionMemory?: CompanionPositionMemory };
 type Control = Record<Exclude<CompanionHomeAction, "book"> | "place" | "rest" | "toys" | "toyChanged" | "toyTouched" | "toyReturned", () => void>;
 type RuntimeAction = CompanionAction & { personalityScene?: PersonalitySceneBeat; personalityJobEnd?: true; foodRefusal?: { foodId: string; kind: CompanionFoodKind }; toyMishap?: CompanionToyTripWitness; personalitySignature?: CompanionPreferences["personality"]; scene?: CompanionSceneAction["scene"]; toy?: CompanionToyAction["toy"]; toyApproach?: { element: HTMLElement; effect: "stash" | "spawn"; duration: number }; household?: CompanionHouseholdBeat; radio?: { generation: number; reaction: CompanionRadioReaction; bpm: number; instrument?: CompanionInstrumentReaction } };
 const sampleWorldMusic = (music: NonNullable<RuntimeAction["radio"]>, age: number) => music.instrument ? sampleCompanionInstrumentReaction(music.instrument, age, music.bpm) : sampleCompanionRadioReaction(music.reaction, age, music.bpm);
@@ -134,6 +136,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
   const toyTastes = useRef<ReturnType<typeof loadCompanionTastes> | null>(null);
   toyTastes.current ??= loadCompanionTastes();
   const sceneStore = useRef<ReturnType<typeof createCompanionSceneStore> | null>(null);
+  const agentStore = useRef<ReturnType<typeof createCompanionAgentExperienceStore> | null>(null);
   const foodDiscarded = useRef<(id: string) => void>(() => {});
   // Audio sliders do not restart geometry, the brain or decoded body owners.
   const worldPreferencesKey = companionWorldPreferencesKey(preferences);
@@ -289,6 +292,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     const preferences = preferencesRef.current;
     const el = body.current, button = actor.current, page = root.current, image = sprite.current, poseLayer = pose.current, reactionLayer = reaction.current, facingLayer = facing.current, contactLayer = contact.current, inertiaLayer = inertia.current;
     if (!ready || !el || !button || !page || !image || !poseLayer || !reactionLayer || !facingLayer || !contactLayer || !inertiaLayer || !preferences.enabled) return;
+    el.dataset.lifePurpose = "ordinary";
     if (blocked) { el.hidden = true; setSuspended(true); setHomeExpanded(false); return; }
     // Settings/auto/storage notifications own this snapshot. Animation frames
     // must not synchronously reread localStorage for each pose/spring/layer.
@@ -301,16 +305,41 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       let storage: Storage | undefined; try { storage = window.localStorage; } catch { /* local storage can be unavailable */ }
       sceneStore.current = createCompanionSceneStore(storage);
     }
+    if (!agentStore.current) {
+      let storage: Storage | undefined; try { storage = window.localStorage; } catch { /* Optional same-device learning. */ }
+      agentStore.current = createCompanionAgentExperienceStore(storage);
+    }
+    let agentMemoryGeneration = brain.current.habits?.generation ?? 0;
+    const agentMemory = createCompanionAgentExperience(agentStore.current.load(agentMemoryGeneration, preferences.learnFromYou));
+    let agentActionGeneration = brain.current.habits?.generation ?? 0, agentActionPersonality = preferences.personality, washLearningCredit = false;
+    const learnedPlaces = new Set<string>();
+    const learnAgent = (effect: CompanionExperienceEffect, family?: CompanionExperienceFamily, autonomous = true, epoch = { generation: agentActionGeneration, personality: agentActionPersonality }) => agentMemory.observe({
+      personality: preferencesRef.current.personality, context: isHomeSupport(support) ? "home" : "outside", effect, family,
+      learn: preferencesRef.current.enabled && preferencesRef.current.learnFromYou && !document.hidden
+        && (!autonomous || sameCompanionAgentGeneration(epoch.generation, brain.current.habits?.generation ?? 0) && epoch.personality === preferencesRef.current.personality),
+    });
+    const syncAgentMemory = (event: StorageEvent) => {
+      if (event.key !== null && event.key !== COMPANION_AGENT_EXPERIENCE_KEY) return;
+      agentMemory.restore(agentStore.current?.synchronize(event.key === null ? null : event.newValue, brain.current.habits?.generation ?? 0, preferencesRef.current.learnFromYou));
+    };
+    window.addEventListener("storage", syncAgentMemory);
     const scenes = createCompanionScenes(sceneStore.current.load(preferences.learnFromYou));
     const personalityDirector = createCompanionPersonalityDirector();
     const routines = createCompanionRoutineArbiter();
-    routineEvent.current = effect => routines.observe(effect, brain.current.activeMs);
+    const observeRoutine = (effect: CompanionRoutineEffect) => {
+      routines.observe(effect, brain.current.activeMs);
+      if (effect === "ate") { if (learnAgent("ate")) washLearningCredit = true; }
+      else if (effect === "played") { if (learnAgent("toy-played")) washLearningCredit = true; }
+      else if (effect === "washed" && washLearningCredit && learnAgent("washed")) washLearningCredit = false;
+      else if (effect === "slept") learnAgent("slept");
+    };
+    routineEvent.current = observeRoutine;
     let personalityMusic: { source: "radio" | "instrument"; at: number; mood?: CompanionRadioMood } | undefined;
     const sceneEvent = (event: CompanionSceneEvent) => {
       scenes.event(event, brain.current.activeMs, preferences.learnFromYou);
       const at = brain.current.activeMs;
       if (event.kind === "encounter" || event.kind === "home-called") personalityDirector.event("arrival", at);
-      if (event.kind === "petted") personalityDirector.event("pet", at);
+      if (event.kind === "petted") { personalityDirector.event("pet", at); learnAgent("petted", undefined, false); }
       if ((event.kind === "radio" && radioAllowed()) || event.kind === "instrument") {
         personalityMusic = { source: event.kind, at, mood: event.mood };
         personalityDirector.event("music", at);
@@ -345,6 +374,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     const sceneDepart = () => {
       sceneEvent({ kind: "depart", wallTime: Date.now(), unfinished: hiding ? "hide" : action?.play === "cheer-rehearsal" ? "performance" : unfinishedMelody ? "melody" : undefined, ...(unfinishedMelody && lastSceneScore ? { score: lastSceneScore } : {}) });
       sceneStore.current?.save(scenes.checkpoint(), preferences.learnFromYou);
+      agentStore.current?.save(agentMemory.snapshot(), brain.current.habits?.generation ?? 0, preferencesRef.current.learnFromYou);
     };
     window.addEventListener("pagehide", sceneDepart);
     const observeInstrumentScene = (played: { pulse: CompanionInstrumentPulse; quality: "steady" | "uneven" | "unknown" }) => {
@@ -354,18 +384,35 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       sceneEvent({ kind: "instrument", phrase: Math.floor(pulse.scoreIndex / 3), finished: Boolean(pulse.scoreEnd), quality: played.quality, score: lastSceneScore, phraseEnd: pulse.phraseEnd, mood: pulse.mood });
     };
     let lastMemorySave = performance.now();
-    const persistCare = (force = false) => { const saved = saveCompanionCare(brain.current, force); brain.current = { ...brain.current, habits: saved.habits, life: saved.life }; flushCompanionCollection(force); sceneStore.current?.save(scenes.checkpoint(), preferences.learnFromYou); lastMemorySave = performance.now(); };
+    let resetSceneSerial: number | undefined;
+    const resetLearningMemory = (deferSceneCancel = false) => {
+      agentMemory.clear(); agentStore.current?.clear(); learnedPlaces.clear(); washLearningCredit = false;
+      // A pre-reset contact may finish its body reaction, but cannot teach
+      // the erased accident again when the completed clip acknowledges it.
+      if (action?.toyMishap) action = { ...action, toyMishap: undefined };
+      toyMishapWitnessed = false;
+      scenes.resetMemory(); unfinishedMelody = false; lastSceneScore = undefined; scatteredFoods.clear(); manualLandingPending = undefined;
+      if (action?.scene) {
+        if (["walk", "jump"].includes(action.kind)) action = { ...action, scene: undefined };
+        else if (deferSceneCancel) resetSceneSerial = action.scene.serial;
+        else clearAction();
+      }
+      sceneStore.current?.save(scenes.checkpoint(), true);
+    };
+    const persistCare = (force = false) => {
+      const saved = saveCompanionCare(brain.current, force);
+      // A forced meal save can run inside the completed-action stack. Wipe
+      // memory now; cancel that exact legacy scene at the next existing tick.
+      agentMemoryGeneration = reconcileCompanionAgentExperienceGeneration(agentMemoryGeneration, saved.habits.generation, () => resetLearningMemory(true));
+      brain.current = { ...brain.current, habits: saved.habits, life: saved.life };
+      flushCompanionCollection(force); sceneStore.current?.save(scenes.checkpoint(), preferences.learnFromYou);
+      agentStore.current?.save(agentMemory.snapshot(), agentMemoryGeneration, preferencesRef.current.learnFromYou); lastMemorySave = performance.now();
+    };
     const offHabits = subscribeCompanionHabits(habits => {
       const reset = habits.generation !== (brain.current.habits?.generation ?? 0);
       brain.current = { ...brain.current, habits };
       if (reset) {
-        // A pre-reset contact may finish its body reaction, but cannot teach
-        // the erased accident again when the completed clip acknowledges it.
-        if (action?.toyMishap) action = { ...action, toyMishap: undefined };
-        toyMishapWitnessed = false;
-        scenes.resetMemory(); unfinishedMelody = false; lastSceneScore = undefined; scatteredFoods.clear(); manualLandingPending = undefined;
-        if (action?.scene) { if (["walk", "jump"].includes(action.kind)) action = { ...action, scene: undefined }; else clearAction(); }
-        sceneStore.current?.save(scenes.checkpoint(), true);
+        agentMemoryGeneration = reconcileCompanionAgentExperienceGeneration(agentMemoryGeneration, habits.generation, resetLearningMemory);
       }
     });
     const offLife = subscribeCompanionLife(life => { brain.current = { ...brain.current, life }; });
@@ -447,6 +494,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     let raf = 0, timer: ReturnType<typeof setTimeout> | undefined, lastPaint = 0, lastTick = performance.now(), lastNeeds = lastTick, lastCare = lastTick, stopped = false, sleeping = false;
     let inputPaintQueued = false, interactionUntil = 0;
     let pause = true, started = false, nextDecision = 0, needsLanding = false, afterPetLanding = false, restAfterLanding = false;
+    let activityArrival: { action: RuntimeAction; from: { x:number;y:number;platformId?:string } } | undefined;
     let action: RuntimeAction | null = null, began = 0, origin = { x, y }, travel = 0, total = 0, petUntil = 0, placing = false, keyboardHeld = false, keyboardMoved = false, consumePlacementClick = false;
     let sofaTravelActive = false;
     let sofaFlightShape: CompanionSofaTravelShape | undefined, ballisticCoefficient: number | null = null;
@@ -991,6 +1039,13 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         poseOrigin: heldPivot || presentationNow - releasedPivotAt < 100 ? { x: sample.facing < 0 ? size - grip.x : grip.x, y: grip.y } : undefined,
         inertiaOrigin: grip };
       const paintedCurrent = observed.visible && observed.decoded && observed.adoptedIndex === observed.requestedIndex && observed.adoptedSrc === observed.requestedSrc;
+      // Reuse this existing paint and active clock. No per-frame storage read,
+      // DOM search, route proof, learning reward or second animation loop.
+      personalityDirector.observeProgress({ now: brain.current.activeMs, point: { x, y, platformId: support },
+        carriedToyId: toys.current?.carried(), carriedFoodId: food.current?.carried(),
+        active: observed.visible && observed.decoded && preferences.enabled && preferences.roam && !pause && !document.hidden
+          && !pressed && !keyboardHeld && !placing && !pendingMonth && !returning && !overlayActive && !premiereActive
+          && !workspaceBusyRef.current && !reduced && gfxMode() !== "off" && presence.phase === "active" });
       if (action?.kind === "sleep" && paintedCurrent && status === "sleep") {
         const at = performance.now(); if (sleepPaintAt) sleepPaintMs += Math.min(100, Math.max(0, at - sleepPaintAt)); sleepPaintAt = at;
       } else sleepPaintAt = 0;
@@ -1342,7 +1397,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       for (const key of ["data-episode", "data-episode-phase", "data-episode-variant", "data-episode-food"]) el.removeAttribute(key);
     };
     const cancelHousehold = () => { household.cancel(); const carried = food.current?.carried(); if (carried) food.current?.releaseCarry(carried); if (action?.household) action = { ...action, household: undefined }; el.removeAttribute("data-household"); };
-    const clearAction = (preserveEpisode = false, preserveHousehold = false, preserveScene = false) => { clearHomeContact(); sleepPaintAt = 0; if (washTool.current) washTool.current.hidden = true; el.removeAttribute("data-washing"); if (!preserveScene) { scenes.cancel(); toyPlanner.cancel(brain.current.activeMs); toys.current?.cancel(performance.now()); } if (!preserveHousehold) cancelHousehold(); el.removeAttribute("data-food-curiosity"); clearThrow(); sofaTravelActive = false; sofaFlightShape = undefined; ballisticCoefficient = null; el.removeAttribute("data-sofa-flight"); if (!preserveEpisode) { jumpRecoveryContext = undefined; brain.current = { ...brain.current, episode: undefined }; el.removeAttribute("data-episode"); el.removeAttribute("data-episode-phase"); el.removeAttribute("data-episode-variant"); el.removeAttribute("data-episode-food"); el.removeAttribute("data-food-goal"); } else if (brain.current.episode) data("episodePhase", brain.current.episode.phase); if (homeDeparture?.flying) homeDeparture = undefined; action = null; toyReturnAim = undefined; toyReturnPainted = undefined; foodDisposalAim = undefined; foodDisposalPainted = undefined; heldShake.reset(); shakenReleasePending = undefined; shakenGroundColumn = undefined; runTrip = runHop = undefined; runUpCurve = false; el.removeAttribute("data-trip"); el.removeAttribute("data-run-up"); el.removeAttribute("data-held-dizzy"); food.current?.nibble(); heartResult = null; sleeping = false; playImpact = playFalling = panelImpact = false; el.removeAttribute("data-attention"); el.removeAttribute("data-intent"); el.removeAttribute("data-play"); el.removeAttribute("data-play-beat"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
+    const clearAction = (preserveEpisode = false, preserveHousehold = false, preserveScene = false) => { activityArrival=undefined; el.dataset.lifePurpose="ordinary"; if (!preserveScene && action?.personalityScene?.id.startsWith("entry-") && !personalityDirector.entryReady()) personalityDirector.cancel(); clearHomeContact(); sleepPaintAt = 0; if (washTool.current) washTool.current.hidden = true; el.removeAttribute("data-washing"); if (!preserveScene) { scenes.cancel(); toyPlanner.cancel(brain.current.activeMs); toys.current?.cancel(performance.now()); } if (!preserveHousehold) cancelHousehold(); el.removeAttribute("data-food-curiosity"); clearThrow(); sofaTravelActive = false; sofaFlightShape = undefined; ballisticCoefficient = null; el.removeAttribute("data-sofa-flight"); if (!preserveEpisode) { jumpRecoveryContext = undefined; brain.current = { ...brain.current, episode: undefined }; el.removeAttribute("data-episode"); el.removeAttribute("data-episode-phase"); el.removeAttribute("data-episode-variant"); el.removeAttribute("data-episode-food"); el.removeAttribute("data-food-goal"); } else if (brain.current.episode) data("episodePhase", brain.current.episode.phase); if (homeDeparture?.flying) homeDeparture = undefined; action = null; toyReturnAim = undefined; toyReturnPainted = undefined; foodDisposalAim = undefined; foodDisposalPainted = undefined; heldShake.reset(); shakenReleasePending = undefined; shakenGroundColumn = undefined; runTrip = runHop = undefined; runUpCurve = false; el.removeAttribute("data-trip"); el.removeAttribute("data-run-up"); el.removeAttribute("data-held-dizzy"); food.current?.nibble(); heartResult = null; sleeping = false; playImpact = playFalling = panelImpact = false; el.removeAttribute("data-attention"); el.removeAttribute("data-intent"); el.removeAttribute("data-play"); el.removeAttribute("data-play-beat"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
     const clearForPetting = () => {
       const invitation = scenes.current()?.id === 10;
       if (invitation && action?.scene?.id === 10) scenes.complete(action as CompanionSceneAction);
@@ -1659,7 +1714,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           .sort((a, b) => Math.abs(platformLandingX(a, cx, 9) - cx) - Math.abs(platformLandingX(b, cx, 9) - cx))[0];
         if (!hint) return;
         const id = toys.current?.spawn({ x: cx, y: opening.bottom, platformId: hint.id }, performance.now(), false, food.current?.occupied());
-        if (id) { humanToyAt = brain.current.activeMs; playCompanionSound("play", preferencesRef.current); nextDecision = performance.now(); schedule(); }
+        if (id) { personalityDirector.observeEffect("toy", brain.current.activeMs); humanToyAt = brain.current.activeMs; playCompanionSound("play", preferencesRef.current); nextDecision = performance.now(); schedule(); }
       },
       toyChanged: () => { if (!pause && !document.hidden && !stopped) { nextDecision = Math.min(nextDecision, performance.now() + 100); schedule(); } },
       toyReturned: () => { personalityDirector.event("toy-returned", brain.current.activeMs); },
@@ -1786,6 +1841,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (homeContact) ensureWardrobe(true);
       if (next.personalityScene?.command.kind === "wash" || homeContact) spriteSources[9].forEach(src => requestSprite.current(src));
       personalityActivity.record(next, { x, y }, brain.current.activeMs, effective.personality);
+      agentActionGeneration = brain.current.habits?.generation ?? 0;
+      agentActionPersonality = effective.personality;
+      data("lifePurpose",companionLifePurpose(next));
+      activityArrival={action:next,from:{x,y,platformId:support}};
       if (next.household) data("household", next.household.kind); action = next; origin = { x, y }; began = now; total = next.duration; travel = 0;
       if (next.living === "social") invitedUntil = now + total + 7000;
       if (next.foodCuriosity) data("foodCuriosity", next.foodCuriosity); else el.removeAttribute("data-food-curiosity");
@@ -1934,6 +1993,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     const tick = (now: number) => {
       inputPaintQueued = false;
       if (stopped || pause) return;
+      if (resetSceneSerial !== undefined) {
+        const serial = resetSceneSerial; resetSceneSerial = undefined;
+        if (action?.scene?.serial === serial) clearAction();
+      }
       if (premiereActive) { tickPremiere(now); return; }
       if (freshHomePending) { lastTick = lastNeeds = lastCare = now; return; }
       if (pendingPosition.current) { lastTick = lastNeeds = lastCare = now; return; }
@@ -2252,7 +2315,20 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         let priorityMeal = !food.current?.carried() && !toys.current?.carried() && !household.active() && !toyPlanner.active() && brain.current.hunger >= .78
           ? getFoodAction(brain.current, householdWorld, effective, brain.current.activeMs) : undefined;
         let foodSupply: RuntimeAction | undefined;
-        if (!priorityMeal && !liveFoods.length && !food.current?.carried() && !toys.current?.carried() && !household.active() && !toyPlanner.active()
+        const sceneMemory = effective.learnFromYou ? scenes.checkpoint() : undefined;
+        // The actual audible source supplies mood; coarse local listening
+        // familiarity never borrows unrelated food/toy experience.
+        const music = radioState.playing && radioState.mood && radioAllowed() ? { mood: radioState.mood }
+          : personalityMusic?.source === "instrument" && brain.current.activeMs - personalityMusic.at < 9000 && musicAllowed() && !radioState.playing ? { mood: personalityMusic.mood } : undefined;
+        const sceneInput: PersonalitySceneInput = { world: toyWorld, brain: brain.current, preferences: effective, now: brain.current.activeMs, home: personalityHome, toys: settledToys, experience: agentMemory,
+            curtainPhase: curtainProjection.current.phase, lightLit: getCompanionHomeLight(), toyPlayCounts: effective.learnFromYou ? Object.fromEntries(Object.entries(toyTastes.current?.toyTastes ?? {}).map(([kind, taste]) => [kind, taste?.accepted ?? 0])) : undefined, familiarHour: (sceneMemory?.hours[Math.floor(environment.current.hour)] ?? 0) >= 3, learnedMorning: Boolean(sceneMemory?.hours.slice(7, 11).some(n => n >= 3)),
+            favoriteToy: effective.learnFromYou ? summarizeCompanionToyTastes(toyTastes.current).favorite : null, toyCount: actualToyIds.length, carriedToyId: toys.current?.carried(), carriedFoodId: food.current?.carried(), deferredToyId: deferredPersonalityToy, interruptedItemId: interruptedPersonalityItem,
+            tv: getCompanionHomeTv(), canTv: canCompanionSetHomeTv(), canCurtain: canCompanionSetCurtain(), radioAllowed: radioAllowed() && canCompanionSetRadio(), radioPlaying: radioState.playing, environment: environment.current, favoriteFood: brain.current.life?.favoriteFood,
+            music: music && { ...music, familiar: Boolean(effective.learnFromYou && music.mood && (sceneMemory?.music[music.mood] ?? 0) >= 3) },
+            learnedSocial: effective.learnFromYou && Boolean(brain.current.life?.recent.some(reason => reason === "kind-touch" || reason === "reassured")), equipped: Boolean(wardrobe.current.equipped), hasExperience: effective.learnFromYou && Boolean(loadCompanionCollection().foods.length || Object.keys(toyTastes.current?.toyTastes ?? {}).length),
+            yieldedItem: Boolean(yieldedPersonalityItem && brain.current.activeMs - humanToyAt < 8000), yieldedItemId: yieldedPersonalityItem, storedFoodIds: [...storedPersonalityFoods] };
+        const authoredReserved = personalityDirector.routineReserved(sceneInput);
+        if (!priorityMeal && (!authoredReserved || brain.current.hunger >= .78) && !liveFoods.length && !food.current?.carried() && !toys.current?.carried() && !household.active() && !toyPlanner.active()
           && householdHome.dispenser && brain.current.hunger >= (effective.personality === "gourmet" ? COMPANION_FULL_THRESHOLD : .65) && brain.current.activeMs >= nextSupplyAt) {
           nextSupplyAt = brain.current.activeMs + 2000;
           household.wake(brain.current.activeMs);
@@ -2260,25 +2336,13 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
             count: 0, occupied: toys.current?.occupied(), intent: "feed" });
           if (foodSupply) personalityDirector.cancel();
         }
-        const sceneMemory = effective.learnFromYou ? scenes.checkpoint() : undefined;
-        // The actual audible source supplies mood; coarse local listening
-        // familiarity never borrows unrelated food/toy experience.
-        const music = radioState.playing && radioState.mood && radioAllowed() ? { mood: radioState.mood }
-          : personalityMusic?.source === "instrument" && brain.current.activeMs - personalityMusic.at < 9000 && musicAllowed() && !radioState.playing ? { mood: personalityMusic.mood } : undefined;
-        const sceneInput: PersonalitySceneInput = { world: toyWorld, brain: brain.current, preferences: effective, now: brain.current.activeMs, home: personalityHome, toys: settledToys,
-            curtainPhase: curtainProjection.current.phase, lightLit: getCompanionHomeLight(), toyPlayCounts: effective.learnFromYou ? Object.fromEntries(Object.entries(toyTastes.current?.toyTastes ?? {}).map(([kind, taste]) => [kind, taste?.accepted ?? 0])) : undefined, familiarHour: (sceneMemory?.hours[Math.floor(environment.current.hour)] ?? 0) >= 3, learnedMorning: Boolean(sceneMemory?.hours.slice(7, 11).some(n => n >= 3)),
-            favoriteToy: effective.learnFromYou ? summarizeCompanionToyTastes(toyTastes.current).favorite : null, toyCount: actualToyIds.length, carriedToyId: toys.current?.carried(), deferredToyId: deferredPersonalityToy, interruptedItemId: interruptedPersonalityItem,
-            tv: getCompanionHomeTv(), canTv: canCompanionSetHomeTv(), canCurtain: canCompanionSetCurtain(), radioAllowed: radioAllowed() && canCompanionSetRadio(), radioPlaying: radioState.playing, environment: environment.current, favoriteFood: brain.current.life?.favoriteFood,
-            music: music && { ...music, familiar: Boolean(effective.learnFromYou && music.mood && (sceneMemory?.music[music.mood] ?? 0) >= 3) },
-            learnedSocial: effective.learnFromYou && Boolean(brain.current.life?.recent.some(reason => reason === "kind-touch" || reason === "reassured")), equipped: Boolean(wardrobe.current.equipped), hasExperience: effective.learnFromYou && Boolean(loadCompanionCollection().foods.length || Object.keys(toyTastes.current?.toyTastes ?? {}).length),
-            yieldedItem: Boolean(yieldedPersonalityItem && brain.current.activeMs - humanToyAt < 8000), yieldedItemId: yieldedPersonalityItem, storedFoodIds: [...storedPersonalityFoods] };
         if (routines.current() && !personalityDirector.current()?.routine) routines.cancel(brain.current.activeMs);
         const routineOwner = Boolean(household.active() || toyPlanner.active() || food.current?.carried() || toys.current?.carried() || personalityDirector.current()?.routine);
         if (!priorityMeal && !foodSupply && !routineOwner) {
           const meal = effective.feeding ? getFoodAction(brain.current, householdWorld, effective, brain.current.activeMs) : undefined;
           const canSupply = Boolean(effective.feeding && liveFoods.length < 8 && householdHome.dispenser && findCompanionToyRoute(householdWorld, householdHome.dispenser, householdPlatforms, effective.jump));
           const request = routines.next({ ...sceneInput, active: !overlayActive && !premiereActive && !pendingMonth && !returning && !reduced && gfxMode() !== "off" && !workspaceBusyRef.current && presence.phase === "active",
-            entryReady: personalityDirector.entryReady(), owned: routineOwner,
+            entryReady: personalityDirector.entryReady(), owned: routineOwner, authoredReserved,
             meal: { foodId: meal?.foodId, canSupply } });
           if (request && !personalityDirector.startRoutine(request.recipe, brain.current.activeMs, request.itemId)) routines.cancel(brain.current.activeMs);
         }
@@ -2287,7 +2351,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         let yieldedMeal = false;
         if (!priorityMeal && !foodSupply) {
           priorityMeal = getCompanionPersonalityMeal(personalityDirector, authoredOffer, { world: householdWorld, brain: brain.current, preferences: effective,
-            now: brain.current.activeMs, carriedToy: toys.current?.carried(), carriedFood: food.current?.carried(), ownedJob: household.active() || toyPlanner.active() });
+            now: brain.current.activeMs, carriedToy: toys.current?.carried(), carriedFood: food.current?.carried(), ownedJob: household.active() || toyPlanner.active(),
+            authoredReserved: personalityDirector.routineReserved(sceneInput) });
           if (priorityMeal) { yieldedMeal = true; personalityDirector.cancel(); authoredOffer = undefined; }
         }
         const authored = authoredOffer ? personalityJobs.next(authoredOffer, { world: toyWorld, brain: brain.current, preferences: effective, now: brain.current.activeMs,
@@ -2319,7 +2384,17 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         const validStory = story?.accessory && !accessorySpace(story.accessory) ? undefined : story;
         if (story && !validStory) scenes.cancel();
         const offered: RuntimeAction = priorityMeal ?? foodSupply ?? authored ?? errand ?? toyErrand ?? refusal ?? validStory ?? musical ?? signature ?? (safeTrick ? { kind: "look", accessory: equipped!, target: { x, y, platformId: support }, duration: COMPANION_ACCESSORY_MOTION_MS } : getAction(brain.current, world, effective, now));
-        const chosen = personalityActivity.boundWander(offered, world, effective, brain.current.activeMs);
+        const progressed: RuntimeAction = boundCompanionStationaryProgress(offered, brain.current, householdWorld, effective, brain.current.activeMs,
+          personalityDirector.progressDeadline(), boundary => personalityActivity.choose(brain.current, householdWorld, effective, brain.current.activeMs, boundary),
+          Boolean(priorityMeal || foodSupply || authored || errand || toyErrand || refusal || validStory || musical || signature || safeTrick
+            || personalityDirector.active() || household.active() || toyPlanner.active() || food.current?.carried() || toys.current?.carried()
+            || homeJourney || overlayActive || premiereActive || pendingMonth || returning || reduced || gfxMode() === "off" || workspaceBusyRef.current || presence.phase !== "active"));
+        const diverse: RuntimeAction = personalityActivity.diversifyTravel(progressed,brain.current,householdWorld,effective,brain.current.activeMs,
+          ()=>personalityActivity.choose(brain.current,householdWorld,effective,brain.current.activeMs,{deadline:brain.current.activeMs,nextDuration:1}),
+          Boolean(priorityMeal || foodSupply || authored || errand || toyErrand || refusal || validStory || musical || safeTrick
+            || personalityDirector.active() || household.active() || toyPlanner.active() || food.current?.carried() || toys.current?.carried()
+            || homeJourney || pressed || keyboardHeld || placing || pause || document.hidden || overlayActive || premiereActive || pendingMonth || returning || reduced || ["off","soft"].includes(gfxMode()) || workspaceBusyRef.current || presence.phase !== "active"));
+        const chosen = personalityActivity.boundWander(diverse, world, effective, brain.current.activeMs);
         if (chosen !== offered) cancelTravelGoal();
         if (chosen.radio && reaction) radioInbox.take(radioState, now);
         if (musical?.radio) {
@@ -2350,12 +2425,14 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         // the request and neither a timer nor an unbounded wait is added.
         if (homeRadioPending && p >= .72) {
           if (now - homeRadioRequestedAt < 2500) { began += delta; age = now - began; p = clamp(age / total, 0, 1); }
-          else { homeRadioPending.abort(); homeRadioPending = undefined; if (authoredBeat) personalityDirector.resolve(authoredBeat, false); }
+          else { homeRadioPending.abort(); homeRadioPending = undefined; if (authoredBeat) personalityDirector.resolve(authoredBeat, false, undefined, brain.current.activeMs); }
         }
         if (authoredBeat && !authoredBeat.travel && !personalityEffectApplied && p >= .5 && ["tv", "light", "curtain", "radio"].includes(authoredBeat.command.kind)
           && (homeContact && homeInteractionWitness === homeContact.serial || p >= .9)) {
           personalityEffectApplied = true;
           let accepted = false;
+          const previousControl = authoredBeat.command.kind === "tv" ? getCompanionHomeTv() : authoredBeat.command.kind === "light" ? getCompanionHomeLight() : authoredBeat.command.kind === "curtain" ? getCompanionCurtainChoice() : getCompanionRadioSnapshot().playing;
+          const learningEpoch = { generation: agentActionGeneration, personality: agentActionPersonality };
           const allowed = Boolean(homeContact && homeInteractionWitness === homeContact.serial && homeContact.element.isConnected && !workspaceBusyRef.current && !overlayActive && !pause && !document.hidden && supportedNow() && presence.phase === "active" && isHomeFloor(support));
           if (allowed && authoredBeat.command.kind === "tv") accepted = setCompanionHomeTv(authoredBeat.command.state === "next" ? companionHomeTvControl(getCompanionHomeTv()).next : authoredBeat.command.state, { source: "companion" });
           if (allowed && authoredBeat.command.kind === "light") accepted = canCompanionSetHomeLight() && setCompanionHomeLight(authoredBeat.command.lit, { source: "companion" });
@@ -2364,11 +2441,22 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
             const controller = new AbortController(); homeRadioPending = controller; homeRadioRequestedAt = now;
             void setCompanionRadioPlaying(authoredBeat.command.playing, controller.signal).then(success => {
               if (homeRadioPending !== controller || controller.signal.aborted) return;
-              homeRadioPending = undefined; personalityDirector.resolve(authoredBeat, success);
-              if (success) { data("personalityEffect", "radio"); if (authoredBeat.command.kind === "radio" && authoredBeat.command.playing) routines.observe("music-started", brain.current.activeMs); }
+              homeRadioPending = undefined; personalityDirector.resolve(authoredBeat, success, undefined, brain.current.activeMs);
+              if (success) { data("personalityEffect", "radio"); if (previousControl !== getCompanionRadioSnapshot().playing) {
+                personalityDirector.observeProgress({ now: brain.current.activeMs, active: !pause && !document.hidden && presence.phase === "active", controls: { radio: getCompanionRadioSnapshot().playing },
+                  carriedToyId: toys.current?.carried(), carriedFoodId: food.current?.carried() });
+                learnAgent("home-control", undefined, true, learningEpoch);
+              } if (authoredBeat.command.kind === "radio" && authoredBeat.command.playing) observeRoutine("music-started"); }
             });
-          } else personalityDirector.resolve(authoredBeat, accepted);
+          } else personalityDirector.resolve(authoredBeat, accepted, undefined, brain.current.activeMs);
           if (accepted) data("personalityEffect", authoredBeat.command.kind);
+          if (accepted && previousControl !== (authoredBeat.command.kind === "tv" ? getCompanionHomeTv() : authoredBeat.command.kind === "light" ? getCompanionHomeLight() : getCompanionCurtainChoice())) {
+            const controls = authoredBeat.command.kind === "tv" ? { tv: getCompanionHomeTv() }
+              : authoredBeat.command.kind === "light" ? { light: getCompanionHomeLight() } : { curtain: getCompanionCurtainChoice() };
+            personalityDirector.observeProgress({ now: brain.current.activeMs, active: allowed, controls,
+              carriedToyId: toys.current?.carried(), carriedFoodId: food.current?.carried() });
+            learnAgent("home-control");
+          }
         }
         if (action.scene?.effect && !sceneEffectApplied && p >= .5
           && (action.scene.effect.kind !== "discard" || p >= 1 || companionFoodDisposalDelivered(foodDisposalPainted, foodDisposalAim?.point))) {
@@ -2410,8 +2498,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           }
           else if (allowed && (toyBeat.effect === "toss" || toyBeat.effect === "put") && toyBeat.toyId) success = Boolean(toys.current?.put(toyBeat.toyId, { x, y: toyBeat.effect === "toss" ? y - 22 : y, platformId: support }, now, toyBeat.effect === "toss", true));
           toyPlanner.resolve(toyBeat, success, brain.current.activeMs);
+          if (allowed && success && toyBeat.effect === "stash") learnAgent("toy-returned");
+          else if (allowed && !success && ["spawn", "stash"].includes(toyBeat.effect)) learnAgent("route-failed", toyBeat.effect === "stash" ? "cleanup" : "play");
           if (authoredBeat && !["pick", "decline"].includes(toyBeat.effect)) {
-            personalityDirector.resolve(authoredBeat, Boolean(success), typeof success === "string" ? success : toyBeat.toyId);
+            personalityDirector.resolve(authoredBeat, Boolean(success), typeof success === "string" ? success : toyBeat.toyId, brain.current.activeMs);
             const owner = personalityDirector.current();
             if (!owner || owner.id !== authoredBeat.id || owner.beat !== authoredBeat.beat) toyPlanner.cancel(brain.current.activeMs);
             if (success && toyBeat.effect === "stash") {
@@ -2452,8 +2542,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
             if (result) { pendingCue = "play"; for (const item of before) scatteredFoods.set(item.id, { from: { x: item.x, y: item.y }, expires: brain.current.activeMs + 10000 }); }
           }
           household.resolve(householdBeat, result, brain.current.activeMs);
+          if (result && householdBeat.effect === "put") learnAgent("food-stored");
+          else if (result && householdBeat.effect === "discard") learnAgent("food-discarded");
           if (authoredBeat && householdBeat.effect !== "pick" && householdBeat.effect !== "scatter") {
-            personalityDirector.resolve(authoredBeat, Boolean(result), typeof result === "string" ? result : householdBeat.foodId);
+            personalityDirector.resolve(authoredBeat, Boolean(result), typeof result === "string" ? result : householdBeat.foodId, brain.current.activeMs);
             if (result && householdBeat.effect === "put" && householdBeat.foodId) storedPersonalityFoods.add(householdBeat.foodId);
             const owner = personalityDirector.current(); if (!owner || owner.beat !== authoredBeat.beat) household.cancel();
           }
@@ -2654,12 +2746,12 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
             if (firstFood && eatenFood) discover({ kind: "food", id: eatenFood.kind, source: { x, y: y - size * .4 } });
             queueSituation("meal-finished", [0, 9, 29]); pendingCue = firstFood ? "discover" : "eat";
             const previousFavorite = brain.current.life?.favoriteFood;
-            brain.current = recordCompanionEvent(brain.current, "ate"); routines.observe("ate", brain.current.activeMs); if (!experience("fed", eatenFood?.kind, taste)) persistCare(true);
+            brain.current = recordCompanionEvent(brain.current, "ate"); observeRoutine("ate"); if (!experience("fed", eatenFood?.kind, taste)) persistCare(true);
             // Profile subscribers read canonical care when taste memory emits.
             // Both stores receive this one real meal's identical impression.
             if (taste) recordCompanionFoodTasteOutcome(taste, preferencesRef.current.learnFromYou !== false);
             if (eatenFood) sceneEvent({ kind: "meal", foodId: eatenFood.id, food: eatenFood.kind, favoriteChanged: previousFavorite !== brain.current.life?.favoriteFood, first: Boolean(firstFood) });
-            if (completed.personalityScene) personalityDirector.resolve(completed.personalityScene, true, eatenFood?.id);
+            if (completed.personalityScene) personalityDirector.resolve(completed.personalityScene, true, eatenFood?.id, brain.current.activeMs);
             if (eatenFood) storedPersonalityFoods.delete(eatenFood.id);
             petUntil = now + (reduced ? 400 : 1100);
           }
@@ -2671,8 +2763,17 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           if (completed.accessory && (accessoryWitnessed & 6) === 6 && wardrobe.current.equipped === completed.accessory) queueSituation("accessory-trick", [9]);
           if (rested && isHomeSupport(support)) queueSituation("home-rested", [0, 9, 11, 12, 40]);
           if (["walk", "jump", "heart", "hide", "play"].includes(action.kind)) { x = action.target.x; y = action.target.y; support = action.target.platformId ?? support; }
-          if (["walk", "jump"].includes(completed.kind) && !isHomeSupport(support) && supportedNow() && Math.hypot(x - completedOrigin.x, y - completedOrigin.y) >= 24) routines.observe("went-out", brain.current.activeMs);
-          if (rested && isHomeSupport(support) && sleepPaintMs >= 500) routines.observe("slept", brain.current.activeMs);
+          if (["walk", "jump"].includes(completed.kind) && !isHomeSupport(support) && supportedNow() && Math.hypot(x - completedOrigin.x, y - completedOrigin.y) >= 24) {
+            observeRoutine("went-out");
+            const place = `${support}:${Math.floor(x / 96)}`;
+            if (!learnedPlaces.has(place)) { learnedPlaces.add(place); if (learnedPlaces.size > 64) learnedPlaces.delete(learnedPlaces.values().next().value!); learnAgent("went-out"); }
+          }
+          if (activityArrival?.action===completed && supportedNow() && !pause && !document.hidden && !overlayActive && !premiereActive && !workspaceBusyRef.current && !returning && !homeJourney && presence.phase === "active" && !reduced && gfxMode() !== "off"
+            && !food.current?.carried() && !toys.current?.carried() && !household.active() && !toyPlanner.active()) {
+            personalityActivity.recordArrival(completed,activityArrival.from,{...homeRouteWorld(),animated:!reduced && !["off","soft"].includes(gfxMode())},effective,brain.current.activeMs);
+          }
+          activityArrival=undefined;
+          if (rested && isHomeSupport(support) && sleepPaintMs >= 500) observeRoutine("slept");
           if (completed.kind === "jump" && verticalLanding) verticalRecoveryX = undefined;
           let arrivalPlay: CompanionAction["play"] = undefined;
           if (completed.kind === "jump" && shakenReleasePending && supportedNow() && !homeJourney && !ejected && !overlayActive && !workspaceBusyRef.current && !reduced && gfxMode() !== "off") arrivalPlay = "dizzy";
@@ -2699,8 +2800,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           const nextHop = completed.kind === "walk" && !completed.episodeCancelled && runHop && supportedNow() && !homeJourney && !overlayActive && !restAfterLanding && !ejected && !workspaceBusyRef.current && !premiereActive && !reduced && gfxMode() !== "off" && presence.phase === "active" && validCompanionRunHop(runHop, { x, y }, supportById(support)) && (!runHop.episode || companionEpisodeHopAvailable(runHop, supportById(support), liveFoods)) ? runHop : undefined;
           if (completed.scene) scenes.complete(completed as CompanionSceneAction);
           if (completed.personalityScene) {
-            if (completed.personalityScene.command.kind === "wash" && !completed.personalityScene.travel) { personalityDirector.resolve(completed.personalityScene, washContactMs >= 500); if (washContactMs >= 500) routines.observe("washed", brain.current.activeMs); }
-            else if (completed.personalityJobEnd) personalityDirector.resolve(completed.personalityScene, true, completed.personalityScene.itemId ?? toys.current?.carried());
+            if (completed.personalityScene.command.kind === "wash" && !completed.personalityScene.travel) { personalityDirector.resolve(completed.personalityScene, washContactMs >= 500, undefined, brain.current.activeMs); if (washContactMs >= 500) observeRoutine("washed"); }
+            else if (completed.personalityJobEnd) personalityDirector.resolve(completed.personalityScene, true, completed.personalityScene.itemId ?? toys.current?.carried(), brain.current.activeMs);
             else personalityDirector.complete(completed.personalityScene);
             if (completed.play && ["tumble", "dizzy", "slip-tumble"].includes(completed.play)) personalityDirector.event("recovered", brain.current.activeMs);
           }
@@ -3981,6 +4082,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       window.removeEventListener(COMPANION_SCENE_SIGNAL, sceneSignal);
       window.removeEventListener(COMPANION_WORK_SIGNAL, workSignal);
       window.removeEventListener("pagehide", sceneDepart);
+      window.removeEventListener("storage", syncAgentMemory);
       foodDiscarded.current = () => {};
       window.removeEventListener("blur", focusChanged); window.removeEventListener("focus", focusChanged);
       window.removeEventListener("resize", parkedLayout); window.removeEventListener("scroll", parkedLayout, true); window.removeEventListener("vic:companion-home", parkedLayout);
@@ -4015,7 +4117,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
   };
   const act = (kind: CompanionHomeAction) => { if (kind === "book") { onOpenBook(); return; } control.current?.[kind](); };
   const performanceActive = Boolean(premiereCue?.generation && premiereCue.phase !== "idle" && (premiereCue.phase === "return" || premiereCue.target - syncedNow() <= 166000));
-  const house = <CompanionHome care={care} preferences={preferences} inactive={overlayOpen || performanceActive} owner={premiereCue?.owner} unreadCollection={unreadCollection} radioPlaying={radioPlaying} environment={homeEnvironment} curtain={homeCurtain} toyCount={toyCount} onToyBox={() => { logActivity("ui.click", { target: "companion-home-toys" }); control.current?.toys(); }} onAction={act} onClose={homeVisible ? undefined : closeHome} />;
+  const house = <CompanionHome care={care} preferences={preferences} inactive={overlayOpen || performanceActive} owner={premiereCue?.owner} unreadCollection={unreadCollection} radioPlaying={radioPlaying} environment={homeEnvironment} curtain={homeCurtain} toyCount={toyCount} onToyBox={() => { logActivity("ui.click", { target: "companion-home-toys" }); control.current?.toys(); }} onPersonality={() => onOpenBook("personality")} onAction={act} onClose={homeVisible ? undefined : closeHome} />;
   return createPortal(<>
     <span className="vc-wash-tool" ref={washTool} hidden aria-hidden="true"><svg width="24" height="38" viewBox="0 0 24 38" focusable="false"><path d="M6 12h5l2 20q-3 6-7 0Z" fill="#e6a052" stroke="#78522e" strokeWidth="1.5" /><path d="M4 3q4-3 9 0v10H4Z" fill="#fff5df" stroke="#78522e" strokeWidth="1.5" /><path d="M6 4v7m3-7v7m3-7v7" stroke="#76a79a" strokeWidth="1.4" /><g fill="#fffdf6" stroke="#b1cbd1" strokeWidth=".8"><circle cx="15" cy="8" r="3" /><circle cx="19" cy="4" r="2" /><circle cx="19" cy="11" r="2" /></g><path d="m20 17 1 2 2 1-2 1-1 2-1-2-2-1 2-1Z" fill="#f8db89" /></svg></span>
     <span className="vc-home-touch-tool" ref={interactionTool} hidden aria-hidden="true"><svg width="18" height="18" viewBox="0 0 18 18" focusable="false"><path d="M4 14q-3-3-1-6l2 1V5q0-3 2-3 2 0 2 3l1-1q2-1 3 1l1 2q3 0 3 3 0 4-5 6Z" fill="#fff1ce" stroke="#77522d" strokeWidth="1.3" strokeLinejoin="round" /></svg></span>

@@ -829,6 +829,7 @@ export function PublicPoster({
   // 기존 배관(1690~)을 그대로 태운다: 열림 = 어느 시트든 열림, 닫기 = 어느 시트든 닫기.
   const [sheet, setSheet] = useState<null | "insights" | "search" | "settings">(null);
   const [companionBook, setCompanionBook] = useState(false);
+  const [companionPersonality, setCompanionPersonality] = useState(false);
   const settingsOpenerRef = useRef<HTMLElement | null>(null);
   const settingsWasOpen = useRef(false);
   // Match the studio lifecycle: capture before the shared trap takes focus,
@@ -836,7 +837,7 @@ export function PublicPoster({
   useEffect(() => {
     const open = sheet === "settings", wasOpen = settingsWasOpen.current;
     settingsWasOpen.current = open;
-    if (open && !wasOpen) settingsOpenerRef.current = document.activeElement as HTMLElement | null;
+    if (open && !wasOpen && !settingsOpenerRef.current) settingsOpenerRef.current = document.activeElement as HTMLElement | null;
     else if (!open && wasOpen) { restoreDialogOpener(settingsOpenerRef.current); settingsOpenerRef.current = null; }
   }, [sheet]);
   const settingsTrapRef = useFocusTrap<HTMLDivElement>(sheet === "settings");
@@ -4140,7 +4141,12 @@ export function PublicPoster({
           컴포넌트). 표면(data-export-surface) 밖의 페이지 배경에만 얹혀 공식 PNG 캡처엔 안 들어간다. */}
       <div className="pm-ambient-shell" data-pm-exit="4">{!showAgenda ? <AmbientLayer force={ambientForce} month={view.month} slug={schedule.calendar.slug} worldForce={ambientWorldForce} year={view.year} /> : null}</div>
       <ShowcaseExit />
-      {companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed ? <ViewerCompanion onOpenBook={() => { setCompanionBook(true); setSheet("settings"); }} root={posterRootRef} preferences={settingsPrefs.companionPrefs}
+      {companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed ? <ViewerCompanion onOpenBook={destination => {
+        // A warm child's layout effect can focus its radio before our passive
+        // opener effect. Remember the real activation while it still owns focus.
+        if (sheet !== "settings") settingsOpenerRef.current = document.activeElement as HTMLElement | null;
+        setCompanionPersonality(destination === "personality"); setCompanionBook(true); setSheet("settings");
+      }} root={posterRootRef} preferences={settingsPrefs.companionPrefs}
         context={{ slug: schedule.calendar.slug, year: view.year, month: view.month, season: pickAmbient(ambientWorldForce?.month ?? view.month, ambientForce ?? null).season, force: ambientWorldForce }}
         positionMemory={positionMemory}
               blocked={Boolean(monthPick || giftCard || gachaOpen)}
@@ -4641,6 +4647,7 @@ export function PublicPoster({
             <div className="settings-modal-body">
               <StudioSettingsList
                 companionBook={companionBook}
+                companionPersonality={companionPersonality}
                 ambientMode={settingsPrefs.ambientMode}
                 textPx={settingsPrefs.textPx}
                 onChangeTextPx={settingsPrefs.changeTextPx}

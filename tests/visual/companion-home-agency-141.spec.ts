@@ -5,10 +5,14 @@ import { resolve } from "node:path";
 import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_PERSONALITIES, COMPANION_PERSONALITY_NAMES, DEFAULT_COMPANION_PREFERENCES, type CompanionPersonality } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_COLLECTION_KEY } from "@/lib/ui/viewer-companion/collection";
+import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
+import { companionPlayDuration, COMPANION_PLAY_TIMING } from "@/lib/ui/viewer-companion/timing";
+import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
+import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 
 type Rect = { x: number; y: number; width: number; height: number };
 type Tool = Rect & { visible: boolean; transform: string };
@@ -22,9 +26,10 @@ type Frame = {
   foods: { id: string; kind: string; eating: boolean; carried: boolean; discarding: boolean }[];
   toys: { id: string; carried: boolean; held: boolean }[];
 };
-type ProbeWindow = Window & { agency141?: { frames: Frame[]; humanControls: { at: number; action: string }[]; stop: () => void } };
+type EntryInterruption = Pick<Frame, "absolute" | "state" | "scene" | "pose" | "visible" | "decoded"> & { trusted: boolean };
+type ProbeWindow = Window & { agency141?: { frames: Frame[]; humanControls: { at: number; action: string }[]; entryChosenAt?: number; entryInterruption?: EntryInterruption; stop: () => void } };
 type Proof = { build: string; errors: string[]; rejected: string[]; writes: string[]; notes: unknown[]; chunks: { url: string; served: string; local: string }[]; pending: Promise<void>[] };
-type FixtureOptions = { personality?: CompanionPersonality; hunger?: number; energy?: number; sleep?: boolean; sound?: boolean; summer?: boolean; night?: boolean; roam?: boolean; cat?: boolean };
+type FixtureOptions = { personality?: CompanionPersonality; hunger?: number; energy?: number; sleep?: boolean; sound?: boolean; summer?: boolean; night?: boolean; roam?: boolean; cat?: boolean; interruptEntry?: boolean };
 const output = resolve(process.env.COMPANION141_AGENCY_OUTPUT ?? ".scratch-pw/companion-141/home-agency");
 const proofs = new WeakMap<Page, Proof>();
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
@@ -54,9 +59,9 @@ test.beforeEach(async ({ page, context, baseURL }) => {
       proof.chunks.push({ url: url.pathname, served: hash(await response.body()), local: hash(readFileSync(resolve(directory, "static", url.pathname.slice("/_next/static/".length)))) });
     })().catch(error => { proof.errors.push(`served chunk proof: ${String(error)}`); }));
   });
-  await context.route("**/*", route => {
+  await context.route("**/*", async route => {
     const request = route.request(), url = new URL(request.url());
-    if (request.method() === "GET" && request.resourceType() === "font" && fonts.has(url.href)) return route.continue();
+    if (request.resourceType() === "font" && url.origin !== origin.origin) return fulfillReadOnlyFont(route, fonts, proof.rejected);
     if (url.origin !== origin.origin) { proof.rejected.push(`${request.method()} ${url.origin}${url.pathname}`); return route.abort(); }
     if (request.method() === "POST" && url.pathname === "/visual-fixture/studio" && preview.has(request.headers()["next-action"])) return route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":"fixture"}\n1:${JSON.stringify(samplePublicScheduleData)}\n` });
     if (!["GET", "HEAD"].includes(request.method())) { proof.writes.push(`${request.method()} ${url.pathname}`); return route.abort(); }
@@ -77,7 +82,7 @@ test.afterEach(async ({ page }, info) => {
   expect(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim()).toBe(proof.build);
 });
 
-async function selectNative(page: Page, personality: CompanionPersonality, roam: boolean) {
+async function selectNative(page: Page, personality: CompanionPersonality, roam: boolean, deferPointerMove = false) {
   const home = await openCompanionHome(page); await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
   await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
@@ -85,7 +90,8 @@ async function selectNative(page: Page, personality: CompanionPersonality, roam:
   if (await option.getAttribute("aria-checked") === "true") await group.locator('[role="radio"][aria-checked="false"]').first().click();
   await option.click(); await expect(option).toHaveAttribute("aria-checked", "true");
   await dialog.getByRole("tab", { name: "움직임", exact: true }).click(); await dialog.locator('[data-act="companion-roam"]').setChecked(roam);
-  await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden(); await page.mouse.move(2, 2);
+  if (deferPointerMove) await page.evaluate(() => { const probe=(window as ProbeWindow).agency141;if (probe) probe.entryChosenAt=performance.now(); });
+  await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden(); if (!deferPointerMove) await page.mouse.move(2, 2);
 }
 async function fixture(page: Page, options: FixtureOptions = {}) {
   proofs.get(page)!.notes.push({ initialSavedFixtureOnly: { hunger: options.hunger ?? .05, energy: options.energy ?? .9, sleep: options.sleep ?? false, sound: options.sound ?? false, animalMode: options.cat ? "cat" : "default" }, personalityConfirmedThroughNativeRadio: options.personality ?? "balanced" });
@@ -98,9 +104,85 @@ async function fixture(page: Page, options: FixtureOptions = {}) {
   }, { preferences: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, options });
   await page.goto(`/visual-fixture/studio?role=owner&y=2025&m=${options.summer ? 7 : 10}&hour=${options.night ? 21 : 12}&weather=clear`);
   await page.bringToFront(); await settlePanelLayout(page); await page.evaluate(() => document.fonts.ready);
-  await expect(pet(page)).toBeVisible(); await selectNative(page, options.personality ?? "balanced", options.roam ?? true);
+  await expect(pet(page)).toBeVisible();
+  // Prepare handles, measured point and read-only observation before the
+  // greeting can start. After closing only focus/observe/native P remain.
+  const interruption = options.interruptEntry ? await prepareNativeEntryInterruption(page) : undefined;
+  await selectNative(page, options.personality ?? "balanced", options.roam ?? true, Boolean(interruption));
+  if (interruption) { await interruptNativeEntryOnHomeFloor(page,interruption); return interruption.home; }
   const home = await openCompanionHome(page); await placeCompanionOnHomeFloor(page); await startProbe(page); return home;
 }
+
+/** Deliberately interrupt the newly chosen mischievous greeting through the
+ * public keyboard placement. The observer captures the trusted key before
+ * the normal product handler, never calling an engine/actor callback. */
+async function prepareNativeEntryInterruption(page: Page) {
+  const home = await openCompanionHome(page);
+  const identity = (await pet(page).elementHandle())!;
+  const bed = (await home.locator(".vc-plush-bed").boundingBox())!, floor = (await home.locator(".vc-home-floor").boundingBox())!;
+  const point = { x: bed.x + bed.width / 2, y: floor.y + floor.height - COMPANION_HOME_FLOOR_INSET - 8 };
+  await startProbe(page);
+  await page.evaluate(() => {
+    document.addEventListener("keydown", event => {
+      const node = document.querySelector<HTMLElement>(".vc-companion"), p = (window as ProbeWindow).agency141;
+      if (!p || !node || event.key.toLowerCase() !== "p" || !(event.target instanceof Node) || !node.contains(event.target)) return;
+      const texture = node.querySelector<HTMLImageElement>(".vc-texture"), r = node.getBoundingClientRect();
+      p.entryInterruption = { absolute: performance.now(), state: node.dataset.state ?? "", scene: node.dataset.personalityScene ?? "", pose: Number(node.dataset.pose ?? -1), trusted: event.isTrusted,
+        visible: !document.hidden && !node.hidden && node.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && r.width > 0 && r.height > 0,
+        decoded: Boolean(texture?.complete && texture.naturalWidth && texture.getBoundingClientRect().width > 0) };
+    }, { capture: true, once: true });
+  });
+  return { home, identity, point };
+}
+
+async function interruptNativeEntryOnHomeFloor(page: Page, prepared: Awaited<ReturnType<typeof prepareNativeEntryInterruption>>) {
+  const { home, identity, point } = prepared;
+  await actor(page).focus();
+  // The actual first semantic beat of row31 must still be running while the
+  // greeting is genuinely in flight; a historical completed frame cannot do.
+  await expect.poll(async () => {
+    const frame = await latest(page), actual = await now(page);
+    return Boolean(frame && actual-frame.absolute < 100 && genuine(frame) && frame.scene === "entry-mischievous" && frame.state === "play"
+      && companionSpriteMetadata.rows[31].includes(frame.pose));
+  }, { timeout: 5000, intervals: [10] }).toBe(true);
+  await actor(page).press("p"); await expect(pet(page)).toHaveAttribute("data-placing", "");
+  const interrupted = await page.evaluate(() => (window as ProbeWindow).agency141!.entryInterruption!);
+  expect(interrupted).toMatchObject({ trusted:true, scene:"entry-mischievous", state:"play", visible:true, decoded:true });
+  expect(companionSpriteMetadata.rows[31]).toContain(interrupted.pose);
+  const placingAt = await now(page);
+  await page.mouse.click(point.x,point.y); await page.mouse.move(2,2);
+  await expect(pet(page)).not.toHaveAttribute("data-placing");
+  await expect(pet(page)).toHaveAttribute("data-platform", /^companion-home-floor(?:-\d+)?$/);
+  await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
+  await expect.poll(async () => {
+    const feet = await pet(page).evaluate(node => node.getBoundingClientRect().bottom), actualFloor = (await home.locator(".vc-home-floor").boundingBox())!;
+    return Math.abs(feet-(actualFloor.y+actualFloor.height-COMPANION_HOME_FLOOR_INSET));
+  }).toBeLessThan(2);
+  expect(await identity.evaluate(node => node.isConnected && node === document.querySelector(".vc-companion"))).toBe(true);
+  const arrivedAt = await now(page);
+  proofs.get(page)!.notes.push({ entryInterruptedNatively:interrupted, actualPlacingObservedAt:placingAt, actualFloorArrivedAt:arrivedAt, sameActorIdentity:true });
+}
+
+async function assertNativeEntryStayedInterrupted(page: Page) {
+  const interrupted = await page.evaluate(() => (window as ProbeWindow).agency141!.entryInterruption!);
+  const chosenAt = await page.evaluate(() => (window as ProbeWindow).agency141!.entryChosenAt!);
+  expect(Number.isFinite(chosenAt)).toBe(true); expect(interrupted.absolute).toBeGreaterThan(chosenAt);
+  const trace = await frames(page), entry = trace.filter(frame => frame.absolute>=chosenAt && genuine(frame) && frame.scene === "entry-mischievous" && frame.state === "play"
+    && COMPANION_PLAY_TIMING.pounce.beats.some(beat => companionSpriteMetadata.rows[beat.row].includes(frame.pose)));
+  expect(entry.length).toBeGreaterThan(0);
+  const before = entry.filter(frame => frame.absolute <= interrupted.absolute);
+  expect(before.length).toBeGreaterThan(0);
+  expect(interrupted.absolute-before[0].absolute).toBeLessThan(COMPANION_PLAY_TIMING.pounce.beats[0].duration);
+  // Retained first-frame labels cannot stand in for actual completion. The
+  // recover row of the original entry must never finish after public P.
+  expect(entry.some(frame => frame.absolute > interrupted.absolute && companionSpriteMetadata.rows[23].includes(frame.pose))).toBe(false);
+  expect(entry.at(-1)!.absolute-entry[0].absolute).toBeLessThan(COMPANION_PLAY_TIMING.pounce.beats[0].duration);
+  const meal = trace.find(frame => genuine(frame) && frame.scene === "routine-meal" && frame.state === "eat");
+  expect(meal).toBeTruthy(); expect(meal!.absolute).toBeGreaterThan(interrupted.absolute);
+  proofs.get(page)!.notes.push({ interruptedEntryNeverCompleted:true, nativeChoiceObservedAt:chosenAt, entryVisibleSpan:entry.at(-1)!.absolute-entry[0].absolute,
+    actualMealAfterInterruptAt:meal!.absolute, interruptToMealMs:meal!.absolute-interrupted.absolute });
+}
+
 async function startProbe(page: Page) {
   await page.evaluate(() => {
     (window as ProbeWindow).agency141?.stop();
@@ -279,7 +361,7 @@ test("141 unlit room grades the actual resident and native outside placement res
 });
 
 for (const personality of COMPANION_PERSONALITIES) test(`141 common ${personality} actual middle-hunger meal is followed by real mat washing`, async ({ page }) => {
-  await fixture(page, { personality, hunger: .5 });
+  const home = await fixture(page, { personality, hunger: .5, interruptEntry: personality === "mischievous" });
   await expect.poll(async () => (await frames(page)).some(frame => genuine(frame) && frame.state === "eat" && frame.foods.some(food => food.eating && !food.discarding)), { timeout: 65_000, intervals: [100] }).toBe(true);
   const eating = (await frames(page)).find(frame => genuine(frame) && frame.state === "eat" && frame.foods.some(food => food.eating && !food.discarding))!, food = eating.foods.find(food => food.eating && !food.discarding)!;
   await expect.poll(async () => (await frames(page)).some(frame => frame.absolute > eating.absolute && !frame.foods.some(item => item.id === food.id)), { timeout: 15_000, intervals: [100] }).toBe(true);
@@ -287,9 +369,29 @@ for (const personality of COMPANION_PERSONALITIES) test(`141 common ${personalit
   const actualCollection = await page.evaluate(key => JSON.parse(localStorage.getItem(key) ?? "{}").foods ?? [], COMPANION_COLLECTION_KEY); expect(actualCollection).toContain(food.kind);
   await expect.poll(async () => (await frames(page)).some(frame => frame.absolute > consumed.absolute && washing(frame) && frame.scene === "routine-wash"), { timeout: 35_000, intervals: [100] }).toBe(true);
   await expect.poll(async () => { const washed = (await frames(page)).filter(frame => frame.absolute > consumed.absolute && washing(frame) && frame.scene === "routine-wash"); return washed.length > 1 ? washed.at(-1)!.absolute - washed[0].absolute : 0; }, { timeout: 5000, intervals: [50] }).toBeGreaterThanOrEqual(500);
+  const realFloor = (await home.locator(".vc-home-floor").boundingBox())!;
+  const floorY = realFloor.y + realFloor.height - COMPANION_HOME_FLOOR_INSET;
+  await expect.poll(async () => {
+    const trace = await frames(page), washed = trace.filter(frame => frame.absolute > consumed.absolute && washing(frame) && frame.scene === "routine-wash");
+    const lastWash = washed.at(-1); if (!lastWash) return false;
+    // Only this routine's next required go (beat2) can prove its exit. A
+    // different later owner cannot substitute for its omitted continuation.
+    const exit = trace.filter(frame => genuine(frame) && frame.absolute > lastWash.absolute && frame.scene === "routine-wash" && frame.beat === "2" && frame.command === "go");
+    const moved = exit.some(frame => ["walk", "jump"].includes(frame.state) && Math.hypot(frame.x-lastWash.x,frame.y-lastWash.y) >= 24);
+    const arrived = exit.find(frame => /^companion-home-floor(?:-\d+)?$/.test(frame.platform) && frame.platform !== "companion-home-floor-400"
+      && Math.abs(frame.y-floorY) < 2.5 && frame.x >= realFloor.x && frame.x <= realFloor.x+realFloor.width);
+    if (!moved || !arrived) return false;
+    const rows = personality === "mischievous" ? [17] : personality === "sleepy" ? [16] : COMPANION_PLAY_TIMING.bow.beats.map(beat => beat.row);
+    const finalState = personality === "mischievous" ? "shake" : personality === "sleepy" ? "stretch" : "play";
+    const finish = trace.filter(frame => genuine(frame) && frame.absolute >= arrived.absolute && frame.scene === "routine-wash" && frame.beat === "3" && frame.command === "pose"
+      && frame.platform === arrived.platform && frame.state === finalState && rows.some(row => companionSpriteMetadata.rows[row].includes(frame.pose)));
+    const expectedMs = personality === "mischievous" || personality === "sleepy" ? 900 : companionPlayDuration("bow");
+    return finish.length >= 2 && finish.at(-1)!.absolute-finish[0].absolute >= expectedMs*.8-80;
+  }, { timeout: 12_000, intervals: [50] }).toBe(true);
+  if (personality === "mischievous") await assertNativeEntryStayedInterrupted(page);
   const trace = await frames(page); expect(trace.filter(frame => frame.state === "eat" && frame.foods.some(item => item.id === food.id)).length).toBeGreaterThan(2);
   expect(trace.some(frame => frame.foods.some(item => item.id === food.id && item.discarding))).toBe(false);
-  proofs.get(page)!.notes.push({ personalityChosenNatively: personality, initialHunger: .5, initialAnimalPreference: "default", foodId: food.id, earnedKind: food.kind, realMealBeforeWash: true });
+  proofs.get(page)!.notes.push({ personalityChosenNatively: personality, initialHunger: .5, initialAnimalPreference: "default", foodId: food.id, earnedKind: food.kind, realMealBeforeWash: true, sameRoutineActualExitAndFinishingGesture: true });
   if (await page.locator(".vc-wash-tool").isVisible()) await snapshot(page, "common-meal-then-brush");
 });
 

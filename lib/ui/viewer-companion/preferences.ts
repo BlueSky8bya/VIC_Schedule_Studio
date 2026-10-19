@@ -1,7 +1,7 @@
 /** Device-local companion preferences. No account, schedule data or server calls. */
 export const COMPANION_PERSONALITIES = ["performer", "curious", "affectionate", "sleepy", "tidy", "mischievous", "gourmet", "homebody", "balanced"] as const;
 export type CompanionPersonality = typeof COMPANION_PERSONALITIES[number];
-export const COMPANION_PERSONALITY_NAMES: Readonly<Record<CompanionPersonality, string>> = Object.freeze({ curious: "탐험둥이", affectionate: "애교쟁이", sleepy: "잠꾸러기", tidy: "깔끔이", mischievous: "사고뭉치", gourmet: "먹보", performer: "재롱둥이", homebody: "집돌이", balanced: "둥글이" });
+export const COMPANION_PERSONALITY_NAMES: Readonly<Record<CompanionPersonality, string>> = Object.freeze({ curious: "탐험둥이", affectionate: "애교쟁이", sleepy: "잠꾸러기", tidy: "깔끔이", mischievous: "사고뭉치", gourmet: "먹보", performer: "재롱둥이", homebody: "집돌이", balanced: "동글이" });
 export const COMPANION_PERSONALITY_SUMMARIES: Readonly<Record<CompanionPersonality, string>> = Object.freeze({
   performer: "소품으로 재롱을 부리고, 일하는 곁에서 응원해요.", curious: "새 장난감과 간식을 살피고, 창밖과 TV를 비교해요.",
   affectionate: "마우스를 따라와 인사하고, 손길을 받으면 행복해해요.", sleepy: "쿠션을 꾹꾹 누르고 하품해요. 밥과 반납은 먼저 마쳐요.",

@@ -6,8 +6,9 @@ import { useEffect, useRef } from "react";
  * replacement, or the native settings entry when the pet was disabled. */
 export function restoreDialogOpener(opener: HTMLElement | null, root: ParentNode = document) {
   const available = (element: HTMLElement) => element.isConnected && element.getClientRects().length > 0 && !element.closest("[inert],[hidden]");
-  const replacementBook = opener?.getAttribute("data-act") === "companion-book-open"
-    ? Array.from(root.querySelectorAll<HTMLElement>('[data-act="companion-book-open"]')).find(available)
+  const openerAction = opener?.getAttribute("data-act");
+  const replacementBook = openerAction === "companion-book-open" || openerAction === "companion-personality-open"
+    ? Array.from(root.querySelectorAll<HTMLElement>(`[data-act="${openerAction}"]`)).find(available)
     : undefined;
   const target = opener && available(opener) ? opener : replacementBook ?? Array.from(root.querySelectorAll<HTMLElement>('[data-act="open-settings"],[data-act="studio-settings"],.stool-settings')).find(available)
     ?? Array.from(root.querySelectorAll<HTMLElement>('[data-act="panel-toggle"]')).find(available);

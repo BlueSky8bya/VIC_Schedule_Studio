@@ -9,11 +9,15 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
+import { waitForOverlayEntrance } from "./helpers/companion-overlay";
+import { COMPANION_PERSONALITY_LAYOUT } from "@/lib/ui/viewer-companion/personality-layout";
+import { fulfillReadOnlyFont } from "./helpers/readonly-font";
+import { completedNativeToyReplay } from "./helpers/companion-toy-replay";
 
 const output = process.env.COMPANION141_OUTPUT ?? ".scratch-pw/companion-141/collection-settings";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
 type Surface = "viewer" | "studio" | "preview";
-type ItemFrame = { id: string; kind: string; carried: boolean; held: boolean; falling: boolean; x: number; y: number };
+type ItemFrame = { id: string; kind: string; carried: boolean; held: boolean; falling: boolean; visible: boolean; decoded: boolean; x: number; y: number };
 type Frame = { at: number; state: string; row: number; pose: number; decoded: boolean; toyAction: string; toys: ItemFrame[]; knownToys: string[]; behaviors: string[]; moments: string[] };
 type Flight = { key: number; kind: string; id: string; at: number; duration: number; first: { x: number; y: number; width: number; height: number }; last: { x: number; y: number; width: number; height: number }; book: { x: number; y: number } | null; frames: Keyframe[]; decoded: boolean; known: boolean; samples: number };
 type Probe = { samples: Frame[]; flights: Flight[]; stop: () => void };
@@ -28,9 +32,9 @@ test.beforeEach(async ({ page, context, baseURL }) => {
   const actions = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
   const preview = new Set(Object.entries(actions).filter(([, entry]) => entry.exportedName === "getPublicPreviewAction").map(([id]) => id));
   page.on("pageerror", error => proof.errors.push(error.message));
-  await context.route("**/*", route => {
+  await context.route("**/*", async route => {
     const request = route.request(), url = new URL(request.url());
-    if (request.method() === "GET" && request.resourceType() === "font" && fonts.has(url.href)) return route.continue();
+    if (request.resourceType() === "font" && url.origin !== origin) return fulfillReadOnlyFont(route, fonts, proof.rejected);
     if (url.origin === origin && request.method() === "POST" && url.pathname === "/visual-fixture/studio" && preview.has(request.headers()["next-action"])) {
       proof.previewReads++;
       return route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":"fixture"}\n1:${JSON.stringify(samplePublicScheduleData)}\n` });
@@ -87,7 +91,12 @@ async function startProbe(page: Page) {
         last = now; const tastes = json(tasteKey), collection = json(collectionKey), pet = document.querySelector<HTMLElement>(".vc-companion"), texture = pet?.querySelector<HTMLImageElement>(".vc-sprite>.vc-texture");
         const petRect = pet?.getBoundingClientRect(), visible = Boolean(pet && !document.hidden && !pet.hidden && petRect!.width > 0 && getComputedStyle(pet).visibility !== "hidden" && Number(getComputedStyle(pet).opacity) > 0 && !pet.closest("[hidden],[inert],[aria-hidden='true']"));
         const decoded = visible && Boolean(texture?.complete && texture.naturalWidth && texture.getBoundingClientRect().width > 0);
-        samples.push({ at: now - began, state: pet?.dataset.state ?? "", row: Number(pet?.dataset.row ?? -1), pose: Number(pet?.dataset.pose ?? -1), decoded, toyAction: pet?.dataset.toyAction ?? "", toys: [...document.querySelectorAll<HTMLElement>(".vc-toy")].map(node => { const r = node.getBoundingClientRect(); return { id: node.dataset.toyId!, kind: node.dataset.kind!, carried: node.dataset.carried === "true", held: node.dataset.held === "true", falling: node.dataset.falling === "true", x: r.left + r.width / 2, y: r.bottom }; }), knownToys: tastes.toys ?? [], behaviors: collection.behaviors ?? [], moments: collection.situations ?? [] });
+        samples.push({ at: now - began, state: pet?.dataset.state ?? "", row: Number(pet?.dataset.row ?? -1), pose: Number(pet?.dataset.pose ?? -1), decoded, toyAction: pet?.dataset.toyAction ?? "", toys: [...document.querySelectorAll<HTMLElement>(".vc-toy")].map(node => { const r = node.getBoundingClientRect(); const image = node.querySelector<HTMLImageElement>("img"), picture = image?.getBoundingClientRect();
+          const visible = !document.hidden && !node.closest("[hidden],[inert],[aria-hidden='true']") && node.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && Number(getComputedStyle(node).opacity) > .05
+            && Boolean(image?.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && Number(getComputedStyle(image).opacity) > .05 && picture?.width && picture.height)
+            && r.width > 0 && r.height > 0 && r.right > 0 && r.bottom > 0 && r.left < innerWidth && r.top < innerHeight;
+          return { id: node.dataset.toyId!, kind: node.dataset.kind!, carried: node.dataset.carried === "true", held: node.dataset.held === "true", falling: node.dataset.falling === "true", visible,
+            decoded: visible && Boolean(image?.complete && image.naturalWidth), x: r.left + r.width / 2, y: r.bottom }; }), knownToys: tastes.toys ?? [], behaviors: collection.behaviors ?? [], moments: collection.situations ?? [] });
         const notice = document.querySelector<HTMLElement>(".vc-discovery-flight");
         if (notice && !notice.hidden) for (const animation of notice.getAnimations().filter(value => value.effect instanceof KeyframeEffect && value.effect.target === notice)) {
           let flight = animationIds.get(animation);
@@ -157,6 +166,90 @@ for (const [surface, width] of [["studio", 1100], ["viewer", 1920], ["preview", 
   if (surface === "preview") expect(proofs.get(page)!.previewReads).toBeGreaterThan(0);
 });
 
+for (const [surface, width] of [["viewer", 1920], ["studio", 1100], ["preview", 1920]] as const) test(`142 ${surface} direct personality shortcut exposes the complete shared compass without manual scrolling`, async ({ page }) => {
+  const home = await fixture(page, surface, width);
+  if (surface === "studio") { await page.setViewportSize({ width, height: 640 }); await settlePanelLayout(page); }
+  const shortcut = home.locator('[data-home-action="personality"]'); await expect(shortcut).toBeVisible();
+  const size = (await shortcut.boundingBox())!; expect(size.width).toBeGreaterThanOrEqual(44); expect(size.height).toBeGreaterThanOrEqual(44);
+  const headerButtons = await home.locator(":scope > .panel-section-heading button").evaluateAll(nodes => nodes.map(node => { const r = node.getBoundingClientRect(); return { action: node.getAttribute("data-act"), x: r.x, y: r.y, width: r.width, height: r.height }; }));
+  for (let i = 0; i < headerButtons.length; i++) for (const other of headerButtons.slice(i + 1)) {
+    const current = headerButtons[i], overlapX = Math.min(current.x + current.width, other.x + other.width) - Math.max(current.x, other.x), overlapY = Math.min(current.y + current.height, other.y + other.height) - Math.max(current.y, other.y);
+    expect(Math.max(0, overlapX) * Math.max(0, overlapY), "the real header inputs must stay separate").toBeLessThan(.1);
+  }
+  await shortcut.click(); const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
+  await expect(dialog.getByRole("tab", { name: "환경설정", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(dialog.getByRole("tab", { name: "기본", exact: true })).toHaveAttribute("aria-selected", "true");
+  const grid = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true });
+  await expect(grid.locator('[aria-checked="true"]')).toBeFocused();
+  const actual = await grid.getByRole("radio").evaluateAll(nodes => nodes.map(node => {
+    const r = node.getBoundingClientRect(), hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+    return { id: node.getAttribute("data-act-opt"), x: r.x, y: r.y, width: r.width, height: r.height, exposed: hit === node || node.contains(hit) };
+  }));
+  expect(actual.map(item => item.id)).toEqual(COMPANION_PERSONALITY_LAYOUT); expect(actual.every(item => item.exposed && item.width >= 44 && item.height >= 44)).toBe(true);
+  for (let i = 0; i < 9; i++) { expect(actual[i].x).toBeCloseTo(actual[i % 3].x, 0); expect(actual[i].y).toBeCloseTo(actual[Math.floor(i / 3) * 3].y, 0); }
+  await grid.getByRole("radio", { name: "동글이", exact: true }).click(); await expect(grid.getByRole("radio", { name: "동글이", exact: true })).toHaveAttribute("aria-checked", "true");
+  await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(shortcut).toBeFocused(); await expect(shortcut).toContainText("동글이");
+  // Reuse the already mounted settings child: its layout focus must not
+  // replace the actual home opener captured by the parent activation.
+  await shortcut.click(); await expect(grid.getByRole("radio", { name: "동글이", exact: true })).toBeFocused();
+  await waitForOverlayEntrance(dialog);
+  const readCompassThumb = () => grid.evaluate(group => {
+    const selected = group.querySelector<HTMLElement>('[role="radio"][aria-checked="true"]'), thumb = group.querySelector<HTMLElement>(":scope > .rhh-seg-thumb");
+    if (!selected || !thumb) return null;
+    const a = selected.getBoundingClientRect(), b = thumb.getBoundingClientRect();
+    return { selected: selected.dataset.actOpt, button: a.toJSON(), thumb: b.toJSON(),
+      centerError: Math.max(Math.abs(a.x+a.width/2-b.x-b.width/2), Math.abs(a.y+a.height/2-b.y-b.height/2)),
+      edgeError: Math.max(Math.abs(a.left-b.left), Math.abs(a.top-b.top), Math.abs(a.right-b.right), Math.abs(a.bottom-b.bottom)),
+      running: group.getAnimations({ subtree: true }).filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))).length };
+  });
+  // The shared thumb reserves a2px inter-cell gap; the buttons share their
+  // full columns. Observe its actual settled cell rather than an entrance or
+  // spring midpoint, without changing CSS or stopping any animation.
+  let previousCompass: Awaited<ReturnType<typeof readCompassThumb>> = null, stableBoxDrift = Infinity;
+  await expect.poll(async () => {
+    const actual = await readCompassThumb();
+    stableBoxDrift = actual && previousCompass ? Math.max(...["button", "thumb"].flatMap(part => ["left", "right", "top", "bottom"].map(edge => Math.abs(actual[part as "button" | "thumb"][edge] - previousCompass![part as "button" | "thumb"][edge])))) : Infinity;
+    previousCompass = actual;
+    return Boolean(actual && actual.running === 0 && actual.centerError <= 1 && actual.edgeError <= 2 && stableBoxDrift <= .1);
+  }).toBe(true);
+  const warmCompassSettled = await readCompassThumb();
+  proofs.get(page)!.notes.push({ surface, warmCompassSettled, twoActualBoxReadings: true, stableBoxDrift });
+  mkdirSync(output, { recursive: true });
+  await page.screenshot({ path: resolve(output, test.info().title.replace(/[^a-z0-9]+/gi, "-")+"-warm-open-compass.png") });
+  await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(shortcut).toBeFocused();
+  await home.locator('[data-home-action="book"]').click(); await expect(dialog.getByRole("tab", { name: "함께 지내기", exact: true })).toHaveAttribute("aria-selected", "true");
+  await dialog.getByRole("button", { name: "성격 바꾸기", exact: true }).click(); await expect(grid.getByRole("radio", { name: "동글이", exact: true })).toBeFocused();
+  await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(home.locator('[data-home-action="book"]')).toBeFocused();
+  proofs.get(page)!.notes.push({ surface, viewport: page.viewportSize(), actualCompass: actual, headerButtons, oneHomeActivation: true, warmSecondOpenRestoresHomeOpener: true, manualScroll: false, ordinaryBookPreserved: true });
+});
+
+for (const [surface, width] of [["viewer", 1920], ["studio", 2400]] as const) test(`142 ${surface} real television glass and continuous cords retain their physical controls`, async ({ page }) => {
+  const home = await fixture(page, surface, width); await placeCompanionOnHomeFloor(page);
+  const tv = home.locator('[data-home-action="tv"]'); await tv.focus(); await tv.press("Enter");
+  await home.locator(".vc-home-tv-screen > img").evaluate(node => (node as HTMLImageElement).decode());
+  const actual = await home.evaluate(node => {
+    const box = (selector: string) => { const r = node.querySelector(selector)!.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
+    const lamp = box(".vc-home-lamp-paint > img"), circle = box(".vc-home-lamp-cord circle"), cord = box(".vc-curtain-control > span"), window = box(".vc-home-window");
+    const picture = node.querySelector<HTMLElement>(".vc-home-tv-screen")!, clip = node.querySelector<SVGClipPathElement>(".vc-home-tv-projection clipPath")!;
+    return { lamp, circle, cord, window, curtainHit: box(".vc-curtain-control"), lampHit: box(".vc-home-lamp"), bodySrc: node.querySelector(".vc-home-tv-body")!.getAttribute("src"), clip: clip.querySelector("path")!.getAttribute("d"), pictureTransform: getComputedStyle(picture).transform };
+  });
+  expect(actual.bodySrc).toBe("/companion/home/136/tv-body.webp"); expect(actual.clip).toMatch(/^M133 167/);
+  expect(Math.abs(actual.lamp.x + actual.lamp.width / 2 - actual.circle.x - actual.circle.width / 2)).toBeLessThan(.75);
+  expect(actual.cord.y).toBeLessThan(actual.window.y + 1); expect(actual.cord.height).toBeGreaterThan(60);
+  expect(actual.cord.x).toBeLessThan(actual.window.x); expect(actual.cord.x).toBeGreaterThan(actual.window.x - 6);
+  for (const rect of [actual.curtainHit, actual.lampHit]) { expect(rect.width).toBeGreaterThanOrEqual(44); expect(rect.height).toBeGreaterThanOrEqual(44); }
+  proofs.get(page)!.notes.push({ surface, actual, unchangedRaster: true, contactSelectors: [".vc-home-lamp-cord circle", ".vc-curtain-control > span"], sourceGlassPixelProof: "companion-personality-layout-142.test.ts" });
+  if (surface === "studio") {
+    await home.locator('[data-home-action="book"]').click();
+    const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
+    await waitForOverlayEntrance(dialog);
+    const button = dialog.getByRole("button", { name: "성격 바꾸기", exact: true }), rect = (await button.boundingBox())!;
+    expect(rect.width).toBeGreaterThanOrEqual(44); expect(rect.height).toBeGreaterThanOrEqual(44);
+    proofs.get(page)!.notes.push({ surface, viewport: page.viewportSize(), actualProfileShortcut: rect });
+    await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(home.locator('[data-home-action="book"]')).toBeFocused();
+  }
+});
+
 test("141 food toy and furniture pointer hover has no circular outline while keyboard focus remains visible", async ({ page }) => {
   const home = await fixture(page, "studio"); await choose(page, "tidy", false);
   await home.locator('[data-home-action="feed"]').focus(); await page.keyboard.press("Enter");
@@ -197,11 +290,10 @@ test("141 a native spawned toy stays unknown until visible completed play and ea
   expect(first.samples.some(frame => frame.knownToys.includes("ball"))).toBe(true);
   // Wait for a subsequent genuine play of this same physical toy, rather than
   // dispatching an experience or calling a store API to manufacture a repeat.
-  const began = first.samples.at(-1)!.at;
-  await expect.poll(async () => {
-    const trace = (await observation(page)).samples.filter(frame => frame.at > began + 1800);
-    return trace.some(frame => frame.decoded && frame.toys.some(toy => toy.id === id && toy.carried && !toy.held)) && trace.some(frame => frame.at > began + 5000 && frame.toys.some(toy => toy.id === id && !toy.carried && !toy.held));
-  }, { timeout: 65000, intervals: [100] }).toBe(true);
+  await expect.poll(async () => Boolean(completedNativeToyReplay((await observation(page)).samples, id, flight.at, "pounce")),
+    { timeout: 65000, intervals: [100] }).toBe(true);
+  proofs.get(page)!.notes.push({ samePhysicalToyReplay: completedNativeToyReplay((await observation(page)).samples, id, flight.at, "pounce"),
+    expectedPlaybackMs: 1100, expectedSharedPlay: "pounce", sameIdFlightCount: (await observation(page)).flights.filter(f => f.kind === "toy" && f.id === "ball").length });
   expect((await observation(page)).flights.filter(f => f.kind === "toy" && f.id === "ball")).toHaveLength(1);
 });
 

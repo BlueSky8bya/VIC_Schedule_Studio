@@ -27,7 +27,7 @@ describe("137 complete report recipe catalog", () => {
   it("gives all nine named personalities five major, seven minor and four cross-feature paths", () => {
     expect(COMPANION_PERSONALITIES).toHaveLength(9);
     expect(COMPANION_PERSONALITY_NAMES.curious).toBe("탐험둥이");
-    expect(COMPANION_PERSONALITY_NAMES.balanced).toBe("둥글이");
+    expect(COMPANION_PERSONALITY_NAMES.balanced).toBe("동글이");
     for (const personality of COMPANION_PERSONALITIES) {
       const scenes = COMPANION_PERSONALITY_SCENES.filter(scene => scene.personality === personality);
       expect(scenes.filter(scene => scene.major), personality).toHaveLength(5);

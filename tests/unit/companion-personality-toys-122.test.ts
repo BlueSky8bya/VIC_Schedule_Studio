@@ -181,7 +181,7 @@ describe("122 actual toy admission and ownership", () => {
 });
 
 describe("122 eight-personality meaningful activity budget", () => {
-  it("reuses a cue-selected expression for the same decision with one draw and no pre-adoption budget reset", () => {
+  it("reuses a cue-selected excursion for the same decision with one draw and no pre-adoption budget reset", () => {
     let draws = 0; const activity = createCompanionPersonalityActivity(() => { draws++; return .5; });
     const prefs = { ...DEFAULT_COMPANION_PREFERENCES, personality: "curious" as const }, owners = { scene: false, household: false, toy: false, home: false, blocked: false };
     const cue = activity.choose(brain, world, prefs, 600)!;
@@ -191,7 +191,7 @@ describe("122 eight-personality meaningful activity budget", () => {
     expect(draws).toBe(1); expect(activity.due(600)).toBe(true);
     activity.record(decision!, world, 600, prefs.personality); expect(activity.due(600)).toBe(false);
   });
-  it("reserves a due fitting expression before a new secondary job without claiming it before launch", () => {
+  it("reserves a due real excursion before a new secondary job without claiming it before launch", () => {
     let draws = 0; const activity = createCompanionPersonalityActivity(() => { draws++; return 0; });
     const prefs = { ...DEFAULT_COMPANION_PREFERENCES, personality: "curious" as const }, empty = { scene: false, household: false, toy: false, home: false, blocked: false };
     const candidate = preflightCompanionPersonalityActivity(activity, brain, world, prefs, 600, empty)!;
@@ -200,7 +200,7 @@ describe("122 eight-personality meaningful activity budget", () => {
     expect(preflightCompanionPersonalityActivity(activity, { ...brain, foodGoal: { foodId: "real-meal", remaining: 3, retryAfter: 0 } }, world, prefs, 600, empty)).toBeUndefined();
     expect(draws).toBe(1); activity.record(candidate, world, 600, "curious"); expect(preflightCompanionPersonalityActivity(activity, brain, world, prefs, 1000, empty)).toBeUndefined();
   });
-  for (const personality of COMPANION_PERSONALITIES) it(personality + " admits its due first expression before a new job while every actual owner remains protected", () => {
+  for (const personality of COMPANION_PERSONALITIES) it(personality + " admits due real movement before a new job while every actual owner remains protected", () => {
     let draws = 0; const activity = createCompanionPersonalityActivity(() => { draws++; return 0; });
     const prefs = { ...DEFAULT_COMPANION_PREFERENCES, personality }, owners = { scene: false, household: false, toy: false, home: false, blocked: false };
     for (const owner of ["scene", "household", "toy", "home", "blocked"] as const) expect(preflightCompanionPersonalityActivity(activity, brain, world, prefs, 600, { ...owners, [owner]: true })).toBeUndefined();
@@ -209,15 +209,16 @@ describe("122 eight-personality meaningful activity budget", () => {
     const candidate = preflightCompanionPersonalityActivity(activity, brain, world, prefs, 600, owners)!;
     expect(candidate.personalitySignature).toBe(personality); expect(draws).toBe(1); expect(activity.due(600)).toBe(true);
   });
-  for (const personality of COMPANION_PERSONALITIES) it(personality + " starts a finite authored signature and empty idle/look cannot postpone the next one", () => {
+  for (const personality of COMPANION_PERSONALITIES) it(personality + " starts a finite excursion and empty idle/look cannot postpone the next one", () => {
     const activity = createCompanionPersonalityActivity(() => 0), prefs = { ...DEFAULT_COMPANION_PREFERENCES, personality, sleep: false };
     const first = activity.choose(brain, world, prefs, 600)!;
-    expect(first).toMatchObject({ kind: "play", personalitySignature: personality });
+    expect(first).toMatchObject({ kind: "walk", personalitySignature: personality });
+    expect(Math.abs(first.target.x-world.x)).toBeGreaterThanOrEqual(48);
     expect(first.duration).toBeGreaterThan(0); expect(first.duration).toBeLessThan(6000);
     activity.record(first, world, 600);
     for (let now = 1000; now < 8600; now += 500) { activity.record({ ...idle, kind: now % 1000 ? "look" : "idle" }, world, now); expect(activity.choose(brain, world, prefs, now)).toBeUndefined(); }
     const second = activity.choose(brain, world, prefs, 8600)!;
-    expect(second.kind).toBe("play"); expect(second.play).not.toBe(first.play);
+    expect(second.kind).toBe("walk"); expect(second.play).toBeUndefined();
   });
   it("preserves real care goals and refuses hidden/reduced/disabled or unsupported worlds", () => {
     const activity = createCompanionPersonalityActivity(() => 0), prefs = { ...DEFAULT_COMPANION_PREFERENCES };
@@ -228,21 +229,22 @@ describe("122 eight-personality meaningful activity budget", () => {
     activity.record({ kind: "walk", foodId: "actual-food", target: { x: 700, y: 600, platformId: floor.id }, duration: 9000 }, world, 9000);
     expect(activity.choose(brain, world, prefs, 16000)).toBeUndefined();
   });
-  it("purpose-free random walks never reset the personality deadline and stale goals eventually release it", () => {
+  it("real walks satisfy the movement deadline while stale goals release a finite new excursion", () => {
     const activity = createCompanionPersonalityActivity(() => 0), prefs = { ...DEFAULT_COMPANION_PREFERENCES, personality: "tidy" as const };
     for (let now = 0; now < 20000; now += 500) activity.record({ kind: "walk", target: { x: 700, y: 600, platformId: floor.id }, duration: 1000 }, world, now, "tidy");
-    expect(activity.choose(brain, world, prefs, 20000)?.personalitySignature).toBe("tidy");
+    expect(activity.choose(brain, world, prefs, 20000)).toBeUndefined();
+    expect(activity.choose(brain, world, prefs, 28000)?.personalitySignature).toBe("tidy");
     const stuck = { ...brain, foodGoal: { foodId: "gone", remaining: 4, retryAfter: 0 } };
-    expect(activity.choose(stuck, world, prefs, 20000)).toBeUndefined();
-    expect(activity.choose(stuck, world, prefs, 29000)?.kind).toBe("play");
-    expect(activity.choose({ ...stuck, foodGoal: { ...stuck.foodGoal, remaining: 0 } }, world, prefs, 30000)?.kind).toBe("play");
+    expect(activity.choose(stuck, world, prefs, 28000)).toBeUndefined();
+    expect(activity.choose(stuck, world, prefs, 37000)?.kind).toBe("walk");
+    expect(activity.choose({ ...stuck, foodGoal: { ...stuck.foodGoal, remaining: 0 } }, world, prefs, 38000)?.kind).toBe("walk");
   });
   it("generic play and low-priority scene clips cannot postpone fitting personality activity forever", () => {
     const activity = createCompanionPersonalityActivity(() => 0), prefs = { ...DEFAULT_COMPANION_PREFERENCES, personality: "tidy" as const };
     for (let now = 0; now <= 15000; now += 1000) activity.record({ ...idle, kind: "play", play: "celebrate", ...(now % 2000 ? { scene: { id: 35 } } : {}) }, world, now, "tidy");
     expect(activity.choose(brain, world, prefs, 15000)?.personalitySignature).toBe("tidy");
     activity.record({ ...idle, kind: "play", play: "groom", personalitySignature: "tidy" }, world, 15000, "tidy");
-    expect(activity.choose(brain, world, prefs, 22000)).toBeUndefined();
+    expect(activity.choose(brain, world, prefs, 22000)?.kind).toBe("walk");
     activity.record({ ...idle, kind: "play", play: "bow", living: "social" }, world, 22000, "tidy");
     expect(activity.choose(brain, world, prefs, 29000)).toBeUndefined();
   });
@@ -255,10 +257,11 @@ describe("122 eight-personality meaningful activity budget", () => {
     expect(activity.boundWander({ ...offered, foodId: "real-meal" }, world, prefs, 2000).duration).toBe(12000);
     expect(activity.boundWander({ ...offered, household: {} }, world, prefs, 2000).duration).toBe(12000);
   });
-  it("jump OFF excludes pounce signatures for every personality and draw", () => {
+  it("jump OFF permits only actual ground excursions for every personality and draw", () => {
     for (const personality of COMPANION_PERSONALITIES) for (const draw of [0, .4, .99]) {
       const action = createCompanionPersonalityActivity(() => draw).choose(brain, world, { ...DEFAULT_COMPANION_PREFERENCES, personality, jump: false }, 2000)!;
-      expect(action.kind).toBe("play"); expect(action.play).not.toBe("pounce");
+      expect(action.kind).toBe("walk"); expect(action.play).toBeUndefined();
+      expect(action.target.platformId).toBe(floor.id); expect(Math.abs(action.target.x-world.x)).toBeGreaterThanOrEqual(48);
     }
   });
   it("an unreachable offered food cannot block personality forever while a proved meal still takes priority", () => {
@@ -273,7 +276,7 @@ describe("122 eight-personality meaningful activity budget", () => {
     const blockedEight = { ...actual, foods: Array.from({ length: 8 }, (_, index) => ({ ...food, id: "upper-" + index })) };
     const bounded = createCompanionPersonalityActivity(() => 0);
     expect(bounded.choose(hungry, blockedEight, p, 1000)).toBeUndefined();
-    expect(bounded.choose(hungry, blockedEight, p, 1250)?.kind).toBe("play");
+    expect(bounded.choose(hungry, blockedEight, p, 1250)?.kind).toBe("walk");
   });
   it("only a familiar nonfavorite refusal context creates a finite real food approach and expression", () => {
     const life = createCompanionLife(() => 0); life.favoriteFood = "apple"; life.familiarity.peach = .8;

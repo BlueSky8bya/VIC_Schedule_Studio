@@ -2,6 +2,7 @@ import type { ReactElement, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SettingsSegment, RowLabel } from "@/components/shared/settings-controls";
 import { COMPANION_PERSONALITIES, COMPANION_PERSONALITY_SUMMARIES, DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
+import { COMPANION_PERSONALITY_LAYOUT } from "@/lib/ui/viewer-companion/personality-layout";
 
 vi.mock("react", async original => ({ ...await original<typeof import("react")>(), useState: (value: unknown) => [value, vi.fn()], useRef: (current: unknown) => ({ current }), useId: () => "settings-layout", useEffect: () => {}, useLayoutEffect: () => {} }));
 vi.mock("@/lib/activity/client", () => ({ logActivity: vi.fn() }));
@@ -27,6 +28,7 @@ describe("141 shared basic personality settings", () => {
       expect(nodes(children[1]).find(element => element.props.interactive === false)?.props.enabled).toBe(true);
       expect(children[2].type).toBe(SettingsSegment); expect(children[2].props.columns).toBe(3);
       expect(children[2].props.options).toHaveLength(9);
+      expect((children[2].props.options as { value: string }[]).map(option => option.value)).toEqual(COMPANION_PERSONALITY_LAYOUT);
     }
   });
   it("uses the same three columns for animal and personality choices and preserves single change/reselect callbacks", () => {

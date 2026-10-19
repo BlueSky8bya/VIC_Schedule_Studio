@@ -14,6 +14,7 @@ import { describeTarget } from "@/lib/activity/labels";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { selectCompanionCollectionIndex } from "./helpers/companion-collection";
+import { abortUnknownFixtureOrigin, fulfillReadOnlyFont } from "./helpers/readonly-font";
 
 type Surface = "viewer" | "studio";
 type Event = { kind: string; target?: string | null; meta?: unknown; durMs?: number | null };
@@ -31,11 +32,13 @@ const new115Targets = ["companion-personality#tidy", "companion-personality#misc
 const new137Targets = ["companion-personality#curious", "companion-personality#balanced"];
 const new135Targets = ["companion-home-tv#on", "companion-home-tv#off", "companion-home-tv#next", "companion-home-light#on", "companion-home-light#off"];
 const new141Targets = ["companion-home-curtain#open", "companion-home-curtain#shade", "companion-home-curtain#closed"];
-const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-shake", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets, ...new110Targets, ...new111Targets, ...new115Targets, ...new135Targets, ...new141Targets];
+const new142Targets = ["companion-personality-open"];
+const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-shake", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets, ...new110Targets, ...new111Targets, ...new115Targets, ...new135Targets, ...new141Targets, ...new142Targets];
 const retired110Target = "companion-radio-mood#lively";
 const readFixtureTargets = [...sampleTargets, ...new137Targets, retired110Target];
 const at = Date.parse("2026-06-10T03:00:00Z");
 const auditPrefix = process.env.VIC_ACTIVITY_AUDIT_PREFIX ?? ".scratch-pw/companion-activity";
+const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
 
 // A loopback alias and test-only WebDriver getter let the real client queue
 // run. EVERY mutation is fulfilled locally before navigation: no event,
@@ -60,9 +63,12 @@ test.beforeEach(async ({ page }) => {
       } catch (error) { result.errors.push(`fixture chunk proof: ${String(error)}`); }
     })());
   });
-  await page.route("**/*", route => {
+  await page.route("**/*", async route => {
     const request = route.request(), requestUrl = new URL(request.url()), pathname = requestUrl.pathname;
     if (!result.requestOrigins.includes(requestUrl.origin)) result.requestOrigins.push(requestUrl.origin);
+    const origin = new URL(process.env.VIC_ACTIVITY_BASE_URL ?? "http://127.0.0.2:3100").origin;
+    if (request.resourceType() === "font" && requestUrl.origin !== origin && requestUrl.origin !== origin.replace("127.0.0.2", "127.0.0.1")) return fulfillReadOnlyFont(route, fonts, result.unexpected);
+    if (await abortUnknownFixtureOrigin(route, new Set([origin, origin.replace("127.0.0.2", "127.0.0.1")]), result.unexpected)) return;
     if (!["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) {
       if (pathname === "/api/soop-live") return route.fulfill({ json: { live: false } });
       // Preserve the browser alias for the client guard, but also work with
@@ -392,7 +398,7 @@ for (const surface of ["viewer", "studio"] as const) {
     await panel.getByRole("tab", { name: "기본", exact: true }).click();
     await panel.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "고양이", exact: true }).click();
     await panel.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name: "잠꾸러기", exact: true }).click();
-    for (const name of ["깔끔이", "사고뭉치", "탐험둥이", "둥글이"]) await panel.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name, exact: true }).click();
+    for (const name of ["깔끔이", "사고뭉치", "탐험둥이", "동글이"]) await panel.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name, exact: true }).click();
     const learning = panel.locator('[data-act="companion-learning-enabled"]');
     const learningBefore = await learning.isChecked();
     await learning.click(); await expect(learning).toBeChecked({ checked: !learningBefore });
@@ -408,7 +414,7 @@ for (const surface of ["viewer", "studio"] as const) {
     // one existing fixed use for each pointer/keyboard activation.
     await panel.getByRole("tab", { name: "기본", exact: true }).click();
     const personality = panel.getByRole("radiogroup", { name: "빅타민 성격", exact: true });
-    const balanced = personality.getByRole("radio", { name: "둥글이", exact: true });
+    const balanced = personality.getByRole("radio", { name: "동글이", exact: true });
     await balanced.click(); await balanced.focus(); await balanced.press("Enter");
     await balanced.press("Home"); await personality.getByRole("radio", { name: "재롱둥이", exact: true }).press("Home");
     await flush(page, [{ target: "companion-personality#balanced", n: 3 }, { target: "companion-personality#performer", n: 2 }]);
@@ -615,7 +621,7 @@ test("110 developer views show book and unified memory uses while old radio mood
   await usage.locator('[data-act="usage-show-all"]').click();
   await page.locator('[data-act="activity-expand-all"]').click();
   await timeline.locator(".act-lines > summary").click();
-  for (const target of [...new110Targets, ...new115Targets, ...new135Targets, ...new137Targets, ...new141Targets]) {
+  for (const target of [...new110Targets, ...new115Targets, ...new135Targets, ...new137Targets, ...new141Targets, ...new142Targets]) {
     const name = describeTarget("ui.click", target).name;
     const usageRow = usage.locator('.usage-list:not([data-retired]) > li').filter({ hasText: name }), timelineRow = timeline.getByText(name, { exact: true });
     await usageRow.scrollIntoViewIfNeeded(); await expect(usageRow).toBeInViewport();
@@ -654,6 +660,22 @@ for (const surface of ["viewer", "studio"] as const) test(`113 ${surface}: inspe
   expect(JSON.stringify(capture.get(page)!.events)).not.toContain(COMPANION_FOOD_KINDS[0]);
   await tile.press("Enter"); await flush(page, [{ target: "companion-collection-inspect#food", n: 2 }]);
   expect(count(page, "companion-collection-inspect#food")).toBe(2);
+});
+
+for (const surface of ["viewer", "studio"] as const) test(`142 ${surface}: shared personality shortcut pointer and keys capture once and retain the actual choice`, async ({ page }) => {
+  await setup(page, surface); const home = await openCompanionHome(page), shortcut = home.locator('[data-home-action="personality"]');
+  const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
+  for (const input of ["pointer", "Enter", "Space"]) {
+    if (input === "pointer") await shortcut.click(); else { await shortcut.focus(); await shortcut.press(input); }
+    await expect(dialog.getByRole("tab", { name: "환경설정", exact: true })).toHaveAttribute("aria-selected", "true");
+    await expect(dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).locator('[aria-checked="true"]')).toBeFocused();
+    await dialog.getByRole("button", { name: "닫기", exact: true }).click();
+  }
+  await expect.poll(() => count(page, "companion-personality-open"), { timeout: 20000 }).toBe(3);
+  const events = capture.get(page)!.events.filter(event => event.target === "companion-personality-open");
+  expect(events.every(event => event.meta === null && event.durMs === null)).toBe(true);
+  expect(count(page, "companion-personality#balanced")).toBe(0);
+  writeFileSync(`${auditPrefix}-142-${surface}-shortcut.json`, JSON.stringify({ events, nativeInputs: ["pointer", "Enter", "Space"], noChoiceChangedByOpening: true }, null, 2));
 });
 
 for (const surface of ["viewer", "studio"] as const) test(`141 ${surface}: TV lamp and curtain pointer-keyboard controls emit one fixed use per activation`, async ({ page }) => {

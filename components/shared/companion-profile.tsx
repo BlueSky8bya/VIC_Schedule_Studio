@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { BookOpen, Heart, HelpCircle, Settings2, Shirt } from "lucide-react";
+import { BookOpen, Heart, HelpCircle, Settings2, Shirt, Sparkles } from "lucide-react";
 import { onCollectionArrowKey } from "./companion-collection-navigation";
 import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { getCompanionLearnedEffectDirections } from "@/lib/ui/viewer-companion/behavior-profile";
@@ -91,10 +91,11 @@ function learnedEffects(preferences: CompanionPreferences, memory: CompanionMemo
   return effects;
 }
 
-export function CompanionProfile({ preferences, active, environment }: { preferences: CompanionPreferences; active: boolean; environment?: (active: boolean) => ReactNode }) {
-  const [page, setPage] = useState<ProfilePage>("together"), [care, setCare] = useState<CompanionMemory | null>(null), [collection, setCollection] = useState<CompanionCollection | null>(null);
-  const [visited, setVisited] = useState({ discover: false, dress: false, settings: false });
+export function CompanionProfile({ preferences, active, environment, initialPersonality = false }: { preferences: CompanionPreferences; active: boolean; environment?: (active: boolean, personalityRequest: number) => ReactNode; initialPersonality?: boolean }) {
+  const [page, setPage] = useState<ProfilePage>(initialPersonality ? "settings" : "together"), [care, setCare] = useState<CompanionMemory | null>(null), [collection, setCollection] = useState<CompanionCollection | null>(null);
+  const [visited, setVisited] = useState({ discover: false, dress: false, settings: initialPersonality });
   const [tastes, setTastes] = useState<CompanionTastes | null>(null);
+  const [personalityRequest, requestPersonality] = useState(initialPersonality ? 1 : 0);
   const id = useId(), nav = useRef<HTMLDivElement>(null), spotlight = useProfileSpotlight(active && preferences.enabled, page);
   useEffect(() => {
     if (!active) return;
@@ -126,6 +127,7 @@ export function CompanionProfile({ preferences, active, environment }: { prefere
   const personality = COMPANION_PERSONALITY_NAMES[preferences.personality];
   return <div className="rhh-companion-settings rhh-companion-profile rhh-profile-playful rhh-companion-experience" data-paged={active && (page === "discover" || page === "dress") || undefined} onKeyDownCapture={event => { if (active && (page === "discover" || page === "dress")) onCollectionArrowKey(event); }} {...spotlight}>
     <span className="sr-only" id={`${id}-unread`}>새로 발견한 항목</span>
+    {environment && <div className="rhh-personality-shortcut-row"><span>지금 성격 · <strong>{personality}</strong></span><button type="button" className="rhh-personality-shortcut" data-act="companion-personality-open" aria-label="성격 바꾸기" onClick={() => { changePage("settings"); requestPersonality(value => value + 1); }}><Sparkles size={16} aria-hidden="true" /><span>성격 바꾸기</span></button></div>}
     <div aria-label="빅타민 프로필" className="rhh-seg rhh-profile-nav" ref={nav} role="tablist" style={{ "--n": pages.length, "--i": pages.findIndex(item => item.key === page) } as CSSProperties}>
       <span aria-hidden="true" className="rhh-seg-thumb" />
       {pages.map(item => <button aria-describedby={pageUnread(item.key) ? `${id}-unread` : undefined} data-unread={pageUnread(item.key) || undefined} aria-controls={`${id}-${item.key}-panel`} aria-selected={page === item.key} className={page === item.key ? "on" : ""} data-act="companion-profile-page" data-act-opt={item.key} data-profile-page={item.key} id={`${id}-${item.key}-tab`} key={item.key} onClick={() => changePage(item.key)} onKeyDown={onTabKey} role="tab" tabIndex={page === item.key ? 0 : -1} type="button"><item.icon aria-hidden="true" size={17} />{item.label}{pageUnread(item.key) && <span aria-hidden="true" className="rhh-collection-unread" data-unread="">!</span>}</button>)}
@@ -147,6 +149,6 @@ export function CompanionProfile({ preferences, active, environment }: { prefere
     </div>
     <div aria-labelledby={`${id}-discover-tab`} hidden={page !== "discover"} id={`${id}-discover-panel`} role="tabpanel" tabIndex={0}>{visited.discover && <CompanionDiscovery active={active && page === "discover"} collection={collection} tastes={tastes} />}</div>
     <div aria-labelledby={`${id}-dress-tab`} hidden={page !== "dress"} id={`${id}-dress-panel`} role="tabpanel" tabIndex={0}>{visited.dress && <CompanionWardrobe active={active && page === "dress"} collection={collection} preferences={preferences} />}</div>
-    <div aria-labelledby={`${id}-settings-tab`} hidden={page !== "settings"} id={`${id}-settings-panel`} role="tabpanel" tabIndex={0}>{visited.settings && environment?.(active && page === "settings")}</div>
+    <div aria-labelledby={`${id}-settings-tab`} hidden={page !== "settings"} id={`${id}-settings-panel`} role="tabpanel" tabIndex={0}>{visited.settings && environment?.(active && page === "settings", personalityRequest)}</div>
   </div>;
 }

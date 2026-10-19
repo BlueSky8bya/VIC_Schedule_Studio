@@ -18,8 +18,9 @@ type Input = {
 /** Basic care may replace a nonmeal scene, but never a carried object, an
  * existing job, the entry greeting or the personality's own meal sequence. */
 export function getCompanionPersonalityMeal(director: ReturnType<typeof createCompanionPersonalityDirector>, proposal: PersonalitySceneProposal | undefined,
-  input: Pick<Input, "world" | "brain" | "preferences" | "now" | "carriedToy" | "carriedFood"> & { ownedJob?: boolean }): CompanionAction | undefined {
-  if (!input.world.animated || !input.preferences.roam || input.ownedJob || input.carriedToy || input.carriedFood || proposal?.meta.id.startsWith("entry-") || director.plansMeal()) return;
+  input: Pick<Input, "world" | "brain" | "preferences" | "now" | "carriedToy" | "carriedFood"> & { ownedJob?: boolean; authoredReserved?: boolean }): CompanionAction | undefined {
+  if (!input.world.animated || !input.preferences.roam || input.ownedJob || input.carriedToy || input.carriedFood || proposal?.meta.id.startsWith("entry-") || director.plansMeal()
+    || input.authoredReserved && input.brain.hunger < .78) return;
   return getFoodAction(input.brain, input.world, input.preferences, input.now);
 }
 
@@ -81,7 +82,7 @@ export function createCompanionPersonalityJobs(director: ReturnType<typeof creat
         // Comparison visits one different real food without rebinding the
         // selected meal. The following inspect/eat keeps the original ID.
         const mainId = proposal.meta.itemId ?? director.current()?.itemId;
-        const food = command.mode === "compare" ? mainId && world.foods?.some(item => item.id === mainId) ? world.foods.find(item => item.id !== mainId) : undefined
+        const food = command.mode === "compare" ? mainId && world.foods?.some(item => item.id === mainId) ? world.foods.find(item => item.id === proposal.meta.comparisonItemId) : undefined
           : mainId ? world.foods?.find(item => item.id === mainId) : world.foods?.[0];
         if (food && p.feeding) {
           if (command.mode !== "compare") director.bind(proposal.meta, food.id);

@@ -677,6 +677,7 @@ export const ACT: Record<string, TargetLabel> = {
   "companion-learning-reset": { name: "빅타민 배운 습관 초기화", area: "설정" },
   "companion-home-open": { name: "빅타민 집 열기", area: "빅타민" },
   "companion-book-open": { name: "빅타민 수첩 열기", area: "빅타민" },
+  "companion-personality-open": { name: "빅타민 성격 바로 열기", area: "빅타민" },
   "companion-book-close": { name: "빅타민 수첩 닫기", area: "빅타민" },
   "companion-home-close": { name: "빅타민 집 닫기", area: "빅타민" },
   "companion-home-fold": { name: "빅타민 집", area: "빅타민", opts: { open: "펴기", close: "접기" } },

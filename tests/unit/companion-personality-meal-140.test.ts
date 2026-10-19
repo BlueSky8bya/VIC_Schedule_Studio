@@ -14,11 +14,11 @@ function input(personality: CompanionPersonality = "tidy"): PersonalitySceneInpu
 }
 
 describe("140 real basic meals cannot be starved by personality fallback", () => {
-  it.each(COMPANION_PERSONALITIES)("%s yields its ready expression to a proved real meal at middle hunger, without mutating the object", personality => {
+  it.each(COMPANION_PERSONALITIES)("%s leaves an empty scene unowned so a proved middle-hunger meal proceeds without object mutation", personality => {
     const scene = input(personality), director = createCompanionPersonalityDirector([]);
     const entry = director.next(scene)!;
     expect(getCompanionPersonalityMeal(director, entry, scene)).toBeUndefined();
-    const ready = director.next(scene)!; expect(ready.meta.id).toBe(`ready-${personality}`);
+    const ready = director.next(scene); expect(ready).toBeUndefined();
     const before = JSON.stringify(scene), meal = getCompanionPersonalityMeal(director, ready, scene);
     expect(meal).toMatchObject({ kind: "walk", foodId: "actual-apple", target: { x: 300, y: 600, platformId: floor.id } });
     expect(JSON.stringify(scene)).toBe(before); expect(director.completed()).toEqual([]);

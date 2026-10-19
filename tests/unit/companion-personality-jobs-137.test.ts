@@ -141,6 +141,9 @@ describe("137 authored jobs use the physical owners", () => {
   ] as const)("140 %s completes its actual toy owner and return at middle hunger, without deleting or substituting its item", (scene, kind) => {
     const host = fixture(scene, 1, kind), id = host.originalIds[0];
     host.scene.brain.hunger = .5;
+    // This full S03 positive includes real rest; the142 high-energy case
+    // separately proves same-ID return without claiming the omitted sleep.
+    if (scene === "S03") host.scene.brain.energy = .4;
     host.scene.world.pointer = { x: 440, y: floor.y, stableMs: 1000 };
     host.run();
     expect(host.trace.some(event => event.kind === "toy:pick" && event.id === id)).toBe(true);
@@ -213,7 +216,7 @@ describe("137 authored jobs use the physical owners", () => {
 
   it("G04 compares another real food then inspects its selected new meal without losing or rebinding the main ID", () => {
     const host = fixture("G04", 0), known: CompanionFood = { id: "known-apple", kind: "apple", x: 160, y: floor.y, platformId: outside.id };
-    const fresh: CompanionFood = { id: "new-same-family-lemon", kind: "lemon", x: 350, y: floor.y, platformId: outside.id };
+    const fresh: CompanionFood = { id: "new-same-family-lemon", kind: "lemon", x: 290, y: floor.y, platformId: outside.id };
     host.scene.preferences.learnFromYou = true; host.scene.brain.hunger = .5; host.scene.brain.life!.tastedFoods = ["apple"];
     host.scene.world = { ...host.scene.world, platformId: outside.id, foods: [known, fresh] };
     const observed: { x: number; id?: string; beat: number }[] = [];

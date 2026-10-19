@@ -7,6 +7,7 @@ import type { Weather } from "@/components/shared/ambient/world/weather";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome } from "./helpers/companion-home";
+import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 
 const out = process.env.COMPANION_WINDOW_UI_OUTPUT ?? ".scratch-pw/companion-123/window";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
@@ -24,10 +25,10 @@ test.beforeEach(async ({ page, baseURL }) => {
   expect(["127.0.0.1", "127.0.0.2", "localhost", "[::1]"]).toContain(origin.hostname);
   const proof = { writes: [] as string[], foreign: [] as string[], errors: [] as string[] }; proofs.set(page, proof);
   page.on("pageerror", error => proof.errors.push(error.message));
-  await page.context().route("**/*", route => {
+  await page.context().route("**/*", async route => {
     const request = route.request(), url = new URL(request.url());
     if (url.origin !== origin.origin) {
-      if (request.method() === "GET" && request.resourceType() === "font" && fonts.has(url.href)) return route.continue();
+      if (request.resourceType() === "font") return fulfillReadOnlyFont(route, fonts, proof.foreign);
       proof.foreign.push(request.method() + " " + url.origin + url.pathname);
       return route.abort();
     }

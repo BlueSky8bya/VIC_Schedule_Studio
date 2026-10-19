@@ -10,6 +10,15 @@ const TOGGLES = [
   "companion-drag-enabled", "companion-petting-enabled", "companion-feeding-enabled", "companion-learning-enabled",
   "companion-sound-enabled", "companion-sound-care", "companion-sound-motion", "companion-sound-keepsakes", "companion-radio-enabled", "companion-radio-react"
 ] as const;
+
+describe("142 direct personality navigation activity", () => {
+  it("uses one public fixed target without the current or selected personality in metadata", () => {
+    expect(ACT["companion-personality-open"]).toEqual({ name: "빅타민 성격 바로 열기", area: "빅타민" });
+    expect(sanitizeTarget("companion-personality-open")).toBe("companion-personality-open");
+    expect(sanitizeMeta({ personality: "balanced", learned: "private-canary" })).toBeNull();
+    expect(describeTarget("ui.click", "companion-personality-open")).toMatchObject({ name: "빅타민 성격 바로 열기", area: "빅타민" });
+  });
+});
 const SETTINGS = [
   "settings-companion-tab", ...TOGGLES, "companion-speed", "companion-animal", "companion-personality", "companion-learning-reset"
 ] as const;

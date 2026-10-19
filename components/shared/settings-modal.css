@@ -1700,6 +1700,11 @@ html[data-theme="dark"] .vic-settings .rhh-companion-settings .role-help-haptics
 .rhh-companion-settings .rhh-profile-controls { margin-top: 0; }
 .vic-settings .rhh-companion-settings .rhh-companion-choice-row { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; gap: var(--space-2); }
 .vic-settings .rhh-companion-settings .rhh-companion-choice-row > .rhh-seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; width: 100%; }
+.rhh-personality-section { scroll-margin-block-start: var(--space-2); }
+.rhh-personality-shortcut-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); margin-bottom: var(--space-2); color: var(--muted); font-size: var(--text-body); }
+.rhh-personality-shortcut-row strong { color: var(--ink); }
+.rhh-personality-shortcut { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1); min-height: var(--companion-hit-size, 44px); padding: var(--space-1) var(--space-2); flex: none; border: var(--stroke-hairline) solid var(--panel-card-line); border-radius: var(--r-sm); background: var(--panel-card-bg); color: var(--ink); font: inherit; cursor: pointer; }
+.rhh-personality-shortcut:hover { background: color-mix(in srgb, var(--panel-card-bg) 85%, var(--accent)); }
 .vic-settings .rhh-companion-settings .rhh-link {
   justify-content: center;
   gap: 6px;

@@ -375,7 +375,13 @@ describe("137 one personality scene director", () => {
     const recipes = [...predecessors.map(id => COMPANION_PERSONALITY_SCENES.find(item => item.id === id)!), recipe];
     const director = createCompanionPersonalityDirector(recipes), scene = matrixInput(recipe);
     const entry = director.next(scene)!; expect(entry.meta.id).toBe(`entry-${recipe.personality}`); director.complete(entry.meta);
+    scene.now += entry.action!.duration;
+    // This positive protocol host starts after a real modeled preparation
+    // displacement. Separate142 regressions keep the stationary entry path
+    // and prove that pose/beat completion cannot refresh physical progress.
+    scene.world.x += 24;
     for (const id of predecessors) runRecipe(director, scene, COMPANION_PERSONALITY_SCENES.find(item => item.id === id)!);
+    if (predecessors.length) scene.world.x += 24;
     const before = new Set(director.completed());
     const effects = runRecipe(director, scene, recipe);
     expect(before.has(recipe.id)).toBe(false);

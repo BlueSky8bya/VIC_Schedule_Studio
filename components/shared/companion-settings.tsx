@@ -1,9 +1,10 @@
 "use client";
 
 import { ArrowDownToLine, EyeOff, Gauge, Grab, Heart, Leaf, PanelTopOpen, PartyPopper, Pointer, Sparkles, Volume1, Volume2, VolumeX } from "lucide-react";
-import { useId, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { RowLabel, SettingsSegment, Switch } from "@/components/shared/settings-controls";
-import { COMPANION_PERSONALITIES, COMPANION_PERSONALITY_NAMES, COMPANION_PERSONALITY_SUMMARIES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
+import { COMPANION_PERSONALITY_NAMES, COMPANION_PERSONALITY_SUMMARIES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
+import { COMPANION_PERSONALITY_LAYOUT } from "@/lib/ui/viewer-companion/personality-layout";
 import { CompanionWardrobePreview } from "./companion-wardrobe-preview";
 import { COMPANION_SOUND_CATEGORY_NAMES, previewCompanionSound } from "@/lib/ui/viewer-companion/companion-sound";
 import { resetCompanionHabits } from "@/lib/ui/viewer-companion/care";
@@ -29,11 +30,23 @@ const companionToggleActions: Record<CompanionToggle, string> = {
 };
 
 /** Shared setting controls stay editable while OFF, so a quiet preset can be prepared first. */
-export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn, active, radio }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; globalSoundOn: boolean; active: boolean; radio: ReactNode }) {
+export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn, active, radio, personalityRequest = 0 }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; globalSoundOn: boolean; active: boolean; radio: ReactNode; personalityRequest?: number }) {
   const [tab, setTab] = useState<CompanionTab>("personality");
   const id = useId();
   const personalityPreview = { performer: "cheer-rehearsal", curious: preferences.jump ? "pounce" : "bow", affectionate: preferences.petting ? "ask-petting" : "bow", sleepy: preferences.sleep ? "doze-curl" : "stretch", tidy: "groom", mischievous: preferences.jump ? "tumble" : "bow", gourmet: "bow", homebody: "paper-knead", balanced: "bow" }[preferences.personality];
   const nav = useRef<HTMLDivElement>(null);
+  const personalitySection = useRef<HTMLDivElement>(null), focusedRequest = useRef(0);
+  useLayoutEffect(() => {
+    if (!active || personalityRequest <= 0 || focusedRequest.current === personalityRequest) return;
+    if (tab !== "personality") { setTab("personality"); return; }
+    const section = personalitySection.current, selected = section?.querySelector<HTMLButtonElement>('[role="radio"][aria-checked="true"]');
+    if (!section || !selected) return;
+    focusedRequest.current = personalityRequest;
+    // An explicit shortcut exposes the existing three-by-three controls. It
+    // does not synthesize another click, persist a choice or start a timer.
+    section.scrollIntoView({ block: "start", behavior: "instant" });
+    selected.focus({ preventScroll: true });
+  }, [active, personalityRequest, tab]);
   const row = (key: CompanionToggle, label: string, icon: ReactNode) => (
     <div className="role-help-haptics" key={key}>
       <RowLabel icon={icon} tone="leaf">{label}</RowLabel>
@@ -106,13 +119,13 @@ export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn
           <RowLabel icon={<Sparkles size={15} />} tone="leaf">동물 모드</RowLabel>
           <SettingsSegment ariaLabel="빅타민 동물 모드" columns={3} dataAct="companion-animal" onChange={animalMode => onChange({ animalMode })} options={[{ value: "default", label: "빅타민" }, { value: "cat", label: "고양이" }, { value: "dog", label: "강아지" }]} value={preferences.animalMode} />
         </div>
-        <div className="role-help-haptics rhh-stack-sm rhh-companion-choice-row">
+        <div className="role-help-haptics rhh-stack-sm rhh-companion-choice-row rhh-personality-section" ref={personalitySection}>
           <RowLabel icon={<Sparkles size={15} />} tone="leaf">지금 성격</RowLabel>
           <div className="rhh-personality-preview" data-personality-preview={preferences.personality}>
             <CompanionWardrobePreview key={preferences.personality} accessory={null} behaviors={[personalityPreview]} enabled={active && tab === "personality" && preferences.enabled} interactive={false} />
             <div><strong>{COMPANION_PERSONALITY_NAMES[preferences.personality]}</strong><p>{COMPANION_PERSONALITY_SUMMARIES[preferences.personality]}</p></div>
           </div>
-          <SettingsSegment ariaLabel="빅타민 성격" columns={3} dataAct="companion-personality" onChange={personality => onChange({ personality })} onReselect={personality => onChange({ personality })} options={COMPANION_PERSONALITIES.map(value => ({ value, label: COMPANION_PERSONALITY_NAMES[value] }))} value={preferences.personality} />
+          <SettingsSegment ariaLabel="빅타민 성격" columns={3} dataAct="companion-personality" onChange={personality => onChange({ personality })} onReselect={personality => onChange({ personality })} options={COMPANION_PERSONALITY_LAYOUT.map(value => ({ value, label: COMPANION_PERSONALITY_NAMES[value] }))} value={preferences.personality} />
           <p className="rhh-group-foot">직접 고른 성격은 새로고침 후에도 유지돼요. 고르지 않았다면 새로고침마다 무작위로 정해져요.</p>
         </div>
         {row("learnFromYou", "함께 지내며 배우기", <Heart size={15} />)}

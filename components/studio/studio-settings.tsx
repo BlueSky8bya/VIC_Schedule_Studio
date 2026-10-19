@@ -43,6 +43,8 @@ type SeasonOpt = "real" | SeasonKey;
 export type StudioSettingsProps = {
   /** Same controls, opened directly from the house book. */
   companionBook?: boolean;
+  /** Open the existing book directly at its shared personality controls. */
+  companionPersonality?: boolean;
   canManageTimelines?: boolean;
   hapticsSupported: boolean;
   hapticsOn: boolean;
@@ -196,12 +198,13 @@ function CompanionRadioSettings({ companionAudible, globalSoundOn }: { companion
 
 /** One shared companion experience; controls load only on its environment page. */
 const CompanionBehaviorSettings = dynamic(() => import("@/components/shared/companion-settings").then(module => module.CompanionBehaviorSettings), { loading: () => <span aria-live="polite" className="rhh-companion-loading" role="status">불러오는 중</span> });
-function CompanionSettings({ preferences, onChange, globalSoundOn, globalSoundVolume, active }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; globalSoundOn: boolean; globalSoundVolume: number; active: boolean }) {
-  return <CompanionProfile active={active} preferences={preferences} environment={settingsActive => <CompanionBehaviorSettings active={settingsActive} preferences={preferences} onChange={onChange} globalSoundOn={globalSoundOn} radio={<CompanionRadioSettings companionAudible={preferences.enabled && preferences.sound && preferences.soundVolume > 0} globalSoundOn={globalSoundOn && globalSoundVolume > 0} />} />} />;
+function CompanionSettings({ preferences, onChange, globalSoundOn, globalSoundVolume, active, initialPersonality = false }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; globalSoundOn: boolean; globalSoundVolume: number; active: boolean; initialPersonality?: boolean }) {
+  return <CompanionProfile active={active} preferences={preferences} initialPersonality={initialPersonality} environment={(settingsActive, personalityRequest) => <CompanionBehaviorSettings active={settingsActive} personalityRequest={personalityRequest} preferences={preferences} onChange={onChange} globalSoundOn={globalSoundOn} radio={<CompanionRadioSettings companionAudible={preferences.enabled && preferences.sound && preferences.soundVolume > 0} globalSoundOn={globalSoundOn && globalSoundVolume > 0} />} />} />;
 }
 
 export function StudioSettingsList({
   companionBook = false,
+  companionPersonality = false,
   canManageTimelines = false,
   hapticsSupported,
   hapticsOn,
@@ -355,7 +358,7 @@ export function StudioSettingsList({
     logActivity("ui.click", { target: `settings-tab#${next.key}` });
     nav?.querySelector<HTMLButtonElement>(`[data-tab="${next.key}"]`)?.focus();
   };
-  if (companionBook && companionAvailable) return <div className="rhh-tabs rhh-companion-book-pages"><CompanionSettings preferences={companionPrefs} onChange={onCompanionChange} globalSoundOn={sound.on} globalSoundVolume={sound.vol} active /></div>;
+  if (companionBook && companionAvailable) return <div className="rhh-tabs rhh-companion-book-pages"><CompanionSettings preferences={companionPrefs} onChange={onCompanionChange} globalSoundOn={sound.on} globalSoundVolume={sound.vol} initialPersonality={companionPersonality} active /></div>;
   return (
     <div className="rhh-tabs">
       <div className="rhh-tabs-grid">

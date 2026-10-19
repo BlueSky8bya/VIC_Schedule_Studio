@@ -2,23 +2,24 @@
 
 /* eslint-disable @next/next/no-img-element -- Local game art already has bounded WebP derivatives; no second image pipeline. */
 
-import { X } from "lucide-react";
+import { Sparkles, X } from "lucide-react";
 import { useId, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import { flipSpring } from "@/lib/ui/flip-motion";
 import { PanelSection } from "@/components/shared/panel-section";
 import type { CompanionCare } from "@/lib/ui/viewer-companion/care";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
+import { COMPANION_PERSONALITY_NAMES } from "@/lib/ui/viewer-companion/preferences";
 import type { CompanionHomeEnvironment } from "@/lib/ui/viewer-companion/home-environment";
 import { resolveCompanionWindowScene } from "@/lib/ui/viewer-companion/home-window-scene";
 import { INITIAL_COMPANION_HOME_CURTAIN, type CompanionHomeCurtain } from "@/lib/ui/viewer-companion/home-curtain";
 import { HomeWindow } from "./companion-home-window";
 import { companionHomeTvControl, getCompanionHomeTv, getServerCompanionHomeTv, setCompanionHomeTv, subscribeCompanionHomeTv } from "@/lib/ui/viewer-companion/home-room-media";
 import { getCompanionHomeLight, getServerCompanionHomeLight, initializeCompanionHomeLight, setCompanionHomeLight, subscribeCompanionHomeLight } from "@/lib/ui/viewer-companion/home-light";
-import { COMPANION_TV_ART_VIEWBOX, COMPANION_TV_SCREEN_TRANSFORM } from "@/lib/ui/viewer-companion/home-tv-art";
+import { COMPANION_TV_ART_VIEWBOX, COMPANION_TV_SCREEN_CLIP, COMPANION_TV_SCREEN_TRANSFORM } from "@/lib/ui/viewer-companion/home-tv-art";
 import { companionCurtainControl, setCompanionCurtainChoice } from "@/lib/ui/viewer-companion/home-curtain-control";
 
 export type CompanionHomeAction = "home" | "feed" | "clearFood" | "radio" | "book";
-type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?: boolean; owner?: string; radioPlaying?: boolean; unreadCollection?: boolean; onAction: (action: CompanionHomeAction) => void; onClose?: () => void; onToyBox?: () => void; toyCount?: number; environment?: CompanionHomeEnvironment; curtain?: CompanionHomeCurtain };
+type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?: boolean; owner?: string; radioPlaying?: boolean; unreadCollection?: boolean; onAction: (action: CompanionHomeAction) => void; onPersonality?: () => void; onClose?: () => void; onToyBox?: () => void; toyCount?: number; environment?: CompanionHomeEnvironment; curtain?: CompanionHomeCurtain };
 
 function HomeObjectArt({ kind, className = "" }: { kind: "radio" | "book" | "dispenser" | "trash" | "toy-box"; className?: string }) {
   const [width, height] = { radio: [256, 164], book: [244, 256], dispenser: [256, 256], trash: [256, 229], "toy-box": [256, 134] }[kind];
@@ -61,7 +62,7 @@ export function CompanionBedForeground({ idPrefix = "companion-front" }: { idPre
 
 /** One small room, shared by the desktop rail and compact portal. The cushion
  * is a real landing anchor; food and care stay in the existing single runtime. */
-export function CompanionHome({ care, preferences, inactive, owner, radioPlaying = false, unreadCollection = false, onAction, onClose, onToyBox, toyCount = 0, environment, curtain = INITIAL_COMPANION_HOME_CURTAIN }: Props) {
+export function CompanionHome({ care, preferences, inactive, owner, radioPlaying = false, unreadCollection = false, onAction, onPersonality, onClose, onToyBox, toyCount = 0, environment, curtain = INITIAL_COMPANION_HOME_CURTAIN }: Props) {
   const room = useRef<HTMLElement>(null);
   const bedId = useId().replace(/:/g, "");
   const tv = useSyncExternalStore(subscribeCompanionHomeTv, getCompanionHomeTv, getServerCompanionHomeTv);
@@ -72,7 +73,7 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
   // Its host already owns the panel FLIP. A tiny entry never resizes the room,
   // repeats on care changes, or creates an autonomous animation loop.
   useLayoutEffect(() => { if (room.current) flipSpring(room.current, "translateY(3px)"); }, []);
-  return <PanelSection inert={inactive ? true : undefined} aria-hidden={inactive ? true : undefined} ref={room} title="빅타민 집" sectionKey="companion-home" headingAction="companion-home-fold" collapsible={!onClose} headingData={{ "data-home-action": "fold" }} actions={onClose ? <button type="button" data-home-action="close" data-act="companion-home-close" data-tip="닫기" className="vc-home-close" onClick={onClose} aria-label="빅타민 집 닫기"><X size={15} strokeWidth={1.7} /></button> : undefined} className="vc-home" aria-label="빅타민 집" data-home-presentation={onClose ? "compact" : "panel"} data-size={preferences.size} data-sfx="off" data-pm-exit="5" data-companion-home-owner={owner}>
+  return <PanelSection inert={inactive ? true : undefined} aria-hidden={inactive ? true : undefined} ref={room} title="빅타민 집" sectionKey="companion-home" headingAction="companion-home-fold" collapsible={!onClose} headingData={{ "data-home-action": "fold" }} actions={<>{onPersonality && <button type="button" className="vc-home-personality" data-home-action="personality" data-act="companion-personality-open" data-tip={`성격 바꾸기 · ${COMPANION_PERSONALITY_NAMES[preferences.personality]}`} aria-label={`성격 바꾸기 · ${COMPANION_PERSONALITY_NAMES[preferences.personality]}`} onClick={onPersonality}><Sparkles size={15} aria-hidden="true" /><span>{COMPANION_PERSONALITY_NAMES[preferences.personality]}</span></button>}{onClose && <button type="button" data-home-action="close" data-act="companion-home-close" data-tip="닫기" className="vc-home-close" onClick={onClose} aria-label="빅타민 집 닫기"><X size={15} strokeWidth={1.7} /></button>}</>} className="vc-home" aria-label="빅타민 집" data-home-presentation={onClose ? "compact" : "panel"} data-size={preferences.size} data-sfx="off" data-pm-exit="5" data-companion-home-owner={owner}>
     <div className="vc-home-room" data-season={environment?.season} data-weather={environment?.weather} data-band={environment?.band} data-phase={resolveCompanionWindowScene(environment).phase} data-night={environment?.night || undefined} data-lamp-lit={lampLit || undefined} data-tv={tv}>
       <HomeWindow environment={environment} curtain={curtain} inactive={inactive} />
       <button type="button" className="vc-curtain-control" data-home-decoration-control="" data-home-action="curtain" data-act="companion-home-curtain" data-act-opt={curtainControl.next} aria-label={curtainControl.label} data-tip={curtainControl.label} onClick={() => setCompanionCurtainChoice(curtainControl.next)}><span aria-hidden="true" /></button>
@@ -99,7 +100,7 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
       <button type="button" className="vc-home-lamp" data-home-decoration-control="" data-home-action="light" data-act="companion-home-light" data-act-opt={lampLit ? "off" : "on"} data-tip={lampLit ? "전등 켜짐 · 누르면 끄기" : "전등 꺼짐 · 누르면 켜기"} aria-label={lampLit ? "전등 켜짐 · 누르면 끄기" : "전등 꺼짐 · 누르면 켜기"} aria-pressed={lampLit} onClick={() => setCompanionHomeLight(!getCompanionHomeLight())}>
         <span className="vc-home-lamp-paint" aria-hidden="true">
           <img src="/companion/home/135/lamp-body.webp" width="200" height="210" alt="" draggable={false} decoding="async" />
-          <svg className="vc-home-lamp-cord" viewBox="0 0 44 58" preserveAspectRatio="none" focusable="false"><path d="M27 0V53" fill="none" stroke="#926039" strokeWidth="1.1" /><circle cx="27" cy="54" r="2.2" fill="#dbab63" stroke="#926039" strokeWidth=".8" /></svg>
+          <svg className="vc-home-lamp-cord" viewBox="0 0 44 58" preserveAspectRatio="none" focusable="false"><path d="M22 0V53" fill="none" stroke="#926039" strokeWidth="1.1" /><circle cx="22" cy="54" r="2.2" fill="#dbab63" stroke="#926039" strokeWidth=".8" /></svg>
           <span className="vc-home-lamp-bulb" />
         </span>
       </button>
@@ -137,7 +138,7 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
       <button type="button" className="vc-home-tv" data-home-decoration-control="" data-home-action="tv" data-act="companion-home-tv" data-act-opt={television.option} data-tip={television.label} aria-label={television.label} aria-pressed={tv !== "off"} onClick={() => setCompanionHomeTv(companionHomeTvControl(getCompanionHomeTv()).next, { source: "human" })}>
         <span className="vc-home-tv-paint" aria-hidden="true">
           <img className="vc-home-tv-body" src="/companion/home/136/tv-body.webp" width="512" height="512" alt="" draggable={false} decoding="async" />
-          {tv !== "off" && <svg className="vc-home-tv-projection" viewBox={COMPANION_TV_ART_VIEWBOX} focusable="false"><foreignObject x="0" y="0" width="512" height="512"><div className="vc-home-tv-screen" style={{ transform: COMPANION_TV_SCREEN_TRANSFORM }}><img src={`/companion/home/135/tv-screen-${tv}.webp`} width="244" height="202" alt="" draggable={false} decoding="async" /></div></foreignObject></svg>}
+          {tv !== "off" && <svg className="vc-home-tv-projection" viewBox={COMPANION_TV_ART_VIEWBOX} focusable="false"><defs><clipPath id={`${bedId}-tv-screen`}><path d={COMPANION_TV_SCREEN_CLIP} /></clipPath></defs><g clipPath={`url(#${bedId}-tv-screen)`}><foreignObject x="0" y="0" width="512" height="512"><div className="vc-home-tv-screen" style={{ transform: COMPANION_TV_SCREEN_TRANSFORM }}><img src={`/companion/home/135/tv-screen-${tv}.webp`} width="244" height="202" alt="" draggable={false} decoding="async" /></div></foreignObject></g></svg>}
         </span>
       </button>
       {preferences.feeding ? <>

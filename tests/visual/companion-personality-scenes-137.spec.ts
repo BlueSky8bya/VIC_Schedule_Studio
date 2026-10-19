@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { COMPANION_PERSONALITIES, COMPANION_PERSONALITY_NAMES, DEFAULT_COMPANION_PREFERENCES, type CompanionPersonality, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
+import { COMPANION_PERSONALITIES, COMPANION_PERSONALITY_NAMES, COMPANION_PREFERENCES_EVENT, DEFAULT_COMPANION_PREFERENCES, type CompanionPersonality, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { companionPlayDuration, COMPANION_PLAY_TIMING } from "@/lib/ui/viewer-companion/timing";
 import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
@@ -12,11 +12,14 @@ import type { CompanionToyKind } from "@/lib/ui/viewer-companion/toy-catalog";
 import { COMPANION_RADIO_TRACKS } from "@/lib/ui/viewer-companion/radio-catalog";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
+import { fulfillReadOnlyFont } from "./helpers/readonly-font";
+import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
+import { completedNativeTravel, nativeTravelPointsBefore, type NativeTravelFrame, type NativeSupportSurface } from "./helpers/companion-native-travel";
 
 const output = process.env.COMPANION137_OUTPUT ?? ".scratch-pw/companion-137/native";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
 type Surface = "viewer" | "studio" | "preview";
-type Frame = {
+type Frame = NativeTravelFrame & {
   at: number; state: string; signature: string; scene: string; beat: string; command: string; play: string; pose: number;
   x: number; y: number; platform: string; visible: boolean; decoded: boolean; tv: string; lit: boolean; curtain: string; curiosity: string;
   toys: { id: string; carried: boolean; held: boolean; x: number; y: number }[]; foods: string[];
@@ -35,9 +38,9 @@ test.beforeEach(async ({ page, context, baseURL }) => {
   const actions = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
   const previewIds = new Set(Object.entries(actions).filter(([, entry]) => entry.exportedName === "getPublicPreviewAction").map(([id]) => id));
   page.on("pageerror", error => proof.errors.push(error.message));
-  await context.route("**/*", route => {
+  await context.route("**/*", async route => {
     const request = route.request(), url = new URL(request.url());
-    if (request.method() === "GET" && request.resourceType() === "font" && fonts.has(url.href)) return route.continue();
+    if (request.resourceType() === "font" && url.origin !== origin) return fulfillReadOnlyFont(route, fonts, proof.rejected);
     if (url.origin === origin && request.method() === "POST" && url.pathname === "/visual-fixture/studio" && previewIds.has(request.headers()["next-action"])) {
       proof.previewReads++;
       // Fulfill this one known public read from a synthetic public DTO. No
@@ -60,11 +63,11 @@ test.afterEach(async ({ page }, info) => {
   expect(proofs.get(page)!.errors).toEqual([]); expect(proofs.get(page)!.rejected).toEqual([]);
 });
 
-async function fixture(page: Page, surface: Surface, options: { personality?: CompanionPersonality; animalMode?: CompanionPreferences["animalMode"]; summer?: boolean; roam?: boolean; reduced?: boolean; gfxOff?: boolean; hunger?: number; sound?: boolean } = {}) {
+async function fixture(page: Page, surface: Surface, options: { personality?: CompanionPersonality; animalMode?: CompanionPreferences["animalMode"]; summer?: boolean; roam?: boolean; reduced?: boolean; gfxOff?: boolean; hunger?: number; sound?: boolean; energy?: number; sleep?: boolean } = {}) {
   await page.addInitScript(({ preferences, memory, epoch, epochKey, options }) => {
     for (const [key, value] of Object.entries({ [epochKey]: epoch, "vic.gfxPref": options.gfxOff ? "off" : "max", "vic.gfx": JSON.stringify({ mode: options.gfxOff ? "off" : "full", at: Date.now(), v: 3 }), "vic.sound": options.sound ? "on" : "off", "vic.soundVol": "45", "vic.ambient": "off", "vic.reduceMotion": options.reduced ? "on" : "off", "vic.dark": "off", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(key, value);
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, activeWhileVisible: true, personality: options.personality ?? "balanced", animalMode: options.animalMode ?? preferences.animalMode, roam: options.personality ? false : options.roam ?? true, sleep: false, feeding: true, sound: options.sound ?? false, learnFromYou: false, heartPrank: false, cardPrank: false, panelPrank: false, rarePrank: false }));
-    localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...memory, energy: .9, hunger: options.hunger ?? .05 }));
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, activeWhileVisible: true, personality: options.personality ?? "balanced", animalMode: options.animalMode ?? preferences.animalMode, roam: options.personality ? false : options.roam ?? true, sleep: options.sleep ?? false, feeding: true, sound: options.sound ?? false, learnFromYou: false, heartPrank: false, cardPrank: false, panelPrank: false, rarePrank: false }));
+    localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...memory, energy: options.energy ?? .9, hunger: options.hunger ?? .05 }));
   }, { preferences: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, options });
   await page.goto(surface === "viewer" ? "/visual-fixture/poster?avatar=1" : `/visual-fixture/studio?role=owner&y=2025&m=${options.summer ? 7 : 10}&hour=${options.summer ? 12 : 21}&weather=clear`);
   await page.bringToFront(); await settlePanelLayout(page);
@@ -76,7 +79,7 @@ async function fixture(page: Page, surface: Surface, options: { personality?: Co
   return openCompanionHome(page);
 }
 
-async function selectNative(page: Page, personality: CompanionPersonality, roam?: boolean) {
+async function selectNative(page: Page, personality: CompanionPersonality, roam?: boolean, sleep?: boolean) {
   const home = await openCompanionHome(page);
   const book = home.getByRole("button", { name: "빅타민 수첩 열기", exact: true });
   await expect(book).toBeVisible(); await book.click();
@@ -87,9 +90,10 @@ async function selectNative(page: Page, personality: CompanionPersonality, roam?
   const option = group.getByRole("radio", { name: COMPANION_PERSONALITY_NAMES[personality], exact: true });
   if (await option.getAttribute("aria-checked") === "true") await group.locator('[role="radio"][aria-checked="false"]').first().click();
   await option.click(); await expect(option).toHaveAttribute("aria-checked", "true");
-  if (roam !== undefined) {
+  if (roam !== undefined || sleep !== undefined) {
     await dialog.getByRole("tab", { name: "움직임", exact: true }).click();
-    await dialog.locator('[data-act="companion-roam"]').setChecked(roam);
+    if (roam !== undefined) await dialog.locator('[data-act="companion-roam"]').setChecked(roam);
+    if (sleep !== undefined) await dialog.locator('[data-act="companion-sleep"]').setChecked(sleep);
   }
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden();
   await page.mouse.move(2, 2); await startProbe(page);
@@ -97,20 +101,88 @@ async function selectNative(page: Page, personality: CompanionPersonality, roam?
 }
 
 async function startProbe(page: Page) {
-  await page.evaluate(() => {
+  await page.evaluate(({ preferenceEvent, floorInset }) => {
     (window as ProbeWindow).personality137?.stop();
-    let request = 0, last = -Infinity, stopped = false; const began = performance.now(), samples: Frame[] = [];
+    let request = 0, last = -Infinity, stopped = false, epoch = 0, lastTrusted = -Infinity;
+    let runId = 0, motionKind = "", resting = 0, source: HTMLElement | null = null, viewportSource = false;
+    let preferences = { enabled:false,roam:false,jump:false };
+    try { const saved = JSON.parse(localStorage.getItem("vic.viewerCompanion") ?? "{}"); preferences = { enabled:saved.enabled === true,roam:saved.roam === true,jump:saved.jump === true }; } catch { /* Unavailable preferences cannot prove autonomous travel. */ }
+    const preference = (event: Event) => { const value = (event as CustomEvent<CompanionPreferences>).detail; preferences = {enabled:value.enabled === true,roam:value.roam === true,jump:value.jump === true}; };
+    const changed = () => { epoch++; };
+    const input = (event: Event) => { if (event.isTrusted) { epoch++; lastTrusted = performance.now(); } };
+    window.addEventListener("scroll",changed,true); window.addEventListener("resize",changed);
+    document.addEventListener("keydown",input,true); document.addEventListener("pointerdown",input,true); window.addEventListener(preferenceEvent,preference);
+    const began = performance.now(), samples: Frame[] = [];
+    const edgeNodes = (x: number,y: number) => [...new Set(document.elementsFromPoint(x,Math.min(innerHeight-1,y+4)).flatMap(element => {
+      if (element.closest(".vc-companion,.vc-toy,.vc-food")) return [];
+      const node = element.closest<HTMLElement>(".public-event,.agenda-event,.agenda-item,[data-companion-event='ordinary'],.public-day,.agenda-day,.studio-day,.support-bar,.weekday-row,.public-calendar-header,.studio-weekdays");
+      return node ? [node] : [];
+    }))];
+    const supportAt = (x:number,y:number,platform:string): {support:NativeSupportSurface|null;inkRects:NativeSupportSurface["rect"][]} => {
+      const surfaces:NativeSupportSurface[]=[],inkRects:NativeSupportSurface["rect"][]=[];
+      const add=(kind:NativeSupportSurface["kind"],rect:DOMRect|undefined,footY:number,node?:Element|null,registered=false)=>{
+        if(!rect || !node?.isConnected || !node.checkVisibility({checkOpacity:true,checkVisibilityCSS:true}) || !rect.width || !rect.height) return;
+        surfaces.push({kind,rect:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},footY,visible:true,...(kind === "ink" ? {registered} : {})});
+      };
+      if(/^companion-home-floor(?:-\d+)?$/.test(platform)){
+        const node=document.querySelector<HTMLElement>(platform === "companion-home-floor-400" ? ".vc-home-wash-pad" : ".vc-home-floor"),rect=node?.getBoundingClientRect();
+        add("home",rect,rect ? platform === "companion-home-floor-400" ? rect.top+rect.height*.72 : rect.bottom-floorInset : NaN,node);
+      }else if(platform === "companion-home"){
+        const node=document.querySelector<HTMLElement>(".vc-home-cushion"),rect=node?.getBoundingClientRect();add("home",rect,rect?.top ?? NaN,node);
+      }else if(/^viewport-floor(?:-\d+)?$/.test(platform)) surfaces.push({kind:"viewport",rect:{x:0,y:innerHeight-18,width:innerWidth,height:18},footY:innerHeight-18,visible:true});
+      else {
+        const hits=document.elementsFromPoint(x,Math.min(innerHeight-1,y+4)),inks=new Set<HTMLElement>(),days=new Set<HTMLElement>();
+        const dateInk=".day-strip > strong,.agenda-when > strong,.studio-day-head > strong";
+        const publicInk=".public-event .event-main p,.public-event .event-subs li,.agenda-event .agenda-title-text,.agenda-event .agenda-subs li,.agenda-item .agenda-title-text,.agenda-item .agenda-title,.agenda-item .agenda-subs li,[data-companion-event='ordinary'] .pill-main strong,[data-companion-event='ordinary'] .pill-subs li,[data-companion-event='ordinary'] .pill-sub-last .pill-sub-text,[data-companion-event='ordinary'] .agenda-title-text,[data-companion-event='ordinary'] .agenda-subs li";
+        for(const element of hits){
+          if(element.closest(".vc-companion,.vc-toy,.vc-food")) continue;
+          const ink=element.closest<HTMLElement>("strong,p,li,.agenda-title-text,.agenda-title,.pill-sub-text"),day=element.closest<HTMLElement>(".public-day,.agenda-day,.studio-day");
+          if(ink && day && ink.matches(dateInk+","+publicInk)) inks.add(ink);if(day) days.add(day);
+        }
+        // Match the actual public ink scopes in geometry.ts. No textContent,
+        // event identity, private-card selector or geometry callback is read.
+        for(const day of [...days].slice(0,4)) for(const node of [...day.querySelectorAll<HTMLElement>(dateInk+","+publicInk)].slice(0,64)) inks.add(node);
+        for(const ink of [...inks].slice(0,64)){
+          if(surfaces.length>=128) break;
+          const owner=ink.closest<HTMLElement>(ink.matches(dateInk) ? ".public-day,.agenda-day,.studio-day" : ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],[data-companion-event='ordinary'][data-eventid]");
+          if(!owner || ![...days].some(day=>day.contains(owner))) continue;
+          if(!ink.isConnected || !ink.checkVisibility({checkOpacity:true,checkVisibilityCSS:true})) continue;
+          const range=document.createRange();range.selectNodeContents(ink);const rects=[...range.getClientRects()].slice(0,16);range.detach();
+          for(const rect of rects){if(surfaces.length>=128) break;add("ink",rect,rect.top-3,ink,true);if(rect.width>0 && rect.height>0 && inkRects.length<128) inkRects.push({x:rect.x,y:rect.y,width:rect.width,height:rect.height});}
+        }
+        for(const node of edgeNodes(x,y)){
+          const rect=node.getBoundingClientRect(),bottom=node.matches(".public-day,.agenda-day,.studio-day,.weekday-row,.public-calendar-header,.studio-weekdays");
+          add("edge",rect,(bottom ? rect.bottom : rect.top)-3,node);
+        }
+      }
+      const support=surfaces.find(surface=>[surface.footY,...Object.values(surface.rect)].every(Number.isFinite) && x>=surface.rect.x-1 && x<=surface.rect.x+surface.rect.width+1 && Math.abs(y-surface.footY)<=3) ?? null;
+      return {support,inkRects};
+    };
     const sample = (now: number) => {
       if (stopped) return;
       if (now - last >= 40) {
         last = now; const actor = document.querySelector<HTMLElement>(".vc-companion"), texture = actor?.querySelector<HTMLImageElement>(".vc-texture"), r = actor?.getBoundingClientRect(), room = document.querySelector<HTMLElement>(".vc-home-room"), brush = document.querySelector<HTMLElement>(".vc-wash-tool"), brushRect = brush?.getBoundingClientRect();
-        samples.push({ at: now - began, state: actor?.dataset.state ?? "", signature: actor?.dataset.personalityActivity ?? "", scene: actor?.dataset.personalityScene ?? "", beat: actor?.dataset.personalityBeat ?? "", command: actor?.dataset.personalityCommand ?? "", play: actor?.dataset.play ?? "", pose: Number(actor?.dataset.pose ?? -1), x: r ? r.left + r.width / 2 : NaN, y: r?.bottom ?? NaN, platform: actor?.dataset.platform ?? "", visible: Boolean(actor && !document.hidden && !actor.hidden && r!.width && getComputedStyle(actor).visibility !== "hidden" && Number(getComputedStyle(actor).opacity) > 0), decoded: Boolean(texture?.complete && texture.naturalWidth), tv: room?.dataset.tv ?? "off", lit: room?.hasAttribute("data-lamp-lit") ?? false, curtain: room?.querySelector<HTMLElement>(".vc-home-window")?.dataset.curtain ?? "", curiosity: actor?.dataset.foodCuriosity ?? "",
+        const state=actor?.dataset.state ?? "",platform=actor?.dataset.platform ?? "",x=r ? r.left+r.width/2 : NaN,y=r?.bottom ?? NaN,moving=state === "walk" || state === "jump";
+        if (moving) {
+          if (motionKind !== state) {
+            runId++;const prior=samples.at(-1),from=prior ?? {x,y,platform};
+            source=/^companion-home(?:-|$)/.test(from.platform) ? room : edgeNodes(from.x,from.y)[0] ?? null;
+            viewportSource=/^viewport-floor(?:-\d+)?$/.test(from.platform);
+          }
+          motionKind=state;resting=0;
+        } else if (motionKind && ++resting>2) motionKind="";
+        const supported=!moving && Boolean(motionKind) && resting<=2 ? supportAt(x,y,platform) : {support:null,inkRects:[]};
+        const anchor=viewportSource ? {x:0,y:0,width:innerWidth,height:innerHeight} : source?.isConnected ? source.getBoundingClientRect() : null;
+        samples.push({ at: now - began, state, signature: actor?.dataset.personalityActivity ?? "", scene: actor?.dataset.personalityScene ?? "", beat: actor?.dataset.personalityBeat ?? "", command: actor?.dataset.personalityCommand ?? "", play: actor?.dataset.play ?? "", pose: Number(actor?.dataset.pose ?? -1), x,y,platform, visible: Boolean(actor && !document.hidden && !actor.hidden && r!.width && r!.height && r!.bottom > 0 && r!.top < innerHeight && r!.right > 0 && r!.left < innerWidth && actor.checkVisibility({checkOpacity:true,checkVisibilityCSS:true})), decoded: Boolean(texture?.complete && texture.naturalWidth), tv: room?.dataset.tv ?? "off", lit: room?.hasAttribute("data-lamp-lit") ?? false, curtain: room?.querySelector<HTMLElement>(".vc-home-window")?.dataset.curtain ?? "", curiosity: actor?.dataset.foodCuriosity ?? "",
+          travel:{id:runId,epoch,...preferences,manual:state === "held" || Boolean(actor?.hasAttribute("data-placing")) || now-lastTrusted < 1000,actorWidth:r?.width ?? 0,actorHeight:r?.height ?? 0,anchor:anchor ? {x:anchor.x,y:anchor.y,width:anchor.width,height:anchor.height} : null,supported:Boolean(supported.support),...supported},
           toys: [...document.querySelectorAll<HTMLElement>(".vc-toy")].map(node => { const box = node.getBoundingClientRect(); return { id: node.dataset.toyId!, carried: node.dataset.carried === "true", held: node.dataset.held === "true", x: box.left + box.width / 2, y: box.bottom }; }), foods: [...document.querySelectorAll<HTMLElement>(".vc-food")].map(node => node.dataset.food!), washing: actor?.hasAttribute("data-washing") ?? false, brush: brush && brushRect ? { x: brushRect.left + brushRect.width / 2, y: brushRect.top + brushRect.height / 2, visible: !brush.hidden && getComputedStyle(brush).visibility !== "hidden" && brushRect.width > 0 } : null });
       }
       if (now - began < 130_000) request = requestAnimationFrame(sample);
     };
-    (window as ProbeWindow).personality137 = { samples, stop() { stopped = true; cancelAnimationFrame(request); } }; request = requestAnimationFrame(sample);
-  });
+    (window as ProbeWindow).personality137 = { samples, stop() { stopped = true; cancelAnimationFrame(request);
+      window.removeEventListener("scroll",changed,true);window.removeEventListener("resize",changed);document.removeEventListener("keydown",input,true);document.removeEventListener("pointerdown",input,true);window.removeEventListener(preferenceEvent,preference);
+    } }; request = requestAnimationFrame(sample);
+  },{preferenceEvent:COMPANION_PREFERENCES_EVENT,floorInset:COMPANION_HOME_FLOOR_INSET});
 }
 const frames = (page: Page) => page.evaluate(() => (window as ProbeWindow).personality137?.samples ?? []);
 const duration = async (page: Page, ms: number) => expect.poll(async () => (await frames(page)).at(-1)?.at ?? 0, { timeout: ms + 8000, intervals: [250] }).toBeGreaterThanOrEqual(ms);
@@ -118,16 +190,12 @@ function signature(frame: Frame, personality: CompanionPersonality) {
   const timing = COMPANION_PLAY_TIMING[frame.play as keyof typeof COMPANION_PLAY_TIMING];
   return frame.visible && frame.decoded && frame.signature === personality && frame.state === "play" && Boolean(timing?.beats.some(beat => companionSpriteMetadata.rows[beat.row].includes(frame.pose)));
 }
-function meaningful(trace: readonly Frame[], index: number, personality: CompanionPersonality) {
+function meaningful(trace: readonly Frame[], index: number, personality: CompanionPersonality, traveled: ReadonlySet<number>) {
   const frame = trace[index]; if (!frame.visible || !frame.decoded) return false;
   if (signature(frame, personality) || frame.state === "eat" || frame.toys.some(toy => toy.carried && !toy.held)) return true;
+  if (traveled.has(frame.at)) return true;
   if (!frame.scene || frame.signature !== personality) return false;
-  if (frame.command === "watch" && frame.state === "look" && frame.tv !== "off") return true;
-  if (["walk", "jump"].includes(frame.state)) {
-    const previous = trace.slice(Math.max(0, index - 25), index).find(value => value.scene === frame.scene && value.beat === frame.beat);
-    return Boolean(previous && Math.hypot(frame.x - previous.x, frame.y - previous.y) >= 8);
-  }
-  return false;
+  return frame.command === "watch" && frame.state === "look" && frame.tv !== "off";
 }
 
 /** Choose through the actual24-kind shuffle bag and physically return unwanted
@@ -151,41 +219,86 @@ async function drawNativeToy(page: Page, kind: CompanionToyKind) {
 
 function finishedRecipes(trace: readonly Frame[], opening: { x: number; y: number }) {
   return COMPANION_PERSONALITY_SCENES.filter(recipe => {
-    const beat = recipe.steps.reduce((last, step, i) => step.optional ? last : i, -1), command = recipe.steps[beat];
-    const start = trace.findIndex(frame => frame.visible && frame.decoded && frame.scene === recipe.id && Number(frame.beat) === beat);
-    if (start < 0) return false;
-    const next = trace.findIndex((frame, i) => i > start && frame.scene && frame.scene !== recipe.id);
-    if (next < 0) return false;
-    const stage = trace.slice(start, next).filter(frame => frame.visible && frame.decoded && frame.scene === recipe.id && Number(frame.beat) === beat);
-    const playedFor = (state: string, ms: number) => {
-      const painted = stage.filter(frame => frame.state === state);
-      return painted.length > 1 && painted.at(-1)!.at - painted[0].at >= ms * .8 - 80;
+    // Keep attempts separate: an abbreviated first run cannot borrow a
+    // missing pose or real effect from a later execution of the same scene.
+    const attempts: { start: number; end: number }[] = [];
+    let start = -1, lastBeat = -1;
+    const actualGeneric = (frame: Frame | undefined) => {
+      if (!frame || frame.scene || !frame.visible || !frame.decoded || frame.state === "idle") return false;
+      if (frame.state === "play") return Boolean(COMPANION_PLAY_TIMING[frame.play as keyof typeof COMPANION_PLAY_TIMING]?.beats
+        .some(beat => companionSpriteMetadata.rows[beat.row].includes(frame.pose)));
+      const rows: Record<string, number[]> = { look: [1, 26], sniff: [1], stretch: [16], shake: [17], walk: [2, 20], jump: [3, 4, 5, 6], eat: [1, 9], sleep: [10, 11, 12, 35, 36, 40] };
+      return Boolean(rows[frame.state]?.some(row => companionSpriteMetadata.rows[row].includes(frame.pose)));
     };
-    if (command.kind === "pose") return ["look", "sniff", "stretch", "shake"].includes(command.pose)
-      ? playedFor(command.pose, Math.min(2500, command.ms ?? 900))
-      : playedFor("play", companionPlayDuration(command.pose as keyof typeof COMPANION_PLAY_TIMING));
-    if (command.kind === "watch") return playedFor("look", Math.min(3500, Math.max(650, command.ms)));
-    if (command.kind === "sleep") return playedFor("sleep", Math.min(7000, Math.max(2000, command.ms))) || playedFor("stretch", 1000);
-    if (command.kind === "wash") {
-      const contact = stage.filter(frame => frame.washing && frame.brush?.visible);
-      return contact.length > 1 && contact.at(-1)!.at - contact[0].at >= 500;
+    for (let i = 0; i < trace.length; i++) {
+      const frame = trace[i];
+      if (frame.scene === recipe.id) {
+        const beat = Number(frame.beat);
+        if (start >= 0 && beat < lastBeat) { attempts.push({ start, end: i }); start = i; }
+        if (start < 0) start = i;
+        lastBeat = beat;
+      } else if (start >= 0) {
+        const next = trace[i + 1];
+        const previous = trace.slice(start, i).reverse().find(value => value.scene === recipe.id && value.visible && value.decoded);
+        const realGenericBoundary = actualGeneric(frame) && actualGeneric(next) && next.state === frame.state && next.play === frame.play
+          && next.at > frame.at && next.at - frame.at <= 160 && Boolean(previous
+            && (frame.state !== previous.state || frame.play !== previous.play || frame.pose !== previous.pose));
+        // Completing a source scene need not start another source script.
+        // A genuine newly painted ordinary action also closes this attempt;
+        // empty/idle labels alone still cannot prove completion.
+        if (frame.scene || realGenericBoundary) { attempts.push({ start, end: i }); start = -1; lastBeat = -1; }
+      }
     }
-    if (command.kind === "toy" && command.mode === "return") return stage.some(frame => frame.toys.some(toy => toy.carried
-      && Math.hypot(toy.x - opening.x, toy.y - opening.y) < 20 && trace.slice(next).some(later => !later.toys.some(item => item.id === toy.id))));
-    if (command.kind === "go") {
-      const destination = trace[next], reached = command.target === "sofa" ? destination.platform === "companion-home"
-        : ["floor", "box", "dispenser", "window", "pad"].includes(command.target) ? /^companion-home-floor/.test(destination.platform) : Boolean(destination.platform);
-      return reached && stage.some(frame => ["walk", "jump"].includes(frame.state))
-        && Math.hypot(destination.x - stage[0].x, destination.y - stage[0].y) > 8;
-    }
-    // Other terminal effects need a dedicated physical assertion rather than
-    // treating a failed final command followed by ready-* as a completion.
-    return false;
+    return attempts.some(attempt => {
+      const run = trace.slice(attempt.start, attempt.end), following = trace[attempt.end];
+      const stageFor = (beat: number) => run.filter(frame => frame.visible && frame.decoded && frame.scene === recipe.id && Number(frame.beat) === beat);
+      const playedFor = (stage: readonly Frame[], state: string, ms: number, play?: string) => {
+        const timing = play ? COMPANION_PLAY_TIMING[play as keyof typeof COMPANION_PLAY_TIMING] : undefined;
+        const rows = state === "sleep" ? [10, 11, 12, 40, ...COMPANION_PLAY_TIMING["cozy-nest"].beats.map(beat => beat.row)]
+          : state === "look" || state === "sniff" ? [1] : state === "stretch" ? [16] : state === "shake" ? [17] : undefined;
+        const painted = stage.filter(frame => frame.state === state && (!play || frame.play === play
+          && timing?.beats.some(beat => companionSpriteMetadata.rows[beat.row].includes(frame.pose)))
+          && (!rows || rows.some(row => companionSpriteMetadata.rows[row].includes(frame.pose))));
+        return painted.length > 1 && painted.at(-1)!.at - painted[0].at >= ms * .8 - 80;
+      };
+      const returned = (stage: readonly Frame[]) => stage.some(frame => frame.toys.some(toy => toy.carried
+        && Math.hypot(toy.x - opening.x, toy.y - opening.y) < 20
+        && trace.slice(attempt.start).some(later => later.at > frame.at && !later.toys.some(item => item.id === toy.id))));
+      // Every required visible performance must really play in this one run.
+      // Elapsed stretch never substitutes for sleep, and a terminal bow never
+      // proves a preceding pose that the progress policy legitimately omitted.
+      for (let beat = 0; beat < recipe.steps.length; beat++) {
+        const command = recipe.steps[beat]; if (command.optional) continue;
+        const stage = stageFor(beat);
+        if (command.kind === "pose" && !( ["look", "sniff", "stretch", "shake"].includes(command.pose)
+          ? playedFor(stage, command.pose, Math.min(2500, command.ms ?? 900))
+          : playedFor(stage, "play", companionPlayDuration(command.pose as keyof typeof COMPANION_PLAY_TIMING), command.pose))) return false;
+        if (command.kind === "watch" && !playedFor(stage, "look", Math.min(3500, Math.max(650, command.ms)))) return false;
+        if (command.kind === "sleep" && (!playedFor(stage, "sleep", Math.min(7000, Math.max(2000, command.ms)))
+          || stage.filter(frame => frame.state === "sleep" && [11, 40].some(row => companionSpriteMetadata.rows[row].includes(frame.pose))).length < 2)) return false;
+        if (command.kind === "wash") {
+          const contact = stage.filter(frame => frame.washing && frame.brush?.visible);
+          if (!(contact.length > 1 && contact.at(-1)!.at - contact[0].at >= 500)) return false;
+        }
+        if (command.kind === "toy" && command.mode === "return" && !returned(stage)) return false;
+      }
+      const beat = recipe.steps.reduce((last, step, i) => step.optional ? last : i, -1), command = recipe.steps[beat], stage = stageFor(beat);
+      if (["pose", "watch", "sleep", "wash"].includes(command.kind)) return true;
+      if (command.kind === "toy" && command.mode === "return") return returned(stage);
+      if (command.kind === "go") {
+        const reached = command.target === "sofa" ? following.platform === "companion-home"
+          : ["floor", "box", "dispenser", "window", "pad"].includes(command.target) ? /^companion-home-floor/.test(following.platform) : Boolean(following.platform);
+        return reached && stage.some(frame => ["walk", "jump"].includes(frame.state))
+          && Math.hypot(following.x - stage[0].x, following.y - stage[0].y) > 8;
+      }
+      // Other terminal effects require a dedicated physical assertion.
+      return false;
+    });
   });
 }
 
 const toys140: Partial<Record<CompanionPersonality, CompanionToyKind>> = {
-  performer: "maraca", curious: "kaleidoscope", affectionate: "duck", sleepy: "plush-fish",
+  performer: "maraca", curious: "kaleidoscope", affectionate: "duck", sleepy: "feather",
   tidy: "ball", mischievous: "ball", homebody: "train", balanced: "ball",
 };
 test("140 sleepy responds to an actual calm recording and stops its music sequence when native radio volume reaches zero", async ({ page }) => {
@@ -231,11 +344,35 @@ for (const personality of COMPANION_PERSONALITIES) test(`140 ${personality} nati
     await page.mouse.move(20, 800);
     expect(await page.evaluate(() => Boolean(document.elementFromPoint(20, 800)?.closest("button,a,input,select,textarea,[role='button']")))).toBe(false);
   }
+  const proofStarted = Date.now();
+  if (personality === "sleepy") {
+    // Sleep OFF cannot paint S09/S11's required sleep rows. Finish the real
+    // feather scene first, then create the authored S10 falling-toy event
+    // through one actual box click, keeping the original total115s budget.
+    await expect.poll(async () => finishedRecipes(await frames(page), boxPoint).some(recipe => recipe.id === "S05")
+      && await page.locator(`.vc-toy[data-toy-id="${id}"]`).count() === 0, { timeout: 115000, intervals: [250] }).toBe(true);
+    // A real farther approach gives this falling-toy response a positive
+    // physical context, rather than borrowing a finished scene's tiny12px
+    // shuffle at the box. This public placement remains inside the total115s.
+    await placeCompanionOnHomeFloor(page);
+    await expect(page.locator(".vc-companion")).toHaveAttribute("data-platform", "companion-home-floor");
+    await home.locator('[data-home-action="toys"]').click();
+    await expect(page.locator(".vc-toy")).toHaveCount(1);
+    await expect(page.locator(".vc-toy")).toHaveAttribute("data-falling", "false", { timeout: 6000 });
+    const resident = (await page.locator(".vc-companion").boundingBox())!, dropped = (await page.locator(".vc-toy").boundingBox())!;
+    expect(Math.abs(dropped.x+dropped.width/2-resident.x-resident.width/2), "S10 has a real approach of at least48px").toBeGreaterThanOrEqual(48);
+  }
   await expect.poll(async () => {
     const done = finishedRecipes(await frames(page), boxPoint).filter(recipe => recipe.personality === personality);
     return { primary: done.some(recipe => recipe.major), secondary: done.some(recipe => !recipe.major && !recipe.id.startsWith("X-")), returned: !id || await page.locator(`.vc-toy[data-toy-id="${id}"]`).count() === 0 };
-  }, { timeout: 115000, intervals: [250] }).toEqual({ primary: true, secondary: true, returned: true });
+  }, { timeout: Math.max(1, 115000 - (Date.now() - proofStarted)), intervals: [250] }).toEqual({ primary: true, secondary: true, returned: true });
+  expect(Date.now() - proofStarted, "primary and original secondary complete within the original total115s observation budget").toBeLessThanOrEqual(115000);
   const trace = await frames(page), done = finishedRecipes(trace, boxPoint).filter(recipe => recipe.personality === personality);
+  if (personality === "sleepy") {
+    const approach = trace.filter(frame => frame.scene === "S10" && frame.beat === "1" && ["walk", "jump"].includes(frame.state));
+    expect(approach.length).toBeGreaterThan(1);
+    expect(Math.max(...approach.map(frame => Math.hypot(frame.x-approach[0].x,frame.y-approach[0].y))), "the new S10 context actually moved, rather than merely promising a route").toBeGreaterThanOrEqual(48);
+  }
   if (id) {
     await expect(page.locator(`.vc-toy[data-toy-id="${id}"]`)).toHaveCount(0, { timeout: 25000 });
     const actual = await frames(page), carried = actual.filter(frame => frame.toys.some(toy => toy.id === id && toy.carried));
@@ -252,21 +389,58 @@ for (const personality of COMPANION_PERSONALITIES) test(`140 ${personality} nati
   proofs.get(page)!.notes.push({ personality, nativeShuffleKind: kind, samePhysicalId: id, reachedFinalBeatAndSubsequentSequence: done.map(recipe => ({ id: recipe.id, major: recipe.major })), scope: "Actual native primary+secondary samples and physical effects; not144 native recipe executions" });
 });
 
+test("142 sleepy low-energy same-ID return completes its required rest, while sleep OFF samples stay separate", async ({ page }) => {
+  test.setTimeout(190000);
+  // Keep preparation from spending the very rest need this positive case
+  // measures. Turn sleep ON through the actual control, then use the public
+  // keyboard hold while drawing the shuffle bag; no care value is rewritten.
+  const home = await fixture(page, "studio", { personality: "sleepy", roam: false, hunger: .05, energy: .05, sleep: false, summer: true });
+  await selectNative(page, "sleepy", false, true);
+  await placeCompanionOnHomeFloor(page);
+  const actor = page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
+  await actor.focus(); await actor.press("Space"); await expect(page.locator(".vc-companion")).toHaveAttribute("data-state", "held");
+  const id = await drawNativeToy(page, "plush-fish"), opening = (await home.locator(".vc-toy-box-opening").boundingBox())!;
+  const boxPoint = { x: opening.x + opening.width / 2, y: opening.y + opening.height };
+  await selectNative(page, "sleepy", true);
+  await expect(page.locator(".vc-companion"), "native dialog/selection releases the preparation hold before autonomous observation").not.toHaveAttribute("data-state", "held");
+  await expect.poll(async () => finishedRecipes(await frames(page), boxPoint).some(recipe => recipe.id === "S03"),
+    { timeout: 115000, intervals: [250] }).toBe(true);
+  await expect(page.locator(`.vc-toy[data-toy-id="${id}"]`)).toHaveCount(0);
+  const trace = await frames(page), carried = trace.filter(frame => frame.toys.some(toy => toy.id === id && toy.carried));
+  expect(carried.length).toBeGreaterThanOrEqual(2);
+  expect(carried.some(frame => frame.toys.some(toy => toy.id === id && Math.hypot(toy.x-boxPoint.x,toy.y-boxPoint.y)<20))).toBe(true);
+  const sleep = trace.filter(frame => frame.scene === "S03" && frame.state === "sleep" && frame.visible && frame.decoded);
+  expect(sleep.length).toBeGreaterThan(2);expect(sleep.at(-1)!.at-sleep[0].at).toBeGreaterThanOrEqual(5500*.8-80);
+  proofs.get(page)!.notes.push({ actualRestEnabledThroughControl: true, nativeKeyboardHoldDuringShuffle: true, lowInitialEnergy: .05, samePhysicalId: id, fullOriginalRecipe: "S03", separatedFromNineSleepOffSamples: true });
+});
+
 for (const surface of ["viewer", "studio", "preview"] as const) for (const personality of COMPANION_PERSONALITIES)
   test(`137 ${surface} native ${personality} selection expresses immediately and remains purposeful`, async ({ page }) => {
     await fixture(page, surface, { personality: personality === "balanced" ? "curious" : "balanced" });
     await selectNative(page, personality);
     await expect.poll(async () => (await frames(page)).some(frame => signature(frame, personality)), { timeout: 3500, intervals: [40] }).toBe(true);
-    await duration(page, 20_000); const trace = await frames(page), first = trace.find(frame => signature(frame, personality))!;
+    await duration(page, 20_000); let observed=await frames(page);
+    const cutoff=observed.at(-1)!.at, run=observed.at(-1)!, first=observed.find(frame=>signature(frame,personality))!;
+    const gapsFor=(points: number[])=>[points[0],...points.slice(1).map((point,index)=>point-points[index]),cutoff-points.at(-1)!];
+    const pointsFor=(trace: readonly Frame[])=>{ const traveled=nativeTravelPointsBefore(completedNativeTravel(trace),cutoff);
+      return trace.flatMap((frame,index)=>frame.at<=cutoff && meaningful(trace,index,personality,traveled) ? [frame.at] : []); };
+    // The original20s interval stays fixed. Only if its boundary cuts through
+    // actual travel may its SAME run finish within6s before judging that
+    // interval. No later/new trip supplies a20s meaningful timestamp.
+    if (["walk","jump"].includes(run.state) && Math.max(...gapsFor(pointsFor(observed)))>10000) {
+      await expect.poll(async()=>{ observed=await frames(page);return completedNativeTravel(observed).some(value=>value.id===run.travel.id && value.startedAt<=cutoff && value.endedAt>cutoff); },{timeout:6000,intervals:[80]}).toBe(true);
+    }
+    const trace=observed.filter(frame=>frame.at<=cutoff);
     expect(first.at).toBeLessThanOrEqual(3000);
     expect(first.scene).toBe(`entry-${personality}`);
-    const points = trace.flatMap((frame, index) => meaningful(trace, index, personality) ? [frame.at] : []);
+    const travel = completedNativeTravel(observed), traveled = nativeTravelPointsBefore(travel,cutoff);
+    const points = trace.flatMap((frame, index) => meaningful(trace, index, personality, traveled) ? [frame.at] : []);
     expect(points.length).toBeGreaterThan(2);
-    const gaps = [points[0], ...points.slice(1).map((point, index) => point - points[index]), trace.at(-1)!.at - points.at(-1)!];
+    const gaps = gapsFor(points);
     expect(Math.max(...gaps), "decoded personality expression or actual purposeful progress must recur before10s").toBeLessThanOrEqual(10_000);
     expect(new Set(trace.filter(frame => frame.scene).map(frame => `${frame.scene}:${frame.beat}`)).size, "an entry label alone is not a full living sequence").toBeGreaterThan(1);
     expect(trace.every(frame => frame.foods.length <= 8 && frame.toys.length <= 4)).toBe(true);
-    proofs.get(page)!.notes.push({ firstDecodedSignatureAt: first.at, largestMeaningfulGap: Math.max(...gaps), distinctStages: [...new Set(trace.map(frame => `${frame.scene}:${frame.beat}`))], selectionWasNativeRadio: true });
+    proofs.get(page)!.notes.push({ firstDecodedSignatureAt: first.at, largestMeaningfulGap: Math.max(...gaps), distinctStages: [...new Set(trace.map(frame => `${frame.scene}:${frame.beat}`))], selectionWasNativeRadio: true, completedActualTravel:travel, originalObservationEnd:cutoff, boundedCompletionObservedUntil:observed.at(-1)!.at });
   });
 
 for (const surface of ["viewer", "studio"] as const) test(`137 ${surface} tidy carries all four native toys to the actual box before removing their IDs`, async ({ page }) => {

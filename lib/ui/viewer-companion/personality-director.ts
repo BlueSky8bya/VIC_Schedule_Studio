@@ -13,6 +13,7 @@ import type { CompanionHomeTvState } from "./home-room-media";
 import { COMPANION_PERSONALITY_SCENES, type PersonalitySceneRecipe, type SceneBeat, type SceneTrigger } from "./personality-scene-catalog";
 import { companionPersonalityPlayAllowed } from "./personality-activity";
 import type { CompanionRadioMood } from "./radio-reaction";
+import type { CompanionAgentExperience, CompanionExperienceFamily } from "./agent-experience";
 
 type Point = { x: number; y: number; platformId?: string };
 export type PersonalityHome = Partial<Record<"sofa" | "floor" | "window" | "pad" | "box" | "dispenser" | "tv" | "light" | "curtain" | "radio", Point>> & {
@@ -25,10 +26,15 @@ export type PersonalitySceneInput = {
   environment?: CompanionHomeEnvironment; favoriteFood?: string | null; learnedSocial?: boolean;
   busy?: boolean; canTv?: boolean; canCurtain?: boolean; radioAllowed?: boolean; equipped?: boolean; hasExperience?: boolean;
   yieldedItem?: boolean; yieldedItemId?: string; storedFoodIds?: readonly string[]; favoriteToy?: string | null;
-  toyPlayCounts?: Partial<Record<CompanionToyKind, number>>; toyCount?: number; curtainPhase?: "open" | "shade" | "closed"; lightLit?: boolean; familiarHour?: boolean; learnedMorning?: boolean; carriedToyId?: string; deferredToyId?: string; interruptedItemId?: string;
+  toyPlayCounts?: Partial<Record<CompanionToyKind, number>>; toyCount?: number; curtainPhase?: "open" | "shade" | "closed"; lightLit?: boolean; familiarHour?: boolean; learnedMorning?: boolean; carriedToyId?: string; carriedFoodId?: string; deferredToyId?: string; interruptedItemId?: string;
   music?: { mood?: CompanionRadioMood; familiar: boolean }; radioPlaying?: boolean;
+  experience?: Pick<CompanionAgentExperience, "score">;
 };
-export type PersonalitySceneBeat = { id: string; serial: number; beat: number; command: SceneBeat; itemId?: string; travel?: true; routine?: true; interactionContact?: { x: number; y: number } };
+export type PersonalityProgressObservation = {
+  now: number; active: boolean; point?: Point; carriedToyId?: string; carriedFoodId?: string;
+  controls?: { tv?: CompanionHomeTvState; light?: boolean; curtain?: "open" | "shade" | "closed"; radio?: boolean };
+};
+export type PersonalitySceneBeat = { id: string; serial: number; beat: number; command: SceneBeat; itemId?: string; comparisonItemId?: string; travel?: true; routine?: true; interactionContact?: { x: number; y: number } };
 export type PersonalitySceneAction = CompanionAction & { personalityScene: PersonalitySceneBeat; personalitySignature: CompanionPreferences["personality"] };
 export type PersonalitySceneProposal = { meta: PersonalitySceneBeat; action?: PersonalitySceneAction; delegate?: Extract<SceneBeat, { kind: "toy" | "food" }> };
 const entry: Readonly<Record<CompanionPreferences["personality"], readonly CompanionPlay[]>> = {
@@ -38,27 +44,96 @@ const entry: Readonly<Record<CompanionPreferences["personality"], readonly Compa
 };
 const safe = (point: Point | undefined): point is Point => Boolean(point && [point.x, point.y].every(Number.isFinite));
 const atHome = (id?: string) => /^companion-home(?:-floor)?(?:-\d+)?$/.test(id ?? "");
+const ACTUAL_PROGRESS_BUDGET_MS = 8000;
+// Admission and execution share the same real authored-sleep condition.
+// Needs-selected routines retain their separately proved nap/night threshold.
+const authoredSleepNeeded = (input: PersonalitySceneInput) => input.preferences.sleep
+  && input.brain.energy <= getCompanionBehaviorProfile(input.preferences).sleepEnergy;
+const restExpression = (step: SceneBeat) => step.kind === "sleep"
+  || step.kind === "pose" && ["cozy-nest", "doze-curl"].includes(step.pose);
 
 /** One finite intention on the existing world clock. No DOM, timer, storage,
  * audio, learning, analytics or speculative object mutation happens here. */
 export function createCompanionPersonalityDirector(recipes: readonly PersonalitySceneRecipe[] = COMPANION_PERSONALITY_SCENES) {
   let serial = 0, selected: CompanionPreferences["personality"] | undefined, first = true, cursor = 0;
-  let active: { recipe: PersonalitySceneRecipe; serial: number; beat: number; started: number; progressed: number; attempts: number; itemId?: string; lastX: number; lastY: number; count: number; routine?: true; goal?: { beat: number; id: string; fraction?: number } } | undefined;
+  let active: { recipe: PersonalitySceneRecipe; serial: number; beat: number; started: number; progressed: number; attempts: number; itemId?: string; comparisonItemId?: string; lastX: number; lastY: number; count: number; routine?: true; abbreviated?: true; waking?: true; closureAt?: number; goal?: { beat: number; id: string; fraction?: number } } | undefined;
   let entrySerial: number | undefined, entryFinished = false, lastPosition: Point | undefined;
-  let previousPlay: string | undefined, lastCompleted = "", lastPerformance = -Infinity;
+  // Existing active time only. A completed pose/beat/scene never refills this.
+  // Initial entry receives one finite startup grace before this clock begins.
+  let actualProgressAt: number | undefined, actualPoint: Point | undefined, progressActive = false;
+  let initialProgressDeadline: number | undefined;
+  let carried: string | undefined, carriedFood: string | undefined;
+  let controls: PersonalityProgressObservation["controls"];
+  let lastCompleted = "", lastPerformance = -Infinity;
   const events = new Map<SceneTrigger, number>(), completed: string[] = [], failures = new Map<string, number>();
   const purposes: string[] = [];
   let attention: Point | undefined, lastToyKind: CompanionToyKind | undefined;
   const heldBack = new Map<SceneTrigger, number>();
+  const recentPurposes = new Map<string, { point: Point; until: number }>();
+  const family = (recipe: PersonalitySceneRecipe): CompanionExperienceFamily | undefined => {
+    const work = recipe.steps.find(step => ["toy", "food", "wash", "sleep", "tv", "light", "curtain", "radio"].includes(step.kind));
+    if (work?.kind === "toy") return work.mode === "return" ? "cleanup" : "play";
+    if (work?.kind === "food") return work.mode === "tidy" ? "cleanup" : "meal";
+    if (work?.kind === "wash") return "cleanup";
+    if (work?.kind === "sleep") return "rest";
+    if (work) return "home";
+    const travel = recipe.steps.find(step => step.kind === "go");
+    return travel?.kind === "go" ? travel.target === "pointer" ? "social" : "explore" : undefined;
+  };
+  const repeatFamily = (recipe: PersonalitySceneRecipe) => {
+    const purpose = family(recipe);
+    // Real remaining meals/chores are separate objects, not repeat poses.
+    if (purpose === "cleanup" || purpose === "meal" || recipe.steps.some(step => step.kind === "toy" && step.mode === "return" && !step.optional)) return;
+    if (recipe.steps.some(restExpression)) return "rest-expression";
+    const firstPose = recipe.steps.find(step => step.kind === "pose");
+    return !purpose && firstPose?.kind === "pose" ? `expression:${firstPose.pose}` : purpose;
+  };
   let now = 0;
+  const observeProgress = (input: PersonalityProgressObservation) => {
+    if (!Number.isFinite(input.now) || input.now < now) return;
+    now = input.now; progressActive = input.active;
+    const point = safe(input.point) ? input.point : undefined, next = input.controls;
+    const changedControl = Boolean(controls && next && (
+      next.tv !== undefined && next.tv !== controls.tv || next.light !== undefined && next.light !== controls.light
+      || next.curtain !== undefined && next.curtain !== controls.curtain || next.radio !== undefined && next.radio !== controls.radio));
+    const moved = Boolean(point && actualPoint && Math.hypot(point.x-actualPoint.x,point.y-actualPoint.y) >= 8);
+    const changedCarry = "carriedToyId" in input && carried !== input.carriedToyId || "carriedFoodId" in input && carriedFood !== input.carriedFoodId;
+    const physical = moved || changedControl || changedCarry;
+    if (entryFinished && input.active && (actualProgressAt === undefined || physical)) {
+      actualProgressAt = now;
+      if (physical) initialProgressDeadline = undefined;
+    }
+    if (point) {
+      lastPosition = { ...point };
+      if (!input.active || !actualPoint || physical) actualPoint = { ...point };
+    }
+    if (next) controls = { ...controls, ...next };
+    if ("carriedToyId" in input) carried = input.carriedToyId;
+    if ("carriedFoodId" in input) carriedFood = input.carriedFoodId;
+  };
+  const observeEffect = (effect: "toy" | "food" | "wash", at: number) => {
+    if (!entryFinished || !progressActive || !Number.isFinite(at) || at < now || !["toy", "food", "wash"].includes(effect)) return;
+    now = at; actualProgressAt = at; initialProgressDeadline = undefined;
+    if (lastPosition) actualPoint = { ...lastPosition };
+  };
+  const rememberExpression = (key: string) => {
+    if (!lastPosition) return;
+    recentPurposes.delete(key); recentPurposes.set(key, { point: { ...lastPosition }, until: now + 12000 });
+    if (recentPurposes.size > 12) recentPurposes.delete(recentPurposes.keys().next().value!);
+  };
   const finish = (success: boolean) => {
     if (active) {
       if (success) {
-        lastCompleted = active.recipe.id; completed.push(lastCompleted); if (completed.length > 12) completed.shift();
+        lastCompleted = active.recipe.id;
+        // Real chores may finish after an unneeded decorative tail is omitted.
+        // Such a partial scene is not a completion of every authored beat.
+        if (!active.abbreviated) { completed.push(lastCompleted); if (completed.length > 12) completed.shift(); }
         const work = active.recipe.steps.find(step => ["toy", "food", "tv", "wash", "sleep", "hide"].includes(step.kind));
         const purpose = work ? work.kind === "toy" ? `${work.kind}:${work.mode}` : work.kind === "food" ? `${work.kind}:${work.mode}` : work.kind : active.recipe.personality === "affectionate" ? "social" : "expression";
         purposes.push(purpose); if (purposes.length > 4) purposes.shift();
-        if (active.recipe.personality === "performer") lastPerformance = now;
+        const repeated = repeatFamily(active.recipe);
+        if (repeated) rememberExpression(repeated);
+        if (active.recipe.personality === "performer" && !active.abbreviated) lastPerformance = now;
       }
       else failures.set(active.recipe.id, now + 8000);
       for (const trigger of active.recipe.triggers) if (events.has(trigger)) heldBack.set(trigger, events.get(trigger)!);
@@ -112,6 +187,14 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
   const available = (recipe: PersonalitySceneRecipe, input: PersonalitySceneInput) => {
     if ((failures.get(recipe.id) ?? -Infinity) > now || !recipe.triggers.every(key => trigger(key, input))) return false;
     const { world: w, brain: b, preferences: p, home } = input, id = recipe.id;
+    const requiredSleep = recipe.steps.some(step => step.kind === "sleep" && !step.optional);
+    const actualChore = recipe.steps.some(step => !step.optional && (step.kind === "toy" || step.kind === "food" || step.kind === "wash"));
+    if (requiredSleep && !actualChore && !authoredSleepNeeded(input)) return false;
+    if (recipe.steps.some(step => step.kind === "food" && step.mode === "eat" && !step.optional)
+      && (!p.feeding || b.hunger < COMPANION_FULL_THRESHOLD)) return false;
+    // A real need never loses admission to expression repetition memory.
+    const repeated = requiredSleep && authoredSleepNeeded(input) ? undefined : repeatFamily(recipe), recent = repeated && recentPurposes.get(repeated);
+    if (recent && recent.until > now && recent.point.platformId === w.platformId && Math.hypot(recent.point.x - w.x, recent.point.y - w.y) < 96) return false;
     if (id === "C01" && !input.toys.some(toy => !(input.toyPlayCounts?.[toy.kind] ?? 0))) return false;
     if (id === "C02" && !w.foods?.some(food => !b.life?.tastedFoods.includes(food.kind))) return false;
     if (id === "G04" && !freshFamiliarFood(input)) return false;
@@ -124,7 +207,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
     if (id === "H02" && !input.toys.some(toy => toy.kind === input.favoriteToy && !atHome(toy.platformId))) return false;
     if (recipe.steps.some(step => step.kind === "go" && step.target === "pointer")
       && (!p.petting || !w.pointer || (w.pointer.stableMs ?? 0) < 200)) return false;
-    if (id === "A12" && p.petting || ["S04", "X-S-house", "X-S-return-time"].includes(id) && (!p.sleep || b.energy > .65)) return false;
+    if (id === "A12" && p.petting) return false;
     if (["T02", "T03", "G02", "H08"].includes(id) && b.hunger >= COMPANION_FULL_THRESHOLD) return false;
     if (["T02", "G02", "H08"].includes(id) && !w.foods?.some(food => food.kind === input.favoriteFood)) return false;
     if (id === "T03" && !w.foods?.some(food => food.kind !== input.favoriteFood)) return false;
@@ -158,7 +241,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
     return true;
   };
   const meta = (command: SceneBeat): PersonalitySceneBeat => ({ id: active!.recipe.id, serial: active!.serial, beat: active!.beat, command,
-    ...(active!.routine ? { routine: true } : {}), ...(active!.itemId ? { itemId: active!.itemId } : {}) });
+    ...(active!.routine ? { routine: true } : {}), ...(active!.itemId ? { itemId: active!.itemId } : {}), ...(active!.comparisonItemId ? { comparisonItemId: active!.comparisonItemId } : {}) });
   const action = (command: SceneBeat, value: CompanionAction, input: PersonalitySceneInput): PersonalitySceneProposal => ({ meta: meta(command), action: { ...value, personalityScene: meta(command), personalitySignature: input.preferences.personality } });
   const toyCandidates = (recipe: PersonalitySceneRecipe | undefined, input: PersonalitySceneInput) => {
     const typed = recipe?.steps.find(step => step.kind === "toy" && step.kinds), kinds = typed?.kind === "toy" ? typed.kinds : undefined;
@@ -207,6 +290,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
         if (input.brain.hunger >= .65 || !input.preferences.learnFromYou) return dist;
         return (Number(Boolean(input.brain.life?.tastedFoods.includes(a.kind))) - Number(Boolean(input.brain.life?.tastedFoods.includes(b.kind)))) * 10000 + dist;
       });
+      if (input.preferences.personality === "gourmet" && active?.recipe.id !== "G04") eligible.sort((a,b) => Math.hypot(a.x-world.x,a.y-world.y) - Math.hypot(b.x-world.x,b.y-world.y));
       const food = active?.itemId ? eligible.find(food => food.id === active!.itemId) : eligible[0]; if (food && active) active.itemId = food.id; return food;
     }
     if (target === "toy-other-side") {
@@ -256,6 +340,13 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
       if (point && active) active.goal = { beat: active.beat, id: point.platformId };
       return point;
     }
+    if (target === "floor" && active?.recipe.id === "routine-wash") {
+      // Leaving a body-only hygiene stance needs the measured room floor.
+      // A hidden/removed room must never turn the pad itself into "floor".
+      const point = home.floor, floor = point && world.platforms.find(platform => platform.id === point.platformId);
+      return safe(point) && floor?.kind === "floor" && !floor.bodyOnly && /^companion-home-floor(?:-\d+)?$/.test(floor.id)
+        && Math.abs(point.y-floor.y) <= .5 && point.x >= floor.x && point.x <= floor.x+floor.width ? point : undefined;
+    }
     if (target === "floor" && !home.floor) {
       const floor = world.platforms.find(p => p.id === world.platformId && p.kind === "floor") ?? world.platforms.find(p => p.kind === "floor" && !p.manualOnly);
       return floor && { x: platformLandingX(floor, world.x + 55), y: floor.y, platformId: floor.id };
@@ -271,9 +362,104 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
     const offered = action(command, { ...step, pace: input.preferences.personality === "sleepy" ? "amble" : "scoot", duration: step.kind === "jump" ? 850 : Math.max(220, Math.abs(step.target.x - input.world.x) / speed * 1000) }, input);
     offered.meta.travel = true; offered.action!.personalityScene.travel = true; return offered;
   };
+  const remainingRequiredWork = (input: PersonalitySceneInput) => Boolean(active?.recipe.steps.slice(active.beat).some(step => {
+    if (step.optional) return false;
+    if (step.kind === "toy" || step.kind === "food" || step.kind === "wash") return true;
+    if (step.kind === "sleep") return Boolean(active?.routine || authoredSleepNeeded(input));
+    if (step.kind === "tv") return step.state === "next" || input.tv !== step.state;
+    if (step.kind === "light") return input.lightLit !== step.lit;
+    if (step.kind === "curtain") return input.curtainPhase !== step.phase;
+    if (step.kind === "radio") return input.radioPlaying !== step.playing;
+    if (step.kind !== "go") return false;
+    // This test never reserves a future object/route or mutates its owner.
+    // Unknown dynamic destinations keep their one bounded real route attempt.
+    const point = step.target in input.home ? input.home[step.target as keyof Omit<PersonalityHome, "contacts">] : undefined;
+    return !safe(point) || point.platformId !== input.world.platformId || Math.hypot(point.x-input.world.x, point.y-input.world.y) >= 24;
+  }));
+  const pureDuration = (command: SceneBeat, input: PersonalitySceneInput) => {
+    if (command.kind === "watch") return Math.min(3500, Math.max(650, command.ms));
+    if (command.kind !== "pose") return 0;
+    if (["look", "sniff", "stretch", "shake"].includes(command.pose)) return Math.min(2500, command.ms ?? 900);
+    const play = companionPersonalityPlayAllowed(command.pose as CompanionPlay, input.preferences) ? command.pose as CompanionPlay : "bow";
+    return companionPlayDuration(play);
+  };
+  const routineReserved = (input: PersonalitySceneInput) => {
+    const owner = active, { preferences: p, world, brain, home } = input, at = input.now;
+    if (!owner || owner.routine || selected !== p.personality || owner.recipe.personality !== p.personality
+      || !p.enabled || !p.roam || !world.animated || world.paused || input.busy || !Number.isFinite(at)
+      || at < now || at-owner.started > 60000 || at-owner.progressed > 7500 && Math.hypot(world.x-owner.lastX,world.y-owner.lastY) <= 4) return false;
+    const connected = (point: Point | undefined, allowBody = false) => {
+      const plane = point && world.platforms.find(platform => platform.id === point.platformId);
+      return Boolean(safe(point) && plane && (allowBody || !plane.bodyOnly) && !["control", "hide"].includes(plane.kind)
+        && Math.abs(point.y-plane.y) <= 2 && point.x >= plane.x && point.x <= plane.x+plane.width);
+    };
+    if (!connected({x:world.x,y:world.y,platformId:world.platformId},true)) return false;
+    const tail = owner.recipe.steps.slice(owner.beat);
+    if (!authoredSleepNeeded(input) && owner.recipe.steps.slice(0,owner.beat).some(step => step.kind === "toy" && step.mode === "return" && !step.optional)
+      && tail.some(step => step.kind === "sleep") && tail.every(step => step.kind === "pose" || step.kind === "sleep" || step.kind === "go" && step.target === "sofa")) return false;
+    const toyReady = (step: Extract<SceneBeat,{kind:"toy"}>) => (step.mode !== "return" || connected(home.box))
+      && input.toys.slice(0,4).some(toy => (!owner.itemId || toy.id === owner.itemId) && !toy.held && !toy.hidden && !toy.carried
+        && (!step.kinds?.length || step.kinds.includes(toy.kind)) && connected(toy.stance ?? toy));
+    const head = tail[0];
+    // A later rest cannot reserve a currently lost mandatory object. Let the
+    // director fail that exact job and let real care arbitrate next normally.
+    if (head && !head.optional && (head.kind === "toy" && head.mode !== "spawn" && !toyReady(head)
+      || head.kind === "food" && (!p.feeding || head.mode !== "spawn" && !world.foods?.some(food => (!owner.itemId || food.id === owner.itemId) && connected(food))))) return false;
+    const work = tail.some(step => {
+      if (step.optional) return false;
+      if (step.kind === "toy") {
+        if (step.mode === "spawn") return p.ambientPrank && (input.toyCount ?? input.toys.length) < 4 && connected(home.box);
+        return toyReady(step);
+      }
+      if (step.kind === "food") {
+        if (!p.feeding || step.mode === "eat" && brain.hunger < COMPANION_FULL_THRESHOLD || step.mode === "tidy" && brain.hunger >= COMPANION_FULL_THRESHOLD) return false;
+        if (step.mode === "spawn") return brain.hunger >= COMPANION_FULL_THRESHOLD && (world.foods?.length ?? 0) < 8 && connected(home.dispenser);
+        return Boolean(world.foods?.slice(0,8).some(food => (!owner.itemId || food.id === owner.itemId) && connected(food)));
+      }
+      if (step.kind === "wash") return home.pad?.platformId === "companion-home-floor-400"
+        && Boolean(world.platforms.find(plane => plane.id === home.pad!.platformId)?.bodyOnly) && connected(home.pad,true);
+      if (step.kind === "sleep") return authoredSleepNeeded(input) && connected(home.sofa);
+      if (step.kind === "tv" || step.kind === "light" || step.kind === "curtain" || step.kind === "radio") {
+        const point = step.kind === "curtain" ? home.curtain ?? home.window : home[step.kind];
+        if (!connected(point) || !safe(home.contacts?.[step.kind])) return false;
+        return step.kind === "tv" ? input.canTv !== false && (step.state === "next" || input.tv !== step.state)
+          : step.kind === "light" ? input.lightLit !== step.lit
+          : step.kind === "curtain" ? input.canCurtain !== false && input.curtainPhase !== step.phase
+          : input.radioAllowed !== false && (!step.playing || p.sound) && input.radioPlaying !== step.playing;
+      }
+      if (step.kind !== "go") return false;
+      // No targetFor call here: this observer never reserves another item or
+      // mutates a route. The normal director still proves the next real hop.
+      if (step.target === "pointer") return p.petting && Boolean(world.pointer && (world.pointer.stableMs ?? 0) >= 200);
+      if (step.target === "toy" || step.target === "toy-other-side") return input.toys.some(toy => (!owner.itemId || toy.id === owner.itemId) && !toy.held && !toy.hidden && !toy.carried && connected(toy.stance ?? toy));
+      if (step.target === "food") return p.feeding && Boolean(world.foods?.some(food => (!owner.itemId || food.id === owner.itemId) && connected(food)));
+      if (step.target === "novel-place") return Boolean(owner.goal && world.platforms.some(plane => plane.id === owner.goal!.id && !plane.bodyOnly && !plane.manualOnly && !["control","hide"].includes(plane.kind)));
+      const point = home[step.target];
+      return connected(point,step.target === "pad") && Boolean(point && (point.platformId !== world.platformId || Math.hypot(point.x-world.x,point.y-world.y) >= 24));
+    });
+    if (work) return true;
+    // A successful same-serial primitive may finish its short authored
+    // gesture. This is ownership only: it never refills physical progress,
+    // learning reward or an already exhausted8s decorative budget.
+    return owner.closureAt !== undefined && at-owner.closureAt <= 3500 && tail.length > 0
+      && tail.every(step => step.kind === "pose" || step.kind === "watch")
+      && tail.reduce((ms,step) => ms+pureDuration(step,input),0) <= 3500;
+  };
   return {
+    /** Reuse the existing paint/active clock, including moves during legacy
+     * ownership. Pose frames and inactive/manual observations grant no credit. */
+    observeProgress,
+    /** Caller certifies an actual accepted primitive, independently of learning. */
+    observeEffect,
+    progressDeadline: () => actualProgressAt === undefined ? undefined
+      : Math.min(actualProgressAt + ACTUAL_PROGRESS_BUDGET_MS, initialProgressDeadline ?? Infinity),
     event(key: SceneTrigger, at: number) { if (Number.isFinite(at)) events.set(key, at); },
-    cancel() { finish(false); },
+    cancel() {
+      // An interrupted issued greeting is dismissed, not completed. It must
+      // not lock common needs forever; no scene/reward/progress ACK is made.
+      if (entrySerial !== undefined && !entryFinished) { entryFinished = true; entrySerial = undefined; }
+      finish(false);
+    },
     active: () => Boolean(active),
     entryReady: () => entryFinished,
     /** Caller admits only at a safe checkpoint outside manual/object owners. */
@@ -286,14 +472,25 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
       return true;
     },
     plansMeal: () => Boolean(active?.recipe.steps.slice(active.beat).some(step => step.kind === "food" && ["inspect", "compare", "eat"].includes(step.mode))),
+    /** Soft goal ownership at a routine checkpoint, never a physical ACK. */
+    routineReserved,
     current: () => active ? { id: active.recipe.id, beat: active.beat, itemId: active.itemId, ...(active.routine ? { routine: true as const } : {}) } : undefined,
     bind(beat: PersonalitySceneBeat, itemId: string) { if (active?.serial === beat.serial && active.beat === beat.beat && !active.itemId) active.itemId = itemId; },
     completed: () => [...completed],
     /** Called only after a real native effect acknowledges success. */
-    resolve(beat: PersonalitySceneBeat, success: boolean, itemId?: string) {
+    resolve(beat: PersonalitySceneBeat, success: boolean, itemId?: string, at?: number) {
       if (!active || beat.serial !== active.serial || beat.beat !== active.beat || beat.travel) return;
+      const acknowledgedAt = at === undefined ? now : at;
+      const timely = Number.isFinite(acknowledgedAt) && acknowledgedAt >= now;
+      if (Number.isFinite(acknowledgedAt) && acknowledgedAt >= now) now = acknowledgedAt;
       if (!success) { if (beat.command.optional) advance(); else finish(false); return; }
       if (itemId) active.itemId = itemId;
+      if (timely && ["toy", "food", "wash", "tv", "light", "curtain", "radio"].includes(beat.command.kind)) active.closureAt = acknowledgedAt;
+      // These ACKs certify real physical effects. Inspect/compare are finite
+      // observations; they must not masquerade as manipulative progress.
+      if (beat.command.kind === "toy" && beat.command.mode !== "inspect") observeEffect("toy", acknowledgedAt);
+      if (beat.command.kind === "food" && !["inspect", "compare"].includes(beat.command.mode)) observeEffect("food", acknowledgedAt);
+      if (beat.command.kind === "wash") observeEffect("wash", acknowledgedAt);
       if (beat.command.kind === "toy" && beat.command.mode === "return" && ++active.count < Math.min(2, beat.command.limit ?? 1)) { active.itemId = undefined; active.progressed = now; return; }
       advance();
     },
@@ -303,23 +500,35 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
       // Travel is re-proved at the next decision. Delegated ownership and
       // furniture effects need actual ACK, never merely an elapsed pose.
       if (["go", "toy", "food", "tv", "light", "curtain", "radio"].includes(beat.command.kind)) return;
+      // Sleep is a legitimate need, not a physical-progress ACK: only the
+      // runtime proves painted sleep. Preserve its one finite wake stretch.
+      if (beat.command.kind === "sleep") active.waking = true;
+      else active.waking = undefined;
+      if (restExpression(beat.command)) rememberExpression("rest-expression");
       advance();
     },
     next(input: PersonalitySceneInput): PersonalitySceneProposal | undefined {
       now = Math.max(now, Number.isFinite(input.now) ? input.now : now);
       const { world, preferences: p, brain } = input;
-      if (selected !== p.personality) { selected = p.personality; first = true; entryFinished = false; entrySerial = undefined; finish(false); cursor = 0; }
+      if (selected !== p.personality) {
+        selected = p.personality; first = true; entryFinished = false; entrySerial = undefined; finish(false); cursor = 0;
+        actualProgressAt = undefined; actualPoint = undefined; progressActive = false; controls = undefined; carried = carriedFood = undefined; initialProgressDeadline = undefined;
+      }
       if (!p.enabled || !p.roam || !world.animated || world.paused || input.busy || !world.platformId) return;
       const support = world.platforms.find(platform => platform.id === world.platformId);
       if (!support || Math.abs(support.y - world.y) > 2 || world.x < support.x || world.x > support.x + support.width || ["control", "hide"].includes(support.kind)) return;
       const here = { x: world.x, y: world.y, platformId: world.platformId };
       lastPosition = here;
       if (first) {
-        first = false; const play = companionPersonalityPlayAllowed(entry[p.personality][0], p) ? entry[p.personality][0] : "bow"; previousPlay = play;
+        first = false; initialProgressDeadline = now + 10000; actualPoint = { ...here };
+        controls = { tv: input.tv, light: input.lightLit, curtain: input.curtainPhase, radio: input.radioPlaying }; carried = input.carriedToyId; carriedFood = input.carriedFoodId;
+        const play = companionPersonalityPlayAllowed(entry[p.personality][0], p) ? entry[p.personality][0] : "bow";
         const command: SceneBeat = { kind: "pose", pose: play };
         const entryMeta = { id: `entry-${p.personality}`, serial: ++serial, beat: 0, command }; entrySerial = entryMeta.serial;
         return { meta: entryMeta, action: { kind: "play", play, target: here, duration: companionPlayDuration(play), personalityScene: entryMeta, personalitySignature: p.personality } };
       }
+      observeProgress({ now, active: true, point: here, carriedToyId: input.carriedToyId, carriedFoodId: input.carriedFoodId,
+        controls: { tv: input.tv, light: input.lightLit, curtain: input.curtainPhase, radio: input.radioPlaying } });
       if (active?.routine && (!p.feeding && active.recipe.id === "routine-meal" || !p.sleep && ["routine-sleep", "routine-nap"].includes(active.recipe.id))) finish(false);
       if (active?.recipe.triggers.includes("music") && !fittingMusic(active.recipe.id, input)) finish(false);
       if (active) {
@@ -335,20 +544,57 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
         // justify the same authored return; absent/blocked objects never do.
         const choices = different.length ? different : pool.filter(recipe => recipe.id === lastCompleted && unfinishedReturn(recipe, input));
         const major = choices.filter(recipe => recipe.major), event = choices.filter(recipe => recipe.triggers.some(key => !["free", "toy", "food", "tv", "night", "summer", "rain", "experience"].includes(key)));
-        const candidates = event.length ? event : major.length && cursor % 4 !== 3 ? major : choices;
-        const recipe = candidates[cursor++ % Math.max(1, candidates.length)];
-        if (recipe) active = { recipe, serial: ++serial, beat: 0, started: now, progressed: now, attempts: 0, lastX: world.x, lastY: world.y, count: 0 };
-        else {
-          const options = entry[p.personality].filter(play => play !== previousPlay && companionPersonalityPlayAllowed(play, p));
-          const play = options[cursor++ % Math.max(1, options.length)] ?? "bow"; previousPlay = play;
-          const command: SceneBeat = { kind: "pose", pose: play }, entryMeta = { id: `ready-${p.personality}`, serial: ++serial, beat: 0, command };
-          return { meta: entryMeta, action: { kind: "play", play, target: here, duration: companionPlayDuration(play), personalityScene: entryMeta, personalitySignature: p.personality } };
+        const group = event.length ? event : major.length && cursor % 4 !== 3 ? major : choices;
+        // Prefer a whole currently executable goal within this same priority
+        // group. Keep a real chore with an unneeded rest tail when it is the
+        // only option; never discard the physical return for script variety.
+        const whole = group.filter(recipe => authoredSleepNeeded(input) || !recipe.steps.some(step => step.kind === "sleep" && !step.optional));
+        const candidates = whole.length ? whole : group;
+        // A tidying session resumes the real remaining chore before script
+        // variety. The renderer still owns carried/manual work and urgent
+        // care; route, identity, held, hunger and energy proofs stay intact.
+        const preferred = cursor++ % Math.max(1, candidates.length);
+        const ordinary = candidates[preferred];
+        const cleanup = p.personality === "tidy" && !input.yieldedItem && brain.hunger < .78
+          ? ordinary && unfinishedReturn(ordinary,input) ? ordinary : pool.find(recipe => recipe.id === "T01" && unfinishedReturn(recipe, input)) : undefined;
+        let recipe = cleanup ?? ordinary;
+        if (!cleanup && p.learnFromYou && input.experience && candidates.length > 1) {
+          const context = atHome(world.platformId) ? "home" : "outside";
+          const ranked = candidates.map((candidate, index) => {
+            const purpose = family(candidate), value = purpose ? input.experience!.score({ personality: p.personality, context, family: purpose, learn: true }) : 0;
+            return { candidate, score: Number.isFinite(value) ? Math.max(-.1,Math.min(.2,value)) : 0, index };
+          });
+          if (ranked.some(item => item.score !== 0)) recipe = ranked.sort((a,b) => (b.score + Number(b.index === preferred) * .04) - (a.score + Number(a.index === preferred) * .04))[0].candidate;
         }
+        if (recipe) active = { recipe, serial: ++serial, beat: 0, started: now, progressed: now, attempts: 0, lastX: world.x, lastY: world.y, count: 0 };
+        else return;
       }
       // At most four zero-duration transitions per existing decision.
       for (let transitions = 0; active && transitions < 4; transitions++) {
         const command = active.recipe.steps[active.beat];
         if (!command) { finish(true); return; }
+        // S03's same-ID return still happens at high energy. Only its now
+        // unnecessary cushion/sleep tail is omitted after the actual ACK.
+        if (!active.routine && !authoredSleepNeeded(input)
+          && active.recipe.steps.slice(0, active.beat).some(step => step.kind === "toy" && step.mode === "return" && !step.optional)
+          && active.recipe.steps.slice(active.beat).some(step => step.kind === "sleep")
+          && active.recipe.steps.slice(active.beat).every(step => step.kind === "pose" || step.kind === "sleep" || step.kind === "go" && step.target === "sofa")) {
+          active.abbreviated = true; advance(); continue;
+        }
+        // Check the upcoming duration, not just elapsed age: starting a3.2s
+        // pose at7.8s would otherwise create an11s stationary interval.
+        // A yielded decorative plan is cancelled, never resumed elsewhere.
+        const duration = pureDuration(command, input);
+        const waking = active.waking && command.kind === "pose" && command.pose === "stretch";
+        if (duration > 0 && !waking && !input.carriedToyId && actualProgressAt !== undefined
+          && now + duration > Math.min(actualProgressAt + ACTUAL_PROGRESS_BUDGET_MS, initialProgressDeadline ?? Infinity)) {
+          if (remainingRequiredWork(input)) {
+            // Future real work does not excuse a stationary pose chain. Keep
+            // that same-ID goal, but move past the decoration into real work.
+            active.abbreviated = true; advance(); continue;
+          }
+          finish(false); return;
+        }
         if (command.kind === "go") {
           const point = targetFor(command.target, input);
           if (safe(point)) attention = point;
@@ -372,6 +618,17 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
               finish(false); return;
             }
           }
+          if (command.kind === "food" && command.mode === "compare") {
+            const main = world.foods?.find(food => food.id === active!.itemId);
+            const partner = active.comparisonItemId ? world.foods?.find(food => food.id === active!.comparisonItemId)
+              : main && world.foods?.filter(food => food.id !== main.id && Math.hypot(food.x-main.x,food.y-main.y) <= 160
+                && findCompanionToyRoute(world,food,world.platforms,p.jump))
+                .sort((a,b) => Math.hypot(a.x-main.x,a.y-main.y)-Math.hypot(b.x-main.x,b.y-main.y))[0];
+            // A comparison is a nearby glance, never a cross-screen detour.
+            // Losing its secondary object does not replace the chosen meal.
+            if (!main || !partner || Math.hypot(partner.x-main.x,partner.y-main.y) > 160) { advance(); continue; }
+            active.comparisonItemId = partner.id;
+          }
           return { meta: meta(command), delegate: command };
         }
         if (command.kind === "tv" || command.kind === "light" || command.kind === "curtain" || command.kind === "radio") {
@@ -390,7 +647,10 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
           offered.meta.interactionContact = { ...contact }; offered.action!.personalityScene.interactionContact = { ...contact };
           return offered;
         }
-        if (command.kind === "sleep" && (!p.sleep || !atHome(world.platformId) || !active.routine && brain.energy > getCompanionBehaviorProfile(p).sleepEnergy)) return action(command, { kind: "stretch", target: here, duration: 1000 }, input);
+        if (command.kind === "sleep" && (!p.sleep || !atHome(world.platformId) || !active.routine && !authoredSleepNeeded(input))) {
+          if (!command.optional) active.abbreviated = true;
+          advance(); continue;
+        }
         if (command.kind === "sleep") return action(command, { kind: "sleep", living: "cozy", target: here, duration: Math.min(7000, Math.max(2000, command.ms)) }, input);
         if (command.kind === "hide") return action(command, { kind: "hide", target: here, duration: Math.min(3000, command.ms) }, input);
         if (command.kind === "watch") {

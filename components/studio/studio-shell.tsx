@@ -413,6 +413,7 @@ export function StudioShell({
   const [monthPick, setMonthPick] = useState<{ anchor: DOMRect | null } | null>(null);
   const [jumpToast, setJumpToast] = useState<{ to: YM; from: YM } | null>(null);
   const [companionBook, setCompanionBook] = useState(false);
+  const [companionPersonality, setCompanionPersonality] = useState(false);
   const jumpToastTimerRef = useRef<number | null>(null);
   const jumpTodayRef = useRef<() => void>(() => {});
   const flashTimerRef = useRef<number | null>(null);
@@ -1217,6 +1218,7 @@ export function StudioShell({
     return (
       <StudioSettingsList
         companionBook={companionBook}
+        companionPersonality={companionPersonality}
         textPx={textPx}
         onChangeTextPx={changeTextPx}
         font={{ id: fontId, change: changeFont, weight: textWeight, changeWeight: changeTextWeight }}
@@ -1904,7 +1906,7 @@ export function StudioShell({
     const prev = prevModalRef.current;
     prevModalRef.current = modal;
     if (prev === null && modal !== null) {
-      modalOpenerRef.current = document.activeElement as HTMLElement | null;
+      if (!modalOpenerRef.current) modalOpenerRef.current = document.activeElement as HTMLElement | null;
     } else if (prev !== null && modal === null) {
       restoreDialogOpener(modalOpenerRef.current);
       modalOpenerRef.current = null;
@@ -7313,7 +7315,11 @@ export function StudioShell({
       data-companion-window={companionDesktop && companionPrefs.enabled && (editorVisible || mobileEditId !== null || modal || searchOpen || dayVodPop) ? "" : undefined}
       ref={setShellRef}
     >
-      {companionDesktop && companionPrefs.enabled ? <ViewerCompanion onOpenBook={() => { setCompanionBook(true); setModal("settings"); }} root={shellRef} preferences={companionPrefs}
+      {companionDesktop && companionPrefs.enabled ? <ViewerCompanion onOpenBook={destination => {
+        // Capture before a reused settings child's layout effect moves focus.
+        if (modal === null) modalOpenerRef.current = document.activeElement as HTMLElement | null;
+        setCompanionPersonality(destination === "personality"); setCompanionBook(true); setModal("settings");
+      }} root={shellRef} preferences={companionPrefs}
         context={{ slug: schedule.calendar.slug, year: view.year, month: view.month, season: pickAmbient(worldForce?.month ?? view.month, ambientForce ?? devSeason).season, force: worldForce }}
         positionMemory={staffCompanionPositionMemory}
         blocked={Boolean(monthPick || passcodeModal || navMsg)}

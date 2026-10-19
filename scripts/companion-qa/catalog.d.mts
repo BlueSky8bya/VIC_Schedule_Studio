@@ -1,0 +1,16 @@
+export const BOOLEAN_KEYS: readonly string[];
+export const PERSONALITIES: readonly string[];
+export const ROUTINES: readonly string[];
+export type QaRow = Record<string, string | number>;
+export const DIMENSIONS: Record<string, readonly (string | number)[]>;
+export const PURE_SUITES: readonly string[];
+export const NATIVE_SUITES: readonly string[];
+export const NATIVE_ENTRY_TITLES: readonly string[];
+export const PLANNED_NATIVE_CASE_COUNT: number;
+export const NATIVE_ENTRY_GREP: string;
+export const NATIVE_GREP: string;
+export function pairKeys(row: QaRow, dimensions?: typeof DIMENSIONS): string[];
+export function pairwiseRows(dimensions?: typeof DIMENSIONS): QaRow[];
+export function dailyCases(dayOrdinal: number): (QaRow & { id: string; seconds: number })[];
+export function coverageFor(rows: QaRow[], dimensions?: typeof DIMENSIONS): { method: string; requiredPairs: number; coveredPairs: number; complete: boolean; missingPairs: string[] };
+export function universe(): { schemaVersion: number; normalizedPreferenceCrossProduct: number; preferenceEnums: { personality: number; animalMode: number; speed: number; soundVolume: number }; fixedNormalizedSize: string; booleanPatternCount: number; booleanKeys: readonly string[]; dimensions: typeof DIMENSIONS; modeledRoutineTemplates: number; modeledEntries: number; plannedNativeEntryCases: number; pairwiseRows: QaRow[]; claims: Record<string, boolean>; limitations: string[] };

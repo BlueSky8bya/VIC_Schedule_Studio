@@ -8,6 +8,9 @@ export type CompanionRoutineEffect = "ate" | "washed" | "slept" | "went-out" | "
 export type CompanionRoutineInput = PersonalitySceneInput & {
   /** Existing visible/foreground policy and the native entry completion ACK. */
   active: boolean; entryReady: boolean; owned?: boolean;
+  /** Current authored real work/short closure; urgent care may supersede it
+   * at this checkpoint. Hard physical/manual owners above remain absolute. */
+  authoredReserved?: boolean;
   /** A real existing meal route, or a real usable dispenser. Never raw count. */
   meal?: { foodId?: string; canSupply?: boolean };
   /** A measured outside route may be unavailable in a cramped room. */
@@ -40,6 +43,10 @@ function recipe(kind: CompanionRoutineKind, input: CompanionRoutineInput): Perso
   ];
   else if (kind === "wash") steps = [
     { kind: "go", target: "pad" }, { kind: "wash", ms: personality === "tidy" ? 3000 : personality === "mischievous" ? 1900 : 2400 },
+    // The narrow body-only pad is a washing stance, not a stage for the next
+    // performance. Finish the actual care, then leave through a proved route
+    // before the finite personality gesture. Never fake a floor or wash ACK.
+    { kind: "go", target: "floor" },
     pose(personality === "mischievous" ? "shake" : personality === "sleepy" ? "stretch" : "bow"),
   ];
   else if (kind === "sleep" || kind === "nap") steps = [
@@ -82,11 +89,13 @@ export function createCompanionRoutineArbiter() {
       if (pending && input.now - pending.at <= 60000) return;
       if (pending) { failedUntil.set(pending.kind, input.now + 8000); pending = undefined; }
       const { preferences: p, brain, home, environment } = input, profile = profiles[p.personality], at = input.now;
+      const urgentHunger = brain.hunger >= .78, exhausted = brain.energy <= .18;
       const candidates: { kind: CompanionRoutineKind; score: number; overdue: number; reason: CompanionRoutineRequest["reason"] }[] = [];
       const add = (kind: CompanionRoutineKind, possible: boolean, score: number, overdue: number, reason: CompanionRoutineRequest["reason"]) => {
+        if (input.authoredReserved && !(kind === "meal" && urgentHunger || (kind === "sleep" || kind === "nap") && exhausted)) return;
         if (possible && at >= (failedUntil.get(kind) ?? -Infinity)) candidates.push({ kind, score, overdue, reason });
       };
-      const hungry = brain.hunger >= COMPANION_FULL_THRESHOLD, urgentHunger = brain.hunger >= .78;
+      const hungry = brain.hunger >= COMPANION_FULL_THRESHOLD;
       const actualFoodId = input.world.foods?.some(food => food.id === input.meal?.foodId) ? input.meal?.foodId : undefined;
       const realMeal = Boolean(p.feeding && (actualFoodId || !input.meal?.foodId && input.meal?.canSupply && home.dispenser));
       const firstTidyPickup = p.personality === "tidy" && !actualFoodId && !urgentHunger && at - (began ?? at) < 8000
@@ -106,7 +115,7 @@ export function createCompanionRoutineArbiter() {
       add("wash", Boolean(pad?.platformId === "companion-home-floor-400" && actualPad?.bodyOnly && (dirt >= .5 || washAge >= 1)),
         .55 + dirt * .35, Math.min(2, washAge), "hygiene");
       const night = environment?.band === "night" || environment?.band === "evening";
-      const exhausted = brain.energy <= .18, maySleep = p.sleep && Boolean(home.sofa)
+      const maySleep = p.sleep && Boolean(home.sofa)
         && (exhausted || !completed.has("slept") || at - stamp("slept") > 90000);
       add(night ? "sleep" : "nap", maySleep && (exhausted || brain.energy <= (night ? Math.max(.48, profile.napEnergy) : profile.napEnergy)),
         exhausted ? 2.9 : .62 + (1 - clamp(brain.energy, 0, 1)) * .3, exhausted ? 2.9 : 0, "energy");

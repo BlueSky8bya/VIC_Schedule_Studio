@@ -15,6 +15,7 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
+import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 
 type BookKind = "food" | "toy" | "memory" | "wardrobe";
 type Click = { target: string; direction: string | null; label: string | null };
@@ -84,9 +85,9 @@ for (const [surface, width, height, dark] of [["viewer", 1050, 640, false], ["st
     pending.push((async () => { const hash = (b: Buffer) => createHash("sha256").update(b).digest("hex"); chunks.push({ served: hash(await response.body()), local: hash(readFileSync(resolve(buildDir, "static", url.pathname.slice("/_next/static/".length)))) }); })().catch(error => { errors.push(`chunk proof: ${String(error)}`); }));
   });
   await page.exposeBinding("recordGallery134Click", (_source, value: Click) => clicks.push(value));
-  await page.route("**/*", route => {
+  await page.route("**/*", async route => {
     const request = route.request(), url = new URL(request.url()), local = url.origin === origin || url.origin === origin.replace("127.0.0.2", "127.0.0.1");
-    if (!local) { if (request.method() === "GET" && request.resourceType() === "font" && fonts.has(url.href)) return route.continue(); blocked.push(`${request.method()} ${url.origin}${url.pathname}`); return route.abort(); }
+    if (!local) { if (request.resourceType() === "font") return fulfillReadOnlyFont(route, fonts, blocked); blocked.push(`${request.method()} ${url.origin}${url.pathname}`); return route.abort(); }
     if (!["GET", "HEAD"].includes(request.method())) {
       mutations.push(`${request.method()} ${url.pathname}`);
       if (url.pathname === "/api/activity") { events.push(...(request.postDataJSON() as { events: Activity[] }).events); return route.fulfill({ json: { ok: true } }); }

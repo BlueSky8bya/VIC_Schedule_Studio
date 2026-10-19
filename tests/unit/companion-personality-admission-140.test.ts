@@ -5,7 +5,7 @@ import { COMPANION_PERSONALITIES, DEFAULT_COMPANION_PREFERENCES, type CompanionP
 import { accessibleCompanionToys, companionToyFoodPriority, createCompanionToyPlanner, createCompanionToys, findCompanionToyRoute, type CompanionToy } from "@/lib/ui/viewer-companion/toys";
 import { createCompanionPersonalityDirector, type PersonalitySceneInput } from "@/lib/ui/viewer-companion/personality-director";
 import { COMPANION_PERSONALITY_SCENES } from "@/lib/ui/viewer-companion/personality-scene-catalog";
-import { companionPersonalityPlayAllowed, createCompanionPersonalityActivity } from "@/lib/ui/viewer-companion/personality-activity";
+import { createCompanionPersonalityActivity } from "@/lib/ui/viewer-companion/personality-activity";
 import { createCompanionHousehold } from "@/lib/ui/viewer-companion/household";
 import { createCompanionPersonalityJobs, type PersonalityJobAction } from "@/lib/ui/viewer-companion/personality-jobs";
 import { companionToyReturnDelivered, companionToyReturnTarget, sampleCompanionToyReturn } from "@/lib/ui/viewer-companion/toy-return";
@@ -227,7 +227,7 @@ describe("140 real task admission before personality fallback", () => {
   it.each(COMPANION_PERSONALITY_SCENES.filter(scene => scene.steps.some(step => step.kind === "go" && step.target === "pointer")))("$id requires an allowed stable pointer before starting its human approach", recipe => {
       const scene: PersonalitySceneInput = {
         world: { ...world(), foods: [{ id: "real-apple", kind: "apple", x: 500, y: ground.y, platformId: ground.id }], pointer: { x: 700, y: 600, stableMs: 1000 } },
-        brain: brain(.1), preferences: preferences(recipe.personality), now: 0, home: { box, floor: box, sofa: box, tv: box }, toys: [{ ...toy("real-duck", 300), kind: "duck" }],
+        brain: brain(recipe.steps.some(step => step.kind === "food" && step.mode === "eat" && !step.optional) ? .5 : .1), preferences: preferences(recipe.personality), now: 0, home: { box, floor: box, sofa: box, tv: box }, toys: [{ ...toy("real-duck", 300), kind: "duck" }],
         tv: "nature", canTv: true, learnedSocial: true, hasExperience: true, music: { mood: "calm", familiar: true },
         environment: { date: { y: 2026, m: 10, d: 20 }, season: "autumn", hour: 22, band: "night", night: true, weather: "clear", sunlight: 0 },
       };
@@ -262,13 +262,13 @@ describe("140 real task admission before personality fallback", () => {
     expect(director.next(scene)?.action?.target.x).not.toBe(first);
   });
 
-  it.each(COMPANION_PERSONALITIES)("keeps %s fallback clips valid and honors petting/jump OFF on repeated decisions", personality => {
+  it.each(COMPANION_PERSONALITIES)("keeps %s fallback travel real and honors petting/jump OFF on repeated decisions", personality => {
     const activity = createCompanionPersonalityActivity(() => .999), p = { ...preferences(personality), petting: false, jump: false };
     for (let now = 10000; now < 100000; now += 9000) {
       const action = activity.choose(brain(.1), world(), p, now)!;
-      expect(action?.play).toBeTruthy(); expect(companionPersonalityPlayAllowed(action.play!, p)).toBe(true);
-      expect(["ask-petting", "lean-nuzzle", "pounce"]).not.toContain(action.play);
-      if (personality === "tidy") expect(["groom", "bow"]).toContain(action.play);
+      expect(action.kind).toBe("walk"); expect(action.play).toBeUndefined();
+      expect(Math.abs(action.target.x-world().x)).toBeGreaterThanOrEqual(48);
+      expect(action.target.platformId).toBe(ground.id);
       activity.record(action, world(), now, personality);
     }
   });

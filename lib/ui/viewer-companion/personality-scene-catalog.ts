@@ -266,11 +266,11 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   // 실제 귀가를 마치고 집 안 생활. 밤이라고 자동 수면하지 않음.
   { id: "X-H-return-time", label: "집돌이 · 귀가·재회·시간대", personality: "homebody", major: false, triggers: ["arrival"], steps: [g("sofa"), p("bow"), p("groom"), w(1400)] },
   // 시청 한 구간이 끝나면 놀이·정리·교감 중 최근과 다른 한 편.
-  { id: "X-B-house", label: "둥글이 · 집·TV·빛·씻기", personality: "balanced", major: false, triggers: ["tv"], steps: [w(1800), opt(t("play")), opt(t("return")), p("stretch"), p("bow")] },
+  { id: "X-B-house", label: "동글이 · 집·TV·빛·씻기", personality: "balanced", major: false, triggers: ["tv"], steps: [w(1800), opt(t("play")), opt(t("return")), p("stretch"), p("bow")] },
   // 가장 최근 유효한 공개 완료 신호에 꾸벅. 중복·밀린 응원 없음.
-  { id: "X-B-editor", label: "둥글이 · 편집하는 사람 곁", personality: "balanced", major: false, triggers: ["work"], steps: [p("bow"), p("groom")] },
+  { id: "X-B-editor", label: "동글이 · 편집하는 사람 곁", personality: "balanced", major: false, triggers: ["work"], steps: [p("bow"), p("groom")] },
   // 실제 악구 마무리에 한 번 반응하고 현재 적합한 다른 생활로.
-  { id: "X-B-music", label: "둥글이 · 실제 음악", personality: "balanced", major: false, triggers: ["music"], steps: [p("bow"), p("stretch"), g("novel-place")] },
+  { id: "X-B-music", label: "동글이 · 실제 음악", personality: "balanced", major: false, triggers: ["music"], steps: [p("bow"), p("stretch"), g("novel-place")] },
   // 가을 실제 비를 잠깐 보고 감상·정리 중 하나를 완결. 억지 외출 없음.
-  { id: "X-B-return-time", label: "둥글이 · 귀가·재회·시간대", personality: "balanced", major: false, triggers: ["arrival", "rain"], steps: [g("window"), curtain("open"), w(1600), opt(f("tidy")), p("groom")] },
+  { id: "X-B-return-time", label: "동글이 · 귀가·재회·시간대", personality: "balanced", major: false, triggers: ["arrival", "rain"], steps: [g("window"), curtain("open"), w(1600), opt(f("tidy")), p("groom")] },
 ]);
