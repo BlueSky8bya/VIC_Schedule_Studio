@@ -1,6 +1,6 @@
 import { CompanionCollectionPager } from "@/components/shared/companion-collection-pager";
 import type { KeyboardEvent, ReactElement, ReactNode } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_WEARABLE_IDS } from "@/lib/ui/viewer-companion/gifts";
 import type { CompanionCollection } from "@/lib/ui/viewer-companion/collection";
@@ -41,7 +41,9 @@ beforeEach(() => {
   harness.states = []; harness.refs = []; harness.equip.mockReset(); harness.gift.mockReset(); harness.acknowledge.mockReset();
   collection = { version: 1, foods: [], behaviors: ["groom"], situations: [], gifts: { pending: null, unlocked: ["sunglasses", "beret"], equipped: "sunglasses", activeMs: 0, interactionCredit: 0 } };
   harness.equip.mockImplementation(accessory => { collection = { ...collection, gifts: { ...collection.gifts, equipped: accessory } }; return true; });
+  vi.stubGlobal("getComputedStyle", () => ({ gridTemplateColumns: "1fr 1fr 1fr 1fr" }));
 });
+afterEach(() => vi.unstubAllGlobals());
 
 describe("actual wardrobe selection and equipment callbacks", () => {
   it("jumps to unread owned gifts without changing equipment or revealing locked artwork", async () => {
@@ -79,6 +81,24 @@ describe("actual wardrobe selection and equipment callbacks", () => {
     expect(harness.equip.mock.calls).toEqual([[null]]); expect(preview().accessory).toBeNull();
     expect(collection.gifts.equipped).toBeNull();
     expect(nodes(tree).filter(element => element.props["data-accessory"] && element.props["aria-pressed"])).toHaveLength(0);
+  });
+  it("keeps horizontal tile keys for the footer and inspects the actual next row without equipping it", async () => {
+    collection.gifts.unlocked = [...COMPANION_WEARABLE_IDS];
+    collection.seen = { foods: [], behaviors: [], situations: [], accessories: [] };
+    await render();
+    const key = (value: string) => {
+      const tile = find(element => element.props["data-accessory"] === "sunglasses");
+      const event = { key: value, preventDefault: vi.fn(), stopPropagation: vi.fn(), currentTarget: { dataset: { act: "companion-accessory-select" }, closest: () => ({ querySelectorAll: () => [] }) } };
+      (tile.props.onKeyDown as (event: KeyboardEvent<HTMLButtonElement>) => void)(event as unknown as KeyboardEvent<HTMLButtonElement>);
+      return event;
+    };
+    for (const direction of ["ArrowLeft", "ArrowRight"]) { const event = key(direction); expect(event.preventDefault).not.toHaveBeenCalled(); expect(event.stopPropagation).not.toHaveBeenCalled(); }
+    await render(); expect(preview().accessory).toBe("sunglasses"); expect(harness.acknowledge).not.toHaveBeenCalled();
+    key("ArrowDown"); await render();
+    expect(preview().accessory).toBe(COMPANION_WEARABLE_IDS[4]);
+    expect(find(element => element.props["data-accessory"] === COMPANION_WEARABLE_IDS[4]).props["aria-pressed"]).toBe(true);
+    expect(harness.acknowledge.mock.calls).toEqual([["accessory", COMPANION_WEARABLE_IDS[4]]]);
+    expect(collection.gifts.equipped).toBe("sunglasses"); expect(harness.equip).not.toHaveBeenCalled();
   });
   it("keeps try-on local, offers only owned items, and respects a subsequent ownership clear", async () => {
     await render();

@@ -48,13 +48,19 @@ describe("122 finite toy book interaction", () => {
     expect(harness.activity).not.toHaveBeenCalled();
   });
   it("acknowledges pointer/keyboard inspection only and logs the fixed category rather than toy identity", async () => {
-    const tastes = normalizeCompanionTastes({ version: 1, toys: ["ball", "blocks"], seen: [] }); await render(tastes);
+    const nextRowKind = COMPANION_TOY_KINDS[4], tastes = normalizeCompanionTastes({ version: 1, toys: ["ball", nextRowKind], seen: [] }); await render(tastes);
     expect(tiles()[0].props["data-unread"]).toBe(true); click(tiles()[0]); expect(harness.acknowledge).toHaveBeenCalledWith("ball");
     harness.acknowledge.mockClear(); harness.acknowledge.mockReturnValue(true);
     const current = tiles()[0];
-    (current.props.onKeyDown as (event: KeyboardEvent<HTMLButtonElement>) => void)({ key: "ArrowRight", preventDefault: vi.fn(), stopPropagation: vi.fn(), currentTarget: { dataset: { act: "companion-collection-inspect", actOpt: "toy" }, closest: () => ({ querySelectorAll: () => [] }) } } as unknown as KeyboardEvent<HTMLButtonElement>);
-    await render(tastes); expect(tiles()[1].props["aria-pressed"]).toBe(true);
-    expect(harness.acknowledge.mock.calls).toEqual([["blocks"]]); expect(harness.activity.mock.calls).toEqual([["ui.click", { target: "companion-collection-inspect#toy" }]]);
+    (current.props.onKeyDown as (event: KeyboardEvent<HTMLButtonElement>) => void)({ key: "ArrowDown", preventDefault: vi.fn(), stopPropagation: vi.fn(), currentTarget: { dataset: { act: "companion-collection-inspect", actOpt: "toy" }, closest: () => ({ querySelectorAll: () => [] }) } } as unknown as KeyboardEvent<HTMLButtonElement>);
+    await render(tastes); expect(selectedKind).toBe(nextRowKind); expect(tiles().find(node => node.props["data-collection-index"] === 4)?.props["aria-pressed"]).toBe(true);
+    expect(harness.acknowledge.mock.calls).toEqual([[nextRowKind]]); expect(harness.activity.mock.calls).toEqual([["ui.click", { target: "companion-collection-inspect#toy" }]]);
+  });
+  it("leaves horizontal keys to the actual shared footer without selecting or acknowledging a sibling", async () => {
+    const tastes = normalizeCompanionTastes({ version: 1, toys: ["ball", "blocks"], seen: [] }); await render(tastes);
+    for (const key of ["ArrowLeft", "ArrowRight"]) (tiles()[0].props.onKeyDown as (event: KeyboardEvent<HTMLButtonElement>) => void)({ key, preventDefault: vi.fn(), stopPropagation: vi.fn(), currentTarget: { dataset: { act: "companion-collection-inspect", actOpt: "toy" }, closest: () => ({ querySelectorAll: () => [] }) } } as unknown as KeyboardEvent<HTMLButtonElement>);
+    await render(tastes); expect(selectedKind).toBe("ball"); expect(tiles()[0].props["aria-pressed"]).toBe(true);
+    expect(harness.acknowledge).not.toHaveBeenCalled(); expect(harness.activity).not.toHaveBeenCalled();
   });
   it("does not mount a paused/inactive book", async () => { await render(null, false); expect(tree).toBeNull(); expect(harness.acknowledge).not.toHaveBeenCalled(); });
 });

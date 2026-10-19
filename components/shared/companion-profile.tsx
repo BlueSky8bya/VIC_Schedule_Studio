@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { BookOpen, Heart, HelpCircle, Settings2, Shirt } from "lucide-react";
+import { onCollectionArrowKey } from "./companion-collection-navigation";
 import { useCallback, useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { getCompanionLearnedEffectDirections } from "@/lib/ui/viewer-companion/behavior-profile";
 import { loadCompanionCare, subscribeCompanionHabits, subscribeCompanionLife, type CompanionMemory } from "@/lib/ui/viewer-companion/care";
@@ -114,6 +115,7 @@ export function CompanionProfile({ preferences, active, environment }: { prefere
     setPage(next);
   };
   const onTabKey = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.nativeEvent?.isComposing) return;
     const index = pages.findIndex(item => item.key === page);
     const next = event.key === "Home" ? 0 : event.key === "End" ? pages.length - 1 : event.key === "ArrowRight" ? (index + 1) % pages.length : event.key === "ArrowLeft" ? (index - 1 + pages.length) % pages.length : -1;
     if (next < 0) return;
@@ -127,7 +129,7 @@ export function CompanionProfile({ preferences, active, environment }: { prefere
   const pageUnread = (key: ProfilePage) => key === "discover" ? unread.foods + unread.memories + companionToyUnread(tastes) > 0 : key === "dress" && unread.accessories > 0;
   const mode = { default: "빅타민", cat: "고양이", dog: "강아지" }[preferences.animalMode];
   const personality = COMPANION_PERSONALITY_NAMES[preferences.personality];
-  return <div className="rhh-companion-settings rhh-companion-profile rhh-profile-playful rhh-companion-experience" data-paged={active && (page === "discover" || page === "dress") || undefined} {...spotlight}>
+  return <div className="rhh-companion-settings rhh-companion-profile rhh-profile-playful rhh-companion-experience" data-paged={active && (page === "discover" || page === "dress") || undefined} onKeyDownCapture={event => { if (active && (page === "discover" || page === "dress")) onCollectionArrowKey(event); }} {...spotlight}>
     <span className="sr-only" id={`${id}-unread`}>새로 발견한 항목</span>
     <div aria-label="빅타민 프로필" className="rhh-seg rhh-profile-nav" ref={nav} role="tablist" style={{ "--n": pages.length, "--i": pages.findIndex(item => item.key === page) } as CSSProperties}>
       <span aria-hidden="true" className="rhh-seg-thumb" />

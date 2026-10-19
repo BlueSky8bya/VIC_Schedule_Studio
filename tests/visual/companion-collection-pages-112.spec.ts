@@ -11,6 +11,7 @@ import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 import { COMPANION_WEARABLE_IDS } from "@/lib/ui/viewer-companion/gifts";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { settlePanelLayout } from "./helpers/panel-layout";
+import { selectCompanionCollectionIndex } from "./helpers/companion-collection";
 test.use({ viewport: { width: 1440, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
 type Surface = "viewer" | "studio" | "preview";
 type FixtureOptions = { theme?: "light" | "dark"; collection?: CompanionCollection; reduce?: boolean; graphics?: "max" | "off" | "soft"; enabled?: boolean };
@@ -148,7 +149,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
   await foodGrid.locator("button[tabindex='0']").focus(); await page.keyboard.press("End");
   await expect(foodGrid.locator('[data-food-index="179"]')).toBeFocused(); await expect(profile.getByRole("button", { name: "다음 페이지", exact: true })).toBeDisabled();
   await page.keyboard.press("Home"); await expect(foodGrid.locator('[data-food-index="0"]')).toBeFocused();
-  for (let index = 0; index < 5; index++) await page.keyboard.press("ArrowRight");
+  await selectCompanionCollectionIndex(page, foodGrid, 5);
   await expect(foodGrid.locator('[data-food-index="5"]')).toBeFocused(); await expect(profile.locator(".rhh-food-detail strong")).toHaveText("???"); await expect(foodGrid.locator('[data-food-index="5"]')).not.toHaveAttribute("data-found");
   await page.setViewportSize({ width: 1050, height: 640 });
   //131 reserves two readable rows on the short sheet; its measured width can

@@ -77,8 +77,9 @@ export function CompanionDiscovery({ collection, active, tastes = null }: { coll
   const foundFood = collection?.foods.includes(selectedFood) ?? false;
   const categories = [{ key: "food", name: "냠냠 도감", count: collection?.foods.length ?? 0, total: COMPANION_FOOD_KINDS.length, unread: unread.foods }, { key: "toy", name: "장난감 도감", count: tastes?.toys.length ?? 0, total: COMPANION_TOY_KINDS.length, unread: companionToyUnread(tastes) }, { key: "behavior", name: "추억 도감", count: (collection?.behaviors.length ?? 0) + (collection?.situations.length ?? 0), total: memories.length, unread: unread.memories }] as const;
   const categoryKey = (event: KeyboardEvent<HTMLButtonElement>) => {
-    const index = categories.findIndex(item => item.key === category), next = event.key === "Home" ? 0 : event.key === "End" ? 2 : event.key === "ArrowRight" ? (index + 1) % 3 : event.key === "ArrowLeft" ? (index + 2) % 3 : -1;
-    if (next < 0) return; event.preventDefault(); event.stopPropagation();
+    if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.nativeEvent?.isComposing) return;
+    const index = categories.findIndex(item => item.key === category), next = event.key === "Home" ? 0 : event.key === "End" ? 2 : -1;
+    if (next === -1) return; event.preventDefault(); event.stopPropagation();
     if (next !== index) { setCategory(categories[next].key); logActivity("ui.click", { target: `companion-collection-category#${categories[next].key}` }); }
     event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>("button")[next]?.focus();
   };

@@ -163,13 +163,14 @@ describe("actual shared profile navigation callbacks", () => {
   });
   it("acknowledges only deliberate unread tile inspection, not mounting, category changes or paging", async () => {
     harness.acknowledge.mockReturnValue(true);
-    discoveryCollection = { version: 1, foods: [...COMPANION_FOOD_KINDS.slice(0, 10)], behaviors: ["ask-petting"], situations: ["meal-finished"], gifts: { pending: null, unlocked: [], equipped: null, activeMs: 0, interactionCredit: 0 }, seen: { foods: [], behaviors: [], situations: [], accessories: [] } };
+    discoveryCollection = { version: 1, foods: [...COMPANION_FOOD_KINDS.slice(0, 16)], behaviors: ["ask-petting"], situations: ["meal-finished"], gifts: { pending: null, unlocked: [], equipped: null, activeMs: 0, interactionCredit: 0 }, seen: { foods: [], behaviors: [], situations: [], accessories: [] } };
     await render(); await discover(); expect(harness.acknowledge).not.toHaveBeenCalled();
     expect(foods()[0].props["data-unread"]).toBe(true); expect(foods()[0].props["aria-describedby"]).toBe("unit-profile");
     const pageSize = foods().length;
     (find(node => node.props.type === "range").props.onChange as (event: { currentTarget: { value: string } }) => void)({ currentTarget: { value: "2" } }); await render();
     expect(foods()[0].props["data-food-index"]).toBe(pageSize); expect(harness.acknowledge).not.toHaveBeenCalled();
-    key(foods()[0], "ArrowRight"); await render(); expect(harness.acknowledge.mock.calls).toEqual([["food", COMPANION_FOOD_KINDS[pageSize + 1]]]);
+    key(foods()[0], "ArrowDown"); await render(); expect(foods().find(node => node.props["aria-pressed"])?.props["data-food-index"]).toBe(pageSize + 4);
+    expect(harness.acknowledge.mock.calls).toEqual([["food", COMPANION_FOOD_KINDS[pageSize + 4]]]);
     click(foods()[0]); expect(harness.acknowledge.mock.calls.at(-1)).toEqual(["food", COMPANION_FOOD_KINDS[pageSize]]);
     key(foods()[0], "Home"); await render(); harness.acknowledge.mockClear(); harness.activity.mockClear();
     key(foods()[0], "Home"); expect(harness.acknowledge.mock.calls).toEqual([["food", "apple"]]); expect(harness.activity.mock.calls).toEqual([["ui.click", { target: "companion-collection-inspect#food" }]]);
@@ -253,16 +254,24 @@ describe("actual shared profile navigation callbacks", () => {
     expect(foods()[0].props["data-food-index"]).toBe(0);
     expect(harness.activity.mock.calls).toEqual(Array.from({ length: 2 }, () => ["ui.click", { target: "companion-collection-inspect#food" }]));
   });
-  it("crosses a page edge in either direction and emits no extra activity for a clamped edge key", async () => {
+  it("crosses a four-column page edge vertically and emits no extra activity for a clamped edge key", async () => {
     await render(); await discover(); harness.activity.mockClear();
     const size = foods().length;
-    key(foods().at(-1)!, "ArrowRight"); await render();
-    expect(foods()[0].props["data-food-index"]).toBe(size); expect(foods()[0].props["aria-pressed"]).toBe(true);
-    key(foods()[0], "ArrowLeft"); await render();
+    key(foods().at(-1)!, "ArrowDown"); await render();
+    expect(foods()[0].props["data-food-index"]).toBe(size); expect(foods().find(node => node.props["aria-pressed"])?.props["data-food-index"]).toBe(size - 1 + 4);
+    key(foods().find(node => node.props["aria-pressed"])!, "ArrowUp"); await render();
     expect(foods().at(-1)!.props["data-food-index"]).toBe(size - 1); expect(foods().at(-1)!.props["aria-pressed"]).toBe(true);
     key(foods().at(-1)!, "Home"); await render(); const count = harness.activity.mock.calls.length;
-    key(foods()[0], "Home"); key(foods()[0], "ArrowLeft"); await render();
+    key(foods()[0], "Home"); key(foods()[0], "ArrowUp"); await render();
     expect(harness.activity).toHaveBeenCalledTimes(count);
+  });
+  it("does not let a tile or category consume the footer's horizontal keys", async () => {
+    await render(); await discover();
+    const first = foods()[0], category = find(node => node.props["data-act"] === "companion-collection-category" && node.props["data-act-opt"] === "food");
+    for (const direction of ["ArrowLeft", "ArrowRight"]) { key(first, direction); key(category, direction); await render(); }
+    expect(foods()[0].props["data-food-index"]).toBe(0); expect(foods()[0].props["aria-pressed"]).toBe(true);
+    expect(find(node => node.props["data-act"] === "companion-collection-category" && node.props["data-act-opt"] === "food").props["aria-pressed"]).toBe(true);
+    expect(harness.acknowledge).not.toHaveBeenCalled(); expect(harness.activity).not.toHaveBeenCalled();
   });
   it("logs changed profile keyboard selection once and does not log Home on the current first tab", async () => {
     await render(); const first = find(node => node.props["data-profile-page"] === "together");
@@ -270,6 +279,22 @@ describe("actual shared profile navigation callbacks", () => {
     key(first, "ArrowRight"); await render();
     expect(find(node => node.props["data-profile-page"] === "discover").props["aria-selected"]).toBe(true);
     expect(harness.activity.mock.calls).toEqual([["ui.click", { target: "companion-profile-page#discover" }]]);
+  });
+  it("delegates horizontal capture only for an active discovery or wardrobe page", async () => {
+    const delegated = vi.fn(), query = vi.fn(() => [{ disabled: false, closest: () => null, click: delegated }]);
+    const capture = () => {
+      const event = { key: "ArrowRight", preventDefault: vi.fn(), stopPropagation: vi.fn(), target: { isContentEditable: false, closest: () => null }, currentTarget: { querySelectorAll: query } };
+      (tree.props.onKeyDownCapture as (event: KeyboardEvent<HTMLElement>) => void)(event as unknown as KeyboardEvent<HTMLElement>);
+      return event;
+    };
+    await render(); capture(); expect(query).not.toHaveBeenCalled();
+    click(find(node => node.props["data-profile-page"] === "discover")); await render();
+    const discover = capture(); expect(delegated).toHaveBeenCalledTimes(1); expect(discover.preventDefault).toHaveBeenCalledOnce(); expect(discover.stopPropagation).toHaveBeenCalledOnce();
+    await render(false); capture(); expect(delegated).toHaveBeenCalledTimes(1);
+    await render(); click(find(node => node.props["data-profile-page"] === "settings")); await render(); capture(); expect(delegated).toHaveBeenCalledTimes(1);
+    click(find(node => node.props["data-profile-page"] === "dress")); await render(); capture(); expect(delegated).toHaveBeenCalledTimes(2);
+    expect(query.mock.calls).toEqual(Array.from({ length: 2 }, () => ['.rhh-collection-pages [data-page-direction="next"]']));
+    expect(harness.acknowledge).not.toHaveBeenCalled();
   });
   it("offers food/toy/memory collections and keeps all behavior/situation memories together without revealing unknown names", async () => {
     await render(); await discover();
@@ -311,9 +336,10 @@ describe("actual shared profile navigation callbacks", () => {
       click(find(node => node.props["data-act"] === "companion-collection-page" && node.props["data-act-opt"] === "next")); await render();
     }
     harness.activity.mockClear();
-    key(memory(COMPANION_BEHAVIOR_IDS.length - 1), "ArrowRight"); await render();
-    expect(memory(COMPANION_BEHAVIOR_IDS.length).props["aria-pressed"]).toBe(true);
-    key(memory(COMPANION_BEHAVIOR_IDS.length), "ArrowLeft"); await render();
+    const firstSituationBelow = COMPANION_BEHAVIOR_IDS.length - 1 + 4;
+    key(memory(COMPANION_BEHAVIOR_IDS.length - 1), "ArrowDown"); await render();
+    expect(memory(firstSituationBelow).props["aria-pressed"]).toBe(true);
+    key(memory(firstSituationBelow), "ArrowUp"); await render();
     expect(memory(COMPANION_BEHAVIOR_IDS.length - 1).props["aria-pressed"]).toBe(true);
     key(memoryTiles()[0], "End"); await render();
     expect(memoryTiles().at(-1)?.props["aria-pressed"]).toBe(true);

@@ -40,19 +40,22 @@ describe("finite responsive collection pages", () => {
     expect(nextCompanionCollectionUnread(0, 0, () => true)).toBeNull();
     expect(nextCompanionCollectionUnread(4, 8, index => index === 4)).toBe(4);
   });
-  it("owns pager arrows without duplicate native-click capture or acknowledging a tile", () => {
+  it("keeps manual PageDown/PageUp navigation separate from the footer's horizontal buttons", () => {
     const select = vi.fn(), preventDefault = vi.fn(), stopPropagation = vi.fn();
     const event = (key: string) => ({ key, preventDefault, stopPropagation }) as unknown as KeyboardEvent<HTMLElement>;
     vi.mocked(logActivity).mockClear();
-    onCollectionPageKey(event("ArrowRight"), 0, 4, 8, select);
+    onCollectionPageKey(event("PageDown"), 0, 4, 8, select);
     expect(select.mock.calls).toEqual([[8, true]]);
     expect(logActivity).toHaveBeenCalledExactlyOnceWith("ui.click", { target: "companion-collection-page#next" });
     onCollectionPageKey(event("End"), 3, 4, 8, select);
     expect(select).toHaveBeenCalledTimes(1); expect(logActivity).toHaveBeenCalledTimes(1);
-    onCollectionPageKey(event("ArrowLeft"), 2, 4, 8, select);
+    onCollectionPageKey(event("PageUp"), 2, 4, 8, select);
     expect(select.mock.calls.at(-1)).toEqual([8, true]);
     expect(logActivity).toHaveBeenLastCalledWith("ui.click", { target: "companion-collection-page#prev" });
     onCollectionPageKey(event("Enter"), 0, 4, 8, select);
+    onCollectionPageKey(event("ArrowLeft"), 2, 4, 8, select);
+    onCollectionPageKey(event("ArrowRight"), 2, 4, 8, select);
+    expect(select).toHaveBeenCalledTimes(2); expect(logActivity).toHaveBeenCalledTimes(2);
     expect(preventDefault).toHaveBeenCalledTimes(3); expect(stopPropagation).toHaveBeenCalledTimes(3);
   });
   it("preserves the selected identity across resize, final partial pages and each collection type", () => {

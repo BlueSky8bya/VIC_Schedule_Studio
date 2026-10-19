@@ -1,6 +1,6 @@
 # 133 — 빅타민 허공 받침·도감 방향 탐색·쓰다듬기 눈선
 
-2026-10-19 KST. 상태: 구현·로컬 검증 완료, 승인 범위 출시 확인 대기. 최신 사용자 세 가지 수정 요청에 한정한다. 132의 새 성격·집 생활 제안은 별도 검토 상태로 유지하며 구현하지 않는다.
+2026-10-19 KST. 상태: 구현·검증·출시 완료. 최신 사용자 세 가지 수정 요청에 한정한다. 132의 새 성격·집 생활 제안은 별도 검토 상태로 유지하며 구현하지 않는다.
 
 ## 범위와 경계
 
@@ -50,3 +50,13 @@
 - 최초 native 실행은 activity 전용 loopback alias가 기본3100을 가리켜 중단했다.3117 alias로 수정한25케이스 실행은17통과/8실패였다. 실패8개는 기존110의 도감 분류2개 기대(실제3개)와112의 퇴역 프로필 region 선택자였고 제품 동작 실패로 숨기지 않았다. 현재3개 분류명/성격 카드/옷장 버튼을 검증하는 하네스로 고쳐 동일 빌드에서 해당8케이스를 재검사한다. 원래 실패 trace·video·report는 `final-native-v2`에 보존한다.
 - 같은 빌드 재검사 `final-native-v3`는110 viewer/studio2개 통과,112의 옛 짧은 화면8개 tile 상한 때문에6개 실패했다.131부터 보장한2행·최대6열의 실제12칸을 기준으로 computed2행/2..6열/실제 칸 수와 기존44px·비넘침·선택/ACK·키보드 검사를 함께 유지했다. 최종 `final-native-v4`의112 viewer/studio/preview×light/dark6개 모두 통과(재시도0), 제품 수정0이다.25개 고유 native 시나리오가 같은 최종 빌드에서 모두 통과했고, 별도 실제 본체 낙하3개도 통과했다.
 - G22는 실제 포인터/키보드에 대한 고정 page prev/next·inspection category·book open/close 캡처와 developer timeline/least-used 표시까지 통과했다. 메타데이터에 음식/장난감/발견/개인 취향 ID를 추가하지 않았다. 모든 실패·교정 전 자료와 최종28개 고유 native 결과를 별도로 남겼다.
+
+### 출시와 실제 공개 검증
+
+- 승인 범위57경로만 커밋 `bfab6e6cb3be9d7ed9b2c2899a0be434d10e1d13`으로 main에 반영했다. 작성자/커미터는 공개 noreply identity이며 관련 없는 사용자 그림 기록은 제외했다. 필수 재현14파일은 Git index에서도 원본 해시와 정확히 일치했다. 새 runtime 파일은 최종v3 하나이고 중간v1/v2·원문/계약·개인 경로·132 미승인 이미지·무관한 untracked 파일은 제외했다. `.vercelignore`는 source/review archive를 배포 입력에서 제외한다.
+- [Vercel 배포5wyHGH7aiLv2A13TucagQWZwQvGT](https://vercel.com/bluesky-s-project3/vic-schedule-studio/5wyHGH7aiLv2A13TucagQWZwQvGT)는2026-10-19 17:06:38 KST에 success/Deployment has completed로 확인했다. 실제 공개 클라이언트 전체 SHA와98개 committed runtime 파일의 원격 바이트 해시, 실제 로드된 청크도 일치했다.
+- 첫 공개 검사17:08:04.637 KST 실패를 `.scratch-pw/companion-133/production/`에 보존했다. 새 toy tab mount 직후 max3을 읽은 다음 ResizeObserver가 실제 max2를 전달한 것이었다. 검사만 실제 grid BCR/CSS rows·columns/range max가4연속 native rAF에서 일치하고 총수/실제 pageSize가 맞는 뒤 기준값을 잡도록 고쳤다. 제품·스타일·상태·clock/RNG를 변경하거나 원 실패를 덮어쓰지 않았다.
+- 두 번째 실제 익명 공개 검사는17:10:15.392 KST 통과했다(`production-2/`). 음식15·장난감2·추억3·옷장5페이지의 pointer/좌우키/Home/End, 점·바/방향 badge와 일반 탐색 ACK불변, 프로필·전체상자 반환·실제 음식/장난감 source→floor·hover/selection·모바일 제외·404를 확인했다. 실제 페이지의 새 도감과 쓰다듬기 스크린샷을 직접 열었다. care/preferences/tastes/discovery 주입0, 실제 live-state GET·private manifest 읽기·서버 mutation 전달0, 브라우저 오류·예상 밖 요청0이다.
+- 실제 공개 쓰다듬기는 sofa Enter 회수 뒤96회 native pointer 왕복만으로 finalv3의16개 physical pose144–159/decoded261프레임을 관측했다. keyboard affection fallback은 사용하지 않았다. 실제 자동 graphics 정책은soft였으며 이를 full-motion/OBS 성능 증거로 바꾸지 않는다. full graphics의 연속 동작은 위 동일 소스 최종 fixture 녹화/75프레임에서 별도로 확인했다.
+- [원격 quality39220175711](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39220175711)은17:10:13 KST success다. 새 checkout의 단위·격리 SQL 계약·harness·production build·generated-route/source typecheck·lint를 통과했다. 실제 로그인/RLS/계속 비활성인 OS 창/방송자PC·OBS 및 동기간 provider quota 회복은 이번 증거가 아니다.
+- 보호된 사용자 그림 기록 SHA `E980005102457E2A02AE318FF7665596E7170D0BFB34A328F64A6EC292C5990B`와 기존 캐릭터/장난감 원본은 보존했다. 출시 완료 bookkeeping은 로컬 문서에 남겨 별도 docs-only 배포를 추가하지 않는다.

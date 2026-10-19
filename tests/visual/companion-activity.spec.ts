@@ -13,6 +13,7 @@ import { PREMIERE_STAGE_KEY, SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui
 import { describeTarget } from "@/lib/activity/labels";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
 import { openCompanionHome } from "./helpers/companion-home";
+import { selectCompanionCollectionIndex } from "./helpers/companion-collection";
 
 type Surface = "viewer" | "studio";
 type Event = { kind: string; target?: string | null; meta?: unknown; durMs?: number | null };
@@ -214,11 +215,14 @@ for (const surface of ["viewer", "studio"] as const) {
     await expect.poll(() => memories.count()).toBeGreaterThan(0);
     expect(await memories.count()).toBeLessThanOrEqual(24);
     const lastBehavior = panel.locator(`[data-collection-index="${COMPANION_BEHAVIOR_IDS.length - 1}"]`), firstMoment = panel.locator(`[data-collection-index="${COMPANION_BEHAVIOR_IDS.length}"]`);
-    for (let pageIndex = 0; pageIndex < 12 && !await lastBehavior.count(); pageIndex++) await panel.getByRole("button", { name: "다음 페이지", exact: true }).click();
-    await lastBehavior.click();
-    await lastBehavior.press("ArrowRight"); await expect(firstMoment).toBeFocused();
-    await firstMoment.press("ArrowLeft"); await expect(lastBehavior).toBeFocused();
-    await lastBehavior.press("End"); await expect(memories.last()).toBeFocused();
+    const memoryGrid = panel.locator(".rhh-behavior-grid");
+    await selectCompanionCollectionIndex(page, memoryGrid, COMPANION_BEHAVIOR_IDS.length - 1);
+    await expect(lastBehavior).toBeFocused();
+    await selectCompanionCollectionIndex(page, memoryGrid, COMPANION_BEHAVIOR_IDS.length);
+    await expect(firstMoment).toBeFocused();
+    const memoryColumns = await memoryGrid.evaluate(node => getComputedStyle(node).gridTemplateColumns.trim().split(/\s+/).length);
+    await firstMoment.press("ArrowUp"); await expect(memoryGrid.locator(`[data-collection-index="${COMPANION_BEHAVIOR_IDS.length - memoryColumns}"]`)).toBeFocused();
+    await memoryGrid.locator("button:focus").press("End"); await expect(memories.last()).toBeFocused();
     await memories.last().press("Home"); await expect(memories.first()).toBeFocused();
     await panel.getByRole("tab", { name: "환경설정", exact: true }).click();
     await panel.getByRole("tab", { name: "소리", exact: true }).click();
@@ -433,8 +437,9 @@ for (const surface of ["viewer", "studio"] as const) {
     const pageSize = await foodGrid.locator("button").count(); expect(pageSize).toBeLessThanOrEqual(24);
     await profile.getByRole("button", { name: "다음 페이지", exact: true }).click();
     await expect(foodGrid.locator("button").first()).toHaveAttribute("data-food-index", String(pageSize));
-    await foodGrid.locator("button").first().focus(); await page.keyboard.press("ArrowRight");
-    await expect(foodGrid.locator(`[data-food-index="${pageSize + 1}"]`)).toBeFocused();
+    const foodColumns = await foodGrid.evaluate(node => getComputedStyle(node).gridTemplateColumns.trim().split(/\s+/).length);
+    await foodGrid.locator("button").first().focus(); await page.keyboard.press("ArrowDown");
+    await expect(foodGrid.locator(`[data-food-index="${pageSize + foodColumns}"]`)).toBeFocused();
     await page.keyboard.press("Home"); await expect(foodGrid.locator('[data-food-index="0"]')).toBeFocused();
     await page.keyboard.press("End");
     const lastIndex = COMPANION_FOOD_KINDS.length - 1;

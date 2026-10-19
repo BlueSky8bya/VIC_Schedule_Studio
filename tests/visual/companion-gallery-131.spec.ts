@@ -113,7 +113,7 @@ for (const [surface, entry, width, height, dark] of [["viewer", "book", 1050, 64
       await dialog.screenshot({ path: `${output}/${name}-${category}-directional-unread.png` });
       const lastPage = Number(await rail.inputValue());
       await expect(book.locator('.rhh-collection-page-dots [aria-current="page"]')).toHaveAttribute("data-page", String(lastPage - 1));
-      await page.keyboard.press("ArrowLeft"); await expect(rail).toHaveValue(String(Math.max(1, lastPage - 1)));
+      await page.keyboard.press("PageUp"); await expect(rail).toHaveValue(String(Math.max(1, lastPage - 1)));
       await page.keyboard.press("Home"); await expect(rail).toHaveValue("1");
     } else await expect(rail).toBeDisabled();
     expect(await page.evaluate(key => localStorage.getItem(key), category === "toy" ? "vic.viewerCompanionTastes" : COMPANION_COLLECTION_KEY)).toBe(beforeManual);
@@ -124,12 +124,18 @@ for (const [surface, entry, width, height, dark] of [["viewer", "book", 1050, 64
       const selected = grid.locator('[aria-pressed="true"]'); await expect(selected).toHaveAttribute("data-found", "true"); await expect(selected).not.toHaveAttribute("data-unread", "true");
       inspected.push(Number(await selected.getAttribute("data-collection-index"))); sameSplit(before, await measure(book, category === "food" ? 2 : undefined));
     }
-    expect(inspected.length).toBeGreaterThan(0); expect(new Set(inspected).size).toBe(inspected.length); await expect(book.locator(".rhh-collection-next-unread,.rhh-collection-unread-count,.rhh-collection-page-status")).toHaveCount(0);
+    expect(inspected.length).toBeGreaterThan(0); expect(new Set(inspected).size).toBe(inspected.length); await expect(book.locator(".rhh-collection-next-unread,.rhh-collection-unread-count,.rhh-collection-page-status,.rhh-collection-page-bar")).toHaveCount(0);
+    await expect(book.locator(".rhh-collection-page-dots > span")).toHaveCount(Number(await rail.getAttribute("max")));
     const next = book.locator('[data-page-direction="next"]');
     await grid.locator('[tabindex="0"]').focus(); await page.keyboard.press("Home"); await expect(grid.locator('[data-collection-index="0"]')).toBeFocused();
-    await next.focus(); await page.keyboard.press("ArrowRight"); await expect(grid.locator('[tabindex="0"]')).toBeFocused();
-    const pageFirst = Number(await grid.locator('[tabindex="0"]').getAttribute("data-collection-index")); expect(pageFirst).toBeGreaterThan(0);
-    await page.keyboard.press("ArrowLeft"); await expect(grid.locator(`[data-collection-index="${pageFirst - 1}"]`)).toBeFocused();
+    if (Number(await rail.getAttribute("max")) > 1) { await next.focus(); await page.keyboard.press("ArrowRight"); } else await grid.locator('[tabindex="0"]').press("ArrowRight");
+    await expect(grid.locator('[tabindex="0"]')).toBeFocused();
+    const pageFirst = Number(await grid.locator('[tabindex="0"]').getAttribute("data-collection-index")); expect(pageFirst).toBe(Number(await rail.getAttribute("max")) > 1 ? Number(await grid.locator("button").first().getAttribute("data-collection-index")) : 0);
+    if (Number(await rail.getAttribute("max")) > 1) expect(pageFirst).toBeGreaterThan(0);
+    await page.keyboard.press("ArrowLeft"); await expect(grid.locator('[data-collection-index="0"]')).toBeFocused();
+    const columns = await grid.evaluate(node => getComputedStyle(node).gridTemplateColumns.trim().split(/\s+/).length);
+    await page.keyboard.press("ArrowDown"); await expect(grid.locator(`[data-collection-index="${columns}"]`)).toBeFocused();
+    await page.keyboard.press("ArrowUp"); await expect(grid.locator('[data-collection-index="0"]')).toBeFocused();
     results[category] = { geometry: before, inspected, actualPageBoundaryIndex: pageFirst };
     await dialog.screenshot({ path: `${output}/${name}-${category}.png` });
   }

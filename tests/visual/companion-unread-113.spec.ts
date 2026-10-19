@@ -25,6 +25,9 @@ test.use({ headless: true, viewport: { width: 1440, height: 900 }, isMobile: fal
 test.setTimeout(120000);
 
 async function fixture(page: Page, context: BrowserContext, surface: Surface, meal = false) {
+  const fixtureBase = new URL(test.info().project.use.baseURL ?? "");
+  if (fixtureBase.protocol !== "http:" || !["127.0.0.1", "127.0.0.2", "localhost", "[::1]"].includes(fixtureBase.hostname) || fixtureBase.username || fixtureBase.password) throw new Error("Unread fixture requires an explicit HTTP loopback baseURL");
+  const fixtureOrigin = fixtureBase.origin;
   const proof: Proof = { build: readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim(), writes: [], errors: [], foreignReads: [], phases: [] };
   proofs.set(page, proof); context.on("page", other => other.on("pageerror", error => proof.errors.push(error.message)));
   page.on("pageerror", error => proof.errors.push(error.message));
@@ -32,7 +35,7 @@ async function fixture(page: Page, context: BrowserContext, surface: Surface, me
   const previewReads = new Set(Object.entries(manifest).filter(([, action]) => action.exportedName === "getPublicPreviewAction").map(([id]) => id));
   await context.route("**/*", route => {
     const request = route.request(), url = new URL(request.url());
-    if (url.origin !== "http://127.0.0.1:3117") { proof.foreignReads.push(`${request.method()} ${url.origin}${url.pathname}`); return route.abort(); }
+    if (url.origin !== fixtureOrigin) { proof.foreignReads.push(`${request.method()} ${url.origin}${url.pathname}`); return route.abort(); }
     if (request.method() === "POST" && url.pathname === "/visual-fixture/studio" && previewReads.has(request.headers()["next-action"])) return route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":"fixture"}\n1:${JSON.stringify(samplePublicScheduleData)}\n` });
     if (!["GET", "HEAD"].includes(request.method())) { proof.writes.push(`${request.method()} ${url.pathname}`); return route.fulfill({ status: 503, body: "fixture forbids writes" }); }
     if (url.pathname.startsWith("/api/")) return route.fulfill({ status: 503, body: "fixture forbids live API reads" });
@@ -107,7 +110,7 @@ async function turnUntil(dialog: Locator, target: Locator, next: string) {
     const value = Number(await rail.inputValue()), backwards = next.startsWith("이전");
     expect(backwards ? value > 1 : value < Number(await rail.getAttribute("max"))).toBe(true);
     if (await target.isVisible()) break;
-    await rail.focus(); await rail.press(backwards ? "ArrowLeft" : "ArrowRight");
+    await rail.focus(); await rail.press(backwards ? "PageUp" : "PageDown");
     // A native key may resolve before React/ResizeObserver commits the new
     // measured page. Wait for that page before deciding to advance again.
     await expect.poll(async () => await target.isVisible() || await firstItem() !== before).toBe(true);

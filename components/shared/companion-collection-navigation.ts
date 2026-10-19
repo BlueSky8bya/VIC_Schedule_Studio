@@ -58,17 +58,36 @@ export function companionCollectionUnreadDirections(index: number, length: numbe
   return { previous, next };
 }
 
-/** Fifteen food pages fit as real dots. Extremely narrow books can have more
- * pages: their local dot window stays bounded while the bar spans every page. */
-export function companionCollectionPageDots(page: number, count: number) {
-  const size = Math.min(count, count <= 15 ? 15 : 9), start = Math.max(0, Math.min(count - size, page - Math.floor(size / 2)));
-  return Array.from({ length: size }, (_, index) => start + index);
+/** Every page keeps a visible position after removal of the progress bar. */
+export function companionCollectionPageDots(count: number) {
+  return Array.from({ length: count }, (_, index) => index);
 }
 
-/** Pager arrows own page movement; tile arrows continue to own individual
- * cards, including a boundary that mounts the next finite page. */
+export function companionCollectionUnreadPages(length: number, size: number, unread: (index: number) => boolean) {
+  const pages = new Set<number>();
+  for (let index = 0; index < length; index++) if (unread(index)) pages.add(Math.floor(index / size));
+  return pages;
+}
+
+/** The visible buttons own Left/Right everywhere in an open collection.
+ * Their real click also owns acknowledgment, focus and the single activity
+ * event. Consume edges/loading before child tab/tile/calendar key handlers. */
+export function onCollectionArrowKey(event: KeyboardEvent<HTMLElement>) {
+  if (!["ArrowLeft", "ArrowRight"].includes(event.key) || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.nativeEvent?.isComposing) return;
+  const target = event.target as HTMLElement;
+  if (target.isContentEditable || target.closest?.('textarea, select, input:not([type="range"]), [contenteditable="true"], [contenteditable=""]')) return;
+  event.preventDefault(); event.stopPropagation();
+  const direction = event.key === "ArrowLeft" ? "prev" : "next";
+  const button = [...event.currentTarget.querySelectorAll<HTMLButtonElement>(`.rhh-collection-pages [data-page-direction="${direction}"]`)]
+    .find(node => !node.closest('[hidden], [inert], [aria-hidden="true"]'));
+  if (button && !button.disabled) button.click();
+}
+
+/** Home/End/PageUp/PageDown remain manual paging. Left/Right belong solely
+ * to onCollectionArrowKey and the visible previous/next buttons. */
 export function onCollectionPageKey(event: KeyboardEvent<HTMLElement>, page: number, count: number, size: number, select: (index: number, focus: boolean) => void) {
-  const next = event.key === "Home" ? 0 : event.key === "End" ? count - 1 : event.key === "ArrowLeft" || event.key === "PageUp" ? Math.max(0, page - 1) : event.key === "ArrowRight" || event.key === "PageDown" ? Math.min(count - 1, page + 1) : -1;
+  if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.nativeEvent?.isComposing) return;
+  const next = event.key === "Home" ? 0 : event.key === "End" ? count - 1 : event.key === "PageUp" ? Math.max(0, page - 1) : event.key === "PageDown" ? Math.min(count - 1, page + 1) : -1;
   if (next < 0) return;
   event.preventDefault(); event.stopPropagation();
   if (next === page) return;
@@ -77,11 +96,11 @@ export function onCollectionPageKey(event: KeyboardEvent<HTMLElement>, page: num
 }
 
 export function onCollectionKey(event: KeyboardEvent<HTMLButtonElement>, index: number, length: number, select: (index: number) => boolean | void, offset = 0, categoryAt?: (index: number) => string) {
-  if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) return;
+  if (!["ArrowUp", "ArrowDown", "Home", "End"].includes(event.key) || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.nativeEvent?.isComposing) return;
   const list = event.currentTarget.closest("ul");
   if (!list) return;
   const columns = Math.max(1, getComputedStyle(list).gridTemplateColumns.split(/\s+/).length);
-  const next = event.key === "Home" ? 0 : event.key === "End" ? length - 1 : event.key === "ArrowLeft" ? Math.max(0, index - 1) : event.key === "ArrowRight" ? Math.min(length - 1, index + 1) : event.key === "ArrowUp" ? Math.max(0, index - columns) : Math.min(length - 1, index + columns);
+  const next = event.key === "Home" ? 0 : event.key === "End" ? length - 1 : event.key === "ArrowUp" ? Math.max(0, index - columns) : Math.min(length - 1, index + columns);
   event.preventDefault(); event.stopPropagation();
   // Home on an unread first tile is still an intentional inspection. Already
   // read/unknown clamped keys remain a no-op; a real acknowledgment logs once.

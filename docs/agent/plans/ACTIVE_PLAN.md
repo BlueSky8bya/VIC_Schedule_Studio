@@ -2,7 +2,7 @@
 
 | ID | Status | Record |
 |---|---|---|
-| COMPANION-FIX-133 | Local gates complete; scoped release verification pending | [Body grounding, gallery and petting eyes](PLAN-20261019-133-companion-grounding-gallery-eyes.md) |
+| COMPANION-GALLERY-134 | Local gates complete; scoped release verification pending | [Gallery arrow keys and unread page dots](PLAN-20261019-134-companion-gallery-arrow-dots.md) |
 | COMPANION-LIFE-132 | Awaiting design feedback; six image drafts/five families ready, runtime integration not started | [Nine personalities](PLAN-20261019-132-companion-personality-life.md), [House and work scenes](PLAN-20261019-132-companion-home-scenes.md) |
 | PRIVACY-20260921 | Deployed containment verified; historical Git exposure, realtime/provider and retention follow-up remain | [Privacy audit](../verification/PRIVACY-20260921.md) |
 | DARK-HARMONY-20260919 | Ribbon editor dark controls corrected; local verification and authorized push follow-up. Production unverified (prior release staged) | [Dark palette follow-up](../../ux/dark-mode-palette.md) |
