@@ -27,7 +27,8 @@ function HomeWindow({ environment }: { environment?: CompanionHomeEnvironment })
 }
 
 function HomeObjectArt({ kind, className = "" }: { kind: "radio" | "book" | "dispenser" | "trash" | "toy-box"; className?: string }) {
-  return <img className={`vc-object-paint vc-home-object-image ${className}`} src={`/companion/home/122/furniture-${kind}.webp`} width="256" height="256" alt="" aria-hidden="true" draggable={false} decoding="async" loading="lazy" />;
+  const [width, height] = { radio: [256, 169], book: [250, 256], dispenser: [256, 217], trash: [256, 229], "toy-box": [256, 165] }[kind];
+  return <img className={`vc-object-paint vc-home-object-image ${className}`} src={`/companion/home/122/furniture-${kind}.webp`} width={width} height={height} alt="" aria-hidden="true" draggable={false} decoding="async" loading="lazy" />;
 }
 
 // The open U is shared by the room drawing and the separate foreground layer.
@@ -73,7 +74,7 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
     <div className="vc-home-room" data-season={environment?.season} data-weather={environment?.weather} data-band={environment?.band} data-phase={resolveCompanionWindowScene(environment).phase} data-night={environment?.night || undefined}>
       <HomeWindow environment={environment} />
       <div className="vc-home-shelf">
-      <svg className="vc-home-shelf-art" width="108" height="55" viewBox="0 0 108 55" fill="none" aria-hidden="true" focusable="false">
+      <svg className="vc-home-shelf-art" width="108" height="55" viewBox="0 0 108 55" preserveAspectRatio="none" fill="none" aria-hidden="true" focusable="false">
         <defs>
           <linearGradient id={`${bedId}-shelf`} x2=".15" y2="1"><stop stopColor="var(--vc-wood-light)" /><stop offset=".5" stopColor="var(--vc-wood)" /><stop offset="1" stopColor="var(--vc-wood-edge)" /></linearGradient>
         </defs>

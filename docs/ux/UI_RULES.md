@@ -1,5 +1,7 @@
 # Current UI rules
 
+집 비례·그림체 정정(2026-10-19 최신 소유자): [PLAN-124](../agent/plans/PLAN-20261019-124-companion-home-harmony.md)은123의236px 높이 보존과 사실적인 풍경 표현을 대체한다. 집 그림 영역은 공유200px(≤250px 컨테이너의44px 조작 간격·접근 공간이 요구하는 경우만226px, 종전258px) 가로형으로 정리하고, 기존 소파·창문을 큰 기준물로 둔다. 넓은 패널의 소파에는 공유150px 폭 상한을 두어 창 유리를 가리지 않으며, 셸 축소 시 실제120px 최소 폭·양쪽17.75% 좌석 안쪽 여백으로 기존92px 몸의 귀가 공간을 보존한다. 다른5개 집기는 투명 캔버스가 아닌 가시 크기·무게와 선반/수납/바닥의 정렬로 조화시킨다. 음식통은 작은 선반 위에서 기존 몸 보호영역을 막지 않으면서 실제 출구에 접근 가능한 높이를 유지한다. 계절·시간·날씨의 다양성은 유지하며 창밖도 실내와 같은 부드럽고 단순한 일러스트로 생성한다. 물리 좌석·출구·입구는 실제 DOM을 사용하고44px 실제 조작 영역·호버·감소 모션·G-22 의미 타깃은 유지한다.
+
 장난감·창문 정정(2026-10-19 최신 소유자): [PLAN-123](../agent/plans/PLAN-20261019-123-companion-direct-toys-and-window-world.md)은 장난감 직접 이동을 음식과 같은 grab-offset/latest-input/frame-paint 경로로 맞추고, 들고 가는 물체는 현재 프레임의 실제 빅타민 표시 위치를 따른다. 낙하와 유한 반납 모션은 기존 단일 세계 시계의 full/lite 주기를 쓰며 멈춘 장난감에 새 상시 loop를 만들지 않는다. 창문은 실제 shelf/hit/소파/출구 간격을 유지하며 넓혀야 한다. 공유 월/계절/날씨/태양 시간대 원천으로 실제 낮·새벽·노을·밤 그림과 날씨 그림을 고르고 밤을 낮 그림의 어두운 필터만으로 표현하지 않는다. 캐릭터·소파 원본과 기존 상호작용/접근성/감소 모션 권한은 유지한다.
 
 Updated: 2026-10-19. Read only sections affected by the task. Shared security, KST and authorization rules live in [AGENTS](../../AGENTS.md). This file preserves standing UI constraints formerly mixed with history in CLAUDE; historical explanations remain in git and dated reports.

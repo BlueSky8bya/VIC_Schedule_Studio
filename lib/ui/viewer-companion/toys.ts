@@ -93,7 +93,25 @@ export function createCompanionToys() {
         // A chest ejection aims into its measured room. The ordinary native
         // drop/toss remains unchanged, and the same sweep still owns contact.
         const seconds = (120 + Math.sqrt(120 * 120 + 1800 * (recipient.y - point.y))) / 900;
-        const targetX = platformLandingX(recipient, point.x + vx, 9), aimed = (targetX - point.x) / seconds;
+        const desired = point.x + vx;
+        let targetX = platformLandingX(recipient, desired, 9), distance = Infinity;
+        const contacts = platforms.filter(p => p.kind === "floor" && isCompanionHomeFloorFoodSupport(p.id) && Math.abs(p.y - recipient.y) <= .5).slice(0, 8);
+        if (!contacts.length && roomFloor(recipient)) contacts.push(recipient);
+        // The 44px support can extend beyond every body-safe approach. Aim
+        // inside their measured overlap, using each tier's existing inset;
+        // projection after a real swept contact then stays well within the
+        // unchanged 48px pickup radius, including ordinary coarse frames.
+        for (const body of platforms) {
+          if (!roomFloor(body) || Math.abs(body.y - recipient.y) > .5) continue;
+          for (const contact of contacts) {
+            const low = Math.max(platformLandingX(body, body.x), platformLandingX(contact, contact.x, 9), point.x - 260 * seconds);
+            const high = Math.min(platformLandingX(body, body.x + body.width), platformLandingX(contact, contact.x + contact.width, 9), point.x + 260 * seconds);
+            if (low > high) continue;
+            const candidate = clamp(desired, low, high), nextDistance = Math.abs(candidate - desired);
+            if (nextDistance < distance) { targetX = candidate; distance = nextDistance; }
+          }
+        }
+        const aimed = (targetX - point.x) / seconds;
         if (Number.isFinite(aimed) && Math.abs(aimed) <= 260) vx = aimed;
       }
       release(toy, at, { x: vx, y: -120 });

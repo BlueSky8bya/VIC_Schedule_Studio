@@ -8,12 +8,12 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome } from "./helpers/companion-home";
 
-const out = ".scratch-pw/companion-123/window";
+const out = process.env.COMPANION_WINDOW_UI_OUTPUT ?? ".scratch-pw/companion-123/window";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
 const month: Record<SeasonKey, number> = { spring: 4, summer: 7, autumn: 10, winter: 1 };
 type Phase = "dawn" | "day" | "dusk" | "night";
 const band: Record<Phase, DayBand> = { dawn: "dawn", day: "noon", dusk: "dusk", night: "night" };
-const overlay: Record<Weather, string | null> = { clear: null, cloud: "/companion/home/123/window-cloud-overlay.webp", rain: "/companion/home/122/window-rain-overlay.webp", snow: "/companion/home/122/window-snow-overlay.webp", fog: "/companion/home/123/window-fog-overlay.webp", wind: "/companion/home/123/window-wind-overlay.webp" };
+const overlay: Record<Weather, string | null> = { clear: null, cloud: "/companion/home/124/window-cloud-overlay.webp", rain: "/companion/home/124/window-rain-overlay.webp", snow: "/companion/home/124/window-snow-overlay.webp", fog: "/companion/home/124/window-fog-overlay.webp", wind: "/companion/home/124/window-wind-overlay.webp" };
 type Options = { surface?: "viewer" | "studio"; season?: SeasonKey; phase?: Phase; weather?: Weather; quiet?: "reduced" | "off"; dark?: boolean };
 const proofs = new WeakMap<Page, { writes: string[]; foreign: string[]; errors: string[] }>();
 
@@ -92,10 +92,14 @@ for (const [surface, width, dark] of [["viewer", 1440, false], ["studio", 1920, 
   expect(bounds.window.width / bounds.scale).toBeCloseTo(expectedWidth, 1);
   expect(bounds.window.width).toBeGreaterThan((124 + 10) * bounds.scale);
   expect(bounds.shelf.x - bounds.window.x - bounds.window.width).toBeGreaterThanOrEqual(6);
-  expect(bounds.window.y + bounds.window.height).toBeLessThan(bounds.sofa.y);
+  const painted = await state.room.evaluate(node => {
+    const glass = node.querySelector(".vc-window-glass")!.getBoundingClientRect(), sofa = node.querySelector(".vc-plush-bed")!.getBoundingClientRect();
+    return { glassBottom: glass.bottom, sofaOpaqueTop: sofa.top + sofa.height * .07 };
+  });
+  expect(painted.glassBottom).toBeLessThanOrEqual(painted.sofaOpaqueTop + .5);
   expect(bounds.window.x).toBeGreaterThanOrEqual(bounds.room.x);
   expect(bounds.window.x + bounds.window.width).toBeLessThan(bounds.room.x + bounds.room.width);
-  expect(await state.room.locator(".vc-home-room").evaluate(node => parseFloat(getComputedStyle(node).height))).toBeCloseTo(236, 1);
+  expect(await state.room.locator(".vc-home-room").evaluate(node => parseFloat(getComputedStyle(node).height))).toBeCloseTo(200, 1);
   for (const action of ["book", "radio", "home", "toys", "feed", "clearFood"]) {
     const target = state.room.locator(`[data-home-action="${action}"]`), rect = (await target.boundingBox())!;
     expect(rect.width).toBeGreaterThanOrEqual(44); expect(rect.height).toBeGreaterThanOrEqual(44);
@@ -108,7 +112,7 @@ for (const season of ["spring", "summer", "autumn", "winter"] as const) test(`12
   for (const phase of ["dawn", "day", "dusk", "night"] as const) {
     const state = await fixture(page, { season, phase });
     await expect(state.window).toHaveAttribute("data-phase", phase);
-    const expected = phase === "day" ? `/companion/home/122/window-${season}.webp` : `/companion/home/123/window-${season}-${phase}.webp`;
+    const expected = `/companion/home/124/window-${season}-${phase}.webp`;
     await expect(state.window.locator(".vc-window-landscape")).toHaveAttribute("src", expected); sources.add(expected);
     await expect(state.window.locator(".vc-window-weather")).toHaveCount(0);
     const bounds = await snapshot(page, state, `${season}-${phase}`);
@@ -124,7 +128,7 @@ test("123 all six shared weathers select their own static overlay without changi
     const state = await fixture(page, { season: "autumn", phase: "day", weather });
     await expect(state.window).toHaveAttribute("data-weather", weather);
     await expect(state.window).toHaveAttribute("data-phase", "day");
-    await expect(state.window.locator(".vc-window-landscape")).toHaveAttribute("src", "/companion/home/122/window-autumn.webp");
+    await expect(state.window.locator(".vc-window-landscape")).toHaveAttribute("src", "/companion/home/124/window-autumn-day.webp");
     if (overlay[weather]) await expect(state.window.locator(".vc-window-weather")).toHaveAttribute("src", overlay[weather]!);
     else await expect(state.window.locator(".vc-window-weather")).toHaveCount(0);
     expect(await state.window.evaluate(node => node.getAnimations({ subtree: true }).length)).toBe(0);
@@ -134,7 +138,7 @@ test("123 all six shared weathers select their own static overlay without changi
 
 for (const quiet of ["reduced", "off"] as const) test(`123 static night and weather remain present in quiet mode: ${quiet}`, async ({ page }) => {
   const state = await fixture(page, { season: "winter", phase: "night", weather: "wind", quiet });
-  await expect(state.window.locator(".vc-window-landscape")).toHaveAttribute("src", "/companion/home/123/window-winter-night.webp");
+  await expect(state.window.locator(".vc-window-landscape")).toHaveAttribute("src", "/companion/home/124/window-winter-night.webp");
   await expect(state.window.locator(".vc-window-weather")).toHaveAttribute("src", overlay.wind!);
   await expect(state.window.locator(".vc-window-landscape")).toHaveCSS("filter", "none");
   expect(await state.window.evaluate(node => node.getAnimations({ subtree: true }).length)).toBe(0);

@@ -4,8 +4,17 @@
    Every scene layer is static; only a deliberate interaction moves. */
 .vc-home {
   --vc-object-min-hit: calc(45px / var(--shell-zoom, 1));
-  --vc-bin-hit: max(52px, var(--vc-object-min-hit));
+  --vc-bin-hit: max(54px, var(--vc-object-min-hit));
+  --vc-bin-height: max(52px, var(--vc-object-min-hit));
   --vc-object-gap: max(8px, calc(8px / var(--shell-zoom, 1)));
+  --vc-radio-hit: max(53px, var(--vc-object-min-hit));
+  --vc-book-hit: max(44px, var(--vc-object-min-hit));
+  --vc-toy-hit: max(66px, var(--vc-object-min-hit));
+  --vc-dispenser-hit: max(48px, var(--vc-object-min-hit));
+  --vc-shelf-width: max(116px, calc(var(--vc-radio-hit) + var(--vc-book-hit) + var(--vc-object-gap) + 2px));
+  --vc-window-left: 12px;
+  --vc-window-width: min(152px, calc(100% - var(--vc-shelf-width) - 28px));
+  --vc-storage-bottom: max(69px, calc(6px + var(--vc-bin-height) + var(--vc-object-gap)));
   --vc-wall: color-mix(in srgb, rgb(var(--glass-panel)) 88%, #dfc9ab);
   --vc-floor: color-mix(in srgb, rgb(var(--glass-cell)) 72%, #c5a47e);
   --vc-wood: color-mix(in srgb, rgb(var(--glass-panel)) 46%, #ae8864);
@@ -43,16 +52,16 @@
   box-shadow: var(--panel-card-shadow);
   font-size: var(--text-body);
 }
-/* Painted props sit on two clear planes: shelf above, storage at the back
-   of the floor, sofa and bin in front. Hit planes never scale with the art. */
-.vc-home-room { position: relative; height: 236px; overflow: hidden; border-radius: var(--r-sm); background: radial-gradient(ellipse at 18% 18%, #fff5 0, transparent 60%), linear-gradient(180deg, var(--vc-wall), color-mix(in srgb, var(--vc-wall) 88%, var(--vc-linen))); box-shadow: inset 0 1px 0 #fff3, inset 0 -1px 0 var(--vc-thread); }
+/* Shelf, back-row storage and the foreground keep separate native targets.
+   At200px the capped sofa clears the glass; taller empty wall is unnecessary. */
+.vc-home-room { position: relative; height: 200px; overflow: hidden; border-radius: var(--r-sm); background: radial-gradient(ellipse at 18% 18%, #fff5 0, transparent 60%), linear-gradient(180deg, var(--vc-wall), color-mix(in srgb, var(--vc-wall) 88%, var(--vc-linen))); box-shadow: inset 0 1px 0 #fff3, inset 0 -1px 0 var(--vc-thread); }
 .vc-home[data-home-presentation="compact"] > .panel-section-heading .panel-section-title > span { min-height: 36px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: 4px var(--control-hit); }
-.vc-home-room::before { content: ''; position: absolute; inset: auto 0 102px; height: 5px; background: linear-gradient(180deg, var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 1px 2px var(--vc-soft-shadow); pointer-events: none; }
+.vc-home-room::before { content: ''; position: absolute; inset: auto 0 70px; height: 5px; background: linear-gradient(180deg, var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 1px 2px var(--vc-soft-shadow); pointer-events: none; }
 .vc-home-close { display: grid; place-items: center; width: var(--control-hit); height: var(--control-hit); margin-left: auto; padding: 0; border: 0; border-radius: var(--r-pill); color: var(--muted); background: transparent; cursor: pointer; pointer-events: auto; }
 .vc-home-close:hover { color: var(--ink); background: rgb(var(--glass-head)); }
-/* Leave8px before the existing116px shelf even in the compact room. The
-   frame grows to152x116 without changing the room or any physical anchor. */
-.vc-home-window { position: absolute; left: 12px; top: 10px; box-sizing: border-box; width: min(152px, calc(100% - 144px)); height: auto; aspect-ratio: 38 / 29; padding: 6px; border: 1px solid color-mix(in srgb, var(--vc-wood-edge) 65%, transparent); border-radius: 14px 14px 9px 9px; background: linear-gradient(110deg, var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 3px 5px var(--vc-soft-shadow), inset 0 1px 1px #fff9; pointer-events: none; }
+/* Keep the compact138px/full152px frame. The shelf may grow only to retain
+   its two45px native targets and their gap at the inherited shell zoom. */
+.vc-home-window { position: absolute; left: var(--vc-window-left); top: 8px; box-sizing: border-box; width: var(--vc-window-width); height: auto; aspect-ratio: 38 / 29; padding: 6px; border: 1px solid color-mix(in srgb, var(--vc-wood-edge) 65%, transparent); border-radius: 14px 14px 9px 9px; background: linear-gradient(110deg, var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 3px 5px var(--vc-soft-shadow), inset 0 1px 1px #fff9; pointer-events: none; }
 .vc-window-glass { position: relative; display: block; width: 100%; height: 100%; overflow: hidden; border-radius: 8px 8px 3px 3px; box-shadow: inset 0 0 0 1px #604b3436; isolation: isolate; }
 .vc-window-landscape, .vc-window-weather { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 .vc-window-landscape { filter: var(--vc-landscape-grade, none); }
@@ -72,25 +81,30 @@
 .vc-window-crossbar::before { top: 0; bottom: 0; left: calc(50% - 1px); width: 2px; }
 .vc-window-crossbar::after { left: 0; right: 0; top: 43%; height: 2px; }
 .vc-window-sill { position: absolute; left: -4px; right: -4px; bottom: -4px; height: 6px; border: 1px solid color-mix(in srgb, var(--vc-wood-edge) 60%, transparent); border-radius: 4px; background: linear-gradient(var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 2px 2px var(--vc-soft-shadow); }
-.vc-home-shelf { position: absolute; top: 12px; right: 8px; width: 116px; height: 70px; pointer-events: none; }
+.vc-home-shelf { position: absolute; top: 7px; right: 8px; width: var(--vc-shelf-width); height: calc(max(48px, var(--vc-object-min-hit)) + 13px); pointer-events: none; }
 .vc-home-shelf-art { position: absolute; bottom: 0; display: block; width: 100%; height: 55px; pointer-events: none; }
 .vc-shelf-bracket { stroke: var(--vc-wood-edge); stroke-width: 3; stroke-linecap: round; }
 .vc-shelf-board-shadow { fill: var(--vc-soft-shadow); }
 .vc-shelf-board { stroke: var(--vc-wood-edge); stroke-width: .7; }
-.vc-book-button, .vc-radio-button { position: absolute; bottom: 13px; display: grid; place-items: end center; width: var(--vc-object-min-hit); min-width: 45px; height: max(56px, var(--vc-object-min-hit)); padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--ink); pointer-events: auto; cursor: pointer; }
-.vc-book-button { right: 1px; }
-.vc-radio-button { left: 0; width: max(58px, var(--vc-object-min-hit)); }
+.vc-book-button, .vc-radio-button { position: absolute; bottom: 13px; display: grid; place-items: end center; height: max(48px, var(--vc-object-min-hit)); padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--ink); pointer-events: auto; cursor: pointer; }
+.vc-book-button { right: 1px; width: var(--vc-book-hit); }
+.vc-radio-button { left: 0; width: var(--vc-radio-hit); }
 .vc-home-object-image { width: 100%; height: 100%; object-fit: contain; object-position: center bottom; }
-.vc-book-button > .vc-home-object-image { width: 40px; height: 50px; }
-.vc-radio-button > .vc-home-object-image { width: 58px; height: 49px; }
+/* These contain boxes account for each immutable bitmap's transparent
+   margins: visible alpha masses stay within about18%, without stretching. */
+.vc-book-button > .vc-home-object-image { width: 42px; height: 42px; }
+.vc-radio-button > .vc-home-object-image { width: 53px; height: 40px; }
 .vc-book-unread { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 17px; height: 17px; border: 2px solid var(--vc-linen); border-radius: 50%; background: #a34d39; color: #fffaf2; font: 800 11px/1 var(--font-ui, sans-serif); pointer-events: none; }
 .vc-home-light { position: absolute; top: 36px; left: 40px; width: 65%; height: 144px; background: linear-gradient(125deg, #f4e2b72e, transparent 84%); clip-path: polygon(0 0, 28% 0, 100% 100%, 10% 100%); pointer-events: none; }
 .vc-home-room[data-night] .vc-home-light { background: linear-gradient(125deg, #c6d7eb18, transparent 84%); }
 .vc-home-room:is([data-weather="rain"], [data-weather="fog"], [data-weather="snow"]) .vc-home-light { opacity: .3; }
-.vc-home-floor { position: absolute; inset: auto 0 0; height: 104px; background: repeating-linear-gradient(0deg, transparent 0 21px, var(--vc-thread) 22px, transparent 23px 44px), radial-gradient(ellipse at 33% 0, #fff4, transparent 68%), linear-gradient(180deg, color-mix(in srgb, var(--vc-floor) 80%, var(--vc-wall)), var(--vc-floor)); box-shadow: inset 0 1px 0 #fff2, inset 0 -3px 0 var(--vc-thread); pointer-events: none; }
+.vc-home-floor { position: absolute; inset: auto 0 0; height: 72px; background: repeating-linear-gradient(0deg, transparent 0 21px, var(--vc-thread) 22px, transparent 23px 44px), radial-gradient(ellipse at 33% 0, #fff4, transparent 68%), linear-gradient(180deg, color-mix(in srgb, var(--vc-floor) 80%, var(--vc-wall)), var(--vc-floor)); box-shadow: inset 0 1px 0 #fff2, inset 0 -3px 0 var(--vc-thread); pointer-events: none; }
 /* The recessed seat is the real anchor. The raised torus can grow around
    it without pretending a flat rug is a bed (PLAN052 replaces16px cushion). */
-.vc-cushion-button { position: absolute; z-index: 2; left: 7%; bottom: 5px; width: 49%; height: 78px; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; color: var(--muted); cursor: pointer; }
+/* The78px hit covers the complete resting back rim of the capped150px SVG
+   (77.5px of opaque height). A button-only check would miss an inert SVG
+   painting above its target. The original compact sofa aspect is retained. */
+.vc-cushion-button { position: absolute; z-index: 2; left: 5px; bottom: 5px; width: max(calc(120px / var(--shell-zoom, 1)), min(49%, 150px)); height: 78px; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; color: var(--muted); cursor: pointer; }
 .vc-plush-bed { position: absolute; bottom: 0; left: 0; width: 100%; height: auto; overflow: visible; pointer-events: none; transform-origin: 50% 85%; }
 /* Only painted groups move. The SVG, button and two-pixel seat remain fixed
    measurements; both copies of the cloth share the same viewBox and pivot. */
@@ -104,8 +118,12 @@ body:has(.vc-cushion-button:is(:hover, :focus-visible)) .vc-bed-foreground .vc-s
    listener or geometry read. Release returns through the shared spring. */
 .vc-cushion-button:active .vc-sofa-feedback,
 body:has(.vc-cushion-button:active) .vc-bed-foreground .vc-sofa-feedback { --vc-sofa-feedback-scale: var(--press-scale); --vc-object-feedback-y: 1px; --vc-sofa-feedback-duration: .07s; --vc-sofa-feedback-ease: var(--ease-exit, var(--ease)); --vc-sofa-feedback-welt-opacity: .9; }
-/* The 62% seat opening stays inside the SVG's actual 31..149/180 sidewalls. */
-.vc-home-cushion { position: absolute; bottom: 26%; left: 19%; right: 19%; height: 2px; pointer-events: none; }
+/* The64.5% seat stays inside the SVG's31..149/180 opening. A120px native
+   sofa supplies77.4px of seat, enough for the unchanged92px registered body
+   plus its two3px clearances and1px landing interval (76.92px required). */
+/* Preserve the original78px hit's26% seat offset explicitly. The measured
+   seat and original foreground relation remain independent of image caps. */
+.vc-home-cushion { position: absolute; bottom: 20.28px; left: 17.75%; right: 17.75%; height: 2px; pointer-events: none; }
 .vc-bed-ground { fill: var(--vc-soft-shadow); }
 .vc-bed-centre { fill: var(--vc-bed-light); opacity: .36; }
 .vc-bed-back-ribs { fill: none; stroke: var(--vc-bed-light); stroke-width: 3.6; stroke-linecap: round; opacity: .46; }
@@ -122,16 +140,22 @@ body:has(.vc-cushion-button:active) .vc-bed-foreground .vc-sofa-feedback { --vc-
 .vc-home button:not(:disabled):is(:hover, :focus-visible) > .vc-object-paint { --vc-object-feedback-y: -4px; --vc-object-feedback-scale: 1.085; --vc-object-feedback-angle: -2deg; filter: brightness(1.08) drop-shadow(0 4px 2px #62452730); }
 .vc-home :is(.vc-book-button, .vc-toy-box):not(:disabled):is(:hover, :focus-visible) > .vc-object-paint { --vc-object-feedback-angle: 2deg; }
 .vc-home button:not(:disabled):active > .vc-object-paint { --vc-object-feedback-y: 1px; --vc-object-feedback-scale: .94; --vc-object-feedback-angle: 0deg; --vc-object-feedback-duration: .07s; filter: brightness(.94); }
-.vc-toy-box { --vc-toy-hit: max(66px, var(--vc-object-min-hit)); position: absolute; right: 10px; bottom: 80px; z-index: 2; width: var(--vc-toy-hit); height: max(59px, var(--vc-object-min-hit)); display: grid; place-items: end center; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
-.vc-toy-box > .vc-home-object-image { height: 59px; }
-.vc-toy-box-opening { position: absolute; left: 53%; bottom: 28px; width: 26px; height: 4px; margin-left: -13px; pointer-events: none; }
-.vc-dispenser { position: absolute; z-index: 2; right: calc(10px + max(66px, var(--vc-object-min-hit)) + var(--vc-object-gap)); bottom: 80px; width: max(45px, var(--vc-object-min-hit)); height: max(48px, var(--vc-object-min-hit)); box-sizing: border-box; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
-.vc-dispenser-paint { position: absolute; bottom: 0; left: 50%; margin-left: -22px; width: 44px; height: 48px; }
+.vc-toy-box { position: absolute; right: 10px; bottom: var(--vc-storage-bottom); z-index: 2; width: var(--vc-toy-hit); height: max(52px, var(--vc-object-min-hit)); display: grid; place-items: end center; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
+.vc-toy-box > .vc-home-object-image { position: relative; bottom: -3px; width: 62px; height: 42px; }
+/* The fixed source opening follows the same62/66 contain scale and3px
+   baseline correction as its picture, outside all hover transforms. */
+.vc-toy-box-opening { position: absolute; left: calc(50% + 1.86px); bottom: calc(28px * 62 / 66 - 3px); width: calc(26px * 62 / 66); height: calc(4px * 62 / 66); margin-left: calc(-13px * 62 / 66); pointer-events: none; }
+/* A small wall-mounted dispenser leaves74px below its native target: the
+   existing92px body clears it while the actual outlet stays within reach.
+   Horizontal placement uses the real window edge and the open wall gap. */
+.vc-dispenser { position: absolute; z-index: 2; left: max(calc(var(--vc-window-left) + var(--vc-window-width)), calc(55% - var(--vc-dispenser-hit) / 2)); bottom: calc(80px / var(--shell-zoom, 1)); width: var(--vc-dispenser-hit); height: max(48px, var(--vc-object-min-hit)); box-sizing: border-box; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
+.vc-dispenser::before { content: ''; position: absolute; bottom: 0; left: calc(50% - 23px); width: 46px; height: 4px; border-radius: 2px; background: linear-gradient(var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 2px 2px var(--vc-soft-shadow); pointer-events: none; }
+.vc-dispenser-paint { position: absolute; bottom: 0; left: 50%; margin-left: -24px; width: 48px; height: 44px; }
 /* Native outlet remains outside the moving art; geometry measures its actual
    smaller dispenser slot, not a decorative animation transform. */
-.vc-dispenser-slot { position: absolute; bottom: 10px; left: calc(50% - 2.5px); margin-left: -9.5px; width: 19px; height: 4px; pointer-events: none; }
-.vc-home-trash { --vc-trash-progress: 0; position: absolute; z-index: 2; right: 10px; bottom: 6px; display: grid; place-items: end center; width: var(--vc-bin-hit); height: max(55px, var(--vc-object-min-hit)); padding: 0; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
-.vc-home-trash > .vc-home-object-image { width: 45px; height: 52px; }
+.vc-dispenser-slot { position: absolute; bottom: calc(10px * 48 / 44); left: calc(50% - 2.5px * 48 / 44); margin-left: calc(-9.5px * 48 / 44); width: calc(19px * 48 / 44); height: calc(4px * 48 / 44); pointer-events: none; }
+.vc-home-trash { --vc-trash-progress: 0; position: absolute; z-index: 2; right: 10px; bottom: 6px; display: grid; place-items: end center; width: var(--vc-bin-hit); height: var(--vc-bin-height); padding: 0; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
+.vc-home-trash > .vc-home-object-image { position: relative; bottom: -6.3px; width: 54px; height: 48px; }
 .vc-trash-progress { position: absolute; bottom: 2px; left: 10px; right: 10px; height: 2px; border-radius: var(--r-pill); background: var(--muted); transform: scaleX(var(--vc-trash-progress)); transform-origin: left; }
 .vc-home button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .vc-home button:disabled { opacity: .38; cursor: default; }
@@ -145,13 +169,16 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home butt
 html[data-theme="dark"] .vc-home { --vc-soft-shadow: #21181045; --vc-wood-light: color-mix(in srgb, rgb(var(--glass-cell)) 38%, #b69d7d); }
 html[data-theme="dark"] .vc-home-object-image { opacity: .92; }
 @container (max-width: 250px) {
-  .vc-home-room { height: 258px; }
-  .vc-home-window { width: min(126px, calc(100% - 134px)); left: 10px; }
-  .vc-home-shelf { right: 6px; width: 106px; }
-  .vc-home-room::before { bottom: 118px; }
-  .vc-home-floor { height: 120px; }
-  .vc-cushion-button { bottom: 6px; left: 4%; }
-  .vc-dispenser, .vc-toy-box { bottom: 86px; }
-  .vc-radio-button { width: max(52px, var(--vc-object-min-hit)); }
-  .vc-radio-button > .vc-home-object-image { width: 52px; }
+  /* At this exceptional width the raised food target and shelf share x.
+     At .8 zoom,226px leaves8.4px between those native targets; the box and
+     full sofa hit meet without overlap. Ordinary >=282px rooms stay200px.
+     This replaces the old258px narrow room, never expands calendar chrome. */
+  .vc-home-room { --vc-window-left: 10px; --vc-window-width: min(126px, calc(100% - var(--vc-shelf-width) - 26px)); height: 226px; }
+  .vc-home-shelf { top: 3px; right: 6px; }
+  .vc-home-room::before { bottom: 86px; }
+  .vc-home-floor { height: 88px; }
+  .vc-toy-box { bottom: 83px; }
+  /* Only the transparent frame-side gutter may share this hit rectangle;
+     the contained dispenser paint remains clear of the landscape glass. */
+  .vc-dispenser { left: min(max(calc(var(--vc-window-left) + var(--vc-window-width)), calc(55% - var(--vc-dispenser-hit) / 2)), calc(100% - 10px - var(--vc-toy-hit) - var(--vc-object-gap) - var(--vc-dispenser-hit))); bottom: max(calc(80px / var(--shell-zoom, 1)), 83px); }
 }

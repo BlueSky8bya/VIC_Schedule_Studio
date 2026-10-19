@@ -2,7 +2,7 @@
 
 | ID | Status | Record |
 |---|---|---|
-| PLAN-20261019-123 | In progress: immediate toy movement and wider seasonal/time window scenery | [Direct toys and window world](PLAN-20261019-123-companion-direct-toys-and-window-world.md) |
+| PLAN-20261019-124 | Release checks: local source, rendered interactions and art/privacy gates complete | [Home harmony](PLAN-20261019-124-companion-home-harmony.md) |
 | PRIVACY-20260921 | Deployed containment verified; historical Git exposure, realtime/provider and retention follow-up remain | [Privacy audit](../verification/PRIVACY-20260921.md) |
 | DARK-HARMONY-20260919 | Ribbon editor dark controls corrected; local verification and authorized push follow-up. Production unverified (prior release staged) | [Dark palette follow-up](../../ux/dark-mode-palette.md) |
 | MARINE-RESUME | Paused by owner | [Resume handoff](../handoffs/20260916-marine-biomes-resume.md) |
