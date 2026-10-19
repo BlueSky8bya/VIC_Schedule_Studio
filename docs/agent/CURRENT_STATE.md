@@ -7,7 +7,7 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Current work138: repair sofa/native scroll coherence and dark weekday bar, lower room furniture as one composition, randomize personality on each full refresh.
+Current139: slightly enlarge the shared room book; preserve explicit personality choices across reload while never-selected documents continue random selection.
 
 Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user.125 explicitly authorizes unnecessary Vercel deployment cleanup/optimization; unrelated cleanup, bulk DB UPDATE, paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
 
@@ -17,7 +17,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| COMPANION-SCROLL-138 | Local verified | Check deployed full SHA, native refresh selection and dark weekday surface; 3458 units/55 native PASS | [138 plan](plans/PLAN-20261019-138-companion-scroll-room-random.md) |
+| COMPANION-MANUAL-139 | Local verified | Check deployed full SHA/native random→manual pin and book48; 3476 units/15 browser checks PASS | [139 plan](plans/PLAN-20261020-139-manual-personality-book.md) |
 | OPS-VERCEL-QUOTA | Open | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
@@ -45,6 +45,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 5. PRIVACY-20260921: resolve remaining visit/recurring retention policy and restricted local recovery-backup removal after its2026-10-24 window. No automatic future run is scheduled.
 ## Last Verified
 
-Current product release `1c8db0004e2d0b9b3cc0cc278d73d424ac749946`: [137 approved personalities and real home scenes](plans/PLAN-20261019-137-companion-personality-scenes.md#출시-확인). Nine names/108 scenes+36 combinations implemented. Local3443 units/302 files/type/lint/build/harness337 and70 distinct native checks PASS;27 viewer/studio/preview selections first decoded expression max558.6ms, meaningful gap max4049.9ms during20s observations. Same-ID four-toy cleanup/actual brush, food dispenser/eating, real TV/light/curtain/manual priority, editor focus/ACK/OFF and G22 capture+both developer views verified. Vercel success and fresh actual anonymous fullSHA/chunk/native controls/light reload PASS23:48 KST; no production mutations/live-state GET/private-manifest reads. Original report/protected art preserved. Remote quality39271858616 success23:50:02 KST. Real-login/RLS/OBS/screen-reader and human visual recognition/art approval remain separate.
+Current product release `41e73e05904d60b7effea1a70a6d141ad71376fd`: [138 shared room scroll, theme and refresh personality](plans/PLAN-20261019-138-companion-scroll-room-random.md#출시-확인). Same-delivery sofa/resident scroll, shared dark weekdays and common lower furniture anchors; fresh personality per document while ordinary OFF/settings and same-document manual selection persist. Local3458 units/303 files/type/lint/build/harness338 and55 distinct native checks PASS, including all9 personalities, actual four-toy returns/eating/washing/TV/light/curtain, editor ACK/OFF and G22 both developer views. Vercel success and fresh anonymous actual fullSHA/chunk/native controls/light reload/6 random refreshes/dark weekday PASS00:30 KST; errors0/production mutation0/live-state GET0/private-manifest0. Protected art preserved. Remote quality39277952042 pending; real-login/RLS/OBS/screen-reader and human visual recognition/art approval remain separate.
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.

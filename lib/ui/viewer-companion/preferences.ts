@@ -79,18 +79,28 @@ export function companionWorldPreferencesKey(preferences: Readonly<CompanionPref
 let volatilePreferences: CompanionPreferences | undefined;
 let lastReadableRaw: string | null | undefined;
 let unwritten: { raw: string | null | undefined; owner: Window } | undefined;
-const documentPersonalities = new WeakMap<Window, CompanionPersonality>();
+type PersonalityChoice = Readonly<{ personality: CompanionPersonality; manual: boolean }>;
+type StoredPreferences = Readonly<{ preferences: CompanionPreferences; manualPersonality?: CompanionPersonality }>;
+const documentPersonalities = new WeakMap<Window, PersonalityChoice>();
+const validPersonality = (value: unknown): value is CompanionPersonality => COMPANION_PERSONALITIES.some(personality => personality === value);
 
-/** One independent choice per document, shared by every same-page consumer.
- * Full navigation/refresh creates a new module/document; remounts and preview
- * transitions do not. This never writes storage or emits a human action. */
+/** Unselected documents draw once; a direct choice stays local until written.
+ * Reading alone never writes storage or emits a human action. */
 function withDocumentPersonality(preferences: Readonly<CompanionPreferences>): CompanionPreferences {
-  let personality = documentPersonalities.get(window);
-  if (!personality) {
+  let choice = documentPersonalities.get(window);
+  if (!choice) {
     const draw = Math.random(), index = Number.isFinite(draw) ? Math.max(0, Math.min(COMPANION_PERSONALITIES.length - 1, Math.floor(draw * COMPANION_PERSONALITIES.length))) : 0;
-    personality = COMPANION_PERSONALITIES[index]; documentPersonalities.set(window, personality);
+    choice = { personality: COMPANION_PERSONALITIES[index], manual: false }; documentPersonalities.set(window, choice);
   }
-  return { ...preferences, personality };
+  return { ...preferences, personality: choice.personality };
+}
+
+/** Only the persisted provenance pair can pin a new document. Legacy/random
+ * records do not identify a human choice; reset also releases a prior pin. */
+function adoptStoredPreferences(stored: StoredPreferences): CompanionPreferences {
+  if (stored.manualPersonality) documentPersonalities.set(window, { personality: stored.manualPersonality, manual: true });
+  else if (documentPersonalities.get(window)?.manual) documentPersonalities.delete(window);
+  return withDocumentPersonality(stored.preferences);
 }
 
 /** Explicit allowlist: malformed patches keep the current/default choices.
@@ -102,23 +112,24 @@ export function normalizeCompanionPreferences(value: unknown, base: Readonly<Com
   for (const key of booleanKeys) if (typeof source[key] === "boolean") next[key] = source[key];
   if (typeof source.soundVolume === "number" && Number.isFinite(source.soundVolume)) next.soundVolume = Math.min(100, Math.max(0, Math.round(source.soundVolume)));
   if (source.speed === "relaxed" || source.speed === "normal" || source.speed === "lively") next.speed = source.speed;
-  if (COMPANION_PERSONALITIES.some(personality => personality === source.personality)) next.personality = source.personality as CompanionPersonality;
+  if (validPersonality(source.personality)) next.personality = source.personality;
   if (source.animalMode === "default" || source.animalMode === "cat" || source.animalMode === "dog") next.animalMode = source.animalMode;
   return next;
 }
 
-function parseStoredPreferences(raw: string | null): CompanionPreferences {
-  if (raw === null) return { ...DEFAULT_COMPANION_PREFERENCES };
+function parseStoredPreferences(raw: string | null): StoredPreferences {
+  if (raw === null) return { preferences: { ...DEFAULT_COMPANION_PREFERENCES } };
   try {
     const stored: unknown = JSON.parse(raw);
-    if (!stored || typeof stored !== "object" || Array.isArray(stored) || !("version" in stored) || stored.version !== 1) return { ...DEFAULT_COMPANION_PREFERENCES, enabled: false };
+    if (!stored || typeof stored !== "object" || Array.isArray(stored) || !("version" in stored) || stored.version !== 1) return { preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: false } };
     const next = normalizeCompanionPreferences(stored);
     // A missing field in an otherwise valid old preference record adopts the
     // new default. Explicit ON/OFF remains the user's choice; an invalid master
     // field cannot accidentally turn a corrupt saved record into an opt-in.
     if ("enabled" in stored && typeof stored.enabled !== "boolean") next.enabled = false;
-    return next;
-  } catch { return { ...DEFAULT_COMPANION_PREFERENCES, enabled: false }; }
+    const source = stored as Record<string, unknown>;
+    return { preferences: next, ...(source.personalitySource === "manual" && validPersonality(source.personality) ? { manualPersonality: source.personality } : {}) };
+  } catch { return { preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: false } }; }
 }
 
 export function getCompanionPreferences(): CompanionPreferences {
@@ -131,22 +142,24 @@ export function getCompanionPreferences(): CompanionPreferences {
   // latest choices until a write succeeds or the stored bytes actually change.
   if (unwritten?.owner === window && (unwritten.raw === undefined || unwritten.raw === raw)) return withDocumentPersonality(volatilePreferences ?? DEFAULT_COMPANION_PREFERENCES);
   unwritten = undefined;
-  // The saved record still owns every ordinary switch, including master OFF.
-  // Its previous personality never pins the next document's fresh choice.
-  volatilePreferences = withDocumentPersonality(parseStoredPreferences(raw));
+  // The saved record owns every ordinary switch, including master OFF. Only
+  // an explicit saved manual choice also owns the next document's personality.
+  volatilePreferences = adoptStoredPreferences(parseStoredPreferences(raw));
   return { ...volatilePreferences };
 }
 
 /** A master OFF only changes enabled; every detailed choice survives. */
 export function setCompanionPreferences(patch: Partial<CompanionPreferences>): CompanionPreferences {
-  const next = normalizeCompanionPreferences(patch, getCompanionPreferences());
+  const current = getCompanionPreferences(), next = normalizeCompanionPreferences(patch, current);
   if (typeof window === "undefined") return next;
-  // Direct selection takes effect immediately throughout this document and
-  // survives later setting changes/remounts, until the next full refresh.
-  documentPersonalities.set(window, next.personality);
+  const selected = patch && typeof patch === "object" && !Array.isArray(patch) && Object.prototype.hasOwnProperty.call(patch, "personality") && validPersonality(patch.personality);
+  // Unrelated/invalid patches cannot silently turn an automatic draw into a
+  // permanent selection. A direct re-selection is deliberately still manual.
+  if (selected) documentPersonalities.set(window, { personality: next.personality, manual: true });
+  else next.personality = current.personality;
   volatilePreferences = next;
   try {
-    const raw = JSON.stringify({ version: 1, ...next });
+    const raw = JSON.stringify({ version: 1, ...next, ...(documentPersonalities.get(window)?.manual ? { personalitySource: "manual" } : {}) });
     window.localStorage.setItem(COMPANION_PREFERENCES_KEY, raw);
     lastReadableRaw = raw;
     unwritten = undefined;
@@ -157,8 +170,8 @@ export function setCompanionPreferences(patch: Partial<CompanionPreferences>): C
   return { ...next };
 }
 
-/** Same-page consumers share the current personality. Other documents still
- * synchronize ordinary settings, without replacing their own personality. */
+/** Same-page consumers share the live choice. Saved manual selections and
+ * ordinary settings also synchronize across documents, including reset. */
 export function subscribeCompanionPreferences(listener: (preferences: CompanionPreferences) => void): () => void {
   if (typeof window === "undefined") return () => {};
   const changed = (event: Event) => listener(withDocumentPersonality(normalizeCompanionPreferences((event as CustomEvent<unknown>).detail)));
@@ -171,7 +184,7 @@ export function subscribeCompanionPreferences(listener: (preferences: CompanionP
       // the other tab's explicit choice/reset replace our volatile fallback.
       if (event.key === null || event.newValue === null || typeof event.newValue === "string") {
         lastReadableRaw = event.key === null ? null : event.newValue;
-        volatilePreferences = parseStoredPreferences(lastReadableRaw);
+        volatilePreferences = adoptStoredPreferences(parseStoredPreferences(lastReadableRaw));
       }
       listener(getCompanionPreferences());
     }

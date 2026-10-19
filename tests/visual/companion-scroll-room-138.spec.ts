@@ -13,7 +13,7 @@ const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAl
 const proof = new WeakMap<Page, { errors: string[]; unexpected: string[] }>();
 type Frame = { phase: string; scroll: number; front: boolean; dx: number; dy: number; actorDx: number; actorDy: number; support: string; visible: boolean };
 type ProbeWindow = Window & { scroll138?: { frames: Frame[]; stop(): void } };
-test.use({ viewport: { width: 1920, height: 780 }, serviceWorkers: "block" });
+test.use({ viewport: { width: 1920, height: 780 }, storageState: { cookies: [], origins: [] }, serviceWorkers: "block" });
 test.setTimeout(70000);
 
 test.beforeEach(async ({ page, context, baseURL }) => {
@@ -32,7 +32,7 @@ test.beforeEach(async ({ page, context, baseURL }) => {
   });
 });
 
-test("138 each full refresh picks a personality while manual choice survives the same-document preview", async ({ page }) => {
+test("138 unconfigured refreshes stay random while explicit choice survives preview and reload", async ({ page }) => {
   await setup(page, "studio", true);
   const read = async () => {
     const home = await openCompanionHome(page); await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
@@ -40,19 +40,23 @@ test("138 each full refresh picks a personality while manual choice survives the
     await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
     const group = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }); await expect(group.getByRole("radio")).toHaveCount(9);
     const current = await group.locator('[aria-checked="true"]').innerText();
-    await expect(dialog.getByText("새로고침마다 성격을 무작위로 골라요.", { exact: false })).toBeVisible();
+    await expect(dialog.getByText("직접 고른 성격은 새로고침 후에도 유지돼요.", { exact: false })).toBeVisible();
     await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden();
     expect(Object.values(COMPANION_PERSONALITY_NAMES)).toContain(current.trim()); return current.trim();
   };
-  const initial = await read(); await chooseCompanionPersonality(page, "mischievous"); expect(await read()).toBe("사고뭉치");
-  await page.locator(".io-preview").click(); await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible(); await settlePanelLayout(page);
-  expect(await read()).toBe("사고뭉치");
+  const initial = await read();
   const refreshed: string[] = [];
   // Independent draws may repeat. Unit tests enumerate all nine exact draws;
   // this bounded native smoke observes actual documents without RNG injection.
   for (let i = 0; i < 8; i++) { await page.reload(); await page.bringToFront(); await settlePanelLayout(page); refreshed.push(await read()); }
-  mkdirSync(out, { recursive: true }); writeFileSync(`${out}/random-refresh.json`, JSON.stringify({ initial, manual: "사고뭉치", sameDocumentPreview: true, refreshed, distinct: new Set(refreshed).size, nativeRngNotPatched: true }));
   expect(new Set(refreshed).size).toBeGreaterThan(1);
+  await chooseCompanionPersonality(page, "mischievous"); expect(await read()).toBe("사고뭉치");
+  await page.locator(".io-preview").click(); await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible(); await settlePanelLayout(page);
+  expect(await read()).toBe("사고뭉치");
+  const pinned: string[] = [];
+  for (let i = 0; i < 3; i++) { await page.reload(); await page.bringToFront(); await settlePanelLayout(page); pinned.push(await read()); }
+  expect(pinned).toEqual(["사고뭉치", "사고뭉치", "사고뭉치"]);
+  mkdirSync(out, { recursive: true }); writeFileSync(`${out}/random-refresh.json`, JSON.stringify({ initial, manual: "사고뭉치", sameDocumentPreview: true, refreshed, pinned, distinct: new Set(refreshed).size, nativeRngNotPatched: true }));
 });
 test.afterEach(async ({ page }, info) => {
   const frames = await page.evaluate(() => { const p = (window as ProbeWindow).scroll138; p?.stop(); return p?.frames ?? []; }).catch(() => []);
@@ -65,7 +69,7 @@ test.afterEach(async ({ page }, info) => {
 async function setup(page: Page, surface: "viewer" | "studio" | "preview", dark: boolean) {
   await page.addInitScript(({ defaults, epoch, epochKey, dark }) => {
     for (const [key, value] of Object.entries({ [epochKey]: epoch, "vic.gfxPref": "max", "vic.gfx": JSON.stringify({ mode: "full", v: 3, at: Date.now() }), "vic.dark": dark ? "on" : "off", "vic.sound": "off", "vic.ambient": "off", "vic.reduceMotion": "off", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(key, value);
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...defaults, enabled: true, roam: false, activeWhileVisible: true, sleep: false, sound: false }));
+    if (!localStorage.getItem("vic.viewerCompanion")) localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...defaults, enabled: true, roam: false, activeWhileVisible: true, sleep: false, sound: false }));
   }, { defaults: DEFAULT_COMPANION_PREFERENCES, epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, dark });
   await page.goto(surface === "viewer" ? "/visual-fixture/poster?avatar=1" : "/visual-fixture/studio?role=owner&y=2026&m=6&hour=23&weather=clear");
   await page.bringToFront(); await settlePanelLayout(page);

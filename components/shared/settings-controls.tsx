@@ -8,6 +8,7 @@ export function SettingsSegment<T extends string | number>({
   value,
   options,
   onChange,
+  onReselect,
   ariaLabel,
   dataAct,
   columns
@@ -16,6 +17,8 @@ export function SettingsSegment<T extends string | number>({
   /** opt = 기록용 값 이름(숫자 값은 자릿수가 접혀 #로 뭉치므로 이름을 따로 준다). */
   options: { value: T; label: string; opt?: string }[];
   onChange: (v: T) => void;
+  /** Some choices distinguish an explicit confirmation from an automatic value. */
+  onReselect?: (v: T) => void;
   ariaLabel: string;
   dataAct: string;
   /** A bounded multi-row choice keeps the same control and moving thumb. */
@@ -30,8 +33,9 @@ export function SettingsSegment<T extends string | number>({
         : event.key === "ArrowDown" ? (index + columnCount) % options.length : event.key === "ArrowUp" ? (index - columnCount + options.length) % options.length : -1;
     if (next < 0) return;
     event.preventDefault(); event.stopPropagation();
-    if (options[next].value !== value) {
-      onChange(options[next].value);
+    if (options[next].value !== value || onReselect) {
+      if (options[next].value !== value) onChange(options[next].value);
+      else onReselect?.(options[next].value);
       logActivity("ui.click", { target: `${dataAct}#${options[next].opt ?? String(options[next].value)}` });
     }
     event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>("button[role='radio']")[next]?.focus();
@@ -64,6 +68,7 @@ export function SettingsSegment<T extends string | number>({
           key={String(o.value)}
           onClick={() => {
             if (o.value !== value) onChange(o.value);
+            else onReselect?.(o.value);
           }}
           onKeyDown={rows > 1 ? event => onKey(event, index) : undefined}
           role="radio"

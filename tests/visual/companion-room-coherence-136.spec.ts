@@ -75,6 +75,7 @@ for (const [surface, width] of [["viewer", 1440], ["studio", 1100], ["studio", 1
     expect(data.body).toBe("/companion/home/136/tv-body.webp"); expect(data.planarXScale).toBe(1); expect(data.planarYRotation).toBe(0);
     if (data.presentation === "compact") { expect(data.home.width / data.home.height).toBeGreaterThan(1.18); expect(data.room.width).toBeGreaterThan(390); }
     for (const target of [data.lamp, data.feeder]) { expect(target.width).toBeGreaterThanOrEqual(44); expect(target.height).toBeGreaterThanOrEqual(44); }
+    await placeCompanionOnHomeFloor(page);
     await home.locator(".vc-home-tv").click(); await home.locator(".vc-home-tv-screen > img").evaluate(image => (image as HTMLImageElement).decode());
     await page.mouse.move(2, 2); await save(home, `${surface}-${width}-composition`, data);
   });

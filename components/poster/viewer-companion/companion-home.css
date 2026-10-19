@@ -8,7 +8,7 @@
   --vc-bin-height: max(20cqw, var(--vc-object-min-hit));
   --vc-object-gap: max(8px, calc(8px / var(--shell-zoom, 1)));
   --vc-radio-hit: max(13.5cqw, var(--vc-object-min-hit));
-  --vc-book-hit: max(11.5cqw, var(--vc-object-min-hit));
+  --vc-book-hit: max(12.5cqw, 48px, var(--vc-object-min-hit));
   --vc-toy-hit: max(30cqw, var(--vc-object-min-hit));
   --vc-dispenser-hit: max(14cqw, var(--vc-object-min-hit));
   --vc-storage-right: 4cqw;
@@ -108,9 +108,9 @@
 .vc-home-object-image { width: 100%; height: 100%; object-fit: contain; object-position: center bottom; }
 /* Preserve the artwork's aspect. Storage is deliberately larger than the
    small shelf objects; transparent canvas size is not furniture scale. */
-.vc-book-paint { position: relative; width: 42px; height: 42px; }
+.vc-book-paint { position: relative; width: 48px; height: 48px; }
 .vc-book-paint > .vc-home-object-image { display: block; width: 100%; height: 100%; }
-.vc-book-cover-mascot { position: absolute; left: 50%; top: 51.2%; width: 19px; height: 19px; transform: translate(-50%, -50%); background: url('/companion/hd/vitamin-action-00-eye-contour-120-v1.webp') 0 0 / 800% 200% no-repeat; pointer-events: none; }
+.vc-book-cover-mascot { position: absolute; left: 50%; top: 51.2%; width: 45.24%; height: 45.24%; transform: translate(-50%, -50%); background: url('/companion/hd/vitamin-action-00-eye-contour-120-v1.webp') 0 0 / 800% 200% no-repeat; pointer-events: none; }
 .vc-radio-button > .vc-home-object-image { width: 53px; height: 40px; }
 .vc-book-unread { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 17px; height: 17px; border: 2px solid var(--vc-linen); border-radius: 50%; background: #a34d39; color: #fffaf2; font: 800 11px/1 var(--font-ui, sans-serif); pointer-events: none; }
 .vc-home-light { display: none; }

@@ -1,6 +1,6 @@
 # 집·스크롤·성격138
 
-시작2026-10-19, 진행2026-10-20 KST. 상태: 로컬 검증 완료, 배포 검증 대기. 최신 요청: 빠른 스크롤 중 소파와 배우 분리 수정, 고정 요일 바 다크 조화, 소파·TV·밥통·장난감 상자·패드·쓰레기통을 함께 조금 내리기, 매 새로고침9종 무작위 성격.137의 성격 저장 유지 조항만 새 문서 추첨으로 대체하고 같은 문서 수동 선택·화면 전환 유지/기존OFF·안전·단일 시계는 보존한다.
+시작2026-10-19, 완료2026-10-20 KST. 상태: 구현·로컬·실제 배포 검증 완료. 최신 요청: 빠른 스크롤 중 소파와 배우 분리 수정, 고정 요일 바 다크 조화, 소파·TV·밥통·장난감 상자·패드·쓰레기통을 함께 조금 내리기, 매 새로고침9종 무작위 성격.137의 성격 저장 유지 조항만 새 문서 추첨으로 대체하고 같은 문서 수동 선택·화면 전환 유지/기존OFF·안전·단일 시계는 보존한다.
 
 ## 범위·검증
 
@@ -29,3 +29,7 @@ baseline-1의 weekday 미진입은 달력 확대1단계만 적용한 테스트 �
 회귀3은38/39 PASS,136 소파 준비에서 바닥에 놓인 실제 배우가 중앙 포인터를 가려90초 timeout1회였다. 준비만 실제 focus+Enter로 교정하고 같은 빌드 회귀4에서1/1 PASS; 앞뒤 재질·커튼 밝기·hover·전등3상태 검사는 그대로다. 최종 고유 native55종(새7+회귀48) 모두PASS.9성격 선택 직후와20초 의미행동, viewer/studio 같은ID 장난감4개 운반·반납, 실제 밥통→같은 음식 먹기, 사용자의15초 수동 우선과 TV/커튼/영속 전등, 세면, 배출8/4개 상한·1440/1920/2400 실제 바닥·비중첩, 편집 focus/서버ACK/OFF·감소 모션·gfx OFF를 확인했다. G22 고정 선택·TV/전등 pointer/keyboard 단일capture와 개발자 timeline/least-used 양쪽 표시5검사도PASS. 자동 추첨은 기록하지 않는다.
 
 최종 full lint/typecheck와 수정136 scoped lint PASS, unit3458/303·fixture build PASS, harness338·diff check PASS. 독립 검토 차단0. 보호 사용자 제작기록SHA256 E980005102457E2A02AE318FF7665596E7170D0BFB34A328F64A6EC292C5990B 유지. 실로그인/RLS/OBS·화면 낭독기와 전문 아트 판정은 이번 fixture 결과에 포함하지 않는다. 운영 확인은 새 익명 context·실제 fullSHA/chunk digest·native 조작으로 수행하고 POST/운영 live-state GET은 차단한다.
+
+## 출시 확인
+
+제품 커밋 `41e73e05904d60b7effea1a70a6d141ad71376fd` main push/Vercel success.2026-10-20 00:30 KST 실제 공개 HTML/정적 chunk의40자리 SHA 및 브라우저가 받은8개 chunk digest 일치PASS. 빈 익명 cookies/origins/localStorage에서 실제9종 선택·재롱둥이 decoded 대표 동작, native 움직임OFF 뒤 전등 변경→reload 유지·TV 수동 우선·가구 이미지 decode를 확인했다. 성격6회 실제 reload에서 사고뭉치/잠꾸러기/먹보/탐험둥이/둥글이/먹보(5종), 실제 설정의 다크 선택 뒤 native Ctrl+휠 확대/스크롤의 고정요일rgb(35,33,29)=cal-head#23211d PASS. 최종 화면 직접 검수. 오류0/예상 밖 요청0/운영 mutation0/live-state GET0/private manifest0. 알려진 익명 저장하트 read POST8회도 실제로 보내지 않고 차단했다. `.scratch-pw/companion-138/production/41e73e05904d60b7effea1a70a6d141ad71376fd/`에 at-run checker/증거 JSON/실제 캡처를 보존했다. 원격 quality39277952042는 진행 중이며 성공으로 미리 기록하지 않는다.

@@ -403,6 +403,16 @@ for (const surface of ["viewer", "studio"] as const) {
     for (const id of ["companion-enabled", "companion-roam", "companion-panel-prank", "companion-card-prank", "companion-rare-prank", "companion-petting-enabled", "companion-learning-enabled"]) for (const option of ["on", "off"]) expect(count(page, `${id}#${option}`), `${id}#${option}`).toBe(1);
     for (const target of ["settings-tab#companion", "companion-animal#cat", "companion-personality#sleepy", ...new115Targets, ...new137Targets, "companion-speed#lively", "companion-learning-reset"]) expect(count(page, target), target).toBe(1);
     expect(targets(page).filter(target => target?.startsWith("companion-") && !target.includes("#"))).toEqual(["companion-learning-reset"]);
+    //139: explicitly confirming the current random choice pins it too, with
+    // one existing fixed use for each pointer/keyboard activation.
+    await panel.getByRole("tab", { name: "기본", exact: true }).click();
+    const personality = panel.getByRole("radiogroup", { name: "빅타민 성격", exact: true });
+    const balanced = personality.getByRole("radio", { name: "둥글이", exact: true });
+    await balanced.click(); await balanced.focus(); await balanced.press("Enter");
+    await balanced.press("Home"); await personality.getByRole("radio", { name: "재롱둥이", exact: true }).press("Home");
+    await flush(page, [{ target: "companion-personality#balanced", n: 3 }, { target: "companion-personality#performer", n: 2 }]);
+    expect(count(page, "companion-personality#balanced")).toBe(3);
+    expect(count(page, "companion-personality#performer")).toBe(2);
   });
 
   test(`109 ${surface}: native radio, range, food pages and throw emit fixed uses once`, async ({ page }) => {

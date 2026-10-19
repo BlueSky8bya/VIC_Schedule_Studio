@@ -72,7 +72,7 @@ describe("viewer companion device preferences", () => {
     expect(getCompanionPreferences()).toEqual({ ...chosen, enabled: false });
     setCompanionPreferences({ enabled: true });
     expect(getCompanionPreferences()).toEqual(chosen);
-    expect(JSON.parse(entries.get(COMPANION_PREFERENCES_KEY)!)).toEqual({ version: 1, ...chosen });
+    expect(JSON.parse(entries.get(COMPANION_PREFERENCES_KEY)!)).toEqual({ version: 1, ...chosen, personalitySource: "manual" });
   });
   it("allowlists booleans and enums without importing unknown properties", () => {
     expect(normalizeCompanionPreferences({ enabled: "true", roam: 1, sleep: false, speed: "turbo", size: "large", personality: "affectionate", feeding: "yes", animalMode: "cat-and-dog", email: "synthetic-canary@example.invalid" })).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, sleep: false, size: "large", personality: "affectionate" });
@@ -216,7 +216,7 @@ describe("viewer companion device preferences", () => {
     setCompanionPreferences({ heartPrank: false });
     expect(JSON.parse(entries.get(COMPANION_PREFERENCES_KEY)!)).toEqual({ version: 1, ...DEFAULT_COMPANION_PREFERENCES, enabled: true, speed: "lively", petting: false, heartPrank: false });
   });
-  it("lets external ordinary settings supersede failed writes without replacing this document's personality", () => {
+  it("lets external ordinary settings supersede failed writes while an unmarked legacy personality remains automatic", () => {
     browser.localStorage.setItem = () => { throw new Error("quota exceeded"); };
     setCompanionPreferences({ enabled: true, jump: false });
     entries.set(COMPANION_PREFERENCES_KEY, JSON.stringify({ version: 1, ...DEFAULT_COMPANION_PREFERENCES, enabled: false, personality: "sleepy" }));
