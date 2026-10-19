@@ -4,16 +4,16 @@
    Every scene layer is static; only a deliberate interaction moves. */
 .vc-home {
   --vc-object-min-hit: calc(45px / var(--shell-zoom, 1));
-  --vc-bin-hit: max(54px, var(--vc-object-min-hit));
-  --vc-bin-height: max(52px, var(--vc-object-min-hit));
+  --vc-bin-hit: max(66px, var(--vc-object-min-hit));
+  --vc-bin-height: max(64px, var(--vc-object-min-hit));
   --vc-object-gap: max(8px, calc(8px / var(--shell-zoom, 1)));
   --vc-radio-hit: max(53px, var(--vc-object-min-hit));
   --vc-book-hit: max(44px, var(--vc-object-min-hit));
-  --vc-toy-hit: max(66px, var(--vc-object-min-hit));
-  --vc-dispenser-hit: max(48px, var(--vc-object-min-hit));
+  --vc-toy-hit: max(84px, var(--vc-object-min-hit));
+  --vc-dispenser-hit: max(56px, var(--vc-object-min-hit));
+  --vc-feed-hit-lift: max(0px, calc(83px - 80px / var(--shell-zoom, 1)));
   --vc-shelf-width: max(116px, calc(var(--vc-radio-hit) + var(--vc-book-hit) + var(--vc-object-gap) + 2px));
   --vc-window-left: 12px;
-  --vc-window-width: min(152px, calc(100% - var(--vc-shelf-width) - 28px));
   --vc-storage-bottom: max(69px, calc(6px + var(--vc-bin-height) + var(--vc-object-gap)));
   --vc-wall: color-mix(in srgb, rgb(var(--glass-panel)) 88%, #dfc9ab);
   --vc-floor: color-mix(in srgb, rgb(var(--glass-cell)) 72%, #c5a47e);
@@ -54,19 +54,29 @@
 }
 /* Shelf, back-row storage and the foreground keep separate native targets.
    At200px the capped sofa clears the glass; taller empty wall is unnecessary. */
-.vc-home-room { position: relative; height: 200px; overflow: hidden; border-radius: var(--r-sm); background: radial-gradient(ellipse at 18% 18%, #fff5 0, transparent 60%), linear-gradient(180deg, var(--vc-wall), color-mix(in srgb, var(--vc-wall) 88%, var(--vc-linen))); box-shadow: inset 0 1px 0 #fff3, inset 0 -1px 0 var(--vc-thread); }
+.vc-home-room { --vc-toy-paint-width: 82px; --vc-wall-reserve: max(calc(var(--vc-shelf-width) + 28px), calc(var(--vc-dispenser-hit) + var(--vc-toy-hit) + var(--vc-object-gap) + 22px)); --vc-window-width: min(152px, calc(100% - var(--vc-wall-reserve))); position: relative; height: 200px; overflow: hidden; border-radius: var(--r-sm); background: radial-gradient(ellipse at 18% 18%, #fff5 0, transparent 60%), linear-gradient(180deg, var(--vc-wall), color-mix(in srgb, var(--vc-wall) 88%, var(--vc-linen))); box-shadow: inset 0 1px 0 #fff3, inset 0 -1px 0 var(--vc-thread); }
 .vc-home[data-home-presentation="compact"] > .panel-section-heading .panel-section-title > span { min-height: 36px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: 4px var(--control-hit); }
-.vc-home-room::before { content: ''; position: absolute; inset: auto 0 70px; height: 5px; background: linear-gradient(180deg, var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 1px 2px var(--vc-soft-shadow); pointer-events: none; }
+.vc-home-room::before { content: ''; position: absolute; inset: auto 0 78px; height: 5px; background: linear-gradient(180deg, var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 1px 2px var(--vc-soft-shadow); pointer-events: none; }
 .vc-home-close { display: grid; place-items: center; width: var(--control-hit); height: var(--control-hit); margin-left: auto; padding: 0; border: 0; border-radius: var(--r-pill); color: var(--muted); background: transparent; cursor: pointer; pointer-events: auto; }
 .vc-home-close:hover { color: var(--ink); background: rgb(var(--glass-head)); }
-/* Keep the compact138px/full152px frame. The shelf may grow only to retain
-   its two45px native targets and their gap at the inherited shell zoom. */
+/* Storage has room-appropriate scale. The glass uses the remaining wall
+   width after the enlarged native targets and their shared gap. */
 .vc-home-window { position: absolute; left: var(--vc-window-left); top: 8px; box-sizing: border-box; width: var(--vc-window-width); height: auto; aspect-ratio: 38 / 29; padding: 6px; border: 1px solid color-mix(in srgb, var(--vc-wood-edge) 65%, transparent); border-radius: 14px 14px 9px 9px; background: linear-gradient(110deg, var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 3px 5px var(--vc-soft-shadow), inset 0 1px 1px #fff9; pointer-events: none; }
 .vc-window-glass { position: relative; display: block; width: 100%; height: 100%; overflow: hidden; border-radius: 8px 8px 3px 3px; box-shadow: inset 0 0 0 1px #604b3436; isolation: isolate; }
 .vc-window-landscape, .vc-window-weather { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 .vc-window-landscape { filter: var(--vc-landscape-grade, none); }
 .vc-window-weather { z-index: 1; opacity: .72; }
 .vc-window-atmosphere { position: absolute; inset: 0; background: linear-gradient(120deg, #ffffff28, transparent 65%); pointer-events: none; }
+/* Two finite cloth panels remain inside the existing glass. Their fixed51%
+   boxes overlap at the center when closed; no floor/control anchor moves. */
+.vc-window-curtains { position: absolute; inset: 0; z-index: 2; overflow: hidden; pointer-events: none; }
+.vc-window-curtain { position: absolute; top: 0; bottom: 0; width: 51%; background: var(--vc-linen); transform: scaleX(var(--vc-curtain-scale, .08)); transition: transform var(--dur-spring-smooth) var(--spring-smooth, var(--ease-spring)); pointer-events: none; }
+.vc-window-curtain-left { left: 0; transform-origin: left center; }
+.vc-window-curtain-right { right: 0; transform-origin: right center; }
+.vc-window-curtain > img { display: block; width: 100%; height: 100%; object-fit: fill; pointer-events: none; }
+.vc-window-curtain-right > img { transform: scaleX(-1); }
+.vc-home-window[data-curtain-motion="off"] .vc-window-curtain,
+html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-window-curtain { transition: none; }
 .vc-home-window[data-weather="cloud"] { --vc-landscape-grade: saturate(.9) brightness(.92); }
 .vc-home-window[data-weather="rain"] { --vc-landscape-grade: saturate(.84) brightness(.92); }
 .vc-home-window[data-weather="snow"] { --vc-landscape-grade: saturate(.9) brightness(1.01); }
@@ -76,7 +86,7 @@
 .vc-home-window[data-phase="night"] { --vc-landscape-grade: none; }
 .vc-home-window:is([data-phase="dusk"], [data-phase="night"]) .vc-window-weather { opacity: .5; }
 .vc-home-window[data-phase="night"] .vc-window-atmosphere { background: linear-gradient(120deg, #b6cced10, transparent 65%); }
-.vc-window-crossbar { position: absolute; inset: 6px; pointer-events: none; }
+.vc-window-crossbar { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
 .vc-window-crossbar::before, .vc-window-crossbar::after { content: ''; position: absolute; background: var(--vc-wood-light); box-shadow: 1px 1px 1px #62452b36; border-radius: 1px; }
 .vc-window-crossbar::before { top: 0; bottom: 0; left: calc(50% - 1px); width: 2px; }
 .vc-window-crossbar::after { left: 0; right: 0; top: 43%; height: 2px; }
@@ -90,15 +100,17 @@
 .vc-book-button { right: 1px; width: var(--vc-book-hit); }
 .vc-radio-button { left: 0; width: var(--vc-radio-hit); }
 .vc-home-object-image { width: 100%; height: 100%; object-fit: contain; object-position: center bottom; }
-/* These contain boxes account for each immutable bitmap's transparent
-   margins: visible alpha masses stay within about18%, without stretching. */
-.vc-book-button > .vc-home-object-image { width: 42px; height: 42px; }
+/* Preserve the artwork's aspect. Storage is deliberately larger than the
+   small shelf objects; transparent canvas size is not furniture scale. */
+.vc-book-paint { position: relative; width: 42px; height: 42px; }
+.vc-book-paint > .vc-home-object-image { display: block; width: 100%; height: 100%; }
+.vc-book-cover-mascot { position: absolute; left: 50%; top: 51.2%; width: 19px; height: 19px; transform: translate(-50%, -50%); background: url('/companion/hd/vitamin-action-00-eye-contour-120-v1.webp') 0 0 / 800% 200% no-repeat; pointer-events: none; }
 .vc-radio-button > .vc-home-object-image { width: 53px; height: 40px; }
 .vc-book-unread { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 17px; height: 17px; border: 2px solid var(--vc-linen); border-radius: 50%; background: #a34d39; color: #fffaf2; font: 800 11px/1 var(--font-ui, sans-serif); pointer-events: none; }
 .vc-home-light { position: absolute; top: 36px; left: 40px; width: 65%; height: 144px; background: linear-gradient(125deg, #f4e2b72e, transparent 84%); clip-path: polygon(0 0, 28% 0, 100% 100%, 10% 100%); pointer-events: none; }
 .vc-home-room[data-night] .vc-home-light { background: linear-gradient(125deg, #c6d7eb18, transparent 84%); }
 .vc-home-room:is([data-weather="rain"], [data-weather="fog"], [data-weather="snow"]) .vc-home-light { opacity: .3; }
-.vc-home-floor { position: absolute; inset: auto 0 0; height: 72px; background: repeating-linear-gradient(0deg, transparent 0 21px, var(--vc-thread) 22px, transparent 23px 44px), radial-gradient(ellipse at 33% 0, #fff4, transparent 68%), linear-gradient(180deg, color-mix(in srgb, var(--vc-floor) 80%, var(--vc-wall)), var(--vc-floor)); box-shadow: inset 0 1px 0 #fff2, inset 0 -3px 0 var(--vc-thread); pointer-events: none; }
+.vc-home-floor { position: absolute; inset: auto 0 0; height: 80px; background: repeating-linear-gradient(0deg, transparent 0 21px, var(--vc-thread) 22px, transparent 23px 44px), radial-gradient(ellipse at 33% 0, #fff4, transparent 68%), linear-gradient(180deg, color-mix(in srgb, var(--vc-floor) 80%, var(--vc-wall)), var(--vc-floor)); box-shadow: inset 0 1px 0 #fff3, inset 0 -3px 0 var(--vc-thread); pointer-events: none; }
 /* The recessed seat is the real anchor. The raised torus can grow around
    it without pretending a flat rug is a bed (PLAN052 replaces16px cushion). */
 /* The78px hit covers the complete resting back rim of the capped150px SVG
@@ -137,48 +149,56 @@ body:has(.vc-cushion-button:active) .vc-bed-foreground .vc-sofa-feedback { --vc-
 /* Full painted objects respond; physical anchors and hit targets stay still. */
 .vc-home :is(.vc-cushion-button, .vc-radio-button, .vc-book-button, .vc-dispenser, .vc-home-trash, .vc-toy-box):active { transform: none; }
 .vc-object-paint { display: block; pointer-events: none; transform-origin: 50% 90%; transform: translateY(var(--vc-object-feedback-y, 0px)) rotate(var(--vc-object-feedback-angle, 0deg)) scale(var(--vc-object-feedback-scale, 1)); transition: transform var(--vc-object-feedback-duration, var(--dur-spring-smooth)) var(--spring-smooth, var(--ease-spring)), filter var(--dur-1) var(--ease); }
-.vc-home button:not(:disabled):is(:hover, :focus-visible) > .vc-object-paint { --vc-object-feedback-y: -4px; --vc-object-feedback-scale: 1.085; --vc-object-feedback-angle: -2deg; filter: brightness(1.08) drop-shadow(0 4px 2px #62452730); }
-.vc-home :is(.vc-book-button, .vc-toy-box):not(:disabled):is(:hover, :focus-visible) > .vc-object-paint { --vc-object-feedback-angle: 2deg; }
+.vc-home button:not(:disabled):is(:hover, :focus-visible, [data-toy-over], [data-food-over]) > .vc-object-paint { --vc-object-feedback-y: -4px; --vc-object-feedback-scale: 1.085; --vc-object-feedback-angle: -2deg; filter: brightness(1.08) drop-shadow(0 4px 2px #62452730); }
+.vc-home :is(.vc-book-button, .vc-toy-box):not(:disabled):is(:hover, :focus-visible, [data-toy-over]) > .vc-object-paint { --vc-object-feedback-angle: 2deg; }
 .vc-home button:not(:disabled):active > .vc-object-paint { --vc-object-feedback-y: 1px; --vc-object-feedback-scale: .94; --vc-object-feedback-angle: 0deg; --vc-object-feedback-duration: .07s; filter: brightness(.94); }
-.vc-toy-box { position: absolute; right: 10px; bottom: var(--vc-storage-bottom); z-index: 2; width: var(--vc-toy-hit); height: max(52px, var(--vc-object-min-hit)); display: grid; place-items: end center; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
-.vc-toy-box > .vc-home-object-image { position: relative; bottom: -3px; width: 62px; height: 42px; }
-/* The fixed source opening follows the same62/66 contain scale and3px
-   baseline correction as its picture, outside all hover transforms. */
-.vc-toy-box-opening { position: absolute; left: calc(50% + 1.86px); bottom: calc(28px * 62 / 66 - 3px); width: calc(26px * 62 / 66); height: calc(4px * 62 / 66); margin-left: calc(-13px * 62 / 66); pointer-events: none; }
+.vc-toy-box { position: absolute; right: 10px; bottom: var(--vc-storage-bottom); z-index: 2; width: var(--vc-toy-hit); height: max(56px, var(--vc-object-min-hit)); display: grid; place-items: end center; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
+.vc-toy-box > .vc-home-object-image { position: absolute; left: 50%; margin-left: calc(var(--vc-toy-paint-width) / -2); bottom: -3px; width: var(--vc-toy-paint-width); height: calc(var(--vc-toy-paint-width) * 134 / 256); }
+/* Actual125 source opening(128,52) in the256x134 frontal box. The same
+   image scale and3px baseline own both compact and wider storage contacts. */
+.vc-toy-box-opening { position: absolute; left: 50%; bottom: calc(var(--vc-toy-paint-width) * 78 / 256 - 3px); width: calc(var(--vc-toy-paint-width) * 120 / 256); height: calc(var(--vc-toy-paint-width) * 8 / 256); margin-left: calc(var(--vc-toy-paint-width) * -60 / 256); pointer-events: none; }
 /* A small wall-mounted dispenser leaves74px below its native target: the
    existing92px body clears it while the actual outlet stays within reach.
    Horizontal placement uses the real window edge and the open wall gap. */
-.vc-dispenser { position: absolute; z-index: 2; left: max(calc(var(--vc-window-left) + var(--vc-window-width)), calc(55% - var(--vc-dispenser-hit) / 2)); bottom: calc(80px / var(--shell-zoom, 1)); width: var(--vc-dispenser-hit); height: max(48px, var(--vc-object-min-hit)); box-sizing: border-box; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
-.vc-dispenser::before { content: ''; position: absolute; bottom: 0; left: calc(50% - 23px); width: 46px; height: 4px; border-radius: 2px; background: linear-gradient(var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 2px 2px var(--vc-soft-shadow); pointer-events: none; }
-.vc-dispenser-paint { position: absolute; bottom: 0; left: 50%; margin-left: -24px; width: 48px; height: 44px; }
+.vc-dispenser { position: absolute; z-index: 2; left: min(max(calc(var(--vc-window-left) + var(--vc-window-width)), calc(55% - var(--vc-dispenser-hit) / 2)), calc(100% - 10px - var(--vc-toy-hit) - var(--vc-object-gap) - var(--vc-dispenser-hit))); bottom: calc(80px / var(--shell-zoom, 1) + var(--vc-feed-hit-lift)); width: var(--vc-dispenser-hit); height: max(56px, var(--vc-object-min-hit)); box-sizing: border-box; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
+.vc-dispenser::before { content: ''; position: absolute; bottom: 0; left: calc(50% - 27px); width: 54px; height: 4px; border-radius: 2px; background: linear-gradient(var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 2px 2px var(--vc-soft-shadow); pointer-events: none; }
+.vc-dispenser-paint { position: absolute; bottom: calc(-1 * var(--vc-feed-hit-lift)); left: 50%; margin-left: -28px; width: 56px; height: 52px; }
 /* Native outlet remains outside the moving art; geometry measures its actual
    smaller dispenser slot, not a decorative animation transform. */
-.vc-dispenser-slot { position: absolute; bottom: calc(10px * 48 / 44); left: calc(50% - 2.5px * 48 / 44); margin-left: calc(-9.5px * 48 / 44); width: calc(19px * 48 / 44); height: calc(4px * 48 / 44); pointer-events: none; }
-.vc-home-trash { --vc-trash-progress: 0; position: absolute; z-index: 2; right: 10px; bottom: 6px; display: grid; place-items: end center; width: var(--vc-bin-hit); height: var(--vc-bin-height); padding: 0; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
-.vc-home-trash > .vc-home-object-image { position: relative; bottom: -6.3px; width: 54px; height: 48px; }
-.vc-trash-progress { position: absolute; bottom: 2px; left: 10px; right: 10px; height: 2px; border-radius: var(--r-pill); background: var(--muted); transform: scaleX(var(--vc-trash-progress)); transform-origin: left; }
+/* Contained square art is52px, with actual source outlet center(131,168).
+   This contact remains outside the whole-object hover/press transform. */
+.vc-dispenser-slot { position: absolute; bottom: calc(17.0625px - var(--vc-feed-hit-lift)); left: calc(50% + .609375px); margin-left: -9.546875px; width: 19.09375px; height: 1.625px; pointer-events: none; }
+.vc-home-trash { position: absolute; z-index: 2; right: 10px; bottom: 6px; display: grid; place-items: end center; width: var(--vc-bin-hit); height: var(--vc-bin-height); padding: 0; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
+/* An oversized grid child expands the implicit track beyond its button.
+   Anchor this painting directly so the enlarged bin stays fully clickable. */
+.vc-home-trash > .vc-home-object-image { position: absolute; left: 50%; margin-left: -41px; bottom: -9.2px; width: 82px; height: 74px; }
 .vc-home button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .vc-home button:disabled { opacity: .38; cursor: default; }
 .vc-home-close:active { transform: scale(var(--press-scale)); }
 .vc-home-close { transition: transform var(--dur-spring-smooth) var(--spring-smooth, var(--ease-spring)), color var(--dur-1) var(--ease), background-color var(--dur-1) var(--ease); }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-sofa-feedback { transform: none; transition: none; }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-object-paint { transform: none; transition: none; }
-html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home button:not(:disabled):is(:hover, :focus-visible) > .vc-object-paint { filter: brightness(1.08); }
+html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home button:not(:disabled):is(:hover, :focus-visible, [data-toy-over], [data-food-over]) > .vc-object-paint { filter: brightness(1.08); }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home button:not(:disabled):active > .vc-object-paint { filter: brightness(.94); }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home button:active { transform: none; }
 html[data-theme="dark"] .vc-home { --vc-soft-shadow: #21181045; --vc-wood-light: color-mix(in srgb, rgb(var(--glass-cell)) 38%, #b69d7d); }
 html[data-theme="dark"] .vc-home-object-image { opacity: .92; }
+@container (min-width: 330px) {
+  /* A wide room can show a real broad chest without taking space from its
+    152px window. Narrow hosts use the same art/contacts at the smaller scale. */
+  .vc-home-room { --vc-toy-hit: max(112px, var(--vc-object-min-hit)); --vc-toy-paint-width: 110px; }
+}
 @container (max-width: 250px) {
   /* At this exceptional width the raised food target and shelf share x.
      At .8 zoom,226px leaves8.4px between those native targets; the box and
      full sofa hit meet without overlap. Ordinary >=282px rooms stay200px.
      This replaces the old258px narrow room, never expands calendar chrome. */
-  .vc-home-room { --vc-window-left: 10px; --vc-window-width: min(126px, calc(100% - var(--vc-shelf-width) - 26px)); height: 226px; }
+  .vc-home-room { --vc-window-left: 10px; --vc-wall-reserve: max(calc(var(--vc-shelf-width) + 26px), calc(var(--vc-dispenser-hit) + var(--vc-toy-hit) + var(--vc-object-gap) + 20px)); --vc-window-width: min(126px, calc(100% - var(--vc-wall-reserve))); height: 226px; }
   .vc-home-shelf { top: 3px; right: 6px; }
   .vc-home-room::before { bottom: 86px; }
   .vc-home-floor { height: 88px; }
   .vc-toy-box { bottom: 83px; }
   /* Only the transparent frame-side gutter may share this hit rectangle;
      the contained dispenser paint remains clear of the landscape glass. */
-  .vc-dispenser { left: min(max(calc(var(--vc-window-left) + var(--vc-window-width)), calc(55% - var(--vc-dispenser-hit) / 2)), calc(100% - 10px - var(--vc-toy-hit) - var(--vc-object-gap) - var(--vc-dispenser-hit))); bottom: max(calc(80px / var(--shell-zoom, 1)), 83px); }
+  .vc-dispenser { left: min(max(calc(var(--vc-window-left) + var(--vc-window-width)), calc(55% - var(--vc-dispenser-hit) / 2)), calc(100% - 10px - var(--vc-toy-hit) - var(--vc-object-gap) - var(--vc-dispenser-hit))); }
 }

@@ -7,6 +7,17 @@ import { companionHomeEnvironment, resolveCompanionHomeEnvironment } from "@/lib
 
 const clock = { today: { y: 2026, m: 10, d: 19 }, hour: 13.25 };
 describe("one ambient environment for the house and calendar", () => {
+  it("quantizes the existing real solar altitude without a second clock or a nominal noon rule", () => {
+    const context = { slug: "vic", year: 2026, month: 10, season: "autumn" as const };
+    const values = new Set<number>();
+    for (const hour of [0, 6, 8, 10, 12, 14, 16, 18, 23]) {
+      const ambient = resolveAmbientEnvironment(context, { ...clock, hour }), home = companionHomeEnvironment(ambient);
+      const expected = Math.round(Math.max(0, Math.sin(Math.max(0, ambient.time.sun.alt) * Math.PI / 180)) * 4);
+      expect(home.sunlight).toBe(expected); values.add(home.sunlight!);
+      if (ambient.time.sun.alt < 0) expect(home.sunlight).toBe(0);
+    }
+    expect(values.size).toBeGreaterThan(2);
+  });
   it("keeps current/past/future viewed-date ownership including leap February", () => {
     const dates = [[2026, 10, 19], [2024, 2, 29], [2027, 1, 1]];
     for (const [year, month, day] of dates) {

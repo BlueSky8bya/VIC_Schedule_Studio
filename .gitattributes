@@ -2,6 +2,8 @@
 # Preserve the exact pre-compaction rule/state evidence across operating systems.
 docs/agent/archive/20261017-*-before-platform-remediation.snapshot.txt -text whitespace=cr-at-eol
 # Art receipts are byte-pinned evidence, including their native line endings.
+art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/*.json -text whitespace=cr-at-eol
+art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/제작기록/공개자료/*.json -text whitespace=cr-at-eol
 art-src/빅타민/동행/작업회차/20261018-큰눈통일/**/*.json -text whitespace=cr-at-eol
 art-src/빅타민/동행/작업회차/20261018-체형외곽선통일/**/*.json -text whitespace=cr-at-eol
 art-src/빅타민/동행/작업회차/20261018-포즈통일114/**/*.json -text whitespace=cr-at-eol

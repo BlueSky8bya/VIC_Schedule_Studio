@@ -17,7 +17,7 @@ afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 const bounds = { width: 1000, height: 700 };
 const floor: Platform = { id: "floor", x: 0, y: 600, width: 1000, kind: "floor" };
-const make = (platforms: readonly Platform[] = [floor]) => { const model = createCompanionToys(); model.sync(platforms, bounds, 0); return model; };
+const make = (platforms: readonly Platform[] = [floor]) => { const model = createCompanionToys(() => 0); model.sync(platforms, bounds, 0); return model; };
 type Model = ReturnType<typeof createCompanionToys>;
 const settle = (model: Model, start = 0) => { for (let at = start + 16; at <= start + 1800; at += 16) model.tick(at); };
 const point = { x: 600, y: 500, platformId: floor.id };
@@ -211,6 +211,7 @@ describe("actual toy planner effects and acknowledgements", () => {
 describe("shared native toy controller ownership", () => {
   async function harness() {
     component.refs = []; component.states = []; component.activity.mockReset();
+    vi.spyOn(Math, "random").mockReturnValue(0);
     vi.stubGlobal("React", await import("react")); vi.spyOn(performance, "now").mockReturnValue(2000);
     const { CompanionToys } = await import("@/components/poster/viewer-companion/companion-toys");
     const ref: { current: import("@/components/poster/viewer-companion/companion-toys").CompanionToyControl | null } = { current: null }, onActivity = vi.fn(), onExperience = vi.fn();
@@ -223,6 +224,67 @@ describe("shared native toy controller ownership", () => {
     const tree = render(), button = (tree.props as { children: ReactElement[] }).children[0] as ReactElement<Record<string, unknown>>;
     return { ref, render, button, onActivity, onExperience };
   }
+
+  async function heldOverBox() {
+    const frames = new Map<number, FrameRequestCallback>(); let frameId = 0;
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { frames.set(++frameId, callback); return frameId; });
+    vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
+    const frame = () => { for (const [id, callback] of [...frames]) { frames.delete(id); callback(2020); } };
+    const attrs = new Map<string, string>();
+    const box = { disabled: false, getAttribute: (key: string) => attrs.get(key) ?? null, closest: () => null,
+      getBoundingClientRect: vi.fn(() => ({ left: 500, right: 580, top: 300, bottom: 360 })), setAttribute: (key: string, value: string) => attrs.set(key, value), removeAttribute: (key: string) => attrs.delete(key) };
+    vi.stubGlobal("document", { querySelector: () => box });
+    const h = await harness(); h.ref.current!.tick(1800); const actual = h.ref.current!.available()[0];
+    const node = { style: { transform: "" }, dataset: {} as Record<string, string>, hidden: false, setPointerCapture: vi.fn(), hasPointerCapture: vi.fn(() => true), releasePointerCapture: vi.fn() };
+    (h.button.props.ref as (node: unknown) => void)(node);
+    const event = (x = actual.x, y = actual.y) => ({ button: 0, pointerId: 7, clientX: x, clientY: y, currentTarget: node, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+    (h.button.props.onPointerDown as (event: unknown) => void)(event());
+    (h.button.props.onPointerMove as (event: unknown) => void)(event(492, 292));
+    frame();
+    expect(attrs.has("data-toy-over")).toBe(true);
+    return { ...h, attrs, box, node, event, frame, frames };
+  }
+
+  it("highlights the real box under pointer capture and returns only at the same measured release boundary", async () => {
+    const h = await heldOverBox();
+    (h.button.props.onPointerMove as (event: unknown) => void)(h.event(491.99, 292)); h.frame(); expect(h.attrs.has("data-toy-over")).toBe(false);
+    (h.button.props.onPointerMove as (event: unknown) => void)(h.event(492, 292)); h.frame(); expect(h.attrs.has("data-toy-over")).toBe(true);
+    (h.button.props.onPointerUp as (event: unknown) => void)(h.event(492, 292));
+    expect(h.attrs.has("data-toy-over")).toBe(false); expect(h.ref.current!.count()).toBe(0);
+    expect(component.activity.mock.calls.at(-1)).toEqual(["ui.click", { target: "companion-toy-return" }]);
+    expect(h.onExperience.mock.calls.at(-1)).toEqual(["ball", "tidied"]);
+  });
+
+  it("coalesces a high-rate pointer burst into one box measurement on the existing display frame", async () => {
+    const h = await heldOverBox(); h.box.getBoundingClientRect.mockClear();
+    for (let i = 0; i < 200; i++) (h.button.props.onPointerMove as (event: unknown) => void)(h.event(492 + i * .01, 292));
+    expect(h.box.getBoundingClientRect).not.toHaveBeenCalled(); expect(h.frames.size).toBe(1);
+    h.frame(); expect(h.box.getBoundingClientRect).toHaveBeenCalledTimes(1); expect(h.attrs.has("data-toy-over")).toBe(true);
+    (h.button.props.onPointerCancel as (event: unknown) => void)(h.event(494, 292));
+  });
+
+  it("transfers a pointer hold to native Escape without a stale capture, pending frame or later accidental return", async () => {
+    const h = await heldOverBox(); component.activity.mockClear();
+    (h.button.props.onKeyDown as (event: unknown) => void)({ key: "Escape", preventDefault: vi.fn(), stopPropagation: vi.fn() });
+    expect(h.attrs.has("data-toy-over")).toBe(false); expect(h.frames.size).toBe(0); expect(h.node.releasePointerCapture).toHaveBeenCalledWith(7);
+    expect(component.activity.mock.calls).toEqual([["ui.click", { target: "companion-toy-drop" }]]);
+    (h.button.props.onPointerUp as (event: unknown) => void)(h.event(492, 292));
+    expect(h.ref.current!.count()).toBe(1); expect(component.activity.mock.calls).toHaveLength(1);
+  });
+
+  it.each(["pointer-cancel", "lost-capture", "pause", "blocked", "unmount", "planner-cancel"])("clears captured feedback at %s without a fabricated return or cancelling an unrelated human hold", async mode => {
+    const h = await heldOverBox(); component.activity.mockClear();
+    if (mode === "pause") h.ref.current!.pause(2100);
+    else if (mode === "blocked") h.render(true);
+    else if (mode === "unmount") { const cleanup = component.effects[1]() as unknown as () => void; cleanup(); }
+    else {
+      if (mode === "planner-cancel") { h.ref.current!.cancel(2100); expect(h.attrs.has("data-toy-over")).toBe(true); }
+      const key = mode === "lost-capture" ? "onLostPointerCapture" : "onPointerCancel";
+      (h.button.props[key] as (event: unknown) => void)(h.event(492, 292));
+    }
+    expect(h.attrs.has("data-toy-over")).toBe(false); expect(h.ref.current!.count()).toBe(1);
+    expect(component.activity.mock.calls.some(([, options]) => options.target === "companion-toy-return")).toBe(false);
+  });
 
   it("preserves an off-centre grab, coalesces to the newest native point, and flushes pointerup before the queued frame", async () => {
     const frames = new Map<number, FrameRequestCallback>(); let serial = 0;

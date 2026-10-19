@@ -156,7 +156,9 @@ for (const [surface, width, dark] of [["viewer", 1100, false], ["viewer", 1440, 
   expect(data.sofa.width).toBeGreaterThanOrEqual(119.99);
   expect(data.sofa.width / data.scale).toBeLessThanOrEqual(150.05);
   expect(data.sofa.width / data.sofa.height).toBeCloseTo(1.8, 2);
-  const expectedWindow = Math.min(narrow ? 126 : 152, data.cssWidth - data.shelf.width / data.scale - (narrow ? 26 : 28));
+  const feedWidth = data.controls.find(control => control.action === "feed")!.width / data.scale;
+  const chestWidth = data.controls.find(control => control.action === "toys")!.width / data.scale;
+  const expectedWindow = Math.min(narrow ? 126 : 152, data.cssWidth - Math.max(data.shelf.width / data.scale + (narrow ? 26 : 28), feedWidth + chestWidth + Math.max(8, 8 / data.scale) + (narrow ? 20 : 22)));
   expect(data.window.width / data.scale).toBeCloseTo(expectedWindow, 1);
   expect(data.shelf.x - data.window.right).toBeGreaterThanOrEqual(6);
   expect(data.sofaRaster.opaqueSamples).toBeGreaterThan(1000);
@@ -182,8 +184,15 @@ for (const [surface, width, dark] of [["viewer", 1100, false], ["viewer", 1440, 
     const first = data.controls[a], overlapX = Math.min(first.right, b.right) - Math.max(first.x, b.x), overlapY = Math.min(first.bottom, b.bottom) - Math.max(first.y, b.y);
     expect(overlapX > 0 && overlapY > 0, first.action + " overlaps " + b.action).toBe(false);
   }
-  const masses = data.pictures.map(picture => picture.mass);
-  expect(Math.max(...masses) / Math.min(...masses), "visible source-alpha mass, rather than transparent img boxes").toBeLessThan(1.25);
+  //125 owner explicitly replaces equal-size props with real furniture scale.
+  // Measure the opaque silhouettes, rather than declaring every canvas equal.
+  const pictureFor = (action: string) => data.pictures.find(picture => picture.action === action)!;
+  const visibleWidth = (action: string) => { const r = pictureFor(action).visible; return r.right - r.x; };
+  const visibleHeight = (action: string) => { const r = pictureFor(action).visible; return r.bottom - r.y; };
+  expect(visibleWidth("toys"), "a chest is broader than a shelf radio").toBeGreaterThan(visibleWidth("radio") * 1.3);
+  expect(visibleWidth("toys")).toBeGreaterThan(visibleWidth("book") * 1.8);
+  expect(visibleWidth("feed") * visibleHeight("feed"), "the dispenser is larger than the book").toBeGreaterThan(visibleWidth("book") * visibleHeight("book") * 1.25);
+  expect(visibleHeight("clearFood"), "the floor bin has real height").toBeGreaterThan(visibleHeight("radio") * 1.25);
   for (const picture of data.pictures) {
     expect(picture.fit).toBe("contain"); expect(picture.alphaPixels).toBeGreaterThan(10000);
     const hit = data.controls.find(control => control.action === picture.action)!;
@@ -192,9 +201,9 @@ for (const [surface, width, dark] of [["viewer", 1100, false], ["viewer", 1440, 
     const overlapsGlass = picture.visible.x < data.glass.right && picture.visible.right > data.glass.x && picture.visible.y < data.glass.bottom && picture.visible.bottom > data.glass.y;
     expect(overlapsGlass, picture.action + " leaves the actual landscape glass visible").toBe(false);
   }
-  // Preserve the two existing bitmap opening centers in source coordinates.
-  // These independent source landmarks must survive contain-box resizing.
-  for (const [action, anchor, x, y] of [["feed", data.outlet, 113.454545, 147.181818], ["toys", data.opening, 135.68, 48.636364]] as const) {
+  //125 creator-visible landmarks in the new frontal source images. Static
+  // openings must follow the same contain scale as their respective art.
+  for (const [action, anchor, x, y] of [["feed", data.outlet, 131, 168], ["toys", data.opening, 128, 52]] as const) {
     const picture = data.pictures.find(item => item.action === action)!;
     expect((anchor.x + anchor.width / 2 - picture.content.x) / picture.content.scale).toBeCloseTo(x, 0);
     expect((anchor.y + anchor.height / 2 - picture.content.y) / picture.content.scale).toBeCloseTo(y, 0);

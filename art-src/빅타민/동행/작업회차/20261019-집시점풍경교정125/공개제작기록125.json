@@ -1,0 +1,1867 @@
+{
+  "schema_version": 1,
+  "scope": "cohesive_front_house_furnishings_near_garden_and_curtain125",
+  "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+  "asset_count": 21,
+  "generation_summary": {
+    "tool": "builtin image_gen",
+    "completed_outputs": 21,
+    "attempted_calls_across_two_actual_user_requests": 24,
+    "user_cancelled_unreturned_attempts": 3,
+    "technical_interruption_recovery_calls": 3,
+    "automatic_art_quality_retries": 0,
+    "independent_art_review_calls": 0,
+    "user_visual_approval": false
+  },
+  "reference_observations": [
+    {
+      "url": "https://hyperbeard.com/wp-content/uploads/2023/08/08_AH_Screenshot_03.png",
+      "observation": "Frontal shelf/shop furniture, strong simple contours, muted flat fill. Do not copy scratch lines or designs.",
+      "role": "DESIGN_LANGUAGE_INSPIRATION_ONLY_NOT_COPIED_OR_ATTACHED_TO_MODEL"
+    },
+    {
+      "url": "https://usagishima.net/wp-content/uploads/2021/04/timeofday-1-1024x341.png",
+      "observation": "Shared warm brown contours and flat two/three shades; entire day/sunset/night world uses coherent palettes. No direct asset copying.",
+      "page": "https://usagishima.net/2021/04/13/devlog-2-real-time-day-night-cycle/",
+      "role": "DESIGN_LANGUAGE_INSPIRATION_ONLY_NOT_COPIED_OR_ATTACHED_TO_MODEL"
+    }
+  ],
+  "lineage": "New spring day is the working layout parent for the other3seasonal days. Each seasonal day directly parents its own dawn/dusk/night; lighting variants never parent another variant. Old124scenery is not a composition authority.",
+  "preserved": "All122/123/124 source/native/runtime, sofa, window frame, floor trash and character art remain unchanged. The book is intentionally blank; the app separately displays its existing whole-mascot cover print.",
+  "book_print": "No mascot was redrawn in this pack. A separate product overlay reuses the existing complete mascot image.",
+  "creator_observation": "Whole21model outputs, five furniture/curtain runtime derivatives and the contact sheet were actually viewed. Newprops have level frontal baselines, landscape detail is broad outlined garden masses. Non-winter night palettes reduce some autumn color distinction; this remains creator observation, not independent art approval.",
+  "technical_note": "Radio source genuine alpha range0..254 was initially misclassified by an overstrict exactly255 check; source bytes stayed unchanged and the assertion was corrected. Native bytes remain exact. Uniform resize can produce alpha255 at interpolated runtime pixels; no matte replacement or alpha cleanup occurred.",
+  "contact_sheet": {
+    "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/전체21종_접촉표.png",
+    "sha256": "286835A0AD8E3765310C83A1D96D86A92CAFAFDE83E46BACA65C9E625F814E18",
+    "bytes": 943449,
+    "width": 1056,
+    "height": 1192,
+    "mode": "RGB"
+  },
+  "runtime_total_bytes": 372994,
+  "assets": [
+    {
+      "id": "furniture-radio",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: precise-object-edit. One original cozy game furnishing sprite, centered, genuinely transparent background. Match the muted ivory, honey-brown, sage and soft lavender of image1, but simplify material texture to clean matte two or three shading planes and warm related-color contours. No photorealistic grain, realistic highlights or cast glow. Perfectly straight front orthographic elevation: zero yaw and zero roll, front surface parallel to image plane, both sides equal height, all horizontal front edges level and parallel to the image bottom. No diagonally receding side face, no banked baseline. Keep the whole object inside the canvas with a small transparent margin. No room, shelf, floor, scenery, typography, logos, mascots or characters. Use image2 only for its existing radio design and palette; its angled perspective is rejected. A rounded honey-wood vintage radio, centered sage carry handle, cream speaker mesh simplified to a subtle broad pattern, two symmetrical cream knobs and a centered sage tuner strip. Front feet sit on the same perfectly level baseline. The visible right side must not be wider or lower than the left.",
+        "transparent_background": true,
+        "inputs": [
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "existing_cream_sage_honey_palette_and_outline_only_not_objects",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          },
+          {
+            "id": "라디오",
+            "sha256": "4DC8FFE65F52A7F1D62E1192D4069858E487559239E6787D446F8265229CFB09",
+            "role": "existing_shape_material_only_oblique_camera_rejected",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/라디오_기존형태참고.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/라디오.png",
+          "sha256": "B73D215BFBBA6F072FD67EE89CD1D32BE4505D88C374C0DCC642B5F65D86A96A",
+          "bytes": 1640040,
+          "width": 1536,
+          "height": 1024,
+          "mode": "RGBA"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/라디오.png",
+        "sha256": "01D16E397EF0182EC76FE536A8AA37900FB8DE4A103627FBE37D17D821335154",
+        "bytes": 49533,
+        "width": 256,
+        "height": 164,
+        "mode": "RGBA"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/furniture-radio.webp",
+        "sha256": "58E0E152156F8A26628DB4C7EC331456C09805DD85810C49F01B1DD14C7D4B27",
+        "bytes": 12678,
+        "width": 256,
+        "height": 164,
+        "mode": "RGBA"
+      },
+      "derivation": {
+        "operation": "Exact transparent-only crop then uniform Lanczos downscale to maximum256px. No repaint, recolor, alpha cleanup or logo composite.",
+        "source_crop_box": [
+          0,
+          25,
+          1505,
+          992
+        ],
+        "target_size": [
+          256,
+          164
+        ],
+        "source_alpha_range": [
+          0,
+          254
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "furniture-book",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: precise-object-edit. One original cozy game furnishing sprite, centered, genuinely transparent background. Match the muted ivory, honey-brown, sage and soft lavender of image1, but simplify material texture to clean matte two or three shading planes and warm related-color contours. No photorealistic grain, realistic highlights or cast glow. Perfectly straight front orthographic elevation: zero yaw and zero roll, front surface parallel to image plane, both sides equal height, all horizontal front edges level and parallel to the image bottom. No diagonally receding side face, no banked baseline. Keep the whole object inside the canvas with a small transparent margin. No room, shelf, floor, scenery, typography, logos, mascots or characters. Use image2 only for its sage book materials and lavender ribbon; its perspective and cover character are rejected. One upright closed sage-green hardback book with narrow straight gold edging and a lavender bookmark. The front cover is a level vertical rounded rectangle, symmetrical top and bottom edges, no right side wedge. A large blank warm ivory rectangular label occupies the center, completely empty without any drawing or character; the app will apply its existing logo later.",
+        "transparent_background": true,
+        "inputs": [
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "existing_cream_sage_honey_palette_and_outline_only_not_objects",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          },
+          {
+            "id": "빅타민책",
+            "sha256": "3CB8DE0EEF49D9501B8FDF05825177D8E9A203B443CFC8668F70DC12071C59C8",
+            "role": "existing_shape_material_only_oblique_camera_rejected",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/빅타민책_기존형태참고.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/빅타민책.png",
+          "sha256": "0AADF9C5F5EE1ABD64242DAE2BCB731984DFF5324D2CF9F93CD299D0F42CFC60",
+          "bytes": 1279176,
+          "width": 1214,
+          "height": 1295,
+          "mode": "RGBA"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/빅타민책.png",
+        "sha256": "8EDCA99302975A1E7A692B2EE054298D9CA16B6F5623609256408E187B2AD31C",
+        "bytes": 49872,
+        "width": 244,
+        "height": 256,
+        "mode": "RGBA"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/furniture-book.webp",
+        "sha256": "9092F6AD0907AB9F62E4E4F7E5F4697F49C225D9C017061D4E1FDA190464EC26",
+        "bytes": 9074,
+        "width": 244,
+        "height": 256,
+        "mode": "RGBA"
+      },
+      "derivation": {
+        "operation": "Exact transparent-only crop then uniform Lanczos downscale to maximum256px. No repaint, recolor, alpha cleanup or logo composite.",
+        "source_crop_box": [
+          0,
+          19,
+          1200,
+          1279
+        ],
+        "target_size": [
+          244,
+          256
+        ],
+        "source_alpha_range": [
+          0,
+          255
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "furniture-dispenser",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: precise-object-edit. One original cozy game furnishing sprite, centered, genuinely transparent background. Match the muted ivory, honey-brown, sage and soft lavender of image1, but simplify material texture to clean matte two or three shading planes and warm related-color contours. No photorealistic grain, realistic highlights or cast glow. Perfectly straight front orthographic elevation: zero yaw and zero roll, front surface parallel to image plane, both sides equal height, all horizontal front edges level and parallel to the image bottom. No diagonally receding side face, no banked baseline. Keep the whole object inside the canvas with a small transparent margin. No room, shelf, floor, scenery, typography, logos, mascots or characters. Use image2 only for the existing cream ceramic food jar design; its angled camera is rejected. Rounded cream food dispenser with honey-wood lid and centered knob. A small centered sage plaque has a simple spoon relief. A wide centered lower outlet with a shallow cream catch tray, viewed straight on: outlet and tray level, both side depths identical. Keep the lid a horizontally symmetrical shallow ellipse, no oblique sidewall.",
+        "transparent_background": true,
+        "inputs": [
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "existing_cream_sage_honey_palette_and_outline_only_not_objects",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          },
+          {
+            "id": "음식통",
+            "sha256": "C32A1D3ABE3D8B0A3609D3FF3ADFA590E78889428AF045E1A27364DC211D9C24",
+            "role": "existing_shape_material_only_oblique_camera_rejected",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/음식통_기존형태참고.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/음식통.png",
+          "sha256": "1C060DDCDDEC389D42388394119D75A0335186FF14E40E9EE77B68D8D0F51EF4",
+          "bytes": 1107053,
+          "width": 1254,
+          "height": 1254,
+          "mode": "RGBA"
+        },
+        "technical_interruption_recovery": {
+          "prior_user_cancelled_unreturned_attempts": 1,
+          "recovery_calls": 1,
+          "completed_native_outputs_total": 1,
+          "same_prompt": true,
+          "new_actual_user_request_bound": true,
+          "art_quality_reroll": false
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/음식통.png",
+        "sha256": "D391DD4577596400B0D2E59E1731F90C9C8A2B61C7C4C8DBADA872966D1E1BE0",
+        "bytes": 54373,
+        "width": 256,
+        "height": 256,
+        "mode": "RGBA"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/furniture-dispenser.webp",
+        "sha256": "C065760DE0CB70039160EC4BC7DFB8F7EAFB3D21E5AE05FF6572C06F1D708651",
+        "bytes": 11914,
+        "width": 256,
+        "height": 256,
+        "mode": "RGBA"
+      },
+      "derivation": {
+        "operation": "Exact transparent-only crop then uniform Lanczos downscale to maximum256px. No repaint, recolor, alpha cleanup or logo composite.",
+        "source_crop_box": [
+          0,
+          25,
+          1230,
+          1254
+        ],
+        "target_size": [
+          256,
+          256
+        ],
+        "source_alpha_range": [
+          0,
+          255
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "furniture-toy-box",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: precise-object-edit. One original cozy game furnishing sprite, centered, genuinely transparent background. Match the muted ivory, honey-brown, sage and soft lavender of image1, but simplify material texture to clean matte two or three shading planes and warm related-color contours. No photorealistic grain, realistic highlights or cast glow. Perfectly straight front orthographic elevation: zero yaw and zero roll, front surface parallel to image plane, both sides equal height, all horizontal front edges level and parallel to the image bottom. No diagonally receding side face, no banked baseline. Keep the whole object inside the canvas with a small transparent margin. No room, shelf, floor, scenery, typography, logos, mascots or characters. Use image2 only for its honey-wood toy box design and lavender lining; the angled side view is rejected. A low wide open toy box with cream front inset and centered sage handle, lavender cloth lining, three tiny simple muted toy shapes inside. Front rectangular face has horizontal top and bottom edges. A slight symmetrical top opening reveals the contents; equal shallow left and right sides, no one-sided receding wall. All four corners align on a front orthographic grid.",
+        "transparent_background": true,
+        "inputs": [
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "existing_cream_sage_honey_palette_and_outline_only_not_objects",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          },
+          {
+            "id": "장난감상자",
+            "sha256": "4F2B47712B2F46D71D2470476B6BA89EFB62D58DBB29F2337CD8FC5470C45537",
+            "role": "existing_shape_material_only_oblique_camera_rejected",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/장난감상자_기존형태참고.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/장난감상자.png",
+          "sha256": "4B8D84242B2C0746A41A74B63D8CFF161607CC2C14ED681CDE25B9A295B7B986",
+          "bytes": 1020613,
+          "width": 1774,
+          "height": 887,
+          "mode": "RGBA"
+        },
+        "technical_interruption_recovery": {
+          "prior_user_cancelled_unreturned_attempts": 1,
+          "recovery_calls": 1,
+          "completed_native_outputs_total": 1,
+          "same_prompt": true,
+          "new_actual_user_request_bound": true,
+          "art_quality_reroll": false
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/장난감상자.png",
+        "sha256": "ABC9B91CAE317386F0CD57802482348DA19630417A4B38DDB4745674D0165F6F",
+        "bytes": 27703,
+        "width": 256,
+        "height": 134,
+        "mode": "RGBA"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/furniture-toy-box.webp",
+        "sha256": "1692DF8249EE907AA6E1BD47BE2C8D0A62EE7599EBBD2D1C8E593DFD860F5CB8",
+        "bytes": 6162,
+        "width": 256,
+        "height": 134,
+        "mode": "RGBA"
+      },
+      "derivation": {
+        "operation": "Exact transparent-only crop then uniform Lanczos downscale to maximum256px. No repaint, recolor, alpha cleanup or logo composite.",
+        "source_crop_box": [
+          47,
+          7,
+          1722,
+          887
+        ],
+        "target_size": [
+          256,
+          134
+        ],
+        "source_alpha_range": [
+          0,
+          255
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "window-spring-day",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: illustration-story. Create one new full-bleed opaque horizontal4:3 window landscape for a tiny cozy illustrated room. Image1 gives only the room furnishings palette, matte surfaces and warm contours; do not draw those objects. A simple near garden seen straight ahead: one broad rounded tree at the left edge, a low rounded hedge across the middle distance, a small grassy clearing and one modest patch of a few flowers at lower right, soft open sky above. Natural hand-drawn organic silhouettes, warm brown related-color outlines, two or three flat softly shaded color planes, muted cream/sage/clay palette, modest contrast. Broad readable masses with very few details; no individually rendered leaf clusters, grass blades, blossoms or texture. Clear spring daytime, sage green foliage, a few pale blush accents, softly blue-ivory sky. No cottage, bridge, stream, mountains, path, window frame, curtains, furniture, characters, photographic light, realistic detail, woodgrain, brush-noise, lens effect, vector primitives, UI or text. The garden should feel like the same illustrated world as the room, never a detailed painting pasted into it.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "existing_cream_sage_honey_palette_and_outline_only_not_objects",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/봄_낮풍경.png",
+          "sha256": "745FF6F258D3D3A43332FF8AEA065F6E767FBED67C2E820E506D9488214AF89B",
+          "bytes": 1633265,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/봄_낮풍경.png",
+        "sha256": "799B5E3BD9C283AC7679ADFE80B044DF933E92CD4D8CE4874F093BF2ACCAFBC1",
+        "bytes": 203368,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/window-spring-day.webp",
+        "sha256": "7EF70623027637B2F23A6D182E7887D1655B3CDFE22AB5FD60BBFB5C7DCDAAC3",
+        "bytes": 16332,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve original bytes; center crop to exact4:3 if necessary then uniform Lanczos downscale. No recolor/filter/repaint.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "curtain-panel",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: illustration-story. Create ONE original vertical rectangular curtain fabric panel, front view, full height with a2:3 width-to-height ratio. Image1 is only the warm ivory room style and matte shading reference; no furnishing is copied. The fabric is a calm warm ivory with slightly darker warm beige vertical pleats, gently rounded hems and a thin warm-brown contour, two or three soft matte shading planes, no realistic textile grain. The silhouette is a full nearly rectangular sheet, top and bottom horizontal, both sides straight; NOT tied back, no narrow waist, no diagonal perspective. Opaque cloth fills almost the entire rectangle including its center and outer sides, with only a very small transparent margin outside the edge. This panel must fully cover half a window when widened, and can be compressed into a narrow pleated strip by the app. No rod, hooks, rings, window, frame, tie, bow, room, floor, scenery, characters, pattern, text, cast shadow or glow. Genuinely transparent background outside the complete cloth.",
+        "transparent_background": true,
+        "inputs": [
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "existing_cream_sage_honey_palette_and_outline_only_not_objects",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/커튼천.png",
+          "sha256": "33ECA0696D2933C7FE1D3D8CBEABFFF675F2B8A61579E88669589BD3CD4026CC",
+          "bytes": 1192972,
+          "width": 1024,
+          "height": 1536,
+          "mode": "RGBA"
+        },
+        "technical_interruption_recovery": {
+          "prior_user_cancelled_unreturned_attempts": 1,
+          "recovery_calls": 1,
+          "completed_native_outputs_total": 1,
+          "same_prompt": true,
+          "new_actual_user_request_bound": true,
+          "art_quality_reroll": false
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/커튼천.png",
+        "sha256": "EA24DC1E981702699D7EE13016BD3118ED1B891B4FFBC1B4F6A5860C629F7A2A",
+        "bytes": 72998,
+        "width": 256,
+        "height": 384,
+        "mode": "RGBA"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/curtain-panel.webp",
+        "sha256": "AA430594A238594C2135CFECFCC41EB3F6E6A4FD5D9F2F77C3FC02923BD722CF",
+        "bytes": 12616,
+        "width": 256,
+        "height": 384,
+        "mode": "RGBA"
+      },
+      "derivation": {
+        "operation": "Exact transparent-only crop; uniform Lanczos contain in256x384 transparent canvas. No fabric repaint or alpha matte change.",
+        "source_crop_box": [
+          45,
+          19,
+          950,
+          1536
+        ],
+        "target_size": [
+          256,
+          384
+        ],
+        "source_alpha_range": [
+          0,
+          254
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "window-summer-day",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: lighting-weather. Create one full-bleed opaque horizontal4:3 seasonal variant of image2, a new same-pack unapproved spring-day illustration, not an approved artwork. Image1 supplies room furnishing palette and matte contour style only; do not draw its objects. Keep image2 composition exactly: broad tree at left edge, hedge at the same height, same open clearing, cloud placement and modest flower patch at lower right. Change only season colors and the stated seasonal details. Summer in the same near garden: softly deeper sage green tree and hedge, fresh muted green grass, four simple cream and pale-yellow flowers at the same lower-right patch. Clear pale blue-ivory summer daytime sky, calm diffuse daylight. Preserve the simple cozy game drawing: warm related-brown outlines, organic rounded silhouettes, two or three flat softly shaded color planes, modest contrast and cream/sage/clay palette. No increased detail, individual leaf rendering, realistic light, dense brushtexture, photoeffect, cottage, stream, bridge, mountains, path, window frame, furniture, curtains, characters, UI or text. This should feel like the exact same garden and illustration as image2, merely another season.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "existing_room_palette_contour_only",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          },
+          {
+            "id": "same-pack-spring-day",
+            "sha256": "745FF6F258D3D3A43332FF8AEA065F6E767FBED67C2E820E506D9488214AF89B",
+            "role": "same_pack_direct_layout_parent_only",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/같은회차봄낮_배치부모.png",
+            "user_visual_approval": false,
+            "source_native": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/봄_낮풍경.png",
+            "status": "SAME_PACK_WORKING_DRAFT_NOT_USER_APPROVED"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/여름_낮풍경.png",
+          "sha256": "C4F24FCD85B706F9D690DBD7CA9230EA050BA19E084B114561584E229330F37A",
+          "bytes": 1627515,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/여름_낮풍경.png",
+        "sha256": "6349C3613BCDB1BDB08D163FE20350C94E1E249C7F9EE2997F171D47E452904D",
+        "bytes": 208483,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/window-summer-day.webp",
+        "sha256": "ED06A3D5D631A32892AA99996EB3C419B42A55CBBAAAF622C9ABEE0362B876C1",
+        "bytes": 19998,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve original bytes; center crop to exact4:3 if necessary then uniform Lanczos downscale. No recolor/filter/repaint.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "window-autumn-day",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: lighting-weather. Create one full-bleed opaque horizontal4:3 seasonal variant of image2, a new same-pack unapproved spring-day illustration, not an approved artwork. Image1 supplies room furnishing palette and matte contour style only; do not draw its objects. Keep image2 composition exactly: broad tree at left edge, hedge at the same height, same open clearing, cloud placement and modest flower patch at lower right. Change only season colors and the stated seasonal details. Autumn in the same near garden: muted honey, amber and clay-orange tree canopy and hedge, soft moss-beige clearing, the same small lower-right flower patch with faded cream petals and a few amber leaves. Clear pale warm ivory-blue autumn daytime sky, calm diffuse daylight. Preserve the simple cozy game drawing: warm related-brown outlines, organic rounded silhouettes, two or three flat softly shaded color planes, modest contrast and cream/sage/clay palette. No increased detail, individual leaf rendering, realistic light, dense brushtexture, photoeffect, cottage, stream, bridge, mountains, path, window frame, furniture, curtains, characters, UI or text. This should feel like the exact same garden and illustration as image2, merely another season.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "existing_room_palette_contour_only",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          },
+          {
+            "id": "same-pack-spring-day",
+            "sha256": "745FF6F258D3D3A43332FF8AEA065F6E767FBED67C2E820E506D9488214AF89B",
+            "role": "same_pack_direct_layout_parent_only",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/같은회차봄낮_배치부모.png",
+            "user_visual_approval": false,
+            "source_native": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/봄_낮풍경.png",
+            "status": "SAME_PACK_WORKING_DRAFT_NOT_USER_APPROVED"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/가을_낮풍경.png",
+          "sha256": "DFCF49FFAA58FB6247093EDEBC9E6AFEED7492BCE18DFB62AB61C0D5543A632A",
+          "bytes": 1654379,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/가을_낮풍경.png",
+        "sha256": "A6A01AE4124145AD13CADE34CCB2718B732669443E5C7F16F9D7554B61EA8C85",
+        "bytes": 207630,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/window-autumn-day.webp",
+        "sha256": "7549C46B44BE5AA6621F871B8C53378B83E4C133EAAE6593AC267F6A5BD9CF28",
+        "bytes": 19144,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve original bytes; center crop to exact4:3 if necessary then uniform Lanczos downscale. No recolor/filter/repaint.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "window-winter-day",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: lighting-weather. Create one full-bleed opaque horizontal4:3 seasonal variant of image2, a new same-pack unapproved spring-day illustration, not an approved artwork. Image1 supplies room furnishing palette and matte contour style only; do not draw its objects. Keep image2 composition exactly: broad tree at left edge, hedge at the same height, same open clearing, cloud placement and modest flower patch at lower right. Change only season colors and the stated seasonal details. Winter in the same near garden: soft cream-white snow caps on the existing rounded tree canopy and hedge, snow across the same clearing, the same lower-right flower stems with tiny simple snow caps. Cool muted sage and lavender shadows, pale blue-ivory winter daytime sky, calm diffuse daylight. Preserve the simple cozy game drawing: warm related-brown outlines, organic rounded silhouettes, two or three flat softly shaded color planes, modest contrast and cream/sage/clay palette. No increased detail, individual leaf rendering, realistic light, dense brushtexture, photoeffect, cottage, stream, bridge, mountains, path, window frame, furniture, curtains, characters, UI or text. This should feel like the exact same garden and illustration as image2, merely another season.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "existing_room_palette_contour_only",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          },
+          {
+            "id": "same-pack-spring-day",
+            "sha256": "745FF6F258D3D3A43332FF8AEA065F6E767FBED67C2E820E506D9488214AF89B",
+            "role": "same_pack_direct_layout_parent_only",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/같은회차봄낮_배치부모.png",
+            "user_visual_approval": false,
+            "source_native": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/봄_낮풍경.png",
+            "status": "SAME_PACK_WORKING_DRAFT_NOT_USER_APPROVED"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/겨울_낮풍경.png",
+          "sha256": "00A3F1EB2CFF8C937D999315A0CC47B09593522BD4B8641529423577B8091021",
+          "bytes": 1658531,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/겨울_낮풍경.png",
+        "sha256": "8D12830EBA713E5DD9BF6B831F117421FCDA28A9DF31E3621E58DD1014B04076",
+        "bytes": 219604,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/window-winter-day.webp",
+        "sha256": "461FC2DE750D3AD9BB1541F1C1D67F7C13BAE88B100E2EFD0EFA6C80D6E9FC58",
+        "bytes": 23680,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve original bytes; center crop to exact4:3 if necessary then uniform Lanczos downscale. No recolor/filter/repaint.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "window-spring-dawn",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: lighting-weather. Create one full-bleed opaque horizontal4:3 time-of-day version of image1, the direct same-season day illustration from this working pack, not user-approved artwork. Image2 gives existing room furnishing style/palette only; do not draw its objects. Change ONLY time lighting and sky colors. Keep image1 entire composition, camera, tree/hedge silhouettes and outlines, clearing, exact flower patch, season and snow state unchanged. Early dawn: pale warm peach and ivory sky, cool muted sage/lavender shadows, gentle low morning light. Keep the whole garden softly readable and calm, not dark. Preserve the deliberately simple cozy game illustration: organic rounded masses, warm related-color outlines, two or three broad matte shading planes, modest contrast, no added fine texture. Do not increase leaf, flower or grass detail, introduce new landscape objects, or move existing objects. No realistic light, photographic atmosphere, glitter, dense brushtexture, cottage, bridge, stream, mountains, window frame, curtains, furniture, people, pets, mascots, UI or text. The scene must look like the same illustrated garden at another hour.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "same-pack-spring-day",
+            "sha256": "745FF6F258D3D3A43332FF8AEA065F6E767FBED67C2E820E506D9488214AF89B",
+            "role": "direct_same_season_day_parent_for_lighting_only",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/봄낮_같은회차시간부모.png",
+            "user_visual_approval": false,
+            "source_native": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/봄_낮풍경.png",
+            "status": "SAME_PACK_WORKING_DRAFT_NOT_USER_APPROVED"
+          },
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "same_room_palette_contour_material_only_no_objects",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/봄_새벽풍경.png",
+          "sha256": "2E08DBA1E27742C5BBB2F4AEE4CF5DBBB5C90D1198A4B0F33BC0DA6856CF590D",
+          "bytes": 1590934,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/봄_새벽풍경.png",
+        "sha256": "094BEAA4D2D8C63983D6C0430AEB0BB14B155E0F9969FFB765D43C856F0A258C",
+        "bytes": 203481,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/window-spring-dawn.webp",
+        "sha256": "37EEBEE49FE81415DF37FD047883C6E19EC1085385990CA553D1E60DA1789BB6",
+        "bytes": 17786,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve original bytes; center crop to exact4:3 if necessary then uniform Lanczos downscale. No recolor/filter/repaint.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "window-spring-dusk",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: lighting-weather. Create one full-bleed opaque horizontal4:3 time-of-day version of image1, the direct same-season day illustration from this working pack, not user-approved artwork. Image2 gives existing room furnishing style/palette only; do not draw its objects. Change ONLY time lighting and sky colors. Keep image1 entire composition, camera, tree/hedge silhouettes and outlines, clearing, exact flower patch, season and snow state unchanged. Gentle sunset: broad softly peach/coral sky with muted lavender undertones, warm honey-lit tree edges, sage/clay surfaces with lavender shadows. Cohesive warm pastel evening palette across the entire garden, not a filter placed only on the sky. Preserve the deliberately simple cozy game illustration: organic rounded masses, warm related-color outlines, two or three broad matte shading planes, modest contrast, no added fine texture. Do not increase leaf, flower or grass detail, introduce new landscape objects, or move existing objects. No realistic light, photographic atmosphere, glitter, dense brushtexture, cottage, bridge, stream, mountains, window frame, curtains, furniture, people, pets, mascots, UI or text. The scene must look like the same illustrated garden at another hour.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "same-pack-spring-day",
+            "sha256": "745FF6F258D3D3A43332FF8AEA065F6E767FBED67C2E820E506D9488214AF89B",
+            "role": "direct_same_season_day_parent_for_lighting_only",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/봄낮_같은회차시간부모.png",
+            "user_visual_approval": false,
+            "source_native": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/봄_낮풍경.png",
+            "status": "SAME_PACK_WORKING_DRAFT_NOT_USER_APPROVED"
+          },
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "same_room_palette_contour_material_only_no_objects",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/봄_노을풍경.png",
+          "sha256": "0635516FAB81FBAEC405EC2C205C3D8434CD53B8EA36F1E2BB9682531D122A60",
+          "bytes": 1605501,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/봄_노을풍경.png",
+        "sha256": "8A9E475061C96BF6EF71FB67F00551B66753996BD0F11F6E965A24E3B4255698",
+        "bytes": 210813,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/window-spring-dusk.webp",
+        "sha256": "7940297435831BAA0ECD0D86802EFA8AF9E99F4FA7CE85137DD2ACB4B89514D3",
+        "bytes": 20856,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve original bytes; center crop to exact4:3 if necessary then uniform Lanczos downscale. No recolor/filter/repaint.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "window-spring-night",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: lighting-weather. Create one full-bleed opaque horizontal4:3 time-of-day version of image1, the direct same-season day illustration from this working pack, not user-approved artwork. Image2 gives existing room furnishing style/palette only; do not draw its objects. Change ONLY time lighting and sky colors. Keep image1 entire composition, camera, tree/hedge silhouettes and outlines, clearing, exact flower patch, season and snow state unchanged. Quiet night: muted blue-violet and lavender sky, subdued sage foliage and cool lavender surfaces, warm-brown contours softened to muted plum-brown. Add only a very small pale crescent high in the existing clear sky and three tiny quiet stars; preserve every garden object and cloud position. Readable moonlit cozy palette with moderate brightness, never near-black or photorealistic. Preserve the deliberately simple cozy game illustration: organic rounded masses, warm related-color outlines, two or three broad matte shading planes, modest contrast, no added fine texture. Do not increase leaf, flower or grass detail, introduce new landscape objects, or move existing objects. No realistic light, photographic atmosphere, glitter, dense brushtexture, cottage, bridge, stream, mountains, window frame, curtains, furniture, people, pets, mascots, UI or text. The scene must look like the same illustrated garden at another hour.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "same-pack-spring-day",
+            "sha256": "745FF6F258D3D3A43332FF8AEA065F6E767FBED67C2E820E506D9488214AF89B",
+            "role": "direct_same_season_day_parent_for_lighting_only",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/봄낮_같은회차시간부모.png",
+            "user_visual_approval": false,
+            "source_native": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/봄_낮풍경.png",
+            "status": "SAME_PACK_WORKING_DRAFT_NOT_USER_APPROVED"
+          },
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "same_room_palette_contour_material_only_no_objects",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/봄_밤풍경.png",
+          "sha256": "1A6E288CF0079AE05E24C321932C579DF798B6E5CBB51546D4F5AB6BF336F610",
+          "bytes": 1448717,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/봄_밤풍경.png",
+        "sha256": "4E9A006F4313A966983B21A5AAD03E9FB62A230050E02EF3D5ED8B24FBCA9582",
+        "bytes": 193229,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/window-spring-night.webp",
+        "sha256": "2AE0826B405AA2D5756AA542352E34E97F095C73B3105365B157B64BA466EB91",
+        "bytes": 14642,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve original bytes; center crop to exact4:3 if necessary then uniform Lanczos downscale. No recolor/filter/repaint.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "window-summer-dawn",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: lighting-weather. Create one full-bleed opaque horizontal4:3 time-of-day version of image1, the direct same-season day illustration from this working pack, not user-approved artwork. Image2 gives existing room furnishing style/palette only; do not draw its objects. Change ONLY time lighting and sky colors. Keep image1 entire composition, camera, tree/hedge silhouettes and outlines, clearing, exact flower patch, season and snow state unchanged. Early dawn: pale warm peach and ivory sky, cool muted sage/lavender shadows, gentle low morning light. Keep the whole garden softly readable and calm, not dark. Preserve the deliberately simple cozy game illustration: organic rounded masses, warm related-color outlines, two or three broad matte shading planes, modest contrast, no added fine texture. Do not increase leaf, flower or grass detail, introduce new landscape objects, or move existing objects. No realistic light, photographic atmosphere, glitter, dense brushtexture, cottage, bridge, stream, mountains, window frame, curtains, furniture, people, pets, mascots, UI or text. The scene must look like the same illustrated garden at another hour.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "same-pack-summer-day",
+            "sha256": "C4F24FCD85B706F9D690DBD7CA9230EA050BA19E084B114561584E229330F37A",
+            "role": "direct_same_season_day_parent_for_lighting_only",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/여름낮_같은회차시간부모.png",
+            "user_visual_approval": false,
+            "source_native": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/여름_낮풍경.png",
+            "status": "SAME_PACK_WORKING_DRAFT_NOT_USER_APPROVED"
+          },
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "same_room_palette_contour_material_only_no_objects",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/여름_새벽풍경.png",
+          "sha256": "66E3F3E995AF37DC5F9D60A8296A9542E7EE4B9228D7336877ED9EC1C92ECDD7",
+          "bytes": 1544860,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/여름_새벽풍경.png",
+        "sha256": "F4B101380C2B3408F8DA87BC10B041DC8600520E17BA71A67AF98564E8A0C911",
+        "bytes": 203548,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/window-summer-dawn.webp",
+        "sha256": "58E21FB7793B7A4CF09CF75BCAD4C1A5C9155B69B7F348BE498EA594E9AFCB8A",
+        "bytes": 19956,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve original bytes; center crop to exact4:3 if necessary then uniform Lanczos downscale. No recolor/filter/repaint.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "window-summer-dusk",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: lighting-weather. Create one full-bleed opaque horizontal4:3 time-of-day version of image1, the direct same-season day illustration from this working pack, not user-approved artwork. Image2 gives existing room furnishing style/palette only; do not draw its objects. Change ONLY time lighting and sky colors. Keep image1 entire composition, camera, tree/hedge silhouettes and outlines, clearing, exact flower patch, season and snow state unchanged. Gentle sunset: broad softly peach/coral sky with muted lavender undertones, warm honey-lit tree edges, sage/clay surfaces with lavender shadows. Cohesive warm pastel evening palette across the entire garden, not a filter placed only on the sky. Preserve the deliberately simple cozy game illustration: organic rounded masses, warm related-color outlines, two or three broad matte shading planes, modest contrast, no added fine texture. Do not increase leaf, flower or grass detail, introduce new landscape objects, or move existing objects. No realistic light, photographic atmosphere, glitter, dense brushtexture, cottage, bridge, stream, mountains, window frame, curtains, furniture, people, pets, mascots, UI or text. The scene must look like the same illustrated garden at another hour.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "same-pack-summer-day",
+            "sha256": "C4F24FCD85B706F9D690DBD7CA9230EA050BA19E084B114561584E229330F37A",
+            "role": "direct_same_season_day_parent_for_lighting_only",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/여름낮_같은회차시간부모.png",
+            "user_visual_approval": false,
+            "source_native": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/여름_낮풍경.png",
+            "status": "SAME_PACK_WORKING_DRAFT_NOT_USER_APPROVED"
+          },
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "same_room_palette_contour_material_only_no_objects",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/여름_노을풍경.png",
+          "sha256": "339B9D9B4D7E5DF987522D3D2AB299658426BB596A33F0DCAA6CC480DD3852A6",
+          "bytes": 1551324,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/여름_노을풍경.png",
+        "sha256": "07266DC61B29FA82EC7905DCA42165F45307C2F7880BB39E7A168E3EBE4D0C48",
+        "bytes": 208323,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/window-summer-dusk.webp",
+        "sha256": "1E7DE8F833EFC1A94377A452E24CB8D329911D12FC12BF82BE878B4D38605939",
+        "bytes": 20542,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve original bytes; center crop to exact4:3 if necessary then uniform Lanczos downscale. No recolor/filter/repaint.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "window-summer-night",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: lighting-weather. Create one full-bleed opaque horizontal4:3 time-of-day version of image1, the direct same-season day illustration from this working pack, not user-approved artwork. Image2 gives existing room furnishing style/palette only; do not draw its objects. Change ONLY time lighting and sky colors. Keep image1 entire composition, camera, tree/hedge silhouettes and outlines, clearing, exact flower patch, season and snow state unchanged. Quiet night: muted blue-violet and lavender sky, subdued sage foliage and cool lavender surfaces, warm-brown contours softened to muted plum-brown. Add only a very small pale crescent high in the existing clear sky and three tiny quiet stars; preserve every garden object and cloud position. Readable moonlit cozy palette with moderate brightness, never near-black or photorealistic. Preserve the deliberately simple cozy game illustration: organic rounded masses, warm related-color outlines, two or three broad matte shading planes, modest contrast, no added fine texture. Do not increase leaf, flower or grass detail, introduce new landscape objects, or move existing objects. No realistic light, photographic atmosphere, glitter, dense brushtexture, cottage, bridge, stream, mountains, window frame, curtains, furniture, people, pets, mascots, UI or text. The scene must look like the same illustrated garden at another hour.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "same-pack-summer-day",
+            "sha256": "C4F24FCD85B706F9D690DBD7CA9230EA050BA19E084B114561584E229330F37A",
+            "role": "direct_same_season_day_parent_for_lighting_only",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/여름낮_같은회차시간부모.png",
+            "user_visual_approval": false,
+            "source_native": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/여름_낮풍경.png",
+            "status": "SAME_PACK_WORKING_DRAFT_NOT_USER_APPROVED"
+          },
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "same_room_palette_contour_material_only_no_objects",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/여름_밤풍경.png",
+          "sha256": "328B778491C17BA3E5D9F709D1B7C83FC2277E642F4FAA823103A415C9C27279",
+          "bytes": 1536299,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/여름_밤풍경.png",
+        "sha256": "9C099EBF642E9BC99B2011031EDCA456FA7013630812FBAE6ECABC4340BAD905",
+        "bytes": 198947,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/window-summer-night.webp",
+        "sha256": "596024F0830359BCFF63B93B6ED7193840B1DEE3134CFADB9F8BD16341A1F1CF",
+        "bytes": 16298,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve original bytes; center crop to exact4:3 if necessary then uniform Lanczos downscale. No recolor/filter/repaint.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "window-autumn-dawn",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: lighting-weather. Create one full-bleed opaque horizontal4:3 time-of-day version of image1, the direct same-season day illustration from this working pack, not user-approved artwork. Image2 gives existing room furnishing style/palette only; do not draw its objects. Change ONLY time lighting and sky colors. Keep image1 entire composition, camera, tree/hedge silhouettes and outlines, clearing, exact flower patch, season and snow state unchanged. Early dawn: pale warm peach and ivory sky, cool muted sage/lavender shadows, gentle low morning light. Keep the whole garden softly readable and calm, not dark. Preserve the deliberately simple cozy game illustration: organic rounded masses, warm related-color outlines, two or three broad matte shading planes, modest contrast, no added fine texture. Do not increase leaf, flower or grass detail, introduce new landscape objects, or move existing objects. No realistic light, photographic atmosphere, glitter, dense brushtexture, cottage, bridge, stream, mountains, window frame, curtains, furniture, people, pets, mascots, UI or text. The scene must look like the same illustrated garden at another hour.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "same-pack-autumn-day",
+            "sha256": "DFCF49FFAA58FB6247093EDEBC9E6AFEED7492BCE18DFB62AB61C0D5543A632A",
+            "role": "direct_same_season_day_parent_for_lighting_only",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/가을낮_같은회차시간부모.png",
+            "user_visual_approval": false,
+            "source_native": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/가을_낮풍경.png",
+            "status": "SAME_PACK_WORKING_DRAFT_NOT_USER_APPROVED"
+          },
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "same_room_palette_contour_material_only_no_objects",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/가을_새벽풍경.png",
+          "sha256": "2AAA0DE3A2461F89C1BBD14F89D8F6443C3C30BA36D40B2F4057BBDA7F411720",
+          "bytes": 1635176,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/가을_새벽풍경.png",
+        "sha256": "26467C941CF7992C0F6828925A48006B6B64090E934A02D2F42A2F2AF56907C3",
+        "bytes": 211578,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/window-autumn-dawn.webp",
+        "sha256": "176AADD923549F9B88CD110B638A4CF1D5ECA56F7C73A0CC51B9999A2641AEC0",
+        "bytes": 20090,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve original bytes; center crop to exact4:3 if necessary then uniform Lanczos downscale. No recolor/filter/repaint.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "window-autumn-dusk",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: lighting-weather. Create one full-bleed opaque horizontal4:3 time-of-day version of image1, the direct same-season day illustration from this working pack, not user-approved artwork. Image2 gives existing room furnishing style/palette only; do not draw its objects. Change ONLY time lighting and sky colors. Keep image1 entire composition, camera, tree/hedge silhouettes and outlines, clearing, exact flower patch, season and snow state unchanged. Gentle sunset: broad softly peach/coral sky with muted lavender undertones, warm honey-lit tree edges, sage/clay surfaces with lavender shadows. Cohesive warm pastel evening palette across the entire garden, not a filter placed only on the sky. Preserve the deliberately simple cozy game illustration: organic rounded masses, warm related-color outlines, two or three broad matte shading planes, modest contrast, no added fine texture. Do not increase leaf, flower or grass detail, introduce new landscape objects, or move existing objects. No realistic light, photographic atmosphere, glitter, dense brushtexture, cottage, bridge, stream, mountains, window frame, curtains, furniture, people, pets, mascots, UI or text. The scene must look like the same illustrated garden at another hour.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "same-pack-autumn-day",
+            "sha256": "DFCF49FFAA58FB6247093EDEBC9E6AFEED7492BCE18DFB62AB61C0D5543A632A",
+            "role": "direct_same_season_day_parent_for_lighting_only",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/가을낮_같은회차시간부모.png",
+            "user_visual_approval": false,
+            "source_native": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/가을_낮풍경.png",
+            "status": "SAME_PACK_WORKING_DRAFT_NOT_USER_APPROVED"
+          },
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "same_room_palette_contour_material_only_no_objects",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/가을_노을풍경.png",
+          "sha256": "27740C0E6ECBD5D7DD1530BE766C8DB4E536EC459C508B610BF2C54483C8808A",
+          "bytes": 1611087,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/가을_노을풍경.png",
+        "sha256": "593D58C90B1E58D4FD2EF186017D9891D76A2554B27AAB0D99829907A88BC919",
+        "bytes": 213243,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/window-autumn-dusk.webp",
+        "sha256": "53B25AF8A2DFEEB48EFDAF0D7953777A16ADF6F2B3E4D6654B8DBBF19665FEF3",
+        "bytes": 21328,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve original bytes; center crop to exact4:3 if necessary then uniform Lanczos downscale. No recolor/filter/repaint.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "window-autumn-night",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: lighting-weather. Create one full-bleed opaque horizontal4:3 time-of-day version of image1, the direct same-season day illustration from this working pack, not user-approved artwork. Image2 gives existing room furnishing style/palette only; do not draw its objects. Change ONLY time lighting and sky colors. Keep image1 entire composition, camera, tree/hedge silhouettes and outlines, clearing, exact flower patch, season and snow state unchanged. Quiet night: muted blue-violet and lavender sky, subdued sage foliage and cool lavender surfaces, warm-brown contours softened to muted plum-brown. Add only a very small pale crescent high in the existing clear sky and three tiny quiet stars; preserve every garden object and cloud position. Readable moonlit cozy palette with moderate brightness, never near-black or photorealistic. Preserve the deliberately simple cozy game illustration: organic rounded masses, warm related-color outlines, two or three broad matte shading planes, modest contrast, no added fine texture. Do not increase leaf, flower or grass detail, introduce new landscape objects, or move existing objects. No realistic light, photographic atmosphere, glitter, dense brushtexture, cottage, bridge, stream, mountains, window frame, curtains, furniture, people, pets, mascots, UI or text. The scene must look like the same illustrated garden at another hour.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "same-pack-autumn-day",
+            "sha256": "DFCF49FFAA58FB6247093EDEBC9E6AFEED7492BCE18DFB62AB61C0D5543A632A",
+            "role": "direct_same_season_day_parent_for_lighting_only",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/가을낮_같은회차시간부모.png",
+            "user_visual_approval": false,
+            "source_native": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/가을_낮풍경.png",
+            "status": "SAME_PACK_WORKING_DRAFT_NOT_USER_APPROVED"
+          },
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "same_room_palette_contour_material_only_no_objects",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/가을_밤풍경.png",
+          "sha256": "B9B0D25CE4C73B8CCC3AD629559BA5F4C5F944C111A009ACC405B48BB3B1BCC8",
+          "bytes": 1533845,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/가을_밤풍경.png",
+        "sha256": "9506CDEB83970857BD3091D6E517BE2C47A3D6469FDE6591339A8933D4656D71",
+        "bytes": 202352,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/window-autumn-night.webp",
+        "sha256": "F2D9FD38D64B7DA524F0C530F074000E26CBF1711096542F7ABB4230417658C2",
+        "bytes": 17726,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve original bytes; center crop to exact4:3 if necessary then uniform Lanczos downscale. No recolor/filter/repaint.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "window-winter-dawn",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: lighting-weather. Create one full-bleed opaque horizontal4:3 time-of-day version of image1, the direct same-season day illustration from this working pack, not user-approved artwork. Image2 gives existing room furnishing style/palette only; do not draw its objects. Change ONLY time lighting and sky colors. Keep image1 entire composition, camera, tree/hedge silhouettes and outlines, clearing, exact flower patch, season and snow state unchanged. Early dawn: pale warm peach and ivory sky, cool muted sage/lavender shadows, gentle low morning light. Keep the whole garden softly readable and calm, not dark. Preserve the deliberately simple cozy game illustration: organic rounded masses, warm related-color outlines, two or three broad matte shading planes, modest contrast, no added fine texture. Do not increase leaf, flower or grass detail, introduce new landscape objects, or move existing objects. No realistic light, photographic atmosphere, glitter, dense brushtexture, cottage, bridge, stream, mountains, window frame, curtains, furniture, people, pets, mascots, UI or text. The scene must look like the same illustrated garden at another hour.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "same-pack-winter-day",
+            "sha256": "00A3F1EB2CFF8C937D999315A0CC47B09593522BD4B8641529423577B8091021",
+            "role": "direct_same_season_day_parent_for_lighting_only",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/겨울낮_같은회차시간부모.png",
+            "user_visual_approval": false,
+            "source_native": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/겨울_낮풍경.png",
+            "status": "SAME_PACK_WORKING_DRAFT_NOT_USER_APPROVED"
+          },
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "same_room_palette_contour_material_only_no_objects",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/겨울_새벽풍경.png",
+          "sha256": "A6548FE4FB53641013AD55EC48A071F62F673B33B92391B510411834F367B29A",
+          "bytes": 1607518,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/겨울_새벽풍경.png",
+        "sha256": "DF45E9E4E1F9BE7D3A2A2D8F79D3585B51E50BF9AA5B0E3C10C164FA192F6A8B",
+        "bytes": 220797,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/window-winter-dawn.webp",
+        "sha256": "251FE3B43DDB2ECFA853B977923F7619572065748DF15B3ED2D9395E6D7F7D76",
+        "bytes": 24036,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve original bytes; center crop to exact4:3 if necessary then uniform Lanczos downscale. No recolor/filter/repaint.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "window-winter-dusk",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: lighting-weather. Create one full-bleed opaque horizontal4:3 time-of-day version of image1, the direct same-season day illustration from this working pack, not user-approved artwork. Image2 gives existing room furnishing style/palette only; do not draw its objects. Change ONLY time lighting and sky colors. Keep image1 entire composition, camera, tree/hedge silhouettes and outlines, clearing, exact flower patch, season and snow state unchanged. Gentle sunset: broad softly peach/coral sky with muted lavender undertones, warm honey-lit tree edges, sage/clay surfaces with lavender shadows. Cohesive warm pastel evening palette across the entire garden, not a filter placed only on the sky. Preserve the deliberately simple cozy game illustration: organic rounded masses, warm related-color outlines, two or three broad matte shading planes, modest contrast, no added fine texture. Do not increase leaf, flower or grass detail, introduce new landscape objects, or move existing objects. No realistic light, photographic atmosphere, glitter, dense brushtexture, cottage, bridge, stream, mountains, window frame, curtains, furniture, people, pets, mascots, UI or text. The scene must look like the same illustrated garden at another hour.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "same-pack-winter-day",
+            "sha256": "00A3F1EB2CFF8C937D999315A0CC47B09593522BD4B8641529423577B8091021",
+            "role": "direct_same_season_day_parent_for_lighting_only",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/겨울낮_같은회차시간부모.png",
+            "user_visual_approval": false,
+            "source_native": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/겨울_낮풍경.png",
+            "status": "SAME_PACK_WORKING_DRAFT_NOT_USER_APPROVED"
+          },
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "same_room_palette_contour_material_only_no_objects",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/겨울_노을풍경.png",
+          "sha256": "DB93650B67064F1C4D101FD1AC4520073E161C1D1DA216B1981B10200EA241E7",
+          "bytes": 1642965,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/겨울_노을풍경.png",
+        "sha256": "B29962CF29F911656FAB9DFFBFB5B3A278F11AFB18A3CC46E605896C43F005C4",
+        "bytes": 230010,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/window-winter-dusk.webp",
+        "sha256": "9FB7A1E986AFCDBBB732183EE4460D8397C6A0EAD241368BC0CFB0BB48EE3757",
+        "bytes": 25594,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve original bytes; center crop to exact4:3 if necessary then uniform Lanczos downscale. No recolor/filter/repaint.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    },
+    {
+      "id": "window-winter-night",
+      "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+      "generation": {
+        "tool": "builtin image_gen",
+        "completed_calls": 1,
+        "automatic_art_quality_retries": 0,
+        "prompt": "Use case: lighting-weather. Create one full-bleed opaque horizontal4:3 time-of-day version of image1, the direct same-season day illustration from this working pack, not user-approved artwork. Image2 gives existing room furnishing style/palette only; do not draw its objects. Change ONLY time lighting and sky colors. Keep image1 entire composition, camera, tree/hedge silhouettes and outlines, clearing, exact flower patch, season and snow state unchanged. Quiet night: muted blue-violet and lavender sky, subdued sage foliage and cool lavender surfaces, warm-brown contours softened to muted plum-brown. Add only a very small pale crescent high in the existing clear sky and three tiny quiet stars; preserve every garden object and cloud position. Readable moonlit cozy palette with moderate brightness, never near-black or photorealistic. Preserve the deliberately simple cozy game illustration: organic rounded masses, warm related-color outlines, two or three broad matte shading planes, modest contrast, no added fine texture. Do not increase leaf, flower or grass detail, introduce new landscape objects, or move existing objects. No realistic light, photographic atmosphere, glitter, dense brushtexture, cottage, bridge, stream, mountains, window frame, curtains, furniture, people, pets, mascots, UI or text. The scene must look like the same illustrated garden at another hour.",
+        "transparent_background": false,
+        "inputs": [
+          {
+            "id": "same-pack-winter-day",
+            "sha256": "00A3F1EB2CFF8C937D999315A0CC47B09593522BD4B8641529423577B8091021",
+            "role": "direct_same_season_day_parent_for_lighting_only",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/겨울낮_같은회차시간부모.png",
+            "user_visual_approval": false,
+            "source_native": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/겨울_낮풍경.png",
+            "status": "SAME_PACK_WORKING_DRAFT_NOT_USER_APPROVED"
+          },
+          {
+            "id": "furnishing-style",
+            "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+            "role": "same_room_palette_contour_material_only_no_objects",
+            "frozen_input": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/고정입력/기존집기와소파_화풍시트.png",
+            "user_visual_approval": false,
+            "distribution": "REFERENCE_ONLY_NOT_DISTRIBUTED_IN_THIS_DELIVERY"
+          }
+        ],
+        "original": {
+          "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/원본/겨울_밤풍경.png",
+          "sha256": "A28E1B05607F136D57BF9596A7D8A439F3899A66B4DAD3456ACE5E40DF968A1C",
+          "bytes": 1542793,
+          "width": 1448,
+          "height": 1086,
+          "mode": "RGB"
+        }
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-집시점풍경교정125/정리본/겨울_밤풍경.png",
+        "sha256": "9DD401BD30DFE405FA0345970EEC57E3C2D5D24AF38E371E179FBB1F7CF5DDD4",
+        "bytes": 215845,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "runtime": {
+        "path": "public/companion/home/125/window-winter-night.webp",
+        "sha256": "8CC03BD629EC04BB03E4F36A031894135BFB76F15548A7B4884E8FC590B3678F",
+        "bytes": 22542,
+        "width": 512,
+        "height": 384,
+        "mode": "RGB"
+      },
+      "derivation": {
+        "operation": "Preserve original bytes; center crop to exact4:3 if necessary then uniform Lanczos downscale. No recolor/filter/repaint.",
+        "source_crop_box": [
+          0,
+          0,
+          1448,
+          1086
+        ],
+        "target_size": [
+          512,
+          384
+        ],
+        "source_alpha_range": [
+          255,
+          255
+        ],
+        "runtime_encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6
+        }
+      },
+      "user_visual_approval": false
+    }
+  ],
+  "geometry": {
+    "status": "CREATOR_MEASURED_NOT_GLOBAL_ENGINE_ANCHORS",
+    "assets": [
+      {
+        "id": "furniture-radio",
+        "runtime_path": "public/companion/home/125/furniture-radio.webp",
+        "size": [
+          256,
+          164
+        ],
+        "alpha_range": [
+          0,
+          255
+        ],
+        "nonzero_alpha_bbox": [
+          35,
+          6,
+          247,
+          160
+        ],
+        "visible_alpha192_bbox": [
+          38,
+          9,
+          223,
+          156
+        ],
+        "near_opaque250_bbox": [
+          38,
+          9,
+          223,
+          156
+        ],
+        "zero_alpha_fraction": 0.4526724466463415,
+        "near_opaque250_fraction": 0.5002381859756098
+      },
+      {
+        "id": "furniture-book",
+        "runtime_path": "public/companion/home/125/furniture-book.webp",
+        "size": [
+          244,
+          256
+        ],
+        "alpha_range": [
+          0,
+          255
+        ],
+        "nonzero_alpha_bbox": [
+          39,
+          20,
+          212,
+          232
+        ],
+        "visible_alpha192_bbox": [
+          42,
+          23,
+          209,
+          229
+        ],
+        "near_opaque250_bbox": [
+          43,
+          23,
+          208,
+          229
+        ],
+        "zero_alpha_fraction": 0.44065381659836067,
+        "near_opaque250_fraction": 0.5285604508196722
+      },
+      {
+        "id": "furniture-dispenser",
+        "runtime_path": "public/companion/home/125/furniture-dispenser.webp",
+        "size": [
+          256,
+          256
+        ],
+        "alpha_range": [
+          0,
+          255
+        ],
+        "nonzero_alpha_bbox": [
+          0,
+          9,
+          251,
+          238
+        ],
+        "visible_alpha192_bbox": [
+          29,
+          23,
+          232,
+          226
+        ],
+        "near_opaque250_bbox": [
+          29,
+          23,
+          232,
+          226
+        ],
+        "zero_alpha_fraction": 0.4548492431640625,
+        "near_opaque250_fraction": 0.5157470703125
+      },
+      {
+        "id": "furniture-toy-box",
+        "runtime_path": "public/companion/home/125/furniture-toy-box.webp",
+        "size": [
+          256,
+          134
+        ],
+        "alpha_range": [
+          0,
+          255
+        ],
+        "nonzero_alpha_bbox": [
+          33,
+          3,
+          224,
+          119
+        ],
+        "visible_alpha192_bbox": [
+          36,
+          27,
+          221,
+          116
+        ],
+        "near_opaque250_bbox": [
+          36,
+          27,
+          221,
+          116
+        ],
+        "zero_alpha_fraction": 0.5370219216417911,
+        "near_opaque250_fraction": 0.42473180970149255
+      },
+      {
+        "id": "curtain-panel",
+        "runtime_path": "public/companion/home/125/curtain-panel.webp",
+        "size": [
+          256,
+          384
+        ],
+        "alpha_range": [
+          0,
+          255
+        ],
+        "nonzero_alpha_bbox": [
+          18,
+          4,
+          242,
+          377
+        ],
+        "visible_alpha192_bbox": [
+          22,
+          7,
+          240,
+          373
+        ],
+        "near_opaque250_bbox": [
+          23,
+          7,
+          240,
+          373
+        ],
+        "zero_alpha_fraction": 0.1788330078125,
+        "near_opaque250_fraction": 0.791595458984375
+      }
+    ],
+    "approximate_runtime_anchor_centers": {
+      "dispenser": {
+        "outlet_dark_center_runtime": [
+          131,
+          168
+        ],
+        "tray_receiving_mouth_center_runtime": [
+          131,
+          190
+        ],
+        "basis": "Creator actually viewed full native and256px derivative; approximate pixel centers, not global engine anchor."
+      },
+      "toy-box": {
+        "return_opening_center_runtime": [
+          128,
+          52
+        ],
+        "basis": "Actual frontal opening within the lavender lining; approximate center, root maps actual DOM."
+      },
+      "book": {
+        "blank_label_box_runtime": [
+          60,
+          61,
+          188,
+          198
+        ],
+        "blank_label_center_runtime": [
+          124,
+          131
+        ]
+      },
+      "curtain": {
+        "mirrored_instances": 2,
+        "source_is_full_rectangle": true,
+        "nativeAlpha254Preserved": true,
+        "app_linen_backing_preserves_closed_coverage": true
+      }
+    }
+  }
+}

@@ -8,6 +8,11 @@ import { isCompanionHomeFloorFoodSupport } from "./food";
 export { COMPANION_TOY_KINDS, COMPANION_TOY_NAMES, type CompanionToyKind } from "./toy-catalog";
 
 export const MAX_COMPANION_TOYS = 4;
+/** The captured pointer and final return share one measured box predicate. */
+export function companionToyBoxDropReady(rect: { left: number; right: number; top: number; bottom: number }, point: { x: number; y: number }) {
+  return [rect.left, rect.right, rect.top, rect.bottom, point.x, point.y].every(Number.isFinite) && rect.right > rect.left && rect.bottom > rect.top
+    && point.x >= rect.left - 8 && point.x <= rect.right + 8 && point.y >= rect.top - 8 && point.y <= rect.bottom + 8;
+}
 type Point = { x: number; y: number; platformId?: string };
 export type CompanionToy = Point & { id: string; kind: CompanionToyKind; angle: number; held: boolean; carried: boolean; fraction?: number; hidden?: boolean; stance?: Point };
 type Flight = { at: number; lastAt: number; x: number; y: number; vx: number; vy: number; previous: Point; remaining: number };
@@ -41,8 +46,23 @@ export function findCompanionToyRoute(from: Point, target: Point, platforms: rea
 
 /** Four small real objects. Driven only by the host's existing active/finite
  * layout clock. There is no timer, DOM scan, food/discovery or save side effect. */
-export function createCompanionToys() {
+export function createCompanionToys(rng: () => number = Math.random) {
   let serial = 0, width = 0, height = 0;
+  let bag: CompanionToyKind[] = [], bagIndex = 0, previousKind: CompanionToyKind | undefined;
+  const nextKind = () => {
+    if (bagIndex >= bag.length) {
+      bag = [...COMPANION_TOY_KINDS]; bagIndex = 0;
+      // One bounded bag per actual 24 take-outs. A short visit can meet any
+      // kind, without repeating one before every other kind has appeared.
+      for (let i = 0; i < bag.length - 1; i++) {
+        const value = rng(), roll = Number.isFinite(value) ? clamp(value, 0, 1 - Number.EPSILON) : 0;
+        const j = i + Math.floor(roll * (bag.length - i));
+        [bag[i], bag[j]] = [bag[j], bag[i]];
+      }
+      if (bag[0] === previousKind) [bag[0], bag[1]] = [bag[1], bag[0]];
+    }
+    previousKind = bag[bagIndex++]; return previousKind;
+  };
   let pausedAt: number | undefined;
   let platforms: readonly Platform[] = [];
   const objects = new Map<string, CompanionToy>(), flights = new Map<string, Flight>();
@@ -82,7 +102,7 @@ export function createCompanionToys() {
     },
     spawn(point: Point, at: number) {
       if (pausedAt !== undefined || objects.size >= MAX_COMPANION_TOYS || !valid(point) || !Number.isFinite(at) || width <= 0 || height <= 0) return;
-      const id = "toy-" + ++serial, kind = COMPANION_TOY_KINDS[(serial - 1) % COMPANION_TOY_KINDS.length];
+      const id = "toy-" + ++serial, kind = nextKind();
       const toy: CompanionToy = { id, kind, x: point.x, y: point.y, angle: 0, held: false, carried: false };
       objects.set(id, toy);
       // The outlet is the actual source point. A support hint must not move a
@@ -221,8 +241,8 @@ export function createCompanionToyPlanner() {
   };
   const preference = (input: Input, toy: CompanionToy) => {
     if (input.preferences.personality === "tidy") return 0;
-    const favorites: Record<CompanionPreferences["personality"], readonly CompanionToyKind[]> = { curious: ["paper-plane", "pinwheel", "feather"], affectionate: ["spool", "bell"], sleepy: ["spool", "feather"], tidy: [], mischievous: ["ball", "blocks", "hoop"], gourmet: ["bell", "spool"], performer: ["pinwheel", "bell", "hoop"], homebody: ["blocks", "spool"] };
-    const species = input.preferences.animalMode === "dog" && toy.kind === "ball" || input.preferences.animalMode === "cat" && ["feather", "spool"].includes(toy.kind);
+    const favorites: Record<CompanionPreferences["personality"], readonly CompanionToyKind[]> = { curious: ["paper-plane", "pinwheel", "feather", "spinning-top", "kaleidoscope", "toy-rocket"], affectionate: ["spool", "bell", "duck", "plush-fish", "ribbon-ball"], sleepy: ["spool", "feather", "plush-fish", "rocking-horse"], tidy: [], mischievous: ["ball", "blocks", "hoop", "toy-car", "dice", "squeaky-carrot", "ribbon-ball"], gourmet: ["bell", "spool", "duck", "squeaky-carrot"], performer: ["pinwheel", "bell", "hoop", "star-wand", "tambourine", "maraca", "yo-yo", "toy-rocket"], homebody: ["blocks", "spool", "train", "rocking-horse", "stacking-rings", "kaleidoscope"] };
+    const species = input.preferences.animalMode === "dog" && ["ball", "squeaky-carrot", "plush-fish"].includes(toy.kind) || input.preferences.animalMode === "cat" && ["feather", "spool", "ribbon-ball", "plush-fish"].includes(toy.kind);
     const learned = input.preferences.learnFromYou !== false ? clamp(input.tastes?.toyTastes[toy.kind]?.score ?? 0, -1, 1) : 0;
     return (Number(favorites[input.preferences.personality].includes(toy.kind)) * .4 + Number(species) * .2 + learned * .6) * 120;
   };

@@ -54,14 +54,14 @@ for (const [surface, dark, width] of [["viewer", false, 1440], ["studio", true, 
   const category = profile.locator('[data-act="companion-collection-category"][data-act-opt="toy"]'); await expect(category).toHaveAttribute("data-unread", "true"); await category.click();
   const book = profile.locator(".rhh-companion-toy-discovery"); await expect(book).toBeVisible();
   const indexes: number[] = []; let inspected = false;
-  for (let i = 0; i < 8; i++) {
+  for (let i = 0; i < COMPANION_TOY_KINDS.length; i++) {
     const tiles = book.locator(".rhh-collection-tile"); indexes.push(...await tiles.evaluateAll(nodes => nodes.map(node => Number(node.getAttribute("data-collection-index")))));
     const hiddenImages = await tiles.evaluateAll(nodes => nodes.filter(node => !node.hasAttribute("data-found")).reduce((n, node) => n + node.querySelectorAll("img").length, 0)); expect(hiddenImages).toBe(0);
     const known = tiles.filter({ hasText: COMPANION_TOY_NAMES[kind] });
     if (await known.count()) { await expect(known).toHaveAttribute("data-unread", "true"); await known.click(); await expect(known).not.toHaveAttribute("data-unread", "true"); inspected = true; }
     const next = book.getByRole("button", { name: "다음 장난감", exact: true }); if (await next.isDisabled()) break; await next.click();
   }
-  expect(indexes).toEqual([0, 1, 2, 3, 4, 5, 6, 7]); expect(inspected).toBe(true);
+  expect(indexes).toEqual(COMPANION_TOY_KINDS.map((_, index) => index)); expect(inspected).toBe(true);
   const selectedBefore = await book.locator('[data-collection-index][aria-pressed="true"]').getAttribute("data-collection-index");
   await category.focus(); await page.keyboard.press("ArrowRight"); await expect(profile.locator('[data-act="companion-collection-category"][data-act-opt="behavior"]')).toBeFocused(); await page.keyboard.press("ArrowLeft"); await expect(category).toBeFocused();
   await expect(book.locator(`[data-collection-index="${selectedBefore}"]`)).toHaveAttribute("aria-pressed", "true");

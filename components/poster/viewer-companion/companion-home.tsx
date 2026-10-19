@@ -3,32 +3,42 @@
 /* eslint-disable @next/next/no-img-element -- Local game art already has bounded WebP derivatives; no second image pipeline. */
 
 import { X } from "lucide-react";
-import { useId, useLayoutEffect, useRef } from "react";
+import { useId, useLayoutEffect, useRef, type CSSProperties } from "react";
 import { flipSpring } from "@/lib/ui/flip-motion";
 import { PanelSection } from "@/components/shared/panel-section";
 import type { CompanionCare } from "@/lib/ui/viewer-companion/care";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import type { CompanionHomeEnvironment } from "@/lib/ui/viewer-companion/home-environment";
 import { resolveCompanionWindowScene } from "@/lib/ui/viewer-companion/home-window-scene";
+import { INITIAL_COMPANION_HOME_CURTAIN, type CompanionHomeCurtain } from "@/lib/ui/viewer-companion/home-curtain";
 
 export type CompanionHomeAction = "home" | "feed" | "clearFood" | "radio" | "book";
-type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?: boolean; owner?: string; radioPlaying?: boolean; unreadCollection?: boolean; onAction: (action: CompanionHomeAction) => void; onClose?: () => void; onToyBox?: () => void; toyCount?: number; environment?: CompanionHomeEnvironment };
+type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?: boolean; owner?: string; radioPlaying?: boolean; unreadCollection?: boolean; onAction: (action: CompanionHomeAction) => void; onClose?: () => void; onToyBox?: () => void; toyCount?: number; environment?: CompanionHomeEnvironment; curtain?: CompanionHomeCurtain };
 
-function HomeWindow({ environment }: { environment?: CompanionHomeEnvironment }) {
+function HomeWindow({ environment, curtain, inactive }: { environment?: CompanionHomeEnvironment; curtain: CompanionHomeCurtain; inactive?: boolean }) {
   const scene = resolveCompanionWindowScene(environment);
-  return <div className="vc-home-window" aria-hidden="true" data-season={scene.season} data-weather={scene.weather} data-band={environment?.band} data-phase={scene.phase} data-night={environment?.night || undefined}>
+  return <div className="vc-home-window" aria-hidden="true" data-season={scene.season} data-weather={scene.weather} data-band={environment?.band} data-phase={scene.phase} data-night={environment?.night || undefined} data-curtain={curtain.phase} data-curtain-rest={curtain.rest} data-curtain-motion={curtain.animate && !inactive ? "on" : "off"} style={{ "--vc-curtain-scale": curtain.panelScale } as CSSProperties}>
     <span className="vc-window-glass">
       <img className="vc-window-landscape" src={scene.landscapeSrc} alt="" width="512" height="384" draggable={false} decoding="async" loading="lazy" />
       {scene.overlaySrc && <img className="vc-window-weather" src={scene.overlaySrc} alt="" width="512" height="384" draggable={false} decoding="async" loading="lazy" />}
       <span className="vc-window-atmosphere" />
+      <span className="vc-window-crossbar" />
+      <span className="vc-window-curtains" aria-hidden="true">
+        {(["left", "right"] as const).map(side => <span className={`vc-window-curtain vc-window-curtain-${side}`} key={side}>
+          <img src="/companion/home/125/curtain-panel.webp" alt="" width="256" height="384" draggable={false} decoding="async" loading="lazy" />
+        </span>)}
+      </span>
     </span>
-    <span className="vc-window-crossbar" /><span className="vc-window-sill" />
+    <span className="vc-window-sill" />
   </div>;
 }
 
 function HomeObjectArt({ kind, className = "" }: { kind: "radio" | "book" | "dispenser" | "trash" | "toy-box"; className?: string }) {
-  const [width, height] = { radio: [256, 169], book: [250, 256], dispenser: [256, 217], trash: [256, 229], "toy-box": [256, 165] }[kind];
-  return <img className={`vc-object-paint vc-home-object-image ${className}`} src={`/companion/home/122/furniture-${kind}.webp`} width={width} height={height} alt="" aria-hidden="true" draggable={false} decoding="async" loading="lazy" />;
+  const [width, height] = { radio: [256, 164], book: [244, 256], dispenser: [256, 256], trash: [256, 229], "toy-box": [256, 134] }[kind];
+  const image = <img className={`${kind === "book" ? "" : "vc-object-paint "}vc-home-object-image ${className}`} src={`/companion/home/${kind === "trash" ? "122" : "125"}/furniture-${kind}.webp`} width={width} height={height} alt="" aria-hidden="true" draggable={false} decoding="async" loading="lazy" />;
+  // The cover uses the exact whole neutral sprite cell already shown by the
+  // resident. Its identity is printed without generating another mascot.
+  return kind === "book" ? <span className="vc-object-paint vc-book-paint" aria-hidden="true">{image}<span className="vc-book-cover-mascot" /></span> : image;
 }
 
 // The open U is shared by the room drawing and the separate foreground layer.
@@ -64,7 +74,7 @@ export function CompanionBedForeground({ idPrefix = "companion-front" }: { idPre
 
 /** One small room, shared by the desktop rail and compact portal. The cushion
  * is a real landing anchor; food and care stay in the existing single runtime. */
-export function CompanionHome({ care, preferences, inactive, owner, radioPlaying = false, unreadCollection = false, onAction, onClose, onToyBox, toyCount = 0, environment }: Props) {
+export function CompanionHome({ care, preferences, inactive, owner, radioPlaying = false, unreadCollection = false, onAction, onClose, onToyBox, toyCount = 0, environment, curtain = INITIAL_COMPANION_HOME_CURTAIN }: Props) {
   const room = useRef<HTMLElement>(null);
   const bedId = useId().replace(/:/g, "");
   // Its host already owns the panel FLIP. A tiny entry never resizes the room,
@@ -72,7 +82,7 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
   useLayoutEffect(() => { if (room.current) flipSpring(room.current, "translateY(3px)"); }, []);
   return <PanelSection inert={inactive ? true : undefined} aria-hidden={inactive ? true : undefined} ref={room} title="빅타민 집" sectionKey="companion-home" headingAction="companion-home-fold" collapsible={!onClose} headingData={{ "data-home-action": "fold" }} actions={onClose ? <button type="button" data-home-action="close" data-act="companion-home-close" data-tip="닫기" className="vc-home-close" onClick={onClose} aria-label="빅타민 집 닫기"><X size={15} strokeWidth={1.7} /></button> : undefined} className="vc-home" aria-label="빅타민 집" data-home-presentation={onClose ? "compact" : "panel"} data-size={preferences.size} data-sfx="off" data-pm-exit="5" data-companion-home-owner={owner}>
     <div className="vc-home-room" data-season={environment?.season} data-weather={environment?.weather} data-band={environment?.band} data-phase={resolveCompanionWindowScene(environment).phase} data-night={environment?.night || undefined}>
-      <HomeWindow environment={environment} />
+      <HomeWindow environment={environment} curtain={curtain} inactive={inactive} />
       <div className="vc-home-shelf">
       <svg className="vc-home-shelf-art" width="108" height="55" viewBox="0 0 108 55" preserveAspectRatio="none" fill="none" aria-hidden="true" focusable="false">
         <defs>
@@ -128,7 +138,7 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
           {/* Actual outlet geometry stays fixed while the complete paint moves. */}
           <span className="vc-dispenser-slot" aria-hidden="true" />
         </button>
-        <button type="button" data-home-action="clearFood" data-activity-manual="" data-companion-trash="" data-tip="음식 버리기" className="vc-home-trash" onClick={() => onAction("clearFood")} aria-label="음식 버리기"><HomeObjectArt kind="trash" /><span className="vc-trash-progress" aria-hidden="true" /></button>
+        <button type="button" data-home-action="clearFood" data-activity-manual="" data-companion-trash="" data-tip="음식 버리기" className="vc-home-trash" onClick={() => onAction("clearFood")} aria-label="음식 버리기"><HomeObjectArt kind="trash" /></button>
       </> : null}
     </div>
     <div className="sr-only"><meter min="0" max="1" value={care.affection} aria-label="빅타민 친밀도" /><meter min="0" max="1" value={1 - care.hunger} aria-label="빅타민 포만감" /><meter min="0" max="1" value={care.energy} aria-label="빅타민 기력" /></div>

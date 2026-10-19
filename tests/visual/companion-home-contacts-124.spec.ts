@@ -162,6 +162,9 @@ test("124 native outlet food reaches the real floor and disappears only after a 
   await fixture(page); await placeCompanionOnHomeFloor(page); await probe(page); const food = await foodOnFloor(page), id = (await food.getAttribute("data-food"))!;
   const bin = home(page).getByRole("button", { name: "음식 버리기", exact: true }), target = (await bin.boundingBox())!, r = (await food.boundingBox())!;
   await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2); await page.mouse.down(); await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 12 });
+  await expect(bin).toHaveAttribute("data-food-over", "");
+  await expect(bin.locator(".vc-trash-progress")).toHaveCount(0);
+  await expect.poll(() => bin.locator(".vc-object-paint").evaluate(node => getComputedStyle(node).filter.startsWith("brightness(1.08)"))).toBe(true);
   await expect.poll(async () => (await samples(page)).some(frame => frame.foods.some(food => food.id === id && food.discarding)), { message: "real native trash dwell reaches its finite discard paint", timeout: 3000 }).toBe(true); await page.mouse.up();
   await expect(page.locator(`.vc-food[data-food="${id}"]`)).toHaveCount(0, { timeout: 3000 });
   const trace = await samples(page), discarded = trace.filter(frame => frame.foods.some(food => food.id === id && food.discarding));

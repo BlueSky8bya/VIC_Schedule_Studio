@@ -28,10 +28,10 @@ describe("122 finite toy book interaction", () => {
     expect(nodes(tree).filter(node => typeof node.type === "function" && node.type.name === "CompanionToyArt")).toHaveLength(0);
     expect(harness.acknowledge).not.toHaveBeenCalled(); expect(harness.activity).not.toHaveBeenCalled();
   });
-  it("covers all eight identities exactly once in finite pages and does not read items by paging", async () => {
+  it("covers all twenty-four identities exactly once in finite pages and does not read items by paging", async () => {
     const tastes = normalizeCompanionTastes({ version: 1, toys: [...COMPANION_TOY_KINDS], seen: [] }), indexes: number[] = [];
-    for (let i = 0; i < 3; i++) { await render(tastes); indexes.push(...tiles().map(node => Number(node.props["data-collection-index"]))); const next = find(node => node.props["aria-label"] === "다음 장난감"); if (next.props.disabled) break; click(next); }
-    expect(indexes).toEqual([0, 1, 2, 3, 4, 5, 6, 7]); expect(tiles()).toHaveLength(4);
+    for (let i = 0; i < 6; i++) { await render(tastes); indexes.push(...tiles().map(node => Number(node.props["data-collection-index"]))); const next = find(node => node.props["aria-label"] === "다음 장난감"); if (next.props.disabled) break; click(next); }
+    expect(indexes).toEqual(Array.from({ length: 24 }, (_, i) => i)); expect(tiles()).toHaveLength(4);
     expect(find(node => node.props["aria-label"] === "다음 장난감").props.disabled).toBe(true);
     expect(harness.acknowledge).not.toHaveBeenCalled();
   });

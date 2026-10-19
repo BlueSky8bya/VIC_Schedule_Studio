@@ -1,0 +1,672 @@
+{
+  "schemaVersion": 1,
+  "stamp": 206110930697461,
+  "files": [
+    {
+      "file": "backdrop-forest-autumn-v1.png",
+      "bytes": 2044220,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "backdrop-forest-autumn-v2.png",
+      "bytes": 2330975,
+      "w": 2171,
+      "h": 724
+    },
+    {
+      "file": "backdrop-forest-spring-v1.png",
+      "bytes": 2068982,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "backdrop-forest-spring-v2.png",
+      "bytes": 2361377,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "backdrop-forest-summer-v1.png",
+      "bytes": 2071198,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "backdrop-forest-summer-v2.png",
+      "bytes": 2258302,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "backdrop-forest-winter-v1.png",
+      "bytes": 2234313,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "backdrop-forest-winter-v2.png",
+      "bytes": 2481166,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "backdrop-hill-autumn-v2.png",
+      "bytes": 2172125,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "backdrop-hill-spring-v2.png",
+      "bytes": 2163075,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "backdrop-hill-summer-v2.png",
+      "bytes": 2064547,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "backdrop-hill-winter-v2.png",
+      "bytes": 2002019,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "backdrop-meadow-autumn-far-v1.png",
+      "bytes": 1262981,
+      "w": 1536,
+      "h": 1024
+    },
+    {
+      "file": "backdrop-meadow-autumn-frame-v1.png",
+      "bytes": 1246838,
+      "w": 1536,
+      "h": 1024
+    },
+    {
+      "file": "backdrop-meadow-autumn-ground-v1.png",
+      "bytes": 2861935,
+      "w": 1536,
+      "h": 1024
+    },
+    {
+      "file": "backdrop-meadow-autumn-near-detail-v1.png",
+      "bytes": 3277022,
+      "w": 1536,
+      "h": 1024
+    },
+    {
+      "file": "backdrop-meadow-spring-far-v2.png",
+      "bytes": 1599826,
+      "w": 1536,
+      "h": 1024
+    },
+    {
+      "file": "backdrop-meadow-spring-frame-v2.png",
+      "bytes": 1848161,
+      "w": 1536,
+      "h": 1024
+    },
+    {
+      "file": "backdrop-meadow-spring-ground-v3.png",
+      "bytes": 2056575,
+      "w": 1536,
+      "h": 1024
+    },
+    {
+      "file": "backdrop-meadow-spring-ground-v5.png",
+      "bytes": 2360821,
+      "w": 1536,
+      "h": 1024
+    },
+    {
+      "file": "backdrop-meadow-spring-near-detail-v1.png",
+      "bytes": 2773112,
+      "w": 1536,
+      "h": 1024
+    },
+    {
+      "file": "backdrop-meadow-spring-v1.png",
+      "bytes": 1773389,
+      "w": 1536,
+      "h": 1024
+    },
+    {
+      "file": "backdrop-meadow-summer-far-v1.png",
+      "bytes": 1268383,
+      "w": 1536,
+      "h": 1024
+    },
+    {
+      "file": "backdrop-meadow-summer-frame-v1.png",
+      "bytes": 1238034,
+      "w": 1536,
+      "h": 1024
+    },
+    {
+      "file": "backdrop-meadow-summer-ground-v1.png",
+      "bytes": 2734249,
+      "w": 1536,
+      "h": 1024
+    },
+    {
+      "file": "backdrop-meadow-summer-near-detail-v1.png",
+      "bytes": 3150507,
+      "w": 1536,
+      "h": 1024
+    },
+    {
+      "file": "backdrop-meadow-winter-far-v1.png",
+      "bytes": 1210419,
+      "w": 1536,
+      "h": 1024
+    },
+    {
+      "file": "backdrop-meadow-winter-frame-v1.png",
+      "bytes": 1234149,
+      "w": 1536,
+      "h": 1024
+    },
+    {
+      "file": "backdrop-meadow-winter-ground-v1.png",
+      "bytes": 1944542,
+      "w": 1536,
+      "h": 1024
+    },
+    {
+      "file": "backdrop-meadow-winter-near-detail-v1.png",
+      "bytes": 2816720,
+      "w": 1536,
+      "h": 1024
+    },
+    {
+      "file": "backdrop-mountain-autumn-v1.png",
+      "bytes": 2541877,
+      "w": 1672,
+      "h": 941
+    },
+    {
+      "file": "backdrop-mountain-spring-v1.png",
+      "bytes": 2525522,
+      "w": 1672,
+      "h": 941
+    },
+    {
+      "file": "backdrop-mountain-summer-v1.png",
+      "bytes": 2343704,
+      "w": 1672,
+      "h": 941
+    },
+    {
+      "file": "backdrop-mountain-winter-v1.png",
+      "bytes": 2667381,
+      "w": 1672,
+      "h": 941
+    },
+    {
+      "file": "backdrop-pond-autumn-v1.png",
+      "bytes": 1720329,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "backdrop-pond-spring-v1.png",
+      "bytes": 1687069,
+      "w": 2171,
+      "h": 724
+    },
+    {
+      "file": "backdrop-pond-summer-v1.png",
+      "bytes": 1678345,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "backdrop-pond-winter-v1.png",
+      "bytes": 1839509,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "backdrop-rocky-autumn-v1.png",
+      "bytes": 2191040,
+      "w": 1672,
+      "h": 941
+    },
+    {
+      "file": "backdrop-rocky-spring-v1.png",
+      "bytes": 2247898,
+      "w": 1672,
+      "h": 941
+    },
+    {
+      "file": "backdrop-rocky-summer-v1.png",
+      "bytes": 2195935,
+      "w": 1672,
+      "h": 941
+    },
+    {
+      "file": "backdrop-rocky-winter-v1.png",
+      "bytes": 2318221,
+      "w": 1672,
+      "h": 941
+    },
+    {
+      "file": "backdrop-sandy-autumn-v1.png",
+      "bytes": 1925424,
+      "w": 1672,
+      "h": 941
+    },
+    {
+      "file": "backdrop-sandy-spring-v1.png",
+      "bytes": 1884301,
+      "w": 1672,
+      "h": 941
+    },
+    {
+      "file": "backdrop-sandy-summer-v1.png",
+      "bytes": 1895049,
+      "w": 1672,
+      "h": 941
+    },
+    {
+      "file": "backdrop-sandy-winter-v1.png",
+      "bytes": 1973022,
+      "w": 1672,
+      "h": 941
+    },
+    {
+      "file": "backdrop-tidal-autumn-v1.png",
+      "bytes": 2194125,
+      "w": 1672,
+      "h": 940
+    },
+    {
+      "file": "backdrop-tidal-spring-v1.png",
+      "bytes": 2189528,
+      "w": 1672,
+      "h": 940
+    },
+    {
+      "file": "backdrop-tidal-summer-v1.png",
+      "bytes": 2148256,
+      "w": 1672,
+      "h": 940
+    },
+    {
+      "file": "backdrop-tidal-winter-v1.png",
+      "bytes": 2359876,
+      "w": 1672,
+      "h": 940
+    },
+    {
+      "file": "backdrop-valley-autumn-v1.png",
+      "bytes": 2396848,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "backdrop-valley-spring-v1.png",
+      "bytes": 2410694,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "backdrop-valley-summer-v1.png",
+      "bytes": 2321689,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "backdrop-valley-winter-v1.png",
+      "bytes": 2210237,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "cloud-atlas-v1.png",
+      "bytes": 1483402,
+      "w": 1254,
+      "h": 1254
+    },
+    {
+      "file": "cloud-atlas-v2.png",
+      "bytes": 1616306,
+      "w": 1254,
+      "h": 1254
+    },
+    {
+      "file": "cloud-high-1.png",
+      "bytes": 588,
+      "w": 440,
+      "h": 64
+    },
+    {
+      "file": "cloud-high-2.png",
+      "bytes": 643,
+      "w": 440,
+      "h": 72
+    },
+    {
+      "file": "cloud-high-3.png",
+      "bytes": 553,
+      "w": 440,
+      "h": 72
+    },
+    {
+      "file": "cloud-low-1.png",
+      "bytes": 864,
+      "w": 432,
+      "h": 176
+    },
+    {
+      "file": "cloud-low-2.png",
+      "bytes": 1017,
+      "w": 432,
+      "h": 192
+    },
+    {
+      "file": "cloud-low-3.png",
+      "bytes": 1058,
+      "w": 432,
+      "h": 192
+    },
+    {
+      "file": "cloud-low-4.png",
+      "bytes": 1030,
+      "w": 432,
+      "h": 208
+    },
+    {
+      "file": "cloud-mid-1.png",
+      "bytes": 724,
+      "w": 432,
+      "h": 128
+    },
+    {
+      "file": "cloud-mid-2.png",
+      "bytes": 713,
+      "w": 432,
+      "h": 112
+    },
+    {
+      "file": "cloud-mid-3.png",
+      "bytes": 680,
+      "w": 432,
+      "h": 128
+    },
+    {
+      "file": "cloud-storm-1.png",
+      "bytes": 912,
+      "w": 432,
+      "h": 176
+    },
+    {
+      "file": "cloud-storm-2.png",
+      "bytes": 1097,
+      "w": 432,
+      "h": 208
+    },
+    {
+      "file": "cloud-wisp-1.png",
+      "bytes": 494,
+      "w": 432,
+      "h": 128
+    },
+    {
+      "file": "cloud-wisp-2.png",
+      "bytes": 518,
+      "w": 432,
+      "h": 128
+    },
+    {
+      "file": "comet-1.png",
+      "bytes": 983,
+      "w": 432,
+      "h": 192
+    },
+    {
+      "file": "comet-2.png",
+      "bytes": 944,
+      "w": 448,
+      "h": 192
+    },
+    {
+      "file": "concept-deep-sea-v1.png",
+      "bytes": 1072900,
+      "w": 1672,
+      "h": 941
+    },
+    {
+      "file": "concept-open-sea-v1.png",
+      "bytes": 2452623,
+      "w": 1672,
+      "h": 941
+    },
+    {
+      "file": "concept-shallow-v1.png",
+      "bytes": 2429059,
+      "w": 1672,
+      "h": 941
+    },
+    {
+      "file": "forest-ground-detail-autumn-v2.png",
+      "bytes": 3557681,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "forest-ground-detail-spring-v2.png",
+      "bytes": 3655552,
+      "w": 2170,
+      "h": 725
+    },
+    {
+      "file": "forest-ground-detail-summer-v2.png",
+      "bytes": 3677561,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "forest-ground-detail-winter-v2.png",
+      "bytes": 3868366,
+      "w": 2172,
+      "h": 724
+    },
+    {
+      "file": "forest-trees-autumn-v1.png",
+      "bytes": 2157001,
+      "w": 1254,
+      "h": 1254
+    },
+    {
+      "file": "forest-trees-spring-v1.png",
+      "bytes": 2201095,
+      "w": 1254,
+      "h": 1254
+    },
+    {
+      "file": "forest-trees-summer-v1.png",
+      "bytes": 2165796,
+      "w": 1254,
+      "h": 1254
+    },
+    {
+      "file": "forest-trees-winter-v1.png",
+      "bytes": 2349639,
+      "w": 1254,
+      "h": 1254
+    },
+    {
+      "file": "moon-phase-1.png",
+      "bytes": 1479,
+      "w": 480,
+      "h": 480
+    },
+    {
+      "file": "moon-phase-2.png",
+      "bytes": 1614,
+      "w": 480,
+      "h": 480
+    },
+    {
+      "file": "moon-phase-3.png",
+      "bytes": 1705,
+      "w": 480,
+      "h": 480
+    },
+    {
+      "file": "moon-phase-4.png",
+      "bytes": 1742,
+      "w": 480,
+      "h": 480
+    },
+    {
+      "file": "moon-phase-5.png",
+      "bytes": 1679,
+      "w": 480,
+      "h": 480
+    },
+    {
+      "file": "moon-phase-6.png",
+      "bytes": 1720,
+      "w": 480,
+      "h": 480
+    },
+    {
+      "file": "moon-phase-7.png",
+      "bytes": 1728,
+      "w": 480,
+      "h": 480
+    },
+    {
+      "file": "moon-phase-8.png",
+      "bytes": 1640,
+      "w": 480,
+      "h": 480
+    },
+    {
+      "file": "rock-1.png",
+      "bytes": 464,
+      "w": 256,
+      "h": 192
+    },
+    {
+      "file": "rock-2.png",
+      "bytes": 551,
+      "w": 256,
+      "h": 192
+    },
+    {
+      "file": "rock-3.png",
+      "bytes": 518,
+      "w": 256,
+      "h": 192
+    },
+    {
+      "file": "rock-4.png",
+      "bytes": 527,
+      "w": 256,
+      "h": 192
+    },
+    {
+      "file": "rock-5.png",
+      "bytes": 471,
+      "w": 256,
+      "h": 192
+    },
+    {
+      "file": "rock-6.png",
+      "bytes": 511,
+      "w": 256,
+      "h": 192
+    },
+    {
+      "file": "rock-7.png",
+      "bytes": 497,
+      "w": 256,
+      "h": 192
+    },
+    {
+      "file": "rock-8.png",
+      "bytes": 468,
+      "w": 256,
+      "h": 192
+    },
+    {
+      "file": "shooting-star-1.png",
+      "bytes": 357,
+      "w": 224,
+      "h": 80
+    },
+    {
+      "file": "shooting-star-2.png",
+      "bytes": 462,
+      "w": 224,
+      "h": 80
+    },
+    {
+      "file": "sky-atlas-v2.png",
+      "bytes": 1166550,
+      "w": 1254,
+      "h": 1254
+    },
+    {
+      "file": "sun-disc-1.png",
+      "bytes": 991,
+      "w": 448,
+      "h": 448
+    },
+    {
+      "file": "sun-disc-2.png",
+      "bytes": 982,
+      "w": 448,
+      "h": 448
+    },
+    {
+      "file": "tree-oak-autumn-1.png",
+      "bytes": 3266,
+      "w": 408,
+      "h": 448
+    },
+    {
+      "file": "tree-oak-spring-1.png",
+      "bytes": 3061,
+      "w": 352,
+      "h": 440
+    },
+    {
+      "file": "tree-oak-summer-1.png",
+      "bytes": 3144,
+      "w": 424,
+      "h": 440
+    },
+    {
+      "file": "tree-oak-winter-1.png",
+      "bytes": 3530,
+      "w": 408,
+      "h": 440
+    },
+    {
+      "file": "tree-pine-1.png",
+      "bytes": 1096,
+      "w": 240,
+      "h": 432
+    },
+    {
+      "file": "tree-pine-autumn-1.png",
+      "bytes": 1094,
+      "w": 240,
+      "h": 432
+    },
+    {
+      "file": "tree-pine-winter-1.png",
+      "bytes": 1250,
+      "w": 240,
+      "h": 432
+    }
+  ]
+}

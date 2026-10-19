@@ -78,7 +78,7 @@ async function snapshot(page: Page, state: Awaited<ReturnType<typeof fixture>>, 
   const bounds = await state.room.evaluate(node => {
     const box = (selector: string) => { const r = node.querySelector(selector)!.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
     const room = box(".vc-home-room"), cssWidth = parseFloat(getComputedStyle(node.querySelector(".vc-home-room")!).width);
-    return { room, cssWidth, scale: room.width / cssWidth, window: box(".vc-home-window"), shelf: box(".vc-home-shelf"), sofa: box(".vc-cushion-button"), outlet: box(".vc-dispenser-slot"), opening: box(".vc-toy-box-opening") };
+    return { room, cssWidth, scale: room.width / cssWidth, window: box(".vc-home-window"), shelf: box(".vc-home-shelf"), feed: box(".vc-dispenser"), chest: box(".vc-toy-box"), sofa: box(".vc-cushion-button"), outlet: box(".vc-dispenser-slot"), opening: box(".vc-toy-box-opening") };
   });
   writeFileSync(`${out}/${name}.json`, JSON.stringify({ build: readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim(), decoded: state.decoded, bounds }, null, 2));
   await state.room.screenshot({ path: `${out}/${name}.png` });
@@ -88,9 +88,11 @@ async function snapshot(page: Page, state: Awaited<ReturnType<typeof fixture>>, 
 for (const [surface, width, dark] of [["viewer", 1440, false], ["studio", 1920, true], ["studio", 2400, false]] as const) test(`123 wider window keeps real shelf and physical controls clear: ${surface} ${width}`, async ({ page }) => {
   await page.setViewportSize({ width, height: 1100 });
   const state = await fixture(page, { surface, dark }), bounds = await snapshot(page, state, `layout-${surface}-${width}`);
-  const expectedWidth = Math.min(152, bounds.cssWidth - 144);
+  //125 larger storage supersedes the old fixed138px compact frame. Wide
+  // rooms retain152px; smaller walls reserve actual native furniture first.
+  const expectedWidth = Math.min(152, bounds.cssWidth - Math.max(bounds.shelf.width / bounds.scale + 28, (bounds.feed.width + bounds.chest.width) / bounds.scale + Math.max(8, 8 / bounds.scale) + 22));
   expect(bounds.window.width / bounds.scale).toBeCloseTo(expectedWidth, 1);
-  expect(bounds.window.width).toBeGreaterThan((124 + 10) * bounds.scale);
+  expect(bounds.window.width).toBeGreaterThan(96 * bounds.scale);
   expect(bounds.shelf.x - bounds.window.x - bounds.window.width).toBeGreaterThanOrEqual(6);
   const painted = await state.room.evaluate(node => {
     const glass = node.querySelector(".vc-window-glass")!.getBoundingClientRect(), sofa = node.querySelector(".vc-plush-bed")!.getBoundingClientRect();
@@ -112,7 +114,7 @@ for (const season of ["spring", "summer", "autumn", "winter"] as const) test(`12
   for (const phase of ["dawn", "day", "dusk", "night"] as const) {
     const state = await fixture(page, { season, phase });
     await expect(state.window).toHaveAttribute("data-phase", phase);
-    const expected = `/companion/home/124/window-${season}-${phase}.webp`;
+    const expected = `/companion/home/125/window-${season}-${phase}.webp`;
     await expect(state.window.locator(".vc-window-landscape")).toHaveAttribute("src", expected); sources.add(expected);
     await expect(state.window.locator(".vc-window-weather")).toHaveCount(0);
     const bounds = await snapshot(page, state, `${season}-${phase}`);
@@ -128,7 +130,7 @@ test("123 all six shared weathers select their own static overlay without changi
     const state = await fixture(page, { season: "autumn", phase: "day", weather });
     await expect(state.window).toHaveAttribute("data-weather", weather);
     await expect(state.window).toHaveAttribute("data-phase", "day");
-    await expect(state.window.locator(".vc-window-landscape")).toHaveAttribute("src", "/companion/home/124/window-autumn-day.webp");
+    await expect(state.window.locator(".vc-window-landscape")).toHaveAttribute("src", "/companion/home/125/window-autumn-day.webp");
     if (overlay[weather]) await expect(state.window.locator(".vc-window-weather")).toHaveAttribute("src", overlay[weather]!);
     else await expect(state.window.locator(".vc-window-weather")).toHaveCount(0);
     expect(await state.window.evaluate(node => node.getAnimations({ subtree: true }).length)).toBe(0);
@@ -138,7 +140,7 @@ test("123 all six shared weathers select their own static overlay without changi
 
 for (const quiet of ["reduced", "off"] as const) test(`123 static night and weather remain present in quiet mode: ${quiet}`, async ({ page }) => {
   const state = await fixture(page, { season: "winter", phase: "night", weather: "wind", quiet });
-  await expect(state.window.locator(".vc-window-landscape")).toHaveAttribute("src", "/companion/home/124/window-winter-night.webp");
+  await expect(state.window.locator(".vc-window-landscape")).toHaveAttribute("src", "/companion/home/125/window-winter-night.webp");
   await expect(state.window.locator(".vc-window-weather")).toHaveAttribute("src", overlay.wind!);
   await expect(state.window.locator(".vc-window-landscape")).toHaveCSS("filter", "none");
   expect(await state.window.evaluate(node => node.getAnimations({ subtree: true }).length)).toBe(0);

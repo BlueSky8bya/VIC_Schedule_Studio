@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { createCompanionToys, COMPANION_TOY_NAMES, type CompanionToy, type CompanionToyKind } from "@/lib/ui/viewer-companion/toys";
+import { companionToyBoxDropReady, createCompanionToys, COMPANION_TOY_NAMES, type CompanionToy, type CompanionToyKind } from "@/lib/ui/viewer-companion/toys";
 import type { Platform } from "@/lib/ui/viewer-companion/brain";
 import { logActivity } from "@/lib/activity/client";
 import { CompanionToyArt } from "./companion-toy-art";
@@ -41,6 +41,18 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
   dragFrame.current ??= createCompanionInputFrame();
   const painted = useRef(new WeakMap<HTMLButtonElement, string>());
   const blockedRef = useRef(blocked); blockedRef.current = blocked;
+  const dropBox = useRef<HTMLButtonElement | null>(null);
+  const clearDropBox = useCallback(() => { dropBox.current?.removeAttribute("data-toy-over"); dropBox.current = null; }, []);
+  const returnTarget = (point: Point) => {
+    const box = typeof document === "undefined" ? null : document.querySelector<HTMLButtonElement>(".vc-home [data-home-action='toys']");
+    return box && !box.disabled && box.getAttribute("aria-disabled") !== "true" && !box.closest("[hidden],[inert],[aria-hidden='true']") && companionToyBoxDropReady(box.getBoundingClientRect(), point) ? box : undefined;
+  };
+  const paintDropBox = (point: Point) => {
+    const target = returnTarget(point);
+    if (target === dropBox.current) return;
+    clearDropBox();
+    if (target) { target.setAttribute("data-toy-over", ""); dropBox.current = target; }
+  };
   const paint = useCallback((onlyId?: string) => { world.visit(toy => {
     if (onlyId && toy.id !== onlyId) return;
     const node = nodes.current.get(toy.id);
@@ -59,11 +71,12 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
   }, [world, onCount, paint]);
   const pauseModel = useCallback((now: number) => {
     dragFrame.current!.cancel();
+    clearDropBox();
     pendingPlays.current.clear();
     const current = drag.current; drag.current = null;
     if (current) try { if (current.node.hasPointerCapture(current.pointer)) current.node.releasePointerCapture(current.pointer); } catch { /* detached capture */ }
     world.pause(now); paint();
-  }, [world, paint]);
+  }, [world, paint, clearDropBox]);
   useImperativeHandle(ref, () => ({
     sync(platforms, bounds, now, smallHomeFloors) { world.sync(platforms, bounds, now, smallHomeFloors); paint(); },
     tick(now) { world.tick(now); if (world.count() !== count.current) refresh(); else paint(); },
@@ -89,6 +102,7 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     paint();
   }, [blocked, world, paint, pauseModel]);
   useEffect(() => () => { pauseModel(performance.now()); }, [pauseModel]);
+  useEffect(() => { if (hidden) clearDropBox(); }, [hidden, clearDropBox]);
   const finish = (event: React.PointerEvent<HTMLButtonElement>, cancelled = false) => {
     const current = drag.current;
     if (!current || current.pointer !== event.pointerId) return;
@@ -100,10 +114,11 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
       world.drag(current.id, { x: event.clientX - current.offset.x, y: event.clientY - current.offset.y });
     }
     if (cancelled) dragFrame.current!.cancel(); else dragFrame.current!.flush();
+    clearDropBox();
     drag.current = null; event.stopPropagation();
     if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
-    const box = !cancelled && document.querySelector<HTMLElement>(".vc-home [data-home-action='toys']"), rect = box && box.getBoundingClientRect();
-    if (rect && event.clientX >= rect.left - 8 && event.clientX <= rect.right + 8 && event.clientY >= rect.top - 8 && event.clientY <= rect.bottom + 8 && world.returnHeld(current.id)) { refresh(); const toy = items.find(item => item.id === current.id); if (toy) onExperience?.(toy.kind, "tidied"); onReturned?.(); logActivity("ui.click", { target: "companion-toy-return" }); }
+    const box = !cancelled && returnTarget({ x: event.clientX, y: event.clientY });
+    if (box && world.returnHeld(current.id)) { refresh(); const toy = items.find(item => item.id === current.id); if (toy) onExperience?.(toy.kind, "tidied"); onReturned?.(); logActivity("ui.click", { target: "companion-toy-return" }); }
     else { world.drop(current.id, performance.now(), cancelled ? { x: 0, y: 0 } : current.moved ? current.velocity : { x: 35, y: -130 }); if (!cancelled) logActivity("ui.click", { target: "companion-toy-drop" }); }
     paint(); onActivity(true);
   };
@@ -118,13 +133,19 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
         paint(toy.id); logActivity("ui.click", { target: "companion-toy-grab" }); onActivity(true);
       }}
       onPointerMove={event => {
+        if (blockedRef.current) { clearDropBox(); return; }
         const current = drag.current; if (!current || current.pointer !== event.pointerId) return; event.stopPropagation();
         const now = performance.now(), dt = Math.max(8, now - current.time), point = { x: event.clientX, y: event.clientY };
         current.moved ||= Math.hypot(point.x - current.origin.x, point.y - current.origin.y) > 6;
         current.velocity = { x: (point.x - current.last.x) / dt * 1000, y: (point.y - current.last.y) / dt * 1000 }; current.last = point; current.time = now;
-        if (!current.moved) return;
-        world.drag(toy.id, { x: point.x - current.offset.x, y: point.y - current.offset.y });
-        dragFrame.current!.queue(() => { if (drag.current === current && !blockedRef.current) paint(toy.id); });
+        if (current.moved) world.drag(toy.id, { x: point.x - current.offset.x, y: point.y - current.offset.y });
+        dragFrame.current!.queue(() => {
+          if (drag.current !== current || blockedRef.current) return;
+          // A high-rate captured pointer still measures the box only once on
+          // the existing latest-input frame, alongside the actual toy paint.
+          paintDropBox(current.last);
+          if (current.moved) paint(toy.id);
+        });
       }}
       onPointerUp={event => finish(event)} onPointerCancel={event => finish(event, true)} onLostPointerCapture={event => finish(event, true)}
       onKeyDown={event => {
@@ -134,6 +155,11 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
         // Like food, this native control owns only its supported keys. In
         // particular arrows must not also navigate the calendar's month.
         event.preventDefault(); event.stopPropagation();
+        const pointer = drag.current;
+        if (pointer?.id === toy.id) {
+          dragFrame.current!.cancel(); drag.current = null; clearDropBox();
+          if (pointer.node.hasPointerCapture(pointer.pointer)) pointer.node.releasePointerCapture(pointer.pointer);
+        }
         pendingPlays.current.delete(toy.id);
         if (["Enter", " "].includes(event.key)) {
           const ok = current.held ? world.drop(toy.id, performance.now(), { x: 20, y: -100 }) : world.grab(toy.id);

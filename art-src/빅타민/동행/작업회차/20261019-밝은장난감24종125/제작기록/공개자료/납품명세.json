@@ -1,0 +1,1586 @@
+{
+  "schema_version": 1,
+  "run": "20261019-밝은장난감24종125",
+  "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+  "asset_count": 24,
+  "builtin_calls": 24,
+  "automatic_retries": 0,
+  "independent_art_reviews": 0,
+  "owner_visual_approval": false,
+  "single_shared_image_per_toy": true,
+  "separate_stamps": 0,
+  "runtime_total_bytes": 540534,
+  "native_total_bytes": 23290239,
+  "final_total_bytes": 747940,
+  "protected_old_files": 39,
+  "solid_shapes_preserved": 24,
+  "normalization": "Each source canvas trimmed to alpha>=32 body bounds plus6%long-edge padding, then uniformly resized to192px long edge. No source alpha, colors or art hand-editing. Native unchanged; all alpha>=32 source pixels remain. Lossless exact WebP equals normalizedPNG decodedRGBA.",
+  "assets": [
+    {
+      "id": "ball",
+      "name": "통통공",
+      "suggested_display_long_edge": 24,
+      "runtime": {
+        "path": "public/companion/home/125/toy-ball.webp",
+        "sha256": "0366E15300B2D8AA354F7D26B9309FE2D01C295514E63347B4BB56769730FF96",
+        "bytes": 28292,
+        "size": [
+          192,
+          191
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/통통공.png",
+        "sha256": "15FF7B66D4F0ED5E817B56759A686FFD692CFA174BEB77649513D2925062AEEF",
+        "bytes": 750361,
+        "size": [
+          1303,
+          1207
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/통통공.png",
+        "sha256": "6936E4CD6B6BDEDB13C837FC03EE203C4CED44AA6C941F4E693ACACA14C556B1",
+        "bytes": 39418,
+        "size": [
+          192,
+          191
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        173,
+        134,
+        1130,
+        1088
+      ],
+      "body_bbox_before_crop": [
+        225,
+        186,
+        1078,
+        1036
+      ],
+      "padding_source_pixels": 52,
+      "runtime_core_bbox": [
+        11,
+        11,
+        181,
+        180
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "통통 공",
+        "box_width": 22,
+        "box_height": 22,
+        "object_fit": "contain",
+        "contained_bitmap_width": 22.0,
+        "contained_bitmap_height": 21.885417
+      }
+    },
+    {
+      "id": "blocks",
+      "name": "쌓기블록",
+      "suggested_display_long_edge": 28,
+      "runtime": {
+        "path": "public/companion/home/125/toy-blocks.webp",
+        "sha256": "4C4B93B20D9A99F053B6D6FEEEA0BA0894E45D53AA6229C5C1E193A6A7245AAD",
+        "bytes": 27374,
+        "size": [
+          192,
+          181
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/쌓기블록.png",
+        "sha256": "E5E41811B98CA628D59963BF94AEFB672C537CBCBCFC63BAABA6F2BAC1238181",
+        "bytes": 1359266,
+        "size": [
+          1536,
+          1024
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/쌓기블록.png",
+        "sha256": "AC698A3E5843896BB6C35F68A3FC103DE8640E0D98F4CA358030D1B304FDE08D",
+        "bytes": 36834,
+        "size": [
+          192,
+          181
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        278,
+        60,
+        1264,
+        989
+      ],
+      "body_bbox_before_crop": [
+        331,
+        113,
+        1211,
+        936
+      ],
+      "padding_source_pixels": 53,
+      "runtime_core_bbox": [
+        11,
+        11,
+        181,
+        170
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "알록 블록",
+        "box_width": 30,
+        "box_height": 26,
+        "object_fit": "contain",
+        "contained_bitmap_width": 27.58011,
+        "contained_bitmap_height": 26.0
+      }
+    },
+    {
+      "id": "paper-plane",
+      "name": "종이비행기",
+      "suggested_display_long_edge": 34,
+      "runtime": {
+        "path": "public/companion/home/125/toy-paper-plane.webp",
+        "sha256": "C1CDFC2667D251D6161F6583B72025D6CF8A5C1297622A8CFC1FC39355463B3F",
+        "bytes": 14494,
+        "size": [
+          192,
+          103
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/종이비행기.png",
+        "sha256": "D59ECFD9449E02B0FD86044A39CE65B291528548E36173375582772E0B90C8F3",
+        "bytes": 1306574,
+        "size": [
+          1536,
+          1024
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/종이비행기.png",
+        "sha256": "1C98EC7F8D3DC7A0EF5611A26FB6A2E85B8256D25B6D597CD7DDD19BC8F5943F",
+        "bytes": 18927,
+        "size": [
+          192,
+          103
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        32,
+        126,
+        1536,
+        934
+      ],
+      "body_bbox_before_crop": [
+        113,
+        207,
+        1458,
+        853
+      ],
+      "padding_source_pixels": 81,
+      "runtime_core_bbox": [
+        11,
+        11,
+        181,
+        92
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "종이비행기",
+        "box_width": 34,
+        "box_height": 22,
+        "object_fit": "contain",
+        "contained_bitmap_width": 34.0,
+        "contained_bitmap_height": 18.239583
+      }
+    },
+    {
+      "id": "spool",
+      "name": "실타래",
+      "suggested_display_long_edge": 22,
+      "runtime": {
+        "path": "public/companion/home/125/toy-spool.webp",
+        "sha256": "3EA1D60DEE701566196073F8B0D625B379F239655DF9399E0F214C5B98506CFD",
+        "bytes": 25368,
+        "size": [
+          192,
+          149
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/실타래.png",
+        "sha256": "10F85BC139F564FF7DEFEEDBD0EBD17CF8D532A80C03504450343A27591E2480",
+        "bytes": 1276454,
+        "size": [
+          1536,
+          1024
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/실타래.png",
+        "sha256": "4AC31BE2FEF21B6F7E73BEFA99A2571D6F59C31A7C752DA3CDAFAB6C9CF28692",
+        "bytes": 36137,
+        "size": [
+          192,
+          149
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        283,
+        140,
+        1238,
+        880
+      ],
+      "body_bbox_before_crop": [
+        335,
+        192,
+        1186,
+        828
+      ],
+      "padding_source_pixels": 52,
+      "runtime_core_bbox": [
+        11,
+        11,
+        181,
+        138
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "실타래",
+        "box_width": 22,
+        "box_height": 22,
+        "object_fit": "contain",
+        "contained_bitmap_width": 22.0,
+        "contained_bitmap_height": 17.072917
+      }
+    },
+    {
+      "id": "hoop",
+      "name": "알록달록고리",
+      "suggested_display_long_edge": 30,
+      "runtime": {
+        "path": "public/companion/home/125/toy-hoop.webp",
+        "sha256": "8F1C35C45F40CDE230CE1E2CF18F5D5015B59E12E68263C813F443700424273E",
+        "bytes": 25274,
+        "size": [
+          192,
+          182
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/알록달록고리.png",
+        "sha256": "8E417EA4CDEE13BE3DDC5748E661E8A8CB826F0AEA05EA07109CA51DF496AC64",
+        "bytes": 487536,
+        "size": [
+          1567,
+          1004
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/알록달록고리.png",
+        "sha256": "3C269A9C4105F8EE41E0B1B808B980DAC9F1FFA0B90171FD9D88A0C7C1EB0FD0",
+        "bytes": 34147,
+        "size": [
+          192,
+          182
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        337,
+        77,
+        1231,
+        925
+      ],
+      "body_bbox_before_crop": [
+        385,
+        125,
+        1183,
+        877
+      ],
+      "padding_source_pixels": 48,
+      "runtime_core_bbox": [
+        11,
+        11,
+        181,
+        171
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "둥근 고리",
+        "box_width": 28,
+        "box_height": 28,
+        "object_fit": "contain",
+        "contained_bitmap_width": 28.0,
+        "contained_bitmap_height": 26.541667
+      }
+    },
+    {
+      "id": "pinwheel",
+      "name": "팔랑바람개비",
+      "suggested_display_long_edge": 31,
+      "runtime": {
+        "path": "public/companion/home/125/toy-pinwheel.webp",
+        "sha256": "8899B8C20D72D53216AB946C1FE09896312518D712C047273CF1502A4325B930",
+        "bytes": 14038,
+        "size": [
+          126,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/팔랑바람개비.png",
+        "sha256": "BD8AF28AABF75F65F78D46A0B193D21DD244BA8BB6644457137DD92AD1B5C556",
+        "bytes": 1240713,
+        "size": [
+          1024,
+          1536
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/팔랑바람개비.png",
+        "sha256": "B29DF060A2694B9A1861F00CB3B3B40BB7F15E923170ED5E6682E686BCAE89F2",
+        "bytes": 18838,
+        "size": [
+          126,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        63,
+        63,
+        969,
+        1443
+      ],
+      "body_bbox_before_crop": [
+        137,
+        137,
+        895,
+        1369
+      ],
+      "padding_source_pixels": 74,
+      "runtime_core_bbox": [
+        11,
+        11,
+        115,
+        181
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "바람개비",
+        "box_width": 28,
+        "box_height": 36,
+        "object_fit": "contain",
+        "contained_bitmap_width": 23.625,
+        "contained_bitmap_height": 36.0
+      }
+    },
+    {
+      "id": "bell",
+      "name": "딸랑종",
+      "suggested_display_long_edge": 20,
+      "runtime": {
+        "path": "public/companion/home/125/toy-bell.webp",
+        "sha256": "C450628199E4B5BD10B164CA852A6AA1119F06B4A7447692E544917B38CA66E2",
+        "bytes": 18296,
+        "size": [
+          142,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/딸랑종.png",
+        "sha256": "1D4DEC36CD3F8B547A7EB0C6F195F0EF920186A88C5C4DD70044E47A7C3B9BB4",
+        "bytes": 500943,
+        "size": [
+          1351,
+          1164
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/딸랑종.png",
+        "sha256": "05895006823C10278E13DFE816404FAC5D24EF04BABCABE6F783652260F45302",
+        "bytes": 23906,
+        "size": [
+          142,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        278,
+        50,
+        1073,
+        1125
+      ],
+      "body_bbox_before_crop": [
+        336,
+        108,
+        1015,
+        1067
+      ],
+      "padding_source_pixels": 58,
+      "runtime_core_bbox": [
+        11,
+        11,
+        131,
+        181
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "딸랑 종",
+        "box_width": 20,
+        "box_height": 24,
+        "object_fit": "contain",
+        "contained_bitmap_width": 17.75,
+        "contained_bitmap_height": 24.0
+      }
+    },
+    {
+      "id": "feather",
+      "name": "깃털막대",
+      "suggested_display_long_edge": 35,
+      "runtime": {
+        "path": "public/companion/home/125/toy-feather.webp",
+        "sha256": "D0AE3E35669D7A39F8CA93F5B366626B0A16F9F0FE700E669252B6B944201DD0",
+        "bytes": 19530,
+        "size": [
+          186,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/깃털막대.png",
+        "sha256": "E376B23E571282B5FEFC74683DB968851EADA68CA5C00A5B79E1E7D05273B122",
+        "bytes": 1118451,
+        "size": [
+          1536,
+          1024
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/깃털막대.png",
+        "sha256": "528C13A8FECDA9E3C5766A1A249C2022010EB7050FDC8FD94F178F76D2237FF5",
+        "bytes": 27589,
+        "size": [
+          186,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        368,
+        50,
+        1264,
+        973
+      ],
+      "body_bbox_before_crop": [
+        418,
+        100,
+        1214,
+        923
+      ],
+      "padding_source_pixels": 50,
+      "runtime_core_bbox": [
+        11,
+        11,
+        175,
+        181
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "깃털 장난감",
+        "box_width": 20,
+        "box_height": 36,
+        "object_fit": "contain",
+        "contained_bitmap_width": 20.0,
+        "contained_bitmap_height": 20.645161
+      }
+    },
+    {
+      "id": "duck",
+      "name": "삑삑오리",
+      "suggested_display_long_edge": 25,
+      "runtime": {
+        "path": "public/companion/home/125/toy-duck.webp",
+        "sha256": "7109156AA36290119A03D6B61B20403C3D380ABD4D734D8EA9E2C864FE2E7529",
+        "bytes": 26382,
+        "size": [
+          192,
+          185
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/삑삑오리.png",
+        "sha256": "EACF22CBD5C4FB3F9A9EC28E7855CE41CCD1CB5754084A96D08D4AD27DDD2687",
+        "bytes": 1094780,
+        "size": [
+          1536,
+          1024
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/삑삑오리.png",
+        "sha256": "F2E09ABEDFD2929B1891BC1E6A83ADABB032B4BBE063B1373272535C710A2CA7",
+        "bytes": 36064,
+        "size": [
+          192,
+          185
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        347,
+        90,
+        1235,
+        945
+      ],
+      "body_bbox_before_crop": [
+        395,
+        138,
+        1187,
+        897
+      ],
+      "padding_source_pixels": 48,
+      "runtime_core_bbox": [
+        11,
+        11,
+        181,
+        174
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "오리 인형",
+        "box_width": 28,
+        "box_height": 26,
+        "object_fit": "contain",
+        "contained_bitmap_width": 26.983784,
+        "contained_bitmap_height": 26.0
+      }
+    },
+    {
+      "id": "spinning-top",
+      "name": "빙글팽이",
+      "suggested_display_long_edge": 23,
+      "runtime": {
+        "path": "public/companion/home/125/toy-spinning-top.webp",
+        "sha256": "513CBE9DDD5CF1198350F4C8FA5025212AEF51AEE76FB4DECEAF09211BA1C8E6",
+        "bytes": 22488,
+        "size": [
+          176,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/빙글팽이.png",
+        "sha256": "559A057D27721A6DF4F93BE6A0E085EF9CC036147F724577C164BD3315C69A96",
+        "bytes": 493478,
+        "size": [
+          1567,
+          1004
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/빙글팽이.png",
+        "sha256": "68F4E163BBCF4C254ECA03C5514249EDA729C06D1B52F822E8826128AF0000AB",
+        "bytes": 31189,
+        "size": [
+          176,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        380,
+        62,
+        1188,
+        942
+      ],
+      "body_bbox_before_crop": [
+        428,
+        110,
+        1140,
+        894
+      ],
+      "padding_source_pixels": 48,
+      "runtime_core_bbox": [
+        11,
+        11,
+        165,
+        181
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "빙글 팽이",
+        "box_width": 20,
+        "box_height": 24,
+        "object_fit": "contain",
+        "contained_bitmap_width": 20.0,
+        "contained_bitmap_height": 21.818182
+      }
+    },
+    {
+      "id": "toy-car",
+      "name": "부릉자동차",
+      "suggested_display_long_edge": 34,
+      "runtime": {
+        "path": "public/companion/home/125/toy-toy-car.webp",
+        "sha256": "214627C781E1748D1E01812C8D60AEC0D1A463CECC1E7435BE34168D9D0141C1",
+        "bytes": 22456,
+        "size": [
+          192,
+          130
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/부릉자동차.png",
+        "sha256": "8DDB4A6D11AFD6633473AFBE42029B5348B5485CB84A2343D8D306AE1735AAD6",
+        "bytes": 981212,
+        "size": [
+          1567,
+          1004
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/부릉자동차.png",
+        "sha256": "356088B26E9A9245EF45D51575AC5CE64D15C734EE4CA8566D9A06D9E7923440",
+        "bytes": 30795,
+        "size": [
+          192,
+          130
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        99,
+        18,
+        1476,
+        948
+      ],
+      "body_bbox_before_crop": [
+        173,
+        92,
+        1402,
+        874
+      ],
+      "padding_source_pixels": 74,
+      "runtime_core_bbox": [
+        11,
+        11,
+        181,
+        119
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "작은 자동차",
+        "box_width": 34,
+        "box_height": 22,
+        "object_fit": "contain",
+        "contained_bitmap_width": 32.492308,
+        "contained_bitmap_height": 22.0
+      }
+    },
+    {
+      "id": "train",
+      "name": "칙칙기차",
+      "suggested_display_long_edge": 40,
+      "runtime": {
+        "path": "public/companion/home/125/toy-train.webp",
+        "sha256": "C1DDD13AE4017EFF32F084ADB1AA602C5584A166BC206DB37D823573E0AAB0B0",
+        "bytes": 27044,
+        "size": [
+          192,
+          140
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/칙칙기차.png",
+        "sha256": "8A935B5E33724CA3126BFE04268C4F368C70BBB5C16CFCA96A90EC92CECE6D87",
+        "bytes": 847757,
+        "size": [
+          1567,
+          1004
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/칙칙기차.png",
+        "sha256": "1B992FC8BFE5CA146E60416EEA69B2E24C8EF6C9867E332FAD09438A1388E808",
+        "bytes": 36395,
+        "size": [
+          192,
+          140
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        228,
+        59,
+        1421,
+        932
+      ],
+      "body_bbox_before_crop": [
+        292,
+        123,
+        1357,
+        868
+      ],
+      "padding_source_pixels": 64,
+      "runtime_core_bbox": [
+        11,
+        11,
+        181,
+        129
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "칙칙 기차",
+        "box_width": 42,
+        "box_height": 26,
+        "object_fit": "contain",
+        "contained_bitmap_width": 35.657143,
+        "contained_bitmap_height": 26.0
+      }
+    },
+    {
+      "id": "dice",
+      "name": "주사위",
+      "suggested_display_long_edge": 21,
+      "runtime": {
+        "path": "public/companion/home/125/toy-dice.webp",
+        "sha256": "8086407BE52B3638565B219A220284DE4D52CE08144F4D786F2A06E20B13BB0E",
+        "bytes": 29800,
+        "size": [
+          192,
+          187
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/주사위.png",
+        "sha256": "1907B537D6E16DB9A64985FAFC6A7AAE6132A2929AB8ED75B16FA3F7263EE8D3",
+        "bytes": 720865,
+        "size": [
+          1374,
+          1145
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/주사위.png",
+        "sha256": "B7BF9630362BCBDD0180ABF6C4AF47B8D773535B92D03224E603935876E3365F",
+        "bytes": 42839,
+        "size": [
+          192,
+          187
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        221,
+        127,
+        1152,
+        1036
+      ],
+      "body_bbox_before_crop": [
+        271,
+        177,
+        1102,
+        986
+      ],
+      "padding_source_pixels": 50,
+      "runtime_core_bbox": [
+        11,
+        11,
+        181,
+        176
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "알록 주사위",
+        "box_width": 18,
+        "box_height": 18,
+        "object_fit": "contain",
+        "contained_bitmap_width": 18.0,
+        "contained_bitmap_height": 17.53125
+      }
+    },
+    {
+      "id": "rocking-horse",
+      "name": "흔들목마",
+      "suggested_display_long_edge": 38,
+      "runtime": {
+        "path": "public/companion/home/125/toy-rocking-horse.webp",
+        "sha256": "F54739FEA4B5494E6ADA974E53185D7EBC98FBED0F07A86817C0B50AC6B797CA",
+        "bytes": 28452,
+        "size": [
+          192,
+          177
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/흔들목마.png",
+        "sha256": "CFF050E3680D78B3ADE8CB8DCD0AC50BB88FC40E65415D6CFD8BE96900887AF3",
+        "bytes": 1441891,
+        "size": [
+          1536,
+          1024
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/흔들목마.png",
+        "sha256": "E3AD234A6B5B1DF4AC04E80941281326EC78578DABA2E77A99BF85362B429B20",
+        "bytes": 40304,
+        "size": [
+          192,
+          177
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        255,
+        9,
+        1353,
+        1019
+      ],
+      "body_bbox_before_crop": [
+        314,
+        68,
+        1294,
+        960
+      ],
+      "padding_source_pixels": 59,
+      "runtime_core_bbox": [
+        11,
+        11,
+        181,
+        166
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "흔들 목마",
+        "box_width": 38,
+        "box_height": 34,
+        "object_fit": "contain",
+        "contained_bitmap_width": 36.881356,
+        "contained_bitmap_height": 34.0
+      }
+    },
+    {
+      "id": "squeaky-carrot",
+      "name": "삑삑당근",
+      "suggested_display_long_edge": 27,
+      "runtime": {
+        "path": "public/companion/home/125/toy-squeaky-carrot.webp",
+        "sha256": "DA64195B02F125F60DD89F6432FB2DFE7719CDCA0AED9E738A792A18EB63E7A0",
+        "bytes": 18654,
+        "size": [
+          125,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/삑삑당근.png",
+        "sha256": "215B329B7C65357748991B7DC9ADD2D2A32A65E58B700567CA32882671260998",
+        "bytes": 385877,
+        "size": [
+          1567,
+          1004
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/삑삑당근.png",
+        "sha256": "0A9897EB876C684CF4FAF0757AB61DF08A550606B516DF5BBD31B35CE344FFEA",
+        "bytes": 26049,
+        "size": [
+          125,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        519,
+        97,
+        1050,
+        915
+      ],
+      "body_bbox_before_crop": [
+        563,
+        141,
+        1006,
+        871
+      ],
+      "padding_source_pixels": 44,
+      "runtime_core_bbox": [
+        11,
+        11,
+        114,
+        181
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "말랑 당근",
+        "box_width": 20,
+        "box_height": 32,
+        "object_fit": "contain",
+        "contained_bitmap_width": 20.0,
+        "contained_bitmap_height": 30.72
+      }
+    },
+    {
+      "id": "star-wand",
+      "name": "반짝별봉",
+      "suggested_display_long_edge": 36,
+      "runtime": {
+        "path": "public/companion/home/125/toy-star-wand.webp",
+        "sha256": "989486BEFD6912600A021B6465EB036FD15C7C3A6DFDD62F6E17460FD6954832",
+        "bytes": 17820,
+        "size": [
+          170,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/반짝별봉.png",
+        "sha256": "645B138634148F8E4EB7CC1A5F81078BC6D3E65E9D86154667FAEAA54219E420",
+        "bytes": 384086,
+        "size": [
+          1567,
+          1004
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/반짝별봉.png",
+        "sha256": "516CE1AE8DA2F624BEED2BC1B48ECA2AD46F234598DB8125D022A4682AFB204C",
+        "bytes": 25309,
+        "size": [
+          170,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        370,
+        43,
+        1188,
+        966
+      ],
+      "body_bbox_before_crop": [
+        420,
+        93,
+        1138,
+        916
+      ],
+      "padding_source_pixels": 50,
+      "runtime_core_bbox": [
+        11,
+        11,
+        159,
+        181
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "별 지팡이",
+        "box_width": 22,
+        "box_height": 38,
+        "object_fit": "contain",
+        "contained_bitmap_width": 22.0,
+        "contained_bitmap_height": 24.847059
+      }
+    },
+    {
+      "id": "kaleidoscope",
+      "name": "만화경",
+      "suggested_display_long_edge": 27,
+      "runtime": {
+        "path": "public/companion/home/125/toy-kaleidoscope.webp",
+        "sha256": "E8ABAF76E08ECF04D37CE99C313982C75BC7836D0C83E52630A8912A7FED676D",
+        "bytes": 17744,
+        "size": [
+          192,
+          120
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/만화경.png",
+        "sha256": "4C694D4436DBCEFC3F09571C575A50B7371DD81CA40C63934652A8A19DC1E6FD",
+        "bytes": 1164556,
+        "size": [
+          1536,
+          1024
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/만화경.png",
+        "sha256": "0EC6ABE3B74CA4379A728A6A47E2CF66978CBECB6C47D9AB4A3812A02A70177C",
+        "bytes": 24071,
+        "size": [
+          192,
+          120
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        193,
+        143,
+        1344,
+        860
+      ],
+      "body_bbox_before_crop": [
+        255,
+        205,
+        1282,
+        798
+      ],
+      "padding_source_pixels": 62,
+      "runtime_core_bbox": [
+        11,
+        11,
+        181,
+        109
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "만화경",
+        "box_width": 28,
+        "box_height": 20,
+        "object_fit": "contain",
+        "contained_bitmap_width": 28.0,
+        "contained_bitmap_height": 17.5
+      }
+    },
+    {
+      "id": "tambourine",
+      "name": "찰랑탬버린",
+      "suggested_display_long_edge": 29,
+      "runtime": {
+        "path": "public/companion/home/125/toy-tambourine.webp",
+        "sha256": "19D5A5624301A505CA3711380D97C83F398C100FFC3D359051FB0C396489A999",
+        "bytes": 21430,
+        "size": [
+          192,
+          132
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/찰랑탬버린.png",
+        "sha256": "B79BED48B14214A2D5BAAC182245FED8F6C0F5CDE24D6D0B56408A4CD20DDD02",
+        "bytes": 1173951,
+        "size": [
+          1536,
+          1024
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/찰랑탬버린.png",
+        "sha256": "B2BDA01A7AA733B9A8F8975AA9A7E3790FC8231B6B0805B8CBA5AFB411E7F183",
+        "bytes": 29013,
+        "size": [
+          192,
+          132
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        256,
+        135,
+        1307,
+        859
+      ],
+      "body_bbox_before_crop": [
+        313,
+        192,
+        1250,
+        802
+      ],
+      "padding_source_pixels": 57,
+      "runtime_core_bbox": [
+        11,
+        11,
+        181,
+        121
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "탬버린",
+        "box_width": 30,
+        "box_height": 30,
+        "object_fit": "contain",
+        "contained_bitmap_width": 30.0,
+        "contained_bitmap_height": 20.625
+      }
+    },
+    {
+      "id": "maraca",
+      "name": "찰찰마라카",
+      "suggested_display_long_edge": 29,
+      "runtime": {
+        "path": "public/companion/home/125/toy-maraca.webp",
+        "sha256": "A037334A3F0FB6BCA0DD58495CD51111C19FEFC8AF46D40F5184D6C9D019E11E",
+        "bytes": 17532,
+        "size": [
+          161,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/찰찰마라카.png",
+        "sha256": "F9C1E62722219F781518FD17587363FFA1025EB6F332C17D9B2C9EAF016A3C55",
+        "bytes": 491077,
+        "size": [
+          1318,
+          1193
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/찰찰마라카.png",
+        "sha256": "DDABE604E9400BDB5900C4CD82F6D94E610A2A589104590489EFF0895E324F4D",
+        "bytes": 24324,
+        "size": [
+          161,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        227,
+        95,
+        1092,
+        1125
+      ],
+      "body_bbox_before_crop": [
+        283,
+        151,
+        1036,
+        1069
+      ],
+      "padding_source_pixels": 56,
+      "runtime_core_bbox": [
+        11,
+        11,
+        150,
+        181
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "딸랑 마라카스",
+        "box_width": 20,
+        "box_height": 34,
+        "object_fit": "contain",
+        "contained_bitmap_width": 20.0,
+        "contained_bitmap_height": 23.850932
+      }
+    },
+    {
+      "id": "yo-yo",
+      "name": "빙글요요",
+      "suggested_display_long_edge": 22,
+      "runtime": {
+        "path": "public/companion/home/125/toy-yo-yo.webp",
+        "sha256": "E93A34E1FF95520A866FD1FD6B179A642D6EA5C54AECFCB526CBB2AB13FB99B4",
+        "bytes": 25036,
+        "size": [
+          192,
+          159
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/빙글요요.png",
+        "sha256": "4B8E143EB46A33C2D2608D7D42F6BB67DCBF9B6A2D8BB37B68734562FFFD8C50",
+        "bytes": 1180911,
+        "size": [
+          1536,
+          1024
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/빙글요요.png",
+        "sha256": "4CA12B6E9EC3088BB9A723E14CDF36CD028B414C0C04D4AD75D55503652A8CA0",
+        "bytes": 33841,
+        "size": [
+          192,
+          159
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        326,
+        98,
+        1340,
+        939
+      ],
+      "body_bbox_before_crop": [
+        381,
+        153,
+        1285,
+        884
+      ],
+      "padding_source_pixels": 55,
+      "runtime_core_bbox": [
+        11,
+        11,
+        181,
+        148
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "동글 요요",
+        "box_width": 20,
+        "box_height": 22,
+        "object_fit": "contain",
+        "contained_bitmap_width": 20.0,
+        "contained_bitmap_height": 16.5625
+      }
+    },
+    {
+      "id": "plush-fish",
+      "name": "말랑물고기",
+      "suggested_display_long_edge": 32,
+      "runtime": {
+        "path": "public/companion/home/125/toy-plush-fish.webp",
+        "sha256": "987161D1C5F5BE40F34B1F03BE5A154F46DEF13D4CC915B6CE1B63977E30058E",
+        "bytes": 20736,
+        "size": [
+          192,
+          137
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/말랑물고기.png",
+        "sha256": "BC72A1199E5CF29ACB6F08BC7426AC8DFE51D275C08D6E50B65C62340D6513F3",
+        "bytes": 1632091,
+        "size": [
+          1536,
+          1024
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/말랑물고기.png",
+        "sha256": "8D540CE4EE05DDC55653CC4080559E192702820A3C90C58C6C2CA1583DA8044B",
+        "bytes": 29815,
+        "size": [
+          192,
+          137
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        116,
+        22,
+        1445,
+        970
+      ],
+      "body_bbox_before_crop": [
+        188,
+        94,
+        1373,
+        898
+      ],
+      "padding_source_pixels": 72,
+      "runtime_core_bbox": [
+        11,
+        11,
+        181,
+        126
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "물고기 인형",
+        "box_width": 34,
+        "box_height": 20,
+        "object_fit": "contain",
+        "contained_bitmap_width": 28.029197,
+        "contained_bitmap_height": 20.0
+      }
+    },
+    {
+      "id": "ribbon-ball",
+      "name": "리본공",
+      "suggested_display_long_edge": 26,
+      "runtime": {
+        "path": "public/companion/home/125/toy-ribbon-ball.webp",
+        "sha256": "E31E749D959FB5A7F05DCC4E5CAB978ED9DC0051B3E30897E08F1BD26D87ED6F",
+        "bytes": 25156,
+        "size": [
+          148,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/리본공.png",
+        "sha256": "D59A502D9ED04E9F40EF3C2622AF9DEA71A442BF7687F1B7333A3B8A2FB52347",
+        "bytes": 938746,
+        "size": [
+          1305,
+          1206
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/리본공.png",
+        "sha256": "26622533BCF3B770D1831B1058D18D2B8C6BCF63D5ACD452471C68D4123467F7",
+        "bytes": 34660,
+        "size": [
+          148,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        205,
+        12,
+        1110,
+        1187
+      ],
+      "body_bbox_before_crop": [
+        268,
+        75,
+        1047,
+        1124
+      ],
+      "padding_source_pixels": 63,
+      "runtime_core_bbox": [
+        11,
+        11,
+        137,
+        181
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "리본 공",
+        "box_width": 28,
+        "box_height": 28,
+        "object_fit": "contain",
+        "contained_bitmap_width": 21.583333,
+        "contained_bitmap_height": 28.0
+      }
+    },
+    {
+      "id": "stacking-rings",
+      "name": "쌓기링",
+      "suggested_display_long_edge": 29,
+      "runtime": {
+        "path": "public/companion/home/125/toy-stacking-rings.webp",
+        "sha256": "90A09F3A3135A0C8EFB041B5F58B30651155A77D83D1A4DA7A0060112EEB8411",
+        "bytes": 22400,
+        "size": [
+          162,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/쌓기링.png",
+        "sha256": "1BA8BD735C7A176CA86077E59B62E431B34381C8AF4DF3D52A6FB5D625AD71DD",
+        "bytes": 1118371,
+        "size": [
+          1536,
+          1024
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/쌓기링.png",
+        "sha256": "8D02C009E6F968E8CC008CCE06DE6BBCE1D37BBF4A41292BCAE0782F3F044AA3",
+        "bytes": 31464,
+        "size": [
+          162,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        385,
+        64,
+        1151,
+        970
+      ],
+      "body_bbox_before_crop": [
+        434,
+        113,
+        1102,
+        921
+      ],
+      "padding_source_pixels": 49,
+      "runtime_core_bbox": [
+        11,
+        11,
+        151,
+        181
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "고리 쌓기",
+        "box_width": 26,
+        "box_height": 32,
+        "object_fit": "contain",
+        "contained_bitmap_width": 26.0,
+        "contained_bitmap_height": 30.814815
+      }
+    },
+    {
+      "id": "toy-rocket",
+      "name": "슝슝로켓",
+      "suggested_display_long_edge": 36,
+      "runtime": {
+        "path": "public/companion/home/125/toy-toy-rocket.webp",
+        "sha256": "5C7AD8AE1E7754350EFA35E99C7BABE51B7BF319613AC9BBC02638B27AAB57C0",
+        "bytes": 24738,
+        "size": [
+          174,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/원본/슝슝로켓.png",
+        "sha256": "D223D57809D7DD764C960FFE69F9E776868BD69CE45131C8821E54C129A59E20",
+        "bytes": 1200292,
+        "size": [
+          1536,
+          1024
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/정리본/여백정규화2/슝슝로켓.png",
+        "sha256": "2A45218A9DF32F336E6BF444371E4DE189FB8EE2E1AF2D23A84909DD2255A13B",
+        "bytes": 36012,
+        "size": [
+          174,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "source_crop_box": [
+        346,
+        27,
+        1182,
+        952
+      ],
+      "body_bbox_before_crop": [
+        396,
+        77,
+        1132,
+        902
+      ],
+      "padding_source_pixels": 50,
+      "runtime_core_bbox": [
+        11,
+        11,
+        163,
+        181
+      ],
+      "rgba_parity": true,
+      "solid_shape_not_cut": true,
+      "world_display": {
+        "catalog_name": "작은 로켓",
+        "box_width": 24,
+        "box_height": 40,
+        "object_fit": "contain",
+        "contained_bitmap_width": 24.0,
+        "contained_bitmap_height": 26.482759
+      }
+    }
+  ],
+  "world_display_authority": {
+    "path": "lib/ui/viewer-companion/toy-catalog.ts",
+    "sha256": "365063BD7574FDA3D3EE150AB8BC77D0A57DF334CFB05FEC8858A9EC7E433215",
+    "export": "COMPANION_TOY_VISUALS",
+    "scope": "Artwork box width/height only. Existing suggested_display_long_edge remains a historical art recommendation, not live dimensions."
+  },
+  "contact_sheets": [
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/검토/24종_확대와실제크기_밝은배경.png",
+      "sha256": "C79C21633BF00D072F590A8DCDE941074B971F9134FEFD5F01159DC665ED5655",
+      "bytes": 216170,
+      "size": [
+        1320,
+        800
+      ],
+      "large_preview_long_edge": 80,
+      "world_preview": "CSS object-fit: contain inside the current COMPANION_TOY_VISUALS width/height. Raster sheet rounds the final contained bitmap to nearest pixel."
+    },
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/검토/24종_확대와실제크기_어두운배경.png",
+      "sha256": "3C0FD7C6904469BEA7DC1BCB98C4479AD2D882FAEB6EB22B42E7DAD2C8A8D848",
+      "bytes": 212650,
+      "size": [
+        1320,
+        800
+      ],
+      "large_preview_long_edge": 80,
+      "world_preview": "CSS object-fit: contain inside the current COMPANION_TOY_VISUALS width/height. Raster sheet rounds the final contained bitmap to nearest pixel."
+    }
+  ]
+}

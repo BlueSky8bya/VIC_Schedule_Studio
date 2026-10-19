@@ -23,7 +23,7 @@ export function resolveCompanionWindowScene(environment?: CompanionHomeEnvironme
   const phase = PHASE[environment?.band ?? "noon"];
   return {
     season, weather, phase,
-    landscapeSrc: `/companion/home/124/window-${season}-${phase}.webp`,
+    landscapeSrc: `/companion/home/125/window-${season}-${phase}.webp`,
     overlaySrc: WEATHER_OVERLAY[weather],
   };
 }

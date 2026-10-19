@@ -61,6 +61,7 @@ import { createCompanionPersonalityActivity, preflightCompanionPersonalityActivi
 import { companionToyUnread, loadCompanionTastes, recordCompanionFoodTaste, recordCompanionToyExperience, shouldDeclineCompanionFood, subscribeCompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
 import { createCompanionReactiveCues } from "@/lib/ui/viewer-companion/reactive-cues";
 import { resolveCompanionHomeEnvironment, type CompanionHomeEnvironmentContext } from "@/lib/ui/viewer-companion/home-environment";
+import { companionHomeRest, INITIAL_COMPANION_HOME_CURTAIN, reduceCompanionHomeCurtain } from "@/lib/ui/viewer-companion/home-curtain";
 import { placeCompanionOverlayPerch, type CompanionOverlayPerch } from "@/lib/ui/viewer-companion/overlay-perch";
 import { createCompanionOverlayReturn, type CompanionReturnPoint } from "@/lib/ui/viewer-companion/overlay-return";
 import { FLIP_MS } from "@/lib/ui/flip-motion";
@@ -186,6 +187,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
   overlayRef.current = overlayOpen;
   const [homeExpanded, setHomeExpanded] = useState(false), [suspended, setSuspended] = useState(true);
   const [care, setCare] = useState({ ...DEFAULT_COMPANION_CARE }), [announcement, setAnnouncement] = useState("");
+  const [homeCurtain, setHomeCurtain] = useState(INITIAL_COMPANION_HOME_CURTAIN);
+  const curtainProjection = useRef(INITIAL_COMPANION_HOME_CURTAIN);
   const [ready, setReady] = useState(false), [unreadCollection, setUnreadCollection] = useState(false);
   const compactActive = ready && !suspended && !blocked && !(homeVisible && homeHost) && !!launcherHost && !!compactHost;
   const homeShelf = useHomeShelf({ active: compactActive, expanded: homeExpanded, monthKey, host: compactHost, launcher: homeLauncher, room: compactHome, setExpanded: setHomeExpanded });
@@ -673,6 +676,26 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     const data = (name: string, value: string) => { if (el.dataset[name] !== value) el.dataset[name] = value; };
     const clearSupportWait = () => { waitingForSupport = supportValidationRequested = false; clearTimeout(supportValidationTimer); supportValidationTimer = undefined; };
     const resetInertia = () => { heldInertia.reset(); heldShake.reset(); shakenReleasePending = undefined; shakenGroundColumn = undefined; el.removeAttribute("data-held-dizzy"); sofaContact = undefined; style(inertiaLayer, "transform", "rotate(0.000deg) scale(1.0000,1.0000)"); };
+    const publishHomeCurtain = (status: string, suspended = false) => {
+      const restAction = action?.kind === "sleep";
+      const atHome = isHomeSupport(support);
+      const rest = companionHomeRest({
+        atHome, grounded: atHome && status !== "jump" && supportedNow(), sleepAllowed: preferences.sleep,
+        held: Boolean(pressed || keyboardHeld || placing || overlayDrag || overlayPlacing),
+        resting: restAction || presence.phase === "yawning" || presence.phase === "parked",
+        dreaming: presence.dreaming || restAction && sleeping,
+        waking: status === "wake" || presence.phase === "waking" || restAction && performance.now() - began >= total - COMPANION_TIMING.sleepWake,
+      });
+      const next = reduceCompanionHomeCurtain(curtainProjection.current, {
+        environment: environment.current, personality: preferences.personality, rest,
+        lookingOut: atHome && action?.scene?.id === 31 && action.kind === "look",
+        visible: !document.hidden, blocked: suspended || pause || overlayActive || premiereActive || Boolean(premiereBounce) || homeOccluded || workspaceBusyRef.current,
+        reduced: reduced || gfxMode() === "off" || document.documentElement.dataset.gfx === "soft",
+      });
+      // Only coarse semantic changes reach React; ordinary pose/frame paints
+      // return the same projection and never rerender the calendar or house.
+      if (next !== curtainProjection.current) { curtainProjection.current = next; setHomeCurtain(next); }
+    };
     el.style.setProperty("--vc-size", `${size}px`);
     const paint = (row: number, frame: number, status: string) => {
       bedNeedsPaint = false;
@@ -898,6 +921,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         }
       }
       data("state", status);
+      publishHomeCurtain(status);
       if (!action?.radio?.instrument) el.removeAttribute("data-instrument-reaction");
       if (action?.living && ["play", "sleep", "walk"].includes(status)) data("living", action.living); else el.removeAttribute("data-living");
       data("platform", support);
@@ -1748,7 +1772,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         environmentMinute = Math.floor(Date.now() / 60000);
         const nextEnvironment = resolveCompanionHomeEnvironment(environmentContext.current ?? { slug: "vic", year: Number(monthKey.split("-")[0]), month: Number(monthKey.split("-")[1]) });
         environment.current = nextEnvironment;
-        setHomeEnvironment(previous => previous.date.y === nextEnvironment.date.y && previous.date.m === nextEnvironment.date.m && previous.date.d === nextEnvironment.date.d && previous.season === nextEnvironment.season && previous.weather === nextEnvironment.weather && previous.band === nextEnvironment.band && previous.night === nextEnvironment.night ? previous : nextEnvironment);
+        setHomeEnvironment(previous => previous.date.y === nextEnvironment.date.y && previous.date.m === nextEnvironment.date.m && previous.date.d === nextEnvironment.date.d && previous.season === nextEnvironment.season && previous.weather === nextEnvironment.weather && previous.band === nextEnvironment.band && previous.night === nextEnvironment.night && previous.sunlight === nextEnvironment.sunlight ? previous : nextEnvironment);
       }
       if (presence.phase !== "parked") { toys.current?.resume(now); toys.current?.tick(reduced || gfxMode() === "off" ? now + 2000 : now); }
       if (!returning && presence.phase === "active" && now - lastNeeds >= 250) {
@@ -2559,6 +2583,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     };
     const sync = () => {
       graphicsMode = readGfxMode();
+      publishHomeCurtain(lastPoseSample.status, Boolean(document.hidden || overlayRef.current || workspaceBusyRef.current || premiereRef.current.cue?.phase && !["idle", "return", "prelude"].includes(premiereRef.current.cue.phase)));
       if (!radioAllowed()) { radioInbox.clear(); if (action?.radio && !(action.radio.instrument ? musicAllowed() : radioAllowed())) clearAction(); }
       if (!musicAllowed()) instrumentInbox.clear();
       if (graphicsMode === "off" || blocked || document.hidden || overlayRef.current || workspaceBusyRef.current || premiereRef.current.cue?.phase && !["idle", "return", "prelude"].includes(premiereRef.current.cue.phase)) cancelEpisode();
@@ -3498,7 +3523,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
   };
   const act = (kind: CompanionHomeAction) => { if (kind === "book") { onOpenBook(); return; } control.current?.[kind](); };
   const performanceActive = Boolean(premiereCue?.generation && premiereCue.phase !== "idle" && (premiereCue.phase === "return" || premiereCue.target - syncedNow() <= 166000));
-  const house = <CompanionHome care={care} preferences={preferences} inactive={overlayOpen || performanceActive} owner={premiereCue?.owner} unreadCollection={unreadCollection} radioPlaying={radioPlaying} environment={homeEnvironment} toyCount={toyCount} onToyBox={() => { logActivity("ui.click", { target: "companion-home-toys" }); control.current?.toys(); }} onAction={act} onClose={homeVisible ? undefined : closeHome} />;
+  const house = <CompanionHome care={care} preferences={preferences} inactive={overlayOpen || performanceActive} owner={premiereCue?.owner} unreadCollection={unreadCollection} radioPlaying={radioPlaying} environment={homeEnvironment} curtain={homeCurtain} toyCount={toyCount} onToyBox={() => { logActivity("ui.click", { target: "companion-home-toys" }); control.current?.toys(); }} onAction={act} onClose={homeVisible ? undefined : closeHome} />;
   return createPortal(<>
     {firstTaste && preferences.enabled && !blocked && !overlayOpen && <span className="vc-first-taste" ref={tasteStamp} aria-hidden="true"><CompanionCollectionArt kind="food-stamp" id={firstTaste.kind} /></span>}
     <div className="vc-companion" ref={body} hidden data-sfx="off" data-size="large" data-overlay={overlayOpen ? "quiet" : undefined} data-workspace-busy={workspaceBusy ? "" : undefined}>

@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/generate-ambient-art-metadata.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/generate-ambient-art-metadata.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",
@@ -27,6 +29,7 @@
     "style:pick": "node scripts/ambient-style-refs.mjs pick",
     "style:catalog": "node scripts/ambient-style-refs.mjs catalog",
     "art:check": "node scripts/ambient-art-check.mjs",
+    "art:metadata": "node scripts/generate-ambient-art-metadata.mjs",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "ambient:qa:selftest": "node scripts/ambient-qa/selftest.mjs",
     "ambient:qa:capture": "node scripts/ambient-qa/capture.mjs",

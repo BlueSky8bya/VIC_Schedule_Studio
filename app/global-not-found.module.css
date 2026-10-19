@@ -1,0 +1,71 @@
+/* The layout is bypassed here. Fallbacks match the shared system-state tokens
+   without importing application CSS, remote fonts or preference scripts. */
+.document {
+  color-scheme: light;
+  color: var(--ink, #1c2433);
+  background: var(--paper, #f8efda);
+  font-family: system-ui, "Malgun Gothic", sans-serif;
+  line-height: 1.6;
+}
+.body { margin: 0; }
+.page {
+  box-sizing: border-box;
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: var(--space-5, 24px);
+}
+.card {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 440px;
+  padding: var(--space-5, 24px);
+  border: 1px solid var(--line, #ece0c9);
+  border-radius: var(--r-card, 14px);
+  background: var(--surface, #fffdf6);
+}
+.code {
+  display: inline-grid;
+  place-items: center;
+  min-width: var(--control-hit, 44px);
+  min-height: var(--control-hit, 44px);
+  border: 1px solid var(--selection-border, #1e5aa8);
+  border-radius: var(--r-control, 12px);
+  color: var(--selection-hue, #1e5aa8);
+  background: var(--selection-fill, #edf4fc);
+  font-weight: 700;
+}
+.eyebrow { margin: var(--space-3, 12px) 0 0; color: var(--muted, #6b7384); font-size: var(--text-body, 13.5px); }
+.card h1 { margin: var(--space-2, 8px) 0; font-size: var(--text-hero, 28px); line-height: 1.45; word-break: keep-all; }
+.description { margin: 0; color: var(--muted, #6b7384); font-size: var(--text-body, 13.5px); }
+.home {
+  display: inline-flex;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--control-hit, 44px);
+  min-width: 84px;
+  margin-top: var(--space-5, 24px);
+  padding-inline: var(--space-control-x, 16px);
+  border-radius: var(--r-control, 12px);
+  color: var(--on-accent, #4a3500);
+  background: var(--accent, #ffc83d);
+  font-size: var(--text-ui, 15px);
+  font-weight: 600;
+  text-decoration: none;
+}
+.home:hover { text-decoration: underline; }
+.home:focus-visible { outline: 2px solid var(--selection-hue, #1e5aa8); outline-offset: 3px; }
+@media (prefers-color-scheme: dark) {
+  .document {
+    color-scheme: dark;
+    --ink: #ece9e2;
+    --muted: #c9c5bc;
+    --line: #3b3833;
+    --paper: #1a1916;
+    --surface: #26241f;
+    --selection-hue: #8db9ec;
+    --selection-border: #8db9ec;
+    --selection-fill: #24364d;
+  }
+}

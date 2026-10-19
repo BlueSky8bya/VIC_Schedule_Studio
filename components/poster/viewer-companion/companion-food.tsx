@@ -381,7 +381,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   animateDrops.current = runDrops;
   const clearGuard = useCallback(() => { clearTimeout(guard.current.timer); guard.current = { owns: false, pointer: null }; }, []);
   const ownClick = useCallback((pointer: number) => { clearTimeout(guard.current.timer); guard.current = { owns: true, pointer }; }, []);
-  const clearBin = (bin: HTMLElement) => { bin.removeAttribute("data-food-over"); bin.style.removeProperty("--vc-trash-progress"); };
+  const clearBin = (bin: HTMLElement) => { bin.removeAttribute("data-food-over"); };
   const cancelHover = useCallback(() => { cancelAnimationFrame(hoverFrame.current); hoverFrame.current = 0; if (hover.current) clearBin(hover.current.bin); hover.current = null; }, []);
   const release = useCallback((settle = false) => {
     dragFrame.current!.cancel();
@@ -412,7 +412,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     if (!operating.current || !food || !node || !bin.isConnected) { cancelHover(); return false; }
     cancelDiscard(); cancelAnimationFrame(hoverFrame.current); hoverFrame.current = 0; hover.current = null;
     release(); choose(null); resetNibble(id);
-    bin.setAttribute("data-food-over", ""); bin.style.setProperty("--vc-trash-progress", "1");
+    bin.setAttribute("data-food-over", "");
     const rect = bin.getBoundingClientRect();
     const animation = reduced() ? undefined : node.animate([
       { transform: node.style.transform, opacity: 1 },
@@ -434,12 +434,11 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     if (discard.current?.id === id) return;
     if (hover.current?.id === id && hover.current.bin === bin) { hover.current.point = point; hover.current.pinned ||= pinned; return; }
     cancelHover(); hover.current = { id, bin, point, since: performance.now(), pinned };
-    bin.setAttribute("data-food-over", ""); bin.style.setProperty("--vc-trash-progress", "0");
+    bin.setAttribute("data-food-over", "");
     const step = (now: number) => {
       const state = hover.current;
       if (!state || !operating.current || !state.bin.isConnected || !current.current.some(food => food.id === state.id)) { cancelHover(); return; }
       const progress = companionTrashProgress(now - state.since);
-      state.bin.style.setProperty("--vc-trash-progress", progress.toFixed(3));
       if (progress >= 1) {
         if (state.pinned || trashAt(state.point) === state.bin) beginDiscard(state.id, state.bin);
         else cancelHover();

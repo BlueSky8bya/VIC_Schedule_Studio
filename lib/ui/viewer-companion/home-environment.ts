@@ -5,6 +5,8 @@ import type { Weather } from "@/components/shared/ambient/world/weather";
 
 export type CompanionHomeEnvironment = Readonly<{
   date: KstDate; season: SeasonKey; hour: number; band: DayBand; night: boolean; weather: Weather;
+  /** Quantized direct sunlight from the shared world's actual solar altitude. */
+  sunlight?: number;
 }>;
 export type CompanionHomeEnvironmentContext = {
   slug: string; year: number; month: number; season?: SeasonKey; force?: AmbientEnvironmentForce | null;
@@ -13,7 +15,9 @@ export type CompanionHomeEnvironmentContext = {
 /** A small, readonly view of the same resolved canvas world. No second
  * weather table, random draw, API, interval or ambient-on dependency. */
 export function companionHomeEnvironment(environment: AmbientEnvironment): CompanionHomeEnvironment {
-  return { date: { ...environment.date }, season: environment.season, hour: environment.time.hour, band: environment.time.band, night: environment.time.night, weather: environment.weather.now };
+  const altitude = environment.time.sun.alt;
+  const sunlight = Number.isFinite(altitude) ? Math.round(Math.max(0, Math.sin(Math.max(0, Math.min(90, altitude)) * Math.PI / 180)) * 4) : 0;
+  return { date: { ...environment.date }, season: environment.season, hour: environment.time.hour, band: environment.time.band, night: environment.time.night, weather: environment.weather.now, sunlight };
 }
 
 export function resolveCompanionHomeEnvironment(context: CompanionHomeEnvironmentContext, clock: AmbientEnvironmentClock = { today: kstToday(), hour: kstHour() }): CompanionHomeEnvironment {

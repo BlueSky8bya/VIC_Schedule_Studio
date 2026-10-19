@@ -81,7 +81,7 @@ describe("shared companion room presentation", () => {
       environment: { date: { y: 2027, m: 1, d: 1 }, season: "winter", hour: 23, band: "night", night: true, weather: "snow" },
     }));
     expect(html).toContain('data-season="winter" data-weather="snow" data-band="night" data-phase="night" data-night="true"');
-    expect(html).toContain('/companion/home/124/window-winter-night.webp');
+    expect(html).toContain('/companion/home/125/window-winter-night.webp');
     expect(html).toContain('/companion/home/124/window-snow-overlay.webp');
     expect(html).not.toContain('/companion/home/124/window-rain-overlay.webp');
     expect(html).not.toContain('class="vc-window-sun"');

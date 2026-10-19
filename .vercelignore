@@ -1,0 +1,30 @@
+# Keep source/review archives and local evidence in Git/on disk, outside deploy inputs.
+/art-src/
+/docs/
+/tests/
+/.agents/
+/.claude/
+/.codex*/
+/.vscode/
+/.scratch*/
+/preview-*.png
+/.github/
+/AGENTS.md
+/계획서.md
+
+# Explicitly preserve existing local-only/credential exclusions for CLI uploads.
+.env*
+.vercel/
+.next/
+node_modules/
+coverage/
+tmp/
+.scratch-pw/
+output/
+test-results/
+playwright-report/
+*.tsbuildinfo
+*.log
+
+# Build code (including scripts/build-commit.ts and the metadata generator),
+# generated JSON, application sources, and every public runtime asset stay included.

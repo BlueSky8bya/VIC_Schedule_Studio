@@ -9,6 +9,9 @@ const nextConfig: NextConfig = {
     APP_COMMIT: resolveBuildCommit()
   },
   experimental: {
+    // Unmatched URLs use an independent static document, outside ActorTail.
+    // Existing segment notFound() handling and every valid route stay intact.
+    globalNotFound: true,
     // Server Action 본문 한도(기본 1MB) 상향. 원래 근거였던 커스텀 이모지 업로드는 2026-08-27 스티커
     // 철수로 사라졌지만, 그림판(방송 화면) 저장 등 큰 페이로드 여유분으로 4MB를 유지한다.
     serverActions: {
