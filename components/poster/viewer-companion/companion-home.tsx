@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element -- Local game art already has bounded WebP derivatives; no second image pipeline. */
 
 import { X } from "lucide-react";
-import { useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useId, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import { flipSpring } from "@/lib/ui/flip-motion";
 import { PanelSection } from "@/components/shared/panel-section";
 import type { CompanionCare } from "@/lib/ui/viewer-companion/care";
@@ -12,7 +12,7 @@ import type { CompanionHomeEnvironment } from "@/lib/ui/viewer-companion/home-en
 import { resolveCompanionWindowScene } from "@/lib/ui/viewer-companion/home-window-scene";
 import { INITIAL_COMPANION_HOME_CURTAIN, type CompanionHomeCurtain } from "@/lib/ui/viewer-companion/home-curtain";
 import { HomeWindow } from "./companion-home-window";
-import { companionHomeTvControl, type CompanionHomeTvState } from "@/lib/ui/viewer-companion/home-room-media";
+import { companionHomeTvControl, getCompanionHomeTv, getServerCompanionHomeTv, setCompanionHomeTv, subscribeCompanionHomeTv } from "@/lib/ui/viewer-companion/home-room-media";
 import { getCompanionHomeLight, getServerCompanionHomeLight, initializeCompanionHomeLight, setCompanionHomeLight, subscribeCompanionHomeLight } from "@/lib/ui/viewer-companion/home-light";
 import { COMPANION_TV_ART_VIEWBOX, COMPANION_TV_SCREEN_TRANSFORM } from "@/lib/ui/viewer-companion/home-tv-art";
 
@@ -63,7 +63,7 @@ export function CompanionBedForeground({ idPrefix = "companion-front" }: { idPre
 export function CompanionHome({ care, preferences, inactive, owner, radioPlaying = false, unreadCollection = false, onAction, onClose, onToyBox, toyCount = 0, environment, curtain = INITIAL_COMPANION_HOME_CURTAIN }: Props) {
   const room = useRef<HTMLElement>(null);
   const bedId = useId().replace(/:/g, "");
-  const [tv, setTv] = useState<CompanionHomeTvState>("off");
+  const tv = useSyncExternalStore(subscribeCompanionHomeTv, getCompanionHomeTv, getServerCompanionHomeTv);
   const lampLit = useSyncExternalStore(subscribeCompanionHomeLight, getCompanionHomeLight, getServerCompanionHomeLight);
   useLayoutEffect(initializeCompanionHomeLight, []);
   const television = companionHomeTvControl(tv);
@@ -131,7 +131,7 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
         <HomeObjectArt kind="toy-box" />
         <span className="vc-toy-box-opening" aria-hidden="true" />
       </button>
-      <button type="button" className="vc-home-tv" data-home-decoration-control="" data-home-action="tv" data-act="companion-home-tv" data-act-opt={television.option} data-tip={television.label} aria-label={television.label} aria-pressed={tv !== "off"} onClick={() => setTv(television.next)}>
+      <button type="button" className="vc-home-tv" data-home-decoration-control="" data-home-action="tv" data-act="companion-home-tv" data-act-opt={television.option} data-tip={television.label} aria-label={television.label} aria-pressed={tv !== "off"} onClick={() => setCompanionHomeTv(companionHomeTvControl(getCompanionHomeTv()).next, { source: "human" })}>
         <span className="vc-home-tv-paint" aria-hidden="true">
           <img className="vc-home-tv-body" src="/companion/home/136/tv-body.webp" width="512" height="512" alt="" draggable={false} decoding="async" />
           {tv !== "off" && <svg className="vc-home-tv-projection" viewBox={COMPANION_TV_ART_VIEWBOX} focusable="false"><foreignObject x="0" y="0" width="512" height="512"><div className="vc-home-tv-screen" style={{ transform: COMPANION_TV_SCREEN_TRANSFORM }}><img src={`/companion/home/135/tv-screen-${tv}.webp`} width="244" height="202" alt="" draggable={false} decoding="async" /></div></foreignObject></svg>}

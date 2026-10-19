@@ -110,9 +110,9 @@ describe("122 actual toy admission and ownership", () => {
     expect(planner.next({ ...input, now: 2100, carriedId: model.carried() })).toBeUndefined();
     expect(planner.active()).toBe(false); model.releaseCarry(2100); expect(model.items()[0].held).toBe(true);
   });
-  it("gives the eight personalities different actual toy motivation instead of universal five-second spawning", () => {
+  it("gives the nine personalities different actual toy motivation instead of universal five-second spawning", () => {
     const motivations = COMPANION_PERSONALITIES.map(personality => companionToyMotivation({ ...DEFAULT_COMPANION_PREFERENCES, personality }, brain, world));
-    expect(motivations.filter(item => item.spawn)).toHaveLength(3);
+    expect(motivations.filter(item => item.spawn)).toHaveLength(4);
     expect(new Set(motivations.map(item => item.cooldown)).size).toBeGreaterThan(5);
     expect(companionToyMotivation({ ...DEFAULT_COMPANION_PREFERENCES, personality: "gourmet" }, { ...brain, hunger: .5 }, world).interested).toBe(false);
     expect(companionToyMotivation({ ...DEFAULT_COMPANION_PREFERENCES, personality: "affectionate" }, brain, { ...world, pointer: { x: 180, y: 550, stableMs: 1000 } }).interested).toBe(false);

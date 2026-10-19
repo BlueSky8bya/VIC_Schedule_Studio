@@ -11,7 +11,7 @@ import { COMPANION_ACCESSORY_NAMES } from "@/lib/ui/viewer-companion/gifts";
 import { DEFAULT_COMPANION_HABITS } from "@/lib/ui/viewer-companion/habits";
 import { getCompanionFoodArtFrame } from "@/lib/ui/viewer-companion/food-art";
 import type { CompanionLifeReason } from "@/lib/ui/viewer-companion/life";
-import { COMPANION_PERSONALITY_NAMES, type CompanionPersonality, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
+import { COMPANION_PERSONALITY_NAMES, COMPANION_PERSONALITY_SUMMARIES, type CompanionPersonality, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_FOOD_NAMES } from "@/lib/ui/viewer-companion/snacks";
 import { COMPANION_TOY_NAMES, type CompanionToyKind } from "@/lib/ui/viewer-companion/toy-catalog";
 import { companionProfileTasteReason, companionToyUnread, loadCompanionTastes, subscribeCompanionTastes, summarizeCompanionFoodTastes, summarizeCompanionToyTastes, type CompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
@@ -34,12 +34,7 @@ const recentReasons: Record<CompanionLifeReason, string> = {
   "discovered-taste": "새 최애 간식", "variety": "다른 간식 맛보기",
   "reassured": "놀란 뒤 쓰다듬기", "rested": "푹 쉬기"
 };
-const personalityNotes: Readonly<Record<CompanionPersonality, string>> = {
-  curious: "새 소품에 다가가 두리번거려요.", affectionate: "마우스를 따라와 쓰다듬어 달래요.",
-  sleepy: "천천히 걷고 쿠션에서 쉬어요.", tidy: "흩어진 장난감을 상자에 넣어요.",
-  mischievous: "장난감을 꺼내 툭툭 차요.", gourmet: "배고프면 간식을 먼저 찾아요.",
-  performer: "안전한 자리에서 폴짝 재롱을 부려요.", homebody: "쿠션 가까이에서 놀고 쉬어요."
-};
+const personalityNotes: Readonly<Record<CompanionPersonality, string>> = COMPANION_PERSONALITY_SUMMARIES;
 
 function foodStyle(kind: CompanionFoodKind) {
   const art = getCompanionFoodArtFrame(kind);

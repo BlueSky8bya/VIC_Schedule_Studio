@@ -6,13 +6,13 @@ import type { CompanionPreferences } from "./preferences";
 
 export type CompanionHomeItemPoint = { x: number; y: number; platformId?: string };
 type PantryInput = { pantry?: CompanionHomeItemPoint; platforms: readonly Platform[]; visibleFoods: readonly CompanionFood[]; occupied?: readonly CompanionItemPoint[]; allowJump: boolean };
-const isRoomFloor = (p: Platform) => p.kind === "floor" && p.manualOnly === true && /^companion-home-floor(?:-\d+)?$/.test(p.id);
+const isRoomFloor = (p: Platform) => !p.bodyOnly && p.kind === "floor" && p.manualOnly === true && /^companion-home-floor(?:-\d+)?$/.test(p.id);
 
 /** A measured room span excludes complete controls at the body tier. Only
  * this deliberate item errand traverses it; other manual tops stay terminal. */
 export function findCompanionHomeItemRoute(origin: CompanionHomeItemPoint, target: CompanionHomeItemPoint, platforms: readonly Platform[], allowJump: boolean) {
   const targetFloor = platforms.find(p => p.id === target.platformId);
-  if (!targetFloor || ![target.x, target.y, targetFloor.x, targetFloor.y, targetFloor.width].every(Number.isFinite)
+  if (!targetFloor || targetFloor.bodyOnly || ![target.x, target.y, targetFloor.x, targetFloor.y, targetFloor.width].every(Number.isFinite)
     || targetFloor.width <= 0 || ["control", "hide"].includes(targetFloor.kind) || target.x < targetFloor.x || target.x > targetFloor.x + targetFloor.width || Math.abs(target.y - targetFloor.y) > 2) return null;
   const plane = platforms.find(p => p.id === origin.platformId && p.id === target.platformId);
   if (plane && isRoomFloor(plane) && [plane.x, plane.y, plane.width, plane.x + plane.width].every(Number.isFinite) && plane.width > 0

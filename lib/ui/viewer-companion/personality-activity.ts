@@ -44,7 +44,7 @@ export function createCompanionPersonalityActivity(rng: () => number = Math.rand
   const clips: Record<CompanionPreferences["personality"], readonly CompanionPlay[]> = {
     curious: ["pounce", "bow", "celebrate"], affectionate: ["ask-petting", "lean-nuzzle", "bow"], sleepy: ["groom", "ask-petting", "lean-nuzzle"],
     tidy: ["groom", "bow", "ask-petting"], mischievous: ["bow", "pounce", "celebrate"], gourmet: ["ask-petting", "bow", "groom"],
-    performer: ["cheer-rehearsal", "celebrate", "bow"], homebody: ["lean-nuzzle", "groom", "ask-petting"],
+    performer: ["cheer-rehearsal", "celebrate", "bow"], homebody: ["lean-nuzzle", "groom", "ask-petting"], balanced: ["bow", "groom", "celebrate", "ask-petting"],
   };
   return {
     due(now: number) { return Number.isFinite(now) && now - lastMeaningfulAt >= 8000; },

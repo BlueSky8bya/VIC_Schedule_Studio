@@ -26,6 +26,7 @@ export type CompanionToyControl = {
   carry: (id: string, point: Point) => boolean;
   put: (id: string, point: Point, now: number, toss?: boolean, asPlay?: boolean) => boolean;
   decline: (id: string, point: Point, now: number) => boolean;
+  nudge: (id: string, point: Point, now: number) => boolean;
   completePlay: (id: string, observed?: boolean) => void;
   stash: (id: string) => boolean;
   cancel: (now: number) => void;
@@ -89,6 +90,7 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     pick(id, point) { const ok = world.pick(id, point); paint(id); return ok; },
     carry(id, point) { const ok = world.carry(id, point); paint(id); return ok; },
     put(id, point, now, toss, asPlay = false) { const toy = world.items().find(item => item.id === id), ok = world.put(id, point, now, toss); paint(); if (ok) { if (toy && asPlay) pendingPlays.current.set(id, { kind: toy.kind, outcome: "played" }); onActivity(); } return ok; },
+    nudge(id, point, now) { const toy = world.items().find(item => item.id === id), ok = world.nudge(id, point, now); paint(); if (ok) { if (toy) pendingPlays.current.set(id, { kind: toy.kind, outcome: "played" }); onActivity(); } return ok; },
     decline(id, point, now) { const toy = world.items().find(item => item.id === id), ok = world.nudge(id, point, now); paint(); if (ok) { if (toy) pendingPlays.current.set(id, { kind: toy.kind, outcome: "declined" }); onActivity(); } return ok; },
     completePlay(id, observed = true) { const result = pendingPlays.current.get(id); pendingPlays.current.delete(id); if (observed && result && world.items().some(toy => toy.id === id && !toy.held)) onExperience?.(result.kind, result.outcome); },
     stash(id) { const toy = world.items().find(item => item.id === id), ok = world.stash(id); if (ok) { refresh(); if (toy) onExperience?.(toy.kind, "tidied"); } return ok; },

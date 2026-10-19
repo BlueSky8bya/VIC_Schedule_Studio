@@ -1,6 +1,6 @@
 # 136 — 집 구도·입체 TV·조명 기억과 성격 보고서
 
-2026-10-19 KST. 상태: 구현/검증 진행. 최신 첨부4를 미술 목표로 삼는다.135의 평면 TV30도 변형/좁은 launcher 방/전등 초기 OFF/커튼 비일관 조명은 이번 요청으로 대체한다. 원본 소파/보호 배우 그림·기존 출구/반납·공유 물리/KST·서버 경계는 유지한다.
+2026-10-19 KST. 상태: 구현·배포·실제 공개 검증 완료. 최신 첨부4를 미술 목표로 삼는다.135의 평면 TV30도 변형/좁은 launcher 방/전등 초기 OFF/커튼 비일관 조명은 이번 요청으로 대체한다. 원본 소파/보호 배우 그림·기존 출구/반납·공유 물리/KST·서버 경계는 유지한다.
 
 ## 구현 범위
 
@@ -27,3 +27,16 @@
 최종 typecheck/전체lint/build/harness335 PASS. 독립 room_release_review_136의 저장/구독·geometry루프/역할·공개정보/KST/G22/접근성 소스 리뷰도 추가P1/P2 없음이다. 보호 사용자 응원단 기록 SHA는 작업 전과 같다.
 
 승인된 scoped commit/push와 해당 배포의 전체SHA/실제 공개 화면 검증은 다음 단계다. 보호 사용자 응원단 기록/다른 초안은 범위에서 제외한다. 배포 뒤 완료 상태는 로컬 문서에 닫고 docs-only 재배포는 하지 않는다.
+
+
+## 출시 확인
+
+승인된 scoped commit/push는 `f8646283b51204e88648c9d01500848b4d8145a6`, main이다. 기존 공개 GitHub 이름+noreply를 사용하고 보호 사용자 기록/관련 없는 초안은 제외했다. 커밋된 생성 원본2개와 배포3개는 출처 명세의 SHA와 일치하며 새 배포 합계96,410바이트다.
+
+- [Vercel DkGpVjFmupwUqLe3xdnY5XEV9Ms4](https://vercel.com/bluesky-s-project3/vic-schedule-studio/DkGpVjFmupwUqLe3xdnY5XEV9Ms4) success를22:11:57 KST 확인했다.
+- [원격 quality39257571710](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39257571710) completed/success 및 전 단계 성공을 확인했다. Unit/isolated SQL/harness/production build/타입/lint와 후처리까지 완료했다.
+- 실제 공개 검증은 **22:12:57.716 KST PASS**, 로컬 `.scratch-pw/companion-136/production-1/`의 checker/helper 원문·summary·public-release-proof·그림 SHA/실제 PNG/JPG·전등 기억 증거에 보존했다. 첫 anonymous 저장/발견/취향/전등 seed0, 실제 공개 client chunk 전체SHA 일치, 기존109+신규3=112개 자산의 커밋 bytes 일치, 오류/예상외 요청0이다.
+- 실제 KST 밤+밝은 테마에서 첫 전등ON, pointer/Enter/Space로 OFF→ON→OFF, 새로고침 뒤OFF 기억 확인. 전등/밥통 중심 일치, 넓은432px 방, 왜곡 없는 본체와 서로 다른5개 CRT 화면 decode/꺼짐 확인. root가 실제 공개 양조명 JPG를 직접 열어 커튼/창틀/가구/소파의 공통 조명을 확인했다. 앉은 배우 foreground와 제어한 낮/밤·양테마는 local native 증거다.
+- 실제 상자의 장난감 발견1개, 네 도감 실루엣·점/좌우키·범위·ACK·두 행과 모바일 제외/한국어 global404도 확인했다. 모든write·telemetry는 차단했으며 예상한 하트 읽기POST2개도 실행하지 않았다. 실제 live-state GET/private manifest read0. 새 성격AI·전문 미술 승인·실제 로그인/RLS/OBS·공급자 한도 해결을 입증하지 않는다.
+
+완료 상태는 로컬 문서에 반영했다. 같은 내용의 docs-only 추가push/재배포는 하지 않는다. 본인 소유3136 fixture 서버는 종료했다. 성격108+36 보고서는 사용자의 다음 방향 검토를 기다린다.

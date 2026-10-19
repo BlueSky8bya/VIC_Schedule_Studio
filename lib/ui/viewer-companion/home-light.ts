@@ -48,12 +48,18 @@ function deviceStore() {
 export const getCompanionHomeLight = () => typeof window === "undefined" ? false : deviceStore().read();
 export const getServerCompanionHomeLight = () => false;
 export function initializeCompanionHomeLight() { if (typeof window !== "undefined") deviceStore().initialize(); }
-export function setCompanionHomeLight(lit: boolean) {
-  if (typeof window === "undefined") return;
+let humanPriorityUntil = -Infinity;
+export function canCompanionSetHomeLight() { return typeof window !== "undefined" && performance.now() >= humanPriorityUntil; }
+export function setCompanionHomeLight(lit: boolean, options: { source?: "human" | "companion" } = {}) {
+  if (typeof window === "undefined") return false;
+  const at = performance.now();
+  if (options.source === "companion" && at < humanPriorityUntil) return false;
+  if (options.source !== "companion") humanPriorityUntil = at + 15000;
   deviceStore().set(lit);
   // Existing geometry delivery also synchronizes the sofa's foreground
   // material after React commits. No new observer, clock or animation loop.
   window.dispatchEvent(new Event("vic:companion-home"));
+  return true;
 }
 export function subscribeCompanionHomeLight(listener: () => void) {
   if (typeof window === "undefined") return () => undefined;

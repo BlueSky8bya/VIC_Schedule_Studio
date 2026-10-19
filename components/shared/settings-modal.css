@@ -1834,6 +1834,11 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 .rhh-companion-facts dd { margin: 0; color: var(--companion-ink); font-size: var(--text-ui); font-weight: 700; overflow-wrap: anywhere; }
 /*122: four illustrated tastes share the same readable grid on every surface. */
 .rhh-companion-experience .rhh-profile-personality { font-size: max(23px, var(--text-title)); line-height: 1.25; }
+.rhh-personality-preview { display: grid; grid-template-columns: 112px minmax(0, 1fr); align-items: center; gap: var(--space-3); padding: var(--space-2); border-radius: var(--r-card); background: color-mix(in srgb, var(--panel-card-bg) 80%, #f4ddba); }
+.rhh-personality-preview .rhh-wardrobe-preview-wrap { height: 100px; min-height: 0; }
+.rhh-personality-preview .rhh-wardrobe-preview { width: 100%; height: 100%; min-height: 0; }
+.rhh-personality-preview strong { font-size: var(--text-title); }
+.rhh-personality-preview p { margin: var(--space-1) 0 0; font-size: var(--text-body); line-height: 1.55; color: var(--muted); overflow-wrap: anywhere; }
 .rhh-profile-appearance { margin: 0; color: var(--companion-soft); font-size: var(--text-caption); }
 .rhh-companion-experience .rhh-companion-facts { grid-column: 1 / -1; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 0; }
 .rhh-companion-experience .rhh-companion-facts > .rhh-taste-card { display: grid; grid-template-columns: 54px minmax(0, 1fr); grid-template-rows: auto auto; align-content: center; column-gap: 9px; row-gap: 3px; min-height: 78px; border: 1px solid var(--companion-line); border-radius: var(--r-lg); background: var(--companion-mint); padding: 10px; }

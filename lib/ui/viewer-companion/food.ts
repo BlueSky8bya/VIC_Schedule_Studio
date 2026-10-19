@@ -130,6 +130,7 @@ export function followCompanionFood(attachment: CompanionFoodAttachment, scroll:
 export function safeCompanionAttachedFood(point: Point, supports: readonly CompanionFoodDropSupport[]): Point | undefined {
   let best: Point | undefined, distance = Infinity;
   for (const support of supports) {
+    if (support.bodyOnly) continue;
     if (![support.x, support.y, support.width, point.x, point.y].every(Number.isFinite) || support.width <= 0 || Math.abs(support.y - point.y) > 2) continue;
     const x = Math.max(support.x, Math.min(support.x + support.width, point.x)), delta = Math.abs(x - point.x);
     if (delta < distance) { best = { x, y: support.y }; distance = delta; }
@@ -171,6 +172,7 @@ export function companionTrashProgress(elapsedMs: number): number {
 function firstFoodSupportBelow(point: Point, platforms: readonly CompanionFoodDropSupport[]): CompanionFoodDropSupport | undefined {
   let first: CompanionFoodDropSupport | undefined, distance = Infinity;
   for (const support of platforms) {
+    if (support.bodyOnly) continue;
     const end = support.x + support.width, surface = support.kind === "card" ? support.dropSurface : undefined;
     const bounds = surface && [surface.x, surface.width, surface.x + surface.width].every(Number.isFinite)
       && surface.width > 0 && support.x >= surface.x - .5 && end <= surface.x + surface.width + .5 ? surface : support;

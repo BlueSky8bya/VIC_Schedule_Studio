@@ -28,6 +28,8 @@ export type Platform = {
   /** A user-chosen top never attracts aimless play; actual food may explicitly
    * invite one proved terminal jump. It cannot be a walking/intermediate node. */
   manualOnly?: boolean;
+  /** A measured body contact (e.g. a wash stance), never a small-item ledge. */
+  bodyOnly?: boolean;
   heart?: { x: number; y: number; blocked?: boolean };
 };
 

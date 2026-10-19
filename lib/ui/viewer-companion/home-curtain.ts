@@ -21,8 +21,8 @@ export function companionHomeRest(input: { atHome: boolean; grounded: boolean; s
   return input.dreaming ? "asleep" : "settling";
 }
 
-type Input = { environment?: CompanionHomeEnvironment; personality: CompanionPersonality; rest: CompanionHomeRest; lookingOut: boolean; visible: boolean; blocked: boolean; reduced: boolean };
-const shade: Readonly<Record<CompanionPersonality, number>> = { curious: .18, affectionate: .26, sleepy: .42, tidy: .28, mischievous: .22, gourmet: .26, performer: .22, homebody: .36 };
+type Input = { environment?: CompanionHomeEnvironment; personality: CompanionPersonality; rest: CompanionHomeRest; lookingOut: boolean; visible: boolean; blocked: boolean; reduced: boolean; intent?: CompanionHomeCurtain["phase"] };
+const shade: Readonly<Record<CompanionPersonality, number>> = { curious: .18, affectionate: .26, sleepy: .42, tidy: .28, mischievous: .22, gourmet: .26, performer: .22, homebody: .36, balanced: .26 };
 
 /** Presentation only, sampled by existing paint/context boundaries. No clock,
  * randomness, gameplay action, storage or human activity event is owned here. */
@@ -37,6 +37,7 @@ export function reduceCompanionHomeCurtain(previous: CompanionHomeCurtain, input
   else if (input.rest !== "waking" && !input.lookingOut && !night && environment?.weather === "clear" && sunlight >= (previous.reason === "sun" ? 2 : 3)) {
     phase = "shade"; reason = "sun"; panelScale = shade[input.personality];
   }
+  if (input.rest === "awake" && input.intent) { phase = input.intent; reason = phase === "closed" ? "rest" : phase === "shade" ? "sun" : "awake"; panelScale = phase === "closed" ? 1 : phase === "shade" ? shade[input.personality] : .08; }
   const changed = previous.phase !== phase || previous.panelScale !== panelScale;
   const animate = changed ? previous.active && !input.reduced : previous.active && !input.reduced && previous.animate;
   if (previous.phase === phase && previous.reason === reason && previous.rest === input.rest && previous.panelScale === panelScale && previous.active && previous.animate === animate) return previous;

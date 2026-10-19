@@ -22,8 +22,8 @@ const clamp = (n: number, low: number, high: number) => Math.max(low, Math.min(h
 const valid = (point: Point) => [point.x, point.y].every(Number.isFinite);
 // The pet's transparent panel support is an attachment, not an object ledge.
 const panelFloor = (platform: Platform) => /^companion-panel-floor(?:-food)?(?:-\d+)?$/.test(platform.id);
-const floor = (platform: Platform) => !["control", "hide"].includes(platform.kind) && !panelFloor(platform);
-const roomFloor = (platform: Platform) => platform.kind === "floor" && /^companion-home-floor(?:-\d+)?$/.test(platform.id);
+const floor = (platform: Platform) => !platform.bodyOnly && !["control", "hide"].includes(platform.kind) && !panelFloor(platform);
+const roomFloor = (platform: Platform) => !platform.bodyOnly && platform.kind === "floor" && /^companion-home-floor(?:-\d+)?$/.test(platform.id);
 const roomContact = (platform: Platform) => roomFloor(platform) || platform.kind === "floor" && isCompanionHomeFloorFoodSupport(platform.id);
 const viewportFloor = (platform: Platform) => platform.kind === "floor" && /^viewport-floor(?:-food)?(?:-\d+)?$/.test(platform.id);
 const homeContacts = (platforms: readonly Platform[]) => platforms.filter(p => roomContact(p)
@@ -128,7 +128,7 @@ export function createCompanionToys(rng: () => number = Math.random) {
   return {
     sync(next: readonly Platform[], bounds: { width: number; height: number }, at: number, smallHomeFloors: readonly Platform[] = []) {
       if (![bounds.width, bounds.height, at].every(Number.isFinite) || bounds.width <= 0 || bounds.height <= 0) return;
-      const measured = [...new Map([...smallHomeFloors.filter(p => p.kind === "floor" && isCompanionHomeFloorFoodSupport(p.id)).slice(0, 8), ...next.slice(0, 400)].filter(p => Boolean(p.id) && !panelFloor(p) && [p.x, p.y, p.width].every(Number.isFinite) && p.width > 0).map(p => [p.id, p])).values()];
+      const measured = [...new Map([...smallHomeFloors.filter(p => p.kind === "floor" && isCompanionHomeFloorFoodSupport(p.id)).slice(0, 8), ...next.slice(0, 400)].filter(p => Boolean(p.id) && !p.bodyOnly && !panelFloor(p) && [p.x, p.y, p.width].every(Number.isFinite) && p.width > 0).map(p => [p.id, p])).values()];
       const occupied = new Set([...objects.values()].map(toy => toy.platformId).filter(Boolean));
       const retained = (p: Platform) => occupied.has(p.id) || roomContact(p);
       // Ordinary and manual snapshots are independently bounded. Keep the
@@ -272,7 +272,7 @@ export function createCompanionToys(rng: () => number = Math.random) {
     clear: () => { objects.clear(); flights.clear(); waiting.clear(); },
   };
 }
-export type CompanionToyBeat = { serial: number; kind: "tidy" | "play"; effect?: "pick" | "stash" | "toss" | "put" | "decline" | "spawn"; toyId?: string; point?: Point };
+export type CompanionToyBeat = { serial: number; kind: "tidy" | "play"; effect?: "pick" | "stash" | "toss" | "put" | "decline" | "spawn" | "nudge"; toyId?: string; point?: Point };
 export type CompanionToyAction = CompanionAction & { toy: CompanionToyBeat };
 /** A real meal or committed care intention always keeps ownership. Shared by
  * both planning and the carried-toy continuation so neither can cut in. */
@@ -292,7 +292,8 @@ export function companionToyMotivation(p: CompanionPreferences, brain: Companion
     mischievous: { spawn: true, cooldown: 5000, play: "pounce", gentle: false, interested: true },
     gourmet: { spawn: false, cooldown: 30000, play: "bow", gentle: true, interested: brain.hunger < .2 },
     performer: { spawn: true, cooldown: 12000, play: "celebrate", gentle: false, interested: true },
-    homebody: { spawn: false, cooldown: 22000, play: "lean-nuzzle", gentle: true, interested: home },
+    homebody: { spawn: false, cooldown: 6000, play: "lean-nuzzle", gentle: true, interested: home },
+    balanced: { spawn: true, cooldown: 6000, play: "bow", gentle: true, interested: true },
   };
   return values[p.personality];
 }
@@ -306,7 +307,7 @@ export function createCompanionToyPlanner() {
     if (job?.toyId) rememberFailure(job.toyId, now);
     stop(now, 500);
   };
-  type Input = { world: CompanionWorld; brain: CompanionBrain; preferences: CompanionPreferences; now: number; toys: readonly CompanionToy[]; existingIds?: readonly string[]; carriedId?: string; count: number; box?: Point; tastes?: CompanionTastes };
+  type Input = { world: CompanionWorld; brain: CompanionBrain; preferences: CompanionPreferences; now: number; toys: readonly CompanionToy[]; existingIds?: readonly string[]; carriedId?: string; count: number; box?: Point; tastes?: CompanionTastes; intent?: { mode: "play" | "return" | "spawn"; targetId?: string; kinds?: readonly CompanionToyKind[] } };
   const eligible = ({ world, brain, preferences: p, now }: Input) => p.enabled && p.roam && world.animated && !world.paused && Number.isFinite(now)
     && brain.energy >= .25 && brain.hunger < .8 && !companionToyFoodPriority(brain, world, p) && companionToyMotivation(p, brain, world).interested;
   const routeBetween = (input: Input, from: Point, target: Point) => {
@@ -314,19 +315,24 @@ export function createCompanionToyPlanner() {
   };
   const preference = (input: Input, toy: CompanionToy) => {
     if (input.preferences.personality === "tidy") return 0;
-    const favorites: Record<CompanionPreferences["personality"], readonly CompanionToyKind[]> = { curious: ["paper-plane", "pinwheel", "feather", "spinning-top", "kaleidoscope", "toy-rocket"], affectionate: ["spool", "bell", "duck", "plush-fish", "ribbon-ball"], sleepy: ["spool", "feather", "plush-fish", "rocking-horse"], tidy: [], mischievous: ["ball", "blocks", "hoop", "toy-car", "dice", "squeaky-carrot", "ribbon-ball"], gourmet: ["bell", "spool", "duck", "squeaky-carrot"], performer: ["pinwheel", "bell", "hoop", "star-wand", "tambourine", "maraca", "yo-yo", "toy-rocket"], homebody: ["blocks", "spool", "train", "rocking-horse", "stacking-rings", "kaleidoscope"] };
+    const favorites: Record<CompanionPreferences["personality"], readonly CompanionToyKind[]> = { curious: ["paper-plane", "pinwheel", "feather", "spinning-top", "kaleidoscope", "toy-rocket"], affectionate: ["spool", "bell", "duck", "plush-fish", "ribbon-ball"], sleepy: ["spool", "feather", "plush-fish", "rocking-horse"], tidy: [], mischievous: ["ball", "blocks", "hoop", "toy-car", "dice", "squeaky-carrot", "ribbon-ball"], gourmet: ["bell", "spool", "duck", "squeaky-carrot"], performer: ["pinwheel", "bell", "hoop", "star-wand", "tambourine", "maraca", "yo-yo", "toy-rocket"], homebody: ["blocks", "spool", "train", "rocking-horse", "stacking-rings", "kaleidoscope"], balanced: [] };
     const species = input.preferences.animalMode === "dog" && ["ball", "squeaky-carrot", "plush-fish"].includes(toy.kind) || input.preferences.animalMode === "cat" && ["feather", "spool", "ribbon-ball", "plush-fish"].includes(toy.kind);
     const learned = input.preferences.learnFromYou !== false ? clamp(input.tastes?.toyTastes[toy.kind]?.score ?? 0, -1, 1) : 0;
     return (Number(favorites[input.preferences.personality].includes(toy.kind)) * .4 + Number(species) * .2 + learned * .6) * 120;
   };
   const candidates = (input: Input) => input.toys.filter(toy => toy.platformId && !toy.hidden && !toy.held && !toy.carried && valid(toy)
+    && (!input.intent?.targetId || toy.id === input.intent.targetId) && (!input.intent?.kinds?.length || input.intent.kinds.includes(toy.kind))
     && (failed.get(toy.id) ?? -Infinity) <= input.now).slice(0, MAX_COMPANION_TOYS)
     .sort((a, b) => Math.hypot(a.x - input.world.x, a.y - input.world.y) - preference(input, a) - Math.hypot(b.x - input.world.x, b.y - input.world.y) + preference(input, b));
   return {
     // Ordinary action replacement also calls cancel. An inactive planner must
     // not postpone its first admission on every short idle/look forever.
     cancel(now: number) { if (job) stop(now, 1500); },
-    wake(now: number) { noticed.clear(); readyAt = Math.min(readyAt, now + 250); },
+    wake(now: number, immediate = false) { noticed.clear(); readyAt = Math.min(readyAt, now + (immediate ? 0 : 250)); },
+    returnCarried(toyId: string, now: number) {
+      job = { serial: ++serial, kind: "tidy", stage: "deliver", toyId, deadline: now + 30000, budget: 24, play: "groom", gentle: true, cooldown: 1000 };
+      readyAt = now;
+    },
     notice(input: Input & { action: (CompanionAction & { scene?: { id: number }; toy?: unknown; household?: unknown; radio?: unknown }) | null; active: boolean; grounded: boolean; held?: boolean; commanded?: boolean; busy?: boolean }) {
       const { action, now, preferences: p } = input;
       if (job || !eligible(input) || !input.active || !input.grounded || input.held || input.commanded || input.busy
@@ -356,9 +362,9 @@ export function createCompanionToyPlanner() {
         const tidy = p.personality === "tidy", motivation = companionToyMotivation(p, brain, world);
         // At most four real objects: an unreachable nearest toy cannot hide
         // another reachable one. Reuse its proved first route in this beat.
-        const target = candidates(input).find(toy => { const route = routeTo(toy.stance ?? toy); if (!route || tidy && !routeBetween(input, toy.stance ?? toy, box!)) { rememberFailure(toy.id, now); return false; } preparedRoute = route; return true; });
+        const target = input.intent?.mode === "spawn" ? undefined : candidates(input).find(toy => { const route = routeTo(toy.stance ?? toy); if (!route || tidy && !routeBetween(input, toy.stance ?? toy, box!)) { rememberFailure(toy.id, now); return false; } preparedRoute = route; return true; });
         if (target) job = { serial: ++serial, kind: tidy ? "tidy" : "play", stage: input.tastes && shouldDeclineCompanionToy(target.kind, input.tastes, p, brain) ? "decline" : "seek", toyId: target.id, deadline: now + 30_000, budget: 18, ...motivation };
-        else if (motivation.spawn && box && input.count < MAX_COMPANION_TOYS && p.ambientPrank) job = { serial: ++serial, kind: "play", stage: "box", deadline: now + 25_000, budget: 16, ...motivation };
+        else if ((!input.intent || input.intent.mode === "spawn") && motivation.spawn && box && input.count < MAX_COMPANION_TOYS && p.ambientPrank) job = { serial: ++serial, kind: "play", stage: "box", deadline: now + 25_000, budget: 16, ...motivation };
         else { stop(now, 1000); return; }
       }
       const current = job, toy = input.toys.find(item => item.id === current.toyId);

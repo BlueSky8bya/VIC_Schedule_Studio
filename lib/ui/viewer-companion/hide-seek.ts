@@ -34,9 +34,9 @@ export function createCompanionHideSeek() {
     return { token: session.token, phase: progress < 1 ? "emerging" : "done", progress, active: progress < 1 };
   };
   return {
-    start(token: string, now: number, waitMs = COMPANION_HIDE_WAIT_DEFAULT_MS): boolean {
+    start(token: string, now: number, waitMs = COMPANION_HIDE_WAIT_DEFAULT_MS, shortPeek = false): boolean {
       if (!validToken(token) || !validTime(now) || !Number.isFinite(waitMs) || session?.token === token) return false;
-      const wait = Math.max(COMPANION_HIDE_WAIT_MIN_MS, Math.min(COMPANION_HIDE_WAIT_MAX_MS, waitMs));
+      const wait = shortPeek ? Math.max(1000, Math.min(3000, waitMs)) : Math.max(COMPANION_HIDE_WAIT_MIN_MS, Math.min(COMPANION_HIDE_WAIT_MAX_MS, waitMs));
       session = { token, startedAt: now, emergeAt: now + COMPANION_HIDE_ENTER_MS + wait };
       return true;
     },

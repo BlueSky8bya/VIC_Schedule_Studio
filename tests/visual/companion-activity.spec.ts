@@ -12,7 +12,7 @@ import { COMPANION_SITUATION_IDS } from "@/lib/ui/viewer-companion/moments";
 import { PREMIERE_STAGE_KEY, SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { describeTarget } from "@/lib/activity/labels";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
-import { openCompanionHome } from "./helpers/companion-home";
+import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { selectCompanionCollectionIndex } from "./helpers/companion-collection";
 
 type Surface = "viewer" | "studio";
@@ -28,10 +28,11 @@ const new109Targets = ["companion-radio-list#open", "companion-radio-list#close"
 const new110Targets = ["companion-book-open", "companion-book-close", "companion-collection-inspect#behavior", "companion-collection-inspect#moment"];
 const new111Targets = ["companion-profile-page#settings", "companion-rare-prank#on", "companion-rare-prank#off", "companion-radio-source", "companion-radio-license"];
 const new115Targets = ["companion-personality#tidy", "companion-personality#mischievous"];
+const new137Targets = ["companion-personality#curious", "companion-personality#balanced"];
 const new135Targets = ["companion-home-tv#on", "companion-home-tv#off", "companion-home-tv#next", "companion-home-light#on", "companion-home-light#off"];
 const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-shake", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets, ...new110Targets, ...new111Targets, ...new115Targets, ...new135Targets];
 const retired110Target = "companion-radio-mood#lively";
-const readFixtureTargets = [...sampleTargets, retired110Target];
+const readFixtureTargets = [...sampleTargets, ...new137Targets, retired110Target];
 const at = Date.parse("2026-06-10T03:00:00Z");
 const auditPrefix = process.env.VIC_ACTIVITY_AUDIT_PREFIX ?? ".scratch-pw/companion-activity";
 
@@ -390,7 +391,7 @@ for (const surface of ["viewer", "studio"] as const) {
     await panel.getByRole("tab", { name: "기본", exact: true }).click();
     await panel.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "고양이", exact: true }).click();
     await panel.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name: "잠꾸러기", exact: true }).click();
-    for (const name of ["깔끔이", "사고뭉치"]) await panel.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name, exact: true }).click();
+    for (const name of ["깔끔이", "사고뭉치", "탐험둥이", "둥글이"]) await panel.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name, exact: true }).click();
     const learning = panel.locator('[data-act="companion-learning-enabled"]');
     const learningBefore = await learning.isChecked();
     await learning.click(); await expect(learning).toBeChecked({ checked: !learningBefore });
@@ -400,7 +401,7 @@ for (const surface of ["viewer", "studio"] as const) {
     await panel.getByRole("radiogroup", { name: "빅타민 걸음", exact: true }).getByRole("radio", { name: "발랄하게", exact: true }).click();
     await flush(page, [{ target: "companion-speed#lively" }]);
     for (const id of ["companion-enabled", "companion-roam", "companion-panel-prank", "companion-card-prank", "companion-rare-prank", "companion-petting-enabled", "companion-learning-enabled"]) for (const option of ["on", "off"]) expect(count(page, `${id}#${option}`), `${id}#${option}`).toBe(1);
-    for (const target of ["settings-tab#companion", "companion-animal#cat", "companion-personality#sleepy", ...new115Targets, "companion-speed#lively", "companion-learning-reset"]) expect(count(page, target), target).toBe(1);
+    for (const target of ["settings-tab#companion", "companion-animal#cat", "companion-personality#sleepy", ...new115Targets, ...new137Targets, "companion-speed#lively", "companion-learning-reset"]) expect(count(page, target), target).toBe(1);
     expect(targets(page).filter(target => target?.startsWith("companion-") && !target.includes("#"))).toEqual(["companion-learning-reset"]);
   });
 
@@ -583,7 +584,7 @@ test("110 developer views show book and unified memory uses while old radio mood
   await usage.locator('[data-act="usage-show-all"]').click();
   await page.locator('[data-act="activity-expand-all"]').click();
   await timeline.locator(".act-lines > summary").click();
-  for (const target of [...new110Targets, ...new115Targets, ...new135Targets]) {
+  for (const target of [...new110Targets, ...new115Targets, ...new135Targets, ...new137Targets]) {
     const name = describeTarget("ui.click", target).name;
     const usageRow = usage.locator('.usage-list:not([data-retired]) > li').filter({ hasText: name }), timelineRow = timeline.getByText(name, { exact: true });
     await usageRow.scrollIntoViewIfNeeded(); await expect(usageRow).toBeInViewport();
@@ -627,6 +628,9 @@ for (const surface of ["viewer", "studio"] as const) test(`113 ${surface}: inspe
 for (const surface of ["viewer", "studio"] as const) test(`135 ${surface}: TV and lamp pointer-keyboard controls emit one fixed use per activation`, async ({ page }) => {
   test.setTimeout(60000); await setup(page, surface);
   const home = await openCompanionHome(page), tv = home.locator('[data-act="companion-home-tv"]'), lamp = home.locator('[data-act="companion-home-light"]');
+  // A fresh resident may stand over the TV. Native placement keeps this
+  // control-capture test independent of the initial random home position.
+  await placeCompanionOnHomeFloor(page);
   const expected: string[] = [], snapshots: unknown[] = [];
   for (const button of [tv, lamp]) {
     await expect(button).toHaveCount(1); const box = (await button.boundingBox())!;

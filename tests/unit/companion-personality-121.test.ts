@@ -17,7 +17,7 @@ describe("visible activity, automatic sleep and distinct companion personalities
     expect(normalizeCompanionPreferences({ enabled: false, sleep: false })).toMatchObject({ enabled: false, sleep: false, activeWhileVisible: true });
     expect(normalizeCompanionPreferences({ activeWhileVisible: false })).toMatchObject({ activeWhileVisible: false });
     expect(normalizeCompanionPreferences({ activeWhileVisible: "true", personality: "private-canary" })).toMatchObject({ activeWhileVisible: true, personality: "curious" });
-    expect(COMPANION_PERSONALITIES).toHaveLength(8);
+    expect(COMPANION_PERSONALITIES).toHaveLength(9);
     for (const personality of COMPANION_PERSONALITIES) expect(normalizeCompanionPreferences({ personality }).personality).toBe(personality);
   });
 

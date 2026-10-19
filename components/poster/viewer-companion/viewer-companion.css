@@ -6,6 +6,7 @@
    sits above the body, so lifting naturally clears the fabric without hiding
    the sofa or changing the native cushion/food hit targets. */
 .vc-bed-foreground { position: fixed; left: 0; top: 0; z-index: 76; pointer-events: none; }
+.vc-wash-tool { position: fixed; left: 0; top: 0; z-index: 77; width: 14px; height: 30px; transform-origin: 7px 4px; pointer-events: none; filter: drop-shadow(0 1px 1px #795b3924); }
 .vc-bed-foreground[hidden] { display: none; }
 .vc-actor { position: absolute; left: 12%; bottom: 0; width: 76%; height: 76%; border: 0; padding: 0; overflow: visible; background: transparent; border-radius: 50%; cursor: grab; pointer-events: auto; touch-action: none; user-select: none; }
 /* The global button focus rule must not restore a circular pet halo. A small
@@ -172,5 +173,7 @@ html[data-gfx="off"] .vc-dream i { animation: none; opacity: .7; }
 .studio-shell[data-companion-window] .modal-backdrop { z-index: 90; }
 .vc-companion[data-home-window] .vc-actor { pointer-events: none; }
 .vc-companion[data-workspace-busy] .vc-actor { pointer-events: none; }
+.vc-companion[data-working] { z-index: 81; }
+.vc-companion[data-working] .vc-actor { pointer-events: none; }
 .vc-companion[data-overlay-drag] .vc-actor { cursor: grabbing; }
 .vc-companion[data-overlay="quiet"] .vc-contact-shadow, .vc-companion[data-overlay="quiet"] .vc-effect { visibility: hidden; }

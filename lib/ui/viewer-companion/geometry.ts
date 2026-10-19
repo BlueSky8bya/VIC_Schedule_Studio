@@ -52,7 +52,7 @@ export function companionCalendarAnchorIdentity(element: Element): string | unde
 }
 export const isCompanionPanelFloor = (id?: string) => /^companion-panel-floor(?:-food)?(?:-\d+)?$/.test(id ?? "");
 const isHomeFloor = (id: string) => /^companion-home-floor(?:-food)?(?:-\d+)?$/.test(id);
-const copyPlatform = (platform: Platform): Platform => ({ id: platform.id, x: platform.x, y: platform.y, width: platform.width, kind: platform.kind, ...(platform.manualOnly ? { manualOnly: true } : {}), ...(platform.heart ? { heart: { ...platform.heart } } : {}), ...(platform.panelSide ? { panelSide: platform.panelSide } : {}) });
+const copyPlatform = (platform: Platform): Platform => ({ id: platform.id, x: platform.x, y: platform.y, width: platform.width, kind: platform.kind, ...(platform.manualOnly ? { manualOnly: true } : {}), ...(platform.bodyOnly ? { bodyOnly: true } : {}), ...(platform.heart ? { heart: { ...platform.heart } } : {}), ...(platform.panelSide ? { panelSide: platform.panelSide } : {}) });
 const copyFoodSupport = (platform: CompanionFoodDropSupport): CompanionFoodDropSupport => ({ ...copyPlatform(platform), ...(platform.dropSurface ? { dropSurface: { ...platform.dropSurface } } : {}) });
 
 /** Text behind the opaque house is not visible ink. Keep any part outside its
@@ -401,6 +401,17 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         for (let i = 0; i < spans.length && landings.length < MAX_PLATFORMS; i++) {
           const platform: Platform = { id: i ? `companion-home-floor-${i}` : "companion-home-floor", ...spans[i], kind: "floor", manualOnly: true };
           landings.push(platform); nextAnchors.set(platform.id, { platform, anchor: homeFloor, rect: frameOf(rect) });
+        }
+        // The visible bath mat lies on this same illustrated floor plane.
+        // Its deliberate stance is not a floating item shelf or a roaming
+        // invitation; only the explicit wash journey may choose it.
+        const pad = house?.querySelector<HTMLElement>(".vc-home-wash-pad");
+        if (pad?.isConnected && visible(pad) && landings.length < MAX_PLATFORMS) {
+          const mat = rectFor(pad), foot = mat.top + mat.height * .72, centre = mat.left + mat.width / 2;
+          if (mat.width > 0 && foot >= rect.top && foot < rect.bottom && centre - size * .38 >= x && centre + size * .38 <= right) {
+            const platform: Platform = { id: "companion-home-floor-400", x: centre - 1, y: foot, width: 2, kind: "floor", manualOnly: true, bodyOnly: true };
+            landings.push(platform); nextAnchors.set(platform.id, { platform, anchor: pad, rect: frameOf(mat) }); nextObserved.add(pad);
+          }
         }
         // A drop from above uses the same real floor as a direct room release.
         // The food's smaller footprint remains independent of the pet tier.

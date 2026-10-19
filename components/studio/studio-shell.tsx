@@ -14,6 +14,7 @@ import { flipSpring } from "@/lib/ui/flip-motion";
 import { trackPopoverLayout } from "@/lib/ui/popover-layout";
 import { normalizeEditableText, readEditableText, writeEditableText } from "@/lib/ui/editable-text";
 import { ringPath, ringSpring } from "@/lib/ui/ring-path";
+import { createCompanionWorkCompletion, emitCompanionWorkSignal } from "@/lib/ui/viewer-companion/work-signals";
 
 import dynamic from "next/dynamic";
 import type { DayVod } from "@/components/poster/day-vod-window";
@@ -1411,6 +1412,15 @@ export function StudioShell({
     [selectedEventId, visibleEvents]
   );
   const [form, setForm] = useState<EventForm>(() => createEmptyForm());
+  // One public, content-free input boundary. Changing title/body never creates
+  // another signal, and private/teaser editors never enter this lifecycle.
+  const companionEditing = Boolean(!viewerMode && editorVisible && form.visibilityScope === "public" && !form.teaser && !modal && !searchOpen);
+  const companionEditorSignalRef = useRef(false);
+  useEffect(() => {
+    if (companionEditorSignalRef.current === companionEditing) return;
+    companionEditorSignalRef.current = companionEditing;
+    emitCompanionWorkSignal(companionEditing ? "opened" : "closed");
+  }, [companionEditing]);
   // 기간 안내를 편집 중이면 팝오버 점선·리더 라인·그립을 하늘색으로 — 폼의 **현재** 종류를
   // 따른다(종류 칩을 바꾸면 폼 테마(.support-fields[data-kind])와 함께 즉시 갈아입어야 색이
   // 한 몸으로 읽힌다). 달력 위 띠 자체(.sb-period.is-editing)는 저장값 기준.
@@ -4536,13 +4546,13 @@ export function StudioShell({
     sourceDate: string;
     targetDate: string;
     orderedIds: string[];
-  }) {
+  }, onCommitted?: () => void) {
     pendingPersistRef.current += 1;
     const syncId = canonId(move.id);
     setSyncingIds((p) => (p.includes(syncId) ? p : [...p, syncId])); // 이 카드에 '동기화 중' 표시
     movePersistChainRef.current = movePersistChainRef.current
       .catch(() => {})
-      .then(() => runMovePersist(move))
+      .then(async () => { if (await runMovePersist(move)) onCommitted?.(); })
       .finally(() => {
         pendingPersistRef.current = Math.max(0, pendingPersistRef.current - 1);
         setSyncingIds((p) => p.filter((x) => x !== syncId)); // 반영 끝 → 표시 제거
@@ -4556,12 +4566,12 @@ export function StudioShell({
     sourceDate: string;
     targetDate: string;
     orderedIds: string[];
-  }) {
+  }): Promise<boolean> {
     const realMovedId = await resolveEventId(move.id);
     if (!realMovedId) {
       // 옮긴 카드의 저장이 실패/취소돼 서버에 없다 — 화면만 옮겨진 채 두면 새로고침 때 갈라진다.
       resyncNeededRef.current = true;
-      return;
+      return false;
     }
     const realOrderedIds = await Promise.all(move.orderedIds.map((eid) => resolveEventId(eid)));
     if (realOrderedIds.some((x) => x == null)) {
@@ -4571,7 +4581,7 @@ export function StudioShell({
       const kept = realOrderedIds.filter((x): x is string => x != null);
       if (kept.length === 0) {
         resyncNeededRef.current = true;
-        return;
+        return false;
       }
       realOrderedIds.splice(0, realOrderedIds.length, ...kept);
     }
@@ -4588,7 +4598,9 @@ export function StudioShell({
       // 서버 진실로 재동기화 — 단, 지금은 pendingPersistRef>0이라 곧바로 refresh해도 prop 동기화
       // 가드가 버린다. 플래그만 세우고 큐가 빈 뒤(finally)에 실제 refresh한다.
       resyncNeededRef.current = true;
+      return false;
     }
+    return true;
   }
 
   // 드롭: 일정을 target 날짜로(필요 시) 옮기고, 같은 날 안에서 over(위/아래) 위치에 끼워 순서 변경.
@@ -4879,6 +4891,7 @@ export function StudioShell({
       return;
     }
     const scope: EventVisibilityScope = form.visibilityScope;
+    const companionPublicSave = scope === "public" && !form.teaser;
     const endDateKey =
       form.isSupport && form.endDateKey ? form.endDateKey : undefined;
     // 떡밥: 공개 일정 + 공개 시각이 있어야 성립. 공개 시각은 KST 입력 → ISO(UTC)로.
@@ -5010,6 +5023,7 @@ export function StudioShell({
         resolveSave(realId);
         pendingSavesRef.current.delete(tempId);
       }
+      if (companionPublicSave) emitCompanionWorkSignal("saved");
     });
   }
 
@@ -5319,6 +5333,21 @@ export function StudioShell({
     if (r >= 0) redoStackRef.current.splice(r, 1);
   }
 
+  // History keeps its existing optimistic inverse and serialized write queue.
+  // A mixed/private/teaser group emits nothing; a public group emits once only
+  // after every actual server operation has acknowledged success.
+  function companionPublicHistoryLeaves(action: UndoAction): number {
+    if (action.type === "group") {
+      const counts = action.actions.map(companionPublicHistoryLeaves);
+      return counts.length && counts.every(count => count > 0) ? counts.reduce((sum, count) => sum + count, 0) : 0;
+    }
+    const event = action.type === "recreate" ? action.event : eventsRef.current.find(event => canonId(event.id) === canonId(action.holder.id));
+    return event?.visibilityScope === "public" && !event.teaser ? 1 : 0;
+  }
+  function companionHistoryCommit(action: UndoAction, kind: "undo" | "redo") {
+    return createCompanionWorkCompletion(kind, companionPublicHistoryLeaves(action));
+  }
+
   // Ctrl+Z: 스택 맨 위 '액션'을 종류에 맞게 되돌린다(LIFO). 삭제=다시 만들기, 생성/붙여넣기=지우기.
   // 그래서 복사→삭제→붙여넣기→Ctrl+Z = '방금 붙여넣은 카드'만 사라지고, 한 번 더 누르면 그 전
   // 삭제가 복구된다(올바른 순서). 예전엔 항상 마지막 삭제분을 되살리는 버그가 있었다.
@@ -5332,7 +5361,7 @@ export function StudioShell({
       flashToast("되돌릴 작업이 없어요");
       return;
     }
-    const inverse = applyHistoryAction(action, "undo");
+    const inverse = applyHistoryAction(action, "undo", companionHistoryCommit(action, "undo"));
     if (inverse) redoStackRef.current.push(inverse);
     playSfx("undo");
   }
@@ -5346,7 +5375,7 @@ export function StudioShell({
       flashToast("다시 실행할 작업이 없어요");
       return;
     }
-    const inverse = applyHistoryAction(action, "redo");
+    const inverse = applyHistoryAction(action, "redo", companionHistoryCommit(action, "redo"));
     playSfx("redo");
     if (inverse) deletedStackRef.current.push(inverse);
   }
@@ -5354,13 +5383,13 @@ export function StudioShell({
   // 하나의 실행기가 undo/redo 양쪽을 처리한다 — redo 항목은 'undo가 만든 역연산'이라 같은
   // 모양(UndoAction). 반환값 = 이번 적용의 역연산(호출자가 반대 스택에 쌓는다). 대상 카드가
   // 그 사이 사라졌으면 null — 항목은 양쪽 스택 어디에도 남지 않고 소멸(충돌 가드).
-  function applyHistoryAction(action: UndoAction, mode: "undo" | "redo"): UndoAction | null {
+  function applyHistoryAction(action: UndoAction, mode: "undo" | "redo", onCommitted?: () => void): UndoAction | null {
     const keyHint = mode === "undo" ? "Ctrl+Z" : "Ctrl+Shift+Z";
     if (action.type === "group") {
       // 묶음 이동(띠·이어진 일정) — 구성원을 역순으로 되돌리고, 역연산도 묶음 하나로 돌려준다.
       const inverses: UndoAction[] = [];
       for (const a of [...action.actions].reverse()) {
-        const inv = applyHistoryAction(a, mode);
+        const inv = applyHistoryAction(a, mode, onCommitted);
         if (inv) inverses.push(inv);
       }
       if (inverses.length === 0) return null;
@@ -5423,7 +5452,7 @@ export function StudioShell({
         sourceDate: action.toDate,
         targetDate: action.fromDate,
         orderedIds: fromOrderedIds
-      });
+      }, onCommitted);
       return inverse;
     }
 
@@ -5448,12 +5477,16 @@ export function StudioShell({
       setActionError(null);
       flashToast(mode === "undo" ? "붙여넣기 취소됨 (Ctrl+Z)" : "다시 삭제됨 (Ctrl+Shift+Z)");
       startTransition(async () => {
+        let serverAcknowledged = false;
         const result = await enqueueWrite(async () => {
           const realId = await resolveEventId(id);
           if (!realId) return null; // 서버에 아직 없음 → 보낼 것 없음
-          return postStudioWrite("delete", { eventId: realId });
+          const reply = await postStudioWrite("delete", { eventId: realId });
+          serverAcknowledged = reply.ok;
+          return reply;
         });
         if (!result.ok) setActionError(result.error);
+        else if (serverAcknowledged) onCommitted?.();
       });
       return snapshot ? { type: "recreate", event: snapshot } : null;
     }
@@ -5463,13 +5496,14 @@ export function StudioShell({
     // 유실됐다).
     restoreDeletedEvent(
       action.event,
-      mode === "undo" ? "삭제 취소됨" : "다시 실행함 (Ctrl+Shift+Z)"
+      mode === "undo" ? "삭제 취소됨" : "다시 실행함 (Ctrl+Shift+Z)",
+      onCommitted
     );
     return { type: "remove", holder: { id: canonId(action.event.id) } };
   }
 
   // 삭제 복구 공통 경로 — Ctrl+Z와 삭제 스낵바 '실행 취소'가 함께 쓴다.
-  function restoreDeletedEvent(rawEv: StudioScheduleEvent, toast = "삭제 취소됨") {
+  function restoreDeletedEvent(rawEv: StudioScheduleEvent, toast = "삭제 취소됨", onCommitted?: () => void) {
     setDeleteSnack(null);
     if (deleteSnackTimer.current) window.clearTimeout(deleteSnackTimer.current);
     // 스냅샷이 temp id로 남아 있어도 서버 복원은 실제 id로 간다 — 로컬도 같은 id로 되살려
@@ -5482,10 +5516,13 @@ export function StudioShell({
     markJustSaved(ev.id); // 되살아난 카드도 통통 착지하며 반짝
     flashToast(toast);
     startTransition(async () => {
+      let serverAcknowledged = false;
       const result = await enqueueWrite(async () => {
         const realId = await resolveEventId(ev.id);
         if (!realId) return null; // 서버에 간 적 없는 임시 카드 — 클라 복원으로 충분
-        return postStudioWrite("restore", { eventId: realId });
+        const reply = await postStudioWrite("restore", { eventId: realId });
+        serverAcknowledged = reply.ok;
+        return reply;
       });
       if (!result.ok) {
         setActionError(result.error);
@@ -5493,6 +5530,7 @@ export function StudioShell({
         return;
       }
       hapticTick(); // 서버 확정
+      if (serverAcknowledged) onCommitted?.();
       // 이 일정을 가리키던 연결(linkNext)은 서버 원본이 그대로라 정본 동기화 — 큐가 빈 뒤에
       // (진행 중 쓰기가 있으면 prop 동기화 가드가 결과를 버리므로 requestServerResync로 미룬다).
       requestServerResync();
@@ -7280,6 +7318,7 @@ export function StudioShell({
         positionMemory={staffCompanionPositionMemory}
         blocked={Boolean(monthPick || passcodeModal || navMsg)}
         workspaceBusy={Boolean(dragEventId || spanDrag)}
+        editing={companionEditing}
         overlayOpen={Boolean(editorVisible || mobileEditId !== null || modal || searchOpen || dayVodPop || saveState === "saving")}
         homeHost={companionHomeHost} homeVisible={Boolean(avatarEditor && panel.open && !isNarrow)}
         launcherHost={companionLauncherHost} compactHost={companionCompactHost}
@@ -7356,7 +7395,7 @@ export function StudioShell({
                 type: "remove",
                 holder: { id: canonId(deleteSnack.event.id) }
               });
-              restoreDeletedEvent(deleteSnack.event);
+              restoreDeletedEvent(deleteSnack.event, "삭제 취소됨", companionHistoryCommit({ type: "recreate", event: deleteSnack.event }, "undo"));
             }}
             type="button"
            data-act="delete-snack-undo">

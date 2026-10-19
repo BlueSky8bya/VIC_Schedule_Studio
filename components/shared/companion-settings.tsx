@@ -3,7 +3,8 @@
 import { ArrowDownToLine, EyeOff, Gauge, Grab, Heart, Leaf, PanelTopOpen, PartyPopper, Pointer, Sparkles, Volume1, Volume2, VolumeX } from "lucide-react";
 import { useId, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { RowLabel, SettingsSegment, Switch } from "@/components/shared/settings-controls";
-import { COMPANION_PERSONALITIES, COMPANION_PERSONALITY_NAMES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
+import { COMPANION_PERSONALITIES, COMPANION_PERSONALITY_NAMES, COMPANION_PERSONALITY_SUMMARIES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
+import { CompanionWardrobePreview } from "./companion-wardrobe-preview";
 import { COMPANION_SOUND_CATEGORY_NAMES, previewCompanionSound } from "@/lib/ui/viewer-companion/companion-sound";
 import { resetCompanionHabits } from "@/lib/ui/viewer-companion/care";
 import { resetCompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
@@ -31,6 +32,7 @@ const companionToggleActions: Record<CompanionToggle, string> = {
 export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn, active, radio }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; globalSoundOn: boolean; active: boolean; radio: ReactNode }) {
   const [tab, setTab] = useState<CompanionTab>("personality");
   const id = useId();
+  const personalityPreview = { performer: "cheer-rehearsal", curious: preferences.jump ? "pounce" : "bow", affectionate: preferences.petting ? "ask-petting" : "bow", sleepy: preferences.sleep ? "doze-curl" : "stretch", tidy: "groom", mischievous: preferences.jump ? "tumble" : "bow", gourmet: "bow", homebody: "paper-knead", balanced: "bow" }[preferences.personality];
   const nav = useRef<HTMLDivElement>(null);
   const row = (key: CompanionToggle, label: string, icon: ReactNode) => (
     <div className="role-help-haptics" key={key}>
@@ -106,7 +108,11 @@ export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn
         </div>
         <div className="role-help-haptics rhh-stack-sm">
           <RowLabel icon={<Sparkles size={15} />} tone="leaf">기본 성격</RowLabel>
-          <SettingsSegment ariaLabel="빅타민 성격" columns={4} dataAct="companion-personality" onChange={personality => onChange({ personality })} options={COMPANION_PERSONALITIES.map(value => ({ value, label: COMPANION_PERSONALITY_NAMES[value] }))} value={preferences.personality} />
+          <SettingsSegment ariaLabel="빅타민 성격" columns={3} dataAct="companion-personality" onChange={personality => onChange({ personality })} options={COMPANION_PERSONALITIES.map(value => ({ value, label: COMPANION_PERSONALITY_NAMES[value] }))} value={preferences.personality} />
+          <div className="rhh-personality-preview" data-personality-preview={preferences.personality}>
+            <CompanionWardrobePreview key={preferences.personality} accessory={null} behaviors={[personalityPreview]} enabled={active && tab === "personality" && preferences.enabled} interactive={false} />
+            <div><strong>{COMPANION_PERSONALITY_NAMES[preferences.personality]}</strong><p>{COMPANION_PERSONALITY_SUMMARIES[preferences.personality]}</p></div>
+          </div>
         </div>
         {row("learnFromYou", "함께 지내며 배우기", <Heart size={15} />)}
       </div>

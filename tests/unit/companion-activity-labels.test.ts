@@ -140,7 +140,7 @@ describe("빅타민 행동 기록 이름과 저장 경계", () => {
       ["companion-animal#default", "빅타민 동물 모드 · 빅타민"],
       ["companion-animal#cat", "빅타민 동물 모드 · 고양이"],
       ["companion-animal#dog", "빅타민 동물 모드 · 강아지"],
-      ["companion-personality#curious", "빅타민 성격 · 호기심"],
+      ["companion-personality#curious", "빅타민 성격 · 탐험둥이"],
       ["companion-personality#affectionate", "빅타민 성격 · 애교쟁이"],
       ["companion-personality#sleepy", "빅타민 성격 · 잠꾸러기"],
       ["companion-personality#tidy", "빅타민 성격 · 깔끔이"],
