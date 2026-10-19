@@ -18,7 +18,7 @@ Built-in image generation, five distinct stages, one call each, retries0. New ve
 
 ## Verification
 
-Final local production build `9TXTtfEnaPLF5HBcpt4q4` completed successfully. Explicit full typecheck and lint exited0. Final full units: **3,062/3,062 in281 files PASS**, using two workers and a15s CLI timeout. Earlier concurrent-build run had one5s AST-contract timeout, retained separately; its predicate did not fail and no product/test assertion was weakened. Final focused builder checks154 PASS are separate from the full run.
+Initial release-freeze production build `9TXTtfEnaPLF5HBcpt4q4` completed successfully. Explicit full typecheck and lint exited0; full units **3,062/3,062 in281 files PASS**, using two workers and a15s CLI timeout. Earlier concurrent-build run had one5s AST-contract timeout, retained separately; its predicate did not fail and no product/test assertion was weakened. Focused builder checks154 PASS are separate from the full run. The after-modal follow-up below supersedes this main-controller freeze only.
 
 Independent non-author source reviews cover layout/curtain and physics/packing/return separately, including roles/public boundary/KST/activity. The final19 product hashes match the freeze; the scoped60-path release list has no duplicate, missing, protected user-art or private-source path. Reviewer executions and actual native observations are kept distinct. See [independent review](COMPANION_HOME_126_INDEPENDENT_REVIEW-20261019.md).
 
@@ -30,6 +30,16 @@ Retained failures explain the final corrections:
 - That build's22 unchanged layout/whole-object feedback, window/weather, five-stage curtain and radio cases passed. Their product hashes remain unchanged in the final build. The final build's affected16 spawn/contact/input/personality/toy cases **16/16 PASS**, no retries, in2.7min. Actual1440/1920/2400 initial eight-drop observations each require four distinct food centres and four distinct toy centres, a real falling frame at the real source and real floor contact. Resize/wheel preserve identities and at least two centres per kind; full original fractions may clamp together at current furniture boundaries. Actual carry-resize reaches the current opening, strict return ACK stays20px,24 natural toys render and return, native hover/leave/Escape and same-frame drag pass. No errors, writes or unexpected foreign requests were observed. Earlier videos, rectangles and failures remain preserved in local126 evidence.
 
 Final harness **322 documents PASS**. Actual public full-SHA/98-asset/native release verification remains pending. No fixture result is called real OBS, genuine-login/RLS or owner art approval.
+
+## Actual public failure and bounded command correction
+
+Initial126 commit `8622c08308b83df529f7b7d7818ff9c9fdac607f` reached Vercel6AjvkytGjPAwFeDz7ESoNnZETAqA Ready at11:31:19 KST; remote quality39190189503 succeeded at11:34:40. Actual public full-SHA and98 exact committed assets passed, as did the home/gallery/radio checks, but the new final source-floor probe failed: the first food command immediately after closing settings produced no observed food. This is retained as a failed public release packet, not a completed126 verification.
+
+A separate fresh anonymous native probe confirmed normal soft-mode click/Enter produced snacks1/2; the first Enter after the book closed produced none, then a click800ms later produced snack4. Settings close repeated the same absent5/present6 sequence. No preferences, care, discoveries, RNG or clock were seeded. Local production build `9TXTtfEnaPLF5HBcpt4q4` then reproduced the first-command loss in both full and quiet native cases,0/2 PASS, with original assertions/videos/raw samples retained.
+
+Modal close installs an asynchronous geometry subscription; the immediate manual command could read its still-empty body/anchor tier and silently fail the existing physical plan. A bounded local FIFO now retains at most the existing eight food commands, with the original source/kind/month/settings. Existing geometry completion publishes matching immutable body/food/anchor tiers before consuming the batch exactly once. Ready successful commands remain immediate; failure after the single fresh attempt ends the command. Source replacement/hidden/collapse, month/settings change, modal/pause, clear and cleanup cancel it. No new timer/observer/read loop, RNG retry, body-proof fallback or analytics payload is added. Non-author review found no remaining scoped P1/P2; [delta review](COMPANION_HOME_126_INDEPENDENT_REVIEW-20261019.md) preserves earlier review bytes.
+
+Follow-up build `jJKzis3mftzbAUx-sbEnq` exits0. Explicit full typecheck/lint and **3,070 units in282 files PASS**. Affected native spawn/contact/after-modal cases **9/9 PASS**, no retries,56.1s. This includes the previously failing full/quiet first command, ordered eight-food bursts across book/settings close, all three eight-item layouts and actual current-opening resize return. Unchanged art/layout/curtain sources and prior scoped observations are not presented as a fresh full rerun. Follow-up release/public verification remains pending.
 
 ## Scope
 

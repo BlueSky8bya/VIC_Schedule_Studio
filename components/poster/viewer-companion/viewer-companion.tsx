@@ -58,6 +58,7 @@ import { createCompanionSceneStore } from "@/lib/ui/viewer-companion/scene-memor
 import { COMPANION_SCENE_SIGNAL, emitCompanionWardrobePreference, validCompanionSceneSignal } from "@/lib/ui/viewer-companion/scene-signals";
 import { accessibleCompanionToys, companionToyFoodPriority, createCompanionToyPlanner, type CompanionToyAction } from "@/lib/ui/viewer-companion/toys";
 import { companionToyReturnDelivered, companionToyReturnTarget, sampleCompanionToyReturn } from "@/lib/ui/viewer-companion/toy-return";
+import { createCompanionFeedCommands, type CompanionFeedCommand } from "@/lib/ui/viewer-companion/feed-command";
 import { createCompanionPersonalityActivity, preflightCompanionPersonalityActivity } from "@/lib/ui/viewer-companion/personality-activity";
 import { companionToyUnread, loadCompanionTastes, recordCompanionFoodTaste, recordCompanionToyExperience, shouldDeclineCompanionFood, subscribeCompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
 import { createCompanionReactiveCues } from "@/lib/ui/viewer-companion/reactive-cues";
@@ -376,6 +377,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     let homeWaitingGeometry = false, homeValidationRequested = false, homeLookUsed = false, homeLegs = 0;
     let homeEntryFloor: string | undefined;
     let pendingHomeRecall: HTMLElement | undefined;
+    const pendingFeeds = createCompanionFeedCommands<HTMLElement>();
     const cancelHomeJourney = () => { pendingHomeRecall = undefined; homeJourney = false; homeWakeUntil = 0; strandedSince = 0; homeWaitingGeometry = homeValidationRequested = homeLookUsed = false; homeLegs = 0; homeEntryFloor = undefined; el.removeAttribute("data-home-journey"); el.removeAttribute("data-home-waiting"); el.removeAttribute("data-home-wait-pose"); };
     const supportById = (id: string) => platforms.find(p => p.id === id) ?? landingPlatforms.find(p => p.id === id);
     // Only an actual impact teaches this brief local caution. It keeps the
@@ -1446,6 +1448,15 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       cancelAnimationFrame(raf); clearTimeout(timer); schedule();
       setAnnouncement("빅타민이 포근한 자리로 돌아가요.");
     };
+    const manualFeedAllowed = () => !stopped && !pause && !overlayActive && !overlayRef.current && !document.hidden && !premiereActive && !hiding && !workspaceBusyRef.current && preferencesRef.current.enabled && preferencesRef.current.feeding;
+    const manualFeedSource = (source: HTMLElement) => source.isConnected && source === document.querySelector(".vc-home .vc-dispenser-slot") && !source.parentElement?.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]");
+    const emitManualFeed = ({ source, kind }: CompanionFeedCommand<HTMLElement>) => {
+      const outlet = source.getBoundingClientRect();
+      if (outlet.width <= 0 || outlet.height <= 0) return;
+      const id = food.current?.spawn(kind, { x: outlet.left + outlet.width / 2, y: outlet.bottom + 2 }, source, false, undefined, toys.current?.occupied(), (geometryTracker?.landings() ?? []).filter(p => isHomeFloor(p.id)));
+      if (id) playCompanionSound("feed", preferencesRef.current);
+      return id;
+    };
     control.current = {
       place: () => { if (!hiding && !isDetailGuest() && preferences.drag) {
         beginManualTransfer();
@@ -1462,6 +1473,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       home: () => { if (hiding || pause || overlayActive || premiereActive || !document.hasFocus()) return; sceneEvent({ kind: "home-called", wallTime: Date.now() }); playCompanionSound("cushion", preferencesRef.current); recallHome(); },
       radio: () => { if (!pause && !overlayActive && !premiereActive && !workspaceBusyRef.current && document.hasFocus() && !document.hidden) { logActivity("ui.click", { target: getCompanionRadioToggleIntent() === "stop" ? "companion-radio-stop" : "companion-radio-play" }); void toggleCompanionRadio(); } },
       feed: () => {
+        if (!manualFeedAllowed()) { pendingFeeds.cancel(); return; }
         radioInbox.clear();
         instrumentInbox.clear();
         pendingHomeRecall = undefined;
@@ -1470,13 +1482,15 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         cancelHomeJourney();
         if (action?.accessory || action?.radio || action?.scene || action?.toy || action?.kind === "sleep") { clearAction(); presence.focus(true, performance.now(), true); nextDecision = performance.now(); }
         const kind = randomCompanionFood(lastFood.current); lastFood.current = kind;
-        const slot = document.querySelector<HTMLElement>(".vc-dispenser-slot");
-        const outlet = slot?.getBoundingClientRect();
-        if (!slot || !outlet || outlet.width <= 0 || outlet.height <= 0) return;
-        const id = food.current?.spawn(kind, { x: outlet.left + outlet.width / 2, y: outlet.bottom + 2 }, slot, false, undefined, toys.current?.occupied(), (geometryTracker?.landings() ?? []).filter(p => isHomeFloor(p.id)));
-        if (id) playCompanionSound("feed", preferencesRef.current);
+        const source = document.querySelector<HTMLElement>(".vc-home .vc-dispenser-slot");
+        if (!source || !manualFeedSource(source)) { pendingFeeds.cancel(); return; }
+        const command = { source, kind, month: monthKey, settings: preferencesRef.current };
+        // Do not let a later click overtake an earlier unprepared command.
+        // A ready successful placement keeps its immediate input response.
+        if (!pendingFeeds.pending() && geometryReady && emitManualFeed(command)) return;
+        if (pendingFeeds.enqueue(command)) { connectGeometry(); geometryTracker?.revalidate(true); }
       },
-      clearFood: () => { pendingHomeRecall = undefined; food.current?.clear(); },
+      clearFood: () => { pendingHomeRecall = undefined; pendingFeeds.cancel(); food.current?.clear(); },
       toys: () => {
         if (pause || overlayActive || premiereActive || document.hidden) return;
         const box = document.querySelector<HTMLElement>(".vc-home [data-home-action='toys']"), rect = box?.getBoundingClientRect();
@@ -2600,13 +2614,13 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (!musicAllowed()) instrumentInbox.clear();
       if (graphicsMode === "off" || blocked || document.hidden || overlayRef.current || workspaceBusyRef.current || premiereRef.current.cue?.phase && !["idle", "return", "prelude"].includes(premiereRef.current.cue.phase)) cancelEpisode();
       if (blocked || document.hidden || overlayRef.current || premiereRef.current.cue?.phase && !["idle", "return", "prelude"].includes(premiereRef.current.cue.phase)) cardPlay.clear();
-      if (syncPremiere()) return;
+      if (syncPremiere()) { pendingFeeds.cancel(); return; }
       hideClock(performance.now());
       const html = document.documentElement;
       const wantsOverlay = overlayRef.current;
       const livePrelude = preludeCue();
       const next = blocked || document.hidden || page.inert || html.hasAttribute("data-showcase") || html.hasAttribute("data-ambient-pause") && hasAmbientPauseOutside("poster-window", livePrelude ? [livePrelude.owner] : []);
-      if (next || wantsOverlay) { pendingHomeRecall = undefined; clearTimeout(parkedLayoutTimer); clearSupportWait(); }
+      if (next || wantsOverlay) { pendingHomeRecall = undefined; pendingFeeds.cancel(); clearTimeout(parkedLayoutTimer); clearSupportWait(); }
       if (next) cardPlay.clear();
       if (hiding && !hideValid()) resetHide();
       if (hiding && !(hiding.sheet && !wantsOverlay)) {
@@ -3308,6 +3322,13 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const resumeHome = Boolean(homeJourney && homeWaitingGeometry && !premiereActive && !overlayActive && !hiding && !workspaceBusyRef.current);
       if (resumeHome) { homeWaitingGeometry = false; el.removeAttribute("data-home-waiting"); el.removeAttribute("data-home-wait-pose"); }
       applyGeometry(next, validationOnly);
+      // applyGeometry has published matching immutable body/food/anchor tiers,
+      // even if a parked actor then releases its observer. Consume this batch
+      // exactly once; a still-unavailable physical floor remains fail closed.
+      if (pendingFeeds.pending()) {
+        const source = document.querySelector<HTMLElement>(".vc-home .vc-dispenser-slot");
+        pendingFeeds.complete({ source: source && manualFeedSource(source) ? source : undefined, month: monthKey, settings: preferencesRef.current, active: manualFeedAllowed() }, command => { if (manualFeedAllowed()) emitManualFeed(command); });
+      }
       // A nonempty scan may still be waiting for an existing panel intro to
       // finish before restoring staff handoff coordinates. Neither that scan
       // nor an empty visibility snapshot completes the initial world seed.
@@ -3349,6 +3370,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     const panelChanged = (event: Event) => {
       if (premiereActive || hiding || overlayActive) return;
       if (document.querySelector(".vc-home[data-panel-collapsed]")) {
+        pendingFeeds.cancel();
         bedScene = undefined; hideBed();
         if (isHomeSupport(support)) { homeOccluded = true; el.hidden = true; stopHover(); }
       }
@@ -3356,7 +3378,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     };
     const spriteDecoded = () => { if (!pause) paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status); };
     const workspaceChanged = () => {
-      if (workspaceBusyRef.current) { radioInbox.clear(); instrumentInbox.clear(); if (action?.radio) clearAction(); cancelEpisode(); stopHover(); cardPlay.clear(); return; }
+      if (workspaceBusyRef.current) { pendingFeeds.cancel(); radioInbox.clear(); instrumentInbox.clear(); if (action?.radio) clearAction(); cancelEpisode(); stopHover(); cardPlay.clear(); return; }
       if (pause || overlayActive || hiding || premiereActive) return;
       offGeometry?.(); offGeometry = undefined; connectGeometry();
       cancelAnimationFrame(raf); clearTimeout(timer);
@@ -3490,7 +3512,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (capturePosition.current === captureForSurface) capturePosition.current = null;
       persistCare(true);
       sceneDepart();
-      stopped = true; clearSupportWait(); cancelTravelGoal(); cancelHomeJourney(); clearTimeout(preludeTimer); homeDeparture = undefined; el.removeAttribute("data-home-window"); resetHide(); resetInertia(); returning = undefined; premiereDisplay = undefined; premiereBounce = undefined; premiereExit = undefined; el.inert = false; el.removeAttribute("aria-hidden"); el.removeAttribute("data-premiere-companion"); el.removeAttribute("data-premiere-source"); el.removeAttribute("data-returning"); stopHover(); cancelAnimationFrame(followRaf); geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearTimeout(parkedLayoutTimer); clearAction(); control.current = null; observer.disconnect(); offGeometry?.(); hearts.dispose();
+      stopped = true; pendingFeeds.cancel(); clearSupportWait(); cancelTravelGoal(); cancelHomeJourney(); clearTimeout(preludeTimer); homeDeparture = undefined; el.removeAttribute("data-home-window"); resetHide(); resetInertia(); returning = undefined; premiereDisplay = undefined; premiereBounce = undefined; premiereExit = undefined; el.inert = false; el.removeAttribute("aria-hidden"); el.removeAttribute("data-premiere-companion"); el.removeAttribute("data-premiere-source"); el.removeAttribute("data-returning"); stopHover(); cancelAnimationFrame(followRaf); geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearTimeout(parkedLayoutTimer); clearAction(); control.current = null; observer.disconnect(); offGeometry?.(); hearts.dispose();
       cardPlay.clear();
       releaseOverlayDrag(); perchAnimation?.cancel(); disconnectOverlay(); cancelAnimationFrame(overlayRaf);
       window.removeEventListener("vic:companion-overlay", sync); window.removeEventListener("vic:companion-workspace", workspaceChanged); window.removeEventListener("resize", viewportResized); document.removeEventListener("animationend", queueOverlayPerch, true);

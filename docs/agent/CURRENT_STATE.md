@@ -17,7 +17,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| PLAN-126 | Release verification | Source reviews/build/type/lint/3,062 units/native16/harness322 passed; authorized release and actual public verification next | [Plan](plans/PLAN-20261019-126-companion-floor-drops-and-curtain-layers.md) |
+| PLAN-126 | Follow-up release | Actual public98 assets passed; first post-modal feed failed and corrected. Follow-up source review/build/type/lint/3,070 units/native9 passed; actual public recheck next | [Plan](plans/PLAN-20261019-126-companion-floor-drops-and-curtain-layers.md) |
 | OPS-VERCEL-QUOTA | Open | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |

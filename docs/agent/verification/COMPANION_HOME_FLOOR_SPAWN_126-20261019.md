@@ -57,3 +57,15 @@ root의 build3 관측에서 스폰3개는 당시의 “종류별 최소2중심�
 새 pure return 단위는 실제22.561px 실패 좌표, body와 box의 독립 이동, 현재 입구 도달, 기존 lift, strict20px 경계와 무효 source를 검증한다. 본문 앞의150개 단위/12파일 lint는 이전 동결의 이력이다. 후속 focused10 files **154/154 unit PASS**, owned14 files **lint PASS**로 구분한다. 비작성자 peer는 반환과 shared comparator delta를 읽어 새 확정 P1/P2가 없다고 보고했으며 별도 실행은 하지 않았다. build/server/native/배포는 계속 root 전속이며 새 실물 통과 결과는 대기 중이다.
 
 최종 native 실행 전 root가 resize 계약을 분리했다. 정지 폭에서 새로 꺼낸4개는 종류별4중심을 요구한다.2400→1920 및 후속 scroll에서는 원본 full-floor fraction과 현재 control 안전 clip을 유지하므로 일부 endpoint 합류는 가능하며, 기존 종류별 최소2중심·실제 floor·DOM/ID 보존을 요구한다. 전체 한점 붕괴는 허용하지 않는다. 이를 위해 그룹 순간 재배치나 새 가상 plane을 추가하지 않았다. 이 사전 범위 구분은 새 native 실패를 보고 조건을 바꾼 것이 아니다.
+
+## 운영 after-modal 명령 준비 실패와 후속 수정
+
+배포 `8622c08308b83df529f7b7d7818ff9c9fdac607f`의 첫 공개 checker는 book/settings를 닫은 뒤 첫 음식 Enter에서5초 동안 새 음식이 관측되지 않아 실패했다. 원본 `.scratch-pw/companion-126/production/8622c08308b83df529f7b7d7818ff9c9fdac607f/actual-source-floor-spawn-126-failure.json`을 보존한다. quiet/soft·sleep/parked 상태와 실제 출구/floor는 관측됐지만 내부 cache/반환 branch는 그 raw에 없었다. quiet 모드 자체는 food spawn 금지 조건이 아니므로 그 상태만으로 원인을 확정하지 않았다.
+
+root의 별도 무시드 공개 probe는 fresh soft click/Enter에서snack1/2 정상, book 직후 Enter는 새 음식0·800ms 뒤click은snack4, settings 직후 Enter는 새 음식0·800ms 뒤click은snack6을 관측했다. serial3/5가 없어진 것은 controller 운영 gate 이후 계획이 성립하지 않은 경로와 맞는다. 수동 feed가 modal close 직후의 비동기 새 geometry를 기다리지 않고 빈/미준비 body-anchor 쌍을 즉시 사용하던 source gap을 한정 수정했다. 실패 자료를 fixture 준비 오류나 운영 성공으로 바꾸지 않는다.
+
+새 `feed-command.ts`는 로컬 최대8개 FIFO다. geometry가 준비된 즉시 성공 명령은 그대로 실행하고, 미준비/실패 명령은 기존 `connectGeometry`/`revalidate(true)` 완료를 요청한다. 앞선 대기 명령이 있으면 뒤의 클릭도 같은 순서로 기다린다. 기존 `onGeometry`가 immutable body/food/anchor 쌍을 controller에 동기화한 뒤 queue를 먼저 비우고 각 명령을 **한 번만** 재시도한다. 여전히 실제 물리 계획이 실패하면 다시 예약하지 않는다. 음식 종류는 최초 입력 때 선택한 그대로이며 재시도 RNG는 없다.
+
+같은 native source identity·월·설정 snapshot이 아니면 실행하지 않는다. source 숨김/분리/접힘, modal·pause·document hidden·작업중·premiere·설정 변경·effect cleanup·명시적 음식 비우기는 대기를 취소한다. body 접근 증명·actual source/floor·기존 capacity·fixed semantic activity는 보존한다. 새 observer 종류·timer·상시 geometry loop·per-frame DOM read·서버/analytics payload를 추가하지 않았다. 기존 event 소유 observer의 완료만 이용한다.
+
+후속 focused11 files **162/162 unit PASS**, 변경3 files **lint PASS**. 새8개 단위는 빈 body의 실패→fresh pair의 실제 계획, burst FIFO8 상한, 월/설정/source/modal 취소와 단 한 번 소진을 검증한다. native·full gates·운영 재검증은 root 담당이며 이 수정의 실물 결과는 아직 대기 중이다.

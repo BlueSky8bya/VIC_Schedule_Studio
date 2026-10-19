@@ -41,10 +41,10 @@ test.afterEach(async ({ page }, info) => {
   expect(guards.get(page)!.writes).toEqual([]); expect(guards.get(page)!.foreign).toEqual([]); expect(guards.get(page)!.errors).toEqual([]);
 });
 
-async function ready(page: Page, studio: boolean) {
-  await page.addInitScript(({ preferences, memory, epochKey, epoch }) => {
-    for (const [key, value] of Object.entries({ [epochKey]: epoch, "vic.viewerCompanion": JSON.stringify({ version: 1, ...preferences, enabled: true, activeWhileVisible: true, roam: false, feeding: true, sleep: false, sound: false, learnFromYou: false }), "vic.viewerCompanionCare": JSON.stringify({ version: 3, ...memory, energy: .9, hunger: .05 }), "vic.gfx": JSON.stringify({ mode: "full", at: Date.now(), v: 3 }), "vic.gfxPref": "max", "vic.reduceMotion": "off", "vic.sound": "off", "vic.ambient": "off", "vic.dark": "off", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(key, value);
-  }, { preferences: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, epochKey: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH });
+async function ready(page: Page, studio: boolean, quiet = false) {
+  await page.addInitScript(({ preferences, memory, epochKey, epoch, quiet }) => {
+    for (const [key, value] of Object.entries({ [epochKey]: epoch, "vic.viewerCompanion": JSON.stringify({ version: 1, ...preferences, enabled: true, activeWhileVisible: true, roam: false, feeding: true, sleep: false, sound: false, learnFromYou: false }), "vic.viewerCompanionCare": JSON.stringify({ version: 3, ...memory, energy: .9, hunger: .05 }), "vic.gfx": JSON.stringify({ mode: quiet ? "soft" : "full", at: Date.now(), v: 3 }), "vic.gfxPref": quiet ? "lite" : "max", "vic.reduceMotion": "off", "vic.sound": "off", "vic.ambient": "off", "vic.dark": "off", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(key, value);
+  }, { preferences: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, epochKey: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, quiet });
   await page.goto(studio ? "/visual-fixture/studio?role=owner&y=2025&m=11" : "/visual-fixture/poster?avatar=1&ambient=autumn");
   await page.bringToFront(); await page.evaluate(() => document.fonts.ready);
   await expect(page.locator(".vc-companion")).toBeVisible();
@@ -66,6 +66,32 @@ async function ready(page: Page, studio: boolean) {
       if (frames.length < 2400) request = requestAnimationFrame(sample);
     };
     (window as ProbeWindow).spawn126 = { frames, stop: () => { stopped = true; cancelAnimationFrame(request); } }; request = requestAnimationFrame(sample);
+  });
+}
+
+for (const quiet of [false, true]) {
+  test(`126 native first feed and ordered burst survive book and settings close in ${quiet ? "quiet" : "full"} motion`, async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 1100 }); await ready(page, false, quiet);
+    const feed = home(page).getByRole("button", { name: "밥 꺼내기", exact: true });
+    for (const surface of ["book", "settings"]) {
+      if (surface === "book") await home(page).getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
+      else {
+        await page.getByRole("button", { name: "설정", exact: true }).click();
+        await page.getByRole("dialog", { name: "설정", exact: true }).getByRole("tab", { name: "빅타민", exact: true }).click();
+      }
+      const dialog = page.getByRole("dialog", { name: surface === "book" ? "빅타민 수첩" : "설정", exact: true });
+      await dialog.getByRole("button", { name: "닫기", exact: true }).click();
+      // The first command deliberately precedes the observer's next coalesced
+      // scan. Native keyboard input must not disappear while geometry warms.
+      await feed.focus(); await feed.press("Enter");
+      const count = surface === "book" ? 1 : 5;
+      await expect(page.locator(".vc-food")).toHaveCount(count);
+      for (let i = 0; i < 3; i++) await feed.press("Enter");
+      await expect(page.locator(".vc-food")).toHaveCount(count + 3);
+      await expect.poll(async () => (await points(page)).items.filter(item => item.kind === "food")
+        .every(item => !item.falling && /^companion-home-floor(?:-food)?(?:-\d+)?$/.test(item.platform))).toBe(true);
+    }
+    expect(new Set(await page.locator(".vc-food").evaluateAll(nodes => nodes.map(node => (node as HTMLElement).dataset.food))).size).toBe(8);
   });
 }
 const points = (page: Page) => page.evaluate(() => (window as ProbeWindow).spawn126!.frames.at(-1)!);
