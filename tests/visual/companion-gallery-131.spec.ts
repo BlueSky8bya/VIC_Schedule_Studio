@@ -1,3 +1,4 @@
+import { assertCompanionSilhouettes } from "./helpers/companion-silhouette";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -27,7 +28,7 @@ const catalogue: CompanionCollection = {
   seen: { foods: [], behaviors: [], situations: [], accessories: [] },
 };
 async function bounds(page: Page, book: Locator, rows: number | undefined, diagnostics: { path: string; samples: unknown[] }) {
-  await expect(book).toBeVisible();
+  await expect(book).toBeVisible(); await assertCompanionSilhouettes(book);
   const geometry = await book.evaluate(node => {
     const list = node.querySelector<HTMLElement>("ul")!, detail = node.querySelector<HTMLElement>(".rhh-collection-detail")!;
     const box = (element: Element) => { const rect = element.getBoundingClientRect(); return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, right: rect.right, bottom: rect.bottom }; };
@@ -38,8 +39,10 @@ async function bounds(page: Page, book: Locator, rows: number | undefined, diagn
     }
     return { detail: box(detail), detailOverflow: detail.scrollHeight - detail.clientHeight, detailWidthOverflow: detail.scrollWidth - detail.clientWidth, grid: box(list), rows: getComputedStyle(list).gridTemplateRows.split(/\s+/).length, gridOverflow: list.scrollHeight - list.clientHeight, gridWidthOverflow: list.scrollWidth - list.clientWidth, ancestors,
       buttons: [...node.querySelectorAll<HTMLButtonElement>("button")].map(button => { const rect = box(button), style = getComputedStyle(button), hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2); return { ...rect, label: button.getAttribute("aria-label"), text: button.textContent, className: button.className, selected: button.getAttribute("aria-pressed"), cssWidth: style.width, cssHeight: style.height, minHeight: style.minHeight, zoom: style.zoom, transform: style.transform, disabled: button.disabled, hit: button === hit || button.contains(hit) }; }),
-      hiddenArt: [...list.querySelectorAll("button:not([data-found])")].reduce((count, tile) => count + tile.querySelectorAll("[data-collection-art],img").length, 0),
-      parts: [...detail.querySelectorAll(".rhh-wardrobe-preview,.rhh-wardrobe-description,.rhh-wardrobe-detail-copy > strong,.rhh-collection-detail-copy > *,button")].map(box),
+      coloredUnknownArt: [...list.querySelectorAll("button:not([data-found]) [data-collection-art],button:not([data-found]) img")].filter(art => !getComputedStyle(art).filter.startsWith("brightness(0)")).length,
+      // Short sheets intentionally hide the redundant overline. Only painted
+      // parts participate in detail containment; a display:none rect is0,0.
+      parts: [...detail.querySelectorAll(".rhh-wardrobe-preview,.rhh-wardrobe-description,.rhh-wardrobe-detail-copy > strong,.rhh-collection-detail-copy > *,button")].filter(part => part.getClientRects().length > 0).map(box),
     };
   });
   // Save before assertions: a failed hit target or unread transition must
@@ -47,7 +50,7 @@ async function bounds(page: Page, book: Locator, rows: number | undefined, diagn
   diagnostics.samples.push(geometry);
   writeFileSync(diagnostics.path, JSON.stringify(diagnostics.samples, null, 2));
   if (rows !== undefined) expect(geometry.rows).toBeGreaterThanOrEqual(rows);
-  expect(geometry.gridOverflow).toBeLessThanOrEqual(2); expect(geometry.gridWidthOverflow).toBeLessThanOrEqual(2); expect(geometry.hiddenArt).toBe(0);
+  expect(geometry.gridOverflow).toBeLessThanOrEqual(2); expect(geometry.gridWidthOverflow).toBeLessThanOrEqual(2); expect(geometry.coloredUnknownArt).toBe(0);
   expect(geometry.detailOverflow).toBeLessThanOrEqual(2); expect(geometry.detailWidthOverflow).toBeLessThanOrEqual(2);
   expect(geometry.ancestors.filter(item => item.xOverflow > 2 || item.yOverflow > 2)).toEqual([]);
   expect(geometry.grid.bottom).toBeLessThanOrEqual(page.viewportSize()!.height - 8);

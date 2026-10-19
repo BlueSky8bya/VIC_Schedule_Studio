@@ -1943,8 +1943,27 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 .rhh-companion-settings .rhh-collection-book .rhh-gift-arrival > .vc-collection-art { width: 38px; height: 38px; }
 .rhh-companion-settings .rhh-collection-book .rhh-gift-arrival > strong { min-width: 0; font-size: var(--text-body); }
 .rhh-companion-settings .rhh-collection-book .rhh-equipped-current { display: flex; align-items: center; justify-content: flex-end; gap: 8px; font-size: var(--text-caption); }
-/*131: selection changes content, never the gallery/detail split. Unknown
-  records use one generic mark and reserve the same text/action slots. */
+/*135: a warm field guide, with a single large specimen and quiet silhouettes.
+  Unknown names/stories stay hidden; selection never changes the fixed split. */
+.rhh-companion-settings[data-paged] { --companion-paper: #fff9ed; --companion-ground: #eee4d2; --companion-line: #d8c7a9; --companion-ink: #423b32; --companion-soft: #74634f; --companion-peach: #f5e4c5; --companion-mint: #e7eedc; --companion-lilac: #eee4d1; background: linear-gradient(135deg, #f7efdf, #eee3cd); }
+html[data-theme="dark"] .rhh-companion-settings[data-paged] { --companion-paper: #39372f; --companion-ground: #292a25; --companion-line: #69634e; --companion-ink: #f6efdf; --companion-soft: #d1c4a9; --companion-peach: #4a4231; --companion-mint: #3b4434; --companion-lilac: #423c31; background: linear-gradient(135deg, #302e28, #252722); }
+.rhh-companion-settings .rhh-collection-book .rhh-collection-gallery-detail,
+.rhh-companion-settings .rhh-collection-book .rhh-wardrobe-detail { background: linear-gradient(110deg, color-mix(in srgb, var(--companion-peach) 48%, var(--companion-paper)), var(--companion-paper) 62%); border-color: var(--companion-line); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--companion-paper) 80%, transparent), 0 2px 4px #49351c0a; }
+.rhh-companion-settings .rhh-collection-book .rhh-collection-art-stage { background: radial-gradient(ellipse at 35% 25%, var(--companion-paper), transparent 75%), var(--companion-peach); border-radius: var(--r-lg); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--companion-line) 70%, transparent), inset 0 -5px 12px #805a2410; }
+.rhh-collection-overline { color: var(--companion-soft); font-size: var(--text-caption); font-weight: 600; letter-spacing: .06em; }
+.rhh-companion-settings .rhh-collection-book .rhh-collection-tile { background: color-mix(in srgb, var(--companion-paper) 82%, var(--companion-peach)); border-color: var(--companion-line); }
+.rhh-companion-settings .rhh-collection-book .rhh-collection-tile:not([data-found]) { background: color-mix(in srgb, var(--companion-ground) 72%, var(--companion-paper)); }
+.rhh-companion-settings .rhh-collection-book .rhh-collection-tile[aria-pressed="true"] { background: var(--companion-accent-fill); border-color: var(--companion-accent); }
+.rhh-memory-silhouette { display: block; width: 72px; height: 72px; background: url('/companion/hd/vitamin-action-00-eye-contour-120-v1.webp') 0 0 / 800% 200% no-repeat; }
+.rhh-collection-art-stage > .rhh-memory-silhouette { width: 124px; height: 124px; }
+.rhh-companion-settings .rhh-collection-tile:not([data-found]) > :is(.vc-collection-art, .vc-toy-art, .rhh-memory-silhouette),
+.rhh-companion-settings .rhh-collection-gallery-detail:not([data-found]) .rhh-collection-art-stage > :is(.vc-collection-art, .vc-toy-art, .rhh-memory-silhouette),
+.rhh-companion-settings .rhh-wardrobe-fitting-stage[data-unfound] > .vc-collection-art { filter: brightness(0); opacity: .3; }
+html[data-theme="dark"] .rhh-companion-settings .rhh-collection-tile:not([data-found]) > :is(.vc-collection-art, .vc-toy-art, .rhh-memory-silhouette),
+html[data-theme="dark"] .rhh-companion-settings .rhh-collection-gallery-detail:not([data-found]) .rhh-collection-art-stage > :is(.vc-collection-art, .vc-toy-art, .rhh-memory-silhouette),
+html[data-theme="dark"] .rhh-companion-settings .rhh-wardrobe-fitting-stage[data-unfound] > .vc-collection-art { filter: brightness(0) invert(1); opacity: .4; }
+.rhh-companion-settings .rhh-collection-book .rhh-toy-detail .rhh-collection-art-stage > .vc-toy-art { width: 124px; height: 124px; object-fit: contain; }
+.rhh-companion-settings .rhh-wardrobe-fitting-stage > .rhh-wardrobe-silhouette { width: min(100%, 180px); aspect-ratio: 1; }
 .rhh-companion-settings .rhh-collection-book .rhh-collection-gallery-detail { height: 176px; min-height: 176px; }
 .rhh-collection-unknown { width: 56px; height: 56px; color: var(--companion-soft); opacity: .5; }
 .rhh-collection-art-stage { border: 0; box-shadow: inset 0 0 0 1px var(--companion-line); }
@@ -1982,7 +2001,8 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
   .rhh-companion-settings .rhh-collection-book .rhh-wardrobe-kind { display: none; }
   .rhh-companion-settings .rhh-collection-book .rhh-gift-arrival { padding-block: 0; }
   .rhh-companion-settings .rhh-collection-book .rhh-collection-gallery-detail { grid-template-columns: 96px minmax(0, 1fr); height: 116px; min-height: 116px; gap: 10px; padding: 8px 10px; }
-  .rhh-collection-art-stage > .vc-collection-art { width: 96px; height: 96px; }
+  .rhh-collection-art-stage > :is(.vc-collection-art, .rhh-memory-silhouette), .rhh-companion-settings .rhh-collection-book .rhh-toy-detail .rhh-collection-art-stage > .vc-toy-art { width: 96px; height: 96px; }
+  .rhh-collection-overline { display: none; }
   .rhh-companion-settings .rhh-collection-book .rhh-accessory-grid { height: 124px; }
   .vic-settings :is(.rhh-panes, .rhh-companion-book-pages):has(.rhh-companion-experience[data-paged]) { padding-block: 10px; }
   .vic-settings .rhh-companion-experience[data-paged] > .rhh-profile-nav { min-height: 44px; margin-bottom: 6px; }

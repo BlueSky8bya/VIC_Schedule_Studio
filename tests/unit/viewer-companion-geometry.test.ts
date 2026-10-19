@@ -83,6 +83,21 @@ function geometryFixture() {
 }
 
 describe("111 text geometry reuse", () => {
+  it("keeps decorative TV and lamp hit targets from cutting a real house floor", () => {
+    const floor = (decoration: boolean | null) => {
+      const f = geometryFixture(), h = addHouseFloor(f);
+      if (decoration !== null) {
+        const control = new FixtureElement(); control.parentElement = h.room; control.rect = box(110, 580, 340, 80);
+        control.closest = selector => decoration && selector.includes("[data-home-decoration-control]") ? control : null;
+        f.controls.push(control);
+      }
+      const subscription = observeCompanionPlatforms(f.root, () => {}, { size: 92, home: f.home as unknown as HTMLElement }); f.flush();
+      const result = subscription.landings().filter(platform => platform.id.startsWith("companion-home-floor")).map(({ x, y, width }) => ({ x, y, width }));
+      subscription(); return result;
+    };
+    const baseline = floor(null); expect(baseline.length).toBeGreaterThan(0);
+    expect(floor(true)).toEqual(baseline); expect(floor(false)).not.toEqual(baseline);
+  });
   it("translates cached lines on scroll, reranges only changed text and invalidates fonts", () => {
     const f = geometryFixture();
     const deliveries: Platform[][] = [];

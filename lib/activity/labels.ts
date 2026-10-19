@@ -682,6 +682,8 @@ export const ACT: Record<string, TargetLabel> = {
   "companion-home-fold": { name: "빅타민 집", area: "빅타민", opts: { open: "펴기", close: "접기" } },
   "companion-home-call": { name: "빅타민 집으로 부르기", area: "빅타민" },
   "companion-home-toys": { name: "빅타민 장난감 상자 열기", area: "빅타민", hint: "직접 상자를 눌러 장난감을 꺼낸 조작만 세요." },
+  "companion-home-tv": { name: "빅타민 TV", area: "빅타민", opts: { on: "켜기", off: "끄기", next: "채널 돌리기" }, hint: "직접 TV를 조작한 동작만 세요. 채널 내용과 취향은 기록하지 않아요." },
+  "companion-home-light": { name: "빅타민 집 전등", area: "빅타민", opts: { on: "켜기", off: "끄기" }, hint: "직접 전등을 조작한 동작만 세요." },
   "companion-toy-grab": { name: "빅타민 장난감 집기", area: "빅타민", hint: "직접 장난감을 집은 조작만 세요." },
   "companion-toy-drop": { name: "빅타민 장난감 놓기", area: "빅타민", hint: "직접 장난감을 놓은 조작만 세요." },
   "companion-toy-return": { name: "빅타민 장난감 상자에 넣기", area: "빅타민", hint: "직접 상자에 돌려놓은 조작만 세요." },

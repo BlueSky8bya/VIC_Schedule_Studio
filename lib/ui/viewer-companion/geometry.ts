@@ -334,7 +334,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       const measuredControls = new Map<Element, DOMRect>();
       for (const element of root.ownerDocument.querySelectorAll<HTMLElement>(".vc-home-launcher,.vc-home button")) controlElements.add(element);
       for (const element of controlElements) {
-        if (!visible(element) || element.matches(`${CARD_SELECTOR},${DAY_SELECTOR}`) || element.closest(".vc-companion,.vc-cushion-button,.vc-toys,.vc-toy")) continue;
+        if (!visible(element) || element.matches(`${CARD_SELECTOR},${DAY_SELECTOR}`) || element.closest(".vc-companion,.vc-cushion-button,.vc-toys,.vc-toy,.vc-home [data-home-decoration-control]")) continue;
         const rect = rectFor(element), clip = clipping(element.parentElement);
         measuredControls.set(element, rect);
         const bounds = { left: Math.max(rect.left, clip.left), right: Math.min(rect.right, clip.right), top: Math.max(rect.top, clip.top), bottom: Math.min(rect.bottom, clip.bottom) };

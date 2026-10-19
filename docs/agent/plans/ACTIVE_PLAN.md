@@ -2,8 +2,8 @@
 
 | ID | Status | Record |
 |---|---|---|
-| COMPANION-GALLERY-134 | Local gates complete; scoped release verification pending | [Gallery arrow keys and unread page dots](PLAN-20261019-134-companion-gallery-arrow-dots.md) |
-| COMPANION-LIFE-132 | Awaiting design feedback; six image drafts/five families ready, runtime integration not started | [Nine personalities](PLAN-20261019-132-companion-personality-life.md), [House and work scenes](PLAN-20261019-132-companion-home-scenes.md) |
+| COMPANION-INTERIOR-135 | Local verification complete; scoped release/actual public verification pending | [Interior and field guide](PLAN-20261019-135-companion-interior-field-guide.md) |
+| COMPANION-LIFE-132 | Awaiting nine-name/personality proposal feedback; new AI unapplied, selected room direction implemented in135 | [Personality reader](PLAN-20261019-135-personality-reader.md), [House and work scenes](PLAN-20261019-132-companion-home-scenes.md) |
 | PRIVACY-20260921 | Deployed containment verified; historical Git exposure, realtime/provider and retention follow-up remain | [Privacy audit](../verification/PRIVACY-20260921.md) |
 | DARK-HARMONY-20260919 | Ribbon editor dark controls corrected; local verification and authorized push follow-up. Production unverified (prior release staged) | [Dark palette follow-up](../../ux/dark-mode-palette.md) |
 | MARINE-RESUME | Paused by owner | [Resume handoff](../handoffs/20260916-marine-biomes-resume.md) |

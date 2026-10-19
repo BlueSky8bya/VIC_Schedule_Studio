@@ -83,6 +83,13 @@ describe("completed companion input owns its activity event", () => {
     f.click(false, false, false, "companion-gift-open");
     expect((await f.events()).map((event: { target: string }) => event.target)).toEqual(["companion-gift-open", "companion-gift-open"]);
   });
+  it("TV and lamp controls count each direct operation once with fixed options", async () => {
+    const f = await fixture();
+    for (const [action, options] of [["companion-home-tv", ["on", "next", "off"]], ["companion-home-light", ["on", "off"]]] as const) for (const option of options) f.click(false, false, false, action, option);
+    const events = await f.events();
+    expect(events.map((event: { target: string }) => event.target)).toEqual(["companion-home-tv#on", "companion-home-tv#next", "companion-home-tv#off", "companion-home-light#on", "companion-home-light#off"]);
+    expect(events.every((event: { meta?: unknown }) => event.meta == null)).toBe(true);
+  });
   it("ordinary controls and an already selected human heart still count normally", async () => {
     const f = await fixture();
     f.click(false, false);

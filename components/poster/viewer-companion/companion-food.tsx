@@ -46,7 +46,9 @@ type FoodAttachment = { element?: Element; position: CompanionFoodAttachment; ho
 type AttachmentRead = { food: Food; bound?: FoodAttachment; rect?: DOMRect; controls?: readonly DOMRect[]; supports?: readonly CompanionFoodDropSupport[]; unavailable?: boolean };
 const homeSelector = (kind: HomeAnchor) => kind === "floor" ? ".vc-home .vc-home-floor" : ".vc-home .vc-dispenser-slot";
 const homeFoodId = (kind?: HomeAnchor) => kind === "floor" ? COMPANION_HOME_FLOOR_FOOD : undefined;
-const homeControlRects = (element: Element, measured = new Map<Element, DOMRect>()) => [...element.closest(".vc-home")!.querySelectorAll<HTMLElement>("button,a[href],input,select,textarea,[role=button]")].filter(node => !node.matches(".vc-cushion-button")).map(node => {
+// Match the shared geometry's furnishing exceptions. A retained food must not
+// acquire a TV/lamp obstacle that its proven initial emission never had.
+const homeControlRects = (element: Element, measured = new Map<Element, DOMRect>()) => [...element.closest(".vc-home")!.querySelectorAll<HTMLElement>("button,a[href],input,select,textarea,[role=button]")].filter(node => !node.matches(".vc-cushion-button,[data-home-decoration-control]")).map(node => {
   let rect = measured.get(node);
   if (!rect) { rect = node.getBoundingClientRect(); measured.set(node, rect); }
   return rect;

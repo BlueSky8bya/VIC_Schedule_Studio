@@ -149,6 +149,41 @@ describe("actual food-controller carry and physical scatter callbacks", () => {
     hiddenRoom = false; api().sync([support], anchor, [support]);
     expect(nodeById.get(id)!.hidden).toBe(false); expect(api().foods()[0].id).toBe(id);
   });
+  it("retains four food centres under room decorations across reflow while protecting the native bin", async () => {
+    let dx = 0, dy = 0;
+    const rect = (left: number, top: number, width: number, height: number) => ({ left: left + dx, top: top + dy, right: left + dx + width, bottom: top + dy + height, width, height });
+    const decoration = (left: number) => Object.assign(node(), {
+      matches: (selector: string) => selector.split(",").some(part => part.trim() === "[data-home-decoration-control]"),
+      getBoundingClientRect: () => rect(left, 640, 180, 76),
+    });
+    const tv = decoration(420), lamp = decoration(480);
+    const bin = Object.assign(node(), { getBoundingClientRect: () => rect(750, 640, 60, 60) });
+    const house = { querySelectorAll: () => [tv, lamp, bin] };
+    const actualFloor = Object.assign(node(), {
+      matches: (selector: string) => selector === ".vc-home-floor",
+      closest: (selector: string) => selector === ".vc-home" ? house : null,
+      parentElement: { closest: () => null },
+      getBoundingClientRect: () => rect(100, 600, 800, 100),
+    });
+    vi.spyOn(document, "elementsFromPoint").mockReturnValue([actualFloor] as unknown as globalThis.Element[]);
+    const support: Platform = { id: "companion-home-floor-food", kind: "floor", x: 122, y: 694, width: 606 };
+    const anchor = () => ({ element: actualFloor as unknown as HTMLElement, left: 100, top: 600, width: 800, height: 100 });
+    harness.graphics = "off"; harness.layouts[0]();
+    api().sync([support], anchor, [support]);
+    const targets = [480, 500, 520, 540], ids: string[] = [];
+    for (const x of targets) {
+      const id = await spawn(); ids.push(id);
+      expect(api().beginCarry(id)).toBe(true); api().carry(id, { x, y: 650 });
+      expect(api().releaseCarry(id, { x, y: 694 })).toBe(true); await render();
+    }
+    expect(api().foods().map(food => food.x)).toEqual(targets);
+    dx = 25; dy = -20; api().sync([support], anchor, [support]);
+    expect(api().foods().map(food => ({ id: food.id, x: food.x, y: food.y }))).toEqual(ids.map((id, index) => ({ id, x: targets[index] + dx, y: 674 })));
+    expect(new Set(api().foods().map(food => food.x)).size).toBe(4);
+    const native = await spawn(); expect(api().beginCarry(native)).toBe(true);
+    api().carry(native, { x: 745 + dx, y: 650 + dy }); api().releaseCarry(native, { x: 745 + dx, y: 694 + dy });
+    expect(api().foods().find(food => food.id === native)).toMatchObject({ x: 728 + dx, y: 694 + dy });
+  });
   it("notifies each actually removed human Delete/clear food once without sending its id to activity", async () => {
     const first = await spawn(200), second = await spawn(280), third = await spawn(360);
     harness.activity.mockClear();

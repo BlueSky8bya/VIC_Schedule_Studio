@@ -1,0 +1,254 @@
+{
+  "dateKST": "2026-10-19",
+  "builtin_generation_count": 2,
+  "source_reference": {
+    "basename": "ChatGPT 이미지 2026년 10월 19일 오후 04_10_19.png",
+    "sha256": "37bf98a2d1b898dfe3930229b14e719fa83822ff21fbba8e02d11f4afe11c245",
+    "role": "owner-selected room/light composition; source held locally"
+  },
+  "protected_art_log_sha256": "e980005102457e2a02ae318ff7665596e7170d0bfb34a328f64a6ec292c5990b",
+  "assets": [
+    {
+      "source": "art-src/빅타민/동행/작업회차/20261019-방인테리어135/원본/빈방_벽바닥.png",
+      "source_sha256": "8ac0fe0171347ecce8119155ae14663ab1df208387a3c9e0b7442350b13370d1",
+      "crop": [
+        760,
+        80,
+        1536,
+        570
+      ],
+      "runtime": "public/companion/home/135/room-wall.webp",
+      "runtime_sha256": "70ae90114739ec749e114919cffb0db2b99bd377f18a723faec2c21e542d03ec",
+      "size": [
+        776,
+        490
+      ],
+      "bytes": 3308,
+      "operation": "rectangular source crop, opaque RGB WebP quality90; no material painting"
+    },
+    {
+      "source": "art-src/빅타민/동행/작업회차/20261019-방인테리어135/원본/빈방_벽바닥.png",
+      "source_sha256": "8ac0fe0171347ecce8119155ae14663ab1df208387a3c9e0b7442350b13370d1",
+      "crop": [
+        760,
+        568,
+        1536,
+        596
+      ],
+      "runtime": "public/companion/home/135/room-baseboard.webp",
+      "runtime_sha256": "afc0c847060d76832ca4802893ebf04d887bbad964f9d7ed61ebefa778e4685b",
+      "size": [
+        776,
+        28
+      ],
+      "bytes": 948,
+      "operation": "rectangular source crop, opaque RGB WebP quality90; no material painting"
+    },
+    {
+      "source": "art-src/빅타민/동행/작업회차/20261019-방인테리어135/원본/빈방_벽바닥.png",
+      "source_sha256": "8ac0fe0171347ecce8119155ae14663ab1df208387a3c9e0b7442350b13370d1",
+      "crop": [
+        1040,
+        596,
+        1536,
+        1024
+      ],
+      "runtime": "public/companion/home/135/room-floor.webp",
+      "runtime_sha256": "6b8b6860fc7c175fd086b0cd9358d304b5cec8a1f462201415092ce07ea0ee95",
+      "size": [
+        496,
+        428
+      ],
+      "bytes": 4974,
+      "operation": "rectangular source crop, opaque RGB WebP quality90; no material painting"
+    },
+    {
+      "source": "art-src/빅타민/동행/작업회차/20261019-방인테리어135/참조원본/티비_상태6종.png",
+      "source_sha256": "90afd280ac27e46ac385caf1fac59b0db476fc774e305571582f13ef46f10909",
+      "crop": [
+        32,
+        0,
+        496,
+        512
+      ],
+      "runtime": "public/companion/home/135/tv-body.webp",
+      "runtime_sha256": "81a1562bb3a9b25aded33301beba42c02d17fbee0b347970f8de3985ad2492b3",
+      "size": [
+        232,
+        256
+      ],
+      "bytes": 46220,
+      "operation": "rectangular crop, optional Lanczos resize, lossless WebP; alpha unchanged apart from resize",
+      "source_origin": "art-src/빅타민/동행/작업회차/20261019-집생활상태132/원본/티비_상태6종.png"
+    },
+    {
+      "source": "art-src/빅타민/동행/작업회차/20261019-방인테리어135/참조원본/티비_상태6종.png",
+      "source_sha256": "90afd280ac27e46ac385caf1fac59b0db476fc774e305571582f13ef46f10909",
+      "crop": [
+        624,
+        190,
+        868,
+        392
+      ],
+      "runtime": "public/companion/home/135/tv-screen-nature.webp",
+      "runtime_sha256": "bbda91521d2f0d6554e582a92acdc6b2a52baa40f66f81be7af83b87d1f43f09",
+      "size": [
+        244,
+        202
+      ],
+      "bytes": 56262,
+      "operation": "rectangular crop, optional Lanczos resize, lossless WebP; alpha unchanged apart from resize",
+      "source_origin": "art-src/빅타민/동행/작업회차/20261019-집생활상태132/원본/티비_상태6종.png"
+    },
+    {
+      "source": "art-src/빅타민/동행/작업회차/20261019-방인테리어135/참조원본/티비_상태6종.png",
+      "source_sha256": "90afd280ac27e46ac385caf1fac59b0db476fc774e305571582f13ef46f10909",
+      "crop": [
+        1136,
+        190,
+        1380,
+        392
+      ],
+      "runtime": "public/companion/home/135/tv-screen-music.webp",
+      "runtime_sha256": "359b463dff63ba5969df163afdf18c4568c51ca3d9e1342dc99e11c36ffd86a9",
+      "size": [
+        244,
+        202
+      ],
+      "bytes": 42926,
+      "operation": "rectangular crop, optional Lanczos resize, lossless WebP; alpha unchanged apart from resize",
+      "source_origin": "art-src/빅타민/동행/작업회차/20261019-집생활상태132/원본/티비_상태6종.png"
+    },
+    {
+      "source": "art-src/빅타민/동행/작업회차/20261019-방인테리어135/참조원본/티비_상태6종.png",
+      "source_sha256": "90afd280ac27e46ac385caf1fac59b0db476fc774e305571582f13ef46f10909",
+      "crop": [
+        112,
+        702,
+        356,
+        904
+      ],
+      "runtime": "public/companion/home/135/tv-screen-cooking.webp",
+      "runtime_sha256": "37a9dca6fc5afe0799e53907b1f97db77bf41aa2a7f7defdc9cb8ca84ee185f6",
+      "size": [
+        244,
+        202
+      ],
+      "bytes": 53622,
+      "operation": "rectangular crop, optional Lanczos resize, lossless WebP; alpha unchanged apart from resize",
+      "source_origin": "art-src/빅타민/동행/작업회차/20261019-집생활상태132/원본/티비_상태6종.png"
+    },
+    {
+      "source": "art-src/빅타민/동행/작업회차/20261019-방인테리어135/참조원본/티비_상태6종.png",
+      "source_sha256": "90afd280ac27e46ac385caf1fac59b0db476fc774e305571582f13ef46f10909",
+      "crop": [
+        624,
+        702,
+        868,
+        904
+      ],
+      "runtime": "public/companion/home/135/tv-screen-toys.webp",
+      "runtime_sha256": "0ba730fb39be7bfac9e3af84993ad86cb4c6c8a0376df81bb2606a98ae15cfd0",
+      "size": [
+        244,
+        202
+      ],
+      "bytes": 51870,
+      "operation": "rectangular crop, optional Lanczos resize, lossless WebP; alpha unchanged apart from resize",
+      "source_origin": "art-src/빅타민/동행/작업회차/20261019-집생활상태132/원본/티비_상태6종.png"
+    },
+    {
+      "source": "art-src/빅타민/동행/작업회차/20261019-방인테리어135/참조원본/티비_상태6종.png",
+      "source_sha256": "90afd280ac27e46ac385caf1fac59b0db476fc774e305571582f13ef46f10909",
+      "crop": [
+        1136,
+        702,
+        1380,
+        904
+      ],
+      "runtime": "public/companion/home/135/tv-screen-moon.webp",
+      "runtime_sha256": "7f377e061383b699062e7b4cbe87fd416b51fd8184f4ad2a64a29d3d4b8ac06d",
+      "size": [
+        244,
+        202
+      ],
+      "bytes": 48460,
+      "operation": "rectangular crop, optional Lanczos resize, lossless WebP; alpha unchanged apart from resize",
+      "source_origin": "art-src/빅타민/동행/작업회차/20261019-집생활상태132/원본/티비_상태6종.png"
+    },
+    {
+      "source": "art-src/빅타민/동행/작업회차/20261019-방인테리어135/참조원본/전등_상태4종.png",
+      "source_sha256": "6176ceacf62e322366a7e893f70f137fcf4b3219ed51ea0dc256f07ff9b2c401",
+      "crop": [
+        50,
+        0,
+        450,
+        420
+      ],
+      "runtime": "public/companion/home/135/lamp-body.webp",
+      "runtime_sha256": "d2d88344107e7ecb27fb0f278df4ff4262436ac7229c4d3602f6e57ebb36cb0c",
+      "size": [
+        200,
+        210
+      ],
+      "bytes": 34530,
+      "operation": "rectangular crop, optional Lanczos resize, lossless WebP; alpha unchanged apart from resize",
+      "source_origin": "art-src/빅타민/동행/작업회차/20261019-집생활상태132/원본/전등_상태4종.png"
+    },
+    {
+      "source": "art-src/빅타민/동행/작업회차/20261019-집생활상태132/원본/씻기_생활4종.png",
+      "source_sha256": "d5684dc8e48428d8a35e95aa675e6ef52ba1c9f4f8dd5c866c5a4e9240606723",
+      "crop": [
+        0,
+        350,
+        540,
+        674
+      ],
+      "runtime": "art-src/빅타민/동행/작업회차/20261019-방인테리어135/정리본/132_빈패드_검토.webp",
+      "runtime_sha256": "ee1353b0f52e8991004d5a530be209ee85f06450e96396d7715e8c5d345ace37",
+      "size": [
+        270,
+        162
+      ],
+      "bytes": 26558,
+      "operation": "rectangular crop, optional Lanczos resize, lossless WebP; alpha unchanged apart from resize",
+      "review_only": true,
+      "release_excluded": true,
+      "release_source_status": "local132 source retained; not staged or required by active runtime derivatives"
+    },
+    {
+      "source": "art-src/빅타민/동행/작업회차/20261019-방인테리어135/원본/빈씻기패드.png",
+      "source_sha256": "db4a7cad87fe35d667b445a6453b0ecf77c4dff7725a4893a334761211623669",
+      "crop": [
+        51,
+        220,
+        1486,
+        831
+      ],
+      "runtime": "public/companion/home/135/wash-pad-135.webp",
+      "runtime_sha256": "db7cb80c71159ba9bc0273107076a6d50eb229e17ae099e2fdb99f8a8986aeb8",
+      "size": [
+        360,
+        153
+      ],
+      "bytes": 57786,
+      "operation": "rectangular crop, Lanczos resize, lossless WebP; alpha retained"
+    }
+  ],
+  "selected_reference_copies": [
+    {
+      "original_archive_path": "art-src/빅타민/동행/작업회차/20261019-집생활상태132/원본/티비_상태6종.png",
+      "copied_archive_path": "art-src/빅타민/동행/작업회차/20261019-방인테리어135/참조원본/티비_상태6종.png",
+      "sha256": "90afd280ac27e46ac385caf1fac59b0db476fc774e305571582f13ef46f10909",
+      "bytes": 1893161,
+      "operation": "exact-byte copy of selected132 source; original retained"
+    },
+    {
+      "original_archive_path": "art-src/빅타민/동행/작업회차/20261019-집생활상태132/원본/전등_상태4종.png",
+      "copied_archive_path": "art-src/빅타민/동행/작업회차/20261019-방인테리어135/참조원본/전등_상태4종.png",
+      "sha256": "6176ceacf62e322366a7e893f70f137fcf4b3219ed51ea0dc256f07ff9b2c401",
+      "bytes": 1774144,
+      "operation": "exact-byte copy of selected132 source; original retained"
+    }
+  ]
+}

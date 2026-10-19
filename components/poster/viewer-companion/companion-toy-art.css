@@ -1,2 +1,3 @@
-/* Preserve the generated silhouette in every live/profile/book viewport. */
-.vc-toy-art { display: block; object-fit: contain; }
+/* A modest, shared color lift keeps small toys as legible as food. Neutral
+   unknown silhouettes override the filter in the collection, not the source. */
+.vc-toy-art { --vc-toy-color: saturate(1.2) contrast(1.06); display: block; object-fit: contain; filter: var(--vc-toy-color); }

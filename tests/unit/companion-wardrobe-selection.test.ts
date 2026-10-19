@@ -30,7 +30,7 @@ function nodes(node: ReactNode): Element[] {
   return [element, ...nodes(element.props.children as ReactNode)];
 }
 const find = (predicate: (element: Element) => boolean) => nodes(tree).find(predicate)!;
-const preview = () => find(element => "behaviors" in element.props && "accessory" in element.props).props;
+const preview = () => nodes(tree).find(element => "behaviors" in element.props && "accessory" in element.props)?.props;
 const click = (element: Element) => (element.props.onClick as (event: { detail: number }) => void)({ detail: 1 });
 async function render(active = true) {
   vi.stubGlobal("React", await import("react")); harness.state = 0; harness.ref = 0;
@@ -46,18 +46,19 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("actual wardrobe selection and equipment callbacks", () => {
-  it("jumps to unread owned gifts without changing equipment or revealing locked artwork", async () => {
+  it("jumps to unread owned gifts without changing equipment and retains neutral locked shape clues", async () => {
     collection.gifts.unlocked = ["sunglasses", "beret", COMPANION_WEARABLE_IDS[26]];
     collection.seen = { foods: [], behaviors: [], situations: [], accessories: ["sunglasses"] };
     harness.acknowledge.mockImplementation((_kind, id) => { collection.seen!.accessories.push(id); return true; });
     await render(); const unread = () => find(element => element.props["aria-label"] === "다음 새 발견 보기");
-    click(unread()); await render(); expect(preview().accessory).toBe("beret");
-    click(unread()); await render(); expect(preview().accessory).toBe(COMPANION_WEARABLE_IDS[26]);
+    click(unread()); await render(); expect(preview()?.accessory).toBe("beret");
+    click(unread()); await render(); expect(preview()?.accessory).toBe(COMPANION_WEARABLE_IDS[26]);
     expect(nodes(tree).filter(element => element.props["data-page-direction"] && element.props["data-unread"])).toHaveLength(0);
     expect(harness.acknowledge.mock.calls).toEqual([["accessory", "beret"], ["accessory", COMPANION_WEARABLE_IDS[26]]]);
     expect(harness.equip).not.toHaveBeenCalled(); expect(collection.gifts.equipped).toBe("sunglasses");
     for (const tile of nodes(tree).filter(element => element.props["data-accessory"] && !element.props["data-found"])) {
-      expect(nodes(tile).some(element => typeof element.type === "function" && element.type.name === "CompanionCollectionArt")).toBe(false);
+      expect(nodes(tile).filter(element => typeof element.type === "function" && element.type.name === "CompanionCollectionArt")).toHaveLength(1);
+      expect(tile.props["aria-label"]).toMatch(/^\?\?\? · \d+$/);
     }
   });
   it("keeps unread badges through opening and paging, acknowledging only the intentionally selected owned tile", async () => {
@@ -76,9 +77,9 @@ describe("actual wardrobe selection and equipment callbacks", () => {
     vi.unstubAllGlobals();
   });
   it("immediately previews actual equipment, and removing clears the selected try-on in the same update", async () => {
-    await render(); expect(preview().accessory).toBe("sunglasses"); expect(preview().behaviors).toEqual(["groom"]);
+    await render(); expect(preview()?.accessory).toBe("sunglasses"); expect(preview()?.behaviors).toEqual(["groom"]);
     click(find(element => element.props["data-act"] === "companion-accessory-equip")); await render();
-    expect(harness.equip.mock.calls).toEqual([[null]]); expect(preview().accessory).toBeNull();
+    expect(harness.equip.mock.calls).toEqual([[null]]); expect(preview()?.accessory).toBeNull();
     expect(collection.gifts.equipped).toBeNull();
     expect(nodes(tree).filter(element => element.props["data-accessory"] && element.props["aria-pressed"])).toHaveLength(0);
   });
@@ -93,9 +94,9 @@ describe("actual wardrobe selection and equipment callbacks", () => {
       return event;
     };
     for (const direction of ["ArrowLeft", "ArrowRight"]) { const event = key(direction); expect(event.preventDefault).not.toHaveBeenCalled(); expect(event.stopPropagation).not.toHaveBeenCalled(); }
-    await render(); expect(preview().accessory).toBe("sunglasses"); expect(harness.acknowledge).not.toHaveBeenCalled();
+    await render(); expect(preview()?.accessory).toBe("sunglasses"); expect(harness.acknowledge).not.toHaveBeenCalled();
     key("ArrowDown"); await render();
-    expect(preview().accessory).toBe(COMPANION_WEARABLE_IDS[4]);
+    expect(preview()?.accessory).toBe(COMPANION_WEARABLE_IDS[4]);
     expect(find(element => element.props["data-accessory"] === COMPANION_WEARABLE_IDS[4]).props["aria-pressed"]).toBe(true);
     expect(harness.acknowledge.mock.calls).toEqual([["accessory", COMPANION_WEARABLE_IDS[4]]]);
     expect(collection.gifts.equipped).toBe("sunglasses"); expect(harness.equip).not.toHaveBeenCalled();
@@ -103,14 +104,15 @@ describe("actual wardrobe selection and equipment callbacks", () => {
   it("keeps try-on local, offers only owned items, and respects a subsequent ownership clear", async () => {
     await render();
     click(find(element => element.props["data-accessory"] === "beret")); await render();
-    expect(preview().accessory).toBe("beret"); expect(harness.equip).not.toHaveBeenCalled();
+    expect(preview()?.accessory).toBe("beret"); expect(harness.equip).not.toHaveBeenCalled();
     collection = { ...collection, gifts: { ...collection.gifts, unlocked: [], equipped: null } }; await render();
-    expect(preview().accessory).toBeNull();
+    expect(preview()).toBeUndefined();
+    expect(find(element => element.props.className === "rhh-wardrobe-silhouette").props.id).toBe("beret");
     expect(nodes(tree).some(element => element.props["data-act"] === "companion-accessory-equip")).toBe(false);
   });
   it("starts bare when nothing is worn and never leaks undiscovered gestures or retired catalogue entries", async () => {
     collection.gifts = { ...collection.gifts, unlocked: ["scarf", "bell-pendant", "sunglasses"], equipped: null };
-    await render(); expect(preview().accessory).toBeNull(); expect(preview().behaviors).toEqual(collection.behaviors);
+    await render(); expect(preview()?.accessory).toBeNull(); expect(preview()?.behaviors).toEqual(collection.behaviors);
     const ids: unknown[] = [];
     for (;;) {
       const tiles = nodes(tree).filter(element => element.props["data-accessory"]);
@@ -125,7 +127,9 @@ describe("actual wardrobe selection and equipment callbacks", () => {
     expect(ids).toEqual([...COMPANION_WEARABLE_IDS]);
     expect(find(element => element.props.className === "rhh-collection-heading").props.children).toEqual(expect.arrayContaining([expect.objectContaining({ props: expect.objectContaining({ children: [1, "/", COMPANION_WEARABLE_IDS.length] }) })]));
     const locked = nodes(tree).find(element => element.props["data-accessory"] && !element.props["data-found"])!;
-    click(locked); await render(); expect(preview().accessory).toBeNull(); expect(harness.equip).not.toHaveBeenCalled();
+    click(locked); await render(); expect(preview()).toBeUndefined();
+    expect(find(element => element.props.className === "rhh-wardrobe-silhouette").props.id).toBe(locked.props["data-accessory"]);
+    expect(harness.equip).not.toHaveBeenCalled();
     await render(false); expect(tree).toBeNull();
   });
 });

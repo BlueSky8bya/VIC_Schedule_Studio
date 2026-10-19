@@ -17,12 +17,14 @@ type ProbeWindow = Window & { spawn126?: { frames: Frame[]; stop: () => void } }
 const guards = new WeakMap<Page, { writes: string[]; foreign: string[]; errors: string[]; blockedAPI: string[] }>();
 test.use({ headless: true, serviceWorkers: "block", isMobile: false, hasTouch: false });
 test.setTimeout(60000);
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page, baseURL }) => {
+  const project = new URL(baseURL!); expect(project.protocol).toBe("http:"); expect(["127.0.0.1", "localhost"]).toContain(project.hostname);
+  const origin = project.origin;
   const guard = { writes: [] as string[], foreign: [] as string[], errors: [] as string[], blockedAPI: [] as string[] }; guards.set(page, guard);
   page.on("pageerror", error => guard.errors.push(error.message));
   await page.context().route("**/*", route => {
     const request = route.request(), url = new URL(request.url());
-    if (url.origin !== "http://127.0.0.1:3117") {
+    if (url.origin !== origin) {
       if (request.method() === "GET" && request.resourceType() === "font" && fonts.has(url.href)) return route.continue();
       guard.foreign.push(request.method() + " " + url.origin + url.pathname); return route.abort();
     }

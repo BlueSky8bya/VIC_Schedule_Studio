@@ -146,6 +146,11 @@ describe("빅타민 행동 기록 이름과 저장 경계", () => {
       ["companion-personality#tidy", "빅타민 성격 · 깔끔이"],
       ["companion-personality#mischievous", "빅타민 성격 · 사고뭉치"],
       ["companion-home-fold#open", "빅타민 집 · 펴기"],
+      ["companion-home-tv#on", "빅타민 TV · 켜기"],
+      ["companion-home-tv#off", "빅타민 TV · 끄기"],
+      ["companion-home-tv#next", "빅타민 TV · 채널 돌리기"],
+      ["companion-home-light#on", "빅타민 집 전등 · 켜기"],
+      ["companion-home-light#off", "빅타민 집 전등 · 끄기"],
       ["companion-home-fold#close", "빅타민 집 · 접기"]
     ];
     for (const [id, label] of examples) {

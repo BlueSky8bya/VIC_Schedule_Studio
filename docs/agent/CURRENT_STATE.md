@@ -7,7 +7,7 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Current work: 134 gallery keyboard/button parity and unread page dots;132 personality/living proposals remain design/art review only. Preserve shared clock/KST, physical contacts, protected art and public/private boundaries.
+Current work:135 approved-reference room interior, silhouette field-guide and toy-color refresh;132 personality/living proposals remain reading/design only, alongside operations/privacy follow-up. Preserve shared clock/KST, physical contacts, protected art and public/private boundaries.
 
 Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user.125 explicitly authorizes unnecessary Vercel deployment cleanup/optimization; unrelated cleanup, bulk DB UPDATE, paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
 
@@ -17,8 +17,8 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| COMPANION-GALLERY-134 | Local checks complete | Scoped release and actual public/remote checks;3,196 units and21 native scenarios passed | [134 plan](plans/PLAN-20261019-134-companion-gallery-arrow-dots.md) |
-| COMPANION-LIFE-132 | Design/art drafts ready | User reviews nine-personality scenarios and six image drafts across five families; no behavior integration started | [Personality proposal](plans/PLAN-20261019-132-companion-personality-life.md), [House proposal](plans/PLAN-20261019-132-companion-home-scenes.md) |
+| COMPANION-INTERIOR-135 | Release verification | Local3204 units/type/lint/build and24 distinct native scenes passed; verify scoped release fullSHA/actual public UI and remote quality | [135 plan](plans/PLAN-20261019-135-companion-interior-field-guide.md) |
+| COMPANION-LIFE-132 | Awaiting personality feedback | User reads nine names/108 scenarios+36 combinations; selected room direction is implemented in135, new behavior AI remains unapplied | [Personality reader](plans/PLAN-20261019-135-personality-reader.md), [House proposal](plans/PLAN-20261019-132-companion-home-scenes.md) |
 | OPS-VERCEL-QUOTA | Open | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
@@ -39,7 +39,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Next Exact Steps
 
-1. COMPANION-LIFE-132: user reviews the nine-personality/living proposals and six image drafts; do not integrate new behavior before that direction is chosen.
+1. COMPANION-INTERIOR-135: verify the scoped release and actual anonymous room/gallery. COMPANION-LIFE-132: user reviews the nine names and personality/living proposals; do not integrate new behavior before that direction is chosen.
 2. OPS-DB-QUOTA/OPS-VERCEL-QUOTA: compare post-release route/RPC/cost with the same period/denominator, recheck Hobby restrictions/reset status; define the Free-plan full-backup/recovery path and recheck unavailable compute graphs. No automatic future run was created.
 3. ART-PINE-PILOT: only on owner curation, remove named references and freeze fresh variants2/3 request. Preserve the old pilot/approved inputs.
 4. RULE-ART-COMPLETION: wait for pending presentation/source-policy choices; unrelated work grants no approval.
@@ -48,6 +48,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Last Verified
 
-Current release `bfab6e6cb3be9d7ed9b2c2899a0be434d10e1d13`: [133 grounding, gallery navigation and petting eye weight](plans/PLAN-20261019-133-companion-grounding-gallery-eyes.md#출시와-실제-공개-검증). Local3,190 units/294 files/type/lint/build/harness331 and28 distinct native scenarios PASS. Earlier failures, corrected harness/public probe timing and video/OS-focus limits remain in the record. Actual anonymous fullSHA/98 exact assets/4 gallery pointer-keyboard/ACK/native source-floor/food selection and finalv3 petting16poses/261decoded frames PASS2026-10-19 17:10:15.392 KST; Vercel5wyHGH7aiLv2A13TucagQWZwQvGT success17:06:38, remote quality39220175711 success17:10:13. No production mutation/live-state GET/private manifest/seeded care/preferences/tastes/discovery in public verification. Protected user art, old character packets and72 toy art bytes preserved. No owner art approval, same-period quota resolution or actual broadcaster hardware claim.
+Current release `85c922c18ac63a3ed52428cd96f870d4ec113c83`: [134 gallery arrow/button parity and unread page dots](plans/PLAN-20261019-134-companion-gallery-arrow-dots.md#출시와-실제-공개-검증). Local3,196 units/294 files/type/lint/build/harness332 and21 distinct native scenarios PASS. Actual fresh anonymous fullSHA/98 exact assets/4 gallery dots-pointer-keyboard/ACK PASS2026-10-19 20:46:15.123 KST; VercelF6rbrHasG8FzYWd8FLVPaMJdvgMj success20:39:52, remote quality39245987212 success20:42:50. The first oversized public probe failed a historical house-floor2px assertion before the gallery; its evidence and unresolved cause remain in134, distinct from the scoped gallery PASS. No production mutation/live-state GET/private manifest/seeded care/preferences/tastes/discovery in public verification. Protected user art/runtime art preserved. This release does not reverify body physics/petting motion or establish real-login/RLS/OBS/screen-reader/45-native-dot evidence, art approval or quota resolution.
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.

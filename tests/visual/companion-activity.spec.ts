@@ -28,7 +28,8 @@ const new109Targets = ["companion-radio-list#open", "companion-radio-list#close"
 const new110Targets = ["companion-book-open", "companion-book-close", "companion-collection-inspect#behavior", "companion-collection-inspect#moment"];
 const new111Targets = ["companion-profile-page#settings", "companion-rare-prank#on", "companion-rare-prank#off", "companion-radio-source", "companion-radio-license"];
 const new115Targets = ["companion-personality#tidy", "companion-personality#mischievous"];
-const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-shake", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets, ...new110Targets, ...new111Targets, ...new115Targets];
+const new135Targets = ["companion-home-tv#on", "companion-home-tv#off", "companion-home-tv#next", "companion-home-light#on", "companion-home-light#off"];
+const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-shake", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets, ...new110Targets, ...new111Targets, ...new115Targets, ...new135Targets];
 const retired110Target = "companion-radio-mood#lively";
 const readFixtureTargets = [...sampleTargets, retired110Target];
 const at = Date.parse("2026-06-10T03:00:00Z");
@@ -582,7 +583,7 @@ test("110 developer views show book and unified memory uses while old radio mood
   await usage.locator('[data-act="usage-show-all"]').click();
   await page.locator('[data-act="activity-expand-all"]').click();
   await timeline.locator(".act-lines > summary").click();
-  for (const target of [...new110Targets, ...new115Targets]) {
+  for (const target of [...new110Targets, ...new115Targets, ...new135Targets]) {
     const name = describeTarget("ui.click", target).name;
     const usageRow = usage.locator('.usage-list:not([data-retired]) > li').filter({ hasText: name }), timelineRow = timeline.getByText(name, { exact: true });
     await usageRow.scrollIntoViewIfNeeded(); await expect(usageRow).toBeInViewport();
@@ -621,4 +622,32 @@ for (const surface of ["viewer", "studio"] as const) test(`113 ${surface}: inspe
   expect(JSON.stringify(capture.get(page)!.events)).not.toContain(COMPANION_FOOD_KINDS[0]);
   await tile.press("Enter"); await flush(page, [{ target: "companion-collection-inspect#food", n: 2 }]);
   expect(count(page, "companion-collection-inspect#food")).toBe(2);
+});
+
+for (const surface of ["viewer", "studio"] as const) test(`135 ${surface}: TV and lamp pointer-keyboard controls emit one fixed use per activation`, async ({ page }) => {
+  test.setTimeout(60000); await setup(page, surface);
+  const home = await openCompanionHome(page), tv = home.locator('[data-act="companion-home-tv"]'), lamp = home.locator('[data-act="companion-home-light"]');
+  const expected: string[] = [], snapshots: unknown[] = [];
+  for (const button of [tv, lamp]) {
+    await expect(button).toHaveCount(1); const box = (await button.boundingBox())!;
+    expect(box.width).toBeGreaterThanOrEqual(43.9); expect(box.height).toBeGreaterThanOrEqual(43.9);
+    await expect(button).toHaveAttribute('data-home-decoration-control', '');
+  }
+  for (let step = 0; step < 6; step++) {
+    const action = await tv.getAttribute('data-act-opt'); expect(action).toBe(step === 0 ? 'on' : step === 5 ? 'off' : 'next');
+    expected.push('companion-home-tv#' + action);
+    if (step % 3 === 0) await tv.click(); else { await tv.focus(); await tv.press(step % 3 === 1 ? 'Enter' : 'Space'); }
+    await expect(tv).toHaveAttribute('aria-pressed', step === 5 ? 'false' : 'true');
+    snapshots.push({ step, action, label: await tv.getAttribute('aria-label') });
+  }
+  for (let step = 0; step < 2; step++) {
+    const action = await lamp.getAttribute('data-act-opt'); expect(['on', 'off']).toContain(action); expected.push('companion-home-light#' + action);
+    await lamp.focus(); await lamp.press(step ? 'Space' : 'Enter'); await expect(lamp).toHaveAttribute('aria-pressed', action === 'on' ? 'true' : 'false');
+  }
+  const scoped = () => capture.get(page)!.events.filter(event => /^companion-home-(tv|light)#/.test(event.target ?? ''));
+  await expect.poll(() => scoped().map(event => event.target), { timeout: 20000 }).toEqual(expected);
+  await page.waitForTimeout(180); expect(scoped().map(event => event.target)).toEqual(expected);
+  expect(scoped().every(event => event.meta === null && event.durMs === null)).toBe(true);
+  writeFileSync(`${auditPrefix}-135-${surface}-controls.json`, JSON.stringify({ expected, snapshots, events: scoped(), noSyntheticClockOrCallbacks: true }, null, 2));
+  await home.screenshot({ path: `${auditPrefix}-135-${surface}-controls.png` });
 });

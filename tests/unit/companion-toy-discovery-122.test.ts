@@ -23,10 +23,11 @@ const click = (node: Element, detail = 1) => (node.props.onClick as (event: { de
 beforeEach(() => { selectedKind = "ball"; harness.states = []; harness.refs = []; harness.acknowledge.mockReset(); harness.activity.mockReset(); vi.stubGlobal("getComputedStyle", () => ({ gridTemplateColumns: "1fr 1fr 1fr 1fr" })); });
 afterEach(() => vi.unstubAllGlobals());
 describe("122 finite toy book interaction", () => {
-  it("mounts no hidden item's artwork/name and performs no automatic acknowledgment", async () => {
+  it("mounts bounded neutral shape clues without names or automatic acknowledgment", async () => {
     await render(); expect(tiles()).toHaveLength(8);
     expect(tiles().every(node => /^\?\?\? · \d+$/.test(String(node.props["aria-label"])))).toBe(true);
-    expect(nodes(tree).filter(node => typeof node.type === "function" && node.type.name === "CompanionToyArt")).toHaveLength(0);
+    expect(nodes(tree).filter(node => typeof node.type === "function" && node.type.name === "CompanionToyArt")).toHaveLength(9); //8 tiles + one large silhouette.
+    expect(find(node => node.props.className === "rhh-collection-detail rhh-collection-gallery-detail rhh-toy-detail").props["data-found"]).toBeUndefined();
     expect(harness.acknowledge).not.toHaveBeenCalled(); expect(harness.activity).not.toHaveBeenCalled();
   });
   it("covers all twenty-four identities exactly once in finite pages and does not read items by paging", async () => {

@@ -1,3 +1,4 @@
+import { assertCompanionSilhouettes } from "./helpers/companion-silhouette";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -187,7 +188,7 @@ for (const [surface, width, height, dark] of [["viewer", 1050, 640, false], ["st
     await activate("prev", category, "disabled start consumes key without category or tile movement"); await manualPage("End");
     await activate("next", grid.locator('[aria-pressed="true"]'), "disabled end consumes key without inspection");
     expect(await page.evaluate(key => (JSON.parse(localStorage.getItem(key)!) as CompanionCollection).gifts.equipped, COMPANION_COLLECTION_KEY)).toBe(prior.gifts.equipped);
-    expect(await grid.locator('button:not([data-found]) [data-collection-art],button:not([data-found]) img').count()).toBe(0);
+    await assertCompanionSilhouettes(grid);
     await dialog.screenshot({ path: `${output}/${surface}-${kind}.png` }); steps.push({ kind, initialDots, finalDots: await assertDots(book, [], size) });
   }
   // Let the real bounded client queue flush naturally. Every mutation has

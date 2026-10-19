@@ -20,6 +20,7 @@ const VISIT = "12345678-1234-4234-8234-123456789abc";
 const CANARY = "synthetic-sensitive-canary@example.test";
 const ACTIONS = [
   "companion-home-open", "companion-home-close", "companion-home-fold#close", "companion-home-call",
+  "companion-home-tv#on", "companion-home-tv#off", "companion-home-tv#next", "companion-home-light#on", "companion-home-light#off",
   "companion-food-spawn", "companion-food-move", "companion-food-discard", "companion-food-clear",
   "companion-pet", "companion-drag", "companion-bonk", "companion-rest", "companion-find",
   "companion-extract", "companion-heart-clear"

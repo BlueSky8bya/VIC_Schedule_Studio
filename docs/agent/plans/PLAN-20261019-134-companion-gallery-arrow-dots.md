@@ -1,6 +1,6 @@
 # 134 — 도감 좌우키와 발견 페이지 점 표시
 
-2026-10-19 KST. 상태: 구현·로컬 검증 완료, 승인 범위 출시 확인 대기. 최신 사용자 요청은 도감 종류/개별 항목을 좌우로 옮기는 대신 화면의 이전·다음 버튼을 실행하고, 하단 가로 바를 없애며 새 발견이 남은 페이지를 점 색으로 알리는 것이다.
+2026-10-19 KST. 상태: 구현·검증·배포 완료. 최신 사용자 요청은 도감 종류/개별 항목을 좌우로 옮기는 대신 화면의 이전·다음 버튼을 실행하고, 하단 가로 바를 없애며 새 발견이 남은 페이지를 점 색으로 알리는 것이다.
 
 ## 계약과 범위
 
@@ -28,4 +28,14 @@
 - 실제 최대18개 점의 가시 색·현재/미확인 이중 색·자기 칸 경계·bar0을 검사했다.45개는 순수 데이터/셀 너비 검토 범위이고45개 실물이나 screen reader 음성 판정은 주장하지 않는다. 작은 수첩과 어두운 설정의 실제 directional-unread 스크린샷을 직접 열어 확인했다.
 - native 첫 실행은14PASS/7FAIL이었다.3개는 CSSOM이50:50 gradient를4개 중복 색 stop으로 직렬화한 것을2개라고 가정한 하네스 문제로, 실제 blue→warm 두 색을 정합 검사하도록 교정했다.113의4개는 하드코딩3117 origin이3118을 거부한 준비 오류였으며 HTTP loopback을 먼저 검증한 실제 project origin만 허용하게 교정한 뒤4PASS였다. 이후134의3개는 ACK 배열이 삽입순서일 것이라는 가정, 그 다음3개는 같은 페이지 Home이 선택 항목을0으로 옮길 것이라는 가정에서 실패했다. 정확한 membership/개수와 이미 읽은0번의 실제 클릭으로 의도를 분리하고 같은 제품/빌드에서3PASS했다. native-1/2/3의 실패·trace·video를 모두 보존하고14+4+3의 최종 근거를 구분한다. 제품 동작을 검사에 맞춰 바꾸지 않았다.
 
-최종 동결 뒤 전체 단위를 다시 단독 실행해3,196개/294파일을22.86초에 통과했고, 명시적 typecheck·전역 lint·harness332도 다시 통과했다. 출시 검증은 승인 범위 반영 후 기록한다. 관련 없는 사용자 그림·로컬 작업을 보존한다.
+최종 동결 뒤 전체 단위를 다시 단독 실행해3,196개/294파일을22.86초에 통과했고, 명시적 typecheck·전역 lint·harness332도 다시 통과했다. 관련 없는 사용자 그림·로컬 작업을 보존했다.
+
+## 출시와 실제 공개 검증
+
+- 승인 범위21경로를 `85c922c18ac63a3ed52428cd96f870d4ec113c83` (`fix(companion): align gallery keys and dots`)로 main에 반영했다. 공개 author/committer는 BlueSky8bya의 GitHub noreply 식별자다. 서버/API/DTO/권한/KST·그림 파일·의존성 변경0이며 보호된 사용자 제작기록 SHA256 `E980005102457E2A02AE318FF7665596E7170D0BFB34A328F64A6EC292C5990B`를 유지했다.
+- Vercel `F6rbrHasG8FzYWd8FLVPaMJdvgMj`는2026-10-19 20:39:52 KST success, [원격 quality39245987212](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39245987212)는20:42:50 KST success다. Unit/isolated SQL/harness/build/type/lint 단계가 모두 통과했다. 원격 근거는 `.scratch-pw/companion-134/release-remote.json`이다.
+- 첫 실제 공개 검사는 갤러리에 도달하기 전 과거 집 배치 조건에서 `floor.bottom310`과 `room.bottom312`의2px 차이로 실패했다. `.scratch-pw/companion-134/production/`의 검사본·실패·스크린샷을 그대로 보존했다. 원인은 확정하지 않았으며 집 물리/가구 조건이 통과했다고 주장하지 않는다. 이번 갤러리 변경을 검증하기 위해 과거 집 래스터/contact·음식 물리·쓰다듬기 동영상·라디오/취향 문구 검사를 명시적으로 제외한 별도 검사본을 작성하고 독립 검토했다. 제품을 실패한 과거 조건에 맞춰 바꾸지 않았다.
+- 별도 실제 익명 검사는20:46:15.123 KST에 PASS했다. `.scratch-pw/companion-134/production-2/`에 fullSHA/실제 브라우저 chunk/98개 배포 자산의 exact committed bytes,4도감 결과와 스크린샷을 보존했다. 옷장5·냠냠15·장난감2·추억3페이지에서 바0·전체 점·44px·셀 경계·현재/미확인 색·native 포인터/Home/End/PageUp/PageDown ACK0과 좌우키의 실제 footer click1/ACK를 확인했다. 각 도감에서 좌우키2회가 표시된 버튼의 action/option/방향과 일치했다. 실제 장난감 상자를 한 번 눌러 발견한 stacking-rings와 자율 발견 추억은 각각 좌우 버튼 경로에서 ACK1, 일반 페이지 이동은 ACK0이었다. 실제 공개 음식/옷장의 새 발견은 없었고, 해당 상태는 앞선 명시적 fixture 검증으로 구분한다.
+- 실제 공개 컨텍스트는 빈 쿠키/저장소로 시작해 취향/돌봄/발견 seed0, 앱 콜백·RNG·시계·레이아웃 주입0이다. 생산 쓰기·telemetry·외부 요청을 차단하고 live-state GET/private manifest 읽기0을 유지했다. 오류/예상 밖 요청0, 모바일 제외도 통과했다. 실제 공개 음식 화면과 fixture의 미확인 점 화면을 직접 열어 확인했다. OBS/실제 로그인·RLS/screen reader 음성/45점 실물/이번 범위 밖 물리·표정의 재검증 근거로 확대하지 않는다.
+
+출시 완료 기록은 로컬 문서에 반영한다. 별도 문서 전용 재배포는 만들지 않는다.132 성격/생활 장면은 계속 제안 검토 상태다.
