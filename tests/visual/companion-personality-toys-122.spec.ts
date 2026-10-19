@@ -153,6 +153,13 @@ test("122 full tidy actually picks carries and returns all four naturally dispen
   await startProbe(page); await actor.focus(); await actor.press("Space"); await page.mouse.move(2, 2);
   await expect(pet).not.toHaveAttribute("data-state", "held");
   await expect(page.locator(".vc-toy")).toHaveCount(0, { timeout: 65000 });
+  await expect.poll(async () => {
+    const observed = await samples(page);
+    return ids.every(id => {
+      const last = observed.filter(sample => sample.toys.some(toy => toy.id === id && toy.carried)).at(-1);
+      return last && observed.some(sample => sample.at > last.at && !sample.toys.some(toy => toy.id === id));
+    });
+  }, { message: "the display probe witnesses each actual return after its final carry", timeout: 1000, intervals: [16, 16, 32] }).toBe(true);
   const trace = await samples(page);
   for (const id of ids) {
     const carried = trace.filter(sample => sample.toys.some(toy => toy.id === id && toy.carried));

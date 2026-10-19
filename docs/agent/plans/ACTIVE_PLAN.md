@@ -11,3 +11,9 @@
 Completed plans remain in their own files. Remove their row here when work finishes; record verification in the plan/handoff and link next active work from CURRENT_STATE.
 
 Previous accumulated index: `docs/agent/archive/20260909-ACTIVE_PLAN.snapshot.txt` (history).
+
+## UI-128 — grounded storage and final box approach
+
+2026-10-19 KST, latest owner128. User selected the rear floor shared with the chest. CSS-only first candidate grounds both opaque bases and balances their right-side spacing. Independent review identified an existing jump-landing inset preventing the final grounded toy-box approach at shell .9/.8; the native carried-resize regression reproduced a failed return on build pUjm-JWwSRralWtP1gaXp.
+
+Implement a bounded final walk only when an actual toy stash/spawn beat is outside the existing box-close range and the same measured body-safe home floor intersects that range. Ordinary jump landing inset, body/control collision geometry, close distance and actual painted-opening20px ACK remain unchanged. Revalidate that narrow walk against current safe floor/box on layout changes; cancellation/hidden/removed targets fail closed. No new clock, observer, teleport, API, DB, metadata or personal-data collection. Existing shared viewer/studio code only. Add focused boundary/resize/cancel coverage, rerun all local gates and actual native interactions, then independent review and authorized main release/public verification. Completion evidence belongs to the128 topic record; remove this active block afterward.

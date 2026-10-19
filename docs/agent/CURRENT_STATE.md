@@ -7,7 +7,7 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Current product work: [127 furniture placement](verification/COMPANION_FURNITURE_PLACEMENT-20261019.md), smaller trash painting, feeder beside the curtain and padded right-aligned chest. Provider quota comparison/recovery and the listed evidence follow-ups remain. Shared clock/KST, physical contacts, sofa art and public/private boundaries remain mandatory.
+Current product work: [128 storage baseline](verification/COMPANION_STORAGE_BASELINE-20261019.md), ground the feeder/chest and balance their right-side placement. Provider quota comparison/recovery and the listed evidence follow-ups remain. Shared clock/KST, physical contacts, sofa art and public/private boundaries remain mandatory.
 
 Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user.125 explicitly authorizes unnecessary Vercel deployment cleanup/optimization; unrelated cleanup, bulk DB UPDATE, paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
 
@@ -17,7 +17,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| UI-127 | Release verification | Local gates passed; check actual public furniture/drop/return and remote quality after release | [Record](verification/COMPANION_FURNITURE_PLACEMENT-20261019.md) |
+| UI-128 | Validation | Ground actual painted bases, validate spacing/physical interactions and authorized release | [Record](verification/COMPANION_STORAGE_BASELINE-20261019.md) |
 | OPS-VERCEL-QUOTA | Open | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
@@ -38,7 +38,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Next Exact Steps
 
-0. UI-127: release reviewed furniture placement and verify actual public fullSHA/assets/UI. Local3,070 units/type/lint/build/native16/harness323 passed. No production data/provider changes.
 1. OPS-DB-QUOTA/OPS-VERCEL-QUOTA: compare post-release route/RPC/cost with the same period/denominator, recheck Hobby restrictions/reset status; define the Free-plan full-backup/recovery path and recheck unavailable compute graphs. No automatic future run was created.
 2. ART-PINE-PILOT: only on owner curation, remove named references and freeze fresh variants2/3 request. Preserve the old pilot/approved inputs.
 3. RULE-ART-COMPLETION: wait for pending presentation/source-policy choices; unrelated work grants no approval.
@@ -47,6 +46,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Last Verified
 
-Current release `17de1eb295eb6f99902c0ccff4e36800cb385ba8`: [126 floor drops, furniture, layered curtains and first-feed correction](verification/COMPANION_FLOOR_CURTAIN_LAYERS-20261019.md#release). Local3,070 units/type/lint/build/harness322 and final affected9/9 native PASS; earlier scoped layout/curtain/input/toy observations and failures retained separately. Actual anonymous fullSHA/98 exact assets/UI/source-floor spawn PASS at2026-10-19 11:43:29 KST; VercelBJctA4crgGFeBVMiGYexZTLTRi3v Ready11:42:26, remote quality39191066436 success11:44:19. No production mutation/live-state GET/private manifest/seeded care/preferences/tastes/discovery. Protected user art preserved. No owner art approval, same-period quota resolution or actual broadcaster hardware claim.
+Current release `ba0863f3fc97f9c6c2351d01621187d98f37a097`: [127 furniture placement](verification/COMPANION_FURNITURE_PLACEMENT-20261019.md#release). Local3,070 units/type/lint/build/harness323 and final16/16 native PASS; initial failures and physical-clearance correction retained separately. Actual anonymous fullSHA/98 exact assets/UI/source-floor spawn PASS at2026-10-19 12:02:26 KST; Vercel6VPLKaTyHZh9AadSSCM5ZFE3mQcW Ready12:01:16, remote quality39192514482 success12:03:46. No production mutation/live-state GET/private manifest/seeded care/preferences/tastes/discovery. Protected user art preserved. No owner art approval, same-period quota resolution or actual broadcaster hardware claim.
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.

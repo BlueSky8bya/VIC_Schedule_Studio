@@ -57,7 +57,7 @@ import { createCompanionScenes, type CompanionSceneAction, type CompanionSceneEv
 import { createCompanionSceneStore } from "@/lib/ui/viewer-companion/scene-memory";
 import { COMPANION_SCENE_SIGNAL, emitCompanionWardrobePreference, validCompanionSceneSignal } from "@/lib/ui/viewer-companion/scene-signals";
 import { accessibleCompanionToys, companionToyFoodPriority, createCompanionToyPlanner, type CompanionToyAction } from "@/lib/ui/viewer-companion/toys";
-import { companionToyReturnDelivered, companionToyReturnTarget, sampleCompanionToyReturn } from "@/lib/ui/viewer-companion/toy-return";
+import { companionToyReturnDelivered, companionToyReturnTarget, planCompanionToyBoxApproach, sampleCompanionToyReturn, validCompanionToyBoxApproach } from "@/lib/ui/viewer-companion/toy-return";
 import { createCompanionFeedCommands, type CompanionFeedCommand } from "@/lib/ui/viewer-companion/feed-command";
 import { createCompanionPersonalityActivity, preflightCompanionPersonalityActivity } from "@/lib/ui/viewer-companion/personality-activity";
 import { companionToyUnread, loadCompanionTastes, recordCompanionFoodTaste, recordCompanionToyExperience, shouldDeclineCompanionFood, subscribeCompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
@@ -94,7 +94,7 @@ import "./viewer-companion.css";
 
 type Props = { onOpenBook: () => void; root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; workspaceBusy?: boolean; agenda: boolean; monthKey: string; context?: CompanionHomeEnvironmentContext; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; launcherHost?: HTMLElement | null; compactHost?: HTMLElement | null; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void; positionMemory?: CompanionPositionMemory };
 type Control = Record<Exclude<CompanionHomeAction, "book"> | "place" | "rest" | "toys" | "toyChanged" | "toyTouched", () => void>;
-type RuntimeAction = CompanionAction & { foodRefusal?: { foodId: string; kind: CompanionFoodKind }; personalitySignature?: CompanionPreferences["personality"]; scene?: CompanionSceneAction["scene"]; toy?: CompanionToyAction["toy"]; household?: CompanionHouseholdBeat; radio?: { generation: number; reaction: CompanionRadioReaction; bpm: number; instrument?: CompanionInstrumentReaction } };
+type RuntimeAction = CompanionAction & { foodRefusal?: { foodId: string; kind: CompanionFoodKind }; personalitySignature?: CompanionPreferences["personality"]; scene?: CompanionSceneAction["scene"]; toy?: CompanionToyAction["toy"]; toyApproach?: { element: HTMLElement; effect: "stash" | "spawn"; duration: number }; household?: CompanionHouseholdBeat; radio?: { generation: number; reaction: CompanionRadioReaction; bpm: number; instrument?: CompanionInstrumentReaction } };
 const sampleWorldMusic = (music: NonNullable<RuntimeAction["radio"]>, age: number) => music.instrument ? sampleCompanionInstrumentReaction(music.instrument, age, music.bpm) : sampleCompanionRadioReaction(music.reaction, age, music.bpm);
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -1509,7 +1509,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       toyTouched: () => {
         toyPlanner.cancel(brain.current.activeMs); toys.current?.cancel(performance.now()); toyPlanner.wake(brain.current.activeMs); scenes.cancel();
         if (action?.toy || action?.scene) {
-          if (["walk", "jump"].includes(action.kind)) action = { ...action, toy: undefined, scene: undefined };
+          if (["walk", "jump"].includes(action.kind)) action = { ...action, toy: undefined, toyApproach: undefined, scene: undefined };
           else clearAction(false, false, true);
         }
         if (!pause && !document.hidden) schedule();
@@ -1535,6 +1535,15 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     };
     const launch = (next: RuntimeAction, now: number) => {
       curiosityTossed = false;
+      if (next.kind === "sniff" && next.toy && ["stash", "spawn"].includes(next.toy.effect ?? "")) {
+        const element = document.querySelector<HTMLElement>(".vc-home [data-home-action='toys']"), rect = element?.getBoundingClientRect();
+        const available = Boolean(element?.isConnected && !element.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]"));
+        const approach = rect && planCompanionToyBoxApproach({ x, y, platformId: support }, supportById(support), rect, size, available);
+        if (!element || !approach) { clearAction(); nextDecision = now + 500; return; }
+        if (approach.kind === "walk") next = { ...next, kind: "walk", target: approach.target, duration: 220, pace: "amble",
+          toy: { ...next.toy, effect: undefined, point: undefined },
+          toyApproach: { element, effect: next.toy.effect === "stash" ? "stash" : "spawn", duration: next.duration } };
+      }
       if (next.household?.kind === "tidy" || next.toy) ensureWardrobe(true);
       accessoryWitnessed = 0; accessoryLanded = false;
       verticalRecoveryX = undefined;
@@ -2298,6 +2307,22 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           const nextHop = completed.kind === "walk" && !completed.episodeCancelled && runHop && supportedNow() && !homeJourney && !overlayActive && !restAfterLanding && !ejected && !workspaceBusyRef.current && !premiereActive && !reduced && gfxMode() !== "off" && presence.phase === "active" && validCompanionRunHop(runHop, { x, y }, supportById(support)) && (!runHop.episode || companionEpisodeHopAvailable(runHop, supportById(support), liveFoods)) ? runHop : undefined;
           if (completed.scene) scenes.complete(completed as CompanionSceneAction);
           clearAction(continueEpisode, Boolean(completed.household && household.active() || completed.scene), Boolean(completed.scene || completed.toy));
+          if (completed.toyApproach && completed.toy) {
+            const marker = completed.toyApproach, element = marker.element;
+            const available = element.isConnected && element === document.querySelector(".vc-home [data-home-action='toys']")
+              && !element.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]");
+            const ready = planCompanionToyBoxApproach({ x, y, platformId: support }, supportById(support), element.getBoundingClientRect(), size, available);
+            const owns = !homeJourney && !restAfterLanding && !overlayActive && !pause && !document.hidden && !premiereActive && !workspaceBusyRef.current
+              && !pressed && !keyboardHeld && !placing && effective.enabled && effective.roam && !reduced && gfxMode() !== "off" && presence.phase === "active"
+              && toyPlanner.active() && !companionToyFoodPriority(brain.current, { x, y, platformId: support, platforms, width: innerWidth, height: innerHeight, foods: liveFoods }, effective);
+            // Resume this offered beat once. Replanning its generic12px
+            // landing would walk back out of the valid close intersection.
+            if (owns && ready?.kind === "ready") {
+              launch({ kind: "sniff", target: { x, y, platformId: support }, duration: marker.duration,
+                toy: { ...completed.toy, effect: marker.effect, point: { x, y, platformId: support } } }, now);
+              status = "sniff"; row = 1; frame = 0;
+            } else { clearAction(); nextDecision = now + 500; }
+          }
           if (ejected && presence.phase === "parked") { row = presence.pose.row; frame = 0; status = presence.pose.status; if (presence.dreaming) el.dataset.dreaming = ""; else el.removeAttribute("data-dreaming"); offGeometry?.(); offGeometry = undefined; geometryReady = false; hearts.pause(true); }
           if (rested) { brain.current = recordCompanionEvent(brain.current, "rested"); rememberLife({ kind: "rested" }); sceneEvent({ kind: "rested", equipped: wardrobe.current.equipped, place: isHomeSupport(support) ? "home" : supportById(support)?.kind === "card" ? "card" : "floor" }); } if (completed.episodeCancelled) brain.current = { ...brain.current, episode: undefined }; nextDecision = now + (homeJourney || continueRoute || continueEpisode || completed.household && household.active() ? 0 : completed.attention && completed.attention.kind !== "social" ? 60 : 220);
           if (homeJourney && !overlayActive && (presence.phase === "active" || homeJourney === "called" && presence.phase === "finishing")) {
@@ -3302,9 +3327,20 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         const destination = action?.target.platformId;
         const target = destination && action ? resolve(destination, action.target) : undefined;
         if (action && target) {
-          action.target.platformId = target.id;
-          if (!verticalLanding) action.target.x = platformLandingX(target, action.target.x);
-          action.target.y = target.y;
+          if (action.toyApproach) {
+            const element = action.toyApproach.element, rect = element.getBoundingClientRect();
+            const available = element.isConnected && element === document.querySelector(".vc-home [data-home-action='toys']")
+              && !element.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]");
+            const exact = { x: action.target.x, y: target.y, platformId: target.id };
+            if (!validCompanionToyBoxApproach({ x, y, platformId: support }, exact, p, rect, size, available)) {
+              clearAction(); nextDecision = geometryAt + 500;
+              if (!p || x < p.x || x > p.x + p.width || Math.abs(y - p.y) > 2) settle({ x, y }, viewportChanged, !viewportChanged);
+            } else action.target = exact;
+          } else {
+            action.target.platformId = target.id;
+            if (!verticalLanding) action.target.x = platformLandingX(target, action.target.x);
+            action.target.y = target.y;
+          }
         }
         // Genuine deletion/occlusion/resize needs one safe landing. A source
         // leaving the viewport during a valid flight does not cancel it.

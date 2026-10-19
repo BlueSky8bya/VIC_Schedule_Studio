@@ -171,14 +171,11 @@ for (const [surface, width, dark] of [["viewer", 1100, false], ["viewer", 1440, 
   expect(data.floor.bottom).toBeCloseTo(data.room.bottom, 2);
   expect(data.floor.y - data.window.bottom, "the frame and sill have wall space above the floor").toBeGreaterThan(8 * data.scale);
   const feeder = data.controls.find(control => control.action === "feed")!;
-  expect(data.room.bottom - feeder.bottom).toBeCloseTo(Math.max(86 * data.scale, 79), 1);
-  expect(data.floor.bottom - 6 - feeder.bottom, "the unscaled92px body keeps its real floor clearance").toBeGreaterThanOrEqual(72.92);
   const chest = data.controls.find(control => control.action === "toys")!;
-  expect(data.room.right - chest.right).toBeCloseTo(6 * data.scale, 1);
+  expect(data.room.right - chest.right).toBeCloseTo(4 * data.scale, 1);
   expect(feeder.right).toBeLessThanOrEqual(chest.x);
-  expect(feeder.bottom).toBeLessThanOrEqual(sofaHit.y - 2 * data.scale);
   expect(await page.locator(".vc-dispenser").evaluate(node => getComputedStyle(node, "::before").content)).toBe("none");
-  expect(data.controls.find(control => control.action === "toys")!.width / data.scale).toBeGreaterThanOrEqual(data.cssWidth >= 330 ? 130 : 104);
+  expect(chest.width / data.scale).toBeCloseTo(data.cssWidth >= 330 ? 124 : 98, 1);
   expect(data.sofa.bottom - data.seat.bottom).toBeCloseTo(20.28 * data.scale, 1);
   expect(data.seat.x).toBeGreaterThan(data.sofa.x + data.sofa.width * 31 / 180);
   expect(data.seat.right).toBeLessThan(data.sofa.x + data.sofa.width * 149 / 180);
@@ -199,6 +196,11 @@ for (const [surface, width, dark] of [["viewer", 1100, false], ["viewer", 1440, 
   const pictureFor = (action: string) => data.pictures.find(picture => picture.action === action)!;
   const visibleWidth = (action: string) => { const r = pictureFor(action).visible; return r.right - r.x; };
   const visibleHeight = (action: string) => { const r = pictureFor(action).visible; return r.bottom - r.y; };
+  for (const action of ["feed", "toys"]) expect(Math.abs(pictureFor(action).visible.bottom - data.floor.y), action + " opaque base rests on the rear floor").toBeLessThan(.25);
+  const storageGap = pictureFor("toys").visible.x - pictureFor("feed").visible.right;
+  expect(storageGap, "visible furniture keeps breathing room").toBeGreaterThanOrEqual(12);
+  expect(storageGap).toBeLessThanOrEqual(30);
+  expect(data.room.right - pictureFor("toys").visible.right, "the chest painting retains right padding").toBeGreaterThanOrEqual(12);
   expect(visibleWidth("toys"), "a chest is broader than a shelf radio").toBeGreaterThan(visibleWidth("radio") * 1.3);
   expect(visibleWidth("toys")).toBeGreaterThan(visibleWidth("book") * 1.8);
   expect(visibleWidth("feed") * visibleHeight("feed"), "the dispenser is larger than the book").toBeGreaterThan(visibleWidth("book") * visibleHeight("book") * 1.25);

@@ -9,11 +9,12 @@
   --vc-object-gap: max(8px, calc(8px / var(--shell-zoom, 1)));
   --vc-radio-hit: max(53px, var(--vc-object-min-hit));
   --vc-book-hit: max(44px, var(--vc-object-min-hit));
-  --vc-toy-hit: max(104px, var(--vc-object-min-hit));
-  --vc-dispenser-hit: max(56px, var(--vc-object-min-hit));
+  --vc-toy-hit: max(98px, var(--vc-object-min-hit));
+  --vc-dispenser-hit: var(--vc-object-min-hit);
+  --vc-storage-right: 4px;
+  --vc-storage-gap: max(3px, calc(3px / var(--shell-zoom, 1)));
   --vc-shelf-width: max(116px, calc(var(--vc-radio-hit) + var(--vc-book-hit) + var(--vc-object-gap) + 2px));
   --vc-window-left: 12px;
-  --vc-storage-bottom: max(69px, calc(6px + var(--vc-bin-height) + var(--vc-object-gap)));
   --vc-wall: color-mix(in srgb, rgb(var(--glass-panel)) 88%, #dfc9ab);
   --vc-floor: color-mix(in srgb, rgb(var(--glass-cell)) 72%, #c5a47e);
   --vc-wood: color-mix(in srgb, rgb(var(--glass-panel)) 46%, #ae8864);
@@ -53,9 +54,9 @@
 }
 /* Shelf, back-row storage and the foreground keep separate native targets.
    At200px the capped sofa clears the glass; taller empty wall is unnecessary. */
-.vc-home-room { --vc-toy-paint-width: 104px; --vc-wall-reserve: calc(var(--vc-shelf-width) + 28px); --vc-window-width: min(152px, calc(100% - var(--vc-wall-reserve))); position: relative; height: 200px; overflow: hidden; border-radius: var(--r-sm); background: radial-gradient(ellipse at 18% 18%, #fff5 0, transparent 60%), linear-gradient(180deg, var(--vc-wall), color-mix(in srgb, var(--vc-wall) 88%, var(--vc-linen))); box-shadow: inset 0 1px 0 #fff3, inset 0 -1px 0 var(--vc-thread); }
+.vc-home-room { --vc-toy-paint-width: 104px; --vc-floor-height: 80px; --vc-storage-bottom: calc(var(--vc-floor-height) + 3px - var(--vc-toy-paint-width) * 17 / 256); --vc-wall-reserve: calc(var(--vc-shelf-width) + 28px); --vc-window-width: min(152px, calc(100% - var(--vc-wall-reserve))); position: relative; height: 200px; overflow: hidden; border-radius: var(--r-sm); background: radial-gradient(ellipse at 18% 18%, #fff5 0, transparent 60%), linear-gradient(180deg, var(--vc-wall), color-mix(in srgb, var(--vc-wall) 88%, var(--vc-linen))); box-shadow: inset 0 1px 0 #fff3, inset 0 -1px 0 var(--vc-thread); }
 .vc-home[data-home-presentation="compact"] > .panel-section-heading .panel-section-title > span { min-height: 36px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: 4px var(--control-hit); }
-.vc-home-room::before { content: ''; position: absolute; inset: auto 0 78px; height: 5px; background: linear-gradient(180deg, var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 1px 2px var(--vc-soft-shadow); pointer-events: none; }
+.vc-home-room::before { content: ''; position: absolute; inset: auto 0 calc(var(--vc-floor-height) - 2px); height: 5px; background: linear-gradient(180deg, var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 1px 2px var(--vc-soft-shadow); pointer-events: none; }
 .vc-home-close { display: grid; place-items: center; width: var(--control-hit); height: var(--control-hit); margin-left: auto; padding: 0; border: 0; border-radius: var(--r-pill); color: var(--muted); background: transparent; cursor: pointer; pointer-events: auto; }
 .vc-home-close:hover { color: var(--ink); background: rgb(var(--glass-head)); }
 /* Storage has room-appropriate scale. The glass uses the remaining wall
@@ -99,7 +100,7 @@
 .vc-home-light { position: absolute; top: 36px; left: 40px; width: 65%; height: 144px; background: linear-gradient(125deg, #f4e2b72e, transparent 84%); clip-path: polygon(0 0, 28% 0, 100% 100%, 10% 100%); pointer-events: none; }
 .vc-home-room[data-night] .vc-home-light { background: linear-gradient(125deg, #c6d7eb18, transparent 84%); }
 .vc-home-room:is([data-weather="rain"], [data-weather="fog"], [data-weather="snow"]) .vc-home-light { opacity: .3; }
-.vc-home-floor { position: absolute; inset: auto 0 0; height: 80px; background: repeating-linear-gradient(0deg, transparent 0 21px, var(--vc-thread) 22px, transparent 23px 44px), radial-gradient(ellipse at 33% 0, #fff4, transparent 68%), linear-gradient(180deg, color-mix(in srgb, var(--vc-floor) 80%, var(--vc-wall)), var(--vc-floor)); box-shadow: inset 0 1px 0 #fff3, inset 0 -3px 0 var(--vc-thread); pointer-events: none; }
+.vc-home-floor { position: absolute; inset: auto 0 0; height: var(--vc-floor-height); background: repeating-linear-gradient(0deg, transparent 0 21px, var(--vc-thread) 22px, transparent 23px 44px), radial-gradient(ellipse at 33% 0, #fff4, transparent 68%), linear-gradient(180deg, color-mix(in srgb, var(--vc-floor) 80%, var(--vc-wall)), var(--vc-floor)); box-shadow: inset 0 1px 0 #fff3, inset 0 -3px 0 var(--vc-thread); pointer-events: none; }
 /* The recessed seat is the real anchor. The raised torus can grow around
    it without pretending a flat rug is a bed (PLAN052 replaces16px cushion). */
 /* The78px hit covers the complete resting back rim of the capped150px SVG
@@ -141,14 +142,14 @@ body:has(.vc-cushion-button:active) .vc-bed-foreground .vc-sofa-feedback { --vc-
 .vc-home button:not(:disabled):is(:hover, :focus-visible, [data-toy-over], [data-food-over]) > .vc-object-paint { --vc-object-feedback-y: -4px; --vc-object-feedback-scale: 1.085; --vc-object-feedback-angle: -2deg; filter: brightness(1.08) drop-shadow(0 4px 2px #62452730); }
 .vc-home :is(.vc-book-button, .vc-toy-box):not(:disabled):is(:hover, :focus-visible, [data-toy-over]) > .vc-object-paint { --vc-object-feedback-angle: 2deg; }
 .vc-home button:not(:disabled):active > .vc-object-paint { --vc-object-feedback-y: 1px; --vc-object-feedback-scale: .94; --vc-object-feedback-angle: 0deg; --vc-object-feedback-duration: .07s; filter: brightness(.94); }
-.vc-toy-box { position: absolute; right: 6px; bottom: var(--vc-storage-bottom); z-index: 2; width: var(--vc-toy-hit); height: max(56px, var(--vc-object-min-hit)); display: grid; place-items: end center; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
+.vc-toy-box { position: absolute; right: var(--vc-storage-right); bottom: var(--vc-storage-bottom); z-index: 2; width: var(--vc-toy-hit); height: max(56px, var(--vc-object-min-hit)); display: grid; place-items: end center; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
 .vc-toy-box > .vc-home-object-image { position: absolute; left: 50%; margin-left: calc(var(--vc-toy-paint-width) / -2); bottom: -3px; width: var(--vc-toy-paint-width); height: calc(var(--vc-toy-paint-width) * 134 / 256); }
 /* Actual125 source opening(128,52) in the256x134 frontal box. The same
    image scale and3px baseline own both compact and wider storage contacts. */
 .vc-toy-box-opening { position: absolute; left: 50%; bottom: calc(var(--vc-toy-paint-width) * 78 / 256 - 3px); width: calc(var(--vc-toy-paint-width) * 120 / 256); height: calc(var(--vc-toy-paint-width) * 8 / 256); margin-left: calc(var(--vc-toy-paint-width) * -60 / 256); pointer-events: none; }
-/* The feeder sits left of storage, slightly in front of the curtain's lower
-   edge. Its fixed outlet moves with the real button; there is no wall ledge. */
-.vc-dispenser { position: absolute; z-index: 4; left: calc(var(--vc-window-left) + var(--vc-window-width) - 35px); bottom: max(86px, calc(79px / var(--shell-zoom, 1))); width: var(--vc-dispenser-hit); height: max(56px, var(--vc-object-min-hit)); box-sizing: border-box; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
+/* Paint bases share the rear floor edge, including the chest's transparent
+   bottom17/256. The smaller feeder hit still encloses its whole opaque art. */
+.vc-dispenser { position: absolute; z-index: 4; right: calc(var(--vc-storage-right) + var(--vc-toy-hit) + var(--vc-storage-gap)); bottom: var(--vc-floor-height); width: var(--vc-dispenser-hit); height: var(--vc-dispenser-hit); box-sizing: border-box; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
 .vc-dispenser-paint { position: absolute; bottom: -5.9px; left: 50%; margin-left: -28px; width: 56px; height: 52px; }
 /* Native outlet remains outside the moving art; geometry measures its actual
    smaller dispenser slot, not a decorative animation transform. */
@@ -174,14 +175,12 @@ html[data-theme="dark"] .vc-home-object-image { opacity: .92; }
 @container (min-width: 330px) {
   /* A wide room can show a real broad chest without taking space from its
     152px window. Narrow hosts use the same art/contacts at the smaller scale. */
-  .vc-home-room { --vc-toy-hit: max(130px, var(--vc-object-min-hit)); --vc-toy-paint-width: 132px; }
+  .vc-home-room { --vc-toy-hit: max(124px, var(--vc-object-min-hit)); --vc-toy-paint-width: 132px; }
 }
 @container (max-width: 250px) {
   /* At this exceptional width the feeder uses the back floor row, next to
      the chest. Its visible base meets the wall/floor edge; the original
      sofa and bin keep the front row. Ordinary >=282px rooms stay200px. */
-  .vc-home-room { --vc-window-left: 10px; --vc-wall-reserve: calc(var(--vc-shelf-width) + 26px); --vc-window-width: min(126px, calc(100% - var(--vc-wall-reserve))); --vc-storage-bottom: 83px; height: 226px; }
+  .vc-home-room { --vc-window-left: 10px; --vc-wall-reserve: calc(var(--vc-shelf-width) + 26px); --vc-window-width: min(126px, calc(100% - var(--vc-wall-reserve))); --vc-floor-height: 88px; height: 226px; }
   .vc-home-shelf { top: 3px; right: 6px; }
-  .vc-home-room::before { bottom: 86px; }
-  .vc-home-floor { height: 88px; }
 }
