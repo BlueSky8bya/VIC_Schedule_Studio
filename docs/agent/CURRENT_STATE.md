@@ -7,8 +7,6 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Current work:137 implements all approved personality names/scenes from the136 report, immediate representative actions and real home interactions. Preserve shared clock/KST, physical contacts, protected art and public/private boundaries.
-
 Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user.125 explicitly authorizes unnecessary Vercel deployment cleanup/optimization; unrelated cleanup, bulk DB UPDATE, paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
 
 Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, owner-only private content, Google+passcode/session binding, KST and serial writes remain mandatory. Companion defaults ON only for PC without saved choice; explicit choices persist. Mobile companion stays excluded. Actual OBS hardware/real-session/provider evidence stays distinct from fixtures.
@@ -17,7 +15,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| COMPANION-LIFE-137 | Shipping | Local3443 units/70 distinct native checks pass; verify scoped deployment and fresh anonymous full SHA | [137 plan](plans/PLAN-20261019-137-companion-personality-scenes.md), [Approved scope](reports/REPORT-20261019-136-personality-scenes.html) |
 | OPS-VERCEL-QUOTA | Open | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
@@ -38,15 +35,13 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Next Exact Steps
 
-1. COMPANION-LIFE-137: local144 recipe contracts/3443 units/70 distinct native checks pass; verify the scoped deployed full SHA and close out actual public interactions.
-2. OPS-DB-QUOTA/OPS-VERCEL-QUOTA: compare post-release route/RPC/cost with the same period/denominator, recheck Hobby restrictions/reset status; define the Free-plan full-backup/recovery path and recheck unavailable compute graphs. No automatic future run was created.
-3. ART-PINE-PILOT: only on owner curation, remove named references and freeze fresh variants2/3 request. Preserve the old pilot/approved inputs.
-4. RULE-ART-COMPLETION: wait for pending presentation/source-policy choices; unrelated work grants no approval.
-5. VERIFY-REAL-SESSION: use synthetic canaries and real authority; fixture/service-role tests never establish genuine-login RLS.
-6. PRIVACY-20260921: resolve remaining visit/recurring retention policy and restricted local recovery-backup removal after its2026-10-24 window. No automatic future run is scheduled.
-
+1. OPS-DB-QUOTA/OPS-VERCEL-QUOTA: compare post-release route/RPC/cost with the same period/denominator, recheck Hobby restrictions/reset status; define the Free-plan full-backup/recovery path and recheck unavailable compute graphs. No automatic future run was created.
+2. ART-PINE-PILOT: only on owner curation, remove named references and freeze fresh variants2/3 request. Preserve the old pilot/approved inputs.
+3. RULE-ART-COMPLETION: wait for pending presentation/source-policy choices; unrelated work grants no approval.
+4. VERIFY-REAL-SESSION: use synthetic canaries and real authority; fixture/service-role tests never establish genuine-login RLS.
+5. PRIVACY-20260921: resolve remaining visit/recurring retention policy and restricted local recovery-backup removal after its2026-10-24 window. No automatic future run is scheduled.
 ## Last Verified
 
-Current release `a8683a3dc67955407f26dc555a351a7787267a0c`: [135 room, silhouette field guides and small toy colors](plans/PLAN-20261019-135-companion-interior-field-guide.md#출시-확인). Local3204 units/295 files/type/lint/build/harness334 and24 distinct native scenes PASS (native3 21/24 plus same-build affected house5/5 after actual actor-paint waiting; earlier failures retained). Vercel984CGkKX262i62NpZaMSq5YcS4kj success21:34:47, remote quality39252956550 success21:39:01 KST. Fresh actual anonymous fullSHA/109 exact assets/new TV-light controls/four silhouette galleries/dots-keys-ACK PASS21:35:56.388 KST. No public-check seed, production mutation/live-state GET/private manifest read; protected user art and body packets unchanged. New personality names/AI remain proposals. Real-login/RLS/OBS/screen-reader, body/petting art review, art approval and provider quotas remain outside this verification.
+Current product release `1c8db0004e2d0b9b3cc0cc278d73d424ac749946`: [137 approved personalities and real home scenes](plans/PLAN-20261019-137-companion-personality-scenes.md#출시-확인). Nine names/108 scenes+36 combinations implemented. Local3443 units/302 files/type/lint/build/harness337 and70 distinct native checks PASS;27 viewer/studio/preview selections first decoded expression max558.6ms, meaningful gap max4049.9ms during20s observations. Same-ID four-toy cleanup/actual brush, food dispenser/eating, real TV/light/curtain/manual priority, editor focus/ACK/OFF and G22 capture+both developer views verified. Vercel success and fresh actual anonymous fullSHA/chunk/native controls/light reload PASS23:48 KST; no production mutations/live-state GET/private-manifest reads. Original report/protected art preserved. Remote quality39271858616 success23:50:02 KST. Real-login/RLS/OBS/screen-reader and human visual recognition/art approval remain separate.
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.
