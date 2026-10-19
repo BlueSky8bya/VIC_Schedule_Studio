@@ -46,7 +46,7 @@ import { createCompanionViewportRecovery } from "@/lib/ui/viewer-companion/viewp
 import { companionPositionPoint, resolveCompanionPosition, type CompanionPositionMemory, type CompanionPositionSnapshot } from "@/lib/ui/viewer-companion/position-memory";
 import { companionGripProfile } from "@/lib/ui/viewer-companion/contact-grip";
 import { companionMaterialScale } from "@/lib/ui/viewer-companion/material-scale";
-import { DEFAULT_COMPANION_CARE, loadCompanionCare, saveCompanionCare, subscribeCompanionHabits, subscribeCompanionLife } from "@/lib/ui/viewer-companion/care";
+import { COMPANION_FULL_THRESHOLD, DEFAULT_COMPANION_CARE, loadCompanionCare, saveCompanionCare, subscribeCompanionHabits, subscribeCompanionLife } from "@/lib/ui/viewer-companion/care";
 import { learnCompanionHabits, type CompanionExperience } from "@/lib/ui/viewer-companion/habits";
 import { experienceCompanionLife, type CompanionLifeExperience } from "@/lib/ui/viewer-companion/life";
 import { advanceCompanionCollection, equipCompanionAccessory, flushCompanionCollection, getCompanionUnreadCounts, loadCompanionCollection, openCompanionGift, recordCompanionConsumedFood, recordCompanionGiftInteraction, recordCompanionObservedBehavior, recordCompanionObservedSituation, subscribeCompanionCollection } from "@/lib/ui/viewer-companion/collection";
@@ -78,6 +78,7 @@ import { boundCompanionBallisticArc, boundCompanionSineArc, companionBallisticAr
 import { createCompanionPettingContact, createCompanionPettingGesture, createCompanionPettingWindow } from "@/lib/ui/viewer-companion/petting";
 import { randomCompanionFood, type CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { accessibleCompanionFoods } from "@/lib/ui/viewer-companion/food-access";
+import { withinCompanionFoodReach } from "@/lib/ui/viewer-companion/food-reach";
 import { COMPANION_HOME_FLOOR_INSET, isCompanionHomeFloorFoodSupport } from "@/lib/ui/viewer-companion/food";
 import { acquireDecodedCompanionSprite, canDecodeCompanionSprite, companionMotionClips, companionSpriteMetadata as registration, companionSpriteSources, decodeCompanionSprite, isCompanionSpriteDecoded, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { companionNextPlayRow, companionTapReaction, sampleCompanionCozySleep, sampleCompanionPlay } from "@/lib/ui/viewer-companion/play";
@@ -92,6 +93,7 @@ import { CompanionToys, type CompanionToyControl } from "./companion-toys";
 const CompanionCollectionArt = dynamic(() => import("./companion-collection-art").then(module => module.CompanionCollectionArt), { loading: () => null });
 import { CompanionBedForeground, CompanionHome, type CompanionHomeAction } from "./companion-home";
 import { useHomeShelf } from "./use-home-shelf";
+import { companionInitialHomePoint } from "@/lib/ui/viewer-companion/home-entry";
 import "./viewer-companion.css";
 
 type Props = { onOpenBook: () => void; root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; workspaceBusy?: boolean; agenda: boolean; monthKey: string; context?: CompanionHomeEnvironmentContext; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; launcherHost?: HTMLElement | null; compactHost?: HTMLElement | null; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void; positionMemory?: CompanionPositionMemory };
@@ -174,6 +176,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
   const compactHome = useRef<HTMLDivElement>(null);
   const homeFocus = useRef<string | null>(null);
   const lastPose = useRef<{ x: number; y: number; monthKey: string; atHome: boolean; homeSupportId?: string; seeded: boolean } | null>(null);
+  const initialHome = useRef<{ roll: number | null; entered: boolean; offered: boolean }>({ roll: null, entered: false, offered: false });
   const capturePosition = useRef<(() => void) | null>(null);
   const pendingPosition = useRef<CompanionPositionSnapshot | null>(null);
   // Layout cleanup runs before the old calendar/house DOM disappears. The
@@ -195,6 +198,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
   const curtainProjection = useRef(INITIAL_COMPANION_HOME_CURTAIN);
   const [ready, setReady] = useState(false), [unreadCollection, setUnreadCollection] = useState(false);
   const compactActive = ready && !suspended && !blocked && !(homeVisible && homeHost) && !!launcherHost && !!compactHost;
+  useEffect(() => {
+    if (compactActive && !initialHome.current.entered && !initialHome.current.offered) {
+      initialHome.current.offered = true; setHomeExpanded(true);
+    }
+  }, [compactActive]);
   const homeShelf = useHomeShelf({ active: compactActive, expanded: homeExpanded, monthKey, host: compactHost, launcher: homeLauncher, room: compactHome, setExpanded: setHomeExpanded });
   const [geometryIdentity] = useState(createCompanionGeometryIdentity);
   useEffect(() => { setReady(true); }, []);
@@ -371,6 +379,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     const received = pendingPosition.current;
     const transferredPoint = received && companionPositionPoint(received, { width: innerWidth, height: innerHeight }, COMPANION_SIZE);
     const incoming = transferredPoint ? received : null;
+    if (saved?.seeded || incoming) initialHome.current.entered = true;
+    let freshHomePending = !saved?.seeded && !incoming && !initialHome.current.entered;
+    if (freshHomePending) initialHome.current.roll ??= Math.random();
     if (!incoming) pendingPosition.current = null;
     let pendingMonth = Boolean(saved && saved.monthKey !== monthKey && !saved.atHome);
     let sceneMonthPending = Boolean(saved && saved.monthKey !== monthKey);
@@ -414,7 +425,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     let toyReturnPainted: { x: number; y: number } | undefined;
     let foodDisposalAim: { element: HTMLElement; point: { x: number; y: number } } | undefined;
     let foodDisposalPainted: { x: number; y: number } | undefined;
-    const recordFoodDisposalPaint = (point: { x: number; y: number }) => { if (action?.household?.effect === "discard") foodDisposalPainted = point; };
+    const isFoodDisposal = (candidate: RuntimeAction | null) => candidate?.household?.effect === "discard" || candidate?.scene?.effect?.kind === "discard";
+    const recordFoodDisposalPaint = (point: { x: number; y: number }) => { if (isFoodDisposal(action)) foodDisposalPainted = point; };
     let householdEffectApplied = false;
     let curiosityTossed = false, invitedUntil = 0, lastRoughAt = -Infinity, roughInGrip = false;
     const hurtTrust = (kind: "rough-play" | "betrayed", now: number) => {
@@ -712,6 +724,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     el.style.setProperty("--vc-size", `${size}px`);
     const paint = (row: number, frame: number, status: string) => {
       bedNeedsPaint = false;
+      if (freshHomePending && !premiereActive && !premiereBounce && !hiding) { hideBed(); el.hidden = true; return; }
       if (premiereActive || premiereBounce) pendingPosition.current = null;
       if (pendingPosition.current) { hideBed(); if (!el.hidden) el.hidden = true; return; }
       const hide = hideSeek.sample(presentationNow);
@@ -902,8 +915,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         // 32px snack foot is8px below that point, leaving real floor clearance.
         if (carryPoint && carriedFood) {
           let point = { x: carryPoint.x, y: carryPoint.y + 8 };
-          if (action?.household?.effect === "discard" && foodDisposalAim) point = sampleCompanionFoodDisposal(point, foodDisposalAim.point, (performance.now() - began) / total);
-          food.current?.carry(carriedFood, point, action?.household?.effect === "discard" ? recordFoodDisposalPaint : undefined);
+          if (isFoodDisposal(action) && foodDisposalAim) point = sampleCompanionFoodDisposal(point, foodDisposalAim.point, (performance.now() - began) / total);
+          food.current?.carry(carriedFood, point, isFoodDisposal(action) ? recordFoodDisposalPaint : undefined);
         }
         if (carriedToy) {
           // The adopted current pose owns transport for both kinds of object.
@@ -1050,7 +1063,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       anchorsDirty = false;
       followedAt = now; followedKeys = keys;
       let returnMoved = false;
-      if (foodDisposalAim && action?.household?.effect === "discard") {
+      if (foodDisposalAim && isFoodDisposal(action)) {
         const source = foodDisposalAim.element;
         const point = companionFoodDisposalTarget(source.getBoundingClientRect(), source.isConnected && !source.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]"));
         if (!point) { clearAction(); returnMoved = true; }
@@ -1131,7 +1144,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, now, toyHomeContacts);
       return Boolean(dx || dy || bedMoved || returnMoved);
     };
-    const continuousMotion = () => Boolean(performance.now() < interactionUntil || toys.current?.moving() || action?.toy?.effect === "stash" && toys.current?.carried() || action?.household?.effect === "discard" && food.current?.carried() || homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && (action.accessory || action.radio || ["walk", "jump", "heart", "hide", "stretch", "shake", "eat", "play"].includes(action.kind)));
+    const continuousMotion = () => Boolean(performance.now() < interactionUntil || toys.current?.moving() || action?.toy?.effect === "stash" && toys.current?.carried() || isFoodDisposal(action) && food.current?.carried() || homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && (action.accessory || action.radio || ["walk", "jump", "heart", "hide", "stretch", "shake", "eat", "play"].includes(action.kind)));
     const followLayout = (event?: Event) => {
       if (premiereActive && event?.target === window.visualViewport) { viewportResized(); return; }
       // A compact room can unmount while the creature is parked. Drop its
@@ -1572,17 +1585,19 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           toy: { ...next.toy, effect: undefined, point: undefined },
           toyApproach: { element, effect: next.toy.effect === "stash" ? "stash" : "spawn", duration: next.duration } };
       }
-      if (next.household?.kind === "tidy" || next.toy) ensureWardrobe(true);
+      if (next.household?.kind === "tidy" || next.toy || next.scene?.effect?.kind === "pick") ensureWardrobe(true);
       accessoryWitnessed = 0; accessoryLanded = false;
       verticalRecoveryX = undefined;
       let passage = sampleSofaRoute(next, { x, y }, .5);
       let sofaTransfer = next.kind === "jump" && (support === "companion-home" || next.target.platformId === "companion-home");
-      if (sofaTransfer && (next.household || next.toy) && support === "companion-home" && (!passage || !passage.safe)) {
+      if (sofaTransfer && (next.household || next.toy || next.foodId || next.scene) && support === "companion-home" && (!passage || !passage.safe)) {
         // Leave through the measured cushion opening, then retain the errand
         // for its safe room-floor walk. A direct diagonal exit can cut the rim.
         const detour = planHomeFloorEntry();
         if (detour) {
           const candidate: RuntimeAction = { ...detour.action,
+            ...(next.foodId ? { foodId: next.foodId, intention: next.intention, episode: next.episode } : {}),
+            ...(next.scene ? { scene: { ...next.scene, effect: undefined } } : {}),
             ...(next.household ? { household: { ...next.household, effect: undefined, point: undefined } } : {}),
             ...(next.toy ? { toy: { ...next.toy, effect: undefined, point: undefined } } : {}) };
           const alternate = sampleSofaRoute(candidate, { x, y }, .5);
@@ -1621,7 +1636,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       clearAction(false, Boolean(next.household || next.scene), Boolean(next.scene || next.toy)); householdEffectApplied = false; toyEffectApplied = toyPerformanceWitnessed = toyMishapWitnessed = foodRefusalWitnessed = sceneEffectApplied = false;
       toyReturnAim = undefined; toyReturnPainted = undefined;
       foodDisposalAim = undefined; foodDisposalPainted = undefined;
-      if (next.household?.effect === "discard") {
+      if (isFoodDisposal(next)) {
         const element = document.querySelector<HTMLElement>(".vc-home [data-companion-trash]");
         const point = element && companionFoodDisposalTarget(element.getBoundingClientRect(), element.isConnected && !element.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]"));
         if (element && point) foodDisposalAim = { element, point };
@@ -1754,6 +1769,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       inputPaintQueued = false;
       if (stopped || pause) return;
       if (premiereActive) { tickPremiere(now); return; }
+      if (freshHomePending) { lastTick = lastNeeds = lastCare = now; return; }
       if (pendingPosition.current) { lastTick = lastNeeds = lastCare = now; return; }
       if (flight && (reduced || gfxMode() === "off")) { clearAction(); settle({ x, y }); }
       const cue = preludeCue();
@@ -1999,16 +2015,26 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         if (!overlayActive && !premiereActive && !pendingMonth && !returning && !reduced && gfxMode() !== "off") {
           for (const [key, selector] of [["dispenser", ".vc-home .vc-dispenser"], ["bin", ".vc-home [data-companion-trash]"]] as const) {
             const control = document.querySelector<HTMLElement>(selector), rect = control?.getBoundingClientRect();
-            if (!control || control.closest("[hidden],[inert],[aria-hidden='true']") || !rect || rect.width <= 0 || rect.height <= 0 || rect.bottom < 0 || rect.top > innerHeight) continue;
+            if (!control || control.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]") || !rect || rect.width <= 0 || rect.height <= 0 || rect.bottom < 0 || rect.top > innerHeight) continue;
             // A carried item reaches the bin through its own finite delivery
             // arc. The body only approaches a real safe floor, never the bin.
             const cx = rect.left + rect.width / 2, reach = size + rect.width / 2;
             const stance = householdPlatforms.filter(p => isHomeFloor(p.id) && (key === "bin" || Math.abs(platformLandingX(p, cx) - cx) <= reach) && Math.abs(p.y - rect.bottom) < 100).sort((a, b) => Math.abs(platformLandingX(a, cx) - cx) - Math.abs(platformLandingX(b, cx) - cx))[0];
             if (stance) householdHome[key] = { x: platformLandingX(stance, cx), y: stance.y, platformId: stance.id };
           }
+          const room = document.querySelector<HTMLElement>(".vc-home .vc-home-floor"), roomRect = room?.getBoundingClientRect();
+          if (room?.isConnected && roomRect && roomRect.width > 0 && roomRect.height > 0 && roomRect.bottom > 0 && roomRect.top < innerHeight
+            // The painted floor itself is decorative aria-hidden content.
+            // Its visible measured surface remains physical; an inaccessible
+            // enclosing home/panel still revokes the pantry immediately.
+            && !room.closest("[hidden],[inert],[data-panel-collapsed]") && !room.parentElement?.closest("[aria-hidden='true']")) {
+            const pantry = householdPlatforms.filter(p => isHomeFloor(p.id) && p.manualOnly && Math.abs(p.y - roomRect.bottom + COMPANION_HOME_FLOOR_INSET) < 2)
+              .sort((a, b) => b.width - a.width)[0];
+            if (pantry) householdHome.pantry = { x: platformLandingX(pantry, pantry.x + pantry.width / 2), y: pantry.y, platformId: pantry.id };
+          }
         }
         if (sceneOutfit !== wardrobe.current.equipped) { sceneOutfit = wardrobe.current.equipped; sceneEvent({ kind: "accessory", id: sceneOutfit }); }
-        const errand = !signatureFirst && !scenes.current() && !toyPlanner.active() && !overlayActive && !premiereActive && !pendingMonth && !returning && !reduced && gfxMode() !== "off" ? household.next({ brain: brain.current, world: householdWorld, preferences: effective, now: brain.current.activeMs, home: householdHome, count: liveFoods.length + (food.current?.carried() ? 1 : 0), carried: food.current?.carried(), occupied: toys.current?.occupied() }) : undefined;
+        const errand = !signatureFirst && !scenes.current() && !toyPlanner.active() && !overlayActive && !premiereActive && !pendingMonth && !returning && !reduced && gfxMode() !== "off" ? household.next({ brain: brain.current, world: householdWorld, visibleFoods: liveFoods, preferences: effective, now: brain.current.activeMs, home: householdHome, count: liveFoods.length + (food.current?.carried() ? 1 : 0), carried: food.current?.carried(), occupied: toys.current?.occupied() }) : undefined;
         if (!errand && !scenes.current() && food.current?.carried()) food.current.releaseCarry(food.current.carried()!);
         const box = document.querySelector<HTMLElement>(".vc-home [data-home-action='toys']"), boxRect = box?.getBoundingClientRect();
         const boxFloor = boxRect && householdPlatforms.filter(p => isHomeFloor(p.id) && Math.abs(p.y - boxRect.bottom) <= 140).sort((a, b) => Math.abs(platformLandingX(a, boxRect.left + boxRect.width / 2) - boxRect.left - boxRect.width / 2) - Math.abs(platformLandingX(b, boxRect.left + boxRect.width / 2) - boxRect.left - boxRect.width / 2))[0];
@@ -2038,7 +2064,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         const signature = !refusal && !errand && !toyErrand && !musical && !safeTrick && !scenes.current() && !household.active() && !toyPlanner.active()
           ? cueSignature ?? signatureFirst ?? personalityActivity.choose(brain.current, world, effective, brain.current.activeMs) : undefined;
         const story = !refusal && !signature && !errand && !toyErrand && !household.active() && !toyPlanner.active() && !overlayActive && !premiereActive && !returning
-          ? scenes.next({ brain: brain.current, world: householdWorld, preferences: effective, now: brain.current.activeMs, knownFoods: loadCompanionCollection().foods, knownBehaviors: loadCompanionCollection().behaviors, owned: loadCompanionCollection().gifts.unlocked, equipped, radio: radioState, environment: environment.current, home: supportById("companion-home") ? { x: platformLandingX(supportById("companion-home")!, supportById("companion-home")!.x + supportById("companion-home")!.width / 2), y: supportById("companion-home")!.y, platformId: "companion-home" } : undefined, toyCount: toys.current?.count() ?? 0, carriedFoodId: food.current?.carried() }) : undefined;
+          ? scenes.next({ brain: brain.current, world: householdWorld, preferences: effective, now: brain.current.activeMs, pantry: householdHome.pantry, bin: householdHome.bin, visibleFoods: liveFoods, occupied: toys.current?.occupied(), knownFoods: loadCompanionCollection().foods, knownBehaviors: loadCompanionCollection().behaviors, owned: loadCompanionCollection().gifts.unlocked, equipped, radio: radioState, environment: environment.current, home: supportById("companion-home") ? { x: platformLandingX(supportById("companion-home")!, supportById("companion-home")!.x + supportById("companion-home")!.width / 2), y: supportById("companion-home")!.y, platformId: "companion-home" } : undefined, toyCount: toys.current?.count() ?? 0, carriedFoodId: food.current?.carried() }) : undefined;
         const validStory = story?.accessory && !accessorySpace(story.accessory) ? undefined : story;
         if (story && !validStory) scenes.cancel();
         const offered: RuntimeAction = errand ?? toyErrand ?? refusal ?? validStory ?? musical ?? signature ?? (safeTrick ? { kind: "look", accessory: equipped!, target: { x, y, platformId: support }, duration: COMPANION_ACCESSORY_MOTION_MS } : getAction(brain.current, world, effective, now));
@@ -2063,17 +2089,24 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       let row = 0, frame = 0, status = "idle";
       if (action) {
         let age = now - began, p = clamp(age / total, 0, 1); status = action.kind;
-        if (action.scene?.effect && !sceneEffectApplied && p >= .5) {
+        if (action.scene?.effect && !sceneEffectApplied && p >= .5
+          && (action.scene.effect.kind !== "discard" || p >= 1 || companionFoodDisposalDelivered(foodDisposalPainted, foodDisposalAim?.point))) {
           sceneEffectApplied = true;
           const effect = action.scene.effect;
           let success = false;
           const allowed = !workspaceBusyRef.current && !overlayActive && !pause && presence.phase === "active" && !document.hidden;
           if (allowed && effect.kind === "pick") {
-            const targetFood = food.current?.foods().find(item => item.id === effect.foodId);
-            success = Boolean(targetFood && targetFood.platformId === support && Math.hypot(targetFood.x - x, targetFood.y - y) <= 24 && food.current?.beginCarry(effect.foodId));
+            const targetFood = accessibleCompanionFoods(food.current?.foods().filter(item => item.id === effect.foodId) ?? [], [...platforms, ...landingPlatforms]).find(item => item.platformId === support);
+            success = Boolean(targetFood && withinCompanionFoodReach(Math.hypot(targetFood.x - x, targetFood.y - y))
+              && paintedSelection && accessoryModule?.companionCarryAnchor(paintedSelection) && food.current?.beginCarry(effect.foodId));
           }
-          else if (allowed && effect.kind === "put") success = Boolean(food.current?.releaseCarry(effect.foodId, { x, y }));
-          else if (allowed && effect.kind === "discard") { const bin = document.querySelector<HTMLElement>(".vc-home [data-companion-trash]"); success = Boolean(bin && food.current?.discardCarry(effect.foodId, bin)); }
+          else if (allowed && effect.kind === "put") success = Boolean(isHomeFloor(support) && supportedNow() && food.current?.releaseCarry(effect.foodId, { x, y }));
+          else if (allowed && effect.kind === "discard") {
+            const bin = document.querySelector<HTMLElement>(".vc-home [data-companion-trash]");
+            const target = bin && companionFoodDisposalTarget(bin.getBoundingClientRect(), bin.isConnected && !bin.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]"));
+            success = Boolean(brain.current.hunger < COMPANION_FULL_THRESHOLD && bin && bin === foodDisposalAim?.element && target && isHomeFloor(support) && supportedNow()
+              && companionFoodDisposalDelivered(foodDisposalPainted, target) && food.current?.discardCarry(effect.foodId, bin));
+          }
           scenes.resolve(action as CompanionSceneAction, success);
         }
         const toyBeat = action.toy;
@@ -2103,13 +2136,15 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           let result: boolean | string = false;
           if (householdBeat.effect === "pick" && householdBeat.foodId) {
             const item = liveFoods.find(item => item.id === householdBeat.foodId);
-            result = Boolean(item && Math.hypot(item.x - x, item.y - y) <= 36 && paintedSelection && accessoryModule?.companionCarryAnchor(paintedSelection) && food.current?.beginCarry(householdBeat.foodId));
+            result = Boolean(item && withinCompanionFoodReach(Math.hypot(item.x - x, item.y - y)) && paintedSelection && accessoryModule?.companionCarryAnchor(paintedSelection) && food.current?.beginCarry(householdBeat.foodId));
           }
-          else if (householdBeat.effect === "put" && householdBeat.foodId) result = Boolean(food.current?.releaseCarry(householdBeat.foodId));
+          else if (householdBeat.effect === "put" && householdBeat.foodId) result = Boolean(isHomeFloor(support) && supportedNow() && householdBeat.point
+            && isHomeFloor(householdBeat.point.platformId ?? "") && withinCompanionFoodReach(Math.hypot(x - householdBeat.point.x, y - householdBeat.point.y))
+            && food.current?.releaseCarry(householdBeat.foodId, { x, y }));
           else if (householdBeat.effect === "discard" && householdBeat.foodId) {
             const bin = document.querySelector<HTMLElement>(".vc-home [data-companion-trash]");
             const target = bin && companionFoodDisposalTarget(bin.getBoundingClientRect(), bin.isConnected && !bin.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]"));
-            result = Boolean(bin && bin === foodDisposalAim?.element && target && isHomeFloor(support) && supportedNow() && companionFoodDisposalDelivered(foodDisposalPainted, target) && food.current?.discardCarry(householdBeat.foodId, bin));
+            result = Boolean(brain.current.hunger < COMPANION_FULL_THRESHOLD && bin && bin === foodDisposalAim?.element && target && isHomeFloor(support) && supportedNow() && companionFoodDisposalDelivered(foodDisposalPainted, target) && food.current?.discardCarry(householdBeat.foodId, bin));
           } else if (householdBeat.effect === "spawn") {
             const slot = document.querySelector<HTMLElement>(".vc-home .vc-dispenser-slot"), outlet = slot?.getBoundingClientRect();
             if (slot && outlet && outlet.width > 0 && Math.abs(x - (outlet.left + outlet.width / 2)) <= size + outlet.width / 2 && Math.abs(y - outlet.bottom) < size && !slot.parentElement?.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]")) {
@@ -2410,6 +2445,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     };
     const schedule = () => {
       armPrelude();
+      if (freshHomePending && !premiereActive) return;
       if (premiereActive) {
         if (stopped || pause || premiereExit) return;
         const cue = premiereRef.current.cue, memory = premiereMemory.current;
@@ -3050,7 +3086,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         cancelAnimationFrame(raf); clearTimeout(timer);
         lastTick = lastNeeds = lastPaint = performance.now(); if (!finishParkedDrop()) schedule(); return;
       }
-      if (pause || overlayActive || !placing || el.contains(event.target as Node)) return;
+      // Explicit placement also owns a click on the current resident. A
+      // fresh home-floor start can already cover the chosen destination;
+      // that click must finish placing rather than bonk the resident.
+      if (pause || overlayActive || !placing) return;
       event.preventDefault(); event.stopPropagation(); placing = false; delete el.dataset.placing;
       // pointerdown cancellation alone does not cancel the independent click:
       // consume this placement's click before a real card/heart can receive it.
@@ -3246,6 +3285,14 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       // Publish new supports, but input alone owns the displayed world point.
       if (pressed || keyboardHeld || placing) return;
       homeOccluded = false;
+      if (freshHomePending) {
+        const point = companionInitialHomePoint(platforms, landingPlatforms, initialHome.current.roll ?? .5);
+        if (!point) { homeOccluded = true; hideBed(); el.hidden = true; return; }
+        clearAction(); supportMotion.reset(); resetInertia();
+        x = point.x; y = point.y; support = point.platformId; worldSeeded = true;
+        freshHomePending = false; initialHome.current.entered = true;
+        awaitingAtX = false; needsLanding = false;
+      }
       const panelResident = isCompanionPanelFloor(support) && !afterPetLanding && !playFalling && !flight
         && action?.kind !== "jump" && (!action || isCompanionPanelFloor(action.target.platformId));
       if (panelResident) {
@@ -3406,6 +3453,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     };
     const onGeometry = (next: Platform[], validationOnly = false) => {
       const wasWaiting = waitingForSupport;
+      const wasFreshHomePending = freshHomePending;
       const seedingOverlay = needsOverlayWorldSeed();
       const resumeHome = Boolean(homeJourney && homeWaitingGeometry && !premiereActive && !overlayActive && !hiding && !workspaceBusyRef.current);
       if (resumeHome) { homeWaitingGeometry = false; el.removeAttribute("data-home-waiting"); el.removeAttribute("data-home-wait-pose"); }
@@ -3421,6 +3469,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       // finish before restoring staff handoff coordinates. Neither that scan
       // nor an empty visibility snapshot completes the initial world seed.
       initialGeometryMeasured ||= !pendingPosition.current && !pendingMonth && Boolean(supportById(support));
+      if (wasFreshHomePending && !freshHomePending && !stopped && !pause && !overlayActive && !premiereActive && !hiding) {
+        lastTick = lastNeeds = lastCare = lastPaint = performance.now(); nextDecision = lastTick + 1100;
+        paint(presence.pose.row, 0, presence.pose.status); cancelAnimationFrame(raf); clearTimeout(timer); schedule();
+      }
       if (seedingOverlay && initialGeometryMeasured && overlayActive) {
         // The actual ledge, including an empty calendar's real viewport floor,
         // owns visibility. Then return to the ordinary window's quiet lifetime.

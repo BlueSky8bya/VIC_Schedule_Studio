@@ -87,6 +87,41 @@ beforeEach(async () => {
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 describe("actual food-controller carry and physical scatter callbacks", () => {
+  const shown = (id: string) => {
+    const match = nodeById.get(id)!.style.transform.match(/translate3d\(([-\d.]+)px,([-\d.]+)px/)!;
+    return { x: Number(match[1]), y: Number(match[2]) };
+  };
+  it("flushes the final captured point and throws from there using actual recent input velocity", async () => {
+    const id = await spawn(); invoke(id, "onPointerDown");
+    clock = 1020; invoke(id, "onPointerMove", { clientX: 240, clientY: 264 });
+    clock = 1040; invoke(id, "onPointerUp", { clientX: 260, clientY: 254 });
+    expect(shown(id)).toEqual({ x: 260, y: 270 }); expect(api().foods()).toEqual([]);
+    frame(1080); expect(shown(id).x).toBeGreaterThan(260); expect(shown(id).y).toBeLessThan(270);
+    frame(3000); expect(api().foods()[0]).toMatchObject({ id, platformId: floor.id, y: floor.y }); expect(frames.size).toBe(0);
+  });
+  it("does not fling a held still grip using stale motion or a cancelled capture", async () => {
+    const id = await spawn(); invoke(id, "onPointerDown");
+    clock = 1020; invoke(id, "onPointerMove", { clientX: 240, clientY: 264 });
+    clock = 1400; invoke(id, "onPointerUp", { clientX: 240, clientY: 264 });
+    frame(1440); expect(shown(id).x).toBe(240); expect(shown(id).y).toBeGreaterThan(280);
+    frame(3000); invoke(id, "onPointerDown", { clientX: 240, clientY: 754 });
+    clock = 3020; invoke(id, "onPointerMove", { clientX: 300, clientY: 300 }); invoke(id, "onPointerCancel");
+    const start = shown(id); frame(3060); expect(shown(id).x).toBe(start.x); expect(shown(id).y).toBeGreaterThan(start.y);
+  });
+  it("preserves an unsupported drop visibly without a loop and recovers on the next actual floor delivery", async () => {
+    api().sync([]); const id = await spawn(); invoke(id, "onPointerDown");
+    clock = 1020; invoke(id, "onPointerMove", { clientX: 260, clientY: 300 });
+    clock = 1300; invoke(id, "onPointerUp", { clientX: 260, clientY: 300 });
+    expect(api().contains(id)).toBe(true); expect(api().foods()).toEqual([]); expect(nodeById.get(id)!.hidden).toBe(false); expect(frames.size).toBe(0);
+    expect(api().consume(id)).toBe(false); expect(api().stash(id)).toBe(false); expect(api().beginCarry(id)).toBe(false); expect(api().scatter(shown(id), 100)).toBe(0);
+    vi.stubGlobal("innerWidth", 240); vi.stubGlobal("innerHeight", 260); api().sync([]);
+    expect(shown(id)).toEqual({ x: 216, y: 236 }); expect(nodeById.get(id)!.hidden).toBe(false); expect(frames.size).toBe(0);
+    vi.stubGlobal("innerWidth", 1000); vi.stubGlobal("innerHeight", 800);
+    const start = shown(id); api().sync([floor]); expect(api().foods()).toEqual([]);
+    frame(1340); expect(shown(id).y).toBeGreaterThan(start.y); frame(3000);
+    expect(api().foods()[0]).toMatchObject({ id, platformId: floor.id, y: floor.y }); expect(frames.size).toBe(0);
+    expect(harness.discarded).not.toHaveBeenCalled();
+  });
   it("falls from a decorative outlet onto its real floor and follows the room's visibility", async () => {
     let hiddenRoom = false;
     const source = node(); source.attributes.set("aria-hidden", "true");
@@ -253,13 +288,44 @@ describe("actual food-controller carry and physical scatter callbacks", () => {
     frame(2600); expect(api().foods()[0]).toMatchObject({ id, x: 330, y: 420, platformId: first.id });
     expect(frames.size).toBe(0); expect(api().releaseCarry(id)).toBe(false); expect(harness.activity).not.toHaveBeenCalled();
   });
+  it("treats an explicit pantry point as the real destination and preserves the actually painted carry origin", async () => {
+    let dx = 0, dy = 0;
+    const house = { querySelectorAll: () => [] };
+    const actualFloor = Object.assign(node(), {
+      matches: (selector: string) => selector === ".vc-home-floor",
+      closest: (selector: string) => selector === ".vc-home" ? house : null,
+      parentElement: { closest: () => null },
+      getBoundingClientRect: () => ({ left: 100 + dx, right: 900 + dx, top: 600 + dy, bottom: 700 + dy, width: 800, height: 100 }),
+    });
+    const support: Platform = { id: "companion-home-floor-food", kind: "floor", x: 122, y: 694, width: 756 };
+    const anchor = () => ({ element: actualFloor as unknown as HTMLElement, left: 100, top: 600, width: 800, height: 100 });
+    vi.spyOn(document, "querySelector").mockReturnValue(actualFloor as unknown as HTMLElement);
+    vi.spyOn(document, "elementsFromPoint").mockReturnValue([actualFloor as unknown as HTMLElement]);
+    api().sync([support], anchor, [support]);
+    const id = await spawn(), origin = { x: 350.1234, y: 620.4321 }, destination = { x: 300, y: 694 };
+    expect(api().beginCarry(id)).toBe(true); expect(api().carry(id, origin)).toBe(true); harness.activity.mockClear();
+    const carryPaint = nodeById.get(id)!.style.transform;
+    expect(api().releaseCarry(id, destination)).toBe(true);
+    expect(nodeById.get(id)!.style.transform, "the release batch must not paint the target before gravity").toBe(carryPaint);
+    expect(api().carried()).toBeUndefined(); expect(api().foods()).toEqual([]); expect(api().contains(id)).toBe(true);
+    await render(); harness.layouts[1]();
+    expect(nodeById.get(id)!.style.transform, "a React placement commit must preserve the same first drawing").toBe(carryPaint);
+    frame(1080); const halfway = shown(id);
+    expect(halfway.x).toBeLessThan(origin.x); expect(halfway.x).toBeGreaterThan(destination.x);
+    expect(halfway.y).toBeGreaterThan(origin.y); expect(halfway.y).toBeLessThan(destination.y);
+    frame(2600); expect(api().foods()[0]).toMatchObject({ id, ...destination, platformId: support.id }); expect(frames.size).toBe(0);
+    dx = 40; dy = 30; api().sync([support], anchor, [support]);
+    expect(api().foods()[0]).toMatchObject({ id, x: destination.x + dx, y: destination.y + dy, platformId: support.id });
+    expect(harness.activity).not.toHaveBeenCalled(); expect(harness.discarded).not.toHaveBeenCalled();
+  });
   it("native pointer capture or keyboard selection takes a carried food immediately, preserving existing move/discard logs", async () => {
     const id = await spawn(); api().beginCarry(id); api().carry(id, { x: 220, y: 320 }); harness.activity.mockClear();
     invoke(id, "onPointerDown", { clientX: 220, clientY: 304 });
     expect(api().carried()).toBeUndefined(); expect(api().carry(id, { x: 500, y: 500 })).toBe(false); expect(api().beginCarry(id)).toBe(false);
     invoke(id, "onPointerMove", { clientX: 320, clientY: 304 }); frame(1017);
     invoke(id, "onPointerUp", { clientX: 320, clientY: 304 }); frame(2700);
-    expect(api().foods()[0].x).toBe(320); expect(harness.activity.mock.calls).toEqual([["ui.click", { target: "companion-food-move" }]]);
+    expect(api().foods()[0]).toMatchObject({ id, platformId: floor.id, y: floor.y }); expect(api().foods()[0].x).toBeGreaterThan(320);
+    expect(harness.activity.mock.calls).toEqual([["ui.click", { target: "companion-food-move" }]]);
     api().beginCarry(id); await render(); invoke(id, "onKeyDown", { key: "Delete" });
     expect(api().carried()).toBeUndefined(); expect(api().contains(id)).toBe(false);
     expect(harness.activity.mock.calls.at(-1)).toEqual(["ui.click", { target: "companion-food-discard" }]);

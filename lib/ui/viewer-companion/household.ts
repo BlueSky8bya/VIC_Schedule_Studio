@@ -1,15 +1,16 @@
-import { findPlatformRoute, platformLandingX, type CompanionAction, type CompanionBrain, type CompanionFood, type CompanionWorld, type Platform } from "./brain";
+import { platformLandingX, type CompanionAction, type CompanionBrain, type CompanionFood, type CompanionWorld, type Platform } from "./brain";
 import { getCompanionBehaviorProfile } from "./behavior-profile";
 import type { CompanionPreferences } from "./preferences";
 import { MAX_COMPANION_FOOD } from "./food-capacity";
-import { compareCompanionItemLandings, rankCompanionItemLandings, type CompanionItemPoint } from "./item-landing";
+import type { CompanionItemPoint } from "./item-landing";
+import { findCompanionHomeItemRoute, selectCompanionHomeFoodDestination } from "./home-pantry";
 
 type Point = { x: number; y: number; platformId?: string };
 export type CompanionHouseholdBeat = { serial: number; kind: "tidy" | "mischief"; effect?: "pick" | "put" | "discard" | "spawn" | "scatter"; foodId?: string; point?: Point };
 export type CompanionHouseholdAction = CompanionAction & { household: CompanionHouseholdBeat };
-export type CompanionHouseholdHome = { dispenser?: Point; bin?: Point };
-type Input = { brain: CompanionBrain; world: CompanionWorld; preferences: CompanionPreferences; now: number; home: CompanionHouseholdHome; count: number; carried?: string; occupied?: readonly CompanionItemPoint[] };
-type Job = { serial: number; kind: "tidy" | "mischief"; stage: "seek" | "deliver" | "dispenser" | "waiting"; foodId?: string; destination?: Point; discard?: boolean; deadline: number; budget: number };
+export type CompanionHouseholdHome = { dispenser?: Point; bin?: Point; pantry?: Point };
+type Input = { brain: CompanionBrain; world: CompanionWorld; preferences: CompanionPreferences; now: number; home: CompanionHouseholdHome; count: number; carried?: string; occupied?: readonly CompanionItemPoint[]; visibleFoods?: readonly CompanionFood[] };
+type Job = { serial: number; kind: "tidy" | "mischief"; stage: "seek" | "deliver" | "dispenser" | "waiting"; foodId?: string; foodKind?: CompanionFood["kind"]; destination?: Point; discard?: boolean; deadline: number; budget: number };
 
 /** One bounded local errand, driven by the existing decision/paint clock. A
  * successful effect is acknowledged by the real food owner. This planner
@@ -18,44 +19,20 @@ export function createCompanionHousehold(rng: () => number = Math.random) {
   let job: Job | undefined, serial = 0, retryAt = 0, lastNow = 0, cooldownMs = 35000;
   const handled = new Map<string, number>();
   const finish = (now: number) => { job = undefined; retryAt = now + cooldownMs; };
-  const routeBetween = (origin: Point, target: Point, platforms: readonly Platform[], allowJump: boolean) => {
-    const plane = platforms.find(p => p.id === origin.platformId && p.id === target.platformId);
-    // Manual room floors exclude ordinary wandering, but their measured spans
-    // already exclude complete controls at the92px tier. This one errand may
-    // traverse that same continuous safe span; no gap/control becomes a path.
-    if (plane?.manualOnly && plane.kind === "floor" && /^companion-home-floor(?:-\d+)?$/.test(plane.id)
-      && [plane.x, plane.y, plane.width, plane.x + plane.width].every(Number.isFinite) && plane.width > 0
-      && Math.abs(origin.y - plane.y) < 2 && Math.abs(target.y - plane.y) < 2
-      && [origin.x, target.x].every(x => Number.isFinite(x) && x >= plane.x && x <= plane.x + plane.width)) {
-      return Math.abs(origin.x - target.x) > 1 ? [{ kind: "walk" as const, target: { ...target, platformId: plane.id } }] : [];
-    }
-    return findPlatformRoute(origin, target, platforms, allowJump, target.platformId);
-  };
-  const route = (input: Input, target: Point) => routeBetween(input.world, target, input.world.platforms, input.preferences.jump);
+  const route = (input: Input, target: Point) => findCompanionHomeItemRoute(input.world, target, input.world.platforms, input.preferences.jump);
   const pointFor = (food: CompanionFood, platforms: readonly Platform[]): Point | undefined => {
     const support = platforms.find(p => p.id === food.platformId);
     return support && { x: platformLandingX(support, food.x), y: support.y, platformId: support.id };
   };
-  const collectPoint = (input: Input, from: Point, food: Pick<CompanionFood, "id" | "x" | "y">, support: Platform, improve = true): Point | undefined => {
-    if (![support.x, support.y, support.width].every(Number.isFinite) || support.width <= 0 || ["hide", "control"].includes(support.kind)) return;
-    // Recently handled siblings still occupy real space. At most eight foods
-    // and four native toys/reservations share the existing44px ranking policy.
-    const occupied = [...(input.world.foods ?? []).slice(0, MAX_COMPANION_FOOD).filter(item => item.id !== food.id), ...(input.occupied ?? []).slice(0, 4)];
-    const current = rankCompanionItemLandings([{ id: support.id, x: food.x, y: food.y, width: 0 }], food.x, occupied)[0];
-    if (improve && (!current || current.overlap === 0)) return;
-    // Geometry already emits safe body-centre intervals, not raw outer edges.
-    // Preserve its whole span and the existing landing inset; adding a snack
-    // half-width again would discard valid44px collection positions.
-    const left = platformLandingX(support, support.x), right = platformLandingX(support, support.x + support.width);
-    if (right < left) return;
-    for (const candidate of rankCompanionItemLandings([{ id: support.id, x: left, y: support.y, width: right - left }], food.x, occupied)) {
-      if (improve && (compareCompanionItemLandings(candidate, current!) >= 0 || Math.abs(candidate.x - food.x) < 2)) continue;
-      const point = { x: candidate.x, y: candidate.y, platformId: support.id };
-      if (routeBetween(from, point, input.world.platforms, input.preferences.jump)) return point;
-    }
-  };
-  const eligible = ({ brain, world, preferences }: Input, continuing = false) => preferences.enabled && preferences.roam && preferences.feeding && world.animated
-    && !world.paused && brain.energy > .3 && brain.hunger < (continuing ? .65 : .35) && !brain.foodGoal && !brain.episode
+  // Reachability controls routes, never whether an existing snack occupies
+  // space. Keep the same bounded eight foods/four toys; no new world scan.
+  const visibleFoods = (input: Input) => (input.visibleFoods ?? input.world.foods ?? []).slice(0, MAX_COMPANION_FOOD);
+  const destinationFor = (input: Input, from: Point, food: Pick<CompanionFood, "id" | "kind">) => selectCompanionHomeFoodDestination({
+    ...input.home, platforms: input.world.platforms, visibleFoods: visibleFoods(input), occupied: input.occupied,
+    allowJump: input.preferences.jump, brain: input.brain, preferences: input.preferences,
+  }, from, food);
+  const eligible = ({ brain, world, preferences }: Input) => preferences.enabled && preferences.roam && preferences.feeding && world.animated
+    && !world.paused && brain.energy > .3 && brain.hunger < .65 && !brain.foodGoal && !brain.episode
     && (!brain.intention || brain.intention.kind === "explore" && (brain.intention.stage !== "travel" || brain.intention.remaining <= 0));
   const begin = (input: Input) => {
     if (input.now < retryAt || !eligible(input)) return;
@@ -63,23 +40,20 @@ export function createCompanionHousehold(rng: () => number = Math.random) {
     retryAt = input.now + profile.householdRetryMs;
     const foods = (input.world.foods ?? []).filter(food => (handled.get(food.id) ?? -Infinity) < input.now);
     const ordered = foods.slice().sort((a, b) => Math.hypot(a.x - input.world.x, a.y - input.world.y) - Math.hypot(b.x - input.world.x, b.y - input.world.y));
-    if (input.brain.hunger < .35 && foods.length >= (input.preferences.personality === "tidy" ? 1 : 2) && rng() < profile.tidyWeight * .8) {
+    if (foods.length >= (input.preferences.personality === "tidy" ? 1 : 2) && rng() < profile.tidyWeight * .8) {
       const candidates = ordered.flatMap(food => {
         const source = pointFor(food, input.world.platforms);
         return source && route(input, source) ? [{ food, source }] : [];
       });
-      // A proved bin route takes priority over rearrangement, even when an
-      // earlier snack has only a local collection option.
-      const bin = input.home.bin;
-      if (bin) for (const { food, source } of candidates) if (routeBetween(source, bin, input.world.platforms, input.preferences.jump)) {
-        job = { serial: ++serial, kind: "tidy", stage: "seek", foodId: food.id, destination: bin, discard: true, deadline: input.now + 45000, budget: 32 };
-        return;
-      }
       for (const { food, source } of candidates) {
-        const support = input.world.platforms.find(p => p.id === source.platformId);
-        const destination = support && collectPoint(input, source, food, support);
+        const destination = destinationFor(input, source, food);
         if (!destination) continue;
-        job = { serial: ++serial, kind: "tidy", stage: "seek", foodId: food.id, destination, discard: false, deadline: input.now + 45000, budget: 32 };
+        // A separated snack already stored inside the room needs no second
+        // pantry move. Fullness-driven real-bin cleanup remains independent.
+        if (!destination.discard && /^companion-home-floor(?:-\d+)?$/.test(source.platformId ?? "")
+          && !visibleFoods(input).some(other => other.id !== food.id && Math.hypot(other.x - food.x, other.y - food.y) < 44)
+          && !(input.occupied ?? []).slice(0, 4).some(other => Math.hypot(other.x - food.x, other.y - food.y) < 44)) continue;
+        job = { serial: ++serial, kind: "tidy", stage: "seek", foodId: food.id, foodKind: food.kind, ...destination, deadline: input.now + 45000, budget: 32 };
         return;
       }
       // A selected tidy attempt with already good placements must not fall
@@ -98,7 +72,7 @@ export function createCompanionHousehold(rng: () => number = Math.random) {
   const next = (input: Input): CompanionHouseholdAction | undefined => {
     lastNow = input.now;
     cooldownMs = getCompanionBehaviorProfile(input.preferences, input.brain.habits).householdCooldownMs;
-    if (job && (!eligible(input, true) || input.now >= job.deadline || --job.budget < 0)) finish(input.now);
+    if (job && (!eligible(input) || input.now >= job.deadline || --job.budget < 0)) finish(input.now);
     if (!job) begin(input);
     if (!job) return;
     const active = job;
@@ -109,11 +83,13 @@ export function createCompanionHousehold(rng: () => number = Math.random) {
       if (!food) return still(undefined, undefined, 350);
       active.stage = "seek";
     }
-    if (active.stage === "deliver" && !active.discard && active.destination && active.foodId) {
-      const support = input.world.platforms.find(p => p.id === active.destination!.platformId);
-      const destination = support && collectPoint(input, input.world, { id: active.foodId, ...active.destination }, support, false);
+    if (active.stage === "deliver" && active.destination && active.foodId && active.foodKind) {
+      // Fullness, preference, real room geometry and sibling occupancy can
+      // change during the walk. Never complete an obsolete trash decision or
+      // replace a missing home with an arbitrary outside collection point.
+      const destination = destinationFor(input, input.world, { id: active.foodId, kind: active.foodKind });
       if (!destination) { finish(input.now); return; }
-      active.destination = destination;
+      active.destination = destination.destination; active.discard = destination.discard;
     }
     let target: Point | undefined;
     if (active.stage === "seek") target = food && pointFor(food, input.world.platforms);

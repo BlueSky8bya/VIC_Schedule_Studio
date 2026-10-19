@@ -5,6 +5,7 @@ import { isCompanionFoodKind, type CompanionFoodKind } from "./snacks";
 import { advanceCompanionAffect, appraiseCompanionEvent, companionMood, createCompanionAffect, type CompanionAffect } from "./affect";
 import { COMPANION_FEED_ACTION_BUDGET, COMPANION_FEED_RETRY_MS, planCompanionGoal, rememberCompanionOutcomes, type CompanionFeedGoal, type CompanionIntention, type CompanionOutcome, type CompanionPlaceMemory } from "./planner";
 import { MAX_COMPANION_FOOD } from "./food-capacity";
+import { withinCompanionFoodReach } from "./food-reach";
 import { getCompanionBehaviorProfile } from "./behavior-profile";
 import type { CompanionAttention } from "./deliberation";
 import { advanceCompanionHabits, DEFAULT_COMPANION_HABITS, type CompanionHabits } from "./habits";
@@ -188,7 +189,18 @@ export function findPlatformRoute(origin: SupportedPoint, target: SupportedPoint
     || origin.x < start.x - 1e-7 || origin.x > start.x + start.width + 1e-7
     || Math.abs(start.y - origin.y) > 18 || Math.abs(goal.y - target.y) > 18) return null;
   const finalX = platformLandingX(goal, target.x);
-  const finish = (x: number, steps: CompanionRouteStep[]): CompanionRouteStep[] | null => goal.manualOnly ? Math.abs(finalX - x) <= 36 ? steps : null : Math.abs(finalX - x) > 1
+  // The room's manual floor is already one continuous safe92px body span.
+  // An explicitly offered meal may approach along that same measured span;
+  // other manual tops still permit only their proved landing/contact point.
+  if (start.id === goal.id && origin.platformId === goal.id && foodTargetId === goal.id
+    && goal.manualOnly && goal.kind === "floor" && /^companion-home-floor(?:-\d+)?$/.test(goal.id)) {
+    const right = goal.x + goal.width;
+    if (![right, finalX].every(Number.isFinite) || origin.x < goal.x || origin.x > right
+      || Math.abs(origin.y - goal.y) > 2 || Math.abs(target.y - goal.y) > .5
+      || !withinCompanionFoodReach(Math.hypot(target.x - finalX, target.y - goal.y))) return null;
+    return Math.abs(finalX - origin.x) > 1 ? [{ kind: "walk", target: { x: finalX, y: goal.y, platformId: goal.id } }] : [];
+  }
+  const finish = (x: number, steps: CompanionRouteStep[]): CompanionRouteStep[] | null => goal.manualOnly ? withinCompanionFoodReach(Math.abs(finalX - x)) ? steps : null : Math.abs(finalX - x) > 1
     ? [...steps, { kind: "walk" as const, target: { x: finalX, y: goal.y, platformId: goal.id } }] : steps;
   if (start.id === goal.id) return finish(origin.x, []);
   if (!allowJump) return null;
@@ -323,7 +335,7 @@ export function getFoodAction(brain: CompanionBrain, world: CompanionWorld, pref
     const route = findPlatformRoute(supported, food, world.platforms, prefs.jump, platform?.manualOnly ? platform.id : undefined);
     if (!route) continue;
     const sameSupport = !route.some(step => step.kind === "jump");
-    if (sameSupport && Math.abs(world.y - food.y) <= 18 && Math.abs(world.x - food.x) <= 36) {
+    if (sameSupport && Math.abs(world.y - food.y) <= 18 && withinCompanionFoodReach(Math.abs(world.x - food.x))) {
       if ((brain.cooldowns.eat ?? -Infinity) > now) continue;
       return { kind: "eat", target: supported, duration: COMPANION_TIMING.eat, foodId: food.id, effectPoint: { x: food.x, y: food.y }, intention: { ...intention, stage: "observe" } };
     }

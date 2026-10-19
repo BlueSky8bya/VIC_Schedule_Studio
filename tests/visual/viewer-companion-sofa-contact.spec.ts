@@ -85,6 +85,7 @@ async function floorPlacement(page: Page) {
   await actor(page).focus(); await actor(page).press("p"); await expect(pet(page)).toHaveAttribute("data-placing", "");
   expect(await actor(page).evaluate(node => getComputedStyle(node).outlineStyle)).toBe("none");
   await page.mouse.click(point.x, point.y);
+  await expect(pet(page)).not.toHaveAttribute("data-placing");
   await expect(pet(page)).toHaveAttribute("data-platform", /^companion-home-floor(?:-\d+)?$/);
   await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
   await expect.poll(async () => Math.abs(await pet(page).evaluate(node => node.getBoundingClientRect().bottom) - (await furniture(page)).floor.bottom + COMPANION_HOME_FLOOR_INSET)).toBeLessThan(2);

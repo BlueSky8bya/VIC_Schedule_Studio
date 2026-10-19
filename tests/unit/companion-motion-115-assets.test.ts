@@ -60,11 +60,12 @@ describe("115 whole-pose continuity derivatives", () => {
       const before = json<{ rows: number[][] }>(`${run}/고정입력/${name}.json`), current = json<{ rows: number[][] }>(`lib/ui/viewer-companion/${name}.json`);
       expect(current.rows).toEqual(before.rows);
       const frozen = json<{ rows: number[][]; frames: Frame[]; atlases: Atlas[] }>(receipt.stagedMetadata[name]);
-      const active = json<typeof frozen>(`lib/ui/viewer-companion/${name}.json`);
+      // This historical conservation check binds the immutable120 stage.
+      // The131 petting test separately verifies the exact current successor.
+      const active = json<typeof frozen>(eye120.stagedMetadata[name]);
       // The immutable115 evidence below still checks every historical pixel.
       // Current120 replaces only three119 packets, keeping the four119 body
       // fits and every immutable115 source/packet assertion below intact.
-      expect(readFileSync(`lib/ui/viewer-companion/${name}.json`).equals(readFileSync(eye120.stagedMetadata[name]))).toBe(true);
       expect({ ...active, atlases: frozen.atlases, frames: frozen.frames }).toEqual(frozen);
       expect(active.atlases).toHaveLength(frozen.atlases.length); expect(active.frames).toHaveLength(frozen.frames.length);
       for (const [index, atlas] of active.atlases.entries()) {

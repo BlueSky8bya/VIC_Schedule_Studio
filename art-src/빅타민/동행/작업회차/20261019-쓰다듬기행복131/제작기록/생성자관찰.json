@@ -1,0 +1,42 @@
+{
+  "final_sha256": "41EA00D7053DBBC9532C728D9710ADA2F51E37B7BE698B3EFD304BEBEACE29F9",
+  "whole_visual_inspection": true,
+  "opened_files": [
+    {
+      "path": "C:\\Projects\\VIC Schedule studio\\art-src\\빅타민\\동행\\작업회차\\20261019-쓰다듬기행복131\\원본\\쓰다듬기행복_단일생성.png",
+      "sha256": "41EA00D7053DBBC9532C728D9710ADA2F51E37B7BE698B3EFD304BEBEACE29F9"
+    }
+  ],
+  "observer_role": "creator_only",
+  "whole_view_source": "Actual builtin imagegen output displayed whole in this conversation; first-cell native crop then inspected separately.",
+  "findings": [
+    {
+      "scope": "requested_expression",
+      "observation": "Paired gently curved closed happy eyes and a small open U smile are visible in all16 frames; creator observation only, no independent/art/user approval."
+    },
+    {
+      "scope": "protected_body_ears_outline",
+      "status": "NOT_EXACTLY_PRESERVED",
+      "observation": "Generator re-rendered protected body/ears/outline. Normalized alpha>=200 core area increases4.80..6.67%, lower-body area1.88..3.57%, body width.41..2.81%, ear-rise proxy3.85..7.69%. Thresholded outline-run median3→4.243 cell192 pixels; proxy depends on AA/shape."
+    },
+    {
+      "scope": "alpha_color_fringe",
+      "status": "LOW_ALPHA_ONLY_IN_DEFINED_PROXY",
+      "observation": "Outside filled solid-core red/yellow proxy7746 pixels:7502 alpha1,244 alpha2..7,max6; no alpha>=8. Original alpha bytes retained."
+    },
+    {
+      "scope": "runtime_integration",
+      "status": "NOT_APPLIED",
+      "observation": "Current source atlas/metadata/anchors unchanged. Live bright/dark rendered frames, row9 continuity, protection judgment and mouth anchoring not yet verified."
+    }
+  ],
+  "not_claimed": [
+    "professional artwork PASS",
+    "user visual approval",
+    "outside-face RGBA exact preservation",
+    "runtime QA PASS"
+  ],
+  "generation_calls": 1,
+  "additional_generation_calls": 0,
+  "pixel_retouch_or_face_compositing": false
+}

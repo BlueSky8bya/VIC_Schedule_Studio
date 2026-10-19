@@ -103,26 +103,21 @@ describe("finite companion food gravity", () => {
     const bad = createCompanionFoodGravity({ x: NaN, y: Infinity }, { x: NaN, y: 0 }, NaN).sample(Infinity);
     expect(Object.values(bad).every(value => typeof value !== "number" || Number.isFinite(value))).toBe(true);
   });
-  it("continuously falls from an unsupported release to the retained world floor without an instant teleport", () => {
+  it("preserves an unsupported release without a fake floor or offscreen fall loop", () => {
     const from = Object.freeze({ x: 200, y: 260 });
     const food = placeCompanionFood({ id: "apple", kind: "apple", ...from }, from, [], { width: 1000, height: 800 });
-    expect(food).toMatchObject({ ...from, y: 844 }); expect(food.platformId).toBeUndefined();
-    const drop = createCompanionFoodGravity(from, food, 1000), fall = drop.duration - 240;
-    expect(drop.duration).toBeGreaterThan(0); expect(drop.duration).toBeLessThanOrEqual(1440);
-    expect(drop.sample(1000)).toMatchObject({ ...from, active: true });
-    const a = drop.sample(1000 + fall * .25), b = drop.sample(1000 + fall * .5), c = drop.sample(1000 + fall * .75);
-    expect(a.y).toBeGreaterThan(from.y); expect(c.y).toBeLessThan(food.y);
-    expect(b.y - a.y).toBeGreaterThan(a.y - from.y); expect(c.y - b.y).toBeGreaterThan(b.y - a.y);
-    expect(drop.sample(1000 + drop.duration)).toEqual({ x: food.x, y: food.y, scale: 1, scaleX: 1, scaleY: 1, rotation: 0, active: false });
+    expect(food).toMatchObject(from); expect(food.platformId).toBeUndefined();
+    const drop = createCompanionFoodGravity(from, food, 1000);
+    expect(drop.duration).toBe(0); expect(drop.sample(100000)).toMatchObject({ ...from, active: false });
   });
-  it("carries that unsupported world floor through scrolling and resumes a caught fall from its actual drawing", () => {
+  it("keeps scroll attachment math and resumes a caught fall only when a real support arrives", () => {
     const from = { x: 200, y: 260 }, viewport = { width: 1000, height: 800 };
     const food = placeCompanionFood({ id: "apple", kind: "apple", ...from }, from, [], viewport);
     const attachment = attachCompanionFood(food, { x: 0, y: 120 });
     const drop = createCompanionFoodGravity(from, food, 0), at = 200;
     const shown = drop.sample(at), target = followCompanionFood(attachment, { x: 0, y: 220 }).point;
     expect(drop.sample(at, target).y).toBeCloseTo(shown.y - 100);
-    const caught = drop.sample(at, target), placed = placeCompanionFood(food, caught, [], viewport);
+    const caught = drop.sample(at, target), placed = placeCompanionFood(food, caught, [{ id: "viewport-floor-food", kind: "floor", x: 24, y: 770, width: 952 }], viewport);
     const resumed = createCompanionFoodGravity(caught, placed, at);
     expect(resumed.sample(at)).toMatchObject({ x: caught.x, y: caught.y, active: true });
     expect(resumed.sample(at + 60).y).toBeGreaterThan(caught.y);

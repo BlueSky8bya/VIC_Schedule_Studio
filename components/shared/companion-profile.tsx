@@ -13,7 +13,7 @@ import type { CompanionLifeReason } from "@/lib/ui/viewer-companion/life";
 import { COMPANION_PERSONALITY_NAMES, type CompanionPersonality, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_FOOD_NAMES } from "@/lib/ui/viewer-companion/snacks";
 import { COMPANION_TOY_NAMES, type CompanionToyKind } from "@/lib/ui/viewer-companion/toy-catalog";
-import { companionTasteReason, companionToyUnread, loadCompanionTastes, subscribeCompanionTastes, summarizeCompanionFoodTastes, summarizeCompanionToyTastes, type CompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
+import { companionProfileTasteReason, companionToyUnread, loadCompanionTastes, subscribeCompanionTastes, summarizeCompanionFoodTastes, summarizeCompanionToyTastes, type CompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
 import { CompanionToyArt } from "@/components/poster/viewer-companion/companion-toy-art";
 import type { CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { playSfx } from "@/lib/ui/sfx";
@@ -143,7 +143,7 @@ export function CompanionProfile({ preferences, active, environment }: { prefere
         <div className="rhh-companion-summary-copy"><span className="rhh-companion-presence" data-awake={preferences.enabled || undefined}>빅타민{!preferences.enabled && " · 쉬는 중"}</span><h3 className="rhh-profile-personality" id={`${id}-traits-title`}>{personality}</h3><p className="rhh-profile-meta"><span>{personalityNotes[preferences.personality]}</span></p>
           <p className="rhh-profile-appearance">{mode} 모드 · {collection?.gifts.equipped ? COMPANION_ACCESSORY_NAMES[collection.gifts.equipped] : "기본 모습"}</p>
         </div>
-        <dl className="rhh-companion-facts"><TasteCard label="좋아하는 간식" food={foodTastes.favorite} reason={companionTasteReason(tastes, "food", foodTastes.favorite, "positive")} /><TasteCard label="싫어하는 간식" food={foodTastes.disliked} reason={companionTasteReason(tastes, "food", foodTastes.disliked, "negative")} dislike /><TasteCard label="좋아하는 장난감" toy={toyTastes.favorite} reason={companionTasteReason(tastes, "toy", toyTastes.favorite, "positive")} /><TasteCard label="싫어하는 장난감" toy={toyTastes.disliked} reason={companionTasteReason(tastes, "toy", toyTastes.disliked, "negative")} dislike /></dl>
+        <dl className="rhh-companion-facts"><TasteCard label="좋아하는 간식" food={foodTastes.favorite} reason={companionProfileTasteReason(tastes, "food", foodTastes.favorite, "positive", care?.life)} /><TasteCard label="싫어하는 간식" food={foodTastes.disliked} reason={companionProfileTasteReason(tastes, "food", foodTastes.disliked, "negative", care?.life)} dislike /><TasteCard label="좋아하는 장난감" toy={toyTastes.favorite} reason={companionProfileTasteReason(tastes, "toy", toyTastes.favorite, "positive", care?.life)} /><TasteCard label="싫어하는 장난감" toy={toyTastes.disliked} reason={companionProfileTasteReason(tastes, "toy", toyTastes.disliked, "negative", care?.life)} dislike /></dl>
       </section>
       <section aria-labelledby={`${id}-habits-title`} className="rhh-profile-habits"><div className="rhh-habits-heading"><h3 id={`${id}-habits-title`}>배운 습관</h3>{!preferences.learnFromYou && <span className="rhh-habit-paused">적용 중지</span>}</div>{effects.length ? <ul className="rhh-profile-learned">{effects.map(effect => <li key={effect}>{effect}</li>)}</ul> : <p className="rhh-habit-empty">아직 배운 습관이 없어요.</p>}</section>
       {care?.life.recent.at(-1) && <p className="rhh-trait-reason"><span>최근 경험</span><span>{recentReasons[care.life.recent.at(-1)!]}</span></p>}

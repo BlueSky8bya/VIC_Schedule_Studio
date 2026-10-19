@@ -114,12 +114,14 @@ describe("visible activity, automatic sleep and distinct companion personalities
 
   it("finds one distant snack for tidy disposal only through both real routes and yields to hunger", () => {
     const food: CompanionFood = { id: "far-snack", x: 850, y: 600, platformId: floor.id, kind: "apple" };
-    const context = { brain: brain(), world: { ...world, foods: [food] }, preferences: { ...preferences, personality: "tidy" as const, ambientPrank: false }, now: 0, home: { bin: { x: 950, y: 600, platformId: floor.id } }, count: 1 };
+    const room: Platform = { id: "companion-home-floor", x: 900, y: 600, width: 100, kind: "floor", manualOnly: true };
+    const context = { brain: brain(), world: { ...world, platforms: [{ ...floor, width: 880 }, room], foods: [food] }, preferences: { ...preferences, personality: "tidy" as const, ambientPrank: false }, now: 0, home: { bin: { x: 950, y: 600, platformId: room.id } }, count: 1 };
     const approach = createCompanionHousehold(() => 0).next(context);
     expect(approach).toMatchObject({ kind: "walk", target: { x: 850, platformId: floor.id }, household: { kind: "tidy", foodId: food.id } });
     expect(createCompanionHousehold(() => 0).next({ ...context, brain: { ...context.brain, hunger: .6 } })).toBeUndefined();
     expect(createCompanionHousehold(() => 0).next({ ...context, home: {} })).toBeUndefined();
     expect(createCompanionHousehold(() => 0).next({ ...context, home: { bin: { x: 950, y: 600, platformId: "missing" } } })).toBeUndefined();
+    expect(createCompanionHousehold(() => 0).next({ ...context, home: { bin: { x: 850, y: 600, platformId: floor.id } } })).toBeUndefined();
     expect(food.x).toBe(850);
   });
 });

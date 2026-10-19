@@ -1,16 +1,57 @@
 import { describe, expect, it } from "vitest";
-import { createCompanionHousehold } from "@/lib/ui/viewer-companion/household";
+import { createCompanionHousehold, type CompanionHouseholdHome } from "@/lib/ui/viewer-companion/household";
 import { createBrain, type CompanionFood, type CompanionWorld, type Platform } from "@/lib/ui/viewer-companion/brain";
 import { DEFAULT_COMPANION_PREFERENCES, normalizeCompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { getCompanionBehaviorProfile } from "@/lib/ui/viewer-companion/behavior-profile";
+import { createCompanionLife } from "@/lib/ui/viewer-companion/life";
 
-const floor: Platform = { id: "floor", x: 0, y: 600, width: 800, kind: "floor" };
+const floor: Platform = { id: "companion-home-floor", x: 0, y: 600, width: 800, kind: "floor", manualOnly: true };
 const foods: CompanionFood[] = [{ id: "a", kind: "apple", x: 650, y: 600, platformId: floor.id }, { id: "b", kind: "bread", x: 680, y: 600, platformId: floor.id }];
 const world: CompanionWorld = { x: 500, y: 600, platformId: floor.id, platforms: [floor], width: 800, height: 700, animated: true, foods };
-const input = () => ({ brain: { ...createBrain(0, () => .5), hunger: .1, energy: .9 }, world: { ...world }, preferences: { ...DEFAULT_COMPANION_PREFERENCES, personality: "tidy" as const }, now: 10000, home: {}, count: 2 });
+const input = () => ({ brain: { ...createBrain(0, () => .5), hunger: .1, energy: .9 }, world: { ...world }, preferences: { ...DEFAULT_COMPANION_PREFERENCES, personality: "tidy" as const }, now: 10000, home: { pantry: { x: 650, y: 600, platformId: floor.id } } as CompanionHouseholdHome, count: 2 });
 
 describe("contextual household ownership", () => {
-  it("carries an actual scattered snack to the same real support and stops after placement", () => {
+  const outside = () => {
+    const context = input(), calendar = { ...floor, id: "calendar-floor", x: 0, width: 360, manualOnly: false };
+    const room = { ...floor, x: 400, width: 400 };
+    context.world = { ...world, x: 100, platformId: calendar.id, platforms: [calendar, room], foods: [{ ...foods[0], x: 300, kind: "bread", platformId: calendar.id }] };
+    context.home = { pantry: { x: 500, y: room.y, platformId: room.id }, bin: { x: 700, y: room.y, platformId: room.id } };
+    const life = createCompanionLife(() => 0); context.brain.life = { ...life, favoriteFood: "apple", foodScores: { ...life.foodScores, apple: .9, bread: .1 } };
+    context.count = 1; return context;
+  };
+  it("never calls outdoor rearrangement cleanup when the real bin and home pantry are missing", () => {
+    const context = outside(); context.home = {};
+    expect(createCompanionHousehold(() => 0).next(context)).toBeUndefined();
+    context.home = { pantry: { x: 300, y: 600, platformId: "calendar-floor" } };
+    expect(createCompanionHousehold(() => 0).next(context)).toBeUndefined();
+  });
+  it("uses the current fullness and actual taste to choose bin versus indoor storage, and yields hungry food", () => {
+    for (const { hunger, kind, score, discard } of [
+      { hunger: .1, kind: "bread" as const, score: .1, discard: true },
+      { hunger: .5, kind: "bread" as const, score: .1, discard: false },
+      { hunger: .1, kind: "apple" as const, score: .1, discard: false },
+      { hunger: .1, kind: "bread" as const, score: .8, discard: false },
+    ]) {
+      const context = outside(), planner = createCompanionHousehold(() => 0); context.brain.hunger = hunger;
+      context.world.foods = [{ ...context.world.foods![0], kind }]; context.brain.life!.foodScores[kind] = score;
+      expect(planner.next(context)).toBeDefined(); expect(planner.currentCleanup()?.discard).toBe(discard);
+      expect(planner.currentCleanup()?.point?.platformId).toBe(floor.id);
+    }
+    const context = outside(); context.brain.hunger = .65;
+    expect(createCompanionHousehold(() => 0).next(context)).toBeUndefined();
+    context.brain.hunger = .1; context.home.bin = undefined;
+    const fallback = createCompanionHousehold(() => 0); expect(fallback.next(context)).toBeDefined(); expect(fallback.currentCleanup()?.discard).toBe(false);
+  });
+  it("rechecks a carried food's full condition and actual home at every delivery decision", () => {
+    const context = outside(), planner = createCompanionHousehold(() => 0), approach = planner.next(context)!;
+    context.world = { ...context.world, ...approach.target };
+    const pick = planner.next(context)!; expect(pick.household.effect).toBe("pick"); planner.resolve(pick.household, true, context.now);
+    const carrying = { ...context, carried: "a", world: { ...context.world, foods: [] }, brain: { ...context.brain, hunger: .5 } };
+    expect(planner.next(carrying)).toBeDefined(); expect(planner.currentCleanup()?.discard).toBe(false);
+    expect(planner.next({ ...carrying, home: {} })).toBeUndefined(); expect(planner.active()).toBe(false);
+    expect(carrying.carried).toBe("a");
+  });
+  it("carries an actual scattered snack into a free real home pantry position and stops after placement", () => {
     const controller = createCompanionHousehold(() => 0), context = input();
     const approach = controller.next(context)!;
     expect(approach).toMatchObject({ kind: "walk", target: { x: 650, y: 600, platformId: floor.id }, household: { kind: "tidy", foodId: "a" } });
@@ -128,6 +169,7 @@ describe("contextual household ownership", () => {
   });
   it("uses a proved free44px centre on a support narrower than120px and respects toy occupancy", () => {
     const small: Platform = { ...floor, x: 100, width: 112 }, context = input();
+    context.home.pantry = { x: 150, y: small.y, platformId: small.id };
     context.world = { ...world, x: 150, platformId: small.id, platforms: [small], foods: [{ ...foods[0], x: 166 }, { ...foods[1], x: 166 }] };
     const controller = createCompanionHousehold(() => 0), step = controller.next({ ...context, occupied: [{ x: 194, y: 600 }] })!;
     expect(step).toBeDefined(); context.world = { ...context.world, ...step.target };
@@ -143,6 +185,7 @@ describe("contextual household ownership", () => {
   });
   it("keeps all three free44px positions in a narrow body-safe centre interval", () => {
     const support: Platform = { ...floor, x: 100, width: 112 }, context = input(), controller = createCompanionHousehold(() => 0);
+    context.home.pantry = { x: 156, y: support.y, platformId: support.id };
     context.world = { ...world, x: 156, platforms: [support], foods: Array.from({ length: 3 }, (_, i) => ({ ...foods[0], id: `small-${i}`, x: 156 })) };
     context.count = 3;
     for (let turn = 0; turn < 2; turn++) {
@@ -172,5 +215,17 @@ describe("contextual household ownership", () => {
     expect(Math.abs(destination.x - occupiedTarget)).toBeGreaterThanOrEqual(44);
     const neat = { ...context, world: { ...world, foods: [{ ...foods[0], x: 200 }, { ...foods[1], x: 244 }] } };
     expect(createCompanionHousehold(() => 0).next(neat)).toBeUndefined();
+  });
+  it("separates one indoor snack overlapping a real toy instead of treating it as already stored", () => {
+    const context = input(), food = foods[0], occupied = [{ x: food.x, y: food.y }];
+    const scene = { ...context, count: 1, occupied, world: { ...world, foods: [food] } };
+    expect(createCompanionHousehold(() => 0).next({ ...scene, occupied: [] })).toBeUndefined();
+    const planner = createCompanionHousehold(() => 0), approach = planner.next(scene)!;
+    expect(approach.household.foodId).toBe(food.id);
+    const atFood = { ...scene, world: { ...scene.world, ...approach.target } }, pick = planner.next(atFood)!;
+    expect(pick.household.effect).toBe("pick"); planner.resolve(pick.household, true, 11000);
+    const delivery = planner.next({ ...atFood, carried: food.id, now: 11500, world: { ...atFood.world, foods: [] } })!;
+    expect(delivery.target.platformId).toBe(floor.id);
+    expect(Math.hypot(delivery.target.x - occupied[0].x, delivery.target.y - occupied[0].y)).toBeGreaterThanOrEqual(44);
   });
 });

@@ -139,7 +139,7 @@ describe("actual shared profile navigation callbacks", () => {
       expect(nodes(badge).filter(node => typeof node.type !== "string")).toHaveLength(0);
     }
   });
-  it("shows short witnessed reasons on the four existing cards without activity capture or invented legacy reasons", async () => {
+  it("shows witnessed reasons and honest existing-experience fallbacks without writing new memories", async () => {
     const store = createCompanionTastesStore(); let life = createCompanionLife(() => 0);
     for (const [kind, roll] of [["durian", 0], ["peach", 1]] as const) {
       const taste = evaluateCompanionFoodTaste(kind, life, roll); life = experienceCompanionLife(life, { kind: "fed", food: kind, taste }); store.recordFoodOutcome(taste);
@@ -154,17 +154,21 @@ describe("actual shared profile navigation callbacks", () => {
     expect(reasons.map(node => node.props.children)).toEqual(["달콤해서 기분 좋아요", "주인 양말 냄새남", "함께 노니 신나요", "놀다가 걸려 넘어졌어요"]);
     expect(harness.activity).not.toHaveBeenCalled(); expect(harness.acknowledge).not.toHaveBeenCalled();
     harness.states[4] = normalizeCompanionTastes({ version: 1, toys: ["ball", "feather"], seen: [], toyTastes: {}, foodTastes: {} }); await render();
-    expect(nodes(tree).filter(node => typeof node.type === "function" && typeof node.props.label === "string").every(card => card.props.reason === undefined)).toBe(true);
+    const fallback = nodes(tree).filter(node => typeof node.type === "function" && typeof node.props.label === "string");
+    expect(fallback.map(card => card.props.reason)).toEqual(["먹어 보고 마음에 들었어요", "예전엔 입맛에 잘 안 맞았어요", undefined, undefined]);
+    expect((harness.states[4] as ReturnType<typeof normalizeCompanionTastes>).reasons).toEqual([]);
+    expect(harness.activity).not.toHaveBeenCalled(); expect(harness.acknowledge).not.toHaveBeenCalled();
   });
   it("acknowledges only deliberate unread tile inspection, not mounting, category changes or paging", async () => {
     harness.acknowledge.mockReturnValue(true);
     discoveryCollection = { version: 1, foods: [...COMPANION_FOOD_KINDS.slice(0, 10)], behaviors: ["ask-petting"], situations: ["meal-finished"], gifts: { pending: null, unlocked: [], equipped: null, activeMs: 0, interactionCredit: 0 }, seen: { foods: [], behaviors: [], situations: [], accessories: [] } };
     await render(); await discover(); expect(harness.acknowledge).not.toHaveBeenCalled();
     expect(foods()[0].props["data-unread"]).toBe(true); expect(foods()[0].props["aria-describedby"]).toBe("unit-profile");
+    const pageSize = foods().length;
     click(find(node => node.props["data-act"] === "companion-collection-page" && node.props["data-act-opt"] === "next")); await render();
-    expect(foods()[0].props["data-food-index"]).toBe(4); expect(harness.acknowledge).not.toHaveBeenCalled();
-    key(foods()[0], "ArrowRight"); await render(); expect(harness.acknowledge.mock.calls).toEqual([["food", COMPANION_FOOD_KINDS[5]]]);
-    click(foods()[0]); expect(harness.acknowledge.mock.calls.at(-1)).toEqual(["food", COMPANION_FOOD_KINDS[4]]);
+    expect(foods()[0].props["data-food-index"]).toBe(pageSize); expect(harness.acknowledge).not.toHaveBeenCalled();
+    key(foods()[0], "ArrowRight"); await render(); expect(harness.acknowledge.mock.calls).toEqual([["food", COMPANION_FOOD_KINDS[pageSize + 1]]]);
+    click(foods()[0]); expect(harness.acknowledge.mock.calls.at(-1)).toEqual(["food", COMPANION_FOOD_KINDS[pageSize]]);
     key(foods()[0], "Home"); await render(); harness.acknowledge.mockClear(); harness.activity.mockClear();
     key(foods()[0], "Home"); expect(harness.acknowledge.mock.calls).toEqual([["food", "apple"]]); expect(harness.activity.mock.calls).toEqual([["ui.click", { target: "companion-collection-inspect#food" }]]);
     harness.activity.mockClear(); harness.acknowledge.mockReturnValue(false); key(foods()[0], "Home"); expect(harness.activity).not.toHaveBeenCalled();
@@ -172,6 +176,24 @@ describe("actual shared profile navigation callbacks", () => {
     expect(harness.acknowledge).not.toHaveBeenCalled();
     click(find(node => node.props["data-collection-index"] === 0)); expect(harness.acknowledge.mock.calls).toEqual([["behavior", "ask-petting"]]);
     harness.acknowledge.mockClear(); click(find(node => node.props["data-collection-index"] === 1)); expect(harness.acknowledge).not.toHaveBeenCalled();
+  });
+  it("visits every unread food and both memory registries without leaking unknown artwork or reading siblings", async () => {
+    discoveryCollection = { version: 1, foods: ["apple", COMPANION_FOOD_KINDS[20], COMPANION_FOOD_KINDS[179]], behaviors: [COMPANION_BEHAVIOR_IDS[0], COMPANION_BEHAVIOR_IDS[3]], situations: [COMPANION_SITUATION_IDS[2]], gifts: { pending: null, unlocked: [], equipped: null, activeMs: 0, interactionCredit: 0 }, seen: { foods: ["apple"], behaviors: [], situations: [], accessories: [] } };
+    harness.acknowledge.mockImplementation((kind: "food" | "behavior" | "moment", id: string) => { const seen = discoveryCollection!.seen!; (kind === "food" ? seen.foods : kind === "moment" ? seen.situations : seen.behaviors).push(id as never); return true; });
+    await render(); await discover();
+    const unread = () => find(node => node.props["aria-label"] === "다음 새 발견");
+    click(unread()); await render(); expect(foods().some(node => node.props["data-food-index"] === 20 && node.props["aria-pressed"])).toBe(true);
+    click(unread()); await render(); expect(foods().some(node => node.props["data-food-index"] === 179 && node.props["aria-pressed"])).toBe(true);
+    expect(unread().props.disabled).toBe(true);
+    expect(harness.acknowledge.mock.calls).toEqual([["food", COMPANION_FOOD_KINDS[20]], ["food", COMPANION_FOOD_KINDS[179]]]);
+    click(find(node => node.props["data-act"] === "companion-collection-category" && node.props["data-act-opt"] === "behavior")); await render();
+    for (let i = 0; i < 3; i++) { expect(unread().props.disabled).toBe(false); click(unread()); await render(); }
+    expect(unread().props.disabled).toBe(true);
+    expect(harness.acknowledge.mock.calls.slice(2)).toEqual([["behavior", COMPANION_BEHAVIOR_IDS[3]], ["moment", COMPANION_SITUATION_IDS[2]], ["behavior", COMPANION_BEHAVIOR_IDS[0]]]);
+    for (const tile of nodes(tree).filter(node => node.props["data-collection-index"] !== undefined && !node.props["data-found"])) {
+      expect(nodes(tile).some(node => typeof node.type === "function" && node.type.name === "CompanionCollectionArt")).toBe(false);
+    }
+    expect(harness.activity).not.toHaveBeenCalled();
   });
   it("leads with a live portrait and keeps all operational controls on the last page", async () => {
     await render();
@@ -254,7 +276,7 @@ describe("actual shared profile navigation callbacks", () => {
     click(categories[2]); await render();
     const kinds: unknown[] = [], indexes: unknown[] = [];
     for (;;) {
-      const memories = nodes(tree).filter(node => node.props["data-act"] === "companion-collection-inspect");
+      const memories = nodes(tree).filter(node => node.props["data-collection-index"] !== undefined);
       expect(memories.length).toBeGreaterThan(0); expect(memories.length).toBeLessThanOrEqual(24);
       expect(memories.every(node => /^\?\?\? · \d+$/.test(String(node.props["aria-label"])))).toBe(true);
       expect(memories.filter(node => node.props.tabIndex === 0)).toHaveLength(1);
@@ -280,7 +302,7 @@ describe("actual shared profile navigation callbacks", () => {
   it("crosses the merged-memory boundary and records the selected destination's fixed category exactly once", async () => {
     await render(); await discover();
     click(find(node => node.props["data-act"] === "companion-collection-category" && node.props["data-act-opt"] === "behavior")); await render();
-    const memoryTiles = () => nodes(tree).filter(node => node.props["data-act"] === "companion-collection-inspect");
+    const memoryTiles = () => nodes(tree).filter(node => node.props["data-collection-index"] !== undefined);
     const memory = (index: number) => memoryTiles().find(node => node.props["data-collection-index"] === index)!;
     for (let page = 0; !memory(COMPANION_BEHAVIOR_IDS.length - 1); page++) {
       expect(page).toBeLessThan(COMPANION_BEHAVIOR_IDS.length);

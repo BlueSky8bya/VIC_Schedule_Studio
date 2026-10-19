@@ -1,6 +1,7 @@
 import { platformLandingX, type CompanionFood, type Platform } from "./brain";
 import { COMPANION_HOME_FLOOR_FOOD, isCompanionFoodBedSupport, isCompanionViewportFloorFoodSupport } from "./food";
 import { MAX_COMPANION_FOOD } from "./food-capacity";
+import { withinCompanionFoodReach } from "./food-reach";
 
 /** The snack's own32px collision can fit where a92px creature cannot. Preserve
  * that visible placement. The pet can eat from a separately measured safe
@@ -19,7 +20,7 @@ export function accessibleCompanionFoods(foods: readonly CompanionFood[], petSup
       : floor ? p.kind === "floor" && /^viewport-floor(?:-\d+)?$/.test(p.id)
       : p.id === food.platformId;
     const distance = (p: Platform) => Math.abs(platformLandingX(p, food.x) - food.x);
-    const support = supports.filter(p => matches(p) && Math.abs(food.y - p.y) <= .5 && distance(p) <= 36)
+    const support = supports.filter(p => matches(p) && Math.abs(food.y - p.y) <= .5 && withinCompanionFoodReach(distance(p)))
       .sort((a, b) => distance(a) - distance(b) || a.id.localeCompare(b.id))[0];
     return support ? [{ ...food, platformId: support.id }] : [];
   });

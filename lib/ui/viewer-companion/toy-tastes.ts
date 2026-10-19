@@ -3,13 +3,13 @@ import { COMPANION_FOOD_KINDS, isCompanionFoodKind, type CompanionFoodKind } fro
 import { getCompanionFoodPreference, type CompanionLife } from "./life";
 import type { CompanionPreferences } from "./preferences";
 import type { CompanionBrain } from "./brain";
-import { COMPANION_TASTE_REASON_TEXT, isCompanionFoodTasteOutcome, type CompanionFoodTasteOutcome, type CompanionFoodTasteReason, type CompanionTasteReason } from "./taste-reasons";
+import { COMPANION_TASTE_REASON_TEXT, companionInnateFoodReason, companionToyTasteReason, isCompanionFoodTasteOutcome, isCompanionToyTasteReason, isPositiveCompanionTasteReason, type CompanionFoodTasteOutcome, type CompanionFoodTasteReason, type CompanionTasteReason, type CompanionToyTasteReason } from "./taste-reasons";
 
 export const COMPANION_TASTES_KEY = "vic.viewerCompanionTastes";
 export const COMPANION_TASTES_EVENT = "vic:companion-tastes";
 export type CompanionToyExperience = "taken-out" | "played" | "tidied" | "declined" | "tripped";
 type Taste = { score: number; accepted: number; declined: number; tripped?: number };
-export type CompanionTasteMemory = { domain: "food"; kind: CompanionFoodKind; reason: CompanionFoodTasteReason; age: number } | { domain: "toy"; kind: CompanionToyKind; reason: "toy-fun" | "toy-trip"; age: number };
+export type CompanionTasteMemory = { domain: "food"; kind: CompanionFoodKind; reason: CompanionFoodTasteReason; age: number } | { domain: "toy"; kind: CompanionToyKind; reason: CompanionToyTasteReason; age: number };
 export type CompanionTastes = { version: 1; toys: CompanionToyKind[]; seen: CompanionToyKind[]; toyTastes: Partial<Record<CompanionToyKind, Taste>>; foodTastes: Partial<Record<CompanionFoodKind, Taste>>; reasons: CompanionTasteMemory[] };
 type TasteStorage = Pick<Storage, "getItem" | "setItem">;
 const object = (value: unknown): Record<string, unknown> => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -32,7 +32,7 @@ export function normalizeCompanionTastes(value: unknown): CompanionTastes {
   for (const value of Array.isArray(source.reasons) ? source.reasons.slice(-32) : []) {
     const item = object(value), age = typeof item.age === "number" && Number.isFinite(item.age) ? Math.max(0, Math.floor(item.age)) : 0;
     if (age >= REASON_STEPS) continue;
-    if (item.domain === "toy" && isCompanionToyKind(item.kind) && toys.includes(item.kind) && ["toy-fun", "toy-trip"].includes(item.reason as string)) reasons.push({ domain: "toy", kind: item.kind, reason: item.reason as "toy-fun" | "toy-trip", age });
+    if (item.domain === "toy" && isCompanionToyKind(item.kind) && toys.includes(item.kind) && isCompanionToyTasteReason(item.kind, item.reason)) reasons.push({ domain: "toy", kind: item.kind, reason: item.reason, age });
     else if (item.domain === "food" && isCompanionFoodKind(item.kind)) {
       const reason = item.reason as CompanionFoodTasteReason;
       if (isCompanionFoodTasteOutcome({ food: item.kind, reason, reaction: "liked" }) || isCompanionFoodTasteOutcome({ food: item.kind, reason, reaction: "disliked" })) reasons.push({ domain: "food", kind: item.kind, reason, age });
@@ -48,8 +48,23 @@ const changeTaste = (previous: Taste | undefined, positive: boolean): Taste => {
 const remember = (value: CompanionTastes, reason: CompanionTasteMemory) => { value.reasons = [...value.reasons.filter(item => item.domain !== reason.domain || item.kind !== reason.kind), reason].slice(-8); };
 export function companionTasteReason(value: CompanionTastes | null | undefined, domain: "food" | "toy", kind: CompanionFoodKind | CompanionToyKind | null | undefined, valence?: "positive" | "negative"): string | undefined {
   const entry = kind && value?.reasons.filter(item => item.domain === domain && item.kind === kind).at(-1);
-  if (entry && valence && ["sweet-bite", "fresh-bite", "cozy-bite", "toy-fun"].includes(entry.reason) !== (valence === "positive")) return;
+  if (entry && valence && isPositiveCompanionTasteReason(entry.reason) !== (valence === "positive")) return;
   return entry ? COMPANION_TASTE_REASON_TEXT[entry.reason as CompanionTasteReason] : undefined;
+}
+export function companionProfileTasteReason(value: CompanionTastes | null | undefined, domain: "food" | "toy", kind: CompanionFoodKind | CompanionToyKind | null | undefined, valence: "positive" | "negative", life?: CompanionLife): string | undefined {
+  if (!kind) return;
+  const remembered = companionTasteReason(value, domain, kind, valence);
+  if (remembered) return remembered;
+  if (domain === "food" && isCompanionFoodKind(kind)) {
+    if (valence === "positive" && life?.seedFood === kind && !life.tastedFoods.includes(kind)) return companionInnateFoodReason(kind);
+    if (life?.tastedFoods.includes(kind)) return valence === "positive" ? "먹어 보고 마음에 들었어요" : "예전엔 입맛에 잘 안 맞았어요";
+    if (valence === "positive" && life?.favoriteFood === kind) return "예전부터 좋아하던 간식이에요";
+  }
+  if (domain === "toy" && isCompanionToyKind(kind)) {
+    const prior = value?.toyTastes[kind];
+    if (valence === "positive" && prior && prior.accepted > 0) return prior.accepted >= 3 ? "여러 번 놀아서 정들었어요" : "같이 놀아 보니 마음에 들어요";
+    if (valence === "negative" && prior?.tripped) return "전에 걸려 넘어져 조심해요";
+  }
 }
 export function companionToyUnread(value: CompanionTastes | null | undefined) { return value?.toys.filter(kind => !value.seen.includes(kind)).length ?? 0; }
 export function summarizeCompanionToyTastes(value: CompanionTastes | null | undefined) {
@@ -108,7 +123,7 @@ export function createCompanionTastesStore(storage?: TasteStorage, notify?: (val
       // Taking out or putting away proves discovery, never dislike or liking.
       if (learn && (outcome === "played" || outcome === "tripped")) {
         next.toyTastes[kind] = changeTaste(next.toyTastes[kind], outcome === "played");
-        remember(next, { domain: "toy", kind, reason: outcome === "played" ? "toy-fun" : "toy-trip", age: 0 });
+        remember(next, { domain: "toy", kind, reason: companionToyTasteReason(kind, outcome, outcome === "played" ? next.toyTastes[kind]!.accepted : next.toyTastes[kind]!.tripped ?? 0), age: 0 });
       }
       return commit(next);
     },

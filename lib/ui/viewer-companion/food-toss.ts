@@ -15,7 +15,7 @@ function planFoodToss(food: CompanionFood, awayFrom: Point, strength: number, su
     || viewport.width < 48 || viewport.height < 48 || food.x < 24 || food.x > viewport.width - 24 || food.y < 12 || food.y > viewport.height) return;
   const force = Number.isFinite(strength) ? clamp(strength, 1, 3) : 1;
   const height = Math.min(18 + force * 12, food.y - 8), gravity = COMPANION_FOOD_TOSS_GRAVITY;
-  const vy = -Math.sqrt(2 * gravity * height), apex = food.y - height;
+  const vy = -Math.sqrt(2 * gravity * height);
   // A known home contact ends this flight. The viewport below that floor is
   // not extra air time that should throttle an outlet only18px above ground.
   // Ordinary throws keep their existing viewport horizon and speed policy.
@@ -40,9 +40,15 @@ function planFoodToss(food: CompanionFood, awayFrom: Point, strength: number, su
     }
   }
   const vx = clamp(horizontalSpeed, (24 - food.x) / horizon, (viewport.width - 24 - food.x) / horizon);
-  let chosen: { food: CompanionFood; contactX: number; height: number; seconds: number; distance: number; floor: boolean } | undefined;
+  return firstFoodFlightContact(food, vx, vy, height, supports, viewport);
+}
+
+function firstFoodFlightContact(food: CompanionFood, vx: number, vy: number, height: number, supports: readonly CompanionFoodDropSupport[], viewport: Readonly<{ width: number; height: number }>) {
+  const gravity = COMPANION_FOOD_TOSS_GRAVITY, apex = food.y - height;
+  let chosen: { food: CompanionFood; contactX: number; height: number; velocityY: number; seconds: number; distance: number; floor: boolean } | undefined;
   for (const support of supports) {
-    if (!support.id || isCompanionFoodBedSupport(support.id) || ![support.x, support.y, support.width, support.x + support.width].every(Number.isFinite)
+    if (!support.id || isCompanionFoodBedSupport(support.id) || /^companion-panel-floor(?:-food)?(?:-\d+)?$/.test(support.id)
+      || ["control", "hide"].includes(support.kind) || ![support.x, support.y, support.width, support.x + support.width].every(Number.isFinite)
       || support.width <= 0 || support.y < apex || support.y < 8 || support.y > viewport.height - 12) continue;
     if (isCompanionViewportFloorFoodSupport(support.id) && (support.kind !== "floor" || support.y < viewport.height * .65 - 8 || support.x < 0 || support.x + support.width > viewport.width)) continue;
     const safeLeft = Math.max(24, support.x), safeRight = Math.min(viewport.width - 24, support.x + support.width);
@@ -59,7 +65,7 @@ function planFoodToss(food: CompanionFood, awayFrom: Point, strength: number, su
     const floor = support.kind === "floor";
     if (!chosen || seconds < chosen.seconds || seconds === chosen.seconds && (floor !== chosen.floor ? !floor
       : distance < chosen.distance || distance === chosen.distance && support.id < (chosen.food.platformId ?? ""))) {
-      chosen = { food: { id: food.id, kind: food.kind, x, y: support.y, platformId: support.id }, contactX, height, seconds, distance, floor };
+      chosen = { food: { id: food.id, kind: food.kind, x, y: support.y, platformId: support.id }, contactX, height, velocityY: vy, seconds, distance, floor };
     }
   }
   return chosen;
@@ -67,6 +73,21 @@ function planFoodToss(food: CompanionFood, awayFrom: Point, strength: number, su
 
 export function planCompanionFoodToss(food: CompanionFood, awayFrom: Point, strength: number, supports: readonly CompanionFoodDropSupport[], viewport: Readonly<{ width: number; height: number }>) {
   return planFoodToss(food, awayFrom, strength, supports, viewport);
+}
+
+/** A real captured release retains its last bounded input velocity. Slow or
+ * stale grips use ordinary gravity; a throw must still prove its first real
+ * descending contact before the logical food adopts that support. */
+export function planCompanionFoodThrow(food: CompanionFood, velocity: Point, supports: readonly CompanionFoodDropSupport[], viewport: Readonly<{ width: number; height: number }>) {
+  if (!finite(food) || !finite(velocity) || ![viewport.width, viewport.height].every(Number.isFinite) || viewport.width < 48 || viewport.height < 48
+    || food.x < 24 || food.x > viewport.width - 24 || food.y < 8 || food.y > viewport.height || Math.hypot(velocity.x, velocity.y) < 40) return;
+  const gravity = COMPANION_FOOD_TOSS_GRAVITY;
+  const vy = clamp(velocity.y, -Math.min(220, Math.sqrt(2 * gravity * (food.y - 8))), 140);
+  const height = vy < 0 ? vy * vy / (2 * gravity) : 0;
+  const horizon = (-vy + Math.sqrt(vy * vy + 2 * gravity * Math.max(0, viewport.height - food.y))) / gravity;
+  if (!Number.isFinite(horizon) || horizon <= 0) return;
+  const vx = clamp(clamp(velocity.x, -260, 260), (24 - food.x) / horizon, (viewport.width - 24 - food.x) / horizon);
+  return firstFoodFlightContact(food, vx, vy, height, supports.slice(0, 200), viewport);
 }
 
 /** A human click emits at the actual outlet, never on a guessed tray. Rank

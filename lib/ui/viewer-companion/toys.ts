@@ -5,6 +5,7 @@ import { COMPANION_FULL_THRESHOLD } from "./care";
 import { COMPANION_TOY_KINDS, type CompanionToyKind } from "./toy-catalog";
 import { shouldDeclineCompanionToy, type CompanionTastes } from "./toy-tastes";
 import { isCompanionHomeFloorFoodSupport } from "./food";
+import { createCompanionFoodGravity } from "./food-gravity";
 import { compareCompanionItemLandings, rankCompanionItemLandings, type CompanionItemLanding, type CompanionItemPoint } from "./item-landing";
 export { COMPANION_TOY_KINDS, COMPANION_TOY_NAMES, type CompanionToyKind } from "./toy-catalog";
 
@@ -16,7 +17,7 @@ export function companionToyBoxDropReady(rect: { left: number; right: number; to
 }
 type Point = { x: number; y: number; platformId?: string };
 export type CompanionToy = Point & { id: string; kind: CompanionToyKind; angle: number; held: boolean; carried: boolean; fraction?: number; hidden?: boolean; stance?: Point };
-type Flight = { at: number; lastAt: number; x: number; y: number; vx: number; vy: number; previous: Point; remaining: number; homeEmission?: boolean; viewportOnly?: boolean; target?: Point; targetFraction?: number };
+type Flight = { at: number; lastAt: number; x: number; y: number; vx: number; vy: number; previous: Point; homeEmission?: boolean; target?: Point; targetFraction?: number; recovery?: ReturnType<typeof createCompanionFoodGravity> };
 const clamp = (n: number, low: number, high: number) => Math.max(low, Math.min(high, n));
 const valid = (point: Point) => [point.x, point.y].every(Number.isFinite);
 // The pet's transparent panel support is an attachment, not an object ledge.
@@ -85,7 +86,7 @@ export function createCompanionToys(rng: () => number = Math.random) {
   let pausedAt: number | undefined;
   let platforms: readonly Platform[] = [];
   let emissionContacts: readonly Platform[] = [];
-  const objects = new Map<string, CompanionToy>(), flights = new Map<string, Flight>();
+  const objects = new Map<string, CompanionToy>(), flights = new Map<string, Flight>(), waiting = new Set<string>();
   const bind = (toy: CompanionToy, support: Platform, x: number) => {
     toy.x = platformLandingX(support, x, 9); toy.y = support.y; toy.platformId = support.id;
     toy.fraction = support.width > 0 ? clamp((toy.x - support.x) / support.width, 0, 1) : .5;
@@ -94,12 +95,31 @@ export function createCompanionToys(rng: () => number = Math.random) {
   const release = (toy: CompanionToy, at: number, velocity = { x: 0, y: 0 }) => {
     toy.held = toy.carried = false; toy.platformId = undefined; toy.fraction = undefined; toy.hidden = false;
     const began = pausedAt ?? at;
-    flights.set(toy.id, { at: began, lastAt: began, x: toy.x, y: toy.y, vx: Number.isFinite(velocity.x) ? clamp(velocity.x, -260, 260) : 0, vy: Number.isFinite(velocity.y) ? clamp(velocity.y, -220, 140) : 0, previous: { x: toy.x, y: toy.y }, remaining: 2 });
+    waiting.delete(toy.id);
+    flights.set(toy.id, { at: began, lastAt: began, x: toy.x, y: toy.y, vx: Number.isFinite(velocity.x) ? clamp(velocity.x, -260, 260) : 0, vy: Number.isFinite(velocity.y) ? clamp(velocity.y, -220, 140) : 0, previous: { x: toy.x, y: toy.y } });
   };
-  const remove = (id: string) => { flights.delete(id); return objects.delete(id); };
+  const remove = (id: string) => { waiting.delete(id); flights.delete(id); return objects.delete(id); };
+  const recover = (toy: CompanionToy, at: number) => {
+    // A protected button can leave a hole in the floor below a captured grip.
+    // Recover only onto a current measured viewport span, never onto a missed
+    // card, transparent panel, guessed full-width ledge or deletion boundary.
+    toy.x = clamp(toy.x, 24, Math.max(24, width - 24)); toy.y = clamp(toy.y, 44, Math.max(44, height - 10));
+    toy.platformId = undefined; toy.fraction = undefined; toy.angle = 0; toy.hidden = false;
+    const candidate = platforms.filter(p => viewportFloor(p) && p.y >= height * .65 - 8 && p.y <= height - 12
+      && Math.max(24, p.x) <= Math.min(width - 24, p.x + p.width))
+      .map(p => ({ p, x: clamp(toy.x, Math.max(24, p.x), Math.min(width - 24, p.x + p.width)) }))
+      .sort((a, b) => Math.abs(a.x - toy.x) - Math.abs(b.x - toy.x) || a.p.y - b.p.y || a.p.id.localeCompare(b.p.id))[0];
+    if (!candidate) { flights.delete(toy.id); waiting.add(toy.id); return; }
+    const target = { x: platformLandingX(candidate.p, candidate.x, 9), y: candidate.p.y, platformId: candidate.p.id };
+    const recovery = createCompanionFoodGravity(toy, target, 0, { recoverAboveFloor: true });
+    waiting.delete(toy.id);
+    if (!recovery.duration) { bind(toy, candidate.p, target.x); flights.delete(toy.id); return; }
+    flights.set(toy.id, { at, lastAt: at, x: toy.x, y: toy.y, vx: 0, vy: 0, previous: { x: toy.x, y: toy.y }, target,
+      targetFraction: clamp((target.x - candidate.p.x) / candidate.p.width, 0, 1), recovery });
+  };
   const reconcile = (at: number) => {
     for (const toy of objects.values()) {
-      if (toy.held || toy.carried || flights.has(toy.id)) continue;
+      if (toy.held || toy.carried || flights.has(toy.id) || waiting.has(toy.id)) continue;
       const support = platforms.find(p => p.id === toy.platformId && floor(p));
       if (support) bind(toy, support, support.x + support.width * (toy.fraction ?? .5));
       else release(toy, at);
@@ -119,15 +139,18 @@ export function createCompanionToys(rng: () => number = Math.random) {
       // restarting gravity. Native user throws have no such destination.
       for (const [id, flight] of flights) {
         if (!flight.target || flight.targetFraction === undefined) continue;
-        const support = platforms.find(p => p.id === flight.target!.platformId && roomContact(p));
+        const support = platforms.find(p => p.id === flight.target!.platformId && (flight.recovery ? viewportFloor(p) : roomContact(p)));
         const toy = objects.get(id);
-        if (!support || !toy) { flight.target = undefined; flight.targetFraction = undefined; continue; }
+        if (!support || !toy) { if (toy && flight.recovery) recover(toy, at); else { flight.target = undefined; flight.targetFraction = undefined; } continue; }
         const x = platformLandingX(support, support.x + support.width * flight.targetFraction, 9), y = support.y;
         const dx = x - flight.target.x, dy = y - flight.target.y;
         flight.x += dx; flight.y += dy; flight.previous.x += dx; flight.previous.y += dy;
         toy.x += dx; toy.y += dy; flight.target = { x, y, platformId: support.id };
       }
-      if (pausedAt === undefined) reconcile(at);
+      if (pausedAt === undefined) {
+        for (const id of waiting) { const toy = objects.get(id); if (toy) recover(toy, at); else waiting.delete(id); }
+        reconcile(at);
+      }
     },
     spawn(point: Point, at: number, occupied: readonly CompanionItemPoint[] = []) {
       if (pausedAt !== undefined || objects.size >= MAX_COMPANION_TOYS || !valid(point) || !Number.isFinite(at) || width <= 0 || height <= 0) return;
@@ -185,12 +208,19 @@ export function createCompanionToys(rng: () => number = Math.random) {
       for (const [id, flight] of flights) {
         const toy = objects.get(id); if (!toy) { flights.delete(id); continue; }
         if (at < flight.lastAt) continue;
+        if (flight.recovery && flight.target) {
+          // The original finite sampler owns this clock through layout moves.
+          const pose = flight.recovery.sample(at - flight.at, flight.target);
+          toy.x = pose.x; toy.y = pose.y; toy.angle = pose.rotation; flight.lastAt = at;
+          if (!pose.active) { const p = platforms.find(p => p.id === flight.target!.platformId && viewportFloor(p)); if (p) { bind(toy, p, flight.target.x); flights.delete(id); } else recover(toy, at); }
+          continue;
+        }
         const age = clamp((at - flight.at) / 1000, 0, 2);
         const next = { x: flight.x + flight.vx * age, y: flight.y + flight.vy * age + 450 * age * age };
         const falling = next.y >= flight.previous.y, dy = next.y - flight.previous.y;
         // A chest emission is in front of the sofa and calendar, on the same
         // measured floor plane as food. Human throws retain every real ledge.
-        const physical = (p: Platform) => flight.viewportOnly ? viewportFloor(p) : floor(p);
+        const physical = floor;
         const swept = !flight.homeEmission && falling ? platforms.filter(p => physical(p) && p.y >= flight.previous.y - .1 && p.y <= next.y + .1)
           .map(p => ({ p, t: dy > .01 ? clamp((p.y - flight.previous.y) / dy, 0, 1) : 0 }))
           .filter(({ p, t }) => { const x = flight.previous.x + (next.x - flight.previous.x) * t; return x >= p.x && x <= p.x + p.width; })
@@ -202,27 +232,17 @@ export function createCompanionToys(rng: () => number = Math.random) {
           toy.x = clamp(next.x, 10, Math.max(10, width - 10)); toy.y = next.y; toy.angle = Math.sin(age * 5) * 30;
           flight.previous = { x: toy.x, y: toy.y };
           flight.lastAt = at;
-          if (age >= 2 || toy.y > height + 40) {
-            const below = platforms.some(p => viewportFloor(p) && p.y >= toy.y && p.y <= height && p.x <= toy.x && p.x + p.width >= toy.x);
-            if (toy.y > height + 40 || --flight.remaining <= 0 || !below) remove(id);
-            else {
-              // A timeout cannot catch a missed upper card/panel or teleport
-              // back above the viewport. Continue only downward at current x.
-              flight.at = flight.lastAt = at; flight.x = toy.x; flight.y = toy.y; flight.previous = { x: toy.x, y: toy.y };
-              flight.vx = flight.vy = 0; flight.homeEmission = false; flight.viewportOnly = true;
-              flight.target = undefined; flight.targetFraction = undefined;
-            }
-          }
+          if (age >= 2 || toy.y > height - 10) recover(toy, at);
         }
       }
     },
-    grab(id: string) { const toy = objects.get(id); if (pausedAt !== undefined || !toy || toy.hidden) return false; flights.delete(id); toy.held = true; toy.carried = false; toy.platformId = undefined; toy.fraction = undefined; return true; },
+    grab(id: string) { const toy = objects.get(id); if (pausedAt !== undefined || !toy || toy.hidden) return false; waiting.delete(id); flights.delete(id); toy.held = true; toy.carried = false; toy.platformId = undefined; toy.fraction = undefined; return true; },
     drag(id: string, point: Point) { const toy = objects.get(id); if (pausedAt !== undefined || !toy?.held || !valid(point)) return false; toy.x = clamp(point.x, 10, Math.max(10, width - 10)); toy.y = clamp(point.y, 20, Math.max(20, height - 10)); return true; },
     drop(id: string, at: number, velocity?: { x: number; y: number }) { const toy = objects.get(id); if (pausedAt !== undefined || !toy?.held || !Number.isFinite(at)) return false; release(toy, at, velocity); return true; },
-    pick(id: string, point: Point) { const toy = objects.get(id); if (pausedAt !== undefined || !toy || toy.hidden || !valid(point) || toy.held || toy.carried || flights.has(id) || Math.hypot(toy.x - point.x, toy.y - point.y) > 48) return false; toy.carried = true; toy.platformId = undefined; return true; },
+    pick(id: string, point: Point) { const toy = objects.get(id); if (pausedAt !== undefined || !toy || toy.hidden || !valid(point) || toy.held || toy.carried || flights.has(id) || waiting.has(id) || Math.hypot(toy.x - point.x, toy.y - point.y) > 48) return false; toy.carried = true; toy.platformId = undefined; return true; },
     carry(id: string, point: Point) { const toy = objects.get(id); if (pausedAt !== undefined || !toy?.carried || !valid(point)) return false; toy.x = point.x; toy.y = point.y; return true; },
     put(id: string, point: Point, at: number, toss = false) { const toy = objects.get(id); if (pausedAt !== undefined || !toy?.carried || !valid(point) || !Number.isFinite(at)) return false; toy.x = point.x; toy.y = point.y; if (toss) release(toy, at, { x: serial % 2 ? 160 : -160, y: -160 }); else { toy.carried = false; const support = platforms.find(p => p.id === point.platformId && floor(p)); if (support) bind(toy, support, point.x); else release(toy, at); } return true; },
-    nudge(id: string, point: Point, at: number) { const toy = objects.get(id); if (pausedAt !== undefined || !toy || toy.hidden || toy.held || toy.carried || flights.has(id) || !valid(point) || !Number.isFinite(at) || Math.hypot(toy.x - point.x, toy.y - point.y) > 48) return false; release(toy, at, { x: toy.x < point.x ? -120 : 120, y: -80 }); return true; },
+    nudge(id: string, point: Point, at: number) { const toy = objects.get(id); if (pausedAt !== undefined || !toy || toy.hidden || toy.held || toy.carried || flights.has(id) || waiting.has(id) || !valid(point) || !Number.isFinite(at) || Math.hypot(toy.x - point.x, toy.y - point.y) > 48) return false; release(toy, at, { x: toy.x < point.x ? -120 : 120, y: -80 }); return true; },
     stash(id: string) { const toy = objects.get(id); return Boolean(pausedAt === undefined && toy?.carried && !toy.held && remove(id)); },
     returnHeld(id: string) { return pausedAt === undefined && objects.get(id)?.held ? remove(id) : false; },
     releaseCarry(at: number) { if (Number.isFinite(at)) for (const toy of objects.values()) if (toy.carried) release(toy, at); },
@@ -246,10 +266,10 @@ export function createCompanionToys(rng: () => number = Math.random) {
     ids: () => [...objects.keys()],
     count: () => objects.size,
     visit: (visitor: (toy: Readonly<CompanionToy>) => void) => objects.forEach(visitor),
-    available: () => [...objects.values()].filter(toy => !toy.hidden && !toy.held && !toy.carried && !flights.has(toy.id)).map(toy => ({ ...toy })),
+    available: () => [...objects.values()].filter(toy => !toy.hidden && !toy.held && !toy.carried && !flights.has(toy.id) && !waiting.has(toy.id)).map(toy => ({ ...toy })),
     carried: () => [...objects.values()].find(toy => toy.carried)?.id,
     moving: () => pausedAt === undefined && flights.size > 0,
-    clear: () => { objects.clear(); flights.clear(); },
+    clear: () => { objects.clear(); flights.clear(); waiting.clear(); },
   };
 }
 export type CompanionToyBeat = { serial: number; kind: "tidy" | "play"; effect?: "pick" | "stash" | "toss" | "put" | "decline" | "spawn"; toyId?: string; point?: Point };

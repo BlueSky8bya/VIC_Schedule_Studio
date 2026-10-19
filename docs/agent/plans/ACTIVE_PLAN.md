@@ -2,7 +2,7 @@
 
 | ID | Status | Record |
 |---|---|---|
-| UI-130 | Release validation | [Sofa depth, immediate petting and lived preferences](../verification/COMPANION_EXPERIENCE_DEPTH-20261019.md) |
+| UI-131 | Local verification | [Happy petting, physical belongings and readable collection](../verification/COMPANION_CARE_COLLECTION-20261019.md) |
 | PRIVACY-20260921 | Deployed containment verified; historical Git exposure, realtime/provider and retention follow-up remain | [Privacy audit](../verification/PRIVACY-20260921.md) |
 | DARK-HARMONY-20260919 | Ribbon editor dark controls corrected; local verification and authorized push follow-up. Production unverified (prior release staged) | [Dark palette follow-up](../../ux/dark-mode-palette.md) |
 | MARINE-RESUME | Paused by owner | [Resume handoff](../handoffs/20260916-marine-biomes-resume.md) |

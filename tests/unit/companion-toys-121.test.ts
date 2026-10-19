@@ -102,13 +102,14 @@ describe("real bounded companion toy objects", () => {
     expect(model.carried()).toBeUndefined(); expect(model.items()[0].carried).toBe(false);
   });
 
-  it("falls onto a real lower replacement and removes a toy after two bounded unsupported recovery attempts", () => {
-    const { model } = settled();
+  it("falls onto a real lower replacement and preserves an unsupported toy without an endless recovery clock", () => {
+    const { model, id } = settled();
     const lower = { ...floor, id: "lower", y: 650 };
     model.sync([lower], bounds, 2000); expect(model.available()).toEqual([]);
     model.tick(2400); expect(model.items()[0]).toMatchObject({ platformId: lower.id, y: lower.y });
     model.sync([], bounds, 2500); model.tick(4600); model.tick(6700);
-    expect(model.items()).toEqual([]); expect(model.moving()).toBe(false);
+    expect(model.items()).toHaveLength(1); expect(model.items()[0]).toMatchObject({ id, platformId: undefined, hidden: false }); expect(model.moving()).toBe(false);
+    expect(model.available()).toEqual([]); expect(model.grab(id)).toBe(true);
   });
 
   it("rejects invalid viewport/clock input without poisoning current coordinates or the four-object bound", () => {

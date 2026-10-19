@@ -101,11 +101,11 @@ describe("130 bounded lived taste impressions", () => {
     expect(summarizeCompanionToyTastes(store.load()).favorite).toBe("ball");
     store.recordToy("ball", "tripped"); expect(summarizeCompanionToyTastes(store.load()).disliked).toBe("ball");
     store.recordToy("ball", "tripped"); expect(summarizeCompanionToyTastes(store.load()).disliked).toBe("ball");
-    expect(companionTasteReason(store.load(), "toy", "ball")).toBe("놀다가 걸려 넘어졌어요");
+    expect(companionTasteReason(store.load(), "toy", "ball")).toBe("동그란 장난감에 발이 걸렸어요");
     store.recordToy("ball", "played"); expect(summarizeCompanionToyTastes(store.load()).disliked).toBeNull();
     store.recordToy("feather", "played"); store.recordToy("feather", "played");
     expect(summarizeCompanionToyTastes(store.load()).favorite).toBe("feather");
-    expect(companionTasteReason(store.load(), "toy", "feather")).toBe("함께 노니 신나요");
+    expect(companionTasteReason(store.load(), "toy", "feather")).toBe("가볍게 살랑이는 게 좋아요");
   });
 
   it("forgets through supplied active buckets only, without reads at each needs sample or elapsed-away debt", () => {

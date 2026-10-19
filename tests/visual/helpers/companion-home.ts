@@ -30,6 +30,7 @@ export async function placeCompanionOnHomeFloor(page: Page) {
   const point = { x: bed.x + bed.width / 2, y: floor.y + floor.height - COMPANION_HOME_FLOOR_INSET - 8 };
   await actor.focus(); await actor.press("p"); await expect(pet).toHaveAttribute("data-placing", "");
   await page.mouse.click(point.x, point.y); await page.mouse.move(2, 2);
+  await expect(pet).not.toHaveAttribute("data-placing");
   await expect(pet).toHaveAttribute("data-platform", /^companion-home-floor(?:-\d+)?$/);
   await expect(pet).not.toHaveAttribute("data-state", "jump");
   await expect.poll(async () => {

@@ -10,6 +10,7 @@ import living from "@/lib/ui/viewer-companion/living-motion-sprite.json";
 import legacy from "@/lib/ui/viewer-companion/fluid-sprite.json";
 import bodyRegistration from "../../art-src/빅타민/동행/작업회차/20261018-동작연결정리115/패킹파생기록.json";
 import expression119 from "../../art-src/빅타민/동행/작업회차/20261019-표정체적교정119/패킹파생기록.json";
+import happiness131 from "../../art-src/빅타민/동행/작업회차/20261019-쓰다듬기행복131/패킹파생기록.json";
 
 describe("116 whole-pose continuity", () => {
   // Review sheet labels are one-based; the frozen packing receipt is zero-based.
@@ -44,10 +45,11 @@ describe("one high-resolution pipeline for every companion action", () => {
     expect(sprites.rows.slice(0, 18)).toEqual(legacy.rows);
     expect(sprites.rows[18]).toEqual(Array.from({ length: 16 }, (_, index) => 272 + index));
     expect(sprites.rows[19]).toEqual(Array.from({ length: 16 }, (_, index) => 288 + index));
-    // Keep117 rise, the119 body packets and only three120 replacements active.
+    // Keep117/119/120;131 replaces only row9's16 generated happy poses.
     const replacements: Partial<Record<number, string>> = {
       0: "/companion/hd/vitamin-action-00-eye-contour-120-v1.webp",
       4: "/companion/hd/vitamin-action-04-tuft-117-v1.webp",
+      9: "/companion/hd/vitamin-action-09-happiness-131-v1.webp",
       16: "/companion/hd/vitamin-action-16-eye-contour-120-v1.webp",
     };
     const eye120 = JSON.parse(readFileSync("art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/패킹파생기록.json", "utf8")) as typeof expression119;
@@ -61,15 +63,38 @@ describe("one high-resolution pipeline for every companion action", () => {
       expect(selected.src).toBe(replacements[atlas] ?? `/companion/hd/vitamin-action-${String(atlas).padStart(2, "0")}-motion-115-v1.webp`);
       expect(selected.frame).toEqual(sprites.frames[index]);
     }
+    expect(happiness131.physicalIndices).toEqual(Array.from({ length: 16 }, (_, index) => 144 + index));
+    expect(sprites.atlases[9]).toEqual(happiness131.packet);
+    expect(happiness131.packet.sha256).toBe("eaa134b4001477439dae456989d255e4cf723da31fbc5c3809f6b6d85285fcdb");
+    // Check all504 untouched registrations against the immediate pre131
+    // snapshot, including the119 body fits outside the original HD family.
+    let frameOffset = 0, atlasOffset = 0, unchanged = 0;
+    for (const name of ["hd-motion-sprite", "play-motion-sprite", "living-motion-sprite"]) {
+      const before = JSON.parse(readFileSync(`art-src/빅타민/동행/작업회차/20261019-쓰다듬기행복131/고정입력/${name}.json`, "utf8")) as typeof sprites;
+      for (const [local, frame] of before.frames.entries()) {
+        const physical = frameOffset + local;
+        if (physical >= 144 && physical <= 159) continue;
+        expect(companionSpriteMetadata.frames[physical]).toEqual({ ...frame, atlas: frame.atlas + atlasOffset }); unchanged++;
+      }
+      frameOffset += before.frames.length; atlasOffset += before.atlases.length;
+    }
+    expect(unchanged).toBe(504);
   });
   it("registers actual bodies in80 logical units with protected stroke margins", () => {
     for (const [index, frame] of sprites.frames.entries()) {
       expect([frame.x, frame.y, ...frame.clip].every(Number.isFinite)).toBe(true);
       expect(frame.clip.every(value => value >= 0)).toBe(true);
       expect(frame.clip[0] + frame.clip[2]).toBeLessThan(80); expect(frame.clip[1] + frame.clip[3]).toBeLessThan(80);
-      // Tiny nearly transparent export pixels cannot own the actual body's
-      // centre or ground contact. Clip still includes the entire authored AA.
-      const body = bodyRegistration.slots[index].body;
+      //115's historical body measurements remain authoritative except the
+      //16 source-bound131 drawings.131 keeps alpha in the asset and measures
+      //its clip at8/255 so low-alpha export specks cannot enlarge geometry.
+      const happy = happiness131.frames.find(entry => entry.physicalIndex === index);
+      if (happy) {
+        expect(index).toBeGreaterThanOrEqual(144); expect(index).toBeLessThanOrEqual(159);
+        expect(sprites.atlases[frame.atlas]).toEqual(happiness131.packet);
+        expect(frame).toEqual(happy.frame); expect(happy.clipAlphaThreshold).toBe(8);
+      }
+      const body = happy?.body ?? bodyRegistration.slots[index].body;
       expect((body.left + body.right) / 2 / 2.4 + frame.x).toBeCloseTo(40, 5);
       expect(body.bottom / 2.4 + frame.y).toBeCloseTo(80, 5);
       const bodyWidth = 80 - frame.clip[1] - frame.clip[3] - 4;

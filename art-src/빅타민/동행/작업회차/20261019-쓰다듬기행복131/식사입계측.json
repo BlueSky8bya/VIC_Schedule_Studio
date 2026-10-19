@@ -1,0 +1,221 @@
+{
+  "version": 1,
+  "source": {
+    "src": "/companion/hd/vitamin-action-09-happiness-131-v1.webp",
+    "sha256": "eaa134b4001477439dae456989d255e4cf723da31fbc5c3809f6b6d85285fcdb",
+    "bytes": 366210,
+    "width": 1536,
+    "height": 384
+  },
+  "method": "Actual decoded source-bound U mouth ink bounds; no runtime analysis or face editing.",
+  "frames": [
+    {
+      "index": 144,
+      "atlas": 1,
+      "cell": 0,
+      "x": 106,
+      "y": 134,
+      "bounds": [
+        99,
+        128,
+        113,
+        140
+      ]
+    },
+    {
+      "index": 145,
+      "atlas": 1,
+      "cell": 1,
+      "x": 106,
+      "y": 134,
+      "bounds": [
+        99,
+        128,
+        113,
+        140
+      ]
+    },
+    {
+      "index": 146,
+      "atlas": 1,
+      "cell": 2,
+      "x": 106,
+      "y": 134.5,
+      "bounds": [
+        99,
+        129,
+        113,
+        140
+      ]
+    },
+    {
+      "index": 147,
+      "atlas": 1,
+      "cell": 3,
+      "x": 106,
+      "y": 134,
+      "bounds": [
+        99,
+        128,
+        113,
+        140
+      ]
+    },
+    {
+      "index": 148,
+      "atlas": 1,
+      "cell": 4,
+      "x": 106,
+      "y": 134,
+      "bounds": [
+        99,
+        128,
+        113,
+        140
+      ]
+    },
+    {
+      "index": 149,
+      "atlas": 1,
+      "cell": 5,
+      "x": 106,
+      "y": 134,
+      "bounds": [
+        99,
+        128,
+        113,
+        140
+      ]
+    },
+    {
+      "index": 150,
+      "atlas": 1,
+      "cell": 6,
+      "x": 105.5,
+      "y": 134,
+      "bounds": [
+        98,
+        128,
+        113,
+        140
+      ]
+    },
+    {
+      "index": 151,
+      "atlas": 1,
+      "cell": 7,
+      "x": 106,
+      "y": 134,
+      "bounds": [
+        99,
+        128,
+        113,
+        140
+      ]
+    },
+    {
+      "index": 152,
+      "atlas": 1,
+      "cell": 8,
+      "x": 106,
+      "y": 133.5,
+      "bounds": [
+        99,
+        128,
+        113,
+        139
+      ]
+    },
+    {
+      "index": 153,
+      "atlas": 1,
+      "cell": 9,
+      "x": 106,
+      "y": 133.5,
+      "bounds": [
+        99,
+        128,
+        113,
+        139
+      ]
+    },
+    {
+      "index": 154,
+      "atlas": 1,
+      "cell": 10,
+      "x": 106,
+      "y": 134.5,
+      "bounds": [
+        99,
+        129,
+        113,
+        140
+      ]
+    },
+    {
+      "index": 155,
+      "atlas": 1,
+      "cell": 11,
+      "x": 105.5,
+      "y": 134,
+      "bounds": [
+        98,
+        128,
+        113,
+        140
+      ]
+    },
+    {
+      "index": 156,
+      "atlas": 1,
+      "cell": 12,
+      "x": 106,
+      "y": 134,
+      "bounds": [
+        99,
+        128,
+        113,
+        140
+      ]
+    },
+    {
+      "index": 157,
+      "atlas": 1,
+      "cell": 13,
+      "x": 106,
+      "y": 134,
+      "bounds": [
+        99,
+        128,
+        113,
+        140
+      ]
+    },
+    {
+      "index": 158,
+      "atlas": 1,
+      "cell": 14,
+      "x": 105.5,
+      "y": 134,
+      "bounds": [
+        98,
+        128,
+        113,
+        140
+      ]
+    },
+    {
+      "index": 159,
+      "atlas": 1,
+      "cell": 15,
+      "x": 106,
+      "y": 133.5,
+      "bounds": [
+        99,
+        128,
+        113,
+        139
+      ]
+    }
+  ]
+}

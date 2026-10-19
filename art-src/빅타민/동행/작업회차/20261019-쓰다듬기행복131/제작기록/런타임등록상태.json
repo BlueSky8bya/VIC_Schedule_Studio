@@ -1,0 +1,36 @@
+{
+  "status": "NEW_ROW9_RUNTIME_REGISTERED_TECHNICAL_QA_PENDING",
+  "rootInstruction": "Use this single generation, retaining measured body/outline differences; no exact-protection or approval PASS.",
+  "runtime": "/companion/hd/vitamin-action-09-happiness-131-v1.webp",
+  "runtimeSha256": "eaa134b4001477439dae456989d255e4cf723da31fbc5c3809f6b6d85285fcdb",
+  "preview": {
+    "path": "art-src\\빅타민\\동행\\작업회차\\20261019-쓰다듬기행복131\\정리본\\쓰다듬기행복_표정미리보기.png",
+    "sha256": "b080e4cd269e1c5041a2be3f40a61fc03afd145b34f13f5ba1a4398f9a3fc255",
+    "size": [
+      192,
+      192
+    ],
+    "operation": "Exact integer crop of normalized frame0. Transparent source pixels retained; no labels, retouch, face composite or noise deletion."
+  },
+  "generationCalls": 1,
+  "additionalGenerationCalls": 0,
+  "knownProtectedShapeDriftRetained": true,
+  "independentArtReview": "NOT_REQUESTED",
+  "userVisualApproval": false,
+  "technicalChecks": {
+    "focusedUnitFiles": 2,
+    "focusedUnitTests": 10,
+    "ownedLintFiles": 4,
+    "packerCheck": "PASS",
+    "accessoryAnchorCheck": "PASS",
+    "other504FramesExact": true,
+    "other32PacketsExact": true,
+    "all33OldPacketsExact": true
+  },
+  "notRunByProducer": [
+    "full typecheck",
+    "full tests",
+    "build",
+    "browser/native rendered interactions"
+  ]
+}

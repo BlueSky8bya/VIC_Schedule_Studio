@@ -128,7 +128,9 @@ describe("120 source-bound eye/contour packet conservation", () => {
   it("replaces exactly packets0/16/32 and preserves every row, frame and other30 atlas references", () => {
     const receipt = readJson<Receipt>(`${run}/패킹파생기록.json`);
     const parents = names.map(name => readJson<Metadata>(`${run}/고정입력/${name}.json`));
-    const active = names.map(name => readJson<Metadata>(`lib/ui/viewer-companion/${name}.json`));
+    // Preserve the exact120 evidence after131 takes row9 ownership. Current
+    // successor conservation is checked by companion-petting-happiness-131.
+    const active = names.map(name => readJson<Metadata>(receipt.stagedMetadata[name]));
     for (const name of names) expect(readFileSync(`${run}/고정입력/${name}.json`).equals(readFileSync(`${prior119}/정리본/${name}.json`))).toBe(true);
     const before = combine(parents), after = combine(active);
     expect(after.rows).toEqual(before.rows); expect(after.frames).toEqual(before.frames);
@@ -147,7 +149,6 @@ describe("120 source-bound eye/contour packet conservation", () => {
     expect(after.atlases[22].src).toContain("expression-119"); expect(after.atlases[31].src).toContain("expression-119");
     for (let family = 0; family < active.length; family++) {
       expect({ ...active[family], atlases: parents[family].atlases }).toEqual(parents[family]);
-      expect(readFileSync(`lib/ui/viewer-companion/${names[family]}.json`).equals(readFileSync(receipt.stagedMetadata[names[family]]))).toBe(true);
     }
     expect(receipt.frames.map(frame => frame.physicalIndex)).toEqual(expectedPhysical);
     for (const frame of receipt.frames) { expect(frame.frame).toEqual(frame.parentFrame); expect(frame.registrationChanged).toBe(false); }
@@ -202,14 +203,14 @@ describe("120 source-bound eye/contour packet conservation", () => {
   });
 
   it("keeps all516 non-target anchor records while the separate anchor step binds current packet sources", () => {
-    const receipt = readJson<Receipt>(`${run}/패킹파생기록.json`), parent = readJson<Anchors>(`${run}/고정입력/accessory-anchors.json`), current = readJson<Anchors>("lib/ui/viewer-companion/accessory-anchors.json");
+    const receipt = readJson<Receipt>(`${run}/패킹파생기록.json`), parent = readJson<Anchors>(`${run}/고정입력/accessory-anchors.json`), current = readJson<Anchors>(`${run}/정리본/accessory-anchors.json`);
     expect(receipt.frozenAnchors.regeneratedByThisScript).toBe(false);
     expect(hash(readFileSync(receipt.frozenAnchors.path))).toBe(receipt.frozenAnchors.sha256);
     expect(hash(readFileSync(receipt.frozenAnchors.path))).toBe("8501cc74e23861bc80d89cd231b38c330189dfdc268f75a52abacb4b28cd0e17");
     expect(readFileSync(receipt.frozenAnchors.path).equals(readFileSync(`${prior119}/정리본/accessory-anchors.json`))).toBe(true);
     expect(current.frames).toHaveLength(520); expect(current.rows).toEqual(parent.rows);
     for (let index = 0; index < 520; index++) if (!expectedPhysical.includes(index)) expect(current.frames[index], `untargeted anchor${index}`).toEqual(parent.frames[index]);
-    const active = combine(names.map(name => readJson<Metadata>(`lib/ui/viewer-companion/${name}.json`)));
+    const active = combine(names.map(name => readJson<Metadata>(receipt.stagedMetadata[name])));
     expect(current.sources).toEqual(active.atlases.map(({ src, sha256, bytes }) => ({ src, sha256, bytes })));
     expect(current.rows).toEqual(active.rows);
   });
@@ -242,12 +243,11 @@ describe("120 source-bound eye/contour packet conservation", () => {
     expect(paths.map(filename => hash(readFileSync(filename)))).toEqual(before);
   });
 
-  it("reproduces three lossless packets, staged metadata and the packing receipt without writing", () => {
+  it("refuses historical120 reproduction over the131 successor without changing its immutable evidence", () => {
     const receipt = readJson<Receipt>(`${run}/패킹파생기록.json`);
     const paths = [...names.map(name => `lib/ui/viewer-companion/${name}.json`), ...Object.values(receipt.stagedMetadata), ...receipt.packets.map(packet => `public${packet.packet.src}`), ...receipt.immutableParentPackets.map(packet => `public${packet.src}`), `${run}/패킹파생기록.json`, "lib/ui/viewer-companion/accessory-anchors.json"];
     const before = paths.map(filename => hash(readFileSync(filename)));
-    const report = JSON.parse(execFileSync(process.execPath, ["scripts/prepare-companion-eye-contour-120.mjs", "--check"], { encoding: "utf8" }));
-    expect(report).toMatchObject({ check: true, packets: 3, physicalIndices: expectedPhysical, registrationChanges: [], parentPacketsPreserved: 33, anchorsRegenerated: false });
+    expect(() => execFileSync(process.execPath, ["scripts/prepare-companion-eye-contour-120.mjs", "--check"], { encoding: "utf8", stdio: "pipe" })).toThrow(/unrelated active metadata/);
     expect(paths.map(filename => hash(readFileSync(filename)))).toEqual(before);
   }, 30_000);
 });

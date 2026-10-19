@@ -119,7 +119,7 @@ describe("129 real toy source, reachable packing and finite recovery", () => {
     model.tick(900); expect(model.available()[0]).toMatchObject({ platformId: viewport.id, y: viewport.y });
   });
 
-  it("never snaps a timed-out trajectory up to a missed card, and removes an unsupported recovery finitely", () => {
+  it("never snaps a timed-out trajectory onto a missed card or deletes it before finite real-floor recovery", () => {
     const card: Platform = { id: "missed-card", x: 500, y: 500, width: 100, kind: "card" };
     const lowViewport = { ...viewport, y: 4500, width: 1000 }, tall = { width: 1000, height: 5000 };
     const model = createCompanionToys(() => 0); model.sync([card, lowViewport], tall, 0);
@@ -127,8 +127,8 @@ describe("129 real toy source, reachable packing and finite recovery", () => {
     model.tick(2000);
     expect(model.items()[0]).toMatchObject({ x: 540, y: 1900, platformId: undefined });
     expect(model.available()).toEqual([]); expect(model.moving()).toBe(true);
-    model.tick(3000); expect(model.items()[0]).toMatchObject({ x: 540, y: 2350, platformId: undefined });
-    model.tick(4000); expect(model.items()).toEqual([]); expect(model.moving()).toBe(false);
+    model.tick(3000); expect(model.items()[0].x).toBe(540); expect(model.items()[0].y).toBeGreaterThan(1900); expect(model.items()[0].y).toBeLessThan(4500);
+    model.tick(4000); expect(model.available()[0]).toMatchObject({ x: 540, y: 4500, platformId: viewport.id }); expect(model.moving()).toBe(false);
   });
 
   it("can complete that finite recovery only on a current-x actual viewport floor below it", () => {
@@ -136,7 +136,32 @@ describe("129 real toy source, reachable packing and finite recovery", () => {
     const tall = { width: 1000, height: 5000 }, model = createCompanionToys(() => 0);
     model.sync([card, { ...viewport, y: 4500, width: 1000 }], tall, 0);
     const id = model.spawn({ x: 20, y: 100 }, 0)!; model.grab(id); model.drop(id, 0, { x: 260, y: 0 }); model.tick(2000);
-    model.sync([card, { ...viewport, y: 2500, width: 1000 }], tall, 2000); model.tick(3200);
-    expect(model.available()[0]).toMatchObject({ x: 540, y: 2500, platformId: viewport.id });
+    model.sync([card, { ...viewport, y: 3500, width: 1000 }], tall, 2000); model.tick(3600);
+    expect(model.available()[0]).toMatchObject({ x: 540, y: 3500, platformId: viewport.id });
+  });
+  it("recovers a below-floor native release beside a protected badge onto an actual safe interval", () => {
+    const model = createCompanionToys(() => 0), left = { ...viewport, x: 24, width: 220 }, right = { ...viewport, id: "viewport-floor-1", x: 500, width: 1000 };
+    model.sync([left, right], bounds, 0);
+    const id = model.spawn({ x: 400, y: 1050 }, 0)!; model.grab(id); model.drag(id, { x: 400, y: 1089 }); model.drop(id, 0);
+    model.tick(100); expect(model.count()).toBe(1); const start = model.items()[0]; expect(start.hidden).toBe(false); expect(start.platformId).toBeUndefined();
+    model.tick(200); const halfway = model.items()[0]; expect(halfway.x).toBeGreaterThan(start.x); expect(halfway.y).toBeLessThan(start.y);
+    model.tick(1500); expect(model.available()[0]).toMatchObject({ id, platformId: right.id, y: right.y }); expect(model.moving()).toBe(false);
+  });
+  it("parks an unsupported toy visibly without a loop, then recovers only after a real viewport span returns", () => {
+    const model = createCompanionToys(() => 0); model.sync([], bounds, 0);
+    const id = model.spawn({ x: 400, y: 1080 }, 0)!; model.grab(id); model.drop(id, 0); model.tick(3000);
+    expect(model.count()).toBe(1); expect(model.items()[0]).toMatchObject({ id, hidden: false, platformId: undefined });
+    expect(model.items()[0].y).toBeLessThan(bounds.height); expect(model.moving()).toBe(false); expect(model.available()).toEqual([]);
+    expect(model.pick(id, model.items()[0])).toBe(false);
+    model.sync([{ ...viewport, id: "companion-panel-floor" }], bounds, 4000); expect(model.moving()).toBe(false);
+    model.sync([viewport], bounds, 5000); expect(model.moving()).toBe(true); model.tick(7000);
+    expect(model.available()[0]).toMatchObject({ id, platformId: viewport.id });
+  });
+  it("freezes a finite recovery through hidden time and yields immediately to a captured user", () => {
+    const model = createCompanionToys(() => 0); model.sync([viewport], bounds, 0);
+    const id = model.spawn({ x: 400, y: 1080 }, 0)!; model.grab(id); model.drop(id, 0); model.tick(100); model.tick(150);
+    const shown = model.items()[0]; model.pause(160); model.resume(10000); model.tick(10000);
+    expect(model.items()[0]).toEqual(shown); model.tick(10010); expect(model.items()[0].y).toBeLessThan(shown.y);
+    expect(model.grab(id)).toBe(true); expect(model.moving()).toBe(false); model.tick(20000); expect(model.items()[0].held).toBe(true);
   });
 });

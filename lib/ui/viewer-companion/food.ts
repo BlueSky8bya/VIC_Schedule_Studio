@@ -221,10 +221,10 @@ export function placeCompanionFood(food: CompanionFood, point: { x: number; y: n
       }
     }
     if (floor) return { id: food.id, kind: food.kind, x: floorX, y: floor.y, platformId: floor.id };
-    // No valid safe screen-floor span exists. Fall completely below the visible
-    // input plane, retaining a document/world attachment for later scrolling
-    // and retrieval. It remains unsupported and cannot be offered as food.
-    return { id: food.id, kind: food.kind, x: Math.max(24, Math.min(fallbackViewport.width - 24, point.x)), y: Math.max(point.y, fallbackViewport.height + 44) };
+    // A missing safe span is not a disposal request. Keep the native item
+    // visible and unsupported until the next actual geometry delivery proves
+    // a viewport recipient; no imaginary platform or endless fall is added.
+    return { id: food.id, kind: food.kind, x: Math.max(24, Math.min(fallbackViewport.width - 24, point.x)), y: Math.max(44, Math.min(fallbackViewport.height - 24, point.y)) };
   }
   return { id: food.id, kind: food.kind, x: point.x, y: point.y };
 }

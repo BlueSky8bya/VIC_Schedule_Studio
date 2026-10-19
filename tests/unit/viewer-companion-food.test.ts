@@ -200,7 +200,7 @@ describe("companion food support", () => {
     expect(placeCompanionFood(apple, { x: 700, y: 100 }, [{ ...valid, y: 130 }], viewport).platformId).toBe(valid.id);
     expect(placeCompanionFood(apple, point, [valid])).toEqual({ ...apple, ...point });
   });
-  it("retains an unsupported document floor below the viewport when valid safe floor spans are absent", () => {
+  it("preserves a visible unsupported grip when valid safe floor spans are absent", () => {
     const point = { x: 500, y: 700 }, viewport = { width: 1000, height: 800 };
     const candidates: Platform[] = [
       { id: "viewport-floor-food", x: 50, y: -1, width: 100, kind: "floor" },
@@ -210,13 +210,13 @@ describe("companion food support", () => {
       { id: "viewport-floor-food-3", x: 800, y: 780, width: -1, kind: "floor" },
     ];
     const placed = placeCompanionFood(apple, point, candidates, viewport);
-    expect(placed).toEqual({ ...apple, x: 500, y: 844 });
+    expect(placed).toEqual({ ...apple, x: 500, y: 700 });
     expect(placed.platformId).toBeUndefined();
     const attachment = attachCompanionFood(placed, { x: 0, y: 120 });
-    expect(followCompanionFood(attachment, { x: 0, y: 220 }).point).toEqual({ x: 500, y: 744 });
-    expect(followCompanionFood(attachment, { x: 0, y: 120 }).point).toEqual({ x: 500, y: 844 });
-    expect(placeCompanionFood(apple, { x: 1, y: 700 }, [], viewport)).toEqual({ ...apple, x: 24, y: 844 });
-    expect(placeCompanionFood(apple, { x: 999, y: 700 }, [], viewport)).toEqual({ ...apple, x: 976, y: 844 });
+    expect(followCompanionFood(attachment, { x: 0, y: 220 }).point).toEqual({ x: 500, y: 600 });
+    expect(followCompanionFood(attachment, { x: 0, y: 120 }).point).toEqual({ x: 500, y: 700 });
+    expect(placeCompanionFood(apple, { x: 1, y: 700 }, [], viewport)).toEqual({ ...apple, x: 24, y: 700 });
+    expect(placeCompanionFood(apple, { x: 999, y: 700 }, [], viewport)).toEqual({ ...apple, x: 976, y: 700 });
   });
   it("keeps the optional viewport fallback fail-closed for invalid dimensions and preserves legacy callers", () => {
     const point = { x: 500, y: 700 }, expected = { ...apple, ...point };

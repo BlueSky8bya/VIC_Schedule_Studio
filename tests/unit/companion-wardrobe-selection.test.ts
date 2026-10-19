@@ -42,6 +42,20 @@ beforeEach(() => {
 });
 
 describe("actual wardrobe selection and equipment callbacks", () => {
+  it("jumps to unread owned gifts without changing equipment or revealing locked artwork", async () => {
+    collection.gifts.unlocked = ["sunglasses", "beret", COMPANION_WEARABLE_IDS[26]];
+    collection.seen = { foods: [], behaviors: [], situations: [], accessories: ["sunglasses"] };
+    harness.acknowledge.mockImplementation((_kind, id) => { collection.seen!.accessories.push(id); return true; });
+    await render(); const unread = () => find(element => element.props["aria-label"] === "다음 새 발견");
+    click(unread()); await render(); expect(preview().accessory).toBe("beret");
+    click(unread()); await render(); expect(preview().accessory).toBe(COMPANION_WEARABLE_IDS[26]);
+    expect(unread().props.disabled).toBe(true);
+    expect(harness.acknowledge.mock.calls).toEqual([["accessory", "beret"], ["accessory", COMPANION_WEARABLE_IDS[26]]]);
+    expect(harness.equip).not.toHaveBeenCalled(); expect(collection.gifts.equipped).toBe("sunglasses");
+    for (const tile of nodes(tree).filter(element => element.props["data-accessory"] && !element.props["data-found"])) {
+      expect(nodes(tile).some(element => typeof element.type === "function" && element.type.name === "CompanionCollectionArt")).toBe(false);
+    }
+  });
   it("keeps unread badges through opening and paging, acknowledging only the intentionally selected owned tile", async () => {
     collection.gifts.unlocked = [...COMPANION_WEARABLE_IDS];
     collection.seen = { foods: [], behaviors: [], situations: [], accessories: [] };

@@ -1,8 +1,11 @@
-import { findPlatformRoute, platformLandingX, type CompanionAction, type CompanionBrain, type CompanionPlay, type CompanionWorld, type Platform } from "./brain";
+import { findPlatformRoute, platformLandingX, type CompanionAction, type CompanionBrain, type CompanionFood, type CompanionPlay, type CompanionWorld, type Platform } from "./brain";
 import { COMPANION_TIMING, companionPlayDuration } from "./timing";
 import { getCompanionBehaviorProfile } from "./behavior-profile";
 import { companionConsumedFoodExperience } from "./food-family";
 import { COMPANION_FULL_THRESHOLD } from "./care";
+import { withinCompanionFoodReach } from "./food-reach";
+import { findCompanionHomeItemRoute, selectCompanionHomeFoodDestination, selectCompanionHomePantryPoint } from "./home-pantry";
+import type { CompanionItemPoint } from "./item-landing";
 import { kstHour } from "@/lib/calendar/month";
 import type { CompanionPreferences } from "./preferences";
 import type { CompanionAccessoryId } from "./accessory-catalog";
@@ -25,6 +28,10 @@ export type CompanionSceneInput = {
   radio?: { playing: boolean; mood: CompanionRadioMood | null };
   environment?: { season: string; weather: string };
   home?: { x: number; y: number; platformId: string };
+  pantry?: Point;
+  bin?: Point;
+  visibleFoods?: readonly CompanionFood[];
+  occupied?: readonly CompanionItemPoint[];
   toyCount?: number;
   carriedFoodId?: string;
   knownBehaviors?: readonly CompanionBehaviorId[];
@@ -58,7 +65,7 @@ type Command = { kind: "look" | "sniff" | "stretch" | "shake"; direction?: -1 | 
   | { kind: "pick" | "put" | "discard" | "eat"; foodId: string }
   | { kind: "wait-phrase" | "phrase-response" };
 type Cleanup = { foodId: string; point?: Point; discard?: boolean };
-type Scene = { id: number; serial: number; beat: number; commands: Command[]; deadline: number; budget: number; foodId?: string; otherId?: string; failed?: boolean; responded?: boolean; quality?: Quality; resolvedBeat?: number; destination?: Point; cleanup?: Cleanup; goal?: { beat: number; platformId: string; ratio: number }; phrase?: number; score?: Score };
+type Scene = { id: number; serial: number; beat: number; commands: Command[]; deadline: number; budget: number; foodId?: string; foodKind?: CompanionFoodKind; otherId?: string; failed?: boolean; responded?: boolean; quality?: Quality; resolvedBeat?: number; destination?: Point; cleanup?: Cleanup; goal?: { beat: number; platformId: string; ratio: number }; phrase?: number; score?: Score };
 type Offer = { id: number; priority: number; expires: number; foodId?: string; otherId?: string; signal?: CompanionSceneSignal; returning?: boolean; quality?: Quality; cleanup?: Cleanup; phrase?: number; score?: Score };
 const placeOf = (input: CompanionSceneInput): CompanionScenePlace => input.world.platformId?.startsWith("companion-home") ? "home" : input.world.platforms.find(p => p.id === input.world.platformId)?.kind === "card" ? "card" : "floor";
 const cap = (value: number) => Math.min(12, value + 1);
@@ -246,6 +253,13 @@ export function createCompanionScenes(initial: CompanionSceneMemory) {
     return input.preferences.enabled && input.preferences.roam && input.world.animated && !input.world.paused && p && !["hide", "control"].includes(p.kind)
       && Math.abs(p.y - input.world.y) <= 2 && input.world.x >= p.x && input.world.x <= p.x + p.width;
   };
+  const storageDestination = (input: CompanionSceneInput, current: Scene, from: Point) => {
+    if (!current.foodId) return;
+    const storage = { pantry: input.pantry, platforms: input.world.platforms, visibleFoods: input.visibleFoods ?? input.world.foods ?? [], occupied: input.occupied, allowJump: input.preferences.jump };
+    if (current.id === 19) return current.foodKind && selectCompanionHomeFoodDestination({ ...storage, bin: input.bin, brain: input.brain, preferences: input.preferences }, from, { id: current.foodId, kind: current.foodKind });
+    const destination = selectCompanionHomePantryPoint(storage, from, { id: current.foodId });
+    return destination ? { destination, discard: false } : undefined;
+  };
   const next = (input: CompanionSceneInput): CompanionSceneAction | undefined => {
     if (!Number.isFinite(input.now)) return;
     now = Math.max(now, input.now);
@@ -308,7 +322,8 @@ export function createCompanionScenes(initial: CompanionSceneMemory) {
       if (offered.id === 10) greetingInvitation = false;
       if (!commands.length) { cooldowns.set(offered.id, now + 12_000); return next(input); }
       const cleanupFood = commands.find(command => command.kind === "pick");
-      active = { id: offered.id, serial: ++serial, beat: 0, commands, deadline: now + 25_000, budget: 18, foodId: offered.foodId ?? (cleanupFood && "foodId" in cleanupFood ? cleanupFood.foodId : undefined), otherId: offered.otherId, cleanup: offered.cleanup, quality: offered.quality, phrase: offered.phrase, score: offered.score };
+      const foodId = offered.foodId ?? (cleanupFood && "foodId" in cleanupFood ? cleanupFood.foodId : undefined);
+      active = { id: offered.id, serial: ++serial, beat: 0, commands, deadline: now + 25_000, budget: 18, foodId, foodKind: foods.find(food => food.id === foodId)?.kind, otherId: offered.otherId, cleanup: offered.cleanup, quality: offered.quality, phrase: offered.phrase, score: offered.score };
     }
     const current = active, command = current.commands[current.beat], world = input.world;
     if (current.id === 10 && current.beat >= 2 && !current.responded) { current.beat = current.commands.length; return; }
@@ -316,7 +331,7 @@ export function createCompanionScenes(initial: CompanionSceneMemory) {
     const stamp = (action: CompanionAction, effect?: CompanionSceneEffect): CompanionSceneAction => ({ ...action, scene: { id: current.id, serial: current.serial, beat: current.beat, ...(effect ? { effect } : {}), ...(current.id === 22 ? { instrumentQuality: current.quality ?? "unknown" } : {}) } });
     if (command.kind === "go") {
       const support = world.platforms.find(item => item.id === world.platformId)!;
-      let target = { ...here };
+      let target: Point = { ...here };
       const food = foods.find(item => item.id === (command.foodId ?? current.foodId));
       if (command.target === "food") { if (!food) { cancel(); return; } target = { x: food.x, y: food.y, platformId: food.platformId }; }
       else if (command.target === "home") { if (!input.home) { current.beat++; return; } target = input.home; }
@@ -325,14 +340,18 @@ export function createCompanionScenes(initial: CompanionSceneMemory) {
         if (point && point.platformId !== support.id || helpedLanding && helpedLanding.place !== placeOf(input)) { cancel(); return; }
         target = { x: platformLandingX(support, world.x + (world.x <= support.x + support.width / 2 ? 24 : -24)), y: support.y, platformId: support.id };
       } else if (command.target === "cleanup") {
-        const point = current.cleanup?.point;
-        if (validPoint(point)) { const plane = world.platforms.find(item => item.id === point.platformId); if (!plane) { cancel(); return; } target = { x: platformLandingX(plane, point.x), y: plane.y, platformId: plane.id }; }
-        else target = { x: platformLandingX(support, support.x + support.width * .25), y: support.y, platformId: support.id };
+        const destination = storageDestination(input, current, here);
+        if (!destination) { cancel(); return; }
+        target = destination.destination; current.destination = { ...target };
       } else if (command.target === "preferred" && input.home && memory.places.home >= Math.max(3, memory.places.card, memory.places.floor)) target = input.home;
       else if (command.target === "pointer") {
         if (!world.pointer) { current.beat++; return next(input); }
         target = { x: platformLandingX(support, world.pointer.x), y: support.y, platformId: support.id };
-      } else if (command.target === "reserved") { target = { x: platformLandingX(support, world.x + (support.x + support.width / 2 > world.x ? 44 : -44)), y: support.y, platformId: support.id }; current.destination = { ...target }; }
+      } else if (command.target === "reserved") {
+        const destination = storageDestination(input, current, here);
+        if (!destination) { cancel(); return; }
+        target = destination.destination; current.destination = { ...target };
+      }
       else {
         const preferred = world.platforms.filter(item => ordinary(item) && item.width >= 95 && Math.abs(item.y - world.y) <= 100)
           .sort((a, b) => (memory.places[placeOf({ ...input, world: { ...world, platformId: b.id } })] ?? 0) - (memory.places[placeOf({ ...input, world: { ...world, platformId: a.id } })] ?? 0) || Math.hypot(a.x + a.width / 2 - world.x, a.y - world.y) - Math.hypot(b.x + b.width / 2 - world.x, b.y - world.y));
@@ -343,7 +362,7 @@ export function createCompanionScenes(initial: CompanionSceneMemory) {
       // choosing another ledge after arrival creates an endless shuttle.
       // Retain only a relative offset on the live measured plane so resize
       // can move the real destination without preserving stale screen XY.
-      if (command.target !== "food") {
+      if (!["food", "reserved", "cleanup"].includes(command.target)) {
         if (current.goal?.beat === current.beat) {
           const plane = world.platforms.find(item => item.id === current.goal!.platformId);
           if (!plane) { cancel(); return; }
@@ -358,7 +377,8 @@ export function createCompanionScenes(initial: CompanionSceneMemory) {
       // never licenses crossing another manual span or an intervening control.
       const sameManual = support.manualOnly && support.kind === "floor" && target.platformId === support.id;
       const routePlatforms = sameManual ? world.platforms.map(item => item.id === support.id ? { ...item, manualOnly: false } : item) : world.platforms;
-      const route = findPlatformRoute(here, target, routePlatforms, p.jump, ["food", "home", "preferred"].includes(command.target) ? target.platformId : undefined);
+      const route = ["reserved", "cleanup"].includes(command.target) ? findCompanionHomeItemRoute(here, target, world.platforms, p.jump)
+        : findPlatformRoute(here, target, routePlatforms, p.jump, ["food", "home", "preferred"].includes(command.target) ? target.platformId : undefined);
       if (!route) { cancel(); return; }
       if (!route.length) { current.beat++; return next(input); }
       const step = route[0], profile = getCompanionBehaviorProfile(p, input.brain.habits);
@@ -369,12 +389,23 @@ export function createCompanionScenes(initial: CompanionSceneMemory) {
     }
     if (command.kind === "pick" || command.kind === "put" || command.kind === "discard") {
       const food = foods.find(item => item.id === command.foodId);
-      if (command.kind === "pick" ? !food || input.carriedFoodId || food.platformId !== world.platformId || Math.hypot(food.x - world.x, food.y - world.y) > 18 : input.carriedFoodId !== command.foodId) { cancel(); return; }
-      return stamp({ kind: "sniff", target: here, duration: 550 }, { kind: command.kind, foodId: command.foodId, point: here });
+      if (command.kind === "pick" ? !food || input.carriedFoodId || food.platformId !== world.platformId || !withinCompanionFoodReach(Math.hypot(food.x - world.x, food.y - world.y)) : input.carriedFoodId !== command.foodId) { cancel(); return; }
+      // Picking never strands an item without a current real home/bin route.
+      // Revalidate again before delivery; changed fullness or occupancy sends
+      // the existing finite beat back to its proved destination, not a drop.
+      const destination = storageDestination(input, current, here);
+      if (!destination) { cancel(); return; }
+      current.destination = { ...destination.destination };
+      if (command.kind !== "pick") {
+        const route = findCompanionHomeItemRoute(here, destination.destination, world.platforms, p.jump);
+        if (!route) { cancel(); return; }
+        if (route.length) { current.beat--; current.goal = undefined; return next(input); }
+      }
+      return stamp({ kind: "sniff", target: here, duration: 550 }, { kind: command.kind === "pick" ? "pick" : destination.discard ? "discard" : "put", foodId: command.foodId, point: command.kind === "pick" ? here : destination.destination });
     }
     if (command.kind === "eat") {
       const food = foods.find(item => item.id === command.foodId);
-      if (!p.feeding || !food || !hungry || input.carriedFoodId || food.platformId !== world.platformId || Math.hypot(food.x - world.x, food.y - world.y) > 18) { current.beat++; return next(input); }
+      if (!p.feeding || !food || !hungry || input.carriedFoodId || food.platformId !== world.platformId || !withinCompanionFoodReach(Math.hypot(food.x - world.x, food.y - world.y))) { current.beat++; return next(input); }
       return stamp({ kind: "eat", target: here, foodId: food.id, duration: COMPANION_TIMING.eat });
     }
     if (command.kind === "wait-phrase") {

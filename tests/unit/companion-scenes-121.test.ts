@@ -10,10 +10,11 @@ import { DEFAULT_COMPANION_LIFE } from "@/lib/ui/viewer-companion/life";
 
 const wallTime = Date.parse("2026-10-19T21:00:00+09:00");
 const floor: Platform = { id: "floor", kind: "floor", x: 0, y: 600, width: 900 };
+const pantryFloor: Platform = { id: "companion-home-floor", kind: "floor", manualOnly: true, x: 400, y: 600, width: 300 };
 const apple = (id = "a", x = 100): CompanionFood => ({ id, kind: "apple", x, y: 600, platformId: "floor" });
 function scenario(memory = newCompanionSceneMemory()) {
   const controller = createCompanionScenes(memory), brain = { ...createBrain(0, () => .5), hunger: .1, energy: .9, life: { ...DEFAULT_COMPANION_LIFE, foodScores: { ...DEFAULT_COMPANION_LIFE.foodScores }, familiarity: { ...DEFAULT_COMPANION_LIFE.familiarity } } };
-  const input: CompanionSceneInput = { brain, world: { x: 100, y: 600, platformId: "floor", platforms: [floor], foods: [], width: 1000, height: 700, animated: true }, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: true, jump: true, feeding: true, sleep: true, learnFromYou: true, rarePrank: true }, now: 0, knownFoods: COMPANION_FOOD_KINDS, owned: [], equipped: null };
+  const input: CompanionSceneInput = { brain, world: { x: 100, y: 600, platformId: "floor", platforms: [floor, pantryFloor], foods: [], width: 1000, height: 700, animated: true }, pantry: { x: 550, y: 600, platformId: pantryFloor.id }, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: true, jump: true, feeding: true, sleep: true, learnFromYou: true, rarePrank: true }, now: 0, knownFoods: COMPANION_FOOD_KINDS, owned: [], equipped: null };
   const removed = new Map<string, CompanionFood>();
   const event = (value: CompanionSceneEvent) => controller.event(value, input.now, input.preferences.learnFromYou);
   const next = () => controller.next(input);
