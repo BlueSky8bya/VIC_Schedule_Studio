@@ -7,7 +7,7 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Current140: reproduce the reported outside-room tidy stall and audit all nine personalities' primary and secondary scenes through real completion.
+Current141: local verification complete; verify the approved release of shared daily routines, actual furniture contact, wash stability, seasonal art and collection/settings feedback.
 
 Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user.125 explicitly authorizes unnecessary Vercel deployment cleanup/optimization; unrelated cleanup, bulk DB UPDATE, paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
 
@@ -17,7 +17,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| COMPANION-EXECUTION-140 | Releasing | Build6 all-nine native primary/secondary and three far returns passed; build7 affected13/13 passed. Confirm main deployment/fullSHA and actual anonymous four-ID cleanup | [140 plan](plans/PLAN-20261020-140-personality-execution-audit.md) |
+| COMPANION-AGENCY-141 | Release verification | Push the approved exact scope; check deployed fullSHA/chunks, native curtain/room lighting/real returns and remote quality | [141 plan](plans/PLAN-20261020-141-companion-everyday-agency.md) |
 | OPS-VERCEL-QUOTA | Open | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
@@ -45,6 +45,8 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 5. PRIVACY-20260921: resolve remaining visit/recurring retention policy and restricted local recovery-backup removal after its2026-10-24 window. No automatic future run is scheduled.
 ## Last Verified
 
-Current product release `a0e7d07e813bbb307b6b33f0dcc6dd06fa209c54`: [139 explicit personality memory and larger room book](plans/PLAN-20261020-139-manual-personality-book.md#출시-확인). Direct personality choices persist across reload/tabs; unselected documents keep random draws even after ordinary settings changes. Same-value pointer/keyboard confirmation also pins. Shared book42→48px with proportional cover and real hit area. Local3476 units/303 files/type/lint/build/harness339 and15 distinct browser checks PASS, including viewer/studio/actual preview reloads, physical controls and G22 both developer views. Vercel success and fresh anonymous actual fullSHA/chunk proof,6 unselected documents/5 personalities→native choice→3 pinned reloads/book48/light/TV/dark weekday PASS00:55~00:56 KST; errors0/production mutation0/live-state GET0/private-manifest0. Protected art preserved. Remote quality39281249552 completed/success; real-login/RLS/OBS/screen-reader and human visual recognition/art approval remain separate.
+141 local frozen source: [daily life/contact verification](plans/PLAN-20261020-141-companion-everyday-agency.md#최종-로컬-검증과-출시-준비). Final type/lint/build and322files/3780units PASS; Build5 affected10/10 actual UI PASS, including actual M07 rim contact→new ID→play/return and earned collection. Earlier scoped builds establish9 personality primary/original-secondary samples,9 default-mode actual meal→wash samples and three actual outside four-ID returns; not144 native completions or one aggregate run. Actual manual curtain15s, wash geometry/brush, sleep/wake/OFF, indoor/outdoor light,16 scenes/weather, pointer/keyboard, shared settings and G22 capture/display reviewed. Exact100 paths/private-art exclusion/protected hash checked; deployed141 proof remains next.
+
+Current deployed predecessor `55e150b99eef6f4354aced76a91a7a0435428f31`: [140 release](plans/PLAN-20261020-140-personality-execution-audit.md#출시-확인). Fresh anonymous fullSHA/chunks/native returns and random/pinned preferences verified02:30~02:31 KST; remote quality39294277761 completed/success. Real-login/RLS/OBS/screen-reader and human art approval remain separate.
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.

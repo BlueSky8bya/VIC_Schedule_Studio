@@ -37,7 +37,9 @@ export function reduceCompanionHomeCurtain(previous: CompanionHomeCurtain, input
   else if (input.rest !== "waking" && !input.lookingOut && !night && environment?.weather === "clear" && sunlight >= (previous.reason === "sun" ? 2 : 3)) {
     phase = "shade"; reason = "sun"; panelScale = shade[input.personality];
   }
-  if (input.rest === "awake" && input.intent) { phase = input.intent; reason = phase === "closed" ? "rest" : phase === "shade" ? "sun" : "awake"; panelScale = phase === "closed" ? 1 : phase === "shade" ? shade[input.personality] : .08; }
+  // An actual user/companion control owns the cloth, including while asleep.
+  // Needs/weather alone may suggest a choice but cannot undo that contact.
+  if (input.intent) { phase = input.intent; reason = phase === "closed" ? "rest" : phase === "shade" ? "sun" : "awake"; panelScale = phase === "closed" ? 1 : phase === "shade" ? shade[input.personality] : .08; }
   const changed = previous.phase !== phase || previous.panelScale !== panelScale;
   const animate = changed ? previous.active && !input.reduced : previous.active && !input.reduced && previous.animate;
   if (previous.phase === phase && previous.reason === reason && previous.rest === input.rest && previous.panelScale === panelScale && previous.active && previous.animate === animate) return previous;

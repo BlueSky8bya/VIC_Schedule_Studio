@@ -1,0 +1,1009 @@
+{
+  "schema_version": 1,
+  "work": "companion-seasonal-window-141",
+  "prepared_at_kst": "2026-10-20T02:43:50.142192+09:00",
+  "generation": {
+    "builtin_calls": 1,
+    "automatic_retries": 0,
+    "independent_art_review_calls": 0,
+    "user_visual_approval": false
+  },
+  "native": {
+    "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/원본/사계절_네시간대_원본시트.png",
+    "sha256": "D07567E979C97B1E569D2047F8D6810220D2BC50D08AB0F194E5240A31206C88",
+    "bytes": 2340889,
+    "dimensions": [
+      1448,
+      1086
+    ],
+    "mode": "RGB",
+    "metadata": "Preserved PNG caBX/C2PA. JUMBF/CBOR typed text and X509 subject/issuer/SAN were checked for the current human request, turn identifiers, local paths/account and email candidates: none. Opaque cryptographic bytes and signature trust are not certified."
+  },
+  "references": [
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/고정입력/기존정원_구도와외곽선.webp",
+      "sha256": "7EF70623027637B2F23A6D182E7887D1655B3CDFE22AB5FD60BBFB5C7DCDAAC3",
+      "source_path": "public/companion/home/125/window-spring-day.webp",
+      "role": "Layout/style reference only: garden depth, left deciduous trunk, quiet open center, warm brown outlines and simple matte shading. Spring/summer similarity is the requested defect, not a color target."
+    },
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/고정입력/기존밤_시간대색감.webp",
+      "sha256": "2AE0826B405AA2D5756AA542352E34E97F095C73B3105365B157B64BA466EB91",
+      "source_path": "public/companion/home/125/window-spring-night.webp",
+      "role": "Lighting/style reference only: authored night sky and quiet blue-violet garden, not a dark filter over daylight."
+    },
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/고정입력/기존실내_재질과색감.webp",
+      "sha256": "4491905CDAEAA5835B6464EB1AC8A9FE96B8CF402C084AA22AD2152C4E35A384",
+      "source_path": "public/companion/home/136/room-neutral.webp",
+      "role": "Interior material/palette compatibility only. Do not draw the room, floor, window frame, curtain or furniture in the new landscape."
+    }
+  ],
+  "atlas": {
+    "rows": [
+      "spring",
+      "summer",
+      "autumn",
+      "winter"
+    ],
+    "columns": [
+      "dawn",
+      "day",
+      "dusk",
+      "night"
+    ],
+    "grid_x": [
+      0,
+      362,
+      724,
+      1086,
+      1448
+    ],
+    "grid_y": [
+      0,
+      272,
+      543,
+      814,
+      1086
+    ],
+    "crop_rationale": "2–3px guards exclude generated seams. Native356x267 PNG crops preserve source pixels; runtime separately uses uniform resize and explicitly lossy compression."
+  },
+  "assets": [
+    {
+      "season": "spring",
+      "phase": "dawn",
+      "source_crop": [
+        3,
+        2,
+        359,
+        269
+      ],
+      "source_cell": [
+        0,
+        0,
+        362,
+        272
+      ],
+      "native_crop_size": [
+        356,
+        267
+      ],
+      "runtime_size": [
+        256,
+        192
+      ],
+      "resampling": "uniform 64/89 LANCZOS followed by explicit lossy WebP q90, method6",
+      "color_or_alpha_changes": "Native PNG crop RGB is unchanged and alpha255. Runtime is uniformly downsampled and lossy encoded; alpha remains fully opaque.",
+      "png": {
+        "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/정리본/봄_새벽.png",
+        "sha256": "C90C882ABAF98FE5483D693B901F15EF46661FCEFC58187C7DEEFE750F6EB31E",
+        "bytes": 156697
+      },
+      "runtime": {
+        "path": "public/companion/home/141/window-spring-dawn.webp",
+        "url": "/companion/home/141/window-spring-dawn.webp",
+        "sha256": "40E3D5082CFB0B3B0B759C54BFDB3715C08B0D6E94F374DE61DBEAA00B8234BF",
+        "bytes": 12538,
+        "encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6,
+          "lossless": false
+        }
+      },
+      "png_webp_decoded_rgba_equal": false,
+      "runtime_chunks": [
+        "VP8 "
+      ],
+      "runtime_metadata": "no EXIF/XMP/ICC/JUMBF chunks; standard opaque WebP",
+      "native_png_crop_rgba_equal": true,
+      "comparison_200x132": {
+        "bytes": 12538,
+        "display_200x132_mean_channel_delta": 2.4319,
+        "display_200x132_max_channel_delta": 35,
+        "display_200x132_psnr_db": 36.84
+      }
+    },
+    {
+      "season": "spring",
+      "phase": "day",
+      "source_crop": [
+        365,
+        2,
+        721,
+        269
+      ],
+      "source_cell": [
+        362,
+        0,
+        724,
+        272
+      ],
+      "native_crop_size": [
+        356,
+        267
+      ],
+      "runtime_size": [
+        256,
+        192
+      ],
+      "resampling": "uniform 64/89 LANCZOS followed by explicit lossy WebP q90, method6",
+      "color_or_alpha_changes": "Native PNG crop RGB is unchanged and alpha255. Runtime is uniformly downsampled and lossy encoded; alpha remains fully opaque.",
+      "png": {
+        "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/정리본/봄_낮.png",
+        "sha256": "70EFAFD5F5D62E386951D26EDFA0D4C199B2311713A617A3B5DE93C236C253DD",
+        "bytes": 160291
+      },
+      "runtime": {
+        "path": "public/companion/home/141/window-spring-day.webp",
+        "url": "/companion/home/141/window-spring-day.webp",
+        "sha256": "C4CD5ADA8F25FC35AB1A1B5B389921C4D727E61D09262332D2C70FDBE2A3B5B8",
+        "bytes": 13270,
+        "encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6,
+          "lossless": false
+        }
+      },
+      "png_webp_decoded_rgba_equal": false,
+      "runtime_chunks": [
+        "VP8 "
+      ],
+      "runtime_metadata": "no EXIF/XMP/ICC/JUMBF chunks; standard opaque WebP",
+      "native_png_crop_rgba_equal": true,
+      "comparison_200x132": {
+        "bytes": 13270,
+        "display_200x132_mean_channel_delta": 2.7012,
+        "display_200x132_max_channel_delta": 43,
+        "display_200x132_psnr_db": 35.706
+      }
+    },
+    {
+      "season": "spring",
+      "phase": "dusk",
+      "source_crop": [
+        727,
+        2,
+        1083,
+        269
+      ],
+      "source_cell": [
+        724,
+        0,
+        1086,
+        272
+      ],
+      "native_crop_size": [
+        356,
+        267
+      ],
+      "runtime_size": [
+        256,
+        192
+      ],
+      "resampling": "uniform 64/89 LANCZOS followed by explicit lossy WebP q90, method6",
+      "color_or_alpha_changes": "Native PNG crop RGB is unchanged and alpha255. Runtime is uniformly downsampled and lossy encoded; alpha remains fully opaque.",
+      "png": {
+        "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/정리본/봄_노을.png",
+        "sha256": "6B35AD76B6004778F1451309863077A48F91763EBD96B28E3B20A8F149304F90",
+        "bytes": 159083
+      },
+      "runtime": {
+        "path": "public/companion/home/141/window-spring-dusk.webp",
+        "url": "/companion/home/141/window-spring-dusk.webp",
+        "sha256": "BC775E0C1C7C03281459BC1AE0273B11CBEB4F86DDDC8292DBCC1C96DFAF5435",
+        "bytes": 12912,
+        "encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6,
+          "lossless": false
+        }
+      },
+      "png_webp_decoded_rgba_equal": false,
+      "runtime_chunks": [
+        "VP8 "
+      ],
+      "runtime_metadata": "no EXIF/XMP/ICC/JUMBF chunks; standard opaque WebP",
+      "native_png_crop_rgba_equal": true,
+      "comparison_200x132": {
+        "bytes": 12912,
+        "display_200x132_mean_channel_delta": 2.4397,
+        "display_200x132_max_channel_delta": 29,
+        "display_200x132_psnr_db": 36.948
+      }
+    },
+    {
+      "season": "spring",
+      "phase": "night",
+      "source_crop": [
+        1089,
+        2,
+        1445,
+        269
+      ],
+      "source_cell": [
+        1086,
+        0,
+        1448,
+        272
+      ],
+      "native_crop_size": [
+        356,
+        267
+      ],
+      "runtime_size": [
+        256,
+        192
+      ],
+      "resampling": "uniform 64/89 LANCZOS followed by explicit lossy WebP q90, method6",
+      "color_or_alpha_changes": "Native PNG crop RGB is unchanged and alpha255. Runtime is uniformly downsampled and lossy encoded; alpha remains fully opaque.",
+      "png": {
+        "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/정리본/봄_밤.png",
+        "sha256": "A75AACD330F8E82D44F4C594D6DAE2C73A6F1CD2B207E1CE6A903883C022D9FD",
+        "bytes": 155129
+      },
+      "runtime": {
+        "path": "public/companion/home/141/window-spring-night.webp",
+        "url": "/companion/home/141/window-spring-night.webp",
+        "sha256": "18505A20F4E01AD22211AC84BD3D6589C4723AA04A28B9AA6C52C44494688E0D",
+        "bytes": 11796,
+        "encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6,
+          "lossless": false
+        }
+      },
+      "png_webp_decoded_rgba_equal": false,
+      "runtime_chunks": [
+        "VP8 "
+      ],
+      "runtime_metadata": "no EXIF/XMP/ICC/JUMBF chunks; standard opaque WebP",
+      "native_png_crop_rgba_equal": true,
+      "comparison_200x132": {
+        "bytes": 11796,
+        "display_200x132_mean_channel_delta": 2.0929,
+        "display_200x132_max_channel_delta": 33,
+        "display_200x132_psnr_db": 38.158
+      }
+    },
+    {
+      "season": "summer",
+      "phase": "dawn",
+      "source_crop": [
+        3,
+        274,
+        359,
+        541
+      ],
+      "source_cell": [
+        0,
+        272,
+        362,
+        543
+      ],
+      "native_crop_size": [
+        356,
+        267
+      ],
+      "runtime_size": [
+        256,
+        192
+      ],
+      "resampling": "uniform 64/89 LANCZOS followed by explicit lossy WebP q90, method6",
+      "color_or_alpha_changes": "Native PNG crop RGB is unchanged and alpha255. Runtime is uniformly downsampled and lossy encoded; alpha remains fully opaque.",
+      "png": {
+        "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/정리본/여름_새벽.png",
+        "sha256": "A17B50A30BF83B0E2D1113A64B0D277C3F1EF1F1ABC2E6F81703607A659E117E",
+        "bytes": 144443
+      },
+      "runtime": {
+        "path": "public/companion/home/141/window-summer-dawn.webp",
+        "url": "/companion/home/141/window-summer-dawn.webp",
+        "sha256": "C74D5CFFAEC0162926E39724E55F366813B516D97431F93D7FE9C8A1E735CB12",
+        "bytes": 10634,
+        "encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6,
+          "lossless": false
+        }
+      },
+      "png_webp_decoded_rgba_equal": false,
+      "runtime_chunks": [
+        "VP8 "
+      ],
+      "runtime_metadata": "no EXIF/XMP/ICC/JUMBF chunks; standard opaque WebP",
+      "native_png_crop_rgba_equal": true,
+      "comparison_200x132": {
+        "bytes": 10634,
+        "display_200x132_mean_channel_delta": 2.331,
+        "display_200x132_max_channel_delta": 55,
+        "display_200x132_psnr_db": 36.759
+      }
+    },
+    {
+      "season": "summer",
+      "phase": "day",
+      "source_crop": [
+        365,
+        274,
+        721,
+        541
+      ],
+      "source_cell": [
+        362,
+        272,
+        724,
+        543
+      ],
+      "native_crop_size": [
+        356,
+        267
+      ],
+      "runtime_size": [
+        256,
+        192
+      ],
+      "resampling": "uniform 64/89 LANCZOS followed by explicit lossy WebP q90, method6",
+      "color_or_alpha_changes": "Native PNG crop RGB is unchanged and alpha255. Runtime is uniformly downsampled and lossy encoded; alpha remains fully opaque.",
+      "png": {
+        "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/정리본/여름_낮.png",
+        "sha256": "54DC18234094426294E25AA60726FD7D4BAAC1AC9B97FCCC1384A42B5FA5A434",
+        "bytes": 150670
+      },
+      "runtime": {
+        "path": "public/companion/home/141/window-summer-day.webp",
+        "url": "/companion/home/141/window-summer-day.webp",
+        "sha256": "2325D7DAF6E3B9503A0CB2D55BEF2626CEBA682772AB0B7100E540E659643C38",
+        "bytes": 12382,
+        "encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6,
+          "lossless": false
+        }
+      },
+      "png_webp_decoded_rgba_equal": false,
+      "runtime_chunks": [
+        "VP8 "
+      ],
+      "runtime_metadata": "no EXIF/XMP/ICC/JUMBF chunks; standard opaque WebP",
+      "native_png_crop_rgba_equal": true,
+      "comparison_200x132": {
+        "bytes": 12382,
+        "display_200x132_mean_channel_delta": 2.7069,
+        "display_200x132_max_channel_delta": 61,
+        "display_200x132_psnr_db": 35.006
+      }
+    },
+    {
+      "season": "summer",
+      "phase": "dusk",
+      "source_crop": [
+        727,
+        274,
+        1083,
+        541
+      ],
+      "source_cell": [
+        724,
+        272,
+        1086,
+        543
+      ],
+      "native_crop_size": [
+        356,
+        267
+      ],
+      "runtime_size": [
+        256,
+        192
+      ],
+      "resampling": "uniform 64/89 LANCZOS followed by explicit lossy WebP q90, method6",
+      "color_or_alpha_changes": "Native PNG crop RGB is unchanged and alpha255. Runtime is uniformly downsampled and lossy encoded; alpha remains fully opaque.",
+      "png": {
+        "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/정리본/여름_노을.png",
+        "sha256": "0DB8797E451497CA4B74C44B8AD44E55C673EA0707FE48DB66E548F38A4C34F3",
+        "bytes": 148487
+      },
+      "runtime": {
+        "path": "public/companion/home/141/window-summer-dusk.webp",
+        "url": "/companion/home/141/window-summer-dusk.webp",
+        "sha256": "A06A2ED6017276FAF072CB22B3D693A6C8CCBB779E5B593BBC7CC303D6396746",
+        "bytes": 11604,
+        "encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6,
+          "lossless": false
+        }
+      },
+      "png_webp_decoded_rgba_equal": false,
+      "runtime_chunks": [
+        "VP8 "
+      ],
+      "runtime_metadata": "no EXIF/XMP/ICC/JUMBF chunks; standard opaque WebP",
+      "native_png_crop_rgba_equal": true,
+      "comparison_200x132": {
+        "bytes": 11604,
+        "display_200x132_mean_channel_delta": 2.5097,
+        "display_200x132_max_channel_delta": 50,
+        "display_200x132_psnr_db": 36.026
+      }
+    },
+    {
+      "season": "summer",
+      "phase": "night",
+      "source_crop": [
+        1089,
+        274,
+        1445,
+        541
+      ],
+      "source_cell": [
+        1086,
+        272,
+        1448,
+        543
+      ],
+      "native_crop_size": [
+        356,
+        267
+      ],
+      "runtime_size": [
+        256,
+        192
+      ],
+      "resampling": "uniform 64/89 LANCZOS followed by explicit lossy WebP q90, method6",
+      "color_or_alpha_changes": "Native PNG crop RGB is unchanged and alpha255. Runtime is uniformly downsampled and lossy encoded; alpha remains fully opaque.",
+      "png": {
+        "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/정리본/여름_밤.png",
+        "sha256": "45F5F332533A282FDE96BE06C330BA371D10868EFA9DB9DA3674F5AACA9CFEF5",
+        "bytes": 138880
+      },
+      "runtime": {
+        "path": "public/companion/home/141/window-summer-night.webp",
+        "url": "/companion/home/141/window-summer-night.webp",
+        "sha256": "AE760879BC4C4734AB0A24F2A1E6FE297680D40719619949125450442EC2AC9A",
+        "bytes": 9170,
+        "encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6,
+          "lossless": false
+        }
+      },
+      "png_webp_decoded_rgba_equal": false,
+      "runtime_chunks": [
+        "VP8 "
+      ],
+      "runtime_metadata": "no EXIF/XMP/ICC/JUMBF chunks; standard opaque WebP",
+      "native_png_crop_rgba_equal": true,
+      "comparison_200x132": {
+        "bytes": 9170,
+        "display_200x132_mean_channel_delta": 1.8507,
+        "display_200x132_max_channel_delta": 41,
+        "display_200x132_psnr_db": 38.569
+      }
+    },
+    {
+      "season": "autumn",
+      "phase": "dawn",
+      "source_crop": [
+        3,
+        545,
+        359,
+        812
+      ],
+      "source_cell": [
+        0,
+        543,
+        362,
+        814
+      ],
+      "native_crop_size": [
+        356,
+        267
+      ],
+      "runtime_size": [
+        256,
+        192
+      ],
+      "resampling": "uniform 64/89 LANCZOS followed by explicit lossy WebP q90, method6",
+      "color_or_alpha_changes": "Native PNG crop RGB is unchanged and alpha255. Runtime is uniformly downsampled and lossy encoded; alpha remains fully opaque.",
+      "png": {
+        "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/정리본/가을_새벽.png",
+        "sha256": "204BAD4DD8CF9B9BF5EE3BA336D92874B25201A64B56FA3067140307920140CC",
+        "bytes": 165472
+      },
+      "runtime": {
+        "path": "public/companion/home/141/window-autumn-dawn.webp",
+        "url": "/companion/home/141/window-autumn-dawn.webp",
+        "sha256": "5C0B04EA8CAC6FCFF5D4862A2585A82417243C7EA537786DCA107F78D910D6CB",
+        "bytes": 13970,
+        "encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6,
+          "lossless": false
+        }
+      },
+      "png_webp_decoded_rgba_equal": false,
+      "runtime_chunks": [
+        "VP8 "
+      ],
+      "runtime_metadata": "no EXIF/XMP/ICC/JUMBF chunks; standard opaque WebP",
+      "native_png_crop_rgba_equal": true,
+      "comparison_200x132": {
+        "bytes": 13970,
+        "display_200x132_mean_channel_delta": 2.8243,
+        "display_200x132_max_channel_delta": 44,
+        "display_200x132_psnr_db": 35.162
+      }
+    },
+    {
+      "season": "autumn",
+      "phase": "day",
+      "source_crop": [
+        365,
+        545,
+        721,
+        812
+      ],
+      "source_cell": [
+        362,
+        543,
+        724,
+        814
+      ],
+      "native_crop_size": [
+        356,
+        267
+      ],
+      "runtime_size": [
+        256,
+        192
+      ],
+      "resampling": "uniform 64/89 LANCZOS followed by explicit lossy WebP q90, method6",
+      "color_or_alpha_changes": "Native PNG crop RGB is unchanged and alpha255. Runtime is uniformly downsampled and lossy encoded; alpha remains fully opaque.",
+      "png": {
+        "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/정리본/가을_낮.png",
+        "sha256": "AD70BE9414DEF617B4BBAC701A16A40EF2418CC2809C7D5F6055EE80AB97B70C",
+        "bytes": 167382
+      },
+      "runtime": {
+        "path": "public/companion/home/141/window-autumn-day.webp",
+        "url": "/companion/home/141/window-autumn-day.webp",
+        "sha256": "0D5066C7BBE6FC34C71B084D8DD90D2E8B64F19568168CB2D6E4E812FB94CBA0",
+        "bytes": 14700,
+        "encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6,
+          "lossless": false
+        }
+      },
+      "png_webp_decoded_rgba_equal": false,
+      "runtime_chunks": [
+        "VP8 "
+      ],
+      "runtime_metadata": "no EXIF/XMP/ICC/JUMBF chunks; standard opaque WebP",
+      "native_png_crop_rgba_equal": true,
+      "comparison_200x132": {
+        "bytes": 14700,
+        "display_200x132_mean_channel_delta": 3.1442,
+        "display_200x132_max_channel_delta": 67,
+        "display_200x132_psnr_db": 33.868
+      }
+    },
+    {
+      "season": "autumn",
+      "phase": "dusk",
+      "source_crop": [
+        727,
+        545,
+        1083,
+        812
+      ],
+      "source_cell": [
+        724,
+        543,
+        1086,
+        814
+      ],
+      "native_crop_size": [
+        356,
+        267
+      ],
+      "runtime_size": [
+        256,
+        192
+      ],
+      "resampling": "uniform 64/89 LANCZOS followed by explicit lossy WebP q90, method6",
+      "color_or_alpha_changes": "Native PNG crop RGB is unchanged and alpha255. Runtime is uniformly downsampled and lossy encoded; alpha remains fully opaque.",
+      "png": {
+        "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/정리본/가을_노을.png",
+        "sha256": "BD38B6DC4A7236985188A8F00550E93149512D5096A4147F5DC23410BB04400F",
+        "bytes": 162407
+      },
+      "runtime": {
+        "path": "public/companion/home/141/window-autumn-dusk.webp",
+        "url": "/companion/home/141/window-autumn-dusk.webp",
+        "sha256": "9AED0CE0B5C3950E9EAF90DF5F9770712604446F4447C700FCC053EB73718A11",
+        "bytes": 13268,
+        "encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6,
+          "lossless": false
+        }
+      },
+      "png_webp_decoded_rgba_equal": false,
+      "runtime_chunks": [
+        "VP8 "
+      ],
+      "runtime_metadata": "no EXIF/XMP/ICC/JUMBF chunks; standard opaque WebP",
+      "native_png_crop_rgba_equal": true,
+      "comparison_200x132": {
+        "bytes": 13268,
+        "display_200x132_mean_channel_delta": 2.6454,
+        "display_200x132_max_channel_delta": 36,
+        "display_200x132_psnr_db": 35.872
+      }
+    },
+    {
+      "season": "autumn",
+      "phase": "night",
+      "source_crop": [
+        1089,
+        545,
+        1445,
+        812
+      ],
+      "source_cell": [
+        1086,
+        543,
+        1448,
+        814
+      ],
+      "native_crop_size": [
+        356,
+        267
+      ],
+      "runtime_size": [
+        256,
+        192
+      ],
+      "resampling": "uniform 64/89 LANCZOS followed by explicit lossy WebP q90, method6",
+      "color_or_alpha_changes": "Native PNG crop RGB is unchanged and alpha255. Runtime is uniformly downsampled and lossy encoded; alpha remains fully opaque.",
+      "png": {
+        "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/정리본/가을_밤.png",
+        "sha256": "41E68498BED277715A99AD697238C06445AE1030EFE9D2A1A56E4F25F4EA06CB",
+        "bytes": 154474
+      },
+      "runtime": {
+        "path": "public/companion/home/141/window-autumn-night.webp",
+        "url": "/companion/home/141/window-autumn-night.webp",
+        "sha256": "1142530A43826D9E113FA3D9CA91FDAD8BBEE830A6362E7C597BBACD6F2C0B5C",
+        "bytes": 11352,
+        "encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6,
+          "lossless": false
+        }
+      },
+      "png_webp_decoded_rgba_equal": false,
+      "runtime_chunks": [
+        "VP8 "
+      ],
+      "runtime_metadata": "no EXIF/XMP/ICC/JUMBF chunks; standard opaque WebP",
+      "native_png_crop_rgba_equal": true,
+      "comparison_200x132": {
+        "bytes": 11352,
+        "display_200x132_mean_channel_delta": 2.3924,
+        "display_200x132_max_channel_delta": 44,
+        "display_200x132_psnr_db": 36.548
+      }
+    },
+    {
+      "season": "winter",
+      "phase": "dawn",
+      "source_crop": [
+        3,
+        816,
+        359,
+        1083
+      ],
+      "source_cell": [
+        0,
+        814,
+        362,
+        1086
+      ],
+      "native_crop_size": [
+        356,
+        267
+      ],
+      "runtime_size": [
+        256,
+        192
+      ],
+      "resampling": "uniform 64/89 LANCZOS followed by explicit lossy WebP q90, method6",
+      "color_or_alpha_changes": "Native PNG crop RGB is unchanged and alpha255. Runtime is uniformly downsampled and lossy encoded; alpha remains fully opaque.",
+      "png": {
+        "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/정리본/겨울_새벽.png",
+        "sha256": "720648143A9B36CAC54FE123404BCA9A954DB5E1546758AA96E4ED980722AB54",
+        "bytes": 164178
+      },
+      "runtime": {
+        "path": "public/companion/home/141/window-winter-dawn.webp",
+        "url": "/companion/home/141/window-winter-dawn.webp",
+        "sha256": "066DCA071AB11FBF8A817F2C1F06F3D57980F360DEAEB540738FB7C2E2FE23EF",
+        "bytes": 13778,
+        "encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6,
+          "lossless": false
+        }
+      },
+      "png_webp_decoded_rgba_equal": false,
+      "runtime_chunks": [
+        "VP8 "
+      ],
+      "runtime_metadata": "no EXIF/XMP/ICC/JUMBF chunks; standard opaque WebP",
+      "native_png_crop_rgba_equal": true,
+      "comparison_200x132": {
+        "bytes": 13778,
+        "display_200x132_mean_channel_delta": 2.5498,
+        "display_200x132_max_channel_delta": 36,
+        "display_200x132_psnr_db": 36.373
+      }
+    },
+    {
+      "season": "winter",
+      "phase": "day",
+      "source_crop": [
+        365,
+        816,
+        721,
+        1083
+      ],
+      "source_cell": [
+        362,
+        814,
+        724,
+        1086
+      ],
+      "native_crop_size": [
+        356,
+        267
+      ],
+      "runtime_size": [
+        256,
+        192
+      ],
+      "resampling": "uniform 64/89 LANCZOS followed by explicit lossy WebP q90, method6",
+      "color_or_alpha_changes": "Native PNG crop RGB is unchanged and alpha255. Runtime is uniformly downsampled and lossy encoded; alpha remains fully opaque.",
+      "png": {
+        "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/정리본/겨울_낮.png",
+        "sha256": "18C2B6F1A0F0555C24EB86935502656E7D219ABEB6C6DFFF313AF1B409BF0EED",
+        "bytes": 164307
+      },
+      "runtime": {
+        "path": "public/companion/home/141/window-winter-day.webp",
+        "url": "/companion/home/141/window-winter-day.webp",
+        "sha256": "BC12104DA84D8AC84B91D48B80FE439B044E88F652E06B93C4DC39197E321402",
+        "bytes": 14332,
+        "encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6,
+          "lossless": false
+        }
+      },
+      "png_webp_decoded_rgba_equal": false,
+      "runtime_chunks": [
+        "VP8 "
+      ],
+      "runtime_metadata": "no EXIF/XMP/ICC/JUMBF chunks; standard opaque WebP",
+      "native_png_crop_rgba_equal": true,
+      "comparison_200x132": {
+        "bytes": 14332,
+        "display_200x132_mean_channel_delta": 2.6774,
+        "display_200x132_max_channel_delta": 39,
+        "display_200x132_psnr_db": 35.552
+      }
+    },
+    {
+      "season": "winter",
+      "phase": "dusk",
+      "source_crop": [
+        727,
+        816,
+        1083,
+        1083
+      ],
+      "source_cell": [
+        724,
+        814,
+        1086,
+        1086
+      ],
+      "native_crop_size": [
+        356,
+        267
+      ],
+      "runtime_size": [
+        256,
+        192
+      ],
+      "resampling": "uniform 64/89 LANCZOS followed by explicit lossy WebP q90, method6",
+      "color_or_alpha_changes": "Native PNG crop RGB is unchanged and alpha255. Runtime is uniformly downsampled and lossy encoded; alpha remains fully opaque.",
+      "png": {
+        "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/정리본/겨울_노을.png",
+        "sha256": "2E15F737CF7CBD1E071DB90FAA60486B55F3303A0B14408A7294558476F64AC5",
+        "bytes": 164075
+      },
+      "runtime": {
+        "path": "public/companion/home/141/window-winter-dusk.webp",
+        "url": "/companion/home/141/window-winter-dusk.webp",
+        "sha256": "61783102D24BED308C5FF64B50523C4BA3CCC0F61918ECC0527D780DAA8A59BB",
+        "bytes": 13352,
+        "encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6,
+          "lossless": false
+        }
+      },
+      "png_webp_decoded_rgba_equal": false,
+      "runtime_chunks": [
+        "VP8 "
+      ],
+      "runtime_metadata": "no EXIF/XMP/ICC/JUMBF chunks; standard opaque WebP",
+      "native_png_crop_rgba_equal": true,
+      "comparison_200x132": {
+        "bytes": 13352,
+        "display_200x132_mean_channel_delta": 2.4563,
+        "display_200x132_max_channel_delta": 31,
+        "display_200x132_psnr_db": 36.794
+      }
+    },
+    {
+      "season": "winter",
+      "phase": "night",
+      "source_crop": [
+        1089,
+        816,
+        1445,
+        1083
+      ],
+      "source_cell": [
+        1086,
+        814,
+        1448,
+        1086
+      ],
+      "native_crop_size": [
+        356,
+        267
+      ],
+      "runtime_size": [
+        256,
+        192
+      ],
+      "resampling": "uniform 64/89 LANCZOS followed by explicit lossy WebP q90, method6",
+      "color_or_alpha_changes": "Native PNG crop RGB is unchanged and alpha255. Runtime is uniformly downsampled and lossy encoded; alpha remains fully opaque.",
+      "png": {
+        "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/정리본/겨울_밤.png",
+        "sha256": "8A39848C0BDB0852015D21D4098020800EE11CC8C1222A650C31863336C50F2A",
+        "bytes": 157615
+      },
+      "runtime": {
+        "path": "public/companion/home/141/window-winter-night.webp",
+        "url": "/companion/home/141/window-winter-night.webp",
+        "sha256": "3D2C39DC19E2A1D799A5B18DCFC6AF82FBCAA60C6ADE489D8840B3C060A28B40",
+        "bytes": 12048,
+        "encoder": {
+          "format": "WebP",
+          "quality": 90,
+          "method": 6,
+          "lossless": false
+        }
+      },
+      "png_webp_decoded_rgba_equal": false,
+      "runtime_chunks": [
+        "VP8 "
+      ],
+      "runtime_metadata": "no EXIF/XMP/ICC/JUMBF chunks; standard opaque WebP",
+      "native_png_crop_rgba_equal": true,
+      "comparison_200x132": {
+        "bytes": 12048,
+        "display_200x132_mean_channel_delta": 2.0949,
+        "display_200x132_max_channel_delta": 31,
+        "display_200x132_psnr_db": 37.548
+      }
+    }
+  ],
+  "comparison_sheets": [
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/검토/사계절_시간대_보존원화비교.png",
+      "sha256": "0A7EBAC2194716B980316F4172E7760BAA6FBF060C1B0A631F9CF8CB405D75AD",
+      "bytes": 2227861,
+      "browser_capture": false
+    },
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/검토/사계절_시간대_런타임작은창비교.png",
+      "sha256": "C1B19D4F0517DC8D2A9491A9654301AAAB6CE148C72F7851AC4686CBAF53FBE2",
+      "bytes": 380883,
+      "browser_capture": false
+    },
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261020-창밖사계절141/검토/압축선택비교.png",
+      "sha256": "4A66EEA3AC7616184EC11A2485DD31AAFF7C851BFB6E024B0FB751A4EC5CBCEB",
+      "bytes": 755829,
+      "browser_capture": false
+    }
+  ],
+  "preservation": {
+    "prior_home_images_checked": 119,
+    "changed_prior_images": 0,
+    "weather124": "unchanged",
+    "curtains126": "unchanged",
+    "room136": "unchanged",
+    "character_and_sofa": "untouched"
+  },
+  "technical_scope": "One same-season/same-time static picture is selected from the existing shared viewed-month/solar-band environment. Existing weather, atmosphere, crossbar and curtain layers remain mounted.",
+  "privacy": "Public-safe relative asset paths only; no human transcript, source-turn identifiers, local drive paths, owner-private data or analytics metadata.",
+  "compression": {
+    "runtime_size": [
+      256,
+      192
+    ],
+    "quality": 90,
+    "lossless": false,
+    "source_crop_pixel_identity": true,
+    "runtime_source_pixel_identity": false,
+    "native_pngs_preserved": 16,
+    "runtime_total_bytes": 201106,
+    "prior125_pack_bytes": 320550,
+    "reduction_vs_prior125_percent": 37.26,
+    "initial_native_lossless_candidate_bytes": 1715320,
+    "numeric_error_is_not_visual_approval": true
+  },
+  "creator_observation": {
+    "basis": "Whole generated atlas and16 cropped panels, small-window and compression sheets actually viewed by generator.",
+    "seasons": {
+      "spring": "Pink blossoms and fresh leaves visible.",
+      "summer": "Dense deeper green crowns and hydrangea/sunflower patch visible.",
+      "autumn": "Red/golden foliage and actual fallen leaf shapes visible.",
+      "winter": "All four phases show bare branching trees/shrubs with snow; no green leafy crowns observed."
+    },
+    "limits": "A coherent illustrated family is a creator observation, not independent art PASS or owner approval. Actual browser/window layers remain root QA."
+  }
+}

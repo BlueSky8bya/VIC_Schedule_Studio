@@ -19,12 +19,14 @@ const proofs = new WeakMap<Page, { writes: string[]; foreign: string[]; errors: 
 
 test.use({ serviceWorkers: "block", viewport: { width: 1920, height: 1100 } });
 test.setTimeout(90000);
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page, baseURL }) => {
+  const origin = new URL(baseURL!); expect(origin.protocol).toBe("http:");
+  expect(["127.0.0.1", "127.0.0.2", "localhost", "[::1]"]).toContain(origin.hostname);
   const proof = { writes: [] as string[], foreign: [] as string[], errors: [] as string[] }; proofs.set(page, proof);
   page.on("pageerror", error => proof.errors.push(error.message));
   await page.context().route("**/*", route => {
     const request = route.request(), url = new URL(request.url());
-    if (url.origin !== "http://127.0.0.1:3117") {
+    if (url.origin !== origin.origin) {
       if (request.method() === "GET" && request.resourceType() === "font" && fonts.has(url.href)) return route.continue();
       proof.foreign.push(request.method() + " " + url.origin + url.pathname);
       return route.abort();
@@ -88,10 +90,10 @@ async function snapshot(page: Page, state: Awaited<ReturnType<typeof fixture>>, 
 for (const [surface, width, dark] of [["viewer", 1440, false], ["studio", 1920, true], ["studio", 2400, false]] as const) test(`123 wider window keeps real shelf and physical controls clear: ${surface} ${width}`, async ({ page }) => {
   await page.setViewportSize({ width, height: 1100 });
   const state = await fixture(page, { surface, dark }), bounds = await snapshot(page, state, `layout-${surface}-${width}`);
-  //126 floor storage frees the wall for a wider, raised window. The shared
-  // shelf alone reserves wall width; storage retains independent native hits.
-  const expectedWidth = Math.min(152, bounds.cssWidth - (bounds.shelf.width / bounds.scale + 28));
-  expect(bounds.window.width / bounds.scale).toBeCloseTo(expectedWidth, 1);
+  //136 replaced126's152px/200px room with the approved wider proportional
+  // interior. Verify that visual contract rather than the retired constants.
+  expect(bounds.window.width / bounds.room.width).toBeGreaterThanOrEqual(.5);
+  expect(bounds.window.width / bounds.room.width).toBeLessThanOrEqual(.6);
   expect(bounds.window.width).toBeGreaterThan(96 * bounds.scale);
   expect(bounds.shelf.x - bounds.window.x - bounds.window.width).toBeGreaterThanOrEqual(6);
   const painted = await state.room.evaluate(node => {
@@ -101,8 +103,16 @@ for (const [surface, width, dark] of [["viewer", 1440, false], ["studio", 1920, 
   expect(painted.glassBottom).toBeLessThanOrEqual(painted.sofaOpaqueTop + .5);
   expect(bounds.window.x).toBeGreaterThanOrEqual(bounds.room.x);
   expect(bounds.window.x + bounds.window.width).toBeLessThan(bounds.room.x + bounds.room.width);
-  expect(await state.room.locator(".vc-home-room").evaluate(node => parseFloat(getComputedStyle(node).height))).toBeCloseTo(200, 1);
-  for (const action of ["book", "radio", "home", "toys", "feed", "clearFood"]) {
+  expect(bounds.room.width / bounds.room.height).toBeGreaterThanOrEqual(1.2);
+  expect(bounds.room.width / bounds.room.height).toBeLessThanOrEqual(1.6);
+  // An actual sofa resident may legitimately receive the sofa's centre
+  // input. Move it by native placement before isolating furniture hit tests.
+  const point = await page.locator('[data-act="calendar-cell"], .public-day[data-date]').evaluateAll((nodes, room) => nodes.map(node => { const r = node.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height * .7, width: r.width, height: r.height }; }).find(p => p.width > 70 && p.height > 45 && p.x > room.x + room.width + 100 && p.y > 140 && p.y < innerHeight - 100), bounds.room);
+  expect(point).toBeTruthy();
+  const actor = page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
+  await actor.focus(); await actor.press("p"); await expect(page.locator(".vc-companion")).toHaveAttribute("data-placing", "");
+  await page.mouse.click(point!.x, point!.y); await page.mouse.move(2, 2); await expect(page.locator(".vc-companion")).not.toHaveAttribute("data-placing");
+  for (const action of ["book", "radio", "home", "toys", "feed", "clearFood", "tv", "light", "curtain"]) {
     const target = state.room.locator(`[data-home-action="${action}"]`), rect = (await target.boundingBox())!;
     expect(rect.width).toBeGreaterThanOrEqual(44); expect(rect.height).toBeGreaterThanOrEqual(44);
     expect(await target.evaluate(node => { const r = node.getBoundingClientRect(), hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return hit === node || node.contains(hit); })).toBe(true);
@@ -114,7 +124,7 @@ for (const season of ["spring", "summer", "autumn", "winter"] as const) test(`12
   for (const phase of ["dawn", "day", "dusk", "night"] as const) {
     const state = await fixture(page, { season, phase });
     await expect(state.window).toHaveAttribute("data-phase", phase);
-    const expected = `/companion/home/125/window-${season}-${phase}.webp`;
+    const expected = `/companion/home/141/window-${season}-${phase}.webp`;
     await expect(state.window.locator(".vc-window-landscape")).toHaveAttribute("src", expected); sources.add(expected);
     await expect(state.window.locator(".vc-window-weather")).toHaveCount(0);
     const bounds = await snapshot(page, state, `${season}-${phase}`);
@@ -130,7 +140,7 @@ test("123 six shared weather states retain their scene and keep clouds behind it
     const state = await fixture(page, { season: "autumn", phase: "day", weather });
     await expect(state.window).toHaveAttribute("data-weather", weather);
     await expect(state.window).toHaveAttribute("data-phase", "day");
-    await expect(state.window.locator(".vc-window-landscape")).toHaveAttribute("src", "/companion/home/125/window-autumn-day.webp");
+    await expect(state.window.locator(".vc-window-landscape")).toHaveAttribute("src", "/companion/home/141/window-autumn-day.webp");
     if (overlay[weather]) await expect(state.window.locator(".vc-window-weather")).toHaveAttribute("src", overlay[weather]!);
     else await expect(state.window.locator(".vc-window-weather")).toHaveCount(0);
     expect(await state.window.evaluate(node => node.getAnimations({ subtree: true }).length)).toBe(0);
@@ -140,7 +150,7 @@ test("123 six shared weather states retain their scene and keep clouds behind it
 
 for (const quiet of ["reduced", "off"] as const) test(`123 static night and weather remain present in quiet mode: ${quiet}`, async ({ page }) => {
   const state = await fixture(page, { season: "winter", phase: "night", weather: "wind", quiet });
-  await expect(state.window.locator(".vc-window-landscape")).toHaveAttribute("src", "/companion/home/125/window-winter-night.webp");
+  await expect(state.window.locator(".vc-window-landscape")).toHaveAttribute("src", "/companion/home/141/window-winter-night.webp");
   await expect(state.window.locator(".vc-window-weather")).toHaveAttribute("src", overlay.wind!);
   await expect(state.window.locator(".vc-window-landscape")).toHaveCSS("filter", "none");
   expect(await state.window.evaluate(node => node.getAnimations({ subtree: true }).length)).toBe(0);

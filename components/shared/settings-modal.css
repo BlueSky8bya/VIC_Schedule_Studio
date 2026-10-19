@@ -1698,6 +1698,8 @@ html[data-theme="dark"] .vic-settings .rhh-companion-settings .role-help-haptics
 .rhh-companion-settings .rhh-group-foot { color: var(--companion-soft); font-size: var(--text-body, 13.5px); }
 .rhh-companion-settings .rhh-companion-card-title { margin: 0; padding-block: 14px 4px; color: var(--companion-soft); font-size: var(--text-body, 13.5px); font-weight: 600; }
 .rhh-companion-settings .rhh-profile-controls { margin-top: 0; }
+.vic-settings .rhh-companion-settings .rhh-companion-choice-row { display: grid; grid-template-columns: minmax(0, 1fr); align-items: stretch; gap: var(--space-2); }
+.vic-settings .rhh-companion-settings .rhh-companion-choice-row > .rhh-seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; width: 100%; }
 .vic-settings .rhh-companion-settings .rhh-link {
   justify-content: center;
   gap: 6px;

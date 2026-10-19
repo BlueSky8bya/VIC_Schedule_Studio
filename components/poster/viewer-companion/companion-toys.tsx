@@ -28,15 +28,17 @@ export type CompanionToyControl = {
   decline: (id: string, point: Point, now: number) => boolean;
   nudge: (id: string, point: Point, now: number) => boolean;
   completePlay: (id: string, observed?: boolean) => void;
+  completeCarriedPlay: (id: string, observed: boolean) => boolean;
   stash: (id: string) => boolean;
   cancel: (now: number) => void;
 };
-type Props = { blocked: boolean; hidden?: boolean; onActivity: (direct?: boolean) => void; onCount: (count: number) => void; onReturned?: () => void; onExperience?: (kind: CompanionToyKind, outcome: CompanionToyExperience) => void };
+type Props = { blocked: boolean; hidden?: boolean; onActivity: (direct?: boolean) => void; onCount: (count: number) => void; onReturned?: () => void; onExperience?: (kind: CompanionToyKind, outcome: CompanionToyExperience, source?: Readonly<{ x: number; y: number }>) => void };
 export const CompanionToys = forwardRef<CompanionToyControl, Props>(function CompanionToys({ blocked, hidden = false, onActivity, onCount, onReturned, onExperience }, ref) {
   const model = useRef<ReturnType<typeof createCompanionToys> | null>(null);
   model.current ??= createCompanionToys();
   const world = model.current, nodes = useRef(new Map<string, HTMLButtonElement>()), count = useRef(0);
   const pendingPlays = useRef(new Map<string, { kind: CompanionToyKind; outcome: "played" | "declined" }>());
+  const pendingCarriedPlays = useRef(new Set<string>());
   const [items, setItems] = useState<{ id: string; kind: CompanionToyKind }[]>([]);
   const drag = useRef<{ id: string; pointer: number; node: HTMLButtonElement; moved: boolean; origin: Point; offset: Point; last: Point; time: number; velocity: Point } | null>(null);
   const dragFrame = useRef<ReturnType<typeof createCompanionInputFrame> | null>(null);
@@ -75,6 +77,7 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     dragFrame.current!.cancel();
     clearDropBox();
     pendingPlays.current.clear();
+    pendingCarriedPlays.current.clear();
     const current = drag.current; drag.current = null;
     if (current) try { if (current.node.hasPointerCapture(current.pointer)) current.node.releasePointerCapture(current.pointer); } catch { /* detached capture */ }
     world.pause(now); paint();
@@ -87,14 +90,35 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     available: world.available, ids: world.ids, count: () => count.current, moving: world.moving, carried: world.carried,
     pause: pauseModel,
     resume(now) { if (!blockedRef.current) world.resume(now); },
-    pick(id, point) { const ok = world.pick(id, point); paint(id); return ok; },
+    pick(id, point) { const ok = world.pick(id, point); if (ok) { pendingPlays.current.delete(id); pendingCarriedPlays.current.add(id); } paint(id); return ok; },
     carry(id, point) { const ok = world.carry(id, point); paint(id); return ok; },
-    put(id, point, now, toss, asPlay = false) { const toy = world.items().find(item => item.id === id), ok = world.put(id, point, now, toss); paint(); if (ok) { if (toy && asPlay) pendingPlays.current.set(id, { kind: toy.kind, outcome: "played" }); onActivity(); } return ok; },
+    put(id, point, now, toss, asPlay = false) { const toy = world.items().find(item => item.id === id), ok = world.put(id, point, now, toss); paint(); if (ok) { pendingCarriedPlays.current.delete(id); if (toy && asPlay) pendingPlays.current.set(id, { kind: toy.kind, outcome: "played" }); onActivity(); } return ok; },
     nudge(id, point, now) { const toy = world.items().find(item => item.id === id), ok = world.nudge(id, point, now); paint(); if (ok) { if (toy) pendingPlays.current.set(id, { kind: toy.kind, outcome: "played" }); onActivity(); } return ok; },
     decline(id, point, now) { const toy = world.items().find(item => item.id === id), ok = world.nudge(id, point, now); paint(); if (ok) { if (toy) pendingPlays.current.set(id, { kind: toy.kind, outcome: "declined" }); onActivity(); } return ok; },
-    completePlay(id, observed = true) { const result = pendingPlays.current.get(id); pendingPlays.current.delete(id); if (observed && result && world.items().some(toy => toy.id === id && !toy.held)) onExperience?.(result.kind, result.outcome); },
-    stash(id) { const toy = world.items().find(item => item.id === id), ok = world.stash(id); if (ok) { refresh(); if (toy) onExperience?.(toy.kind, "tidied"); } return ok; },
-    cancel(now) { pendingPlays.current.clear(); world.releaseCarry(now); paint(); },
+    completePlay(id, observed = true) {
+      const result = pendingPlays.current.get(id); pendingPlays.current.delete(id);
+      const toy = world.items().find(toy => toy.id === id), node = nodes.current.get(id);
+      if (!observed || !result || blockedRef.current || document.hidden || !toy || toy.held || toy.carried || toy.hidden || !node?.isConnected || node.hidden) return;
+      // Once at the actual completion ACK, not on every pose/input frame.
+      const rect = node.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0 && [rect.left, rect.top, rect.width, rect.height].every(Number.isFinite)) onExperience?.(result.kind, result.outcome, { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+    },
+    completeCarriedPlay(id, observed) {
+      // One completion opportunity per successful real pickup. The authored
+      // caller owns its decoded performance witness; a failed/canceled ACK
+      // cannot be replayed later against the same carried object.
+      const pending = pendingCarriedPlays.current.delete(id);
+      const toy = world.items().find(toy => toy.id === id), node = nodes.current.get(id);
+      if (!pending || !observed || blockedRef.current || document.hidden || world.carried() !== id || !toy?.carried || toy.held || toy.hidden || !node?.isConnected || node.hidden) return false;
+      const view = node.ownerDocument.defaultView, style = view?.getComputedStyle(node);
+      if (!style || style.visibility === "hidden" || style.display === "none" || Number(style.opacity) <= 0) return false;
+      const rect = node.getBoundingClientRect();
+      if (!(rect.width > 0 && rect.height > 0 && [rect.left, rect.top, rect.width, rect.height].every(Number.isFinite))) return false;
+      onExperience?.(toy.kind, "played", { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+      return true;
+    },
+    stash(id) { const toy = world.items().find(item => item.id === id), ok = world.stash(id); if (ok) { pendingCarriedPlays.current.delete(id); pendingPlays.current.delete(id); refresh(); if (toy) onExperience?.(toy.kind, "tidied"); } return ok; },
+    cancel(now) { pendingPlays.current.clear(); pendingCarriedPlays.current.clear(); world.releaseCarry(now); paint(); },
   }), [world, paint, refresh, onActivity, pauseModel, onExperience]);
   useEffect(() => {
     const now = performance.now();
@@ -131,7 +155,7 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
       onPointerDown={event => {
         if (blockedRef.current || drag.current || event.button !== 0) return;
         const position = world.items().find(item => item.id === toy.id); if (!position || !world.grab(toy.id)) return;
-        pendingPlays.current.delete(toy.id); event.preventDefault(); event.stopPropagation(); event.currentTarget.setPointerCapture(event.pointerId);
+        pendingPlays.current.delete(toy.id); pendingCarriedPlays.current.delete(toy.id); event.preventDefault(); event.stopPropagation(); event.currentTarget.setPointerCapture(event.pointerId);
         const point = { x: event.clientX, y: event.clientY };
         drag.current = { id: toy.id, pointer: event.pointerId, node: event.currentTarget, moved: false, origin: point, offset: { x: point.x - position.x, y: point.y - position.y }, last: point, time: performance.now(), velocity: { x: 0, y: 0 } };
         paint(toy.id); logActivity("ui.click", { target: "companion-toy-grab" }); onActivity(true);
@@ -165,6 +189,7 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
           if (pointer.node.hasPointerCapture(pointer.pointer)) pointer.node.releasePointerCapture(pointer.pointer);
         }
         pendingPlays.current.delete(toy.id);
+        pendingCarriedPlays.current.delete(toy.id);
         if (["Enter", " "].includes(event.key)) {
           const ok = current.held ? world.drop(toy.id, performance.now(), { x: 20, y: -100 }) : world.grab(toy.id);
           if (ok) { logActivity("ui.click", { target: current.held ? "companion-toy-drop" : "companion-toy-grab" }); onActivity(true); paint(); }

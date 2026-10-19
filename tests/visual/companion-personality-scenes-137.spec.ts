@@ -344,19 +344,31 @@ async function outsideTidy(page: Page, hunger: number, eventPerch = false) {
     return;
   }
   await expect.poll(async () => (await frames(page)).some(frame => frame.toys.some(toy => toy.carried) || frame.scene === "T01" && ["walk", "jump"].includes(frame.state)), { timeout: 10000, intervals: [100] }).toBe(true);
-  await expect(page.locator(".vc-toy")).toHaveCount(0, { timeout: 110000 });
+  //141 common needs may perform a real meal/wash between finite returns.
+  // Preserve the110s cleanup budget separately from that visible care; a
+  // ready loop, hidden frame or an ordinary pose cannot earn extra time.
+  await expect(page.locator(".vc-toy")).toHaveCount(0, { timeout: 150000 });
   await expect.poll(async () => {
     const painted = await frames(page);
     return ids.every(id => { const last = painted.filter(frame => frame.toys.some(toy => toy.id === id && toy.carried)).at(-1); return last && painted.some(frame => frame.at > last.at && !frame.toys.some(toy => toy.id === id)); });
   }, { timeout: 1000, intervals: [50] }).toBe(true);
   const trace = await frames(page);
+  const empty = trace.findIndex(frame => ids.every(id => !frame.toys.some(toy => toy.id === id)));
+  expect(empty).toBeGreaterThan(0);
+  let actualCareMs = 0;
+  for (let index = 1; index <= empty; index++) {
+    const before = trace[index - 1], after = trace[index];
+    if (before.visible && before.decoded && /^routine-(meal|wash)$/.test(before.scene) && !["idle", "held"].includes(before.state)) actualCareMs += Math.min(100, Math.max(0, after.at - before.at));
+  }
+  expect(actualCareMs).toBeLessThanOrEqual(40000);
+  expect(trace[empty].at - trace[0].at - actualCareMs, "unchanged110s cleanup budget excludes only bounded actually painted care").toBeLessThanOrEqual(110000);
   for (const id of ids) {
     const carry = trace.filter(frame => frame.toys.some(toy => toy.id === id && toy.carried)); expect(carry.length, id).toBeGreaterThanOrEqual(2);
     const last = carry.at(-1)!, item = last.toys.find(toy => toy.id === id)!;
     expect(Math.hypot(item.x - opening.x, item.y - opening.y), `${id} actual return contact`).toBeLessThan(20);
     expect(trace.some(frame => frame.at > last.at && !frame.toys.some(toy => toy.id === id))).toBe(true);
   }
-  proofs.get(page)!.notes.push({ hunger, ids, initial, initialPlatform, eventPerch, opening, sameIdActualPickupReturn: true });
+  proofs.get(page)!.notes.push({ hunger, ids, initial, initialPlatform, eventPerch, opening, sameIdActualPickupReturn: true, actualCareMs, cleanupBudgetMs: 110000 });
 }
 for (const hunger of [.05, .5]) test(`140 outside-home tidy actually retrieves four toys from a calendar perch at hunger${hunger}`, async ({ page }) => outsideTidy(page, hunger));
 test("140 actual public event perch to four separated outside toys and same-ID box returns at middle hunger", async ({ page }) => outsideTidy(page, .5, true));

@@ -35,13 +35,14 @@ describe("135 room decoration and manual state", () => {
       care: DEFAULT_COMPANION_CARE, preferences: DEFAULT_COMPANION_PREFERENCES,
       onAction: () => undefined, onToyBox: () => undefined,
     }));
-    for (const action of ["home", "feed", "clearFood", "radio", "book", "toys", "light", "tv"])
+    for (const action of ["home", "feed", "clearFood", "radio", "book", "toys", "light", "tv", "curtain"])
       expect(html).toContain(`data-home-action="${action}"`);
     expect(html).toContain('data-tv="off"');
     expect(html).not.toContain("data-lamp-lit=");
-    expect(html.match(/data-home-decoration-control=""/g)).toHaveLength(2);
+    expect(html.match(/data-home-decoration-control=""/g)).toHaveLength(3);
     expect(html).toContain('data-act="companion-home-tv" data-act-opt="on"');
     expect(html).toContain('data-act="companion-home-light" data-act-opt="on"');
+    expect(html).toContain('data-act="companion-home-curtain" data-act-opt="shade"');
     expect(html).toContain('class="vc-home-cushion"');
     expect(html).toContain('class="vc-dispenser-slot"');
     expect(html).toContain('class="vc-toy-box-opening"');

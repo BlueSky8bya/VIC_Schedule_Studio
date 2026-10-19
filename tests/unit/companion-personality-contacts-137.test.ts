@@ -28,7 +28,8 @@ describe("137 actual body versus item contact", () => {
     const closed = reduceCompanionHomeCurtain(INITIAL_COMPANION_HOME_CURTAIN, {...base,intent:"closed"});
     expect(closed).toMatchObject({phase:"closed",panelScale:1,active:true});
     expect(reduceCompanionHomeCurtain(closed,{...base,visible:false,intent:"open"})).toMatchObject({phase:"closed",active:false,animate:false});
-    expect(reduceCompanionHomeCurtain(closed,{...base,rest:"asleep",intent:"open"})).toMatchObject({phase:"closed",rest:"asleep"});
+    //141: an actual physical/manual choice also owns the curtain during rest.
+    expect(reduceCompanionHomeCurtain(closed,{...base,rest:"asleep",intent:"open"})).toMatchObject({phase:"open",rest:"asleep"});
     expect(reduceCompanionHomeCurtain(closed,{...base,intent:"open"})).toMatchObject({phase:"open",panelScale:.08});
   });
   it("keeps personality peeks under10s without changing the legacy hide session wait", () => {

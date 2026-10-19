@@ -6,7 +6,10 @@
    sits above the body, so lifting naturally clears the fabric without hiding
    the sofa or changing the native cushion/food hit targets. */
 .vc-bed-foreground { position: fixed; left: 0; top: 0; z-index: 76; pointer-events: none; }
-.vc-wash-tool { position: fixed; left: 0; top: 0; z-index: 77; width: 14px; height: 30px; transform-origin: 7px 4px; pointer-events: none; filter: drop-shadow(0 1px 1px #795b3924); }
+.vc-wash-tool { position: fixed; left: 0; top: 0; z-index: 77; width: 24px; height: 38px; transform-origin: 8px 7px; pointer-events: none; filter: brightness(var(--vc-body-room-light, 1)) drop-shadow(0 1px 1px #795b3924); }
+.vc-wash-tool[hidden], .vc-home-touch-tool[hidden] { display: none; }
+.vc-home-touch-tool { position: fixed; left: 0; top: 0; z-index: 77; width: 18px; height: 18px; transform-origin: center; pointer-events: none; filter: brightness(var(--vc-body-room-light, 1)); }
+.vc-inertia { filter: brightness(var(--vc-body-room-light, 1)); transition: filter var(--dur-2) var(--ease); }
 .vc-bed-foreground[hidden] { display: none; }
 .vc-actor { position: absolute; left: 12%; bottom: 0; width: 76%; height: 76%; border: 0; padding: 0; overflow: visible; background: transparent; border-radius: 50%; cursor: grab; pointer-events: auto; touch-action: none; user-select: none; }
 /* The global button focus rule must not restore a circular pet halo. A small
@@ -78,6 +81,7 @@ html :is(.poster-page,[data-companion-event="ordinary"]) .event-heart[data-compa
 .vc-food span { display: block; width: 36px; height: 36px; transform: scale(var(--vc-nibble, 1)); transform-origin: bottom center; pointer-events: none; }
 .vc-food[data-eating] span { transform-origin: center; }
 .vc-food:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 0; }
+.vc-food:where(:hover, :focus):not(:focus-visible) { outline: none; box-shadow: none; }
 /* The button owns the44px contact and the span owns nibbling/arrival. Only
    the inner picture responds, keeping the pointer/fall/carry foot stationary. */
 .vc-food > span > .vc-fruit { transform-box: border-box; transform-origin: 50% 100%; transition: transform var(--dur-spring-smooth) var(--spring-smooth, var(--ease-spring)), filter var(--dur-1) var(--ease); }

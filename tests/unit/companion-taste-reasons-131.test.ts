@@ -64,6 +64,7 @@ describe("131 contextual, truthful profile reasons", () => {
   it("records a new contextual reason only on actual completed experience and preserves learning OFF", () => {
     const store = createCompanionTastesStore();
     store.recordToy("feather", "taken-out"); store.recordToy("feather", "tidied");
+    expect(store.load().toys).toEqual([]);
     expect(store.load().reasons).toEqual([]);
     store.recordToy("feather", "played"); store.recordToy("feather", "played");
     expect(companionProfileTasteReason(store.load(), "toy", "feather", "positive")).toBe("가볍게 살랑이는 게 좋아요");

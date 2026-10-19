@@ -176,7 +176,7 @@ function CompanionRadioSettings({ companionAudible, globalSoundOn }: { companion
   if (!preferences) return null;
   const change = (patch: Partial<CompanionRadioPreferences>) => setPreferences(setCompanionRadioPreferences(patch));
   const play = (start: () => Promise<boolean>) => { const token = ++requestToken.current; setPending(true); void start().finally(() => { if (requestToken.current === token) setPending(false); }); };
-  const stop = () => { requestToken.current++; setPending(false); stopCompanionRadio(); };
+  const stop = () => { requestToken.current++; setPending(false); stopCompanionRadio("human"); };
   const selected = COMPANION_RADIO_TRACKS.filter(track => !preferences.excludedIds.includes(track.id));
   const pool = selected;
   const blocked = !globalSoundOn || !companionAudible || !preferences.enabled || preferences.volume === 0;

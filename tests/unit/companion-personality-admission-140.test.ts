@@ -32,7 +32,7 @@ function b04Host(count: number) {
   const jobs = createCompanionPersonalityJobs(director, household, planner);
   const scene: PersonalitySceneInput = {
     world: { ...world(), platformId: floor.id, platforms: [floor] }, brain: brain(.5), preferences: preferences("balanced"), now: 3000,
-    home: { box: boxPoint, window: { x: 500, y: floor.y, platformId: floor.id } }, toys: [], tv: "off", curtainPhase: "closed",
+    home: { box: boxPoint, window: { x: 500, y: floor.y, platformId: floor.id }, contacts: { curtain: { x: 500, y: floor.y - 45 } } }, toys: [], tv: "off", curtainPhase: "closed",
   };
   const trace: { effect: string; id?: string; beat: number }[] = [], originalIds = model.ids();
   const offer = () => {

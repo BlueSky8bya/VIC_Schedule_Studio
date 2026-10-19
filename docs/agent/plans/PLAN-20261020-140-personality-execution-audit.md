@@ -76,3 +76,15 @@ build7 native-meal-release는13/13 PASS(2.0분). 실제 tidy4개 반납·세면/
 공용 client만 수정했다. 서버 public DTO/owner_private/Google+passcode/권한·KST·DB 경계 변경0. G22 자동 행동 제외와 양쪽 개발자 활동표/최저 사용 기능은 build6 native에서 검증했고 build7 자동 실물 정리의 추가 사람 클릭0도 재확인했다. 새 의도·경로 cache·실물ID·학습 성향을 운영 로그나 API에 추가하지 않았다. 보호 사용자 제작기록 SHA256 `E980005102457E2A02AE318FF7665596E7170D0BFB34A328F64A6EC292C5990B` 유지. 제품·회귀·이번 문서만 정확한 경로로 stage한다. 기존 Git 설정은 바꾸지 않고 이번 commit의 author/committer만 검증된 공개 GitHub noreply로 설정한다. 이전 커밋/이력은 수정하지 않는다.
 
 기존 main push 배포 승인 범위로 제품 릴리스를 진행한다. Vercel 성공 뒤 빈 익명 context에서 실제 전체SHA·정적 chunk digest와 실제 tidy4-ID carry→상자 접촉→부재·수동 기억·책48·전등/TV·다크 요일을 확인한다. 모든 운영 mutation/실제 live-state GET/분석 SDK 실행을 차단한다. 출시 후 문서 결과만 로컬에서 마감하여 문서 단독 재배포는 만들지 않는다.
+
+## 출시 확인
+
+제품 `55e150b99eef6f4354aced76a91a7a0435428f31` main push, Vercel success를2026-10-20 02:29 KST에 확인했다. 새 commit author/committer는 둘 다 검증된 공개 GitHub noreply이며 보호 제작기록 원래 해시 유지. 원격 quality39294277761은02:30 KST in_progress였으므로 성공으로 기록하지 않는다.
+
+02:30~02:31 KST 실제 공개 배포의40자리 SHA·정적 chunk 수신10회 SHA256 일치PASS. 이는 서로 다른10개 chunk라는 뜻이 아니라 reload마다 받은 같은 증명 chunk의10회 검사다. 초기 cookies/origins/localStorage 빈 익명 문서, tastes/collection null에서 시작했고 초기 care/성격/RNG/clock/엔진 상태를 주입하지 않았다. 무선택6문서의 성격은 탐험둥이/애교쟁이/탐험둥이/사고뭉치/먹보/재롱둥이(5종). 실제 radio로 재롱둥이 선택→3회 reload 전부 유지, 책48×48px, decoded 대표 동작·전등 기억·수동TV·다크 요일 cal-head 일치PASS.
+
+같은 공개 context의 실제 깔끔이 선택과 네 번 상자 조작으로 얻은 toy-1~4도 각각 실제 연속carry→실제 상자 입구20px 이내→후속 프레임 부재로 전부PASS. 다른ID 대체·직접 삭제/성공 ACK는 쓰지 않았다. root가 완료 PNG와 실제 다크 요일 PNG를 확인했다. 오류0/예상 밖 요청0/운영 mutation0/live-state GET0/private-manifest0. 알려진 익명 저장하트 read POST10회도 차단했고 분석 SDK는 실행하지 않았다. at-run checker/공개 SHA 증명/actual-tidy140 JSON·캡처/native-production-proof는 `.scratch-pw/companion-140/production/55e150b99eef6f4354aced76a91a7a0435428f31/`에 보존한다. 제품은 배포 확인됐고 사후 증거 문서만 로컬 마감한다. 실로그인/RLS/OBS/전문 아트 판정은 이 검증 범위가 아니다.
+
+독립 agent도 운영 전체SHA literal·실제 수신 JS SHA256·빈 초기저장과 네 same-ID 반납/PNG를 재검수해 차단0. 각 ID는28/38/51/63 carried프레임→실제 입구 접촉→각50ms 뒤 제거였고 중간drop0. 네트워크는 모든 nonGET abort·실제 soop-live GET network전 fulfill·분석 SDK20건 차단을 checker와 결과 양쪽에서 확인했다. 원격 quality39294277761은02:32 KST에도 in_progress로, 배포/로컬검수 성공과 구분해 남긴다. 마감 harness341 PASS, 제품 추가 편집0·보호 제작기록 원래 해시 유지.
+
+141 작업 중2026-10-20 KST 재조회: 원격 quality39294277761 completed/success 확인. 위 당시 pending 기록은 당시 관찰로 유지한다.

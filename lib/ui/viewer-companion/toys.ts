@@ -478,7 +478,7 @@ export function createCompanionToyPlanner() {
       if (!route) { fail(now); return; }
       if (route.length) { current.budget--; const step = route[0], speed = getCompanionBehaviorProfile(p, brain.habits).walkSpeed; return { ...step, duration: step.kind === "jump" ? 900 : Math.max(220, Math.abs(step.target.x - world.x) / speed * 1000), pace: current.kind === "play" ? "scoot" : "amble", toy: { serial: current.serial, kind: current.kind } }; }
       if (current.stage === "decline") return { kind: "play", play: "bonk-sad", target: here, duration: 1200, toy: { serial: current.serial, kind: current.kind, effect: "decline", toyId: current.toyId, point: here } };
-      return { kind: "sniff", target: here, duration: 600, toy: { serial: current.serial, kind: current.kind, effect: current.stage === "box" ? "spawn" : current.stage === "deliver" ? "stash" : "pick", toyId: current.toyId, point: here } };
+      return { kind: "sniff", target: here, duration: current.stage === "box" ? 900 : 600, toy: { serial: current.serial, kind: current.kind, effect: current.stage === "box" ? "spawn" : current.stage === "deliver" ? "stash" : "pick", toyId: current.toyId, point: here } };
     },
     resolve(beat: CompanionToyBeat, ok: boolean | string, now: number) {
       if (!job || beat.serial !== job.serial || !beat.effect) return;

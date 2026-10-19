@@ -12,6 +12,15 @@ let output: ReturnType<typeof connectCompanionMedia> = null;
 let request = 0;
 let teardown: (() => void) | null = null;
 let pendingTrackId: string | null = null;
+let humanPriorityUntil = -Infinity;
+type RadioSource = "human" | "companion";
+export const canCompanionSetRadio = () => typeof document !== "undefined" && performance.now() >= humanPriorityUntil;
+function admit(source: RadioSource) {
+  const now = performance.now();
+  if (source === "companion" && now < humanPriorityUntil) return false;
+  if (source === "human") humanPriorityUntil = now + 15000;
+  return true;
+}
 export const getCompanionRadioSnapshot = () => snapshot;
 /** The next real toggle also stops an in-flight play request. Activity uses
  * this same intent rather than mistaking a not-yet-playing request for play. */
@@ -38,7 +47,8 @@ export function companionRadioOutputGain(masterVolume: number, radioVolume: numb
 }
 /** Stop invalidates pending play/resume/decode before releasing listeners and
  * the stream. Nothing resumes automatically after focus, unmute or remount. */
-export function stopCompanionRadio(): void {
+export function stopCompanionRadio(source?: RadioSource | Event): void {
+  if (source === "human") admit("human");
   request++;
   pendingTrackId = null;
   teardown?.(); teardown = null;
@@ -74,7 +84,7 @@ async function play(track: CompanionRadioTrack): Promise<boolean> {
   media.preload = "none";
   output ??= connectCompanionMedia(media);
   if (!output) { stopCompanionRadio(); return false; }
-  media.onended = () => { if (snapshot.playing && allowed()) void nextCompanionRadio(); };
+  media.onended = () => { if (snapshot.playing && allowed()) void nextCompanionRadio("companion"); };
   media.onerror = () => { if (token === request) stopCompanionRadio(); };
   monitor();
   try {
@@ -91,17 +101,33 @@ async function play(track: CompanionRadioTrack): Promise<boolean> {
     return true;
   } catch { if (token === request) stopCompanionRadio(); return false; }
 }
-export function playCompanionRadioTrack(id: string): Promise<boolean> {
+export function playCompanionRadioTrack(id: string, source: RadioSource = "human"): Promise<boolean> {
+  if (!admit(source)) return Promise.resolve(false);
   const track = companionRadioPool().find(item => item.id === id);
   return track ? play(track) : Promise.resolve(false);
 }
-export function nextCompanionRadio(): Promise<boolean> {
+export function nextCompanionRadio(source: RadioSource = "human"): Promise<boolean> {
+  if (!admit(source)) return Promise.resolve(false);
   const pool = companionRadioPool();
   const choices = pool.length > 1 ? pool.filter(track => track.id !== snapshot.trackId) : pool;
   if (!choices.length) { stopCompanionRadio(); return Promise.resolve(false); }
   return play(choices[Math.floor(Math.random() * choices.length)]);
 }
-export function toggleCompanionRadio(): Promise<boolean> {
+export function toggleCompanionRadio(source: RadioSource = "human"): Promise<boolean> {
+  if (!admit(source)) return Promise.resolve(false);
   if (getCompanionRadioToggleIntent() === "stop") { stopCompanionRadio(); return Promise.resolve(false); }
-  return nextCompanionRadio();
+  return nextCompanionRadio(source);
+}
+
+/** Actual companion contact may use the existing audio owner. It never
+ * overrides mute, a human lease, browser autoplay or a canceled scene. */
+export async function setCompanionRadioPlaying(playing: boolean, signal?: AbortSignal): Promise<boolean> {
+  if (!canCompanionSetRadio() || signal?.aborted || playing && !allowed()) return false;
+  if (!playing) { stopCompanionRadio(); return true; }
+  if (snapshot.playing) return true;
+  const pending = nextCompanionRadio("companion"), token = request;
+  const abort = () => { if (token === request) stopCompanionRadio(); };
+  signal?.addEventListener("abort", abort, { once: true });
+  try { return await pending && !signal?.aborted; }
+  finally { signal?.removeEventListener("abort", abort); }
 }

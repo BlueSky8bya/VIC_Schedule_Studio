@@ -71,8 +71,9 @@ describe("125 twenty-four shared toy identities", () => {
   it("learns and acknowledges a late new kind only after actual experiences, while OFF still discovers without a score", () => {
     const store = createCompanionTastesStore();
     expect(store.acknowledge("toy-rocket")).toBe(false); expect(store.load().toys).toEqual([]);
-    store.recordToy("toy-rocket", "taken-out"); expect(companionToyUnread(store.load())).toBe(1); expect(store.load().toyTastes).toEqual({});
+    store.recordToy("toy-rocket", "taken-out"); expect(companionToyUnread(store.load())).toBe(0); expect(store.load().toys).toEqual([]); expect(store.load().toyTastes).toEqual({});
     store.recordToy("toy-rocket", "played"); store.recordToy("toy-rocket", "played");
+    expect(companionToyUnread(store.load())).toBe(1);
     expect(summarizeCompanionToyTastes(store.load()).favorite).toBe("toy-rocket");
     expect(store.acknowledge("toy-rocket")).toBe(true); expect(companionToyUnread(store.load())).toBe(0);
     store.recordToy("train", "played", false); expect(store.load().toys).toContain("train"); expect(store.load().toyTastes.train).toBeUndefined();

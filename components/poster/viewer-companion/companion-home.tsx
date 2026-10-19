@@ -15,6 +15,7 @@ import { HomeWindow } from "./companion-home-window";
 import { companionHomeTvControl, getCompanionHomeTv, getServerCompanionHomeTv, setCompanionHomeTv, subscribeCompanionHomeTv } from "@/lib/ui/viewer-companion/home-room-media";
 import { getCompanionHomeLight, getServerCompanionHomeLight, initializeCompanionHomeLight, setCompanionHomeLight, subscribeCompanionHomeLight } from "@/lib/ui/viewer-companion/home-light";
 import { COMPANION_TV_ART_VIEWBOX, COMPANION_TV_SCREEN_TRANSFORM } from "@/lib/ui/viewer-companion/home-tv-art";
+import { companionCurtainControl, setCompanionCurtainChoice } from "@/lib/ui/viewer-companion/home-curtain-control";
 
 export type CompanionHomeAction = "home" | "feed" | "clearFood" | "radio" | "book";
 type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?: boolean; owner?: string; radioPlaying?: boolean; unreadCollection?: boolean; onAction: (action: CompanionHomeAction) => void; onClose?: () => void; onToyBox?: () => void; toyCount?: number; environment?: CompanionHomeEnvironment; curtain?: CompanionHomeCurtain };
@@ -67,12 +68,14 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
   const lampLit = useSyncExternalStore(subscribeCompanionHomeLight, getCompanionHomeLight, getServerCompanionHomeLight);
   useLayoutEffect(initializeCompanionHomeLight, []);
   const television = companionHomeTvControl(tv);
+  const curtainControl = companionCurtainControl(curtain.phase);
   // Its host already owns the panel FLIP. A tiny entry never resizes the room,
   // repeats on care changes, or creates an autonomous animation loop.
   useLayoutEffect(() => { if (room.current) flipSpring(room.current, "translateY(3px)"); }, []);
   return <PanelSection inert={inactive ? true : undefined} aria-hidden={inactive ? true : undefined} ref={room} title="빅타민 집" sectionKey="companion-home" headingAction="companion-home-fold" collapsible={!onClose} headingData={{ "data-home-action": "fold" }} actions={onClose ? <button type="button" data-home-action="close" data-act="companion-home-close" data-tip="닫기" className="vc-home-close" onClick={onClose} aria-label="빅타민 집 닫기"><X size={15} strokeWidth={1.7} /></button> : undefined} className="vc-home" aria-label="빅타민 집" data-home-presentation={onClose ? "compact" : "panel"} data-size={preferences.size} data-sfx="off" data-pm-exit="5" data-companion-home-owner={owner}>
     <div className="vc-home-room" data-season={environment?.season} data-weather={environment?.weather} data-band={environment?.band} data-phase={resolveCompanionWindowScene(environment).phase} data-night={environment?.night || undefined} data-lamp-lit={lampLit || undefined} data-tv={tv}>
       <HomeWindow environment={environment} curtain={curtain} inactive={inactive} />
+      <button type="button" className="vc-curtain-control" data-home-decoration-control="" data-home-action="curtain" data-act="companion-home-curtain" data-act-opt={curtainControl.next} aria-label={curtainControl.label} data-tip={curtainControl.label} onClick={() => setCompanionCurtainChoice(curtainControl.next)}><span aria-hidden="true" /></button>
       <div className="vc-home-shelf">
       <svg className="vc-home-shelf-art" width="108" height="55" viewBox="0 0 108 55" preserveAspectRatio="none" fill="none" aria-hidden="true" focusable="false">
         <defs>
@@ -96,7 +99,7 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
       <button type="button" className="vc-home-lamp" data-home-decoration-control="" data-home-action="light" data-act="companion-home-light" data-act-opt={lampLit ? "off" : "on"} data-tip={lampLit ? "전등 켜짐 · 누르면 끄기" : "전등 꺼짐 · 누르면 켜기"} aria-label={lampLit ? "전등 켜짐 · 누르면 끄기" : "전등 꺼짐 · 누르면 켜기"} aria-pressed={lampLit} onClick={() => setCompanionHomeLight(!getCompanionHomeLight())}>
         <span className="vc-home-lamp-paint" aria-hidden="true">
           <img src="/companion/home/135/lamp-body.webp" width="200" height="210" alt="" draggable={false} decoding="async" />
-          <svg className="vc-home-lamp-cord" viewBox="0 0 44 58" focusable="false"><path d="M22 35v18" fill="none" stroke="#926039" strokeWidth="1.1" /><circle cx="22" cy="54" r="2.2" fill="#dbab63" stroke="#926039" strokeWidth=".8" /></svg>
+          <svg className="vc-home-lamp-cord" viewBox="0 0 44 58" preserveAspectRatio="none" focusable="false"><path d="M27 0V53" fill="none" stroke="#926039" strokeWidth="1.1" /><circle cx="27" cy="54" r="2.2" fill="#dbab63" stroke="#926039" strokeWidth=".8" /></svg>
           <span className="vc-home-lamp-bulb" />
         </span>
       </button>

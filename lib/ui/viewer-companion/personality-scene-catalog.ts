@@ -12,6 +12,7 @@ export type SceneBeat = (
   | { kind: "go"; target: "pointer" | "sofa" | "floor" | "window" | "pad" | "novel-place" | "toy" | "toy-other-side" | "food" | "box" | "dispenser" }
   | { kind: "tv"; state: CompanionHomeTvState | "next" }
   | { kind: "light"; lit: boolean }
+  | { kind: "radio"; playing: boolean }
   | { kind: "curtain"; phase: "open" | "shade" | "closed" }
   | { kind: "toy"; mode: "play" | "return" | "inspect" | "toss" | "nudge" | "spawn"; kinds?: readonly CompanionToyKind[]; limit?: number }
   | { kind: "food"; mode: "eat" | "tidy" | "inspect" | "compare" | "spawn" }

@@ -15,7 +15,7 @@ describe("shared-world illustrated window pictures", () => {
     for (const season of seasons) for (const band of DAY_BANDS) {
       const input = Object.freeze({ ...base, season, band }), scene = resolveCompanionWindowScene(input);
       expect(scene.phase).toBe(phase[band]); expect(scene.season).toBe(season);
-      expect(scene.landscapeSrc).toBe(`/companion/home/125/window-${season}-${phase[band]}.webp`);
+      expect(scene.landscapeSrc).toBe(`/companion/home/141/window-${season}-${phase[band]}.webp`);
       expect(scene.overlaySrc).toBeNull(); sources.add(scene.landscapeSrc);
     }
     expect(sources.size).toBe(16);
@@ -50,7 +50,7 @@ describe("shared-world illustrated window pictures", () => {
   });
 
   it("has a deterministic initial picture when the shared environment has not arrived", () => {
-    expect(resolveCompanionWindowScene()).toEqual({ season: "spring", weather: "clear", phase: "day", landscapeSrc: "/companion/home/125/window-spring-day.webp", overlaySrc: null });
+    expect(resolveCompanionWindowScene()).toEqual({ season: "spring", weather: "clear", phase: "day", landscapeSrc: "/companion/home/141/window-spring-day.webp", overlaySrc: null });
   });
 
   it("uses the existing fixture's solar representative hours for all four phases in each viewed season", () => {

@@ -102,17 +102,17 @@ export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn
     <div aria-labelledby={`${id}-personality`} hidden={tab !== "personality"} id={`${id}-personality-panel`} role="tabpanel" tabIndex={0}>
       <div className="rhh-group-card rhh-profile-controls">
         <h3 className="rhh-companion-card-title">기본 설정</h3>
-        <div className="role-help-haptics rhh-stack-sm">
+        <div className="role-help-haptics rhh-stack-sm rhh-companion-choice-row">
           <RowLabel icon={<Sparkles size={15} />} tone="leaf">동물 모드</RowLabel>
-          <SettingsSegment ariaLabel="빅타민 동물 모드" dataAct="companion-animal" onChange={animalMode => onChange({ animalMode })} options={[{ value: "default", label: "빅타민" }, { value: "cat", label: "고양이" }, { value: "dog", label: "강아지" }]} value={preferences.animalMode} />
+          <SettingsSegment ariaLabel="빅타민 동물 모드" columns={3} dataAct="companion-animal" onChange={animalMode => onChange({ animalMode })} options={[{ value: "default", label: "빅타민" }, { value: "cat", label: "고양이" }, { value: "dog", label: "강아지" }]} value={preferences.animalMode} />
         </div>
-        <div className="role-help-haptics rhh-stack-sm">
+        <div className="role-help-haptics rhh-stack-sm rhh-companion-choice-row">
           <RowLabel icon={<Sparkles size={15} />} tone="leaf">지금 성격</RowLabel>
-          <SettingsSegment ariaLabel="빅타민 성격" columns={3} dataAct="companion-personality" onChange={personality => onChange({ personality })} onReselect={personality => onChange({ personality })} options={COMPANION_PERSONALITIES.map(value => ({ value, label: COMPANION_PERSONALITY_NAMES[value] }))} value={preferences.personality} />
           <div className="rhh-personality-preview" data-personality-preview={preferences.personality}>
             <CompanionWardrobePreview key={preferences.personality} accessory={null} behaviors={[personalityPreview]} enabled={active && tab === "personality" && preferences.enabled} interactive={false} />
             <div><strong>{COMPANION_PERSONALITY_NAMES[preferences.personality]}</strong><p>{COMPANION_PERSONALITY_SUMMARIES[preferences.personality]}</p></div>
           </div>
+          <SettingsSegment ariaLabel="빅타민 성격" columns={3} dataAct="companion-personality" onChange={personality => onChange({ personality })} onReselect={personality => onChange({ personality })} options={COMPANION_PERSONALITIES.map(value => ({ value, label: COMPANION_PERSONALITY_NAMES[value] }))} value={preferences.personality} />
           <p className="rhh-group-foot">직접 고른 성격은 새로고침 후에도 유지돼요. 고르지 않았다면 새로고침마다 무작위로 정해져요.</p>
         </div>
         {row("learnFromYou", "함께 지내며 배우기", <Heart size={15} />)}

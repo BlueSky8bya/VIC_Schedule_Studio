@@ -29,15 +29,17 @@ const ball = { id: "same-real-ball", kind: "ball" as const, x: 150, y: 600, plat
 const matrixInput = (recipe: PersonalitySceneRecipe): PersonalitySceneInput => {
   const room: Platform = { id: "companion-home-floor", x: 0, y: 600, width: 650, kind: "floor", manualOnly: true };
   const sofa: Platform = { id: "companion-home", x: 0, y: 560, width: 160, kind: "floor" };
+  const pad: Platform = { id: "companion-home-floor-400", x: 500, y: 600, width: 40, kind: "floor", manualOnly: true, bodyOnly: true };
   const novel: Platform = { id: "actual-new-date", x: 700, y: 570, width: 180, kind: "date" };
   const point = (x: number) => ({ x, y: 600, platformId: room.id });
   const kinds = [...new Set(recipe.steps.flatMap(step => step.kind === "toy" ? step.kinds ?? [] : []))];
   if (!kinds.length) kinds.push("ball", "feather");
   if (kinds.length === 1) kinds.push(kinds[0] === "ball" ? "feather" : "ball");
   const scene = input(recipe.personality, {
-    world: { ...world(), platforms: [floor, room, sofa, novel], pointer: { x: 200, y: 600, stableMs: 1000 }, hideAvailable: true,
+    world: { ...world(), platforms: [floor, room, sofa, pad, novel], pointer: { x: 200, y: 600, stableMs: 1000 }, hideAvailable: true,
       foods: [{ id: "real-carrot", kind: "carrot", x: 185, y: 600, platformId: floor.id }, { id: "real-bagel", kind: "bagel", x: 220, y: 600, platformId: floor.id }] },
-    home: { sofa: { x: 80, y: 560, platformId: sofa.id }, floor: point(300), window: point(260), pad: point(520), box: point(470), dispenser: point(400), tv: point(210), light: point(400), curtain: point(260) },
+    home: { sofa: { x: 80, y: 560, platformId: sofa.id }, floor: point(300), window: point(260), pad: { x: 520, y: pad.y, platformId: pad.id }, box: point(470), dispenser: point(400), tv: point(210), light: point(400), curtain: point(260), radio: point(420),
+      contacts: { tv: { x: 210, y: 570 }, light: { x: 400, y: 520 }, curtain: { x: 260, y: 545 }, radio: { x: 420, y: 550 } } },
     toys: kinds.slice(0, 3).map((kind, i) => ({ ...ball, id: `real-${kind}-${i}`, kind, x: 140 + i * 45 })),
     tv: recipe.id === "X-P-house" ? "music" : "nature", canTv: true, lightLit: true, familiarHour: true, learnedMorning: true, equipped: true, hasExperience: true, learnedSocial: true,
     music: { mood: recipe.id === "X-S-music" ? "calm" : "lively", familiar: true },

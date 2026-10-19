@@ -125,7 +125,7 @@ for (const [season, weather] of [['spring', 'rain'], ['summer', 'clear'], ['autu
   await expect(window).toHaveAttribute('data-season', season); await expect(window).toHaveAttribute('data-weather', weather);
   const phase = await window.getAttribute('data-phase');
   expect(['dawn', 'day', 'dusk', 'night']).toContain(phase);
-  await expect(window.locator('.vc-window-landscape')).toHaveAttribute('src', `/companion/home/125/window-${season}-${phase}.webp`);
+  await expect(window.locator('.vc-window-landscape')).toHaveAttribute('src', `/companion/home/141/window-${season}-${phase}.webp`);
   expect(await window.locator('svg').count()).toBe(0);
   await decodedArt(page);
   if (weather === 'rain' || weather === 'snow') await expect(window.locator('.vc-window-weather')).toHaveAttribute('src', `/companion/home/124/window-${weather}-overlay.webp`);

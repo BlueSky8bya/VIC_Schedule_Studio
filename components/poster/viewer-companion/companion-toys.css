@@ -5,6 +5,7 @@
 .vc-toy>.vc-toy-art{display:block;flex:0 0 auto;width:var(--vc-toy-art-width,28px);height:var(--vc-toy-art-height,28px);object-fit:contain;filter:var(--vc-toy-color) drop-shadow(0 2px 1px #5d422528);pointer-events:none;transition:transform var(--dur-spring-smooth) var(--ease-spring)}
 .vc-toy:hover>.vc-toy-art,.vc-toy:focus-visible>.vc-toy-art{transform:scale(1.12)}
 .vc-toy:focus-visible{outline:2px solid var(--accent,#5077aa);outline-offset:-3px;border-radius:12px}
+.vc-toy:where(:hover,:focus):not(:focus-visible){outline:none;box-shadow:none}
 .vc-toy[data-held=true]{cursor:grabbing}
 .vc-toy[data-carried=true]{pointer-events:none}
 .vc-toy:disabled{opacity:1}

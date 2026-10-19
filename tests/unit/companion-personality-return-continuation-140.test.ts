@@ -10,6 +10,7 @@ import { companionToyReturnDelivered, companionToyReturnTarget, sampleCompanionT
 
 const floor: Platform = { id: "companion-home-floor", x: 50, y: 600, width: 740, kind: "floor", manualOnly: true };
 const contact: Platform = { ...floor, id: "companion-home-floor-food", x: 30, width: 780 };
+const pad: Platform = { id: "companion-home-floor-400", x: 580, y: 600, width: 40, kind: "floor", manualOnly: true, bodyOnly: true };
 const loft: Platform = { id: "isolated-high-date", x: 50, y: 100, width: 80, kind: "date" };
 const source = (id: string) => COMPANION_PERSONALITY_SCENES.find(recipe => recipe.id === id)!;
 
@@ -24,10 +25,10 @@ function fixture(count = 4, recipes: readonly PersonalitySceneRecipe[] = COMPANI
   const director = createCompanionPersonalityDirector(recipes), planner = createCompanionToyPlanner(), household = createCompanionHousehold(() => 0);
   const jobs = createCompanionPersonalityJobs(director, household, planner), box = { x: 680, y: floor.y, platformId: floor.id };
   const scene: PersonalitySceneInput = {
-    world: { x: 120, y: floor.y, platformId: floor.id, platforms: [floor, loft], width: 900, height: 720, animated: true, foods: [] },
+    world: { x: 120, y: floor.y, platformId: floor.id, platforms: [floor, loft, pad], width: 900, height: 720, animated: true, foods: [] },
     brain: { ...createBrain(0, () => .5), energy: .9, hunger: .5 },
     preferences: { ...DEFAULT_COMPANION_PREFERENCES, personality, sleep: false, learnFromYou: false }, now: 3000,
-    home: { box, floor: { x: 280, y: floor.y, platformId: floor.id }, pad: { x: 600, y: floor.y, platformId: floor.id }, sofa: { x: 180, y: floor.y, platformId: floor.id } },
+    home: { box, floor: { x: 280, y: floor.y, platformId: floor.id }, pad: { x: 600, y: pad.y, platformId: pad.id }, sofa: { x: 180, y: floor.y, platformId: floor.id } },
     toys: [], tv: "off",
   };
   const originalIds = model.ids(), trace: { scene: string; effect: string; id?: string; count: number }[] = [];

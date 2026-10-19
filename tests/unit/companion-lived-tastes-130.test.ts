@@ -91,6 +91,8 @@ describe("130 bounded lived taste impressions", () => {
     expect(store.recordFoodOutcome(taste, false)).toBe(false);
     expect(store.recordFoodOutcome({ ...taste, food: "apple" })).toBe(false);
     store.recordToy("ball", "tripped", false);
+    expect(store.load().toys).toEqual([]);
+    store.recordToy("ball", "played", false);
     expect(store.load().toys).toEqual(["ball"]); expect(store.load().toyTastes).toEqual({}); expect(store.load().foodTastes).toEqual({}); expect(store.load().reasons).toEqual([]);
     const before = store.load(); for (const delta of [0, -1, NaN, Infinity]) expect(store.advanceActive(delta)).toBe(false);
     expect(store.load()).toEqual(before);
@@ -111,7 +113,7 @@ describe("130 bounded lived taste impressions", () => {
   it("forgets through supplied active buckets only, without reads at each needs sample or elapsed-away debt", () => {
     let raw: string | null = null;
     const disk = { getItem: vi.fn(() => raw), setItem: vi.fn((_key: string, value: string) => { raw = value; }) };
-    const store = createCompanionTastesStore(disk); store.recordToy("ball", "tripped"); store.acknowledge("ball");
+    const store = createCompanionTastesStore(disk); store.recordToy("ball", "played", false); store.recordToy("ball", "tripped"); store.acknowledge("ball");
     const original = store.load(); disk.getItem.mockClear(); disk.setItem.mockClear();
     for (let i = 0; i < 19; i++) expect(store.advanceActive(250)).toBe(false);
     expect(disk.getItem).not.toHaveBeenCalled(); expect(disk.setItem).not.toHaveBeenCalled();

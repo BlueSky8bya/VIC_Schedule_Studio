@@ -30,7 +30,8 @@ const new111Targets = ["companion-profile-page#settings", "companion-rare-prank#
 const new115Targets = ["companion-personality#tidy", "companion-personality#mischievous"];
 const new137Targets = ["companion-personality#curious", "companion-personality#balanced"];
 const new135Targets = ["companion-home-tv#on", "companion-home-tv#off", "companion-home-tv#next", "companion-home-light#on", "companion-home-light#off"];
-const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-shake", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets, ...new110Targets, ...new111Targets, ...new115Targets, ...new135Targets];
+const new141Targets = ["companion-home-curtain#open", "companion-home-curtain#shade", "companion-home-curtain#closed"];
+const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-shake", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets, ...new110Targets, ...new111Targets, ...new115Targets, ...new135Targets, ...new141Targets];
 const retired110Target = "companion-radio-mood#lively";
 const readFixtureTargets = [...sampleTargets, ...new137Targets, retired110Target];
 const at = Date.parse("2026-06-10T03:00:00Z");
@@ -614,7 +615,7 @@ test("110 developer views show book and unified memory uses while old radio mood
   await usage.locator('[data-act="usage-show-all"]').click();
   await page.locator('[data-act="activity-expand-all"]').click();
   await timeline.locator(".act-lines > summary").click();
-  for (const target of [...new110Targets, ...new115Targets, ...new135Targets, ...new137Targets]) {
+  for (const target of [...new110Targets, ...new115Targets, ...new135Targets, ...new137Targets, ...new141Targets]) {
     const name = describeTarget("ui.click", target).name;
     const usageRow = usage.locator('.usage-list:not([data-retired]) > li').filter({ hasText: name }), timelineRow = timeline.getByText(name, { exact: true });
     await usageRow.scrollIntoViewIfNeeded(); await expect(usageRow).toBeInViewport();
@@ -655,14 +656,14 @@ for (const surface of ["viewer", "studio"] as const) test(`113 ${surface}: inspe
   expect(count(page, "companion-collection-inspect#food")).toBe(2);
 });
 
-for (const surface of ["viewer", "studio"] as const) test(`135 ${surface}: TV and lamp pointer-keyboard controls emit one fixed use per activation`, async ({ page }) => {
+for (const surface of ["viewer", "studio"] as const) test(`141 ${surface}: TV lamp and curtain pointer-keyboard controls emit one fixed use per activation`, async ({ page }) => {
   test.setTimeout(60000); await setup(page, surface);
-  const home = await openCompanionHome(page), tv = home.locator('[data-act="companion-home-tv"]'), lamp = home.locator('[data-act="companion-home-light"]');
+  const home = await openCompanionHome(page), tv = home.locator('[data-act="companion-home-tv"]'), lamp = home.locator('[data-act="companion-home-light"]'), curtain = home.locator('[data-act="companion-home-curtain"]');
   // A fresh resident may stand over the TV. Native placement keeps this
   // control-capture test independent of the initial random home position.
   await placeCompanionOnHomeFloor(page);
   const expected: string[] = [], snapshots: unknown[] = [];
-  for (const button of [tv, lamp]) {
+  for (const button of [tv, lamp, curtain]) {
     await expect(button).toHaveCount(1); const box = (await button.boundingBox())!;
     expect(box.width).toBeGreaterThanOrEqual(43.9); expect(box.height).toBeGreaterThanOrEqual(43.9);
     await expect(button).toHaveAttribute('data-home-decoration-control', '');
@@ -678,10 +679,20 @@ for (const surface of ["viewer", "studio"] as const) test(`135 ${surface}: TV an
     const action = await lamp.getAttribute('data-act-opt'); expect(['on', 'off']).toContain(action); expected.push('companion-home-light#' + action);
     await lamp.focus(); await lamp.press(step ? 'Space' : 'Enter'); await expect(lamp).toHaveAttribute('aria-pressed', action === 'on' ? 'true' : 'false');
   }
-  const scoped = () => capture.get(page)!.events.filter(event => /^companion-home-(tv|light)#/.test(event.target ?? ''));
+  const curtainChoices: string[] = [];
+  for (let step = 0; step < 9; step++) {
+    const choice = await curtain.getAttribute('data-act-opt'); expect(['open', 'shade', 'closed']).toContain(choice);
+    curtainChoices.push(choice!); expected.push('companion-home-curtain#' + choice);
+    const input = (step + Math.floor(step / 3)) % 3 === 0 ? 'pointer' : (step + Math.floor(step / 3)) % 3 === 1 ? 'Enter' : 'Space';
+    if (input === 'pointer') await curtain.click(); else { await curtain.focus(); await curtain.press(input); }
+    await expect(home.locator('.vc-home-window')).toHaveAttribute('data-curtain', choice!);
+    snapshots.push({ control: 'curtain', step, input, choice, actual: await home.locator('.vc-home-window').getAttribute('data-curtain') });
+  }
+  for (const choice of ['open', 'shade', 'closed']) expect(curtainChoices.filter(value => value === choice)).toHaveLength(3);
+  const scoped = () => capture.get(page)!.events.filter(event => /^companion-home-(tv|light|curtain)#/.test(event.target ?? ''));
   await expect.poll(() => scoped().map(event => event.target), { timeout: 20000 }).toEqual(expected);
   await page.waitForTimeout(180); expect(scoped().map(event => event.target)).toEqual(expected);
   expect(scoped().every(event => event.meta === null && event.durMs === null)).toBe(true);
-  writeFileSync(`${auditPrefix}-135-${surface}-controls.json`, JSON.stringify({ expected, snapshots, events: scoped(), noSyntheticClockOrCallbacks: true }, null, 2));
-  await home.screenshot({ path: `${auditPrefix}-135-${surface}-controls.png` });
+  writeFileSync(`${auditPrefix}-141-${surface}-controls.json`, JSON.stringify({ expected, snapshots, events: scoped(), noSyntheticClockOrCallbacks: true }, null, 2));
+  await home.screenshot({ path: `${auditPrefix}-141-${surface}-controls.png` });
 });

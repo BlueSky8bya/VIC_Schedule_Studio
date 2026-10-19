@@ -22,9 +22,11 @@ describe("122 witnessed toy discovery and local tastes", () => {
     expect(store.recordToy("ball", "spawn-request" as "played")).toBe(false);
     expect(store.acknowledge("ball")).toBe(false); expect(storage.setItem).not.toHaveBeenCalled();
   });
-  it("discovers successful manual take-out and actual tidying without fabricating a preference", () => {
+  it("collects only completed play, never a spawn, return, refusal or trip on an unknown toy", () => {
     const storage = disk(), store = createCompanionTastesStore(storage);
-    expect(store.recordToy("ball", "taken-out")).toBe(true); expect(store.recordToy("blocks", "tidied")).toBe(true);
+    for (const outcome of ["taken-out", "tidied", "declined", "tripped"] as const) { expect(store.recordToy("ball", outcome)).toBe(false); expect(store.recordToy("blocks", outcome, false)).toBe(false); }
+    expect(store.load().toys).toEqual([]); expect(store.load().reasons).toEqual([]); expect(storage.setItem).not.toHaveBeenCalled();
+    expect(store.recordToy("ball", "played", false)).toBe(true); expect(store.recordToy("blocks", "played", false)).toBe(true);
     expect(store.load().toys).toEqual(["ball", "blocks"]); expect(store.load().toyTastes).toEqual({});
     expect(summarizeCompanionToyTastes(store.load())).toEqual({ favorite: null, disliked: null });
     expect(companionToyUnread(store.load())).toBe(2); expect(store.recordToy("ball", "taken-out")).toBe(false);
@@ -41,7 +43,7 @@ describe("122 witnessed toy discovery and local tastes", () => {
     expect(summarizeCompanionToyTastes(store.load())).toEqual({ favorite: "feather", disliked: null });
   });
   it("acknowledges only an intentionally inspected discovered toy, preserving other unread items", () => {
-    const store = createCompanionTastesStore(); store.recordToy("ball", "taken-out"); store.recordToy("bell", "played");
+    const store = createCompanionTastesStore(); store.recordToy("ball", "played"); store.recordToy("bell", "played");
     const before = store.load(); expect(store.acknowledge("feather")).toBe(false); expect(store.load()).toEqual(before);
     expect(store.acknowledge("bell")).toBe(true); expect(store.acknowledge("bell")).toBe(false);
     expect(companionToyUnread(store.load())).toBe(1); expect(store.load().seen).toEqual(["bell"]);
@@ -73,7 +75,7 @@ describe("122 witnessed toy discovery and local tastes", () => {
     for (const patch of [{ hunger: .9 }, { curiosity: .9 }, { life: { ...life, favoriteFood: "peach" as const } }, { life: { ...life, familiarity: { ...life.familiarity, peach: .1 } } }]) expect(shouldDeclineCompanionFood("peach", before, p, { ...brain, ...patch }, ["peach"])).toBe(false);
   });
   it("resets preferences alone while preserving real discoveries, acknowledgments and unrelated collection storage", () => {
-    const storage = disk(), store = createCompanionTastesStore(storage); store.recordToy("ball", "played"); store.recordToy("bell", "tidied"); store.acknowledge("bell"); store.recordFood("apple", "declined");
+    const storage = disk(), store = createCompanionTastesStore(storage); store.recordToy("ball", "played"); store.recordToy("bell", "played"); store.recordToy("bell", "tidied"); store.acknowledge("bell"); store.recordFood("apple", "declined");
     expect(store.resetPreferences()).toBe(true); expect(store.load()).toEqual({ version: 1, toys: ["ball", "bell"], seen: ["bell"], toyTastes: {}, foodTastes: {}, reasons: [] });
     expect(createCompanionTastesStore(storage).load()).toEqual(store.load()); expect(store.resetPreferences()).toBe(false);
     expect(storage.setItem.mock.calls.every(([key]) => key === COMPANION_TASTES_KEY)).toBe(true);
@@ -87,7 +89,7 @@ describe("122 witnessed toy discovery and local tastes", () => {
   });
   it("preserves newer cross-tab discoveries/acknowledgments and honors an external clear", () => {
     const storage = disk(), first = createCompanionTastesStore(storage), second = createCompanionTastesStore(storage);
-    first.load(); second.load(); first.recordToy("ball", "played"); second.recordToy("bell", "taken-out");
+    first.load(); second.load(); first.recordToy("ball", "played"); second.recordToy("bell", "played", false);
     first.acknowledge("ball"); second.recordToy("bell", "played");
     expect(second.load().toys).toEqual(["ball", "bell"]); expect(first.load().seen).toEqual(["ball"]);
     storage.replace(null); expect(first.load().toys).toEqual([]); expect(second.load().toys).toEqual([]);

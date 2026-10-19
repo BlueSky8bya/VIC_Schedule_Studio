@@ -34,7 +34,7 @@ function fixture(id: string, count = 1, firstKind: CompanionToyKind = "star-wand
   const scene: PersonalitySceneInput = {
     world, brain: { ...createBrain(0, () => .5), life: createCompanionLife(() => 0), hunger: .1, energy: .9 },
     preferences: { ...DEFAULT_COMPANION_PREFERENCES, personality: recipe.personality }, now: 3000,
-    home: { floor: { x: 280, y: floor.y, platformId: floor.id }, sofa: { x: 180, y: floor.y, platformId: floor.id }, window: { x: 500, y: floor.y, platformId: floor.id }, box, dispenser: { x: 600, y: floor.y, platformId: floor.id } },
+    home: { floor: { x: 280, y: floor.y, platformId: floor.id }, sofa: { x: 180, y: floor.y, platformId: floor.id }, window: { x: 500, y: floor.y, platformId: floor.id }, contacts: { curtain: { x: 500, y: floor.y - 45 } }, box, dispenser: { x: 600, y: floor.y, platformId: floor.id } },
     toys: [], tv: "off", favoriteFood: "apple",
   };
   const trace: Trace[] = [], originalIds = toys.ids(), pantry = { x: 500, y: floor.y, platformId: floor.id };

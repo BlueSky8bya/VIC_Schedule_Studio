@@ -146,7 +146,7 @@ describe("actual shared profile navigation callbacks", () => {
     for (const [kind, roll] of [["durian", 0], ["peach", 1]] as const) {
       const taste = evaluateCompanionFoodTaste(kind, life, roll); life = experienceCompanionLife(life, { kind: "fed", food: kind, taste }); store.recordFoodOutcome(taste);
     }
-    store.recordToy("ball", "tripped"); store.recordToy("feather", "played");
+    store.recordToy("ball", "played", false); store.recordToy("ball", "tripped"); store.recordToy("feather", "played");
     harness.states[1] = { ...DEFAULT_COMPANION_MEMORY, life };
     harness.states[2] = { version: 1, foods: ["durian", "peach"], behaviors: [], situations: [], gifts: { pending: null, unlocked: [], equipped: null, activeMs: 0, interactionCredit: 0 } };
     harness.states[4] = store.load(); await render();

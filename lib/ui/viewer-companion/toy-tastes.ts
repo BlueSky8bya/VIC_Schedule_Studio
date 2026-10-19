@@ -119,8 +119,11 @@ export function createCompanionTastesStore(storage?: TasteStorage, notify?: (val
     recordToy(kind: CompanionToyKind, outcome: CompanionToyExperience, learn = true) {
       if (!isCompanionToyKind(kind) || !["taken-out", "played", "tidied", "declined", "tripped"].includes(outcome)) return false;
       refresh();
+      // A spawned/returned/tripped-over object is not a collected toy. Only
+      // the pet's completed, witnessed play ACK may add a new identity; keep
+      // all existing discoveries, including readable older saved histories.
+      if (!memory.toys.includes(kind) && outcome !== "played") return false;
       const next = copy(memory); if (!next.toys.includes(kind)) next.toys = COMPANION_TOY_KINDS.filter(id => id === kind || next.toys.includes(id));
-      // Taking out or putting away proves discovery, never dislike or liking.
       if (learn && (outcome === "played" || outcome === "tripped")) {
         next.toyTastes[kind] = changeTaste(next.toyTastes[kind], outcome === "played");
         remember(next, { domain: "toy", kind, reason: companionToyTasteReason(kind, outcome, outcome === "played" ? next.toyTastes[kind]!.accepted : next.toyTastes[kind]!.tripped ?? 0), age: 0 });

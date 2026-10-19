@@ -9,7 +9,7 @@ const PHASE: Readonly<Record<DayBand, CompanionWindowPhase>> = {
 };
 const WEATHER_OVERLAY: Readonly<Record<Weather, string | null>> = {
   clear: null,
-  // The opaque125 scenes already paint their clouds behind the tree crowns.
+  // The opaque141 scenes already paint their clouds behind the tree crowns.
   // Keep the cloudy lighting grade without washing another cloud over them.
   cloud: null,
   rain: "/companion/home/124/window-rain-overlay.webp",
@@ -25,7 +25,7 @@ export function resolveCompanionWindowScene(environment?: CompanionHomeEnvironme
   const phase = PHASE[environment?.band ?? "noon"];
   return {
     season, weather, phase,
-    landscapeSrc: `/companion/home/125/window-${season}-${phase}.webp`,
+    landscapeSrc: `/companion/home/141/window-${season}-${phase}.webp`,
     overlaySrc: WEATHER_OVERLAY[weather],
   };
 }

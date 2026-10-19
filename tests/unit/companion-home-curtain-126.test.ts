@@ -97,7 +97,7 @@ describe("126 five generated curtain stages", () => {
     const render = (closed: boolean) => renderToStaticMarkup(React.createElement(HomeWindow, { environment: { date: { y: 2026, m: 10, d: 19 }, season: "autumn", weather: "rain", band: "night", night: true, hour: 23 }, curtain: closed ? { ...INITIAL_COMPANION_HOME_CURTAIN, phase: "closed", panelScale: 1 } : INITIAL_COMPANION_HOME_CURTAIN }));
     const open = render(false), closed = render(true);
     for (const html of [open, closed]) {
-      expect(html).toContain('/companion/home/125/window-autumn-night.webp'); expect(html).toContain('/companion/home/124/window-rain-overlay.webp');
+      expect(html).toContain('/companion/home/141/window-autumn-night.webp'); expect(html).toContain('/companion/home/124/window-rain-overlay.webp');
       expect(html).toContain('class="vc-window-crossbar"'); expect(html).toContain('class="vc-window-sill"');
       expect(html.match(/src="\/companion\/home\/126\/curtain-stage-\d.webp"/g)).toHaveLength(5);
       expect(html.match(/loading="lazy"/g)).toHaveLength(7); expect(html).not.toMatch(/<button|data-act=|curtain-panel|scaleX/);

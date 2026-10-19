@@ -198,6 +198,7 @@ html[data-theme="dark"] .vc-home-object-image { opacity: .92; }
   --vc-bed-cloth: #817778; --vc-bed-light: #b5aaa1; --vc-bed-shade: #5c5762; --vc-soft-shadow: #21181045;
 }
 .vc-home-room[data-lamp-lit] { --vc-room-grade: #ba7d2d09; --vc-room-art-grade: 1; --vc-bed-cloth: #c4b6a2; --vc-bed-light: #e7d6bb; --vc-bed-shade: #99887c; }
+.vc-home-room:not([data-lamp-lit]):has(.vc-home-window[data-curtain="closed"]) { --vc-room-grade: #2e203970; --vc-room-art-grade: .65; --vc-bed-cloth: #817778; --vc-bed-light: #b5aaa1; --vc-bed-shade: #5c5762; }
 .vc-home-room :is(.vc-home-shelf, .vc-toy-box, .vc-dispenser, .vc-home-trash, .vc-home-wash-pad, .vc-window-curtain-overlay, .vc-window-sill, .vc-window-crossbar) { filter: brightness(var(--vc-room-art-grade)); }
 .vc-home-room[data-night]:not([data-lamp-lit]) .vc-home-window { background: linear-gradient(110deg, #8d765f, #70563f); border-color: #69513f; }
 .vc-home-room::after { content: ''; position: absolute; z-index: 1; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at 52% 83%, #ffc4793b, transparent 33%); }
@@ -205,10 +206,19 @@ html[data-theme="dark"] .vc-home-object-image { opacity: .92; }
 .vc-home-lamp-light { position: absolute; z-index: 1; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at 59% 9%, #ffe4ad50, #ffcf731c 38%, transparent 75%); transition: opacity var(--dur-2) var(--ease); }
 .vc-home-room[data-lamp-lit] .vc-home-lamp-light { opacity: 1; }
 /* Lamp and feeder share the same native width and horizontal formula. */
-.vc-home-lamp { position: absolute; z-index: 4; top: 0; right: calc(var(--vc-storage-right) + var(--vc-toy-hit) + var(--vc-storage-gap)); width: var(--vc-dispenser-hit); height: max(56px, 16cqw, var(--vc-object-min-hit)); box-sizing: border-box; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; cursor: pointer; }
+.vc-home-lamp { --vc-lamp-paint-width: max(44px, 12cqw); --vc-lamp-cord-height: max(calc(var(--vc-lamp-paint-width) * 58 / 44), calc(var(--vc-room-height) * .4)); position: absolute; z-index: 4; top: 0; right: calc(var(--vc-storage-right) + var(--vc-toy-hit) + var(--vc-storage-gap)); width: var(--vc-dispenser-hit); height: max(56px, var(--vc-lamp-cord-height), var(--vc-object-min-hit)); box-sizing: border-box; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; cursor: pointer; }
 .vc-home-lamp-paint { --vc-lamp-paint-width: max(44px, 12cqw); position: absolute; inset: 0; display: block; pointer-events: none; }
 .vc-home-lamp-paint > img { position: absolute; top: 0; left: 50%; width: var(--vc-lamp-paint-width); height: calc(var(--vc-lamp-paint-width) * 1.05); transform: translateX(-50%); filter: brightness(var(--vc-room-art-grade)); }
-.vc-home-lamp-cord { position: absolute; top: 0; left: 50%; width: var(--vc-lamp-paint-width); height: calc(var(--vc-lamp-paint-width) * 58 / 44); transform: translateX(-50%); }
+.vc-home-lamp-cord { position: absolute; z-index: 0; top: 0; left: 50%; width: var(--vc-lamp-paint-width); height: var(--vc-lamp-cord-height); transform: translateX(-50%); filter: brightness(var(--vc-room-art-grade)); }
+.vc-home-lamp-paint > img { z-index: 1; }
+.vc-home-lamp-bulb { z-index: 2; }
+.vc-curtain-control { position: absolute; z-index: 4; left: calc(var(--vc-window-left) - 3px); top: calc(7px + var(--vc-window-width) * .37); width: var(--vc-object-min-hit); height: max(var(--vc-object-min-hit), calc(var(--vc-room-height) - 266px)); padding: 0; border: 0; border-radius: var(--r-pill); background: transparent; cursor: pointer; }
+.vc-curtain-control > span { position: absolute; left: 17px; top: 4px; width: 2px; height: max(27px, calc(var(--vc-room-height) - 275px)); background: #a57c4c; filter: brightness(var(--vc-room-art-grade)); transform-origin: top; }
+.vc-curtain-control > span::after { content: ''; position: absolute; left: -3px; bottom: -3px; width: 8px; height: 11px; border-radius: 40%; background: #cba66d; border: 1px solid #8b6844; box-shadow: inset 1px 1px #f6e4b966; }
+.vc-curtain-control:hover > span { transform: translateY(2px); filter: brightness(1.1); }
+.vc-curtain-control:active > span { transform: translateY(4px); }
+html .vc-home button:where(:hover, :focus):not(:focus-visible) { outline: none; box-shadow: none; }
+.vc-home button:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: 2px; }
 .vc-home-lamp-bulb { position: absolute; left: calc(50% - 5px); top: calc(var(--vc-lamp-paint-width) * 34 / 44); width: 10px; height: 7px; border-radius: 50%; opacity: 0; background: #fff1bb; box-shadow: 0 0 12px 5px #ffcd6977; }
 .vc-home-room[data-lamp-lit] .vc-home-lamp-bulb { opacity: 1; }
 .vc-home-lamp:not(:disabled):is(:hover, :focus-visible) .vc-home-lamp-paint { filter: brightness(1.1); }

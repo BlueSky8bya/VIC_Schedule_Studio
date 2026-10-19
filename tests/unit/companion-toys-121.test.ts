@@ -246,6 +246,16 @@ describe("shared native toy controller ownership", () => {
     return { ...h, attrs, box, node, event, frame, frames };
   }
 
+  async function carriedPerformance() {
+    const h = await harness(), control = h.ref.current!;
+    const style = { visibility: "visible", display: "block", opacity: "1" };
+    const document = { hidden: false, defaultView: { getComputedStyle: vi.fn(() => style) } }; vi.stubGlobal("document", document);
+    const node = { ownerDocument: document, style: { transform: "" }, dataset: {} as Record<string, string>, hidden: false, isConnected: true, getBoundingClientRect: vi.fn(() => ({ left: 410, top: 330, width: 44, height: 44 })) };
+    (h.button.props.ref as (node: unknown) => void)(node);
+    control.tick(1800); const actual = control.available()[0]; h.onExperience.mockClear();
+    return { ...h, control, node, actual, document, style };
+  }
+
   it("highlights the real box under pointer capture and returns only at the same measured release boundary", async () => {
     const h = await heldOverBox();
     (h.button.props.onPointerMove as (event: unknown) => void)(h.event(491.99, 292)); h.frame(); expect(h.attrs.has("data-toy-over")).toBe(false);
@@ -369,6 +379,13 @@ describe("shared native toy controller ownership", () => {
   });
   it("records only observed completed real play/refusal acknowledgements, never generic put or cancelled playback", async () => {
     const h = await harness(), control = h.ref.current!;
+    vi.stubGlobal("document", { hidden: false });
+    const rect = { left: 410, top: 330, width: 44, height: 44 };
+    const node = { style: { transform: "" }, dataset: {} as Record<string, string>, hidden: false, isConnected: true, getBoundingClientRect: vi.fn(() => rect) };
+    (h.button.props.ref as (node: unknown) => void)(node);
+    // A unit DOM node with its own measured rectangle. The completion source
+    // must use this displayed centroid, rather than the model's floor point.
+    const source = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
     control.tick(1800); let actual = control.available()[0];
     expect(h.onExperience.mock.calls).toEqual([["ball", "taken-out"]]); h.onExperience.mockClear();
     expect(control.pick(actual.id, actual)).toBe(true); expect(control.put(actual.id, actual, 2000)).toBe(true);
@@ -379,13 +396,73 @@ describe("shared native toy controller ownership", () => {
     control.cancel(2200); control.completePlay(actual.id); expect(h.onExperience).not.toHaveBeenCalled();
     expect(control.pick(actual.id, actual)).toBe(true); expect(control.put(actual.id, actual, 2300, false, true)).toBe(true);
     control.completePlay(actual.id); control.completePlay(actual.id);
-    expect(h.onExperience.mock.calls).toEqual([["ball", "played"]]);
+    expect(h.onExperience.mock.calls).toEqual([["ball", "played", source]]);
     expect(control.decline(actual.id, { x: actual.x - 200, y: actual.y }, 2400)).toBe(false);
     expect(control.decline(actual.id, actual, 2400)).toBe(true); expect(control.moving()).toBe(true);
     control.completePlay(actual.id); control.completePlay(actual.id);
-    expect(h.onExperience.mock.calls).toEqual([["ball", "played"], ["ball", "declined"]]);
+    expect(h.onExperience.mock.calls).toEqual([["ball", "played", source], ["ball", "declined", source]]);
     control.tick(4000); actual = control.available()[0]; expect(actual).toBeDefined();
     expect(control.pick(actual.id, actual)).toBe(true); expect(control.stash(actual.id)).toBe(true);
     expect(h.onExperience.mock.calls.at(-1)).toEqual(["ball", "tidied"]);
+  });
+  it.each(["hidden-document", "detached-node", "hidden-node", "empty-rectangle"] as const)("consumes a pending ACK without discovery when its actual presentation is %s", async boundary => {
+    const h = await harness(), control = h.ref.current!;
+    const document = { hidden: false }; vi.stubGlobal("document", document);
+    const node = { style: { transform: "" }, dataset: {} as Record<string, string>, hidden: false, isConnected: true, getBoundingClientRect: vi.fn(() => ({ left: 410, top: 330, width: boundary === "empty-rectangle" ? 0 : 44, height: 44 })) };
+    (h.button.props.ref as (node: unknown) => void)(node);
+    control.tick(1800); const actual = control.available()[0]; h.onExperience.mockClear();
+    expect(control.pick(actual.id, actual)).toBe(true); expect(control.put(actual.id, actual, 2000, false, true)).toBe(true);
+    if (boundary === "hidden-document") document.hidden = true;
+    if (boundary === "detached-node") node.isConnected = false;
+    if (boundary === "hidden-node") node.hidden = true;
+    control.completePlay(actual.id); expect(h.onExperience).not.toHaveBeenCalled();
+    document.hidden = node.hidden = false; node.isConnected = true;
+    node.getBoundingClientRect.mockReturnValue({ left: 410, top: 330, width: 44, height: 44 });
+    control.completePlay(actual.id); expect(h.onExperience).not.toHaveBeenCalled();
+  });
+  it("records one observed authored carried performance per real pickup, using the current displayed centroid", async () => {
+    const h = await carriedPerformance(), { control, actual } = h;
+    expect(control.completeCarriedPlay(actual.id, true)).toBe(false);
+    expect(control.pick(actual.id, actual)).toBe(true);
+    expect(control.completeCarriedPlay("missing-id", true)).toBe(false);
+    control.completePlay(actual.id, true); expect(h.onExperience).not.toHaveBeenCalled();
+    expect(control.completeCarriedPlay(actual.id, true)).toBe(true);
+    expect(control.completeCarriedPlay(actual.id, true)).toBe(false);
+    expect(h.onExperience.mock.calls).toEqual([["ball", "played", { x: 432, y: 352 }]]);
+    expect(control.carried()).toBe(actual.id); expect(h.node.getBoundingClientRect).toHaveBeenCalledOnce();
+    expect(control.put(actual.id, actual, 2200)).toBe(true);
+    expect(control.pick(actual.id, actual)).toBe(true);
+    expect(control.completeCarriedPlay(actual.id, true)).toBe(true);
+    expect(h.onExperience).toHaveBeenCalledTimes(2);
+  });
+  it("does not turn an unwitnessed carried performance into a later replayed discovery", async () => {
+    const h = await carriedPerformance(); expect(h.control.pick(h.actual.id, h.actual)).toBe(true);
+    expect(h.control.completeCarriedPlay(h.actual.id, false)).toBe(false);
+    expect(h.control.completeCarriedPlay(h.actual.id, true)).toBe(false);
+    expect(h.onExperience).not.toHaveBeenCalled(); expect(h.node.getBoundingClientRect).not.toHaveBeenCalled();
+  });
+  it.each(["cancel", "pause", "put", "stash", "native-hold", "blocked"] as const)("revokes a carried performance after %s without inventing completed play", async boundary => {
+    const h = await carriedPerformance(), { control, actual } = h; expect(control.pick(actual.id, actual)).toBe(true);
+    if (boundary === "cancel") control.cancel(2000);
+    if (boundary === "pause") control.pause(2000);
+    if (boundary === "put") expect(control.put(actual.id, actual, 2000)).toBe(true);
+    if (boundary === "stash") expect(control.stash(actual.id)).toBe(true);
+    if (boundary === "native-hold") (h.button.props.onKeyDown as (event: unknown) => void)({ key: "Enter", preventDefault: vi.fn(), stopPropagation: vi.fn() });
+    if (boundary === "blocked") h.render(true);
+    expect(control.completeCarriedPlay(actual.id, true)).toBe(false);
+    expect(h.onExperience.mock.calls.filter(([, outcome]) => outcome === "played")).toEqual([]);
+  });
+  it.each(["document-hidden", "detached", "node-hidden", "css-hidden", "transparent", "empty"] as const)("rejects a carried completion with %s actual presentation and cannot replay it after recovery", async boundary => {
+    const h = await carriedPerformance(), { control, actual } = h; expect(control.pick(actual.id, actual)).toBe(true);
+    if (boundary === "document-hidden") h.document.hidden = true;
+    if (boundary === "detached") h.node.isConnected = false;
+    if (boundary === "node-hidden") h.node.hidden = true;
+    if (boundary === "css-hidden") h.style.visibility = "hidden";
+    if (boundary === "transparent") h.style.opacity = "0";
+    if (boundary === "empty") h.node.getBoundingClientRect.mockReturnValue({ left: 410, top: 330, width: 0, height: 44 });
+    expect(control.completeCarriedPlay(actual.id, true)).toBe(false);
+    h.document.hidden = h.node.hidden = false; h.node.isConnected = true; h.style.visibility = "visible"; h.style.opacity = "1";
+    h.node.getBoundingClientRect.mockReturnValue({ left: 410, top: 330, width: 44, height: 44 });
+    expect(control.completeCarriedPlay(actual.id, true)).toBe(false); expect(h.onExperience).not.toHaveBeenCalled();
   });
 });
