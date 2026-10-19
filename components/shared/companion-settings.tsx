@@ -107,12 +107,13 @@ export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn
           <SettingsSegment ariaLabel="빅타민 동물 모드" dataAct="companion-animal" onChange={animalMode => onChange({ animalMode })} options={[{ value: "default", label: "빅타민" }, { value: "cat", label: "고양이" }, { value: "dog", label: "강아지" }]} value={preferences.animalMode} />
         </div>
         <div className="role-help-haptics rhh-stack-sm">
-          <RowLabel icon={<Sparkles size={15} />} tone="leaf">기본 성격</RowLabel>
+          <RowLabel icon={<Sparkles size={15} />} tone="leaf">지금 성격</RowLabel>
           <SettingsSegment ariaLabel="빅타민 성격" columns={3} dataAct="companion-personality" onChange={personality => onChange({ personality })} options={COMPANION_PERSONALITIES.map(value => ({ value, label: COMPANION_PERSONALITY_NAMES[value] }))} value={preferences.personality} />
           <div className="rhh-personality-preview" data-personality-preview={preferences.personality}>
             <CompanionWardrobePreview key={preferences.personality} accessory={null} behaviors={[personalityPreview]} enabled={active && tab === "personality" && preferences.enabled} interactive={false} />
             <div><strong>{COMPANION_PERSONALITY_NAMES[preferences.personality]}</strong><p>{COMPANION_PERSONALITY_SUMMARIES[preferences.personality]}</p></div>
           </div>
+          <p className="rhh-group-foot">새로고침마다 성격을 무작위로 골라요. 직접 고른 성격은 다음 새로고침까지 유지돼요.</p>
         </div>
         {row("learnFromYou", "함께 지내며 배우기", <Heart size={15} />)}
       </div>

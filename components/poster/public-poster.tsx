@@ -1806,6 +1806,9 @@ export function PublicPoster({
         cur = next;
         const t = next > 0 ? `translateY(${next}px)` : "";
         for (const node of group) node.style.transform = t;
+        // The room shares this rail. Publish the committed native translation
+        // so its fixed resident/front adopt it before this frame is painted.
+        window.dispatchEvent(new CustomEvent("vic:layout-motion", { detail: { element: parent, ms: 180 } }));
       }
     };
     const schedule = () => {

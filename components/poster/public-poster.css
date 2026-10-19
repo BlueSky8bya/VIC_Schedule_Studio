@@ -5148,11 +5148,12 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   align-items: center;
-  border: 1px solid #efe9dd;
+  border: 1px solid var(--cal-grid-line);
   border-top: 0;
   border-radius: 0 0 var(--r-card) var(--r-card);
-  background: #fbf7ee;
-  box-shadow: 0 6px 14px rgb(120 90 60 / 12%);
+  background: var(--cal-head);
+  color: var(--ink);
+  box-shadow: var(--elev-2);
   font-weight: 800;
   letter-spacing: 0.05em;
   text-align: center;

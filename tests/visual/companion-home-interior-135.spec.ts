@@ -83,7 +83,7 @@ async function geometry(home: Locator) {
       const x = r.x + (r.width - canvas.width * scale) / 2, y = r.bottom - canvas.height * scale;
       return { x: x + x0 * scale, y: y + y0 * scale, right: x + x1 * scale, bottom: y + y1 * scale };
     };
-    const chest = painted(".vc-toy-box > img"), bin = painted(".vc-home-trash > img"), pad = painted(".vc-home-wash-pad > img");
+    const chest = painted(".vc-toy-box > img"), feeder = painted(".vc-dispenser-paint"), bin = painted(".vc-home-trash > img"), pad = painted(".vc-home-wash-pad > img");
     const expectedPad = { x: (Math.max(chest.x, bin.x) + Math.min(chest.right, bin.right)) / 2, y: (Math.max(chest.y, bin.y) + Math.min(chest.bottom, bin.bottom)) / 2 };
     const controls = [...room.querySelectorAll<HTMLButtonElement>("button[data-home-action]")].filter(node => !node.disabled).map(node => {
       const r = box(node), points = [[r.x + 2, r.y + r.height / 2], [r.right - 2, r.y + r.height / 2], [r.x + r.width / 2, r.y + 2], [r.x + r.width / 2, r.bottom - 2]];
@@ -94,7 +94,7 @@ async function geometry(home: Locator) {
     const transform = new DOMMatrix().translate(parseFloat(paintStyle.width) / 2, 0).multiply(new DOMMatrix(paintStyle.transform));
     const body = room.querySelector(".vc-home-tv-body")!;
     return { room: box(room), cssWidth: parseFloat(getComputedStyle(room).width), cssHeight: parseFloat(getComputedStyle(room).height),
-      controls, chest, bin, pad, expectedPad, tvAngle: Math.atan2(transform.m31, transform.m11) * 180 / Math.PI,
+      controls, chest, feeder, bin, pad, expectedPad, tvAngle: Math.atan2(transform.m31, transform.m11) * 180 / Math.PI,
       tv: box(room.querySelector(".vc-home-tv")!), sofa: box(room.querySelector(".vc-cushion-button")!), bodySrc: body.getAttribute("src"),
       floor: box(room.querySelector(".vc-home-floor")!), seat: box(room.querySelector(".vc-home-cushion")!),
       floorLightOpacity: getComputedStyle(room, "::before").opacity,
@@ -131,7 +131,10 @@ for (const [surface, width, night, reduced] of [["viewer", 1440, false, false], 
     expect(data.bodySrc).toBe("/companion/home/136/tv-body.webp");
     expect(Math.abs((data.pad.x + data.pad.right) / 2 - data.expectedPad.x)).toBeLessThan(1.5);
     expect(Math.abs((data.pad.y + data.pad.bottom) / 2 - data.expectedPad.y)).toBeLessThan(1.5);
-    expect(data.chest.bottom).toBeCloseTo(data.floor.y, 0);
+    //138 moves the back-row storage together onto the illustrated floor.
+    expect(Math.abs(data.chest.bottom - data.feeder.bottom)).toBeLessThan(1.5);
+    expect(data.chest.bottom).toBeGreaterThan(data.floor.y);
+    expect(data.chest.bottom).toBeLessThan(data.floor.bottom);
     expect(data.seat.width).toBeGreaterThan(0); expect(data.outlet.width).toBeGreaterThan(0); expect(data.opening.width).toBeGreaterThan(0);
     await expect(home.locator(".vc-window-curtain-stage")).toHaveCount(5);
     if (surface === "studio") {

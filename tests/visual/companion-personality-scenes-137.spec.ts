@@ -60,17 +60,20 @@ test.afterEach(async ({ page }, info) => {
 async function fixture(page: Page, surface: Surface, options: { personality?: CompanionPersonality; summer?: boolean; roam?: boolean; reduced?: boolean; gfxOff?: boolean; hunger?: number } = {}) {
   await page.addInitScript(({ preferences, memory, epoch, epochKey, options }) => {
     for (const [key, value] of Object.entries({ [epochKey]: epoch, "vic.gfxPref": options.gfxOff ? "off" : "max", "vic.gfx": JSON.stringify({ mode: options.gfxOff ? "off" : "full", at: Date.now(), v: 3 }), "vic.sound": "off", "vic.ambient": "off", "vic.reduceMotion": options.reduced ? "on" : "off", "vic.dark": "off", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(key, value);
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, activeWhileVisible: true, personality: options.personality ?? "balanced", roam: options.roam ?? true, sleep: false, feeding: true, sound: false, learnFromYou: false, heartPrank: false, cardPrank: false, panelPrank: false, rarePrank: false }));
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, activeWhileVisible: true, personality: options.personality ?? "balanced", roam: options.personality ? false : options.roam ?? true, sleep: false, feeding: true, sound: false, learnFromYou: false, heartPrank: false, cardPrank: false, panelPrank: false, rarePrank: false }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...memory, energy: .9, hunger: options.hunger ?? .05 }));
   }, { preferences: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, options });
   await page.goto(surface === "viewer" ? "/visual-fixture/poster?avatar=1" : `/visual-fixture/studio?role=owner&y=2025&m=${options.summer ? 7 : 10}&hour=${options.summer ? 12 : 21}&weather=clear`);
   await page.bringToFront(); await settlePanelLayout(page);
   if (surface === "preview") { await page.locator(".io-preview").click(); await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible(); await settlePanelLayout(page); }
   await expect(page.locator(".vc-companion")).toBeVisible(); await page.evaluate(() => document.fonts.ready);
+  //138 randomizes the first document personality. Deterministic scenario
+  // preconditions use the real settings radio rather than seeded personality.
+  if (options.personality) await selectNative(page, options.personality, options.roam ?? true);
   return openCompanionHome(page);
 }
 
-async function selectNative(page: Page, personality: CompanionPersonality) {
+async function selectNative(page: Page, personality: CompanionPersonality, roam?: boolean) {
   const home = await openCompanionHome(page);
   const book = home.getByRole("button", { name: "빅타민 수첩 열기", exact: true });
   await expect(book).toBeVisible(); await book.click();
@@ -78,7 +81,13 @@ async function selectNative(page: Page, personality: CompanionPersonality) {
   await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
   const group = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true });
   await expect(group.getByRole("radio")).toHaveCount(9);
-  const option = group.getByRole("radio", { name: COMPANION_PERSONALITY_NAMES[personality], exact: true }); await option.click(); await expect(option).toHaveAttribute("aria-checked", "true");
+  const option = group.getByRole("radio", { name: COMPANION_PERSONALITY_NAMES[personality], exact: true });
+  if (await option.getAttribute("aria-checked") === "true") await group.locator('[role="radio"][aria-checked="false"]').first().click();
+  await option.click(); await expect(option).toHaveAttribute("aria-checked", "true");
+  if (roam !== undefined) {
+    await dialog.getByRole("tab", { name: "움직임", exact: true }).click();
+    await dialog.locator('[data-act="companion-roam"]').setChecked(roam);
+  }
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden();
   await page.mouse.move(2, 2); await startProbe(page);
   return page.locator(".vc-companion");

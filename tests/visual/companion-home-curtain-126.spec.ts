@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
+import { chooseCompanionPersonality, openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 
 const output = process.env.COMPANION_CURTAIN_126_OUTPUT ?? ".scratch-pw/companion-126/curtains";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
@@ -53,6 +53,7 @@ async function fixture(page: Page, personality: "curious" | "sleepy", hour: numb
   await page.goto(`/visual-fixture/studio?role=owner&y=2025&m=7&ambient=summer&weather=${weather}&hour=${hour}`);
   await page.bringToFront(); await page.evaluate(() => document.fonts.ready);
   await expect(page.locator(".vc-companion")).toBeVisible();
+  await chooseCompanionPersonality(page, personality);
   const room = await openCompanionHome(page); await placeCompanionOnHomeFloor(page);
   await room.locator(".vc-home-window img").evaluateAll(images => Promise.all(images.map(image => (image as HTMLImageElement).decode())));
   const windowView = room.locator(".vc-home-window"), layers = windowView.locator(".vc-window-curtain-stage");

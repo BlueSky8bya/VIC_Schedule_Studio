@@ -10,9 +10,10 @@ beforeEach(() => {
     setItem: (key: string, value: string) => { entries.set(key, value); }
   } });
   vi.stubGlobal("window", browser);
+  vi.spyOn(Math, "random").mockReturnValue(1.5 / 9);
   getCompanionPreferences();
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("viewer companion device preferences", () => {
   it("keeps the live world stable for sound-only changes and invalidates it for every world choice", () => {
@@ -34,17 +35,18 @@ describe("viewer companion device preferences", () => {
     vi.stubGlobal("window", undefined);
     expect(getCompanionPreferences()).toEqual(DEFAULT_COMPANION_PREFERENCES);
   });
-  it("preserves an explicit saved OFF and every detailed choice across rereads, remount and legacy-size migration", () => {
+  it("preserves saved OFF and detailed choices while the current document owns personality", () => {
     const chosen = { ...DEFAULT_COMPANION_PREFERENCES, enabled: false, jump: false, feeding: false, learnFromYou: false, personality: "sleepy" as const, animalMode: "cat" as const, speed: "relaxed" as const };
     entries.set(COMPANION_PREFERENCES_KEY, JSON.stringify({ version: 1, ...chosen, size: "small" }));
-    expect(getCompanionPreferences()).toEqual(chosen);
-    expect(getCompanionPreferences()).toEqual(chosen);
+    const current = { ...chosen, personality: "curious" };
+    expect(getCompanionPreferences()).toEqual(current);
+    expect(getCompanionPreferences()).toEqual(current);
     const remounted = Object.assign(new EventTarget(), { localStorage: browser.localStorage });
     vi.stubGlobal("window", remounted);
-    expect(getCompanionPreferences()).toEqual(chosen);
+    expect(getCompanionPreferences()).toEqual(current);
     setCompanionPreferences({ heartPrank: false });
-    expect(getCompanionPreferences()).toEqual({ ...chosen, heartPrank: false });
-    expect(JSON.parse(entries.get(COMPANION_PREFERENCES_KEY)!)).toEqual({ version: 1, ...chosen, heartPrank: false });
+    expect(getCompanionPreferences()).toEqual({ ...current, heartPrank: false });
+    expect(JSON.parse(entries.get(COMPANION_PREFERENCES_KEY)!)).toEqual({ version: 1, ...current, heartPrank: false });
   });
   it("uses ON for a valid legacy record's missing master field while retaining its other settings", () => {
     entries.set(COMPANION_PREFERENCES_KEY, JSON.stringify({ version: 1, jump: false, speed: "lively", animalMode: "dog", learnFromYou: false }));
@@ -95,9 +97,9 @@ describe("viewer companion device preferences", () => {
   });
   it("extends version1 preferences without resetting existing choices", () => {
     entries.set(COMPANION_PREFERENCES_KEY, JSON.stringify({ version: 1, enabled: true, roam: false, personality: "sleepy", size: "small" }));
-    expect(getCompanionPreferences()).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, personality: "sleepy", size: "large", animalMode: "default", feeding: true });
+    expect(getCompanionPreferences()).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, personality: "curious", size: "large", animalMode: "default", feeding: true });
     setCompanionPreferences({ animalMode: "dog", feeding: false });
-    expect(getCompanionPreferences()).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, personality: "sleepy", size: "large", animalMode: "dog", feeding: false });
+    expect(getCompanionPreferences()).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, personality: "curious", size: "large", animalMode: "dog", feeding: false });
   });
   it("migrates the card prank to ON and keeps an explicit OFF independently of play and other pranks", () => {
     entries.set(COMPANION_PREFERENCES_KEY, JSON.stringify({ version: 1, enabled: true, jump: false, heartPrank: false }));
@@ -214,11 +216,11 @@ describe("viewer companion device preferences", () => {
     setCompanionPreferences({ heartPrank: false });
     expect(JSON.parse(entries.get(COMPANION_PREFERENCES_KEY)!)).toEqual({ version: 1, ...DEFAULT_COMPANION_PREFERENCES, enabled: true, speed: "lively", petting: false, heartPrank: false });
   });
-  it("lets external stored changes supersede a failed-write override", () => {
+  it("lets external ordinary settings supersede failed writes without replacing this document's personality", () => {
     browser.localStorage.setItem = () => { throw new Error("quota exceeded"); };
     setCompanionPreferences({ enabled: true, jump: false });
-    entries.set(COMPANION_PREFERENCES_KEY, JSON.stringify({ version: 1, ...DEFAULT_COMPANION_PREFERENCES, personality: "sleepy" }));
-    expect(getCompanionPreferences()).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, personality: "sleepy" });
+    entries.set(COMPANION_PREFERENCES_KEY, JSON.stringify({ version: 1, ...DEFAULT_COMPANION_PREFERENCES, enabled: false, personality: "sleepy" }));
+    expect(getCompanionPreferences()).toEqual({ ...DEFAULT_COMPANION_PREFERENCES, enabled: false });
   });
   it("honors another tab's explicit reset even while stale saved bytes are unchanged", () => {
     const listener = vi.fn();
@@ -238,8 +240,8 @@ describe("viewer companion device preferences", () => {
     browser.localStorage.getItem = () => { throw new Error("storage denied"); };
     const external = { ...DEFAULT_COMPANION_PREFERENCES, size: "large", personality: "sleepy" } as const;
     browser.dispatchEvent(Object.assign(new Event("storage"), { key: COMPANION_PREFERENCES_KEY, newValue: JSON.stringify({ version: 1, ...external }) }));
-    expect(listener).toHaveBeenLastCalledWith(external);
-    expect(getCompanionPreferences()).toEqual(external);
+    expect(listener).toHaveBeenLastCalledWith({ ...external, personality: "curious" });
+    expect(getCompanionPreferences()).toEqual({ ...external, personality: "curious" });
     stop();
   });
   it("returns copies so callers cannot mutate the saved defaults or other consumers", () => {

@@ -82,7 +82,10 @@ for (const [surface, width] of [["viewer", 1440], ["studio", 1100], ["studio", 1
 test("136 seated sofa front/back and curtains share both light states and the same hover response", async ({ page }) => {
   await seed(page, true); await page.goto("/visual-fixture/studio?role=owner&y=2025&m=10&hour=23&weather=clear");
   const home = await opened(page), room = home.locator(".vc-home-room"), lamp = home.locator(".vc-home-lamp"), foreground = page.locator(".vc-bed-foreground");
-  await placeCompanionOnHomeFloor(page); await home.locator('[data-home-action="home"]').click(); await page.mouse.move(2, 2);
+  await placeCompanionOnHomeFloor(page);
+  //138's lower sofa overlaps the resident's floor placement at its centre.
+  // Enter through the native keyboard control before comparing hover paint.
+  const sofa = home.locator('[data-home-action="home"]'); await sofa.focus(); await sofa.press("Enter"); await page.mouse.move(2, 2);
   await expect(page.locator(".vc-companion")).toHaveAttribute("data-platform", "companion-home", { timeout: 20000 });
   await expect(foreground).toBeVisible();
   const materials = () => page.evaluate(() => {

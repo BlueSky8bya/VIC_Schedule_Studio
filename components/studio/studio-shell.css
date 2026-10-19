@@ -5965,7 +5965,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   margin-bottom: 8px;
   border: 1px solid var(--studio-line);
   border-radius: var(--r-card);
-  background: linear-gradient(180deg, #fdf1fb, #eef3ff);
+  background: var(--cal-head);
   overflow: hidden;
   box-shadow: var(--elev-2);
 }

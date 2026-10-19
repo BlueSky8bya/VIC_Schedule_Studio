@@ -11,15 +11,18 @@
 /* ── 시청자 포스터 ─────────────────────────────────────────────────────────── */
 /* 요일 머리글·날짜 숫자 — 주말 색은 색상은 유지하고 밝기만 올린다(빨강·파랑의 뜻이 사라지면 안 된다). */
 html[data-theme="dark"] .weekday-row span,
+html[data-theme="dark"] .weekday-stick span,
 html[data-theme="dark"] .public-day .day-strip strong {
   color: var(--ink);
 }
 html[data-theme="dark"] .weekday-row .sunday,
+html[data-theme="dark"] .weekday-stick .sunday,
 html[data-theme="dark"] .public-day strong.red,
 html[data-theme="dark"] .day-mark {
   color: #ff8a80;
 }
 html[data-theme="dark"] .weekday-row .saturday,
+html[data-theme="dark"] .weekday-stick .saturday,
 html[data-theme="dark"] .public-day strong.saturday {
   color: #7fb0ff;
 }

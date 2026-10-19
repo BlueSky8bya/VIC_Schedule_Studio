@@ -79,6 +79,19 @@ export function companionWorldPreferencesKey(preferences: Readonly<CompanionPref
 let volatilePreferences: CompanionPreferences | undefined;
 let lastReadableRaw: string | null | undefined;
 let unwritten: { raw: string | null | undefined; owner: Window } | undefined;
+const documentPersonalities = new WeakMap<Window, CompanionPersonality>();
+
+/** One independent choice per document, shared by every same-page consumer.
+ * Full navigation/refresh creates a new module/document; remounts and preview
+ * transitions do not. This never writes storage or emits a human action. */
+function withDocumentPersonality(preferences: Readonly<CompanionPreferences>): CompanionPreferences {
+  let personality = documentPersonalities.get(window);
+  if (!personality) {
+    const draw = Math.random(), index = Number.isFinite(draw) ? Math.max(0, Math.min(COMPANION_PERSONALITIES.length - 1, Math.floor(draw * COMPANION_PERSONALITIES.length))) : 0;
+    personality = COMPANION_PERSONALITIES[index]; documentPersonalities.set(window, personality);
+  }
+  return { ...preferences, personality };
+}
 
 /** Explicit allowlist: malformed patches keep the current/default choices.
  * Saved malformed configuration has its own conservative OFF fallback below. */
@@ -112,13 +125,15 @@ export function getCompanionPreferences(): CompanionPreferences {
   if (typeof window === "undefined") return { ...DEFAULT_COMPANION_PREFERENCES };
   let raw: string | null;
   try { raw = window.localStorage.getItem(COMPANION_PREFERENCES_KEY); }
-  catch { return { ...(volatilePreferences ?? DEFAULT_COMPANION_PREFERENCES) }; }
+  catch { return withDocumentPersonality(volatilePreferences ?? DEFAULT_COMPANION_PREFERENCES); }
   lastReadableRaw = raw;
   // A quota failure can leave readable but stale bytes behind. Keep this tab's
   // latest choices until a write succeeds or the stored bytes actually change.
-  if (unwritten?.owner === window && (unwritten.raw === undefined || unwritten.raw === raw)) return { ...(volatilePreferences ?? DEFAULT_COMPANION_PREFERENCES) };
+  if (unwritten?.owner === window && (unwritten.raw === undefined || unwritten.raw === raw)) return withDocumentPersonality(volatilePreferences ?? DEFAULT_COMPANION_PREFERENCES);
   unwritten = undefined;
-  volatilePreferences = parseStoredPreferences(raw);
+  // The saved record still owns every ordinary switch, including master OFF.
+  // Its previous personality never pins the next document's fresh choice.
+  volatilePreferences = withDocumentPersonality(parseStoredPreferences(raw));
   return { ...volatilePreferences };
 }
 
@@ -126,6 +141,9 @@ export function getCompanionPreferences(): CompanionPreferences {
 export function setCompanionPreferences(patch: Partial<CompanionPreferences>): CompanionPreferences {
   const next = normalizeCompanionPreferences(patch, getCompanionPreferences());
   if (typeof window === "undefined") return next;
+  // Direct selection takes effect immediately throughout this document and
+  // survives later setting changes/remounts, until the next full refresh.
+  documentPersonalities.set(window, next.personality);
   volatilePreferences = next;
   try {
     const raw = JSON.stringify({ version: 1, ...next });
@@ -139,10 +157,11 @@ export function setCompanionPreferences(patch: Partial<CompanionPreferences>): C
   return { ...next };
 }
 
-/** Same tab, studio preview and other tabs all observe the same preference. */
+/** Same-page consumers share the current personality. Other documents still
+ * synchronize ordinary settings, without replacing their own personality. */
 export function subscribeCompanionPreferences(listener: (preferences: CompanionPreferences) => void): () => void {
   if (typeof window === "undefined") return () => {};
-  const changed = (event: Event) => listener(normalizeCompanionPreferences((event as CustomEvent<unknown>).detail));
+  const changed = (event: Event) => listener(withDocumentPersonality(normalizeCompanionPreferences((event as CustomEvent<unknown>).detail)));
   const stored = (event: StorageEvent) => {
     if (event.key === COMPANION_PREFERENCES_KEY || event.key === null) {
       // An explicit change/reset in another tab wins over an unwritten local

@@ -1224,6 +1224,13 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         if (event?.type === "scroll") scrollUntil = now + 180;
         followUntil = Math.max(followUntil, now + duration + 80);
       }
+      // Native scrolling already moved the room before this event. Commit its
+      // resident and front in that same delivery; waiting for the next rAF
+      // leaves the fixed pair separated from the scrolling sofa for a frame.
+      if ((event?.type === "scroll" || event?.type === "vic:layout-motion") && bedScene?.anchor.isConnected && (support === "companion-home" || front && !front.hidden)) {
+        refreshAnchors(now, true, true);
+        paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status);
+      }
       if (followRaf) return;
       const follow = (time: number) => {
         followRaf = 0;
