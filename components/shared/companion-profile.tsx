@@ -13,7 +13,7 @@ import type { CompanionLifeReason } from "@/lib/ui/viewer-companion/life";
 import { COMPANION_PERSONALITY_NAMES, type CompanionPersonality, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_FOOD_NAMES } from "@/lib/ui/viewer-companion/snacks";
 import { COMPANION_TOY_NAMES, type CompanionToyKind } from "@/lib/ui/viewer-companion/toy-catalog";
-import { companionToyUnread, loadCompanionTastes, subscribeCompanionTastes, summarizeCompanionFoodTastes, summarizeCompanionToyTastes, type CompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
+import { companionTasteReason, companionToyUnread, loadCompanionTastes, subscribeCompanionTastes, summarizeCompanionFoodTastes, summarizeCompanionToyTastes, type CompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
 import { CompanionToyArt } from "@/components/poster/viewer-companion/companion-toy-art";
 import type { CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { playSfx } from "@/lib/ui/sfx";
@@ -29,7 +29,7 @@ type ProfilePage = typeof pages[number]["key"];
 const recentReasons: Record<CompanionLifeReason, string> = {
   "favorite-food": "좋아하는 간식 먹기", "new-flavor": "새 간식 맛보기",
   "kind-touch": "쓰다듬기", "play-together": "함께 놀기",
-  "food-mishap": "간식 앞에서 깜짝", "food-declined": "익숙한 간식 사양", "cozy-rest": "포근한 휴식",
+  "food-mishap": "간식 앞에서 깜짝", "food-declined": "익숙한 간식 사양", "food-disliked": "직접 맛본 간식", "cozy-rest": "포근한 휴식",
   "discovered-taste": "새 최애 간식", "variety": "다른 간식 맛보기",
   "reassured": "놀란 뒤 쓰다듬기", "rested": "푹 쉬기"
 };
@@ -45,10 +45,10 @@ function foodStyle(kind: CompanionFoodKind) {
   if (!art) return undefined;
   return { backgroundImage: `url("${art.src}")`, backgroundSize: `${art.atlasWidth / art.width * 100}% ${art.atlasHeight / art.height * 100}%`, backgroundPosition: `${art.atlasWidth === art.width ? 0 : art.x / (art.atlasWidth - art.width) * 100}% ${art.atlasHeight === art.height ? 0 : art.y / (art.atlasHeight - art.height) * 100}%` };
 }
-function TasteCard({ label, food, toy, dislike = false }: { label: string; food?: CompanionFoodKind | null; toy?: CompanionToyKind | null; dislike?: boolean }) {
+function TasteCard({ label, food, toy, dislike = false, reason }: { label: string; food?: CompanionFoodKind | null; toy?: CompanionToyKind | null; dislike?: boolean; reason?: string }) {
   const known = Boolean(food || toy);
   return <div className="rhh-taste-card" data-dislike={dislike || undefined} data-known={known || undefined}>
-    <dt><span aria-hidden="true" className="rhh-taste-picture">{food ? <span className="vc-collection-art" style={foodStyle(food)} /> : toy ? <CompanionToyArt kind={toy} /> : <HelpCircle size={30} />}</span><span>{label}</span></dt><dd>{food ? COMPANION_FOOD_NAMES[food] : toy ? COMPANION_TOY_NAMES[toy] : "알아가는 중"}</dd>
+    <dt><span aria-hidden="true" className="rhh-taste-picture">{food ? <span className="vc-collection-art" style={foodStyle(food)} /> : toy ? <CompanionToyArt kind={toy} /> : <HelpCircle size={30} />}</span><span>{label}</span></dt><dd>{food ? COMPANION_FOOD_NAMES[food] : toy ? COMPANION_TOY_NAMES[toy] : "알아가는 중"}{known && reason && <small className="rhh-taste-reason">{reason}</small>}</dd>
   </div>;
 }
 
@@ -143,7 +143,7 @@ export function CompanionProfile({ preferences, active, environment }: { prefere
         <div className="rhh-companion-summary-copy"><span className="rhh-companion-presence" data-awake={preferences.enabled || undefined}>빅타민{!preferences.enabled && " · 쉬는 중"}</span><h3 className="rhh-profile-personality" id={`${id}-traits-title`}>{personality}</h3><p className="rhh-profile-meta"><span>{personalityNotes[preferences.personality]}</span></p>
           <p className="rhh-profile-appearance">{mode} 모드 · {collection?.gifts.equipped ? COMPANION_ACCESSORY_NAMES[collection.gifts.equipped] : "기본 모습"}</p>
         </div>
-        <dl className="rhh-companion-facts"><TasteCard label="좋아하는 간식" food={foodTastes.favorite} /><TasteCard label="싫어하는 간식" food={foodTastes.disliked} dislike /><TasteCard label="좋아하는 장난감" toy={toyTastes.favorite} /><TasteCard label="싫어하는 장난감" toy={toyTastes.disliked} dislike /></dl>
+        <dl className="rhh-companion-facts"><TasteCard label="좋아하는 간식" food={foodTastes.favorite} reason={companionTasteReason(tastes, "food", foodTastes.favorite, "positive")} /><TasteCard label="싫어하는 간식" food={foodTastes.disliked} reason={companionTasteReason(tastes, "food", foodTastes.disliked, "negative")} dislike /><TasteCard label="좋아하는 장난감" toy={toyTastes.favorite} reason={companionTasteReason(tastes, "toy", toyTastes.favorite, "positive")} /><TasteCard label="싫어하는 장난감" toy={toyTastes.disliked} reason={companionTasteReason(tastes, "toy", toyTastes.disliked, "negative")} dislike /></dl>
       </section>
       <section aria-labelledby={`${id}-habits-title`} className="rhh-profile-habits"><div className="rhh-habits-heading"><h3 id={`${id}-habits-title`}>배운 습관</h3>{!preferences.learnFromYou && <span className="rhh-habit-paused">적용 중지</span>}</div>{effects.length ? <ul className="rhh-profile-learned">{effects.map(effect => <li key={effect}>{effect}</li>)}</ul> : <p className="rhh-habit-empty">아직 배운 습관이 없어요.</p>}</section>
       {care?.life.recent.at(-1) && <p className="rhh-trait-reason"><span>최근 경험</span><span>{recentReasons[care.life.recent.at(-1)!]}</span></p>}

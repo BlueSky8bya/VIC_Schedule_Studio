@@ -9,7 +9,9 @@ const PHASE: Readonly<Record<DayBand, CompanionWindowPhase>> = {
 };
 const WEATHER_OVERLAY: Readonly<Record<Weather, string | null>> = {
   clear: null,
-  cloud: "/companion/home/124/window-cloud-overlay.webp",
+  // The opaque125 scenes already paint their clouds behind the tree crowns.
+  // Keep the cloudy lighting grade without washing another cloud over them.
+  cloud: null,
   rain: "/companion/home/124/window-rain-overlay.webp",
   snow: "/companion/home/124/window-snow-overlay.webp",
   fog: "/companion/home/124/window-fog-overlay.webp",

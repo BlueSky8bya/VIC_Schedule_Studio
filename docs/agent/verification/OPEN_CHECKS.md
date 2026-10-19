@@ -1,6 +1,6 @@
 # Open verification and operations checks
 
-Updated: 2026-10-17
+Updated: 2026-10-19
 
 This file keeps unresolved evidence gaps out of startup history. A prior PASS applies to its tested revision and scope only. Recheck before closing; do not infer current production state from old notes.
 
@@ -28,6 +28,8 @@ This file keeps unresolved evidence gaps out of startup history. A prior PASS ap
 ## COMPANION-096-FOCUS — 실제 viewer 창 전환
 
 [096 검증](COMPANION_CONTINUOUS_RUN_THROW-20261017.md)의 새 주행/투척12case와 기존 회귀21case는 PASS했다. 기존 `viewer-refocus`1case는 실제 headed 브라우저에서 의도한 창 전환 전부터 반복 trusted blur가 발생해3회 모두 준비에 실패했다. 외부 입력 주체/정확한 OS 원인은 미확인이고 다른 명령을 중지한 실행도 실패했다. 원본/report/context는 각각 SHA 봉인했으며 같은 공유 구현의 studio PASS로 대체하지 않는다.
+
+[130 쓰다듬기](COMPANION_EXPERIENCE_DEPTH-20261019.md)는 별도 진입의 `document.hasFocus()` 조건과 저장된 visible-background 정책 불일치를 수정했다. Headless Playwright의 기본 focus emulation을 해제한 실제 peer 탭 전환에서 대상 visible/unfocused를 확인하고, 일정표 pointerdown 없이 첫 native stroke 반응을 관측했다. Native mouse 전송이 대상 탭을 활성화하므로, 계속 비활성 상태인 OS 창의 쓰다듬기나096 음식 접근 복귀를 검증한 것은 아니다. 이 간격과 사용자 유예한 실제 방송 장비 검증은 유지한다.
 
 다음: 실제 포커스를 안정적으로 소유할 수 있는 환경에서 현재 fixture의 음식 배치→실제 approach 시작→native blur/focus→같은 음식 소비/한 번 보상·마무리를 기존 단언으로 재검한다. RNG/시계/강제 focus emulation으로 이 actual-focus 증거를 대신하지 않는다. 운영 기능 결함으로 확정된 사항은 아니며 새 코드의 기본 주행/투척 검증과 구분한다.
 

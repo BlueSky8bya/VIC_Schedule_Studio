@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { companionSofaDepth, companionSofaRelease, companionSofaSeat } from "@/lib/ui/viewer-companion/sofa";
+import { companionSofaDepth, companionSofaRelease, companionSofaResident, companionSofaSeat } from "@/lib/ui/viewer-companion/sofa";
 import type { Platform } from "@/lib/ui/viewer-companion/brain";
+import { projectCompanionSofaBody } from "@/lib/ui/viewer-companion/sofa-pose";
+import { sampleCompanionRadioReaction } from "@/lib/ui/viewer-companion/radio-reaction";
+import { selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 
 describe("sofa solid opening", () => {
   const seat: Platform = { id: "companion-home", x: 180, y: 300, width: 12, kind: "date" };
@@ -34,6 +37,42 @@ describe("complete rendered body sofa depth", () => {
   const bed = { left: 100, right: 280, top: 200, bottom: 300 }, seatY = 274;
   const rectangle = (left: number, top: number, right: number, bottom: number) => [{ x: left, y: top }, { x: right, y: top }, { x: right, y: bottom }, { x: left, y: bottom }];
   const body = rectangle(156, 194, 224, 276), point = { x: 190, y: seatY };
+  it("keeps the cloth over a smiling/rocking grounded resident while every real exit loses that ownership", () => {
+    const seat: Platform = { id: "companion-home", x: 180, y: seatY, width: 20, kind: "date" };
+    const input = { point, seat, connected: true, held: false, placing: false, airborne: false, pickupTail: false };
+    const wide = rectangle(129, 194, 251, 276);
+    expect(companionSofaDepth({ point, body: wide, bed, seatY })).toBe("front");
+    expect(companionSofaResident(input)).toBe(true);
+    expect(companionSofaDepth({ point, body: wide, bed, seatY, resident: companionSofaResident(input) })).toBe("seat");
+    for (const patch of [{ connected: false }, { held: true }, { placing: true }, { airborne: true }, { pickupTail: true }, { seat: undefined }, { seat: { ...seat, id: "companion-home-floor", kind: "floor" as const } }, { point: { ...point, x: seat.x - .01 } }, { point: { ...point, y: seatY + .51 } }, { seat: { ...seat, width: NaN } }]) {
+      const resident = companionSofaResident({ ...input, ...patch }); expect(resident).toBe(false);
+      expect(companionSofaDepth({ point, body: wide, bed, seatY, previous: "seat", resident })).toBe("front");
+    }
+    // The exception changes cloth ownership, not malformed/overhead depth or
+    // the captured body's release collider.
+    expect(companionSofaDepth({ point, body: [], bed, seatY, resident: true })).toBe("clear");
+    expect(companionSofaDepth({ point: { ...point, y: 216 }, body: rectangle(156, 138, 224, 218), bed, seatY, resident: true })).toBe("clear");
+    expect(companionSofaRelease(point, bed, seat, [], 92, { body: wide, depth: "front" })).toBeNull();
+  });
+  it("keeps genuine smiling clips behind cloth through the shared finite rocking pose without permitting a held crossing", () => {
+    const narrowBed = { left: 100, right: 220, top: 200, bottom: 266.667 }, seatY = 250, point = { x: 160, y: seatY };
+    const seat: Platform = { id: "companion-home", kind: "date", x: 159, y: seatY, width: 2 };
+    const context = { point, seat, connected: true, held: false, placing: false, airborne: false, pickupTail: false };
+    let crossed = 0;
+    // This checks the real projection contract, not whether the radio planner
+    // admits its full-body gesture in this deliberately narrow seat.
+    for (let age = 0; age <= 5200; age += 40) {
+      const sample = sampleCompanionRadioReaction("bounce", age, 96), cell = selectCompanionSprite(-1, sample.row, sample.frame).frame;
+      const body = projectCompanionSofaBody({ size: 92, display: { ...point, scale: 1 }, cell,
+        shape: { bob: sample.bob, tilt: sample.tilt, scaleX: 1, scaleY: 1 - sample.squash },
+        pressure: { x: 0, y: 0, tilt: 0, squash: 0 }, response: { lift: 0, squash: 0 }, facing: 1, sway: { tilt: 0, stretch: 0 } });
+      const ordinary = companionSofaDepth({ point, body, bed: narrowBed, seatY });
+      if (ordinary === "front") crossed++;
+      expect(companionSofaDepth({ point, body, bed: narrowBed, seatY, resident: companionSofaResident(context) })).toBe("seat");
+      expect(companionSofaDepth({ point, body, bed: narrowBed, seatY, resident: companionSofaResident({ ...context, held: true }) })).toBe(ordinary);
+    }
+    expect(crossed).toBeGreaterThan(0);
+  });
   it("orders a contained resident behind the U and every outside body in front, regardless of old support/history", () => {
     expect(companionSofaDepth({ point, body, bed, seatY, previous: "front" })).toBe("seat");
     expect(companionSofaDepth({ point: { x: 124, y: seatY }, body: rectangle(90, 194, 158, 276), bed, seatY, previous: "seat" })).toBe("front");

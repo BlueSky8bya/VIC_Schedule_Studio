@@ -15,6 +15,16 @@ const bodyBounds = (points: readonly CompanionSofaPoint[]): Rect | null => {
 };
 const intersects = (a: Rect, b: Rect) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
 
+/** A local smile/rocking pose cannot move a grounded resident in front of its
+ * cushion. Actual captured movement, flight and pickup recovery keep using
+ * the full current polygon. The real safe seat owns this narrow exception. */
+export function companionSofaResident(input: { point: CompanionSofaPoint; seat?: Platform; connected: boolean; held: boolean; placing: boolean; airborne: boolean; pickupTail: boolean }) {
+  const { point, seat } = input;
+  return Boolean(input.connected && !input.held && !input.placing && !input.airborne && !input.pickupTail
+    && seat?.id === "companion-home" && seat.kind === "date" && [point.x, point.y, seat.x, seat.y, seat.width].every(Number.isFinite)
+    && seat.width > 0 && point.x >= seat.x && point.x <= seat.x + seat.width && Math.abs(point.y - seat.y) <= .5);
+}
+
 /** The same rendered body can be on either side of the furniture while its
  * old support ID remains unchanged. The caller supplies the current opaque
  * polygon AFTER registration, local pose/contact/reaction, facing and inertia;
@@ -23,12 +33,14 @@ const intersects = (a: Rect, b: Rect) => a.left < b.right && a.right > b.left &&
  * The shared180x100 art opens between31..149, with side tips at19 and its
  * upper opening at31. The actual CSS seat plane is a separate measured input;
  * the visible front crest at54 is not the creature's landing plane. */
-export function companionSofaDepth({ point, body, bed, seatY, previous }: {
+export function companionSofaDepth({ point, body, bed, seatY, previous, resident = false }: {
   point: CompanionSofaPoint;
   body: readonly CompanionSofaPoint[];
   bed: Rect;
   seatY: number;
   previous?: CompanionSofaDepth;
+  /** Only companionSofaResident's current grounded seat proof may set this. */
+  resident?: boolean;
 }): CompanionSofaDepth {
   const bounds = bodyBounds(body);
   if (!bounds || !finiteRect(bed) || ![point.x, point.y, seatY].every(Number.isFinite) || !intersects(bounds, bed)) return "clear";
@@ -37,10 +49,10 @@ export function companionSofaDepth({ point, body, bed, seatY, previous }: {
   // to pass above the sofa. A foot or neutral92px box cannot establish this.
   if (bounds.bottom <= bed.top + height * .19) return "clear";
   const inner = opening(bed);
+  const seated = Math.abs(point.y - seatY) <= .5;
   // Whole-body containment wins over history: an ear-grip lean or outside
   // lateral lift must never leave the U painted through part of the creature.
-  if (bounds.left < inner.left - 1e-7 || bounds.right > inner.right + 1e-7) return "front";
-  const seated = Math.abs(point.y - seatY) <= .5;
+  if ((bounds.left < inner.left - 1e-7 || bounds.right > inner.right + 1e-7) && !(resident && seated)) return "front";
   const depthLimit = seatY + (previous === "seat" || previous === "back" ? 2 : previous === "front" ? -2 : 0);
   if (!seated && point.y > depthLimit) return "front";
   // Hysteresis is bounded to the depth plane, never a permit to cross either

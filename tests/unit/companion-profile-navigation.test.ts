@@ -6,6 +6,9 @@ import { COMPANION_BEHAVIOR_IDS, type CompanionCollection } from "@/lib/ui/viewe
 import { COMPANION_SITUATION_IDS } from "@/lib/ui/viewer-companion/moments";
 import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { getCompanionBehaviorProfile } from "@/lib/ui/viewer-companion/behavior-profile";
+import { createCompanionLife, experienceCompanionLife } from "@/lib/ui/viewer-companion/life";
+import { createCompanionTastesStore, normalizeCompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
+import { evaluateCompanionFoodTaste } from "@/lib/ui/viewer-companion/taste-reasons";
 
 const harness = vi.hoisted(() => ({ states: [] as unknown[], state: 0, refs: [] as { current: unknown }[], ref: 0, activity: vi.fn(), acknowledge: vi.fn() }));
 vi.mock("react", async importOriginal => ({ ...await importOriginal<typeof import("react")>(),
@@ -135,6 +138,23 @@ describe("actual shared profile navigation callbacks", () => {
       expect(art.props.style).toMatchObject({ backgroundImage: `url("/companion/collection/${favorite.file}")`, backgroundSize: expect.any(String), backgroundPosition: favorite.position });
       expect(nodes(badge).filter(node => typeof node.type !== "string")).toHaveLength(0);
     }
+  });
+  it("shows short witnessed reasons on the four existing cards without activity capture or invented legacy reasons", async () => {
+    const store = createCompanionTastesStore(); let life = createCompanionLife(() => 0);
+    for (const [kind, roll] of [["durian", 0], ["peach", 1]] as const) {
+      const taste = evaluateCompanionFoodTaste(kind, life, roll); life = experienceCompanionLife(life, { kind: "fed", food: kind, taste }); store.recordFoodOutcome(taste);
+    }
+    store.recordToy("ball", "tripped"); store.recordToy("feather", "played");
+    harness.states[1] = { ...DEFAULT_COMPANION_MEMORY, life };
+    harness.states[2] = { version: 1, foods: ["durian", "peach"], behaviors: [], situations: [], gifts: { pending: null, unlocked: [], equipped: null, activeMs: 0, interactionCredit: 0 } };
+    harness.states[4] = store.load(); await render();
+    const cards = nodes(tree).filter(node => typeof node.type === "function" && typeof node.props.label === "string");
+    expect(cards.map(node => node.props.label)).toEqual(["좋아하는 간식", "싫어하는 간식", "좋아하는 장난감", "싫어하는 장난감"]);
+    const reasons = cards.flatMap(card => nodes((card.type as (props: Record<string, unknown>) => Element)(card.props))).filter(node => node.props.className === "rhh-taste-reason");
+    expect(reasons.map(node => node.props.children)).toEqual(["달콤해서 기분 좋아요", "주인 양말 냄새남", "함께 노니 신나요", "놀다가 걸려 넘어졌어요"]);
+    expect(harness.activity).not.toHaveBeenCalled(); expect(harness.acknowledge).not.toHaveBeenCalled();
+    harness.states[4] = normalizeCompanionTastes({ version: 1, toys: ["ball", "feather"], seen: [], toyTastes: {}, foodTastes: {} }); await render();
+    expect(nodes(tree).filter(node => typeof node.type === "function" && typeof node.props.label === "string").every(card => card.props.reason === undefined)).toBe(true);
   });
   it("acknowledges only deliberate unread tile inspection, not mounting, category changes or paging", async () => {
     harness.acknowledge.mockReturnValue(true);

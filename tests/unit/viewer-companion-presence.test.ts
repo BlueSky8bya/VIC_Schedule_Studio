@@ -1,8 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { createCompanionPresence } from "@/lib/ui/viewer-companion/presence";
+import { companionPresenceActive, createCompanionPresence } from "@/lib/ui/viewer-companion/presence";
+import { createCompanionPettingGesture } from "@/lib/ui/viewer-companion/petting";
 import { COMPANION_TIMING as T } from "@/lib/ui/viewer-companion/timing";
 
 describe("companion passive presence", () => {
+  it("admits the first real no-click stroke on a visible background page only under its saved policy", () => {
+    const allowed = { focused: false, visible: true, activeWhileVisible: true, blocked: false };
+    const p = createCompanionPresence(companionPresenceActive(allowed), 0), gesture = createCompanionPettingGesture();
+    p.focus(companionPresenceActive(allowed), 100);
+    expect(p.step(5000, false)).toBe("active");
+    expect(gesture.sample(.2, 5000).reward).toBe(false); expect(gesture.sample(.8, 5100).reward).toBe(false);
+    expect(gesture.sample(.2, 5200)).toEqual({ stroking: true, reward: true });
+    for (const patch of [{ activeWhileVisible: false }, { visible: false }, { blocked: true }]) expect(companionPresenceActive({ ...allowed, ...patch })).toBe(false);
+    expect(companionPresenceActive({ ...allowed, activeWhileVisible: false, focused: true })).toBe(true);
+  });
   it("lets direct focused input take over waking without overriding blur", () => {
     const p = createCompanionPresence(false, 0);
     p.step(0, false); p.step(T.presenceRest, false); p.step(T.presenceRest + T.presenceYawn, false);

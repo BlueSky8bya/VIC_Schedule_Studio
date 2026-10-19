@@ -7,7 +7,7 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Current product work: [129 item support and clarity](verification/COMPANION_ITEM_SUPPORT-20261019.md), reproduce midair stops and verify mixed packing/tidy paths and toy rendering quality. Provider quota comparison/recovery and listed evidence follow-ups remain. Shared clock/KST, physical contacts, sofa art and public/private boundaries remain mandatory.
+Current product work: [130 sofa, petting and lived tastes](verification/COMPANION_EXPERIENCE_DEPTH-20261019.md). Fix resident sofa depth, first no-click petting after another window, cloudy sky depth and food selection feedback; make taste reasons follow real meals/toy accidents and fade through experience. Provider quota/recovery and listed evidence follow-ups remain. Shared clock/KST, physical contacts, sofa art and public/private boundaries remain mandatory.
 
 Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user.125 explicitly authorizes unnecessary Vercel deployment cleanup/optimization; unrelated cleanup, bulk DB UPDATE, paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
 
@@ -17,7 +17,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| UI-129 | Release validation | Local21 native/3,101 units/type/lint/build passed; verify deployed SHA, public inputs/assets and remote quality | [Record](verification/COMPANION_ITEM_SUPPORT-20261019.md) |
+| UI-130 | Release validation | Local3,120 units/type/lint/build/harness326 and18 distinct native scenarios verified; authorized push and actual public/remote checks next | [Record](verification/COMPANION_EXPERIENCE_DEPTH-20261019.md) |
 | OPS-VERCEL-QUOTA | Open | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
@@ -46,6 +46,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Last Verified
 
-Current release `92399f77e2e39af4b19623b171420f30890d0ca3`: [128 storage baseline](verification/COMPANION_STORAGE_BASELINE-20261019.md#release). Local3,075 units/type/lint/build/harness324 PASS; all16 native scenarios verified across15/16 main run plus corrected tidy2/2. Actual product failure and final-observation test race are retained separately in the record. Actual anonymous fullSHA/98 exact assets/UI/source-floor spawn PASS at2026-10-19 12:28:27 KST; Vercel5UEqPJ9Vck7zqzA7KeSVupZn7wCA Ready12:27:31, remote quality39194628030 success12:30:00. No production mutation/live-state GET/private manifest/seeded care/preferences/tastes/discovery. Protected user art preserved. No owner art approval, same-period quota resolution or actual broadcaster hardware claim.
+Current release `ea8545cdf63792399421d44b5f53ec612b32824b`: [129 item support and clarity](verification/COMPANION_ITEM_SUPPORT-20261019.md#final-local-result-and-release). Local3,101 units/284 files/type/lint/build/harness325 and21/21 native scenarios PASS, retries0/flaky0. Actual1440 stale-floor product failure, earlier transparent-panel reproduction and unrelated catalog timeout remain in the record. Actual anonymous fullSHA/98 exact assets/UI/source-floor spawn PASS at2026-10-19 13:55:58.759 KST; Vercel74NHkgopmEfJzz9pBfyrJj6P6XWH completed13:54:30, remote quality39201659832 success13:57:56. No production mutation/live-state GET/private manifest/seeded care/preferences/tastes/discovery. Protected user art and72 toy art hashes preserved. No owner art approval, same-period quota resolution or actual broadcaster hardware claim.
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.

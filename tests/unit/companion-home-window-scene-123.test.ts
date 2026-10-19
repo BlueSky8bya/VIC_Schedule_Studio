@@ -21,15 +21,17 @@ describe("shared-world illustrated window pictures", () => {
     expect(sources.size).toBe(16);
   });
 
-  it("keeps each shared weather identity and uses actual static weather textures rather than a color-only variant", () => {
+  it("keeps weather identity while separating painted sky clouds from foreground weather", () => {
     const overlays: Record<Weather, string | null> = {
-      clear: null, cloud: "/companion/home/124/window-cloud-overlay.webp", rain: "/companion/home/124/window-rain-overlay.webp",
+      clear: null, cloud: null, rain: "/companion/home/124/window-rain-overlay.webp",
       snow: "/companion/home/124/window-snow-overlay.webp", fog: "/companion/home/124/window-fog-overlay.webp", wind: "/companion/home/124/window-wind-overlay.webp",
     };
-    for (const weather of Object.keys(overlays) as Weather[]) for (const band of DAY_BANDS) {
-      const scene = resolveCompanionWindowScene({ ...base, band, weather });
+    for (const season of seasons) for (const weather of Object.keys(overlays) as Weather[]) for (const band of DAY_BANDS) {
+      const scene = resolveCompanionWindowScene({ ...base, season, band, weather });
       expect(scene.weather).toBe(weather); expect(scene.overlaySrc).toBe(overlays[weather]);
-      expect(scene.landscapeSrc).toBe(resolveCompanionWindowScene({ ...base, band }).landscapeSrc);
+      // Every opaque scene keeps its authored foreground/sky depth. Cloud
+      // identity still reaches the shared lighting grade and room behavior.
+      expect(scene.landscapeSrc).toBe(resolveCompanionWindowScene({ ...base, season, band }).landscapeSrc);
     }
   });
 

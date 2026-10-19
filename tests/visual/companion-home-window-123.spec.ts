@@ -13,7 +13,7 @@ const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAl
 const month: Record<SeasonKey, number> = { spring: 4, summer: 7, autumn: 10, winter: 1 };
 type Phase = "dawn" | "day" | "dusk" | "night";
 const band: Record<Phase, DayBand> = { dawn: "dawn", day: "noon", dusk: "dusk", night: "night" };
-const overlay: Record<Weather, string | null> = { clear: null, cloud: "/companion/home/124/window-cloud-overlay.webp", rain: "/companion/home/124/window-rain-overlay.webp", snow: "/companion/home/124/window-snow-overlay.webp", fog: "/companion/home/124/window-fog-overlay.webp", wind: "/companion/home/124/window-wind-overlay.webp" };
+const overlay: Record<Weather, string | null> = { clear: null, cloud: null, rain: "/companion/home/124/window-rain-overlay.webp", snow: "/companion/home/124/window-snow-overlay.webp", fog: "/companion/home/124/window-fog-overlay.webp", wind: "/companion/home/124/window-wind-overlay.webp" };
 type Options = { surface?: "viewer" | "studio"; season?: SeasonKey; phase?: Phase; weather?: Weather; quiet?: "reduced" | "off"; dark?: boolean };
 const proofs = new WeakMap<Page, { writes: string[]; foreign: string[]; errors: string[] }>();
 
@@ -125,7 +125,7 @@ for (const season of ["spring", "summer", "autumn", "winter"] as const) test(`12
   for (const rect of anchors.slice(1)) for (const key of ["x", "y", "width", "height"] as const) expect(rect[key]).toBeCloseTo(anchors[0][key], 1);
 });
 
-test("123 all six shared weathers select their own static overlay without changing the daylight scene", async ({ page }) => {
+test("123 six shared weather states retain their scene and keep clouds behind its trees", async ({ page }) => {
   for (const weather of ["clear", "cloud", "rain", "snow", "fog", "wind"] as const) {
     const state = await fixture(page, { season: "autumn", phase: "day", weather });
     await expect(state.window).toHaveAttribute("data-weather", weather);

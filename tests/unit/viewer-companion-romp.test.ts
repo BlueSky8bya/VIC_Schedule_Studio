@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { companionRunTripContact, planCompanionRomp, sampleCompanionRunUp, validCompanionRunHop } from "@/lib/ui/viewer-companion/romp";
+import { companionRunTripContact, companionToyTripExperience, planCompanionRomp, sampleCompanionRunUp, validCompanionRunHop, type CompanionRunToy } from "@/lib/ui/viewer-companion/romp";
 import { DEFAULT_COMPANION_PREFERENCES as prefs } from "@/lib/ui/viewer-companion/preferences";
 import { commitAction, createBrain, type CompanionAction, type Platform } from "@/lib/ui/viewer-companion/brain";
+import { createCompanionToys } from "@/lib/ui/viewer-companion/toys";
 
 const floor: Platform = { id: "floor", kind: "floor", x: 40, y: 800, width: 1000 };
 const action: CompanionAction = { kind: "walk", pace: "scoot", target: { x: 550, y: 800, platformId: floor.id }, duration: 2400, direction: 1 };
@@ -24,6 +25,63 @@ describe("one bounded romp on an actual run", () => {
     for (const food of [{ ...snack, x: 200 }, { ...snack, x: 700 }, { ...snack, y: 700 }, { ...snack, x: NaN }]) {
       expect(planCompanionRomp({ ...input, foods: [food] }, prefs, () => .5).trip).toBeUndefined();
     }
+  });
+  it("contacts an actual settled toy once, then revokes it as soon as the person picks it up", () => {
+    const toys = createCompanionToys(() => 0);
+    toys.sync([floor], { width: 1200, height: 1000 }, 0);
+    const id = toys.spawn({ x: 430, y: 760 }, 0)!;
+    for (let at = 16; at <= 1000; at += 16) toys.tick(at);
+    const settled = toys.available();
+    expect(settled).toHaveLength(1); expect(settled[0]).toMatchObject({ id, platformId: floor.id, y: floor.y });
+    let draws = 0;
+    const plan = planCompanionRomp({ ...input, toys: settled }, prefs, () => { draws++; return .5; });
+    expect(plan.trip).toMatchObject({ cause: "toy", toyId: id, play: "tumble", x: settled[0].x - 10 });
+    expect(draws).toBe(1); expect(plan.hop).toBeUndefined();
+    expect(companionRunTripContact(plan.trip!, input.from, action.target, floor, [], settled)).toBe(settled[0].x - 10);
+    expect(toys.grab(id)).toBe(true);
+    expect(companionRunTripContact(plan.trip!, input.from, action.target, floor, [], toys.available())).toBeNull();
+    expect(toys.items()[0]).toMatchObject({ held: true, kind: settled[0].kind });
+  });
+  it("keeps toy contact on the real same support and ahead of the actual run in either direction", () => {
+    const toy: CompanionRunToy = { id: "toy", kind: "ball", x: 430, y: 800, platformId: floor.id, held: false, carried: false };
+    for (const patch of [{ held: true }, { carried: true }, { hidden: true }, { platformId: undefined }, { platformId: "other-floor" }, { y: 700 }, { x: 200 }, { x: 700 }]) {
+      expect(planCompanionRomp({ ...input, toys: [{ ...toy, ...patch }] }, { ...prefs, jump: false }, () => .5).trip).toBeUndefined();
+    }
+    const reversed = { ...input, from: { x: 550, y: 800 }, action: { ...action, target: { x: 250, y: 800, platformId: floor.id }, direction: -1 as const }, toys: [toy] };
+    const plan = planCompanionRomp(reversed, prefs, () => .5);
+    expect(plan.trip).toMatchObject({ cause: "toy", toyId: "toy", x: 440 });
+    expect(companionRunTripContact(plan.trip!, reversed.from, reversed.action.target, floor, [], [toy])).toBe(440);
+    expect(companionRunTripContact(plan.trip!, reversed.from, reversed.action.target, floor, [], [{ ...toy, carried: true }])).toBeNull();
+    expect(companionRunTripContact(plan.trip!, reversed.from, reversed.action.target, { ...floor, id: "other-floor" }, [], [toy])).toBeNull();
+    const nearest = planCompanionRomp({ ...input, foods: [{ ...snack, x: 460 }], toys: [toy] }, prefs, () => .5);
+    expect(nearest.trip).toMatchObject({ cause: "toy", toyId: "toy" });
+    expect(planCompanionRomp({ ...input, foods: [{ ...snack, x: 400 }], toys: [toy] }, prefs, () => .5).trip).toMatchObject({ cause: "food", foodId: snack.id });
+  });
+  it("teaches a toy trip only after a witnessed completed nearby reaction, never a requested or cancelled clip", () => {
+    const toy: CompanionRunToy = { id: "toy", kind: "ball", x: 430, y: 800, platformId: floor.id, held: false, carried: false };
+    const witness = { toyId: toy.id, kind: toy.kind, platformId: floor.id, generation: 0 };
+    const completed = { point: { x: 420, y: 800 }, platformId: floor.id, generation: 0, observed: true, completed: true, active: true, learn: true };
+    expect(companionToyTripExperience(witness, [toy], completed)).toBe("ball");
+    for (const guard of ["observed", "completed", "active", "learn"] as const) expect(companionToyTripExperience(witness, [toy], { ...completed, [guard]: false })).toBeUndefined();
+    expect(companionToyTripExperience(witness, [], completed)).toBeUndefined();
+    for (const patch of [{ id: "replacement" }, { kind: "bell" as const }, { held: true }, { carried: true }, { hidden: true }, { platformId: "other-floor" }, { x: 469 }, { y: NaN }]) {
+      expect(companionToyTripExperience(witness, [{ ...toy, ...patch }], completed)).toBeUndefined();
+    }
+    expect(companionToyTripExperience(witness, [toy], { ...completed, platformId: "other-floor" })).toBeUndefined();
+  });
+  it("cannot relearn an already witnessed contact after learning was reset, while a new real contact can learn", () => {
+    const toy: CompanionRunToy = { id: "toy", kind: "ball", x: 430, y: 800, platformId: floor.id, held: false, carried: false };
+    const plan = planCompanionRomp({ ...input, toys: [toy] }, prefs, () => .5);
+    const contact = companionRunTripContact(plan.trip!, input.from, action.target, floor, [], [toy]);
+    expect(contact).toBe(420);
+    const witness = { toyId: toy.id, kind: toy.kind, platformId: floor.id, generation: 4 };
+    const complete = { point: { x: contact!, y: 800 }, platformId: floor.id, generation: 4, observed: true, completed: true, active: true, learn: true };
+    expect(companionToyTripExperience(witness, [toy], complete)).toBe("ball");
+    // Physical position, completed clip and visibility remain valid through
+    // the reset. Its new generation alone must revoke the old evidence.
+    expect(companionToyTripExperience(witness, [toy], { ...complete, generation: 5 })).toBeUndefined();
+    expect(companionToyTripExperience({ ...witness, generation: 5 }, [toy], { ...complete, generation: 5 })).toBe("ball");
+    for (const generation of [-1, NaN, Infinity, .5]) expect(companionToyTripExperience({ ...witness, generation }, [toy], { ...complete, generation })).toBeUndefined();
   });
   it("accepts a nearby real approach and autonomous exploration without interrupting feed/rest", () => {
     const explore = { kind: "explore" as const, targetId: "other-ledge", offset: .5, remaining: 8, stage: "travel" as const };

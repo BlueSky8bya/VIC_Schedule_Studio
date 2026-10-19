@@ -77,6 +77,14 @@ html :is(.poster-page,[data-companion-event="ordinary"]) .event-heart[data-compa
 .vc-food span { display: block; width: 36px; height: 36px; transform: scale(var(--vc-nibble, 1)); transform-origin: bottom center; pointer-events: none; }
 .vc-food[data-eating] span { transform-origin: center; }
 .vc-food:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 0; }
+/* The button owns the44px contact and the span owns nibbling/arrival. Only
+   the inner picture responds, keeping the pointer/fall/carry foot stationary. */
+.vc-food > span > .vc-fruit { transform-box: border-box; transform-origin: 50% 100%; transition: transform var(--dur-spring-smooth) var(--spring-smooth, var(--ease-spring)), filter var(--dur-1) var(--ease); }
+.vc-food:where(:hover, :focus-visible, [data-selected]) > span > .vc-fruit { transform: scale(1.1); filter: brightness(1.07) drop-shadow(0 2px 1px #5d422528); }
+.vc-food:is([data-carried], [data-eating], [data-discarding]) > span > .vc-fruit { transform: none; filter: none; transition: none; }
+/* Reduced graphics keep static selection feedback without a motion clock. */
+html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-food > span > .vc-fruit { transform: none; transition: none; }
+@media (prefers-reduced-motion: reduce) { .vc-food > span > .vc-fruit { transform: none; transition: none; } }
 .vc-food[hidden] { display: none; }
 .vc-food:active { cursor: grabbing; }
 .vc-food[data-eating] .vc-fruit > ellipse { opacity: 0; }

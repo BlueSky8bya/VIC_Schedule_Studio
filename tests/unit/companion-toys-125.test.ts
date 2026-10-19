@@ -77,7 +77,9 @@ describe("125 twenty-four shared toy identities", () => {
     expect(store.acknowledge("toy-rocket")).toBe(true); expect(companionToyUnread(store.load())).toBe(0);
     store.recordToy("train", "played", false); expect(store.load().toys).toContain("train"); expect(store.load().toyTastes.train).toBeUndefined();
     for (let i = 0; i < 200; i++) store.recordToy("toy-rocket", "declined");
-    expect(store.load().toyTastes["toy-rocket"]?.declined).toBe(31); expect(summarizeCompanionToyTastes(store.load()).disliked).toBe("toy-rocket");
+    expect(store.load().toyTastes["toy-rocket"]?.declined).toBe(0); expect(summarizeCompanionToyTastes(store.load()).disliked).toBeNull();
+    for (let i = 0; i < 200; i++) store.recordToy("toy-rocket", "tripped");
+    expect(store.load().toyTastes["toy-rocket"]?.tripped).toBe(31); expect(summarizeCompanionToyTastes(store.load()).disliked).toBe("toy-rocket");
     expect(store.load().seen).toEqual(["toy-rocket"]);
   });
   it("rejects unknown contents and keeps toy-specific identity out of fixed activity capture", () => {

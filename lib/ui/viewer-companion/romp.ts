@@ -1,11 +1,14 @@
 import { COMPANION_JUMP_LIMITS, platformLandingX, reachablePlatforms, type CompanionAction, type CompanionFood, type Platform } from "./brain";
 import { getCompanionBehaviorProfile } from "./behavior-profile";
 import type { CompanionPreferences } from "./preferences";
+import type { CompanionToyKind } from "./toy-catalog";
 
-export type CompanionRunTrip = { x: number; play: "tumble" | "bump"; cause: "food" | "stumble"; foodId?: string };
+export type CompanionRunTrip = { x: number; play: "tumble" | "bump"; cause: "food" | "toy" | "stumble"; foodId?: string; toyId?: string };
 export type CompanionRomp = { trip?: CompanionRunTrip; walk?: CompanionAction; hop?: CompanionAction };
+export type CompanionRunToy = Readonly<{ id: string; kind: CompanionToyKind; x: number; y: number; platformId?: string; held: boolean; carried: boolean; hidden?: boolean }>;
+export type CompanionToyTripWitness = Readonly<{ toyId: string; kind: CompanionToyKind; platformId: string; generation: number }>;
 type Point = { x: number; y: number };
-type Input = { action: CompanionAction; from: Point; platform?: Platform; foods: readonly CompanionFood[]; energy: number; cooldownReady: boolean };
+type Input = { action: CompanionAction; from: Point; platform?: Platform; foods: readonly CompanionFood[]; toys?: readonly CompanionRunToy[]; energy: number; cooldownReady: boolean };
 const unit = (n: number) => Math.max(0, Math.min(1, Number.isFinite(n) ? n : 1));
 const home = (p: Platform) => p.id.startsWith("companion-home");
 
@@ -21,17 +24,19 @@ export function planCompanionRomp(input: Input, prefs: CompanionPreferences, rng
   const distance = Math.abs(action.target.x - from.x), direction = action.target.x < from.x ? -1 : 1;
   if (distance < 48) return {};
   const profile = getCompanionBehaviorProfile(prefs);
-  const trip = (x: number, cause: CompanionRunTrip["cause"], foodId?: string): CompanionRomp => ({ trip: {
-    x, cause, ...(foodId ? { foodId } : {}),
+  const trip = (x: number, cause: CompanionRunTrip["cause"], id?: string): CompanionRomp => ({ trip: {
+    x, cause, ...(id ? cause === "toy" ? { toyId: id } : { foodId: id } : {}),
     play: prefs.jump && Math.min(x - p.x, p.x + p.width - x) >= 28 ? "tumble" : "bump",
   } });
   if (input.cooldownReady) {
     // foods() already excludes lifted, falling, hidden and consumed items.
     // Different pet/food floor IDs may name the same measured physical plane.
-    const food = input.foods.slice(0, 8).filter(food => [food.x, food.y].every(Number.isFinite) && Math.abs(food.y - p.y) <= 4
-      && (food.x - from.x) * direction >= 34 && (action.target.x - food.x) * direction >= 12 && food.x >= p.x + 12 && food.x <= p.x + p.width - 12)
-      .sort((a, b) => (a.x - b.x) * direction)[0];
-    if (food && unit(rng()) < Math.min(1, profile.accidentChance * 6)) return trip(food.x - direction * 10, "food", food.id);
+    const inPath = (point: Point) => [point.x, point.y].every(Number.isFinite) && Math.abs(point.y - p.y) <= 4
+      && (point.x - from.x) * direction >= 34 && (action.target.x - point.x) * direction >= 12 && point.x >= p.x + 12 && point.x <= p.x + p.width - 12;
+    const obstacles = [...input.foods.slice(0, 8).filter(inPath).map(food => ({ ...food, cause: "food" as const })),
+      ...(input.toys ?? []).slice(0, 4).filter(toy => !toy.held && !toy.carried && !toy.hidden && toy.platformId === p.id && inPath(toy)).map(toy => ({ ...toy, cause: "toy" as const }))];
+    const obstacle = obstacles.sort((a, b) => (a.x - b.x) * direction)[0];
+    if (obstacle && unit(rng()) < Math.min(1, profile.accidentChance * 6)) return trip(obstacle.x - direction * 10, obstacle.cause, obstacle.id);
     if (unit(rng()) < profile.accidentChance) return trip(from.x + direction * distance * (.35 + unit(rng()) * .3), "stumble");
   }
   if (!prefs.jump || energy < .4 || unit(rng()) >= .35 + profile.scootChance * .25) return {};
@@ -73,13 +78,27 @@ export function validCompanionRunHop(hop: CompanionAction, from: Point, p?: Plat
 }
 
 /** A moved/lifted snack cancels its contact; it cannot trip the pet remotely. */
-export function companionRunTripContact(trip: CompanionRunTrip, from: Point, target: Point, p: Platform | undefined, foods: readonly CompanionFood[]): number | null {
+export function companionRunTripContact(trip: CompanionRunTrip, from: Point, target: Point, p: Platform | undefined, foods: readonly CompanionFood[], toys: readonly CompanionRunToy[] = []): number | null {
   if (!p || p.manualOnly || home(p) || Math.abs(from.y - p.y) > 2 || Math.abs(target.y - p.y) > 2) return null;
   const direction = target.x < from.x ? -1 : 1;
   const food = trip.foodId ? foods.find(food => food.id === trip.foodId && Math.abs(food.y - p.y) <= 4) : undefined;
+  const toy = trip.toyId ? toys.slice(0, 4).find(toy => toy.id === trip.toyId && !toy.held && !toy.carried && !toy.hidden && toy.platformId === p.id && Math.abs(toy.y - p.y) <= 4) : undefined;
   if (trip.foodId && !food) return null;
-  const x = food ? food.x - direction * 10 : trip.x;
+  if (trip.toyId && !toy) return null;
+  const obstacle = toy ?? food;
+  const x = obstacle ? obstacle.x - direction * 10 : trip.x;
   return Number.isFinite(x) && x >= p.x + 8 && x <= p.x + p.width - 8 && (x - from.x) * direction >= 24 && (target.x - x) * direction >= 8 ? x : null;
+}
+
+/** A completed, visibly adopted mishap may teach one local toy reason. A
+ * requested clip, missing/held object or interrupted action cannot teach it. */
+export function companionToyTripExperience(witness: CompanionToyTripWitness, toys: readonly CompanionRunToy[], input: {
+  point: Point; platformId: string; generation: number; observed: boolean; completed: boolean; active: boolean; learn: boolean;
+}): CompanionToyKind | undefined {
+  if (!input.observed || !input.completed || !input.active || !input.learn || input.platformId !== witness.platformId
+    || !Number.isSafeInteger(witness.generation) || witness.generation < 0 || input.generation !== witness.generation) return;
+  const toy = toys.slice(0, 4).find(toy => toy.id === witness.toyId && toy.kind === witness.kind && toy.platformId === witness.platformId && !toy.held && !toy.carried && !toy.hidden);
+  if (toy && [toy.x, toy.y, input.point.x, input.point.y].every(Number.isFinite) && Math.hypot(toy.x - input.point.x, toy.y - input.point.y) <= 48) return toy.kind;
 }
 
 /** End speed stays nonzero for a proved run-up; ordinary walks still stop. */

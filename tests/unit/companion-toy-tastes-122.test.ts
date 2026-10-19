@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { COMPANION_TOY_KINDS, COMPANION_TOY_NAMES, getCompanionToyArt } from "@/lib/ui/viewer-companion/toy-catalog";
 import { COMPANION_TASTES_KEY, companionToyUnread, createCompanionTastesStore, normalizeCompanionTastes, shouldDeclineCompanionFood, shouldDeclineCompanionToy, summarizeCompanionFoodTastes, summarizeCompanionToyTastes } from "@/lib/ui/viewer-companion/toy-tastes";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
-import { createCompanionLife } from "@/lib/ui/viewer-companion/life";
+import { createCompanionLife, experienceCompanionLife } from "@/lib/ui/viewer-companion/life";
+import { evaluateCompanionFoodTaste } from "@/lib/ui/viewer-companion/taste-reasons";
 import { sanitizeMeta, sanitizeTarget } from "@/lib/activity/kinds";
 import { ACT, describeTarget } from "@/lib/activity/labels";
 import { buildStory, type NarrativeItem } from "@/lib/activity/narrative";
@@ -29,11 +30,12 @@ describe("122 witnessed toy discovery and local tastes", () => {
     expect(companionToyUnread(store.load())).toBe(2); expect(store.recordToy("ball", "taken-out")).toBe(false);
     expect(createCompanionTastesStore(storage).load()).toEqual(store.load());
   });
-  it("requires repeated completed reactions, and earned likes/dislikes can change through later real play", () => {
+  it("uses completed play and actual trips, and earned likes/dislikes can change through later real play", () => {
     const store = createCompanionTastesStore();
-    store.recordToy("feather", "played"); expect(summarizeCompanionToyTastes(store.load()).favorite).toBeNull();
     store.recordToy("feather", "played"); expect(summarizeCompanionToyTastes(store.load()).favorite).toBe("feather");
-    for (let i = 0; i < 6; i++) store.recordToy("feather", "declined");
+    store.recordToy("feather", "played"); expect(summarizeCompanionToyTastes(store.load()).favorite).toBe("feather");
+    const before = store.load().toyTastes; store.recordToy("feather", "declined"); expect(store.load().toyTastes).toEqual(before);
+    for (let i = 0; i < 2; i++) store.recordToy("feather", "tripped");
     expect(summarizeCompanionToyTastes(store.load())).toEqual({ favorite: null, disliked: "feather" });
     for (let i = 0; i < 8; i++) store.recordToy("feather", "played");
     expect(summarizeCompanionToyTastes(store.load())).toEqual({ favorite: "feather", disliked: null });
@@ -72,13 +74,13 @@ describe("122 witnessed toy discovery and local tastes", () => {
   });
   it("resets preferences alone while preserving real discoveries, acknowledgments and unrelated collection storage", () => {
     const storage = disk(), store = createCompanionTastesStore(storage); store.recordToy("ball", "played"); store.recordToy("bell", "tidied"); store.acknowledge("bell"); store.recordFood("apple", "declined");
-    expect(store.resetPreferences()).toBe(true); expect(store.load()).toEqual({ version: 1, toys: ["ball", "bell"], seen: ["bell"], toyTastes: {}, foodTastes: {} });
+    expect(store.resetPreferences()).toBe(true); expect(store.load()).toEqual({ version: 1, toys: ["ball", "bell"], seen: ["bell"], toyTastes: {}, foodTastes: {}, reasons: [] });
     expect(createCompanionTastesStore(storage).load()).toEqual(store.load()); expect(store.resetPreferences()).toBe(false);
     expect(storage.setItem.mock.calls.every(([key]) => key === COMPANION_TASTES_KEY)).toBe(true);
   });
   it("whitelists bounded fields and does not retain schedule/account data or unobserved toy tastes", () => {
     const value = normalizeCompanionTastes({ version: 1, toys: ["ball", "ball", "private-canary"], seen: ["bell", "ball"], toyTastes: { ball: { accepted: 300, declined: -1, score: 50, title: "private-canary" }, bell: { accepted: 2, score: 1 } }, foodTastes: { apple: { accepted: 3, declined: NaN, score: -.4 }, secret: { accepted: 20, score: 1 } }, account: "private-canary", at: Date.now() });
-    expect(value).toEqual({ version: 1, toys: ["ball"], seen: ["ball"], toyTastes: { ball: { accepted: 31, declined: 0, score: 1 } }, foodTastes: { apple: { accepted: 3, declined: 0, score: -.4 } } });
+    expect(value).toEqual({ version: 1, toys: ["ball"], seen: ["ball"], toyTastes: { ball: { accepted: 31, declined: 0, score: 1 } }, foodTastes: { apple: { accepted: 3, declined: 0, score: -.4 } }, reasons: [] });
     const store = createCompanionTastesStore(); for (let i = 0; i < 200; i++) store.recordToy("ball", "played");
     expect(store.load().toyTastes.ball?.accepted).toBe(31); expect(store.load().toyTastes.ball?.score).toBeLessThanOrEqual(1);
     expect(JSON.stringify(store.load()).length).toBeLessThan(16384);
@@ -98,16 +100,18 @@ describe("122 witnessed toy discovery and local tastes", () => {
     storage.replace("{"); expect(store.load().toys).toEqual([]);
   });
   it("keeps the authored initial favorite separate from discoveries and never turns novelty into dislike", () => {
-    const life = createCompanionLife(() => 0), store = createCompanionTastesStore();
+    let life = createCompanionLife(() => 0); const store = createCompanionTastesStore();
     expect(summarizeCompanionFoodTastes(store.load(), life, [])).toEqual({ favorite: life.favoriteFood, disliked: null });
     expect(store.load().toys).toEqual([]); expect(store.load().foodTastes).toEqual({});
     life.foodScores.peach = .95; life.favoriteFood = "peach"; store.recordFood("peach", "accepted");
     expect(summarizeCompanionFoodTastes(store.load(), life, ["apple", "peach"])).toEqual({ favorite: "peach", disliked: null });
     life.familiarity.apple = 1; expect(summarizeCompanionFoodTastes(store.load(), life, ["apple", "peach"]).disliked).toBeNull();
     store.recordFood("apple", "declined"); store.recordFood("apple", "declined");
-    expect(summarizeCompanionFoodTastes(store.load(), life, ["apple", "peach"])).toEqual({ favorite: "peach", disliked: "apple" });
-    for (let i = 0; i < 5; i++) store.recordFood("apple", "accepted");
-    expect(summarizeCompanionFoodTastes(store.load(), life, ["apple", "peach"]).disliked).toBeNull();
+    expect(summarizeCompanionFoodTastes(store.load(), life, ["apple", "peach"])).toEqual({ favorite: "peach", disliked: null });
+    const bad = evaluateCompanionFoodTaste("durian", life, 0); life = experienceCompanionLife(life, { kind: "fed", food: "durian", taste: bad }); store.recordFoodOutcome(bad);
+    expect(summarizeCompanionFoodTastes(store.load(), life, ["apple", "peach", "durian"]).disliked).toBe("durian");
+    for (let i = 0; i < 5; i++) { const good = evaluateCompanionFoodTaste("durian", life, 1); life = experienceCompanionLife(life, { kind: "fed", food: "durian", taste: good }); store.recordFoodOutcome(good); }
+    expect(summarizeCompanionFoodTastes(store.load(), life, ["apple", "peach", "durian"]).disliked).toBeNull();
   });
   it("labels only the fixed toy category in timelines/least-used controls and strips item identities/metadata", () => {
     for (const action of ["companion-collection-category", "companion-collection-inspect"]) {

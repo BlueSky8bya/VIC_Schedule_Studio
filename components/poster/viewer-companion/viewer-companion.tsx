@@ -8,7 +8,7 @@ import { Home, X } from "lucide-react";
 import { logActivity } from "@/lib/activity/client";
 import { COMPANION_CLIP_TIMING, COMPANION_PLAY_TIMING, COMPANION_TIMING, COMPANION_THROW_ROW, companionPlayDuration } from "@/lib/ui/viewer-companion/timing";
 import { getCompanionArrivalPlay } from "@/lib/ui/viewer-companion/arrival-play";
-import { companionRunTripContact, planCompanionRomp, sampleCompanionRunUp, validCompanionRunHop, type CompanionRunTrip } from "@/lib/ui/viewer-companion/romp";
+import { companionRunTripContact, companionToyTripExperience, planCompanionRomp, sampleCompanionRunUp, validCompanionRunHop, type CompanionRunTrip, type CompanionToyTripWitness } from "@/lib/ui/viewer-companion/romp";
 import { cancelCompanionEpisode, companionEpisodeHopAvailable, companionEpisodeMishap, companionEpisodeRunHop, companionEpisodeRunTrip, companionRollProgress } from "@/lib/ui/viewer-companion/episodes";
 import { companionAttentionPoint, deliberateCompanionAction } from "@/lib/ui/viewer-companion/deliberation";
 import { advanceBrain, cancelCompanionTravelGoal, commitAction, createBrain, getAction, getCompanionMood, nearestPlatform, platformLandingX, recordCompanionEvent, type CompanionAction, type Platform } from "@/lib/ui/viewer-companion/brain";
@@ -26,7 +26,7 @@ import { companionPremiereMoment, companionPremiereReturn, COMPANION_PREMIERE_EN
 import { sampleCompanionPremiereTravel } from "@/lib/ui/viewer-companion/premiere-travel";
 import { syncedNow } from "@/lib/ui/synced-clock";
 import { premiereViewportBounds } from "@/lib/ui/premiere/panel-departure";
-import { companionSofaDepth, companionSofaRelease, type CompanionSofaDepth, type CompanionSofaPoint } from "@/lib/ui/viewer-companion/sofa";
+import { companionSofaDepth, companionSofaRelease, companionSofaResident, type CompanionSofaDepth, type CompanionSofaPoint } from "@/lib/ui/viewer-companion/sofa";
 import { projectCompanionSofaBody, projectCompanionSpritePoint } from "@/lib/ui/viewer-companion/sofa-pose";
 import { canStartCompanionAccessoryMotion, COMPANION_ACCESSORY_MOTION_MS, isCompanionHat, sampleCompanionAccessoryMotion } from "@/lib/ui/viewer-companion/accessory-motion";
 import { playCompanionSound, type CompanionSoundMoment } from "@/lib/ui/viewer-companion/companion-sound";
@@ -61,7 +61,8 @@ import { companionToyReturnDelivered, companionToyReturnTarget, planCompanionToy
 import { companionFoodDisposalDelivered, companionFoodDisposalTarget, sampleCompanionFoodDisposal } from "@/lib/ui/viewer-companion/food-disposal";
 import { createCompanionFeedCommands, type CompanionFeedCommand } from "@/lib/ui/viewer-companion/feed-command";
 import { createCompanionPersonalityActivity, preflightCompanionPersonalityActivity } from "@/lib/ui/viewer-companion/personality-activity";
-import { companionToyUnread, loadCompanionTastes, recordCompanionFoodTaste, recordCompanionToyExperience, shouldDeclineCompanionFood, subscribeCompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
+import { advanceCompanionTastes, companionToyUnread, loadCompanionTastes, recordCompanionFoodTasteOutcome, recordCompanionToyExperience, shouldDeclineCompanionFood, subscribeCompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
+import { evaluateCompanionFoodTaste, type CompanionFoodTasteOutcome } from "@/lib/ui/viewer-companion/taste-reasons";
 import { createCompanionReactiveCues } from "@/lib/ui/viewer-companion/reactive-cues";
 import { resolveCompanionHomeEnvironment, type CompanionHomeEnvironmentContext } from "@/lib/ui/viewer-companion/home-environment";
 import { companionHomeRest, INITIAL_COMPANION_HOME_CURTAIN, reduceCompanionHomeCurtain } from "@/lib/ui/viewer-companion/home-curtain";
@@ -95,7 +96,7 @@ import "./viewer-companion.css";
 
 type Props = { onOpenBook: () => void; root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; workspaceBusy?: boolean; agenda: boolean; monthKey: string; context?: CompanionHomeEnvironmentContext; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; launcherHost?: HTMLElement | null; compactHost?: HTMLElement | null; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void; positionMemory?: CompanionPositionMemory };
 type Control = Record<Exclude<CompanionHomeAction, "book"> | "place" | "rest" | "toys" | "toyChanged" | "toyTouched", () => void>;
-type RuntimeAction = CompanionAction & { foodRefusal?: { foodId: string; kind: CompanionFoodKind }; personalitySignature?: CompanionPreferences["personality"]; scene?: CompanionSceneAction["scene"]; toy?: CompanionToyAction["toy"]; toyApproach?: { element: HTMLElement; effect: "stash" | "spawn"; duration: number }; household?: CompanionHouseholdBeat; radio?: { generation: number; reaction: CompanionRadioReaction; bpm: number; instrument?: CompanionInstrumentReaction } };
+type RuntimeAction = CompanionAction & { foodRefusal?: { foodId: string; kind: CompanionFoodKind }; toyMishap?: CompanionToyTripWitness; personalitySignature?: CompanionPreferences["personality"]; scene?: CompanionSceneAction["scene"]; toy?: CompanionToyAction["toy"]; toyApproach?: { element: HTMLElement; effect: "stash" | "spawn"; duration: number }; household?: CompanionHouseholdBeat; radio?: { generation: number; reaction: CompanionRadioReaction; bpm: number; instrument?: CompanionInstrumentReaction } };
 const sampleWorldMusic = (music: NonNullable<RuntimeAction["radio"]>, age: number) => music.instrument ? sampleCompanionInstrumentReaction(music.instrument, age, music.bpm) : sampleCompanionRadioReaction(music.reaction, age, music.bpm);
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -314,6 +315,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const reset = habits.generation !== (brain.current.habits?.generation ?? 0);
       brain.current = { ...brain.current, habits };
       if (reset) {
+        // A pre-reset contact may finish its body reaction, but cannot teach
+        // the erased accident again when the completed clip acknowledges it.
+        if (action?.toyMishap) action = { ...action, toyMishap: undefined };
+        toyMishapWitnessed = false;
         scenes.resetMemory(); unfinishedMelody = false; lastSceneScore = undefined; scatteredFoods.clear(); manualLandingPending = undefined;
         if (action?.scene) { if (["walk", "jump"].includes(action.kind)) action = { ...action, scene: undefined }; else clearAction(); }
         sceneStore.current?.save(scenes.checkpoint(), true);
@@ -326,7 +331,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (life === brain.current.life) return false;
       brain.current = { ...brain.current, life }; persistCare(true); return true;
     };
-    const experience = (kind: CompanionExperience, foodKind?: CompanionFoodKind) => {
+    const experience = (kind: CompanionExperience, foodKind?: CompanionFoodKind, taste?: CompanionFoodTasteOutcome) => {
       if (kind === "petted" || kind === "reassured") sceneEvent({ kind: "petted", place: isHomeSupport(support) ? "home" : supportById(support)?.kind === "card" ? "card" : "floor", equipped: wardrobe.current.equipped });
       if (kind === "played") sceneEvent({ kind: "played", equipped: wardrobe.current.equipped });
       // Real direct interactions can earn a keepsake even when learning is
@@ -334,7 +339,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (preferences.enabled && ["petted", "reassured", "fed", "played"].includes(kind)) recordCompanionGiftInteraction();
       if (!preferences.enabled || !preferences.learnFromYou) return false;
       const habits = learnCompanionHabits(brain.current.habits, kind);
-      const event: CompanionLifeExperience | undefined = kind === "fed" ? foodKind ? { kind: "fed", food: foodKind } : undefined : kind === "reassured" ? { kind: "petted" } : kind === "petted" || kind === "played" ? { kind } : undefined;
+      const event: CompanionLifeExperience | undefined = kind === "fed" ? foodKind ? { kind: "fed", food: foodKind, ...(taste ? { taste } : {}) } : undefined : kind === "reassured" ? { kind: "petted" } : kind === "petted" || kind === "played" ? { kind } : undefined;
       const life = event ? experienceCompanionLife(brain.current.life, event) : brain.current.life;
       if (habits === brain.current.habits && life === brain.current.life) return false;
       brain.current = { ...brain.current, habits, life };
@@ -404,7 +409,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     let nextCueProbe = 0;
     const toyPlanner = createCompanionToyPlanner();
     const personalityActivity = createCompanionPersonalityActivity();
-    let toyEffectApplied = false, toyPerformanceWitnessed = false, foodRefusalWitnessed = false, sceneEffectApplied = false;
+    let toyEffectApplied = false, toyPerformanceWitnessed = false, toyMishapWitnessed = false, foodRefusalWitnessed = false, sceneEffectApplied = false;
     let toyReturnAim: { element: HTMLElement; point: { x: number; y: number } } | undefined;
     let toyReturnPainted: { x: number; y: number } | undefined;
     let foodDisposalAim: { element: HTMLElement; point: { x: number; y: number } } | undefined;
@@ -880,6 +885,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (action?.kind === "play" && action.play && observed.decoded && observed.visible && observed.adoptedIndex === observed.requestedIndex && observed.adoptedSrc === observed.requestedSrc
         && COMPANION_PLAY_TIMING[action.play].beats.some(beat => beat.row === drawingRow)) {
         if (action.toy) toyPerformanceWitnessed = true;
+        if (action.toyMishap && COMPANION_PLAY_TIMING[action.play].beats.some(beat => beat.row === drawingRow && beat.beat === "impact")) toyMishapWitnessed = true;
         if (action.foodRefusal) foodRefusalWitnessed = true;
       }
       // Listening is a local performance, not a newly witnessed authored
@@ -978,7 +984,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (front && bedScene?.anchor.isConnected && paintedRegistration && !el.hidden && !pause && !premiereActive && !premiereBounce && !isDetailGuest() && !hiding && !homeOccluded) {
         const b = bedScene, right = b.left + b.width, bottom = b.top + b.height;
         const body = projectCompanionSofaBody({ ...projection, cell: paintedRegistration });
-        sofaDepth = companionSofaDepth({ point: display, body, bed: { left: b.left, right, top: b.top, bottom }, seatY: b.anchorY, previous: sofaDepth });
+        const resident = companionSofaResident({ point: display, seat: support === "companion-home" ? supportById(support) : undefined,
+          connected: b.anchor.isConnected && Boolean(localBedFront?.isConnected), held: Boolean(pressed || keyboardHeld || overlayDrag), placing: Boolean(placing || overlayPlacing),
+          airborne: Boolean(flight || action?.kind === "jump" || playFalling || returning || homeDeparture),
+          pickupTail: recoveringPickup || heldPivot || presentationNow - releasedPivotAt < 100 });
+        sofaDepth = companionSofaDepth({ point: display, body, bed: { left: b.left, right, top: b.top, bottom }, seatY: b.anchorY, previous: sofaDepth, resident });
         sofaContact = { point: { x, y }, body, depth: sofaDepth };
         data("sofaDepth", sofaDepth);
         if (front.dataset.depth !== sofaDepth) front.dataset.depth = sofaDepth;
@@ -1350,7 +1360,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (guest) wakeGuest(); else nextDecision = petUntil + 500;
     };
     const isOtherControl = (target: EventTarget | null) => target instanceof Element && !el.contains(target) && Boolean(target.closest("button,a,input,select,textarea,[role='button']"));
-    const hoverEligible = () => !pause && !workspaceBusyRef.current && !premiereActive && !premiereBounce && !returning && !el.hidden && document.hasFocus() && preferences.petting && (isDetailGuest() ? !overlayDrag && !guestKeyboardHeld : !hiding && !overlayActive && presence.phase === "active" && !pressed && !keyboardHeld && !placing && !pendingMonth && !awaitingAtX && !(action && ["walk", "jump", "heart", "hide", "eat"].includes(action.kind)));
+    // The authored detail guest retains its existing focused-window exception;
+    // an ordinary resident follows the shared visible-background permission.
+    const hoverEligible = () => !pause && !workspaceBusyRef.current && !premiereActive && !premiereBounce && !returning && !el.hidden && (isDetailGuest() ? document.hasFocus() && !document.hidden : visibleActive()) && preferences.petting && (isDetailGuest() ? !overlayDrag && !guestKeyboardHeld : !hiding && !overlayActive && presence.phase === "active" && !pressed && !keyboardHeld && !placing && !pendingMonth && !awaitingAtX && !(action && ["walk", "jump", "heart", "hide", "eat"].includes(action.kind)));
     const canHover = (point: { x: number; y: number }) => hoverEligible() && pettingWindow.contains(pettingPoint(point), pettingBase, performance.now());
     const stopHover = () => {
       petting.reset(); touch.reset(); pettingWindow.reset(); hoverPetting = false; hoverPoint = undefined;
@@ -1521,6 +1533,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       },
       toyChanged: () => { if (!pause && !document.hidden && !stopped) { nextDecision = Math.min(nextDecision, performance.now() + 100); schedule(); } },
       toyTouched: () => {
+        if (action?.toyMishap) action = { ...action, toyMishap: undefined };
+        toyMishapWitnessed = false;
         toyPlanner.cancel(brain.current.activeMs); toys.current?.cancel(performance.now()); toyPlanner.wake(brain.current.activeMs); scenes.cancel();
         if (action?.toy || action?.scene) {
           if (["walk", "jump"].includes(action.kind)) action = { ...action, toy: undefined, toyApproach: undefined, scene: undefined };
@@ -1600,11 +1614,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         }
       }
       const playful = !homeJourney && !overlayActive && !workspaceBusyRef.current && !premiereActive && presence.phase === "active" && !reduced && gfxMode() !== "off";
-      const romp = playful && !next.episode && !next.household && !next.scene && !next.toy ? planCompanionRomp({ action: next, from: { x, y }, platform: supportById(support), foods: food.current?.foods() ?? [], energy: brain.current.energy, cooldownReady: (brain.current.cooldowns.mishap ?? -Infinity) <= now }, preferences) : undefined;
+      const romp = playful && !next.episode && !next.household && !next.scene && !next.toy ? planCompanionRomp({ action: next, from: { x, y }, platform: supportById(support), foods: food.current?.foods() ?? [], toys: toys.current?.available(), energy: brain.current.energy, cooldownReady: (brain.current.cooldowns.mishap ?? -Infinity) <= now }, preferences) : undefined;
       // A verified run-up shortens only this leg. Preserve the ultimate goal
       // and commit its actual duration/budget after selecting the takeoff.
       next = romp?.walk ?? next;
-      clearAction(false, Boolean(next.household || next.scene), Boolean(next.scene || next.toy)); householdEffectApplied = false; toyEffectApplied = toyPerformanceWitnessed = foodRefusalWitnessed = sceneEffectApplied = false;
+      clearAction(false, Boolean(next.household || next.scene), Boolean(next.scene || next.toy)); householdEffectApplied = false; toyEffectApplied = toyPerformanceWitnessed = toyMishapWitnessed = foodRefusalWitnessed = sceneEffectApplied = false;
       toyReturnAim = undefined; toyReturnPainted = undefined;
       foodDisposalAim = undefined; foodDisposalPainted = undefined;
       if (next.household?.effect === "discard") {
@@ -1833,6 +1847,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (!returning && presence.phase === "active" && now - lastNeeds >= 250) {
         const elapsed = now - lastNeeds;
         brain.current = advanceBrain(brain.current, elapsed, preferences.learnFromYou, preferences);
+        advanceCompanionTastes(elapsed, preferences.learnFromYou);
         const giftArrived = advanceCompanionCollection(elapsed, brain.current.affection, !action && !pressed && !keyboardHeld && !placing && !homeJourney && !overlayActive && !workspaceBusyRef.current && !brain.current.foodGoal && !brain.current.intention && !(brain.current.episode && brain.current.episode.remaining > 0 && brain.current.episode.phase !== "finish") && supportedNow());
         if (giftArrived) launch({ kind: "play", play: "bow", target: { x, y, platformId: support }, duration: companionPlayDuration("bow") }, now);
         if (now - lastMemorySave >= 5000) persistCare(); lastNeeds = now;
@@ -2114,18 +2129,21 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         if (action.kind === "walk") {
           x = lerp(origin.x, action.target.x, runUpCurve ? sampleCompanionRunUp(p) : sampleCompanionTravel(p)); row = action.pace === "scoot" ? 20 : 2;
           if (runTrip) {
-            const point = companionRunTripContact(runTrip, origin, action.target, supportById(support), liveFoods);
+            const tripToys = runTrip.toyId ? toys.current?.available() ?? [] : [];
+            const point = companionRunTripContact(runTrip, origin, action.target, supportById(support), liveFoods, tripToys);
             if (point === null || overlayActive || homeJourney || workspaceBusyRef.current || presence.phase !== "active" || reduced || gfxMode() === "off") runTrip = undefined;
             else if ((x - point) * (action.target.x < origin.x ? -1 : 1) >= 0) {
               const contact = runTrip; x = point; rememberMishapPlace();
               const wasRunning = action.pace === "scoot";
               const trippedFood = liveFoods.find(item => item.id === contact.foodId);
+              const trippedToy = tripToys.find(item => item.id === contact.toyId);
               if (trippedFood) { rememberLife({ kind: "food-mishap", food: trippedFood.kind }); sceneEvent({ kind: "food-mishap", food: trippedFood.kind }); }
               const reaction = action.episode ? companionEpisodeMishap(action, { x, y }, supportById(support), brain.current, now, preferences) : undefined;
-              launch(reaction ?? { kind: "play", play: contact.play, target: { x, y, platformId: support }, duration: companionPlayDuration(contact.play), direction: action.direction, intention: brain.current.intention }, now);
+              const mishap = reaction ?? { kind: "play" as const, play: contact.play, target: { x, y, platformId: support }, duration: companionPlayDuration(contact.play), direction: action.direction, intention: brain.current.intention };
+              launch({ ...mishap, ...(trippedToy ? { toyMishap: { toyId: trippedToy.id, kind: trippedToy.kind, platformId: support, generation: brain.current.habits?.generation ?? 0 } } : {}) }, now);
               const contactPlay = reaction?.play ?? contact.play;
               data("trip", contact.cause); data("play", contactPlay); data("playBeat", "impact");
-              const situation = companionRunContactSituation({ cause: contact.cause, running: wasRunning, foodPresent: Boolean(trippedFood) });
+              const situation = companionRunContactSituation({ cause: contact.cause === "food" ? "food" : "stumble", running: wasRunning, foodPresent: Boolean(trippedFood) });
               if (situation) queueSituation(situation, [21, 24, 25], began);
               paint(sampleCompanionPlay(contactPlay, 0).row, 0, "play"); schedule(); return;
             }
@@ -2277,11 +2295,16 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         else if (action.kind === "shake") { row = 17; frame = p * 15; }
         if (p >= 1) {
           const completed = action, completedTravel = travel, completedOrigin = origin;
+          if (completed.toyMishap && completed.kind === "play") {
+            const kind = companionToyTripExperience(completed.toyMishap, toys.current?.available() ?? [], { point: { x, y }, platformId: support, generation: brain.current.habits?.generation ?? 0,
+              observed: toyMishapWitnessed, completed: true, active: effective.enabled && !pressed && !keyboardHeld && !placing && !reduced && gfxMode() !== "off" && !pause && !document.hidden && !overlayActive && !workspaceBusyRef.current && !premiereActive && presence.phase === "active",
+              learn: preferencesRef.current.learnFromYou !== false });
+            if (kind) recordCompanionToyExperience(kind, "tripped", preferencesRef.current.learnFromYou !== false);
+          }
           if (completed.toy?.toyId && ["toss", "put", "decline"].includes(completed.toy.effect ?? "")) toys.current?.completePlay(completed.toy.toyId, toyPerformanceWitnessed);
           if (completed.foodRefusal && completed.kind === "play" && foodRefusalWitnessed) {
             const refused = food.current?.foods().find(item => item.id === completed.foodRefusal!.foodId && item.platformId === support && Math.hypot(item.x - x, item.y - y) <= 24);
             if (refused && shouldDeclineCompanionFood(refused.kind, toyTastes.current, preferences, brain.current, loadCompanionCollection().foods)) {
-              recordCompanionFoodTaste(refused.kind, "declined", preferences.learnFromYou);
               rememberLife({ kind: "food-declined", food: refused.kind });
             }
           }
@@ -2290,12 +2313,15 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           const continueRoute = Boolean(action.foodId && (action.kind === "walk" || action.kind === "jump") || brain.current.intention?.kind === "explore" && ["consider", "travel"].includes(brain.current.intention.stage) && brain.current.intention.remaining > 0);
           const eatenFood = action.kind === "eat" && action.foodId ? liveFoods.find(item => item.id === action!.foodId) : undefined;
           if (action.kind === "eat" && action.foodId && food.current?.consume(action.foodId)) {
-            if (eatenFood) recordCompanionFoodTaste(eatenFood.kind, "accepted", preferencesRef.current.learnFromYou !== false);
+            const taste = eatenFood ? evaluateCompanionFoodTaste(eatenFood.kind, brain.current.life, Math.random()) : undefined;
             const firstFood = eatenFood && recordCompanionConsumedFood(eatenFood.kind, true);
             if (firstFood && eatenFood) setFirstTaste({ kind: eatenFood.kind, x, y: y - size * .4 });
             queueSituation("meal-finished", [0, 9, 29]); pendingCue = firstFood ? "discover" : "eat";
             const previousFavorite = brain.current.life?.favoriteFood;
-            brain.current = recordCompanionEvent(brain.current, "ate"); if (!experience("fed", eatenFood?.kind)) persistCare(true);
+            brain.current = recordCompanionEvent(brain.current, "ate"); if (!experience("fed", eatenFood?.kind, taste)) persistCare(true);
+            // Profile subscribers read canonical care when taste memory emits.
+            // Both stores receive this one real meal's identical impression.
+            if (taste) recordCompanionFoodTasteOutcome(taste, preferencesRef.current.learnFromYou !== false);
             if (eatenFood) sceneEvent({ kind: "meal", foodId: eatenFood.id, food: eatenFood.kind, favoriteChanged: previousFavorite !== brain.current.life?.favoriteFood, first: Boolean(firstFood) });
             petUntil = now + (reduced ? 400 : 1100);
           }

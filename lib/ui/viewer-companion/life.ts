@@ -1,11 +1,13 @@
 import { COMPANION_FOOD_KINDS, COMPANION_FOOD_NAMES, isCompanionFoodKind, randomCompanionFood, type CompanionFoodKind } from "./snacks";
+import { isCompanionFoodTasteOutcome, type CompanionFoodTasteOutcome } from "./taste-reasons";
 
-export type CompanionLifeReason = "favorite-food" | "new-flavor" | "kind-touch" | "play-together" | "food-mishap" | "food-declined" | "cozy-rest" | "discovered-taste" | "variety" | "reassured" | "rested";
+export type CompanionLifeReason = "favorite-food" | "new-flavor" | "kind-touch" | "play-together" | "food-mishap" | "food-declined" | "food-disliked" | "cozy-rest" | "discovered-taste" | "variety" | "reassured" | "rested";
 export type CompanionLife = {
   seedFood: CompanionFoodKind;
   favoriteFood: CompanionFoodKind;
   foodScores: Record<CompanionFoodKind, number>;
   familiarity: Record<CompanionFoodKind, number>;
+  tastedFoods: CompanionFoodKind[];
   play: number;
   comfort: number;
   social: number;
@@ -15,8 +17,8 @@ export type CompanionLife = {
   generation: number;
   recent: CompanionLifeReason[];
 };
-export type CompanionLifeExperience = { kind: "fed" | "food-mishap" | "food-declined"; food: CompanionFoodKind } | { kind: "petted" | "played" | "rested" };
-const reasons: readonly CompanionLifeReason[] = ["favorite-food", "new-flavor", "kind-touch", "play-together", "food-mishap", "food-declined", "cozy-rest", "discovered-taste", "variety", "reassured", "rested"];
+export type CompanionLifeExperience = { kind: "fed"; food: CompanionFoodKind; taste?: CompanionFoodTasteOutcome } | { kind: "food-mishap" | "food-declined"; food: CompanionFoodKind } | { kind: "petted" | "played" | "rested" };
+const reasons: readonly CompanionLifeReason[] = ["favorite-food", "new-flavor", "kind-touch", "play-together", "food-mishap", "food-declined", "food-disliked", "cozy-rest", "discovered-taste", "variety", "reassured", "rested"];
 const unit = (value: number) => Math.max(0, Math.min(1, value));
 const finite = (value: unknown, fallback: number) => typeof value === "number" && Number.isFinite(value) ? unit(value) : fallback;
 const generationOf = (value: unknown) => typeof value === "number" && Number.isSafeInteger(value) && value >= 0 ? value : 0;
@@ -27,9 +29,9 @@ const familiarityFor = () => Object.fromEntries(COMPANION_FOOD_KINDS.map(kind =>
  * not reroll a favorite or infer time spent away. */
 export function createCompanionLife(rng: () => number = Math.random, generation = 0): CompanionLife {
   const seedFood = randomCompanionFood(undefined, rng);
-  return { seedFood, favoriteFood: seedFood, foodScores: scoresFor(seedFood), familiarity: familiarityFor(), play: .5, comfort: .5, social: .5, curiosity: .5, credit: 1, noveltyCredit: 0, generation: generationOf(generation), recent: [] };
+  return { seedFood, favoriteFood: seedFood, foodScores: scoresFor(seedFood), familiarity: familiarityFor(), tastedFoods: [], play: .5, comfort: .5, social: .5, curiosity: .5, credit: 1, noveltyCredit: 0, generation: generationOf(generation), recent: [] };
 }
-export const DEFAULT_COMPANION_LIFE: Readonly<CompanionLife> = Object.freeze({ ...createCompanionLife(() => 0), foodScores: Object.freeze(scoresFor("apple")), familiarity: Object.freeze(familiarityFor()), recent: Object.freeze([]) as unknown as CompanionLifeReason[] });
+export const DEFAULT_COMPANION_LIFE: Readonly<CompanionLife> = Object.freeze({ ...createCompanionLife(() => 0), foodScores: Object.freeze(scoresFor("apple")), familiarity: Object.freeze(familiarityFor()), tastedFoods: Object.freeze([]) as unknown as CompanionFoodKind[], recent: Object.freeze([]) as unknown as CompanionLifeReason[] });
 
 /** Explicit bounded fields only: no text, dates, accounts, schedules or IDs. */
 export function normalizeCompanionLife(value: unknown, base: Readonly<CompanionLife> = DEFAULT_COMPANION_LIFE): CompanionLife {
@@ -47,9 +49,11 @@ export function normalizeCompanionLife(value: unknown, base: Readonly<CompanionL
     foodScores[kind] = finite(scores[kind], hasScores ? Math.min(fallback, favoriteScore) : fallback);
   }
   for (const kind of COMPANION_FOOD_KINDS) familiarity[kind] = finite(known[kind], base.familiarity[kind]);
-  for (const kind of COMPANION_FOOD_KINDS) if (foodScores[kind] > foodScores[favoriteFood]) favoriteFood = kind;
+  const tastedFoods = COMPANION_FOOD_KINDS.filter(kind => Array.isArray(source.tastedFoods) && source.tastedFoods.includes(kind));
+  const candidates = Array.isArray(source.tastedFoods) ? [seedFood, favoriteFood, ...tastedFoods] : COMPANION_FOOD_KINDS;
+  for (const kind of candidates) if (foodScores[kind] > foodScores[favoriteFood]) favoriteFood = kind;
   const recent = Array.isArray(source.recent) ? source.recent.slice(-16).filter((reason): reason is CompanionLifeReason => reasons.includes(reason as CompanionLifeReason)).slice(-4) : [...base.recent];
-  return { seedFood, favoriteFood, foodScores, familiarity, play: finite(source.play, base.play), comfort: finite(source.comfort, base.comfort), social: finite(source.social, base.social), curiosity: finite(source.curiosity, base.curiosity), credit: finite(source.credit, base.credit), noveltyCredit: finite(source.noveltyCredit, base.noveltyCredit), generation: generationOf(source.generation ?? base.generation), recent };
+  return { seedFood, favoriteFood, foodScores, familiarity, tastedFoods, play: finite(source.play, base.play), comfort: finite(source.comfort, base.comfort), social: finite(source.social, base.social), curiosity: finite(source.curiosity, base.curiosity), credit: finite(source.credit, base.credit), noveltyCredit: finite(source.noveltyCredit, base.noveltyCredit), generation: generationOf(source.generation ?? base.generation), recent };
 }
 
 export function resetCompanionLife(value: CompanionLife, generation: number): CompanionLife {
@@ -72,11 +76,12 @@ export function advanceCompanionLife(value: CompanionLife | undefined, elapsedMs
   // acknowledged meal. No mount or wall-clock gap supplies elapsed time.
   for (const food of COMPANION_FOOD_KINDS) {
     next.familiarity[food] = Math.max(0, next.familiarity[food] - noveltyMs / 600000);
-    const baseline = food === next.seedFood ? .62 : .54;
-    next.foodScores[food] += (baseline - next.foodScores[food]) * noveltyMs / 36000000;
+    const tasted = next.tastedFoods.includes(food), baseline = tasted ? .5 : food === next.seedFood ? .62 : .54;
+    const fade = tasted ? 1 - 2 ** (-noveltyMs / 1800000) : noveltyMs / 36000000;
+    next.foodScores[food] += (baseline - next.foodScores[food]) * fade;
   }
   next.curiosity += (.58 - next.curiosity) * noveltyMs / 3600000;
-  for (const food of COMPANION_FOOD_KINDS) if (next.foodScores[food] > next.foodScores[next.favoriteFood]) next.favoriteFood = food;
+  for (const food of [next.seedFood, next.favoriteFood, ...next.tastedFoods]) if (next.foodScores[food] > next.foodScores[next.favoriteFood]) next.favoriteFood = food;
   return next;
 }
 
@@ -84,24 +89,31 @@ export function advanceCompanionLife(value: CompanionLife | undefined, elapsedMs
  * Food events must refer to an actual consumed food or actual food accident. */
 export function experienceCompanionLife(value: CompanionLife | undefined, event: CompanionLifeExperience, enabled = true): CompanionLife {
   const current = value ?? normalizeCompanionLife(undefined);
-  if (!enabled || !event || !["fed", "food-mishap", "food-declined", "petted", "played", "rested"].includes(event.kind) || current.credit < 1 - 1e-9 && event.kind !== "food-declined") return current;
+  if (!enabled || !event || !["fed", "food-mishap", "food-declined", "petted", "played", "rested"].includes(event.kind)) return current;
   if ((event.kind === "fed" || event.kind === "food-mishap" || event.kind === "food-declined") && !isCompanionFoodKind(event.food)) return current;
+  const taste = event.kind === "fed" && isCompanionFoodTasteOutcome(event.taste) && event.taste.food === event.food ? event.taste : undefined;
+  if (event.kind === "fed" && event.taste !== undefined && !taste) return current;
+  const credited = current.credit >= 1 - 1e-9;
+  if (!credited && !taste && event.kind !== "food-declined") return current;
   if (event.kind === "food-declined" && (event.food === current.favoriteFood || current.familiarity[event.food] < .6)) return current;
   const next = normalizeCompanionLife(current);
-  next.credit = 0;
+  if (credited) next.credit = 0;
   const toward = (key: "play" | "comfort" | "social" | "curiosity", target: number) => { next[key] = unit(next[key] + .025 * (target - next[key])); };
   let reason: CompanionLifeReason;
   if (event.kind === "fed") {
-    next.foodScores[event.food] = unit(next.foodScores[event.food] + .025 * (1 - next.foodScores[event.food]) * (1 - .85 * next.familiarity[event.food]));
+    if (taste) {
+      if (!next.tastedFoods.includes(event.food)) next.tastedFoods = COMPANION_FOOD_KINDS.filter(food => food === event.food || next.tastedFoods.includes(food));
+      const before = next.foodScores[event.food];
+      next.foodScores[event.food] = taste.reaction === "disliked" ? before * .45 : taste.reaction === "delighted"
+        ? unit(Math.max(.78, before + .45 * (1 - before), next.foodScores[current.favoriteFood] + .02)) : unit(Math.max(.5, before + .14 * (1 - before)));
+      if (taste.reaction === "delighted") next.favoriteFood = event.food;
+    } else next.foodScores[event.food] = unit(next.foodScores[event.food] + .025 * (1 - next.foodScores[event.food]) * (1 - .85 * next.familiarity[event.food]));
     next.familiarity[event.food] = unit(next.familiarity[event.food] + .12);
-    toward("comfort", .8); toward("social", .75);
-    if (event.food !== current.favoriteFood) toward("curiosity", .9);
-    reason = event.food === current.favoriteFood ? "favorite-food" : "variety";
+    if (credited) { toward("comfort", .8); toward("social", .75); if (event.food !== current.favoriteFood) toward("curiosity", .9); }
+    reason = taste?.reaction === "disliked" ? "food-disliked" : event.food === current.favoriteFood ? "favorite-food" : "variety";
   } else if (event.kind === "food-declined") {
-    // The observed refusal controller enforces a30s completion cooldown and
-    // repeated familiarity. One completion gently changes existing choice
-    // weight, even when a recent meal used the ordinary learning credit.
-    next.foodScores[event.food] = Math.max(.15, next.foodScores[event.food] - .04);
+    // A visible refusal is a current choice, not a tasted aversion. Only an
+    // impression from a consumed meal can reduce its canonical food score.
     reason = "food-declined";
   } else if (event.kind === "food-mishap") {
     // An accident only changes temporary familiarity/approach, never removes
@@ -115,8 +127,9 @@ export function experienceCompanionLife(value: CompanionLife | undefined, event:
   } else {
     toward("comfort", 1); reason = "rested";
   }
-  for (const food of COMPANION_FOOD_KINDS) if (next.foodScores[food] > next.foodScores[next.favoriteFood]) next.favoriteFood = food;
-  if (next.favoriteFood !== current.favoriteFood) reason = "discovered-taste";
+  const candidates = event.kind === "fed" && !taste ? COMPANION_FOOD_KINDS : [next.seedFood, next.favoriteFood, ...next.tastedFoods];
+  for (const food of candidates) if (next.foodScores[food] > next.foodScores[next.favoriteFood]) next.favoriteFood = food;
+  if (next.favoriteFood !== current.favoriteFood && taste?.reaction !== "disliked") reason = "discovered-taste";
   next.recent = [...next.recent.filter(previous => previous !== reason), reason].slice(-4);
   return next;
 }

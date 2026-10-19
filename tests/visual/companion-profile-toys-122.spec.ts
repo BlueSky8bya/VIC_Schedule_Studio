@@ -69,11 +69,17 @@ for (const [surface, dark, width] of [["viewer", false, 1440], ["studio", true, 
   await expect(category).not.toHaveAttribute("data-unread", "true"); await dialog.screenshot({ path: `${out}/${surface}-toy-book.png` });
   state.verify();
 });
-test("122 profile reads bounded prior toy/food reactions without discovering the other six toys", async ({ page }, info) => {
+test("122 profile reads bounded prior toy/food reactions without discovering other toys", async ({ page }, info) => {
   await page.setViewportSize({ width: 1050, height: 780 }); const state = await fixture(page, info, "viewer", true, true), { profile } = await state.open();
-  await expect(profile.locator(".rhh-taste-card dd")).toHaveText(["복숭아", "사과", "통통 공", "딸랑 종"]);
+  //130 preserves prior reactions without inventing a sensory aversion from
+  // old boredom refusals, or fabricating a reason the legacy record lacks.
+  await expect(profile.locator(".rhh-taste-card dd")).toHaveText(["복숭아", "알아가는 중", "통통 공", "알아가는 중"]);
+  await expect(profile.locator(".rhh-taste-reason")).toHaveCount(0);
   await expect.poll(() => profile.locator(".rhh-taste-card img").evaluateAll(nodes => nodes.every(node => (node as HTMLImageElement).complete && (node as HTMLImageElement).naturalWidth > 0))).toBe(true);
   const before = await page.evaluate(() => localStorage.getItem("vic.viewerCompanionTastes"));
+  const legacy = JSON.parse(before!);
+  expect(legacy.toys).toEqual(["ball", "bell"]); expect(legacy.seen).toEqual([]);
+  expect(legacy.toyTastes.bell).toEqual({ score: -.6, accepted: 2, declined: 6 });
   await profile.getByRole("tab", { name: "도감", exact: true }).click(); await profile.locator('[data-act="companion-collection-category"][data-act-opt="toy"]').click();
   await expect(profile.locator(".rhh-companion-toy-discovery")).toBeVisible(); expect(await page.evaluate(() => localStorage.getItem("vic.viewerCompanionTastes"))).toBe(before);
   await profile.getByRole("tab", { name: "환경설정", exact: true }).click();

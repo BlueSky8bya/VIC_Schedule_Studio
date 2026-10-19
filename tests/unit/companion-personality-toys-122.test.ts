@@ -289,7 +289,9 @@ describe("122 eight-personality meaningful activity budget", () => {
     for (const patch of [{ brain: { ...full, hunger: .8 }, preferences, known: ["peach" as const] }, { brain: full, preferences: { ...preferences, learnFromYou: false }, known: ["peach" as const] }, { brain: full, preferences, known: [] }])
       expect(createCompanionPersonalityActivity().refuseFood(patch.brain, offered, patch.preferences, tastes, patch.known, 2000)).toBeUndefined();
     const before = getCompanionFoodPreference(life, "peach"), learned = experienceCompanionLife(life, { kind: "food-declined", food: "peach" });
-    expect(getCompanionFoodPreference(learned, "peach")).toBeLessThan(before);
+    //130: the observed refusal remains a choice; only eating can teach a new
+    // sensory aversion. Keep its real approach/expression and all guards.
+    expect(getCompanionFoodPreference(learned, "peach")).toBe(before);
     expect(experienceCompanionLife(life, { kind: "food-declined", food: "peach" }, false)).toBe(life);
     expect(experienceCompanionLife(life, { kind: "food-declined", food: "apple" })).toBe(life);
     expect(learned.foodScores.peach).toBeGreaterThanOrEqual(.15);
