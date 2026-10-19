@@ -2,7 +2,7 @@
 
 | ID | Status | Record |
 |---|---|---|
-| COMPANION-INTERIOR-135 | Local verification complete; scoped release/actual public verification pending | [Interior and field guide](PLAN-20261019-135-companion-interior-field-guide.md) |
+| COMPANION-ROOM-136 | Implementing room coherence, persistent light and expanded behavior report | [136 plan](PLAN-20261019-136-companion-room-coherence.md) |
 | COMPANION-LIFE-132 | Awaiting nine-name/personality proposal feedback; new AI unapplied, selected room direction implemented in135 | [Personality reader](PLAN-20261019-135-personality-reader.md), [House and work scenes](PLAN-20261019-132-companion-home-scenes.md) |
 | PRIVACY-20260921 | Deployed containment verified; historical Git exposure, realtime/provider and retention follow-up remain | [Privacy audit](../verification/PRIVACY-20260921.md) |
 | DARK-HARMONY-20260919 | Ribbon editor dark controls corrected; local verification and authorized push follow-up. Production unverified (prior release staged) | [Dark palette follow-up](../../ux/dark-mode-palette.md) |

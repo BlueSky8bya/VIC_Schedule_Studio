@@ -512,7 +512,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       }
       bedScene = { anchor, anchorX: seat.left, anchorY: seat.top, left: rect.left, top: rect.top, width: rect.width, height: rect.height, opacity, opacitySources, clip: { left: clip.left, top: clip.top, right: clip.right, bottom: clip.bottom } };
       bedNeedsPaint = true;
-      const material = getComputedStyle(room.closest(".vc-home")!);
+      const material = getComputedStyle(room);
       for (const token of ["--vc-bed-light", "--vc-bed-cloth", "--vc-bed-shade", "--vc-soft-shadow"]) style(front, token, material.getPropertyValue(token));
     };
     // The complete room already draws its front. The extra portal is needed

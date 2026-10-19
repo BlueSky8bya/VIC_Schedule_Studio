@@ -97,7 +97,7 @@ async function geometry(home: Locator) {
       controls, chest, bin, pad, expectedPad, tvAngle: Math.atan2(transform.m31, transform.m11) * 180 / Math.PI,
       tv: box(room.querySelector(".vc-home-tv")!), sofa: box(room.querySelector(".vc-cushion-button")!), bodySrc: body.getAttribute("src"),
       floor: box(room.querySelector(".vc-home-floor")!), seat: box(room.querySelector(".vc-home-cushion")!),
-      floorLightOpacity: getComputedStyle(room.querySelector(".vc-home-floor")!, "::after").opacity,
+      floorLightOpacity: getComputedStyle(room, "::before").opacity,
       curtainPhase: room.querySelector(".vc-home-window")!.getAttribute("data-curtain"),
       opening: box(room.querySelector(".vc-toy-box-opening")!), outlet: box(room.querySelector(".vc-dispenser-slot")!) };
   });
@@ -125,7 +125,10 @@ for (const [surface, width, night, reduced] of [["viewer", 1440, false, false], 
       expect(Math.max(0, Math.min(x.right, y.right) - Math.max(x.x, y.x)) * Math.max(0, Math.min(x.bottom, y.bottom) - Math.max(x.y, y.y)), `${x.action}/${y.action} overlap`).toBeLessThan(.5);
     }
     expect(data.tv.x + data.tv.width / 2).toBeGreaterThan(data.sofa.x + data.sofa.width / 2);
-    expect(data.tvAngle).toBeCloseTo(-30, 0);
+    //136's cabinet is drawn with real visible depth. No planar body warp;
+    // the changing CRT picture alone is projected into that cabinet.
+    expect(data.tvAngle).toBeCloseTo(0, 0);
+    expect(data.bodySrc).toBe("/companion/home/136/tv-body.webp");
     expect(Math.abs((data.pad.x + data.pad.right) / 2 - data.expectedPad.x)).toBeLessThan(1.5);
     expect(Math.abs((data.pad.y + data.pad.bottom) / 2 - data.expectedPad.y)).toBeLessThan(1.5);
     expect(data.chest.bottom).toBeCloseTo(data.floor.y, 0);

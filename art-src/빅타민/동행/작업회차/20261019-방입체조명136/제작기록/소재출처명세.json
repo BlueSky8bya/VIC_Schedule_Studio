@@ -1,0 +1,50 @@
+{
+  "dateKST": "2026-10-19",
+  "builtin_generations": 2,
+  "entries": [
+    {
+      "source": "art-src/빅타민/동행/작업회차/20261019-방입체조명136/원본/입체티비.png",
+      "source_sha256": "5400ab3f132d27ba1d71c1112f7eb2287be44ffdc7e4ddc8b343871b11c0ed06",
+      "runtime": "public/companion/home/136/tv-body.webp",
+      "sha256": "6f8e4b0e4100546cef2d46a6685234e4d5073a1e57bef38f9359907965d1694c",
+      "sourceSize": [
+        1254,
+        1254
+      ],
+      "opaqueBounds": {
+        "left": 63,
+        "top": 114,
+        "right": 1191,
+        "bottom": 1159
+      },
+      "bytes": 45282,
+      "operation": "Lanczos resize, WebP quality93, alpha preserved"
+    },
+    {
+      "source": "art-src/빅타민/동행/작업회차/20261019-방입체조명136/원본/중립조명빈방.png",
+      "source_sha256": "50ca0edbffd9d709956785e41307f6381a6815291975c9500fa51f6caa1f0bc9",
+      "runtime": "public/companion/home/136/room-neutral.webp",
+      "sha256": "4491905cdaeaa5835b6464eb1ac8a9fe96b8cf402c084aa22ad2152c4e35a384",
+      "sourceSize": [
+        1536,
+        1024
+      ],
+      "opaqueBounds": {
+        "left": 0,
+        "top": 0,
+        "right": 1536,
+        "bottom": 1024
+      },
+      "bytes": 27902,
+      "operation": "Lanczos resize, WebP quality93, alpha preserved"
+    },
+    {
+      "source": "art-src/빅타민/동행/작업회차/20261019-방인테리어135/원본/빈방_벽바닥.png",
+      "source_sha256": "8ac0fe0171347ecce8119155ae14663ab1df208387a3c9e0b7442350b13370d1",
+      "runtime": "public/companion/home/136/room-sunlit.webp",
+      "sha256": "e8219e9f9c7193bb848f2fb68e94170f6c2f55587dafb9297ea870e423e0c3d2",
+      "bytes": 23226,
+      "operation": "Existing135 full empty room, Lanczos resize, WebP quality93"
+    }
+  ]
+}

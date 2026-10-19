@@ -156,7 +156,12 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     }
   };
   const resizeObserver = typeof ResizeObserver === "undefined" ? undefined : new ResizeObserver(entries => { for (const entry of entries) dirtyTextScopes.add(entry.target); schedule(); });
-  const homeObserver = typeof MutationObserver === "undefined" ? undefined : new MutationObserver(records => { dirtyText(records); schedule(); });
+  const homeObserver = typeof MutationObserver === "undefined" ? undefined : new MutationObserver(records => {
+    // Room materials can change without moving any platform. Deliver that
+    // snapshot too so the separately rendered sofa foreground stays in sync.
+    if (records.some(record => record.type === "attributes" && ["data-lamp-lit", "data-night", "data-phase", "data-curtain"].includes(record.attributeName ?? ""))) notifyNextMeasurement = true;
+    dirtyText(records); schedule();
+  });
   const invalidateText = () => { textEpoch++; schedule(); };
 
   function measure() {
@@ -312,7 +317,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       homeObserver?.disconnect();
       observedHome = home;
       const house = home?.closest<HTMLElement>(".vc-home") ?? home?.parentElement;
-      if (house) homeObserver?.observe(house, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["class", "style", "hidden", "inert", "aria-hidden"] });
+      if (house) homeObserver?.observe(house, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ["class", "style", "hidden", "inert", "aria-hidden", "data-lamp-lit", "data-night", "data-phase", "data-curtain"] });
       for (let element: HTMLElement | null = house?.parentElement ?? home; element; element = element.parentElement) {
         homeObserver?.observe(element, { attributes: true, attributeFilter: ["class", "style", "hidden", "inert", "aria-hidden"] });
       }

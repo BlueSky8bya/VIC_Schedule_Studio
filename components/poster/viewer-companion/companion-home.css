@@ -4,15 +4,15 @@
    Every scene layer is static; only a deliberate interaction moves. */
 .vc-home {
   --vc-object-min-hit: calc(45px / var(--shell-zoom, 1));
-  --vc-bin-hit: max(66px, var(--vc-object-min-hit));
-  --vc-bin-height: max(64px, var(--vc-object-min-hit));
+  --vc-bin-hit: max(20.5cqw, var(--vc-object-min-hit));
+  --vc-bin-height: max(20cqw, var(--vc-object-min-hit));
   --vc-object-gap: max(8px, calc(8px / var(--shell-zoom, 1)));
-  --vc-radio-hit: max(53px, var(--vc-object-min-hit));
-  --vc-book-hit: max(44px, var(--vc-object-min-hit));
-  --vc-toy-hit: max(98px, var(--vc-object-min-hit));
-  --vc-dispenser-hit: var(--vc-object-min-hit);
-  --vc-storage-right: 4px;
-  --vc-storage-gap: max(3px, calc(3px / var(--shell-zoom, 1)));
+  --vc-radio-hit: max(13.5cqw, var(--vc-object-min-hit));
+  --vc-book-hit: max(11.5cqw, var(--vc-object-min-hit));
+  --vc-toy-hit: max(30cqw, var(--vc-object-min-hit));
+  --vc-dispenser-hit: max(14cqw, var(--vc-object-min-hit));
+  --vc-storage-right: 4cqw;
+  --vc-storage-gap: max(3px, 1.2cqw);
   --vc-shelf-width: max(116px, calc(var(--vc-radio-hit) + var(--vc-book-hit) + var(--vc-object-gap) + 2px));
   --vc-window-left: 12px;
   --vc-wall: color-mix(in srgb, rgb(var(--glass-panel)) 88%, #dfc9ab);
@@ -54,14 +54,28 @@
 }
 /* Shelf, back-row storage and the foreground keep separate native targets.
    The240px scene gives the lamp, broad window and two floor rows room. */
-.vc-home-room { --vc-toy-paint-width: 104px; --vc-floor-height: 76px; --vc-storage-bottom: calc(var(--vc-floor-height) + 3px - var(--vc-toy-paint-width) * 17 / 256); --vc-wall-reserve: calc(var(--vc-shelf-width) + 28px); --vc-window-width: min(180px, calc(100% - var(--vc-wall-reserve))); --vc-room-grade: #2c233500; --vc-room-art-grade: 1; --vc-tv-width: 64px; --vc-tv-bottom: 4px; position: relative; height: max(240px, calc(144px + 96px / var(--shell-zoom, 1))); overflow: hidden; border-radius: var(--r-sm); background: linear-gradient(var(--vc-room-grade), var(--vc-room-grade)), url('/companion/home/135/room-wall.webp') center / 100% 100%; box-shadow: inset 0 1px 0 #fff3, inset 0 -1px 0 var(--vc-thread); }
+.vc-home-room {
+  --vc-room-height: max(74cqw, calc(130px + 130px / var(--shell-zoom, 1)));
+  --vc-floor-height: calc(var(--vc-room-height) * .42);
+  --vc-toy-paint-width: 34cqw;
+  --vc-storage-bottom: calc(var(--vc-floor-height) + 3px - var(--vc-toy-paint-width) * 17 / 256);
+  --vc-dispenser-paint-width: max(56px, 17.4cqw);
+  --vc-bin-paint-width: 23cqw; --vc-bin-right: 4cqw; --vc-bin-bottom: 8cqw;
+  --vc-window-width: min(54cqw, calc(100% - var(--vc-shelf-width) - 20px));
+  --vc-tv-width: max(64px, 20cqw); --vc-tv-bottom: 9cqw;
+  --vc-room-grade: #56371b00; --vc-room-art-grade: 1; --vc-room-daylight: 0;
+  --vc-bed-cloth: #c4bcae; --vc-bed-light: #e1d9ca; --vc-bed-shade: #aaa292;
+  position: relative; height: var(--vc-room-height); overflow: hidden; border-radius: var(--r-sm);
+  background: linear-gradient(var(--vc-room-grade), var(--vc-room-grade)), url('/companion/home/136/room-neutral.webp') center / 100% 100%;
+  box-shadow: inset 0 1px 0 #fff3, inset 0 -1px 0 var(--vc-thread);
+}
 .vc-home[data-home-presentation="compact"] > .panel-section-heading .panel-section-title > span { min-height: 36px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: 4px var(--control-hit); }
-.vc-home-room::before { content: ''; position: absolute; inset: auto 0 calc(var(--vc-floor-height) - 2px); height: 8px; background: linear-gradient(var(--vc-room-grade), var(--vc-room-grade)), url('/companion/home/135/room-baseboard.webp') center / 100% 100%; box-shadow: 0 1px 2px #795b3924; pointer-events: none; }
+.vc-home-room::before { content: ''; position: absolute; z-index: 0; inset: 0; background: url('/companion/home/136/room-sunlit.webp') center / 100% 100%; opacity: var(--vc-room-daylight); pointer-events: none; transition: opacity calc(var(--dur-2) * 4) var(--ease); }
 .vc-home-close { display: grid; place-items: center; width: var(--control-hit); height: var(--control-hit); margin-left: auto; padding: 0; border: 0; border-radius: var(--r-pill); color: var(--muted); background: transparent; cursor: pointer; pointer-events: auto; }
 .vc-home-close:hover { color: var(--ink); background: rgb(var(--glass-head)); }
 /* Storage has room-appropriate scale. The glass uses the remaining wall
    width after the enlarged native targets and their shared gap. */
-.vc-home-window { position: absolute; left: var(--vc-window-left); top: 7px; box-sizing: border-box; width: var(--vc-window-width); height: auto; aspect-ratio: 38 / 25; padding: 6px; border: 1px solid color-mix(in srgb, var(--vc-wood-edge) 65%, transparent); border-radius: 14px 14px 9px 9px; background: linear-gradient(110deg, var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 3px 5px var(--vc-soft-shadow), inset 0 1px 1px #fff9; pointer-events: none; }
+.vc-home-window { position: absolute; z-index: 1; left: var(--vc-window-left); top: 7px; box-sizing: border-box; width: var(--vc-window-width); height: auto; aspect-ratio: 38 / 25; padding: 6px; border: 1px solid color-mix(in srgb, var(--vc-wood-edge) 65%, transparent); border-radius: 14px 14px 9px 9px; background: linear-gradient(110deg, var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 3px 5px var(--vc-soft-shadow), inset 0 1px 1px #fff9; pointer-events: none; }
 .vc-window-glass { position: relative; display: block; width: 100%; height: 100%; overflow: hidden; border-radius: 8px 8px 3px 3px; box-shadow: inset 0 0 0 1px #604b3436; isolation: isolate; }
 .vc-window-landscape, .vc-window-weather { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 .vc-window-landscape { filter: var(--vc-landscape-grade, none); }
@@ -81,7 +95,7 @@
 .vc-window-crossbar::before { top: 0; bottom: 0; left: calc(50% - 1px); width: 2px; }
 .vc-window-crossbar::after { left: 0; right: 0; top: 43%; height: 2px; }
 .vc-window-sill { position: absolute; left: -4px; right: -4px; bottom: -4px; height: 6px; border: 1px solid color-mix(in srgb, var(--vc-wood-edge) 60%, transparent); border-radius: 4px; background: linear-gradient(var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 2px 2px var(--vc-soft-shadow); }
-.vc-home-shelf { position: absolute; top: calc(var(--vc-object-min-hit) + 13px); right: 8px; width: var(--vc-shelf-width); height: calc(max(48px, var(--vc-object-min-hit)) + 13px); pointer-events: none; }
+.vc-home-shelf { position: absolute; z-index: 2; top: max(48px, var(--vc-object-min-hit)); right: 8px; width: var(--vc-shelf-width); height: calc(max(48px, var(--vc-object-min-hit)) + 13px); pointer-events: none; }
 .vc-home-shelf-art { position: absolute; bottom: 0; display: block; width: 100%; height: 55px; pointer-events: none; }
 .vc-shelf-bracket { stroke: var(--vc-wood-edge); stroke-width: 3; stroke-linecap: round; }
 .vc-shelf-board-shadow { fill: var(--vc-soft-shadow); }
@@ -97,25 +111,16 @@
 .vc-book-cover-mascot { position: absolute; left: 50%; top: 51.2%; width: 19px; height: 19px; transform: translate(-50%, -50%); background: url('/companion/hd/vitamin-action-00-eye-contour-120-v1.webp') 0 0 / 800% 200% no-repeat; pointer-events: none; }
 .vc-radio-button > .vc-home-object-image { width: 53px; height: 40px; }
 .vc-book-unread { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 17px; height: 17px; border: 2px solid var(--vc-linen); border-radius: 50%; background: #a34d39; color: #fffaf2; font: 800 11px/1 var(--font-ui, sans-serif); pointer-events: none; }
-.vc-home-light { position: absolute; top: 36px; left: 40px; width: 65%; height: 144px; background: linear-gradient(125deg, #f4e2b72e, transparent 84%); clip-path: polygon(0 0, 28% 0, 100% 100%, 10% 100%); pointer-events: none; }
-.vc-home-room[data-night] .vc-home-light { background: linear-gradient(125deg, #c6d7eb18, transparent 84%); }
-.vc-home-room:is([data-weather="rain"], [data-weather="fog"], [data-weather="snow"]) .vc-home-light { opacity: .3; }
-.vc-home-floor { position: absolute; inset: auto 0 0; height: var(--vc-floor-height); background: linear-gradient(var(--vc-room-grade), var(--vc-room-grade)), url('/companion/home/135/room-floor.webp') center / 100% 100%; box-shadow: inset 0 1px 0 #fff3, inset 0 -3px 0 #795b3920; pointer-events: none; }
-/* The window's daylight reaches the floor below the furniture, rather than
-   ending behind the opaque floor layer. Night has no baked daytime beam. */
-.vc-home-floor::after { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, #fff1c787, #fff1c730 70%, transparent); clip-path: polygon(7% 0, 34% 0, 93% 100%, 28% 100%); transition: opacity calc(var(--dur-2) * 4) var(--ease); pointer-events: none; }
-.vc-home-room[data-night] .vc-home-floor::after { opacity: 0; }
-.vc-home-room:is([data-weather="rain"], [data-weather="fog"], [data-weather="snow"], [data-weather="cloud"]) .vc-home-floor::after { opacity: .25; }
-.vc-home-room[data-night]:is([data-weather="rain"], [data-weather="fog"], [data-weather="snow"], [data-weather="cloud"]) .vc-home-floor::after { opacity: 0; }
-.vc-home-room:not([data-night]):has(.vc-home-window[data-curtain="shade"]) .vc-home-floor::after { opacity: .65; }
-.vc-home-room:has(.vc-home-window[data-curtain="closed"]) .vc-home-floor::after,
-.vc-home-room:has(.vc-home-window[data-curtain="closed"]) .vc-home-light { opacity: 0; }
+.vc-home-light { display: none; }
+/* A transparent measured floor follows the illustrated baseboard at58%.
+   The continuous room picture owns perspective, grain and daylight. */
+.vc-home-floor { position: absolute; inset: auto 0 0; height: var(--vc-floor-height); pointer-events: none; }
 /* The recessed seat is the real anchor. The raised torus can grow around
    it without pretending a flat rug is a bed (PLAN052 replaces16px cushion). */
 /* The78px hit covers the complete resting back rim of the capped150px SVG
    (77.5px of opaque height). A button-only check would miss an inert SVG
    painting above its target. The original compact sofa aspect is retained. */
-.vc-cushion-button { position: absolute; z-index: 2; left: 5px; bottom: 5px; width: max(calc(120px / var(--shell-zoom, 1)), min(45%, 150px)); height: 78px; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; color: var(--muted); cursor: pointer; }
+.vc-cushion-button { position: absolute; z-index: 2; left: 5px; bottom: 10cqw; width: max(calc(120px / var(--shell-zoom, 1)), min(39%, 150px)); height: 78px; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; color: var(--muted); cursor: pointer; }
 .vc-plush-bed { position: absolute; bottom: 0; left: 0; width: 100%; height: auto; overflow: visible; pointer-events: none; transform-origin: 50% 85%; }
 /* Only painted groups move. The SVG, button and two-pixel seat remain fixed
    measurements; both copies of the cloth share the same viewBox and pivot. */
@@ -159,17 +164,17 @@ body:has(.vc-cushion-button:active) .vc-bed-foreground .vc-sofa-feedback { --vc-
 /* Paint bases share the rear floor edge, including the chest's transparent
    bottom17/256. The smaller feeder hit still encloses its whole opaque art. */
 .vc-dispenser { position: absolute; z-index: 4; right: calc(var(--vc-storage-right) + var(--vc-toy-hit) + var(--vc-storage-gap)); bottom: var(--vc-floor-height); width: var(--vc-dispenser-hit); height: var(--vc-dispenser-hit); box-sizing: border-box; padding: 0; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
-.vc-dispenser-paint { position: absolute; bottom: -5.9px; left: 50%; margin-left: -28px; width: 56px; height: 52px; }
+.vc-dispenser-paint { position: absolute; bottom: calc(var(--vc-dispenser-paint-width) * -5.9 / 56); left: 50%; margin-left: calc(var(--vc-dispenser-paint-width) / -2); width: var(--vc-dispenser-paint-width); height: calc(var(--vc-dispenser-paint-width) * 52 / 56); }
 /* Native outlet remains outside the moving art; geometry measures its actual
    smaller dispenser slot, not a decorative animation transform. */
 /* Contained square art is52px, with actual source outlet center(131,168).
    This contact remains outside the whole-object hover/press transform. */
-.vc-dispenser-slot { position: absolute; bottom: 11.1625px; left: calc(50% + .609375px); margin-left: -9.546875px; width: 19.09375px; height: 1.625px; pointer-events: none; }
-.vc-home-trash { position: absolute; z-index: 2; right: 10px; bottom: 6px; display: grid; place-items: end center; width: var(--vc-bin-hit); height: var(--vc-bin-height); padding: 0; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
+.vc-dispenser-slot { position: absolute; bottom: calc(var(--vc-dispenser-paint-width) * 11.1625 / 56); left: calc(50% + var(--vc-dispenser-paint-width) * .609375 / 56); margin-left: calc(var(--vc-dispenser-paint-width) * -9.546875 / 56); width: calc(var(--vc-dispenser-paint-width) * 19.09375 / 56); height: calc(var(--vc-dispenser-paint-width) * 1.625 / 56); pointer-events: none; }
+.vc-home-trash { position: absolute; z-index: 2; right: var(--vc-bin-right); bottom: var(--vc-bin-bottom); display: grid; place-items: end center; width: var(--vc-bin-hit); height: var(--vc-bin-height); padding: 0; border: 0; border-radius: var(--r-md); background: transparent; cursor: pointer; }
 /* An oversized grid child expands the implicit track beyond its button.
    Anchor this painting directly so the enlarged bin stays fully clickable. */
 /*90% paint size preserves the floor baseline and original native hit target. */
-.vc-home-trash > .vc-home-object-image { position: absolute; left: 50%; margin-left: -36.9px; bottom: -8.28px; width: 73.8px; height: 66.6px; }
+.vc-home-trash > .vc-home-object-image { position: absolute; left: 50%; margin-left: calc(var(--vc-bin-paint-width) / -2); bottom: calc(var(--vc-bin-paint-width) * -8.28 / 73.8); width: var(--vc-bin-paint-width); height: calc(var(--vc-bin-paint-width) * 229 / 256); }
 .vc-home button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .vc-home button:disabled { opacity: .38; cursor: default; }
 .vc-home-close:active { transform: scale(var(--press-scale)); }
@@ -181,65 +186,59 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home butt
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home button:active { transform: none; }
 html[data-theme="dark"] .vc-home { --vc-soft-shadow: #21181045; --vc-wood-light: color-mix(in srgb, rgb(var(--glass-cell)) 38%, #b69d7d); }
 html[data-theme="dark"] .vc-home-object-image { opacity: .92; }
-/*135: neutral patches come from one generated empty room. Separate wall and
-  floor registration keeps their seam on the actual physical floor edge. */
-.vc-home-room[data-night] { --vc-room-grade: #252039a6; --vc-room-art-grade: .64; --vc-bed-cloth: #817778; --vc-bed-light: #b5aaa1; --vc-bed-shade: #5c5762; }
-.vc-home-room[data-night][data-lamp-lit] { --vc-room-grade: #593e342e; --vc-room-art-grade: .95; --vc-bed-cloth: #c4b6a2; --vc-bed-light: #e7d6bb; --vc-bed-shade: #99887c; }
-.vc-home-room[data-phase="dusk"] { --vc-room-grade: #ad71451c; }
-.vc-home-room :is(.vc-home-shelf, .vc-toy-box, .vc-dispenser, .vc-home-trash, .vc-home-wash-pad) { filter: brightness(var(--vc-room-art-grade)); }
-.vc-home-room::after { content: ''; position: absolute; z-index: 1; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at 59% 91%, #ffc4793b, transparent 33%); }
+/*136: one perspective, one room material and one source of light. The
+  scenery remains emissive outside; curtains, frame and furniture are inside. */
+.vc-home-room:not([data-night])[data-weather="clear"] { --vc-room-daylight: 1; }
+.vc-home-room:not([data-night]):has(.vc-home-window[data-curtain="shade"]) { --vc-room-daylight: .65; }
+.vc-home-room:has(.vc-home-window[data-curtain="closed"]) { --vc-room-daylight: 0; }
+.vc-home-room[data-night]:not([data-lamp-lit]) {
+  --vc-room-grade: #2e2039a6; --vc-room-art-grade: .6;
+  --vc-bed-cloth: #817778; --vc-bed-light: #b5aaa1; --vc-bed-shade: #5c5762; --vc-soft-shadow: #21181045;
+}
+.vc-home-room[data-lamp-lit] { --vc-room-grade: #ba7d2d09; --vc-room-art-grade: 1; --vc-bed-cloth: #c4b6a2; --vc-bed-light: #e7d6bb; --vc-bed-shade: #99887c; }
+.vc-home-room :is(.vc-home-shelf, .vc-toy-box, .vc-dispenser, .vc-home-trash, .vc-home-wash-pad, .vc-window-curtain-overlay, .vc-window-sill, .vc-window-crossbar) { filter: brightness(var(--vc-room-art-grade)); }
+.vc-home-room[data-night]:not([data-lamp-lit]) .vc-home-window { background: linear-gradient(110deg, #8d765f, #70563f); border-color: #69513f; }
+.vc-home-room::after { content: ''; position: absolute; z-index: 1; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at 52% 83%, #ffc4793b, transparent 33%); }
 .vc-home-room[data-night]:not([data-tv="off"])::after { opacity: 1; }
-.vc-home-lamp-light { position: absolute; z-index: 1; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at 89% 9%, #ffe4ad73, #ffcf7330 38%, transparent 75%); transition: opacity var(--dur-2) var(--ease); }
+.vc-home-lamp-light { position: absolute; z-index: 1; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at 59% 9%, #ffe4ad50, #ffcf731c 38%, transparent 75%); transition: opacity var(--dur-2) var(--ease); }
 .vc-home-room[data-lamp-lit] .vc-home-lamp-light { opacity: 1; }
-.vc-home-lamp { position: absolute; z-index: 4; top: 0; right: 12px; width: var(--vc-object-min-hit); height: max(56px, var(--vc-object-min-hit)); box-sizing: border-box; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; cursor: pointer; }
-.vc-home-lamp-paint { position: absolute; inset: 0; display: block; pointer-events: none; }
-.vc-home-lamp-paint > img { position: absolute; top: 0; left: 50%; width: 44px; height: 46.2px; transform: translateX(-50%); filter: brightness(var(--vc-room-art-grade)); }
-.vc-home-lamp-cord { position: absolute; top: 0; left: 50%; width: 44px; height: 58px; transform: translateX(-50%); }
-.vc-home-lamp-bulb { position: absolute; left: calc(50% - 5px); top: 34px; width: 10px; height: 7px; border-radius: 50%; opacity: 0; background: #fff1bb; box-shadow: 0 0 12px 5px #ffcd6977; }
+/* Lamp and feeder share the same native width and horizontal formula. */
+.vc-home-lamp { position: absolute; z-index: 4; top: 0; right: calc(var(--vc-storage-right) + var(--vc-toy-hit) + var(--vc-storage-gap)); width: var(--vc-dispenser-hit); height: max(56px, 16cqw, var(--vc-object-min-hit)); box-sizing: border-box; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; cursor: pointer; }
+.vc-home-lamp-paint { --vc-lamp-paint-width: max(44px, 12cqw); position: absolute; inset: 0; display: block; pointer-events: none; }
+.vc-home-lamp-paint > img { position: absolute; top: 0; left: 50%; width: var(--vc-lamp-paint-width); height: calc(var(--vc-lamp-paint-width) * 1.05); transform: translateX(-50%); filter: brightness(var(--vc-room-art-grade)); }
+.vc-home-lamp-cord { position: absolute; top: 0; left: 50%; width: var(--vc-lamp-paint-width); height: calc(var(--vc-lamp-paint-width) * 58 / 44); transform: translateX(-50%); }
+.vc-home-lamp-bulb { position: absolute; left: calc(50% - 5px); top: calc(var(--vc-lamp-paint-width) * 34 / 44); width: 10px; height: 7px; border-radius: 50%; opacity: 0; background: #fff1bb; box-shadow: 0 0 12px 5px #ffcd6977; }
 .vc-home-room[data-lamp-lit] .vc-home-lamp-bulb { opacity: 1; }
 .vc-home-lamp:not(:disabled):is(:hover, :focus-visible) .vc-home-lamp-paint { filter: brightness(1.1); }
 .vc-home-lamp:active .vc-home-lamp-cord { transform: translate(-50%, 2px); }
-.vc-home-tv { position: absolute; z-index: 3; left: calc(9px + max(calc(120px / var(--shell-zoom, 1)), min(45%, 150px))); bottom: var(--vc-tv-bottom); width: max(var(--vc-tv-width), var(--vc-object-min-hit)); height: max(70.62px, var(--vc-object-min-hit)); box-sizing: border-box; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; cursor: pointer; }
-/* One OFF body owns all five screens. Perspective points its normal left,
-  toward the unchanged sofa, without moving any measured input or anchor. */
-.vc-home-tv-paint { position: absolute; width: var(--vc-tv-width); height: calc(var(--vc-tv-width) * 256 / 232); left: 50%; bottom: 0; display: block; transform: translateX(-50%) perspective(260px) rotateY(-30deg); transform-origin: 50% 80%; pointer-events: none; filter: brightness(var(--vc-room-art-grade)) drop-shadow(2px 3px 2px #795b3936); }
-.vc-home-tv-body { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
-.vc-home-tv-screen { position: absolute; left: 17.24%; top: 37.1%; width: 52.58%; height: 39.45%; display: block; overflow: hidden; border-radius: 23%; background: #fff1bb; box-shadow: 0 0 4px #ffe5ab6b; }
+.vc-home-tv { position: absolute; z-index: 3; left: calc(9px + max(calc(120px / var(--shell-zoom, 1)), min(39%, 150px))); bottom: var(--vc-tv-bottom); width: max(var(--vc-tv-width), var(--vc-object-min-hit)); height: max(var(--vc-tv-width), var(--vc-object-min-hit)); box-sizing: border-box; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; cursor: pointer; }
+/* The thick cabinet is actually illustrated in a left-facing three-quarter
+  view. Its fixed body is never a planar rotateY distortion. Only the picture
+  is projected into that body's measured CRT plane. */
+.vc-home-tv-paint { position: absolute; width: var(--vc-tv-width); height: var(--vc-tv-width); left: 50%; bottom: 0; display: block; transform: translateX(-50%); pointer-events: none; filter: drop-shadow(2px 3px 2px #795b3936); }
+.vc-home-tv-body, .vc-home-tv-projection { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+.vc-home-tv-body { filter: brightness(var(--vc-room-art-grade)); }
+.vc-home-tv-screen { position: absolute; left: 0; top: 0; width: 100px; height: 100px; display: block; overflow: hidden; border-radius: 12%; transform-origin: 0 0; background: #fff1bb; }
 .vc-home-tv-screen > img { display: block; width: 100%; height: 100%; object-fit: cover; }
-.vc-home-tv:not(:disabled):is(:hover, :focus-visible) .vc-home-tv-paint { filter: brightness(1.1) drop-shadow(2px 3px 2px #795b3936); }
-.vc-home-tv:active .vc-home-tv-paint { filter: brightness(.94) drop-shadow(1px 2px 1px #795b3936); }
-/* Source alpha>32 bounds: chest(35,26)..(222,117)/256x134;
-  bin(57,24)..(203,199)/256x229 at73.8x66.6. The midpoint of
-  closest rectangle points uses the centre of their shared horizontal span,
-  and halfway across the vertical gap. Transparent canvas/hits do not count. */
-.vc-home-wash-pad { --vc-pad-right: calc((min(calc(var(--vc-storage-right) + var(--vc-toy-hit) / 2 + var(--vc-toy-paint-width) * 93 / 256), calc(10px + var(--vc-bin-hit) / 2 + 20.46796875px)) + max(calc(var(--vc-storage-right) + var(--vc-toy-hit) / 2 - var(--vc-toy-paint-width) * 94 / 256), calc(10px + var(--vc-bin-hit) / 2 - 21.6234375px))) / 2); position: absolute; z-index: 1; right: calc(var(--vc-pad-right) - 29px); bottom: calc((var(--vc-floor-height) + 57.3409607px) / 2 - 12.325px); width: 58px; height: 24.65px; pointer-events: none; }
+.vc-home-tv:not(:disabled):is(:hover, :focus-visible) .vc-home-tv-body { filter: brightness(calc(var(--vc-room-art-grade) * 1.1)); }
+.vc-home-tv:active .vc-home-tv-body { filter: brightness(calc(var(--vc-room-art-grade) * .94)); }
+/* Alpha>32 opaque bounds from the unchanged chest/bin sources. The pad is
+  centred across their nearest vertical gap and shared horizontal span. */
+.vc-home-wash-pad {
+  --vc-pad-width: max(58px, 19cqw); --vc-pad-height: calc(var(--vc-pad-width) * 153 / 360);
+  --vc-pad-right: calc((min(calc(var(--vc-storage-right) + var(--vc-toy-hit) / 2 + var(--vc-toy-paint-width) * 93 / 256), calc(var(--vc-bin-right) + var(--vc-bin-hit) / 2 + var(--vc-bin-paint-width) * 71 / 256)) + max(calc(var(--vc-storage-right) + var(--vc-toy-hit) / 2 - var(--vc-toy-paint-width) * 94 / 256), calc(var(--vc-bin-right) + var(--vc-bin-hit) / 2 - var(--vc-bin-paint-width) * 75 / 256))) / 2);
+  position: absolute; z-index: 1; right: calc(var(--vc-pad-right) - var(--vc-pad-width) / 2);
+  bottom: calc((var(--vc-floor-height) + var(--vc-bin-bottom) + var(--vc-bin-paint-width) * .688586128) / 2 - var(--vc-pad-height) / 2);
+  width: var(--vc-pad-width); height: var(--vc-pad-height); pointer-events: none;
+}
 .vc-home-wash-pad > img { display: block; width: 100%; height: 100%; }
 .vc-home :is(.vc-home-tv, .vc-home-lamp):active { transform: none; }
-html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home-lamp-light { transition: none; }
-html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home-floor::after { transition: none; }
+html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home-lamp-light,
+html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home-room::before { transition: none; }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home-lamp:active .vc-home-lamp-cord { transform: translateX(-50%); }
-@container (min-width: 330px) {
-  /* A wide room can show a real broad chest without taking space from its
-    180px window. Narrow hosts use the same art/contacts at the smaller scale. */
-  .vc-home-room { --vc-toy-hit: max(124px, var(--vc-object-min-hit)); --vc-toy-paint-width: 132px; }
-}
 @container (max-width: 310px) {
-  .vc-home-room { --vc-floor-height: max(76px, calc(272px / var(--shell-zoom, 1) - 196px)); --vc-tv-width: 58px; --vc-tv-bottom: max(4px, calc(332px / var(--shell-zoom, 1) - 328px)); height: max(240px, calc(352px / var(--shell-zoom, 1) - 112px)); }
-  /* At small physical widths the TV is behind the sofa's right shoulder;
-     the bin remains in front and the pantry stays on the back floor row.
-     Compensated height supplies real44px controls under .8/.9 shell zoom. */
-  .vc-home-tv { left: calc(9px + max(calc(120px / var(--shell-zoom, 1)), min(45%, 150px)) - max(0px, calc(292px / var(--shell-zoom, 1) - 292px))); height: var(--vc-object-min-hit); }
-}
-@container (max-width: 270px) {
-  /* The original120px sofa and all45px physical inputs cannot share a
-     <=270px front row. This structural exception gives the TV its own depth
-     row; native tests must check real bounds, not assume the old226px room. */
-  .vc-home-room { --vc-floor-height: calc(64px + 64px / var(--shell-zoom, 1)); --vc-tv-bottom: calc(27px + 48px / var(--shell-zoom, 1)); height: calc(148px + 144px / var(--shell-zoom, 1)); }
-}
-@container (max-width: 250px) {
-  /* At this exceptional width the feeder uses the back floor row, next to
-     the chest. Its visible base meets the wall/floor edge; the original
-     sofa and bin keep the front row. The depth rows keep physical targets. */
-  .vc-home-room { --vc-window-left: 10px; --vc-wall-reserve: calc(var(--vc-shelf-width) + 26px); --vc-window-width: min(126px, calc(100% - var(--vc-wall-reserve))); }
-  .vc-home-shelf { right: 6px; }
+  /* Below310 CSS px, real45px furniture inputs need another depth row.
+     Floating homes use the requested wider host; only cramped rails need it. */
+  .vc-home-room { --vc-room-height: max(285px, calc(130px + 130px / var(--shell-zoom, 1))); }
+  .vc-home-shelf { top: max(56px, var(--vc-object-min-hit)); }
 }

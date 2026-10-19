@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element -- Local game art already has bounded WebP derivatives; no second image pipeline. */
 
 import { X } from "lucide-react";
-import { useId, useLayoutEffect, useRef, useState } from "react";
+import { useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { flipSpring } from "@/lib/ui/flip-motion";
 import { PanelSection } from "@/components/shared/panel-section";
 import type { CompanionCare } from "@/lib/ui/viewer-companion/care";
@@ -13,6 +13,8 @@ import { resolveCompanionWindowScene } from "@/lib/ui/viewer-companion/home-wind
 import { INITIAL_COMPANION_HOME_CURTAIN, type CompanionHomeCurtain } from "@/lib/ui/viewer-companion/home-curtain";
 import { HomeWindow } from "./companion-home-window";
 import { companionHomeTvControl, type CompanionHomeTvState } from "@/lib/ui/viewer-companion/home-room-media";
+import { getCompanionHomeLight, getServerCompanionHomeLight, initializeCompanionHomeLight, setCompanionHomeLight, subscribeCompanionHomeLight } from "@/lib/ui/viewer-companion/home-light";
+import { COMPANION_TV_ART_VIEWBOX, COMPANION_TV_SCREEN_TRANSFORM } from "@/lib/ui/viewer-companion/home-tv-art";
 
 export type CompanionHomeAction = "home" | "feed" | "clearFood" | "radio" | "book";
 type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?: boolean; owner?: string; radioPlaying?: boolean; unreadCollection?: boolean; onAction: (action: CompanionHomeAction) => void; onClose?: () => void; onToyBox?: () => void; toyCount?: number; environment?: CompanionHomeEnvironment; curtain?: CompanionHomeCurtain };
@@ -61,7 +63,9 @@ export function CompanionBedForeground({ idPrefix = "companion-front" }: { idPre
 export function CompanionHome({ care, preferences, inactive, owner, radioPlaying = false, unreadCollection = false, onAction, onClose, onToyBox, toyCount = 0, environment, curtain = INITIAL_COMPANION_HOME_CURTAIN }: Props) {
   const room = useRef<HTMLElement>(null);
   const bedId = useId().replace(/:/g, "");
-  const [tv, setTv] = useState<CompanionHomeTvState>("off"), [lampLit, setLampLit] = useState(false);
+  const [tv, setTv] = useState<CompanionHomeTvState>("off");
+  const lampLit = useSyncExternalStore(subscribeCompanionHomeLight, getCompanionHomeLight, getServerCompanionHomeLight);
+  useLayoutEffect(initializeCompanionHomeLight, []);
   const television = companionHomeTvControl(tv);
   // Its host already owns the panel FLIP. A tiny entry never resizes the room,
   // repeats on care changes, or creates an autonomous animation loop.
@@ -89,7 +93,7 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
         {[0, 1, 2].map(note => <svg className="vc-radio-note" key={note} width="9" height="14" viewBox="0 0 12 18" focusable="false"><path d="M5 3v10c-1.1-.4-3.1.1-3.8 1.3-.7 1.3 0 2.4 1.5 2.4 1.7 0 3.7-1.3 3.7-3V6l4-1V1.8Z" /></svg>)}
       </span>}
       </div>
-      <button type="button" className="vc-home-lamp" data-home-decoration-control="" data-home-action="light" data-act="companion-home-light" data-act-opt={lampLit ? "off" : "on"} data-tip={lampLit ? "전등 켜짐 · 누르면 끄기" : "전등 꺼짐 · 누르면 켜기"} aria-label={lampLit ? "전등 켜짐 · 누르면 끄기" : "전등 꺼짐 · 누르면 켜기"} aria-pressed={lampLit} onClick={() => setLampLit(value => !value)}>
+      <button type="button" className="vc-home-lamp" data-home-decoration-control="" data-home-action="light" data-act="companion-home-light" data-act-opt={lampLit ? "off" : "on"} data-tip={lampLit ? "전등 켜짐 · 누르면 끄기" : "전등 꺼짐 · 누르면 켜기"} aria-label={lampLit ? "전등 켜짐 · 누르면 끄기" : "전등 꺼짐 · 누르면 켜기"} aria-pressed={lampLit} onClick={() => setCompanionHomeLight(!getCompanionHomeLight())}>
         <span className="vc-home-lamp-paint" aria-hidden="true">
           <img src="/companion/home/135/lamp-body.webp" width="200" height="210" alt="" draggable={false} decoding="async" />
           <svg className="vc-home-lamp-cord" viewBox="0 0 44 58" focusable="false"><path d="M22 35v18" fill="none" stroke="#926039" strokeWidth="1.1" /><circle cx="22" cy="54" r="2.2" fill="#dbab63" stroke="#926039" strokeWidth=".8" /></svg>
@@ -129,8 +133,8 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
       </button>
       <button type="button" className="vc-home-tv" data-home-decoration-control="" data-home-action="tv" data-act="companion-home-tv" data-act-opt={television.option} data-tip={television.label} aria-label={television.label} aria-pressed={tv !== "off"} onClick={() => setTv(television.next)}>
         <span className="vc-home-tv-paint" aria-hidden="true">
-          <img className="vc-home-tv-body" src="/companion/home/135/tv-body.webp" width="232" height="256" alt="" draggable={false} decoding="async" />
-          {tv !== "off" && <span className="vc-home-tv-screen"><img src={`/companion/home/135/tv-screen-${tv}.webp`} width="244" height="202" alt="" draggable={false} decoding="async" /></span>}
+          <img className="vc-home-tv-body" src="/companion/home/136/tv-body.webp" width="512" height="512" alt="" draggable={false} decoding="async" />
+          {tv !== "off" && <svg className="vc-home-tv-projection" viewBox={COMPANION_TV_ART_VIEWBOX} focusable="false"><foreignObject x="0" y="0" width="512" height="512"><div className="vc-home-tv-screen" style={{ transform: COMPANION_TV_SCREEN_TRANSFORM }}><img src={`/companion/home/135/tv-screen-${tv}.webp`} width="244" height="202" alt="" draggable={false} decoding="async" /></div></foreignObject></svg>}
         </span>
       </button>
       {preferences.feeding ? <>

@@ -62,7 +62,9 @@ describe("135 room decoration and manual state", () => {
     for (const asset of ["room-wall", "room-baseboard", "room-floor", "tv-body", "lamp-body", "wash-pad-135", "tv-screen-nature", "tv-screen-music", "tv-screen-cooking", "tv-screen-toys", "tv-screen-moon"])
       expect(existsSync(`public/companion/home/135/${asset}.webp`), asset).toBe(true);
     const source = readFileSync("components/poster/viewer-companion/companion-home.tsx", "utf8");
-    expect(source.match(/135\/tv-body\.webp/g)).toHaveLength(1);
+    //136 replaces the flat135 cabinet, retaining the five channel pictures.
+    expect(existsSync("public/companion/home/136/tv-body.webp")).toBe(true);
+    expect(source.match(/136\/tv-body\.webp/g)).toHaveLength(1);
     expect(source).toContain("tv-screen-${tv}.webp");
     expect(source).not.toMatch(/setInterval|requestAnimationFrame|new Date\(|fetch\(/);
   });

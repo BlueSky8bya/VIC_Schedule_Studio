@@ -83,6 +83,18 @@ function geometryFixture() {
 }
 
 describe("111 text geometry reuse", () => {
+  it("delivers unchanged geometry for house material changes without polling", () => {
+    const f = geometryFixture(); addHouseFloor(f);
+    const changed = vi.fn();
+    const dispose = observeCompanionPlatforms(f.root, changed, { home: f.home as unknown as HTMLElement });
+    f.flush(); const original = changed.mock.calls.at(-1)![0]; const count = changed.mock.calls.length;
+    f.callbacks[1]([{ type: "attributes", attributeName: "data-lamp-lit", target: f.home } as unknown as MutationRecord]); f.advance(120);
+    expect(changed).toHaveBeenCalledTimes(count + 1); expect(changed.mock.calls.at(-1)![0]).toEqual(original);
+    f.callbacks[1]([{ type: "attributes", attributeName: "style", target: f.home } as unknown as MutationRecord]); f.advance(120);
+    expect(changed).toHaveBeenCalledTimes(count + 1); expect(f.frames.size).toBe(0); expect(f.timers.size).toBe(0);
+    const disconnects = f.observers.map(observer => observer.disconnect.mock.calls.length);
+    dispose(); expect(f.observers.every((observer, i) => observer.disconnect.mock.calls.length === disconnects[i] + 1)).toBe(true);
+  });
   it("keeps decorative TV and lamp hit targets from cutting a real house floor", () => {
     const floor = (decoration: boolean | null) => {
       const f = geometryFixture(), h = addHouseFloor(f);

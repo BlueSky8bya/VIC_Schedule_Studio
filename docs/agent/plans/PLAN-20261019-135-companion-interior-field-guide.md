@@ -1,6 +1,6 @@
 # 135 — 집 인테리어·도감 소재·장난감 가독성
 
-2026-10-19 KST. 상태: 로컬 구현/검증 완료·출시 확인 대기. 최신 사용자의 낮/밤 방 첨부를 인테리어 목표로 사용한다.132 성격별 행동안은 이름을 다듬어 읽기 자료로 제시하며 이번에 새 성격 AI를 통합하지 않는다.
+2026-10-19 KST. 상태: 출시·실제 공개 확인 완료. 최신 사용자의 낮/밤 방 첨부를 인테리어 목표로 사용한다.132 성격별 행동안은 이름을 다듬어 읽기 자료로 제시하며 이번에 새 성격 AI를 통합하지 않는다.
 
 ## 범위와 대체 계약
 
@@ -42,4 +42,12 @@
 
 ## 출시 확인
 
-로컬 검증까지 완료. 승인된 scoped commit/push 뒤 실제 전체SHA·공개 그림 바이트·신규 TV/전등·실루엣/키보드/ACK와 원격 quality 결과를 따로 확인한다.
+승인된 scoped commit/push: `a8683a3dc67955407f26dc555a351a7787267a0c`, main. 공개 author/committer는 기존 공개 GitHub 이름+noreply다. 보호 사용자 기록·다른 과거 초안·개인 경로·dependency 변경은 포함하지 않았다. 신규11 런타임 자산과 사용 원본이 커밋된 출처/SHA와 일치함도 별도 확인했다(최초 보조검사는 Node 기본1MiB buffer 한도로 미완료,8MiB buffer로 정정 후 PASS; 제품 변경 없음).
+
+- [Vercel984CGkKX262i62NpZaMSq5YcS4kj](https://vercel.com/bluesky-s-project3/vic-schedule-studio/984CGkKX262i62NpZaMSq5YcS4kj) success **21:34:47 KST**.
+- [원격 quality39252956550](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39252956550) completed/success **21:39:01 KST**. Unit/isolated SQL contracts/harness/production build/generated-routes typecheck/lint 및 job 정리 모두 완료.
+- 실제 공개 검증은 **21:35:56.388 KST PASS**, `.scratch-pw/companion-135/production-2/summary.json` 및 해당 checker/helper 원문·JSON·JPG에 보존했다. 배포 전 첫 시도는 fullSHA가 아직 공개 chunk에 없어 fail-closed로 끝났으며 실제 UI 검증을 시작하지 않았다. 그 결과도 `production-1/`에 별도 보존한다.
+- fresh context의 cookie/기존 localStorage 없음, 취향/발견/시간/RNG/레이아웃 seed0. 실제 공개 client chunk의 전체SHA/커밋 bytes와 기존98+신규11=**109 그림 bytes** 일치. TV 실제30도/고정 본체/서로 다른5화면 decode/꺼짐·전등 pointer/Enter/Space, 실제 상자에서 장난감1개 발견, 네 도감 실루엣/점/좌우키/버튼/범위/ACK, 모바일 빅타민 제외·한국어 global404 확인. root가 실제 공개 집과 미발견 도감 JPG도 직접 확인했다. 원본 그림의 전문 미술 승인/배우 표정 QA는 아니다.
+- 모든 write/telemetry 차단. 기대한 저장 하트 읽기 POST1개도 차단하고 실제 live-state GET/private manifest read0, 예상외 요청/페이지 오류0. 실제 KST 밤 장면 검증이며, 제어한 낮/밤·좁은 폭·커튼/바닥빛 연동·물리 분산은 위 local production-build native 증거다. 진짜 로그인/RLS/OBS/성격 AI 통합/운영 한도 해결로 확대하지 않는다.
+
+사용자가 읽을9성격 이름/108+36 제안은 계속 미적용 상태다. 완료 기록만 로컬 문서에 반영하고, 같은 내용의 docs-only 추가 push/재배포는 하지 않는다. 실행한 본인 소유3135 fixture 서버는 종료했다.

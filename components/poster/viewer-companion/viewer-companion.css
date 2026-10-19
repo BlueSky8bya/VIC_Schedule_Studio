@@ -146,7 +146,7 @@ html[data-reduce-motion] .vc-companion:is([data-presence="parked"], [data-dreami
 @keyframes vc-snack { from { opacity: 0; scale: .65; } to { opacity: 1; scale: 1; } }
 
 .vc-home-host { flex: 0 0 auto; min-width: 0; width: 100%; }
-.vc-compact-home { position: fixed; left: var(--vc-home-left, max(12px, env(safe-area-inset-left))); top: var(--vc-home-top, max(12px, env(safe-area-inset-top))); z-index: 73; width: min(var(--side-panel-w), var(--vc-home-max-width, calc(100vw - 24px))); min-width: 0; pointer-events: none; }
+.vc-compact-home { position: fixed; left: var(--vc-home-left, max(12px, env(safe-area-inset-left))); top: var(--vc-home-top, max(12px, env(safe-area-inset-top))); z-index: 73; width: min(calc(var(--side-panel-w) * 1.5), var(--vc-home-max-width, calc(100vw - 24px))); min-width: 0; pointer-events: none; }
 .vc-compact-home[hidden] { display: none; }
 /*098 restores a compact floating room beside the actual header launcher.
    Only its viewport position/available space change; the132px interior and
