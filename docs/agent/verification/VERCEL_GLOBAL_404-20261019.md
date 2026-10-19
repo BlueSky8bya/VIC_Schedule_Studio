@@ -38,3 +38,7 @@ This lane read the root's preserved `.scratch-pw/companion-125/vercel/global404-
 The before build was `LveSYGOr3F-gO4soNECzZ`; the after build was `EvOPphFWc5NQdeAbl6tL_`. Root reported the latter build/typecheck/full3,037 units passing. Native verification was running concurrently, so these local latency samples are a limited comparison under uncontrolled load. They are **not billed CPU, memory, production traffic, a server Auth trace or a guaranteed percentage saving**. Original JSON and HTML evidence remain in scratch. The production/native route checks and equal-period provider usage comparison retain their separate root-owned scope.
 
 No build/server/browser, provider setting, credential or production-data operation occurred here. No dependency or protected art changed.
+
+## Root's completed route and release checks
+
+The three native cases passed on the combined125 fixture; the actual production release `a0c44ea79edb0b4d177f2f99a9fec04182f244d8` also returned404 on one fixed unmatched public HTML GET,11,580bytes, Korean/noindex and no application-tail/private markers. That request started no browser or API/beacon. The production response has provider serialization differences from the11,472-byte local document; raw byte equality between these environments is not asserted. Vercel Ready, public fullSHA and remote quality success are recorded in the [shared release proof](COMPANION_HOME_CURTAINS_TOYS-20261019.md#release). No billed CPU/memory or server Auth trace claim is added.

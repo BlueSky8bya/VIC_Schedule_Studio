@@ -99,23 +99,16 @@ const samples = (page: Page) => page.evaluate(() => (window as ProbeWindow).home
 async function foodOnFloor(page: Page) {
   const slot = (await home(page).locator(".vc-dispenser-slot").boundingBox())!;
   await home(page).getByRole("button", { name: "밥 꺼내기", exact: true }).click();
-  const food = page.locator(".vc-food").last(); await expect(food).toBeVisible(); await stable(food);
-  const source = await food.evaluate(node => { const m = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: m.m41, y: m.m42 }; });
-  expect(Math.hypot(source.x - (slot.x - 40), source.y - (slot.y + slot.height + 4)), "manual food starts at its actual outlet tray").toBeLessThan(2);
-  const destination = await home(page).locator(".vc-home-floor").evaluate((node, inset) => {
-    const floor = node.getBoundingClientRect(), y = floor.bottom - inset;
-    const controls = [...node.closest(".vc-home")!.querySelectorAll("button:not(.vc-cushion-button)")].map(control => control.getBoundingClientRect());
-    for (let x = floor.left + 32; x <= floor.right - 32; x += 12) {
-      const hit = document.elementFromPoint(x, floor.bottom - 2);
-      if (!controls.some(r => x - 22 < r.right && x + 22 > r.left && y - 38 < r.bottom && y + 6 > r.top) && (hit === node || hit === node.parentElement || Boolean(hit?.closest(".vc-cushion-button")))) return { x, y: floor.bottom - 2 };
-    }
-    return null;
-  }, COMPANION_HOME_FLOOR_INSET);
-  expect(destination, "the measured floor exposes a real safe native food drop").not.toBeNull();
-  const r = (await food.boundingBox())!, grab = { x: r.x + r.width / 2, y: r.y + r.height - 7 };
-  await page.mouse.move(grab.x, grab.y); await page.mouse.down(); await page.mouse.move(destination!.x, destination!.y - 20, { steps: 12 }); await page.mouse.up(); await page.mouse.move(2, 2);
+  const food = page.locator(".vc-food").last(); await expect(food).toBeVisible();
+  const id = (await food.getAttribute("data-food"))!;
+  await expect(food).toHaveAttribute("data-platform", /^companion-home-floor-food(?:-\d+)?$/);
+  await expect.poll(() => food.evaluate(node => !node.hasAttribute("data-falling")), { timeout: 5000 }).toBe(true);
   await floorContact(page, food, "food");
-  proofs.get(page)!.notes.push({ actualFeedSlot: slot, actualTraySource: source, actualNativeFloorRelease: { x: destination!.x, y: destination!.y - 20 }, foodId: await food.getAttribute("data-food") });
+  const actual = (await samples(page)).flatMap(frame => frame.foods.filter(food => food.id === id));
+  expect(actual.some(food => food.falling), "a click really emits through finite motion before floor contact").toBe(true);
+  const first = actual[0].point;
+  expect(Math.hypot(first.x - (slot.x + slot.width / 2), first.y - (slot.y + slot.height + 2)), "first native frame is beside the actual outlet").toBeLessThan(24);
+  proofs.get(page)!.notes.push({ actualFeedSlot: slot, firstRenderedFoot: first, automaticFloorContact: true, fallingFrames: actual.filter(food => food.falling).length, foodId: id });
   return food;
 }
 async function toyOnFloor(page: Page) {

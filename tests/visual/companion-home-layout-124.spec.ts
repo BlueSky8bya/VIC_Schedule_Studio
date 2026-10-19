@@ -156,9 +156,9 @@ for (const [surface, width, dark] of [["viewer", 1100, false], ["viewer", 1440, 
   expect(data.sofa.width).toBeGreaterThanOrEqual(119.99);
   expect(data.sofa.width / data.scale).toBeLessThanOrEqual(150.05);
   expect(data.sofa.width / data.sofa.height).toBeCloseTo(1.8, 2);
-  const feedWidth = data.controls.find(control => control.action === "feed")!.width / data.scale;
-  const chestWidth = data.controls.find(control => control.action === "toys")!.width / data.scale;
-  const expectedWindow = Math.min(narrow ? 126 : 152, data.cssWidth - Math.max(data.shelf.width / data.scale + (narrow ? 26 : 28), feedWidth + chestWidth + Math.max(8, 8 / data.scale) + (narrow ? 20 : 22)));
+  //126 moves the dispenser to the floor. Only the shelf reserves wall width;
+  // enlarging the chest no longer squeezes the window down to a tiny square.
+  const expectedWindow = Math.min(narrow ? 126 : 152, data.cssWidth - (data.shelf.width / data.scale + (narrow ? 26 : 28)));
   expect(data.window.width / data.scale).toBeCloseTo(expectedWindow, 1);
   expect(data.shelf.x - data.window.right).toBeGreaterThanOrEqual(6);
   expect(data.sofaRaster.opaqueSamples).toBeGreaterThan(1000);
@@ -169,6 +169,11 @@ for (const [surface, width, dark] of [["viewer", 1100, false], ["viewer", 1440, 
   expect(data.sofaRaster.opaqueHitPoints.length).toBeGreaterThan(8);
   expect(data.sofaRaster.opaqueHitPoints.every(point => point.hit), "real painted back rim and body belong to the sofa control").toBe(true);
   expect(data.floor.bottom).toBeCloseTo(data.room.bottom, 2);
+  expect(data.floor.y - data.window.bottom, "the frame and sill have wall space above the floor").toBeGreaterThan(8 * data.scale);
+  const feeder = data.controls.find(control => control.action === "feed")!;
+  expect(data.room.bottom - feeder.bottom).toBeCloseTo((narrow ? 89 : 6) * data.scale, 1);
+  expect(await page.locator(".vc-dispenser").evaluate(node => getComputedStyle(node, "::before").content)).toBe("none");
+  expect(data.controls.find(control => control.action === "toys")!.width / data.scale).toBeGreaterThanOrEqual(data.cssWidth >= 330 ? 130 : 104);
   expect(data.sofa.bottom - data.seat.bottom).toBeCloseTo(20.28 * data.scale, 1);
   expect(data.seat.x).toBeGreaterThan(data.sofa.x + data.sofa.width * 31 / 180);
   expect(data.seat.right).toBeLessThan(data.sofa.x + data.sofa.width * 149 / 180);

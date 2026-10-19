@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element -- Local game art already has bounded WebP derivatives; no second image pipeline. */
 
 import { X } from "lucide-react";
-import { useId, useLayoutEffect, useRef, type CSSProperties } from "react";
+import { useId, useLayoutEffect, useRef } from "react";
 import { flipSpring } from "@/lib/ui/flip-motion";
 import { PanelSection } from "@/components/shared/panel-section";
 import type { CompanionCare } from "@/lib/ui/viewer-companion/care";
@@ -11,27 +11,10 @@ import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences
 import type { CompanionHomeEnvironment } from "@/lib/ui/viewer-companion/home-environment";
 import { resolveCompanionWindowScene } from "@/lib/ui/viewer-companion/home-window-scene";
 import { INITIAL_COMPANION_HOME_CURTAIN, type CompanionHomeCurtain } from "@/lib/ui/viewer-companion/home-curtain";
+import { HomeWindow } from "./companion-home-window";
 
 export type CompanionHomeAction = "home" | "feed" | "clearFood" | "radio" | "book";
 type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?: boolean; owner?: string; radioPlaying?: boolean; unreadCollection?: boolean; onAction: (action: CompanionHomeAction) => void; onClose?: () => void; onToyBox?: () => void; toyCount?: number; environment?: CompanionHomeEnvironment; curtain?: CompanionHomeCurtain };
-
-function HomeWindow({ environment, curtain, inactive }: { environment?: CompanionHomeEnvironment; curtain: CompanionHomeCurtain; inactive?: boolean }) {
-  const scene = resolveCompanionWindowScene(environment);
-  return <div className="vc-home-window" aria-hidden="true" data-season={scene.season} data-weather={scene.weather} data-band={environment?.band} data-phase={scene.phase} data-night={environment?.night || undefined} data-curtain={curtain.phase} data-curtain-rest={curtain.rest} data-curtain-motion={curtain.animate && !inactive ? "on" : "off"} style={{ "--vc-curtain-scale": curtain.panelScale } as CSSProperties}>
-    <span className="vc-window-glass">
-      <img className="vc-window-landscape" src={scene.landscapeSrc} alt="" width="512" height="384" draggable={false} decoding="async" loading="lazy" />
-      {scene.overlaySrc && <img className="vc-window-weather" src={scene.overlaySrc} alt="" width="512" height="384" draggable={false} decoding="async" loading="lazy" />}
-      <span className="vc-window-atmosphere" />
-      <span className="vc-window-crossbar" />
-      <span className="vc-window-curtains" aria-hidden="true">
-        {(["left", "right"] as const).map(side => <span className={`vc-window-curtain vc-window-curtain-${side}`} key={side}>
-          <img src="/companion/home/125/curtain-panel.webp" alt="" width="256" height="384" draggable={false} decoding="async" loading="lazy" />
-        </span>)}
-      </span>
-    </span>
-    <span className="vc-window-sill" />
-  </div>;
-}
 
 function HomeObjectArt({ kind, className = "" }: { kind: "radio" | "book" | "dispenser" | "trash" | "toy-box"; className?: string }) {
   const [width, height] = { radio: [256, 164], book: [244, 256], dispenser: [256, 256], trash: [256, 229], "toy-box": [256, 134] }[kind];

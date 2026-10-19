@@ -86,19 +86,31 @@ beforeEach(async () => {
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 describe("actual food-controller carry and physical scatter callbacks", () => {
-  it("uses a decorative aria-hidden outlet while still hiding snacks with its hidden room ancestor", async () => {
+  it("falls from a decorative outlet onto its real floor and follows the room's visibility", async () => {
     let hiddenRoom = false;
     const source = node(); source.attributes.set("aria-hidden", "true");
     const outlet = Object.assign(source, {
-      closest: (selector: string) => selector.includes("aria-hidden") ? source : null,
-      parentElement: { closest: () => hiddenRoom ? source : null },
+      closest: () => null,
+      getBoundingClientRect: () => ({ left: 500, right: 520, top: 640, bottom: 642, width: 20, height: 2 }),
     });
+    const room = { querySelectorAll: () => [], closest: () => hiddenRoom ? source : null };
+    const actualFloor = Object.assign(node(), {
+      matches: (selector: string) => selector === ".vc-home-floor",
+      closest: (selector: string) => selector === ".vc-home" ? room : null,
+      parentElement: { closest: () => hiddenRoom ? source : null },
+      getBoundingClientRect: () => ({ left: 100, right: 900, top: 600, bottom: 700, width: 800, height: 100 }),
+    });
+    const support: Platform = { id: "companion-home-floor-food", kind: "floor", x: 122, y: 694, width: 756 };
+    const anchor = () => ({ element: actualFloor as unknown as HTMLElement, left: 100, top: 600, width: 800, height: 100 });
+    api().sync([support], anchor, [support]);
     const id = api().spawn("apple", { x: 560, y: 420 }, outlet as unknown as HTMLElement)!;
-    await render(); api().sync([floor]);
+    expect(id).toBeTruthy(); expect(api().foods()).toEqual([]);
+    await render(); frame(2200); api().sync([support], anchor, [support]);
     expect(nodeById.get(id)!.hidden).toBe(false); expect(api().foods()[0].id).toBe(id);
-    hiddenRoom = true; api().sync([floor]);
+    expect(api().foods()[0]).toMatchObject({ y: 694, platformId: support.id });
+    hiddenRoom = true; api().sync([support], anchor, [support]);
     expect(nodeById.get(id)!.hidden).toBe(true); expect(api().foods()).toHaveLength(0);
-    hiddenRoom = false; api().sync([floor]);
+    hiddenRoom = false; api().sync([support], anchor, [support]);
     expect(nodeById.get(id)!.hidden).toBe(false); expect(api().foods()[0].id).toBe(id);
   });
   it("notifies each actually removed human Delete/clear food once without sending its id to activity", async () => {

@@ -1,0 +1,68 @@
+{
+  "mode": "builtin_image_gen",
+  "per_asset_calls": 1,
+  "transparent_background": true,
+  "references": [
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/고정입력/현행커튼천_재질색명암참고.png",
+      "sha256": "EA24DC1E981702699D7EE13016BD3118ED1B891B4FFBC1B4F6A5860C629F7A2A",
+      "role": "Warm ivory linen color, medium warm-brown contour, subtle vertical pleat shading only. Existing stretched single-panel mechanism is rejected."
+    },
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/고정입력/실내가구_윤곽화풍참고.png",
+      "sha256": "B79F64BBAF9AE14778479A53FC7708B29792C82DC18A574088BC6AFFBA0E806A",
+      "role": "Warm related-color contours, matte ivory/honey palette only. Do not draw furnishings or character."
+    }
+  ],
+  "same_pack_layout_parent": {
+    "path": "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/원본/완전열림.png",
+    "sha256": "E92A770F924A46C30913FE670F8439CB7A47D141D29D722F14051B8B93248E80",
+    "role": "Unapproved generated open-stage full canvas reference only, not character authority or owner approval"
+  },
+  "assets": [
+    {
+      "stage": 0,
+      "prompt": "Use case: illustration-story. Create ONE original complete curtain-set overlay sprite for a cozy illustrated pet room, WIDE4:3 canvas and genuinely transparent background. Image1 supplies the existing warm ivory linen, warm medium-brown thin contour and subtle beige vertical pleat shading. Image2 supplies only cozy matte outlining; draw NONE of its furniture or character. Perfect straight-on front view, no yaw or roll. One slim horizontal light honey-wood rod stretches from about3% to97% across the canvas at5% height, with two small rounded finials. Two matching warm ivory linen curtains hang from8% down to96% canvas height, one at each side. This is stage0 FULLY OPEN: each gathered curtain occupies only the outer12% of canvas width, leaving the broad center approximately76% completely transparent. Curtains are gathered into natural narrow vertical pleats, not a flat skinny stretched sheet; left and right have matching outline weight, cloth color, soft rounded hems and equal height. Keep the complete rod and both curtains visible, no clipping. Both outer edges and hem will remain fixed for all later closing stages. Entire central opening must contain real transparency, not a black, white or beige painted rectangle. No curtain ties, scenery, window, window frame, glass, mullions, wall, furniture, sofa, floor, stage, backdrop, text, logos, character, shadow outside cloth, glow, photographic grain, realistic textile fibers or dark wash. Simple matte two-or-three-plane ivory/beige shading and warm related-color contour. This artwork must layer above an already rendered window; generate curtains and rod ONLY.",
+      "input_paths": [
+        "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/고정입력/현행커튼천_재질색명암참고.png",
+        "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/고정입력/실내가구_윤곽화풍참고.png"
+      ]
+    },
+    {
+      "stage": 1,
+      "prompt": "Use case: precise-object-edit. Create ONE wide4:3 transparent curtain-set overlay, a closing stage of the exact SAME set in image1. Image1 is the unapproved same-pack open layout parent, not an approved artwork: keep its full canvas framing, identical rod endpoints/top height/diameter/finials, outer curtain edges, bottom hem height, warm ivory color, beige shading, contour weight and front-view camera. Other images provide only existing125linen/room style; draw none of their furniture or character. Change ONLY the horizontal gathering of the two cloth panels: stage1 has each curtain extending from its outer edge toward the center to occupy approximately25% of the full canvas width. Leave a centered completely transparent opening about50% of canvas width between the two inner cloth edges, not a painted pale rectangle. Both curtains hang naturally from the same top8% to hem96% height, with believable broad soft vertical folds, rounded hems and consistent mass of gathered cloth. Equal left/right height; no stretching shorter or longer, no perspective rotation, no moving rod, no extra objects. Maintain the exact same overall scale and registration as image1 so consecutive stages overlay without jumping. Preserve genuine transparency outside cloth and rod. No window frame, window glass, mullions, scenery, wall, room, furniture, sofa, floor, background color, label, logo, character, glow, cast shadow outside cloth, dark wash, photographic texture or new decoration. One complete curtain set only, matte2–3ivory/beige shading planes, warm related-color contour.",
+      "input_paths": [
+        "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/원본/완전열림.png",
+        "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/고정입력/현행커튼천_재질색명암참고.png",
+        "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/고정입력/실내가구_윤곽화풍참고.png"
+      ]
+    },
+    {
+      "stage": 2,
+      "prompt": "Use case: precise-object-edit. Create ONE wide4:3 transparent curtain-set overlay, a closing stage of the exact SAME set in image1. Image1 is the unapproved same-pack open layout parent, not an approved artwork: keep its full canvas framing, identical rod endpoints/top height/diameter/finials, outer curtain edges, bottom hem height, warm ivory color, beige shading, contour weight and front-view camera. Other images provide only existing125linen/room style; draw none of their furniture or character. Change ONLY the horizontal gathering of the two cloth panels: stage2 has each curtain extending from its outer edge toward the center to occupy approximately32% of the full canvas width. Leave a centered completely transparent opening about36% of canvas width between the two inner cloth edges, not a painted pale rectangle. Both curtains hang naturally from the same top8% to hem96% height, with believable broad soft vertical folds, rounded hems and consistent mass of gathered cloth. Equal left/right height; no stretching shorter or longer, no perspective rotation, no moving rod, no extra objects. Maintain the exact same overall scale and registration as image1 so consecutive stages overlay without jumping. Preserve genuine transparency outside cloth and rod. No window frame, window glass, mullions, scenery, wall, room, furniture, sofa, floor, background color, label, logo, character, glow, cast shadow outside cloth, dark wash, photographic texture or new decoration. One complete curtain set only, matte2–3ivory/beige shading planes, warm related-color contour.",
+      "input_paths": [
+        "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/원본/완전열림.png",
+        "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/고정입력/현행커튼천_재질색명암참고.png",
+        "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/고정입력/실내가구_윤곽화풍참고.png"
+      ]
+    },
+    {
+      "stage": 3,
+      "prompt": "Use case: precise-object-edit. Create ONE wide4:3 transparent curtain-set overlay, a closing stage of the exact SAME set in image1. Image1 is the unapproved same-pack open layout parent, not an approved artwork: keep its full canvas framing, identical rod endpoints/top height/diameter/finials, outer curtain edges, bottom hem height, warm ivory color, beige shading, contour weight and front-view camera. Other images provide only existing125linen/room style; draw none of their furniture or character. Change ONLY the horizontal gathering of the two cloth panels: stage3 has each curtain extending from its outer edge toward the center to occupy approximately42% of the full canvas width. Leave a centered completely transparent opening about16% of canvas width between the two inner cloth edges, not a painted pale rectangle. Both curtains hang naturally from the same top8% to hem96% height, with believable broad soft vertical folds, rounded hems and consistent mass of gathered cloth. Equal left/right height; no stretching shorter or longer, no perspective rotation, no moving rod, no extra objects. Maintain the exact same overall scale and registration as image1 so consecutive stages overlay without jumping. Preserve genuine transparency outside cloth and rod. No window frame, window glass, mullions, scenery, wall, room, furniture, sofa, floor, background color, label, logo, character, glow, cast shadow outside cloth, dark wash, photographic texture or new decoration. One complete curtain set only, matte2–3ivory/beige shading planes, warm related-color contour.",
+      "input_paths": [
+        "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/원본/완전열림.png",
+        "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/고정입력/현행커튼천_재질색명암참고.png",
+        "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/고정입력/실내가구_윤곽화풍참고.png"
+      ]
+    },
+    {
+      "stage": 4,
+      "prompt": "Use case: precise-object-edit. Create ONE wide4:3 transparent curtain-set overlay, a closing stage of the exact SAME set in image1. Image1 is the unapproved same-pack open layout parent, not an approved artwork: keep its full canvas framing, identical rod endpoints/top height/diameter/finials, outer curtain edges, bottom hem height, warm ivory color, beige shading, contour weight and front-view camera. Other images provide only existing125linen/room style; draw none of their furniture or character. Change ONLY the horizontal gathering of the two cloth panels: stage4 has each curtain extending from its outer edge toward the center to occupy approximately51% of the full canvas width. Both inner edges overlap slightly at center; no center opening remains, and cloth opaque core fully covers the window. Both curtains hang naturally from the same top8% to hem96% height, with believable broad soft vertical folds, rounded hems and consistent mass of gathered cloth. Equal left/right height; no stretching shorter or longer, no perspective rotation, no moving rod, no extra objects. Maintain the exact same overall scale and registration as image1 so consecutive stages overlay without jumping. Preserve genuine transparency outside cloth and rod. No window frame, window glass, mullions, scenery, wall, room, furniture, sofa, floor, background color, label, logo, character, glow, cast shadow outside cloth, dark wash, photographic texture or new decoration. One complete curtain set only, matte2–3ivory/beige shading planes, warm related-color contour.",
+      "input_paths": [
+        "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/원본/완전열림.png",
+        "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/고정입력/현행커튼천_재질색명암참고.png",
+        "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/고정입력/실내가구_윤곽화풍참고.png"
+      ]
+    }
+  ]
+}

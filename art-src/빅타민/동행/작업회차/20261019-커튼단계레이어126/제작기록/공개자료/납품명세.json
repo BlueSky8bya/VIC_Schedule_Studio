@@ -1,0 +1,469 @@
+{
+  "schema_version": 1,
+  "run": "20261019-커튼단계레이어126",
+  "status": "GENERATED_DRAFT_NOT_USER_VISUALLY_APPROVED",
+  "asset_count": 5,
+  "builtin_calls": 5,
+  "automatic_retries": 0,
+  "independent_art_reviews": 0,
+  "owner_visual_approval": false,
+  "runtime_size": [
+    256,
+    192
+  ],
+  "runtime_total_bytes": 125406,
+  "native_total_bytes": 4861364,
+  "final_total_bytes": 172188,
+  "protected_previous_files": 216,
+  "normalization": "Five1448x1086 originalRGBA full canvases uniformly downscaled to256x192 with identical canvas coordinates and zero contain offset. No crop, stretch, alpha rewrite, matte, repaint, recolor or component assembly. Lossless exact WebP decodedRGBA equals finalPNG.",
+  "geometry": "Each stage references the exact full open-stage native directly, never another intermediate stage. The rod/outer cloth edges/hem remain visually aligned, with small generated subpixel contour variations retained rather than painted out.",
+  "known_limits": "Creator observations and alpha/registration measurements are not independent art review or owner visual approval. Faint generated peripheral alpha1..31 remains. Closed cloth center alpha253 is near-opaque, not asserted255. Actual product layering/animation verification belongs to runtime checks.",
+  "assets": [
+    {
+      "stage": 0,
+      "name": "완전열림",
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/원본/완전열림.png",
+        "sha256": "E92A770F924A46C30913FE670F8439CB7A47D141D29D722F14051B8B93248E80",
+        "bytes": 498483,
+        "size": [
+          1448,
+          1086
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/정리본/완전열림.png",
+        "sha256": "C0EEC142B7DCE16DC06B623D6E23EA61281631BFB87A540B7006FE1E14C932D6",
+        "bytes": 21158,
+        "size": [
+          256,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "runtime": {
+        "path": "public/companion/home/126/curtain-stage-0.webp",
+        "sha256": "F4CA63814F26A2E4A1CE08221B4AE398C8B1E772F9259A1BF807D6BD04F28997",
+        "bytes": 15856,
+        "size": [
+          256,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "source_full_canvas_size": [
+        1448,
+        1086
+      ],
+      "uniform_contained_size": [
+        256,
+        192
+      ],
+      "contain_offset": [
+        0,
+        0
+      ],
+      "runtime_alpha_bbox": [
+        0,
+        12,
+        256,
+        184
+      ],
+      "runtime_bbox_alpha32": [
+        5,
+        14,
+        251,
+        180
+      ],
+      "runtime_bbox_alpha250": [
+        6,
+        15,
+        250,
+        179
+      ],
+      "runtime_center_alpha": 0,
+      "center_opening_at_row96_alpha_below32": [
+        40,
+        216
+      ],
+      "center_opening_width_fraction": 0.6875,
+      "rgba_parity": true,
+      "cover_168x111": {
+        "uniform_scaled_size": [
+          168,
+          126
+        ],
+        "center_vertical_clip_each_side": 7.5,
+        "source_y_interval": [
+          11.428571,
+          180.571429
+        ],
+        "clipped_source_pixels_alpha32_or_higher": 0
+      },
+      "builtin_calls": 1,
+      "automatic_retries": 0
+    },
+    {
+      "stage": 1,
+      "name": "사분의일닫힘",
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/원본/사분의일닫힘.png",
+        "sha256": "7C94C89D86CE5A5C2C07C965A9D0890ADCEBDCD1F500E6ABC93EA1361AC116DB",
+        "bytes": 772421,
+        "size": [
+          1448,
+          1086
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/정리본/사분의일닫힘.png",
+        "sha256": "C247AE608AC2A21B2B5E1D5DCAE3DF944EF69F6D9F5732C835C2F9F266D0BA2B",
+        "bytes": 29727,
+        "size": [
+          256,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "runtime": {
+        "path": "public/companion/home/126/curtain-stage-1.webp",
+        "sha256": "B3AA72BB231BCF8CB0DB86F99A3D5B1A769565246F8B0401738F0611695F4801",
+        "bytes": 22080,
+        "size": [
+          256,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "source_full_canvas_size": [
+        1448,
+        1086
+      ],
+      "uniform_contained_size": [
+        256,
+        192
+      ],
+      "contain_offset": [
+        0,
+        0
+      ],
+      "runtime_alpha_bbox": [
+        2,
+        4,
+        254,
+        182
+      ],
+      "runtime_bbox_alpha32": [
+        4,
+        13,
+        251,
+        180
+      ],
+      "runtime_bbox_alpha250": [
+        5,
+        15,
+        250,
+        179
+      ],
+      "runtime_center_alpha": 0,
+      "center_opening_at_row96_alpha_below32": [
+        67,
+        189
+      ],
+      "center_opening_width_fraction": 0.476562,
+      "rgba_parity": true,
+      "cover_168x111": {
+        "uniform_scaled_size": [
+          168,
+          126
+        ],
+        "center_vertical_clip_each_side": 7.5,
+        "source_y_interval": [
+          11.428571,
+          180.571429
+        ],
+        "clipped_source_pixels_alpha32_or_higher": 0
+      },
+      "builtin_calls": 1,
+      "automatic_retries": 0
+    },
+    {
+      "stage": 2,
+      "name": "절반닫힘",
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/원본/절반닫힘.png",
+        "sha256": "83A6279EEAB29FC2FAAD641B6A9464510C2989B21D5D40B393690DBC60B98D23",
+        "bytes": 989053,
+        "size": [
+          1448,
+          1086
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/정리본/절반닫힘.png",
+        "sha256": "362D0E40F604CEB89D6C51C3783CA1A6827891E05AD25E2E00033ED9AC880555",
+        "bytes": 35899,
+        "size": [
+          256,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "runtime": {
+        "path": "public/companion/home/126/curtain-stage-2.webp",
+        "sha256": "64659957CE275E796FB06CA3DE0C1AB0F4F022999DD58C1D20B4208BF7E31702",
+        "bytes": 25810,
+        "size": [
+          256,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "source_full_canvas_size": [
+        1448,
+        1086
+      ],
+      "uniform_contained_size": [
+        256,
+        192
+      ],
+      "contain_offset": [
+        0,
+        0
+      ],
+      "runtime_alpha_bbox": [
+        2,
+        3,
+        254,
+        182
+      ],
+      "runtime_bbox_alpha32": [
+        4,
+        14,
+        252,
+        180
+      ],
+      "runtime_bbox_alpha250": [
+        5,
+        15,
+        251,
+        179
+      ],
+      "runtime_center_alpha": 0,
+      "center_opening_at_row96_alpha_below32": [
+        85,
+        171
+      ],
+      "center_opening_width_fraction": 0.335938,
+      "rgba_parity": true,
+      "cover_168x111": {
+        "uniform_scaled_size": [
+          168,
+          126
+        ],
+        "center_vertical_clip_each_side": 7.5,
+        "source_y_interval": [
+          11.428571,
+          180.571429
+        ],
+        "clipped_source_pixels_alpha32_or_higher": 0
+      },
+      "builtin_calls": 1,
+      "automatic_retries": 0
+    },
+    {
+      "stage": 3,
+      "name": "사분의삼닫힘",
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/원본/사분의삼닫힘.png",
+        "sha256": "A284CC217C58DD73F304545BB35E9440A23F67BF51C8FAD45C8BC4EF0162B681",
+        "bytes": 1196864,
+        "size": [
+          1448,
+          1086
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/정리본/사분의삼닫힘.png",
+        "sha256": "9F390D516B568F7357326C4231038620711DB5AFA68FF36B1B62B72148A88B86",
+        "bytes": 40890,
+        "size": [
+          256,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "runtime": {
+        "path": "public/companion/home/126/curtain-stage-3.webp",
+        "sha256": "53A7FD278F7587AE19FB3958A47BDEF73FBAA63E0ADA376F13BE1018955F6910",
+        "bytes": 29874,
+        "size": [
+          256,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "source_full_canvas_size": [
+        1448,
+        1086
+      ],
+      "uniform_contained_size": [
+        256,
+        192
+      ],
+      "contain_offset": [
+        0,
+        0
+      ],
+      "runtime_alpha_bbox": [
+        3,
+        11,
+        253,
+        182
+      ],
+      "runtime_bbox_alpha32": [
+        5,
+        13,
+        251,
+        180
+      ],
+      "runtime_bbox_alpha250": [
+        6,
+        15,
+        250,
+        179
+      ],
+      "runtime_center_alpha": 0,
+      "center_opening_at_row96_alpha_below32": [
+        105,
+        151
+      ],
+      "center_opening_width_fraction": 0.179688,
+      "rgba_parity": true,
+      "cover_168x111": {
+        "uniform_scaled_size": [
+          168,
+          126
+        ],
+        "center_vertical_clip_each_side": 7.5,
+        "source_y_interval": [
+          11.428571,
+          180.571429
+        ],
+        "clipped_source_pixels_alpha32_or_higher": 0
+      },
+      "builtin_calls": 1,
+      "automatic_retries": 0
+    },
+    {
+      "stage": 4,
+      "name": "완전닫힘",
+      "native": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/원본/완전닫힘.png",
+        "sha256": "DE19D7A798B52B5A5250E903F8006A4D2A602FA61F2BE190AAE1F39160446E97",
+        "bytes": 1404543,
+        "size": [
+          1448,
+          1086
+        ],
+        "mode": "RGBA"
+      },
+      "final": {
+        "path": "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/정리본/완전닫힘.png",
+        "sha256": "90BB2D08307F5475F1AF015EB4588C4C92936D83A307755445B1919A621AE161",
+        "bytes": 44514,
+        "size": [
+          256,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "runtime": {
+        "path": "public/companion/home/126/curtain-stage-4.webp",
+        "sha256": "883CB0D100761804346BD7F755E80F77AEFD0C69B42E6FC3A97E2A7530B88BD4",
+        "bytes": 31786,
+        "size": [
+          256,
+          192
+        ],
+        "mode": "RGBA"
+      },
+      "source_full_canvas_size": [
+        1448,
+        1086
+      ],
+      "uniform_contained_size": [
+        256,
+        192
+      ],
+      "contain_offset": [
+        0,
+        0
+      ],
+      "runtime_alpha_bbox": [
+        2,
+        5,
+        254,
+        182
+      ],
+      "runtime_bbox_alpha32": [
+        4,
+        14,
+        252,
+        180
+      ],
+      "runtime_bbox_alpha250": [
+        5,
+        15,
+        251,
+        179
+      ],
+      "runtime_center_alpha": 253,
+      "center_opening_at_row96_alpha_below32": null,
+      "center_opening_width_fraction": 0,
+      "rgba_parity": true,
+      "cover_168x111": {
+        "uniform_scaled_size": [
+          168,
+          126
+        ],
+        "center_vertical_clip_each_side": 7.5,
+        "source_y_interval": [
+          11.428571,
+          180.571429
+        ],
+        "clipped_source_pixels_alpha32_or_higher": 0
+      },
+      "builtin_calls": 1,
+      "automatic_retries": 0
+    }
+  ],
+  "contact_sheets": [
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/검토/5단계_투명층비교.png",
+      "sha256": "D7BB3B3F85D5D564E340D30DFFC83F97C3CEEDC697FF11DA031CE0E4BD4AA894",
+      "bytes": 240068,
+      "size": [
+        1400,
+        510
+      ],
+      "kind": "transparent_checker_contact",
+      "not_product_screenshot": true
+    },
+    {
+      "path": "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/검토/5단계_기존풍경겹침.png",
+      "sha256": "DFEF9EC21CDED7836F8149B0890C8D680C4F9B0997729C73089130E7FA8BE017",
+      "bytes": 293972,
+      "size": [
+        1400,
+        510
+      ],
+      "kind": "existing_scene_overlay_contact",
+      "not_product_screenshot": true
+    }
+  ]
+}

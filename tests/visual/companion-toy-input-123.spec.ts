@@ -133,7 +133,10 @@ test("123 native pet carry follows the current adopted DOM pose and still reache
   // off-centre pointer bug and of the old toy-arrow/month ownership bug.
   const rect = (await toy.boundingBox())!, floor = (await room.locator(".vc-home-floor").boundingBox())!;
   const grab = { x: rect.x + rect.width / 2, y: rect.y + rect.height - 1 };
-  await page.mouse.move(grab.x, grab.y); await page.mouse.down(); await page.mouse.move(floor.x + 118, grab.y, { steps: 12 }); await page.mouse.up();
+  //126's ground feeder shortens the right-hand body-safe stance. Start the
+  // same native errand on the open left floor, so it still contains a real
+  // >24px carried walk instead of weakening that movement/cadence assertion.
+  await page.mouse.move(grab.x, grab.y); await page.mouse.down(); await page.mouse.move(floor.x + 50, grab.y, { steps: 12 }); await page.mouse.up();
   await expect(toy).toHaveAttribute("data-falling", "false");
   await expect(pet).toHaveAttribute("data-state", "held");
   const opening = (await room.locator(".vc-toy-box-opening").boundingBox())!, target = { x: opening.x + opening.width / 2, y: opening.y + opening.height };

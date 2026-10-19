@@ -3,11 +3,11 @@
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
 import { logActivity } from "@/lib/activity/client";
 import type { CompanionFood as Food, Platform } from "@/lib/ui/viewer-companion/brain";
-import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET, COMPANION_TRASH_DISCARD_MS, MAX_COMPANION_FOOD, attachCompanionFood, companionFoodJostle, companionTrashProgress, followCompanionFood, followCompanionViewportFloorFood, isCompanionHomeFloorFoodSupport, isCompanionViewportFloorFoodSupport, placeCompanionFood, presentCompanionFood, rebaseCompanionFoodSupport, receiveCompanionHomeFloorFood, safeCompanionAttachedFood, type CompanionFoodAttachment, type CompanionFoodDropSupport, type CompanionFoodPresentation } from "@/lib/ui/viewer-companion/food";
+import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET, COMPANION_TRASH_DISCARD_MS, MAX_COMPANION_FOOD, attachCompanionFood, companionFoodJostle, companionTrashProgress, followCompanionFood, followCompanionViewportFloorFood, isCompanionHomeFloorFoodSupport, isCompanionViewportFloorFoodSupport, placeCompanionFood, presentCompanionFood, rebaseCompanionFoodBodySupport, rebaseCompanionFoodSupport, receiveCompanionHomeFloorFood, safeCompanionAttachedFood, type CompanionFoodAttachment, type CompanionFoodDropSupport, type CompanionFoodPresentation } from "@/lib/ui/viewer-companion/food";
 import { companionCalendarAnchorIdentity, isCompanionPanelFloor, type CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
 import { companionLayoutMotionMs } from "@/lib/ui/viewer-companion/element-anchor";
 import { createCompanionFoodGravity, createCompanionFoodToss } from "@/lib/ui/viewer-companion/food-gravity";
-import { planCompanionDispenserEjection, planCompanionFoodToss } from "@/lib/ui/viewer-companion/food-toss";
+import { planCompanionDispenserEjection, planCompanionFoodToss, planCompanionHomeFoodEjection } from "@/lib/ui/viewer-companion/food-toss";
 import { nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
 import { createCompanionInputFrame } from "@/lib/ui/viewer-companion/input-frame";
 import { gfxMode as readGfxMode, type GfxMode } from "@/lib/ui/gfx";
@@ -18,7 +18,8 @@ import { CompanionFruit } from "./companion-fruit";
 
 type Point = { x: number; y: number };
 export type CompanionFoodControl = {
-  spawn: (kind: Food["kind"], point: Point, source?: HTMLElement, autonomous?: boolean, recipient?: Point) => string | undefined;
+  spawn: (kind: Food["kind"], point: Point, source?: HTMLElement, autonomous?: boolean, recipient?: Point, occupied?: readonly Point[], petSupports?: readonly Platform[]) => string | undefined;
+  occupied: () => readonly Point[];
   foods: () => readonly Food[];
   contains: (id: string) => boolean;
   consume: (id: string) => boolean;
@@ -471,27 +472,38 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   }, [cancelDiscard, cancelHover, cancelJostle, choose, finishDrops, release, releaseCarry, resetNibble, settleFood, update]);
 
   useImperativeHandle(ref, () => ({
-    spawn(kind, point, source, autonomous = false, recipient) {
+    spawn(kind, point, source, autonomous = false, recipient, occupied = [], petSupports) {
       if (!operating.current || !isCompanionFoodKind(kind) || ![point.x, point.y].every(Number.isFinite)) return;
       if (autonomous && recipient && (document.hidden || selection.current || dragging.current || discard.current)) return;
       if (current.current.length >= MAX_COMPANION_FOOD) { setMessage(`밥은 ${MAX_COMPANION_FOOD}개까지 놓을 수 있어요. 남은 밥을 기다리거나 휴지통에 치워 주세요.`); return; }
-      const food: Food = { id: `snack-${++serial.current}`, kind, x: clamp(point.x, 24, innerWidth - 24), y: clamp(point.y, 48, innerHeight - 24) };
+      if (source && (!source.isConnected || source.closest("[hidden],[inert]"))) return;
+      const outlet = source?.getBoundingClientRect();
+      if (outlet && (outlet.width <= 0 || outlet.height <= 0)) return;
+      const origin = outlet ? { x: outlet.left + outlet.width / 2, y: outlet.bottom + 2 } : point;
+      const food: Food = { id: `snack-${++serial.current}`, kind, x: clamp(origin.x, 24, innerWidth - 24), y: clamp(origin.y, 48, innerHeight - 24) };
       let placed: Food;
-      if (autonomous && recipient) {
+      if (source || autonomous && recipient) {
         const { available, sources } = measureSupports();
-        const ejection = planCompanionDispenserEjection(food, recipient, available, { width: innerWidth, height: innerHeight });
+        const viewport = { width: innerWidth, height: innerHeight };
+        const bodies = petSupports?.slice(0, 8).flatMap(support => {
+          const anchor = anchorFor.current?.(support.id), current = [...sources.values()].find(s => s.element === anchor?.element)?.origin;
+          if (!anchor?.element || !current) return [];
+          // Reuse the same native frame already read for the room's food
+          // supports. A moving panel must not compare old body x with new food x.
+          if (anchor.left === current.x && anchor.top === current.y && anchor.width === current.width && anchor.height === current.height) return [support];
+          const rebased = rebaseCompanionFoodBodySupport(support, anchor, { left: current.x, top: current.y, width: current.width, height: current.height });
+          return rebased ? [rebased] : [];
+        });
+        const ejection = source ? planCompanionHomeFoodEjection(food, available, viewport, [...current.current, ...occupied], bodies)
+          : planCompanionDispenserEjection(food, recipient!, available, viewport);
         if (!ejection) return;
-        placed = ejection.food; bindLanding(food, placed, point, sources);
+        placed = ejection.food; bindLanding(food, placed, origin, sources);
         if (!suspending.current && !document.hidden && !reduced() && graphics.current !== "off") {
           const flight = createCompanionFoodToss(food, placed, performance.now(), ejection);
           drops.current.set(food.id, flight);
           const pose = flight.sample(performance.now()); presentations.current.set(food.id, pose); paint(placed, pose); animateDrops.current();
         } else paint(placed);
       } else {
-        if (source?.isConnected) {
-          const rect = source.getBoundingClientRect();
-          if (rect.width > 0 && rect.height > 0) attachments.current.set(food.id, { home: "tray", element: source, position: attachCompanionFood(food, { x: scrollX, y: scrollY }, { x: rect.left, y: rect.top }) });
-        }
         placed = autonomous ? settleFood(food, food) : food;
       }
       cancelHover(); update([...current.current, placed]); setMessage(autonomous ? "간식이 나왔어요." : `${names[kind]} 꺼냈어요. 잡아 끌어 옮겨 주세요.`);
@@ -499,6 +511,9 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       if (attachments.current.get(food.id)?.home) followHome.current();
       return food.id;
     },
+    // Logical destinations reserve space during finite falls too. Presentation
+    // coordinates and IDs never leave this local physics bridge.
+    occupied: () => current.current.map(({ x, y }) => ({ x, y })),
     foods: () => current.current.filter(food => !drops.current.has(food.id) && visibility.current.get(food.id) !== false && food.id !== selection.current && food.id !== dragging.current?.id && food.id !== discard.current?.id && food.id !== carried.current),
     contains: id => current.current.some(food => food.id === id),
     consume(id) {

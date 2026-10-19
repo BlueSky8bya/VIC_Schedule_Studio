@@ -13,7 +13,8 @@ type Point = { x: number; y: number; platformId?: string };
 export type CompanionToyControl = {
   sync: (platforms: readonly Platform[], bounds: { width: number; height: number }, now: number, smallHomeFloors?: readonly Platform[]) => void;
   tick: (now: number) => void;
-  spawn: (point: Point, now: number, autonomous?: boolean) => string | undefined;
+  spawn: (point: Point, now: number, autonomous?: boolean, occupied?: readonly Point[]) => string | undefined;
+  occupied: () => readonly Point[];
   available: () => CompanionToy[];
   ids: () => string[];
   count: () => number;
@@ -80,7 +81,8 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
   useImperativeHandle(ref, () => ({
     sync(platforms, bounds, now, smallHomeFloors) { world.sync(platforms, bounds, now, smallHomeFloors); paint(); },
     tick(now) { world.tick(now); if (world.count() !== count.current) refresh(); else paint(); },
-    spawn(point, now, autonomous = false) { if (blockedRef.current) return; const id = world.spawn(point, now); if (id) { refresh(); if (!autonomous) { const toy = world.items().find(item => item.id === id); if (toy) onExperience?.(toy.kind, "taken-out"); } onActivity(); } return id; },
+    spawn(point, now, autonomous = false, occupied) { if (blockedRef.current) return; const id = world.spawn(point, now, occupied); if (id) { refresh(); if (!autonomous) { const toy = world.items().find(item => item.id === id); if (toy) onExperience?.(toy.kind, "taken-out"); } onActivity(); } return id; },
+    occupied: world.occupied,
     available: world.available, ids: world.ids, count: () => count.current, moving: world.moving, carried: world.carried,
     pause: pauseModel,
     resume(now) { if (!blockedRef.current) world.resume(now); },

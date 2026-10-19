@@ -55,3 +55,7 @@ Root completed production build `EvOPphFWc5NQdeAbl6tL_` and reported typecheck/f
 Each local trace excludes the same **148,678,737 PNG bytes** and shrinks by148,657,446 total referenced bytes. These are build tracing measurements, not four separately billed storage copies, measured upload bytes, allocated Function memory or consumed Fluid CPU. No Vercel CPU percentage or billing reduction is established. The original before/after inventories and delta remain preserved in scratch; deployment behavior and provider billing still require their separate root-owned checks.
 
 No production/provider operation, deployment removal, browser/server execution or protected-art write occurred in this implementation lane.
+
+## Root's actual deployment verification
+
+Release `a0c44ea79edb0b4d177f2f99a9fec04182f244d8` is Ready as Vercel `8QmowR8GezU6sjtdhdHbbBXtuB8v`. Root compared the Resources console with prior124 `HPkeLeSMuhZdG6h2RPtcHQA4GZHp`: `/studio/ambient-art`, its slot route and the two fixture equivalents each show **149MB before /2.23MB after**, ICN1/Node24.x. This verifies a provider package reduction, separate from local raw traces and accrued billing/Fluid CPU. Both screenshots are preserved in excluded125 evidence; current/rollback Ready states were observed. The original public files remain committed. Actual Git source-input exclusion bytes and equal-period CPU/memory/storage charges are still not measured. [Shared release proof](COMPANION_HOME_CURTAINS_TOYS-20261019.md#release).

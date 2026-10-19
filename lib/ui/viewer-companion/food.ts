@@ -58,6 +58,17 @@ export function rebaseCompanionFoodSupport(support: CompanionFoodDropSupport, so
   return result;
 }
 
+/** System emission needs the original body baseline. Food's fixed22px resize
+ * clearance cannot certify the larger pet footprint during a shrinking panel.
+ * Translate matching frames only; a resize waits for the next full safe scan. */
+export function rebaseCompanionFoodBodySupport(support: Platform, source: AnchorRect, rect: AnchorRect & { width: number }): Platform | undefined {
+  if (source.width === undefined || source.height === undefined || rect.height === undefined
+    || Math.abs(source.width - rect.width) > .001 || Math.abs(source.height - rect.height) > .001) return;
+  if (![support.x, support.y, support.width, source.left, source.top, source.width, source.height, rect.left, rect.top, rect.width, rect.height].every(Number.isFinite)
+    || support.width <= 0 || source.width <= 0 || source.height <= 0 || rect.width <= 0 || rect.height <= 0) return;
+  return { ...support, x: support.x + rect.left - source.left, y: support.y + rect.top - source.top };
+}
+
 /** Validate a real floor recipient and a bounded native grab offset. This is
  * intentionally private: a generic rectangle must not re-enable sofa drops. */
 function receivesFoodRect(point: Point, release: Point, rect: HomeFoodRect): boolean {

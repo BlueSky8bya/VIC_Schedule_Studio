@@ -51,11 +51,16 @@ describe("124 chest ejections retain physical pickup reach", () => {
     expect(model.pick(actual.id, available[0].stance!)).toBe(true);
   });
 
-  it("keeps an earlier real swept contact instead of forcing the aimed room endpoint", () => {
-    const upper: Platform = { id: "real-ledge", x: 0, y: 420, width: 1000, kind: "card" };
-    const model = createCompanionToys(); model.sync([upper, ground, body], bounds, 0, [small]);
+  it("126 emits in front of the sofa and calendar while a human throw still hits their real ledge", () => {
+    const upper: Platform = { id: "card-1-top", x: 0, y: 420, width: 1000, kind: "card" };
+    const seat: Platform = { id: "companion-home", x: 0, y: 440, width: 1000, kind: "date" };
+    const model = createCompanionToys(); model.sync([upper, seat, ground, body], bounds, 0, [small]);
     model.spawn(opening, 0); settle(model, [50]);
-    expect(model.available()[0]).toMatchObject({ platformId: upper.id, y: upper.y });
+    expect(model.available()[0]).toMatchObject({ platformId: small.id, y: small.y });
+    const human = createCompanionToys(); human.sync([upper, seat, ground, body], bounds, 0, [small]);
+    const id = human.spawn(opening, 0)!; expect(human.grab(id)).toBe(true);
+    expect(human.drag(id, { x: 300, y: 380 })).toBe(true); expect(human.drop(id, 0)).toBe(true);
+    settle(human, [50]); expect(human.available()[0]).toMatchObject({ platformId: upper.id, y: upper.y });
   });
 
   it("does not redirect manual throws toward the chest's landing target", () => {

@@ -84,11 +84,12 @@ describe("125 bounded automatic home curtains", () => {
       onAction: () => undefined, onClose: () => undefined, onToyBox: () => undefined,
     }));
     const open = render(), closed = render(reduceCompanionHomeCurtain(awake(), { ...input, rest: "asleep" }));
-    expect(closed).toContain('data-curtain="closed" data-curtain-rest="asleep"');
+    expect(closed).toContain('data-curtain="closed"'); expect(closed).toContain('data-curtain-rest="asleep"');
     expect(closed).toContain(resolveCompanionWindowScene(environment).landscapeSrc);
-    expect(closed.match(/src="[^"]*curtain-panel.webp"/g)).toHaveLength(2);
+    // 126 replaces scaled125 panels with five transparent registered stages.
+    expect(closed.match(/src="[^"]*curtain-stage-\d.webp"/g)).toHaveLength(5);
     expect(closed.match(/data-home-action="[^"]+"/g)).toEqual(open.match(/data-home-action="[^"]+"/g));
     expect(closed.match(/<button\b/g)).toHaveLength(open.match(/<button\b/g)!.length);
-    expect(closed).toContain('class="vc-window-curtains" aria-hidden="true"');
+    expect(closed).toContain('class="vc-window-curtain-overlay" aria-hidden="true"');
   });
 });

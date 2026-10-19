@@ -88,9 +88,9 @@ async function snapshot(page: Page, state: Awaited<ReturnType<typeof fixture>>, 
 for (const [surface, width, dark] of [["viewer", 1440, false], ["studio", 1920, true], ["studio", 2400, false]] as const) test(`123 wider window keeps real shelf and physical controls clear: ${surface} ${width}`, async ({ page }) => {
   await page.setViewportSize({ width, height: 1100 });
   const state = await fixture(page, { surface, dark }), bounds = await snapshot(page, state, `layout-${surface}-${width}`);
-  //125 larger storage supersedes the old fixed138px compact frame. Wide
-  // rooms retain152px; smaller walls reserve actual native furniture first.
-  const expectedWidth = Math.min(152, bounds.cssWidth - Math.max(bounds.shelf.width / bounds.scale + 28, (bounds.feed.width + bounds.chest.width) / bounds.scale + Math.max(8, 8 / bounds.scale) + 22));
+  //126 floor storage frees the wall for a wider, raised window. The shared
+  // shelf alone reserves wall width; storage retains independent native hits.
+  const expectedWidth = Math.min(152, bounds.cssWidth - (bounds.shelf.width / bounds.scale + 28));
   expect(bounds.window.width / bounds.scale).toBeCloseTo(expectedWidth, 1);
   expect(bounds.window.width).toBeGreaterThan(96 * bounds.scale);
   expect(bounds.shelf.x - bounds.window.x - bounds.window.width).toBeGreaterThanOrEqual(6);

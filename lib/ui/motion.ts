@@ -26,6 +26,7 @@ export const SETTINGS_EPOCH_KEY = "vic.settingsEpoch";
 import { eyeComfortAttrValue } from "@/lib/ui/gfx";
 
 const REDUCE_MOTION_KEY = "vic.reduceMotion"; // localStorage: "on"/"off"/미설정(=off)
+export const REDUCE_MOTION_EVENT = "vic:reduce-motion";
 
 export function reduceMotionEnabled(): boolean {
   if (typeof window === "undefined") return false;
@@ -50,6 +51,9 @@ export function setReduceMotion(on: boolean): void {
   } catch {
     /* no-op (SSR 등) */
   }
+  // Same-window finite renderers re-read the established preference/attribute.
+  // This carries no value, identity or activity metadata and creates no clock.
+  try { window.dispatchEvent(new Event(REDUCE_MOTION_EVENT)); } catch { /* SSR */ }
 }
 
 // Personal stage preference; the production release flag is a separate gate.

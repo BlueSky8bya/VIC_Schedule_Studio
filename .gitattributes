@@ -21,4 +21,5 @@ art-src/빅타민/수집/작업회차/20261018-먹거리와추억/**/*.json -tex
 art-src/빅타민/수집/작업회차/20261018-먹거리와추억/원본/*.svg -text whitespace=cr-at-eol
 art-src/빅타민/수집/작업회차/20261018-먹거리일치와삼각김밥/**/*.json -text whitespace=cr-at-eol
 # Preserve the publisher's original blank-line/tail whitespace verbatim.
+art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/제작기록/공개자료/*.json -text whitespace=cr-at-eol
 public/companion/audio/KENNEY-LICENSE.txt -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol

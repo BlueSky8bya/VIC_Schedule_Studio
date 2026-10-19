@@ -1,0 +1,33 @@
+{
+  "files": [
+    "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/원본/완전열림.png",
+    "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/정리본/완전열림.png",
+    "public/companion/home/126/curtain-stage-0.webp",
+    "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/원본/사분의일닫힘.png",
+    "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/정리본/사분의일닫힘.png",
+    "public/companion/home/126/curtain-stage-1.webp",
+    "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/원본/절반닫힘.png",
+    "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/정리본/절반닫힘.png",
+    "public/companion/home/126/curtain-stage-2.webp",
+    "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/원본/사분의삼닫힘.png",
+    "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/정리본/사분의삼닫힘.png",
+    "public/companion/home/126/curtain-stage-3.webp",
+    "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/원본/완전닫힘.png",
+    "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/정리본/완전닫힘.png",
+    "public/companion/home/126/curtain-stage-4.webp",
+    "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/검토/5단계_투명층비교.png",
+    "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/검토/5단계_기존풍경겹침.png",
+    "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/고정입력/현행커튼천_재질색명암참고.png",
+    "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/고정입력/실내가구_윤곽화풍참고.png",
+    "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/제작기록/공개자료/납품명세.json",
+    "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/제작기록/공개자료/생성명세.json",
+    "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/제작기록/공개자료/명시적스테이지목록.json"
+  ],
+  "count": 22,
+  "contact_sheet_sha256": {
+    "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/검토/5단계_투명층비교.png": "D7BB3B3F85D5D564E340D30DFFC83F97C3CEEDC697FF11DA031CE0E4BD4AA894",
+    "art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/검토/5단계_기존풍경겹침.png": "DFEF9EC21CDED7836F8149B0890C8D680C4F9B0997729C73089130E7FA8BE017"
+  },
+  "delivery_manifest_sha256": "D89785B062FE7B06654ED9BFC7C1B72B257DCD21940E5A04261B2FAD8F6B37AE",
+  "exclusions": "Actual user screenshot and raw feedback, personal absolute paths, provider paths, helper contracts and local private evidence deliberately excluded."
+}
