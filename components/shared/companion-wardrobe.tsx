@@ -1,10 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { Check, ChevronLeft, ChevronRight, Gift, HelpCircle, Shirt, X } from "lucide-react";
+import { Check, Gift, HelpCircle, Shirt, X } from "lucide-react";
 import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
+import { CompanionCollectionPager } from "./companion-collection-pager";
 import { CompanionCollectionArt } from "@/components/poster/viewer-companion/companion-collection-art";
-import { companionCollectionPage, nextCompanionCollectionUnread, onCollectionKey, onCollectionPageKey, useCompanionCollectionLayout } from "./companion-collection-navigation";
+import { companionCollectionPage, onCollectionKey, useCompanionCollectionLayout } from "./companion-collection-navigation";
 import { acknowledgeCompanionCollection, getCompanionUnreadCounts, isCompanionCollectionUnread, equipCompanionAccessory, openCompanionGift, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_WEARABLE_IDS, COMPANION_ACCESSORY_NAMES, type CompanionAccessoryId } from "@/lib/ui/viewer-companion/gifts";
 import { playCompanionSound } from "@/lib/ui/viewer-companion/companion-sound";
@@ -30,7 +31,7 @@ export function CompanionWardrobe({ collection, preferences, active }: { collect
   const focusAccessory = selectedAccessory ?? COMPANION_WEARABLE_IDS[page.offset];
   const ownedCount = COMPANION_WEARABLE_IDS.filter(accessory => gifts?.unlocked.includes(accessory)).length;
   const copy = selectedAccessory && owned ? companionAccessoryCopy(selectedAccessory) : undefined;
-  const nextUnread = nextCompanionCollectionUnread(pageAnchor, COMPANION_WEARABLE_IDS.length, index => isCompanionCollectionUnread(collection, "accessory", COMPANION_WEARABLE_IDS[index]));
+  const unreadAt = (index: number) => isCompanionCollectionUnread(collection, "accessory", COMPANION_WEARABLE_IDS[index]);
   useEffect(() => {
     if (!active || !preferences.learnFromYou || !gifts) return;
     const receive = (event: Event) => {
@@ -99,7 +100,7 @@ export function CompanionWardrobe({ collection, preferences, active }: { collect
       const found = gifts?.unlocked.includes(accessory) ?? false, unreadItem = isCompanionCollectionUnread(collection, "accessory", accessory);
       return <li key={accessory}><button aria-label={found ? `${COMPANION_ACCESSORY_NAMES[accessory]} · ${gifts?.equipped === accessory ? "장착 중" : "받은 선물"}` : `??? · ${index + 1}`} aria-describedby={unreadItem ? unreadDescription : undefined} data-unread={unreadItem || undefined} aria-pressed={selectedAccessory === accessory} data-accessory={accessory} data-collection-index={index} className="rhh-collection-tile" data-act="companion-accessory-select" data-found={found || undefined} onClick={() => select(accessory, true)} onKeyDown={event => onCollectionKey(event, index, COMPANION_WEARABLE_IDS.length, next => selectIndex(next, true, true), page.offset)} tabIndex={focusAccessory === accessory ? 0 : -1} type="button">{unreadItem && <span aria-hidden="true" className="rhh-collection-unread" data-unread="">!</span>}{found ? <CompanionCollectionArt kind="accessory" id={accessory} /> : <HelpCircle aria-hidden="true" className="rhh-collection-unknown" />}<span>{found ? COMPANION_ACCESSORY_NAMES[accessory] : "???"}</span><span aria-hidden={!found || undefined} className="rhh-collection-state" data-empty={!found || undefined}>{found ? gifts?.equipped === accessory ? "장착 중" : "받은 선물" : "빈칸"}</span></button></li>;
     })}</ul>
-    <nav aria-label="옷장 페이지" className="rhh-collection-pages" onKeyDown={event => onCollectionPageKey(event, page.page, page.count, layout.size, selectIndex)}><button aria-label="이전 소품" className="rhh-link" data-act="companion-collection-page" data-act-opt="prev" disabled={page.page === 0} onClick={event => selectIndex((page.page - 1) * layout.size, event.detail === 0)} type="button"><ChevronLeft aria-hidden="true" size={17} /><span className="rhh-collection-page-label">이전</span></button><span className="rhh-collection-page-status"><span aria-live="polite">{page.offset + 1}–{page.end} <span>/ {COMPANION_WEARABLE_IDS.length}</span></span><button aria-label="다음 새 발견" aria-describedby={`${unreadDescription}-remaining`} className="rhh-link rhh-collection-next-unread" data-act="companion-accessory-select" disabled={nextUnread === null} onClick={event => { if (nextUnread !== null) selectIndex(nextUnread, event.detail === 0, true); }} type="button"><span aria-hidden="true">!</span><span className="rhh-collection-unread-count" id={`${unreadDescription}-remaining`}><span className="sr-only">남은 새 발견 </span>{unread.accessories}<span className="sr-only">개</span></span></button></span><button aria-label="다음 소품" className="rhh-link" data-act="companion-collection-page" data-act-opt="next" disabled={page.page + 1 >= page.count} onClick={event => selectIndex((page.page + 1) * layout.size, event.detail === 0)} type="button"><span className="rhh-collection-page-label">다음</span><ChevronRight aria-hidden="true" size={17} /></button></nav>
+    <CompanionCollectionPager label="옷장 페이지" previousLabel="이전 페이지" nextLabel="다음 페이지" page={page} size={layout.size} length={COMPANION_WEARABLE_IDS.length} selected={pageAnchor} unread={unreadAt} select={selectIndex} inspectionAction="companion-accessory-select" />
     <span aria-live="polite" className="sr-only">{announcement}</span>
   </div> : null;
 }

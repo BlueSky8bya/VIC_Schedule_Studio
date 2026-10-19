@@ -300,17 +300,17 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await page.keyboard.press("Home");
     await expect(foods.locator('[data-food-index="0"]')).toBeFocused();
     const pageSize = await foods.getByRole("button").count();
-    await profile.getByRole("button", { name: "다음 간식", exact: true }).click();
+    await profile.getByRole("button", { name: "다음 페이지", exact: true }).click();
     await expect(foods.locator(`[data-food-index="${pageSize}"]`)).toHaveAttribute("aria-pressed", "true");
     await foods.locator(`[data-food-index="${pageSize}"]`).focus(); await page.keyboard.press("ArrowLeft");
     await expect(foods.locator(`[data-food-index="${pageSize - 1}"]`)).toBeFocused();
     await page.keyboard.press("ArrowRight"); await expect(foods.locator(`[data-food-index="${pageSize}"]`)).toBeFocused();
     await expect(foods.getByRole("button")).toHaveCount(pageSize);
-    await profile.getByRole("button", { name: "이전 간식", exact: true }).click();
+    await profile.getByRole("button", { name: "이전 페이지", exact: true }).click();
     await expect(foods.locator('[data-food-index="0"]')).toHaveAttribute("aria-pressed", "true");
-    await profile.getByRole("button", { name: "다음 간식", exact: true }).focus(); await page.keyboard.press("Enter");
+    await profile.getByRole("button", { name: "다음 페이지", exact: true }).focus(); await page.keyboard.press("Enter");
     await expect(foods.locator(`[data-food-index="${pageSize}"]`)).toBeFocused();
-    await profile.getByRole("button", { name: "이전 간식", exact: true }).focus(); await page.keyboard.press("Enter");
+    await profile.getByRole("button", { name: "이전 페이지", exact: true }).focus(); await page.keyboard.press("Enter");
     await expect(foods.locator('[data-food-index="0"]')).toBeFocused();
 
     await profile.getByRole("button", { name: "추억 도감 3/24", exact: true }).click();

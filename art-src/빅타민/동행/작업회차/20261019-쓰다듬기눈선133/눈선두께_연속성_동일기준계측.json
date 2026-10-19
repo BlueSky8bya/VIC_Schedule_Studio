@@ -1,0 +1,1190 @@
+{
+  "method": "Same192-texture-cell/alpha>200/R<180,G<140,B<120 connected ink. meanVerticalInkRun=ink area divided by occupied columns; an orientation-sensitive pixel proxy, not a physical pen-width or art PASS. Endpoint chord and pair-axis angles are separate proxies; no added pixels from measurement.",
+  "references": [
+    {
+      "name": "existing-116-runtime-sleep",
+      "packet": "public/companion/hd/vitamin-action-11-motion-115-v1.webp",
+      "sha256": "423d11cd938bb22c1bd57c7b57aaf00b2578b8709e49a3b00297c5ec8ff84189",
+      "cell": 0,
+      "eyes": [
+        {
+          "bounds": [
+            85,
+            123,
+            100,
+            132
+          ],
+          "center": [
+            92.5,
+            127.5
+          ],
+          "darkPixels": 84,
+          "meanVerticalInkRun": 5.6,
+          "endpointChordAngleDegrees": -2.2025981617658053
+        },
+        {
+          "bounds": [
+            118,
+            121,
+            131,
+            131
+          ],
+          "center": [
+            124.5,
+            126.0
+          ],
+          "darkPixels": 76,
+          "meanVerticalInkRun": 5.846153846153846,
+          "endpointChordAngleDegrees": -3.513159107105125
+        }
+      ]
+    },
+    {
+      "name": "historical-119-yawn",
+      "packet": "public/companion/hd/vitamin-action-16-expression-119-v1.webp",
+      "sha256": "cd843900c6ffad194c336c0a5a07293230434c5d012d5f54c546bd7bb1fb6003",
+      "cell": 10,
+      "eyes": [
+        {
+          "bounds": [
+            84,
+            122,
+            97,
+            128
+          ],
+          "center": [
+            90.5,
+            125.0
+          ],
+          "darkPixels": 46,
+          "meanVerticalInkRun": 3.5384615384615383,
+          "endpointChordAngleDegrees": -5.44033203100545
+        },
+        {
+          "bounds": [
+            118,
+            121,
+            131,
+            127
+          ],
+          "center": [
+            124.5,
+            124.0
+          ],
+          "darkPixels": 44,
+          "meanVerticalInkRun": 3.3846153846153846,
+          "endpointChordAngleDegrees": -1.4878675288278105
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "beforeMeanVerticalInkRunRange": [
+      2.5,
+      3.0833333333333335
+    ],
+    "afterMeanVerticalInkRunRange": [
+      4.466666666666667,
+      5.071428571428571
+    ],
+    "medianBefore": 2.7596153846153846,
+    "medianAfter": 4.792857142857143,
+    "perEyeWeightRatioRange": [
+      1.511111111111111,
+      1.9714285714285715
+    ],
+    "maxEyeBoundsCenterDeltaTexturePx": 2.5,
+    "maxEyeBoundsCenterDeltaAt92px": 1.1979166666666667,
+    "maxPairAxisAngleDeltaDegrees": 1.984629850638624,
+    "maxEndpointChordAngleDeltaDegrees": 9.57509672304544,
+    "maxConsecutiveFrameEyeWeightProxyChange": 0.4666666666666668
+  },
+  "frames": [
+    {
+      "physicalIndex": 144,
+      "before": [
+        {
+          "bounds": [
+            85,
+            123,
+            97,
+            130
+          ],
+          "center": [
+            91.0,
+            126.5
+          ],
+          "darkPixels": 30,
+          "meanVerticalInkRun": 2.5,
+          "endpointChordAngleDegrees": -2.290610042638562
+        },
+        {
+          "bounds": [
+            115,
+            120,
+            128,
+            127
+          ],
+          "center": [
+            121.5,
+            123.5
+          ],
+          "darkPixels": 36,
+          "meanVerticalInkRun": 2.769230769230769,
+          "endpointChordAngleDegrees": 0.0
+        }
+      ],
+      "after": [
+        {
+          "bounds": [
+            83,
+            120,
+            97,
+            129
+          ],
+          "center": [
+            90.0,
+            124.5
+          ],
+          "darkPixels": 69,
+          "meanVerticalInkRun": 4.928571428571429,
+          "endpointChordAngleDegrees": -3.576334374997351
+        },
+        {
+          "bounds": [
+            114,
+            118,
+            129,
+            127
+          ],
+          "center": [
+            121.5,
+            122.5
+          ],
+          "darkPixels": 72,
+          "meanVerticalInkRun": 4.8,
+          "endpointChordAngleDegrees": -2.9356734464211938
+        }
+      ]
+    },
+    {
+      "physicalIndex": 145,
+      "before": [
+        {
+          "bounds": [
+            84,
+            122,
+            97,
+            130
+          ],
+          "center": [
+            90.5,
+            126.0
+          ],
+          "darkPixels": 33,
+          "meanVerticalInkRun": 2.5384615384615383,
+          "endpointChordAngleDegrees": -2.948993915689859
+        },
+        {
+          "bounds": [
+            115,
+            120,
+            127,
+            127
+          ],
+          "center": [
+            121.0,
+            123.5
+          ],
+          "darkPixels": 31,
+          "meanVerticalInkRun": 2.5833333333333335,
+          "endpointChordAngleDegrees": -3.9498680217639492
+        }
+      ],
+      "after": [
+        {
+          "bounds": [
+            82,
+            121,
+            97,
+            130
+          ],
+          "center": [
+            89.5,
+            125.5
+          ],
+          "darkPixels": 72,
+          "meanVerticalInkRun": 4.8,
+          "endpointChordAngleDegrees": -2.5740012960585044
+        },
+        {
+          "bounds": [
+            114,
+            119,
+            129,
+            128
+          ],
+          "center": [
+            121.5,
+            123.5
+          ],
+          "darkPixels": 69,
+          "meanVerticalInkRun": 4.6,
+          "endpointChordAngleDegrees": -2.2025981617658053
+        }
+      ]
+    },
+    {
+      "physicalIndex": 146,
+      "before": [
+        {
+          "bounds": [
+            85,
+            122,
+            97,
+            130
+          ],
+          "center": [
+            91.0,
+            126.0
+          ],
+          "darkPixels": 36,
+          "meanVerticalInkRun": 3.0,
+          "endpointChordAngleDegrees": -1.6706532713999949
+        },
+        {
+          "bounds": [
+            116,
+            120,
+            128,
+            127
+          ],
+          "center": [
+            122.0,
+            123.5
+          ],
+          "darkPixels": 35,
+          "meanVerticalInkRun": 2.9166666666666665,
+          "endpointChordAngleDegrees": 3.497059739298187
+        }
+      ],
+      "after": [
+        {
+          "bounds": [
+            81,
+            120,
+            97,
+            129
+          ],
+          "center": [
+            89.0,
+            124.5
+          ],
+          "darkPixels": 74,
+          "meanVerticalInkRun": 4.625,
+          "endpointChordAngleDegrees": -2.2205606283026813
+        },
+        {
+          "bounds": [
+            114,
+            118,
+            129,
+            127
+          ],
+          "center": [
+            121.5,
+            122.5
+          ],
+          "darkPixels": 75,
+          "meanVerticalInkRun": 5.0,
+          "endpointChordAngleDegrees": -2.5692410201482274
+        }
+      ]
+    },
+    {
+      "physicalIndex": 147,
+      "before": [
+        {
+          "bounds": [
+            85,
+            122,
+            97,
+            130
+          ],
+          "center": [
+            91.0,
+            126.0
+          ],
+          "darkPixels": 32,
+          "meanVerticalInkRun": 2.6666666666666665,
+          "endpointChordAngleDegrees": -0.38196620472908516
+        },
+        {
+          "bounds": [
+            115,
+            120,
+            127,
+            127
+          ],
+          "center": [
+            121.0,
+            123.5
+          ],
+          "darkPixels": 34,
+          "meanVerticalInkRun": 2.8333333333333335,
+          "endpointChordAngleDegrees": -2.62422002778203
+        }
+      ],
+      "after": [
+        {
+          "bounds": [
+            82,
+            120,
+            97,
+            129
+          ],
+          "center": [
+            89.5,
+            124.5
+          ],
+          "darkPixels": 72,
+          "meanVerticalInkRun": 4.8,
+          "endpointChordAngleDegrees": -2.9356734464211938
+        },
+        {
+          "bounds": [
+            114,
+            118,
+            129,
+            127
+          ],
+          "center": [
+            121.5,
+            122.5
+          ],
+          "darkPixels": 74,
+          "meanVerticalInkRun": 4.933333333333334,
+          "endpointChordAngleDegrees": -2.9356734464211938
+        }
+      ]
+    },
+    {
+      "physicalIndex": 148,
+      "before": [
+        {
+          "bounds": [
+            85,
+            122,
+            97,
+            130
+          ],
+          "center": [
+            91.0,
+            126.0
+          ],
+          "darkPixels": 32,
+          "meanVerticalInkRun": 2.6666666666666665,
+          "endpointChordAngleDegrees": -1.636577041616753
+        },
+        {
+          "bounds": [
+            115,
+            120,
+            127,
+            127
+          ],
+          "center": [
+            121.0,
+            123.5
+          ],
+          "darkPixels": 33,
+          "meanVerticalInkRun": 2.75,
+          "endpointChordAngleDegrees": -2.62422002778203
+        }
+      ],
+      "after": [
+        {
+          "bounds": [
+            82,
+            120,
+            97,
+            129
+          ],
+          "center": [
+            89.5,
+            124.5
+          ],
+          "darkPixels": 72,
+          "meanVerticalInkRun": 4.8,
+          "endpointChordAngleDegrees": -2.9356734464211938
+        },
+        {
+          "bounds": [
+            114,
+            118,
+            129,
+            127
+          ],
+          "center": [
+            121.5,
+            122.5
+          ],
+          "darkPixels": 73,
+          "meanVerticalInkRun": 4.866666666666666,
+          "endpointChordAngleDegrees": -2.3073729969622403
+        }
+      ]
+    },
+    {
+      "physicalIndex": 149,
+      "before": [
+        {
+          "bounds": [
+            85,
+            122,
+            97,
+            130
+          ],
+          "center": [
+            91.0,
+            126.0
+          ],
+          "darkPixels": 32,
+          "meanVerticalInkRun": 2.6666666666666665,
+          "endpointChordAngleDegrees": -3.576334374997351
+        },
+        {
+          "bounds": [
+            115,
+            120,
+            127,
+            127
+          ],
+          "center": [
+            121.0,
+            123.5
+          ],
+          "darkPixels": 33,
+          "meanVerticalInkRun": 2.75,
+          "endpointChordAngleDegrees": -2.62422002778203
+        }
+      ],
+      "after": [
+        {
+          "bounds": [
+            82,
+            120,
+            97,
+            129
+          ],
+          "center": [
+            89.5,
+            124.5
+          ],
+          "darkPixels": 70,
+          "meanVerticalInkRun": 4.666666666666667,
+          "endpointChordAngleDegrees": -2.9356734464211938
+        },
+        {
+          "bounds": [
+            114,
+            118,
+            129,
+            126
+          ],
+          "center": [
+            121.5,
+            122.0
+          ],
+          "darkPixels": 71,
+          "meanVerticalInkRun": 4.733333333333333,
+          "endpointChordAngleDegrees": -0.2938219346507497
+        }
+      ]
+    },
+    {
+      "physicalIndex": 150,
+      "before": [
+        {
+          "bounds": [
+            85,
+            122,
+            96,
+            130
+          ],
+          "center": [
+            90.5,
+            126.0
+          ],
+          "darkPixels": 33,
+          "meanVerticalInkRun": 3.0,
+          "endpointChordAngleDegrees": -2.121096396661424
+        },
+        {
+          "bounds": [
+            115,
+            120,
+            127,
+            127
+          ],
+          "center": [
+            121.0,
+            123.5
+          ],
+          "darkPixels": 33,
+          "meanVerticalInkRun": 2.75,
+          "endpointChordAngleDegrees": 2.62422002778203
+        }
+      ],
+      "after": [
+        {
+          "bounds": [
+            82,
+            120,
+            97,
+            129
+          ],
+          "center": [
+            89.5,
+            124.5
+          ],
+          "darkPixels": 72,
+          "meanVerticalInkRun": 4.8,
+          "endpointChordAngleDegrees": -2.9356734464211938
+        },
+        {
+          "bounds": [
+            114,
+            118,
+            129,
+            126
+          ],
+          "center": [
+            121.5,
+            122.0
+          ],
+          "darkPixels": 68,
+          "meanVerticalInkRun": 4.533333333333333,
+          "endpointChordAngleDegrees": -2.3859440303888335
+        }
+      ]
+    },
+    {
+      "physicalIndex": 151,
+      "before": [
+        {
+          "bounds": [
+            85,
+            122,
+            97,
+            130
+          ],
+          "center": [
+            91.0,
+            126.0
+          ],
+          "darkPixels": 34,
+          "meanVerticalInkRun": 2.8333333333333335,
+          "endpointChordAngleDegrees": 2.8624052261117474
+        },
+        {
+          "bounds": [
+            115,
+            120,
+            127,
+            127
+          ],
+          "center": [
+            121.0,
+            123.5
+          ],
+          "darkPixels": 32,
+          "meanVerticalInkRun": 2.6666666666666665,
+          "endpointChordAngleDegrees": -2.62422002778203
+        }
+      ],
+      "after": [
+        {
+          "bounds": [
+            82,
+            120,
+            97,
+            129
+          ],
+          "center": [
+            89.5,
+            124.5
+          ],
+          "darkPixels": 72,
+          "meanVerticalInkRun": 4.8,
+          "endpointChordAngleDegrees": -2.5740012960585044
+        },
+        {
+          "bounds": [
+            113,
+            118,
+            128,
+            127
+          ],
+          "center": [
+            120.5,
+            122.5
+          ],
+          "darkPixels": 70,
+          "meanVerticalInkRun": 4.666666666666667,
+          "endpointChordAngleDegrees": -2.642545294064699
+        }
+      ]
+    },
+    {
+      "physicalIndex": 152,
+      "before": [
+        {
+          "bounds": [
+            84,
+            122,
+            97,
+            129
+          ],
+          "center": [
+            90.5,
+            125.5
+          ],
+          "darkPixels": 35,
+          "meanVerticalInkRun": 2.6923076923076925,
+          "endpointChordAngleDegrees": -3.122130462115679
+        },
+        {
+          "bounds": [
+            115,
+            120,
+            128,
+            127
+          ],
+          "center": [
+            121.5,
+            123.5
+          ],
+          "darkPixels": 33,
+          "meanVerticalInkRun": 2.5384615384615383,
+          "endpointChordAngleDegrees": 0.89284896057695
+        }
+      ],
+      "after": [
+        {
+          "bounds": [
+            82,
+            121,
+            97,
+            131
+          ],
+          "center": [
+            89.5,
+            126.0
+          ],
+          "darkPixels": 74,
+          "meanVerticalInkRun": 4.933333333333334,
+          "endpointChordAngleDegrees": -3.5513892752888867
+        },
+        {
+          "bounds": [
+            114,
+            119,
+            128,
+            128
+          ],
+          "center": [
+            121.0,
+            123.5
+          ],
+          "darkPixels": 68,
+          "meanVerticalInkRun": 4.857142857142857,
+          "endpointChordAngleDegrees": -3.2327158046160513
+        }
+      ]
+    },
+    {
+      "physicalIndex": 153,
+      "before": [
+        {
+          "bounds": [
+            84,
+            122,
+            96,
+            130
+          ],
+          "center": [
+            90.0,
+            126.0
+          ],
+          "darkPixels": 36,
+          "meanVerticalInkRun": 3.0,
+          "endpointChordAngleDegrees": -7.829076510059608
+        },
+        {
+          "bounds": [
+            115,
+            120,
+            127,
+            127
+          ],
+          "center": [
+            121.0,
+            123.5
+          ],
+          "darkPixels": 35,
+          "meanVerticalInkRun": 2.9166666666666665,
+          "endpointChordAngleDegrees": 0.0
+        }
+      ],
+      "after": [
+        {
+          "bounds": [
+            81,
+            122,
+            96,
+            131
+          ],
+          "center": [
+            88.5,
+            126.5
+          ],
+          "darkPixels": 68,
+          "meanVerticalInkRun": 4.533333333333333,
+          "endpointChordAngleDegrees": -6.581944655177949
+        },
+        {
+          "bounds": [
+            113,
+            120,
+            128,
+            129
+          ],
+          "center": [
+            120.5,
+            124.5
+          ],
+          "darkPixels": 70,
+          "meanVerticalInkRun": 4.666666666666667,
+          "endpointChordAngleDegrees": -2.9356734464211938
+        }
+      ]
+    },
+    {
+      "physicalIndex": 154,
+      "before": [
+        {
+          "bounds": [
+            84,
+            123,
+            97,
+            130
+          ],
+          "center": [
+            90.5,
+            126.5
+          ],
+          "darkPixels": 34,
+          "meanVerticalInkRun": 2.6153846153846154,
+          "endpointChordAngleDegrees": -2.8624052261117328
+        },
+        {
+          "bounds": [
+            115,
+            121,
+            127,
+            128
+          ],
+          "center": [
+            121.0,
+            124.5
+          ],
+          "darkPixels": 34,
+          "meanVerticalInkRun": 2.8333333333333335,
+          "endpointChordAngleDegrees": -3.100491449807807
+        }
+      ],
+      "after": [
+        {
+          "bounds": [
+            83,
+            123,
+            98,
+            132
+          ],
+          "center": [
+            90.5,
+            127.5
+          ],
+          "darkPixels": 75,
+          "meanVerticalInkRun": 5.0,
+          "endpointChordAngleDegrees": -3.202020583322108
+        },
+        {
+          "bounds": [
+            114,
+            121,
+            129,
+            130
+          ],
+          "center": [
+            121.5,
+            125.5
+          ],
+          "darkPixels": 68,
+          "meanVerticalInkRun": 4.533333333333333,
+          "endpointChordAngleDegrees": -2.621602088652214
+        }
+      ]
+    },
+    {
+      "physicalIndex": 155,
+      "before": [
+        {
+          "bounds": [
+            84,
+            122,
+            96,
+            130
+          ],
+          "center": [
+            90.0,
+            126.0
+          ],
+          "darkPixels": 35,
+          "meanVerticalInkRun": 2.9166666666666665,
+          "endpointChordAngleDegrees": -7.024254475179119
+        },
+        {
+          "bounds": [
+            115,
+            120,
+            127,
+            127
+          ],
+          "center": [
+            121.0,
+            123.5
+          ],
+          "darkPixels": 32,
+          "meanVerticalInkRun": 2.6666666666666665,
+          "endpointChordAngleDegrees": 2.62422002778203
+        }
+      ],
+      "after": [
+        {
+          "bounds": [
+            83,
+            122,
+            97,
+            131
+          ],
+          "center": [
+            90.0,
+            126.5
+          ],
+          "darkPixels": 71,
+          "meanVerticalInkRun": 5.071428571428571,
+          "endpointChordAngleDegrees": -5.581635940191803
+        },
+        {
+          "bounds": [
+            114,
+            120,
+            129,
+            129
+          ],
+          "center": [
+            121.5,
+            124.5
+          ],
+          "darkPixels": 70,
+          "meanVerticalInkRun": 4.666666666666667,
+          "endpointChordAngleDegrees": -4.106497165170382
+        }
+      ]
+    },
+    {
+      "physicalIndex": 156,
+      "before": [
+        {
+          "bounds": [
+            84,
+            123,
+            97,
+            130
+          ],
+          "center": [
+            90.5,
+            126.5
+          ],
+          "darkPixels": 35,
+          "meanVerticalInkRun": 2.6923076923076925,
+          "endpointChordAngleDegrees": -0.9300445967184469
+        },
+        {
+          "bounds": [
+            115,
+            120,
+            127,
+            127
+          ],
+          "center": [
+            121.0,
+            123.5
+          ],
+          "darkPixels": 35,
+          "meanVerticalInkRun": 2.9166666666666665,
+          "endpointChordAngleDegrees": 3.497059739298187
+        }
+      ],
+      "after": [
+        {
+          "bounds": [
+            82,
+            122,
+            97,
+            131
+          ],
+          "center": [
+            89.5,
+            126.5
+          ],
+          "darkPixels": 73,
+          "meanVerticalInkRun": 4.866666666666666,
+          "endpointChordAngleDegrees": -2.9356734464211938
+        },
+        {
+          "bounds": [
+            114,
+            120,
+            128,
+            129
+          ],
+          "center": [
+            121.0,
+            124.5
+          ],
+          "darkPixels": 69,
+          "meanVerticalInkRun": 4.928571428571429,
+          "endpointChordAngleDegrees": -6.078036983747253
+        }
+      ]
+    },
+    {
+      "physicalIndex": 157,
+      "before": [
+        {
+          "bounds": [
+            84,
+            122,
+            97,
+            130
+          ],
+          "center": [
+            90.5,
+            126.0
+          ],
+          "darkPixels": 36,
+          "meanVerticalInkRun": 2.769230769230769,
+          "endpointChordAngleDegrees": -4.307651352168441
+        },
+        {
+          "bounds": [
+            115,
+            120,
+            127,
+            127
+          ],
+          "center": [
+            121.0,
+            123.5
+          ],
+          "darkPixels": 35,
+          "meanVerticalInkRun": 2.9166666666666665,
+          "endpointChordAngleDegrees": 1.9432185325037867
+        }
+      ],
+      "after": [
+        {
+          "bounds": [
+            82,
+            122,
+            98,
+            131
+          ],
+          "center": [
+            90.0,
+            126.5
+          ],
+          "darkPixels": 72,
+          "meanVerticalInkRun": 4.5,
+          "endpointChordAngleDegrees": -5.440332031005488
+        },
+        {
+          "bounds": [
+            114,
+            120,
+            129,
+            128
+          ],
+          "center": [
+            121.5,
+            124.0
+          ],
+          "darkPixels": 67,
+          "meanVerticalInkRun": 4.466666666666667,
+          "endpointChordAngleDegrees": -1.4688007143858663
+        }
+      ]
+    },
+    {
+      "physicalIndex": 158,
+      "before": [
+        {
+          "bounds": [
+            84,
+            122,
+            96,
+            130
+          ],
+          "center": [
+            90.0,
+            126.0
+          ],
+          "darkPixels": 37,
+          "meanVerticalInkRun": 3.0833333333333335,
+          "endpointChordAngleDegrees": -6.575903664160972
+        },
+        {
+          "bounds": [
+            114,
+            120,
+            127,
+            128
+          ],
+          "center": [
+            120.5,
+            124.0
+          ],
+          "darkPixels": 36,
+          "meanVerticalInkRun": 2.769230769230769,
+          "endpointChordAngleDegrees": 0.2976377357235299
+        }
+      ],
+      "after": [
+        {
+          "bounds": [
+            83,
+            122,
+            97,
+            131
+          ],
+          "center": [
+            90.0,
+            126.5
+          ],
+          "darkPixels": 67,
+          "meanVerticalInkRun": 4.785714285714286,
+          "endpointChordAngleDegrees": -4.5720043719954795
+        },
+        {
+          "bounds": [
+            114,
+            120,
+            129,
+            128
+          ],
+          "center": [
+            121.5,
+            124.0
+          ],
+          "darkPixels": 67,
+          "meanVerticalInkRun": 4.466666666666667,
+          "endpointChordAngleDegrees": -4.398705354995532
+        }
+      ]
+    },
+    {
+      "physicalIndex": 159,
+      "before": [
+        {
+          "bounds": [
+            84,
+            122,
+            97,
+            130
+          ],
+          "center": [
+            90.5,
+            126.0
+          ],
+          "darkPixels": 36,
+          "meanVerticalInkRun": 2.769230769230769,
+          "endpointChordAngleDegrees": -2.948993915689859
+        },
+        {
+          "bounds": [
+            115,
+            120,
+            127,
+            127
+          ],
+          "center": [
+            121.0,
+            123.5
+          ],
+          "darkPixels": 33,
+          "meanVerticalInkRun": 2.75,
+          "endpointChordAngleDegrees": -2.62422002778203
+        }
+      ],
+      "after": [
+        {
+          "bounds": [
+            82,
+            122,
+            97,
+            131
+          ],
+          "center": [
+            89.5,
+            126.5
+          ],
+          "darkPixels": 68,
+          "meanVerticalInkRun": 4.533333333333333,
+          "endpointChordAngleDegrees": -2.9356734464211938
+        },
+        {
+          "bounds": [
+            113,
+            120,
+            128,
+            128
+          ],
+          "center": [
+            120.5,
+            124.0
+          ],
+          "darkPixels": 69,
+          "meanVerticalInkRun": 4.6,
+          "endpointChordAngleDegrees": -3.484862443909482
+        }
+      ]
+    }
+  ],
+  "conservation": {
+    "changedPixels": 4309,
+    "changedRgbChannels": 12597,
+    "allAlphaExact": true,
+    "outsideEyeRgbaExact": true,
+    "everyActualMouthAnd1pxGuardRgbaExact": true,
+    "all520FrameRegistrationsExact": true,
+    "all520AccessoryAnchorsExact": true
+  },
+  "limits": [
+    "Fullness/happiness/consistency are creator observations, not independent professional approval.",
+    "New eye ink bounds can shift within the explicit eye region; body registration and all gameplay/accessory/mouth anchors are unchanged.",
+    "Actual browser/native petting playback remains root-owned and unverified here."
+  ]
+}

@@ -11,6 +11,7 @@ import legacy from "@/lib/ui/viewer-companion/fluid-sprite.json";
 import bodyRegistration from "../../art-src/빅타민/동행/작업회차/20261018-동작연결정리115/패킹파생기록.json";
 import expression119 from "../../art-src/빅타민/동행/작업회차/20261019-표정체적교정119/패킹파생기록.json";
 import happiness131 from "../../art-src/빅타민/동행/작업회차/20261019-쓰다듬기행복131/패킹파생기록.json";
+import eyeWeight133 from "../../art-src/빅타민/동행/작업회차/20261019-쓰다듬기눈선133/패킹파생기록.json";
 
 describe("116 whole-pose continuity", () => {
   // Review sheet labels are one-based; the frozen packing receipt is zero-based.
@@ -49,7 +50,7 @@ describe("one high-resolution pipeline for every companion action", () => {
     const replacements: Partial<Record<number, string>> = {
       0: "/companion/hd/vitamin-action-00-eye-contour-120-v1.webp",
       4: "/companion/hd/vitamin-action-04-tuft-117-v1.webp",
-      9: "/companion/hd/vitamin-action-09-happiness-131-v1.webp",
+      9: "/companion/hd/vitamin-action-09-eye-weight-133-v3.webp",
       16: "/companion/hd/vitamin-action-16-eye-contour-120-v1.webp",
     };
     const eye120 = JSON.parse(readFileSync("art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/패킹파생기록.json", "utf8")) as typeof expression119;
@@ -64,7 +65,9 @@ describe("one high-resolution pipeline for every companion action", () => {
       expect(selected.frame).toEqual(sprites.frames[index]);
     }
     expect(happiness131.physicalIndices).toEqual(Array.from({ length: 16 }, (_, index) => 144 + index));
-    expect(sprites.atlases[9]).toEqual(happiness131.packet);
+    expect(eyeWeight133.parent).toEqual(happiness131.packet);
+    expect(eyeWeight133.packet.sha256).toBe("ff8ecc78933a0bd414e7fefa2e682fa1a04da5760e3985e286731d02bd6b1673");
+    expect(sprites.atlases[9]).toEqual(eyeWeight133.packet);
     expect(happiness131.packet.sha256).toBe("eaa134b4001477439dae456989d255e4cf723da31fbc5c3809f6b6d85285fcdb");
     // Check all504 untouched registrations against the immediate pre131
     // snapshot, including the119 body fits outside the original HD family.
@@ -91,7 +94,7 @@ describe("one high-resolution pipeline for every companion action", () => {
       const happy = happiness131.frames.find(entry => entry.physicalIndex === index);
       if (happy) {
         expect(index).toBeGreaterThanOrEqual(144); expect(index).toBeLessThanOrEqual(159);
-        expect(sprites.atlases[frame.atlas]).toEqual(happiness131.packet);
+        expect(sprites.atlases[frame.atlas]).toEqual(eyeWeight133.packet);
         expect(frame).toEqual(happy.frame); expect(happy.clipAlphaThreshold).toBe(8);
       }
       const body = happy?.body ?? bodyRegistration.slots[index].body;

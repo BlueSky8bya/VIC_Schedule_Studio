@@ -94,18 +94,42 @@ const intendedMouth = structuredClone(frozenMouth);
 intendedMouth.evidence = `${run}/식사입계측.json`;
 intendedMouth.atlases[1] = { src, sha256: packet.sha256 };
 intendedMouth.frames = intendedMouth.frames.map(frame => frame.index >= 144 && frame.index <= 159 ? mouths[frame.index - 144] : frame);
+// Historical131 remains reproducible after the exact eye-weight-only133
+// successor. WRITE still cannot roll a later active source back to131.
+let successorHd, successorMouth;
+const currentHd = await read('lib/ui/viewer-companion/hd-motion-sprite.json');
+if (check && currentHd.atlases[9].src === '/companion/hd/vitamin-action-09-eye-weight-133-v3.webp') {
+  const nextRun = 'art-src/빅타민/동행/작업회차/20261019-쓰다듬기눈선133';
+  const next = await read(`${nextRun}/패킹파생기록.json`);
+  assert(next.parent.sha256 === packet.sha256 && next.packet.sha256 === 'ff8ecc78933a0bd414e7fefa2e682fa1a04da5760e3985e286731d02bd6b1673', 'Unbound133 successor');
+  assert(isDeepStrictEqual(await read(`${nextRun}/고정입력/hd-motion-sprite.json`), intended[0]), '133 did not derive from exact131 registration');
+  const bytes = await fs.readFile(`public${next.packet.src}`); assert(hash(bytes) === next.packet.sha256, '133 packet changed');
+  const after = await sharp(bytes).ensureAlpha().raw().toBuffer();
+  for (let at = 0; at < decoded.length; at += 4) {
+    const p = at / 4, x = p % 1536 % 192, y = Math.floor(p / 1536) % 192;
+    const eye = x >= 81 && x < 99 && y >= 117 && y < 134 || x >= 113 && x < 132 && y >= 115 && y < 132;
+    assert(decoded[at + 3] === after[at + 3], '133 changed protected131 alpha');
+    if (!eye) for (let c = 0; c < 3; c++) assert(decoded[at + c] === after[at + c], '133 changed protected131 outside-eye pixels');
+  }
+  successorHd = structuredClone(intended[0]); successorHd.atlases[9] = next.packet;
+  successorMouth = structuredClone(intendedMouth); successorMouth.atlases[1] = { src: next.packet.src, sha256: next.packet.sha256 };
+}
 // Fail closed BEFORE ANY derivative/public/metadata write if another owner changed.
 for (let i = 0; i < names.length; i++) {
   const active = await read(`lib/ui/viewer-companion/${names[i]}.json`);
-  assert(isDeepStrictEqual(active, frozen[i]) || isDeepStrictEqual(active, intended[i]), `Unowned metadata: ${names[i]}`);
+  assert(isDeepStrictEqual(active, frozen[i]) || isDeepStrictEqual(active, intended[i]) || i === 0 && successorHd && isDeepStrictEqual(active, successorHd), `Unowned metadata: ${names[i]}`);
 }
 const activeMouth = await read('lib/ui/viewer-companion/mouth-anchors.json');
-assert(isDeepStrictEqual(activeMouth, frozenMouth) || isDeepStrictEqual(activeMouth, intendedMouth), 'Unowned mouth registration');
+assert(isDeepStrictEqual(activeMouth, frozenMouth) || isDeepStrictEqual(activeMouth, intendedMouth) || successorMouth && isDeepStrictEqual(activeMouth, successorMouth), 'Unowned mouth registration');
 const receipt = { version: 1, generationCalls: 1, generationCallsByThisScript: 0, faceCompositing: false, alphaCleanup: false, professionalArtReview: 'NOT_REQUESTED', ownerVisualApproval: false, creatorFindingsPath: `${run}/제작기록/생성자관찰.json`, native: { path: sourcePath, sha256: sourceSha, width: 2172, height: 724 }, normalization: { crop: [0, 91, 2172, 634], output: [1536, 384], uniformScale: 1536 / 2172, kernel: 'lanczos3', alphaNoiseNotErased: true, metadataClipAlphaThreshold: 8, clipReason: 'Keep low-alpha export color residue in asset while registering visible silhouette with2logical-pixel margin; opaque200 body owns centre/foot.' }, packet, normalizedRgbaSha256: hash(normalized), invisibleRgbChannelsNormalized: invisibleRgbNormalized, physicalIndices: frames.map(f => f.physicalIndex), frames, oldPacket: frozen[0].atlases[9], immutableParentPackets: immutablePackets, unchangedOther504Frames: true, unchangedOther32Packets: true, stagedMetadata: Object.fromEntries(names.map(name => [name, `${run}/정리본/${name}.json`])) };
 const outputs = new Map([[`public${src}`, webp], [`${run}/정리본/쓰다듬기행복_192셀.png`, png], [`${run}/패킹파생기록.json`, json(receipt)], [`${run}/식사입계측.json`, json({ version: 1, source: packet, method: 'Actual decoded source-bound U mouth ink bounds; no runtime analysis or face editing.', frames: mouths })], ['lib/ui/viewer-companion/hd-motion-sprite.json', json(intended[0])], ['lib/ui/viewer-companion/mouth-anchors.json', json(intendedMouth)]]);
 for (let i = 0; i < names.length; i++) outputs.set(`${run}/정리본/${names[i]}.json`, json(intended[i]));
 for (const [name, bytes] of outputs) {
-  if (check) assert((await fs.readFile(name)).equals(bytes), `131 deterministic output changed: ${name}`);
+  if (check) {
+    const expected = successorHd && name === 'lib/ui/viewer-companion/hd-motion-sprite.json' ? json(successorHd)
+      : successorMouth && name === 'lib/ui/viewer-companion/mouth-anchors.json' ? json(successorMouth) : bytes;
+    assert((await fs.readFile(name)).equals(expected), `131 deterministic output changed: ${name}`);
+  }
   else await fs.writeFile(name, bytes);
 }
 console.log(JSON.stringify({ status: check ? 'CHECK_PASS' : 'WRITTEN', packet, frames: frames.length, firstMouth: mouths[0], immutablePackets: immutablePackets.length, invisibleRgbNormalized }));

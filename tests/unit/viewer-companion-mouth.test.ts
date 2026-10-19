@@ -25,6 +25,7 @@ describe("current authored eating mouth registration", () => {
   });
   it("covers every actual look and happy eating cell against the exact rendered atlas bytes", async () => {
     expect(calibration.frames.map(frame => frame.index)).toEqual([...metadata.rows[1], ...metadata.rows[9]]);
+    const parent131 = await sharp(readFileSync("public/companion/hd/vitamin-action-09-happiness-131-v1.webp")).ensureAlpha().raw().toBuffer();
     for (const atlas of calibration.atlases) {
       const bytes = readFileSync(`public${atlas.src}`);
       expect(createHash("sha256").update(bytes).digest("hex")).toBe(atlas.sha256);
@@ -36,9 +37,14 @@ describe("current authored eating mouth registration", () => {
         // Inspect the recorded mouth arc itself, not transparent padding, an
         // eye or cheek. All32 distinct cells retain authored mouth ink here.
         const [left, top, right, bottom] = frame.bounds, ink: Array<{ x: number; y: number }> = [];
+        const eyeWeight133 = atlas.src === "/companion/hd/vitamin-action-09-eye-weight-133-v3.webp";
+        if (eyeWeight133) expect(atlas.sha256).toBe("ff8ecc78933a0bd414e7fefa2e682fa1a04da5760e3985e286731d02bd6b1673");
         for (let y = top - 1; y <= bottom; y++) {
           for (let x = left - 1; x <= right; x++) {
             const p = ((Math.floor(frame.cell / 8) * 192 + y) * info.width + frame.cell % 8 * 192 + x) * 4;
+            //133 protects every recorded mouth and this original1px search
+            //guard. Keep the full ink detector and prove exact parent RGBA.
+            if (eyeWeight133) expect(data.subarray(p, p + 4)).toEqual(parent131.subarray(p, p + 4));
             if (data[p + 3] > 200 && data[p] < 240 && data[p + 1] < 170 && data[p + 2] < 150) ink.push({ x, y });
           }
         }

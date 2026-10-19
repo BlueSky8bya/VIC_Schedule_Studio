@@ -2,7 +2,8 @@
 
 | ID | Status | Record |
 |---|---|---|
-| UI-131 | Local verification | [Happy petting, physical belongings and readable collection](../verification/COMPANION_CARE_COLLECTION-20261019.md) |
+| COMPANION-FIX-133 | Local gates complete; scoped release verification pending | [Body grounding, gallery and petting eyes](PLAN-20261019-133-companion-grounding-gallery-eyes.md) |
+| COMPANION-LIFE-132 | Awaiting design feedback; six image drafts/five families ready, runtime integration not started | [Nine personalities](PLAN-20261019-132-companion-personality-life.md), [House and work scenes](PLAN-20261019-132-companion-home-scenes.md) |
 | PRIVACY-20260921 | Deployed containment verified; historical Git exposure, realtime/provider and retention follow-up remain | [Privacy audit](../verification/PRIVACY-20260921.md) |
 | DARK-HARMONY-20260919 | Ribbon editor dark controls corrected; local verification and authorized push follow-up. Production unverified (prior release staged) | [Dark palette follow-up](../../ux/dark-mode-palette.md) |
 | MARINE-RESUME | Paused by owner | [Resume handoff](../handoffs/20260916-marine-biomes-resume.md) |

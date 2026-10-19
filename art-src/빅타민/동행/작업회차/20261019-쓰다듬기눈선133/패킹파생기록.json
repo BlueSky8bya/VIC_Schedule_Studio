@@ -1,0 +1,1678 @@
+{
+  "version": 3,
+  "previousIntermediateArtifacts": {
+    "policy": "Local-only rejected derivations; not reproduction inputs or public assets.",
+    "v1PacketSha256": "2e68316af3cd87f7a2c88963a92e49234cedfa9f08e0b58edbbce4cd24f093f8",
+    "v2PacketSha256": "72d1f0494882a9d51c21aa7d8fcc5940ce2532b69b30bb19fb50b66b58c5bdd9",
+    "failure": "The shared x99 mouth approximation missed actual x98 edges; v3 protects every recorded mouth and1px guard."
+  },
+  "generationCalls": 1,
+  "callsByThisScript": 0,
+  "independentArtReviews": 0,
+  "ownerApproval": false,
+  "native": {
+    "path": "art-src/빅타민/동행/작업회차/20261019-쓰다듬기눈선133/원본/쓰다듬기눈선_단일생성.png",
+    "sha256": "2e58c84c2530bbb41e640a8f8db0148b5269dc3ac3d5d34c4fb5c808db424a2d",
+    "width": 2172,
+    "height": 724
+  },
+  "parent": {
+    "src": "/companion/hd/vitamin-action-09-happiness-131-v1.webp",
+    "sha256": "eaa134b4001477439dae456989d255e4cf723da31fbc5c3809f6b6d85285fcdb",
+    "bytes": 366210,
+    "width": 1536,
+    "height": 384
+  },
+  "normalization": {
+    "crop": [
+      0,
+      91,
+      2172,
+      634
+    ],
+    "output": [
+      1536,
+      384
+    ],
+    "kernel": "lanczos3",
+    "wholeCellIntegerTranslations": true,
+    "localEyeWarpOrDrawing": false,
+    "originalAlphaRetained": true
+  },
+  "declaredMask": {
+    "path": "art-src/빅타민/동행/작업회차/20261019-쓰다듬기눈선133/고정입력/눈선_명시편집영역.png",
+    "sha256": "e03b016e442c493a9afcfb2fb522770832cd8717faaa2c23773c0977a8fa631a"
+  },
+  "effectiveAllowedMask": {
+    "path": "art-src/빅타민/동행/작업회차/20261019-쓰다듬기눈선133/정리본/눈선133_최종허용영역.png",
+    "sha256": "3ba053e6d4b459a2cff804a1ddaaf47b9f197831d00c29d400c125dbe57a8b62",
+    "mouthExclusion": "All16 actual131 mouth bounds plus1px neighboring guard."
+  },
+  "packet": {
+    "src": "/companion/hd/vitamin-action-09-eye-weight-133-v3.webp",
+    "sha256": "ff8ecc78933a0bd414e7fefa2e682fa1a04da5760e3985e286731d02bd6b1673",
+    "bytes": 368600,
+    "width": 1536,
+    "height": 384
+  },
+  "changedPixels": 4309,
+  "changedChannels": 12597,
+  "unchangedOutsideEyeRgba": true,
+  "unchangedAllAlpha": true,
+  "unchangedAll16MouthGuardsRgba": true,
+  "invisibleRgbChannelsNormalized": 0,
+  "unchanged520FrameRegistrations": true,
+  "unchanged520AccessoryAnchors": true,
+  "unchangedMouthAnchorFrames": true,
+  "immutableParentPackets": [
+    {
+      "src": "/companion/hd/vitamin-action-00-eye-contour-120-v1.webp",
+      "sha256": "0ae8841d45d0aed2f1838d7bf9effb193153d64e58dd570e1ad9eaa60392d460",
+      "bytes": 416708,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-action-01-motion-115-v1.webp",
+      "sha256": "a4fb475886e13f597883851aaa2990868848ccf74371c4d3c90c05f64abb1a19",
+      "bytes": 178160,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-action-02-motion-115-v1.webp",
+      "sha256": "2d42987867f83ae696b06935471825addbd54fb06615302f44538a1ce6f97370",
+      "bytes": 188292,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-action-03-motion-115-v1.webp",
+      "sha256": "8309dc44823ca1b19743e6862b8e8b374af25e4d53198f57690dbbe8a92f2597",
+      "bytes": 169674,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-action-04-tuft-117-v1.webp",
+      "sha256": "f76289f26fa772382ab1b1d638c71a9aaa6cf26eaa9a11ad681039aaad7ccc8d",
+      "bytes": 426660,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-action-05-motion-115-v1.webp",
+      "sha256": "231447687ccdf4f016a52b5e73667d19764fde2429f8f2ff385b82bbfb012d12",
+      "bytes": 183914,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-action-06-motion-115-v1.webp",
+      "sha256": "9e5fb14d82995bbf03398f3baea1e55fb537c4c163ac7690075d3e4793e8810f",
+      "bytes": 160014,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-action-07-motion-115-v1.webp",
+      "sha256": "d4b7571deb7dfddcc8949a9f21eb0c179997b1689f4210881dbef10686955fca",
+      "bytes": 181454,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-action-08-motion-115-v1.webp",
+      "sha256": "3a63b44c1ed3e1ee3fd4da2ca19d27cadbbde352da4f3025c25bb6aacf4c56f2",
+      "bytes": 188834,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-action-09-happiness-131-v1.webp",
+      "sha256": "eaa134b4001477439dae456989d255e4cf723da31fbc5c3809f6b6d85285fcdb",
+      "bytes": 366210,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-action-10-motion-115-v1.webp",
+      "sha256": "f34c90faf915f3bd1ad918ee5578947a635070af0a49ed3cd7ed0478e97c63bc",
+      "bytes": 173586,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-action-11-motion-115-v1.webp",
+      "sha256": "423d11cd938bb22c1bd57c7b57aaf00b2578b8709e49a3b00297c5ec8ff84189",
+      "bytes": 162480,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-action-12-motion-115-v1.webp",
+      "sha256": "89342020b0f59b1942e1300193158d828fdbfcc43ec7123e602911fd13a2f79b",
+      "bytes": 184054,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-action-13-motion-115-v1.webp",
+      "sha256": "d07c8f4d6e1c22f7a434687921b506cf33f61d08a29f8b033bd1dd0ad5ad55ba",
+      "bytes": 188094,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-action-14-motion-115-v1.webp",
+      "sha256": "69efbfb85a0e7fb157d059ef23848f8bd1c96171f75597c033ecc9dafb1f18ed",
+      "bytes": 150920,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-action-15-motion-115-v1.webp",
+      "sha256": "9ef892aab49024b09c32416ac0ad48236802d0c9cba111577b0225622d186a40",
+      "bytes": 182094,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-action-16-eye-contour-120-v1.webp",
+      "sha256": "39c0f80b9b03d25d9be087f4f19fcd7c4f1088f4f4faa64da83c8a8797800747",
+      "bytes": 410432,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-action-17-motion-115-v1.webp",
+      "sha256": "a8f367189abdd6427cd229139d00a81200666eac57ef1c01fcb150b6ef5b0a6b",
+      "bytes": 174982,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-action-18-motion-115-v1.webp",
+      "sha256": "ee4d9f844b183fbe43040d35c69eef90d327cc9469b74a628ed5aaff7e4e353d",
+      "bytes": 138246,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-play-00-motion-115-v1.webp",
+      "sha256": "977e0a047d92c6a3ba3426058805d000f6ee6c1d1ab86bfca28f50a32f42fa6e",
+      "bytes": 165222,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-play-01-motion-115-v1.webp",
+      "sha256": "098e64532c469fcb54ffbaff48bb9bc55fcd1cd6de899d3fffe82e863323858d",
+      "bytes": 156312,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-play-02-motion-115-v1.webp",
+      "sha256": "0de81d9b157d46ef8a5b402a4e3807141b5c1024379d47b35590588f709cfa80",
+      "bytes": 144466,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-play-03-expression-119-v1.webp",
+      "sha256": "da09c0c607da35f5f7802568040fc654a868d06356013258074d3b9a01766450",
+      "bytes": 172514,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-play-04-motion-115-v1.webp",
+      "sha256": "b2e701cd2e403c402f61126404a6435cdde40e3810584262693605765cac6cda",
+      "bytes": 128930,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-play-05-motion-115-v1.webp",
+      "sha256": "e92d09cae67082d1839b88d5edbd8985f9935121b440dc2cdba5082388ca4621",
+      "bytes": 146216,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-play-06-motion-115-v1.webp",
+      "sha256": "a5fc6045daee6d0629c2152b509ffd4862a2fbdd6f83437f0710ab5eef2f24d9",
+      "bytes": 137384,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-play-07-motion-115-v1.webp",
+      "sha256": "a9c6fde71d01a7950e2526e98402152c830cc376d41b0fc112af09bf31605d6c",
+      "bytes": 141228,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-play-08-motion-115-v1.webp",
+      "sha256": "bf6a95fe60d6ae7e107b8314c2ce372721f18780fdc5815a725cedd032bba5fe",
+      "bytes": 120040,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-play-09-motion-115-v1.webp",
+      "sha256": "4cd30d750518e755eab9fec005aec6c03ff7a2dbfb2d4733539ae212eef5446e",
+      "bytes": 151170,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-play-10-motion-115-v1.webp",
+      "sha256": "470a91d49a60b7cf5b0b14a55d168bc67664fe425185ad15e02b168aab9120d6",
+      "bytes": 153752,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-play-11-motion-115-v1.webp",
+      "sha256": "ea49bcfdba18d05d963c18cf8303631ce3874f68b8ff31101307041d8be7d5a5",
+      "bytes": 149896,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-play-12-expression-119-v1.webp",
+      "sha256": "67d24e1a51c3f3b0b65a33be063aea3a333ca0e1b45b8c9d3a24c7e70866fec4",
+      "bytes": 162878,
+      "width": 1536,
+      "height": 384
+    },
+    {
+      "src": "/companion/hd/vitamin-episodes-00-eye-contour-120-v1.webp",
+      "sha256": "5ea159d3bca15819d3ef5f119397f9da3ffdb2ba715b9fb4e54d6da43eee2e58",
+      "bytes": 222634,
+      "width": 1536,
+      "height": 384
+    }
+  ],
+  "frames": [
+    {
+      "physicalIndex": 144,
+      "wholeCellTranslation": [
+        0,
+        -1
+      ],
+      "protectedMouthBounds": [
+        99,
+        128,
+        113,
+        140
+      ],
+      "protectedMouthGuard": [
+        98,
+        127,
+        114,
+        141
+      ],
+      "changedPixels": 284,
+      "before": {
+        "eyePairAngleDegrees": -5.61758059012683,
+        "eyes": [
+          {
+            "bounds": [
+              85,
+              123,
+              97,
+              130
+            ],
+            "center": [
+              91,
+              126.5
+            ],
+            "darkPixels": 30,
+            "meanVerticalInkRun": 2.5
+          },
+          {
+            "bounds": [
+              115,
+              120,
+              128,
+              127
+            ],
+            "center": [
+              121.5,
+              123.5
+            ],
+            "darkPixels": 36,
+            "meanVerticalInkRun": 2.769230769230769
+          }
+        ]
+      },
+      "after": {
+        "eyePairAngleDegrees": -3.6329507394882063,
+        "eyes": [
+          {
+            "bounds": [
+              83,
+              120,
+              97,
+              129
+            ],
+            "center": [
+              90,
+              124.5
+            ],
+            "darkPixels": 69,
+            "meanVerticalInkRun": 4.928571428571429
+          },
+          {
+            "bounds": [
+              114,
+              118,
+              129,
+              127
+            ],
+            "center": [
+              121.5,
+              122.5
+            ],
+            "darkPixels": 72,
+            "meanVerticalInkRun": 4.8
+          }
+        ]
+      }
+    },
+    {
+      "physicalIndex": 145,
+      "wholeCellTranslation": [
+        -1,
+        0
+      ],
+      "protectedMouthBounds": [
+        99,
+        128,
+        113,
+        140
+      ],
+      "protectedMouthGuard": [
+        98,
+        127,
+        114,
+        141
+      ],
+      "changedPixels": 265,
+      "before": {
+        "eyePairAngleDegrees": -4.685899839502702,
+        "eyes": [
+          {
+            "bounds": [
+              84,
+              122,
+              97,
+              130
+            ],
+            "center": [
+              90.5,
+              126
+            ],
+            "darkPixels": 33,
+            "meanVerticalInkRun": 2.5384615384615383
+          },
+          {
+            "bounds": [
+              115,
+              120,
+              127,
+              127
+            ],
+            "center": [
+              121,
+              123.5
+            ],
+            "darkPixels": 31,
+            "meanVerticalInkRun": 2.5833333333333335
+          }
+        ]
+      },
+      "after": {
+        "eyePairAngleDegrees": -3.5763343749973515,
+        "eyes": [
+          {
+            "bounds": [
+              82,
+              121,
+              97,
+              130
+            ],
+            "center": [
+              89.5,
+              125.5
+            ],
+            "darkPixels": 72,
+            "meanVerticalInkRun": 4.8
+          },
+          {
+            "bounds": [
+              114,
+              119,
+              129,
+              128
+            ],
+            "center": [
+              121.5,
+              123.5
+            ],
+            "darkPixels": 69,
+            "meanVerticalInkRun": 4.6
+          }
+        ]
+      }
+    },
+    {
+      "physicalIndex": 146,
+      "wholeCellTranslation": [
+        -2,
+        -1
+      ],
+      "protectedMouthBounds": [
+        99,
+        129,
+        113,
+        140
+      ],
+      "protectedMouthGuard": [
+        98,
+        128,
+        114,
+        141
+      ],
+      "changedPixels": 296,
+      "before": {
+        "eyePairAngleDegrees": -4.61064931866061,
+        "eyes": [
+          {
+            "bounds": [
+              85,
+              122,
+              97,
+              130
+            ],
+            "center": [
+              91,
+              126
+            ],
+            "darkPixels": 36,
+            "meanVerticalInkRun": 3
+          },
+          {
+            "bounds": [
+              116,
+              120,
+              128,
+              127
+            ],
+            "center": [
+              122,
+              123.5
+            ],
+            "darkPixels": 35,
+            "meanVerticalInkRun": 2.9166666666666665
+          }
+        ]
+      },
+      "after": {
+        "eyePairAngleDegrees": -3.5214533769222385,
+        "eyes": [
+          {
+            "bounds": [
+              81,
+              120,
+              97,
+              129
+            ],
+            "center": [
+              89,
+              124.5
+            ],
+            "darkPixels": 74,
+            "meanVerticalInkRun": 4.625
+          },
+          {
+            "bounds": [
+              114,
+              118,
+              129,
+              127
+            ],
+            "center": [
+              121.5,
+              122.5
+            ],
+            "darkPixels": 75,
+            "meanVerticalInkRun": 5
+          }
+        ]
+      }
+    },
+    {
+      "physicalIndex": 147,
+      "wholeCellTranslation": [
+        -2,
+        -1
+      ],
+      "protectedMouthBounds": [
+        99,
+        128,
+        113,
+        140
+      ],
+      "protectedMouthGuard": [
+        98,
+        127,
+        114,
+        141
+      ],
+      "changedPixels": 288,
+      "before": {
+        "eyePairAngleDegrees": -4.763641690726177,
+        "eyes": [
+          {
+            "bounds": [
+              85,
+              122,
+              97,
+              130
+            ],
+            "center": [
+              91,
+              126
+            ],
+            "darkPixels": 32,
+            "meanVerticalInkRun": 2.6666666666666665
+          },
+          {
+            "bounds": [
+              115,
+              120,
+              127,
+              127
+            ],
+            "center": [
+              121,
+              123.5
+            ],
+            "darkPixels": 34,
+            "meanVerticalInkRun": 2.8333333333333335
+          }
+        ]
+      },
+      "after": {
+        "eyePairAngleDegrees": -3.5763343749973515,
+        "eyes": [
+          {
+            "bounds": [
+              82,
+              120,
+              97,
+              129
+            ],
+            "center": [
+              89.5,
+              124.5
+            ],
+            "darkPixels": 72,
+            "meanVerticalInkRun": 4.8
+          },
+          {
+            "bounds": [
+              114,
+              118,
+              129,
+              127
+            ],
+            "center": [
+              121.5,
+              122.5
+            ],
+            "darkPixels": 74,
+            "meanVerticalInkRun": 4.933333333333334
+          }
+        ]
+      }
+    },
+    {
+      "physicalIndex": 148,
+      "wholeCellTranslation": [
+        -2,
+        -1
+      ],
+      "protectedMouthBounds": [
+        99,
+        128,
+        113,
+        140
+      ],
+      "protectedMouthGuard": [
+        98,
+        127,
+        114,
+        141
+      ],
+      "changedPixels": 291,
+      "before": {
+        "eyePairAngleDegrees": -4.763641690726177,
+        "eyes": [
+          {
+            "bounds": [
+              85,
+              122,
+              97,
+              130
+            ],
+            "center": [
+              91,
+              126
+            ],
+            "darkPixels": 32,
+            "meanVerticalInkRun": 2.6666666666666665
+          },
+          {
+            "bounds": [
+              115,
+              120,
+              127,
+              127
+            ],
+            "center": [
+              121,
+              123.5
+            ],
+            "darkPixels": 33,
+            "meanVerticalInkRun": 2.75
+          }
+        ]
+      },
+      "after": {
+        "eyePairAngleDegrees": -3.5763343749973515,
+        "eyes": [
+          {
+            "bounds": [
+              82,
+              120,
+              97,
+              129
+            ],
+            "center": [
+              89.5,
+              124.5
+            ],
+            "darkPixels": 72,
+            "meanVerticalInkRun": 4.8
+          },
+          {
+            "bounds": [
+              114,
+              118,
+              129,
+              127
+            ],
+            "center": [
+              121.5,
+              122.5
+            ],
+            "darkPixels": 73,
+            "meanVerticalInkRun": 4.866666666666666
+          }
+        ]
+      }
+    },
+    {
+      "physicalIndex": 149,
+      "wholeCellTranslation": [
+        -3,
+        -1
+      ],
+      "protectedMouthBounds": [
+        99,
+        128,
+        113,
+        140
+      ],
+      "protectedMouthGuard": [
+        98,
+        127,
+        114,
+        141
+      ],
+      "changedPixels": 290,
+      "before": {
+        "eyePairAngleDegrees": -4.763641690726177,
+        "eyes": [
+          {
+            "bounds": [
+              85,
+              122,
+              97,
+              130
+            ],
+            "center": [
+              91,
+              126
+            ],
+            "darkPixels": 32,
+            "meanVerticalInkRun": 2.6666666666666665
+          },
+          {
+            "bounds": [
+              115,
+              120,
+              127,
+              127
+            ],
+            "center": [
+              121,
+              123.5
+            ],
+            "darkPixels": 33,
+            "meanVerticalInkRun": 2.75
+          }
+        ]
+      },
+      "after": {
+        "eyePairAngleDegrees": -4.467159061389273,
+        "eyes": [
+          {
+            "bounds": [
+              82,
+              120,
+              97,
+              129
+            ],
+            "center": [
+              89.5,
+              124.5
+            ],
+            "darkPixels": 70,
+            "meanVerticalInkRun": 4.666666666666667
+          },
+          {
+            "bounds": [
+              114,
+              118,
+              129,
+              126
+            ],
+            "center": [
+              121.5,
+              122
+            ],
+            "darkPixels": 71,
+            "meanVerticalInkRun": 4.733333333333333
+          }
+        ]
+      }
+    },
+    {
+      "physicalIndex": 150,
+      "wholeCellTranslation": [
+        -3,
+        -1
+      ],
+      "protectedMouthBounds": [
+        98,
+        128,
+        113,
+        140
+      ],
+      "protectedMouthGuard": [
+        97,
+        127,
+        114,
+        141
+      ],
+      "changedPixels": 284,
+      "before": {
+        "eyePairAngleDegrees": -4.685899839502702,
+        "eyes": [
+          {
+            "bounds": [
+              85,
+              122,
+              96,
+              130
+            ],
+            "center": [
+              90.5,
+              126
+            ],
+            "darkPixels": 33,
+            "meanVerticalInkRun": 3
+          },
+          {
+            "bounds": [
+              115,
+              120,
+              127,
+              127
+            ],
+            "center": [
+              121,
+              123.5
+            ],
+            "darkPixels": 33,
+            "meanVerticalInkRun": 2.75
+          }
+        ]
+      },
+      "after": {
+        "eyePairAngleDegrees": -4.467159061389273,
+        "eyes": [
+          {
+            "bounds": [
+              82,
+              120,
+              97,
+              129
+            ],
+            "center": [
+              89.5,
+              124.5
+            ],
+            "darkPixels": 72,
+            "meanVerticalInkRun": 4.8
+          },
+          {
+            "bounds": [
+              114,
+              118,
+              129,
+              126
+            ],
+            "center": [
+              121.5,
+              122
+            ],
+            "darkPixels": 68,
+            "meanVerticalInkRun": 4.533333333333333
+          }
+        ]
+      }
+    },
+    {
+      "physicalIndex": 151,
+      "wholeCellTranslation": [
+        -4,
+        -1
+      ],
+      "protectedMouthBounds": [
+        99,
+        128,
+        113,
+        140
+      ],
+      "protectedMouthGuard": [
+        98,
+        127,
+        114,
+        141
+      ],
+      "changedPixels": 283,
+      "before": {
+        "eyePairAngleDegrees": -4.763641690726177,
+        "eyes": [
+          {
+            "bounds": [
+              85,
+              122,
+              97,
+              130
+            ],
+            "center": [
+              91,
+              126
+            ],
+            "darkPixels": 34,
+            "meanVerticalInkRun": 2.8333333333333335
+          },
+          {
+            "bounds": [
+              115,
+              120,
+              127,
+              127
+            ],
+            "center": [
+              121,
+              123.5
+            ],
+            "darkPixels": 32,
+            "meanVerticalInkRun": 2.6666666666666665
+          }
+        ]
+      },
+      "after": {
+        "eyePairAngleDegrees": -3.6913859864512752,
+        "eyes": [
+          {
+            "bounds": [
+              82,
+              120,
+              97,
+              129
+            ],
+            "center": [
+              89.5,
+              124.5
+            ],
+            "darkPixels": 72,
+            "meanVerticalInkRun": 4.8
+          },
+          {
+            "bounds": [
+              113,
+              118,
+              128,
+              127
+            ],
+            "center": [
+              120.5,
+              122.5
+            ],
+            "darkPixels": 70,
+            "meanVerticalInkRun": 4.666666666666667
+          }
+        ]
+      }
+    },
+    {
+      "physicalIndex": 152,
+      "wholeCellTranslation": [
+        -1,
+        1
+      ],
+      "protectedMouthBounds": [
+        99,
+        128,
+        113,
+        139
+      ],
+      "protectedMouthGuard": [
+        98,
+        127,
+        114,
+        140
+      ],
+      "changedPixels": 261,
+      "before": {
+        "eyePairAngleDegrees": -3.6913859864512752,
+        "eyes": [
+          {
+            "bounds": [
+              84,
+              122,
+              97,
+              129
+            ],
+            "center": [
+              90.5,
+              125.5
+            ],
+            "darkPixels": 35,
+            "meanVerticalInkRun": 2.6923076923076925
+          },
+          {
+            "bounds": [
+              115,
+              120,
+              128,
+              127
+            ],
+            "center": [
+              121.5,
+              123.5
+            ],
+            "darkPixels": 33,
+            "meanVerticalInkRun": 2.5384615384615383
+          }
+        ]
+      },
+      "after": {
+        "eyePairAngleDegrees": -4.537772507906651,
+        "eyes": [
+          {
+            "bounds": [
+              82,
+              121,
+              97,
+              131
+            ],
+            "center": [
+              89.5,
+              126
+            ],
+            "darkPixels": 74,
+            "meanVerticalInkRun": 4.933333333333334
+          },
+          {
+            "bounds": [
+              114,
+              119,
+              128,
+              128
+            ],
+            "center": [
+              121,
+              123.5
+            ],
+            "darkPixels": 68,
+            "meanVerticalInkRun": 4.857142857142857
+          }
+        ]
+      }
+    },
+    {
+      "physicalIndex": 153,
+      "wholeCellTranslation": [
+        -1,
+        1
+      ],
+      "protectedMouthBounds": [
+        99,
+        128,
+        113,
+        139
+      ],
+      "protectedMouthGuard": [
+        98,
+        127,
+        114,
+        140
+      ],
+      "changedPixels": 251,
+      "before": {
+        "eyePairAngleDegrees": -4.61064931866061,
+        "eyes": [
+          {
+            "bounds": [
+              84,
+              122,
+              96,
+              130
+            ],
+            "center": [
+              90,
+              126
+            ],
+            "darkPixels": 36,
+            "meanVerticalInkRun": 3
+          },
+          {
+            "bounds": [
+              115,
+              120,
+              127,
+              127
+            ],
+            "center": [
+              121,
+              123.5
+            ],
+            "darkPixels": 35,
+            "meanVerticalInkRun": 2.9166666666666665
+          }
+        ]
+      },
+      "after": {
+        "eyePairAngleDegrees": -3.5763343749973515,
+        "eyes": [
+          {
+            "bounds": [
+              81,
+              122,
+              96,
+              131
+            ],
+            "center": [
+              88.5,
+              126.5
+            ],
+            "darkPixels": 68,
+            "meanVerticalInkRun": 4.533333333333333
+          },
+          {
+            "bounds": [
+              113,
+              120,
+              128,
+              129
+            ],
+            "center": [
+              120.5,
+              124.5
+            ],
+            "darkPixels": 70,
+            "meanVerticalInkRun": 4.666666666666667
+          }
+        ]
+      }
+    },
+    {
+      "physicalIndex": 154,
+      "wholeCellTranslation": [
+        1,
+        1
+      ],
+      "protectedMouthBounds": [
+        99,
+        129,
+        113,
+        140
+      ],
+      "protectedMouthGuard": [
+        98,
+        128,
+        114,
+        141
+      ],
+      "changedPixels": 257,
+      "before": {
+        "eyePairAngleDegrees": -3.7517290705259754,
+        "eyes": [
+          {
+            "bounds": [
+              84,
+              123,
+              97,
+              130
+            ],
+            "center": [
+              90.5,
+              126.5
+            ],
+            "darkPixels": 34,
+            "meanVerticalInkRun": 2.6153846153846154
+          },
+          {
+            "bounds": [
+              115,
+              121,
+              127,
+              128
+            ],
+            "center": [
+              121,
+              124.5
+            ],
+            "darkPixels": 34,
+            "meanVerticalInkRun": 2.8333333333333335
+          }
+        ]
+      },
+      "after": {
+        "eyePairAngleDegrees": -3.6913859864512752,
+        "eyes": [
+          {
+            "bounds": [
+              83,
+              123,
+              98,
+              132
+            ],
+            "center": [
+              90.5,
+              127.5
+            ],
+            "darkPixels": 75,
+            "meanVerticalInkRun": 5
+          },
+          {
+            "bounds": [
+              114,
+              121,
+              129,
+              130
+            ],
+            "center": [
+              121.5,
+              125.5
+            ],
+            "darkPixels": 68,
+            "meanVerticalInkRun": 4.533333333333333
+          }
+        ]
+      }
+    },
+    {
+      "physicalIndex": 155,
+      "wholeCellTranslation": [
+        0,
+        1
+      ],
+      "protectedMouthBounds": [
+        98,
+        128,
+        113,
+        140
+      ],
+      "protectedMouthGuard": [
+        97,
+        127,
+        114,
+        141
+      ],
+      "changedPixels": 256,
+      "before": {
+        "eyePairAngleDegrees": -4.61064931866061,
+        "eyes": [
+          {
+            "bounds": [
+              84,
+              122,
+              96,
+              130
+            ],
+            "center": [
+              90,
+              126
+            ],
+            "darkPixels": 35,
+            "meanVerticalInkRun": 2.9166666666666665
+          },
+          {
+            "bounds": [
+              115,
+              120,
+              127,
+              127
+            ],
+            "center": [
+              121,
+              123.5
+            ],
+            "darkPixels": 32,
+            "meanVerticalInkRun": 2.6666666666666665
+          }
+        ]
+      },
+      "after": {
+        "eyePairAngleDegrees": -3.6329507394882063,
+        "eyes": [
+          {
+            "bounds": [
+              83,
+              122,
+              97,
+              131
+            ],
+            "center": [
+              90,
+              126.5
+            ],
+            "darkPixels": 71,
+            "meanVerticalInkRun": 5.071428571428571
+          },
+          {
+            "bounds": [
+              114,
+              120,
+              129,
+              129
+            ],
+            "center": [
+              121.5,
+              124.5
+            ],
+            "darkPixels": 70,
+            "meanVerticalInkRun": 4.666666666666667
+          }
+        ]
+      }
+    },
+    {
+      "physicalIndex": 156,
+      "wholeCellTranslation": [
+        -1,
+        1
+      ],
+      "protectedMouthBounds": [
+        99,
+        128,
+        113,
+        140
+      ],
+      "protectedMouthGuard": [
+        98,
+        127,
+        114,
+        141
+      ],
+      "changedPixels": 256,
+      "before": {
+        "eyePairAngleDegrees": -5.61758059012683,
+        "eyes": [
+          {
+            "bounds": [
+              84,
+              123,
+              97,
+              130
+            ],
+            "center": [
+              90.5,
+              126.5
+            ],
+            "darkPixels": 35,
+            "meanVerticalInkRun": 2.6923076923076925
+          },
+          {
+            "bounds": [
+              115,
+              120,
+              127,
+              127
+            ],
+            "center": [
+              121,
+              123.5
+            ],
+            "darkPixels": 35,
+            "meanVerticalInkRun": 2.9166666666666665
+          }
+        ]
+      },
+      "after": {
+        "eyePairAngleDegrees": -3.6329507394882063,
+        "eyes": [
+          {
+            "bounds": [
+              82,
+              122,
+              97,
+              131
+            ],
+            "center": [
+              89.5,
+              126.5
+            ],
+            "darkPixels": 73,
+            "meanVerticalInkRun": 4.866666666666666
+          },
+          {
+            "bounds": [
+              114,
+              120,
+              128,
+              129
+            ],
+            "center": [
+              121,
+              124.5
+            ],
+            "darkPixels": 69,
+            "meanVerticalInkRun": 4.928571428571429
+          }
+        ]
+      }
+    },
+    {
+      "physicalIndex": 157,
+      "wholeCellTranslation": [
+        -1,
+        1
+      ],
+      "protectedMouthBounds": [
+        99,
+        128,
+        113,
+        140
+      ],
+      "protectedMouthGuard": [
+        98,
+        127,
+        114,
+        141
+      ],
+      "changedPixels": 252,
+      "before": {
+        "eyePairAngleDegrees": -4.685899839502702,
+        "eyes": [
+          {
+            "bounds": [
+              84,
+              122,
+              97,
+              130
+            ],
+            "center": [
+              90.5,
+              126
+            ],
+            "darkPixels": 36,
+            "meanVerticalInkRun": 2.769230769230769
+          },
+          {
+            "bounds": [
+              115,
+              120,
+              127,
+              127
+            ],
+            "center": [
+              121,
+              123.5
+            ],
+            "darkPixels": 35,
+            "meanVerticalInkRun": 2.9166666666666665
+          }
+        ]
+      },
+      "after": {
+        "eyePairAngleDegrees": -4.537772507906651,
+        "eyes": [
+          {
+            "bounds": [
+              82,
+              122,
+              98,
+              131
+            ],
+            "center": [
+              90,
+              126.5
+            ],
+            "darkPixels": 72,
+            "meanVerticalInkRun": 4.5
+          },
+          {
+            "bounds": [
+              114,
+              120,
+              129,
+              128
+            ],
+            "center": [
+              121.5,
+              124
+            ],
+            "darkPixels": 67,
+            "meanVerticalInkRun": 4.466666666666667
+          }
+        ]
+      }
+    },
+    {
+      "physicalIndex": 158,
+      "wholeCellTranslation": [
+        -2,
+        1
+      ],
+      "protectedMouthBounds": [
+        98,
+        128,
+        113,
+        140
+      ],
+      "protectedMouthGuard": [
+        97,
+        127,
+        114,
+        141
+      ],
+      "changedPixels": 246,
+      "before": {
+        "eyePairAngleDegrees": -3.7517290705259754,
+        "eyes": [
+          {
+            "bounds": [
+              84,
+              122,
+              96,
+              130
+            ],
+            "center": [
+              90,
+              126
+            ],
+            "darkPixels": 37,
+            "meanVerticalInkRun": 3.0833333333333335
+          },
+          {
+            "bounds": [
+              114,
+              120,
+              127,
+              128
+            ],
+            "center": [
+              120.5,
+              124
+            ],
+            "darkPixels": 36,
+            "meanVerticalInkRun": 2.769230769230769
+          }
+        ]
+      },
+      "after": {
+        "eyePairAngleDegrees": -4.537772507906651,
+        "eyes": [
+          {
+            "bounds": [
+              83,
+              122,
+              97,
+              131
+            ],
+            "center": [
+              90,
+              126.5
+            ],
+            "darkPixels": 67,
+            "meanVerticalInkRun": 4.785714285714286
+          },
+          {
+            "bounds": [
+              114,
+              120,
+              129,
+              128
+            ],
+            "center": [
+              121.5,
+              124
+            ],
+            "darkPixels": 67,
+            "meanVerticalInkRun": 4.466666666666667
+          }
+        ]
+      }
+    },
+    {
+      "physicalIndex": 159,
+      "wholeCellTranslation": [
+        -4,
+        1
+      ],
+      "protectedMouthBounds": [
+        99,
+        128,
+        113,
+        139
+      ],
+      "protectedMouthGuard": [
+        98,
+        127,
+        114,
+        140
+      ],
+      "changedPixels": 249,
+      "before": {
+        "eyePairAngleDegrees": -4.685899839502702,
+        "eyes": [
+          {
+            "bounds": [
+              84,
+              122,
+              97,
+              130
+            ],
+            "center": [
+              90.5,
+              126
+            ],
+            "darkPixels": 36,
+            "meanVerticalInkRun": 2.769230769230769
+          },
+          {
+            "bounds": [
+              115,
+              120,
+              127,
+              127
+            ],
+            "center": [
+              121,
+              123.5
+            ],
+            "darkPixels": 33,
+            "meanVerticalInkRun": 2.75
+          }
+        ]
+      },
+      "after": {
+        "eyePairAngleDegrees": -4.61064931866061,
+        "eyes": [
+          {
+            "bounds": [
+              82,
+              122,
+              97,
+              131
+            ],
+            "center": [
+              89.5,
+              126.5
+            ],
+            "darkPixels": 68,
+            "meanVerticalInkRun": 4.533333333333333
+          },
+          {
+            "bounds": [
+              113,
+              120,
+              128,
+              128
+            ],
+            "center": [
+              120.5,
+              124
+            ],
+            "darkPixels": 69,
+            "meanVerticalInkRun": 4.6
+          }
+        ]
+      }
+    }
+  ]
+}

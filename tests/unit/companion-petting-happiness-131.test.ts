@@ -14,6 +14,8 @@ type Metadata = { atlases: Atlas[]; frames: Frame[]; rows: number[][] };
 type Mouth = { evidence: string; atlases: Array<{ src: string; sha256: string }>; frames: Array<{ index: number; atlas: number; cell: number; x: number; y: number; bounds: number[] }> };
 type Anchors = { metadata: Array<{ path: string; sha256: string }>; sources: Atlas[]; frames: Array<{ physicalIndex: number }>; rows: number[][] };
 const receipt = read<{ native: { path: string; sha256: string }; packet: Atlas; frames: Array<{ physicalIndex: number; frame: Frame; body: { left: number; right: number; bottom: number } }>; physicalIndices: number[]; normalizedRgbaSha256: string; alphaCleanup: boolean; faceCompositing: boolean; generationCalls: number; generationCallsByThisScript: number; immutableParentPackets: Atlas[] }>(`${run}/패킹파생기록.json`);
+const successorRun = "art-src/빅타민/동행/작업회차/20261019-쓰다듬기눈선133";
+const successor = read<{ parent: Atlas; packet: Atlas }>(`${successorRun}/패킹파생기록.json`);
 
 describe("131 single-generation happy-petting source and registration", () => {
   it("derives the packet by one uniform whole-grid resize, retaining every normalized alpha and visible RGB byte", async () => {
@@ -37,16 +39,21 @@ describe("131 single-generation happy-petting source and registration", () => {
 
   it("changes only row9's packet and16 registrations while preserving all33 old packets and504 other frames", () => {
     expect(receipt.physicalIndices).toEqual(Array.from({ length: 16 }, (_, i) => 144 + i));
+    expect(successor.parent).toEqual(receipt.packet);
+    expect(successor.packet.sha256).toBe("ff8ecc78933a0bd414e7fefa2e682fa1a04da5760e3985e286731d02bd6b1673");
     let unchangedFrames = 0, unchangedPackets = 0;
     for (const [family, name] of names.entries()) {
       const before = read<Metadata>(`${run}/고정입력/${name}.json`), active = read<Metadata>(`lib/ui/viewer-companion/${name}.json`);
+      const stage131 = read<Metadata>(`${run}/정리본/${name}.json`), inherited = read<Metadata>(`${successorRun}/고정입력/${name}.json`);
+      expect(inherited).toEqual(stage131);
+      expect(active.frames).toEqual(stage131.frames);
       expect(active.rows).toEqual(before.rows);
       for (const [index, frame] of active.frames.entries()) {
         if (family === 0 && index >= 144 && index <= 159) expect(frame).toEqual(receipt.frames[index - 144].frame);
         else { expect(frame).toEqual(before.frames[index]); unchangedFrames++; }
       }
       for (const [index, packet] of active.atlases.entries()) {
-        if (family === 0 && index === 9) expect(packet).toEqual(receipt.packet);
+        if (family === 0 && index === 9) { expect(stage131.atlases[index]).toEqual(receipt.packet); expect(packet).toEqual(successor.packet); }
         else { expect(packet).toEqual(before.atlases[index]); unchangedPackets++; }
       }
       expect({ ...active, frames: before.frames, atlases: before.atlases }).toEqual(before);
@@ -74,9 +81,11 @@ describe("131 single-generation happy-petting source and registration", () => {
     const oldMouth = read<Mouth>(`${run}/고정입력/mouth-anchors.json`), current = read<Mouth>("lib/ui/viewer-companion/mouth-anchors.json");
     expect(current.frames.filter(f => f.index < 144 || f.index > 159)).toEqual(oldMouth.frames.filter(f => f.index < 144 || f.index > 159));
     expect(current.atlases[0]).toEqual(oldMouth.atlases[0]);
-    expect(current.atlases[1]).toEqual({ src: receipt.packet.src, sha256: receipt.packet.sha256 });
+    expect(current.atlases[1]).toEqual({ src: successor.packet.src, sha256: successor.packet.sha256 });
     expect(current.frames.filter(f => f.index >= 144 && f.index <= 159)).toHaveLength(16);
     const old = read<Anchors>(`${run}/고정입력/accessory-anchors.json`), anchors = read<Anchors>("lib/ui/viewer-companion/accessory-anchors.json");
+    const inherited = read<Anchors>(`${successorRun}/고정입력/accessory-anchors.json`);
+    expect(anchors.frames).toEqual(inherited.frames);
     expect(anchors.rows).toEqual(old.rows); expect(anchors.frames).toHaveLength(520);
     for (const [index, anchor] of anchors.frames.entries()) if (index < 144 || index > 159) expect(anchor).toEqual(old.frames[index]);
     for (const [index, source] of anchors.sources.entries()) if (index !== 9) expect(source).toEqual(old.sources[index]);

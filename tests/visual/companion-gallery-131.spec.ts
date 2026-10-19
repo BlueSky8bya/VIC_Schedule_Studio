@@ -102,14 +102,30 @@ for (const [surface, entry, width, height, dark] of [["viewer", "book", 1050, 64
     await selectCompanionCollectionIndex(page, grid, unknown); const before = await measure(book, category === "food" ? 2 : undefined);
     await selectCompanionCollectionIndex(page, grid, known); sameSplit(before, await measure(book, category === "food" ? 2 : undefined));
     await selectCompanionCollectionIndex(page, grid, unknown);
-    const unread = book.getByRole("button", { name: "다음 새 발견", exact: true }), inspected: number[] = [];
-    for (let step = 0; await unread.isEnabled(); step++) {
-      expect(step).toBeLessThan(6); await unread.click();
+    const rail = book.getByRole("slider"), inspected: number[] = [];
+    await expect(rail).toHaveAttribute("data-act", "companion-collection-page");
+    const beforeManual = await page.evaluate(key => localStorage.getItem(key), category === "toy" ? "vic.viewerCompanionTastes" : COMPANION_COLLECTION_KEY);
+    if (Number(await rail.getAttribute("max")) > 1) {
+      const hit = (await rail.boundingBox())!; expect(hit.width).toBeGreaterThanOrEqual(43.9); expect(hit.height).toBeGreaterThanOrEqual(43.9);
+      await rail.click({ position: { x: hit.width / 2, y: hit.height / 2 } }); expect(Number(await rail.inputValue())).toBeGreaterThan(1);
+      await rail.focus(); await page.keyboard.press("End"); await expect(rail).toBeFocused();
+      await expect(rail).toHaveValue((await rail.getAttribute("max"))!);
+      await dialog.screenshot({ path: `${output}/${name}-${category}-directional-unread.png` });
+      const lastPage = Number(await rail.inputValue());
+      await expect(book.locator('.rhh-collection-page-dots [aria-current="page"]')).toHaveAttribute("data-page", String(lastPage - 1));
+      await page.keyboard.press("ArrowLeft"); await expect(rail).toHaveValue(String(Math.max(1, lastPage - 1)));
+      await page.keyboard.press("Home"); await expect(rail).toHaveValue("1");
+    } else await expect(rail).toBeDisabled();
+    expect(await page.evaluate(key => localStorage.getItem(key), category === "toy" ? "vic.viewerCompanionTastes" : COMPANION_COLLECTION_KEY)).toBe(beforeManual);
+    await selectCompanionCollectionIndex(page, grid, unknown); sameSplit(before, await measure(book, category === "food" ? 2 : undefined));
+    for (let step = 0; await book.locator(".rhh-collection-page-arrow[data-unread]").count(); step++) {
+      const forward = book.getByRole("button", { name: "다음 새 발견 보기", exact: true }), backward = book.getByRole("button", { name: "이전 새 발견 보기", exact: true });
+      expect(step).toBeLessThan(6); await (await forward.count() ? forward : backward).click();
       const selected = grid.locator('[aria-pressed="true"]'); await expect(selected).toHaveAttribute("data-found", "true"); await expect(selected).not.toHaveAttribute("data-unread", "true");
       inspected.push(Number(await selected.getAttribute("data-collection-index"))); sameSplit(before, await measure(book, category === "food" ? 2 : undefined));
     }
-    expect(inspected.length).toBeGreaterThan(0); expect(new Set(inspected).size).toBe(inspected.length); await expect(unread.locator(".rhh-collection-unread-count")).toHaveText("남은 새 발견 0개");
-    const next = book.locator('[data-act="companion-collection-page"][data-act-opt="next"]');
+    expect(inspected.length).toBeGreaterThan(0); expect(new Set(inspected).size).toBe(inspected.length); await expect(book.locator(".rhh-collection-next-unread,.rhh-collection-unread-count,.rhh-collection-page-status")).toHaveCount(0);
+    const next = book.locator('[data-page-direction="next"]');
     await grid.locator('[tabindex="0"]').focus(); await page.keyboard.press("Home"); await expect(grid.locator('[data-collection-index="0"]')).toBeFocused();
     await next.focus(); await page.keyboard.press("ArrowRight"); await expect(grid.locator('[tabindex="0"]')).toBeFocused();
     const pageFirst = Number(await grid.locator('[tabindex="0"]').getAttribute("data-collection-index")); expect(pageFirst).toBeGreaterThan(0);
@@ -125,18 +141,19 @@ for (const [surface, entry, width, height, dark] of [["viewer", "book", 1050, 64
   const headingVisible = await heading.isVisible();
   // The existing short-sheet layout omits this redundant title. Normal
   // sheets still prove the real owned2/27 bounds; every sheet proves the
-  // always-visible page counter instead of measuring a hidden element.
+  // always-visible page rail instead of measuring a hidden element.
   if (height > 700) expect(headingVisible).toBe(true);
   if (headingVisible) {
     const count = heading.locator(":scope > span").last(), countBox = (await count.boundingBox())!, headingBox = (await heading.boundingBox())!;
     expect(countBox.x).toBeGreaterThanOrEqual(headingBox.x); expect(countBox.x + countBox.width).toBeLessThanOrEqual(headingBox.x + headingBox.width);
   } else await expect(heading).toBeHidden();
-  const pageCounter = wardrobe.locator(".rhh-collection-page-status > span").first(); await expect(pageCounter).toBeVisible(); await expect(pageCounter).toContainText(/\/\s*27$/);
-  const counterBox = (await pageCounter.boundingBox())!, bookBox = (await wardrobe.boundingBox())!;
+  const pageRail = wardrobe.getByRole("slider"); await expect(pageRail).toBeVisible(); await expect(pageRail).toHaveAttribute("aria-valuetext", /페이지 중 \d+페이지$/);
+  const counterBox = (await pageRail.boundingBox())!, bookBox = (await wardrobe.boundingBox())!;
+  expect(counterBox.width).toBeGreaterThanOrEqual(43.9); expect(counterBox.height).toBeGreaterThanOrEqual(43.9);
   expect(counterBox.x).toBeGreaterThanOrEqual(bookBox.x); expect(counterBox.x + counterBox.width).toBeLessThanOrEqual(bookBox.x + bookBox.width);
   await grid.locator('[tabindex="0"]').focus(); await page.keyboard.press("End"); await expect(grid.locator(`[data-collection-index="${COMPANION_WEARABLE_IDS.length - 1}"]`)).toBeFocused(); sameSplit(before, await measure(wardrobe));
   const saved = await page.evaluate(key => JSON.parse(localStorage.getItem(key)!) as CompanionCollection, COMPANION_COLLECTION_KEY);
   expect(saved.gifts.equipped).toBe("sunglasses"); expect(saved.gifts.unlocked).toEqual(catalogue.gifts.unlocked); expect(errors).toEqual([]); expect(rejected).toEqual([]);
-  writeFileSync(`${output}/${name}.json`, JSON.stringify({ build: readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim(), priorLocalFixturesOnly: true, earnedInNativeSession: false, results, wardrobe: before, headingVisible, actualPageCounter: counterBox, errors, rejected }, null, 2));
+  writeFileSync(`${output}/${name}.json`, JSON.stringify({ build: readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim(), priorLocalFixturesOnly: true, earnedInNativeSession: false, results, wardrobe: before, headingVisible, actualPageRail: counterBox, errors, rejected }, null, 2));
   await dialog.screenshot({ path: `${output}/${name}.png` });
 });

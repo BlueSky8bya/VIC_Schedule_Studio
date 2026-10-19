@@ -396,7 +396,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     let pendingHomeRecall: HTMLElement | undefined;
     const pendingFeeds = createCompanionFeedCommands<HTMLElement>();
     const cancelHomeJourney = () => { pendingHomeRecall = undefined; homeJourney = false; homeWakeUntil = 0; strandedSince = 0; homeWaitingGeometry = homeValidationRequested = homeLookUsed = false; homeLegs = 0; homeEntryFloor = undefined; el.removeAttribute("data-home-journey"); el.removeAttribute("data-home-waiting"); el.removeAttribute("data-home-wait-pose"); };
-    const supportById = (id: string) => platforms.find(p => p.id === id) ?? landingPlatforms.find(p => p.id === id);
+    // A retired transparent panel anchor cannot keep a stale world grounded
+    // while its next geometry delivery selects an actual lower support.
+    const supportById = (id: string) => isCompanionPanelFloor(id) ? undefined : platforms.find(p => p.id === id) ?? landingPlatforms.find(p => p.id === id);
     // Only an actual impact teaches this brief local caution. It keeps the
     // current food/route identity and never persists a calendar location.
     const rememberMishapPlace = () => {
@@ -619,7 +621,6 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     };
     let offGeometry: CompanionGeometrySubscription | undefined, geometryTracker: CompanionGeometrySubscription | undefined;
     const anchorSeen = new Map<string, { x: number; y: number; frame?: CompanionAnchorFrame }>();
-    let panelFloorWaiting = false, panelFloorU: number | undefined;
     const carrier = { x: 0, y: 0 };
     let followRaf = 0, followUntil = 0, scrollUntil = 0;
     let followedAt = -Infinity, followedKeys = "", anchorsDirty = false;
@@ -1081,10 +1082,6 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const progress = action ? sofaFlightProgress(now) : 0;
       const previousPassage = sofaPassage(progress);
       const samples = geometryTracker?.follow(followedIds) ?? [];
-      if (isCompanionPanelFloor(support) && !pressed && !keyboardHeld && !placing && !flight && action?.kind !== "jump"
-        && !geometryTracker?.anchor(support)?.element?.isConnected) {
-        panelFloorWaiting = true; awaitingAtX = "vertical"; el.hidden = true; stopHover();
-      }
       const seatSample = samples.find(sample => sample.platform.id === "companion-home");
       const beforeBed = bedScene && { x: bedScene.anchorX, y: bedScene.anchorY };
       const bedMoved = followBed(seatSample, now);
@@ -1137,8 +1134,6 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const dx = validPassage ? movedPassage!.x - previousPassage!.x : lerp(from.x, to.x, px);
       const dy = validPassage ? movedPassage!.y - previousPassage!.y : lerp(from.y, to.y, py);
       x += dx; y += dy; carrier.x += dx; carrier.y += dy;
-      const panelSample = isCompanionPanelFloor(support) ? samples.find(sample => sample.platform.id === support)?.currentFrame : undefined;
-      if (panelSample && !panelFloorWaiting) panelFloorU = (x - panelSample.left) / panelSample.width;
       if (scroll && dy && !pendingMonth && !reduced && gfxMode() !== "off" && !isHomeSupport(support) && action?.kind !== "jump" && !playFalling) supportMotion.push(dy, now);
       if (isHomeSupport(support) || pressed || keyboardHeld || reduced || gfxMode() === "off") supportMotion.reset(now);
       toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, now, toyHomeContacts);
@@ -1191,10 +1186,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           && !overlayActive && !pressed && !keyboardHeld && !placing && !returning && !pendingMonth
           && !workspaceBusyRef.current && !afterPetLanding && !playFalling && action?.kind !== "jump"
           && (!action || isHomeSupport(action.target.platformId ?? ""))) offGeometry.revalidate();
-        // A native panel/day may enter while its first scan was clipped. Use
+        // A native day may enter while its first scan was clipped. Use
         // the same120ms queue only inside this actual layout-motion lease.
         if (time < followUntil && offGeometry && !overlayActive && !workspaceBusyRef.current
-          && (panelFloorWaiting || [support, action?.target.platformId].some(id => Boolean(id && geometryTracker?.anchor(id)?.element)))) offGeometry.revalidate();
+          && [support, action?.target.platformId].some(id => Boolean(id && geometryTracker?.anchor(id)?.element))) offGeometry.revalidate();
         const mainOwnsFrame = !reduced && gfxMode() === "full" && continuousMotion();
         // A main paint consumes this flag too, so a front already committed
         // in this frame does not need a duplicate full follower paint.
@@ -1231,7 +1226,6 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       clearAction(false, false, invitation);
     };
     const settle = (point: { x: number; y: number }, nearby = false, atX = false) => {
-      panelFloorWaiting = false; panelFloorU = undefined;
       // One lost-support episode owns one body-width escape budget. Fresh
       // scans cannot repeatedly move this origin to ratchet across columns.
       if (atX) verticalRecoveryX ??= point.x;
@@ -1776,7 +1770,6 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (!cue && premiereRef.current.cue?.generation && !["idle", "return"].includes(premiereRef.current.cue.phase) && !premiereMemory.current.joined) { sync(); return; }
       if (hiding && overlayActive && (!hiding.sheet || !hiding.ready)) { lastTick = now; return; }
       refreshAnchors(now, now <= scrollUntil);
-      if (panelFloorWaiting && !pressed && !keyboardHeld && !placing) { lastTick = lastNeeds = lastCare = now; return; }
       const delta = Math.max(0, now - lastTick); lastTick = now;
       presentationNow += delta;
       if (cue && !overlayActive && !pressed && !keyboardHeld && !placing && isHomeSupport(support) && departedGeneration !== cue.generation && cue.target - syncedNow() <= 168000) {
@@ -3293,25 +3286,6 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         freshHomePending = false; initialHome.current.entered = true;
         awaitingAtX = false; needsLanding = false;
       }
-      const panelResident = isCompanionPanelFloor(support) && !afterPetLanding && !playFalling && !flight
-        && action?.kind !== "jump" && (!action || isCompanionPanelFloor(action.target.platformId));
-      if (panelResident) {
-        const candidates = landingPlatforms.filter(p => isCompanionPanelFloor(p.id));
-        const source = candidates.length ? geometryTracker?.anchor(candidates[0].id) : undefined;
-        if (!source?.element?.isConnected || !source.width || !candidates.length) {
-          panelFloorWaiting = true; awaitingAtX = "vertical"; clearAction(); hideBed(); stopHover(); el.hidden = true; return;
-        }
-        const desired = source.left + source.width * (panelFloorU ?? (x - source.left) / source.width);
-        const safe = candidates.reduce((best, candidate) => {
-          const distance = (p: Platform) => Math.abs(clamp(desired, p.x, p.x + p.width) - desired);
-          return distance(candidate) < distance(best) ? candidate : best;
-        });
-        const nextX = clamp(desired, safe.x, safe.x + safe.width), dx = nextX - x, dy = safe.y - y;
-        x = nextX; y = safe.y; carrier.x += dx; carrier.y += dy;
-        support = safe.id; panelFloorWaiting = false; awaitingAtX = false; clearSupportWait();
-        panelFloorU ??= (x - source.left) / source.width;
-        if (action) { origin.x += dx; origin.y += dy; action.target.x += dx; action.target.y += dy; action.target.platformId = support; }
-      } else if (!isCompanionPanelFloor(support)) { panelFloorWaiting = false; panelFloorU = undefined; }
       const residesAtHome = isHomeSupport(support) && !pressed && !keyboardHeld && !placing && !afterPetLanding && (!action || isHomeSupport(action.target.platformId ?? "")) && action?.kind !== "jump" && !playFalling;
       if (residesAtHome) {
         const floor = isHomeFloor(support);
@@ -3352,7 +3326,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         const exact = supportById(id);
         if (isHomeSupport(id) && exact) return exact;
         if (exact && Math.abs(point.y - exact.y) <= 3 && point.x >= exact.x && point.x <= exact.x + exact.width) return exact;
-        const group = isCompanionPanelFloor(id) ? "companion-panel-floor" : id.match(/^(?:card|date)-\d+/)?.[0];
+        const group = id.match(/^(?:card|date)-\d+/)?.[0];
         return group ? nearestVerticalCompanionSupport(point, [...platforms, ...landingPlatforms].filter(p => (p.id === group || p.id.startsWith(`${group}-`)) && Math.abs(point.y - p.y) <= 3)) : undefined;
       };
       if (returning) {

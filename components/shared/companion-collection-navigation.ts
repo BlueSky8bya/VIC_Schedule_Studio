@@ -49,6 +49,22 @@ export function nextCompanionCollectionUnread(index: number, length: number, unr
   return null;
 }
 
+/** Direction is registry order, including unread neighbours on this page.
+ * The selected tile is read only by deliberately inspecting that tile. */
+export function companionCollectionUnreadDirections(index: number, length: number, unread: (index: number) => boolean) {
+  let previous: number | null = null, next: number | null = null;
+  for (let item = Math.min(index - 1, length - 1); item >= 0; item--) if (unread(item)) { previous = item; break; }
+  for (let item = Math.max(0, index + 1); item < length; item++) if (unread(item)) { next = item; break; }
+  return { previous, next };
+}
+
+/** Fifteen food pages fit as real dots. Extremely narrow books can have more
+ * pages: their local dot window stays bounded while the bar spans every page. */
+export function companionCollectionPageDots(page: number, count: number) {
+  const size = Math.min(count, count <= 15 ? 15 : 9), start = Math.max(0, Math.min(count - size, page - Math.floor(size / 2)));
+  return Array.from({ length: size }, (_, index) => start + index);
+}
+
 /** Pager arrows own page movement; tile arrows continue to own individual
  * cards, including a boundary that mounts the next finite page. */
 export function onCollectionPageKey(event: KeyboardEvent<HTMLElement>, page: number, count: number, size: number, select: (index: number, focus: boolean) => void) {

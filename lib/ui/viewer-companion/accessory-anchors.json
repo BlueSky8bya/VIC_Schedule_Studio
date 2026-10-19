@@ -6,7 +6,7 @@
   "metadata": [
     {
       "path": "lib/ui/viewer-companion/hd-motion-sprite.json",
-      "sha256": "b9f3701d4a3714411756d512a431a9909157adfc9cf03c1589aff1904d35d7ae"
+      "sha256": "7eae6f8046859dfe5a2d41bef99640159eb761d5c89013270f3dcab3d7a65f68"
     },
     {
       "path": "lib/ui/viewer-companion/play-motion-sprite.json",
@@ -64,9 +64,9 @@
       "bytes": 188834
     },
     {
-      "src": "/companion/hd/vitamin-action-09-happiness-131-v1.webp",
-      "sha256": "eaa134b4001477439dae456989d255e4cf723da31fbc5c3809f6b6d85285fcdb",
-      "bytes": 366210
+      "src": "/companion/hd/vitamin-action-09-eye-weight-133-v3.webp",
+      "sha256": "ff8ecc78933a0bd414e7fefa2e682fa1a04da5760e3985e286731d02bd6b1673",
+      "bytes": 368600
     },
     {
       "src": "/companion/hd/vitamin-action-10-motion-115-v1.webp",

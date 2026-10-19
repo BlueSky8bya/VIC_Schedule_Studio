@@ -1954,10 +1954,25 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 .rhh-companion-settings .rhh-collection-book .rhh-collection-tile > [data-empty] { visibility: hidden; }
 .rhh-companion-settings .rhh-collection-book .rhh-food-grid .rhh-collection-tile > :is(.vc-collection-art, .rhh-collection-unknown) { width: 48px; height: 48px; }
 .rhh-companion-settings .rhh-collection-book .rhh-collection-pages { gap: 4px; padding-inline: 5px; box-sizing: border-box; }
-.rhh-companion-settings .rhh-collection-pages > .rhh-collection-page-status { display: flex; align-items: center; justify-content: center; gap: 5px; min-width: 0; font-size: var(--text-caption); }
-.rhh-collection-page-status > span > span { color: var(--companion-soft); }
-.vic-settings .rhh-companion-settings .rhh-collection-next-unread { display: flex; flex: none; align-items: center; justify-content: center; gap: 3px; width: var(--companion-hit-size, 44px); min-width: var(--companion-hit-size, 44px); height: var(--companion-hit-size, 44px); padding: 0; border-radius: var(--r-pill); font-weight: 700; font-size: var(--text-title); }
-.rhh-collection-next-unread .rhh-collection-unread-count { font-size: var(--text-caption); }
+/*133: one stable, content-free page rail. Direction marks lead to real unread
+  entries; all other pages remain reachable without consuming discoveries. */
+.rhh-companion-settings .rhh-collection-book .rhh-collection-pages { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
+.vic-settings .rhh-companion-settings .rhh-collection-page-arrow { position: relative; display: flex; align-items: center; justify-content: center; gap: 5px; min-width: var(--companion-hit-size, 44px); height: var(--companion-hit-size, 44px); padding: 0 9px; }
+.rhh-companion-settings .rhh-collection-page-arrow > .rhh-collection-unread { position: absolute; top: 0; right: 0; }
+.rhh-companion-settings .rhh-collection-page-arrow[data-page-direction="prev"] > .rhh-collection-unread { right: auto; left: 0; }
+.rhh-companion-settings .rhh-collection-page-arrow[data-unread] { background: var(--companion-blue); }
+.rhh-collection-page-position { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; justify-self: center; box-sizing: border-box; width: min(100%, 220px); min-width: var(--companion-hit-size, 44px); height: var(--companion-hit-size, 44px); padding: 5px 6px; border-radius: var(--r-pill); }
+.rhh-collection-page-position:hover { background: var(--companion-blue); }
+.rhh-collection-page-position:has(input:focus-visible) { outline: 2px solid var(--companion-accent); outline-offset: 2px; }
+.rhh-collection-page-dots { display: grid; grid-template-columns: repeat(var(--collection-dot-count), minmax(0, 1fr)); align-items: center; justify-items: center; gap: clamp(1px, .6cqw, 6px); width: 100%; height: 10px; pointer-events: none; }
+.rhh-collection-page-dots > span { width: min(100%, 5px); height: 5px; border-radius: var(--r-pill); background: var(--companion-soft); opacity: .35; }
+.rhh-collection-page-dots > span[aria-current="page"] { width: min(100%, 13px); height: 9px; background: var(--companion-accent); opacity: 1; }
+.rhh-collection-page-dots > span[data-continuation] { opacity: .18; }
+.rhh-collection-page-bar { position: relative; width: 100%; height: 3px; border-radius: var(--r-pill); background: var(--companion-line); pointer-events: none; }
+.rhh-collection-page-bar::before { position: absolute; inset: 0 auto 0 0; width: var(--collection-progress); border-radius: inherit; background: var(--companion-accent); content: ""; }
+.rhh-collection-page-bar::after { position: absolute; top: -2px; left: clamp(0px, calc(var(--collection-progress) - 3px), calc(100% - 6px)); width: 7px; height: 7px; border-radius: 50%; background: var(--companion-accent); content: ""; }
+.rhh-companion-settings input.rhh-collection-page-rail { position: absolute; inset: 0; box-sizing: border-box; width: 100%; min-width: var(--companion-hit-size, 44px); height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+.rhh-companion-settings input.rhh-collection-page-rail:disabled { cursor: default; }
 @media (max-height: 700px) {
   .rhh-companion-experience > [role="tabpanel"] { --companion-preview-size: 148px; }
   .rhh-companion-settings .rhh-collection-book { gap: 5px; }
@@ -1987,7 +2002,7 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
   .rhh-collection-art-stage > .vc-collection-art { width: 96px; height: 96px; }
 }
 @media (max-height: 700px) { @container companion-settings (max-width: 480px) { .rhh-companion-settings .rhh-collection-book .rhh-collection-gallery-detail { height: 116px; min-height: 116px; } } }
-@container companion-settings (max-width: 360px) { .rhh-collection-pages .rhh-collection-page-label { display: none; } }
+@container companion-settings (max-width: 480px) { .rhh-collection-pages .rhh-collection-page-label { display: none; } .vic-settings .rhh-companion-settings .rhh-collection-page-arrow { padding-inline: 0; } }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-collection-art-stage > .vc-collection-art { transform: none; transition: none; }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companion-settings [data-discovery-cue] :is(.rhh-collection-stamp, .rhh-collection-recent) { animation: none; }
 

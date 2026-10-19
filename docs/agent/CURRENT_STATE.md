@@ -7,7 +7,7 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Current product work: [131 care, belongings and collection](verification/COMPANION_CARE_COLLECTION-20261019.md). Happy petting expression, food throws and real cleanup, unread/keyboard/fixed book layout, direct taste reasons and fresh home spawn. Provider quota/recovery and listed evidence follow-ups remain separate. Preserve shared clock/KST, physical contacts, protected art and public/private boundaries.
+Current work: 133 companion body grounding, shared gallery navigation and petting eye weight fixes; 132 personality/living proposals remain design/art review only. Preserve shared clock/KST, physical contacts, protected art and public/private boundaries.
 
 Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user.125 explicitly authorizes unnecessary Vercel deployment cleanup/optimization; unrelated cleanup, bulk DB UPDATE, paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
 
@@ -17,7 +17,8 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| UI-131 | Local verification | Shared implementation and versioned petting art; finish full/native checks, then authorized release and public verification | [Record](verification/COMPANION_CARE_COLLECTION-20261019.md) |
+| COMPANION-FIX-133 | Local checks complete | Authorized scoped release, then actual public SHA/assets/UI and remote quality verification;28 native scenarios and3,190 units passed | [133 plan](plans/PLAN-20261019-133-companion-grounding-gallery-eyes.md) |
+| COMPANION-LIFE-132 | Design/art drafts ready | User reviews nine-personality scenarios and six image drafts across five families; no behavior integration started | [Personality proposal](plans/PLAN-20261019-132-companion-personality-life.md), [House proposal](plans/PLAN-20261019-132-companion-home-scenes.md) |
 | OPS-VERCEL-QUOTA | Open | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
@@ -46,6 +47,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Last Verified
 
-Current release `3968a5102f6df368a12cba644b0212ee1c07f4d5`: [130 sofa, petting and lived tastes](verification/COMPANION_EXPERIENCE_DEPTH-20261019.md#final-local-result-and-release). Local3,120 units/285 files/type/lint/build/harness326 PASS;18 distinct native scenarios verified through16 second-run passes plus2 corrected-probe resident rechecks, and1 additional actual native meal PASS. Failed preparations/assertions and exact rocking/OS-focus coverage limits remain in the record. Actual anonymous fullSHA/98 exact assets/UI/source-floor spawn/food selection PASS at2026-10-19 14:35:28.264 KST; VercelGreTUZhiywK5FsYrz8eAzaad8kTV Ready14:31:45, remote quality39204826953 success14:33:30. No production mutation/live-state GET/private manifest/seeded care/preferences/tastes/discovery. Protected user art and72 toy art bytes preserved. No owner art approval, same-period quota resolution or actual broadcaster hardware claim.
+Current release `a44f46a2097f2dfc36ef31eefb2249d3844073cc`: [131 care, belongings and collection](verification/COMPANION_CARE_COLLECTION-20261019.md#final-local-result-and-release). Local3,181 units/292 files/type/lint/build/harness327 and24 distinct ordinary native scenarios PASS. Earlier failures, corrected native/public probe assumptions and video/OS-focus limits remain in the record. Actual anonymous fullSHA/98 exact assets/UI/source-floor spawn/food selection PASS at2026-10-19 15:57:43.133 KST; Vercel44mULe9KvabjdZF4QT8HV9W5iH2R Ready15:54:27, remote quality39212458709 success15:58:27. No production mutation/live-state GET/private manifest/seeded care/preferences/tastes/discovery in public verification. Protected user art, old character packets and72 toy art bytes preserved. No owner art approval, same-period quota resolution or actual broadcaster hardware claim.
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.

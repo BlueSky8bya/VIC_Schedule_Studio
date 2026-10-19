@@ -206,14 +206,15 @@ for (const surface of ["viewer", "studio"] as const) {
     const panel = dialog.locator(".rhh-companion-book-pages");
     await panel.getByRole("tab", { name: "도감", exact: true }).click();
     const categories = panel.getByRole("group", { name: "도감 종류", exact: true });
-    await expect(categories.getByRole("button")).toHaveCount(2);
+    await expect(categories.getByRole("button")).toHaveCount(3);
+    for (const [index, label] of ["냠냠 도감", "장난감 도감", "추억 도감"].entries()) await expect(categories.getByRole("button").nth(index)).toHaveAccessibleName(new RegExp(`^${label} \\d+/\\d+$`));
     await categories.getByRole("button", { name: /^추억 도감 / }).click();
     await expect(categories.getByRole("button", { name: /재롱|특별한 순간/ })).toHaveCount(0);
     const memories = panel.locator(".rhh-behavior-grid button");
     await expect.poll(() => memories.count()).toBeGreaterThan(0);
     expect(await memories.count()).toBeLessThanOrEqual(24);
     const lastBehavior = panel.locator(`[data-collection-index="${COMPANION_BEHAVIOR_IDS.length - 1}"]`), firstMoment = panel.locator(`[data-collection-index="${COMPANION_BEHAVIOR_IDS.length}"]`);
-    for (let pageIndex = 0; pageIndex < 12 && !await lastBehavior.count(); pageIndex++) await panel.getByRole("button", { name: "다음 추억", exact: true }).click();
+    for (let pageIndex = 0; pageIndex < 12 && !await lastBehavior.count(); pageIndex++) await panel.getByRole("button", { name: "다음 페이지", exact: true }).click();
     await lastBehavior.click();
     await lastBehavior.press("ArrowRight"); await expect(firstMoment).toBeFocused();
     await firstMoment.press("ArrowLeft"); await expect(lastBehavior).toBeFocused();
@@ -430,7 +431,7 @@ for (const surface of ["viewer", "studio"] as const) {
     await expect(profileTabs.getByRole("tab", { name: "도감", exact: true })).toHaveAttribute("aria-selected", "true");
     const foodGrid = profile.locator(".rhh-food-grid"); await expect.poll(() => foodGrid.locator("button").count()).toBeGreaterThan(0);
     const pageSize = await foodGrid.locator("button").count(); expect(pageSize).toBeLessThanOrEqual(24);
-    await profile.getByRole("button", { name: "다음 간식", exact: true }).click();
+    await profile.getByRole("button", { name: "다음 페이지", exact: true }).click();
     await expect(foodGrid.locator("button").first()).toHaveAttribute("data-food-index", String(pageSize));
     await foodGrid.locator("button").first().focus(); await page.keyboard.press("ArrowRight");
     await expect(foodGrid.locator(`[data-food-index="${pageSize + 1}"]`)).toBeFocused();
@@ -439,7 +440,7 @@ for (const surface of ["viewer", "studio"] as const) {
     const lastIndex = COMPANION_FOOD_KINDS.length - 1;
     await expect(foodGrid.locator(`[data-food-index="${lastIndex}"]`)).toBeFocused();
     await expect(foodGrid.locator("button")).toHaveCount(COMPANION_FOOD_KINDS.length % pageSize || pageSize);
-    await profile.getByRole("button", { name: "이전 간식", exact: true }).click();
+    await profile.getByRole("button", { name: "이전 페이지", exact: true }).click();
     await flush(page, [{ target: "companion-radio-list#close" }, { target: "companion-radio-volume" }, { target: "companion-collection-page#prev" }]);
     for (const target of ["companion-radio-source", "companion-radio-license", "companion-radio-list#open", "companion-radio-list#close", "companion-radio-volume", "companion-profile-page#discover", "companion-collection-page#next", "companion-collection-page#prev"]) expect(count(page, target), target).toBe(1);
     expect(count(page, "companion-collection-inspect#food")).toBe(3);

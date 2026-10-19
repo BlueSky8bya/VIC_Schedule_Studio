@@ -103,11 +103,12 @@ async function turnUntil(dialog: Locator, target: Locator, next: string) {
   await settlePanelLayout(dialog.page());
   const firstItem = () => grid.locator("button").first().evaluate(node => node.getAttribute("data-collection-index") ?? node.getAttribute("data-accessory"));
   for (let attempt = 0; attempt < 100 && !await target.isVisible(); attempt++) {
-    const before = await firstItem(), button = dialog.getByRole("button", { name: next, exact: true });
-    await expect(button).toBeEnabled();
+    const before = await firstItem(), rail = dialog.getByRole("slider", { name: /도감 페이지 선택|옷장 페이지 선택/ });
+    const value = Number(await rail.inputValue()), backwards = next.startsWith("이전");
+    expect(backwards ? value > 1 : value < Number(await rail.getAttribute("max"))).toBe(true);
     if (await target.isVisible()) break;
-    await button.click();
-    // A native click may resolve before React/ResizeObserver commits the new
+    await rail.focus(); await rail.press(backwards ? "ArrowLeft" : "ArrowRight");
+    // A native key may resolve before React/ResizeObserver commits the new
     // measured page. Wait for that page before deciding to advance again.
     await expect.poll(async () => await target.isVisible() || await firstItem() !== before).toBe(true);
   }
@@ -157,16 +158,16 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`113 ${surf
   await counts(page, six, "settings open and tab switch never acknowledge");
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); dialog = await book(page);
   await dialog.getByRole("tab", { name: "도감", exact: true }).click();
-  const foodLast = dialog.locator('[data-food-index="179"]'); await turnUntil(dialog, foodLast, "다음 간식");
+  const foodLast = dialog.locator('[data-food-index="179"]'); await turnUntil(dialog, foodLast, "다음 페이지");
   await foodLast.focus(); await counts(page, six, "page navigation and focus never acknowledge");
   await page.setViewportSize({ width: 1100, height: 640 }); await settlePanelLayout(page); await counts(page, six, "responsive automatic page adjustment never acknowledges");
-  await page.setViewportSize({ width: 1440, height: 900 }); await settlePanelLayout(page); await turnUntil(dialog, foodLast, "다음 간식");
+  await page.setViewportSize({ width: 1440, height: 900 }); await settlePanelLayout(page); await turnUntil(dialog, foodLast, "다음 페이지");
   await expect(foodLast).toHaveAttribute("data-unread", /.+/);
   await inspectBadgePaint(page, dialog, "shared unread badges contrast and separate stamp corner");
   mkdirSync(output, { recursive: true }); await dialog.screenshot({ path: `${output}/${surface}-food-unread.png` });
   await foodLast.click(); await expect(foodLast).not.toHaveAttribute("data-unread");
   await counts(page, { foods: 1, memories: 2, accessories: 2, total: 5 }, "native food pointer clears only that item");
-  const foodOne = dialog.locator('[data-food-index="1"]'); await turnUntil(dialog, foodOne, "이전 간식");
+  const foodOne = dialog.locator('[data-food-index="1"]'); await turnUntil(dialog, foodOne, "이전 페이지");
   await foodOne.focus(); await expect(foodOne).toHaveAttribute("data-unread", /.+/);
   await dialog.locator('[data-food-index="0"]').focus(); await page.keyboard.press("ArrowRight");
   await expect(foodOne).toBeFocused();
@@ -174,16 +175,16 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`113 ${surf
   await dialog.getByRole("button", { name: /^추억 도감 / }).click();
   const behavior = dialog.locator('[data-collection-index="1"]'); await expect(behavior).toHaveAttribute("data-unread", /.+/); await behavior.click();
   await counts(page, { foods: 0, memories: 1, accessories: 2, total: 3 }, "behavior pointer leaves situation unread");
-  const moment = dialog.locator(`[data-collection-index="${COMPANION_BEHAVIOR_IDS.length}"]`); await turnUntil(dialog, moment, "다음 추억");
+  const moment = dialog.locator(`[data-collection-index="${COMPANION_BEHAVIOR_IDS.length}"]`); await turnUntil(dialog, moment, "다음 페이지");
   await moment.focus(); await expect(moment).toHaveAttribute("data-unread", /.+/); await moment.press("Space");
   await counts(page, { foods: 0, memories: 0, accessories: 2, total: 2 }, "situation keyboard acknowledges");
   await dialog.getByRole("tab", { name: "옷장", exact: true }).click();
-  const accessoryLast = dialog.locator(`[data-accessory="${COMPANION_WEARABLE_IDS.at(-1)}"]`); await turnUntil(dialog, accessoryLast, "다음 소품");
+  const accessoryLast = dialog.locator(`[data-accessory="${COMPANION_WEARABLE_IDS.at(-1)}"]`); await turnUntil(dialog, accessoryLast, "다음 페이지");
   await accessoryLast.focus(); await expect(accessoryLast).toHaveAttribute("data-unread", /.+/);
   await counts(page, { foods: 0, memories: 0, accessories: 2, total: 2 }, "wardrobe pages and focus never acknowledge");
   await accessoryLast.press("Enter");
   await counts(page, { foods: 0, memories: 0, accessories: 1, total: 1 }, "accessory keyboard clears only that item");
-  const accessoryOne = dialog.locator(`[data-accessory="${COMPANION_WEARABLE_IDS[1]}"]`); await turnUntil(dialog, accessoryOne, "이전 소품"); await accessoryOne.click();
+  const accessoryOne = dialog.locator(`[data-accessory="${COMPANION_WEARABLE_IDS[1]}"]`); await turnUntil(dialog, accessoryOne, "이전 페이지"); await accessoryOne.click();
   await counts(page, { foods: 0, memories: 0, accessories: 0, total: 0 }, "last accessory pointer acknowledges");
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(entry).not.toHaveAttribute("data-unread");
   const acknowledged = await read(page); await visit(page, surface); dialog = await settings(page);
@@ -246,7 +247,7 @@ test("113 actual meal: recent-food automatic selection leaves unread in book and
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await page.reload(); await page.bringToFront(); await settlePanelLayout(page);
   dialog = await book(page); await dialog.getByRole("tab", { name: "도감", exact: true }).click();
   expect(unread(await read(page)).foods).toBe(1);
-  const tile = dialog.locator(`.rhh-food-grid [data-food-index="${index}"]`); await turnUntil(dialog, tile, "다음 간식"); await expect(tile).toHaveAttribute("data-unread", /.+/); await tile.click();
+  const tile = dialog.locator(`.rhh-food-grid [data-food-index="${index}"]`); await turnUntil(dialog, tile, "다음 페이지"); await expect(tile).toHaveAttribute("data-unread", /.+/); await tile.click();
   await expect.poll(async () => unread(await read(page)).foods).toBe(0); await expect(tile).not.toHaveAttribute("data-unread");
   proofs.get(page)!.phases.push({ label: "actual meal unread survives automatic selection/surface change/reload, then native tile inspection acknowledges", kind, state: await read(page) });
 });

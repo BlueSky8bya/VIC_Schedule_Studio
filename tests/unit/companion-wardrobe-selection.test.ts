@@ -1,3 +1,4 @@
+import { CompanionCollectionPager } from "@/components/shared/companion-collection-pager";
 import type { KeyboardEvent, ReactElement, ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
@@ -25,6 +26,7 @@ function nodes(node: ReactNode): Element[] {
   if (Array.isArray(node)) return node.flatMap(nodes);
   if (!node || typeof node !== "object" || !("props" in node)) return [];
   const element = node as Element;
+  if (element.type === CompanionCollectionPager) return nodes(CompanionCollectionPager(element.props as unknown as Parameters<typeof CompanionCollectionPager>[0]));
   return [element, ...nodes(element.props.children as ReactNode)];
 }
 const find = (predicate: (element: Element) => boolean) => nodes(tree).find(predicate)!;
@@ -46,10 +48,10 @@ describe("actual wardrobe selection and equipment callbacks", () => {
     collection.gifts.unlocked = ["sunglasses", "beret", COMPANION_WEARABLE_IDS[26]];
     collection.seen = { foods: [], behaviors: [], situations: [], accessories: ["sunglasses"] };
     harness.acknowledge.mockImplementation((_kind, id) => { collection.seen!.accessories.push(id); return true; });
-    await render(); const unread = () => find(element => element.props["aria-label"] === "다음 새 발견");
+    await render(); const unread = () => find(element => element.props["aria-label"] === "다음 새 발견 보기");
     click(unread()); await render(); expect(preview().accessory).toBe("beret");
     click(unread()); await render(); expect(preview().accessory).toBe(COMPANION_WEARABLE_IDS[26]);
-    expect(unread().props.disabled).toBe(true);
+    expect(nodes(tree).filter(element => element.props["data-page-direction"] && element.props["data-unread"])).toHaveLength(0);
     expect(harness.acknowledge.mock.calls).toEqual([["accessory", "beret"], ["accessory", COMPANION_WEARABLE_IDS[26]]]);
     expect(harness.equip).not.toHaveBeenCalled(); expect(collection.gifts.equipped).toBe("sunglasses");
     for (const tile of nodes(tree).filter(element => element.props["data-accessory"] && !element.props["data-found"])) {
@@ -61,7 +63,7 @@ describe("actual wardrobe selection and equipment callbacks", () => {
     collection.seen = { foods: [], behaviors: [], situations: [], accessories: [] };
     await render(); expect(harness.acknowledge).not.toHaveBeenCalled();
     expect(find(element => element.props["data-accessory"] === "sunglasses").props["data-unread"]).toBe(true);
-    click(find(element => element.props["data-act"] === "companion-collection-page" && element.props["data-act-opt"] === "next")); await render();
+    (find(element => element.props.type === "range").props.onChange as (event: { currentTarget: { value: string } }) => void)({ currentTarget: { value: "2" } }); await render();
     expect(harness.acknowledge).not.toHaveBeenCalled();
     const first = find(element => element.props["data-accessory"] === COMPANION_WEARABLE_IDS[4]); click(first);
     expect(harness.acknowledge.mock.calls).toEqual([["accessory", COMPANION_WEARABLE_IDS[4]]]);
@@ -96,9 +98,9 @@ describe("actual wardrobe selection and equipment callbacks", () => {
       expect(tiles.filter(element => !element.props["data-found"]).every(element => /^\?\?\? · \d+$/.test(String(element.props["aria-label"])))).toBe(true);
       ids.push(...tiles.map(element => element.props["data-accessory"]));
       expect(ids.length).toBeLessThanOrEqual(COMPANION_WEARABLE_IDS.length);
-      const next = find(element => element.props["data-act"] === "companion-collection-page" && element.props["data-act-opt"] === "next");
-      if (next.props.disabled) break;
-      click(next); await render(); expect(harness.equip).not.toHaveBeenCalled();
+      const rail = find(element => element.props.type === "range");
+      if (rail.props.value === rail.props.max) break;
+      (rail.props.onChange as (event: { currentTarget: { value: string } }) => void)({ currentTarget: { value: String(Number(rail.props.value) + 1) } }); await render(); expect(harness.equip).not.toHaveBeenCalled();
     }
     expect(ids).toEqual([...COMPANION_WEARABLE_IDS]);
     expect(find(element => element.props.className === "rhh-collection-heading").props.children).toEqual(expect.arrayContaining([expect.objectContaining({ props: expect.objectContaining({ children: [1, "/", COMPANION_WEARABLE_IDS.length] }) })]));

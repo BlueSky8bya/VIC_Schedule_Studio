@@ -13,7 +13,6 @@ const HEADER_SELECTOR = `.weekday-row,.public-calendar-header,.agenda-header,${S
 // A day is a large clickable container on both surfaces, not one giant control
 // obstacle. Its nested edit/delete/private-card controls remain protected.
 const DAY_SELECTOR = ".public-day,.agenda-day,.studio-day";
-const PANEL_FLOOR_SELECTOR = ".avatar-dock-inner";
 const DATE_TEXT_SELECTOR = ".public-day .day-strip > strong,.agenda-day .agenda-when > strong,.studio-day .studio-day-head > strong";
 const CARD_TEXT_SELECTOR = `.public-event .event-main p,.public-event .event-subs li,.agenda-event .agenda-title-text,.agenda-event .agenda-subs li,.agenda-item .agenda-title-text,.agenda-item .agenda-title,.agenda-item .agenda-subs li,${STUDIO_CARD_SELECTOR} .pill-main strong,${STUDIO_CARD_SELECTOR} .pill-subs li,${STUDIO_CARD_SELECTOR} .pill-sub-last .pill-sub-text,${STUDIO_CARD_SELECTOR} .agenda-title-text,${STUDIO_CARD_SELECTOR} .agenda-subs li`;
 const TEXT_SURFACE_SELECTOR = `${DATE_TEXT_SELECTOR},${CARD_TEXT_SELECTOR}`;
@@ -440,19 +439,19 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
           }
         }
       }
-      // A deliberate pet placement retains the empty panel's native anchor.
-      // Its transparent wrapper is not an item floor:129 replaces121's
-      // automatic panel-item catch. Real day edges still accept both tiers.
-      for (const element of root.querySelectorAll<HTMLElement>(`${DAY_SELECTOR},${PANEL_FLOOR_SELECTOR}`)) {
+      // Only real day edges accept deliberate placement.133 also retires
+      // the body's121 transparent panel anchor;129 removed its item tier.
+      // A layout wrapper's bottom is not a visible physical landing surface.
+      for (const element of root.querySelectorAll<HTMLElement>(DAY_SELECTOR)) {
         nextObserved.add(element);
         if (!visible(element) || !supportVisible(element)) continue;
-        const rect = rectFor(element), clip = clipping(element.parentElement), panel = element.matches(PANEL_FLOOR_SELECTOR);
+        const rect = rectFor(element), clip = clipping(element.parentElement);
         const x = Math.max(rect.left, clip.left), right = Math.min(rect.right, clip.right), y = rect.bottom - CLEARANCE;
         if (rect.width <= 0 || rect.height <= 0 || y < clip.top || y >= clip.bottom || right <= x) continue;
         const petSpans = safeCompanionSurfaces({ x: x + footprint.width / 2, y, width: right - x - footprint.width }, ordinaryObstacles, size, viewport, footprint);
-        const foodSpans = panel ? [] : safeCompanionSurfaces({ x: x + FOOD_FOOTPRINT.width / 2, y, width: right - x - FOOD_FOOTPRINT.width }, ordinaryObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT);
+        const foodSpans = safeCompanionSurfaces({ x: x + FOOD_FOOTPRINT.width / 2, y, width: right - x - FOOD_FOOTPRINT.width }, ordinaryObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT);
         if (!petSpans.length && !foodSpans.length) continue;
-        const id = panel ? "companion-panel-floor" : `${idFor(element, "date")}-floor`;
+        const id = `${idFor(element, "date")}-floor`;
         const addManual = (spans: CompanionSurface[], food: boolean) => {
           for (let i = 0; i < spans.length && (food ? foodLandings : landings).length < MAX_PLATFORMS; i++) {
             const platform: CompanionFoodDropSupport = { id: `${id}${food ? "-food" : ""}${i ? `-${i}` : ""}`, ...spans[i], kind: "floor", manualOnly: true };
@@ -556,7 +555,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     retainedIds.clear();
     for (const id of followedIds) {
       const snapshot = anchors.get(id);
-      if (!nextAnchors.has(id) && snapshot?.anchor?.isConnected) {
+      if (!isCompanionPanelFloor(id) && !nextAnchors.has(id) && snapshot?.anchor?.isConnected) {
         nextAnchors.set(id, snapshot); retainedIds.add(id);
       }
     }
@@ -657,12 +656,12 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     // or doing an additional selector/Range/rect read.
     anchor(id: string): CompanionGeometryAnchor | undefined {
       const snapshot = anchors.get(id);
-      if (!snapshot || snapshot.anchor && (snapshot.identity !== companionCalendarAnchorIdentity(snapshot.anchor) || isCompanionPanelFloor(id) && snapshot.anchor.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]"))) return;
+      if (isCompanionPanelFloor(id) || !snapshot || snapshot.anchor && snapshot.identity !== companionCalendarAnchorIdentity(snapshot.anchor)) return;
       return { element: snapshot.anchor, left: snapshot.rect?.left ?? 0, top: snapshot.rect?.top ?? 0, ...(snapshot.rect ? { width: snapshot.rect.width, height: snapshot.rect.height } : {}), ...(snapshot.identity ? { identity: snapshot.identity } : {}) };
     },
     follow(requested: readonly string[]): CompanionFollowSample[] {
       if (!root.isConnected) { anchors.clear(); homeFloorFamilies.clear(); followedIds = []; retainedIds.clear(); landingSnapshot = []; foodLandingSnapshot = []; return []; }
-      followedIds = [...new Set(requested)].slice(0, 7);
+      followedIds = [...new Set(requested)].slice(0, 7).filter(id => !isCompanionPanelFloor(id));
       for (const id of retainedIds) {
         if (!followedIds.includes(id)) { anchors.delete(id); retainedIds.delete(id); }
       }
@@ -687,7 +686,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         const platform = copyPlatform(snapshot.platform);
         let anchorX = 0, anchorY = 0;
         if (snapshot.anchor) {
-          if (!snapshot.anchor.isConnected || snapshot.identity !== companionCalendarAnchorIdentity(snapshot.anchor) || isCompanionPanelFloor(id) && snapshot.anchor.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]") || typeof snapshot.anchor.getBoundingClientRect !== "function") { anchors.delete(id); retainedIds.delete(id); continue; }
+          if (!snapshot.anchor.isConnected || snapshot.identity !== companionCalendarAnchorIdentity(snapshot.anchor) || typeof snapshot.anchor.getBoundingClientRect !== "function") { anchors.delete(id); retainedIds.delete(id); continue; }
           let rect = measured.get(snapshot.anchor);
           if (!rect) { rect = snapshot.anchor.getBoundingClientRect(); measured.set(snapshot.anchor, rect); }
           if (rect.width <= 0 || rect.height <= 0 || !snapshot.rect) continue;

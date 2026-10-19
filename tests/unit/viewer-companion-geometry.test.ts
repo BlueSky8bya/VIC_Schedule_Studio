@@ -3,7 +3,7 @@ import { createCompanionGeometryIdentity, observeCompanionPlatforms, safeCompani
 import type { Platform } from "@/lib/ui/viewer-companion/brain";
 import { COMPANION_HOME_FLOOR_FOOD, placeCompanionFood, type CompanionFoodDropSupport } from "@/lib/ui/viewer-companion/food";
 import { COMPANION_PANEL_SIDE_SELECTOR } from "@/lib/ui/viewer-companion/panel-play";
-import { firstCompanionSupportBelow } from "@/lib/ui/viewer-companion/support-landing";
+import { firstCompanionSupportBelow, recoverCompanionVerticalSupport } from "@/lib/ui/viewer-companion/support-landing";
 
 const viewport = { width: 1000, height: 800 };
 const text = (left: number, top: number, right: number, bottom: number): CompanionTextRect => ({ left, top, right, bottom });
@@ -147,19 +147,19 @@ describe("121 deliberate native floors and ribbon contact", () => {
     expect(ribbons.some(p => p.x <= 120 && p.x + p.width >= 120)).toBe(true);
     expectClear(ribbons, [button.rect], 92 * .76); sub();
   });
-  it("preserves guarded day edges and manual pet panel anchors without emitting a transparent panel item floor", () => {
+  it("preserves guarded real day edges without emitting a transparent panel floor for either tier", () => {
     const f = geometryFixture(), panel = new FixtureElement(), control = new FixtureElement();
     const dayElement = f.day as unknown as Element;
     f.day.rect = box(100, 300, 350, 350); f.day.matches = selector => selector.includes(".public-day");
     panel.parentElement = f.sourceRoot; panel.rect = box(600, 300, 300, 350); panel.matches = selector => selector === ".avatar-dock-inner";
     control.rect = box(220, 590, 44, 58); control.parentElement = f.day; f.controls.push(control);
     const query = f.sourceRoot.querySelectorAll;
-    f.sourceRoot.querySelectorAll = selector => selector.endsWith(",.avatar-dock-inner") ? [f.day, panel] : query(selector);
+    f.sourceRoot.querySelectorAll = selector => selector.includes(".avatar-dock-inner") ? [...query(selector), panel] : query(selector);
     let roaming: Platform[] = [];
     const sub = observeCompanionPlatforms(f.root, next => { roaming = next; }, { size: 92 }); f.flush();
     const floors = sub.landings().filter(p => /(?:date-\d+-floor|companion-panel-floor)(?:-\d+)?$/.test(p.id));
     expect(floors.some(p => sub.anchor(p.id)?.element === dayElement)).toBe(true);
-    expect(floors.some(p => p.id === "companion-panel-floor")).toBe(true);
+    expect(floors.some(p => p.id.startsWith("companion-panel-floor"))).toBe(false);
     expect(floors.every(p => p.manualOnly && p.y === 647)).toBe(true);
     expect(roaming.some(p => floors.some(floor => floor.id === p.id))).toBe(false);
     expectClear(floors, [control.rect, f.date.rect, f.title.rect], 92 * .76);
@@ -173,17 +173,19 @@ describe("121 deliberate native floors and ribbon contact", () => {
     expect(food.some(p => p.id.startsWith("companion-panel-floor"))).toBe(false);
     expect(sub.landings(32).some(p => sub.anchor(p.id)?.element === (panel as unknown as Element))).toBe(false); sub();
   });
-  it("lets a snack fall through the empty panel wrapper to the real viewport floor", () => {
+  it("lets a released body and snack fall through the empty panel to the same real viewport floor", () => {
     const f = geometryFixture(), panel = new FixtureElement();
     panel.parentElement = f.sourceRoot; panel.rect = box(600, 300, 300, 350); panel.matches = selector => selector === ".avatar-dock-inner";
     const query = f.sourceRoot.querySelectorAll;
-    f.sourceRoot.querySelectorAll = selector => selector.endsWith(",.avatar-dock-inner") ? [panel] : query(selector);
+    f.sourceRoot.querySelectorAll = selector => selector.includes(".avatar-dock-inner") ? [...query(selector), panel] : query(selector);
     const sub = observeCompanionPlatforms(f.root, () => {}, { size: 92 }); f.flush();
     const point = { x: 750, y: 500 }, snack = { id: "panel-fall", kind: "apple" as const, ...point };
-    expect(firstCompanionSupportBelow(point, sub.landings())?.id).toBe("companion-panel-floor");
+    expect(firstCompanionSupportBelow(point, sub.landings())).toMatchObject({ id: "viewport-floor", y: 782 });
+    expect(recoverCompanionVerticalSupport({ x: point.x, y: 647 }, [], sub.landings())).toMatchObject({ id: "viewport-floor", y: 782 });
     expect(placeCompanionFood(snack, point, sub.landings(32), viewport)).toMatchObject({ x: 750, y: 782, platformId: "viewport-floor-food" });
     panel.rect = box(100, 260, 300, 350); f.win.emit("scroll"); f.advance(120);
-    expect(sub.follow(["companion-panel-floor"])[0].anchorX).toBe(100);
+    expect(sub.follow(["companion-panel-floor"])).toEqual([]);
+    expect(firstCompanionSupportBelow(point, sub.landings())).toMatchObject({ id: "viewport-floor", y: 782 });
     expect(sub.landings(32).some(p => p.id.startsWith("companion-panel-floor"))).toBe(false); sub();
   });
   it("follows fractional native width and bottom changes without new Range/style scans", () => {
@@ -201,21 +203,24 @@ describe("121 deliberate native floors and ribbon contact", () => {
     expect(sub.follow([floor.id])[0].sourceFrame?.left).toBe(100);
     expect([f.range.getClientRects.mock.calls.length, f.win.getComputedStyle.mock.calls.length]).toEqual(calls); sub();
   });
-  it("rebinds only the same panel-floor identity after side remount and fails closed on removal", () => {
+  it("never reacquires a retired panel floor on scroll, remount, hiding or removal", () => {
     const f = geometryFixture(); let panel = new FixtureElement();
     const make = (node: FixtureElement, left: number) => { node.rect = box(left, 300, 300, 350); node.parentElement = f.sourceRoot; node.matches = selector => selector === ".avatar-dock-inner"; };
     make(panel, 600); const query = f.sourceRoot.querySelectorAll;
-    f.sourceRoot.querySelectorAll = selector => selector.endsWith(",.avatar-dock-inner") ? [panel] : query(selector);
+    f.sourceRoot.querySelectorAll = selector => selector.includes(".avatar-dock-inner") ? [...query(selector), panel] : query(selector);
     const sub = observeCompanionPlatforms(f.root, () => {}, { size: 92 }); f.flush();
-    expect(sub.anchor("companion-panel-floor")?.element).toBe(panel);
+    const retired = ["companion-panel-floor", "companion-panel-floor-1", "companion-panel-floor-food", "companion-panel-floor-food-1"];
+    for (const id of retired) expect(sub.anchor(id)).toBeUndefined();
+    expect(sub.follow(retired)).toEqual([]);
     panel.isConnected = false; const replacement = new FixtureElement(); make(replacement, 100); panel = replacement;
     f.win.emit("scroll"); f.advance(120);
-    expect(sub.anchor("companion-panel-floor")?.element).toBe(replacement);
-    expect(sub.landings(32).some(p => p.id.startsWith("companion-panel-floor"))).toBe(false);
-    expect(sub.follow(["companion-panel-floor"])[0].anchorX).toBe(100);
+    for (const id of retired) expect(sub.anchor(id)).toBeUndefined();
+    for (const size of [92, 32]) expect(sub.landings(size).some(p => p.id.startsWith("companion-panel-floor"))).toBe(false);
+    expect(sub.follow(retired)).toEqual([]);
+    expect(replacement.getBoundingClientRect).not.toHaveBeenCalled();
     replacement.closest = selector => selector.includes("[inert]") ? replacement : null;
-    expect(sub.anchor("companion-panel-floor")).toBeUndefined(); expect(sub.follow(["companion-panel-floor"])).toEqual([]);
-    replacement.isConnected = false; expect(sub.follow(["companion-panel-floor"])).toEqual([]); sub();
+    expect(sub.anchor("companion-panel-floor")).toBeUndefined(); expect(sub.follow(retired)).toEqual([]);
+    replacement.isConnected = false; expect(sub.follow(retired)).toEqual([]); sub();
   });
   it("never recycles an old calendar date anchor even if React retains the native element", () => {
     const f = geometryFixture(); let date = "2026-10-19";

@@ -6,7 +6,7 @@ import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_COLLECTION_KEY, COMPANION_BEHAVIOR_IDS, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_SITUATION_IDS } from "@/lib/ui/viewer-companion/moments";
 import { createCompanionLife } from "@/lib/ui/viewer-companion/life";
-import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
+import { COMPANION_PERSONALITY_NAMES, DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 import { COMPANION_WEARABLE_IDS } from "@/lib/ui/viewer-companion/gifts";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
@@ -53,7 +53,10 @@ async function openProfile(page: Page) {
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
   const profile = dialog.locator(".rhh-companion-profile");
-  await expect(profile.getByRole("region", { name: "빅타민 특성", exact: true })).toBeVisible();
+  const together = profile.getByRole("tabpanel", { name: "함께 지내기", exact: true });
+  await expect(together).toBeVisible();
+  await expect(together.getByRole("region", { name: COMPANION_PERSONALITY_NAMES[DEFAULT_COMPANION_PREFERENCES.personality], exact: true })).toBeVisible();
+  await expect(together.getByRole("button", { name: "옷장 열기", exact: true })).toBeVisible();
   return { dialog, profile, nav: profile.getByRole("tablist", { name: "빅타민 프로필", exact: true }) };
 }
 
@@ -143,16 +146,22 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
   const foodGrid = profile.locator(".rhh-food-grid"); await expect(foodGrid).toBeVisible();
   await sheet112(page, `${surface}-${theme}-food-tall`);
   await foodGrid.locator("button[tabindex='0']").focus(); await page.keyboard.press("End");
-  await expect(foodGrid.locator('[data-food-index="179"]')).toBeFocused(); await expect(profile.getByRole("button", { name: "다음 간식", exact: true })).toBeDisabled();
+  await expect(foodGrid.locator('[data-food-index="179"]')).toBeFocused(); await expect(profile.getByRole("button", { name: "다음 페이지", exact: true })).toBeDisabled();
   await page.keyboard.press("Home"); await expect(foodGrid.locator('[data-food-index="0"]')).toBeFocused();
   for (let index = 0; index < 5; index++) await page.keyboard.press("ArrowRight");
   await expect(foodGrid.locator('[data-food-index="5"]')).toBeFocused(); await expect(profile.locator(".rhh-food-detail strong")).toHaveText("???"); await expect(foodGrid.locator('[data-food-index="5"]')).not.toHaveAttribute("data-found");
-  await page.setViewportSize({ width: 1050, height: 640 }); await expect.poll(() => foodGrid.locator("button").count()).toBeLessThanOrEqual(8);
+  await page.setViewportSize({ width: 1050, height: 640 });
+  //131 reserves two readable rows on the short sheet; its measured width can
+  //still fit six columns. Verify that real grid rather than112's old8 cap.
+  await expect.poll(() => foodGrid.evaluate(node => getComputedStyle(node).gridTemplateRows.trim().split(/\s+/).length)).toBe(2);
+  const shortColumns = await foodGrid.evaluate(node => getComputedStyle(node).gridTemplateColumns.trim().split(/\s+/).length);
+  expect(shortColumns).toBeGreaterThanOrEqual(2); expect(shortColumns).toBeLessThanOrEqual(6);
+  await expect(foodGrid.locator("button")).toHaveCount(shortColumns * 2);
   await expect(foodGrid.locator('[data-food-index="5"]')).toHaveAttribute("aria-pressed", "true");
   await sheet112(page, `${surface}-${theme}-food-short`);
   await profile.getByRole("button", { name: /^추억 도감 / }).click();
   const memories = profile.locator(".rhh-behavior-grid"); await memories.locator("button[tabindex='0']").focus(); await page.keyboard.press("End");
-  await expect(memories.locator('[data-collection-index="23"]')).toBeFocused(); await expect(profile.getByRole("button", { name: "다음 추억", exact: true })).toBeDisabled();
+  await expect(memories.locator('[data-collection-index="23"]')).toBeFocused(); await expect(profile.getByRole("button", { name: "다음 페이지", exact: true })).toBeDisabled();
   await sheet112(page, `${surface}-${theme}-memories-short`);
   await nav.getByRole("tab", { name: "옷장", exact: true }).click();
   const wardrobe = profile.locator(".rhh-accessory-grid"); await expect(profile.locator('.rhh-wardrobe-preview')).toHaveAttribute("data-preview-accessory", "sunglasses");

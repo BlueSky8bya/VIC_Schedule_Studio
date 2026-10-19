@@ -202,11 +202,37 @@ const sourcePixels = await Promise.all(sourceBytes.map(async (bytes, index) => {
   if (hash(bytes) !== source.sha256 || bytes.length !== source.bytes || info.width !== cell * 8 || info.height !== cell * 2) throw Error(`Registered source bytes changed: ${source.src}`);
   return sharp(bytes).ensureAlpha().raw().toBuffer();
 }));
+// A stroke-weight-only correction must not move hats/chest attachments merely
+// because its thicker ink changes an eye component's area or bounding box.
+// Inherit the measured131 registration only for these exact133 bytes after
+// independently proving unchanged alpha/outside-eye pixels and frame mapping.
+let eyeWeight133Rig;
+if (sources[9].src === '/companion/hd/vitamin-action-09-eye-weight-133-v3.webp') {
+  if (sources[9].sha256 !== 'ff8ecc78933a0bd414e7fefa2e682fa1a04da5760e3985e286731d02bd6b1673') throw Error('Unmeasured133 eye-weight source');
+  const folder = path.join(root, 'art-src/빅타민/동행/작업회차/20261019-쓰다듬기눈선133/고정입력');
+  const rigBytes = await fs.readFile(path.join(folder, 'accessory-anchors.json'));
+  if (hash(rigBytes) !== '08463ff882931c2c1fe974774bd4af3d45f2b21180faa1eebc84dfef40a78578') throw Error('Frozen131 registration changed');
+  const baseline = JSON.parse(await fs.readFile(path.join(folder, 'hd-motion-sprite.json'), 'utf8'));
+  if (JSON.stringify(packs[0].frames) !== JSON.stringify(baseline.frames) || JSON.stringify(packs[0].rows) !== JSON.stringify(baseline.rows)) throw Error('133 changed protected frame registration');
+  const oldBytes = await fs.readFile(path.join(root, 'public/companion/hd/vitamin-action-09-happiness-131-v1.webp'));
+  if (hash(oldBytes) !== 'eaa134b4001477439dae456989d255e4cf723da31fbc5c3809f6b6d85285fcdb') throw Error('Actual131 parent changed');
+  const parent = await sharp(oldBytes).ensureAlpha().raw().toBuffer(), current = sourcePixels[9];
+  for (let at = 0; at < parent.length; at += 4) {
+    const p = at / 4, x = p % (cell * 8) % cell, y = Math.floor(p / (cell * 8)) % cell;
+    const eye = x >= 81 && x < 99 && y >= 117 && y < 134 || x >= 113 && x < 132 && y >= 115 && y < 132;
+    if (parent[at + 3] !== current[at + 3]) throw Error('133 alpha conservation failed');
+    if (!eye) for (let c = 0; c < 3; c++) if (parent[at + c] !== current[at + c]) throw Error('133 outside-eye conservation failed');
+  }
+  eyeWeight133Rig = JSON.parse(rigBytes).frames;
+}
 const registered = [], cells = [], errors = [];
 for (let physicalIndex = 0; physicalIndex < frames.length; physicalIndex++) {
   const frame = frames[physicalIndex], packet = sourcePixels[frame.atlas], bytes = Buffer.alloc(cell * cell * 4);
   for (let y = 0; y < cell; y++) packet.copy(bytes, y * cell * 4, ((Math.floor(frame.index / 8) * cell + y) * cell * 8 + frame.index % 8 * cell) * 4, ((Math.floor(frame.index / 8) * cell + y) * cell * 8 + (frame.index % 8 + 1) * cell) * 4);
-  try { registered.push(register(bytes, frame, physicalIndex)); cells.push(bytes); }
+  try {
+    registered.push(eyeWeight133Rig && frame.atlas === 9 ? { ...eyeWeight133Rig[physicalIndex], evidence: { method: 'Exact133 eye-weight-only conservation; original131 eye geometry remains the attachment reference, not the new ink bounds.', sourceKey: `${frame.atlas}:${frame.index}`, parentSha256: 'eaa134b4001477439dae456989d255e4cf723da31fbc5c3809f6b6d85285fcdb' } } : register(bytes, frame, physicalIndex));
+    cells.push(bytes);
+  }
   catch (error) { errors.push(String(error.message)); }
 }
 if (errors.length) throw Error(`${errors.length} uncertain frames require explicit source-key inspection:\n${errors.join('\n')}`);

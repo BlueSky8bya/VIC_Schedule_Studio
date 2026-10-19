@@ -96,10 +96,12 @@ describe("completed companion input owns its activity event", () => {
     expect(await f.events()).toEqual([]);
     f.range("change"); f.range("click");
     f.range("change", "companion-sound-volume");
+    f.range("input", "companion-collection-page");
+    f.range("change", "companion-collection-page"); f.range("click", "companion-collection-page");
     f.range("change", "companion-radio-volume", true);
     f.range("change", "companion-radio-volume", false, true);
     f.range("change", "sound-volume"); // Unrelated range behavior is unchanged.
-    expect((await f.events()).map((event: { target: string }) => event.target)).toEqual(["companion-radio-volume", "companion-sound-volume"]);
+    expect((await f.events()).map((event: { target: string }) => event.target)).toEqual(["companion-radio-volume", "companion-sound-volume", "companion-collection-page"]);
   });
 
   it("removes personal companion fields before the request, while preserving ordinary activity metadata", async () => {
