@@ -54,6 +54,10 @@ const saved = (page: Page) => page.evaluate(key => JSON.parse(localStorage.getIt
 for (const surface of ["viewer", "studio", "preview"] as const) test(`153 ${surface}: wardrobe opens and reopens at the worn item for immediate removal or replacement`, async ({ page }) => {
   const safety = await fixture(page, { reduce: true, theme: surface === "studio" ? "dark" : "light" });
   const { profile, preview } = await openWardrobe(page, surface);
+  await expect(profile).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(profile).toHaveCSS("background-image", "none");
+  await expect(profile.locator(".rhh-collection-book:visible")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await expect(profile.locator(".rhh-collection-book:visible")).toHaveCSS("background-image", "none");
   const worn = profile.locator('[data-accessory="sunglasses"]');
   await expect(worn).toHaveAttribute("aria-pressed", "true");
   await expect(profile.getByRole("button", { name: "벗기기", exact: true })).toBeVisible();

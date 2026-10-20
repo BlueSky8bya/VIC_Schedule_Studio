@@ -214,10 +214,13 @@ async function notebookBounds(page: Page, label: string) {
     const buttons = [...node.querySelectorAll<HTMLElement>(".rhh-companion-settings button")].filter(visible).map(item => { const box = item.getBoundingClientRect(); return { text: item.textContent?.trim(), left: box.left, right: box.right, width: box.width, height: box.height, scrollWidth: item.scrollWidth, clientWidth: item.clientWidth }; });
     const counts = [...node.querySelectorAll<HTMLElement>(".rhh-collection-count")].filter(visible).map(item => { const box = item.getBoundingClientRect(); return { text: item.textContent, left: box.left, right: box.right, scrollWidth: item.scrollWidth, clientWidth: item.clientWidth }; });
     const footer = [...node.querySelectorAll<HTMLElement>(".rhh-collection-pages")].filter(visible).map(item => { const box = item.getBoundingClientRect(); return { top: box.top, bottom: box.bottom, left: box.left, right: box.right }; });
-    return { card: { left: card.left, right: card.right, top: card.top, bottom: card.bottom }, buttons, counts, footer, horizontalOverflow: node.scrollWidth - node.clientWidth, theme: document.documentElement.dataset.theme ?? "light" };
+    const backgrounds = [...node.querySelectorAll(".rhh-companion-experience,.rhh-collection-book")].filter(visible).map(item => { const css = getComputedStyle(item); return { color: css.backgroundColor, image: css.backgroundImage }; });
+    return { card: { left: card.left, right: card.right, top: card.top, bottom: card.bottom }, buttons, counts, footer, backgrounds, horizontalOverflow: node.scrollWidth - node.clientWidth, theme: document.documentElement.dataset.theme ?? "light" };
   });
   proofs.get(page)!.notes.push({ notebookPage: label, geometry });
   expect(geometry.horizontalOverflow).toBeLessThanOrEqual(2);
+  expect(geometry.backgrounds.length).toBeGreaterThan(0);
+  for (const background of geometry.backgrounds) { expect(background.color).toBe("rgba(0, 0, 0, 0)"); expect(background.image).toBe("none"); }
   for (const button of geometry.buttons) { expect(button.left).toBeGreaterThanOrEqual(geometry.card.left - 1); expect(button.right).toBeLessThanOrEqual(geometry.card.right + 1); expect(button.width).toBeGreaterThanOrEqual(43.9); expect(button.height).toBeGreaterThanOrEqual(43.9); expect(button.scrollWidth - button.clientWidth).toBeLessThanOrEqual(2); }
   for (const count of geometry.counts) { expect(count.left).toBeGreaterThanOrEqual(geometry.card.left + 6); expect(count.right).toBeLessThanOrEqual(geometry.card.right - 6); expect(count.scrollWidth - count.clientWidth).toBeLessThanOrEqual(1); }
   for (const footer of geometry.footer) expect(footer.bottom).toBeLessThanOrEqual(geometry.card.bottom - 6);
