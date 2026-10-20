@@ -63,16 +63,29 @@ async function recordPaint155(page: Page, name: string) {
   const { data, info } = await sharp(bytes).removeAlpha().raw().toBuffer({ resolveWithObject: true });
   const active = sample.layers.find(layer => layer.opacity === 1)!;
   const scale = info.width / sample.body.width, head = Math.ceil(active.head * scale), tail = Math.ceil(active.tail * scale);
-  const lineX = Math.round(info.width * 443 / 512), rows: { y: number; contrast: number }[] = [];
+  const lineX = Math.round(info.width * 443 / 512), rows: { y: number; contrast: number; signedContrast: number }[] = [];
   const luma = (x: number, y: number) => { const i = (y * info.width + x) * info.channels; return .2126 * data[i] + .7152 * data[i + 1] + .0722 * data[i + 2]; };
   for (let y = head - 2; y < info.height - tail + 2; y++) {
     const center = Math.min(luma(lineX - 1, y), luma(lineX, y), luma(lineX + 1, y));
     const left = (luma(lineX - 5, y) + luma(lineX - 4, y)) / 2;
-    rows.push({ y, contrast: left - center });
+    // Highlighted cord pixels may be lighter than their backdrop. Retain
+    // signed measurements while requiring contrast on every original row.
+    rows.push({ y, contrast: Math.abs(left - center), signedContrast: left - center });
   }
   proofs.get(page)!.notes.push({ stage: "actual-rendered-cord", name, ...sample, pixels: { width: info.width, height: info.height, rows, missingCandidates: rows.filter(row => row.contrast < 1) } });
   // Both seams and every stretched middle row must retain a visible line.
   expect(rows.filter(row => row.contrast < 1), "rendered raster cord has a missing row").toEqual([]);
+  return bytes;
+}
+
+async function feedback156(page: Page) {
+  return page.locator(".vc-home:visible .vc-home-lamp").evaluate(lamp => {
+    const paint = lamp.querySelector(".vc-home-lamp-paint")!, css = getComputedStyle(paint);
+    const head = lamp.querySelector(".vc-home-lamp-art")!;
+    return { height: paint.getBoundingClientRect().height, visualScale: paint.getBoundingClientRect().height / Number.parseFloat(css.height), head: getComputedStyle(head).borderTopWidth,
+      opacity: Math.max(...[...lamp.querySelectorAll(".vc-home-lamp-cord-feedback")].map(node => Number(getComputedStyle(node).opacity))),
+      transition: css.transitionDuration, hoveredCord: Boolean(lamp.querySelector(".vc-home-lamp-cord-hit:hover")) };
+  });
 }
 
 for (const [surface, mode, compact, dark] of [
@@ -103,13 +116,39 @@ for (const [surface, mode, compact, dark] of [
     expect(before.knob.left).toBeGreaterThan(before.body.left + before.body.width / 2);
     expect(before.knob.bottom).toBeLessThan(before.room.bottom); expect(before.knobTarget).toBe("light");
     const name = [surface, mode, compact ? "compact" : "panel", dark ? "dark" : "light", lit ? "on" : "off"].join("-");
-    mkdirSync(out, { recursive: true }); await home.screenshot({ path: resolve(out, name + ".png") }); await recordPaint155(page, name);
+    mkdirSync(out, { recursive: true }); await home.screenshot({ path: resolve(out, name + ".png") }); const ordinary = await recordPaint155(page, name);
+    const idle = await feedback156(page); expect(idle.opacity).toBe(0);
+    const handle = before.knob; await page.mouse.move((handle.left + handle.right) / 2, (handle.top + handle.bottom) / 2);
+    await expect.poll(async () => (await feedback156(page)).opacity).toBe(1);
+    await expect.poll(async () => (await feedback156(page)).height - idle.height).toBeCloseTo(mode === "full" ? 1.5 * idle.visualScale : 0, 1);
+    const hover = await feedback156(page); expect(hover.hoveredCord).toBe(true); expect(hover.head).toBe(idle.head);
+    const highlighted = await recordPaint155(page, name + "-hover");
+    const plain = await sharp(ordinary).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+    const glow = await sharp(highlighted).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+    let changedCordPixels = 0, changedGlobePixels = 0;
+    for (let y = 2; y < Math.min(plain.info.height, glow.info.height) - 2; y++) for (let x = 1; x < plain.info.width - 1; x++) {
+      const i = (y * plain.info.width + x) * plain.info.channels;
+      const changed = [0, 1, 2].some(channel => Math.abs(plain.data[i + channel] - glow.data[i + channel]) > 3);
+      if (changed && x > plain.info.width * .82 && x < plain.info.width * .94 && y > Number.parseFloat(idle.head)) changedCordPixels++;
+      if (changed && x < plain.info.width * .78 && y < Number.parseFloat(idle.head) - 2) changedGlobePixels++;
+    }
+    expect(changedCordPixels).toBeGreaterThan(5); expect(changedGlobePixels).toBe(0);
+    proofs.get(page)!.notes.push({ stage: "cord-hover156", name, idle, hover, changedCordPixels, changedGlobePixels });
     const k = before.knob; await page.mouse.move((k.left + k.right) / 2, (k.top + k.bottom) / 2); await page.mouse.down();
     const pressed = await lampSample155(page);
     expect(pressed.layers.map(layer => layer.head)).toEqual(before.layers.map(layer => layer.head));
     expect(pressed.knob.top).toBeGreaterThanOrEqual(before.knob.top); expect(pressed.knobTarget).toBe("light");
     await recordPaint155(page, name + "-pressed"); await page.mouse.up();
     await expect(lamp).toHaveAttribute("aria-pressed", String(!lit)); await lamp.focus(); await lamp.press("Enter"); await expect(lamp).toHaveAttribute("aria-pressed", String(lit));
+  }
+  if (surface === "viewer" && mode === "full" && !compact && !dark) {
+    await page.mouse.click(1, 1); await page.mouse.move(1, 1); await page.emulateMedia({ reducedMotion: "reduce" });
+    const quiet = await feedback156(page), handle = (await lampSample155(page)).knob;
+    await page.mouse.move((handle.left + handle.right) / 2, (handle.top + handle.bottom) / 2);
+    const quietHover = await feedback156(page); expect(quietHover.height).toBe(quiet.height); expect(quietHover.opacity).toBe(1); expect(quietHover.transition).toBe("0s");
+    await page.mouse.down(); expect((await feedback156(page)).height).toBe(quiet.height); await page.mouse.up();
+    proofs.get(page)!.notes.push({ stage: "system-reduced-motion156", quiet, quietHover });
+    await page.emulateMedia({ reducedMotion: "no-preference" });
   }
   const saved = (await lamp.getAttribute("aria-pressed"))!; await curtain.click(); await expect(lamp).toHaveAttribute("aria-pressed", saved);
   const radio = home.locator("[data-home-action=radio]");
