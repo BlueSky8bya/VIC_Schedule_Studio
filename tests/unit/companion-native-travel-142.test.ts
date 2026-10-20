@@ -87,3 +87,32 @@ describe("142 measured ink support includes bounded public hit-day descendants",
   expect(completedNativeTravel(followed)).toEqual([]);
  });
 });
+
+
+describe("142 only registered motion samples can prove travel displacement and duration", () => {
+  it("does not credit a cold8px displacement followed by three stationary registered poses", () => {
+    const frames = journey().slice(0, 7);
+    frames[1].pose = companionSpriteMetadata.rows[16][0];
+    for (let index = 2; index <= 4; index++) {
+      frames[index].x = 108; frames[index].pose = companionSpriteMetadata.rows[2][index - 2];
+    }
+    for (const frame of frames.slice(5)) { frame.state = "look"; frame.x = 108; frame.travel.supported = true;
+      frame.travel.support = { kind:"home",rect:{x:0,y:400,width:320,height:200},footY:550,visible:true }; }
+    expect(completedNativeTravel(frames)).toEqual([]);
+  });
+  it("does not borrow the cold texture interval to turn50ms of registered motion into100ms", () => {
+    const source = journey();
+    const samples = [[0,"look",100,1,0],[50,"walk",100,16,0],[100,"walk",100,16,0],[150,"walk",100,16,0],
+      [200,"walk",100,2,0],[225,"walk",104,2,1],[250,"walk",108,2,2],[300,"look",108,1,0],[350,"look",108,1,1]] as const;
+    const frames = samples.map(([at,state,x,row,column],index) => ({ ...source[index],at,state,x,pose:companionSpriteMetadata.rows[row][column],
+      travel:{...source[index].travel,supported:state === "look",support:state === "look" ? {kind:"home" as const,rect:{x:0,y:400,width:320,height:200},footY:550,visible:true}:null} }));
+    expect(completedNativeTravel(frames)).toEqual([]);
+  });
+  it("retains a genuinely moving cold-texture trip while starting credit at its first registered frame", () => {
+    const frames = journey(); frames[1].pose = companionSpriteMetadata.rows[16][0];
+    const proof = completedNativeTravel(frames); expect(proof).toHaveLength(1);
+    expect(proof[0].startedAt).toBe(100); expect(proof[0].endedAt).toBe(650);
+    expect(proof[0].distance).toBeCloseTo(43.2); expect(proof[0].movingAt).toHaveLength(10);
+    expect(proof[0].movingAt[0]).toBe(100); expect(proof[0].poses).toBeGreaterThanOrEqual(2);
+  });
+});

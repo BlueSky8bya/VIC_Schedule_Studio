@@ -63,10 +63,10 @@ test.afterEach(async ({ page }, info) => {
   expect(proofs.get(page)!.errors).toEqual([]); expect(proofs.get(page)!.rejected).toEqual([]);
 });
 
-async function fixture(page: Page, surface: Surface, options: { personality?: CompanionPersonality; animalMode?: CompanionPreferences["animalMode"]; summer?: boolean; roam?: boolean; reduced?: boolean; gfxOff?: boolean; hunger?: number; sound?: boolean; energy?: number; sleep?: boolean } = {}) {
+async function fixture(page: Page, surface: Surface, options: { personality?: CompanionPersonality; animalMode?: CompanionPreferences["animalMode"]; summer?: boolean; roam?: boolean; reduced?: boolean; gfxOff?: boolean; hunger?: number; sound?: boolean; energy?: number; sleep?: boolean; learnFromYou?: boolean } = {}) {
   await page.addInitScript(({ preferences, memory, epoch, epochKey, options }) => {
     for (const [key, value] of Object.entries({ [epochKey]: epoch, "vic.gfxPref": options.gfxOff ? "off" : "max", "vic.gfx": JSON.stringify({ mode: options.gfxOff ? "off" : "full", at: Date.now(), v: 3 }), "vic.sound": options.sound ? "on" : "off", "vic.soundVol": "45", "vic.ambient": "off", "vic.reduceMotion": options.reduced ? "on" : "off", "vic.dark": "off", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(key, value);
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, activeWhileVisible: true, personality: options.personality ?? "balanced", animalMode: options.animalMode ?? preferences.animalMode, roam: options.personality ? false : options.roam ?? true, sleep: options.sleep ?? false, feeding: true, sound: options.sound ?? false, learnFromYou: false, heartPrank: false, cardPrank: false, panelPrank: false, rarePrank: false }));
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, activeWhileVisible: true, personality: options.personality ?? "balanced", animalMode: options.animalMode ?? preferences.animalMode, roam: options.personality ? false : options.roam ?? true, sleep: options.sleep ?? false, feeding: true, sound: options.sound ?? false, learnFromYou: options.learnFromYou ?? false, heartPrank: false, cardPrank: false, panelPrank: false, rarePrank: false }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...memory, energy: options.energy ?? .9, hunger: options.hunger ?? .05 }));
   }, { preferences: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, options });
   await page.goto(surface === "viewer" ? "/visual-fixture/poster?avatar=1" : `/visual-fixture/studio?role=owner&y=2025&m=${options.summer ? 7 : 10}&hour=${options.summer ? 12 : 21}&weather=clear`);
@@ -324,6 +324,133 @@ test("140 sleepy responds to an actual calm recording and stops its music sequen
   await duration(page, 4500);
   expect((await frames(page)).some(frame => frame.scene === "X-S-music" && frame.state !== "idle")).toBe(false);
   proofs.get(page)!.notes.push({ actualUserStartedRecording: track.id, actualCalmSequence: true, nativeVolumeZeroCancelsSequence: true });
+});
+
+for (const outside of [false, true]) test(outside
+  ? "142 floating home tidy returns from a real calendar perch to all four toys"
+  : "142 floating home tidy preserves all four returns with learned care on", async ({ page }) => {
+  test.setTimeout(165_000);
+  await page.setViewportSize({ width: 1440, height: 1050 });
+  await fixture(page, "viewer", { personality: "tidy", roam: false, hunger: .60, energy: .76, sleep: true, learnFromYou: true });
+  const fold = page.getByRole("button", { name: "패널 접기", exact: true });
+  if (await fold.isVisible()) await fold.click();
+  await settlePanelLayout(page);
+  const home = await openCompanionHome(page);
+  await settlePanelLayout(page);
+  const room = (await home.locator(".vc-home-room").boundingBox())!;
+  expect(room.width, "the real launcher opens the wide floating room").toBeGreaterThan(400);
+  await placeCompanionOnHomeFloor(page);
+  const actor = page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
+  const pet = page.locator(".vc-companion"), identity = (await pet.elementHandle())!;
+  const ids: string[] = [];
+  for (let index = 0; index < 4; index++) {
+    await home.locator('[data-home-action="toys"]').click();
+    await expect(page.locator(".vc-toy")).toHaveCount(index + 1);
+    const toy = page.locator(".vc-toy").last();
+    await expect(toy).toHaveAttribute("data-falling", "false", { timeout: 6000 });
+    ids.push((await toy.getAttribute("data-toy-id"))!);
+  }
+  const floor = (await home.locator(".vc-home-floor").boundingBox())!;
+  const floorFoot = floor.y + floor.height - COMPANION_HOME_FLOOR_INSET;
+  const rim = (await home.locator(".vc-toy-box-opening").boundingBox())!;
+  const opening = { x: rim.x + rim.width / 2, y: rim.y + rim.height };
+  let perch: { x: number; y: number; width: number; eventId: string } | undefined;
+  let actualPerch: { x: number; y: number; platform: string | undefined } | undefined;
+  if (outside) {
+    // Choose a real visible event below this measured room. No test platform,
+    // calendar geometry, clock, RNG or engine state is supplied.
+    const perches = await page.locator(".public-event[data-eventid]").evaluateAll((nodes, bounds) => nodes.flatMap(node => {
+      const rect = node.getBoundingClientRect(), x = rect.x + rect.width / 2, y = rect.y - 3;
+      return node.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && rect.width > 90
+        && x >= bounds.x + 48 && x <= bounds.x + bounds.width - 48
+        && y > bounds.foot + 160 && y < bounds.foot + 330 && rect.bottom < innerHeight - 30
+        ? [{ x, y, width: rect.width, eventId: node.getAttribute("data-eventid")! }] : [];
+    }), { x: floor.x, width: floor.width, foot: floorFoot });
+    proofs.get(page)!.notes.push({ measuredFloatingRoom: room, measuredFloor: floor, eligibleRealPerches: perches });
+    perch = perches[0];
+    expect(perch, "a real event more than the ordinary jump rise below the floating floor exists").toBeTruthy();
+    await actor.focus(); await actor.press("p");
+    await expect(pet).toHaveAttribute("data-placing", "");
+    await page.mouse.click(perch!.x, perch!.y); await page.mouse.move(2, 2);
+    await expect(pet).not.toHaveAttribute("data-placing");
+    await expect(pet).not.toHaveAttribute("data-state", "jump");
+    await expect(pet).toHaveAttribute("data-platform", /^card-/);
+    actualPerch = await pet.evaluate(node => {
+      const rect = node.getBoundingClientRect();
+      return { x: rect.x + rect.width / 2, y: rect.bottom, platform: (node as HTMLElement).dataset.platform };
+    });
+    expect(actualPerch.y - floorFoot, "actual planted feet retain the measured height gap").toBeGreaterThan(160);
+    expect(actualPerch.y - floorFoot).toBeLessThan(330);
+    expect(Math.abs(actualPerch.x - perch!.x)).toBeLessThan(2);
+    expect(Math.abs(actualPerch.y - perch!.y)).toBeLessThan(3);
+  }
+  const initialPlatform = await pet.getAttribute("data-platform");
+  const initialCare = await home.locator("meter").evaluateAll(nodes => nodes.map(node => ({ label: node.getAttribute("aria-label"), value: (node as HTMLMeterElement).value })));
+  const observedPreferences = await page.evaluate(() => {
+    const value = JSON.parse(localStorage.getItem("vic.viewerCompanion") ?? "{}");
+    return { sleep: value.sleep, learnFromYou: value.learnFromYou };
+  });
+  expect(observedPreferences).toEqual({ sleep: true, learnFromYou: true });
+  expect(initialCare.find(value => value.label === "빅타민 포만감")!.value).toBeLessThanOrEqual(.41);
+  expect(initialCare.find(value => value.label === "빅타민 포만감")!.value).toBeGreaterThan(.3);
+  expect(initialCare.find(value => value.label === "빅타민 기력")!.value).toBeGreaterThan(.6);
+  await selectNative(page, "tidy", true, true);
+  await expect.poll(async () => (await frames(page)).some(frame => frame.visible && frame.decoded), { timeout: 5000, intervals: [50] }).toBe(true);
+  const initialObserved = (await frames(page)).find(frame => frame.visible && frame.decoded)!;
+  let actualPerchSupport: { x: number; y: number; width: number; height: number; footY: number; visible: boolean } | null = null;
+  if (outside) {
+    actualPerchSupport = await page.locator(".public-event[data-eventid]").evaluateAll((nodes, eventId) => {
+      const node = nodes.find(value => value.getAttribute("data-eventid") === eventId);
+      if (!node) return null;
+      const rect = node.getBoundingClientRect();
+      return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, footY: rect.y - 3, visible: node.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) };
+    }, perch!.eventId);
+    expect(actualPerchSupport?.visible).toBe(true);
+    expect(initialObserved.platform).toBe(initialPlatform);
+    expect(initialObserved.y - floorFoot).toBeGreaterThan(160);
+    expect(initialObserved.y - floorFoot).toBeLessThan(330);
+    expect(Math.abs(initialObserved.y - actualPerchSupport!.footY)).toBeLessThan(3);
+    expect(initialObserved.x).toBeGreaterThanOrEqual(actualPerchSupport!.x);
+    expect(initialObserved.x).toBeLessThanOrEqual(actualPerchSupport!.x + actualPerchSupport!.width);
+  }
+  proofs.get(page)!.notes.push({ floatingCleanupPreconditions: { room, floor, floorFoot, perch, actualPerch, actualPerchSupport, initialPlatform, initialCare, observedPreferences, initialObserved: { at: initialObserved.at, x: initialObserved.x, y: initialObserved.y, platform: initialObserved.platform, state: initialObserved.state, visible: initialObserved.visible, decoded: initialObserved.decoded }, ids, opening } });
+  await expect(page.locator(".vc-toy")).toHaveCount(0, { timeout: 115_000 });
+  await expect.poll(async () => {
+    const trace = await frames(page);
+    return ids.every(id => {
+      const last = trace.filter(frame => frame.toys.some(toy => toy.id === id && toy.carried)).at(-1);
+      return last && trace.some(frame => frame.at > last.at && !frame.toys.some(toy => toy.id === id));
+    });
+  }, { timeout: 1000, intervals: [50] }).toBe(true);
+  const trace = await frames(page);
+  for (const id of ids) {
+    const carried = trace.filter(frame => frame.visible && frame.decoded && frame.toys.some(toy => toy.id === id && toy.carried));
+    expect(carried.length, `${id} must be visibly carried before its removal`).toBeGreaterThanOrEqual(2);
+    const last = carried.at(-1)!, item = last.toys.find(toy => toy.id === id)!;
+    expect(Math.hypot(item.x - opening.x, item.y - opening.y), `${id} reaches the actual painted opening`).toBeLessThan(20);
+    expect(trace.some(frame => frame.at > last.at && !frame.toys.some(toy => toy.id === id))).toBe(true);
+  }
+  const firstPickup = trace.find(frame => frame.toys.some(toy => toy.carried))!;
+  const observedEntry: { id: number; from: string; to: string; startY: number; endY: number }[] = [];
+  if (outside) {
+    const entry = completedNativeTravel(trace.filter(frame => frame.at <= firstPickup.at));
+    let support = initialPlatform;
+    for (const trip of entry) {
+      const start = trace.find(frame => frame.at === trip.startedAt);
+      const end = trace.find(frame => frame.at === trip.endedAt);
+      if (!start || !end || start.platform !== support) continue;
+      observedEntry.push({ id: trip.id, from: start.platform, to: end.platform, startY: start.y, endY: end.y });
+      support = end.platform;
+      if (/^companion-home-floor(?:-\d+)?$/.test(support)) break;
+    }
+    expect(observedEntry.length, "actual decoded supported travel starts at the planted calendar support").toBeGreaterThan(0);
+    expect(observedEntry[0].from).toBe(initialPlatform);
+    expect(observedEntry.at(-1)!.to, "a contiguous supported route reaches the room before pickup").toMatch(/^companion-home-floor(?:-\d+)?$/);
+    expect(firstPickup.y).toBeCloseTo(floorFoot, 0);
+  }
+  expect(await identity.evaluate(node => node.isConnected && node === document.querySelector(".vc-companion"))).toBe(true);
+  expect(trace.every(frame => frame.toys.length <= 4 && frame.foods.length <= 8)).toBe(true);
+  proofs.get(page)!.notes.push({ floatingRoom: room, floorFoot, perch, actualPerch, actualPerchSupport, observedEntry, initialPlatform, initialCare, observedPreferences, nativeIds: ids, opening, sameActor: true, sameIdPhysicalReturns: true, savedFixtureCare: { hunger: .60, energy: .76, sleep: true, learnFromYou: true }, scope: "Native floating-house regression using initial saved fixture care and actual controls. Not an unseeded production replay or complete platform-graph capture." });
 });
 
 for (const personality of COMPANION_PERSONALITIES) test(`140 ${personality} native primary and secondary sequences finish with real object or room effects`, async ({ page }) => {

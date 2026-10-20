@@ -7,8 +7,9 @@ type CareAction = "쓰다듬기" | "옮길 곳 고르기" | "여기서 낮잠" |
 const home = (page: Page) => page.getByRole("region", { name: "빅타민 집", exact: true });
 
 export async function openCompanionHome(page: Page, input: HomeInput = "pointer") {
+  const launcher = page.getByRole("button", { name: "빅타민 집 열기", exact: true });
+  await expect.poll(async () => await home(page).isVisible() || await launcher.isVisible()).toBe(true);
   if (!await home(page).isVisible()) {
-    const launcher = page.getByRole("button", { name: "빅타민 집 열기", exact: true });
     if (input === "keyboard") { await launcher.focus(); await launcher.press("Enter"); }
     else if (input === "touch") await launcher.tap();
     else await launcher.click();

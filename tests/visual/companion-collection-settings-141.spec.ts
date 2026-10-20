@@ -181,6 +181,7 @@ for (const [surface, width] of [["viewer", 1920], ["studio", 1100], ["preview", 
   await expect(dialog.getByRole("tab", { name: "기본", exact: true })).toHaveAttribute("aria-selected", "true");
   const grid = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true });
   await expect(grid.locator('[aria-checked="true"]')).toBeFocused();
+  await waitForOverlayEntrance(dialog);
   const actual = await grid.getByRole("radio").evaluateAll(nodes => nodes.map(node => {
     const r = node.getBoundingClientRect(), hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
     return { id: node.getAttribute("data-act-opt"), x: r.x, y: r.y, width: r.width, height: r.height, exposed: hit === node || node.contains(hit) };

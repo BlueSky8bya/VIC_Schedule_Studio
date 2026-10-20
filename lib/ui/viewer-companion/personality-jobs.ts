@@ -51,13 +51,13 @@ export function createCompanionPersonalityJobs(director: ReturnType<typeof creat
           }
           selected = toys.next({ world, brain, preferences: { ...p, personality: "curious" }, now, toys: input.toys,
             existingIds: input.toyIds, carriedId: input.carriedToy, count: input.toyCount, box: input.box, tastes: input.tastes,
-            intent: { mode: "play", targetId: proposal.meta.itemId, kinds: command.kinds } });
+            intent: { mode: "play", targetId: proposal.meta.itemId, kinds: command.kinds, homeFloorEntry: proposal.meta.homeFloorEntry === true } });
           if (selected?.toy?.toyId) director.bind(proposal.meta, selected.toy.toyId);
         } else if (command.mode === "inspect" || command.mode === "nudge") {
           const target = proposal.meta.itemId ? input.toys.find(toy => toy.id === proposal.meta.itemId) : input.toys.find(toy => !command.kinds?.length || command.kinds.includes(toy.kind));
           if (target && !target.held && !target.hidden && !target.carried) {
             director.bind(proposal.meta, target.id);
-            const route = findCompanionToyRoute(world, target.stance ?? target, world.platforms, p.jump), step = route?.[0];
+            const route = findCompanionToyRoute(world, target.stance ?? target, world.platforms, p.jump, proposal.meta.homeFloorEntry === true), step = route?.[0];
             if (step) return stamp({ ...step, duration: step.kind === "jump" ? 850 : Math.max(250, Math.abs(step.target.x - world.x) / 100 * 1000) }, true);
             if (route && Math.hypot(target.x - world.x, target.y - world.y) < 48) {
               if (command.mode === "nudge") return stamp({ kind: "sniff", target: here, duration: 700,
@@ -70,7 +70,7 @@ export function createCompanionPersonalityJobs(director: ReturnType<typeof creat
         } else {
           const chosenPreferences = { ...p, personality: command.mode === "return" ? "tidy" as const : command.mode === "toss" ? "mischievous" as const : "curious" as const };
           const jobInput = { world, brain, preferences: chosenPreferences, now, toys: input.toys, existingIds: input.toyIds, carriedId: input.carriedToy, count: input.toyCount, box: input.box, tastes: input.tastes,
-            intent: { mode: command.mode === "return" ? "return" as const : command.mode === "spawn" ? "spawn" as const : "play" as const, targetId: proposal.meta.itemId, kinds: command.kinds } };
+            intent: { mode: command.mode === "return" ? "return" as const : command.mode === "spawn" ? "spawn" as const : "play" as const, targetId: proposal.meta.itemId, kinds: command.kinds, homeFloorEntry: proposal.meta.homeFloorEntry === true } };
           selected = toys.playfulCarry(here) ?? toys.next(jobInput);
           if (selected?.toy?.toyId) director.bind(proposal.meta, selected.toy.toyId);
         }

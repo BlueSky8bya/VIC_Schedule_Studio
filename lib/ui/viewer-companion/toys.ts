@@ -8,6 +8,7 @@ import { isCompanionHomeFloorFoodSupport } from "./food";
 import { createCompanionFoodGravity } from "./food-gravity";
 import { compareCompanionItemLandings, rankCompanionItemLandings, type CompanionItemLanding, type CompanionItemPoint } from "./item-landing";
 import { COMPANION_TIMING } from "./timing";
+import { shortestCompanionHomeRoute } from "./home-route";
 export { COMPANION_TOY_KINDS, COMPANION_TOY_NAMES, type CompanionToyKind } from "./toy-catalog";
 
 export const MAX_COMPANION_TOYS = 4;
@@ -57,12 +58,19 @@ export function accessibleCompanionToys(toys: readonly CompanionToy[], supports:
 /** A toy errand may traverse the room's measured body-safe floor spans. The
  * ordinary roaming graph still excludes these manual supports. Keep the real
  * endpoints inside the bounded graph even in a dense calendar snapshot. */
-export function findCompanionToyRoute(from: Point, target: Point, platforms: readonly Platform[], allowJump: boolean) {
+export function findCompanionToyRoute(from: Point, target: Point, platforms: readonly Platform[], allowJump: boolean, allowHomeFloorEntry = false) {
   const source = platforms.find(p => p.id === from.platformId), goal = platforms.find(p => p.id === target.platformId);
   const sameFloor = source?.id === goal?.id && source?.kind === "floor" ? source.id : undefined;
   const ordered = [...new Map([...(source ? [source] : []), ...(goal ? [goal] : []), ...platforms.filter(roomFloor), ...platforms].map(p => [p.id, p])).values()];
   const traversable = ordered.map(p => p.manualOnly && (roomFloor(p) || p.id === sameFloor) ? { ...p, manualOnly: false } : p);
-  return findPlatformRoute(from, target, traversable, allowJump, target.platformId);
+  const normal = findPlatformRoute(from, target, traversable, allowJump, target.platformId);
+  if (normal || !allowHomeFloorEntry || !allowJump || !source || !goal || !roomFloor(goal) || !goal.manualOnly
+    || source.bodyOnly || ["control", "hide"].includes(source.kind) || panelFloor(source) || roomFloor(source) || source.id === "companion-home"
+    || !valid(from) || !valid(target) || Math.abs(target.y-goal.y) > .5 || target.x < goal.x || target.x > goal.x+goal.width) return normal;
+  // Explicit real returns alone reuse the existing bounded house-entry
+  // crouch/spring. Ordinary roaming never gains a stronger jump or a fake
+  // platform. Preserve the real requested room floor and every proved hop.
+  return shortestCompanionHomeRoute(from, target, ordered.filter(p => !p.bodyOnly && !["control", "hide"].includes(p.kind) && !panelFloor(p)), true, true);
 }
 
 /** Four small real objects. Driven only by the host's existing active/finite
@@ -382,11 +390,11 @@ export function createCompanionToyPlanner() {
     if (job?.toyId) rememberFailure(job.toyId, now);
     stop(now, 500);
   };
-  type Input = { world: CompanionWorld; brain: CompanionBrain; preferences: CompanionPreferences; now: number; toys: readonly CompanionToy[]; existingIds?: readonly string[]; carriedId?: string; count: number; box?: Point; tastes?: CompanionTastes; intent?: { mode: "play" | "return" | "spawn"; targetId?: string; kinds?: readonly CompanionToyKind[] } };
+  type Input = { world: CompanionWorld; brain: CompanionBrain; preferences: CompanionPreferences; now: number; toys: readonly CompanionToy[]; existingIds?: readonly string[]; carriedId?: string; count: number; box?: Point; tastes?: CompanionTastes; intent?: { mode: "play" | "return" | "spawn"; targetId?: string; kinds?: readonly CompanionToyKind[]; homeFloorEntry?: boolean } };
   const eligible = ({ world, brain, preferences: p, now }: Input) => p.enabled && p.roam && world.animated && !world.paused && Number.isFinite(now)
     && brain.energy >= .25 && brain.hunger < .8 && !companionToyFoodPriority(brain, world, p) && companionToyMotivation(p, brain, world).interested;
   const routeBetween = (input: Input, from: Point, target: Point) => {
-    return findCompanionToyRoute(from, target, input.world.platforms, input.preferences.jump);
+    return findCompanionToyRoute(from, target, input.world.platforms, input.preferences.jump, input.intent?.homeFloorEntry === true || input.intent?.mode === "return" || input.preferences.personality === "tidy");
   };
   const returnAllowance = (input: Input, approach: NonNullable<ReturnType<typeof findPlatformRoute>>, back: NonNullable<ReturnType<typeof findPlatformRoute>>, point: Point) => {
     // A proved leg has at most12 jumps,12 takeoff walks and one final walk.
@@ -399,7 +407,8 @@ export function createCompanionToyPlanner() {
       const step = steps[index], dy = step.target.y - previous.y;
       // The renderer replaces a jump's placeholder900ms with this existing
       // physical flight plus anticipation/landing. Include its decision gap.
-      const { gravity, maxRise } = COMPANION_JUMP_LIMITS, impulse = Math.sqrt(2 * gravity * maxRise);
+      const { gravity, maxRise } = COMPANION_JUMP_LIMITS;
+      const rise = "jumpHeight" in step && typeof step.jumpHeight === "number" ? step.jumpHeight : maxRise, impulse = Math.sqrt(2 * gravity * rise);
       elapsed += step.kind === "jump" ? COMPANION_TIMING.jumpAnticipation + COMPANION_TIMING.jumpLanding
         + (impulse + Math.sqrt(Math.max(0, impulse * impulse + 2 * gravity * dy))) / gravity * 1000
         : Math.max(220, Math.abs(step.target.x - previous.x) / speed * 1000);

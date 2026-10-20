@@ -63,9 +63,13 @@ export function completedNativeTravel(frames: readonly NativeTravelFrame[]): Nat
         } else if (!frame.travel.supported || !frame.travel.support || !measuredNativeTravelSupport(frame.x,frame.y,[frame.travel.support]) || !frame.platform || candidate.end && (frame.platform !== candidate.end.platform || Math.hypot(frame.x-candidate.end.x,frame.y-candidate.end.y) > 1)) candidate = undefined;
         else {
           candidate.end ??= frame; candidate.stable++;
-          const first = candidate.first, last = candidate.moving.at(-1), distance = Math.hypot(frame.x-first.x,frame.y-first.y);
+          // A cold initial texture can hold an unrelated pose. Only the
+          // registered motion samples establish displacement, time and start.
+          const first = candidate.moving[0], last = candidate.moving.at(-1);
+          const distance = first ? Math.hypot(frame.x-first.x,frame.y-first.y) : 0;
+          const paintedDistance = first && last ? Math.hypot(last.x-first.x,last.y-first.y) : 0;
           if (candidate.stable >= 2) {
-            if (last && candidate.moving.length >= 3 && last.at-first.at >= 100 && candidate.poses.size >= 2 && distance >= 8
+            if (first && last && candidate.moving.length >= 3 && last.at-first.at >= 100 && candidate.poses.size >= 2 && distance >= 8 && paintedDistance >= 8
               && (candidate.kind === "walk" ? Math.abs(frame.y-first.y) < 2 : candidate.flight && candidate.landing)) {
               result.push({ id:first.travel.id,kind: candidate.kind, startedAt: first.at, endedAt: frame.at, movingAt: candidate.moving.map(value => value.at), distance, poses: candidate.poses.size });
             }

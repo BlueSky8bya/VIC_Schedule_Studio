@@ -98,11 +98,28 @@ export function planCompanionGoal(brain: CompanionBrain, world: CompanionWorld, 
       if (action) return { action, outcomes };
     }
   }
+  // Renderer-rejected sofa entries already have a finite active-time retry
+  // memory. Only a NEW foreign-home admission waits for it: an owned route
+  // above, or a real actor already on the sofa, keeps its existing authority.
+  const homeBlocked = Boolean(home && home.id !== current.id && memories.some(place => place.id === home.id && place.failures > 0 && place.retryAfter > activeMs));
   if (prefs.sleep && brain.energy < profile.restEnergy && home) {
-    const action = pursue({ kind: "rest", targetId: home.id, offset: .5, remaining: 12, stage: "travel" });
-    if (action) return { action, outcomes };
+    if (!homeBlocked) {
+      const action = pursue({ kind: "rest", targetId: home.id, offset: .5, remaining: 12, stage: "travel" });
+      if (action) return { action, outcomes };
+    } else if (world.animated && !brain.foodGoal && !previous && !(brain.episode && brain.episode.remaining > 0 && brain.episode.phase !== "finish")
+      && current.kind === "floor" && !current.bodyOnly && (!current.manualOnly || /^companion-home-floor(?:-\d+)?$/.test(current.id))
+      && [world.x, world.y, current.x, current.y, current.width, current.x + current.width].every(Number.isFinite) && current.width > 0
+      && Math.abs(world.y-current.y) <= 2 && world.x >= current.x && world.x <= current.x+current.width) {
+      // The need survives an unavailable destination. Sleep on this actual
+      // safe floor, using the existing finite rest action and completion ACK;
+      // merely skipping a retry must not emit another blocked outcome/TTL.
+      const offset = clamp((world.x-current.x)/current.width,0,1);
+      return { action: { kind: "sleep", target: { x: world.x, y: world.y, platformId: current.id }, duration: 9000 * profile.pauseScale,
+        intention: { kind: "rest", targetId: current.id, offset, remaining: 12, stage: "observe" },
+        ...(/^companion-home-floor(?:-\d+)?$/.test(current.id) ? { living: "cozy" as const } : {}) }, outcomes };
+    }
   }
-  if (prefs.personality === "homebody" && home && home.id !== current.id && activeMs >= 15000) {
+  if (prefs.personality === "homebody" && home && !homeBlocked && home.id !== current.id && activeMs >= 15000) {
     const action = pursue({ kind: "explore", targetId: home.id, offset: .5, remaining: 12, stage: "travel" });
     if (action) return { action, outcomes };
   }

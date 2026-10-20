@@ -40,7 +40,11 @@ export const NATIVE_SUITES = Object.freeze([
   'companion-activity.spec.ts',
 ]);
 export const NATIVE_ENTRY_TITLES = Object.freeze(['viewer', 'studio', 'preview'].flatMap(surface => PERSONALITIES.map(personality => `137 ${surface} native ${personality} selection expresses immediately and remains purposeful`)));
-export const PLANNED_NATIVE_CASE_COUNT = 95;
+export const NATIVE_FLOATING_TIDY_TITLES = Object.freeze([
+  '142 floating home tidy preserves all four returns with learned care on',
+  '142 floating home tidy returns from a real calendar perch to all four toys',
+]);
+export const PLANNED_NATIVE_CASE_COUNT = 97;
 export const NATIVE_ENTRY_GREP = `(?:^|\\s)137 (?:viewer|studio|preview) native (?:${PERSONALITIES.join('|')}) selection expresses immediately and remains purposeful$`;
 export const NATIVE_GREP = '142 |141 |134 .*arrows activate|140 .*primary and secondary|140 outside-home|123 actual solar|123 six shared|123 static|autonomous companion movement never|110 developer views' + '|' + NATIVE_ENTRY_GREP;
 const key = (a, av, b, bv) => JSON.stringify([a, av, b, bv]);
@@ -87,7 +91,7 @@ export function universe() {
   return { schemaVersion: 1, normalizedPreferenceCrossProduct: 2 ** BOOLEAN_KEYS.length * PERSONALITIES.length * 3 * 3 * 101,
     preferenceEnums: { personality: PERSONALITIES.length, animalMode: 3, speed: 3, soundVolume: 101 }, fixedNormalizedSize: 'large',
     booleanPatternCount: 2 ** BOOLEAN_KEYS.length, booleanKeys: BOOLEAN_KEYS, dimensions: DIMENSIONS,
-    modeledRoutineTemplates: ROUTINES.length * PERSONALITIES.length, modeledEntries: PERSONALITIES.length, plannedNativeEntryCases: PERSONALITIES.length * 3,
+    modeledRoutineTemplates: ROUTINES.length * PERSONALITIES.length, modeledEntries: PERSONALITIES.length, plannedNativeEntryCases: PERSONALITIES.length * 3, plannedNativeFloatingTidyCases: NATIVE_FLOATING_TIDY_TITLES.length, plannedNativeCaseCount: PLANNED_NATIVE_CASE_COUNT,
     pairwiseRows: pairwiseRows(), claims: { nativeExhaustive: false, continuousWorldExhaustive: false, arbitraryFramePairsAreLegal: false },
     limitations: ['Coordinates, time and human input sequences are continuous/unbounded.', 'Pairwise rows do not cover all setting cross-products.', 'Only passing, observed native cases count toward native coverage.', 'Pure host ACKs are not rendered effect or artwork evidence.'] };
 }

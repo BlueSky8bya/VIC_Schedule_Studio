@@ -7,7 +7,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { finished } from 'node:stream/promises';
 import { pathToFileURL } from 'node:url';
-import { universe, dailyCases, coverageFor, PURE_SUITES, NATIVE_SUITES, NATIVE_GREP, NATIVE_ENTRY_TITLES, PLANNED_NATIVE_CASE_COUNT } from './catalog.mjs';
+import { universe, dailyCases, coverageFor, PURE_SUITES, NATIVE_SUITES, NATIVE_GREP, NATIVE_ENTRY_TITLES, NATIVE_FLOATING_TIDY_TITLES, PLANNED_NATIVE_CASE_COUNT } from './catalog.mjs';
 import { sha, writeNewJson, evidenceFiles, writeReport } from './report.mjs';
 import { AUDITED_MACHINE_METADATA, AUDITED_MACHINE_METADATA_BYTES, validateAuditedMachineMetadata } from './machine-metadata.mjs';
 
@@ -122,14 +122,23 @@ export function nativeEntryEvidence(report) {
   };
   const cases = NATIVE_ENTRY_TITLES.map(title => ({ title, status: classify(specs.filter(spec => spec?.title === title)) }));
   const count = status => cases.filter(item => item.status === status).length;
+  // Actual floating-house cleanup is separate from pure goal/route contracts.
+  // Exact titles prevent two unrelated passes from replacing either new case.
+  const floatingCases = NATIVE_FLOATING_TIDY_TITLES.map(title => ({ title, status: classify(specs.filter(spec => spec?.title === title)) }));
+  const floatingTidy = { required: NATIVE_FLOATING_TIDY_TITLES.length,
+    registered: floatingCases.filter(item => specs.some(spec => spec?.title === item.title)).length,
+    passed: floatingCases.filter(item => item.status === 'passed').length,
+    failed: floatingCases.filter(item => item.status === 'failed').length,
+    skipped: floatingCases.filter(item => item.status === 'skipped').length,
+    notRun: floatingCases.filter(item => item.status === 'not-run').length, cases: floatingCases };
   const selectedPassedCases = specs.filter(spec => classify([spec]) === 'passed').length;
   const selectedUniqueTitles = new Set(specs.map(spec => spec?.title).filter(title => typeof title === 'string')).size;
   const passedEntries = count('passed'), notRunEntries = count('not-run');
-  const gatePassed = passedEntries === NATIVE_ENTRY_TITLES.length && specs.length === PLANNED_NATIVE_CASE_COUNT && selectedUniqueTitles === PLANNED_NATIVE_CASE_COUNT && selectedPassedCases === PLANNED_NATIVE_CASE_COUNT && Array.isArray(report?.errors) && report.errors.length === 0;
+  const gatePassed = passedEntries === NATIVE_ENTRY_TITLES.length && floatingTidy.passed === NATIVE_FLOATING_TIDY_TITLES.length && specs.length === PLANNED_NATIVE_CASE_COUNT && selectedUniqueTitles === PLANNED_NATIVE_CASE_COUNT && selectedPassedCases === PLANNED_NATIVE_CASE_COUNT && Array.isArray(report?.errors) && report.errors.length === 0;
   return { status: notRunEntries === NATIVE_ENTRY_TITLES.length ? 'not-run' : gatePassed ? 'passed' : 'failed', gatePassed,
     requiredEntries: NATIVE_ENTRY_TITLES.length, registeredEntries: cases.filter(item => specs.some(spec => spec?.title === item.title)).length,
     passedEntries, failedEntries: count('failed'), skippedEntries: count('skipped'), notRunEntries,
-    plannedSelectedCases: PLANNED_NATIVE_CASE_COUNT, selectedCaseCount: specs.length, selectedPassedCases, selectedUniqueTitles, cases };
+    plannedSelectedCases: PLANNED_NATIVE_CASE_COUNT, selectedCaseCount: specs.length, selectedPassedCases, selectedUniqueTitles, cases, floatingTidy };
 }
 const readJson = file => JSON.parse(fs.readFileSync(file, 'utf8'));
 function passedTests(report) { return report.testResults.flatMap(file => file.assertionResults).filter(result => result.status === 'passed'); }
@@ -221,8 +230,8 @@ export async function run(options) {
     const native = await command(workspace, ['node_modules/@playwright/test/cli.js', 'test', '--config', config, '--grep', NATIVE_GREP], childEnvironment(process.env, { ...nodeGuard, ...nativeEnv, COMPANION_QA_NODE_ORIGIN: baseURL, VIC_ACTIVITY_BASE_URL: baseURL.replace("127.0.0.1", "127.0.0.2"), COMPANION_QA_OUTPUT: nativeOutput, COMPANION_QA_CASES: JSON.stringify(cases), VISUAL_TEST_BUILD_DIR: path.join(workspace, '.next') }), path.join(attempt, 'native.log'), deadline, control);
     const nativeStage = { name: 'native-production-fixture', ...native }; stages.push(nativeStage);
     result.nativeEntries = nativeEntryEvidence(fs.existsSync(reportFile) ? readJson(reportFile) : undefined);
-    stages.push({ name: 'native-personality-entry-proof', status: result.nativeEntries.status, detail: `${result.nativeEntries.passedEntries}/27 actual entry cases passed; skipped:${result.nativeEntries.skippedEntries}, failed:${result.nativeEntries.failedEntries}, not-run:${result.nativeEntries.notRunEntries}; ${result.nativeEntries.selectedCaseCount}/95 cases selected, ${result.nativeEntries.selectedPassedCases}/95 actually passed` });
-    if (!result.nativeEntries.gatePassed) { native.status = nativeStage.status = 'failed'; nativeStage.detail = 'Exactly95 unique native cases including all27 entry cases must actually pass once; skipped, missing and retried outcomes are not passes'; }
+    stages.push({ name: 'native-personality-entry-proof', status: result.nativeEntries.status, detail: `${result.nativeEntries.passedEntries}/27 actual entry cases passed; skipped:${result.nativeEntries.skippedEntries}, failed:${result.nativeEntries.failedEntries}, not-run:${result.nativeEntries.notRunEntries}; ${result.nativeEntries.selectedCaseCount}/${PLANNED_NATIVE_CASE_COUNT} cases selected, ${result.nativeEntries.selectedPassedCases}/${PLANNED_NATIVE_CASE_COUNT} actually passed; ${result.nativeEntries.floatingTidy.passed}/${NATIVE_FLOATING_TIDY_TITLES.length} exact floating-house tidy cases passed` });
+    if (!result.nativeEntries.gatePassed) { native.status = nativeStage.status = 'failed'; nativeStage.detail = `Exactly${PLANNED_NATIVE_CASE_COUNT} unique native cases including all27 entries and both exact floating-house tidy cases must actually pass once; skipped, missing and retried outcomes are not passes`; }
 
     const observedDirectory = path.join(nativeOutput, 'daily');
     const observed = fs.existsSync(observedDirectory) ? fs.readdirSync(observedDirectory).filter(file => /^daily-[a-z-]+\.json$/.test(file)).map(file => readJson(path.join(observedDirectory, file))) : [];

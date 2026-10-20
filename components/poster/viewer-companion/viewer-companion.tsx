@@ -84,7 +84,7 @@ import { hasAmbientPauseOutside } from "@/lib/ui/ambient-pause";
 import { createCompanionSupportMotion } from "@/lib/ui/viewer-companion/support-motion";
 import { boundCompanionHeldPose, createCompanionHeldInertia } from "@/lib/ui/viewer-companion/held-inertia";
 import { createCompanionHeldShake } from "@/lib/ui/viewer-companion/held-shake";
-import { companionViewportFloorAbove, companionWorldHiddenReason, firstCompanionSupportBelow, nearestVerticalCompanionSupport, recoverCompanionDropAtViewportFloor, recoverCompanionPassiveFloor, recoverCompanionVerticalSupport } from "@/lib/ui/viewer-companion/support-landing";
+import { captureCompanionRestartSupport, deferCompanionRestartSupport, companionViewportFloorAbove, companionWorldHiddenReason, firstCompanionSupportBelow, nearestVerticalCompanionSupport, recoverCompanionDropAtViewportFloor, recoverCompanionPassiveFloor, recoverCompanionVerticalSupport, resolveCompanionRestartSupport, type CompanionRestartSupport } from "@/lib/ui/viewer-companion/support-landing";
 import { boundCompanionBallisticArc, boundCompanionSineArc, companionBallisticArcIsSafe } from "@/lib/ui/viewer-companion/jump-arc";
 import { createCompanionPettingContact, createCompanionPettingGesture, createCompanionPettingWindow } from "@/lib/ui/viewer-companion/petting";
 import { randomCompanionFood, type CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
@@ -178,7 +178,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
   const homeLauncher = useRef<HTMLButtonElement>(null);
   const compactHome = useRef<HTMLDivElement>(null);
   const homeFocus = useRef<string | null>(null);
-  const lastPose = useRef<{ x: number; y: number; monthKey: string; atHome: boolean; homeSupportId?: string; seeded: boolean } | null>(null);
+  const lastPose = useRef<{ x: number; y: number; monthKey: string; atHome: boolean; homeSupportId?: string; seeded: boolean; restartSupport?: CompanionRestartSupport } | null>(null);
   const initialHome = useRef<{ roll: number | null; entered: boolean; offered: boolean }>({ roll: null, entered: false, offered: false });
   const capturePosition = useRef<(() => void) | null>(null);
   const pendingPosition = useRef<CompanionPositionSnapshot | null>(null);
@@ -291,9 +291,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     void worldPreferencesKey;
     const preferences = preferencesRef.current;
     const el = body.current, button = actor.current, page = root.current, image = sprite.current, poseLayer = pose.current, reactionLayer = reaction.current, facingLayer = facing.current, contactLayer = contact.current, inertiaLayer = inertia.current;
-    if (!ready || !el || !button || !page || !image || !poseLayer || !reactionLayer || !facingLayer || !contactLayer || !inertiaLayer || !preferences.enabled) return;
+    if (!ready || !el || !button || !page || !image || !poseLayer || !reactionLayer || !facingLayer || !contactLayer || !inertiaLayer || !preferences.enabled) { if (lastPose.current) lastPose.current.restartSupport = undefined; return; }
     el.dataset.lifePurpose = "ordinary";
-    if (blocked) { el.hidden = true; setSuspended(true); setHomeExpanded(false); return; }
+    if (blocked) { if (lastPose.current) lastPose.current.restartSupport = undefined; el.hidden = true; setSuspended(true); setHomeExpanded(false); return; }
     // Settings/auto/storage notifications own this snapshot. Animation frames
     // must not synchronously reread localStorage for each pose/spring/layer.
     let graphicsMode = readGfxMode();
@@ -460,6 +460,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     const visibleActive = () => companionPresenceActive({ focused: document.hasFocus(), visible: !document.hidden, activeWhileVisible: preferences.activeWhileVisible, blocked: blocked || overlayRef.current && !workAllowed() || workspaceBusyRef.current });
     const presence = createCompanionPresence(visibleActive(), performance.now(), { autoSleep: preferences.sleep });
     const saved = lastPose.current;
+    let restartSupport = saved?.restartSupport;
     if (!saved && !pendingPosition.current && positionMemory?.current) pendingPosition.current = positionMemory.current;
     const received = pendingPosition.current;
     const transferredPoint = received && companionPositionPoint(received, { width: innerWidth, height: innerHeight }, COMPANION_SIZE);
@@ -2343,6 +2344,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           const canSupply = Boolean(effective.feeding && liveFoods.length < 8 && householdHome.dispenser && findCompanionToyRoute(householdWorld, householdHome.dispenser, householdPlatforms, effective.jump));
           const request = routines.next({ ...sceneInput, active: !overlayActive && !premiereActive && !pendingMonth && !returning && !reduced && gfxMode() !== "off" && !workspaceBusyRef.current && presence.phase === "active",
             entryReady: personalityDirector.entryReady(), owned: routineOwner, authoredReserved,
+            canOuting: !personalityDirector.cleanupPending(sceneInput),
             meal: { foodId: meal?.foodId, canSupply } });
           if (request && !personalityDirector.startRoutine(request.recipe, brain.current.activeMs, request.itemId)) routines.cancel(brain.current.activeMs);
         }
@@ -3582,6 +3584,15 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       positionMemory.current = { point: { x, y }, viewport: { width: innerWidth, height: innerHeight }, monthKey, seeded: worldSeeded || Boolean(supportById(support)), ...(anchor ? { anchor } : {}) };
     };
     capturePosition.current = captureForSurface;
+    const restartSupportState = () => ({
+      enabled: preferences.enabled && preferencesRef.current.enabled, visible: !document.hidden,
+      blocked: blocked || workspaceBusyRef.current, reduced: reduced || gfxMode() === "off",
+      held: Boolean(pressed || keyboardHeld || placing || guestKeyboardHeld || overlayDrag),
+      airborne: Boolean(action?.kind === "jump" || playFalling || afterPetLanding || needsLanding),
+      carrying: Boolean(food.current?.carried() || toys.current?.carried()),
+      owned: Boolean(household.active() || toyPlanner.active() || homeJourney || returning || hiding || premiereActive || pendingMonth),
+      resting: Boolean(sleeping || action?.kind === "sleep" || presence.dreaming || !overlayActive && presence.phase !== "active" && presence.phase !== "finishing"),
+    });
     const applyGeometry = (next: Platform[], validationOnly = false) => {
       if (premiereActive || hiding || overlayActive && !workAllowed() && !needsOverlayWorldSeed()) return;
       // Drag-source text is intentionally hidden by the editor. That brief
@@ -3717,6 +3728,25 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       // Geometry may refresh during a captured drag or keyboard placement.
       // Publish new supports, but input alone owns the displayed world point.
       if (pressed || keyboardHeld || placing) return;
+      // Preference changes dispose the controller, not the occupied card.
+      // Manual card tops live in landings, so a normal-only nearest search
+      // cannot preserve them. Retain only freshly verified exact DOM geometry.
+      if (restartSupport) {
+        const candidate = !support && !action ? supportById(restartSupport.platform.id) : undefined;
+        const restartContext = { point: { x, y }, monthKey, root: page,
+          platform: candidate, anchor: candidate ? geometryTracker?.anchor(candidate.id) : undefined,
+          viewport: { width: innerWidth, height: innerHeight }, size, state: restartSupportState() };
+        const retained = resolveCompanionRestartSupport(restartSupport, restartContext);
+        if (!retained && !support && !action && deferCompanionRestartSupport(restartSupport, restartContext, overlayActive && !workAllowed())) {
+          // A modal's controls can clip/remove this same card's safe span. Preserve
+          // the old point without adopting it or choosing a nearer date.
+          // Closing the window reconnects the existing geometry subscription;
+          // only that fresh strict resolve may restore this checkpoint.
+          hideBed(); stopHover(); el.hidden = true; return;
+        }
+        restartSupport = undefined;
+        if (retained) support = retained.id;
+      }
       homeOccluded = false;
       if (freshHomePending) {
         const point = companionInitialHomePoint(platforms, landingPlatforms, initialHome.current.roll ?? .5);
@@ -4066,7 +4096,18 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       offRadio(); offRadioPreferences(); radioInbox.clear(); instrumentInbox.clear(); window.removeEventListener(COMPANION_INSTRUMENT_EVENT, instrumentPlayed);
       window.removeEventListener("vic:sound", instrumentSoundChanged); window.removeEventListener("storage", instrumentSoundStored);
       refreshWardrobe.current = () => {}; situationSink.current = () => {}; pendingSituations.clear(); wardrobePainter?.clear();
-      lastPose.current = { x, y, monthKey, seeded: worldSeeded || Boolean(supportById(support)), atHome: isHomeSupport(support) && (homeOccluded || supportedNow()) && !pressed && !keyboardHeld && action?.kind !== "jump" && !playFalling, homeSupportId: isHomeSupport(support) ? support : undefined };
+      // Repeated choices inside the same modal restart this controller too.
+      // An unadopted checkpoint still belongs to its original measured card;
+      // an empty support must not overwrite it with a nearer-date capture.
+      const pendingRestart = !support && !action ? restartSupport : undefined;
+      const checkpointId = pendingRestart?.platform.id ?? support;
+      const restartContext = { point: { x, y }, monthKey, root: page,
+        platform: supportById(checkpointId), anchor: geometryTracker?.anchor(checkpointId),
+        viewport: { width: innerWidth, height: innerHeight }, size, state: restartSupportState() };
+      const retainedSupport = pendingRestart
+        ? deferCompanionRestartSupport(pendingRestart, restartContext, overlayActive && !workAllowed())
+        : captureCompanionRestartSupport(restartContext);
+      lastPose.current = { x, y, monthKey, seeded: worldSeeded || Boolean(supportById(support)), atHome: isHomeSupport(support) && (homeOccluded || supportedNow()) && !pressed && !keyboardHeld && action?.kind !== "jump" && !playFalling, homeSupportId: isHomeSupport(support) ? support : undefined, restartSupport: retainedSupport };
       if (capturePosition.current === captureForSurface) capturePosition.current = null;
       persistCare(true);
       sceneDepart();

@@ -106,9 +106,10 @@ describe("140 toy work budgets follow the proved complete round trip", () => {
   it("keeps the12-hop graph limit and never admits an unproved round trip", () => {
     const host = fixture(15);
     expect(findCompanionToyRoute(host.input.world, host.model.available()[0], host.input.world.platforms, true)).toBeNull();
-    // The authored grooming introduction may play before its required real
-    // object is reserved. It cannot create or finish the invalid toy job.
-    host.apply(host.offer()!); expect(host.offer()?.personalityScene.id).not.toBe("T01");
+    // Required physical return is proved before even its preparatory pose.
+    // Repeated unchanged decisions cannot start a cosmetic cleanup loop.
+    for (let n = 0; n < 6; n++) { expect(host.offer()).toBeUndefined(); host.input.now += 250; }
+    expect(host.actions).toEqual([]); expect(host.effects).toEqual([]); expect(host.director.completed()).toEqual([]);
     expect(host.planner.active()).toBe(false); expect(host.model.ids()).toEqual([host.id]);
   });
 

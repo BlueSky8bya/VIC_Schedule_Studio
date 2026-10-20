@@ -202,3 +202,124 @@ common mischievous에서는 미완료 entry row31/pose483에서 trusted P(4.187�
 새 UI5PNG/JSON과 root의 실제 TV·studio 선택기 화면 재검토에서 새 확정P1/P2 0.3표면 가운데 동글이/9개 바로 노출/44px, pill 중심오차0.015625px·끝선0.6875px·진행애니메이션/좌표변동0, 실제 TV 유리 안 화면/전체 입체 외곽과 전등/커튼 줄 연결을 확인했다. 이5장은 밝은 로컬 화면이며 운영 다크모드 결과는 아직 아니다. 최종5report SHA 일치, 정확 Node 거절 파일0·원본hash변경0/gitfalse/본인 프로세스 정리 PASS와 보호 아트 SHA 동일을 두 비작성 원시 검토와 root가 확인했다.08:26KST 종료/보존 후 원본 동결을 해제했으며 제품 소스 추가 변경 없이 최종 보고서/render/정확73파일 커밋/운영 실측을 진행한다.
 
 최종 HTML은 현재 코드에서 추출한9×(대표5+보조11)=144개 이름·순서·실제 step 흐름·optional 표시를 비작성 대조해 일치했다.1440/375px에서 실제 렌더/144li·144flow·가로넘침0, 두 PNG root/비작성 열람과 비밀·개인정보 비노출/배포 대기 범위 검토에서 확정P1/P2 0. 문서 harness343 PASS(HTML은 문서수 추가 대상이 아니므로344라고 부르지 않음). 정확73개 파일만 staging했고 미요청 제작기록과 기타 untracked art는 제외했다. 제품3개 핵심 SHA는 격리11차와 같은 값이며 배포 전/후 결과는 이어서 별도로 기록한다.
+
+## 운영 첫 실제 실패와 추가 재현
+
+정확73개 `12d34b5f739eb230beaf88f6a6ca2b24c79a8e50`을 main에 커밋/푸시했다. Vercel08:32:58KST success, 원격 quality39341988589는08:40 확인 시 completed/success였다(단위/격리 SQL/harness/build/type/lint). 이는 운영의 모든 행동 성공을 대신하지 않는다.
+
+첫 fresh anonymous 운영 검사 `12d34…-20261020083307-36416`은 공개 fullSHA/새 청크를 확인했으나 깔끔이의 실제4개 장난감 정리에서115초 뒤3개가 남아 exit1이었다. 한 개만 반납한 사실을 숨기거나 제한 시간을 늘리지 않는다. errors/unexpected/운영쓰기/live-state GET0, 학습 양성·운영 다크모드 단계는 미도달이다. 첫 checker는 실패한 assertion 뒤 in-memory 정리 raw를 저장하지 않은 채 브라우저를 닫았으므로 원인 판단에 필요한 연속 기록이 소실됐다. 원 실패 폴더/summary와 pre-release 보고서는 보존했으며, 현재 HTML/CURRENT_STATE에 실패와 미완료를 명시했다.
+
+원격 원인 후보는 운영 기본 care(hunger.58/energy.8/수면ON)와 fixture(.05 또는 .5/.9/수면OFF)의 조합 차이, 첫 반납 뒤 toy planner 취소와 routine 우선 재진입이다. 학습 ON 자체는 cleanup 우선 분기보다 뒤여서 직접 원인으로 확인되지 않았고, 깔끔이 장난감 취향 거절도 source에서 제외된다. 다음같은T01 재허용 경로도 있어 anti-repeat를 미리 원인으로 단정하지 않는다. 정확히 어떤 목표/실물/루틴이 막혔는지는 실제 raw 재수집이 필요하다.
+
+원 checker/제품은 바꾸지 않고 ignored 진단 복사본만 추가했다(SHA `39B8A1B304E0E8B5C06E4CBD9C45F5477A6EE159DA2353EA64B9A1DC8D19C0A1`).73개 expect·115초/20px 접촉·입력·network guard/무seed/RNG/clock 절차는 같고, 기존40ms DOM probe에 실제 actor/foods/toys 좌표·공개 단계·meter를 읽으며 finally에서 실패 raw/유한 허용 설정·경험/PNG를 항상 저장한다. Food의 없는 held 속성은 null로 둔다. 구문 검사와 root/비작성 관측 경계 검토 후 같은12d34 빌드의 fresh 익명 진단 `…20261020083938-12812`을 실행했다. 같은115초 정리 실패를 재현하고2,301프레임을 보존했다. 상세 관측과 수정 전 상태는 아래에 기록한다. 단순 재실행 통과만으로 첫 실패를 삭제하거나 해결로 부르지 않으며 원인 확인과 필요한 회귀/수정 뒤 새 전체 검증을 수행한다.
+
+진행 중인 재현/수정과09:00 예약 검사가 겹치지 않도록 같은 heartbeat prompt에 중복 실행 금지/진행 작업 이어서 완료/이번 예약 별도 미실행 명시만 추가했다. id/name/ACTIVE/일일09:00/현재 thread는 보존·재검증했다. 예약 PASS나 첫 일일 실행을 주장하지 않는다.
+
+
+## 운영 두 번째 재현과 수정 적용 전 상태
+
+08:56 KST 기준. 같은 배포 `12d34b5f739eb230beaf88f6a6ca2b24c79a8e50`의 진단2도115초4개→1개 반납/3개 잔여로 exit1이었다. 원본 첫 실패와 진단2의 `diagnostic-final-state.json`/PNG를 모두 보존한다. 진단 스크립트39B8의 가드·입력·115초·실제 입구20px 기준은 원 checker와 같고, 연속2,301개 관측을 실패 뒤에도 저장했다. 운영 다크모드·4개 전체 반납 뒤 학습 양성 단계는 여전히 미도달이다.
+
+실제 `toy-4`는4.304~7.404초63개 운반 관측 뒤7.454초 사라졌고, 마지막 실제 입구 오차는0.000546px였다. 남은3개는 y425.672의 실제 집 바닥에서 x258.938/302.938/346.938,44px 간격으로 끝까지 가시·정착·비운반 상태였다.11.754초 `routine-outing`이 첫 반납 뒤 소파 이동의 꼬리를 대체했고16.004초 집 밖 카드에 도착했다. 이후 T01은10회 모두 준비 몸단장 beat0만 표시하고 실제 장난감 beat1/추가 집기는0회였다. 전 구간 음식·식사·세척·수면 관측0, 기존 coarse meter의 허기.60→.72/기력.76→.42로 긴급 허기.78/탈진.18 또는 장난감 eligibility.25 미만의 상황은 아니었다. 학습 ON 점수가 유효 cleanup 우선순위를 직접 뒤집는 경로는 확인되지 않았다.
+
+소스에서는 authored 반납 뒤 planner의 연속 정리 예약을 취소하고 다음 장면보다 공통 outing을 먼저 판단하는 경계, 직접 높이 차이가 ordinary140px 상승 한도를 넘는 경우에도 필수 반납 장면의 준비 포즈를 먼저 허용하는 경계를 확인했다. 실제 출발 카드와 집 바닥의 직접 높이 차이는230.827px였다. 전체 운영 발판 그래프와 내부 route 결과는 수집하지 않았으므로 모든 우회 경로의 불가능이나 각 내부 분기 실행을 raw만으로 확정하지 않는다. 마지막 PNG는 밝은 화면이며 운영 다크 검증을 대신하지 않는다.
+
+고정 제안 r4(`production-recovery-r4/approved.patch`, SHA256 `A6169BBC7094F7D85C84D18F3851B9CC55A21F5463FC8D8FE1D953764ECD99E6`)는 유효한 남은 정리가 있으면 leisure outing만 보류하고, 명시된 실제 반납 경로에 기존 집 진입 spring을 재사용하며, 필수 반납 불가능 시 준비 포즈를 사전 배제한다. ordinary 경로를 먼저 쓰고 실제 home-floor/점프ON/몸 안전·물건 ID·ACK를 유지한다. 운반 공연과 직접 inspect/nudge도 같은 제한된 진입 권한을 전달한다. geometry-only admission과 돌봄 우선 조건을 분리했고, 식사·세척·필요 수면·수동 조작을 억제하지 않는다. 두 비작성 읽기 검토에서 새 확정P1/P2 0, 제안 사본289/289 단위·5파일lint·좁은 타입 검사는 작성자 PASS다. 이는 운영 native 성공이 아니다. 제품4개와 기존 goal 단위1개, 총5개 원본에는 아직 적용하지 않았고 원래 해시를 유지한다.
+
+새 실제 검사2개는1440×1050의 실제 패널 접기/432px 부유 집, 초기 care.60/.76·수면/학습ON, 실제4개 꺼내기와 같은ID 운반·입구20px·후속 부재/115초를 검사한다. 외부 발판 경우에는 실제 P 배치와 설정 종료 후 첫 표시 위치가 집 바닥보다160~330px 아래인 같은 공개 카드인지, 실제 decoded 이동·지원면 연결로 집 바닥에 도달한 뒤 집는지 확인한다. native v4와 factory97 등록7개는 적용됐고 factory QA161단위·소유lint/구문은 PASS다. 기존95개·27개 선택·9개90초 기준을 보존하며 정확한 새2개 결과를 별도로 요구한다. 새2개 baseline은 root session34744에서 실행 중이며 아직 결과가 없다. 고정 runner SHA256 `DD5C8732BF62AA84816AA85F395E38EBA45142D2106F5ADFED1DAC9B9523ED72`는 이전11차 빌드92N과 제품 원래 바이트를 유지하고 native v4 한 파일만 검사 사본에서 교체한다.97개 전체 native는 아직 미실행이며 실제 발판 준비의 양성도 미검증이다.
+
+다음 순서: 이전 제품 빌드의 새2개 baseline 보존→r4 원본 적용→전체 단위/type/lint/harness/build→새97 actual/27 selection/9 daily90초→독립 증거 검토→정확 범위 커밋/푸시→같은 새 배포의 실제4개 정리·학습 양성·다크 화면 확인이다. local11의95/27/9와 하네스343은 그 당시 소스의 완료 증거로 유지하며 새 적용본의 PASS로 재사용하지 않는다. HTML은 현재 운영 실패 명시 상태를 유지한다.
+
+09:00 KST heartbeat의 id/name/ACTIVE/현재 대화는 유지한다.08:56 KST 확인 시 첫 예약 시각은 아직 미래이고 실제 예약 실행은 미검증이다.09시에도 이 재현·수정이 진행 중이면 별도 공장·브라우저·배포를 중복 시작하지 않고 현재 작업을 이어간다. 이 경우 해당 예약의 독립 검사는 미실행으로 명시하며 기존 직접 실행을 예약 실행 PASS로 바꾸지 않는다.
+
+## 부유 집 baseline과 설정 재시작 위치 손실
+
+새2개 baseline `20261020085755-44704-acdfaa60`은 exit1로 보존했다. 집 안 시작은771개 프레임에서 같은4개를 실제 운반하고 각각 입구 오차0.000546px 뒤 사라져 PASS했다. 반면 외부 시작은 설정 종료 직후 위치 검증에서 FAIL했다. 최초에는 검사 배치 문제로 의심했으나 독립 trace3개를 대조한 결과 실제 제품의 설정 재시작 결함이었다. P 배치 후 `card-105-top`의 x320.383/y586.757에 있던 배우가, 첫 다른 성격 선택과 다음 깔끔이 선택 사이 `date-75`의 x234.422/y564.183으로 바뀌었다. roamON과 모달 닫기 이전이므로 자율 이동으로 해석하지 않는다. 마지막4개 관측은 idle이었다. 기존 native v4 검사와 기대값은 그대로 유지한다.
+
+소스에서도 effect cleanup은 집 identity만 남기고 비집 발판을 저장하지 않으며, 설정 재시작 초기화는 빈 support에서 normal platforms의 nearest 발판을 선택함을 확인했다. 원래 card-top은 manual landings에 있으므로 이 경계에서 같은 실제 카드 위치가 보존되지 않았다. 같은 page/month와 같은 연결된 실제 DOM 발판·안전 범위가 증명된 경우만 지지면을 보존하는 r5를 별도 준비한다. r4는 불변으로 보존하고 원본 제품은 아직 변경하지 않았다. 월·표면 전환, 삭제·숨김·공중·운반 같은 상황은 기존 복구와 소유권 경계를 유지해야 한다.
+
+baseline의 static 증거도 별도 FAIL이었다. 일반 Playwright trace는 JS29/30개 응답이200이어도 본문을 의도적으로 생략했고, CSS28개씩의 실제 본문만 남겼다. 따라서 복사한 BUILD_ID92N·컴파일 바이트 보존과 실제 수신 JS 해시를 혼동하지 않는다. 원본·기존11차 전체 파일·소유 프로세스 정리는 PASS였다. 독립 재계산과 정확3개 snapshot은 `.scratch-pw/companion-142/baseline-v1-position-loss-independent-read.json`에 보존했다.
+
+동일 native v4·이전 제품에 공개 HAR 본문 기록만 추가한 ignored v3 runner(SHA256 `83F312A976C38245A57082F313DC2E0BCF5FEBD21A35DAE2BAA48B5692A8B96B`)를 session19151에서 실행 중이다. 실제 trace의 URL/query·method·status마다 HAR 본문 SHA 일치를 요구하고 JS/CSS 양성도 각각 필요하다.304·본문 누락·CSS만 존재·바이트 불일치의 부정 mock10개와 두 읽기 검토는 통과했으나 실제 HAR 기록 성공은 아직 미검증이다. 행동 실패를 증거 보완으로 승격하거나115초/20px·재시도0 기준을 변경하지 않는다.
+
+09시 예약 시각은 원작업 진행 중 경과했다. 별도 예약 trigger나 완료 결과는 관측하지 않았으므로 예약 PASS·유예 완료 모두 주장하지 않는다. 중복 검사는 시작하지 않고 현재 재현·수정·검증을 이어간다.
+
+
+## 이전 빌드 baseline 종료와 r5b 원본 적용
+
+r5b 원본 적용 후 첫 전체 검사까지의 기록이다. 아래 이전 빌드 결과와 제안 사본의 좁은 검증은 완료됐고, 적용본의 첫 전체 검사에서는 기존 회귀 계약 충돌1개가 남았다. 정정 후 full13의 전체332파일4,357개 단위·typecheck·lint는 PASS했고, 새 빌드와97개 actual native는 아직 대기 중이다. 앞 절의 “baseline 실행 중/r4·r5 미적용”은 당시 상태로 보존하며 현재 상태는 이 절로 갱신한다. 운영 `12d34b5f739eb230beaf88f6a6ca2b24c79a8e50`에서 두 번 관측한115초1/4 반납 실패는 해결 확인 전까지 유효하다.
+
+이전 제품11차 빌드 `92N_-57NiE4tLQBeXIGxI`의 HAR 보완 baseline v3 `20261020090553-48232-c66dfe2a`는 정확2개 중1 PASS/1 FAIL, exit1로 종료했다. 집 안 시작은776프레임에서 같은4개를 실제 운반하고 각각 실제 상자 입구 오차0.000546px 뒤 부재를 확인했다. 외부 시작은 첫4프레임부터 원래 공개 카드 대신 date 발판에 있어 위치 보존 단언에 실패했다. 이후 외부→집 재진입이나4개 반납까지 성공했다고 세지 않는다. 기존 native v4의 기대 카드·실제 발 위치·115초 상한·20px 접촉·retry0을 바꾸거나 수동 재배치로 실패를 숨기지 않았다.
+
+HAR는 두 케이스의 실제 정적 응답을 각각58/57 tuple, 케이스별 합산115 tuple에서 URL/query·method·status와 본문 SHA까지 대조했다. 각 JS30/29개와 CSS28/28개가 일치했고 누락·불일치0이었다. 이는115개 고유 파일이라는 뜻이 아니며,115초 행동 상한과도 별개다. 일반 trace에서 생략된 JS 본문이 소급 생성됐다는 뜻도 아니다. 복사한2,723개 컴파일 파일의 바이트·BUILD_ID가 이전 빌드와 같고, 이전11차 전체 원본·기존95개 증거·소유 프로세스 정리가 보존됐음을 확인했다. 이 static 증거 PASS는 native1/2 FAIL이나 운영 정리 실패를 상향하지 않는다. 독립 최종 재계산은 `.scratch-pw/companion-142/floating-tidy-baseline-v3-independent-proof-final.json`에 보존했다. Windows260자 경로 제한 때문에 첫 읽기에서 잘못 누락으로 본4파일은 확장 경로로 실제 바이트와 SHA를 확인했고, 처음 관측 기록도 삭제하지 않았다.
+
+검토한 r5b canonical6개를 원본에 적용했다. 제품은 `toys.ts`, `personality-director.ts`, `personality-jobs.ts`, `support-landing.ts`, `viewer-companion.tsx`의5개이며, 회귀는 기존 `companion-goal-continuity-142.test.ts` 한 파일에 합쳤다. 새 repo 경로·의존성·설정·서버/DTO/역할·KST·DB 변경은 없다. r4와 r5a 제안/manifest는 바이트 그대로 보존한다. r5b 고정 manifest는 SHA256 `548664F22A11019F162C0BD1021D0512AC3DFC85BB08498F7F9017A698B6D391`, 누적 패치는 `A8C6B08489E3AB772DAC86ADFEB9FAD2E3E903E46E5E691B0AA14DA5B7A8298F`이다.
+
+수정 범위는 다음 네 가지다.
+
+- 실제 남은 반납 대상이 있으면 leisure outing만 보류한다. 기본 식사·세척·필요 수면, 긴급 허기.78/탈진.18, 수동 조작·실제 운반/작업 소유권을 없애거나 정리만 무기한 강요하지 않는다.
+- 필수 같은-ID 반납에 필요한 경우만 기존 집 진입 spring을 실제 main home-floor에 재사용한다. normal bounded BFS가 먼저이며, 점프OFF·몸 전용/컨트롤/가짜 집 바닥에는 허용하지 않는다. 실제 `jumpHeight`와 동일 실물 ID를 접근·inspect/nudge·운반·반납까지 전달하고 기존 경로·실패·유한 예산을 유지한다. 이 모델 증거로 수집하지 않은 운영 전체 그래프의 모든 우회 경로를 단정하지 않는다.
+- 필수 반납 장면은 준비 포즈 전에 실제 같은-ID 접근/반납 가능성을 확인한다. 물건 생성 전제는 필수 spawn과 현재 실제 생성 가능 조건이 있을 때만 인정하며, optional spawn·상한4·박스 없음/접근 불가를 가짜 미래 물건으로 대체하지 않는다. geometry admission과 실제 돌봄 우선 조건을 구분하고, 불가능한 준비 포즈를 완료나 경험 보상으로 세지 않는다.
+- 성격/이동 설정으로 effect가 재시작될 때 유효한 비집 발판의 위치를 보존한다. 이전 실제 grounded 지지면과 같은 page/month·연결된 동일 DOM·같은 측정 frame/안전 span·현재 point·viewport/size가 새 normal/landing geometry에서 모두 확인된 경우에 support identity만 유지한다. x/y를 옮기거나 이전 action·장면 단계·운반·수면·진행 시계·학습 보상을 복구하지 않는다. 모달 전환의 배우 `hidden`은 실제 발판 소실로 혼동하지 않되, 실제 문서 hidden/OFF/blocked/reduced·분리/삭제된 source·bodyOnly·공중·수동 점유·운반/작업·실제 수면은 거부하고 기존 복구를 따른다. `presence.dreaming`의 CSS 자동수면도 명시 거부한다. 기존 surface `positionMemory`는 교체하거나 덮어쓰지 않는다.
+
+G18의 viewer/studio/preview 공통 runtime·geometry 한 구현을 유지한다. 새 transient snapshot은 controller 안의 한 지지면/DOM 참조이며 저장소·공개 DTO·로그에 넣지 않는다. 신규 RAF/observer/timer·프레임당 DOM/저장소/경로 검색·임의 좌표 이동·가짜 실물/ACK·새 인간 활동 이벤트는 없다. 기존 사용자 설정 제어의 G22 기록과 자동 행동 제외를 유지한다. 장면144개, 성격9개의 주5/보조11 보고서 계약은 그대로이며, 모든 성격이 같은 일상 안에서 다르게 행동한다는 범위를 정리 우선순위로 대체하지 않았다.
+
+기존 goal 회귀10개에 r4의35개와 r5b의41개, 총76개를 추가해86개로 만들었다. 실제 같은-ID 모델의 floating 입장/필수 inspect→반납·유효 정상 경로 우선·돌봄 우선·필수 생성 조건, 수동 card-top의 연속2회 설정 재시작 위치 보존, 월/DOM/소스/frame/span/viewport/size/point 변화·분실·OFF/실수면/공중/운반 등의 음성을 포함한다. 기존144 protocol 원문 양성 fixture/assertion은 바꾸지 않았다. 제안 사본의 좁은5파일330/330 단위(1worker), canonical6파일 ESLint exit0, import 경로만 바꾼 검사용 사본의 좁은 타입 검사 exit0을 확인했다. 첫 타입 진단은 source 참조의 타입 좁히기와 검사용 dynamic import 경로를 고쳐 보존했으며 처음부터 PASS였다고 기록하지 않는다. Face/root 비작성 검토에서 r5b 실제 해시·r4 보존·모달/자동수면·geometry callback 순서의 잔여 확정P1/P2는0이었다. 읽기 검토와 순수 ACK는 실제 렌더링/원본 전체 검사/출시 성공을 대신하지 않는다.
+
+적용본의 첫 전체 검사 full12는332파일·4,356 PASS/1 FAIL/대기0, 전체 typecheck/lint PASS였다. 실패는 기존 `companion-toy-round-trip-budget-140.test.ts`의 “keeps the12-hop graph limit and never admits an unproved round trip”이다.15개 발판의 실제 접근 경로가 이미12-hop 상한으로 null인데, 이전 계약의 “준비 몸단장은 허용” 주석과 `host.apply(host.offer()!)`가 준비 제안 존재를 강제했다. 새 필수 반납 사전 gate가 의도대로 제안하지 않으므로 undefined를 apply한 검사 계약 충돌이며, 이 전체 실패 기록은 보존한다. 준비 포즈를 다시 허용해 제품을 되돌리는 대신 같은 입력에서6회 제안 없음·actions/effects/completed 모두 비어 있음으로 강화하는 정정을 독립 읽기 검토했다. 실제8발판의 같은-ID pick→stash·18회 초과 이동·30~60초 유한 예산 양성,12-hop 상한·예산 재충전 거부·7.5초 무진행·OFF/분실/실물 보존 음성은 그대로 유지해야 한다. 이후 정정본의 fresh full13을 실행해332파일4,357 PASS/실패0/대기0 및 전체 typecheck/lint exit0을 확인했다. 원래 full12의 실패는 보존했다.
+
+원본6개 변경 후 새 production build·97 unique actual native/27 actual selection/9 daily90초·설정 뒤 같은 공개 카드 위치 유지/실제432px 부유 집 진입·같은4개 반납 성공은 아직 미검증이다. 기존11차95/27/9 및 이전 baseline의 집 안 PASS를 이 적용본의 PASS로 재사용하지 않는다. 다음 순서는 문서 하네스→새 동결 빌드97개→독립 raw/PNG/실제 수신 코드 증거 검토→승인 범위 반영→동일 새 배포의 무seed 실제4개 정리·학습 양성·다크 확인이다. 학습/다크 운영 단계 미도달 상태도 실제 새 증거 전까지 유지한다.
+
+동결 전 문서 하네스343 PASS, 현재 brief7,765/8,192 UTF-8 bytes를 확인했다. 제품/검사/문서/인덱스를 이 상태로 동결하고 새 격리97개 실행을 시작한다. 실제 결과는 아직 없다.
+
+### 열두 번째 실제97개 결과와 좁은 후속 진단
+
+격리 run `20261020091418-42428-5c30b584`, BUILD_ID `7bfqzAtZyA9Oh0gbuudVi`: 실제97개 중94 PASS/3 FAIL, 선택 직후27/27 PASS, 집 안 네 개 실반납 PASS이나 밖 공개 카드에서 시작한 경우 첫 가시 프레임이 `card-92-top`에서 `date-64`로 바뀌어 FAIL이다. r5b의 재시작 복구는 실제 밖 조건을 해결하지 못했다. 원 카드 BCR·poster scale은 설정 전후 동일하지만 당시 내부 capture/resolve 거절 조건은 raw에 없어 미확정이다. 이 실패와 기존 배포의1/4 실패를 보존하며, 테스트 시작 위치나 기대값을 바꿔 통과시키지 않는다.
+
+나머지 두 실패는 실제 CSS500ms scale 입장 중 버튼 높이42.801px를44px와 비교한 viewer 첫 열기 검사와, 집/launcher가 모두 아직 없는 goto 완료+0.845초에 launcher만 기다린 curious 설정이다. curious는 관찰0프레임으로 실제90초 성격 행동 실패/성공을 주장할 수 없다. 다른8개 일일 사례는 각각90초와1,060~1,088 가시 decoded 프레임을 관찰했다. native 종료 exit1, 소유 프로세스 정리 PASS, 원본 hash 변화0·git-state 변화false를 확인한 뒤 동결을 해제했다.
+
+독립 검토 후 검사 네 파일만 정정했다. 첫 UI는 기존 finite 입장 애니메이션 완료를 기다린 후 같은44px/노출 조건을 검사한다. 공통 집 helper는 기존5초 기대 안에서 실제 집 또는 실제 launcher 노출을 기다린 뒤 기존 native 분기/count1을 유지한다. 공통 이동 관찰기는 등록되지 않은 첫 프레임의 거리/시간이 정지한 등록 포즈에 이동 실적을 빌려주던 오류를 고쳐 등록된 첫/마지막 움직임 자체의8px/100ms를 요구한다. 기존41단위와 새로운3음성, 별도 원본 대비3사례 총47 PASS 사본 증거와 실제 적용을 구분하며, 이 네 파일의 전체 type/lint/build/native는 다시 실행해야 한다.
+
+정확한 제품 거절 조건은 별도 r6b 복제본에 기존 capture/resolve context 두 곳만 총24회 이하 기록해 확인한다. 원함수 호출/반환과 anchor·RAF·RNG·BCR·timer 호출 수는 그대로이며, localhost의 공개 fixture 경로에 한정하고 일정 원문/실물ID/계정/월 원문/저장/외부 통신은 넣지 않는다. 원본과 run12의 compiled/evidence는 바꾸지 않는다. 이 진단은 성공 증거가 아니며, 원인 확인 후 최소 수정·독립 검토·전체 검사·새97개를 다시 요구한다. 매일09KST heartbeat는 ACTIVE이지만 이번 슬롯의 별도 실행/완료는 관찰되지 않았고, 같은 작업 중복 실행은 만들지 않았다.
+
+격리 진단 `restart-diagnostic-r6b-runs/20261020093923-2900-5d672743`는 새 BUILD_ID `rUP4dKk4G7FAeSYPLIZR1`, 원 outside-v4 한 사례/1worker/retry0로 같은 실패를 재현했다. 콘솔7건 중 첫 카드 capture는 성공했고, 바로 다음 resolve에서 `pointInSpan`·`samePlatform`만 거절됐다. point/root/source/month/frame/viewport/size는 같았지만, 모달이 열린 동안 같은 카드의 안전 span이191.196732px에서90.255225px로100.941506px 줄었다. 실제 점 x320.383148이 이 임시 span을 벗어나 일회성 snapshot을 버리고 날짜 발판으로 대체한 원인이다. 실제 HAR JS/CSS와 trace 요청·새 compiled bytes 일치, Node 거절0, 원12 전체/복제 source 보존·소유 프로세스 정리 PASS였다. 결과 `067DC200…4FE1`, 콘솔 `83CA193E…D8EC` SHA256이며 진단은 제품 정상/새97 PASS로 승격하지 않는다. ordinary modal 동안 유효한 미완료 복구만 보류하고 닫힌 뒤 기존 strict 검증을 실행하는 최소 후속 수정이 필요하다.
+
+### r6-r3 적용과 새 전체 검증
+
+독립 검토한 r6-r3 세 파일을 실제 적용했다. main SHA256 `63F16B0CBF8D93B1646B72059EF7E79D80CBA593FB74F62FF61AA08C7A3DA63B`, support helper `BD89FD7F89E6966046775027F2C02FED09DB371F601BD13795AC8BB00741701C`, goal 회귀 `7C356DC825ADA1BCC70349F5DFD1D6835D9672BDCD3348DCA086A8B2AAB09080`이다. r1의 partial span 초안과 r2의 missing 보류 초안은 그대로 보존했다. r3는 current candidate를 조회하지 않은 소유/행동 상태의 undefined가 실제 발판 미검출로 오인되지 않도록 호출에도 `!support && !action`을 명시했다.
+
+일반 모달·실제 무소유/정지·같은 root/source/month/point/viewport/size일 때만 이전 checkpoint를 숨긴 미채택 상태로 보관한다. 현재 frame/span이 제공되면 같은 소스/frame과 양수 부분구간이어야 하며, 발판과 anchor가 모두 미발행이면 다음 실제 검증까지 보류만 한다. 한쪽만 없거나 반대 source/frame·확대된 span이면 거절한다. OFF·문서 숨김·수면·공중·운반·인간/가정 소유·실제 source 삭제/context 변경은 즉시 거절한다. 반복 설정 cleanup도 같은 조건을 다시 확인한다. 창이 닫히면 기존 strict 함수 원문 그대로 새 실제 지지면을 검증한 뒤에만 채택한다. 보류는 보행/표시/보상/학습/지원면 완료가 아니고, nearest 날짜 선택보다 앞에서 반환한다.
+
+기존86회귀를 보존하고 부분 가림41·전체 미발행20, 총147/147 사본 단위를1worker로 확인했다. 사본 scoped typecheck exit0·canonical3파일 lint 오류0. 첫 lint의 테스트용 숫자 정밀도 표기 진단은 같은 runtime Number로 고쳐 기록을 남겼다. 비작성 Face/root 검토 새 P1/P2 0, 원본3 baseline과 canonical/applied byte hash 일치 및 보호 사용자 art SHA256 동일. 실제 진단은 partial 실패 원인만 입증했으며 완전 가림은 순수 lifecycle 검사 범위다. 추가 native98 사례로 과장하지 않고 기존97의 밖 partial 실동선과 단위 증거를 구분한다. 새 RAF/타이머/DOM 측정/경로 검색·서버/DTO/권한/KST/저장/G22 변경은 없다. 실제 적용본 full14 전체 단위(max4)/type/lint를 새로 시작했으며, 새97 actual native/27 entry/9 daily90초와 운영 무seed4반납·학습·다크는 아직 미검증이다.
+
+실제 적용본 fresh full14는332파일4,421/4,421 단위 PASS(실패/대기/todo0, maxWorkers4), 전체 typecheck/lint exit0을 확인했다. 새147 goal 회귀와 공통 이동 관찰기의44 단위도 이 전체 결과에 포함한다. 비작성 적용본 검토에서 canonical3/기존 검사4/나머지 r5b3 exact, 후보22개 중 보호 art/env/scratch 포함0 및 보호 art 원본 hash 동일을 확인했다. 앞선 full12/13·run12·r6b 진단 실패는 보존한다. 이 상태의 제품·검사·문서·index를 동결하고 후속 하네스 및 새 격리 프로덕션 빌드97개를 실행한다. 기존 실제 실패를 수정본의 실제 성공으로 대신하지 않는다.
+
+열세 번째 격리 run `20261020095140-43844-80cb86c3`, BUILD_ID `6h4P7h8Wcp4mG0AMPamx3`는 exit0/completed-scoped-checks이다. 모델23파일1,039 PASS, production build/type/lint, actual97/97 unique native,27/27 selection,9/9 actual90초와 floating2/2 PASS, skip/retry0, 소유 프로세스 정리·원본 hash변경0/git-statefalse를 확인했다. 아홉 일일 표본은 총9,607개 가시 decoded frame이다. 독립 전기간 raw/endPNG 검토에서 새 확정P1/P2는 없으나 표본 밖의 장기 자연스러움은 입증하지 않는다.
+
+집 안726프레임/밖780프레임에서 같은 네 toy ID의 실제 unheld 운반은 각각27/36/48/61,28/39/48/63프레임이고, 실제 상자 입구 거리0.000546px 뒤 모두 부재/재등장0으로36.474/39.462초에 반납했다. 밖 시작의 설정 전후 card-96-top/x/y 변화0, 실제 집 바닥 높이차161.085px. 등록 점프 두 구간(26샘플·25pose·1,266.6ms·88.876px와18·17·866.6ms·138.511px), 각 실제 지원면 두 착지와 연결을 확인하고5.197초 집 도착 뒤6.947초 첫 집기였다. 초기 미등록 cold pose는 이동 실적에서 제외했다. 종료 뒤 별도 strict-v2 raw audit SHA256 `3D63E926…749063`도 두 scoped contract proved였으며, 이전 실패/운영 무seed230px 조건의 성공으로 대체하지 않는다.
+
+정성 검토에서 동글이 후기23.6초는 정지 전체가 아니라 관찰8.08초·실제75px 보행·관찰6.85초·실제100px 보행·관찰6.08초였다. 집돌이는22.7초에H05→H12→H05의 실제 소파/바닥 이동3회가 있었고 뒤H01 새 작업으로 넘어갔다. 그래서 영구부유/10초 무진행/ordinary 두점 루프라고 판정하지 않았다. 다만 동글이의330/480ms care/ordinary 관찰 교대와 정합하는 코드 누락을 발견했다. planner의 새 rest-home/homebody-home admission은 다른 익숙한 휴식·탐색 경로와 달리 기존8초 failed-place retryAfter를 읽지 않는다. raw에는 연속 brain/attention/currentintention이 없어 이 표본의 내부 원인 확정은 아니지만, 명시 실패 기억을 무시하는 admission 일관성 결함은 순수 회귀로 닫아야 한다. 집돌이의12초 recentPurpose도 같은 platform에서만 적용돼 다른 family/발판 왕복으로 회피한다. 효과 없는 집안 free 생활의 다양성을 보완하되 실제 새 물건·정리/식사/긴급 돌봄·제어 변화·선택 직후 행동은 방해하지 않는 좁은 r7 제안을 준비한다. formal97 PASS로 이를 덮거나 새 코드의 실제 성공을 미리 주장하지 않는다.
+
+### r7 생활 다양성 보완 적용
+
+통합 manifest SHA256 `358F0F451AF43CACF3624105CC2B58135A44C71527DC8FE52B7B67B0F03A1100`의 canonical3파일을 원본 baseline/SHA와 보호 사용자 art hash를 검증한 뒤 적용했다. planner `9DAB4C86…9D77C6B`, director `D5A4083E…6EAA81`, 기존 goal 회귀 `4B5CE890…8F736`이다. 새 repo 파일·설정·의존성·서버/권한/DTO/KST/DB 변경은 없다.
+
+새 외부 소파 진입 두 곳만 기존 실패 기억의 active-time retryAfter를 존중한다. 이미 소유한 경로·실제 소파 위의 배우는 기존대로 유지한다. 실제 피곤하고 sleep ON인 무소유 배우는 유효한 현재 floor에서 기존 유한 sleep/완료 ACK를 사용해 쉰다. 실패 기억을 재발급해 TTL을 연장하지 않는다. 몸 전용·수동 카드·좌표 불일치·foodGoal/미완료 episode·이동/설정 OFF 등은 새 휴식 양성으로 인정하지 않는다.
+
+집돌이의 자유 생활 중 소파/바닥/창가만 도는 comfort/expression class는 완전한 비축약 성공 뒤 실제 물건·돌봄·제어 변화가 없을 때만12초 간격을 둔다. 현재 catalog의 H05/H12가 해당한다. 다른 발판/family여도 같은 제한이 적용되지만 실제 다른 상태의 접근 가능한 제어는 면제한다. 선택 즉시 장면·취소/축약·실물 정리/식사·필수 수면/세척·외부 생활·기존 local family 제한은 유지한다. 새 저장/타이머/RAF/인간활동 이벤트는 없고, 제어 면제의 기존 bounded route 검색은 선택 시 실제 다른 제어에만 실행한다. 자동 행동은 G22 인간 활동으로 기록하지 않는다.
+
+기존147개에 needs28·quiet23을 추가한 사본198/198 PASS(1worker), import만 대체한 좁은 typecheck와 canonical3파일 lint exit0을 확인했다. 이전 원본에서 새 needs28 중12 FAIL/16 PASS, quiet의 실제 H05↔H12 두 회귀 FAIL 기록은 보존했다. Face/root 비작성 exact-read 새 P1/P2 0, 저자 검증과 독립 읽기를 구분한다. 전체 full15/type/lint와 새97/27/9·운영 무seed4개/학습/다크는 아직 미검증이며 앞선13차 PASS를 새 r7의 실제 성공으로 대체하지 않는다.
+
+적용 후 fresh full15는332파일4,472/4,472 단위 PASS(실패/대기/todo0, maxWorkers4), 전체 typecheck/lint exit0이다. Face의 적용본3 actualSHA·후보23 경계·보호 art E980… 원본 보존 읽기 검토도 새 P1/P2 0이었다. 문서 하네스343 PASS 뒤 제품/검사/문서/index를 동결하고 새14차 격리 build97/27/9를 실행한다. 아직 실제 새 native/출시 성공을 의미하지 않는다.
+
+첫 npm 전달은 stdout의4,472 PASS만 남고 요청한 JSON을 쓰지 않아, 직접 Vitest CLI의 명시 maxWorkers4로 다시 실행했다. 새 full-unit-final-15.json의 실제332파일4,472 PASS/실패·대기·todo0을 확인했으며 출력만으로 기계 receipt를 추정하지 않았다. 일일 heartbeat의 ‘가능한 경우 독립 검토’ 문구는 G21과 불일치해 같은 automation ID/ACTIVE/09KST/대상 대화를 유지하며 ‘반영 전 작성자 외 독립 검토 필수, 불가하면 수정·증거 보존 후 commit/push/deploy 보류·보고’로 정정했다. CLI는 검사·후보 검출만 하고 heartbeat 에이전트가 재현·최대3회 수정·독립 검토·전체 검사·허용 범위 출시·실제 결과 보고를 연결한다. 별도09시 실행의 완료는 여전히 미관측이다.
+
+### 새14차 실제 검증 종료
+
+`20261020102511-31772-f23d67b2`, BUILD_ID `qa6vsHnqKrLdyvob8VKX7`의 root 세션64482가 exit0/completed-scoped-checks로 종료했다.23파일1,090모델·metadata·production build/type/lint, 고유97/97 actual native,27/27 selection,9/9 실제90초, 정확2/2 floating 정리 모두 PASS이며 skip/retry0이다. 소유 프로세스 정리 PASS, 원본 hash변경0/git-statefalse 확인 후 동결을 해제했다. 전체332파일4,472/4,472 root 단위 JSON SHA256 `C3617CB76DD3FDBF3CE49672C7ADE4C933E9137E989E14F3D3BD76D6113B09BF`와 이 격리 모델 결과는 별도다.
+
+9개 일일 표본은 합계9,602가시 decoded프레임/최소90.180초다. 동글이는68.686~77.752초 실제 바닥 수면 뒤 놀이로 복귀했고, 깔끔이는 실물 정리·세척 뒤 다양한 달력 위치로 이동했다. 집돌이는 완전한H05 뒤 새toy3 운반/반납을 했지만 일부 축약H12/H05·짧은H01재시도는 남았다. 애교 교감 의식, 잠꾸러기의 졸린 표정 반복, 먹보의 후기 보행 비중도 질적 한계로 보존하며 완벽한 자연스러움이나 모든 반복 제거를 주장하지 않는다. source 수정 작성자와 raw 관찰자의 역할을 구분하고 Face/root의 독립 source 검토와 별개로 기록했다. 실제 선택27개 첫 decoded 대표행동299.9~507.7ms,20초 내 의미 진행 최대간격7,033.1ms, 실제 이동138(보행64/점프74), 관찰연장0을 raw와 재대조했다.
+
+정리 두 사례는 집 안728프레임/36.763초, 밖777프레임/39.291초에서 같은4개 모두 실제 운반·실제 입구 접촉·최종 부재/재등장0이다. 각 운반은26/37/50/62 및28/36/49/61프레임, 마지막 입구 오차 전부0.000545915px였다. 밖은 card-105-top 설정전후x/y변화0, 집 높이차161.085083px, 등록점프 두 구간26샘플25pose/1,299.9ms/88.876px와18/17/883.2ms/138.511px 및 실측2착지·연결을 확인했다. 집 도착5.209초 뒤 첫 집기6.993초다. 종료 뒤 별도 strict-v2 audit SHA256 `DE37F1F2ED7379739A04E9E54915264A002E70A217D1F66046FA683E130024FE`는 두 scoped contract proved, missing0이다. 초기 미등록 프레임은 이동 증거에서 제외했다.
+
+유한 모델 전체와 actual pairwise152/431(미완료),9개의90초 표본은 다르다.144장면 모두의 native 완주·약21억 설정 전교차·운영 무seed230px 조건·실제 로그인/RLS·OBS·스크린리더·장기 자연성은 여기서 입증하지 않았다. 이전95/97/운영1/4/카드 실패와 진단은 그대로 보존했다. 다음은 검증한23개 후보만 반영하고 동일 새 fullSHA의 운영4실반납·양성 로컬학습·다크를 검증하는 단계다.

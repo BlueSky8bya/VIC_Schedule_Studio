@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { BOOLEAN_KEYS, PERSONALITIES, ROUTINES, NATIVE_ENTRY_GREP, NATIVE_ENTRY_TITLES, PLANNED_NATIVE_CASE_COUNT, NATIVE_GREP, NATIVE_SUITES, coverageFor, dailyCases, pairwiseRows, universe } from "../../scripts/companion-qa/catalog.mjs";
+import { BOOLEAN_KEYS, PERSONALITIES, ROUTINES, NATIVE_ENTRY_GREP, NATIVE_ENTRY_TITLES, NATIVE_FLOATING_TIDY_TITLES, PLANNED_NATIVE_CASE_COUNT, NATIVE_GREP, NATIVE_SUITES, coverageFor, dailyCases, pairwiseRows, universe } from "../../scripts/companion-qa/catalog.mjs";
 import { childEnvironment, dailyEvidenceGate, nativeEntryEvidence, loopbackOrigin, ownedTerminationCommand, parseOptions, REQUIRED_AGENT_REGRESSIONS, registeredAgentRegressions, safeRelative, snapshotEligible } from "../../scripts/companion-qa/runner.mjs";
 import { inspectTrace, traceSufficiency, ordinaryRouteOscillations, ordinaryWalkPacing, traceContextComplete, type QaFrame } from "../../scripts/companion-qa/trace-checks.mjs";
 import { admitNodeRequest } from "../../scripts/companion-qa/network-guard.mjs";
@@ -157,15 +157,15 @@ describe("142 exact declared Node font admission", () => {
 });
 describe("142 actual native entry reporter gate", () => {
   const passedSpec = (title: string) => ({ title, tests: [{ expectedStatus: "passed", status: "expected", results: [{ status: "passed", retry: 0 }] }] });
-  const nativeReport = () => ({ errors: [], suites: [{ specs: Array.from({ length: PLANNED_NATIVE_CASE_COUNT - NATIVE_ENTRY_TITLES.length }, (_, index) => passedSpec(`legacy-native-${index}`)), suites: [{ specs: NATIVE_ENTRY_TITLES.map(passedSpec) }] }] });
-  it("requires actual95 unique single-pass results including all27 exact selection entries", () => {
+  const nativeReport = () => ({ errors: [], suites: [{ specs: Array.from({ length: PLANNED_NATIVE_CASE_COUNT - NATIVE_ENTRY_TITLES.length - NATIVE_FLOATING_TIDY_TITLES.length }, (_, index) => passedSpec(`legacy-native-${index}`)), suites: [{ specs: NATIVE_ENTRY_TITLES.map(passedSpec) }, { specs: NATIVE_FLOATING_TIDY_TITLES.map(passedSpec) }] }] });
+  it("requires actual97 unique single-pass results including all27 entries and both exact floating-house tidy cases", () => {
     const result = nativeEntryEvidence(nativeReport());
-    expect(result).toMatchObject({ status: "passed", gatePassed: true, requiredEntries: 27, registeredEntries: 27, passedEntries: 27, failedEntries: 0, skippedEntries: 0, notRunEntries: 0, selectedCaseCount: 95, selectedPassedCases: 95 });
+    expect(result).toMatchObject({ status: "passed", gatePassed: true, requiredEntries: 27, registeredEntries: 27, passedEntries: 27, failedEntries: 0, skippedEntries: 0, notRunEntries: 0, selectedCaseCount: 97, selectedPassedCases: 97, floatingTidy: { required: 2, registered: 2, passed: 2, failed: 0, skipped: 0, notRun: 0 } });
   });
   it("reports entirely missing entry cases as not-run rather than promoting the pure entry model", () => {
     expect(nativeEntryEvidence(undefined)).toMatchObject({ status: "not-run", gatePassed: false, passedEntries: 0, notRunEntries: 27 });
     const report = nativeReport(); report.suites[0].suites[0].specs = [];
-    expect(nativeEntryEvidence(report)).toMatchObject({ status: "not-run", gatePassed: false, registeredEntries: 0, notRunEntries: 27, selectedCaseCount: 68 });
+    expect(nativeEntryEvidence(report)).toMatchObject({ status: "not-run", gatePassed: false, registeredEntries: 0, notRunEntries: 27, selectedCaseCount: 70 });
   });
   it("rejects a missing, skipped or failed entry even if all remaining selected cases passed", () => {
     const missing = nativeReport(); missing.suites[0].suites[0].specs.pop();
@@ -174,6 +174,37 @@ describe("142 actual native entry reporter gate", () => {
     expect(nativeEntryEvidence(skipped)).toMatchObject({ gatePassed: false, skippedEntries: 1, passedEntries: 26 });
     const failed = nativeReport(); failed.suites[0].suites[0].specs[0].tests[0].results[0].status = "failed";
     expect(nativeEntryEvidence(failed)).toMatchObject({ gatePassed: false, failedEntries: 1, passedEntries: 26 });
+  });
+  it("registers exactly two new native titles without changing the nine-model/27-selection distinction", () => {
+    expect(NATIVE_FLOATING_TIDY_TITLES).toEqual([
+      "142 floating home tidy preserves all four returns with learned care on",
+      "142 floating home tidy returns from a real calendar perch to all four toys",
+    ]);
+    expect(new Set(NATIVE_FLOATING_TIDY_TITLES).size).toBe(2);
+    for (const title of NATIVE_FLOATING_TIDY_TITLES) expect(new RegExp(NATIVE_GREP).test(title)).toBe(true);
+    expect(universe()).toMatchObject({ modeledEntries: 9, plannedNativeEntryCases: 27, plannedNativeFloatingTidyCases: 2, plannedNativeCaseCount: 97 });
+  });
+  it("never promotes the previous95-case result when both floating-house regressions did not run", () => {
+    const old95 = nativeReport(); old95.suites[0].suites[1].specs = [];
+    expect(nativeEntryEvidence(old95)).toMatchObject({ gatePassed: false, passedEntries: 27, selectedCaseCount: 95, selectedPassedCases: 95, floatingTidy: { required: 2, registered: 0, passed: 0, notRun: 2 } });
+  });
+  it.each(NATIVE_FLOATING_TIDY_TITLES)("requires exact floating-house result%s even when unrelated passes fill97 slots", title => {
+    const report = nativeReport(), cases = report.suites[0].suites[1].specs;
+    const index = cases.findIndex(item => item.title === title); cases[index] = passedSpec("unrelated-padding-case");
+    expect(nativeEntryEvidence(report)).toMatchObject({ gatePassed: false, selectedCaseCount: 97, selectedUniqueTitles: 97, selectedPassedCases: 97, floatingTidy: { registered: 1, passed: 1, notRun: 1 } });
+  });
+  it("rejects a duplicate floating-house title without treating the absent peer as success", () => {
+    const report = nativeReport(), cases = report.suites[0].suites[1].specs; cases[1] = cases[0];
+    expect(nativeEntryEvidence(report)).toMatchObject({ gatePassed: false, selectedCaseCount: 97, selectedUniqueTitles: 96, floatingTidy: { passed: 0, failed: 1, notRun: 1 } });
+  });
+  it.each(["skip", "fail", "retry", "expected-failure", "never-ran"] as const)("rejects floating-house%s outcomes while all27 selection entries pass", defect => {
+    const report = nativeReport(), test = report.suites[0].suites[1].specs[0].tests[0];
+    if (defect === "skip") test.results[0].status = "skipped";
+    if (defect === "fail") test.results[0].status = "failed";
+    if (defect === "retry") test.results[0].retry = 1;
+    if (defect === "expected-failure") test.expectedStatus = "failed";
+    if (defect === "never-ran") test.results = [];
+    expect(nativeEntryEvidence(report)).toMatchObject({ gatePassed: false, passedEntries: 27, floatingTidy: { passed: 1 } });
   });
   it("rejects expected failures, retries, duplicate titles, zero execution and missing legacy coverage", () => {
     const wrongExpectation = nativeReport(); wrongExpectation.suites[0].suites[0].specs[0].tests[0].expectedStatus = "failed";

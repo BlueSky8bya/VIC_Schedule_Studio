@@ -128,3 +128,85 @@ export function companionWorldHiddenReason(context: {
     || point.x < size / 2 + 4 || point.x > viewport.width - size / 2 - 4 || point.y < size * (context.neutralVerticalRecovery ? .82 : 1) + 8 || point.y > viewport.height - 12) return "bounds";
   return null;
 }
+
+
+/** A same-controller restart may retain one already occupied physical ledge.
+ * This volatile identity never enters positionMemory, storage or public DTOs. */
+type RestartNode = Readonly<{ isConnected: boolean }>;
+type RestartFrame = Readonly<{ left: number; top: number; width?: number; height?: number; identity?: string }>;
+export type CompanionRestartSupportState = Readonly<{
+  enabled: boolean; visible: boolean; blocked: boolean; reduced: boolean;
+  held: boolean; airborne: boolean; carrying: boolean; owned: boolean; resting: boolean;
+}>;
+export type CompanionRestartSupport = Readonly<{
+  point: Readonly<{ x: number; y: number }>; monthKey: string;
+  root: RestartNode; source: RestartNode; frame: RestartFrame;
+  platform: Readonly<Platform>; viewport: Readonly<{ width: number; height: number }>; size: number;
+}>;
+type RestartSupportContext = Readonly<{
+  point: Readonly<{ x: number; y: number }>; monthKey: string; root: RestartNode;
+  anchor?: RestartFrame & { element?: RestartNode }; platform?: Readonly<Platform>;
+  viewport: Readonly<{ width: number; height: number }>; size: number;
+  state: CompanionRestartSupportState;
+}>;
+const restartSupportAllowed = (state: CompanionRestartSupportState) => state.enabled && state.visible && !state.blocked && !state.reduced
+  && !state.held && !state.airborne && !state.carrying && !state.owned && !state.resting;
+const validRestartFrame = (frame: RestartFrame | undefined): frame is RestartFrame & { width: number; height: number } => Boolean(frame
+  && [frame.left, frame.top, frame.width, frame.height].every(value => typeof value === "number" && Number.isFinite(value)) && frame.width! > 0 && frame.height! > 0);
+
+/** Capture only an actual grounded non-home support. Actor opacity/hidden is
+ * deliberately absent: closing the old controller hides it during a modal. */
+export function captureCompanionRestartSupport(context: RestartSupportContext): CompanionRestartSupport | undefined {
+  const { platform, point, anchor, state, viewport, size } = context;
+  const source = anchor?.element;
+  if (!restartSupportAllowed(state) || !context.monthKey || !context.root.isConnected || !source?.isConnected || !validRestartFrame(anchor)
+    || !platform?.id || /^companion-(?:home|panel-floor)/.test(platform.id) || platform.bodyOnly || platform.kind === "hide" || platform.kind === "control"
+    || ![point.x, point.y, platform.x, platform.y, platform.width, platform.x + platform.width, viewport.width, viewport.height, size].every(Number.isFinite)
+    || size <= 0 || viewport.width <= size || viewport.height <= size || platform.width <= 0
+    || point.y < size + 8 || point.y > viewport.height - 12 || point.x < platform.x || point.x > platform.x + platform.width || Math.abs(point.y - platform.y) > 2) return;
+  return { point: { ...point }, monthKey: context.monthKey, root: context.root, source,
+    frame: { left: anchor.left, top: anchor.top, width: anchor.width, height: anchor.height, identity: anchor.identity },
+    platform: { id: platform.id, x: platform.x, y: platform.y, width: platform.width, kind: platform.kind,
+      ...(platform.manualOnly ? { manualOnly: true } : {}), ...(platform.bodyOnly ? { bodyOnly: true } : {}) }, viewport: { ...viewport }, size };
+}
+
+/** Reuse the exact point only after the new measured normal/landing snapshot
+ * proves the same live DOM, month, frame and safe span. Any reflow/deletion,
+ * different surface or newly owned action falls back to existing recovery. */
+export function resolveCompanionRestartSupport(snapshot: CompanionRestartSupport | undefined, context: RestartSupportContext): Readonly<Platform> | undefined {
+  const current = captureCompanionRestartSupport(context);
+  if (!snapshot || !current || snapshot.root !== current.root || snapshot.source !== current.source || !snapshot.source.isConnected
+    || snapshot.monthKey !== current.monthKey || snapshot.size !== current.size || snapshot.viewport.width !== current.viewport.width || snapshot.viewport.height !== current.viewport.height
+    || snapshot.point.x !== current.point.x || snapshot.point.y !== current.point.y
+    || ["left", "top", "width", "height", "identity"].some(key => snapshot.frame[key as keyof RestartFrame] !== current.frame[key as keyof RestartFrame])
+    || ["id", "x", "y", "width", "kind", "manualOnly", "bodyOnly"].some(key => snapshot.platform[key as keyof Platform] !== current.platform[key as keyof Platform])) return;
+  return context.platform;
+}
+
+/** An ordinary modal can temporarily remove or clip this already occupied
+ * card's safe span. Keep only its original checkpoint, hidden and unadopted,
+ * while the same root/source and inactive state still own that point. Missing
+ * geometry proves no support: only a fresh strict resolve after close may
+ * adopt it. Any supplied geometry must match the same frame and safe subset. */
+export function deferCompanionRestartSupport(snapshot: CompanionRestartSupport | undefined, context: RestartSupportContext, ordinaryModal: boolean): CompanionRestartSupport | undefined {
+  const { platform, anchor, point, state, viewport, size } = context, prior = snapshot?.platform;
+  if (!ordinaryModal || !snapshot || !prior || !restartSupportAllowed(state)
+    || !context.root.isConnected || !snapshot.source.isConnected || context.root !== snapshot.root
+    || !context.monthKey || context.monthKey !== snapshot.monthKey || !validRestartFrame(snapshot.frame)
+    || size !== snapshot.size || viewport.width !== snapshot.viewport.width || viewport.height !== snapshot.viewport.height
+    || point.x !== snapshot.point.x || point.y !== snapshot.point.y
+    || !prior.id || /^companion-(?:home|panel-floor)/.test(prior.id) || prior.bodyOnly || prior.kind === "hide" || prior.kind === "control"
+    || ![point.x, point.y, prior.x, prior.y, prior.width, prior.x + prior.width, viewport.width, viewport.height, size].every(Number.isFinite)
+    || size <= 0 || viewport.width <= size || viewport.height <= size || prior.width <= 0
+    || point.y < size + 8 || point.y > viewport.height - 12 || point.x < prior.x || point.x > prior.x + prior.width || Math.abs(point.y - prior.y) > 2) return;
+  // No current physical claim is made here. Both proofs must be absent;
+  // an incomplete pair or a positively contradictory measurement is revoked.
+  if (!platform && !anchor) return snapshot;
+  if (!platform || !anchor || anchor.element !== snapshot.source || !validRestartFrame(anchor)
+    || ["left", "top", "width", "height", "identity"].some(key => snapshot.frame[key as keyof RestartFrame] !== anchor[key as keyof RestartFrame])
+    || !platform.id || /^companion-(?:home|panel-floor)/.test(platform.id) || platform.bodyOnly || platform.kind === "hide" || platform.kind === "control"
+    || ["id", "y", "kind", "manualOnly", "bodyOnly"].some(key => prior[key as keyof Platform] !== platform[key as keyof Platform])
+    || ![platform.x, platform.y, platform.width, platform.x + platform.width].every(Number.isFinite) || platform.width <= 0
+    || platform.x < prior.x || platform.x + platform.width > prior.x + prior.width) return;
+  return snapshot;
+}
