@@ -103,9 +103,9 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
       </div>
       <button type="button" className="vc-home-lamp" data-home-decoration-control="" data-home-action="light" data-act="companion-home-light" data-act-opt={lampLit ? "off" : "on"} data-tip={lampLit ? "전등 켜짐 · 누르면 끄기" : "전등 꺼짐 · 누르면 켜기"} aria-label={lampLit ? "전등 켜짐 · 누르면 끄기" : "전등 꺼짐 · 누르면 켜기"} aria-pressed={lampLit} onClick={() => setCompanionHomeLight(!getCompanionHomeLight())}>
         <span className="vc-home-lamp-paint" aria-hidden="true">
-          <img src="/companion/home/135/lamp-body.webp" width="200" height="210" alt="" draggable={false} decoding="async" />
-          <svg className="vc-home-lamp-cord" viewBox="0 0 8 58" preserveAspectRatio="none" focusable="false"><path d="M4 0V53" fill="none" stroke="#926039" strokeWidth="1.1" /><circle cx="4" cy="54" r="2.2" fill="#dbab63" stroke="#926039" strokeWidth=".8" /></svg>
-          <span className="vc-home-lamp-bulb" />
+          <span className="vc-home-lamp-art" data-lamp-state="off" />
+          <span className="vc-home-lamp-art" data-lamp-state="on" />
+          <span className="vc-home-lamp-handle" />
         </span>
       </button>
       <span className="vc-home-light" aria-hidden="true" />

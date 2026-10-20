@@ -552,7 +552,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     let homeContact: { serial: number; kind: HomeContactKind; element: Element; point: { x: number; y: number } } | undefined;
     let homeRadioPending: AbortController | undefined, homeRadioRequestedAt = 0;
     const homeContactElement = (kind: HomeContactKind): Element | null => {
-      const selector = { tv: ".vc-home-tv-paint", light: ".vc-home-lamp-cord circle", curtain: ".vc-curtain-control > span", radio: ".vc-radio-button .vc-object-paint", dispenser: ".vc-dispenser-slot", box: ".vc-toy-box-opening", bin: ".vc-home-trash" }[kind];
+      const selector = { tv: ".vc-home-tv-paint", light: ".vc-home-lamp-handle", curtain: ".vc-curtain-control > span", radio: ".vc-radio-button .vc-object-paint", dispenser: ".vc-dispenser-slot", box: ".vc-toy-box-opening", bin: ".vc-home-trash" }[kind];
       return document.querySelector(".vc-home " + selector);
     };
     const homeContactPoint = (kind: HomeContactKind, element: Element) => {
@@ -1158,7 +1158,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           style(paw, "--vc-body-room-light", String(roomLight));
         }
       }
-      el.toggleAttribute("data-home-reaching", Boolean(reach));
+      if (reach && interaction) {
+        if (el.getAttribute("data-home-reaching") !== interaction.kind) el.setAttribute("data-home-reaching", interaction.kind);
+      } else el.removeAttribute("data-home-reaching");
       if (touchingControl) homeInteractionWitness = interaction?.serial;
       const carriedFood = food.current?.carried(), carriedToy = toys.current?.carried();
       if ((carriedFood || carriedToy) && paintedSelection) {
