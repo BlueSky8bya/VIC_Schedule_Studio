@@ -26,6 +26,7 @@ export function CompanionWardrobe({ collection, preferences, active }: { collect
   const unreadDescription = useId(), unread = getCompanionUnreadCounts(collection);
   const layout = useCompanionCollectionLayout(grid, active, "wardrobe"), page = companionCollectionPage(pageAnchor, COMPANION_WEARABLE_IDS.length, layout.size);
   const gifts = collection?.gifts, owned = selectedAccessory !== null && Boolean(gifts?.unlocked.includes(selectedAccessory));
+  const equipped = gifts?.equipped ?? null, loaded = collection !== null;
   const previewCandidate = previewChoice === undefined ? gifts?.equipped ?? null : previewChoice;
   const previewAccessory = previewCandidate && gifts?.unlocked.includes(previewCandidate) ? previewCandidate : null;
   const focusAccessory = selectedAccessory ?? COMPANION_WEARABLE_IDS[page.offset];
@@ -33,22 +34,24 @@ export function CompanionWardrobe({ collection, preferences, active }: { collect
   const copy = selectedAccessory && owned ? companionAccessoryCopy(selectedAccessory) : undefined;
   const unreadAt = (index: number) => isCompanionCollectionUnread(collection, "accessory", COMPANION_WEARABLE_IDS[index]);
   useEffect(() => {
+    if (!active) { touched.current = false; return; }
+    if (!loaded || touched.current) return;
+    // Each visit starts at the real outfit, including its page and preview.
+    // Browsing within this visit remains a local try-on until explicitly worn.
+    setSelectedAccessory(equipped); setPreviewChoice(undefined);
+    setPageAnchor(Math.max(0, COMPANION_WEARABLE_IDS.indexOf(equipped ?? COMPANION_WEARABLE_IDS[0])));
+  }, [active, equipped, loaded]);
+  useEffect(() => {
     if (!active || !preferences.learnFromYou || !gifts) return;
     const receive = (event: Event) => {
       const id: unknown = (event as CustomEvent).detail;
-      if (touched.current || !validCompanionWardrobePreference(id) || !gifts.unlocked.includes(id)) return;
+      if (gifts.equipped || touched.current || !validCompanionWardrobePreference(id) || !gifts.unlocked.includes(id)) return;
       setSelectedAccessory(id); setPreviewChoice(id); setPageAnchor(COMPANION_WEARABLE_IDS.indexOf(id));
     };
     window.addEventListener(COMPANION_WARDROBE_PREFERENCE, receive);
     emitCompanionSceneSignal({ kind: "wardrobe-opened" });
     return () => window.removeEventListener(COMPANION_WARDROBE_PREFERENCE, receive);
   }, [active, preferences.learnFromYou, gifts]);
-  useEffect(() => {
-    if (!touched.current) {
-      setSelectedAccessory(collection?.gifts.equipped ?? null);
-      setPageAnchor(Math.max(0, COMPANION_WEARABLE_IDS.indexOf(collection?.gifts.equipped ?? COMPANION_WEARABLE_IDS[0])));
-    }
-  }, [collection?.gifts.equipped]);
   useEffect(() => {
     if (!active) { pendingFocus.current = null; return; }
     const item = pendingFocus.current;

@@ -51,6 +51,38 @@ async function openWardrobe(page: Page, surface: Surface = "viewer") {
 }
 const saved = (page: Page) => page.evaluate(key => JSON.parse(localStorage.getItem(key)!) as CompanionCollection, COMPANION_COLLECTION_KEY);
 
+for (const surface of ["viewer", "studio", "preview"] as const) test(`153 ${surface}: wardrobe opens and reopens at the worn item for immediate removal or replacement`, async ({ page }) => {
+  const safety = await fixture(page, { reduce: true, theme: surface === "studio" ? "dark" : "light" });
+  const { profile, preview } = await openWardrobe(page, surface);
+  const worn = profile.locator('[data-accessory="sunglasses"]');
+  await expect(worn).toHaveAttribute("aria-pressed", "true");
+  await expect(profile.getByRole("button", { name: "벗기기", exact: true })).toBeVisible();
+  // Exercise the existing synchronous recommendation path, without touching
+  // equipment, input timing, geometry or discovery state.
+  await page.evaluate(() => window.dispatchEvent(new CustomEvent("vic:companion-wardrobe-preference", { detail: "beret" })));
+  await expect(worn).toHaveAttribute("aria-pressed", "true");
+  await profile.locator('[data-accessory="beret"]').click();
+  await expect(profile.getByRole("button", { name: "장착하기", exact: true })).toBeVisible();
+  expect((await saved(page)).gifts.equipped).toBe("sunglasses");
+  await profile.getByRole("tab", { name: "함께 지내기", exact: true }).click();
+  await profile.getByRole("tab", { name: "옷장", exact: true }).click();
+  await expect(worn).toHaveAttribute("aria-pressed", "true");
+  await expect(profile.locator(".rhh-wardrobe-detail-copy strong")).toHaveText("선글라스");
+  mkdirSync(`${regressionOutput}/wardrobe`, { recursive: true });
+  await profile.screenshot({ path: `${regressionOutput}/wardrobe/equipped-first-${surface}.png` });
+  await profile.getByRole("button", { name: "벗기기", exact: true }).click();
+  expect((await saved(page)).gifts.equipped).toBeNull();
+  await expect(preview.locator(".vc-wearable-front")).toBeHidden();
+  await profile.locator('[data-accessory="beret"]').click();
+  await profile.getByRole("button", { name: "장착하기", exact: true }).click();
+  expect((await saved(page)).gifts.equipped).toBe("beret");
+  await profile.getByRole("tab", { name: "도감", exact: true }).click();
+  await profile.getByRole("tab", { name: "옷장", exact: true }).click();
+  await expect(profile.locator('[data-accessory="beret"]')).toHaveAttribute("aria-pressed", "true");
+  await expect(profile.getByRole("button", { name: "벗기기", exact: true })).toBeVisible();
+  expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
+});
+
 for (const surface of ["viewer", "studio"] as const) test(`114 ${surface}: every active fitting renders, retired tiles stay absent and native removal clears the preview`, async ({ page }) => {
   const safety = await fixture(page, { allOwned: true, found: false, reduce: true, theme: surface === "studio" ? "dark" : "light" });
   const { dialog, profile, preview } = await openWardrobe(page, surface);
