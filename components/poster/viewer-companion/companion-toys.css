@@ -2,6 +2,7 @@
 /* The existing world clock owns position. A button spring must not trail its
    swept contact, carry or opening hold; hover spring stays on the child art. */
 .vc-toy{position:absolute;left:0;top:0;display:flex;align-items:flex-end;justify-content:center;width:44px;height:44px;padding:0;border:0;background:transparent;box-shadow:none;pointer-events:auto;cursor:grab;touch-action:none;transform-origin:50% 100%;will-change:transform;transition:none}
+.vc-toys[hidden],.vc-toy[hidden]{display:none}
 .vc-toy>.vc-toy-art{display:block;flex:0 0 auto;width:var(--vc-toy-art-width,28px);height:var(--vc-toy-art-height,28px);object-fit:contain;filter:var(--vc-toy-color) drop-shadow(0 2px 1px #5d422528);pointer-events:none;transition:transform var(--dur-spring-smooth) var(--ease-spring)}
 .vc-toy:hover>.vc-toy-art,.vc-toy:focus-visible>.vc-toy-art{transform:scale(1.12)}
 .vc-toy:focus-visible{outline:2px solid var(--accent,#5077aa);outline-offset:-3px;border-radius:12px}

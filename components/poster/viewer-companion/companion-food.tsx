@@ -751,7 +751,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       if (motionEvent && !duration) return;
       // Synchronize input-facing coordinates in the same native event. The
       // browser anchor owns scroll paint; the finite rAF still owns reflow.
-      if (event?.type === "scroll") followAttachments();
+      if (event?.type === "scroll" || event?.type === "vic:panel-section" || event?.type === "vic:side-panel") followAttachments();
       if (sources.length && duration && !reduced() && graphics.current !== "off") followUntil.current = Math.max(followUntil.current, performance.now() + duration + 80);
       if (followFrame.current) return;
       // The event can run later than this frame's rAF timestamp. Always carry

@@ -249,6 +249,18 @@ export function createCompanionToys(rng: () => number = Math.random) {
       }
       return id;
     },
+    settleHomeEmissions() {
+      // A closing room keeps a newly dispensed object inside. Finish only
+      // its already measured home arc; human throws keep their ownership.
+      let settled = 0;
+      for (const [id, flight] of flights) {
+        if (!flight.homeEmission) continue;
+        const toy = objects.get(id), contact = firstHomeContact(flight, flight.vx, flight.vy, emissionContacts.filter(roomContact), 2);
+        if (!toy || !contact) continue;
+        bind(toy, contact.p, contact.x); flights.delete(id); settled++;
+      }
+      return settled;
+    },
     tick(at: number) {
       if (pausedAt !== undefined || !Number.isFinite(at)) return;
       for (const [id, flight] of flights) {

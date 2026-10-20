@@ -108,16 +108,18 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     else { delete node.dataset.toyUse; delete node.dataset.playEffect; }
     const light = companionRoomItemLight(toy, roomLight.current.room, roomLight.current.grade);
     if (paintedLight.current.get(node) !== light) { node.style.setProperty("--vc-item-room-light", String(light)); paintedLight.current.set(node, light); }
-    node.hidden = Boolean(toy.hidden);
     if (toy.held || toy.carried || !toy.platformId) { restingSources.current.delete(toy.id); retainedSources.current.delete(toy.id); }
     const anchor = toy.platformId && !toy.hidden && !toy.held && !toy.carried ? retainedSources.current.get(toy.id) ?? anchorFor.current?.(toy.platformId) : undefined;
-    const visibilitySource = anchor?.element?.matches(".vc-home-floor") ? anchor.element.parentElement : anchor?.element;
-    const source = anchor?.element && !visibilitySource?.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]")
+    const element = anchor?.element ?? restingSources.current.get(toy.id)?.element;
+    const visibilitySource = element?.matches(".vc-home-floor") ? element.parentElement : element;
+    const sourceHidden = Boolean(visibilitySource?.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]"));
+    node.hidden = Boolean(toy.hidden || sourceHidden);
+    const source = anchor?.element && !sourceHidden
       ? { element: anchor.element, left: anchor.left, top: anchor.top } : undefined;
-    if (source && toy.platformId && anchor?.width && anchor.height) {
-      const frame = { left: source.left, top: source.top, width: anchor.width, height: anchor.height };
+    if (anchor?.element && toy.platformId && anchor.width && anchor.height && (!sourceHidden || !restingSources.current.has(toy.id))) {
+      const frame = { left: anchor.left, top: anchor.top, width: anchor.width, height: anchor.height };
       const point = attachCompanionElementPoint(toy, frame);
-      if (point) restingSources.current.set(toy.id, { platformId: toy.platformId, element: source.element, identity: companionCalendarAnchorIdentity(source.element), frame, point });
+      if (point) restingSources.current.set(toy.id, { platformId: toy.platformId, element: anchor.element, identity: companionCalendarAnchorIdentity(anchor.element), frame, point });
     }
     const point = itemAnchors.current!.project(node, toy, source);
     const transform = "translate3d(" + point.x.toFixed(3) + "px," + point.y.toFixed(3) + "px,0) translate(-50%,-100%) rotate(" + (toy.angle + (drawing?.rotation ?? 0)).toFixed(2) + "deg)";
@@ -238,6 +240,18 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
   }, [blocked, world, paint, pauseModel]);
   useEffect(() => () => { pauseModel(performance.now()); }, [pauseModel]);
   useEffect(() => () => { itemAnchors.current!.clearAll(); restingSources.current.clear(); retainedSources.current.clear(); }, []);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    // A disclosure commits before the next geometry scan. Hide its attached
+    // drawings in that same event, retaining their model and local offsets.
+    const changed = () => {
+      if (document.querySelector(".vc-home")?.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]")) world.settleHomeEmissions();
+      paint();
+    };
+    window.addEventListener("vic:panel-section", changed);
+    window.addEventListener("vic:side-panel", changed);
+    return () => { window.removeEventListener("vic:panel-section", changed); window.removeEventListener("vic:side-panel", changed); };
+  }, [paint, world]);
   useEffect(() => { if (hidden) clearDropBox(); }, [hidden, clearDropBox]);
   const finish = (event: React.PointerEvent<HTMLButtonElement>, cancelled = false) => {
     const current = drag.current;
