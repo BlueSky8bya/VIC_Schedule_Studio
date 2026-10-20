@@ -1,6 +1,6 @@
 # 작은 손 표시 제거와 클래식 라디오 확장
 
-2026-10-21 KST. Status: local verification complete; independent final review and deployment pending. 최신 사용자 요청이 우선한다.
+2026-10-21 KST. Status: verified locally; public deployment proof pending. 최신 사용자 요청이 우선한다.
 
 ## 범위
 
@@ -28,6 +28,13 @@
 - 첫 실제 브라우저 검사14개 중8개 통과/6개 실패. 라디오7개는 viewer/studio/preview 설정·제외·음소거·명시적 재생·OFF·최초 제스처 및34곡 실제 브라우저 PCM 모두 통과했다. 쓰다듬기6실패는 native-sofa 상대 transform을 화면 좌표로 읽은 head helper, 화면 밖으로 벗어난 X경로, 소파 버튼을 침범한 overshoot 배치로 확인했다. 원래 실패 영상/trace/JSON은 `native/`, `native-results.json`, `contact/`에 그대로 보존했다.
 - 보정은 실제 보이는 BCR 관측과 실제 P키→달력 바닥 배치뿐이다. 기존 elementFromPoint/50% 유지 범위/친밀도/입력 우선권/초점/캡처/기하 검사를 유지했다. 라디오 크레딧은 기존의 화면 밖 그룹 캡처가 증거가 되지 않아 실제 스크롤 후 보이는 설정창을 캡처하도록 보정했다. 새 결과는 `native-attempt2/`, `native-attempt2-results.json`, `contact-attempt2/`로 분리했다.
 - 재실행8개 모두 통과(손 관련7개 +34곡 PCM1개,83.38초,skip/retry/flaky0). 실제 소파 쓰다듬기 full/reduced·native dragging/키보드 옮기기·달력 바닥 X/Y50% 접촉 유지·subpixel/rest/native cursor를 확인했다. 손DOM0, 실제 친밀도/몸반응 유지, 포커스/캡처 침범0. 라디오34곡 실제 진행시간/비영 PCM·보컬 크레딧 가시 캡처도 통과했다. writes/errors0. 이전7개 라디오3표면 결과와 보정 재실행을 서로 다른 실행으로 기록하며14개를 한 번에 재완주했다고 세지 않는다.
+- 이후 전등 줄 피드백 후속 수정 `75eed4e2`도 들어와 정상 통합했다. 최종 제품 소스 `cc3aae181c1e18a2fb695f070cc7aa256a8db81a`, 빌드 `0uohUrZgYo0NpOdNPn9Jt`에서 전체 typecheck/lint/build 및 unit363파일/5443개를 다시 통과했다. 기존34음원/카탈로그/허가 해시는 그대로다.
+- 이 최종 통합 빌드에서는 원래14개를 한 번에 새로 실행해 모두 통과했다(131.708초,skip/retry/flaky0). `native-final-results.json`, `native-final/`의 실제 영상/가능한 trace, `contact-final/`, `actual-recordings-pcm-final.json`, `habanera-credit-final.png`에 보존했다. 실제34곡 PCM/재생 진행·쓰다듬기7개·라디오3표면 설정/제외/음소거·명시적 재생·OFF/최초 제스처를 포함하며 writes/errors0다. root가 최종 보컬 크레딧 가시 캡처도 직접 읽었다.
+- 비작성 `/root/hands_radio_review`가 손 renderer/입력 보존, 원본13과 신규21바이너리, 개별 허가/크레딧, 전체 변환/디코드, 경계/G-22, 실패 원인과 테스트 보정, 실제 raw/PNG를 독립 검수했다. 이전 통합 검수와 최종 통합 검수 영수증은 `review/`에서 리비전별로 구분한다. 출처 조사자 `/root/classical_sources`와 손 작성자 `/root/remove_companion_hands` 실제 호출·종료도 대화와 로컬 근거에 남아 있다.
+
+## 반영
+
+제품 검증 이후에는 이 기록만 정리한다. 허용된 손/라디오 소스·음원·테스트·본 기록만 커밋하며 사용자 dirty 기록·원본 자산·다른 진행 건은 스테이징하지 않는다. 공개 배포의 전체SHA와 manifest/신규21음원 실제 전체바이트 해시는 `public-proof.json`/`public-audio-proof.json`으로 별도 확인 후 보고한다. 이 커밋 시점에는 공개 확인을 완료로 주장하지 않는다.
 
 ## 경계와 관측 범위
 
