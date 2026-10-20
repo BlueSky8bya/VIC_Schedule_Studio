@@ -215,12 +215,18 @@ html[data-theme="dark"] .vc-home-object-image { opacity: .92; }
    Preserve its head/tail proportions; stretch only the straight cord band.
    Shared 512x668 registration: head304px, tail84px, handle at(443,626). */
 .vc-home-lamp { --vc-lamp-paint-width: max(52px, 14cqw); --vc-lamp-height: max(calc(var(--vc-lamp-paint-width) * 58 / 44), calc(var(--vc-room-height) * .4)); --vc-lamp-control-width: max(var(--vc-dispenser-hit), var(--vc-lamp-paint-width)); --vc-lamp-pull: 0px; position: absolute; z-index: 4; top: 0; right: calc(var(--vc-storage-right) + var(--vc-toy-hit) + var(--vc-storage-gap) - (var(--vc-lamp-control-width) - var(--vc-dispenser-hit)) / 2 + max(12px, 3.8cqw)); width: var(--vc-lamp-control-width); height: max(56px, calc(var(--vc-lamp-height) + 2px), var(--vc-object-min-hit)); box-sizing: border-box; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; cursor: pointer; }
-.vc-home-lamp-paint { position: absolute; top: 0; left: 50%; width: var(--vc-lamp-paint-width); height: calc(var(--vc-lamp-height) + var(--vc-lamp-pull)); transform: translateX(-50%); display: block; pointer-events: none; }
-.vc-home-lamp-art { position: absolute; inset: 0; display: block; box-sizing: border-box; border-style: solid; border-color: transparent; border-width: calc(var(--vc-lamp-paint-width) * 304 / 512) 0 calc(var(--vc-lamp-paint-width) * 84 / 512); border-image-slice: 304 0 84 0 fill; border-image-repeat: stretch; filter: brightness(var(--vc-room-art-grade)); }
-.vc-home-lamp-art[data-lamp-state="off"] { border-image-source: url('/companion/home/155/lamp-off.webp'); }
-.vc-home-lamp-art[data-lamp-state="on"] { border-image-source: url('/companion/home/155/lamp-on.webp'); opacity: 0; }
+.vc-home-lamp-paint { position: absolute; top: 0; left: 50%; width: var(--vc-lamp-paint-width); height: calc(var(--vc-lamp-height) + var(--vc-lamp-pull)); transform: translateX(-50%); display: block; pointer-events: none; transition: height var(--dur-2) var(--ease); }
+.vc-home-lamp-art, .vc-home-lamp-cord-feedback { position: absolute; inset: 0; display: block; box-sizing: border-box; border-style: solid; border-color: transparent; border-width: calc(var(--vc-lamp-paint-width) * 304 / 512) 0 calc(var(--vc-lamp-paint-width) * 84 / 512); border-image-slice: 304 0 84 0 fill; border-image-repeat: stretch; filter: brightness(var(--vc-room-art-grade)); }
+.vc-home-lamp :is(.vc-home-lamp-art, .vc-home-lamp-cord-feedback)[data-lamp-state="off"] { border-image-source: url('/companion/home/155/lamp-off.webp'); }
+.vc-home-lamp :is(.vc-home-lamp-art, .vc-home-lamp-cord-feedback)[data-lamp-state="on"] { border-image-source: url('/companion/home/155/lamp-on.webp'); opacity: 0; }
 .vc-home-room[data-lamp-lit] .vc-home-lamp-art[data-lamp-state="off"] { opacity: 0; }
 .vc-home-room[data-lamp-lit] .vc-home-lamp-art[data-lamp-state="on"] { opacity: 1; }
+/* Highlight the existing continuous cord pixels, never draw a second cord
+   across the globe. Only its straight middle stretches during a small pull. */
+.vc-home-lamp-cord-feedback { opacity: 0; clip-path: polygon(84% calc(var(--vc-lamp-paint-width) * 108 / 512), 94% calc(var(--vc-lamp-paint-width) * 108 / 512), 94% 100%, 81% 100%, 81% calc(100% - var(--vc-lamp-paint-width) * 84 / 512), 84% calc(100% - var(--vc-lamp-paint-width) * 84 / 512)); filter: brightness(calc(var(--vc-room-art-grade) * 1.65)) drop-shadow(0 0 1px #ffe4ad); transition: opacity var(--dur-2) var(--ease); }
+.vc-home-room:not([data-lamp-lit]) .vc-home-lamp-cord-feedback[data-lamp-state="off"],
+.vc-home-room[data-lamp-lit] .vc-home-lamp-cord-feedback[data-lamp-state="on"] { opacity: var(--vc-lamp-feedback, 0); }
+.vc-home-lamp-cord-hit { position: absolute; left: calc(86.5% - 7px); top: calc(var(--vc-lamp-paint-width) * 108 / 512); bottom: 0; width: 14px; pointer-events: auto; }
 /* Invisible contact geometry follows the actual illustrated wooden handle.
    It paints no replacement cord, bulb, glow or marker. */
 .vc-home-lamp-handle { position: absolute; left: calc(50% + var(--vc-lamp-paint-width) * 334 / 1024); bottom: calc(var(--vc-lamp-paint-width) * 18 / 1024); width: calc(var(--vc-lamp-paint-width) * 80 / 1024); height: calc(var(--vc-lamp-paint-width) * 132 / 1024); }
@@ -233,8 +239,8 @@ html[data-theme="dark"] .vc-home-object-image { opacity: .92; }
 .vc-curtain-control:active > span { transform: scaleY(1.04); }
 html .vc-home button:where(:hover, :focus):not(:focus-visible) { outline: none; box-shadow: none; }
 .vc-home button:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: 2px; }
-.vc-home-lamp:not(:disabled):is(:hover, :focus-visible) .vc-home-lamp-paint { filter: brightness(1.1); }
-.vc-home-lamp:active { --vc-lamp-pull: 2px; }
+.vc-home-lamp:not(:disabled):is(:has(.vc-home-lamp-cord-hit:hover), :focus-visible) { --vc-lamp-pull: 1.5px; --vc-lamp-feedback: 1; }
+.vc-home-lamp:not(:disabled):is(:active, [data-companion-touch]) { --vc-lamp-pull: 3px; --vc-lamp-feedback: 1; }
 .vc-home-tv { position: absolute; z-index: 3; left: calc(9px + max(calc(120px / var(--shell-zoom, 1)), min(39%, 150px))); bottom: var(--vc-tv-bottom); width: max(var(--vc-tv-width), var(--vc-object-min-hit)); height: max(var(--vc-tv-width), var(--vc-object-min-hit)); box-sizing: border-box; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; cursor: pointer; }
 /* The thick cabinet is actually illustrated in a left-facing three-quarter
   view. Its fixed body is never a planar rotateY distortion. Only the picture
@@ -285,7 +291,12 @@ html:is([data-reduce-motion],[data-gfx="off"],[data-gfx="soft"]) .vc-tv-picture 
 .vc-home :is(.vc-home-tv, .vc-home-lamp):active { transform: none; }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home-lamp-light,
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home-room::before { transition: none; }
-html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home-lamp:active { --vc-lamp-pull: 0px; }
+html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home-lamp { --vc-lamp-pull: 0px !important; }
+html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) :is(.vc-home-lamp-paint, .vc-home-lamp-cord-feedback) { transition: none; }
+@media (prefers-reduced-motion: reduce) {
+  .vc-home-lamp { --vc-lamp-pull: 0px !important; }
+  .vc-home-lamp-paint, .vc-home-lamp-cord-feedback { transition: none; }
+}
 @container (max-width: 310px) {
   /* Below310 CSS px, real45px furniture inputs need another depth row.
      Floating homes use the requested wider host; only cramped rails need it. */

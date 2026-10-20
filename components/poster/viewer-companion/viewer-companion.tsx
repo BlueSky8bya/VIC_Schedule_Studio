@@ -551,6 +551,13 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     type HomeContactKind = "tv" | "light" | "curtain" | "radio" | "dispenser" | "box" | "bin";
     let homeContact: { serial: number; kind: HomeContactKind; element: Element; point: { x: number; y: number } } | undefined;
     let homeRadioPending: AbortController | undefined, homeRadioRequestedAt = 0;
+    let touchedLamp: HTMLButtonElement | null = null;
+    const showLampContact = (lamp: HTMLButtonElement | null) => {
+      if (touchedLamp === lamp) return;
+      touchedLamp?.removeAttribute("data-companion-touch");
+      touchedLamp = lamp;
+      touchedLamp?.setAttribute("data-companion-touch", "");
+    };
     const homeContactElement = (kind: HomeContactKind): Element | null => {
       const selector = { tv: ".vc-home-tv-paint", light: ".vc-home-lamp-handle", curtain: ".vc-curtain-control > span", radio: ".vc-radio-button .vc-object-paint", dispenser: ".vc-dispenser-slot", box: ".vc-toy-box-opening", bin: ".vc-home-trash" }[kind];
       return document.querySelector(".vc-home " + selector);
@@ -565,6 +572,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     const clearHomeContact = () => {
       homeRadioPending?.abort(); homeRadioPending = undefined; homeRadioRequestedAt = 0;
       homeContact = undefined; homeInteractionWitness = undefined;
+      showLampContact(null);
       if (interactionTool.current) interactionTool.current.hidden = true;
       el.removeAttribute("data-home-reaching");
     };
@@ -1150,9 +1158,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const actualHand = hand && paintedSelection ? projectCompanionSpritePoint({ ...projection, cell: paintedSelection.frame }, hand) : null;
       const targetContact = interaction?.point;
       const touchingControl = Boolean(reach?.touching && paintedCurrent && actualHand && targetContact && Math.hypot(actualHand.x - targetContact.x, actualHand.y - targetContact.y) <= size * .5);
+      // Lamp contact is shown on the real cord, without rays over the pet's face.
+      showLampContact(touchingControl && interaction?.kind === "light" ? interaction.element.closest("button") : null);
       const paw = interactionTool.current;
       if (paw) {
-        paw.hidden = !touchingControl;
+        paw.hidden = !touchingControl || interaction?.kind === "light";
         if (touchingControl && targetContact) {
           style(paw, "transform", `translate3d(${targetContact.x - 9}px,${targetContact.y - 8}px,0) rotate(${Math.sin((performance.now() - began) / 70) * 6}deg)`);
           style(paw, "--vc-body-room-light", String(roomLight));

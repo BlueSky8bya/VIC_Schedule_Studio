@@ -23,6 +23,7 @@ type Frame = {
   pad: Rect | null; padFoot: number; washing: boolean; brush: Tool | null; paw: Tool | null; reaching: boolean; grade: number; inertiaFilter: string;
   tv: string; lit: boolean; curtain: string; radio: boolean; room: Rect | null;
   contacts: Partial<Record<"tv" | "light" | "curtain" | "radio", Rect>>;
+  lampTouch: boolean; lampFeedbackOpacity: number;
   foods: { id: string; kind: string; eating: boolean; carried: boolean; discarding: boolean }[];
   toys: { id: string; carried: boolean; held: boolean }[];
 };
@@ -203,6 +204,8 @@ async function startProbe(page: Page) {
           facing: node?.dataset.facing ?? "", facingScale: new DOMMatrixReadOnly(facingTransform).a, facingTransform, boxOpening: readRect(document.querySelector(".vc-home .vc-toy-box-opening")),
           washing: node?.hasAttribute("data-washing") ?? false, brush: readTool(".vc-wash-tool"), paw: readTool(".vc-home-touch-tool"), reaching: node?.hasAttribute("data-home-reaching") ?? false, grade: Number(css?.getPropertyValue("--vc-body-room-light") || 1), inertiaFilter: node?.querySelector(".vc-inertia") ? getComputedStyle(node.querySelector(".vc-inertia")!).filter : "",
           tv: roomNode?.dataset.tv ?? "off", lit: roomNode?.hasAttribute("data-lamp-lit") ?? false, curtain: document.querySelector<HTMLElement>(".vc-home-window")?.dataset.curtain ?? "", radio: document.querySelector('[data-home-action="radio"]')?.getAttribute("aria-pressed") === "true", room: readRect(roomNode), contacts,
+          lampTouch: document.querySelector(".vc-home-lamp")?.hasAttribute("data-companion-touch") ?? false,
+          lampFeedbackOpacity: Math.max(0, ...[...document.querySelectorAll(".vc-home-lamp-cord-feedback")].map(node => Number(getComputedStyle(node).opacity))),
           foods: [...document.querySelectorAll<HTMLElement>(".vc-food")].map(food => ({ id: food.dataset.food ?? "", kind: food.dataset.kind ?? "", eating: food.hasAttribute("data-eating"), carried: food.hasAttribute("data-carried"), discarding: food.hasAttribute("data-discarding") })),
           toys: [...document.querySelectorAll<HTMLElement>(".vc-toy")].map(toy => ({ id: toy.dataset.toyId ?? "", carried: toy.dataset.carried === "true", held: toy.dataset.held === "true" })) });
       }
@@ -214,8 +217,12 @@ async function startProbe(page: Page) {
 async function snapshot(page: Page, name: string) { mkdirSync(output, { recursive: true }); await page.screenshot({ path: resolve(output, `${test.info().title.replace(/[^a-z0-9]+/gi, "-")}-${name}.png`) }); }
 async function waitElapsed(page: Page, since: number, milliseconds: number) { await expect.poll(async () => ((await latest(page))?.absolute ?? since) - since, { timeout: milliseconds + 5000, intervals: [100] }).toBeGreaterThanOrEqual(milliseconds); }
 function contactWitness(trace: readonly Frame[], at: number, kind: "tv" | "light" | "curtain" | "radio") {
-  return trace.filter(frame => frame.absolute <= at && frame.absolute >= at - 400 && genuine(frame) && frame.command === kind && frame.reaching && frame.paw?.visible && /^companion-home-floor/.test(frame.platform)).find(frame => {
-    const control = frame.contacts[kind], paw = frame.paw!; if (!control || !frame.rect) return false;
+  return trace.filter(frame => frame.absolute <= at && frame.absolute >= at - 400 && genuine(frame) && frame.command === kind && frame.reaching && (kind === "light" ? frame.lampTouch && frame.lampFeedbackOpacity > .05 && !frame.paw?.visible : frame.paw?.visible) && /^companion-home-floor/.test(frame.platform)).find(frame => {
+    const control = frame.contacts[kind]; if (!control || !frame.rect) return false;
+    // Lamp feedback now belongs to the actual cord. Its runtime flag still
+    // requires the same decoded, projected body-contact gate, not a timer.
+    if (kind === "light") return Math.hypot(control.x + control.width / 2 - frame.x, control.y + control.height / 2 - (frame.y - frame.rect.height / 2)) <= frame.rect.height * 1.5;
+    const paw = frame.paw!;
     const x = paw.x + paw.width / 2, y = paw.y + paw.height / 2;
     return x >= control.x - 8 && x <= control.x + control.width + 8 && y >= control.y - 8 && y <= control.y + control.height + 8
       && Math.hypot(x - frame.x, y - (frame.y - frame.rect.height / 2)) <= frame.rect.height * 1.5;
@@ -228,7 +235,7 @@ async function awaitEffect(page: Page, kind: "tv" | "light" | "curtain" | "radio
   const changed = trace[index], witnessed = contactWitness(trace, changed.absolute, kind);
   expect(witnessed, `first actual ${kind} value change must have prior painted physical contact`).toBeTruthy();
   const witness = witnessed!;
-  proofs.get(page)!.notes.push({ actualSetter: kind, before: value(trace[index - 1]), after: value(changed), changedAt: changed.absolute, witnessedAt: witness.absolute, scene: witness.scene, beat: witness.beat, actualContact: witness.contacts[kind], paintedPaw: witness.paw, actor: witness.rect });
+  proofs.get(page)!.notes.push({ actualSetter: kind, before: value(trace[index - 1]), after: value(changed), changedAt: changed.absolute, witnessedAt: witness.absolute, scene: witness.scene, beat: witness.beat, actualContact: witness.contacts[kind], paintedPaw: witness.paw, lampTouch: witness.lampTouch, lampFeedbackOpacity: witness.lampFeedbackOpacity, actor: witness.rect });
   return changed;
 }
 function assertEveryEffectWasPhysical(trace: readonly Frame[], after: number, kinds: readonly ("tv" | "light" | "curtain" | "radio")[]) {
