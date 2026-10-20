@@ -63,12 +63,27 @@ describe("bounded local discoveries", () => {
     expect(store.load().behaviors).toEqual(["lean-nuzzle"]);
   });
 
-  it("stamps all twelve allowed actions and waits for the visible cheer finish", () => {
+  it("stamps the allowed actions and requires the hidden consumed-food witness", () => {
     const store = createCompanionCollectionStore();
     for (const requestedRow of [33, 34, 35, 36, 40, 30, 29, 31, 21, 22, 16]) expect(store.recordBehavior(observation({ requestedRow }))).toBe(true);
     expect(store.recordBehavior(observation({ requestedRow: 37 }))).toBe(false); expect(store.recordBehavior(observation({ requestedRow: 38 }))).toBe(false);
     expect(store.load().behaviors).not.toContain("cheer-rehearsal");
-    expect(store.recordBehavior(observation({ requestedRow: 39 }))).toBe(true); expect(store.load().behaviors).toEqual(COMPANION_BEHAVIOR_IDS);
+    expect(store.recordBehavior(observation({ requestedRow: 39 }))).toBe(true);
+    expect(store.recordBehavior(observation({ requestedRow: 23 }))).toBe(false);
+    expect(store.recordBehavior(observation({ requestedRow: 23, foodAftertaste: true, decoded: false }))).toBe(false);
+    expect(store.recordBehavior(observation({ requestedRow: 23, foodAftertaste: true }))).toBe(true);
+    expect(store.load().behaviors).toEqual(COMPANION_BEHAVIOR_IDS);
+  });
+
+  it("does not turn an ordinary happy face or cold fallback into the body cheer discovery", () => {
+    const cheer = observation({ requestedRow: 9, cheerBounce: true });
+    expect(observedCompanionBehavior(cheer)).toBe("cheer-rehearsal");
+    for (const patch of [{ cheerBounce: false }, { cheerBounce: undefined }, { visible: false }, { decoded: false }, { adoptedIndex: 144 }, { adoptedSrc: "/cold.webp" }, { requestedRow: 0 }])
+      expect(observedCompanionBehavior({ ...cheer, ...patch })).toBeUndefined();
+    const store = createCompanionCollectionStore();
+    expect(store.recordBehavior({ ...cheer, cheerBounce: false })).toBe(false);
+    expect(store.recordBehavior(cheer)).toBe(true);
+    expect(store.recordBehavior(cheer)).toBe(false);
   });
 });
 

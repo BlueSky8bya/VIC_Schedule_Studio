@@ -8,6 +8,11 @@
 .vc-toy:where(:hover,:focus):not(:focus-visible){outline:none;box-shadow:none}
 .vc-toy[data-held=true]{cursor:grabbing}
 .vc-toy[data-carried=true]{pointer-events:none}
+.vc-toy[data-carried=true]>.vc-toy-art{transform:scale(var(--vc-toy-play-scale,1)) scaleX(var(--vc-toy-play-facing,1));transition:none}
+.vc-toy[data-play-effect]::after{content:"";position:absolute;left:50%;top:65%;pointer-events:none;opacity:var(--vc-toy-effect-opacity,0);transform:translate(var(--vc-toy-effect-x,0px),var(--vc-toy-effect-y,0px));width:14px;height:4px;border-radius:3px;background:#64b8d4;box-shadow:inset 3px 0 #e9b14e}
+.vc-toy[data-play-effect=bubble]::after{width:9px;height:9px;border:1px solid #72b7c2;border-radius:50%;background:#e6fbff80;box-shadow:inset 2px 2px #fff9}
+.vc-toy[data-play-effect=ping]::after{width:10px;height:10px;background:#ffe38b;box-shadow:none;clip-path:polygon(50% 0,62% 36%,100% 50%,62% 64%,50% 100%,38% 64%,0 50%,38% 36%)}
+.vc-toy[data-play-effect=none]::after{display:none}
 .vc-toy:disabled{opacity:1}
 [data-gfx=off] .vc-toy>.vc-toy-art,[data-gfx=soft] .vc-toy>.vc-toy-art,[data-reduce-motion] .vc-toy>.vc-toy-art{filter:var(--vc-toy-color);transition:none;transform:none}
 @media(prefers-reduced-motion:reduce){.vc-toy>.vc-toy-art{transition:none}}

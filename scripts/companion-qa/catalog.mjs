@@ -57,6 +57,10 @@ export const PURE_SUITES = Object.freeze([
   'tests/unit/companion-collection-art-146.test.ts',
   'tests/unit/companion-item-anchor-147.test.ts',
   'tests/unit/companion-items-scroll-147.test.ts',
+  'tests/unit/companion-cheer-149.test.ts',
+  'tests/unit/companion-home-life-policy-149.test.ts',
+  'tests/unit/companion-toy-play-149.test.ts',
+  'tests/unit/companion-food-aftertaste-149.test.ts',
 ]);
 export const NATIVE_SUITES = Object.freeze([
   'companion-daily-142.spec.ts', 'companion-home-agency-141.spec.ts',
@@ -67,15 +71,17 @@ export const NATIVE_SUITES = Object.freeze([
   'companion-house-146.spec.ts',
   'companion-living-runtime-146.spec.ts',
   'companion-items-scroll-147.spec.ts',
+  'companion-living-149.spec.ts',
+  'companion-objects-149.spec.ts',
 ]);
 export const NATIVE_ENTRY_TITLES = Object.freeze(['viewer', 'studio', 'preview'].flatMap(surface => PERSONALITIES.map(personality => `137 ${surface} native ${personality} selection expresses immediately and remains purposeful`)));
 export const NATIVE_FLOATING_TIDY_TITLES = Object.freeze([
   '142 floating home tidy preserves all four returns with learned care on',
   '142 floating home tidy returns from a real calendar perch to all four toys',
 ]);
-export const PLANNED_NATIVE_CASE_COUNT = 143;
+export const PLANNED_NATIVE_CASE_COUNT = 169;
 export const NATIVE_ENTRY_GREP = `(?:^|\\s)137 (?:viewer|studio|preview) native (?:${PERSONALITIES.join('|')}) selection expresses immediately and remains purposeful$`;
-export const NATIVE_GREP = '147 |146 |143 |142 |141 |134 .*arrows activate|140 .*primary and secondary|140 outside-home|123 actual solar|123 six shared|123 static|autonomous companion movement never|110 developer views' + '|' + NATIVE_ENTRY_GREP;
+export const NATIVE_GREP = '149 |147 |146 |143 |142 |141 |134 .*arrows activate|140 .*primary and secondary|140 outside-home|123 actual solar|123 six shared|123 static|autonomous companion movement never|110 developer views' + '|' + NATIVE_ENTRY_GREP;
 const key = (a, av, b, bv) => JSON.stringify([a, av, b, bv]);
 export function pairKeys(row, dimensions = DIMENSIONS) {
   const names = Object.keys(dimensions), result = [];

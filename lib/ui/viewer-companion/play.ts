@@ -1,4 +1,5 @@
 import type { CompanionPlay } from "./brain";
+import { sampleCompanionCheer } from "./cheer";
 import { COMPANION_PLAY_TIMING, COMPANION_TIMING, type CompanionPlayBeat } from "./timing";
 
 /** Authored finite beats, sampled by the existing display clock. Native art
@@ -28,6 +29,10 @@ export function sampleCompanionPlay(kind: CompanionPlay, progress: number, reduc
     return result(last?.row ?? rows.recover, 1, last?.beat ?? "recover");
   }
   if (reduced) return result(kind === "bonk-tears" ? rows.tears : kind === "bonk-sad" ? rows.sulk : rows.recover, kind === "bonk-tears" || kind === "bonk-sad" ? .6 : 1, "recover");
+  if (kind === "cheer-rehearsal") {
+    const cheer = sampleCompanionCheer(p);
+    return result(9, p, "play", cheer.lift, cheer.lean, 0, cheer.compression);
+  }
   const timing = COMPANION_PLAY_TIMING[kind], age = p * timing.duration;
   let entered = 0;
   for (const stage of timing.beats) {

@@ -4,11 +4,13 @@ import type { CompanionPlay } from "@/lib/ui/viewer-companion/brain";
 import { companionPlayDuration, COMPANION_PLAY_TIMING, COMPANION_TIMING } from "@/lib/ui/viewer-companion/timing";
 
 describe("finite authored companion play", () => {
-  it("prepares only the actual next beat when an action returns to an earlier drawing row", () => {
-    expect(companionNextPlayRow("cheer-rehearsal", 0)).toBe(37);
-    expect(companionNextPlayRow("cheer-rehearsal", 749 / 3800)).toBe(37);
-    expect(companionNextPlayRow("cheer-rehearsal", 750 / 3800)).toBe(38);
-    expect(companionNextPlayRow("cheer-rehearsal", 3000 / 3800)).toBe(9);
+  it("prepares only the following authored beat and no extra packet for continuous cheering", () => {
+    expect(companionNextPlayRow("cozy-nest", 0)).toBe(36);
+    expect(companionNextPlayRow("cozy-nest", 1500 / 3200)).toBe(40);
+    expect(companionNextPlayRow("ask-petting", 0)).toBe(33);
+    expect(companionNextPlayRow("cheer-rehearsal", 0)).toBe(-1);
+    expect(companionNextPlayRow("cheer-rehearsal", 750 / 3800)).toBe(-1);
+    expect(companionNextPlayRow("cheer-rehearsal", 3000 / 3800)).toBe(-1);
     expect(companionNextPlayRow("cheer-rehearsal", 3200 / 3800)).toBe(-1);
     expect(companionNextPlayRow("cheer-rehearsal", 3799 / 3800)).toBe(-1);
     expect(companionNextPlayRow("cheer-rehearsal", 1)).toBe(-1);
@@ -23,7 +25,7 @@ describe("finite authored companion play", () => {
     { kind: "ask-petting", duration: 2150, rows: [33, 33], ends: [1500, 2150], finalRow: 33, finalBeat: "checking" },
     { kind: "lean-nuzzle", duration: 1950, rows: [34, 9], ends: [1400, 1950], finalRow: 9, finalBeat: "checking" },
     { kind: "cozy-nest", duration: 3200, rows: [35, 36, 40], ends: [1500, 2350, 3200], finalRow: 40, finalBeat: "checking" },
-    { kind: "cheer-rehearsal", duration: 3800, rows: [9, 37, 38, 39, 9], ends: [750, 1600, 2250, 3200, 3800], finalRow: 9, finalBeat: "checking" },
+    { kind: "cheer-rehearsal", duration: 3800, rows: [9], ends: [3800], finalRow: 9, finalBeat: "play" },
     { kind: "doze-curl", duration: 2800, rows: [40], ends: [2800], finalRow: 40, finalBeat: "play" },
   ] as const;
   const allKinds = [...kinds, ...livingGestures.map(gesture => gesture.kind)];
@@ -165,9 +167,9 @@ describe("finite authored companion play", () => {
     for (const pose of samples) {
       expect(rows).toContain(pose.row);
       expect(pose.phase).toBeGreaterThanOrEqual(0); expect(pose.phase).toBeLessThanOrEqual(1);
-      expect(Math.abs(pose.lift)).toBeLessThanOrEqual(3); expect(Math.abs(pose.lean)).toBeLessThanOrEqual(7);
+      expect(Math.abs(pose.lift)).toBeLessThanOrEqual(kind === "cheer-rehearsal" ? 24.001 : 3); expect(Math.abs(pose.lean)).toBeLessThanOrEqual(7);
       expect(pose.shift).toBe(0);
-      expect(pose.compression).toBeGreaterThanOrEqual(0); expect(pose.compression).toBeLessThanOrEqual(.045);
+      expect(pose.compression).toBeGreaterThanOrEqual(kind === "cheer-rehearsal" ? -.025001 : 0); expect(pose.compression).toBeLessThanOrEqual(kind === "cheer-rehearsal" ? .055001 : .045);
     }
     expect(samples.at(-1)).toEqual({ row: finalRow, phase: 1, beat: finalBeat, lift: 0, lean: 0, shift: 0, compression: 0 });
     expect(sampleCompanionPlay(kind, 2)).toEqual(samples.at(-1));

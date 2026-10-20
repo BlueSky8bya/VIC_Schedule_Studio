@@ -85,15 +85,21 @@ describe("142 declared QA model and safety gates", () => {
     for (const suite of ["tests/unit/companion-public-life-146.test.ts", "tests/unit/companion-preparation-budget-146.test.ts", "tests/unit/companion-cleanup-aftercare-146.test.ts", "tests/unit/companion-homage-catalog-146.test.ts", "tests/unit/companion-collection-art-146.test.ts"]) expect(PURE_SUITES).toContain(suite);
     for (const suite of ["companion-house-146.spec.ts", "companion-living-runtime-146.spec.ts"]) expect(NATIVE_SUITES).toContain(suite);
     for (const title of ["146 viewer 1920 dark occupied sofa and clear window storage", "146 viewer tidy carries all four same physical toys into the box before leisure", "146 curious actually lives on the public calendar across a continuous active sequence"]) expect(new RegExp(NATIVE_GREP).test(title)).toBe(true);
-    expect(PLANNED_NATIVE_CASE_COUNT).toBe(143);
-    expect(universe()).toMatchObject({ modeledEntries: 9, plannedNativeEntryCases: 27, plannedNativeFloatingTidyCases: 2, plannedNativeCaseCount: 143 });
+    expect(PLANNED_NATIVE_CASE_COUNT).toBe(169);
+    expect(universe()).toMatchObject({ modeledEntries: 9, plannedNativeEntryCases: 27, plannedNativeFloatingTidyCases: 2, plannedNativeCaseCount: 169 });
   });
   it("adds147 resting-item scroll and actual drag/flight regressions while retaining all older suites", () => {
     for (const suite of ["tests/unit/companion-item-anchor-147.test.ts", "tests/unit/companion-items-scroll-147.test.ts"]) expect(PURE_SUITES).toContain(suite);
     expect(NATIVE_SUITES).toContain("companion-items-scroll-147.spec.ts");
     for (const title of ["147 viewer 1920 full floor food and toy follow rapid native scroll", "147 viewer 1100 soft floor food and toy follow rapid native scroll", "147 studio 1920 off floor food and toy follow rapid native scroll", "147 preview 1920 full floor food and toy follow rapid native scroll", "147 native food and toy drag release keep the actual grip and unanchored flight"]) expect(new RegExp(NATIVE_GREP).test(title)).toBe(true);
-    expect(PLANNED_NATIVE_CASE_COUNT).toBe(130 + 12 + 1);
-    expect(NATIVE_SUITES).toHaveLength(11);
+    expect(PLANNED_NATIVE_CASE_COUNT).toBe(130 + 12 + 1 + 17 + 9);
+    expect(NATIVE_SUITES).toHaveLength(13);
+  });
+  it("registers149 body, household and object regression sources without dropping earlier cases", () => {
+    for (const suite of ["companion-cheer-149", "companion-home-life-policy-149", "companion-toy-play-149", "companion-food-aftertaste-149"])
+      expect(PURE_SUITES).toContain(`tests/unit/${suite}.test.ts`);
+    for (const suite of ["companion-living-149.spec.ts", "companion-objects-149.spec.ts"]) expect(NATIVE_SUITES).toContain(suite);
+    for (const title of ["149 studio full body cheer", "149 objects actual meal", "149 objects night routine"]) expect(new RegExp(NATIVE_GREP).test(title)).toBe(true);
   });
   it("uses only an exact owned PID tree and requires every declared personality evidence ID to pass", () => {
     expect(ownedTerminationCommand(1234, "win32", resolve("synthetic-windows"))).toEqual({ file: resolve("synthetic-windows/System32/taskkill.exe"), args: ["/PID", "1234", "/T", "/F"] });

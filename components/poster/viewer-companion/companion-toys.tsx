@@ -1,18 +1,22 @@
 "use client";
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { companionToyBoxDropReady, createCompanionToys, COMPANION_TOY_NAMES, type CompanionToy, type CompanionToyKind } from "@/lib/ui/viewer-companion/toys";
+import { companionToyBoxDropReady, createCompanionToys, COMPANION_TOY_NAMES, type CompanionToy, type CompanionToyKind, type CompanionToyAttachment } from "@/lib/ui/viewer-companion/toys";
 import type { Platform } from "@/lib/ui/viewer-companion/brain";
 import { logActivity } from "@/lib/activity/client";
 import { CompanionToyArt } from "./companion-toy-art";
 import type { CompanionToyExperience } from "@/lib/ui/viewer-companion/toy-tastes";
 import { createCompanionInputFrame } from "@/lib/ui/viewer-companion/input-frame";
 import "./companion-toys.css";
+import type { CompanionToyPlayPose } from "@/lib/ui/viewer-companion/toy-play";
 import { companionRoomItemLight, type CompanionRoomLightRect } from "@/lib/ui/viewer-companion/room-light";
 import { createCompanionItemAnchors } from "@/lib/ui/viewer-companion/item-anchor";
-import type { CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
+import { companionCalendarAnchorIdentity, type CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
+import { attachCompanionElementPoint, followCompanionElementPoint, type CompanionAnchorFrame, type CompanionElementPoint } from "@/lib/ui/viewer-companion/element-anchor";
 
 type Point = { x: number; y: number; platformId?: string };
+type RestingSource = { platformId: string; element: Element; identity?: string; frame: CompanionAnchorFrame; point: CompanionElementPoint };
+type ToyDrawing = { rotation: number; scale: number; facing: number; size: number; visible: boolean; use: CompanionToyPlayPose["use"]; effect: CompanionToyPlayPose["effect"] };
 export type CompanionToyControl = {
   setRoomLight: (room?: CompanionRoomLightRect, grade?: number) => void;
   sync: (platforms: readonly Platform[], bounds: { width: number; height: number }, now: number, smallHomeFloors?: readonly Platform[], getAnchor?: (id: string) => CompanionGeometryAnchor | undefined) => void;
@@ -26,8 +30,10 @@ export type CompanionToyControl = {
   pause: (now: number) => void;
   resume: (now: number) => void;
   carried: () => string | undefined;
+  item: (id: string) => CompanionToy | undefined;
+  witnessPlay: (id: string) => boolean;
   pick: (id: string, point: Point) => boolean;
-  carry: (id: string, point: Point) => boolean;
+  carry: (id: string, point: Point, drawing?: ToyDrawing) => boolean;
   put: (id: string, point: Point, now: number, toss?: boolean, asPlay?: boolean) => boolean;
   decline: (id: string, point: Point, now: number) => boolean;
   nudge: (id: string, point: Point, now: number) => boolean;
@@ -44,6 +50,8 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
   const itemAnchors = useRef<ReturnType<typeof createCompanionItemAnchors> | null>(null);
   itemAnchors.current ??= createCompanionItemAnchors();
   const anchorFor = useRef<((id: string) => CompanionGeometryAnchor | undefined) | undefined>(undefined);
+  const restingSources = useRef(new Map<string, RestingSource>());
+  const retainedSources = useRef(new Map<string, CompanionGeometryAnchor>());
   const pendingPlays = useRef(new Map<string, { kind: CompanionToyKind; outcome: "played" | "declined" }>());
   const pendingCarriedPlays = useRef(new Set<string>());
   const [items, setItems] = useState<{ id: string; kind: CompanionToyKind }[]>([]);
@@ -52,13 +60,16 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
   dragFrame.current ??= createCompanionInputFrame();
   const painted = useRef(new WeakMap<HTMLButtonElement, string>());
   const paintedLight = useRef(new WeakMap<HTMLButtonElement, number>());
+  const paintedPlay = useRef(new WeakMap<HTMLButtonElement, Map<string, string>>());
+  const playDrawings = useRef(new Map<string, ToyDrawing>());
+  const playExposure = useRef(new Map<string, { at: number; ms: number; changed: number; transform: string }>());
   const roomLight = useRef<{ room?: CompanionRoomLightRect; grade: number }>({ grade: 1 });
   const blockedRef = useRef(blocked); blockedRef.current = blocked;
   const dropBox = useRef<HTMLButtonElement | null>(null);
   const clearDropBox = useCallback(() => { dropBox.current?.removeAttribute("data-toy-over"); dropBox.current = null; }, []);
   const grab = (id: string) => {
     const toy = world.items().find(item => item.id === id); if (!toy) return;
-    const node = nodes.current.get(id), source = toy.platformId && node?.dataset.nativeItemAnchor !== undefined ? anchorFor.current?.(toy.platformId) : undefined;
+    const node = nodes.current.get(id), source = toy.platformId && node?.dataset.nativeItemAnchor !== undefined ? retainedSources.current.get(id) ?? anchorFor.current?.(toy.platformId) : undefined;
     let point: Point | undefined;
     if (source?.element?.isConnected) {
       // A native hit can arrive before the next JavaScript layout frame.
@@ -85,21 +96,49 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     if (onlyId && toy.id !== onlyId) return;
     const node = nodes.current.get(toy.id);
     if (!node) return;
+    if (!toy.carried) playDrawings.current.delete(toy.id);
+    const drawing = playDrawings.current.get(toy.id);
+    if (!drawing) playExposure.current.delete(toy.id);
+    const detail = drawing?.effect;
+    const local = { "--vc-toy-play-scale": String(drawing?.scale ?? 1), "--vc-toy-play-facing": String(drawing?.facing ?? 1), "--vc-toy-effect-opacity": String(detail?.opacity ?? 0), "--vc-toy-effect-x": `${(detail?.x ?? 0) * (drawing?.facing ?? 1) * (drawing?.size ?? 80) / 80}px`, "--vc-toy-effect-y": `${(detail?.y ?? 0) * (drawing?.size ?? 80) / 80}px` };
+    let localStyles = paintedPlay.current.get(node);
+    if (!localStyles) { localStyles = new Map(); paintedPlay.current.set(node, localStyles); }
+    for (const [key, value] of Object.entries(local)) if (localStyles.get(key) !== value) { node.style.setProperty(key, value); localStyles.set(key, value); }
+    if (drawing) { node.dataset.toyUse = drawing.use; node.dataset.playEffect = detail?.kind ?? "none"; }
+    else { delete node.dataset.toyUse; delete node.dataset.playEffect; }
     const light = companionRoomItemLight(toy, roomLight.current.room, roomLight.current.grade);
     if (paintedLight.current.get(node) !== light) { node.style.setProperty("--vc-item-room-light", String(light)); paintedLight.current.set(node, light); }
     node.hidden = Boolean(toy.hidden);
-    const anchor = toy.platformId && !toy.hidden && !toy.held && !toy.carried ? anchorFor.current?.(toy.platformId) : undefined;
+    if (toy.held || toy.carried || !toy.platformId) { restingSources.current.delete(toy.id); retainedSources.current.delete(toy.id); }
+    const anchor = toy.platformId && !toy.hidden && !toy.held && !toy.carried ? retainedSources.current.get(toy.id) ?? anchorFor.current?.(toy.platformId) : undefined;
     const visibilitySource = anchor?.element?.matches(".vc-home-floor") ? anchor.element.parentElement : anchor?.element;
     const source = anchor?.element && !visibilitySource?.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]")
       ? { element: anchor.element, left: anchor.left, top: anchor.top } : undefined;
+    if (source && toy.platformId && anchor?.width && anchor.height) {
+      const frame = { left: source.left, top: source.top, width: anchor.width, height: anchor.height };
+      const point = attachCompanionElementPoint(toy, frame);
+      if (point) restingSources.current.set(toy.id, { platformId: toy.platformId, element: source.element, identity: companionCalendarAnchorIdentity(source.element), frame, point });
+    }
     const point = itemAnchors.current!.project(node, toy, source);
-    const transform = "translate3d(" + point.x.toFixed(3) + "px," + point.y.toFixed(3) + "px,0) translate(-50%,-100%) rotate(" + toy.angle.toFixed(2) + "deg)";
+    const transform = "translate3d(" + point.x.toFixed(3) + "px," + point.y.toFixed(3) + "px,0) translate(-50%,-100%) rotate(" + (toy.angle + (drawing?.rotation ?? 0)).toFixed(2) + "deg)";
+    if (drawing?.visible && !toy.hidden && !blockedRef.current && !document.hidden && node.isConnected && !node.closest("[hidden],[inert]")
+      && point.x + 22 > 0 && point.x - 22 < innerWidth && point.y > 0 && point.y - 44 < innerHeight) {
+      const image = node.querySelector<HTMLImageElement>(".vc-toy-art");
+      if (image?.complete && image.naturalWidth) {
+        const now = performance.now(), previous = playExposure.current.get(toy.id);
+        playExposure.current.set(toy.id, { at: now, ms: (previous?.ms ?? 0) + (previous ? Math.min(100, Math.max(0, now - previous.at)) : 0), changed: (previous?.changed ?? 0) + (previous?.transform === transform ? 0 : 1), transform });
+      } else playExposure.current.delete(toy.id);
+    } else playExposure.current.delete(toy.id);
     if (painted.current.get(node) !== transform) { node.style.transform = transform; painted.current.set(node, transform); }
     for (const [key, value] of Object.entries({ held: String(toy.held), carried: String(toy.carried), kind: toy.kind, platform: toy.platformId ?? "", falling: String(!toy.held && !toy.carried && !toy.platformId && !toy.hidden) })) if (node.dataset[key] !== value) node.dataset[key] = value;
     node.disabled = blockedRef.current;
   }); }, [world]);
   const refresh = useCallback(() => {
     const next = world.items();
+    const ids = new Set(next.map(toy => toy.id));
+    for (const id of playDrawings.current.keys()) if (!ids.has(id)) playDrawings.current.delete(id);
+    for (const id of playExposure.current.keys()) if (!ids.has(id)) playExposure.current.delete(id);
+    for (const id of restingSources.current.keys()) if (!ids.has(id)) { restingSources.current.delete(id); retainedSources.current.delete(id); }
     setItems(previous => previous.length === next.length && previous.every((item, i) => item.id === next[i].id) ? previous : next.map(({ id, kind }) => ({ id, kind })));
     if (count.current !== next.length) { count.current = next.length; onCount(next.length); }
     paint();
@@ -119,15 +158,47 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
       if (previous.grade === grade && ["left", "right", "top", "bottom"].every(key => previous.room?.[key as keyof CompanionRoomLightRect] === room?.[key as keyof CompanionRoomLightRect])) return;
       roomLight.current = { room: room && { ...room }, grade }; paint();
     },
-    sync(platforms, bounds, now, smallHomeFloors, getAnchor) { if (getAnchor) anchorFor.current = getAnchor; world.sync(platforms, bounds, now, smallHomeFloors); paint(); },
+    sync(platforms, bounds, now, smallHomeFloors, getAnchor) {
+      if (getAnchor) anchorFor.current = getAnchor;
+      retainedSources.current.clear();
+      const current = new Set([...platforms, ...(smallHomeFloors ?? [])].filter(p => !p.bodyOnly && !["control", "hide"].includes(p.kind)).map(p => p.id));
+      const readings = new Map<Element, DOMRect>(), attachments: CompanionToyAttachment[] = [];
+      world.visit(toy => {
+        if (!toy.platformId || toy.held || toy.carried || current.has(toy.platformId)) return;
+        const bound = restingSources.current.get(toy.id);
+        if (!bound || bound.platformId !== toy.platformId || !bound.element.isConnected || bound.identity !== companionCalendarAnchorIdentity(bound.element)) return;
+        let rect = readings.get(bound.element);
+        if (!rect) { rect = bound.element.getBoundingClientRect(); readings.set(bound.element, rect); }
+        const visibilitySource = bound.element.matches(".vc-home-floor") ? bound.element.parentElement : bound.element;
+        const hidden = rect.width <= 0 || rect.height <= 0 || Boolean(visibilitySource?.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]"));
+        const frame = hidden ? bound.frame : { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+        const point = followCompanionElementPoint(bound.point, frame);
+        if (!point) return;
+        // A clipped landing list cannot detach an existing real object.
+        // Retain only this object's source; never add it to flight landings.
+        attachments.push({ id: toy.id, platformId: toy.platformId, ...point, hidden });
+        retainedSources.current.set(toy.id, { element: bound.element, ...frame, identity: bound.identity });
+      });
+      world.sync(platforms, bounds, now, smallHomeFloors, attachments); paint();
+    },
     tick(now) { world.tick(now); if (world.count() !== count.current) refresh(); else paint(); },
     spawn(point, now, autonomous = false, occupied) { if (blockedRef.current) return; const id = world.spawn(point, now, occupied); if (id) { refresh(); if (!autonomous) { const toy = world.items().find(item => item.id === id); if (toy) onExperience?.(toy.kind, "taken-out"); } onActivity(); } return id; },
     occupied: world.occupied,
     available: world.available, ids: world.ids, count: () => count.current, moving: world.moving, carried: world.carried,
+    item: id => world.items().find(toy => toy.id === id),
+    witnessPlay(id) {
+      const node = nodes.current.get(id), exposure = playExposure.current.get(id), image = node?.querySelector<HTMLImageElement>(".vc-toy-art");
+      if (world.carried() !== id || !playDrawings.current.has(id) || !exposure || exposure.ms < 400 || exposure.changed < 3 || blockedRef.current || document.hidden
+        || !node?.isConnected || node.hidden || node.closest("[hidden],[inert]") || !image?.complete || !image.naturalWidth) return false;
+      const style = getComputedStyle(node), rect = node.getBoundingClientRect();
+      const imageStyle = getComputedStyle(image);
+      return style.visibility === "visible" && style.display !== "none" && Number(style.opacity) > 0 && imageStyle.visibility === "visible" && imageStyle.display !== "none"
+        && rect.width > 0 && rect.height > 0 && rect.right > 0 && rect.left < innerWidth && rect.bottom > 0 && rect.top < innerHeight;
+    },
     pause: pauseModel,
     resume(now) { if (!blockedRef.current) world.resume(now); },
     pick(id, point) { const ok = world.pick(id, point); if (ok) { pendingPlays.current.delete(id); pendingCarriedPlays.current.add(id); } paint(id); return ok; },
-    carry(id, point) { const ok = world.carry(id, point); paint(id); return ok; },
+    carry(id, point, drawing) { const ok = world.carry(id, point); if (ok && drawing) playDrawings.current.set(id, drawing); else playDrawings.current.delete(id); paint(id); return ok; },
     put(id, point, now, toss, asPlay = false) { const toy = world.items().find(item => item.id === id), ok = world.put(id, point, now, toss); paint(); if (ok) { pendingCarriedPlays.current.delete(id); if (toy && asPlay) pendingPlays.current.set(id, { kind: toy.kind, outcome: "played" }); onActivity(); } return ok; },
     nudge(id, point, now) { const toy = world.items().find(item => item.id === id), ok = world.nudge(id, point, now); paint(); if (ok) { if (toy) pendingPlays.current.set(id, { kind: toy.kind, outcome: "played" }); onActivity(); } return ok; },
     decline(id, point, now) { const toy = world.items().find(item => item.id === id), ok = world.nudge(id, point, now); paint(); if (ok) { if (toy) pendingPlays.current.set(id, { kind: toy.kind, outcome: "declined" }); onActivity(); } return ok; },
@@ -166,7 +237,7 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     paint();
   }, [blocked, world, paint, pauseModel]);
   useEffect(() => () => { pauseModel(performance.now()); }, [pauseModel]);
-  useEffect(() => () => itemAnchors.current!.clearAll(), []);
+  useEffect(() => () => { itemAnchors.current!.clearAll(); restingSources.current.clear(); retainedSources.current.clear(); }, []);
   useEffect(() => { if (hidden) clearDropBox(); }, [hidden, clearDropBox]);
   const finish = (event: React.PointerEvent<HTMLButtonElement>, cancelled = false) => {
     const current = drag.current;

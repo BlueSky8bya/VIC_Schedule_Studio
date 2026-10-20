@@ -52,7 +52,9 @@ export const COMPANION_PLAY_TIMING: Readonly<Record<CompanionPlay, PlayTiming>> 
   "ask-petting": timing({ row: 33, duration: 1500, beat: "play" }, { row: 33, duration: 650, beat: "checking" }),
   "lean-nuzzle": timing({ row: 34, duration: 1400, beat: "play" }, { row: 9, duration: 550, beat: "checking" }),
   "cozy-nest": timing({ row: 35, duration: 1500, beat: "play", cycles: 3 }, { row: 36, duration: 850, beat: "play" }, { row: 40, duration: 850, beat: "checking" }),
-  "cheer-rehearsal": timing({ row: 9, duration: 750, beat: "play" }, { row: 37, duration: 850, beat: "play" }, { row: 38, duration: 650, beat: "checking" }, { row: 39, duration: 950, beat: "play" }, { row: 9, duration: 600, beat: "checking" }),
+  // The pompom body bounces throughout; keep the calibrated happy face
+  // without adding limbs or cutting back to historical held-prop keys.
+  "cheer-rehearsal": timing({ row: 9, duration: 3800, beat: "play" }),
   "doze-curl": timing({ row: 40, duration: 2800, beat: "play" }),
 });
 

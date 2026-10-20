@@ -32,6 +32,9 @@ export type PersonalitySceneInput = {
   toyPlayCounts?: Partial<Record<CompanionToyKind, number>>; toyCount?: number; curtainPhase?: "open" | "shade" | "closed"; lightLit?: boolean; familiarHour?: boolean; learnedMorning?: boolean; carriedToyId?: string; carriedFoodId?: string; deferredToyId?: string; interruptedItemId?: string;
   music?: { mood?: CompanionRadioMood; familiar: boolean }; radioPlaying?: boolean;
   experience?: Pick<CompanionAgentExperience, "score">;
+  /** Normalize autonomous light/TV intent before its state comparison and
+   * actual route. Human stores and curtain/radio choices stay independent. */
+  homeLifeControl?: (command: Extract<SceneBeat, { kind: "light" | "tv" }>, context: Readonly<{ id: string; beat: number; steps: readonly SceneBeat[] }>) => Extract<SceneBeat, { kind: "light" | "tv" }>;
 };
 /** Runtime-owned completion of a decoded finite TV look, never a physical ACK. */
 export type PersonalityTvWatchCompletion = {
@@ -728,6 +731,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
       return Boolean(cleanup && unfinishedReturn(cleanup,input));
     },
     current: () => active ? { id: active.recipe.id, beat: active.beat, itemId: active.itemId, ...(active.routine ? { routine: true as const } : {}) } : undefined,
+    owns: (beat: PersonalitySceneBeat) => Boolean(active && active.recipe.id === beat.id && active.serial === beat.serial && active.beat === beat.beat),
     bind(beat: PersonalitySceneBeat, itemId: string) { if (active?.serial === beat.serial && active.beat === beat.beat && !active.itemId) active.itemId = itemId; },
     completed: () => [...completed],
     /** Called only after a real native effect acknowledges success. */
@@ -869,6 +873,10 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
           active.tvChoice=choice;command={...command,state:choice.state};
         }
         if (!command) { finish(true); return; }
+        if (input.homeLifeControl && (command.kind === "light" || command.kind === "tv")) {
+          const normalized = input.homeLifeControl(command, { id: active.recipe.id, beat: active.beat, steps: active.recipe.steps });
+          if (normalized.kind === command.kind) command = normalized;
+        }
         // S03's same-ID return still happens at high energy. Only its now
         // unnecessary cushion/sleep tail is omitted after the actual ACK.
         if (!active.routine && !authoredSleepNeeded(input)

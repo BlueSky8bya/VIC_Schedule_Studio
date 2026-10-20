@@ -22,6 +22,7 @@ export function CompanionWardrobePreview({ accessory, behaviors, enabled, intera
     if (!context) return;
     const hosts = { back: back.current, front: front.current, gift: gift.current };
     let disposed = false;
+    let paintedCell = "", paintedRegistration = "";
     let painter: ReturnType<typeof import("@/lib/ui/viewer-companion/accessory").createCompanionAccessoryPainter> | undefined;
     // An undecorated portrait needs no attachment landmarks or wardrobe atlas.
     // A late import belongs only to this effect's still-current accessory.
@@ -45,18 +46,30 @@ export function CompanionWardrobePreview({ accessory, behaviors, enabled, intera
       // change its source, move its live DOM owner or touch the shared LRU.
       const image = peekDecodedCompanionSprite(selection.src);
       if (!image) return false;
-      const frame = companionPreviewDrawing(selection, image.naturalWidth, image.naturalHeight);
-      context.clearRect(0, 0, drawing.width, drawing.height);
-      context.drawImage(image, frame.sourceX, frame.sourceY, frame.sourceWidth, frame.sourceHeight, 0, 0, drawing.width, drawing.height);
-      spritePlane.style.transform = `translate(${frame.x}%,${frame.y}%)`;
-      spritePlane.style.clipPath = `inset(${frame.clip.map(value => `${value}%`).join(" ")})`;
+      // Local pose/props can move every display frame while the authored
+      // drawing holds its8Hz cell. Reuse those pixels and registration until
+      // the adopted cell changes, rather than repainting the same canvas.
+      const cell = `${selection.src}:${selection.index}`;
+      if (paintedCell !== cell) {
+        const frame = companionPreviewDrawing(selection, image.naturalWidth, image.naturalHeight);
+        context.clearRect(0, 0, drawing.width, drawing.height);
+        context.drawImage(image, frame.sourceX, frame.sourceY, frame.sourceWidth, frame.sourceHeight, 0, 0, drawing.width, drawing.height);
+        paintedCell = cell;
+        const registration = `${frame.x}:${frame.y}:${frame.clip.join(":")}`;
+        if (paintedRegistration !== registration) {
+          spritePlane.style.transform = `translate(${frame.x}%,${frame.y}%)`;
+          spritePlane.style.clipPath = `inset(${frame.clip.map(value => `${value}%`).join(" ")})`;
+          paintedRegistration = registration;
+        }
+      }
       const bob = shape.bob + sample.lift, tilt = shape.tilt + sample.lean;
       const material = companionMaterialScale(shape.scaleY * (1 - sample.compression));
       posePlane.style.transform = `translateY(${bob}px) rotate(${tilt}deg) scale(${material.scaleX},${material.scaleY})`;
       painter?.paint(selection, accessory, false);
-      element.dataset.previewRow = String(shape.row);
-      element.dataset.previewAccessory = painter ? accessory ?? "none" : "none";
-      element.dataset.previewReady = "";
+      const row = String(shape.row), worn = painter ? accessory ?? "none" : "none";
+      if (element.dataset.previewRow !== row) element.dataset.previewRow = row;
+      if (element.dataset.previewAccessory !== worn) element.dataset.previewAccessory = worn;
+      if (element.dataset.previewReady !== "") element.dataset.previewReady = "";
       return true;
     };
     const prepare = async (row: number, token: number) => {
@@ -90,7 +103,7 @@ export function CompanionWardrobePreview({ accessory, behaviors, enabled, intera
           });
           return;
         }
-        const due = nextCompanionPaint(now, paintedAt, 14);
+        const due = nextCompanionPaint(now, paintedAt, behavior === "cheer-rehearsal" ? 60 : 14);
         if (due !== null) { paintedAt = due; paint(behavior, now - start, now); }
         raf = requestAnimationFrame(tick);
       };

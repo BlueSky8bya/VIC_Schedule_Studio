@@ -82,7 +82,7 @@ export function CompanionWardrobe({ collection, preferences, active }: { collect
   const selectIndex = (index: number, focus = false, inspect = false) => { const accessory = COMPANION_WEARABLE_IDS[index]; if (focus) pendingFocus.current = accessory; return select(accessory, inspect); };
   return active ? <div className="rhh-companion-wardrobe rhh-collection-book" ref={host}>
     <span className="sr-only" id={unreadDescription}>새로 발견한 항목</span>
-    <div className="rhh-collection-heading"><Shirt aria-hidden="true" size={23} /><h3>옷장</h3>{unread.accessories > 0 && <span aria-label="새로 발견한 항목" className="rhh-collection-unread" data-unread="" role="img">!</span>}<span>{ownedCount}/{COMPANION_WEARABLE_IDS.length}</span></div>
+    <div className="rhh-collection-heading"><Shirt aria-hidden="true" size={23} /><h3>옷장</h3>{unread.accessories > 0 && <span aria-label="새로 발견한 항목" className="rhh-collection-unread" data-unread="" role="img">!</span>}<span className="rhh-collection-count">{ownedCount}/{COMPANION_WEARABLE_IDS.length}</span></div>
     {gifts?.pending && <div className="rhh-gift-arrival"><CompanionCollectionArt kind="gift" /><strong>선물이 도착했어요</strong><button className="rhh-link" data-act="companion-gift-open" data-sfx="off" onClick={openGift} type="button">선물 열기</button></div>}
     <div className="rhh-collection-detail rhh-wardrobe-detail">
       <div className="rhh-wardrobe-fitting-stage" data-unfound={selectedAccessory !== null && !owned || undefined}>{selectedAccessory !== null && !owned ? <CompanionCollectionArt kind="accessory" id={selectedAccessory} className="rhh-wardrobe-silhouette" /> : <CompanionWardrobePreview accessory={previewAccessory} behaviors={collection?.behaviors ?? []} enabled={preferences.enabled} />}

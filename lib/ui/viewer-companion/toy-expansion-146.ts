@@ -20,7 +20,7 @@ export const COMPANION_TOY_EXPANSION_146 = Object.freeze([
   { id: "tori-acrylic-stand", name: "안녕하세요 토리 스탠드", rarity: "ultra-rare", width: 30, height: 40, hint: "안녕하세요 하고 인사하는 토리님을 닮은 조그만 아크릴 장식이에요." },
   { id: "practice-baseball-bat", name: "풀트 연습 배트", rarity: "rare", width: 40, height: 42, hint: "야구 연습 방송을 떠올리는 작은 배트예요. 끝을 밀어 데굴데굴 굴려요." },
   { id: "practice-baseball-glove", name: "연습장 야구 글러브", rarity: "rare", width: 36, height: 34, hint: "야구 연습 장면을 닮은 글러브 소품이에요. 앞발로 폭신한 안쪽을 눌러 봐요." },
-  { id: "cheer-pompom", name: "SBO 응원수술", rarity: "rare", width: 36, height: 36, hint: "치어리더 방송의 응원 장면을 떠올리는 반짝이는 수술이에요." },
+  { id: "cheer-pompom", name: "SBO 응원 폼폼", rarity: "rare", width: 36, height: 36, hint: "치어리더 방송의 응원 장면을 떠올리는 반짝이는 폼폼이에요." },
   { id: "broadcast-microphone", name: "노래방송 마이크", rarity: "ultra-rare", width: 36, height: 40, hint: "1주년 노래 방송을 떠올리는 마이크 소품이에요. 살짝 기대어 가수 흉내를 내요." },
   { id: "vr-headset", name: "VRC 고글 소품", rarity: "ultra-rare", width: 40, height: 30, hint: "VRC 방송의 신나는 외출을 떠올리는 고글이에요. 실물 장비 대신 작은 소품으로 만나요." },
   { id: "vr-fishing-rod", name: "생일 낚싯대 소품", rarity: "rare", width: 40, height: 40, hint: "생일 VRC 낚시 장면을 떠올리는 낚싯대예요. 동그란 찌를 살짝 건드려 봐요." },

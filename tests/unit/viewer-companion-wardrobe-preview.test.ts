@@ -13,11 +13,11 @@ describe("isolated discovered wardrobe gestures", () => {
   });
 
   it("samples only each discovered row even when its world sequence contains other gestures", () => {
-    const expected = { "ask-petting": 33, "lean-nuzzle": 34, "paper-knead": 35, "paper-nest": 36, "cheer-rehearsal": 39, "doze-curl": 40, groom: 30, bow: 29, pounce: 31, tumble: 21, dizzy: 22, stretch: 16 };
+    const expected = { "ask-petting": 33, "lean-nuzzle": 34, "paper-knead": 35, "paper-nest": 36, "cheer-rehearsal": 9, "doze-curl": 40, groom: 30, bow: 29, pounce: 31, tumble: 21, dizzy: 22, stretch: 16, "odd-food-reaction": 23 };
     expect(Object.keys(expected)).toEqual([...COMPANION_BEHAVIOR_IDS]);
     for (const id of COMPANION_BEHAVIOR_IDS) {
       const duration = companionPreviewDuration(id);
-      expect(duration).toBeGreaterThan(0); expect(duration).toBeLessThanOrEqual(2800);
+      expect(duration).toBeGreaterThan(0); expect(duration).toBeLessThanOrEqual(id === "cheer-rehearsal" ? 3800 : 2800);
       for (let step = 0; step < 100; step++) expect(sampleCompanionPreview(id, duration * step / 100).row).toBe(expected[id]);
       expect(sampleCompanionPreview(id, duration).row).toBe(0);
       expect(sampleCompanionPreview(id, duration + 500).row).toBe(0);

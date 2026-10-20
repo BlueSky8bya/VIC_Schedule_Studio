@@ -218,14 +218,13 @@ html[data-theme="dark"] .vc-home-object-image { opacity: .92; }
 .vc-home-lamp-cord { position: absolute; z-index: 0; top: 0; left: 50%; width: var(--vc-lamp-paint-width); height: var(--vc-lamp-cord-height); transform: translateX(-50%); filter: brightness(var(--vc-room-art-grade)); }
 .vc-home-lamp-paint > img { z-index: 1; }
 .vc-home-lamp-bulb { z-index: 2; }
-/* A single continuous rope starts at the lower wall-registered rod.
-   Keep its old knob height from the former wall-width, so
-   the actual measured contact is retained rather than extending actor reach. */
-.vc-curtain-control { --vc-curtain-rod-top: calc(var(--vc-window-top) - 6px); --vc-curtain-cord-height: calc(11px + var(--vc-window-wall-width) * .37 + max(27px, calc(var(--vc-room-height) - 275px)) - var(--vc-curtain-rod-top)); position: absolute; z-index: 4; left: calc(var(--vc-window-left) - 10px); top: var(--vc-curtain-rod-top); width: var(--vc-object-min-hit); height: max(var(--vc-object-min-hit), var(--vc-curtain-cord-height)); padding: 0; border: 0; border-radius: var(--r-pill); background: transparent; cursor: pointer; }
+/* The image's rod is at(10,17) in its256x192 registered overlay, below the
+   transparent canvas top. Preserve the existing reachable knob height. */
+.vc-curtain-control { --vc-curtain-rod-top: calc(var(--vc-window-top) - 6px + (var(--vc-window-width) * 23 / 38 + 9px) * 17 / 192); --vc-curtain-rod-left: calc(var(--vc-window-left) - 7px + (var(--vc-window-width) + 14px) * 10 / 256); --vc-curtain-cord-height: calc(11px + var(--vc-window-wall-width) * .37 + max(27px, calc(var(--vc-room-height) - 275px)) - var(--vc-curtain-rod-top)); position: absolute; z-index: 4; left: calc(var(--vc-curtain-rod-left) - 7px); top: var(--vc-curtain-rod-top); width: var(--vc-object-min-hit); height: max(var(--vc-object-min-hit), var(--vc-curtain-cord-height)); padding: 0; border: 0; border-radius: var(--r-pill); background: transparent; cursor: pointer; }
 .vc-curtain-control > span { position: absolute; left: 6px; top: 0; width: 2px; height: var(--vc-curtain-cord-height); background: #a57c4c; filter: brightness(var(--vc-room-art-grade)); transform-origin: top; }
 .vc-curtain-control > span::after { content: ''; position: absolute; left: -3px; bottom: -3px; width: 8px; height: 11px; border-radius: 40%; background: #cba66d; border: 1px solid #8b6844; box-shadow: inset 1px 1px #f6e4b966; }
-.vc-curtain-control:hover > span { transform: translateY(2px); filter: brightness(1.1); }
-.vc-curtain-control:active > span { transform: translateY(4px); }
+.vc-curtain-control:hover > span { transform: scaleY(1.02); filter: brightness(1.1); }
+.vc-curtain-control:active > span { transform: scaleY(1.04); }
 html .vc-home button:where(:hover, :focus):not(:focus-visible) { outline: none; box-shadow: none; }
 .vc-home button:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: 2px; }
 .vc-home-lamp-bulb { position: absolute; left: calc(50% - 5px); top: calc(var(--vc-lamp-paint-width) * 34 / 44); width: 10px; height: 7px; border-radius: 50%; opacity: 0; background: #fff1bb; box-shadow: 0 0 12px 5px #ffcd6977; }

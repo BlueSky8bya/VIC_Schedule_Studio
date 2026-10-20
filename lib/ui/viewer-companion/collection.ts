@@ -8,10 +8,10 @@ export const COMPANION_COLLECTION_KEY = "vic.viewerCompanionCollection";
 export const COMPANION_COLLECTION_EVENT = "vic:companion-collection";
 export const COMPANION_CONSUMED_FOOD_EVENT = "vic:companion-consumed-food";
 export type CompanionConsumedFood = Readonly<{ kind: CompanionFoodKind; serial: number; newDiscovery: boolean }>;
-export const COMPANION_BEHAVIOR_IDS = Object.freeze(["ask-petting", "lean-nuzzle", "paper-knead", "paper-nest", "cheer-rehearsal", "doze-curl", "groom", "bow", "pounce", "tumble", "dizzy", "stretch"] as const);
+export const COMPANION_BEHAVIOR_IDS = Object.freeze(["ask-petting", "lean-nuzzle", "paper-knead", "paper-nest", "cheer-rehearsal", "doze-curl", "groom", "bow", "pounce", "tumble", "dizzy", "stretch", "odd-food-reaction"] as const);
 export type CompanionBehaviorId = typeof COMPANION_BEHAVIOR_IDS[number];
-export const COMPANION_BEHAVIOR_NAMES: Readonly<Record<CompanionBehaviorId, string>> = Object.freeze({ "ask-petting": "쓰담해 줘", "lean-nuzzle": "부비부비", "paper-knead": "꾹꾹이", "paper-nest": "자리 만들기", "cheer-rehearsal": "으쌰으쌰", "doze-curl": "꾸벅꾸벅", groom: "몸단장", bow: "꾸벅 인사", pounce: "폴짝!", tumble: "데굴데굴", dizzy: "빙글빙글", stretch: "쭉쭉" });
-export const COMPANION_BEHAVIOR_HINTS: Readonly<Record<CompanionBehaviorId, string>> = Object.freeze({ "ask-petting": "안전한 곳에서 가까이 머물러 보세요.", "lean-nuzzle": "쓰다듬으며 다정해진 빅타민 곁에 머물러 보세요.", "paper-knead": "쿠션으로 돌아가 편히 쉬게 해 주세요.", "paper-nest": "쿠션에서 자리를 고르는 모습을 지켜보세요.", "cheer-rehearsal": "활기찬 빅타민과 오래 함께 지내 보세요.", "doze-curl": "피곤한 빅타민이 집에서 쉬는 모습을 지켜보세요.", groom: "고양이 모드의 편안한 모습을 지켜보세요.", bow: "강아지 모드로 함께 지내 보세요.", pounce: "고양이 모드에서 다가와 놀 때를 기다려 보세요.", tumble: "활기차게 이동하는 모습을 지켜보세요.", dizzy: "장난을 마치고 어지럼을 가라앉히는 모습을 지켜보세요.", stretch: "쉬고 일어난 빅타민을 지켜보세요." });
+export const COMPANION_BEHAVIOR_NAMES: Readonly<Record<CompanionBehaviorId, string>> = Object.freeze({ "ask-petting": "쓰담해 줘", "lean-nuzzle": "부비부비", "paper-knead": "꾹꾹이", "paper-nest": "자리 만들기", "cheer-rehearsal": "으쌰으쌰", "doze-curl": "꾸벅꾸벅", groom: "몸단장", bow: "꾸벅 인사", pounce: "폴짝!", tumble: "데굴데굴", dizzy: "빙글빙글", stretch: "쭉쭉", "odd-food-reaction": "이 맛은…!" });
+export const COMPANION_BEHAVIOR_HINTS: Readonly<Record<CompanionBehaviorId, string>> = Object.freeze({ "ask-petting": "안전한 곳에서 가까이 머물러 보세요.", "lean-nuzzle": "쓰다듬으며 다정해진 빅타민 곁에 머물러 보세요.", "paper-knead": "쿠션으로 돌아가 편히 쉬게 해 주세요.", "paper-nest": "쿠션에서 자리를 고르는 모습을 지켜보세요.", "cheer-rehearsal": "활기찬 빅타민과 오래 함께 지내 보세요.", "doze-curl": "피곤한 빅타민이 집에서 쉬는 모습을 지켜보세요.", groom: "고양이 모드의 편안한 모습을 지켜보세요.", bow: "강아지 모드로 함께 지내 보세요.", pounce: "고양이 모드에서 다가와 놀 때를 기다려 보세요.", tumble: "활기차게 이동하는 모습을 지켜보세요.", dizzy: "장난을 마치고 어지럼을 가라앉히는 모습을 지켜보세요.", stretch: "쉬고 일어난 빅타민을 지켜보세요.", "odd-food-reaction": "특별한 맛을 먹은 뒤 빅타민의 표정을 지켜보세요." });
 export type CompanionCollectionSeen = { foods: CompanionFoodKind[]; behaviors: CompanionBehaviorId[]; situations: CompanionSituationId[]; accessories: CompanionAccessoryId[] };
 export type CompanionCollectionKind = "food" | "behavior" | "moment" | "accessory";
 export type CompanionCollection = { version: 1; foods: CompanionFoodKind[]; behaviors: CompanionBehaviorId[]; situations: CompanionSituationId[]; gifts: CompanionGiftState; seen?: CompanionCollectionSeen };
@@ -33,10 +33,12 @@ export function getCompanionUnreadCounts(value: CompanionCollection | null | und
   return { foods, memories, accessories, total: foods + memories + accessories };
 }
 const behaviorRows: Readonly<Record<number, CompanionBehaviorId>> = Object.freeze({ 33: "ask-petting", 34: "lean-nuzzle", 35: "paper-knead", 36: "paper-nest", 39: "cheer-rehearsal", 40: "doze-curl", 30: "groom", 29: "bow", 31: "pounce", 21: "tumble", 22: "dizzy", 16: "stretch" });
-export type CompanionBehaviorObservation = { requestedRow: number; requestedIndex: number; adoptedIndex?: number; requestedSrc: string; adoptedSrc?: string; decoded: boolean; visible: boolean };
+export type CompanionBehaviorObservation = { requestedRow: number; requestedIndex: number; adoptedIndex?: number; requestedSrc: string; adoptedSrc?: string; decoded: boolean; visible: boolean; /** Only a witnessed sequence of airborne body cheers on the calibrated happy drawing. */ cheerBounce?: boolean; /** Actual consumed-food receipt and a legible finite reaction, never ordinary recovery. */ foodAftertaste?: boolean };
 /** A requested semantic row cannot stamp an old retained fallback image. */
 export function observedCompanionBehavior(observation: CompanionBehaviorObservation): CompanionBehaviorId | undefined {
   if (!observation.visible || !observation.decoded || !Number.isInteger(observation.requestedIndex) || observation.requestedIndex < 0 || observation.adoptedIndex !== observation.requestedIndex || !observation.requestedSrc || observation.adoptedSrc !== observation.requestedSrc) return;
+  if (observation.requestedRow === 9 && observation.cheerBounce === true) return "cheer-rehearsal";
+  if (observation.requestedRow === 23 && observation.foodAftertaste === true) return "odd-food-reaction";
   return behaviorRows[observation.requestedRow];
 }
 export function normalizeCompanionCollection(value: unknown): CompanionCollection {

@@ -4,6 +4,10 @@ import { companionWorkExpressionsFor, companionWorkExpressionPose, type Companio
 
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
+import { sampleCompanionCheer } from "@/lib/ui/viewer-companion/cheer";
+import { companionToyPlayDuration, sampleCompanionToyPlay } from "@/lib/ui/viewer-companion/toy-play";
+import type { CompanionToyKind } from "@/lib/ui/viewer-companion/toy-catalog";
+import { createCompanionFoodAftertaste, sampleCompanionFoodAftertaste, type CompanionFoodAftertaste } from "@/lib/ui/viewer-companion/food-aftertaste";
 import dynamic from "next/dynamic";
 import { soundEnabled, soundVolume } from "@/lib/ui/sfx";
 import { Home, X } from "lucide-react";
@@ -22,6 +26,7 @@ import { COMPANION_AGENT_EXPERIENCE_KEY, createCompanionAgentExperienceStore, re
 import { createCompanionPersonalityJobs, getCompanionPersonalityMeal } from "@/lib/ui/viewer-companion/personality-jobs";
 import { canCompanionSetHomeTv, companionHomeTvControl, getCompanionHomeTv, setCompanionHomeTv } from "@/lib/ui/viewer-companion/home-room-media";
 import { canCompanionSetHomeLight, getCompanionHomeLight, setCompanionHomeLight } from "@/lib/ui/viewer-companion/home-light";
+import { companionHomeLifePhaseFor, createCompanionHomeLifePolicy, planCompanionHomeLifeControl, type CompanionHomeLifeAction, type CompanionHomeLifePhase } from "@/lib/ui/viewer-companion/home-life-policy";
 import { canCompanionSetCurtain, getCompanionCurtainChoice, setCompanionCurtainChoice, subscribeCompanionCurtainChoice } from "@/lib/ui/viewer-companion/home-curtain-control";
 import { companionHomeOpeningContact, companionHomeResidentFloor, companionRoomBodyLight, COMPANION_WASH_SUPPORT, sampleCompanionHomeReach } from "@/lib/ui/viewer-companion/home-interaction";
 import { COMPANION_THROW_LIMITS, createCompanionThrow, createCompanionThrowVelocity, stepCompanionThrow, type CompanionThrowState, type CompanionThrowVelocity } from "@/lib/ui/viewer-companion/throw";
@@ -113,7 +118,7 @@ import "./viewer-companion.css";
 
 type Props = { onOpenBook: (destination?: "personality") => void; root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; workspaceBusy?: boolean; editing?: boolean; agenda: boolean; monthKey: string; context?: CompanionHomeEnvironmentContext; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; launcherHost?: HTMLElement | null; compactHost?: HTMLElement | null; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void; positionMemory?: CompanionPositionMemory };
 type Control = Record<Exclude<CompanionHomeAction, "book"> | "place" | "rest" | "toys" | "toyChanged" | "toyTouched" | "toyReturned", () => void>;
-type RuntimeAction = CompanionAction & { workExpression?: CompanionWorkExpressionOffer; personalityScene?: PersonalitySceneBeat; personalityJobEnd?: true; foodRefusal?: { foodId: string; kind: CompanionFoodKind }; toyMishap?: CompanionToyTripWitness; personalitySignature?: CompanionPreferences["personality"]; scene?: CompanionSceneAction["scene"]; toy?: CompanionToyAction["toy"]; toyApproach?: { element: HTMLElement; effect: "stash" | "spawn"; duration: number }; household?: CompanionHouseholdBeat; radio?: { generation: number; reaction: CompanionRadioReaction; bpm: number; instrument?: CompanionInstrumentReaction } };
+type RuntimeAction = CompanionAction & { homeLife?: CompanionHomeLifeAction["homeLife"]; toyPerformance?: { id: string; kind: CompanionToyKind }; foodAftertaste?: CompanionFoodAftertaste; workExpression?: CompanionWorkExpressionOffer; personalityScene?: PersonalitySceneBeat; personalityJobEnd?: true; foodRefusal?: { foodId: string; kind: CompanionFoodKind }; toyMishap?: CompanionToyTripWitness; personalitySignature?: CompanionPreferences["personality"]; scene?: CompanionSceneAction["scene"]; toy?: CompanionToyAction["toy"]; toyApproach?: { element: HTMLElement; effect: "stash" | "spawn"; duration: number }; household?: CompanionHouseholdBeat; radio?: { generation: number; reaction: CompanionRadioReaction; bpm: number; instrument?: CompanionInstrumentReaction } };
 const sampleWorldMusic = (music: NonNullable<RuntimeAction["radio"]>, age: number) => music.instrument ? sampleCompanionInstrumentReaction(music.instrument, age, music.bpm) : sampleCompanionRadioReaction(music.reaction, age, music.bpm);
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -298,6 +303,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     const preferences = preferencesRef.current;
     const el = body.current, button = actor.current, page = root.current, image = sprite.current, poseLayer = pose.current, reactionLayer = reaction.current, facingLayer = facing.current, contactLayer = contact.current, inertiaLayer = inertia.current;
     if (!ready || !el || !button || !page || !image || !poseLayer || !reactionLayer || !facingLayer || !contactLayer || !inertiaLayer || !preferences.enabled) { if (lastPose.current) lastPose.current.restartSupport = undefined; return; }
+    let witnessedCheerHops = 0, aftertastePaintMs = 0, aftertastePaintAt = 0;
+    const aftertastes = createCompanionFoodAftertaste();
     el.dataset.lifePurpose = "ordinary";
     if (blocked) { if (lastPose.current) lastPose.current.restartSupport = undefined; el.hidden = true; setSuspended(true); setHomeExpanded(false); return; }
     // Settings/auto/storage notifications own this snapshot. Animation frames
@@ -528,6 +535,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     let pointer: { x: number; y: number } | undefined, pointerAnchor: { x: number; y: number } | undefined, pointerStableSince = 0, heartResult: "added" | "removed" | "blocked" | "missing" | null = null;
     const foodCuriosity = createCompanionFoodCuriosity();
     const household = createCompanionHousehold();
+    const homeLifePolicy = createCompanionHomeLifePolicy();
+    const homeLifeScenePhases = new Map<string, CompanionHomeLifePhase>();
+    let homeLifePending: { original: RuntimeAction; phase: CompanionHomeLifePhase; personality: CompanionPreferences["personality"]; deadline: number; retryAt: number; legs: number; failures: number; targetRatio?: number; controlsReady?: boolean } | undefined;
+    let homeLifeEffectApplied = false, homeLifeEffectSucceeded = false;
+    const cancelHomeLife = () => { homeLifePending = undefined; el.removeAttribute("data-home-life"); };
     const reactive = createCompanionReactiveCues();
     let nextCueProbe = 0;
     const toyPlanner = createCompanionToyPlanner();
@@ -983,11 +995,16 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (status === "play" && (action?.play === "dizzy" || action?.play === "tumble" || action?.play === "slip-tumble") && sample.row === 23) heldInertia.reset();
       const sway = neutralVerticalRecovery ? { tilt: 0, stretch: 0 } : boundCompanionHeldPose(heldInertia.sample(performance.now()), physicalOrigin, physicalGrip, displayFrame.size, { width: innerWidth, height: innerHeight });
       const shape = heldPivot || presentationNow - releasedPivotAt < 100 ? boundCompanionHangingPose(sample, physicalOrigin, physicalGrip, displayFrame.size, { width: innerWidth, height: innerHeight }, sway) : { ...sample };
-      const play = action?.kind === "play" && action.play && status === "play" ? sampleCompanionPlay(action.play, (performance.now() - began) / total, reduced || gfxMode() === "off") : action?.kind === "sleep" && action.living === "cozy" && status === "sleep" ? sampleCompanionCozySleep(performance.now() - began, total, action.cozySettled, reduced || gfxMode() === "off") : undefined;
+      const playProgress = (performance.now() - began) / total;
+      const cheerQuiet = reduced || ["off", "soft"].includes(gfxMode());
+      const playingToy = action?.toyPerformance && status === "play" && toys.current?.carried() === action.toyPerformance.id ? sampleCompanionToyPlay(action.toyPerformance.kind, playProgress, cheerQuiet) : undefined;
+      const aftertaste = action?.foodAftertaste && status === "play" ? sampleCompanionFoodAftertaste(action.foodAftertaste.kind, playProgress, cheerQuiet) : undefined;
+      const play = aftertaste ?? (playingToy ? { ...playingToy, beat: "play" } : action?.kind === "play" && action.play && status === "play" ? sampleCompanionPlay(action.play, playProgress, reduced || gfxMode() === "off" || action.play === "cheer-rehearsal" && cheerQuiet) : action?.kind === "sleep" && action.living === "cozy" && status === "sleep" ? sampleCompanionCozySleep(performance.now() - began, total, action.cozySettled, reduced || gfxMode() === "off") : undefined);
       if (play) {
         // The current actual support owns world position throughout the gag.
         shape.bob += play.lift; shape.tilt += play.lean;
         shape.scaleY *= 1 - play.compression; shape.scaleX = 1 / shape.scaleY;
+        if (action?.play === "cheer-rehearsal") shape.bob = Math.max(-Math.max(0, physicalOrigin.y - 2), shape.bob);
         if ((action?.play === "dizzy" || action?.play === "tumble" || action?.play === "slip-tumble") && play.beat === "recover") Object.assign(shape, boundCompanionHangingPose(shape, physicalOrigin, { x: displayFrame.size / 2, y: displayFrame.size }, displayFrame.size, { width: innerWidth, height: innerHeight }, { tilt: 0, stretch: 0 }));
       }
       const accessoryMotion = action?.accessory && status === "look" && action.accessory === wardrobe.current.equipped ? sampleCompanionAccessoryMotion(action.accessory, performance.now() - began) : undefined;
@@ -1081,10 +1098,26 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       }
       const observed = { requestedRow: drawingRow, requestedIndex: selected.physicalIndex, adoptedIndex: paintedSelection?.physicalIndex, requestedSrc: selected.src, adoptedSrc: paintedSelection?.src,
         decoded: Boolean(paintedTexture?.complete && paintedTexture.naturalWidth && paintedTexture.parentElement === image && paintedTexture.getAttribute("src") === selected.src),
-        visible: !el.hidden && !document.hidden && displayOpacity > .05 };
+        visible: !el.hidden && !document.hidden && displayOpacity > .05, cheerBounce: false, foodAftertaste: false };
+      // Witness several actual airborne body beats, never a happy face alone.
+      if (action?.play === "cheer-rehearsal" && status === "play" && drawingRow === 9 && !washingPose && !interaction
+        && !cheerQuiet && observed.visible && observed.decoded && observed.adoptedIndex === observed.requestedIndex && observed.adoptedSrc === observed.requestedSrc) {
+        const bounce = sampleCompanionCheer(playProgress);
+        if (bounce.airborne && bounce.hop && shape.bob < -3) witnessedCheerHops |= 1 << bounce.hop;
+        observed.cheerBounce = playProgress >= .89 && witnessedCheerHops.toString(2).replaceAll("0", "").length >= 3;
+      }
+      const currentDrawing = observed.visible && observed.decoded && observed.adoptedIndex === observed.requestedIndex && observed.adoptedSrc === observed.requestedSrc;
+      if (aftertaste && currentDrawing && drawingRow === 23 && !cheerQuiet) {
+        const at = presentationNow;
+        if (aftertastePaintAt) aftertastePaintMs += Math.min(100, Math.max(0, at - aftertastePaintAt));
+        aftertastePaintAt = at;
+        observed.foodAftertaste = playProgress >= .8 && aftertastePaintMs >= 400;
+      } else aftertastePaintAt = 0;
+      if (playingToy && action?.toyPerformance && currentDrawing && playProgress >= .7 && !cheerQuiet && !toyPerformanceWitnessed)
+        toyPerformanceWitnessed = toys.current?.witnessPlay(action.toyPerformance.id) ?? false;
       if (action?.kind === "play" && action.play && observed.decoded && observed.visible && observed.adoptedIndex === observed.requestedIndex && observed.adoptedSrc === observed.requestedSrc
         && COMPANION_PLAY_TIMING[action.play].beats.some(beat => beat.row === drawingRow)) {
-        if (action.toy || action.personalityJobEnd && action.personalityScene?.command.kind === "toy" && action.personalityScene.command.mode === "play" && toys.current?.carried()) toyPerformanceWitnessed = true;
+        if (!action.toyPerformance && (action.toy || action.personalityJobEnd && action.personalityScene?.command.kind === "toy" && action.personalityScene.command.mode === "play" && toys.current?.carried())) toyPerformanceWitnessed = true;
         if (action.toyMishap && COMPANION_PLAY_TIMING[action.play].beats.some(beat => beat.row === drawingRow && beat.beat === "impact")) toyMishapWitnessed = true;
         if (action.foodRefusal) foodRefusalWitnessed = true;
       }
@@ -1148,8 +1181,20 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           if (action?.toy?.effect === "stash" && toyReturnAim) {
             point = sampleCompanionToyReturn(point, toyReturnAim.point, (performance.now() - began) / total);
           }
-          if (toys.current?.carry(carriedToy, point) && action?.toy?.effect === "stash") toyReturnPainted = point;
+          if (playingToy && action?.toyPerformance?.id === carriedToy) {
+            const platform = supportById(support), factor = size / 80;
+            const floor = { x: display.x + sample.facing * 26 * factor, y: display.y };
+            point = { x: lerp(point.x, floor.x, playingToy.toy.floorMix) + sample.facing * playingToy.toy.x * factor,
+              y: lerp(point.y, floor.y, playingToy.toy.floorMix) + playingToy.toy.y * factor };
+            if (platform && platform.width >= 32) point.x = clamp(point.x, platform.x + 16, platform.x + platform.width - 16);
+          }
+          const carried = toys.current?.carry(carriedToy, point, playingToy ? { rotation: playingToy.toy.rotation * sample.facing, scale: playingToy.toy.scale, facing: sample.facing, size, visible: currentDrawing, use: playingToy.use, effect: playingToy.effect } : undefined);
+          if (carried && action?.toy?.effect === "stash") toyReturnPainted = point;
         }
+      }
+      if (aftertaste && effect.current) {
+        effect.current.textContent = aftertaste.puff > .28 ? action?.foodAftertaste?.kind === "retch" ? "으엑…" : "켁켁!" : "";
+        style(effect.current, "left", "58%"); style(effect.current, "top", "38%");
       }
       if (status === "eat" && action?.kind === "eat") {
         const mouth = paintedSelection ? projectCompanionMouth(paintedSelection, projection) : null;
@@ -1483,7 +1528,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       for (const key of ["data-episode", "data-episode-phase", "data-episode-variant", "data-episode-food"]) el.removeAttribute(key);
     };
     const cancelHousehold = () => { household.cancel(); const carried = food.current?.carried(); if (carried) food.current?.releaseCarry(carried); if (action?.household) action = { ...action, household: undefined }; el.removeAttribute("data-household"); };
-    const clearAction = (preserveEpisode = false, preserveHousehold = false, preserveScene = false) => { activityArrival=undefined; el.dataset.lifePurpose="ordinary"; if (!preserveScene && action?.personalityScene?.id.startsWith("entry-") && !personalityDirector.entryReady()) personalityDirector.cancel(); clearHomeContact(); sleepPaintAt = 0; watchPaintMs = watchPaintAt = 0; if (washTool.current) washTool.current.hidden = true; el.removeAttribute("data-washing"); if (!preserveScene) { scenes.cancel(); toyPlanner.cancel(brain.current.activeMs); toys.current?.cancel(performance.now()); } if (!preserveHousehold) cancelHousehold(); el.removeAttribute("data-food-curiosity"); clearThrow(); sofaTravelActive = false; sofaFlightShape = undefined; ballisticCoefficient = null; el.removeAttribute("data-sofa-flight"); if (!preserveEpisode) { jumpRecoveryContext = undefined; brain.current = { ...brain.current, episode: undefined }; el.removeAttribute("data-episode"); el.removeAttribute("data-episode-phase"); el.removeAttribute("data-episode-variant"); el.removeAttribute("data-episode-food"); el.removeAttribute("data-food-goal"); } else if (brain.current.episode) data("episodePhase", brain.current.episode.phase); if (homeDeparture?.flying) homeDeparture = undefined; action = null; toyReturnAim = undefined; toyReturnPainted = undefined; foodDisposalAim = undefined; foodDisposalPainted = undefined; heldShake.reset(); shakenReleasePending = undefined; shakenGroundColumn = undefined; runTrip = runHop = undefined; runUpCurve = false; el.removeAttribute("data-trip"); el.removeAttribute("data-run-up"); el.removeAttribute("data-held-dizzy"); food.current?.nibble(); heartResult = null; sleeping = false; playImpact = playFalling = panelImpact = false; el.removeAttribute("data-attention"); el.removeAttribute("data-intent"); el.removeAttribute("data-play"); el.removeAttribute("data-play-beat"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); } };
+    const clearAction = (preserveEpisode = false, preserveHousehold = false, preserveScene = false, preserveHomeLife = false) => { if (!preserveHomeLife) cancelHomeLife(); witnessedCheerHops = 0; aftertastePaintAt = aftertastePaintMs = 0; el.removeAttribute("data-food-aftertaste"); activityArrival=undefined; el.dataset.lifePurpose="ordinary"; if (!preserveScene && action?.personalityScene?.id.startsWith("entry-") && !personalityDirector.entryReady()) personalityDirector.cancel(); clearHomeContact(); sleepPaintAt = 0; watchPaintMs = watchPaintAt = 0; if (washTool.current) washTool.current.hidden = true; el.removeAttribute("data-washing"); if (!preserveScene) { scenes.cancel(); toyPlanner.cancel(brain.current.activeMs); toys.current?.cancel(performance.now()); } if (!preserveHousehold) cancelHousehold(); el.removeAttribute("data-food-curiosity"); clearThrow(); sofaTravelActive = false; sofaFlightShape = undefined; ballisticCoefficient = null; el.removeAttribute("data-sofa-flight"); if (!preserveEpisode) { jumpRecoveryContext = undefined; brain.current = { ...brain.current, episode: undefined }; el.removeAttribute("data-episode"); el.removeAttribute("data-episode-phase"); el.removeAttribute("data-episode-variant"); el.removeAttribute("data-episode-food"); el.removeAttribute("data-food-goal"); } else if (brain.current.episode) data("episodePhase", brain.current.episode.phase); if (homeDeparture?.flying) homeDeparture = undefined; action = null; toyReturnAim = undefined; toyReturnPainted = undefined; foodDisposalAim = undefined; foodDisposalPainted = undefined; heldShake.reset(); shakenReleasePending = undefined; shakenGroundColumn = undefined; runTrip = runHop = undefined; runUpCurve = false; el.removeAttribute("data-trip"); el.removeAttribute("data-run-up"); el.removeAttribute("data-held-dizzy"); food.current?.nibble(); heartResult = null; sleeping = false; playImpact = playFalling = panelImpact = false; el.removeAttribute("data-attention"); el.removeAttribute("data-intent"); el.removeAttribute("data-play"); el.removeAttribute("data-play-beat"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); paintedStyles.delete(effect.current); } };
     const clearForPetting = () => {
       petResponse = [];
       const invitation = scenes.current()?.id === 10;
@@ -1595,7 +1640,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     const releaseHold = () => { resetInertia(); const held = pressed; pressed = null; keyboardHeld = false; if (held && button.hasPointerCapture(held.id)) button.releasePointerCapture(held.id); };
     const startRest = () => {
       const cozy = isHomeSupport(support) && !reduced && gfxMode() !== "off";
-      action = { kind: "sleep", target: { x, y, platformId: support }, duration: 12000, ...(cozy ? { living: "cozy" as const } : {}) }; began = performance.now(); total = 12000;
+      const rest: RuntimeAction = { kind: "sleep", target: { x, y, platformId: support }, duration: 12000, ...(cozy ? { living: "cozy" as const } : {}) };
+      if (cozy && effective.enabled && effective.roam && presence.phase === "active") launch(rest, performance.now());
+      else { action = rest; began = performance.now(); total = 12000; }
       if (cozy) { data("living", "cozy"); spriteSources[35].forEach(src => requestSprite.current(src)); }
       pendingCue = "sleep";
     };
@@ -1816,8 +1863,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         if (action?.toyMishap) action = { ...action, toyMishap: undefined };
         toyMishapWitnessed = false;
         toyPlanner.cancel(brain.current.activeMs); toys.current?.cancel(performance.now()); toyPlanner.wake(brain.current.activeMs); scenes.cancel();
-        if (action?.toy || action?.scene || action?.personalityScene) {
-          if (["walk", "jump"].includes(action.kind)) action = { ...action, toy: undefined, toyApproach: undefined, scene: undefined, personalityScene: undefined, personalitySignature: undefined };
+        if (action?.toy || action?.scene || action?.personalityScene || action?.homeLife) {
+          if (["walk", "jump"].includes(action.kind)) { action = { ...action, toy: undefined, toyApproach: undefined, scene: undefined, personalityScene: undefined, personalitySignature: undefined, homeLife: undefined }; cancelHomeLife(); }
           else clearAction(false, false, true);
         }
         if (!pause && !document.hidden) schedule();
@@ -1841,7 +1888,119 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         if (plan.state === "travel") return { id: floor.id, action: plan.action };
       }
     };
+    const homeLifeInput = (phase: CompanionHomeLifePhase, allowBackground = false) => ({
+      phase, personality: effective.personality, night: environment.current.night, inside: isHomeSupport(support),
+      enabled: preferences.enabled && effective.enabled && effective.roam && !reduced && gfxMode() !== "off",
+      active: !stopped && !pause && !document.hidden && !overlayActive && !premiereActive && !workspaceBusyRef.current
+        && !pendingMonth && !returning && !homeJourney && geometryReady && presence.phase === "active" && supportedNow(),
+      owned: Boolean(pressed || keyboardHeld || placing || overlayDrag || overlayPlacing || food.current?.carried() || toys.current?.carried()),
+      lightLit: getCompanionHomeLight(), tv: getCompanionHomeTv(), canLight: canCompanionSetHomeLight(), canTv: canCompanionSetHomeTv(), allowBackground,
+    });
+    const homeLifeTarget = (original: RuntimeAction, ratio?: number) => {
+      const world = homeRouteWorld();
+      let target = { ...original.target };
+      if (original.foodId) {
+        const actual = accessibleCompanionFoods(food.current?.foods() ?? [], [...platforms,...landingPlatforms]).find(item => item.id === original.foodId);
+        if (!actual) return;
+        target = { x: actual.x, y: actual.y, platformId: actual.platformId };
+      } else if (original.toy?.toyId && ["pick", "nudge", "decline"].includes(original.toy.effect ?? "")) {
+        const actual = accessibleCompanionToys(toys.current?.available() ?? [], [...platforms,...landingPlatforms]).find(item => item.id === original.toy?.toyId);
+        if (!actual) return;
+        target = actual.stance ?? { x: actual.x, y: actual.y, platformId: actual.platformId };
+      }
+      const floor = world.platforms.find(platform => platform.id === target.platformId);
+      if (!floor || floor.bodyOnly && original.personalityScene?.command.kind !== "wash") return;
+      const cx = original.foodId || original.toy?.toyId ? target.x : ratio === undefined ? target.x : floor.x + floor.width * ratio;
+      return { x: platformLandingX(floor, cx), y: floor.y, platformId: floor.id };
+    };
+    const homeLifeDuration = (step: Pick<CompanionAction, "kind" | "target">) => step.kind === "jump" ? 850
+      : Math.max(220, Math.abs(step.target.x - x) / (effective.speed === "relaxed" ? 65 : effective.speed === "lively" ? 135 : 100) * 1000);
+    // This finite queue retains the offered life goal while its own physical
+    // control trips run. No timer, scene ACK, new food/toy or second agent loop.
+    const advanceHomeLife = (now: number): boolean => {
+      const pending = homeLifePending;
+      if (!pending) return false;
+      const input = homeLifeInput(pending.phase, !pending.original.foodId && !pending.original.toy && !pending.original.household
+        && !pending.original.scene && !pending.original.personalityScene && !pending.original.radio && brain.current.hunger < .65);
+      if (!input.enabled || input.owned || pending.personality !== effective.personality || brain.current.activeMs > pending.deadline
+        || pending.legs > 12 || pending.failures >= 3
+        || pending.original.personalityScene && !pending.original.personalityScene.id.startsWith("working-") && !personalityDirector.owns(pending.original.personalityScene)) {
+        cancelHomeLife(); if (!input.enabled) homeLifePolicy.clear(); nextDecision = now + 500; return true;
+      }
+      if (!input.active || now < pending.retryAt) { nextDecision = Math.max(now + 100, pending.retryAt); return true; }
+      const decision = !input.inside && pending.phase === "outside" && pending.controlsReady
+        ? { status: "ready" as const, plan: homeLifePolicy.current() } : homeLifePolicy.next(input);
+      if (decision.status === "blocked") {
+        // A human's fifteen-second control ownership is temporary, not an
+        // acknowledgement. Keep this exact phase/exception and retry later.
+        pending.retryAt = now + 500; nextDecision = pending.retryAt; return true;
+      }
+      if (decision.status === "command" && decision.command) {
+        const element = homeContactElement(decision.command.kind), contact = element && homeContactPoint(decision.command.kind, element);
+        const world = { ...homeRouteWorld(), animated: !reduced && gfxMode() !== "off" };
+        const floor = contact && world.platforms.filter(platform => isHomeFloor(platform.id) && !platform.bodyOnly)
+          .sort((a,b) => Math.abs(platformLandingX(a,contact.x)-contact.x)-Math.abs(platformLandingX(b,contact.x)-contact.x))[0];
+        const stance = floor && contact ? { x: platformLandingX(floor,contact.x), y: floor.y, platformId: floor.id } : undefined;
+        const job = planCompanionHomeLifeControl({ decision, world, preferences: effective, stance, contact: contact || undefined });
+        if (!job) { pending.failures++; pending.retryAt = now + 500; nextDecision = pending.retryAt; return true; }
+        pending.legs++; launch(job, now); return true;
+      }
+      pending.controlsReady = true;
+      const target = homeLifeTarget(pending.original, pending.targetRatio);
+      if (!target) { cancelHomeLife(); nextDecision = now + 500; return true; }
+      const needsTravel = support !== target.platformId || Math.hypot(x-target.x,y-target.y) > 2;
+      const route = needsTravel ? findCompanionToyRoute(homeRouteWorld(), target, homeRouteWorld().platforms, effective.jump)?.[0] : undefined;
+      if (needsTravel && !route) { cancelHomeLife(); nextDecision = now + 500; return true; }
+      const original = pending.original;
+      const finalTravelLeg = route && ["walk", "jump"].includes(original.kind) && route.target.platformId === target.platformId
+        && Math.hypot(route.target.x-target.x,route.target.y-target.y) <= 2;
+      if (route && !finalTravelLeg) {
+        // Resume at the original destination, never at an unconditional sofa
+        // reset. Real item IDs and moving support coordinates were rechecked.
+        const command = decision.plan?.commands[0];
+        if (!command || !decision.plan) { cancelHomeLife(); nextDecision = now + 500; return true; }
+        pending.legs++; launch({ ...route, duration: homeLifeDuration(route), pace: effective.personality === "sleepy" ? "amble" : "scoot",
+          homeLife: { serial: decision.plan.serial, command, travel: true, returning: true } }, now); return true;
+      }
+      cancelHomeLife();
+      launch(route ? { ...original, ...route, duration: homeLifeDuration(route) }
+        : { ...original, target: { x, y, platformId: support }, ...(original.kind === "walk" || original.kind === "jump" ? { kind: "walk", duration: 220 } : {}) }, now);
+      return true;
+    };
+    const offerHomeLife = (next: RuntimeAction, now: number) => {
+      // A physical mishap or an actual bite owns its immediate reaction.
+      // Household preparation cannot delay a cough, tap response or landing.
+      if (next.homeLife || next.foodAftertaste || next.play && ["bonk-sad", "bonk-tears", "dizzy", "tumble", "slip-tumble", "slip", "bump"].includes(next.play)
+        || !isHomeSupport(support) || next.personalityScene && (next.personalityScene.id.startsWith("entry-") || ["light", "tv"].includes(next.personalityScene.command.kind))) return false;
+      const phase = next.personalityScene && homeLifeScenePhases.get(`${next.personalityScene.id}:${next.personalityScene.beat}`)
+        || companionHomeLifePhaseFor({ action: next, inside: true, night: environment.current.night, scene: next.personalityScene });
+      const input = homeLifeInput(phase, !next.foodId && !next.toy && !next.household && !next.scene && !next.personalityScene && !next.radio && brain.current.hunger < .65);
+      if (!input.enabled || !input.active || input.owned) return false;
+      const decision = homeLifePolicy.next(input);
+      const requiredBlocked = decision.status === "blocked" && decision.plan?.commands.some(command => command.required
+        && (command.kind === "light" ? command.lit !== input.lightLit : command.state !== input.tv));
+      if (decision.status !== "command" && !requiredBlocked) return false;
+      const floor = supportById(next.target.platformId ?? "");
+      homeLifePending = { original: next, phase, personality: effective.personality, deadline: brain.current.activeMs + 30000,
+        retryAt: now, legs: 0, failures: 0, ...(floor && floor.width > 0 ? { targetRatio: clamp((next.target.x-floor.x)/floor.width,0,1) } : {}) };
+      data("homeLife", phase); advanceHomeLife(now); return true;
+    };
     const launch = (next: RuntimeAction, now: number) => {
+      if (offerHomeLife(next, now)) return;
+      aftertastePaintMs = aftertastePaintAt = 0;
+      const heldToy = toys.current?.carried(), actualToy = heldToy && toys.current?.item(heldToy);
+      const toyPerformanceOffer = next.kind === "play" && (next.toy?.kind === "play" && ["put", "toss"].includes(next.toy.effect ?? "")
+        || next.personalityJobEnd && next.personalityScene?.command.kind === "toy" && next.personalityScene.command.mode === "play");
+      const expectedToy = next.toy?.toyId ?? next.personalityScene?.itemId;
+      if (toyPerformanceOffer && actualToy && expectedToy && expectedToy !== actualToy.id) {
+        if (next.personalityScene) personalityDirector.resolve(next.personalityScene, false, undefined, brain.current.activeMs);
+        toyPlanner.cancel(brain.current.activeMs);
+        toyPlanner.returnCarried(actualToy.id, brain.current.activeMs);
+        nextDecision = now + 60; return;
+      }
+      if (toyPerformanceOffer && actualToy) {
+        next = { ...next, toyPerformance: { id: actualToy.id, kind: actualToy.kind }, duration: companionToyPlayDuration(actualToy.kind) };
+      }
       clearHomeContact();
       curiosityTossed = false;
       if (next.kind === "sniff" && next.toy && ["stash", "spawn"].includes(next.toy.effect ?? "")) {
@@ -1858,13 +2017,14 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       verticalRecoveryX = undefined;
       let passage = sampleSofaRoute(next, { x, y }, .5);
       let sofaTransfer = next.kind === "jump" && (support === "companion-home" || next.target.platformId === "companion-home");
-      if (sofaTransfer && (next.household || next.toy || next.foodId || next.scene || next.personalityScene) && support === "companion-home" && (!passage || !passage.safe)) {
+      if (sofaTransfer && (next.household || next.toy || next.foodId || next.scene || next.personalityScene || next.homeLife) && support === "companion-home" && (!passage || !passage.safe)) {
         // Leave through the measured cushion opening, then retain the errand
         // for its safe room-floor walk. A direct diagonal exit can cut the rim.
         const detour = planHomeFloorEntry();
         if (detour) {
           const candidate: RuntimeAction = { ...detour.action,
             ...(next.personalityScene ? { personalityScene: { ...next.personalityScene, travel: true }, personalitySignature: next.personalitySignature } : {}),
+            ...(next.homeLife ? { homeLife: { ...next.homeLife, travel: true } } : {}),
             ...(next.foodId ? { foodId: next.foodId, intention: next.intention, episode: next.episode } : {}),
             ...(next.scene ? { scene: { ...next.scene, effect: undefined } } : {}),
             ...(next.household ? { household: { ...next.household, effect: undefined, point: undefined } } : {}),
@@ -1893,17 +2053,20 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
             ...(next.foodId ? { foodId: next.foodId } : {}), ...(next.foodId && goal ? { intention: { ...goal, stage: "consider" as const } } : {}),
             ...(next.episode ? { episode: { ...next.episode } } : {}),
             ...(next.personalityScene ? { personalityScene: { ...next.personalityScene, travel: true }, personalitySignature: next.personalitySignature } : {}),
+            ...(next.homeLife ? { homeLife: { ...next.homeLife, travel: true } } : {}),
             attention: { kind: "reconsider", ...(goal ? { goal: { ...goal } } : { point: { ...next.target } }) },
             outcomes: [...(next.outcomes ?? []).slice(0, 2), { targetId: goal?.targetId ?? next.target.platformId ?? "", result: "blocked" }] };
           passage = undefined;
         }
       }
       const playful = !homeJourney && !overlayActive && !workspaceBusyRef.current && !premiereActive && presence.phase === "active" && !reduced && gfxMode() !== "off";
-      const romp = playful && !next.personalityScene && !next.episode && !next.household && !next.scene && !next.toy ? planCompanionRomp({ action: next, from: { x, y }, platform: supportById(support), foods: food.current?.foods() ?? [], toys: toys.current?.available(), energy: brain.current.energy, cooldownReady: (brain.current.cooldowns.mishap ?? -Infinity) <= now }, preferences) : undefined;
+      const romp = playful && !next.homeLife && !next.personalityScene && !next.episode && !next.household && !next.scene && !next.toy ? planCompanionRomp({ action: next, from: { x, y }, platform: supportById(support), foods: food.current?.foods() ?? [], toys: toys.current?.available(), energy: brain.current.energy, cooldownReady: (brain.current.cooldowns.mishap ?? -Infinity) <= now }, preferences) : undefined;
       // A verified run-up shortens only this leg. Preserve the ultimate goal
       // and commit its actual duration/budget after selecting the takeoff.
       next = romp?.walk ?? next;
-      clearAction(false, Boolean(next.household || next.scene || next.personalityScene), Boolean(next.scene || next.toy || next.personalityScene)); householdEffectApplied = false; personalityEffectApplied = false; washContactMs = 0; washPaintAt = 0; sleepPaintMs = 0; sleepPaintAt = 0; toyEffectApplied = toyPerformanceWitnessed = toyMishapWitnessed = foodRefusalWitnessed = sceneEffectApplied = false;
+      const retainedLife = next.homeLife ? homeLifePending?.original : undefined;
+      clearAction(false, Boolean(next.household || next.scene || next.personalityScene || retainedLife?.household || retainedLife?.scene || retainedLife?.personalityScene), Boolean(next.scene || next.toy || next.personalityScene || retainedLife?.scene || retainedLife?.toy || retainedLife?.personalityScene), Boolean(next.homeLife));
+      homeLifeEffectApplied = homeLifeEffectSucceeded = false; householdEffectApplied = false; personalityEffectApplied = false; washContactMs = 0; washPaintAt = 0; sleepPaintMs = 0; sleepPaintAt = 0; toyEffectApplied = toyPerformanceWitnessed = toyMishapWitnessed = foodRefusalWitnessed = sceneEffectApplied = false;
       toyReturnAim = undefined; toyReturnPainted = undefined;
       foodDisposalAim = undefined; foodDisposalPainted = undefined;
       if (isFoodDisposal(next)) {
@@ -1920,7 +2083,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (next.toy) data("toyAction", next.toy.kind); else el.removeAttribute("data-toy-action");
       if (next.personalityScene) { data("personalityScene", next.personalityScene.id); data("personalityBeat", String(next.personalityScene.beat)); data("personalityCommand", next.personalityScene.command.kind); } else { el.removeAttribute("data-personality-scene"); el.removeAttribute("data-personality-beat"); el.removeAttribute("data-personality-command"); }
       if (next.personalitySignature) data("personalityActivity", next.personalitySignature); else el.removeAttribute("data-personality-activity");
-      const sceneKind = next.personalityScene && !next.personalityScene.travel ? next.personalityScene.command.kind : undefined;
+      const sceneKind = next.homeLife && !next.homeLife.travel ? next.homeLife.command.kind
+        : next.personalityScene && !next.personalityScene.travel ? next.personalityScene.command.kind : undefined;
       const contactKind: HomeContactKind | undefined = sceneKind && ["tv", "light", "curtain", "radio"].includes(sceneKind) ? sceneKind as HomeContactKind
         : next.toy && ["spawn", "stash"].includes(next.toy.effect ?? "") ? "box"
         : next.household?.effect === "spawn" ? "dispenser" : next.household?.effect === "discard" ? "bin" : undefined;
@@ -1955,10 +2119,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (next.kind === "play" && next.play) {
         // Decode just the contact and expression packets ahead of their beat.
         // Keep the existing bounded cache; never warm the entire pose library.
-        const beats = COMPANION_PLAY_TIMING[next.play].beats;
+        const beats = next.foodAftertaste ? [{ row: 23 }] : next.toyPerformance ? [{ row: 1 }, { row: 9 }] : COMPANION_PLAY_TIMING[next.play].beats;
         for (const row of new Set(beats.slice(0, 2).map(beat => beat.row))) spriteSources[row].forEach(src => requestSprite.current(src));
         preparedPlayRow = beats[0].row;
-        preparedNextPlayRow = companionNextPlayRow(next.play, 0, reduced || gfxMode() === "off");
+        preparedNextPlayRow = next.foodAftertaste ? 23 : next.toyPerformance ? 9 : companionNextPlayRow(next.play, 0, reduced || gfxMode() === "off");
       }
       if (next.kind === "play" && next.play?.startsWith("bonk-") && !supportedNow()) {
         // A tap during landing still has the requested immediate expression.
@@ -2351,7 +2515,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         const expression = workExpression(); if (expression) launch(expression, now);
       }
       if (!workCanExpress() && overlayActive && action?.personalityScene?.id.startsWith("working-")) { clearAction(); presence.focus(false, now); }
-      if (!action && !overlayActive && !homeJourney && !workspaceBusyRef.current && presence.phase === "active" && geometryReady && now >= nextDecision && (!isHomeSupport(support) || supportById(support))) {
+      if (!action && homeLifePending && now >= nextDecision && !overlayActive && !homeJourney && presence.phase === "active") advanceHomeLife(now);
+      if (!action && !homeLifePending && !overlayActive && !homeJourney && !workspaceBusyRef.current && presence.phase === "active" && geometryReady && now >= nextDecision && (!isHomeSupport(support) || supportById(support))) {
         const occupied = supportById(support);
         const availableFood = accessibleCompanionFoods(liveFoods, [...platforms, ...landingPlatforms]);
         const explicitSupports = landingPlatforms.filter(p => p.manualOnly && (p.id === occupied?.id || availableFood.some(item => item.platformId === p.id)));
@@ -2442,6 +2607,19 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         const music = radioState.playing && radioState.mood && radioAllowed() ? { mood: radioState.mood }
           : personalityMusic?.source === "instrument" && brain.current.activeMs - personalityMusic.at < 9000 && musicAllowed() && !radioState.playing ? { mood: personalityMusic.mood } : undefined;
         const sceneInput: PersonalitySceneInput = { world: toyWorld, brain: brain.current, preferences: effective, now: brain.current.activeMs, home: personalityHome, toys: settledToys, experience: agentMemory,
+            homeLifeControl: (command, context) => {
+              const phase = companionHomeLifePhaseFor({ action: { kind: "look", target: { x,y,platformId:support } }, inside: isHomeSupport(support), night: environment.current.night,
+                scene: { ...context, command } });
+              context.steps.forEach((step, beat) => homeLifeScenePhases.set(`${context.id}:${beat}`,
+                companionHomeLifePhaseFor({ action: {kind:"look",target:{x,y,platformId:support}}, inside:isHomeSupport(support),night:environment.current.night,
+                  scene:{...context,beat,command:step} })));
+              if (homeLifeScenePhases.size > 64) homeLifeScenePhases.delete(homeLifeScenePhases.keys().next().value!);
+              const decision = homeLifePolicy.next(homeLifeInput(phase));
+              if (decision.reason && ["off","inactive","ownership","outside","invalid"].includes(decision.reason)) return command;
+              const desired = decision.plan?.commands.find(item => item.kind === command.kind);
+              return command.kind === "light" && desired?.kind === "light" ? { ...command, lit: desired.lit }
+                : command.kind === "tv" && desired?.kind === "tv" ? { ...command, state: desired.state } : command;
+            },
             curtainPhase: curtainProjection.current.phase, lightLit: getCompanionHomeLight(), toyPlayCounts: effective.learnFromYou ? Object.fromEntries(Object.entries(toyTastes.current?.toyTastes ?? {}).map(([kind, taste]) => [kind, taste?.accepted ?? 0])) : undefined, familiarHour: (sceneMemory?.hours[Math.floor(environment.current.hour)] ?? 0) >= 3, learnedMorning: Boolean(sceneMemory?.hours.slice(7, 11).some(n => n >= 3)),
             favoriteToy: effective.learnFromYou ? summarizeCompanionToyTastes(toyTastes.current).favorite : null, toyCount: actualToyIds.length, carriedToyId: toys.current?.carried(), carriedFoodId: food.current?.carried(), deferredToyId: deferredPersonalityToy, interruptedItemId: interruptedPersonalityItem,
             tv: getCompanionHomeTv(), canTv: canCompanionSetHomeTv(), canCurtain: canCompanionSetCurtain(), radioAllowed: radioAllowed() && canCompanionSetRadio(), radioPlaying: radioState.playing, environment: environment.current, favoriteFood: brain.current.life?.favoriteFood,
@@ -2547,6 +2725,24 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (action) {
         let age = now - began, p = clamp(age / total, 0, 1); status = action.kind;
         const authoredBeat = action.personalityScene;
+        const lifeBeat = action.homeLife;
+        if (lifeBeat && !lifeBeat.travel && !homeLifeEffectApplied && p >= .5
+          && (homeContact && homeInteractionWitness === homeContact.serial || p >= .9)) {
+          homeLifeEffectApplied = true;
+          const input = homeLifeInput(homeLifePending?.phase ?? "awake");
+          const allowed = input.enabled && input.active && !input.owned && homeLifePending
+            && homeLifePolicy.current()?.serial === lifeBeat.serial && homeContact?.kind === lifeBeat.command.kind
+            && homeInteractionWitness === homeContact.serial && homeContact.element.isConnected && isHomeFloor(support);
+          const previous = lifeBeat.command.kind === "light" ? getCompanionHomeLight() : getCompanionHomeTv();
+          if (allowed && lifeBeat.command.kind === "light" && canCompanionSetHomeLight()) setCompanionHomeLight(lifeBeat.command.lit, { source: "companion" });
+          if (allowed && lifeBeat.command.kind === "tv" && canCompanionSetHomeTv()) setCompanionHomeTv(lifeBeat.command.state, { source: "companion" });
+          const actual = lifeBeat.command.kind === "light" ? getCompanionHomeLight() : getCompanionHomeTv();
+          homeLifeEffectSucceeded = Boolean(allowed && actual === (lifeBeat.command.kind === "light" ? lifeBeat.command.lit : lifeBeat.command.state));
+          if (homeLifeEffectSucceeded && previous !== actual) {
+            data("personalityEffect", lifeBeat.command.kind);
+            learnAgent("home-control", undefined, true, { generation:agentActionGeneration, personality:agentActionPersonality });
+          }
+        }
         // A first audio stream may decode after the short physical gesture.
         // Keep this same owned contact briefly; cancellation/OFF still aborts
         // the request and neither a timer nor an unbounded wait is added.
@@ -2606,7 +2802,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           scenes.resolve(action as CompanionSceneAction, success);
         }
         const toyBeat = action.toy;
-        if (toyBeat?.effect && !toyEffectApplied && p >= .5 && (toyBeat.effect !== "spawn" || homeContact && homeInteractionWitness === homeContact.serial || p >= .9) && (toyBeat.effect !== "stash" || p >= 1 || companionToyReturnDelivered(toyReturnPainted, toyReturnAim?.point))) {
+        if (toyBeat?.effect && !toyEffectApplied && p >= (action.toyPerformance && ["put", "toss"].includes(toyBeat.effect) ? 1 : .5) && (toyBeat.effect !== "spawn" || homeContact && homeInteractionWitness === homeContact.serial || p >= .9) && (toyBeat.effect !== "stash" || p >= 1 || companionToyReturnDelivered(toyReturnPainted, toyReturnAim?.point))) {
           toyEffectApplied = true;
           let success: boolean | string = false;
           const allowed = !workspaceBusyRef.current && !overlayActive && !pause && presence.phase === "active" && !document.hidden;
@@ -2805,11 +3001,14 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           }
           row = p < .18 ? 1 : 9; frame = p < .18 ? p / .18 * 15 : 0;
         } else if (action.kind === "play" && action.play) {
-          const play = sampleCompanionPlay(action.play, p, reduced || gfxMode() === "off");
+          const quietPlay = reduced || ["off", "soft"].includes(gfxMode());
+          const play = action.foodAftertaste ? sampleCompanionFoodAftertaste(action.foodAftertaste.kind, p, quietPlay)
+            : action.toyPerformance ? { ...sampleCompanionToyPlay(action.toyPerformance.kind, p, quietPlay), beat: "play" }
+              : sampleCompanionPlay(action.play, p, reduced || gfxMode() === "off");
           row = play.row; frame = play.phase * 15;
           if (preparedPlayRow !== play.row) {
             preparedPlayRow = play.row;
-            preparedNextPlayRow = companionNextPlayRow(action.play, p, reduced || gfxMode() === "off");
+            preparedNextPlayRow = action.foodAftertaste ? 23 : action.toyPerformance ? 9 : companionNextPlayRow(action.play, p, reduced || gfxMode() === "off");
           }
           // The bounded decoder may evict an unowned future packet while
           // this beat stays on the same row. Retry only its imminent row on
@@ -2848,6 +3047,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         else if (action.kind === "shake") { row = 17; frame = p * 15; }
         if (p >= 1) {
           const completed = action, completedTravel = travel, completedOrigin = origin;
+          let afterMealReaction: CompanionFoodAftertaste | undefined;
           if(completed.workExpression && workExpressions.complete(completed.workExpression,{eligible:workAllowed()&&overlayActive&&!pressed&&!keyboardHeld&&!placing,
             kind:completed.kind,pose:completed.personalityScene?.command.kind==="pose",travel:Boolean(completed.personalityScene?.travel)})) {
             if(!workExpressions.available()){
@@ -2875,6 +3075,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           const continueRoute = Boolean(action.foodId && (action.kind === "walk" || action.kind === "jump") || brain.current.intention?.kind === "explore" && ["consider", "travel"].includes(brain.current.intention.stage) && brain.current.intention.remaining > 0);
           const eatenFood = action.kind === "eat" && action.foodId ? liveFoods.find(item => item.id === action!.foodId) : undefined;
           if (action.kind === "eat" && action.foodId && food.current?.consume(action.foodId)) {
+            if (eatenFood) afterMealReaction = aftertastes.consume({ foodId: eatenFood.id, food: eatenFood.kind, consumed: true },
+              Boolean(effective.enabled && !reduced && !["off", "soft"].includes(gfxMode()) && !pause && !document.hidden && !overlayActive && !workspaceBusyRef.current && !premiereActive && supportedNow() && presence.phase === "active"));
             const taste = eatenFood ? evaluateCompanionFoodTaste(eatenFood.kind, brain.current.life, Math.random()) : undefined;
             const firstFood = eatenFood && recordCompanionConsumedFood(eatenFood.kind, true);
             if (firstFood && eatenFood) discover({ kind: "food", id: eatenFood.kind, source: { x, y: y - size * .4 } });
@@ -2913,8 +3115,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           if (rested && isHomeSupport(support) && sleepPaintMs >= 500) observeRoutine("slept");
           if (completed.kind === "jump" && verticalLanding) verticalRecoveryX = undefined;
           let arrivalPlay: CompanionAction["play"] = undefined;
-          if (completed.kind === "jump" && shakenReleasePending && supportedNow() && !homeJourney && !ejected && !overlayActive && !workspaceBusyRef.current && !reduced && gfxMode() !== "off") arrivalPlay = "dizzy";
-          else if (completed.kind === "jump" && !completed.foodId && !completed.episode && !completed.scene && !completed.toy && !completed.personalityScene && !homeJourney && !restAfterLanding && !ejected && !overlayActive && !workspaceBusyRef.current && !reduced && gfxMode() !== "off" && presence.phase === "active") {
+          if (completed.kind === "jump" && !completed.homeLife && shakenReleasePending && supportedNow() && !homeJourney && !ejected && !overlayActive && !workspaceBusyRef.current && !reduced && gfxMode() !== "off") arrivalPlay = "dizzy";
+          else if (completed.kind === "jump" && !completed.homeLife && !completed.foodId && !completed.episode && !completed.scene && !completed.toy && !completed.personalityScene && !homeJourney && !restAfterLanding && !ejected && !overlayActive && !workspaceBusyRef.current && !reduced && gfxMode() !== "off" && presence.phase === "active") {
             const landing = supportById(support);
             const node = geometryTracker?.anchor(support)?.element?.closest<HTMLElement>(".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],[data-companion-event='ordinary'][data-eventid]");
             const ordinary = Boolean(node && !node.matches(".selected,.primary-selected,.dragging-src,.span-drag-src,.connect-target,.connect-hover,.connect-dim,.filter-dim,.is-editing,.is-selected") && collectCompanionHideTargets(page).some(target => target.element === node));
@@ -2932,9 +3134,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
             }, preferences) ?? undefined;
           }
           const shakenArrivalColumn = arrivalPlay === "dizzy" ? shakenReleasePending?.column : undefined;
-          const continueEpisode = Boolean(!completed.episodeCancelled && (completed.episode || brain.current.episode?.phase === "ate") && !homeJourney && !overlayActive && !restAfterLanding && !ejected && !workspaceBusyRef.current && !premiereActive && !reduced && gfxMode() !== "off" && presence.phase === "active");
+          const continueEpisode = Boolean(!completed.homeLife && !completed.episodeCancelled && (completed.episode || brain.current.episode?.phase === "ate") && !homeJourney && !overlayActive && !restAfterLanding && !ejected && !workspaceBusyRef.current && !premiereActive && !reduced && gfxMode() !== "off" && presence.phase === "active");
           const episodeMishap = continueEpisode && completed.kind === "jump" ? companionEpisodeMishap(completed, { x, y }, supportById(support), brain.current, now, preferences, true) : undefined;
-          const nextHop = completed.kind === "walk" && !completed.episodeCancelled && runHop && supportedNow() && !homeJourney && !overlayActive && !restAfterLanding && !ejected && !workspaceBusyRef.current && !premiereActive && !reduced && gfxMode() !== "off" && presence.phase === "active" && validCompanionRunHop(runHop, { x, y }, supportById(support)) && (!runHop.episode || companionEpisodeHopAvailable(runHop, supportById(support), liveFoods)) ? runHop : undefined;
+          const nextHop = completed.kind === "walk" && !completed.homeLife && !completed.episodeCancelled && runHop && supportedNow() && !homeJourney && !overlayActive && !restAfterLanding && !ejected && !workspaceBusyRef.current && !premiereActive && !reduced && gfxMode() !== "off" && presence.phase === "active" && validCompanionRunHop(runHop, { x, y }, supportById(support)) && (!runHop.episode || companionEpisodeHopAvailable(runHop, supportById(support), liveFoods)) ? runHop : undefined;
           if (completed.scene) scenes.complete(completed as CompanionSceneAction);
           if (completed.personalityScene) {
             if (completed.personalityScene.command.kind === "wash" && !completed.personalityScene.travel) { personalityDirector.resolve(completed.personalityScene, washContactMs >= 500, undefined, brain.current.activeMs); if (washContactMs >= 500) observeRoutine("washed"); }
@@ -2948,7 +3150,18 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
             else personalityDirector.complete(completed.personalityScene);
             if (completed.play && ["tumble", "dizzy", "slip-tumble"].includes(completed.play)) personalityDirector.event("recovered", brain.current.activeMs);
           }
-          clearAction(continueEpisode, Boolean(completed.household && household.active() || completed.scene || completed.personalityScene), Boolean(completed.scene || completed.toy || completed.personalityScene));
+          const pendingLifeOwner = completed.homeLife ? homeLifePending?.original : undefined;
+          const lifeSucceeded = homeLifeEffectSucceeded;
+          clearAction(continueEpisode, Boolean(completed.household && household.active() || completed.scene || completed.personalityScene || pendingLifeOwner?.household || pendingLifeOwner?.scene || pendingLifeOwner?.personalityScene), Boolean(completed.scene || completed.toy || completed.personalityScene || pendingLifeOwner?.scene || pendingLifeOwner?.toy || pendingLifeOwner?.personalityScene), Boolean(completed.homeLife));
+          if (completed.homeLife) {
+            if (homeLifePending && !completed.homeLife.travel && !lifeSucceeded) {
+              const command = completed.homeLife.command;
+              if (command.kind === "light" ? canCompanionSetHomeLight() : canCompanionSetHomeTv()) homeLifePending.failures++;
+              homeLifePending.retryAt = now + 500;
+            }
+            nextDecision = now; advanceHomeLife(now);
+            if (action) { status = action.kind; row = action.kind === "walk" ? action.pace === "scoot" ? 20 : 2 : action.kind === "jump" ? 3 : action.kind === "sleep" ? 10 : 1; frame = 0; }
+          }
           if (completed.toyApproach && completed.toy) {
             const marker = completed.toyApproach, element = marker.element;
             const available = element.isConnected && element === document.querySelector(".vc-home [data-home-action='toys']")
@@ -2966,13 +3179,13 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
               status = "sniff"; row = 1; frame = 0;
             } else { clearAction(); nextDecision = now + 500; }
           }
-          if (ejected && presence.phase === "parked") { row = presence.pose.row; frame = 0; status = presence.pose.status; if (presence.dreaming) el.dataset.dreaming = ""; else el.removeAttribute("data-dreaming"); offGeometry?.(); offGeometry = undefined; geometryReady = false; hearts.pause(true); }
-          if (rested) { brain.current = recordCompanionEvent(brain.current, "rested"); rememberLife({ kind: "rested" }); sceneEvent({ kind: "rested", equipped: wardrobe.current.equipped, place: isHomeSupport(support) ? "home" : supportById(support)?.kind === "card" ? "card" : "floor" }); } if (completed.episodeCancelled) brain.current = { ...brain.current, episode: undefined }; nextDecision = now + (homeJourney || continueRoute || continueEpisode || completed.household && household.active() ? 0 : completed.attention && completed.attention.kind !== "social" ? 60 : 220);
-          if (homeJourney && !overlayActive && (presence.phase === "active" || homeJourney === "called" && presence.phase === "finishing")) {
+          if (!completed.homeLife && ejected && presence.phase === "parked") { row = presence.pose.row; frame = 0; status = presence.pose.status; if (presence.dreaming) el.dataset.dreaming = ""; else el.removeAttribute("data-dreaming"); offGeometry?.(); offGeometry = undefined; geometryReady = false; hearts.pause(true); }
+          if (rested) { brain.current = recordCompanionEvent(brain.current, "rested"); rememberLife({ kind: "rested" }); sceneEvent({ kind: "rested", equipped: wardrobe.current.equipped, place: isHomeSupport(support) ? "home" : supportById(support)?.kind === "card" ? "card" : "floor" }); } if (completed.episodeCancelled) brain.current = { ...brain.current, episode: undefined }; if (!completed.homeLife) nextDecision = now + (homeJourney || continueRoute || continueEpisode || completed.household && household.active() ? 0 : completed.attention && completed.attention.kind !== "social" ? 60 : 220);
+          if (!completed.homeLife && homeJourney && !overlayActive && (presence.phase === "active" || homeJourney === "called" && presence.phase === "finishing")) {
             advanceHomeJourney(now);
             if (action) { status = action.kind; row = action.kind === "walk" ? action.pace === "scoot" ? 20 : 2 : action.kind === "jump" ? 3 : action.kind === "sleep" ? 10 : 1; frame = 0; }
           }
-          if (restAfterLanding) { restAfterLanding = false; if (presence.phase === "active") control.current?.rest(); }
+          if (!completed.homeLife && restAfterLanding) { restAfterLanding = false; if (presence.phase === "active") control.current?.rest(); }
           if (nextHop) { launch(nextHop, now); row = 4; frame = 0; status = "jump"; }
           if (episodeMishap) { rememberMishapPlace(); const trippedFood = liveFoods.find(item => item.id === episodeMishap.foodId); if (trippedFood) { rememberLife({ kind: "food-mishap", food: trippedFood.kind }); sceneEvent({ kind: "food-mishap", food: trippedFood.kind }); } launch(episodeMishap, now); const contact = sampleCompanionPlay(episodeMishap.play!, 0); row = contact.row; frame = 0; status = "play"; data("trip", "landing"); queueSituation("landing-mishap", [21, 24, 25], began); }
           if (arrivalPlay) {
@@ -2986,6 +3199,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
             row = contact.row; frame = 0; status = "play";
             data("play", arrivalPlay); data("playBeat", contact.beat);
           }
+          if (afterMealReaction) {
+            petUntil = now;
+            launch({ kind: "play", play: "dizzy", foodAftertaste: afterMealReaction, target: { x, y, platformId: support }, duration: afterMealReaction.duration }, now);
+            data("foodAftertaste", afterMealReaction.kind); row = 23; frame = 8; status = "play";
+          } else if (completed.foodAftertaste) el.removeAttribute("data-food-aftertaste");
           if (!ejected && completed.kind === "jump" && finishParkedDrop()) return;
         }
       }
@@ -4310,7 +4528,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       {homeExpanded ? house : null}
     </div> : null}
     <span className="vc-wash-tool" ref={washTool} hidden aria-hidden="true"><svg width="24" height="38" viewBox="0 0 24 38" focusable="false"><path d="M6 12h5l2 20q-3 6-7 0Z" fill="#e6a052" stroke="#78522e" strokeWidth="1.5" /><path d="M4 3q4-3 9 0v10H4Z" fill="#fff5df" stroke="#78522e" strokeWidth="1.5" /><path d="M6 4v7m3-7v7m3-7v7" stroke="#76a79a" strokeWidth="1.4" /><g fill="#fffdf6" stroke="#b1cbd1" strokeWidth=".8"><circle cx="15" cy="8" r="3" /><circle cx="19" cy="4" r="2" /><circle cx="19" cy="11" r="2" /></g><path d="m20 17 1 2 2 1-2 1-1 2-1-2-2-1 2-1Z" fill="#f8db89" /></svg></span>
-    <span className="vc-home-touch-tool" ref={interactionTool} hidden aria-hidden="true"><svg width="18" height="18" viewBox="0 0 18 18" focusable="false"><path d="M4 14q-3-3-1-6l2 1V5q0-3 2-3 2 0 2 3l1-1q2-1 3 1l1 2q3 0 3 3 0 4-5 6Z" fill="#fff1ce" stroke="#77522d" strokeWidth="1.3" strokeLinejoin="round" /></svg></span>
+    <span className="vc-home-touch-tool" ref={interactionTool} hidden aria-hidden="true"><svg width="18" height="18" viewBox="0 0 18 18" focusable="false"><path d="M9 3v3M3 8l3 1M13 8l3-1" fill="none" stroke="#b48144" strokeWidth="1.6" strokeLinecap="round" /></svg></span>
     <CompanionDiscoveryFlight notice={discovery} enabled={preferences.enabled && !blocked && !overlayOpen && !performanceActive && !suspended} onComplete={finishDiscovery} />
     <div className="vc-companion" ref={body} hidden data-sfx="off" data-size="large" data-overlay={overlayOpen ? "quiet" : undefined} data-workspace-busy={workspaceBusy ? "" : undefined}>
     <span className="vc-contact-shadow" ref={shadow} aria-hidden="true" />

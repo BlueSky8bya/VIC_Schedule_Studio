@@ -3,14 +3,16 @@ import { sampleCompanionCozySleep, sampleCompanionPlay } from "@/lib/ui/viewer-c
 import { COMPANION_PLAY_TIMING } from "@/lib/ui/viewer-companion/timing";
 
 describe("connected living performances", () => {
-  it("finishes the whole cheer story in its authored order without recovery-face intrusion", () => {
+  it("keeps the calibrated happy face through a finite stronger cheer and settles on its support", () => {
     const kind = "cheer-rehearsal", duration = COMPANION_PLAY_TIMING[kind].duration;
     const seen = Array.from({ length: 401 }, (_, index) => sampleCompanionPlay(kind, index / 400));
     const rows = seen.map(pose => pose.row).filter((row, index, all) => index === 0 || row !== all[index - 1]);
-    expect(rows).toEqual([9, 37, 38, 39, 9]);
+    expect(rows).toEqual([9]);
     expect(duration).toBeGreaterThan(3000);
     expect(duration).toBeLessThan(6000);
-    expect(seen.every(pose => pose.shift === 0 && Math.abs(pose.lean) <= 7 && Math.abs(pose.lift) <= 3)).toBe(true);
+    expect(seen.every(pose => pose.shift === 0 && Math.abs(pose.lean) <= 6 && Math.abs(pose.lift) <= 24.001)).toBe(true);
+    expect(Math.max(...seen.map(pose => Math.abs(pose.lift)))).toBeGreaterThan(23);
+    expect(seen.at(-1)).toMatchObject({ lift: 0, lean: 0, compression: 0 });
   });
 
   it("settles on the same support, curls into a quiet hold and wakes with the existing clip", () => {

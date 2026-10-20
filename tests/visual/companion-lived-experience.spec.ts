@@ -15,7 +15,8 @@ import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companio
 
 type Surface = "viewer" | "studio";
 type Mode = "meal" | "social" | "cozy" | "cheer" | "nuzzle" | "accessory" | "radio-lively" | "radio-graceful" | "radio-calm" | "radio-off";
-type Frame = { at: number; visibleFocusedMs: number; focused: boolean; hidden: boolean; state: string; living: string; play: string; requestedRow: number; row: number; pose: number; atlas: number; platform: string; foodGoal: string; episodeFood: string; dreaming: boolean; decoded: boolean; registered: boolean; src: string; expectedSrc: string; srcMatches: boolean; same: boolean; count: number; x: number; y: number; trick: string; beat: string; journey: string; accessoryPose: number; bodyBob: number; radio: string; radioGeneration: number; bodyTilt: number; wearable: { hidden: boolean; top: string; left: string; transform: string; background: string } };
+type CheerPaint = { propsCount: number; scale: number };
+type Frame = { at: number; visibleFocusedMs: number; focused: boolean; hidden: boolean; state: string; living: string; play: string; requestedRow: number; row: number; pose: number; atlas: number; platform: string; foodGoal: string; episodeFood: string; dreaming: boolean; decoded: boolean; registered: boolean; src: string; expectedSrc: string; srcMatches: boolean; same: boolean; count: number; x: number; y: number; trick: string; beat: string; journey: string; accessoryPose: number; bodyBob: number; radio: string; radioGeneration: number; bodyTilt: number; wearable: { hidden: boolean; top: string; left: string; transform: string; background: string }; cheer: CheerPaint };
 type Input = { type: string; key: string; target: string; trusted: boolean };
 type Probe = { frames: Frame[]; inputs: Input[]; began: number; lastSample: number; lastActive: boolean; visibleFocusedMs: number; raf: number; previous: string; node: HTMLElement; input: (event: Event) => void };
 type ProbeWindow = Window & { livedExperience104?: Probe; __companionSfxTrace?: string[] };
@@ -119,13 +120,14 @@ async function startProbe(page: Page) {
       const adopted = Number.isInteger(pose) && pose >= 0 ? frames[pose] : undefined, atlas = adopted ? atlases[adopted.atlas] : undefined;
       const src = image?.currentSrc ?? "", expectedSrc = atlas ? new URL(atlas.src, document.baseURI).href : "", srcMatches = Boolean(src && expectedSrc && src === expectedSrc);
       const wearable = el.querySelector<HTMLElement>(".vc-wearable-front"), body = el.querySelector<HTMLElement>(".vc-pose"), bodyMatrix = body ? new DOMMatrixReadOnly(body.style.transform) : new DOMMatrixReadOnly(), bodyBob = bodyMatrix.m42;
+      const cheer: CheerPaint = { propsCount: el.querySelectorAll(".vc-cheer-props,[data-cheer-side]").length, scale: bodyMatrix.a * bodyMatrix.d - bodyMatrix.b * bodyMatrix.c };
       // CSS tracks the requested semantic row. Until a packet decodes, the
       // renderer safely retains an already adopted frame. Observe its actual
       // registered data-pose rather than mislabelling that20ms fallback. A
       // row membership alone is insufficient: its metadata frame must point
       // to the atlas actually adopted by the live image's currentSrc.
-      const frame: Frame = { at: now - p.began, visibleFocusedMs: p.visibleFocusedMs, focused, hidden, state: el.dataset.state ?? "", living: el.dataset.living ?? "", play: el.dataset.play ?? "", requestedRow, row, pose, atlas: adopted?.atlas ?? -1, platform: el.dataset.platform ?? "", foodGoal: el.dataset.foodGoal ?? "", episodeFood: el.dataset.episodeFood ?? "", dreaming: el.hasAttribute("data-dreaming"), decoded: Boolean(image?.complete && image.naturalWidth), registered: Boolean(adopted && rows[row]?.includes(pose) && srcMatches), src, expectedSrc, srcMatches, same: el.isConnected && el === document.querySelector(".vc-companion"), count: document.querySelectorAll(".vc-companion").length, x: m.m41 + size / 2, y: m.m42 + size, trick: el.dataset.accessoryTrick ?? "", beat: el.dataset.accessoryBeat ?? "", journey: el.dataset.journey ?? "", accessoryPose: Number(el.dataset.accessoryPose ?? -1), bodyBob, radio: el.dataset.radioReaction ?? "", radioGeneration: Number(el.dataset.radioGeneration ?? 0), bodyTilt: Math.atan2(bodyMatrix.m12, bodyMatrix.m11) * 180 / Math.PI, wearable: { hidden: !wearable || wearable.hidden, top: wearable?.style.top ?? "", left: wearable?.style.left ?? "", transform: wearable?.style.transform ?? "", background: wearable?.style.backgroundImage ?? "" } };
-      const signature = JSON.stringify([frame.state, frame.living, frame.play, frame.requestedRow, frame.row, frame.pose, frame.platform, frame.foodGoal, frame.dreaming, frame.decoded, frame.registered, frame.src, focused, hidden, frame.trick, frame.beat, frame.trick ? [frame.bodyBob, frame.wearable] : null, frame.radio, frame.radioGeneration, frame.radio ? [frame.bodyBob, frame.bodyTilt] : null]);
+      const frame: Frame = { at: now - p.began, visibleFocusedMs: p.visibleFocusedMs, focused, hidden, state: el.dataset.state ?? "", living: el.dataset.living ?? "", play: el.dataset.play ?? "", requestedRow, row, pose, atlas: adopted?.atlas ?? -1, platform: el.dataset.platform ?? "", foodGoal: el.dataset.foodGoal ?? "", episodeFood: el.dataset.episodeFood ?? "", dreaming: el.hasAttribute("data-dreaming"), decoded: Boolean(image?.complete && image.naturalWidth), registered: Boolean(adopted && rows[row]?.includes(pose) && srcMatches), src, expectedSrc, srcMatches, same: el.isConnected && el === document.querySelector(".vc-companion"), count: document.querySelectorAll(".vc-companion").length, x: m.m41 + size / 2, y: m.m42 + size, trick: el.dataset.accessoryTrick ?? "", beat: el.dataset.accessoryBeat ?? "", journey: el.dataset.journey ?? "", accessoryPose: Number(el.dataset.accessoryPose ?? -1), bodyBob, radio: el.dataset.radioReaction ?? "", radioGeneration: Number(el.dataset.radioGeneration ?? 0), bodyTilt: Math.atan2(bodyMatrix.m12, bodyMatrix.m11) * 180 / Math.PI, wearable: { hidden: !wearable || wearable.hidden, top: wearable?.style.top ?? "", left: wearable?.style.left ?? "", transform: wearable?.style.transform ?? "", background: wearable?.style.backgroundImage ?? "" }, cheer };
+      const signature = JSON.stringify([frame.state, frame.living, frame.play, frame.requestedRow, frame.row, frame.pose, frame.platform, frame.foodGoal, frame.dreaming, frame.decoded, frame.registered, frame.src, focused, hidden, frame.trick, frame.beat, frame.trick ? [frame.bodyBob, frame.wearable] : null, frame.radio, frame.radioGeneration, frame.radio ? [frame.bodyBob, frame.bodyTilt] : null, frame.play === "cheer-rehearsal" ? [frame.bodyBob, frame.bodyTilt, frame.cheer] : null]);
       if (signature !== p.previous) { p.frames.push(frame); p.previous = signature; }
       p.raf = requestAnimationFrame(sample);
     };
@@ -139,11 +141,20 @@ async function waitVisibleFocused(page: Page, elapsed: number) {
   await expect.poll(() => page.evaluate(started => (window as unknown as ProbeWindow).livedExperience104!.visibleFocusedMs - started, started), { timeout: elapsed + 15000, intervals: [500] }).toBeGreaterThanOrEqual(elapsed);
 }
 function connectedCheer(observed: Frame[]): Frame[] | undefined {
-  const cheer = observed.filter(frame => frame.living === "cheer" && frame.play === "cheer-rehearsal" && frame.state === "play");
-  for (const [index, frame] of cheer.entries()) {
-    if (frame.row !== 37) continue;
-    const sequence = cheer.slice(index).filter((item, position, all) => position === 0 || item.row !== all[position - 1].row).slice(0, 3);
-    if (sequence.length === 3 && sequence[1].row === 38 && sequence[2].row === 39 && sequence[2].at - frame.at < 4000) return sequence;
+  const playing = (frame: Frame) => frame.living === "cheer" && frame.play === "cheer-rehearsal" && frame.state === "play";
+  const spread = (values: number[]) => Math.max(...values) - Math.min(...values);
+  let bout: Frame[] = [];
+  for (const frame of observed) {
+    if (playing(frame)) { bout.push(frame); continue; }
+    if (!bout.length) continue;
+    const painted = bout.filter(item => item.row === 9 && item.decoded && item.registered && item.srcMatches && item.src.endsWith("/companion/hd/vitamin-action-09-eye-scale-143-v1.webp"));
+    let airborneBeats = 0, above = false;
+    for (const item of painted) { const next = item.bodyBob < -12; if (next && !above) airborneBeats++; above = next; }
+    const duration = painted.length ? painted.at(-1)!.at - painted[0].at : 0;
+    if (painted.length >= 12 && duration >= 3300 && duration <= 4200 && frame.at - bout[0].at < 4500
+      && airborneBeats >= 3 && airborneBeats <= 5 && painted.every(item => item.cheer.propsCount === 0 && Math.abs(item.cheer.scale - 1) < .002)
+      && Math.abs(painted.at(-1)!.bodyBob) < 2 && spread(painted.map(item => item.x)) < 1 && spread(painted.map(item => item.y)) < 1) return [painted[0], painted[Math.floor(painted.length / 2)], painted.at(-1)!];
+    bout = [];
   }
 }
 
@@ -528,7 +539,7 @@ for (const surface of ["viewer", "studio"] as const) {
     await expect(pet(page)).toHaveAttribute("data-platform", "companion-home");
   });
 
-  test(`${surface}: genuine active floor time naturally performs the connected native cheer rows37–39`, async ({ page }) => {
+  test(`${surface}: genuine active floor time naturally performs and finishes the connected native pompom cheer`, async ({ page }) => {
     test.setTimeout(250000);
     const identity = await setup(page, surface, "cheer"); await placeAndHold(page, 90);
     const initial = await memory(page); expect(initial.life.play).toBeGreaterThan(.8); expect(initial.life.curiosity).toBeGreaterThan(.8);
@@ -544,10 +555,10 @@ for (const surface of ["viewer", "studio"] as const) {
     // The bounded observation also covers the ordinary first-rehearsal window.
     await expect.poll(async () => Boolean(connectedCheer(await frames(page))), { timeout: 120000, intervals: [100] }).toBe(true);
     const observed = await frames(page), sequence = connectedCheer(observed)!;
-    expect(sequence.map(frame => frame.row)).toEqual([37, 38, 39]); expect(sequence[0].visibleFocusedMs).toBeGreaterThanOrEqual(90000);
+    expect(sequence.map(frame => frame.row)).toEqual([9, 9, 9]); expect(sequence[0].visibleFocusedMs).toBeGreaterThanOrEqual(90000);
     const performed = observed.filter(frame => frame.at >= sequence[0].at && frame.at <= sequence[2].at);
     expect(performed.length).toBeGreaterThanOrEqual(3);
-    expect(performed.every(frame => frame.living === "cheer" && frame.play === "cheer-rehearsal" && frame.state === "play" && [37, 38, 39].includes(frame.row) && frame.platform === sequence[0].platform && /^viewport-floor/.test(frame.platform) && frame.same && frame.count === 1 && frame.decoded && frame.registered && frame.focused && !frame.hidden && frame.src.endsWith("/companion/hd/victamin-episodes-104-v1.webp"))).toBe(true);
+    expect(performed.every(frame => frame.living === "cheer" && frame.play === "cheer-rehearsal" && frame.state === "play" && frame.row === 9 && frame.platform === sequence[0].platform && /^viewport-floor/.test(frame.platform) && frame.same && frame.count === 1 && frame.decoded && frame.registered && frame.focused && !frame.hidden && frame.src.endsWith("/companion/hd/vitamin-action-09-eye-scale-143-v1.webp"))).toBe(true);
     expect(Math.max(...performed.map(frame => frame.x)) - Math.min(...performed.map(frame => frame.x))).toBeLessThan(1);
     expect(Math.max(...performed.map(frame => frame.y)) - Math.min(...performed.map(frame => frame.y))).toBeLessThan(1);
     expect(await identity.evaluate(node => node.isConnected && node === document.querySelector(".vc-companion"))).toBe(true);

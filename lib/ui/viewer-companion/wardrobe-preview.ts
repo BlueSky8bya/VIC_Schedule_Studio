@@ -3,8 +3,9 @@ import type { CompanionBehaviorId } from "./collection";
 import { sampleCompanionPlay, type CompanionPlayPose } from "./play";
 import { canDecodeCompanionSprite, companionSpriteSources, decodeCompanionSprite, peekDecodedCompanionSprite, type CompanionSpriteSelection } from "./sprite-quality";
 import { COMPANION_CLIP_TIMING, COMPANION_PLAY_TIMING } from "./timing";
+import { companionFoodAftertasteDuration, sampleCompanionFoodAftertaste } from "./food-aftertaste";
 
-type PreviewClip = Readonly<{ row: number; play?: CompanionPlay }>;
+type PreviewClip = Readonly<{ row: number; play?: CompanionPlay; aftertaste?: true }>;
 /** A discovered gesture exposes only its own row, never the other gestures
  * that happen to share its authored world sequence or texture packet. */
 const clips: Readonly<Record<CompanionBehaviorId, PreviewClip>> = Object.freeze({
@@ -12,11 +13,12 @@ const clips: Readonly<Record<CompanionBehaviorId, PreviewClip>> = Object.freeze(
   "lean-nuzzle": { row: 34, play: "lean-nuzzle" },
   "paper-knead": { row: 35, play: "cozy-nest" },
   "paper-nest": { row: 36, play: "cozy-nest" },
-  "cheer-rehearsal": { row: 39, play: "cheer-rehearsal" },
+  "cheer-rehearsal": { row: 9, play: "cheer-rehearsal" },
   "doze-curl": { row: 40, play: "doze-curl" },
   groom: { row: 30, play: "groom" }, bow: { row: 29, play: "bow" },
   pounce: { row: 31, play: "pounce" }, tumble: { row: 21, play: "tumble" },
   dizzy: { row: 22, play: "dizzy" }, stretch: { row: 16 },
+  "odd-food-reaction": { row: 23, aftertaste: true },
 });
 const neutral = (): CompanionPlayPose => ({ row: 0, phase: 0, beat: "checking", lift: 0, lean: 0, shift: 0, compression: 0 });
 
@@ -53,12 +55,14 @@ export function chooseCompanionPreviewBehavior(found: readonly string[], previou
 
 export function companionPreviewDuration(id: CompanionBehaviorId): number {
   const clip = clips[id];
+  if (clip.aftertaste) return companionFoodAftertasteDuration("retch");
   return clip.play ? COMPANION_PLAY_TIMING[clip.play].beats.find(beat => beat.row === clip.row)!.duration : COMPANION_CLIP_TIMING.find(timing => timing.row === clip.row)!.duration!;
 }
 
 export function sampleCompanionPreview(id: CompanionBehaviorId | null, elapsed: number): CompanionPlayPose {
   if (!id || !Number.isFinite(elapsed) || elapsed < 0 || elapsed >= companionPreviewDuration(id)) return neutral();
   const clip = clips[id];
+  if (clip.aftertaste) return { ...sampleCompanionFoodAftertaste("retch", elapsed / companionPreviewDuration(id)), row: clip.row, beat: "play" };
   if (!clip.play) return { ...neutral(), row: clip.row, phase: elapsed / companionPreviewDuration(id), beat: "play" };
   const timing = COMPANION_PLAY_TIMING[clip.play];
   let offset = 0;

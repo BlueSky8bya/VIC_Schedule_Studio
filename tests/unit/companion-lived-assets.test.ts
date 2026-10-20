@@ -116,7 +116,9 @@ describe("104 additive living-pose asset integrity", () => {
         expect(selected.src).toBe(living.atlases[0].src); expect(selected.index).toBe(pose.row - 33);
       }
     }
-    expect([...reached].sort((a, b) => a - b)).toEqual(keys.map((_, index) => 33 + index));
+    // The former three still cheer keys remain byte-pinned above. Continuous
+    // cheering now reuses the calibrated happy body with independent props.
+    expect([...reached].sort((a, b) => a - b)).toEqual([33, 34, 35, 36, 40]);
     const quiet = sampleCompanionCozySleep(6000, 12000); expect(quiet).toMatchObject({ row: 40, dreaming: true });
     expect(selectCompanionSprite(-1, quiet.row, 0)).toMatchObject({ src: living.atlases[0].src, index: 7 });
   });
