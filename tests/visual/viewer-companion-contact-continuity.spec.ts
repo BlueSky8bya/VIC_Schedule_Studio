@@ -5,6 +5,7 @@ import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { companionSpriteSources } from "@/lib/ui/viewer-companion/sprite-quality";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome } from "./helpers/companion-home";
+import { placeCompanionForContactRetention } from "./helpers/companion-contact-floor";
 
 const contactOutput = process.env.COMPANION_CONTACT_OUTPUT ?? ".scratch-pw";
 const pet = (page: Page) => page.locator(".vc-companion");
@@ -42,6 +43,7 @@ async function setup(page: Page, reduced = false, mobile = false): Promise<Body>
   await page.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(a => a.playState === "running" && Number.isFinite(Number(a.effect?.getComputedTiming().endTime))).map(a => a.finished)); });
   await page.waitForTimeout(180); await expect(actor(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-atlas", "hd"); await expect(pet(page)).toHaveAttribute("data-presence", "active");
   await expect.poll(() => page.evaluate(() => document.hasFocus())).toBe(true);
+  if (!mobile) await placeCompanionForContactRetention(page);
   return pet(page).evaluate(node => { const r = node.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.bottom, size: r.width }; });
 }
 async function ready(page: Page, p: Point) {

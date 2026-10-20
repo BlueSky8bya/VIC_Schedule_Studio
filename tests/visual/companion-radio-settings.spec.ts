@@ -264,8 +264,11 @@ test("every active licensed recording decodes and produces real browser samples 
     await radio.getByRole("button", { name: `${track.title} 재생`, exact: true }).click();
     await expect(radio.locator(".rhh-radio-now > p")).toHaveText(track.title);
     if (track.credit) {
-      await expect(radio.locator(".rhh-radio-attribution")).toContainText(track.credit);
-      await test.info().attach("credited-vocal-recording", { body: await radio.screenshot(), contentType: "image/png" });
+      const attribution = radio.locator(".rhh-radio-attribution");
+      await expect(attribution).toContainText(track.credit);
+      await attribution.scrollIntoViewIfNeeded();
+      await expect(attribution).toBeVisible();
+      await test.info().attach("credited-vocal-recording", { body: await page.getByRole("dialog", { name: "설정", exact: true }).screenshot(), contentType: "image/png" });
     }
     await expect.poll(read).toMatchObject({ src: track.src, context: "running" });
     await expect.poll(async () => (await read()).time).toBeGreaterThan(.15);

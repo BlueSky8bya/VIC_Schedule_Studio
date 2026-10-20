@@ -3,6 +3,7 @@ import { writeFile } from "node:fs/promises";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { openCompanionHome } from "./helpers/companion-home";
+import { placeCompanionForContactRetention } from "./helpers/companion-contact-floor";
 
 const contactOutput = process.env.COMPANION_CONTACT_OUTPUT ?? ".scratch-pw";
 const pet = (page: Page) => page.locator(".vc-companion");
@@ -39,6 +40,7 @@ async function setup(page: Page, reduced: boolean) {
   await page.waitForTimeout(180);
   await expect(pet(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-atlas", "hd");
   expect(await page.evaluate(() => document.hasFocus())).toBe(true);
+  await placeCompanionForContactRetention(page);
   return pet(page).evaluate(node => { const r = node.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.bottom, size: r.width }; });
 }
 // Observe the live care meter. Device storage deliberately flushes ordinary

@@ -47,7 +47,7 @@ async function setup(page: Page, options: { home?: boolean; reduced?: boolean } 
   // start a genuine landing. Stroke the settled actor, rather than coordinates
   // captured in mid-fall while hovering is intentionally unavailable.
   await expect.poll(async () => {
-    const current = await pet(page).evaluate(node => { const el = node as HTMLElement, matrix = new DOMMatrixReadOnly(el.style.transform); return { x: matrix.m41 + 46, y: matrix.m42 + 92, support: el.dataset.platform ?? "", stationary: !el.hidden && el.dataset.presence === "active" && !el.hasAttribute("data-returning") && ["idle", "look", "sniff"].includes(el.dataset.state ?? "") }; });
+    const current = await pet(page).evaluate(node => { const el = node as HTMLElement, box = node.getBoundingClientRect(); return { x: box.left + box.width / 2, y: box.bottom, support: el.dataset.platform ?? "", stationary: !el.hidden && el.dataset.presence === "active" && !el.hasAttribute("data-returning") && ["idle", "look", "sniff"].includes(el.dataset.state ?? "") }; });
     stable = current.stationary && current.support && previous?.support === current.support && Math.hypot(current.x - previous.x, current.y - previous.y) < .05 ? stable + 1 : 0;
     previous = current; return stable;
   }, { intervals: [80], timeout: 5000 }).toBeGreaterThanOrEqual(2);
@@ -55,10 +55,14 @@ async function setup(page: Page, options: { home?: boolean; reduced?: boolean } 
 
 async function world(page: Page) {
   return pet(page).evaluate(node => {
-    // Inline world coordinates survive display:none. BCR=0 while hidden must
-    // not masquerade as a horizontal teleport or a successful recovery.
-    const size = parseFloat((node as HTMLElement).style.getPropertyValue("--vc-size"));
-    const matrix = new DOMMatrixReadOnly((node as HTMLElement).style.transform);
+    const element = node as HTMLElement, box = node.getBoundingClientRect();
+    // A native sofa positions the body relative to its registered anchor,
+    // rather than the old world transform. Observe its visible contact frame.
+    if (!element.hidden && box.width > 0 && box.height > 0) return { x: box.left + box.width / 2, y: box.bottom, size: box.width };
+    // Inline world coordinates still preserve hidden recovery evidence;
+    // BCR=0 must not masquerade as a teleport or a successful recovery.
+    const size = parseFloat(element.style.getPropertyValue("--vc-size"));
+    const matrix = new DOMMatrixReadOnly(element.style.transform);
     return { x: matrix.m41 + size / 2, y: matrix.m42 + size, size };
   });
 }
