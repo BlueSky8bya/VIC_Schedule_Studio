@@ -6,6 +6,7 @@ import { companionSpriteSources } from "@/lib/ui/viewer-companion/sprite-quality
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome } from "./helpers/companion-home";
 
+const contactOutput = process.env.COMPANION_CONTACT_OUTPUT ?? ".scratch-pw";
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
 const hand = (page: Page) => pet(page).locator(".vc-petting-hand");
@@ -14,7 +15,7 @@ const affection = (page: Page) => page.getByRole("meter", { name: "빅타민 친
 const posts = new WeakMap<Page, string[]>();
 type Point = { x: number; y: number };
 type Body = Point & { size: number };
-type Frame = { at: number; x: number; y: number; hidden: boolean; mode: string | null; hand: boolean; cursor: string; poseX: number; poseY: number; bob: number; originError: number; lowerBodyY: number; state: string; facing: string; textureCell: string };
+type Frame = { at: number; x: number; y: number; hidden: boolean; mode: string | null; handCount: number; cursor: string; poseX: number; poseY: number; bob: number; originError: number; lowerBodyY: number; state: string; facing: string; textureCell: string };
 type Probe = { frames: Frame[]; pointer: Point; losses: number; hiddenChanges: number; captures: number; raf: number; observer: MutationObserver; move: (event: PointerEvent) => void; capture: () => void; node: Element };
 type ProbeWindow = Window & { contactContinuityProbe?: Probe };
 type FocusFixtureWindow = Window & { companionFixtureFocused?: boolean };
@@ -44,7 +45,7 @@ async function setup(page: Page, reduced = false, mobile = false): Promise<Body>
   return pet(page).evaluate(node => { const r = node.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.bottom, size: r.width }; });
 }
 async function ready(page: Page, p: Point) {
-  await page.mouse.move(p.x, p.y); await expect(hand(page)).toBeVisible(); await expect.poll(() => hand(page).evaluate(node => getComputedStyle(node).opacity)).toBe("1");
+  await page.mouse.move(p.x, p.y); await expect(pet(page)).toHaveAttribute("data-petting", /^(ready|touch|hover)$/); await expect(hand(page)).toHaveCount(0);
 }
 async function probe(page: Page, pointer: Point) {
   await pet(page).evaluate((node, pointer) => {
@@ -56,9 +57,9 @@ async function probe(page: Page, pointer: Point) {
     document.addEventListener("pointermove", p.move, { capture: true, passive: true }); document.addEventListener("gotpointercapture", p.capture, true);
     const began = performance.now();
     const sample = (now: number) => {
-      const el = node as HTMLElement, r = node.getBoundingClientRect(), hs = getComputedStyle(node.querySelector(".vc-petting-hand")!), pose = getComputedStyle(node.querySelector(".vc-pose")!), m = new DOMMatrixReadOnly(pose.transform), hit = document.elementFromPoint(p.pointer.x, p.pointer.y);
+      const el = node as HTMLElement, r = node.getBoundingClientRect(), pose = getComputedStyle(node.querySelector(".vc-pose")!), m = new DOMMatrixReadOnly(pose.transform), hit = document.elementFromPoint(p.pointer.x, p.pointer.y);
       const [ox, oy] = pose.transformOrigin.split(" ").map(parseFloat), [gx, gy] = getComputedStyle(node.querySelector(".vc-inertia")!).transformOrigin.split(" ").map(parseFloat), facing = new DOMMatrixReadOnly(getComputedStyle(node.querySelector(".vc-facing")!).transform).a;
-      p.frames.push({ at: now - began, x: r.left + r.width / 2, y: r.bottom, hidden: el.hidden || getComputedStyle(node).display === "none", mode: el.getAttribute("data-petting"), hand: hs.visibility === "visible" && Number(hs.opacity) === 1, cursor: hit ? getComputedStyle(hit).cursor : "", poseX: Math.hypot(m.a, m.b), poseY: Math.hypot(m.c, m.d), bob: m.f,
+      p.frames.push({ at: now - began, x: r.left + r.width / 2, y: r.bottom, hidden: el.hidden || getComputedStyle(node).display === "none", mode: el.getAttribute("data-petting"), handCount: node.querySelectorAll(".vc-petting-hand").length, cursor: hit ? getComputedStyle(hit).cursor : "", poseX: Math.hypot(m.a, m.b), poseY: Math.hypot(m.c, m.d), bob: m.f,
         originError: Math.hypot(ox - (facing < 0 ? r.width - gx : gx), oy - gy), lowerBodyY: oy + m.b * (46 - ox) + m.d * (76 - oy) + m.f - 76, state: el.dataset.state ?? "", facing: el.dataset.facing ?? "", textureCell: node.querySelector<HTMLImageElement>(".vc-texture")?.style.transform ?? "" });
       p.raf = requestAnimationFrame(sample);
     };
@@ -67,11 +68,11 @@ async function probe(page: Page, pointer: Point) {
 }
 async function finish(page: Page, label: string) {
   const result = await page.evaluate(() => { const p = (window as ProbeWindow).contactContinuityProbe!; cancelAnimationFrame(p.raf); p.observer.disconnect(); document.removeEventListener("pointermove", p.move, true); document.removeEventListener("gotpointercapture", p.capture, true); return { frames: p.frames, losses: p.losses, hiddenChanges: p.hiddenChanges, captures: p.captures, sameDom: document.querySelector(".vc-companion") === p.node }; });
-  await writeFile(`.scratch-pw/companion-058-contact-${label}.json`, JSON.stringify(result, null, 2)); expect(result.sameDom).toBe(true); expect(result.frames.length).toBeGreaterThan(12); expect(result.frames.every(f => !f.hidden)).toBe(true); expect(result.hiddenChanges).toBe(0); return result;
+  await writeFile(`${contactOutput}/companion-058-contact-${label}.json`, JSON.stringify(result, null, 2)); expect(result.sameDom).toBe(true); expect(result.frames.length).toBeGreaterThan(12); expect(result.frames.every(f => !f.hidden)).toBe(true); expect(result.hiddenChanges).toBe(0); return result;
 }
 async function move(page: Page, p: Point, steps = 12) { await page.mouse.move(p.x, p.y, { steps }); await page.waitForTimeout(30); }
 
-for (const axis of ["x", "y"] as const) test(`${axis}-axis round trips retain the hand through the fifty-percent excursion without extra affection`, async ({ page }) => {
+for (const axis of ["x", "y"] as const) test(`${axis}-axis round trips retain contact without hands through the fifty-percent excursion or extra affection`, async ({ page }) => {
   const p = await setup(page), center = { x: p.x, y: p.y - p.size * .45 }, initial = await affection(page);
   const route = axis === "x" ? [{ x: p.x - p.size * .2, y: center.y }, { x: p.x + p.size * .2, y: center.y }, { x: p.x + p.size * 1.13, y: center.y }, { x: p.x - p.size * 1.13, y: center.y }, center]
     : [{ x: p.x, y: p.y - p.size * .65 }, { x: p.x, y: p.y - p.size * .30 }, { x: p.x, y: p.y - p.size * 1.49 }, center];
@@ -89,28 +90,28 @@ for (const axis of ["x", "y"] as const) test(`${axis}-axis round trips retain th
   for (const point of route.slice(2)) await move(page, point, 24);
   await expect.poll(async () => await affection(page) - initial).toBeGreaterThan(.07); const awarded = await affection(page); expect(awarded - initial).toBeLessThan(.09);
   await page.waitForTimeout(650); const result = await finish(page, axis);
-  expect(result.losses).toBe(0); expect(result.captures).toBe(0); expect(result.frames.every(f => f.mode && f.hand && f.cursor === "none")).toBe(true);
+  expect(result.losses).toBe(0); expect(result.captures).toBe(0); expect(result.frames.every(f => f.mode && f.handCount === 0 && f.cursor !== "none")).toBe(true);
   expect(await affection(page)).toBeLessThanOrEqual(awarded + .001);
-  await page.screenshot({ path: `.scratch-pw/companion-058-contact-${axis}.png` });
-  await move(page, { x: p.x + p.size * 1.19, y: center.y }); await expect(hand(page)).toBeHidden(); await expect(marks(page)).toHaveCount(0);
+  await page.screenshot({ path: `${contactOutput}/companion-058-contact-${axis}.png` });
+  await move(page, { x: p.x + p.size * 1.19, y: center.y }); await expect(pet(page)).not.toHaveAttribute("data-petting"); await expect(hand(page)).toHaveCount(0); await expect(marks(page)).toHaveCount(0);
 });
 
 test("retention yields to a native neighbouring button before reversal or click", async ({ page }) => {
   const p = await setup(page), y = p.y - p.size * .45, initial = await affection(page);
   await page.evaluate(({ x, y }) => { const b = document.createElement("button"); b.type = "button"; b.id = "contact-native-neighbour"; b.textContent = "조작"; Object.assign(b.style, { position: "fixed", left: `${x + 72}px`, top: `${y - 12}px`, width: "24px", height: "24px", padding: "0", zIndex: "80", cursor: "pointer" }); b.addEventListener("click", () => { b.dataset.clicked = "1"; }); document.body.append(b); }, { x: p.x, y });
   await ready(page, { x: p.x - 20, y }); await move(page, { x: p.x + 20, y }); await move(page, { x: p.x + 80, y });
-  await expect(hand(page)).toBeHidden(); await expect(marks(page)).toHaveCount(0); const button = page.locator("#contact-native-neighbour"); expect(await button.evaluate(node => getComputedStyle(node).cursor)).toBe("pointer");
+  await expect(pet(page)).not.toHaveAttribute("data-petting"); await expect(hand(page)).toHaveCount(0); await expect(marks(page)).toHaveCount(0); const button = page.locator("#contact-native-neighbour"); expect(await button.evaluate(node => getComputedStyle(node).cursor)).toBe("pointer");
   expect(await affection(page)).toBeLessThanOrEqual(initial + .001); await button.click(); await expect(button).toHaveAttribute("data-clicked", "1");
 });
 
 test("reduced-motion retention starts only in the base and expires outside after real movement stops", async ({ page }) => {
   const p = await setup(page, true), y = p.y - p.size * .45, outside = { x: p.x + p.size * 1.10, y };
-  await page.mouse.move(outside.x, outside.y); await expect(hand(page)).toBeHidden(); await expect(marks(page)).toHaveCount(0);
-  await ready(page, { x: p.x, y }); await page.mouse.move(outside.x, outside.y); await expect(hand(page)).toBeHidden();
+  await page.mouse.move(outside.x, outside.y); await expect(pet(page)).not.toHaveAttribute("data-petting"); await expect(hand(page)).toHaveCount(0); await expect(marks(page)).toHaveCount(0);
+  await ready(page, { x: p.x, y }); await page.mouse.move(outside.x, outside.y); await expect(pet(page)).not.toHaveAttribute("data-petting"); await expect(hand(page)).toHaveCount(0);
   await ready(page, { x: p.x, y }); await move(page, { x: p.x + 12, y }); await move(page, outside);
-  await expect(hand(page)).toBeVisible(); await page.waitForTimeout(350); await expect(hand(page)).toBeVisible();
-  await expect(hand(page)).toBeHidden({ timeout: 1300 }); await expect(marks(page)).toHaveCount(0);
-  await page.mouse.move(outside.x + 1, outside.y); await expect(hand(page)).toBeHidden(); await ready(page, { x: p.x, y });
+  await expect(pet(page)).toHaveAttribute("data-petting", /^(ready|touch|hover)$/); await expect(hand(page)).toHaveCount(0); await page.waitForTimeout(350); await expect(pet(page)).toHaveAttribute("data-petting", /^(ready|touch|hover)$/); await expect(hand(page)).toHaveCount(0);
+  await expect(pet(page)).not.toHaveAttribute("data-petting", /.+/, { timeout: 1300 }); await expect(hand(page)).toHaveCount(0); await expect(marks(page)).toHaveCount(0);
+  await page.mouse.move(outside.x + 1, outside.y); await expect(pet(page)).not.toHaveAttribute("data-petting"); await expect(hand(page)).toHaveCount(0); await ready(page, { x: p.x, y });
 });
 
 // PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
@@ -145,7 +146,7 @@ for (const mobile of [false]) test.describe(mobile ? "touch hanging tension" : "
       if (!mobile) expect(heldRequests).toBe(1);
       expect(settled.length).toBeGreaterThan(12); expect(settled.every(f => f.poseY >= 1.18 && f.poseY <= 1.32 && f.poseX < 1 && Math.abs(f.bob) < .001 && f.originError < .1 && f.lowerBodyY > .2)).toBe(true);
       expect(new Set(settled.map(f => f.facing)).size).toBe(1); expect(Math.max(...settled.map(f => f.x)) - Math.min(...settled.map(f => f.x))).toBeLessThan(.05); expect(Math.max(...settled.map(f => f.y)) - Math.min(...settled.map(f => f.y))).toBeLessThan(.05);
-      await page.screenshot({ path: `.scratch-pw/companion-058-contact-held-${mobile ? "touch" : "cold"}.png` });
+      await page.screenshot({ path: `${contactOutput}/companion-058-contact-held-${mobile ? "touch" : "cold"}.png` });
     } finally { unblock(); if (client) { await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await client.detach(); } else await page.mouse.up(); }
     await expect(pet(page)).not.toHaveAttribute("data-state", "held");
     if (!mobile) {

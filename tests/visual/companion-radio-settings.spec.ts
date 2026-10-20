@@ -241,6 +241,7 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface}: first hom
 });
 
 test("every active licensed recording decodes and produces real browser samples without fetching the retired playlist", async ({ page }) => {
+  test.setTimeout(15000 + COMPANION_RADIO_TRACKS.length * 2500);
   const safety = await fixture(page);
   await page.addInitScript(() => {
     const target = window as Window & { __allRadio?: { media: HTMLMediaElement; analyser: AnalyserNode } };
@@ -262,6 +263,10 @@ test("every active licensed recording decodes and produces real browser samples 
   for (const track of COMPANION_RADIO_TRACKS) {
     await radio.getByRole("button", { name: `${track.title} 재생`, exact: true }).click();
     await expect(radio.locator(".rhh-radio-now > p")).toHaveText(track.title);
+    if (track.credit) {
+      await expect(radio.locator(".rhh-radio-attribution")).toContainText(track.credit);
+      await test.info().attach("credited-vocal-recording", { body: await radio.screenshot(), contentType: "image/png" });
+    }
     await expect.poll(read).toMatchObject({ src: track.src, context: "running" });
     await expect.poll(async () => (await read()).time).toBeGreaterThan(.15);
     await expect.poll(async () => (await read()).peak).toBeGreaterThan(.00001);

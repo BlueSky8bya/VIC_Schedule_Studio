@@ -152,7 +152,6 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
   const actorId = useId();
   const body = useRef<HTMLDivElement>(null), actor = useRef<HTMLButtonElement>(null), effect = useRef<HTMLSpanElement>(null);
   const sprite = useRef<HTMLSpanElement>(null), pose = useRef<HTMLSpanElement>(null), reaction = useRef<HTMLSpanElement>(null), facing = useRef<HTMLSpanElement>(null), shadow = useRef<HTMLSpanElement>(null);
-  const pettingHand = useRef<HTMLSpanElement>(null);
   const washTool = useRef<HTMLSpanElement>(null);
   const interactionTool = useRef<HTMLSpanElement>(null);
   const accessoryBack = useRef<HTMLSpanElement>(null), accessoryFront = useRef<HTMLSpanElement>(null), giftProp = useRef<HTMLSpanElement>(null), giftButton = useRef<HTMLButtonElement>(null);
@@ -739,7 +738,6 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     const touch = createCompanionPettingContact();
     let hoverPetting = false, hoverStarted = 0, petStarted = 0;
     let hoverPoint: { x: number; y: number } | undefined, hoverTarget: Element | null = null;
-    let handPresentation: string | undefined;
     let awaitingAtX: false | "vertical" | "drop" = false;
     let verticalRecoveryX: number | undefined;
     let verticalLanding = false;
@@ -932,10 +930,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       lastPoseSample = { row, frame, status };
       if (!action?.accessory) { el.removeAttribute("data-accessory-trick"); el.removeAttribute("data-accessory-beat"); }
       if (!action?.radio) { el.removeAttribute("data-radio-reaction"); el.removeAttribute("data-radio-generation"); }
-      // Cursor presence belongs to a valid hover, not the pressure/reward
+      // Contact presence belongs to a valid hover, not the pressure/reward
       // envelopes. Existing paints also release it when the world moves away.
       if (hoverPoint && (!canHover(hoverPoint) || !hoverTarget?.isConnected || isOtherControl(hoverTarget))) stopHover();
-      if (hoverPoint && handPresentation && pettingHand.current) style(pettingHand.current, "transform", handPresentation);
       if (supportById(support)) worldSeeded = true;
       // Scroll can carry an anchor outside the safe viewport between full
       // scans. Never paint that interim frame over headers or clipped edges.
@@ -1687,8 +1684,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     const canHover = (point: { x: number; y: number }) => hoverEligible() && pettingWindow.contains(pettingPoint(point), pettingBase, performance.now());
     const stopHover = () => {
       petting.reset(); touch.reset(); pettingWindow.reset(); hoverPetting = false; hoverPoint = undefined;
-      handPresentation = undefined; interactionUntil = 0;
-      hoverTarget?.removeAttribute("data-vc-petting-cursor"); hoverTarget = null;
+      interactionUntil = 0; hoverTarget = null;
       el.removeAttribute("data-petting"); style(contactLayer, "transform", "translate3d(0,0,0) rotate(0deg) scale(1,1)");
     };
     const inputPaint = (row: number, frame: number, status: string) => {
@@ -1700,7 +1696,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         // does not. Give only this acknowledged contact its finite tail.
         if (!homeWaitingGeometry || overlayActive || presence.phase !== "active") return;
       }
-      // Keep every gesture/inertia sample, but commit contact/hand/body once
+      // Keep every gesture/inertia sample, but commit contact/body once
       // on the existing display clock. A short input tail promotes idle14Hz
       // to the normal full60/lite30 cadence; it never starts a second loop.
       const now = performance.now();
@@ -1719,12 +1715,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const now = performance.now();
       if (event.pointerType !== "mouse" || event.buttons !== 0 || !hoverEligible() || !(target instanceof Element) || isOtherControl(target) || !pettingWindow.move(pettingPoint(point), pettingBase, now)) { stopHover(); return; }
       hoverPoint = point;
-      if (hoverTarget !== target) {
-        hoverTarget?.removeAttribute("data-vc-petting-cursor"); hoverTarget = target;
-        // Mark only the actual non-control surface under this pointer. No
-        // enlarged hitbox, global cursor override or inline-style replacement.
-        hoverTarget.setAttribute("data-vc-petting-cursor", "");
-      }
+      hoverTarget = target;
       const normalized = (event.clientX - bodyFrame.x) / (bodyFrame.size * .76) + .5;
       // Preserve the familiar stroke distance while contact also responds in
       // the side padding, rather than clamping an entire margin to one point.
@@ -1735,7 +1726,6 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (result.stroking || hoverPetting) data("petting", "hover");
       else if (moving || touch.sample(now).pressure > 0) data("petting", "touch");
       else data("petting", "ready");
-      handPresentation = `translate3d(${((event.clientX - bodyFrame.x) / bodyFrame.scale + size / 2 - 12).toFixed(2)}px,${((event.clientY - bodyFrame.y) / bodyFrame.scale + size - 21).toFixed(2)}px,0) rotate(${reduced ? 0 : -18 + (normalized - .5) * 12}deg)`;
       if (isDetailGuest() && (moving || touch.sample(now).pressure > 0)) guestUntil = now + 600;
       if (!result.stroking) { inputPaint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status); return; }
       if (!hoverPetting) {
@@ -4544,7 +4534,6 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     {pendingGift && <button className="vc-gift-open" ref={giftButton} hidden type="button" aria-label="빅타민이 가져온 선물 열기" title="선물 열기" data-activity-manual="" data-sfx="off" disabled={blocked || overlayOpen || performanceActive} tabIndex={overlayOpen || performanceActive ? -1 : 0} onPointerDown={event => event.stopPropagation()} onClick={event => { event.preventDefault(); event.stopPropagation(); unwrapGift(); }} />}
     <span className="vc-effect" ref={effect} aria-hidden="true" />
     <span className="vc-affection-hearts" aria-hidden="true"><i>♥</i><i>♥</i><i>♥</i></span>
-    <span className="vc-petting-hand" ref={pettingHand} aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false"><path d="M10 26c-3-3-5-6-6-9-1-2 1-4 3-2l3 3-1-9c0-3 3-4 4-1l1 6V6c0-3 4-3 4 0v8l1-6c1-3 4-2 4 1l-1 8 2-3c2-2 4 0 2 3l-4 7c-1 2-3 4-6 4h-3Z"/><path className="vc-hand-fold" d="M11 21c2-2 5-2 7 0"/><path className="vc-hand-cuff" d="M10 27h11v4H10Z"/></svg></span>
     <span className="sr-only" id="vc-help">빅타민의 몸 위에서 마우스를 좌우로 움직여 쓰다듬기. 짧게 누르면 톡 치기. 끌어서 옮기기. Enter 쓰다듬기. 스페이스로 집고 방향키로 옮긴 뒤 스페이스나 Escape로 놓기. P로 위치 선택. N으로 낮잠.</span>
     <span className="sr-only" role="status">{announcement}</span>
   </div>

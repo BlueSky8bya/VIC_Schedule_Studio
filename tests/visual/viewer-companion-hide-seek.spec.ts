@@ -220,7 +220,7 @@ for (const mobile of [false]) test.describe(mobile ? "native touch finding" : "n
       const y = finalPerch.y - finalPerch.height * .45;
       await page.mouse.move(finalPerch.x - finalPerch.width * .24, y);
       for (const direction of [1, -1, 1]) { await page.mouse.move(finalPerch.x + direction * finalPerch.width * .24, y, { steps: 12 }); await page.waitForTimeout(40); }
-      await expect(pet(page).locator(".vc-petting-hand")).toBeVisible();
+      await expect(pet(page)).toHaveAttribute("data-petting", /^(ready|touch|hover)$/); await expect(pet(page).locator(".vc-petting-hand")).toHaveCount(0);
     }
     await expect(pet(page)).toHaveAttribute("data-state", "petted"); await expect(pet(page).locator(".vc-affection-hearts")).toBeVisible();
     expect(await page.evaluate(() => document.activeElement?.className)).toBe(focusBefore); await expect(sheet(page)).toHaveAttribute("data-companion-detail-event", target.eventId);

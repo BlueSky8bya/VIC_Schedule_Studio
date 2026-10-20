@@ -4,12 +4,13 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { openCompanionHome } from "./helpers/companion-home";
 
+const contactOutput = process.env.COMPANION_CONTACT_OUTPUT ?? ".scratch-pw";
 const pet = (page: Page) => page.locator(".vc-companion");
 const hand = (page: Page) => pet(page).locator(".vc-petting-hand");
 const marks = (page: Page) => page.locator("[data-vc-petting-cursor]");
 const posts = new WeakMap<Page, string[]>();
 type Point = { x: number; y: number; size: number };
-type HoverFrame = { at: number; mode: string | null; handVisible: boolean; opacity: number; cursor: string; marked: number; actor: { x: number; y: number; width: number; height: number } };
+type HoverFrame = { at: number; mode: string | null; handCount: number; cursor: string; marked: number; actor: { x: number; y: number; width: number; height: number } };
 type Probe = { point: { x: number; y: number }; frames: HoverFrame[]; moves: number[]; losses: number; captures: number; raf: number; slow: boolean; observer: MutationObserver; move: (event: PointerEvent) => void; capture: () => void };
 type ProbeWindow = Window & { hoverStabilityProbe?: Probe };
 
@@ -45,9 +46,8 @@ async function setup(page: Page, reduced: boolean) {
 const affection = (page: Page) => page.getByRole("meter", { name: "빅타민 친밀도", exact: true }).evaluate(node => (node as HTMLMeterElement).value);
 async function readyAt(page: Page, point: { x: number; y: number }) {
   await page.mouse.move(point.x, point.y);
-  await expect(pet(page)).toHaveAttribute("data-petting", /^(ready|touch|hover)$/); await expect(hand(page)).toBeVisible();
-  await expect.poll(() => hand(page).evaluate(node => getComputedStyle(node).opacity)).toBe("1");
-  expect(await page.evaluate(point => { const hit = document.elementFromPoint(point.x, point.y); return hit ? getComputedStyle(hit).cursor : null; }, point)).toBe("none");
+  await expect(pet(page)).toHaveAttribute("data-petting", /^(ready|touch|hover)$/); await expect(hand(page)).toHaveCount(0);
+  expect(await page.evaluate(point => { const hit = document.elementFromPoint(point.x, point.y); return hit ? getComputedStyle(hit).cursor : null; }, point)).not.toBe("none");
 }
 async function startProbe(page: Page, point: { x: number; y: number }) {
   await pet(page).evaluate((node, point) => {
@@ -66,8 +66,8 @@ async function startProbe(page: Page, point: { x: number; y: number }) {
     document.addEventListener("pointermove", probe.move, { capture: true, passive: true }); document.addEventListener("gotpointercapture", probe.capture, true);
     const began = performance.now();
     const sample = (now: number) => {
-      const h = getComputedStyle(node.querySelector(".vc-petting-hand")!), hit = document.elementFromPoint(probe.point.x, probe.point.y), r = node.querySelector(".vc-actor")!.getBoundingClientRect();
-      probe.frames.push({ at: now - began, mode: node.getAttribute("data-petting"), handVisible: h.visibility === "visible" && h.display !== "none", opacity: Number(h.opacity), cursor: hit ? getComputedStyle(hit).cursor : "", marked: document.querySelectorAll("[data-vc-petting-cursor]").length, actor: { x: r.x, y: r.y, width: r.width, height: r.height } });
+      const hit = document.elementFromPoint(probe.point.x, probe.point.y), r = node.querySelector(".vc-actor")!.getBoundingClientRect();
+      probe.frames.push({ at: now - began, mode: node.getAttribute("data-petting"), handCount: node.querySelectorAll(".vc-petting-hand").length, cursor: hit ? getComputedStyle(hit).cursor : "", marked: document.querySelectorAll("[data-vc-petting-cursor]").length, actor: { x: r.x, y: r.y, width: r.width, height: r.height } });
       probe.raf = requestAnimationFrame(sample);
     };
     (window as ProbeWindow).hoverStabilityProbe = probe; probe.raf = requestAnimationFrame(sample);
@@ -78,10 +78,10 @@ async function stopProbe(page: Page, label: string) {
     const p = (window as ProbeWindow).hoverStabilityProbe!; cancelAnimationFrame(p.raf); p.observer.disconnect(); document.removeEventListener("pointermove", p.move, true); document.removeEventListener("gotpointercapture", p.capture, true);
     return { frames: p.frames, moves: p.moves, losses: p.losses, captures: p.captures };
   });
-  await writeFile(`.scratch-pw/companion-055-hover-${label}.json`, JSON.stringify(result, null, 2));
+  await writeFile(`${contactOutput}/companion-055-hover-${label}.json`, JSON.stringify(result, null, 2));
   expect(result.frames.length).toBeGreaterThan(50); expect(result.losses).toBe(0); expect(result.captures).toBe(0);
   expect(result.moves.length).toBeGreaterThan(80); expect(Math.max(...result.moves)).toBeLessThan(1);
-  expect(result.frames.every(frame => frame.mode !== null && frame.handVisible && frame.opacity === 1 && frame.cursor === "none" && frame.marked <= 1)).toBe(true);
+  expect(result.frames.every(frame => frame.mode !== null && frame.handCount === 0 && frame.cursor !== "none" && frame.marked === 0)).toBe(true);
   const first = result.frames[0].actor;
   expect(result.frames.every(({ actor }) => Math.hypot(actor.x - first.x, actor.y - first.y) < .01 && Math.abs(actor.width - first.width) < .01 && Math.abs(actor.height - first.height) < .01)).toBe(true);
   console.log(JSON.stringify({ check: `hover-stability-${label}`, frames: result.frames.length, duration: result.frames.at(-1)!.at, slowEvents: result.moves.length, maxSlowStep: Math.max(...result.moves), dataLosses: result.losses, captures: result.captures }));
@@ -116,10 +116,10 @@ for (const reduced of [false, true]) test.describe(reduced ? "reduced hover curs
     // the authored happy pose changes. Input geometry must remain fixed.
     for (const offset of [.30, .60, .30, -.30, -.60, -.30]) await page.mouse.move(p.x + p.size * offset, y, { steps: 8 });
     await page.mouse.move(p.x + p.size * .68 + 3, y); // An established stroke retains the new50% overshoot.
-    await page.waitForTimeout(120); await expect(hand(page)).toBeVisible();
+    await page.waitForTimeout(120); await expect(pet(page)).toHaveAttribute("data-petting", /^(ready|touch|hover)$/); await expect(hand(page)).toHaveCount(0);
     await stopProbe(page, reduced ? "reduced" : "full"); await expect(focus).toBeFocused();
-    await page.screenshot({ path: `.scratch-pw/companion-055-hover-${reduced ? "reduced" : "full"}.png` });
-    await page.mouse.move(p.x + p.size * (.68 + .50) + 3, y); await expect(hand(page)).toBeHidden(); await expect(marks(page)).toHaveCount(0);
+    await page.screenshot({ path: `${contactOutput}/companion-055-hover-${reduced ? "reduced" : "full"}.png` });
+    await page.mouse.move(p.x + p.size * (.68 + .50) + 3, y); await expect(pet(page)).not.toHaveAttribute("data-petting"); await expect(hand(page)).toHaveCount(0); await expect(marks(page)).toHaveCount(0);
   });
 
   test("native neighbouring controls, document exit and an ordinary window release the cursor immediately", async ({ page }) => {
@@ -132,18 +132,18 @@ for (const reduced of [false, true]) test.describe(reduced ? "reduced hover curs
     await page.mouse.move(p.x + 50, y); await readyAt(page, { x: p.x + 28, y });
     await page.mouse.move(p.x + 8, y); await page.mouse.move(p.x + 50, y);
     const control = page.locator("#hover-stability-neighbour");
-    await expect(hand(page)).toBeHidden(); await expect(marks(page)).toHaveCount(0);
+    await expect(pet(page)).not.toHaveAttribute("data-petting"); await expect(hand(page)).toHaveCount(0); await expect(marks(page)).toHaveCount(0);
     expect(await control.evaluate(node => getComputedStyle(node).cursor)).toBe("pointer");
     expect(await affection(page)).toBeLessThanOrEqual(initial + .001); await expect(pet(page)).not.toHaveAttribute("data-state", "petted");
     await control.click(); await expect(control).toHaveAttribute("data-clicked", "1");
     await readyAt(page, { x: p.x - 50, y });
-    await page.mouse.move(-5, -5); await expect(hand(page)).toBeHidden(); await expect(marks(page)).toHaveCount(0);
+    await page.mouse.move(-5, -5); await expect(pet(page)).not.toHaveAttribute("data-petting"); await expect(hand(page)).toHaveCount(0); await expect(marks(page)).toHaveCount(0);
     // Keyboard opening leaves the physical mouse over the pet. Cleanup must
     // come from the actual overlay transition, not from moving to its opener.
     await readyAt(page, { x: p.x - 50, y });
-    const settings = page.getByRole("button", { name: "설정", exact: true }); await settings.focus(); await expect(hand(page)).toBeVisible(); await settings.press("Enter");
+    const settings = page.getByRole("button", { name: "설정", exact: true }); await settings.focus(); await expect(pet(page)).toHaveAttribute("data-petting", /^(ready|touch|hover)$/); await expect(hand(page)).toHaveCount(0); await settings.press("Enter");
     await expect(page.getByRole("dialog", { name: "설정", exact: true })).toBeVisible();
-    await expect(pet(page)).toHaveAttribute("data-overlay", "quiet"); await expect(hand(page)).toBeHidden(); await expect(marks(page)).toHaveCount(0);
+    await expect(pet(page)).toHaveAttribute("data-overlay", "quiet"); await expect(pet(page)).not.toHaveAttribute("data-petting"); await expect(hand(page)).toHaveCount(0); await expect(marks(page)).toHaveCount(0);
     await expect(pet(page).locator(".vc-actor")).not.toBeFocused();
   });
 });

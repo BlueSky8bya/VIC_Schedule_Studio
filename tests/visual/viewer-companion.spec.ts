@@ -40,7 +40,7 @@ async function centre(locator: Locator) {
 async function stroke(page: Page) {
   const point = await centre(actor(page));
   await page.mouse.move(point.x - 20, point.y);
-  await expect(pet(page).locator(".vc-petting-hand")).toBeVisible();
+  await expect(pet(page)).toHaveAttribute("data-petting", /^(ready|touch|hover)$/); await expect(pet(page).locator(".vc-petting-hand")).toHaveCount(0);
   for (const dx of [20, -20, 20]) {
     await page.mouse.move(point.x + dx, point.y, { steps: 12 });
     await page.waitForTimeout(40);

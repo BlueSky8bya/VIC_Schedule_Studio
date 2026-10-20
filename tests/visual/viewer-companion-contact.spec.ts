@@ -4,6 +4,7 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome } from "./helpers/companion-home";
 
+const contactOutput = process.env.COMPANION_CONTACT_OUTPUT ?? ".scratch-pw";
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
 const bond = (page: Page) => page.getByRole("meter", { name: "빅타민 친밀도", exact: true });
@@ -78,7 +79,7 @@ async function neutralContact(page: Page) {
 }
 async function leaveContact(page: Page) {
   await page.mouse.move(4, 4);
-  await expect(page.locator(".vc-petting-hand")).toBeHidden();
+  await expect(pet(page)).not.toHaveAttribute("data-petting"); await expect(page.locator(".vc-petting-hand")).toHaveCount(0);
   await expect(page.locator("[data-vc-petting-cursor]")).toHaveCount(0);
 }
 
@@ -95,20 +96,19 @@ for (const reduced of [false, true]) test(`native head strokes are finite and le
   await stroke(page);
   await expect(pet(page)).toHaveAttribute("data-petting", "hover");
   await expect(pet(page)).toHaveAttribute("data-state", "petted");
-  await expect(page.locator(".vc-petting-hand")).toBeVisible();
-  if (!reduced) await page.screenshot({ path: ".scratch-pw/companion-contact-hand.png" });
+  await expect(pet(page)).toHaveAttribute("data-petting", /^(ready|touch|hover)$/); await expect(page.locator(".vc-petting-hand")).toHaveCount(0);
+  if (!reduced) await page.screenshot({ path: `${contactOutput}/companion-contact-body-only.png` });
   await expect.poll(async () => await affection(page) - initialBond).toBeGreaterThan(.07);
   expect(await affection(page) - initialBond).toBeLessThan(.09);
   await expect(focus).toBeFocused(); expect(page.url()).toBe(url);
   expect(await page.evaluate(() => ({ clicks: (window as ContactProbe).contactClicks, captures: (window as ContactProbe).contactCaptures }))).toEqual({ clicks: 0, captures: 0 });
   const after = await world(page);
   expect(Math.abs(after.x - before.x)).toBeLessThan(.01); expect(Math.abs(after.y - before.y)).toBeLessThan(.01);
-  if (reduced) expect(await page.locator(".vc-petting-hand").evaluate(node => new DOMMatrixReadOnly(getComputedStyle(node).transform).b)).toBe(0);
-  // PLAN-055 keeps the eligible hover's hand/cursor steady. Only pressure,
+  // Eligible hover retains contact without a hand overlay. Only pressure,
   // happiness and rewards end without another deliberate stroke.
   await expect(pet(page)).not.toHaveAttribute("data-petting", "hover", { timeout: 2000 });
   await expect(pet(page)).toHaveAttribute("data-petting", "ready");
-  await expect(page.locator(".vc-petting-hand")).toBeVisible();
+  await expect(pet(page)).toHaveAttribute("data-petting", /^(ready|touch|hover)$/); await expect(page.locator(".vc-petting-hand")).toHaveCount(0);
   await expect(pet(page)).not.toHaveAttribute("data-state", "petted", { timeout: 2000 });
   await neutralContact(page); expect(await affection(page) - initialBond).toBeLessThan(.09);
   await leaveContact(page);
@@ -131,7 +131,7 @@ test("one pass and jitter never award affection, including jitter after a genuin
   for (let i = 0; i < 80; i++) { await page.mouse.move(end.right + (i % 2) * .5, end.y); await page.waitForTimeout(55); }
   await expect(pet(page)).not.toHaveAttribute("data-petting", "hover");
   await expect(pet(page)).toHaveAttribute("data-petting", "ready");
-  await expect(page.locator(".vc-petting-hand")).toBeVisible();
+  await expect(pet(page)).toHaveAttribute("data-petting", /^(ready|touch|hover)$/); await expect(page.locator(".vc-petting-hand")).toHaveCount(0);
   await expect(pet(page)).not.toHaveAttribute("data-state", "petted"); await neutralContact(page);
   expect(await affection(page)).toBeLessThanOrEqual(awarded + .001);
   expect(await affection(page)).toBeGreaterThan(awarded - .02);

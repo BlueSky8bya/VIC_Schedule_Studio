@@ -191,7 +191,7 @@ test("large native keyposes and first-pass contact stay fluid, reward only real 
   const before = await world(page), y = before.y - before.size * .49, left = before.x - before.size * .22, right = before.x + before.size * .22;
   const bond = page.getByRole("meter", { name: "빅타민 친밀도", exact: true }), initial = await bond.evaluate(node => (node as HTMLMeterElement).value);
   await page.mouse.move(left, y); await page.mouse.move(right, y, { steps: 6 });
-  await expect(pet(page)).toHaveAttribute("data-petting", "touch"); await expect(page.locator(".vc-petting-hand")).toBeVisible();
+  await expect(pet(page)).toHaveAttribute("data-petting", "touch"); await expect(pet(page)).toHaveAttribute("data-petting", /^(ready|touch|hover)$/); await expect(page.locator(".vc-petting-hand")).toHaveCount(0);
   await expect.poll(() => page.locator(".vc-contact").evaluate(node => { const m = new DOMMatrixReadOnly(getComputedStyle(node).transform); return Math.abs(m.m42) + Math.abs(m.b); })).toBeGreaterThan(.01);
   expect(await bond.evaluate(node => (node as HTMLMeterElement).value)).toBeLessThanOrEqual(initial + .001);
   await expect(focus).toBeFocused();

@@ -128,7 +128,7 @@ for (const area of [
   const p = await point(page); expect(p.width).toBe(92);
   const y = p.y - 92 * area.height, x = p.x + 92 * area.offset;
   await page.mouse.move(x - area.stroke, y); await page.mouse.move(x + area.stroke, y, { steps: 6 });
-  await expect(pet(page).locator(".vc-petting-hand")).toBeVisible();
+  await expect(pet(page)).toHaveAttribute("data-petting", /^(ready|touch|hover)$/); await expect(pet(page).locator(".vc-petting-hand")).toHaveCount(0);
   await page.mouse.move(x - area.stroke, y, { steps: 6 });
   await expect(pet(page)).toHaveAttribute("data-state", "petted"); await expect(pet(page)).toHaveAttribute("data-atlas", "hd");
   const palette = await pet(page).locator(".vc-affection-hearts").evaluate(node => ({ color: getComputedStyle(node).color, teaser: getComputedStyle(node).getPropertyValue("--teaser"), visible: getComputedStyle(node).display }));
@@ -140,12 +140,12 @@ test("a stroke can cross the drag button edge without losing intent, and leaving
   await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page);
   const p = await point(page), y = p.y - 92 * .42;
   await page.mouse.move(p.x + 28, y); await page.mouse.move(p.x + 50, y);
-  await expect(pet(page).locator(".vc-petting-hand")).toBeVisible();
+  await expect(pet(page)).toHaveAttribute("data-petting", /^(ready|touch|hover)$/); await expect(pet(page).locator(".vc-petting-hand")).toHaveCount(0);
   await page.mouse.move(p.x + 28, y);
   await expect(pet(page)).toHaveAttribute("data-state", "petted");
   await page.mouse.move(p.x + 92 * .8, y);
   await expect(pet(page)).not.toHaveAttribute("data-petting");
-  await expect(pet(page).locator(".vc-petting-hand")).not.toBeVisible();
+  await expect(pet(page)).not.toHaveAttribute("data-petting"); await expect(pet(page).locator(".vc-petting-hand")).toHaveCount(0);
 });
 
 test("leaving the drag button for another control cannot award affection or consume its click", async ({ page }) => {
