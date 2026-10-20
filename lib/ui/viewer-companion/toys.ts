@@ -19,6 +19,9 @@ export function companionToyBoxDropReady(rect: { left: number; right: number; to
 }
 type Point = { x: number; y: number; platformId?: string };
 export type CompanionToy = Point & { id: string; kind: CompanionToyKind; angle: number; held: boolean; carried: boolean; fraction?: number; hidden?: boolean; stance?: Point };
+/** An already resting object's same physical DOM source may scroll out of
+ * the safe landing snapshot. This is its attachment, never a new ledge. */
+export type CompanionToyAttachment = Readonly<Point & { id: string; platformId: string; hidden?: boolean }>;
 type Flight = { at: number; lastAt: number; x: number; y: number; vx: number; vy: number; previous: Point; homeEmission?: boolean; autonomousToss?: boolean; target?: Point; targetFraction?: number; recovery?: ReturnType<typeof createCompanionFoodGravity> };
 const clamp = (n: number, low: number, high: number) => Math.max(low, Math.min(high, n));
 const valid = (point: Point) => [point.x, point.y].every(Number.isFinite);
@@ -147,16 +150,20 @@ export function createCompanionToys(rng: () => number = Math.random) {
     flights.set(toy.id, { at, lastAt: at, x: toy.x, y: toy.y, vx: 0, vy: 0, previous: { x: toy.x, y: toy.y }, target,
       targetFraction: clamp((target.x - candidate.p.x) / candidate.p.width, 0, 1), recovery });
   };
-  const reconcile = (at: number) => {
+  const reconcile = (at: number, attachments: readonly CompanionToyAttachment[] = []) => {
     for (const toy of objects.values()) {
       if (toy.held || toy.carried || flights.has(toy.id) || waiting.has(toy.id)) continue;
       const support = platforms.find(p => p.id === toy.platformId && floor(p));
       if (support) bind(toy, support, support.x + support.width * (toy.fraction ?? .5));
-      else release(toy, at);
+      else {
+        const attached = attachments.find(item => item.id === toy.id && item.platformId === toy.platformId && valid(item));
+        if (attached) { toy.x = attached.x; toy.y = attached.y; toy.hidden = Boolean(attached.hidden); }
+        else release(toy, at);
+      }
     }
   };
   return {
-    sync(next: readonly Platform[], bounds: { width: number; height: number }, at: number, smallHomeFloors: readonly Platform[] = []) {
+    sync(next: readonly Platform[], bounds: { width: number; height: number }, at: number, smallHomeFloors: readonly Platform[] = [], attachments: readonly CompanionToyAttachment[] = []) {
       if (![bounds.width, bounds.height, at].every(Number.isFinite) || bounds.width <= 0 || bounds.height <= 0) return;
       const measured = [...new Map([...smallHomeFloors.filter(p => p.kind === "floor" && isCompanionHomeFloorFoodSupport(p.id)).slice(0, 8), ...next.slice(0, 400)].filter(p => Boolean(p.id) && !p.bodyOnly && !panelFloor(p) && [p.x, p.y, p.width].every(Number.isFinite) && p.width > 0).map(p => [p.id, p])).values()];
       const occupied = new Set([...objects.values()].map(toy => toy.platformId).filter(Boolean));
@@ -182,7 +189,7 @@ export function createCompanionToys(rng: () => number = Math.random) {
       }
       // Pausing freezes a throw's clock, not the real floor under a resting
       // object. Keep its logical coordinates paired with that moving floor.
-      reconcile(at);
+      reconcile(at, attachments.slice(0, MAX_COMPANION_TOYS));
     },
     spawn(point: Point, at: number, occupied: readonly CompanionItemPoint[] = []) {
       if (pausedAt !== undefined || objects.size >= MAX_COMPANION_TOYS || !valid(point) || !Number.isFinite(at) || width <= 0 || height <= 0) return;

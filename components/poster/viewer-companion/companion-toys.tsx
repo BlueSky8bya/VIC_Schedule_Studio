@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
-import { companionToyBoxDropReady, createCompanionToys, COMPANION_TOY_NAMES, type CompanionToy, type CompanionToyKind } from "@/lib/ui/viewer-companion/toys";
+import { companionToyBoxDropReady, createCompanionToys, COMPANION_TOY_NAMES, type CompanionToy, type CompanionToyKind, type CompanionToyAttachment } from "@/lib/ui/viewer-companion/toys";
 import type { Platform } from "@/lib/ui/viewer-companion/brain";
 import { logActivity } from "@/lib/activity/client";
 import { CompanionToyArt } from "./companion-toy-art";
@@ -10,9 +10,11 @@ import { createCompanionInputFrame } from "@/lib/ui/viewer-companion/input-frame
 import "./companion-toys.css";
 import { companionRoomItemLight, type CompanionRoomLightRect } from "@/lib/ui/viewer-companion/room-light";
 import { createCompanionItemAnchors } from "@/lib/ui/viewer-companion/item-anchor";
-import type { CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
+import { companionCalendarAnchorIdentity, type CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
+import { attachCompanionElementPoint, followCompanionElementPoint, type CompanionAnchorFrame, type CompanionElementPoint } from "@/lib/ui/viewer-companion/element-anchor";
 
 type Point = { x: number; y: number; platformId?: string };
+type RestingSource = { platformId: string; element: Element; identity?: string; frame: CompanionAnchorFrame; point: CompanionElementPoint };
 export type CompanionToyControl = {
   setRoomLight: (room?: CompanionRoomLightRect, grade?: number) => void;
   sync: (platforms: readonly Platform[], bounds: { width: number; height: number }, now: number, smallHomeFloors?: readonly Platform[], getAnchor?: (id: string) => CompanionGeometryAnchor | undefined) => void;
@@ -44,6 +46,8 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
   const itemAnchors = useRef<ReturnType<typeof createCompanionItemAnchors> | null>(null);
   itemAnchors.current ??= createCompanionItemAnchors();
   const anchorFor = useRef<((id: string) => CompanionGeometryAnchor | undefined) | undefined>(undefined);
+  const restingSources = useRef(new Map<string, RestingSource>());
+  const retainedSources = useRef(new Map<string, CompanionGeometryAnchor>());
   const pendingPlays = useRef(new Map<string, { kind: CompanionToyKind; outcome: "played" | "declined" }>());
   const pendingCarriedPlays = useRef(new Set<string>());
   const [items, setItems] = useState<{ id: string; kind: CompanionToyKind }[]>([]);
@@ -58,7 +62,7 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
   const clearDropBox = useCallback(() => { dropBox.current?.removeAttribute("data-toy-over"); dropBox.current = null; }, []);
   const grab = (id: string) => {
     const toy = world.items().find(item => item.id === id); if (!toy) return;
-    const node = nodes.current.get(id), source = toy.platformId && node?.dataset.nativeItemAnchor !== undefined ? anchorFor.current?.(toy.platformId) : undefined;
+    const node = nodes.current.get(id), source = toy.platformId && node?.dataset.nativeItemAnchor !== undefined ? retainedSources.current.get(id) ?? anchorFor.current?.(toy.platformId) : undefined;
     let point: Point | undefined;
     if (source?.element?.isConnected) {
       // A native hit can arrive before the next JavaScript layout frame.
@@ -88,10 +92,16 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     const light = companionRoomItemLight(toy, roomLight.current.room, roomLight.current.grade);
     if (paintedLight.current.get(node) !== light) { node.style.setProperty("--vc-item-room-light", String(light)); paintedLight.current.set(node, light); }
     node.hidden = Boolean(toy.hidden);
-    const anchor = toy.platformId && !toy.hidden && !toy.held && !toy.carried ? anchorFor.current?.(toy.platformId) : undefined;
+    if (toy.held || toy.carried || !toy.platformId) { restingSources.current.delete(toy.id); retainedSources.current.delete(toy.id); }
+    const anchor = toy.platformId && !toy.hidden && !toy.held && !toy.carried ? retainedSources.current.get(toy.id) ?? anchorFor.current?.(toy.platformId) : undefined;
     const visibilitySource = anchor?.element?.matches(".vc-home-floor") ? anchor.element.parentElement : anchor?.element;
     const source = anchor?.element && !visibilitySource?.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]")
       ? { element: anchor.element, left: anchor.left, top: anchor.top } : undefined;
+    if (source && toy.platformId && anchor?.width && anchor.height) {
+      const frame = { left: source.left, top: source.top, width: anchor.width, height: anchor.height };
+      const point = attachCompanionElementPoint(toy, frame);
+      if (point) restingSources.current.set(toy.id, { platformId: toy.platformId, element: source.element, identity: companionCalendarAnchorIdentity(source.element), frame, point });
+    }
     const point = itemAnchors.current!.project(node, toy, source);
     const transform = "translate3d(" + point.x.toFixed(3) + "px," + point.y.toFixed(3) + "px,0) translate(-50%,-100%) rotate(" + toy.angle.toFixed(2) + "deg)";
     if (painted.current.get(node) !== transform) { node.style.transform = transform; painted.current.set(node, transform); }
@@ -100,6 +110,8 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
   }); }, [world]);
   const refresh = useCallback(() => {
     const next = world.items();
+    const ids = new Set(next.map(toy => toy.id));
+    for (const id of restingSources.current.keys()) if (!ids.has(id)) { restingSources.current.delete(id); retainedSources.current.delete(id); }
     setItems(previous => previous.length === next.length && previous.every((item, i) => item.id === next[i].id) ? previous : next.map(({ id, kind }) => ({ id, kind })));
     if (count.current !== next.length) { count.current = next.length; onCount(next.length); }
     paint();
@@ -119,7 +131,29 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
       if (previous.grade === grade && ["left", "right", "top", "bottom"].every(key => previous.room?.[key as keyof CompanionRoomLightRect] === room?.[key as keyof CompanionRoomLightRect])) return;
       roomLight.current = { room: room && { ...room }, grade }; paint();
     },
-    sync(platforms, bounds, now, smallHomeFloors, getAnchor) { if (getAnchor) anchorFor.current = getAnchor; world.sync(platforms, bounds, now, smallHomeFloors); paint(); },
+    sync(platforms, bounds, now, smallHomeFloors, getAnchor) {
+      if (getAnchor) anchorFor.current = getAnchor;
+      retainedSources.current.clear();
+      const current = new Set([...platforms, ...(smallHomeFloors ?? [])].filter(p => !p.bodyOnly && !["control", "hide"].includes(p.kind)).map(p => p.id));
+      const readings = new Map<Element, DOMRect>(), attachments: CompanionToyAttachment[] = [];
+      world.visit(toy => {
+        if (!toy.platformId || toy.held || toy.carried || current.has(toy.platformId)) return;
+        const bound = restingSources.current.get(toy.id);
+        if (!bound || bound.platformId !== toy.platformId || !bound.element.isConnected || bound.identity !== companionCalendarAnchorIdentity(bound.element)) return;
+        let rect = readings.get(bound.element);
+        if (!rect) { rect = bound.element.getBoundingClientRect(); readings.set(bound.element, rect); }
+        const visibilitySource = bound.element.matches(".vc-home-floor") ? bound.element.parentElement : bound.element;
+        const hidden = rect.width <= 0 || rect.height <= 0 || Boolean(visibilitySource?.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]"));
+        const frame = hidden ? bound.frame : { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+        const point = followCompanionElementPoint(bound.point, frame);
+        if (!point) return;
+        // A clipped landing list cannot detach an existing real object.
+        // Retain only this object's source; never add it to flight landings.
+        attachments.push({ id: toy.id, platformId: toy.platformId, ...point, hidden });
+        retainedSources.current.set(toy.id, { element: bound.element, ...frame, identity: bound.identity });
+      });
+      world.sync(platforms, bounds, now, smallHomeFloors, attachments); paint();
+    },
     tick(now) { world.tick(now); if (world.count() !== count.current) refresh(); else paint(); },
     spawn(point, now, autonomous = false, occupied) { if (blockedRef.current) return; const id = world.spawn(point, now, occupied); if (id) { refresh(); if (!autonomous) { const toy = world.items().find(item => item.id === id); if (toy) onExperience?.(toy.kind, "taken-out"); } onActivity(); } return id; },
     occupied: world.occupied,
@@ -166,7 +200,7 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     paint();
   }, [blocked, world, paint, pauseModel]);
   useEffect(() => () => { pauseModel(performance.now()); }, [pauseModel]);
-  useEffect(() => () => itemAnchors.current!.clearAll(), []);
+  useEffect(() => () => { itemAnchors.current!.clearAll(); restingSources.current.clear(); retainedSources.current.clear(); }, []);
   useEffect(() => { if (hidden) clearDropBox(); }, [hidden, clearDropBox]);
   const finish = (event: React.PointerEvent<HTMLButtonElement>, cancelled = false) => {
     const current = drag.current;
