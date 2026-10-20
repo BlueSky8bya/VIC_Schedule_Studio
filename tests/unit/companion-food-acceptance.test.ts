@@ -9,9 +9,9 @@ const food: CompanionFood = Object.freeze({ id: "bread-one", kind: "bagel", x: 1
 const meal: CompanionAction = Object.freeze({ kind: "eat", foodId: food.id, effectPoint: { x: 150, y: 400 }, target: { x: 145, y: 400, platformId: "card" }, duration: 2200 });
 
 describe("actual consumed food family acceptance", () => {
-  it("assigns every one of240 snacks to exactly one explicit culinary family", () => {
+  it("assigns every one of252 snacks to exactly one explicit culinary family", () => {
     const assigned = Object.values(COMPANION_FOOD_FAMILIES).flat();
-    expect(assigned).toHaveLength(240); expect(new Set(assigned).size).toBe(240);
+    expect(assigned).toHaveLength(252); expect(new Set(assigned).size).toBe(252);
     expect([...assigned].sort()).toEqual([...COMPANION_FOOD_KINDS].sort());
     for (const [family, members] of Object.entries(COMPANION_FOOD_FAMILIES)) for (const kind of members) expect(COMPANION_FOOD_FAMILY[kind]).toBe(family);
     expect(COMPANION_FOOD_FAMILY.bread).toBe(COMPANION_FOOD_FAMILY.croissant);
@@ -20,7 +20,7 @@ describe("actual consumed food family acceptance", () => {
     expect(COMPANION_FOOD_FAMILY.pasta).not.toBe(COMPANION_FOOD_FAMILY.sushi);
   });
 
-  it("makes a genuinely consumed family more welcoming for all240 foods, below exact-food trust", () => {
+  it("makes a genuinely consumed family more welcoming for all252 foods, below exact-food trust", () => {
     for (const kind of COMPANION_FOOD_KINDS) {
       const related = COMPANION_FOOD_FAMILIES[COMPANION_FOOD_FAMILY[kind]].find(other => other !== kind)!;
       const first = companionFoodAcceptance(kind, .1, prefs), family = companionFoodAcceptance(kind, .1, prefs, [related]), exact = companionFoodAcceptance(kind, .1, prefs, [kind]);

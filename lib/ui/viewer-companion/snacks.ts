@@ -1,6 +1,7 @@
 import { createBoundedWeightedCatalog } from "./bounded-weighted-catalog";
 import { COMPANION_COLLECTION_RARITY_NAMES, type CompanionCollectionRarity } from "./collection-rarity";
 import { COMPANION_SNACK_EXPANSION_143, type ExpandedCompanionFoodKind143 } from "./snack-expansion-143";
+import { COMPANION_SNACK_EXPANSION_146, type ExpandedCompanionFoodKind146 } from "./snack-expansion-146";
 import { COMPANION_SNACK_EXPANSION, type ExpandedCompanionFoodKind } from "./snack-expansion";
 
 /** Device-local visual snacks. No food choice is sent to a server or account. */
@@ -16,6 +17,7 @@ export const COMPANION_FOOD_KINDS = Object.freeze([
   "rice-ball", "rice-cake", "dumpling", "pizza", "pasta", "omelet", "soup", "curry", "sushi", "pudding", "cookie", "macaron",
   ...COMPANION_SNACK_EXPANSION.map(item => item.id),
   ...COMPANION_SNACK_EXPANSION_143.map(item => item.id),
+  ...COMPANION_SNACK_EXPANSION_146.map(item => item.id),
 ] as const);
 export type CompanionFoodKind = typeof COMPANION_FOOD_KINDS[number];
 export type CompanionFoodRarity = CompanionCollectionRarity;
@@ -31,6 +33,7 @@ export const COMPANION_FOOD_NAMES: Readonly<Record<CompanionFoodKind, string>> =
   "rice-ball": "삼각김밥", "rice-cake": "떡", dumpling: "만두", pizza: "피자", pasta: "파스타", omelet: "오믈렛", soup: "수프", curry: "카레", sushi: "초밥", pudding: "푸딩", cookie: "쿠키", macaron: "마카롱",
   ...expandedNames,
   ...Object.fromEntries(COMPANION_SNACK_EXPANSION_143.map(item => [item.id, item.name])) as Record<ExpandedCompanionFoodKind143, string>,
+  ...Object.fromEntries(COMPANION_SNACK_EXPANSION_146.map(item => [item.id, item.name])) as Record<ExpandedCompanionFoodKind146, string>,
 });
 export const COMPANION_FOOD_RARITY_NAMES = COMPANION_COLLECTION_RARITY_NAMES;
 export const COMPANION_FOOD_RARITY: Readonly<Record<CompanionFoodKind, CompanionFoodRarity>> = Object.freeze({
@@ -41,11 +44,14 @@ export const COMPANION_FOOD_RARITY: Readonly<Record<CompanionFoodKind, Companion
   "rice-ball": "common", "rice-cake": "common", dumpling: "common", pizza: "uncommon", pasta: "uncommon", omelet: "common", soup: "uncommon", curry: "rare", sushi: "rare", pudding: "rare", cookie: "uncommon", macaron: "rare",
   ...expandedRarities,
   ...Object.fromEntries(COMPANION_SNACK_EXPANSION_143.map(item => [item.id, item.rarity])) as Record<ExpandedCompanionFoodKind143, CompanionFoodRarity>,
+  ...Object.fromEntries(COMPANION_SNACK_EXPANSION_146.map(item => [item.id, item.rarity])) as Record<ExpandedCompanionFoodKind146, CompanionFoodRarity>,
 });
 const vegetables: readonly CompanionFoodKind[] = ["tomato", "carrot", "cucumber", "broccoli", "pumpkin", "corn", "sweet-potato", "potato", "cabbage", "eggplant", "bell-pepper", "radish", "peas"];
-const expandedCategories = new Map<string, "fruit" | "vegetable" | "prepared">([...COMPANION_SNACK_EXPANSION, ...COMPANION_SNACK_EXPANSION_143].map(item => [item.id, item.category]));
+const expandedCategories = new Map<string, "fruit" | "vegetable" | "prepared">([...COMPANION_SNACK_EXPANSION, ...COMPANION_SNACK_EXPANSION_143, ...COMPANION_SNACK_EXPANSION_146].map(item => [item.id, item.category]));
 export const COMPANION_FOOD_CATEGORY = Object.freeze(Object.fromEntries(COMPANION_FOOD_KINDS.map((kind, index) => [kind, expandedCategories.get(kind) ?? (index >= 36 ? "prepared" : vegetables.includes(kind) ? "vegetable" : "fruit")]))) as Readonly<Record<CompanionFoodKind, "fruit" | "vegetable" | "prepared">>;
-/** Integer masses: tier totals75%,23%,1.93%,.065%,.005% across240 items.
+/** Preserve143 integer masses for every established identity, and assign each
+ * new homage its tier's same mass. Normalization includes all identities, so
+ * additions never make the existing mythic/ultra-rare items more frequent.
  * There is no pity counter or rarity gate on any care/scene function. */
 export const COMPANION_FOOD_WEIGHTS = Object.freeze(Object.fromEntries(COMPANION_FOOD_KINDS.map(kind => [kind, { common: 825000, uncommon: 253000, rare: 46320, "ultra-rare": 22880, mythic: 5280 }[COMPANION_FOOD_RARITY[kind]]])) as Record<CompanionFoodKind, number>);
 const kinds = new Set<string>(COMPANION_FOOD_KINDS);

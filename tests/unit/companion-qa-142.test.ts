@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { BOOLEAN_KEYS, PERSONALITIES, ROUTINES, NATIVE_ENTRY_GREP, NATIVE_ENTRY_TITLES, NATIVE_FLOATING_TIDY_TITLES, PLANNED_NATIVE_CASE_COUNT, NATIVE_GREP, NATIVE_SUITES, coverageFor, dailyCases, pairwiseRows, universe } from "../../scripts/companion-qa/catalog.mjs";
+import { BOOLEAN_KEYS, PERSONALITIES, ROUTINES, NATIVE_ENTRY_GREP, NATIVE_ENTRY_TITLES, NATIVE_FLOATING_TIDY_TITLES, PLANNED_NATIVE_CASE_COUNT, NATIVE_GREP, NATIVE_SUITES, PURE_SUITES, coverageFor, dailyCases, pairwiseRows, universe } from "../../scripts/companion-qa/catalog.mjs";
 import { childEnvironment, dailyEvidenceGate, nativeEntryEvidence, loopbackOrigin, ownedTerminationCommand, parseOptions, REQUIRED_AGENT_REGRESSIONS, registeredAgentRegressions, safeRelative, snapshotEligible } from "../../scripts/companion-qa/runner.mjs";
 import { inspectTrace, traceSufficiency, ordinaryRouteOscillations, ordinaryWalkPacing, traceContextComplete, type QaFrame } from "../../scripts/companion-qa/trace-checks.mjs";
 import { admitNodeRequest } from "../../scripts/companion-qa/network-guard.mjs";
@@ -80,6 +80,13 @@ describe("142 declared QA model and safety gates", () => {
     expect(admitNodeRequest("http://127.0.0.1:3100/visual-fixture/poster", "POST")).toBe(false);
     expect(admitNodeRequest("http://127.0.0.1:3100/visual-fixture/poster", "GET", "http://127.0.0.1:3100")).toBe(true);
     expect(admitNodeRequest("http://127.0.0.1:3101/visual-fixture/poster", "GET", "http://127.0.0.1:3100")).toBe(false);
+  });
+  it("adds146 actual living, occupied-house and homage regressions to the daily plan without replacing prior coverage", () => {
+    for (const suite of ["tests/unit/companion-public-life-146.test.ts", "tests/unit/companion-preparation-budget-146.test.ts", "tests/unit/companion-cleanup-aftercare-146.test.ts", "tests/unit/companion-homage-catalog-146.test.ts", "tests/unit/companion-collection-art-146.test.ts"]) expect(PURE_SUITES).toContain(suite);
+    for (const suite of ["companion-house-146.spec.ts", "companion-living-runtime-146.spec.ts"]) expect(NATIVE_SUITES).toContain(suite);
+    for (const title of ["146 viewer 1920 dark occupied sofa and clear window storage", "146 viewer tidy carries all four same physical toys into the box before leisure", "146 curious actually lives on the public calendar across a continuous active sequence"]) expect(new RegExp(NATIVE_GREP).test(title)).toBe(true);
+    expect(PLANNED_NATIVE_CASE_COUNT).toBe(130);
+    expect(universe()).toMatchObject({ modeledEntries: 9, plannedNativeEntryCases: 27, plannedNativeFloatingTidyCases: 2, plannedNativeCaseCount: 130 });
   });
   it("uses only an exact owned PID tree and requires every declared personality evidence ID to pass", () => {
     expect(ownedTerminationCommand(1234, "win32", resolve("synthetic-windows"))).toEqual({ file: resolve("synthetic-windows/System32/taskkill.exe"), args: ["/PID", "1234", "/T", "/F"] });

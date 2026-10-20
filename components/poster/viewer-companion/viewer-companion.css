@@ -6,6 +6,10 @@
    sits above the body, so lifting naturally clears the fabric without hiding
    the sofa or changing the native cushion/food hit targets. */
 .vc-bed-foreground { position: fixed; left: 0; top: 0; z-index: 76; pointer-events: none; }
+/* A seated creature and its cloth use the browser's native anchor scroll
+   compensation. JavaScript still owns world travel, while compositor scroll
+   no longer advances the room a frame ahead of these two fixed carriers. */
+.vc-companion[data-native-sofa], .vc-bed-foreground[data-native-sofa] { left: anchor(left, 0px); top: anchor(top, 0px); }
 .vc-wash-tool { position: fixed; left: 0; top: 0; z-index: 77; width: 24px; height: 38px; transform-origin: 8px 7px; pointer-events: none; filter: brightness(var(--vc-body-room-light, 1)) drop-shadow(0 1px 1px #795b3924); }
 .vc-wash-tool[hidden], .vc-home-touch-tool[hidden] { display: none; }
 .vc-home-touch-tool { position: fixed; left: 0; top: 0; z-index: 77; width: 18px; height: 18px; transform-origin: center; pointer-events: none; filter: brightness(var(--vc-body-room-light, 1)); }

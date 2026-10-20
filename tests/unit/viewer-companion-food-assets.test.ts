@@ -228,7 +228,7 @@ describe("additive107 native collection assets", () => {
   });
 
   it("preserves60 native pairs among240 foods, legacy12 accessory views and12 situation stamps alongside27 active accessories", () => {
-    expect(COMPANION_FOOD_KINDS).toHaveLength(240); expect(COMPANION_ACCESSORY_IDS).toHaveLength(39); expect(COMPANION_WEARABLE_IDS).toHaveLength(27);
+    expect(COMPANION_FOOD_KINDS).toHaveLength(252); expect(COMPANION_ACCESSORY_IDS).toHaveLength(39); expect(COMPANION_WEARABLE_IDS).toHaveLength(27);
     expect(Object.keys(COMPANION_COLLECTION_FRAMES.food)).toEqual([...COMPANION_FOOD_KINDS]);
     expect(Object.keys(COMPANION_COLLECTION_FRAMES["food-stamp"])).toEqual([...COMPANION_FOOD_KINDS]);
     expect(Object.keys(COMPANION_COLLECTION_FRAMES["situation-stamp"])).toEqual([...COMPANION_SITUATION_IDS]);
@@ -269,7 +269,7 @@ describe("additive107 native collection assets", () => {
 describe("same-source108 food stamps", () => {
   beforeEach(() => vi.stubGlobal("React", React));
   afterEach(() => vi.unstubAllGlobals());
-  it("renders all240 stamps from the exact live food crop with square meet geometry and no independently drawn stamp food", () => {
+  it("renders all252 stamps from the exact live food crop with square meet geometry and no independently drawn stamp food", () => {
     for (const id of COMPANION_FOOD_KINDS) {
       const frame = getCompanionCollectionArtFrame("food", id)!;
       const stamp = renderToStaticMarkup(createElement(CompanionCollectionArt, { kind: "food-stamp", id }));

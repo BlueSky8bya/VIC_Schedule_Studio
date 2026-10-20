@@ -14,7 +14,7 @@
   --vc-storage-right: 4cqw;
   --vc-storage-gap: max(3px, 1.2cqw);
   --vc-shelf-width: max(116px, calc(var(--vc-radio-hit) + var(--vc-book-hit) + var(--vc-object-gap) + 2px));
-  --vc-window-left: 12px;
+  --vc-window-left: 22px;
   --vc-wall: color-mix(in srgb, rgb(var(--glass-panel)) 88%, #dfc9ab);
   --vc-floor: color-mix(in srgb, rgb(var(--glass-cell)) 72%, #c5a47e);
   --vc-wood: color-mix(in srgb, rgb(var(--glass-panel)) 46%, #ae8864);
@@ -62,9 +62,9 @@
   --vc-toy-paint-width: 34cqw;
   --vc-storage-bottom: calc(var(--vc-storage-floor) + 3px - var(--vc-toy-paint-width) * 17 / 256);
   --vc-dispenser-paint-width: max(56px, 17.4cqw);
-  --vc-bin-paint-width: 23cqw; --vc-bin-right: 4cqw; --vc-bin-bottom: calc(8cqw - var(--vc-furniture-lower));
-  --vc-window-wall-width: min(54cqw, calc(100cqw - var(--vc-shelf-width) - 20px));
-  --vc-window-width: calc(var(--vc-window-wall-width) * .93);
+  --vc-bin-paint-width: 23cqw; --vc-bin-right: 2cqw; --vc-bin-bottom: 2cqw;
+  --vc-window-wall-width: min(52cqw, calc(100cqw - var(--vc-shelf-width) - 28px));
+  --vc-window-width: calc(var(--vc-window-wall-width) * .9);
   /* The136 room's real wall/ceiling seam is50/683 down its full canvas.
      Leave8px for the registered curtain's transparent top and rod thickness. */
   --vc-window-top: calc(var(--vc-room-height) * 50 / 683 + 8px);
@@ -83,7 +83,7 @@
 .vc-home-personality:hover { background: rgb(var(--glass-head)); }
 /* Storage has room-appropriate scale. The glass uses the remaining wall
    width after the enlarged native targets and their shared gap. */
-.vc-home-window { position: absolute; z-index: 1; left: var(--vc-window-left); top: var(--vc-window-top); box-sizing: border-box; width: var(--vc-window-width); height: auto; aspect-ratio: 38 / 25; padding: 6px; border: 1px solid color-mix(in srgb, var(--vc-wood-edge) 65%, transparent); border-radius: 14px 14px 9px 9px; background: linear-gradient(110deg, var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 3px 5px var(--vc-soft-shadow), inset 0 1px 1px #fff9; pointer-events: none; }
+.vc-home-window { position: absolute; z-index: 1; left: var(--vc-window-left); top: var(--vc-window-top); box-sizing: border-box; width: var(--vc-window-width); height: auto; aspect-ratio: 38 / 23; padding: 6px; border: 1px solid color-mix(in srgb, var(--vc-wood-edge) 65%, transparent); border-radius: 14px 14px 9px 9px; background: linear-gradient(110deg, var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 3px 5px var(--vc-soft-shadow), inset 0 1px 1px #fff9; pointer-events: none; }
 .vc-window-glass { position: relative; display: block; width: 100%; height: 100%; overflow: hidden; border-radius: 8px 8px 3px 3px; box-shadow: inset 0 0 0 1px #604b3436; isolation: isolate; }
 .vc-window-landscape, .vc-window-weather { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 .vc-window-landscape { filter: var(--vc-landscape-grade, none); }

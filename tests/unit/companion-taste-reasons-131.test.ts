@@ -8,7 +8,7 @@ import { COMPANION_TASTES_MAX_BYTES, companionProfileTasteReason, createCompanio
 describe("131 contextual, truthful profile reasons", () => {
   it("validates varied meal outcomes for every food without inventing ordinary-food aversions", () => {
     const life = createCompanionLife(() => 0), reasons = new Set<string>();
-    const polarizing = new Set(["durian", "lemon", "grapefruit", "yuzu", "kumquat", "kiwi", "pineapple", "broccoli", "bell-pepper", "eggplant", "cabbage", "curry", "coconut"]);
+    const polarizing = new Set(["durian", "lemon", "grapefruit", "yuzu", "kumquat", "kiwi", "pineapple", "broccoli", "bell-pepper", "eggplant", "cabbage", "curry", "coconut", "frozen-leftover-pizza", "frozen-leftover-tteokbokki", "cricket-pepero", "herb-avocado-milk", "blue-marshmallow-tteokguk", "mint-choco-brisket-stew"]);
     for (const food of COMPANION_FOOD_KINDS) for (let step = 0; step <= 100; step++) {
       const result = evaluateCompanionFoodTaste(food, life, step / 100);
       expect(isCompanionFoodTasteOutcome(result)).toBe(true);

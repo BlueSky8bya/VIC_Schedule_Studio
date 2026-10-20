@@ -15,8 +15,8 @@ const sha = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
  * outside the credential-free daily factory's source-archive boundary. */
 describe("143 public runtime collection art", () => {
   it("registers the exact60 food cells and36 toy files using only public technical fingerprints", () => {
-    expect(Object.keys(COMPANION_COLLECTION_FRAMES.food)).toHaveLength(240);
-    expect(Object.keys(COMPANION_COLLECTION_FRAMES["food-stamp"])).toHaveLength(240);
+    expect(Object.keys(COMPANION_COLLECTION_FRAMES.food)).toHaveLength(252);
+    expect(Object.keys(COMPANION_COLLECTION_FRAMES["food-stamp"])).toHaveLength(252);
     expect(fixture.foods.map(x => x.id)).toEqual(COMPANION_SNACK_EXPANSION_143.map(x => x.id));
     expect(fixture.toys.map(x => x.id)).toEqual(COMPANION_TOY_EXPANSION_143.map(x => x.id));
     expect(fixture.runtimeFiles).toHaveLength(41); expect(new Set(fixture.runtimeFiles.map(x => x.src)).size).toBe(41);

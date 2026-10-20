@@ -59,7 +59,7 @@ describe("130 bounded lived taste impressions", () => {
       const outcome = evaluateCompanionFoodTaste(food, life, roll);
       expect(outcome.reaction).not.toBe("disliked"); expect(isCompanionFoodTasteOutcome(outcome)).toBe(true);
     }
-    expect(new Set(COMPANION_FOOD_KINDS.filter(food => evaluateCompanionFoodTaste(food, life, 0).reaction === "disliked"))).toEqual(new Set(["durian", "lemon", "grapefruit", "yuzu", "kumquat", "kiwi", "pineapple", "broccoli", "bell-pepper", "eggplant", "cabbage", "curry", "coconut"]));
+    expect(new Set(COMPANION_FOOD_KINDS.filter(food => evaluateCompanionFoodTaste(food, life, 0).reaction === "disliked"))).toEqual(new Set(["durian", "lemon", "grapefruit", "yuzu", "kumquat", "kiwi", "pineapple", "broccoli", "bell-pepper", "eggplant", "cabbage", "curry", "coconut", "frozen-leftover-pizza", "frozen-leftover-tteokbokki", "cricket-pepero", "herb-avocado-milk", "blue-marshmallow-tteokguk", "mint-choco-brisket-stew"]));
     for (const reason of ["texture-surprise", "durian-socks", undefined]) {
       const invalid = { food: "apple" as const, reaction: "disliked" as const, reason };
       expect(isCompanionFoodTasteOutcome(invalid)).toBe(false);
@@ -139,8 +139,8 @@ describe("130 bounded lived taste impressions", () => {
     expect(life.favoriteFood).toBe("durian"); expect(life.foodScores.durian).toBeGreaterThan(.7);
   });
 
-  it("bounds all300 catalogue entries plus eight reasons below the explicit24KiB UTF-8 parse limit", () => {
-    expect(COMPANION_FOOD_KINDS.length + COMPANION_TOY_KINDS.length).toBe(300);
+  it("bounds all336 catalogue entries plus eight reasons below the explicit32KiB UTF-8 parse limit", () => {
+    expect(COMPANION_FOOD_KINDS.length + COMPANION_TOY_KINDS.length).toBe(336);
     const record = { score: -.123456789, accepted: 31, declined: 31, tripped: 31, freeText: "private-canary", instanceId: "toy-999" };
     const value = normalizeCompanionTastes({ version: 1, toys: COMPANION_TOY_KINDS, seen: COMPANION_TOY_KINDS,
       toyTastes: Object.fromEntries(COMPANION_TOY_KINDS.map(kind => [kind, record])), foodTastes: Object.fromEntries(COMPANION_FOOD_KINDS.map(kind => [kind, record])),

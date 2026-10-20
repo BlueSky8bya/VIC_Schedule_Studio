@@ -1,4 +1,5 @@
 import { COMPANION_FOOD_FACTS_143 } from "./food-facts-143";
+import { COMPANION_SNACK_EXPANSION_146, type ExpandedCompanionFoodKind146 } from "./snack-expansion-146";
 import type { CompanionFoodKind } from "./snacks";
 
 /** Short sensory/cooking notes, not dietary advice. Research notes and primary
@@ -6,6 +7,7 @@ import type { CompanionFoodKind } from "./snacks";
  * Keep this lazy settings-only data out of the ambient simulation loop. */
 export const COMPANION_FOOD_FACTS = Object.freeze({
   ...COMPANION_FOOD_FACTS_143,
+  ...Object.fromEntries(COMPANION_SNACK_EXPANSION_146.map(item => [item.id, item.fact])) as Record<ExpandedCompanionFoodKind146, string>,
   apple: "아삭한 과육에 달콤새콤한 즙이 담겨 있어요. 품종에 따라 빨강·초록·노랑 옷을 입어요.",
   lemon: "노란 껍질은 향긋하고 속은 새콤해요. 껍질을 잘게 갈아 빵이나 과자에 향을 더하기도 해요.",
   strawberry: "빨간 표면에 작은 씨처럼 보이는 알갱이가 콕콕 박혀 있어요. 향긋한 잼으로도 만나요.",

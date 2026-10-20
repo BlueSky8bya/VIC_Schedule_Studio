@@ -90,6 +90,15 @@ export function createCompanionPersonalityJobs(director: ReturnType<typeof creat
           : mainId ? world.foods?.find(item => item.id === mainId) : world.foods?.[0];
         if (food && p.feeding) {
           if (command.mode !== "compare") director.bind(proposal.meta, food.id);
+          // Comparison is one nearby look, not a second meal destination.
+          // The committed original ID still owns the following inspect/eat.
+          if (command.mode === "compare") {
+            if (food.platformId !== world.platformId || Math.hypot(food.x-world.x,food.y-world.y) > 72) {
+              director.resolve(proposal.meta,true); return;
+            }
+            return stamp({kind:"look",target:here,direction:food.x<world.x?-1:1,
+              duration:650,personalityJobEnd:true});
+          }
           const route = findCompanionToyRoute(world, food, world.platforms, p.jump), step = route?.[0];
           if (step) return stamp({ ...step, duration: step.kind === "jump" ? 850 : Math.max(250, Math.abs(step.target.x - world.x) / 100 * 1000) }, true);
           if (route && Math.hypot(food.x - world.x, food.y - world.y) < 50) return stamp({ kind: "sniff", target: here, duration: 750, personalityJobEnd: true });

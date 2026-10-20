@@ -13,7 +13,10 @@ function fixture() {
     toys: [{ id: "same-native-maraca", kind: "maraca", x: 340, y: 600, platformId: floor.id, angle: 0, held: false, carried: false }],
   };
   const director = createCompanionPersonalityDirector(COMPANION_PERSONALITY_SCENES.filter(recipe => ["P01", "P02", "P11"].includes(recipe.id)));
-  director.next(scene); director.event("arrival", 0);
+  // Consume the same finite entry and real completion handshake as runtime.
+  // Leaving entry unacknowledged prevents later genuine travel observations
+  // from earning their physical progress during this handoff regression.
+  const entry=director.next(scene)!;scene.now+=entry.action!.duration;director.complete(entry.meta);director.event("arrival",scene.now);
   return { scene, director };
 }
 
@@ -34,6 +37,10 @@ describe("140 authored scene ownership across actionless transitions", () => {
 
   it("hands the reached final P01 waypoint directly to P02 with its same maraca, leaving no gap for a generic toss", () => {
     const { scene, director } = fixture();
+    // This handoff case has a genuinely displaced public waypoint. Switching
+    // between perfectly overlapping support IDs is not physical progress and
+    // must not silently buy another preparatory inspection budget.
+    scene.world.platforms=[floor,{id:"actual-outside-floor",x:820,y:570,width:80,kind:"floor"}];
     for (let n = 0; n < 10; n++) {
       const proposal = nextCompanionPersonalityScene(director, scene)!;
       if (proposal.meta.id === "P02") {

@@ -7,11 +7,11 @@ import { COMPANION_TASTE_REASON_TEXT, companionInnateFoodReason, companionToyTas
 
 export const COMPANION_TASTES_KEY = "vic.viewerCompanionTastes";
 export const COMPANION_TASTES_EVENT = "vic:companion-tastes";
-/**143 expands the finite catalogue from204 to300 identities. The previous
- *16KiB parser could discard this store's own valid earned state on reload.
- *24KiB retains all bounded records+8 reasons; malformed/oversized data still
- *fails closed. The limit is UTF-8 bytes, not JavaScript string length. */
-export const COMPANION_TASTES_MAX_BYTES = 24 * 1024;
+/**146 appends broadcast homages to the300 established identities. A fully
+ *earned state exceeds the old24KiB limit;32KiB retains all bounded records
+ *and8 reasons. Malformed/oversized data still fails closed. The limit is
+ *UTF-8 bytes, not JavaScript string length. */
+export const COMPANION_TASTES_MAX_BYTES = 32 * 1024;
 export type CompanionToyExperience = "taken-out" | "played" | "tidied" | "declined" | "tripped";
 type Taste = { score: number; accepted: number; declined: number; tripped?: number };
 export type CompanionTasteMemory = { domain: "food"; kind: CompanionFoodKind; reason: CompanionFoodTasteReason; age: number } | { domain: "toy"; kind: CompanionToyKind; reason: CompanionToyTasteReason; age: number };

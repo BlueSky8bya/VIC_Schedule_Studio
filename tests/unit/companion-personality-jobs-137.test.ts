@@ -237,7 +237,9 @@ describe("137 authored jobs use the physical owners", () => {
       host.apply(action);
       expect(host.director.current()?.itemId).toBe(fresh.id);
     }
-    expect(observed).toEqual([{ x: known.x, id: fresh.id, beat: 0 }, { x: fresh.x, id: fresh.id, beat: 1 }]);
+    // The nearby alternative is observed from the occupied place. Comparing
+    // does not send the pet to a second meal before its committed destination.
+    expect(observed).toEqual([{ x: 120, id: fresh.id, beat: 0 }, { x: fresh.x, id: fresh.id, beat: 1 }]);
     expect(host.scene.world.foods).toEqual([known, fresh]); expect(host.director.current()?.beat).toBe(2);
   });
 

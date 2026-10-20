@@ -62,8 +62,8 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
   let serial = 0, selected: CompanionPreferences["personality"] | undefined, first = true, cursor = 0;
   let active: { recipe: PersonalitySceneRecipe; serial: number; beat: number; started: number; progressed: number; attempts: number; itemId?: string; comparisonItemId?: string; lastX: number; lastY: number; count: number; routine?: true; abbreviated?: true; waking?: true; closureAt?: number; goal?: { beat: number; id: string; fraction?: number }; quietHome?: true; quietMaterial?: true; quietControls?: PersonalityProgressObservation["controls"]; tvChoice?: {beat:number;state:CompanionHomeTvState}; tvWatch?: { beat: number; started: number; duration: number; point: Point } } | undefined;
   let entrySerial: number | undefined, entryFinished = false, lastPosition: Point | undefined;
-  // Existing active time only. A completed pose/beat/scene never refills this.
-  // Initial entry receives one finite startup grace before this clock begins.
+  // Existing active time only, including the initial personal preparation.
+  // A completed entry/observation/pose/scene never refills this shared budget.
   let actualProgressAt: number | undefined, actualPoint: Point | undefined, progressActive = false;
   let initialProgressDeadline: number | undefined;
   let carried: string | undefined, carriedFood: string | undefined;
@@ -71,6 +71,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
   let lastCompleted = "", lastPerformance = -Infinity;
   // One ephemeral completion cooldown, across home supports/families only.
   let quietHomeUntil = -Infinity;
+  let lastCleanupAt = -Infinity, lastOutsideAt = -Infinity, selectedAt = 0;
   const events = new Map<SceneTrigger, number>(), completed: string[] = [], failures = new Map<string, number>();
   const purposes: string[] = [];
   let attention: Point | undefined, lastToyKind: CompanionToyKind | undefined;
@@ -227,6 +228,17 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
   const available = (recipe: PersonalitySceneRecipe, input: PersonalitySceneInput) => {
     if ((failures.get(recipe.id) ?? -Infinity) > now || !recipe.triggers.every(key => trigger(key, input))) return false;
     const { world: w, brain: b, preferences: p, home } = input, id = recipe.id;
+    // New optional room entertainment must not repeatedly reset an awake
+    // visitor to its sofa. Real meals, remaining objects, hygiene, fatigue
+    // and a direct touch remain eligible; the common arbiter owns departure.
+    const optionalRoom = recipe.triggers.every(key => ["free", "tv", "night", "summer", "rain"].includes(key))
+      && recipe.steps.some(step => ["tv", "light", "curtain", "radio"].includes(step.kind)
+        || step.kind === "go" && ["sofa", "floor", "window"].includes(step.target))
+      && !recipe.steps.some(step => ["toy", "food", "wash", "sleep", "hide"].includes(step.kind)
+        || step.kind === "go" && ["outside", "pointer", "novel-place"].includes(step.target));
+    if (p.personality !== "homebody" && b.energy >= (p.personality === "sleepy" ? .62 : .4)
+      && atHome(w.platformId) && input.now - Math.max(selectedAt,lastOutsideAt) >= (p.personality === "sleepy" ? 45000 : 8000)
+      && optionalRoom && outsidePoint(input)) return false;
     // A new toy script must pass the same real meal/owner gate as its executor.
     if(recipe.steps.some(step=>step.kind==="toy"&&!step.optional) && !input.carriedToyId && companionToyFoodPriority(b,w,p))return false;
     const returnIndex = recipe.steps.findIndex(step => step.kind === "toy" && step.mode === "return" && !step.optional);
@@ -344,6 +356,29 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
         && findCompanionToyRoute(home.sofa!,home.tv!,world.platforms,p.jump)
         && findCompanionToyRoute(home.tv!,home.sofa!,world.platforms,p.jump));
     });
+  };
+  // Final physical cleanup has one short, feasible hygiene follow-up before
+  // optional departure. Remaining objects and urgent/basic owners keep their
+  // own priorities; a missing pad never reserves the pet inside its room.
+  const cleanupFollowupCandidate = (input:PersonalitySceneInput,choices?:readonly PersonalitySceneRecipe[]) => {
+    const {world,brain,preferences:p,home}=input,at=events.get("toy-returned");
+    if (active || !entryFinished || selected!=="tidy" || p.personality!=="tidy" || !p.enabled || !p.roam
+      || !world.animated || world.paused || input.busy || !Number.isFinite(input.now) || input.now<now
+      || at===undefined || at!==lastCleanupAt || at>input.now || at<=input.now-15000 || at<=(heldBack.get("toy-returned")??-Infinity)
+      || input.toyCount!==0 || input.toys.length || input.carriedToyId || input.carriedFoodId
+      || ![brain.hunger,brain.energy].every(Number.isFinite) || brain.hunger>=.78 || brain.energy<=.18
+      || brain.foodGoal || brain.intention && brain.intention.kind!=="explore"
+      || brain.episode && brain.episode.remaining>0 && brain.episode.phase!=="finish") return;
+    const pad=home.pad,plane=pad&&world.platforms.find(value=>value.id===pad.platformId);
+    const source=world.platforms.find(value=>value.id===world.platformId);
+    if (!safe(pad) || pad.platformId!=="companion-home-floor-400" || !plane?.bodyOnly || plane.kind!=="floor"
+      || ![plane.x,plane.y,plane.width].every(Number.isFinite) || plane.width<=0 || Math.abs(pad.y-plane.y)>.5
+      || pad.x<plane.x || pad.x>plane.x+plane.width || !source || source.bodyOnly || ["control","hide"].includes(source.kind)
+      || ![world.x,world.y,source.x,source.y,source.width].every(Number.isFinite) || source.width<=0
+      || Math.abs(world.y-source.y)>2 || world.x<source.x || world.x>source.x+source.width
+      || !findCompanionToyRoute(world,pad,world.platforms,p.jump)) return;
+    const eligible=choices??selectionChoices(recipes.filter(recipe=>recipe.personality==="tidy"&&available(recipe,input)),input);
+    return eligible.find(recipe=>recipe.id==="T05")??eligible.find(recipe=>recipe.id==="X-T-house");
   };
   const meta = (command: SceneBeat): PersonalitySceneBeat => ({ id: active!.recipe.id, serial: active!.serial, beat: active!.beat, command,
     ...(active!.routine ? { routine: true } : {}), ...(active!.recipe.propShow ? {propShow:true as const} : {}), ...(active!.recipe.steps.slice(active!.beat).some(step => step.kind === "toy" && step.mode === "return" && !step.optional) ? { homeFloorEntry: true as const } : {}), ...(active!.itemId ? { itemId: active!.itemId } : {}), ...(active!.comparisonItemId ? { comparisonItemId: active!.comparisonItemId } : {}) });
@@ -539,6 +574,12 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
   }));
   const pureDuration = (command: SceneBeat, input: PersonalitySceneInput) => {
     if (command.kind === "watch") return Math.min(3500, Math.max(650, command.ms));
+    // These delegated steps are finite observations, not object effects.
+    // Counting them as zero let entry + several recipes + an inspection
+    // exceed the stationary budget before any real pickup or movement.
+    if (command.kind === "toy" && command.mode === "inspect") return 900;
+    if (command.kind === "food" && command.mode === "inspect") return 750;
+    if (command.kind === "food" && command.mode === "compare") return 650;
     if (command.kind !== "pose") return 0;
     if (["look", "sniff", "stretch", "shake"].includes(command.pose)) return Math.min(2500, command.ms ?? 900);
     const play = companionPersonalityPlayAllowed(command.pose as CompanionPlay, input.preferences) ? command.pose as CompanionPlay : "bow";
@@ -676,6 +717,8 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
     routineOwnership,
     /** Read-only existing meal cue; only leisure outing may wait for this goal. */
     mealFollowupReady: (input:PersonalitySceneInput) => Boolean(mealFollowupCandidate(input)),
+    /** Eligibility only: inspection does not consume the actual return cue. */
+    cleanupFollowupReady: (input:PersonalitySceneInput) => Boolean(cleanupFollowupCandidate(input)),
     /** Real unfinished tidy returns defer leisure only; common care and
      * physical/manual owners keep their independent existing priorities. */
     cleanupPending(input: PersonalitySceneInput) {
@@ -700,7 +743,15 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
       // observations; they must not masquerade as manipulative progress.
       if (beat.command.kind === "toy" && beat.command.mode !== "inspect") observeEffect("toy", acknowledgedAt);
       if (beat.command.kind === "food" && !["inspect", "compare"].includes(beat.command.mode)) observeEffect("food", acknowledgedAt);
-      if (beat.command.kind === "wash") observeEffect("wash", acknowledgedAt);
+      if (beat.command.kind === "wash") {
+        observeEffect("wash", acknowledgedAt);
+        // Consume this actual aftercare opportunity at the wash ACK itself.
+        // An interrupted decorative tail cannot wash twice for one return.
+        if (timely && active.recipe.triggers.includes("toy-returned")) {
+          const returned=events.get("toy-returned");if(returned!==undefined)heldBack.set("toy-returned",returned);
+        }
+      }
+      if (timely && beat.command.kind === "toy" && beat.command.mode === "return") lastCleanupAt = acknowledgedAt;
       if (beat.command.kind === "toy" && beat.command.mode === "return" && ++active.count < Math.min(2, beat.command.limit ?? 1)) { active.itemId = undefined; active.progressed = now; return; }
       advance();
     },
@@ -738,15 +789,17 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
       const { world, preferences: p, brain } = input;
       if (selected !== p.personality) {
         selected = p.personality; quietHomeUntil = -Infinity; first = true; entryFinished = false; entrySerial = undefined; finish(false); cursor = 0;
+        selectedAt = now; lastOutsideAt = lastCleanupAt = -Infinity;
         actualProgressAt = undefined; actualPoint = undefined; progressActive = false; controls = undefined; carried = carriedFood = undefined; initialProgressDeadline = undefined;
       }
       if (!p.enabled || !p.roam || !world.animated || world.paused || input.busy || !world.platformId) return;
       const support = world.platforms.find(platform => platform.id === world.platformId);
       if (!support || Math.abs(support.y - world.y) > 2 || world.x < support.x || world.x > support.x + support.width || ["control", "hide"].includes(support.kind)) return;
       const here = { x: world.x, y: world.y, platformId: world.platformId };
+      if (actualOutside(world)) lastOutsideAt = now;
       lastPosition = here;
       if (first) {
-        first = false; initialProgressDeadline = now + 10000; actualPoint = { ...here };
+        first = false; actualProgressAt = now; initialProgressDeadline = now + ACTUAL_PROGRESS_BUDGET_MS; actualPoint = { ...here };
         controls = { tv: input.tv, light: input.lightLit, curtain: input.curtainPhase, radio: input.radioPlaying }; carried = input.carriedToyId; carriedFood = input.carriedFoodId;
         const preparation=companionEntryPreparation(p.personality,world,p.jump,p.sleep);
         const command: SceneBeat = {kind:"pose",pose:preparation.kind==="play" ? preparation.play : preparation.kind};
@@ -761,12 +814,20 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
         if (Math.hypot(world.x - active.lastX, world.y - active.lastY) > 4) { active.progressed = now; active.lastX = world.x; active.lastY = world.y; }
         if (now - active.progressed > 7500 || now - active.started > 60000) finish(false,now-active.started>60000?"duration-timeout":"progress-timeout");
       }
+      // A remaining chore is re-proved at each safe decision. A person can
+      // grab/remove it after the previous delivery; momentum cannot keep a
+      // stale return or its preparation alive when that actual work is gone.
+      if (active?.recipe.id === "T01" && !input.carriedToyId
+        && active.recipe.steps.find(step=>step.kind==="toy")?.mode === "return"
+        && active.recipe.steps.slice(active.beat).some(step=>step.kind==="toy"&&step.mode==="return"&&!step.optional)
+        && !unfinishedReturn(active.recipe,input)) finish(false);
       if (!active) {
         const pool = recipes.filter(recipe => recipe.personality === p.personality && available(recipe, input));
         const choices = selectionChoices(pool,input);
         const major = choices.filter(recipe => recipe.major), event = choices.filter(recipe => recipe.triggers.some(key => !["free", "toy", "food", "tv", "night", "summer", "rain", "experience"].includes(key)));
         const mealFollowup=mealFollowupCandidate(input,choices);
-        const group = mealFollowup && choices.includes(mealFollowup) ? [mealFollowup] : event.length ? event : major.length && cursor % 4 !== 3 ? major : choices;
+        const cleanupFollowup=cleanupFollowupCandidate(input,choices);
+        const group = cleanupFollowup ? [cleanupFollowup] : mealFollowup && choices.includes(mealFollowup) ? [mealFollowup] : event.length ? event : major.length && cursor % 4 !== 3 ? major : choices;
         // Prefer a whole currently executable goal within this same priority
         // group. Keep a real chore with an unneeded rest tail when it is the
         // only option; never discard the physical return for script variety.
@@ -795,6 +856,14 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
       // At most four zero-duration transitions per existing decision.
       for (let transitions = 0; active && transitions < 4; transitions++) {
         let command = active.recipe.steps[active.beat];
+        // The next real object is the continuation of the same chore. Omit
+        // repeated preparation/celebration between returns, while keeping
+        // each native same-ID delivery and its own completion unchanged.
+        if (p.personality === "tidy" && active.recipe.id === "T01" && command?.kind === "pose"
+          && active.recipe.steps.find(step=>step.kind==="toy")?.mode === "return"
+          && now-lastCleanupAt < 8000 && !input.yieldedItem && unfinishedReturn(active.recipe,input)) {
+          advance(); continue;
+        }
         if(command?.kind==="tv" && command.state==="next" && input.canTv!==false) {
           const choice=active.tvChoice?.beat===active.beat ? active.tvChoice : {beat:active.beat,state:randomCompanionHomeTvChannel(rng)};
           active.tvChoice=choice;command={...command,state:choice.state};
@@ -813,7 +882,8 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
         // A yielded decorative plan is cancelled, never resumed elsewhere.
         const duration = pureDuration(command, input);
         const waking = active.waking && command.kind === "pose" && command.pose === "stretch";
-        if (duration > 0 && !waking && !input.carriedToyId && actualProgressAt !== undefined
+        const directTouch = active.recipe.triggers.includes("pet") && trigger("pet",input);
+        if (duration > 0 && !waking && !directTouch && !input.carriedToyId && actualProgressAt !== undefined
           && now + duration > Math.min(actualProgressAt + ACTUAL_PROGRESS_BUDGET_MS, initialProgressDeadline ?? Infinity)) {
           if (remainingRequiredWork(input)) {
             // Future real work does not excuse a stationary pose chain. Keep
@@ -850,11 +920,13 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
             const main = world.foods?.find(food => food.id === active!.itemId);
             const partner = active.comparisonItemId ? world.foods?.find(food => food.id === active!.comparisonItemId)
               : main && world.foods?.filter(food => food.id !== main.id && Math.hypot(food.x-main.x,food.y-main.y) <= 160
+                && food.platformId === world.platformId && Math.hypot(food.x-world.x,food.y-world.y) <= 72
                 && findCompanionToyRoute(world,food,world.platforms,p.jump))
                 .sort((a,b) => Math.hypot(a.x-main.x,a.y-main.y)-Math.hypot(b.x-main.x,b.y-main.y))[0];
             // A comparison is a nearby glance, never a cross-screen detour.
             // Losing its secondary object does not replace the chosen meal.
-            if (!main || !partner || Math.hypot(partner.x-main.x,partner.y-main.y) > 160) { advance(); continue; }
+            if (!main || !partner || brain.hunger >= .65 || Math.hypot(partner.x-main.x,partner.y-main.y) > 160
+              || partner.platformId !== world.platformId || Math.hypot(partner.x-world.x,partner.y-world.y) > 72) { advance(); continue; }
             active.comparisonItemId = partner.id;
           }
           return { meta: meta(command), delegate: command };

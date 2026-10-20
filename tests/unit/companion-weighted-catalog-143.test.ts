@@ -32,10 +32,10 @@ describe("143 bounded weighted collection draw", () => {
     expect(() => createBoundedWeightedCatalog(Array.from({ length: 513 }, (_, i) => ({ id: String(i), mass: 1 })))).toThrow();
     expect(() => createBoundedWeightedCatalog([{ id: 3 as unknown as string, mass: 1 }, { id: "b", mass: 1 }])).toThrow();
   });
-  it("proves all sixty toy intervals for every previous exclusion with no residual mass", () => {
-    expect(COMPANION_TOY_KINDS).toHaveLength(60);
-    expect(Object.fromEntries(["common", "uncommon", "rare", "ultra-rare", "mythic"].map(tier => [tier, Object.values(COMPANION_TOY_RARITY).filter(value => value === tier).length]))).toEqual({ common: 24, uncommon: 18, rare: 12, "ultra-rare": 5, mythic: 1 });
-    const totalMass = Object.values(COMPANION_TOY_WEIGHTS).reduce((sum, mass) => sum + mass, 0); expect(totalMass).toBe(36000000);
+  it("proves all eighty-four toy intervals for every previous exclusion with no residual mass", () => {
+    expect(COMPANION_TOY_KINDS).toHaveLength(84);
+    expect(Object.fromEntries(["common", "uncommon", "rare", "ultra-rare", "mythic"].map(tier => [tier, Object.values(COMPANION_TOY_RARITY).filter(value => value === tier).length]))).toEqual({ common: 24, uncommon: 22, rare: 25, "ultra-rare": 12, mythic: 1 });
+    const totalMass = Object.values(COMPANION_TOY_WEIGHTS).reduce((sum, mass) => sum + mass, 0); expect(totalMass).toBe(38628880);
     for (const previous of [undefined, ...COMPANION_TOY_KINDS]) {
       const total = totalMass - (previous ? COMPANION_TOY_WEIGHTS[previous] : 0);
       let offset = 0, residual = total, chanceSum = 0;
@@ -47,6 +47,6 @@ describe("143 bounded weighted collection draw", () => {
       }
       expect(offset).toBe(total); expect(residual).toBe(0); expect(chanceSum).toBeCloseTo(1, 12);
     }
-    expect(companionToyChance("stud-brick-castle")).toBe(.00005);
+    expect(companionToyChance("stud-brick-castle")).toBe(1800 / 38628880);
   });
 });

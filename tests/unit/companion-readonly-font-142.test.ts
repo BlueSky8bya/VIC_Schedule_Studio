@@ -79,7 +79,12 @@ describe("142 shared read-only native font guard", () => {
   it("registers this security suite and delegates external fonts in every selected native guard", () => {
     expect(PURE_SUITES).toContain("tests/unit/companion-readonly-font-142.test.ts");
     for (const suite of NATIVE_SUITES) {
-      const path = suite === "companion-daily-142.spec.ts" ? "helpers/companion-qa.ts" : suite;
+      const entry = readFileSync(resolve("tests/visual", suite), "utf8");
+      // Shared guards own the font route for daily and146 runtime tests;
+      // inline guards still have to call the same no-redirect helper.
+      const sharedGuard = /import\s*\{[^}]*\bguardCompanionQa\b[^}]*\}\s*from\s*["']\.\/helpers\/companion-qa["']/.test(entry);
+      if (sharedGuard) expect(entry).toMatch(/\bawait guardCompanionQa\(/);
+      const path = sharedGuard ? "helpers/companion-qa.ts" : suite;
       const source = readFileSync(resolve("tests/visual", path), "utf8");
       expect(source).toContain("return fulfillReadOnlyFont(route, fonts,");
       expect(source).not.toMatch(/fonts\.has\([^\n]+return route\.continue/);

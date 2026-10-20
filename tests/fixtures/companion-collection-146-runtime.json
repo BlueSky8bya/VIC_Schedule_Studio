@@ -1,0 +1,614 @@
+{
+  "edition": 146,
+  "foods": [
+    {
+      "id": "kkak-kong-soup",
+      "content": {
+        "x": 6,
+        "y": 16,
+        "width": 116,
+        "height": 95
+      },
+      "index": 0,
+      "x": 0,
+      "y": 0
+    },
+    {
+      "id": "frozen-leftover-pizza",
+      "content": {
+        "x": 6,
+        "y": 11,
+        "width": 116,
+        "height": 105
+      },
+      "index": 1,
+      "x": 128,
+      "y": 0
+    },
+    {
+      "id": "frozen-leftover-tteokbokki",
+      "content": {
+        "x": 6,
+        "y": 26,
+        "width": 116,
+        "height": 76
+      },
+      "index": 2,
+      "x": 256,
+      "y": 0
+    },
+    {
+      "id": "cricket-pepero",
+      "content": {
+        "x": 6,
+        "y": 11,
+        "width": 116,
+        "height": 106
+      },
+      "index": 3,
+      "x": 384,
+      "y": 0
+    },
+    {
+      "id": "pepero",
+      "content": {
+        "x": 6,
+        "y": 10,
+        "width": 116,
+        "height": 108
+      },
+      "index": 4,
+      "x": 0,
+      "y": 128
+    },
+    {
+      "id": "blue-marshmallow-tteokguk",
+      "content": {
+        "x": 6,
+        "y": 12,
+        "width": 116,
+        "height": 104
+      },
+      "index": 5,
+      "x": 128,
+      "y": 128
+    },
+    {
+      "id": "herb-avocado-milk",
+      "content": {
+        "x": 10,
+        "y": 6,
+        "width": 108,
+        "height": 116
+      },
+      "index": 6,
+      "x": 256,
+      "y": 128
+    },
+    {
+      "id": "mint-choco-brisket-stew",
+      "content": {
+        "x": 6,
+        "y": 10,
+        "width": 116,
+        "height": 108
+      },
+      "index": 7,
+      "x": 384,
+      "y": 128
+    },
+    {
+      "id": "birthday-seaweed-soup",
+      "content": {
+        "x": 6,
+        "y": 28,
+        "width": 116,
+        "height": 71
+      },
+      "index": 8,
+      "x": 0,
+      "y": 256
+    },
+    {
+      "id": "cookie-cake",
+      "content": {
+        "x": 6,
+        "y": 8,
+        "width": 116,
+        "height": 112
+      },
+      "index": 9,
+      "x": 128,
+      "y": 256
+    },
+    {
+      "id": "dubai-chewy-cookie",
+      "content": {
+        "x": 6,
+        "y": 16,
+        "width": 116,
+        "height": 96
+      },
+      "index": 10,
+      "x": 256,
+      "y": 256
+    },
+    {
+      "id": "duchosaeng-cake",
+      "content": {
+        "x": 6,
+        "y": 6,
+        "width": 116,
+        "height": 116
+      },
+      "index": 11,
+      "x": 384,
+      "y": 256
+    }
+  ],
+  "toys": [
+    {
+      "id": "pangtteok-cushion",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 172,
+        "height": 176
+      },
+      "src": "/companion/home/146/toy-pangtteok-cushion.webp",
+      "size": [
+        188,
+        192
+      ]
+    },
+    {
+      "id": "tori-keycap-clicker",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 176,
+        "height": 169
+      },
+      "src": "/companion/home/146/toy-tori-keycap-clicker.webp",
+      "size": [
+        192,
+        185
+      ]
+    },
+    {
+      "id": "tori-photocard",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 173,
+        "height": 176
+      },
+      "src": "/companion/home/146/toy-tori-photocard.webp",
+      "size": [
+        189,
+        192
+      ]
+    },
+    {
+      "id": "otamatone",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 169,
+        "height": 176
+      },
+      "src": "/companion/home/146/toy-otamatone.webp",
+      "size": [
+        185,
+        192
+      ]
+    },
+    {
+      "id": "tail-comb",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 176,
+        "height": 174
+      },
+      "src": "/companion/home/146/toy-tail-comb.webp",
+      "size": [
+        192,
+        190
+      ]
+    },
+    {
+      "id": "card-mirror",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 176,
+        "height": 176
+      },
+      "src": "/companion/home/146/toy-card-mirror.webp",
+      "size": [
+        192,
+        192
+      ]
+    },
+    {
+      "id": "airy-velvet-tint",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 176,
+        "height": 173
+      },
+      "src": "/companion/home/146/toy-airy-velvet-tint.webp",
+      "size": [
+        192,
+        189
+      ]
+    },
+    {
+      "id": "half-wallet",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 176,
+        "height": 173
+      },
+      "src": "/companion/home/146/toy-half-wallet.webp",
+      "size": [
+        192,
+        189
+      ]
+    },
+    {
+      "id": "power-bank",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 167,
+        "height": 176
+      },
+      "src": "/companion/home/146/toy-power-bank.webp",
+      "size": [
+        183,
+        192
+      ]
+    },
+    {
+      "id": "wireless-earbuds",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 163,
+        "height": 176
+      },
+      "src": "/companion/home/146/toy-wireless-earbuds.webp",
+      "size": [
+        179,
+        192
+      ]
+    },
+    {
+      "id": "sewing-kit",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 176,
+        "height": 172
+      },
+      "src": "/companion/home/146/toy-sewing-kit.webp",
+      "size": [
+        192,
+        188
+      ]
+    },
+    {
+      "id": "matte-turbo-lighter",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 160,
+        "height": 176
+      },
+      "src": "/companion/home/146/toy-matte-turbo-lighter.webp",
+      "size": [
+        176,
+        192
+      ]
+    },
+    {
+      "id": "herbal-lip-balm",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 175,
+        "height": 176
+      },
+      "src": "/companion/home/146/toy-herbal-lip-balm.webp",
+      "size": [
+        191,
+        192
+      ]
+    },
+    {
+      "id": "ceramic-safety-cutter",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 176,
+        "height": 175
+      },
+      "src": "/companion/home/146/toy-ceramic-safety-cutter.webp",
+      "size": [
+        192,
+        191
+      ]
+    },
+    {
+      "id": "tori-blanket",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 176,
+        "height": 174
+      },
+      "src": "/companion/home/146/toy-tori-blanket.webp",
+      "size": [
+        192,
+        190
+      ]
+    },
+    {
+      "id": "tori-tumbler",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 176,
+        "height": 156
+      },
+      "src": "/companion/home/146/toy-tori-tumbler.webp",
+      "size": [
+        192,
+        172
+      ]
+    },
+    {
+      "id": "tori-acrylic-stand",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 173,
+        "height": 176
+      },
+      "src": "/companion/home/146/toy-tori-acrylic-stand.webp",
+      "size": [
+        189,
+        192
+      ]
+    },
+    {
+      "id": "practice-baseball-bat",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 176,
+        "height": 175
+      },
+      "src": "/companion/home/146/toy-practice-baseball-bat.webp",
+      "size": [
+        192,
+        191
+      ]
+    },
+    {
+      "id": "practice-baseball-glove",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 176,
+        "height": 175
+      },
+      "src": "/companion/home/146/toy-practice-baseball-glove.webp",
+      "size": [
+        192,
+        191
+      ]
+    },
+    {
+      "id": "cheer-pompom",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 176,
+        "height": 173
+      },
+      "src": "/companion/home/146/toy-cheer-pompom.webp",
+      "size": [
+        192,
+        189
+      ]
+    },
+    {
+      "id": "broadcast-microphone",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 176,
+        "height": 170
+      },
+      "src": "/companion/home/146/toy-broadcast-microphone.webp",
+      "size": [
+        192,
+        186
+      ]
+    },
+    {
+      "id": "vr-headset",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 174,
+        "height": 176
+      },
+      "src": "/companion/home/146/toy-vr-headset.webp",
+      "size": [
+        190,
+        192
+      ]
+    },
+    {
+      "id": "vr-fishing-rod",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 163,
+        "height": 176
+      },
+      "src": "/companion/home/146/toy-vr-fishing-rod.webp",
+      "size": [
+        179,
+        192
+      ]
+    },
+    {
+      "id": "drawing-tablet",
+      "content": {
+        "x": 8,
+        "y": 8,
+        "width": 173,
+        "height": 176
+      },
+      "src": "/companion/home/146/toy-drawing-tablet.webp",
+      "size": [
+        189,
+        192
+      ]
+    }
+  ],
+  "runtimeFiles": [
+    {
+      "src": "/companion/collection/foods-146-v1.webp",
+      "sha256": "1b8969208132adfac12923d49fa2704540216c35ecff5f3cad31f91e718b24d4",
+      "bytes": 205024
+    },
+    {
+      "src": "/companion/home/146/toy-pangtteok-cushion.webp",
+      "sha256": "5caa9237bd8478d3c3d72bbb7405ca5ceb340403ac09649e00b75a6df1dcfe70",
+      "bytes": 28742
+    },
+    {
+      "src": "/companion/home/146/toy-tori-keycap-clicker.webp",
+      "sha256": "5cf7138c49c3cfa95f8c80249a5ebdbe034a6d51adc41be9107f269a4b8ea3c8",
+      "bytes": 21798
+    },
+    {
+      "src": "/companion/home/146/toy-tori-photocard.webp",
+      "sha256": "7c45d7150749bc3f9a9cf31f279f2f5843f71f36175fb44d150a7a4be5aa41ed",
+      "bytes": 25354
+    },
+    {
+      "src": "/companion/home/146/toy-otamatone.webp",
+      "sha256": "3b43b21f4d67188e78b98f40464f129c012ea33aad7f6473075f924668b37573",
+      "bytes": 13056
+    },
+    {
+      "src": "/companion/home/146/toy-tail-comb.webp",
+      "sha256": "75c11bae212d4b79888b80832791aa09c00585b4434c735634eda5ba83767d89",
+      "bytes": 15450
+    },
+    {
+      "src": "/companion/home/146/toy-card-mirror.webp",
+      "sha256": "3a21a88692f0aece7e3c95e1e56540a421522cea473e781932cdc7cd268c59f5",
+      "bytes": 31902
+    },
+    {
+      "src": "/companion/home/146/toy-airy-velvet-tint.webp",
+      "sha256": "e641c0ec2999d20b36bd0b1b40f47bd1b6f12df4cd6cb37d97ad8588049ba872",
+      "bytes": 19736
+    },
+    {
+      "src": "/companion/home/146/toy-half-wallet.webp",
+      "sha256": "b63b590aea577f35f3c9e924ad7a1cb50ced74ec8ba8840836a748732ca147fe",
+      "bytes": 30230
+    },
+    {
+      "src": "/companion/home/146/toy-power-bank.webp",
+      "sha256": "be74d28a14bfcaddb50669c5972b5325c726935960ef12c03cafcee32ac47f6f",
+      "bytes": 18034
+    },
+    {
+      "src": "/companion/home/146/toy-wireless-earbuds.webp",
+      "sha256": "09df9e3ad3228fa4160327f09849a46b9116773e82f910571b8c6c54f64cf681",
+      "bytes": 29262
+    },
+    {
+      "src": "/companion/home/146/toy-sewing-kit.webp",
+      "sha256": "e2fff0cd91a352b937b3964eb3ad9ceee25ce3c50f235bfe78554ccf501dbd69",
+      "bytes": 34818
+    },
+    {
+      "src": "/companion/home/146/toy-matte-turbo-lighter.webp",
+      "sha256": "2b9292d020243fc7159f52a932b51b64333c0618e4750665a7209420c76f43a7",
+      "bytes": 17866
+    },
+    {
+      "src": "/companion/home/146/toy-herbal-lip-balm.webp",
+      "sha256": "6c55c883c980bd7f4405798f0f509fd5b19b246ae7a94e6d7feb6ab9f21cabfc",
+      "bytes": 21404
+    },
+    {
+      "src": "/companion/home/146/toy-ceramic-safety-cutter.webp",
+      "sha256": "1413a73ec2e5ff2848bbbe931a9d12ff032614c5df56caa94ee91afc70c0078e",
+      "bytes": 24210
+    },
+    {
+      "src": "/companion/home/146/toy-tori-blanket.webp",
+      "sha256": "8e7834db02df31a0acdfe5fc967fba3975c4164f31bd83f9ea4602f6c7296bce",
+      "bytes": 17340
+    },
+    {
+      "src": "/companion/home/146/toy-tori-tumbler.webp",
+      "sha256": "9e8b1840af2a9919cbb42b1a145a989f019cee6a2b9ab485bbcdb1e356347f35",
+      "bytes": 10572
+    },
+    {
+      "src": "/companion/home/146/toy-tori-acrylic-stand.webp",
+      "sha256": "886644808386627ac22837fb655f4529b9f926c57b34186a48b3f2a584d56294",
+      "bytes": 15838
+    },
+    {
+      "src": "/companion/home/146/toy-practice-baseball-bat.webp",
+      "sha256": "46f5a27d96c035a7fd4a636245ce41d38f9c9398bc7da0f66d3ad58ce0865bbe",
+      "bytes": 15010
+    },
+    {
+      "src": "/companion/home/146/toy-practice-baseball-glove.webp",
+      "sha256": "458a3ed8bb481cf3759d7044ad011b460aa7713409174981f6f17b5c39267a89",
+      "bytes": 38802
+    },
+    {
+      "src": "/companion/home/146/toy-cheer-pompom.webp",
+      "sha256": "29b0ee30fb2fa07076599754e97205d1f265de4fac785907bd559069cfc88e75",
+      "bytes": 44834
+    },
+    {
+      "src": "/companion/home/146/toy-broadcast-microphone.webp",
+      "sha256": "ad732599ca1d62e06c9655040f4075d5f0893175bf5650991a2e5b0b7420a1ee",
+      "bytes": 26632
+    },
+    {
+      "src": "/companion/home/146/toy-vr-headset.webp",
+      "sha256": "8c8021c979a183dbb2702f0feb6c552570b9c349c1e3026114d3d04a0e3e0220",
+      "bytes": 23918
+    },
+    {
+      "src": "/companion/home/146/toy-vr-fishing-rod.webp",
+      "sha256": "d6aad67396c3973e997b15e9de26679026f001a08b0a27ec6ddbe1f559622048",
+      "bytes": 20062
+    },
+    {
+      "src": "/companion/home/146/toy-drawing-tablet.webp",
+      "sha256": "9ebcc2e654b8fde6152b7eb7189f623f1b293c9c97a8a2283c8839b4b028c7f2",
+      "bytes": 24104
+    }
+  ]
+}

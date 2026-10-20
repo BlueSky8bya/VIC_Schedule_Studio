@@ -92,6 +92,14 @@ function fixture(count = 4, recipes: readonly PersonalitySceneRecipe[] = COMPANI
 }
 
 describe("140 anti-repeat preserves unfinished physical returns", () => {
+  it("continues four actual returns without another grooming/bow interval between the remaining objects", () => {
+    const host = fixture(4, [source("T01")], "tidy");
+    host.until(() => host.model.count() === 0);
+    const firstReturn = host.trace.findIndex(row => row.effect === "stash");
+    const remaining = host.trace.slice(firstReturn + 1).filter(row => row.count > 0);
+    expect(remaining.some(row => row.effect === "pose")).toBe(false);
+    expect(host.trace.filter(row => row.effect === "stash").map(row => row.id).sort()).toEqual([...host.originalIds].sort());
+  });
   it("returns all four actual IDs after arrival plus repeated T01, then reaches washing and no-work T07", () => {
     const host = fixture(4, COMPANION_PERSONALITY_SCENES, "tidy"); host.director.event("arrival", host.scene.now);
     host.until(() => host.director.completed().includes("T05") && host.director.completed().includes("T07"));

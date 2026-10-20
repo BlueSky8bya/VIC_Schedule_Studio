@@ -592,7 +592,9 @@ describe("142 an interrupted greeting cannot permanently block common living",()
   });
   it("never reissues the dismissed greeting or refills the physical progress deadline on repeated cancellation",()=>{
     const {input,director}=prepared("mischievous");director.cancel();input.now=50;
-    expect(director.next(input)).toBeUndefined();const deadline=director.progressDeadline();expect(deadline).toBe(8050);
+    // Entry starts the shared budget at0. Dismissing it50ms later is no
+    // physical progress and must neither restart nor add50ms to that budget.
+    expect(director.next(input)).toBeUndefined();const deadline=director.progressDeadline();expect(deadline).toBe(8000);
     input.now=500;director.cancel();expect(director.next(input)).toBeUndefined();expect(director.progressDeadline()).toBe(deadline);
     expect(director.completed()).toEqual([]);
   });

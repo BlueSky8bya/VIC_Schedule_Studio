@@ -18,7 +18,8 @@ describe("125 identities retained by the143 sixty-toy catalogue", () => {
     const dimensions = new Set<string>();
     for (const kind of COMPANION_TOY_KINDS) {
       expect(isCompanionToyKind(kind)).toBe(true); expect(COMPANION_TOY_NAMES[kind]).toBeTruthy(); expect(COMPANION_TOY_HINTS[kind]).toBeTruthy();
-      expect(getCompanionToyArt(kind)).toBe(`/companion/home/${COMPANION_TOY_KINDS.indexOf(kind) < 24 ? "125" : "143"}/toy-${kind}.webp`);
+      const index = COMPANION_TOY_KINDS.indexOf(kind);
+      expect(getCompanionToyArt(kind)).toBe(`/companion/home/${index < 24 ? "125" : index < 60 ? "143" : "146"}/toy-${kind}.webp`);
       const visual = COMPANION_TOY_VISUALS[kind];
       for (const extent of [visual.width, visual.height]) { expect(extent).toBeGreaterThanOrEqual(18); expect(extent).toBeLessThanOrEqual(42); }
       dimensions.add(`${visual.width}x${visual.height}`);

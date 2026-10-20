@@ -18,13 +18,13 @@ describe("143 append-only local collection migration", () => {
     expect(sha(old)).toBe("722c2bd5a8aef99a5cd5569354a4aa06de37b024b2c0dd6fe0bacf187810343f");
     expect(sha(old.map(id => [id, COMPANION_FOOD_NAMES[id]]))).toBe("2942a19c44eb90b52d7b3c0b7cf596b2920295c1a909f64f3e7cd30c2171a9a5");
     expect(sha(old.map(id => [id, COMPANION_FOOD_RARITY[id]]))).toBe("05f9bd0d7c756e17516fb3fc4afc14c0a0475988db7ba70968cd6f6568a678b7");
-    expect(COMPANION_FOOD_KINDS.slice(180)).toEqual(COMPANION_SNACK_EXPANSION_143.map(item => item.id));
-    expect(COMPANION_TOY_KINDS.slice(24)).toEqual(COMPANION_TOY_EXPANSION_143.map(item => item.id));
+    expect(COMPANION_FOOD_KINDS.slice(180, 240)).toEqual(COMPANION_SNACK_EXPANSION_143.map(item => item.id));
+    expect(COMPANION_TOY_KINDS.slice(24, 60)).toEqual(COMPANION_TOY_EXPANSION_143.map(item => item.id));
     expect(COMPANION_FOOD_KINDS.length % 12).toBe(0); expect(COMPANION_TOY_KINDS.length % 12).toBe(0);
-    expect(new Set(Object.values(COMPANION_TOY_NAMES)).size).toBe(60);
+    expect(new Set(Object.values(COMPANION_TOY_NAMES)).size).toBe(84);
   });
   it("covers all facts/families and keeps generated toys inside the shared44px target", () => {
-    expect(Object.keys(COMPANION_FOOD_FACTS).length).toBe(240); expect(Object.keys(COMPANION_FOOD_FAMILY).length).toBe(240);
+    expect(Object.keys(COMPANION_FOOD_FACTS).length).toBe(252); expect(Object.keys(COMPANION_FOOD_FAMILY).length).toBe(252);
     for (const food of COMPANION_FOOD_KINDS) { expect(COMPANION_FOOD_FACTS[food].length).toBeGreaterThan(10); expect(COMPANION_FOOD_FAMILY[food]).toBeTruthy(); }
     for (const toy of COMPANION_TOY_KINDS) { const box = COMPANION_TOY_VISUALS[toy]; expect(box.width).toBeGreaterThanOrEqual(18); expect(box.width).toBeLessThanOrEqual(44); expect(box.height).toBeGreaterThanOrEqual(18); expect(box.height).toBeLessThanOrEqual(44); expect(COMPANION_TOY_HINTS[toy]).toBeTruthy(); }
     expect(companionConsumedFoodExperience("jjajangmyeon", ["udon"])).toEqual({ exact: false, related: 1 });

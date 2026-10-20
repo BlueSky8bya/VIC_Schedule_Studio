@@ -93,16 +93,33 @@ describe("142 goals survive scene variety and empty scenes yield to real behavio
     const director=createCompanionPersonalityDirector([source("G04")]);enter(director,input);
     expect(director.next(input)).toMatchObject({meta:{itemId:"main",beat:1},delegate:{kind:"food",mode:"inspect"}});
   });
-  it("G04 holds both real IDs through reorder and feeds the original, not its comparison partner",()=>{
-    const input=scene("gourmet");input.brain.hunger=.5;input.brain.life={...input.brain.life!,tastedFoods:["potato"]};
-    input.world.foods=[{id:"main",kind:"carrot",x:180,y:600,platformId:floor.id},{id:"peer",kind:"bagel",x:240,y:600,platformId:floor.id},{id:"other",kind:"bread",x:270,y:600,platformId:floor.id}];
+  it.each([{hunger:.5,compare:true},{hunger:.7,compare:false}])("G04 hunger=$hunger keeps its selected meal through reorder; nearby comparison=$compare never adds a travel destination",({hunger,compare})=>{
+    const input=scene("gourmet");input.brain.hunger=hunger;input.brain.life={...input.brain.life!,tastedFoods:["potato"]};
+    input.world.foods=[{id:"main",kind:"carrot",x:180,y:600,platformId:floor.id},{id:"peer",kind:"bagel",x:150,y:600,platformId:floor.id},{id:"other",kind:"bread",x:270,y:600,platformId:floor.id}];
     const director=createCompanionPersonalityDirector([source("G04")]),jobs=createCompanionPersonalityJobs(director,createCompanionHousehold(()=>0),createCompanionToyPlanner());enter(director,input);
-    const offer=()=>{const p=director.next(input)!;return {p,a:jobs.next(p,{world:input.world,brain:input.brain,preferences:input.preferences,now:input.now,home:{},toys:[],toyCount:0,foodCount:3})!};};
-    const first=offer();expect(first.p.meta).toMatchObject({itemId:"main",comparisonItemId:"peer"});expect(first.a.target.x).toBe(240);
-    input.world.foods=[input.world.foods![0],input.world.foods![2],input.world.foods![1]];input.world.x=150;input.now+=400;
-    const again=offer();expect(again.a.target.x).toBe(240);input.world.x=240;input.now+=900;
-    const sniff=offer();expect(sniff.a.kind).toBe("sniff");director.resolve(sniff.a.personalityScene,true);
-    expect(director.current()).toMatchObject({itemId:"main",beat:1});expect(offer().a.target.x).toBe(180);
+    const offer=()=>{const p=director.next(input)!;expect(p).toBeTruthy();const a=jobs.next(p,{world:input.world,brain:input.brain,preferences:input.preferences,now:input.now,home:{},toys:[],toyCount:0,foodCount:3})!;expect(a).toBeTruthy();return {p,a};};
+    const first=offer();expect(first.p.meta.itemId).toBe("main");
+    if(compare){
+      expect(first.p.meta).toMatchObject({beat:0,itemId:"main",comparisonItemId:"peer"});
+      expect(first.a).toMatchObject({kind:"look",target:{x:100,y:600,platformId:floor.id},personalityJobEnd:true});
+      input.world.foods=[input.world.foods![0],input.world.foods![2],input.world.foods![1]];input.now+=400;
+      const again=offer();expect(again.p.meta).toMatchObject({itemId:"main",comparisonItemId:"peer"});
+      expect(again.a.kind).toBe("look");expect(again.a.target).toEqual(first.a.target);expect(input.world.x).toBe(100);
+      input.now+=again.a.duration;director.resolve(again.a.personalityScene,true,undefined,input.now);
+    }else{
+      // Hunger skips even a nearby available peer, rather than merely
+      // failing the old remote-comparison geometry precondition.
+      expect(first.p.meta).toMatchObject({beat:1,itemId:"main"});expect(first.p.meta.comparisonItemId).toBeUndefined();
+      expect(first.p.delegate).toMatchObject({kind:"food",mode:"inspect"});
+      input.world.foods=[input.world.foods![2],input.world.foods![1],input.world.foods![0]];
+    }
+    expect(director.current()).toMatchObject({itemId:"main",beat:1});
+    const approach=offer();expect(approach.a.kind).toBe("walk");expect(approach.a.target.x).toBe(180);
+    input.world={...input.world,...approach.a.target};input.now+=approach.a.duration+220;
+    const inspected=offer();expect(inspected.a.kind).toBe("sniff");expect(inspected.p.meta.itemId).toBe("main");
+    input.now+=inspected.a.duration;director.resolve(inspected.a.personalityScene,true,"main",input.now);
+    const meal=offer();expect(meal.p.meta.itemId).toBe("main");expect(meal.a).toMatchObject({kind:"eat",foodId:"main"});
+    expect(meal.a.target.x).toBe(180);expect(input.world.foods?.map(food=>food.id).sort()).toEqual(["main","other","peer"]);
   });
   it("never reads learned scores with learning OFF or lets them replace entry/actual cleanup",()=>{
     const input=scene("tidy"),score=vi.fn(()=>.2);input.preferences.learnFromYou=false;input.experience={score};
