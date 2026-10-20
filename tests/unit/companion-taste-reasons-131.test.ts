@@ -3,7 +3,7 @@ import { createCompanionLife } from "@/lib/ui/viewer-companion/life";
 import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 import { COMPANION_TOY_KINDS } from "@/lib/ui/viewer-companion/toy-catalog";
 import { companionInnateFoodReason, companionToyTasteReason, evaluateCompanionFoodTaste, isCompanionFoodTasteOutcome, isCompanionToyTasteReason, isPositiveCompanionTasteReason } from "@/lib/ui/viewer-companion/taste-reasons";
-import { companionProfileTasteReason, createCompanionTastesStore, normalizeCompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
+import { COMPANION_TASTES_MAX_BYTES, companionProfileTasteReason, createCompanionTastesStore, normalizeCompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
 
 describe("131 contextual, truthful profile reasons", () => {
   it("validates varied meal outcomes for every food without inventing ordinary-food aversions", () => {
@@ -81,7 +81,7 @@ describe("131 contextual, truthful profile reasons", () => {
     const store = createCompanionTastesStore();
     for (const kind of COMPANION_TOY_KINDS) { store.recordToy(kind, "taken-out"); store.recordToy(kind, "played"); }
     for (const food of COMPANION_FOOD_KINDS) store.recordFoodOutcome(evaluateCompanionFoodTaste(food, undefined, .82));
-    expect(store.load().reasons).toHaveLength(8); expect(JSON.stringify(store.load()).length).toBeLessThan(16384);
+    expect(store.load().reasons).toHaveLength(8); expect(Buffer.byteLength(JSON.stringify(store.load()), "utf8")).toBeLessThan(COMPANION_TASTES_MAX_BYTES);
     const toys = store.load().toys; store.resetPreferences();
     expect(store.load().reasons).toEqual([]); expect(store.load().toys).toEqual(toys);
   });

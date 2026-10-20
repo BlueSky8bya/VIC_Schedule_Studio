@@ -9,7 +9,7 @@ import type { CompanionToyKind } from "./toy-catalog";
 export type SceneTrigger = "editor-open" | "free" | "toy" | "food" | "pet" | "music" | "work" | "undo" | "arrival" | "layout" | "toy-returned" | "toy-settled" | "recovered" | "meal" | "favorite" | "outfit" | "rain" | "summer" | "night" | "experience" | "tv";
 export type SceneBeat = (
   | { kind: "pose"; pose: CompanionPlay | "sniff" | "look" | "stretch" | "shake"; ms?: number }
-  | { kind: "go"; target: "pointer" | "sofa" | "floor" | "window" | "pad" | "novel-place" | "toy" | "toy-other-side" | "food" | "box" | "dispenser" }
+  | { kind: "go"; target: "pointer" | "outside" | "sofa" | "floor" | "window" | "pad" | "novel-place" | "toy" | "toy-other-side" | "food" | "box" | "dispenser" }
   | { kind: "tv"; state: CompanionHomeTvState | "next" }
   | { kind: "light"; lit: boolean }
   | { kind: "radio"; playing: boolean }
@@ -20,13 +20,17 @@ export type SceneBeat = (
   | { kind: "sleep"; ms: number }
   | { kind: "wash"; ms: number }
   | { kind: "hide"; ms: number }
-) & { optional?: boolean };
+) & { optional?: boolean; audience?: true };
 export type PersonalitySceneRecipe = {
   id: string; label: string; personality: CompanionPersonality; major: boolean;
   triggers: readonly SceneTrigger[]; steps: readonly SceneBeat[];
+  /** Actual prop ownership, never a pose pretending to hold an object. */
+  propShow?: true;
+  /** Initial selection scope only; a bound same-ID goal survives movement. */
+  toyScope?: "outside"; foodScope?: "outside";
 };
 
-const p = (pose: Extract<SceneBeat, { kind: "pose" }>["pose"]): SceneBeat => ({ kind: "pose", pose });
+const p = (pose: Extract<SceneBeat, { kind: "pose" }>["pose"], audience=false): SceneBeat => ({ kind: "pose", pose, ...(audience?{audience:true as const}:{}) });
 const g = (target: Extract<SceneBeat, { kind: "go" }>["target"]): SceneBeat => ({ kind: "go", target });
 const t = (mode: Extract<SceneBeat, { kind: "toy" }>["mode"], kinds?: readonly CompanionToyKind[], limit = 1): SceneBeat => ({ kind: "toy", mode, ...(kinds ? { kinds } : {}), limit });
 const f = (mode: Extract<SceneBeat, { kind: "food" }>["mode"]): SceneBeat => ({ kind: "food", mode });
@@ -40,6 +44,9 @@ const hide = (ms: number): SceneBeat => ({ kind: "hide", ms });
 const opt = (beat: SceneBeat): SceneBeat => ({ ...beat, optional: true });
 
 /** Source: docs/agent/reports/REPORT-20261019-136-personality-scenes.html.
+ *143 supersedes indoor audience performances and unnecessary sofa resets.
+ * The original144 IDs remain;9 new143 goals extend the current catalog to153.
+ * Changed routes/new goals are not unchanged136 sequence evidence.
  * The complete source contracts are preserved in the137 implementation audit.
  * These are executable requests, not completion evidence. The single runtime
  * retains object IDs through pick/travel/drop and requires each actual ACK.
@@ -47,22 +54,22 @@ const opt = (beat: SceneBeat): SceneBeat => ({ ...beat, optional: true });
  * Entry signatures are separate preparation, not a success of these scenes. */
 export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = Object.freeze([
   // P01 계기: 실제 방문을 확인했고, 착지·잡기·운반 등 진행 중인 일을 안전하게 마친 첫 여유가 생긴다.
-  { id: "P01", label: "돌아온 사람을 위한 작은 개막식", personality: "performer", major: true, triggers: ["arrival"], steps: [p("cheer-rehearsal"), p("celebrate"), p("bow"), g("floor")] },
+  { id: "P01", label: "돌아온 사람을 위한 작은 개막식", personality: "performer", major: true, triggers: ["arrival"], steps: [p("cheer-rehearsal"), p("celebrate"), p("bow"), g("outside")] },
   // P02 계기: 접근 가능한 실제 마라카스나 탬버린이 있고, 허기·사용자 입력에 양보할 필요가 없다.
-  { id: "P02", label: "마라카스 한 개로 여는 소품 무대", personality: "performer", major: true, triggers: ["toy"], steps: [t("inspect", ["maraca", "tambourine"]), g("floor"), t("play", ["maraca", "tambourine"]), p("cheer-rehearsal"), p("bow"), t("return", ["maraca", "tambourine"])] },
+  { id: "P02", label: "마라카스 한 개로 여는 소품 무대", personality: "performer", major: true, triggers: ["toy"], steps: [t("inspect", ["maraca", "tambourine"]), g("outside"), t("play", ["maraca", "tambourine"]), p("cheer-rehearsal"), p("bow"), t("return", ["maraca", "tambourine"])] },
   // P03 계기: 허용된 라디오·악기에서 실제 들린 구절이 있고, 다른 공연이나 음소거 정책과 충돌하지 않는다.
   { id: "P03", label: "음악 한 구절을 받는 짧은 응원", personality: "performer", major: true, triggers: ["music"], steps: [p("cheer-rehearsal"), p("celebrate"), p("bow")] },
   // P04 계기: 공개 일반 일정의 실제 저장 성공이라는 고정 완료 신호가 왔고, 입력·IME·저장·모달 소유권이 끝난다.
-  { id: "P04", label: "잘 끝난 공개 작업에 축하 한 번", personality: "performer", major: true, triggers: ["work"], steps: [p("cheer-rehearsal"), p("celebrate"), p("bow"), g("floor")] },
+  { id: "P04", label: "잘 끝난 공개 작업에 축하 한 번", personality: "performer", major: true, triggers: ["work"], steps: [p("cheer-rehearsal"), p("celebrate"), p("bow"), g("outside")] },
   // P05 계기: 짧은 공연을 실제로 마친 직후 사용자가 쓰다듬어 주었으며, 교감 기능이 허용돼 있다.
   { id: "P05", label: "앵콜은 딱 한 번, 다른 재롱으로", personality: "performer", major: true, triggers: ["pet"], steps: [p("celebrate"), p("bow"), p("groom")] },
   { id: "P06", label: "공과 맞춰 통통", personality: "performer", major: false, triggers: ["toy"], steps: [t("toss", ["ball"]), w(700), g("toy"), p("celebrate"), p("bow")] },
   { id: "P07", label: "기차 옆 행진", personality: "performer", major: false, triggers: ["toy"], steps: [t("nudge", ["train"]), g("toy"), p("bow")] },
   { id: "P08", label: "별 지팡이 소개", personality: "performer", major: false, triggers: ["toy"], steps: [t("inspect", ["star-wand"]), p("cheer-rehearsal"), p("bow"), t("return", ["star-wand"])] },
-  { id: "P09", label: "굴러도 마지막 인사", personality: "performer", major: false, triggers: ["recovered"], steps: [p("shake"), p("bow")] },
-  { id: "P10", label: "새로 입은 액세서리 자랑", personality: "performer", major: false, triggers: ["outfit"], steps: [p("celebrate"), p("bow"), p("groom")] },
+  { id: "P09", label: "굴러도 마지막 인사", personality: "performer", major: false, triggers: ["recovered"], steps: [p("shake"), p("bow",true)] },
+  { id: "P10", label: "새로 입은 액세서리 자랑", personality: "performer", major: false, triggers: ["outfit"], steps: [p("celebrate",true), p("bow",true), p("groom")] },
   { id: "P11", label: "관객 없는 연습", personality: "performer", major: false, triggers: ["free"], steps: [p("cheer-rehearsal"), p("bow")] },
-  { id: "P12", label: "빛 아래 작은 무대", personality: "performer", major: false, triggers: ["tv"], steps: [g("floor"), p("cheer-rehearsal"), p("celebrate"), p("bow")] },
+  { id: "P12", label: "빛 아래 작은 무대", personality: "performer", major: false, triggers: ["tv"], steps: [g("outside"), p("cheer-rehearsal"), p("celebrate"), p("bow")] },
   // C01 계기: 사용자가 놓은 실제 장난감이 정착했고, 아직 덜 경험한 물건이며 안전한 접근로가 있다.
   { id: "C01", label: "처음 놓인 장난감의 양쪽 살피기", personality: "curious", major: true, triggers: ["toy", "toy-settled"], steps: [p("sniff"), g("toy"), t("inspect"), opt(g("toy-other-side")), p("sniff"), p("bow"), t("play"), t("return")] },
   // C02 계기: 실제 식사 가능한 새 음식이 있고, feeding이 켜져 있으며 현재 배고픔이 식사를 허용한다.
@@ -72,7 +79,7 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   // C04 계기: 실제 TV 시청을 시작할 수 있고, 사람이 최근 끄거나 고정한 선택을 침범하지 않는 자유 기회다.
   { id: "C04", label: "TV 다섯 채널 중 한 번 비교하기", personality: "curious", major: true, triggers: ["tv"], steps: [g("sofa"), tv("nature"), w(1400), tv("next"), w(3000), p("bow")] },
   // C05 계기: 실제 월 이동·레이아웃 변경이 끝나 새 안전 구간이 확인됐으며 사용자의 입력이 끝났다.
-  { id: "C05", label: "달력이 바뀐 뒤 안전한 새 자리 하나", personality: "curious", major: true, triggers: ["layout"], steps: [p("sniff"), g("novel-place"), p("stretch"), p("bow")] },
+  { id: "C05", label: "달력이 바뀐 뒤 안전한 새 자리 하나", personality: "curious", major: true, triggers: ["layout"], steps: [p("sniff"), g("outside"), p("sniff"), g("outside"), p("bow")] },
   { id: "C06", label: "멈춘 공을 늦게 톡", personality: "curious", major: false, triggers: ["toy", "toy-settled"], steps: [w(500), g("toy"), t("nudge", ["ball"]), p("bow")] },
   { id: "C07", label: "만화경 가까이 보기", personality: "curious", major: false, triggers: ["toy"], steps: [t("inspect", ["kaleidoscope"]), p("sniff"), t("return", ["kaleidoscope"])] },
   { id: "C08", label: "팽이 앞 갸웃", personality: "curious", major: false, triggers: ["toy"], steps: [t("inspect", ["spinning-top"]), p("bow"), t("return", ["spinning-top"])] },
@@ -81,7 +88,7 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   { id: "C11", label: "처음 들린 소리", personality: "curious", major: false, triggers: ["music"], steps: [p("sniff"), w(2500), p("bow")] },
   { id: "C12", label: "창밖 비 한 번 보기", personality: "curious", major: false, triggers: ["rain"], steps: [g("window"), curtain("open"), w(2200), p("stretch")] },
   // A01 계기: 포인터가 실제 접근 가능한 안전한 곳에 멈췄고, 입력·드래그·모달이 없으며 petting이 허용된다.
-  { id: "A01", label: "멈춘 마우스 옆의 작은 부탁", personality: "affectionate", major: true, triggers: ["free"], steps: [g("pointer"), p("ask-petting"), w(1200), p("bow"), g("floor")] },
+  { id: "A01", label: "멈춘 마우스 옆의 작은 부탁", personality: "affectionate", major: true, triggers: ["free"], steps: [g("pointer"), p("ask-petting"), w(1200), p("bow")] },
   // A02 계기: 사용자가 실제 쓰다듬었고 기존 교감 완료가 확인된다. 자율 동작을 사용자 경험으로 위조하지 않는다.
   { id: "A02", label: "실제 쓰다듬기 뒤 오래 남는 만족", personality: "affectionate", major: true, triggers: ["pet"], steps: [p("lean-nuzzle"), p("groom"), p("bow")] },
   // A03 계기: 실제 오리·물고기 인형을 소유해 놀고 있는데 사용자가 안전한 근처에 멈춘다.
@@ -89,14 +96,14 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   // A04 계기: 실제 보이는 재회가 있었고 공유 KST가 밤이다. 부재 기간은 인사의 변주에만 쓴다.
   { id: "A04", label: "밤의 실제 재회, 조용한 옆자리", personality: "affectionate", major: true, triggers: ["arrival", "night"], steps: [g("pointer"), p("lean-nuzzle"), w(1000), p("bow")] },
   // A05 계기: 실제 낙하·거친 놀이 후 회복을 마쳤고, 사용자가 다시 안전한 곳에 멈춘다.
-  { id: "A05", label: "넘어진 뒤, 실제 안심을 기다리는 재접근", personality: "affectionate", major: true, triggers: ["recovered"], steps: [p("shake"), g("pointer"), p("ask-petting"), w(1000), p("groom"), g("floor")] },
-  { id: "A06", label: "쿠션에서 몸 내밀기", personality: "affectionate", major: false, triggers: ["free"], steps: [g("sofa"), p("lean-nuzzle"), p("groom")] },
-  { id: "A07", label: "한 번만 따라가기", personality: "affectionate", major: false, triggers: ["free"], steps: [g("pointer"), p("bow"), g("floor")] },
-  { id: "A08", label: "음식보다 먼저 인사", personality: "affectionate", major: false, triggers: ["food"], steps: [g("pointer"), p("bow"), f("eat")] },
+  { id: "A05", label: "넘어진 뒤, 실제 안심을 기다리는 재접근", personality: "affectionate", major: true, triggers: ["recovered"], steps: [p("shake"), g("pointer"), p("ask-petting"), w(1000), p("groom")] },
+  { id: "A06", label: "문밖에서 조용히 몸 내밀기", personality: "affectionate", major: false, triggers: ["free"], steps: [g("outside"), p("lean-nuzzle"), p("groom")] },
+  { id: "A07", label: "한 번만 따라가기", personality: "affectionate", major: false, triggers: ["free"], steps: [g("pointer"), p("bow")] },
+  { id: "A08", label: "음식보다 먼저 인사", personality: "affectionate", major: false, triggers: ["food"], steps: [f("eat"), g("pointer"), p("bow")] },
   { id: "A09", label: "음악 끝에 가까이 꾸벅", personality: "affectionate", major: false, triggers: ["music"], steps: [g("pointer"), p("bow"), w(800)] },
   { id: "A10", label: "저장 뒤 응원 대신 곁 지키기", personality: "affectionate", major: false, triggers: ["work"], steps: [g("pointer"), p("lean-nuzzle"), w(1200), p("bow")] },
-  { id: "A11", label: "TV보다 사람 보기", personality: "affectionate", major: false, triggers: ["tv"], steps: [w(700), g("pointer"), p("bow"), g("sofa"), w(1700)] },
-  { id: "A12", label: "교감 OFF의 조용한 인사", personality: "affectionate", major: false, triggers: ["free"], steps: [p("bow"), p("groom")] },
+  { id: "A11", label: "TV보다 사람 보기", personality: "affectionate", major: false, triggers: ["tv"], steps: [w(700), g("pointer"), p("bow"), w(900)] },
+  { id: "A12", label: "교감 OFF의 조용한 인사", personality: "affectionate", major: false, triggers: ["free"], steps: [p("bow",true), p("groom")] },
   // S01 계기: 한 활동을 마치고 빈 쿠션에 안전하게 도착했으며, 현재 에너지를 다시 확인할 수 있다.
   { id: "S01", label: "잘 자려다 다시 구경하는 쿠션 의식", personality: "sleepy", major: true, triggers: ["free"], steps: [g("sofa"), p("doze-curl"), p("cozy-nest"), nap(6500), p("stretch")] },
   // S02 계기: 현재 졸음이 있지만 실제 허기가 높고 접근 가능한 음식이 있으며 feeding이 허용된다.
@@ -123,7 +130,7 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   // T04 계기: 정리 대상으로 다가가는 중이거나 유한한 운반 과정에서 사용자가 같은 물건을 직접 잡는다.
   { id: "T04", label: "정리하다 사용자가 집으면 바로 양보", personality: "tidy", major: true, triggers: ["experience"], steps: [p("bow"), opt(t("return", undefined, 1)), p("groom")] },
   // T05 계기: 마지막 실제 물건의 반납 완료가 확인됐고 빈 씻기 패드로 가는 몸의 안전 경로가 성립한다.
-  { id: "T05", label: "정리 완료 뒤 씻고 쉬는 작은 보상", personality: "tidy", major: true, triggers: ["toy-returned"], steps: [g("pad"), wash(2000), g("sofa"), p("groom")] },
+  { id: "T05", label: "정리 완료 뒤 씻고 쉬는 작은 보상", personality: "tidy", major: true, triggers: ["toy-returned"], steps: [g("pad"), wash(2000), g("floor"), opt(g("outside")), p("groom")] },
   { id: "T06", label: "겹친 음식 하나 옮기기", personality: "tidy", major: false, triggers: ["food"], steps: [f("tidy"), p("bow")] },
   { id: "T07", label: "할 일이 없으면 몸단장", personality: "tidy", major: false, triggers: ["free"], steps: [p("groom"), p("sniff"), p("bow")] },
   { id: "T08", label: "음식과 장난감 중 한 작업", personality: "tidy", major: false, triggers: ["toy", "food"], steps: [t("return", undefined, 1), p("groom")] },
@@ -170,7 +177,7 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   // H02 계기: 집 밖 실제 소품을 선호하고 현재 안전한 왕복 경로가 있으며 사용자 소유·급한 욕구가 없다.
   { id: "H02", label: "밖의 좋아하는 소품을 데려오기", personality: "homebody", major: true, triggers: ["toy", "experience"], steps: [p("bow"), g("toy"), t("inspect"), t("return"), g("sofa"), p("groom")] },
   // H03 계기: 보고 있는 달력 월이 여름이고 공유 햇빛이 강하다. 실제로 깨어 있으며 자율 가구 선택이 허용되는 여유다.
-  { id: "H03", label: "여름 낮, 깨어 즐기는 작은 극장", personality: "homebody", major: true, triggers: ["summer"], steps: [g("sofa"), curtain("closed"), light(false), tv("nature"), w(3600), p("groom")] },
+  { id: "H03", label: "여름 낮, 깨어 즐기는 작은 극장", personality: "homebody", major: true, triggers: ["summer"], steps: [g("sofa"), curtain("closed"), light(false), tv("tori"), w(3600), p("groom")] },
   // H04 계기: 사용자가 집을 접었다 다시 열었고 현재 물건·배우의 진행 중 소유권이 확인된다.
   { id: "H04", label: "접혔다 열린 집으로 실제 귀가", personality: "homebody", major: true, triggers: ["layout"], steps: [g("sofa"), p("sniff"), p("bow"), p("groom")] },
   // H05 계기: 집 안 활동 하나를 실제 마쳤고, 쿠션과 바닥 등 둘 이상의 안전한 생활 자리가 있다.
@@ -185,7 +192,7 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   // B01 계기: 자유로운 선택 기회에 실제 장난감 한 개가 있고 검사·놀이·반납 경로가 모두 성립한다.
   { id: "B01", label: "살펴보고 놀고 반납하는 생활 한 편", personality: "balanced", major: true, triggers: ["toy"], steps: [t("inspect"), t("play"), t("return"), p("bow")] },
   // B02 계기: 비슷한 목적의 활동을 두 번 실제 완료했고 다른 적합한 실제 대상이 있으며 급한 욕구가 없다.
-  { id: "B02", label: "두 번 같은 일을 했으면 다음 재미 찾기", personality: "balanced", major: true, triggers: ["free"], steps: [p("stretch"), g("novel-place"), p("bow"), opt(t("inspect")), opt(t("return"))] },
+  { id: "B02", label: "두 번 같은 일을 했으면 다음 재미 찾기", personality: "balanced", major: true, triggers: ["free"], steps: [p("stretch"), g("outside"), p("bow"), opt(t("inspect")), opt(t("return"))] },
   // B03 계기: 최애·익숙한 음식·새 음식 중 실제로 둘 이상을 고를 수 있고 feeding이 허용된다.
   { id: "B03", label: "배고픔과 새로움 사이에서 한 끼 결정", personality: "balanced", major: true, triggers: ["food"], steps: [f("inspect"), f("eat"), p("groom")] },
   // B04 계기: 실제 장난감이 여럿 흩어졌고 급한 욕구가 없으며 상자 반납과 TV·창가 감상 중 다른 한 활동이 가능하다.
@@ -193,22 +200,22 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   // B05 계기: 실제 이동 중 넘어짐·레이아웃 변화·사용자 조작으로 현재 장면이 중단됐고 회복 후 재개 여부를 판단할 수 있다.
   { id: "B05", label: "예상 밖의 중단에도 같은 일을 마치기", personality: "balanced", major: true, triggers: ["recovered"], steps: [p("shake"), opt(t("return", undefined, 1)), opt(f("tidy")), p("bow")] },
   { id: "B06", label: "공 한 번 뒤 반납", personality: "balanced", major: false, triggers: ["toy"], steps: [t("play", ["ball"]), t("return", ["ball"]), p("bow")] },
-  { id: "B07", label: "짧은 인사 뒤 양보", personality: "balanced", major: false, triggers: ["free"], steps: [g("pointer"), p("bow"), w(900), g("floor")] },
+  { id: "B07", label: "짧은 인사 뒤 양보", personality: "balanced", major: false, triggers: ["free"], steps: [g("pointer"), p("bow"), w(900)] },
   { id: "B08", label: "쉬었다 작은 놀이", personality: "balanced", major: false, triggers: ["toy"], steps: [g("floor"), t("play"), t("return")] },
   { id: "B09", label: "최근과 다른 소품", personality: "balanced", major: false, triggers: ["toy"], steps: [t("inspect"), t("play"), t("return")] },
   { id: "B10", label: "좋았던 교감 한 번 제안", personality: "balanced", major: false, triggers: ["experience"], steps: [g("pointer"), p("ask-petting"), w(1000), p("bow")] },
   { id: "B11", label: "가을비 뒤 차분한 생활", personality: "balanced", major: false, triggers: ["rain"], steps: [g("window"), curtain("open"), w(1800), opt(f("tidy")), p("groom")] },
-  { id: "B12", label: "가장 최근 작업 완료만 응원", personality: "balanced", major: false, triggers: ["work"], steps: [p("bow"), p("stretch")] },
+  { id: "B12", label: "가장 최근 작업 완료만 응원", personality: "balanced", major: false, triggers: ["work"], steps: [p("bow",true), p("stretch")] },
 
   //36 cross-feature combinations follow the report table row order.
   // 음악 화면 한 구간을 본 뒤 소파 앞 안전한 자리에서 짧은 재롱. 인사와 같은 소품 반납으로 끝.
-  { id: "X-P-house", label: "재롱둥이 · 집·TV·빛·씻기", personality: "performer", major: false, triggers: ["tv"], steps: [w(1800), g("floor"), p("cheer-rehearsal"), p("bow"), opt(t("return"))] },
+  { id: "X-P-house", label: "재롱둥이 · 집·TV·빛·씻기", personality: "performer", major: false, triggers: ["tv"], steps: [w(1800), g("outside"), p("cheer-rehearsal"), p("bow"), opt(t("return"))] },
   // 공개 저장 성공 신호 하나에 축하 한 번. 다음 입력이면 바로 양보.
-  { id: "X-P-editor", label: "재롱둥이 · 편집하는 사람 곁", personality: "performer", major: false, triggers: ["work"], steps: [p("celebrate"), p("bow")] },
+  { id: "X-P-editor", label: "재롱둥이 · 편집하는 사람 곁", personality: "performer", major: false, triggers: ["work"], steps: [p("celebrate",true), p("bow",true)] },
   // 실제 악구에 응원 한 토막. 구절이 끝나면 인사하고 감상 종료.
   { id: "X-P-music", label: "재롱둥이 · 실제 음악", personality: "performer", major: false, triggers: ["music"], steps: [p("cheer-rehearsal"), p("bow")] },
   // 익숙한 저녁의 실제 재회에 작은 개막식. 옆으로 비켜 주며 끝.
-  { id: "X-P-return-time", label: "재롱둥이 · 귀가·재회·시간대", personality: "performer", major: false, triggers: ["arrival", "experience", "night"], steps: [p("cheer-rehearsal"), p("celebrate"), p("bow"), g("floor")] },
+  { id: "X-P-return-time", label: "재롱둥이 · 귀가·재회·시간대", personality: "performer", major: false, triggers: ["arrival", "experience", "night"], steps: [p("cheer-rehearsal"), p("celebrate"), p("bow"), g("outside")] },
   // 자연·장난감 화면을 한 번 비교하고 관심 있는 채널 한 구간에 머묾.
   { id: "X-C-house", label: "탐험둥이 · 집·TV·빛·씻기", personality: "curious", major: false, triggers: ["tv"], steps: [g("sofa"), tv("nature"), w(1400), tv("toys"), w(2600), p("bow")] },
   // 공개 편집창의 안전한 열림 신호에 갸웃. 입력 시작이면 원래 생활.
@@ -240,7 +247,7 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   // 음악이 와도 현재 반납부터 완료. 이후 인사·감상 한 구간.
   { id: "X-T-music", label: "깔끔이 · 실제 음악", personality: "tidy", major: false, triggers: ["music", "toy"], steps: [t("return", undefined, 1), p("bow"), w(1500)] },
   // 귀가 때 현재 흩어진 실물 하나를 반납하고 편한 자리로.
-  { id: "X-T-return-time", label: "깔끔이 · 귀가·재회·시간대", personality: "tidy", major: false, triggers: ["arrival", "toy"], steps: [t("return", undefined, 1), g("sofa"), p("groom")] },
+  { id: "X-T-return-time", label: "깔끔이 · 귀가·재회·시간대", personality: "tidy", major: false, triggers: ["arrival", "toy"], steps: [t("return", undefined, 1), g("floor"), p("groom")] },
   // 채널 한 번 비교 뒤 심심하면 실제 장난감 하나. 연타·점멸 없음.
   { id: "X-M-house", label: "사고뭉치 · 집·TV·빛·씻기", personality: "mischievous", major: false, triggers: ["tv"], steps: [w(1600), tv("next"), w(2300), opt(t("play", undefined, 1)), opt(t("return", undefined, 1))] },
   // 실제 공개 undo/redo 완료 뒤 작은 갸웃. 키와 기록에 손대지 않음.
@@ -258,7 +265,7 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   // 실제 관측한 아침 band에도 음식·허기가 있어야 식사. 부재 벌점 없음.
   { id: "X-G-return-time", label: "먹보 · 귀가·재회·시간대", personality: "gourmet", major: false, triggers: ["arrival", "food"], steps: [p("sniff"), f("eat"), p("groom")] },
   // 한여름 깨어 있는 극장: 허용 커튼·지속 전등·TV 아래 소파 감상.
-  { id: "X-H-house", label: "집돌이 · 집·TV·빛·씻기", personality: "homebody", major: false, triggers: ["summer"], steps: [g("sofa"), curtain("closed"), light(false), tv("nature"), w(3600), p("groom")] },
+  { id: "X-H-house", label: "집돌이 · 집·TV·빛·씻기", personality: "homebody", major: false, triggers: ["summer"], steps: [g("sofa"), curtain("closed"), light(false), tv("tori"), w(3600), p("groom")] },
   // 패널 geometry 완료 뒤 현재 집 앵커에서 자리 양보.
   { id: "X-H-editor", label: "집돌이 · 편집하는 사람 곁", personality: "homebody", major: false, triggers: ["layout"], steps: [g("sofa"), p("stretch")] },
   // 좋아하던 실제 음악을 집의 익숙한 자리에서 한 구간 감상.
@@ -268,9 +275,20 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   // 시청 한 구간이 끝나면 놀이·정리·교감 중 최근과 다른 한 편.
   { id: "X-B-house", label: "동글이 · 집·TV·빛·씻기", personality: "balanced", major: false, triggers: ["tv"], steps: [w(1800), opt(t("play")), opt(t("return")), p("stretch"), p("bow")] },
   // 가장 최근 유효한 공개 완료 신호에 꾸벅. 중복·밀린 응원 없음.
-  { id: "X-B-editor", label: "동글이 · 편집하는 사람 곁", personality: "balanced", major: false, triggers: ["work"], steps: [p("bow"), p("groom")] },
+  { id: "X-B-editor", label: "동글이 · 편집하는 사람 곁", personality: "balanced", major: false, triggers: ["work"], steps: [p("bow",true), p("groom")] },
   // 실제 악구 마무리에 한 번 반응하고 현재 적합한 다른 생활로.
   { id: "X-B-music", label: "동글이 · 실제 음악", personality: "balanced", major: false, triggers: ["music"], steps: [p("bow"), p("stretch"), g("novel-place")] },
   // 가을 실제 비를 잠깐 보고 감상·정리 중 하나를 완결. 억지 외출 없음.
   { id: "X-B-return-time", label: "동글이 · 귀가·재회·시간대", personality: "balanced", major: false, triggers: ["arrival", "rain"], steps: [g("window"), curtain("open"), w(1600), opt(f("tidy")), p("groom")] },
+
+  //143 daily ideas: real situational goals, each with source admission below.
+  {id:"D143-P",label:"별 소품으로 두 곳 출장 공연",personality:"performer",major:false,triggers:["toy"],propShow:true,steps:[t("inspect",["maraca","tambourine","star-wand"]),g("outside"),p("bow",true),g("outside"),t("play"),p("cheer-rehearsal"),t("return")]},
+  {id:"D143-C",label:"밖의 두 칸을 잇는 탐험",personality:"curious",major:false,triggers:["free"],steps:[g("outside"),p("sniff"),g("outside"),p("stretch")]},
+  {id:"D143-A",label:"쓰담 뒤 인형을 문밖에 보여주기",personality:"affectionate",major:false,triggers:["pet","toy"],propShow:true,steps:[t("inspect",["duck","plush-fish"]),g("outside"),g("pointer"),p("ask-petting"),w(700),t("return")]},
+  {id:"D143-S",label:"문밖에 놓인 깃털에 한 걸음",personality:"sleepy",major:false,triggers:["toy","toy-settled"],toyScope:"outside",steps:[t("inspect",["feather"]),t("play",["feather"]),p("stretch"),t("return",["feather"])]},
+  {id:"D143-T",label:"정리가 끝나면 씻고 바깥 털기",personality:"tidy",major:false,triggers:["toy-returned"],steps:[g("pad"),wash(2000),g("floor"),g("outside"),p("groom")]},
+  {id:"D143-M",label:"문밖 자동차를 밀고 따라잡기",personality:"mischievous",major:false,triggers:["toy"],toyScope:"outside",steps:[t("nudge",["ball","toy-car"]),g("toy"),p("pounce"),t("return")]},
+  {id:"D143-G",label:"달력 위 한 끼 피크닉",personality:"gourmet",major:false,triggers:["food"],foodScope:"outside",steps:[f("inspect"),f("eat"),p("groom")]},
+  {id:"D143-H",label:"내 집 창을 열고 토리 방송",personality:"homebody",major:false,triggers:["free"],steps:[g("window"),curtain("open"),p("sniff"),tv("tori"),g("sofa"),w(2400),p("groom")]},
+  {id:"D143-B",label:"식사 뒤 밖의 두 박자 산책",personality:"balanced",major:false,triggers:["meal"],steps:[g("outside"),p("stretch"),g("outside"),p("bow")]},
 ]);

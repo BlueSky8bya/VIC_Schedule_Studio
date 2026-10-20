@@ -33,7 +33,7 @@ export function companionSofaResident(input: { point: CompanionSofaPoint; seat?:
  * The shared180x100 art opens between31..149, with side tips at19 and its
  * upper opening at31. The actual CSS seat plane is a separate measured input;
  * the visible front crest at54 is not the creature's landing plane. */
-export function companionSofaDepth({ point, body, bed, seatY, previous, resident = false }: {
+export function companionSofaDepth({ point, body, bed, seatY, previous, resident = false, groundY }: {
   point: CompanionSofaPoint;
   body: readonly CompanionSofaPoint[];
   bed: Rect;
@@ -41,6 +41,9 @@ export function companionSofaDepth({ point, body, bed, seatY, previous, resident
   previous?: CompanionSofaDepth;
   /** Only companionSofaResident's current grounded seat proof may set this. */
   resident?: boolean;
+  /** Ground-plane travel depth during a jump. Raising the actual body does
+   * not move its ground path behind furniture; body/side clearance stays real. */
+  groundY?: number;
 }): CompanionSofaDepth {
   const bounds = bodyBounds(body);
   if (!bounds || !finiteRect(bed) || ![point.x, point.y, seatY].every(Number.isFinite) || !intersects(bounds, bed)) return "clear";
@@ -49,16 +52,17 @@ export function companionSofaDepth({ point, body, bed, seatY, previous, resident
   // to pass above the sofa. A foot or neutral92px box cannot establish this.
   if (bounds.bottom <= bed.top + height * .19) return "clear";
   const inner = opening(bed);
-  const seated = Math.abs(point.y - seatY) <= .5;
+  const depthY = Number.isFinite(groundY) ? groundY! : point.y;
+  const seated = Math.abs(depthY - seatY) <= .5;
   // Whole-body containment wins over history: an ear-grip lean or outside
   // lateral lift must never leave the U painted through part of the creature.
   if ((bounds.left < inner.left - 1e-7 || bounds.right > inner.right + 1e-7) && !(resident && seated)) return "front";
   const depthLimit = seatY + (previous === "seat" || previous === "back" ? 2 : previous === "front" ? -2 : 0);
-  if (!seated && point.y > depthLimit) return "front";
+  if (!seated && depthY > depthLimit) return "front";
   // Hysteresis is bounded to the depth plane, never a permit to cross either
   // sidewall. A real settled seat always restores its proper back/front order.
   const backLimit = bed.top + height * .31 + (previous === "back" ? 2 : previous === "seat" ? -2 : 0);
-  return point.y < backLimit ? "back" : "seat";
+  return depthY < backLimit ? "back" : "seat";
 }
 
 /** A seat interval contains the registered opaque body, not just its feet.

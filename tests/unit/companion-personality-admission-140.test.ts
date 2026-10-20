@@ -231,6 +231,7 @@ describe("140 real task admission before personality fallback", () => {
         tv: "nature", canTv: true, learnedSocial: true, hasExperience: true, music: { mood: "calm", familiar: true },
         environment: { date: { y: 2026, m: 10, d: 20 }, season: "autumn", hour: 22, band: "night", night: true, weather: "clear", sunlight: 0 },
       };
+      if(recipe.id==="D143-A") { scene.brain.episode=undefined;scene.brain.foodGoal=undefined;scene.world.platforms=[...scene.world.platforms,{id:"another-public-support",x:600,y:600,width:200,kind:"date"}]; }
       const firstAfterEntry = (input: PersonalitySceneInput) => {
         const director = createCompanionPersonalityDirector([recipe]); director.next(input);
         for (const event of recipe.triggers) director.event(event, input.now);

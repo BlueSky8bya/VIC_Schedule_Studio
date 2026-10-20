@@ -17,22 +17,26 @@ describe("137 complete report recipe catalog", () => {
       return { id: match[2], label: plain(name).replace(major ? /^$/ : /^[PCASTMGHB]\d{2}/, "").trim(), major };
     });
     expect(source).toHaveLength(108);
-    const regular = COMPANION_PERSONALITY_SCENES.filter(scene => !scene.id.startsWith("X-"));
-    expect(regular.map(({ id, label, major }) => ({ id, label, major }))).toEqual(source);
-    expect(COMPANION_PERSONALITY_SCENES).toHaveLength(144);
-    expect(new Set(COMPANION_PERSONALITY_SCENES.map(scene => scene.id)).size).toBe(144);
+    const regular = COMPANION_PERSONALITY_SCENES.filter(scene => !scene.id.startsWith("X-") && !scene.id.startsWith("D143-"));
+    //143 changes A06 from a sofa invitation to an actual outside greeting.
+    const currentSource=source.map(row=>row.id==="A06"?{...row,label:"문밖에서 조용히 몸 내밀기"}:row);
+    expect(regular.map(({ id, label, major }) => ({ id, label, major }))).toEqual(currentSource);
+    expect(COMPANION_PERSONALITY_SCENES).toHaveLength(153);
+    expect(new Set(COMPANION_PERSONALITY_SCENES.map(scene => scene.id)).size).toBe(153);
     expect(COMPANION_PERSONALITY_SCENES.filter(scene => scene.id.startsWith("X-"))).toHaveLength(36);
+    expect(COMPANION_PERSONALITY_SCENES.filter(scene=>scene.id.startsWith("D143-"))).toHaveLength(9);
   });
 
-  it("gives all nine named personalities five major, seven minor and four cross-feature paths", () => {
+  it("gives all nine named personalities five major, seven minor and four cross-feature paths plus nine143 additions", () => {
     expect(COMPANION_PERSONALITIES).toHaveLength(9);
     expect(COMPANION_PERSONALITY_NAMES.curious).toBe("탐험둥이");
     expect(COMPANION_PERSONALITY_NAMES.balanced).toBe("동글이");
     for (const personality of COMPANION_PERSONALITIES) {
       const scenes = COMPANION_PERSONALITY_SCENES.filter(scene => scene.personality === personality);
       expect(scenes.filter(scene => scene.major), personality).toHaveLength(5);
-      expect(scenes.filter(scene => !scene.major && !scene.id.startsWith("X-")), personality).toHaveLength(7);
+      expect(scenes.filter(scene => !scene.major && !scene.id.startsWith("X-") && !scene.id.startsWith("D143-")), personality).toHaveLength(7);
       expect(scenes.filter(scene => scene.id.startsWith("X-")), personality).toHaveLength(4);
+      expect(scenes.filter(scene=>scene.id.startsWith("D143-"))).toHaveLength(1);
       expect(scenes.every(scene => scene.label.length > 0)).toBe(true);
     }
   });
@@ -86,7 +90,7 @@ describe("137 complete report recipe catalog", () => {
 
   it("connects house stages while preserving manual darkness and honest source fallbacks", () => {
     expect(effects("H03")).toEqual(expect.arrayContaining([
-      { kind: "curtain", phase: "closed" }, { kind: "light", lit: false }, { kind: "tv", state: "nature" },
+      { kind: "curtain", phase: "closed" }, { kind: "light", lit: false }, { kind: "tv", state: "tori" },
     ]));
     expect(effects("S04")).toEqual(expect.arrayContaining([{ kind: "tv", state: "moon" }, { kind: "tv", state: "off" }, { kind: "light", lit: false }]));
     expect(recipe("P12").steps.some(step => step.kind === "light" && step.lit)).toBe(false);

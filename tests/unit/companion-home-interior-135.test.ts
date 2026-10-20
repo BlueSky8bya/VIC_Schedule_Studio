@@ -18,13 +18,13 @@ describe("135 room decoration and manual state", () => {
       const control = companionHomeTvControl(state);
       options.push(control.option); state = control.next; seen.push(state);
     }
-    expect(seen).toEqual(["off", "nature", "music", "cooking", "toys", "moon", "off"]);
+    expect(seen).toEqual(["off", "tori", "nature", "cooking", "toys", "moon", "off"]);
     expect(options).toEqual(["on", "next", "next", "next", "next", "off"]);
   });
 
   it("names the current picture and the next click without making music playback", () => {
-    expect(companionHomeTvControl("off").label).toBe("TV 꺼짐 · 누르면 자연 채널 켜기");
-    expect(companionHomeTvControl("nature").label).toBe("TV 자연 · 누르면 음악 채널");
+    expect(companionHomeTvControl("off").label).toBe("TV 꺼짐 · 누르면 토리 방송 채널 켜기");
+    expect(companionHomeTvControl("nature").label).toBe("TV 자연 · 누르면 요리 채널");
     expect(companionHomeTvControl("moon").label).toBe("TV 달과 별 · 누르면 끄기");
     for (const value of ["off", "nature", "music", "cooking", "toys", "moon"] as const)
       expect(["on", "next", "off"]).toContain(companionHomeTvControl(value).option);
@@ -66,7 +66,11 @@ describe("135 room decoration and manual state", () => {
     //136 replaces the flat135 cabinet, retaining the five channel pictures.
     expect(existsSync("public/companion/home/136/tv-body.webp")).toBe(true);
     expect(source.match(/136\/tv-body\.webp/g)).toHaveLength(1);
-    expect(source).toContain("tv-screen-${tv}.webp");
+    const picture = readFileSync("components/poster/viewer-companion/companion-tv-picture.tsx", "utf8");
+    expect(source).toContain("<CompanionTvPicture");
+    expect(picture).toContain("tv-screen-${current}.webp");
+    expect(existsSync("public/companion/home/143/tv-screen-tori.webp")).toBe(true);
+    expect(picture).not.toMatch(/setInterval|requestAnimationFrame|new Date\(|fetch\(/);
     expect(source).not.toMatch(/setInterval|requestAnimationFrame|new Date\(|fetch\(/);
   });
 });

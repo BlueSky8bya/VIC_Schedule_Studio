@@ -1,4 +1,6 @@
+import { companionEyeScale143Source, companionEyeScale143Eyes } from "./eye-scale-143";
 import anchors from "./accessory-anchors.json";
+import { companionEyeAccessorySpan, companionEyeViewScale } from "./accessory-eye-fit";
 import mouths from "./mouth-anchors.json";
 import { getCompanionCollectionArtFrame, type CompanionCollectionArtFrame } from "./collection-art";
 import type { CompanionAccessoryId } from "./gifts";
@@ -11,7 +13,7 @@ import { companionOpenPocketArt, companionPropellerArt, getCompanionAccessoryArt
 type Landmark = Readonly<{ x: number; y: number; width: number; roll: number }>;
 type Pose = Readonly<{ physicalIndex: number; atlas: number; index: number; orientation: "front" | "quarter" | "side" | "back"; face: Landmark; head: Landmark; chest: Landmark; sideChest: Landmark; sideBody: Landmark; bodyBounds: readonly number[]; eyes: readonly Readonly<{ center: readonly number[]; bounds: readonly number[] }>[] }>;
 type Placement = Readonly<{ art: CompanionAccessoryArtFrame; x: number; y: number; width: number; rotation: number; layer: "front" | "back" | "headwear"; mirror?: -1 | 1; pivot?: Readonly<{ x: number; y: number }>; clips?: Readonly<{ front: string; back: string }>; stretchY?: number; rotor?: number; rearArt?: CompanionAccessoryArtFrame }>;
-const poses = new Map<number, Pose>((anchors.frames as readonly Pose[]).map(frame => [frame.physicalIndex, frame]));
+const poses = new Map<number, Pose>((anchors.frames as readonly Pose[]).map(frame => [frame.physicalIndex, { ...frame, eyes: companionEyeScale143Eyes(frame, anchors.sources[frame.atlas]) }]));
 // Source-bound geometry is immutable. Measure the eye fit once, not during
 // each world frame or repeated wardrobe preview paint.
 const eyeFits = new Map(Array.from(poses.values()).flatMap(pose => {
@@ -22,6 +24,9 @@ const eyeFits = new Map(Array.from(poses.values()).flatMap(pose => {
   const corners = eyes.flatMap(eye => [0, 2].flatMap(x => [1, 3].map(y => ({ x: eye.bounds[x] - pose.face.x, y: eye.bounds[y] - pose.face.y }))));
   return [[pose.physicalIndex, { x: eye.center[0], y: eye.center[1], width: Math.max(4.5, radius * 72 / 22 * 1.08), span: Math.hypot(eyes[1].center[0] - eyes[0].center[0], eyes[1].center[1] - eyes[0].center[1]), pairU: Math.max(...corners.map(point => Math.abs(point.x * c + point.y * s))), pairV: Math.max(...corners.map(point => Math.abs(-point.x * s + point.y * c))) }] as const];
 }));
+// The approved standing cell is the size reference. Every current source
+// retains its own position/roll/yaw and immutable measured coverage bounds.
+const standingEyeFit = eyeFits.get(0), standingFace = poses.get(0)?.face;
 // The native drawings themselves can turn in either direction before their
 // common parent mirrors for travel. Measure yaw in the registered face axis,
 // not viewport x: a tumble's in-plane roll is not a change of facing.
@@ -65,7 +70,7 @@ function withMotion(placement: Placement, pose: Pose, id: CompanionAccessoryId, 
  * requested action's face or ear location. Coordinates precede registration. */
 export function companionAccessoryPlacement(selected: CompanionSpriteSelection, id: CompanionAccessoryId, motion?: CompanionAccessoryTransform): Placement | null {
   id = currentCompanionAccessory(id);
-  const pose = poses.get(selected.physicalIndex), source = pose && anchors.sources[pose.atlas];
+  const pose = poses.get(selected.physicalIndex), source = pose && companionEyeScale143Source(anchors.sources[pose.atlas]);
   const item = COMPANION_ACCESSORIES[id], spec = item && { point: familyPoint[item.family], scale: item.scale };
   if (!pose || !source || source.src !== selected.src || pose.index !== selected.index || !spec) return null;
   if (motion && (!Object.values(motion).every(Number.isFinite) || motion.scale <= 0)) return null;
@@ -79,7 +84,9 @@ export function companionAccessoryPlacement(selected: CompanionSpriteSelection, 
     if (!eye) return null;
     // A common opaque panel contains both actual eye boxes in the measured
     // face axis. The printed artwork moves with that same single mask plane.
-    const width = Math.max(eye.span * 104 / 48, eye.pairU * 104 / 40 * 1.08, eye.pairV * 104 * (art.viewScale ?? 1) / 12 * 1.08);
+    const nominalSpan = standingEyeFit && companionEyeAccessorySpan(standingEyeFit.span, pose.orientation);
+    if (!nominalSpan) return null;
+    const width = Math.max(nominalSpan * 104 / 48, eye.pairU * 104 / 40 * 1.08, eye.pairV * 104 * (art.viewScale ?? 1) / 12 * 1.08);
     return withMotion({ art, x: pose.face.x, y: pose.face.y, width, rotation: pose.face.roll, layer: "front", ...decoration, pivot: { x: 64, y: 64 } }, pose, id, motion);
   }
   if (item.family === "eye-cover" && pose.orientation !== "back") {
@@ -90,12 +97,14 @@ export function companionAccessoryPlacement(selected: CompanionSpriteSelection, 
     if (!eye) return null;
     // This is the positive eye-axis endpoint, so its short outer chain stays
     // on that same side. Camera yaw must not mirror it back across the nose.
-    return withMotion({ art, x: eye.x, y: eye.y, width: eye.width, rotation: pose.face.roll, layer: "front", ...decoration, mirror: 1, pivot: { x: 64, y: 64 } }, pose, id, motion);
+    return withMotion({ art, x: eye.x, y: eye.y, width: Math.max(eye.width, (standingEyeFit?.width ?? eye.width) * companionEyeViewScale(pose.orientation)), rotation: pose.face.roll, layer: "front", ...decoration, mirror: 1, pivot: { x: 64, y: 64 } }, pose, id, motion);
   }
   if (art.pairedEyes && pose.orientation !== "back") {
     const eye = eyeFits.get(selected.physicalIndex);
-    if (!eye) return null;
-    return withMotion({ art, x: pose.face.x, y: pose.face.y, width: eye.span * art.content.width / (48 * (art.viewScale ?? 1)), rotation: pose.face.roll, layer: "front", ...decoration, pivot: { x: 64, y: 64 } }, pose, id, motion);
+    if (!eye || !standingEyeFit) return null;
+    const span = companionEyeAccessorySpan(standingEyeFit.span, pose.orientation);
+    if (!span) return null;
+    return withMotion({ art, x: pose.face.x, y: pose.face.y, width: span * art.content.width / (48 * (art.viewScale ?? 1)), rotation: pose.face.roll, layer: "front", ...decoration, pivot: { x: 64, y: 64 } }, pose, id, motion);
   }
   // The measured ear-root line receives the brim, not the cap's centre.
   // Shift along this pose's own head normal; the parent rig then deforms the
@@ -104,12 +113,14 @@ export function companionAccessoryPlacement(selected: CompanionSpriteSelection, 
   // Ear-root spacing is a stable pivot, but too narrow to size a readable
   // hat at the actual92px pet size. Keep its source-measured body proportion
   // as a lower bound without moving the pivot or hiding the ear tips.
-  const baseWidth = headwear ? Math.max(point.width, pose.chest.width * .38) : point.width;
+  const baseWidth = item.family === "eyes" && pose.orientation !== "back" && standingFace
+    ? standingFace.width * companionEyeViewScale(pose.orientation)
+    : headwear ? Math.max(point.width, pose.chest.width * .38) : point.width;
   if (frontMounted(id) && pose.orientation !== "back") {
     const angle = point.roll * Math.PI / 180, nx = -Math.sin(angle), ny = Math.cos(angle), depth = (x: number, y: number) => (x - pose.face.x) * nx + (y - pose.face.y) * ny;
     const [left, top, right, bottom] = pose.bodyBounds;
     const bodyDepth = Math.max(depth(left, top), depth(right, top), depth(left, bottom), depth(right, bottom));
-    const mouth = calibratedMouths.get(selected.physicalIndex), mouthSource = mouth && mouths.atlases[mouth.atlas];
+    const mouth = calibratedMouths.get(selected.physicalIndex), mouthSource = mouth && companionEyeScale143Source(mouths.atlases[mouth.atlas]);
     const exactMouth = mouth && mouth.cell === selected.index && mouthSource?.src === selected.src && mouthSource.sha256 === source.sha256 ? mouth : undefined;
     const mouthBottom = exactMouth ? Math.max(...[0, 2].flatMap(x => [1, 3].map(y => depth(exactMouth.bounds[x] / mouths.cell * 80, exactMouth.bounds[y] / mouths.cell * 80)))) : 0;
     // A measured mouth wins where registered; the other authored frames keep
@@ -140,7 +151,7 @@ export function companionAccessoryAnchor(selected: CompanionSpriteSelection, id:
  * needs the existing projected viewport point. No extra scene loop or DOM
  * measurement is involved. */
 export function companionGiftAnchor(selected: CompanionSpriteSelection): { x: number; y: number; width: number; roll: number; behind: boolean } | null {
-  const pose = poses.get(selected.physicalIndex), source = pose && anchors.sources[pose.atlas];
+  const pose = poses.get(selected.physicalIndex), source = pose && companionEyeScale143Source(anchors.sources[pose.atlas]);
   if (!pose || !source || source.src !== selected.src || pose.index !== selected.index) return null;
   return { ...pose.chest, y: pose.chest.y + pose.chest.width * .1, width: pose.chest.width * .43, behind: pose.orientation === "back" };
 }
@@ -149,7 +160,7 @@ export function companionGiftAnchor(selected: CompanionSpriteSelection): { x: nu
  * including walking/jumping frames that intentionally have no eating mouth.
  * This never relaxes the separate source-calibrated eating-mouth contract. */
 export function companionCarryAnchor(selected: CompanionSpriteSelection): Landmark | null {
-  const pose = poses.get(selected.physicalIndex), source = pose && anchors.sources[pose.atlas];
+  const pose = poses.get(selected.physicalIndex), source = pose && companionEyeScale143Source(anchors.sources[pose.atlas]);
   const frame = companionSpriteMetadata.frames[selected.physicalIndex], actual = frame && companionSpriteMetadata.atlases[frame.atlas];
   if (!pose || !source || !frame || !actual || source.src !== selected.src || pose.index !== selected.index || frame.index !== selected.index
     || actual.src !== source.src || actual.sha256 !== source.sha256 || actual.bytes !== source.bytes) return null;

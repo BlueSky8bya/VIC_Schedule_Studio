@@ -227,7 +227,9 @@ for (const [surface, width] of [["viewer", 1920], ["studio", 1100], ["preview", 
 for (const [surface, width] of [["viewer", 1920], ["studio", 2400]] as const) test(`142 ${surface} real television glass and continuous cords retain their physical controls`, async ({ page }) => {
   const home = await fixture(page, surface, width); await placeCompanionOnHomeFloor(page);
   const tv = home.locator('[data-home-action="tv"]'); await tv.focus(); await tv.press("Enter");
-  await home.locator(".vc-home-tv-screen > img").evaluate(node => (node as HTMLImageElement).decode());
+  const screenImage=home.locator(".vc-home-tv-screen > .vc-tv-picture > img");
+  await expect(screenImage).toHaveCount(1);
+  expect(await screenImage.evaluate(async(node:HTMLImageElement)=>{await node.decode();return node.complete&&node.naturalWidth>0;})).toBe(true);
   const actual = await home.evaluate(node => {
     const box = (selector: string) => { const r = node.querySelector(selector)!.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
     const lamp = box(".vc-home-lamp-paint > img"), circle = box(".vc-home-lamp-cord circle"), cord = box(".vc-curtain-control > span"), window = box(".vc-home-window");
@@ -272,18 +274,22 @@ test("141 food toy and furniture pointer hover has no circular outline while key
 });
 
 test("141 a native spawned toy stays unknown until visible completed play and earns one book flight", async ({ page }) => {
-  test.setTimeout(210000); const home = await fixture(page, "studio"); await choose(page, "mischievous", false); await placeCompanionOnHomeFloor(page);
-  // A real shuffle bag is used. Return other actual draws through the actual
-  // opening; no toy kind, model location or random value is supplied.
-  let id = "";
-  for (let draw = 0; draw < 24; draw++) {
+  // Preparation draws are finite and separate from the unchanged75s first
+  // discovery and65s actual replay windows below. This is not a rarity guarantee.
+  test.setTimeout(950000); const home = await fixture(page, "studio"); await choose(page, "mischievous", false); await placeCompanionOnHomeFloor(page);
+  //143 uses the actual weighted60 catalogue. Return unwanted native draws
+  // through the actual opening; no kind, weight, model or RNG is supplied.
+  let id = "",actualDraws=0;
+  for (let draw = 0; draw < 320; draw++) {
     await home.locator('[data-home-action="toys"]').focus(); await page.keyboard.press("Enter"); const toy = page.locator(".vc-toy"); await expect(toy).toHaveCount(1); await expect(toy).toHaveAttribute("data-falling", "false", { timeout: 6000 });
+    actualDraws++;
     expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key) ?? "{}").toys ?? [], COMPANION_TASTES_KEY)).toEqual([]);
     if (await toy.getAttribute("data-kind") === "ball") { id = (await toy.getAttribute("data-toy-id"))!; break; }
     const r = (await toy.boundingBox())!, b = (await home.locator(".vc-toy-box-opening").boundingBox())!;
-    await page.mouse.move(r.x + r.width / 2, r.y + r.height - 6); await page.mouse.down(); await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 8 }); await expect(home.locator('[data-home-action="toys"]')).toHaveAttribute("data-toy-over", ""); await page.mouse.up(); await expect(toy).toHaveCount(0);
+    await page.mouse.move(r.x + r.width / 2, r.y + r.height - 6); await page.mouse.down(); await expect(toy).toHaveAttribute("data-held","true"); await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 8 }); await expect(home.locator('[data-home-action="toys"]')).toHaveAttribute("data-toy-over", ""); await page.mouse.up(); await expect(toy).toHaveCount(0);
   }
-  expect(id).not.toBe(""); await startProbe(page); await choose(page, "mischievous", true);
+  proofs.get(page)!.notes.push({ actualWeightedPreparationDraws:actualDraws,maximumDraws:320,targetKind:"ball",randomOrRarityOverride:false,firstDiscoveryTimeoutMs:75000,sameIdReplayTimeoutMs:65000 });
+  expect(id,"bounded actual weighted draws must produce the target; absence is a preserved setup failure, never forced").not.toBe(""); await startProbe(page); await choose(page, "mischievous", true);
   await expect.poll(async () => (await observation(page)).flights.some(f => f.kind === "toy" && f.id === "ball"), { timeout: 75000, intervals: [100] }).toBe(true);
   const first = await observation(page), flight = first.flights.find(f => f.kind === "toy" && f.id === "ball")!;
   expect(flight.known).toBe(true); expect(flight.decoded).toBe(true); expect(flight.duration).toBe(1500); expect(flight.book).not.toBeNull();

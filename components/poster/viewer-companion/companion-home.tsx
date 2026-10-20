@@ -17,6 +17,7 @@ import { companionHomeTvControl, getCompanionHomeTv, getServerCompanionHomeTv, s
 import { getCompanionHomeLight, getServerCompanionHomeLight, initializeCompanionHomeLight, setCompanionHomeLight, subscribeCompanionHomeLight } from "@/lib/ui/viewer-companion/home-light";
 import { COMPANION_TV_ART_VIEWBOX, COMPANION_TV_SCREEN_CLIP, COMPANION_TV_SCREEN_TRANSFORM } from "@/lib/ui/viewer-companion/home-tv-art";
 import { companionCurtainControl, setCompanionCurtainChoice } from "@/lib/ui/viewer-companion/home-curtain-control";
+import { CompanionTvPicture } from "./companion-tv-picture";
 
 export type CompanionHomeAction = "home" | "feed" | "clearFood" | "radio" | "book";
 type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?: boolean; owner?: string; radioPlaying?: boolean; unreadCollection?: boolean; onAction: (action: CompanionHomeAction) => void; onPersonality?: () => void; onClose?: () => void; onToyBox?: () => void; toyCount?: number; environment?: CompanionHomeEnvironment; curtain?: CompanionHomeCurtain };
@@ -69,6 +70,9 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
   const lampLit = useSyncExternalStore(subscribeCompanionHomeLight, getCompanionHomeLight, getServerCompanionHomeLight);
   useLayoutEffect(initializeCompanionHomeLight, []);
   const television = companionHomeTvControl(tv);
+  // Stores notify before React commits the material/clip. Deliver the final
+  // room pixels through the existing geometry path after that same commit.
+  useLayoutEffect(() => { window.dispatchEvent(new Event("vic:companion-home")); }, [lampLit, tv, curtain.phase]);
   const curtainControl = companionCurtainControl(curtain.phase);
   // Its host already owns the panel FLIP. A tiny entry never resizes the room,
   // repeats on care changes, or creates an autonomous animation loop.
@@ -138,7 +142,7 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
       <button type="button" className="vc-home-tv" data-home-decoration-control="" data-home-action="tv" data-act="companion-home-tv" data-act-opt={television.option} data-tip={television.label} aria-label={television.label} aria-pressed={tv !== "off"} onClick={() => setCompanionHomeTv(companionHomeTvControl(getCompanionHomeTv()).next, { source: "human" })}>
         <span className="vc-home-tv-paint" aria-hidden="true">
           <img className="vc-home-tv-body" src="/companion/home/136/tv-body.webp" width="512" height="512" alt="" draggable={false} decoding="async" />
-          {tv !== "off" && <svg className="vc-home-tv-projection" viewBox={COMPANION_TV_ART_VIEWBOX} focusable="false"><defs><clipPath id={`${bedId}-tv-screen`}><path d={COMPANION_TV_SCREEN_CLIP} /></clipPath></defs><g clipPath={`url(#${bedId}-tv-screen)`}><foreignObject x="0" y="0" width="512" height="512"><div className="vc-home-tv-screen" style={{ transform: COMPANION_TV_SCREEN_TRANSFORM }}><img src={`/companion/home/135/tv-screen-${tv}.webp`} width="244" height="202" alt="" draggable={false} decoding="async" /></div></foreignObject></g></svg>}
+          {tv !== "off" && <svg className="vc-home-tv-projection" viewBox={COMPANION_TV_ART_VIEWBOX} focusable="false"><defs><clipPath id={`${bedId}-tv-screen`}><path d={COMPANION_TV_SCREEN_CLIP} /></clipPath></defs><g clipPath={`url(#${bedId}-tv-screen)`}><foreignObject x="0" y="0" width="512" height="512"><div className="vc-home-tv-screen" style={{ transform: COMPANION_TV_SCREEN_TRANSFORM }}><CompanionTvPicture channel={tv} animate={preferences.enabled && !inactive} /></div></foreignObject></g></svg>}
         </span>
       </button>
       {preferences.feeding ? <>

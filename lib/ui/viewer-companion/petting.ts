@@ -1,3 +1,6 @@
+import type { CompanionPlay } from "./brain";
+import type { CompanionPersonality, CompanionPreferences } from "./preferences";
+
 /** A mouse resting on the head is not a stroke. One deliberate out-and-back
  * establishes intent; rewards require a reversal and retain their own budget. */
 export function createCompanionPettingGesture() {
@@ -102,4 +105,15 @@ export function createCompanionPettingContact() {
       return { x: reduced ? 0 : (at - .5) * pressure * 1.6, y: pressure * 1.6, tilt: reduced ? 0 : direction * pressure * 2.4, squash: pressure * .035, pressure };
     },
   };
+}
+
+/** Only call after an actual acknowledged pet. This chooses a finite response,
+ * never its gesture threshold, reward, position, target or activity record. */
+export function companionPettingResponse(personality: CompanionPersonality, preferences: Pick<CompanionPreferences,"petting"|"jump"|"sleep">): readonly (CompanionPlay | "sniff" | "stretch" | "look")[] {
+  if (!preferences.petting) return [];
+  return ({
+    performer: ["bow","groom"], curious: ["sniff","bow"], affectionate: ["lean-nuzzle","groom"],
+    sleepy: ["doze-curl","stretch"], tidy: ["groom","bow"], mischievous: ["pounce","bow"],
+    gourmet: ["sniff","groom"], homebody: ["cozy-nest","groom"], balanced: ["bow","stretch"],
+  } as const satisfies Record<CompanionPersonality,readonly (CompanionPlay | "sniff" | "stretch" | "look")[]>)[personality].map(clip => !preferences.sleep && clip === "doze-curl" ? "stretch" : !preferences.sleep && clip === "cozy-nest" ? "groom" : !preferences.jump && clip === "pounce" ? "sniff" : clip);
 }

@@ -10,10 +10,10 @@ import { buildStory, type NarrativeItem } from "@/lib/activity/narrative";
 
 function disk() { let raw: string | null = null; return { getItem: vi.fn(() => raw), setItem: vi.fn((key: string, value: string) => { expect(key).toBe(COMPANION_TASTES_KEY); raw = value; }), replace(value: string | null) { raw = value; }, read: () => raw }; }
 describe("122 witnessed toy discovery and local tastes", () => {
-  it("shares twenty-four fixed identities and new art paths while preserving the first eight stored identities", () => {
+  it("shares sixty fixed identities and preserves all twenty-four established art paths", () => {
     expect(COMPANION_TOY_KINDS.slice(0, 8)).toEqual(["ball", "blocks", "paper-plane", "spool", "hoop", "pinwheel", "bell", "feather"]);
-    expect(COMPANION_TOY_KINDS).toHaveLength(24); expect(new Set(Object.values(COMPANION_TOY_NAMES)).size).toBe(24);
-    for (const kind of COMPANION_TOY_KINDS) expect(getCompanionToyArt(kind)).toBe(`/companion/home/125/toy-${kind}.webp`);
+    expect(COMPANION_TOY_KINDS).toHaveLength(60); expect(new Set(Object.values(COMPANION_TOY_NAMES)).size).toBe(60);
+    for (const kind of COMPANION_TOY_KINDS) expect(getCompanionToyArt(kind)).toBe(`/companion/home/${COMPANION_TOY_KINDS.indexOf(kind) < 24 ? "125" : "143"}/toy-${kind}.webp`);
   });
   it("does not invent discovery from loading, proposed actions, unsupported events or unknown IDs", () => {
     const storage = disk(), store = createCompanionTastesStore(storage);

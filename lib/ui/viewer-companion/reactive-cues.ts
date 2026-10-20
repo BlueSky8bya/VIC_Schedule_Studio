@@ -2,14 +2,15 @@ import { findPlatformRoute, platformLandingX, type CompanionAction, type Compani
 import { getCompanionBehaviorProfile } from "./behavior-profile";
 import { COMPANION_FULL_THRESHOLD } from "./care";
 import { MAX_COMPANION_FOOD } from "./food-capacity";
+import { companionPrivateHomeSupport } from "./life-space";
 import type { CompanionPreferences } from "./preferences";
 
 /** Four ranked real supports, one proved leg; no cursor or geometry ownership. */
-export function findCompanionPointerRoute(world: CompanionWorld, preferences: CompanionPreferences, gap: number) {
+export function findCompanionPointerRoute(world: CompanionWorld, preferences: CompanionPreferences, gap: number, outsideOnly = false) {
   const pointer = world.pointer;
   if (!pointer || ![pointer.x, pointer.y, world.x, world.y, gap].every(Number.isFinite)) return;
   const platforms = world.platforms.slice(0, 200);
-  const candidates = platforms.filter(platform => !platform.manualOnly && !["hide", "control"].includes(platform.kind)
+  const candidates = platforms.filter(platform => !platform.manualOnly && !platform.bodyOnly && (!outsideOnly || !companionPrivateHomeSupport(platform.id)) && !["hide", "control"].includes(platform.kind)
     && [platform.x, platform.y, platform.width].every(Number.isFinite) && platform.width > 0)
     .map(platform => {
       const x = platformLandingX(platform, pointer.x + (world.x <= pointer.x ? -gap : gap));

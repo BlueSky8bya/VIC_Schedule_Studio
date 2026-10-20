@@ -28,12 +28,13 @@ function context(personality: "tidy" | "mischievous" = "tidy", toys: readonly Co
 }
 
 describe("real bounded companion toy objects", () => {
-  it("spawns four different real objects, respects capacity and lands on the first crossed safe support", () => {
+  it("spawns four separately identified real objects, respects capacity and lands on the first crossed safe support", () => {
     const first = { ...floor, id: "first", y: 350 }, second = { ...floor, id: "second", y: 500 };
     const model = make([{ ...floor, id: "control", kind: "control", y: 250 }, { ...floor, id: "hidden", kind: "hide", y: 300 }, first, second, floor]);
     const ids = Array.from({ length: 5 }, () => model.spawn({ x: 600, y: 200 }, 0));
     expect(ids.slice(0, 4).every(Boolean)).toBe(true); expect(ids[4]).toBeUndefined();
-    expect(model.items()).toHaveLength(MAX_COMPANION_TOYS); expect(model.items().map(toy => toy.kind)).toEqual(COMPANION_TOY_KINDS.slice(0, MAX_COMPANION_TOYS));
+    expect(model.items()).toHaveLength(MAX_COMPANION_TOYS); expect(model.items().map(toy => toy.kind)).toEqual([COMPANION_TOY_KINDS[0], COMPANION_TOY_KINDS[1], COMPANION_TOY_KINDS[0], COMPANION_TOY_KINDS[1]]);
+    expect(new Set(model.items().map(toy => toy.id)).size).toBe(MAX_COMPANION_TOYS);
     model.tick(100); expect(model.items()[0].y).toBeLessThan(200); expect(model.items()[0].x).toBeLessThan(600);
     settle(model, 100);
     expect(model.moving()).toBe(false); expect(model.available()).toHaveLength(4);
@@ -236,7 +237,7 @@ describe("shared native toy controller ownership", () => {
       getBoundingClientRect: vi.fn(() => ({ left: 500, right: 580, top: 300, bottom: 360 })), setAttribute: (key: string, value: string) => attrs.set(key, value), removeAttribute: (key: string) => attrs.delete(key) };
     vi.stubGlobal("document", { querySelector: () => box });
     const h = await harness(); h.ref.current!.tick(1800); const actual = h.ref.current!.available()[0];
-    const node = { style: { transform: "" }, dataset: {} as Record<string, string>, hidden: false, setPointerCapture: vi.fn(), hasPointerCapture: vi.fn(() => true), releasePointerCapture: vi.fn() };
+    const node = { style: { transform: "", setProperty: vi.fn() }, dataset: {} as Record<string, string>, hidden: false, setPointerCapture: vi.fn(), hasPointerCapture: vi.fn(() => true), releasePointerCapture: vi.fn() };
     (h.button.props.ref as (node: unknown) => void)(node);
     const event = (x = actual.x, y = actual.y) => ({ button: 0, pointerId: 7, clientX: x, clientY: y, currentTarget: node, preventDefault: vi.fn(), stopPropagation: vi.fn() });
     (h.button.props.onPointerDown as (event: unknown) => void)(event());
@@ -250,7 +251,7 @@ describe("shared native toy controller ownership", () => {
     const h = await harness(), control = h.ref.current!;
     const style = { visibility: "visible", display: "block", opacity: "1" };
     const document = { hidden: false, defaultView: { getComputedStyle: vi.fn(() => style) } }; vi.stubGlobal("document", document);
-    const node = { ownerDocument: document, style: { transform: "" }, dataset: {} as Record<string, string>, hidden: false, isConnected: true, getBoundingClientRect: vi.fn(() => ({ left: 410, top: 330, width: 44, height: 44 })) };
+    const node = { ownerDocument: document, style: { transform: "", setProperty: vi.fn() }, dataset: {} as Record<string, string>, hidden: false, isConnected: true, getBoundingClientRect: vi.fn(() => ({ left: 410, top: 330, width: 44, height: 44 })) };
     (h.button.props.ref as (node: unknown) => void)(node);
     control.tick(1800); const actual = control.available()[0]; h.onExperience.mockClear();
     return { ...h, control, node, actual, document, style };
@@ -302,7 +303,7 @@ describe("shared native toy controller ownership", () => {
     vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { frames.set(++serial, callback); return serial; }); vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
     vi.stubGlobal("document", { querySelector: () => null });
     const h = await harness(); h.ref.current!.tick(1800); const actual = h.ref.current!.available()[0];
-    const node = { style: { transform: "" }, dataset: {} as Record<string, string>, hidden: false, setPointerCapture: vi.fn(), hasPointerCapture: vi.fn(() => true), releasePointerCapture: vi.fn() };
+    const node = { style: { transform: "", setProperty: vi.fn() }, dataset: {} as Record<string, string>, hidden: false, setPointerCapture: vi.fn(), hasPointerCapture: vi.fn(() => true), releasePointerCapture: vi.fn() };
     (h.button.props.ref as (node: unknown) => void)(node);
     const start = { x: actual.x - 13, y: actual.y - 31 }, event = (point = start) => ({ button: 0, pointerId: 7, clientX: point.x, clientY: point.y, currentTarget: node, preventDefault: vi.fn(), stopPropagation: vi.fn() });
     (h.button.props.onPointerDown as (event: unknown) => void)(event()); const initial = node.style.transform;
@@ -322,7 +323,7 @@ describe("shared native toy controller ownership", () => {
     const frames = new Map<number, FrameRequestCallback>(); let serial = 0;
     vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { frames.set(++serial, callback); return serial; }); vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
     const h = await harness(); h.ref.current!.tick(1800); const actual = h.ref.current!.available()[0];
-    const node = { style: { transform: "" }, dataset: {} as Record<string, string>, hidden: false, setPointerCapture: vi.fn(), hasPointerCapture: vi.fn(() => true), releasePointerCapture: vi.fn() }; (h.button.props.ref as (node: unknown) => void)(node);
+    const node = { style: { transform: "", setProperty: vi.fn() }, dataset: {} as Record<string, string>, hidden: false, setPointerCapture: vi.fn(), hasPointerCapture: vi.fn(() => true), releasePointerCapture: vi.fn() }; (h.button.props.ref as (node: unknown) => void)(node);
     const event = { button: 0, pointerId: 9, clientX: actual.x, clientY: actual.y - 22, currentTarget: node, preventDefault: vi.fn(), stopPropagation: vi.fn() };
     (h.button.props.onPointerDown as (event: unknown) => void)(event);
     vi.mocked(performance.now).mockReturnValue(2020); (h.button.props.onPointerMove as (event: unknown) => void)({ ...event, clientX: actual.x + 40 });
@@ -381,7 +382,7 @@ describe("shared native toy controller ownership", () => {
     const h = await harness(), control = h.ref.current!;
     vi.stubGlobal("document", { hidden: false });
     const rect = { left: 410, top: 330, width: 44, height: 44 };
-    const node = { style: { transform: "" }, dataset: {} as Record<string, string>, hidden: false, isConnected: true, getBoundingClientRect: vi.fn(() => rect) };
+    const node = { style: { transform: "", setProperty: vi.fn() }, dataset: {} as Record<string, string>, hidden: false, isConnected: true, getBoundingClientRect: vi.fn(() => rect) };
     (h.button.props.ref as (node: unknown) => void)(node);
     // A unit DOM node with its own measured rectangle. The completion source
     // must use this displayed centroid, rather than the model's floor point.
@@ -408,7 +409,7 @@ describe("shared native toy controller ownership", () => {
   it.each(["hidden-document", "detached-node", "hidden-node", "empty-rectangle"] as const)("consumes a pending ACK without discovery when its actual presentation is %s", async boundary => {
     const h = await harness(), control = h.ref.current!;
     const document = { hidden: false }; vi.stubGlobal("document", document);
-    const node = { style: { transform: "" }, dataset: {} as Record<string, string>, hidden: false, isConnected: true, getBoundingClientRect: vi.fn(() => ({ left: 410, top: 330, width: boundary === "empty-rectangle" ? 0 : 44, height: 44 })) };
+    const node = { style: { transform: "", setProperty: vi.fn() }, dataset: {} as Record<string, string>, hidden: false, isConnected: true, getBoundingClientRect: vi.fn(() => ({ left: 410, top: 330, width: boundary === "empty-rectangle" ? 0 : 44, height: 44 })) };
     (h.button.props.ref as (node: unknown) => void)(node);
     control.tick(1800); const actual = control.available()[0]; h.onExperience.mockClear();
     expect(control.pick(actual.id, actual)).toBe(true); expect(control.put(actual.id, actual, 2000, false, true)).toBe(true);

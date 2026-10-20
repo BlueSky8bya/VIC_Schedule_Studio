@@ -63,7 +63,11 @@
   --vc-storage-bottom: calc(var(--vc-storage-floor) + 3px - var(--vc-toy-paint-width) * 17 / 256);
   --vc-dispenser-paint-width: max(56px, 17.4cqw);
   --vc-bin-paint-width: 23cqw; --vc-bin-right: 4cqw; --vc-bin-bottom: calc(8cqw - var(--vc-furniture-lower));
-  --vc-window-width: min(54cqw, calc(100cqw - var(--vc-shelf-width) - 20px));
+  --vc-window-wall-width: min(54cqw, calc(100cqw - var(--vc-shelf-width) - 20px));
+  --vc-window-width: calc(var(--vc-window-wall-width) * .93);
+  /* The136 room's real wall/ceiling seam is50/683 down its full canvas.
+     Leave8px for the registered curtain's transparent top and rod thickness. */
+  --vc-window-top: calc(var(--vc-room-height) * 50 / 683 + 8px);
   --vc-tv-width: max(64px, 20cqw); --vc-tv-bottom: calc(9cqw - var(--vc-furniture-lower));
   --vc-room-grade: #56371b00; --vc-room-art-grade: 1; --vc-room-daylight: 0;
   --vc-bed-cloth: #c4bcae; --vc-bed-light: #e1d9ca; --vc-bed-shade: #aaa292;
@@ -71,18 +75,15 @@
   background: linear-gradient(var(--vc-room-grade), var(--vc-room-grade)), url('/companion/home/136/room-neutral.webp') center / 100% 100%;
   box-shadow: inset 0 1px 0 #fff3, inset 0 -1px 0 var(--vc-thread);
 }
-.vc-home[data-home-presentation="compact"] > .panel-section-heading .panel-section-title > span { min-height: 36px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; padding: 4px var(--control-hit); }
+.vc-home[data-home-presentation="compact"] > .panel-section-heading .panel-section-title > span { min-height: var(--vc-object-min-hit); }
 .vc-home-room::before { content: ''; position: absolute; z-index: 0; inset: 0; background: url('/companion/home/136/room-sunlit.webp') center / 100% 100%; opacity: var(--vc-room-daylight); pointer-events: none; transition: opacity calc(var(--dur-2) * 4) var(--ease); }
-.vc-home-close { display: grid; place-items: center; width: var(--control-hit); height: var(--control-hit); margin-left: auto; padding: 0; border: 0; border-radius: var(--r-pill); color: var(--muted); background: transparent; cursor: pointer; pointer-events: auto; }
+.vc-home-close { display: grid; place-items: center; width: var(--vc-object-min-hit); height: var(--vc-object-min-hit); margin-left: auto; padding: 0; border: 0; border-radius: var(--r-pill); color: var(--muted); background: transparent; cursor: pointer; pointer-events: auto; }
 .vc-home-close:hover { color: var(--ink); background: rgb(var(--glass-head)); }
 .vc-home-personality { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: var(--vc-object-min-hit); min-height: var(--vc-object-min-hit); padding: 0 6px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--ink); font: inherit; font-size: calc(var(--text-body) / var(--shell-zoom, 1)); cursor: pointer; }
 .vc-home-personality:hover { background: rgb(var(--glass-head)); }
-.vc-home:has(.vc-home-personality) > .panel-section-heading .panel-section-title { padding-inline: 100px; }
-.vc-home:has(.vc-home-personality) > .panel-section-heading .panel-section-toggle { padding-inline: 10px; }
-.vc-home[data-home-presentation="compact"]:has(.vc-home-personality) > .panel-section-heading .panel-section-title { padding-inline: 112px; }
 /* Storage has room-appropriate scale. The glass uses the remaining wall
    width after the enlarged native targets and their shared gap. */
-.vc-home-window { position: absolute; z-index: 1; left: var(--vc-window-left); top: 7px; box-sizing: border-box; width: var(--vc-window-width); height: auto; aspect-ratio: 38 / 25; padding: 6px; border: 1px solid color-mix(in srgb, var(--vc-wood-edge) 65%, transparent); border-radius: 14px 14px 9px 9px; background: linear-gradient(110deg, var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 3px 5px var(--vc-soft-shadow), inset 0 1px 1px #fff9; pointer-events: none; }
+.vc-home-window { position: absolute; z-index: 1; left: var(--vc-window-left); top: var(--vc-window-top); box-sizing: border-box; width: var(--vc-window-width); height: auto; aspect-ratio: 38 / 25; padding: 6px; border: 1px solid color-mix(in srgb, var(--vc-wood-edge) 65%, transparent); border-radius: 14px 14px 9px 9px; background: linear-gradient(110deg, var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 3px 5px var(--vc-soft-shadow), inset 0 1px 1px #fff9; pointer-events: none; }
 .vc-window-glass { position: relative; display: block; width: 100%; height: 100%; overflow: hidden; border-radius: 8px 8px 3px 3px; box-shadow: inset 0 0 0 1px #604b3436; isolation: isolate; }
 .vc-window-landscape, .vc-window-weather { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
 .vc-window-landscape { filter: var(--vc-landscape-grade, none); }
@@ -217,9 +218,10 @@ html[data-theme="dark"] .vc-home-object-image { opacity: .92; }
 .vc-home-lamp-cord { position: absolute; z-index: 0; top: 0; left: 50%; width: var(--vc-lamp-paint-width); height: var(--vc-lamp-cord-height); transform: translateX(-50%); filter: brightness(var(--vc-room-art-grade)); }
 .vc-home-lamp-paint > img { z-index: 1; }
 .vc-home-lamp-bulb { z-index: 2; }
-/* A single continuous rope starts at the rod. Keep its old knob height, so
+/* A single continuous rope starts at the lower wall-registered rod.
+   Keep its old knob height from the former wall-width, so
    the actual measured contact is retained rather than extending actor reach. */
-.vc-curtain-control { --vc-curtain-cord-height: calc(7px + var(--vc-window-width) * .37 + max(27px, calc(var(--vc-room-height) - 275px))); position: absolute; z-index: 4; left: calc(var(--vc-window-left) - 10px); top: 4px; width: var(--vc-object-min-hit); height: max(var(--vc-object-min-hit), var(--vc-curtain-cord-height)); padding: 0; border: 0; border-radius: var(--r-pill); background: transparent; cursor: pointer; }
+.vc-curtain-control { --vc-curtain-rod-top: calc(var(--vc-window-top) - 6px); --vc-curtain-cord-height: calc(11px + var(--vc-window-wall-width) * .37 + max(27px, calc(var(--vc-room-height) - 275px)) - var(--vc-curtain-rod-top)); position: absolute; z-index: 4; left: calc(var(--vc-window-left) - 10px); top: var(--vc-curtain-rod-top); width: var(--vc-object-min-hit); height: max(var(--vc-object-min-hit), var(--vc-curtain-cord-height)); padding: 0; border: 0; border-radius: var(--r-pill); background: transparent; cursor: pointer; }
 .vc-curtain-control > span { position: absolute; left: 6px; top: 0; width: 2px; height: var(--vc-curtain-cord-height); background: #a57c4c; filter: brightness(var(--vc-room-art-grade)); transform-origin: top; }
 .vc-curtain-control > span::after { content: ''; position: absolute; left: -3px; bottom: -3px; width: 8px; height: 11px; border-radius: 40%; background: #cba66d; border: 1px solid #8b6844; box-shadow: inset 1px 1px #f6e4b966; }
 .vc-curtain-control:hover > span { transform: translateY(2px); filter: brightness(1.1); }
@@ -239,6 +241,32 @@ html .vc-home button:where(:hover, :focus):not(:focus-visible) { outline: none; 
 .vc-home-tv-body { filter: brightness(var(--vc-room-art-grade)); }
 .vc-home-tv-screen { position: absolute; left: 0; top: 0; width: 100px; height: 100px; display: block; overflow: hidden; transform-origin: 0 0; background: #fff1bb; }
 .vc-home-tv-screen > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.vc-tv-picture { position: relative; width: 100%; height: 100%; overflow: hidden; isolation: isolate; background: #edcf8f; }
+.vc-tv-picture > img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.vc-tv-glass { position: absolute; inset: 0; background: linear-gradient(115deg,#fff4 0%,#fff0 32%,#fff0 70%,#98622718); box-shadow: inset 0 0 9px #51301932; }
+.vc-tv-picture :is(.vc-tv-live-dot,.vc-tv-spark,.vc-tv-bird,.vc-tv-steam,.vc-tv-ball,.vc-tv-star) { position: absolute; }
+.vc-tv-live-dot { left: 8%; top: 9%; width: 5%; aspect-ratio: 1; border-radius: 50%; background: #f0646c; box-shadow: 0 0 2px #fff; }
+.vc-tv-spark { color: #ffe2aa; font-size: 12px; text-shadow: 0 1px 1px #bd704e; }
+.vc-tv-spark-a { right: 13%; top: 32%; }.vc-tv-spark-b { left: 12%; bottom: 17%; color: #ffb8c0; }
+.vc-tv-bird { left: 10%; top: 20%; width: 18%; height: 10%; }
+.vc-tv-steam { left: 42%; top: 40%; width: 25%; height: 20%; display: flex; gap: 13%; }
+.vc-tv-steam i { width: 12%; height: 100%; border-left: 2px solid #fff9; border-radius: 50%; }
+.vc-tv-ball { left: 20%; bottom: 13%; width: 13%; aspect-ratio: 1; border-radius: 50%; background: #f48354; box-shadow: inset -2px -2px #b95a3a; }
+.vc-tv-star { color: #fff0a4; font-size: 10px; }.vc-tv-star-a { top: 17%; left: 22%; }.vc-tv-star-b { top: 38%; right: 18%; }
+.vc-tv-picture[data-tv-loop] .vc-tv-live-dot { animation: vc-tv-pulse 3s ease-in-out infinite; }
+.vc-tv-picture[data-tv-loop][data-channel="tori"] > img { animation: vc-tv-host 8s ease-in-out infinite; }
+.vc-tv-picture[data-tv-loop] :is(.vc-tv-spark,.vc-tv-star) { animation: vc-tv-twinkle 4s ease-in-out infinite; }
+.vc-tv-picture[data-tv-loop] :is(.vc-tv-spark-b,.vc-tv-star-b) { animation-delay: -2s; }
+.vc-tv-picture[data-tv-loop] .vc-tv-bird { animation: vc-tv-bird 9s linear infinite; }
+.vc-tv-picture[data-tv-loop] .vc-tv-steam { animation: vc-tv-steam 3s ease-in-out infinite; }
+.vc-tv-picture[data-tv-loop] .vc-tv-ball { animation: vc-tv-ball 3s ease-in-out infinite; }
+@keyframes vc-tv-host { 0%,100% { transform: scale(1.025) translateY(.3%); } 50% { transform: scale(1.045) translateY(-.5%); } }
+@keyframes vc-tv-pulse { 0%,100% { opacity: 1; } 50% { opacity: .65; } }
+@keyframes vc-tv-twinkle { 0%,100% { opacity: .35; transform: scale(.8); } 50% { opacity: .95; transform: scale(1); } }
+@keyframes vc-tv-bird { from { transform: translateX(-180%); } to { transform: translateX(600%); } }
+@keyframes vc-tv-steam { 0%,100% { opacity: .3; transform: translateY(8%); } 60% { opacity: .8; transform: translateY(-25%); } }
+@keyframes vc-tv-ball { 0%,100% { transform: translate(0,0); } 50% { transform: translate(260%,-65%); } }
+html:is([data-reduce-motion],[data-gfx="off"],[data-gfx="soft"]) .vc-tv-picture * { animation: none !important; }
 .vc-home-tv:not(:disabled):is(:hover, :focus-visible) .vc-home-tv-body { filter: brightness(calc(var(--vc-room-art-grade) * 1.1)); }
 .vc-home-tv:active .vc-home-tv-body { filter: brightness(calc(var(--vc-room-art-grade) * .94)); }
 /* Alpha>32 opaque bounds from the unchanged chest/bin sources. The pad is

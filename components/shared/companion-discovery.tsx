@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCompanionCollectionChance } from "@/lib/ui/viewer-companion/collection-rarity";
 import { Check, Sparkles } from "lucide-react";
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { logActivity } from "@/lib/activity/client";
@@ -92,7 +93,7 @@ export function CompanionDiscovery({ collection, active, tastes = null }: { coll
       <div aria-hidden="true" className="rhh-collection-art-stage" key={selectedFood}><CompanionCollectionArt kind="food" id={selectedFood} /></div>
       <div className="rhh-collection-detail-copy"><span className="rhh-collection-overline">냠냠 기록</span><div className="rhh-collection-detail-title"><strong>{foundFood ? COMPANION_FOOD_NAMES[selectedFood] : "???"}</strong>{foundFood && <span className="rhh-collection-rarity">{COMPANION_FOOD_RARITY_NAMES[COMPANION_FOOD_RARITY[selectedFood]]}</span>}</div>
         <p className="rhh-collection-fact">{foundFood ? COMPANION_FOOD_FACTS[selectedFood] : "아직 맛보기 전"}</p>
-        <div className="rhh-collection-detail-meta">{foundFood && <><span className="rhh-collection-chance">기본 등장 {(companionFoodChance(selectedFood) * 100).toFixed(1)}%</span>{selectedFood === recent?.kind && <span className="rhh-collection-recent"><Check aria-hidden="true" size={14} />방금 맛봤어요</span>}</>}</div>
+        <div className="rhh-collection-detail-meta">{foundFood && <><span className="rhh-collection-chance" title="직전 음식은 연속으로 나오지 않아 실제 다음 확률은 달라져요. 별도의 희귀도 보장은 없어요.">기본 등장 {formatCompanionCollectionChance(companionFoodChance(selectedFood))}</span>{selectedFood === recent?.kind && <span className="rhh-collection-recent"><Check aria-hidden="true" size={14} />방금 맛봤어요</span>}</>}</div>
       </div>
     </div> : <div aria-live="polite" className="rhh-collection-detail rhh-memory-detail rhh-collection-gallery-detail" data-found={memoryFound(selectedMemory) || undefined}>
       <div aria-hidden="true" className="rhh-collection-art-stage" key={selectedMemory.kind + selectedMemory.id}>{memoryFound(selectedMemory) ? <CompanionCollectionArt kind={selectedMemory.kind === "moment" ? "situation-stamp" : "behavior-stamp"} id={selectedMemory.id} /> : <span className="rhh-memory-silhouette" />}</div>

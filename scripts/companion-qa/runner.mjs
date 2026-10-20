@@ -7,7 +7,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { finished } from 'node:stream/promises';
 import { pathToFileURL } from 'node:url';
-import { universe, dailyCases, coverageFor, PURE_SUITES, NATIVE_SUITES, NATIVE_GREP, NATIVE_ENTRY_TITLES, NATIVE_FLOATING_TIDY_TITLES, PLANNED_NATIVE_CASE_COUNT } from './catalog.mjs';
+import { universe, dailyCases, coverageFor, PURE_SUITES, NATIVE_SUITES, NATIVE_GREP, NATIVE_ENTRY_TITLES, NATIVE_FLOATING_TIDY_TITLES, PLANNED_NATIVE_CASE_COUNT, MODELED_RECIPE_COUNT } from './catalog.mjs';
 import { sha, writeNewJson, evidenceFiles, writeReport } from './report.mjs';
 import { AUDITED_MACHINE_METADATA, AUDITED_MACHINE_METADATA_BYTES, validateAuditedMachineMetadata } from './machine-metadata.mjs';
 
@@ -204,7 +204,7 @@ export async function run(options) {
     stages.push({ name: 'pure-models', ...await command(workspace, ['node_modules/vitest/vitest.mjs', 'run', ...suites, '--maxWorkers=1', '--reporter=json', `--outputFile=${pureFile}`], env, path.join(attempt, 'pure.log'), deadline, control) });
     if (stages.at(-1).status !== 'passed') throw Error('Pure-model gate failed; native stages not run');
     const pureReport = readJson(pureFile), evidence = readJson(path.join(pure, 'model-coverage.json')), passed = passedTests(pureReport);
-    if (!pureReport.success || pureReport.numPendingTests || evidence.booleanPatterns !== 262144 || evidence.routineTemplates !== 54 || evidence.entries !== 9 || passed.filter(test => /executes .+ with actual source context/.test(test.fullName)).length !== evidence.recipeCount || evidence.recipeCount !== 144) throw Error('Pure evidence counts do not prove the declared finite model');
+    if (!pureReport.success || pureReport.numPendingTests || evidence.booleanPatterns !== 262144 || evidence.routineTemplates !== 54 || evidence.entries !== 9 || passed.filter(test => /executes .+ with actual source context/.test(test.fullName)).length !== evidence.recipeCount || evidence.recipeCount !== MODELED_RECIPE_COUNT) throw Error('Pure evidence counts do not prove the declared finite model');
     for (const suite of learner) if (!pureReport.testResults.some(file => file.name.replaceAll('\\', '/').endsWith(suite) && file.assertionResults.length && file.assertionResults.every(test => test.status === 'passed'))) throw Error('A required learner suite did not execute and pass');
     stages.push({ name: 'pure-count-proof', status: 'passed', detail: `${evidence.booleanPatterns} normalization patterns; ${evidence.recipeCount} recipe contracts; ${evidence.routineTemplates} routine admissions; ${evidence.entries} entries. Not a native Cartesian proof.` });
     for (const [name, args] of [
@@ -225,7 +225,7 @@ export async function run(options) {
     if (!ready) throw Error('Owned fixture server did not become ready within the budget');
     const config = path.join(workspace, 'companion-qa.generated.config.ts'), nativeOutput = path.join(attempt, 'native'), reportFile = path.join(attempt, 'playwright.json');
     fs.mkdirSync(nativeOutput, { recursive: true }); // Shared parent exists before any parallel case writes a prefix-based artifact.
-    const nativeEnv = Object.fromEntries(['COMPANION141_AGENCY_OUTPUT', 'COMPANION141_OUTPUT', 'COMPANION137_OUTPUT', 'COMPANION134_GALLERY_OUTPUT', 'COMPANION_WINDOW_UI_OUTPUT', 'VIC_ACTIVITY_AUDIT_PREFIX'].map(key => [key, path.join(nativeOutput, key.toLowerCase())]));
+    const nativeEnv = Object.fromEntries(['COMPANION143_OUTPUT', 'COMPANION141_AGENCY_OUTPUT', 'COMPANION141_OUTPUT', 'COMPANION137_OUTPUT', 'COMPANION134_GALLERY_OUTPUT', 'COMPANION_WINDOW_UI_OUTPUT', 'VIC_ACTIVITY_AUDIT_PREFIX'].map(key => [key, path.join(nativeOutput, key.toLowerCase())]));
     fs.writeFileSync(config, `import {defineConfig} from '@playwright/test';\nexport default defineConfig(${JSON.stringify({ testDir: './tests/visual', testMatch: NATIVE_SUITES, grep: undefined, workers: options.workers, retries: 0, timeout: 125000, fullyParallel: true, outputDir: path.join(attempt, 'playwright'), reporter: [['json', { outputFile: reportFile }]], use: { baseURL, viewport: { width: 1920, height: 1100 }, deviceScaleFactor: 1, serviceWorkers: 'block', trace: 'retain-on-failure', video: 'on', screenshot: 'only-on-failure' } })});\n`, { flag: 'wx' });
     const native = await command(workspace, ['node_modules/@playwright/test/cli.js', 'test', '--config', config, '--grep', NATIVE_GREP], childEnvironment(process.env, { ...nodeGuard, ...nativeEnv, COMPANION_QA_NODE_ORIGIN: baseURL, VIC_ACTIVITY_BASE_URL: baseURL.replace("127.0.0.1", "127.0.0.2"), COMPANION_QA_OUTPUT: nativeOutput, COMPANION_QA_CASES: JSON.stringify(cases), VISUAL_TEST_BUILD_DIR: path.join(workspace, '.next') }), path.join(attempt, 'native.log'), deadline, control);
     const nativeStage = { name: 'native-production-fixture', ...native }; stages.push(nativeStage);

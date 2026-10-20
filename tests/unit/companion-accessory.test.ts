@@ -1,4 +1,8 @@
+import { createHash } from "node:crypto";
+import { readFileSync } from "node:fs";
+import sharp from "sharp";
 import { describe, expect, it } from "vitest";
+import edition from "../fixtures/companion-eye-scale-143.json";
 import { companionAccessoryAnchor, companionAccessoryPlacement, companionGiftAnchor, createCompanionAccessoryPainter } from "@/lib/ui/viewer-companion/accessory";
 import { COMPANION_ACCESSORIES, currentCompanionAccessory } from "@/lib/ui/viewer-companion/accessory-catalog";
 import { COMPANION_ACCESSORY_IDS } from "@/lib/ui/viewer-companion/gifts";
@@ -6,6 +10,47 @@ import { companionSpriteMetadata, selectCompanionSprite } from "@/lib/ui/viewer-
 import anchors from "@/lib/ui/viewer-companion/accessory-anchors.json";
 import mouths from "@/lib/ui/viewer-companion/mouth-anchors.json";
 import { sampleCompanionAccessoryMotion } from "@/lib/ui/viewer-companion/accessory-motion";
+
+// Measure the adopted eye ink independently of the runtime overlay numbers.
+// Parent registrations still own the496 unchanged cells and the approved
+// standing lens size; only the24 source-bound eye edits need new centres.
+async function measuredActiveEyes() {
+  type Eye = { center: number[]; bounds: number[] };
+  const measured = new Map<number, Eye[]>();
+  for (const packet of edition.packets) {
+    const bytes = readFileSync(`public${packet.src}`);
+    expect(createHash("sha256").update(bytes).digest("hex")).toBe(packet.sha256);
+    expect(anchors.sources[packet.atlas]).toMatchObject({ src: packet.parentSrc, sha256: packet.parentSha256 });
+    for (const cell of edition.frames.filter(frame => frame.atlas === packet.atlas)) {
+      const rgba = await sharp(bytes).extract({ left: cell.index % 8 * 192, top: Math.floor(cell.index / 8) * 192, width: 192, height: 192 }).ensureAlpha().raw().toBuffer();
+      const ink = (point: number) => rgba[point * 4] < 120 && rgba[point * 4 + 1] < 100 && rgba[point * 4 + 2] < 90 && rgba[point * 4 + 3] > 160;
+      const seen = new Uint8Array(192 * 192), queue = new Int32Array(seen.length), parts: Eye[] = [];
+      for (let start = 0; start < seen.length; start++) {
+        if (seen[start] || !ink(start)) continue;
+        let head = 0, count = 1, left = 192, top = 192, right = 0, bottom = 0, sumX = 0, sumY = 0;
+        queue[0] = start; seen[start] = 1;
+        while (head < count) {
+          const point = queue[head++], x = point % 192, y = Math.floor(point / 192);
+          left = Math.min(left, x); top = Math.min(top, y); right = Math.max(right, x + 1); bottom = Math.max(bottom, y + 1); sumX += x + .5; sumY += y + .5;
+          for (let yy = Math.max(0, y - 1); yy <= Math.min(191, y + 1); yy++) for (let xx = Math.max(0, x - 1); xx <= Math.min(191, x + 1); xx++) {
+            const next = yy * 192 + xx;
+            if (!seen[next] && ink(next)) { seen[next] = 1; queue[count++] = next; }
+          }
+        }
+        if (count >= 8 && right - left < 25 && bottom - top < 26) parts.push({ center: [sumX / count / 2.4, sumY / count / 2.4], bounds: [left / 2.4, top / 2.4, right / 2.4, bottom / 2.4] });
+      }
+      const eyes = anchors.frames[cell.physical].eyes.map(parent => {
+        const distance = (part: Eye) => Math.hypot(part.center[0] - parent.center[0], part.center[1] - parent.center[1]);
+        const nearest = [...parts].sort((a, b) => distance(a) - distance(b))[0];
+        expect(nearest, `actual eye${cell.physical}`).toBeDefined(); expect(distance(nearest)).toBeLessThanOrEqual(7 / 2.4);
+        return nearest;
+      });
+      expect(eyes).toHaveLength(2); expect(eyes[0]).not.toBe(eyes[1]); measured.set(cell.physical, eyes);
+    }
+  }
+  expect(measured.size).toBe(24);
+  return measured;
+}
 
 describe("adopted pose wardrobe", () => {
   it("maps every current physical frame to each owned accessory and actual gift anchor", () => {
@@ -30,12 +75,14 @@ describe("adopted pose wardrobe", () => {
       expect(companionGiftAnchor(changed)).toBeNull();
     }
   });
-  it("covers the measured source-local eye on every visible pose and aligns each new lens pair to the actual eye span", () => {
+  it("covers every measured eye while keeping the approved standing lens size across expressions", async () => {
+    const activeEyes = await measuredActiveEyes();
     const measured = anchors.frames as unknown as Array<typeof anchors.frames[number] & { eyes: { center: number[]; bounds: number[] }[] }>;
     for (const pose of measured) {
       if (pose.orientation === "back") continue;
       expect(pose.eyes, `eyes ${pose.physicalIndex}`).toHaveLength(2);
-      const selected = selectCompanionSprite(pose.physicalIndex), eye = pose.eyes[1];
+      const eyes = activeEyes.get(pose.physicalIndex) ?? pose.eyes;
+      const selected = selectCompanionSprite(pose.physicalIndex), eye = eyes[1];
       for (const id of ["monocle"] as const) {
         const placed = companionAccessoryPlacement(selected, id)!;
         expect(placed.x, `${id}:${pose.physicalIndex}`).toBeCloseTo(eye.center[0]); expect(placed.y).toBeCloseTo(eye.center[1]);
@@ -44,8 +91,11 @@ describe("adopted pose wardrobe", () => {
         expect(placed.layer).toBe("front");
       }
       for (const id of ["round-glasses", "wire-glasses", "browline-glasses", "heart-glasses", "square-glasses"] as const) {
-        const placed = companionAccessoryPlacement(selected, id)!, span = Math.hypot(pose.eyes[1].center[0] - pose.eyes[0].center[0], pose.eyes[1].center[1] - pose.eyes[0].center[1]);
-        expect(placed.width / placed.art.content.width * 48 * placed.art.viewScale!, `${id}:${pose.physicalIndex} lens span`).toBeCloseTo(span);
+        const placed = companionAccessoryPlacement(selected, id)!, span = Math.hypot(eyes[1].center[0] - eyes[0].center[0], eyes[1].center[1] - eyes[0].center[1]);
+        const standing = measured[0].eyes, standingSpan = Math.hypot(standing[1].center[0] - standing[0].center[0], standing[1].center[1] - standing[0].center[1]);
+        const viewScale = pose.orientation === "quarter" ? .83 : pose.orientation === "side" ? .56 : 1;
+        expect(placed.width / placed.art.content.width * 48 * placed.art.viewScale!, `${id}:${pose.physicalIndex} standing lens span`).toBeCloseTo(standingSpan * viewScale);
+        expect(span).toBeGreaterThan(0);
         expect(placed.rotation).toBeCloseTo(pose.face.roll); expect(placed.pivot).toEqual({ x: 64, y: 64 });
       }
     }
@@ -130,7 +180,7 @@ describe("adopted pose wardrobe", () => {
       if (pose.orientation === "back") continue;
       const selected = selectCompanionSprite(pose.physicalIndex), angle = pose.face.roll * Math.PI / 180, nx = -Math.sin(angle), ny = Math.cos(angle), depth = (x: number, y: number) => (x - pose.face.x) * nx + (y - pose.face.y) * ny;
       const mouth = calibrated.get(pose.physicalIndex), mouthSource = mouth && mouths.atlases[mouth.atlas];
-      const mouthBottom = mouth && mouthSource?.src === selected.src && mouthSource.sha256 === anchors.sources[pose.atlas].sha256 ? Math.max(...[0, 2].flatMap(x => [1, 3].map(y => depth(mouth.bounds[x] / mouths.cell * 80, mouth.bounds[y] / mouths.cell * 80)))) : undefined;
+      const mouthBottom = mouth && mouthSource?.src === anchors.sources[pose.atlas].src && mouthSource.sha256 === anchors.sources[pose.atlas].sha256 ? Math.max(...[0, 2].flatMap(x => [1, 3].map(y => depth(mouth.bounds[x] / mouths.cell * 80, mouth.bounds[y] / mouths.cell * 80)))) : undefined;
       for (const id of COMPANION_ACCESSORY_IDS.filter(id => ["chest-badge", "front-bow", "front-pocket"].includes(COMPANION_ACCESSORIES[currentCompanionAccessory(id)].family))) for (const age of [0, 300, 600, 900, 1200, 1500, 1800, 2100, 2600]) {
         const placed = companionAccessoryPlacement(selected, id, sampleCompanionAccessoryMotion(id, age).accessory)!, rotation = placed.rotation * Math.PI / 180, height = placed.width * placed.art.content.height / placed.art.content.width;
         const corners = [-1, 1].flatMap(sx => [-1, 1].map(sy => {

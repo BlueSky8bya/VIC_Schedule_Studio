@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createCompanionGeometryIdentity, observeCompanionPlatforms, safeCompanionSurfaces, unoccludedCompanionRects, type CompanionSurface, type CompanionTextRect, type CompanionGeometrySubscription, type CompanionFollowSample } from "@/lib/ui/viewer-companion/geometry";
+import { createCompanionGeometryIdentity, observeCompanionPlatforms, safeCompanionSurfaces, unoccludedCompanionRects, paintedCompanionDayBorder, type CompanionSurface, type CompanionTextRect, type CompanionGeometrySubscription, type CompanionFollowSample } from "@/lib/ui/viewer-companion/geometry";
+import { planCompanionOutsideRoute } from "@/lib/ui/viewer-companion/outside-route";
+import { findCompanionToyRoute } from "@/lib/ui/viewer-companion/toys";
 import type { Platform } from "@/lib/ui/viewer-companion/brain";
 import { COMPANION_HOME_FLOOR_FOOD, placeCompanionFood, type CompanionFoodDropSupport } from "@/lib/ui/viewer-companion/food";
 import { COMPANION_PANEL_SIDE_SELECTOR } from "@/lib/ui/viewer-companion/panel-play";
@@ -1030,5 +1032,119 @@ describe("companion text platforms", () => {
     expect(safe(surface, [text(NaN, 400, 500, 430), text(200, 400, 200, 430)])).toEqual(safe(surface, []));
     expect(safe({ x: NaN, y: 400, width: 300 }, [])).toEqual([]);
     expect(safe(surface, [], NaN)).toEqual([]);
+  });
+});
+
+
+const paintedGridBorder = { borderBottomWidth: "1px", borderBottomStyle: "solid", borderBottomColor: "rgb(47, 44, 40)" };
+function paintedDayFixture(mode: "public" | "agenda" | "studio" = "public") {
+  const f = geometryFixture(), base = f.win.getComputedStyle();
+  f.day.rect = box(450, 500, 284, 79.2); f.date.rect = box(456, 508, 14, 20); f.title.rect = box(456, 428, 20, 20);
+  f.day.matches = selector => selector.includes(mode === "studio" ? ".studio-day" : mode === "agenda" ? ".agenda-day" : ".public-day");
+  f.day.getAttribute = key => key === "data-isodate" ? "2025-04-01" : null;
+  f.sourceRoot.getAttribute = key => mode === "studio" && key === "data-companion-surface" ? "studio" : null;
+  f.win.getComputedStyle.mockImplementation(element => element === f.day ? { ...base, ...paintedGridBorder } : base);
+  return f;
+}
+describe("143 actual painted calendar edges", () => {
+  it.each(["rgb(47, 44, 40)", "rgba(47,44,40,.12)", "rgb(47 44 40 / 12%)", "rgb(0% 0% 0% / 1)"])("recognizes positive computed border paint %s", color => {
+    expect(paintedCompanionDayBorder({ ...paintedGridBorder, borderBottomColor: color })).toBe(true);
+  });
+  it.each([
+    { borderBottomWidth: "0px" }, { borderBottomWidth: "1invalid" }, { borderBottomWidth: "NaNpx" },
+    { borderBottomStyle: "none" }, { borderBottomStyle: "hidden" }, { borderBottomStyle: "dashed" },
+    { borderBottomColor: "transparent" }, { borderBottomColor: "rgba(47,44,40,0)" },
+    { borderBottomColor: "rgb(47 44 40 / 0%)" }, { borderBottomColor: "rgb(47,44,40,2)" },
+    { borderBottomColor: "rgb(47,44)" }, { borderBottomColor: "unknown(1)" },
+  ])("does not invent paint from invalid or invisible border $borderBottomColor $borderBottomWidth $borderBottomStyle", change => {
+    expect(paintedCompanionDayBorder({ ...paintedGridBorder, ...change })).toBe(false);
+  });
+  it.each(["public", "agenda", "studio"] as const)("publishes the same actually measured safe edge on %s with one authoritative normal/landing/scroll identity", mode => {
+    const f = paintedDayFixture(mode); let normal: Platform[] = [];
+    const sub = observeCompanionPlatforms(f.root, planes => { normal = planes; }, { size: 92 }); f.flush();
+    const edges = normal.filter(plane => /date-\d+-floor(?:-\d+)?$/.test(plane.id));
+    expect(edges.length).toBeGreaterThan(0);
+    for (const plane of edges) {
+      expect(plane).toMatchObject({ kind: "floor", y: f.day.rect.bottom - 3 }); expect(plane.manualOnly).toBeUndefined();
+      expect(normal.filter(other => other.id === plane.id)).toHaveLength(1);
+      expect(sub.landings().filter(other => other.id === plane.id)).toEqual([plane]);
+      expect(sub.anchor(plane.id)?.element).toBe(f.day);
+    }
+    const id = edges[0].id; const old = { ...edges[0] }; f.day.rect = box(460, 480, 284, 79.2);
+    const followed = sub.follow([id])[0]; expect(followed.platform).toMatchObject({ id, x: old.x + 10, y: old.y - 20 });
+    expect(followed.platform.manualOnly).toBeUndefined();
+    sub();
+  });
+  it.each(["transparent", "no-border", "no-calendar-identity", "hidden", "inert", "clipped", "border-clipped-only", "source-removed"] as const)("never promotes an unproved day edge: %s", gate => {
+    const f = paintedDayFixture(); const base = f.win.getComputedStyle();
+    if (gate === "transparent") f.win.getComputedStyle.mockImplementation(element => element === f.day ? { ...base, ...paintedGridBorder, borderBottomColor: "rgba(0,0,0,0)" } : base);
+    if (gate === "no-border") f.win.getComputedStyle.mockImplementation(element => element === f.day ? { ...base, ...paintedGridBorder, borderBottomWidth: "0px" } : base);
+    if (gate === "no-calendar-identity") f.day.getAttribute = () => null;
+    if (gate === "hidden") f.day.hasAttribute = key => key === "hidden";
+    if (gate === "inert") f.day.closest = selector => selector.includes("[inert]") ? f.day : null;
+    if (gate === "clipped") { f.sourceRoot.rect = box(0,0,1000,550); f.win.getComputedStyle.mockImplementation(element => element === f.sourceRoot ? { ...base, overflowY: "hidden" } : element === f.day ? { ...base, ...paintedGridBorder } : base); }
+    if (gate === "border-clipped-only") { f.sourceRoot.rect = box(0,0,1000,f.day.rect.bottom-1); f.win.getComputedStyle.mockImplementation(element => element === f.sourceRoot ? { ...base, overflowY: "hidden" } : element === f.day ? { ...base, ...paintedGridBorder } : base); }
+    if (gate === "source-removed") f.sourceRoot.isConnected = false;
+    let normal: Platform[] = []; const sub = observeCompanionPlatforms(f.root, planes => { normal = planes; }, { size: 92 }); f.flush();
+    expect(normal.some(plane => /date-\d+-floor(?:-\d+)?$/.test(plane.id))).toBe(false);
+    if (["transparent", "no-border", "no-calendar-identity", "border-clipped-only"].includes(gate)) expect(sub.landings().some(plane => /date-\d+-floor(?:-\d+)?$/.test(plane.id) && plane.manualOnly)).toBe(true);
+    sub();
+  });
+  it("keeps the old input/text/house guards and item tier while opening a proved bounded outside route", () => {
+    const f = paintedDayFixture(); f.win.innerHeight = 1100; addHouseFloor(f);
+    f.day.rect = box(400,500,284,79.2); f.date.rect = box(406,508,14,20); f.title.rect = box(406,428,20,20);
+    // Restore the explicit painted day after addHouseFloor's shared style setup.
+    const style = f.win.getComputedStyle(); const previousStyle = f.win.getComputedStyle.getMockImplementation()!;
+    f.win.getComputedStyle.mockImplementation(element => element === f.day ? { ...style, ...paintedGridBorder } : previousStyle(element));
+    const control = new FixtureElement(); control.parentElement = f.sourceRoot; control.rect = box(610,510,44,65); f.controls.push(control);
+    let planes: Platform[] = []; const sub = observeCompanionPlatforms(f.root, next => { planes = next; }, { size: 92, home: f.home as unknown as HTMLElement }); f.flush();
+    const edges = planes.filter(plane => /date-\d+-floor(?:-\d+)?$/.test(plane.id)); expect(edges.length).toBeGreaterThan(0);
+    expectClear(edges, [f.date.rect, f.title.rect, control.rect, box(100,480,360,190)], 92 * .76);
+    const home = sub.landings().find(plane => plane.id === "companion-home-floor")!; expect(home).toBeTruthy();
+    const origin = { x: home.x + home.width / 2, y: home.y, platformId: home.id }, world = { ...origin, platforms: [...planes, ...sub.landings().filter(plane => !planes.some(p => p.id === plane.id))], width: 1000, height: 1100, animated: true };
+    expect(planCompanionOutsideRoute({ ...world, platforms: world.platforms.filter(plane => !edges.some(edge => edge.id === plane.id)) }, true)).toBeUndefined();
+    const plan = planCompanionOutsideRoute(world, true)!; expect(plan, JSON.stringify({origin,edges,planes:world.platforms})).toBeTruthy(); expect(edges.some(edge => edge.id === plan.target.platformId)).toBe(true);
+    expect(plan.route.some(step => step.kind === "jump")).toBe(true);
+    let point = origin;
+    for (const step of plan.route) { expect(world.platforms.some(plane => plane.id === step.target.platformId)).toBe(true); point = { ...point, ...step.target }; }
+    expect(point).toEqual(plan.target); expect(findCompanionToyRoute(origin, plan.target, world.platforms, false)).toBeNull();
+    const itemEdges = sub.landings(32).filter(plane => /date-\d+-floor-food(?:-\d+)?$/.test(plane.id));
+    expect(itemEdges.length).toBeGreaterThan(0); expect(itemEdges.every(plane => plane.manualOnly)).toBe(true);
+    sub();
+  });
+});
+
+
+describe("143 day edge shares the existing bounded geometry budget", () => {
+  it("never evicts one existing text/card support to make room for a day edge", () => {
+    const measure = (painted: boolean) => {
+      const f = paintedDayFixture(), base = f.win.getComputedStyle(); f.win.innerWidth = 40000;
+      f.win.getComputedStyle.mockImplementation(element => element === f.day ? { ...base, ...paintedGridBorder, borderBottomWidth: painted ? "1px" : "0px" } : base);
+      const nodes = Array.from({ length: 205 }, (_, i) => {
+        const owner = new FixtureElement(), ink = new FixtureElement(); owner.parentElement = f.sourceRoot; ink.parentElement = owner;
+        owner.rect = box(100+i*140,400,90,60); ink.rect = box(110+i*140,410,60,20);
+        ink.closest = selector => selector.includes(".event-main") ? ink : selector.includes("data-eventid") ? owner : null;
+        return { parentElement: ink };
+      });
+      f.root.ownerDocument.createTreeWalker = () => { let at = 0; return { nextNode: () => nodes[at++] ?? null } as unknown as TreeWalker; };
+      let normal: Platform[] = []; const sub = observeCompanionPlatforms(f.root, planes => { normal = planes; }, { size: 92 }); f.flush();
+      const result = normal.map(plane => ({ ...plane })); expect(result).toHaveLength(200);
+      expect(sub.landings().filter(plane => /date-\d+-floor(?:-\d+)?$/.test(plane.id)).every(plane => plane.manualOnly)).toBe(true);
+      sub(); return result;
+    };
+    expect(measure(true)).toEqual(measure(false));
+  });
+  it("does not add measurement calls, expose panel wrappers or change the food support when border paint toggles", () => {
+    const measure = (painted: boolean) => {
+      const f = paintedDayFixture(), base = f.win.getComputedStyle();
+      f.win.getComputedStyle.mockImplementation(element => element === f.day ? { ...base, ...paintedGridBorder, borderBottomWidth: painted ? "1px" : "0px" } : base);
+      let normal: Platform[] = []; const sub = observeCompanionPlatforms(f.root, planes => { normal = planes; }, { size: 92 }); f.flush();
+      const calls = { styles: f.win.getComputedStyle.mock.calls.length, ranges: f.range.getClientRects.mock.calls.length, dayRects: f.day.getBoundingClientRect.mock.calls.length };
+      const foods = sub.landings(32).map(plane => ({ ...plane }));
+      expect([...normal, ...sub.landings(), ...foods].some(plane => plane.id.startsWith("companion-panel-floor"))).toBe(false);
+      expect(normal.length).toBeLessThanOrEqual(200); expect(sub.landings().length).toBeLessThanOrEqual(200);
+      sub(); return { calls, foods };
+    };
+    expect(measure(true)).toEqual(measure(false));
   });
 });

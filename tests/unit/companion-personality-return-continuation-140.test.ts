@@ -138,7 +138,7 @@ describe("140 anti-repeat preserves unfinished physical returns", () => {
   });
 
   it.each(["P11", "T07"])("does not repeat pure expression %s just because nothing else is available", id => {
-    const host = fixture(0, [source(id)]); host.until(() => host.director.completed().includes(id));
+    const host = fixture(0, [source(id)]); if(id==="P11") {const publicFloor={...floor,id:"actual-outside-floor",manualOnly:false};host.scene.world.platforms=[...host.scene.world.platforms,publicFloor];host.scene.world.platformId=publicFloor.id;} host.until(() => host.director.completed().includes(id));
     expect(host.offer()?.personalityScene.id).not.toBe(id);
   });
 

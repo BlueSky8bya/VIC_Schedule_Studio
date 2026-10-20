@@ -1,5 +1,7 @@
 # 빅타민 목적·경험 학습과 일일 검수142
 
+상태: scoped 구현·검증·출시 완료. 매일09:00 KST 검수 예약 ACTIVE; 별도 예약의 실제 첫 실행은 미검증. 최종 범위와 한계는 [출시 확인](#출시-확인)을 따른다.
+
 2026-10-20 KST. 최신 요청: 성격 표현을 같은 자리에서 반복하는 대신 생활 속 목적을 유지하고 실제 경험으로 선택을 개선한다. 남은 정리·다중 음식 선택·사고뭉치 제자리 반복, 성격 바로가기/중앙 동글이와 팔괘 배치, TV 화면/전등·커튼 줄 표시를 고친다. 매일 한 번 재현 가능한 자동 검사→문제 재현→수정→독립 검수→검증된 반영→결과 보고를 실행한다.141의 PASS는 이번 자연스러움 검증을 대신하지 않는다.
 
 ## 경계와 계획
@@ -323,3 +325,21 @@ G18의 viewer/studio/preview 공통 runtime·geometry 한 구현을 유지한다
 정리 두 사례는 집 안728프레임/36.763초, 밖777프레임/39.291초에서 같은4개 모두 실제 운반·실제 입구 접촉·최종 부재/재등장0이다. 각 운반은26/37/50/62 및28/36/49/61프레임, 마지막 입구 오차 전부0.000545915px였다. 밖은 card-105-top 설정전후x/y변화0, 집 높이차161.085083px, 등록점프 두 구간26샘플25pose/1,299.9ms/88.876px와18/17/883.2ms/138.511px 및 실측2착지·연결을 확인했다. 집 도착5.209초 뒤 첫 집기6.993초다. 종료 뒤 별도 strict-v2 audit SHA256 `DE37F1F2ED7379739A04E9E54915264A002E70A217D1F66046FA683E130024FE`는 두 scoped contract proved, missing0이다. 초기 미등록 프레임은 이동 증거에서 제외했다.
 
 유한 모델 전체와 actual pairwise152/431(미완료),9개의90초 표본은 다르다.144장면 모두의 native 완주·약21억 설정 전교차·운영 무seed230px 조건·실제 로그인/RLS·OBS·스크린리더·장기 자연성은 여기서 입증하지 않았다. 이전95/97/운영1/4/카드 실패와 진단은 그대로 보존했다. 다음은 검증한23개 후보만 반영하고 동일 새 fullSHA의 운영4실반납·양성 로컬학습·다크를 검증하는 단계다.
+
+### 동일 새 SHA 운영 검증
+
+검증한23파일만 `564e9a910be37b4dfe8bad2cc11be7dd379439a5`로 commit/push했다. 사용자 아트·무관한 untracked·환경 파일은 제외했고 보호 제작기록 E980… 원문을 유지했다. [Vercel 배포](https://vercel.com/bluesky-s-project3/vic-schedule-studio/3umdQbipitbabBWhFhRgikyT26ec) success 뒤 같은39B8A1B3… 원문 진단기를 실제 공개 서비스에 실행해 root72081 exit0/PASS로 종료했다. 시작 localStorage keys[], initialCareSeed/experienceSeed false, RNG/clock/engine/geometry 주입 없이 기존115초/20px 조건을 그대로 사용했다.
+
+2026-10-20 10:51~10:52 KST의 실제745샘플에서 toy1..4의 unheld carry29/39/50/65프레임→실제 입구 마지막오차0.000545915px→각29.302/37.051/22.602/7.603초 부재/재등장0을 확인했다. 네 개 완료37.051초다. 초기 한 개 뒤 외출하던 이전12d의 두1/4 실패를 보존한 채 새 실제4/4 성공을 확인했다. 새 표본은 성공한 현재 실동선이며, 이전 실패의230px 밖 복귀 구간을 그대로 통과했다고 주장하지 않는다. 밖→집 동선의 직접 증거는 별도 새14차161px fixture 두 점프다.
+
+실제 정리 뒤 로컬 cleanup 경험은0→2.955225로 증가했다. abstract 허용5필드만, 즉시2개/최종3개 entry 및126상한·버전 검사 PASS이며 네 개 각각이 cleanup 보상 한 번씩을 받았다는 주장과 다르다. 새 익명6문서에서5종류가 관측됐고 수동 재롱둥이는3회 새로고침 유지, 책48px·전등 선택 유지·커튼3단계·TV nature·실제 pad/actor 밝기 inside.65→outside1·dark weekday rgb(35,33,29)=#23211d도 PASS였다. 다크 캡처는 UI theme/낮 풍경/현재 조명 상태의 검증이며 밤 방 전체 검증으로 확대하지 않는다. 실제 새 house registration·dark home·dark weekday PNG를 직접 열람했다.
+
+공개 release proof의24개 코드 해시와 브라우저가 실제 수신한 commit-bearing1경로10개200응답을 구분하며 각각 expected와 일치했다. 실제 errors/unexpected/운영 mutation/live-state GET/private manifest0, 정확한 기존 read POST 포함 차단10·SDK20차단. viewer 공개 일정 제목은 기존 공개 DTO이며 새 학습/메타데이터에 넣지 않았다. Face의 원 진단기 SHA·실raw·허용 필드·수신 응답/PNG 독립읽기에서도 새 확정P1/P2는 없었다. 원격 [quality39355536049](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39355536049)는 단위·격리SQL·harness PASS, build/type/lint는 이 기록 시점 대기다.
+
+최종 배포 확인을 적는 네 문서(CURRENT_STATE/ACTIVE_PLAN/이 계획/보고서)는 검증한 제품 SHA를 바꾸지 않도록 로컬 docs-only closure로 남긴다. 이 문서 보완을 새 제품 배포라고 보고하거나 반복 push하지 않는다. 완료 시점은 원격 필수 gate와 독립 최종 읽기까지 확인한 후 기록한다. 매일09KST 예약 ACTIVE와 오늘 별도 예약 실행 미관측은 그대로 구분한다.
+
+## 출시 확인
+
+2026-10-20 10:56 KST, `564e9a910be37b4dfe8bad2cc11be7dd379439a5`의 [quality39355536049](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/39355536049) actual completed/success를 확인했다. Unit tests·Isolated SQL contracts·Agent harness·Production build·Typecheck generated routes and source·Lint 모두 success다. Vercel success와 새 익명 운영4/4 반납·양성 로컬학습·manual refresh/조명/TV/커튼/다크·수신 코드 해시의 root 검증 및 Face 독립 읽기도 완료했다. 독립 운영 proof SHA256 `8DC6B58508DE86F94177AB53E6C8844C088E80F09FA30595A5CF3379856EF8CD`, 선택27 raw 재계산 `920C4540AD9250E858CFCC1EFFB676624C1A2D535D846CB72ECF4E01841438C1`, strict 정리 감사 `DE37F1F2…0024FE`를 로컬에 보존했다.
+
+현재 요청의 구현/검증/출시를 완료하고 active plan 행을 제거한다. 모델 전수와 실제 표본·누락 조합을 구분하고, 남은 축약 관찰/교감 반복·장기 자연성 한계는 위 결과와 보고서에 유지한다. 매일09KST heartbeat가 이후 확인된 문제의 재현→최대3수정→독립 검수→전체 필수 검사→허용 범위 반영→실제 배포 확인→결과 보고를 이어간다. 오늘09시의 별도 실행 성공,144개 native 전완주,전설정/연속시간 전수,실제 로그인/RLS/OBS/스크린리더를 이 완료에 포함하지 않는다. 사용자 원본·보호 art·이전 실패를 보존한다.

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { advanceCompanionLife, createCompanionLife, experienceCompanionLife, normalizeCompanionLife } from "@/lib/ui/viewer-companion/life";
 import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 import { COMPANION_TOY_KINDS } from "@/lib/ui/viewer-companion/toy-catalog";
-import { companionTasteReason, createCompanionTastesStore, normalizeCompanionTastes, summarizeCompanionFoodTastes, summarizeCompanionToyTastes } from "@/lib/ui/viewer-companion/toy-tastes";
+import { COMPANION_TASTES_MAX_BYTES, companionTasteReason, createCompanionTastesStore, normalizeCompanionTastes, summarizeCompanionFoodTastes, summarizeCompanionToyTastes } from "@/lib/ui/viewer-companion/toy-tastes";
 import { evaluateCompanionFoodTaste, isCompanionFoodTasteOutcome } from "@/lib/ui/viewer-companion/taste-reasons";
 import { sanitizeMeta, sanitizeTarget } from "@/lib/activity/kinds";
 
@@ -139,13 +139,13 @@ describe("130 bounded lived taste impressions", () => {
     expect(life.favoriteFood).toBe("durian"); expect(life.foodScores.durian).toBeGreaterThan(.7);
   });
 
-  it("bounds all204 catalogue entries plus eight reasons below the unchanged16KB parse limit", () => {
-    expect(COMPANION_FOOD_KINDS.length + COMPANION_TOY_KINDS.length).toBe(204);
+  it("bounds all300 catalogue entries plus eight reasons below the explicit24KiB UTF-8 parse limit", () => {
+    expect(COMPANION_FOOD_KINDS.length + COMPANION_TOY_KINDS.length).toBe(300);
     const record = { score: -.123456789, accepted: 31, declined: 31, tripped: 31, freeText: "private-canary", instanceId: "toy-999" };
     const value = normalizeCompanionTastes({ version: 1, toys: COMPANION_TOY_KINDS, seen: COMPANION_TOY_KINDS,
       toyTastes: Object.fromEntries(COMPANION_TOY_KINDS.map(kind => [kind, record])), foodTastes: Object.fromEntries(COMPANION_FOOD_KINDS.map(kind => [kind, record])),
       reasons: COMPANION_TOY_KINDS.map(kind => ({ domain: "toy", kind, reason: "toy-trip", age: 239, account: "private-canary" })), owner: "private-canary", at: Date.now() });
-    const raw = JSON.stringify(value); expect(Buffer.byteLength(raw, "utf8")).toBeLessThanOrEqual(16384); expect(raw.length).toBeLessThanOrEqual(16384);
+    const raw = JSON.stringify(value); expect(Buffer.byteLength(raw, "utf8")).toBeLessThanOrEqual(COMPANION_TASTES_MAX_BYTES); expect(raw.length).toBeLessThanOrEqual(COMPANION_TASTES_MAX_BYTES);
     expect(raw).not.toContain("private-canary"); expect(raw).not.toContain("toy-999"); expect(value.reasons).toHaveLength(8);
     expect(value.toyTastes.ball!.score).toBe(-.1235);
     const restored = createCompanionTastesStore({ getItem: () => raw, setItem: vi.fn() }).load(); expect(restored).toEqual(value);

@@ -8,9 +8,11 @@ import { CompanionToyArt } from "./companion-toy-art";
 import type { CompanionToyExperience } from "@/lib/ui/viewer-companion/toy-tastes";
 import { createCompanionInputFrame } from "@/lib/ui/viewer-companion/input-frame";
 import "./companion-toys.css";
+import { companionRoomItemLight, type CompanionRoomLightRect } from "@/lib/ui/viewer-companion/room-light";
 
 type Point = { x: number; y: number; platformId?: string };
 export type CompanionToyControl = {
+  setRoomLight: (room?: CompanionRoomLightRect, grade?: number) => void;
   sync: (platforms: readonly Platform[], bounds: { width: number; height: number }, now: number, smallHomeFloors?: readonly Platform[]) => void;
   tick: (now: number) => void;
   spawn: (point: Point, now: number, autonomous?: boolean, occupied?: readonly Point[]) => string | undefined;
@@ -44,6 +46,8 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
   const dragFrame = useRef<ReturnType<typeof createCompanionInputFrame> | null>(null);
   dragFrame.current ??= createCompanionInputFrame();
   const painted = useRef(new WeakMap<HTMLButtonElement, string>());
+  const paintedLight = useRef(new WeakMap<HTMLButtonElement, number>());
+  const roomLight = useRef<{ room?: CompanionRoomLightRect; grade: number }>({ grade: 1 });
   const blockedRef = useRef(blocked); blockedRef.current = blocked;
   const dropBox = useRef<HTMLButtonElement | null>(null);
   const clearDropBox = useCallback(() => { dropBox.current?.removeAttribute("data-toy-over"); dropBox.current = null; }, []);
@@ -61,6 +65,8 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     if (onlyId && toy.id !== onlyId) return;
     const node = nodes.current.get(toy.id);
     if (!node) return;
+    const light = companionRoomItemLight(toy, roomLight.current.room, roomLight.current.grade);
+    if (paintedLight.current.get(node) !== light) { node.style.setProperty("--vc-item-room-light", String(light)); paintedLight.current.set(node, light); }
     node.hidden = Boolean(toy.hidden);
     const transform = "translate3d(" + toy.x.toFixed(3) + "px," + toy.y.toFixed(3) + "px,0) translate(-50%,-100%) rotate(" + toy.angle.toFixed(2) + "deg)";
     if (painted.current.get(node) !== transform) { node.style.transform = transform; painted.current.set(node, transform); }
@@ -83,6 +89,11 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     world.pause(now); paint();
   }, [world, paint, clearDropBox]);
   useImperativeHandle(ref, () => ({
+    setRoomLight(room, grade = 1) {
+      const previous = roomLight.current;
+      if (previous.grade === grade && ["left", "right", "top", "bottom"].every(key => previous.room?.[key as keyof CompanionRoomLightRect] === room?.[key as keyof CompanionRoomLightRect])) return;
+      roomLight.current = { room: room && { ...room }, grade }; paint();
+    },
     sync(platforms, bounds, now, smallHomeFloors) { world.sync(platforms, bounds, now, smallHomeFloors); paint(); },
     tick(now) { world.tick(now); if (world.count() !== count.current) refresh(); else paint(); },
     spawn(point, now, autonomous = false, occupied) { if (blockedRef.current) return; const id = world.spawn(point, now, occupied); if (id) { refresh(); if (!autonomous) { const toy = world.items().find(item => item.id === id); if (toy) onExperience?.(toy.kind, "taken-out"); } onActivity(); } return id; },

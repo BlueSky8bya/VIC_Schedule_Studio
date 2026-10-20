@@ -15,6 +15,7 @@ import { settlePanelLayout } from "./helpers/panel-layout";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
 import { completedNativeTravel, nativeTravelPointsBefore, type NativeTravelFrame, type NativeSupportSurface } from "./helpers/companion-native-travel";
+import { enableCompanion143Diagnostics, readCompanion143Diagnostics } from "./helpers/companion-qa";
 
 const output = process.env.COMPANION137_OUTPUT ?? ".scratch-pw/companion-137/native";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
@@ -33,6 +34,7 @@ test.use({ viewport: { width: 1920, height: 1100 }, serviceWorkers: "block", isM
 test.setTimeout(110_000);
 
 test.beforeEach(async ({ page, context, baseURL }) => {
+  await enableCompanion143Diagnostics(page);
   const proof: Proof = { errors: [], rejected: [], previewReads: 0, notes: [] }; proofs.set(page, proof);
   const origin = new URL(baseURL!).origin;
   const actions = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
@@ -55,9 +57,10 @@ test.beforeEach(async ({ page, context, baseURL }) => {
 
 test.afterEach(async ({ page }, info) => {
   const frames = await page.evaluate(() => { const probe = (window as ProbeWindow).personality137; probe?.stop(); return probe?.samples ?? []; }).catch(() => []);
+  const diagnostics143=await readCompanion143Diagnostics(page).catch(()=>[]);
   mkdirSync(output, { recursive: true }); const filename = info.title.replace(/[^a-z0-9]+/gi, "-");
   const path = resolve(output, filename + ".json");
-  writeFileSync(path, JSON.stringify({ ...proofs.get(page), frames, status: info.status, capturedAt: new Date().toISOString(), scope: "Production-build native fixture interactions and read-only rAF observations. Initial local saved preferences/care only. No RNG/clock/brain/geometry/style injection. Not a144 native-scene, OBS, real-login or RLS claim." }, null, 2));
+  writeFileSync(path, JSON.stringify({ ...proofs.get(page), frames, diagnostics143, status: info.status, capturedAt: new Date().toISOString(), scope: "Production-build native fixture interactions and read-only rAF observations. Initial local saved preferences/care only. No RNG/clock/brain/geometry/style injection. Not a144 native-scene, OBS, real-login or RLS claim." }, null, 2));
   await info.attach("personality137-native", { path, contentType: "application/json" });
   await page.screenshot({ path: resolve(output, filename + ".png") }).catch(() => {});
   expect(proofs.get(page)!.errors).toEqual([]); expect(proofs.get(page)!.rejected).toEqual([]);
@@ -113,11 +116,29 @@ async function startProbe(page: Page) {
     window.addEventListener("scroll",changed,true); window.addEventListener("resize",changed);
     document.addEventListener("keydown",input,true); document.addEventListener("pointerdown",input,true); window.addEventListener(preferenceEvent,preference);
     const began = performance.now(), samples: Frame[] = [];
-    const edgeNodes = (x: number,y: number) => [...new Set(document.elementsFromPoint(x,Math.min(innerHeight-1,y+4)).flatMap(element => {
-      if (element.closest(".vc-companion,.vc-toy,.vc-food")) return [];
-      const node = element.closest<HTMLElement>(".public-event,.agenda-event,.agenda-item,[data-companion-event='ordinary'],.public-day,.agenda-day,.studio-day,.support-bar,.weekday-row,.public-calendar-header,.studio-weekdays");
-      return node ? [node] : [];
-    }))];
+    const edgeNodes = (x: number,y: number) => {
+      const nodes = document.elementsFromPoint(x,Math.min(innerHeight-1,y+4)).flatMap(element => {
+        if (element.closest(".vc-companion,.vc-toy,.vc-food")) return [];
+        const node = element.closest<HTMLElement>(".public-event,.agenda-event,.agenda-item,[data-companion-event='ordinary'],.public-day,.agenda-day,.studio-day,.support-bar,.weekday-row,.public-calendar-header,.studio-weekdays");
+        return node ? [node] : [];
+      });
+      // A day-floor foot is bottom-3: the old y+4 hit crosses into the next day.
+      // Only add a real painted, unclipped public DAY border from the upper hit.
+      const upper = document.elementsFromPoint(x,Math.max(0,Math.min(innerHeight-1,y+2))).find(element => !element.closest(".vc-companion,.vc-toy,.vc-food"));
+      const day = upper?.closest<HTMLElement>(".public-day,.agenda-day,.studio-day");
+      if(day && !upper?.closest(".vc-home,button,input,select,textarea,[role='button'],[role='switch']") && !day.closest(".dimmed,[hidden],[inert],[aria-hidden='true']") && day.checkVisibility({checkOpacity:true,checkVisibilityCSS:true}) && /^\d{4}-\d{2}-\d{2}$/.test(day.getAttribute("data-date") ?? day.getAttribute("data-isodate") ?? "")){
+        const rect=day.getBoundingClientRect(),style=getComputedStyle(day),width=Number.parseFloat(style.borderBottomWidth);
+        const color=/^rgba?\(([^)]+)\)$/.exec(style.borderBottomColor.trim().toLowerCase()),parts=color?.[1].split("/") ?? [];
+        const values=parts[0]?.trim().split(/[\s,]+/).filter(Boolean) ?? [],alpha=parts[1]?.trim() ?? (values.length===4 ? values.pop()! : "1");
+        const validColor=parts.length<=2 && values.length===3 && values.every(value=>/^\d*\.?\d+%?$/.test(value) && Number.parseFloat(value)<= (value.endsWith("%") ? 100 : 255)) && /^\d*\.?\d+%?$/.test(alpha) && Number.parseFloat(alpha)>0 && Number.parseFloat(alpha)<= (alpha.endsWith("%") ? 100 : 1);
+        if(rect.width>0 && rect.height>0 && rect.bottom>0 && rect.bottom<=innerHeight && x>=rect.left && x<=rect.right && Math.abs(y-(rect.bottom-3))<=3 && Number(style.opacity)>0.05 && /^\d*\.?\d+px$/.test(style.borderBottomWidth) && Number.isFinite(width) && width>0 && style.borderBottomStyle==="solid" && validColor){
+          // Exact first painted border hit rejects a clipped edge, house or control cover.
+          const border=document.elementsFromPoint(x,rect.bottom-.01).find(element=>!element.closest(".vc-companion,.vc-toy,.vc-food"));
+          if(border===day) nodes.unshift(day);
+        }
+      }
+      return [...new Set(nodes)];
+    };
     const supportAt = (x:number,y:number,platform:string): {support:NativeSupportSurface|null;inkRects:NativeSupportSurface["rect"][]} => {
       const surfaces:NativeSupportSurface[]=[],inkRects:NativeSupportSurface["rect"][]=[];
       const add=(kind:NativeSupportSurface["kind"],rect:DOMRect|undefined,footY:number,node?:Element|null,registered=false)=>{
@@ -187,6 +208,12 @@ async function startProbe(page: Page) {
 const frames = (page: Page) => page.evaluate(() => (window as ProbeWindow).personality137?.samples ?? []);
 const duration = async (page: Page, ms: number) => expect.poll(async () => (await frames(page)).at(-1)?.at ?? 0, { timeout: ms + 8000, intervals: [250] }).toBeGreaterThanOrEqual(ms);
 function signature(frame: Frame, personality: CompanionPersonality) {
+  //143 replaces private-room audience performances with actual personal
+  // preparation. Witness the decoded declared action row, never its label.
+  const preparation = ["performer", "balanced", "sleepy"].includes(personality) ? { state: "stretch", row: 16 }
+    : ["curious", "gourmet"].includes(personality) ? { state: "sniff", row: 1 } : undefined;
+  if (preparation && frame.scene === `entry-${personality}` && frame.visible && frame.decoded && frame.signature === personality
+    && frame.state === preparation.state && companionSpriteMetadata.rows[preparation.row].includes(frame.pose)) return true;
   const timing = COMPANION_PLAY_TIMING[frame.play as keyof typeof COMPANION_PLAY_TIMING];
   return frame.visible && frame.decoded && frame.signature === personality && frame.state === "play" && Boolean(timing?.beats.some(beat => companionSpriteMetadata.rows[beat.row].includes(frame.pose)));
 }
@@ -198,11 +225,13 @@ function meaningful(trace: readonly Frame[], index: number, personality: Compani
   return frame.command === "watch" && frame.state === "look" && frame.tv !== "off";
 }
 
-/** Choose through the actual24-kind shuffle bag and physically return unwanted
+/**143 weighted sampling no longer guarantees a24-item bag. Acquisition is
+ * bounded to320 real draws; the subsequent115s living proof is unchanged.
+ * Choose through the actual weighted catalogue and physically return unwanted
  * draws. No item kind, recipe, clock or actor state is supplied to the app. */
 async function drawNativeToy(page: Page, kind: CompanionToyKind) {
   const home = await openCompanionHome(page);
-  for (let draw = 0; draw < 24; draw++) {
+  for (let draw = 0; draw < 320; draw++) {
     await home.locator('[data-home-action="toys"]').click();
     const toy = page.locator(".vc-toy"); await expect(toy).toHaveCount(1);
     await expect(toy).toHaveAttribute("data-falling", "false", { timeout: 6000 });
@@ -214,7 +243,7 @@ async function drawNativeToy(page: Page, kind: CompanionToyKind) {
     await expect(home.locator('[data-home-action="toys"]')).toHaveAttribute("data-toy-over", "");
     await page.mouse.up(); await expect(toy).toHaveCount(0);
   }
-  throw new Error(`actual shuffle bag did not produce ${kind}`);
+  throw new Error(`actual bounded weighted draws did not produce ${kind}; no rarity or random state was overridden`);
 }
 
 function finishedRecipes(trace: readonly Frame[], opening: { x: number; y: number }) {
@@ -330,7 +359,10 @@ for (const outside of [false, true]) test(outside
   ? "142 floating home tidy returns from a real calendar perch to all four toys"
   : "142 floating home tidy preserves all four returns with learned care on", async ({ page }) => {
   test.setTimeout(165_000);
-  await page.setViewportSize({ width: 1440, height: 1050 });
+  // Preserve the measured160..330px real-card gap after143's room proportions.
+  // Only this outside-return fixture needs the taller native viewport. No
+  // support coordinates, physics limits or runtime state are substituted.
+  await page.setViewportSize({ width: 1440, height: outside ? 1100 : 1050 });
   await fixture(page, "viewer", { personality: "tidy", roam: false, hunger: .60, energy: .76, sleep: true, learnFromYou: true });
   const fold = page.getByRole("button", { name: "패널 접기", exact: true });
   if (await fold.isVisible()) await fold.click();
@@ -454,7 +486,7 @@ for (const outside of [false, true]) test(outside
 });
 
 for (const personality of COMPANION_PERSONALITIES) test(`140 ${personality} native primary and secondary sequences finish with real object or room effects`, async ({ page }) => {
-  test.setTimeout(190000);
+  test.setTimeout(950000);
   const home = await fixture(page, "studio", { personality, roam: false, hunger: personality === "gourmet" ? .6 : .5 });
   await placeCompanionOnHomeFloor(page);
   const kind = toys140[personality], id = kind ? await drawNativeToy(page, kind) : undefined;
@@ -517,7 +549,7 @@ for (const personality of COMPANION_PERSONALITIES) test(`140 ${personality} nati
 });
 
 test("142 sleepy low-energy same-ID return completes its required rest, while sleep OFF samples stay separate", async ({ page }) => {
-  test.setTimeout(190000);
+  test.setTimeout(950000);
   // Keep preparation from spending the very rest need this positive case
   // measures. Turn sleep ON through the actual control, then use the public
   // keyboard hold while drawing the shuffle bag; no care value is rewritten.

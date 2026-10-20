@@ -22,7 +22,7 @@ describe("additive109 small-food delivery", () => {
   it("maps exactly120 distinct new observed native cells without altering the existing60 IDs", () => {
     expect(COMPANION_SNACK_EXPANSION).toHaveLength(120);
     const ids = COMPANION_SNACK_EXPANSION.map(item => item.id);
-    expect(COMPANION_FOOD_KINDS.slice(60)).toEqual(ids);
+    expect(COMPANION_FOOD_KINDS.slice(60, 180)).toEqual(ids);
     expect(receipt.cells.map(item => item.id)).toEqual(ids);
     expect(new Set(receipt.cells.map(item => `${item.source}:${item.sourceIndex}`)).size).toBe(120);
     expect(receipt.sources).toHaveLength(6);

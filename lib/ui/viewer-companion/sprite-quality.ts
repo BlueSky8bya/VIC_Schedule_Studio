@@ -1,3 +1,4 @@
+import { companionEyeScale143Source } from "./eye-scale-143";
 import base from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
 import play from "@/lib/ui/viewer-companion/play-motion-sprite.json";
 import living from "@/lib/ui/viewer-companion/living-motion-sprite.json";
@@ -6,7 +7,7 @@ import living from "@/lib/ui/viewer-companion/living-motion-sprite.json";
  * registration. Every consumer uses this same global frame/atlas mapping. */
 export const companionSpriteMetadata = {
   ...base,
-  atlases: [...base.atlases, ...play.atlases, ...living.atlases],
+  atlases: [...base.atlases, ...play.atlases, ...living.atlases].map(companionEyeScale143Source),
   frames: [...base.frames, ...play.frames.map(frame => ({ ...frame, atlas: frame.atlas + base.atlases.length })), ...living.frames.map(frame => ({ ...frame, atlas: frame.atlas + base.atlases.length + play.atlases.length }))],
   rows: [...base.rows, ...play.rows.map(row => row.map(index => index + base.frames.length)), ...living.rows.map(row => row.map(index => index + base.frames.length + play.frames.length))],
 };

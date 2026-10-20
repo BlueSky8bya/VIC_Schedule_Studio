@@ -66,7 +66,7 @@ describe("142 declared QA model and safety gates", () => {
       "137 viewer native performer selection expresses immediately and remains purposeful sibling",
       "137 viewer tidy carries all four native toys to the actual box before removing their IDs",
     ]) expect(entry.test(title)).toBe(false);
-    for (const title of ["142 performer actual daily life", "141 common everyday life", "140 viewer primary and secondary"]) expect(selected.test(title)).toBe(true);
+    for (const title of ["143 actual controls", "142 performer actual daily life", "141 common everyday life", "140 viewer primary and secondary"]) expect(selected.test(title)).toBe(true);
   });
   it("excludes credentials/private source art and preserves a fail-closed loopback and worker budget", () => {
     for (const file of [".env.local", "lib/.env", "art-src/private.png", "lib/../secret", "/etc/passwd", "C:/Users/private", "docs/제작기록/request.json"]) expect(snapshotEligible(file)).toBe(false);
@@ -122,12 +122,13 @@ describe("142 declared QA model and safety gates", () => {
     if (kind === "meal") { input.brain.hunger = .5; input.meal = { foodId: "synthetic-carrot" }; }
     if (kind === "wash") for (let n = 1; n <= 5; n++) arbiter.observe("played", n);
     if (kind === "sleep" || kind === "nap") { input.brain.energy = .15; input.environment = { ...input.environment!, band: kind === "sleep" ? "night" : "noon", night: kind === "sleep" }; }
-    if (kind === "outing" || kind === "music") { input.canOuting = kind !== "music"; arbiter.next(input); input.now = kind === "music" ? 35000 : 8000; }
+    if (kind === "outing") input.radioAllowed=false; // Isolate the outing retry, not another valid leisure kind.
+    if (kind === "outing" || kind === "music") { input.canOuting = kind !== "music"; arbiter.next(input); input.now = kind === "music" ? 35000 : personality === "sleepy" ? 45000 : personality === "homebody" ? 100000 : 8000; }
     const chosen = arbiter.next(input)!;
     expect(chosen?.kind).toBe(kind); expect(chosen.recipe.personality).toBe(personality); expect(chosen.recipe.steps.length).toBeGreaterThan(1);
     for (const step of chosen.recipe.steps) if ("ms" in step) expect(step.ms).toBeGreaterThan(0);
     const director = createCompanionPersonalityDirector([]), entry = director.next(input)!; director.complete(entry.meta);
-    expect(director.startRoutine(chosen.recipe, input.now, chosen.itemId)).toBe(true);
+    expect(director.startRoutine(chosen.recipe, input.now, chosen.itemId, chosen.outsideGoal)).toBe(true);
     expect(director.current()).toMatchObject({ id: `routine-${kind}`, routine: true }); expect(director.completed()).toEqual([]);
     arbiter.cancel(input.now); expect(arbiter.current()).toBeUndefined(); expect(arbiter.next(input)).toBeUndefined(); measured.routineTemplates++;
   });
@@ -158,14 +159,14 @@ describe("142 exact declared Node font admission", () => {
 describe("142 actual native entry reporter gate", () => {
   const passedSpec = (title: string) => ({ title, tests: [{ expectedStatus: "passed", status: "expected", results: [{ status: "passed", retry: 0 }] }] });
   const nativeReport = () => ({ errors: [], suites: [{ specs: Array.from({ length: PLANNED_NATIVE_CASE_COUNT - NATIVE_ENTRY_TITLES.length - NATIVE_FLOATING_TIDY_TITLES.length }, (_, index) => passedSpec(`legacy-native-${index}`)), suites: [{ specs: NATIVE_ENTRY_TITLES.map(passedSpec) }, { specs: NATIVE_FLOATING_TIDY_TITLES.map(passedSpec) }] }] });
-  it("requires actual97 unique single-pass results including all27 entries and both exact floating-house tidy cases", () => {
+  it("requires every planned unique single-pass results including all27 entries and both exact floating-house tidy cases", () => {
     const result = nativeEntryEvidence(nativeReport());
-    expect(result).toMatchObject({ status: "passed", gatePassed: true, requiredEntries: 27, registeredEntries: 27, passedEntries: 27, failedEntries: 0, skippedEntries: 0, notRunEntries: 0, selectedCaseCount: 97, selectedPassedCases: 97, floatingTidy: { required: 2, registered: 2, passed: 2, failed: 0, skipped: 0, notRun: 0 } });
+    expect(result).toMatchObject({ status: "passed", gatePassed: true, requiredEntries: 27, registeredEntries: 27, passedEntries: 27, failedEntries: 0, skippedEntries: 0, notRunEntries: 0, selectedCaseCount: PLANNED_NATIVE_CASE_COUNT, selectedPassedCases: PLANNED_NATIVE_CASE_COUNT, floatingTidy: { required: 2, registered: 2, passed: 2, failed: 0, skipped: 0, notRun: 0 } });
   });
   it("reports entirely missing entry cases as not-run rather than promoting the pure entry model", () => {
     expect(nativeEntryEvidence(undefined)).toMatchObject({ status: "not-run", gatePassed: false, passedEntries: 0, notRunEntries: 27 });
     const report = nativeReport(); report.suites[0].suites[0].specs = [];
-    expect(nativeEntryEvidence(report)).toMatchObject({ status: "not-run", gatePassed: false, registeredEntries: 0, notRunEntries: 27, selectedCaseCount: 70 });
+    expect(nativeEntryEvidence(report)).toMatchObject({ status: "not-run", gatePassed: false, registeredEntries: 0, notRunEntries: 27, selectedCaseCount: PLANNED_NATIVE_CASE_COUNT-NATIVE_ENTRY_TITLES.length });
   });
   it("rejects a missing, skipped or failed entry even if all remaining selected cases passed", () => {
     const missing = nativeReport(); missing.suites[0].suites[0].specs.pop();
@@ -182,20 +183,20 @@ describe("142 actual native entry reporter gate", () => {
     ]);
     expect(new Set(NATIVE_FLOATING_TIDY_TITLES).size).toBe(2);
     for (const title of NATIVE_FLOATING_TIDY_TITLES) expect(new RegExp(NATIVE_GREP).test(title)).toBe(true);
-    expect(universe()).toMatchObject({ modeledEntries: 9, plannedNativeEntryCases: 27, plannedNativeFloatingTidyCases: 2, plannedNativeCaseCount: 97 });
+    expect(universe()).toMatchObject({ modeledEntries: 9, plannedNativeEntryCases: 27, plannedNativeFloatingTidyCases: 2, plannedNativeCaseCount: PLANNED_NATIVE_CASE_COUNT });
   });
   it("never promotes the previous95-case result when both floating-house regressions did not run", () => {
-    const old95 = nativeReport(); old95.suites[0].suites[1].specs = [];
+    const old95 = nativeReport(); old95.suites[0].suites[1].specs = []; old95.suites[0].specs=old95.suites[0].specs.slice(0,95-NATIVE_ENTRY_TITLES.length);
     expect(nativeEntryEvidence(old95)).toMatchObject({ gatePassed: false, passedEntries: 27, selectedCaseCount: 95, selectedPassedCases: 95, floatingTidy: { required: 2, registered: 0, passed: 0, notRun: 2 } });
   });
-  it.each(NATIVE_FLOATING_TIDY_TITLES)("requires exact floating-house result%s even when unrelated passes fill97 slots", title => {
+  it.each(NATIVE_FLOATING_TIDY_TITLES)("requires exact floating-house result%s even when unrelated passes fill every planned slot", title => {
     const report = nativeReport(), cases = report.suites[0].suites[1].specs;
     const index = cases.findIndex(item => item.title === title); cases[index] = passedSpec("unrelated-padding-case");
-    expect(nativeEntryEvidence(report)).toMatchObject({ gatePassed: false, selectedCaseCount: 97, selectedUniqueTitles: 97, selectedPassedCases: 97, floatingTidy: { registered: 1, passed: 1, notRun: 1 } });
+    expect(nativeEntryEvidence(report)).toMatchObject({ gatePassed: false, selectedCaseCount: PLANNED_NATIVE_CASE_COUNT, selectedUniqueTitles: PLANNED_NATIVE_CASE_COUNT, selectedPassedCases: PLANNED_NATIVE_CASE_COUNT, floatingTidy: { registered: 1, passed: 1, notRun: 1 } });
   });
   it("rejects a duplicate floating-house title without treating the absent peer as success", () => {
     const report = nativeReport(), cases = report.suites[0].suites[1].specs; cases[1] = cases[0];
-    expect(nativeEntryEvidence(report)).toMatchObject({ gatePassed: false, selectedCaseCount: 97, selectedUniqueTitles: 96, floatingTidy: { passed: 0, failed: 1, notRun: 1 } });
+    expect(nativeEntryEvidence(report)).toMatchObject({ gatePassed: false, selectedCaseCount: PLANNED_NATIVE_CASE_COUNT, selectedUniqueTitles: PLANNED_NATIVE_CASE_COUNT-1, floatingTidy: { passed: 0, failed: 1, notRun: 1 } });
   });
   it.each(["skip", "fail", "retry", "expected-failure", "never-ran"] as const)("rejects floating-house%s outcomes while all27 selection entries pass", defect => {
     const report = nativeReport(), test = report.suites[0].suites[1].specs[0].tests[0];

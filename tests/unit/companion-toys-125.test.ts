@@ -1,17 +1,24 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it, vi } from "vitest";
-import { COMPANION_TOY_HINTS, COMPANION_TOY_KINDS, COMPANION_TOY_NAMES, COMPANION_TOY_VISUALS, getCompanionToyArt, isCompanionToyKind, type CompanionToyKind } from "@/lib/ui/viewer-companion/toy-catalog";
+import { COMPANION_TOY_WEIGHTS, COMPANION_TOY_HINTS, COMPANION_TOY_KINDS, COMPANION_TOY_NAMES, COMPANION_TOY_VISUALS, getCompanionToyArt, isCompanionToyKind, type CompanionToyKind } from "@/lib/ui/viewer-companion/toy-catalog";
 import { companionToyBoxDropReady, createCompanionToys, MAX_COMPANION_TOYS } from "@/lib/ui/viewer-companion/toys";
 import { companionToyUnread, createCompanionTastesStore, normalizeCompanionTastes, summarizeCompanionToyTastes } from "@/lib/ui/viewer-companion/toy-tastes";
 import { sanitizeMeta, sanitizeTarget } from "@/lib/activity/kinds";
 
-describe("125 twenty-four shared toy identities", () => {
+/** Select a semantic kind using its published conditional CDF midpoint.
+ * Test fixtures do not depend on the retired bag's random-number sequence. */
+function drawFor(kind: CompanionToyKind, previous?: CompanionToyKind) {
+  let offset = 0; const total = COMPANION_TOY_KINDS.reduce((sum, item) => sum + (item === previous ? 0 : COMPANION_TOY_WEIGHTS[item]), 0);
+  for (const item of COMPANION_TOY_KINDS) { if (item === previous) continue; if (item === kind) return (offset + COMPANION_TOY_WEIGHTS[item] / 2) / total; offset += COMPANION_TOY_WEIGHTS[item]; }
+  throw new Error("Invalid semantic toy fixture");
+}
+describe("125 identities retained by the143 sixty-toy catalogue", () => {
   it("covers the exact new objects, with varied live art sizes inside the unchanged native target", () => {
-    expect(COMPANION_TOY_KINDS).toEqual(["ball", "blocks", "paper-plane", "spool", "hoop", "pinwheel", "bell", "feather", "duck", "spinning-top", "toy-car", "train", "dice", "rocking-horse", "squeaky-carrot", "star-wand", "kaleidoscope", "tambourine", "maraca", "yo-yo", "plush-fish", "ribbon-ball", "stacking-rings", "toy-rocket"]);
+    expect(COMPANION_TOY_KINDS.slice(0, 24)).toEqual(["ball", "blocks", "paper-plane", "spool", "hoop", "pinwheel", "bell", "feather", "duck", "spinning-top", "toy-car", "train", "dice", "rocking-horse", "squeaky-carrot", "star-wand", "kaleidoscope", "tambourine", "maraca", "yo-yo", "plush-fish", "ribbon-ball", "stacking-rings", "toy-rocket"]);
     const dimensions = new Set<string>();
     for (const kind of COMPANION_TOY_KINDS) {
       expect(isCompanionToyKind(kind)).toBe(true); expect(COMPANION_TOY_NAMES[kind]).toBeTruthy(); expect(COMPANION_TOY_HINTS[kind]).toBeTruthy();
-      expect(getCompanionToyArt(kind)).toBe(`/companion/home/125/toy-${kind}.webp`);
+      expect(getCompanionToyArt(kind)).toBe(`/companion/home/${COMPANION_TOY_KINDS.indexOf(kind) < 24 ? "125" : "143"}/toy-${kind}.webp`);
       const visual = COMPANION_TOY_VISUALS[kind];
       for (const extent of [visual.width, visual.height]) { expect(extent).toBeGreaterThanOrEqual(18); expect(extent).toBeLessThanOrEqual(42); }
       dimensions.add(`${visual.width}x${visual.height}`);
@@ -20,7 +27,8 @@ describe("125 twenty-four shared toy identities", () => {
   });
   it("keeps the actual contained silhouettes readable inside the native target", () => {
     const art = JSON.parse(readFileSync("art-src/빅타민/동행/작업회차/20261019-밝은장난감24종125/제작기록/공개자료/납품명세.json", "utf8")) as { assets: { id: CompanionToyKind; runtime: { size: [number, number] }; runtime_core_bbox: [number, number, number, number] }[] };
-    expect(art.assets.map(asset => asset.id)).toEqual(COMPANION_TOY_KINDS);
+    // Immutable125 art proof remains scoped to its original24 files.
+    expect(art.assets.map(asset => asset.id)).toEqual(COMPANION_TOY_KINDS.slice(0, 24));
     // The frozen asset bounds catch diagonal art shrinking inside a tall,
     // narrow box; checking only that box's height missed the tiny live toys.
     for (const asset of art.assets) {
@@ -34,9 +42,10 @@ describe("125 twenty-four shared toy identities", () => {
     }
   });
   it("cycles every kind through actual capacity and physical pickup/removal without consuming failed spawn serials", () => {
-    const model = createCompanionToys(() => 0), kinds: string[] = [];
+    let drawIndex = 0;
+    const model = createCompanionToys(() => { const i = drawIndex++; return drawFor(COMPANION_TOY_KINDS[i % COMPANION_TOY_KINDS.length], i ? COMPANION_TOY_KINDS[(i - 1) % COMPANION_TOY_KINDS.length] : undefined); }), kinds: string[] = [];
     model.sync([{ id: "viewport-floor", x: 0, y: 600, width: 1000, kind: "floor" }], { width: 1000, height: 800 }, 0);
-    for (let batch = 0; batch < 6; batch++) {
+    for (let batch = 0; batch < COMPANION_TOY_KINDS.length / MAX_COMPANION_TOYS; batch++) {
       const began = batch * 3000;
       for (let i = 0; i < MAX_COMPANION_TOYS; i++) expect(model.spawn({ x: 500, y: 400 }, began)).toBeTruthy();
       expect(model.spawn({ x: 500, y: 400 }, began)).toBeUndefined();
@@ -46,21 +55,22 @@ describe("125 twenty-four shared toy identities", () => {
       expect(model.count()).toBe(0);
     }
     expect(kinds).toEqual(COMPANION_TOY_KINDS);
-    expect(model.spawn({ x: 500, y: 400 }, 20000)).toBeTruthy(); expect(model.items()[0].kind).toBe("ball");
+    expect(model.spawn({ x: 500, y: 400 }, 50000)).toBeTruthy(); expect(model.items()[0].kind).toBe("ball");
   });
-  it("shuffles only successful take-outs, covers all24 before repeating and prevents an immediate refill repeat", () => {
-    const rng = vi.fn().mockReturnValue(.999); for (let i = 0; i < 23; i++) rng.mockReturnValueOnce(0);
-    const model = createCompanionToys(rng), kinds: CompanionToyKind[] = [];
+  it("draws only after successful admission, excludes the previous kind and does not promise a uniform bag", () => {
+    const rng = vi.fn(() => 0), model = createCompanionToys(rng), kinds: CompanionToyKind[] = [];
     expect(model.spawn({ x: 500, y: 400 }, 0)).toBeUndefined(); expect(rng).not.toHaveBeenCalled();
     model.sync([{ id: "viewport-floor", x: 0, y: 600, width: 1000, kind: "floor" }], { width: 1000, height: 800 }, 0);
+    expect(model.spawn({ x: Number.NaN, y: 400 }, 0)).toBeUndefined(); expect(rng).not.toHaveBeenCalled();
     for (let i = 0; i < 72; i++) {
       const id = model.spawn({ x: 500, y: 400 }, i)!; expect(id).toBe(`toy-${i + 1}`);
       kinds.push(model.items()[0].kind); expect(model.grab(id)).toBe(true); expect(model.returnHeld(id)).toBe(true);
     }
-    for (let i = 0; i < 72; i += 24) expect(new Set(kinds.slice(i, i + 24))).toEqual(new Set(COMPANION_TOY_KINDS));
-    expect(kinds.every((kind, i) => !i || kind !== kinds[i - 1])).toBe(true); expect(rng).toHaveBeenCalledTimes(69);
-    const other = createCompanionToys(() => .999); other.sync([], { width: 1000, height: 800 }, 0); other.spawn({ x: 500, y: 400 }, 0);
-    expect(other.items()[0].kind).not.toBe(kinds[0]);
+    expect(kinds.every((kind, i) => kind === (i % 2 ? "blocks" : "ball"))).toBe(true);
+    expect(new Set(kinds).size).toBe(2); //143 intentionally supersedes the uniform24-item bag.
+    expect(rng).toHaveBeenCalledTimes(72);
+    for (let i = 0; i < MAX_COMPANION_TOYS; i++) expect(model.spawn({ x: 500, y: 400 }, 100)).toBeTruthy();
+    const before = rng.mock.calls.length; expect(model.spawn({ x: 500, y: 400 }, 100)).toBeUndefined(); expect(rng).toHaveBeenCalledTimes(before);
   });
   it("retains every legacy discovery, acknowledgment and learned score without discovering the new sixteen", () => {
     const old = COMPANION_TOY_KINDS.slice(0, 8), snapshot = { version: 1, toys: old, seen: old.slice(0, 3), toyTastes: { feather: { accepted: 3, declined: 0, score: .6 } }, foodTastes: {} };

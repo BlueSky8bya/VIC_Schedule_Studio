@@ -1,4 +1,7 @@
 /* Common transparent stage registration covers the frame and sill. The actual
    glass/scenery/weather stay mounted beneath it, with no painted fallback. */
-.vc-window-curtain-overlay { position: absolute; inset: -7px -8px -4px; z-index: 3; pointer-events: none; }
-.vc-window-curtain-stage { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; pointer-events: none; transition: none; }
+.vc-window-curtain-overlay { position: absolute; inset: -7px -8px -4px; z-index: 3; pointer-events: none; isolation: isolate; }
+.vc-window-curtain-stage { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; pointer-events: none; transition: none; mix-blend-mode: plus-lighter; }
+
+/* Adjacent opacity weights add inside this transparent isolated group.
+   Normal source-over would expose the landscape at every half-way stop. */

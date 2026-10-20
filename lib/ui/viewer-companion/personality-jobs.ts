@@ -45,7 +45,11 @@ export function createCompanionPersonalityJobs(director: ReturnType<typeof creat
       });
       let selected: CompanionAction & { toy?: CompanionToyAction["toy"]; household?: CompanionHouseholdBeat } | undefined;
       if (command.kind === "toy") {
-        if (command.mode === "inspect" && carryingShow.has(proposal.meta.id)) {
+        const show=proposal.meta.propShow===true || carryingShow.has(proposal.meta.id);
+        if(proposal.meta.propShow && command.mode==="play" && (!proposal.meta.itemId || input.carriedToy!==proposal.meta.itemId)) {
+          director.resolve(proposal.meta,false); return;
+        }
+        if (command.mode === "inspect" && show) {
           if (input.carriedToy && (!proposal.meta.itemId || input.carriedToy === proposal.meta.itemId)) {
             return stamp({ kind: "sniff", target: here, duration: 800, personalityJobEnd: true });
           }
@@ -65,7 +69,7 @@ export function createCompanionPersonalityJobs(director: ReturnType<typeof creat
               return stamp({ kind: "sniff", target: here, duration: 900, personalityJobEnd: true });
             }
           }
-        } else if (command.mode === "play" && carryingShow.has(proposal.meta.id) && input.carriedToy) {
+        } else if (command.mode === "play" && show && input.carriedToy) {
           return stamp({ kind: "play", play: "celebrate", target: here, duration: companionPlayDuration("celebrate"), personalityJobEnd: true });
         } else {
           const chosenPreferences = { ...p, personality: command.mode === "return" ? "tidy" as const : command.mode === "toss" ? "mischievous" as const : "curious" as const };

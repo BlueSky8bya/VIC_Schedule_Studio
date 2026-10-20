@@ -1,0 +1,4189 @@
+{
+  "mode": "Draft, source-bound generated RGB registration; no manual drawing",
+  "generatedSha256": "1b1dc2d4abf68a9a5e8125f222ffbe296b7f213f2fb034d970fadbe9972b3acf",
+  "sourceThreshold": {
+    "rBelow": 120,
+    "gBelow": 100,
+    "bBelow": 90,
+    "alphaAbove": 160,
+    "connectivity": 8
+  },
+  "normalization": "4x6 grid uniform native1448x1086 to256x192 Lanczos; per-eye isotropic scale and translation from measured generated component to actual source pair axis/midpoint",
+  "standing": {
+    "eyes": [
+      {
+        "box": [
+          79,
+          119,
+          91,
+          131
+        ],
+        "center": [
+          84.71505376344086,
+          125.74731182795699
+        ],
+        "area": 93
+      },
+      {
+        "box": [
+          113,
+          119,
+          124,
+          130
+        ],
+        "center": [
+          118.62941176470588,
+          124.53529411764706
+        ],
+        "area": 85
+      }
+    ],
+    "pairSpan": 33.93600839179636,
+    "axisDegrees": -2.0467425115879805
+  },
+  "targetNativeEyeWidth": 12,
+  "targetPairSpan": 33.93600839179636,
+  "changedPhysicalFrames": [
+    144,
+    145,
+    146,
+    147,
+    148,
+    149,
+    150,
+    151,
+    152,
+    153,
+    154,
+    155,
+    156,
+    157,
+    158,
+    159,
+    376,
+    377,
+    378,
+    379,
+    380,
+    381,
+    382,
+    383
+  ],
+  "frames": [
+    {
+      "physical": 144,
+      "sourceAtlas": 9,
+      "sourceCell": 0,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              83,
+              120,
+              97,
+              129
+            ],
+            "center": [
+              89.55084745762711,
+              123.65254237288136
+            ],
+            "area": 59
+          },
+          {
+            "box": [
+              114,
+              118,
+              129,
+              126
+            ],
+            "center": [
+              121.21186440677967,
+              121.63559322033899
+            ],
+            "area": 59
+          }
+        ],
+        "pairSpan": 31.72519626635061,
+        "axisDegrees": -3.6450732383579747
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              83,
+              120,
+              94,
+              127
+            ],
+            "center": [
+              88.75,
+              123.20454545454545
+            ],
+            "area": 44
+          },
+          {
+            "box": [
+              116,
+              118,
+              129,
+              126
+            ],
+            "center": [
+              122.14,
+              121.7
+            ],
+            "area": 50
+          }
+        ],
+        "pairSpan": 33.423880041443326,
+        "axisDegrees": -2.5799890139962325
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              11,
+              9,
+              23,
+              17
+            ],
+            "center": [
+              16.8953488372093,
+              12.825581395348838
+            ],
+            "area": 43
+          },
+          {
+            "box": [
+              38,
+              7,
+              49,
+              14
+            ],
+            "center": [
+              43.285714285714285,
+              10.380952380952381
+            ],
+            "area": 42
+          }
+        ],
+        "pairSpan": 26.503350722572318,
+        "axisDegrees": -5.292398844901441
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              11,
+              9,
+              23,
+              17
+            ],
+            "center": [
+              16.8953488372093,
+              12.825581395348838
+            ],
+            "area": 43
+          },
+          "desiredCenter192": [
+            88.44767760506781,
+            123.72281925321035
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -71.55232876785851,
+            0,
+            1.0,
+            -110.89723785786151
+          ],
+          "adoptedRegionPixels": 210
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              38,
+              7,
+              49,
+              14
+            ],
+            "center": [
+              43.285714285714285,
+              10.380952380952381
+            ],
+            "area": 42
+          },
+          "desiredCenter192": [
+            122.31503425933897,
+            121.56531634001
+          ],
+          "scale": 1.0909090909090908,
+          "affineDestination192ToGenerated64": [
+            0.9166666666666667,
+            0,
+            -68.83640045201312,
+            0,
+            0.9166666666666667,
+            -101.05392093072346
+          ],
+          "adoptedRegionPixels": 211
+        }
+      ],
+      "changedPixels": 421,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 145,
+      "sourceAtlas": 9,
+      "sourceCell": 1,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              121,
+              97,
+              130
+            ],
+            "center": [
+              88.96774193548387,
+              124.8225806451613
+            ],
+            "area": 62
+          },
+          {
+            "box": [
+              114,
+              119,
+              128,
+              127
+            ],
+            "center": [
+              120.76315789473684,
+              122.69298245614036
+            ],
+            "area": 57
+          }
+        ],
+        "pairSpan": 31.86665442854959,
+        "axisDegrees": -3.8318422681431246
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              121,
+              94,
+              129
+            ],
+            "center": [
+              87.88297872340425,
+              125.01063829787235
+            ],
+            "area": 47
+          },
+          {
+            "box": [
+              116,
+              119,
+              128,
+              127
+            ],
+            "center": [
+              121.9390243902439,
+              122.67073170731707
+            ],
+            "area": 41
+          }
+        ],
+        "pairSpan": 34.13633561638378,
+        "axisDegrees": -3.9304740446092716
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              12,
+              10,
+              23,
+              17
+            ],
+            "center": [
+              17.28048780487805,
+              13.060975609756097
+            ],
+            "area": 41
+          },
+          {
+            "box": [
+              40,
+              7,
+              52,
+              15
+            ],
+            "center": [
+              45.670731707317074,
+              10.695121951219512
+            ],
+            "area": 41
+          }
+        ],
+        "pairSpan": 28.488650588850064,
+        "axisDegrees": -4.7636416907261765
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              12,
+              10,
+              23,
+              17
+            ],
+            "center": [
+              17.28048780487805,
+              13.060975609756097
+            ],
+            "area": 41
+          },
+          "desiredCenter192": [
+            87.93537799254338,
+            124.89172647379628
+          ],
+          "scale": 1.0909090909090908,
+          "affineDestination192ToGenerated64": [
+            0.9166666666666667,
+            0,
+            -63.326942021620056,
+            0,
+            0.9166666666666667,
+            -101.42310699122383
+          ],
+          "adoptedRegionPixels": 228
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              40,
+              7,
+              52,
+              15
+            ],
+            "center": [
+              45.670731707317074,
+              10.695121951219512
+            ],
+            "area": 41
+          },
+          "desiredCenter192": [
+            121.79552183767734,
+            122.62383662750538
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -76.12479013036027,
+            0,
+            1.0,
+            -111.92871467628586
+          ],
+          "adoptedRegionPixels": 215
+        }
+      ],
+      "changedPixels": 443,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 146,
+      "sourceAtlas": 9,
+      "sourceCell": 2,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              120,
+              96,
+              129
+            ],
+            "center": [
+              88.53225806451613,
+              123.96774193548387
+            ],
+            "area": 62
+          },
+          {
+            "box": [
+              114,
+              118,
+              128,
+              126
+            ],
+            "center": [
+              120.82786885245902,
+              121.64754098360656
+            ],
+            "area": 61
+          }
+        ],
+        "pairSpan": 32.378848167026966,
+        "axisDegrees": -4.109218294320283
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              81,
+              120,
+              94,
+              128
+            ],
+            "center": [
+              87.80188679245283,
+              123.85849056603773
+            ],
+            "area": 53
+          },
+          {
+            "box": [
+              116,
+              118,
+              128,
+              126
+            ],
+            "center": [
+              121.56122448979592,
+              121.66326530612245
+            ],
+            "area": 49
+          }
+        ],
+        "pairSpan": 33.83063546114705,
+        "axisDegrees": -3.720461451022803
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              12,
+              9,
+              23,
+              16
+            ],
+            "center": [
+              17.475609756097562,
+              12.670731707317072
+            ],
+            "area": 41
+          },
+          {
+            "box": [
+              40,
+              7,
+              51,
+              14
+            ],
+            "center": [
+              45.375,
+              10.175
+            ],
+            "area": 40
+          }
+        ],
+        "pairSpan": 28.010795289253505,
+        "axisDegrees": -5.1117709518355765
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              12,
+              9,
+              23,
+              16
+            ],
+            "center": [
+              17.475609756097562,
+              12.670731707317072
+            ],
+            "area": 41
+          },
+          "desiredCenter192": [
+            87.75567947385412,
+            124.02353336785815
+          ],
+          "scale": 1.0909090909090908,
+          "affineDestination192ToGenerated64": [
+            0.9166666666666667,
+            0,
+            -62.96709642826871,
+            0,
+            0.9166666666666667,
+            -101.01750721321957
+          ],
+          "adoptedRegionPixels": 198
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              40,
+              7,
+              51,
+              14
+            ],
+            "center": [
+              45.375,
+              10.175
+            ],
+            "area": 40
+          },
+          "desiredCenter192": [
+            121.60444744312105,
+            121.59174955123227
+          ],
+          "scale": 1.0909090909090908,
+          "affineDestination192ToGenerated64": [
+            0.9166666666666667,
+            0,
+            -66.09574348952764,
+            0,
+            0.9166666666666667,
+            -101.28410375529626
+          ],
+          "adoptedRegionPixels": 216
+        }
+      ],
+      "changedPixels": 414,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 147,
+      "sourceAtlas": 9,
+      "sourceCell": 3,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              120,
+              97,
+              129
+            ],
+            "center": [
+              89.26923076923077,
+              123.8076923076923
+            ],
+            "area": 65
+          },
+          {
+            "box": [
+              114,
+              118,
+              129,
+              127
+            ],
+            "center": [
+              121.19354838709677,
+              121.8225806451613
+            ],
+            "area": 62
+          }
+        ],
+        "pairSpan": 31.98597698490865,
+        "axisDegrees": -3.558173669679952
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              83,
+              120,
+              94,
+              127
+            ],
+            "center": [
+              88.6590909090909,
+              123.43181818181819
+            ],
+            "area": 44
+          },
+          {
+            "box": [
+              116,
+              118,
+              128,
+              126
+            ],
+            "center": [
+              121.93396226415095,
+              121.68867924528301
+            ],
+            "area": 53
+          }
+        ],
+        "pairSpan": 33.32049815125609,
+        "axisDegrees": -2.998758175493835
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              11,
+              9,
+              23,
+              17
+            ],
+            "center": [
+              17.085365853658537,
+              12.817073170731707
+            ],
+            "area": 41
+          },
+          {
+            "box": [
+              40,
+              7,
+              51,
+              14
+            ],
+            "center": [
+              45.2906976744186,
+              10.174418604651162
+            ],
+            "area": 43
+          }
+        ],
+        "pairSpan": 28.32886101266351,
+        "axisDegrees": -5.352612613725541
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              11,
+              9,
+              23,
+              17
+            ],
+            "center": [
+              17.085365853658537,
+              12.817073170731707
+            ],
+            "area": 41
+          },
+          "desiredCenter192": [
+            88.29609460353433,
+            123.8682036700612
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -71.21072874987578,
+            0,
+            1.0,
+            -111.0511304993295
+          ],
+          "adoptedRegionPixels": 184
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              40,
+              7,
+              51,
+              14
+            ],
+            "center": [
+              45.2906976744186,
+              10.174418604651162
+            ],
+            "area": 43
+          },
+          "desiredCenter192": [
+            122.16668455279321,
+            121.7620692827924
+          ],
+          "scale": 1.0909090909090908,
+          "affineDestination192ToGenerated64": [
+            0.9166666666666667,
+            0,
+            -66.69542983230852,
+            0,
+            0.9166666666666667,
+            -101.44081157124187
+          ],
+          "adoptedRegionPixels": 192
+        }
+      ],
+      "changedPixels": 376,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 148,
+      "sourceAtlas": 9,
+      "sourceCell": 4,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              120,
+              97,
+              129
+            ],
+            "center": [
+              89.23015873015873,
+              123.7063492063492
+            ],
+            "area": 63
+          },
+          {
+            "box": [
+              114,
+              118,
+              129,
+              126
+            ],
+            "center": [
+              121.13934426229508,
+              121.6311475409836
+            ],
+            "area": 61
+          }
+        ],
+        "pairSpan": 31.976594303900406,
+        "axisDegrees": -3.7209690419248247
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              120,
+              94,
+              128
+            ],
+            "center": [
+              88.15957446808511,
+              123.56382978723404
+            ],
+            "area": 47
+          },
+          {
+            "box": [
+              116,
+              118,
+              129,
+              126
+            ],
+            "center": [
+              122.17391304347827,
+              121.52173913043478
+            ],
+            "area": 46
+          }
+        ],
+        "pairSpan": 34.075583090712705,
+        "axisDegrees": -3.4356953857546952
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              11,
+              9,
+              23,
+              16
+            ],
+            "center": [
+              17.22093023255814,
+              12.662790697674419
+            ],
+            "area": 43
+          },
+          {
+            "box": [
+              40,
+              7,
+              51,
+              14
+            ],
+            "center": [
+              45.45348837209303,
+              10.011627906976743
+            ],
+            "area": 43
+          }
+        ],
+        "pairSpan": 28.356762919011004,
+        "axisDegrees": -5.364597042712107
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              11,
+              9,
+              23,
+              16
+            ],
+            "center": [
+              17.22093023255814,
+              12.662790697674419
+            ],
+            "area": 43
+          },
+          "desiredCenter192": [
+            88.25251697333587,
+            123.76992976373593
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -71.03158674077773,
+            0,
+            1.0,
+            -111.1071390660615
+          ],
+          "adoptedRegionPixels": 188
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              40,
+              7,
+              51,
+              14
+            ],
+            "center": [
+              45.45348837209303,
+              10.011627906976743
+            ],
+            "area": 43
+          },
+          "desiredCenter192": [
+            122.11698601911795,
+            121.56756698359688
+          ],
+          "scale": 1.0909090909090908,
+          "affineDestination192ToGenerated64": [
+            0.9166666666666667,
+            0,
+            -66.48708214543177,
+            0,
+            0.9166666666666667,
+            -101.42530849465373
+          ],
+          "adoptedRegionPixels": 209
+        }
+      ],
+      "changedPixels": 397,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 149,
+      "sourceAtlas": 9,
+      "sourceCell": 5,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              120,
+              97,
+              129
+            ],
+            "center": [
+              89.25806451612904,
+              123.75806451612904
+            ],
+            "area": 62
+          },
+          {
+            "box": [
+              114,
+              118,
+              128,
+              126
+            ],
+            "center": [
+              120.85593220338983,
+              121.58474576271186
+            ],
+            "area": 59
+          }
+        ],
+        "pairSpan": 31.67252053098386,
+        "axisDegrees": -3.934638483538041
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              120,
+              94,
+              128
+            ],
+            "center": [
+              88.06862745098039,
+              123.77450980392157
+            ],
+            "area": 51
+          },
+          {
+            "box": [
+              116,
+              118,
+              128,
+              125
+            ],
+            "center": [
+              121.92857142857143,
+              121.42857142857143
+            ],
+            "area": 42
+          }
+        ],
+        "pairSpan": 33.94111419836633,
+        "axisDegrees": -3.9633236211236826
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              12,
+              9,
+              23,
+              16
+            ],
+            "center": [
+              17.357142857142858,
+              12.595238095238095
+            ],
+            "area": 42
+          },
+          {
+            "box": [
+              40,
+              7,
+              52,
+              14
+            ],
+            "center": [
+              45.96341463414634,
+              10.012195121951219
+            ],
+            "area": 41
+          }
+        ],
+        "pairSpan": 28.722654751635208,
+        "axisDegrees": -5.159609361880465
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              12,
+              9,
+              23,
+              16
+            ],
+            "center": [
+              17.357142857142858,
+              12.595238095238095
+            ],
+            "area": 42
+          },
+          "desiredCenter192": [
+            88.12898813163814,
+            123.83572301209912
+          ],
+          "scale": 1.0909090909090908,
+          "affineDestination192ToGenerated64": [
+            0.9166666666666667,
+            0,
+            -63.4277629301921,
+            0,
+            0.9166666666666667,
+            -100.92084133251944
+          ],
+          "adoptedRegionPixels": 187
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              40,
+              7,
+              52,
+              14
+            ],
+            "center": [
+              45.96341463414634,
+              10.012195121951219
+            ],
+            "area": 41
+          },
+          "desiredCenter192": [
+            121.98500858788073,
+            121.50708726674176
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -76.0215939537344,
+            0,
+            1.0,
+            -111.49489214479054
+          ],
+          "adoptedRegionPixels": 209
+        }
+      ],
+      "changedPixels": 396,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 150,
+      "sourceAtlas": 9,
+      "sourceCell": 6,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              120,
+              97,
+              128
+            ],
+            "center": [
+              89.3225806451613,
+              123.62903225806451
+            ],
+            "area": 62
+          },
+          {
+            "box": [
+              114,
+              118,
+              128,
+              126
+            ],
+            "center": [
+              121.01666666666667,
+              121.56666666666666
+            ],
+            "area": 60
+          }
+        ],
+        "pairSpan": 31.761115228706373,
+        "axisDegrees": -3.7230443356536442
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              121,
+              94,
+              128
+            ],
+            "center": [
+              88.10975609756098,
+              123.9390243902439
+            ],
+            "area": 41
+          },
+          {
+            "box": [
+              116,
+              118,
+              129,
+              125
+            ],
+            "center": [
+              122.35416666666667,
+              121.29166666666667
+            ],
+            "area": 48
+          }
+        ],
+        "pairSpan": 34.3465887409807,
+        "axisDegrees": -4.420614194762771
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              11,
+              9,
+              23,
+              16
+            ],
+            "center": [
+              16.662790697674417,
+              12.453488372093023
+            ],
+            "area": 43
+          },
+          {
+            "box": [
+              41,
+              6,
+              52,
+              14
+            ],
+            "center": [
+              46.357142857142854,
+              9.904761904761905
+            ],
+            "area": 42
+          }
+        ],
+        "pairSpan": 29.803532622422498,
+        "axisDegrees": -4.905789323303469
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              11,
+              9,
+              23,
+              16
+            ],
+            "center": [
+              16.662790697674417,
+              12.453488372093023
+            ],
+            "area": 43
+          },
+          "desiredCenter192": [
+            88.23742902970012,
+            123.69964414924378
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -71.5746383320257,
+            0,
+            1.0,
+            -111.24615577715076
+          ],
+          "adoptedRegionPixels": 214
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              41,
+              6,
+              52,
+              14
+            ],
+            "center": [
+              46.357142857142854,
+              9.904761904761905
+            ],
+            "area": 42
+          },
+          "desiredCenter192": [
+            122.10181828212784,
+            121.4960547754874
+          ],
+          "scale": 1.0909090909090908,
+          "affineDestination192ToGenerated64": [
+            0.9166666666666667,
+            0,
+            -65.56952390147433,
+            0,
+            0.9166666666666667,
+            -101.46662163943489
+          ],
+          "adoptedRegionPixels": 212
+        }
+      ],
+      "changedPixels": 426,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 151,
+      "sourceAtlas": 9,
+      "sourceCell": 7,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              120,
+              97,
+              128
+            ],
+            "center": [
+              89.0,
+              123.75
+            ],
+            "area": 60
+          },
+          {
+            "box": [
+              114,
+              118,
+              128,
+              126
+            ],
+            "center": [
+              120.75,
+              121.83333333333333
+            ],
+            "area": 60
+          }
+        ],
+        "pairSpan": 31.80779953267926,
+        "axisDegrees": -3.4546079469826956
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              120,
+              94,
+              128
+            ],
+            "center": [
+              87.95454545454545,
+              123.61363636363636
+            ],
+            "area": 44
+          },
+          {
+            "box": [
+              116,
+              118,
+              128,
+              126
+            ],
+            "center": [
+              121.72727272727273,
+              121.56818181818181
+            ],
+            "area": 44
+          }
+        ],
+        "pairSpan": 33.83461233316466,
+        "axisDegrees": -3.4659010139871826
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              11,
+              9,
+              23,
+              17
+            ],
+            "center": [
+              16.941860465116278,
+              12.779069767441861
+            ],
+            "area": 43
+          },
+          {
+            "box": [
+              40,
+              7,
+              52,
+              14
+            ],
+            "center": [
+              45.890243902439025,
+              9.963414634146341
+            ],
+            "area": 41
+          }
+        ],
+        "pairSpan": 29.084992994049617,
+        "axisDegrees": -5.555380664291629
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              11,
+              9,
+              23,
+              17
+            ],
+            "center": [
+              16.941860465116278,
+              12.779069767441861
+            ],
+            "area": 43
+          },
+          "desiredCenter192": [
+            87.937829207463,
+            123.8141205465311
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -70.99596874234672,
+            0,
+            1.0,
+            -111.03505077908923
+          ],
+          "adoptedRegionPixels": 194
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              40,
+              7,
+              52,
+              14
+            ],
+            "center": [
+              45.890243902439025,
+              9.963414634146341
+            ],
+            "area": 41
+          },
+          "desiredCenter192": [
+            121.812170792537,
+            121.76921278680221
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -75.92192689009798,
+            0,
+            1.0,
+            -111.80579815265587
+          ],
+          "adoptedRegionPixels": 188
+        }
+      ],
+      "changedPixels": 382,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 152,
+      "sourceAtlas": 9,
+      "sourceCell": 8,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              122,
+              97,
+              130
+            ],
+            "center": [
+              89.13934426229508,
+              125.58196721311475
+            ],
+            "area": 61
+          },
+          {
+            "box": [
+              114,
+              120,
+              128,
+              128
+            ],
+            "center": [
+              120.72033898305085,
+              123.5
+            ],
+            "area": 59
+          }
+        ],
+        "pairSpan": 31.64954683765454,
+        "axisDegrees": -3.7717485996587654
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              122,
+              94,
+              130
+            ],
+            "center": [
+              87.80232558139535,
+              125.87209302325581
+            ],
+            "area": 43
+          },
+          {
+            "box": [
+              116,
+              120,
+              128,
+              128
+            ],
+            "center": [
+              121.64285714285714,
+              123.54081632653062
+            ],
+            "area": 49
+          }
+        ],
+        "pairSpan": 33.9207374241626,
+        "axisDegrees": -3.9408840442923854
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              10,
+              10,
+              22,
+              17
+            ],
+            "center": [
+              15.887755102040817,
+              13.295918367346939
+            ],
+            "area": 49
+          },
+          {
+            "box": [
+              40,
+              7,
+              52,
+              15
+            ],
+            "center": [
+              46.03191489361702,
+              10.712765957446809
+            ],
+            "area": 47
+          }
+        ],
+        "pairSpan": 30.254636767161035,
+        "axisDegrees": -4.897898604932023
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              10,
+              10,
+              22,
+              17
+            ],
+            "center": [
+              15.887755102040817,
+              13.295918367346939
+            ],
+            "area": 49
+          },
+          "desiredCenter192": [
+            87.99858969413401,
+            125.65717110172315
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -72.1108345920932,
+            0,
+            1.0,
+            -112.36125273437621
+          ],
+          "adoptedRegionPixels": 238
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              40,
+              7,
+              52,
+              15
+            ],
+            "center": [
+              46.03191489361702,
+              10.712765957446809
+            ],
+            "area": 47
+          },
+          "desiredCenter192": [
+            121.86109355121192,
+            123.4247961113916
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -75.8291786575949,
+            0,
+            1.0,
+            -112.7120301539448
+          ],
+          "adoptedRegionPixels": 215
+        }
+      ],
+      "changedPixels": 453,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 153,
+      "sourceAtlas": 9,
+      "sourceCell": 9,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              122,
+              96,
+              131
+            ],
+            "center": [
+              88.53333333333333,
+              125.9
+            ],
+            "area": 60
+          },
+          {
+            "box": [
+              113,
+              120,
+              127,
+              129
+            ],
+            "center": [
+              120.22413793103448,
+              123.70689655172414
+            ],
+            "area": 58
+          }
+        ],
+        "pairSpan": 31.766598791569038,
+        "axisDegrees": -3.9587368099051794
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              123,
+              94,
+              130
+            ],
+            "center": [
+              87.73404255319149,
+              126.01063829787235
+            ],
+            "area": 47
+          },
+          {
+            "box": [
+              116,
+              120,
+              128,
+              128
+            ],
+            "center": [
+              121.3695652173913,
+              123.52173913043478
+            ],
+            "area": 46
+          }
+        ],
+        "pairSpan": 33.72748143516753,
+        "axisDegrees": -4.231954395165054
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              10,
+              10,
+              22,
+              18
+            ],
+            "center": [
+              15.91304347826087,
+              13.76086956521739
+            ],
+            "area": 46
+          },
+          {
+            "box": [
+              40,
+              8,
+              52,
+              15
+            ],
+            "center": [
+              45.81111111111111,
+              11.188888888888888
+            ],
+            "area": 45
+          }
+        ],
+        "pairSpan": 30.008491011343683,
+        "axisDegrees": -4.916763636646035
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              10,
+              10,
+              22,
+              18
+            ],
+            "center": [
+              15.91304347826087,
+              13.76086956521739
+            ],
+            "area": 46
+          },
+          "desiredCenter192": [
+            87.45121660777082,
+            125.9748858841672
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -71.53817312950994,
+            0,
+            1.0,
+            -112.2140163189498
+          ],
+          "adoptedRegionPixels": 242
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              40,
+              8,
+              52,
+              15
+            ],
+            "center": [
+              45.81111111111111,
+              11.188888888888888
+            ],
+            "area": 45
+          },
+          "desiredCenter192": [
+            121.30625465659699,
+            123.63201066755697
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -75.49514354548589,
+            0,
+            1.0,
+            -112.44312177866809
+          ],
+          "adoptedRegionPixels": 218
+        }
+      ],
+      "changedPixels": 460,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 154,
+      "sourceAtlas": 9,
+      "sourceCell": 10,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              83,
+              123,
+              98,
+              132
+            ],
+            "center": [
+              90.08730158730158,
+              126.78571428571429
+            ],
+            "area": 63
+          },
+          {
+            "box": [
+              115,
+              121,
+              128,
+              129
+            ],
+            "center": [
+              121.34482758620689,
+              124.58620689655173
+            ],
+            "area": 58
+          }
+        ],
+        "pairSpan": 31.334817126117425,
+        "axisDegrees": -4.0251139435963585
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              83,
+              124,
+              95,
+              131
+            ],
+            "center": [
+              88.94186046511628,
+              126.96511627906976
+            ],
+            "area": 43
+          },
+          {
+            "box": [
+              117,
+              121,
+              129,
+              129
+            ],
+            "center": [
+              122.54347826086956,
+              124.6086956521739
+            ],
+            "area": 46
+          }
+        ],
+        "pairSpan": 33.68414221355123,
+        "axisDegrees": -4.011481790318824
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              10,
+              10,
+              22,
+              18
+            ],
+            "center": [
+              15.904255319148936,
+              13.840425531914894
+            ],
+            "area": 47
+          },
+          {
+            "box": [
+              40,
+              8,
+              52,
+              15
+            ],
+            "center": [
+              45.81111111111111,
+              11.188888888888888
+            ],
+            "area": 45
+          }
+        ],
+        "pairSpan": 30.02416809722679,
+        "axisDegrees": -5.066586169331848
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              10,
+              10,
+              22,
+              18
+            ],
+            "center": [
+              15.904255319148936,
+              13.840425531914894
+            ],
+            "area": 47
+          },
+          "desiredCenter192": [
+            88.78991403134684,
+            126.87700793179587
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -72.88565871219791,
+            0,
+            1.0,
+            -113.03658239988098
+          ],
+          "adoptedRegionPixels": 231
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              40,
+              8,
+              52,
+              15
+            ],
+            "center": [
+              45.81111111111111,
+              11.188888888888888
+            ],
+            "area": 45
+          },
+          "desiredCenter192": [
+            122.64221514216165,
+            124.49491325047015
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -76.83110403105053,
+            0,
+            1.0,
+            -113.30602436158127
+          ],
+          "adoptedRegionPixels": 209
+        }
+      ],
+      "changedPixels": 440,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 155,
+      "sourceAtlas": 9,
+      "sourceCell": 11,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              83,
+              122,
+              97,
+              131
+            ],
+            "center": [
+              90.06896551724138,
+              125.82758620689656
+            ],
+            "area": 58
+          },
+          {
+            "box": [
+              115,
+              120,
+              129,
+              128
+            ],
+            "center": [
+              121.75862068965517,
+              123.72413793103448
+            ],
+            "area": 58
+          }
+        ],
+        "pairSpan": 31.759388211924353,
+        "axisDegrees": -3.797522536754869
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              83,
+              122,
+              95,
+              130
+            ],
+            "center": [
+              88.91304347826087,
+              125.91304347826087
+            ],
+            "area": 46
+          },
+          {
+            "box": [
+              117,
+              120,
+              129,
+              128
+            ],
+            "center": [
+              122.88297872340425,
+              123.58510638297872
+            ],
+            "area": 47
+          }
+        ],
+        "pairSpan": 34.049607805066195,
+        "axisDegrees": -3.9203124253718507
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              10,
+              10,
+              22,
+              18
+            ],
+            "center": [
+              15.904255319148936,
+              13.840425531914894
+            ],
+            "area": 47
+          },
+          {
+            "box": [
+              40,
+              7,
+              52,
+              15
+            ],
+            "center": [
+              46.1875,
+              10.833333333333334
+            ],
+            "area": 48
+          }
+        ],
+        "pairSpan": 30.43217888832583,
+        "axisDegrees": -5.670816748856384
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              10,
+              10,
+              22,
+              18
+            ],
+            "center": [
+              15.904255319148936,
+              13.840425531914894
+            ],
+            "area": 47
+          },
+          "desiredCenter192": [
+            88.98304499381702,
+            125.89966580638392
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -73.07878967466809,
+            0,
+            1.0,
+            -112.05924027446903
+          ],
+          "adoptedRegionPixels": 211
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              40,
+              7,
+              52,
+              15
+            ],
+            "center": [
+              46.1875,
+              10.833333333333334
+            ],
+            "area": 48
+          },
+          "desiredCenter192": [
+            122.84454121307955,
+            123.65205833154712
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -76.65704121307955,
+            0,
+            1.0,
+            -112.8187249982138
+          ],
+          "adoptedRegionPixels": 221
+        }
+      ],
+      "changedPixels": 432,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 156,
+      "sourceAtlas": 9,
+      "sourceCell": 12,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              122,
+              97,
+              131
+            ],
+            "center": [
+              89.63793103448276,
+              125.98275862068965
+            ],
+            "area": 58
+          },
+          {
+            "box": [
+              114,
+              120,
+              128,
+              128
+            ],
+            "center": [
+              120.86206896551724,
+              123.58620689655173
+            ],
+            "area": 58
+          }
+        ],
+        "pairSpan": 31.315974353398847,
+        "axisDegrees": -4.3890278313120055
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              123,
+              94,
+              130
+            ],
+            "center": [
+              87.95454545454545,
+              126.0909090909091
+            ],
+            "area": 44
+          },
+          {
+            "box": [
+              116,
+              120,
+              128,
+              128
+            ],
+            "center": [
+              122.1,
+              123.54444444444445
+            ],
+            "area": 45
+          }
+        ],
+        "pairSpan": 34.24027669735448,
+        "axisDegrees": -4.265050490264224
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              10,
+              10,
+              22,
+              17
+            ],
+            "center": [
+              15.977272727272727,
+              13.681818181818182
+            ],
+            "area": 44
+          },
+          {
+            "box": [
+              40,
+              8,
+              52,
+              16
+            ],
+            "center": [
+              45.45744680851064,
+              11.585106382978724
+            ],
+            "area": 47
+          }
+        ],
+        "pairSpan": 29.554642008109052,
+        "axisDegrees": -4.068184515918755
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              10,
+              10,
+              22,
+              17
+            ],
+            "center": [
+              15.977272727272727,
+              13.681818181818182
+            ],
+            "area": 44
+          },
+          "desiredCenter192": [
+            88.33175573756037,
+            126.08301172188911
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -72.35448301028765,
+            0,
+            1.0,
+            -112.40119354007092
+          ],
+          "adoptedRegionPixels": 218
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              40,
+              8,
+              52,
+              16
+            ],
+            "center": [
+              45.45744680851064,
+              11.585106382978724
+            ],
+            "area": 47
+          },
+          "desiredCenter192": [
+            122.16824426243963,
+            123.48595379535229
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -76.71079745392899,
+            0,
+            1.0,
+            -111.90084741237357
+          ],
+          "adoptedRegionPixels": 205
+        }
+      ],
+      "changedPixels": 423,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 157,
+      "sourceAtlas": 9,
+      "sourceCell": 13,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              83,
+              122,
+              97,
+              131
+            ],
+            "center": [
+              89.6311475409836,
+              125.81147540983606
+            ],
+            "area": 61
+          },
+          {
+            "box": [
+              115,
+              120,
+              128,
+              128
+            ],
+            "center": [
+              121.39090909090909,
+              123.51818181818182
+            ],
+            "area": 55
+          }
+        ],
+        "pairSpan": 31.842450427152237,
+        "axisDegrees": -4.130018182133327
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              83,
+              123,
+              95,
+              130
+            ],
+            "center": [
+              88.69565217391305,
+              126.0
+            ],
+            "area": 46
+          },
+          {
+            "box": [
+              117,
+              120,
+              129,
+              127
+            ],
+            "center": [
+              122.59302325581395,
+              123.33720930232558
+            ],
+            "area": 43
+          }
+        ],
+        "pairSpan": 34.00179731372612,
+        "axisDegrees": -4.491616924621894
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              10,
+              10,
+              22,
+              18
+            ],
+            "center": [
+              16.108695652173914,
+              13.695652173913043
+            ],
+            "area": 46
+          },
+          {
+            "box": [
+              40,
+              8,
+              52,
+              16
+            ],
+            "center": [
+              45.58695652173913,
+              11.673913043478262
+            ],
+            "area": 46
+          }
+        ],
+        "pairSpan": 29.5475090829273,
+        "axisDegrees": -3.9234338460609806
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              10,
+              10,
+              22,
+              18
+            ],
+            "center": [
+              16.108695652173914,
+              13.695652173913043
+            ],
+            "area": 46
+          },
+          "desiredCenter192": [
+            88.58708684753667,
+            125.8868644423959
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -72.47839119536275,
+            0,
+            1.0,
+            -112.19121226848286
+          ],
+          "adoptedRegionPixels": 209
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              40,
+              8,
+              52,
+              16
+            ],
+            "center": [
+              45.58695652173913,
+              11.673913043478262
+            ],
+            "area": 46
+          },
+          "desiredCenter192": [
+            122.43496978435603,
+            123.44279278562198
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -76.84801326261689,
+            0,
+            1.0,
+            -111.76887974214371
+          ],
+          "adoptedRegionPixels": 221
+        }
+      ],
+      "changedPixels": 430,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 158,
+      "sourceAtlas": 9,
+      "sourceCell": 14,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              83,
+              122,
+              97,
+              130
+            ],
+            "center": [
+              89.87704918032787,
+              125.6311475409836
+            ],
+            "area": 61
+          },
+          {
+            "box": [
+              114,
+              120,
+              128,
+              128
+            ],
+            "center": [
+              121.21428571428571,
+              123.53571428571429
+            ],
+            "area": 56
+          }
+        ],
+        "pairSpan": 31.40721627448874,
+        "axisDegrees": -3.8255135424617595
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              83,
+              122,
+              95,
+              129
+            ],
+            "center": [
+              88.76086956521739,
+              125.54347826086956
+            ],
+            "area": 46
+          },
+          {
+            "box": [
+              117,
+              120,
+              129,
+              127
+            ],
+            "center": [
+              122.61111111111111,
+              123.27777777777777
+            ],
+            "area": 45
+          }
+        ],
+        "pairSpan": 33.92598195180844,
+        "axisDegrees": -3.829270638074922
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              10,
+              10,
+              22,
+              17
+            ],
+            "center": [
+              16.022727272727273,
+              13.681818181818182
+            ],
+            "area": 44
+          },
+          {
+            "box": [
+              40,
+              8,
+              52,
+              16
+            ],
+            "center": [
+              45.670212765957444,
+              11.73404255319149
+            ],
+            "area": 47
+          }
+        ],
+        "pairSpan": 29.711398923153475,
+        "axisDegrees": -3.7588069869508343
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              10,
+              10,
+              22,
+              17
+            ],
+            "center": [
+              16.022727272727273,
+              13.681818181818182
+            ],
+            "area": 44
+          },
+          "desiredCenter192": [
+            88.61547037575157,
+            125.71550578292327
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -72.5927431030243,
+            0,
+            1.0,
+            -112.03368760110509
+          ],
+          "adoptedRegionPixels": 191
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              40,
+              8,
+              52,
+              16
+            ],
+            "center": [
+              45.670212765957444,
+              11.73404255319149
+            ],
+            "area": 47
+          },
+          "desiredCenter192": [
+            122.475864518862,
+            123.45135604377462
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -76.80565175290455,
+            0,
+            1.0,
+            -111.71731349058314
+          ],
+          "adoptedRegionPixels": 185
+        }
+      ],
+      "changedPixels": 376,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 159,
+      "sourceAtlas": 9,
+      "sourceCell": 15,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              122,
+              97,
+              130
+            ],
+            "center": [
+              89.00847457627118,
+              125.60169491525424
+            ],
+            "area": 59
+          },
+          {
+            "box": [
+              114,
+              120,
+              128,
+              128
+            ],
+            "center": [
+              120.44736842105263,
+              123.55263157894737
+            ],
+            "area": 57
+          }
+        ],
+        "pairSpan": 31.50559802225049,
+        "axisDegrees": -3.729039103257264
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              82,
+              122,
+              94,
+              129
+            ],
+            "center": [
+              87.9888888888889,
+              125.5
+            ],
+            "area": 45
+          },
+          {
+            "box": [
+              116,
+              120,
+              128,
+              128
+            ],
+            "center": [
+              121.72448979591837,
+              123.45918367346938
+            ],
+            "area": 49
+          }
+        ],
+        "pairSpan": 33.79727355626489,
+        "axisDegrees": -3.4618573016525147
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              10,
+              10,
+              22,
+              18
+            ],
+            "center": [
+              15.91304347826087,
+              13.76086956521739
+            ],
+            "area": 46
+          },
+          {
+            "box": [
+              40,
+              8,
+              52,
+              16
+            ],
+            "center": [
+              45.52040816326531,
+              11.66326530612245
+            ],
+            "area": 49
+          }
+        ],
+        "pairSpan": 29.68157656221484,
+        "axisDegrees": -4.052484715618481
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              10,
+              10,
+              22,
+              18
+            ],
+            "center": [
+              15.91304347826087,
+              13.76086956521739
+            ],
+            "area": 46
+          },
+          "desiredCenter192": [
+            87.79584224417825,
+            125.68072951692882
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -71.88279876591737,
+            0,
+            1.0,
+            -111.91985995171143
+          ],
+          "adoptedRegionPixels": 228
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              40,
+              8,
+              52,
+              16
+            ],
+            "center": [
+              45.52040816326531,
+              11.66326530612245
+            ],
+            "area": 49
+          },
+          "desiredCenter192": [
+            121.66000075314558,
+            123.47359697727278
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -76.13959258988027,
+            0,
+            1.0,
+            -111.81033167115032
+          ],
+          "adoptedRegionPixels": 217
+        }
+      ],
+      "changedPixels": 445,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 376,
+      "sourceAtlas": 23,
+      "sourceCell": 8,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              93,
+              145,
+              106,
+              158
+            ],
+            "center": [
+              98.95121951219512,
+              152.09756097560975
+            ],
+            "area": 82
+          },
+          {
+            "box": [
+              121,
+              145,
+              133,
+              157
+            ],
+            "center": [
+              127.23611111111111,
+              151.51388888888889
+            ],
+            "area": 72
+          }
+        ],
+        "pairSpan": 28.290913132439638,
+        "axisDegrees": -1.1821576725534024
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              91,
+              146,
+              103,
+              157
+            ],
+            "center": [
+              96.54615384615384,
+              151.76153846153846
+            ],
+            "area": 65
+          },
+          {
+            "box": [
+              123,
+              145,
+              136,
+              157
+            ],
+            "center": [
+              129.54347826086956,
+              150.7753623188406
+            ],
+            "area": 69
+          }
+        ],
+        "pairSpan": 33.01205782610985,
+        "axisDegrees": -1.7118635432403957
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              12,
+              10,
+              24,
+              22
+            ],
+            "center": [
+              17.5,
+              16.0
+            ],
+            "area": 72
+          },
+          {
+            "box": [
+              42,
+              9,
+              53,
+              21
+            ],
+            "center": [
+              47.891304347826086,
+              15.528985507246377
+            ],
+            "area": 69
+          }
+        ],
+        "pairSpan": 30.394954097918568,
+        "axisDegrees": -0.8879178653169068
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              12,
+              10,
+              24,
+              22
+            ],
+            "center": [
+              17.5,
+              16.0
+            ],
+            "area": 72
+          },
+          "desiredCenter192": [
+            96.12927264308942,
+            152.15579318102394
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -78.62927264308942,
+            0,
+            1.0,
+            -136.15579318102394
+          ],
+          "adoptedRegionPixels": 350
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              42,
+              9,
+              53,
+              21
+            ],
+            "center": [
+              47.891304347826086,
+              15.528985507246377
+            ],
+            "area": 69
+          },
+          "desiredCenter192": [
+            130.05805798021683,
+            151.4556566834747
+          ],
+          "scale": 1.0909090909090908,
+          "affineDestination192ToGenerated64": [
+            0.9166666666666667,
+            0,
+            -71.32858213403935,
+            0,
+            0.9166666666666667,
+            -123.30536645260545
+          ],
+          "adoptedRegionPixels": 295
+        }
+      ],
+      "changedPixels": 645,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 377,
+      "sourceAtlas": 23,
+      "sourceCell": 9,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              93,
+              145,
+              106,
+              158
+            ],
+            "center": [
+              98.95121951219512,
+              152.09756097560975
+            ],
+            "area": 82
+          },
+          {
+            "box": [
+              121,
+              145,
+              133,
+              157
+            ],
+            "center": [
+              127.23611111111111,
+              151.51388888888889
+            ],
+            "area": 72
+          }
+        ],
+        "pairSpan": 28.290913132439638,
+        "axisDegrees": -1.1821576725534024
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              91,
+              146,
+              102,
+              157
+            ],
+            "center": [
+              96.37692307692308,
+              151.66923076923078
+            ],
+            "area": 65
+          },
+          {
+            "box": [
+              123,
+              145,
+              136,
+              157
+            ],
+            "center": [
+              129.58955223880596,
+              150.84328358208955
+            ],
+            "area": 67
+          }
+        ],
+        "pairSpan": 33.222897594892295,
+        "axisDegrees": -1.424564606521817
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              12,
+              10,
+              24,
+              22
+            ],
+            "center": [
+              17.69178082191781,
+              16.006849315068493
+            ],
+            "area": 73
+          },
+          {
+            "box": [
+              42,
+              9,
+              53,
+              21
+            ],
+            "center": [
+              47.838235294117645,
+              15.455882352941176
+            ],
+            "area": 68
+          }
+        ],
+        "pairSpan": 30.15148888260368,
+        "axisDegrees": -1.0470407879755617
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              12,
+              10,
+              24,
+              22
+            ],
+            "center": [
+              17.69178082191781,
+              16.006849315068493
+            ],
+            "area": 73
+          },
+          "desiredCenter192": [
+            96.12927264308942,
+            152.15579318102394
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -78.43749182117162,
+            0,
+            1.0,
+            -136.14894386595546
+          ],
+          "adoptedRegionPixels": 350
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              42,
+              9,
+              53,
+              21
+            ],
+            "center": [
+              47.838235294117645,
+              15.455882352941176
+            ],
+            "area": 68
+          },
+          "desiredCenter192": [
+            130.05805798021683,
+            151.4556566834747
+          ],
+          "scale": 1.0909090909090908,
+          "affineDestination192ToGenerated64": [
+            0.9166666666666667,
+            0,
+            -71.38165118774779,
+            0,
+            0.9166666666666667,
+            -123.37846960691066
+          ],
+          "adoptedRegionPixels": 295
+        }
+      ],
+      "changedPixels": 644,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 378,
+      "sourceAtlas": 23,
+      "sourceCell": 10,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              93,
+              145,
+              106,
+              158
+            ],
+            "center": [
+              98.95121951219512,
+              152.09756097560975
+            ],
+            "area": 82
+          },
+          {
+            "box": [
+              121,
+              145,
+              133,
+              157
+            ],
+            "center": [
+              127.23611111111111,
+              151.51388888888889
+            ],
+            "area": 72
+          }
+        ],
+        "pairSpan": 28.290913132439638,
+        "axisDegrees": -1.1821576725534024
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              91,
+              146,
+              102,
+              157
+            ],
+            "center": [
+              96.37692307692308,
+              151.66923076923078
+            ],
+            "area": 65
+          },
+          {
+            "box": [
+              123,
+              145,
+              136,
+              157
+            ],
+            "center": [
+              129.54347826086956,
+              150.7753623188406
+            ],
+            "area": 69
+          }
+        ],
+        "pairSpan": 33.17859827624384,
+        "axisDegrees": -1.5437990098946757
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              12,
+              10,
+              24,
+              22
+            ],
+            "center": [
+              17.75,
+              15.972222222222221
+            ],
+            "area": 72
+          },
+          {
+            "box": [
+              42,
+              9,
+              53,
+              21
+            ],
+            "center": [
+              47.891304347826086,
+              15.528985507246377
+            ],
+            "area": 69
+          }
+        ],
+        "pairSpan": 30.144563134565118,
+        "axisDegrees": -0.8424905065704567
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              12,
+              10,
+              24,
+              22
+            ],
+            "center": [
+              17.75,
+              15.972222222222221
+            ],
+            "area": 72
+          },
+          "desiredCenter192": [
+            96.12927264308942,
+            152.15579318102394
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -78.37927264308942,
+            0,
+            1.0,
+            -136.1835709588017
+          ],
+          "adoptedRegionPixels": 350
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              42,
+              9,
+              53,
+              21
+            ],
+            "center": [
+              47.891304347826086,
+              15.528985507246377
+            ],
+            "area": 69
+          },
+          "desiredCenter192": [
+            130.05805798021683,
+            151.4556566834747
+          ],
+          "scale": 1.0909090909090908,
+          "affineDestination192ToGenerated64": [
+            0.9166666666666667,
+            0,
+            -71.32858213403935,
+            0,
+            0.9166666666666667,
+            -123.30536645260545
+          ],
+          "adoptedRegionPixels": 295
+        }
+      ],
+      "changedPixels": 645,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 379,
+      "sourceAtlas": 23,
+      "sourceCell": 11,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              93,
+              145,
+              106,
+              158
+            ],
+            "center": [
+              98.95121951219512,
+              152.09756097560975
+            ],
+            "area": 82
+          },
+          {
+            "box": [
+              121,
+              145,
+              133,
+              157
+            ],
+            "center": [
+              127.23611111111111,
+              151.51388888888889
+            ],
+            "area": 72
+          }
+        ],
+        "pairSpan": 28.290913132439638,
+        "axisDegrees": -1.1821576725534024
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              91,
+              146,
+              103,
+              158
+            ],
+            "center": [
+              96.45454545454545,
+              151.83333333333334
+            ],
+            "area": 66
+          },
+          {
+            "box": [
+              124,
+              145,
+              135,
+              156
+            ],
+            "center": [
+              129.66363636363636,
+              150.8090909090909
+            ],
+            "area": 55
+          }
+        ],
+        "pairSpan": 33.22488211494334,
+        "axisDegrees": -1.766569613513132
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              12,
+              10,
+              24,
+              22
+            ],
+            "center": [
+              17.62162162162162,
+              15.95945945945946
+            ],
+            "area": 74
+          },
+          {
+            "box": [
+              41,
+              9,
+              53,
+              21
+            ],
+            "center": [
+              47.67391304347826,
+              15.5
+            ],
+            "area": 69
+          }
+        ],
+        "pairSpan": 30.05580347784908,
+        "axisDegrees": -0.8759078200726099
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              12,
+              10,
+              24,
+              22
+            ],
+            "center": [
+              17.62162162162162,
+              15.95945945945946
+            ],
+            "area": 74
+          },
+          "desiredCenter192": [
+            96.12927264308942,
+            152.15579318102394
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -78.50765102146781,
+            0,
+            1.0,
+            -136.19633372156449
+          ],
+          "adoptedRegionPixels": 350
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              41,
+              9,
+              53,
+              21
+            ],
+            "center": [
+              47.67391304347826,
+              15.5
+            ],
+            "area": 69
+          },
+          "desiredCenter192": [
+            130.05805798021683,
+            151.4556566834747
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -82.38414493673858,
+            0,
+            1.0,
+            -135.9556566834747
+          ],
+          "adoptedRegionPixels": 295
+        }
+      ],
+      "changedPixels": 645,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 380,
+      "sourceAtlas": 23,
+      "sourceCell": 12,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              93,
+              145,
+              106,
+              158
+            ],
+            "center": [
+              98.95121951219512,
+              152.09756097560975
+            ],
+            "area": 82
+          },
+          {
+            "box": [
+              121,
+              145,
+              133,
+              157
+            ],
+            "center": [
+              127.23611111111111,
+              151.51388888888889
+            ],
+            "area": 72
+          }
+        ],
+        "pairSpan": 28.290913132439638,
+        "axisDegrees": -1.1821576725534024
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              91,
+              146,
+              103,
+              158
+            ],
+            "center": [
+              96.51515151515152,
+              151.84848484848484
+            ],
+            "area": 66
+          },
+          {
+            "box": [
+              123,
+              145,
+              136,
+              156
+            ],
+            "center": [
+              129.62698412698413,
+              150.45238095238096
+            ],
+            "area": 63
+          }
+        ],
+        "pairSpan": 33.14125171146585,
+        "axisDegrees": -2.4143487124447844
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              12,
+              10,
+              24,
+              22
+            ],
+            "center": [
+              17.5,
+              15.98611111111111
+            ],
+            "area": 72
+          },
+          {
+            "box": [
+              41,
+              9,
+              52,
+              21
+            ],
+            "center": [
+              47.29710144927536,
+              15.702898550724637
+            ],
+            "area": 69
+          }
+        ],
+        "pairSpan": 29.798447344329343,
+        "axisDegrees": -0.5445628940539804
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              12,
+              10,
+              24,
+              22
+            ],
+            "center": [
+              17.5,
+              15.98611111111111
+            ],
+            "area": 72
+          },
+          "desiredCenter192": [
+            96.12927264308942,
+            152.15579318102394
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -78.62927264308942,
+            0,
+            1.0,
+            -136.16968206991282
+          ],
+          "adoptedRegionPixels": 350
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              41,
+              9,
+              52,
+              21
+            ],
+            "center": [
+              47.29710144927536,
+              15.702898550724637
+            ],
+            "area": 69
+          },
+          "desiredCenter192": [
+            130.05805798021683,
+            151.4556566834747
+          ],
+          "scale": 1.0909090909090908,
+          "affineDestination192ToGenerated64": [
+            0.9166666666666667,
+            0,
+            -71.92278503259007,
+            0,
+            0.9166666666666667,
+            -123.13145340912719
+          ],
+          "adoptedRegionPixels": 295
+        }
+      ],
+      "changedPixels": 645,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 381,
+      "sourceAtlas": 23,
+      "sourceCell": 13,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              93,
+              145,
+              106,
+              158
+            ],
+            "center": [
+              98.95121951219512,
+              152.09756097560975
+            ],
+            "area": 82
+          },
+          {
+            "box": [
+              121,
+              145,
+              133,
+              157
+            ],
+            "center": [
+              127.23611111111111,
+              151.51388888888889
+            ],
+            "area": 72
+          }
+        ],
+        "pairSpan": 28.290913132439638,
+        "axisDegrees": -1.1821576725534024
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              90,
+              145,
+              103,
+              158
+            ],
+            "center": [
+              96.51298701298701,
+              151.6818181818182
+            ],
+            "area": 77
+          },
+          {
+            "box": [
+              124,
+              145,
+              135,
+              156
+            ],
+            "center": [
+              129.53571428571428,
+              150.67857142857142
+            ],
+            "area": 56
+          }
+        ],
+        "pairSpan": 33.03796332368001,
+        "axisDegrees": -1.7401388243679046
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              13,
+              9,
+              24,
+              21
+            ],
+            "center": [
+              17.785714285714285,
+              15.657142857142857
+            ],
+            "area": 70
+          },
+          {
+            "box": [
+              41,
+              9,
+              53,
+              21
+            ],
+            "center": [
+              47.37323943661972,
+              15.274647887323944
+            ],
+            "area": 71
+          }
+        ],
+        "pairSpan": 29.589997413947142,
+        "axisDegrees": -0.7406542662532876
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              13,
+              9,
+              24,
+              21
+            ],
+            "center": [
+              17.785714285714285,
+              15.657142857142857
+            ],
+            "area": 70
+          },
+          "desiredCenter192": [
+            96.12927264308942,
+            152.15579318102394
+          ],
+          "scale": 1.0909090909090908,
+          "affineDestination192ToGenerated64": [
+            0.9166666666666667,
+            0,
+            -70.3327856371177,
+            0,
+            0.9166666666666667,
+            -123.8190008921291
+          ],
+          "adoptedRegionPixels": 350
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              41,
+              9,
+              53,
+              21
+            ],
+            "center": [
+              47.37323943661972,
+              15.274647887323944
+            ],
+            "area": 71
+          },
+          "desiredCenter192": [
+            130.05805798021683,
+            151.4556566834747
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -82.68481854359712,
+            0,
+            1.0,
+            -136.18100879615076
+          ],
+          "adoptedRegionPixels": 295
+        }
+      ],
+      "changedPixels": 645,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 382,
+      "sourceAtlas": 23,
+      "sourceCell": 14,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              93,
+              145,
+              106,
+              158
+            ],
+            "center": [
+              98.95121951219512,
+              152.09756097560975
+            ],
+            "area": 82
+          },
+          {
+            "box": [
+              121,
+              145,
+              133,
+              157
+            ],
+            "center": [
+              127.23611111111111,
+              151.51388888888889
+            ],
+            "area": 72
+          }
+        ],
+        "pairSpan": 28.290913132439638,
+        "axisDegrees": -1.1821576725534024
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              90,
+              145,
+              103,
+              158
+            ],
+            "center": [
+              96.48701298701299,
+              151.5909090909091
+            ],
+            "area": 77
+          },
+          {
+            "box": [
+              123,
+              145,
+              136,
+              157
+            ],
+            "center": [
+              129.58955223880596,
+              150.84328358208955
+            ],
+            "area": 67
+          }
+        ],
+        "pairSpan": 33.11098078912693,
+        "axisDegrees": -1.2938132892363703
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              14,
+              9,
+              25,
+              21
+            ],
+            "center": [
+              18.916666666666668,
+              15.805555555555555
+            ],
+            "area": 72
+          },
+          {
+            "box": [
+              42,
+              9,
+              53,
+              21
+            ],
+            "center": [
+              47.89705882352941,
+              15.308823529411764
+            ],
+            "area": 68
+          }
+        ],
+        "pairSpan": 28.9846489071603,
+        "axisDegrees": -0.9819695275542439
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              14,
+              9,
+              25,
+              21
+            ],
+            "center": [
+              18.916666666666668,
+              15.805555555555555
+            ],
+            "area": 72
+          },
+          "desiredCenter192": [
+            96.12927264308942,
+            152.15579318102394
+          ],
+          "scale": 1.0909090909090908,
+          "affineDestination192ToGenerated64": [
+            0.9166666666666667,
+            0,
+            -69.2018332561653,
+            0,
+            0.9166666666666667,
+            -123.6705881937164
+          ],
+          "adoptedRegionPixels": 350
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              42,
+              9,
+              53,
+              21
+            ],
+            "center": [
+              47.89705882352941,
+              15.308823529411764
+            ],
+            "area": 68
+          },
+          "desiredCenter192": [
+            130.05805798021683,
+            151.4556566834747
+          ],
+          "scale": 1.0909090909090908,
+          "affineDestination192ToGenerated64": [
+            0.9166666666666667,
+            0,
+            -71.32282765833602,
+            0,
+            0.9166666666666667,
+            -123.52552843044006
+          ],
+          "adoptedRegionPixels": 295
+        }
+      ],
+      "changedPixels": 644,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    },
+    {
+      "physical": 383,
+      "sourceAtlas": 23,
+      "sourceCell": 15,
+      "before": {
+        "eyes": [
+          {
+            "box": [
+              93,
+              145,
+              106,
+              158
+            ],
+            "center": [
+              98.95121951219512,
+              152.09756097560975
+            ],
+            "area": 82
+          },
+          {
+            "box": [
+              121,
+              145,
+              133,
+              157
+            ],
+            "center": [
+              127.23611111111111,
+              151.51388888888889
+            ],
+            "area": 72
+          }
+        ],
+        "pairSpan": 28.290913132439638,
+        "axisDegrees": -1.1821576725534024
+      },
+      "after": {
+        "eyes": [
+          {
+            "box": [
+              91,
+              146,
+              103,
+              158
+            ],
+            "center": [
+              96.44029850746269,
+              151.76865671641792
+            ],
+            "area": 67
+          },
+          {
+            "box": [
+              124,
+              145,
+              135,
+              156
+            ],
+            "center": [
+              129.60714285714286,
+              150.83928571428572
+            ],
+            "area": 56
+          }
+        ],
+        "pairSpan": 33.17986278717132,
+        "axisDegrees": -1.605069970166022
+      },
+      "generatedNormalized": {
+        "eyes": [
+          {
+            "box": [
+              12,
+              10,
+              24,
+              22
+            ],
+            "center": [
+              17.65277777777778,
+              16.02777777777778
+            ],
+            "area": 72
+          },
+          {
+            "box": [
+              41,
+              9,
+              53,
+              21
+            ],
+            "center": [
+              47.63235294117647,
+              15.426470588235293
+            ],
+            "area": 68
+          }
+        ],
+        "pairSpan": 29.985604834888143,
+        "axisDegrees": -1.1490404751836758
+      },
+      "registration": [
+        {
+          "side": 0,
+          "sourceGeneratedEye": {
+            "box": [
+              12,
+              10,
+              24,
+              22
+            ],
+            "center": [
+              17.65277777777778,
+              16.02777777777778
+            ],
+            "area": 72
+          },
+          "desiredCenter192": [
+            96.12927264308942,
+            152.15579318102394
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -78.47649486531165,
+            0,
+            1.0,
+            -136.12801540324617
+          ],
+          "adoptedRegionPixels": 350
+        },
+        {
+          "side": 1,
+          "sourceGeneratedEye": {
+            "box": [
+              41,
+              9,
+              53,
+              21
+            ],
+            "center": [
+              47.63235294117647,
+              15.426470588235293
+            ],
+            "area": 68
+          },
+          "desiredCenter192": [
+            130.05805798021683,
+            151.4556566834747
+          ],
+          "scale": 1.0,
+          "affineDestination192ToGenerated64": [
+            1.0,
+            0,
+            -82.42570503904037,
+            0,
+            1.0,
+            -136.0291860952394
+          ],
+          "adoptedRegionPixels": 295
+        }
+      ],
+      "changedPixels": 645,
+      "adoptionMaskSubsetOfDeclared": true,
+      "alphaExact": true,
+      "outsideMaskRGBAExact": true,
+      "mouthAnd1pxGuardRGBAExact": true,
+      "orangeCheeksRGBAExact": true
+    }
+  ],
+  "ownerApproval": "NONE",
+  "runtimeAdoption": false,
+  "outputs": [
+    {
+      "path": "art-src\\빅타민\\동행\\작업회차\\20261020-눈크기정렬143\\정리본\\vitamin-action-09-eye-scale-143-v1.png",
+      "sha256": "3c9016affd16ff5abe3832d027353fab5dc0f6028c0a2372c385af17439e74ef",
+      "bytes": 507380,
+      "size": [
+        1536,
+        384
+      ],
+      "exactRGBA": true
+    },
+    {
+      "path": "art-src\\빅타민\\동행\\작업회차\\20261020-눈크기정렬143\\정리본\\vitamin-action-09-eye-scale-143-v1.webp",
+      "sha256": "14ff5ce9a8477cd6b928ed3149e2a98ba8cb67a2c7b093dffcc99d6c7990044b",
+      "bytes": 385804,
+      "size": [
+        1536,
+        384
+      ],
+      "exactRGBA": true
+    },
+    {
+      "path": "art-src\\빅타민\\동행\\작업회차\\20261020-눈크기정렬143\\정리본\\vitamin-play-04-eye-scale-143-v1.png",
+      "sha256": "81042245cbbccc0978eb8f614a90d63e2121723a5c75d1172540b9365c16ea2d",
+      "bytes": 114735,
+      "size": [
+        1536,
+        384
+      ],
+      "exactRGBA": true
+    },
+    {
+      "path": "art-src\\빅타민\\동행\\작업회차\\20261020-눈크기정렬143\\정리본\\vitamin-play-04-eye-scale-143-v1.webp",
+      "sha256": "a1037fa6435ea0ba4066a5d61cda4a060daeba92a1c64cfcbe9e5a136cd7e454",
+      "bytes": 100874,
+      "size": [
+        1536,
+        384
+      ],
+      "exactRGBA": true
+    }
+  ],
+  "protected": {
+    "oldRuntimePacketsOverwritten": false,
+    "oldMetadataChanged": false,
+    "alphaAllPixelsExact": true,
+    "outsideEyeRGBAExact": true,
+    "mouthGuard24Exact": true,
+    "quarter368To375Exact": true,
+    "other496PhysicalFramesNotReplaced": true
+  },
+  "unverified": [
+    "actual runtime/native sprite display",
+    "all other515 visible eyes normalized",
+    "independent art approval",
+    "glasses integration"
+  ]
+}

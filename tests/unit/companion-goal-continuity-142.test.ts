@@ -1,5 +1,6 @@
+import { randomCompanionToy } from "@/lib/ui/viewer-companion/toy-catalog";
 import { planCompanionGoal } from "@/lib/ui/viewer-companion/planner";
-import { captureCompanionRestartSupport, deferCompanionRestartSupport, resolveCompanionRestartSupport } from "@/lib/ui/viewer-companion/support-landing";
+import { captureCompanionRestartSupport, companionRestartPaintPending, deferCompanionRestartSupport, resolveCompanionRestartSupport } from "@/lib/ui/viewer-companion/support-landing";
 import { createCompanionRoutineArbiter } from "@/lib/ui/viewer-companion/routine-arbiter";
 import { describe, expect, it, vi } from "vitest";
 import { createBrain, getAction, getFoodAction, commitAction, recordCompanionEvent, findPlatformRoute, platformLandingX, reachablePlatforms, type CompanionWorld, type Platform } from "@/lib/ui/viewer-companion/brain";
@@ -7,7 +8,7 @@ import { createCompanionPersonalityDirector, nextCompanionPersonalityScene, type
 import { createCompanionPersonalityJobs } from "@/lib/ui/viewer-companion/personality-jobs";
 import { createCompanionPersonalityActivity } from "@/lib/ui/viewer-companion/personality-activity";
 import { createCompanionHousehold } from "@/lib/ui/viewer-companion/household";
-import { accessibleCompanionToys, createCompanionToys, createCompanionToyPlanner, findCompanionToyRoute, COMPANION_TOY_KINDS, type CompanionToyKind } from "@/lib/ui/viewer-companion/toys";
+import { accessibleCompanionToys, createCompanionToys, createCompanionToyPlanner, findCompanionToyRoute, type CompanionToyKind } from "@/lib/ui/viewer-companion/toys";
 import { COMPANION_PERSONALITY_SCENES, type PersonalitySceneRecipe } from "@/lib/ui/viewer-companion/personality-scene-catalog";
 import { DEFAULT_COMPANION_PREFERENCES, COMPANION_PERSONALITIES } from "@/lib/ui/viewer-companion/preferences";
 import { companionToyReturnDelivered, companionToyReturnTarget, sampleCompanionToyReturn } from "@/lib/ui/viewer-companion/toy-return";
@@ -138,7 +139,7 @@ const outsidePoint={x:115.01599502563477,y:outside.y,platformId:outside.id};
 const box={x:330,y:floor.y,platformId:floor.id},opening={left:392.515625,top:268.203125,width:68.84375,height:4.578125};
 function fixture(startOutside=false, recipes=COMPANION_PERSONALITY_SCENES.filter(r=>['T01','X-T-return-time'].includes(r.id)),firstKind?:CompanionToyKind) {
  const director=createCompanionPersonalityDirector(recipes),planner=createCompanionToyPlanner(),household=createCompanionHousehold(()=>0);
- let first=true;const jobs=createCompanionPersonalityJobs(director,household,planner),toys=createCompanionToys(()=>first&&firstKind?(first=false,(COMPANION_TOY_KINDS.indexOf(firstKind)+.01)/COMPANION_TOY_KINDS.length):0);
+ let first=true;const jobs=createCompanionPersonalityJobs(director,household,planner),toys=createCompanionToys(()=>first&&firstKind?(first=false,toyRoll(firstKind)):0);
  const planes=[outside,floor,sofa];toys.sync(planes,{width:1440,height:1050},0,[foodFloor]);
  for(const x of [346.93798828125,302.93798828125,258.93798828125,214.93800354003906])expect(toys.spawn({x,y:opening.top+opening.height,platformId:foodFloor.id},0)).toBeTruthy();
  for(let at=0;at<=4000;at+=16)toys.tick(at);
@@ -188,8 +189,12 @@ describe('production recovery proposal model; no DOM/native completion claim',()
  });
  it('unfinished3 real returns defer only leisure outing at the observed post-first-return boundary',()=>{
   const host=fixture();host.director.event('arrival',host.input.now);
-  for(let i=0;i<50&&!(host.toys.count()===3&&host.input.world.platformId===sofa.id);i++)host.step();
-  expect(host.toys.count()).toBe(3);expect(host.input.world.platformId).toBe(sofa.id);host.refresh();
+  for(let i=0;i<50&&host.toys.count()>3;i++)host.step();
+  expect(host.toys.count()).toBe(3);
+  //143 removes the old forced sofa reset. Finish this real return's bounded
+  //closure, then test the same actionless leisure-vs-cleanup checkpoint.
+  for(let i=0;i<20&&host.toys.count()===3&&host.director.current()?.id==="X-T-return-time";i++)host.step();
+  expect(host.toys.count()).toBe(3);host.refresh();
   expect(host.director.routineReserved(host.input)).toBe(false);expect(host.director.cleanupPending(host.input)).toBe(true);
   const init={...host.input,now:0,active:true,entryReady:true};
   const old=createCompanionRoutineArbiter();old.next({...init,active:false});
@@ -773,5 +778,85 @@ quietDescribe("142 global quiet home cooldown preserves real work and selection"
     const f = quietFixture([recipe]); f.input.curtainPhase = "closed"; f.drain(recipe.id);
     f.recipes.push({ ...recipe, id: "quiet-control-two", steps: [{ kind: "go", target: "window" }, { kind: "curtain", phase: "shade" }, { kind: "watch", ms: 650 }] });
     f.input.now += 100; quietExpect(f.director.next(f.input)).toBeUndefined();
+  });
+});
+
+/** Select a real weighted catalog interval in this pure model fixture. */
+function toyRoll(kind: CompanionToyKind) {
+  const roll=Array.from({length:4096},(_,i)=>i/4096).find(value=>randomCompanionToy(undefined,()=>value)===kind);
+  expect(roll,`actual weighted interval for ${kind}`).toBeDefined(); return roll!;
+}
+
+
+describe("143 restart paint stays hidden until fresh physical support is adopted", () => {
+  function fixture() {
+    const root = { isConnected: true }, source = { isConnected: true };
+    const platform: Platform = { id: "card-105-top", x: 224.7847748, y: 612.008667, width: 191.1967316, kind: "card", manualOnly: true };
+    const context = { point: { x: 320.383, y: platform.y }, monthKey: "2026-06", root, platform,
+      anchor: { element: source, left: 224.7847748, top: platform.y + 3, width: platform.width, height: 48, identity: "2026-06-22" },
+      viewport: { width: 1440, height: 1100 }, size: 92,
+      state: { enabled: true, visible: true, blocked: false, reduced: false, held: false, airborne: false, carrying: false, owned: false, resting: false } };
+    return { root, source, platform, context, snapshot: captureCompanionRestartSupport(context)! };
+  }
+  it("does not expose the actual 31ms unanchored idle before the 81ms exact card adoption", () => {
+    const { context, platform, snapshot } = fixture(); expect(snapshot).toBeTruthy();
+    let pending: typeof snapshot | undefined = snapshot; let support = "";
+    const samples: { at: number; visible: boolean; platform: string; x: number; y: number }[] = [];
+    const paint = (at: number) => samples.push({ at, visible: !companionRestartPaintPending(pending, support, false), platform: support, ...context.point });
+    paint(31.6);
+    const retained = resolveCompanionRestartSupport(pending, context); pending = undefined; support = retained?.id ?? ""; paint(81.7);
+    expect(samples.filter(frame => frame.visible)).toEqual([{ at: 81.7, visible: true, platform: platform.id, ...context.point }]);
+    expect(samples[0]).toMatchObject({ visible: false, platform: "", ...context.point });
+    expect(snapshot.point).toEqual(context.point); expect(snapshot.platform).toEqual(platform);
+  });
+  it("keeps repeated ordinary-modal missing spans hidden without adopting a substitute and releases only after strict close", () => {
+    const { context, platform, snapshot } = fixture(); let pending = snapshot, support = "";
+    const missing = { ...context, platform: undefined, anchor: undefined };
+    for (let restart = 0; restart < 3; restart++) {
+      expect(resolveCompanionRestartSupport(pending, missing)).toBeUndefined();
+      pending = deferCompanionRestartSupport(pending, missing, true)!;
+      expect(pending).toBe(snapshot); expect(companionRestartPaintPending(pending, support, false)).toBe(true);
+    }
+    const restored = resolveCompanionRestartSupport(pending, context)!; support = restored.id;
+    expect(restored).toBe(platform); expect(companionRestartPaintPending(undefined, support, false)).toBe(false);
+    expect(context.point).toEqual(snapshot.point);
+  });
+  it.each(["wrong-source", "source-removed", "root-removed", "reflow", "offscreen", "point-changed", "wrong-month", "disabled", "hidden-document", "blocked", "reduced", "owned", "held", "airborne", "carrying", "resting"] as const)("does not let hidden paint turn %s into a valid restored support", gate => {
+    const { context, source, root, snapshot } = fixture();
+    const next = { ...context, point: { ...context.point }, anchor: { ...context.anchor }, viewport: { ...context.viewport }, state: { ...context.state } };
+    if (gate === "wrong-source") next.anchor.element = { isConnected: true };
+    if (gate === "source-removed") source.isConnected = false;
+    if (gate === "root-removed") root.isConnected = false;
+    if (gate === "reflow") next.anchor.width++;
+    if (gate === "offscreen") next.viewport.height = 600;
+    if (gate === "point-changed") next.point.x++;
+    if (gate === "wrong-month") next.monthKey = "2026-07";
+    if (gate === "disabled") next.state.enabled = false;
+    if (gate === "hidden-document") next.state.visible = false;
+    if (gate === "blocked") next.state.blocked = true;
+if (gate === "reduced") next.state.reduced = true;
+if (gate === "owned") next.state.owned = true;
+if (gate === "held") next.state.held = true;
+if (gate === "airborne") next.state.airborne = true;
+if (gate === "carrying") next.state.carrying = true;
+if (gate === "resting") next.state.resting = true;
+    expect(companionRestartPaintPending(snapshot, "", false)).toBe(true);
+    const retained = resolveCompanionRestartSupport(snapshot, next);
+    expect(retained).toBeUndefined();
+    // The existing fresh-geometry path consumes the rejected checkpoint before
+    // its normal recovery. This paint latch never adopts the old card by itself.
+    expect(companionRestartPaintPending(undefined, "", false)).toBe(false);
+    expect(snapshot.platform.id).toBe("card-105-top");
+  });
+  it("does not suppress an existing physical/manual action owner while its support is empty", () => {
+    const { snapshot } = fixture(); expect(companionRestartPaintPending(snapshot, "", true)).toBe(false);
+  });
+  it("does not hide an adopted editor card or the initial/home-seat path without a non-home checkpoint", () => {
+    const { context, snapshot } = fixture();
+    expect(companionRestartPaintPending(snapshot, "card-105-top", false)).toBe(false);
+    expect(companionRestartPaintPending(undefined, "", false)).toBe(false);
+    expect(companionRestartPaintPending(undefined, "companion-home", false)).toBe(false);
+    expect(captureCompanionRestartSupport({ ...context, platform: { ...context.platform, id: "companion-home" } })).toBeUndefined();
+    expect(captureCompanionRestartSupport({ ...context, platform: { ...context.platform, id: "companion-home-floor-400", bodyOnly: true } })).toBeUndefined();
   });
 });

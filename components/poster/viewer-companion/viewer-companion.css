@@ -177,7 +177,15 @@ html[data-gfx="off"] .vc-dream i { animation: none; opacity: .7; }
 .studio-shell[data-companion-window] .modal-backdrop { z-index: 90; }
 .vc-companion[data-home-window] .vc-actor { pointer-events: none; }
 .vc-companion[data-workspace-busy] .vc-actor { pointer-events: none; }
-.vc-companion[data-working] { z-index: 81; }
+/* A working resident keeps the same75/76 actor/cloth pair. Only its actual
+   outside body rises beside the editor; the cloth must stay below the editor. */
+.vc-companion[data-working]:not([data-sofa-depth="seat"]):not([data-sofa-depth="back"]) { z-index: 81; }
 .vc-companion[data-working] .vc-actor { pointer-events: none; }
 .vc-companion[data-overlay-drag] .vc-actor { cursor: grabbing; }
 .vc-companion[data-overlay="quiet"] .vc-contact-shadow, .vc-companion[data-overlay="quiet"] .vc-effect { visibility: hidden; }
+
+/* Item portals cannot inherit the room. Their current physical foot supplies
+   this bounded grade; focus targets remain outside the filtered artwork. */
+.vc-food > span { filter: brightness(var(--vc-item-room-light, 1)); }
+.vc-toys .vc-toy > .vc-toy-art { filter: brightness(var(--vc-item-room-light, 1)) var(--vc-toy-color) drop-shadow(0 2px 1px #5d422528); }
+html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-toys .vc-toy > .vc-toy-art { filter: brightness(var(--vc-item-room-light, 1)) var(--vc-toy-color); }

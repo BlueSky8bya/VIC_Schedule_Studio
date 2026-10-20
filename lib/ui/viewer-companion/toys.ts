@@ -2,7 +2,7 @@ import { COMPANION_JUMP_LIMITS, COMPANION_ROUTE_LIMITS, findPlatformRoute, platf
 import type { CompanionPreferences } from "./preferences";
 import { getCompanionBehaviorProfile } from "./behavior-profile";
 import { COMPANION_FULL_THRESHOLD } from "./care";
-import { COMPANION_TOY_KINDS, type CompanionToyKind } from "./toy-catalog";
+import { randomCompanionToy, type CompanionToyKind } from "./toy-catalog";
 import { shouldDeclineCompanionToy, type CompanionTastes } from "./toy-tastes";
 import { isCompanionHomeFloorFoodSupport } from "./food";
 import { createCompanionFoodGravity } from "./food-gravity";
@@ -77,21 +77,10 @@ export function findCompanionToyRoute(from: Point, target: Point, platforms: rea
  * layout clock. There is no timer, DOM scan, food/discovery or save side effect. */
 export function createCompanionToys(rng: () => number = Math.random) {
   let serial = 0, width = 0, height = 0;
-  let bag: CompanionToyKind[] = [], bagIndex = 0, previousKind: CompanionToyKind | undefined;
-  const nextKind = () => {
-    if (bagIndex >= bag.length) {
-      bag = [...COMPANION_TOY_KINDS]; bagIndex = 0;
-      // One bounded bag per actual 24 take-outs. A short visit can meet any
-      // kind, without repeating one before every other kind has appeared.
-      for (let i = 0; i < bag.length - 1; i++) {
-        const value = rng(), roll = Number.isFinite(value) ? clamp(value, 0, 1 - Number.EPSILON) : 0;
-        const j = i + Math.floor(roll * (bag.length - i));
-        [bag[i], bag[j]] = [bag[j], bag[i]];
-      }
-      if (bag[0] === previousKind) [bag[0], bag[1]] = [bag[1], bag[0]];
-    }
-    previousKind = bag[bagIndex++]; return previousKind;
-  };
+  let previousKind: CompanionToyKind | undefined;
+  //143 replaces the uniform24-item bag with the published60-item rarity
+  // distribution. Invalid/capped spawns still return before consuming RNG.
+  const nextKind = () => { previousKind = randomCompanionToy(previousKind, rng); return previousKind; };
   let pausedAt: number | undefined;
   let platforms: readonly Platform[] = [];
   let emissionContacts: readonly Platform[] = [];

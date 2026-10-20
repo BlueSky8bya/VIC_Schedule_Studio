@@ -1,6 +1,7 @@
 export const BOOLEAN_KEYS: readonly string[];
 export const PERSONALITIES: readonly string[];
 export const ROUTINES: readonly string[];
+export const MODELED_RECIPE_COUNT: number;
 export type QaRow = Record<string, string | number>;
 export const DIMENSIONS: Record<string, readonly (string | number)[]>;
 export const PURE_SUITES: readonly string[];

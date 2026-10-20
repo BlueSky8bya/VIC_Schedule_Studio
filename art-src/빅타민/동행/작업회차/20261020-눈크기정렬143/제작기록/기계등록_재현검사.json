@@ -1,0 +1,5 @@
+{
+  "exit": 0,
+  "stdout": "{\"status\": \"CHECK_EXACT\", \"changedFrames\": 24, \"targetSpan\": 33.93600839179636, \"targetWidth\": 12, \"afterSpanRange\": [33.01205782610985, 34.3465887409807], \"preserved\": {\"oldRuntimePacketsOverwritten\": false, \"oldMetadataChanged\": false, \"alphaAllPixelsExact\": true, \"outsideEyeRGBAExact\": true, \"mouthGuard24Exact\": true, \"quarter368To375Exact\": true, \"other496PhysicalFramesNotReplaced\": true}}\n",
+  "stderr": ""
+}

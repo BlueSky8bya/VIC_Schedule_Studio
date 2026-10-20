@@ -1,3 +1,4 @@
+import { inspectLivingContext } from './living-criteria.mjs';
 /** Physical wash evidence is measured from the current DOM, never an engine ACK.
  * Keep at most750ms and require500ms of uninterrupted visible, decoded contact.
  * Labels and row9 are corroboration only: a real brush must move relative to the
@@ -155,7 +156,8 @@ export function traceContextComplete(frames) {
 /** Read-only evidence classifier. A candidate is never an automatic art verdict. */
 export function inspectTrace(frames) {
   const washProgress = measuredWashProgressTimes(frames);
-  const findings = [...ordinaryRouteOscillations(frames), ...ordinaryWalkPacing(frames)], active = frames.filter(f => f.visible && f.decoded && f.enabled !== false && !f.blocked && !f.owned && !['sleep', 'held', 'placing'].includes(f.state));
+  const living = inspectLivingContext(frames);
+  const findings = [...ordinaryRouteOscillations(frames), ...ordinaryWalkPacing(frames), ...living.findings], active = frames.filter(f => f.visible && f.decoded && f.enabled !== false && !f.blocked && !f.owned && !['sleep', 'held', 'placing'].includes(f.state));
   let checkpoint, prior, targetHistory = [], repeated = 0;
   const flag = (rule, frame, detail) => { if (!findings.some(f => f.rule === rule)) findings.push({ rule, at: frame.at, severity: 'candidate', detail }); };
   for (const frame of active) {
@@ -183,7 +185,7 @@ export function inspectTrace(frames) {
   }
   // OFF/sleep is checked outside the active-progress filter as well.
   for (const frame of frames) if (frame.visible && frame.decoded && frame.sleepAllowed === false && frame.state === 'sleep') flag('sleep-off', frame, 'Actual sleep while explicit sleep is OFF');
-  return { frames: frames.length, washProgressFrames: washProgress.size, eligibleFrames: active.filter(frame => frame.eligible === true).length, findings, verdict: findings.length ? 'needs-review' : 'no-detector-findings', limitations: ['No detector findings is not human visual approval.', 'Two-point oscillation is a sampled ordinary-life candidate, not an engine route verdict; legacy traces do not prove unrecorded mouse/input/layout inactivity.', 'Nearby cleanup is only a candidate: route availability and four-object return completion require dedicated native proof.', 'Clip checks require explicit current source proof; absent proof is not assumed.', 'A sampled trace is not every compositor frame or every possible sequence.', 'Wash progress requires raw visible pad/body/brush geometry, decoded current row9, continuous500ms contact and fresh body-relative brush motion; labels alone do not qualify. Older traces without these fields remain unchanged and cannot be promoted retroactively.'] };
+  return { frames: frames.length, washProgressFrames: washProgress.size, eligibleFrames: active.filter(frame => frame.eligible === true).length, living, findings, verdict: findings.length ? 'needs-review' : 'no-detector-findings', limitations: ['No detector findings is not human visual approval.', 'Two-point oscillation is a sampled ordinary-life candidate, not an engine route verdict; legacy traces do not prove unrecorded mouse/input/layout inactivity.', 'Nearby cleanup is only a candidate: route availability and four-object return completion require dedicated native proof.', 'Clip checks require explicit current source proof; absent proof is not assumed.', 'A sampled trace is not every compositor frame or every possible sequence.', 'Wash progress requires raw visible pad/body/brush geometry, decoded current row9, continuous500ms contact and fresh body-relative brush motion; labels alone do not qualify. Older traces without these fields remain unchanged and cannot be promoted retroactively.'] };
 }
 
 /** Empty, hidden, undecoded or prematurely stopped samples never prove 90s. */

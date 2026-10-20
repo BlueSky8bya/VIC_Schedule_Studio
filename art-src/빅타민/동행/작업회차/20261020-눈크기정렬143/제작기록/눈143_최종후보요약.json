@@ -1,0 +1,59 @@
+{
+  "oneGeneration": true,
+  "nativeSha256": "1b1dc2d4abf68a9a5e8125f222ffbe296b7f213f2fb034d970fadbe9972b3acf",
+  "ownerApproval": "NONE",
+  "authorObservationsOnly": true,
+  "actualRuntime": "UNRUN",
+  "scope": {
+    "physical144To159": "logical pet row9",
+    "physical376To383": "global sourceAtlas23; play atlas4; logical row24 front half",
+    "physical368To375": "unchanged quarter view",
+    "logicalRow23": "play atlas3/physical352..367 unchanged"
+  },
+  "groups": [
+    {
+      "group": "pet144..159",
+      "pairSpanMinMax": [
+        33.32049815125609,
+        34.3465887409807
+      ],
+      "inkWidthMinMax": [
+        11,
+        13
+      ],
+      "inkHeightMinMax": [
+        7,
+        8
+      ],
+      "maxPairMidpointDrift": 0.26520434565234396,
+      "maxAdjacentPairSpanStep": 0.7550849394566157,
+      "maxAdjacentAxisStepDegrees": 1.3504850306130392
+    },
+    {
+      "group": "frontRecovery376..383",
+      "pairSpanMinMax": [
+        33.01205782610985,
+        33.22488211494334
+      ],
+      "inkWidthMinMax": [
+        11,
+        13
+      ],
+      "inkHeightMinMax": [
+        11,
+        13
+      ],
+      "maxPairMidpointDrift": 0.6556815488808726,
+      "maxAdjacentPairSpanStep": 0.21083976878244215,
+      "maxAdjacentAxisStepDegrees": 0.6742098880768799
+    }
+  ],
+  "originalArtLogSha256": "e980005102457e2a02ae318ff7665596e7170d0bfb34a328f64a6ec292c5990b",
+  "limits": [
+    "24 front frames only; no claim that every visible pose now has default eye scale",
+    "Individual expression heights stay closed/pinched, not forced to open standing pupil height",
+    "No independent art review/human approval",
+    "Native displayed continuity at normal or reduced animation is pending",
+    "Other496 frames and quarter view remain original"
+  ]
+}

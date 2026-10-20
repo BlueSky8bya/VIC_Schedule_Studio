@@ -4,6 +4,7 @@ import { DEFAULT_COMPANION_LIFE } from "./life";
 import { getCompanionBehaviorProfile } from "./behavior-profile";
 import { findCompanionPointerRoute } from "./reactive-cues";
 import { COMPANION_FULL_THRESHOLD } from "./care";
+import { companionMayAddressAudience, companionPrivateHomeSupport } from "./life-space";
 
 export type CompanionLivingKind = "social" | "cozy" | "cheer";
 export const COMPANION_LIVING_COOLDOWN = 120000;
@@ -16,7 +17,7 @@ function socialRoute(world: CompanionWorld, prefs: CompanionBehaviorPreferences,
   const step = old?.route?.step, target = step && world.platforms.find(platform => platform.id === step.target.platformId);
   const validStep = step && target && Math.abs(target.y - step.target.y) <= 2 && step.target.x >= target.x && step.target.x <= target.x + target.width;
   if (sameCue && now < old.retryAt && (!step || validStep && Math.hypot(world.x - old.x, world.y - old.y) < .5)) return old.route;
-  const route = findCompanionPointerRoute(world, prefs, gap);
+  const route = findCompanionPointerRoute(world, prefs, gap, true);
   followCache.set(prefs, { x: world.x, y: world.y, px: pointer.x, py: pointer.y, support: world.platformId, retryAt: now + cadence, route });
   return route;
 }
@@ -38,7 +39,7 @@ export function getLivingAction(brain: CompanionBrain, world: CompanionWorld, pr
   const support = world.platforms.find(platform => platform.id === world.platformId);
   if (!support || ![support.x, support.y, support.width].every(Number.isFinite) || support.width <= 0
     || Math.abs(support.y - world.y) > 2 || world.x < support.x || world.x > support.x + support.width || support.kind === "control" || support.kind === "hide") return;
-  const home = support.id === "companion-home" || /^companion-home-floor(?:-\d+)?$/.test(support.id);
+  const home = companionPrivateHomeSupport(support.id);
   if (support.manualOnly && !home) return;
   const here = { x: world.x, y: world.y, platformId: support.id }, life = prefs.learnFromYou === false ? DEFAULT_COMPANION_LIFE : brain.life ?? DEFAULT_COMPANION_LIFE;
   const profile = getCompanionBehaviorProfile(prefs, brain.habits);
@@ -71,7 +72,7 @@ export function getLivingAction(brain: CompanionBrain, world: CompanionWorld, pr
   if (promptSocial && prefs.petting && prefs.roam && brain.energy >= .28 && pointer && !social) {
     const route = socialRoute(world, prefs, profile.pointerGap, profile.activityCadenceMs, now);
     if (route?.step) {
-      if (!brain.recentLiving?.includes("social")) return play(prefs.personality === "affectionate" ? "ask-petting" : "bow", "social");
+      if (companionMayAddressAudience(world) && !brain.recentLiving?.includes("social")) return play(prefs.personality === "affectionate" ? "ask-petting" : "bow", "social");
       const step = route.step, pace = prefs.animalMode === "cat" ? "amble" as const : "scoot" as const;
       const speed = profile.walkSpeed * (pace === "scoot" ? 1.3 : 1);
       const target = step.kind === "walk" ? { ...step.target, x: world.x + clamp(step.target.x - world.x, -speed * 12, speed * 12) } : step.target;

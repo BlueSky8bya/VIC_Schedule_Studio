@@ -7,6 +7,11 @@ import { COMPANION_TASTE_REASON_TEXT, companionInnateFoodReason, companionToyTas
 
 export const COMPANION_TASTES_KEY = "vic.viewerCompanionTastes";
 export const COMPANION_TASTES_EVENT = "vic:companion-tastes";
+/**143 expands the finite catalogue from204 to300 identities. The previous
+ *16KiB parser could discard this store's own valid earned state on reload.
+ *24KiB retains all bounded records+8 reasons; malformed/oversized data still
+ *fails closed. The limit is UTF-8 bytes, not JavaScript string length. */
+export const COMPANION_TASTES_MAX_BYTES = 24 * 1024;
 export type CompanionToyExperience = "taken-out" | "played" | "tidied" | "declined" | "tripped";
 type Taste = { score: number; accepted: number; declined: number; tripped?: number };
 export type CompanionTasteMemory = { domain: "food"; kind: CompanionFoodKind; reason: CompanionFoodTasteReason; age: number } | { domain: "toy"; kind: CompanionToyKind; reason: CompanionToyTasteReason; age: number };
@@ -102,7 +107,7 @@ export function createCompanionTastesStore(storage?: TasteStorage, notify?: (val
   let memory = normalizeCompanionTastes(undefined), rawSeen: string | null | undefined, initialized = false, activeCredit = 0;
   const synchronize = (raw: string | null) => {
     const previous = JSON.stringify(memory); let parsed: unknown;
-    try { parsed = raw && raw.length <= 16384 ? JSON.parse(raw) : undefined; } catch { parsed = undefined; }
+    try { parsed = raw && raw.length <= COMPANION_TASTES_MAX_BYTES && new TextEncoder().encode(raw).byteLength <= COMPANION_TASTES_MAX_BYTES ? JSON.parse(raw) : undefined; } catch { parsed = undefined; }
     memory = normalizeCompanionTastes(parsed); initialized = true; rawSeen = raw; activeCredit = 0;
     if (JSON.stringify(memory) !== previous) notify?.(copy(memory));
     return copy(memory);

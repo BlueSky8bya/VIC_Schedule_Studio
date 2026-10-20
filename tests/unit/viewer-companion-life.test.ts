@@ -9,7 +9,7 @@ const earned = (life = fresh(), event: CompanionLifeExperience = { kind: "petted
 
 describe("bounded device-local companion life", () => {
   it("draws one initial favorite and normalizes/resets without drawing again", () => {
-    const rng = vi.fn(() => .7), life = createCompanionLife(rng);
+    const rng = vi.fn(() => 0.5191649621212121), life = createCompanionLife(rng); //143 published CDF midpoint for salad.
     expect(rng).toHaveBeenCalledTimes(1); expect(life.favoriteFood).toBe("salad");
     expect(normalizeCompanionLife(JSON.parse(JSON.stringify(life)))).toEqual(life);
     const reset = resetCompanionLife(earned(life), 3);
@@ -51,7 +51,7 @@ describe("bounded device-local companion life", () => {
     expect(normalizeCompanionLife(JSON.parse(JSON.stringify(life)))).toEqual(life);
   });
 
-  it("expands a saved60-food life to180 without rerolling or replacing low earned tastes", () => {
+  it("expands a saved60-food life to240 without rerolling or replacing low earned tastes", () => {
     const oldFoods = COMPANION_FOOD_KINDS.slice(0, 60);
     const foodScores = Object.fromEntries(oldFoods.map(food => [food, food === "macaron" ? .31 : .2]));
     const familiarity = Object.fromEntries(oldFoods.map((food, index) => [food, index / 100]));

@@ -484,6 +484,7 @@ describe("142 routine checkpoints retain real authored work and bounded closure"
   });
   it("yields a pure performance to ordinary real care instead of reserving expression alone",()=>{
     const input=scene();input.preferences.personality="performer";input.brain.hunger=.5;
+    input.world.platforms=[floor,{id:"actual-outside",kind:"floor",x:100,y:600,width:500}];input.world.platformId="actual-outside";
     input.world.foods=[{id:"actual-meal",kind:"carrot",x:180,y:600,platformId:floor.id}];
     const director=createCompanionPersonalityDirector([source("P11")]),entry=director.next(input)!;
     input.now+=entry.action!.duration;director.complete(entry.meta);expect(director.next(input)?.meta.id).toBe("P11");

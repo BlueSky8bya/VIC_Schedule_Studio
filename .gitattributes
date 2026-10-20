@@ -23,3 +23,10 @@ art-src/빅타민/수집/작업회차/20261018-먹거리일치와삼각김밥/**
 # Preserve the publisher's original blank-line/tail whitespace verbatim.
 art-src/빅타민/동행/작업회차/20261019-커튼단계레이어126/제작기록/공개자료/*.json -text whitespace=cr-at-eol
 public/companion/audio/KENNEY-LICENSE.txt -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol
+
+# Preserve exact task143 eye-registration receipt bytes.
+art-src/빅타민/동행/작업회차/20261020-눈크기정렬143/제작기록/개별눈마스크_계보.json -text whitespace=cr-at-eol
+art-src/빅타민/동행/작업회차/20261020-눈크기정렬143/제작기록/기계등록_재현검사.json -text whitespace=cr-at-eol
+art-src/빅타민/동행/작업회차/20261020-눈크기정렬143/제작기록/눈143_기계등록계측.json -text whitespace=cr-at-eol
+art-src/빅타민/동행/작업회차/20261020-눈크기정렬143/제작기록/눈143_최종후보요약.json -text whitespace=cr-at-eol
+art-src/빅타민/동행/작업회차/20261020-눈크기정렬143/제작기록/얼굴입력_기계크롭영수증.json -text whitespace=cr-at-eol

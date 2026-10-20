@@ -8,10 +8,11 @@ import sprites from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
 import play from "@/lib/ui/viewer-companion/play-motion-sprite.json";
 import living from "@/lib/ui/viewer-companion/living-motion-sprite.json";
 import legacy from "@/lib/ui/viewer-companion/fluid-sprite.json";
-import bodyRegistration from "../../art-src/빅타민/동행/작업회차/20261018-동작연결정리115/패킹파생기록.json";
-import expression119 from "../../art-src/빅타민/동행/작업회차/20261019-표정체적교정119/패킹파생기록.json";
-import happiness131 from "../../art-src/빅타민/동행/작업회차/20261019-쓰다듬기행복131/패킹파생기록.json";
-import eyeWeight133 from "../../art-src/빅타민/동행/작업회차/20261019-쓰다듬기눈선133/패킹파생기록.json";
+import bodyRegistration from "@/art-src/빅타민/동행/작업회차/20261018-동작연결정리115/패킹파생기록.json";
+import expression119 from "@/art-src/빅타민/동행/작업회차/20261019-표정체적교정119/패킹파생기록.json";
+import happiness131 from "@/art-src/빅타민/동행/작업회차/20261019-쓰다듬기행복131/패킹파생기록.json";
+import edition from "../fixtures/companion-eye-scale-143.json";
+import eyeWeight133 from "@/art-src/빅타민/동행/작업회차/20261019-쓰다듬기눈선133/패킹파생기록.json";
 
 describe("116 whole-pose continuity", () => {
   // Review sheet labels are one-based; the frozen packing receipt is zero-based.
@@ -60,8 +61,7 @@ describe("one high-resolution pipeline for every companion action", () => {
       const selected = selectCompanionSprite(index);
       expect(selected).toMatchObject({ atlas: "hd", physicalIndex: index, index: index % 16, grid: 8, gridRows: 2 });
       const atlas = Math.floor(index / 16);
-      expect(selected.src).toBe(sprites.atlases[atlas].src);
-      expect(selected.src).toBe(replacements[atlas] ?? `/companion/hd/vitamin-action-${String(atlas).padStart(2, "0")}-motion-115-v1.webp`);
+      expect(sprites.atlases[atlas].src).toBe(replacements[atlas] ?? `/companion/hd/vitamin-action-${String(atlas).padStart(2, "0")}-motion-115-v1.webp`);
       expect(selected.frame).toEqual(sprites.frames[index]);
     }
     expect(happiness131.physicalIndices).toEqual(Array.from({ length: 16 }, (_, index) => 144 + index));
@@ -82,6 +82,14 @@ describe("one high-resolution pipeline for every companion action", () => {
       frameOffset += before.frames.length; atlasOffset += before.atlases.length;
     }
     expect(unchanged).toBe(504);
+  });
+  it("selects exact active143 images without rewriting historical rows or sources", () => {
+    const historical = [...sprites.atlases, ...play.atlases, ...living.atlases];
+    for (const [index, frame] of companionSpriteMetadata.frames.entries()) {
+      const parent = historical[frame.atlas], patch = edition.packets.find(p => p.atlas === frame.atlas);
+      if (patch) { expect(parent.src).toBe(patch.parentSrc); expect(parent.sha256).toBe(patch.parentSha256); }
+      expect(selectCompanionSprite(index).src).toBe(patch?.src ?? parent.src);
+    }
   });
   it("registers actual bodies in80 logical units with protected stroke margins", () => {
     for (const [index, frame] of sprites.frames.entries()) {

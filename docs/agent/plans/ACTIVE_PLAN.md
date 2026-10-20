@@ -2,7 +2,7 @@
 
 | ID | Status | Record |
 |---|---|---|
-| COMPANION-AGENT-142 | Goal continuity, experience-based selection, direct personality UI and daily audit factory | [142 plan](PLAN-20261020-142-companion-agent-and-daily-qa.md) |
+| COMPANION-LIVING-143 | Natural outside life, shared layering/UI, collection rarity and three-reviewer daily improvements | [143 plan](PLAN-20261020-143-companion-living-and-collections.md) |
 | PRIVACY-20260921 | Deployed containment verified; historical Git exposure, realtime/provider and retention follow-up remain | [Privacy audit](../verification/PRIVACY-20260921.md) |
 | DARK-HARMONY-20260919 | Ribbon editor dark controls corrected; local verification and authorized push follow-up. Production unverified (prior release staged) | [Dark palette follow-up](../../ux/dark-mode-palette.md) |
 | MARINE-RESUME | Paused by owner | [Resume handoff](../handoffs/20260916-marine-biomes-resume.md) |

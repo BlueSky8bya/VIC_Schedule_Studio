@@ -44,6 +44,9 @@ export function getCompanionBehaviorProfile(prefs: Pick<CompanionPreferences, "a
     hungerScale: gourmet ? 1.5 : dog ? 1.15 : 1,
     livingCooldownMs: affectionate ? 8000 : performer ? 8000 : mischievous ? 6000 : dog ? 10000 : 45000,
     homeWeight: homebody ? 2.5 : sleepy ? 1.3 : .1,
+    // Outside is a real goal, not a larger decorative-play weight.
+    outsideCadenceMs: prefs.personality === "curious" ? 24000 : mischievous ? 32000 : performer ? 40000 : affectionate ? 42000 : gourmet ? 50000 : tidy ? 55000 : homebody ? 100000 : sleepy ? 85000 : 45000,
+    outsideStops: prefs.personality === "curious" ? 2 : 1,
     householdRetryMs: tidy ? 1500 : mischievous ? 2000 : 8000,
     householdCooldownMs: tidy ? 6000 : mischievous ? 4500 : 35000,
     // Cartoon clumsiness belongs mostly to the fictional pompom mascot.

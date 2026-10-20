@@ -329,7 +329,7 @@ test("141 manual curtain cycles three phases with15s lease then homebody physica
   expect(protectedFrames.length).toBeGreaterThan(100); expect(protectedFrames.every(frame => frame.curtain === "open")).toBe(true);
   await awaitEffect(page, "curtain", automaticAfter); await awaitEffect(page, "light", automaticAfter); await awaitEffect(page, "tv", automaticAfter);
   const trace = await frames(page); expect(trace.some(frame => frame.state === "sleep")).toBe(false);
-  await expect.poll(async () => (await frames(page)).some(frame => genuine(frame) && frame.tv === "nature" && !frame.lit && frame.curtain === "closed"), { timeout: 20_000, intervals: [100] }).toBe(true);
+  await expect.poll(async () => (await frames(page)).some(frame => genuine(frame) && frame.tv === "tori" && !frame.lit && frame.curtain === "closed"), { timeout: 20_000, intervals: [100] }).toBe(true);
   await snapshot(page, "actual-homebody-theatre");
   assertEveryEffectWasPhysical(await frames(page), automaticAfter, ["curtain", "light", "tv"]);
 });

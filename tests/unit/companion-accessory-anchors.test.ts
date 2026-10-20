@@ -4,6 +4,10 @@ import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
 import anchors from "@/lib/ui/viewer-companion/accessory-anchors.json";
+import base from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
+import play from "@/lib/ui/viewer-companion/play-motion-sprite.json";
+import living from "@/lib/ui/viewer-companion/living-motion-sprite.json";
+import edition from "../fixtures/companion-eye-scale-143.json";
 import { companionSpriteMetadata, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { companionAccessoryPlacement, companionGiftAnchor } from "@/lib/ui/viewer-companion/accessory";
 import { COMPANION_ACCESSORY_IDS } from "@/lib/ui/viewer-companion/gifts";
@@ -41,13 +45,25 @@ describe("source-bound all-pose accessory anchors", () => {
 
   it("binds all33 exact public packet bytes and the three aggregate mapping inputs", () => {
     expect(anchors.sources).toHaveLength(33); expect(anchors.metadata).toHaveLength(3);
+    const historical = [...base.atlases, ...play.atlases, ...living.atlases];
     for (const [index, source] of anchors.sources.entries()) {
       const bytes = fs.readFileSync(path.join(root, "public", source.src));
       expect(sha256(bytes)).toBe(source.sha256); expect(bytes.length).toBe(source.bytes);
-      expect(source.src).toBe(companionSpriteMetadata.atlases[index].src);
-      expect(source.sha256).toBe(companionSpriteMetadata.atlases[index].sha256);
+      expect(source.src).toBe(historical[index].src);
+      expect(source.sha256).toBe(historical[index].sha256);
     }
     for (const source of anchors.metadata) expect(sha256(fs.readFileSync(path.join(root, source.path)))).toBe(source.sha256);
+  });
+
+  it("binds the active143 sources separately from the immutable33-packet history", () => {
+    for (const [index, parent] of anchors.sources.entries()) {
+      const patch = edition.packets.find(p => p.atlas === index);
+      if (patch) { expect(parent.src).toBe(patch.parentSrc); expect(parent.sha256).toBe(patch.parentSha256); }
+      const expected = patch ? { src: patch.src, sha256: patch.sha256, bytes: patch.bytes } : parent;
+      expect(companionSpriteMetadata.atlases[index]).toMatchObject(expected);
+      const actual = fs.readFileSync(path.join(root, "public", expected.src));
+      expect(sha256(actual)).toBe(expected.sha256); expect(actual.length).toBe(expected.bytes);
+    }
   });
 
   it("distinguishes an authored body roll from yaw and explicitly maps the actual rear drawings", () => {

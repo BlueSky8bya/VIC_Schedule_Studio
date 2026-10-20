@@ -2,6 +2,8 @@ import type { PersonalitySceneInput } from "./personality-director";
 import type { PersonalitySceneRecipe, SceneBeat } from "./personality-scene-catalog";
 import type { CompanionPersonality } from "./preferences";
 import { COMPANION_FULL_THRESHOLD } from "./care";
+import { getCompanionBehaviorProfile } from "./behavior-profile";
+import { planCompanionOutsideRoute, type CompanionOutsideGoal, type CompanionOutsideObserver } from "./outside-route";
 
 export type CompanionRoutineKind = "meal" | "wash" | "sleep" | "nap" | "outing" | "music";
 export type CompanionRoutineEffect = "ate" | "washed" | "slept" | "went-out" | "played" | "music-started";
@@ -11,12 +13,14 @@ export type CompanionRoutineInput = PersonalitySceneInput & {
   /** Current authored real work/short closure; urgent care may supersede it
    * at this checkpoint. Hard physical/manual owners above remain absolute. */
   authoredReserved?: boolean;
+  /** Only optional TV/radio itinerary, never a real object/care/closure owner. */
+  authoredLeisure?: boolean;
   /** A real existing meal route, or a real usable dispenser. Never raw count. */
   meal?: { foodId?: string; canSupply?: boolean };
   /** A measured outside route may be unavailable in a cramped room. */
   canOuting?: boolean;
 };
-export type CompanionRoutineRequest = { kind: CompanionRoutineKind; recipe: PersonalitySceneRecipe; itemId?: string; reason: "hunger" | "hygiene" | "energy" | "wake" | "movement" | "music" };
+export type CompanionRoutineRequest = { kind: CompanionRoutineKind; recipe: PersonalitySceneRecipe; itemId?: string; reason: "hunger" | "hygiene" | "energy" | "wake" | "movement" | "music"; outsideGoal?:CompanionOutsideGoal };
 
 const profiles: Readonly<Record<CompanionPersonality, { washMs: number; outingMs: number; napEnergy: number; sleepMs: number; inspect: boolean }>> = {
   performer: { washMs: 150000, outingMs: 50000, napEnergy: .3, sleepMs: 3000, inspect: false },
@@ -30,7 +34,6 @@ const profiles: Readonly<Record<CompanionPersonality, { washMs: number; outingMs
   balanced: { washMs: 130000, outingMs: 45000, napEnergy: .34, sleepMs: 3500, inspect: true },
 };
 const clamp = (value: number, low: number, high: number) => Math.max(low, Math.min(high, value));
-const homeId = (id?: string) => /^companion-home(?:-floor)?(?:-\d+)?$/.test(id ?? "");
 const pose = (name: "bow" | "groom" | "stretch" | "shake"): SceneBeat => ({ kind: "pose", pose: name });
 
 function recipe(kind: CompanionRoutineKind, input: CompanionRoutineInput): PersonalitySceneRecipe {
@@ -59,8 +62,10 @@ function recipe(kind: CompanionRoutineKind, input: CompanionRoutineInput): Perso
   ];
   else steps = [
     { kind: "curtain", phase: "open", optional: true },
-    ...((input.environment?.night ?? false) ? [{ kind: "light", lit: true, optional: true } as const] : []),
-    { kind: "go", target: "novel-place" }, pose(personality === "tidy" ? "groom" : "bow"),
+    ...((input.environment?.night ?? false) ? [{ kind: "light", lit: false, optional: true } as const] : []),
+    { kind: "go", target: "outside" },
+    ...(getCompanionBehaviorProfile(input.preferences).outsideStops > 1 ? [pose("stretch"), { kind: "go", target: "outside" } as const] : []),
+    pose(personality === "tidy" ? "groom" : "bow"),
   ];
   return { id: `routine-${kind}`, label: { meal: "배고프면 냠냠", wash: "패드에서 씻기", sleep: "불 끄고 잠든 뒤 기지개", nap: "짧은 낮잠과 기지개", outing: "기지개 뒤 바깥 산책", music: "라디오 켜고 소파에서 쉬기" }[kind], personality, major: true, triggers: ["free"], steps };
 }
@@ -68,7 +73,7 @@ function recipe(kind: CompanionRoutineKind, input: CompanionRoutineInput): Perso
 /** Needs select a common routine; personality changes how it is performed.
  * One existing active clock,6 bounded choices and actual effect ACKs only.
  * This is local ephemeral state, not an extra saved preference/care schema. */
-export function createCompanionRoutineArbiter() {
+export function createCompanionRoutineArbiter(outsideDiagnostic?:CompanionOutsideObserver) {
   let began: number | undefined, previous = 0, dirt = .2, wakePending = false;
   let pending: { kind: CompanionRoutineKind; at: number } | undefined;
   const completed = new Map<CompanionRoutineEffect, number>(), failedUntil = new Map<CompanionRoutineKind, number>();
@@ -92,7 +97,7 @@ export function createCompanionRoutineArbiter() {
       const urgentHunger = brain.hunger >= .78, exhausted = brain.energy <= .18;
       const candidates: { kind: CompanionRoutineKind; score: number; overdue: number; reason: CompanionRoutineRequest["reason"] }[] = [];
       const add = (kind: CompanionRoutineKind, possible: boolean, score: number, overdue: number, reason: CompanionRoutineRequest["reason"]) => {
-        if (input.authoredReserved && !(kind === "meal" && urgentHunger || (kind === "sleep" || kind === "nap") && exhausted)) return;
+        if (input.authoredReserved && !(kind === "meal" && urgentHunger || (kind === "sleep" || kind === "nap") && exhausted || kind === "outing" && input.authoredLeisure)) return;
         if (possible && at >= (failedUntil.get(kind) ?? -Infinity)) candidates.push({ kind, score, overdue, reason });
       };
       const hungry = brain.hunger >= COMPANION_FULL_THRESHOLD;
@@ -119,10 +124,15 @@ export function createCompanionRoutineArbiter() {
         && (exhausted || !completed.has("slept") || at - stamp("slept") > 90000);
       add(night ? "sleep" : "nap", maySleep && (exhausted || brain.energy <= (night ? Math.max(.48, profile.napEnergy) : profile.napEnergy)),
         exhausted ? 2.9 : .62 + (1 - clamp(brain.energy, 0, 1)) * .3, exhausted ? 2.9 : 0, "energy");
-      const outingAge = (at - stamp("went-out")) / profile.outingMs;
-      const outsideExists = input.world.platforms.some(plane => !homeId(plane.id) && !plane.manualOnly && !plane.bodyOnly && !["control", "hide"].includes(plane.kind));
-      add("outing", input.canOuting !== false && outsideExists && brain.energy >= .32 && !night
-        && (wakePending || (at - (began ?? at) >= 8000 && (!completed.has("went-out") || outingAge >= 1))),
+      const behavior = getCompanionBehaviorProfile(p,brain.habits);
+      const outingAge = (at - stamp("went-out")) / behavior.outsideCadenceMs;
+      const firstOutsideAt = p.personality === "homebody" ? behavior.outsideCadenceMs : p.personality === "sleepy" ? 45000 : 8000;
+      // Awake pets can go out at night. Actual fatigue/urgent care, hard work
+      // and explicit OFF still arbitrate above; a clock band is not an owner.
+      const outsideDue=input.canOuting!==false && brain.energy>=.32 && at>=(failedUntil.get("outing")??-Infinity)
+        && (!input.authoredReserved||input.authoredLeisure) && (wakePending || (at-(began??at)>=firstOutsideAt && (!completed.has("went-out")||outingAge>=1)));
+      const outside=outsideDue?planCompanionOutsideRoute(input.world,p.jump,brain.visited,{observe:outsideDiagnostic}):undefined;
+      add("outing", Boolean(outside),
         wakePending ? .98 : .55 + Math.min(.3, outingAge * .2), wakePending ? 2 : Math.min(2, outingAge), wakePending ? "wake" : "movement");
       const radio = home.radio, radioContact = home.contacts?.radio;
       const radioSupport = radio && input.world.platforms.find(plane => plane.id === radio.platformId);
@@ -139,7 +149,7 @@ export function createCompanionRoutineArbiter() {
       candidates.sort((a, b) => Number(b.overdue >= 1.5) - Number(a.overdue >= 1.5) || b.score - a.score || b.overdue - a.overdue);
       const chosen = candidates[0]; if (!chosen) return;
       pending = { kind: chosen.kind, at };
-      return { kind: chosen.kind, recipe: recipe(chosen.kind, input), reason: chosen.reason, ...(chosen.kind === "meal" && input.meal?.foodId ? { itemId: input.meal.foodId } : {}) };
+      return { kind: chosen.kind, recipe: recipe(chosen.kind, input), reason: chosen.reason, ...(chosen.kind === "meal" && input.meal?.foodId ? { itemId: input.meal.foodId } : {}), ...(chosen.kind==="outing"&&outside?{outsideGoal:outside.goal}:{}) };
     },
     /** Call from real eat/wash/sleep/outside completion, never a smiling pose. */
     observe(effect: CompanionRoutineEffect, at: number) {

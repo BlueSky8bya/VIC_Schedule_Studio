@@ -1,0 +1,1499 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Public runtime-only technical fingerprints. Source-archive RGBA attribution is separately verified by the explicit art packing CLI; no source file is read by this fixture.",
+  "catalogSha256": "1349b2347279bea40180e25a61ee1c0c4a811a70cd086ca7614c1591d8ead2f2",
+  "sourceArtifactFingerprints": [
+    {
+      "sheet": "food-1",
+      "sha256": "e24adede1aa87705a4186d2bffa05e95be0cccc2a619cd2d5294aa80b5e4857a"
+    },
+    {
+      "sheet": "food-2",
+      "sha256": "1f70f5a12ce6ed6bb7423be8b464f275074c2e94e0e717d0c41330926cb6130e"
+    },
+    {
+      "sheet": "food-3",
+      "sha256": "5a428e8ad6ee4c742803ea5cf68213f9c9448b7d8eac844fbb4abedd8feda8a6"
+    },
+    {
+      "sheet": "food-4",
+      "sha256": "2e708d60a5a6110b622cfc6707be8df535bf6da41c1455e647b4e634bbb19c57"
+    },
+    {
+      "sheet": "food-5",
+      "sha256": "f9067033c2d558d8892855d74c9db1fd904ea288ee9fd28d5774af6a80a7365d"
+    },
+    {
+      "sheet": "toy-1",
+      "sha256": "823fa5a44843fa420f124957536caafce27907b68d71578cfd82e1c436550796"
+    },
+    {
+      "sheet": "toy-2",
+      "sha256": "7f85fa9243ddd1761342c50c5aee5ad877bd20ae1f7088ea8d171080d978678c"
+    },
+    {
+      "sheet": "toy-3",
+      "sha256": "117629c9d5cdf1e269a68d9f7a8c8cb3616dd469bc84c30a660bcab9415d8558"
+    }
+  ],
+  "runtimeFiles": [
+    {
+      "src": "/companion/collection/foods-143-1-v1.webp",
+      "sha256": "aa1457dbfc1c604a33af15c60f77c3c8b24147684962c41eece7fd5fddac90d2",
+      "bytes": 210168,
+      "size": [
+        512,
+        384
+      ],
+      "decodedRgbaSha256": "a465baaa54ae7441b99d35f2427e5e3f7000a07dd9f2a622955a41e7bf4afc25"
+    },
+    {
+      "src": "/companion/collection/foods-143-2-v1.webp",
+      "sha256": "3b105260431c1e055fe887d8fc9c7a5716380a1bdcfc3adf34c7b9f764a78fa4",
+      "bytes": 194202,
+      "size": [
+        512,
+        384
+      ],
+      "decodedRgbaSha256": "dbc3b1dc774722f4fdb96d34092f3a24f88f855c6b3749d731467eeda2619482"
+    },
+    {
+      "src": "/companion/collection/foods-143-3-v1.webp",
+      "sha256": "4b5daf6c43e1725f960138c3cee0af42c414af54341fafa0b9a26ee81b2d0e3f",
+      "bytes": 187100,
+      "size": [
+        512,
+        384
+      ],
+      "decodedRgbaSha256": "661010d223c982eeb9127ee3f5eae279424cdfee5bc6b09197db7a609a20df6c"
+    },
+    {
+      "src": "/companion/collection/foods-143-4-v1.webp",
+      "sha256": "459a38fd350de520808e1c778347c1e4c137bcfbe55e9f28c87d585ba61b0baf",
+      "bytes": 184988,
+      "size": [
+        512,
+        384
+      ],
+      "decodedRgbaSha256": "e673d4bb6210cea0ca93ba70befceaec17c10ec98b7030028f55a00ed5951bfe"
+    },
+    {
+      "src": "/companion/collection/foods-143-5-v1.webp",
+      "sha256": "d3e800a6f8b24037deee92b67842530081dd50a78be128ec2c59bc4defe42895",
+      "bytes": 199954,
+      "size": [
+        512,
+        384
+      ],
+      "decodedRgbaSha256": "8df9ba7d76650f951b50ce76fee414be359135bb4af92d51f71b0620f0f8bfef"
+    },
+    {
+      "src": "/companion/home/143/toy-bubble-wand.webp",
+      "sha256": "a0c9c121264bf51ab441b367ff6d8372f76dc67231d0b49059eb8dac0f9a33c0",
+      "bytes": 25784,
+      "size": [
+        177,
+        192
+      ],
+      "decodedRgbaSha256": "1ab9eebcbd6855c1b4080788f6b885da4b6a139ff2eae447fd20d0573b9fd730"
+    },
+    {
+      "src": "/companion/home/143/toy-kite.webp",
+      "sha256": "74bc5ecb4949233711ef4913d622dbabda700941393a7432bc0e7e0572074b22",
+      "bytes": 21904,
+      "size": [
+        165,
+        192
+      ],
+      "decodedRgbaSha256": "0869dc697564f4396ae684448a960882eec1282e1c23624f333409e752c4fd76"
+    },
+    {
+      "src": "/companion/home/143/toy-boomerang.webp",
+      "sha256": "8e05d658d42ad24a499066ed5646a7beb83413d40faea2d81e32ab63523a4440",
+      "bytes": 20692,
+      "size": [
+        192,
+        190
+      ],
+      "decodedRgbaSha256": "0f3b74b378422582bb6b7dd0a75611a621ce50844c08b418c35f71b934c9844c"
+    },
+    {
+      "src": "/companion/home/143/toy-flying-disc.webp",
+      "sha256": "eaab52119a488d09a1e563ed05b22aece0bf75b73c452f067793f682413a54a8",
+      "bytes": 27480,
+      "size": [
+        192,
+        189
+      ],
+      "decodedRgbaSha256": "928fddf4b6167a644b253b02a05b070b325bc37e43bbe1256971e83876c543c2"
+    },
+    {
+      "src": "/companion/home/143/toy-mini-skateboard.webp",
+      "sha256": "e6c00e7a843c15f02fd696be1b6a3f05e9de63beb95890b6a71a4b09a64d581c",
+      "bytes": 27606,
+      "size": [
+        192,
+        174
+      ],
+      "decodedRgbaSha256": "35baac420a96b53ce28dcc120c0dff2b226c8e205f23c054cb9541f80eb33bc8"
+    },
+    {
+      "src": "/companion/home/143/toy-jump-rope.webp",
+      "sha256": "baa99a242565498f24f5266bd7b265c929505dbfc37766aaa69051f83434fb4a",
+      "bytes": 35672,
+      "size": [
+        192,
+        184
+      ],
+      "decodedRgbaSha256": "7362a9848ed0efe9ef230c2d2a729a1a8f8b132d5de9f2b4cb5118d7c39cc7ba"
+    },
+    {
+      "src": "/companion/home/143/toy-toy-drum.webp",
+      "sha256": "bc6573aaf7128feeb1b62a079c383d6acf8fd90d3ad05f9881a7a968041976af",
+      "bytes": 34732,
+      "size": [
+        192,
+        167
+      ],
+      "decodedRgbaSha256": "46c3de5ab9e415da2e7457a0abd6b1ffda0034e355f6b87c698d4f798139e800"
+    },
+    {
+      "src": "/companion/home/143/toy-xylophone.webp",
+      "sha256": "9bad38fbdd32393687fba8b14b9b1d3c34e065ecd72475c7ab68d9815833590e",
+      "bytes": 35840,
+      "size": [
+        192,
+        162
+      ],
+      "decodedRgbaSha256": "02502cf3943e1e8418890c916ade16130dfc029be5e001143fb5abbf1d65ffdc"
+    },
+    {
+      "src": "/companion/home/143/toy-harmonica.webp",
+      "sha256": "5d736188058b4abd2039f8e800ae114be64070b4b50df5e884a74b6db4a4f290",
+      "bytes": 21582,
+      "size": [
+        192,
+        169
+      ],
+      "decodedRgbaSha256": "1999bc23d720ae0e0afd6e9adf8c1b4d82db2c16d81787628e3a156cfb0a4b9a"
+    },
+    {
+      "src": "/companion/home/143/toy-toy-trumpet.webp",
+      "sha256": "ed167b63e6f76d1d06b63c1787f9dbd04724562aea8e818159b6f5c2deb24a2e",
+      "bytes": 22794,
+      "size": [
+        192,
+        161
+      ],
+      "decodedRgbaSha256": "93ce906a3d79acdc5a9e37176857690f09b7eea3862995589ca7c547b02186d8"
+    },
+    {
+      "src": "/companion/home/143/toy-hand-puppet.webp",
+      "sha256": "d1f4c521f00ee873a36af02b7df7a7bd6af082b068952e59537fae9e3fc05d5f",
+      "bytes": 27448,
+      "size": [
+        164,
+        192
+      ],
+      "decodedRgbaSha256": "78d319edb8d4557ba1d42110e0d7cc231fc4397b8a1c7b5f691fa1ecc13402f6"
+    },
+    {
+      "src": "/companion/home/143/toy-cup-and-ball.webp",
+      "sha256": "4ecff90d453e554e334e10eab4ecb375bbab35335b47908fc37cfc3a31005488",
+      "bytes": 23566,
+      "size": [
+        192,
+        171
+      ],
+      "decodedRgbaSha256": "b7c63264648111fc3db4781fc37ddd62402fee071458ded05f67e85cb460904a"
+    },
+    {
+      "src": "/companion/home/143/toy-paddle-ball.webp",
+      "sha256": "86c28423d2ee680343987a1223ee137a5c13264ad6a8459394b291826a04246d",
+      "bytes": 26370,
+      "size": [
+        192,
+        184
+      ],
+      "decodedRgbaSha256": "f5fa2bfe4b011c8eae8a3055b42e5a3a2a5379201847e781476bc9e5ac9b50c1"
+    },
+    {
+      "src": "/companion/home/143/toy-slinky-spring.webp",
+      "sha256": "a3660a815dad23d57b8b5cf544225a64772e93610fabea909cfd9f33b8b6ddc4",
+      "bytes": 37484,
+      "size": [
+        192,
+        178
+      ],
+      "decodedRgbaSha256": "e641c62073aba1f218a02d063782ce144968bea615d7a31e8bf7e31ca763d340"
+    },
+    {
+      "src": "/companion/home/143/toy-toy-camera.webp",
+      "sha256": "f018797cee83ee4ee6ee514b52241b099f32eb090b1c6a51f775b39b980ce51f",
+      "bytes": 36356,
+      "size": [
+        192,
+        189
+      ],
+      "decodedRgbaSha256": "5f12d1fa12e5831ecdf6420ead854f1ce46f072673bab9675d24eea997eb3ff3"
+    },
+    {
+      "src": "/companion/home/143/toy-toy-telescope.webp",
+      "sha256": "1103f64aa9ceff599f20c605457d1441a8214bbaa635ad491b100159688b52db",
+      "bytes": 33402,
+      "size": [
+        181,
+        192
+      ],
+      "decodedRgbaSha256": "b3de683ba9affa195cb9b007e92de03c804ce596ae065c64133703e7308f2f5d"
+    },
+    {
+      "src": "/companion/home/143/toy-magnetic-fishing.webp",
+      "sha256": "b73f70bcaa62834d1c578a3913b4c4b2929d470f3ddf3abf24e29ab414ecf4bd",
+      "bytes": 28346,
+      "size": [
+        192,
+        178
+      ],
+      "decodedRgbaSha256": "15115058dc258e188348f1134955bd6463ec5e350fec576830abef388038d184"
+    },
+    {
+      "src": "/companion/home/143/toy-windup-crab.webp",
+      "sha256": "aaef97d34b4a0bb32d3832e15ef704a7e884a2de43de10a195b5e4f5f6eaa286",
+      "bytes": 31816,
+      "size": [
+        192,
+        135
+      ],
+      "decodedRgbaSha256": "185bc78b92ec6a549fee6805207bf37822531118a1077c06862a9000dbb785c0"
+    },
+    {
+      "src": "/companion/home/143/toy-balancing-bird.webp",
+      "sha256": "0fffa50f3c834dfacb4277c2bc594d8f8d48a9cb627084ffcb8672a1efc721c3",
+      "bytes": 29372,
+      "size": [
+        192,
+        155
+      ],
+      "decodedRgbaSha256": "c9d2e63e0861aaa14cce3d1e8f88ad806c335f6222fb6d6ee181c5a9594e889b"
+    },
+    {
+      "src": "/companion/home/143/toy-jigsaw-puzzle.webp",
+      "sha256": "49f522339fffc1117b4c348deede9515ad94edfd6c22cc7ada3324920bbaa248",
+      "bytes": 44814,
+      "size": [
+        192,
+        188
+      ],
+      "decodedRgbaSha256": "7a1a2b8880967b20e3f7aab51dfd78123f867e90875b808932ea947361ec36a9"
+    },
+    {
+      "src": "/companion/home/143/toy-shape-sorter.webp",
+      "sha256": "b4d865673775de1c90926d4c9ed4ece3171d8a39b5256f44cfbe6ff85233dc87",
+      "bytes": 37380,
+      "size": [
+        192,
+        176
+      ],
+      "decodedRgbaSha256": "578acf2c342af30ba757db899794ad9715e321d25cb1578c38d3fbe335fc1a7a"
+    },
+    {
+      "src": "/companion/home/143/toy-gear-board.webp",
+      "sha256": "56a17ade7740af4df4d6c55da9b2522a1c6b4ae2af0c17a8e870bbc6740d6690",
+      "bytes": 43128,
+      "size": [
+        192,
+        185
+      ],
+      "decodedRgbaSha256": "185fdf1c62b04a35741c314f4086bf923feb9a76aa63fe9d06c5c3d251a7ba9c"
+    },
+    {
+      "src": "/companion/home/143/toy-wooden-bowling.webp",
+      "sha256": "61c6946f50443c23d74e41411470d8cb4c48d3eb699e24d88a0c263de4a40a6b",
+      "bytes": 34160,
+      "size": [
+        192,
+        190
+      ],
+      "decodedRgbaSha256": "aab0eb8077d3997647ce48b7a1234949c330d52f453d8cd9693c7063c409c045"
+    },
+    {
+      "src": "/companion/home/143/toy-mini-tuho.webp",
+      "sha256": "79dd1cf42b0973e33b8251af82ecca8f755b22f111bc093c37578ecb5458e93a",
+      "bytes": 25774,
+      "size": [
+        118,
+        192
+      ],
+      "decodedRgbaSha256": "53eeacadecdc151a79f3af39142990b99b58c280e7e200459260a7703cfcbcb7"
+    },
+    {
+      "src": "/companion/home/143/toy-foam-dart-blaster.webp",
+      "sha256": "fa18ae99fb7165538d04d60d24ff81b3c5ccb547bc28eee6092a1e74906adc6d",
+      "bytes": 32998,
+      "size": [
+        192,
+        167
+      ],
+      "decodedRgbaSha256": "cf4516381584ba04e88eedf79662a6fd0998f58e683c63ea28b74cf2ff155041"
+    },
+    {
+      "src": "/companion/home/143/toy-mini-dollhouse.webp",
+      "sha256": "af909e2e73ab898be28ec5077405bf395dd2d9d069f60e785d7d9bf37a23a4f3",
+      "bytes": 37188,
+      "size": [
+        175,
+        192
+      ],
+      "decodedRgbaSha256": "3cfb8e7ec294172ea5aec37097222b8217565d6643d1840a1dc068d0b75d6063"
+    },
+    {
+      "src": "/companion/home/143/toy-battle-top-launcher.webp",
+      "sha256": "8f6853d857274e4028afb8fdde5f18daf69dea741c92d2b769baa50d7a0c3891",
+      "bytes": 31876,
+      "size": [
+        192,
+        173
+      ],
+      "decodedRgbaSha256": "ec91bfd2e03da7945756fd1ab4e8fb0b934c8b1639b42465dcbf2256110d95a9"
+    },
+    {
+      "src": "/companion/home/143/toy-puzzle-cube.webp",
+      "sha256": "27627d71d7c755ebdb91d31db7de118867cc120dcfed0ac3fe487ac3fd519b22",
+      "bytes": 38778,
+      "size": [
+        178,
+        192
+      ],
+      "decodedRgbaSha256": "df398c307a9532b937006ae29a11c32d824eafad21d4b6bc962c36a6cbcec20d"
+    },
+    {
+      "src": "/companion/home/143/toy-modeling-clay-tub.webp",
+      "sha256": "2b694a98e767fdbc09f0b57f6dbd51c29e4615b4dfcdc46fa6a4684639a874df",
+      "bytes": 31908,
+      "size": [
+        192,
+        170
+      ],
+      "decodedRgbaSha256": "560c9a551a1319344647cf3dc90ae11836b29cd1d13eabaa38a59fe534f350e4"
+    },
+    {
+      "src": "/companion/home/143/toy-heart-compact.webp",
+      "sha256": "a3df5c3aeda2593d4b6286915cb84698be1d3b9d036ff905db5a7fb1737f674c",
+      "bytes": 34594,
+      "size": [
+        150,
+        192
+      ],
+      "decodedRgbaSha256": "9b428bc0caf8220517aa0be1438caf9ca7ec8235edef2d41c5a80d1cf03ce830"
+    },
+    {
+      "src": "/companion/home/143/toy-virtual-pet-keyring.webp",
+      "sha256": "0f218cf6efd9a0a7d1da2632f85016a401f5530fa7258df04d5b1ee4157de778",
+      "bytes": 40016,
+      "size": [
+        188,
+        192
+      ],
+      "decodedRgbaSha256": "3f324f5e5cac35c6ff5bfb8628c9dd330d894556ce1f936fcac37d046f403401"
+    },
+    {
+      "src": "/companion/home/143/toy-transforming-robot.webp",
+      "sha256": "2d13e1ee180f40c2a956c359131977f569bcd4d9b0b96150640db66a60c3bb63",
+      "bytes": 52524,
+      "size": [
+        190,
+        192
+      ],
+      "decodedRgbaSha256": "3a5422d7c3c366f9747127f35dbebb416f5fd3f2dc53ad348d87184024eaa45e"
+    },
+    {
+      "src": "/companion/home/143/toy-loop-race-track.webp",
+      "sha256": "ead073c249bd10b9776dc5d6d1dc4ffeb38b2d2db347bf10d5f7d42b76ed8523",
+      "bytes": 31290,
+      "size": [
+        192,
+        183
+      ],
+      "decodedRgbaSha256": "6df07b3d508a50abf68af7a533fa19f1188164c161e8358f7cf63c51c2639209"
+    },
+    {
+      "src": "/companion/home/143/toy-mini-game-console.webp",
+      "sha256": "86e331b1b2ab85317174a7820128d82a216e3fbad7cdbff2d9f77ad8323f629f",
+      "bytes": 29874,
+      "size": [
+        192,
+        127
+      ],
+      "decodedRgbaSha256": "10730e9f9673a71a4c3a0fc34bfff945ba71de4fc44318763b69d2cb48f002d3"
+    },
+    {
+      "src": "/companion/home/143/toy-capsule-machine.webp",
+      "sha256": "e6a173853b8ffed7b9ddcadec63f2722316c80491de1803ba4041c65d08c6f9c",
+      "bytes": 35280,
+      "size": [
+        143,
+        192
+      ],
+      "decodedRgbaSha256": "78f9194cbe64af8e3474d080250f1c2397125baeee04f44f8e4a7f673368b9fc"
+    },
+    {
+      "src": "/companion/home/143/toy-stud-brick-castle.webp",
+      "sha256": "ae120d6f0118b7b5af38f85f2576dfb16b7823fdaa7a214584c5b1e4a27bc55f",
+      "bytes": 35796,
+      "size": [
+        192,
+        180
+      ],
+      "decodedRgbaSha256": "5e2152741fb9acb9b104a75af9a5aca71bbcb0284d6fc6a1a0cb564e5dfcaa8c"
+    }
+  ],
+  "foods": [
+    {
+      "id": "yubu-sushi",
+      "atlasId": "food-143-1",
+      "x": 0,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "b014a17011b4b122c97fac802495809db2511c88e4c8ba8e77ce1b8524b7dbb3"
+    },
+    {
+      "id": "ssambap",
+      "atlasId": "food-143-1",
+      "x": 128,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "8d5a060dd04fa7f9997957a0c079f90f10546d744809ccbfaa8d7bb3e8e56d03"
+    },
+    {
+      "id": "jjajangmyeon",
+      "atlasId": "food-143-1",
+      "x": 256,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "d055ed8c3b44018898b92b20b8e7027012ac50d823dcb45257a4bfc123fd7972"
+    },
+    {
+      "id": "naengmyeon",
+      "atlasId": "food-143-1",
+      "x": 384,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "183c791918f676ab3ba3d7dd08b877568d7a362a61d8ca5946c21de97da3eb0a"
+    },
+    {
+      "id": "kalguksu",
+      "atlasId": "food-143-1",
+      "x": 0,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "5f3d086a110acdd0f5ab06fcbdb01965d712ebb1d45a3b23a484a10b6c63a2fa"
+    },
+    {
+      "id": "samgyetang",
+      "atlasId": "food-143-1",
+      "x": 128,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "8647cc8742b1cb836ee4a1cb0a55869a12ab4918656c65f53b8530cea2f625b1"
+    },
+    {
+      "id": "galbi",
+      "atlasId": "food-143-1",
+      "x": 256,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "fca00885b935d03515b55e6df9466ef3cfd5a666938a51145495b4e39ec5b44d"
+    },
+    {
+      "id": "bulgogi",
+      "atlasId": "food-143-1",
+      "x": 384,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "45e1aace7b98b4f3612c4185e7c8016dc10a0d8f497506fe14d0611cfb1316cd"
+    },
+    {
+      "id": "bossam",
+      "atlasId": "food-143-1",
+      "x": 0,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "29edcc30444234c9f06212e742aa30ef49ecdc35b098d2aaf5c4bd2d663d9a37"
+    },
+    {
+      "id": "grilled-mackerel",
+      "atlasId": "food-143-1",
+      "x": 128,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "1084c1148d58de713c28d0bb3d947414f6931d5f710229e33db139038a331e6c"
+    },
+    {
+      "id": "kimchi-stew",
+      "atlasId": "food-143-1",
+      "x": 256,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "e88e10fffd36726a0050c5952a054725f98733c8d652130c87e0d338451d11c8"
+    },
+    {
+      "id": "soybean-stew",
+      "atlasId": "food-143-1",
+      "x": 384,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "f54cec481b8b85a78114c986a0df2b730f69dd27e949a0111d83d3f3b008e36d"
+    },
+    {
+      "id": "donkatsu",
+      "atlasId": "food-143-2",
+      "x": 0,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "1ef6145f3bc849adcd44f1510ec0ce77ac277573f5a2ab79201ed86b64731349"
+    },
+    {
+      "id": "hamburger-steak",
+      "atlasId": "food-143-2",
+      "x": 128,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "ec71e188f3d214a0068203b39900885e241a66ca00d80d3a23cba477c3479e35"
+    },
+    {
+      "id": "shrimp-tempura",
+      "atlasId": "food-143-2",
+      "x": 256,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "1f3c33be978f2daa467e9426a0c708b29d23febe14b940874b0fcfe99fd0112e"
+    },
+    {
+      "id": "squid-tempura",
+      "atlasId": "food-143-2",
+      "x": 384,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "0694bce43fe6a3747e452cc283bb53e0cb7fdfc1d3711ec2250544fbcc9d9d65"
+    },
+    {
+      "id": "cheese-stick",
+      "atlasId": "food-143-2",
+      "x": 0,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "baf97c950521575f1c706dd5fec2d8fc74af08d7108a2041682648d1809b3bc6"
+    },
+    {
+      "id": "potato-croquette",
+      "atlasId": "food-143-2",
+      "x": 128,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "a027a1cb0b3764ba9aacebd4998047eaed326e20eb96889b8ee9b50c33e8c1a9"
+    },
+    {
+      "id": "tornado-potato",
+      "atlasId": "food-143-2",
+      "x": 256,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "3f3b9f14564b6315072e28ab9881e6145d55a485ead75f3c9445b69650c36234"
+    },
+    {
+      "id": "takoyaki",
+      "atlasId": "food-143-2",
+      "x": 384,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "894b9993620ee4b7d3065af79048971ad1f357d054e043919b2af8d46b8f6d6a"
+    },
+    {
+      "id": "taco",
+      "atlasId": "food-143-2",
+      "x": 0,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "0c2ef942c85ce8f7c82c831a93a1681d8dc269ccd829c789632f7d847d9c6f5b"
+    },
+    {
+      "id": "burrito",
+      "atlasId": "food-143-2",
+      "x": 128,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "f89dc83cc80a34f8426c15246a54271ea95b798b41f01065de6b2f922cb305c7"
+    },
+    {
+      "id": "quesadilla",
+      "atlasId": "food-143-2",
+      "x": 256,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "863fe590ab18c71f26cdd7ff448a80f5fa1a40756a34bf62b8a966b356f2a676"
+    },
+    {
+      "id": "lasagna",
+      "atlasId": "food-143-2",
+      "x": 384,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "535eb274571c0fc9bbc54b1227082f1ddcec8b8d526c6c1b3acf69125e00c647"
+    },
+    {
+      "id": "dalgona",
+      "atlasId": "food-143-3",
+      "x": 0,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "1a650fd445fc935fee3efa9c590f59fdb15ab0abbbe71e358178640be16b74fe"
+    },
+    {
+      "id": "cotton-candy",
+      "atlasId": "food-143-3",
+      "x": 128,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "1a535efb77930809286a76ce828f60d06faab32b9e72877ab25977d462012988"
+    },
+    {
+      "id": "tanghulu",
+      "atlasId": "food-143-3",
+      "x": 256,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "e41cf2042813588b02b8561bf37782211a1ddad2c0ae56af8a7eef8863e4b7a1"
+    },
+    {
+      "id": "popcorn",
+      "atlasId": "food-143-3",
+      "x": 384,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "acd482b1387c40148f37a20ea8426ee525727407a3737951d23c9e82fb50c9e5"
+    },
+    {
+      "id": "dried-squid",
+      "atlasId": "food-143-3",
+      "x": 0,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "bd5c8d676b5cbc2489c4366c0442eaba3d61c443c68b4cae16f1a609200befc3"
+    },
+    {
+      "id": "roasted-seaweed",
+      "atlasId": "food-143-3",
+      "x": 128,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "d73460c4e68fbee91ffadc91d1a1ccc153f6aa9ccc69935e0485e8e35dc766e6"
+    },
+    {
+      "id": "rice-cracker",
+      "atlasId": "food-143-3",
+      "x": 256,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "8f26581321cbb2def5d6510eba494453827208fe2fb6d6db31a18c6ff099e864"
+    },
+    {
+      "id": "tteok-skewer",
+      "atlasId": "food-143-3",
+      "x": 384,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "860f0dccb6284f85cfcb87838ba7d913f5944ba3724d91ed94a7410d63c9bcf7"
+    },
+    {
+      "id": "sotteok-skewer",
+      "atlasId": "food-143-3",
+      "x": 0,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "87c906b8884b62f9c6d47b2e8c98da7ff566c350e0a3ceb995388d8282b4ca92"
+    },
+    {
+      "id": "sweet-potato-mattang",
+      "atlasId": "food-143-3",
+      "x": 128,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "af9c4e77ccbca68b0f04e7dafa81c4f26babca71803c3836ac9420d7be94bdf9"
+    },
+    {
+      "id": "patjuk",
+      "atlasId": "food-143-3",
+      "x": 256,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "6ab02ddd76eac4f717dda024e675540380fdb713fd6c4887ed29f5b7b1da6824"
+    },
+    {
+      "id": "corn-cheese",
+      "atlasId": "food-143-3",
+      "x": 384,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "f322e30a92e453c8b2cec37c9ac81a57ac645c50f9a472cef42de31aebb0ba4f"
+    },
+    {
+      "id": "dacquoise",
+      "atlasId": "food-143-4",
+      "x": 0,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "85289074aa2a432ec7b8b49921a4192246f423abddb65b26a513b364bd366ea3"
+    },
+    {
+      "id": "mille-feuille",
+      "atlasId": "food-143-4",
+      "x": 128,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "58e05bc6a4a3c7cf760ee980533c345b9504fa4ab4252ae9425809dec16ee893"
+    },
+    {
+      "id": "mont-blanc",
+      "atlasId": "food-143-4",
+      "x": 256,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "ab6d7a114edba1159ed28b76e8abbb064cdbe713b5a5d98f5f6cbcdfe1b502ad"
+    },
+    {
+      "id": "crepe",
+      "atlasId": "food-143-4",
+      "x": 384,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "5e7464561d04b084daf04e637cc5cb50b2c10aed34b5d27d3e16d310321050fa"
+    },
+    {
+      "id": "souffle",
+      "atlasId": "food-143-4",
+      "x": 0,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "a74c8aa68a625c11fd2bd13f152eb7be9acb183aca04d06ddbd6ce2de9b03abc"
+    },
+    {
+      "id": "pavlova",
+      "atlasId": "food-143-4",
+      "x": 128,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "c70b95aee7f4f1145b8a8d737089e9e3225f01a3402c3296a0738e50eba1f2cb"
+    },
+    {
+      "id": "croquembouche",
+      "atlasId": "food-143-4",
+      "x": 256,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "891b4e32c4b06ab408c8fe85c307b675f76a41715ee40a3a9463e0442ab817a6"
+    },
+    {
+      "id": "cannoli",
+      "atlasId": "food-143-4",
+      "x": 384,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "ee9c90c58fa90e629dbefdb15e1da6f452ee91a4d7d1d286ce1ba41468f555c4"
+    },
+    {
+      "id": "dorayaki",
+      "atlasId": "food-143-4",
+      "x": 0,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "cdf475ee5b40c3d7f1fcc65685b8d3eb02a219b075c464408e30183a50606b04"
+    },
+    {
+      "id": "banana-split",
+      "atlasId": "food-143-4",
+      "x": 128,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "a23595f79305be1b79c38cd60385e36f765a3c01e58e7bac58f3f233baf367e5"
+    },
+    {
+      "id": "cinnamon-roll",
+      "atlasId": "food-143-4",
+      "x": 256,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "f5a24eb8dd358924deee63a2b78c863e00af5c85f903a4bc6fc681b3c3249bf4"
+    },
+    {
+      "id": "marshmallow",
+      "atlasId": "food-143-4",
+      "x": 384,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "245543b5893387556085991d983f8b2b2d9478f0e3ac17e22a9951d75fb49b75"
+    },
+    {
+      "id": "artichoke",
+      "atlasId": "food-143-5",
+      "x": 0,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "0ff8aea52a8e5dce308373b8104c561688579dce9479f477f476884dec58b024"
+    },
+    {
+      "id": "kohlrabi",
+      "atlasId": "food-143-5",
+      "x": 128,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "7b05a12c2ae6b762a2e911e507a82742a99163a300e04dc8f8c5b575f587e887"
+    },
+    {
+      "id": "romanesco",
+      "atlasId": "food-143-5",
+      "x": 256,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "bf077c8082cfd6fcf0d10925096bdba81f514c692f29b6f81f8738ac0c767d75"
+    },
+    {
+      "id": "chili-pepper",
+      "atlasId": "food-143-5",
+      "x": 384,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "7f4957cbe7fe6dca7915a387d772ac79bc2a608997aac847a69ec711ab47dc9b"
+    },
+    {
+      "id": "perilla-leaf",
+      "atlasId": "food-143-5",
+      "x": 0,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "9eed492f32271b10763392c6a94a4d37946de1cba18bd9e42d2a2968c6ff0c57"
+    },
+    {
+      "id": "ginger",
+      "atlasId": "food-143-5",
+      "x": 128,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "f2983c9cdb15f8cc10ef03c53125c02220839fc9d270ed49f8bead344319f275"
+    },
+    {
+      "id": "fennel",
+      "atlasId": "food-143-5",
+      "x": 256,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "6d55c5fc146d8d144ea514d461bbd2f78f0c9b0187c8dd259cecea19050e96ca"
+    },
+    {
+      "id": "taro",
+      "atlasId": "food-143-5",
+      "x": 384,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "05e47b857dc91bc03314448d4bbcd9886e3a5d690a3afccee7e1cbd309efbc26"
+    },
+    {
+      "id": "cacao-pod",
+      "atlasId": "food-143-5",
+      "x": 0,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "5d1f83f2768629979dddb6b522277cf69cf3792f494c347426602ca0dd6dd9d3"
+    },
+    {
+      "id": "cherimoya",
+      "atlasId": "food-143-5",
+      "x": 128,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "90c077f65e12558188f7f81a1fa4f1d0d723c70470ba7f0360372c2393cec2fc"
+    },
+    {
+      "id": "scallop",
+      "atlasId": "food-143-5",
+      "x": 256,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "68d5d88107d5db52f1d0fca51a342d7f41228c9ab4c4c4f6339675eac6b884c6"
+    },
+    {
+      "id": "oyster",
+      "atlasId": "food-143-5",
+      "x": 384,
+      "y": 256,
+      "width": 128,
+      "height": 128,
+      "decodedRgbaSha256": "141010654f1b25aa717bd9a6cfe84e48c92f9e067b520b5d1bbaf91fba371e3e"
+    }
+  ],
+  "toys": [
+    {
+      "id": "bubble-wand",
+      "src": "/companion/home/143/toy-bubble-wand.webp",
+      "content": {
+        "x": 11,
+        "y": 38,
+        "width": 154,
+        "height": 133
+      },
+      "size": [
+        177,
+        192
+      ]
+    },
+    {
+      "id": "kite",
+      "src": "/companion/home/143/toy-kite.webp",
+      "content": {
+        "x": 9,
+        "y": 22,
+        "width": 154,
+        "height": 160
+      },
+      "size": [
+        165,
+        192
+      ]
+    },
+    {
+      "id": "boomerang",
+      "src": "/companion/home/143/toy-boomerang.webp",
+      "content": {
+        "x": 3,
+        "y": 42,
+        "width": 183,
+        "height": 126
+      },
+      "size": [
+        192,
+        190
+      ]
+    },
+    {
+      "id": "flying-disc",
+      "src": "/companion/home/143/toy-flying-disc.webp",
+      "content": {
+        "x": 2,
+        "y": 34,
+        "width": 186,
+        "height": 145
+      },
+      "size": [
+        192,
+        189
+      ]
+    },
+    {
+      "id": "mini-skateboard",
+      "src": "/companion/home/143/toy-mini-skateboard.webp",
+      "content": {
+        "x": 1,
+        "y": 23,
+        "width": 189,
+        "height": 137
+      },
+      "size": [
+        192,
+        174
+      ]
+    },
+    {
+      "id": "jump-rope",
+      "src": "/companion/home/143/toy-jump-rope.webp",
+      "content": {
+        "x": 8,
+        "y": 11,
+        "width": 166,
+        "height": 160
+      },
+      "size": [
+        192,
+        184
+      ]
+    },
+    {
+      "id": "toy-drum",
+      "src": "/companion/home/143/toy-toy-drum.webp",
+      "content": {
+        "x": 13,
+        "y": 21,
+        "width": 169,
+        "height": 141
+      },
+      "size": [
+        192,
+        167
+      ]
+    },
+    {
+      "id": "xylophone",
+      "src": "/companion/home/143/toy-xylophone.webp",
+      "content": {
+        "x": 1,
+        "y": 20,
+        "width": 188,
+        "height": 141
+      },
+      "size": [
+        192,
+        162
+      ]
+    },
+    {
+      "id": "harmonica",
+      "src": "/companion/home/143/toy-harmonica.webp",
+      "content": {
+        "x": 22,
+        "y": 28,
+        "width": 167,
+        "height": 102
+      },
+      "size": [
+        192,
+        169
+      ]
+    },
+    {
+      "id": "toy-trumpet",
+      "src": "/companion/home/143/toy-toy-trumpet.webp",
+      "content": {
+        "x": 24,
+        "y": 11,
+        "width": 159,
+        "height": 119
+      },
+      "size": [
+        192,
+        161
+      ]
+    },
+    {
+      "id": "hand-puppet",
+      "src": "/companion/home/143/toy-hand-puppet.webp",
+      "content": {
+        "x": 6,
+        "y": 5,
+        "width": 143,
+        "height": 179
+      },
+      "size": [
+        164,
+        192
+      ]
+    },
+    {
+      "id": "cup-and-ball",
+      "src": "/companion/home/143/toy-cup-and-ball.webp",
+      "content": {
+        "x": 17,
+        "y": 4,
+        "width": 164,
+        "height": 144
+      },
+      "size": [
+        192,
+        171
+      ]
+    },
+    {
+      "id": "paddle-ball",
+      "src": "/companion/home/143/toy-paddle-ball.webp",
+      "content": {
+        "x": 7,
+        "y": 19,
+        "width": 163,
+        "height": 160
+      },
+      "size": [
+        192,
+        184
+      ]
+    },
+    {
+      "id": "slinky-spring",
+      "src": "/companion/home/143/toy-slinky-spring.webp",
+      "content": {
+        "x": 2,
+        "y": 32,
+        "width": 185,
+        "height": 131
+      },
+      "size": [
+        192,
+        178
+      ]
+    },
+    {
+      "id": "toy-camera",
+      "src": "/companion/home/143/toy-toy-camera.webp",
+      "content": {
+        "x": 2,
+        "y": 35,
+        "width": 188,
+        "height": 150
+      },
+      "size": [
+        192,
+        189
+      ]
+    },
+    {
+      "id": "toy-telescope",
+      "src": "/companion/home/143/toy-toy-telescope.webp",
+      "content": {
+        "x": 3,
+        "y": 7,
+        "width": 177,
+        "height": 184
+      },
+      "size": [
+        181,
+        192
+      ]
+    },
+    {
+      "id": "magnetic-fishing",
+      "src": "/companion/home/143/toy-magnetic-fishing.webp",
+      "content": {
+        "x": 1,
+        "y": 1,
+        "width": 190,
+        "height": 176
+      },
+      "size": [
+        192,
+        178
+      ]
+    },
+    {
+      "id": "windup-crab",
+      "src": "/companion/home/143/toy-windup-crab.webp",
+      "content": {
+        "x": 1,
+        "y": 1,
+        "width": 188,
+        "height": 122
+      },
+      "size": [
+        192,
+        135
+      ]
+    },
+    {
+      "id": "balancing-bird",
+      "src": "/companion/home/143/toy-balancing-bird.webp",
+      "content": {
+        "x": 1,
+        "y": 3,
+        "width": 189,
+        "height": 139
+      },
+      "size": [
+        192,
+        155
+      ]
+    },
+    {
+      "id": "jigsaw-puzzle",
+      "src": "/companion/home/143/toy-jigsaw-puzzle.webp",
+      "content": {
+        "x": 2,
+        "y": 4,
+        "width": 187,
+        "height": 182
+      },
+      "size": [
+        192,
+        188
+      ]
+    },
+    {
+      "id": "shape-sorter",
+      "src": "/companion/home/143/toy-shape-sorter.webp",
+      "content": {
+        "x": 5,
+        "y": 1,
+        "width": 177,
+        "height": 174
+      },
+      "size": [
+        192,
+        176
+      ]
+    },
+    {
+      "id": "gear-board",
+      "src": "/companion/home/143/toy-gear-board.webp",
+      "content": {
+        "x": 6,
+        "y": 9,
+        "width": 181,
+        "height": 158
+      },
+      "size": [
+        192,
+        185
+      ]
+    },
+    {
+      "id": "wooden-bowling",
+      "src": "/companion/home/143/toy-wooden-bowling.webp",
+      "content": {
+        "x": 11,
+        "y": 13,
+        "width": 176,
+        "height": 165
+      },
+      "size": [
+        192,
+        190
+      ]
+    },
+    {
+      "id": "mini-tuho",
+      "src": "/companion/home/143/toy-mini-tuho.webp",
+      "content": {
+        "x": 2,
+        "y": 1,
+        "width": 109,
+        "height": 170
+      },
+      "size": [
+        118,
+        192
+      ]
+    },
+    {
+      "id": "foam-dart-blaster",
+      "src": "/companion/home/143/toy-foam-dart-blaster.webp",
+      "content": {
+        "x": 17,
+        "y": 17,
+        "width": 174,
+        "height": 149
+      },
+      "size": [
+        192,
+        167
+      ]
+    },
+    {
+      "id": "mini-dollhouse",
+      "src": "/companion/home/143/toy-mini-dollhouse.webp",
+      "content": {
+        "x": 1,
+        "y": 27,
+        "width": 173,
+        "height": 163
+      },
+      "size": [
+        175,
+        192
+      ]
+    },
+    {
+      "id": "battle-top-launcher",
+      "src": "/companion/home/143/toy-battle-top-launcher.webp",
+      "content": {
+        "x": 2,
+        "y": 9,
+        "width": 175,
+        "height": 163
+      },
+      "size": [
+        192,
+        173
+      ]
+    },
+    {
+      "id": "puzzle-cube",
+      "src": "/companion/home/143/toy-puzzle-cube.webp",
+      "content": {
+        "x": 3,
+        "y": 15,
+        "width": 165,
+        "height": 175
+      },
+      "size": [
+        178,
+        192
+      ]
+    },
+    {
+      "id": "modeling-clay-tub",
+      "src": "/companion/home/143/toy-modeling-clay-tub.webp",
+      "content": {
+        "x": 1,
+        "y": 3,
+        "width": 187,
+        "height": 165
+      },
+      "size": [
+        192,
+        170
+      ]
+    },
+    {
+      "id": "heart-compact",
+      "src": "/companion/home/143/toy-heart-compact.webp",
+      "content": {
+        "x": 2,
+        "y": 1,
+        "width": 146,
+        "height": 188
+      },
+      "size": [
+        150,
+        192
+      ]
+    },
+    {
+      "id": "virtual-pet-keyring",
+      "src": "/companion/home/143/toy-virtual-pet-keyring.webp",
+      "content": {
+        "x": 3,
+        "y": 1,
+        "width": 184,
+        "height": 185
+      },
+      "size": [
+        188,
+        192
+      ]
+    },
+    {
+      "id": "transforming-robot",
+      "src": "/companion/home/143/toy-transforming-robot.webp",
+      "content": {
+        "x": 1,
+        "y": 1,
+        "width": 188,
+        "height": 189
+      },
+      "size": [
+        190,
+        192
+      ]
+    },
+    {
+      "id": "loop-race-track",
+      "src": "/companion/home/143/toy-loop-race-track.webp",
+      "content": {
+        "x": 11,
+        "y": 1,
+        "width": 177,
+        "height": 162
+      },
+      "size": [
+        192,
+        183
+      ]
+    },
+    {
+      "id": "mini-game-console",
+      "src": "/companion/home/143/toy-mini-game-console.webp",
+      "content": {
+        "x": 2,
+        "y": 12,
+        "width": 188,
+        "height": 114
+      },
+      "size": [
+        192,
+        127
+      ]
+    },
+    {
+      "id": "capsule-machine",
+      "src": "/companion/home/143/toy-capsule-machine.webp",
+      "content": {
+        "x": 2,
+        "y": 3,
+        "width": 133,
+        "height": 186
+      },
+      "size": [
+        143,
+        192
+      ]
+    },
+    {
+      "id": "stud-brick-castle",
+      "src": "/companion/home/143/toy-stud-brick-castle.webp",
+      "content": {
+        "x": 8,
+        "y": 1,
+        "width": 182,
+        "height": 178
+      },
+      "size": [
+        192,
+        180
+      ]
+    }
+  ]
+}

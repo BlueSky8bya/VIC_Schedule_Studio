@@ -30,10 +30,10 @@ describe("122 finite toy book interaction", () => {
     expect(find(node => node.props.className === "rhh-collection-detail rhh-collection-gallery-detail rhh-toy-detail").props["data-found"]).toBeUndefined();
     expect(harness.acknowledge).not.toHaveBeenCalled(); expect(harness.activity).not.toHaveBeenCalled();
   });
-  it("covers all twenty-four identities exactly once in finite pages and does not read items by paging", async () => {
+  it("covers all sixty identities exactly once in finite pages and does not read items by paging", async () => {
     const tastes = normalizeCompanionTastes({ version: 1, toys: [...COMPANION_TOY_KINDS], seen: [] }), indexes: number[] = [];
-    for (let i = 0; i < 6; i++) { await render(tastes); indexes.push(...tiles().map(node => Number(node.props["data-collection-index"]))); const rail = find(node => node.props.type === "range"); if (rail.props.value === rail.props.max) break; (rail.props.onChange as (event: { currentTarget: { value: string } }) => void)({ currentTarget: { value: String(Number(rail.props.value) + 1) } }); }
-    expect(indexes).toEqual(Array.from({ length: 24 }, (_, i) => i)); expect(tiles()).toHaveLength(8);
+    for (let i = 0; i < Math.ceil(COMPANION_TOY_KINDS.length / 8); i++) { await render(tastes); indexes.push(...tiles().map(node => Number(node.props["data-collection-index"]))); const rail = find(node => node.props.type === "range"); if (rail.props.value === rail.props.max) break; (rail.props.onChange as (event: { currentTarget: { value: string } }) => void)({ currentTarget: { value: String(Number(rail.props.value) + 1) } }); }
+    expect(indexes).toEqual(Array.from({ length: COMPANION_TOY_KINDS.length }, (_, i) => i)); expect(tiles()).toHaveLength(COMPANION_TOY_KINDS.length % 8 || 8);
     const rail = find(node => node.props.type === "range"); expect(rail.props.value).toBe(rail.props.max);
     expect(harness.acknowledge).not.toHaveBeenCalled();
   });

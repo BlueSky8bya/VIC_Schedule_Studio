@@ -33,6 +33,20 @@ const HOME_ITEM_FOOTPRINT = { width: 44, height: 44 };
 export type CompanionTextRect = { left: number; right: number; top: number; bottom: number };
 export type CompanionSurface = { x: number; y: number; width: number };
 export type CompanionFootprint = { width: number; height: number };
+/** A real continuous calendar grid border, never a transparent layout plane.
+ * Computed CSS resolves project colors to rgb/rgba; unknown formats fail closed. */
+export function paintedCompanionDayBorder(style: Pick<CSSStyleDeclaration, "borderBottomWidth" | "borderBottomStyle" | "borderBottomColor">): boolean {
+  const width = Number.parseFloat(style.borderBottomWidth), color = (style.borderBottomColor ?? "").trim().toLowerCase();
+  if (!/^\d*\.?\d+px$/.test(style.borderBottomWidth) || !Number.isFinite(width) || width <= 0 || style.borderBottomStyle !== "solid") return false;
+  const rgb = /^rgba?\(([^)]+)\)$/.exec(color);
+  if (!rgb) return false;
+  const parts = rgb[1].split("/");
+  if (parts.length > 2) return false;
+  const values = parts[0].trim().split(/[\s,]+/).filter(Boolean);
+  const alpha = parts[1]?.trim() ?? (values.length === 4 ? values.pop()! : "1");
+  const number = (value: string, maximum: number) => /^\d*\.?\d+%?$/.test(value) && Number.parseFloat(value) >= 0 && Number.parseFloat(value) <= (value.endsWith("%") ? 100 : maximum);
+  return values.length === 3 && values.every(value => number(value, 255)) && number(alpha, 1) && Number.parseFloat(alpha) > 0;
+}
 export type CompanionGeometryIdentity = { ids: WeakMap<Element, string>; dates?: WeakMap<Element, string>; serial: number };
 export type CompanionGeometryOptions = { size?: number; home?: HTMLElement | null; getHome?: () => HTMLElement | null; identity?: CompanionGeometryIdentity; onInvalidate?: () => void };
 export type CompanionFollowSample = { platform: Platform; anchorX: number; anchorY: number; sourceFrame?: CompanionAnchorFrame; currentFrame?: CompanionAnchorFrame };
@@ -181,6 +195,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     const landings: Platform[] = [];
     const foodLandings: CompanionFoodDropSupport[] = [];
     const nextAnchors = new Map<string, AnchorSnapshot>();
+    const paintedDayEdges: AnchorSnapshot[] = [];
     const remember = (platform: Platform, anchor?: Element, rect?: DOMRect) => {
       platforms.push(platform);
       if ((platform.kind === "floor" || platform.kind === "control" || platform.id === "companion-home") && landings.length < MAX_PLATFORMS) landings.push(copyPlatform(platform));
@@ -456,9 +471,9 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
           }
         }
       }
-      // Only real day edges accept deliberate placement.133 also retires
-      // the body's121 transparent panel anchor;129 removed its item tier.
-      // A layout wrapper's bottom is not a visible physical landing surface.
+      // Real day edges retain deliberate placement.143 also permits ordinary
+      // travel on an actually painted continuous grid border. Reuse this exact
+      // safe tier, never the retired transparent panel or a guessed height.
       for (const element of root.querySelectorAll<HTMLElement>(DAY_SELECTOR)) {
         nextObserved.add(element);
         if (!visible(element) || !supportVisible(element)) continue;
@@ -474,6 +489,10 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
             const platform: CompanionFoodDropSupport = { id: `${id}${food ? "-food" : ""}${i ? `-${i}` : ""}`, ...spans[i], kind: "floor", manualOnly: true };
             (food ? foodLandings : landings).push(platform);
             nextAnchors.set(platform.id, { platform, anchor: element, rect: frameOf(rect), identity: companionCalendarAnchorIdentity(element) });
+            if (!food && paintedDayEdges.length < MAX_PLATFORMS && rect.bottom <= clip.bottom && paintedCompanionDayBorder(styleFor(element))) {
+              const snapshot = nextAnchors.get(platform.id)!;
+              if (snapshot.identity) paintedDayEdges.push(snapshot);
+            }
           }
         };
         addManual(petSpans, false);
@@ -546,6 +565,17 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       }
       for (const day of studio ? [] : root.querySelectorAll<HTMLElement>(DAY_SELECTOR)) {
         nextObserved.add(day);
+      }
+      // Existing text/card platforms keep their200-entry priority. Only the
+      // remaining budget can promote measured day edges. Keep one authoritative
+      // same-ID plane in both tiers, so follow/scroll never restores manualOnly.
+      for (const snapshot of paintedDayEdges) {
+        if (platforms.length >= MAX_PLATFORMS) break;
+        const platform = { ...snapshot.platform }; delete platform.manualOnly;
+        const index = landings.findIndex(landing => landing.id === platform.id);
+        if (index < 0) continue;
+        platforms.push(platform); landings[index] = copyPlatform(platform);
+        nextAnchors.set(platform.id, { ...snapshot, platform });
       }
     }
     for (const element of observed) {

@@ -4,9 +4,11 @@ import { createHash } from "node:crypto";
 import sharp from "sharp";
 import base from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
 import play from "@/lib/ui/viewer-companion/play-motion-sprite.json";
+import anchors from "@/lib/ui/viewer-companion/accessory-anchors.json";
+import edition from "../fixtures/companion-eye-scale-143.json";
 import { companionSpriteMetadata, companionSpriteSources, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
-import bodyRegistration from "../../art-src/빅타민/동행/작업회차/20261018-동작연결정리115/패킹파생기록.json";
-import expression119 from "../../art-src/빅타민/동행/작업회차/20261019-표정체적교정119/패킹파생기록.json";
+import bodyRegistration from "@/art-src/빅타민/동행/작업회차/20261018-동작연결정리115/패킹파생기록.json";
+import expression119 from "@/art-src/빅타민/동행/작업회차/20261019-표정체적교정119/패킹파생기록.json";
 
 // Match the documented opaque-body registration threshold, measuring the
 // actual new packet independently of its recorded frame coordinates.
@@ -36,15 +38,14 @@ describe("additional native play packets share the established HD pipeline", () 
     expect(play.rows).toHaveLength(13); expect(play.frames).toHaveLength(208); expect(play.atlases).toHaveLength(13);
     expect(companionSpriteMetadata.rows.slice(0, base.rows.length)).toEqual(base.rows);
     expect(companionSpriteMetadata.frames.slice(0, base.frames.length)).toEqual(base.frames);
-    expect(companionSpriteMetadata.atlases.slice(0, base.atlases.length)).toEqual(base.atlases);
+    expect([...base.atlases, ...play.atlases].map(({ src, sha256, bytes }) => ({ src, sha256, bytes }))).toEqual(anchors.sources.slice(0, base.atlases.length + play.atlases.length));
     for (let row = 20; row < 32; row++) {
       const indices = companionSpriteMetadata.rows[row]; expect(indices).toHaveLength(16);
-      const source = play.atlases[row - 20].src;
-      expect(companionSpriteSources(row)).toEqual([source]);
       for (const [column, index] of indices.entries()) {
         const selected = selectCompanionSprite(index, row, column);
         expect(selected).toMatchObject({ atlas: "hd", physicalIndex: base.frames.length + (row - 20) * 16 + column, index: column, grid: 8, gridRows: 2 });
-        expect(selected.src).toBe(source);
+        const parentFrame = play.frames[(row - 20) * 16 + column];
+        expect(selected.frame).toEqual({ ...parentFrame, atlas: parentFrame.atlas + base.atlases.length });
       }
     }
     const throwRow = companionSpriteMetadata.rows[32];
@@ -53,6 +54,16 @@ describe("additional native play packets share the established HD pipeline", () 
     expect(play.atlases[12].src).toBe("/companion/hd/vitamin-play-12-expression-119-v1.webp");
     expect(companionSpriteSources(32)).toEqual([play.atlases[12].src]);
     for (const [column, index] of throwRow.entries()) expect(selectCompanionSprite(index, 32, column)).toMatchObject({ atlas: "hd", physicalIndex: index, index: column, grid: 8, gridRows: 2, src: play.atlases[12].src });
+  });
+  it("preloads the exact active play edition while preserving its thirteen parent packets", () => {
+    for (let row = 20; row < 33; row++) {
+      const parent = play.atlases[row - 20], sourceIndex = row - 20 + base.atlases.length;
+      const patch = edition.packets.find(p => p.atlas === sourceIndex);
+      if (patch) { expect(parent.src).toBe(patch.parentSrc); expect(parent.sha256).toBe(patch.parentSha256); }
+      const expected = patch?.src ?? parent.src;
+      expect(companionSpriteSources(row)).toEqual([expected]);
+      for (const index of companionSpriteMetadata.rows[row]) expect(selectCompanionSprite(index).src).toBe(expected);
+    }
   });
   it("keeps whole bodies inside the existing footprint with a common centre and actual opaque foot", async () => {
     expect(expression119.registrationChanges).toEqual([496, 497, 498, 499]);

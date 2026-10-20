@@ -210,3 +210,11 @@ export function deferCompanionRestartSupport(snapshot: CompanionRestartSupport |
     || platform.x < prior.x || platform.x + platform.width > prior.x + prior.width) return;
   return snapshot;
 }
+
+/** An unadopted restart checkpoint owns no visible grounded pose. Keep only
+ * that pending paint hidden until the existing fresh strict resolve consumes
+ * it. Physical/manual owners retain their normal paint; this grants no support
+ * and never changes the checkpoint, world point, geometry or recovery policy. */
+export function companionRestartPaintPending(snapshot: CompanionRestartSupport | undefined, support: string, owned: boolean): boolean {
+  return Boolean(snapshot && !support && !owned);
+}

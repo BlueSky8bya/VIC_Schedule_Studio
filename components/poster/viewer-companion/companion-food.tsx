@@ -15,9 +15,11 @@ import { FLIP_MS } from "@/lib/ui/flip-motion";
 import { COMPANION_CARD_PLAY_EVENT } from "@/lib/ui/viewer-companion/card-play";
 import { COMPANION_FOOD_NAMES as names, isCompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { CompanionFruit } from "./companion-fruit";
+import { companionRoomItemLight, type CompanionRoomLightRect } from "@/lib/ui/viewer-companion/room-light";
 
 type Point = { x: number; y: number };
 export type CompanionFoodControl = {
+  setRoomLight: (room?: CompanionRoomLightRect, grade?: number) => void;
   spawn: (kind: Food["kind"], point: Point, source?: HTMLElement, autonomous?: boolean, recipient?: Point, occupied?: readonly Point[], petSupports?: readonly Platform[]) => string | undefined;
   occupied: () => readonly Point[];
   foods: () => readonly Food[];
@@ -76,7 +78,8 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   const drops = useRef(new Map<string, ReturnType<typeof createCompanionFoodGravity>>());
   const jostles = useRef(new Map<string, Jostle>());
   const dropFrame = useRef(0), lastDropPaint = useRef(0), suspending = useRef(false), animateDrops = useRef<() => void>(() => {});
-  const painted = useRef(new WeakMap<HTMLElement, { transform: string; nibble?: string; eating?: boolean }>());
+  const painted = useRef(new WeakMap<HTMLElement, { transform: string; nibble?: string; eating?: boolean; light?: number }>());
+  const roomLight = useRef<{ room?: CompanionRoomLightRect; grade: number }>({ grade: 1 });
   const renderedTransforms = useRef(new Map<string, string>());
   const serial = useRef(0), dragging = useRef<Drag | null>(null), hover = useRef<Hover | null>(null), discard = useRef<Discard | null>(null);
   const carried = useRef<string | undefined>(undefined);
@@ -132,6 +135,8 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     if (node.hasAttribute("data-carried") !== (carried.current === food.id)) node.toggleAttribute("data-carried", carried.current === food.id);
     const pose = presentation ?? { x: food.x, y: food.y, scale: 1, rotation: 0 };
     const next = transform(pose), cached = painted.current.get(node);
+    const light = companionRoomItemLight(pose, roomLight.current.room, roomLight.current.grade);
+    if (cached?.light !== light) node.style.setProperty("--vc-item-room-light", String(light));
     if (cached?.transform !== next) node.style.transform = next;
     const art = node.firstElementChild as HTMLElement | null;
     const local = `rotate(${pose.rotation.toFixed(3)}deg) scale(${(pose.scaleX ?? pose.scale).toFixed(4)},${(pose.scaleY ?? pose.scale).toFixed(4)})`;
@@ -139,7 +144,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     const nibble = String(pose.scale), eating = Boolean(presentation) && !drops.current.has(food.id);
     if (cached?.nibble !== nibble) node.style.setProperty("--vc-nibble", nibble);
     if (cached?.eating !== eating) node.toggleAttribute("data-eating", eating);
-    painted.current.set(node, { transform: next, nibble, eating });
+    painted.current.set(node, { transform: next, nibble, eating, light });
   }, [cancelJostle]);
   const resetNibble = useCallback((id?: string) => {
     for (const food of current.current) if ((!id || food.id === id) && !drops.current.has(food.id)) { presentations.current.delete(food.id); paint(food); }
@@ -500,6 +505,12 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   }, [cancelDiscard, cancelHover, cancelJostle, choose, finishDrops, release, releaseCarry, resetNibble, settleFood, update]);
 
   useImperativeHandle(ref, () => ({
+    setRoomLight(room, grade = 1) {
+      const previous = roomLight.current;
+      if (previous.grade === grade && ["left", "right", "top", "bottom"].every(key => previous.room?.[key as keyof CompanionRoomLightRect] === room?.[key as keyof CompanionRoomLightRect])) return;
+      roomLight.current = { room: room && { ...room }, grade };
+      for (const food of current.current) paint(food, presentations.current.get(food.id));
+    },
     spawn(kind, point, source, autonomous = false, recipient, occupied = [], petSupports) {
       if (!operating.current || !isCompanionFoodKind(kind) || ![point.x, point.y].every(Number.isFinite)) return;
       if (autonomous && recipient && (document.hidden || selection.current || dragging.current || discard.current)) return;

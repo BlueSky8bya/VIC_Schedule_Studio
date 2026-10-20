@@ -7,7 +7,7 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 const floor: Platform = { id: "companion-home-floor", x: 50, y: 600, width: 740, kind: "floor", manualOnly: true };
 function fixture() {
   const scene: PersonalitySceneInput = {
-    world: { x: 120, y: 600, platformId: floor.id, platforms: [floor], width: 900, height: 720, animated: true, foods: [] },
+    world: { x: 120, y: 600, platformId: floor.id, platforms: [floor,{id:"actual-outside-floor",x:50,y:600,width:740,kind:"floor"}], width: 900, height: 720, animated: true, foods: [] },
     brain: { ...createBrain(0, () => .5), energy: .9, hunger: .5 }, preferences: { ...DEFAULT_COMPANION_PREFERENCES, personality: "performer" }, now: 0,
     home: { floor: { x: 300, y: 600, platformId: floor.id }, box: { x: 680, y: 600, platformId: floor.id } }, tv: "off",
     toys: [{ id: "same-native-maraca", kind: "maraca", x: 340, y: 600, platformId: floor.id, angle: 0, held: false, carried: false }],
@@ -21,10 +21,10 @@ describe("140 authored scene ownership across actionless transitions", () => {
   it("lets an affectionate resident approach a real blank pointer on its measured room floor while other manual surfaces remain excluded", () => {
     const recipe = COMPANION_PERSONALITY_SCENES.find(recipe => recipe.id === "A01")!;
     const { scene } = fixture(); scene.preferences.personality = "affectionate";
-    scene.world.pointer = { x: 500, y: 600, stableMs: 1000 };
+    scene.world.platformId="actual-outside-floor";scene.world.pointer = { x: 500, y: 600, stableMs: 1000 };
     const director = createCompanionPersonalityDirector([recipe]); director.next(scene);
     const approach = nextCompanionPersonalityScene(director, scene)!;
-    expect(approach.meta.id).toBe("A01"); expect(approach.action).toMatchObject({ kind: "walk", target: { x: 476, y: 600, platformId: floor.id } });
+    expect(approach.meta.id).toBe("A01"); expect(approach.action).toMatchObject({ kind: "walk", target: { x: 500, y: 600, platformId: "actual-outside-floor" } });
     for (const surface of [{ ...floor, bodyOnly: true }, { ...floor, id: "unrelated-manual-platform" }]) {
       const blocked = createCompanionPersonalityDirector([recipe]);
       const input = { ...scene, world: { ...scene.world, platformId: surface.id, platforms: [surface] } };

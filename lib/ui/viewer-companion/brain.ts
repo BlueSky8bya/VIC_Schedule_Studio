@@ -12,6 +12,7 @@ import { advanceCompanionHabits, DEFAULT_COMPANION_HABITS, type CompanionHabits 
 import { createCompanionContext, pendingCompanionMealId, planCompanionEpisode, type CompanionEpisode } from "./episodes";
 import { advanceCompanionLife, getCompanionFoodPreference, type CompanionLife } from "./life";
 import { companionFoodApproachScale, COMPANION_LIVING_COOLDOWN, getLivingAction, type CompanionLivingKind } from "./living";
+import { companionMayAddressAudience } from "./life-space";
 
 /** Local, renderer-independent companion. Coordinates are CSS viewport pixels:
  * x is the character's centre, y its feet; platform y is the walkable top.
@@ -430,8 +431,8 @@ export function getAction(brain: CompanionBrain, world: CompanionWorld, prefs: C
   // dogs invite play, and an affectionate mascot responds near the pointer.
   if (current && current.id === world.platformId && Math.abs(current.y - world.y) <= 18) {
     if (cat) add("play", profile.playWeight, companionPlayDuration("groom"), stationary, undefined, { play: "groom" });
-    else if (dog) add("play", profile.playWeight * (follows ? 1.7 : 1), companionPlayDuration("bow"), stationary, undefined, { play: "bow" });
-    else if ((brain.affect?.joy ?? 0) >= .18 || affectionate && follows || prefs.personality === "performer") add("play", profile.playWeight * 1.5, companionPlayDuration("celebrate"), stationary, undefined, { play: "celebrate" });
+    else if (dog && (!follows || companionMayAddressAudience(world))) add("play", profile.playWeight * (follows ? 1.7 : 1), companionPlayDuration("bow"), stationary, undefined, { play: "bow" });
+    else if ((brain.affect?.joy ?? 0) >= .18 || companionMayAddressAudience(world) && (affectionate && follows || prefs.personality === "performer")) add("play", profile.playWeight * 1.5, companionPlayDuration("celebrate"), stationary, undefined, { play: "celebrate" });
     if (cat && prefs.roam && prefs.jump && !current.manualOnly && current.width >= 100 && follows && !tired) add("play", profile.playWeight * .8, companionPlayDuration("pounce"), stationary, undefined, { play: "pounce" });
   }
   if (prefs.roam && current && Math.abs(current.y - world.y) <= 18) {

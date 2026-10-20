@@ -1,3 +1,5 @@
+import { companionAudiencePlay, companionMayAddressAudience, companionOutsidePlatforms } from "./life-space";
+import { findCompanionToyRoute } from "./toys";
 import { findPlatformRoute, platformLandingX, type CompanionAction, type CompanionBrain, type CompanionFood, type CompanionPlay, type CompanionWorld, type Platform } from "./brain";
 import { COMPANION_TIMING, companionPlayDuration } from "./timing";
 import { getCompanionBehaviorProfile } from "./behavior-profile";
@@ -21,7 +23,7 @@ type Point = { x: number; y: number; platformId?: string };
 type Quality = "steady" | "uneven" | "unknown";
 type Score = { id: string; segment: number };
 export type CompanionSceneEffect = { kind: "pick" | "put" | "discard"; foodId: string; point: Point };
-export type CompanionSceneAction = CompanionAction & { scene: { id: number; serial: number; beat: number; effect?: CompanionSceneEffect; instrumentQuality?: Quality } };
+export type CompanionSceneAction = CompanionAction & { scene: { id: number; serial: number; beat: number; travel?: true; effect?: CompanionSceneEffect; instrumentQuality?: Quality } };
 export type CompanionSceneInput = {
   brain: CompanionBrain; world: CompanionWorld; preferences: CompanionPreferences; now: number;
   knownFoods: readonly CompanionFoodKind[]; owned: readonly CompanionAccessoryId[]; equipped: CompanionAccessoryId | null;
@@ -59,7 +61,7 @@ export type CompanionSceneEvent =
   | { kind: "depart"; wallTime: number; unfinished?: CompanionUnfinished; score?: Score };
 
 type Command = { kind: "look" | "sniff" | "stretch" | "shake"; direction?: -1 | 1; duration?: number }
-  | { kind: "play"; play: CompanionPlay }
+  | { kind: "play"; play: CompanionPlay; audience?: boolean }
   | { kind: "accessory"; id: CompanionAccessoryId }
   | { kind: "go"; target: "food" | "other" | "home" | "pointer" | "reserved" | "helped" | "preferred" | "cleanup"; foodId?: string }
   | { kind: "pick" | "put" | "discard" | "eat"; foodId: string }
@@ -176,10 +178,10 @@ export function createCompanionScenes(initial: CompanionSceneMemory) {
     }
   };
   function cancel() { if (active) cooldowns.set(active.id, now + 12_000); active = undefined; }
-  const play = (kind: CompanionPlay): Command => ({ kind: "play", play: kind });
+  const play = (kind: CompanionPlay, audience=false): Command => ({ kind: "play", play: kind, ...(audience?{audience:true}:{}) });
   const greeting = (input: CompanionSceneInput) => input.preferences.personality === "sleepy" ? { kind: "stretch" } as Command
-    : play(input.preferences.animalMode === "cat" ? "groom" : input.preferences.personality === "mischievous" || input.preferences.personality === "performer" ? "celebrate" : "bow");
-  const cuddle = (input: CompanionSceneInput): Command => play(input.preferences.personality === "affectionate" || input.preferences.animalMode === "dog" ? "ask-petting" : "bow");
+    : play(input.preferences.animalMode === "cat" ? "groom" : input.preferences.personality === "mischievous" || input.preferences.personality === "performer" ? "celebrate" : "bow", true);
+  const cuddle = (input: CompanionSceneInput): Command => play(input.preferences.personality === "affectionate" || input.preferences.animalMode === "dog" ? "ask-petting" : "bow", true);
   const inspect = (): Command[] => [{ kind: "look" }, { kind: "sniff" }];
   const commandsFor = (offer: Offer, input: CompanionSceneInput): Command[] => {
     const { preferences: p } = input;
@@ -188,7 +190,7 @@ export function createCompanionScenes(initial: CompanionSceneMemory) {
     const nearby = input.world.foods?.find(food => food.id === offer.foodId) ?? input.world.foods?.[0];
     switch (offer.id) {
       case 1: return [greeting(input), go("pointer"), cuddle(input)];
-      case 2: return [greeting(input), play(memory.greeting === "stretch" ? "ask-petting" : memory.greeting), { kind: "look" }];
+      case 2: return [greeting(input), play(memory.greeting === "stretch" ? "ask-petting" : memory.greeting, true), { kind: "look" }];
       case 3: return [{ kind: "stretch" }, { kind: "look" }, greeting(input)];
       case 4: return [{ kind: "look" }, go("home"), play("cozy-nest"), p.sleep && p.personality === "sleepy" ? play("doze-curl") : { kind: "stretch" }];
       case 5: return [{ kind: "look" }, play(p.personality === "mischievous" ? "slip" : "cheer-rehearsal"), { kind: "shake" }, greeting(input)];
@@ -196,7 +198,7 @@ export function createCompanionScenes(initial: CompanionSceneMemory) {
       case 7: return helpedLanding ? [{ kind: "look" }, { kind: "shake" }, go("helped"), greeting(input)] : [];
       case 8: return [go("pointer"), play(memory.reassurance >= 5 ? "lean-nuzzle" : "ask-petting")];
       case 9: return [go("preferred"), { kind: "look" }, play("cozy-nest")];
-      case 10: return [play(memory.greeting === "stretch" ? "ask-petting" : memory.greeting), { kind: "look", duration: 900 }, cuddle(input)];
+      case 10: return [play(memory.greeting === "stretch" ? "ask-petting" : memory.greeting, true), { kind: "look", duration: 900 }, cuddle(input)];
       case 11: return offer.foodId && offer.otherId && input.world.foods?.some(food => food.id === offer.foodId) && input.world.foods.some(food => food.id === offer.otherId) ? [{ kind: "look", direction: -1 }, { kind: "look", direction: 1 }, go("food", offer.foodId), { kind: "sniff" }, { kind: "eat", foodId: offer.foodId }] : [];
       case 12: return offer.foodId ? [go("food", offer.foodId), { kind: "sniff", duration: 260 }, greeting(input)] : [];
       case 13: return offer.returning && offer.foodId ? [{ kind: "look" }, go("food", offer.foodId), { kind: "sniff" }, { kind: "eat", foodId: offer.foodId }] : nearby ? [...reserve(nearby.id), play("pounce")] : [];
@@ -328,7 +330,7 @@ export function createCompanionScenes(initial: CompanionSceneMemory) {
     const current = active, command = current.commands[current.beat], world = input.world;
     if (current.id === 10 && current.beat >= 2 && !current.responded) { current.beat = current.commands.length; return; }
     const here = { x: world.x, y: world.y, platformId: world.platformId };
-    const stamp = (action: CompanionAction, effect?: CompanionSceneEffect): CompanionSceneAction => ({ ...action, scene: { id: current.id, serial: current.serial, beat: current.beat, ...(effect ? { effect } : {}), ...(current.id === 22 ? { instrumentQuality: current.quality ?? "unknown" } : {}) } });
+    const stamp = (action: CompanionAction, effect?: CompanionSceneEffect, travel=false): CompanionSceneAction => ({ ...action, scene: { id: current.id, serial: current.serial, beat: current.beat, ...(travel?{travel:true as const}:{}), ...(effect ? { effect } : {}), ...(current.id === 22 ? { instrumentQuality: current.quality ?? "unknown" } : {}) } });
     if (command.kind === "go") {
       const support = world.platforms.find(item => item.id === world.platformId)!;
       let target: Point = { ...here };
@@ -412,6 +414,20 @@ export function createCompanionScenes(initial: CompanionSceneMemory) {
       if (current.responded) { current.beat++; return next(input); }
       return stamp({ kind: "look", target: here, duration: 1700 });
     }
+    if (command.kind === "play" || command.kind === "phrase-response") {
+      // Scene8 is offered only after actual reassurance petting. A food's
+      // satisfaction remains private joy; it is not a volunteer invitation.
+      const personalMeal=[14,15,36].includes(current.id) && now-lastMealAt<=20000 && command.kind === "play" && !companionAudiencePlay(command.play);
+      if ((command.kind === "phrase-response" || command.kind === "play" && (command.audience || companionAudiencePlay(command.play))) && !personalMeal && !companionMayAddressAudience(world,current.id===8)) {
+        const candidates=companionOutsidePlatforms(world,input.brain.visited);
+        for(const plane of candidates) {
+          const target={x:platformLandingX(plane,plane.x+plane.width/2),y:plane.y,platformId:plane.id};
+          const route=findCompanionToyRoute(world,target,world.platforms,p.jump),step=route?.[0];
+          if(step) return stamp({...step,duration:step.kind==="jump"?900:Math.max(250,Math.abs(step.target.x-world.x)/getCompanionBehaviorProfile(p).walkSpeed*1000),pace:"amble"},undefined,true);
+        }
+        cancel(); return;
+      }
+    }
     if (command.kind === "phrase-response") {
       if (!current.responded) { current.beat++; return next(input); }
       const chosen = p.personality === "sleepy" ? "bow" : current.quality === "steady" ? "celebrate" : p.personality === "affectionate" || p.animalMode === "dog" ? "bow" : current.quality === "uneven" ? "groom" : "bow";
@@ -444,7 +460,7 @@ export function createCompanionScenes(initial: CompanionSceneMemory) {
       if (!active || action.scene.serial !== active.serial || action.scene.beat !== active.beat) return;
       active.budget--;
       if (action.scene.effect && active.resolvedBeat !== active.beat) { active.failed = true; return; }
-      if (active.commands[active.beat]?.kind !== "go") active.beat++;
+      if (!action.scene.travel && active.commands[active.beat]?.kind !== "go") active.beat++;
     },
     resolve(action: CompanionSceneAction, success: boolean) {
       if (!active || active.serial !== action.scene.serial || active.beat !== action.scene.beat) return;

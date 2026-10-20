@@ -1,3 +1,4 @@
+import { randomCompanionToy } from "@/lib/ui/viewer-companion/toy-catalog";
 import { describe, expect, it } from "vitest";
 import { createBrain, type CompanionFood, type CompanionWorld, type Platform } from "@/lib/ui/viewer-companion/brain";
 import { createCompanionLife } from "@/lib/ui/viewer-companion/life";
@@ -6,7 +7,7 @@ import { createCompanionPersonalityDirector, type PersonalitySceneInput } from "
 import { createCompanionPersonalityJobs, type PersonalityJobAction } from "@/lib/ui/viewer-companion/personality-jobs";
 import { COMPANION_PERSONALITY_SCENES } from "@/lib/ui/viewer-companion/personality-scene-catalog";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
-import { accessibleCompanionToys, COMPANION_TOY_KINDS, createCompanionToyPlanner, createCompanionToys, type CompanionToyKind } from "@/lib/ui/viewer-companion/toys";
+import { accessibleCompanionToys, createCompanionToyPlanner, createCompanionToys, type CompanionToyKind } from "@/lib/ui/viewer-companion/toys";
 import { companionToyReturnDelivered, companionToyReturnTarget, sampleCompanionToyReturn } from "@/lib/ui/viewer-companion/toy-return";
 
 const floor: Platform = { id: "companion-home-floor", x: 50, y: 600, width: 740, kind: "floor", manualOnly: true };
@@ -14,7 +15,7 @@ const contact: Platform = { ...floor, id: "companion-home-floor-food", x: 30, wi
 const outside: Platform = { id: "actual-calendar-floor", x: 50, y: 600, width: 740, kind: "floor" };
 const opening = { left: 650, top: 525, width: 60, height: 25 };
 const box = { x: 680, y: floor.y, platformId: floor.id };
-type Trace = { kind: string; id?: string; scene: string; beat: number; count: number };
+type Trace = { kind: string; id?: string; scene: string; beat: number; count: number; platform?:string };
 
 /** Real toy model + planners, with a small synchronous host. Body moves only
  * along returned route endpoints; effects receive ACK only after the real toy
@@ -23,7 +24,7 @@ type Trace = { kind: string; id?: string; scene: string; beat: number; count: nu
 function fixture(id: string, count = 1, firstKind: CompanionToyKind = "star-wand") {
   const recipe = COMPANION_PERSONALITY_SCENES.find(scene => scene.id === id)!;
   let first = true;
-  const toys = createCompanionToys(() => first ? (first = false, (COMPANION_TOY_KINDS.indexOf(firstKind) + .01) / COMPANION_TOY_KINDS.length) : 0);
+  const toys = createCompanionToys(() => first ? (first = false, toyRoll(firstKind)) : 0);
   toys.sync([floor], { width: 900, height: 720 }, 0, [contact]);
   for (let i = 0; i < count; i++) expect(toys.spawn({ x: 340 + i * 45, y: 530, platformId: contact.id }, 0)).toBeTruthy();
   for (let at = 0; at <= 3000; at += 16) toys.tick(at);
@@ -89,7 +90,7 @@ function fixture(id: string, count = 1, firstKind: CompanionToyKind = "star-wand
       // These cases deliberately do not implement spawn. None of these
       // source scenes author it; a planner fallback would be an actual defect.
       expect(toy.effect).not.toBe("spawn");
-      trace.push({ kind: `toy:${toy.effect}`, id: toy.toyId, scene: meta.id, beat: meta.beat, count: toys.count() });
+      trace.push({ kind: `toy:${toy.effect}`, id: toy.toyId, scene: meta.id, beat: meta.beat, count: toys.count(), platform:scene.world.platformId });
       toyPlanner.resolve(toy, ok, scene.now);
       if (toy.effect !== "pick" && toy.effect !== "decline") {
         director.resolve(meta, ok, toy.toyId);
@@ -120,7 +121,7 @@ function fixture(id: string, count = 1, firstKind: CompanionToyKind = "star-wand
     if (action.personalityJobEnd) director.resolve(meta, true, meta.itemId ?? toys.carried());
     else if (meta.command.kind === "curtain") { scene.curtainPhase = meta.command.phase; director.resolve(meta, true); }
     else director.complete(meta);
-    trace.push({ kind: action.kind, id: toys.carried(), scene: meta.id, beat: meta.beat, count: toys.count() });
+    trace.push({ kind: action.kind, id: toys.carried(), scene: meta.id, beat: meta.beat, count: toys.count(), platform:scene.world.platformId });
     toys.tick(scene.now);
   };
   const run = (limit = 60) => {
@@ -159,6 +160,15 @@ describe("137 authored jobs use the physical owners", () => {
     expect(host.trace.some(event => event.kind === "toy:toss")).toBe(false);
     if (scene === "H06") expect(host.trace.filter(event => event.kind === "toy:stash").map(event => event.id)).toEqual([id]);
     else expect(host.toys.ids()).toEqual([id]);
+  });
+
+  it("143 P02 admits from its sole actual outside, enters for its same maraca, then truly carries it outside before returning",()=>{
+    const host=fixture("P02",1,"maraca"),id=host.originalIds[0];
+    host.scene.world.platformId=outside.id;host.scene.world.x=500;
+    host.run(100);
+    expect(host.trace.filter(e=>e.kind==="toy:pick").map(e=>[e.id,e.platform])).toEqual([[id,floor.id]]);
+    expect(host.trace.some(e=>["walk","jump"].includes(e.kind)&&e.beat===1&&e.id===id&&e.platform===outside.id)).toBe(true);
+    expect(host.trace.filter(e=>e.kind==="toy:stash").map(e=>e.id)).toEqual([id]);expect(host.toys.ids()).toEqual([]);
   });
 
   it("P08 actually picks its star wand, carries the same ID through the performance and paints it into the real box before stash ACK", () => {
@@ -287,3 +297,9 @@ describe("137 authored jobs use the physical owners", () => {
     expect(createCompanionHousehold(() => 0).next({ ...context, preferences: { ...context.preferences, feeding: false }, intent: "feed" })).toBeUndefined();
   });
 });
+
+/** Select a real weighted catalog interval in this pure model fixture. */
+function toyRoll(kind: CompanionToyKind) {
+  const roll=Array.from({length:4096},(_,i)=>i/4096).find(value=>randomCompanionToy(undefined,()=>value)===kind);
+  expect(roll,`actual weighted interval for ${kind}`).toBeDefined(); return roll!;
+}

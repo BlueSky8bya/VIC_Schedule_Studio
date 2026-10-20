@@ -149,13 +149,18 @@ describe("141 bounded common daily needs", () => {
     arbiter.observe("went-out", 2000); scene.now = 2001; expect(arbiter.next(scene)).toBeUndefined();
   });
 
+  it.each(COMPANION_PERSONALITIES)("%s may wake into a real outside walk at night when awake",personality=>{
+    const arbiter=createCompanionRoutineArbiter(),scene=input(personality);scene.environment={...scene.environment!,band:"night",night:true};
+    arbiter.next(scene);arbiter.observe("slept",1);scene.now=2;
+    expect(arbiter.next(scene)).toMatchObject({kind:"outing",reason:"wake"});
+  });
+
   it("does not call a sofa/room/body-only/manual ledge an outside walk", () => {
-    for (const state of ["no-outside", "manual-only", "body-only", "night", "no-route"] as const) {
+    for (const state of ["no-outside", "manual-only", "body-only", "no-route"] as const) {
       const arbiter = createCompanionRoutineArbiter(), scene = input(); arbiter.next(scene); arbiter.observe("slept", 1); scene.now = 2;
       if (state === "no-outside") scene.world.platforms = [floor, pad, sofa];
       if (state === "manual-only") scene.world.platforms = [floor, pad, sofa, { ...outside, manualOnly: true }];
       if (state === "body-only") scene.world.platforms = [floor, pad, sofa, { ...outside, bodyOnly: true }];
-      if (state === "night") scene.environment = { ...scene.environment!, band: "night", night: true };
       if (state === "no-route") scene.canOuting = false;
       expect(arbiter.next(scene), state).toBeUndefined();
     }

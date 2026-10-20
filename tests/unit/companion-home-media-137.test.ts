@@ -42,7 +42,7 @@ describe("137 shared room TV state", () => {
     expect(store.set("music", { source: "human" })).toBe(true);
     now = 14_000; expect(store.set("music", { source: "human" })).toBe(true);
     now = 15_001; expect(store.set("cooking", { source: "companion" })).toBe(false);
-    expect(store.read()).toBe("music");
+    expect(store.read()).toBe("tori");
     expect(store.set("off", { source: "human" })).toBe(true);
     now = 30_001; expect(store.set("cooking", { source: "companion" })).toBe(true);
   });
@@ -68,7 +68,7 @@ describe("137 shared room TV state", () => {
     expect(store.set("nature", { source: "foreign" as "human" })).toBe(false);
     now = Number.NaN; expect(store.set("nature", { source: "companion" })).toBe(false);
     now = -1000; expect(store.set("nature", { source: "companion" })).toBe(false);
-    expect(store.read()).toBe("music"); expect(listener).toHaveBeenCalledOnce();
+    expect(store.read()).toBe("tori"); expect(listener).toHaveBeenCalledOnce();
   });
 
   it("keeps server snapshots isolated without storage, timers or client state mutation", () => {

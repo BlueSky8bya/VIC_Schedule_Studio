@@ -1,0 +1,473 @@
+{
+  "mode": "Exact current native integer face-band crops, no scaling or RGB/alpha edits",
+  "canvas": [
+    256,
+    192
+  ],
+  "tile": [
+    64,
+    32
+  ],
+  "columns": 4,
+  "rows": 6,
+  "mapping": [
+    {
+      "targetTile": 0,
+      "sourcePhysical": 144,
+      "sourceAtlas": 9,
+      "sourceCell": 0,
+      "sourceCrop192": [
+        74,
+        112,
+        138,
+        144
+      ],
+      "targetX": 0,
+      "targetY": 0,
+      "cropPixelSha256": "6b05116c00d8d658297083d32bb40e394102b63072208b25e074a3ae2aad3b43",
+      "alphaMinMax": [
+        253,
+        254
+      ]
+    },
+    {
+      "targetTile": 1,
+      "sourcePhysical": 145,
+      "sourceAtlas": 9,
+      "sourceCell": 1,
+      "sourceCrop192": [
+        74,
+        112,
+        138,
+        144
+      ],
+      "targetX": 64,
+      "targetY": 0,
+      "cropPixelSha256": "067f01a5b3daf8c3a9dae2222d90dcb577256430d2a674eb213f8784d1c3a6c5",
+      "alphaMinMax": [
+        253,
+        254
+      ]
+    },
+    {
+      "targetTile": 2,
+      "sourcePhysical": 146,
+      "sourceAtlas": 9,
+      "sourceCell": 2,
+      "sourceCrop192": [
+        74,
+        112,
+        138,
+        144
+      ],
+      "targetX": 128,
+      "targetY": 0,
+      "cropPixelSha256": "e592ac4ce59a2cff46742a961459a09e7ca7327926f88fda6b4515d6bae9f7c7",
+      "alphaMinMax": [
+        253,
+        254
+      ]
+    },
+    {
+      "targetTile": 3,
+      "sourcePhysical": 147,
+      "sourceAtlas": 9,
+      "sourceCell": 3,
+      "sourceCrop192": [
+        74,
+        112,
+        138,
+        144
+      ],
+      "targetX": 192,
+      "targetY": 0,
+      "cropPixelSha256": "1b840a64ed147d9949751eec9df9c9cb4999cd91635958e7b878965236a40fda",
+      "alphaMinMax": [
+        253,
+        254
+      ]
+    },
+    {
+      "targetTile": 4,
+      "sourcePhysical": 148,
+      "sourceAtlas": 9,
+      "sourceCell": 4,
+      "sourceCrop192": [
+        74,
+        112,
+        138,
+        144
+      ],
+      "targetX": 0,
+      "targetY": 32,
+      "cropPixelSha256": "7713d19f2e4b27db1b3ed20d86d8f40f242b03bb2e8d84c3c02c4ee6ce9fb5e7",
+      "alphaMinMax": [
+        253,
+        254
+      ]
+    },
+    {
+      "targetTile": 5,
+      "sourcePhysical": 149,
+      "sourceAtlas": 9,
+      "sourceCell": 5,
+      "sourceCrop192": [
+        74,
+        112,
+        138,
+        144
+      ],
+      "targetX": 64,
+      "targetY": 32,
+      "cropPixelSha256": "e271a08708f2a52e63d767ae848278c5a3c0cbe1878784e7bbb7101bb5077fbd",
+      "alphaMinMax": [
+        253,
+        254
+      ]
+    },
+    {
+      "targetTile": 6,
+      "sourcePhysical": 150,
+      "sourceAtlas": 9,
+      "sourceCell": 6,
+      "sourceCrop192": [
+        74,
+        112,
+        138,
+        144
+      ],
+      "targetX": 128,
+      "targetY": 32,
+      "cropPixelSha256": "e18a86dbc65ad2199931dbcd7cb7f79ef228668bb4e0c9d3cce9cad68f3e393f",
+      "alphaMinMax": [
+        253,
+        254
+      ]
+    },
+    {
+      "targetTile": 7,
+      "sourcePhysical": 151,
+      "sourceAtlas": 9,
+      "sourceCell": 7,
+      "sourceCrop192": [
+        74,
+        112,
+        138,
+        144
+      ],
+      "targetX": 192,
+      "targetY": 32,
+      "cropPixelSha256": "37a0ee6929b6a08ba0e54e4bb7085e66e0e5dddccec9803a7e0fc87a5b7a7917",
+      "alphaMinMax": [
+        253,
+        254
+      ]
+    },
+    {
+      "targetTile": 8,
+      "sourcePhysical": 152,
+      "sourceAtlas": 9,
+      "sourceCell": 8,
+      "sourceCrop192": [
+        74,
+        112,
+        138,
+        144
+      ],
+      "targetX": 0,
+      "targetY": 64,
+      "cropPixelSha256": "0b9032749452dc4d1b4f0d71a41cb8cdb90d652ae2defab4799f4715295fbf44",
+      "alphaMinMax": [
+        253,
+        254
+      ]
+    },
+    {
+      "targetTile": 9,
+      "sourcePhysical": 153,
+      "sourceAtlas": 9,
+      "sourceCell": 9,
+      "sourceCrop192": [
+        74,
+        112,
+        138,
+        144
+      ],
+      "targetX": 64,
+      "targetY": 64,
+      "cropPixelSha256": "4f6cc8cba94a0ab46c56e3975789ccd1b86bce051ba860cd44db14977e02373c",
+      "alphaMinMax": [
+        253,
+        254
+      ]
+    },
+    {
+      "targetTile": 10,
+      "sourcePhysical": 154,
+      "sourceAtlas": 9,
+      "sourceCell": 10,
+      "sourceCrop192": [
+        74,
+        112,
+        138,
+        144
+      ],
+      "targetX": 128,
+      "targetY": 64,
+      "cropPixelSha256": "4fb28b81b54c5d9c316bbd0804c54ed7059af6711221b5e3081fb4e3a7394c92",
+      "alphaMinMax": [
+        253,
+        254
+      ]
+    },
+    {
+      "targetTile": 11,
+      "sourcePhysical": 155,
+      "sourceAtlas": 9,
+      "sourceCell": 11,
+      "sourceCrop192": [
+        74,
+        112,
+        138,
+        144
+      ],
+      "targetX": 192,
+      "targetY": 64,
+      "cropPixelSha256": "71930f0592960d9a16f7b94c9ca93de5cfafb1b51f5b9cdf0e7ffb6dd2afe55d",
+      "alphaMinMax": [
+        253,
+        254
+      ]
+    },
+    {
+      "targetTile": 12,
+      "sourcePhysical": 156,
+      "sourceAtlas": 9,
+      "sourceCell": 12,
+      "sourceCrop192": [
+        74,
+        112,
+        138,
+        144
+      ],
+      "targetX": 0,
+      "targetY": 96,
+      "cropPixelSha256": "b26a4d2c61050975ec147d7a4f1929800efc4cfa0ffcd9f754334420ebf7949e",
+      "alphaMinMax": [
+        253,
+        254
+      ]
+    },
+    {
+      "targetTile": 13,
+      "sourcePhysical": 157,
+      "sourceAtlas": 9,
+      "sourceCell": 13,
+      "sourceCrop192": [
+        74,
+        112,
+        138,
+        144
+      ],
+      "targetX": 64,
+      "targetY": 96,
+      "cropPixelSha256": "e008794b015d1166391bb22146745191ace984dbb84d63560e131505dbecd825",
+      "alphaMinMax": [
+        253,
+        254
+      ]
+    },
+    {
+      "targetTile": 14,
+      "sourcePhysical": 158,
+      "sourceAtlas": 9,
+      "sourceCell": 14,
+      "sourceCrop192": [
+        74,
+        112,
+        138,
+        144
+      ],
+      "targetX": 128,
+      "targetY": 96,
+      "cropPixelSha256": "0e49b83b256cbffb0540528ced35aa5f82540406b991dc53869869b469321288",
+      "alphaMinMax": [
+        253,
+        254
+      ]
+    },
+    {
+      "targetTile": 15,
+      "sourcePhysical": 159,
+      "sourceAtlas": 9,
+      "sourceCell": 15,
+      "sourceCrop192": [
+        74,
+        112,
+        138,
+        144
+      ],
+      "targetX": 192,
+      "targetY": 96,
+      "cropPixelSha256": "236f9012219ff21288111166229f276f9a4a0557f48209920e064176adafd928",
+      "alphaMinMax": [
+        253,
+        254
+      ]
+    },
+    {
+      "targetTile": 16,
+      "sourcePhysical": 376,
+      "sourceAtlas": 23,
+      "sourceCell": 8,
+      "sourceCrop192": [
+        80,
+        136,
+        144,
+        168
+      ],
+      "targetX": 0,
+      "targetY": 128,
+      "cropPixelSha256": "5b6d9b613617974869db7b439de64aefc0581b6aa80605cdad7435efe2baaccb",
+      "alphaMinMax": [
+        250,
+        254
+      ]
+    },
+    {
+      "targetTile": 17,
+      "sourcePhysical": 377,
+      "sourceAtlas": 23,
+      "sourceCell": 9,
+      "sourceCrop192": [
+        80,
+        136,
+        144,
+        168
+      ],
+      "targetX": 64,
+      "targetY": 128,
+      "cropPixelSha256": "a665708a7299f670312c284f8dc0c6dda191d8fa28138f692dce7b06a27fa037",
+      "alphaMinMax": [
+        250,
+        254
+      ]
+    },
+    {
+      "targetTile": 18,
+      "sourcePhysical": 378,
+      "sourceAtlas": 23,
+      "sourceCell": 10,
+      "sourceCrop192": [
+        80,
+        136,
+        144,
+        168
+      ],
+      "targetX": 128,
+      "targetY": 128,
+      "cropPixelSha256": "a665708a7299f670312c284f8dc0c6dda191d8fa28138f692dce7b06a27fa037",
+      "alphaMinMax": [
+        250,
+        254
+      ]
+    },
+    {
+      "targetTile": 19,
+      "sourcePhysical": 379,
+      "sourceAtlas": 23,
+      "sourceCell": 11,
+      "sourceCrop192": [
+        80,
+        136,
+        144,
+        168
+      ],
+      "targetX": 192,
+      "targetY": 128,
+      "cropPixelSha256": "a665708a7299f670312c284f8dc0c6dda191d8fa28138f692dce7b06a27fa037",
+      "alphaMinMax": [
+        250,
+        254
+      ]
+    },
+    {
+      "targetTile": 20,
+      "sourcePhysical": 380,
+      "sourceAtlas": 23,
+      "sourceCell": 12,
+      "sourceCrop192": [
+        80,
+        136,
+        144,
+        168
+      ],
+      "targetX": 0,
+      "targetY": 160,
+      "cropPixelSha256": "a665708a7299f670312c284f8dc0c6dda191d8fa28138f692dce7b06a27fa037",
+      "alphaMinMax": [
+        250,
+        254
+      ]
+    },
+    {
+      "targetTile": 21,
+      "sourcePhysical": 381,
+      "sourceAtlas": 23,
+      "sourceCell": 13,
+      "sourceCrop192": [
+        80,
+        136,
+        144,
+        168
+      ],
+      "targetX": 64,
+      "targetY": 160,
+      "cropPixelSha256": "a665708a7299f670312c284f8dc0c6dda191d8fa28138f692dce7b06a27fa037",
+      "alphaMinMax": [
+        250,
+        254
+      ]
+    },
+    {
+      "targetTile": 22,
+      "sourcePhysical": 382,
+      "sourceAtlas": 23,
+      "sourceCell": 14,
+      "sourceCrop192": [
+        80,
+        136,
+        144,
+        168
+      ],
+      "targetX": 128,
+      "targetY": 160,
+      "cropPixelSha256": "a665708a7299f670312c284f8dc0c6dda191d8fa28138f692dce7b06a27fa037",
+      "alphaMinMax": [
+        250,
+        254
+      ]
+    },
+    {
+      "targetTile": 23,
+      "sourcePhysical": 383,
+      "sourceAtlas": 23,
+      "sourceCell": 15,
+      "sourceCrop192": [
+        80,
+        136,
+        144,
+        168
+      ],
+      "targetX": 192,
+      "targetY": 160,
+      "cropPixelSha256": "a665708a7299f670312c284f8dc0c6dda191d8fa28138f692dce7b06a27fa037",
+      "alphaMinMax": [
+        250,
+        254
+      ]
+    }
+  ],
+  "reason": "Transparent full sprite packets contain alpha0 RGB residues; crop only actual opaque face bands rather than editing or clearing those historical bytes.",
+  "basePacketCopiesPreserved": true
+}
