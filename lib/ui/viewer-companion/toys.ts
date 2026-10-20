@@ -165,7 +165,14 @@ export function createCompanionToys(rng: () => number = Math.random) {
   return {
     sync(next: readonly Platform[], bounds: { width: number; height: number }, at: number, smallHomeFloors: readonly Platform[] = [], attachments: readonly CompanionToyAttachment[] = []) {
       if (![bounds.width, bounds.height, at].every(Number.isFinite) || bounds.width <= 0 || bounds.height <= 0) return;
-      const measured = [...new Map([...smallHomeFloors.filter(p => p.kind === "floor" && isCompanionHomeFloorFoodSupport(p.id)).slice(0, 8), ...next.slice(0, 400)].filter(p => Boolean(p.id) && !p.bodyOnly && !panelFloor(p) && [p.x, p.y, p.width].every(Number.isFinite) && p.width > 0).map(p => [p.id, p])).values()];
+      const measuredById = new Map<string, Platform>();
+      // The host supplies current followed geometry before its cached full-
+      // scan landing twins. Keep that first sample paired with the display
+      // anchor; a later stale twin must not undo the scroll translation.
+      for (const p of [...smallHomeFloors.filter(p => p.kind === "floor" && isCompanionHomeFloorFoodSupport(p.id)).slice(0, 8), ...next.slice(0, 400)]) {
+        if (p.id && !p.bodyOnly && !panelFloor(p) && [p.x, p.y, p.width].every(Number.isFinite) && p.width > 0 && !measuredById.has(p.id)) measuredById.set(p.id, p);
+      }
+      const measured = [...measuredById.values()];
       const occupied = new Set([...objects.values()].map(toy => toy.platformId).filter(Boolean));
       const retained = (p: Platform) => occupied.has(p.id) || roomContact(p);
       // Ordinary and manual snapshots are independently bounded. Keep the
