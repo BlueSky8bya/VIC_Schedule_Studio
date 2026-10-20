@@ -77,7 +77,7 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   // C03 계기: 실제 종이비행기가 있고, 날리기·도착·회수가 성립하는 안전한 목적지가 확인된다.
   { id: "C03", label: "종이비행기의 도착 지점 조사", personality: "curious", major: true, triggers: ["toy"], steps: [t("inspect", ["paper-plane"]), t("toss", ["paper-plane"]), w(900), g("toy"), t("inspect", ["paper-plane"]), t("return", ["paper-plane"])] },
   // C04 계기: 실제 TV 시청을 시작할 수 있고, 사람이 최근 끄거나 고정한 선택을 침범하지 않는 자유 기회다.
-  { id: "C04", label: "TV 다섯 채널 중 한 번 비교하기", personality: "curious", major: true, triggers: ["tv"], steps: [g("sofa"), tv("nature"), w(1400), tv("next"), w(3000), p("bow")] },
+  { id: "C04", label: "TV 다섯 채널 중 한 번 비교하기", personality: "curious", major: true, triggers: ["tv"], steps: [g("sofa"), tv("nature"), w(1400), tv("next"), w(3000), opt(p("bow"))] },
   // C05 계기: 실제 월 이동·레이아웃 변경이 끝나 새 안전 구간이 확인됐으며 사용자의 입력이 끝났다.
   { id: "C05", label: "달력이 바뀐 뒤 안전한 새 자리 하나", personality: "curious", major: true, triggers: ["layout"], steps: [p("sniff"), g("outside"), p("sniff"), g("outside"), p("bow")] },
   { id: "C06", label: "멈춘 공을 늦게 톡", personality: "curious", major: false, triggers: ["toy", "toy-settled"], steps: [w(500), g("toy"), t("nudge", ["ball"]), p("bow")] },
@@ -217,7 +217,7 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   // 익숙한 저녁의 실제 재회에 작은 개막식. 옆으로 비켜 주며 끝.
   { id: "X-P-return-time", label: "재롱둥이 · 귀가·재회·시간대", personality: "performer", major: false, triggers: ["arrival", "experience", "night"], steps: [p("cheer-rehearsal"), p("celebrate"), p("bow"), g("outside")] },
   // 자연·장난감 화면을 한 번 비교하고 관심 있는 채널 한 구간에 머묾.
-  { id: "X-C-house", label: "탐험둥이 · 집·TV·빛·씻기", personality: "curious", major: false, triggers: ["tv"], steps: [g("sofa"), tv("nature"), w(1400), tv("toys"), w(2600), p("bow")] },
+  { id: "X-C-house", label: "탐험둥이 · 집·TV·빛·씻기", personality: "curious", major: false, triggers: ["tv"], steps: [g("sofa"), tv("nature"), w(1400), tv("toys"), w(2600), opt(p("bow"))] },
   // 공개 편집창의 안전한 열림 신호에 갸웃. 입력 시작이면 원래 생활.
   { id: "X-C-editor", label: "탐험둥이 · 편집하는 사람 곁", personality: "curious", major: false, triggers: ["editor-open"], steps: [p("sniff"), p("bow")] },
   // 처음 실제 들린 소리 쪽을 집중해 보고 한 구간 뒤 원래 탐색.

@@ -133,7 +133,7 @@ describe("142 declared QA model and safety gates", () => {
     arbiter.cancel(input.now); expect(arbiter.current()).toBeUndefined(); expect(arbiter.next(input)).toBeUndefined(); measured.routineTemplates++;
   });
 });
-const frame = (at: number, patch: Partial<QaFrame> = {}): QaFrame => ({ at, x: 100, y: 600, visible: true, decoded: true, state: "idle", eligible: true, pose: 0, ...patch });
+const frame = (at: number, patch: Partial<QaFrame> = {}): QaFrame => ({ at, x: 100, y: 600, visible: true, decoded: true, state: "idle", eligible: true, pose: 0, activity:{source:true,manual:false,epoch:0,jumpAllowed:true,width:60,height:60,anchor:{x:0,y:0,width:1200,height:900},action:"",context:""}, ...patch });
 const declaredNanumFonts = [
   "https://hangeul.pstatic.net/hangeul_static/webfont/NanumSquareRound/NanumSquareRoundR.woff2",
   "https://hangeul.pstatic.net/hangeul_static/webfont/NanumSquareRound/NanumSquareRoundB.woff2",

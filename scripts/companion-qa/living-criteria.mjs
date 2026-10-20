@@ -1,5 +1,5 @@
 /** Sampled daily candidates and positive witnesses, never runtime policy. */
-export const LIVING_NEGATIVES = Object.freeze(['awake-confined-home','voluntary-audience-inside-home','repeated-sofa-reset','no-visible-progress-10s','ordinary-two-point-route-oscillation','food-target-thrash','nearby-cleanup-no-progress-candidate','body-clip','sleep-off']);
+export const LIVING_NEGATIVES = Object.freeze(['awake-confined-home','voluntary-audience-inside-home','repeated-sofa-reset','no-visible-progress-10s','stationary-action-repetition','ordinary-walk-pacing','ordinary-two-point-route-oscillation','food-target-thrash','nearby-cleanup-no-progress-candidate','body-clip','sleep-off']);
 export const LIVING_POSITIVES = Object.freeze(['decoded-outside-walk','decoded-outside-jump','actual-object-care-progress','private-rest','outside-audience','direct-pet-response','private-toy-play']);
 const home = id => /^companion-home(?:$|-)/.test(id ?? '');
 export function traceLivingContextComplete(frames) {

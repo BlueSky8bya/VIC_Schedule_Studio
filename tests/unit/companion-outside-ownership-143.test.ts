@@ -428,7 +428,11 @@ describe("143 a real meal's existing cue survives necessary wash before one reac
 
 describe("143 a genuinely completed required TV observation closes its same-owner finite tail",()=>{
  type ClosureDirector143=ReturnType<typeof createCompanionPersonalityDirector>;
- function closureReady143(recipe:PersonalitySceneRecipe=source("C04")){
+ function closureReady143(recipe:PersonalitySceneRecipe=source("C04"),requiredTail=true){
+  // Generic required-tail safety regression. Actual C04/X-C-house bows are
+  // optional by the user's145 instruction; keep the old ownership negatives
+  // against an explicit required fixture instead of forcing product gestures.
+  if(requiredTail)recipe={...recipe,steps:recipe.steps.map((step,index)=>index===recipe.steps.length-1?{...step,optional:false}:step)};
   const s=scene("curious"),room={...floor,width:720},sofa:Platform={id:"companion-home",x:90,y:560,width:160,kind:"date"};
   s.world={...s.world,platforms:[room,sofa,{...outside,x:850}],x:150};
   s.home.sofa={x:170,y:sofa.y,platformId:sofa.id};s.home.tv={x:650,y:room.y,platformId:room.id};s.home.contacts={tv:{x:650,y:570}};s.canTv=true;
@@ -452,7 +456,7 @@ describe("143 a genuinely completed required TV observation closes its same-owne
   d.complete(p.meta,witness);return witness;
  }
  function closureOwnership143(c:ReturnType<typeof closureReady143>){return{...c.s,authoredReserved:c.d.routineReserved(c.s),authoredLeisure:c.d.routineOwnership(c.s)==="leisure"};}
- it.each(["C04","X-C-house"])("keeps the original %s final bow after two real controls, both finite watches and a long sofa approach",id=>{
+ it.each(["C04","X-C-house"])("keeps an explicitly required %s test tail after real controls, both finite watches and a long sofa approach",id=>{
   const c=closureReady143(source(id)),{s,d,a}=c;expect(c.controls).toBe(2);expect(c.watchOne).toBe(1400);
   expect(s.now-c.lastControlAt).toBeGreaterThan(3500);expect(c.p.action).toMatchObject({kind:"look",duration:id==="C04"?3000:2600});
   const deadline=d.progressDeadline();closureFinish143(c);
@@ -460,6 +464,13 @@ describe("143 a genuinely completed required TV observation closes its same-owne
   expect(a.next(closureOwnership143(c))).toBeUndefined();expect(d.progressDeadline()).toBe(deadline);
   const bow=d.next(s)!;expect(bow.meta.command).toMatchObject({kind:"pose",pose:"bow"});expect(bow.action).toMatchObject({kind:"play",play:"bow"});
   advance(s,bow,d);expect(d.completed()).toEqual([id]);expect(d.progressDeadline()).toBe(deadline);
+ });
+ it.each(["C04","X-C-house"])("actual %s leaves its decorative bow optional after required TV work",id=>{
+  const recipe=source(id);expect(recipe.steps.at(-1)).toMatchObject({kind:"pose",pose:"bow",optional:true});
+  expect(recipe.steps.filter(step=>step.kind==="tv"||step.kind==="watch").every(step=>!step.optional)).toBe(true);
+  const c=closureReady143(recipe,false);expect(c.controls).toBe(2);expect(c.watchOne).toBe(1400);closureFinish143(c);
+  // A due outing may replace optional leisure; no greeting is required first.
+  expect(c.d.routineReserved(c.s)).toBe(false);expect(c.a.next(closureOwnership143(c))?.kind).toBe("outing");
  });
  it("uses the actual required-TV work contract rather than an authored recipe ID",()=>{
   const c=closureReady143({...source("C04"),id:"another-real-two-channel-observation"});closureFinish143(c);

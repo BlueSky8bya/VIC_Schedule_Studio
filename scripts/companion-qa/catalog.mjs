@@ -15,6 +15,7 @@ export const DIMENSIONS = Object.freeze({
 });
 export const PURE_SUITES = Object.freeze([
   'tests/unit/companion-qa-142.test.ts',
+  'tests/unit/companion-activity-criteria-145.test.ts',
   'tests/unit/companion-readonly-font-142.test.ts',
   'tests/unit/companion-native-toy-replay-142.test.ts',
   'tests/unit/companion-native-travel-142.test.ts',
@@ -40,6 +41,7 @@ export const PURE_SUITES = Object.freeze([
   'tests/unit/viewer-companion-geometry.test.ts',
   'tests/unit/companion-goal-continuity-142.test.ts',
   'tests/unit/companion-daily-review-143.test.ts',
+  'tests/unit/companion-curious-completion-144.test.ts',
   'tests/unit/companion-sofa-flight-depth-143.test.ts',
   'tests/unit/companion-weighted-catalog-143.test.ts',
   'tests/unit/companion-collection-expansion-143.test.ts',

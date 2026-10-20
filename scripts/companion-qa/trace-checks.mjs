@@ -1,4 +1,5 @@
 import { inspectLivingContext } from './living-criteria.mjs';
+import { activityProgressTimes, stationaryActivityRepetitions } from './activity-criteria.mjs';
 /** Physical wash evidence is measured from the current DOM, never an engine ACK.
  * Keep at most750ms and require500ms of uninterrupted visible, decoded contact.
  * Labels and row9 are corroboration only: a real brush must move relative to the
@@ -150,27 +151,31 @@ export function ordinaryWalkPacing(frames, { legacyWalkPoses } = {}) {
 export function traceContextComplete(frames) {
   const observed = frames.filter(frame => frame.visible && frame.decoded);
   return observed.length > 0 && observed.every(frame => ['ordinary', 'explore', 'food', 'toy', 'care', 'social', 'authored'].includes(frame.lifePurpose)
-    && [frame.humanEpoch, frame.layoutEpoch].every(value => Number.isSafeInteger(value) && value >= 0) && typeof frame.walkSource === 'boolean');
+    && [frame.humanEpoch, frame.layoutEpoch].every(value => Number.isSafeInteger(value) && value >= 0) && typeof frame.walkSource === 'boolean' && frame.activity && typeof frame.activity.source === 'boolean'
+    && typeof frame.activity.manual === 'boolean' && Number.isSafeInteger(frame.activity.epoch) && frame.activity.epoch >= 0
+    && typeof frame.activity.jumpAllowed === 'boolean' && typeof frame.activity.action === 'string' && typeof frame.activity.context === 'string'
+    && [frame.activity.width,frame.activity.height].every(value=>Number.isFinite(value)&&value>0)
+    && frame.activity.anchor && [frame.activity.anchor.x,frame.activity.anchor.y,frame.activity.anchor.width,frame.activity.anchor.height].every(Number.isFinite));
 }
 
 /** Read-only evidence classifier. A candidate is never an automatic art verdict. */
 export function inspectTrace(frames) {
   const washProgress = measuredWashProgressTimes(frames);
+  const activity = activityProgressTimes(frames);
   const living = inspectLivingContext(frames);
-  const findings = [...ordinaryRouteOscillations(frames), ...ordinaryWalkPacing(frames), ...living.findings], active = frames.filter(f => f.visible && f.decoded && f.enabled !== false && !f.blocked && !f.owned && !['sleep', 'held', 'placing'].includes(f.state));
+  const findings = [...stationaryActivityRepetitions(frames,{progressTimes:washProgress}), ...ordinaryRouteOscillations(frames), ...ordinaryWalkPacing(frames), ...living.findings], active = frames.filter(f => f.visible && f.decoded && f.enabled !== false && !f.blocked && !f.owned && !['sleep', 'held', 'placing'].includes(f.state));
   let checkpoint, prior, targetHistory = [], repeated = 0;
   const flag = (rule, frame, detail) => { if (!findings.some(f => f.rule === rule)) findings.push({ rule, at: frame.at, severity: 'candidate', detail }); };
   for (const frame of active) {
     if (![frame.at, frame.x, frame.y].every(Number.isFinite)) { flag('nonfinite-body', frame, 'Nonfinite measured body'); continue; }
     if (prior && (frame.at - prior.at > 500 || frame.at <= prior.at)) { checkpoint = undefined; targetHistory = []; repeated = 0; }
     checkpoint ??= frame;
-    const moved = Math.hypot(frame.x - checkpoint.x, frame.y - checkpoint.y) >= 8;
     // A changed face/pose/scene label is not an accomplished action. Keep the
     // checkpoint until real travel, object ownership/count, or a painted home
     // control changes; otherwise a looping authored beat would evade this rule.
-    const meaningful = moved || washProgress.has(frame.at) || frame.controls !== checkpoint.controls || frame.carried !== checkpoint.carried || frame.items !== checkpoint.items;
+    const meaningful = activity.has(frame.at) || washProgress.has(frame.at) || frame.controls !== checkpoint.controls || frame.carried !== checkpoint.carried || frame.items !== checkpoint.items;
     if (meaningful) checkpoint = frame;
-    else if (frame.at - checkpoint.at >= 10000 && frame.roam !== false && frame.eligible) flag('no-visible-progress-10s', frame, 'Ten eligible active seconds without real travel, object ownership/count, painted control or independently measured brush/contact progress; pose/beat changes alone do not qualify');
+    else if (frame.at - checkpoint.at >= 10000 && frame.roam !== false && frame.eligible) flag('no-visible-progress-10s', frame, 'Ten eligible active seconds without authenticated in-progress movement, a finite authenticated body action, object ownership/count, painted control or independently measured brush/contact progress. Exact landing is separate; labels and endless same-action loops do not qualify');
     if (frame.goal && frame.goal !== prior?.goal) {
       targetHistory = [...targetHistory.filter(item => frame.at - item.at <= 10000), { id: frame.goal, at: frame.at }].slice(-3);
       if (frame.stableFood && targetHistory.length === 3 && targetHistory[0].id === targetHistory[2].id && targetHistory[0].id !== targetHistory[1].id) flag('food-target-thrash', frame, 'A-B-A while the same real foods and support remain stable');

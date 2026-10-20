@@ -621,7 +621,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
     // A successful same-serial primitive may finish its short authored
     // gesture. This is ownership only: it never refills physical progress,
     // learning reward or an already exhausted8s decorative budget.
-    return owner.closureAt !== undefined && at-owner.closureAt <= 3500 && tail.length > 0
+    return owner.closureAt !== undefined && at-owner.closureAt <= 3500 && tail.some(step=>!step.optional)
       && tail.every(step => step.kind === "pose" || step.kind === "watch")
       && tail.reduce((ms,step) => ms+pureDuration(step,input),0) <= 3500;
   };
@@ -630,7 +630,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
     const owner=active!;
     if (requiredTvWatch(input)) return "work";
     const tail=owner.recipe.steps.slice(owner.beat), closure=owner.closureAt!==undefined && input.now-owner.closureAt<=3500
-      && tail.every(step=>step.kind==="pose"||step.kind==="watch") && tail.reduce((ms,step)=>ms+pureDuration(step,input),0)<=3500;
+      && tail.some(step=>!step.optional) && tail.every(step=>step.kind==="pose"||step.kind==="watch") && tail.reduce((ms,step)=>ms+pureDuration(step,input),0)<=3500;
     // A safe decision boundary may yield optional TV/radio entertainment.
     // Real objects, necessary rest/wash and the completed job's short closure
     // remain authored work. In-flight gestures are owned by the renderer.

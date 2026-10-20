@@ -7,6 +7,7 @@ import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-qualit
 import { inspectTrace, traceSufficiency, traceContextComplete, type QaFrame } from "../../../scripts/companion-qa/trace-checks.mjs";
 import { fulfillReadOnlyFont } from "./readonly-font";
 import { traceLivingContextComplete } from "../../../scripts/companion-qa/living-criteria.mjs";
+import { completedCuriousDailyIdeas, curiousTextureCellMatches, CURIOUS_COMPLETION_SCOPE, type CuriousCompletionSnapshot } from "./companion-curious-completion-144";
 
 export type Companion143DiagnosticRecord = {stage:string;activeMs:number;facts:Readonly<Record<string,unknown>>};
 /** Opt-in observation only. It exposes no actor/scene/clock/geometry setter. */
@@ -17,7 +18,7 @@ export async function readCompanion143Diagnostics(page:Page):Promise<Companion14
   return page.evaluate(()=>{const value=(window as Window & {__vicCompanionDiagnostics143?:{version:number;records:Companion143DiagnosticRecord[]}}).__vicCompanionDiagnostics143;
     return value?.version===1&&Array.isArray(value.records)?value.records.slice(0,24):[];});
 }
-export type QaObservation = QaFrame & { sourceClipMeasured: boolean; scene: string; beat: string; platform: string; frame: number };
+export type QaObservation = QaFrame & { sourceClipMeasured: boolean; scene: string; beat: string; platform: string; frame: number; pose: number; play: string; curiousCompletion: CuriousCompletionSnapshot };
 type ProbeWindow = Window & { companionDaily142?: { frames: QaObservation[]; stop: () => void } };
 export type DailyProof = { build: string; errors: string[]; rejected: string[]; mutations: string[]; liveReads: string[]; blockedTelemetry: string[]; chunks: { path: string; served: string; local: string }[]; pending: Promise<void>[] };
 export async function guardCompanionQa(page: Page, context: BrowserContext, base: string): Promise<DailyProof> {
@@ -67,9 +68,10 @@ export async function startCompanionQaProbe(page: Page) {
     let stopped = false, request = 0, last = -Infinity, previousFood = "", stableSince = 0, cleanupSince = 0;
     // Read-only epochs: real human input or layout movement ends an ordinary
     // route candidate. No actor callback, clock or geometry state is changed.
-    let humanEpoch = 0, layoutEpoch = 0, pointer: { x: number; y: number } | undefined;
+    let humanEpoch = 0, layoutEpoch = 0, pointer: { x: number; y: number } | undefined, lastHuman=-Infinity;
     const human = (event: Event) => {
       if (!event.isTrusted) return;
+      lastHuman=performance.now();
       if (event.type === "pointermove") {
         const point = event as PointerEvent;
         if (!pointer || Math.hypot(point.clientX - pointer.x, point.clientY - pointer.y) >= 2) { humanEpoch++; pointer = { x: point.clientX, y: point.clientY }; }
@@ -149,15 +151,59 @@ export async function startCompanionQaProbe(page: Page) {
           toys: toys.slice(0,4).map(node=>{const rect=measuredRect(node),image=node.querySelector<HTMLImageElement>("img"),imageRect=measuredRect(image);
             return {id:node.dataset.toyId??"",carried:node.dataset.carried==="true",held:node.dataset.held==="true",falling:node.dataset.falling==="true",
               rect,imageRect,visible:painted(node,rect)&&painted(image,imageRect),decoded:Boolean(image?.complete&&image.naturalWidth)};}) };
-        frames.push({ at: at - start, x: rect ? rect.x + rect.width / 2 : NaN, y: rect?.bottom ?? NaN, visible, decoded, state: actor?.dataset.state ?? "", enabled: preferences.enabled !== false, roam: preferences.roam !== false, sleepAllowed: preferences.sleep !== false,
+        // C-only additions reuse this80ms observer, current decoded source and
+        // body measurement. No toy/food/control geometry or extra listener.
+        let day:CuriousCompletionSnapshot["day"]=null;
+        const x=rect?rect.x+rect.width/2:NaN,y=rect?.bottom??NaN;
+        if(preferences.personality==="curious" && /^date-\d+-floor$/.test(platform) && Number.isFinite(x) && Number.isFinite(y)){
+          const upper=document.elementsFromPoint(x,Math.max(0,Math.min(innerHeight-1,y+2))).find(node=>!node.closest(".vc-companion,.vc-toy,.vc-food"));
+          const node=upper?.closest<HTMLElement>(".public-day,.agenda-day,.studio-day"),r=measuredRect(node??null);
+          if(node && r && painted(node,r) && !node.closest(".dimmed,[hidden],[inert],[aria-hidden='true']")
+            && !upper?.closest(".vc-home,button,input,select,textarea,[role='button'],[role='switch']")){
+            const css=getComputedStyle(node),width=Number.parseFloat(css.borderBottomWidth);
+            const color=/^rgba?\(([^)]+)\)$/.exec(css.borderBottomColor.trim().toLowerCase()),parts=color?.[1].split("/")??[];
+            const values=parts[0]?.trim().split(/[\s,]+/).filter(Boolean)??[],alpha=parts[1]?.trim()??(values.length===4?values.pop()!:"1");
+            const opaque=parts.length<=2 && values.length===3 && values.every(value=>/^\d*\.?\d+%?$/.test(value)&&Number.parseFloat(value)<=(value.endsWith("%")?100:255))
+              && /^\d*\.?\d+%?$/.test(alpha)&&Number.parseFloat(alpha)>0&&Number.parseFloat(alpha)<=(alpha.endsWith("%")?100:1);
+            // As in the existing140 probe, the actual topmost solid DAY border
+            // must be visible at its exact painted foot, including clipping.
+            const border=document.elementsFromPoint(x,r.y+r.height-.01).find(element=>!element.closest(".vc-companion,.vc-toy,.vc-food"));
+            if(border===node && css.borderBottomStyle==="solid" && Number.isFinite(width)&&width>0 && opaque && r.y+r.height<=innerHeight)
+              day={rect:r,footY:r.y+r.height-3};
+          }
+        }
+        let cell:CuriousCompletionSnapshot["cell"]=null;
+        if(texture && sprite){
+          try{
+            const textureCss=getComputedStyle(texture),spriteCss=getComputedStyle(sprite);
+            const px=(value:string)=>/^-?\d*\.?\d+px$/.test(value)?Number.parseFloat(value):Number.NaN;
+            const matrixValues=(value:string)=>{const m=new DOMMatrixReadOnly(value);return [m.m11,m.m12,m.m13,m.m14,m.m21,m.m22,m.m23,m.m24,m.m31,m.m32,m.m33,m.m34,m.m41,m.m42,m.m43,m.m44];};
+            const actual=new URL(texture.currentSrc,location.href);
+            cell={currentPath:actual.origin===location.origin&&!actual.search&&!actual.hash?actual.pathname:null,
+              connectedToSprite:texture.isConnected&&sprite.isConnected&&texture.parentElement===sprite&&Boolean(actor?.contains(sprite)),
+              naturalWidth:texture.naturalWidth,naturalHeight:texture.naturalHeight,
+              textureWidth:px(textureCss.width),textureHeight:px(textureCss.height),spriteWidth:px(spriteCss.width),spriteHeight:px(spriteCss.height),
+              textureLeft:px(textureCss.left),textureTop:px(textureCss.top),textureMatrix:matrixValues(textureCss.transform),spriteMatrix:matrixValues(spriteCss.transform),
+              spriteClipPath:spriteCss.clipPath,textureClipPath:textureCss.clipPath};
+          }catch{ /* Missing/unsupported local matrix evidence never earns a note. */ }
+        }
+        const curiousCompletion:CuriousCompletionSnapshot={version:2,source:playSourceMeasured,body:wash.body,day,cell,
+          guards:{preferencesObserved:typeof preferences.enabled==="boolean"&&typeof preferences.roam==="boolean"&&typeof preferences.jump==="boolean",
+            jumpAllowed:preferences.jump===true,foodGoalAbsent:Boolean(actor&&!actor.hasAttribute("data-food-goal")),
+            feedIntentAbsent:Boolean(actor&&actor.dataset.intent!=="feed"),episodeInactive:Boolean(actor&&(!actor.hasAttribute("data-episode")||actor.dataset.episodePhase==="finish")),
+            handsFree:Boolean(actor&&!owned&&!foods.some(item=>item.hasAttribute("data-carried"))&&!toys.some(item=>item.dataset.carried==="true"))}};
+        const root=document.documentElement.getBoundingClientRect(),state=actor?.dataset.state??"",play=actor?.dataset.play??"";
+        const rows=state==="play"?playRows[play]:({sniff:[1],stretch:[16],shake:[17],walk:[2,20],jump:[3,4,5,6,7]} as Record<string,number[]>)[state];
+        const action=rows?.some(row=>metadata.rows[row]?.includes(pose))?state==="play"?`play:${play}`:state:"";
+        frames.push({ activity:{source:false,manual:owned||at-lastHuman<1000,epoch:humanEpoch+layoutEpoch,jumpAllowed:preferences.jump===true,width:rect?.width??0,height:rect?.height??0,anchor:{x:root.x,y:root.y,width:root.width,height:root.height},action,context:""},at: at - start, x: rect ? rect.x + rect.width / 2 : NaN, y: rect?.bottom ?? NaN, visible, decoded, state: actor?.dataset.state ?? "", enabled: preferences.enabled !== false, roam: preferences.roam !== false, sleepAllowed: preferences.sleep !== false,
           owned, blocked, lifePurpose: actor?.dataset.lifePurpose, humanEpoch, layoutEpoch, walkSource: Boolean(decoded && texture && frame && sprite && painted(sprite, measuredRect(sprite)) && painted(texture, measuredRect(texture)) && texture.currentSrc.endsWith(metadata.atlases[frame.atlas].src) && [2,20].some(row => metadata.rows[row].includes(pose))), eligible: visible && decoded && !quiet && !blocked && !owned && preferences.roam !== false, pose, frame: pose, sourceClipMeasured, clipError, wash, toyPlay, playPaint,
           personality: preferences.personality, hunger, energy, outsideVisible, command: actor?.dataset.personalityCommand ?? "", play: actor?.dataset.play ?? "",
           jumpSource: Boolean(decoded && texture && frame && sprite && texture.currentSrc.endsWith(metadata.atlases[frame.atlas].src) && [5,6,7].some(row => metadata.rows[row].includes(pose))),
-          platform, scene: actor?.dataset.personalityScene ?? actor?.dataset.scene ?? "", beat: actor?.dataset.personalityBeat ?? actor?.dataset.sceneBeat ?? "", effect: actor?.dataset.personalityEffect ?? "", goal: actor?.dataset.foodGoal,
+          platform, scene: actor?.dataset.personalityScene ?? actor?.dataset.scene ?? "", beat: actor?.dataset.personalityBeat ?? actor?.dataset.sceneBeat ?? "", effect: actor?.dataset.personalityEffect ?? "", goal: actor?.dataset.foodGoal ?? "",
           carried: [...foods.filter(item => item.hasAttribute("data-carried")).map(item => item.dataset.food), ...toys.filter(item => item.dataset.carried === "true").map(item => item.dataset.toyId)].join(","), items: `${foods.map(item => item.dataset.food).join(",")}|${toys.map(item => item.dataset.toyId).join(",")}`,
           controls: [document.querySelector<HTMLElement>(".vc-home-room")?.dataset.tv ?? "", document.querySelector<HTMLElement>(".vc-home-room")?.dataset.lampLit ?? "off", document.querySelector<HTMLElement>(".vc-home-window")?.dataset.curtain ?? "", document.querySelector('[data-home-action="radio"]')?.getAttribute("aria-pressed") ?? ""].join("|"),
           stableFood: foods.length > 0 && at - stableSince >= 1000, nearbyCleanupCandidate, cleanupWaitingMs: cleanupSince ? at - cleanupSince : 0,
-          intendedOcclusion: platform === "companion-home" || actor?.hasAttribute("data-hidden-reason") });
+          intendedOcclusion: platform === "companion-home" || actor?.hasAttribute("data-hidden-reason"),curiousCompletion });
       }
       if (at - start <= 100000) request = requestAnimationFrame(sample);
     };
@@ -168,7 +214,7 @@ export async function startCompanionQaProbe(page: Page) {
   }, {metadata:companionSpriteMetadata,playRows:Object.fromEntries(Object.entries(COMPANION_PLAY_TIMING).map(([key,value])=>[key,value.beats.map(beat=>beat.row)]))});
 }
 export async function finishCompanionQa(page: Page, info: TestInfo, proof: DailyProof, scenario: Record<string, string | number>, completed: boolean, originalError?: string) {
-  const frames = await page.evaluate(() => { const probe = (window as ProbeWindow).companionDaily142; probe?.stop(); return probe?.frames ?? []; }).catch(() => []);
+  const frames = (await page.evaluate(() => { const probe = (window as ProbeWindow).companionDaily142; probe?.stop(); return probe?.frames ?? []; }).catch(() => [])).map(frame=>({...frame,activity:{...frame.activity!,source:frame.curiousCompletion.source&&curiousTextureCellMatches(frame.pose,frame.curiousCompletion.cell),context:JSON.stringify([frame.items,frame.carried,frame.controls])}}));
   await Promise.allSettled(proof.pending);
   const diagnostics143 = await readCompanion143Diagnostics(page).catch(()=>[]);
   const analysis = inspectTrace(frames), sufficiency = traceSufficiency(frames, Number(scenario.seconds)), directory = resolve(process.env.COMPANION_QA_OUTPUT ?? ".scratch-pw/companion-daily-manual", "daily"); mkdirSync(directory, { recursive: true });
@@ -176,7 +222,9 @@ export async function finishCompanionQa(page: Page, info: TestInfo, proof: Daily
   const contextComplete = traceContextComplete(frames) && traceLivingContextComplete(frames);
   const networkClean = proof.errors.length === 0 && proof.rejected.length === 0 && proof.mutations.length === 0;
   const chunksMatch = proof.chunks.length > 0 && proof.chunks.every(chunk => chunk.local === chunk.served);
-  writeFileSync(file, JSON.stringify({ schemaVersion: 1, status: completed && sufficiency.passed && contextComplete && !analysis.findings.length && networkClean && chunksMatch ? "passed" : "needs-review", scenario, originalError, diagnostics143, proof: { ...proof, pending: undefined, liveReadsExecuted: 0, telemetryRequestsExecuted: 0, blockedTelemetryCount: proof.blockedTelemetry.length }, frames, analysis, sufficiency, contextComplete, sourceClipFrames: frames.filter(f => f.sourceClipMeasured).length, limitations: "Synthetic initial preferences/care; actual UI inputs; read-only canvas/DOM observations. Every live API attempt was denied with404 and counted, never executed. Exactly two known Vercel SDK GET paths are locally fulfilled with inert JavaScript and counted separately; no SDK or telemetry request executes. No runtime/RNG/clock/geometry mutation. Physical wash uses raw pad/body/visible brush rectangles and brush rotation, exact decoded row9, at least500ms continuous contact and fresh body-relative motion; labels alone never qualify and older traces receive no retrospective credit. Nearby cleanup has no route proof; dedicated return traces are separate. Source alpha/clip measurement is a candidate, not expert art approval." }, null, 2), { flag: "wx" });
+  const notes=[{...CURIOUS_COMPLETION_SCOPE,reachedFinalBeatAndSubsequentSequence:
+    completed && sufficiency.passed && contextComplete && !analysis.findings.length && networkClean && chunksMatch ? completedCuriousDailyIdeas(frames) : []}];
+  writeFileSync(file, JSON.stringify({ schemaVersion: 1, status: completed && sufficiency.passed && contextComplete && !analysis.findings.length && networkClean && chunksMatch ? "passed" : "needs-review", scenario, originalError, diagnostics143, errors: proof.errors, rejected: proof.rejected, notes, proof: { ...proof, pending: undefined, liveReadsExecuted: 0, telemetryRequestsExecuted: 0, blockedTelemetryCount: proof.blockedTelemetry.length }, frames, analysis, sufficiency, contextComplete, sourceClipFrames: frames.filter(f => f.sourceClipMeasured).length, limitations: "Synthetic initial preferences/care; actual UI inputs; read-only canvas/DOM observations. Every live API attempt was denied with404 and counted, never executed. Exactly two known Vercel SDK GET paths are locally fulfilled with inert JavaScript and counted separately; no SDK or telemetry request executes. No runtime/RNG/clock/geometry mutation. Physical wash uses raw pad/body/visible brush rectangles and brush rotation, exact decoded row9, at least500ms continuous contact and fresh body-relative motion; labels alone never qualify and older traces receive no retrospective credit. Nearby cleanup has no route proof; dedicated return traces are separate. Source alpha/clip measurement is a candidate, not expert art approval." }, null, 2), { flag: "wx" });
   await page.screenshot({ path: resolve(directory, `${id}.png`) }); await info.attach("companion-daily142", { path: file, contentType: "application/json" });
   expect(proof.errors).toEqual([]); expect(proof.rejected).toEqual([]); expect(proof.mutations).toEqual([]); expect(chunksMatch).toBe(true);
   expect(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim()).toBe(proof.build);

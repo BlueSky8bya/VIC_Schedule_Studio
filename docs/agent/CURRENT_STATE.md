@@ -7,9 +7,9 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Current143: apply the latest archived companion request across natural outside life, sofa/scroll/layering, independent house controls, consistent eyes/accessories, shared fold UI, expanded rare collections and5 TV loops. [143 checklist](plans/PLAN-20261020-143-companion-living-and-collections.md). Compare a2e6 observations with564e9a9 first. Daily QA gains3 independent reviewers and9 grounded ideas; preserve user assets/current142 local closure.
+Criteria145: optional TV bow and separate actual10s activity/repetition verified. Final frozen110/27/9/2, full gates and three independent final reviews passed; scoped commit and actual production confirmation pending. [145 plan](plans/PLAN-20261020-145-companion-activity-criteria.md).
 
-Scheduled: daily companion QA is ACTIVE at09:00 KST in the current thread. The current user authorizes bounded companion reproduce/fix/independent-review/verify/report work; unrelated operations remain excluded. [Factory and scope](plans/PLAN-20261020-142-companion-agent-and-daily-qa.md). Do not overlap an active run; separate scheduled execution remains unverified.
+Scheduled: daily companion QA is ACTIVE at09:00 KST in the current thread. The current user authorizes bounded companion reproduce/fix/independent-review/verify/report work; unrelated operations remain excluded. [Factory and scope](plans/PLAN-20261020-142-companion-agent-and-daily-qa.md). Do not overlap an active run.144 proves a separate scheduled execution; its second factory failed and release stays held. All processes closed and originals preserved.
 
 Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user.125 explicitly authorizes unnecessary Vercel deployment cleanup/optimization; unrelated cleanup, bulk DB UPDATE, paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
 
@@ -19,7 +19,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| COMPANION-LIVING-143 | Release proof | Final110P/27entries/9daily/two4-ID returns; unit5100/pure1723/type/lint/build P. 3fresh reviews/finalizer P;9formal ideas deferred. Report/index→authorized release actual proof | [143 plan](plans/PLAN-20261020-143-companion-living-and-collections.md) |
+| COMPANION-ACTIVITY-145 | Local gates and three final reviews passed | Scoped commit/push then actual fullSHA/deployed viewer check | [145 plan](plans/PLAN-20261020-145-companion-activity-criteria.md) |
 | OPS-VERCEL-QUOTA | Open | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
@@ -31,6 +31,8 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Blockers
 
+- Criteria145: local evidence and finalizer passed; release remains pending until exact public fullSHA and deployed result are verified. Previous failed runs and three-remediation cap remain in the topic plan.
+
 - Supabase dashboard login/Free-Nano quotas confirmed. Free has no managed daily backups/PITR; local081 backup covers diagnostics only. Some CPU/memory/IO dashboard graphs failed to load. Full recovery and real-device evidence remain separate.
 - Mobile/screen reader and formal flash/fanout capacity remain unverified; fixtures do not establish actual OBS performance. Broadcaster hardware work remains deferred by the user.
 - Continuously unfocused OS-window gestures and the separate viewer food-approach focus-transition check remain [open](verification/OPEN_CHECKS.md#companion-096-focus--실제-viewer-창-전환).
@@ -40,6 +42,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Next Exact Steps
 
+0. COMPANION-ACTIVITY-145: literal companion commit→remote quality/Vercel→new anonymous deployed fullSHA/UI verification. [145 details](plans/PLAN-20261020-145-companion-activity-criteria.md).
 1. OPS-DB-QUOTA/OPS-VERCEL-QUOTA: compare post-release route/RPC/cost with the same period/denominator, recheck Hobby restrictions/reset status; define the Free-plan full-backup/recovery path and recheck unavailable compute graphs. No automatic future run was created.
 2. ART-PINE-PILOT: only on owner curation, remove named references and freeze fresh variants2/3 request. Preserve the old pilot/approved inputs.
 3. RULE-ART-COMPLETION: wait for pending presentation/source-policy choices; unrelated work grants no approval.
@@ -47,6 +50,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 5. PRIVACY-20260921: resolve remaining visit/recurring retention policy and restricted local recovery-backup removal after its2026-10-24 window. No automatic future run is scheduled.
 ## Last Verified
 
-Last verified release `564e9a910be37b4dfe8bad2cc11be7dd379439a5`: [142 closure](plans/PLAN-20261020-142-companion-agent-and-daily-qa.md#출시-확인). Full15:332files/4472units/type/lint; fresh14 build qa6vsHnqKrLdyvob8VKX7:1090 models/build/type/lint/97 unique native/27 entries/9 actual90s/2 four-toy returns PASS, skip/retry0, original/cleanup intact.9daily9602 visible decoded frames;27 first signatures299.9~507.7ms/max meaningful gap7.033s. Vercel success; fresh anonymous actual4/4 same-ID carry→box→absence by37.051s, positive bounded local learning,6 random documents/manual3reloads, curtain/light/TV/dark weekday and actual received-code hashes PASS10:51~10:52 KST. Errors/unexpected writes/live-state GET/private manifest0; protected art preserved. Independent reviews and remote quality39355536049 completed/success (unit/SQL/harness/build/type/lint). Prior failures retained.152/431 pairwise,144 modeled recipes and actual samples remain distinct; long-term naturalness, real-login/RLS/OBS/screen-reader and human art approval are separate.
+Last verified release `e4f56c8f1cfc988bfca174e4a06127ef9facb51f`: [143 closure](plans/PLAN-20261020-143-companion-living-and-collections.md#출시-확인). Unit5100/lastregressions175/type/lint/harness P; frozen fe7bffde/build1Dy_mFKNi-EY380rSVIar: pure1723/110unique native/27entries/9actual90s/two4-IDreturns,skip/retry0,cleanup/originalpreserved.3fresh non-author accepts/finalizer P;9D143 formaladoptions deferred (actualCfinal+next observed,requirednote absent).417literal/302art indexrawbytes/protectedasset verified. Remotequality39376172009/Vercelsuccess; freshanonymous fullSHA/chunks/9compasslayout/2manualchoices-balancedpersist/5TVpictures/independentcurtain-light/240food60toybook P14:55 KST. Production sample excludes9life,actualbroadcast/authRLS/OBS. Scheduled144 is a separate run;153models/normalization are not nativeexhaustive.
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.

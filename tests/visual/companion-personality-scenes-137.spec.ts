@@ -14,8 +14,11 @@ import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companio
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
-import { completedNativeTravel, nativeTravelPointsBefore, type NativeTravelFrame, type NativeSupportSurface } from "./helpers/companion-native-travel";
+import { completedNativeTravel, type NativeTravelFrame, type NativeSupportSurface } from "./helpers/companion-native-travel";
 import { enableCompanion143Diagnostics, readCompanion143Diagnostics } from "./helpers/companion-qa";
+
+import { activityProgressTimes, stationaryActivityRepetitions, type ActivityObservation } from "../../scripts/companion-qa/activity-criteria.mjs";
+import { curiousTextureCellMatches, type CuriousTextureCellMeasurement } from "./helpers/companion-curious-completion-144";
 
 const output = process.env.COMPANION137_OUTPUT ?? ".scratch-pw/companion-137/native";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
@@ -24,6 +27,7 @@ type Frame = NativeTravelFrame & {
   at: number; state: string; signature: string; scene: string; beat: string; command: string; play: string; pose: number;
   x: number; y: number; platform: string; visible: boolean; decoded: boolean; tv: string; lit: boolean; curtain: string; curiosity: string;
   toys: { id: string; carried: boolean; held: boolean; x: number; y: number }[]; foods: string[];
+  activity: ActivityObservation; cell: CuriousTextureCellMeasurement | null; sourcePaint: boolean; tvPaint: boolean;
   washing: boolean; brush: { x: number; y: number; visible: boolean } | null;
 };
 type ProbeWindow = Window & { personality137?: { samples: Frame[]; stop: () => void } };
@@ -56,7 +60,7 @@ test.beforeEach(async ({ page, context, baseURL }) => {
 });
 
 test.afterEach(async ({ page }, info) => {
-  const frames = await page.evaluate(() => { const probe = (window as ProbeWindow).personality137; probe?.stop(); return probe?.samples ?? []; }).catch(() => []);
+  const frames = authenticateFrames(await page.evaluate(() => { const probe = (window as ProbeWindow).personality137; probe?.stop(); return probe?.samples ?? []; }).catch(() => []));
   const diagnostics143=await readCompanion143Diagnostics(page).catch(()=>[]);
   mkdirSync(output, { recursive: true }); const filename = info.title.replace(/[^a-z0-9]+/gi, "-");
   const path = resolve(output, filename + ".json");
@@ -104,7 +108,7 @@ async function selectNative(page: Page, personality: CompanionPersonality, roam?
 }
 
 async function startProbe(page: Page) {
-  await page.evaluate(({ preferenceEvent, floorInset }) => {
+  await page.evaluate(({ preferenceEvent, floorInset, metadata, playRows }) => {
     (window as ProbeWindow).personality137?.stop();
     let request = 0, last = -Infinity, stopped = false, epoch = 0, lastTrusted = -Infinity;
     let runId = 0, motionKind = "", resting = 0, source: HTMLElement | null = null, viewportSource = false;
@@ -114,7 +118,7 @@ async function startProbe(page: Page) {
     const changed = () => { epoch++; };
     const input = (event: Event) => { if (event.isTrusted) { epoch++; lastTrusted = performance.now(); } };
     window.addEventListener("scroll",changed,true); window.addEventListener("resize",changed);
-    document.addEventListener("keydown",input,true); document.addEventListener("pointerdown",input,true); window.addEventListener(preferenceEvent,preference);
+    document.addEventListener("keydown",input,true); document.addEventListener("pointerdown",input,true); document.addEventListener("pointermove",input,true); window.addEventListener(preferenceEvent,preference);
     const began = performance.now(), samples: Frame[] = [];
     const edgeNodes = (x: number,y: number) => {
       const nodes = document.elementsFromPoint(x,Math.min(innerHeight-1,y+4)).flatMap(element => {
@@ -194,20 +198,40 @@ async function startProbe(page: Page) {
         } else if (motionKind && ++resting>2) motionKind="";
         const supported=!moving && Boolean(motionKind) && resting<=2 ? supportAt(x,y,platform) : {support:null,inkRects:[]};
         const anchor=viewportSource ? {x:0,y:0,width:innerWidth,height:innerHeight} : source?.isConnected ? source.getBoundingClientRect() : null;
+        const sprite=actor?.querySelector<HTMLElement>(".vc-sprite"),pose=Number(actor?.dataset.pose??-1),packet=metadata.frames[pose];
+        let cell:CuriousTextureCellMeasurement|null=null;
+        if(texture&&sprite)try{
+          const tc=getComputedStyle(texture),sc=getComputedStyle(sprite),url=new URL(texture.currentSrc,location.href);
+          const px=(v:string)=>/^-?\d*\.?\d+px$/.test(v)?Number.parseFloat(v):NaN;
+          const matrix=(v:string)=>{const m=new DOMMatrixReadOnly(v);return [m.m11,m.m12,m.m13,m.m14,m.m21,m.m22,m.m23,m.m24,m.m31,m.m32,m.m33,m.m34,m.m41,m.m42,m.m43,m.m44];};
+          cell={currentPath:url.origin===location.origin&&!url.search&&!url.hash?url.pathname:null,connectedToSprite:texture.isConnected&&sprite.isConnected&&texture.parentElement===sprite&&Boolean(actor?.contains(sprite)),naturalWidth:texture.naturalWidth,naturalHeight:texture.naturalHeight,textureWidth:px(tc.width),textureHeight:px(tc.height),spriteWidth:px(sc.width),spriteHeight:px(sc.height),textureLeft:px(tc.left),textureTop:px(tc.top),textureMatrix:matrix(tc.transform),spriteMatrix:matrix(sc.transform),spriteClipPath:sc.clipPath,textureClipPath:tc.clipPath};
+        }catch{/* Unmeasured pixels earn no activity. */}
+        const play=actor?.dataset.play??"",rows=state==="play"?playRows[play]:({sniff:[1],stretch:[16],shake:[17],walk:[2,20],jump:[3,4,5,6,7]} as Record<string,number[]>)[state];
+        const action=rows?.some(row=>metadata.rows[row]?.includes(pose))?state==="play"?`play:${play}`:state:"";
+        const root=document.documentElement.getBoundingClientRect(),picture=room?.querySelector<HTMLImageElement>(".vc-tv-picture img"),channel=room?.dataset.tv;
+        const expectedPicture=channel==="tori"?"/companion/home/143/tv-screen-tori.webp":`/companion/home/135/tv-screen-${channel}.webp`;
+        const tvPaint=Boolean(picture?.complete&&picture.naturalWidth&&picture.checkVisibility({checkOpacity:true,checkVisibilityCSS:true})&&new URL(picture.currentSrc,location.href).pathname===expectedPicture);
+        // Raw cell is authenticated after extraction, outside this observer.
+        const activity:ActivityObservation={source:false,manual:now-lastTrusted<1000||state==="held"||Boolean(actor?.hasAttribute("data-placing")),epoch,jumpAllowed:preferences.jump,width:r?.width??0,height:r?.height??0,anchor:{x:root.x,y:root.y,width:root.width,height:root.height},action:packet?action:"",context:""};
         samples.push({ at: now - began, state, signature: actor?.dataset.personalityActivity ?? "", scene: actor?.dataset.personalityScene ?? "", beat: actor?.dataset.personalityBeat ?? "", command: actor?.dataset.personalityCommand ?? "", play: actor?.dataset.play ?? "", pose: Number(actor?.dataset.pose ?? -1), x,y,platform, visible: Boolean(actor && !document.hidden && !actor.hidden && r!.width && r!.height && r!.bottom > 0 && r!.top < innerHeight && r!.right > 0 && r!.left < innerWidth && actor.checkVisibility({checkOpacity:true,checkVisibilityCSS:true})), decoded: Boolean(texture?.complete && texture.naturalWidth), tv: room?.dataset.tv ?? "off", lit: room?.hasAttribute("data-lamp-lit") ?? false, curtain: room?.querySelector<HTMLElement>(".vc-home-window")?.dataset.curtain ?? "", curiosity: actor?.dataset.foodCuriosity ?? "",
+          activity,cell,tvPaint,sourcePaint:Boolean(sprite&&texture&&[sprite,texture].every(node=>{
+            const r=node.getBoundingClientRect(),css=getComputedStyle(node);return !node.hidden&&!node.closest("[hidden],[inert]")&&r.width>0&&r.height>0&&r.right>0&&r.bottom>0&&r.x<innerWidth&&r.y<innerHeight&&css.display!=="none"&&css.visibility==="visible"&&Number(css.opacity)>.05&&node.checkVisibility({checkOpacity:true,checkVisibilityCSS:true});
+          })),
           travel:{id:runId,epoch,...preferences,manual:state === "held" || Boolean(actor?.hasAttribute("data-placing")) || now-lastTrusted < 1000,actorWidth:r?.width ?? 0,actorHeight:r?.height ?? 0,anchor:anchor ? {x:anchor.x,y:anchor.y,width:anchor.width,height:anchor.height} : null,supported:Boolean(supported.support),...supported},
           toys: [...document.querySelectorAll<HTMLElement>(".vc-toy")].map(node => { const box = node.getBoundingClientRect(); return { id: node.dataset.toyId!, carried: node.dataset.carried === "true", held: node.dataset.held === "true", x: box.left + box.width / 2, y: box.bottom }; }), foods: [...document.querySelectorAll<HTMLElement>(".vc-food")].map(node => node.dataset.food!), washing: actor?.hasAttribute("data-washing") ?? false, brush: brush && brushRect ? { x: brushRect.left + brushRect.width / 2, y: brushRect.top + brushRect.height / 2, visible: !brush.hidden && getComputedStyle(brush).visibility !== "hidden" && brushRect.width > 0 } : null });
       }
       if (now - began < 130_000) request = requestAnimationFrame(sample);
     };
     (window as ProbeWindow).personality137 = { samples, stop() { stopped = true; cancelAnimationFrame(request);
-      window.removeEventListener("scroll",changed,true);window.removeEventListener("resize",changed);document.removeEventListener("keydown",input,true);document.removeEventListener("pointerdown",input,true);window.removeEventListener(preferenceEvent,preference);
+      window.removeEventListener("scroll",changed,true);window.removeEventListener("resize",changed);document.removeEventListener("keydown",input,true);document.removeEventListener("pointerdown",input,true);document.removeEventListener("pointermove",input,true);window.removeEventListener(preferenceEvent,preference);
     } }; request = requestAnimationFrame(sample);
-  },{preferenceEvent:COMPANION_PREFERENCES_EVENT,floorInset:COMPANION_HOME_FLOOR_INSET});
+  },{preferenceEvent:COMPANION_PREFERENCES_EVENT,floorInset:COMPANION_HOME_FLOOR_INSET,metadata:companionSpriteMetadata,playRows:Object.fromEntries(Object.entries(COMPANION_PLAY_TIMING).map(([key,value])=>[key,value.beats.map(beat=>beat.row)]))});
 }
-const frames = (page: Page) => page.evaluate(() => (window as ProbeWindow).personality137?.samples ?? []);
+const authenticateFrames=(observed:readonly Frame[])=>observed.map(frame=>({...frame,enabled:frame.travel.enabled,roam:frame.travel.roam,activity:{...frame.activity,source:frame.sourcePaint&&curiousTextureCellMatches(frame.pose,frame.cell),context:JSON.stringify([frame.foods,frame.toys.map(t=>[t.id,t.carried]),frame.tv,frame.lit,frame.curtain])}}));
+const frames = async (page: Page) => authenticateFrames(await page.evaluate(() => (window as ProbeWindow).personality137?.samples ?? []));
 const duration = async (page: Page, ms: number) => expect.poll(async () => (await frames(page)).at(-1)?.at ?? 0, { timeout: ms + 8000, intervals: [250] }).toBeGreaterThanOrEqual(ms);
 function signature(frame: Frame, personality: CompanionPersonality) {
+  if(!frame.activity.source)return false;
   //143 replaces private-room audience performances with actual personal
   // preparation. Witness the decoded declared action row, never its label.
   const preparation = ["performer", "balanced", "sleepy"].includes(personality) ? { state: "stretch", row: 16 }
@@ -217,12 +241,13 @@ function signature(frame: Frame, personality: CompanionPersonality) {
   const timing = COMPANION_PLAY_TIMING[frame.play as keyof typeof COMPANION_PLAY_TIMING];
   return frame.visible && frame.decoded && frame.signature === personality && frame.state === "play" && Boolean(timing?.beats.some(beat => companionSpriteMetadata.rows[beat.row].includes(frame.pose)));
 }
-function meaningful(trace: readonly Frame[], index: number, personality: CompanionPersonality, traveled: ReadonlySet<number>) {
-  const frame = trace[index]; if (!frame.visible || !frame.decoded) return false;
-  if (signature(frame, personality) || frame.state === "eat" || frame.toys.some(toy => toy.carried && !toy.held)) return true;
-  if (traveled.has(frame.at)) return true;
-  if (!frame.scene || frame.signature !== personality) return false;
-  return frame.command === "watch" && frame.state === "look" && frame.tv !== "off";
+function meaningful(trace: readonly Frame[], index: number, activity: ReadonlySet<number>) {
+  const frame=trace[index];if(!frame.visible||!frame.decoded||!frame.travel.enabled||!frame.activity.source||frame.activity.manual)return false;
+  if(activity.has(frame.at))return true;
+  const prior=trace[index-1];
+  if(prior && (frame.foods.join("|")!==prior.foods.join("|") || JSON.stringify(frame.toys.map(t=>[t.id,t.carried]))!==JSON.stringify(prior.toys.map(t=>[t.id,t.carried]))))return true;
+  // Rest is an explicit exception, not a fictitious activity/landing receipt.
+  return frame.state==="sleep"&&[10,11,12,35,36,40].some(row=>companionSpriteMetadata.rows[row]?.includes(frame.pose));
 }
 
 /**143 weighted sampling no longer guarantees a24-item bag. Acquisition is
@@ -302,7 +327,10 @@ function finishedRecipes(trace: readonly Frame[], opening: { x: number; y: numbe
         if (command.kind === "pose" && !( ["look", "sniff", "stretch", "shake"].includes(command.pose)
           ? playedFor(stage, command.pose, Math.min(2500, command.ms ?? 900))
           : playedFor(stage, "play", companionPlayDuration(command.pose as keyof typeof COMPANION_PLAY_TIMING), command.pose))) return false;
-        if (command.kind === "watch" && !playedFor(stage, "look", Math.min(3500, Math.max(650, command.ms)))) return false;
+        if (command.kind === "watch") {
+          const tvWatch=recipe.steps.slice(0,beat).some(step=>step.kind==="tv");
+          if(!playedFor(stage.filter(frame=>frame.activity.source&&(!tvWatch||frame.tv!=="off"&&frame.tvPaint)),"look",Math.min(3500,Math.max(650,command.ms))))return false;
+        }
         if (command.kind === "sleep" && (!playedFor(stage, "sleep", Math.min(7000, Math.max(2000, command.ms)))
           || stage.filter(frame => frame.state === "sleep" && [11, 40].some(row => companionSpriteMetadata.rows[row].includes(frame.pose))).length < 2)) return false;
         if (command.kind === "wash") {
@@ -578,28 +606,23 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const perso
     await fixture(page, surface, { personality: personality === "balanced" ? "curious" : "balanced" });
     await selectNative(page, personality);
     await expect.poll(async () => (await frames(page)).some(frame => signature(frame, personality)), { timeout: 3500, intervals: [40] }).toBe(true);
-    await duration(page, 20_000); let observed=await frames(page);
-    const cutoff=observed.at(-1)!.at, run=observed.at(-1)!, first=observed.find(frame=>signature(frame,personality))!;
-    const gapsFor=(points: number[])=>[points[0],...points.slice(1).map((point,index)=>point-points[index]),cutoff-points.at(-1)!];
-    const pointsFor=(trace: readonly Frame[])=>{ const traveled=nativeTravelPointsBefore(completedNativeTravel(trace),cutoff);
-      return trace.flatMap((frame,index)=>frame.at<=cutoff && meaningful(trace,index,personality,traveled) ? [frame.at] : []); };
-    // The original20s interval stays fixed. Only if its boundary cuts through
-    // actual travel may its SAME run finish within6s before judging that
-    // interval. No later/new trip supplies a20s meaningful timestamp.
-    if (["walk","jump"].includes(run.state) && Math.max(...gapsFor(pointsFor(observed)))>10000) {
-      await expect.poll(async()=>{ observed=await frames(page);return completedNativeTravel(observed).some(value=>value.id===run.travel.id && value.startedAt<=cutoff && value.endedAt>cutoff); },{timeout:6000,intervals:[80]}).toBe(true);
-    }
+    await duration(page, 20_000); const observed=await frames(page);
+    const cutoff=observed.at(-1)!.at,first=observed.find(frame=>signature(frame,personality))!;
+    const gapsFor=(points:number[])=>[points[0],...points.slice(1).map((point,index)=>point-points[index]),cutoff-points.at(-1)!];
+    // Activity is judged inside the original20s, including a live walk/jump.
+    // Precise landing proof remains only in dedicated destination checks.
     const trace=observed.filter(frame=>frame.at<=cutoff);
     expect(first.at).toBeLessThanOrEqual(3000);
     expect(first.scene).toBe(`entry-${personality}`);
-    const travel = completedNativeTravel(observed), traveled = nativeTravelPointsBefore(travel,cutoff);
-    const points = trace.flatMap((frame, index) => meaningful(trace, index, personality, traveled) ? [frame.at] : []);
+    const travel=completedNativeTravel(observed),activity=activityProgressTimes(trace);
+    const points = trace.flatMap((frame, index) => meaningful(trace, index, activity) ? [frame.at] : []);
+    expect(stationaryActivityRepetitions(trace), "Repeated stationary action is checked separately from actual movement and ten-second activity").toEqual([]);
     expect(points.length).toBeGreaterThan(2);
     const gaps = gapsFor(points);
-    expect(Math.max(...gaps), "decoded personality expression or actual purposeful progress must recur before10s").toBeLessThanOrEqual(10_000);
+    expect(Math.max(...gaps), "actual varied activity must recur before10s; no precise landing or decorative TV bow is required").toBeLessThanOrEqual(10_000);
     expect(new Set(trace.filter(frame => frame.scene).map(frame => `${frame.scene}:${frame.beat}`)).size, "an entry label alone is not a full living sequence").toBeGreaterThan(1);
     expect(trace.every(frame => frame.foods.length <= 8 && frame.toys.length <= 4)).toBe(true);
-    proofs.get(page)!.notes.push({ firstDecodedSignatureAt: first.at, largestMeaningfulGap: Math.max(...gaps), distinctStages: [...new Set(trace.map(frame => `${frame.scene}:${frame.beat}`))], selectionWasNativeRadio: true, completedActualTravel:travel, originalObservationEnd:cutoff, boundedCompletionObservedUntil:observed.at(-1)!.at });
+    proofs.get(page)!.notes.push({ firstDecodedSignatureAt: first.at, largestMeaningfulGap: Math.max(...gaps), distinctStages: [...new Set(trace.map(frame => `${frame.scene}:${frame.beat}`))], selectionWasNativeRadio: true, completedActualTravel:travel, originalObservationEnd:cutoff, activityCriteria:145,activityFrames:activity.size,observedUntil:observed.at(-1)!.at });
   });
 
 for (const surface of ["viewer", "studio"] as const) test(`137 ${surface} tidy carries all four native toys to the actual box before removing their IDs`, async ({ page }) => {
@@ -681,10 +704,12 @@ async function outsideTidy(page: Page, hunger: number, eventPerch = false) {
   // Preserve the110s cleanup budget separately from that visible care; a
   // ready loop, hidden frame or an ordinary pose cannot earn extra time.
   await expect(page.locator(".vc-toy")).toHaveCount(0, { timeout: 150000 });
-  await expect.poll(async () => {
-    const painted = await frames(page);
-    return ids.every(id => { const last = painted.filter(frame => frame.toys.some(toy => toy.id === id && toy.carried)).at(-1); return last && painted.some(frame => frame.at > last.at && !frame.toys.some(toy => toy.id === id)); });
-  }, { timeout: 1000, intervals: [50] }).toBe(true);
+  // Keep the same1s receipt gate without serializing the complete long trace
+  // on every poll. The full authenticated raw is still checked below/saved.
+  await expect.poll(async () => page.evaluate(wantedIds => {
+    const painted = (window as ProbeWindow).personality137?.samples ?? [];
+    return wantedIds.every(id => { const last = painted.filter(frame => frame.toys.some(toy => toy.id === id && toy.carried)).at(-1); return last && painted.some(frame => frame.at > last.at && !frame.toys.some(toy => toy.id === id)); });
+  }, ids), { timeout: 1000, intervals: [50] }).toBe(true);
   const trace = await frames(page);
   const empty = trace.findIndex(frame => ids.every(id => !frame.toys.some(toy => toy.id === id)));
   expect(empty).toBeGreaterThan(0);
