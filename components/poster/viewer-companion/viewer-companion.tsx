@@ -785,6 +785,13 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     };
     let offGeometry: CompanionGeometrySubscription | undefined, geometryTracker: CompanionGeometrySubscription | undefined;
     const anchorSeen = new Map<string, { x: number; y: number; frame?: CompanionAnchorFrame }>();
+    const toyAnchor = (id: string) => {
+      const source = geometryTracker?.anchor(id), seen = anchorSeen.get(id);
+      // The toy model receives the followed platform, not the old full-scan
+      // position. Its display origin must use that same logical sample.
+      return source && { ...source, left: seen?.x ?? source.left, top: seen?.y ?? source.top,
+        ...(seen?.frame ? { width: seen.frame.width, height: seen.frame.height } : {}) };
+    };
     const carrier = { x: 0, y: 0 };
     let followRaf = 0, followUntil = 0, scrollUntil = 0;
     let followedAt = -Infinity, followedKeys = "", anchorsDirty = false;
@@ -1352,7 +1359,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           if (sample.platform.heart) platform.heart = { ...sample.platform.heart };
         }
       }
-      if (pressed || keyboardHeld || placing || flight) { supportMotion.reset(now); toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, now, toyHomeContacts); return bedMoved || returnMoved; }
+      if (pressed || keyboardHeld || placing || flight) { supportMotion.reset(now); toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, now, toyHomeContacts, toyAnchor); return bedMoved || returnMoved; }
       const shift = (id: string | undefined, point: { x: number; y: number }) => shifts.get(id ?? "")?.(point) ?? { x: 0, y: 0 };
       const from = shift(support, action ? origin : { x, y }), to = shift(action?.target.platformId ?? support, action ? action.target : { x, y });
       if (homeContact) { const moved = shift(support, homeContact.point); homeContact.point.x += moved.x; homeContact.point.y += moved.y; }
@@ -1381,7 +1388,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       x += dx; y += dy; carrier.x += dx; carrier.y += dy;
       if (scroll && dy && !pendingMonth && !reduced && gfxMode() !== "off" && !isHomeSupport(support) && action?.kind !== "jump" && !playFalling) supportMotion.push(dy, now);
       if (isHomeSupport(support) || pressed || keyboardHeld || reduced || gfxMode() === "off") supportMotion.reset(now);
-      toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, now, toyHomeContacts);
+      toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, now, toyHomeContacts, toyAnchor);
       return Boolean(dx || dy || bedMoved || returnMoved);
     };
     const continuousMotion = () => Boolean(performance.now() < interactionUntil || toys.current?.moving() || action?.toy?.effect === "stash" && toys.current?.carried() || isFoodDisposal(action) && food.current?.carried() || homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && (action.accessory || action.radio || ["walk", "jump", "heart", "hide", "stretch", "shake", "eat", "play"].includes(action.kind)));
@@ -1421,9 +1428,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       // Native scrolling already moved the room before this event. Commit its
       // resident and front in that same delivery; waiting for the next rAF
       // leaves the fixed pair separated from the scrolling sofa for a frame.
-      if ((event?.type === "scroll" || event?.type === "vic:layout-motion") && bedScene?.anchor.isConnected && (support === "companion-home" || front && !front.hidden)) {
+      const occupiedSofa = bedScene?.anchor.isConnected && (support === "companion-home" || front && !front.hidden);
+      if (event?.type === "scroll" || event?.type === "vic:layout-motion" && occupiedSofa) {
         refreshAnchors(now, true, true);
-        paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status);
+        if (occupiedSofa) paint(lastPoseSample.row, lastPoseSample.frame, lastPoseSample.status);
       }
       if (followRaf) return;
       const follow = (time: number) => {
@@ -1789,7 +1797,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         if (!box || !rect || rect.width <= 0 || box.closest("[hidden],[inert]")) return;
         const opening = box.querySelector<HTMLElement>(".vc-toy-box-opening")?.getBoundingClientRect();
         if (!opening || opening.width <= 0 || opening.height <= 0) return;
-        toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, performance.now(), toyHomeContacts);
+        toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, performance.now(), toyHomeContacts, toyAnchor);
         const cx = opening.left + opening.width / 2;
         const hint = [...toyHomeContacts, ...landingPlatforms].filter(p => !p.bodyOnly && (isCompanionHomeFloorFoodSupport(p.id) || isHomeFloor(p.id)) && p.y > opening.bottom)
           .sort((a, b) => Math.abs(platformLandingX(a, cx, 9) - cx) - Math.abs(platformLandingX(b, cx, 9) - cx))[0];
@@ -3753,7 +3761,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       measureBed();
       if (homeContact) { const currentContact = homeContactPoint(homeContact.kind, homeContact.element); if (currentContact) homeContact.point = currentContact; else clearHomeContact(); }
       food.current?.sync(platforms, id => geometryTracker?.anchor(id), geometryTracker?.landings(32));
-      toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, geometryAt, toyHomeContacts);
+      toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, geometryAt, toyHomeContacts, toyAnchor);
       if (homeJourney && !platforms.some(p => p.id === "companion-home")) {
         if (!openHomeRecallTarget()) {
           cancelHomeJourney(); clearAction();

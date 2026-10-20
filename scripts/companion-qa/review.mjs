@@ -13,6 +13,10 @@ import { traceLivingContextComplete } from './living-criteria.mjs';
 import { AUDITED_MACHINE_METADATA } from './machine-metadata.mjs';
 
 export const REVIEW_PERSPECTIVES = Object.freeze(['living-and-goal-continuity', 'spatial-and-interaction-ux', 'boundary-off-and-evidence-qa']);
+export const ITEMS_SCROLL_147_TITLES = Object.freeze([
+  '147 native food and toy drag release keep the actual grip and unanchored flight',
+  ...[['viewer',1920],['viewer',1100],['studio',1920],['preview',1920]].flatMap(([surface,width]) => ['full','soft','off'].map(mode => `147 ${surface} ${width} ${mode} floor food and toy follow rapid native scroll`))
+]);
 const REQUIRED_STAGES = Object.freeze(['isolated-snapshot', 'pure-models', 'pure-count-proof', 'metadata', 'build', 'typecheck', 'lint', 'native-production-fixture', 'native-personality-entry-proof', 'owned-process-cleanup', 'original-tree-preserved']);
 const CATALOG = 'lib/ui/viewer-companion/personality-scene-catalog.ts';
 const HEX = /^[a-f0-9]{64}$/;
@@ -42,6 +46,42 @@ function actualCaseTitles(reporter) {
     visit(suite?.suites);
   } };
   visit(reporter?.suites); return result;
+}
+/** Recompute candidates from all raw DOM phases. A claimed no-candidate label
+ * cannot remove a scroll/rAF/post-timer observation from independent review. */
+function itemRenderCandidates(raw, caseTitle) {
+  if (!Array.isArray(raw?.frames) || raw.frames.length > 100000) return null;
+  if (caseTitle.includes(' floor ') && (!raw.frames.length || !['scroll','frame','post-render'].every(phase => raw.frames.some(f => f?.phase === phase)))) return null;
+  const candidates = [];
+  for (const frame of raw.frames) {
+    if (!['scroll','frame','post-render'].includes(frame?.phase) || !Number.isFinite(frame.at) || !Array.isArray(frame.items) || frame.items.length !== 2) return null;
+    if (!all(frame.items.map(x => x?.type), ['food','toy'])) return null;
+    for (const item of frame.items) {
+      if (typeof item.eligible !== 'boolean' || typeof item.shown !== 'boolean' || !text(item.id) || !Number.isFinite(item.dx) || !Number.isFinite(item.dy)) return null;
+      if (item.eligible && (!item.shown || Math.max(Math.abs(item.dx),Math.abs(item.dy)) >= 2)) candidates.push({phase:frame.phase,at:frame.at,type:item.type,id:item.id,shown:item.shown,dx:item.dx,dy:item.dy});
+    }
+  }
+  return candidates;
+}
+function checkRenderedItems147(input, actualTitles, reviewed, report, add) {
+  const entries = array(input.renderedNativeEvidence);
+  if (!ITEMS_SCROLL_147_TITLES.every(title => actualTitles.has(title)) || !all(entries.map(e => e?.caseTitle), ITEMS_SCROLL_147_TITLES)) add('items147-exact-cases-or-attachments');
+  const candidates = [];
+  for (const entry of entries) {
+    const raw = entry?.document, observed = itemRenderCandidates(raw, entry?.caseTitle ?? '');
+    if (!ITEMS_SCROLL_147_TITLES.includes(entry?.caseTitle) || entry.attachmentBound !== true || !hash(entry.sha256) || !relative(entry.path) || raw?.schemaVersion !== 1 || raw?.kind !== 'companion-items-scroll-147' || raw?.caseTitle !== entry.caseTitle || raw?.buildId !== report?.buildId || raw?.build !== report?.buildId || raw?.status !== 'passed' || raw?.admissionStatus !== 'passed' || !cleanList(raw?.errors) || !cleanList(raw?.unexpected) || raw?.renderThresholdCssPx !== 2 || observed === null || JSON.stringify(raw?.renderCandidates) !== JSON.stringify(observed) || raw?.renderedStatus !== (observed?.length ? 'needs_render_review' : 'no_candidate_observed')) { add('items147-raw-unproved'); continue; }
+    if (observed.length) candidates.push({entry,observed});
+  }
+  for (const review of reviewed) {
+    const assessments = array(review?.document?.renderedAssessments);
+    if (assessments.length !== candidates.length) add('items147-three-rendered-assessments');
+    for (const {entry,observed} of candidates) {
+      const matches = assessments.filter(a => a?.caseTitle === entry.caseTitle && a?.buildId === report?.buildId && a?.rawAttachment?.path === entry.path && a?.rawAttachment?.sha256 === entry.sha256);
+      if (matches.length !== 1) { add('items147-three-rendered-assessments'); continue; }
+      const assessment = matches[0], paints = array(assessment.paintEvidence);
+      if (assessment.state !== 'prepaint_observation' || assessment.candidateCount !== observed.length || !Number.isFinite(assessment.maxRelativeErrorCssPx) || assessment.maxRelativeErrorCssPx < 0 || assessment.maxRelativeErrorCssPx >= 2 || assessment.missing !== 0 || !text(assessment.reason) || !['trace','video'].every(kind => paints.some(p => p?.kind === kind)) || new Set(paints.map(p => p?.path)).size !== paints.length || paints.length > 12 || paints.some(p => !['trace','video'].includes(p?.kind) || p.pixelScale !== 1 || !Number.isSafeInteger(p.sampleCount) || p.sampleCount < 2 || !array(entry.paintAttachments).some(original => original.attachmentBound === true && original.kind === p.kind && original.path === p.path && original.sha256 === p.sha256))) add('items147-rendered-unproved');
+    }
+  }
 }
 /** Parse declarations without executing product TypeScript or accepting a label
  * that merely occurs in a comment/string elsewhere in the file. Only explicit
@@ -109,6 +149,7 @@ export function evaluateReviewContracts(input) {
     if (!Array.isArray(r?.evidence) || r.evidence.length < 1 || r.evidence.length > 50) add('review-missing-evidence');
   }
   const actualTitles = actualCaseTitles(reporter);
+  checkRenderedItems147(input, actualTitles, reviewed, report, add);
   for (const item of items) {
     if (!text(item?.hypothesis) || !text(item?.reason) || !['adopted', 'rejected', 'blocked', 'deferred'].includes(item?.decision)) { add('idea-decision'); continue; }
     if (item.decision !== 'adopted') continue;
@@ -186,9 +227,28 @@ export function finalizeDailyReview(options) {
       // Actual call/completion receipt files are preserved, not only a claimed digest.
       const dispatch = read.verify(reviewRoot, invocation.dispatchReceipt), completion = read.verify(reviewRoot, invocation.completionReceipt);
       if (read.fingerprint(dispatch).sha256 !== invocation.dispatchReceiptSha256 || read.fingerprint(completion).sha256 !== invocation.completionReceiptSha256) throw Error('invocation-receipt-sha');
-      reviews.push({ document, invocation }); refs.push(...array(document.evidence), ...array(document.findings).flatMap(f => array(f?.evidence)));
+      reviews.push({ document, invocation }); refs.push(...array(document.evidence), ...array(document.findings).flatMap(f => array(f?.evidence)), ...array(document.renderedAssessments).flatMap(a => [...array(a?.paintEvidence), a?.rawAttachment].filter(Boolean)));
     }
     const nativeEvidence = [], passedCases = actualCaseTitles(reporter);
+    const frozenAttachment = attachment => {
+      if (typeof attachment?.path !== 'string' || !path.isAbsolute(attachment.path)) throw Error('items147-attachment-not-frozen');
+      const name = path.relative(path.join(run, 'attempt-01'), attachment.path).replaceAll('\\', '/');
+      if (!relative(name)) throw Error('items147-attachment-not-frozen');
+      const frozen = evidence.get(name); if (!frozen) throw Error('items147-attachment-not-frozen');
+      read.verify(path.join(run,'attempt-01'),frozen); return frozen;
+    };
+    // These thirteen cases are checked independently of adopted idea references.
+    // Removing all147 ideas/attachments cannot bypass the rendered-review gate.
+    const renderedNativeEvidence = ITEMS_SCROLL_147_TITLES.map(caseTitle => {
+      const attachments = array(passedCases.get(caseTitle)?.attachments), raw = attachments.filter(a => a?.name === 'actual-items-scroll-147' && a?.contentType === 'application/json');
+      if (raw.length !== 1) throw Error('items147-exact-cases-or-attachments');
+      const frozen = frozenAttachment(raw[0]);
+      const paintAttachments = attachments.flatMap(a => {
+        const kind = a?.name === 'trace' && a?.contentType === 'application/zip' ? 'trace' : a?.name === 'video' && a?.contentType?.startsWith('video/') ? 'video' : null;
+        return kind ? [{...frozenAttachment(a),kind,attachmentBound:true}] : [];
+      });
+      return {...frozen,caseTitle,attachmentBound:true,document:loadEvidence(frozen),paintAttachments};
+    });
     const attachmentMatches = ref => array(passedCases.get(ref?.caseTitle)?.attachments).some(attachment => {
       if (attachment?.contentType !== 'application/json' || typeof attachment.path !== 'string' || !path.isAbsolute(attachment.path)) return false;
       const name = path.relative(path.join(run, 'attempt-01'), attachment.path).replaceAll('\\', '/');
@@ -205,7 +265,7 @@ export function finalizeDailyReview(options) {
     if (!freeze.sourceFiles.some(x => x.path === CATALOG && hash(x.sha256))) throw Error('catalog-not-frozen');
     const catalogFile = localFile(path.join(run, 'workspace'), CATALOG), registrations = registeredRecipes(fs.readFileSync(catalogFile, 'utf8'));
     const pureReport = loadEvidence(evidence.get('pure/vitest.json')), modelCoverage = loadEvidence(evidence.get('pure/model-coverage.json'));
-    const assessed = evaluateReviewContracts({ report, source, ideas, reviews, daily, reporter, registrations, nativeEvidence, pureReport, modelCoverage, authors: index.authors });
+    const assessed = evaluateReviewContracts({ report, source, ideas, reviews, daily, reporter, registrations, nativeEvidence, renderedNativeEvidence, pureReport, modelCoverage, authors: index.authors });
     const result = { schemaVersion: 1, kind: 'companion-daily-finalization', runId: report.runId, sourceDigest: report.sourceDigest, buildId: report.buildId, dayKst: report.createdAtKst?.slice(0, 10),
       eligibleForAuthorizedRelease: assessed.passed, decision: assessed.passed ? 'candidate-for-authorized-release' : 'hold', issues: assessed.issues,
       integrity: { copiedSourceFiles: copied, reportSha256: reportMap.get('report.json').sha256, evidenceManifestSha256: read.fingerprint(localFile(run, 'evidence-manifest.json')).sha256, reviewsIndexSha256: read.fingerprint(reviewFile).sha256, ideasSha256: read.fingerprint(ideaFile).sha256 },
@@ -215,7 +275,7 @@ export function finalizeDailyReview(options) {
     return result;
   } catch (error) {
     // Fixed codes only: never echo arbitrary file paths, file contents or raw errors.
-    const known = ['linked-path', 'sensitive-path-excluded', 'unsafe-relative-path', 'outside-root', 'file-budget', 'json-budget', 'reference-shape', 'reference-sha-mismatch', 'manifest-budget', 'manifest-duplicate', 'manifest-missing-report', 'source-list', 'source-entry', 'deleted-source-reappeared', 'snapshot-source-changed', 'build-id-budget', 'evidence-not-frozen', 'native-reporter-missing', 'daily-evidence-missing', 'review-index', 'invocation-receipt-sha', 'implementation-source-mismatch', 'reference-budget', 'output-inside-frozen-run', 'catalog-not-frozen', 'catalog-size', 'catalog-shape', 'catalog-record', 'catalog-registration'];
+    const known = ['linked-path', 'sensitive-path-excluded', 'unsafe-relative-path', 'outside-root', 'file-budget', 'json-budget', 'reference-shape', 'reference-sha-mismatch', 'manifest-budget', 'manifest-duplicate', 'manifest-missing-report', 'source-list', 'source-entry', 'deleted-source-reappeared', 'snapshot-source-changed', 'build-id-budget', 'evidence-not-frozen', 'native-reporter-missing', 'daily-evidence-missing', 'review-index', 'invocation-receipt-sha', 'implementation-source-mismatch', 'reference-budget', 'output-inside-frozen-run', 'catalog-not-frozen', 'catalog-size', 'catalog-shape', 'catalog-record', 'catalog-registration', 'items147-attachment-not-frozen', 'items147-exact-cases-or-attachments'];
     return failure(known.includes(error?.message) ? error.message : 'local-evidence-unreadable-or-output-exists');
   }
 }

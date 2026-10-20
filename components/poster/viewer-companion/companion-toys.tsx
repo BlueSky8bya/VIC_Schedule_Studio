@@ -9,11 +9,13 @@ import type { CompanionToyExperience } from "@/lib/ui/viewer-companion/toy-taste
 import { createCompanionInputFrame } from "@/lib/ui/viewer-companion/input-frame";
 import "./companion-toys.css";
 import { companionRoomItemLight, type CompanionRoomLightRect } from "@/lib/ui/viewer-companion/room-light";
+import { createCompanionItemAnchors } from "@/lib/ui/viewer-companion/item-anchor";
+import type { CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
 
 type Point = { x: number; y: number; platformId?: string };
 export type CompanionToyControl = {
   setRoomLight: (room?: CompanionRoomLightRect, grade?: number) => void;
-  sync: (platforms: readonly Platform[], bounds: { width: number; height: number }, now: number, smallHomeFloors?: readonly Platform[]) => void;
+  sync: (platforms: readonly Platform[], bounds: { width: number; height: number }, now: number, smallHomeFloors?: readonly Platform[], getAnchor?: (id: string) => CompanionGeometryAnchor | undefined) => void;
   tick: (now: number) => void;
   spawn: (point: Point, now: number, autonomous?: boolean, occupied?: readonly Point[]) => string | undefined;
   occupied: () => readonly Point[];
@@ -39,6 +41,9 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
   const model = useRef<ReturnType<typeof createCompanionToys> | null>(null);
   model.current ??= createCompanionToys();
   const world = model.current, nodes = useRef(new Map<string, HTMLButtonElement>()), count = useRef(0);
+  const itemAnchors = useRef<ReturnType<typeof createCompanionItemAnchors> | null>(null);
+  itemAnchors.current ??= createCompanionItemAnchors();
+  const anchorFor = useRef<((id: string) => CompanionGeometryAnchor | undefined) | undefined>(undefined);
   const pendingPlays = useRef(new Map<string, { kind: CompanionToyKind; outcome: "played" | "declined" }>());
   const pendingCarriedPlays = useRef(new Set<string>());
   const [items, setItems] = useState<{ id: string; kind: CompanionToyKind }[]>([]);
@@ -51,6 +56,21 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
   const blockedRef = useRef(blocked); blockedRef.current = blocked;
   const dropBox = useRef<HTMLButtonElement | null>(null);
   const clearDropBox = useCallback(() => { dropBox.current?.removeAttribute("data-toy-over"); dropBox.current = null; }, []);
+  const grab = (id: string) => {
+    const toy = world.items().find(item => item.id === id); if (!toy) return;
+    const node = nodes.current.get(id), source = toy.platformId && node?.dataset.nativeItemAnchor !== undefined ? anchorFor.current?.(toy.platformId) : undefined;
+    let point: Point | undefined;
+    if (source?.element?.isConnected) {
+      // A native hit can arrive before the next JavaScript layout frame.
+      // Resolve that existing grip against its actual floor once, before
+      // detaching it into viewport coordinates for pointer/keyboard input.
+      const rect = source.element.getBoundingClientRect();
+      point = { x: toy.x + rect.left - source.left, y: toy.y + rect.top - source.top };
+    }
+    if (!world.grab(id)) return;
+    if (point) world.drag(id, point);
+    return world.items().find(item => item.id === id);
+  };
   const returnTarget = (point: Point) => {
     const box = typeof document === "undefined" ? null : document.querySelector<HTMLButtonElement>(".vc-home [data-home-action='toys']");
     return box && !box.disabled && box.getAttribute("aria-disabled") !== "true" && !box.closest("[hidden],[inert],[aria-hidden='true']") && companionToyBoxDropReady(box.getBoundingClientRect(), point) ? box : undefined;
@@ -68,7 +88,12 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     const light = companionRoomItemLight(toy, roomLight.current.room, roomLight.current.grade);
     if (paintedLight.current.get(node) !== light) { node.style.setProperty("--vc-item-room-light", String(light)); paintedLight.current.set(node, light); }
     node.hidden = Boolean(toy.hidden);
-    const transform = "translate3d(" + toy.x.toFixed(3) + "px," + toy.y.toFixed(3) + "px,0) translate(-50%,-100%) rotate(" + toy.angle.toFixed(2) + "deg)";
+    const anchor = toy.platformId && !toy.hidden && !toy.held && !toy.carried ? anchorFor.current?.(toy.platformId) : undefined;
+    const visibilitySource = anchor?.element?.matches(".vc-home-floor") ? anchor.element.parentElement : anchor?.element;
+    const source = anchor?.element && !visibilitySource?.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]")
+      ? { element: anchor.element, left: anchor.left, top: anchor.top } : undefined;
+    const point = itemAnchors.current!.project(node, toy, source);
+    const transform = "translate3d(" + point.x.toFixed(3) + "px," + point.y.toFixed(3) + "px,0) translate(-50%,-100%) rotate(" + toy.angle.toFixed(2) + "deg)";
     if (painted.current.get(node) !== transform) { node.style.transform = transform; painted.current.set(node, transform); }
     for (const [key, value] of Object.entries({ held: String(toy.held), carried: String(toy.carried), kind: toy.kind, platform: toy.platformId ?? "", falling: String(!toy.held && !toy.carried && !toy.platformId && !toy.hidden) })) if (node.dataset[key] !== value) node.dataset[key] = value;
     node.disabled = blockedRef.current;
@@ -94,7 +119,7 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
       if (previous.grade === grade && ["left", "right", "top", "bottom"].every(key => previous.room?.[key as keyof CompanionRoomLightRect] === room?.[key as keyof CompanionRoomLightRect])) return;
       roomLight.current = { room: room && { ...room }, grade }; paint();
     },
-    sync(platforms, bounds, now, smallHomeFloors) { world.sync(platforms, bounds, now, smallHomeFloors); paint(); },
+    sync(platforms, bounds, now, smallHomeFloors, getAnchor) { if (getAnchor) anchorFor.current = getAnchor; world.sync(platforms, bounds, now, smallHomeFloors); paint(); },
     tick(now) { world.tick(now); if (world.count() !== count.current) refresh(); else paint(); },
     spawn(point, now, autonomous = false, occupied) { if (blockedRef.current) return; const id = world.spawn(point, now, occupied); if (id) { refresh(); if (!autonomous) { const toy = world.items().find(item => item.id === id); if (toy) onExperience?.(toy.kind, "taken-out"); } onActivity(); } return id; },
     occupied: world.occupied,
@@ -141,6 +166,7 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     paint();
   }, [blocked, world, paint, pauseModel]);
   useEffect(() => () => { pauseModel(performance.now()); }, [pauseModel]);
+  useEffect(() => () => itemAnchors.current!.clearAll(), []);
   useEffect(() => { if (hidden) clearDropBox(); }, [hidden, clearDropBox]);
   const finish = (event: React.PointerEvent<HTMLButtonElement>, cancelled = false) => {
     const current = drag.current;
@@ -162,10 +188,10 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     paint(); onActivity(true);
   };
   return <div className="vc-toys" aria-label="빅타민 장난감" data-companion-toys="" hidden={hidden}>
-    {items.map(toy => <button key={toy.id} ref={node => { if (node) { nodes.current.set(toy.id, node); paint(); } else nodes.current.delete(toy.id); }} className="vc-toy" data-companion-toy="" data-toy-id={toy.id} data-activity-manual="" data-act="companion-toy-grab" aria-label={COMPANION_TOY_NAMES[toy.kind] + " 잡기"} disabled={blocked} type="button"
+    {items.map(toy => <button key={toy.id} ref={node => { if (node) { nodes.current.set(toy.id, node); paint(); } else { const previous = nodes.current.get(toy.id); if (previous) itemAnchors.current!.clear(previous); nodes.current.delete(toy.id); } }} className="vc-toy" data-companion-toy="" data-toy-id={toy.id} data-activity-manual="" data-act="companion-toy-grab" aria-label={COMPANION_TOY_NAMES[toy.kind] + " 잡기"} disabled={blocked} type="button"
       onPointerDown={event => {
         if (blockedRef.current || drag.current || event.button !== 0) return;
-        const position = world.items().find(item => item.id === toy.id); if (!position || !world.grab(toy.id)) return;
+        const position = grab(toy.id); if (!position) return;
         pendingPlays.current.delete(toy.id); pendingCarriedPlays.current.delete(toy.id); event.preventDefault(); event.stopPropagation(); event.currentTarget.setPointerCapture(event.pointerId);
         const point = { x: event.clientX, y: event.clientY };
         drag.current = { id: toy.id, pointer: event.pointerId, node: event.currentTarget, moved: false, origin: point, offset: { x: point.x - position.x, y: point.y - position.y }, last: point, time: performance.now(), velocity: { x: 0, y: 0 } };
@@ -189,7 +215,7 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
       onPointerUp={event => finish(event)} onPointerCancel={event => finish(event, true)} onLostPointerCapture={event => finish(event, true)}
       onKeyDown={event => {
         if (blockedRef.current || !["Enter", " ", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Escape"].includes(event.key)) return;
-        const current = world.items().find(item => item.id === toy.id); if (!current) return;
+        let current = world.items().find(item => item.id === toy.id); if (!current) return;
         if (event.key === "Escape" && !current.held) return;
         // Like food, this native control owns only its supported keys. In
         // particular arrows must not also navigate the calendar's month.
@@ -202,10 +228,10 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
         pendingPlays.current.delete(toy.id);
         pendingCarriedPlays.current.delete(toy.id);
         if (["Enter", " "].includes(event.key)) {
-          const ok = current.held ? world.drop(toy.id, performance.now(), { x: 20, y: -100 }) : world.grab(toy.id);
+          const ok = current.held ? world.drop(toy.id, performance.now(), { x: 20, y: -100 }) : Boolean(grab(toy.id));
           if (ok) { logActivity("ui.click", { target: current.held ? "companion-toy-drop" : "companion-toy-grab" }); onActivity(true); paint(); }
         } else if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
-          if (!current.held) { if (!world.grab(toy.id)) return; logActivity("ui.click", { target: "companion-toy-grab" }); }
+          if (!current.held) { const grabbed = grab(toy.id); if (!grabbed) return; current = grabbed; logActivity("ui.click", { target: "companion-toy-grab" }); }
           if (world.drag(toy.id, { x: current.x + (event.key === "ArrowRight" ? 16 : event.key === "ArrowLeft" ? -16 : 0), y: current.y + (event.key === "ArrowDown" ? 16 : event.key === "ArrowUp" ? -16 : 0) })) { onActivity(true); paint(); }
         } else if (event.key === "Escape" && current.held) {
           if (world.drop(toy.id, performance.now())) { logActivity("ui.click", { target: "companion-toy-drop" }); onActivity(true); paint(); }

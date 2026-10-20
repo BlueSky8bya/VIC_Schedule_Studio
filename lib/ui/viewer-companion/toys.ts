@@ -179,8 +179,10 @@ export function createCompanionToys(rng: () => number = Math.random) {
       }
       if (pausedAt === undefined) {
         for (const id of waiting) { const toy = objects.get(id); if (toy) recover(toy, at); else waiting.delete(id); }
-        reconcile(at);
       }
+      // Pausing freezes a throw's clock, not the real floor under a resting
+      // object. Keep its logical coordinates paired with that moving floor.
+      reconcile(at);
     },
     spawn(point: Point, at: number, occupied: readonly CompanionItemPoint[] = []) {
       if (pausedAt !== undefined || objects.size >= MAX_COMPANION_TOYS || !valid(point) || !Number.isFinite(at) || width <= 0 || height <= 0) return;

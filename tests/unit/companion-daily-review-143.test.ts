@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createHash } from "node:crypto";
-import { evaluateReviewContracts, finalizeDailyReview, registeredRecipes, parseReviewOptions, REVIEW_PERSPECTIVES } from "../../scripts/companion-qa/review.mjs";
+import { evaluateReviewContracts, finalizeDailyReview, registeredRecipes, parseReviewOptions, REVIEW_PERSPECTIVES, ITEMS_SCROLL_147_TITLES } from "../../scripts/companion-qa/review.mjs";
 import { PERSONALITIES, NATIVE_ENTRY_TITLES, NATIVE_FLOATING_TIDY_TITLES, PLANNED_NATIVE_CASE_COUNT } from "../../scripts/companion-qa/catalog.mjs";
 
 const digest = (value: string | Buffer) => createHash("sha256").update(value).digest("hex");
@@ -11,7 +11,9 @@ const HASH = digest("fixture"), CATALOG="lib/ui/viewer-companion/personality-sce
 const BINDING={runId:"20261020-local-fixture",sourceDigest:HASH,buildId:"local-build-fixture",dayKst:"2026-10-20"};
 const sourceCode=`export const COMPANION_PERSONALITY_SCENES = Object.freeze([${PERSONALITIES.map((p,i)=>`{id:"D143-${i}",personality:"${p}",major:false,triggers:["free"],steps:[]}`).join(",")}]);`;
 const pngRef={path:"native/screenshot.png",sha256:HASH};
-const nativeTitles=[...NATIVE_ENTRY_TITLES,...NATIVE_FLOATING_TIDY_TITLES,...Array.from({length:PLANNED_NATIVE_CASE_COUNT-NATIVE_ENTRY_TITLES.length-NATIVE_FLOATING_TIDY_TITLES.length},(_,i)=>`actual fixture ${i}`)];
+const nativeTitles=[...NATIVE_ENTRY_TITLES,...NATIVE_FLOATING_TIDY_TITLES,...ITEMS_SCROLL_147_TITLES,...Array.from({length:PLANNED_NATIVE_CASE_COUNT-NATIVE_ENTRY_TITLES.length-NATIVE_FLOATING_TIDY_TITLES.length-ITEMS_SCROLL_147_TITLES.length},(_,i)=>`actual fixture ${i}`)];
+type PaintRef={kind:string;path:string;sha256:string;pixelScale:number;sampleCount:number};
+type RenderAssessment={rawAttachment:{path:string;sha256:string};caseTitle:string;buildId:string;state:string;candidateCount:number;maxRelativeErrorCssPx:number;missing:number;reason:string;paintEvidence:PaintRef[]};
 function make() {
   const items=PERSONALITIES.map((personality,i)=>({id:`idea-${i}`,personality,hypothesis:"A bounded new journey with a physical effect",decision:"rejected",reason:"Actual implementation not adopted in this fixture",registeredRecipeId:`D143-${i}`,implementation:{path:CATALOG,sha256:HASH},pureModelEvidence:[{kind:"pure-model",path:"pure/vitest.json",sha256:HASH,testFullName:`D143-${i} model`}],actualCaseEvidence:[{kind:"native",path:`native/goal-${i}.json`,sha256:HASH,caseTitle:nativeTitles[i]}]}));
   const stages=["isolated-snapshot","pure-models","pure-count-proof","metadata","build","typecheck","lint","native-production-fixture","native-personality-entry-proof","owned-process-cleanup","original-tree-preserved"].map(name=>({name,status:"passed",exitCode:0}));
@@ -21,12 +23,19 @@ function make() {
   const reporter={errors:[],suites:[{specs:nativeTitles.map(title=>({title,tests:[{expectedStatus:"passed",status:"expected",results:[{status:"passed",retry:0}]}]}))}]};
   const authors=["/root-builder","/behavior-builder","/art-builder"];
   const ideas={schemaVersion:1,kind:"companion-daily-ideas",...BINDING,authors,items};
-  const reviews=REVIEW_PERSPECTIVES.map((perspective,i)=>({document:{schemaVersion:1,kind:"companion-independent-review",...BINDING,agentId:`/grader-${i}`,perspective,fresh:true,readOnly:true,decision:"accept",assessments:items.map(x=>({ideaId:x.id,decision:"reject",reason:"Reject the unimplemented candidate"})),findings:[] as {severity:string;status:string;reason:string;evidence:typeof pngRef[]}[],evidence:[pngRef]},invocation:{schemaVersion:1,kind:"companion-parent-grader-receipt",...BINDING,agentId:`/grader-${i}`,parentAgentId:authors[0],perspective,fresh:true,readOnly:true,dispatchReceiptSha256:HASH,completionReceiptSha256:HASH}}));
+  const reviews=REVIEW_PERSPECTIVES.map((perspective,i)=>({document:{schemaVersion:1,kind:"companion-independent-review",...BINDING,agentId:`/grader-${i}`,perspective,fresh:true,readOnly:true,decision:"accept",assessments:items.map(x=>({ideaId:x.id,decision:"reject",reason:"Reject the unimplemented candidate"})),renderedAssessments:[] as RenderAssessment[],findings:[] as {severity:string;status:string;reason:string;evidence:typeof pngRef[]}[],evidence:[pngRef]},invocation:{schemaVersion:1,kind:"companion-parent-grader-receipt",...BINDING,agentId:`/grader-${i}`,parentAgentId:authors[0],perspective,fresh:true,readOnly:true,dispatchReceiptSha256:HASH,completionReceiptSha256:HASH}}));
   const source={contentDigest:HASH,recomputedDigest:HASH,buildId:BINDING.buildId,snapshotMatches:true,privateSourceArtCopied:false,sourceIllustrationsCopied:0,sourceContractsCopied:0};
   const registrations=registeredRecipes(sourceCode), pureReport={success:true,numTotalTests:9,numFailedTests:0,numPendingTests:0,testResults:[{assertionResults:items.map((_,i)=>({status:"passed",fullName:`D143-${i} model`}))}]};
   const modelCoverage={recipeCount:registrations.length,entries:9,routineTemplates:54,booleanPatterns:262144};
   const nativeEvidence=items.map((item,i)=>({path:`native/goal-${i}.json`,sha256:HASH,caseTitle:nativeTitles[i],attachmentBound:true,document:{status:"passed",errors:[],rejected:[],notes:[{reachedFinalBeatAndSubsequentSequence:[{id:item.registeredRecipeId,major:false}]}],frames:[{at:10,scene:item.registeredRecipeId,visible:true,decoded:true},{at:1000,scene:item.registeredRecipeId,visible:true,decoded:true}]}}));
-  return {report,source,ideas,reviews,daily,reporter,registrations,pureReport,modelCoverage,nativeEvidence,authors};
+  const renderedNativeEvidence=ITEMS_SCROLL_147_TITLES.map((caseTitle,i)=>({path:`native/items147-${i}.json`,sha256:HASH,caseTitle,attachmentBound:true,paintAttachments:[{kind:"trace",path:`native/items147-${i}-trace.zip`,sha256:HASH,attachmentBound:true},{kind:"video",path:`native/items147-${i}-video.webm`,sha256:HASH,attachmentBound:true}],document:{schemaVersion:1,kind:"companion-items-scroll-147",caseTitle,build:BINDING.buildId,buildId:BINDING.buildId,status:"passed",admissionStatus:"passed",errors:[],unexpected:[],renderThresholdCssPx:2,renderedStatus:"no_candidate_observed",renderCandidates:[] as {phase:string;at:number;type:string;id:string;shown:boolean;dx:number;dy:number}[],frames:i===0?[]:["scroll","frame","post-render"].map((phase,at)=>({phase,at,items:["food","toy"].map(type=>({type,id:type,eligible:true,shown:true,dx:0,dy:0}))}))}}));
+  return {report,source,ideas,reviews,daily,reporter,registrations,pureReport,modelCoverage,nativeEvidence,renderedNativeEvidence,authors};
+}
+function renderedCandidate(input=make(),index=1,phase="post-render") {
+  const e=input.renderedNativeEvidence[index],frame=e.document.frames.find(f=>f.phase===phase)!;frame.items[0].dy=18.25;
+  e.document.renderedStatus="needs_render_review";e.document.renderCandidates=[{phase,at:frame.at,type:"food",id:"food",shown:true,dx:0,dy:18.25}];
+  for(const r of input.reviews)r.document.renderedAssessments.push({rawAttachment:{path:e.path,sha256:e.sha256},caseTitle:e.caseTitle,buildId:BINDING.buildId,state:"prepaint_observation",candidateCount:1,maxRelativeErrorCssPx:1,missing:0,reason:"Original 1:1 native trace and video show both objects move with their floor in the same painted frame",paintEvidence:e.paintAttachments.map(p=>({kind:p.kind,path:p.path,sha256:p.sha256,pixelScale:1,sampleCount:3}))});
+  return input;
 }
 function adopt(input:ReturnType<typeof make>,n=0) { input.ideas.items[n].decision="adopted";input.ideas.items[n].reason="Model plus actual case inspected";for(const r of input.reviews)r.document.assessments[n].decision="accept";return input; }
 const temporary:string[]=[];
@@ -41,16 +50,19 @@ function fixture(input=make()) {
   const sourceDigest=digest(JSON.stringify(sourceFiles));input.report.sourceDigest=sourceDigest;input.ideas.sourceDigest=sourceDigest;for(const r of input.reviews){r.document.sourceDigest=sourceDigest;r.invocation.sourceDigest=sourceDigest;}
   input.ideas.items.forEach(x=>{x.implementation.sha256=digest(sourceCode);});
   for(let i=0;i<input.nativeEvidence.length;i++){const spec=input.reporter.suites[0].specs[i];Object.assign(spec.tests[0].results[0],{attachments:[{contentType:"application/json",path:path.join(run,"attempt-01",input.nativeEvidence[i].path)}]});}
+  for(const e of input.renderedNativeEvidence){const spec=input.reporter.suites[0].specs.find(s=>s.title===e.caseTitle)!;Object.assign(spec.tests[0].results[0],{attachments:[{name:"actual-items-scroll-147",contentType:"application/json",path:path.join(run,"attempt-01",e.path)},...e.paintAttachments.map(p=>({name:p.kind,contentType:p.kind==="trace"?"application/zip":"video/webm",path:path.join(run,"attempt-01",p.path)}))]});}
   put("run/attempt-01/playwright.json",input.reporter);for(const row of input.daily)put(`run/attempt-01/native/daily/${row.scenario.id}.json`,row);
   put("run/attempt-01/native/screenshot.png","fixture-only-png-bytes");put("run/attempt-01/pure/vitest.json",input.pureReport);put("run/attempt-01/pure/model-coverage.json",input.modelCoverage);
   for(const e of input.nativeEvidence)put("run/attempt-01/"+e.path,e.document);
-  const evidencePaths=["playwright.json","native/screenshot.png","pure/vitest.json","pure/model-coverage.json",...input.daily.map(r=>`native/daily/${r.scenario.id}.json`),...input.nativeEvidence.map(e=>e.path)];
+  for(const e of input.renderedNativeEvidence){put("run/attempt-01/"+e.path,e.document);for(const p of e.paintAttachments)put("run/attempt-01/"+p.path,`fixture-only-${p.kind}-${e.caseTitle}`);}
+  const evidencePaths=["playwright.json","native/screenshot.png","pure/vitest.json","pure/model-coverage.json",...input.daily.map(r=>`native/daily/${r.scenario.id}.json`),...input.nativeEvidence.map(e=>e.path),...input.renderedNativeEvidence.flatMap(e=>[e.path,...e.paintAttachments.map(p=>p.path)])];
   const evidenceFiles=evidencePaths.map(p=>({...ref("run/attempt-01",p),bytes:fs.statSync(path.join(run,"attempt-01",p)).size}));
   const nativeRef=(p:string)=>{const f=evidenceFiles.find(f=>f.path===p);if(!f)throw Error("fixture-ref");return {path:f.path,sha256:f.sha256};};
   input.ideas.items.forEach(x=>{x.actualCaseEvidence=x.actualCaseEvidence.map(r=>({...r,...nativeRef(r.path)}));x.pureModelEvidence=x.pureModelEvidence.map(r=>({...r,...nativeRef(r.path)}));});
   const reviewIndex=[];
   for(let i=0;i<input.reviews.length;i++){
     const r=input.reviews[i];r.document.evidence=[nativeRef("native/screenshot.png")];
+    for(const a of r.document.renderedAssessments){a.rawAttachment={...a.rawAttachment,...nativeRef(a.rawAttachment.path)};a.paintEvidence=a.paintEvidence.map(p=>({...p,...nativeRef(p.path)}));}
     put(`reviews/dispatch-${i}.json`,{kind:"actual-parent-tool-receipt-fixture",agentId:r.document.agentId});put(`reviews/completion-${i}.json`,{kind:"actual-parent-completion-fixture",agentId:r.document.agentId});
     const dispatchReceipt=ref("reviews",`dispatch-${i}.json`),completionReceipt=ref("reviews",`completion-${i}.json`);
     const call={...r.invocation,dispatchReceipt,completionReceipt,dispatchReceiptSha256:dispatchReceipt.sha256,completionReceiptSha256:completionReceipt.sha256};
@@ -137,6 +149,42 @@ describe("143 immutable local file finalization",()=>{
   it("requires the catalog itself in the frozen source list",()=>{const f=fixture();const freeze=f.read("run/source-freeze.json");freeze.sourceFiles=freeze.sourceFiles.filter((r:{path:string})=>r.path!==CATALOG);f.put("run/source-freeze.json",freeze);const manifest=f.read("run/evidence-manifest.json");manifest.report=manifest.report.map((r:{path:string})=>r.path==="source-freeze.json"?f.ref("run",r.path):r);f.put("run/evidence-manifest.json",manifest);expect(finalizeDailyReview(f).issues).toEqual(["catalog-not-frozen"]);});
   it("holds unreadable JSON without leaking raw text or local paths",()=>{const f=fixture();f.put("ideas.json","PRIVATE-SYNTHETIC-CANARY");const r=finalizeDailyReview(f);expect(r.eligibleForAuthorizedRelease).toBe(false);expect(JSON.stringify(r)).not.toContain("PRIVATE-SYNTHETIC-CANARY");expect(JSON.stringify(r)).not.toContain(f.root);});
   it("rejects missing argument/unknown flag/duplicate run and keeps exact three required inputs",()=>{expect(()=>parseReviewOptions(["--run","x"])).toThrow();expect(()=>parseReviewOptions(["--run","a","--run","b","--reviews","x","--ideas","y"])).toThrow();expect(()=>parseReviewOptions(["--run","a","--reviews","x","--ideas","y","--deploy"])).toThrow();expect(parseReviewOptions(["--run","a","--reviews","x","--ideas","y"]).run).toBe(path.resolve("a"));});
+});
+
+describe("147 raw DOM admission and independent rendered review stay separate",()=>{
+  it("requires all thirteen exact cases even when every daily idea is rejected",()=>{const x=make();for(const s of x.reporter.suites[0].specs)if(s.title.startsWith("147 "))s.title="unrelated "+s.title;expect(evaluateReviewContracts(x).issues).toContain("items147-exact-cases-or-attachments");});
+  it("requires all thirteen raw attachments, independent of adopted idea references",()=>{const x=make();x.renderedNativeEvidence=[];expect(evaluateReviewContracts(x).issues).toContain("items147-exact-cases-or-attachments");});
+  it("rejects a duplicate raw attachment",()=>{const x=make();x.renderedNativeEvidence.push(x.renderedNativeEvidence[0]);expect(evaluateReviewContracts(x).issues).toContain("items147-exact-cases-or-attachments");});
+  it.each(["scroll","frame","post-render"])("requires three original painted assessments for a %s candidate",phase=>{const x=renderedCandidate(make(),1,phase);expect(evaluateReviewContracts(x)).toEqual({passed:true,issues:[]});x.reviews[2].document.renderedAssessments=[];expect(evaluateReviewContracts(x).issues).toContain("items147-three-rendered-assessments");});
+  const negatives:[string,(x:ReturnType<typeof make>)=>void,string][]=[
+    ["missing assessment",x=>{x.reviews[0].document.renderedAssessments=[];},"items147-three-rendered-assessments"],
+    ["raw SHA differs",x=>{x.reviews[0].document.renderedAssessments[0].rawAttachment.sha256=digest("different");},"items147-three-rendered-assessments"],
+    ["case differs",x=>{x.reviews[0].document.renderedAssessments[0].caseTitle=ITEMS_SCROLL_147_TITLES[2];},"items147-three-rendered-assessments"],
+    ["BUILD_ID differs",x=>{x.reviews[0].document.renderedAssessments[0].buildId="old-build";},"items147-three-rendered-assessments"],
+    ["duplicate assessment",x=>{x.reviews[0].document.renderedAssessments.push(x.reviews[0].document.renderedAssessments[0]);},"items147-three-rendered-assessments"],
+    ...["confirmed_failure","insufficient_evidence","needs_render_review"].map(state=>[state,(x:ReturnType<typeof make>)=>{x.reviews[0].document.renderedAssessments[0].state=state;},"items147-rendered-unproved"] as [string,(x:ReturnType<typeof make>)=>void,string]),
+    ...[2,2.01,-1,NaN,Infinity].map(value=>[`paint error ${value}`,(x:ReturnType<typeof make>)=>{x.reviews[0].document.renderedAssessments[0].maxRelativeErrorCssPx=value;},"items147-rendered-unproved"] as [string,(x:ReturnType<typeof make>)=>void,string]),
+    ["missing painted object",x=>{x.reviews[0].document.renderedAssessments[0].missing=1;},"items147-rendered-unproved"],
+    ["not all candidates inspected",x=>{x.reviews[0].document.renderedAssessments[0].candidateCount=0;},"items147-rendered-unproved"],
+    ["no original paints",x=>{x.reviews[0].document.renderedAssessments[0].paintEvidence=[];},"items147-rendered-unproved"],
+    ...["trace","video"].map(kind=>[`${kind} only`,(x:ReturnType<typeof make>)=>{x.reviews[0].document.renderedAssessments[0].paintEvidence=x.reviews[0].document.renderedAssessments[0].paintEvidence.filter(p=>p.kind===kind);},"items147-rendered-unproved"] as [string,(x:ReturnType<typeof make>)=>void,string]),
+    ["duplicate original ref",x=>{const p=x.reviews[0].document.renderedAssessments[0].paintEvidence;p.push(p[0]);},"items147-rendered-unproved"],
+    ["resized paint",x=>{x.reviews[0].document.renderedAssessments[0].paintEvidence[0].pixelScale=.5;},"items147-rendered-unproved"],
+    ["one paint only",x=>{x.reviews[0].document.renderedAssessments[0].paintEvidence[0].sampleCount=1;},"items147-rendered-unproved"],
+    ["fractional paint count",x=>{x.reviews[0].document.renderedAssessments[0].paintEvidence[0].sampleCount=2.5;},"items147-rendered-unproved"],
+    ["another case trace",x=>{const a=x.reviews[0].document.renderedAssessments[0];a.paintEvidence[0]={...a.paintEvidence[0],...x.renderedNativeEvidence[2].paintAttachments[0]};},"items147-rendered-unproved"],
+    ["unbound paint bytes",x=>{x.renderedNativeEvidence[1].paintAttachments[0].attachmentBound=false;},"items147-rendered-unproved"],
+    ["raw BUILD_ID differs",x=>{x.renderedNativeEvidence[1].document.buildId="older";},"items147-raw-unproved"],
+    ["raw admission failed",x=>{x.renderedNativeEvidence[1].document.admissionStatus="failed";},"items147-raw-unproved"],
+    ["changed threshold",x=>{x.renderedNativeEvidence[1].document.renderThresholdCssPx=20;},"items147-raw-unproved"],
+    ["candidate label emptied",x=>{x.renderedNativeEvidence[1].document.renderCandidates=[];x.renderedNativeEvidence[1].document.renderedStatus="no_candidate_observed";for(const r of x.reviews)r.document.renderedAssessments=[];},"items147-raw-unproved"],
+  ];
+  it.each(negatives)("holds %s",(_,change,code)=>{const x=renderedCandidate();change(x);expect(evaluateReviewContracts(x).issues).toContain(code);});
+  it("does not accept two otherwise valid reviewers",()=>{const x=renderedCandidate();x.reviews.pop();expect(evaluateReviewContracts(x).issues).toContain("three-unique-reviewers");});
+  it("hash-verifies all thirteen raw files and original trace/video with three valid fresh receipts",()=>{expect(finalizeDailyReview(fixture(renderedCandidate())).eligibleForAuthorizedRelease).toBe(true);});
+  it("rejects altered original paint bytes even when generic screenshot and all idea evidence are intact",()=>{const f=fixture(renderedCandidate());f.put("run/attempt-01/native/items147-1-trace.zip","amended");expect(finalizeDailyReview(f).issues).toEqual(["reference-sha-mismatch"]);});
+  it("rejects amended raw bytes independently of idea evidence",()=>{const f=fixture(make());f.put("run/attempt-01/native/items147-1.json","{}");expect(finalizeDailyReview(f).issues).toEqual(["reference-sha-mismatch"]);});
+  it.each(["missing","duplicate"])("rejects %s dedicated reporter attachment despite a frozen raw JSON",mode=>{const f=fixture();const reporter=f.read("run/attempt-01/playwright.json"),spec=reporter.suites[0].specs.find((s:{title:string})=>s.title===ITEMS_SCROLL_147_TITLES[1]),attachments=spec.tests[0].results[0].attachments;if(mode==="missing")spec.tests[0].results[0].attachments=attachments.filter((a:{name:string})=>a.name!=="actual-items-scroll-147");else attachments.push(attachments[0]);f.put("run/attempt-01/playwright.json",reporter);const manifest=f.read("run/evidence-manifest.json");manifest.files=manifest.files.map((r:{path:string})=>r.path==="playwright.json"?{...f.ref("run/attempt-01",r.path),bytes:fs.statSync(path.join(f.run,"attempt-01",r.path)).size}:r);f.put("run/evidence-manifest.json",manifest);expect(finalizeDailyReview(f).issues).toEqual(["items147-exact-cases-or-attachments"]);});
 });
 
 describe("143 literal recipe registration",()=>{
