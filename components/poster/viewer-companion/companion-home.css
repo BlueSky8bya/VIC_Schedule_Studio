@@ -213,9 +213,12 @@ html[data-theme="dark"] .vc-home-object-image { opacity: .92; }
 .vc-home-room[data-lamp-lit] .vc-home-lamp-light { opacity: 1; }
 /* Lamp and feeder share the same native width and horizontal formula. */
 .vc-home-lamp { --vc-lamp-paint-width: max(44px, 12cqw); --vc-lamp-cord-height: max(calc(var(--vc-lamp-paint-width) * 58 / 44), calc(var(--vc-room-height) * .4)); position: absolute; z-index: 4; top: 0; right: calc(var(--vc-storage-right) + var(--vc-toy-hit) + var(--vc-storage-gap)); width: var(--vc-dispenser-hit); height: max(56px, var(--vc-lamp-cord-height), var(--vc-object-min-hit)); box-sizing: border-box; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; cursor: pointer; }
-.vc-home-lamp-paint { --vc-lamp-paint-width: max(44px, 12cqw); position: absolute; inset: 0; display: block; pointer-events: none; }
+.vc-home-lamp-paint { --vc-lamp-cord-top: calc(var(--vc-lamp-paint-width) * 1.05 + 1px); position: absolute; inset: 0; display: block; pointer-events: none; }
 .vc-home-lamp-paint > img { position: absolute; top: 0; left: 50%; width: var(--vc-lamp-paint-width); height: calc(var(--vc-lamp-paint-width) * 1.05); transform: translateX(-50%); filter: brightness(var(--vc-room-art-grade)); }
-.vc-home-lamp-cord { position: absolute; z-index: 0; top: 0; left: 50%; width: var(--vc-lamp-paint-width); height: var(--vc-lamp-cord-height); transform: translateX(-50%); filter: brightness(var(--vc-room-art-grade)); }
+/* The pull cord begins entirely below the shade canvas, on the bulb's
+   right. The ceiling suspension belongs to the image, not this cord.
+   Keep the reachable knob height without crossing the radio to the right. */
+.vc-home-lamp-cord { position: absolute; z-index: 0; top: var(--vc-lamp-cord-top); left: calc(50% + var(--vc-lamp-paint-width) * 2 / 44); width: calc(var(--vc-lamp-paint-width) * 8 / 44); height: calc(var(--vc-lamp-cord-height) - var(--vc-lamp-cord-top)); filter: brightness(var(--vc-room-art-grade)); }
 .vc-home-lamp-paint > img { z-index: 1; }
 .vc-home-lamp-bulb { z-index: 2; }
 /* The image's rod is at(10,17) in its256x192 registered overlay, below the
@@ -230,7 +233,7 @@ html .vc-home button:where(:hover, :focus):not(:focus-visible) { outline: none; 
 .vc-home-lamp-bulb { position: absolute; left: calc(50% - 5px); top: calc(var(--vc-lamp-paint-width) * 34 / 44); width: 10px; height: 7px; border-radius: 50%; opacity: 0; background: #fff1bb; box-shadow: 0 0 12px 5px #ffcd6977; }
 .vc-home-room[data-lamp-lit] .vc-home-lamp-bulb { opacity: 1; }
 .vc-home-lamp:not(:disabled):is(:hover, :focus-visible) .vc-home-lamp-paint { filter: brightness(1.1); }
-.vc-home-lamp:active .vc-home-lamp-cord { transform: translate(-50%, 2px); }
+.vc-home-lamp:active .vc-home-lamp-cord { transform: translateY(2px); }
 .vc-home-tv { position: absolute; z-index: 3; left: calc(9px + max(calc(120px / var(--shell-zoom, 1)), min(39%, 150px))); bottom: var(--vc-tv-bottom); width: max(var(--vc-tv-width), var(--vc-object-min-hit)); height: max(var(--vc-tv-width), var(--vc-object-min-hit)); box-sizing: border-box; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; cursor: pointer; }
 /* The thick cabinet is actually illustrated in a left-facing three-quarter
   view. Its fixed body is never a planar rotateY distortion. Only the picture
@@ -281,7 +284,7 @@ html:is([data-reduce-motion],[data-gfx="off"],[data-gfx="soft"]) .vc-tv-picture 
 .vc-home :is(.vc-home-tv, .vc-home-lamp):active { transform: none; }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home-lamp-light,
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home-room::before { transition: none; }
-html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home-lamp:active .vc-home-lamp-cord { transform: translateX(-50%); }
+html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home-lamp:active .vc-home-lamp-cord { transform: none; }
 @container (max-width: 310px) {
   /* Below310 CSS px, real45px furniture inputs need another depth row.
      Floating homes use the requested wider host; only cramped rails need it. */
