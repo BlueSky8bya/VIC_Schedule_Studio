@@ -237,8 +237,8 @@ for (const [width, dark] of [[1920, false], [1920, true], [1120, false], [1120, 
     // A discovered entry can make Next jump across pages. Left invokes the
     // actual previous button, whose ordinary destination is after-1, not an
     // invented undo of that unread jump. Observe its click without replacing it.
-    const clicks = await previous.evaluateHandle(node => { const state = { count: 0 }; node.addEventListener("click", () => { state.count++; }, { once: true }); return state; });
-    await page.keyboard.press("ArrowLeft"); await expect.poll(() => clicks.evaluate(state => state.count)).toBe(1); await clicks.dispose();
+    const clicks = await previous.evaluateHandle(node => { const state = { count: 0, stop() { node.removeEventListener("click", clicked); } }; const clicked = () => { state.count++; }; node.addEventListener("click", clicked); return state; });
+    await page.keyboard.press("ArrowLeft"); expect(await clicks.evaluate(state => { state.stop(); return state.count; })).toBe(1); await clicks.dispose();
     if (unreadPrevious === null) await expect(dialog.locator(".rhh-collection-page-rail:visible")).toHaveValue(String(Math.max(1, Number(after) - 1)));
     else await expect.poll(async () => Number(await dialog.locator(".rhh-collection-page-rail:visible").inputValue())).toBeLessThanOrEqual(Number(after)); await expect(dialog.locator(".rhh-collection-page-bar")).toHaveCount(0);
     await notebookBounds(page, name + "-" + category);

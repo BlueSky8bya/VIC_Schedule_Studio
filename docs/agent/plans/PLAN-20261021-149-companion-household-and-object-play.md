@@ -1,6 +1,6 @@
 # 149 · 빅타민 생활 규칙·실물 놀이·수첩 마감
 
-2026-10-21 KST. Latest user steering; implementation in progress. The uncommitted148 held-pompom proposal and all raw checks are preserved in `.scratch-pw/companion-149/superseded-148` and the original148 evidence. Its8/8 is not149 verification.
+2026-10-21 KST. Latest user steering; implementation verified locally; public release pending. The uncommitted148 held-pompom proposal and all raw checks are preserved in `.scratch-pw/companion-149/superseded-148` and the original148 evidence. Its8/8 is not149 verification.
 
 ## Scope and acceptance
 
@@ -25,4 +25,6 @@
 
 ## Current state
 
-Helpers and UI implementation in parallel. No149 build/native PASS or deployment yet.
+Implementation locally verified. Published150/151 scroll fixes merged without resets into9c86b84fb2b48b3dc1a3c9237129a25f1df72974. Unit360files5431/typecheck/lint/build PASS. Frozen653app/assets BUILD e7Lz0M32CQ2reOwDTC759; fresh native26/26 PASS, retries/skip/flaky0. Three fresh non-author actual source/raw/trace/video reviewers accept their declared scope, openP0–P2none. Scope/source/decision receipts and all prior failures are preserved locally. Ordinary actual meal was jelly:5rare recipes' native consume→gag→discovery remain unsampled; known-entry preview and pure mapping are separate. Native toys completed tambourine/modeling-clay-tub/ball, feather was interrupted; no all84 native or all169factory/nine-long-life/fullsleepwake claim. Both developer activity views retain existing fixed labels and controls; autonomous choices/food/toy/discovery identifiers remain excluded, existing G22 regression suites passed. No new API/DTO/auth boundary.
+
+[Local report](../reports/REPORT-20261021-149-companion-household-and-object-play.html) and local release-result retain actual deployment status. Public fullSHA/browser proof pending; no deployment completed claim yet.
