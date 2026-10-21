@@ -1,0 +1,22 @@
+/** Unit-only process preload. No browser, no app, no telemetry, no .env loading. */
+import fs from 'node:fs';
+import http from 'node:http';
+import https from 'node:https';
+import net from 'node:net';
+import tls from 'node:tls';
+import dns from 'node:dns';
+import dnsPromises from 'node:dns/promises';
+import dgram from 'node:dgram';
+import http2 from 'node:http2';
+import {syncBuiltinESMExports} from 'node:module';
+const deny=()=>{if(process.env.SITE_DAILY_NETWORK_LOG)fs.appendFileSync(process.env.SITE_DAILY_NETWORK_LOG,JSON.stringify({decision:'blocked',privateRequestValuesRecorded:false})+'\n');throw Error('site-daily offline units deny all network requests');};
+globalThis.fetch=async()=>deny();
+for(const transport of [http,https])for(const key of ['request','get'])transport[key]=deny;
+for(const key of ['connect','createConnection'])net[key]=deny;
+net.Socket.prototype.connect=deny;
+tls.connect=deny;
+http2.connect=deny;
+dgram.createSocket=deny;
+for(const key of ['send','connect'])dgram.Socket.prototype[key]=deny;
+for(const transport of [dns,dnsPromises,dns.Resolver.prototype,dnsPromises.Resolver.prototype])for(const key of Object.getOwnPropertyNames(transport))if(/^(?:lookup|resolve|reverse)/.test(key)&&typeof transport[key]==='function')transport[key]=deny;
+syncBuiltinESMExports();
