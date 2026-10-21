@@ -53,7 +53,13 @@ async function lampSample155(page: Page) {
     const body = box(".vc-home-lamp-paint"), knob = box(".vc-home-lamp-handle"), room = box(".vc-home-room");
     const lit = home.querySelector('[data-home-action="light"]')!.getAttribute("aria-pressed") === "true";
     const layers = [...home.querySelectorAll<HTMLElement>(".vc-home-lamp-art")].map(node => { const css = getComputedStyle(node); return { state: node.dataset.lampState, opacity: Number(css.opacity), src: css.borderImageSource, slice: css.borderImageSlice, head: parseFloat(css.borderTopWidth), tail: parseFloat(css.borderBottomWidth) }; });
-    return { body, knob, room, lit, layers, knobTarget: document.elementFromPoint((knob.left + knob.right) / 2, (knob.top + knob.bottom) / 2)?.closest("button")?.getAttribute("data-home-action"), obsoleteOverlays: home.querySelectorAll(".vc-home-lamp-cord,.vc-home-lamp-bulb").length };
+    const cordHit = box(".vc-home-lamp-cord-hit"), cordCore = box(".vc-home-lamp-cord-core");
+    const controls = [...home.querySelectorAll<HTMLElement>("[data-home-action]")].filter(node => !["light", "fold", "home"].includes(node.dataset.homeAction!)).map(node => {
+      const r = node.getBoundingClientRect(), action = node.dataset.homeAction;
+      return { action, rect: { left: r.left, top: r.top, width: r.width, height: r.height },
+        hits: [.25, .5, .75].map(fraction => ({ fraction, x: r.left + r.width * fraction, y: r.top + r.height * .5, hit: document.elementFromPoint(r.left + r.width * fraction, r.top + r.height * .5)?.closest<HTMLElement>("[data-home-action]")?.dataset.homeAction })) };
+    });
+    return { body, knob, room, lit, layers, cordHit, cordCore, controls, knobTarget: document.elementFromPoint((knob.left + knob.right) / 2, (knob.top + knob.bottom) / 2)?.closest("button")?.getAttribute("data-home-action"), obsoleteOverlays: home.querySelectorAll(".vc-home-lamp-cord,.vc-home-lamp-bulb").length };
   });
 }
 
@@ -84,8 +90,37 @@ async function feedback156(page: Page) {
     const head = lamp.querySelector(".vc-home-lamp-art")!;
     return { height: paint.getBoundingClientRect().height, visualScale: paint.getBoundingClientRect().height / Number.parseFloat(css.height), head: getComputedStyle(head).borderTopWidth,
       opacity: Math.max(...[...lamp.querySelectorAll(".vc-home-lamp-cord-feedback")].map(node => Number(getComputedStyle(node).opacity))),
-      transition: css.transitionDuration, hoveredCord: Boolean(lamp.querySelector(".vc-home-lamp-cord-hit:hover")) };
+      transition: css.transitionDuration, hoveredCord: Boolean(lamp.querySelector(".vc-home-lamp-cord-hit:hover,.vc-home-lamp-cord-core:hover")) };
   });
+}
+
+async function widerCord158(page: Page, name: string) {
+  const home = page.locator(".vc-home:visible"), lamp = home.locator("[data-home-action=light]");
+  const wall = (await home.locator(".vc-home-room").boundingBox())!;
+  await page.mouse.click(wall.x + wall.width - 3, wall.y + 12); await page.mouse.move(wall.x + wall.width - 3, wall.y + 12);
+  await expect.poll(async () => (await feedback156(page)).opacity).toBe(0);
+  const sample = await lampSample155(page), target = sample.cordHit, center = (sample.knob.left + sample.knob.right) / 2;
+  proofs.get(page)!.notes.push({ stage: "wider-cord158-probe", name, sample });
+  expect(target.width).toBeGreaterThanOrEqual(31.8);
+  const nearby = sample.controls.filter(control => ["radio", "book", "curtain"].includes(control.action!));
+  for (const control of nearby) for (const point of control.hits) {
+    const core = sample.cordCore, onCord = point.x >= core.left && point.x <= core.right && point.y >= core.top && point.y <= core.bottom;
+    expect(point.hit, control.action + " keeps its target outside the original cord core").toBe(onCord ? "light" : control.action);
+    if (point.fraction === .5) expect(point.hit, control.action + " center stays usable").toBe(control.action);
+  }
+  // Actual native clicks13px to either side of the thin cord, outside its
+  // previous7px tolerance. Use clear wall above the neighboring shelf.
+  const y = target.top + 5, initial = String(await lamp.getAttribute("aria-pressed"));
+  expect(initial).toMatch(/^(true|false)$/);
+  const hits: unknown[] = [];
+  for (const offset of [-13, 13]) {
+    const x = center + offset;
+    const hit = await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-home-action]")?.dataset.homeAction, { x, y });
+    expect(hit).toBe("light"); await page.mouse.move(x, y); await expect.poll(async () => (await feedback156(page)).opacity).toBe(1);
+    const before = await lamp.getAttribute("aria-pressed"); await page.mouse.click(x, y); await expect(lamp).toHaveAttribute("aria-pressed", String(before !== "true")); hits.push({ x, y, offset, hit });
+  }
+  await expect(lamp).toHaveAttribute("aria-pressed", initial);
+  proofs.get(page)!.notes.push({ stage: "wider-cord158", name, target, core: sample.cordCore, physicalHandle: sample.knob, controls: nearby, observedControls: sample.controls, hits, sameNativeButton: true });
 }
 
 for (const [surface, mode, compact, dark] of [
@@ -154,4 +189,21 @@ for (const [surface, mode, compact, dark] of [
   const radio = home.locator("[data-home-action=radio]");
   const hit = await radio.evaluate(node => { const r = node.getBoundingClientRect(); return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest("button")?.getAttribute("data-home-action"); });
   expect(hit).toBe("radio"); await radio.click(); await expect(radio).toHaveAttribute("aria-pressed", "false"); await expect(lamp).toHaveAttribute("aria-pressed", saved);
+  await widerCord158(page, [surface, mode, compact ? "compact" : "panel", dark ? "dark" : "light"].join("-"));
+});
+
+for (const surface of ["viewer", "studio"] as const) test("158 " + surface + " narrow panel keeps furniture clickable around the wider invisible cord", async ({ page }) => {
+  let home = await setup(page, surface, 1440, "full");
+  const panel = page.locator(".panel-place-ctl [data-act=panel-toggle]:visible").first();
+  await expect(panel).toBeVisible();
+  if (await panel.getAttribute("aria-pressed") === "false") {
+    if (await home.locator(".vc-home-close").isVisible()) await home.locator(".vc-home-close").click();
+    await panel.click(); await expect(panel).toHaveAttribute("aria-pressed", "true"); await settlePanelLayout(page);
+    home = await openCompanionHome(page); await settlePanelLayout(page);
+  }
+  await expect(home).toHaveAttribute("data-home-presentation", "panel");
+  const fold = home.locator("[data-home-action=fold]");
+  if (await fold.getAttribute("aria-expanded") === "false") await fold.click();
+  await expect(home.locator(".vc-home-room")).toBeVisible(); await settlePanelLayout(page);
+  await widerCord158(page, surface + "-narrow");
 });

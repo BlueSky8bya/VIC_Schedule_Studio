@@ -108,8 +108,9 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
           <span className="vc-home-lamp-cord-feedback" data-lamp-state="off" />
           <span className="vc-home-lamp-cord-feedback" data-lamp-state="on" />
           <span className="vc-home-lamp-handle" />
-          <span className="vc-home-lamp-cord-hit" />
+          <span className="vc-home-lamp-cord-core" />
         </span>
+        <span className="vc-home-lamp-cord-hit" aria-hidden="true" />
       </button>
       <span className="vc-home-light" aria-hidden="true" />
       <span className="vc-home-floor" aria-hidden="true" />
