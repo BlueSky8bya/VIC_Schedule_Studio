@@ -21,7 +21,10 @@ describe("146 broadcast homage collection", () => {
       expect(COMPANION_FOOD_FACTS[item.id]).toBe(item.fact); expect(COMPANION_FOOD_FAMILY[item.id]).toBe(item.family);
       expect(Object.values(COMPANION_FOOD_FAMILIES).flat().filter(kind => kind === item.id)).toHaveLength(1);
     }
-    for (const item of COMPANION_TOY_EXPANSION_146) expect(getCompanionToyArt(item.id)).toBe(`/companion/home/146/toy-${item.id}.webp`);
+    for (const item of COMPANION_TOY_EXPANSION_146) {
+      const edition = ["practice-baseball-bat", "practice-baseball-glove"].includes(item.id) ? 159 : 146;
+      expect(getCompanionToyArt(item.id)).toBe(`/companion/home/${edition}/toy-${item.id}.webp`);
+    }
   });
   it("normalizes exact positive integer masses without increasing established rare-item odds", () => {
     expect(Object.values(COMPANION_FOOD_WEIGHTS).reduce((sum, mass) => sum + mass, 0)).toBe(106169080);

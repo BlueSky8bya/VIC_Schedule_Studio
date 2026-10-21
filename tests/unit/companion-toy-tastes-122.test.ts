@@ -13,7 +13,10 @@ describe("122 witnessed toy discovery and local tastes", () => {
   it("shares eighty-four fixed identities and preserves all twenty-four established art paths", () => {
     expect(COMPANION_TOY_KINDS.slice(0, 8)).toEqual(["ball", "blocks", "paper-plane", "spool", "hoop", "pinwheel", "bell", "feather"]);
     expect(COMPANION_TOY_KINDS).toHaveLength(84); expect(new Set(Object.values(COMPANION_TOY_NAMES)).size).toBe(84);
-    for (const kind of COMPANION_TOY_KINDS) expect(getCompanionToyArt(kind)).toBe(`/companion/home/${COMPANION_TOY_KINDS.indexOf(kind) < 24 ? "125" : COMPANION_TOY_KINDS.indexOf(kind) < 60 ? "143" : "146"}/toy-${kind}.webp`);
+    for (const kind of COMPANION_TOY_KINDS) {
+      const edition = ["practice-baseball-bat", "practice-baseball-glove"].includes(kind) ? "159" : COMPANION_TOY_KINDS.indexOf(kind) < 24 ? "125" : COMPANION_TOY_KINDS.indexOf(kind) < 60 ? "143" : "146";
+      expect(getCompanionToyArt(kind)).toBe(`/companion/home/${edition}/toy-${kind}.webp`);
+    }
   });
   it("does not invent discovery from loading, proposed actions, unsupported events or unknown IDs", () => {
     const storage = disk(), store = createCompanionTastesStore(storage);
