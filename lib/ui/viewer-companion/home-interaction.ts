@@ -5,6 +5,17 @@ type Point = Readonly<{ x: number; y: number }>;
 export const COMPANION_WASH_SUPPORT = "companion-home-floor-400";
 const floor = (id: string) => /^companion-home-floor(?:-\d+)?$/.test(id);
 
+/** Feet stay inside the real mat; the body also needs room at the wall. In a
+ * narrow rail the mat centre can miss that clearance by only two pixels.
+ * Choose the nearest valid part of the same mat, never an unrelated floor. */
+export function companionWashMatStance(mat: { left: number; top: number; width: number; height: number }, room: { left: number; right: number; top: number; bottom: number }, size: number): Point | undefined {
+  if (![mat.left, mat.top, mat.width, mat.height, room.left, room.right, room.top, room.bottom, size].every(Number.isFinite) || mat.width <= 0 || mat.height <= 0 || size <= 0) return;
+  const y = mat.top + mat.height * .72;
+  const left = Math.max(mat.left + mat.width * .18, room.left + size * .38), right = Math.min(mat.left + mat.width * .82, room.right - size * .38);
+  if (right < left || y < room.top || y >= room.bottom) return;
+  return { x: Math.max(left, Math.min(right, mat.left + mat.width / 2)), y };
+}
+
 /** Reach the nearest real rim when storage itself excludes the body from
  * standing under its centre. Delivered items still target the opening centre. */
 export function companionHomeOpeningContact(rect: { left: number; right: number; bottom: number; width: number }, actorX: number): Point | undefined {
