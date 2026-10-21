@@ -4,6 +4,7 @@ import { COMPANION_EXPRESSIONS, type CompanionExpressionId } from "@/lib/ui/view
 import { createCompanionExpressionPainter, COMPANION_EXPRESSION_REFERENCE_SRC } from "@/lib/ui/viewer-companion/expression-painter";
 import { companionSpriteMetadata, decodeCompanionSprite, peekDecodedCompanionSprite, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import anchors from "@/lib/ui/viewer-companion/expression-anchors-161.json";
+import { ExpressionMotionAudit } from "./motion-audit";
 
 /** Production-compiled renderer proof only. The server gate is404 without
  * VISUAL_TEST_FIXTURE=1; this cannot command the living actor or its brain. */
@@ -33,6 +34,7 @@ function Portrait({ id, progress, row }: { id: CompanionExpressionId; progress: 
 }
 export default function ExpressionFixture() {
   const [progress, setProgress] = useState(.55), [row, setRow] = useState(0);
+  const [motion, setMotion] = useState(false);
   const [audit, setAudit] = useState(""), [auditing, setAuditing] = useState(false);
   async function auditAnchors() {
     setAuditing(true);
@@ -72,6 +74,8 @@ export default function ExpressionFixture() {
     <label>표정 진행 <input aria-label="표정 진행" type="range" min=".05" max=".95" step=".05" value={progress} onChange={e => setProgress(Number(e.target.value))} /></label>
     <select aria-label="원화 포즈" value={row} onChange={e => setRow(Number(e.target.value))}><option value="0">기본</option><option value="1">관찰</option><option value="9">행복</option></select>
     <button onClick={() => void auditAnchors()} disabled={auditing} type="button">전체 얼굴 위치 검사</button><output data-anchor-audit={Boolean(audit) || undefined} style={{ display: "none" }}>{audit}</output>
+    <button onClick={() => setMotion(v => !v)} type="button">연속 프레임 재생</button>
+    {motion && <ExpressionMotionAudit key={row} row={row} />}
     <div style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(0,1fr))", gap: 12, maxWidth: 1200 }}>
       {COMPANION_EXPRESSIONS.map(([id, label]) => <figure key={id} style={{ margin: 0, display: "grid", justifyItems: "center", padding: 12, border: "1px solid #d9ceb7", borderRadius: 14, background: "#fffdf7" }}><Portrait id={id} progress={progress} row={row} /><figcaption style={{ fontSize: 15 }}>{label}</figcaption></figure>)}
     </div>

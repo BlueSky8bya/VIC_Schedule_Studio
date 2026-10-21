@@ -47,7 +47,7 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement) {
       if (!pose || pose.index !== selected.index || anchors.sources[pose.source].src !== selected.src || !image || !eyeImage) { hide(); return false; }
       const face = sampleCompanionExpression(expression.id, expression.progress);
       if (face.weight < .005) { hide(); return false; }
-      const key = `${selected.src}:${selected.index}`, draw = `${key}:${expression.id}:${Math.floor(expression.progress * 40)}`;
+      const key = `${selected.src}:${selected.index}`, draw = `${key}:${expression.id}:${Math.floor(expression.progress * 240)}`;
       if (draw === lastDraw && !canvas.hidden) return true;
       const cell = image.naturalWidth / selected.grid, ox = selected.index % selected.grid * cell, oy = Math.floor(selected.index / selected.grid) * cell;
       if (key !== lastCell) { pixels.clearRect(0, 0, PIXELS, PIXELS); pixels.drawImage(image, ox, oy, cell, cell, 0, 0, PIXELS, PIXELS); original = pixels.getImageData(0, 0, PIXELS, PIXELS); lastCell = key; }
@@ -72,32 +72,41 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement) {
       let painted = 0;
       for (let i = 0; i < 2; i++) {
         const { original, width, height, x, y, fill } = eyePatches[i]; if (!fill) continue;
-        const gazeX = face.gazeX * .45 * face.weight, gazeY = face.gazeY * .4 * face.weight;
-        const open = mix(1, i === 0 ? face.left : face.right, face.weight), referenceCell = eyeImage.naturalWidth / 8;
+        const gazeX = Math.max(-width * .12, Math.min(width * .12, face.gazeX * .3)) * face.weight;
+        const gazeY = Math.max(-height * .1, Math.min(height * .1, face.gazeY * .25)) * face.weight;
+        const closure = (i === 0 ? face.leftClosure : face.rightClosure) * face.weight;
+        const open = mix(1, i === 0 ? face.left : face.right, face.weight) * (1 - closure), referenceCell = eyeImage.naturalWidth / 8;
         const shape = i === 0 ? face.leftShape : face.rightShape, side = i === 0 ? 1 : -1;
         ctx.save(); ctx.translate(x, y); ctx.rotate(pose.roll * Math.PI / 180);
         ctx.strokeStyle = "#704626"; ctx.lineCap = "round"; ctx.lineJoin = "round";
-        if (shape === E.smile || shape === E.squeeze) {
-          // A deliberate happy arch or tightly squeezed chevron, with the
-          // reference eye's width and a rounded, visibly substantial stroke.
-          ctx.lineWidth = Math.max(.9, height * .22); ctx.beginPath();
-          if (shape === E.smile) { ctx.moveTo(-width * .43, height * .12); ctx.quadraticCurveTo(0, -height * .62, width * .43, height * .12); }
-          else { ctx.moveTo(-width * .42 * side, -height * .36); ctx.lineTo(width * .22 * side, 0); ctx.lineTo(-width * .42 * side, height * .36); }
-          ctx.stroke();
-        } else {
+        if (open > .015) {
           ctx.save(); ctx.beginPath();
-          const top = -height / 2 + height * (1 - open), bottom = height / 2 + .15;
+          // Preserve the pupil's width and texture. Eyelids move over it;
+          // neither the eye bitmap nor the accessory is vertically scaled.
+          const top = -height / 2 + height * (1 - open) * mix(.8, .5, closure);
+          const bottom = height / 2 - height * (1 - open) * mix(.2, .5, closure);
           ctx.moveTo(-width / 2 - .3, top);
-          if (shape === E.focus) ctx.lineTo(width / 2 + .3, top + side * height * .28);
-          else if (shape === E.worry) ctx.quadraticCurveTo(0, top + height * .28, width / 2 + .3, top - side * height * .18);
+          const contour = face.weight * (1 - closure);
+          if (shape === E.focus) ctx.lineTo(width / 2 + .3, top + side * height * .13 * contour);
+          else if (shape === E.worry) ctx.quadraticCurveTo(0, top + height * .12 * contour, width / 2 + .3, top - side * height * .08 * contour);
           else ctx.lineTo(width / 2 + .3, top);
           ctx.lineTo(width / 2 + .3, bottom);
-          if (shape === E.soft) ctx.quadraticCurveTo(0, bottom - height * .3, -width / 2 - .3, bottom);
+          if (shape === E.soft) ctx.quadraticCurveTo(0, bottom - height * .1 * contour, -width / 2 - .3, bottom);
           else ctx.lineTo(-width / 2 - .3, bottom);
           ctx.closePath(); ctx.clip();
           ctx.drawImage(eyeImage, original.bounds[0] / 80 * referenceCell, original.bounds[1] / 80 * referenceCell, (original.bounds[2] - original.bounds[0]) / 80 * referenceCell, (original.bounds[3] - original.bounds[1]) / 80 * referenceCell, -width / 2 + gazeX, -height / 2 + gazeY, width, height);
           if (face.shine > 0) { ctx.fillStyle = `rgba(255,253,235,${face.shine * .9})`; ctx.beginPath(); ctx.ellipse(-width * .12 + gazeX, -height * .17 + gazeY, width * .12, height * .16, -.3, 0, Math.PI * 2); ctx.fill(); }
           ctx.restore();
+        }
+        if (closure > .35 && (shape === E.smile || shape === E.squeeze)) {
+          // A deliberate happy arch or tightly squeezed chevron, with the
+          // reference eye's width and a rounded, visibly substantial stroke.
+          const t = (closure - .35) / .65;
+          ctx.globalAlpha = t * t * (3 - 2 * t);
+          ctx.lineWidth = Math.max(1.15, height * .27); ctx.beginPath();
+          if (shape === E.smile) { ctx.moveTo(-width * .43, height * .12); ctx.quadraticCurveTo(0, -height * .62, width * .43, height * .12); }
+          else { ctx.moveTo(-width * .42 * side, -height * .36); ctx.lineTo(width * .22 * side, 0); ctx.lineTo(-width * .42 * side, height * .36); }
+          ctx.stroke(); ctx.globalAlpha = 1;
         }
         if (face.brow) { ctx.lineWidth = .65; const lift = Math.abs(face.brow), by = -height / 2 - .8; ctx.beginPath(); ctx.moveTo(-width * .38, by + side * face.brow * .7); ctx.quadraticCurveTo(0, by - lift * .75, width * .38, by - side * face.brow * .7); ctx.stroke(); }
         if (face.tears > 0) { ctx.fillStyle = `rgba(117,175,204,${face.tears * .9})`; ctx.beginPath(); ctx.ellipse(width * .28 * side, height * .55, .55, 1, 0, 0, Math.PI * 2); ctx.fill(); }
