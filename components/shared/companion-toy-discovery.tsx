@@ -8,13 +8,16 @@ import { companionCollectionPage, onCollectionKey, useCompanionCollectionLayout 
 
 import { formatCompanionCollectionChance } from "@/lib/ui/viewer-companion/collection-rarity";
 import { CompanionCollectionPager } from "./companion-collection-pager";
+import { useCompanionDetailRead } from "./use-companion-detail-read";
 
-/** An unknown item shows only its neutral silhouette, never its name or story. Inspection
- * alone acknowledges it; opening the book or changing pages does not. */
+/** Unknown entries retain their silhouette. Only the selected, actually
+ * visible detail is read after a focused dwell; neighbouring tiles stay new. */
 export function CompanionToyDiscovery({ tastes, active, selectedKind, onSelect }: { tastes: CompanionTastes | null; active: boolean; selectedKind: CompanionToyKind; onSelect: (kind: CompanionToyKind) => void }) {
   const selected = COMPANION_TOY_KINDS.indexOf(selectedKind), host = useRef<HTMLDivElement>(null), grid = useRef<HTMLUListElement>(null), pendingFocus = useRef(false);
   const description = useId(), layout = useCompanionCollectionLayout(grid, active, "toy"), page = companionCollectionPage(selected, COMPANION_TOY_KINDS.length, layout.size);
   const kind = COMPANION_TOY_KINDS[selected], found = tastes?.toys.includes(kind) ?? false;
+  const detail = useRef<HTMLDivElement>(null);
+  useCompanionDetailRead(detail, active && found && !tastes?.seen.includes(kind), kind, () => acknowledgeCompanionToy(kind));
   const unreadAt = (index: number) => Boolean(tastes?.toys.includes(COMPANION_TOY_KINDS[index]) && !tastes.seen.includes(COMPANION_TOY_KINDS[index]));
   const select = (index: number, focus = false, inspect = false) => { onSelect(COMPANION_TOY_KINDS[index]); pendingFocus.current = focus; return inspect && acknowledgeCompanionToy(COMPANION_TOY_KINDS[index]); };
   useEffect(() => {
@@ -25,7 +28,7 @@ export function CompanionToyDiscovery({ tastes, active, selectedKind, onSelect }
   if (!active) return null;
   return <div className="rhh-companion-toy-discovery rhh-collection-book" ref={host}>
     <span className="sr-only" id={description}>새로 발견한 장난감</span>
-    <div aria-live="polite" className="rhh-collection-detail rhh-collection-gallery-detail rhh-toy-detail" data-found={found || undefined}>
+    <div ref={detail} aria-live="polite" className="rhh-collection-detail rhh-collection-gallery-detail rhh-toy-detail" data-found={found || undefined}>
       <div aria-hidden="true" className="rhh-collection-art-stage"><CompanionToyArt kind={kind} /></div>
       <div className="rhh-collection-detail-copy"><span className="rhh-collection-overline">장난감 보관함</span><div className="rhh-collection-detail-title"><strong>{found ? COMPANION_TOY_NAMES[kind] : "???"}</strong>{found && <span className="rhh-collection-rarity">{COMPANION_TOY_RARITY_NAMES[COMPANION_TOY_RARITY[kind]]}</span>}</div><p className="rhh-collection-fact">{found ? COMPANION_TOY_HINTS[kind] : "아직 만나기 전"}</p><div className="rhh-collection-detail-meta">{found && <span className="rhh-collection-chance" title="직전 장난감은 연속으로 나오지 않아 실제 다음 확률은 달라져요. 별도의 희귀도 보장은 없어요.">기본 등장 {formatCompanionCollectionChance(companionToyChance(kind))}</span>}</div></div>
     </div>

@@ -185,6 +185,12 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
   const food = useRef<CompanionFoodControl>(null), careLoaded = useRef(false);
   const homeLauncher = useRef<HTMLButtonElement>(null);
   const compactHome = useRef<HTMLDivElement>(null);
+  // Presentation changes move one room, not a newly mounted copy. Keep its
+  // real controls, anchors and in-flight interaction owners alive together.
+  const [homeCarrier] = useState(() => {
+    if (typeof document === "undefined") return null;
+    const node = document.createElement("div"); node.className = "vc-home-carrier"; return node;
+  });
   const homeFocus = useRef<string | null>(null);
   const lastPose = useRef<{ x: number; y: number; monthKey: string; atHome: boolean; homeSupportId?: string; seeded: boolean; restartSupport?: CompanionRestartSupport } | null>(null);
   const initialHome = useRef<{ roll: number | null; entered: boolean; offered: boolean }>({ roll: null, entered: false, offered: false });
@@ -281,6 +287,13 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     const track = (event: FocusEvent) => { const target = event.target as HTMLElement; if (target === document.body) return; homeFocus.current = target.closest(".vc-home,.vc-home-launcher") ? target.dataset.homeAction ?? "home" : null; };
     document.addEventListener("focusin", track); return () => document.removeEventListener("focusin", track);
   }, []);
+  useLayoutEffect(() => {
+    if (!ready || !homeCarrier) return;
+    const destination = !suspended && !blocked ? homeVisible && homeHost ? homeHost : compactHome.current : null;
+    if (destination && homeCarrier.parentElement !== destination) destination.appendChild(homeCarrier);
+    else if (!destination) homeCarrier.remove();
+  }, [ready, homeCarrier, homeHost, homeVisible, homeExpanded, compactActive, suspended, blocked]);
+  useLayoutEffect(() => () => { homeCarrier?.remove(); }, [homeCarrier]);
   useLayoutEffect(() => {
     window.dispatchEvent(new Event("vic:companion-home"));
     if (!overlayOpen && !suspended && homeFocus.current && document.activeElement === document.body) {
@@ -695,7 +708,13 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const material = getComputedStyle(room);
       roomBodyGrade = Number.parseFloat(material.getPropertyValue("--vc-room-art-grade")) || 1;
       syncRoomItemLight();
-      for (const token of ["--vc-bed-light", "--vc-bed-cloth", "--vc-bed-shade", "--vc-soft-shadow"]) style(front, token, material.getPropertyValue(token));
+      if (homeContact) {
+        const point = homeContactPoint(homeContact.kind, homeContact.element);
+        if (point) homeContact.point = point;
+        else clearHomeContact();
+      }
+      // Cloth material follows the same committed room attributes in CSS.
+      // Copying resolved colours here made the portal lag the back by a frame.
     };
     // The complete room already draws its front. The extra portal is needed
     // only around an interior resident; its retained seat and opacity share
@@ -4527,7 +4546,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     {/* This portal already owns body. Keep the floating room before its fixed
         resident so native CSS anchors also work when the short house scrolls. */}
     {compactActive && compactHost ? <div id={`${actorId}-home`} className="vc-compact-home" ref={compactHome} hidden={!homeExpanded} data-companion-home-owner={premiereCue?.owner} data-pm-exit="5" inert={overlayOpen || performanceActive ? true : undefined} aria-hidden={overlayOpen || performanceActive ? true : undefined} data-sfx="off" onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (homeExpanded) logActivity("ui.click", { target: "companion-home-close" }); closeHome(); } }}>
-      {homeExpanded ? house : null}
+      {/* The stable room carrier is moved here by the layout handoff. */}
     </div> : null}
     <span className="vc-wash-tool" ref={washTool} hidden aria-hidden="true"><svg width="24" height="38" viewBox="0 0 24 38" focusable="false"><path d="M6 12h5l2 20q-3 6-7 0Z" fill="#e6a052" stroke="#78522e" strokeWidth="1.5" /><path d="M4 3q4-3 9 0v10H4Z" fill="#fff5df" stroke="#78522e" strokeWidth="1.5" /><path d="M6 4v7m3-7v7m3-7v7" stroke="#76a79a" strokeWidth="1.4" /><g fill="#fffdf6" stroke="#b1cbd1" strokeWidth=".8"><circle cx="15" cy="8" r="3" /><circle cx="19" cy="4" r="2" /><circle cx="19" cy="11" r="2" /></g><path d="m20 17 1 2 2 1-2 1-1 2-1-2-2-1 2-1Z" fill="#f8db89" /></svg></span>
     <span className="vc-home-touch-tool" ref={interactionTool} hidden aria-hidden="true"><svg width="18" height="18" viewBox="0 0 18 18" focusable="false"><path d="M9 3v3M3 8l3 1M13 8l3-1" fill="none" stroke="#b48144" strokeWidth="1.6" strokeLinecap="round" /></svg></span>
@@ -4561,7 +4580,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const committed = recordCompanionToyExperience(kind, outcome, preferencesRef.current.learnFromYou !== false);
       if (committed && !known && outcome === "played" && point && loadCompanionTastes().toys.includes(kind)) discover({ kind: "toy", id: kind, source: point });
     }} onActivity={direct => control.current?.[direct ? "toyTouched" : "toyChanged"]()} onReturned={() => { control.current?.toyReturned(); playCompanionSound("play", preferencesRef.current); }} />
-    {!suspended && !blocked && homeVisible && homeHost ? createPortal(house, homeHost) : null}
+    {homeCarrier ? createPortal(house, homeCarrier) : null}
     {compactActive && launcherHost ? createPortal(<button ref={homeLauncher} data-act={homeExpanded ? "companion-home-close" : "companion-home-open"} data-home-action="launcher" type="button" className="button vc-home-launcher" aria-label={homeExpanded ? "빅타민 집 닫기" : "빅타민 집 열기"} aria-expanded={homeExpanded} aria-controls={`${actorId}-home`} data-companion-home-owner={premiereCue?.owner} data-pm-exit="5" inert={overlayOpen || performanceActive ? true : undefined} aria-hidden={overlayOpen || performanceActive ? true : undefined} onClick={() => homeExpanded ? closeHome() : homeShelf.open()} onKeyDown={event => { if (event.key === "Escape" && homeExpanded) { event.preventDefault(); event.stopPropagation(); logActivity("ui.click", { target: "companion-home-close" }); closeHome(); } }}><Home size={16} aria-hidden="true" /><span className="lbl vc-home-launcher-label">빅타민 집</span></button>, launcherHost) : null}
   </>, document.body);
 }

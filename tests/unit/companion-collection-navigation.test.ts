@@ -7,10 +7,10 @@ import { companionCollectionLayout, companionCollectionPage, nextCompanionCollec
 describe("finite responsive collection pages", () => {
   it("fits fewer tiles on a shorter sheet and bounds wide tall sheets to24", () => {
     expect(companionCollectionLayout(480, 330)).toEqual({ columns: 4, rows: 2, size: 8 });
-    expect(companionCollectionLayout(480, 160).size).toBe(8);
-    expect(companionCollectionLayout(300, 220).size).toBe(6);
+    expect(companionCollectionLayout(480, 160).size).toBe(4);
+    expect(companionCollectionLayout(300, 220).size).toBe(3);
     expect(companionCollectionLayout(2400, 2000).size).toBe(24);
-    expect(companionCollectionLayout(NaN, Infinity).size).toBe(4);
+    expect(companionCollectionLayout(NaN, Infinity).size).toBe(2);
   });
   it("reserves room for full food rarity rows and two-line memory names", () => {
     for (const kind of ["default", "memory"] as const) for (const height of [247, 270, 280, 420, 600]) {
@@ -20,9 +20,10 @@ describe("finite responsive collection pages", () => {
     expect(companionCollectionLayout(640, 247)).toEqual({ columns: 6, rows: 2, size: 12 });
     expect(companionCollectionLayout(640, 247, "memory")).toEqual({ columns: 5, rows: 2, size: 10 });
   });
-  it("keeps food and toy books at least two rows while the wardrobe remains one", () => {
+  it("uses one readable row on short food and toy pages and adds rows only when they fit", () => {
     for (const kind of ["default", "toy"] as const) for (const height of [140, 160, 196, 240]) {
-      expect(companionCollectionLayout(320, height, kind).rows).toBeGreaterThanOrEqual(2);
+      const layout = companionCollectionLayout(320, height, kind);
+      expect(layout.rows).toBe(height < (kind === "default" ? 228 : 244) ? 1 : 2);
       expect(companionCollectionLayout(320, height, kind).size).toBeLessThanOrEqual(24);
     }
   });

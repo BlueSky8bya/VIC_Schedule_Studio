@@ -2067,3 +2067,13 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 .rhh-companion-settings .rhh-profile-nav button > .rhh-collection-unread { position: absolute; top: 5px; right: 7px; }
 /* Acknowledging the last discovery changes its mark, not this row's height. */
 .rhh-companion-settings .rhh-collection-switch button > .rhh-collection-unread { position: absolute; top: 5px; right: 7px; }
+
+/*160: every tile owns one bounded art area and a stable two-line name.
+  A real measured one-row page handles short sheets; artwork never pushes
+  outside a native target or distorts its square atlas cell. */
+.rhh-companion-settings .rhh-collection-book .rhh-collection-tile { container-type: size; box-sizing: border-box; min-width: 0; overflow: hidden; grid-template-rows: minmax(0, 1fr) 2.6em; align-content: stretch; align-items: center; gap: 4px; padding: 8px 6px; font-size: var(--text-caption, 13px); line-height: 1.3; }
+.rhh-companion-settings .rhh-collection-book .rhh-food-grid .rhh-collection-tile { grid-template-rows: minmax(0, 1fr) 2.6em 1.3em; }
+.rhh-companion-settings .rhh-collection-book .rhh-collection-grid .rhh-collection-tile > :is(.vc-collection-art, .vc-toy-art, .rhh-memory-silhouette, .rhh-collection-unknown, .rhh-wardrobe-silhouette) { grid-row: 1; align-self: center; width: min(56px, 80cqw, max(12px, calc(100cqh - 2.6em - 8px))); height: min(56px, 80cqw, max(12px, calc(100cqh - 2.6em - 8px))); min-width: 0; min-height: 0; max-width: 100%; object-fit: contain; }
+.rhh-companion-settings .rhh-collection-book .rhh-food-grid .rhh-collection-tile > :is(.vc-collection-art, .rhh-collection-unknown) { width: min(56px, 80cqw, max(12px, calc(100cqh - 3.9em - 12px))); height: min(56px, 80cqw, max(12px, calc(100cqh - 3.9em - 12px))); }
+.rhh-companion-settings .rhh-collection-book .rhh-collection-tile > span:not([aria-hidden="true"]):not(.vc-collection-art):not(.rhh-collection-rarity):not(.rhh-collection-unread):not(.rhh-collection-state) { grid-row: 2; align-self: start; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; height: 2.6em; min-height: 2.6em; max-width: 100%; margin: 0; padding: 0; overflow: hidden; text-overflow: ellipsis; word-break: keep-all; overflow-wrap: anywhere; text-indent: 0; }
+.rhh-companion-settings .rhh-collection-book .rhh-food-grid .rhh-collection-tile > .rhh-collection-rarity { grid-row: 3; line-height: 1.3; white-space: nowrap; }

@@ -7,9 +7,9 @@ type CollectionLayout = "default" | "memory" | "wardrobe" | "toy";
 export function companionCollectionLayout(width: number, height: number, kind: CollectionLayout = "default") {
   const columns = Math.max(2, Math.min(kind === "memory" ? 5 : 6, Math.floor(((Number.isFinite(width) ? Math.max(0, width) : 0) + 8) / (kind === "memory" ? 120 : 102))));
   const rowHeight = kind === "default" ? 108 : 116;
-  // Food/toy galleries reserve two rows even on the compact sheet. Their
-  // compact CSS reduces artwork, not the44px hit target or readable names.
-  const minimumRows = kind === "default" || kind === "toy" ? 2 : 1;
+  // A short sheet gets one complete row, rather than squeezing two rows of
+  // artwork and long names outside their targets. Selection stays by ID.
+  const minimumRows = 1;
   const rows = kind === "wardrobe" ? 1 : Math.max(minimumRows, Math.min(4, Math.floor(((Number.isFinite(height) ? Math.max(0, height - 4) : 0) + 8) / (rowHeight + 8))));
   return { columns, rows, size: Math.min(24, columns * rows) };
 }

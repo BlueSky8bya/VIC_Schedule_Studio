@@ -2,6 +2,7 @@
    Warm wood and matte ceramics complement the upholstered sofa; only the
    sofa uses fabric ribs. Object contours are not new control-radius steps.
    Every scene layer is static; only a deliberate interaction moves. */
+.vc-home-carrier { display: contents; }
 .vc-home {
   --vc-object-min-hit: calc(45px / var(--shell-zoom, 1));
   --vc-bin-hit: max(20.5cqw, var(--vc-object-min-hit));
@@ -199,12 +200,15 @@ html[data-theme="dark"] .vc-home-object-image { opacity: .92; }
 .vc-home-room:not([data-night])[data-weather="clear"] { --vc-room-daylight: 1; }
 .vc-home-room:not([data-night]):has(.vc-home-window[data-curtain="shade"]) { --vc-room-daylight: .65; }
 .vc-home-room:has(.vc-home-window[data-curtain="closed"]) { --vc-room-daylight: 0; }
-.vc-home-room[data-night]:not([data-lamp-lit]) {
+.vc-bed-foreground { --vc-bed-cloth: #c4bcae; --vc-bed-light: #e1d9ca; --vc-bed-shade: #aaa292; --vc-soft-shadow: #795b3924; }
+.vc-home-room[data-night]:not([data-lamp-lit]),
+body:has(.vc-home-room[data-night]:not([data-lamp-lit])) .vc-bed-foreground {
   --vc-room-grade: #2e2039a6; --vc-room-art-grade: .6;
   --vc-bed-cloth: #817778; --vc-bed-light: #b5aaa1; --vc-bed-shade: #5c5762; --vc-soft-shadow: #21181045;
 }
-.vc-home-room[data-lamp-lit] { --vc-room-grade: #ba7d2d09; --vc-room-art-grade: 1; --vc-bed-cloth: #c4b6a2; --vc-bed-light: #e7d6bb; --vc-bed-shade: #99887c; }
-.vc-home-room:not([data-lamp-lit]):has(.vc-home-window[data-curtain="closed"]) { --vc-room-grade: #2e203970; --vc-room-art-grade: .65; --vc-bed-cloth: #817778; --vc-bed-light: #b5aaa1; --vc-bed-shade: #5c5762; }
+.vc-home-room[data-lamp-lit], body:has(.vc-home-room[data-lamp-lit]) .vc-bed-foreground { --vc-room-grade: #ba7d2d09; --vc-room-art-grade: 1; --vc-bed-cloth: #c4b6a2; --vc-bed-light: #e7d6bb; --vc-bed-shade: #99887c; }
+.vc-home-room:not([data-lamp-lit]):has(.vc-home-window[data-curtain="closed"]),
+body:has(.vc-home-room:not([data-lamp-lit]) .vc-home-window[data-curtain="closed"]) .vc-bed-foreground { --vc-room-grade: #2e203970; --vc-room-art-grade: .65; --vc-bed-cloth: #817778; --vc-bed-light: #b5aaa1; --vc-bed-shade: #5c5762; }
 .vc-home-room :is(.vc-home-shelf, .vc-toy-box, .vc-dispenser, .vc-home-trash, .vc-home-wash-pad, .vc-window-curtain-overlay, .vc-window-sill, .vc-window-crossbar) { filter: brightness(var(--vc-room-art-grade)); }
 .vc-home-room[data-night]:not([data-lamp-lit]) .vc-home-window { background: linear-gradient(110deg, #8d765f, #70563f); border-color: #69513f; }
 .vc-home-room::after { content: ''; position: absolute; z-index: 1; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at 52% 83%, #ffc4793b, transparent 33%); }

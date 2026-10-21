@@ -3,7 +3,6 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
-import { COMPANION_TOY_KINDS } from "@/lib/ui/viewer-companion/toy-catalog";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import assets from "../fixtures/companion-sbo-toys-159.json";
@@ -54,11 +53,15 @@ for(const surface of ["viewer","studio","preview"] as const)for(const dark of [f
   await profile.getByRole("tablist",{name:"빅타민 프로필",exact:true}).getByRole("tab",{name:"도감",exact:true}).click();
   await profile.locator('[data-act="companion-collection-category"][data-act-opt="toy"]').click();
   const book=profile.locator(".rhh-companion-toy-discovery"),rail=book.getByRole("slider");await rail.focus();await rail.press("Home");
-  const pageSize=await book.locator("ul button").count();
   for(const item of assets.toys){
-   const targetPage=Math.floor(COMPANION_TOY_KINDS.indexOf(item.id as typeof COMPANION_TOY_KINDS[number])/pageSize)+1;
-   await rail.focus();await rail.press("Home");for(let step=1;step<targetPage;step++)await rail.press("ArrowRight");await expect(rail).toHaveValue(String(targetPage));
    const name=item.id.endsWith("bat")?"SBO 토리님 배트":"SBO 토리님 글러브",tile=book.getByRole("button",{name:name+" · 만났어요",exact:true});
+   await rail.focus();await rail.press("Home");
+   // Follow the real responsive pages, rather than retaining a pre-resize
+   // row count while ResizeObserver finishes the shorter-sheet layout.
+   for(let step=0;!await tile.count();step++){
+    expect(step).toBeLessThan(42);const before=Number(await rail.inputValue());expect(before).toBeLessThan(Number(await rail.getAttribute("max")));
+    await rail.focus();await rail.press("PageDown");await expect.poll(()=>rail.inputValue()).not.toBe(String(before));
+   }
    await tile.click();const image=tile.locator("img");await expect(image).toHaveAttribute("src",item.src);await expect.poll(()=>image.evaluate(img=>(img as HTMLImageElement).complete&&(img as HTMLImageElement).naturalWidth===192)).toBe(true);
    await expect(book.locator(".rhh-collection-detail-title strong")).toHaveText(name);await expect(book.locator(".rhh-collection-detail img")).toHaveAttribute("src",item.src);
    const rect=await image.boundingBox();expect(rect!.width).toBeGreaterThan(25);expect(rect!.height).toBeGreaterThan(25);notes.push({id:item.id,name,src:item.src,paint:rect});
