@@ -76,7 +76,7 @@ async function assertDots(book: Locator, unread: number[], size: number) {
   // Dot and ancestor rectangles must describe the same browser frame. A
   // selected-tile focus or native scroll may move the whole footer between
   // separate protocol reads while every individual rectangle remains valid.
-  const measurement = await book.evaluate(root => {
+  const measure = () => book.evaluate(root => {
     const rect = (node: Element) => { const r = node.getBoundingClientRect(); return { x:r.x, y:r.y, right:r.right, bottom:r.bottom, width:r.width, height:r.height }; };
     const railNode = root.querySelector<HTMLInputElement>(".rhh-collection-page-rail"), dotNode = root.querySelector<HTMLElement>(".rhh-collection-page-dots");
     if (!railNode || !dotNode) throw new Error("Actual collection rail and dots are required");
@@ -90,16 +90,67 @@ async function assertDots(book: Locator, unread: number[], size: number) {
       // retain the actual shell zoom instead of assuming an unscaled 44px UI.
       const scaleX = r.width / node.offsetWidth, scaleY = r.height / node.offsetHeight;
       const inner = { x:r.x+node.clientLeft*scaleX, y:r.y+node.clientTop*scaleY, right:r.x+(node.clientLeft+node.clientWidth)*scaleX, bottom:r.y+(node.clientTop+node.clientHeight)*scaleY };
-      clips.push({ tag:node.tagName, className:node.className, overflowX:s.overflowX, overflowY:s.overflowY, cssWidth:s.width, cssHeight:s.height, boxSizing:s.boxSizing, borderLeft:s.borderLeftWidth, borderRight:s.borderRightWidth, borderTop:s.borderTopWidth, borderBottom:s.borderBottomWidth, zoom:s.zoom, transform:s.transform, display:s.display, scrollLeft:node.scrollLeft, scrollTop:node.scrollTop, clientWidth:node.clientWidth, clientHeight:node.clientHeight, offsetWidth:node.offsetWidth, offsetHeight:node.offsetHeight, scaleX, scaleY, box:r, inner });
+      clips.push({ tag:node.tagName, className:node.className, overflowX:s.overflowX, overflowY:s.overflowY, cssWidth:s.width, cssHeight:s.height, boxSizing:s.boxSizing, borderLeft:s.borderLeftWidth, borderRight:s.borderRightWidth, borderTop:s.borderTopWidth, borderBottom:s.borderBottomWidth, zoom:s.zoom, transform:s.transform, display:s.display, scrollLeft:node.scrollLeft, scrollTop:node.scrollTop, scrollWidth:node.scrollWidth, scrollHeight:node.scrollHeight, paddingTop:s.paddingTop, paddingRight:s.paddingRight, paddingBottom:s.paddingBottom, paddingLeft:s.paddingLeft, clientWidth:node.clientWidth, clientHeight:node.clientHeight, offsetWidth:node.offsetWidth, offsetHeight:node.offsetHeight, scaleX, scaleY, box:r, inner });
       if (clipsX) { clip.x=Math.max(clip.x,inner.x); clip.right=Math.min(clip.right,inner.right); }
       if (clipsY) { clip.y=Math.max(clip.y,inner.y); clip.bottom=Math.min(clip.bottom,inner.bottom); }
     }
-    const railStyle = getComputedStyle(railNode), positionStyle = getComputedStyle(railNode.parentElement!);
-    return { at:performance.now(), page:Number(railNode.value)-1, maximum:Number(railNode.max), book:rect(root), dotBox:rect(dotNode), rail:rect(railNode), clip, clips,
+    const railStyle = getComputedStyle(railNode), positionStyle = getComputedStyle(railNode.parentElement!), bookStyle=getComputedStyle(root), bookNode=root as HTMLElement;
+    const bookBox=rect(root),railBox=rect(railNode),left=Math.max(bookBox.x,clip.x),right=Math.min(bookBox.right,clip.right),top=Math.max(bookBox.y,clip.y),bottom=Math.min(bookBox.bottom,clip.bottom);
+    const point={x:left+2,y:bottom-2},hit=document.elementFromPoint(point.x,point.y);
+    const wheelPoint={...point,inside:point.x>left&&point.x<right&&point.y>top&&point.y<bottom,
+      outsideRange:point.x<railBox.x-.1,hitInBook:Boolean(hit&&root.contains(hit)),hitOnRange:Boolean(hit&&railNode.contains(hit))};
+    const bookScroll={scrollTop:root.scrollTop,scrollHeight:root.scrollHeight,scrollWidth:root.scrollWidth,clientHeight:root.clientHeight,clientWidth:root.clientWidth,
+      offsetHeight:bookNode.offsetHeight,offsetWidth:bookNode.offsetWidth,cssHeight:bookStyle.height,overflowY:bookStyle.overflowY,
+      paddingTop:bookStyle.paddingTop,paddingRight:bookStyle.paddingRight,paddingBottom:bookStyle.paddingBottom,paddingLeft:bookStyle.paddingLeft};
+    const selected=[...root.querySelectorAll<HTMLElement>("[data-collection-index][aria-pressed='true']")].map(node=>node.getAttribute("data-collection-index"));
+    const painted=Boolean(root.checkVisibility({checkOpacity:true,checkVisibilityCSS:true})&&railNode.checkVisibility({checkVisibilityCSS:true})&&!railNode.closest("[hidden],[inert]"));
+    return { at:performance.now(), page:Number(railNode.value)-1, maximum:Number(railNode.max), book:bookBox, bookScroll, selected, painted, wheelPoint, dotBox:rect(dotNode), rail:railBox, clip, clips,
       railOpacity:railStyle.opacity, positionMinHeight:positionStyle.minHeight, hitSize:positionStyle.getPropertyValue("--companion-hit-size"), shellZoom:positionStyle.getPropertyValue("--shell-zoom"),
       styles:[...dotNode.querySelectorAll<HTMLElement>(":scope > span[data-page]")].map(node => { const s = getComputedStyle(node); return { page:Number(node.dataset.page), unread:node.hasAttribute("data-unread"), current:node.getAttribute("aria-current")==="page", background:s.backgroundColor, image:s.backgroundImage, shadow:s.boxShadow, opacity:Number(s.opacity), ...rect(node) }; }) };
   });
-  receipts.get(book.page())?.recordDots(measurement);
+  let measurement=await measure();
+  receipts.get(book.page())?.recordDots({phase:"after-native-scroll-into-view",...measurement});
+  // Chromium's native reveal can truncate a subpixel edge inside a zoomed
+  // scrollport. Only a measured <=1px remainder with real DOM scroll extent
+  // may receive this one native1px wheel; all original bounds still apply.
+  const beforeWheel=measurement,scroll=beforeWheel.bookScroll;
+  const below=beforeWheel.rail.bottom-beforeWheel.clip.bottom,above=beforeWheel.clip.y-beforeWheel.rail.y;
+  const direction=below>.1&&below<=1&&above<=.1 ? 1 : above>.1&&above<=1&&below<=.1 ? -1 : 0;
+  const scale=beforeWheel.book.width/scroll.offsetWidth,availableCss=direction>0 ? scroll.scrollHeight-scroll.clientHeight-scroll.scrollTop : scroll.scrollTop;
+  const finite=[below,above,scale,availableCss,...Object.values(beforeWheel.book),...Object.values(beforeWheel.rail),...Object.values(beforeWheel.clip)].every(Number.isFinite);
+  const dotsInside=beforeWheel.dotBox.x>=beforeWheel.clip.x-.1&&beforeWheel.dotBox.right<=beforeWheel.clip.right+.1
+    &&beforeWheel.dotBox.y>=beforeWheel.clip.y-.1&&beforeWheel.dotBox.bottom<=beforeWheel.clip.bottom+.1
+    &&beforeWheel.dotBox.x>=beforeWheel.book.x&&beforeWheel.dotBox.right<=beforeWheel.book.right
+    &&beforeWheel.dotBox.y>=beforeWheel.book.y&&beforeWheel.dotBox.bottom<=beforeWheel.book.bottom;
+  const horizontal=beforeWheel.rail.x>=beforeWheel.clip.x-.1&&beforeWheel.rail.right<=beforeWheel.clip.right+.1;
+  const point=beforeWheel.wheelPoint;
+  if(direction&&finite&&scale>0&&availableCss*scale>=1&&/^(auto|scroll)$/.test(scroll.overflowY)
+    &&beforeWheel.painted&&beforeWheel.rail.width>=43.9&&beforeWheel.rail.height>=43.9&&dotsInside&&horizontal
+    &&point.inside&&point.outsideRange&&point.hitInBook&&!point.hitOnRange){
+    const observedAt=beforeWheel.at;
+    await book.page().mouse.move(point.x,point.y);
+    await book.page().mouse.wheel(0,direction);
+    const wheelIssuedAt=Date.now(),consumeDeadline=wheelIssuedAt+500;
+    await book.page().evaluate(()=>new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));
+    measurement=await measure();
+    const consumeSamples=[{at:measurement.at,scrollTop:measurement.bookScroll.scrollTop,rail:measurement.rail,clip:measurement.clip}];
+    // Native wheel delivery is asynchronous. Two painted frames alone do
+    // not acknowledge consumption; observe actual geometry for at most500ms.
+    // There is no repeated wheel, injected scroll, or timer-based success.
+    while(measurement.bookScroll.scrollTop===scroll.scrollTop&&Date.now()<consumeDeadline){
+      const remaining=consumeDeadline-Date.now();if(remaining<=0)break;
+      await book.page().waitForTimeout(Math.min(25,remaining));
+      if(Date.now()>consumeDeadline)break;
+      measurement=await measure();
+      consumeSamples.push({at:measurement.at,scrollTop:measurement.bookScroll.scrollTop,rail:measurement.rail,clip:measurement.clip});
+    }
+    receipts.get(book.page())?.recordDots({phase:"after-bounded-native-wheel",nativeWheel:{deltaY:direction,point:{x:point.x,y:point.y},observedAt,
+      measuredDomAvailableCss:availableCss,measuredScale:scale,priorScrollTop:scroll.scrollTop,currentScrollTop:measurement.bookScroll.scrollTop,
+      consumptionObservation:{budgetMs:500,elapsedMs:Date.now()-wheelIssuedAt,changed:measurement.bookScroll.scrollTop!==scroll.scrollTop,samples:consumeSamples}},...measurement});
+    expect(measurement.page,"native wheel reveal preserves the real page value").toBe(beforeWheel.page);
+    expect(measurement.maximum).toBe(beforeWheel.maximum);
+    expect(measurement.selected,"native wheel reveal preserves the real selected item").toEqual(beforeWheel.selected);
+  }
   const styles = measurement.styles;
   expect(measurement.page).toBe(page); expect(measurement.maximum).toBe(maximum);
   const expected = new Set(unread.map(index => Math.floor(index / size)));
