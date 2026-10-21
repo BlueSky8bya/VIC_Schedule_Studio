@@ -16,6 +16,9 @@ const neutral: CompanionFace = { left: 1, right: 1, gazeX: 0, gazeY: 0, smile: 0
 const clamp = (n: number, a = 0, b = 1) => Math.max(a, Math.min(b, Number.isFinite(n) ? n : a));
 const smooth = (n: number) => { const p = clamp(n); return p * p * (3 - 2 * p); };
 export const COMPANION_EXPRESSION_MS = 1450;
+// New reactions retain a recognisable plump pupil. Natural blink/sleep frames
+// remain in the original animation; a reaction never turns every eye to a line.
+export const COMPANION_EXPRESSION_MIN_EYE = .76;
 
 /** Eye openness clips the existing eye, never enlarges its width/iris. Body,
  * ears, face spacing and eyewear are not part of this sampler. */
@@ -60,6 +63,8 @@ export function sampleCompanionExpression(id: CompanionExpressionId, progress: n
     case "cold": Object.assign(v, { left: .55, right: .55, smile: -.3, tremble: 1 }); break;
     case "resolve": Object.assign(v, { left: .85, right: .85, gazeX: .8, smile: .2, slant: -.3 }); break;
   }
+  v.left = Math.max(COMPANION_EXPRESSION_MIN_EYE, v.left);
+  v.right = Math.max(COMPANION_EXPRESSION_MIN_EYE, v.right);
   return v;
 }
 

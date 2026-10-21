@@ -125,7 +125,11 @@ const runRecipe = (director: ReturnType<typeof createCompanionPersonalityDirecto
       if (proposal.delegate.mode === "eat" || discard) scene.world.foods = foods.filter(item => item.id !== food.id);
       else if (proposal.delegate.mode === "tidy") scene.world.foods = foods.map(item => item.id === food.id ? { ...item, x: 340, platformId: "companion-home-floor" } : item);
       director.resolve(proposal.meta, true, food.id); scene.now += 600;
-    } else if (command.kind === "tv" || command.kind === "light" || command.kind === "curtain") {
+    } else if (command.kind === "tv" || command.kind === "light" || command.kind === "curtain" || command.kind === "wash") {
+      if (command.kind === "wash") {
+        expect(scene.world.platformId).toBe("companion-home-floor-400");
+        expect(Math.hypot(scene.world.x - scene.home.pad!.x, scene.world.y - scene.home.pad!.y)).toBeLessThanOrEqual(1);
+      }
       if (command.kind === "tv") scene.tv = command.state === "next" ? companionHomeTvControl(scene.tv).next : command.state;
       effects.push(command.kind);
       director.complete(proposal.meta); // Elapsed furniture gesture is not ACK.

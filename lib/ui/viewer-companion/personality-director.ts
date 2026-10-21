@@ -15,6 +15,7 @@ import { companionPersonalityPlayAllowed } from "./personality-activity";
 import type { CompanionRadioMood } from "./radio-reaction";
 import type { CompanionAgentExperience, CompanionExperienceFamily } from "./agent-experience";
 import { companionAudiencePlay, companionEntryPreparation, companionMayAddressAudience, companionOutsidePlatforms, companionOutsideSupport, companionOutsideItem } from "./life-space";
+import { companionWashSteps } from "./wash-journey";
 
 import { planCompanionOutsideRoute, companionOutsideRouteFact, boundedCompanionOutsideObserver, type CompanionOutsideGoal, type CompanionOutsideObserver } from "./outside-route";
 
@@ -45,7 +46,7 @@ export type PersonalityProgressObservation = {
   now: number; active: boolean; point?: Point; carriedToyId?: string; carriedFoodId?: string;
   controls?: { tv?: CompanionHomeTvState; light?: boolean; curtain?: "open" | "shade" | "closed"; radio?: boolean };
 };
-export type PersonalitySceneBeat = { id: string; serial: number; beat: number; command: SceneBeat; itemId?: string; comparisonItemId?: string; travel?: true; routine?: true; homeFloorEntry?: true; interactionContact?: { x: number; y: number }; propShow?: true };
+export type PersonalitySceneBeat = { id: string; serial: number; beat: number; command: SceneBeat; itemId?: string; comparisonItemId?: string; travel?: true; routine?: true; manual?: true; homeFloorEntry?: true; interactionContact?: { x: number; y: number }; propShow?: true };
 export type PersonalitySceneAction = CompanionAction & { personalityScene: PersonalitySceneBeat; personalitySignature: CompanionPreferences["personality"] };
 export type PersonalitySceneProposal = { meta: PersonalitySceneBeat; action?: PersonalitySceneAction; delegate?: Extract<SceneBeat, { kind: "toy" | "food" }> };
 const safe = (point: Point | undefined): point is Point => Boolean(point && [point.x, point.y].every(Number.isFinite));
@@ -63,7 +64,7 @@ const restExpression = (step: SceneBeat) => step.kind === "sleep"
 export function createCompanionPersonalityDirector(recipes: readonly PersonalitySceneRecipe[] = COMPANION_PERSONALITY_SCENES, rng: () => number = Math.random, outsideObserver?:CompanionOutsideObserver) {
   const outsideDiagnostic=boundedCompanionOutsideObserver(outsideObserver);
   let serial = 0, selected: CompanionPreferences["personality"] | undefined, first = true, cursor = 0;
-  let active: { recipe: PersonalitySceneRecipe; serial: number; beat: number; started: number; progressed: number; attempts: number; itemId?: string; comparisonItemId?: string; lastX: number; lastY: number; count: number; routine?: true; abbreviated?: true; waking?: true; closureAt?: number; goal?: { beat: number; id: string; fraction?: number }; quietHome?: true; quietMaterial?: true; quietControls?: PersonalityProgressObservation["controls"]; tvChoice?: {beat:number;state:CompanionHomeTvState}; tvWatch?: { beat: number; started: number; duration: number; point: Point } } | undefined;
+  let active: { recipe: PersonalitySceneRecipe; serial: number; beat: number; started: number; progressed: number; attempts: number; itemId?: string; comparisonItemId?: string; lastX: number; lastY: number; count: number; routine?: true; manual?: true; abbreviated?: true; waking?: true; closureAt?: number; goal?: { beat: number; id: string; fraction?: number }; quietHome?: true; quietMaterial?: true; quietControls?: PersonalityProgressObservation["controls"]; tvChoice?: {beat:number;state:CompanionHomeTvState}; tvWatch?: { beat: number; started: number; duration: number; point: Point } } | undefined;
   let entrySerial: number | undefined, entryFinished = false, lastPosition: Point | undefined;
   // Existing active time only, including the initial personal preparation.
   // A completed entry/observation/pose/scene never refills this shared budget.
@@ -384,7 +385,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
     return eligible.find(recipe=>recipe.id==="T05")??eligible.find(recipe=>recipe.id==="X-T-house");
   };
   const meta = (command: SceneBeat): PersonalitySceneBeat => ({ id: active!.recipe.id, serial: active!.serial, beat: active!.beat, command,
-    ...(active!.routine ? { routine: true } : {}), ...(active!.recipe.propShow ? {propShow:true as const} : {}), ...(active!.recipe.steps.slice(active!.beat).some(step => step.kind === "toy" && step.mode === "return" && !step.optional) ? { homeFloorEntry: true as const } : {}), ...(active!.itemId ? { itemId: active!.itemId } : {}), ...(active!.comparisonItemId ? { comparisonItemId: active!.comparisonItemId } : {}) });
+    ...(active!.routine ? { routine: true } : {}), ...(active!.manual ? { manual: true as const } : {}), ...(active!.recipe.propShow ? {propShow:true as const} : {}), ...(active!.recipe.steps.slice(active!.beat).some(step => step.kind === "toy" && step.mode === "return" && !step.optional) ? { homeFloorEntry: true as const } : {}), ...(active!.itemId ? { itemId: active!.itemId } : {}), ...(active!.comparisonItemId ? { comparisonItemId: active!.comparisonItemId } : {}) });
   const action = (command: SceneBeat, value: CompanionAction, input: PersonalitySceneInput): PersonalitySceneProposal => ({ meta: meta(command), action: { ...value, personalityScene: meta(command), personalitySignature: input.preferences.personality } });
   const toyCandidates = (recipe: PersonalitySceneRecipe | undefined, input: PersonalitySceneInput) => {
     const typed = recipe?.steps.find(step => step.kind === "toy" && step.kinds), kinds = typed?.kind === "toy" ? typed.kinds : undefined;
@@ -714,6 +715,28 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
       if(recipe.id==="routine-outing")outsideDiagnostic?.({stage:"routine-admitted",plannedGoal:Boolean(outsideGoal)});
       return true;
     },
+    /** Explicit human request may run with automatic roaming off. The caller
+     * owns the current visible mat and waits outside real meal/carry owners. */
+    startManualWash(input: PersonalitySceneInput) {
+      const { world, preferences: p, home } = input;
+      const pad = home.pad, plane = pad && world.platforms.find(value => value.id === pad.platformId);
+      const source = world.platforms.find(value => value.id === world.platformId);
+      if (!p.enabled || !world.animated || world.paused || input.busy || input.carriedFoodId || input.carriedToyId || active?.manual
+        || !Number.isFinite(input.now) || input.now < now || !safe(pad) || pad.platformId !== "companion-home-floor-400"
+        || !plane?.bodyOnly || plane.kind !== "floor" || Math.abs(plane.y-pad.y) > .5 || pad.x < plane.x || pad.x > plane.x+plane.width
+        || !source || !Number.isFinite(source.width) || source.width <= 0 || ["control","hide"].includes(source.kind)
+        || ![world.x,world.y].every(Number.isFinite) || Math.abs(world.y-source.y)>2 || world.x<source.x || world.x>source.x+source.width
+        || !findCompanionToyRoute(world,pad,world.platforms,p.jump)) return false;
+      finish(false); now = input.now;
+      // Dismiss an unissued autonomous greeting, never acknowledge it or grant
+      // collection/learning credit for a manual button.
+      selected = p.personality; first = false; entryFinished = true; entrySerial = undefined;
+      lastPosition = { x: world.x, y: world.y, platformId: world.platformId };
+      active = { recipe: { id: "routine-wash", label: "샤워패드에서 씻기", personality: p.personality, major: true, triggers: [], steps: companionWashSteps(p.personality) },
+        serial: ++serial, beat: 0, started: now, progressed: now, attempts: 0, count: 0, routine: true, manual: true, lastX: world.x, lastY: world.y };
+      return true;
+    },
+    manualWash: () => Boolean(active?.manual),
     plansMeal: () => Boolean(active?.recipe.steps.slice(active.beat).some(step => step.kind === "food" && ["inspect", "compare", "eat"].includes(step.mode))),
     /** Soft goal ownership at a routine checkpoint, never a physical ACK. */
     routineReserved,
@@ -764,7 +787,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
       if (!active || beat.serial !== active.serial || beat.beat !== active.beat || beat.travel) return;
       // Travel is re-proved at the next decision. Delegated ownership and
       // furniture effects need actual ACK, never merely an elapsed pose.
-      if (["go", "toy", "food", "tv", "light", "curtain", "radio"].includes(beat.command.kind)) return;
+      if (["go", "toy", "food", "wash", "tv", "light", "curtain", "radio"].includes(beat.command.kind)) return;
       const offeredWatch = active.tvWatch;
       // A completed, actually decoded required TV observation may close its
       // same-owner short tail. Merely offering/advancing a watch cannot do so.
@@ -796,7 +819,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
         selectedAt = now; lastOutsideAt = lastCleanupAt = -Infinity;
         actualProgressAt = undefined; actualPoint = undefined; progressActive = false; controls = undefined; carried = carriedFood = undefined; initialProgressDeadline = undefined;
       }
-      if (!p.enabled || !p.roam || !world.animated || world.paused || input.busy || !world.platformId) return;
+      if (!p.enabled || (!p.roam && !active?.manual) || !world.animated || world.paused || input.busy || !world.platformId) return;
       const support = world.platforms.find(platform => platform.id === world.platformId);
       if (!support || Math.abs(support.y - world.y) > 2 || world.x < support.x || world.x > support.x + support.width || ["control", "hide"].includes(support.kind)) return;
       const here = { x: world.x, y: world.y, platformId: world.platformId };

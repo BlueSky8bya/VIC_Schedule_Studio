@@ -96,7 +96,7 @@ export function CompanionDiscovery({ collection, active, tastes = null }: { coll
     <span className="sr-only" id={unreadDescription}>새로 발견한 항목</span>
     {categorySwitch}
     {category === "food" ? <div ref={detail} aria-live="polite" className="rhh-collection-detail rhh-food-detail rhh-collection-gallery-detail" data-found={foundFood || undefined} data-recent={foundFood && selectedFood === recent?.kind || undefined}>
-      <div aria-hidden="true" className="rhh-collection-art-stage" key={selectedFood}><CompanionCollectionArt kind="food" id={selectedFood} /></div>
+      <div aria-hidden="true" className="rhh-collection-art-stage" key={selectedFood}><CompanionCollectionArt kind={foundFood ? "food-stamp" : "food"} id={selectedFood} /></div>
       <div className="rhh-collection-detail-copy"><span className="rhh-collection-overline">냠냠 기록</span><div className="rhh-collection-detail-title"><strong>{foundFood ? COMPANION_FOOD_NAMES[selectedFood] : "???"}</strong>{foundFood && <span className="rhh-collection-rarity">{COMPANION_FOOD_RARITY_NAMES[COMPANION_FOOD_RARITY[selectedFood]]}</span>}</div>
         <p className="rhh-collection-fact">{foundFood ? COMPANION_FOOD_FACTS[selectedFood] : "아직 맛보기 전"}</p>
         <div className="rhh-collection-detail-meta">{foundFood && <><span className="rhh-collection-chance" title="직전 음식은 연속으로 나오지 않아 실제 다음 확률은 달라져요. 별도의 희귀도 보장은 없어요.">기본 등장 {formatCompanionCollectionChance(companionFoodChance(selectedFood))}</span>{selectedFood === recent?.kind && <span className="rhh-collection-recent"><Check aria-hidden="true" size={14} />방금 맛봤어요</span>}</>}</div>
