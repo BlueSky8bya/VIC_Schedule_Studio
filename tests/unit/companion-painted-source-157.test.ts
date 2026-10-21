@@ -3,6 +3,8 @@ import { createCompanionExpressionPixelVerifier157 } from "../visual/helpers/com
 import anchors from "@/lib/ui/viewer-companion/expression-anchors-161.json";
 import { companionSpriteMetadata as metadata } from "@/lib/ui/viewer-companion/sprite-quality";
 import { curiousTextureCellMatches, type CuriousTextureCellMeasurement } from "../visual/helpers/companion-curious-completion-144";
+import { readFileSync } from "node:fs";
+import ts from "typescript";
 
 const direct=createCompanionExpressionPixelVerifier157();
 // Exercise the same trusted serialization/newFunction boundary used by the
@@ -12,6 +14,29 @@ const compare:typeof direct.compare=(...args)=>{const actual=direct.compare(...a
 const samePlane:typeof direct.samePlane=(...args)=>{const actual=direct.samePlane(...args);expect(serialized.samePlane(...args)).toBe(actual);return actual;};
 const mask=direct.mask;
 const pose=anchors.frames.find(f=>f.physicalIndex===anchors.reference)!;
+// Compile the actual162 painter's opaque-background and patch geometry.
+// Repeating a second hand-written box formula here could miss future drift.
+const painterSource=readFileSync("lib/ui/viewer-companion/expression-painter.ts","utf8");
+const painterAst=ts.createSourceFile("expression-painter.ts",painterSource,ts.ScriptTarget.Latest,true);
+const painterNodes:ts.Node[]=[];const visit=(node:ts.Node)=>{painterNodes.push(node);ts.forEachChild(node,visit);};visit(painterAst);
+const background=painterNodes.find((node):node is ts.VariableDeclaration=>ts.isVariableDeclaration(node)&&node.name.getText(painterAst)==="background")!;
+const eyeLoop=painterNodes.find((node):node is ts.ForStatement=>ts.isForStatement(node)&&node.statement.getText(painterAst).includes("const eye = pose.eyes[i]"))!;
+const mouth=painterNodes.find((node):node is ts.IfStatement=>ts.isIfStatement(node)&&node.expression.getText(painterAst).startsWith("pose.mouth &&"))!;
+if(!background||!eyeLoop||!ts.isBlock(eyeLoop.statement)||!mouth||!ts.isBlock(mouth.thenStatement))throw Error("Actual painter mask declarations are missing");
+const print=(node:ts.Node)=>ts.createPrinter().printNode(ts.EmitHint.Unspecified,node,painterAst);
+const eyeDeclarations=eyeLoop.statement.statements.filter(ts.isVariableStatement).slice(0,4);
+if(eyeDeclarations.length!==4||!print(eyeDeclarations[3]).includes("const box"))throw Error("Actual painter eye geometry shape changed");
+const actualMaskCode=ts.transpileModule(`
+const PIXELS=192,SCALE=PIXELS/80,allowed=new Uint8Array(PIXELS*PIXELS);
+const face={gazeX:0,gazeY:0,weight:1,smile:.7,open:1,tremble:.3};
+const pixels={getImageData(left,top,width,height){const data=new Uint8ClampedArray(width*height*4);
+  for(let y=0;y<height;y++)for(let x=0;x<width;x++)data.set(source.subarray(((top+y)*PIXELS+left+x)*4,((top+y)*PIXELS+left+x)*4+4),(y*width+x)*4);
+  return {data,width,height};}};
+const ${print(background)};
+for(let i=0;i<2;i++){${eyeDeclarations.map(print).join("\n")}background(box);}
+if(pose.mouth){${print(mouth.thenStatement.statements[0])}}
+return allowed;`,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText;
+const actualPainterMask=new Function("source","pose","reference",actualMaskCode) as typeof direct.mask;
 const original=()=>{const p=new Uint8ClampedArray(192*192*4);for(let i=0;i<p.length;i+=4)p.set([241,221,178,253],i);return p;};
 function fixture(){const source=original(),permitted=mask(source,pose,pose)!;
   const pixel=permitted.findIndex((v,i)=>v===1&&permitted[i-1]===1&&permitted[i+1]===1),painted=source.slice();
@@ -25,6 +50,18 @@ function cell(index=0):CuriousTextureCellMeasurement {
     spriteClipPath:`inset(${f.clip.map(n=>`${n/80*100}%`).join(" ")})`,textureClipPath:"none"};
 }
 describe("157 actual current-cell canvas comparison shared verbatim with browser",()=>{
+  it("matches actual162 reference-eye mask geometry for every compiled front/quarter pose",()=>{
+    for(const anchor of anchors.frames){
+      const source=original();
+      expect(Buffer.compare(Buffer.from(mask(source,anchor,pose)!),Buffer.from(actualPainterMask(source,anchor,pose)!))).toBe(0);
+    }
+  });
+  it("matches the actual painter's opacity/corner admission as well as its boxes",()=>{
+    for(const anchor of anchors.frames.filter((_,i)=>i%7===0)){
+      const source=original();for(let i=3;i<source.length;i+=324)source[i]=244;
+      expect(Buffer.compare(Buffer.from(mask(source,anchor,pose)!),Buffer.from(actualPainterMask(source,anchor,pose)!))).toBe(0);
+    }
+  });
   it("serializes the actual calibrated mask without a module closure",()=>{
     const p=original();expect(serialized.mask(p,pose,pose)).toEqual(mask(p,pose,pose));
   });

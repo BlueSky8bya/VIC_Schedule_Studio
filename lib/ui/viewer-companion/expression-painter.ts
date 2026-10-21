@@ -63,12 +63,8 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement) {
         ctx.fillStyle = fill; ctx.fillRect(box[0], box[1], box[2] - box[0], box[3] - box[1]);
         const open = mix(1, i === 0 ? face.left : face.right, face.weight), referenceCell = eyeImage.naturalWidth / 8;
         ctx.save(); ctx.translate(x, y); ctx.rotate(pose.roll * Math.PI / 180);
-        if (open > .16) {
-          ctx.beginPath(); ctx.rect(-width / 2 - .6, -height / 2 + height * (1 - open) * .65, width + 1.2, height * open + .2); ctx.clip();
-          ctx.drawImage(eyeImage, original.bounds[0] / 80 * referenceCell, original.bounds[1] / 80 * referenceCell, (original.bounds[2] - original.bounds[0]) / 80 * referenceCell, (original.bounds[3] - original.bounds[1]) / 80 * referenceCell, -width / 2 + gazeX, -height / 2 + gazeY, width, height);
-        } else {
-          ctx.strokeStyle = "#68452a"; ctx.lineWidth = .68; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(-width * .43, 0); ctx.quadraticCurveTo(0, face.smile > .3 ? -1 : .7, width * .43, 0); ctx.stroke();
-        }
+        ctx.beginPath(); ctx.rect(-width / 2 - .6, -height / 2 + height * (1 - open) * .65, width + 1.2, height * open + .2); ctx.clip();
+        ctx.drawImage(eyeImage, original.bounds[0] / 80 * referenceCell, original.bounds[1] / 80 * referenceCell, (original.bounds[2] - original.bounds[0]) / 80 * referenceCell, (original.bounds[3] - original.bounds[1]) / 80 * referenceCell, -width / 2 + gazeX, -height / 2 + gazeY, width, height);
         ctx.restore();
         if (face.tears > 0) { ctx.fillStyle = `rgba(117,175,204,${face.tears * face.weight * .8})`; ctx.beginPath(); ctx.ellipse(x + width * .45, y + height * .65, .45, .75, 0, 0, Math.PI * 2); ctx.fill(); }
         painted++;

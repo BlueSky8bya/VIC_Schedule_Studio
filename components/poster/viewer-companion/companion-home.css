@@ -77,7 +77,7 @@
   box-shadow: inset 0 1px 0 #fff3, inset 0 -1px 0 var(--vc-thread);
 }
 .vc-home[data-home-presentation="compact"] > .panel-section-heading .panel-section-title > span { min-height: var(--vc-object-min-hit); }
-.vc-home-room::before { content: ''; position: absolute; z-index: 0; inset: 0; background: url('/companion/home/136/room-sunlit.webp') center / 100% 100%; opacity: var(--vc-room-daylight); pointer-events: none; transition: opacity calc(var(--dur-2) * 4) var(--ease); }
+.vc-home-room::before { content: ''; position: absolute; z-index: 0; inset: 0; background: linear-gradient(var(--vc-room-grade), var(--vc-room-grade)), url('/companion/home/136/room-sunlit.webp') center / 100% 100%; opacity: var(--vc-room-daylight); pointer-events: none; transition: opacity calc(var(--dur-2) * 4) var(--ease); }
 .vc-home-close { display: grid; place-items: center; width: var(--vc-object-min-hit); height: var(--vc-object-min-hit); margin-left: auto; padding: 0; border: 0; border-radius: var(--r-pill); color: var(--muted); background: transparent; cursor: pointer; pointer-events: auto; }
 .vc-home-close:hover { color: var(--ink); background: rgb(var(--glass-head)); }
 .vc-home-personality { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: var(--vc-object-min-hit); min-height: var(--vc-object-min-hit); padding: 0 6px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--ink); font: inherit; font-size: calc(var(--text-body) / var(--shell-zoom, 1)); cursor: pointer; }
@@ -197,18 +197,10 @@ html[data-theme="dark"] .vc-home { --vc-soft-shadow: #21181045; --vc-wood-light:
 html[data-theme="dark"] .vc-home-object-image { opacity: .92; }
 /*136: one perspective, one room material and one source of light. The
   scenery remains emissive outside; curtains, frame and furniture are inside. */
-.vc-home-room:not([data-night])[data-weather="clear"] { --vc-room-daylight: 1; }
-.vc-home-room:not([data-night]):has(.vc-home-window[data-curtain="shade"]) { --vc-room-daylight: .65; }
-.vc-home-room:has(.vc-home-window[data-curtain="closed"]) { --vc-room-daylight: 0; }
 .vc-bed-foreground { --vc-bed-cloth: #c4bcae; --vc-bed-light: #e1d9ca; --vc-bed-shade: #aaa292; --vc-soft-shadow: #795b3924; }
-.vc-home-room[data-night]:not([data-lamp-lit]),
-body:has(.vc-home-room[data-night]:not([data-lamp-lit])) .vc-bed-foreground {
-  --vc-room-grade: #2e2039a6; --vc-room-art-grade: .6;
-  --vc-bed-cloth: #817778; --vc-bed-light: #b5aaa1; --vc-bed-shade: #5c5762; --vc-soft-shadow: #21181045;
-}
-.vc-home-room[data-lamp-lit], body:has(.vc-home-room[data-lamp-lit]) .vc-bed-foreground { --vc-room-grade: #ba7d2d09; --vc-room-art-grade: 1; --vc-bed-cloth: #c4b6a2; --vc-bed-light: #e7d6bb; --vc-bed-shade: #99887c; }
-.vc-home-room:not([data-lamp-lit]):has(.vc-home-window[data-curtain="closed"]),
-body:has(.vc-home-room:not([data-lamp-lit]) .vc-home-window[data-curtain="closed"]) .vc-bed-foreground { --vc-room-grade: #2e203970; --vc-room-art-grade: .65; --vc-bed-cloth: #817778; --vc-bed-light: #b5aaa1; --vc-bed-shade: #5c5762; }
+/*162: the shared room sample owns light transmission and every cloth token.
+  The room and foreground receive that exact material in one React commit;
+  no competing :has rule can brighten a closed night. */
 .vc-home-room :is(.vc-home-shelf, .vc-toy-box, .vc-dispenser, .vc-home-trash, .vc-home-wash-pad, .vc-window-curtain-overlay, .vc-window-sill, .vc-window-crossbar) { filter: brightness(var(--vc-room-art-grade)); }
 .vc-home-room[data-night]:not([data-lamp-lit]) .vc-home-window { background: linear-gradient(110deg, #8d765f, #70563f); border-color: #69513f; }
 .vc-home-room::after { content: ''; position: absolute; z-index: 1; inset: 0; pointer-events: none; opacity: 0; background: radial-gradient(ellipse at 52% 83%, #ffc4793b, transparent 33%); }
@@ -294,9 +286,10 @@ html:is([data-reduce-motion],[data-gfx="off"],[data-gfx="soft"]) .vc-tv-picture 
   --vc-pad-right: calc((min(calc(var(--vc-storage-right) + var(--vc-toy-hit) / 2 + var(--vc-toy-paint-width) * 93 / 256), calc(var(--vc-bin-right) + var(--vc-bin-hit) / 2 + var(--vc-bin-paint-width) * 71 / 256)) + max(calc(var(--vc-storage-right) + var(--vc-toy-hit) / 2 - var(--vc-toy-paint-width) * 94 / 256), calc(var(--vc-bin-right) + var(--vc-bin-hit) / 2 - var(--vc-bin-paint-width) * 75 / 256))) / 2);
   position: absolute; z-index: 1; right: calc(var(--vc-pad-right) - var(--vc-pad-width) / 2);
   bottom: calc((var(--vc-storage-floor) + var(--vc-bin-bottom) + var(--vc-bin-paint-width) * .688586128) / 2 - var(--vc-pad-height) / 2);
-  width: var(--vc-pad-width); height: var(--vc-pad-height); pointer-events: none;
+  width: var(--vc-pad-width); height: max(var(--vc-object-min-hit), var(--vc-pad-height)); padding: 0; border: 0; border-radius: 40%; background: transparent; cursor: pointer;
 }
-.vc-home-wash-pad > img { display: block; width: 100%; height: 100%; }
+.vc-home-wash-pad > img { position: absolute; bottom: 0; display: block; width: 100%; height: var(--vc-pad-height); pointer-events: none; }
+.vc-home-wash-stance { position: absolute; inset: auto 0 0; height: var(--vc-pad-height); pointer-events: none; }
 .vc-home :is(.vc-home-tv, .vc-home-lamp):active { transform: none; }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home-lamp-light,
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home-room::before { transition: none; }

@@ -90,7 +90,7 @@ export default async function VisualPosterFixture({
   return (
     <PublicPoster
       ambientForce={ambient}
-      ambientWorldForce={hour === undefined ? undefined : { hour }}
+      ambientWorldForce={hour === undefined ? undefined : { hour, weather: "clear" }}
       fixtureCompanionFood={isCompanionFoodKind(sp?.companionFood) ? sp.companionFood : undefined}
       anonymous={sp?.signedIn !== "1"}
       accountSwitch={sp?.signedIn !== undefined}

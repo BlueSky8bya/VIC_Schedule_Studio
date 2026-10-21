@@ -421,7 +421,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         // The visible bath mat lies on this same illustrated floor plane.
         // Its deliberate stance is not a floating item shelf or a roaming
         // invitation; only the explicit wash journey may choose it.
-        const pad = house?.querySelector<HTMLElement>(".vc-home-wash-pad");
+        const pad = house?.querySelector<HTMLElement>(".vc-home-wash-stance") ?? house?.querySelector<HTMLElement>(".vc-home-wash-pad");
         if (pad?.isConnected && visible(pad) && landings.length < MAX_PLATFORMS) {
           const mat = rectFor(pad), foot = mat.top + mat.height * .72, centre = mat.left + mat.width / 2;
           if (mat.width > 0 && foot >= rect.top && foot < rect.bottom && centre - size * .38 >= x && centre + size * .38 <= right) {

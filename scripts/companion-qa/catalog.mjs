@@ -37,6 +37,9 @@ export const PURE_SUITES = Object.freeze([
   'tests/unit/companion-home-contact-anchor-157.test.ts',
   'tests/unit/companion-tidy-primary-157.test.ts',
   'tests/unit/companion-painted-source-157.test.ts',
+  'tests/unit/companion-house-controls-162.test.ts',
+  'tests/unit/activity-home-wash-162.test.ts',
+  'tests/unit/companion-expressions-161.test.ts',
   'tests/unit/companion-native-travel-142.test.ts',
   'tests/unit/companion-ordinary-travel-142.test.ts',
   'tests/unit/companion-personality-catalog-137.test.ts',
@@ -96,15 +99,16 @@ export const NATIVE_SUITES = Object.freeze([
   'companion-play-presentation-156.spec.ts',
   'companion-rest-continuity-157.spec.ts',
   'companion-daily-ideas-157.spec.ts',
+  'companion-house-controls-162.spec.ts',
 ]);
 export const NATIVE_ENTRY_TITLES = Object.freeze(['viewer', 'studio', 'preview'].flatMap(surface => PERSONALITIES.map(personality => `137 ${surface} native ${personality} selection expresses immediately and remains purposeful`)));
 export const NATIVE_FLOATING_TIDY_TITLES = Object.freeze([
   '142 floating home tidy preserves all four returns with learned care on',
   '142 floating home tidy returns from a real calendar perch to all four toys',
 ]);
-export const PLANNED_NATIVE_CASE_COUNT = 192;
+export const PLANNED_NATIVE_CASE_COUNT = 198;
 export const NATIVE_ENTRY_GREP = `(?:^|\\s)137 (?:viewer|studio|preview) native (?:${PERSONALITIES.join('|')}) selection expresses immediately and remains purposeful$`;
-export const NATIVE_GREP = '157 |156 |149 |147 |146 |143 |142 |141 |134 .*arrows activate|140 .*primary and secondary|140 outside-home|123 actual solar|123 six shared|123 static|autonomous companion movement never|110 developer views' + '|' + NATIVE_ENTRY_GREP;
+export const NATIVE_GREP = '157 |156 |149 |147 |146 |143 |142 |141 |134 .*arrows activate|140 .*primary and secondary|140 outside-home|123 actual solar|123 six shared|123 static|autonomous companion movement never|110 developer views' + '|' + NATIVE_ENTRY_GREP + '|162 (?:viewer|studio|preview) (?:pointer|keyboard) direct pad approach wash and exit$';
 const key = (a, av, b, bv) => JSON.stringify([a, av, b, bv]);
 export function pairKeys(row, dimensions = DIMENSIONS) {
   const names = Object.keys(dimensions), result = [];

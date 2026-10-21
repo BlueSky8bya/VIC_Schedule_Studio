@@ -14,7 +14,9 @@ export type PaintedSource157Window = Window & { companionPaintedSource157?: { in
 
 type ExpressionAnchor157 = typeof expressionAnchors.frames[number];
 /** Pure comparator serialized verbatim into the browser observer. Tests call
- * this same exported factory, including the exact calibrated mask operation. */
+ * this same exported factory, including the exact calibrated mask operation.
+ *162 draws clipped reference eyes even for a narrow blink. Its permitted
+ * geometry still uses the reference eye bounds; no wider face mask is needed. */
 export function createCompanionExpressionPixelVerifier157() {
   function maskExpressionPixels157(source: Uint8ClampedArray, pose: ExpressionAnchor157, reference: ExpressionAnchor157) {
     const size=192,total=size*size,scale=size/80,mask=new Uint8Array(total);
