@@ -14,6 +14,7 @@ import { settlePanelLayout } from "./helpers/panel-layout";
 import { curiousTextureCellMatches, type CuriousTextureCellMeasurement } from "./helpers/companion-curious-completion-144";
 import { nativeHomeControlContactBefore, type NativeHomeControlFrame } from "./helpers/companion-home-contact-156";
 import { installCompanionPaintedSource157, type PaintedSource157Proof, type PaintedSource157Window } from "./helpers/companion-painted-source-157";
+import { nextActionProgress157 } from "./helpers/companion-next-action-157";
 
 type Surface = "viewer" | "studio" | "preview";
 type Frame = NativeHomeControlFrame & { state: string; play: string; scene: string; serial: string; beat: string; platform: string; pose: number;
@@ -29,7 +30,10 @@ const sha = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
 const sourcePaths = ["lib/ui/viewer-companion/home-contact-presentation.ts", "tests/visual/helpers/companion-home-contact-156.ts", "tests/visual/helpers/companion-home.ts", "tests/visual/helpers/companion-floor-placement-157.ts", "lib/ui/viewer-companion/home-life-policy.ts", "lib/ui/viewer-companion/personality-director.ts", "lib/ui/viewer-companion/accessory.ts", "lib/ui/viewer-companion/home-contact-anchors-157.json", "lib/ui/viewer-companion/home-interaction.ts", "lib/ui/viewer-companion/home-light.ts", "lib/ui/viewer-companion/home-room-media.ts", "components/poster/public-poster.tsx", "components/shared/companion-settings.tsx", "components/poster/viewer-companion/viewer-companion.tsx", "app/visual-fixture/poster/page.tsx", "tests/visual/companion-rest-continuity-157.spec.ts"];
 test.use({ viewport: { width: 1920, height: 1100 }, deviceScaleFactor: 1, storageState: { cookies: [], origins: [] }, serviceWorkers: "block", hasTouch: false,
   trace: "on", video: { mode: "on", size: { width: 1920, height: 1100 } } });
+sourcePaths.push("tests/visual/helpers/companion-next-action-157.ts");
 test.setTimeout(175_000);
+const S03_ADMISSION_MS = 180_000;
+const S03_FUNCTION_MS = 115_000;
 
 test.beforeEach(async ({ page, context, baseURL }) => {
   const frozen = process.env.COMPANION157_SOURCE_FREEZE ?? process.env.COMPANION156_SOURCE_FREEZE;
@@ -83,10 +87,10 @@ async function fixture(page: Page, surface: Surface, night: boolean, initialLigh
   await expect(home.locator(".vc-home-lamp")).toHaveAttribute("aria-pressed", String(initialLight));
   return home;
 }
-async function startProbe(page: Page) {
+async function startProbe(page: Page, maximumMs = 140_000) {
   readBuffers.delete(page);
   await installCompanionPaintedSource157(page);
-  await page.evaluate(() => {
+  await page.evaluate(maximumMs => {
     (window as ProbeWindow).rest157?.stop(); const frames: Frame[] = [], began = performance.now(); let raf = 0, last = -Infinity, stopped = false;
     const paint = (node: Element | null | undefined): NativeHomeControlFrame["control"]["tool"] => {
       if (!node) return { visible: false, rect: null }; const r = node.getBoundingClientRect(), css = getComputedStyle(node);
@@ -120,10 +124,10 @@ async function startProbe(page: Page) {
           homeLife: actor?.dataset.homeLife ?? "", homeLifeScene: actor?.dataset.homeLifeScene ?? "", homeLifeSerial: actor?.dataset.homeLifeSerial ?? "", homeLifeBeat: actor?.dataset.homeLifeBeat ?? "", control,
           sofa: cushion.rect ? { left: cushion.rect.x, right: cushion.rect.x+cushion.rect.width, top: cushion.rect.y, visible: cushion.visible } : null,
           toys: [...document.querySelectorAll<HTMLElement>(".vc-toy")].map(node => { const p = paint(node); return { id: node.dataset.toyId ?? "", carried: node.dataset.carried === "true", visible: p.visible, x: p.rect ? p.rect.x+p.rect.width/2 : NaN, y: p.rect ? p.rect.y+p.rect.height : NaN }; }) });
-      } if (at-began < 140_000) raf = requestAnimationFrame(sample);
+      } if (at-began < maximumMs) raf = requestAnimationFrame(sample);
     };
     raf = requestAnimationFrame(sample); (window as ProbeWindow).rest157 = { frames, stop() { stopped = true; cancelAnimationFrame(raf); } };
-  });
+  }, maximumMs);
 }
 const read = async (page: Page) => {
   const previous = readBuffers.get(page) ?? { cursor: 0, frames: [] };
@@ -138,24 +142,40 @@ const read = async (page: Page) => {
   return frames;
 };
 const source = (frame: Frame) => frame.visible && frame.decoded && frame.sourcePaint && curiousTextureCellMatches(frame.pose, frame.cell);
-function restWitness(frames: Frame[]) {
-  for (const first of frames.filter(frame => frame.scene === "S03" && frame.beat === "2" && frame.state === "play" && frame.play === "cozy-nest" && source(frame))) {
+function restWitness(frames: Frame[], requiredSerial?: string) {
+  for (const first of frames.filter(frame => frame.scene === "S03" && (requiredSerial === undefined || frame.serial === requiredSerial)
+    && frame.beat === "2" && frame.state === "play" && frame.play === "cozy-nest" && source(frame))) {
     const same = frames.filter(frame => frame.scene === "S03" && frame.serial === first.serial), cozy = same.filter(frame => frame.beat === "2" && frame.play === "cozy-nest" && source(frame));
     const sleeping = same.filter(frame => frame.beat === "3" && frame.state === "sleep" && source(frame) && [10,11,12,35,36,40].some(row => companionSpriteMetadata.rows[row].includes(frame.pose)));
     const end = sleeping.at(-1); if (!end || sleeping.length < 3 || end.at-sleeping[0].at < 5500*.8-80 || cozy.length < 3 || cozy.at(-1)!.at-cozy[0].at < companionPlayDuration("cozy-nest")*.8-80) continue;
-    const next = frames.find(frame => frame.at > end.at+100 && frame.at <= end.at+10_000 && source(frame) && ["walk","jump","stretch","sniff","shake"].includes(frame.state)
-      && (frame.scene !== "S03" || frame.serial !== first.serial));
+    const next = nextActionProgress157(frames.filter(source), end.at, { scene: "S03", serial: first.serial });
     if (next) return { serial: first.serial, first: cozy[0], cozyEnd: cozy.at(-1)!, sleeping, end, next };
   }
 }
 for (const surface of ["viewer", "studio", "preview"] as const) for (const night of [false, true]) test(`157 ${surface} ${night ? "night" : "day"} same-ID return prepares controls before cozy then rests and continues`, async ({ page }) => {
+  test.setTimeout(S03_ADMISSION_MS + S03_FUNCTION_MS + 60_000);
   const home = await fixture(page, surface, night, night), toyButton = home.locator('[data-home-action="toys"]');
   await toyButton.click(); const toy = page.locator(".vc-toy"); await expect(toy).toHaveCount(1); await expect(toy).toHaveAttribute("data-falling", "false", { timeout: 10_000 });
   const id = (await toy.getAttribute("data-toy-id"))!, kind = await toy.getAttribute("data-kind"), box = (await home.locator(".vc-toy-box-opening").boundingBox())!, opening = { x: box.x+box.width/2, y: box.y+box.height };
   const tv = home.locator('[data-home-action="tv"]'); await tv.click(); await tv.click(); await expect(home.locator(".vc-home-room")).toHaveAttribute("data-tv", "nature");
-  await page.waitForTimeout(15500); await startProbe(page); await settings(page, true);
-  await expect.poll(async () => Boolean(restWitness(await read(page))), { timeout: 115_000, intervals: [150] }).toBe(true);
-  const frames = await read(page), witness = restWitness(frames)!;
+  await page.waitForTimeout(15500); await startProbe(page, S03_ADMISSION_MS + S03_FUNCTION_MS + 10_000); await settings(page, true);
+  // Other legitimate needs may finish before the first real S03 selection.
+  // Admission has its own finite budget. The unchanged115s function budget
+  // begins at that FIRST visible/decoded serial's beat0, including its return.
+  await expect.poll(async () => (await read(page)).some(frame => frame.scene === "S03" && frame.visible && frame.decoded),
+    { timeout: S03_ADMISSION_MS, intervals: [150] }).toBe(true);
+  const admittedFrames = await read(page), admitted = admittedFrames.find(frame => frame.scene === "S03" && frame.visible && frame.decoded)!;
+  expect(admitted.beat).toBe("0"); expect(admitted.serial).not.toBe(""); expect(admitted.at).toBeLessThanOrEqual(S03_ADMISSION_MS);
+  const remaining = S03_FUNCTION_MS - (admittedFrames.at(-1)!.at - admitted.at);
+  expect(remaining).toBeGreaterThan(0);
+  await expect.poll(async () => {
+    const witness = restWitness(await read(page), admitted.serial);
+    return Boolean(witness && witness.next.at - admitted.at <= S03_FUNCTION_MS);
+  }, { timeout: remaining, intervals: [150] }).toBe(true);
+  const frames = await read(page), witness = restWitness(frames, admitted.serial)!;
+  expect(witness.serial).toBe(admitted.serial); expect(witness.next.at - admitted.at).toBeLessThanOrEqual(S03_FUNCTION_MS);
+  records.get(page)!.notes.push({ firstActualS03Admission: { serial: admitted.serial, at: admitted.at, beat: admitted.beat },
+    admissionBudgetMs: S03_ADMISSION_MS, functionBudgetMs: S03_FUNCTION_MS, noLaterSerialSubstitution: true });
   const carried = frames.filter(frame => source(frame) && frame.scene === "S03" && frame.serial === witness.serial && frame.beat === "0" && frame.toys.some(toy => toy.id === id && toy.carried)); expect(carried.length).toBeGreaterThanOrEqual(2);
   const last = carried.at(-1)!.toys.find(toy => toy.id === id)!; expect(Math.hypot(last.x-opening.x,last.y-opening.y)).toBeLessThan(20);
   expect(frames.some(frame => frame.at > carried.at(-1)!.at && frame.at < witness.first.at && !frame.toys.some(toy => toy.id === id))).toBe(true);

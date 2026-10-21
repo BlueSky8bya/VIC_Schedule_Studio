@@ -54,14 +54,15 @@ test.afterEach(async ({ page }, info) => {
   expect(proof.errors).toEqual([]); expect(proof.rejected).toEqual([]); expect(proof.chunks.length).toBeGreaterThan(5); expect(proof.chunks.every(chunk => chunk.matchesBuild)).toBe(true);
 });
 
-async function setup(page: Page, surface: "viewer" | "studio" | "preview", mode = "full", glasses = false, dark = false) {
-  await page.addInitScript(({ preferences, memory, epoch, epochKey, mode, glasses, dark }) => {
+async function setup(page: Page, surface: "viewer" | "studio" | "preview", mode = "full", glasses = false, dark = false,
+  world: { roam?: boolean; hour?: number } = {}) {
+  await page.addInitScript(({ preferences, memory, epoch, epochKey, mode, glasses, dark, roam }) => {
     for (const [key, value] of Object.entries({ [epochKey]: epoch, "vic.gfxPref": mode === "soft" ? "auto" : mode === "off" ? "off" : "max", "vic.gfx": JSON.stringify({ mode: mode === "reduced" ? "full" : mode, at: Date.now(), v: 3 }), "vic.reduceMotion": mode === "reduced" ? "on" : "off", "vic.sound": "off", "vic.ambient": "off", "vic.dark": dark ? "on" : "off", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(key, value);
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, personality: "performer", personalitySource: "manual", sleep: false, feeding: false, petting: false, learnFromYou: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, rarePrank: false }));
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, personality: "performer", personalitySource: "manual", roam, sleep: false, feeding: false, petting: false, learnFromYou: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, rarePrank: false }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...memory, energy: .9, hunger: .05 }));
     if (glasses) localStorage.setItem("vic.viewerCompanionCollection", JSON.stringify({ version: 1, foods: [], behaviors: [], situations: [], gifts: { unlocked: ["round-glasses"], equipped: "round-glasses", pending: null } }));
-  }, { preferences: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, mode, glasses, dark });
-  const response = await page.goto(surface === "viewer" ? "/visual-fixture/poster?avatar=1" : "/visual-fixture/studio?role=owner&y=2025&m=10&hour=12&weather=clear");
+  }, { preferences: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, mode, glasses, dark, roam: world.roam ?? DEFAULT_COMPANION_PREFERENCES.roam });
+  const response = await page.goto(surface === "viewer" ? `/visual-fixture/poster?avatar=1${world.hour === undefined ? "" : `&hour=${world.hour}`}` : "/visual-fixture/studio?role=owner&y=2025&m=10&hour=12&weather=clear");
   const html = await response!.body(), proof = proofs.get(page)!; mkdirSync(output, { recursive: true });
   const path = resolve(output, `${test.info().title.replace(/[^a-z0-9]+/gi, "-")}-actual.html`); writeFileSync(path, html); proof.html = { path, sha256: hash(html) }; expect(html.toString("utf8")).toContain(proof.build);
   await page.bringToFront(); await page.evaluate(() => document.fonts.ready); await settlePanelLayout(page);
@@ -87,6 +88,28 @@ async function selectPerformer(page: Page) {
   await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
   const group = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }); await group.getByRole("radio", { name: "동글이", exact: true }).click(); await group.getByRole("radio", { name: "재롱둥이", exact: true }).click();
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden(); await page.mouse.move(2, 2);
+}
+async function collectionBeforeLocalBookPreview(page: Page, seed: string) {
+  // R25 records the actual initial world rest. Observe its real decoded body
+  // and committed collection BEFORE opening the local, non-collecting preview.
+  // Do not seed that discovery, ignore extra IDs or replace full equality.
+  await expect(page.getByRole("dialog", { name: "빅타민 수첩", exact: true })).toHaveCount(0);
+  const inspect = () => page.evaluate(() => {
+    const actor = document.querySelector<HTMLElement>(".vc-companion"), texture = actor?.querySelector<HTMLImageElement>(".vc-texture");
+    const rect = actor?.getBoundingClientRect(), style = actor ? getComputedStyle(actor) : null;
+    const row = parseFloat(actor?.style.getPropertyValue("--vc-row") ?? "NaN") * 40 / 100;
+    const decoded = Boolean(texture?.complete && texture.naturalWidth), visible = Boolean(actor && !actor.hidden && rect?.width && rect.height
+      && rect.right > 0 && rect.left < innerWidth && rect.bottom > 0 && rect.top < innerHeight && style?.visibility === "visible" && style.display !== "none");
+    const behaviors = JSON.parse(localStorage.getItem("vic.viewerCompanionCollection") ?? "{}").behaviors ?? [];
+    return { behaviors, actualNativeRestPainted: decoded && visible && row === 0 && actor?.dataset.state === "idle",
+      world: { decoded, visible, row, pose: Number(actor?.dataset.pose ?? -1), state: actor?.dataset.state ?? "", src: texture?.currentSrc ?? "" } };
+  });
+  await expect.poll(inspect, { timeout: 6000, intervals: [50] }).toMatchObject({ behaviors: [seed, "pose:rest"], actualNativeRestPainted: true });
+  const baseline = await inspect();
+  expect(baseline.behaviors).toEqual([seed, "pose:rest"]);
+  expect(baseline.actualNativeRestPainted).toBe(true);
+  proofs.get(page)!.notes.push({ collectionBeforeLocalBookPreview: baseline, seededBehavior: seed, restObtainedFromNativeWorld: true, observerWrites: false });
+  return baseline.behaviors as string[];
 }
 async function probe(page: Page) {
   await page.evaluate(() => {
@@ -155,7 +178,9 @@ for (const [surface, mode, glasses] of [["studio", "full", false], ["viewer", "f
 
 test("149 real book body cheer replay and manual OFF", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("vic.viewerCompanionCollection", JSON.stringify({ version: 1, foods: [], behaviors: ["cheer-rehearsal"], situations: [], gifts: { unlocked: ["round-glasses"], equipped: "round-glasses", pending: null, activeMs: 0, interactionCredit: 0 } })));
-  const home = await setup(page, "viewer"); await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
+  // Local preview stays fully animated; normal saved roam OFF and the
+  // existing guarded night fixture prevent unrelated entry/summer discoveries.
+  const home = await setup(page, "viewer", "full", false, false, { roam: false, hour: 0 }), beforePreview = await collectionBeforeLocalBookPreview(page, "cheer-rehearsal"); await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true }), tabs = dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true });
   await tabs.getByRole("tab", { name: "함께 지내기", exact: true }).click();
   let preview = dialog.getByRole("img", { name: "빅타민 미리보기", exact: true }); await expect(preview).toHaveAttribute("data-preview-ready", ""); await expect(preview.locator(".vc-wearable-front")).toBeVisible();
@@ -179,14 +204,14 @@ test("149 real book body cheer replay and manual OFF", async ({ page }) => {
   await tabs.getByRole("tab", { name: "환경설정", exact: true }).click(); const master = dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true }); await master.click(); await expect(master).toHaveAttribute("aria-checked", "false"); expect(await old!.evaluate(node => node.isConnected)).toBe(false); await old!.dispose();
   await tabs.getByRole("tab", { name: "옷장", exact: true }).click(); preview = dialog.getByRole("img", { name: "빅타민 미리보기", exact: true }); await expect(preview).toHaveAttribute("data-preview-ready", ""); await expect(dialog.getByRole("button", { name: "다시 보기", exact: true })).toBeDisabled();
   await page.waitForTimeout(750); await expect(preview).toHaveAttribute("data-preview-row", "0"); const quiet = await preview.locator(".vc-pose").evaluate(node => { const pose = new DOMMatrixReadOnly((node as HTMLElement).style.transform); return { bob: pose.f, scaleY: Math.hypot(pose.c, pose.d) }; }); expect(Math.abs(quiet.bob)).toBeLessThan(.1); expect(Math.abs(quiet.scaleY - 1)).toBeLessThan(.002); await expect(dialog.locator(".vc-cheer-props,[data-cheer-side]")).toHaveCount(0);
-  const known = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCollection")!).behaviors); expect(known).toEqual(["cheer-rehearsal"]); proofs.get(page)!.notes.push({ completeBodyMotion: motion, interruptedByNativeMasterOff: true, noPompomPropDOM: true });
+  const known = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCollection")!).behaviors); expect(known).toEqual(beforePreview); proofs.get(page)!.notes.push({ completeBodyMotion: motion, interruptedByNativeMasterOff: true, noPompomPropDOM: true, collectionAfterLocalBookPreview: known });
 });
 
 test("149 known odd-food book preview only contracts recovers and stops on OFF", async ({ page }) => {
   // An explicit known-entry fixture exercises drawing and shared preview.
   // It is not an actual meal, consume ACK or discovery-causality test.
   await page.addInitScript(() => localStorage.setItem("vic.viewerCompanionCollection", JSON.stringify({ version: 1, foods: [], behaviors: ["odd-food-reaction"], situations: [], gifts: { unlocked: ["round-glasses"], equipped: "round-glasses", pending: null, activeMs: 0, interactionCredit: 0 } })));
-  const home = await setup(page, "viewer"); await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
+  const home = await setup(page, "viewer", "full", false, false, { roam: false, hour: 0 }), beforePreview = await collectionBeforeLocalBookPreview(page, "odd-food-reaction"); await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true }), tabs = dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }); await tabs.getByRole("tab", { name: "옷장", exact: true }).click();
   let preview = dialog.getByRole("img", { name: "빅타민 미리보기", exact: true }); await expect(preview).toHaveAttribute("data-preview-ready", ""); await expect(preview.locator(".vc-wearable-front")).toBeVisible();
   const stream = await preview.evaluateHandle(node => {
@@ -203,7 +228,8 @@ test("149 known odd-food book preview only contracts recovers and stops on OFF",
   const playback = bouts.sort((left, right) => right.length - left.length)[0] ?? []; expect(playback.length).toBeGreaterThan(20); const duration = playback.at(-1)!.at - playback[0].at; expect(duration).toBeGreaterThan(1900); expect(duration).toBeLessThan(2500); expect(drawing.painted).toBe(true); expect(drawing.resourceSources.length).toBeGreaterThan(0);
   let contractions = 0, contracted = false; for (const frame of playback) { const next = frame.bob < -.05; if (next && !contracted) contractions++; contracted = next; } expect(contractions).toBeGreaterThanOrEqual(2); expect(contractions).toBeLessThanOrEqual(3); expect(Math.min(...playback.map(frame => frame.bob))).toBeLessThan(-.5); expect(Math.max(...playback.map(frame => frame.tilt))).toBeGreaterThan(4); expect(Math.abs(playback.at(-1)!.bob)).toBeLessThan(.1); expect(playback.every(frame => Math.abs(frame.area - 1) < .002 && frame.propsCount === 0 && frame.accessoryVisible)).toBe(true);
   await dialog.getByRole("button", { name: "다시 보기", exact: true }).click(); await expect(preview).toHaveAttribute("data-preview-row", "23"); const old = await preview.elementHandle(); await tabs.getByRole("tab", { name: "환경설정", exact: true }).click(); const master = dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true }); await master.click(); await expect(master).toHaveAttribute("aria-checked", "false"); expect(await old!.evaluate(node => node.isConnected)).toBe(false); await old!.dispose();
-  await tabs.getByRole("tab", { name: "옷장", exact: true }).click(); preview = dialog.getByRole("img", { name: "빅타민 미리보기", exact: true }); await expect(preview).toHaveAttribute("data-preview-ready", ""); await expect(dialog.getByRole("button", { name: "다시 보기", exact: true })).toBeDisabled(); await page.waitForTimeout(500); await expect(preview).toHaveAttribute("data-preview-row", "0"); const known = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCollection")!).behaviors); expect(known).toEqual(["odd-food-reaction"]);
+  await tabs.getByRole("tab", { name: "옷장", exact: true }).click(); preview = dialog.getByRole("img", { name: "빅타민 미리보기", exact: true }); await expect(preview).toHaveAttribute("data-preview-ready", ""); await expect(dialog.getByRole("button", { name: "다시 보기", exact: true })).toBeDisabled(); await page.waitForTimeout(500); await expect(preview).toHaveAttribute("data-preview-row", "0"); const known = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCollection")!).behaviors); expect(known).toEqual(beforePreview);
+  proofs.get(page)!.notes.push({ collectionAfterLocalBookPreview: known });
   proofs.get(page)!.notes.push({ oddFoodPreviewDurationMs: duration, actualContractionBeats: contractions, manualOffStopsKnownPreview: true, actualConsumeOrDiscoveryProved: false });
 });
 

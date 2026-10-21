@@ -4,6 +4,16 @@
 > 남기는 자리다 — 되돌리기 비싼 변경, 마이그레이션, 공개 경계 변경만 적는다.
 > 포맷·import 정리·소소한 오타는 적지 않는다.
 
+## v0.1.0 — 2026-10-22 (verified candidate)
+
+### CHG-20261022-001 — Bind secondary writes to caller scope and preserve tags on failure
+
+Tags/support enforce existing owner-only and private-unlock rules before mutation. Support uses authenticated RLS with original calendar/scope/type and a checked affected row. New0153 caller-scoped transaction replaces tags without partial deletion or stale full-event overwrite; legacy embargo receives the existing owner_private owner-only policy. No public DTO, role expansion, old-row rewrite or table grant changes. Local action stubs and PGlite validate rejection, rollback, policy and idempotence; genuine provider auth/RLS is unverified. Applied0153 before reader publication with verified TLS; exact function body/security, policy predicates and EXECUTE privileges passed metadata-only verification, actual exit0. No operating rows were queried or rewritten. Recovery: use only a reviewed compatible reader preserving scope guards and authenticated writes, retain the additive safe function while callers remain and keep tightened owner policies; do not restore known service-role or delete/insert bypasses. [Audit plan](plans/PLAN-20261022-site-catalog.md).
+
+### CHG-20261022-002 — Recover rejected editor input in session memory
+
+Confirmed synthetic403 lost a new event's input because the optimistic submit cleared its draft before acknowledgement. Per-attempt memory snapshots now provide explicit FIFO input recovery without changing the current editor on late replies. Independent same-date failures and newer closed/temp drafts remain separate; explicit discard uses monotonic revision cutoffs. Existing ten-minute TTL and original/current/submitted scope, owner, unlock and read-only gates apply. No input/IDs enter storage, analytics or logs; G22 adds only the fixed editor-recover-failed-save action label. Local14 adversarial tests and independent source review pass; rendered/full factory evidence is recorded in the audit plan. Rollback must retain this recovery or an equivalent reviewed fix and the001 authorization repair; do not revert all repairs together to a known broken app.
+
 ## v0.1.0 — 2026-10-17
 
 ### CHG-20261017-003 — Preserve final-action order and cache RLS identity

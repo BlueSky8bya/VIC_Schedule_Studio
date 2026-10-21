@@ -16,7 +16,9 @@ describe("143 append-only local collection migration", () => {
   it("preserves the exact180 old IDs, names and rarity classes", () => {
     const old = COMPANION_FOOD_KINDS.slice(0, 180);
     expect(sha(old)).toBe("722c2bd5a8aef99a5cd5569354a4aa06de37b024b2c0dd6fe0bacf187810343f");
-    expect(sha(old.map(id => [id, COMPANION_FOOD_NAMES[id]]))).toBe("2942a19c44eb90b52d7b3c0b7cf596b2920295c1a909f64f3e7cd30c2171a9a5");
+    const translated: Record<string, [string,string]> = {edamame:["풋콩","에다마메"],lentil:["렌즈콩","렌틸콩"],"passion-fruit":["백향과","패션프루트"],cauliflower:["꽃양배추","콜리플라워"],"apple-pie":["사과파이","애플파이"]};
+    for(const [id,[name]] of Object.entries(translated)) expect(COMPANION_FOOD_NAMES[id as keyof typeof COMPANION_FOOD_NAMES]).toBe(name);
+    expect(sha(old.map(id => [id, translated[id]?.[1] ?? COMPANION_FOOD_NAMES[id]]))).toBe("2942a19c44eb90b52d7b3c0b7cf596b2920295c1a909f64f3e7cd30c2171a9a5");
     expect(sha(old.map(id => [id, COMPANION_FOOD_RARITY[id]]))).toBe("05f9bd0d7c756e17516fb3fc4afc14c0a0475988db7ba70968cd6f6568a678b7");
     expect(COMPANION_FOOD_KINDS.slice(180, 240)).toEqual(COMPANION_SNACK_EXPANSION_143.map(item => item.id));
     expect(COMPANION_TOY_KINDS.slice(24, 60)).toEqual(COMPANION_TOY_EXPANSION_143.map(item => item.id));

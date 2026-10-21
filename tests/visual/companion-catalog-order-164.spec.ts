@@ -15,6 +15,7 @@ import { settlePanelLayout } from "./helpers/panel-layout";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 
 const output = process.env.COMPANION164_OUTPUT ?? ".scratch-pw/catalog164-observations";
+const buildDir = process.env.VISUAL_TEST_BUILD_DIR ?? ".next";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(m => m[1]));
 type Surface = "viewer" | "studio" | "preview";
 type Proof = { rejected: string[]; errors: string[]; notes: unknown[] };
@@ -26,7 +27,7 @@ test.beforeEach(async ({ page, context, baseURL }) => {
   const proof: Proof = { rejected: [], errors: [], notes: [] }; proofs.set(page, proof);
   page.on("pageerror", error => proof.errors.push(error.message));
   const origin = new URL(baseURL!).origin;
-  const manifest = JSON.parse(readFileSync(resolve(".next/server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
+  const manifest = JSON.parse(readFileSync(resolve(buildDir, "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
   const previews = new Set(Object.entries(manifest).filter(([, v]) => v.exportedName === "getPublicPreviewAction").map(([id]) => id));
   await context.route("**/*", route => {
     const req = route.request(), url = new URL(req.url());
@@ -41,7 +42,7 @@ test.beforeEach(async ({ page, context, baseURL }) => {
   });
 });
 test.afterEach(async ({ page }) => {
-  const proof = proofs.get(page)!; save(test.info().title.replace(/[^a-z0-9]+/gi, "-"), { ...proof, buildId: readFileSync(".next/BUILD_ID", "utf8").trim(), scope: "Real production-build fixtures with synthetic care/collection and intercepted APIs; no DB/login or seeded clock/RNG/geometry." });
+  const proof = proofs.get(page)!; save(test.info().title.replace(/[^a-z0-9]+/gi, "-"), { ...proof, buildId: readFileSync(resolve(buildDir, "BUILD_ID"), "utf8").trim(), scope: "Real production-build fixtures with synthetic care/collection and intercepted APIs; no DB/login or seeded clock/RNG/geometry." });
   expect(proof.errors).toEqual([]); expect(proof.rejected).toEqual([]); proofs.delete(page);
 });
 async function seed(page: Page, dark = false, foods = COMPANION_FOOD_KINDS, toys = COMPANION_TOY_KINDS, unread = false) {
@@ -85,9 +86,29 @@ for(const [surface,dark,width,height] of [["viewer",false,1440,1000],["studio",t
       expect(labels.map(label=>label.split(' · ')[0])).toEqual(expected);visited.push(...expected);
       for(let i=0;i<labels.length;i++){
         const id=kinds[offset+i],rarity=category==='food'?COMPANION_FOOD_RARITY[id as keyof typeof COMPANION_FOOD_RARITY]:COMPANION_TOY_RARITY[id as keyof typeof COMPANION_TOY_RARITY];
-        if(tiers.has(rarity))continue;tiers.add(rarity);await tiles.nth(i).click();await page.mouse.move(2,2);
+        await tiles.nth(i).click();await page.mouse.move(2,2);
         const detail=book.locator('.rhh-collection-gallery-detail'),seal=detail.locator('[data-seal-rarity]');
         await expect(seal).toHaveAttribute('data-seal-rarity',rarity);await expect(seal).toHaveAttribute('data-collection-art-id',id);
+        // Measure actual decoded source alpha in the browser, independently of
+        // the generated display metadata and the implementation's dx/dy.
+        const centering=await seal.evaluate(async node=>{
+          const specimen=node.querySelector('.vc-collection-seal-picture image') as SVGImageElement;
+          const image=new Image();image.src=specimen.href.baseVal;await image.decode();
+          const inner=specimen.parentElement as unknown as SVGSVGElement;
+          const food=node.getAttribute('data-collection-art')==='food-stamp';
+          const box=food?inner.viewBox.baseVal:{x:0,y:0,width:image.naturalWidth,height:image.naturalHeight};
+          const canvas=document.createElement('canvas');canvas.width=box.width;canvas.height=box.height;
+          const context=canvas.getContext('2d',{willReadFrequently:true})!;
+          context.drawImage(image,box.x,box.y,box.width,box.height,0,0,box.width,box.height);
+          const pixels=context.getImageData(0,0,box.width,box.height).data;
+          let l=box.width,t=box.height,r=0,b=0;
+          for(let y=0;y<box.height;y++)for(let x=0;x<box.width;x++)if(pixels[(y*box.width+x)*4+3]>16){l=Math.min(l,x);t=Math.min(t,y);r=Math.max(r,x+1);b=Math.max(b,y+1);}
+          const point=new DOMPoint(specimen.x.baseVal.value+(box.x+(l+r)/2)*specimen.width.baseVal.value/image.naturalWidth,specimen.y.baseVal.value+(box.y+(t+b)/2)*specimen.height.baseVal.value/image.naturalHeight).matrixTransform(specimen.getScreenCTM()!);
+          const seal=node.getBoundingClientRect();return {dx:point.x-seal.left-seal.width/2,dy:point.y-seal.top-seal.height/2,visible:r>l&&b>t};
+        });
+        expect(centering.visible).toBe(true);expect(Math.abs(centering.dx)).toBeLessThan(.6);expect(Math.abs(centering.dy)).toBeLessThan(.6);
+        notes.push({category,id,centering});
+        if(tiers.has(rarity))continue;tiers.add(rarity);
         shapes.add((await seal.getAttribute('data-seal-shape'))!);
         for(const backing of await seal.locator(':scope > svg > image').all())expect(await backing.evaluate(async node=>{const image=new Image();image.src=(node as SVGImageElement).href.baseVal;await image.decode();return image.naturalWidth>0;})).toBe(true);
         for(const img of await detail.locator('img').all())await expect.poll(()=>img.evaluate((n:HTMLImageElement)=>n.complete&&n.naturalWidth>0)).toBe(true);

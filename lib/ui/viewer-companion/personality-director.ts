@@ -924,6 +924,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
       const timely = Number.isFinite(acknowledgedAt) && acknowledgedAt >= now;
       if (Number.isFinite(acknowledgedAt) && acknowledgedAt >= now) now = acknowledgedAt;
       if (!success) { if (beat.command.optional) advance(); else finish(false); return; }
+      const ownPlayRelease = beat.command.kind === "toy" && beat.command.mode === "play" && Boolean(itemId) && active.itemId === itemId;
       if (itemId) active.itemId = itemId;
       if (timely && ["toy", "food", "wash", "tv", "light", "curtain", "radio"].includes(beat.command.kind)) active.closureAt = acknowledgedAt;
       // These ACKs certify real physical effects. Inspect/compare are finite
@@ -941,7 +942,9 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
       }
       if (timely && beat.command.kind === "toy" && beat.command.mode === "return") lastCleanupAt = acknowledgedAt;
       if (beat.command.kind === "toy" && beat.command.mode === "return" && ++active.count < Math.min(2, beat.command.limit ?? 1)) { active.itemId = undefined; active.progressed = now; return; }
-      const settling = timely && itemId && beat.command.kind === "toy" && ["toss", "nudge"].includes(beat.command.mode)
+      // A typed play may physically toss its subject too. Only the existing
+      // same-ID flying observation grants this bounded gravity wait.
+      const settling = timely && itemId && beat.command.kind === "toy" && (["toss", "nudge"].includes(beat.command.mode) || ownPlayRelease)
         ? { id: itemId, until: acknowledgedAt + 1500 } : undefined;
       advance();
       if (active && settling) active.settlingToy = settling;

@@ -76,7 +76,7 @@ function fakeClient() {
   return {
     from: (table: string) => builder(table),
     rpc: async (name: string) => ({
-      data: name === "save_event_atomic" ? "evt-1" : null,
+      data: ["save_event_atomic", "replace_event_tags_atomic"].includes(name) ? "evt-1" : null,
       error: null
     })
   };

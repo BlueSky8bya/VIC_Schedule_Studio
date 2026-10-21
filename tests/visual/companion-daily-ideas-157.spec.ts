@@ -11,8 +11,9 @@ import { guardCompanionQa, startCompanionQaProbe, type DailyProof, type QaObserv
 import { completedDailyIdeas157, type Daily157Prelude } from "./helpers/companion-daily-ideas-157";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { placeCompanionOnMeasuredFloor157 } from "./helpers/companion-numbered-floor-157";
+import { decodeCompanionQaObservationPacket } from "./helpers/companion-observation-log";
 
-type ProbeWindow = Window & { companionDaily142?: { frames: QaObservation[]; stop: () => void } };
+type ProbeWindow = Window & { companionDaily142?: { frames: QaObservation[]; sessionId: string; readJson: (from?: number) => string; stop: () => void } };
 type Setup = { id: string; personality: CompanionPersonality; surface: "viewer" | "studio" | "preview"; toys: number; food?: boolean; sleep?: boolean; pet?: boolean };
 const setups: Setup[] = [
   { id: "D157-P", personality: "performer", surface: "preview", toys: 0 },
@@ -28,16 +29,19 @@ const setups: Setup[] = [
 const records = new WeakMap<Page, { proof: DailyProof; initial: Daily157Prelude; setup: Setup; binding: unknown }>();
 const sha = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
 const sampleCache = new WeakMap<Page, QaObservation[]>();
+const sessionCache = new WeakMap<Page, string>();
 // Transfer only new read-only samples while polling. The unmodified complete
 // browser history is still saved below; no failed frames are discarded.
 async function samples(page: Page) {
   const received = sampleCache.get(page) ?? [];
-  const packet = await page.evaluate(offset => {
-    const all = (window as ProbeWindow).companionDaily142?.frames ?? [];
-    return { total: all.length, frames: all.slice(offset) };
+  const encoded = await page.evaluate(offset => {
+    const probe = (window as ProbeWindow).companionDaily142;
+    if (!probe) throw Error("Actual observation session missing");
+    return probe.readJson(offset);
   }, received.length);
-  if (packet.total < received.length || packet.frames.length !== packet.total - received.length)
-    throw Error("Read-only daily probe history changed during incremental transfer");
+  const packet = decodeCompanionQaObservationPacket<QaObservation>(encoded, { from: received.length,
+    sessionId: sessionCache.get(page), previousAt: received.at(-1)?.at });
+  sessionCache.set(page, packet.sessionId);
   received.push(...packet.frames); sampleCache.set(page, received); return received;
 }
 
@@ -47,7 +51,14 @@ test.setTimeout(125_000);
 
 test.afterEach(async ({ page }, info) => {
   const record = records.get(page); if (!record) return;
-  const frames = await page.evaluate(() => { const p = (window as ProbeWindow).companionDaily142; p?.stop(); return p?.frames ?? []; }).catch(() => []);
+  const encoded = await page.evaluate(() => {
+    const probe = (window as ProbeWindow).companionDaily142;
+    if (!probe) throw Error("Actual observation session missing at final capture");
+    probe.stop(); return probe.readJson();
+  });
+  const packet = decodeCompanionQaObservationPacket<QaObservation>(encoded, { from: 0, sessionId: sessionCache.get(page) });
+  const frames = packet.frames, received = sampleCache.get(page) ?? [];
+  const prefixUnchanged = JSON.stringify(frames.slice(0, received.length)) === JSON.stringify(received);
   await Promise.allSettled(record.proof.pending);
   const reached = completedDailyIdeas157(frames, record.setup.id, record.initial);
   const actualExpressionFrames=frames.filter(frame=>frame.paintedSource?.passed&&frame.paintedSource.mode==="expression"
@@ -58,11 +69,13 @@ test.afterEach(async ({ page }, info) => {
     sourceBinding: record.binding, buildId: record.proof.build, setup: record.setup, initial: record.initial,
     errors: record.proof.errors, rejected: record.proof.rejected, proof: { ...record.proof, pending: undefined },
     notes: [{ reachedFinalBeatAndSubsequentSequence: reached, actualExpressionFrames:actualExpressionFrames.length,sampleIntervalMs: 40,
-      pollingTransfer: "append-only delta; complete original browser history retained" }], frames,
+      pollingTransfer: "private immutable JSON capture; session-bound exact append-only delta; atomic stop and final canonical history",
+      observationLog: { sessionId: packet.sessionId, total: packet.total, prefixUnchanged } }], frames,
     limitation: "One actual situational idea/next-action sample per personality, across three shared surfaces. Real UI creates, transports, consumes and reacts; normal synthetic initial preferences/needs are not operating data. All raw candidate/failed frames remain. Not every world/food/random nap outcome or native Cartesian proof." }, null, 2));
   await page.screenshot({ path: png, animations: "allow" }).catch(() => {});
   await info.attach("daily-idea157-native", { path: raw, contentType: "application/json" });
   await info.attach("daily-idea157-final", { path: png, contentType: "image/png" }).catch(() => {});
+  expect(prefixUnchanged, "final canonical history must retain every previously read observation").toBe(true);
   if(record.setup.id==="D157-A")expect(actualExpressionFrames.length,"actual trusted petting must paint at least one fully verified current-cell canvas expression").toBeGreaterThan(0);
   expect(record.proof.errors).toEqual([]); expect(record.proof.rejected).toEqual([]);
   expect(record.proof.mutations).toEqual([]); expect(record.proof.liveReads).toEqual([]);
@@ -83,7 +96,7 @@ for (const setup of setups) test(`157 ${setup.id} ${setup.surface} actual situat
   const bytes = readFileSync(resolve(frozenPath)), freeze = JSON.parse(bytes.toString()) as { contentDigest: string; sourceFiles: { path: string; sha256: string }[] };
   const paths = ["lib/ui/viewer-companion/personality-scene-catalog.ts", "lib/ui/viewer-companion/personality-director.ts", "lib/ui/viewer-companion/personality-activity.ts", "lib/ui/viewer-companion/safe-room-floor.ts", "tests/visual/companion-daily-ideas-157.spec.ts", "tests/visual/helpers/companion-daily-ideas-157.ts",
     "app/visual-fixture/poster/page.tsx", "components/poster/public-poster.tsx", "components/poster/viewer-companion/viewer-companion.tsx",
-    "tests/visual/helpers/companion-numbered-floor-157.ts", "lib/ui/viewer-companion/geometry.ts"];
+    "tests/visual/helpers/companion-numbered-floor-157.ts", "lib/ui/viewer-companion/geometry.ts", "tests/visual/helpers/companion-observation-log.ts"];
   for (const path of paths) expect(freeze.sourceFiles.find(item => item.path === path)?.sha256).toBe(sha(readFileSync(resolve(path))));
   const record = { proof, initial: { toyIds: [], foodIds: [] } as Daily157Prelude, setup, binding: { path: frozenPath, sha256: sha(bytes), contentDigest: freeze.contentDigest } }; records.set(page, record);
   await page.addInitScript(({ epoch, key, defaults, care, setup }) => {

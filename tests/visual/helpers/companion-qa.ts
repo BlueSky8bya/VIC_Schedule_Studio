@@ -10,6 +10,7 @@ import { traceLivingContextComplete } from "../../../scripts/companion-qa/living
 import { completedCuriousDailyIdeas, curiousTextureCellMatches, CURIOUS_COMPLETION_SCOPE, type CuriousCompletionSnapshot } from "./companion-curious-completion-144";
 import { companionSyntheticRead157 } from "./companion-synthetic-reads-157";
 import { installCompanionPaintedSource157, type PaintedSource157Proof, type PaintedSource157Window } from "./companion-painted-source-157";
+import { createCompanionQaObservationLog } from "./companion-observation-log";
 
 export type Companion143DiagnosticRecord = {stage:string;activeMs:number;facts:Readonly<Record<string,unknown>>};
 /** Opt-in observation only. It exposes no actor/scene/clock/geometry setter. */
@@ -24,7 +25,7 @@ export type QaObservation = QaFrame & { sourceClipMeasured: boolean; scene: stri
   paintedSource?: PaintedSource157Proof;
   homeLife?: { phase: string; scene: string; serial: string; beat: string; reaching: string; lampTouch: boolean };
   curiousCompletion: CuriousCompletionSnapshot };
-type ProbeWindow = Window & { companionDaily142?: { frames: QaObservation[]; stop: () => void } };
+type ProbeWindow = Window & { companionDaily142?: { readonly frames: QaObservation[]; readonly sessionId: string; readJson: (from?: number) => string; stop: () => void } };
 export type DailyProof = { build: string; errors: string[]; rejected: string[]; mutations: string[]; liveReads: string[]; syntheticReads: string[]; blockedTelemetry: string[]; chunks: { path: string; served: string; local: string }[]; pending: Promise<void>[] };
 export async function guardCompanionQa(page: Page, context: BrowserContext, base: string): Promise<DailyProof> {
   const origin = new URL(base);
@@ -73,7 +74,8 @@ export async function startCompanionQaProbe(page: Page, options: { sampleInterva
   await installCompanionPaintedSource157(page);
   const sampleIntervalMs = options.sampleIntervalMs ?? 80;
   if (sampleIntervalMs !== 40 && sampleIntervalMs !== 80) throw Error("Unsupported read-only sample interval");
-  await page.evaluate(({metadata,playRows,sampleIntervalMs}) => {
+  const observationLog = await page.evaluateHandle(createCompanionQaObservationLog, undefined);
+  try { await page.evaluate(({metadata,playRows,sampleIntervalMs,observationLog}) => {
     // Browser CSS serializes equivalent inset crops with1–4 values. Keep this
     // parser local to the serialized observer; unsupported syntax stays
     // unmeasured and can never turn the alpha/source gate into a default PASS.
@@ -87,7 +89,7 @@ export async function startCompanionQaProbe(page: Page, options: { sampleInterva
         : values.length === 3 ? [values[0],values[1],values[2],values[1]] : values;
     }
     const scope = window as ProbeWindow; scope.companionDaily142?.stop();
-    const frames: QaObservation[] = [], start = performance.now(), cache = new Map<string, { left: number; right: number; top: number; bottom: number } | null>();
+    const start = performance.now(), cache = new Map<string, { left: number; right: number; top: number; bottom: number } | null>();
     const canvas = document.createElement("canvas"); canvas.width = canvas.height = metadata.cell;
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     let stopped = false, request = 0, last = -Infinity, previousFood = "", stableSince = 0, cleanupSince = 0;
@@ -219,7 +221,7 @@ export async function startCompanionQaProbe(page: Page, options: { sampleInterva
         const root=document.documentElement.getBoundingClientRect(),state=actor?.dataset.state??"",play=actor?.dataset.play??"";
         const rows=state==="play"?playRows[play]:({sniff:[1],stretch:[16],shake:[17],walk:[2,20],jump:[3,4,5,6,7]} as Record<string,number[]>)[state];
         const action=rows?.some(row=>metadata.rows[row]?.includes(pose))?state==="play"?`play:${play}`:state:"";
-        frames.push({ activity:{source:false,manual:owned||at-lastHuman<1000,epoch:humanEpoch+layoutEpoch,jumpAllowed:preferences.jump===true,width:rect?.width??0,height:rect?.height??0,anchor:{x:root.x,y:root.y,width:root.width,height:root.height},action,context:""},at: at - start, x: rect ? rect.x + rect.width / 2 : NaN, y: rect?.bottom ?? NaN, visible, decoded, state: actor?.dataset.state ?? "", enabled: preferences.enabled !== false, roam: preferences.roam !== false, sleepAllowed: preferences.sleep !== false,
+        observationLog.append({ activity:{source:false,manual:owned||at-lastHuman<1000,epoch:humanEpoch+layoutEpoch,jumpAllowed:preferences.jump===true,width:rect?.width??0,height:rect?.height??0,anchor:{x:root.x,y:root.y,width:root.width,height:root.height},action,context:""},at: at - start, x: rect ? rect.x + rect.width / 2 : NaN, y: rect?.bottom ?? NaN, visible, decoded, state: actor?.dataset.state ?? "", enabled: preferences.enabled !== false, roam: preferences.roam !== false, sleepAllowed: preferences.sleep !== false,
           paintedSource,owned, blocked, lifePurpose: actor?.dataset.lifePurpose, humanEpoch, layoutEpoch, walkSource: Boolean(paintedSource?.passed && decoded && texture && frame && sprite && texture.currentSrc.endsWith(metadata.atlases[frame.atlas].src) && [2,20].some(row => metadata.rows[row].includes(pose))), eligible: visible && decoded && !quiet && !blocked && !owned && preferences.roam !== false, pose, frame: pose, sourceClipMeasured, clipError, wash, toyPlay, playPaint,
           personality: preferences.personality, hunger, energy, outsideVisible, command: actor?.dataset.personalityCommand ?? "", play: actor?.dataset.play ?? "",
           jumpSource: Boolean(paintedSource?.passed && decoded && texture && frame && sprite && texture.currentSrc.endsWith(metadata.atlases[frame.atlas].src) && [5,6,7].some(row => metadata.rows[row].includes(pose))),
@@ -234,11 +236,14 @@ export async function startCompanionQaProbe(page: Page, options: { sampleInterva
       }
       if (at - start <= 100000) request = requestAnimationFrame(sample);
     };
-    scope.companionDaily142 = { frames, stop() { stopped = true; cancelAnimationFrame(request);
+    scope.companionDaily142 = Object.freeze({ sessionId: observationLog.sessionId, readJson: observationLog.readJson,
+      get frames() { return JSON.parse(observationLog.readJson()).frames as QaObservation[]; },
+      stop() { stopped = true; cancelAnimationFrame(request);
       document.removeEventListener("pointermove", human, true); document.removeEventListener("pointerdown", human, true); document.removeEventListener("keydown", human, true);
       window.removeEventListener("scroll", layout, true); window.removeEventListener("resize", layout);
-    } }; request = requestAnimationFrame(sample);
-  }, {metadata:companionSpriteMetadata,playRows:Object.fromEntries(Object.entries(COMPANION_PLAY_TIMING).map(([key,value])=>[key,value.beats.map(beat=>beat.row)])),sampleIntervalMs});
+    } }); request = requestAnimationFrame(sample);
+  }, {metadata:companionSpriteMetadata,playRows:Object.fromEntries(Object.entries(COMPANION_PLAY_TIMING).map(([key,value])=>[key,value.beats.map(beat=>beat.row)])),sampleIntervalMs,observationLog}); }
+  finally { await observationLog.dispose(); }
 }
 export async function finishCompanionQa(page: Page, info: TestInfo, proof: DailyProof, scenario: Record<string, string | number>, completed: boolean, originalError?: string) {
   const frames = (await page.evaluate(() => { const probe = (window as ProbeWindow).companionDaily142; probe?.stop(); return probe?.frames ?? []; }).catch(() => [])).map(frame=>({...frame,activity:{...frame.activity!,source:frame.curiousCompletion.source&&curiousTextureCellMatches(frame.pose,frame.curiousCompletion.cell),context:JSON.stringify([frame.items,frame.carried,frame.controls])}}));

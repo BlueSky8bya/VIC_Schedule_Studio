@@ -379,6 +379,9 @@ export function InsightsDashboard({
         if (r.ok) setData(r.data);
         else setError(r.error);
       })
+      .catch(() => {
+        if (alive) setError("인사이트를 불러오지 못했어요. 잠시 후 다시 열어 주세요.");
+      })
       .finally(() => {
         if (alive) setLoading(false);
       });
@@ -386,6 +389,7 @@ export function InsightsDashboard({
       .then((r) => {
         if (alive && r.ok) setVisits(r.data);
       })
+      .catch(() => { /* Keep unavailable data distinct from an empty aggregate. */ })
       .finally(() => {
         if (alive) setVisitsLoading(false);
       });
@@ -393,6 +397,7 @@ export function InsightsDashboard({
       .then((r) => {
         if (alive && r.ok) setTrend(r.data);
       })
+      .catch(() => { /* A failed request is not a zero-activity result. */ })
       .finally(() => {
         if (alive) setTrendLoading(false);
       });
@@ -407,8 +412,10 @@ export function InsightsDashboard({
     setPerfLoading(true);
     getPerfStatsAction(perfHours).then((r) => {
       if (!alive) return;
-      setPerf(r.ok ? r.rows : []);
+      setPerf(r.ok ? r.rows : null);
       setPerfLoading(false);
+    }).catch(() => {
+      if (alive) { setPerf(null); setPerfLoading(false); }
     });
     return () => {
       alive = false;
@@ -1570,7 +1577,7 @@ export function InsightsDashboard({
                   </div>
                 </div>
                 {perf === null ? (
-                  <p className="insight-empty">불러오는 중…</p>
+                  <p className="insight-empty">{perfLoading ? "불러오는 중…" : "성능 정보를 불러오지 못했어요."}</p>
                 ) : perf.length === 0 ? (
                   <p className="insight-empty">아직 표본이 없어요 — 요청이 쌓이면 채워져요.</p>
                 ) : (

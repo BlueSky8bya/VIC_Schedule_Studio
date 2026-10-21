@@ -13,11 +13,12 @@ import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
+import { measuredWashGeometryDeliveries, type WashGeometryOperation } from "./helpers/wash-geometry-observation";
 
 type Rect = { x: number; y: number; width: number; height: number };
 type Tool = Rect & { visible: boolean; transform: string };
 type Frame = {
-  at: number; absolute: number; state: string; scene: string; beat: string; command: string; effect: string; platform: string;
+  at: number; absolute: number; measuredAt: number; measuredUntil: number; state: string; scene: string; beat: string; command: string; effect: string; platform: string;
   visible: boolean; decoded: boolean; pose: number; x: number; y: number; rect: Rect | null;
   facing: string; facingScale: number; facingTransform: string; boxOpening: Rect | null;
   pad: Rect | null; padFoot: number; washing: boolean; brush: Tool | null; paw: Tool | null; reaching: boolean; grade: number; inertiaFilter: string;
@@ -195,6 +196,7 @@ async function startProbe(page: Page) {
     const sample = (at: number) => {
       if (stopped) return;
       if (at - last >= 35) {
+        const measuredAt = performance.now();
         last = at; const node = document.querySelector<HTMLElement>(".vc-companion"), texture = node?.querySelector<HTMLImageElement>(".vc-texture"), r = readRect(node), pad = readRect(document.querySelector(".vc-home-wash-stance") ?? document.querySelector(".vc-home-wash-pad")), roomNode = document.querySelector<HTMLElement>(".vc-home-room"), css = node && getComputedStyle(node);
         const facingNode = node?.querySelector(".vc-facing"), facingTransform = facingNode ? getComputedStyle(facingNode).transform : "none";
         const contacts: Frame["contacts"] = {};
@@ -207,7 +209,7 @@ async function startProbe(page: Page) {
           lampTouch: document.querySelector(".vc-home-lamp")?.hasAttribute("data-companion-touch") ?? false,
           lampFeedbackOpacity: Math.max(0, ...[...document.querySelectorAll(".vc-home-lamp-cord-feedback")].map(node => Number(getComputedStyle(node).opacity))),
           foods: [...document.querySelectorAll<HTMLElement>(".vc-food")].map(food => ({ id: food.dataset.food ?? "", kind: food.dataset.kind ?? "", eating: food.hasAttribute("data-eating"), carried: food.hasAttribute("data-carried"), discarding: food.hasAttribute("data-discarding") })),
-          toys: [...document.querySelectorAll<HTMLElement>(".vc-toy")].map(toy => ({ id: toy.dataset.toyId ?? "", carried: toy.dataset.carried === "true", held: toy.dataset.held === "true" })) });
+          toys: [...document.querySelectorAll<HTMLElement>(".vc-toy")].map(toy => ({ id: toy.dataset.toyId ?? "", carried: toy.dataset.carried === "true", held: toy.dataset.held === "true" })), measuredAt, measuredUntil: performance.now() });
       }
       if (at - start < 125_000) request = requestAnimationFrame(sample);
     };
@@ -300,19 +302,24 @@ test("141 tidy actual wash stays on mat400 through lamp geometry delivery wheel 
   const first = (await frames(page)).find(frame => washing(frame))!; expect(["T05", "X-T-house", "routine-wash"]).toContain(first.scene);
   await expect(page.locator(".vc-wash-tool")).toBeVisible(); await snapshot(page, "brush-visible-before-geometry");
   const operations: number[] = [];
-  await home.locator('[data-home-action="light"]').click(); operations.push(await now(page));
+  const geometryOperations: WashGeometryOperation[] = [];
+  let operationBegan = await now(page);
+  await home.locator('[data-home-action="light"]').click(); operations.push(await now(page)); geometryOperations.push({began:operationBegan,ended:operations.at(-1)!});
   await expect.poll(async () => { const frame = await latest(page); return frame && washing(frame) ? Math.abs(frame.y - frame.padFoot) : Infinity; }, { timeout: 700, intervals: [35] }).toBeLessThan(2.5);
   const calendar = (await page.locator(".studio-calendar-panel, .public-calendar-area").first().boundingBox())!;
-  await page.mouse.move(calendar.x + calendar.width / 2, calendar.y + calendar.height / 2); await page.mouse.wheel(0, 150); operations.push(await now(page));
-  await page.setViewportSize({ width: 1860, height: 1040 }); operations.push(await now(page)); await page.mouse.move(2, 2);
+  await page.mouse.move(calendar.x + calendar.width / 2, calendar.y + calendar.height / 2); operationBegan = await now(page); await page.mouse.wheel(0, 150); operations.push(await now(page)); geometryOperations.push({began:operationBegan,ended:operations.at(-1)!});
+  operationBegan = await now(page); await page.setViewportSize({ width: 1860, height: 1040 }); operations.push(await now(page)); geometryOperations.push({began:operationBegan,ended:operations.at(-1)!}); await page.mouse.move(2, 2);
   await expect.poll(async () => { const frame = await latest(page); return frame && frame.absolute > operations.at(-1)! + 100 && washing(frame) ? Math.abs(frame.y - frame.padFoot) : Infinity; }, { timeout: 900, intervals: [35] }).toBeLessThan(2.5);
   await expect.poll(async () => { const washed = (await frames(page)).filter(frame => washing(frame) && frame.scene === first.scene); return washed.length > 1 ? washed.at(-1)!.absolute - washed[0].absolute : 0; }, { timeout: 4000, intervals: [50] }).toBeGreaterThanOrEqual(500);
-  const washed = (await frames(page)).filter(frame => washing(frame) && frame.scene === first.scene), stable = washed.filter(frame => operations.every(at => frame.absolute < at || frame.absolute > at + 100));
+  const observedFrames = await frames(page), washed = observedFrames.filter(frame => washing(frame) && frame.scene === first.scene);
+  const geometryDeliveries = measuredWashGeometryDeliveries(observedFrames, geometryOperations);
+  const stable = washed.filter(frame => geometryDeliveries.every(at => frame.measuredUntil < at || frame.measuredAt > at + 100));
   expect(stable.length).toBeGreaterThan(3); expect(stable.every(frame => Math.abs(frame.y - frame.padFoot) < 2.5 && Math.abs(frame.x - (frame.pad!.x + frame.pad!.width / 2)) < 2.5)).toBe(true);
+  expect(stable.some(frame => frame.measuredAt > Math.max(...geometryDeliveries) + 100)).toBe(true);
   expect(washed.some(frame => frame.absolute > operations.at(-1)! && frame.pad && (Math.abs(frame.pad.x - first.pad!.x) > .5 || Math.abs(frame.pad.y - first.pad!.y) > .5)), "resize must actually move the measured mat, not merely fire an input").toBe(true);
   expect(new Set(washed.map(frame => frame.brush!.transform)).size).toBeGreaterThan(3);
   await expect.poll(async () => (await frames(page)).some(frame => genuine(frame) && frame.scene === first.scene && Number(frame.beat) > Number(first.beat)), { timeout: 12_000, intervals: [100] }).toBe(true);
-  proofs.get(page)!.notes.push({ actualReturnedToyId: id, washScene: first.scene, paintedContactMs: washed.at(-1)!.absolute - washed[0].absolute, geometryInputsAt: operations, stableMatFrames: stable.length });
+  proofs.get(page)!.notes.push({ actualReturnedToyId: id, washScene: first.scene, paintedContactMs: washed.at(-1)!.absolute - washed[0].absolute, geometryInputsAt: operations, geometryOperations, geometryDeliveries, stableMatFrames: stable.length });
 });
 
 test("141 manual curtain cycles three phases with15s lease then homebody physically changes curtain light and TV", async ({ page }) => {

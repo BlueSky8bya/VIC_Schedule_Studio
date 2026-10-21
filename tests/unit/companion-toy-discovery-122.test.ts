@@ -26,7 +26,7 @@ describe("122 finite toy book interaction", () => {
   it("mounts bounded neutral shape clues without names or automatic acknowledgment", async () => {
     await render(); expect(tiles()).toHaveLength(8);
     expect(tiles().every(node => /^\?\?\? · \d+$/.test(String(node.props["aria-label"])))).toBe(true);
-    expect(nodes(tree).filter(node => typeof node.type === "function" && node.type.name === "CompanionToyArt")).toHaveLength(9); //8 tiles + one large silhouette.
+    expect(nodes(tree).filter(node => typeof node.type === "function" && node.type.name === "CompanionCatalogToyArt")).toHaveLength(9); //8 tiles + one large silhouette.
     expect(find(node => node.props.className === "rhh-collection-detail rhh-collection-gallery-detail rhh-toy-detail").props["data-found"]).toBeUndefined();
     expect(harness.acknowledge).not.toHaveBeenCalled(); expect(harness.activity).not.toHaveBeenCalled();
   });

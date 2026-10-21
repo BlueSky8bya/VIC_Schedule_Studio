@@ -23,6 +23,7 @@ import { getCompanionArrivalPlay } from "@/lib/ui/viewer-companion/arrival-play"
 import { companionRunTripContact, companionToyTripExperience, planCompanionRomp, sampleCompanionRunUp, validCompanionRunHop, type CompanionRunTrip, type CompanionToyTripWitness } from "@/lib/ui/viewer-companion/romp";
 import { cancelCompanionEpisode, companionEpisodeHopAvailable, companionEpisodeMishap, companionEpisodeRunHop, companionEpisodeRunTrip, companionRollProgress } from "@/lib/ui/viewer-companion/episodes";
 import { companionAttentionPoint, deliberateCompanionAction } from "@/lib/ui/viewer-companion/deliberation";
+import { companionExpressionFoodId } from "@/lib/ui/viewer-companion/expression-food-context";
 import { advanceBrain, cancelCompanionTravelGoal, commitAction, createBrain, getAction, getFoodAction, getCompanionMood, nearestPlatform, platformLandingX, recordCompanionEvent, type CompanionAction, type CompanionPlay, type Platform } from "@/lib/ui/viewer-companion/brain";
 import { createCompanionPersonalityDirector, nextCompanionPersonalityScene, type PersonalitySceneBeat, type PersonalityHome, type PersonalitySceneInput } from "@/lib/ui/viewer-companion/personality-director";
 import { createCompanionRoutineArbiter, type CompanionRoutineEffect } from "@/lib/ui/viewer-companion/routine-arbiter";
@@ -1174,7 +1175,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         observed.cheerBounce = playProgress >= .89 && witnessedCheerHops.toString(2).replaceAll("0", "").length >= 3;
       }
       const currentDrawing = observed.visible && observed.decoded && observed.adoptedIndex === observed.requestedIndex && observed.adoptedSrc === observed.requestedSrc;
-      const expressionFood = action?.foodId ? food.current?.foods().find(item => item.id === action?.foodId) : undefined;
+      const expressionFoodId = companionExpressionFoodId(action, status, personalityDirector.current(), meta => personalityDirector.owns(meta));
+      const expressionFood = expressionFoodId ? food.current?.foods().find(item => item.id === expressionFoodId) : undefined;
       const expressionToy = action?.toyPerformance?.kind;
       const privateRoom = support.startsWith("companion-home"), command = action?.personalityScene?.command;
       const lookingOut = privateRoom && status === "look" && (action?.scene?.id === 31 || command?.kind === "watch" && getCompanionHomeTv() === "off");

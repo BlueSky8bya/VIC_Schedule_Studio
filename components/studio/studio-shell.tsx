@@ -185,6 +185,7 @@ import {
   type UndoAction
 } from "@/lib/studio/editor-model";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
+import { canRecoverSaveSnapshot, FailedSaveRecovery, type SaveRecovery } from "@/lib/studio/failed-save-recovery";
 import { restoreDialogOpener, useFocusTrap } from "@/lib/ui/use-focus-trap";
 import {
   type CalZoom,
@@ -345,6 +346,7 @@ export function StudioShell({
   // 저장 상태 칩 — 데스크톱 헤더·모바일 역할바 양쪽에서 같은 모양으로 쓴다.
   function renderSaveStatus() {
     return (
+      <>
       <span
         className={`save-status ${saveState}`}
         aria-live="polite"
@@ -364,6 +366,11 @@ export function StudioShell({
         </em>
         {saveState === "saved" && lastSavedKst ? <b className="ss-time">{lastSavedKst}</b> : null}
       </span>
+      {failedSaveRecoveryRef.current.available(Date.now(), canRecoverSavedForm).length > 0 && !viewerMode && !previewRole ? (
+        <button className="button" type="button" data-act="editor-recover-failed-save" onClick={recoverFailedSave}
+          aria-label="입력 복구" title="보관한 입력을 다시 열어요. 10분 동안 이 화면에서만 보관해요.">복구</button>
+      ) : null}
+      </>
     );
   }
   // 비밀번호 확인 후 팝업이 닫히고 비공개 일정이 서버에서 다시 불러와지는 동안 "불러오는 중" 표시.
@@ -1760,6 +1767,9 @@ export function StudioShell({
   // 카드를 오갈 때만 복원되고, 새로고침하면 사라진다(localStorage 영속 금지 — 게시 전 내용 잔존 방지).
   // baseline = '깨끗한' 기준 지문(원본 일정 또는 빈 새 카드). form이 이와 다르면 미저장 변경 → 보관.
   const editDraftsRef = useRef<Map<string, EditDraft>>(new Map());
+  const editDraftSessionsRef = useRef(new Map<string, { session: number; revision: number }>());
+  const failedSaveRecoveryRef = useRef(new FailedSaveRecovery());
+  const [, refreshFailedSaveRecovery] = useState(0);
   const editBaselineRef = useRef<string>(draftFingerprint(createEmptyForm()));
   // 저장 탭은 **저장할 게 있을 때만**(2026-09-17 소유자): 신규는 내용을 적으면 떠오르고, 기존 일정은 내용·태그·옵션이
   // 기준(열 때 값)과 달라졌을 때만. 지문(draftFingerprint)은 임시 보관과 같은 것 — 같은 판정 한 벌.
@@ -4846,6 +4856,7 @@ export function StudioShell({
     if (!key) return;
     if (draftFingerprint(form) !== editBaselineRef.current) {
       editDraftsRef.current.set(key, { form, ts: Date.now() });
+      editDraftSessionsRef.current.set(key, { session: editorKey, revision: failedSaveRecoveryRef.current.markEdit() });
     } else {
       editDraftsRef.current.delete(key);
     }
@@ -4854,6 +4865,8 @@ export function StudioShell({
 
   // '새로 쓰기' — 복원된 임시 내용을 버리고 원본(기존 일정) 또는 빈 새 카드로 되돌린다.
   function discardDraft() {
+    failedSaveRecoveryRef.current.discardSession(editorKey, Date.now());
+    refreshFailedSaveRecovery(value => value + 1);
     const key = draftKeyFor();
     if (key) {
       editDraftsRef.current.delete(key);
@@ -4862,6 +4875,45 @@ export function StudioShell({
     setForm(ev ? eventToForm(ev) : createEmptyForm());
     setDraftRestored(false);
     hapticTick();
+  }
+
+  function canRecoverSavedForm(saved: EventForm, recovery: SaveRecovery) {
+    const target = saved.id ? eventsRef.current.find(item => canonId(item.id) === canonId(saved.id!)) : undefined;
+    return canRecoverSaveSnapshot(recovery, { canEdit, unlocked: canReadPrivate, owner: effectiveRole === "owner", readOnly: viewerMode || Boolean(previewRole) }, target);
+  }
+  function recoverFailedSave() {
+    if (!canEdit || blockedByPreview()) return;
+    const store = failedSaveRecoveryRef.current, now = Date.now();
+    const next = store.available(now, canRecoverSavedForm)[0];
+    const recovered = next && store.take(next.attempt, now, canRecoverSavedForm);
+    refreshFailedSaveRecovery(value => value + 1);
+    if (!recovered) return;
+    // Preserve the editor being left, including input typed after the failed
+    // submission. Recovery is an explicit local action, never an automatic save.
+    const key = draftKeyFor();
+    if (key && (editorVisible || mobileEditId !== null) && draftFingerprint(form) !== editBaselineRef.current) {
+      editDraftsRef.current.set(key, { form, ts: now });
+      editDraftSessionsRef.current.set(key, { session: editorKey, revision: store.markEdit() });
+    }
+    const existing = recovered.form.id ? eventsRef.current.find(item => canonId(item.id) === canonId(recovered.form.id!)) : undefined;
+    // A target may already hold a newer ordinary draft even while its editor
+    // is closed or another date is being edited. Preserve that slot before
+    // the recovered input becomes its new active draft.
+    const recoveredKey = existing ? `evt:${existing.id}` : `new:${recovered.dateKey}`;
+    const targetDraft = freshDraft(recoveredKey);
+    if (targetDraft) {
+      const owner = editDraftSessionsRef.current.get(recoveredKey);
+      const retained = store.begin({ session: owner?.session ?? editorKey,
+        targetId: existing?.id ?? `draft-${owner?.revision ?? store.markEdit()}`,
+        dateKey: recovered.dateKey, originalScope: existing?.visibilityScope ?? targetDraft.form.visibilityScope,
+        form: { ...targetDraft.form, id: existing?.id } }, now);
+      store.fail(retained, now);
+    }
+    if (existing) { if (isNarrow) openMobileEdit(existing); else selectEvent(existing); }
+    else { if (isNarrow) openMobileAdd(recovered.dateKey); else selectDate(recovered.dateKey, true); }
+    setForm({ ...recovered.form, id: existing?.id });
+    setDraftRestored(true);
+    setActionError(null);
   }
 
   function saveEvent(event?: FormEvent<HTMLFormElement>) {
@@ -4943,6 +4995,9 @@ export function StudioShell({
       teaserRevealAt: teaserRevealIso
     };
 
+    const recoveryForm = { ...form, id: tempId.startsWith("temp-") ? undefined : tempId };
+    const recoveryAttempt = failedSaveRecoveryRef.current.begin({ session: editorKey, targetId: tempId, dateKey: selectedDate,
+      originalScope: existing?.visibilityScope ?? form.visibilityScope, form: recoveryForm }, Date.now());
     // (FLIP은 기본 OFF — 드롭 재정렬에서만 arm. 저장은 형제 카드를 밀지 않는다.)
     setEvents((prev) =>
       isNew
@@ -4989,6 +5044,12 @@ export function StudioShell({
             return postStudioWrite("save", { ...payload, id: realId });
           });
       if (!result.ok) {
+        const newer = editDraftsRef.current.get(`evt:${tempId}`);
+        const newerOwner = editDraftSessionsRef.current.get(`evt:${tempId}`);
+        const resolvedId = canonId(tempId);
+        failedSaveRecoveryRef.current.fail(recoveryAttempt, Date.now(), newer && newerOwner ? { draft: newer, ...newerOwner } : undefined,
+          resolvedId.startsWith("temp-") ? undefined : resolvedId);
+        refreshFailedSaveRecovery(value => value + 1);
         setActionError(result.error);
         playSfx("error");
         // P0-DATA-2(target rollback): 전체 배열 스냅샷 복원은 이 저장 '뒤'에 한 다른 편집까지
@@ -5002,6 +5063,7 @@ export function StudioShell({
         pendingSavesRef.current.delete(tempId);
         return;
       }
+      failedSaveRecoveryRef.current.succeed(recoveryAttempt);
       hapticTick(); // ② 서버확인: 응답 OK 후 한 번 더 톡 → "서버에 올라갔다"는 체감(2단계 컨벤션)
       playSfx("save"); // 저장 확인음 — 진동 ②와 같은 순간(서버가 받았다)
       // 새 일정이면 임시 id를 실제 id로 교체 + 이 임시 id를 가리키던 linkNext도 함께 교체.

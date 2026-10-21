@@ -210,7 +210,9 @@ test("149 objects curious departure prepares TV and light before reaching the pu
 /** Source157 car regression: acquire one actual weighted car without replacing
  * RNG/kinds, then preserve every149 typed-use and collection assertion. */
 test("200 viewer real car completes typed wheel push before mischief and collection", async ({ page }) => {
-  test.setTimeout(240000);
+  // Actual weighted acquisition is separate from the unchanged65s typed-use
+  // observation. A late real draw must not consume that functional window.
+  test.setTimeout(950000); const acquisitionBegan = Date.now();
   await setup(page, "viewer");
   const home = await openCompanionHome(page);
   const draws: { draw: number; id: string; kind: string; requestedAt: number; returnedAt?: number; retained?: boolean }[] = [];
@@ -231,6 +233,8 @@ test("200 viewer real car completes typed wheel push before mischief and collect
     await page.mouse.up(); await expect(actual).toHaveCount(0); entry.returnedAt = Date.now();
   }
   if (!id) throw Error("actual bounded320 weighted draws did not produce toy-car; no random/kind state was overridden");
+  proofs.get(page)!.notes.push({ actualWeightedAcquisitionMs: Date.now() - acquisitionBegan, actualWeightedDraws: draws.length,
+    maximumDraws: 320, caseBudgetMs: 950000, typedUseTimeoutMs: 65000, functionalThresholdsUnchanged: true });
   const kind = "toy-car" as const, toy = page.locator(`.vc-toy[data-toy-id="${id}"]`);
   expect(await knownToys(page)).toEqual([]); await probe(page); await startRoaming(page);
   await expect(toy).toHaveAttribute("data-toy-use", COMPANION_TOY_USES[kind], { timeout: 65000 }); await expect(toy).toHaveAttribute("data-carried", "true");

@@ -50,7 +50,7 @@ export const COMPANION_SNACK_EXPANSION = [
   },
   {
     "id": "passion-fruit",
-    "name": "패션프루트",
+    "name": "백향과",
     "rarity": "rare",
     "category": "fruit"
   },
@@ -152,7 +152,7 @@ export const COMPANION_SNACK_EXPANSION = [
   },
   {
     "id": "cauliflower",
-    "name": "콜리플라워",
+    "name": "꽃양배추",
     "rarity": "uncommon",
     "category": "vegetable"
   },
@@ -194,7 +194,7 @@ export const COMPANION_SNACK_EXPANSION = [
   },
   {
     "id": "edamame",
-    "name": "에다마메",
+    "name": "풋콩",
     "rarity": "uncommon",
     "category": "vegetable"
   },
@@ -350,7 +350,7 @@ export const COMPANION_SNACK_EXPANSION = [
   },
   {
     "id": "lentil",
-    "name": "렌틸콩",
+    "name": "렌즈콩",
     "rarity": "rare",
     "category": "vegetable"
   },
@@ -542,7 +542,7 @@ export const COMPANION_SNACK_EXPANSION = [
   },
   {
     "id": "apple-pie",
-    "name": "애플파이",
+    "name": "사과파이",
     "rarity": "uncommon",
     "category": "prepared"
   },

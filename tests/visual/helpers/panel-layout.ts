@@ -8,7 +8,10 @@ export async function settlePanelLayout(page: Page) {
     await document.fonts.ready;
     const began = performance.now(); let unchangedAt = began, previous = "";
     while (performance.now() - began < 6000) {
-      const animations = document.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime)) && !((animation.effect as KeyframeEffect | null)?.target as Element | null)?.closest(".vc-companion,.vc-food-layer"));
+      // Fixed souvenir flights do not participate in panel layout. They may
+      // queue during real new-pose discoveries; keep observing panel geometry
+      // and every other finite layout/press animation with the same bounds.
+      const animations = document.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime)) && !((animation.effect as KeyframeEffect | null)?.target as Element | null)?.closest(".vc-companion,.vc-food-layer,.vc-discovery-flight"));
       const geometry = [...document.querySelectorAll<HTMLElement>(".panel-section,.panel-section-toggle,.vc-home-launcher,.vc-home-close,.header-left,.studio-topbar .studio-left")].map(node => {
         const rect = node.getBoundingClientRect();
         return [rect.left, rect.top, rect.width, rect.height, getComputedStyle(node).transform, node.matches(":active")];

@@ -74,6 +74,9 @@ export function MemberInsights({
         if (r.ok) setData(r.data);
         else setError(r.error);
       })
+      .catch(() => {
+        if (alive) setError("인사이트를 불러오지 못했어요. 잠시 후 다시 열어 주세요.");
+      })
       .finally(() => {
         if (alive) setLoading(false);
       });
@@ -91,6 +94,8 @@ export function MemberInsights({
       if (!alive) return;
       if (r.ok) setSecurityData(r.data);
       else setSecurityError(r.error); // 조용히 실패해 스켈레톤이 영원히 뜨던 문제 → 에러 노출+재시도
+    }).catch(() => {
+      if (alive) setSecurityError("보안 정보를 불러오지 못했어요.");
     });
     return () => {
       alive = false;
@@ -103,7 +108,7 @@ export function MemberInsights({
     getOwnerSecurityAction().then((r) => {
       if (r.ok) setSecurityData(r.data);
       else setSecurityError(r.error);
-    });
+    }).catch(() => setSecurityError("보안 정보를 불러오지 못했어요."));
   }
 
   // 보안 탭(관리자 전용)을 마지막에 더한 실제 패널 목록. 키보드/스와이프 경계도 이 길이를 쓴다.

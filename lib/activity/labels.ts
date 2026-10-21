@@ -349,6 +349,7 @@ export const ACT: Record<string, TargetLabel> = {
   "private-warning-btn": { name: "비공개 경고 띠", area: "편집실" },
   "delete-snack-undo": { name: "삭제 되돌리기", area: "편집실" },
   "draft-restored-discard": { name: "임시 저장 버리기", area: "편집실" },
+  "editor-recover-failed-save": { name: "저장 실패 입력 복구", area: "편집실" },
   "kbd-hints-btn": { name: "단축키 안내", area: "편집실" },
   "shortcut-help-title": { name: "단축키 안내 접기", area: "옛 화면" },
   "preview-dd-trigger": { name: "역할 미리보기 메뉴", area: "편집실" },

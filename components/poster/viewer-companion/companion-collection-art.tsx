@@ -6,6 +6,7 @@ import type { CompanionCollectionRarity } from "@/lib/ui/viewer-companion/collec
 import { companionNewMemory } from "@/lib/ui/viewer-companion/memory-catalog";
 import type { CompanionExpressionId } from "@/lib/ui/viewer-companion/expressions";
 import { CompanionMemoryPortrait } from "./companion-memory-portrait";
+import { companionCatalogDisplay } from "@/lib/ui/viewer-companion/catalog-display";
 
 /** Owner-selected watercolor backings; live specimens remain separate and contained. */
 const sealTiers = {
@@ -30,17 +31,21 @@ export function CompanionCollectionSeal({ children, rarity = "common", kind = "t
 export function CompanionCollectionArt({ kind, id, className }: { kind: CompanionCollectionArtKind; id?: string; className?: string }) {
   const memory = kind === "behavior-stamp" ? companionNewMemory(id) : undefined;
   if (memory?.family === "expression") return <CompanionMemoryPortrait id={memory.id.slice("expression:".length) as CompanionExpressionId} className={className} />;
-  // A food stamp is a paper seal behind the exact live food pixels. Keeping
-  // the whole square food cell and a square viewport preserves its silhouette,
-  // including future explicitly registered food replacements.
+  // Center actual alpha bounds, not the transparent atlas cell. The nested
+  // viewport clips neighbours before translating the complete original cell.
   const frame = kind === "accessory" ? getCompanionAccessoryArtFrame(id) : getCompanionCollectionArtFrame(kind === "food-stamp" ? "food" : kind, id);
   if (!frame) return null;
   const classes = ["vc-collection-art", className].filter(Boolean).join(" ");
-  if (kind === "food-stamp") return <CompanionCollectionSeal kind="food-stamp" artId={frame.id} rarity={isCompanionFoodKind(id) ? COMPANION_FOOD_RARITY[id] : "common"}>
-    <svg aria-hidden="true" focusable="false" width="100%" height="100%" viewBox={`${frame.x} ${frame.y} ${frame.width} ${frame.height}`} preserveAspectRatio="xMidYMid meet">
-      <image href={frame.src} width={frame.atlasWidth} height={frame.atlasHeight} />
-    </svg>
-  </CompanionCollectionSeal>;
+  if (kind === "food-stamp") {
+    const { dx, dy } = companionCatalogDisplay("food", frame.id);
+    return <CompanionCollectionSeal kind="food-stamp" artId={frame.id} rarity={isCompanionFoodKind(id) ? COMPANION_FOOD_RARITY[id] : "common"}>
+      <svg aria-hidden="true" focusable="false" width="100%" height="100%" viewBox={`0 0 ${frame.width} ${frame.height}`} preserveAspectRatio="xMidYMid meet" overflow="visible">
+        <svg x={dx} y={dy} width={frame.width} height={frame.height} viewBox={`${frame.x} ${frame.y} ${frame.width} ${frame.height}`} overflow="hidden">
+          <image href={frame.src} width={frame.atlasWidth} height={frame.atlasHeight} />
+        </svg>
+      </svg>
+    </CompanionCollectionSeal>;
+  }
   const style: CSSProperties = {
     backgroundImage: `url("${frame.src}")`,
     backgroundRepeat: "no-repeat",

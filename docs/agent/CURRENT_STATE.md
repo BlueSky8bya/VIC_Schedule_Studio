@@ -1,13 +1,13 @@
 # Current State — VIC Schedule Studio
 
-Last Updated: 2026-10-21 (KST)
+Last Updated: 2026-10-22 (KST)
 Project Version: 0.1.0
 
 Current work only. Completed plans/rounds are evidence, not instructions. Previous accumulated state is preserved byte-for-byte in [the snapshot](archive/20261017-CURRENT_STATE-before-platform-remediation.snapshot.txt); use topic records for current behavior.
 
 ## Current Objective
 
-Memories106 locally verified; normal-speed36 remains UNVERIFIED for both reviewers. [Record](plans/PLAN-20261021-companion-memory-expansion.md).
+32B10/22 09h;36 UNVERIFIED. [R26](plans/PLAN-20261022-expression-video-review.md).
 
 Criteria145: optional TV bow and separate actual10s activity/repetition verified. Final frozen110/27/9/2, full gates and three independent final reviews passed; scoped commit and actual production confirmation pending. [145 plan](plans/PLAN-20261020-145-companion-activity-criteria.md).
 

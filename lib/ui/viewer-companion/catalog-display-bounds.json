@@ -1,0 +1,3030 @@
+{
+  "food": {
+    "apple": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 10,
+      "y": 9,
+      "contentWidth": 76,
+      "contentHeight": 78
+    },
+    "lemon": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 17,
+      "y": 18,
+      "contentWidth": 68,
+      "contentHeight": 66
+    },
+    "strawberry": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 19,
+      "y": 12,
+      "contentWidth": 68,
+      "contentHeight": 73
+    },
+    "raspberry": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 11,
+      "y": 11,
+      "contentWidth": 70,
+      "contentHeight": 72
+    },
+    "watermelon": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 11,
+      "y": 14,
+      "contentWidth": 77,
+      "contentHeight": 69
+    },
+    "tomato": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 76,
+      "contentHeight": 74
+    },
+    "grapefruit": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 11,
+      "y": 15,
+      "contentWidth": 74,
+      "contentHeight": 67
+    },
+    "peach": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 9,
+      "y": 18,
+      "contentWidth": 76,
+      "contentHeight": 66
+    },
+    "plum": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 9,
+      "y": 9,
+      "contentWidth": 74,
+      "contentHeight": 75
+    },
+    "orange": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 9,
+      "y": 10,
+      "contentWidth": 78,
+      "contentHeight": 75
+    },
+    "persimmon": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 9,
+      "y": 12,
+      "contentWidth": 77,
+      "contentHeight": 70
+    },
+    "apricot": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 15,
+      "y": 10,
+      "contentWidth": 70,
+      "contentHeight": 70
+    },
+    "pear": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 10,
+      "y": 9,
+      "contentWidth": 73,
+      "contentHeight": 76
+    },
+    "banana": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 11,
+      "y": 14,
+      "contentWidth": 76,
+      "contentHeight": 68
+    },
+    "grape": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 10,
+      "y": 9,
+      "contentWidth": 73,
+      "contentHeight": 78
+    },
+    "cherry": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 12,
+      "y": 8,
+      "contentWidth": 71,
+      "contentHeight": 76
+    },
+    "blueberry": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 9,
+      "y": 16,
+      "contentWidth": 78,
+      "contentHeight": 62
+    },
+    "mango": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 10,
+      "y": 12,
+      "contentWidth": 76,
+      "contentHeight": 68
+    },
+    "kiwi": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 75,
+      "contentHeight": 74
+    },
+    "pineapple": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 24,
+      "y": 9,
+      "contentWidth": 49,
+      "contentHeight": 77
+    },
+    "coconut": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 9,
+      "y": 11,
+      "contentWidth": 78,
+      "contentHeight": 72
+    },
+    "fig": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 12,
+      "y": 9,
+      "contentWidth": 69,
+      "contentHeight": 74
+    },
+    "dragon-fruit": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 10,
+      "y": 11,
+      "contentWidth": 74,
+      "contentHeight": 72
+    },
+    "melon": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 12,
+      "y": 16,
+      "contentWidth": 70,
+      "contentHeight": 67
+    },
+    "carrot": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 12,
+      "y": 9,
+      "contentWidth": 72,
+      "contentHeight": 77
+    },
+    "cucumber": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 8,
+      "y": 14,
+      "contentWidth": 77,
+      "contentHeight": 66
+    },
+    "broccoli": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 11,
+      "y": 12,
+      "contentWidth": 74,
+      "contentHeight": 74
+    },
+    "pumpkin": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 9,
+      "y": 12,
+      "contentWidth": 77,
+      "contentHeight": 70
+    },
+    "corn": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 11,
+      "y": 10,
+      "contentWidth": 74,
+      "contentHeight": 76
+    },
+    "sweet-potato": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 9,
+      "y": 12,
+      "contentWidth": 76,
+      "contentHeight": 71
+    },
+    "potato": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 10,
+      "y": 22,
+      "contentWidth": 75,
+      "contentHeight": 60
+    },
+    "cabbage": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 8,
+      "y": 11,
+      "contentWidth": 78,
+      "contentHeight": 73
+    },
+    "eggplant": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 12,
+      "y": 10,
+      "contentWidth": 74,
+      "contentHeight": 75
+    },
+    "bell-pepper": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 13,
+      "y": 9,
+      "contentWidth": 69,
+      "contentHeight": 78
+    },
+    "radish": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 15,
+      "y": 9,
+      "contentWidth": 68,
+      "contentHeight": 67
+    },
+    "peas": {
+      "src": "/companion/collection/foods-106-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 9,
+      "y": 11,
+      "contentWidth": 76,
+      "contentHeight": 69
+    },
+    "bread": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 10,
+      "y": 14,
+      "contentWidth": 77,
+      "contentHeight": 67
+    },
+    "croissant": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 14,
+      "y": 14,
+      "contentWidth": 73,
+      "contentHeight": 72
+    },
+    "baguette": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 12,
+      "y": 16,
+      "contentWidth": 75,
+      "contentHeight": 65
+    },
+    "bagel": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 9,
+      "y": 14,
+      "contentWidth": 77,
+      "contentHeight": 68
+    },
+    "pretzel": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 11,
+      "y": 15,
+      "contentWidth": 75,
+      "contentHeight": 67
+    },
+    "sandwich": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 11,
+      "y": 15,
+      "contentWidth": 76,
+      "contentHeight": 67
+    },
+    "toast": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 14,
+      "y": 16,
+      "contentWidth": 73,
+      "contentHeight": 64
+    },
+    "pancake": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 10,
+      "y": 16,
+      "contentWidth": 77,
+      "contentHeight": 64
+    },
+    "waffle": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 10,
+      "y": 17,
+      "contentWidth": 77,
+      "contentHeight": 57
+    },
+    "doughnut": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 10,
+      "y": 15,
+      "contentWidth": 75,
+      "contentHeight": 67
+    },
+    "muffin": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 11,
+      "y": 9,
+      "contentWidth": 72,
+      "contentHeight": 73
+    },
+    "cupcake": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 19,
+      "y": 10,
+      "contentWidth": 61,
+      "contentHeight": 78
+    },
+    "rice-ball": {
+      "src": "/companion/collection/rice-ball-108-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 12,
+      "y": 11,
+      "contentWidth": 73,
+      "contentHeight": 72
+    },
+    "rice-cake": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 14,
+      "y": 13,
+      "contentWidth": 72,
+      "contentHeight": 60
+    },
+    "dumpling": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 11,
+      "y": 26,
+      "contentWidth": 73,
+      "contentHeight": 58
+    },
+    "pizza": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 8,
+      "y": 12,
+      "contentWidth": 79,
+      "contentHeight": 71
+    },
+    "pasta": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 12,
+      "y": 19,
+      "contentWidth": 73,
+      "contentHeight": 58
+    },
+    "omelet": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 9,
+      "y": 24,
+      "contentWidth": 77,
+      "contentHeight": 52
+    },
+    "soup": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 9,
+      "y": 15,
+      "contentWidth": 77,
+      "contentHeight": 66
+    },
+    "curry": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 10,
+      "y": 20,
+      "contentWidth": 77,
+      "contentHeight": 50
+    },
+    "sushi": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 9,
+      "y": 16,
+      "contentWidth": 77,
+      "contentHeight": 57
+    },
+    "pudding": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 15,
+      "y": 11,
+      "contentWidth": 72,
+      "contentHeight": 55
+    },
+    "cookie": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 14,
+      "y": 15,
+      "contentWidth": 67,
+      "contentHeight": 62
+    },
+    "macaron": {
+      "src": "/companion/collection/foods-107-v1.webp",
+      "width": 96,
+      "height": 96,
+      "x": 19,
+      "y": 9,
+      "contentWidth": 66,
+      "contentHeight": 77
+    },
+    "mandarin": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 15,
+      "contentWidth": 61,
+      "contentHeight": 50
+    },
+    "kumquat": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 11,
+      "y": 21,
+      "contentWidth": 58,
+      "contentHeight": 48
+    },
+    "yuzu": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 12,
+      "y": 15,
+      "contentWidth": 56,
+      "contentHeight": 52
+    },
+    "green-grape": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 13,
+      "y": 9,
+      "contentWidth": 54,
+      "contentHeight": 62
+    },
+    "blackberry": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 12,
+      "y": 10,
+      "contentWidth": 55,
+      "contentHeight": 62
+    },
+    "cranberry": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 16,
+      "y": 16,
+      "contentWidth": 55,
+      "contentHeight": 46
+    },
+    "lychee": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 15,
+      "contentWidth": 61,
+      "contentHeight": 55
+    },
+    "longan": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 15,
+      "contentWidth": 62,
+      "contentHeight": 52
+    },
+    "passion-fruit": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 10,
+      "contentWidth": 63,
+      "contentHeight": 58
+    },
+    "papaya": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 8,
+      "contentWidth": 62,
+      "contentHeight": 62
+    },
+    "guava": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 11,
+      "contentWidth": 62,
+      "contentHeight": 58
+    },
+    "pomegranate": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 8,
+      "contentWidth": 61,
+      "contentHeight": 62
+    },
+    "starfruit": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 10,
+      "y": 13,
+      "contentWidth": 62,
+      "contentHeight": 54
+    },
+    "rambutan": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 10,
+      "contentWidth": 62,
+      "contentHeight": 61
+    },
+    "mangosteen": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 11,
+      "y": 10,
+      "contentWidth": 58,
+      "contentHeight": 60
+    },
+    "durian": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 14,
+      "y": 10,
+      "contentWidth": 57,
+      "contentHeight": 54
+    },
+    "avocado": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 16,
+      "y": 9,
+      "contentWidth": 48,
+      "contentHeight": 52
+    },
+    "jujube": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 13,
+      "y": 11,
+      "contentWidth": 59,
+      "contentHeight": 50
+    },
+    "quince": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 9,
+      "contentWidth": 59,
+      "contentHeight": 60
+    },
+    "hallabong": {
+      "src": "/companion/collection/foods-109-1-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 8,
+      "contentWidth": 61,
+      "contentHeight": 62
+    },
+    "spinach": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 12,
+      "y": 8,
+      "contentWidth": 56,
+      "contentHeight": 60
+    },
+    "lettuce": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 10,
+      "y": 15,
+      "contentWidth": 59,
+      "contentHeight": 56
+    },
+    "bok-choy": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 10,
+      "y": 8,
+      "contentWidth": 59,
+      "contentHeight": 63
+    },
+    "celery": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 57,
+      "contentHeight": 60
+    },
+    "asparagus": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 8,
+      "contentWidth": 62,
+      "contentHeight": 64
+    },
+    "cauliflower": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 14,
+      "y": 14,
+      "contentWidth": 56,
+      "contentHeight": 50
+    },
+    "beet": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 8,
+      "contentWidth": 61,
+      "contentHeight": 64
+    },
+    "turnip": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 11,
+      "y": 9,
+      "contentWidth": 58,
+      "contentHeight": 63
+    },
+    "lotus-root": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 11,
+      "contentWidth": 62,
+      "contentHeight": 54
+    },
+    "bamboo-shoot": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 11,
+      "y": 8,
+      "contentWidth": 49,
+      "contentHeight": 63
+    },
+    "okra": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 10,
+      "contentWidth": 63,
+      "contentHeight": 59
+    },
+    "green-beans": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 13,
+      "contentWidth": 63,
+      "contentHeight": 54
+    },
+    "edamame": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 12,
+      "contentWidth": 62,
+      "contentHeight": 55
+    },
+    "brussels-sprout": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 15,
+      "contentWidth": 61,
+      "contentHeight": 52
+    },
+    "kale": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 10,
+      "contentWidth": 60,
+      "contentHeight": 60
+    },
+    "zucchini": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 8,
+      "contentWidth": 61,
+      "contentHeight": 57
+    },
+    "red-cabbage": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 10,
+      "y": 8,
+      "contentWidth": 59,
+      "contentHeight": 57
+    },
+    "onion": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 10,
+      "y": 8,
+      "contentWidth": 57,
+      "contentHeight": 63
+    },
+    "garlic": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 10,
+      "y": 8,
+      "contentWidth": 59,
+      "contentHeight": 63
+    },
+    "leek": {
+      "src": "/companion/collection/foods-109-2-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 61,
+      "contentHeight": 58
+    },
+    "button-mushroom": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 15,
+      "y": 21,
+      "contentWidth": 55,
+      "contentHeight": 44
+    },
+    "shiitake": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 14,
+      "contentWidth": 62,
+      "contentHeight": 53
+    },
+    "enoki": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 10,
+      "y": 13,
+      "contentWidth": 58,
+      "contentHeight": 57
+    },
+    "oyster-mushroom": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 11,
+      "y": 15,
+      "contentWidth": 59,
+      "contentHeight": 49
+    },
+    "king-oyster": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 10,
+      "y": 9,
+      "contentWidth": 62,
+      "contentHeight": 61
+    },
+    "walnut": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 18,
+      "y": 17,
+      "contentWidth": 54,
+      "contentHeight": 45
+    },
+    "almond": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 18,
+      "contentWidth": 63,
+      "contentHeight": 46
+    },
+    "cashew": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 11,
+      "y": 17,
+      "contentWidth": 58,
+      "contentHeight": 46
+    },
+    "pistachio": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 19,
+      "contentWidth": 60,
+      "contentHeight": 41
+    },
+    "peanut": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 13,
+      "contentWidth": 62,
+      "contentHeight": 52
+    },
+    "chestnut": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 16,
+      "contentWidth": 63,
+      "contentHeight": 49
+    },
+    "hazelnut": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 15,
+      "contentWidth": 58,
+      "contentHeight": 49
+    },
+    "acorn": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 14,
+      "y": 12,
+      "contentWidth": 57,
+      "contentHeight": 56
+    },
+    "tofu": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 11,
+      "y": 15,
+      "contentWidth": 58,
+      "contentHeight": 51
+    },
+    "soybean": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 16,
+      "contentWidth": 64,
+      "contentHeight": 49
+    },
+    "black-bean": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 16,
+      "y": 15,
+      "contentWidth": 53,
+      "contentHeight": 38
+    },
+    "kidney-bean": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 12,
+      "y": 17,
+      "contentWidth": 59,
+      "contentHeight": 47
+    },
+    "chickpea": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 11,
+      "y": 14,
+      "contentWidth": 60,
+      "contentHeight": 53
+    },
+    "lentil": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 17,
+      "contentWidth": 63,
+      "contentHeight": 43
+    },
+    "boiled-egg": {
+      "src": "/companion/collection/foods-109-3-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 12,
+      "y": 9,
+      "contentWidth": 56,
+      "contentHeight": 52
+    },
+    "gimbap": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 12,
+      "contentWidth": 63,
+      "contentHeight": 56
+    },
+    "salad": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 13,
+      "contentWidth": 63,
+      "contentHeight": 55
+    },
+    "bibimbap": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 11,
+      "y": 15,
+      "contentWidth": 60,
+      "contentHeight": 51
+    },
+    "japchae": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 19,
+      "contentWidth": 61,
+      "contentHeight": 40
+    },
+    "tteokbokki": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 13,
+      "contentWidth": 62,
+      "contentHeight": 51
+    },
+    "fish-cake-skewer": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 15,
+      "contentWidth": 63,
+      "contentHeight": 50
+    },
+    "pajeon": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 16,
+      "contentWidth": 63,
+      "contentHeight": 46
+    },
+    "kimchi-pancake": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 17,
+      "contentWidth": 62,
+      "contentHeight": 46
+    },
+    "egg-roll": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 17,
+      "contentWidth": 62,
+      "contentHeight": 45
+    },
+    "fried-rice": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 11,
+      "y": 18,
+      "contentWidth": 60,
+      "contentHeight": 46
+    },
+    "kimchi-fried-rice": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 15,
+      "contentWidth": 62,
+      "contentHeight": 48
+    },
+    "seaweed-soup": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 13,
+      "contentWidth": 63,
+      "contentHeight": 53
+    },
+    "rice-porridge": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 14,
+      "contentWidth": 61,
+      "contentHeight": 50
+    },
+    "scorched-rice": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 15,
+      "contentWidth": 62,
+      "contentHeight": 49
+    },
+    "ramyeon": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 14,
+      "contentWidth": 63,
+      "contentHeight": 53
+    },
+    "udon": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 14,
+      "contentWidth": 62,
+      "contentHeight": 52
+    },
+    "hotdog": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 15,
+      "contentWidth": 63,
+      "contentHeight": 50
+    },
+    "burger": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 12,
+      "contentWidth": 63,
+      "contentHeight": 56
+    },
+    "fried-chicken": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 10,
+      "y": 11,
+      "contentWidth": 61,
+      "contentHeight": 55
+    },
+    "corn-dog": {
+      "src": "/companion/collection/foods-109-4-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 12,
+      "contentWidth": 63,
+      "contentHeight": 55
+    },
+    "salt-bread": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 15,
+      "contentWidth": 61,
+      "contentHeight": 49
+    },
+    "soboro-bread": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 13,
+      "contentWidth": 62,
+      "contentHeight": 52
+    },
+    "melon-bun": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 12,
+      "contentWidth": 62,
+      "contentHeight": 53
+    },
+    "red-bean-bun": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 15,
+      "contentWidth": 60,
+      "contentHeight": 47
+    },
+    "cream-bun": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 14,
+      "contentWidth": 61,
+      "contentHeight": 50
+    },
+    "steamed-bun": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 15,
+      "contentWidth": 61,
+      "contentHeight": 49
+    },
+    "mocha-bun": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 15,
+      "contentWidth": 63,
+      "contentHeight": 51
+    },
+    "garlic-bread": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 10,
+      "y": 15,
+      "contentWidth": 61,
+      "contentHeight": 48
+    },
+    "cheese-bread": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 19,
+      "contentWidth": 62,
+      "contentHeight": 42
+    },
+    "egg-tart": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 16,
+      "contentWidth": 58,
+      "contentHeight": 47
+    },
+    "apple-pie": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 14,
+      "contentWidth": 63,
+      "contentHeight": 51
+    },
+    "cream-puff": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 11,
+      "contentWidth": 60,
+      "contentHeight": 57
+    },
+    "eclair": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 10,
+      "y": 19,
+      "contentWidth": 62,
+      "contentHeight": 42
+    },
+    "canele": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 10,
+      "y": 9,
+      "contentWidth": 61,
+      "contentHeight": 60
+    },
+    "financier": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 17,
+      "contentWidth": 61,
+      "contentHeight": 46
+    },
+    "madeleine": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 57,
+      "contentHeight": 53
+    },
+    "scone": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 61,
+      "contentHeight": 56
+    },
+    "churros": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 10,
+      "contentWidth": 64,
+      "contentHeight": 51
+    },
+    "roll-cake": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 10,
+      "contentWidth": 61,
+      "contentHeight": 51
+    },
+    "castella": {
+      "src": "/companion/collection/foods-109-5-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 11,
+      "y": 8,
+      "contentWidth": 58,
+      "contentHeight": 54
+    },
+    "bungeoppang": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 18,
+      "contentWidth": 64,
+      "contentHeight": 47
+    },
+    "hotteok": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 16,
+      "contentWidth": 63,
+      "contentHeight": 48
+    },
+    "hodu-gwaja": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 13,
+      "contentWidth": 59,
+      "contentHeight": 52
+    },
+    "yakgwa": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 12,
+      "contentWidth": 61,
+      "contentHeight": 56
+    },
+    "dasik": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 18,
+      "contentWidth": 64,
+      "contentHeight": 51
+    },
+    "hangwa": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 15,
+      "contentWidth": 63,
+      "contentHeight": 49
+    },
+    "injeolmi": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 10,
+      "y": 14,
+      "contentWidth": 60,
+      "contentHeight": 50
+    },
+    "songpyeon": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 11,
+      "y": 20,
+      "contentWidth": 57,
+      "contentHeight": 39
+    },
+    "honey-rice-cake": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 13,
+      "y": 16,
+      "contentWidth": 59,
+      "contentHeight": 49
+    },
+    "croffle": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 17,
+      "contentWidth": 63,
+      "contentHeight": 45
+    },
+    "mochi-icecream": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 15,
+      "contentWidth": 63,
+      "contentHeight": 48
+    },
+    "icecream-cone": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 19,
+      "y": 9,
+      "contentWidth": 44,
+      "contentHeight": 63
+    },
+    "popsicle": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 58,
+      "contentHeight": 62
+    },
+    "fruit-parfait": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 10,
+      "contentWidth": 56,
+      "contentHeight": 60
+    },
+    "bingsu": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 11,
+      "contentWidth": 61,
+      "contentHeight": 56
+    },
+    "jelly": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 17,
+      "contentWidth": 63,
+      "contentHeight": 46
+    },
+    "yogurt": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 10,
+      "y": 9,
+      "contentWidth": 57,
+      "contentHeight": 61
+    },
+    "cheesecake": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 10,
+      "contentWidth": 60,
+      "contentHeight": 49
+    },
+    "tiramisu": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 9,
+      "y": 12,
+      "contentWidth": 63,
+      "contentHeight": 56
+    },
+    "chocolate": {
+      "src": "/companion/collection/foods-109-6-v1.webp",
+      "width": 80,
+      "height": 80,
+      "x": 8,
+      "y": 13,
+      "contentWidth": 64,
+      "contentHeight": 49
+    },
+    "yubu-sushi": {
+      "src": "/companion/collection/foods-143-1-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 9,
+      "y": 21,
+      "contentWidth": 110,
+      "contentHeight": 85
+    },
+    "ssambap": {
+      "src": "/companion/collection/foods-143-1-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 9,
+      "y": 17,
+      "contentWidth": 110,
+      "contentHeight": 100
+    },
+    "jjajangmyeon": {
+      "src": "/companion/collection/foods-143-1-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 9,
+      "y": 19,
+      "contentWidth": 108,
+      "contentHeight": 94
+    },
+    "naengmyeon": {
+      "src": "/companion/collection/foods-143-1-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 8,
+      "y": 16,
+      "contentWidth": 110,
+      "contentHeight": 93
+    },
+    "kalguksu": {
+      "src": "/companion/collection/foods-143-1-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 9,
+      "y": 15,
+      "contentWidth": 110,
+      "contentHeight": 97
+    },
+    "samgyetang": {
+      "src": "/companion/collection/foods-143-1-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 9,
+      "y": 13,
+      "contentWidth": 109,
+      "contentHeight": 99
+    },
+    "galbi": {
+      "src": "/companion/collection/foods-143-1-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 9,
+      "y": 22,
+      "contentWidth": 110,
+      "contentHeight": 82
+    },
+    "bulgogi": {
+      "src": "/companion/collection/foods-143-1-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 9,
+      "y": 25,
+      "contentWidth": 110,
+      "contentHeight": 78
+    },
+    "bossam": {
+      "src": "/companion/collection/foods-143-1-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 15,
+      "y": 19,
+      "contentWidth": 104,
+      "contentHeight": 88
+    },
+    "grilled-mackerel": {
+      "src": "/companion/collection/foods-143-1-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 9,
+      "y": 16,
+      "contentWidth": 111,
+      "contentHeight": 86
+    },
+    "kimchi-stew": {
+      "src": "/companion/collection/foods-143-1-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 11,
+      "y": 8,
+      "contentWidth": 105,
+      "contentHeight": 93
+    },
+    "soybean-stew": {
+      "src": "/companion/collection/foods-143-1-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 10,
+      "y": 9,
+      "contentWidth": 109,
+      "contentHeight": 99
+    },
+    "donkatsu": {
+      "src": "/companion/collection/foods-143-2-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 11,
+      "y": 24,
+      "contentWidth": 109,
+      "contentHeight": 90
+    },
+    "hamburger-steak": {
+      "src": "/companion/collection/foods-143-2-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 8,
+      "y": 23,
+      "contentWidth": 110,
+      "contentHeight": 85
+    },
+    "shrimp-tempura": {
+      "src": "/companion/collection/foods-143-2-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 19,
+      "y": 19,
+      "contentWidth": 100,
+      "contentHeight": 95
+    },
+    "squid-tempura": {
+      "src": "/companion/collection/foods-143-2-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 11,
+      "y": 36,
+      "contentWidth": 104,
+      "contentHeight": 81
+    },
+    "cheese-stick": {
+      "src": "/companion/collection/foods-143-2-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 9,
+      "y": 23,
+      "contentWidth": 108,
+      "contentHeight": 78
+    },
+    "potato-croquette": {
+      "src": "/companion/collection/foods-143-2-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 10,
+      "y": 27,
+      "contentWidth": 108,
+      "contentHeight": 75
+    },
+    "tornado-potato": {
+      "src": "/companion/collection/foods-143-2-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 10,
+      "y": 16,
+      "contentWidth": 109,
+      "contentHeight": 94
+    },
+    "takoyaki": {
+      "src": "/companion/collection/foods-143-2-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 8,
+      "y": 21,
+      "contentWidth": 111,
+      "contentHeight": 84
+    },
+    "taco": {
+      "src": "/companion/collection/foods-143-2-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 10,
+      "y": 12,
+      "contentWidth": 107,
+      "contentHeight": 92
+    },
+    "burrito": {
+      "src": "/companion/collection/foods-143-2-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 13,
+      "y": 12,
+      "contentWidth": 103,
+      "contentHeight": 89
+    },
+    "quesadilla": {
+      "src": "/companion/collection/foods-143-2-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 10,
+      "y": 12,
+      "contentWidth": 105,
+      "contentHeight": 80
+    },
+    "lasagna": {
+      "src": "/companion/collection/foods-143-2-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 11,
+      "y": 19,
+      "contentWidth": 108,
+      "contentHeight": 82
+    },
+    "dalgona": {
+      "src": "/companion/collection/foods-143-3-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 13,
+      "y": 27,
+      "contentWidth": 101,
+      "contentHeight": 92
+    },
+    "cotton-candy": {
+      "src": "/companion/collection/foods-143-3-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 19,
+      "y": 14,
+      "contentWidth": 92,
+      "contentHeight": 101
+    },
+    "tanghulu": {
+      "src": "/companion/collection/foods-143-3-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 19,
+      "y": 9,
+      "contentWidth": 87,
+      "contentHeight": 104
+    },
+    "popcorn": {
+      "src": "/companion/collection/foods-143-3-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 18,
+      "y": 22,
+      "contentWidth": 91,
+      "contentHeight": 95
+    },
+    "dried-squid": {
+      "src": "/companion/collection/foods-143-3-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 19,
+      "y": 16,
+      "contentWidth": 96,
+      "contentHeight": 97
+    },
+    "roasted-seaweed": {
+      "src": "/companion/collection/foods-143-3-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 14,
+      "y": 16,
+      "contentWidth": 102,
+      "contentHeight": 93
+    },
+    "rice-cracker": {
+      "src": "/companion/collection/foods-143-3-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 9,
+      "y": 21,
+      "contentWidth": 105,
+      "contentHeight": 90
+    },
+    "tteok-skewer": {
+      "src": "/companion/collection/foods-143-3-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 16,
+      "y": 9,
+      "contentWidth": 99,
+      "contentHeight": 109
+    },
+    "sotteok-skewer": {
+      "src": "/companion/collection/foods-143-3-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 16,
+      "y": 10,
+      "contentWidth": 96,
+      "contentHeight": 97
+    },
+    "sweet-potato-mattang": {
+      "src": "/companion/collection/foods-143-3-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 12,
+      "y": 11,
+      "contentWidth": 102,
+      "contentHeight": 91
+    },
+    "patjuk": {
+      "src": "/companion/collection/foods-143-3-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 11,
+      "y": 12,
+      "contentWidth": 107,
+      "contentHeight": 98
+    },
+    "corn-cheese": {
+      "src": "/companion/collection/foods-143-3-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 9,
+      "y": 13,
+      "contentWidth": 107,
+      "contentHeight": 87
+    },
+    "dacquoise": {
+      "src": "/companion/collection/foods-143-4-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 14,
+      "y": 30,
+      "contentWidth": 102,
+      "contentHeight": 77
+    },
+    "mille-feuille": {
+      "src": "/companion/collection/foods-143-4-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 10,
+      "y": 20,
+      "contentWidth": 106,
+      "contentHeight": 89
+    },
+    "mont-blanc": {
+      "src": "/companion/collection/foods-143-4-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 18,
+      "y": 17,
+      "contentWidth": 92,
+      "contentHeight": 100
+    },
+    "crepe": {
+      "src": "/companion/collection/foods-143-4-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 20,
+      "y": 26,
+      "contentWidth": 88,
+      "contentHeight": 87
+    },
+    "souffle": {
+      "src": "/companion/collection/foods-143-4-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 100,
+      "contentHeight": 102
+    },
+    "pavlova": {
+      "src": "/companion/collection/foods-143-4-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 15,
+      "y": 24,
+      "contentWidth": 104,
+      "contentHeight": 85
+    },
+    "croquembouche": {
+      "src": "/companion/collection/foods-143-4-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 18,
+      "y": 11,
+      "contentWidth": 91,
+      "contentHeight": 107
+    },
+    "cannoli": {
+      "src": "/companion/collection/foods-143-4-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 11,
+      "y": 17,
+      "contentWidth": 106,
+      "contentHeight": 89
+    },
+    "dorayaki": {
+      "src": "/companion/collection/foods-143-4-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 15,
+      "y": 18,
+      "contentWidth": 103,
+      "contentHeight": 78
+    },
+    "banana-split": {
+      "src": "/companion/collection/foods-143-4-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 11,
+      "y": 16,
+      "contentWidth": 108,
+      "contentHeight": 85
+    },
+    "cinnamon-roll": {
+      "src": "/companion/collection/foods-143-4-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 10,
+      "y": 12,
+      "contentWidth": 104,
+      "contentHeight": 86
+    },
+    "marshmallow": {
+      "src": "/companion/collection/foods-143-4-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 14,
+      "y": 16,
+      "contentWidth": 97,
+      "contentHeight": 84
+    },
+    "artichoke": {
+      "src": "/companion/collection/foods-143-5-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 10,
+      "y": 9,
+      "contentWidth": 106,
+      "contentHeight": 110
+    },
+    "kohlrabi": {
+      "src": "/companion/collection/foods-143-5-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 16,
+      "y": 14,
+      "contentWidth": 93,
+      "contentHeight": 103
+    },
+    "romanesco": {
+      "src": "/companion/collection/foods-143-5-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 14,
+      "y": 17,
+      "contentWidth": 103,
+      "contentHeight": 96
+    },
+    "chili-pepper": {
+      "src": "/companion/collection/foods-143-5-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 13,
+      "y": 10,
+      "contentWidth": 102,
+      "contentHeight": 109
+    },
+    "perilla-leaf": {
+      "src": "/companion/collection/foods-143-5-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 16,
+      "y": 20,
+      "contentWidth": 100,
+      "contentHeight": 92
+    },
+    "ginger": {
+      "src": "/companion/collection/foods-143-5-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 9,
+      "y": 17,
+      "contentWidth": 110,
+      "contentHeight": 85
+    },
+    "fennel": {
+      "src": "/companion/collection/foods-143-5-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 11,
+      "y": 12,
+      "contentWidth": 105,
+      "contentHeight": 104
+    },
+    "taro": {
+      "src": "/companion/collection/foods-143-5-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 12,
+      "y": 19,
+      "contentWidth": 107,
+      "contentHeight": 91
+    },
+    "cacao-pod": {
+      "src": "/companion/collection/foods-143-5-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 15,
+      "y": 10,
+      "contentWidth": 103,
+      "contentHeight": 93
+    },
+    "cherimoya": {
+      "src": "/companion/collection/foods-143-5-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 10,
+      "y": 12,
+      "contentWidth": 107,
+      "contentHeight": 93
+    },
+    "scallop": {
+      "src": "/companion/collection/foods-143-5-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 10,
+      "y": 9,
+      "contentWidth": 109,
+      "contentHeight": 99
+    },
+    "oyster": {
+      "src": "/companion/collection/foods-143-5-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 9,
+      "y": 13,
+      "contentWidth": 110,
+      "contentHeight": 96
+    },
+    "kkak-kong-soup": {
+      "src": "/companion/collection/foods-146-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 13,
+      "y": 18,
+      "contentWidth": 108,
+      "contentHeight": 93
+    },
+    "frozen-leftover-pizza": {
+      "src": "/companion/collection/foods-146-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 6,
+      "y": 11,
+      "contentWidth": 116,
+      "contentHeight": 105
+    },
+    "frozen-leftover-tteokbokki": {
+      "src": "/companion/collection/foods-146-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 7,
+      "y": 26,
+      "contentWidth": 115,
+      "contentHeight": 76
+    },
+    "cricket-pepero": {
+      "src": "/companion/collection/foods-146-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 18,
+      "y": 13,
+      "contentWidth": 104,
+      "contentHeight": 97
+    },
+    "pepero": {
+      "src": "/companion/collection/foods-146-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 26,
+      "y": 11,
+      "contentWidth": 89,
+      "contentHeight": 102
+    },
+    "blue-marshmallow-tteokguk": {
+      "src": "/companion/collection/foods-146-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 10,
+      "y": 19,
+      "contentWidth": 112,
+      "contentHeight": 94
+    },
+    "herb-avocado-milk": {
+      "src": "/companion/collection/foods-146-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 24,
+      "y": 11,
+      "contentWidth": 87,
+      "contentHeight": 105
+    },
+    "mint-choco-brisket-stew": {
+      "src": "/companion/collection/foods-146-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 6,
+      "y": 10,
+      "contentWidth": 115,
+      "contentHeight": 99
+    },
+    "birthday-seaweed-soup": {
+      "src": "/companion/collection/foods-146-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 16,
+      "y": 28,
+      "contentWidth": 100,
+      "contentHeight": 68
+    },
+    "cookie-cake": {
+      "src": "/companion/collection/foods-146-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 10,
+      "y": 8,
+      "contentWidth": 111,
+      "contentHeight": 105
+    },
+    "dubai-chewy-cookie": {
+      "src": "/companion/collection/foods-146-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 9,
+      "y": 23,
+      "contentWidth": 111,
+      "contentHeight": 80
+    },
+    "duchosaeng-cake": {
+      "src": "/companion/collection/foods-146-v1.webp",
+      "width": 128,
+      "height": 128,
+      "x": 13,
+      "y": 7,
+      "contentWidth": 104,
+      "contentHeight": 109
+    }
+  },
+  "toy": {
+    "ball": {
+      "src": "/companion/home/125/toy-ball.webp",
+      "width": 192,
+      "height": 191,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 172,
+      "contentHeight": 171
+    },
+    "blocks": {
+      "src": "/companion/home/125/toy-blocks.webp",
+      "width": 192,
+      "height": 181,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 172,
+      "contentHeight": 161
+    },
+    "paper-plane": {
+      "src": "/companion/home/125/toy-paper-plane.webp",
+      "width": 192,
+      "height": 103,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 172,
+      "contentHeight": 83
+    },
+    "spool": {
+      "src": "/companion/home/125/toy-spool.webp",
+      "width": 192,
+      "height": 149,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 172,
+      "contentHeight": 129
+    },
+    "hoop": {
+      "src": "/companion/home/125/toy-hoop.webp",
+      "width": 192,
+      "height": 182,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 172,
+      "contentHeight": 162
+    },
+    "pinwheel": {
+      "src": "/companion/home/125/toy-pinwheel.webp",
+      "width": 126,
+      "height": 192,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 106,
+      "contentHeight": 172
+    },
+    "bell": {
+      "src": "/companion/home/125/toy-bell.webp",
+      "width": 142,
+      "height": 192,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 122,
+      "contentHeight": 172
+    },
+    "feather": {
+      "src": "/companion/home/125/toy-feather.webp",
+      "width": 186,
+      "height": 192,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 166,
+      "contentHeight": 172
+    },
+    "duck": {
+      "src": "/companion/home/125/toy-duck.webp",
+      "width": 192,
+      "height": 185,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 172,
+      "contentHeight": 165
+    },
+    "spinning-top": {
+      "src": "/companion/home/125/toy-spinning-top.webp",
+      "width": 176,
+      "height": 192,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 156,
+      "contentHeight": 172
+    },
+    "toy-car": {
+      "src": "/companion/home/125/toy-toy-car.webp",
+      "width": 192,
+      "height": 130,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 172,
+      "contentHeight": 110
+    },
+    "train": {
+      "src": "/companion/home/125/toy-train.webp",
+      "width": 192,
+      "height": 140,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 172,
+      "contentHeight": 120
+    },
+    "dice": {
+      "src": "/companion/home/125/toy-dice.webp",
+      "width": 192,
+      "height": 187,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 172,
+      "contentHeight": 167
+    },
+    "rocking-horse": {
+      "src": "/companion/home/125/toy-rocking-horse.webp",
+      "width": 192,
+      "height": 177,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 172,
+      "contentHeight": 157
+    },
+    "squeaky-carrot": {
+      "src": "/companion/home/125/toy-squeaky-carrot.webp",
+      "width": 125,
+      "height": 192,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 105,
+      "contentHeight": 172
+    },
+    "star-wand": {
+      "src": "/companion/home/125/toy-star-wand.webp",
+      "width": 170,
+      "height": 192,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 150,
+      "contentHeight": 172
+    },
+    "kaleidoscope": {
+      "src": "/companion/home/125/toy-kaleidoscope.webp",
+      "width": 192,
+      "height": 120,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 172,
+      "contentHeight": 100
+    },
+    "tambourine": {
+      "src": "/companion/home/125/toy-tambourine.webp",
+      "width": 192,
+      "height": 132,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 172,
+      "contentHeight": 112
+    },
+    "maraca": {
+      "src": "/companion/home/125/toy-maraca.webp",
+      "width": 161,
+      "height": 192,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 141,
+      "contentHeight": 172
+    },
+    "yo-yo": {
+      "src": "/companion/home/125/toy-yo-yo.webp",
+      "width": 192,
+      "height": 159,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 172,
+      "contentHeight": 139
+    },
+    "plush-fish": {
+      "src": "/companion/home/125/toy-plush-fish.webp",
+      "width": 192,
+      "height": 137,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 172,
+      "contentHeight": 117
+    },
+    "ribbon-ball": {
+      "src": "/companion/home/125/toy-ribbon-ball.webp",
+      "width": 148,
+      "height": 192,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 128,
+      "contentHeight": 172
+    },
+    "stacking-rings": {
+      "src": "/companion/home/125/toy-stacking-rings.webp",
+      "width": 162,
+      "height": 192,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 142,
+      "contentHeight": 172
+    },
+    "toy-rocket": {
+      "src": "/companion/home/125/toy-toy-rocket.webp",
+      "width": 174,
+      "height": 192,
+      "x": 10,
+      "y": 10,
+      "contentWidth": 154,
+      "contentHeight": 172
+    },
+    "bubble-wand": {
+      "src": "/companion/home/143/toy-bubble-wand.webp",
+      "width": 177,
+      "height": 192,
+      "x": 11,
+      "y": 38,
+      "contentWidth": 154,
+      "contentHeight": 133
+    },
+    "kite": {
+      "src": "/companion/home/143/toy-kite.webp",
+      "width": 165,
+      "height": 192,
+      "x": 9,
+      "y": 22,
+      "contentWidth": 154,
+      "contentHeight": 160
+    },
+    "boomerang": {
+      "src": "/companion/home/143/toy-boomerang.webp",
+      "width": 192,
+      "height": 190,
+      "x": 3,
+      "y": 42,
+      "contentWidth": 183,
+      "contentHeight": 126
+    },
+    "flying-disc": {
+      "src": "/companion/home/143/toy-flying-disc.webp",
+      "width": 192,
+      "height": 189,
+      "x": 2,
+      "y": 34,
+      "contentWidth": 186,
+      "contentHeight": 145
+    },
+    "mini-skateboard": {
+      "src": "/companion/home/143/toy-mini-skateboard.webp",
+      "width": 192,
+      "height": 174,
+      "x": 1,
+      "y": 23,
+      "contentWidth": 189,
+      "contentHeight": 137
+    },
+    "jump-rope": {
+      "src": "/companion/home/143/toy-jump-rope.webp",
+      "width": 192,
+      "height": 184,
+      "x": 8,
+      "y": 11,
+      "contentWidth": 166,
+      "contentHeight": 160
+    },
+    "toy-drum": {
+      "src": "/companion/home/143/toy-toy-drum.webp",
+      "width": 192,
+      "height": 167,
+      "x": 13,
+      "y": 21,
+      "contentWidth": 169,
+      "contentHeight": 141
+    },
+    "xylophone": {
+      "src": "/companion/home/143/toy-xylophone.webp",
+      "width": 192,
+      "height": 162,
+      "x": 1,
+      "y": 20,
+      "contentWidth": 188,
+      "contentHeight": 141
+    },
+    "harmonica": {
+      "src": "/companion/home/143/toy-harmonica.webp",
+      "width": 192,
+      "height": 169,
+      "x": 22,
+      "y": 28,
+      "contentWidth": 167,
+      "contentHeight": 102
+    },
+    "toy-trumpet": {
+      "src": "/companion/home/143/toy-toy-trumpet.webp",
+      "width": 192,
+      "height": 161,
+      "x": 24,
+      "y": 11,
+      "contentWidth": 159,
+      "contentHeight": 119
+    },
+    "hand-puppet": {
+      "src": "/companion/home/143/toy-hand-puppet.webp",
+      "width": 164,
+      "height": 192,
+      "x": 6,
+      "y": 5,
+      "contentWidth": 143,
+      "contentHeight": 179
+    },
+    "cup-and-ball": {
+      "src": "/companion/home/143/toy-cup-and-ball.webp",
+      "width": 192,
+      "height": 171,
+      "x": 17,
+      "y": 4,
+      "contentWidth": 164,
+      "contentHeight": 144
+    },
+    "paddle-ball": {
+      "src": "/companion/home/143/toy-paddle-ball.webp",
+      "width": 192,
+      "height": 184,
+      "x": 7,
+      "y": 19,
+      "contentWidth": 163,
+      "contentHeight": 160
+    },
+    "slinky-spring": {
+      "src": "/companion/home/143/toy-slinky-spring.webp",
+      "width": 192,
+      "height": 178,
+      "x": 2,
+      "y": 32,
+      "contentWidth": 185,
+      "contentHeight": 131
+    },
+    "toy-camera": {
+      "src": "/companion/home/143/toy-toy-camera.webp",
+      "width": 192,
+      "height": 189,
+      "x": 2,
+      "y": 35,
+      "contentWidth": 188,
+      "contentHeight": 150
+    },
+    "toy-telescope": {
+      "src": "/companion/home/143/toy-toy-telescope.webp",
+      "width": 181,
+      "height": 192,
+      "x": 3,
+      "y": 7,
+      "contentWidth": 177,
+      "contentHeight": 184
+    },
+    "magnetic-fishing": {
+      "src": "/companion/home/143/toy-magnetic-fishing.webp",
+      "width": 192,
+      "height": 178,
+      "x": 1,
+      "y": 1,
+      "contentWidth": 190,
+      "contentHeight": 176
+    },
+    "windup-crab": {
+      "src": "/companion/home/143/toy-windup-crab.webp",
+      "width": 192,
+      "height": 135,
+      "x": 1,
+      "y": 1,
+      "contentWidth": 188,
+      "contentHeight": 122
+    },
+    "balancing-bird": {
+      "src": "/companion/home/143/toy-balancing-bird.webp",
+      "width": 192,
+      "height": 155,
+      "x": 1,
+      "y": 3,
+      "contentWidth": 189,
+      "contentHeight": 139
+    },
+    "jigsaw-puzzle": {
+      "src": "/companion/home/143/toy-jigsaw-puzzle.webp",
+      "width": 192,
+      "height": 188,
+      "x": 2,
+      "y": 4,
+      "contentWidth": 187,
+      "contentHeight": 182
+    },
+    "shape-sorter": {
+      "src": "/companion/home/143/toy-shape-sorter.webp",
+      "width": 192,
+      "height": 176,
+      "x": 5,
+      "y": 1,
+      "contentWidth": 177,
+      "contentHeight": 174
+    },
+    "gear-board": {
+      "src": "/companion/home/143/toy-gear-board.webp",
+      "width": 192,
+      "height": 185,
+      "x": 6,
+      "y": 9,
+      "contentWidth": 181,
+      "contentHeight": 158
+    },
+    "wooden-bowling": {
+      "src": "/companion/home/143/toy-wooden-bowling.webp",
+      "width": 192,
+      "height": 190,
+      "x": 11,
+      "y": 13,
+      "contentWidth": 176,
+      "contentHeight": 165
+    },
+    "mini-tuho": {
+      "src": "/companion/home/143/toy-mini-tuho.webp",
+      "width": 118,
+      "height": 192,
+      "x": 2,
+      "y": 1,
+      "contentWidth": 109,
+      "contentHeight": 170
+    },
+    "foam-dart-blaster": {
+      "src": "/companion/home/143/toy-foam-dart-blaster.webp",
+      "width": 192,
+      "height": 167,
+      "x": 17,
+      "y": 17,
+      "contentWidth": 174,
+      "contentHeight": 149
+    },
+    "mini-dollhouse": {
+      "src": "/companion/home/143/toy-mini-dollhouse.webp",
+      "width": 175,
+      "height": 192,
+      "x": 1,
+      "y": 27,
+      "contentWidth": 173,
+      "contentHeight": 163
+    },
+    "battle-top-launcher": {
+      "src": "/companion/home/143/toy-battle-top-launcher.webp",
+      "width": 192,
+      "height": 173,
+      "x": 2,
+      "y": 9,
+      "contentWidth": 175,
+      "contentHeight": 163
+    },
+    "puzzle-cube": {
+      "src": "/companion/home/143/toy-puzzle-cube.webp",
+      "width": 178,
+      "height": 192,
+      "x": 3,
+      "y": 15,
+      "contentWidth": 165,
+      "contentHeight": 175
+    },
+    "modeling-clay-tub": {
+      "src": "/companion/home/143/toy-modeling-clay-tub.webp",
+      "width": 192,
+      "height": 170,
+      "x": 1,
+      "y": 3,
+      "contentWidth": 187,
+      "contentHeight": 165
+    },
+    "heart-compact": {
+      "src": "/companion/home/143/toy-heart-compact.webp",
+      "width": 150,
+      "height": 192,
+      "x": 2,
+      "y": 1,
+      "contentWidth": 146,
+      "contentHeight": 188
+    },
+    "virtual-pet-keyring": {
+      "src": "/companion/home/143/toy-virtual-pet-keyring.webp",
+      "width": 188,
+      "height": 192,
+      "x": 3,
+      "y": 1,
+      "contentWidth": 184,
+      "contentHeight": 185
+    },
+    "transforming-robot": {
+      "src": "/companion/home/143/toy-transforming-robot.webp",
+      "width": 190,
+      "height": 192,
+      "x": 1,
+      "y": 1,
+      "contentWidth": 188,
+      "contentHeight": 189
+    },
+    "loop-race-track": {
+      "src": "/companion/home/143/toy-loop-race-track.webp",
+      "width": 192,
+      "height": 183,
+      "x": 11,
+      "y": 1,
+      "contentWidth": 177,
+      "contentHeight": 162
+    },
+    "mini-game-console": {
+      "src": "/companion/home/143/toy-mini-game-console.webp",
+      "width": 192,
+      "height": 127,
+      "x": 2,
+      "y": 12,
+      "contentWidth": 188,
+      "contentHeight": 114
+    },
+    "capsule-machine": {
+      "src": "/companion/home/143/toy-capsule-machine.webp",
+      "width": 143,
+      "height": 192,
+      "x": 2,
+      "y": 3,
+      "contentWidth": 133,
+      "contentHeight": 186
+    },
+    "stud-brick-castle": {
+      "src": "/companion/home/143/toy-stud-brick-castle.webp",
+      "width": 192,
+      "height": 180,
+      "x": 8,
+      "y": 1,
+      "contentWidth": 182,
+      "contentHeight": 178
+    },
+    "pangtteok-cushion": {
+      "src": "/companion/home/146/toy-pangtteok-cushion.webp",
+      "width": 188,
+      "height": 192,
+      "x": 20,
+      "y": 28,
+      "contentWidth": 158,
+      "contentHeight": 137
+    },
+    "tori-keycap-clicker": {
+      "src": "/companion/home/146/toy-tori-keycap-clicker.webp",
+      "width": 192,
+      "height": 185,
+      "x": 14,
+      "y": 12,
+      "contentWidth": 161,
+      "contentHeight": 154
+    },
+    "tori-photocard": {
+      "src": "/companion/home/146/toy-tori-photocard.webp",
+      "width": 189,
+      "height": 192,
+      "x": 25,
+      "y": 40,
+      "contentWidth": 142,
+      "contentHeight": 112
+    },
+    "otamatone": {
+      "src": "/companion/home/146/toy-otamatone.webp",
+      "width": 185,
+      "height": 192,
+      "x": 56,
+      "y": 8,
+      "contentWidth": 102,
+      "contentHeight": 176
+    },
+    "tail-comb": {
+      "src": "/companion/home/146/toy-tail-comb.webp",
+      "width": 192,
+      "height": 190,
+      "x": 8,
+      "y": 8,
+      "contentWidth": 174,
+      "contentHeight": 171
+    },
+    "card-mirror": {
+      "src": "/companion/home/146/toy-card-mirror.webp",
+      "width": 192,
+      "height": 192,
+      "x": 8,
+      "y": 8,
+      "contentWidth": 167,
+      "contentHeight": 176
+    },
+    "airy-velvet-tint": {
+      "src": "/companion/home/146/toy-airy-velvet-tint.webp",
+      "width": 192,
+      "height": 189,
+      "x": 38,
+      "y": 8,
+      "contentWidth": 111,
+      "contentHeight": 165
+    },
+    "half-wallet": {
+      "src": "/companion/home/146/toy-half-wallet.webp",
+      "width": 192,
+      "height": 189,
+      "x": 12,
+      "y": 20,
+      "contentWidth": 170,
+      "contentHeight": 148
+    },
+    "power-bank": {
+      "src": "/companion/home/146/toy-power-bank.webp",
+      "width": 183,
+      "height": 192,
+      "x": 10,
+      "y": 30,
+      "contentWidth": 163,
+      "contentHeight": 134
+    },
+    "wireless-earbuds": {
+      "src": "/companion/home/146/toy-wireless-earbuds.webp",
+      "width": 179,
+      "height": 192,
+      "x": 15,
+      "y": 12,
+      "contentWidth": 147,
+      "contentHeight": 165
+    },
+    "sewing-kit": {
+      "src": "/companion/home/146/toy-sewing-kit.webp",
+      "width": 192,
+      "height": 188,
+      "x": 13,
+      "y": 27,
+      "contentWidth": 171,
+      "contentHeight": 128
+    },
+    "matte-turbo-lighter": {
+      "src": "/companion/home/146/toy-matte-turbo-lighter.webp",
+      "width": 176,
+      "height": 192,
+      "x": 33,
+      "y": 16,
+      "contentWidth": 114,
+      "contentHeight": 157
+    },
+    "herbal-lip-balm": {
+      "src": "/companion/home/146/toy-herbal-lip-balm.webp",
+      "width": 191,
+      "height": 192,
+      "x": 10,
+      "y": 8,
+      "contentWidth": 173,
+      "contentHeight": 172
+    },
+    "ceramic-safety-cutter": {
+      "src": "/companion/home/146/toy-ceramic-safety-cutter.webp",
+      "width": 192,
+      "height": 191,
+      "x": 13,
+      "y": 31,
+      "contentWidth": 170,
+      "contentHeight": 127
+    },
+    "tori-blanket": {
+      "src": "/companion/home/146/toy-tori-blanket.webp",
+      "width": 192,
+      "height": 190,
+      "x": 8,
+      "y": 18,
+      "contentWidth": 167,
+      "contentHeight": 131
+    },
+    "tori-tumbler": {
+      "src": "/companion/home/146/toy-tori-tumbler.webp",
+      "width": 192,
+      "height": 172,
+      "x": 71,
+      "y": 8,
+      "contentWidth": 57,
+      "contentHeight": 156
+    },
+    "tori-acrylic-stand": {
+      "src": "/companion/home/146/toy-tori-acrylic-stand.webp",
+      "width": 189,
+      "height": 192,
+      "x": 64,
+      "y": 14,
+      "contentWidth": 64,
+      "contentHeight": 168
+    },
+    "practice-baseball-bat": {
+      "src": "/companion/home/159/toy-practice-baseball-bat.webp",
+      "width": 192,
+      "height": 192,
+      "x": 19,
+      "y": 8,
+      "contentWidth": 165,
+      "contentHeight": 173
+    },
+    "practice-baseball-glove": {
+      "src": "/companion/home/159/toy-practice-baseball-glove.webp",
+      "width": 192,
+      "height": 192,
+      "x": 26,
+      "y": 9,
+      "contentWidth": 158,
+      "contentHeight": 174
+    },
+    "cheer-pompom": {
+      "src": "/companion/home/146/toy-cheer-pompom.webp",
+      "width": 192,
+      "height": 189,
+      "x": 8,
+      "y": 9,
+      "contentWidth": 176,
+      "contentHeight": 172
+    },
+    "broadcast-microphone": {
+      "src": "/companion/home/146/toy-broadcast-microphone.webp",
+      "width": 192,
+      "height": 186,
+      "x": 28,
+      "y": 11,
+      "contentWidth": 147,
+      "contentHeight": 160
+    },
+    "vr-headset": {
+      "src": "/companion/home/146/toy-vr-headset.webp",
+      "width": 190,
+      "height": 192,
+      "x": 13,
+      "y": 24,
+      "contentWidth": 168,
+      "contentHeight": 138
+    },
+    "vr-fishing-rod": {
+      "src": "/companion/home/146/toy-vr-fishing-rod.webp",
+      "width": 179,
+      "height": 192,
+      "x": 10,
+      "y": 17,
+      "contentWidth": 161,
+      "contentHeight": 155
+    },
+    "drawing-tablet": {
+      "src": "/companion/home/146/toy-drawing-tablet.webp",
+      "width": 189,
+      "height": 192,
+      "x": 13,
+      "y": 32,
+      "contentWidth": 167,
+      "contentHeight": 131
+    }
+  }
+}

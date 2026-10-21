@@ -8,6 +8,7 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_COLLECTION_KEY, COMPANION_BEHAVIOR_IDS, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_SITUATION_IDS } from "@/lib/ui/viewer-companion/moments";
+import { COMPANION_MEMORY_BOOK } from "@/lib/ui/viewer-companion/memory-book-order";
 import { COMPANION_FOOD_BOOK_ORDER as COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/collection-book-order";
 import { COMPANION_TOY_BOOK_ORDER as COMPANION_TOY_KINDS } from "@/lib/ui/viewer-companion/collection-book-order";
 import { COMPANION_WEARABLE_IDS } from "@/lib/ui/viewer-companion/gifts";
@@ -26,7 +27,7 @@ const receipts = new WeakMap<Page, { name: string; pending: Promise<void>[]; rec
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
 const scoped = (target: string) => /^(companion-collection-(page|inspect|category)|companion-accessory-select)(#|$)/.test(target);
 const counts = (targets: string[]) => Object.fromEntries([...new Set(targets)].sort().map(target => [target, targets.filter(item => item === target).length]));
-const identities: Record<BookKind, readonly string[]> = { food: COMPANION_FOOD_KINDS, toy: COMPANION_TOY_KINDS, memory: [...COMPANION_BEHAVIOR_IDS.map(id => `behavior:${id}`), ...COMPANION_SITUATION_IDS.map(id => `moment:${id}`)], wardrobe: COMPANION_WEARABLE_IDS };
+const identities: Record<BookKind, readonly string[]> = { food: COMPANION_FOOD_KINDS, toy: COMPANION_TOY_KINDS, memory: COMPANION_MEMORY_BOOK.map(item => `${item.kind}:${item.id}`), wardrobe: COMPANION_WEARABLE_IDS };
 // Deliberately supplied prior local collections, not discoveries earned by
 // this session. No engine, geometry, RNG, clock or action callback is altered.
 const prior: CompanionCollection = {
@@ -34,7 +35,9 @@ const prior: CompanionCollection = {
   gifts: { pending: null, unlocked: [COMPANION_WEARABLE_IDS[0], COMPANION_WEARABLE_IDS[1], COMPANION_WEARABLE_IDS[2], COMPANION_WEARABLE_IDS.at(-1)!], equipped: COMPANION_WEARABLE_IDS[0], activeMs: 0, interactionCredit: 0 },
   seen: { foods: [COMPANION_FOOD_KINDS[0]], behaviors: [COMPANION_BEHAVIOR_IDS[0]], situations: [], accessories: [COMPANION_WEARABLE_IDS[0]] },
 };
-const priorToys = ["ball", "blocks", "feather", "toy-rocket"];
+// Fixed prior discoveries occupy the intended displayed neighbours even after
+// the owner's rarity/assembly/familiarity ordering changes their stable IDs.
+const priorToys = [0, 1, 3, 23].map(index => COMPANION_TOY_KINDS[index]);
 const known: Record<BookKind, string[]> = { food: prior.foods, toy: priorToys, memory: [...prior.behaviors.map(id => `behavior:${id}`), ...prior.situations.map(id => `moment:${id}`)], wardrobe: prior.gifts.unlocked };
 const seenItems = (page: Page, kind: BookKind) => page.evaluate(({ kind, key }) => {
   if (kind === "toy") return (JSON.parse(localStorage.getItem("vic.viewerCompanionTastes")!) as { seen: string[] }).seen;
@@ -227,7 +230,7 @@ for (const [surface, width, height, dark] of [["viewer", 1050, 640, false], ["st
     for (const [key, value] of Object.entries({ [epochKey]: epoch, "vic.sound": "off", "vic.ambient": "off", "vic.reduceMotion": "on", "vic.gfxPref": "off", "vic.dark": dark ? "on" : "off", "vic_avatar_side": "left" })) localStorage.setItem(key, value);
     localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, roam: false, jump: false, sleep: false, feeding: false, ambientPrank: false, heartPrank: false, panelPrank: false, cardPrank: false, learnFromYou: false }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...memory })); localStorage.setItem("vic.viewerCompanionCollection", JSON.stringify(prior));
-    localStorage.setItem("vic.viewerCompanionTastes", JSON.stringify({ version: 1, toys: priorToys, seen: ["ball"], toyTastes: {}, foodTastes: {} }));
+    localStorage.setItem("vic.viewerCompanionTastes", JSON.stringify({ version: 1, toys: priorToys, seen: [priorToys[0]], toyTastes: {}, foodTastes: {} }));
     // Passive capture only: records which real displayed button was clicked;
     // never invokes a control, changes app state, or reads an item identity.
     document.addEventListener("click", event => {

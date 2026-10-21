@@ -53,7 +53,7 @@ test.afterEach(async ({ page }, info) => {
   expect(proofs.get(page)!.errors).toEqual([]); expect(proofs.get(page)!.rejected).toEqual([]);
 });
 
-async function fixture(page: Page, surface: Surface, width = 1920, quiet = false) {
+async function fixture(page: Page, surface: Surface, width = 1920, quiet = false, probeBeforeHydration = false) {
   await page.setViewportSize({ width, height: 1100 });
   await page.addInitScript(({ preferences, memory, epoch, epochKey, quiet }) => {
     for (const [key, value] of Object.entries({ [epochKey]: epoch, "vic.gfxPref": quiet ? "off" : "max", "vic.gfx": JSON.stringify({ mode: quiet ? "off" : "full", at: Date.now(), v: 3 }), "vic.sound": "off", "vic.ambient": "off", "vic.reduceMotion": quiet ? "on" : "off", "vic.dark": "off", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(key, value);
@@ -61,6 +61,7 @@ async function fixture(page: Page, surface: Surface, width = 1920, quiet = false
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...memory, energy: .95, hunger: .05 }));
     // Deliberately no taste, collection, first-discovery or runtime state seed.
   }, { preferences: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, quiet });
+  if (probeBeforeHydration) await page.addInitScript(installCollectionProbeInPage, { tasteKey: COMPANION_TASTES_KEY, collectionKey: COMPANION_COLLECTION_KEY });
   await page.goto(surface === "viewer" ? "/visual-fixture/poster?avatar=1" : "/visual-fixture/studio?role=owner&y=2026&m=10&hour=12&weather=clear");
   await page.bringToFront(); await settlePanelLayout(page); await page.evaluate(() => document.fonts.ready);
   if (surface === "preview") { await page.locator(".io-preview").click(); await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible(); await settlePanelLayout(page); }
@@ -78,8 +79,7 @@ async function choose(page: Page, personality: CompanionPersonality, roam: boole
   await dialog.getByRole("tab", { name: "움직임", exact: true }).click(); await dialog.locator('[data-act="companion-roam"]').setChecked(roam);
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden(); await page.mouse.move(2, 2);
 }
-async function startProbe(page: Page) {
-  await page.evaluate(({ tasteKey, collectionKey }) => {
+function installCollectionProbeInPage({ tasteKey, collectionKey }: { tasteKey: string; collectionKey: string }) {
     (window as ProbeWindow).collection141?.stop();
     const samples: Frame[] = [], flights: Flight[] = [], animationIds = new WeakMap<Animation, Flight>();
     let request = 0, stopped = false, last = -Infinity, serial = 0; const began = performance.now();
@@ -113,7 +113,9 @@ async function startProbe(page: Page) {
       if (now - began < 180000) request = requestAnimationFrame(sample);
     };
     (window as ProbeWindow).collection141 = { samples, flights, stop() { stopped = true; cancelAnimationFrame(request); } }; request = requestAnimationFrame(sample);
-  }, { tasteKey: COMPANION_TASTES_KEY, collectionKey: COMPANION_COLLECTION_KEY });
+}
+async function startProbe(page: Page) {
+  await page.evaluate(installCollectionProbeInPage, { tasteKey: COMPANION_TASTES_KEY, collectionKey: COMPANION_COLLECTION_KEY });
 }
 const observation = (page: Page) => page.evaluate(() => { const p = (window as ProbeWindow).collection141!; return { samples: p.samples, flights: p.flights }; });
 async function keyboardFocus(page: Page, target: Locator) {
@@ -279,7 +281,7 @@ test("141 a native spawned toy stays unknown until visible completed play and ea
   // Preparation draws are finite and separate from the unchanged75s first
   // discovery and65s actual replay windows below. This is not a rarity guarantee.
   test.setTimeout(950000); const home = await fixture(page, "studio"); await choose(page, "mischievous", false); await placeCompanionOnHomeFloor(page);
-  //143 uses the actual weighted60 catalogue. Return unwanted native draws
+  // Use the actual weighted catalogue. Return unwanted native draws
   // through the actual opening; no kind, weight, model or RNG is supplied.
   let id = "",actualDraws=0;
   for (let draw = 0; draw < 320; draw++) {
@@ -297,18 +299,30 @@ test("141 a native spawned toy stays unknown until visible completed play and ea
   expect(flight.known).toBe(true); expect(flight.decoded).toBe(true); expect(flight.duration).toBe(1500); expect(flight.book).not.toBeNull();
   const prior = first.samples.filter(frame => frame.at <= flight.at); expect(prior.some(frame => frame.decoded && frame.toys.some(toy => toy.id === id && toy.carried && !toy.held))).toBe(true);
   expect(first.samples.some(frame => frame.knownToys.includes("ball"))).toBe(true);
+  const firstKnown = first.samples.find(frame => frame.knownToys.includes("ball"));
+  expect(firstKnown).toBeDefined();
+  const replayAfter = firstKnown!.at;
+  expect(replayAfter).toBeLessThanOrEqual(flight.at);
+  expect(first.samples.some(frame => frame.at < replayAfter && frame.decoded && !frame.knownToys.includes("ball")
+    && frame.toys.some(toy => toy.id === id && toy.carried && !toy.held))).toBe(true);
   // Observe a NEW pickup and the current149 full ball throw/catch, then its
   // real release/flight/rest. The legacy1100ms pounce observer remains intact
   // in its own helper/tests; it cannot certify this different2600ms use.
-  await expect.poll(async () => Boolean(completedNativeBallUseReplay((await observation(page)).samples, id, flight.at)),
+  // The collection commit follows the first completed play. Its visual notice
+  // can wait behind other discoveries and begin AFTER the next real pickup.
+  // Keep that queued animation's assertions separate from the replay boundary.
+  await expect.poll(async () => Boolean(completedNativeBallUseReplay((await observation(page)).samples, id, replayAfter)),
     { timeout: 65000, intervals: [100] }).toBe(true);
-  proofs.get(page)!.notes.push({ samePhysicalToyReplay: completedNativeBallUseReplay((await observation(page)).samples, id, flight.at),
+  proofs.get(page)!.notes.push({ samePhysicalToyReplay: completedNativeBallUseReplay((await observation(page)).samples, id, replayAfter),
+    firstCollectionCommitAt: replayAfter, visualDiscoveryFlightAt: flight.at, replayBoundary: "first-completed-play-collection-commit",
     expectedPlaybackMs: 2600, expectedUse: "ball-toss", expectedPlaybackRows: [1, 9], replayObserver: "156-current149", sameIdFlightCount: (await observation(page)).flights.filter(f => f.kind === "toy" && f.id === "ball").length });
   expect((await observation(page)).flights.filter(f => f.kind === "toy" && f.id === "ball")).toHaveLength(1);
 });
 
 for (const quiet of [false, true]) test(`141 actual first behavior discovery uses ${quiet ? "reduced static" : "one shrinking book"} presentation`, async ({ page }) => {
-  await fixture(page, "studio", 1920, quiet); await startProbe(page); await choose(page, "performer", true); await placeCompanionOnHomeFloor(page);
+  // New initial poses may be discovered during hydration. Observe the genuine
+  // first animation from the start; opening the book would cancel that flight.
+  await fixture(page, "studio", 1920, quiet, true);
   await expect.poll(async () => (await observation(page)).flights.some(f => f.kind === "behavior" && f.known && f.decoded), { timeout: 45000, intervals: [100] }).toBe(true);
   const proof = await observation(page), flight = proof.flights.find(f => f.kind === "behavior" && f.known && f.decoded)!;
   expect(proof.samples.some(frame => frame.decoded && frame.at <= flight.at && frame.behaviors.includes(flight.id))).toBe(true);

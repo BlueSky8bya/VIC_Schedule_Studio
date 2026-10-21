@@ -278,7 +278,8 @@ describe("same-source108 food stamps", () => {
       const live = renderToStaticMarkup(createElement(CompanionFruit, { kind: id }));
       expect(frame.width).toBe(frame.height);
       expect(stamp).toContain('data-collection-art="food-stamp"'); expect(stamp).toContain('viewBox="0 0 128 128"');
-      expect(stamp).toContain(`width="100%" height="100%" viewBox="${frame.x} ${frame.y} ${frame.width} ${frame.height}" preserveAspectRatio="xMidYMid meet"`);
+      expect(stamp).toContain(`width="100%" height="100%" viewBox="0 0 ${frame.width} ${frame.height}" preserveAspectRatio="xMidYMid meet"`);
+      expect(stamp).toContain(`width="${frame.width}" height="${frame.height}" viewBox="${frame.x} ${frame.y} ${frame.width} ${frame.height}" overflow="hidden"`);
       const specimen=stamp.match(/<span class="vc-collection-seal-picture">([\s\S]+?)<\/span>/)?.[1];
       expect(specimen).toBeDefined();
       expect(specimen!.match(/<image\s[^>]*>/g)).toEqual(live.match(/<image\s[^>]*>/g));

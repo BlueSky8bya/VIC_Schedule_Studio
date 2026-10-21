@@ -13,7 +13,7 @@ export const COMPANION_TOY_EXPANSION_143 = Object.freeze([
   {"id": "toy-trumpet", "name": "빠밤 나팔", "rarity": "uncommon", "width": 38, "height": 28, "hint": "끝이 나팔꽃처럼 벌어진 작은 장난감이에요."},
   {"id": "hand-puppet", "name": "토끼 손인형", "rarity": "uncommon", "width": 30, "height": 40, "hint": "손을 넣고 싶어지는 포근한 토끼 인형이에요."},
   {"id": "cup-and-ball", "name": "컵받기 장난감", "rarity": "uncommon", "width": 36, "height": 36, "hint": "작은 컵과 공이 가는 줄로 이어져 있어요."},
-  {"id": "paddle-ball", "name": "통통 패들볼", "rarity": "uncommon", "width": 34, "height": 38, "hint": "둥근 패들과 공이 한 줄로 연결되어 있어요."},
+  {"id": "paddle-ball", "name": "통통 공치기", "rarity": "uncommon", "width": 34, "height": 38, "hint": "둥근 채와 공이 한 줄로 연결되어 있어요."},
   {"id": "slinky-spring", "name": "무지개 용수철", "rarity": "uncommon", "width": 32, "height": 32, "hint": "무지갯빛 고리가 층층이 이어진 용수철이에요."},
   {"id": "toy-camera", "name": "찰칵 카메라", "rarity": "uncommon", "width": 36, "height": 28, "hint": "둥근 렌즈와 커다란 셔터가 달린 카메라예요."},
   {"id": "toy-telescope", "name": "별보기 망원경", "rarity": "uncommon", "width": 38, "height": 28, "hint": "길쭉한 몸통 양끝에 둥근 렌즈가 달려 있어요."},
@@ -33,9 +33,9 @@ export const COMPANION_TOY_EXPANSION_143 = Object.freeze([
   {"id": "heart-compact", "name": "하트 컴팩트", "rarity": "rare", "width": 32, "height": 32, "hint": "하트 모양 뚜껑 안에 작은 반짝임이 숨어 있어요."},
   {"id": "virtual-pet-keyring", "name": "달걀 전자친구", "rarity": "ultra-rare", "width": 28, "height": 36, "hint": "달걀 모양 몸통에 작은 화면과 단추가 있어요."},
   {"id": "transforming-robot", "name": "변신 로봇", "rarity": "ultra-rare", "width": 36, "height": 42, "hint": "커다란 손발과 네모난 몸통의 장난감 로봇이에요."},
-  {"id": "loop-race-track", "name": "루프 레이싱트랙", "rarity": "ultra-rare", "width": 42, "height": 36, "hint": "작은 차 옆으로 동그란 경주 트랙이 이어져요."},
+  {"id": "loop-race-track", "name": "고리 경주로", "rarity": "ultra-rare", "width": 42, "height": 36, "hint": "작은 차 옆으로 동그란 경주 트랙이 이어져요."},
   {"id": "mini-game-console", "name": "손바닥 게임기", "rarity": "ultra-rare", "width": 38, "height": 26, "hint": "작은 화면 양옆에 손가락만 한 단추가 있어요."},
-  {"id": "capsule-machine", "name": "미니 캡슐머신", "rarity": "ultra-rare", "width": 30, "height": 42, "hint": "동글동글한 캡슐이 든 작은 뽑기통이에요."},
+  {"id": "capsule-machine", "name": "작은 캡슐뽑기", "rarity": "ultra-rare", "width": 30, "height": 42, "hint": "동글동글한 캡슐이 든 작은 뽑기통이에요."},
   {"id": "stud-brick-castle", "name": "조립 성", "rarity": "mythic", "width": 42, "height": 42, "hint": "작은 돌기가 있는 블록으로 높이 세운 성이에요."},
 ] as const);
 export type ExpandedCompanionToyKind143 = typeof COMPANION_TOY_EXPANSION_143[number]["id"];

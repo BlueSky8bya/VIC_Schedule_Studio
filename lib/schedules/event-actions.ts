@@ -6,7 +6,8 @@ import { recordActivity } from "@/lib/activity/record";
 import type {
   EventCategory,
   EventStatus,
-  EventVisibilityScope
+  EventVisibilityScope,
+  MembershipRole
 } from "@/lib/domain/schedule-types";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
@@ -53,6 +54,13 @@ export type SaveEventInput = {
 export type ActionResult = { ok: true; id: string } | { ok: false; error: string };
 
 const SLUG = "vic";
+// Service-role lookups do not establish the caller's permission to mutate.
+async function eventScopeError(role: MembershipRole, scope: string): Promise<string | null> {
+  if (!["public", "work", "owner_private", "embargo"].includes(scope)) return "일정을 수정할 권한이 없습니다.";
+  if ((scope === "owner_private" || scope === "embargo") && role !== "owner") return "일정을 수정할 권한이 없습니다.";
+  if (scope !== "public" && !(await getUnlockState(SLUG)).hasUnlockSession) return "비공개 레이어 잠금 해제 후 수정할 수 있습니다.";
+  return null;
+}
 // (태그 상한 상수는 event-validation.ts로 이동 — 서버 검증과 한 곳에서 관리)
 
 // 태그를 강제하지 않는다: 콘텐츠 대분류가 하나도 없어도(또는 방식만 있어도) 그대로 저장한다.
@@ -390,13 +398,15 @@ export async function updateSupportSettingsAction(
 
   const { data: ev } = await admin
     .from("events")
-    .select("id, is_support, calendar_id")
+    .select("id, is_support, calendar_id, visibility_scope")
     .is("deleted_at", null) // tombstone 제외(P0-DATA-1)
     .eq("id", eventId)
     .maybeSingle();
   if (!ev || ev.calendar_id !== calendar.id || !ev.is_support) {
     return { ok: false, error: "업 도움 일정이 아닙니다." };
   }
+  const scopeError = await eventScopeError(actor.role, ev.visibility_scope);
+  if (scopeError) return { ok: false, error: scopeError };
 
   // P0-AUTH-1: 날짜 형식 + 링크 스킴(https만) 검증 — 공개 포스터에서 시청자가 클릭하는 값.
   {
@@ -413,10 +423,15 @@ export async function updateSupportSettingsAction(
     patch.support_url = input.supportUrl.trim() || null;
   }
 
-  const { error } = await admin.from("events").update(patch).eq("id", eventId);
+  // Authenticated RLS also covers a scope change between the check and write.
+  const client = await createSupabaseServerClient();
+  if (!client) return { ok: false, error: "Supabase가 설정되지 않았습니다." };
+  const { data: updated, error } = await client.from("events").update(patch).eq("id", eventId)
+    .eq("calendar_id", calendar.id).eq("visibility_scope", ev.visibility_scope).eq("is_support", true).is("deleted_at", null).select("id").maybeSingle();
   if (error) {
     return { ok: false, error: safeActionError("업 도움 설정 저장", error) };
   }
+  if (!updated) return { ok: false, error: "일정을 수정할 권한이 없거나 일정이 변경됐습니다." };
 
   revalidatePath("/");
   revalidatePath("/studio");
@@ -472,26 +487,21 @@ export async function updateEventTagsAction(
   if (!ev || ev.calendar_id !== calendar.id) {
     return { ok: false, error: "일정을 찾을 수 없습니다." };
   }
-  // (P0-AUTH-1의 매니저 비공개 차단 분기는 매니저 철수(2026-09-04, ADR-0018)로 제거 — 여기 도달하는
-  //  역할은 owner/developer뿐이고 그들의 비공개 가시성은 RLS·로더가 이미 가른다.)
+  const scopeError = await eventScopeError(actor.role, ev.visibility_scope);
+  if (scopeError) return { ok: false, error: scopeError };
   // P0-AUTH-1: payload 검증(개수/중복/대표 부분집합/이 캘린더의 활성 태그) — 조용한 slice 대신 거부.
   const tagCheck = await validateTagAssignment(admin, calendar.id, tagIds, primaryTagIds);
   if (!tagCheck.ok) return { ok: false, error: tagCheck.error };
 
-  // 태그 0개면 그대로 둔다(색 없는 흰 카드 — 강제 부착 없음).
-  await admin.from("event_tags").delete().eq("event_id", eventId);
-  if (tagIds.length > 0) {
-    const rows = tagIds.map((tagId, index) => ({
-      event_id: eventId,
-      tag_id: tagId,
-      is_primary: primaryTagIds.includes(tagId),
-      sort_order: index
-    }));
-    const { error } = await admin.from("event_tags").insert(rows);
-    if (error) {
-      return { ok: false, error: safeActionError("태그 저장", error) };
-    }
-  }
+  // Replace in one caller-scoped transaction. An insert error preserves old
+  // tags; do not resend a stale full event row through save_event_atomic.
+  const client = await createSupabaseServerClient();
+  if (!client) return { ok: false, error: "Supabase가 설정되지 않았습니다." };
+  const { data: updated, error } = await client.rpc("replace_event_tags_atomic", {
+    p_event_id: eventId, p_calendar_id: calendar.id,
+    p_tags: tagIds.map((tagId, index) => ({ tag_id: tagId, is_primary: primaryTagIds.includes(tagId), sort_order: index }))
+  });
+  if (error || !updated) return { ok: false, error: safeActionError("태그 저장", error) };
 
   revalidatePath("/");
   revalidatePath("/studio");
