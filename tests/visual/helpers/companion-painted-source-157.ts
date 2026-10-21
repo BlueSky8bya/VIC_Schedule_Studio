@@ -15,31 +15,35 @@ export type PaintedSource157Window = Window & { companionPaintedSource157?: { in
 type ExpressionAnchor157 = typeof expressionAnchors.frames[number];
 /** Pure comparator serialized verbatim into the browser observer. Tests call
  * this same exported factory, including the exact calibrated mask operation.
- *162 draws clipped reference eyes even for a narrow blink. Its permitted
- * geometry still uses the reference eye bounds; no wider face mask is needed. */
+ *163's calibrated eye/brow and mouth patches keep their exact opaque-source
+ * admission, including the narrower authored-eye fallback near an ear. */
 export function createCompanionExpressionPixelVerifier157() {
   function maskExpressionPixels157(source: Uint8ClampedArray, pose: ExpressionAnchor157, reference: ExpressionAnchor157) {
     const size=192,total=size*size,scale=size/80,mask=new Uint8Array(total);
     if(source.length!==total*4||pose.eyes.length!==2||reference.eyes.length!==2)return null;
       const permit=(box:number[])=>{
-        if(box.length!==4||!box.every(Number.isFinite))return;
+        if(box.length!==4||!box.every(Number.isFinite))return false;
         const [left,top,right,bottom]=box.map(n=>Math.round(n*scale));
-        if(left<0||top<0||right>=size||bottom>=size||right<=left||bottom<=top)return;
-        for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++)if(source[(y*size+x)*4+3]<245)return;
+        if(left<0||top<0||right>=size||bottom>=size||right<=left||bottom<=top)return false;
+        for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++)if(source[(y*size+x)*4+3]<245)return false;
         let corners=0;for(const [x,y]of[[left,top],[right,top],[left,bottom],[right,bottom]]){
           const i=(y*size+x)*4;if(source[i]>=190&&source[i+1]>=175&&source[i+2]>=130)corners++;
         }
-        if(corners<3)return;
+        if(corners<3)return false;
         for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++)mask[y*size+x]=1;
+        return true;
       };
       for(let i=0;i<2;i++){
         const eye=pose.eyes[i],original=reference.eyes[i],view=pose.orientation==="quarter"?.83:1;
-        if(eye.center.length!==2||eye.bounds.length!==4||original.bounds.length!==4) return null;
+        if(eye.center.length!==2||eye.bounds.length!==4||original.bounds.length!==4
+          ||![...eye.center,...eye.bounds,...original.bounds].every(Number.isFinite)) return null;
         const [x,y]=eye.center,width=(original.bounds[2]-original.bounds[0])*view,height=(original.bounds[3]-original.bounds[1])*view;
-        permit([Math.min(eye.bounds[0],x-width/2-.5)-.65,Math.min(eye.bounds[1],y-height/2-.5)-.65,
-          Math.max(eye.bounds[2],x+width/2+.5)+.65,Math.max(eye.bounds[3],y+height/2+.5)+.65]);
+        const permitted=permit([Math.min(eye.bounds[0],x-width/2-.5)-.65,Math.min(eye.bounds[1],y-height/2-1.6)-.65,
+          Math.max(eye.bounds[2],x+width/2+.5)+.65,Math.max(eye.bounds[3],y+height/2+1.2)+.65]);
+        if(!permitted)permit([eye.bounds[0]-.4,eye.bounds[1]-.4,eye.bounds[2]+.4,eye.bounds[3]+.4]);
       }
-      if(pose.mouth){const m=pose.mouth;permit([m.bounds[0]-.8,m.bounds[1]-1.7,m.bounds[2]+.8,m.bounds[3]+1.8]);}
+      if(pose.mouth){const m=pose.mouth;permit([Math.min(m.bounds[0]-.5,m.x-3.4),Math.min(m.bounds[1]-.5,m.y-2),
+        Math.max(m.bounds[2]+.5,m.x+3.4),Math.max(m.bounds[3]+.5,m.y+3.6)]);}
     return mask;
   }
   function compareExpressionPixels157(source: Uint8ClampedArray, current: Uint8ClampedArray, pose: ExpressionAnchor157, reference: ExpressionAnchor157) {

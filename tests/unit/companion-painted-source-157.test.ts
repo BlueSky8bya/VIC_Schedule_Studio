@@ -14,18 +14,17 @@ const compare:typeof direct.compare=(...args)=>{const actual=direct.compare(...a
 const samePlane:typeof direct.samePlane=(...args)=>{const actual=direct.samePlane(...args);expect(serialized.samePlane(...args)).toBe(actual);return actual;};
 const mask=direct.mask;
 const pose=anchors.frames.find(f=>f.physicalIndex===anchors.reference)!;
-// Compile the actual162 painter's opaque-background and patch geometry.
+// Compile the actual163 painter's opaque-background and patch geometry.
 // Repeating a second hand-written box formula here could miss future drift.
 const painterSource=readFileSync("lib/ui/viewer-companion/expression-painter.ts","utf8");
 const painterAst=ts.createSourceFile("expression-painter.ts",painterSource,ts.ScriptTarget.Latest,true);
 const painterNodes:ts.Node[]=[];const visit=(node:ts.Node)=>{painterNodes.push(node);ts.forEachChild(node,visit);};visit(painterAst);
 const background=painterNodes.find((node):node is ts.VariableDeclaration=>ts.isVariableDeclaration(node)&&node.name.getText(painterAst)==="background")!;
-const eyeLoop=painterNodes.find((node):node is ts.ForStatement=>ts.isForStatement(node)&&node.statement.getText(painterAst).includes("const eye = pose.eyes[i]"))!;
-const mouth=painterNodes.find((node):node is ts.IfStatement=>ts.isIfStatement(node)&&node.expression.getText(painterAst).startsWith("pose.mouth &&"))!;
-if(!background||!eyeLoop||!ts.isBlock(eyeLoop.statement)||!mouth||!ts.isBlock(mouth.thenStatement))throw Error("Actual painter mask declarations are missing");
+const declaration=(name:string)=>painterNodes.find((node):node is ts.VariableDeclaration=>ts.isVariableDeclaration(node)&&node.name.getText(painterAst)===name);
+const eyePatches=declaration("eyePatches"),mouthCenter=declaration("m"),mouthBox=declaration("mouthBox"),mouthFill=declaration("mouthFill");
+if(!background||!eyePatches||!mouthCenter||!mouthBox||!mouthFill||!eyePatches.initializer||!ts.isCallExpression(eyePatches.initializer)
+  ||eyePatches.initializer.expression.getText(painterAst)!=="pose.eyes.map")throw Error("Actual163 painter mask declarations are missing");
 const print=(node:ts.Node)=>ts.createPrinter().printNode(ts.EmitHint.Unspecified,node,painterAst);
-const eyeDeclarations=eyeLoop.statement.statements.filter(ts.isVariableStatement).slice(0,4);
-if(eyeDeclarations.length!==4||!print(eyeDeclarations[3]).includes("const box"))throw Error("Actual painter eye geometry shape changed");
 const actualMaskCode=ts.transpileModule(`
 const PIXELS=192,SCALE=PIXELS/80,allowed=new Uint8Array(PIXELS*PIXELS);
 const face={gazeX:0,gazeY:0,weight:1,smile:.7,open:1,tremble:.3};
@@ -33,10 +32,15 @@ const pixels={getImageData(left,top,width,height){const data=new Uint8ClampedArr
   for(let y=0;y<height;y++)for(let x=0;x<width;x++)data.set(source.subarray(((top+y)*PIXELS+left+x)*4,((top+y)*PIXELS+left+x)*4+4),(y*width+x)*4);
   return {data,width,height};}};
 const ${print(background)};
-for(let i=0;i<2;i++){${eyeDeclarations.map(print).join("\n")}background(box);}
-if(pose.mouth){${print(mouth.thenStatement.statements[0])}}
-return allowed;`,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText;
-const actualPainterMask=new Function("source","pose","reference",actualMaskCode) as typeof direct.mask;
+const ${print(eyePatches)};
+const ${print(mouthCenter)};
+const ${print(mouthBox)};
+const ${print(mouthFill)};
+return {allowed,eyePatches,mouthBox,mouthFill};`,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText;
+const actualPainterPatches=new Function("source","pose","reference",actualMaskCode) as (source:Uint8ClampedArray,current:typeof pose,reference:typeof pose)=>{
+  allowed:NonNullable<ReturnType<typeof direct.mask>>;eyePatches:{box:number[];fill:string|undefined}[];mouthBox:number[]|undefined;mouthFill:string|undefined;
+};
+const actualPainterMask:typeof direct.mask=(source,current,reference)=>actualPainterPatches(source,current,reference).allowed;
 const original=()=>{const p=new Uint8ClampedArray(192*192*4);for(let i=0;i<p.length;i+=4)p.set([241,221,178,253],i);return p;};
 function fixture(){const source=original(),permitted=mask(source,pose,pose)!;
   const pixel=permitted.findIndex((v,i)=>v===1&&permitted[i-1]===1&&permitted[i+1]===1),painted=source.slice();
@@ -50,7 +54,7 @@ function cell(index=0):CuriousTextureCellMeasurement {
     spriteClipPath:`inset(${f.clip.map(n=>`${n/80*100}%`).join(" ")})`,textureClipPath:"none"};
 }
 describe("157 actual current-cell canvas comparison shared verbatim with browser",()=>{
-  it("matches actual162 reference-eye mask geometry for every compiled front/quarter pose",()=>{
+  it("matches actual163 eye/brow, mouth and fallback geometry for every compiled front/quarter pose",()=>{
     for(const anchor of anchors.frames){
       const source=original();
       expect(Buffer.compare(Buffer.from(mask(source,anchor,pose)!),Buffer.from(actualPainterMask(source,anchor,pose)!))).toBe(0);
@@ -60,6 +64,36 @@ describe("157 actual current-cell canvas comparison shared verbatim with browser
     for(const anchor of anchors.frames.filter((_,i)=>i%7===0)){
       const source=original();for(let i=3;i<source.length;i+=324)source[i]=244;
       expect(Buffer.compare(Buffer.from(mask(source,anchor,pose)!),Buffer.from(actualPainterMask(source,anchor,pose)!))).toBe(0);
+    }
+  });
+  it.each(["alpha","corners"] as const)("uses only the actual authored-eye fallback after a failed primary%s patch",failure=>{
+    const source=original(),primary=actualPainterPatches(source,pose,pose).eyePatches[0].box;
+    const [left,top,right]=primary.map(n=>Math.round(n*192/80));
+    const denied=top*192+left;
+    if(failure==="alpha")source[denied*4+3]=244;
+    else for(const x of [left,right])source.set([170,100,70],(top*192+x)*4);
+    const actual=actualPainterPatches(source,pose,pose),permitted=mask(source,pose,pose)!;
+    expect(actual.eyePatches[0].fill).toBeTruthy();expect(actual.eyePatches[0].box).not.toEqual(primary);
+    expect(Buffer.compare(Buffer.from(permitted),Buffer.from(actual.allowed))).toBe(0);
+    expect(permitted[denied]).toBe(0);
+    const changed=permitted.findIndex(value=>value===1),painted=source.slice();painted[changed*4]--;
+    expect(compare(source,painted,pose,pose).valid).toBe(true);
+    painted[denied*4]--;
+    const rejected=compare(source,painted,pose,pose);expect(rejected.protectedRgbMismatch).toBe(1);expect(rejected.valid).toBe(false);
+  });
+  it("protects pixels immediately outside each actual163 eye and mouth patch",()=>{
+    const source=original(),actual=actualPainterPatches(source,pose,pose),permitted=mask(source,pose,pose)!;
+    expect(actual.mouthFill).toBeTruthy();
+    const boxes=[...actual.eyePatches.map(p=>p.box),actual.mouthBox!],changed=permitted.findIndex(value=>value===1);
+    for(const box of boxes){
+      const [left,top,right,bottom]=box.map(n=>Math.round(n*192/80));
+      const candidates=[[left-1,Math.round((top+bottom)/2)],[right+1,Math.round((top+bottom)/2)],
+        [Math.round((left+right)/2),top-1],[Math.round((left+right)/2),bottom+1]];
+      const outside=candidates.map(([x,y])=>y*192+x).find(index=>index>=0&&index<36864&&!permitted[index]);
+      expect(outside).toBeDefined();
+      const painted=source.slice();painted[changed*4]--;painted[outside!*4]--;
+      const proof=compare(source,painted,pose,pose);expect(proof.alphaCompared).toBe(36864);
+      expect(proof.protectedRgbMismatch).toBe(1);expect(proof.valid).toBe(false);
     }
   });
   it("serializes the actual calibrated mask without a module closure",()=>{
@@ -102,6 +136,10 @@ describe("157 actual current-cell canvas comparison shared verbatim with browser
   });
   it("requires two calibrated eyes",()=>{
     const f=fixture();expect(compare(f.source,f.painted,{...pose,eyes:[]},pose).valid).toBe(false);
+  });
+  it.each([NaN,Infinity])("rejects a nonfinite calibrated eye center%s instead of falling back to a wider permission",value=>{
+    const f=fixture(),invalid={...pose,eyes:[{...pose.eyes[0],center:[value,pose.eyes[0].center[1]]},pose.eyes[1]]};
+    expect(compare(f.source,f.painted,invalid,pose).valid).toBe(false);
   });
 });
 describe("157 current immutable registration and actual canvas plane",()=>{
