@@ -39,7 +39,7 @@ const COLLECTION = [
   ["companion-collection-category#moment", "빅타민 도감 종류 · 특별한 순간"],
   ["companion-collection-inspect#food", "빅타민 도감 항목 살펴보기 · 냠냠 도감"],
   ["companion-collection-inspect#toy", "빅타민 도감 항목 살펴보기 · 장난감 도감"],
-  ["companion-collection-inspect#behavior", "빅타민 도감 항목 살펴보기 · 재롱"],
+  ["companion-collection-inspect#behavior", "빅타민 도감 항목 살펴보기 · 표정·포즈·행동"],
   ["companion-collection-inspect#moment", "빅타민 도감 항목 살펴보기 · 특별한 순간"],
   ["companion-collection-page#prev", "빅타민 도감·옷장 넘기기 · 이전"],
   ["companion-collection-page#next", "빅타민 도감·옷장 넘기기 · 다음"],
