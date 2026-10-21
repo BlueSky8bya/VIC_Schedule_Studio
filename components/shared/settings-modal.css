@@ -1912,7 +1912,7 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 .vic-settings .rhh-companion-experience[data-paged] { display: flex; flex: 1; flex-direction: column; gap: 0; width: 100%; min-width: 0; min-height: 0; background: transparent; }
 .vic-settings .rhh-companion-experience[data-paged] > .rhh-profile-nav { flex: none; margin-block: var(--space-3); }
 .vic-settings .rhh-companion-experience[data-paged] > [role="tabpanel"]:not([hidden]) { display: flex; flex: 1; min-height: 0; }
-.rhh-companion-settings .rhh-collection-book { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; gap: 10px; overflow-y: auto; background: transparent; }
+.rhh-companion-settings .rhh-collection-book { display: flex; flex: 1; flex-direction: column; min-width: 0; min-height: 0; gap: 10px; overflow-y: auto; padding-bottom: 2px; background: transparent; }
 .rhh-companion-settings .rhh-collection-book :is(.rhh-collection-heading, .rhh-collection-switch, .rhh-collection-detail, .rhh-collection-pages, .rhh-gift-arrival, .rhh-equipped-current) { flex: none; margin: 0; }
 .rhh-companion-settings .rhh-collection-book .rhh-collection-detail { position: static; z-index: auto; min-height: 96px; box-sizing: border-box; gap: 4px; padding: 10px 14px; box-shadow: var(--elev-1); }
 .rhh-collection-detail-title { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; width: 100%; }
