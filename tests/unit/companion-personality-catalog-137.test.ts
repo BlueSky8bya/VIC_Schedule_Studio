@@ -17,14 +17,15 @@ describe("137 complete report recipe catalog", () => {
       return { id: match[2], label: plain(name).replace(major ? /^$/ : /^[PCASTMGHB]\d{2}/, "").trim(), major };
     });
     expect(source).toHaveLength(108);
-    const regular = COMPANION_PERSONALITY_SCENES.filter(scene => !scene.id.startsWith("X-") && !scene.id.startsWith("D143-"));
+    const regular = COMPANION_PERSONALITY_SCENES.filter(scene => !scene.id.startsWith("X-") && !/^D(?:143|157)-/.test(scene.id));
     //143 changes A06 from a sofa invitation to an actual outside greeting.
     const currentSource=source.map(row=>row.id==="A06"?{...row,label:"문밖에서 조용히 몸 내밀기"}:row);
     expect(regular.map(({ id, label, major }) => ({ id, label, major }))).toEqual(currentSource);
-    expect(COMPANION_PERSONALITY_SCENES).toHaveLength(153);
-    expect(new Set(COMPANION_PERSONALITY_SCENES.map(scene => scene.id)).size).toBe(153);
+    expect(COMPANION_PERSONALITY_SCENES).toHaveLength(162);
+    expect(new Set(COMPANION_PERSONALITY_SCENES.map(scene => scene.id)).size).toBe(162);
     expect(COMPANION_PERSONALITY_SCENES.filter(scene => scene.id.startsWith("X-"))).toHaveLength(36);
     expect(COMPANION_PERSONALITY_SCENES.filter(scene=>scene.id.startsWith("D143-"))).toHaveLength(9);
+    expect(COMPANION_PERSONALITY_SCENES.filter(scene=>scene.id.startsWith("D157-"))).toHaveLength(9);
   });
 
   it("gives all nine named personalities five major, seven minor and four cross-feature paths plus nine143 additions", () => {
@@ -34,9 +35,10 @@ describe("137 complete report recipe catalog", () => {
     for (const personality of COMPANION_PERSONALITIES) {
       const scenes = COMPANION_PERSONALITY_SCENES.filter(scene => scene.personality === personality);
       expect(scenes.filter(scene => scene.major), personality).toHaveLength(5);
-      expect(scenes.filter(scene => !scene.major && !scene.id.startsWith("X-") && !scene.id.startsWith("D143-")), personality).toHaveLength(7);
+      expect(scenes.filter(scene => !scene.major && !scene.id.startsWith("X-") && !/^D(?:143|157)-/.test(scene.id)), personality).toHaveLength(7);
       expect(scenes.filter(scene => scene.id.startsWith("X-")), personality).toHaveLength(4);
       expect(scenes.filter(scene=>scene.id.startsWith("D143-"))).toHaveLength(1);
+      expect(scenes.filter(scene=>scene.id.startsWith("D157-"))).toHaveLength(1);
       expect(scenes.every(scene => scene.label.length > 0)).toBe(true);
     }
   });
@@ -115,7 +117,7 @@ describe("137 complete report recipe catalog", () => {
 
   it("authors two-sided inspection, physical car nudging, two real food checks and reopening the view before scenery watching", () => {
     expect(recipe("C01").steps).toContainEqual({ kind: "go", target: "toy-other-side", optional: true });
-    expect(recipe("M02").steps.filter(step => step.kind === "toy").map(step => step.mode)).toEqual(["nudge", "return"]);
+    expect(recipe("M02").steps.filter(step => step.kind === "toy").map(step => step.mode)).toEqual(["play", "nudge", "return"]);
     expect(recipe("G04").steps.filter(step => step.kind === "food").map(step => step.mode)).toEqual(["compare", "inspect", "eat"]);
     for (const id of ["C12", "H05", "B04", "B11", "X-C-return-time", "X-B-return-time"]) {
       const steps = recipe(id).steps, open = steps.findIndex(step => step.kind === "curtain" && step.phase === "open"), watch = steps.findIndex(step => step.kind === "watch");

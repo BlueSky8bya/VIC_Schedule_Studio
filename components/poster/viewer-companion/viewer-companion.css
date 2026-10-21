@@ -1,15 +1,17 @@
-.vc-companion { position: fixed; left: 0; top: 0; z-index: 75; width: var(--vc-size, 92px); height: var(--vc-size, 92px); pointer-events: none; will-change: transform; --vc-column: 0%; --vc-row: 0%; }
+.vc-companion { position: fixed; position-anchor: auto; left: 0; top: 0; z-index: 75; width: var(--vc-size, 92px); height: var(--vc-size, 92px); pointer-events: none; will-change: transform; --vc-column: 0%; --vc-row: 0%; }
 .vc-first-taste { position: fixed; top: 0; left: 0; z-index: 77; width: 48px; height: 48px; pointer-events: none; opacity: 0; }
 .vc-first-taste > .vc-collection-art { width: 48px; height: 48px; }
 .vc-companion[hidden] { display: none; }
 /* The room remains behind the pet. Only its matching static U-shaped rim
    sits above the body, so lifting naturally clears the fabric without hiding
    the sofa or changing the native cushion/food hit targets. */
-.vc-bed-foreground { position: fixed; left: 0; top: 0; z-index: 76; pointer-events: none; }
+.vc-bed-foreground { position: fixed; position-anchor: auto; left: 0; top: 0; z-index: 76; pointer-events: none; }
 /* A seated creature and its cloth use the browser's native anchor scroll
    compensation. JavaScript still owns world travel, while compositor scroll
    no longer advances the room a frame ahead of these two fixed carriers. */
-.vc-companion[data-native-sofa], .vc-bed-foreground[data-native-sofa] { left: anchor(left, 0px); top: anchor(top, 0px); }
+/* Removing this state releases the anchor association as well as its origin.
+   Otherwise a world transform receives the old seat's scroll delta again. */
+.vc-companion[data-native-sofa], .vc-bed-foreground[data-native-sofa] { position-anchor: var(--vc-sofa-native-anchor, auto); left: anchor(left, 0px); top: anchor(top, 0px); }
 .vc-wash-tool { position: fixed; left: 0; top: 0; z-index: 77; width: 24px; height: 38px; transform-origin: 8px 7px; pointer-events: none; filter: brightness(var(--vc-body-room-light, 1)) drop-shadow(0 1px 1px #795b3924); }
 .vc-wash-tool[hidden], .vc-home-touch-tool[hidden] { display: none; }
 .vc-home-touch-tool { position: fixed; left: 0; top: 0; z-index: 77; width: 18px; height: 18px; transform-origin: center; pointer-events: none; filter: brightness(var(--vc-body-room-light, 1)); }
@@ -152,7 +154,8 @@ html[data-reduce-motion] .vc-companion:is([data-presence="parked"], [data-dreami
 /*098 restores a compact floating room beside the actual header launcher.
    Only its viewport position/available space change; the132px interior and
    native control geometry stay intact above the unchanged calendar. */
-.vc-compact-home > .vc-home { max-height: var(--vc-home-max-height, calc(100dvh - 24px)); overflow: auto; overscroll-behavior: contain; box-sizing: border-box; box-shadow: var(--elev-3); }
+.vc-compact-home > .vc-home,
+.vc-compact-home > .vc-home-carrier > .vc-home { max-height: var(--vc-home-max-height, calc(100dvh - 24px)); overflow: auto; overscroll-behavior: contain; box-sizing: border-box; box-shadow: var(--elev-3); }
 .button.vc-home-launcher { min-height: 44px; min-width: 44px; border-radius: var(--r-pill); pointer-events: auto; font-size: var(--text-body); white-space: nowrap; }
 html[data-reduce-motion] .vc-contact, html[data-gfx="off"] .vc-contact { transition: none; }
 html[data-reduce-motion] .vc-food, html[data-reduce-motion] .vc-food > span, html[data-reduce-motion] .vc-dream i, html[data-reduce-motion] .vc-companion[data-state="petted"] .vc-effect, html[data-reduce-motion] .vc-companion[data-state="petted"] .vc-actor::after { animation: none; }
@@ -185,3 +188,8 @@ html[data-gfx="off"] .vc-dream i { animation: none; opacity: .7; }
 .vc-food > span { filter: brightness(var(--vc-item-room-light, 1)); }
 .vc-toys .vc-toy > .vc-toy-art { filter: brightness(var(--vc-item-room-light, 1)) var(--vc-toy-color) drop-shadow(0 2px 1px #5d422528); }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-toys .vc-toy > .vc-toy-art { filter: brightness(var(--vc-item-room-light, 1)) var(--vc-toy-color); }
+
+/*161 face rig shares the sprite registration and body transform, beneath eyewear. */
+.vc-expression-face { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+.vc-expression-face[hidden] { display: none; }
+.vc-companion[data-expression] .vc-sprite { visibility: hidden; }

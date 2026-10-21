@@ -19,7 +19,12 @@ export const COMPANION_TOY_VISUALS: Readonly<Record<CompanionToyKind, Readonly<{
 export function isCompanionToyKind(value: unknown): value is CompanionToyKind { return typeof value === "string" && (COMPANION_TOY_KINDS as readonly string[]).includes(value); }
 const expandedKinds = new Set<string>(COMPANION_TOY_EXPANSION_143.map(item => item.id));
 const homageKinds = new Set<string>(COMPANION_TOY_EXPANSION_146.map(item => item.id));
-export function getCompanionToyArt(kind: CompanionToyKind): string { return `/companion/home/${homageKinds.has(kind) ? "146" : expandedKinds.has(kind) ? "143" : "125"}/toy-${kind}.webp`; }
+/** Revised item designs keep their collected identities and original odds. */
+const revisedToyArt: Partial<Record<CompanionToyKind, string>> = {
+  "practice-baseball-bat": "/companion/home/159/toy-practice-baseball-bat.webp",
+  "practice-baseball-glove": "/companion/home/159/toy-practice-baseball-glove.webp",
+};
+export function getCompanionToyArt(kind: CompanionToyKind): string { return revisedToyArt[kind] ?? `/companion/home/${homageKinds.has(kind) ? "146" : expandedKinds.has(kind) ? "143" : "125"}/toy-${kind}.webp`; }
 export const COMPANION_TOY_RARITY_NAMES = COMPANION_COLLECTION_RARITY_NAMES;
 export const COMPANION_TOY_RARITY: Readonly<Record<CompanionToyKind, CompanionCollectionRarity>> = Object.freeze(Object.fromEntries([
   ...COMPANION_TOY_KINDS.map(kind => [kind, "common"]),

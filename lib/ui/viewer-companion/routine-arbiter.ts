@@ -3,6 +3,7 @@ import type { PersonalitySceneRecipe, SceneBeat } from "./personality-scene-cata
 import type { CompanionPersonality } from "./preferences";
 import { COMPANION_FULL_THRESHOLD } from "./care";
 import { getCompanionBehaviorProfile } from "./behavior-profile";
+import { companionWashSteps } from "./wash-journey";
 import { planCompanionOutsideRoute, type CompanionOutsideGoal, type CompanionOutsideObserver } from "./outside-route";
 
 export type CompanionRoutineKind = "meal" | "wash" | "sleep" | "nap" | "outing" | "music";
@@ -44,14 +45,7 @@ function recipe(kind: CompanionRoutineKind, input: CompanionRoutineInput): Perso
     ...(profile.inspect ? [{ kind: "food", mode: "inspect" } as const] : []),
     { kind: "food", mode: "eat" }, pose(personality === "tidy" ? "groom" : "bow"),
   ];
-  else if (kind === "wash") steps = [
-    { kind: "go", target: "pad" }, { kind: "wash", ms: personality === "tidy" ? 3000 : personality === "mischievous" ? 1900 : 2400 },
-    // The narrow body-only pad is a washing stance, not a stage for the next
-    // performance. Finish the actual care, then leave through a proved route
-    // before the finite personality gesture. Never fake a floor or wash ACK.
-    { kind: "go", target: "floor" },
-    pose(personality === "mischievous" ? "shake" : personality === "sleepy" ? "stretch" : "bow"),
-  ];
+  else if (kind === "wash") steps = companionWashSteps(personality);
   else if (kind === "sleep" || kind === "nap") steps = [
     { kind: "radio", playing: false, optional: true },
     { kind: "curtain", phase: "closed" }, { kind: "light", lit: false }, { kind: "go", target: "sofa" },

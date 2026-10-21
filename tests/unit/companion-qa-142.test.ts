@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { BOOLEAN_KEYS, PERSONALITIES, ROUTINES, NATIVE_ENTRY_GREP, NATIVE_ENTRY_TITLES, NATIVE_FLOATING_TIDY_TITLES, PLANNED_NATIVE_CASE_COUNT, NATIVE_GREP, NATIVE_SUITES, PURE_SUITES, coverageFor, dailyCases, pairwiseRows, universe } from "../../scripts/companion-qa/catalog.mjs";
+import { BOOLEAN_KEYS, PERSONALITIES, ROUTINES, NATIVE_ENTRY_GREP, NATIVE_ENTRY_TITLES, NATIVE_FLOATING_TIDY_TITLES, NATIVE_NARROW_WASH_TITLES, NATIVE_CAR_USE_TITLES, PLANNED_NATIVE_CASE_COUNT, NATIVE_GREP, NATIVE_SUITES, PURE_SUITES, coverageFor, dailyCases, pairwiseRows, universe } from "../../scripts/companion-qa/catalog.mjs";
 import { childEnvironment, dailyEvidenceGate, nativeEntryEvidence, loopbackOrigin, ownedTerminationCommand, parseOptions, REQUIRED_AGENT_REGRESSIONS, registeredAgentRegressions, safeRelative, snapshotEligible } from "../../scripts/companion-qa/runner.mjs";
 import { inspectTrace, traceSufficiency, ordinaryRouteOscillations, ordinaryWalkPacing, traceContextComplete, type QaFrame } from "../../scripts/companion-qa/trace-checks.mjs";
 import { admitNodeRequest } from "../../scripts/companion-qa/network-guard.mjs";
@@ -85,15 +85,36 @@ describe("142 declared QA model and safety gates", () => {
     for (const suite of ["tests/unit/companion-public-life-146.test.ts", "tests/unit/companion-preparation-budget-146.test.ts", "tests/unit/companion-cleanup-aftercare-146.test.ts", "tests/unit/companion-homage-catalog-146.test.ts", "tests/unit/companion-collection-art-146.test.ts"]) expect(PURE_SUITES).toContain(suite);
     for (const suite of ["companion-house-146.spec.ts", "companion-living-runtime-146.spec.ts"]) expect(NATIVE_SUITES).toContain(suite);
     for (const title of ["146 viewer 1920 dark occupied sofa and clear window storage", "146 viewer tidy carries all four same physical toys into the box before leisure", "146 curious actually lives on the public calendar across a continuous active sequence"]) expect(new RegExp(NATIVE_GREP).test(title)).toBe(true);
-    expect(PLANNED_NATIVE_CASE_COUNT).toBe(169);
-    expect(universe()).toMatchObject({ modeledEntries: 9, plannedNativeEntryCases: 27, plannedNativeFloatingTidyCases: 2, plannedNativeCaseCount: 169 });
+    expect(PLANNED_NATIVE_CASE_COUNT).toBe(200);
+    expect(universe()).toMatchObject({ modeledEntries: 9, plannedNativeEntryCases: 27, plannedNativeFloatingTidyCases: 2, plannedNativeCaseCount: 200 });
+  });
+  it("accepts a bounded diagnostic subset without lowering the full release case count", () => {
+    expect(parseOptions(["--native-grep", "157 |140 curious", "--workers", "3"]).nativeGrep).toBe("157 |140 curious");
+    for (const pattern of [" ", "[", "x".repeat(1025)]) expect(() => parseOptions(["--native-grep", pattern])).toThrow();
+    expect(parseOptions([]).nativeGrep).toBeUndefined();
+    expect(PLANNED_NATIVE_CASE_COUNT).toBe(200);
   });
   it("adds147 resting-item scroll and actual drag/flight regressions while retaining all older suites", () => {
     for (const suite of ["tests/unit/companion-item-anchor-147.test.ts", "tests/unit/companion-items-scroll-147.test.ts"]) expect(PURE_SUITES).toContain(suite);
     expect(NATIVE_SUITES).toContain("companion-items-scroll-147.spec.ts");
     for (const title of ["147 viewer 1920 full floor food and toy follow rapid native scroll", "147 viewer 1100 soft floor food and toy follow rapid native scroll", "147 studio 1920 off floor food and toy follow rapid native scroll", "147 preview 1920 full floor food and toy follow rapid native scroll", "147 native food and toy drag release keep the actual grip and unanchored flight"]) expect(new RegExp(NATIVE_GREP).test(title)).toBe(true);
-    expect(PLANNED_NATIVE_CASE_COUNT).toBe(130 + 12 + 1 + 17 + 9);
-    expect(NATIVE_SUITES).toHaveLength(13);
+    expect(PLANNED_NATIVE_CASE_COUNT).toBe(130 + 12 + 1 + 17 + 9 + 6 + 8 + 9 + 6 + 2);
+    expect(NATIVE_SUITES).toHaveLength(18);
+  });
+  it("retains192 and requires six real pointer/keyboard manual pad journeys after162 integration",()=>{
+    expect(NATIVE_SUITES).toContain("companion-house-controls-162.spec.ts");
+    for(const surface of ["viewer","studio","preview"])for(const input of ["pointer","keyboard"])
+      expect(new RegExp(NATIVE_GREP).test(`162 ${surface} ${input} direct pad approach wash and exit`)).toBe(true);
+    expect(new RegExp(NATIVE_GREP).test("162 viewer light lighting matrix")).toBe(false);
+  });
+  it("adds one exact narrow default-panel wash case while retaining the original198 selection",()=>{
+    expect(NATIVE_NARROW_WASH_TITLES).toEqual(["162 narrow default panel keeps a real mat stance and accepts a sofa wash request"]);
+    expect(PLANNED_NATIVE_CASE_COUNT).toBe(198+1+1);
+    expect(universe()).toMatchObject({plannedNativeNarrowWashCases:1,plannedNativeCaseCount:200});
+    for(const prefix of ["","chromium companion-house-controls-162.spec.ts "])
+      expect(new RegExp(NATIVE_GREP).test(prefix+NATIVE_NARROW_WASH_TITLES[0])).toBe(true);
+    expect(new RegExp(NATIVE_GREP).test(NATIVE_NARROW_WASH_TITLES[0]+" sibling")).toBe(false);
+    expect(new RegExp(NATIVE_GREP).test("1"+NATIVE_NARROW_WASH_TITLES[0])).toBe(false);
   });
   it("registers149 body, household and object regression sources without dropping earlier cases", () => {
     for (const suite of ["companion-cheer-149", "companion-home-life-policy-149", "companion-toy-play-149", "companion-food-aftertaste-149"])
@@ -178,7 +199,7 @@ describe("142 exact declared Node font admission", () => {
 });
 describe("142 actual native entry reporter gate", () => {
   const passedSpec = (title: string) => ({ title, tests: [{ expectedStatus: "passed", status: "expected", results: [{ status: "passed", retry: 0 }] }] });
-  const nativeReport = () => ({ errors: [], suites: [{ specs: Array.from({ length: PLANNED_NATIVE_CASE_COUNT - NATIVE_ENTRY_TITLES.length - NATIVE_FLOATING_TIDY_TITLES.length }, (_, index) => passedSpec(`legacy-native-${index}`)), suites: [{ specs: NATIVE_ENTRY_TITLES.map(passedSpec) }, { specs: NATIVE_FLOATING_TIDY_TITLES.map(passedSpec) }] }] });
+  const nativeReport = () => ({ errors: [], suites: [{ specs: Array.from({ length: PLANNED_NATIVE_CASE_COUNT - NATIVE_ENTRY_TITLES.length - NATIVE_FLOATING_TIDY_TITLES.length - NATIVE_NARROW_WASH_TITLES.length - NATIVE_CAR_USE_TITLES.length }, (_, index) => passedSpec(`legacy-native-${index}`)), suites: [{ specs: NATIVE_ENTRY_TITLES.map(passedSpec) }, { specs: NATIVE_FLOATING_TIDY_TITLES.map(passedSpec) }, { specs: NATIVE_NARROW_WASH_TITLES.map(passedSpec) }, { specs: NATIVE_CAR_USE_TITLES.map(passedSpec) }] }] });
   it("requires every planned unique single-pass results including all27 entries and both exact floating-house tidy cases", () => {
     const result = nativeEntryEvidence(nativeReport());
     expect(result).toMatchObject({ status: "passed", gatePassed: true, requiredEntries: 27, registeredEntries: 27, passedEntries: 27, failedEntries: 0, skippedEntries: 0, notRunEntries: 0, selectedCaseCount: PLANNED_NATIVE_CASE_COUNT, selectedPassedCases: PLANNED_NATIVE_CASE_COUNT, floatingTidy: { required: 2, registered: 2, passed: 2, failed: 0, skipped: 0, notRun: 0 } });
@@ -206,7 +227,7 @@ describe("142 actual native entry reporter gate", () => {
     expect(universe()).toMatchObject({ modeledEntries: 9, plannedNativeEntryCases: 27, plannedNativeFloatingTidyCases: 2, plannedNativeCaseCount: PLANNED_NATIVE_CASE_COUNT });
   });
   it("never promotes the previous95-case result when both floating-house regressions did not run", () => {
-    const old95 = nativeReport(); old95.suites[0].suites[1].specs = []; old95.suites[0].specs=old95.suites[0].specs.slice(0,95-NATIVE_ENTRY_TITLES.length);
+    const old95 = nativeReport(); old95.suites[0].suites[1].specs = []; old95.suites[0].suites[2].specs = []; old95.suites[0].suites[3].specs = []; old95.suites[0].specs=old95.suites[0].specs.slice(0,95-NATIVE_ENTRY_TITLES.length);
     expect(nativeEntryEvidence(old95)).toMatchObject({ gatePassed: false, passedEntries: 27, selectedCaseCount: 95, selectedPassedCases: 95, floatingTidy: { required: 2, registered: 0, passed: 0, notRun: 2 } });
   });
   it.each(NATIVE_FLOATING_TIDY_TITLES)("requires exact floating-house result%s even when unrelated passes fill every planned slot", title => {
@@ -226,6 +247,43 @@ describe("142 actual native entry reporter gate", () => {
     if (defect === "expected-failure") test.expectedStatus = "failed";
     if (defect === "never-ran") test.results = [];
     expect(nativeEntryEvidence(report)).toMatchObject({ gatePassed: false, passedEntries: 27, floatingTidy: { passed: 1 } });
+  });
+  it("requires the exact narrow-panel case even if an unrelated pass preserves200 slots",()=>{
+    const report=nativeReport();report.suites[0].suites[2].specs[0]=passedSpec("unrelated-padding-for-narrow-case");
+    expect(nativeEntryEvidence(report)).toMatchObject({gatePassed:false,selectedCaseCount:200,selectedPassedCases:200,
+      narrowWash:{required:1,registered:0,passed:0,notRun:1}});
+  });
+  it.each(["skip","fail","retry","expected-failure","never-ran","duplicate"] as const)("rejects narrow-panel %s without reducing prior198",defect=>{
+    const report=nativeReport(),specs=report.suites[0].suites[2].specs,test=specs[0].tests[0];
+    if(defect==="skip")test.results[0].status="skipped";
+    if(defect==="fail")test.results[0].status="failed";
+    if(defect==="retry")test.results[0].retry=1;
+    if(defect==="expected-failure")test.expectedStatus="failed";
+    if(defect==="never-ran")test.results=[];
+    if(defect==="duplicate")specs.push(passedSpec(NATIVE_NARROW_WASH_TITLES[0]));
+    expect(nativeEntryEvidence(report)).toMatchObject({gatePassed:false,passedEntries:27,floatingTidy:{passed:2},narrowWash:{passed:0}});
+  });
+  it("registers the exact actual-car regression and retains all prior199 cases",()=>{
+    expect(NATIVE_CAR_USE_TITLES).toEqual(["200 viewer real car completes typed wheel push before mischief and collection"]);
+    expect(PURE_SUITES.filter(path=>path==="tests/unit/companion-car-use-157.test.ts")).toHaveLength(1);
+    expect(universe()).toMatchObject({plannedNativeNarrowWashCases:1,plannedNativeCarUseCases:1,plannedNativeCaseCount:200});
+    expect(new RegExp(NATIVE_GREP).test(NATIVE_CAR_USE_TITLES[0])).toBe(true);
+    expect(new RegExp(NATIVE_GREP).test(NATIVE_CAR_USE_TITLES[0]+" sibling")).toBe(false);
+  });
+  it("rejects unrelated padding even when all200 slots otherwise pass",()=>{
+    const report=nativeReport();report.suites[0].suites[3].specs[0]=passedSpec("unrelated-padding-for-car-case");
+    expect(nativeEntryEvidence(report)).toMatchObject({gatePassed:false,selectedCaseCount:200,selectedPassedCases:200,carUse:{required:1,registered:0,passed:0,notRun:1},narrowWash:{passed:1},floatingTidy:{passed:2}});
+  });
+  it.each(["skip","fail","retry","expected-failure","never-ran","missing","duplicate"] as const)("rejects actual-car%s while prior199 remain required",defect=>{
+    const report=nativeReport(),specs=report.suites[0].suites[3].specs,test=specs[0].tests[0];
+    if(defect==="skip")test.results[0].status="skipped";
+    if(defect==="fail")test.results[0].status="failed";
+    if(defect==="retry")test.results[0].retry=1;
+    if(defect==="expected-failure")test.expectedStatus="failed";
+    if(defect==="never-ran")test.results=[];
+    if(defect==="missing")specs.length=0;
+    if(defect==="duplicate")specs.push(passedSpec(NATIVE_CAR_USE_TITLES[0]));
+    expect(nativeEntryEvidence(report)).toMatchObject({gatePassed:false,passedEntries:27,floatingTidy:{passed:2},narrowWash:{passed:1},carUse:{passed:0}});
   });
   it("rejects expected failures, retries, duplicate titles, zero execution and missing legacy coverage", () => {
     const wrongExpectation = nativeReport(); wrongExpectation.suites[0].suites[0].specs[0].tests[0].expectedStatus = "failed";

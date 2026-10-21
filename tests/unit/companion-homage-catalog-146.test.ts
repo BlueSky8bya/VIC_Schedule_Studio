@@ -21,7 +21,10 @@ describe("146 broadcast homage collection", () => {
       expect(COMPANION_FOOD_FACTS[item.id]).toBe(item.fact); expect(COMPANION_FOOD_FAMILY[item.id]).toBe(item.family);
       expect(Object.values(COMPANION_FOOD_FAMILIES).flat().filter(kind => kind === item.id)).toHaveLength(1);
     }
-    for (const item of COMPANION_TOY_EXPANSION_146) expect(getCompanionToyArt(item.id)).toBe(`/companion/home/146/toy-${item.id}.webp`);
+    for (const item of COMPANION_TOY_EXPANSION_146) {
+      const edition = ["practice-baseball-bat", "practice-baseball-glove"].includes(item.id) ? 159 : 146;
+      expect(getCompanionToyArt(item.id)).toBe(`/companion/home/${edition}/toy-${item.id}.webp`);
+    }
   });
   it("normalizes exact positive integer masses without increasing established rare-item odds", () => {
     expect(Object.values(COMPANION_FOOD_WEIGHTS).reduce((sum, mass) => sum + mass, 0)).toBe(106169080);
@@ -41,7 +44,7 @@ describe("146 broadcast homage collection", () => {
     }
     const cold = evaluateCompanionFoodTaste("frozen-leftover-pizza", undefined, 0); expect(cold).toMatchObject({ reaction: "disliked", reason: "icy-tooth" });
     store.recordFoodOutcome(cold, false); expect(store.load().reasons).toEqual([]);
-    store.recordFoodOutcome(cold); expect(companionProfileTasteReason(store.load(), "food", cold.food, "negative")).toContain("이가 시려요");
+    store.recordFoodOutcome(cold); expect(companionProfileTasteReason(store.load(), "food", cold.food, "negative")).toContain("꽁꽁 언 피자");
     store.recordFoodOutcome(evaluateCompanionFoodTaste(cold.food, undefined, 1)); expect(companionProfileTasteReason(store.load(), "food", cold.food, "positive")).toContain("치즈");
     expect(companionProfileTasteReason(store.load(), "food", cold.food, "negative")).toBeUndefined();
     for (const food of ["pepero", "birthday-seaweed-soup", "cookie-cake", "dubai-chewy-cookie", "duchosaeng-cake"] as const) expect(evaluateCompanionFoodTaste(food, undefined, 0).reaction).not.toBe("disliked");
@@ -56,7 +59,7 @@ describe("146 broadcast homage collection", () => {
     store.recordToy("card-mirror", "played"); store.recordToy("card-mirror", "played");
     expect(companionProfileTasteReason(store.load(), "toy", "card-mirror", "positive")).toContain("거울");
     expect(companionProfileTasteReason(store.load(), "toy", "card-mirror", "negative")).toBeUndefined();
-    store.recordToy("card-mirror", "tripped"); expect(companionProfileTasteReason(store.load(), "toy", "card-mirror", "negative")).toContain("넘어졌어요");
+    store.recordToy("card-mirror", "tripped"); expect(companionProfileTasteReason(store.load(), "toy", "card-mirror", "negative")).toContain("카드거울 모서리에 걸렸어요");
     expect(COMPANION_TOY_HINTS["matte-turbo-lighter"]).toContain("불을 붙이지 않고");
     expect(COMPANION_TOY_HINTS["ceramic-safety-cutter"]).toContain("날이 들어간 채");
     expect(COMPANION_TOY_HINTS["vr-headset"]).toContain("방송");

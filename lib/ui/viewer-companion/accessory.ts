@@ -1,5 +1,6 @@
 import { companionEyeScale143Source, companionEyeScale143Eyes } from "./eye-scale-143";
 import anchors from "./accessory-anchors.json";
+import homeContactAnchors from "./home-contact-anchors-157.json";
 import { companionEyeAccessorySpan, companionEyeViewScale } from "./accessory-eye-fit";
 import mouths from "./mouth-anchors.json";
 import { getCompanionCollectionArtFrame, type CompanionCollectionArtFrame } from "./collection-art";
@@ -165,6 +166,24 @@ export function companionCarryAnchor(selected: CompanionSpriteSelection): Landma
   if (!pose || !source || !frame || !actual || source.src !== selected.src || pose.index !== selected.index || frame.index !== selected.index
     || actual.src !== source.src || actual.sha256 !== source.sha256 || actual.bytes !== source.bytes) return null;
   return { ...pose.chest };
+}
+
+/** The existing measured body can nudge an overhead cord with its upper
+ * head/ear pixels. Transport still uses the chest. Row9 points are bound to
+ * opaque3x3 patches in its exact immutable source, never invented hands or
+ * an extended reach. Other adopted poses keep their measured ear-root. */
+export function companionHomeContactAnchor(selected: CompanionSpriteSelection, overhead = false): Landmark | null {
+  const carried = companionCarryAnchor(selected);
+  if (!carried || !overhead) return carried;
+  const pose = poses.get(selected.physicalIndex)!;
+  const point = homeContactAnchors.frames.find(frame => frame.physicalIndex === selected.physicalIndex);
+  if (point) {
+    const frame = companionSpriteMetadata.frames[selected.physicalIndex], actual = companionSpriteMetadata.atlases[frame.atlas], source = homeContactAnchors.source;
+    if (point.index !== selected.index || actual.src !== source.src || actual.sha256 !== source.sha256 || actual.bytes !== source.bytes
+      || ![point.x,point.y].every(Number.isFinite)) return null;
+    return { ...pose.head, x: point.x, y: point.y };
+  }
+  return [pose.head.x,pose.head.y,pose.head.width,pose.head.roll].every(Number.isFinite) && pose.head.width > 0 ? { ...pose.head } : null;
 }
 
 type Hosts = { back: HTMLElement; front: HTMLElement; gift: HTMLElement };

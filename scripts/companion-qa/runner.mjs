@@ -7,7 +7,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { finished } from 'node:stream/promises';
 import { pathToFileURL } from 'node:url';
-import { universe, dailyCases, coverageFor, PURE_SUITES, NATIVE_SUITES, NATIVE_GREP, NATIVE_ENTRY_TITLES, NATIVE_FLOATING_TIDY_TITLES, PLANNED_NATIVE_CASE_COUNT, MODELED_RECIPE_COUNT } from './catalog.mjs';
+import { universe, dailyCases, coverageFor, PURE_SUITES, NATIVE_SUITES, NATIVE_GREP, NATIVE_ENTRY_TITLES, NATIVE_FLOATING_TIDY_TITLES, NATIVE_NARROW_WASH_TITLES, NATIVE_CAR_USE_TITLES, PLANNED_NATIVE_CASE_COUNT, MODELED_RECIPE_COUNT } from './catalog.mjs';
 import { sha, writeNewJson, evidenceFiles, writeReport } from './report.mjs';
 import { AUDITED_MACHINE_METADATA, AUDITED_MACHINE_METADATA_BYTES, validateAuditedMachineMetadata } from './machine-metadata.mjs';
 
@@ -43,15 +43,20 @@ function fingerprints(root, paths) {
   return paths.map(relative => { const file = unlinkedFile(root, relative); return { path: relative, sha256: file ? sha(fs.readFileSync(file)) : null }; });
 }
 export function parseOptions(argv) {
-  const options = { budgetMinutes: 45, workers: 3, plan: false, root: process.cwd(), sourceManifest: undefined };
+  const options = { budgetMinutes: 45, workers: 3, plan: false, root: process.cwd(), sourceManifest: undefined, nativeGrep: undefined };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--plan') options.plan = true;
-    else if (['--root', '--budget-minutes', '--workers', '--source-manifest'].includes(argv[i])) {
+    else if (['--root', '--budget-minutes', '--workers', '--source-manifest', '--native-grep'].includes(argv[i])) {
       const key = argv[i], value = argv[++i]; if (!value) throw Error(`Missing ${key}`);
       if (key === '--root') options.root = path.resolve(value);
       if (key === '--budget-minutes') options.budgetMinutes = Number(value);
       if (key === '--workers') options.workers = Number(value);
       if (key === '--source-manifest') options.sourceManifest = path.resolve(value);
+      if (key === '--native-grep') {
+        if (!value.trim() || value.length > 1024) throw Error('A bounded diagnostic native pattern is required');
+        try { new RegExp(value); } catch { throw Error('Invalid diagnostic native pattern'); }
+        options.nativeGrep = value;
+      }
     } else throw Error(`Unknown argument ${argv[i]}`);
   }
   if (!Number.isInteger(options.budgetMinutes) || options.budgetMinutes < 5 || options.budgetMinutes > 180 || !Number.isInteger(options.workers) || options.workers < 1 || options.workers > 3) throw Error('Budget must be 5..180 minutes; workers 1..3');
@@ -131,14 +136,30 @@ export function nativeEntryEvidence(report) {
     failed: floatingCases.filter(item => item.status === 'failed').length,
     skipped: floatingCases.filter(item => item.status === 'skipped').length,
     notRun: floatingCases.filter(item => item.status === 'not-run').length, cases: floatingCases };
+  // The newly reproduced262px case cannot be replaced by an unrelated pass.
+  const narrowCases = NATIVE_NARROW_WASH_TITLES.map(title => ({ title, status: classify(specs.filter(spec => spec?.title === title)) }));
+  const narrowWash = { required: NATIVE_NARROW_WASH_TITLES.length,
+    registered: narrowCases.filter(item => specs.some(spec => spec?.title === item.title)).length,
+    passed: narrowCases.filter(item => item.status === 'passed').length,
+    failed: narrowCases.filter(item => item.status === 'failed').length,
+    skipped: narrowCases.filter(item => item.status === 'skipped').length,
+    notRun: narrowCases.filter(item => item.status === 'not-run').length, cases: narrowCases };
+  // This source regression requires the same actual car's full typed use.
+  const carCases = NATIVE_CAR_USE_TITLES.map(title => ({ title, status: classify(specs.filter(spec => spec?.title === title)) }));
+  const carUse = { required: NATIVE_CAR_USE_TITLES.length,
+    registered: carCases.filter(item => specs.some(spec => spec?.title === item.title)).length,
+    passed: carCases.filter(item => item.status === 'passed').length,
+    failed: carCases.filter(item => item.status === 'failed').length,
+    skipped: carCases.filter(item => item.status === 'skipped').length,
+    notRun: carCases.filter(item => item.status === 'not-run').length, cases: carCases };
   const selectedPassedCases = specs.filter(spec => classify([spec]) === 'passed').length;
   const selectedUniqueTitles = new Set(specs.map(spec => spec?.title).filter(title => typeof title === 'string')).size;
   const passedEntries = count('passed'), notRunEntries = count('not-run');
-  const gatePassed = passedEntries === NATIVE_ENTRY_TITLES.length && floatingTidy.passed === NATIVE_FLOATING_TIDY_TITLES.length && specs.length === PLANNED_NATIVE_CASE_COUNT && selectedUniqueTitles === PLANNED_NATIVE_CASE_COUNT && selectedPassedCases === PLANNED_NATIVE_CASE_COUNT && Array.isArray(report?.errors) && report.errors.length === 0;
+  const gatePassed = passedEntries === NATIVE_ENTRY_TITLES.length && floatingTidy.passed === NATIVE_FLOATING_TIDY_TITLES.length && narrowWash.passed === NATIVE_NARROW_WASH_TITLES.length && carUse.passed === NATIVE_CAR_USE_TITLES.length && specs.length === PLANNED_NATIVE_CASE_COUNT && selectedUniqueTitles === PLANNED_NATIVE_CASE_COUNT && selectedPassedCases === PLANNED_NATIVE_CASE_COUNT && Array.isArray(report?.errors) && report.errors.length === 0;
   return { status: notRunEntries === NATIVE_ENTRY_TITLES.length ? 'not-run' : gatePassed ? 'passed' : 'failed', gatePassed,
     requiredEntries: NATIVE_ENTRY_TITLES.length, registeredEntries: cases.filter(item => specs.some(spec => spec?.title === item.title)).length,
     passedEntries, failedEntries: count('failed'), skippedEntries: count('skipped'), notRunEntries,
-    plannedSelectedCases: PLANNED_NATIVE_CASE_COUNT, selectedCaseCount: specs.length, selectedPassedCases, selectedUniqueTitles, cases, floatingTidy };
+    plannedSelectedCases: PLANNED_NATIVE_CASE_COUNT, selectedCaseCount: specs.length, selectedPassedCases, selectedUniqueTitles, cases, floatingTidy, narrowWash, carUse };
 }
 const readJson = file => JSON.parse(fs.readFileSync(file, 'utf8'));
 function passedTests(report) { return report.testResults.flatMap(file => file.assertionResults).filter(result => result.status === 'passed'); }
@@ -225,13 +246,17 @@ export async function run(options) {
     if (!ready) throw Error('Owned fixture server did not become ready within the budget');
     const config = path.join(workspace, 'companion-qa.generated.config.ts'), nativeOutput = path.join(attempt, 'native'), reportFile = path.join(attempt, 'playwright.json');
     fs.mkdirSync(nativeOutput, { recursive: true }); // Shared parent exists before any parallel case writes a prefix-based artifact.
-    const nativeEnv = Object.fromEntries(['COMPANION149_OUTPUT', 'COMPANION149_OBJECTS_OUTPUT', 'COMPANION147_OUTPUT', 'COMPANION146_HOME_OUTPUT', 'COMPANION146_OUTPUT', 'COMPANION143_OUTPUT', 'COMPANION141_AGENCY_OUTPUT', 'COMPANION141_OUTPUT', 'COMPANION137_OUTPUT', 'COMPANION134_GALLERY_OUTPUT', 'COMPANION_WINDOW_UI_OUTPUT', 'VIC_ACTIVITY_AUDIT_PREFIX'].map(key => [key, path.join(nativeOutput, key.toLowerCase())]));
+    const nativeEnv = { ...Object.fromEntries(['COMPANION162_OUTPUT', 'COMPANION149_OUTPUT', 'COMPANION149_OBJECTS_OUTPUT', 'COMPANION147_OUTPUT', 'COMPANION146_HOME_OUTPUT', 'COMPANION146_OUTPUT', 'COMPANION143_OUTPUT', 'COMPANION141_AGENCY_OUTPUT', 'COMPANION141_OUTPUT', 'COMPANION137_OUTPUT', 'COMPANION134_GALLERY_OUTPUT', 'COMPANION_WINDOW_UI_OUTPUT', 'VIC_ACTIVITY_AUDIT_PREFIX'].map(key => [key, path.join(nativeOutput, key.toLowerCase())])),
+      COMPANION156_SOURCE_FREEZE: path.join(directory, 'source-freeze.json') };
     fs.writeFileSync(config, `import {defineConfig} from '@playwright/test';\nexport default defineConfig(${JSON.stringify({ testDir: './tests/visual', testMatch: NATIVE_SUITES, grep: undefined, workers: options.workers, retries: 0, timeout: 125000, fullyParallel: true, outputDir: path.join(attempt, 'playwright'), reporter: [['json', { outputFile: reportFile }]], use: { baseURL, viewport: { width: 1920, height: 1100 }, deviceScaleFactor: 1, serviceWorkers: 'block', trace: 'retain-on-failure', video: 'on', screenshot: 'only-on-failure' } })});\n`, { flag: 'wx' });
-    const native = await command(workspace, ['node_modules/@playwright/test/cli.js', 'test', '--config', config, '--grep', NATIVE_GREP], childEnvironment(process.env, { ...nodeGuard, ...nativeEnv, COMPANION_QA_NODE_ORIGIN: baseURL, VIC_ACTIVITY_BASE_URL: baseURL.replace("127.0.0.1", "127.0.0.2"), COMPANION_QA_OUTPUT: nativeOutput, COMPANION_QA_CASES: JSON.stringify(cases), VISUAL_TEST_BUILD_DIR: path.join(workspace, '.next') }), path.join(attempt, 'native.log'), deadline, control);
+    // A diagnostic subset retains the full strict release counts below. It
+    // can never certify the factory or replace a later unfiltered run.
+    if (options.nativeGrep) result.diagnosticScope = { nativeGrep: options.nativeGrep, eligibleForRelease: false, fullRunStillRequired: true };
+    const native = await command(workspace, ['node_modules/@playwright/test/cli.js', 'test', '--config', config, '--grep', options.nativeGrep ?? NATIVE_GREP], childEnvironment(process.env, { ...nodeGuard, ...nativeEnv, COMPANION_QA_NODE_ORIGIN: baseURL, VIC_ACTIVITY_BASE_URL: baseURL.replace("127.0.0.1", "127.0.0.2"), COMPANION_QA_OUTPUT: nativeOutput, COMPANION_QA_CASES: JSON.stringify(cases), VISUAL_TEST_BUILD_DIR: path.join(workspace, '.next') }), path.join(attempt, 'native.log'), deadline, control);
     const nativeStage = { name: 'native-production-fixture', ...native }; stages.push(nativeStage);
     result.nativeEntries = nativeEntryEvidence(fs.existsSync(reportFile) ? readJson(reportFile) : undefined);
-    stages.push({ name: 'native-personality-entry-proof', status: result.nativeEntries.status, detail: `${result.nativeEntries.passedEntries}/27 actual entry cases passed; skipped:${result.nativeEntries.skippedEntries}, failed:${result.nativeEntries.failedEntries}, not-run:${result.nativeEntries.notRunEntries}; ${result.nativeEntries.selectedCaseCount}/${PLANNED_NATIVE_CASE_COUNT} cases selected, ${result.nativeEntries.selectedPassedCases}/${PLANNED_NATIVE_CASE_COUNT} actually passed; ${result.nativeEntries.floatingTidy.passed}/${NATIVE_FLOATING_TIDY_TITLES.length} exact floating-house tidy cases passed` });
-    if (!result.nativeEntries.gatePassed) { native.status = nativeStage.status = 'failed'; nativeStage.detail = `Exactly${PLANNED_NATIVE_CASE_COUNT} unique native cases including all27 entries and both exact floating-house tidy cases must actually pass once; skipped, missing and retried outcomes are not passes`; }
+    stages.push({ name: 'native-personality-entry-proof', status: result.nativeEntries.status, detail: `${result.nativeEntries.passedEntries}/27 actual entry cases passed; skipped:${result.nativeEntries.skippedEntries}, failed:${result.nativeEntries.failedEntries}, not-run:${result.nativeEntries.notRunEntries}; ${result.nativeEntries.selectedCaseCount}/${PLANNED_NATIVE_CASE_COUNT} cases selected, ${result.nativeEntries.selectedPassedCases}/${PLANNED_NATIVE_CASE_COUNT} actually passed; ${result.nativeEntries.floatingTidy.passed}/${NATIVE_FLOATING_TIDY_TITLES.length} exact floating-house tidy cases passed; ${result.nativeEntries.narrowWash.passed}/${NATIVE_NARROW_WASH_TITLES.length} exact narrow-panel wash cases passed; ${result.nativeEntries.carUse.passed}/${NATIVE_CAR_USE_TITLES.length} exact actual-car typed-use cases passed` });
+    if (!result.nativeEntries.gatePassed) { native.status = nativeStage.status = 'failed'; nativeStage.detail = `Exactly${PLANNED_NATIVE_CASE_COUNT} unique native cases including all27 entries, both exact floating-house tidy cases and the exact narrow-panel wash case must actually pass once; skipped, missing and retried outcomes are not passes`; }
 
     const observedDirectory = path.join(nativeOutput, 'daily');
     const observed = fs.existsSync(observedDirectory) ? fs.readdirSync(observedDirectory).filter(file => /^daily-[a-z-]+\.json$/.test(file)).map(file => readJson(path.join(observedDirectory, file))) : [];
@@ -259,6 +284,9 @@ export async function run(options) {
       } catch (error) { stages.push({ name: 'original-tree-preserved', status: 'failed', detail: `Preservation could not be proved: ${String(error.message ?? error)}. No automatic restore/reset is performed` }); result.status = 'failed'; }
     }
     for (const required of ['pure-models', 'pure-count-proof', 'metadata', 'build', 'typecheck', 'lint', 'native-production-fixture', 'native-personality-entry-proof']) if (!stages.some(stage => stage.name === required)) stages.push({ name: required, status: 'not-run', detail: 'Earlier gate or budget prevented execution' });
+    // A diagnostic selection can never certify a release, even if its regular
+    // expression happens to select every registered native case.
+    if (options.nativeGrep && result.status === 'completed-scoped-checks') result.status = 'completed-diagnostic-checks';
     writeReport(directory, result); writeNewJson(path.join(directory, 'evidence-manifest.json'), { files: evidenceFiles(attempt), report: ['source-freeze.json', 'universe.json', 'report.json', 'report.md', 'report.html'].filter(file => fs.existsSync(path.join(directory, file))).map(file => ({ path: file, sha256: sha(fs.readFileSync(path.join(directory, file))) })) });
     process.stdout.write(`Companion QA: ${result.status}; local evidence ${directory}\n`);
   }

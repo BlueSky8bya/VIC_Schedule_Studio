@@ -13,12 +13,13 @@ import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
+import { nativeHomeControlContactBefore, type NativeHomeControlFrame } from "./helpers/companion-home-contact-156";
 
 const output = process.env.COMPANION149_OBJECTS_OUTPUT ?? ".scratch-pw/companion-149/objects-native-observations";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
 const hash = (bytes: Buffer | string) => createHash("sha256").update(bytes).digest("hex");
 type Toy = { id: string; kind: string; use: string; carried: boolean; held: boolean; falling: boolean; decoded: boolean; visible: boolean; x: number; y: number; rotation: number; transform: string; scale: string; effect: string };
-type Frame = { at: number; state: string; play: string; aftertaste: string; homeLife: string; platform: string; scene: string; placing: boolean; actorDecoded: boolean; row: number; x: number; y: number; home: { light: boolean; tv: string; night: boolean; contact: boolean }; toys: Toy[]; foods: { id: string; kind: string; eating: boolean; discarding: boolean }[] };
+type Frame = NativeHomeControlFrame & { at: number; state: string; play: string; aftertaste: string; homeLife: string; platform: string; scene: string; placing: boolean; actorDecoded: boolean; row: number; x: number; y: number; home: { light: boolean; tv: string; night: boolean; contact: boolean }; toys: Toy[]; foods: { id: string; kind: string; eating: boolean; discarding: boolean }[] };
 type ObjectWindow = Window & { objects149?: { frames: Frame[]; meals: { at: number; kind: string }[]; discoveries: { at: number; toys: string[] }[]; stop(): void } };
 type Proof = { errors: string[]; rejected: string[]; build: string; notes: unknown[]; html?: { path: string; sha256: string }; chunks: { path: string; sha256: string; matchesBuild: boolean }[]; pending: Promise<void>[] };
 const proofs = new WeakMap<Page, Proof>();
@@ -87,19 +88,35 @@ async function probe(page: Page) {
     const meal = (event: Event) => meals.push({ at: performance.now() - began, kind: String((event as CustomEvent<{ kind?: string }>).detail?.kind ?? "") });
     const discovery = (event: Event) => { const detail = (event as CustomEvent<{ toys?: string[] }>).detail; discoveries.push({ at: performance.now() - began, toys: detail?.toys ?? [] }); };
     window.addEventListener("vic:companion-consumed-food", meal); window.addEventListener("vic:companion-tastes", discovery);
+    const readPaint = (node: Element | null | undefined): NativeHomeControlFrame["control"]["tool"] => {
+      if (!node) return { rect: null, visible: false };
+      const rect = node.getBoundingClientRect(), css = getComputedStyle(node);
+      return { rect: { x: rect.left, y: rect.top, width: rect.width, height: rect.height }, visible: Boolean(!document.hidden && !node.closest("[hidden],[inert],[data-panel-collapsed]") && node.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && Number(css.opacity) > .05 && rect.width > 0 && rect.height > 0 && rect.right > 0 && rect.left < innerWidth && rect.bottom > 0 && rect.top < innerHeight) };
+    };
     const sample = () => {
-      if (stopped) return; const actor = document.querySelector<HTMLElement>(".vc-companion"), image = actor?.querySelector<HTMLImageElement>(".vc-texture"), transform = new DOMMatrixReadOnly(actor?.style.transform), size = parseFloat(actor?.style.getPropertyValue("--vc-size") ?? "92");
+      if (stopped) return;
+      const actor = document.querySelector<HTMLElement>(".vc-companion"), image = actor?.querySelector<HTMLImageElement>(".vc-texture"), actorPaint = readPaint(actor);
       const toys: Toy[] = [...document.querySelectorAll<HTMLElement>(".vc-toy")].map(node => {
-        const image = node.querySelector<HTMLImageElement>(".vc-toy-art"), rect = node.getBoundingClientRect(), css = getComputedStyle(node), matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform);
-        return { id: node.dataset.toyId ?? "", kind: node.dataset.kind ?? "", use: node.dataset.toyUse ?? "", carried: node.dataset.carried === "true", held: node.dataset.held === "true", falling: node.dataset.falling === "true", decoded: Boolean(image?.complete && image.naturalWidth), visible: Boolean(!node.hidden && !node.closest("[hidden],[inert]") && rect.width > 0 && rect.height > 0 && css.display !== "none" && css.visibility === "visible" && rect.right > 0 && rect.left < innerWidth && rect.bottom > 0 && rect.top < innerHeight), x: matrix.m41, y: matrix.m42, rotation: Math.atan2(matrix.b, matrix.a) * 180 / Math.PI, transform: node.style.transform, scale: node.style.getPropertyValue("--vc-toy-play-scale"), effect: node.dataset.playEffect ?? "" };
+        const image = node.querySelector<HTMLImageElement>(".vc-toy-art"), paint = readPaint(node), matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform);
+        // A native floor portal's inline matrix is local to its host. World
+        // positions use the actual BCR; matrix rotation remains a local pose.
+        return { id: node.dataset.toyId ?? "", kind: node.dataset.kind ?? "", use: node.dataset.toyUse ?? "", carried: node.dataset.carried === "true", held: node.dataset.held === "true", falling: node.dataset.falling === "true", decoded: Boolean(image?.complete && image.naturalWidth), visible: paint.visible, x: paint.rect ? paint.rect.x + paint.rect.width / 2 : Number.NaN, y: paint.rect ? paint.rect.y + paint.rect.height : Number.NaN, rotation: Math.atan2(matrix.b, matrix.a) * 180 / Math.PI, transform: node.style.transform, scale: node.style.getPropertyValue("--vc-toy-play-scale"), effect: node.dataset.playEffect ?? "" };
       });
-      const room = document.querySelector<HTMLElement>(".vc-home-room"), tool = document.querySelector<HTMLElement>(".vc-home-touch-tool");
-      frames.push({ at: performance.now() - began, state: actor?.dataset.state ?? "", play: actor?.dataset.play ?? "", aftertaste: actor?.dataset.foodAftertaste ?? "", homeLife: actor?.dataset.homeLife ?? "", platform: actor?.dataset.platform ?? "", scene: actor?.dataset.personalityScene ?? "", placing: Boolean(actor?.hasAttribute("data-placing")), actorDecoded: Boolean(image?.complete && image.naturalWidth), row: Math.round(parseFloat(actor?.style.getPropertyValue("--vc-row") ?? "0") * 40 / 100), x: transform.m41 + size / 2, y: transform.m42 + size, home: { light: Boolean(room?.hasAttribute("data-lamp-lit")), tv: room?.dataset.tv ?? "", night: Boolean(room?.hasAttribute("data-night")), contact: Boolean(tool && !tool.hidden && tool.getBoundingClientRect().width > 0 && getComputedStyle(tool).visibility === "visible") }, toys, foods: [...document.querySelectorAll<HTMLElement>(".vc-food")].map(node => ({ id: node.dataset.food ?? "", kind: node.dataset.kind ?? "", eating: node.hasAttribute("data-eating"), discarding: node.hasAttribute("data-discarding") })) });
+      const room = document.querySelector<HTMLElement>(".vc-home-room"), tool = document.querySelector<HTMLElement>(".vc-home-touch-tool"), lamp = room?.querySelector<HTMLElement>(".vc-home-lamp"), lampPaint = lamp?.querySelector<HTMLElement>(".vc-home-lamp-paint"), lampHandle = lamp?.querySelector<HTMLElement>(".vc-home-lamp-handle"), tv = room?.querySelector<HTMLElement>(".vc-home-tv-paint"), tvImage = tv?.querySelector<HTMLImageElement>(".vc-home-tv-body");
+      const light = Boolean(room?.hasAttribute("data-lamp-lit")), lampState = light ? "on" : "off", art = lamp?.querySelector<HTMLElement>(`.vc-home-lamp-art[data-lamp-state="${lampState}"]`), feedback = lamp?.querySelector<HTMLElement>(`.vc-home-lamp-cord-feedback[data-lamp-state="${lampState}"]`), lampCss = lamp ? getComputedStyle(lamp) : null, paintCss = lampPaint ? getComputedStyle(lampPaint) : null, artCss = art ? getComputedStyle(art) : null, feedbackCss = feedback ? getComputedStyle(feedback) : null;
+      const control: NativeHomeControlFrame["control"] = {
+        actor: { ...actorPaint, decoded: Boolean(image?.complete && image.naturalWidth), pose: Number(actor?.dataset.pose ?? -1), src: image?.currentSrc ?? "", platform: actor?.dataset.platform ?? "", reach: actor?.dataset.homeReaching ?? "" },
+        tool: readPaint(tool),
+        lamp: { button: readPaint(lamp), paint: readPaint(lampPaint), handle: readPaint(lampHandle), touch: Boolean(lamp?.hasAttribute("data-companion-touch")), state: lampState, requestedPull: parseFloat(lampCss?.getPropertyValue("--vc-lamp-pull") ?? "NaN"), cssWidth: parseFloat(paintCss?.width ?? "NaN"), art: { ...readPaint(art), source: artCss?.borderImageSource ?? "" }, feedback: { ...readPaint(feedback), source: feedbackCss?.borderImageSource ?? "", opacity: Number(feedbackCss?.opacity ?? 0), clip: feedbackCss?.clipPath ?? "" } },
+        tv: { ...readPaint(tv), decoded: Boolean(tvImage?.complete && tvImage.naturalWidth), src: tvImage?.currentSrc ?? "" },
+      };
+      frames.push({ at: performance.now() - began, state: actor?.dataset.state ?? "", play: actor?.dataset.play ?? "", aftertaste: actor?.dataset.foodAftertaste ?? "", homeLife: actor?.dataset.homeLife ?? "", platform: actor?.dataset.platform ?? "", scene: actor?.dataset.personalityScene ?? "", placing: Boolean(actor?.hasAttribute("data-placing")), actorDecoded: control.actor.decoded, row: Math.round(parseFloat(actor?.style.getPropertyValue("--vc-row") ?? "0") * 40 / 100), x: actorPaint.rect ? actorPaint.rect.x + actorPaint.rect.width / 2 : Number.NaN, y: actorPaint.rect ? actorPaint.rect.y + actorPaint.rect.height : Number.NaN, home: { light, tv: room?.dataset.tv ?? "", night: Boolean(room?.hasAttribute("data-night")), contact: control.tool.visible || control.lamp.touch }, control, toys, foods: [...document.querySelectorAll<HTMLElement>(".vc-food")].map(node => ({ id: node.dataset.food ?? "", kind: node.dataset.kind ?? "", eating: node.hasAttribute("data-eating"), discarding: node.hasAttribute("data-discarding") })) });
       request = requestAnimationFrame(sample);
     };
     request = requestAnimationFrame(sample); (window as ObjectWindow).objects149 = { frames, meals, discoveries, stop() { stopped = true; cancelAnimationFrame(request); window.removeEventListener("vic:companion-consumed-food", meal); window.removeEventListener("vic:companion-tastes", discovery); } };
   });
 }
+
 const read = (page: Page) => page.evaluate(() => { const probe = (window as ObjectWindow).objects149!; return { frames: probe.frames, meals: probe.meals, discoveries: probe.discoveries }; });
 const knownToys = (page: Page) => page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionTastes") ?? "{}").toys ?? [] as string[]);
 async function prepareToy(page: Page, surface: "viewer" | "studio" | "preview") {
@@ -146,7 +163,7 @@ test("149 objects actual random meal consumes once and only the eligible tasted 
   proofs.get(page)!.notes.push({ actualConsumedKind: kind, actualFoodId: id, expectedAftertaste: reaction ?? "none", actualConsumeEventsForKind: observed.meals.filter(event => event.kind === kind).length, unusualRecipesNotDrawnNativeUnrun: Object.keys(COMPANION_FOOD_AFTERTASTES).filter(food => food !== kind) });
 });
 
-const contactBefore = (frames: Frame[], at: number) => frames.some(frame => frame.at <= at && frame.at >= at - 650 && frame.home.contact && frame.actorDecoded);
+const contactBefore = (frames: Frame[], at: number, kind: "light" | "tv") => nativeHomeControlContactBefore(frames, at, kind);
 async function nativeNatureTvAndPriorityWait(page: Page) {
   const room = page.locator(".vc-home-room"), tv = page.locator('.vc-home [data-home-action="tv"]');
   await expect(room).toHaveAttribute("data-tv", "off"); await tv.click(); await expect(room).toHaveAttribute("data-tv", "tori");
@@ -162,10 +179,10 @@ for (const personality of ["tidy", "gourmet"] as const) test(`149 objects night 
   await expect(lamp).toHaveAttribute("aria-pressed", "true", { timeout: 65000 });
   await expect.poll(async () => { const { frames } = await read(page), lit = frames.find(frame => frame.home.light); return Boolean(lit && frames.some(frame => frame.at > lit.at + 200 && frame.actorDecoded && !frame.homeLife && !frame.home.contact && ["walk", "jump", "play"].includes(frame.state) && Math.hypot(frame.x - lit.x, frame.y - lit.y) > 8)); }, { timeout: 10000 }).toBe(true);
   const observed = await read(page), lit = observed.frames.find(frame => frame.home.light)!;
-  expect(lit).toBeTruthy(); expect(contactBefore(observed.frames, lit.at)).toBe(true);
+  expect(lit).toBeTruthy(); expect(contactBefore(observed.frames, lit.at, "light")).toBeTruthy();
   const approach = observed.frames.filter(frame => frame.at <= lit.at && frame.actorDecoded);
   expect(Math.max(...approach.map(frame => frame.x)) - Math.min(...approach.map(frame => frame.x))).toBeGreaterThan(8);
-  proofs.get(page)!.notes.push({ personality, actualFixtureHour: 0, initialSyntheticLight: false, nativeLightChangedAt: lit.at, actualContactBeforeLight: true, resumedLivingWithin10000ms: true, resumedEvidence: "decoded world movement beyond8px after the homeLife queue and contact both clear" });
+  proofs.get(page)!.notes.push({ personality, actualFixtureHour: 0, initialSyntheticLight: false, nativeLightChangedAt: lit.at, actualContactBeforeLight: contactBefore(observed.frames, lit.at, "light"), resumedLivingWithin10000ms: true, resumedEvidence: "decoded world movement beyond8px after the homeLife queue and contact both clear" });
 });
 test("149 objects automatic night sleep prepares TV and light through real controls", async ({ page }) => {
   await setup(page, "studio", false, { personality: "sleepy", energy: .08, sleep: true, hour: 0, light: true });
@@ -174,9 +191,9 @@ test("149 objects automatic night sleep prepares TV and light through real contr
   const observed = await read(page), sleeping = observed.frames.find(frame => frame.state === "sleep"); expect(sleeping).toBeTruthy();
   expect(sleeping!.home.light).toBe(false); expect(["off", "tori"]).toContain(sleeping!.home.tv);
   const tvChanged = observed.frames.find(frame => frame.home.tv !== "nature"), lightOff = observed.frames.find(frame => !frame.home.light);
-  expect(tvChanged).toBeTruthy(); expect(lightOff).toBeTruthy(); expect(contactBefore(observed.frames, tvChanged!.at)).toBe(true); expect(contactBefore(observed.frames, lightOff!.at)).toBe(true);
+  expect(tvChanged).toBeTruthy(); expect(lightOff).toBeTruthy(); expect(contactBefore(observed.frames, tvChanged!.at, "tv")).toBeTruthy(); expect(contactBefore(observed.frames, lightOff!.at, "light")).toBeTruthy();
   expect(tvChanged!.at).toBeLessThan(sleeping!.at); expect(lightOff!.at).toBeLessThan(sleeping!.at);
-  proofs.get(page)!.notes.push({ automaticSleep: "night fixture and initial saved fatigue; real automatic-sleep switch enabled only after the15.5s TV priority wait; no manual N input", actualFixtureHour: 0, actualManualTvPriorityWaitMs: 15500, originalChannel: "nature", actualSleepTv: sleeping!.home.tv, tvOffActuallyObserved: sleeping!.home.tv === "off", permittedToriExceptionSample: sleeping!.home.tv === "tori", sleepDurationNotFullySampled: true });
+  proofs.get(page)!.notes.push({ actualLightContact: contactBefore(observed.frames, lightOff!.at, "light"), actualTvContact: contactBefore(observed.frames, tvChanged!.at, "tv"), automaticSleep: "night fixture and initial saved fatigue; real automatic-sleep switch enabled only after the15.5s TV priority wait; no manual N input", actualFixtureHour: 0, actualManualTvPriorityWaitMs: 15500, originalChannel: "nature", actualSleepTv: sleeping!.home.tv, tvOffActuallyObserved: sleeping!.home.tv === "off", permittedToriExceptionSample: sleeping!.home.tv === "tori", sleepDurationNotFullySampled: true });
 });
 test("149 objects curious departure prepares TV and light before reaching the public calendar", async ({ page }) => {
   await setup(page, "studio", false, { personality: "curious", energy: .95, sleep: false, hour: 12, light: true });
@@ -185,7 +202,44 @@ test("149 objects curious departure prepares TV and light before reaching the pu
   await page.waitForTimeout(600); const observed = await read(page), outside = observed.frames.find(frame => /^(card|date)-/.test(frame.platform) && frame.actorDecoded)!;
   expect(outside.home.light).toBe(false); expect(["off", "tori"]).toContain(outside.home.tv);
   const tvChanged = observed.frames.find(frame => frame.home.tv !== "nature"), lightOff = observed.frames.find(frame => !frame.home.light);
-  expect(tvChanged).toBeTruthy(); expect(lightOff).toBeTruthy(); expect(contactBefore(observed.frames, tvChanged!.at)).toBe(true); expect(contactBefore(observed.frames, lightOff!.at)).toBe(true);
+  expect(tvChanged).toBeTruthy(); expect(lightOff).toBeTruthy(); expect(contactBefore(observed.frames, tvChanged!.at, "tv")).toBeTruthy(); expect(contactBefore(observed.frames, lightOff!.at, "light")).toBeTruthy();
   expect(tvChanged!.at).toBeLessThan(outside.at); expect(lightOff!.at).toBeLessThan(outside.at);
-  proofs.get(page)!.notes.push({ personality: "curious", actualFixtureHour: 12, actualManualTvPriorityWaitMs: 15500, originalChannel: "nature", actualPublicPlatform: outside.platform, actualPublicArrivalAt: outside.at, actualDepartureTv: outside.home.tv, tvOffActuallyObserved: outside.home.tv === "off", permittedToriExceptionSample: outside.home.tv === "tori" });
+  proofs.get(page)!.notes.push({ actualLightContact: contactBefore(observed.frames, lightOff!.at, "light"), actualTvContact: contactBefore(observed.frames, tvChanged!.at, "tv"), personality: "curious", actualFixtureHour: 12, actualManualTvPriorityWaitMs: 15500, originalChannel: "nature", actualPublicPlatform: outside.platform, actualPublicArrivalAt: outside.at, actualDepartureTv: outside.home.tv, tvOffActuallyObserved: outside.home.tv === "off", permittedToriExceptionSample: outside.home.tv === "tori" });
+});
+
+/** Source157 car regression: acquire one actual weighted car without replacing
+ * RNG/kinds, then preserve every149 typed-use and collection assertion. */
+test("200 viewer real car completes typed wheel push before mischief and collection", async ({ page }) => {
+  test.setTimeout(240000);
+  await setup(page, "viewer");
+  const home = await openCompanionHome(page);
+  const draws: { draw: number; id: string; kind: string; requestedAt: number; returnedAt?: number; retained?: boolean }[] = [];
+  proofs.get(page)!.notes.push({ regression: "M02 actual same-car typed use before nudge and return", acquisition: "maximum320 actual weighted draws; unwanted real objects physically returned with pointer; no RNG/kind override", draws });
+  let id = "";
+  for (let draw = 0; draw < 320; draw++) {
+    await home.locator('[data-home-action="toys"]').click();
+    const actual = page.locator(".vc-toy"); await expect(actual).toHaveCount(1);
+    await expect(actual).toHaveAttribute("data-falling", "false", { timeout: 6000 });
+    const entry: (typeof draws)[number] = { draw: draw + 1, id: (await actual.getAttribute("data-toy-id"))!, kind: (await actual.getAttribute("data-kind"))!, requestedAt: Date.now() };
+    draws.push(entry);
+    if (entry.kind === "toy-car") { entry.retained = true; id = entry.id; break; }
+    const rect = (await actual.boundingBox())!, box = (await home.locator(".vc-toy-box-opening").boundingBox())!;
+    await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height - 6); await page.mouse.down();
+    await expect(actual).toHaveAttribute("data-held", "true");
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 8 });
+    await expect(home.locator('[data-home-action="toys"]')).toHaveAttribute("data-toy-over", "");
+    await page.mouse.up(); await expect(actual).toHaveCount(0); entry.returnedAt = Date.now();
+  }
+  if (!id) throw Error("actual bounded320 weighted draws did not produce toy-car; no random/kind state was overridden");
+  const kind = "toy-car" as const, toy = page.locator(`.vc-toy[data-toy-id="${id}"]`);
+  expect(await knownToys(page)).toEqual([]); await probe(page); await startRoaming(page);
+  await expect(toy).toHaveAttribute("data-toy-use", COMPANION_TOY_USES[kind], { timeout: 65000 }); await expect(toy).toHaveAttribute("data-carried", "true");
+  await expect(toy).not.toHaveAttribute("data-toy-use", /.+/, { timeout: 6500 }); await expect.poll(() => knownToys(page)).toContain(kind); await page.waitForTimeout(300);
+  const observed = await read(page), used = observed.frames.filter(frame => frame.toys.some(item => item.id === id && item.use === COMPANION_TOY_USES[kind] && item.carried));
+  expect(used.length).toBeGreaterThan(15); expect(used.at(-1)!.at - used[0].at).toBeGreaterThan(companionToyPlayDuration(kind) - 220);
+  const actual = used.map(frame => frame.toys.find(item => item.id === id)!);
+  expect(actual.every(item => item.kind === kind && item.visible && item.decoded)).toBe(true); expect(new Set(actual.map(item => item.transform)).size).toBeGreaterThan(4);
+  expect(Math.max(...used.map(frame => frame.x)) - Math.min(...used.map(frame => frame.x))).toBeLessThan(1); expect(Math.max(...used.map(frame => frame.y)) - Math.min(...used.map(frame => frame.y))).toBeLessThan(1);
+  await expect(toy).toHaveCount(1); await expect(toy).toHaveAttribute("data-carried", "false");
+  proofs.get(page)!.notes.push({ sampledKind: kind, sampledUse: COMPANION_TOY_USES[kind], sameRealToyId: id, actualUseFrames: used.length, actualUseMs: used.at(-1)!.at - used[0].at, allOtherUnselectedKindsNativeUnrun: true });
 });

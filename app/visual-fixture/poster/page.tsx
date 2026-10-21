@@ -4,6 +4,7 @@ import { isSeasonKey } from "@/components/shared/ambient/registry";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { buildPremiereFixture } from "@/lib/schedules/premiere-fixture";
 import { tentativeFixtureEvents } from "../tentative-events";
+import { isCompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 
 // 비주얼 회귀 테스트 전용 fixture 페이지 — 고정된 공개 샘플 데이터로 포스터를 렌더한다.
 // 인증·DB·시각(오늘 강조는 6월 뷰라 안 걸림)에 의존하지 않아 매번 동일하게 나온다.
@@ -14,7 +15,7 @@ export const dynamic = "force-dynamic";
 export default async function VisualPosterFixture({
   searchParams
 }: {
-  searchParams?: Promise<{ avatar?: string; teaser?: string; fixed?: string; hearts?: string; ambient?: string; links?: string; signedIn?: string; tent?: string; premiere?: string; count?: string; gap?: string; scenario?: string; rehearsal?: string }>;
+  searchParams?: Promise<{ avatar?: string; teaser?: string; fixed?: string; hearts?: string; ambient?: string; hour?: string; companionFood?: string; links?: string; signedIn?: string; tent?: string; premiere?: string; count?: string; gap?: string; scenario?: string; rehearsal?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
@@ -64,6 +65,10 @@ export default async function VisualPosterFixture({
     : schedule;
   // ambient=spring|summer|autumn|winter → 계절 레이어 강제(ADR-0017 검증용). 없으면 오늘(KST) 절기.
   const ambient = isSeasonKey(sp?.ambient) ? sp.ambient : undefined;
+  // Same existing world-force input as the studio fixture. This guarded
+  // synthetic route alone can select day/night; ordinary viewers keep KST.
+  const requestedHour = sp?.hour === undefined ? undefined : Number(sp.hour);
+  const hour = requestedHour !== undefined && Number.isFinite(requestedHour) && requestedHour >= 0 && requestedHour < 24 ? requestedHour : undefined;
   const withLinks = sp?.links === "1" ? {
     ...shown,
     events: [...shown.events,
@@ -85,6 +90,8 @@ export default async function VisualPosterFixture({
   return (
     <PublicPoster
       ambientForce={ambient}
+      ambientWorldForce={hour === undefined ? undefined : { hour, weather: "clear" }}
+      fixtureCompanionFood={isCompanionFoodKind(sp?.companionFood) ? sp.companionFood : undefined}
       anonymous={sp?.signedIn !== "1"}
       accountSwitch={sp?.signedIn !== undefined}
       avatarFixed={fixed}

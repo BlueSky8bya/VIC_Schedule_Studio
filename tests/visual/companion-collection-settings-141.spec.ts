@@ -12,13 +12,13 @@ import { settlePanelLayout } from "./helpers/panel-layout";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
 import { COMPANION_PERSONALITY_LAYOUT } from "@/lib/ui/viewer-companion/personality-layout";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
-import { completedNativeToyReplay } from "./helpers/companion-toy-replay";
+import { completedNativeBallUseReplay } from "./helpers/companion-ball-use-replay";
 
 const output = process.env.COMPANION141_OUTPUT ?? ".scratch-pw/companion-141/collection-settings";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
 type Surface = "viewer" | "studio" | "preview";
-type ItemFrame = { id: string; kind: string; carried: boolean; held: boolean; falling: boolean; visible: boolean; decoded: boolean; x: number; y: number };
-type Frame = { at: number; state: string; row: number; pose: number; decoded: boolean; toyAction: string; toys: ItemFrame[]; knownToys: string[]; behaviors: string[]; moments: string[] };
+type ItemFrame = { id: string; kind: string; use: string; rotation: number; carried: boolean; held: boolean; falling: boolean; visible: boolean; decoded: boolean; x: number; y: number };
+type Frame = { at: number; state: string; row: number; pose: number; decoded: boolean; toyAction: string; actor: { x: number; y: number }; toys: ItemFrame[]; knownToys: string[]; behaviors: string[]; moments: string[] };
 type Flight = { key: number; kind: string; id: string; at: number; duration: number; first: { x: number; y: number; width: number; height: number }; last: { x: number; y: number; width: number; height: number }; book: { x: number; y: number } | null; frames: Keyframe[]; decoded: boolean; known: boolean; samples: number };
 type Probe = { samples: Frame[]; flights: Flight[]; stop: () => void };
 type ProbeWindow = Window & { collection141?: Probe };
@@ -91,11 +91,11 @@ async function startProbe(page: Page) {
         last = now; const tastes = json(tasteKey), collection = json(collectionKey), pet = document.querySelector<HTMLElement>(".vc-companion"), texture = pet?.querySelector<HTMLImageElement>(".vc-sprite>.vc-texture");
         const petRect = pet?.getBoundingClientRect(), visible = Boolean(pet && !document.hidden && !pet.hidden && petRect!.width > 0 && getComputedStyle(pet).visibility !== "hidden" && Number(getComputedStyle(pet).opacity) > 0 && !pet.closest("[hidden],[inert],[aria-hidden='true']"));
         const decoded = visible && Boolean(texture?.complete && texture.naturalWidth && texture.getBoundingClientRect().width > 0);
-        samples.push({ at: now - began, state: pet?.dataset.state ?? "", row: Number(pet?.dataset.row ?? -1), pose: Number(pet?.dataset.pose ?? -1), decoded, toyAction: pet?.dataset.toyAction ?? "", toys: [...document.querySelectorAll<HTMLElement>(".vc-toy")].map(node => { const r = node.getBoundingClientRect(); const image = node.querySelector<HTMLImageElement>("img"), picture = image?.getBoundingClientRect();
+        samples.push({ at: now - began, state: pet?.dataset.state ?? "", row: Number(pet?.dataset.row ?? -1), pose: Number(pet?.dataset.pose ?? -1), decoded, toyAction: pet?.dataset.toyAction ?? "", actor: { x: petRect ? petRect.left + petRect.width / 2 : Number.NaN, y: petRect?.bottom ?? Number.NaN }, toys: [...document.querySelectorAll<HTMLElement>(".vc-toy")].map(node => { const r = node.getBoundingClientRect(), matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform); const image = node.querySelector<HTMLImageElement>("img"), picture = image?.getBoundingClientRect();
           const visible = !document.hidden && !node.closest("[hidden],[inert],[aria-hidden='true']") && node.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && Number(getComputedStyle(node).opacity) > .05
             && Boolean(image?.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && Number(getComputedStyle(image).opacity) > .05 && picture?.width && picture.height)
             && r.width > 0 && r.height > 0 && r.right > 0 && r.bottom > 0 && r.left < innerWidth && r.top < innerHeight;
-          return { id: node.dataset.toyId!, kind: node.dataset.kind!, carried: node.dataset.carried === "true", held: node.dataset.held === "true", falling: node.dataset.falling === "true", visible,
+          return { id: node.dataset.toyId!, kind: node.dataset.kind!, use: node.dataset.toyUse ?? "", rotation: Math.atan2(matrix.b, matrix.a) * 180 / Math.PI, carried: node.dataset.carried === "true", held: node.dataset.held === "true", falling: node.dataset.falling === "true", visible,
             decoded: visible && Boolean(image?.complete && image.naturalWidth), x: r.left + r.width / 2, y: r.bottom }; }), knownToys: tastes.toys ?? [], behaviors: collection.behaviors ?? [], moments: collection.situations ?? [] });
         const notice = document.querySelector<HTMLElement>(".vc-discovery-flight");
         if (notice && !notice.hidden) for (const animation of notice.getAnimations().filter(value => value.effect instanceof KeyframeEffect && value.effect.target === notice)) {
@@ -297,12 +297,13 @@ test("141 a native spawned toy stays unknown until visible completed play and ea
   expect(flight.known).toBe(true); expect(flight.decoded).toBe(true); expect(flight.duration).toBe(1500); expect(flight.book).not.toBeNull();
   const prior = first.samples.filter(frame => frame.at <= flight.at); expect(prior.some(frame => frame.decoded && frame.toys.some(toy => toy.id === id && toy.carried && !toy.held))).toBe(true);
   expect(first.samples.some(frame => frame.knownToys.includes("ball"))).toBe(true);
-  // Wait for a subsequent genuine play of this same physical toy, rather than
-  // dispatching an experience or calling a store API to manufacture a repeat.
-  await expect.poll(async () => Boolean(completedNativeToyReplay((await observation(page)).samples, id, flight.at, "pounce")),
+  // Observe a NEW pickup and the current149 full ball throw/catch, then its
+  // real release/flight/rest. The legacy1100ms pounce observer remains intact
+  // in its own helper/tests; it cannot certify this different2600ms use.
+  await expect.poll(async () => Boolean(completedNativeBallUseReplay((await observation(page)).samples, id, flight.at)),
     { timeout: 65000, intervals: [100] }).toBe(true);
-  proofs.get(page)!.notes.push({ samePhysicalToyReplay: completedNativeToyReplay((await observation(page)).samples, id, flight.at, "pounce"),
-    expectedPlaybackMs: 1100, expectedSharedPlay: "pounce", sameIdFlightCount: (await observation(page)).flights.filter(f => f.kind === "toy" && f.id === "ball").length });
+  proofs.get(page)!.notes.push({ samePhysicalToyReplay: completedNativeBallUseReplay((await observation(page)).samples, id, flight.at),
+    expectedPlaybackMs: 2600, expectedUse: "ball-toss", expectedPlaybackRows: [1, 9], replayObserver: "156-current149", sameIdFlightCount: (await observation(page)).flights.filter(f => f.kind === "toy" && f.id === "ball").length });
   expect((await observation(page)).flights.filter(f => f.kind === "toy" && f.id === "ball")).toHaveLength(1);
 });
 

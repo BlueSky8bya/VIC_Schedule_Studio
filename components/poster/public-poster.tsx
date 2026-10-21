@@ -34,6 +34,7 @@ import {
   useState
 } from "react";
 import dynamic from "next/dynamic";
+import type { CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { logActivity } from "@/lib/activity/client";
@@ -199,6 +200,8 @@ type PublicPosterProps = {
   ambientForce?: SeasonKey | null;
   // 세계 강제(편집실 미리보기 — 개발자 시간 여행이 미리보기에도 이어지게). 실제 `/`는 넘기지 않는다.
   ambientWorldForce?: WorldCtx["force"];
+  /** One synthetic initial input, supplied only by the guarded visual route. */
+  fixtureCompanionFood?: CompanionFoodKind;
 };
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -594,7 +597,8 @@ export function PublicPoster({
   avatarSlot = false,
   avatarFixed,
   ambientForce,
-  ambientWorldForce
+  ambientWorldForce,
+  fixtureCompanionFood
 }: PublicPosterProps) {
   const posterRootRef = useRef<HTMLDivElement | null>(null);
   const premiereBlockedRef = useRef(false);
@@ -4149,6 +4153,7 @@ export function PublicPoster({
       }} root={posterRootRef} preferences={settingsPrefs.companionPrefs}
         context={{ slug: schedule.calendar.slug, year: view.year, month: view.month, season: pickAmbient(ambientWorldForce?.month ?? view.month, ambientForce ?? null).season, force: ambientWorldForce }}
         positionMemory={positionMemory}
+        fixtureFood={fixtureCompanionFood}
               blocked={Boolean(monthPick || giftCard || gachaOpen)}
               overlayOpen={Boolean(sheet || dayVodPop || agendaDetail)}
         premiereCue={companionPremiere.cue} onPremiereJoin={companionPremiere.onJoin}

@@ -46,7 +46,7 @@ describe("131 contextual, truthful profile reasons", () => {
     const lifeBefore = JSON.stringify(life);
     expect(companionProfileTasteReason(before, "food", life.seedFood, "positive", life)).toBe(companionInnateFoodReason(life.seedFood));
     const legacy = { ...life, seedFood: "apple" as const, favoriteFood: "peach" as const, tastedFoods: [] };
-    expect(companionProfileTasteReason(before, "food", "peach", "positive", legacy)).toBe("예전부터 좋아하던 간식이에요");
+    expect(companionProfileTasteReason(before, "food", "peach", "positive", legacy)).toBe(companionInnateFoodReason("peach"));
     expect(companionProfileTasteReason(before, "food", "durian", "negative", legacy)).toBeUndefined();
     expect(store.load()).toEqual(before); expect(JSON.stringify(life)).toBe(lifeBefore);
     expect(store.load().reasons).toEqual([]); expect(life.tastedFoods).toEqual([]);
@@ -54,11 +54,12 @@ describe("131 contextual, truthful profile reasons", () => {
 
   it("distinguishes a single remembered game from repeated games and requires a real trip", () => {
     const prior = (accepted: number, tripped = 0) => normalizeCompanionTastes({ version: 1, toys: ["ball"], toyTastes: { ball: { accepted, declined: 0, tripped, score: .5 } } });
-    expect(companionProfileTasteReason(prior(1), "toy", "ball", "positive")).toBe("같이 놀아 보니 마음에 들어요");
-    expect(companionProfileTasteReason(prior(2), "toy", "ball", "positive")).toBe("같이 놀아 보니 마음에 들어요");
-    expect(companionProfileTasteReason(prior(3), "toy", "ball", "positive")).toBe("여러 번 놀아서 정들었어요");
+    expect(companionProfileTasteReason(prior(1), "toy", "ball", "positive")).toContain("공을 통통");
+    expect(companionProfileTasteReason(prior(2), "toy", "ball", "positive")).toContain("공을 통통");
+    expect(companionProfileTasteReason(prior(1), "toy", "ball", "positive")).not.toContain("정들었어요");
+    expect(companionProfileTasteReason(prior(3), "toy", "ball", "positive")).toContain("여러 번 놀아서 정들었어요");
     expect(companionProfileTasteReason(prior(1), "toy", "ball", "negative")).toBeUndefined();
-    expect(companionProfileTasteReason(prior(1, 1), "toy", "ball", "negative")).toBe("전에 걸려 넘어져 조심해요");
+    expect(companionProfileTasteReason(prior(1, 1), "toy", "ball", "negative")).toContain("공에 걸려");
   });
 
   it("records a new contextual reason only on actual completed experience and preserves learning OFF", () => {
@@ -67,11 +68,11 @@ describe("131 contextual, truthful profile reasons", () => {
     expect(store.load().toys).toEqual([]);
     expect(store.load().reasons).toEqual([]);
     store.recordToy("feather", "played"); store.recordToy("feather", "played");
-    expect(companionProfileTasteReason(store.load(), "toy", "feather", "positive")).toBe("가볍게 살랑이는 게 좋아요");
+    expect(companionProfileTasteReason(store.load(), "toy", "feather", "positive")).toBe("깃털이 가볍게 살랑이는 게 좋아요");
     store.recordToy("feather", "tripped", false);
     expect(companionProfileTasteReason(store.load(), "toy", "feather", "negative")).toBeUndefined();
     store.recordToy("feather", "tripped"); store.recordToy("feather", "tripped");
-    expect(companionProfileTasteReason(store.load(), "toy", "feather", "negative")).toBe("길쭉한 장난감에 걸려 넘어졌어요");
+    expect(companionProfileTasteReason(store.load(), "toy", "feather", "negative")).toBe("길쭉한 깃털 장난감에 걸려 넘어졌어요");
     const before = store.load();
     expect(store.recordFoodOutcome(evaluateCompanionFoodTaste("croissant", undefined, .72), false)).toBe(false);
     expect(store.load()).toEqual(before);

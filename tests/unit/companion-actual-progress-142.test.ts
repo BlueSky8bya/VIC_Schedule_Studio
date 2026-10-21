@@ -286,9 +286,14 @@ describe("142 shared measured progress across authored and ordinary owners",()=>
     const off=activity.choose(input.brain,input.world,input.preferences,20000,boundary);
     expect(off?.kind).not.toBe("jump");if(off)expect(off.target.platformId).toBe(sofa.id);
   });
-  it.each(["companion-home-floor-400","companion-home-floor-200","arbitrary-manual-furniture"])("does not turn%s into a fallback walking span",id=>{
+  it.each(["companion-home-floor-400","companion-home-floor-food","arbitrary-manual-furniture"])("does not turn%s into a fallback walking span",id=>{
     const {input}=fixture();input.world={...input.world,platformId:id,platforms:[{...main,id,bodyOnly:id.endsWith("400")},main]};
     expect(createCompanionPersonalityActivity(()=>0).choose(input.brain,input.world,input.preferences,12000,{deadline:10000,nextDuration:4750})).toBeUndefined();
+  });
+  it("admits an actually measured ordinary numbered floor200 without manufacturing a pad or item stance",()=>{
+    const {input}=fixture(),id="companion-home-floor-200";input.world={...input.world,platformId:id,platforms:[{...main,id}]};
+    const action=createCompanionPersonalityActivity(()=>0).choose(input.brain,input.world,input.preferences,12000,{deadline:10000,nextDuration:4750});
+    expect(action?.kind).toBe("walk");expect(action?.target.platformId).toBe(id);expect(Math.abs(action!.target.x-input.world.x)).toBeGreaterThanOrEqual(24);
   });
   it("never invents movement on an invalid/small span when its finite look must be shortened",()=>{
     const {input}=fixture();input.world={...input.world,x:30,platforms:[{...main,x:20,width:20}]};const original=look(input);

@@ -171,11 +171,11 @@ describe("actual shared profile navigation callbacks", () => {
     const cards = nodes(tree).filter(node => typeof node.type === "function" && typeof node.props.label === "string");
     expect(cards.map(node => node.props.label)).toEqual(["좋아하는 간식", "싫어하는 간식", "좋아하는 장난감", "싫어하는 장난감"]);
     const reasons = cards.flatMap(card => nodes((card.type as (props: Record<string, unknown>) => Element)(card.props))).filter(node => node.props.className === "rhh-taste-reason");
-    expect(reasons.map(node => node.props.children)).toEqual(["달콤해서 기분 좋아요", "주인 양말 냄새남", "함께 노니 신나요", "놀다가 걸려 넘어졌어요"]);
+    expect(reasons.map(node => node.props.children)).toEqual(["복숭아의 향긋한 과즙이 좋아요", "두리안에서 양말 같은 강한 냄새가 나요", "깃털이 가볍게 살랑이는 게 좋아요", "굴러가던 공에 걸려 넘어져 조심해요"]);
     expect(harness.activity).not.toHaveBeenCalled(); expect(harness.acknowledge).not.toHaveBeenCalled();
     harness.states[4] = normalizeCompanionTastes({ version: 1, toys: ["ball", "feather"], seen: [], toyTastes: {}, foodTastes: {} }); await render();
     const fallback = nodes(tree).filter(node => typeof node.type === "function" && typeof node.props.label === "string");
-    expect(fallback.map(card => card.props.reason)).toEqual(["먹어 보고 마음에 들었어요", "예전엔 입맛에 잘 안 맞았어요", undefined, undefined]);
+    expect(fallback.map(card => card.props.reason)).toEqual(["복숭아의 향긋한 과즙이 좋아요", "두리안에서 양말 같은 강한 냄새가 나요", undefined, undefined]);
     expect((harness.states[4] as ReturnType<typeof normalizeCompanionTastes>).reasons).toEqual([]);
     expect(harness.activity).not.toHaveBeenCalled(); expect(harness.acknowledge).not.toHaveBeenCalled();
   });

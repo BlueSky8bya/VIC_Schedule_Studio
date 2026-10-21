@@ -13,6 +13,7 @@ import { companionCollectionPage, onCollectionKey, useCompanionCollectionLayout 
 import { COMPANION_BEHAVIOR_HINTS, COMPANION_BEHAVIOR_IDS, COMPANION_BEHAVIOR_NAMES, acknowledgeCompanionCollection, getCompanionUnreadCounts, isCompanionCollectionUnread, getCompanionRecentFood, subscribeCompanionConsumedFood, type CompanionCollection, type CompanionConsumedFood } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_SITUATION_HINTS, COMPANION_SITUATION_IDS, COMPANION_SITUATION_NAMES } from "@/lib/ui/viewer-companion/moments";
 import { emitCompanionSceneSignal } from "@/lib/ui/viewer-companion/scene-signals";
+import { useCompanionDetailRead } from "./use-companion-detail-read";
 import { COMPANION_FOOD_FACTS } from "@/lib/ui/viewer-companion/food-facts";
 import { companionFoodChance, COMPANION_FOOD_KINDS, COMPANION_FOOD_NAMES, COMPANION_FOOD_RARITY, COMPANION_FOOD_RARITY_NAMES, type CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 
@@ -35,6 +36,11 @@ export function CompanionDiscovery({ collection, active, tastes = null }: { coll
   const memoryPage = companionCollectionPage(selectedMemoryIndex, memories.length, layout.size);
   const page = category === "food" ? foodPage : memoryPage;
   const selectedMemory = memories[selectedMemoryIndex];
+  const detail = useRef<HTMLDivElement>(null);
+  const detailKind = category === "food" ? "food" : selectedMemory.kind;
+  const detailId = category === "food" ? selectedFood : selectedMemory.id;
+  useCompanionDetailRead(detail, active && category !== "toy" && isCompanionCollectionUnread(collection, detailKind, detailId), `${detailKind}:${detailId}`,
+    () => acknowledgeCompanionCollection(detailKind, detailId));
   const memoryFound = (memory: typeof memories[number]) => ((memory.kind === "moment" ? collection?.situations : collection?.behaviors) as readonly string[] | undefined)?.includes(memory.id) ?? false;
   const unreadAt = (index: number) => category === "food"
     ? isCompanionCollectionUnread(collection, "food", COMPANION_FOOD_KINDS[index])
@@ -89,13 +95,13 @@ export function CompanionDiscovery({ collection, active, tastes = null }: { coll
   return active ? <div className="rhh-companion-discovery rhh-collection-book" ref={host} data-discovery-cue={cue || undefined}>
     <span className="sr-only" id={unreadDescription}>새로 발견한 항목</span>
     {categorySwitch}
-    {category === "food" ? <div aria-live="polite" className="rhh-collection-detail rhh-food-detail rhh-collection-gallery-detail" data-found={foundFood || undefined} data-recent={foundFood && selectedFood === recent?.kind || undefined}>
-      <div aria-hidden="true" className="rhh-collection-art-stage" key={selectedFood}><CompanionCollectionArt kind="food" id={selectedFood} /></div>
+    {category === "food" ? <div ref={detail} aria-live="polite" className="rhh-collection-detail rhh-food-detail rhh-collection-gallery-detail" data-found={foundFood || undefined} data-recent={foundFood && selectedFood === recent?.kind || undefined}>
+      <div aria-hidden="true" className="rhh-collection-art-stage" key={selectedFood}><CompanionCollectionArt kind={foundFood ? "food-stamp" : "food"} id={selectedFood} /></div>
       <div className="rhh-collection-detail-copy"><span className="rhh-collection-overline">냠냠 기록</span><div className="rhh-collection-detail-title"><strong>{foundFood ? COMPANION_FOOD_NAMES[selectedFood] : "???"}</strong>{foundFood && <span className="rhh-collection-rarity">{COMPANION_FOOD_RARITY_NAMES[COMPANION_FOOD_RARITY[selectedFood]]}</span>}</div>
         <p className="rhh-collection-fact">{foundFood ? COMPANION_FOOD_FACTS[selectedFood] : "아직 맛보기 전"}</p>
         <div className="rhh-collection-detail-meta">{foundFood && <><span className="rhh-collection-chance" title="직전 음식은 연속으로 나오지 않아 실제 다음 확률은 달라져요. 별도의 희귀도 보장은 없어요.">기본 등장 {formatCompanionCollectionChance(companionFoodChance(selectedFood))}</span>{selectedFood === recent?.kind && <span className="rhh-collection-recent"><Check aria-hidden="true" size={14} />방금 맛봤어요</span>}</>}</div>
       </div>
-    </div> : <div aria-live="polite" className="rhh-collection-detail rhh-memory-detail rhh-collection-gallery-detail" data-found={memoryFound(selectedMemory) || undefined}>
+    </div> : <div ref={detail} aria-live="polite" className="rhh-collection-detail rhh-memory-detail rhh-collection-gallery-detail" data-found={memoryFound(selectedMemory) || undefined}>
       <div aria-hidden="true" className="rhh-collection-art-stage" key={selectedMemory.kind + selectedMemory.id}>{memoryFound(selectedMemory) ? <CompanionCollectionArt kind={selectedMemory.kind === "moment" ? "situation-stamp" : "behavior-stamp"} id={selectedMemory.id} /> : <span className="rhh-memory-silhouette" />}</div>
       <div className="rhh-collection-detail-copy"><span className="rhh-collection-overline">함께한 순간</span><div className="rhh-collection-detail-title"><strong>{memoryFound(selectedMemory) ? selectedMemory.name : "???"}</strong></div><p>{memoryFound(selectedMemory) ? selectedMemory.hint : "아직 발견하지 못했어요."}</p>{memoryFound(selectedMemory) && <span className="rhh-collection-keepsake"><Sparkles aria-hidden="true" size={14} />{selectedMemory.kind === "moment" ? "특별한 순간" : "재롱"}</span>}</div>
     </div>}

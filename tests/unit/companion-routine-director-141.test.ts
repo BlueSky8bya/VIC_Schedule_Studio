@@ -108,7 +108,9 @@ describe("141 common routines execute through the existing physical director", (
     director.startRoutine(recipe([{ kind: "wash", ms: 2500 }], "routine-wash"), 0);
     const washing = director.next(scene)!; expect(washing).toMatchObject({ action: { kind: "play", play: "groom", target: { platformId: pad.id } }, meta: { routine: true, command: { kind: "wash" } } });
     expect(washing.action!.duration).toBe(2500);
-    director.complete(washing.meta); expect(director.completed()).toEqual(["routine-wash"]);
+    director.complete(washing.meta); expect(director.completed()).toEqual([]);
+    director.resolve(washing.meta, true, undefined, scene.now + washing.action!.duration);
+    expect(director.completed()).toEqual(["routine-wash"]);
     const approaching = ready(); approaching.scene.world.x = 476; approaching.scene.world.platformId = pad.id;
     approaching.director.startRoutine(recipe([{ kind: "wash", ms: 2500 }], "routine-wash"), 0);
     const last = approaching.director.next(approaching.scene)!;

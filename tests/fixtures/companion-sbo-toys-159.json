@@ -1,0 +1,46 @@
+{
+  "edition": 159,
+  "generation": "two separate single built-in imagegen calls; native preserved locally",
+  "toys": [
+    {
+      "id": "practice-baseball-bat",
+      "src": "/companion/home/159/toy-practice-baseball-bat.webp",
+      "sha256": "dc90c7f7aa5f6d48db6d177e39fad388dbefb7f056b24256ebd6b3f3d7994f1c",
+      "bytes": 18702,
+      "size": [
+        192,
+        192
+      ],
+      "nativeSha256": "f0b718bc57b0f51bd3314acec27ccda8cb04d86adfffb53731014f8e588e0204",
+      "nativeSize": [
+        1254,
+        1254
+      ],
+      "resizedSize": [
+        176,
+        175
+      ],
+      "normalization": "alpha0 trim, isotropic Lanczos3 inside176, center on transparent192, lossless WebP; no paint, recolor or compositing with other art"
+    },
+    {
+      "id": "practice-baseball-glove",
+      "src": "/companion/home/159/toy-practice-baseball-glove.webp",
+      "sha256": "3d34e5b5158a02deb1e29a3d87798fe064c528b2578fc8b63aa7f9f78d598c6d",
+      "bytes": 43872,
+      "size": [
+        192,
+        192
+      ],
+      "nativeSha256": "d7a8bb466723706fdec95ea9cfab5031d26ba6d2f75158315e283d8d16a390c5",
+      "nativeSize": [
+        1254,
+        1254
+      ],
+      "resizedSize": [
+        176,
+        174
+      ],
+      "normalization": "alpha0 trim, isotropic Lanczos3 inside176, center on transparent192, lossless WebP; no paint, recolor or compositing with other art"
+    }
+  ]
+}

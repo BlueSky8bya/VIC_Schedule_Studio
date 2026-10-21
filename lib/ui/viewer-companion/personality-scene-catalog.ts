@@ -6,10 +6,10 @@ import type { CompanionToyKind } from "./toy-catalog";
 /** All listed triggers are required, not alternatives. Event triggers are
  * current finite signals; the director also proves each source's predicates.
  * Free means a safe choice opportunity, never a forged pet/meal/work event. */
-export type SceneTrigger = "editor-open" | "free" | "toy" | "food" | "pet" | "music" | "work" | "undo" | "arrival" | "layout" | "toy-returned" | "toy-settled" | "recovered" | "meal" | "favorite" | "outfit" | "rain" | "summer" | "night" | "experience" | "tv";
+export type SceneTrigger = "editor-open" | "free" | "toy" | "food" | "pet" | "music" | "work" | "undo" | "arrival" | "layout" | "toy-returned" | "toy-settled" | "washed" | "rested" | "recovered" | "meal" | "favorite" | "outfit" | "rain" | "summer" | "night" | "experience" | "tv";
 export type SceneBeat = (
   | { kind: "pose"; pose: CompanionPlay | "sniff" | "look" | "stretch" | "shake"; ms?: number }
-  | { kind: "go"; target: "pointer" | "outside" | "sofa" | "floor" | "window" | "pad" | "novel-place" | "toy" | "toy-other-side" | "food" | "box" | "dispenser" }
+  | { kind: "go"; target: "pointer" | "outside" | "local-floor" | "sofa" | "floor" | "window" | "pad" | "novel-place" | "toy" | "toy-other-side" | "food" | "box" | "dispenser" }
   | { kind: "tv"; state: CompanionHomeTvState | "next" }
   | { kind: "light"; lit: boolean }
   | { kind: "radio"; playing: boolean }
@@ -45,7 +45,8 @@ const opt = (beat: SceneBeat): SceneBeat => ({ ...beat, optional: true });
 
 /** Source: docs/agent/reports/REPORT-20261019-136-personality-scenes.html.
  *143 supersedes indoor audience performances and unnecessary sofa resets.
- * The original144 IDs remain;9 new143 goals extend the current catalog to153.
+ * The original144 IDs and9 unadopted143 goals remain. The nine157 goals
+ * implement the owner's2026-10-21 choices, extending the catalog to162.
  * Changed routes/new goals are not unchanged136 sequence evidence.
  * The complete source contracts are preserved in the137 implementation audit.
  * These are executable requests, not completion evidence. The single runtime
@@ -141,7 +142,7 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   // M01 계기: 실제 공이 안전한 바닥에 있고 이동·점프 등 현재 허용 기능과 경로가 맞는다.
   { id: "M01", label: "한 번 굴리고 한 번 더 바꾸는 공놀이", personality: "mischievous", major: true, triggers: ["toy"], steps: [t("toss", ["ball"]), g("toy"), t("toss", ["ball"]), g("toy"), t("return", ["ball"])] },
   // M02 계기: 실제 자동차 장난감이 있고 충돌 없이 짧게 움직일 바닥 구간이 확인된다.
-  { id: "M02", label: "자동차를 밀고 따라잡는 작은 소동", personality: "mischievous", major: true, triggers: ["toy"], steps: [t("nudge", ["toy-car"]), g("toy"), p("pounce"), t("return", ["toy-car"])] },
+  { id: "M02", label: "자동차를 밀고 따라잡는 작은 소동", personality: "mischievous", major: true, triggers: ["toy"], steps: [t("play", ["toy-car"]), t("nudge", ["toy-car"]), g("toy"), p("pounce"), t("return", ["toy-car"])] },
   // M03 계기: 사용자가 실제 소품을 잡았다 놓았고 정착이 끝났으며, 같은 실물은 현재 사용자 소유가 아니다.
   { id: "M03", label: "사용자가 놓은 소품에 딱 한 번 덤비기", personality: "mischievous", major: true, triggers: ["toy", "toy-settled"], steps: [p("pounce"), t("play"), t("return")] },
   // M04 계기: 사용자가 실제 장난감을 방금 반납했으며 그 완료가 확인된다. 근처에 다른 안전한 놀이나 제자리 표현이 있다.
@@ -291,4 +292,16 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   {id:"D143-G",label:"달력 위 한 끼 피크닉",personality:"gourmet",major:false,triggers:["food"],foodScope:"outside",steps:[f("inspect"),f("eat"),p("groom")]},
   {id:"D143-H",label:"내 집 창을 열고 토리 방송",personality:"homebody",major:false,triggers:["free"],steps:[g("window"),curtain("open"),p("sniff"),tv("tori"),g("sofa"),w(2400),p("groom")]},
   {id:"D143-B",label:"식사 뒤 밖의 두 박자 산책",personality:"balanced",major:false,triggers:["meal"],steps:[g("outside"),p("stretch"),g("outside"),p("bow")]},
+  //157: genuine situational continuations; no pet/meal/return is fabricated.
+  // A one-time preference at the first valid opportunity does not interrupt
+  // a real owned need, and each completed path then returns to ordinary life.
+  {id:"D157-P",label:"한 번 응원한 뒤 다른 달력 자리로",personality:"performer",major:false,triggers:["free"],steps:[g("outside"),p("cheer-rehearsal",true),g("outside"),p("stretch")]},
+  {id:"D157-C",label:"지금 바닥의 한 걸음에서 바깥 탐험으로",personality:"curious",major:false,triggers:["free"],steps:[g("local-floor"),p("sniff"),g("outside"),p("stretch")]},
+  {id:"D157-A",label:"실제 쓰담 반응 뒤 문밖에서 다시 다가가기",personality:"affectionate",major:false,triggers:["pet"],steps:[g("outside"),g("pointer"),p("bow")]},
+  {id:"D157-S",label:"기운 있는 날 작은 걸음부터 산책",personality:"sleepy",major:false,triggers:["free"],steps:[g("local-floor"),p("stretch"),g("outside"),p("sniff")]},
+  {id:"D157-T",label:"마지막 정리와 씻기 뒤 밖에서 털고 걷기",personality:"tidy",major:false,triggers:["washed"],steps:[g("outside"),p("shake"),g("local-floor"),p("groom")]},
+  {id:"D157-M",label:"원래 장난감을 밀고 따라간 뒤 방향 바꾸기",personality:"mischievous",major:false,triggers:["toy"],steps:[t("nudge"),g("toy"),g("local-floor"),p("shake")]},
+  {id:"D157-G",label:"실제 한 끼와 뒷맛 반응 뒤 한 걸음",personality:"gourmet",major:false,triggers:["food"],steps:[f("inspect"),f("eat"),g("local-floor"),p("stretch")]},
+  {id:"D157-H",label:"낮잠의 불 선택을 지키고 일어나 집안 일로",personality:"homebody",major:false,triggers:["rested"],steps:[g("floor"),g("local-floor"),p("groom")]},
+  {id:"D157-B",label:"물건을 정리한 다음 현재 바닥에서 산책",personality:"balanced",major:false,triggers:["toy-returned"],steps:[g("local-floor"),p("stretch"),g("outside"),p("bow")]},
 ]);

@@ -34,6 +34,7 @@ export function CompanionCollectionPager({ label, previousLabel, nextLabel, page
       <ChevronLeft aria-hidden="true" size={17} /><span className="rhh-collection-page-label">이전</span>{directions.previous !== null && <span aria-hidden="true" className="rhh-collection-unread" data-unread="">!</span>}
     </button>
     <div className="rhh-collection-page-position" style={{ "--collection-dot-count": dots.length } as CSSProperties}>
+      <span aria-hidden="true" className="rhh-collection-page-number"><b>{page.page + 1}</b><span>/ {page.count}</span></span>
       <div aria-hidden="true" className="rhh-collection-page-dots">{dots.map(dot => <span aria-current={dot === page.page ? "page" : undefined} data-page={dot} data-unread={unreadPages.has(dot) || undefined} key={dot} />)}</div>
       <input aria-label={`${label} 선택`} aria-valuetext={`${page.count}페이지 중 ${page.page + 1}페이지`} aria-describedby={unreadPages.size ? descriptionId : undefined} className="rhh-collection-page-rail" data-act="companion-collection-page" disabled={page.count <= 1} max={page.count} min={1} onChange={event => select((Number(event.currentTarget.value) - 1) * size, false, false)} step={1} type="range" value={page.page + 1} />
       <span aria-live="polite" className="sr-only">{page.count}페이지 중 {page.page + 1}페이지</span>

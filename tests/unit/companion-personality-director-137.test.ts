@@ -14,8 +14,8 @@ const input = (personality: CompanionPersonality, patch: Partial<PersonalityScen
   world: world(), brain: { ...createBrain(0, () => .5), hunger: .2, energy: .9, activeMs: 0 },
   preferences: { ...DEFAULT_COMPANION_PREFERENCES, personality }, now: 0, home: {}, toys: [], tv: "off", ...patch,
 });
-const ready = (personality: CompanionPersonality, patch: Partial<PersonalitySceneInput> = {}) => {
-  const director = createCompanionPersonalityDirector(), scene = input(personality, patch);
+const ready = (personality: CompanionPersonality, patch: Partial<PersonalitySceneInput> = {}, recipes: readonly PersonalitySceneRecipe[] = COMPANION_PERSONALITY_SCENES) => {
+  const director = createCompanionPersonalityDirector(recipes), scene = input(personality, patch);
   const first = director.next(scene)!;
   expect(first.meta.id).toBe(`entry-${personality}`);
   director.complete(first.meta);
@@ -59,6 +59,9 @@ const matrixInput = (recipe: PersonalitySceneRecipe): PersonalitySceneInput => {
   scene.brain.energy = recipe.personality === "sleepy" || recipe.id === "M05" ? .1 : .6;
   if(recipe.id==="D143-S")scene.brain.energy=.6;
   if(recipe.id==="D143-T")scene.toys=[];
+  if(recipe.id==="D157-S")scene.brain.energy=.9;
+  if(recipe.id==="D157-T"){scene.toys=[];scene.toyCount=0;}
+  if(recipe.id==="D157-H")scene.world={...scene.world,x:130,y:room.y,platformId:room.id};
   if (recipe.id === "T06") scene.world.foods = scene.world.foods!.map((food, i) => i === 1 ? { ...food, x: 205 } : food);
   if (["T05", "X-T-house"].includes(recipe.id)) scene.toys = [];
   if (recipe.id === "T07") { scene.toys = []; scene.world.foods = []; }
@@ -125,7 +128,11 @@ const runRecipe = (director: ReturnType<typeof createCompanionPersonalityDirecto
       if (proposal.delegate.mode === "eat" || discard) scene.world.foods = foods.filter(item => item.id !== food.id);
       else if (proposal.delegate.mode === "tidy") scene.world.foods = foods.map(item => item.id === food.id ? { ...item, x: 340, platformId: "companion-home-floor" } : item);
       director.resolve(proposal.meta, true, food.id); scene.now += 600;
-    } else if (command.kind === "tv" || command.kind === "light" || command.kind === "curtain") {
+    } else if (command.kind === "tv" || command.kind === "light" || command.kind === "curtain" || command.kind === "wash") {
+      if (command.kind === "wash") {
+        expect(scene.world.platformId).toBe("companion-home-floor-400");
+        expect(Math.hypot(scene.world.x - scene.home.pad!.x, scene.world.y - scene.home.pad!.y)).toBeLessThanOrEqual(1);
+      }
       if (command.kind === "tv") scene.tv = command.state === "next" ? companionHomeTvControl(scene.tv).next : command.state;
       effects.push(command.kind);
       director.complete(proposal.meta); // Elapsed furniture gesture is not ACK.
@@ -260,7 +267,7 @@ describe("137 one personality scene director", () => {
   });
 
   it("holds the same real toy through toss, route and the next effect; unrelated/stale ACKs do nothing", () => {
-    const { director, scene } = ready("mischievous", { toys: [{ ...ball }], home: { box: { x: 500, y: floor.y, platformId: floor.id } } }); scene.now = 1;
+    const { director, scene } = ready("mischievous", { toys: [{ ...ball }], home: { box: { x: 500, y: floor.y, platformId: floor.id } } }, COMPANION_PERSONALITY_SCENES.filter(recipe=>recipe.id==="M01")); scene.now = 1;
     let proposal = director.next(scene)!;
     expect(proposal.meta.id).toBe("M01"); expect(proposal.delegate).toMatchObject({ kind: "toy", mode: "toss", kinds: ["ball"] });
     director.complete(proposal.meta);
@@ -278,7 +285,7 @@ describe("137 one personality scene director", () => {
   });
 
   it("cancels instead of substituting another toy after the user takes the locked object", () => {
-    const { director, scene } = ready("mischievous", { toys: [{ ...ball }, { ...ball, id: "other-real-ball", x: 240 }], home: { box: { x: 500, y: floor.y, platformId: floor.id } } });
+    const { director, scene } = ready("mischievous", { toys: [{ ...ball }, { ...ball, id: "other-real-ball", x: 240 }], home: { box: { x: 500, y: floor.y, platformId: floor.id } } }, COMPANION_PERSONALITY_SCENES.filter(recipe=>recipe.id==="M01"));
     scene.now = 1; const proposal = director.next(scene)!; director.resolve(proposal.meta, true, ball.id);
     scene.toys = [{ ...ball, held: true }, { ...ball, id: "other-real-ball", x: 240 }]; scene.now = 500;
     const yielded = director.next(scene);
@@ -288,7 +295,7 @@ describe("137 one personality scene director", () => {
   });
 
   it("abandons an effect with no actual progress after7.5 active seconds without marking success", () => {
-    const { director, scene } = ready("mischievous", { toys: [{ ...ball }], home: { box: { x: 500, y: floor.y, platformId: floor.id } } }); scene.now = 1;
+    const { director, scene } = ready("mischievous", { toys: [{ ...ball }], home: { box: { x: 500, y: floor.y, platformId: floor.id } } }, COMPANION_PERSONALITY_SCENES.filter(recipe=>recipe.id==="M01")); scene.now = 1;
     const effect = director.next(scene)!; expect(effect.meta.id).toBe("M01");
     scene.now = 7400; expect(director.next(scene)?.meta.id).toBe("M01");
     scene.now = 7602; const retried = director.next(scene);

@@ -11,6 +11,7 @@ import { snapshotEligible, nativeEntryEvidence, dailyEvidenceGate } from './runn
 import { traceSufficiency, traceContextComplete } from './trace-checks.mjs';
 import { traceLivingContextComplete } from './living-criteria.mjs';
 import { AUDITED_MACHINE_METADATA } from './machine-metadata.mjs';
+import { evaluateSofaRendered143, SOFA_SCROLL_143_TITLE } from './sofa-render-156.mjs';
 
 export const REVIEW_PERSPECTIVES = Object.freeze(['living-and-goal-continuity', 'spatial-and-interaction-ux', 'boundary-off-and-evidence-qa']);
 export const ITEMS_SCROLL_147_TITLES = Object.freeze([
@@ -22,6 +23,7 @@ const CATALOG = 'lib/ui/viewer-companion/personality-scene-catalog.ts';
 const HEX = /^[a-f0-9]{64}$/;
 const TOKEN = /^[A-Za-z0-9_./:-]{1,120}$/;
 const MAX_FILES = 12000, MAX_REFERENCES = 1200, MAX_FILE_BYTES = 64 * 1024 * 1024, MAX_TOTAL_BYTES = 2 * 1024 * 1024 * 1024;
+const MAX_NATIVE_MEDIA_BYTES = 192 * 1024 * 1024;
 const LIMITATIONS = Object.freeze([
   'Hashes establish local artifact integrity, not authenticated reviewer identity or honesty. The parent must actually dispatch three fresh, read-only, non-author agents and retain their receipts.',
   'This does not execute a scheduled run, repair code, authorize publication, run a browser, or prove all catalog recipes/all configurations were rendered.',
@@ -122,6 +124,7 @@ export function evaluateReviewContracts(input) {
   const day = typeof report?.createdAtKst === 'string' ? report.createdAtKst.slice(0, 10) : '';
   if (!pureReport?.success || pureReport.numFailedTests !== 0 || pureReport.numPendingTests !== 0 || !(pureReport.numTotalTests > 0) || modelCoverage?.recipeCount !== array(registrations).length || modelCoverage?.entries !== 9 || modelCoverage?.routineTemplates !== 54 || modelCoverage?.booleanPatterns !== 262144) add('pure-coverage-mismatch');
   if (!obj(report) || report.schemaVersion !== 1 || report.status !== 'completed-scoped-checks' || !hash(report.sourceDigest) || !TOKEN.test(report.runId ?? '') || !TOKEN.test(report.buildId ?? '') || !validDay(day) || typeof report.createdAtKst !== 'string' || !report.createdAtKst.endsWith(' KST')) add('factory-not-closed');
+  if (obj(report) && ('diagnosticScope' in report || 'nativeGrep' in report)) add('diagnostic-not-release');
   if (!source || source.contentDigest !== report?.sourceDigest || source.recomputedDigest !== report?.sourceDigest || source.buildId !== report?.buildId || source.snapshotMatches !== true || source.privateSourceArtCopied !== false || source.sourceIllustrationsCopied !== 0 || source.sourceContractsCopied !== 0) add('source-build-mismatch');
   for (const name of REQUIRED_STAGES) {
     const matches = array(report?.stages).filter(s => s?.name === name);
@@ -150,6 +153,7 @@ export function evaluateReviewContracts(input) {
   }
   const actualTitles = actualCaseTitles(reporter);
   checkRenderedItems147(input, actualTitles, reviewed, report, add);
+  for(const code of evaluateSofaRendered143({report,source,evidence:input.sofaRenderedNativeEvidence,reviews:reviewed,casePresent:actualTitles.has(SOFA_SCROLL_143_TITLE)}).issues)add(code);
   for (const item of items) {
     if (!text(item?.hypothesis) || !text(item?.reason) || !['adopted', 'rejected', 'blocked', 'deferred'].includes(item?.decision)) { add('idea-decision'); continue; }
     if (item.decision !== 'adopted') continue;
@@ -183,15 +187,17 @@ function assertUnlinked(absolute) {
 function localFile(root, name, auditedMachine = false) { if (!relative(name)) throw Error('unsafe-relative-path'); if (name.split('/').some(x => /^(?:art-src|feedback_sources|user_turns|contracts?|capture_state)$/i.test(x)) && !auditedMachine) throw Error('sensitive-path-excluded'); const full = path.resolve(root, name); if (!full.startsWith(path.resolve(root) + path.sep)) throw Error('outside-root'); return assertUnlinked(full); }
 function reader() {
   let total = 0; const cache = new Map();
-  const fingerprint = file => {
-    file = assertUnlinked(file); if (cache.has(file)) return cache.get(file);
-    const stat = fs.statSync(file); if (!stat.isFile() || stat.size > MAX_FILE_BYTES || (total += stat.size) > MAX_TOTAL_BYTES) throw Error('file-budget');
+  const fingerprint = (file, maxBytes = MAX_FILE_BYTES) => {
+    file = assertUnlinked(file);
+    const cached = cache.get(file);
+    if (cached) { if (cached.bytes > maxBytes) throw Error('file-budget'); return cached; }
+    const stat = fs.statSync(file); if (!stat.isFile() || stat.size > maxBytes || (total += stat.size) > MAX_TOTAL_BYTES) throw Error('file-budget');
     const digest = createHash('sha256'), fd = fs.openSync(file, 'r'), buffer = Buffer.alloc(1024 * 1024);
     try { let bytes; while ((bytes = fs.readSync(fd, buffer, 0, buffer.length, null))) digest.update(buffer.subarray(0, bytes)); } finally { fs.closeSync(fd); }
     const value = { sha256: digest.digest('hex'), bytes: stat.size }; cache.set(file, value); return value;
   };
   const json = (file, cap = 24 * 1024 * 1024) => { const f = fingerprint(file); if (f.bytes > cap) throw Error('json-budget'); return JSON.parse(fs.readFileSync(file, 'utf8')); };
-  const verify = (root, ref, cap) => { if (!obj(ref) || !hash(ref.sha256)) throw Error('reference-shape'); const file = localFile(root, ref.path); const fp = fingerprint(file); if (fp.sha256 !== ref.sha256 || ('bytes' in ref && fp.bytes !== ref.bytes)) throw Error('reference-sha-mismatch'); return cap === undefined ? file : json(file, cap); };
+  const verify = (root, ref, cap, maxBytes = MAX_FILE_BYTES) => { if (!obj(ref) || !hash(ref.sha256)) throw Error('reference-shape'); const file = localFile(root, ref.path); const fp = fingerprint(file, maxBytes); if (fp.sha256 !== ref.sha256 || ('bytes' in ref && fp.bytes !== ref.bytes)) throw Error('reference-sha-mismatch'); return cap === undefined ? file : json(file, cap); };
   return { fingerprint, json, verify };
 }
 /** Reads only named local files. No live service, credential, subprocess or browser
@@ -216,7 +222,11 @@ export function finalizeDailyReview(options) {
     }
     const buildFile = localFile(run, 'workspace/.next/BUILD_ID'); if (read.fingerprint(buildFile).bytes > 200) throw Error('build-id-budget');
     const source = { ...freeze, recomputedDigest: sha(JSON.stringify(freeze.sourceFiles)), buildId: fs.readFileSync(buildFile, 'utf8').trim(), snapshotMatches: true };
-    const loadEvidence = (ref, parse = true) => { const frozen = evidence.get(ref?.path); if (!frozen || frozen.sha256 !== ref.sha256) throw Error('evidence-not-frozen'); return read.verify(path.join(run, 'attempt-01'), frozen, parse ? 24 * 1024 * 1024 : undefined); };
+    // Only an original trace/video bound to one of the exact passing paint
+    // cases receives the larger streamed-file budget. Reviewer labels alone
+    // cannot raise source, JSON, receipt, PNG or arbitrary evidence limits.
+    const nativeMedia = new Map();
+    const loadEvidence = (ref, parse = true) => { const frozen = evidence.get(ref?.path); if (!frozen || frozen.sha256 !== ref.sha256) throw Error('evidence-not-frozen'); return read.verify(path.join(run, 'attempt-01'), frozen, parse ? 24 * 1024 * 1024 : undefined, !parse && nativeMedia.get(frozen.path) === frozen.sha256 ? MAX_NATIVE_MEDIA_BYTES : MAX_FILE_BYTES); };
     if (!evidence.has('playwright.json')) throw Error('native-reporter-missing'); const reporter = loadEvidence(evidence.get('playwright.json'));
     const daily = PERSONALITIES.map(p => { const ref = evidence.get('native/daily/daily-' + p + '.json'); if (!ref) throw Error('daily-evidence-missing'); return loadEvidence(ref); });
     const ideas = read.json(ideaFile, 1024 * 1024), index = read.json(reviewFile, 256 * 1024), reviewRoot = path.dirname(reviewFile), reviews = [];
@@ -227,15 +237,25 @@ export function finalizeDailyReview(options) {
       // Actual call/completion receipt files are preserved, not only a claimed digest.
       const dispatch = read.verify(reviewRoot, invocation.dispatchReceipt), completion = read.verify(reviewRoot, invocation.completionReceipt);
       if (read.fingerprint(dispatch).sha256 !== invocation.dispatchReceiptSha256 || read.fingerprint(completion).sha256 !== invocation.completionReceiptSha256) throw Error('invocation-receipt-sha');
-      reviews.push({ document, invocation }); refs.push(...array(document.evidence), ...array(document.findings).flatMap(f => array(f?.evidence)), ...array(document.renderedAssessments).flatMap(a => [...array(a?.paintEvidence), a?.rawAttachment].filter(Boolean)));
+      reviews.push({ document, invocation }); refs.push(...array(document.evidence), ...array(document.findings).flatMap(f => array(f?.evidence)), ...array(document.renderedAssessments).flatMap(a => [...array(a?.paintEvidence), a?.rawAttachment].filter(Boolean)), ...array(document.sofaRenderedAssessments).flatMap(a => [...array(a?.paintEvidence), a?.rawAttachment].filter(Boolean)));
     }
     const nativeEvidence = [], passedCases = actualCaseTitles(reporter);
-    const frozenAttachment = attachment => {
-      if (typeof attachment?.path !== 'string' || !path.isAbsolute(attachment.path)) throw Error('items147-attachment-not-frozen');
+    const frozenAttachment = (attachment, failure='items147-attachment-not-frozen') => {
+      if (typeof attachment?.path !== 'string' || !path.isAbsolute(attachment.path)) throw Error(failure);
       const name = path.relative(path.join(run, 'attempt-01'), attachment.path).replaceAll('\\', '/');
-      if (!relative(name)) throw Error('items147-attachment-not-frozen');
-      const frozen = evidence.get(name); if (!frozen) throw Error('items147-attachment-not-frozen');
-      read.verify(path.join(run,'attempt-01'),frozen); return frozen;
+      if (!relative(name)) throw Error(failure);
+      const frozen = evidence.get(name); if (!frozen) throw Error(failure);
+      const media = attachment.name === 'trace' && attachment.contentType === 'application/zip' && name.endsWith('.zip')
+        || attachment.name === 'video' && attachment.contentType === 'video/webm' && name.endsWith('.webm');
+      const file = read.verify(path.join(run,'attempt-01'),frozen,undefined,media ? MAX_NATIVE_MEDIA_BYTES : MAX_FILE_BYTES);
+      if (media && read.fingerprint(file,MAX_NATIVE_MEDIA_BYTES).bytes > MAX_FILE_BYTES) {
+        const header=Buffer.alloc(4),fd=fs.openSync(file,'r');
+        try { fs.readSync(fd,header,0,4,0); } finally { fs.closeSync(fd); }
+        const expected=attachment.name==='trace' ? Buffer.from([80,75,3,4]) : Buffer.from([26,69,223,163]);
+        if (!header.equals(expected)) throw Error('native-media-header');
+      }
+      if (media) nativeMedia.set(frozen.path,frozen.sha256);
+      return frozen;
     };
     // These thirteen cases are checked independently of adopted idea references.
     // Removing all147 ideas/attachments cannot bypass the rendered-review gate.
@@ -249,6 +269,23 @@ export function finalizeDailyReview(options) {
       });
       return {...frozen,caseTitle,attachmentBound:true,document:loadEvidence(frozen),paintAttachments};
     });
+    // The original resident scroll remains a separate mandatory painted gate,
+    // even with no adopted ideas or no DOM candidate. Its original raw/trace/
+    // video must belong to this exact passing reporter case and frozen run.
+    const sofaAttachments=array(passedCases.get(SOFA_SCROLL_143_TITLE)?.attachments);
+    const sofaRaw=sofaAttachments.filter(attachment=>attachment?.name==='actual-sofa-scroll-156'&&attachment?.contentType==='application/json');
+    if(sofaRaw.length!==1)throw Error('sofa143-exact-case-or-attachment');
+    const sofaFrozen=frozenAttachment(sofaRaw[0],'sofa143-attachment-not-frozen');
+    const sofaPaintAttachments=sofaAttachments.flatMap(attachment=>{
+      const kind=attachment?.name==='trace'&&attachment?.contentType==='application/zip'?'trace':attachment?.name==='video'&&attachment?.contentType?.startsWith('video/')?'video':attachment?.contentType==='image/png'&&/^sofa143-paint-(?:before|down|up)$/.test(attachment?.name??'')?'png':null;
+      if(!kind)return [];
+      const frozen=frozenAttachment(attachment,'sofa143-attachment-not-frozen');
+      if(kind!=='png')return [{...frozen,kind,attachmentBound:true}];
+      const bytes=fs.readFileSync(loadEvidence(frozen,false));
+      if(bytes.length<24||!bytes.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])))throw Error('sofa143-original-paints-unproved');
+      return [{...frozen,kind,name:attachment.name,attachmentBound:true,pixelWidth:bytes.readUInt32BE(16),pixelHeight:bytes.readUInt32BE(20)}];
+    });
+    const sofaRenderedNativeEvidence={...sofaFrozen,caseTitle:SOFA_SCROLL_143_TITLE,attachmentBound:true,document:loadEvidence(sofaFrozen),paintAttachments:sofaPaintAttachments};
     const attachmentMatches = ref => array(passedCases.get(ref?.caseTitle)?.attachments).some(attachment => {
       if (attachment?.contentType !== 'application/json' || typeof attachment.path !== 'string' || !path.isAbsolute(attachment.path)) return false;
       const name = path.relative(path.join(run, 'attempt-01'), attachment.path).replaceAll('\\', '/');
@@ -265,7 +302,7 @@ export function finalizeDailyReview(options) {
     if (!freeze.sourceFiles.some(x => x.path === CATALOG && hash(x.sha256))) throw Error('catalog-not-frozen');
     const catalogFile = localFile(path.join(run, 'workspace'), CATALOG), registrations = registeredRecipes(fs.readFileSync(catalogFile, 'utf8'));
     const pureReport = loadEvidence(evidence.get('pure/vitest.json')), modelCoverage = loadEvidence(evidence.get('pure/model-coverage.json'));
-    const assessed = evaluateReviewContracts({ report, source, ideas, reviews, daily, reporter, registrations, nativeEvidence, renderedNativeEvidence, pureReport, modelCoverage, authors: index.authors });
+    const assessed = evaluateReviewContracts({ report, source, ideas, reviews, daily, reporter, registrations, nativeEvidence, renderedNativeEvidence, sofaRenderedNativeEvidence, pureReport, modelCoverage, authors: index.authors });
     const result = { schemaVersion: 1, kind: 'companion-daily-finalization', runId: report.runId, sourceDigest: report.sourceDigest, buildId: report.buildId, dayKst: report.createdAtKst?.slice(0, 10),
       eligibleForAuthorizedRelease: assessed.passed, decision: assessed.passed ? 'candidate-for-authorized-release' : 'hold', issues: assessed.issues,
       integrity: { copiedSourceFiles: copied, reportSha256: reportMap.get('report.json').sha256, evidenceManifestSha256: read.fingerprint(localFile(run, 'evidence-manifest.json')).sha256, reviewsIndexSha256: read.fingerprint(reviewFile).sha256, ideasSha256: read.fingerprint(ideaFile).sha256 },
@@ -275,7 +312,7 @@ export function finalizeDailyReview(options) {
     return result;
   } catch (error) {
     // Fixed codes only: never echo arbitrary file paths, file contents or raw errors.
-    const known = ['linked-path', 'sensitive-path-excluded', 'unsafe-relative-path', 'outside-root', 'file-budget', 'json-budget', 'reference-shape', 'reference-sha-mismatch', 'manifest-budget', 'manifest-duplicate', 'manifest-missing-report', 'source-list', 'source-entry', 'deleted-source-reappeared', 'snapshot-source-changed', 'build-id-budget', 'evidence-not-frozen', 'native-reporter-missing', 'daily-evidence-missing', 'review-index', 'invocation-receipt-sha', 'implementation-source-mismatch', 'reference-budget', 'output-inside-frozen-run', 'catalog-not-frozen', 'catalog-size', 'catalog-shape', 'catalog-record', 'catalog-registration', 'items147-attachment-not-frozen', 'items147-exact-cases-or-attachments'];
+    const known = ['linked-path', 'sensitive-path-excluded', 'unsafe-relative-path', 'outside-root', 'file-budget', 'json-budget', 'native-media-header', 'reference-shape', 'reference-sha-mismatch', 'manifest-budget', 'manifest-duplicate', 'manifest-missing-report', 'source-list', 'source-entry', 'deleted-source-reappeared', 'snapshot-source-changed', 'build-id-budget', 'evidence-not-frozen', 'native-reporter-missing', 'daily-evidence-missing', 'review-index', 'invocation-receipt-sha', 'implementation-source-mismatch', 'reference-budget', 'output-inside-frozen-run', 'catalog-not-frozen', 'catalog-size', 'catalog-shape', 'catalog-record', 'catalog-registration', 'items147-attachment-not-frozen', 'items147-exact-cases-or-attachments', 'sofa143-attachment-not-frozen', 'sofa143-exact-case-or-attachment', 'sofa143-original-paints-unproved'];
     return failure(known.includes(error?.message) ? error.message : 'local-evidence-unreadable-or-output-exists');
   }
 }
