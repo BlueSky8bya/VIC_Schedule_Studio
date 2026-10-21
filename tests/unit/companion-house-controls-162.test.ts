@@ -5,6 +5,7 @@ import { DEFAULT_COMPANION_PREFERENCES, COMPANION_PERSONALITIES } from "@/lib/ui
 import { companionRoomLighting } from "@/lib/ui/viewer-companion/room-lighting";
 import type { CompanionHomeEnvironment } from "@/lib/ui/viewer-companion/home-environment";
 import { COMPANION_EXPRESSIONS, COMPANION_EXPRESSION_MIN_EYE, sampleCompanionExpression } from "@/lib/ui/viewer-companion/expressions";
+import { companionWashMatStance } from "@/lib/ui/viewer-companion/home-interaction";
 
 const floor: Platform = { id: "companion-home-floor", x: 40, y: 600, width: 620, kind: "floor", manualOnly: true };
 const mat: Platform = { id: "companion-home-floor-400", x: 450, y: 530, width: 2, kind: "floor", manualOnly: true, bodyOnly: true };
@@ -12,6 +13,14 @@ const environment = (night: boolean): CompanionHomeEnvironment => ({ date: { y: 
 const fixture = (): PersonalitySceneInput => ({ world: { x: 220, y: 600, platformId: floor.id, platforms: [floor, mat], width: 1440, height: 1000, animated: true }, brain: { ...createBrain(0), hunger: .05, energy: .9 }, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: true, sleep: false, personality: "balanced" }, now: 100, home: { pad: { x: 451, y: 530, platformId: mat.id }, floor: { x: 220, y: 600, platformId: floor.id } }, toys: [], tv: "off" });
 
 describe("162 direct pad control and whole-room material", () => {
+  it("retains the real narrow-panel mat while respecting body clearance and rejects an impossible stance", () => {
+    const room = { left: 19, right: 281, top: 500, bottom: 653 }, mat = { left: 219.0625, top: 560.8125, width: 58, height: 24.640625 };
+    const actual = companionWashMatStance(mat, room, 92)!;
+    expect(actual.x).toBeCloseTo(246.04, 5); expect(actual.x).toBeLessThan(mat.left + mat.width / 2);
+    expect(actual.x).toBeGreaterThan(mat.left + mat.width * .18); expect(actual.y).toBeCloseTo(mat.top + mat.height * .72);
+    for (const width of [240, 260, 280, 430]) { const m = { ...mat, left: width * .875 - 29 }, r = { ...room, left: 0, right: width }, p = companionWashMatStance(m, r, 92)!; expect(p).toBeTruthy(); expect(p.x - 92 * .38).toBeGreaterThanOrEqual(r.left); expect(p.x + 92 * .38).toBeLessThanOrEqual(r.right + .00001); expect(p.x).toBeGreaterThanOrEqual(m.left + m.width * .18); expect(p.x).toBeLessThanOrEqual(m.left + m.width * .82); }
+    expect(companionWashMatStance(mat, { ...room, right: 50 }, 92)).toBeUndefined(); expect(companionWashMatStance({ ...mat, width: NaN }, room, 92)).toBeUndefined();
+  });
   it.each(COMPANION_PERSONALITIES)("%s manual wash follows physical approach, ACK and exit with automatic roaming off", personality => {
     const input = fixture(); input.preferences.personality = personality;
     const director = createCompanionPersonalityDirector([]);

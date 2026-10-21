@@ -1,6 +1,7 @@
 import type { Platform } from "./brain";
 import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET, type CompanionFoodDropSupport } from "./food";
 import { companionSofaSeat } from "./sofa";
+import { companionWashMatStance } from "./home-interaction";
 import { COMPANION_PANEL_SIDE_SELECTOR } from "./panel-play";
 import { attachCompanionElementPoint, followCompanionElementPoint, type CompanionAnchorFrame } from "./element-anchor";
 
@@ -423,9 +424,9 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
         // invitation; only the explicit wash journey may choose it.
         const pad = house?.querySelector<HTMLElement>(".vc-home-wash-stance") ?? house?.querySelector<HTMLElement>(".vc-home-wash-pad");
         if (pad?.isConnected && visible(pad) && landings.length < MAX_PLATFORMS) {
-          const mat = rectFor(pad), foot = mat.top + mat.height * .72, centre = mat.left + mat.width / 2;
-          if (mat.width > 0 && foot >= rect.top && foot < rect.bottom && centre - size * .38 >= x && centre + size * .38 <= right) {
-            const platform: Platform = { id: "companion-home-floor-400", x: centre - 1, y: foot, width: 2, kind: "floor", manualOnly: true, bodyOnly: true };
+          const mat = rectFor(pad), stance = companionWashMatStance(mat, { left: x, right, top: rect.top, bottom: rect.bottom }, size);
+          if (stance) {
+            const platform: Platform = { id: "companion-home-floor-400", x: stance.x - 1, y: stance.y, width: 2, kind: "floor", manualOnly: true, bodyOnly: true };
             landings.push(platform); nextAnchors.set(platform.id, { platform, anchor: pad, rect: frameOf(mat) }); nextObserved.add(pad);
           }
         }
