@@ -1,11 +1,13 @@
 "use client";
 
+import { COMPANION_FOOD_BOOK_ORDER, COMPANION_TOY_BOOK_ORDER } from "@/lib/ui/viewer-companion/collection-book-order";
+
 import { formatCompanionCollectionChance } from "@/lib/ui/viewer-companion/collection-rarity";
 import { Check, Sparkles } from "lucide-react";
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from "react";
 import { logActivity } from "@/lib/activity/client";
 import { companionToyUnread, type CompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
-import { COMPANION_TOY_KINDS, type CompanionToyKind } from "@/lib/ui/viewer-companion/toy-catalog";
+import { type CompanionToyKind } from "@/lib/ui/viewer-companion/toy-catalog";
 import { CompanionCollectionPager } from "./companion-collection-pager";
 import { CompanionToyDiscovery } from "./companion-toy-discovery";
 import { CompanionCollectionArt } from "@/components/poster/viewer-companion/companion-collection-art";
@@ -15,7 +17,7 @@ import { COMPANION_SITUATION_HINTS, COMPANION_SITUATION_IDS, COMPANION_SITUATION
 import { emitCompanionSceneSignal } from "@/lib/ui/viewer-companion/scene-signals";
 import { useCompanionDetailRead } from "./use-companion-detail-read";
 import { COMPANION_FOOD_FACTS } from "@/lib/ui/viewer-companion/food-facts";
-import { companionFoodChance, COMPANION_FOOD_KINDS, COMPANION_FOOD_NAMES, COMPANION_FOOD_RARITY, COMPANION_FOOD_RARITY_NAMES, type CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
+import { companionFoodChance, COMPANION_FOOD_NAMES, COMPANION_FOOD_RARITY, COMPANION_FOOD_RARITY_NAMES, type CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 
 const memories = [
   ...COMPANION_BEHAVIOR_IDS.map(id => ({ id, kind: "behavior" as const, name: COMPANION_BEHAVIOR_NAMES[id], hint: COMPANION_BEHAVIOR_HINTS[id] })),
@@ -24,15 +26,15 @@ const memories = [
 
 export function CompanionDiscovery({ collection, active, tastes = null }: { collection: CompanionCollection | null; active: boolean; tastes?: CompanionTastes | null }) {
   const [category, setCategory] = useState<"food" | "toy" | "behavior">("food");
-  const [selectedFood, setSelectedFood] = useState<CompanionFoodKind>(COMPANION_FOOD_KINDS[0]), [selectedMemoryIndex, setSelectedMemoryIndex] = useState(0);
+  const [selectedFood, setSelectedFood] = useState<CompanionFoodKind>(COMPANION_FOOD_BOOK_ORDER[0]), [selectedMemoryIndex, setSelectedMemoryIndex] = useState(0);
   const [recent, setRecent] = useState<CompanionConsumedFood | null>(null), [cue, setCue] = useState(false);
-  const [selectedToy, setSelectedToy] = useState<CompanionToyKind>(() => tastes?.toys.find(kind => !tastes.seen.includes(kind)) ?? COMPANION_TOY_KINDS[0]);
+  const [selectedToy, setSelectedToy] = useState<CompanionToyKind>(() => COMPANION_TOY_BOOK_ORDER.find(kind => tastes?.toys.includes(kind) && !tastes.seen.includes(kind)) ?? COMPANION_TOY_BOOK_ORDER[0]);
   const knownToys = useRef(tastes?.toys ?? []);
   const host = useRef<HTMLDivElement>(null), grid = useRef<HTMLUListElement>(null), pendingFocus = useRef<number | null>(null), recentSerial = useRef(0);
   const unreadDescription = useId(), unread = getCompanionUnreadCounts(collection);
   const layout = useCompanionCollectionLayout(grid, active && category !== "toy", category === "food" ? "default" : "memory");
-  const selectedFoodIndex = COMPANION_FOOD_KINDS.indexOf(selectedFood);
-  const foodPage = companionCollectionPage(selectedFoodIndex, COMPANION_FOOD_KINDS.length, layout.size);
+  const selectedFoodIndex = COMPANION_FOOD_BOOK_ORDER.indexOf(selectedFood);
+  const foodPage = companionCollectionPage(selectedFoodIndex, COMPANION_FOOD_BOOK_ORDER.length, layout.size);
   const memoryPage = companionCollectionPage(selectedMemoryIndex, memories.length, layout.size);
   const page = category === "food" ? foodPage : memoryPage;
   const selectedMemory = memories[selectedMemoryIndex];
@@ -43,11 +45,11 @@ export function CompanionDiscovery({ collection, active, tastes = null }: { coll
     () => acknowledgeCompanionCollection(detailKind, detailId));
   const memoryFound = (memory: typeof memories[number]) => ((memory.kind === "moment" ? collection?.situations : collection?.behaviors) as readonly string[] | undefined)?.includes(memory.id) ?? false;
   const unreadAt = (index: number) => category === "food"
-    ? isCompanionCollectionUnread(collection, "food", COMPANION_FOOD_KINDS[index])
+    ? isCompanionCollectionUnread(collection, "food", COMPANION_FOOD_BOOK_ORDER[index])
     : isCompanionCollectionUnread(collection, memories[index].kind, memories[index].id);
   const selectIndex = (index: number, focus = false, inspect = false) => {
     if (focus) pendingFocus.current = index;
-    if (category === "food") { setSelectedFood(COMPANION_FOOD_KINDS[index]); return inspect && isCompanionCollectionUnread(collection, "food", COMPANION_FOOD_KINDS[index]) && acknowledgeCompanionCollection("food", COMPANION_FOOD_KINDS[index]); }
+    if (category === "food") { setSelectedFood(COMPANION_FOOD_BOOK_ORDER[index]); return inspect && isCompanionCollectionUnread(collection, "food", COMPANION_FOOD_BOOK_ORDER[index]) && acknowledgeCompanionCollection("food", COMPANION_FOOD_BOOK_ORDER[index]); }
     setSelectedMemoryIndex(index);
     if (inspect && memoryFound(memories[index])) {
       const memory = memories[index];
@@ -82,7 +84,7 @@ export function CompanionDiscovery({ collection, active, tastes = null }: { coll
     pendingFocus.current = null;
   }, [active, category, selectedFood, selectedMemoryIndex, page.offset, layout.size, collection]);
   const foundFood = collection?.foods.includes(selectedFood) ?? false;
-  const categories = [{ key: "food", name: "냠냠 도감", count: collection?.foods.length ?? 0, total: COMPANION_FOOD_KINDS.length, unread: unread.foods }, { key: "toy", name: "장난감 도감", count: tastes?.toys.length ?? 0, total: COMPANION_TOY_KINDS.length, unread: companionToyUnread(tastes) }, { key: "behavior", name: "추억 도감", count: (collection?.behaviors.length ?? 0) + (collection?.situations.length ?? 0), total: memories.length, unread: unread.memories }] as const;
+  const categories = [{ key: "food", name: "냠냠 도감", count: collection?.foods.length ?? 0, total: COMPANION_FOOD_BOOK_ORDER.length, unread: unread.foods }, { key: "toy", name: "장난감 도감", count: tastes?.toys.length ?? 0, total: COMPANION_TOY_BOOK_ORDER.length, unread: companionToyUnread(tastes) }, { key: "behavior", name: "추억 도감", count: (collection?.behaviors.length ?? 0) + (collection?.situations.length ?? 0), total: memories.length, unread: unread.memories }] as const;
   const categoryKey = (event: KeyboardEvent<HTMLButtonElement>) => {
     if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.nativeEvent?.isComposing) return;
     const index = categories.findIndex(item => item.key === category), next = event.key === "Home" ? 0 : event.key === "End" ? 2 : -1;
@@ -106,14 +108,14 @@ export function CompanionDiscovery({ collection, active, tastes = null }: { coll
       <div className="rhh-collection-detail-copy"><span className="rhh-collection-overline">함께한 순간</span><div className="rhh-collection-detail-title"><strong>{memoryFound(selectedMemory) ? selectedMemory.name : "???"}</strong></div><p>{memoryFound(selectedMemory) ? selectedMemory.hint : "아직 발견하지 못했어요."}</p>{memoryFound(selectedMemory) && <span className="rhh-collection-keepsake"><Sparkles aria-hidden="true" size={14} />{selectedMemory.kind === "moment" ? "특별한 순간" : "재롱"}</span>}</div>
     </div>}
     <ul aria-label={category === "food" ? "냠냠 도감" : "추억 도감"} className={"rhh-collection-grid " + (category === "food" ? "rhh-food-grid" : "rhh-behavior-grid")} ref={grid} style={{ "--collection-columns": layout.columns, "--collection-rows": layout.rows } as CSSProperties}>
-      {category === "food" ? COMPANION_FOOD_KINDS.slice(foodPage.offset, foodPage.end).map((food, localIndex) => {
+      {category === "food" ? COMPANION_FOOD_BOOK_ORDER.slice(foodPage.offset, foodPage.end).map((food, localIndex) => {
         const index = foodPage.offset + localIndex, found = collection?.foods.includes(food) ?? false, unreadItem = isCompanionCollectionUnread(collection, "food", food);
-        return <li key={food}><button aria-label={found ? COMPANION_FOOD_NAMES[food] + " · 맛봤어요" : "??? · " + (index + 1)} aria-describedby={unreadItem ? unreadDescription : undefined} data-unread={unreadItem || undefined} aria-pressed={selectedFood === food} className="rhh-collection-tile" data-act="companion-collection-inspect" data-act-opt="food" data-food-index={index} data-collection-index={index} data-found={found || undefined} data-recent={found && recent?.kind === food || undefined} onClick={() => { setSelectedFood(food); if (unreadItem) acknowledgeCompanionCollection("food", food); }} onKeyDown={event => onCollectionKey(event, index, COMPANION_FOOD_KINDS.length, next => selectIndex(next, true, true), foodPage.offset)} tabIndex={selectedFood === food ? 0 : -1} type="button">{unreadItem && <span aria-hidden="true" className="rhh-collection-unread" data-unread="">!</span>}<CompanionCollectionArt kind="food" id={food} /><span>{found ? COMPANION_FOOD_NAMES[food] : "???"}</span><span aria-hidden={!found || undefined} className="rhh-collection-rarity" data-empty={!found || undefined}>{found ? COMPANION_FOOD_RARITY_NAMES[COMPANION_FOOD_RARITY[food]] : "빈칸"}</span></button></li>;
+        return <li key={food}><button aria-label={found ? COMPANION_FOOD_NAMES[food] + " · 맛봤어요" : "??? · " + (index + 1)} aria-describedby={unreadItem ? unreadDescription : undefined} data-unread={unreadItem || undefined} aria-pressed={selectedFood === food} className="rhh-collection-tile" data-act="companion-collection-inspect" data-act-opt="food" data-food-index={index} data-collection-index={index} data-found={found || undefined} data-recent={found && recent?.kind === food || undefined} onClick={() => { setSelectedFood(food); if (unreadItem) acknowledgeCompanionCollection("food", food); }} onKeyDown={event => onCollectionKey(event, index, COMPANION_FOOD_BOOK_ORDER.length, next => selectIndex(next, true, true), foodPage.offset)} tabIndex={selectedFood === food ? 0 : -1} type="button">{unreadItem && <span aria-hidden="true" className="rhh-collection-unread" data-unread="">!</span>}<CompanionCollectionArt kind="food" id={food} /><span>{found ? COMPANION_FOOD_NAMES[food] : "???"}</span><span aria-hidden={!found || undefined} className="rhh-collection-rarity" data-empty={!found || undefined}>{found ? COMPANION_FOOD_RARITY_NAMES[COMPANION_FOOD_RARITY[food]] : "빈칸"}</span></button></li>;
       }) : memories.slice(memoryPage.offset, memoryPage.end).map((memory, localIndex) => {
         const index = memoryPage.offset + localIndex, found = memoryFound(memory), unreadItem = isCompanionCollectionUnread(collection, memory.kind, memory.id);
         return <li key={memory.kind + ":" + memory.id}><button aria-label={found ? memory.name + " · 만났어요" : "??? · " + (index + 1)} aria-describedby={unreadItem ? unreadDescription : undefined} data-unread={unreadItem || undefined} aria-pressed={selectedMemoryIndex === index} className="rhh-collection-tile" data-act="companion-collection-inspect" data-act-opt={memory.kind} data-collection-index={index} data-found={found || undefined} onClick={() => selectIndex(index, false, true)} onKeyDown={event => onCollectionKey(event, index, memories.length, next => selectIndex(next, true, true), memoryPage.offset, next => memories[next].kind)} tabIndex={selectedMemoryIndex === index ? 0 : -1} type="button">{unreadItem && <span aria-hidden="true" className="rhh-collection-unread" data-unread="">!</span>}{found ? <CompanionCollectionArt kind={memory.kind === "moment" ? "situation-stamp" : "behavior-stamp"} id={memory.id} /> : <span aria-hidden="true" className="rhh-memory-silhouette" />}<span>{found ? memory.name : "???"}</span></button></li>;
       })}
     </ul>
-    <CompanionCollectionPager label={category === "food" ? "냠냠 도감 페이지" : "추억 도감 페이지"} previousLabel="이전 페이지" nextLabel="다음 페이지" page={page} size={layout.size} length={category === "food" ? COMPANION_FOOD_KINDS.length : memories.length} selected={category === "food" ? selectedFoodIndex : selectedMemoryIndex} unread={unreadAt} select={selectIndex} categoryAt={index => category === "food" ? "food" : memories[index].kind} />
+    <CompanionCollectionPager label={category === "food" ? "냠냠 도감 페이지" : "추억 도감 페이지"} previousLabel="이전 페이지" nextLabel="다음 페이지" page={page} size={layout.size} length={category === "food" ? COMPANION_FOOD_BOOK_ORDER.length : memories.length} selected={category === "food" ? selectedFoodIndex : selectedMemoryIndex} unread={unreadAt} select={selectIndex} categoryAt={index => category === "food" ? "food" : memories[index].kind} />
   </div> : null;
 }

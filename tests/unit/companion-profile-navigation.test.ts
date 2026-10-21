@@ -2,7 +2,7 @@ import { CompanionCollectionPager } from "@/components/shared/companion-collecti
 import type { KeyboardEvent, ReactElement, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { COMPANION_PERSONALITIES, COMPANION_PERSONALITY_NAMES, DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
-import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
+import { COMPANION_FOOD_BOOK_ORDER as COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/collection-book-order";
 import { COMPANION_BEHAVIOR_IDS, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_SITUATION_IDS } from "@/lib/ui/viewer-companion/moments";
 import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
@@ -191,7 +191,7 @@ describe("actual shared profile navigation callbacks", () => {
     expect(harness.acknowledge.mock.calls).toEqual([["food", COMPANION_FOOD_KINDS[pageSize + 4]]]);
     click(foods()[0]); expect(harness.acknowledge.mock.calls.at(-1)).toEqual(["food", COMPANION_FOOD_KINDS[pageSize]]);
     key(foods()[0], "Home"); await render(); harness.acknowledge.mockClear(); harness.activity.mockClear();
-    key(foods()[0], "Home"); expect(harness.acknowledge.mock.calls).toEqual([["food", "apple"]]); expect(harness.activity.mock.calls).toEqual([["ui.click", { target: "companion-collection-inspect#food" }]]);
+    key(foods()[0], "Home"); expect(harness.acknowledge.mock.calls).toEqual([["food", COMPANION_FOOD_KINDS[0]]]); expect(harness.activity.mock.calls).toEqual([["ui.click", { target: "companion-collection-inspect#food" }]]);
     harness.activity.mockClear(); harness.acknowledge.mockReturnValue(false); key(foods()[0], "Home"); expect(harness.activity).not.toHaveBeenCalled();
     click(find(node => node.props["data-act"] === "companion-collection-category" && node.props["data-act-opt"] === "behavior")); await render(); harness.acknowledge.mockClear();
     expect(harness.acknowledge).not.toHaveBeenCalled();
@@ -199,7 +199,7 @@ describe("actual shared profile navigation callbacks", () => {
     harness.acknowledge.mockClear(); click(find(node => node.props["data-collection-index"] === 1)); expect(harness.acknowledge).not.toHaveBeenCalled();
   });
   it("visits every unread food and both memory registries without leaking unknown artwork or reading siblings", async () => {
-    discoveryCollection = { version: 1, foods: ["apple", COMPANION_FOOD_KINDS[20], COMPANION_FOOD_KINDS[179]], behaviors: [COMPANION_BEHAVIOR_IDS[0], COMPANION_BEHAVIOR_IDS[3]], situations: [COMPANION_SITUATION_IDS[2]], gifts: { pending: null, unlocked: [], equipped: null, activeMs: 0, interactionCredit: 0 }, seen: { foods: ["apple"], behaviors: [], situations: [], accessories: [] } };
+    discoveryCollection = { version: 1, foods: [COMPANION_FOOD_KINDS[0], COMPANION_FOOD_KINDS[20], COMPANION_FOOD_KINDS[179]], behaviors: [COMPANION_BEHAVIOR_IDS[0], COMPANION_BEHAVIOR_IDS[3]], situations: [COMPANION_SITUATION_IDS[2]], gifts: { pending: null, unlocked: [], equipped: null, activeMs: 0, interactionCredit: 0 }, seen: { foods: [COMPANION_FOOD_KINDS[0]], behaviors: [], situations: [], accessories: [] } };
     harness.acknowledge.mockImplementation((kind: "food" | "behavior" | "moment", id: string) => { const seen = discoveryCollection!.seen!; (kind === "food" ? seen.foods : kind === "moment" ? seen.situations : seen.behaviors).push(id as never); return true; });
     await render(); await discover();
     const unread = () => find(node => node.props["aria-label"] === "다음 새 발견 보기");
@@ -249,7 +249,7 @@ describe("actual shared profile navigation callbacks", () => {
     expect(visited).toEqual(COMPANION_FOOD_KINDS.map((_, index) => index));
     await render(false); expect(foods()).toHaveLength(0);
   });
-  it("pages in registry order without manually logging native-click actions", async () => {
+  it("pages in catalogue display order without manually logging native-click actions", async () => {
     await render(); await discover(); harness.activity.mockClear();
     const size = foods().length;
     click(find(node => node.props["data-act"] === "companion-collection-page" && node.props["data-act-opt"] === "next")); await render();

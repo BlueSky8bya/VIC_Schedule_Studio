@@ -37,7 +37,8 @@ describe("163 specimen-specific impressions and readable expressions", () => {
     expect(sampleCompanionExpression("sour", .55).leftShape).toBe(E.squeeze);
     expect(sampleCompanionExpression("reading", .55).leftShape).toBe(E.focus);
     expect(sampleCompanionExpression("sorry", .55).leftShape).toBe(E.worry);
-    expect(sampleCompanionExpression("first-bite", .55).leftShape).toBe(E.round);
+    // Positive anticipation keeps the pupil open with a gently softened lid.
+    expect(sampleCompanionExpression("first-bite", .55).leftShape).toBe(E.soft);
     expect(sampleCompanionExpression("unimpressed", .55).leftShape).toBe(E.flat);
   });
 });

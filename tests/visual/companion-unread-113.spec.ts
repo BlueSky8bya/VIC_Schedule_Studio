@@ -6,7 +6,7 @@ import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_COLLECTION_KEY, COMPANION_BEHAVIOR_IDS } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_SITUATION_IDS } from "@/lib/ui/viewer-companion/moments";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
-import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
+import { COMPANION_FOOD_BOOK_ORDER as COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/collection-book-order";
 import { COMPANION_WEARABLE_IDS } from "@/lib/ui/viewer-companion/gifts";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { CAL_ZOOM_STEPS } from "@/lib/ui/calendar-zoom";

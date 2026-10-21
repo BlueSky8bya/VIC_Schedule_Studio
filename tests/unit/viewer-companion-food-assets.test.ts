@@ -279,8 +279,13 @@ describe("same-source108 food stamps", () => {
       expect(frame.width).toBe(frame.height);
       expect(stamp).toContain('data-collection-art="food-stamp"'); expect(stamp).toContain('viewBox="0 0 128 128"');
       expect(stamp).toContain(`width="100%" height="100%" viewBox="${frame.x} ${frame.y} ${frame.width} ${frame.height}" preserveAspectRatio="xMidYMid meet"`);
-      expect(stamp.match(/<image\s[^>]*>/g)).toEqual(live.match(/<image\s[^>]*>/g));
-      expect(stamp).not.toContain("food-stamps-"); expect(stamp).not.toMatch(/scale\(|preserveAspectRatio="none"/);
+      const specimen=stamp.match(/<span class="vc-collection-seal-picture">([\s\S]+?)<\/span>/)?.[1];
+      expect(specimen).toBeDefined();
+      expect(specimen!.match(/<image\s[^>]*>/g)).toEqual(live.match(/<image\s[^>]*>/g));
+      expect(stamp).not.toContain("food-stamps-");
+      // Watercolor backings are separate images. The live food must keep its
+      // exact source crop and undistorted geometry inside the specimen layer.
+      expect(specimen).not.toMatch(/scale\(|preserveAspectRatio="none"/);
     }
     expect(renderToStaticMarkup(createElement(CompanionCollectionArt, { kind: "food-stamp", id: "unknown-food" }))).toBe("");
   });

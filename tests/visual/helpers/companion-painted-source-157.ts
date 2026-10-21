@@ -21,29 +21,37 @@ export function createCompanionExpressionPixelVerifier157() {
   function maskExpressionPixels157(source: Uint8ClampedArray, pose: ExpressionAnchor157, reference: ExpressionAnchor157) {
     const size=192,total=size*size,scale=size/80,mask=new Uint8Array(total);
     if(source.length!==total*4||pose.eyes.length!==2||reference.eyes.length!==2)return null;
-      const permit=(box:number[])=>{
+      const permit=(box:number[],feature=1,skinSamples?:readonly (readonly number[])[])=>{
         if(box.length!==4||!box.every(Number.isFinite))return false;
         const [left,top,right,bottom]=box.map(n=>Math.round(n*scale));
         if(left<0||top<0||right>=size||bottom>=size||right<=left||bottom<=top)return false;
         for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++)if(source[(y*size+x)*4+3]<245)return false;
-        let corners=0;for(const [x,y]of[[left,top],[right,top],[left,bottom],[right,bottom]]){
+        const samples=skinSamples?.map(([x,y])=>[Math.round(x*scale),Math.round(y*scale)])??[[left,top],[right,top],[left,bottom],[right,bottom]];
+        let corners=0;for(const [x,y]of samples){
+          if(x<left||y<top||x>right||y>bottom)return false;
           const i=(y*size+x)*4;if(source[i]>=190&&source[i+1]>=175&&source[i+2]>=130)corners++;
         }
         if(corners<3)return false;
-        for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++)mask[y*size+x]=1;
+        for(let y=top;y<=bottom;y++)for(let x=left;x<=right;x++)mask[y*size+x]=feature;
         return true;
       };
       for(let i=0;i<2;i++){
         const eye=pose.eyes[i],original=reference.eyes[i],view=pose.orientation==="quarter"?.83:1;
         if(eye.center.length!==2||eye.bounds.length!==4||original.bounds.length!==4
           ||![...eye.center,...eye.bounds,...original.bounds].every(Number.isFinite)) return null;
-        const [x,y]=eye.center,width=(original.bounds[2]-original.bounds[0])*view,height=(original.bounds[3]-original.bounds[1])*view;
-        const permitted=permit([Math.min(eye.bounds[0],x-width/2-.5)-.65,Math.min(eye.bounds[1],y-height/2-1.6)-.65,
-          Math.max(eye.bounds[2],x+width/2+.5)+.65,Math.max(eye.bounds[3],y+height/2+1.2)+.65]);
+        const sharedWidth=reference.eyes.reduce((sum,eye)=>sum+eye.bounds[2]-eye.bounds[0],0)/2;
+        const sharedHeight=reference.eyes.reduce((sum,eye)=>sum+eye.bounds[3]-eye.bounds[1],0)/2;
+        const [x,y]=eye.center,width=Math.max(original.bounds[2]-original.bounds[0],sharedWidth)*view,height=Math.max(original.bounds[3]-original.bounds[1],sharedHeight)*view;
+        const permitted=permit([Math.min(eye.bounds[0],x-width/2-1)-.65,Math.min(eye.bounds[1],y-height/2-1.6)-.65,
+          Math.max(eye.bounds[2],x+width/2+1)+.65,Math.max(eye.bounds[3],y+height/2+1.2)+.65],1,"skinSamples" in eye?eye.skinSamples:undefined);
         if(!permitted)permit([eye.bounds[0]-.4,eye.bounds[1]-.4,eye.bounds[2]+.4,eye.bounds[3]+.4]);
       }
-      if(pose.mouth){const m=pose.mouth;permit([Math.min(m.bounds[0]-.5,m.x-3.4),Math.min(m.bounds[1]-.5,m.y-2),
-        Math.max(m.bounds[2]+.5,m.x+3.4),Math.max(m.bounds[3]+.5,m.y+3.6)]);}
+      if(pose.mouth){const m=pose.mouth,[left,right]=pose.eyes.map(eye=>eye.center),x=(left[0]+right[0])/2,y=(left[1]+right[1])/2;
+        const angle=Math.atan2(right[1]-left[1],right[0]-left[0]);
+        const depth=Math.max(4,(m.x-x)*-Math.sin(angle)+(m.y-y)*Math.cos(angle));
+        const mouthX=x-Math.sin(angle)*depth,mouthY=y+Math.cos(angle)*depth;
+        permit([Math.min(m.bounds[0]-.5,m.x-3.4,mouthX-3.4),Math.min(m.bounds[1]-.5,m.y-2,mouthY-2),
+          Math.max(m.bounds[2]+.5,m.x+3.4,mouthX+3.4),Math.max(m.bounds[3]+.5,m.y+3.6,mouthY+3.6)],2);}
     return mask;
   }
   function compareExpressionPixels157(source: Uint8ClampedArray, current: Uint8ClampedArray, pose: ExpressionAnchor157, reference: ExpressionAnchor157) {
@@ -52,7 +60,9 @@ export function createCompanionExpressionPixelVerifier157() {
     if(source.length!==total*4||current.length!==source.length)return result;
     const mask=maskExpressionPixels157(source,pose,reference);if(!mask)return result;
       for(let p=0;p<total;p++){
-        const i=p*4,orange=source[i]>210&&source[i+1]<190&&source[i+2]<135;
+        const i=p*4,x=p%192/2.4,y=Math.floor(p/192)/2.4,m=pose.mouth;
+        const sourceMouth=m&&x>=m.bounds[0]-.6&&x<=m.bounds[2]+.6&&y>=m.bounds[1]-.6&&y<=m.bounds[3]+.6;
+        const orange=!sourceMouth&&source[i]>210&&source[i+1]<190&&source[i+2]<135;
         result.alphaCompared++;if(source[i+3]!==current[i+3])result.alphaMismatch++;
         const changed=source[i]!==current[i]||source[i+1]!==current[i+1]||source[i+2]!==current[i+2];
         if(mask[p])result.maskPixels++;

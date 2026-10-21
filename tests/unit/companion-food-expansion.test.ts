@@ -63,7 +63,9 @@ describe("additive109 small-food delivery", () => {
     for (const [index, item] of COMPANION_SNACK_EXPANSION.entries()) {
       const live = renderToStaticMarkup(React.createElement(CompanionFruit, { kind: item.id }));
       const stamp = renderToStaticMarkup(React.createElement(CompanionCollectionArt, { kind: "food-stamp", id: item.id }));
-      expect(live.match(/<image\s[^>]*>/g)).toEqual(stamp.match(/<image\s[^>]*>/g));
+      const specimen=stamp.match(/<span class="vc-collection-seal-picture">([\s\S]+?)<\/span>/)?.[1];
+      expect(specimen).toBeDefined();
+      expect(live.match(/<image\s[^>]*>/g)).toEqual(specimen!.match(/<image\s[^>]*>/g));
       expect(stamp).toContain('preserveAspectRatio="xMidYMid meet"');
       if (!exportSheets) continue;
       const frame = getCompanionCollectionArtFrame("food", item.id)!;

@@ -7,6 +7,8 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
+Faces/stamps: verified; production confirmation next. [Record](plans/PLAN-20261021-watercolor-face-release.md).
+
 Criteria145: optional TV bow and separate actual10s activity/repetition verified. Final frozen110/27/9/2, full gates and three independent final reviews passed; scoped commit and actual production confirmation pending. [145 plan](plans/PLAN-20261020-145-companion-activity-criteria.md).
 
 Scheduled: daily companion QA is ACTIVE at09:00 KST in the current thread. The current user authorizes bounded companion reproduce/fix/independent-review/verify/report work; unrelated operations remain excluded. [Factory and scope](plans/PLAN-20261020-142-companion-agent-and-daily-qa.md). Do not overlap an active run.144 proves a separate scheduled execution; its second factory failed and release stays held. All processes closed and originals preserved.

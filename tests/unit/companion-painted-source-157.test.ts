@@ -5,6 +5,7 @@ import { companionSpriteMetadata as metadata } from "@/lib/ui/viewer-companion/s
 import { curiousTextureCellMatches, type CuriousTextureCellMeasurement } from "../visual/helpers/companion-curious-completion-144";
 import { readFileSync } from "node:fs";
 import ts from "typescript";
+import { companionFaceLayout } from "@/lib/ui/viewer-companion/face-layout";
 
 const direct=createCompanionExpressionPixelVerifier157();
 // Exercise the same trusted serialization/newFunction boundary used by the
@@ -27,7 +28,9 @@ if(!background||!eyePatches||!mouthCenter||!mouthBox||!mouthFill||!eyePatches.in
 const print=(node:ts.Node)=>ts.createPrinter().printNode(ts.EmitHint.Unspecified,node,painterAst);
 const actualMaskCode=ts.transpileModule(`
 const PIXELS=192,SCALE=PIXELS/80,allowed=new Uint8Array(PIXELS*PIXELS);
+const mix=(a,b,p)=>a+(b-a)*p;
 const face={gazeX:0,gazeY:0,weight:1,smile:.7,open:1,tremble:.3};
+const layout=companionFaceLayout(pose);
 const pixels={getImageData(left,top,width,height){const data=new Uint8ClampedArray(width*height*4);
   for(let y=0;y<height;y++)for(let x=0;x<width;x++)data.set(source.subarray(((top+y)*PIXELS+left+x)*4,((top+y)*PIXELS+left+x)*4+4),(y*width+x)*4);
   return {data,width,height};}};
@@ -37,7 +40,8 @@ const ${print(mouthCenter)};
 const ${print(mouthBox)};
 const ${print(mouthFill)};
 return {allowed,eyePatches,mouthBox,mouthFill};`,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText;
-const actualPainterPatches=new Function("source","pose","reference",actualMaskCode) as (source:Uint8ClampedArray,current:typeof pose,reference:typeof pose)=>{
+const compilePainterPatches=new Function("source","pose","reference","companionFaceLayout",actualMaskCode);
+const actualPainterPatches=((source,current,reference)=>compilePainterPatches(source,current,reference,companionFaceLayout)) as (source:Uint8ClampedArray,current:typeof pose,reference:typeof pose)=>{
   allowed:NonNullable<ReturnType<typeof direct.mask>>;eyePatches:{box:number[];fill:string|undefined}[];mouthBox:number[]|undefined;mouthFill:string|undefined;
 };
 const actualPainterMask:typeof direct.mask=(source,current,reference)=>actualPainterPatches(source,current,reference).allowed;
@@ -54,6 +58,21 @@ function cell(index=0):CuriousTextureCellMeasurement {
     spriteClipPath:`inset(${f.clip.map(n=>`${n/80*100}%`).join(" ")})`,textureClipPath:"none"};
 }
 describe("157 actual current-cell canvas comparison shared verbatim with browser",()=>{
+  it("admits the measured pose156 eye from cream samples while retaining the opaque-source guard",()=>{
+    const current=anchors.frames.find(p=>p.physicalIndex===156)!,source=original();
+    const primary=actualPainterPatches(source,current,pose).eyePatches[1].box;
+    const [left,,right,bottom]=primary.map(n=>Math.round(n*192/80));
+    for(const x of [left,right])source.set([170,110,80],(bottom*192+x)*4);
+    const admitted=actualPainterPatches(source,current,pose);
+    expect(admitted.eyePatches[1].box).toEqual(primary);expect(admitted.eyePatches[1].fill).toBeTruthy();
+    expect(mask(source,current,pose)).toEqual(admitted.allowed);
+    const eye=current.eyes[1];if(!("skinSamples" in eye)||!eye.skinSamples)throw Error("Measured skin samples missing");
+    const sample=eye.skinSamples[1],index=Math.round(sample[1]*2.4)*192+Math.round(sample[0]*2.4);
+    source[index*4+3]=244;
+    const denied=actualPainterPatches(source,current,pose);
+    expect(denied.eyePatches[1].box).not.toEqual(primary);expect(denied.allowed[index]).toBe(0);
+    expect(mask(source,current,pose)).toEqual(denied.allowed);
+  });
   it("matches actual163 eye/brow, mouth and fallback geometry for every compiled front/quarter pose",()=>{
     for(const anchor of anchors.frames){
       const source=original();
@@ -122,6 +141,17 @@ describe("157 actual current-cell canvas comparison shared verbatim with browser
   it("preserves orange cheeks even inside a calibrated rectangle",()=>{
     const f=fixture();f.source.set([240,170,100],f.pixel*4);f.painted=f.source.slice();f.painted[f.pixel*4]--;
     const p=compare(f.source,f.painted,pose,pose);expect(p.protectedRgbMismatch).toBe(1);expect(p.valid).toBe(false);
+  });
+  it("can replace a red native mouth while preserving orange pixels in the surrounding mouth patch",()=>{
+    const source=original(),permitted=mask(source,pose,pose)!,m=pose.mouth!;
+    const inMouth=(p:number)=>{const x=p%192/2.4,y=Math.floor(p/192)/2.4;return x>=m.bounds[0]-.6&&x<=m.bounds[2]+.6&&y>=m.bounds[1]-.6&&y<=m.bounds[3]+.6;};
+    const mouth=permitted.findIndex((v,p)=>v===2&&inMouth(p)),cheek=permitted.findIndex((v,p)=>v===2&&!inMouth(p));
+    expect(mouth).toBeGreaterThanOrEqual(0);expect(cheek).toBeGreaterThanOrEqual(0);
+    source.set([240,150,100],mouth*4);source.set([240,150,100],cheek*4);
+    const painted=source.slice();painted[mouth*4]--;
+    expect(compare(source,painted,pose,pose).valid).toBe(true);
+    painted[cheek*4]--;
+    const rejected=compare(source,painted,pose,pose);expect(rejected.protectedRgbMismatch).toBe(1);expect(rejected.valid).toBe(false);
   });
   it("cannot use a neutral reference body for a different current source cell",()=>{
     const f=fixture(),body=f.permitted.findIndex(v=>!v);f.source[body*4]=100;

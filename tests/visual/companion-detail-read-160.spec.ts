@@ -2,7 +2,7 @@ import { expect, test, type Page, type Locator } from "@playwright/test";
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
-import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
+import { COMPANION_FOOD_BOOK_ORDER as COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/collection-book-order";
 import { COMPANION_BEHAVIOR_IDS, COMPANION_COLLECTION_KEY } from "@/lib/ui/viewer-companion/collection";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
