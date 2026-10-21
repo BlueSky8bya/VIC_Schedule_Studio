@@ -13,9 +13,21 @@ import { curiousTextureCellMatches } from "./helpers/companion-curious-completio
 
 type ProbeWindow = Window & { companionDaily142?: { frames: QaObservation[]; stop: () => void } };
 const sha = (data: Buffer) => createHash("sha256").update(data).digest("hex");
-const frames = (page: Page) => page.evaluate(() => (window as ProbeWindow).companionDaily142?.frames ?? []);
-const actualPose = (frame: QaObservation) => frame.visible && frame.decoded && frame.playPaint === "matching"
+const frameBuffers = new WeakMap<Page, { cursor: number; frames: QaObservation[] }>();
+const frames = async (page: Page) => {
+  const previous = frameBuffers.get(page) ?? { cursor: 0, frames: [] };
+  const chunk = await page.evaluate(cursor => {
+    const frames = (window as ProbeWindow).companionDaily142?.frames ?? [];
+    return { cursor: frames.length, frames: frames.slice(cursor) };
+  }, previous.cursor);
+  const frames = previous.frames.concat(chunk.frames);
+  frameBuffers.set(page, { cursor: chunk.cursor, frames });
+  return frames;
+};
+const actualSource = (frame: QaObservation) => frame.visible && frame.decoded && frame.sourceClipMeasured === true
+  && frame.curiousCompletion.source === true && frame.paintedSource?.passed === true
   && curiousTextureCellMatches(frame.pose, frame.curiousCompletion.cell);
+const actualPose = (frame: QaObservation) => actualSource(frame) && frame.playPaint === "matching";
 const firstBow = (observed: QaObservation[]) => {
   const start = observed.findIndex(frame => frame.state === "play" && frame.play === "bow");
   if (start < 0) return [];
@@ -73,7 +85,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`156 ${surf
     const home = await openCompanionHome(page); await placeCompanionOnHomeFloor(page);
     await chooseCompanionPersonality(page, "performer");
     expect(cold, "no bow packet may be warm before autonomous observation").toEqual([]);
-    await startCompanionQaProbe(page);
+    frameBuffers.delete(page);
+    await startCompanionQaProbe(page, { sampleIntervalMs: 40 });
     await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
     await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
@@ -85,7 +98,9 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`156 ${surf
       if (!bow.length) return false;
       const rows = bow.filter(frame => actualPose(frame) && companionSpriteMetadata.rows[29].includes(frame.pose));
       const recovery = bow.filter(frame => actualPose(frame) && companionSpriteMetadata.rows[23].includes(frame.pose));
-      return rows.length >= 3 && recovery.length >= 2 && observed.some(frame => frame.at > recovery.at(-1)!.at + 100 && frame.play !== "bow" && ["walk", "jump", "eat", "sleep"].includes(frame.state));
+      return rows.length >= 3 && recovery.length >= 2 && observed.some(frame => actualSource(frame)
+        && frame.at > recovery.at(-1)!.at + 100 && frame.at <= recovery.at(-1)!.at + 10_000
+        && frame.play !== "bow" && ["walk", "jump", "eat", "sleep"].includes(frame.state));
     }, { timeout: 90_000, intervals: [100] }).toBe(true);
     const observed = await frames(page), bow = firstBow(observed);
     const actual = bow.filter(actualPose);
@@ -104,7 +119,9 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`156 ${surf
     await Promise.allSettled(proof.pending);
     const directory = info.outputPath("cold-bow-presentation-156"); mkdirSync(directory, { recursive: true });
     const raw = resolve(directory, "raw.json");
-    writeFileSync(raw, JSON.stringify({ schemaVersion: 1, kind: "actual-cold-play-presentation-156", surface, status: info.status, completed,
+    const boundaryClean = [proof.errors,proof.rejected,proof.mutations,proof.liveReads].every(rows => rows.length === 0);
+    const chunksMatch = proof.chunks.length > 0 && proof.chunks.every(chunk => chunk.local === chunk.served);
+    writeFileSync(raw, JSON.stringify({ schemaVersion: 1, kind: "actual-cold-play-presentation-156", surface, status: completed && boundaryClean && chunksMatch && info.status === "passed" ? "passed" : "failed", statusAtFinally: info.status, completed,
       sourceBinding: { path: resolve(bindingPath), sha256: sha(sourceBytes), contentDigest: binding.contentDigest }, buildId: proof.build,
       proof: { ...proof, pending: undefined }, cold, frames: observed,
       limitation: "Three real native surface samples of one finite bow under450ms immutable local packet latency. Not every pose/packet or all nine daily idea adoption. Trace/video still require independent review." }, null, 2));

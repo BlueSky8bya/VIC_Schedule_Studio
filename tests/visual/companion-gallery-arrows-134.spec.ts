@@ -42,25 +42,55 @@ const seenItems = (page: Page, kind: BookKind) => page.evaluate(({ kind, key }) 
   return kind === "food" ? seen.foods : kind === "wardrobe" ? seen.accessories : [...seen.behaviors.map(id => `behavior:${id}`), ...seen.situations.map(id => `moment:${id}`)];
 }, { kind, key: COMPANION_COLLECTION_KEY });
 
+type DotBounds134 = { x:number;right:number;y:number;bottom:number;width:number;height:number };
+/** Preserve DOM page order across actual wrapped rows. The tolerance is the
+ * original0.1 CSS px; neither same-row overlap nor backwards rows are allowed. */
+function dotLayoutIssues134(dots: readonly DotBounds134[]) {
+  const issues:string[]=[];
+  const valid=(dot:DotBounds134)=>[dot.x,dot.right,dot.y,dot.bottom,dot.width,dot.height].every(Number.isFinite)
+    &&dot.width>0&&dot.height>0&&dot.right>dot.x&&dot.bottom>dot.y
+    &&Math.abs(dot.right-dot.x-dot.width)<=.1&&Math.abs(dot.bottom-dot.y-dot.height)<=.1;
+  for(let i=0;i<dots.length;i++){
+    const dot=dots[i];if(!valid(dot)){issues.push(`invalid:${i}`);continue;}
+    const previous=dots[i-1];
+    if(previous&&valid(previous)){
+      const verticalOverlap=Math.min(previous.bottom,dot.bottom)-Math.max(previous.y,dot.y);
+      if(verticalOverlap>.1 ? previous.right>dot.x+.1 : previous.bottom>dot.y+.1)issues.push(`order:${i-1}:${i}`);
+    }
+    for(let j=0;j<i;j++){
+      const other=dots[j];if(!valid(other))continue;
+      if(Math.min(other.right,dot.right)-Math.max(other.x,dot.x)>.1
+        &&Math.min(other.bottom,dot.bottom)-Math.max(other.y,dot.y)>.1)issues.push(`overlap:${j}:${i}`);
+    }
+  }
+  return issues;
+}
+
 async function assertDots(book: Locator, unread: number[], size: number) {
   const rail = book.getByRole("slider"), page = Number(await rail.inputValue()) - 1, maximum = Number(await rail.getAttribute("max"));
   await expect(book.locator(".rhh-collection-page-bar")).toHaveCount(0);
   const dots = book.locator(".rhh-collection-page-dots > span[data-page]"); await expect(dots).toHaveCount(maximum);
-  const styles = await dots.evaluateAll(nodes => nodes.map(node => { const s = getComputedStyle(node), r = node.getBoundingClientRect(); return { page: Number((node as HTMLElement).dataset.page), unread: node.hasAttribute("data-unread"), current: node.getAttribute("aria-current") === "page", background: s.backgroundColor, image: s.backgroundImage, shadow: s.boxShadow, opacity: Number(s.opacity), x: r.x, right: r.right, width: r.width }; }));
+  const styles = await dots.evaluateAll(nodes => nodes.map(node => { const s = getComputedStyle(node), r = node.getBoundingClientRect(); return { page: Number((node as HTMLElement).dataset.page), unread: node.hasAttribute("data-unread"), current: node.getAttribute("aria-current") === "page", background: s.backgroundColor, image: s.backgroundImage, shadow: s.boxShadow, opacity: Number(s.opacity), x: r.x, right: r.right, width: r.width, y: r.y, bottom: r.bottom, height: r.height }; }));
   const expected = new Set(unread.map(index => Math.floor(index / size)));
   expect(styles.map(dot => dot.page)).toEqual(Array.from({ length: maximum }, (_, index) => index));
   expect(styles.filter(dot => dot.unread).map(dot => dot.page)).toEqual([...expected].sort((a, b) => a - b));
   expect(styles.filter(dot => dot.current).map(dot => dot.page)).toEqual([page]);
-  const current = styles[page], warm = styles.find(dot => dot.unread && !dot.current), gray = styles.find(dot => !dot.unread && !dot.current);
+  const current = styles[page], gray = styles.find(dot => !dot.unread && !dot.current);
   if (!current.unread) { const rgb = current.background.match(/[\d.]+/g)!.map(Number); expect(rgb[2]).toBeGreaterThan(rgb[0]); }
-  if (warm) { const c = warm.background.match(/[\d.]+/g)!.map(Number); expect(c[0]).toBeGreaterThan(c[2]); expect(warm.opacity).toBe(1); expect(warm.background).not.toBe(current.background); if (gray) expect(warm.background).not.toBe(gray.background); }
+  for (const warm of styles.filter(dot => dot.unread && !dot.current)) { const c = warm.background.match(/[\d.]+/g)!.map(Number); expect(c[0]).toBeGreaterThan(c[2]); expect(warm.opacity).toBe(1); expect(warm.background).not.toBe(current.background); if (gray) expect(warm.background).not.toBe(gray.background); }
   if (current.unread) { const stops = [...current.image.matchAll(/rgba?\(([^)]+)\)/g)].map(match => match[1].match(/[\d.]+/g)!.map(Number)), colors = stops.filter((color, index) => !index || color.some((channel, at) => channel !== stops[index - 1][at])); expect(current.image).toContain("linear-gradient"); expect(colors).toHaveLength(2); expect(colors[0][2]).toBeGreaterThan(colors[0][0]); expect(colors[1][0]).toBeGreaterThan(colors[1][2]); }
-  for (const [index, dot] of styles.entries()) { expect(dot.shadow).toBe("none"); expect(dot.width).toBeGreaterThan(0); if (index) expect(styles[index - 1].right).toBeLessThanOrEqual(dot.x + .1); }
+  for (const dot of styles) { expect(dot.shadow).toBe("none"); expect(dot.width).toBeGreaterThan(0); expect(dot.height).toBeGreaterThan(0); }
+  expect(dotLayoutIssues134(styles), "all dots stay separate and preserve actual row-major page order").toEqual([]);
   if (expected.size) { const description = await rail.getAttribute("aria-describedby"); expect(description).toBeTruthy(); await expect(book.locator(`[id="${description}"]`)).toHaveText(`새 발견이 남은 페이지: ${[...expected].sort((a, b) => a - b).map(index => index + 1).join(", ")}`); } else await expect(rail).not.toHaveAttribute("aria-describedby");
   const box = (await rail.boundingBox())!; expect(box.width).toBeGreaterThanOrEqual(43.9); expect(box.height).toBeGreaterThanOrEqual(43.9);
   await expect(rail).toHaveCSS("opacity", "0"); await expect(rail).toHaveAttribute("aria-valuetext", `${maximum}페이지 중 ${page + 1}페이지`);
   const dotBox = (await dots.first().locator("..").boundingBox())!, bookBox = (await book.boundingBox())!;
   expect(dotBox.x).toBeGreaterThanOrEqual(bookBox.x); expect(dotBox.x + dotBox.width).toBeLessThanOrEqual(bookBox.x + bookBox.width);
+  expect(dotBox.y).toBeGreaterThanOrEqual(bookBox.y); expect(dotBox.y + dotBox.height).toBeLessThanOrEqual(bookBox.y + bookBox.height);
+  for (const dot of styles) {
+    expect(dot.x).toBeGreaterThanOrEqual(dotBox.x - .1); expect(dot.right).toBeLessThanOrEqual(dotBox.x + dotBox.width + .1);
+    expect(dot.y).toBeGreaterThanOrEqual(dotBox.y - .1); expect(dot.bottom).toBeLessThanOrEqual(dotBox.y + dotBox.height + .1);
+  }
   return styles;
 }
 
