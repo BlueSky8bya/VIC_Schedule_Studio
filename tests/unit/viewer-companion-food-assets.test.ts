@@ -9,7 +9,7 @@ import { CompanionCollectionArt } from "@/components/poster/viewer-companion/com
 import { CompanionFruit } from "@/components/poster/viewer-companion/companion-fruit";
 import { COMPANION_FOOD_KINDS, LEGACY_COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 import { COMPANION_COLLECTION_ATLASES, COMPANION_COLLECTION_FRAMES, getCompanionCollectionArtFrame } from "@/lib/ui/viewer-companion/collection-art";
-import { COMPANION_BEHAVIOR_IDS } from "@/lib/ui/viewer-companion/collection";
+import { COMPANION_LEGACY_BEHAVIOR_IDS } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_ACCESSORY_IDS } from "@/lib/ui/viewer-companion/gifts";
 import { COMPANION_WEARABLE_IDS } from "@/lib/ui/viewer-companion/accessory-catalog";
 import { COMPANION_SITUATION_IDS } from "@/lib/ui/viewer-companion/moments";
@@ -105,8 +105,8 @@ describe("native106 paired food collection art", () => {
   });
 
   it("registers every observed behavior, four accessory views and six whole book/gift cells", async () => {
-    expect(Object.keys(COMPANION_COLLECTION_FRAMES["behavior-stamp"])).toEqual(COMPANION_BEHAVIOR_IDS.filter(id => id !== "odd-food-reaction"));
-    for (const id of COMPANION_BEHAVIOR_IDS) expect(getCompanionCollectionArtFrame("behavior-stamp", id)?.id).toBe(id);
+    expect(Object.keys(COMPANION_COLLECTION_FRAMES["behavior-stamp"])).toEqual(COMPANION_LEGACY_BEHAVIOR_IDS.filter(id => id !== "odd-food-reaction"));
+    for (const id of COMPANION_LEGACY_BEHAVIOR_IDS) expect(getCompanionCollectionArtFrame("behavior-stamp", id)?.id).toBe(id);
     expect(getCompanionCollectionArtFrame("behavior-stamp", "odd-food-reaction")).toMatchObject({ width: 192, height: 192, atlasWidth: 1536, atlasHeight: 384 });
     const views = ["front", "quarter", "side", "back"] as const;
     expect(COMPANION_ACCESSORY_IDS.slice(0, 6)).toEqual([...V106_ACCESSORIES]);
@@ -234,7 +234,7 @@ describe("additive107 native collection assets", () => {
     expect(Object.keys(COMPANION_COLLECTION_FRAMES.food)).toEqual([...COMPANION_FOOD_KINDS]);
     expect(Object.keys(COMPANION_COLLECTION_FRAMES["food-stamp"])).toEqual([...COMPANION_FOOD_KINDS]);
     expect(Object.keys(COMPANION_COLLECTION_FRAMES["situation-stamp"])).toEqual([...COMPANION_SITUATION_IDS]);
-    expect(Object.keys(COMPANION_COLLECTION_FRAMES["behavior-stamp"])).toEqual(COMPANION_BEHAVIOR_IDS.filter(id => id !== "odd-food-reaction"));
+    expect(Object.keys(COMPANION_COLLECTION_FRAMES["behavior-stamp"])).toEqual(COMPANION_LEGACY_BEHAVIOR_IDS.filter(id => id !== "odd-food-reaction"));
     for (const [index, id] of COMPANION_FOOD_KINDS.slice(36, 60).entries()) {
       const food = getCompanionCollectionArtFrame("food", id)!, stamp = getCompanionCollectionArtFrame("food-stamp", id)!;
       expect(stamp.index).toBe(index); expect(stamp.src).toBe("/companion/collection/food-stamps-107-v1.webp");

@@ -149,6 +149,18 @@ const runRecipe = (director: ReturnType<typeof createCompanionPersonalityDirecto
 };
 
 describe("137 one personality scene director", () => {
+  it("emits a full-scene receipt once, never for an offer, first beat, stale ACK or cancellation", () => {
+    const recipe: PersonalitySceneRecipe = { id: "memory-protocol", label: "Memory protocol", personality: "balanced", major: false, triggers: ["free"], steps: [{ kind: "pose", pose: "bow" }, { kind: "pose", pose: "groom" }] };
+    const receipts: unknown[] = [], director = createCompanionPersonalityDirector([recipe], () => 0, undefined, undefined, receipt => receipts.push(receipt)), scene = input("balanced");
+    const entry = director.next(scene)!; director.complete(entry.meta); scene.now += entry.action!.duration; scene.world.x += 24;
+    const first = director.next(scene)!; expect(receipts).toEqual([]);
+    scene.now += first.action!.duration; director.complete(first.meta); expect(receipts).toEqual([]);
+    const last = director.next(scene)!; director.complete(first.meta); expect(receipts).toEqual([]);
+    scene.now += last.action!.duration; director.complete(last.meta); director.complete(last.meta);
+    expect(receipts).toEqual([{ id: recipe.id, success: true, abbreviated: false }]);
+    scene.now += 10000; scene.world.x += 24; director.next(scene); director.cancel();
+    expect(receipts).toHaveLength(1);
+  });
   it.each(COMPANION_PERSONALITIES)("offers %s preparation on its first safe choice, separate from scene success", personality => {
     const director = createCompanionPersonalityDirector(), scene = input(personality);
     const proposal = director.next(scene)!;
@@ -463,7 +475,8 @@ describe("137 one personality scene director", () => {
   it.each(COMPANION_PERSONALITY_SCENES)("executes $id with actual source context, proved route endpoints and explicit effect ACKs", recipe => {
     const predecessors = recipe.id === "P05" ? ["P11"] : recipe.id === "B02" ? ["B07", "B12"] : [];
     const recipes = [...predecessors.map(id => COMPANION_PERSONALITY_SCENES.find(item => item.id === id)!), recipe];
-    const director = createCompanionPersonalityDirector(recipes), scene = matrixInput(recipe);
+    const receipts: Array<{id:string;success:true;abbreviated:false}> = [];
+    const director = createCompanionPersonalityDirector(recipes, undefined, undefined, undefined, receipt => receipts.push(receipt)), scene = matrixInput(recipe);
     const entry = director.next(scene)!; expect(entry.meta.id).toBe(`entry-${recipe.personality}`); director.complete(entry.meta);
     scene.now += entry.action!.duration;
     // This positive protocol host starts after a real modeled preparation
@@ -477,5 +490,6 @@ describe("137 one personality scene director", () => {
     expect(before.has(recipe.id)).toBe(false);
     expect(director.completed()).toContain(recipe.id);
     expect(effects.length).toBeGreaterThan(0);
+    expect(receipts.filter(receipt => receipt.id === recipe.id)).toEqual([{ id: recipe.id, success: true, abbreviated: false }]);
   });
 });

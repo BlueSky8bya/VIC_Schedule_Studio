@@ -8,7 +8,7 @@ import { companionFoodAftertasteDuration, sampleCompanionFoodAftertaste } from "
 type PreviewClip = Readonly<{ row: number; play?: CompanionPlay; aftertaste?: true }>;
 /** A discovered gesture exposes only its own row, never the other gestures
  * that happen to share its authored world sequence or texture packet. */
-const clips: Readonly<Record<CompanionBehaviorId, PreviewClip>> = Object.freeze({
+const clips: Readonly<Partial<Record<CompanionBehaviorId, PreviewClip>>> = Object.freeze({
   "ask-petting": { row: 33, play: "ask-petting" },
   "lean-nuzzle": { row: 34, play: "lean-nuzzle" },
   "paper-knead": { row: 35, play: "cozy-nest" },
@@ -55,6 +55,7 @@ export function chooseCompanionPreviewBehavior(found: readonly string[], previou
 
 export function companionPreviewDuration(id: CompanionBehaviorId): number {
   const clip = clips[id];
+  if (!clip) return 0;
   if (clip.aftertaste) return companionFoodAftertasteDuration("retch");
   return clip.play ? COMPANION_PLAY_TIMING[clip.play].beats.find(beat => beat.row === clip.row)!.duration : COMPANION_CLIP_TIMING.find(timing => timing.row === clip.row)!.duration!;
 }
@@ -62,6 +63,7 @@ export function companionPreviewDuration(id: CompanionBehaviorId): number {
 export function sampleCompanionPreview(id: CompanionBehaviorId | null, elapsed: number): CompanionPlayPose {
   if (!id || !Number.isFinite(elapsed) || elapsed < 0 || elapsed >= companionPreviewDuration(id)) return neutral();
   const clip = clips[id];
+  if (!clip) return neutral();
   if (clip.aftertaste) return { ...sampleCompanionFoodAftertaste("retch", elapsed / companionPreviewDuration(id)), row: clip.row, beat: "play" };
   if (!clip.play) return { ...neutral(), row: clip.row, phase: elapsed / companionPreviewDuration(id), beat: "play" };
   const timing = COMPANION_PLAY_TIMING[clip.play];

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type RefObject } from "react";
+import { COMPANION_PORTRAIT_READY_EVENT } from "@/lib/ui/viewer-companion/memory-catalog";
 
 /** Reading the selected picture/story acknowledges that item. Tiles merely
  * passing through the page are not read, and no synthetic click is emitted. */
@@ -17,6 +18,7 @@ export function useCompanionDetailRead(detail: RefObject<HTMLDivElement | null>,
       const rect = element.getBoundingClientRect(), style = getComputedStyle(element);
       if (rect.width < 24 || rect.height < 24 || style.visibility !== "visible" || Number(style.opacity) === 0) return false;
       if ([...element.querySelectorAll<HTMLImageElement>("img")].some(image => !image.complete || !image.naturalWidth)) return false;
+      if ([...element.querySelectorAll<HTMLCanvasElement>("canvas[data-collection-art-id]")].some(canvas => canvas.dataset.portraitReady !== "true")) return false;
       const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
       return hit !== null && element.contains(hit);
     };
@@ -34,9 +36,11 @@ export function useCompanionDetailRead(detail: RefObject<HTMLDivElement | null>,
     window.addEventListener("focus", schedule); window.addEventListener("blur", cancel);
     document.addEventListener("visibilitychange", schedule); document.addEventListener("scroll", schedule, true);
     element.addEventListener("load", schedule, true);
+    element.addEventListener(COMPANION_PORTRAIT_READY_EVENT, schedule, true);
     return () => {
       cancel(); observer.disconnect(); window.removeEventListener("focus", schedule); window.removeEventListener("blur", cancel);
       document.removeEventListener("visibilitychange", schedule); document.removeEventListener("scroll", schedule, true); element.removeEventListener("load", schedule, true);
+      element.removeEventListener(COMPANION_PORTRAIT_READY_EVENT, schedule, true);
     };
   }, [active, identity, detail]);
 }

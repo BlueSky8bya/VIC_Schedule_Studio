@@ -3,6 +3,9 @@ import { getCompanionCollectionArtFrame, type CompanionCollectionArtKind } from 
 import { getCompanionAccessoryArtFrame } from "@/lib/ui/viewer-companion/accessory-art";
 import { COMPANION_FOOD_RARITY, isCompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import type { CompanionCollectionRarity } from "@/lib/ui/viewer-companion/collection-rarity";
+import { companionNewMemory } from "@/lib/ui/viewer-companion/memory-catalog";
+import type { CompanionExpressionId } from "@/lib/ui/viewer-companion/expressions";
+import { CompanionMemoryPortrait } from "./companion-memory-portrait";
 
 /** Owner-selected watercolor backings; live specimens remain separate and contained. */
 const sealTiers = {
@@ -25,6 +28,8 @@ export function CompanionCollectionSeal({ children, rarity = "common", kind = "t
 /** One decorative local atlas cell. Its actual button/label supplies meaning;
  * callers own size, and runtime foods never request the collection stamps. */
 export function CompanionCollectionArt({ kind, id, className }: { kind: CompanionCollectionArtKind; id?: string; className?: string }) {
+  const memory = kind === "behavior-stamp" ? companionNewMemory(id) : undefined;
+  if (memory?.family === "expression") return <CompanionMemoryPortrait id={memory.id.slice("expression:".length) as CompanionExpressionId} className={className} />;
   // A food stamp is a paper seal behind the exact live food pixels. Keeping
   // the whole square food cell and a square viewport preserves its silhouette,
   // including future explicitly registered food replacements.

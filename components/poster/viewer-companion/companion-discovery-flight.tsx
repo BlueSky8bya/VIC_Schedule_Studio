@@ -5,6 +5,7 @@ import { REDUCE_MOTION_EVENT } from "@/lib/ui/motion";
 import { companionDiscoveryFlightPlan, createCompanionDiscoveryFlightGate, validCompanionDiscoveryNotice, type CompanionDiscoveryNotice } from "@/lib/ui/viewer-companion/discovery-flight";
 import { CompanionCollectionArt } from "./companion-collection-art";
 import { CompanionToyArt } from "./companion-toy-art";
+import { COMPANION_PORTRAIT_READY_EVENT } from "@/lib/ui/viewer-companion/memory-catalog";
 import "./companion-discovery-flight.css";
 
 export type { CompanionDiscoveryNotice } from "@/lib/ui/viewer-companion/discovery-flight";
@@ -48,9 +49,15 @@ export function CompanionDiscoveryFlight({ notice, enabled, onComplete }: { noti
     // are never mounted or prefetched, and canceled decodes cannot replay.
     const image = node.querySelector<HTMLImageElement>("img"), svg = node.querySelector("image"), stamp = node.querySelector<HTMLElement>("[data-collection-art]");
     const src = image?.currentSrc || image?.src || svg?.getAttribute("href") || (stamp && win.getComputedStyle(stamp).backgroundImage.match(/url\(["']?(.*?)["']?\)/)?.[1]);
-    if (src) { const picture = new win.Image(); picture.src = src; if (typeof picture.decode === "function") void picture.decode().then(start, finish); else start(); }
+    const portrait = node.querySelector<HTMLCanvasElement>("canvas[data-collection-art-id]");
+    const portraitReady = () => { if (portrait?.dataset.portraitReady === "true") start(); else finish(); };
+    if (portrait) {
+      if (portrait.dataset.portraitReady !== undefined) portraitReady();
+      else portrait.addEventListener(COMPANION_PORTRAIT_READY_EVENT, portraitReady, { once: true });
+    }
+    else if (src) { const picture = new win.Image(); picture.src = src; if (typeof picture.decode === "function") void picture.decode().then(start, finish); else start(); }
     else finish();
-    return () => { document.removeEventListener("visibilitychange", boundary); events.forEach(event => win.removeEventListener(event, boundary)); win.removeEventListener("storage", storage); finish(); };
+    return () => { portrait?.removeEventListener(COMPANION_PORTRAIT_READY_EVENT, portraitReady); document.removeEventListener("visibilitychange", boundary); events.forEach(event => win.removeEventListener(event, boundary)); win.removeEventListener("storage", storage); finish(); };
   }, [notice, enabled]);
   if (!notice || !validCompanionDiscoveryNotice(notice)) return null;
   return <span aria-hidden="true" className="vc-discovery-flight" ref={host} hidden={!enabled} data-discovery-kind={notice.kind}>

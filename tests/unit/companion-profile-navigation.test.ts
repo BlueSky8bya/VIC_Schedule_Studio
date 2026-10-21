@@ -3,7 +3,8 @@ import type { KeyboardEvent, ReactElement, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { COMPANION_PERSONALITIES, COMPANION_PERSONALITY_NAMES, DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_FOOD_BOOK_ORDER as COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/collection-book-order";
-import { COMPANION_BEHAVIOR_IDS, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
+import { COMPANION_BEHAVIOR_IDS, COMPANION_LEGACY_BEHAVIOR_IDS, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
+import { COMPANION_MEMORY_BOOK } from "@/lib/ui/viewer-companion/memory-book-order";
 import { COMPANION_SITUATION_IDS } from "@/lib/ui/viewer-companion/moments";
 import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { getCompanionBehaviorProfile } from "@/lib/ui/viewer-companion/behavior-profile";
@@ -331,7 +332,7 @@ describe("actual shared profile navigation callbacks", () => {
       if (next.props.disabled) break;
       click(next); await render();
     }
-    expect(kinds).toEqual([...COMPANION_BEHAVIOR_IDS.map(() => "behavior"), ...COMPANION_SITUATION_IDS.map(() => "moment")]);
+    expect(kinds).toEqual(COMPANION_MEMORY_BOOK.map(item => item.kind));
     expect(indexes).toEqual(Array.from({ length: COMPANION_BEHAVIOR_IDS.length + COMPANION_SITUATION_IDS.length }, (_, index) => index));
     expect(nodes(tree).some(node => node.props["aria-label"] === "추억 종류")).toBe(false);
   });
@@ -349,22 +350,22 @@ describe("actual shared profile navigation callbacks", () => {
     click(find(node => node.props["data-act"] === "companion-collection-category" && node.props["data-act-opt"] === "behavior")); await render();
     const memoryTiles = () => nodes(tree).filter(node => node.props["data-collection-index"] !== undefined);
     const memory = (index: number) => memoryTiles().find(node => node.props["data-collection-index"] === index)!;
-    for (let page = 0; !memory(COMPANION_BEHAVIOR_IDS.length - 1); page++) {
+    for (let page = 0; !memory(COMPANION_LEGACY_BEHAVIOR_IDS.length - 1); page++) {
       expect(page).toBeLessThan(COMPANION_BEHAVIOR_IDS.length);
       click(find(node => node.props["data-act"] === "companion-collection-page" && node.props["data-act-opt"] === "next")); await render();
     }
     harness.activity.mockClear();
-    const firstSituationBelow = COMPANION_BEHAVIOR_IDS.length - 1 + 4;
-    key(memory(COMPANION_BEHAVIOR_IDS.length - 1), "ArrowDown"); await render();
+    const firstSituationBelow = COMPANION_LEGACY_BEHAVIOR_IDS.length - 1 + 4;
+    key(memory(COMPANION_LEGACY_BEHAVIOR_IDS.length - 1), "ArrowDown"); await render();
     expect(memory(firstSituationBelow).props["aria-pressed"]).toBe(true);
     key(memory(firstSituationBelow), "ArrowUp"); await render();
-    expect(memory(COMPANION_BEHAVIOR_IDS.length - 1).props["aria-pressed"]).toBe(true);
+    expect(memory(COMPANION_LEGACY_BEHAVIOR_IDS.length - 1).props["aria-pressed"]).toBe(true);
     key(memoryTiles()[0], "End"); await render();
     expect(memoryTiles().at(-1)?.props["aria-pressed"]).toBe(true);
     expect(harness.activity.mock.calls).toEqual([
       ["ui.click", { target: "companion-collection-inspect#moment" }],
       ["ui.click", { target: "companion-collection-inspect#behavior" }],
-      ["ui.click", { target: "companion-collection-inspect#moment" }],
+      ["ui.click", { target: "companion-collection-inspect#behavior" }],
     ]);
   });
 });

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { COMPANION_BEHAVIOR_IDS, COMPANION_COLLECTION_KEY, createCompanionCollectionStore, equipCompanionAccessory, getCompanionRecentFood, loadCompanionCollection, normalizeCompanionCollection, observedCompanionBehavior, openCompanionGift, recordCompanionConsumedFood, subscribeCompanionCollection, subscribeCompanionConsumedFood, type CompanionBehaviorObservation } from "@/lib/ui/viewer-companion/collection";
+import { COMPANION_BEHAVIOR_IDS, COMPANION_LEGACY_BEHAVIOR_IDS, COMPANION_COLLECTION_KEY, createCompanionCollectionStore, equipCompanionAccessory, getCompanionRecentFood, loadCompanionCollection, normalizeCompanionCollection, observedCompanionBehavior, openCompanionGift, recordCompanionConsumedFood, subscribeCompanionCollection, subscribeCompanionConsumedFood, type CompanionBehaviorObservation } from "@/lib/ui/viewer-companion/collection";
 import { advanceCompanionGifts, companionGiftChance, COMPANION_ACCESSORY_IDS, COMPANION_WEARABLE_IDS, COMPANION_GIFT_ACTIVE_MS, normalizeCompanionGifts } from "@/lib/ui/viewer-companion/gifts";
 import { COMPANION_ACCESSORIES } from "@/lib/ui/viewer-companion/accessory-catalog";
 import { resetCompanionHabits } from "@/lib/ui/viewer-companion/care";
@@ -72,7 +72,7 @@ describe("bounded local discoveries", () => {
     expect(store.recordBehavior(observation({ requestedRow: 23 }))).toBe(false);
     expect(store.recordBehavior(observation({ requestedRow: 23, foodAftertaste: true, decoded: false }))).toBe(false);
     expect(store.recordBehavior(observation({ requestedRow: 23, foodAftertaste: true }))).toBe(true);
-    expect(store.load().behaviors).toEqual(COMPANION_BEHAVIOR_IDS);
+    expect(store.load().behaviors).toEqual(COMPANION_LEGACY_BEHAVIOR_IDS);
   });
 
   it("does not turn an ordinary happy face or cold fallback into the body cheer discovery", () => {

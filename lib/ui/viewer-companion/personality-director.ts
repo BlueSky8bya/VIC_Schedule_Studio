@@ -65,7 +65,7 @@ const restExpression = (step: SceneBeat) => step.kind === "sleep"
 
 /** One finite intention on the existing world clock. No DOM, timer, storage,
  * audio, learning, analytics or speculative object mutation happens here. */
-export function createCompanionPersonalityDirector(recipes: readonly PersonalitySceneRecipe[] = COMPANION_PERSONALITY_SCENES, rng: () => number = Math.random, outsideObserver?:CompanionOutsideObserver, toyAdmissionObserver?: CompanionToyAdmissionObserver) {
+export function createCompanionPersonalityDirector(recipes: readonly PersonalitySceneRecipe[] = COMPANION_PERSONALITY_SCENES, rng: () => number = Math.random, outsideObserver?:CompanionOutsideObserver, toyAdmissionObserver?: CompanionToyAdmissionObserver, onCompleted?: (receipt: { id: string; success: true; abbreviated: false }) => void) {
   const outsideDiagnostic=boundedCompanionOutsideObserver(outsideObserver);
   const approvedRecipes = recipes.filter(recipe => recipe.id.startsWith("D157-")).slice(0, 9);
   const toyAdmissionSeen = toyAdmissionObserver ? new Set<string>() : undefined;
@@ -202,7 +202,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
         lastCompleted = active.recipe.id;
         // Real chores may finish after an unneeded decorative tail is omitted.
         // Such a partial scene is not a completion of every authored beat.
-        if (!active.abbreviated) { completed.push(lastCompleted); if (completed.length > 12) completed.shift(); if (lastCompleted.startsWith("D157-")) introducedIdeas.add(lastCompleted); }
+        if (!active.abbreviated) { completed.push(lastCompleted); if (completed.length > 12) completed.shift(); if (lastCompleted.startsWith("D157-")) introducedIdeas.add(lastCompleted); onCompleted?.({ id: lastCompleted, success: true, abbreviated: false }); }
         const work = active.recipe.steps.find(step => ["toy", "food", "tv", "wash", "sleep", "hide"].includes(step.kind));
         const purpose = work ? work.kind === "toy" ? `${work.kind}:${work.mode}` : work.kind === "food" ? `${work.kind}:${work.mode}` : work.kind : active.recipe.personality === "affectionate" ? "social" : "expression";
         purposes.push(purpose); if (purposes.length > 4) purposes.shift();

@@ -12,17 +12,14 @@ import { CompanionCollectionPager } from "./companion-collection-pager";
 import { CompanionToyDiscovery } from "./companion-toy-discovery";
 import { CompanionCollectionArt } from "@/components/poster/viewer-companion/companion-collection-art";
 import { companionCollectionPage, onCollectionKey, useCompanionCollectionLayout } from "./companion-collection-navigation";
-import { COMPANION_BEHAVIOR_HINTS, COMPANION_BEHAVIOR_IDS, COMPANION_BEHAVIOR_NAMES, acknowledgeCompanionCollection, getCompanionUnreadCounts, isCompanionCollectionUnread, getCompanionRecentFood, subscribeCompanionConsumedFood, type CompanionCollection, type CompanionConsumedFood } from "@/lib/ui/viewer-companion/collection";
-import { COMPANION_SITUATION_HINTS, COMPANION_SITUATION_IDS, COMPANION_SITUATION_NAMES } from "@/lib/ui/viewer-companion/moments";
+import { acknowledgeCompanionCollection, getCompanionUnreadCounts, isCompanionCollectionUnread, getCompanionRecentFood, subscribeCompanionConsumedFood, type CompanionCollection, type CompanionConsumedFood } from "@/lib/ui/viewer-companion/collection";
+import { COMPANION_MEMORY_BOOK as memories } from "@/lib/ui/viewer-companion/memory-book-order";
 import { emitCompanionSceneSignal } from "@/lib/ui/viewer-companion/scene-signals";
 import { useCompanionDetailRead } from "./use-companion-detail-read";
 import { COMPANION_FOOD_FACTS } from "@/lib/ui/viewer-companion/food-facts";
 import { companionFoodChance, COMPANION_FOOD_NAMES, COMPANION_FOOD_RARITY, COMPANION_FOOD_RARITY_NAMES, type CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 
-const memories = [
-  ...COMPANION_BEHAVIOR_IDS.map(id => ({ id, kind: "behavior" as const, name: COMPANION_BEHAVIOR_NAMES[id], hint: COMPANION_BEHAVIOR_HINTS[id] })),
-  ...COMPANION_SITUATION_IDS.map(id => ({ id, kind: "moment" as const, name: COMPANION_SITUATION_NAMES[id], hint: COMPANION_SITUATION_HINTS[id] })),
-];
+
 
 export function CompanionDiscovery({ collection, active, tastes = null }: { collection: CompanionCollection | null; active: boolean; tastes?: CompanionTastes | null }) {
   const [category, setCategory] = useState<"food" | "toy" | "behavior">("food");
@@ -105,7 +102,7 @@ export function CompanionDiscovery({ collection, active, tastes = null }: { coll
       </div>
     </div> : <div ref={detail} aria-live="polite" className="rhh-collection-detail rhh-memory-detail rhh-collection-gallery-detail" data-found={memoryFound(selectedMemory) || undefined}>
       <div aria-hidden="true" className="rhh-collection-art-stage" key={selectedMemory.kind + selectedMemory.id}>{memoryFound(selectedMemory) ? <CompanionCollectionArt kind={selectedMemory.kind === "moment" ? "situation-stamp" : "behavior-stamp"} id={selectedMemory.id} /> : <span className="rhh-memory-silhouette" />}</div>
-      <div className="rhh-collection-detail-copy"><span className="rhh-collection-overline">함께한 순간</span><div className="rhh-collection-detail-title"><strong>{memoryFound(selectedMemory) ? selectedMemory.name : "???"}</strong></div><p>{memoryFound(selectedMemory) ? selectedMemory.hint : "아직 발견하지 못했어요."}</p>{memoryFound(selectedMemory) && <span className="rhh-collection-keepsake"><Sparkles aria-hidden="true" size={14} />{selectedMemory.kind === "moment" ? "특별한 순간" : "재롱"}</span>}</div>
+      <div className="rhh-collection-detail-copy"><span className="rhh-collection-overline">함께한 순간</span><div className="rhh-collection-detail-title"><strong>{memoryFound(selectedMemory) ? selectedMemory.name : "???"}</strong></div><p>{memoryFound(selectedMemory) ? selectedMemory.hint : "아직 발견하지 못했어요."}</p>{memoryFound(selectedMemory) && <span className="rhh-collection-keepsake"><Sparkles aria-hidden="true" size={14} />{selectedMemory.family === "expression" ? "표정" : selectedMemory.family === "pose" ? "포즈" : selectedMemory.family === "activity" ? "생활 행동" : selectedMemory.kind === "moment" ? "특별한 순간" : "재롱"}</span>}</div>
     </div>}
     <ul aria-label={category === "food" ? "냠냠 도감" : "추억 도감"} className={"rhh-collection-grid " + (category === "food" ? "rhh-food-grid" : "rhh-behavior-grid")} ref={grid} style={{ "--collection-columns": layout.columns, "--collection-rows": layout.rows } as CSSProperties}>
       {category === "food" ? COMPANION_FOOD_BOOK_ORDER.slice(foodPage.offset, foodPage.end).map((food, localIndex) => {

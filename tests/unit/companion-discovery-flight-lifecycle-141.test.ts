@@ -41,6 +41,17 @@ beforeEach(async () => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("141 discovery presentation lifecycle; stub DOM, no runtime experience injection", () => {
+  it("waits for a native expression canvas and cancels its late ready event without replay", () => {
+    const portrait = Object.assign(new EventTarget(), { dataset: {} as Record<string, string> });
+    node.querySelector.mockImplementation(selector => selector === "canvas[data-collection-art-id]" || selector === "[data-collection-art]" ? portrait : null);
+    Object.assign(win, { getComputedStyle: () => ({ backgroundImage: "none", visibility: "visible", getPropertyValue: () => "ease-out" }) });
+    const expression = (serial: number): CompanionDiscoveryNotice => ({ serial, kind: "behavior", id: "expression:sour", source: { x: 200, y: 180 } });
+    const first = mount(expression(1)); expect(complete).not.toHaveBeenCalled(); expect(node.animate).not.toHaveBeenCalled(); expect(pending).toEqual([]);
+    portrait.dataset.portraitReady = "true"; portrait.dispatchEvent(new Event("vic:companion-portrait-ready")); expect(node.animate).toHaveBeenCalledTimes(1);
+    first.cleanup(); delete portrait.dataset.portraitReady;
+    const second = mount(expression(2)); second.cleanup(); portrait.dataset.portraitReady = "true"; portrait.dispatchEvent(new Event("vic:companion-portrait-ready"));
+    expect(node.animate).toHaveBeenCalledTimes(1); expect(complete.mock.calls).toEqual([[1], [2]]);
+  });
   it("waits for its one actual picture, completes once and never replays a rerendered serial", async () => {
     const first = mount(notice(1)); expect(node.animate).not.toHaveBeenCalled(); expect(pending).toHaveLength(1); expect(book.getBoundingClientRect).toHaveBeenCalledTimes(1);
     pending[0].resolve(); await flush(); expect(node.animate).toHaveBeenCalledTimes(1);

@@ -1,5 +1,8 @@
 "use client";
 
+import { createCompanionPoseWitness } from "@/lib/ui/viewer-companion/memory-witness";
+import { recordCompanionObservedExpression, recordCompanionObservedPose, recordCompanionCompletedActivity } from "@/lib/ui/viewer-companion/collection";
+import { companionActivityMemory } from "@/lib/ui/viewer-companion/memory-catalog";
 import { createCompanionExpressions } from "@/lib/ui/viewer-companion/expressions";
 import { createCompanionExpressionPainter, COMPANION_EXPRESSION_REFERENCE_SRC } from "@/lib/ui/viewer-companion/expression-painter";
 
@@ -376,7 +379,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     const outsideDiagnostic = diagnostic143Enabled
       ? (fact:import("@/lib/ui/viewer-companion/outside-route").CompanionOutsideDiagnostic)=>diagnostic143(`outside-${fact.stage}`,{...fact}) : undefined;
     const personalityDirector = createCompanionPersonalityDirector(undefined,undefined,outsideDiagnostic,
-      diagnostic143Enabled ? fact => diagnostic143("curious-toy-admission",fact) : undefined);
+      diagnostic143Enabled ? fact => diagnostic143("curious-toy-admission",fact) : undefined, receipt => {
+        const id = companionActivityMemory(receipt.id);
+        if (id && recordCompanionCompletedActivity(receipt)) discover({ kind: "behavior", id, source: { x, y: y - size * .4 } });
+      });
     const routines = createCompanionRoutineArbiter(outsideDiagnostic);
     const publicLife = createCompanionPublicLife();
     const observeRoutine = (effect: CompanionRoutineEffect) => {
@@ -770,6 +776,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       bed.opacity = opacity;
       return Boolean(dx || dy || opacityChanged);
     };
+    const poseWitness = createCompanionPoseWitness();
     const expressions = createCompanionExpressions(), facePainter = expressionCanvas.current ? createCompanionExpressionPainter(expressionCanvas.current) : undefined;
     let expressionMeal: { serial: number; food: string; full: boolean; last: boolean } | undefined, expressionCleanup = 0, expressionAnimating = false;
     const visual = createCompanionMotion({ clips: companionMotionClips, rowCount: registration.rows.length, loopRows: [0, 2, 8, 9, 11, 20], maxFrameRate: 14 });
@@ -968,6 +975,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     };
     el.style.setProperty("--vc-size", `${size}px`);
     const paint = (row: number, frame: number, status: string) => {
+      if (el.hidden) poseWitness.reset();
       let watchPainted = false;
       try {
       bedNeedsPaint = false;
@@ -1186,6 +1194,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (face) requestSprite.current(COMPANION_EXPRESSION_REFERENCE_SRC);
       const faceVisible = facePainter?.paint(paintedSelection, face);
       if (face && faceVisible) data("expression", face.id); else el.removeAttribute("data-expression");
+      const poseMemory = poseWitness({ ...observed, visible: observed.visible && !pause && !overlayActive && !premiereActive }, presentationNow);
+      if (poseMemory && recordCompanionObservedPose(poseMemory)) discover({ kind: "behavior", id: poseMemory, source: { x: display.x, y: display.y - size * .4 } });
+      if (face && recordCompanionObservedExpression(observed, { ...face, painted: Boolean(faceVisible) }))
+        discover({ kind: "behavior", id: `expression:${face.id}`, source: { x: display.x, y: display.y - size * .4 } });
 
       if (aftertaste && currentDrawing && drawingRow === 23 && !cheerQuiet) {
         const at = presentationNow;
@@ -2395,6 +2407,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (manualWashSource && (!manualWashVisible(manualWashSource) || brain.current.activeMs > manualWashUntil)) cancelManualWash();
       if (manualWashSource && !manualWashPending && !personalityDirector.manualWash()) manualWashSource = undefined;
       inputPaintQueued = false;
+      if (stopped || pause || premiereActive || freshHomePending || pendingPosition.current || hiding && overlayActive && (!hiding.sheet || !hiding.ready)) poseWitness.reset();
       if (stopped || pause) return;
       if (resetSceneSerial !== undefined) {
         const serial = resetSceneSerial; resetSceneSerial = undefined;
@@ -3704,6 +3717,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       tickPremiere(performance.now()); return true;
     };
     const sync = () => {
+      poseWitness.reset();
       graphicsMode = readGfxMode();
       publishHomeCurtain(lastPoseSample.status, Boolean(document.hidden || overlayRef.current || workspaceBusyRef.current || premiereRef.current.cue?.phase && !["idle", "return", "prelude"].includes(premiereRef.current.cue.phase)));
       if (!radioAllowed()) { radioInbox.clear(); if (action?.radio && !(action.radio.instrument ? musicAllowed() : radioAllowed())) clearAction(); }

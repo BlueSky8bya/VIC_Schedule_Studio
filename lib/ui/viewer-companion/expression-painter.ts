@@ -16,7 +16,7 @@ const mix = (a: number, b: number, p: number) => a + (b - a) * p;
  * the exact registered sprite plane. Body/ears/cheeks/source pixels and all
  * transforms remain owned by the existing renderer. Only opaque eye/mouth
  * interiors can receive a patch. No independent animation loop or image node. */
-export function createCompanionExpressionPainter(canvas: HTMLCanvasElement) {
+export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, readImage: (src: string) => HTMLImageElement | undefined = peekDecodedCompanionSprite) {
   canvas.width = canvas.height = PIXELS;
   const ctx = canvas.getContext("2d"), scratch = document.createElement("canvas"); scratch.width = scratch.height = PIXELS;
   const pixels = scratch.getContext("2d", { willReadFrequently: true });
@@ -46,7 +46,7 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement) {
     hide,
     paint(selected: CompanionSpriteSelection | undefined, expression: { id: CompanionExpressionId; progress: number } | null) {
       if (!ctx || !pixels || !selected || !expression) { hide(); return false; }
-      const pose = poses.get(selected.physicalIndex), image = peekDecodedCompanionSprite(selected.src), eyeImage = peekDecodedCompanionSprite(COMPANION_EXPRESSION_REFERENCE_SRC);
+      const pose = poses.get(selected.physicalIndex), image = readImage(selected.src), eyeImage = readImage(COMPANION_EXPRESSION_REFERENCE_SRC);
       if (!pose || pose.index !== selected.index || anchors.sources[pose.source].src !== selected.src || !image || !eyeImage) { hide(); return false; }
       const face = sampleCompanionExpression(expression.id, expression.progress);
       const layout = companionFaceLayout(pose);
