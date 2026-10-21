@@ -2,6 +2,7 @@ import { isCompanionFoodKind, type CompanionFoodKind } from "./snacks";
 import type { CompanionLife } from "./life";
 import { COMPANION_FOOD_FAMILY } from "./food-family";
 import { isCompanionToyKind, type CompanionToyKind } from "./toy-catalog";
+import { COMPANION_FOOD_IMPRESSIONS, COMPANION_TOY_IMPRESSIONS } from "./taste-descriptions";
 
 export const COMPANION_FOOD_TASTE_REASONS = ["sweet-bite", "fresh-bite", "cozy-bite", "durian-socks", "sharp-sour", "green-bitter", "strong-aroma", "spicy-tickle",
   "fruity-aroma", "fruit-treat", "zesty-bite", "refreshing-bite", "vegetable-aroma", "mild-bite", "crisp-bite", "juicy-bite", "soft-bite", "nutty-bite",
@@ -119,9 +120,15 @@ export function isCompanionToyTasteReason(kind: unknown, reason: unknown): reaso
 /** This is a display explanation of the existing innate preference, not a
  * meal, discovery or learned-memory write. */
 export function companionInnateFoodReason(food: CompanionFoodKind) {
-  const family = COMPANION_FOOD_FAMILY[food];
-  if (sour.includes(food)) return "원래 새콤한 맛을 좋아해요";
-  return ({ fruit: "원래 과일 향에 끌려요", vegetable: "원래 담백한 채소를 좋아해요", bread: "원래 고소한 빵을 좋아해요", rice: "원래 밥과 떡을 좋아해요", noodle: "원래 면 요리를 좋아해요", meal: "원래 든든한 간식을 좋아해요", dessert: "원래 달콤한 간식을 좋아해요" })[family] ?? "처음부터 마음에 든 간식이에요";
+  return `원래 ${COMPANION_FOOD_IMPRESSIONS[food][0]}`;
+}
+
+/** Old reason codes still validate saved receipts and keep their polarity.
+ * Display wording follows the exact specimen; broad legacy labels such as
+ * vegetable/mild, fruit/sweet or toy/colours no longer invent its flavour/use. */
+export function companionItemTasteDescription(domain: "food" | "toy", kind: CompanionFoodKind | CompanionToyKind, positive: boolean): string | undefined {
+  if (domain === "food" && isCompanionFoodKind(kind)) return COMPANION_FOOD_IMPRESSIONS[kind][positive ? 0 : 1];
+  if (domain === "toy" && isCompanionToyKind(kind)) return COMPANION_TOY_IMPRESSIONS[kind][positive ? 0 : 1];
 }
 
 /** One impression after a successful real meal. The caller supplies one draw;

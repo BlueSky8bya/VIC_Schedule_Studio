@@ -11,60 +11,63 @@ export const COMPANION_EXPRESSIONS = [
   ["sunny", "햇살에 눈 가늘게"], ["rain", "빗소리에 차분한 눈"], ["sneeze", "재채기 직전 간질"], ["warm", "더워서 잠깐 헥"], ["cold", "추워서 입 달달"], ["resolve", "마음먹고 또렷한 눈"],
 ] as const;
 export type CompanionExpressionId = typeof COMPANION_EXPRESSIONS[number][0];
-export type CompanionFace = Readonly<{ left: number; right: number; gazeX: number; gazeY: number; smile: number; open: number; slant: number; tears: number; tremble: number; weight: number }>;
-const neutral: CompanionFace = { left: 1, right: 1, gazeX: 0, gazeY: 0, smile: 0, open: 0, slant: 0, tears: 0, tremble: 0, weight: 0 };
+/** Eye shapes use the original eye footprint. Closed smiles/squeezes are
+ * explicit curves, never an almost-flat clipped pupil. All fields stay numeric
+ * so the same finite sampler is usable by the runtime and visual audit. */
+export const COMPANION_EYE_SHAPE = { round: 0, soft: 1, flat: 2, smile: 3, squeeze: 4, focus: 5, worry: 6 } as const;
+export const COMPANION_MOUTH_SHAPE = { smile: 0, round: 1, pout: 2, grin: 3, wave: 4, tongue: 5, cat: 6 } as const;
+export type CompanionFace = Readonly<{ left: number; right: number; leftShape: number; rightShape: number; mouth: number; brow: number; shine: number; gazeX: number; gazeY: number; smile: number; open: number; slant: number; tears: number; tremble: number; weight: number }>;
+const neutral: CompanionFace = { left: 1, right: 1, leftShape: 0, rightShape: 0, mouth: 0, brow: 0, shine: 0, gazeX: 0, gazeY: 0, smile: 0, open: 0, slant: 0, tears: 0, tremble: 0, weight: 0 };
 const clamp = (n: number, a = 0, b = 1) => Math.max(a, Math.min(b, Number.isFinite(n) ? n : a));
 const smooth = (n: number) => { const p = clamp(n); return p * p * (3 - 2 * p); };
 export const COMPANION_EXPRESSION_MS = 1450;
-// New reactions retain a recognisable plump pupil. Natural blink/sleep frames
-// remain in the original animation; a reaction never turns every eye to a line.
-export const COMPANION_EXPRESSION_MIN_EYE = .76;
-
-/** Eye openness clips the existing eye, never enlarges its width/iris. Body,
- * ears, face spacing and eyewear are not part of this sampler. */
+// Supersedes162's uniform .76 clamp. Visible pupils keep depth; a deliberate
+// happy close/wink/squeeze has a separate shaped drawing inside the same box.
+export const COMPANION_EXPRESSION_MIN_EYE = .55;
 export function sampleCompanionExpression(id: CompanionExpressionId, progress: number, reduced = false): CompanionFace {
   const p = clamp(progress); if (reduced || p <= 0 || p >= 1) return neutral;
   const weight = smooth(p / .2) * smooth((1 - p) / .22), beat = smooth((p - .25) / .35), wave = Math.sin(p * Math.PI * 2), v = { ...neutral, weight };
+  const E = COMPANION_EYE_SHAPE, M = COMPANION_MOUTH_SHAPE;
+  const eyes = (leftShape: number, rightShape = leftShape) => Object.assign(v, { leftShape, rightShape });
   switch (id) {
-    case "scent": Object.assign(v, { gazeX: 1.2 * wave, gazeY: .5, open: .12 }); break;
-    case "first-bite": Object.assign(v, { gazeY: .6, smile: .5, open: .25 * beat }); break;
-    case "savor": Object.assign(v, { left: .25, right: .25, smile: .85 }); break;
-    case "sour": Object.assign(v, { left: .08, right: .6, open: .35, slant: -.4 }); break;
-    case "hot": Object.assign(v, { left: .65, right: .65, open: .45 + .25 * Math.sin(p * Math.PI * 6) ** 2 }); break;
-    case "icy": Object.assign(v, { left: .12 + .4 * beat, right: .12 + .4 * beat, smile: -.35, tremble: .7 }); break;
-    case "spicy": Object.assign(v, { left: .45, right: .45, open: .7, tears: .8 }); break;
-    case "polite-no": Object.assign(v, { left: .7, right: .85, gazeX: 1.1, smile: .3 - .5 * beat }); break;
-    case "full": Object.assign(v, { left: .48, right: .48, smile: .75, gazeY: .3 }); break;
-    case "last-bite": Object.assign(v, { gazeY: .9, smile: -.5 * (1 - beat), left: .8, right: .8 }); break;
-    case "sleepy": Object.assign(v, { left: .2 + .75 * beat, right: .45 + .5 * beat, smile: -.1 }); break;
-    case "awake": Object.assign(v, { left: .35 + .65 * beat, right: .35 + .65 * beat, smile: .45 * beat, gazeY: -.4 }); break;
-    case "greeting": Object.assign(v, { smile: .8, open: .25 * (1 - beat), gazeY: -.5 }); break;
-    case "shy": Object.assign(v, { gazeX: 1.15 * (1 - beat), left: .85, right: .85, smile: .4 }); break;
-    case "melt": Object.assign(v, { left: .08, right: .08, smile: .8, gazeY: -.2 }); break;
-    case "more-pets": Object.assign(v, { gazeY: -.9, open: .25, smile: .2 }); break;
-    case "busy": Object.assign(v, { left: .5, right: .65, gazeX: -.8, smile: -.2 }); break;
-    case "play-ready": Object.assign(v, { gazeX: wave, smile: .7, open: .2 }); break;
-    case "tidy-pride": Object.assign(v, { left: .35, right: .35, smile: .95, gazeY: -.25 }); break;
-    case "treasure": Object.assign(v, { gazeY: .9, left: .6, right: .6, smile: .7 }); break;
-    case "search": Object.assign(v, { gazeX: 1.3 * Math.sin(p * Math.PI * 3), gazeY: .35, open: .15 }); break;
-    case "reading": Object.assign(v, { gazeX: 1.1 * (p * 2 - 1), gazeY: .9, left: .75, right: .75 }); break;
-    case "tv": Object.assign(v, { gazeX: -.8, gazeY: .2, open: .35 }); break;
-    case "giggle": Object.assign(v, { left: 1 - .9 * beat, right: 1 - .9 * beat, smile: .95, open: .5 * beat }); break;
-    case "listen": Object.assign(v, { gazeX: .9, gazeY: -.6, left: .9, right: 1, open: .1 }); break;
-    case "relief": Object.assign(v, { left: 1 - .6 * beat, right: 1 - .6 * beat, open: .4 * (1 - beat), smile: .5 * beat }); break;
-    case "innocent": Object.assign(v, { gazeX: 1.2 * beat, smile: .1, left: .95, right: .95 }); break;
-    case "sorry": Object.assign(v, { gazeY: .8 - 1.6 * beat, smile: -.4, slant: .4 }); break;
-    case "oops": Object.assign(v, { open: .5 * (1 - beat), smile: -.15, gazeY: .7, left: 1 - .2 * beat, right: 1 - .2 * beat }); break;
-    case "unimpressed": Object.assign(v, { left: .4, right: .5, smile: -.45, gazeX: .6 }); break;
-    case "sunny": Object.assign(v, { left: .35, right: .35, smile: .45, gazeY: -.5 }); break;
-    case "rain": Object.assign(v, { left: .65, right: .65, smile: .25, gazeY: .45, gazeX: -.55 }); break;
-    case "sneeze": Object.assign(v, { left: .65 - .6 * beat, right: .65 - .6 * beat, open: .2 + .6 * Math.sin(p * Math.PI) ** 4 }); break;
-    case "warm": Object.assign(v, { left: .7, right: .7, open: .5 + .15 * wave, gazeY: .2 }); break;
-    case "cold": Object.assign(v, { left: .55, right: .55, smile: -.3, tremble: 1 }); break;
-    case "resolve": Object.assign(v, { left: .85, right: .85, gazeX: .8, smile: .2, slant: -.3 }); break;
+    case "scent": Object.assign(v, { gazeX: 1.6 * wave, gazeY: .6, left: .85, open: .1, mouth: M.round }); break;
+    case "first-bite": Object.assign(v, { gazeY: 1.1, smile: .8, open: .55 * beat, mouth: M.round, shine: 1 }); break;
+    case "savor": eyes(E.soft); Object.assign(v, { left: .65, right: .65, smile: .75, gazeY: .3 }); break;
+    case "sour": eyes(E.squeeze, E.flat); Object.assign(v, { right: .65, open: .35, mouth: M.pout, slant: -.5 }); break;
+    case "hot": eyes(E.worry); Object.assign(v, { open: .45 + .25 * Math.sin(p * Math.PI * 6) ** 2, mouth: M.round, brow: .7, gazeY: -.3 }); break;
+    case "icy": eyes(E.squeeze); Object.assign(v, { smile: -.5, mouth: M.wave, tremble: .85, brow: .3 }); break;
+    case "spicy": eyes(E.soft); Object.assign(v, { left: .65, right: .65, open: .9, mouth: M.grin, tears: 1, brow: .9 }); break;
+    case "polite-no": eyes(E.soft, E.round); Object.assign(v, { left: .65, gazeX: 1.4, smile: .15 - .6 * beat, mouth: M.pout }); break;
+    case "full": eyes(E.soft); Object.assign(v, { left: .65, right: .65, smile: .9, mouth: M.cat, gazeY: .6 }); break;
+    case "last-bite": eyes(E.worry); Object.assign(v, { gazeY: 1.3, smile: -.65, mouth: M.pout, brow: .8 }); break;
+    case "sleepy": eyes(E.flat, E.soft); Object.assign(v, { left: .55 + .35 * beat, right: .7, open: .45 * (1 - beat), mouth: M.round, gazeY: .7 }); break;
+    case "awake": eyes(beat < .3 ? E.smile : E.round); Object.assign(v, { smile: .75 * beat, mouth: M.grin, gazeY: -1, shine: .6 }); break;
+    case "greeting": eyes(E.smile, E.soft); Object.assign(v, { right: .8, smile: 1, open: .55, mouth: M.grin, gazeY: -.6 }); break;
+    case "shy": eyes(E.soft); Object.assign(v, { gazeX: 1.6 * (1 - beat * .45), gazeY: .65, left: .8, right: .8, smile: .5, mouth: M.pout }); break;
+    case "melt": eyes(E.smile); Object.assign(v, { smile: 1, mouth: M.cat, gazeY: -.3, slant: .35 }); break;
+    case "more-pets": Object.assign(v, { gazeY: -1.6, open: .4, mouth: M.round, brow: .6, shine: .8 }); break;
+    case "busy": eyes(E.flat, E.focus); Object.assign(v, { left: .55, right: .7, gazeX: -1.3, smile: -.5, brow: -.6 }); break;
+    case "play-ready": Object.assign(v, { gazeX: 1.3 * wave, gazeY: -.4, smile: .9, open: .6, mouth: M.grin, shine: 1 }); break;
+    case "tidy-pride": eyes(E.smile, E.soft); Object.assign(v, { left: .6, right: .6, smile: 1, gazeY: -.8, mouth: M.grin, slant: -.25 }); break;
+    case "treasure": eyes(E.soft); Object.assign(v, { gazeY: 1.4, left: .8, right: .8, smile: .7, mouth: M.cat, shine: .6 }); break;
+    case "search": eyes(E.round, E.flat); Object.assign(v, { right: .7, gazeX: 1.8 * Math.sin(p * Math.PI * 3), gazeY: .3, open: .25, mouth: M.round, brow: .5 }); break;
+    case "reading": eyes(E.focus); Object.assign(v, { gazeX: 1.6 * (p * 2 - 1), gazeY: 1.4, left: .8, right: .8, smile: -.1 }); break;
+    case "tv": Object.assign(v, { gazeX: -1.4, gazeY: .15, open: .6, mouth: M.round }); break;
+    case "giggle": eyes(beat > .3 ? E.smile : E.soft); Object.assign(v, { smile: 1, open: .95 * beat, mouth: M.grin, slant: .45 * wave }); break;
+    case "listen": eyes(E.round, E.soft); Object.assign(v, { gazeX: 1.4, gazeY: -1.3, right: .8, open: .1, brow: .6, mouth: M.round }); break;
+    case "relief": eyes(beat > .4 ? E.smile : E.worry); Object.assign(v, { open: .65 * (1 - beat), mouth: M.round, smile: .6 * beat, brow: .3 * (1 - beat) }); break;
+    case "innocent": eyes(E.round, E.soft); Object.assign(v, { gazeX: 1.7 * beat, right: .85, smile: .1, mouth: M.cat, brow: .35 }); break;
+    case "sorry": eyes(E.worry); Object.assign(v, { gazeY: .8 - 2.1 * beat, smile: -.8, mouth: M.pout, brow: 1, slant: .4 }); break;
+    case "oops": Object.assign(v, { open: .85 - .35 * beat, mouth: M.round, gazeY: 1.1, brow: .9 }); break;
+    case "unimpressed": eyes(E.flat); Object.assign(v, { left: .55, right: .55, smile: -.1, gazeX: 1.2, mouth: M.wave }); break;
+    case "sunny": eyes(E.soft); Object.assign(v, { left: .55, right: .55, smile: .7, gazeY: -1.2 }); break;
+    case "rain": eyes(E.soft); Object.assign(v, { left: .8, right: .8, smile: .35, gazeY: 1.1, gazeX: -.9 }); break;
+    case "sneeze": eyes(E.squeeze); Object.assign(v, { open: .3 + .7 * Math.sin(p * Math.PI) ** 4, mouth: M.round, brow: -.4 }); break;
+    case "warm": eyes(E.flat); Object.assign(v, { left: .7, right: .7, open: .65, mouth: M.tongue, gazeY: .7 }); break;
+    case "cold": eyes(E.worry); Object.assign(v, { left: .8, right: .8, smile: -.5, mouth: M.wave, tremble: 1, brow: .65 }); break;
+    case "resolve": eyes(E.focus); Object.assign(v, { left: .75, right: .75, gazeX: 1.3, smile: .5, slant: -.4, brow: -.8 }); break;
   }
-  v.left = Math.max(COMPANION_EXPRESSION_MIN_EYE, v.left);
-  v.right = Math.max(COMPANION_EXPRESSION_MIN_EYE, v.right);
+  v.left = clamp(v.left, COMPANION_EXPRESSION_MIN_EYE, 1); v.right = clamp(v.right, COMPANION_EXPRESSION_MIN_EYE, 1);
   return v;
 }
 

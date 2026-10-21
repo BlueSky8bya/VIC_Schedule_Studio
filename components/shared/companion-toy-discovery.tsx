@@ -30,7 +30,7 @@ export function CompanionToyDiscovery({ tastes, active, selectedKind, onSelect }
   return <div className="rhh-companion-toy-discovery rhh-collection-book" ref={host}>
     <span className="sr-only" id={description}>새로 발견한 장난감</span>
     <div ref={detail} aria-live="polite" className="rhh-collection-detail rhh-collection-gallery-detail rhh-toy-detail" data-found={found || undefined}>
-      <div aria-hidden="true" className="rhh-collection-art-stage">{found ? <CompanionCollectionSeal><CompanionToyArt kind={kind} /></CompanionCollectionSeal> : <CompanionToyArt kind={kind} />}</div>
+      <div aria-hidden="true" className="rhh-collection-art-stage">{found ? <CompanionCollectionSeal rarity={COMPANION_TOY_RARITY[kind]} artId={kind}><CompanionToyArt kind={kind} /></CompanionCollectionSeal> : <CompanionToyArt kind={kind} />}</div>
       <div className="rhh-collection-detail-copy"><span className="rhh-collection-overline">장난감 보관함</span><div className="rhh-collection-detail-title"><strong>{found ? COMPANION_TOY_NAMES[kind] : "???"}</strong>{found && <span className="rhh-collection-rarity">{COMPANION_TOY_RARITY_NAMES[COMPANION_TOY_RARITY[kind]]}</span>}</div><p className="rhh-collection-fact">{found ? COMPANION_TOY_HINTS[kind] : "아직 만나기 전"}</p><div className="rhh-collection-detail-meta">{found && <span className="rhh-collection-chance" title="직전 장난감은 연속으로 나오지 않아 실제 다음 확률은 달라져요. 별도의 희귀도 보장은 없어요.">기본 등장 {formatCompanionCollectionChance(companionToyChance(kind))}</span>}</div></div>
     </div>
     <ul aria-label="장난감 도감" className="rhh-collection-grid rhh-toy-grid" ref={grid} style={{ "--collection-columns": layout.columns, "--collection-rows": layout.rows } as CSSProperties}>

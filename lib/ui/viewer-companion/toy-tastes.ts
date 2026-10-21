@@ -3,7 +3,7 @@ import { COMPANION_FOOD_KINDS, isCompanionFoodKind, type CompanionFoodKind } fro
 import { getCompanionFoodPreference, type CompanionLife } from "./life";
 import type { CompanionPreferences } from "./preferences";
 import type { CompanionBrain } from "./brain";
-import { COMPANION_TASTE_REASON_TEXT, companionInnateFoodReason, companionToyTasteReason, isCompanionFoodTasteOutcome, isCompanionToyTasteReason, isPositiveCompanionTasteReason, type CompanionFoodTasteOutcome, type CompanionFoodTasteReason, type CompanionTasteReason, type CompanionToyTasteReason } from "./taste-reasons";
+import { companionItemTasteDescription, companionInnateFoodReason, companionToyTasteReason, isCompanionFoodTasteOutcome, isCompanionToyTasteReason, isPositiveCompanionTasteReason, type CompanionFoodTasteOutcome, type CompanionFoodTasteReason, type CompanionToyTasteReason } from "./taste-reasons";
 
 export const COMPANION_TASTES_KEY = "vic.viewerCompanionTastes";
 export const COMPANION_TASTES_EVENT = "vic:companion-tastes";
@@ -54,7 +54,8 @@ const remember = (value: CompanionTastes, reason: CompanionTasteMemory) => { val
 export function companionTasteReason(value: CompanionTastes | null | undefined, domain: "food" | "toy", kind: CompanionFoodKind | CompanionToyKind | null | undefined, valence?: "positive" | "negative"): string | undefined {
   const entry = kind && value?.reasons.filter(item => item.domain === domain && item.kind === kind).at(-1);
   if (entry && valence && isPositiveCompanionTasteReason(entry.reason) !== (valence === "positive")) return;
-  return entry ? COMPANION_TASTE_REASON_TEXT[entry.reason as CompanionTasteReason] : undefined;
+  const description = entry ? companionItemTasteDescription(domain, entry.kind, isPositiveCompanionTasteReason(entry.reason)) : undefined;
+  return description && entry?.reason === "toy-familiar" ? `${description} · 여러 번 놀아서 정들었어요` : description;
 }
 export function companionProfileTasteReason(value: CompanionTastes | null | undefined, domain: "food" | "toy", kind: CompanionFoodKind | CompanionToyKind | null | undefined, valence: "positive" | "negative", life?: CompanionLife): string | undefined {
   if (!kind) return;
@@ -62,13 +63,13 @@ export function companionProfileTasteReason(value: CompanionTastes | null | unde
   if (remembered) return remembered;
   if (domain === "food" && isCompanionFoodKind(kind)) {
     if (valence === "positive" && life?.seedFood === kind && !life.tastedFoods.includes(kind)) return companionInnateFoodReason(kind);
-    if (life?.tastedFoods.includes(kind)) return valence === "positive" ? "먹어 보고 마음에 들었어요" : "예전엔 입맛에 잘 안 맞았어요";
-    if (valence === "positive" && life?.favoriteFood === kind) return "예전부터 좋아하던 간식이에요";
+    if (life?.tastedFoods.includes(kind)) return companionItemTasteDescription(domain, kind, valence === "positive");
+    if (valence === "positive" && life?.favoriteFood === kind) return companionInnateFoodReason(kind);
   }
   if (domain === "toy" && isCompanionToyKind(kind)) {
     const prior = value?.toyTastes[kind];
-    if (valence === "positive" && prior && prior.accepted > 0) return prior.accepted >= 3 ? "여러 번 놀아서 정들었어요" : "같이 놀아 보니 마음에 들어요";
-    if (valence === "negative" && prior?.tripped) return "전에 걸려 넘어져 조심해요";
+    if (valence === "positive" && prior && prior.accepted > 0) return `${companionItemTasteDescription(domain, kind, true)}${prior.accepted >= 3 ? " · 여러 번 놀아서 정들었어요" : ""}`;
+    if (valence === "negative" && prior?.tripped) return companionItemTasteDescription(domain, kind, false);
   }
 }
 export function companionToyUnread(value: CompanionTastes | null | undefined) { return value?.toys.filter(kind => !value.seen.includes(kind)).length ?? 0; }

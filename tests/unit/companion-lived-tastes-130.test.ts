@@ -18,7 +18,7 @@ describe("130 bounded lived taste impressions", () => {
     const life = experienceCompanionLife(initial, { kind: "fed", food: "durian", taste: outcome }); store.recordFoodOutcome(outcome);
     expect(summarizeCompanionFoodTastes(store.load(), life, [])).toMatchObject({ disliked: null });
     expect(summarizeCompanionFoodTastes(store.load(), life, ["durian"])).toMatchObject({ disliked: "durian" });
-    expect(companionTasteReason(store.load(), "food", "durian")).toBe("주인 양말 냄새남");
+    expect(companionTasteReason(store.load(), "food", "durian")).toBe("두리안에서 양말 같은 강한 냄새가 나요");
     expect(initial.tastedFoods).toEqual([]); expect(life.tastedFoods).toEqual(["durian"]);
   });
 
@@ -50,7 +50,7 @@ describe("130 bounded lived taste impressions", () => {
     expect(normalizeCompanionLife(life).favoriteFood).toBe("durian");
     expect(summarizeCompanionFoodTastes(store.load(), life, ["durian"])).toEqual({ favorite: null, disliked: "durian" });
     expect(companionTasteReason(store.load(), "food", "durian", "positive")).toBeUndefined();
-    expect(companionTasteReason(store.load(), "food", "durian", "negative")).toBe("주인 양말 냄새남");
+    expect(companionTasteReason(store.load(), "food", "durian", "negative")).toBe("두리안에서 양말 같은 강한 냄새가 나요");
   });
 
   it("never invents an ordinary apple or bread aversion, including legacy vague reasons", () => {
@@ -103,11 +103,11 @@ describe("130 bounded lived taste impressions", () => {
     expect(summarizeCompanionToyTastes(store.load()).favorite).toBe("ball");
     store.recordToy("ball", "tripped"); expect(summarizeCompanionToyTastes(store.load()).disliked).toBe("ball");
     store.recordToy("ball", "tripped"); expect(summarizeCompanionToyTastes(store.load()).disliked).toBe("ball");
-    expect(companionTasteReason(store.load(), "toy", "ball")).toBe("동그란 장난감에 발이 걸렸어요");
+    expect(companionTasteReason(store.load(), "toy", "ball")).toBe("굴러가던 공에 걸려 넘어져 조심해요");
     store.recordToy("ball", "played"); expect(summarizeCompanionToyTastes(store.load()).disliked).toBeNull();
     store.recordToy("feather", "played"); store.recordToy("feather", "played");
     expect(summarizeCompanionToyTastes(store.load()).favorite).toBe("feather");
-    expect(companionTasteReason(store.load(), "toy", "feather")).toBe("가볍게 살랑이는 게 좋아요");
+    expect(companionTasteReason(store.load(), "toy", "feather")).toBe("깃털이 가볍게 살랑이는 게 좋아요");
   });
 
   it("forgets through supplied active buckets only, without reads at each needs sample or elapsed-away debt", () => {
