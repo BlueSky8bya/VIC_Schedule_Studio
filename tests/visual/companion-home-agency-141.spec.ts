@@ -195,7 +195,7 @@ async function startProbe(page: Page) {
     const sample = (at: number) => {
       if (stopped) return;
       if (at - last >= 35) {
-        last = at; const node = document.querySelector<HTMLElement>(".vc-companion"), texture = node?.querySelector<HTMLImageElement>(".vc-texture"), r = readRect(node), pad = readRect(document.querySelector(".vc-home-wash-pad")), roomNode = document.querySelector<HTMLElement>(".vc-home-room"), css = node && getComputedStyle(node);
+        last = at; const node = document.querySelector<HTMLElement>(".vc-companion"), texture = node?.querySelector<HTMLImageElement>(".vc-texture"), r = readRect(node), pad = readRect(document.querySelector(".vc-home-wash-stance") ?? document.querySelector(".vc-home-wash-pad")), roomNode = document.querySelector<HTMLElement>(".vc-home-room"), css = node && getComputedStyle(node);
         const facingNode = node?.querySelector(".vc-facing"), facingTransform = facingNode ? getComputedStyle(facingNode).transform : "none";
         const contacts: Frame["contacts"] = {};
         for (const [kind, selector] of [["tv", ".vc-home-tv-paint"], ["light", ".vc-home-lamp-handle"], ["curtain", ".vc-curtain-control > span"], ["radio", ".vc-radio-button .vc-object-paint"]] as const) { const rect = readRect(document.querySelector(selector)); if (rect) contacts[kind] = rect; }

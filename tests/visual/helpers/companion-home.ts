@@ -1,6 +1,7 @@
 import { expect, type Page } from "@playwright/test";
 import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
 import { COMPANION_PERSONALITY_NAMES, type CompanionPersonality } from "@/lib/ui/viewer-companion/preferences";
+import { companionFloorPlacementSamplePasses157, type CompanionFloorPlacementSample157 } from "./companion-floor-placement-157";
 
 type HomeInput = "pointer" | "touch" | "keyboard";
 type CareAction = "쓰다듬기" | "옮길 곳 고르기" | "여기서 낮잠" | "남은 밥 치우기";
@@ -45,15 +46,26 @@ export async function placeCompanionOnHomeFloor(page: Page) {
   const point = { x: bed.x + bed.width / 2, y: floor.y + floor.height - COMPANION_HOME_FLOOR_INSET - 8 };
   await actor.focus(); await actor.press("p"); await expect(pet).toHaveAttribute("data-placing", "");
   await page.mouse.click(point.x, point.y); await page.mouse.move(2, 2);
-  await expect(pet).not.toHaveAttribute("data-placing");
-  await expect(pet).toHaveAttribute("data-platform", /^companion-home-floor(?:-\d+)?$/);
-  await expect(pet).not.toHaveAttribute("data-state", "jump");
-  await expect.poll(async () => {
-    const feet = await pet.evaluate(node => node.getBoundingClientRect().bottom);
-    const actualFloor = (await room.locator(".vc-home-floor").boundingBox())!;
-    return Math.abs(feet - (actualFloor.y + actualFloor.height - COMPANION_HOME_FLOOR_INSET));
-  }).toBeLessThan(2);
+  // Read every original condition in one browser frame. Separate retry
+  // loops can miss a short floor stop and borrow idle from a later sofa trip.
+  const floorNode = (await room.locator(".vc-home-floor").elementHandle())!;
+  const observations: CompanionFloorPlacementSample157[] = [];
+  try {
+    await expect.poll(async () => {
+      const sample = await page.evaluate(({ expected, floor, inset }) => {
+        const node = document.querySelector(".vc-companion"), body = node?.getBoundingClientRect(), plane = floor.getBoundingClientRect();
+        const platform = node?.getAttribute("data-platform") ?? "", state = node?.getAttribute("data-state") ?? "";
+        const feet = body?.bottom ?? NaN, floorFeet = plane.bottom-inset;
+        return { at: performance.now(), sameActor: expected.isConnected && floor.isConnected && node === expected,
+          placingReleased: Boolean(node && !node.hasAttribute("data-placing")), platform, floorPlatform: /^companion-home-floor(?:-\d+)?$/.test(platform),
+          state, notJump: Boolean(node && state !== "jump"), feet, floorFeet, feetError: Math.abs(feet-floorFeet) };
+      }, { expected: identity, floor: floorNode, inset: COMPANION_HOME_FLOOR_INSET });
+      observations.push(sample);
+      return companionFloorPlacementSamplePasses157(sample);
+    }, { timeout: 5000, intervals: [35] }).toBe(true);
+  } finally { await floorNode.dispose(); }
   expect(await identity.evaluate(node => node.isConnected && node === document.querySelector(".vc-companion"))).toBe(true);
+  return { point, observations };
 }
 
 /** Preserve the callers' care intent through the public direct interactions.

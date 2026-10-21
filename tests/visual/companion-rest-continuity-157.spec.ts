@@ -24,8 +24,9 @@ type Frame = NativeHomeControlFrame & { state: string; play: string; scene: stri
   toys: { id: string; carried: boolean; visible: boolean; x: number; y: number }[] };
 type ProbeWindow = Window & { rest157?: { frames: Frame[]; stop(): void }; restOff157?: { events: number[]; stop(): void } };
 const records = new WeakMap<Page, { proof: DailyProof; binding: unknown; notes: unknown[] }>();
+const readBuffers = new WeakMap<Page, { cursor: number; frames: Frame[] }>();
 const sha = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
-const sourcePaths = ["lib/ui/viewer-companion/home-life-policy.ts", "lib/ui/viewer-companion/personality-director.ts", "lib/ui/viewer-companion/accessory.ts", "lib/ui/viewer-companion/home-contact-anchors-157.json", "lib/ui/viewer-companion/home-interaction.ts", "lib/ui/viewer-companion/home-light.ts", "lib/ui/viewer-companion/home-room-media.ts", "components/poster/public-poster.tsx", "components/shared/companion-settings.tsx", "components/poster/viewer-companion/viewer-companion.tsx", "app/visual-fixture/poster/page.tsx", "tests/visual/companion-rest-continuity-157.spec.ts"];
+const sourcePaths = ["lib/ui/viewer-companion/home-contact-presentation.ts", "tests/visual/helpers/companion-home-contact-156.ts", "tests/visual/helpers/companion-home.ts", "tests/visual/helpers/companion-floor-placement-157.ts", "lib/ui/viewer-companion/home-life-policy.ts", "lib/ui/viewer-companion/personality-director.ts", "lib/ui/viewer-companion/accessory.ts", "lib/ui/viewer-companion/home-contact-anchors-157.json", "lib/ui/viewer-companion/home-interaction.ts", "lib/ui/viewer-companion/home-light.ts", "lib/ui/viewer-companion/home-room-media.ts", "components/poster/public-poster.tsx", "components/shared/companion-settings.tsx", "components/poster/viewer-companion/viewer-companion.tsx", "app/visual-fixture/poster/page.tsx", "tests/visual/companion-rest-continuity-157.spec.ts"];
 test.use({ viewport: { width: 1920, height: 1100 }, deviceScaleFactor: 1, storageState: { cookies: [], origins: [] }, serviceWorkers: "block", hasTouch: false,
   trace: "on", video: { mode: "on", size: { width: 1920, height: 1100 } } });
 test.setTimeout(175_000);
@@ -83,6 +84,7 @@ async function fixture(page: Page, surface: Surface, night: boolean, initialLigh
   return home;
 }
 async function startProbe(page: Page) {
+  readBuffers.delete(page);
   await installCompanionPaintedSource157(page);
   await page.evaluate(() => {
     (window as ProbeWindow).rest157?.stop(); const frames: Frame[] = [], began = performance.now(); let raf = 0, last = -Infinity, stopped = false;
@@ -123,7 +125,18 @@ async function startProbe(page: Page) {
     raf = requestAnimationFrame(sample); (window as ProbeWindow).rest157 = { frames, stop() { stopped = true; cancelAnimationFrame(raf); } };
   });
 }
-const read = (page: Page) => page.evaluate(() => (window as ProbeWindow).rest157?.frames ?? []);
+const read = async (page: Page) => {
+  const previous = readBuffers.get(page) ?? { cursor: 0, frames: [] };
+  // Keep every original raw sample, transferring only new frames per poll.
+  // Recopying the growing full trace delayed real renderer/decode work.
+  const chunk = await page.evaluate(cursor => {
+    const frames = (window as ProbeWindow).rest157?.frames ?? [];
+    return { cursor: frames.length, frames: frames.slice(cursor) };
+  }, previous.cursor);
+  const frames = previous.frames.concat(chunk.frames);
+  readBuffers.set(page, { cursor: chunk.cursor, frames });
+  return frames;
+};
 const source = (frame: Frame) => frame.visible && frame.decoded && frame.sourcePaint && curiousTextureCellMatches(frame.pose, frame.cell);
 function restWitness(frames: Frame[]) {
   for (const first of frames.filter(frame => frame.scene === "S03" && frame.beat === "2" && frame.state === "play" && frame.play === "cozy-nest" && source(frame))) {

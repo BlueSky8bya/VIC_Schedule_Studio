@@ -628,6 +628,18 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
     if (!step) return;
     const speed = input.preferences.speed === "relaxed" ? 65 : input.preferences.speed === "lively" ? 135 : 100;
     const offered = action(command, { ...step, pace: input.preferences.personality === "sleepy" ? "amble" : "scoot", duration: step.kind === "jump" ? 850 : Math.max(220, Math.abs(step.target.x - input.world.x) / speed * 1000) }, input);
+    // Bind only an actually issued post-return floor route. Its arrival
+    // may retain short required grooming without a fake ACK or clock refill.
+    const tail = active?.recipe.steps.slice(active.beat + 1) ?? [];
+    if (active && command.kind === "go" && command.target === "floor" && active.closureAt !== undefined
+      && active.recipe.steps.slice(0,active.beat).some(step=>step.kind==="toy"&&step.mode==="return"&&!step.optional)
+      && tail.some(step=>step.kind==="pose"&&step.pose==="groom"&&!step.optional)
+      && tail.every(step=>step.kind==="pose"||step.kind==="watch")
+      && tail.reduce((ms,step)=>ms+pureDuration(step,input),0)<=3500) {
+      const floor=input.world.platforms.find(plane=>plane.id===point.platformId&&companionOrdinaryRoomFloor(plane));
+      if(floor&&floor.width>0&&point.x>=floor.x&&point.x<=floor.x+floor.width&&Math.abs(point.y-floor.y)<=2)
+        active.goal={beat:active.beat,id:floor.id,fraction:(point.x-floor.x)/floor.width};
+    }
     offered.meta.travel = true; offered.action!.personalityScene.travel = true; return offered;
   };
   const remainingRequiredWork = (input: PersonalitySceneInput) => Boolean(active?.recipe.steps.slice(active.beat).some(step => {
@@ -672,6 +684,24 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
         && [plane.x,plane.y,plane.width].every(Number.isFinite) && plane.width > 0
         && Math.abs(point.y-plane.y) <= 2 && point.x >= plane.x && point.x <= plane.x+plane.width);
     });
+  };
+  // A physical return may finish short grooming after its actually issued
+  // floor route arrives. Queries grant no ACK/progress/reward and retain the
+  // enclosing7.5s no-progress/60s total owner limits.
+  const postReturnFloorClosure = (input: PersonalitySceneInput) => {
+    const owner=active,goal=owner?.goal,{world}=input;
+    if(!owner||owner.routine||owner.closureAt===undefined||input.now<owner.closureAt||!goal||goal.fraction===undefined
+      ||goal.beat>owner.beat||input.carriedToyId||input.carriedFoodId||input.brain.foodGoal||input.brain.intention?.kind==="feed")return false;
+    const step=owner.recipe.steps[goal.beat],tail=owner.recipe.steps.slice(goal.beat+1);
+    if(step?.kind!=="go"||step.target!=="floor"
+      ||!owner.recipe.steps.slice(0,goal.beat).some(beat=>beat.kind==="toy"&&beat.mode==="return"&&!beat.optional)
+      ||!tail.some(beat=>beat.kind==="pose"&&beat.pose==="groom"&&!beat.optional)
+      ||!tail.every(beat=>beat.kind==="pose"||beat.kind==="watch")
+      ||tail.reduce((ms,beat)=>ms+pureDuration(beat,input),0)>3500)return false;
+    const floor=world.platforms.find(plane=>plane.id===goal.id&&companionOrdinaryRoomFloor(plane));
+    if(!floor||world.platformId!==floor.id||goal.fraction<0||goal.fraction>1)return false;
+    const destination={x:floor.x+floor.width*goal.fraction,y:floor.y};
+    return Math.hypot(world.x-destination.x,world.y-destination.y)<24;
   };
   const routineReserved = (input: PersonalitySceneInput) => {
     const owner = active, { preferences: p, world, brain, home } = input, at = input.now;
@@ -733,7 +763,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
       const point = home[step.target];
       return connected(point,step.target === "pad") && Boolean(point && (point.platformId !== world.platformId || Math.hypot(point.x-world.x,point.y-world.y) >= 24));
     });
-    if (work) return true;
+    if (work || postReturnFloorClosure(input)) return true;
     // A successful same-serial primitive may finish its short authored
     // gesture. This is ownership only: it never refills physical progress,
     // learning reward or an already exhausted8s decorative budget.

@@ -29,7 +29,7 @@ test.setTimeout(130_000);
 
 for (const surface of ["viewer", "studio", "preview"] as const) test(`156 ${surface} cold bow packet keeps a full actual onset and following activity`, async ({ page, context, baseURL }, info) => {
   const proof = await guardCompanionQa(page, context, baseURL!);
-  const cold: { path: string; requestedAt: number; releasedAt: number; sha256: string }[] = [];
+  const cold: { path: string; requestedAt: number; releasedAt: number; requestedMonotonicAt: number; releasedMonotonicAt: number; sha256: string }[] = [];
   const bowSources = companionSpriteSources(29);
   const bindingPath = process.env.COMPANION156_SOURCE_FREEZE;
   if (!bindingPath) throw Error("New execution source-freeze.json is required");
@@ -41,11 +41,17 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`156 ${surf
     const bytes = readFileSync(resolve("public", "." + path));
     expect(sha(bytes)).toBe(companionSpriteMetadata.atlases.find(atlas => atlas.src === path)?.sha256);
     await context.route("**" + path, async route => {
-      const requestedAt = Date.now();
-      const request = { path, requestedAt, releasedAt: 0, sha256: sha(bytes) }; cold.push(request);
+      const requestedAt = Date.now(), requestedMonotonicAt = performance.now();
+      const request = { path, requestedAt, requestedMonotonicAt, releasedAt: 0, releasedMonotonicAt: 0, sha256: sha(bytes) }; cold.push(request);
       // Delaying these exact existing immutable local bytes models a cold
       // packet. No actor, RNG, clock, geometry or animation hook is replaced.
-      await new Promise(done => setTimeout(done, 450));
+      // A requested timer duration is not a measured lower bound: Node may
+      // fire before the rounded wall-clock deadline. Keep both real clocks.
+      while (Date.now() - requestedAt < 450 || performance.now() - requestedMonotonicAt < 450) {
+        const remaining = Math.max(1, 450 - (Date.now() - requestedAt), 450 - (performance.now() - requestedMonotonicAt));
+        await new Promise(done => setTimeout(done, remaining));
+      }
+      request.releasedMonotonicAt = performance.now();
       request.releasedAt = Date.now();
       await route.fulfill({ contentType: "image/webp", body: bytes });
     });
@@ -84,6 +90,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`156 ${surf
     const observed = await frames(page), bow = firstBow(observed);
     const actual = bow.filter(actualPose);
     expect(cold.length).toBeGreaterThan(0); expect(cold.every(request => request.releasedAt - request.requestedAt >= 450)).toBe(true);
+    expect(cold.every(request => request.releasedMonotonicAt - request.requestedMonotonicAt >= 450)).toBe(true);
     expect(actual.length).toBe(bow.length);
     const onset = actual.filter(frame => companionSpriteMetadata.rows[29].includes(frame.pose));
     expect(onset[0].pose).toBeLessThan(companionSpriteMetadata.rows[29].at(-3)!);

@@ -159,7 +159,7 @@ async function startProbe(page: Page) {
         surfaces.push({kind,rect:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},footY,visible:true,...(kind === "ink" ? {registered} : {})});
       };
       if(/^companion-home-floor(?:-\d+)?$/.test(platform)){
-        const node=document.querySelector<HTMLElement>(platform === "companion-home-floor-400" ? ".vc-home-wash-pad" : ".vc-home-floor"),rect=node?.getBoundingClientRect();
+        const node=platform === "companion-home-floor-400" ? document.querySelector<HTMLElement>(".vc-home-wash-stance") ?? document.querySelector<HTMLElement>(".vc-home-wash-pad") : document.querySelector<HTMLElement>(".vc-home-floor"),rect=node?.getBoundingClientRect();
         add("home",rect,rect ? platform === "companion-home-floor-400" ? rect.top+rect.height*.72 : rect.bottom-floorInset : NaN,node);
       }else if(platform === "companion-home"){
         const node=document.querySelector<HTMLElement>(".vc-home-cushion"),rect=node?.getBoundingClientRect();add("home",rect,rect?.top ?? NaN,node);
@@ -692,7 +692,7 @@ for (const surface of ["viewer", "studio"] as const) test(`137 ${surface} tidy c
   }
   expect(trace.every(frame => frame.toys.length <= 4 && frame.foods.length <= 8)).toBe(true);
   proofs.get(page)!.notes.push({ nativeIds: ids, actualBoxOpening: opening, sameIdCarryBeforeRemoval: true });
-  const pad = (await home.locator(".vc-home-wash-pad").boundingBox())!, stance = { x: pad.x + pad.width / 2, y: pad.y + pad.height * .72 };
+  const actualMat = home.locator(".vc-home-wash-stance"), pad = (await (await actualMat.count() ? actualMat : home.locator(".vc-home-wash-pad")).boundingBox())!, stance = { x: pad.x + pad.width / 2, y: pad.y + pad.height * .72 };
   await expect.poll(async () => (await frames(page)).some(frame => frame.washing && frame.brush?.visible && frame.platform === "companion-home-floor-400"), { timeout: 35_000, intervals: [100] }).toBe(true);
   await expect.poll(async () => {
     const contact = (await frames(page)).filter(frame => frame.washing && frame.brush?.visible && frame.platform === "companion-home-floor-400");

@@ -60,6 +60,7 @@ import { companionRunContactSituation, type CompanionSituationId } from "@/lib/u
 import { COMPANION_ACCESSORY_NAMES, type CompanionAccessoryId } from "@/lib/ui/viewer-companion/gifts";
 import { advanceCompanionMealWait, projectCompanionMouth } from "@/lib/ui/viewer-companion/mouth";
 import { advanceCompanionPlayPresentation, type CompanionPlayPresentation } from "@/lib/ui/viewer-companion/play-presentation";
+import { advanceCompanionHomeContactPresentation, companionLampPresentationReady, observeCompanionLampPresentation, type CompanionLampPresentation } from "@/lib/ui/viewer-companion/home-contact-presentation";
 import { COMPANION_FEED_RETRY_MS, rememberCompanionOutcomes } from "@/lib/ui/viewer-companion/planner";
 import { companionSofaFlightMs, sampleCompanionSofaTravel, type CompanionSofaTravelShape } from "@/lib/ui/viewer-companion/sofa-travel";
 import { createCompanionFoodCuriosity } from "@/lib/ui/viewer-companion/novel-food";
@@ -590,7 +591,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     let roomBodyGrade = 1;
     let homeInteractionWitness: number | undefined, homeContactSerial = 0;
     type HomeContactKind = "tv" | "light" | "curtain" | "radio" | "dispenser" | "box" | "bin";
-    let homeContact: { serial: number; kind: HomeContactKind; element: Element; point: { x: number; y: number } } | undefined;
+    let homeContact: { serial: number; kind: HomeContactKind; element: Element; point: { x: number; y: number }; startedAt: number;
+      lampPaint?: { button: HTMLButtonElement; paint: HTMLElement; art: HTMLElement[]; feedback: HTMLElement[] } } | undefined;
+    let homeLampPresentation: CompanionLampPresentation | undefined;
     let homeRadioPending: AbortController | undefined, homeRadioRequestedAt = 0;
     let touchedLamp: HTMLButtonElement | null = null;
     const showLampContact = (lamp: HTMLButtonElement | null) => {
@@ -612,7 +615,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     };
     const clearHomeContact = () => {
       homeRadioPending?.abort(); homeRadioPending = undefined; homeRadioRequestedAt = 0;
-      homeContact = undefined; homeInteractionWitness = undefined;
+      homeContact = undefined; homeInteractionWitness = undefined; homeLampPresentation = undefined;
       showLampContact(null);
       if (interactionTool.current) interactionTool.current.hidden = true;
       el.removeAttribute("data-home-reaching");
@@ -1232,6 +1235,25 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const touchingControl = Boolean(reach?.touching && paintedCurrent && actualHand && targetContact && Math.hypot(actualHand.x - targetContact.x, actualHand.y - targetContact.y) <= size * .5);
       // Lamp contact is shown on the real cord, without rays over the pet's face.
       showLampContact(touchingControl && interaction?.kind === "light" ? interaction.element.closest("button") : null);
+      if (interaction?.kind === "light" && interaction.lampPaint) {
+        const nodes = interaction.lampPaint, lit = nodes.button.closest(".vc-home-room")?.hasAttribute("data-lamp-lit"), index = lit ? 1 : 0;
+        const art = nodes.art[index], feedback = nodes.feedback[index], paint = nodes.paint.getBoundingClientRect(), button = nodes.button.getBoundingClientRect();
+        const paintCss = getComputedStyle(nodes.paint), feedbackCss = getComputedStyle(feedback), artRect = art.getBoundingClientRect(), feedbackRect = feedback.getBoundingClientRect();
+        const samePlane = (rect: DOMRect) => Math.abs(rect.x-paint.x) <= .75 && Math.abs(rect.y-paint.y) <= .75
+          && Math.abs(rect.width-paint.width) <= .75 && Math.abs(rect.height-paint.height) <= .75;
+        const path = (value: string) => { try { return new URL(value.replace(/^url\(["']?/, "").replace(/["']?\)$/, ""), location.href).pathname; } catch { return ""; } };
+        const source = `/companion/home/155/lamp-${lit ? "on" : "off"}.webp`;
+        const active = paintedCurrent && effective.enabled && effective.roam && !pause && !document.hidden && !pressed && !keyboardHeld && !placing
+          && !overlayActive && !workspaceBusyRef.current && presence.phase === "active" && canCompanionSetHomeLight();
+        homeLampPresentation = observeCompanionLampPresentation(homeLampPresentation, { at: performance.now(), serial: interaction.serial, active, bodyTouch: touchingControl,
+          visible: nodes.paint.isConnected && art.isConnected && paint.width > 0 && paint.height > 0
+            && nodes.paint.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && art.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }),
+          sourceMatches: path(getComputedStyle(art).borderImageSource) === source && path(feedbackCss.borderImageSource) === source,
+          samePlane: samePlane(artRect) && samePlane(feedbackRect) && feedbackCss.clipPath.startsWith("polygon("),
+          requestedPull: parseFloat(getComputedStyle(nodes.button).getPropertyValue("--vc-lamp-pull")), height: paint.height, width: paint.width,
+          cssWidth: parseFloat(paintCss.width), buttonHeight: button.height,
+          feedbackVisible: feedback.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }), feedbackOpacity: Number(feedbackCss.opacity) });
+      }
       const paw = interactionTool.current;
       if (paw) {
         paw.hidden = !touchingControl || interaction?.kind === "light";
@@ -2188,7 +2210,13 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         : next.household?.effect === "spawn" ? "dispenser" : next.household?.effect === "discard" ? "bin" : undefined;
       const contactElement = contactKind ? homeContactElement(contactKind) : null;
       const actualContact = contactKind && contactElement ? homeContactPoint(contactKind, contactElement) : undefined;
-      if (contactKind && contactElement && actualContact) homeContact = { serial: ++homeContactSerial, kind: contactKind, element: contactElement, point: actualContact };
+      if (contactKind && contactElement && actualContact) {
+        const button = contactKind === "light" ? contactElement.closest<HTMLButtonElement>("button") : null, lampPaint = button?.querySelector<HTMLElement>(".vc-home-lamp-paint");
+        homeContact = { serial: ++homeContactSerial, kind: contactKind, element: contactElement, point: actualContact, startedAt: now,
+          lampPaint: button && lampPaint ? { button, paint: lampPaint,
+            art: ["off","on"].map(state => button.querySelector<HTMLElement>(`.vc-home-lamp-art[data-lamp-state="${state}"]`)!),
+            feedback: ["off","on"].map(state => button.querySelector<HTMLElement>(`.vc-home-lamp-cord-feedback[data-lamp-state="${state}"]`)!) } : undefined };
+      }
       if (homeContact) ensureWardrobe(true);
       if (next.personalityScene?.command.kind === "wash" || homeContact) spriteSources[9].forEach(src => requestSprite.current(src));
       personalityActivity.record(next, { x, y }, brain.current.activeMs, effective.personality);
@@ -2825,6 +2853,21 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       }
       let row = 0, frame = 0, status = "idle";
       if (action) {
+        if (homeContact && ["light","tv","curtain","radio"].includes(homeContact.kind)) {
+          const presentation = advanceCompanionHomeContactPresentation({ now, began, startedAt: homeContact.startedAt, delta, duration: total,
+            active: homeContact.element.isConnected && effective.enabled && effective.roam && !pause && !document.hidden && !pressed && !keyboardHeld && !placing
+              && !overlayActive && !workspaceBusyRef.current && presence.phase === "active" });
+          began = presentation.began;
+          if (presentation.expired || presentation.cancelled) {
+            const failed = action;
+            if (failed.personalityScene && !failed.personalityScene.travel) personalityDirector.resolve(failed.personalityScene, false, undefined, brain.current.activeMs);
+            if (failed.homeLife && homeLifePending) { homeLifePending.failures++; homeLifePending.retryAt = now+500; }
+            const retained = failed.homeLife ? homeLifePending?.original : undefined;
+            clearAction(false, Boolean(failed.household || retained?.household || retained?.scene || retained?.personalityScene),
+              Boolean(failed.scene || failed.toy || failed.personalityScene || retained?.scene || retained?.toy || retained?.personalityScene), Boolean(failed.homeLife));
+            nextDecision = now+500; paint(1,0,"look"); schedule(); return;
+          }
+        }
         let age = now - began, p = clamp(age / total, 0, 1); status = action.kind;
         // Keep the preceding body visible while a cold first packet decodes,
         // then play the whole onset from phase0. A late texture must not turn
@@ -2862,7 +2905,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         const authoredBeat = action.personalityScene;
         const lifeBeat = action.homeLife;
         if (lifeBeat && !lifeBeat.travel && !homeLifeEffectApplied && p >= .5
-          && (homeContact && homeInteractionWitness === homeContact.serial || p >= .9)) {
+          && (homeContact && homeInteractionWitness === homeContact.serial || p >= .9)
+          && (lifeBeat.command.kind !== "light" || homeContact && companionLampPresentationReady(homeLampPresentation,homeContact.serial,now,
+            canCompanionSetHomeLight() && el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && homeContact.element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })))) {
           homeLifeEffectApplied = true;
           const input = homeLifeInput(homeLifePending?.phase ?? "awake");
           const allowed = input.enabled && input.active && !input.owned && homeLifePending
@@ -2886,7 +2931,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           else { homeRadioPending.abort(); homeRadioPending = undefined; if (authoredBeat) personalityDirector.resolve(authoredBeat, false, undefined, brain.current.activeMs); }
         }
         if (authoredBeat && !authoredBeat.travel && !personalityEffectApplied && p >= .5 && ["tv", "light", "curtain", "radio"].includes(authoredBeat.command.kind)
-          && (homeContact && homeInteractionWitness === homeContact.serial || p >= .9)) {
+          && (homeContact && homeInteractionWitness === homeContact.serial || p >= .9)
+          && (authoredBeat.command.kind !== "light" || homeContact && companionLampPresentationReady(homeLampPresentation,homeContact.serial,now,
+            canCompanionSetHomeLight() && el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && homeContact.element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })))) {
           personalityEffectApplied = true;
           let accepted = false;
           const previousControl = authoredBeat.command.kind === "tv" ? getCompanionHomeTv() : authoredBeat.command.kind === "light" ? getCompanionHomeLight() : authoredBeat.command.kind === "curtain" ? getCompanionCurtainChoice() : getCompanionRadioSnapshot().playing;

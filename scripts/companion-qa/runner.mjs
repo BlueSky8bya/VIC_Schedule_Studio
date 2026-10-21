@@ -7,7 +7,7 @@ import { spawn, execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { finished } from 'node:stream/promises';
 import { pathToFileURL } from 'node:url';
-import { universe, dailyCases, coverageFor, PURE_SUITES, NATIVE_SUITES, NATIVE_GREP, NATIVE_ENTRY_TITLES, NATIVE_FLOATING_TIDY_TITLES, PLANNED_NATIVE_CASE_COUNT, MODELED_RECIPE_COUNT } from './catalog.mjs';
+import { universe, dailyCases, coverageFor, PURE_SUITES, NATIVE_SUITES, NATIVE_GREP, NATIVE_ENTRY_TITLES, NATIVE_FLOATING_TIDY_TITLES, NATIVE_NARROW_WASH_TITLES, NATIVE_CAR_USE_TITLES, PLANNED_NATIVE_CASE_COUNT, MODELED_RECIPE_COUNT } from './catalog.mjs';
 import { sha, writeNewJson, evidenceFiles, writeReport } from './report.mjs';
 import { AUDITED_MACHINE_METADATA, AUDITED_MACHINE_METADATA_BYTES, validateAuditedMachineMetadata } from './machine-metadata.mjs';
 
@@ -136,14 +136,30 @@ export function nativeEntryEvidence(report) {
     failed: floatingCases.filter(item => item.status === 'failed').length,
     skipped: floatingCases.filter(item => item.status === 'skipped').length,
     notRun: floatingCases.filter(item => item.status === 'not-run').length, cases: floatingCases };
+  // The newly reproduced262px case cannot be replaced by an unrelated pass.
+  const narrowCases = NATIVE_NARROW_WASH_TITLES.map(title => ({ title, status: classify(specs.filter(spec => spec?.title === title)) }));
+  const narrowWash = { required: NATIVE_NARROW_WASH_TITLES.length,
+    registered: narrowCases.filter(item => specs.some(spec => spec?.title === item.title)).length,
+    passed: narrowCases.filter(item => item.status === 'passed').length,
+    failed: narrowCases.filter(item => item.status === 'failed').length,
+    skipped: narrowCases.filter(item => item.status === 'skipped').length,
+    notRun: narrowCases.filter(item => item.status === 'not-run').length, cases: narrowCases };
+  // This source regression requires the same actual car's full typed use.
+  const carCases = NATIVE_CAR_USE_TITLES.map(title => ({ title, status: classify(specs.filter(spec => spec?.title === title)) }));
+  const carUse = { required: NATIVE_CAR_USE_TITLES.length,
+    registered: carCases.filter(item => specs.some(spec => spec?.title === item.title)).length,
+    passed: carCases.filter(item => item.status === 'passed').length,
+    failed: carCases.filter(item => item.status === 'failed').length,
+    skipped: carCases.filter(item => item.status === 'skipped').length,
+    notRun: carCases.filter(item => item.status === 'not-run').length, cases: carCases };
   const selectedPassedCases = specs.filter(spec => classify([spec]) === 'passed').length;
   const selectedUniqueTitles = new Set(specs.map(spec => spec?.title).filter(title => typeof title === 'string')).size;
   const passedEntries = count('passed'), notRunEntries = count('not-run');
-  const gatePassed = passedEntries === NATIVE_ENTRY_TITLES.length && floatingTidy.passed === NATIVE_FLOATING_TIDY_TITLES.length && specs.length === PLANNED_NATIVE_CASE_COUNT && selectedUniqueTitles === PLANNED_NATIVE_CASE_COUNT && selectedPassedCases === PLANNED_NATIVE_CASE_COUNT && Array.isArray(report?.errors) && report.errors.length === 0;
+  const gatePassed = passedEntries === NATIVE_ENTRY_TITLES.length && floatingTidy.passed === NATIVE_FLOATING_TIDY_TITLES.length && narrowWash.passed === NATIVE_NARROW_WASH_TITLES.length && carUse.passed === NATIVE_CAR_USE_TITLES.length && specs.length === PLANNED_NATIVE_CASE_COUNT && selectedUniqueTitles === PLANNED_NATIVE_CASE_COUNT && selectedPassedCases === PLANNED_NATIVE_CASE_COUNT && Array.isArray(report?.errors) && report.errors.length === 0;
   return { status: notRunEntries === NATIVE_ENTRY_TITLES.length ? 'not-run' : gatePassed ? 'passed' : 'failed', gatePassed,
     requiredEntries: NATIVE_ENTRY_TITLES.length, registeredEntries: cases.filter(item => specs.some(spec => spec?.title === item.title)).length,
     passedEntries, failedEntries: count('failed'), skippedEntries: count('skipped'), notRunEntries,
-    plannedSelectedCases: PLANNED_NATIVE_CASE_COUNT, selectedCaseCount: specs.length, selectedPassedCases, selectedUniqueTitles, cases, floatingTidy };
+    plannedSelectedCases: PLANNED_NATIVE_CASE_COUNT, selectedCaseCount: specs.length, selectedPassedCases, selectedUniqueTitles, cases, floatingTidy, narrowWash, carUse };
 }
 const readJson = file => JSON.parse(fs.readFileSync(file, 'utf8'));
 function passedTests(report) { return report.testResults.flatMap(file => file.assertionResults).filter(result => result.status === 'passed'); }
@@ -239,8 +255,8 @@ export async function run(options) {
     const native = await command(workspace, ['node_modules/@playwright/test/cli.js', 'test', '--config', config, '--grep', options.nativeGrep ?? NATIVE_GREP], childEnvironment(process.env, { ...nodeGuard, ...nativeEnv, COMPANION_QA_NODE_ORIGIN: baseURL, VIC_ACTIVITY_BASE_URL: baseURL.replace("127.0.0.1", "127.0.0.2"), COMPANION_QA_OUTPUT: nativeOutput, COMPANION_QA_CASES: JSON.stringify(cases), VISUAL_TEST_BUILD_DIR: path.join(workspace, '.next') }), path.join(attempt, 'native.log'), deadline, control);
     const nativeStage = { name: 'native-production-fixture', ...native }; stages.push(nativeStage);
     result.nativeEntries = nativeEntryEvidence(fs.existsSync(reportFile) ? readJson(reportFile) : undefined);
-    stages.push({ name: 'native-personality-entry-proof', status: result.nativeEntries.status, detail: `${result.nativeEntries.passedEntries}/27 actual entry cases passed; skipped:${result.nativeEntries.skippedEntries}, failed:${result.nativeEntries.failedEntries}, not-run:${result.nativeEntries.notRunEntries}; ${result.nativeEntries.selectedCaseCount}/${PLANNED_NATIVE_CASE_COUNT} cases selected, ${result.nativeEntries.selectedPassedCases}/${PLANNED_NATIVE_CASE_COUNT} actually passed; ${result.nativeEntries.floatingTidy.passed}/${NATIVE_FLOATING_TIDY_TITLES.length} exact floating-house tidy cases passed` });
-    if (!result.nativeEntries.gatePassed) { native.status = nativeStage.status = 'failed'; nativeStage.detail = `Exactly${PLANNED_NATIVE_CASE_COUNT} unique native cases including all27 entries and both exact floating-house tidy cases must actually pass once; skipped, missing and retried outcomes are not passes`; }
+    stages.push({ name: 'native-personality-entry-proof', status: result.nativeEntries.status, detail: `${result.nativeEntries.passedEntries}/27 actual entry cases passed; skipped:${result.nativeEntries.skippedEntries}, failed:${result.nativeEntries.failedEntries}, not-run:${result.nativeEntries.notRunEntries}; ${result.nativeEntries.selectedCaseCount}/${PLANNED_NATIVE_CASE_COUNT} cases selected, ${result.nativeEntries.selectedPassedCases}/${PLANNED_NATIVE_CASE_COUNT} actually passed; ${result.nativeEntries.floatingTidy.passed}/${NATIVE_FLOATING_TIDY_TITLES.length} exact floating-house tidy cases passed; ${result.nativeEntries.narrowWash.passed}/${NATIVE_NARROW_WASH_TITLES.length} exact narrow-panel wash cases passed; ${result.nativeEntries.carUse.passed}/${NATIVE_CAR_USE_TITLES.length} exact actual-car typed-use cases passed` });
+    if (!result.nativeEntries.gatePassed) { native.status = nativeStage.status = 'failed'; nativeStage.detail = `Exactly${PLANNED_NATIVE_CASE_COUNT} unique native cases including all27 entries, both exact floating-house tidy cases and the exact narrow-panel wash case must actually pass once; skipped, missing and retried outcomes are not passes`; }
 
     const observedDirectory = path.join(nativeOutput, 'daily');
     const observed = fs.existsSync(observedDirectory) ? fs.readdirSync(observedDirectory).filter(file => /^daily-[a-z-]+\.json$/.test(file)).map(file => readJson(path.join(observedDirectory, file))) : [];

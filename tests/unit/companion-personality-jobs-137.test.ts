@@ -211,16 +211,22 @@ describe("137 authored jobs use the physical owners", () => {
     expect(host.toys.count()).toBe(0);
   });
 
-  it("M02 nudges the actual car along its support, catches it after gravity settles, then picks it only for the final return", () => {
-    const host = fixture("M02", 1, "toy-car"), id = host.originalIds[0], initial = host.toys.items()[0];
-    const first = host.offer()!; host.apply(first);
-    const nudge = host.offer()!; expect(nudge.toy).toMatchObject({ effect: "nudge", toyId: id }); host.apply(nudge);
+  it("M02 completes the same car's typed play, nudges it along its support, catches it after gravity and returns it", () => {
+    const host = fixture("M02", 1, "toy-car"), id = host.originalIds[0];
+    let nudge = host.offer()!;
+    for (let step = 0; step < 16 && nudge?.toy?.effect !== "nudge"; step++) { host.apply(nudge); nudge = host.offer()!; }
+    // This model runs the physical planner's finite typed-use/release protocol;
+    // the actual wheel animation and discovery are checked by native200.
+    expect(host.trace.some(event => ["toy:put", "toy:toss"].includes(event.kind) && event.id === id && event.beat === 0)).toBe(true);
+    expect(host.trace.filter(event => event.kind === "toy:pick").map(event => event.id)).toEqual([id]);
+    const initial = host.toys.items()[0];
+    expect(nudge.toy).toMatchObject({ effect: "nudge", toyId: id }); host.apply(nudge);
     const moved = host.toys.items()[0]; expect(moved.id).toBe(id); expect(moved.carried).toBe(false);
     expect(Math.abs(moved.x - initial.x)).toBeGreaterThan(8);
     host.run();
     expect(host.trace.filter(event => event.kind === "toy:nudge").map(event => event.id)).toEqual([id]);
-    expect(host.trace.filter(event => event.kind === "toy:pick").map(event => event.id)).toEqual([id]);
-    expect(host.trace.filter(event => event.kind === "toy:toss")).toEqual([]);
+    expect(host.trace.filter(event => event.kind === "toy:pick").map(event => event.id)).toEqual([id, id]);
+    expect(host.trace.filter(event => event.kind === "toy:toss" && event.beat > 0)).toEqual([]);
     expect(host.trace.filter(event => event.kind === "toy:stash").map(event => event.id)).toEqual([id]);
   });
 

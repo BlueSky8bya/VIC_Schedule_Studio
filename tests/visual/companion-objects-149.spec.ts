@@ -206,3 +206,40 @@ test("149 objects curious departure prepares TV and light before reaching the pu
   expect(tvChanged!.at).toBeLessThan(outside.at); expect(lightOff!.at).toBeLessThan(outside.at);
   proofs.get(page)!.notes.push({ actualLightContact: contactBefore(observed.frames, lightOff!.at, "light"), actualTvContact: contactBefore(observed.frames, tvChanged!.at, "tv"), personality: "curious", actualFixtureHour: 12, actualManualTvPriorityWaitMs: 15500, originalChannel: "nature", actualPublicPlatform: outside.platform, actualPublicArrivalAt: outside.at, actualDepartureTv: outside.home.tv, tvOffActuallyObserved: outside.home.tv === "off", permittedToriExceptionSample: outside.home.tv === "tori" });
 });
+
+/** Source157 car regression: acquire one actual weighted car without replacing
+ * RNG/kinds, then preserve every149 typed-use and collection assertion. */
+test("200 viewer real car completes typed wheel push before mischief and collection", async ({ page }) => {
+  test.setTimeout(240000);
+  await setup(page, "viewer");
+  const home = await openCompanionHome(page);
+  const draws: { draw: number; id: string; kind: string; requestedAt: number; returnedAt?: number; retained?: boolean }[] = [];
+  proofs.get(page)!.notes.push({ regression: "M02 actual same-car typed use before nudge and return", acquisition: "maximum320 actual weighted draws; unwanted real objects physically returned with pointer; no RNG/kind override", draws });
+  let id = "";
+  for (let draw = 0; draw < 320; draw++) {
+    await home.locator('[data-home-action="toys"]').click();
+    const actual = page.locator(".vc-toy"); await expect(actual).toHaveCount(1);
+    await expect(actual).toHaveAttribute("data-falling", "false", { timeout: 6000 });
+    const entry: (typeof draws)[number] = { draw: draw + 1, id: (await actual.getAttribute("data-toy-id"))!, kind: (await actual.getAttribute("data-kind"))!, requestedAt: Date.now() };
+    draws.push(entry);
+    if (entry.kind === "toy-car") { entry.retained = true; id = entry.id; break; }
+    const rect = (await actual.boundingBox())!, box = (await home.locator(".vc-toy-box-opening").boundingBox())!;
+    await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height - 6); await page.mouse.down();
+    await expect(actual).toHaveAttribute("data-held", "true");
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 8 });
+    await expect(home.locator('[data-home-action="toys"]')).toHaveAttribute("data-toy-over", "");
+    await page.mouse.up(); await expect(actual).toHaveCount(0); entry.returnedAt = Date.now();
+  }
+  if (!id) throw Error("actual bounded320 weighted draws did not produce toy-car; no random/kind state was overridden");
+  const kind = "toy-car" as const, toy = page.locator(`.vc-toy[data-toy-id="${id}"]`);
+  expect(await knownToys(page)).toEqual([]); await probe(page); await startRoaming(page);
+  await expect(toy).toHaveAttribute("data-toy-use", COMPANION_TOY_USES[kind], { timeout: 65000 }); await expect(toy).toHaveAttribute("data-carried", "true");
+  await expect(toy).not.toHaveAttribute("data-toy-use", /.+/, { timeout: 6500 }); await expect.poll(() => knownToys(page)).toContain(kind); await page.waitForTimeout(300);
+  const observed = await read(page), used = observed.frames.filter(frame => frame.toys.some(item => item.id === id && item.use === COMPANION_TOY_USES[kind] && item.carried));
+  expect(used.length).toBeGreaterThan(15); expect(used.at(-1)!.at - used[0].at).toBeGreaterThan(companionToyPlayDuration(kind) - 220);
+  const actual = used.map(frame => frame.toys.find(item => item.id === id)!);
+  expect(actual.every(item => item.kind === kind && item.visible && item.decoded)).toBe(true); expect(new Set(actual.map(item => item.transform)).size).toBeGreaterThan(4);
+  expect(Math.max(...used.map(frame => frame.x)) - Math.min(...used.map(frame => frame.x))).toBeLessThan(1); expect(Math.max(...used.map(frame => frame.y)) - Math.min(...used.map(frame => frame.y))).toBeLessThan(1);
+  await expect(toy).toHaveCount(1); await expect(toy).toHaveAttribute("data-carried", "false");
+  proofs.get(page)!.notes.push({ sampledKind: kind, sampledUse: COMPANION_TOY_USES[kind], sameRealToyId: id, actualUseFrames: used.length, actualUseMs: used.at(-1)!.at - used[0].at, allOtherUnselectedKindsNativeUnrun: true });
+});

@@ -142,7 +142,7 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   // M01 계기: 실제 공이 안전한 바닥에 있고 이동·점프 등 현재 허용 기능과 경로가 맞는다.
   { id: "M01", label: "한 번 굴리고 한 번 더 바꾸는 공놀이", personality: "mischievous", major: true, triggers: ["toy"], steps: [t("toss", ["ball"]), g("toy"), t("toss", ["ball"]), g("toy"), t("return", ["ball"])] },
   // M02 계기: 실제 자동차 장난감이 있고 충돌 없이 짧게 움직일 바닥 구간이 확인된다.
-  { id: "M02", label: "자동차를 밀고 따라잡는 작은 소동", personality: "mischievous", major: true, triggers: ["toy"], steps: [t("nudge", ["toy-car"]), g("toy"), p("pounce"), t("return", ["toy-car"])] },
+  { id: "M02", label: "자동차를 밀고 따라잡는 작은 소동", personality: "mischievous", major: true, triggers: ["toy"], steps: [t("play", ["toy-car"]), t("nudge", ["toy-car"]), g("toy"), p("pounce"), t("return", ["toy-car"])] },
   // M03 계기: 사용자가 실제 소품을 잡았다 놓았고 정착이 끝났으며, 같은 실물은 현재 사용자 소유가 아니다.
   { id: "M03", label: "사용자가 놓은 소품에 딱 한 번 덤비기", personality: "mischievous", major: true, triggers: ["toy", "toy-settled"], steps: [p("pounce"), t("play"), t("return")] },
   // M04 계기: 사용자가 실제 장난감을 방금 반납했으며 그 완료가 확인된다. 근처에 다른 안전한 놀이나 제자리 표현이 있다.

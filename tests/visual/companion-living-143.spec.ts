@@ -146,7 +146,7 @@ for(const personality of COMPANION_PERSONALITIES)test(`143 ${personality} actual
   await expect.poll(()=>actor.evaluate((node,{poses,sources})=>{
     const pose=Number((node as HTMLElement).dataset.pose),texture=node.querySelector<HTMLImageElement>(".vc-texture");
     return poses.includes(pose)&&Boolean(texture?.complete&&texture.naturalWidth&&new URL(texture.currentSrc,location.href).pathname===sources[pose]);
-  },{poses:companionSpriteMetadata.rows[9],sources:Object.fromEntries(companionSpriteMetadata.rows[9].map(pose=>[pose,selectCompanionSprite(pose).src]))})).toBe(true);await inspectGlasses("happy");
+  },{poses:companionSpriteMetadata.rows[9],sources:Object.fromEntries(companionSpriteMetadata.rows[9].map(pose=>[pose,selectCompanionSprite(pose).src]))}),{timeout:5000,intervals:[50]}).toBe(true);await inspectGlasses("happy");
   const responses={performer:"bow",curious:"sniff",affectionate:"lean-nuzzle",sleepy:"stretch",tidy:"groom",mischievous:"pounce",gourmet:"sniff",homebody:"groom",balanced:"bow"} as const;
   const response=responses[personality];
   await expect.poll(async()=>actor.evaluate((node,{response,rows,timing})=>{
@@ -246,7 +246,8 @@ test("143 studio sofa stays aligned beside the editor and independent controls",
   const controlsFinishedAt=await page.evaluate(()=>performance.now());
   expect(controlsFinishedAt-manualLampAt,"both real curtain checks must remain inside the manual-light lease").toBeLessThan(15000);
   await info.attach("143-independent-curtain-manual-lamp",{contentType:"application/json",body:Buffer.from(JSON.stringify({manualLampAt,controlsFinishedAt,wasLit,manualLampSamples,litDuringCurtainChecks:before,manualLeaseMs:15000}))});
-  await placeCompanionOnHomeFloor(page);
+  const actualFloorPlacement = await placeCompanionOnHomeFloor(page);
+  await info.attach("143-atomic-floor-placement", { contentType: "application/json", body: Buffer.from(JSON.stringify(actualFloorPlacement)) });
   await home.locator(".vc-cushion-button").focus();await page.keyboard.press("Enter");
   await expect(page.locator(".vc-companion")).toHaveAttribute("data-platform","companion-home",{timeout:20_000});
   await page.mouse.move(900,700);await page.mouse.wheel(0,1700);await page.waitForTimeout(500);await page.mouse.wheel(0,-1700);await page.waitForTimeout(700);

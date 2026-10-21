@@ -154,7 +154,8 @@ html[data-reduce-motion] .vc-companion:is([data-presence="parked"], [data-dreami
 /*098 restores a compact floating room beside the actual header launcher.
    Only its viewport position/available space change; the132px interior and
    native control geometry stay intact above the unchanged calendar. */
-.vc-compact-home > .vc-home { max-height: var(--vc-home-max-height, calc(100dvh - 24px)); overflow: auto; overscroll-behavior: contain; box-sizing: border-box; box-shadow: var(--elev-3); }
+.vc-compact-home > .vc-home,
+.vc-compact-home > .vc-home-carrier > .vc-home { max-height: var(--vc-home-max-height, calc(100dvh - 24px)); overflow: auto; overscroll-behavior: contain; box-sizing: border-box; box-shadow: var(--elev-3); }
 .button.vc-home-launcher { min-height: 44px; min-width: 44px; border-radius: var(--r-pill); pointer-events: auto; font-size: var(--text-body); white-space: nowrap; }
 html[data-reduce-motion] .vc-contact, html[data-gfx="off"] .vc-contact { transition: none; }
 html[data-reduce-motion] .vc-food, html[data-reduce-motion] .vc-food > span, html[data-reduce-motion] .vc-dream i, html[data-reduce-motion] .vc-companion[data-state="petted"] .vc-effect, html[data-reduce-motion] .vc-companion[data-state="petted"] .vc-actor::after { animation: none; }

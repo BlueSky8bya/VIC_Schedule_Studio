@@ -165,20 +165,28 @@ for (const source of ["sofa", "calendar"] as const) test(`162 direct pad journey
 
 test("162 narrow default panel keeps a real mat stance and accepts a sofa wash request", async ({ page }) => {
   await seed(page); await page.setViewportSize({ width: 1473, height: 945 });
-  await page.goto("/visual-fixture/poster?hour=12"); await page.bringToFront(); await settlePanelLayout(page);
+  const response=await page.goto("/visual-fixture/poster?hour=12");
+  proofs.get(page)!.notes.push({stage:"actual-html",sha256:createHash("sha256").update(await response!.body()).digest("hex"),hour:12,surface:"viewer-default-panel"}); await page.bringToFront(); await settlePanelLayout(page);
   const panel = page.locator('.poster-panel-ctl [data-act="panel-toggle"]').first();
   if (await panel.getAttribute("aria-pressed") === "false") await panel.click();
   const home = await openCompanionHome(page); await expect(home).toHaveAttribute("data-home-presentation", "panel");
   const fold = home.locator('[data-home-action="fold"]'); if (await fold.getAttribute("aria-expanded") === "false") await fold.click();
   const room = (await home.locator(".vc-home-room").boundingBox())!, mat = (await home.locator(".vc-home-wash-stance").boundingBox())!;
-  expect(room.width).toBeLessThan(290); proofs.get(page)!.notes.push({ stage: "default-panel-mat-measure", room, mat });
+  expect(room.width).toBeGreaterThan(240); expect(room.width).toBeLessThan(290); proofs.get(page)!.notes.push({ stage: "default-panel-mat-measure", room, mat });
   const actor = page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true }), seat = (await home.locator(".vc-home-cushion").boundingBox())!;
   await actor.focus(); await actor.press("p"); await page.mouse.click(seat.x + seat.width / 2, seat.y + seat.height / 2); await page.mouse.move(2, 2);
   await expect(page.locator(".vc-companion")).toHaveAttribute("data-platform", "companion-home");
   await probe(page); await home.getByRole("button", { name: "샤워패드에서 씻기", exact: true }).click(); await page.mouse.move(2, 2);
   await expect(page.locator(".vc-companion")).toHaveAttribute("data-washing", "", { timeout: 25000 }); await page.waitForTimeout(700);
+  await expect(page.locator(".vc-companion")).not.toHaveAttribute("data-washing","",{timeout:12000});
+  await expect.poll(()=>page.locator(".vc-companion").getAttribute("data-platform"),{timeout:12000}).toMatch(/^companion-home-floor(?:-\d+)?$/);
+  await expect(page.locator(".vc-companion")).not.toHaveAttribute("data-platform","companion-home-floor-400");await page.waitForTimeout(1200);
   const frames = await page.evaluate(() => { const probe = (window as ProbeWindow).wash162!; probe.stop(); return probe.frames; });
-  const washing = frames.filter(f => f.washing && f.brush); expect(washing.length).toBeGreaterThan(5);
-  for (const f of washing) { expect(f.platform).toBe("companion-home-floor-400"); expect(f.x).toBeGreaterThan(mat.x + mat.width * .18); expect(f.x).toBeLessThan(mat.x + mat.width * .82); expect(f.x + 92 * .38).toBeLessThanOrEqual(room.x + room.width + .5); }
+  const washing = frames.filter(f => f.washing && f.brush && f.sourcePaint); expect(washing.length).toBeGreaterThan(5);
+  expect(washing.at(-1)!.at-washing[0].at).toBeGreaterThan(500);
+  const first=frames.find(f=>f.sourcePaint);expect(first).toBeTruthy();
+  expect(frames.some(f=>f.sourcePaint&&["walk","jump"].includes(f.state)&&Math.hypot(f.x-first!.x,f.y-first!.y)>24)).toBe(true);
+  expect(frames.some(f=>f.at>washing.at(-1)!.at&&f.sourcePaint&&!f.washing&&f.platform!=="companion-home-floor-400"&&/^companion-home-floor/.test(f.platform))).toBe(true);
+  for (const f of washing) { expect(f.platform).toBe("companion-home-floor-400"); expect(f.pad).not.toBeNull(); expect(Math.abs(f.y-f.pad!.y)).toBeLessThan(2); expect(f.x).toBeGreaterThan(mat.x + mat.width * .18); expect(f.x).toBeLessThan(mat.x + mat.width * .82); expect(f.x - 92 * .38).toBeGreaterThanOrEqual(room.x-.5); expect(f.x + 92 * .38).toBeLessThanOrEqual(room.x + room.width + .5); }
   proofs.get(page)!.notes.push({ stage: "actual-narrow-panel-wash", frames }); await home.screenshot({ path: resolve(output, "narrow-panel-wash.png") });
 });

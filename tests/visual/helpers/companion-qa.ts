@@ -154,7 +154,7 @@ export async function startCompanionQaProbe(page: Page, options: { sampleInterva
           const css = getComputedStyle(node);
           return css.display !== "none" && css.visibility === "visible" && Number(css.opacity) > .05 && node.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && r.x + r.width > 0 && r.y + r.height > 0 && r.x < innerWidth && r.y < innerHeight;
         };
-        const padNode = document.querySelector<HTMLElement>(".vc-home-wash-pad"), padRect = measuredRect(padNode), padImage = padNode?.querySelector<HTMLImageElement>("img");
+        const padButton = document.querySelector<HTMLElement>(".vc-home-wash-pad"), padNode = document.querySelector<HTMLElement>(".vc-home-wash-stance") ?? padButton, padRect = measuredRect(padNode), padImage = padButton?.querySelector<HTMLImageElement>("img");
         const brushNode = document.querySelector<HTMLElement>(".vc-wash-tool"), brushRect = measuredRect(brushNode), brushSvg = brushNode?.querySelector("svg");
         const matrix = brushNode ? new DOMMatrixReadOnly(getComputedStyle(brushNode).transform) : null;
         const wash = { signaled: actor?.hasAttribute("data-washing") ?? false, command: actor?.dataset.personalityCommand ?? "",
