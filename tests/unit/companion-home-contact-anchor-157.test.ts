@@ -35,11 +35,19 @@ describe("157 physical source-bound overhead body contact", () => {
       const y=Math.round(point.y/contacts.logicalCell*contacts.textureCell)+Math.floor(point.index/8)*contacts.textureCell;
       for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)expect(data[((y+dy)*info.width+x+dx)*4+3],`physical${point.physicalIndex} opaque contact`).toBeGreaterThanOrEqual(250);}
   });
-  it("reproduces the wide522 room: original chest misses the real cord but each actual upper body can reach within unchanged140rise/radius", () => {
+  it("preserves exact upper-body contact after164 while reproducing the original fixed140 chest miss", () => {
+    const controlRise=COMPANION_JUMP_LIMITS.maxRise*Math.max(1,(physical.footY-physical.ceiling)/260);
     for(const point of contacts.frames)for(const facing of [-1,1] as const){const selected=selectCompanionSprite(point.physicalIndex),input=projection(point.physicalIndex,facing);
       const chest=projectCompanionSpritePoint(input,companionCarryAnchor(selected)!)!,head=projectCompanionSpritePoint(input,companionHomeContactAnchor(selected,true)!)!;
-      expect(sampleCompanionHomeReach({...physical,hand:chest})!.touching).toBe(false);
-      const reached=sampleCompanionHomeReach({...physical,hand:head})!;expect(reached.touching).toBe(true);expect(reached.lift).toBeLessThanOrEqual(COMPANION_JUMP_LIMITS.maxRise);
+      // The released164 policy now scales only local control reach. Keep
+      // the original fixed140 miss as geometry, rather than expecting the
+      // repaired proportional policy to reproduce its old failure.
+      const originalRise=Math.min(COMPANION_JUMP_LIMITS.maxRise,physical.footY-physical.ceiling-physical.size*.72);
+      expect(Math.hypot(chest.x-physical.contact.x,chest.y-originalRise-physical.contact.y)).toBeGreaterThan(physical.size*.48);
+      const proportional=sampleCompanionHomeReach({...physical,hand:chest})!;
+      expect(proportional.touching).toBe(true);
+      expect(proportional.lift).toBeLessThanOrEqual(controlRise);
+      const reached=sampleCompanionHomeReach({...physical,hand:head})!;expect(reached.touching).toBe(true);expect(reached.lift).toBeLessThanOrEqual(controlRise);
       expect(Math.hypot(reached.from.x-physical.contact.x,reached.from.y-physical.contact.y)).toBeLessThanOrEqual(physical.size*.48);
       expect(physical.footY-reached.lift-physical.size*.72).toBeGreaterThanOrEqual(physical.ceiling);}
   });

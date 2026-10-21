@@ -41,6 +41,7 @@ type Frame = NativeTravelFrame & {
 type ProbeWindow = Window & { personality137?: { samples: Frame[]; stop: () => void } };
 type Proof = { errors: string[]; rejected: string[]; previewReads: number; notes: unknown[] };
 const proofs = new WeakMap<Page, Proof>();
+const frameBuffers = new WeakMap<Page, { cursor: number; frames: Frame[] }>();
 
 test.use({ viewport: { width: 1920, height: 1100 }, serviceWorkers: "block", isMobile: false, hasTouch: false });
 test.setTimeout(110_000);
@@ -116,6 +117,7 @@ async function selectNative(page: Page, personality: CompanionPersonality, roam?
 }
 
 async function startProbe(page: Page) {
+  frameBuffers.delete(page);
   await installCompanionPaintedSource157(page);
   await page.evaluate(({ preferenceEvent, floorInset, metadata, playRows }) => {
     (window as ProbeWindow).personality137?.stop();
@@ -259,7 +261,16 @@ async function startProbe(page: Page) {
   },{preferenceEvent:COMPANION_PREFERENCES_EVENT,floorInset:COMPANION_HOME_FLOOR_INSET,metadata:companionSpriteMetadata,playRows:Object.fromEntries(Object.entries(COMPANION_PLAY_TIMING).map(([key,value])=>[key,value.beats.map(beat=>beat.row)]))});
 }
 const authenticateFrames=(observed:readonly Frame[])=>observed.map(frame=>({...frame,enabled:frame.travel.enabled,roam:frame.travel.roam,activity:{...frame.activity,source:frame.sourcePaint&&curiousTextureCellMatches(frame.pose,frame.cell),context:JSON.stringify([frame.foods,frame.toys.map(t=>[t.id,t.carried]),frame.tv,frame.lit,frame.curtain])}}));
-const frames = async (page: Page) => authenticateFrames(await page.evaluate(() => (window as ProbeWindow).personality137?.samples ?? []));
+const frames = async (page: Page) => {
+  const previous = frameBuffers.get(page) ?? { cursor: 0, frames: [] };
+  const chunk = await page.evaluate(cursor => {
+    const samples = (window as ProbeWindow).personality137?.samples ?? [];
+    return { cursor: samples.length, frames: samples.slice(cursor) };
+  }, previous.cursor);
+  const frames = previous.frames.concat(authenticateFrames(chunk.frames));
+  frameBuffers.set(page, { cursor: chunk.cursor, frames });
+  return frames;
+};
 const duration = async (page: Page, ms: number) => expect.poll(async () => (await frames(page)).at(-1)?.at ?? 0, { timeout: ms + 8000, intervals: [250] }).toBeGreaterThanOrEqual(ms);
 function signature(frame: Frame, personality: CompanionPersonality) {
   if(!frame.activity.source)return false;
@@ -279,6 +290,33 @@ function meaningful(trace: readonly Frame[], index: number, activity: ReadonlySe
   if(prior && (frame.foods.join("|")!==prior.foods.join("|") || JSON.stringify(frame.toys.map(t=>[t.id,t.carried]))!==JSON.stringify(prior.toys.map(t=>[t.id,t.carried]))))return true;
   // Rest is an explicit exception, not a fictitious activity/landing receipt.
   return frame.state==="sleep"&&[10,11,12,35,36,40].some(row=>companionSpriteMetadata.rows[row]?.includes(frame.pose));
+}
+
+/** A released entry may flow into ordinary life without another script label.
+ * Only existing authenticated activity can prove the following physical path;
+ * this neither demands a precise landing nor accepts label-only progression. */
+function physicalEntryContinuation137(trace: readonly Frame[], first: Frame) {
+  const releasedIndex=trace.findIndex(frame=>frame.at>first.at && frame.scene!==first.scene && frame.serial!==first.serial
+    && frame.visible && frame.decoded && frame.activity.source && !frame.activity.manual && frame.travel.enabled);
+  if(releasedIndex<0)return undefined;
+  const after=trace.slice(releasedIndex),released=after[0],progress=activityProgressTimes(after);
+  const paths:Frame[][]=[];let path:Frame[]=[];
+  for(let index=0;index<after.length;index++){
+    const frame=after[index];
+    if(!["walk","jump"].includes(frame.state) || !progress.has(frame.at) || !meaningful(after,index,progress)){path=[];continue;}
+    const prior=path.at(-1);
+    if(!prior || frame.travel.id!==prior.travel.id || frame.state!==prior.state || frame.activity.epoch!==prior.activity.epoch
+      || frame.activity.context!==prior.activity.context || frame.at-prior.at>250){path=[];paths.push(path);}
+    path.push(frame);
+  }
+  for(const path of paths){
+    const start=path[0],end=path.at(-1)!,distance=Math.max(...path.map(frame=>Math.hypot(frame.x-start.x,frame.y-start.y)));
+    if(path.length<3 || start.at-released.at>10_000 || end.at-start.at<100 || distance<8 || new Set(path.map(frame=>frame.pose)).size<2)continue;
+    return {releasedAt:released.at,releasedScene:released.scene,releasedSerial:released.serial,kind:start.state,runId:start.travel.id,
+      firstAt:start.at,lastAt:end.at,followingDelay:start.at-released.at,pointCount:path.length,distance,
+      points:path.map(frame=>({at:frame.at,x:frame.x,y:frame.y,pose:frame.pose,source:frame.activity.source}))};
+  }
+  return undefined;
 }
 
 /**143 weighted sampling no longer guarantees a24-item bag. Acquisition is
@@ -661,9 +699,10 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const perso
     expect(points.length).toBeGreaterThan(2);
     const gaps = gapsFor(points);
     expect(Math.max(...gaps), "actual varied activity must recur before10s; no precise landing or decorative TV bow is required").toBeLessThanOrEqual(10_000);
-    expect(new Set(trace.filter(frame => frame.scene).map(frame => `${frame.scene}:${frame.beat}`)).size, "an entry label alone is not a full living sequence").toBeGreaterThan(1);
+    const distinctStages=new Set(trace.filter(frame=>frame.scene).map(frame=>`${frame.scene}:${frame.beat}`)),actualPhysicalContinuation=physicalEntryContinuation137(trace,first);
+    expect(distinctStages.size>1 || Boolean(actualPhysicalContinuation), "entry must continue into another observed stage or a real released source-authenticated physical path within10s").toBe(true);
     expect(trace.every(frame => frame.foods.length <= 8 && frame.toys.length <= 4)).toBe(true);
-    proofs.get(page)!.notes.push({ firstDecodedSignatureAt: first.at, largestMeaningfulGap: Math.max(...gaps), distinctStages: [...new Set(trace.map(frame => `${frame.scene}:${frame.beat}`))], selectionWasNativeRadio: true, completedActualTravel:travel, originalObservationEnd:cutoff, activityCriteria:145,activityFrames:activity.size,observedUntil:observed.at(-1)!.at });
+    proofs.get(page)!.notes.push({ firstDecodedSignatureAt: first.at, largestMeaningfulGap: Math.max(...gaps), distinctStages: [...new Set(trace.map(frame => `${frame.scene}:${frame.beat}`))], selectionWasNativeRadio: true, actualPhysicalContinuation, completedActualTravel:travel, originalObservationEnd:cutoff, activityCriteria:145,activityFrames:activity.size,observedUntil:observed.at(-1)!.at });
   });
 
 for (const surface of ["viewer", "studio"] as const) test(`137 ${surface} tidy carries all four native toys to the actual box before removing their IDs`, async ({ page }) => {

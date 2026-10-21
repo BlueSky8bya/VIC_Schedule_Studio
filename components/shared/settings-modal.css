@@ -2094,7 +2094,7 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 .rhh-companion-settings .rhh-collection-book .rhh-food-grid .rhh-collection-tile > :is(.vc-collection-art, .rhh-collection-unknown) { width: min(64px, 80cqw, max(16px, calc(100cqh - 2.7em - 50px))); height: min(64px, 80cqw, max(16px, calc(100cqh - 2.7em - 50px))); }
 .rhh-companion-settings .rhh-collection-book .rhh-collection-tile > span:not([aria-hidden="true"]):not(.vc-collection-art):not(.rhh-collection-rarity):not(.rhh-collection-unread):not(.rhh-collection-state) { height: 2.7em; min-height: 2.7em; font-size: max(15px, var(--text-ui)); line-height: 1.35; }
 .rhh-companion-settings .rhh-collection-book .rhh-food-grid .rhh-collection-tile > .rhh-collection-rarity { align-self: center; justify-self: center; padding: 2px 9px; line-height: 1.4; font-size: max(13px, var(--text-caption)); }
-.rhh-companion-settings .rhh-collection-page-position { flex-direction: column; gap: 6px; width: 100%; min-width: 0; height: auto; min-height: 48px; padding: 5px 12px; }
+.rhh-companion-settings .rhh-collection-page-position { flex-direction: column; gap: 6px; width: 100%; min-width: 0; height: auto; min-height: max(48px, var(--companion-hit-size, 44px)); padding: 5px 12px; }
 .rhh-collection-page-number { display: inline-flex; align-items: baseline; justify-content: center; gap: 6px; font-size: 15px; font-variant-numeric: tabular-nums; line-height: 1.2; }
 .rhh-collection-page-number > span { opacity: .7; font-size: 13px; }
 .rhh-companion-settings .rhh-collection-page-dots { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px; height: auto; min-height: 9px; }

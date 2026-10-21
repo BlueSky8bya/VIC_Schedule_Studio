@@ -888,6 +888,24 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
     },
     current: () => active ? { id: active.recipe.id, beat: active.beat, itemId: active.itemId, ...(active.routine ? { routine: true as const } : {}) } : undefined,
     owns: (beat: PersonalitySceneBeat) => Boolean(active && active.recipe.id === beat.id && active.serial === beat.serial && active.beat === beat.beat),
+    /** Current required source subject only, never an ACK or clock reset.
+     * Existing tvWatch is produced only for a real required TV observation;
+     * required basic pose rows are matched to this exact command and action. */
+    finitePosePresentation(beat: PersonalitySceneBeat, kind: CompanionAction["kind"]): { row: number; expiresAt: number } | undefined {
+      const command = active?.recipe.steps[active.beat];
+      if (!active || beat.id !== active.recipe.id || beat.serial !== active.serial || beat.beat !== active.beat || beat.travel
+        || !command || command.optional || beat.command.optional !== command.optional
+        || active.routine || active.manual || beat.routine || beat.manual) return;
+      const expiresAt = Math.min(active.progressed + 7500, active.started + 60000);
+      const subject = (row: number) => ({ row, expiresAt });
+      if (command.kind === "watch" && beat.command.kind === "watch" && kind === "look"
+        && command.ms === beat.command.ms && active.tvWatch?.beat === active.beat) return subject(1);
+      if (command.kind !== "pose" || beat.command.kind !== "pose" || command.pose !== beat.command.pose
+        || command.ms !== beat.command.ms || kind !== command.pose) return;
+      if (command.pose === "stretch") return subject(16);
+      if (command.pose === "shake") return subject(17);
+      if (command.pose === "look" || command.pose === "sniff") return subject(1);
+    },
     /** Current same-serial intent for the room-policy handoff. Never expose
      * a cancelled/next recipe or writable catalog objects to the renderer. */
     homeLifeScene(beat: PersonalitySceneBeat) {

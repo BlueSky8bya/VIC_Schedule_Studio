@@ -2869,6 +2869,32 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           }
         }
         let age = now - began, p = clamp(age / total, 0, 1); status = action.kind;
+        // Only the exact current required basic pose/TV watch owns this
+        // first-packet wait. General look, intro, travel, contact, wash and
+        // sleep keep their existing clocks and cancellation paths.
+        const finitePoseOwner = action.personalityScene;
+        const finitePose = finitePoseOwner && personalityDirector.finitePosePresentation(finitePoseOwner,action.kind);
+        // The readiness wait owns no extra time. Check throughout playback,
+        // on the director's existing active clock, including the final tick.
+        if (finitePoseOwner && finitePose && brain.current.activeMs > finitePose.expiresAt) {
+          personalityDirector.resolve(finitePoseOwner,false,undefined,brain.current.activeMs);
+          clearAction(); nextDecision = now+480; paint(1,0,"look"); schedule(); return;
+        }
+        if (finitePoseOwner && finitePose && !playPresentation.started) {
+          const selected = selectCompanionSprite(registration.rows[finitePose.row][0],finitePose.row,0);
+          requestSprite.current(selected.src);
+          const texture = peekDecodedCompanionSprite(selected.src);
+          const usable = Boolean(texture?.complete && texture.naturalWidth && texture.getAttribute("src") === selected.src
+            && (!texture.isConnected || texture.parentElement === image));
+          const presentation = advanceCompanionPlayPresentation({ now,began,delta,presentation:playPresentation,usable });
+          playPresentation = presentation.presentation; began = presentation.began;
+          age = now-began; p = clamp(age/total,0,1);
+          if (presentation.expired) {
+            personalityDirector.resolve(finitePoseOwner,false,undefined,brain.current.activeMs);
+            clearAction(); nextDecision = now+480; paint(1,0,"look"); schedule(); return;
+          }
+          if (!playPresentation.started) { paint(lastPoseSample.row,lastPoseSample.frame,lastPoseSample.status); schedule(); return; }
+        }
         // Keep the preceding body visible while a cold first packet decodes,
         // then play the whole onset from phase0. A late texture must not turn
         // a bow into its held final key or earn an invisible completion.

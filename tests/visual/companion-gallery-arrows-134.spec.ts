@@ -22,7 +22,7 @@ type Click = { target: string; direction: string | null; label: string | null };
 type Activity = { kind: string; target?: string | null; meta?: unknown; durMs?: number | null };
 const output = process.env.COMPANION134_GALLERY_OUTPUT ?? ".scratch-pw/companion-134/gallery";
 const activityBase = process.env.VIC_ACTIVITY_BASE_URL ?? "http://127.0.0.2:3100";
-const receipts = new WeakMap<Page, { name: string; pending: Promise<void>[]; read: () => unknown }>();
+const receipts = new WeakMap<Page, { name: string; pending: Promise<void>[]; recordDots: (sample: unknown) => void; read: () => unknown }>();
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
 const scoped = (target: string) => /^(companion-collection-(page|inspect|category)|companion-accessory-select)(#|$)/.test(target);
 const counts = (targets: string[]) => Object.fromEntries([...new Set(targets)].sort().map(target => [target, targets.filter(item => item === target).length]));
@@ -70,7 +70,38 @@ async function assertDots(book: Locator, unread: number[], size: number) {
   const rail = book.getByRole("slider"), page = Number(await rail.inputValue()) - 1, maximum = Number(await rail.getAttribute("max"));
   await expect(book.locator(".rhh-collection-page-bar")).toHaveCount(0);
   const dots = book.locator(".rhh-collection-page-dots > span[data-page]"); await expect(dots).toHaveCount(maximum);
-  const styles = await dots.evaluateAll(nodes => nodes.map(node => { const s = getComputedStyle(node), r = node.getBoundingClientRect(); return { page: Number((node as HTMLElement).dataset.page), unread: node.hasAttribute("data-unread"), current: node.getAttribute("aria-current") === "page", background: s.backgroundColor, image: s.backgroundImage, shadow: s.boxShadow, opacity: Number(s.opacity), x: r.x, right: r.right, width: r.width, y: r.y, bottom: r.bottom, height: r.height }; }));
+  // This book intentionally scrolls at short viewport heights. Reveal the
+  // actual native target before measuring; do not alter its content or layout.
+  await rail.scrollIntoViewIfNeeded();
+  // Dot and ancestor rectangles must describe the same browser frame. A
+  // selected-tile focus or native scroll may move the whole footer between
+  // separate protocol reads while every individual rectangle remains valid.
+  const measurement = await book.evaluate(root => {
+    const rect = (node: Element) => { const r = node.getBoundingClientRect(); return { x:r.x, y:r.y, right:r.right, bottom:r.bottom, width:r.width, height:r.height }; };
+    const railNode = root.querySelector<HTMLInputElement>(".rhh-collection-page-rail"), dotNode = root.querySelector<HTMLElement>(".rhh-collection-page-dots");
+    if (!railNode || !dotNode) throw new Error("Actual collection rail and dots are required");
+    const viewport = window.visualViewport, x = viewport?.offsetLeft ?? 0, y = viewport?.offsetTop ?? 0;
+    const clip = { x, y, right:x+(viewport?.width ?? document.documentElement.clientWidth), bottom:y+(viewport?.height ?? document.documentElement.clientHeight) };
+    const clips = [];
+    for (let node: HTMLElement | null = dotNode.parentElement; node; node = node.parentElement) {
+      const s = getComputedStyle(node), r = rect(node), clipsX = /^(auto|scroll|hidden|clip)$/.test(s.overflowX), clipsY = /^(auto|scroll|hidden|clip)$/.test(s.overflowY);
+      if (!clipsX && !clipsY) continue;
+      // Native client boxes exclude borders and scrollbars. BCR/offset ratios
+      // retain the actual shell zoom instead of assuming an unscaled 44px UI.
+      const scaleX = r.width / node.offsetWidth, scaleY = r.height / node.offsetHeight;
+      const inner = { x:r.x+node.clientLeft*scaleX, y:r.y+node.clientTop*scaleY, right:r.x+(node.clientLeft+node.clientWidth)*scaleX, bottom:r.y+(node.clientTop+node.clientHeight)*scaleY };
+      clips.push({ tag:node.tagName, className:node.className, overflowX:s.overflowX, overflowY:s.overflowY, cssWidth:s.width, cssHeight:s.height, boxSizing:s.boxSizing, borderLeft:s.borderLeftWidth, borderRight:s.borderRightWidth, borderTop:s.borderTopWidth, borderBottom:s.borderBottomWidth, zoom:s.zoom, transform:s.transform, display:s.display, scrollLeft:node.scrollLeft, scrollTop:node.scrollTop, clientWidth:node.clientWidth, clientHeight:node.clientHeight, offsetWidth:node.offsetWidth, offsetHeight:node.offsetHeight, scaleX, scaleY, box:r, inner });
+      if (clipsX) { clip.x=Math.max(clip.x,inner.x); clip.right=Math.min(clip.right,inner.right); }
+      if (clipsY) { clip.y=Math.max(clip.y,inner.y); clip.bottom=Math.min(clip.bottom,inner.bottom); }
+    }
+    const railStyle = getComputedStyle(railNode), positionStyle = getComputedStyle(railNode.parentElement!);
+    return { at:performance.now(), page:Number(railNode.value)-1, maximum:Number(railNode.max), book:rect(root), dotBox:rect(dotNode), rail:rect(railNode), clip, clips,
+      railOpacity:railStyle.opacity, positionMinHeight:positionStyle.minHeight, hitSize:positionStyle.getPropertyValue("--companion-hit-size"), shellZoom:positionStyle.getPropertyValue("--shell-zoom"),
+      styles:[...dotNode.querySelectorAll<HTMLElement>(":scope > span[data-page]")].map(node => { const s = getComputedStyle(node); return { page:Number(node.dataset.page), unread:node.hasAttribute("data-unread"), current:node.getAttribute("aria-current")==="page", background:s.backgroundColor, image:s.backgroundImage, shadow:s.boxShadow, opacity:Number(s.opacity), ...rect(node) }; }) };
+  });
+  receipts.get(book.page())?.recordDots(measurement);
+  const styles = measurement.styles;
+  expect(measurement.page).toBe(page); expect(measurement.maximum).toBe(maximum);
   const expected = new Set(unread.map(index => Math.floor(index / size)));
   expect(styles.map(dot => dot.page)).toEqual(Array.from({ length: maximum }, (_, index) => index));
   expect(styles.filter(dot => dot.unread).map(dot => dot.page)).toEqual([...expected].sort((a, b) => a - b));
@@ -82,9 +113,18 @@ async function assertDots(book: Locator, unread: number[], size: number) {
   for (const dot of styles) { expect(dot.shadow).toBe("none"); expect(dot.width).toBeGreaterThan(0); expect(dot.height).toBeGreaterThan(0); }
   expect(dotLayoutIssues134(styles), "all dots stay separate and preserve actual row-major page order").toEqual([]);
   if (expected.size) { const description = await rail.getAttribute("aria-describedby"); expect(description).toBeTruthy(); await expect(book.locator(`[id="${description}"]`)).toHaveText(`새 발견이 남은 페이지: ${[...expected].sort((a, b) => a - b).map(index => index + 1).join(", ")}`); } else await expect(rail).not.toHaveAttribute("aria-describedby");
-  const box = (await rail.boundingBox())!; expect(box.width).toBeGreaterThanOrEqual(43.9); expect(box.height).toBeGreaterThanOrEqual(43.9);
+  const box = measurement.rail; expect(box.width).toBeGreaterThanOrEqual(43.9); expect(box.height).toBeGreaterThanOrEqual(43.9);
   await expect(rail).toHaveCSS("opacity", "0"); await expect(rail).toHaveAttribute("aria-valuetext", `${maximum}페이지 중 ${page + 1}페이지`);
-  const dotBox = (await dots.first().locator("..").boundingBox())!, bookBox = (await book.boundingBox())!;
+  const dotBox = measurement.dotBox, bookBox = measurement.book;
+  // The complete dot field and actual target must be visible through every
+  // real overflow ancestor after scrolling, as well as inside the book.
+  const visible = measurement.clip;
+  expect([visible.x,visible.y,visible.right,visible.bottom,...measurement.clips.flatMap(item => [item.scaleX,item.scaleY])].every(Number.isFinite)).toBe(true);
+  expect(visible.right).toBeGreaterThan(visible.x); expect(visible.bottom).toBeGreaterThan(visible.y);
+  for (const actual of [dotBox,box]) {
+    expect(actual.x).toBeGreaterThanOrEqual(visible.x-.1); expect(actual.right).toBeLessThanOrEqual(visible.right+.1);
+    expect(actual.y).toBeGreaterThanOrEqual(visible.y-.1); expect(actual.bottom).toBeLessThanOrEqual(visible.bottom+.1);
+  }
   expect(dotBox.x).toBeGreaterThanOrEqual(bookBox.x); expect(dotBox.x + dotBox.width).toBeLessThanOrEqual(bookBox.x + bookBox.width);
   expect(dotBox.y).toBeGreaterThanOrEqual(bookBox.y); expect(dotBox.y + dotBox.height).toBeLessThanOrEqual(bookBox.y + bookBox.height);
   for (const dot of styles) {
@@ -103,9 +143,9 @@ test.afterEach(async ({ page }, info) => {
 for (const [surface, width, height, dark] of [["viewer", 1050, 640, false], ["studio", 1920, 1100, true], ["preview", 1440, 900, false]] as const) test(`134 ${surface}: arrows activate displayed buttons, unread dots and single semantic activity`, async ({ page }) => {
   test.setTimeout(120000); mkdirSync(output, { recursive: true });
   const origin = new URL(activityBase).origin, buildDir = process.env.VISUAL_TEST_BUILD_DIR ?? ".next", build = readFileSync(resolve(buildDir, "BUILD_ID"), "utf8").trim();
-  const events: Activity[] = [], clicks: Click[] = [], manual: string[] = [], errors: string[] = [], blocked: string[] = [], mutations: string[] = [], steps: unknown[] = [], chunks: { served: string; local: string }[] = [], pending: Promise<void>[] = [];
+  const events: Activity[] = [], clicks: Click[] = [], manual: string[] = [], errors: string[] = [], blocked: string[] = [], mutations: string[] = [], steps: unknown[] = [], dotMeasurements: unknown[] = [], chunks: { served: string; local: string }[] = [], pending: Promise<void>[] = [];
   let expected: Record<string, number> = {};
-  receipts.set(page, { name: surface, pending, read: () => ({ build, priorLocalFixtureOnly: true, earnedInSession: false, clicks, manual, expected, events, steps, chunks, errors, blocked, interceptedMutations: mutations }) });
+  receipts.set(page, { name: surface, pending, recordDots: sample => dotMeasurements.push(sample), read: () => ({ build, priorLocalFixtureOnly: true, earnedInSession: false, clicks, manual, expected, events, steps, dotMeasurements, chunks, errors, blocked, interceptedMutations: mutations }) });
   const manifest = JSON.parse(readFileSync(resolve(buildDir, "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
   const previewActions = new Set(Object.entries(manifest).filter(([, item]) => item.exportedName === "getPublicPreviewAction").map(([id]) => id));
   page.on("pageerror", error => errors.push(error.message));
