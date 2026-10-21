@@ -19,15 +19,23 @@ import { enableCompanion143Diagnostics, readCompanion143Diagnostics } from "./he
 
 import { activityProgressTimes, stationaryActivityRepetitions, type ActivityObservation } from "../../scripts/companion-qa/activity-criteria.mjs";
 import { curiousTextureCellMatches, type CuriousTextureCellMeasurement } from "./helpers/companion-curious-completion-144";
+import { beforeBedRestPreparation157 } from "./helpers/companion-before-bed-rest-157";
+import { completedTidyReturnGoal157 } from "./helpers/companion-tidy-primary-157";
+import { installCompanionPaintedSource157, type PaintedSource157Proof, type PaintedSource157Window } from "./helpers/companion-painted-source-157";
+import type { NativeHomeControlFrame } from "./helpers/companion-home-contact-156";
 
 const output = process.env.COMPANION137_OUTPUT ?? ".scratch-pw/companion-137/native";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
 type Surface = "viewer" | "studio" | "preview";
 type Frame = NativeTravelFrame & {
-  at: number; state: string; signature: string; scene: string; beat: string; command: string; play: string; pose: number;
+  at: number; state: string; signature: string; scene: string; serial: string; beat: string; command: string; play: string; pose: number;
   x: number; y: number; platform: string; visible: boolean; decoded: boolean; tv: string; lit: boolean; curtain: string; curiosity: string;
   toys: { id: string; carried: boolean; held: boolean; x: number; y: number }[]; foods: string[];
   activity: ActivityObservation; cell: CuriousTextureCellMeasurement | null; sourcePaint: boolean; tvPaint: boolean;
+  paintedSource?: PaintedSource157Proof;
+  homeLife?: { phase: string; scene: string; serial: string; beat: string; reaching: string; lampTouch: boolean };
+  homeSofa?: { left: number; right: number; top: number; visible: boolean };
+  restControl?: NativeHomeControlFrame["control"];
   washing: boolean; brush: { x: number; y: number; visible: boolean } | null;
 };
 type ProbeWindow = Window & { personality137?: { samples: Frame[]; stop: () => void } };
@@ -108,6 +116,7 @@ async function selectNative(page: Page, personality: CompanionPersonality, roam?
 }
 
 async function startProbe(page: Page) {
+  await installCompanionPaintedSource157(page);
   await page.evaluate(({ preferenceEvent, floorInset, metadata, playRows }) => {
     (window as ProbeWindow).personality137?.stop();
     let request = 0, last = -Infinity, stopped = false, epoch = 0, lastTrusted = -Infinity;
@@ -183,6 +192,13 @@ async function startProbe(page: Page) {
       const support=surfaces.find(surface=>[surface.footY,...Object.values(surface.rect)].every(Number.isFinite) && x>=surface.rect.x-1 && x<=surface.rect.x+surface.rect.width+1 && Math.abs(y-surface.footY)<=3) ?? null;
       return {support,inkRects};
     };
+    const restPaint = (node: Element | null | undefined): NativeHomeControlFrame["control"]["tool"] => {
+      if (!node) return { visible:false,rect:null };
+      const rect = node.getBoundingClientRect(), css = getComputedStyle(node);
+      return { rect:{x:rect.x,y:rect.y,width:rect.width,height:rect.height},visible:Boolean(!document.hidden && !node.closest("[hidden],[inert]")
+        && rect.width>0 && rect.height>0 && rect.right>0 && rect.bottom>0 && rect.left<innerWidth && rect.top<innerHeight
+        && css.visibility==="visible" && css.display!=="none" && Number(css.opacity)>.05 && node.checkVisibility({checkOpacity:true,checkVisibilityCSS:true})) };
+    };
     const sample = (now: number) => {
       if (stopped) return;
       if (now - last >= 40) {
@@ -199,6 +215,7 @@ async function startProbe(page: Page) {
         const supported=!moving && Boolean(motionKind) && resting<=2 ? supportAt(x,y,platform) : {support:null,inkRects:[]};
         const anchor=viewportSource ? {x:0,y:0,width:innerWidth,height:innerHeight} : source?.isConnected ? source.getBoundingClientRect() : null;
         const sprite=actor?.querySelector<HTMLElement>(".vc-sprite"),pose=Number(actor?.dataset.pose??-1),packet=metadata.frames[pose];
+        const paintedSource=(window as PaintedSource157Window).companionPaintedSource157?.inspect(actor);
         let cell:CuriousTextureCellMeasurement|null=null;
         if(texture&&sprite)try{
           const tc=getComputedStyle(texture),sc=getComputedStyle(sprite),url=new URL(texture.currentSrc,location.href);
@@ -213,10 +230,24 @@ async function startProbe(page: Page) {
         const tvPaint=Boolean(picture?.complete&&picture.naturalWidth&&picture.checkVisibility({checkOpacity:true,checkVisibilityCSS:true})&&new URL(picture.currentSrc,location.href).pathname===expectedPicture);
         // Raw cell is authenticated after extraction, outside this observer.
         const activity:ActivityObservation={source:false,manual:now-lastTrusted<1000||state==="held"||Boolean(actor?.hasAttribute("data-placing")),epoch,jumpAllowed:preferences.jump,width:r?.width??0,height:r?.height??0,anchor:{x:root.x,y:root.y,width:root.width,height:root.height},action:packet?action:"",context:""};
-        samples.push({ at: now - began, state, signature: actor?.dataset.personalityActivity ?? "", scene: actor?.dataset.personalityScene ?? "", beat: actor?.dataset.personalityBeat ?? "", command: actor?.dataset.personalityCommand ?? "", play: actor?.dataset.play ?? "", pose: Number(actor?.dataset.pose ?? -1), x,y,platform, visible: Boolean(actor && !document.hidden && !actor.hidden && r!.width && r!.height && r!.bottom > 0 && r!.top < innerHeight && r!.right > 0 && r!.left < innerWidth && actor.checkVisibility({checkOpacity:true,checkVisibilityCSS:true})), decoded: Boolean(texture?.complete && texture.naturalWidth), tv: room?.dataset.tv ?? "off", lit: room?.hasAttribute("data-lamp-lit") ?? false, curtain: room?.querySelector<HTMLElement>(".vc-home-window")?.dataset.curtain ?? "", curiosity: actor?.dataset.foodCuriosity ?? "",
-          activity,cell,tvPaint,sourcePaint:Boolean(sprite&&texture&&[sprite,texture].every(node=>{
-            const r=node.getBoundingClientRect(),css=getComputedStyle(node);return !node.hidden&&!node.closest("[hidden],[inert]")&&r.width>0&&r.height>0&&r.right>0&&r.bottom>0&&r.x<innerWidth&&r.y<innerHeight&&css.display!=="none"&&css.visibility==="visible"&&Number(css.opacity)>.05&&node.checkVisibility({checkOpacity:true,checkVisibilityCSS:true});
-          })),
+        const cushion = room?.querySelector<HTMLElement>(".vc-home-cushion"), cushionRect = cushion?.getBoundingClientRect();
+        const homeSofa = cushion && cushionRect ? { left: cushionRect.left, right: cushionRect.right, top: cushionRect.top,
+          visible: cushion.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && cushionRect.width > 0 && cushionRect.height > 0 } : undefined;
+        const homeLife = actor?.dataset.homeLife ? { phase: actor.dataset.homeLife, scene: actor.dataset.homeLifeScene ?? "", serial: actor.dataset.homeLifeSerial ?? "", beat: actor.dataset.homeLifeBeat ?? "",
+          reaching: actor.dataset.homeReaching ?? "", lampTouch: Boolean(room?.querySelector(".vc-home-lamp[data-companion-touch]")) } : undefined;
+        let restControl: NativeHomeControlFrame["control"] | undefined;
+        if (actor?.dataset.personalityScene === "S03" || homeLife?.scene === "S03") {
+          const lamp = room?.querySelector<HTMLElement>(".vc-home-lamp"), lp = lamp?.querySelector<HTMLElement>(".vc-home-lamp-paint"), handle = lamp?.querySelector<HTMLElement>(".vc-home-lamp-handle"), television = room?.querySelector<HTMLElement>(".vc-home-tv-paint"), tvBody = television?.querySelector<HTMLImageElement>(".vc-home-tv-body");
+          const lampState = room?.hasAttribute("data-lamp-lit") ? "on" : "off", art = lamp?.querySelector<HTMLElement>(`.vc-home-lamp-art[data-lamp-state="${lampState}"]`), feedback = lamp?.querySelector<HTMLElement>(`.vc-home-lamp-cord-feedback[data-lamp-state="${lampState}"]`);
+          restControl = { actor:{...restPaint(actor),decoded:Boolean(texture?.complete&&texture.naturalWidth),pose,src:texture?.currentSrc??"",platform,reach:actor?.dataset.homeReaching??""},
+            tool:restPaint(document.querySelector(".vc-home-touch-tool")),
+            lamp:{button:restPaint(lamp),paint:restPaint(lp),handle:restPaint(handle),touch:Boolean(lamp?.hasAttribute("data-companion-touch")),state:lampState,
+              requestedPull:parseFloat(lamp?getComputedStyle(lamp).getPropertyValue("--vc-lamp-pull"):"NaN"),cssWidth:parseFloat(lp?getComputedStyle(lp).width:"NaN"),
+              art:{...restPaint(art),source:art?getComputedStyle(art).borderImageSource:""},feedback:{...restPaint(feedback),source:feedback?getComputedStyle(feedback).borderImageSource:"",opacity:Number(feedback?getComputedStyle(feedback).opacity:0),clip:feedback?getComputedStyle(feedback).clipPath:""}},
+            tv:{...restPaint(television),decoded:Boolean(tvBody?.complete&&tvBody.naturalWidth),src:tvBody?.currentSrc??""} };
+        }
+        samples.push({ at: now - began, homeLife, homeSofa, restControl, state, signature: actor?.dataset.personalityActivity ?? "", scene: actor?.dataset.personalityScene ?? "", serial: actor?.dataset.personalitySerial ?? "", beat: actor?.dataset.personalityBeat ?? "", command: actor?.dataset.personalityCommand ?? "", play: actor?.dataset.play ?? "", pose: Number(actor?.dataset.pose ?? -1), x,y,platform, visible: Boolean(actor && !document.hidden && !actor.hidden && r!.width && r!.height && r!.bottom > 0 && r!.top < innerHeight && r!.right > 0 && r!.left < innerWidth && actor.checkVisibility({checkOpacity:true,checkVisibilityCSS:true})), decoded: Boolean(texture?.complete && texture.naturalWidth), tv: room?.dataset.tv ?? "off", lit: room?.hasAttribute("data-lamp-lit") ?? false, curtain: room?.querySelector<HTMLElement>(".vc-home-window")?.dataset.curtain ?? "", curiosity: actor?.dataset.foodCuriosity ?? "",
+          activity,cell,tvPaint,paintedSource,sourcePaint:paintedSource?.passed===true,
           travel:{id:runId,epoch,...preferences,manual:state === "held" || Boolean(actor?.hasAttribute("data-placing")) || now-lastTrusted < 1000,actorWidth:r?.width ?? 0,actorHeight:r?.height ?? 0,anchor:anchor ? {x:anchor.x,y:anchor.y,width:anchor.width,height:anchor.height} : null,supported:Boolean(supported.support),...supported},
           toys: [...document.querySelectorAll<HTMLElement>(".vc-toy")].map(node => { const box = node.getBoundingClientRect(); return { id: node.dataset.toyId!, carried: node.dataset.carried === "true", held: node.dataset.held === "true", x: box.left + box.width / 2, y: box.bottom }; }), foods: [...document.querySelectorAll<HTMLElement>(".vc-food")].map(node => node.dataset.food!), washing: actor?.hasAttribute("data-washing") ?? false, brush: brush && brushRect ? { x: brushRect.left + brushRect.width / 2, y: brushRect.top + brushRect.height / 2, visible: !brush.hidden && getComputedStyle(brush).visibility !== "hidden" && brushRect.width > 0 } : null });
       }
@@ -276,9 +307,10 @@ function finishedRecipes(trace: readonly Frame[], opening: { x: number; y: numbe
     // Keep attempts separate: an abbreviated first run cannot borrow a
     // missing pose or real effect from a later execution of the same scene.
     const attempts: { start: number; end: number }[] = [];
-    let start = -1, lastBeat = -1;
+    let start = -1, lastBeat = -1, attemptSerial = "";
+    const ownedPreparations = beforeBedRestPreparation157(trace, recipe.id, opening).indices;
     const actualGeneric = (frame: Frame | undefined) => {
-      if (!frame || frame.scene || !frame.visible || !frame.decoded || frame.state === "idle") return false;
+      if (!frame || frame.scene || !frame.visible || !frame.decoded || !frame.activity.source || frame.state === "idle") return false;
       if (frame.state === "play") return Boolean(COMPANION_PLAY_TIMING[frame.play as keyof typeof COMPANION_PLAY_TIMING]?.beats
         .some(beat => companionSpriteMetadata.rows[beat.row].includes(frame.pose)));
       const rows: Record<string, number[]> = { look: [1, 26], sniff: [1], stretch: [16], shake: [17], walk: [2, 20], jump: [3, 4, 5, 6], eat: [1, 9], sleep: [10, 11, 12, 35, 36, 40] };
@@ -288,10 +320,16 @@ function finishedRecipes(trace: readonly Frame[], opening: { x: number; y: numbe
       const frame = trace[i];
       if (frame.scene === recipe.id) {
         const beat = Number(frame.beat);
-        if (start >= 0 && beat < lastBeat) { attempts.push({ start, end: i }); start = i; }
+        if (start >= 0 && (beat < lastBeat || frame.serial && frame.serial !== attemptSerial)) { attempts.push({ start, end: i }); start = i; }
         if (start < 0) start = i;
+        attemptSerial = frame.serial;
         lastBeat = beat;
       } else if (start >= 0) {
+        // A157 pre-bed lamp prerequisite retains the exact S03 go-sofa goal.
+        // Same physical return, actual155 cord ACK, real movement, current
+        // owner/cell and subsequent sofa preparation must all be witnessed.
+        // Its time provides no credit for the required cozy/sleep stages.
+        if (ownedPreparations.has(i)) continue;
         const next = trace[i + 1];
         const previous = trace.slice(start, i).reverse().find(value => value.scene === recipe.id && value.visible && value.decoded);
         const realGenericBoundary = actualGeneric(frame) && actualGeneric(next) && next.state === frame.state && next.play === frame.play
@@ -300,12 +338,12 @@ function finishedRecipes(trace: readonly Frame[], opening: { x: number; y: numbe
         // Completing a source scene need not start another source script.
         // A genuine newly painted ordinary action also closes this attempt;
         // empty/idle labels alone still cannot prove completion.
-        if (frame.scene || realGenericBoundary) { attempts.push({ start, end: i }); start = -1; lastBeat = -1; }
+        if (frame.scene || realGenericBoundary) { attempts.push({ start, end: i }); start = -1; lastBeat = -1; attemptSerial = ""; }
       }
     }
     return attempts.some(attempt => {
       const run = trace.slice(attempt.start, attempt.end), following = trace[attempt.end];
-      const stageFor = (beat: number) => run.filter(frame => frame.visible && frame.decoded && frame.scene === recipe.id && Number(frame.beat) === beat);
+      const stageFor = (beat: number) => run.filter(frame => frame.visible && frame.decoded && frame.sourcePaint && frame.activity.source && frame.scene === recipe.id && Number(frame.beat) === beat);
       const playedFor = (stage: readonly Frame[], state: string, ms: number, play?: string) => {
         const timing = play ? COMPANION_PLAY_TIMING[play as keyof typeof COMPANION_PLAY_TIMING] : undefined;
         const rows = state === "sleep" ? [10, 11, 12, 40, ...COMPANION_PLAY_TIMING["cozy-nest"].beats.map(beat => beat.row)]
@@ -518,11 +556,10 @@ for (const personality of COMPANION_PERSONALITIES) test(`140 ${personality} nati
   const home = await fixture(page, "studio", { personality, roam: false, hunger: personality === "gourmet" ? .6 : .5 });
   await placeCompanionOnHomeFloor(page);
   const kind = toys140[personality], id = kind ? await drawNativeToy(page, kind) : undefined;
-  if (personality === "tidy") for (let i = 0; i < 3; i++) {
-    await home.locator('[data-home-action="toys"]').click();
-    await expect(page.locator(".vc-toy")).toHaveCount(i + 2);
-    await expect(page.locator(".vc-toy").last()).toHaveAttribute("data-falling", "false", { timeout: 6000 });
-  }
+  // One physical toy can finish literal T01 or a complete alternate return
+  // chore with its real floor travel and full final grooming. The latter is
+  // recorded separately; it never certifies T01 or changes catalog-major.
+  // The separate137/142/146 same-four-ID cleanup proofs remain independent.
   const opening = (await home.locator(".vc-toy-box-opening").boundingBox())!, boxPoint = { x: opening.x + opening.width / 2, y: opening.y + opening.height };
   await selectNative(page, personality, true);
   if (personality === "affectionate") {
@@ -550,8 +587,10 @@ for (const personality of COMPANION_PERSONALITIES) test(`140 ${personality} nati
     expect(Math.abs(dropped.x+dropped.width/2-resident.x-resident.width/2), "S10 has a real approach of at least48px").toBeGreaterThanOrEqual(48);
   }
   await expect.poll(async () => {
-    const done = finishedRecipes(await frames(page), boxPoint).filter(recipe => recipe.personality === personality);
-    return { primary: done.some(recipe => recipe.major), secondary: done.some(recipe => !recipe.major && !recipe.id.startsWith("X-")), returned: !id || await page.locator(`.vc-toy[data-toy-id="${id}"]`).count() === 0 };
+    const observed=await frames(page),done = finishedRecipes(observed, boxPoint).filter(recipe => recipe.personality === personality);
+    const alternate=personality==="tidy"&&done.some(recipe=>recipe.id==="X-T-return-time")
+      &&completedTidyReturnGoal157(observed,id,boxPoint).length>0;
+    return { primary: done.some(recipe => recipe.major)||alternate, secondary: done.some(recipe => !recipe.major && !recipe.id.startsWith("X-")), returned: !id || await page.locator(`.vc-toy[data-toy-id="${id}"]`).count() === 0 };
   }, { timeout: Math.max(1, 115000 - (Date.now() - proofStarted)), intervals: [250] }).toEqual({ primary: true, secondary: true, returned: true });
   expect(Date.now() - proofStarted, "primary and original secondary complete within the original total115s observation budget").toBeLessThanOrEqual(115000);
   const trace = await frames(page), done = finishedRecipes(trace, boxPoint).filter(recipe => recipe.personality === personality);
@@ -573,7 +612,9 @@ for (const personality of COMPANION_PERSONALITIES) test(`140 ${personality} nati
     expect(trace.some(frame => frame.tv === "cooking" && frame.platform === "companion-home")).toBe(true);
   }
   expect(trace.some(frame => frame.state === "sleep"), "sleep OFF remains authoritative for every personality").toBe(false);
-  proofs.get(page)!.notes.push({ personality, nativeShuffleKind: kind, samePhysicalId: id, reachedFinalBeatAndSubsequentSequence: done.map(recipe => ({ id: recipe.id, major: recipe.major })), scope: "Actual native primary+secondary samples and physical effects; not144 native recipe executions" });
+  proofs.get(page)!.notes.push({ personality, nativeShuffleKind: kind, samePhysicalId: id,
+    equivalentPhysicalPrimary:personality==="tidy"?completedTidyReturnGoal157(trace,id,boxPoint):[],
+    reachedFinalBeatAndSubsequentSequence: done.map(recipe => ({ id: recipe.id, major: recipe.major })), scope: "Actual native primary+secondary samples and physical effects; a separately named complete alternate tidy chore is not literal T01 or catalog-major; not144 native recipe executions" });
 });
 
 test("142 sleepy low-energy same-ID return completes its required rest, while sleep OFF samples stay separate", async ({ page }) => {

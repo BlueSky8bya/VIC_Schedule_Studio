@@ -25,6 +25,7 @@ export type CompanionToyControl = {
   occupied: () => readonly Point[];
   available: () => CompanionToy[];
   ids: () => string[];
+  flyingIds: () => string[];
   count: () => number;
   moving: () => boolean;
   pause: (now: number) => void;
@@ -186,7 +187,7 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     tick(now) { world.tick(now); if (world.count() !== count.current) refresh(); else paint(); },
     spawn(point, now, autonomous = false, occupied) { if (blockedRef.current) return; const id = world.spawn(point, now, occupied); if (id) { refresh(); if (!autonomous) { const toy = world.items().find(item => item.id === id); if (toy) onExperience?.(toy.kind, "taken-out"); } onActivity(); } return id; },
     occupied: world.occupied,
-    available: world.available, ids: world.ids, count: () => count.current, moving: world.moving, carried: world.carried,
+    available: world.available, ids: world.ids, flyingIds: world.flyingIds, count: () => count.current, moving: world.moving, carried: world.carried,
     item: id => world.items().find(toy => toy.id === id),
     witnessPlay(id) {
       const node = nodes.current.get(id), exposure = playExposure.current.get(id), image = node?.querySelector<HTMLImageElement>(".vc-toy-art");

@@ -5,6 +5,7 @@ import { companionPlayDuration } from "./timing";
 import { shouldDeclineCompanionFood, type CompanionTastes } from "./toy-tastes";
 import type { CompanionFoodKind } from "./snacks";
 import { getCompanionBehaviorProfile } from "./behavior-profile";
+import { companionOrdinaryRoomFloor } from "./safe-room-floor";
 
 type PersonalityAction = CompanionAction & { foodRefusal?: { foodId: string; kind: CompanionFoodKind }; personalitySignature?: CompanionPreferences["personality"] };
 type Activity = PersonalityAction & { scene?: { id: number }; toy?: unknown; household?: unknown; radio?: unknown; personalityScene?: unknown };
@@ -75,7 +76,7 @@ export function createCompanionPersonalityActivity(rng: () => number = Math.rand
       && (from.platformId !== to.platformId
         || Math.hypot(from.x-arrival.to.x,from.y-arrival.to.y) <= 24 && Math.hypot(to.x-arrival.from.x,to.y-arrival.from.y) <= 24)));
   const realOrdinarySupport = (platform: CompanionWorld["platforms"][number] | undefined) => Boolean(platform && !platform.bodyOnly
-    && !["control","hide"].includes(platform.kind) && (!platform.manualOnly || platform.id === "companion-home-floor" && platform.kind === "floor")
+    && !["control","hide"].includes(platform.kind) && (!platform.manualOnly || companionOrdinaryRoomFloor(platform))
     && [platform.x,platform.y,platform.width].every(Number.isFinite) && platform.width > 0);
   const meals = new Map<string, { support?: string; target?: string; jump: boolean; until: number; reachable: boolean }>();
   const hasReachableMeal = (brain: CompanionBrain, world: CompanionWorld, preferences: CompanionPreferences, now: number) => {
@@ -148,27 +149,27 @@ export function createCompanionPersonalityActivity(rng: () => number = Math.rand
         if (now - blockedAt < 9000) return;
       } else blockedKey = "";
       const support = world.platforms.find(platform => platform.id === world.platformId);
-      if (!support || support.bodyOnly || support.manualOnly && (support.id !== "companion-home-floor" || support.kind !== "floor") || ["control", "hide"].includes(support.kind)
+      if (!support || support.bodyOnly || support.manualOnly && !companionOrdinaryRoomFloor(support) || ["control", "hide"].includes(support.kind)
         || ![world.x, world.y, support.x, support.y, support.width].every(Number.isFinite)
         || Math.abs(world.y - support.y) > 2 || world.x < support.x || world.x > support.x + support.width) return;
       const profile = getCompanionBehaviorProfile(preferences, brain.habits), draw = rng();
       // Callers pass brain.activeMs, the same foreground clock used when
       // commitAction records a failed place. No wall time or saved debt.
       const blockedTarget = (id?: string) => Boolean(id && brain.places?.some(place => place.id === id && place.failures > 0 && place.retryAfter > now));
-      const targets = world.platforms.filter(platform => platform.id !== support.id && (!platform.manualOnly || platform.id === "companion-home-floor" && platform.kind === "floor")
+      const targets = world.platforms.filter(platform => platform.id !== support.id && (!platform.manualOnly || companionOrdinaryRoomFloor(platform))
         && !platform.bodyOnly && !["control", "hide"].includes(platform.kind) && !blockedTarget(platform.id))
         .sort((a,b) => Number(brain.visited.includes(a.id))-Number(brain.visited.includes(b.id)) || Math.hypot(a.x-world.x,a.y-world.y)-Math.hypot(b.x-world.x,b.y-world.y));
       // A dense calendar can leave every nearby public glyph unreachable
       // from the cushion. Keep its real visited floor inside the same eight
       // proofs, after the first seven novel choices, so an escape is tried.
-      const floorEscape = support.id === "companion-home" ? targets.find(platform => platform.id === "companion-home-floor" && platform.kind === "floor" && realOrdinarySupport(platform)) : undefined;
+      const floorEscape = support.id === "companion-home" ? targets.find(platform => companionOrdinaryRoomFloor(platform) && realOrdinarySupport(platform)) : undefined;
       const candidates = targets.slice(0, 8);
       if (floorEscape && !candidates.includes(floorEscape)) candidates.splice(7, 1, floorEscape);
       const alternatives: PersonalityAction[]=[];
       for (const platform of candidates) {
         const point = { x: platformLandingX(platform, platform.x+platform.width/2), y: platform.y, platformId: platform.id };
-        const routePlatforms = world.platforms.filter(plane => !plane.manualOnly || plane.id === support.id || plane.id === "companion-home-floor");
-        const route = platform.id === "companion-home-floor" ? findCompanionToyRoute(world, point, routePlatforms, preferences.jump)
+        const routePlatforms = world.platforms.filter(plane => !plane.manualOnly || plane.id === support.id || companionOrdinaryRoomFloor(plane));
+        const route = companionOrdinaryRoomFloor(platform) ? findCompanionToyRoute(world, point, routePlatforms, preferences.jump)
           : findPlatformRoute(world, point, world.platforms, preferences.jump), step = route?.[0];
         if (step && !blockedTarget(step.target.platformId) && Math.hypot(step.target.x-world.x,step.target.y-world.y) >= 24) {
           const offered:PersonalityAction={...step,personalitySignature:preferences.personality,
@@ -181,7 +182,7 @@ export function createCompanionPersonalityActivity(rng: () => number = Math.rand
       }
       // Empty scenes yield to the normal planner rather than manufacturing a
       // new pose. On a real ordinary span, a finite purposeful walk is enough.
-      if (support.bodyOnly || support.manualOnly && (support.id !== "companion-home-floor" || support.kind !== "floor")) return;
+      if (support.bodyOnly || support.manualOnly && !companionOrdinaryRoomFloor(support)) return;
       const direction = brain.heading ?? (Number.isFinite(draw) && draw < .5 ? -1 : 1);
       // Keep the heading's usual step first. If it retraces a completed
       // A->B leg, try continuing beyond B or another real distance on this

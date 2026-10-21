@@ -2,7 +2,7 @@
 export const BOOLEAN_KEYS = Object.freeze(['enabled', 'activeWhileVisible', 'roam', 'jump', 'sleep', 'heartPrank', 'cardPrank', 'ambientPrank', 'panelPrank', 'rarePrank', 'drag', 'petting', 'feeding', 'learnFromYou', 'sound', 'soundCare', 'soundMotion', 'soundKeepsakes']);
 export const PERSONALITIES = Object.freeze(['performer', 'curious', 'affectionate', 'sleepy', 'tidy', 'mischievous', 'gourmet', 'homebody', 'balanced']);
 export const ROUTINES = Object.freeze(['meal', 'wash', 'sleep', 'nap', 'outing', 'music']);
-export const MODELED_RECIPE_COUNT = 153;
+export const MODELED_RECIPE_COUNT = 162;
 export const DIMENSIONS = Object.freeze({
   personality: PERSONALITIES,
   surface: ['viewer', 'studio-owner', 'studio-developer', 'preview'],
@@ -18,6 +18,25 @@ export const PURE_SUITES = Object.freeze([
   'tests/unit/companion-activity-criteria-145.test.ts',
   'tests/unit/companion-readonly-font-142.test.ts',
   'tests/unit/companion-native-toy-replay-142.test.ts',
+  'tests/unit/companion-ball-use-replay-156.test.ts',
+  'tests/unit/companion-play-presentation-156.test.ts',
+  'tests/unit/companion-scene-continuity-156.test.ts',
+  'tests/unit/companion-owned-rest-preparation-156.test.ts',
+  'tests/unit/companion-sofa-world-frame-156.test.ts',
+  'tests/unit/companion-home-contact-156.test.ts',
+  'tests/unit/companion-rest-intent-157.test.ts',
+  'tests/unit/companion-synthetic-reads-157.test.ts',
+  'tests/unit/companion-safe-room-floor-157.test.ts',
+  'tests/unit/companion-daily-ideas-157.test.ts',
+  'tests/unit/companion-daily-witness-157.test.ts',
+  'tests/unit/companion-accepted-pet-157.test.ts',
+  'tests/unit/companion-before-bed-rest-157.test.ts',
+  'tests/unit/companion-curious-admission-diagnostics-157.test.ts',
+  'tests/unit/companion-inset-observer-157.test.ts',
+  'tests/unit/companion-choice-fairness-157.test.ts',
+  'tests/unit/companion-home-contact-anchor-157.test.ts',
+  'tests/unit/companion-tidy-primary-157.test.ts',
+  'tests/unit/companion-painted-source-157.test.ts',
   'tests/unit/companion-native-travel-142.test.ts',
   'tests/unit/companion-ordinary-travel-142.test.ts',
   'tests/unit/companion-personality-catalog-137.test.ts',
@@ -73,15 +92,19 @@ export const NATIVE_SUITES = Object.freeze([
   'companion-items-scroll-147.spec.ts',
   'companion-living-149.spec.ts',
   'companion-objects-149.spec.ts',
+  'companion-sofa-anchor-release-156.spec.ts',
+  'companion-play-presentation-156.spec.ts',
+  'companion-rest-continuity-157.spec.ts',
+  'companion-daily-ideas-157.spec.ts',
 ]);
 export const NATIVE_ENTRY_TITLES = Object.freeze(['viewer', 'studio', 'preview'].flatMap(surface => PERSONALITIES.map(personality => `137 ${surface} native ${personality} selection expresses immediately and remains purposeful`)));
 export const NATIVE_FLOATING_TIDY_TITLES = Object.freeze([
   '142 floating home tidy preserves all four returns with learned care on',
   '142 floating home tidy returns from a real calendar perch to all four toys',
 ]);
-export const PLANNED_NATIVE_CASE_COUNT = 169;
+export const PLANNED_NATIVE_CASE_COUNT = 192;
 export const NATIVE_ENTRY_GREP = `(?:^|\\s)137 (?:viewer|studio|preview) native (?:${PERSONALITIES.join('|')}) selection expresses immediately and remains purposeful$`;
-export const NATIVE_GREP = '149 |147 |146 |143 |142 |141 |134 .*arrows activate|140 .*primary and secondary|140 outside-home|123 actual solar|123 six shared|123 static|autonomous companion movement never|110 developer views' + '|' + NATIVE_ENTRY_GREP;
+export const NATIVE_GREP = '157 |156 |149 |147 |146 |143 |142 |141 |134 .*arrows activate|140 .*primary and secondary|140 outside-home|123 actual solar|123 six shared|123 static|autonomous companion movement never|110 developer views' + '|' + NATIVE_ENTRY_GREP;
 const key = (a, av, b, bv) => JSON.stringify([a, av, b, bv]);
 export function pairKeys(row, dimensions = DIMENSIONS) {
   const names = Object.keys(dimensions), result = [];

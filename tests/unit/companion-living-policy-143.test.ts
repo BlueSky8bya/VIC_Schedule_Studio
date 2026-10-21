@@ -118,7 +118,7 @@ describe("143 private space and real outside goals",()=>{
   it("leaves post-cleanup floor continuation distinct from necessary TV/sleep/homebody sofa goals",()=>{
     for(const id of ["T05","X-T-return-time","A11"])expect(COMPANION_PERSONALITY_SCENES.find(r=>r.id===id)!.steps.some(s=>s.kind==="go"&&s.target==="sofa")).toBe(false);
     for(const id of ["S01","S03","C04","G05","H01"])expect(COMPANION_PERSONALITY_SCENES.find(r=>r.id===id)!.steps.some(s=>s.kind==="go"&&s.target==="sofa")).toBe(true);
-    expect(COMPANION_PERSONALITY_SCENES).toHaveLength(153);
+    expect(COMPANION_PERSONALITY_SCENES).toHaveLength(162);
   });
 });
 
@@ -217,11 +217,11 @@ describe("143 nine situational goals and fixed physical bindings",()=>{
   it("keeps the original144 IDs and adds exactly one executable goal per personality",()=>{
     const added=COMPANION_PERSONALITY_SCENES.filter(r=>r.id.startsWith("D143-"));
     expect(added.map(r=>r.id)).toEqual(freshIds);expect(new Set(added.map(r=>r.personality)).size).toBe(9);
-    expect(new Set(COMPANION_PERSONALITY_SCENES.map(r=>r.id)).size).toBe(153);
-    expect(COMPANION_PERSONALITY_SCENES.filter(r=>!r.id.startsWith("D143-")).length).toBe(144);
+    expect(new Set(COMPANION_PERSONALITY_SCENES.map(r=>r.id)).size).toBe(162);
+    expect(COMPANION_PERSONALITY_SCENES.filter(r=>!/^D(?:143|157)-/.test(r.id)).length).toBe(144);
     for(const personality of COMPANION_PERSONALITIES){
       const group=COMPANION_PERSONALITY_SCENES.filter(r=>r.personality===personality);
-      expect(group.filter(r=>r.major)).toHaveLength(5);expect(group.filter(r=>!r.major)).toHaveLength(12);
+      expect(group.filter(r=>r.major)).toHaveLength(5);expect(group.filter(r=>!r.major)).toHaveLength(13);
     }
   });
   it.each(["A12","B12","X-B-editor","X-P-editor","P10","P09"])("the explicit audience meaning of %s also applies to bow/celebrate",id=>{

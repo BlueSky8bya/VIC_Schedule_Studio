@@ -351,6 +351,10 @@ export function createCompanionToys(rng: () => number = Math.random) {
     visit: (visitor: (toy: Readonly<CompanionToy>) => void) => objects.forEach(visitor),
     available: () => [...objects.values()].filter(toy => !toy.hidden && !toy.held && !toy.carried && !flights.has(toy.id) && !waiting.has(toy.id)).map(toy => ({ ...toy })),
     carried: () => [...objects.values()].find(toy => toy.carried)?.id,
+    /** Read-only bounded ownership signal, never a usable landing candidate. */
+    flyingIds: () => [...flights.keys()].filter(id => {
+      const toy = objects.get(id); return toy && !toy.held && !toy.carried && !toy.hidden;
+    }).slice(0, MAX_COMPANION_TOYS),
     moving: () => pausedAt === undefined && flights.size > 0,
     clear: () => { objects.clear(); flights.clear(); waiting.clear(); },
   };

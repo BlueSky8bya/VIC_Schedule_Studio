@@ -1,0 +1,40 @@
+export const SOFA_SCROLL_143_TITLE: string;
+export const SOFA_SCROLL_156_SOURCES: readonly string[];
+export const SOFA_SCROLL_156_PAINTS: readonly string[];
+export type SofaScrollSummary156 = {
+  began?: number;
+  ended?: number;
+  totalFrames: number;
+  eligible: number;
+  missingSurface: number;
+  missingActor: number;
+  hiddenActor: number;
+  missingFront: number;
+  hiddenFront: number;
+  samples: number;
+  phaseCounts: Record<string, number>;
+  scrollSpan: number;
+  bedSpan: number;
+  footRelativeSpan: number;
+  maxOffset: number;
+  maxSize: number;
+  doubleFront: number;
+  wrongDepth: number;
+  wrongSupport: number;
+  wrongStack: number;
+  nonresident: number;
+};
+export type SofaScrollAnalysis156 = {
+  admissionPassed: boolean;
+  issues: string[];
+  candidates: Record<string, unknown>[];
+  summary: SofaScrollSummary156;
+};
+export function analyzeSofaScroll143(raw: unknown): SofaScrollAnalysis156;
+export function evaluateSofaRendered143(input: {
+  report?: unknown;
+  source?: unknown;
+  evidence?: unknown;
+  reviews?: unknown;
+  casePresent?: boolean;
+}): { passed: boolean; issues: string[] };

@@ -1,0 +1,110 @@
+{
+  "version": 1,
+  "logicalCell": 80,
+  "textureCell": 192,
+  "source": {
+    "src": "/companion/hd/vitamin-action-09-eye-scale-143-v1.webp",
+    "sha256": "14ff5ce9a8477cd6b928ed3149e2a98ba8cb67a2c7b093dffcc99d6c7990044b",
+    "bytes": 385804,
+    "width": 1536,
+    "height": 384
+  },
+  "frames": [
+    {
+      "physicalIndex": 144,
+      "index": 0,
+      "x": 43.75,
+      "y": 20
+    },
+    {
+      "physicalIndex": 145,
+      "index": 1,
+      "x": 44.166667,
+      "y": 19.583333
+    },
+    {
+      "physicalIndex": 146,
+      "index": 2,
+      "x": 44.166667,
+      "y": 19.583333
+    },
+    {
+      "physicalIndex": 147,
+      "index": 3,
+      "x": 44.166667,
+      "y": 19.583333
+    },
+    {
+      "physicalIndex": 148,
+      "index": 4,
+      "x": 44.583333,
+      "y": 20
+    },
+    {
+      "physicalIndex": 149,
+      "index": 5,
+      "x": 43.75,
+      "y": 19.583333
+    },
+    {
+      "physicalIndex": 150,
+      "index": 6,
+      "x": 43.75,
+      "y": 20
+    },
+    {
+      "physicalIndex": 151,
+      "index": 7,
+      "x": 43.75,
+      "y": 20
+    },
+    {
+      "physicalIndex": 152,
+      "index": 8,
+      "x": 43.75,
+      "y": 20.416667
+    },
+    {
+      "physicalIndex": 153,
+      "index": 9,
+      "x": 43.75,
+      "y": 20.416667
+    },
+    {
+      "physicalIndex": 154,
+      "index": 10,
+      "x": 42.916667,
+      "y": 21.25
+    },
+    {
+      "physicalIndex": 155,
+      "index": 11,
+      "x": 43.333333,
+      "y": 20.833333
+    },
+    {
+      "physicalIndex": 156,
+      "index": 12,
+      "x": 42.083333,
+      "y": 20.416667
+    },
+    {
+      "physicalIndex": 157,
+      "index": 13,
+      "x": 43.333333,
+      "y": 20.416667
+    },
+    {
+      "physicalIndex": 158,
+      "index": 14,
+      "x": 43.75,
+      "y": 20.416667
+    },
+    {
+      "physicalIndex": 159,
+      "index": 15,
+      "x": 43.75,
+      "y": 20.416667
+    }
+  ]
+}

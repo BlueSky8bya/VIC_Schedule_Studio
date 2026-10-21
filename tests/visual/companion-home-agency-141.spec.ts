@@ -316,27 +316,58 @@ test("141 tidy actual wash stays on mat400 through lamp geometry delivery wheel 
 });
 
 test("141 manual curtain cycles three phases with15s lease then homebody physically changes curtain light and TV", async ({ page }) => {
-  const home = await fixture(page, { personality: "tidy", summer: true }), homeWindow = home.locator(".vc-home-window"), curtain = home.locator('[data-home-action="curtain"]'), lamp = home.locator('[data-home-action="light"]'), tv = home.locator('[data-home-action="tv"]');
+  // H03 is explicitly a summer sunlight response. Keep actual noon daylight
+  // for its admission while initial manual OFF still proves autonomous lamp
+  // preparation. Dark theatre remains a rare optional homebody choice.
+  const home = await fixture(page, { personality: "tidy", summer: true, night: false, roam: false }), homeWindow = home.locator(".vc-home-window"), curtain = home.locator('[data-home-action="curtain"]'), lamp = home.locator('[data-home-action="light"]'), tv = home.locator('[data-home-action="tv"]');
   const phases = ["open", "shade", "closed"], initial = (await homeWindow.getAttribute("data-curtain"))!;
   for (let step = 1; step <= 3; step++) { await curtain.click(); await expect(homeWindow).toHaveAttribute("data-curtain", phases[(phases.indexOf(initial) + step) % 3]); }
   while (await homeWindow.getAttribute("data-curtain") !== "open") await curtain.click();
-  if (await lamp.getAttribute("aria-pressed") === "true") await lamp.click(); await lamp.click();
+  const lastManualAt = (action: string) => page.evaluate(action => (window as ProbeWindow).agency141?.humanControls.filter(control => control.action === action).at(-1)?.at ?? -1, action);
+  if (await lamp.getAttribute("aria-pressed") === "false") await lamp.click(); await lamp.click(); await expect(lamp).toHaveAttribute("aria-pressed", "false");
+  const lightManualAt = await lastManualAt("light"); expect(lightManualAt).toBeGreaterThan(0);
+  await expect.poll(async () => { const frame = await latest(page); return Boolean(frame && frame.absolute > lightManualAt && !frame.lit); }, { timeout: 1000, intervals: [35] }).toBe(true);
+  const lightPaintAt = (await latest(page))!.absolute;
   for (let step = 0; step < 6; step++) await tv.click(); await expect(home.locator(".vc-home-room")).toHaveAttribute("data-tv", "off");
+  const tvManualAt = await lastManualAt("tv"); expect(tvManualAt).toBeGreaterThan(0);
+  await expect.poll(async () => { const frame = await latest(page); return Boolean(frame && frame.absolute > tvManualAt && frame.tv === "off"); }, { timeout: 1000, intervals: [35] }).toBe(true);
+  const tvPaintAt = (await latest(page))!.absolute;
   await curtain.click(); await curtain.click(); await curtain.click(); await expect(homeWindow).toHaveAttribute("data-curtain", "open");
-  const manualAt = await page.evaluate(() => (window as ProbeWindow).agency141?.humanControls.filter(control => control.action === "curtain").at(-1)?.at ?? -1); expect(manualAt).toBeGreaterThan(0);
+  const manualAt = await lastManualAt("curtain"); expect(manualAt).toBeGreaterThan(0);
   // The final human click is captured before React paints its new phase.
-  // Establish that actual paint separately; it is not an autonomous setter.
-  await expect.poll(async () => { const frame = await latest(page); return Boolean(frame && frame.absolute > manualAt && frame.curtain === "open" && frame.lit && frame.tv === "off"); }, { timeout: 1000, intervals: [35] }).toBe(true);
+  // Establish each actual paint separately; none is an autonomous setter.
+  await expect.poll(async () => { const frame = await latest(page); return Boolean(frame && frame.absolute > manualAt && frame.curtain === "open" && !frame.lit && frame.tv === "off"); }, { timeout: 1000, intervals: [35] }).toBe(true);
   const automaticAfter = (await latest(page))!.absolute;
   expect(automaticAfter - manualAt, "the final manual state must settle promptly before observing autonomous effects").toBeLessThan(1000);
-  proofs.get(page)!.notes.push({ manualCurtainClickAt: manualAt, actualManualPaintAt: automaticAfter, manualLeaseMs: 15_000 });
+  proofs.get(page)!.notes.push({ manualCurtainClickAt: manualAt, actualManualPaintAt: automaticAfter, manualLeaseMs: 15_000,
+    initialNight: false, actualSummerSolarAdmission: true, initialManualLight: false, allControlPaints: { light: { clickAt: lightManualAt, paintAt: lightPaintAt }, tv: { clickAt: tvManualAt, paintAt: tvPaintAt }, curtain: { clickAt: manualAt, paintAt: automaticAfter } } });
   await selectNative(page, "homebody", true);
   await waitElapsed(page, manualAt, 15_000);
   const protectedFrames = (await frames(page)).filter(frame => frame.absolute > manualAt && frame.absolute < manualAt + 14_900);
   expect(protectedFrames.length).toBeGreaterThan(100); expect(protectedFrames.every(frame => frame.curtain === "open")).toBe(true);
-  await awaitEffect(page, "curtain", automaticAfter); await awaitEffect(page, "light", automaticAfter); await awaitEffect(page, "tv", automaticAfter);
+  const protectedLight = (await frames(page)).filter(frame => frame.absolute >= lightPaintAt && frame.absolute < lightManualAt + 14_900);
+  const protectedTv = (await frames(page)).filter(frame => frame.absolute >= tvPaintAt && frame.absolute < tvManualAt + 14_900);
+  expect(protectedLight.length).toBeGreaterThan(100); expect(protectedLight.every(frame => !frame.lit)).toBe(true);
+  expect(protectedTv.length).toBeGreaterThan(100); expect(protectedTv.every(frame => frame.tv === "off")).toBe(true);
+  await awaitEffect(page, "curtain", automaticAfter); const lightChanged = await awaitEffect(page, "light", automaticAfter); await awaitEffect(page, "tv", automaticAfter);
+  expect(lightChanged.lit, "awake life physically restores the initially manually dark room").toBe(true);
   const trace = await frames(page); expect(trace.some(frame => frame.state === "sleep")).toBe(false);
-  await expect.poll(async () => (await frames(page)).some(frame => genuine(frame) && frame.tv === "tori" && !frame.lit && frame.curtain === "closed"), { timeout: 20_000, intervals: [100] }).toBe(true);
+  const theatre = (trace: readonly Frame[]) => {
+    let stage: Frame[] = [];
+    for (const frame of trace) {
+      const prior = stage.at(-1), valid = frame.absolute > automaticAfter && genuine(frame) && frame.tv === "tori" && frame.curtain === "closed"
+        && frame.platform === "companion-home" && frame.command === "watch" && frame.state === "look" && companionSpriteMetadata.rows[1].includes(frame.pose);
+      if (!valid || prior && (frame.scene !== prior.scene || frame.beat !== prior.beat || frame.absolute - prior.absolute > 250)) stage = [];
+      if (valid) stage.push(frame);
+      // Existing137 finite-watch painted threshold (3500*.8-80), now with
+      // dense actual decoded row1 frames. No closing bow/groom is required.
+      if (stage.length >= 20 && stage.at(-1)!.absolute - stage[0].absolute >= 3500 * .8 - 80 && new Set(stage.map(sample => sample.pose)).size >= 2) return stage;
+    }
+  };
+  await expect.poll(async () => Boolean(theatre(await frames(page))), { timeout: 20_000, intervals: [100] }).toBe(true);
+  const viewed = theatre(await frames(page))!;
+  proofs.get(page)!.notes.push({ actualFiniteWatchMs: viewed.at(-1)!.absolute - viewed[0].absolute, actualFiniteWatchFrames: viewed.length,
+    watchScene: viewed[0].scene, watchBeat: viewed[0].beat, observedLightChoices: [...new Set(viewed.map(frame => frame.lit))], requiredDarkTheatre: false, closingSaluteRequired: false });
   await snapshot(page, "actual-homebody-theatre");
   assertEveryEffectWasPhysical(await frames(page), automaticAfter, ["curtain", "light", "tv"]);
 });

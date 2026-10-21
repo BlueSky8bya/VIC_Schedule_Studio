@@ -8,6 +8,8 @@ import { inspectTrace, traceSufficiency, traceContextComplete, type QaFrame } fr
 import { fulfillReadOnlyFont } from "./readonly-font";
 import { traceLivingContextComplete } from "../../../scripts/companion-qa/living-criteria.mjs";
 import { completedCuriousDailyIdeas, curiousTextureCellMatches, CURIOUS_COMPLETION_SCOPE, type CuriousCompletionSnapshot } from "./companion-curious-completion-144";
+import { companionSyntheticRead157 } from "./companion-synthetic-reads-157";
+import { installCompanionPaintedSource157, type PaintedSource157Proof, type PaintedSource157Window } from "./companion-painted-source-157";
 
 export type Companion143DiagnosticRecord = {stage:string;activeMs:number;facts:Readonly<Record<string,unknown>>};
 /** Opt-in observation only. It exposes no actor/scene/clock/geometry setter. */
@@ -18,14 +20,17 @@ export async function readCompanion143Diagnostics(page:Page):Promise<Companion14
   return page.evaluate(()=>{const value=(window as Window & {__vicCompanionDiagnostics143?:{version:number;records:Companion143DiagnosticRecord[]}}).__vicCompanionDiagnostics143;
     return value?.version===1&&Array.isArray(value.records)?value.records.slice(0,24):[];});
 }
-export type QaObservation = QaFrame & { sourceClipMeasured: boolean; scene: string; beat: string; platform: string; frame: number; pose: number; play: string; curiousCompletion: CuriousCompletionSnapshot };
+export type QaObservation = QaFrame & { sourceClipMeasured: boolean; scene: string; serial: string; beat: string; platform: string; frame: number; pose: number; play: string; foodAftertaste: string;
+  paintedSource?: PaintedSource157Proof;
+  homeLife?: { phase: string; scene: string; serial: string; beat: string; reaching: string; lampTouch: boolean };
+  curiousCompletion: CuriousCompletionSnapshot };
 type ProbeWindow = Window & { companionDaily142?: { frames: QaObservation[]; stop: () => void } };
-export type DailyProof = { build: string; errors: string[]; rejected: string[]; mutations: string[]; liveReads: string[]; blockedTelemetry: string[]; chunks: { path: string; served: string; local: string }[]; pending: Promise<void>[] };
+export type DailyProof = { build: string; errors: string[]; rejected: string[]; mutations: string[]; liveReads: string[]; syntheticReads: string[]; blockedTelemetry: string[]; chunks: { path: string; served: string; local: string }[]; pending: Promise<void>[] };
 export async function guardCompanionQa(page: Page, context: BrowserContext, base: string): Promise<DailyProof> {
   const origin = new URL(base);
   if (origin.protocol !== "http:" || !["localhost", "127.0.0.1", "127.0.0.2", "[::1]"].includes(origin.hostname) || origin.username || origin.password || origin.pathname !== "/" || origin.search || origin.hash) throw Error("Only exact HTTP loopback fixture origins are allowed");
   await enableCompanion143Diagnostics(page);
-  const directory = process.env.VISUAL_TEST_BUILD_DIR ?? ".next", proof: DailyProof = { build: readFileSync(resolve(directory, "BUILD_ID"), "utf8").trim(), errors: [], rejected: [], mutations: [], liveReads: [], blockedTelemetry: [], chunks: [], pending: [] };
+  const directory = process.env.VISUAL_TEST_BUILD_DIR ?? ".next", proof: DailyProof = { build: readFileSync(resolve(directory, "BUILD_ID"), "utf8").trim(), errors: [], rejected: [], mutations: [], liveReads: [], syntheticReads: [], blockedTelemetry: [], chunks: [], pending: [] };
   const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
   const manifest = JSON.parse(readFileSync(resolve(directory, "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
   const preview = new Set(Object.entries(manifest).filter(([, item]) => item.exportedName === "getPublicPreviewAction").map(([id]) => id));
@@ -49,6 +54,11 @@ export async function guardCompanionQa(page: Page, context: BrowserContext, base
       return import("@/lib/schedules/sample-public-data").then(({ samplePublicScheduleData }) => route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":"fixture"}\n1:${JSON.stringify(samplePublicScheduleData)}\n` }));
     }
     if (!["GET", "HEAD"].includes(request.method())) { proof.mutations.push(`${request.method()} ${url.pathname}`); return route.abort(); }
+    const synthetic = companionSyntheticRead157(request.method(), url, Date.now());
+    if (synthetic) {
+      proof.syntheticReads.push(synthetic.path);
+      return route.fulfill({ status: synthetic.status, json: synthetic.json, headers: { "Cache-Control": "no-store" } });
+    }
     if (url.pathname.startsWith("/api/")) { proof.liveReads.push(url.pathname); return route.fulfill({ status: 404, body: "Daily companion QA blocks every live API read" }); }
     if (url.pathname.startsWith("/visual-fixture/") || url.pathname.startsWith("/_next/static/")) return route.continue();
     const publicRoot = resolve("public");
@@ -59,8 +69,23 @@ export async function guardCompanionQa(page: Page, context: BrowserContext, base
   });
   return proof;
 }
-export async function startCompanionQaProbe(page: Page) {
-  await page.evaluate(({metadata,playRows}) => {
+export async function startCompanionQaProbe(page: Page, options: { sampleIntervalMs?: 40 | 80 } = {}) {
+  await installCompanionPaintedSource157(page);
+  const sampleIntervalMs = options.sampleIntervalMs ?? 80;
+  if (sampleIntervalMs !== 40 && sampleIntervalMs !== 80) throw Error("Unsupported read-only sample interval");
+  await page.evaluate(({metadata,playRows,sampleIntervalMs}) => {
+    // Browser CSS serializes equivalent inset crops with1–4 values. Keep this
+    // parser local to the serialized observer; unsupported syntax stays
+    // unmeasured and can never turn the alpha/source gate into a default PASS.
+    function normalizedInsetPercent157(value: string): number[] | undefined {
+      const tokens = /^inset\(([^)]+)\)$/.exec(value.trim())?.[1].trim().split(/\s+/);
+      if (!tokens || tokens.length < 1 || tokens.length > 4 || !tokens.every(token => /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)%$/.test(token))) return;
+      const values = tokens.map(Number.parseFloat);
+      if (!values.every(Number.isFinite)) return;
+      return values.length === 1 ? [values[0],values[0],values[0],values[0]]
+        : values.length === 2 ? [values[0],values[1],values[0],values[1]]
+        : values.length === 3 ? [values[0],values[1],values[2],values[1]] : values;
+    }
     const scope = window as ProbeWindow; scope.companionDaily142?.stop();
     const frames: QaObservation[] = [], start = performance.now(), cache = new Map<string, { left: number; right: number; top: number; bottom: number } | null>();
     const canvas = document.createElement("canvas"); canvas.width = canvas.height = metadata.cell;
@@ -82,9 +107,10 @@ export async function startCompanionQaProbe(page: Page) {
     window.addEventListener("scroll", layout, true); window.addEventListener("resize", layout);
     const sample = (at: number) => {
       if (stopped) return;
-      if (at - last >= 80) {
+      if (at - last >= sampleIntervalMs) {
         last = at;
         const actor = document.querySelector<HTMLElement>(".vc-companion"), rect = actor?.getBoundingClientRect(), style = actor && getComputedStyle(actor), texture = actor?.querySelector<HTMLImageElement>(".vc-texture"), sprite = actor?.querySelector<HTMLElement>(".vc-sprite");
+        const paintedSource=(window as PaintedSource157Window).companionPaintedSource157?.inspect(actor);
         const preferences = (() => { try { return JSON.parse(localStorage.getItem("vic.viewerCompanion") ?? "{}"); } catch { return {}; } })();
         const visible = Boolean(actor && rect?.width && !actor.hidden && !document.hidden && style?.display !== "none" && style?.visibility !== "hidden" && Number(style?.opacity) > .05);
         const decoded = Boolean(texture?.complete && texture.naturalWidth), pose = Number(actor?.dataset.pose ?? -1), frame = metadata.frames[pose], platform = actor?.dataset.platform ?? "";
@@ -104,7 +130,7 @@ export async function startCompanionQaProbe(page: Page) {
         const nearbyCleanupCandidate = !blocked && !owned && !quiet && preferences.personality === "tidy" && full && nearby.length >= 2 && Boolean(document.querySelector('.vc-home .vc-toy-box:not(:disabled)'));
         if (!nearbyCleanupCandidate) cleanupSince = 0; else cleanupSince ||= at;
         let clipError: number | undefined, sourceClipMeasured = false;
-        if (decoded && frame && ctx && texture && sprite && texture.currentSrc.endsWith(metadata.atlases[frame.atlas].src)) {
+        if (paintedSource?.passed && decoded && frame && ctx && texture && sprite && texture.currentSrc.endsWith(metadata.atlases[frame.atlas].src)) {
           const key = `${texture.currentSrc}:${frame.index}`;
           if (!cache.has(key)) {
             ctx.clearRect(0, 0, metadata.cell, metadata.cell);
@@ -114,8 +140,7 @@ export async function startCompanionQaProbe(page: Page) {
             for (let y = 0; y < metadata.cell; y++) for (let x = 0; x < metadata.cell; x++) if (pixels[(y * metadata.cell + x) * 4 + 3] >= 250) { left = Math.min(left, x); right = Math.max(right, x); top = Math.min(top, y); bottom = Math.max(bottom, y); }
             cache.set(key, right >= left ? { left, right, top, bottom } : null);
           }
-          const alpha = cache.get(key), insetText = getComputedStyle(sprite).clipPath.match(/^inset\(([^)]+)\)$/)?.[1].split(/\s+/);
-          const inset = insetText?.length === 4 && insetText.every(value => /^-?[\d.]+%$/.test(value)) ? insetText.map(value => parseFloat(value)) : undefined;
+          const alpha = cache.get(key), inset = normalizedInsetPercent157(getComputedStyle(sprite).clipPath);
           if (alpha && inset?.length === 4 && inset.every(Number.isFinite)) {
             const ratio = sprite.clientWidth / metadata.cell, [top, right, bottom, left] = inset.map(value => value * metadata.cell / 100);
             clipError = Math.max(0, left - alpha.left, top - alpha.top, alpha.right - (metadata.cell - right), alpha.bottom - (metadata.cell - bottom)) * ratio; sourceClipMeasured = true;
@@ -133,7 +158,7 @@ export async function startCompanionQaProbe(page: Page) {
         const brushNode = document.querySelector<HTMLElement>(".vc-wash-tool"), brushRect = measuredRect(brushNode), brushSvg = brushNode?.querySelector("svg");
         const matrix = brushNode ? new DOMMatrixReadOnly(getComputedStyle(brushNode).transform) : null;
         const wash = { signaled: actor?.hasAttribute("data-washing") ?? false, command: actor?.dataset.personalityCommand ?? "",
-          row9: Boolean(decoded && texture && frame && sprite && painted(sprite, measuredRect(sprite)) && painted(texture, measuredRect(texture)) && texture.currentSrc.endsWith(metadata.atlases[frame.atlas].src) && metadata.rows[9].includes(pose)),
+          row9: Boolean(paintedSource?.passed && decoded && texture && frame && sprite && texture.currentSrc.endsWith(metadata.atlases[frame.atlas].src) && metadata.rows[9].includes(pose)),
           body: measuredRect(actor), pad: padRect ? { ...padRect, visible: painted(padNode, padRect) && painted(padImage ?? null, measuredRect(padImage ?? null)), decoded: Boolean(padImage?.complete && padImage.naturalWidth) } : null,
           brush: brushRect ? { ...brushRect, visible: painted(brushNode, brushRect) && Boolean(brushSvg?.getBoundingClientRect().width), angle: matrix ? Math.atan2(matrix.b, matrix.a) * 180 / Math.PI : NaN } : null };
         // A private toy hug is not an invitation to the person. Observe the
@@ -142,8 +167,7 @@ export async function startCompanionQaProbe(page: Page) {
         // The action label can change one decoded idle frame before its
         // actual sprite. Reuse this same measured source once, distinguishing
         // a proved different row from an unavailable/undecodable observation.
-        const playSourceMeasured = Boolean(decoded && texture && frame && sprite
-          && painted(sprite, measuredRect(sprite)) && painted(texture, measuredRect(texture))
+        const playSourceMeasured = Boolean(paintedSource?.passed && decoded && texture && frame && sprite
           && texture.currentSrc.endsWith(metadata.atlases[frame.atlas].src));
         const playPaint = !playSourceMeasured ? "unmeasured" as const
           : playRows[actor?.dataset.play as keyof typeof playRows]?.some(row=>metadata.rows[row].includes(pose)) ? "matching" as const : "other" as const;
@@ -196,10 +220,13 @@ export async function startCompanionQaProbe(page: Page) {
         const rows=state==="play"?playRows[play]:({sniff:[1],stretch:[16],shake:[17],walk:[2,20],jump:[3,4,5,6,7]} as Record<string,number[]>)[state];
         const action=rows?.some(row=>metadata.rows[row]?.includes(pose))?state==="play"?`play:${play}`:state:"";
         frames.push({ activity:{source:false,manual:owned||at-lastHuman<1000,epoch:humanEpoch+layoutEpoch,jumpAllowed:preferences.jump===true,width:rect?.width??0,height:rect?.height??0,anchor:{x:root.x,y:root.y,width:root.width,height:root.height},action,context:""},at: at - start, x: rect ? rect.x + rect.width / 2 : NaN, y: rect?.bottom ?? NaN, visible, decoded, state: actor?.dataset.state ?? "", enabled: preferences.enabled !== false, roam: preferences.roam !== false, sleepAllowed: preferences.sleep !== false,
-          owned, blocked, lifePurpose: actor?.dataset.lifePurpose, humanEpoch, layoutEpoch, walkSource: Boolean(decoded && texture && frame && sprite && painted(sprite, measuredRect(sprite)) && painted(texture, measuredRect(texture)) && texture.currentSrc.endsWith(metadata.atlases[frame.atlas].src) && [2,20].some(row => metadata.rows[row].includes(pose))), eligible: visible && decoded && !quiet && !blocked && !owned && preferences.roam !== false, pose, frame: pose, sourceClipMeasured, clipError, wash, toyPlay, playPaint,
+          paintedSource,owned, blocked, lifePurpose: actor?.dataset.lifePurpose, humanEpoch, layoutEpoch, walkSource: Boolean(paintedSource?.passed && decoded && texture && frame && sprite && texture.currentSrc.endsWith(metadata.atlases[frame.atlas].src) && [2,20].some(row => metadata.rows[row].includes(pose))), eligible: visible && decoded && !quiet && !blocked && !owned && preferences.roam !== false, pose, frame: pose, sourceClipMeasured, clipError, wash, toyPlay, playPaint,
           personality: preferences.personality, hunger, energy, outsideVisible, command: actor?.dataset.personalityCommand ?? "", play: actor?.dataset.play ?? "",
-          jumpSource: Boolean(decoded && texture && frame && sprite && texture.currentSrc.endsWith(metadata.atlases[frame.atlas].src) && [5,6,7].some(row => metadata.rows[row].includes(pose))),
-          platform, scene: actor?.dataset.personalityScene ?? actor?.dataset.scene ?? "", beat: actor?.dataset.personalityBeat ?? actor?.dataset.sceneBeat ?? "", effect: actor?.dataset.personalityEffect ?? "", goal: actor?.dataset.foodGoal ?? "",
+          jumpSource: Boolean(paintedSource?.passed && decoded && texture && frame && sprite && texture.currentSrc.endsWith(metadata.atlases[frame.atlas].src) && [5,6,7].some(row => metadata.rows[row].includes(pose))),
+          platform, scene: actor?.dataset.personalityScene ?? actor?.dataset.scene ?? "", serial: actor?.dataset.personalitySerial ?? "", beat: actor?.dataset.personalityBeat ?? actor?.dataset.sceneBeat ?? "", effect: actor?.dataset.personalityEffect ?? "", goal: actor?.dataset.foodGoal ?? "",
+          foodAftertaste: actor?.dataset.foodAftertaste ?? "",
+          homeLife: actor?.dataset.homeLife ? { phase: actor.dataset.homeLife, scene: actor.dataset.homeLifeScene ?? "", serial: actor.dataset.homeLifeSerial ?? "", beat: actor.dataset.homeLifeBeat ?? "", reaching: actor.dataset.homeReaching ?? "",
+            lampTouch: Boolean(document.querySelector(".vc-home-lamp[data-companion-touch]")) } : undefined,
           carried: [...foods.filter(item => item.hasAttribute("data-carried")).map(item => item.dataset.food), ...toys.filter(item => item.dataset.carried === "true").map(item => item.dataset.toyId)].join(","), items: `${foods.map(item => item.dataset.food).join(",")}|${toys.map(item => item.dataset.toyId).join(",")}`,
           controls: [document.querySelector<HTMLElement>(".vc-home-room")?.dataset.tv ?? "", document.querySelector<HTMLElement>(".vc-home-room")?.dataset.lampLit ?? "off", document.querySelector<HTMLElement>(".vc-home-window")?.dataset.curtain ?? "", document.querySelector('[data-home-action="radio"]')?.getAttribute("aria-pressed") ?? ""].join("|"),
           stableFood: foods.length > 0 && at - stableSince >= 1000, nearbyCleanupCandidate, cleanupWaitingMs: cleanupSince ? at - cleanupSince : 0,
@@ -211,7 +238,7 @@ export async function startCompanionQaProbe(page: Page) {
       document.removeEventListener("pointermove", human, true); document.removeEventListener("pointerdown", human, true); document.removeEventListener("keydown", human, true);
       window.removeEventListener("scroll", layout, true); window.removeEventListener("resize", layout);
     } }; request = requestAnimationFrame(sample);
-  }, {metadata:companionSpriteMetadata,playRows:Object.fromEntries(Object.entries(COMPANION_PLAY_TIMING).map(([key,value])=>[key,value.beats.map(beat=>beat.row)]))});
+  }, {metadata:companionSpriteMetadata,playRows:Object.fromEntries(Object.entries(COMPANION_PLAY_TIMING).map(([key,value])=>[key,value.beats.map(beat=>beat.row)])),sampleIntervalMs});
 }
 export async function finishCompanionQa(page: Page, info: TestInfo, proof: DailyProof, scenario: Record<string, string | number>, completed: boolean, originalError?: string) {
   const frames = (await page.evaluate(() => { const probe = (window as ProbeWindow).companionDaily142; probe?.stop(); return probe?.frames ?? []; }).catch(() => [])).map(frame=>({...frame,activity:{...frame.activity!,source:frame.curiousCompletion.source&&curiousTextureCellMatches(frame.pose,frame.curiousCompletion.cell),context:JSON.stringify([frame.items,frame.carried,frame.controls])}}));

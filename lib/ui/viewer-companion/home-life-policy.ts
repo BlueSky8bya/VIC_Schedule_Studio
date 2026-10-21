@@ -68,13 +68,19 @@ export function companionHomeLifePhaseFor(input: {
   if (scene?.id === "routine-sleep") return "sleep";
   if (scene?.id === "routine-nap") return "nap";
   if (scene?.id === "routine-outing") return "outside";
+  // An authored exit can start with a walk on the current room floor. Its
+  // first route leg is preparation for departure, rather than awake leisure.
+  if (scene?.command.kind === "go" && scene.command.target === "outside") return "outside";
   if (input.inside && ["walk", "jump"].includes(action.kind) && action.target.platformId
     && !/^companion-home(?:-floor)?(?:-\d+)?$/.test(action.target.platformId)) return "outside";
   if (action.kind === "sleep") return input.night ? "sleep" : "nap";
+  const later = scene?.steps?.slice(scene.beat + 1).find(step => step.kind === "sleep" || step.kind === "watch" || step.kind === "food"
+    || step.kind === "toy" || step.kind === "wash" || step.kind === "go" && step.target === "outside");
+  // A real rest plan keeps its cushion preparation in the same phase. A
+  // terminal/generic cozy pose and a later meal/watch/chore are not sleep.
+  const preparingRest = scene?.command.kind === "pose" && ["cozy-nest", "doze-curl"].includes(scene.command.pose) && later?.kind === "sleep";
   if (scene && (["tv", "light", "radio", "curtain"].includes(scene.command.kind)
-    || scene.command.kind === "go" && scene.command.target === "sofa")) {
-    const later = scene.steps?.slice(scene.beat + 1).find(step => step.kind === "sleep" || step.kind === "watch" || step.kind === "food"
-      || step.kind === "toy" || step.kind === "wash" || step.kind === "go" && step.target === "outside");
+    || scene.command.kind === "go" && scene.command.target === "sofa" || preparingRest)) {
     if (later?.kind === "sleep") return input.night ? "sleep" : "nap";
     if (later?.kind === "go" && later.target === "outside") return "outside";
     if (later?.kind === "watch" || !later && scene.command.kind === "tv") return "watch";

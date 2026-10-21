@@ -1,5 +1,56 @@
 # Companion daily QA
 
+157 also supports the already deployed161 expression painter without certifying its hidden atlas. A read-only observer requires the actual visible192x192 current-cell canvas, exact36864 alpha bytes, every RGB pixel outside the calibrated opaque face mask (including orange cheeks), a real changed face, and the same measured immutable cell/registration/plane. It keeps the independent atlas/cell proof and stores all pixel/geometry counts in raw frames. Missing/stale/hidden/mismatched planes fail closed. The shared exported comparator is tested verbatim after serialization. Legacy137 stage and common jump admission now also require genuinely painted source. D157-A additionally requires at least one actual expression-mode pixel witness; disabling expressions is not a fixture strategy.
+
+157 original painted evidence has a separate bounded media reader: only an exact passing147/143 reporter attachment named trace/application-zip with a .zip suffix, or video/video-webm with a .webm suffix, and the matching frozen path/SHA may stream up to192MiB. Files over64MiB must also carry the expected ZIP/EBML header. Source, JSON, PNG, receipt and arbitrary reviewer references retain64MiB; JSON parse limits remain smaller, including when the same file was already cached as media. Unique bytes retain the2GiB total cap. This preserves the actual119MiB143 trace instead of replacing it with a derived archive. No source, playback, paint or activity threshold changes.
+
+157 continues through actual repairs, nine user-approved ideas and release verification. It preserves all previous175 native cases and adds eight real rest-continuity/manual-OFF cases plus nine real idea-effect/next-action cases (192 planned), with162 executable recipe contracts. Counts are registrations until actually executed. Same-owner pre-bed preparation and measured safe room-floor steps are actual runtime changes; a fixture correction does not claim a product repair. All original156 raw failures and independently differing pixel conclusions remain immutable.
+
+Daily workflow now distinguishes user approval for implementation from verified completion. Confirmed bugs and already approved improvements continue through reproduction, root repair, actual continuous behavior, full checks, three fresh non-author reviews and scoped release/public verification. New ideas/design changes receive concrete user review and, once approved, join that same implementation queue. Today's nine156 hypotheses are all approved; no second confirmation is required. A failed gate remains a safe intermediate state while fixing its cause, rather than a reason to stop fixable work. Unknown API/writes/network restrictions, manual/OFF, actual object ownership and all same-case paint evidence requirements remain mandatory.
+
+`--native-grep` is an optional bounded diagnostic preflight. It retains the full192-case/27-entry/nine90s release gate and can never authorize release or replace the later unfiltered45-minute/three-worker factory. The diagnostic pattern is recorded separately, full source/build/raw failures are retained, and the original tree stays frozen for its entire runner lifetime too.
+
+156 registers175 native cases: all169 earlier cases plus three real scrolled-sofa lift/flight continuations and three cold-packet bow continuations across viewer/studio/preview. The new cases bind their exact `source-freeze.json` through `COMPANION156_SOURCE_FREEZE`; registration alone does not certify execution. The actual product changes release a resident's CSS anchor on world travel, retain a successful same-ID toy toss while that real object finishes its finite flight, and start a finite gesture only when its first actual decoded packet is usable (bounded1200ms on the existing tick). The current far-object inspection may offer its proved approach before budgeting its later stationary sniff. No extra runtime clock or source-art rewrite is introduced.
+
+Current observation contracts keep the original required pose/rest durations,115s primary/secondary budget,650ms physical-control window and10s resumed-activity rule. Same-ball replay follows the current2600ms typed use, actual release/flight/settling and once-only collection; the legacy1100ms observer and its adversarial suite remain historical and unchanged. Real night lamp preparation may bridge an S03 attempt only with the same serial/beat, physical control change, real travel and return to its actual sofa; it does not itself certify sleep. The first editor phase keeps autonomous work ON. Its separate stationary compact-sofa phase turns roam OFF through the actual UI; the new world-flight cases separately exercise genuine input and movement. Every original failed raw/video/trace remains failed and retained. A numbered floor source candidate that cannot prove native placement/admission remains unproved, not a product defect or adopted daily idea.
+
+## Resident-sofa painted evidence (current157)
+
+The exact case `143 studio sofa stays aligned beside the editor and independent controls` attaches one `actual-sofa-scroll-156` JSON. Its entire frame/native-scroll/post-rAF history, original1CSSpx front/size threshold, body-relative extrema, source digest/BUILD/chunk hashes, resident visibility/ownership and actual wheel reversal remain mandatory. DOM admission and a zero-delay timer do not certify paint. `sofaRenderedAssessments` is separate from the thirteen147 `renderedAssessments`; neither substitutes for the other.
+
+**Always require three fresh independent non-author reviewers for this exact143 case, even with zero DOM candidates or zero adopted ideas.** Each reviewer supplies exactly one `sofaRenderedAssessments` entry. The parent retains actual invocation/completion receipts. The strict finalizer recomputes candidates and all raw denominators, checks the original frozen same-case attachments, PNG headers/dimensions/SHA and source/build bindings, and rejects missing/mismatched/insufficient assessments. Its integrity checks do not authenticate reviewer identity or automatically decide painted pixels.
+
+The original encoded video must actually be **1920x850 at1CSSpx per pixel**, not merely configured that way. The case captures and attaches all three original **1920x420** PNGs named `sofa143-paint-before`, `sofa143-paint-down`, and `sofa143-paint-up`, with browser-clock brackets inside the raw observation window. The exact trace must retain these attached original bytes in its resources. Ordinary trace screencasts may be800px; do not relabel or resize them as1x evidence. Each reviewer actually inspects >=2 bounded samples of both original trace and video and >=2 original1x PNGs embedded in that trace, including `down`. All three PNGs remain frozen even when only two are cited in the minimum reviewer evidence. Reviewers must verify actual encoded dimensions and recorded PNG hashes; configuration and raw labels alone are insufficient.
+
+Required additional fields on each ordinary independent review document (example uses a genuinely zero-candidate case; replace every placeholder with that new run's exact values):
+
+```json
+{
+  "sofaRenderedAssessments": [{
+    "rawAttachment": {"path": "exact/frozen/raw.json", "sha256": "64hex"},
+    "caseTitle": "143 studio sofa stays aligned beside the editor and independent controls",
+    "buildId": "actual-new-BUILD_ID",
+    "state": "no_failure_observed",
+    "candidateCount": 0,
+    "maxRelativeErrorCssPx": 0,
+    "maxFrontErrorCssPx": 0,
+    "maxSizeErrorCssPx": 0,
+    "bodyRelativeSpanCssPx": 0,
+    "missing": 0,
+    "reason": "Actual finite1x samples, measurements and trace/video clocks; explain the evidence and its limits.",
+    "paintEvidence": [
+      {"kind":"trace","path":"original/trace.zip","sha256":"64hex","pixelScale":1,"sampleCount":2,"embeddedPngs":[{"name":"sofa143-paint-before","sha256":"64hex"},{"name":"sofa143-paint-down","sha256":"64hex"},{"name":"sofa143-paint-up","sha256":"64hex"}]},
+      {"kind":"video","path":"original/video.webm","sha256":"64hex","pixelScale":1,"sampleCount":2,"pixelWidth":1920,"pixelHeight":850},
+      {"kind":"png","path":"original/before.png","sha256":"64hex","pixelScale":1,"sampleCount":1},
+      {"kind":"png","path":"original/down.png","sha256":"64hex","pixelScale":1,"sampleCount":1},
+      {"kind":"png","path":"original/up.png","sha256":"64hex","pixelScale":1,"sampleCount":1}
+    ]
+  }]
+}
+```
+
+`candidateCount` must equal the complete recomputed raw count. Use `no_failure_observed` only for exactly zero candidates; use `prepaint_observation` for positive candidates only after adequate actual original-pixel inspection. All four error/span metrics must be finite and **0 <= value <1CSSpx**, and `missing` must be numeric0. Trace `embeddedPngs` contains2–3 unique exact raw name/hash pairs including `down`; each paint reference is a distinct same-case frozen original with matching path/hash/kind. Require `pixelScale:1`, trace/video integer `sampleCount>=2`, and PNG `sampleCount>=1`. Report `confirmed_failure` or `insufficient_evidence` honestly when appropriate; those do not satisfy release. A timer, retained raw label or another case's image cannot turn a candidate into approval. This is a finite sampled painted check, not a claim about every compositor timestep or user environment.
+
 149 registers169 native cases: all prior143 plus17 shared body-cheer/notebook/curtain cases and9 actual object/household cases. Four new pure suites cover five body hops without held props, all84 toys mapped to15 uses, real-consumption-only unusual-food reactions, and committed day/night sleep/departure light/TV policy. The new outputs use unique `COMPANION149_OUTPUT` and `COMPANION149_OBJECTS_OUTPUT` directories per attempt. Existing three independent reviewers, same-object/physical control ACKs, original143 gates and all retained failures remain mandatory. Registration is not proof of execution. Rare recipes and all toy uses have pure coverage; random real native samples and a known hidden-pose preview do not certify every rare food's actual consumption or all84 native toy performances. Manual choices retain their protection; curtains remain independent. The uncommitted148 held-prop proposal was superseded by the user's body-only cheer instruction, with its source and raw evidence kept locally rather than reused as149 PASS.
 
 Current147 registers143 native cases: the previous130 plus13 actual resting-item scroll/input regressions. Four shared layouts (viewer1920, compact viewer1100, studio and preview) each test full/soft/OFF with a real food and toy, rapid native wheel reversals and separate visible-item denominators. Another native test checks actual pointer grip, release and unanchored finite flight for both object types. Physical initial floor contact (<2CSSpx), actual support movement (or a genuinely fixed house beside a scrolling calendar), missing post-timer items, native support and input/flight remain hard admission gates. Two147 pure suites cover native item-anchor ownership and food/toy scroll integration. `COMPANION147_OUTPUT` is assigned a unique directory in every runner attempt.

@@ -43,15 +43,20 @@ function fingerprints(root, paths) {
   return paths.map(relative => { const file = unlinkedFile(root, relative); return { path: relative, sha256: file ? sha(fs.readFileSync(file)) : null }; });
 }
 export function parseOptions(argv) {
-  const options = { budgetMinutes: 45, workers: 3, plan: false, root: process.cwd(), sourceManifest: undefined };
+  const options = { budgetMinutes: 45, workers: 3, plan: false, root: process.cwd(), sourceManifest: undefined, nativeGrep: undefined };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--plan') options.plan = true;
-    else if (['--root', '--budget-minutes', '--workers', '--source-manifest'].includes(argv[i])) {
+    else if (['--root', '--budget-minutes', '--workers', '--source-manifest', '--native-grep'].includes(argv[i])) {
       const key = argv[i], value = argv[++i]; if (!value) throw Error(`Missing ${key}`);
       if (key === '--root') options.root = path.resolve(value);
       if (key === '--budget-minutes') options.budgetMinutes = Number(value);
       if (key === '--workers') options.workers = Number(value);
       if (key === '--source-manifest') options.sourceManifest = path.resolve(value);
+      if (key === '--native-grep') {
+        if (!value.trim() || value.length > 1024) throw Error('A bounded diagnostic native pattern is required');
+        try { new RegExp(value); } catch { throw Error('Invalid diagnostic native pattern'); }
+        options.nativeGrep = value;
+      }
     } else throw Error(`Unknown argument ${argv[i]}`);
   }
   if (!Number.isInteger(options.budgetMinutes) || options.budgetMinutes < 5 || options.budgetMinutes > 180 || !Number.isInteger(options.workers) || options.workers < 1 || options.workers > 3) throw Error('Budget must be 5..180 minutes; workers 1..3');
@@ -225,9 +230,13 @@ export async function run(options) {
     if (!ready) throw Error('Owned fixture server did not become ready within the budget');
     const config = path.join(workspace, 'companion-qa.generated.config.ts'), nativeOutput = path.join(attempt, 'native'), reportFile = path.join(attempt, 'playwright.json');
     fs.mkdirSync(nativeOutput, { recursive: true }); // Shared parent exists before any parallel case writes a prefix-based artifact.
-    const nativeEnv = Object.fromEntries(['COMPANION149_OUTPUT', 'COMPANION149_OBJECTS_OUTPUT', 'COMPANION147_OUTPUT', 'COMPANION146_HOME_OUTPUT', 'COMPANION146_OUTPUT', 'COMPANION143_OUTPUT', 'COMPANION141_AGENCY_OUTPUT', 'COMPANION141_OUTPUT', 'COMPANION137_OUTPUT', 'COMPANION134_GALLERY_OUTPUT', 'COMPANION_WINDOW_UI_OUTPUT', 'VIC_ACTIVITY_AUDIT_PREFIX'].map(key => [key, path.join(nativeOutput, key.toLowerCase())]));
+    const nativeEnv = { ...Object.fromEntries(['COMPANION149_OUTPUT', 'COMPANION149_OBJECTS_OUTPUT', 'COMPANION147_OUTPUT', 'COMPANION146_HOME_OUTPUT', 'COMPANION146_OUTPUT', 'COMPANION143_OUTPUT', 'COMPANION141_AGENCY_OUTPUT', 'COMPANION141_OUTPUT', 'COMPANION137_OUTPUT', 'COMPANION134_GALLERY_OUTPUT', 'COMPANION_WINDOW_UI_OUTPUT', 'VIC_ACTIVITY_AUDIT_PREFIX'].map(key => [key, path.join(nativeOutput, key.toLowerCase())])),
+      COMPANION156_SOURCE_FREEZE: path.join(directory, 'source-freeze.json') };
     fs.writeFileSync(config, `import {defineConfig} from '@playwright/test';\nexport default defineConfig(${JSON.stringify({ testDir: './tests/visual', testMatch: NATIVE_SUITES, grep: undefined, workers: options.workers, retries: 0, timeout: 125000, fullyParallel: true, outputDir: path.join(attempt, 'playwright'), reporter: [['json', { outputFile: reportFile }]], use: { baseURL, viewport: { width: 1920, height: 1100 }, deviceScaleFactor: 1, serviceWorkers: 'block', trace: 'retain-on-failure', video: 'on', screenshot: 'only-on-failure' } })});\n`, { flag: 'wx' });
-    const native = await command(workspace, ['node_modules/@playwright/test/cli.js', 'test', '--config', config, '--grep', NATIVE_GREP], childEnvironment(process.env, { ...nodeGuard, ...nativeEnv, COMPANION_QA_NODE_ORIGIN: baseURL, VIC_ACTIVITY_BASE_URL: baseURL.replace("127.0.0.1", "127.0.0.2"), COMPANION_QA_OUTPUT: nativeOutput, COMPANION_QA_CASES: JSON.stringify(cases), VISUAL_TEST_BUILD_DIR: path.join(workspace, '.next') }), path.join(attempt, 'native.log'), deadline, control);
+    // A diagnostic subset retains the full strict release counts below. It
+    // can never certify the factory or replace a later unfiltered run.
+    if (options.nativeGrep) result.diagnosticScope = { nativeGrep: options.nativeGrep, eligibleForRelease: false, fullRunStillRequired: true };
+    const native = await command(workspace, ['node_modules/@playwright/test/cli.js', 'test', '--config', config, '--grep', options.nativeGrep ?? NATIVE_GREP], childEnvironment(process.env, { ...nodeGuard, ...nativeEnv, COMPANION_QA_NODE_ORIGIN: baseURL, VIC_ACTIVITY_BASE_URL: baseURL.replace("127.0.0.1", "127.0.0.2"), COMPANION_QA_OUTPUT: nativeOutput, COMPANION_QA_CASES: JSON.stringify(cases), VISUAL_TEST_BUILD_DIR: path.join(workspace, '.next') }), path.join(attempt, 'native.log'), deadline, control);
     const nativeStage = { name: 'native-production-fixture', ...native }; stages.push(nativeStage);
     result.nativeEntries = nativeEntryEvidence(fs.existsSync(reportFile) ? readJson(reportFile) : undefined);
     stages.push({ name: 'native-personality-entry-proof', status: result.nativeEntries.status, detail: `${result.nativeEntries.passedEntries}/27 actual entry cases passed; skipped:${result.nativeEntries.skippedEntries}, failed:${result.nativeEntries.failedEntries}, not-run:${result.nativeEntries.notRunEntries}; ${result.nativeEntries.selectedCaseCount}/${PLANNED_NATIVE_CASE_COUNT} cases selected, ${result.nativeEntries.selectedPassedCases}/${PLANNED_NATIVE_CASE_COUNT} actually passed; ${result.nativeEntries.floatingTidy.passed}/${NATIVE_FLOATING_TIDY_TITLES.length} exact floating-house tidy cases passed` });
@@ -259,6 +268,9 @@ export async function run(options) {
       } catch (error) { stages.push({ name: 'original-tree-preserved', status: 'failed', detail: `Preservation could not be proved: ${String(error.message ?? error)}. No automatic restore/reset is performed` }); result.status = 'failed'; }
     }
     for (const required of ['pure-models', 'pure-count-proof', 'metadata', 'build', 'typecheck', 'lint', 'native-production-fixture', 'native-personality-entry-proof']) if (!stages.some(stage => stage.name === required)) stages.push({ name: required, status: 'not-run', detail: 'Earlier gate or budget prevented execution' });
+    // A diagnostic selection can never certify a release, even if its regular
+    // expression happens to select every registered native case.
+    if (options.nativeGrep && result.status === 'completed-scoped-checks') result.status = 'completed-diagnostic-checks';
     writeReport(directory, result); writeNewJson(path.join(directory, 'evidence-manifest.json'), { files: evidenceFiles(attempt), report: ['source-freeze.json', 'universe.json', 'report.json', 'report.md', 'report.html'].filter(file => fs.existsSync(path.join(directory, file))).map(file => ({ path: file, sha256: sha(fs.readFileSync(path.join(directory, file))) })) });
     process.stdout.write(`Companion QA: ${result.status}; local evidence ${directory}\n`);
   }
