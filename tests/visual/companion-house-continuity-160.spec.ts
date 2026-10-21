@@ -142,3 +142,10 @@ for(const personality of ['performer','curious','affectionate','sleepy','tidy','
  expect(repeated,'three unproductive lamp jumps cannot cycle at the same point').toEqual([]);expect(frames.some(f=>f.home.light),'night awake agent must actually reach and turn on the lamp').toBe(true);expect(meaningful.length).toBeGreaterThan(5);
  proofs.get(page)!.notes.push({stage:'actual-personality-continuity',personality,seconds:45,attempts,unproductiveRepeats:repeated.length,actualCalendarFrames:frames.filter(f=>!f.platform.startsWith('companion-home')&&f.actorDecoded).length});
 });
+
+test('161 actual meal admits first bite and a consumed food expression',async({page})=>{
+ await setup(page,'studio',true,{personality:'gourmet',energy:.95,sleep:false,hour:12,light:true});const home=await expandedHome(page);await home.locator('[data-home-action="feed"]').click();await expect(page.locator('.vc-food')).toHaveCount(1);
+ await page.evaluate(()=>{const entries:{id:string;at:number}[]=[],meals:unknown[]=[];const pet=document.querySelector('.vc-companion')!;const m=new MutationObserver(()=>{const id=pet.getAttribute('data-expression');if(id&&entries.at(-1)?.id!==id)entries.push({id,at:performance.now()});});m.observe(pet,{attributes:true,attributeFilter:['data-expression']});window.addEventListener('vic:companion-consumed-food',e=>meals.push((e as CustomEvent).detail));(window as Window&{meal161?:unknown}).meal161={entries,meals};});
+ await probe(page);await startRoaming(page);await expect.poll(()=>page.evaluate(()=>((window as unknown as Window&{meal161:{meals:unknown[]}}).meal161.meals.length)),{timeout:45000}).toBeGreaterThan(0);await page.waitForTimeout(3400);
+ const reaction=await page.evaluate(()=>(window as unknown as Window&{meal161:{entries:{id:string;at:number}[];meals:unknown[]}}).meal161),ids=reaction.entries.map(x=>x.id);proofs.get(page)!.notes.push({stage:'actual-meal-expressions',...reaction});expect(ids).toContain('first-bite');expect(ids.some(id=>['savor','hot','icy','spicy','sour'].includes(id))).toBe(true);expect(ids).not.toContain('melt');
+});

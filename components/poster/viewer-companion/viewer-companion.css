@@ -185,3 +185,8 @@ html[data-gfx="off"] .vc-dream i { animation: none; opacity: .7; }
 .vc-food > span { filter: brightness(var(--vc-item-room-light, 1)); }
 .vc-toys .vc-toy > .vc-toy-art { filter: brightness(var(--vc-item-room-light, 1)) var(--vc-toy-color) drop-shadow(0 2px 1px #5d422528); }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-toys .vc-toy > .vc-toy-art { filter: brightness(var(--vc-item-room-light, 1)) var(--vc-toy-color); }
+
+/*161 face rig shares the sprite registration and body transform, beneath eyewear. */
+.vc-expression-face { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
+.vc-expression-face[hidden] { display: none; }
+.vc-companion[data-expression] .vc-sprite { visibility: hidden; }

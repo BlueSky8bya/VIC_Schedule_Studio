@@ -1,5 +1,8 @@
 "use client";
 
+import { createCompanionExpressions } from "@/lib/ui/viewer-companion/expressions";
+import { createCompanionExpressionPainter, COMPANION_EXPRESSION_REFERENCE_SRC } from "@/lib/ui/viewer-companion/expression-painter";
+
 import { companionWorkExpressionsFor, companionWorkExpressionPose, type CompanionWorkExpressionOffer } from "@/lib/ui/viewer-companion/work-expression";
 
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type RefObject } from "react";
@@ -152,6 +155,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
   const actorId = useId();
   const body = useRef<HTMLDivElement>(null), actor = useRef<HTMLButtonElement>(null), effect = useRef<HTMLSpanElement>(null);
   const sprite = useRef<HTMLSpanElement>(null), pose = useRef<HTMLSpanElement>(null), reaction = useRef<HTMLSpanElement>(null), facing = useRef<HTMLSpanElement>(null), shadow = useRef<HTMLSpanElement>(null);
+  const expressionCanvas = useRef<HTMLCanvasElement>(null);
   const washTool = useRef<HTMLSpanElement>(null);
   const interactionTool = useRef<HTMLSpanElement>(null);
   const accessoryBack = useRef<HTMLSpanElement>(null), accessoryFront = useRef<HTMLSpanElement>(null), giftProp = useRef<HTMLSpanElement>(null), giftButton = useRef<HTMLButtonElement>(null);
@@ -738,6 +742,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       bed.opacity = opacity;
       return Boolean(dx || dy || opacityChanged);
     };
+    const expressions = createCompanionExpressions(), facePainter = expressionCanvas.current ? createCompanionExpressionPainter(expressionCanvas.current) : undefined;
+    let expressionMeal: { serial: number; food: string; full: boolean; last: boolean } | undefined, expressionCleanup = 0, expressionAnimating = false;
     const visual = createCompanionMotion({ clips: companionMotionClips, rowCount: registration.rows.length, loopRows: [0, 2, 8, 9, 11, 20], maxFrameRate: 14 });
     const supportMotion = createCompanionSupportMotion();
     const heldInertia = createCompanionHeldInertia();
@@ -1131,6 +1137,27 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         observed.cheerBounce = playProgress >= .89 && witnessedCheerHops.toString(2).replaceAll("0", "").length >= 3;
       }
       const currentDrawing = observed.visible && observed.decoded && observed.adoptedIndex === observed.requestedIndex && observed.adoptedSrc === observed.requestedSrc;
+      const expressionFood = action?.foodId ? food.current?.foods().find(item => item.id === action?.foodId) : undefined;
+      const expressionToy = action?.toyPerformance?.kind;
+      const privateRoom = support.startsWith("companion-home"), command = action?.personalityScene?.command;
+      const lookingOut = privateRoom && status === "look" && (action?.scene?.id === 31 || command?.kind === "watch" && getCompanionHomeTv() === "off");
+      const face = expressions.sample({
+        token: `${began}:${status}:${action?.play ?? ""}`, status, play: action?.play, phase: clamp((performance.now() - began) / Math.max(1, total), 0, 1),
+        personality: effective.personality, atHome: privateRoom, energy: brain.current.energy, food: expressionFood?.kind,
+        foodRefused: Boolean(action?.foodRefusal), petting: Boolean(pressure.pressure || hoverPetting || petStarted > 0 && performance.now() < petUntil && performance.now() - petStarted < COMPANION_TIMING.petReward + 100), busy: status === "eat" || status === "sleep" || Boolean(expressionToy),
+        userNear: Boolean(pointer && Math.hypot(pointer.x - display.x, pointer.y - display.y) < size * 1.7),
+        toyPlaying: Boolean(expressionToy && toys.current?.carried()), toyApproach: Boolean(action?.toyApproach || action?.toy && !toys.current?.carried()),
+        reading: Boolean(expressionToy && /(?:card|puzzle|cube|kaleidoscope)/.test(expressionToy) && toys.current?.carried()),
+        watching: privateRoom && status === "look" && command?.kind === "watch" && getCompanionHomeTv() !== "off",
+        lookingOut, music: Boolean(action?.radio), season: Number(monthKey.split("-")[1]), weather: environment.current.weather, daylight: !environment.current.night,
+        outing: action?.personalityScene?.id === "routine-outing" || !privateRoom && status === "walk" && effective.personality === "curious",
+        cleanupReceipt: expressionCleanup, meal: expressionMeal, mishap: Boolean(runTrip || action?.toyMishap || heartResult === "removed"),
+      }, presentationNow, reduced || gfxMode() === "off" || gfxMode() === "soft" || !currentDrawing || overlayActive || premiereActive || Boolean(pressed || keyboardHeld || placing || interaction || washingPose || aftertaste) || status === "sleep" || status === "held");
+      expressionAnimating = Boolean(face);
+      if (face) requestSprite.current(COMPANION_EXPRESSION_REFERENCE_SRC);
+      const faceVisible = facePainter?.paint(paintedSelection, face);
+      if (face && faceVisible) data("expression", face.id); else el.removeAttribute("data-expression");
+
       if (aftertaste && currentDrawing && drawingRow === 23 && !cheerQuiet) {
         const at = presentationNow;
         if (aftertastePaintAt) aftertastePaintMs += Math.min(100, Math.max(0, at - aftertastePaintAt));
@@ -1464,7 +1491,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, now, toyHomeContacts, toyAnchor);
       return Boolean(dx || dy || bedMoved || returnMoved);
     };
-    const continuousMotion = () => Boolean(performance.now() < interactionUntil || toys.current?.moving() || action?.toy?.effect === "stash" && toys.current?.carried() || isFoodDisposal(action) && food.current?.carried() || homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && (action.accessory || action.radio || ["walk", "jump", "heart", "hide", "stretch", "shake", "eat", "play"].includes(action.kind)));
+    const continuousMotion = () => Boolean(expressionAnimating || performance.now() < interactionUntil || toys.current?.moving() || action?.toy?.effect === "stash" && toys.current?.carried() || isFoodDisposal(action) && food.current?.carried() || homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && (action.accessory || action.radio || ["walk", "jump", "heart", "hide", "stretch", "shake", "eat", "play"].includes(action.kind)));
     const followLayout = (event?: Event) => {
       if (premiereActive && event?.target === window.visualViewport) { viewportResized(); return; }
       // A compact room can unmount while the creature is parked. Drop its
@@ -1874,7 +1901,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         if (id) { personalityDirector.observeEffect("toy", brain.current.activeMs); humanToyAt = brain.current.activeMs; playCompanionSound("play", preferencesRef.current); nextDecision = performance.now(); schedule(); }
       },
       toyChanged: () => { if (!pause && !document.hidden && !stopped) { nextDecision = Math.min(nextDecision, performance.now() + 100); schedule(); } },
-      toyReturned: () => { personalityDirector.event("toy-returned", brain.current.activeMs); },
+      toyReturned: () => { if (!toys.current?.count()) expressionCleanup++; personalityDirector.event("toy-returned", brain.current.activeMs); },
       toyTouched: () => {
         humanToyAt = brain.current.activeMs;
         const focusedItem = document.activeElement instanceof HTMLElement ? document.activeElement.dataset.toyId : undefined;
@@ -3107,6 +3134,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
             // Profile subscribers read canonical care when taste memory emits.
             // Both stores receive this one real meal's identical impression.
             if (taste) recordCompanionFoodTasteOutcome(taste, preferencesRef.current.learnFromYou !== false);
+            if (eatenFood) expressionMeal = { serial: (expressionMeal?.serial ?? 0) + 1, food: eatenFood.kind, full: brain.current.hunger <= COMPANION_FULL_THRESHOLD, last: !food.current?.foods().length };
             if (eatenFood) sceneEvent({ kind: "meal", foodId: eatenFood.id, food: eatenFood.kind, favoriteChanged: previousFavorite !== brain.current.life?.favoriteFood, first: Boolean(firstFood) });
             if (completed.personalityScene) personalityDirector.resolve(completed.personalityScene, true, eatenFood?.id, brain.current.activeMs);
             if (eatenFood) storedPersonalityFoods.delete(eatenFood.id);
@@ -4557,6 +4585,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       <span className="vc-inertia" ref={inertia} aria-hidden="true"><span className="vc-facing" ref={facing}><span className="vc-reaction" ref={reaction}><span className="vc-contact" ref={contact}><span className="vc-pose" ref={pose}>
         <span className="vc-wearable vc-wearable-back" ref={accessoryBack} hidden />
         <span className="vc-sprite" ref={sprite} />
+        <canvas className="vc-expression-face" ref={expressionCanvas} hidden aria-hidden="true" />
         <span className="vc-wearable vc-wearable-front" ref={accessoryFront} hidden />
         <span className="vc-wearable vc-gift-prop" ref={giftProp} hidden />
       </span></span></span></span></span>
