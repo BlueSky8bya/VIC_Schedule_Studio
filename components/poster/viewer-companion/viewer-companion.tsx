@@ -1136,8 +1136,12 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       }
       const previousCarry = paintedSelection && accessoryModule?.companionHomeContactAnchor(paintedSelection, interaction?.kind === "light" || interaction?.kind === "curtain");
       const previousHand = previousCarry && paintedSelection ? projectCompanionSpritePoint({ size, display, shape, pressure, response, facing: sample.facing, sway, chew: 0, cell: paintedSelection.frame }, previousCarry) : null;
-      const reach = interaction && previousHand ? sampleCompanionHomeReach({ hand: previousHand, contact: interaction.point, footY: display.y, ceiling: bedScene?.clip.top ?? 0, size, progress: (performance.now() - began) / total, jump: effective.jump, cord: interaction.kind === "light" }) : undefined;
-      if (reach) display = { ...display, y: display.y - reach.lift };
+      const reachFloor = interaction?.kind === "light" ? supportById(support) : undefined;
+      const horizontal = reachFloor && !reachFloor.bodyOnly && bedScene ? { bodyX: display.x,
+        left: Math.max(platformLandingX(reachFloor,reachFloor.x),bedScene.clip.left+size*display.scale/2),
+        right: Math.min(platformLandingX(reachFloor,reachFloor.x+reachFloor.width),bedScene.clip.right-size*display.scale/2) } : undefined;
+      const reach = interaction && previousHand ? sampleCompanionHomeReach({ hand: previousHand, contact: interaction.point, footY: display.y, ceiling: bedScene?.clip.top ?? 0, size, progress: (performance.now() - began) / total, jump: effective.jump, cord: interaction.kind === "light", horizontal }) : undefined;
+      if (reach) display = { ...display, x: display.x + reach.shiftX, y: display.y - reach.lift };
       const roomLight = companionRoomBodyLight(display, bedScene?.clip, roomBodyGrade);
       style(el, "--vc-body-room-light", String(roomLight));
       const chew = status === "eat" && !reduced ? Math.sin(presentationNow * .024) * .012 : 0;

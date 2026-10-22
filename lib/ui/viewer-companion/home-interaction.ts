@@ -38,7 +38,8 @@ export function companionHomeResidentFloor(id: string, point: Point, platforms: 
  * grows beyond its260px default while the actor stays92px. Scale this local
  * control hop to the actual hand/handle gap. This is a same-support reach,
  * bounded by the measured ceiling, not an ordinary platform transfer. */
-export function sampleCompanionHomeReach(input: { hand: Point; contact: Point; footY: number; ceiling: number; size: number; progress: number; jump: boolean; cord?: boolean }) {
+export function sampleCompanionHomeReach(input: { hand: Point; contact: Point; footY: number; ceiling: number; size: number; progress: number; jump: boolean; cord?: boolean;
+  horizontal?: Readonly<{ bodyX: number; left: number; right: number }> }) {
   const { hand, contact, footY, ceiling, size } = input;
   if (![hand.x, hand.y, contact.x, contact.y, footY, ceiling, size, input.progress].every(Number.isFinite) || size <= 0) return;
   const p = Math.max(0, Math.min(1, input.progress));
@@ -49,10 +50,19 @@ export function sampleCompanionHomeReach(input: { hand: Point; contact: Point; f
   const wanted = Math.max(0, hand.y - contact.y - (cord ? 0 : size * .2));
   const controlRise = cord ? room : COMPANION_JUMP_LIMITS.maxRise * Math.max(1, (footY - ceiling) / 260);
   const lift = input.jump ? Math.min(controlRise, room, wanted) * envelope : 0;
-  const from = { x: hand.x, y: hand.y - lift };
+  // Centre the registered hand during this same finite hop. Full-renderer
+  // lean/row9 anchors otherwise leave a4px knob between one-frame contacts.
+  // The measured safe floor/room span owns the actual body shift; no remote
+  // reach, instant snap or contact-tolerance change can earn a tug.
+  const span = input.horizontal;
+  const safe = span && [span.bodyX,span.left,span.right].every(Number.isFinite) && span.left <= span.bodyX && span.bodyX <= span.right;
+  const limit = size * .12;
+  const offset = cord && input.jump && safe ? Math.max(span.left-span.bodyX,Math.min(span.right-span.bodyX,Math.max(-limit,Math.min(limit,contact.x-hand.x)))) : 0;
+  const shiftX = envelope > 0 ? offset * envelope : 0;
+  const from = { x: hand.x + shiftX, y: hand.y - lift };
   const reachable = cord ? companionHomeCordTouches(from, contact, size) : Math.hypot(from.x - contact.x, from.y - contact.y) <= size * .48;
   const touching = reachable && p >= .32 && p <= .76;
-  return { lift, from, to: touching ? contact : from, touching };
+  return { lift, shiftX, from, to: touching ? contact : from, touching };
 }
 
 /** Adjacent authored hand anchors vary by about1.5px at the normal92px size.

@@ -7,7 +7,7 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Urgent OPEN: owner still reports lamp failure after633. Capture actual local lamp state; do not infer actual-user success from isolated PASS. Lamp only, no200. [Plan](plans/PLAN-20261022-lamp-live-trace.md). Daily09:00 remains;36 UNVERIFIED.
+Urgent lamp170: actual failure trace obtained and reproduced at full graphics/2133x1050/DPR0.9. Finite bounded hand alignment passes the failed condition plus two nearby cases; independent actual review and deployed full-condition verification pending. Lamp only, no200. [Plan](plans/PLAN-20261022-lamp-live-trace.md). Daily09:00 remains;36 UNVERIFIED.
 
 Criteria145: optional TV bow and separate actual10s activity/repetition verified. Final frozen110/27/9/2, full gates and three independent final reviews passed; scoped commit and actual production confirmation pending. [145 plan](plans/PLAN-20261020-145-companion-activity-criteria.md).
 
@@ -52,7 +52,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 5. PRIVACY-20260921: resolve remaining visit/recurring retention policy and restricted local recovery-backup removal after its2026-10-24 window. No automatic future run is scheduled.
 ## Last Verified
 
-Owner lamp failure remains OPEN after633. Diagnostic9f566c6 local5 units/1 fixture/1 guarded deployed exporter and independent review passed; quality39778352752/Vercel/fullSHA verified. Actual owner failure export is pending; no lamp-fix claim and no200. [Plan](plans/PLAN-20261022-lamp-live-trace.md).
+Actual lamp trace2e669e72 has16 touch paints/0receipts; matched viewer geometry342x260/full graphics/DPR0.9 fails before170 (c49c947d). Bounded physical alignment preserves strict1.25px and passes final3 native cases177e87a8,99 related units/type/lint/build. Source review accepted; actual independent/deployed result pending. No200. [Plan](plans/PLAN-20261022-lamp-live-trace.md).
 
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.
