@@ -43,7 +43,7 @@ function client() {
       const request = { table, columns: "", range: undefined as [number, number] | undefined, order: [] as string[], filters: [] as [string, unknown][] };
       let signal: AbortSignal | undefined;
       query.select = (columns: string) => { request.columns = columns; return query; };
-      for (const method of ["eq", "neq", "is", "gt"]) query[method] = (column: string, value: unknown) => { request.filters.push([`${method}:${column}`, value]); return query; };
+      for (const method of ["eq", "neq", "is", "gt", "in"]) query[method] = (column: string, value: unknown) => { request.filters.push([`${method}:${column}`, value]); return query; };
       query.order = (column: string) => { request.order.push(column); return query; };
       query.limit = () => query;
       query.range = (from: number, to: number) => { request.range = [from, to]; return query; };

@@ -911,6 +911,7 @@ export function PublicPoster({
         thumbQuery?: string;
         host?: string; // 합방 게스트 출연분(0075) — 호스트 닉. 칩·창에 "합방 · ○○" 배지
         hostId?: string; // 호스트 숲 아이디 — 칩이 방송국 링크가 된다(2026-09-17)
+        plus?: boolean; // 구독플러스(구독자 전용, 0154) — 칩·창이 프리미엄 색
       }[]
     >();
     for (const v of schedule.vods ?? []) {
@@ -3901,18 +3902,20 @@ export function PublicPoster({
                   {interactive
                     ? (vodsByDate.get(cell.isoDate) ?? []).map((vod, vi, arr) => (
                         <a
-                          className="agenda-link vod agenda-vod-inline"
+                          className={`agenda-link vod agenda-vod-inline${vod.plus ? " is-plus" : ""}`}
                           data-act="vod-replay"
                           href={`https://vod.sooplive.co.kr/player/${vod.titleNo}`}
                           key={vod.titleNo}
                           onClick={() => hapticTick()}
                           rel="noopener noreferrer"
                           target="_blank"
-                          title={vod.host ? `합방 · ${vod.host} 방송국${vod.title ? ` — ${vod.title}` : ""}` : vod.title || undefined}
+                          title={vod.host ? `합방 · ${vod.host} 방송국${vod.title ? ` — ${vod.title}` : ""}` : vod.plus ? `구독플러스 · ${vod.title || "구독자 전용 다시보기"}` : vod.title || undefined}
                         >
                           <Play aria-hidden="true" size={13} strokeWidth={2.6} />
                           {/* 합방 게스트 출연분(0075) — 다른 채널임을 짧게(모바일은 '합방'만, 호스트는 툴팁). */}
                           {vod.host ? <em className="agenda-vod-host">합방</em> : null}
+                          {/* 구독플러스(0154) — 같은 칩, 색만 프리미엄 + '구플' 각인. */}
+                          {vod.plus ? <em className="agenda-vod-host agenda-vod-plus">구플</em> : null}
                           {/* 라벨 = VOD 제목(넘치면 …). 제목이 비어 있을 때만 '다시보기 N' 폴백. */}
                           <span className="agenda-vod-title">
                             {vod.title || `다시보기${arr.length > 1 ? ` ${vi + 1}` : ""}`}

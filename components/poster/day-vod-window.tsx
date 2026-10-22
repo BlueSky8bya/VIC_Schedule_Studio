@@ -23,6 +23,7 @@ export type DayVod = {
   thumbQuery?: string;
   host?: string; // 합방 게스트 출연분(0075) — 호스트 닉. 칩·창에 "합방 · ○○" 배지
   hostId?: string; // 호스트 숲 아이디 — 칩이 방송국 링크가 된다(2026-09-17)
+  plus?: boolean; // 구독플러스(구독자 전용, 0154) — 탭·머리줄 배지가 보랏빛 프리미엄 색
   startedAt?: string; // 방송 시작 시각(ISO) — 타임라인의 '실제 시각' 표기(2026-09-18 소유자)
 };
 
@@ -1261,6 +1262,12 @@ export function DayVodWindow({
                         합방 · {sel.host} 방송국
                       </span>
                     ) : null}
+                    {/* 구독플러스(0154, 2026-10-23 소유자) — 일반 다시보기와 같은 창, 색만 프리미엄. 재생 권한은 숲 플레이어 몫. */}
+                    {sel?.plus ? (
+                      <span className="dvm-host dvm-plus" title="구독플러스 구독자만 재생할 수 있는 다시보기">
+                        구독플러스
+                      </span>
+                    ) : null}
                     {/* 타임라인 자리 좌/우(2026-09-19 소유자) — 설정의 계절 세그먼트와 같은 알약 문법. */}
                     <div aria-label="타임라인 자리" className="dvm-railside" role="radiogroup">
                       <button
@@ -1338,7 +1345,7 @@ export function DayVodWindow({
                       {list.map((v, i) => (
                         <button
                           aria-selected={v.titleNo === sel.titleNo}
-                          className={`dvm-tab${v.titleNo === sel.titleNo ? " is-on" : ""}`}
+                          className={`dvm-tab${v.titleNo === sel.titleNo ? " is-on" : ""}${v.plus ? " is-plus" : ""}`}
                           data-act="vod-tab"
                           key={v.titleNo}
                           onClick={() => {
@@ -1347,12 +1354,13 @@ export function DayVodWindow({
                             switchDayVod(sel.titleNo, v.titleNo, null);
                           }}
                           role="tab"
-                          title={v.title || undefined}
+                          title={v.plus ? `구독플러스 · ${v.title || "구독자 전용 다시보기"}` : v.title || undefined}
                           type="button"
                         >
                           <b>{i + 1}부</b>
                           {v.durationMs > 0 ? <em>{formatVodDuration(v.durationMs)}</em> : null}
                           {v.host ? <i>합방</i> : null}
+                          {v.plus ? <i className="dvm-tab-plus">구플</i> : null}
                         </button>
                       ))}
                     </div>
@@ -1362,7 +1370,7 @@ export function DayVodWindow({
                       const playerUrl = selPlayerUrl;
                       const label = selLabel;
                       return (
-                        <div className="dvm-vod" data-rail={railSide} key={vod.titleNo}>
+                        <div className="dvm-vod" data-plus={vod.plus ? "" : undefined} data-rail={railSide} key={vod.titleNo}>
                           {/* 플레이어는 창이 열릴 때부터 깔린다(fromApi=1, autoPlay:false 초기화).
                               첫 클릭 = 플레이어 안 ▶ = 어떤 브라우저에서도 1클릭 소리 켠 재생.
                               지정 썸네일 커버는 실제 재생이 시작될 때까지 덮는다(클릭 통과).

@@ -12,6 +12,8 @@
 
 ## 목록 (번호 → 목적)
 
+**Pending (2026-10-23)**: [0154_vod_archive_plus_public.sql](0154_vod_archive_plus_public.sql) — 공개 읽기에 구독플러스 다시보기(auth_no 107) 메타 포함(101·107만, 그 외 차단). 날짜 다시보기 창의 보랏빛 '구플' 탭용. 앱은 적용 전에도 101만 받아 안전(배포 순서 무관). PGlite 테스트 `tests/sql/vod-archive-plus-public.mjs`.
+
 **Applied 2026-10-17 KST**: [0152_event_hearts_read_initplan.sql](0152_event_hearts_read_initplan.sql) — own-heart SELECT keeps the same roles/row predicate while evaluating stable auth.uid once per statement. Guarded transaction; no row/grant/RLS-owner changes. Isolated two-user/NULL/anon/write/rollback/idempotence tests and independent review passed. [Provider verification](../../docs/agent/verification/SUPABASE_PROVIDER-20261017.md).
 
 **Applied 2026-10-14 KST**, before reader deployment: [0142_public_teaser_state.sql](0142_public_teaser_state.sql) — security-invoker public teaser discovery/canonical confirmation RPC over the existing masked view, with DB time/release state and explicit JSON fields. Verified CA/hostname TLS; anon and unprivileged authenticated SQL canaries passed in a rolled-back past-month transaction (zero residue), anonymous REST RPC 200. No raw-event/identity grants, persistent registry or data rewrite. Retain the additive RPC while deployed readers use it. [Verification and rollout](../../docs/agent/verification/TEASER_PREMIERE-20261014.md).

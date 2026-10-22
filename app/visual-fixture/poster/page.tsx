@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 export default async function VisualPosterFixture({
   searchParams
 }: {
-  searchParams?: Promise<{ avatar?: string; teaser?: string; fixed?: string; hearts?: string; ambient?: string; hour?: string; companionFood?: string; links?: string; signedIn?: string; tent?: string; premiere?: string; count?: string; gap?: string; scenario?: string; rehearsal?: string }>;
+  searchParams?: Promise<{ avatar?: string; teaser?: string; fixed?: string; hearts?: string; ambient?: string; hour?: string; companionFood?: string; links?: string; plus?: string; signedIn?: string; tent?: string; premiere?: string; count?: string; gap?: string; scenario?: string; rehearsal?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
@@ -76,7 +76,11 @@ export default async function VisualPosterFixture({
       { ...shown.events[0], id: "fixture-period", startsAt: "2026-06-19T12:00:00+09:00", endsAt: undefined, publicTitle: "기간 안내", tagIds: [], primaryTagIds: [], isSupport: true, supportKind: "period" as const, supportUrl: "https://example.com/fixture" },
       { ...shown.events[0], id: "fixture-up", startsAt: "2026-06-20T12:00:00+09:00", endsAt: undefined, endDateKey: "2026-06-22", publicTitle: "업 도움", tagIds: [], primaryTagIds: [], isSupport: true, supportKind: "up" as const, supportUrl: "https://example.com/fixture" }
     ],
-    vods: [{ titleNo: 900000001, title: "샘플 다시보기", dateKey: "2026-06-18", durationMs: 7200000 }]
+    vods: [
+      { titleNo: 900000001, title: "샘플 다시보기", dateKey: "2026-06-18", durationMs: 7200000 },
+      // plus=1 → 같은 날 구독플러스(0154) 한 편 — 창 탭·모바일 칩의 프리미엄 색 실측용(기준선 영향 없음).
+      ...(sp?.plus === "1" ? [{ titleNo: 900000002, title: "플러스뱅송 - 샘플", dateKey: "2026-06-18", durationMs: 3900000, plus: true }] : [])
+    ]
   } : shown;
   // tent=1 → 6/16~19에 미정·떡밥 비교 묶음(가린 떡밥 stub 포함) — 미정 표시 회귀 실측용(2026-10-05).
   const withTent = sp?.tent === "1" ? { ...withLinks, events: [...withLinks.events, ...tentativeFixtureEvents(true)] } : withLinks;

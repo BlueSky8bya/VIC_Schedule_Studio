@@ -906,6 +906,11 @@ html[data-reduce-motion] .mb-live-dot {
   background: var(--studio-action-tint-hi);
   color: var(--studio-action-strong);
 }
+/* 구독플러스(0154) — 같은 칩, 숲 파랑 대신 옅은 라벤더(창의 구플 탭과 같은 색). */
+.agenda-link.vod.is-plus {
+  background: linear-gradient(135deg, #f4eeff, #f9eef7);
+  color: #5b3f94;
+}
 /* 기간 안내(support_kind period) '자세히 보기' — 하늘색 띠와 같은 색 언어(정형화, globals .sb-period). */
 .agenda-link.period {
   background: #e3f5fb;
@@ -1333,6 +1338,32 @@ html[data-reduce-motion] .dvm-railside-btn { transition: none; }
 }
 .dvm-tab.is-on b,
 .dvm-tab.is-on em { color: #9a6a0c; } /* 단색 금(그라데이션 clip은 가운데 점(::before)을 지웠다) */
+/* 구독플러스(0154, 2026-10-23 소유자: "색만 살짝 구플처럼 프리미엄하게") — 같은 탭 문법, 금 대신 보랏빛.
+   선택되면 흰 알약 대신 옅은 라벤더→로즈 그라데이션 + 보라 헤어라인. '구플' 각인은 머리줄 배지와 같은 재질. */
+.dvm-tab.is-plus { color: #7a5fae; }
+.dvm-tab.is-plus:hover { color: #5b3f94; }
+.dvm-tab.is-plus.is-on {
+  background: linear-gradient(135deg, #f6f0ff, #efe7ff 55%, #fbeef6);
+  box-shadow: inset 0 0 0 1px rgb(124 92 196 / 26%), 0 1px 3px rgb(80 50 140 / 18%);
+  color: #5b3f94;
+}
+.dvm-tab.is-plus.is-on b,
+.dvm-tab.is-plus.is-on em { color: #5b3f94; }
+.dvm-tab .dvm-tab-plus,
+.agenda-vod-plus,
+.dvm-head .dvm-host.dvm-plus {
+  border: 1px solid rgb(124 92 196 / 30%);
+  background: linear-gradient(135deg, #8b6fd6, #7556c4 55%, #b067a8);
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+.dvm-tab .dvm-tab-plus {
+  padding: 2px 6px;
+  border-radius: var(--r-pill);
+}
+.dvm-head .dvm-host.dvm-plus { font-weight: 700; }
+.dvm-vod[data-plus] .dvm-thumb { box-shadow: 0 0 0 1px rgb(124 92 196 / 30%); }
+.dvm-vod[data-plus] .dvm-thumb:hover { box-shadow: 0 0 0 1px rgb(124 92 196 / 38%), 0 10px 22px rgb(110 70 190 / 22%); }
 .dvm-body {
   min-height: 0;
   overflow-y: auto;
@@ -1578,6 +1609,7 @@ html[data-reduce-motion] .dvm-notice {
   transition: background-color var(--dur-1) var(--ease);
 }
 .dvm-thumb:hover .dvm-play { background: rgb(var(--studio-action-rgb) / 80%); }
+.dvm-vod[data-plus] .dvm-thumb:hover .dvm-play { background: rgb(117 86 196 / 85%); } /* 구독플러스 — 보랏빛 */
 .dvm-dur {
   position: absolute;
   right: 8px;

@@ -163,6 +163,7 @@ export type PublicVodEntry = {
   titleNo: number;
   title: string;
   durationMs: number;
+  plus?: boolean; // 구독플러스(구독자 전용, SOOP auth_no=107 — 0154). 창 탭·칩이 프리미엄 색이 된다
   // 팬 타임라인(0071) 요약 — **타임라인 항목 개수**(화면 표기 "타임라인 N개"; 챕터=[코너] 헤더 수는
   // 본문을 받아야 안다)·작성자 닉(크레딧). 본문(entries)은 무거워서 번들에 안 싣고 펼칠 때
   // /api/public/[slug]/vod-timeline에서 따로 받는다. 필드명은 0071 당시 이름 그대로(값 의미만 주석으로).

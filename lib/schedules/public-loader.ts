@@ -368,12 +368,12 @@ const loadPublicScheduleData = unstable_cache(
         supabase.rpc("get_teaser_hope_counts", { p_calendar_id: calendarId }),
         // 다시보기 아카이브(0068) — 공개 메타만(번호·날짜·길이). 최신순 1000행 한도(PostgREST
         // 기본 cap과 같은 값이라 잘려도 '가장 오래된 다시보기'부터 빠진다 — 안전한 방향).
-        // auth_no=101(전체 공개)만 — 구독(플러스) 전용(107)은 일반 시청자가 클릭해도 재생이
-        // 안 되므로 칩을 내보내지 않는다(0069, 2026-08-31 사용자 결정). 미상(0)도 제외.
+        // auth_no=101(전체 공개) + 107(구독플러스 전용 — 2026-10-23 소유자: 창에 프리미엄 색 탭으로, 0154).
+        // 재생 권한은 숲 플레이어가 판단한다. 그 밖(미상 0·102 등)은 제외.
         supabase
           .from("vod_archive")
-          .select("title_no, broadcast_day, title, duration_ms, thumb, guest, host_nick, host_id, reg_date")
-          .eq("auth_no", 101)
+          .select("title_no, broadcast_day, title, duration_ms, thumb, guest, host_nick, host_id, reg_date, auth_no")
+          .in("auth_no", [101, 107])
           .order("broadcast_day", { ascending: false })
           .limit(1000),
         // 팬 타임라인 요약(0071) — 개수·작성자 닉만(본문은 챕터 펼칠 때 별도 라우트).
@@ -437,7 +437,7 @@ const loadPublicScheduleData = unstable_cache(
             (t) => [Number(t.title_no), t]
           )
         );
-        return ((vodsRes.data as { title_no: number; broadcast_day: string; title: string; duration_ms: number; thumb: string; guest?: boolean; host_nick?: string; host_id?: string; reg_date?: string }[] | null) ?? [])
+        return ((vodsRes.data as { title_no: number; broadcast_day: string; title: string; duration_ms: number; thumb: string; guest?: boolean; host_nick?: string; host_id?: string; reg_date?: string; auth_no?: number }[] | null) ?? [])
           .map((row) => {
             // 합방 게스트 출연분(0075)만 호스트 닉·아이디를 싣는다(둘 다 숲 공개 채널 정보). 아이디는 방송국 링크용.
             const host = row.guest === true && typeof row.host_nick === "string" && row.host_nick.trim() ? row.host_nick.trim() : undefined;
@@ -454,6 +454,7 @@ const loadPublicScheduleData = unstable_cache(
               titleNo: Number(row.title_no),
               ...(host ? { host } : {}),
               ...(hostId ? { hostId } : {}),
+              ...(Number(row.auth_no) === 107 ? { plus: true } : {}),
               title: typeof row.title === "string" ? row.title : "",
               durationMs: Number(row.duration_ms) || 0,
               chapters: tl ? Number(tl.entry_count) || 0 : 0,
