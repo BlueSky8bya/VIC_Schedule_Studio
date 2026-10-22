@@ -47,13 +47,18 @@ test.afterEach(async ({ page }, info) => {
   await page.screenshot({ path: resolve(output, name + ".png") }).catch(() => {});
   expect(proof.errors).toEqual([]); expect(proof.rejected).toEqual([]); proofs.delete(page);
 });
-async function seed(page: Page, soft = false) {
-  await page.addInitScript(({ prefs, memory, epoch, key, soft }) => {
+async function seed(page: Page, soft = false, owner = false) {
+  await page.addInitScript(({ prefs, memory, epoch, key, soft, owner }) => {
     for (const [k, v] of Object.entries({ [key]: epoch, "vic.gfxPref": soft ? "auto" : "max", "vic.gfx": JSON.stringify({ mode: soft ? "soft" : "full", at: Date.now(), v: 3 }), "vic.reduceMotion": "off", "vic.dark": "off", "vic.sound": "off", "vic.ambient": "off", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(k, v);
     localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, personality: "balanced", personalitySource: "manual", roam: false, feeding: true, sleep: true, petting: false, learnFromYou: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, rarePrank: false }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...memory, energy: .9, hunger: .05 }));
     localStorage.setItem("vic.companionHomeLight.v1", JSON.stringify({ version: 1, lit: true }));
-  }, { prefs: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY, soft });
+    if (owner) {
+      localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, personality: "balanced", personalitySource: "manual", speed: "lively" }));
+      for (const [k,v] of Object.entries({ "vic.calText": "18", "vic.font": "maple", "vic.calWeight": "0", "vic.prefSplit": "1", "vic.eyeComfort": "on", "vic.reduceMotion": "off", "vic.premiereStage": "on", "vic.ambient": "off", "vic.gfxPref": "auto" })) localStorage.setItem(k,v);
+      localStorage.removeItem("vic.gfx"); localStorage.removeItem("vic.sound");
+    }
+  }, { prefs: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY, soft, owner });
 }
 async function open(page: Page, surface: Surface, compact: boolean) {
   const response = await page.goto(surface === "viewer" ? `/visual-fixture/poster?hour=0${compact ? "&avatar=1" : ""}` : "/visual-fixture/studio?role=owner&y=2025&m=10&hour=0&weather=clear");
@@ -120,10 +125,22 @@ for (const [surface, width, compact, source] of [
   ["viewer", 2560, true, "sofa"], ["studio", 1920, true, "sofa"],
   ["viewer", 1494, false, "near-left"], ["viewer", 1494, false, "near-right"],
   ["viewer", 1494, false, "soft"], ["viewer", 1494, false, "os-reduced"],
+  ["viewer", 1494, false, "cord-hover"],
+  ["viewer", 1494, false, "owner-away"], ["viewer", 1494, false, "owner-hover"],
 ] as const) test(`164 ${surface} ${width} ${compact ? "compact" : "panel"} ${source} lamp off physically returns to sleep`, async ({ page }) => {
   await page.setViewportSize({ width, height: 937 });
   if (source === "os-reduced") await page.emulateMedia({ reducedMotion: "reduce" });
-  await seed(page, source === "soft"); const house = await open(page, surface, compact), actor = page.locator(".vc-companion");
+  const owner = source === "owner-away" || source === "owner-hover";
+  await seed(page, source === "soft", owner); const house = await open(page, surface, compact), actor = page.locator(".vc-companion");
+  if (owner) {
+    const settings = await page.evaluate(() => {
+      const prefs = JSON.parse(localStorage.getItem("vic.viewerCompanion")!);
+      return { personality: prefs.personality, speed: prefs.speed, petting: prefs.petting, learnFromYou: prefs.learnFromYou, text: localStorage.getItem("vic.calText"), font: localStorage.getItem("vic.font"), weight: localStorage.getItem("vic.calWeight"), comfort: localStorage.getItem("vic.eyeComfort"), motion: localStorage.getItem("vic.reduceMotion"), premiere: localStorage.getItem("vic.premiereStage"), ambient: localStorage.getItem("vic.ambient"), gfxPref: localStorage.getItem("vic.gfxPref"), bodyFont: getComputedStyle(document.body).fontFamily, calText: getComputedStyle(document.documentElement).getPropertyValue("--cal-text") };
+    });
+    expect(settings).toMatchObject({ personality: "balanced", speed: "lively", petting: true, learnFromYou: true, text: "18", font: "maple", weight: "0", comfort: "on", motion: "off", premiere: "on", ambient: "off", gfxPref: "auto" });
+    expect(settings.bodyFont).toContain("VIC Maplestory");
+    proofs.get(page)!.notes.push({ stage: "owner-reported-settings", ...settings });
+  }
   // Keep the initial lamp state stable during layout/placement. Native ON
   // starts the existing living loop immediately before observing the intent.
   await house.locator('[data-home-action="personality"]').click();
@@ -157,7 +174,13 @@ for (const [surface, width, compact, source] of [
   if (source === "os-reduced") expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(true);
   proofs.get(page)!.notes.push({ stage: "actual-environment", ...await page.evaluate(() => ({ gfx: document.documentElement.dataset.gfx, reduced: document.documentElement.hasAttribute("data-reduce-motion"), osReduced: matchMedia("(prefers-reduced-motion: reduce)").matches, homeWidth: document.querySelector(".vc-home-room")!.getBoundingClientRect().width })) });
   await observe(page);
-  await actor.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true }).press("n"); await page.mouse.move(2, 2);
+  if (source === "cord-hover" || source === "owner-hover") {
+    const knob = (await house.locator(".vc-home-lamp-handle").boundingBox())!;
+    await page.mouse.move(knob.x + knob.width / 2, knob.y + knob.height / 2);
+    proofs.get(page)!.notes.push({ stage: "cord-hover", requestedPull: await house.locator("[data-home-action=light]").evaluate(el => getComputedStyle(el).getPropertyValue("--vc-lamp-pull")), knob });
+  }
+  await actor.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true }).press("n");
+  if (source !== "cord-hover" && source !== "owner-hover") await page.mouse.move(2, 2);
   await expect(house.locator("[data-home-action=light]")).toHaveAttribute("aria-pressed", "false", { timeout: 18000 });
   await expect(actor).toHaveAttribute("data-state", "sleep", { timeout: 15000 });
   await expect.poll(() => page.evaluate(() => { const frames = (window as ReachWindow).reach164!.frames, contact = frames.find(f => f.touching); return Boolean(contact && frames.some(f => f.state === "sleep" && f.at > contact.at && f.y > contact.y + 20)); })).toBe(true);

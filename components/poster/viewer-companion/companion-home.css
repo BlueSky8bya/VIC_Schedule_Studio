@@ -240,7 +240,9 @@ html[data-theme="dark"] .vc-home-object-image { opacity: .92; }
 .vc-curtain-control:active > span { transform: scaleY(1.04); }
 html .vc-home button:where(:hover, :focus):not(:focus-visible) { outline: none; box-shadow: none; }
 .vc-home button:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: 2px; }
-.vc-home-lamp:not(:disabled):is(:has(.vc-home-lamp-cord-hit:hover, .vc-home-lamp-cord-core:hover), :focus-visible) { --vc-lamp-pull: 1.5px; --vc-lamp-feedback: 1; }
+/* The resident's finite reach owns the cord preview until its real3px tug.
+   Pointer hover/focus must not erase its measured neutral baseline. */
+.vc-home-lamp:not(:disabled):not([data-companion-reaching]):is(:has(.vc-home-lamp-cord-hit:hover, .vc-home-lamp-cord-core:hover), :focus-visible) { --vc-lamp-pull: 1.5px; --vc-lamp-feedback: 1; }
 .vc-home-lamp:not(:disabled):is(:active, [data-companion-touch]) { --vc-lamp-pull: 3px; --vc-lamp-feedback: 1; }
 .vc-home-tv { position: absolute; z-index: 3; left: calc(9px + max(calc(120px / var(--shell-zoom, 1)), min(39%, 150px))); bottom: var(--vc-tv-bottom); width: max(var(--vc-tv-width), var(--vc-object-min-hit)); height: max(var(--vc-tv-width), var(--vc-object-min-hit)); box-sizing: border-box; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; cursor: pointer; }
 /* The thick cabinet is actually illustrated in a left-facing three-quarter

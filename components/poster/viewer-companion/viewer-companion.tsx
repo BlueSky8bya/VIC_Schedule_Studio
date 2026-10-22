@@ -622,6 +622,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         ...(kind === "light" ? { width: rect.width, height: rect.height } : {}) };
     };
     const clearHomeContact = () => {
+      homeContact?.lampPaint?.button.removeAttribute("data-companion-reaching");
       homeRadioPending?.abort(); homeRadioPending = undefined; homeRadioRequestedAt = 0;
       homeContact = undefined; homeInteractionWitness = undefined; homeLampPresentation = undefined;
       showLampContact(null);
@@ -1266,12 +1267,26 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         const at = performance.now(); if (sleepPaintAt) sleepPaintMs += Math.min(100, Math.max(0, at - sleepPaintAt)); sleepPaintAt = at;
       } else sleepPaintAt = 0;
       const hand = paintedSelection && accessoryModule?.companionHomeContactAnchor(paintedSelection, interaction?.kind === "light" || interaction?.kind === "curtain");
-      const actualHand = hand && paintedSelection ? projectCompanionSpritePoint({ ...projection, cell: paintedSelection.frame }, hand) : null;
-      const targetContact = interaction?.point;
-      const touchingControl = Boolean(reach?.touching && paintedCurrent && actualHand && targetContact && (interaction?.kind === "light"
+      let actualHand = hand && paintedSelection ? projectCompanionSpritePoint({ ...projection, cell: paintedSelection.frame }, hand) : null;
+      let targetContact = interaction?.point;
+      let touchingControl = Boolean(reach?.touching && paintedCurrent && actualHand && targetContact && (interaction?.kind === "light"
         ? companionHomeCordTouches(actualHand, targetContact, size) : Math.hypot(actualHand.x - targetContact.x, actualHand.y - targetContact.y) <= size * .5));
       // Lamp contact is shown on the real cord, without rays over the pet's face.
       showLampContact(touchingControl && interaction?.kind === "light" ? interaction.element.closest("button") : null);
+      if (touchingControl && interaction?.kind === "light" && actualHand && targetContact) {
+        // Soft graphics moves the real knob immediately on this same paint.
+        // Carry the touching body with that finite vertical tug before the
+        // actor transform below is committed; never acknowledge the old knob.
+        const current = homeContactPoint("light", interaction.element);
+        if (current && Math.abs(current.x-targetContact.x) <= .05 && Math.abs(current.y-targetContact.y) <= 3.25
+          && Math.abs(current.width!-targetContact.width!) <= .05 && Math.abs(current.height!-targetContact.height!) <= .05) {
+          const dy = current.y-targetContact.y;
+          display.y += dy; actualHand = { ...actualHand, y: actualHand.y+dy };
+          interaction.point = targetContact = current;
+          touchingControl = companionHomeCordTouches(actualHand,current,size);
+        } else touchingControl = false;
+        if (!touchingControl) showLampContact(null);
+      }
       if (interaction?.kind === "light" && interaction.lampPaint) {
         const nodes = interaction.lampPaint, lit = nodes.button.closest(".vc-home-room")?.hasAttribute("data-lamp-lit"), index = lit ? 1 : 0;
         const art = nodes.art[index], feedback = nodes.feedback[index], paint = nodes.paint.getBoundingClientRect(), button = nodes.button.getBoundingClientRect();
@@ -2249,6 +2264,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const actualContact = contactKind && contactElement ? homeContactPoint(contactKind, contactElement) : undefined;
       if (contactKind && contactElement && actualContact) {
         const button = contactKind === "light" ? contactElement.closest<HTMLButtonElement>("button") : null, lampPaint = button?.querySelector<HTMLElement>(".vc-home-lamp-paint");
+        if (button && lampPaint) button.setAttribute("data-companion-reaching", "");
         homeContact = { serial: ++homeContactSerial, kind: contactKind, element: contactElement, point: actualContact, startedAt: now,
           lampPaint: button && lampPaint ? { button, paint: lampPaint,
             art: ["off","on"].map(state => button.querySelector<HTMLElement>(`.vc-home-lamp-art[data-lamp-state="${state}"]`)!),

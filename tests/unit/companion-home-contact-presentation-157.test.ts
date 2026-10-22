@@ -81,6 +81,10 @@ describe("157 calibrated contact presentation", () => {
 });
 
 describe("157 actual prior lamp paint receipt", () => {
+  it.each([-1,.5,1,1.5,2,3])("never prepares or acknowledges from pointer hover or an unregistered rest pull%s", requestedPull => {
+    const state=observe(observe(undefined,frame(0,{requestedPull})),frame(50,{requestedPull}));
+    expect(state.baseline).toBeUndefined();expect(state.receiptAt).toBeUndefined();
+  });
   it("requires a stable neutral pair and a decoded-body touch with an actual visible tug", () => {
     expect(observe(observe(undefined,frame(0)),tug(100)).receiptAt).toBeUndefined();
     const actual=receipt();expect(actual.receiptAt).toBe(100);

@@ -11,10 +11,10 @@ const catalog=JSON.parse(fs.readFileSync(path.resolve('scripts/site-daily/native
 const fingerprint=(value='a')=>caseFingerprint({files:[{path:'lib/product.ts',sha256:value.repeat(64)}],scenario:{buildId:'exact-build',id:'scenario'},runtime:{node:'22',chromium:'fixed'}});
 const raw=(overrides:Record<string,unknown>={})=>({expectedStatus:'passed',status:'expected',results:[{status:'passed',retry:0,duration:200,errors:[]}],...overrides});
 describe('focused daily selection and immutable continuation',()=>{
-  it('balances 218 actual registrations into seven nonduplicated, bounded-cost buckets',()=>{
-    const buckets=weeklyBuckets(catalog.cases);expect(buckets).toHaveLength(7);expect(buckets.flatMap((b:{cases:unknown[]})=>b.cases)).toHaveLength(218);
+  it('balances 221 actual registrations into seven nonduplicated, bounded-cost buckets',()=>{
+    const buckets=weeklyBuckets(catalog.cases);expect(buckets).toHaveLength(7);expect(buckets.flatMap((b:{cases:unknown[]})=>b.cases)).toHaveLength(221);
     const costs=buckets.map((b:{estimatedWorkerSeconds:number})=>b.estimatedWorkerSeconds);expect(Math.max(...costs)-Math.min(...costs)).toBeLessThanOrEqual(125);
-    expect(catalog.registrationOnly).toBe(true);expect(catalog.additionalLampCases).toBe(18);
+    expect(catalog.registrationOnly).toBe(true);expect(catalog.additionalLampCases).toBe(21);
   });
   it('covers the fixed catalog over seven completed days, and catches up after a missed day',()=>{
     const observations:Record<string,unknown>[]=[];const seen=new Set();
@@ -22,7 +22,7 @@ describe('focused daily selection and immutable continuation',()=>{
       const plan=selectDailyCases({catalog:catalog.cases,day:`2026-10-${day}`,observations});expect(plan.cases.length).toBeLessThanOrEqual(42);expect(plan.fullCertification).toBe(false);
       for(const c of plan.cases){seen.add(c.id);observations.push({id:c.id,day:`2026-10-${day}`,outcome:'passed',receiptVerified:true,actualExecuted:true});}
     }
-    expect(seen.size).toBe(218);
+    expect(seen.size).toBe(221);
     const missed=selectDailyCases({catalog:catalog.cases,day:'2026-10-30',observations:observations.filter(x=>x.day!=='2026-10-25')});
     expect(missed.cases.some((c:{id:string})=>observations.some(x=>x.day==='2026-10-25'&&x.id===c.id))).toBe(true);
   });

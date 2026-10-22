@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "baselineRegistration": 200,
-  "additionalLampCases": 18,
+  "additionalLampCases": 21,
   "baselineReporterSha256": "159d3fcac2b5371012fd68f2005ebcf1a8b8db26cd3b3aeb721744d718e9c2d2",
   "registrationOnly": true,
   "cases": [
@@ -1752,6 +1752,33 @@
       "reason": "reported-default-house-failure",
       "id": "1036afc6b20800b98a8ce4af4f655e921d081095871eb8d8c2b68129205b35d8",
       "estimateSource": "new default-panel regression registration; not current PASS"
+    },
+    {
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 viewer 1494 panel cord-hover lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "reason": "missing-native-pointer-condition-not-owner-settings-confirmed",
+      "id": "b5cba7b723bf8034e1373beec260f0eef0b32a400eb552fe0234de3ede6804b7",
+      "estimateSource": "native regression registration for reported options/pointer condition; registration is not PASS"
+    },
+    {
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 viewer 1494 panel owner-away lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "reason": "owner-reported-options-exact",
+      "id": "4b21712b19e77a45d2f3c7eb3ee3d013e7c4559569e8d3a52335fc22f4e16c60",
+      "estimateSource": "native regression registration for reported options/pointer condition; registration is not PASS"
+    },
+    {
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 viewer 1494 panel owner-hover lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "reason": "owner-reported-options-exact",
+      "id": "b43d42d8fd85ccd68294942e2348b3b3feb3284ca64e8a5848560d181c4e492a",
+      "estimateSource": "native regression registration for reported options/pointer condition; registration is not PASS"
     }
   ],
   "dailyScenarios": [

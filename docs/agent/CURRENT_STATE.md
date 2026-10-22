@@ -7,7 +7,7 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Continue risk-focused09:00 daily QA with weekly rotation and verified same-build continuation;36 UNVERIFIED. [Workflow](../../scripts/site-daily/README.md), [record](plans/PLAN-20261022-focused-qa.md).
+Urgent: owner confirms2a6 still cannot switch OFF in default home. Reproduce actual current settings; lamp-only fix, no200. [Active plan](plans/PLAN-20261022-lamp-user-settings.md). Daily09:00 risk/weekly QA remains;36 UNVERIFIED.
 
 Criteria145: optional TV bow and separate actual10s activity/repetition verified. Final frozen110/27/9/2, full gates and three independent final reviews passed; scoped commit and actual production confirmation pending. [145 plan](plans/PLAN-20261020-145-companion-activity-criteria.md).
 
