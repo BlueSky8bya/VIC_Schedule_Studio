@@ -7,7 +7,7 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Urgent lamp release, then focused daily QA;36 UNVERIFIED. [Plan](plans/PLAN-20261022-focused-qa.md).
+Continue risk-focused09:00 daily QA with weekly rotation and verified same-build continuation;36 UNVERIFIED. [Workflow](../../scripts/site-daily/README.md), [record](plans/PLAN-20261022-focused-qa.md).
 
 Criteria145: optional TV bow and separate actual10s activity/repetition verified. Final frozen110/27/9/2, full gates and three independent final reviews passed; scoped commit and actual production confirmation pending. [145 plan](plans/PLAN-20261020-145-companion-activity-criteria.md).
 
@@ -52,7 +52,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 5. PRIVACY-20260921: resolve remaining visit/recurring retention policy and restricted local recovery-backup removal after its2026-10-24 window. No automatic future run is scheduled.
 ## Last Verified
 
-Latest verified release `ac32d7b2f02223c7c11050027375b3abbc4a967d`: current frozen source925672a5/buildKK3 passed original200/200, fresh same-build UI32, all6672 unit/type/lint/build and three actual independent final reviews/strict finalizer. Remote quality39755802475 and actual public full40SHA/25 static assets twice verified. Normal-speed36 remains0/UNVERIFIED after both official32B control reviews failed4/6. [Release and limits](plans/PLAN-20261022-density.md#2026-10-22--actual-release-and-primary-sync-closed).
+Latest product release469fc5eca15f22e9a19f6dbdee8db30ece69dc76: lamp physical reach99units/3native/independent review, remote quality39762693722/Vercel/public40SHA verified. No200 in this task. Prior ac32 full200/UI32/6672 units remain historical exact-source evidence. Normal-speed36 stays0/UNVERIFIED. [Focused record](plans/PLAN-20261022-focused-qa.md).
 
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.

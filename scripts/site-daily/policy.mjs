@@ -1,4 +1,7 @@
 import{AREAS,PERSONALITIES,BASELINE,ALWAYS_UNITS,AREA_UNITS,SEQUENCE_CONTRACTS,dayOrdinal,affectedAreas}from'./catalog.mjs';
+import fs from 'node:fs';
+import {selectDailyCases} from './selection.mjs';
+const nativeCatalog=JSON.parse(fs.readFileSync(new URL('./native-catalog.json',import.meta.url),'utf8'));
 const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const keys=(x,allowed)=>object(x)&&Object.keys(x).every(k=>allowed.includes(k));
 const natural=x=>Number.isSafeInteger(x)&&x>=0&&x<=1e9;
@@ -28,10 +31,10 @@ export function rankAreas({day,history=[],signals,changedFiles=[]}){
   const affected=affectedAreas(changedFiles);
   const ranked=AREAS.map(area=>{
     const observed=rows.filter(r=>r.area===area&&r.verified&&r.status!=='not-run'),anchor=observed.some(r=>r.day===day&&['native','full'].includes(r.kind))?now:now-1;
-    const recent=observed.filter(r=>now-dayOrdinal(r.day)<=7),failures=observed.filter(r=>r.status==='failed'&&(recent.includes(r)||r.regression&&!observed.some(pass=>pass.kind==='full'&&pass.status==='passed'&&pass.day>r.day))),days=new Set(observed.filter(r=>r.status==='passed'&&['native','full'].includes(r.kind)&&dayOrdinal(r.day)>=anchor-6&&dayOrdinal(r.day)<=anchor).map(r=>r.day));
+    const recent=observed.filter(r=>now-dayOrdinal(r.day)<=7),failures=observed.filter(r=>r.status==='failed'&&(recent.includes(r)||r.regression)&&!observed.some(pass=>pass.kind==='full'&&pass.status==='passed'&&(pass.day>r.day||pass.day===r.day&&rows.indexOf(pass)>rows.indexOf(r)))),days=new Set(observed.filter(r=>r.status==='passed'&&['native','full'].includes(r.kind)&&dayOrdinal(r.day)>=anchor-6&&dayOrdinal(r.day)<=anchor).map(r=>r.day));
     const lastFull=rows.filter(r=>r.area===area&&r.kind==='full'&&r.status==='passed'&&r.verified).map(r=>r.day).sort().at(-1)??(area==='companion'?BASELINE.lastCompanionFullDay:undefined);
     const lastObserved=rows.filter(r=>r.area===area&&r.verified&&['native','full'].includes(r.kind)&&r.status!=='not-run').map(r=>r.day).sort().at(-1);
-    const stable=days.size>=7&&!failures.length&&lastFull!==undefined&&now-dayOrdinal(lastFull)<=7;
+    const stable=days.size>=7&&!failures.length;
     const metric=aggregate.areas.find(r=>r.area===area),stale=metric.available&&aggregate.observedDay&&now-dayOrdinal(aggregate.observedDay)>7;
     const severity=Math.max(0,...failures.map(r=>({P0:100,P1:70,P2:40,P3:10})[r.severity??'P2']));
     const realSignal=aggregate.source!=='synthetic-test'&&metric.available&&!metric.suppressed&&!stale;
@@ -41,21 +44,22 @@ export function rankAreas({day,history=[],signals,changedFiles=[]}){
   }).sort((a,b)=>b.score-a.score||AREAS.indexOf(a.area)-AREAS.indexOf(b.area));
   return {ranked,affected,aggregate};
 }
-export function planDaily({day,history=[],signals,changedFiles=[],budgetMinutes=45}){
+export function planDaily({day,history=[],signals,changedFiles=[],caseObservations=[],budgetMinutes=20}){
   if(!Number.isInteger(budgetMinutes)||budgetMinutes<20||budgetMinutes>90)throw Error('invalid-budget');
   const now=dayOrdinal(day),rank=rankAreas({day,history,signals,changedFiles}),focus=rank.ranked[0].area;
-  const explorer=AREAS.filter(a=>a!==focus)[now%(AREAS.length-1)],companionStable=rank.ranked.find(r=>r.area==='companion').stable,personalityStart=(now%3)*3,personalities=companionStable&&focus!=='companion'?[PERSONALITIES[now%9]]:PERSONALITIES.slice(personalityStart,personalityStart+3);
+  const others=AREAS.filter(a=>a!==focus),oldest=area=>rank.ranked.find(r=>r.area===area).lastObservedDay??'';
+  const explorer=[...others].sort((a,b)=>oldest(a).localeCompare(oldest(b))||((others.indexOf(a)-now%others.length+others.length)%others.length)-((others.indexOf(b)-now%others.length+others.length)%others.length))[0],companionStable=rank.ranked.find(r=>r.area==='companion').stable,personalityStart=(now%3)*3,personalities=companionStable&&focus!=='companion'?[PERSONALITIES[now%9]]:PERSONALITIES.slice(personalityStart,personalityStart+3);
   const known=normalizeHistory(history),lastFull=known.filter(r=>r.area==='companion'&&r.kind==='full'&&r.status==='passed'&&r.verified).map(r=>r.day).sort().at(-1)??BASELINE.lastCompanionFullDay;
-  const sweepDue=now-dayOrdinal(lastFull)>=7,confirmedRegression=known.some(r=>r.area==='companion'&&r.verified&&r.status==='failed'&&r.regression&&!known.some(pass=>pass.area==='companion'&&pass.verified&&pass.kind==='full'&&pass.status==='passed'&&pass.day>r.day)),fullRequired=rank.affected.companionChanged||confirmedRegression||sweepDue;
+  const sweepDue=now-dayOrdinal(lastFull)>=7,confirmedRegression=known.some((r,index)=>r.area==='companion'&&r.verified&&r.status==='failed'&&r.regression&&!known.some((pass,passIndex)=>pass.area==='companion'&&pass.verified&&pass.kind==='full'&&pass.status==='passed'&&(pass.day>r.day||pass.day===r.day&&passIndex>index)));
   const units=[...new Set([...ALWAYS_UNITS,...AREA_UNITS[focus],...AREA_UNITS[explorer]])];
-  const surface=['viewer','studio','preview'][now%3],band=now%2?'night':'day';
-  const nativePattern=`142 daily (?:${personalities.join('|')}):|143 studio sofa stays aligned beside the editor and independent controls$|142 floating home tidy ${now%2?'returns from a real calendar perch to all four toys':'preserves all four returns with learned care on'}$|157 ${surface} ${band} same-ID return prepares controls before cozy then rests and continues$`;
-  const requiredTitlePatterns=[...personalities.map(p=>`^142 daily ${p}: ninety actual full-motion seconds in `),'^143 studio sofa stays aligned beside the editor and independent controls$',`^142 floating home tidy ${now%2?'returns from a real calendar perch to all four toys':'preserves all four returns with learned care on'}$`,`^157 ${surface} ${band} same-ID return prepares controls before cozy then rests and continues$`];
-  return {schemaVersion:1,kind:'site-daily-triage-plan',day,budgetMinutes,fullSweepBudgetMinutes:45,repairAndReleaseBudgetSeparate:true,focusArea:focus,explorationArea:explorer,areaRanking:rank.ranked,changedImpact:rank.affected,signals:rank.aggregate,offlineUnitFiles:units,
-    companion:{mode:fullRequired?'full-required':'diagnostic-only',fullRequired,reasons:[...(rank.affected.companionChanged?['source-or-oracle-changed']:[]),...(confirmedRegression?['unresolved-confirmed-regression']:[]),...(sweepDue?['seven-day-full-sweep-due']:[])],lastFullDay:lastFull,rotatingPersonalities:personalities,allNineIdeaAudit:true,nativePattern:fullRequired?null:nativePattern,requiredTitlePatterns:fullRequired?[]:requiredTitlePatterns,expectedSelectedCases:fullRequired?200:personalities.length+3,releaseEligible:false,
-      command:['node','scripts/companion-qa/runner.mjs','--budget-minutes',fullRequired?'45':'20','--workers','3',...(fullRequired?[]:['--native-grep',nativePattern])]},
+  const lamp=changedFiles.some(f=>/home-interaction|house-reach-164/.test(f));
+  const risky=nativeCatalog.cases.filter(c=>lamp?/164 (?:viewer 2560 compact floor|studio 1494 panel floor|preview 1920 compact floor) lamp off/.test(c.title):rank.affected.companionChanged||confirmedRegression?/142 floating home tidy|143 studio sofa stays aligned|157 viewer night same-ID return|142 daily (?:tidy|gourmet|balanced):/.test(c.title):false).map(c=>c.id);
+  const selection=selectDailyCases({catalog:nativeCatalog.cases,day,observations:caseObservations,priorityIds:risky,workerBudgetSeconds:1500,maxCases:42});
+  return {schemaVersion:2,kind:'site-daily-triage-plan',day,budgetMinutes,repairAndReleaseBudgetSeparate:true,focusArea:focus,explorationArea:explorer,areaRanking:rank.ranked,changedImpact:rank.affected,signals:rank.aggregate,offlineUnitFiles:units,
+    companion:{mode:'risk-and-weekly-rotation',fullRequired:false,reasons:[...(rank.affected.companionChanged?['source-or-oracle-changed']:[]),...(confirmedRegression?['unresolved-confirmed-regression']:[]),...(sweepDue?['weekly-coverage-debt-not-full-restart']:[])],lastFullDay:lastFull,rotatingPersonalities:personalities,allNineIdeaAudit:false,expectedSelectedCases:selection.cases.length,selection,dailyScenarios:nativeCatalog.dailyScenarios,releaseEligible:false,
+      command:['node','scripts/site-daily/scoped-native.mjs','--plan','<new-output>/plan.json']},
     sequenceContracts:SEQUENCE_CONTRACTS,ideaPolicy:{maxDailyProposals:3,maxActiveImplementations:2,allNinePersonalityIdeasRequired:false,allNinePersonalityReviewRequired:true,duplicateKey:'area+problemKey',score:'user benefit × evidence confidence / implementation+token+maintenance cost; project heuristic, not a research-proved optimum',approvalBeforeNewFeature:true,bugsNeedNoNewApproval:true},
-    evidencePolicy:{reuseBuildOrNativePass:false,onlyActuallyObservedSettingsCount:true,plannedMotionIsNotActualCoverage:true,retryPassDoesNotEraseFailure:true,allOriginalFailuresRetained:true,triageNeverAuthorizesRelease:true},
+    evidencePolicy:{reuseBuildOrNativePass:'verified-same-build-and-case-fingerprint-only',crossBuildNativeReuse:false,fullRestartOnSingleFailure:false,onlyActuallyObservedSettingsCount:true,plannedMotionIsNotActualCoverage:true,retryPassDoesNotEraseFailure:true,allOriginalFailuresRetained:true,triageNeverAuthorizesRelease:true},
     historyTrust:'Caller-reviewed evidence ledger with source digest and raw evidence ref; this planner does not reverify ledger proof.',nonCompanionCoverage:'Offline selected units are not native UI, actual-login, operating-DB or hardware validation. Observe guarded fixtures and approved aggregates separately; unavailable stays unavailable.'};
 }
 /** Proposals stay proposals until explicit human approval; deduplicate before ranking. */

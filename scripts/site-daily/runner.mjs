@@ -10,11 +10,12 @@ import {pathToFileURL} from 'node:url';
 import {planDaily,shortlistIdeas} from './policy.mjs';
 import {AREAS,ALWAYS_UNITS,AREA_UNITS,dayOrdinal} from './catalog.mjs';
 import {childEnvironment,ownedTerminationCommand} from '../companion-qa/runner.mjs';
+import {observationsFromReceipts} from './receipts.mjs';
 const sha=value=>createHash('sha256').update(value).digest('hex');
 const git=(root,args)=>execFileSync('git',['-C',root,...args],{encoding:'utf8',windowsHide:true,maxBuffer:16*1024*1024});
 export function options(argv){
   const out={day:new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Seoul'}).format(new Date()),root:process.cwd(),runOffline:false,base:'HEAD'};
-  const names={'--day':'day','--root':'root','--base':'base','--history':'history','--signals':'signals','--ideas':'ideas','--changed':'changed'};
+  const names={'--day':'day','--root':'root','--base':'base','--history':'history','--case-history':'caseHistory','--signals':'signals','--ideas':'ideas','--changed':'changed'};
   for(let i=0;i<argv.length;i++){if(argv[i]==='--run-offline')out.runOffline=true;else if(names[argv[i]]){const value=argv[++i];if(!value||value.startsWith('--'))throw Error('missing-option-value');out[names[argv[i-1]]]=value;}else throw Error('unknown-option');}
   dayOrdinal(out.day);out.root=path.resolve(out.root);if(!/^[a-zA-Z0-9_./-]{1,160}$/.test(out.base)||out.base.startsWith('-'))throw Error('invalid-base');return out;
 }
@@ -51,10 +52,11 @@ async function offline(root,plan,out){
 }
 export async function runDaily(o){
   const changed=o.changed?readInput(o.changed):[...new Set((git(o.root,['diff','--name-only','-z',o.base,'--'])+'\0'+git(o.root,['ls-files','--others','--exclude-standard','-z','--','app','components','lib','scripts','tests'])).split('\0').filter(Boolean))];
-  const plan=planDaily({day:o.day,history:readInput(o.history),signals:readInput(o.signals),changedFiles:changed});
+  const plan=planDaily({day:o.day,history:readInput(o.history),signals:readInput(o.signals),changedFiles:changed,caseObservations:observationsFromReceipts(readInput(o.caseHistory)??[])});
   const ideas=shortlistIdeas(readInput(o.ideas)??[]);
   const out=path.join(o.root,'.scratch-pw','site-daily',o.day+'-'+Date.now()+'-'+randomUUID().slice(0,8));fs.mkdirSync(out,{recursive:true});
-  const files=[...new Set([...plan.offlineUnitFiles,'scripts/site-daily/catalog.mjs','scripts/site-daily/policy.mjs','scripts/site-daily/runner.mjs','scripts/site-daily/offline-guard.mjs','scripts/site-daily/vitest.config.mjs','scripts/companion-qa/runner.mjs','package.json','package-lock.json','vitest.config.ts'])];
+  plan.companion.command=['node','scripts/site-daily/scoped-native.mjs','--plan',path.join(out,'plan.json')];
+  const files=[...new Set([...plan.offlineUnitFiles,'scripts/site-daily/catalog.mjs','scripts/site-daily/policy.mjs','scripts/site-daily/selection.mjs','scripts/site-daily/native-catalog.json','scripts/site-daily/receipts.mjs','scripts/site-daily/scoped-native.mjs','scripts/site-daily/runner.mjs','scripts/site-daily/offline-guard.mjs','scripts/site-daily/vitest.config.mjs','scripts/companion-qa/runner.mjs','package.json','package-lock.json','vitest.config.ts'])];
   const source=fingerprint(o.root,files),sourceDigest=sha(JSON.stringify(source));
   write(path.join(out,'source.json'),{scope:'explicit-subset-not-all-imports',sourceDigest,head:git(o.root,['rev-parse','HEAD']).trim(),files:source});write(path.join(out,'plan.json'),plan);write(path.join(out,'ideas.json'),ideas);
   const result=o.runOffline?await offline(o.root,plan,out):{status:'not-run',scope:'plan-only',releaseEligible:false};

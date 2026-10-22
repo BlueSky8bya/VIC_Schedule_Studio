@@ -1,0 +1,1841 @@
+{
+  "schemaVersion": 1,
+  "baselineRegistration": 200,
+  "additionalLampCases": 14,
+  "baselineReporterSha256": "159d3fcac2b5371012fd68f2005ebcf1a8b8db26cd3b3aeb721744d718e9c2d2",
+  "registrationOnly": true,
+  "cases": [
+    {
+      "id": "43e07216a49f6f9a7692cc8d2c8d956e9845b2b2cd05dc3a5e86d0b734a21cc2",
+      "file": "tests/visual/companion-activity.spec.ts",
+      "title": "autonomous companion movement never records human feature use",
+      "project": "",
+      "estimatedSeconds": 13,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "911c1e59f1675526b94839faba6a1bf5356e648c44e22f37348963db01ea9ba7",
+      "file": "tests/visual/companion-activity.spec.ts",
+      "title": "110 developer views show book and unified memory uses while old radio mood stays historical",
+      "project": "",
+      "estimatedSeconds": 15,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "4beae223e1dcfafcc73af06fa5ed3c9a37052712776af19f2f71c5be833f1a55",
+      "file": "tests/visual/companion-activity.spec.ts",
+      "title": "142 viewer: shared personality shortcut pointer and keys capture once and retain the actual choice",
+      "project": "",
+      "estimatedSeconds": 12,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "a5ae2b756e9ce2d76053c9af033c5799de918930364ce02a20f205a36cc681fc",
+      "file": "tests/visual/companion-activity.spec.ts",
+      "title": "142 studio: shared personality shortcut pointer and keys capture once and retain the actual choice",
+      "project": "",
+      "estimatedSeconds": 11,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "258cdd7599a8f4662075f0318b5043156a5f9e57a9d5a2885048e8abf08e30ea",
+      "file": "tests/visual/companion-activity.spec.ts",
+      "title": "141 viewer: TV lamp and curtain pointer-keyboard controls emit one fixed use per activation",
+      "project": "",
+      "estimatedSeconds": 11,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "98bd4ab44b92eeb481807b4ece187f8c4661afbb3d02735e48ac296009e38516",
+      "file": "tests/visual/companion-activity.spec.ts",
+      "title": "141 studio: TV lamp and curtain pointer-keyboard controls emit one fixed use per activation",
+      "project": "",
+      "estimatedSeconds": 11,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "12964e1d067807fb14283bb00776f6277c2c5fd99ebcf93b810abea05fbbdec9",
+      "file": "tests/visual/companion-collection-settings-141.spec.ts",
+      "title": "141 studio 1100 settings order and shared three-column widths follow actual personality selection",
+      "project": "",
+      "estimatedSeconds": 4,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "b41819e65063b497777b43a58e5290474a2d03b540245762719c3e5e7884f58b",
+      "file": "tests/visual/companion-collection-settings-141.spec.ts",
+      "title": "141 viewer 1920 settings order and shared three-column widths follow actual personality selection",
+      "project": "",
+      "estimatedSeconds": 4,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "2bd5a3f9def67e2b1b04ed308fd83ae968d02d59666e3396da53f56a85fda731",
+      "file": "tests/visual/companion-collection-settings-141.spec.ts",
+      "title": "141 preview 1920 settings order and shared three-column widths follow actual personality selection",
+      "project": "",
+      "estimatedSeconds": 5,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "28647bb2d22a75f3af6b799a9a577edc0f73eafba7b571d414e438a55f24024f",
+      "file": "tests/visual/companion-collection-settings-141.spec.ts",
+      "title": "142 viewer direct personality shortcut exposes the complete shared compass without manual scrolling",
+      "project": "",
+      "estimatedSeconds": 6,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "1d534f50436d5c1b5cf8116f753e3d95b829c82b100f51f5c07bce8cde59e3ae",
+      "file": "tests/visual/companion-collection-settings-141.spec.ts",
+      "title": "142 studio direct personality shortcut exposes the complete shared compass without manual scrolling",
+      "project": "",
+      "estimatedSeconds": 5,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "3d66f6a56afb5bd20594158390a73203534cd2f2b1a00b397f57f297928e7dd5",
+      "file": "tests/visual/companion-collection-settings-141.spec.ts",
+      "title": "142 preview direct personality shortcut exposes the complete shared compass without manual scrolling",
+      "project": "",
+      "estimatedSeconds": 7,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "41bc9827a23bd412cb8d82947facc18078a3d273972ddce4fdf91e83baf1ef1f",
+      "file": "tests/visual/companion-collection-settings-141.spec.ts",
+      "title": "142 viewer real television glass and continuous cords retain their physical controls",
+      "project": "",
+      "estimatedSeconds": 4,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "55143c6c55761e155601bf75e49ca877a65281baff1d2b9c01bff1c23ecce40a",
+      "file": "tests/visual/companion-collection-settings-141.spec.ts",
+      "title": "142 studio real television glass and continuous cords retain their physical controls",
+      "project": "",
+      "estimatedSeconds": 4,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "7f415ae90b34c658c2e1623df2764fbe6992e7abb421da564aca92a31536579c",
+      "file": "tests/visual/companion-collection-settings-141.spec.ts",
+      "title": "141 food toy and furniture pointer hover has no circular outline while keyboard focus remains visible",
+      "project": "",
+      "estimatedSeconds": 7,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "1f82a68945f9d1d70243c6f9f5778e4a8d3acd19c18dcb3da650b01817054e26",
+      "file": "tests/visual/companion-collection-settings-141.spec.ts",
+      "title": "141 a native spawned toy stays unknown until visible completed play and earns one book flight",
+      "project": "",
+      "estimatedSeconds": 95,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "09d84dd44cf5d23a2ed7c844010ada51fa31c769d7a83fdc257bf0a11eb9bf1f",
+      "file": "tests/visual/companion-collection-settings-141.spec.ts",
+      "title": "141 actual first behavior discovery uses one shrinking book presentation",
+      "project": "",
+      "estimatedSeconds": 2,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "0a797ee305783ddde615c616a3fd80e72f85d87db2bec530c8a375d07d74e2f2",
+      "file": "tests/visual/companion-collection-settings-141.spec.ts",
+      "title": "141 actual first behavior discovery uses reduced static presentation",
+      "project": "",
+      "estimatedSeconds": 10,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "10237bfa43395bc903736e5d60afca708cce5c176c7292895ff319029a4c836d",
+      "file": "tests/visual/companion-daily-142.spec.ts",
+      "title": "142 daily performer: ninety actual full-motion seconds in viewer/1100 (planned full)",
+      "project": "",
+      "estimatedSeconds": 96,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "180565993cc0840247f5d0b76441ff6ed4ea0829d226f48b42a26e9aa3568a37",
+      "file": "tests/visual/companion-daily-142.spec.ts",
+      "title": "142 daily curious: ninety actual full-motion seconds in viewer/1440 (planned soft)",
+      "project": "",
+      "estimatedSeconds": 97,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "848fb8bb8c7ca935c21e26ce007a89accce68f065c64bf909a7bb9342348089a",
+      "file": "tests/visual/companion-daily-142.spec.ts",
+      "title": "142 daily affectionate: ninety actual full-motion seconds in preview/1440 (planned off)",
+      "project": "",
+      "estimatedSeconds": 98,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "6db04cc304af5aae40b16ceb7e29f41cb3a7e64ce09f05ab0bf2b0dc5b8d55ea",
+      "file": "tests/visual/companion-daily-142.spec.ts",
+      "title": "142 daily sleepy: ninety actual full-motion seconds in preview/1100 (planned soft)",
+      "project": "",
+      "estimatedSeconds": 97,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "24fcf498ce38e3c97f13c37cfa341091eb0a9af98d98e8d31c5fb12dec29662f",
+      "file": "tests/visual/companion-daily-142.spec.ts",
+      "title": "142 daily tidy: ninety actual full-motion seconds in preview/2400 (planned full)",
+      "project": "",
+      "estimatedSeconds": 98,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "a1abe1f60857446e23263e795c219ec31a15e7da0dafef86c9d0348c31d5d239",
+      "file": "tests/visual/companion-daily-142.spec.ts",
+      "title": "142 daily mischievous: ninety actual full-motion seconds in viewer/1100 (planned full)",
+      "project": "",
+      "estimatedSeconds": 96,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "4a981ea7006855f7bf8a6619238831775528b42214a2f0d62a507e9d94502b1c",
+      "file": "tests/visual/companion-daily-142.spec.ts",
+      "title": "142 daily gourmet: ninety actual full-motion seconds in viewer/1100 (planned full)",
+      "project": "",
+      "estimatedSeconds": 96,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "393d6b90efd1116ebad485ad1192279e17086e7cddbb03b1049cea40e065b176",
+      "file": "tests/visual/companion-daily-142.spec.ts",
+      "title": "142 daily homebody: ninety actual full-motion seconds in viewer/1100 (planned full)",
+      "project": "",
+      "estimatedSeconds": 97,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "89470304746a17dba1cb9e780ca6ec7b64593ea7699514b22838ccc60b8796f1",
+      "file": "tests/visual/companion-daily-142.spec.ts",
+      "title": "142 daily balanced: ninety actual full-motion seconds in viewer/1100 (planned full)",
+      "project": "",
+      "estimatedSeconds": 96,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "04eab27346e160e5914016024b0069657a8307f0eff07f90f29499f07d64b1e3",
+      "file": "tests/visual/companion-daily-ideas-157.spec.ts",
+      "title": "157 D157-P preview actual situational effect finishes and continues with next activity",
+      "project": "",
+      "estimatedSeconds": 25,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "9b095e150544096e1f9c6182085e452b4b7810570b83e5d3a7f94a77fa827164",
+      "file": "tests/visual/companion-daily-ideas-157.spec.ts",
+      "title": "157 D157-C viewer actual situational effect finishes and continues with next activity",
+      "project": "",
+      "estimatedSeconds": 22,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "e260fd5bfebeed9d64bc47d5b674bf591f454b43dfdc27682182dccd8b968283",
+      "file": "tests/visual/companion-daily-ideas-157.spec.ts",
+      "title": "157 D157-A studio actual situational effect finishes and continues with next activity",
+      "project": "",
+      "estimatedSeconds": 42,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "a996adc04cd740e82b1c2d3e304f716eefa721a665e6630c41a1773ff430beb8",
+      "file": "tests/visual/companion-daily-ideas-157.spec.ts",
+      "title": "157 D157-S preview actual situational effect finishes and continues with next activity",
+      "project": "",
+      "estimatedSeconds": 24,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "bafe55713ca8204d5a1419d9708d8d55fa75c2e06899fc68d33fc8afffbc6c2c",
+      "file": "tests/visual/companion-daily-ideas-157.spec.ts",
+      "title": "157 D157-T viewer actual situational effect finishes and continues with next activity",
+      "project": "",
+      "estimatedSeconds": 68,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "5932d4af73194ae5cc18a42cb0dfbed8f8b7a79a5328d94bb32a86532904a773",
+      "file": "tests/visual/companion-daily-ideas-157.spec.ts",
+      "title": "157 D157-M studio actual situational effect finishes and continues with next activity",
+      "project": "",
+      "estimatedSeconds": 19,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "a1dca2a74fc616a12e048f1a3276fe3b4c8fca1cbbf2c284f9adc9f49206ef25",
+      "file": "tests/visual/companion-daily-ideas-157.spec.ts",
+      "title": "157 D157-G viewer actual situational effect finishes and continues with next activity",
+      "project": "",
+      "estimatedSeconds": 23,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "0fac122a4d2149277a50dd9e4597480d6811af9eb36ce57167c404755c4f930c",
+      "file": "tests/visual/companion-daily-ideas-157.spec.ts",
+      "title": "157 D157-H studio actual situational effect finishes and continues with next activity",
+      "project": "",
+      "estimatedSeconds": 40,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "3b7f8b3e1a4ab372ba71aafef5f242d1436a55f80423b840f001174c8134a92d",
+      "file": "tests/visual/companion-daily-ideas-157.spec.ts",
+      "title": "157 D157-B viewer actual situational effect finishes and continues with next activity",
+      "project": "",
+      "estimatedSeconds": 38,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "4376f9c0d063c73bc6b6fa9767d345700c3c37c5c55128917ed64325896051ec",
+      "file": "tests/visual/companion-gallery-arrows-134.spec.ts",
+      "title": "134 viewer: arrows activate displayed buttons, unread dots and single semantic activity",
+      "project": "",
+      "estimatedSeconds": 32,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "07168901b20db337917332837ac7d33c9ea9ab8d53ba3f9ad0d5d37a96fd9855",
+      "file": "tests/visual/companion-gallery-arrows-134.spec.ts",
+      "title": "134 studio: arrows activate displayed buttons, unread dots and single semantic activity",
+      "project": "",
+      "estimatedSeconds": 39,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "94f04bf66b48d89998ef394ba3820a978e3065e38b851e981376df3acb85abab",
+      "file": "tests/visual/companion-gallery-arrows-134.spec.ts",
+      "title": "134 preview: arrows activate displayed buttons, unread dots and single semantic activity",
+      "project": "",
+      "estimatedSeconds": 40,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "42d0d199d1d6a47fb6d75d3f9057eb7bf668d177918f1ff9c30bd1b541608580",
+      "file": "tests/visual/companion-home-agency-141.spec.ts",
+      "title": "141 autonomous toy takeout visibly faces and touches the actual rim before a toy appears",
+      "project": "",
+      "estimatedSeconds": 10,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "7c927a607e22ae2de783736f9a62d041db38acce8e3fde9f974fd7511a01e4a1",
+      "file": "tests/visual/companion-home-agency-141.spec.ts",
+      "title": "141 tidy actual wash stays on mat400 through lamp geometry delivery wheel and resize",
+      "project": "",
+      "estimatedSeconds": 21,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "ab092c6d33169c503a8b463461714ef01755a4e2c30236e6c59884b660128229",
+      "file": "tests/visual/companion-home-agency-141.spec.ts",
+      "title": "141 manual curtain cycles three phases with15s lease then homebody physically changes curtain light and TV",
+      "project": "",
+      "estimatedSeconds": 53,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "2ba379d8a1121e82df64aec659826fe1f87d7ec0823b3d7d5c05f3cd0fe2d9ea",
+      "file": "tests/visual/companion-home-agency-141.spec.ts",
+      "title": "141 audible radio routine reaches the actual shelf before playback changes",
+      "project": "",
+      "estimatedSeconds": 49,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "36286f7f78ed53bfefde3edad7fee862c8eb003a61fb9512a57252e0cf3d86fd",
+      "file": "tests/visual/companion-home-agency-141.spec.ts",
+      "title": "141 unlit room grades the actual resident and native outside placement restores brightness",
+      "project": "",
+      "estimatedSeconds": 6,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "7adff8d01b711145f540c903e47898e845ab776dc32a33fa9e06f40f9a91d029",
+      "file": "tests/visual/companion-home-agency-141.spec.ts",
+      "title": "141 common performer actual middle-hunger meal is followed by real mat washing",
+      "project": "",
+      "estimatedSeconds": 39,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "cc56216a1f6c10b54c954c46020e11319cfdf209d709d75a66d914af93b18310",
+      "file": "tests/visual/companion-home-agency-141.spec.ts",
+      "title": "141 common curious actual middle-hunger meal is followed by real mat washing",
+      "project": "",
+      "estimatedSeconds": 36,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "cf2f2f8fc06fd07fe14c26290461a02ddde82b9fe3c017ebc1393dfc667fc381",
+      "file": "tests/visual/companion-home-agency-141.spec.ts",
+      "title": "141 common affectionate actual middle-hunger meal is followed by real mat washing",
+      "project": "",
+      "estimatedSeconds": 26,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "41218951e69d1623ba74e19c3ef11a38b5cf5410ecf8982e4b90cc791b483603",
+      "file": "tests/visual/companion-home-agency-141.spec.ts",
+      "title": "141 common sleepy actual middle-hunger meal is followed by real mat washing",
+      "project": "",
+      "estimatedSeconds": 34,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "29fb5c51b024330ec0357680b97f206d1b1e316d1dfeb21bfba634f1af10a1d1",
+      "file": "tests/visual/companion-home-agency-141.spec.ts",
+      "title": "141 common tidy actual middle-hunger meal is followed by real mat washing",
+      "project": "",
+      "estimatedSeconds": 27,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "310e05d07d7ef215de925a8e7b8e6c3143d8e7f820d48596995be0fb47b37ba6",
+      "file": "tests/visual/companion-home-agency-141.spec.ts",
+      "title": "141 common mischievous actual middle-hunger meal is followed by real mat washing",
+      "project": "",
+      "estimatedSeconds": 23,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "9af0677097c7459194f7111c15cfe605fa15ed34be45324669efda0b3c83b60e",
+      "file": "tests/visual/companion-home-agency-141.spec.ts",
+      "title": "141 common gourmet actual middle-hunger meal is followed by real mat washing",
+      "project": "",
+      "estimatedSeconds": 27,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "c71e010768e60f4084de9bd85acfe84bf784c41fb0575995e65ac1354ce51679",
+      "file": "tests/visual/companion-home-agency-141.spec.ts",
+      "title": "141 common homebody actual middle-hunger meal is followed by real mat washing",
+      "project": "",
+      "estimatedSeconds": 25,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "b4e36e054295a3cec11116868320c17262314619a5c6adb66c2865df088e5de4",
+      "file": "tests/visual/companion-home-agency-141.spec.ts",
+      "title": "141 common balanced actual middle-hunger meal is followed by real mat washing",
+      "project": "",
+      "estimatedSeconds": 24,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "7318a1fe5ec1ea7e1bb9bd229d9ae729149049c64eef5b99a123d62aa4c07893",
+      "file": "tests/visual/companion-home-agency-141.spec.ts",
+      "title": "141 day nap uses curtain lamp sofa then actually sleeps and wakes",
+      "project": "",
+      "estimatedSeconds": 19,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "dc3c6f3c67493a2ade2a9203b59150a7c33a057b5f9174ee892e7c8e0ccc3024",
+      "file": "tests/visual/companion-home-agency-141.spec.ts",
+      "title": "141 night sleep uses curtain lamp sofa then actually sleeps and wakes",
+      "project": "",
+      "estimatedSeconds": 19,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "69ffdd083e021970286c342be23fad639ede3640b8e085b2d188d44e2631f5b8",
+      "file": "tests/visual/companion-home-agency-141.spec.ts",
+      "title": "141 automatic sleep OFF prevents day sleeping even at low energy",
+      "project": "",
+      "estimatedSeconds": 33,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "fc701aa72b664aa0eecf1caf4b2d55b909ec0ce62a2af2e48a9819946673d2f4",
+      "file": "tests/visual/companion-home-agency-141.spec.ts",
+      "title": "141 automatic sleep OFF prevents night sleeping even at low energy",
+      "project": "",
+      "estimatedSeconds": 34,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "977e6b5e9fa9c5d03001aa8eee72b217e5e84728278fcd171ff01fbc53cc2596",
+      "file": "tests/visual/companion-home-agency-141.spec.ts",
+      "title": "141 compact home reaches the real curtain cord and lamp before a finite night sleep",
+      "project": "",
+      "estimatedSeconds": 20,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "c77f97c63d2fc8ec3546845797446c7cacd593a308cd4e5a9bd230a5840b6ece",
+      "file": "tests/visual/companion-home-window-123.spec.ts",
+      "title": "123 actual solar phases choose four distinct scene files: spring",
+      "project": "",
+      "estimatedSeconds": 6,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "7a27fd8c9c9f77ecf417a39a154f6a1875c846466751e31b222138015af34378",
+      "file": "tests/visual/companion-home-window-123.spec.ts",
+      "title": "123 actual solar phases choose four distinct scene files: summer",
+      "project": "",
+      "estimatedSeconds": 6,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "6bf94aa7347e312ec9bdbfced3cefba791afcd573ff837fe9defdf6771782e44",
+      "file": "tests/visual/companion-home-window-123.spec.ts",
+      "title": "123 actual solar phases choose four distinct scene files: autumn",
+      "project": "",
+      "estimatedSeconds": 6,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "2c6e4191d0c20e5bb2b752f15845ab2e1fabcda79d4803f3aefd38f6d5ddc536",
+      "file": "tests/visual/companion-home-window-123.spec.ts",
+      "title": "123 actual solar phases choose four distinct scene files: winter",
+      "project": "",
+      "estimatedSeconds": 6,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "94612abb032cb495c87e943f1b83806ad15d01eb6f7b80342f780d99955a6bb0",
+      "file": "tests/visual/companion-home-window-123.spec.ts",
+      "title": "123 six shared weather states retain their scene and keep clouds behind its trees",
+      "project": "",
+      "estimatedSeconds": 9,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "fad052f04261924f8885b8073fc3c4de470ae1ac2c4dab1ab03e6a5c84254b2a",
+      "file": "tests/visual/companion-home-window-123.spec.ts",
+      "title": "123 static night and weather remain present in quiet mode: reduced",
+      "project": "",
+      "estimatedSeconds": 2,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "ebbc775075b17698f8a964056ec1bd862617ca5c45d4acd22648946e3b626e5b",
+      "file": "tests/visual/companion-home-window-123.spec.ts",
+      "title": "123 static night and weather remain present in quiet mode: off",
+      "project": "",
+      "estimatedSeconds": 2,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "8b1007c22797b702ed7b9216473799d9c8745340809e062fd1580d185466c66c",
+      "file": "tests/visual/companion-house-146.spec.ts",
+      "title": "146 viewer 1920 dark occupied sofa and clear window storage",
+      "project": "",
+      "estimatedSeconds": 11,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "d584e48b462d82e6b41ae94e6ac0e88a9316907144743c2cf729dacdc1188bd5",
+      "file": "tests/visual/companion-house-146.spec.ts",
+      "title": "146 viewer 1920 light occupied sofa and clear window storage",
+      "project": "",
+      "estimatedSeconds": 11,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "97dd9bf36cc184176a3007a146d4cde8153a84b7d00757d0a9ffc72e7ebbc135",
+      "file": "tests/visual/companion-house-146.spec.ts",
+      "title": "146 viewer 1100 dark occupied sofa and clear window storage",
+      "project": "",
+      "estimatedSeconds": 11,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "9a74b0fd44ca9751fa3d32f2cb86baf4301ad9167ce9000a21a413a2f0029b86",
+      "file": "tests/visual/companion-house-146.spec.ts",
+      "title": "146 viewer 1100 light occupied sofa and clear window storage",
+      "project": "",
+      "estimatedSeconds": 11,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "1ecd048fd62b3d4c93d1de5b7a1900cd11e7e1f7c9a6b5ef7490ca9e92822830",
+      "file": "tests/visual/companion-house-146.spec.ts",
+      "title": "146 studio 1920 dark occupied sofa and clear window storage",
+      "project": "",
+      "estimatedSeconds": 10,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "db7c0788fb2c83b04e3a4dafe2a672a557d9d6dc2955f8af6a32d97e4a4d9d91",
+      "file": "tests/visual/companion-house-146.spec.ts",
+      "title": "146 studio 1920 light occupied sofa and clear window storage",
+      "project": "",
+      "estimatedSeconds": 11,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "8738a48dc54430fda03ef757dc8c181965b19ec6531379af79393d99e1035c60",
+      "file": "tests/visual/companion-house-146.spec.ts",
+      "title": "146 preview 1920 dark occupied sofa and clear window storage",
+      "project": "",
+      "estimatedSeconds": 13,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "fd71ec5272b26dd34abc2d3e8c8376695d8c1587025e960c8a6caae3855d315a",
+      "file": "tests/visual/companion-house-146.spec.ts",
+      "title": "146 preview 1920 light occupied sofa and clear window storage",
+      "project": "",
+      "estimatedSeconds": 12,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "eb6b056a7b4269beaaed2cd9cdb99cbef0325c2caa904d2c50d55ae8fa353437",
+      "file": "tests/visual/companion-house-controls-162.spec.ts",
+      "title": "162 viewer pointer direct pad approach wash and exit",
+      "project": "",
+      "estimatedSeconds": 13,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "55da8add859d811d98b479f77de7f24b73b6f3307541a520372217880af2e7db",
+      "file": "tests/visual/companion-house-controls-162.spec.ts",
+      "title": "162 viewer keyboard direct pad approach wash and exit",
+      "project": "",
+      "estimatedSeconds": 13,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "a83f7806c3fd97547cae1de7cdea1abd05ee293d7698edb5fb039995675ac047",
+      "file": "tests/visual/companion-house-controls-162.spec.ts",
+      "title": "162 studio pointer direct pad approach wash and exit",
+      "project": "",
+      "estimatedSeconds": 13,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "59f96e7aa2f6fc8bd104b6ba4f372c6f8cc50ef66464da4266b773da3e095d18",
+      "file": "tests/visual/companion-house-controls-162.spec.ts",
+      "title": "162 studio keyboard direct pad approach wash and exit",
+      "project": "",
+      "estimatedSeconds": 13,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "283ea9c9a4a0de1a9e390065f2cc96116b45d868f1fa4abfcd3575bfb66e09b1",
+      "file": "tests/visual/companion-house-controls-162.spec.ts",
+      "title": "162 preview pointer direct pad approach wash and exit",
+      "project": "",
+      "estimatedSeconds": 15,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "e8c5166b51eef1add249ff66dbcf02f47df2e5439fc540c2778c66c59bcffaa1",
+      "file": "tests/visual/companion-house-controls-162.spec.ts",
+      "title": "162 preview keyboard direct pad approach wash and exit",
+      "project": "",
+      "estimatedSeconds": 15,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "24d3be14c0d42d86e05db905d3b7676225c53e1028cec3bdf1e160236d37a9ba",
+      "file": "tests/visual/companion-house-controls-162.spec.ts",
+      "title": "162 narrow default panel keeps a real mat stance and accepts a sofa wash request",
+      "project": "",
+      "estimatedSeconds": 12,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "9ecf32b93836edf3036171c7d3591c6a28a3dfe4d64b2c43e373a2c8e33c08fa",
+      "file": "tests/visual/companion-items-scroll-147.spec.ts",
+      "title": "147 native food and toy drag release keep the actual grip and unanchored flight",
+      "project": "",
+      "estimatedSeconds": 10,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "35ddaf955fdf94a28bd6c76a30a124e283f51dc034ffc1dc9226082f1ab8f7a5",
+      "file": "tests/visual/companion-items-scroll-147.spec.ts",
+      "title": "147 viewer 1920 full floor food and toy follow rapid native scroll",
+      "project": "",
+      "estimatedSeconds": 14,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "8d04adf42ae45871e8c3c17d7823ff821399112362febf98cfbc32cac73dafe2",
+      "file": "tests/visual/companion-items-scroll-147.spec.ts",
+      "title": "147 viewer 1920 soft floor food and toy follow rapid native scroll",
+      "project": "",
+      "estimatedSeconds": 13,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "be0c18ccd107d1750882533833ef3fc68c5851ab017d560535dd4e41cd3f2cc5",
+      "file": "tests/visual/companion-items-scroll-147.spec.ts",
+      "title": "147 viewer 1920 off floor food and toy follow rapid native scroll",
+      "project": "",
+      "estimatedSeconds": 11,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "9d83d8f67e181c6531337c483d9e0ae50c7c89feeaf5f3c7c2cfe0eef60178e5",
+      "file": "tests/visual/companion-items-scroll-147.spec.ts",
+      "title": "147 viewer 1100 full floor food and toy follow rapid native scroll",
+      "project": "",
+      "estimatedSeconds": 13,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "18dc038232b76c859bdc659d86fe780a9a222be81a05ba2b9865a652173b7566",
+      "file": "tests/visual/companion-items-scroll-147.spec.ts",
+      "title": "147 viewer 1100 soft floor food and toy follow rapid native scroll",
+      "project": "",
+      "estimatedSeconds": 12,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "fba52149ef7cb1d9d2b64a08888e75b656baabff39455dc0839dba6c4d19801c",
+      "file": "tests/visual/companion-items-scroll-147.spec.ts",
+      "title": "147 viewer 1100 off floor food and toy follow rapid native scroll",
+      "project": "",
+      "estimatedSeconds": 10,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "ae311851e1239543a982cefe76ac37046dc8a745a31ae767651b515ea4d69ea6",
+      "file": "tests/visual/companion-items-scroll-147.spec.ts",
+      "title": "147 studio 1920 full floor food and toy follow rapid native scroll",
+      "project": "",
+      "estimatedSeconds": 12,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "cb0ef457e67ca1b7aa6d6a4a4ed200c57f32a756fe70954604fba211c490f9e0",
+      "file": "tests/visual/companion-items-scroll-147.spec.ts",
+      "title": "147 studio 1920 soft floor food and toy follow rapid native scroll",
+      "project": "",
+      "estimatedSeconds": 11,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "be948f08672978b680596c387f3ee4a742e004cd051667e70a548fe7a4679abd",
+      "file": "tests/visual/companion-items-scroll-147.spec.ts",
+      "title": "147 studio 1920 off floor food and toy follow rapid native scroll",
+      "project": "",
+      "estimatedSeconds": 9,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "9f634f28d447cfde1799380edf4a8f9ddc6abf3e1135ca5d9a1b497601ebbfc9",
+      "file": "tests/visual/companion-items-scroll-147.spec.ts",
+      "title": "147 preview 1920 full floor food and toy follow rapid native scroll",
+      "project": "",
+      "estimatedSeconds": 15,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "6a2d0489e4a5e49a9198736c950ee888dc14b64a5c90af6907c0d00291c1aec6",
+      "file": "tests/visual/companion-items-scroll-147.spec.ts",
+      "title": "147 preview 1920 soft floor food and toy follow rapid native scroll",
+      "project": "",
+      "estimatedSeconds": 14,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "23ffb01889bdcf1a80a072665bbe7c824d0af709464d6e0b0732347351809305",
+      "file": "tests/visual/companion-items-scroll-147.spec.ts",
+      "title": "147 preview 1920 off floor food and toy follow rapid native scroll",
+      "project": "",
+      "estimatedSeconds": 12,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "4fef51abe7ea4773d0e918362e73596153aeee4919300e49527494139d15cf01",
+      "file": "tests/visual/companion-living-143.spec.ts",
+      "title": "143 viewer room items follow independent light and five local TV pictures",
+      "project": "",
+      "estimatedSeconds": 12,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "8a21a15abb79ab6313e7243e55afa2c75623df6ba80b2a581f463e0cd009e190",
+      "file": "tests/visual/companion-living-143.spec.ts",
+      "title": "143 studio room items follow independent light and five local TV pictures",
+      "project": "",
+      "estimatedSeconds": 11,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "2c4e950b4df531e814eb3a117a22f3d60070318b441fd5c83dc68ca2586042ab",
+      "file": "tests/visual/companion-living-143.spec.ts",
+      "title": "143 preview room items follow independent light and five local TV pictures",
+      "project": "",
+      "estimatedSeconds": 11,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "50195b7b64ba82a0eec3ca3ad84b8bbb46ab863e9e472822966b35f069b26bc6",
+      "file": "tests/visual/companion-living-143.spec.ts",
+      "title": "143 performer actual indoor pet has a finite personal response",
+      "project": "",
+      "estimatedSeconds": 10,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "c25db9a8fea355b34cf7b56fcd585cf227277c948989454fdf2c473525a187eb",
+      "file": "tests/visual/companion-living-143.spec.ts",
+      "title": "143 curious actual indoor pet has a finite personal response",
+      "project": "",
+      "estimatedSeconds": 9,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "5f7581b9cecd62842ab5f1655c082cbbfa5938eaf40318afec71ba1820dd5a2d",
+      "file": "tests/visual/companion-living-143.spec.ts",
+      "title": "143 affectionate actual indoor pet has a finite personal response",
+      "project": "",
+      "estimatedSeconds": 9,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "e669c87bbe9242334a8e781d5a3a95ed3bf0cec55e28fc9957273763be854a2a",
+      "file": "tests/visual/companion-living-143.spec.ts",
+      "title": "143 sleepy actual indoor pet has a finite personal response",
+      "project": "",
+      "estimatedSeconds": 9,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "7a4215fc672fdbe250b9e79a436e1fc3def51b565a295af7c839683f140abfde",
+      "file": "tests/visual/companion-living-143.spec.ts",
+      "title": "143 tidy actual indoor pet has a finite personal response",
+      "project": "",
+      "estimatedSeconds": 9,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "92c4ce8603ddd800d2c9e1e6219848181f54602f38c848ad19e891e425b39b10",
+      "file": "tests/visual/companion-living-143.spec.ts",
+      "title": "143 mischievous actual indoor pet has a finite personal response",
+      "project": "",
+      "estimatedSeconds": 9,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "6a3fb6484f73e54fe896f602dbb16797af5d035f597cccbc3467d48326c5b1ab",
+      "file": "tests/visual/companion-living-143.spec.ts",
+      "title": "143 gourmet actual indoor pet has a finite personal response",
+      "project": "",
+      "estimatedSeconds": 10,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "bb2f75af73786ff78a62abd472179caf107bab334b50f05a543f64f964c112a0",
+      "file": "tests/visual/companion-living-143.spec.ts",
+      "title": "143 homebody actual indoor pet has a finite personal response",
+      "project": "",
+      "estimatedSeconds": 10,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "79c746c365b139122f35fe354735c9d7f68d30b71d32abc2de478d73281db8db",
+      "file": "tests/visual/companion-living-143.spec.ts",
+      "title": "143 balanced actual indoor pet has a finite personal response",
+      "project": "",
+      "estimatedSeconds": 9,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "a22cafdf61e1c61f715bc1dd8698141c01ec136c9f971ca4ec33fd7f71ac6f20",
+      "file": "tests/visual/companion-living-143.spec.ts",
+      "title": "143 studio sofa stays aligned beside the editor and independent controls",
+      "project": "",
+      "estimatedSeconds": 55,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "204a8fc05a9d20596c6613e7b26c7cbcb2cb1a9878c2bf2f24991531330498e8",
+      "file": "tests/visual/companion-living-149.spec.ts",
+      "title": "149 studio full body pompom hops and clean recovery",
+      "project": "",
+      "estimatedSeconds": 13,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "45a8b622444fb882461fdd272279dd5c208d2e61f821143f6624a82eedc6a4db",
+      "file": "tests/visual/companion-living-149.spec.ts",
+      "title": "149 viewer full body pompom hops and clean recovery",
+      "project": "",
+      "estimatedSeconds": 19,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "2802b5560eec1f5d045ad1035e5cb349d693754855f07bb95fbc22b6b86f7905",
+      "file": "tests/visual/companion-living-149.spec.ts",
+      "title": "149 preview full body pompom hops and clean recovery",
+      "project": "",
+      "estimatedSeconds": 21,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "5993afa77ad11d489c1f101fadc5be64672499b7abab04a7fb151936a85ba3fe",
+      "file": "tests/visual/companion-living-149.spec.ts",
+      "title": "149 studio full glasses body pompom hops and clean recovery",
+      "project": "",
+      "estimatedSeconds": 14,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "d8e5f7f535ce5d8e83150ef58a9a069c04446b297a5b282148e53d6de34deb43",
+      "file": "tests/visual/companion-living-149.spec.ts",
+      "title": "149 studio soft body pompom hops and clean recovery",
+      "project": "",
+      "estimatedSeconds": 10,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "02f6b1a8d455a9cbadefabace69dc51b6ee0381b14cc0dbe79cc692e1b8f9d5e",
+      "file": "tests/visual/companion-living-149.spec.ts",
+      "title": "149 studio off body pompom hops and clean recovery",
+      "project": "",
+      "estimatedSeconds": 10,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "7aa1d6701e87d6efdb71e276c94277b563dd7167eb395d0d44aab0ea4d705e71",
+      "file": "tests/visual/companion-living-149.spec.ts",
+      "title": "149 studio reduced body pompom hops and clean recovery",
+      "project": "",
+      "estimatedSeconds": 8,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "77504f932a6429cd49b70539e066990deaa20ede8cae6c8f32353740c72f189a",
+      "file": "tests/visual/companion-living-149.spec.ts",
+      "title": "149 real book body cheer replay and manual OFF",
+      "project": "",
+      "estimatedSeconds": 11,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "220230c7beb06b8b46e1ef8cadcc972c243212a97428301a054b06976224be9e",
+      "file": "tests/visual/companion-living-149.spec.ts",
+      "title": "149 known odd-food book preview only contracts recovers and stops on OFF",
+      "project": "",
+      "estimatedSeconds": 9,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "f75237afe1374bf5b536ea9c4e8fdafbb3db59203184d20cba4807f30c5b6397",
+      "file": "tests/visual/companion-living-149.spec.ts",
+      "title": "149 notebook four tabs unknown silhouettes 1920 light",
+      "project": "",
+      "estimatedSeconds": 11,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "238501e0a1bd5971b94552965e524d5c87f8b1c0742960dbdf3e025212aaa27f",
+      "file": "tests/visual/companion-living-149.spec.ts",
+      "title": "149 notebook four tabs unknown silhouettes 1920 dark",
+      "project": "",
+      "estimatedSeconds": 11,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "3c0783bcc9d795aff7c8ac1e89ad9f93f681582a7be63df128617b661d184153",
+      "file": "tests/visual/companion-living-149.spec.ts",
+      "title": "149 notebook four tabs unknown silhouettes 1120 light",
+      "project": "",
+      "estimatedSeconds": 10,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "6cdb540eea22ad7ac646937cd3db5e37c3f68c41812c46797982e2ff475a1288",
+      "file": "tests/visual/companion-living-149.spec.ts",
+      "title": "149 notebook four tabs unknown silhouettes 1120 dark",
+      "project": "",
+      "estimatedSeconds": 11,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "e0c1dac3a6cbfb3b5b9651930c52e17b0c28a1625d84f77feb864130ac743a77",
+      "file": "tests/visual/companion-living-149.spec.ts",
+      "title": "149 curtain cord meets actual rod viewer 1920",
+      "project": "",
+      "estimatedSeconds": 4,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "bcf90e2c241a64417901f7e3b07f69d0916a55b2fd3d8f583fed1a27faf013a9",
+      "file": "tests/visual/companion-living-149.spec.ts",
+      "title": "149 curtain cord meets actual rod studio 1920",
+      "project": "",
+      "estimatedSeconds": 4,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "fca2ee519267a7b02054e0cac3f7b8373d803d576e056dd3834302b3c4d533b4",
+      "file": "tests/visual/companion-living-149.spec.ts",
+      "title": "149 curtain cord meets actual rod preview 1920",
+      "project": "",
+      "estimatedSeconds": 5,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "8a71983d5348afc5e939af1906a750be9dee4da52583c684fb976e659e307cfa",
+      "file": "tests/visual/companion-living-149.spec.ts",
+      "title": "149 curtain cord meets actual rod viewer 1120",
+      "project": "",
+      "estimatedSeconds": 5,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "879830ffe7e51b801f2efb691952ffad72b1bd5c5cab24d2936aea19655d8283",
+      "file": "tests/visual/companion-living-runtime-146.spec.ts",
+      "title": "146 viewer tidy carries all four same physical toys into the box before leisure",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "e537940b554c165849c4f436415f3c140fd23bd068687ff58c6469609a3d68e7",
+      "file": "tests/visual/companion-living-runtime-146.spec.ts",
+      "title": "146 studio tidy carries all four same physical toys into the box before leisure",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "4b57e74b0e79df7c8196b86c39cb3e617f86bf44c717f99f32181638c42c1d55",
+      "file": "tests/visual/companion-living-runtime-146.spec.ts",
+      "title": "146 preview tidy carries all four same physical toys into the box before leisure",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "b0d1297f9256ac2965593789f2cd8b627bc40a7169f97af95e49df0305f9f27e",
+      "file": "tests/visual/companion-living-runtime-146.spec.ts",
+      "title": "146 performer actually lives on the public calendar across a continuous active sequence",
+      "project": "",
+      "estimatedSeconds": 25,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "c4441495f47fdb93f246e99b99c68f4e16522fc2d70a73b64ad1d106cd9fcde5",
+      "file": "tests/visual/companion-living-runtime-146.spec.ts",
+      "title": "146 curious actually lives on the public calendar across a continuous active sequence",
+      "project": "",
+      "estimatedSeconds": 30,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "6aad75e034842dc9d3bdde18d93a5064a7bb2cc3d1ffb4062c74741b4ba12296",
+      "file": "tests/visual/companion-living-runtime-146.spec.ts",
+      "title": "146 affectionate actually lives on the public calendar across a continuous active sequence",
+      "project": "",
+      "estimatedSeconds": 40,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "ac2a21d749b5417ee3d45c722dc8a0d8ecf0114e5d053082a253c0ee575fca9a",
+      "file": "tests/visual/companion-living-runtime-146.spec.ts",
+      "title": "146 sleepy actually lives on the public calendar across a continuous active sequence",
+      "project": "",
+      "estimatedSeconds": 33,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "2e8c5c219603ce347554e1578ac10ccefd1abbaa92f502a6c89df0833a3e1d27",
+      "file": "tests/visual/companion-living-runtime-146.spec.ts",
+      "title": "146 tidy actually lives on the public calendar across a continuous active sequence",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "2754d427f469ae383805e41a3402acabcdc4abe37d8dc23b4ca27e6dcf5be203",
+      "file": "tests/visual/companion-living-runtime-146.spec.ts",
+      "title": "146 mischievous actually lives on the public calendar across a continuous active sequence",
+      "project": "",
+      "estimatedSeconds": 39,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "f53dc3a98660f9ccf131e817de1ff54fa6904bdcd03faf66f42bdd03e563e593",
+      "file": "tests/visual/companion-living-runtime-146.spec.ts",
+      "title": "146 gourmet actually lives on the public calendar across a continuous active sequence",
+      "project": "",
+      "estimatedSeconds": 34,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "596d46d2de887819b6470abb8f4ea60382fb1cc95d806f42867989bf0cf6fb7a",
+      "file": "tests/visual/companion-living-runtime-146.spec.ts",
+      "title": "146 balanced actually lives on the public calendar across a continuous active sequence",
+      "project": "",
+      "estimatedSeconds": 40,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "51168f7a2c95e99ee9d4e2734f2faa4bfcac9fb9c852e0736d8be312d0d0be57",
+      "file": "tests/visual/companion-living-runtime-146.spec.ts",
+      "title": "146 gourmet commits to one real meal instead of walking between several food goals",
+      "project": "",
+      "estimatedSeconds": 14,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "cd5f0dca4470e9b4584fe3b0204b22577793575fc9fc79d661bc0dd9d5c2849b",
+      "file": "tests/visual/companion-objects-149.spec.ts",
+      "title": "149 objects studio random real toy completes its own use and collection",
+      "project": "",
+      "estimatedSeconds": 22,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "9d2ee8ecb54fbc1ba555fc17a144db65e209fe0a6383d1047580582a7a0166fb",
+      "file": "tests/visual/companion-objects-149.spec.ts",
+      "title": "149 objects viewer random real toy completes its own use and collection",
+      "project": "",
+      "estimatedSeconds": 22,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "ea0cc8b07deedb0bfa2cb0e810db31f2d994c5feb123f2ee879b96001c6718be",
+      "file": "tests/visual/companion-objects-149.spec.ts",
+      "title": "149 objects preview random real toy completes its own use and collection",
+      "project": "",
+      "estimatedSeconds": 24,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "20df2832f3ceeea8dbde10af576242db2e7967f213a9b8b1940c404b0275651a",
+      "file": "tests/visual/companion-objects-149.spec.ts",
+      "title": "149 objects native body grab interrupts the first real toy use without a fake discovery",
+      "project": "",
+      "estimatedSeconds": 19,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "543a91ff70163cd553b3facec4a07eb912e509a7d8c1cccebd31bd2172653220",
+      "file": "tests/visual/companion-objects-149.spec.ts",
+      "title": "149 objects actual random meal consumes once and only the eligible tasted recipe reacts",
+      "project": "",
+      "estimatedSeconds": 15,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "c6dc9f62feeaa37bd5a321d24607217ae4a0e2011f3816a33cf0854dabc7555a",
+      "file": "tests/visual/companion-objects-149.spec.ts",
+      "title": "149 objects night awake tidy reaches the lamp then resumes living",
+      "project": "",
+      "estimatedSeconds": 13,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "2d2e20df5f050d8c80c2856f57dfac00646687ecce0b9351bec7f3548daf11c2",
+      "file": "tests/visual/companion-objects-149.spec.ts",
+      "title": "149 objects night awake gourmet reaches the lamp then resumes living",
+      "project": "",
+      "estimatedSeconds": 12,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "d430233ccfb1892ad648846ae31e5c5c3a970836926631912b3201142c2de5db",
+      "file": "tests/visual/companion-objects-149.spec.ts",
+      "title": "149 objects automatic night sleep prepares TV and light through real controls",
+      "project": "",
+      "estimatedSeconds": 38,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "7fa21c6c5ef6f483230e5c00d3bf4cbc59bc0f7a0e8494fb279f8a420f6507d5",
+      "file": "tests/visual/companion-objects-149.spec.ts",
+      "title": "149 objects curious departure prepares TV and light before reaching the public calendar",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "710b7bfae4aa18f51f44a206cba372554b8199af1f385500989dfe731267e03e",
+      "file": "tests/visual/companion-objects-149.spec.ts",
+      "title": "200 viewer real car completes typed wheel push before mischief and collection",
+      "project": "",
+      "estimatedSeconds": 88,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "0a059570c316adf25833d28b527714fc173ad3bf9d99f28d9ac41305da8d600a",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "142 floating home tidy preserves all four returns with learned care on",
+      "project": "",
+      "estimatedSeconds": 34,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "8acfcdc9633d9d251b0c279ff3c0932f94f64f5fbe4eb6964f2a3b711aa72272",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "142 floating home tidy returns from a real calendar perch to all four toys",
+      "project": "",
+      "estimatedSeconds": 37,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "3375007da13ab3e9a2b8762a88260441b59976fa3084ace0b103ea272af371c0",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "140 performer native primary and secondary sequences finish with real object or room effects",
+      "project": "",
+      "estimatedSeconds": 87,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "327d03c4a12ce9fa90ac51599136f2164cab0f1f5cca1e515ecfdf83535f5c3c",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "140 curious native primary and secondary sequences finish with real object or room effects",
+      "project": "",
+      "estimatedSeconds": 88,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "1cc930852519ee5cb68eb56ea500fab40f9f6fc220c0d032eea49c8667e879f4",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "140 affectionate native primary and secondary sequences finish with real object or room effects",
+      "project": "",
+      "estimatedSeconds": 92,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "96146b3b644fc8cc8f00ac42bba02618de28b0cbebafafc3fbe1ef18a2f61a33",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "140 sleepy native primary and secondary sequences finish with real object or room effects",
+      "project": "",
+      "estimatedSeconds": 88,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "5ae3c33b379d38fcc6d4aa6f7b489913d27f61cc3236f3e2b3a79894abcb8947",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "140 tidy native primary and secondary sequences finish with real object or room effects",
+      "project": "",
+      "estimatedSeconds": 118,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "9270f0aacbe808887f60c49bc07cd96602d714c81f03ed782abc51250b74d7fe",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "140 mischievous native primary and secondary sequences finish with real object or room effects",
+      "project": "",
+      "estimatedSeconds": 72,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "b8db89fa6ebc25b41d737b7527e4c54281f19641bbe36d65bca96ff1c0e8fd83",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "140 gourmet native primary and secondary sequences finish with real object or room effects",
+      "project": "",
+      "estimatedSeconds": 43,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "879ddad3d70a849618151d84ad2c344b914154d6790b113008973b868c30920f",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "140 homebody native primary and secondary sequences finish with real object or room effects",
+      "project": "",
+      "estimatedSeconds": 99,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "6d2f81bdc2136896402776a2d473ebee221643b07fb6fc4809695d00a0b8719c",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "140 balanced native primary and secondary sequences finish with real object or room effects",
+      "project": "",
+      "estimatedSeconds": 115,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "b7ecb06d2992e5ea7302d8f73a97e0350609696ef9c9f08c0cbd6a4c95abddc9",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "142 sleepy low-energy same-ID return completes its required rest, while sleep OFF samples stay separate",
+      "project": "",
+      "estimatedSeconds": 65,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "17bdde45c1e3376b495aea8d3dfbab330a97bce9e755fb0b61f73472028aa002",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 viewer native performer selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 26,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "7bb640018cb0fdd0de8128edcb241af221741e04fa96451ee0ea92ccc96d2fcf",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 viewer native curious selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 26,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "490061c6714da3618357c2871a50a9387f6e084aadf018ad96ecba7713f9c2b5",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 viewer native affectionate selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 26,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "833e33d9db1e29f6c64ba7908d231ab5ee0d3f0c368876e632a96588e3a56e47",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 viewer native sleepy selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 26,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "4e20932fd1912d5f52fc916024473428cb9e701e11874210aa4753c3f3419c36",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 viewer native tidy selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 26,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "ff43420fdf5c761a8229e603f178bc206475634090f84ecf854876539ac2bdcd",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 viewer native mischievous selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 26,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "7cb6b959764995fe9116ed9ef8ace2b109fa955889e45aaa35a6cbdaf6fe1471",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 viewer native gourmet selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 26,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "a632ebcf4b1ca2dc6ca82f9fe7d0231857d95bbb0e7d2b3746bc7241ca80ad8b",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 viewer native homebody selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 26,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "5b955422e5109173b0b0deb8c845ad05127557cfa940c3c0c7145b43d177a015",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 viewer native balanced selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 26,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "92a418a99ddfedc2ffa150e7903a97893206cbfd48a6a43a8d562a3c7a6a5962",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 studio native performer selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 27,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "8e2501f005e3ed2e6fdb1b94273ac41e6f603e1fbc8034f41805c4421463905f",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 studio native curious selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 26,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "d05af0b12b012007d2cdce38e48d63e5313ed6251914ff61e7ac31b2ca05cb7b",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 studio native affectionate selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 27,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "9067c83c255cb366449b0bf38e5175c22129a5f836dad36ad71678343d9b7a2c",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 studio native sleepy selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 27,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "c464f539f434c39b120969777ead653d1454d318321ef951c1b0831cf67ea288",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 studio native tidy selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 27,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "24853702c387a727b4deee4fdf3e51328550523a7803fc4d2267d76b38fe5e4c",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 studio native mischievous selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 26,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "7aa86920581c40308dcc62f3d954074c1edb768d78ec92592d26178019312937",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 studio native gourmet selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 26,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "32519e4570d7fd3c50c0af86e7dbf9573b7c870885606d641506221bfcd31b74",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 studio native homebody selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 27,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "4ede5e545b9cb9d4648de091767290ecda79a3653abde37a76c29d8f023240fe",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 studio native balanced selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 27,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "4dabea2ea644740b2138de2c627e1c9c68c90b37a36e5e76c3ee8cd103602b04",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 preview native performer selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 28,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "6ce5af1f4be0cd36ce76783732ef674453eb08e6f5a37503da045c28261bcd58",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 preview native curious selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 27,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "9d32423ea867c56a41753bd46cd6489bdf4383859680f77873e33403919fd984",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 preview native affectionate selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 27,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "51821c2e17d37b622ec8faa1089b143f9acf865344a12869bdfa67280e4d7271",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 preview native sleepy selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 28,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "a04f4fc0e20b90a5575b7f200d2a1956fe1408d01713f1a63a8e20a5d9db4846",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 preview native tidy selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 28,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "92b7a919d757733f14e054bc034c803bcac0a28b789d4a3a247e43e83cf8a2cb",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 preview native mischievous selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 27,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "40db10f6483a7c10cf5652f896c99a781efcac491d89990a5597821609ccb122",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 preview native gourmet selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 28,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "e24e905c65d0977056bee78d46f738d5e07a56a3ac5c692b4f1ffc1266ac7517",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 preview native homebody selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 27,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "1b4d7d3fef98269d6b4317749b8a2020b2ba9a946cb8c9e3e693400468efe089",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "137 preview native balanced selection expresses immediately and remains purposeful",
+      "project": "",
+      "estimatedSeconds": 28,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "048cb4eec766a5d7c64d57660d1f50f3aaba58d5bced57a987ae129c77029199",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "140 outside-home tidy actually retrieves four toys from a calendar perch at hunger0.05",
+      "project": "",
+      "estimatedSeconds": 108,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "1ce47e3414b496a97154b08ff2b26102c56e2f64cd3237329e0cad13eefbe96d",
+      "file": "tests/visual/companion-personality-scenes-137.spec.ts",
+      "title": "140 outside-home tidy actually retrieves four toys from a calendar perch at hunger0.5",
+      "project": "",
+      "estimatedSeconds": 124,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "ca627189bda2e847f8bc2dec79cc0add5655cabcb59103d550b00a0cee7f7738",
+      "file": "tests/visual/companion-play-presentation-156.spec.ts",
+      "title": "156 viewer cold bow packet keeps a full actual onset and following activity",
+      "project": "",
+      "estimatedSeconds": 34,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "12499f3e3bb84581ce360d34fbe16ffd95a12f57c236c1d32ccd70c9685c9590",
+      "file": "tests/visual/companion-play-presentation-156.spec.ts",
+      "title": "156 studio cold bow packet keeps a full actual onset and following activity",
+      "project": "",
+      "estimatedSeconds": 41,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "d2e8491ee848f1a6eb83d99b99f199502577ee1f1515051d5ee9b7e17572644e",
+      "file": "tests/visual/companion-play-presentation-156.spec.ts",
+      "title": "156 preview cold bow packet keeps a full actual onset and following activity",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "8879a30aa109b658803a73b5cf4a26ff7fab6d302a83bb3b2593f1bd90fb0ada",
+      "file": "tests/visual/companion-rest-continuity-157.spec.ts",
+      "title": "157 viewer day same-ID return prepares controls before cozy then rests and continues",
+      "project": "",
+      "estimatedSeconds": 123,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "e0675c4c467f5e9c342ae7c75081ea764ec564d36f6c0de8fd1a6823cc6ebc65",
+      "file": "tests/visual/companion-rest-continuity-157.spec.ts",
+      "title": "157 viewer night same-ID return prepares controls before cozy then rests and continues",
+      "project": "",
+      "estimatedSeconds": 98,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "6be8f1d98c8f5d750fdb68c32f6661c706c2127d9d97c25e8f73fa367cb10c4f",
+      "file": "tests/visual/companion-rest-continuity-157.spec.ts",
+      "title": "157 studio day same-ID return prepares controls before cozy then rests and continues",
+      "project": "",
+      "estimatedSeconds": 121,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "2ef6c59eb3dc0dd8b899388286d78a818ead29d7a3195168dc7ef71287de3d94",
+      "file": "tests/visual/companion-rest-continuity-157.spec.ts",
+      "title": "157 studio night same-ID return prepares controls before cozy then rests and continues",
+      "project": "",
+      "estimatedSeconds": 97,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "16a763f83b63426927b5c46382050c2698a889f7b69a7f40d9de0d51f6dad22c",
+      "file": "tests/visual/companion-rest-continuity-157.spec.ts",
+      "title": "157 preview day same-ID return prepares controls before cozy then rests and continues",
+      "project": "",
+      "estimatedSeconds": 121,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "93448edf973a6b0356e7a4b873c9309c8e0e31e63daf8a324997cf6ffdced319",
+      "file": "tests/visual/companion-rest-continuity-157.spec.ts",
+      "title": "157 preview night same-ID return prepares controls before cozy then rests and continues",
+      "project": "",
+      "estimatedSeconds": 97,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "a68f33aeb1e42d9f0d10e95fb1acfc99d23818f2219449a969682609e9ac5a1b",
+      "file": "tests/visual/companion-rest-continuity-157.spec.ts",
+      "title": "157 studio night manual light priority remains until expiry then real rest preparation resumes",
+      "project": "",
+      "estimatedSeconds": 30,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "3eeb31ac0d1feaa0411b8fb0d2fade2fd4c94146d3f7a0af793a0ad14bf61420",
+      "file": "tests/visual/companion-rest-continuity-157.spec.ts",
+      "title": "157 preview manual OFF cancels actual owned cushion rest without remote household effects",
+      "project": "",
+      "estimatedSeconds": 28,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "5ebc03bb4e6354472082f9769bd34616d5117c701b36dda33849582d7fb62265",
+      "file": "tests/visual/companion-sofa-anchor-release-156.spec.ts",
+      "title": "156 viewer scrolled sofa releases native anchor during real lift and flight",
+      "project": "",
+      "estimatedSeconds": 18,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "6208cbad29200c6825b53b524ed5526bece4b111e5626dcac32965e9a0c6e64a",
+      "file": "tests/visual/companion-sofa-anchor-release-156.spec.ts",
+      "title": "156 studio scrolled sofa releases native anchor during real lift and flight",
+      "project": "",
+      "estimatedSeconds": 17,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "c6ebfce52a295b350adfd41fc32884ce09f0332c35249f5a4e24df2f1ae6f803",
+      "file": "tests/visual/companion-sofa-anchor-release-156.spec.ts",
+      "title": "156 preview scrolled sofa releases native anchor during real lift and flight",
+      "project": "",
+      "estimatedSeconds": 17,
+      "estimateSource": "observed-ac32-baseline; not current-source PASS"
+    },
+    {
+      "id": "4dd0269ed27c5ecf120c85abf8ad5870ec8e05cc9fa4b0bbd3d411d1b7e50ff0",
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 viewer 1100 compact floor lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "conservative timeout; not observed"
+    },
+    {
+      "id": "8f8750ed671c6575cc226c9da7aa88c0f0f68f4bf1374522615f1bf3d4e4763f",
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 viewer 1494 compact floor lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "conservative timeout; not observed"
+    },
+    {
+      "id": "b41e5bb1bd6351290df49554430cac8e50b2f80491eefd0d18a4a037257ffb77",
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 viewer 1700 compact floor lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "conservative timeout; not observed"
+    },
+    {
+      "id": "adeed5a876903eda44b76f85c1e3eb5d046d7e166a423183b3872bd7ccc2f4f4",
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 viewer 1920 compact floor lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "conservative timeout; not observed"
+    },
+    {
+      "id": "2a88290ec55cd5fef9971e74f75b484b408530d572c735a63e09e6b1d66fdaeb",
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 viewer 2560 compact floor lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "conservative timeout; not observed"
+    },
+    {
+      "id": "3133418f3957c3b00b93b9a6d329a10b91949ac21b63a6bc9b2c5357d95bbe46",
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 viewer 1494 panel floor lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "conservative timeout; not observed"
+    },
+    {
+      "id": "1307a2ddd5cb8f402d8f98d16e8941dd4634a29099097211401509fba6d1ab4e",
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 studio 1494 compact floor lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "conservative timeout; not observed"
+    },
+    {
+      "id": "08d5aea477303b08b8c20cac26cc94385ad89734b9344383c4446d774bf6420c",
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 studio 1920 compact floor lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "conservative timeout; not observed"
+    },
+    {
+      "id": "3406e2d94610e7c9cdadb8e4a5b120ec2b05ef1e1816f6c7d6eec99da1eb9cea",
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 studio 2560 compact floor lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "conservative timeout; not observed"
+    },
+    {
+      "id": "ee7c4bcc2ebd1432a0a7f1b362ed9f6a8a78539b72ff85d15ecd1611428890cf",
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 studio 1494 panel floor lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "conservative timeout; not observed"
+    },
+    {
+      "id": "4c51dd617cbb173a1da99f678285028e9953f29a032471187342cb793ed80275",
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 preview 1920 compact floor lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "conservative timeout; not observed"
+    },
+    {
+      "id": "dbe032b4a49890af6aee3bc2b30ea48254ebc9044b064fd6c5ee2bd5558d689f",
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 preview 1494 panel floor lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "conservative timeout; not observed"
+    },
+    {
+      "id": "e732ae5061a91d4ba8a2b41be58a02d4e86ecfbe1c106315c0057480e3aaadf0",
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 viewer 2560 compact sofa lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "conservative timeout; not observed"
+    },
+    {
+      "id": "fe99ed6d82bf501f73101584cddb1f05ecd3587b4f56d93f1cb8f6865da9cf70",
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 studio 1920 compact sofa lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "conservative timeout; not observed"
+    }
+  ],
+  "dailyScenarios": [
+    {
+      "personality": "performer",
+      "surface": "viewer",
+      "width": 1100,
+      "theme": "light",
+      "motion": "full",
+      "season": "spring",
+      "band": "day",
+      "need": "content",
+      "plannedMotion": "full",
+      "id": "daily-performer",
+      "seconds": 90
+    },
+    {
+      "personality": "curious",
+      "surface": "viewer",
+      "width": 1440,
+      "theme": "light",
+      "motion": "full",
+      "season": "autumn",
+      "band": "day",
+      "need": "tired",
+      "plannedMotion": "soft",
+      "id": "daily-curious",
+      "seconds": 90
+    },
+    {
+      "personality": "affectionate",
+      "surface": "preview",
+      "width": 1440,
+      "theme": "light",
+      "motion": "full",
+      "season": "spring",
+      "band": "night",
+      "need": "content",
+      "plannedMotion": "off",
+      "id": "daily-affectionate",
+      "seconds": 90
+    },
+    {
+      "personality": "sleepy",
+      "surface": "preview",
+      "width": 1100,
+      "theme": "light",
+      "motion": "full",
+      "season": "autumn",
+      "band": "day",
+      "need": "hungry",
+      "plannedMotion": "soft",
+      "id": "daily-sleepy",
+      "seconds": 90
+    },
+    {
+      "personality": "tidy",
+      "surface": "preview",
+      "width": 2400,
+      "theme": "light",
+      "motion": "full",
+      "season": "autumn",
+      "band": "day",
+      "need": "tired",
+      "plannedMotion": "full",
+      "id": "daily-tidy",
+      "seconds": 90
+    },
+    {
+      "personality": "mischievous",
+      "surface": "viewer",
+      "width": 1100,
+      "theme": "light",
+      "motion": "full",
+      "season": "spring",
+      "band": "day",
+      "need": "content",
+      "plannedMotion": "full",
+      "id": "daily-mischievous",
+      "seconds": 90
+    },
+    {
+      "personality": "gourmet",
+      "surface": "viewer",
+      "width": 1100,
+      "theme": "light",
+      "motion": "full",
+      "season": "spring",
+      "band": "day",
+      "need": "content",
+      "plannedMotion": "full",
+      "id": "daily-gourmet",
+      "seconds": 90
+    },
+    {
+      "personality": "homebody",
+      "surface": "viewer",
+      "width": 1100,
+      "theme": "light",
+      "motion": "full",
+      "season": "spring",
+      "band": "day",
+      "need": "content",
+      "plannedMotion": "full",
+      "id": "daily-homebody",
+      "seconds": 90
+    },
+    {
+      "personality": "balanced",
+      "surface": "viewer",
+      "width": 1100,
+      "theme": "light",
+      "motion": "full",
+      "season": "spring",
+      "band": "day",
+      "need": "content",
+      "plannedMotion": "full",
+      "id": "daily-balanced",
+      "seconds": 90
+    }
+  ],
+  "scenarioLimit": "Nine fixed, explicit 2026-10-22 registration scenarios. Weekly rotation of cases is not all configuration combinations; changing scenarios requires refreshed registration IDs."
+}
