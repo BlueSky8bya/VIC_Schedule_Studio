@@ -5,13 +5,16 @@ export const COMPANION_HOME_CONTACT_OVERRUN_MS = 2500;
 export const COMPANION_HOME_CONTACT_RECEIPT_MS = 650;
 
 export function advanceCompanionHomeContactPresentation(input: {
-  now: number; began: number; startedAt: number; delta: number; duration: number; active: boolean;
+  now: number; began: number; startedAt: number; delta: number; duration: number; active: boolean; prepared?: boolean;
 }) {
   const { now, began, startedAt, delta, duration, active } = input;
   if (!active) return { began, expired: false, cancelled: true };
   if (![now,began,startedAt,delta,duration].every(Number.isFinite) || duration <= 0 || delta < 0
     || now < startedAt || now < began || now-startedAt > duration+COMPANION_HOME_CONTACT_OVERRUN_MS)
     return { began, expired: true, cancelled: false };
+  // A late adopted body must first show the same owner's neutral lamp paint.
+  // Keep the finite wall deadline while painting its real phase-zero stance.
+  if (input.prepared === false) return { began: now, expired: false, cancelled: false };
   const owned = Math.max(0,Math.min(delta,now-began));
   return { began: began+owned-Math.min(COMPANION_HOME_CONTACT_FRAME_MS,owned), expired: false, cancelled: false };
 }

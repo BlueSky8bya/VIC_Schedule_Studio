@@ -15,6 +15,22 @@ function neutral() { return observe(observe(undefined,frame(0)),frame(50)); }
 function receipt() { return observe(neutral(),tug(100)); }
 
 describe("157 calibrated contact presentation", () => {
+  it("holds a cold lamp at phase zero until two actual neutral paints, within the original deadline", () => {
+    let began=0;let state:CompanionLampPresentation|undefined;
+    for(const now of [50,100,150,200]) {
+      const prepared=state?.serial===7&&Boolean(state.baseline);
+      const step=advance({now,began,startedAt:0,delta:50,duration:900,active:true,prepared});began=step.began;
+      expect(now-began).toBe(0);
+      state=observe(state,frame(now,{active:now>=150}));
+    }
+    expect(state?.baseline).toBeTruthy();
+    const start=advance({now:250,began,startedAt:0,delta:50,duration:900,active:true,prepared:true});
+    expect(250-start.began).toBe(50);
+    expect(observe(state,tug(300)).receiptAt).toBe(300);
+    const blocked=advance({now:3401,began:3350,startedAt:0,delta:51,duration:900,active:true,prepared:false});
+    expect(blocked.expired).toBe(true);
+    expect(advance({now:250,began,startedAt:0,delta:50,duration:900,active:false,prepared:false}).cancelled).toBe(true);
+  });
   it("keeps normal foreground frames and the original finite duration unchanged", () => {
     let began = 0;
     for (let now=50;now<=900;now+=50) {

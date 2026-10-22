@@ -598,7 +598,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     let roomBodyGrade = 1;
     let homeInteractionWitness: number | undefined, homeContactSerial = 0;
     type HomeContactKind = "tv" | "light" | "curtain" | "radio" | "dispenser" | "box" | "bin";
-    let homeContact: { serial: number; kind: HomeContactKind; element: Element; point: { x: number; y: number; width?: number; height?: number }; startedAt: number;
+    let homeContact: { serial: number; kind: HomeContactKind; element: Element; point: { x: number; y: number; width?: number; height?: number }; startedAt: number; lampPrepared?: boolean;
       lampPaint?: { button: HTMLButtonElement; paint: HTMLElement; art: HTMLElement[]; feedback: HTMLElement[] } } | undefined;
     let homeLampPresentation: CompanionLampPresentation | undefined;
     let homeRadioPending: AbortController | undefined, homeRadioRequestedAt = 0;
@@ -2892,7 +2892,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       let row = 0, frame = 0, status = "idle";
       if (action) {
         if (homeContact && ["light","tv","curtain","radio"].includes(homeContact.kind)) {
+          // Readiness belongs to this contact owner and is one-way. A later
+          // geometry/source invalidation must never rewind an airborne arc.
+          if (homeContact.kind === "light" && homeLampPresentation?.serial === homeContact.serial && homeLampPresentation.baseline) homeContact.lampPrepared = true;
           const presentation = advanceCompanionHomeContactPresentation({ now, began, startedAt: homeContact.startedAt, delta, duration: total,
+            prepared: homeContact.kind !== "light" || homeContact.lampPrepared === true,
             active: homeContact.element.isConnected && effective.enabled && effective.roam && !pause && !document.hidden && !pressed && !keyboardHeld && !placing
               && !overlayActive && !workspaceBusyRef.current && presence.phase === "active" });
           began = presentation.began;
