@@ -1,3 +1,4 @@
+import { COMPANION_MEMORY_ENCOUNTER_HINTS as hints } from "./memory-encounter-hints";
 import { COMPANION_EXPRESSIONS, type CompanionExpressionId } from "./expressions";
 import { COMPANION_PERSONALITY_SCENES } from "./personality-scene-catalog";
 
@@ -28,14 +29,14 @@ export type CompanionNewMemory = Readonly<{ id: CompanionNewMemoryId; name: stri
 
 export const COMPANION_NEW_MEMORIES: readonly CompanionNewMemory[] = Object.freeze([
   ...COMPANION_EXPRESSIONS.map(([id, name]): CompanionNewMemory => ({ id: `expression:${id}`, name, family: "expression", row: 0,
-    hint: "함께 지내며 이 얼굴이 실제로 나타나는 순간을 만나 보세요." })),
+    hint: hints[`expression:${id}`] })),
   ...COMPANION_MEMORY_POSES.map(([id, name, row]): CompanionNewMemory => ({ id: `pose:${id}`, name, family: "pose", row,
-    hint: "빅타민이 이 자세를 취하는 모습을 지켜보세요." })),
+    hint: hints[`pose:${id}`] })),
   ...newScenes.map(scene => ({ id: `activity:${scene.id}` as const, name: scene.label, family: "activity" as const,
     row: scene.steps.some(step => step.kind === "pose" && step.pose === "stretch") ? 16 : scene.steps.some(step => step.kind === "wash") ? 30 : 29,
-    hint: "빅타민이 이 일과를 처음부터 끝까지 마치는 모습을 만나 보세요." })),
+    hint: hints[`activity:${scene.id}`] })),
   ...routineMemories.map(([id, name, row]): CompanionNewMemory => ({ id: `activity:${id}`, name, family: "activity", row,
-    hint: "빅타민이 이 일과를 끝까지 마치는 모습을 지켜보세요." })),
+    hint: hints[`activity:${id}`] })),
 ]);
 const byId = new Map(COMPANION_NEW_MEMORIES.map(memory => [memory.id, memory]));
 export const COMPANION_NEW_MEMORY_NAMES = Object.fromEntries(COMPANION_NEW_MEMORIES.map(memory => [memory.id, memory.name])) as Record<CompanionNewMemoryId, string>;

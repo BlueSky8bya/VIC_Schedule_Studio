@@ -70,12 +70,14 @@ export async function guardCompanionQa(page: Page, context: BrowserContext, base
   });
   return proof;
 }
-export async function startCompanionQaProbe(page: Page, options: { sampleIntervalMs?: 40 | 80 } = {}) {
+export async function startCompanionQaProbe(page: Page, options: { sampleIntervalMs?: 40 | 80; captureMs?: 100000 | 190000 | 310000 } = {}) {
   await installCompanionPaintedSource157(page);
   const sampleIntervalMs = options.sampleIntervalMs ?? 80;
+  const captureMs = options.captureMs ?? 100000;
   if (sampleIntervalMs !== 40 && sampleIntervalMs !== 80) throw Error("Unsupported read-only sample interval");
+  if (![100000, 190000, 310000].includes(captureMs)) throw Error("Unsupported bounded read-only duration");
   const observationLog = await page.evaluateHandle(createCompanionQaObservationLog, undefined);
-  try { await page.evaluate(({metadata,playRows,sampleIntervalMs,observationLog}) => {
+  try { await page.evaluate(({metadata,playRows,sampleIntervalMs,captureMs,observationLog}) => {
     // Browser CSS serializes equivalent inset crops with1–4 values. Keep this
     // parser local to the serialized observer; unsupported syntax stays
     // unmeasured and can never turn the alpha/source gate into a default PASS.
@@ -234,7 +236,7 @@ export async function startCompanionQaProbe(page: Page, options: { sampleInterva
           stableFood: foods.length > 0 && at - stableSince >= 1000, nearbyCleanupCandidate, cleanupWaitingMs: cleanupSince ? at - cleanupSince : 0,
           intendedOcclusion: platform === "companion-home" || actor?.hasAttribute("data-hidden-reason"),curiousCompletion });
       }
-      if (at - start <= 100000) request = requestAnimationFrame(sample);
+      if (at - start <= captureMs) request = requestAnimationFrame(sample);
     };
     scope.companionDaily142 = Object.freeze({ sessionId: observationLog.sessionId, readJson: observationLog.readJson,
       get frames() { return JSON.parse(observationLog.readJson()).frames as QaObservation[]; },
@@ -242,7 +244,7 @@ export async function startCompanionQaProbe(page: Page, options: { sampleInterva
       document.removeEventListener("pointermove", human, true); document.removeEventListener("pointerdown", human, true); document.removeEventListener("keydown", human, true);
       window.removeEventListener("scroll", layout, true); window.removeEventListener("resize", layout);
     } }); request = requestAnimationFrame(sample);
-  }, {metadata:companionSpriteMetadata,playRows:Object.fromEntries(Object.entries(COMPANION_PLAY_TIMING).map(([key,value])=>[key,value.beats.map(beat=>beat.row)])),sampleIntervalMs,observationLog}); }
+  }, {metadata:companionSpriteMetadata,playRows:Object.fromEntries(Object.entries(COMPANION_PLAY_TIMING).map(([key,value])=>[key,value.beats.map(beat=>beat.row)])),sampleIntervalMs,captureMs,observationLog}); }
   finally { await observationLog.dispose(); }
 }
 export async function finishCompanionQa(page: Page, info: TestInfo, proof: DailyProof, scenario: Record<string, string | number>, completed: boolean, originalError?: string) {

@@ -334,7 +334,8 @@ describe("actual shared profile navigation callbacks", () => {
     }
     expect(kinds).toEqual(COMPANION_MEMORY_BOOK.map(item => item.kind));
     expect(indexes).toEqual(Array.from({ length: COMPANION_BEHAVIOR_IDS.length + COMPANION_SITUATION_IDS.length }, (_, index) => index));
-    expect(nodes(tree).some(node => node.props["aria-label"] === "추억 종류")).toBe(false);
+    expect(nodes(tree).filter(node => node.props["data-act"] === "companion-memory-filter").map(node => node.props["data-act-opt"])).toEqual(["all", "expression", "pose", "life"]);
+    expect(harness.acknowledge).not.toHaveBeenCalled();
   });
   it("preserves a toy's selected identity and finite-page destination across category unmounts without acknowledging it", async () => {
     await render(); await discover();

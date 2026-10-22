@@ -4,11 +4,12 @@ import { createBrain, type CompanionBrain, type CompanionWorld, type Platform } 
 import { COMPANION_PERSONALITIES, DEFAULT_COMPANION_PREFERENCES, type CompanionPersonality } from "@/lib/ui/viewer-companion/preferences";
 import { accessibleCompanionToys, companionToyFoodPriority, createCompanionToyPlanner, createCompanionToys, findCompanionToyRoute, type CompanionToy } from "@/lib/ui/viewer-companion/toys";
 import { createCompanionPersonalityDirector, type PersonalitySceneInput } from "@/lib/ui/viewer-companion/personality-director";
-import { COMPANION_PERSONALITY_SCENES } from "@/lib/ui/viewer-companion/personality-scene-catalog";
+import { COMPANION_PERSONALITY_SCENES, type PersonalitySceneRecipe } from "@/lib/ui/viewer-companion/personality-scene-catalog";
 import { createCompanionPersonalityActivity } from "@/lib/ui/viewer-companion/personality-activity";
 import { createCompanionHousehold } from "@/lib/ui/viewer-companion/household";
 import { createCompanionPersonalityJobs, type PersonalityJobAction } from "@/lib/ui/viewer-companion/personality-jobs";
 import { companionToyReturnDelivered, companionToyReturnTarget, sampleCompanionToyReturn } from "@/lib/ui/viewer-companion/toy-return";
+import { getCompanionBehaviorProfile } from "@/lib/ui/viewer-companion/behavior-profile";
 
 const ground: Platform = { id: "outside-panel-ground", x: 0, y: 600, width: 1000, kind: "floor" };
 const loft: Platform = { id: "unreachable-loft", x: 100, y: 100, width: 100, kind: "date" };
@@ -21,27 +22,27 @@ const box = { x: 900, y: ground.y, platformId: ground.id };
 /** Physical toy owner + ordinary planners. Unit movement consumes only their
  * returned endpoints. A return ACK requires the same carried object to reach
  * the box opening; this host never implements spawn or synthetic success. */
-function b04Host(count: number) {
+function b04Host(count: number, recipe = COMPANION_PERSONALITY_SCENES.find(scene => scene.id === "B04")!, extraRecipes: readonly PersonalitySceneRecipe[] = []) {
   const floor: Platform = { id: "companion-home-floor", x: 0, y: 600, width: 1000, kind: "floor", manualOnly: true };
   const contact = { ...floor, id: "companion-home-floor-food" }, boxPoint = { x: 850, y: floor.y, platformId: floor.id };
-  const model = createCompanionToys(() => 0), recipe = COMPANION_PERSONALITY_SCENES.find(scene => scene.id === "B04")!;
+  const model = createCompanionToys(() => 0);
   model.sync([floor], { width: 1000, height: 700 }, 0, [contact]);
   for (let i = 0; i < count; i++) expect(model.spawn({ x: 300 + i * 90, y: 540, platformId: contact.id }, 0)).toBeTruthy();
   for (let at = 0; at <= 3000; at += 16) model.tick(at);
-  const director = createCompanionPersonalityDirector([recipe]), planner = createCompanionToyPlanner(), household = createCompanionHousehold(() => 0);
+  const director = createCompanionPersonalityDirector([recipe, ...extraRecipes]), planner = createCompanionToyPlanner(), household = createCompanionHousehold(() => 0);
   const jobs = createCompanionPersonalityJobs(director, household, planner);
   const scene: PersonalitySceneInput = {
-    world: { ...world(), platformId: floor.id, platforms: [floor] }, brain: brain(.5), preferences: preferences("balanced"), now: 3000,
+    world: { ...world(), platformId: floor.id, platforms: [floor] }, brain: brain(.5), preferences: preferences(recipe.personality), now: 3000,
     home: { box: boxPoint, window: { x: 500, y: floor.y, platformId: floor.id }, contacts: { curtain: { x: 500, y: floor.y - 45 } } }, toys: [], tv: "off", curtainPhase: "closed",
   };
   const trace: { effect: string; id?: string; beat: number }[] = [], originalIds = model.ids();
   const offer = () => {
     scene.toys = accessibleCompanionToys(model.available(), scene.world.platforms); scene.carriedToyId = model.carried(); scene.brain.activeMs = scene.now;
     const proposal = director.next(scene);
-    return proposal?.meta.id === "B04" ? jobs.next(proposal, {
+    return proposal?.meta.id === recipe.id ? jobs.next(proposal, {
       world: scene.world, brain: scene.brain, preferences: scene.preferences, now: scene.now, home: {}, box: boxPoint,
       toys: scene.toys, toyIds: model.ids(), carriedToy: model.carried(), toyCount: model.count(), foodCount: 0,
-    }) : undefined;
+    }, scene.now) : undefined;
   };
   const apply = (action: PersonalityJobAction) => {
     const meta = action.personalityScene;
@@ -64,7 +65,7 @@ function b04Host(count: number) {
       expect(toy.toyId).toBeTruthy();
       trace.push({ effect: toy.effect!, id: toy.toyId!, beat: meta.beat }); planner.resolve(toy, ok, scene.now);
       if (toy.effect !== "pick") {
-        director.resolve(meta, ok, toy.toyId);
+        director.resolve(meta, ok, toy.toyId, scene.now);
         if (!director.current() || director.current()!.beat !== meta.beat) planner.cancel(scene.now);
       }
     }
@@ -237,6 +238,13 @@ describe("140 real task admission before personality fallback", () => {
         for (const event of recipe.triggers) director.event(event, input.now);
         return director.next(input)?.meta.id;
       };
+      // This TV-to-person recipe starts from actual indoor viewing, then
+      // approaches the pointer. Its outside admission is checked separately.
+      if (recipe.id === "A11" || recipe.id === "X-A-house") {
+        const room = { ...ground, id: "companion-home-floor", manualOnly: true };
+        scene.world = { ...scene.world, platformId: room.id, platforms: [room, ground, loft] };
+        scene.home = { ...scene.home, sofa: { ...box, platformId: room.id }, tv: { ...box, platformId: room.id } };
+      }
       expect(firstAfterEntry(scene)).toBe(recipe.id);
       expect(firstAfterEntry({ ...scene, preferences: { ...scene.preferences, petting: false } })).not.toBe(recipe.id);
       expect(firstAfterEntry({ ...scene, world: { ...scene.world, pointer: undefined } })).not.toBe(recipe.id);
@@ -272,5 +280,158 @@ describe("140 real task admission before personality fallback", () => {
       expect(action.target.platformId).toBe(ground.id);
       activity.record(action, world(), now, personality);
     }
+  });
+});
+
+describe("146 optional TV viewing starts from its real occupied place", () => {
+  const room: Platform = { id: "companion-home-floor", x: 0, y: 600, width: 350, kind: "floor", manualOnly: true };
+  const sofa: Platform = { id: "companion-home", x: 0, y: 560, width: 160, kind: "floor" };
+  const outside: Platform = { id: "actual-public-date", x: 400, y: 580, width: 180, kind: "date" };
+  const source = (id: string) => COMPANION_PERSONALITY_SCENES.find(recipe => recipe.id === id)!;
+  function host(recipe: PersonalitySceneRecipe, indoor = false, energy = .86) {
+    const director = createCompanionPersonalityDirector([recipe]);
+    const scene: PersonalitySceneInput = {
+      world: { ...world(), x: indoor ? 80 : 490, y: indoor ? sofa.y : outside.y, platformId: indoor ? sofa.id : outside.id,
+        platforms: [room, sofa, outside], pointer: { x: 520, y: outside.y, stableMs: 1000 } },
+      brain: { ...brain(.08), energy, foodGoal: undefined, intention: undefined, episode: undefined },
+      preferences: preferences(recipe.personality), now: 0, toys: [], tv: recipe.id === "X-P-house" ? "music" : "nature", canTv: true,
+      home: { sofa: { x: 80, y: sofa.y, platformId: sofa.id }, tv: { x: 180, y: room.y, platformId: room.id },
+        contacts: { tv: { x: 180, y: room.y - 30 } } },
+    };
+    const entry = director.next(scene)!; expect(entry.meta.id).toBe(`entry-${recipe.personality}`); director.complete(entry.meta);
+    scene.now += entry.action!.duration;
+    return { director, scene, offer: () => director.next(scene) };
+  }
+
+  it.each(["A11", "X-A-house", "X-P-house", "X-M-house", "X-B-house", "C04", "X-C-house"])("%s does not pull an awake outside visitor back for a new TV prelude", id => {
+    const h = host(source(id));
+    expect(h.offer()).toBeUndefined(); expect(h.director.active()).toBe(false); expect(h.director.completed()).toEqual([]);
+    expect(h.scene.world.platformId).toBe(outside.id);
+  });
+
+  it.each(["A11", "X-A-house", "X-P-house", "X-M-house", "X-B-house", "C04", "X-C-house"])("%s may choose its real TV journey after the existing outside cadence", id => {
+    const h = host(source(id)), cadence = getCompanionBehaviorProfile(h.scene.preferences, h.scene.brain.habits).outsideCadenceMs;
+    // A real outside visit has moved; waiting motionless past the independent
+    // physical-progress deadline cannot authorize a new stationary watch.
+    h.scene.world.x += 10; h.scene.now = cadence-1; expect(h.offer()).toBeUndefined();
+    h.scene.now = cadence; expect(h.offer()?.meta.id).toBe(id);
+    expect(h.director.completed()).toEqual([]); expect(h.scene.world.platformId).toBe(outside.id);
+  });
+
+  it("keeps one actual public visit across public supports and unsupported flight samples", () => {
+    const h = host(source("C04")), other = { ...outside, id: "another-public-date", x: 610 };
+    h.scene.world.platforms = [...h.scene.world.platforms, other];
+    h.scene.now = 10000; h.scene.world = { ...h.scene.world, x: 700, platformId: other.id }; expect(h.offer()).toBeUndefined();
+    h.scene.now = 17000; h.scene.world.y -= 20; expect(h.offer()).toBeUndefined();
+    h.scene.now = 24000; h.scene.world.y = other.y; expect(h.offer()?.meta.id).toBe("C04");
+    expect(h.director.completed()).toEqual([]);
+  });
+
+  it.each([NaN, Infinity, -Infinity])("invalid input time %s cannot age a newly supported public visit", invalidTime => {
+    const h = host(source("C04")); h.scene.now = invalidTime;
+    expect(h.offer()).toBeUndefined(); expect(h.director.active()).toBe(false);
+    expect(h.director.completed()).toEqual([]); expect(h.scene.world.platformId).toBe(outside.id);
+  });
+
+  it("starts a new bounded visit after actual home return and after personality replacement", () => {
+    const h = host(source("C04")); h.scene.now = 20000;
+    h.scene.world = { ...h.scene.world, x: 80, y: sofa.y, platformId: sofa.id }; h.scene.canTv = false;
+    expect(h.offer()).toBeUndefined(); h.scene.canTv = true;
+    h.scene.now = 21000; h.scene.world = { ...h.scene.world, x: 490, y: outside.y, platformId: outside.id }; expect(h.offer()).toBeUndefined();
+    h.scene.now = 24000; expect(h.offer()).toBeUndefined();
+    h.scene.now = 44999; expect(h.offer()).toBeUndefined(); h.scene.now = 45000; expect(h.offer()?.meta.id).toBe("C04");
+    h.scene.preferences.personality = "tidy"; h.scene.now += 50; expect(h.offer()?.meta.id).toBe("entry-tidy");
+    h.scene.preferences.personality = "curious"; h.scene.now += 50;
+    const entry = h.offer()!; expect(entry.meta.id).toBe("entry-curious"); h.director.complete(entry.meta);
+    h.scene.now += entry.action!.duration; expect(h.offer()).toBeUndefined();
+  });
+
+  // Uses the same physical toy owner/planners and exact box delivery checks
+  // as B04 above; only the one required return fixture has no decorative tail.
+  function returnedRoom(personality: CompanionPersonality, acknowledgement = "success") {
+    const viewing = { ...source("C04"), personality };
+    const chore: PersonalitySceneRecipe = { id: "one-real-room-return", label: "actual single physical return", personality, major: true, triggers: ["toy"], steps: [{ kind: "toy", mode: "return" }] };
+    const h = b04Host(1, chore, [viewing]), room = h.scene.world.platforms[0];
+    h.scene.world = { ...h.scene.world, width: 1400, platforms: [...h.scene.world.platforms, { ...outside, x: 1000, y: 580, width: 240 }] };
+    h.scene.home = { ...h.scene.home, sofa: { x: 100, y: room.y, platformId: room.id }, tv: { x: 180, y: room.y, platformId: room.id }, contacts: { tv: { x: 180, y: room.y-30 } } };
+    h.scene.tv = "nature"; h.scene.canTv = true; h.scene.brain.hunger = .1; h.scene.now = 60000;
+    const original = h.director.resolve.bind(h.director);
+    vi.spyOn(h.director, "resolve").mockImplementation((meta, ok, itemId, at) => {
+      if (acknowledgement === "failed") return original(meta, false, itemId, at);
+      if (acknowledgement === "stale") return original(meta, ok, itemId, -1);
+      if (acknowledgement === "foreign-serial") return original({ ...meta, serial: meta.serial+1 }, ok, itemId, at);
+      if (acknowledgement === "travel") return original({ ...meta, travel: true }, ok, itemId, at);
+      return original(meta, ok, itemId, at);
+    });
+    for (let turn = 0; turn < 40 && !h.trace.some(event => event.effect === "stash"); turn++) {
+      const action = h.offer(); if (!action) throw Error("Real required return lost admission"); h.apply(action);
+    }
+    expect(h.trace.filter(event => event.effect === "stash").map(event => event.id)).toEqual(h.originalIds);
+    expect(h.model.count()).toBe(0); expect(h.model.carried()).toBeUndefined();
+    const at = h.scene.now;
+    if (acknowledgement !== "success") h.director.cancel();
+    h.scene.toys = []; h.scene.carriedToyId = undefined;
+    return { ...h, at, choose: () => h.director.next(h.scene) };
+  }
+
+  it.each(["balanced", "sleepy"] as const)("reopens only the existing %s indoor opportunity after a real return", personality => {
+    const h = returnedRoom(personality), window = personality === "sleepy" ? 45000 : 8000;
+    h.scene.now = h.at+window-1;
+    expect(h.choose()?.meta.id).toBe("C04"); expect(h.director.completed()).toEqual(["one-real-room-return"]);
+  });
+  it.each(["balanced", "sleepy"] as const)("expires the %s real-return opportunity at its original boundary", personality => {
+    const h = returnedRoom(personality); h.scene.now = h.at+(personality === "sleepy" ? 45000 : 8000);
+    expect(h.choose()).toBeUndefined(); expect(h.director.completed()).toEqual(["one-real-room-return"]);
+  });
+  it.each(["failed", "stale", "foreign-serial", "travel"])("a %s return ACK cannot reopen room leisure", acknowledgement => {
+    const h = returnedRoom("balanced", acknowledgement); h.scene.now += 50;
+    expect(h.choose()).toBeUndefined(); expect(h.director.completed()).not.toContain("C04");
+  });
+  it("a toy-returned cue or repeated admission queries alone cannot reopen room leisure", () => {
+    const h = host(source("C04"), true); h.scene.now = 60000;
+    h.director.event("toy-returned", h.scene.now);
+    for (let i = 0; i < 8; i++) { expect(h.offer()).toBeUndefined(); h.scene.now += 50; }
+    expect(h.director.completed()).toEqual([]);
+  });
+
+  it.each(["A11", "X-A-house", "X-P-house", "X-M-house", "X-B-house", "C04", "X-C-house"])("%s still starts from actual indoor TV viewing", id => {
+    const h = host(source(id), true), proposal = h.offer();
+    expect(proposal?.meta.id).toBe(id); expect(h.director.active()).toBe(true); expect(h.director.completed()).toEqual([]);
+  });
+
+  it.each([
+    ["affectionate", .4, false], ["affectionate", .399, true], ["sleepy", .62, false], ["sleepy", .619, true], ["homebody", .9, true],
+  ] as const)("preserves %s energy %s admission boundary", (personality, energy, admitted) => {
+    const h = host({ ...source("X-A-house"), personality }, false, energy);
+    expect(Boolean(h.offer())).toBe(admitted); expect(h.director.completed()).toEqual([]);
+  });
+
+  it("preserves a direct pet event and an already owned TV scene instead of cancelling them as new leisure", () => {
+    const petRecipe: PersonalitySceneRecipe = { ...source("X-A-house"), triggers: ["pet", "tv"] };
+    const pet = host(petRecipe); pet.director.event("pet", pet.scene.now); expect(pet.offer()?.meta.id).toBe(petRecipe.id);
+    const owned = host(source("X-A-house"), true), first = owned.offer()!;
+    expect(first.action?.kind).toBe("look");
+    owned.scene.world = { ...owned.scene.world, x: 490, y: outside.y, platformId: outside.id };
+    owned.scene.now += 100;
+    expect(owned.offer()?.meta.serial).toBe(first.meta.serial); expect(owned.director.completed()).toEqual([]);
+  });
+
+  it("keeps a real required meal eligible and does not invent a successful TV watch", () => {
+    const recipe: PersonalitySceneRecipe = { ...source("X-A-house"), steps: [{ kind: "food", mode: "eat" }, ...source("X-A-house").steps] };
+    const h = host(recipe); h.scene.brain.hunger = .5;
+    h.scene.world.foods = [{ id: "actual-snack", kind: "apple", x: 520, y: outside.y, platformId: outside.id }];
+    expect(h.offer()?.delegate).toMatchObject({ kind: "food", mode: "eat" }); expect(h.director.completed()).toEqual([]);
+  });
+
+  it("retains a watch after a real audience departure without resetting its subject to the TV", () => {
+    const recipe: PersonalitySceneRecipe = { ...source("X-A-house"), steps: [{ kind: "go", target: "pointer" }, { kind: "watch", ms: 1100 }] };
+    const h = host(recipe);
+    for (let turn = 0; turn < 8; turn++) {
+      const proposal = h.offer()!; expect(proposal).toBeTruthy();
+      expect(proposal.action?.target.platformId).toBe(outside.id);
+      if (proposal.meta.command.kind === "watch") { expect(proposal.action?.kind).toBe("look"); return; }
+      h.scene.world = { ...h.scene.world, ...proposal.action!.target }; h.scene.now += proposal.action!.duration; h.director.complete(proposal.meta);
+    }
+    throw new Error("Actual outside approach did not reach its watch");
   });
 });

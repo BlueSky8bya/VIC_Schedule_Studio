@@ -1916,6 +1916,7 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 .rhh-companion-settings .rhh-collection-book :is(.rhh-collection-heading, .rhh-collection-switch, .rhh-collection-detail, .rhh-collection-pages, .rhh-gift-arrival, .rhh-equipped-current) { flex: none; margin: 0; }
 .rhh-companion-settings .rhh-collection-book .rhh-collection-detail { position: static; z-index: auto; min-height: 96px; box-sizing: border-box; gap: 4px; padding: 10px 14px; box-shadow: var(--elev-1); }
 .rhh-collection-detail-title { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; width: 100%; }
+.rhh-memory-encounter-note { display: block; color: var(--companion-soft); font-size: var(--text-caption); line-height: 1.4; }
 .rhh-companion-settings .rhh-collection-detail-title > strong { color: var(--companion-ink); font-size: var(--text-ui, 15px); }
 .rhh-companion-settings .rhh-collection-detail-title .rhh-collection-chance { margin-left: auto; font-size: var(--text-caption); }
 .rhh-companion-settings .rhh-collection-book .rhh-collection-fact { margin: 0; color: var(--companion-soft); line-height: 1.5; }
@@ -2130,3 +2131,9 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
   .rhh-companion-settings .rhh-collection-book { overflow-y: auto; }
   .rhh-companion-settings .rhh-collection-book .rhh-collection-grid { flex: none; height: 184px; min-height: 184px; }
 }
+
+/* Preserve readable memory specimens when fixed controls leave a short book. */
+.rhh-companion-settings .rhh-collection-book .rhh-behavior-grid { min-block-size: 136px; }
+
+/* Keep the memory filter row inside the same fixed notebook on every tab. */
+.rhh-companion-settings .rhh-collection-book:has(> .rhh-memory-filters) { gap: 10px; }

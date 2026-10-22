@@ -126,7 +126,7 @@ describe("143 toy admission shares actual executor meal priority",()=>{
  const d=createCompanionPersonalityDirector([source("M03")]);enter(d,s);d.event("toy-settled",s.now);return{s,d};}
  it("reachable real meal prevents M03's otherwise unexecutable first pounce and admits that actual food",()=>{
   const{s,d}=prepared();expect(companionToyFoodPriority(s.brain,s.world,s.preferences)).toBe(true);expect(d.next(s)).toBeUndefined();expect(d.routineReserved(s)).toBe(false);
-  const meal=getCompanionPersonalityMeal(d,undefined,{...s,authoredReserved:false});expect(meal).toMatchObject({kind:"eat",foodId:"real-meal"});expect(d.completed()).toEqual([]);
+  const meal=getCompanionPersonalityMeal(d,undefined,{...s,authoredReserved:false}, s.now);expect(meal).toMatchObject({kind:"eat",foodId:"real-meal"});expect(d.completed()).toEqual([]);
  });
  it.each(["feeding-off","full","blocked-food"])("preserves a valid actual M03 toy goal when %s",gate=>{
   const{s,d}=prepared();if(gate==="feeding-off")s.preferences.feeding=false;if(gate==="full")s.brain.hunger=.2;if(gate==="blocked-food")s.world.foods=[{id:"real-meal",kind:"carrot",x:2000,y:100,platformId:"missing"}];
@@ -135,17 +135,17 @@ describe("143 toy admission shares actual executor meal priority",()=>{
  it("new actual food during a preparatory pose releases soft reservation before any delegated retry looks",()=>{
   const{s,d}=prepared();s.world.foods=[];const prep=d.next(s)!;expect(prep.action?.play).toBe("pounce");advance(s,prep,d);
   s.world.foods=[{id:"new-meal",kind:"carrot",x:180,y:600,platformId:floor.id}];expect(d.routineReserved(s)).toBe(false);
-  const proposal=d.next(s);expect(getCompanionPersonalityMeal(d,proposal,{...s,authoredReserved:false})).toMatchObject({kind:"eat",foodId:"new-meal"});
+  const proposal=d.next(s);expect(getCompanionPersonalityMeal(d,proposal,{...s,authoredReserved:false}, s.now)).toMatchObject({kind:"eat",foodId:"new-meal"});
  });
  it("actual owned carry still keeps a basic meal from replacing its same-ID return",()=>{
   const{s,d}=prepared();const planner=createCompanionToyPlanner();planner.returnCarried("real-ball",s.now);
-  expect(getCompanionPersonalityMeal(d,undefined,{...s,carriedToy:"real-ball",ownedJob:true,authoredReserved:false})).toBeUndefined();
+  expect(getCompanionPersonalityMeal(d,undefined,{...s,carriedToy:"real-ball",ownedJob:true,authoredReserved:false}, s.now)).toBeUndefined();
   expect(planner.active()).toBe(true);
  });
  it.each(COMPANION_PERSONALITIES)("does not weaken %s immediate typed entry for a real meal",personality=>{
   const s=scene(personality);s.brain.hunger=.8;s.world.foods=[{id:"real-meal",kind:"carrot",x:180,y:600,platformId:floor.id}];
   const d=createCompanionPersonalityDirector([source("M03")]);const entry=d.next(s)!;expect(entry.meta.id).toBe(`entry-${personality}`);
-  expect(getCompanionPersonalityMeal(d,entry,{...s})).toBeUndefined();expect(d.completed()).toEqual([]);
+  expect(getCompanionPersonalityMeal(d,entry,{...s}, s.now)).toBeUndefined();expect(d.completed()).toEqual([]);
  });
 });
 
@@ -409,7 +409,7 @@ describe("143 a real meal's existing cue survives necessary wash before one reac
   // This is a later basic same-ID meal, not another authored scene that
   // would overwrite lastCompleted. It is the real caller shape in question.
   s.brain.hunger=.6;s.world.foods=[{id:"later-same-id-meal",kind:"carrot",x:s.world.x,y:s.world.y,platformId:s.world.platformId}];
-  const meal=getCompanionPersonalityMeal(d,undefined,{world:s.world,brain:s.brain,preferences:s.preferences,now:s.now,authoredReserved:false})!;
+  const meal=getCompanionPersonalityMeal(d,undefined,{world:s.world,brain:s.brain,preferences:s.preferences,now:s.now,authoredReserved:false}, s.now)!;
   expect(meal).toMatchObject({kind:"eat",foodId:"later-same-id-meal"});s.now+=meal.duration;s.brain.activeMs=s.now;s.world.foods=[];s.brain.hunger=.1;
   d.observeEffect("food",s.now);d.event("meal",s.now);a.observe("ate",s.now);
   return{s,d,a};

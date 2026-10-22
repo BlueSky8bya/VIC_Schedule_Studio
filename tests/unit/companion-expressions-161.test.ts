@@ -49,14 +49,19 @@ describe("source-bound finite facial expressions161", () => {
   it("routes contextual faces to current objects/environment rather than a timer-only carousel", () => {
     const cases: Array<[Partial<CompanionExpressionContext>, string]> = [
       [{ foodRefused: true }, "polite-no"], [{ status: "eat", phase: .1 }, "first-bite"], [{ status: "wake" }, "awake"], [{ status: "yawn" }, "sleepy"],
-      [{ status: "sniff" }, "search"], [{ toyApproach: true }, "play-ready"], [{ toyPlaying: true }, "treasure"], [{ toyPlaying: true, play: "wiggle" }, "giggle"],
+      [{ status: "sniff" }, "search"], [{ toyApproach: true }, "play-ready"], [{ toyPlaying: true }, "treasure"], [{ watching: true, phase: .8, personality: "performer" }, "giggle"],
       [{ reading: true, toyPlaying: true }, "reading"], [{ watching: true }, "tv"], [{ music: true }, "listen"], [{ lookingOut: true }, "sunny"],
       [{ lookingOut: true, weather: "rain" }, "rain"], [{ lookingOut: true, season: 4 }, "sneeze"], [{ season: 7 }, "warm"], [{ outing: true, status: "walk" }, "resolve"],
-      [{ mishap: true, userNear: true, personality: "mischievous" }, "innocent"], [{ mishap: true, userNear: true }, "sorry"], [{ play: "sulk" }, "unimpressed"],
+      [{ mishap: true, userNear: true, personality: "mischievous" }, "innocent"], [{ mishap: true, userNear: true }, "sorry"], [{ play: "bonk-sad" }, "unimpressed"],
       [{ play: "slip-tumble", phase: .1 }, "oops"], [{ play: "recover" }, "relief"], [{ userNear: true, status: "look" }, "greeting"], [{ cleanupReceipt: 1 }, "tidy-pride"],
     ];
     for (const [patch, id] of cases) expect(createCompanionExpressions().sample({ ...base, ...patch }, 10)?.id).toBe(id);
     const cold = createCompanionExpressions(); cold.sample({ ...base, season: 1 }, 1); expect(cold.sample({ ...base, season: 1, atHome: true }, 2)?.id).toBe("cold");
     const busy = createCompanionExpressions(); expect(busy.sample({ ...base, petting: true, busy: true }, 1)?.id).toBe("busy");
+  });
+  it("recognizes real sad poses and excludes obsolete play labels and travelling pose remnants", () => {
+    for (const pose of [18, 19]) expect(createCompanionExpressions().sample({ ...base, pose }, 10)?.id).toBe("unimpressed");
+    for (const patch of [{ play: "sulk" }, { play: "wiggle" }, { status: "walk", pose: 18 }])
+      expect(createCompanionExpressions().sample({ ...base, ...patch }, 10)).toBeNull();
   });
 });

@@ -91,7 +91,7 @@ export function sampleCompanionExpression(id: CompanionExpressionId, progress: n
 }
 
 export type CompanionExpressionContext = Readonly<{
-  token: string; status: string; play?: string; phase: number; personality: CompanionPersonality; atHome: boolean; energy: number;
+  token: string; status: string; play?: string; pose?: number; phase: number; personality: CompanionPersonality; atHome: boolean; energy: number;
   food?: string; foodRefused?: boolean; petting: boolean; busy: boolean; userNear: boolean; toyPlaying: boolean; toyApproach: boolean;
   lookingOut: boolean; reading: boolean; watching: boolean; music: boolean; season: number; weather: string; daylight: boolean;
   outing: boolean; cleanupReceipt?: number; meal?: { serial: number; food: string; full: boolean; last: boolean }; mishap?: boolean;
@@ -127,13 +127,13 @@ export function createCompanionExpressions() {
       else if (c.play === "slip-tumble" || c.play === "tumble") id = c.phase < .5 ? "oops" : "relief";
       else if (c.play === "recover" || c.play === "bump") id = "relief";
       else if (c.mishap && c.userNear) id = c.personality === "mischievous" ? "innocent" : "sorry";
-      else if (c.play === "sulk" || c.status === "disappointed") id = "unimpressed";
+      else if (c.play === "bonk-sad" || ["idle", "look"].includes(c.status) && (c.pose === 18 || c.pose === 19)) id = "unimpressed";
       else if (c.status === "wake") id = "awake";
       else if (c.status === "yawn" || c.energy < .25 && ["idle", "look"].includes(c.status)) id = "sleepy";
       else if (c.status === "sniff") id = c.food ? "scent" : "search";
       else if (c.toyApproach) id = "play-ready";
       else if (c.reading) id = "reading";
-      else if (c.toyPlaying) id = c.play === "wiggle" || c.play === "bounce" ? "giggle" : "treasure";
+      else if (c.toyPlaying) id = "treasure";
       else if (c.watching) id = c.phase > .65 && ["performer", "mischievous"].includes(c.personality) ? "giggle" : "tv";
       else if (c.music) id = "listen";
       else if (c.lookingOut) id = c.weather === "rain" || c.weather === "snow" ? "rain" : c.season === 3 || c.season === 4 ? "sneeze" : c.daylight ? "sunny" : "rain";

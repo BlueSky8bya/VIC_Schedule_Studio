@@ -4,6 +4,8 @@ import { createCompanionPersonalityDirector, type PersonalitySceneBeat, type Per
 import { COMPANION_PERSONALITY_SCENES, type PersonalitySceneRecipe, type SceneBeat } from "@/lib/ui/viewer-companion/personality-scene-catalog";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { advanceCompanionPlayPresentation, COMPANION_PLAY_PRESENTATION_WAIT_MS } from "@/lib/ui/viewer-companion/play-presentation";
+import { createCompanionRoutineArbiter } from "@/lib/ui/viewer-companion/routine-arbiter";
+import type { CompanionPersonality } from "@/lib/ui/viewer-companion/preferences";
 
 const floor: Platform = { id: "companion-home-floor", x: 40, y: 600, width: 720, kind: "floor", manualOnly: true };
 const sofa: Platform = { id: "companion-home", x: 90, y: 560, width: 160, kind: "date" };
@@ -42,6 +44,169 @@ const rowOf = (c: ReturnType<typeof offered>, proposal: PersonalitySceneProposal
 const tvWatch = (ms = 1400) => offered([{ kind: "watch", ms }], s => {
   s.world = { ...s.world, x: 170, y: sofa.y, platformId: sofa.id }; s.tv = "nature";
 }, { id: "real-required-television-source-fixture", triggers: ["tv"] });
+
+describe("same-owner play preparation during actual required travel", () => {
+  const go: SceneBeat = { kind: "go", target: "floor" };
+  const local: SceneBeat = { kind: "go", target: "local-floor" };
+  const groom: SceneBeat = { kind: "pose", pose: "groom" };
+  const chain = (tail: readonly SceneBeat[] = [local, groom]) => offered([go, ...tail]);
+  const upcoming = (c: ReturnType<typeof chain>, meta = c.p.meta, kind = c.p.action!.kind,
+    preferences = c.s.preferences, at = c.s.now) => c.d.imminentPlay(meta, kind, preferences, at);
+
+  it("prepares only the closest required play beyond consecutive required go steps", () => {
+    const c = chain([local, groom, { kind: "pose", pose: "bow" }]);
+    expect(c.p.action?.kind).toBe("walk"); expect(c.p.meta.travel).toBe(true);
+    const before = { current: c.d.current(), deadline: c.d.progressDeadline(), completed: c.d.completed() };
+    expect(upcoming(c)).toBe("groom"); expect(upcoming(c)).toBe("groom");
+    expect({ current: c.d.current(), deadline: c.d.progressDeadline(), completed: c.d.completed() }).toEqual(before);
+  });
+  it("offers preparation before a cold2650ms transfer without extending the1200ms onset wait", () => {
+    const c = chain(), requestedAt = c.s.now;
+    expect(upcoming(c)).toBe("groom");
+    // Real director travel, with actual arrival observations and unchanged
+    // scene completion rules. This models the measured latency, not pixels.
+    for (let turn = 0; turn < 6 && c.p.meta.command.kind === "go"; turn++) {
+      if (!c.p.action) throw Error("Required actual route missing");
+      c.s.now += c.p.action.duration; c.s.brain.activeMs = c.s.now;
+      c.s.world = { ...c.s.world, ...c.p.action.target };
+      c.d.observeProgress({ now: c.s.now, active: true, point: c.s.world }); c.d.complete(c.p.meta);
+      const next = c.d.next(c.s); if (!next) throw Error("Required play missing after actual travel"); c.p = next;
+    }
+    expect(c.p.action?.play).toBe("groom");
+    const poseAt = c.s.now, readyAt = requestedAt+2650;
+    expect(readyAt).toBeLessThan(poseAt+COMPANION_PLAY_PRESENTATION_WAIT_MS);
+    let began = poseAt, presentation = { started: false, waited: 0 };
+    for (let at = poseAt; at <= Math.max(poseAt, readyAt)+50; at += 50) {
+      const result = advanceCompanionPlayPresentation({ now: at, began, delta: 50, presentation, usable: at >= readyAt });
+      expect(result.expired).toBe(false); began = result.began; presentation = result.presentation;
+      if (presentation.started) break;
+    }
+    expect(presentation.started).toBe(true); expect(c.p.action?.duration).toBe(1880);
+    expect(c.d.completed()).toEqual([]); expect(COMPANION_PLAY_PRESENTATION_WAIT_MS).toBe(1200);
+  });
+  it.each([
+    [{ kind: "go", target: "local-floor", optional: true }, groom],
+    [{ kind: "pose", pose: "groom", optional: true }],
+    [{ kind: "pose", pose: "stretch" }, groom],
+    [{ kind: "watch", ms: 1400 }, groom],
+    [{ kind: "light", lit: false, optional: true }, groom],
+    [{ kind: "pose", pose: "groom", audience: true }],
+    [{ kind: "pose", pose: "cheer-rehearsal" }],
+  ] as readonly (readonly SceneBeat[])[])("does not look past a barrier in %j", (...tail) => {
+    // it.each spreads each row; the real recipe includes every barrier.
+    const c = chain(tail); expect(upcoming(c)).toBeUndefined();
+  });
+  it.each(["id", "serial", "beat", "target", "optional", "audience", "travel", "routine", "manual", "kind"])("rejects %s metadata mismatch without changing ownership", mismatch => {
+    const c = chain(), meta: PersonalitySceneBeat = { ...c.p.meta, command: { ...c.p.meta.command } };
+    if (mismatch === "id") meta.id = "another-scene";
+    if (mismatch === "serial") meta.serial++;
+    if (mismatch === "beat") meta.beat++;
+    if (mismatch === "target") meta.command = { kind: "go", target: "outside" };
+    if (mismatch === "optional") meta.command = { ...meta.command, optional: true };
+    if (mismatch === "audience") meta.command = { ...meta.command, audience: true };
+    if (mismatch === "travel") delete meta.travel;
+    if (mismatch === "routine") meta.routine = true;
+    if (mismatch === "manual") meta.manual = true;
+    expect(upcoming(c, meta, mismatch === "kind" ? "look" : c.p.action!.kind)).toBeUndefined();
+    expect(c.d.owns(c.p.meta)).toBe(true); expect(c.d.completed()).toEqual([]);
+  });
+  it.each(["disabled", "roam-off", "personality", "expired", "NaN", "cancelled"])("does not prepare for %s ownership", change => {
+    const c = chain(), preferences = { ...c.s.preferences };
+    if (change === "disabled") preferences.enabled = false;
+    if (change === "roam-off") preferences.roam = false;
+    if (change === "personality") preferences.personality = "homebody";
+    if (change === "cancelled") c.d.cancel();
+    const at = change === "expired" ? c.s.now+60001 : change === "NaN" ? NaN : c.s.now;
+    expect(upcoming(c, c.p.meta, c.p.action!.kind, preferences, at)).toBeUndefined();
+    expect(c.d.completed()).toEqual([]);
+  });
+  it("prepares the same allowed fallback that actual pose admission uses", () => {
+    const c = chain([{ kind: "pose", pose: "pounce" }]);
+    expect(upcoming(c)).toBe("pounce");
+    expect(upcoming(c, c.p.meta, c.p.action!.kind, { ...c.s.preferences, jump: false })).toBe("bow");
+  });
+});
+
+// Real arbiter recipe, director route endpoints and wash ACK. These model
+// tests do not certify browser pixels or substitute for the original141 case.
+function automaticWashRecovery(personality: CompanionPersonality = "sleepy") {
+  const s = context(); s.preferences.personality = personality;
+  const d = createCompanionPersonalityDirector([]), arbiter = createCompanionRoutineArbiter();
+  const entry = d.next(s)!; d.complete(entry.meta); s.now += entry.action!.duration;
+  const input = () => ({ ...s, active: true, entryReady: d.entryReady(), canOuting: false });
+  arbiter.next(input()); arbiter.observe("ate", s.now); s.now += 50;
+  const wash = arbiter.next(input()); expect(wash?.kind).toBe("wash");
+  if (!wash || !d.startRoutine(wash.recipe, s.now)) throw Error("Actual automatic wash not admitted");
+  let acknowledged = false, exited = false;
+  for (let turn = 0; turn < 16; turn++) {
+    const p = d.next(s); if (!p?.action) throw Error("Automatic wash lost its required physical stage");
+    if (p.meta.command.kind === "pose") {
+      expect(acknowledged).toBe(true); expect(exited).toBe(true);
+      expect(s.world.platformId).toBe(floor.id); expect(p.meta).toMatchObject({ id: "routine-wash", routine: true, beat: 3 });
+      return { s, d, p, wash };
+    }
+    expect(d.finitePosePresentation(p.meta, p.action.kind)).toBeUndefined();
+    s.now += p.action.duration; s.brain.activeMs = s.now;
+    if (p.meta.command.kind === "wash") {
+      expect(s.world.platformId).toBe(pad.id); expect(p.action.play).toBe("groom");
+      d.complete(p.meta); expect(d.current()?.beat).toBe(1); // Elapsed action alone is no wash ACK.
+      d.resolve(p.meta, true, undefined, s.now); acknowledged = true;
+    } else {
+      expect(p.meta.command.kind).toBe("go"); expect(["walk", "jump"]).toContain(p.action.kind);
+      s.world = { ...s.world, ...p.action.target };
+      if (acknowledged && s.world.platformId === floor.id) exited = true;
+      d.complete(p.meta);
+    }
+  }
+  throw Error("Actual automatic wash never reached its required recovery");
+}
+
+describe("automatic wash terminal basic preparation", () => {
+  it.each([["sleepy", "stretch", 16], ["mischievous", "shake", 17]] as const)("prepares %s %s only after actual wash and required floor exit", (personality, kind, row) => {
+    const c = automaticWashRecovery(personality), deadline = c.d.progressDeadline();
+    expect(c.p.action).toMatchObject({ kind, duration: 900 });
+    expect(c.d.finitePosePresentation(c.p.meta, kind)?.row).toBe(row);
+    expect(c.d.completed()).toEqual([]); expect(c.d.progressDeadline()).toBe(deadline);
+  });
+  it.each([600, 900])("retains the original900ms recovery after %ims cold preparation", delay => {
+    const c = automaticWashRecovery(), initial = c.s.now, deadline = c.d.progressDeadline();
+    let began = initial, presentation = { started: false, waited: 0 };
+    for (let elapsed = 50; elapsed <= delay; elapsed += 50) {
+      expect(c.d.finitePosePresentation(c.p.meta, "stretch")?.row).toBe(16);
+      const result = advanceCompanionPlayPresentation({ now: initial+elapsed, began, delta: 50, presentation, usable: false });
+      began = result.began; presentation = result.presentation;
+      expect(result.expired).toBe(false); expect(initial+elapsed-began).toBe(0); expect(c.d.completed()).toEqual([]);
+    }
+    const ready = advanceCompanionPlayPresentation({ now: initial+delay, began, delta: 0, presentation, usable: true });
+    expect(ready.presentation).toEqual({ started: true, waited: delay }); expect(ready.began).toBe(initial+delay);
+    expect(c.p.action!.duration).toBe(900); expect(c.d.progressDeadline()).toBe(deadline);
+    c.s.now = ready.began+900; c.d.observeProgress({ now: c.s.now, active: true, point: c.s.world }); c.d.complete(c.p.meta);
+    expect(c.d.completed()).toEqual(["routine-wash"]);
+  });
+  it.each(["id", "serial", "beat", "routine", "manual", "travel", "optional", "kind"])("rejects a %s mismatch without losing the current recovery", mismatch => {
+    const c = automaticWashRecovery(), meta: PersonalitySceneBeat = { ...c.p.meta, command: { ...c.p.meta.command } };
+    if (mismatch === "id") meta.id = "another-owner"; if (mismatch === "serial") meta.serial++;
+    if (mismatch === "beat") meta.beat--; if (mismatch === "routine") delete meta.routine;
+    if (mismatch === "manual") meta.manual = true; if (mismatch === "travel") meta.travel = true;
+    if (mismatch === "optional") meta.command = { ...meta.command, optional: true };
+    expect(c.d.finitePosePresentation(meta, mismatch === "kind" ? "look" : "stretch")).toBeUndefined();
+    expect(c.d.owns(c.p.meta)).toBe(true); expect(c.d.completed()).toEqual([]);
+  });
+  it("cancels a permanently cold recovery at the existing1200ms bound without completion", () => {
+    const c = automaticWashRecovery(), deadline = c.d.progressDeadline();
+    expect(c.d.finitePosePresentation(c.p.meta, "stretch")?.row).toBe(16);
+    const waiting = advanceCompanionPlayPresentation({ now: c.s.now+1200, began: c.s.now, delta: 1200, presentation: { started: false, waited: 0 }, usable: false });
+    expect(waiting.expired).toBe(true); c.d.resolve(c.p.meta, false, undefined, c.s.now+1200);
+    expect(c.d.finitePosePresentation(c.p.meta, "stretch")).toBeUndefined(); expect(c.d.completed()).toEqual([]);
+    expect(c.d.progressDeadline()).toBe(deadline);
+  });
+  it("urgent care replaces the recovery without inheriting its source wait", () => {
+    const c = automaticWashRecovery(); c.d.cancel(); c.s.brain.hunger = .85;
+    const urgent = recipe([{ kind: "food", mode: "eat" }], { id: "routine-meal", personality: "sleepy" });
+    expect(c.d.startRoutine(urgent, c.s.now)).toBe(true);
+    expect(c.d.finitePosePresentation(c.p.meta, "stretch")).toBeUndefined(); expect(c.d.completed()).toEqual([]);
+  });
+});
 
 // These are API/clock model tests. Only the visual factory can certify an
 // actual decoded cell, actual TV picture and a real subsequent activity.

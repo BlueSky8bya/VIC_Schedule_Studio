@@ -37,7 +37,7 @@ function protocol(id: string) {
     s.toys = model.available(); s.toyCount = model.count(); s.carriedToyId = model.carried(); s.brain.activeMs = s.now;
     const proposal = d.next(s); if (!proposal) { s.now += 100; return; }
     const action = jobs.next(proposal, { world: s.world, brain: s.brain, preferences: s.preferences, now: s.now, home: { pantry: s.home.floor }, box: s.home.box,
-      toys: s.toys, toyIds: model.ids(), carriedToy: model.carried(), toyCount: model.count(), foodCount: s.world.foods?.length ?? 0 });
+      toys: s.toys, toyIds: model.ids(), carriedToy: model.carried(), toyCount: model.count(), foodCount: s.world.foods?.length ?? 0 }, s.now);
     if (!action) { s.now += 50; return; }
     const meta = action.personalityScene; s.now += action.duration;
     if (action.kind === "walk" || action.kind === "jump") {

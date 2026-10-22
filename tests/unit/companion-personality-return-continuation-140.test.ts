@@ -40,7 +40,7 @@ function fixture(count = 4, recipes: readonly PersonalitySceneRecipe[] = COMPANI
   const offer = () => {
     refresh(); const proposal = nextCompanionPersonalityScene(director, scene);
     return proposal && jobs.next(proposal, { world: scene.world, brain: scene.brain, preferences: scene.preferences, now: scene.now,
-      home: {}, box: scene.home.box, toys: scene.toys, toyIds: model.ids(), carriedToy: model.carried(), toyCount: model.count(), foodCount: 0 });
+      home: {}, box: scene.home.box, toys: scene.toys, toyIds: model.ids(), carriedToy: model.carried(), toyCount: model.count(), foodCount: 0 }, scene.now);
   };
   const apply = (action: PersonalityJobAction) => {
     const meta = action.personalityScene;

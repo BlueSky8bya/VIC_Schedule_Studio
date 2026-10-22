@@ -77,7 +77,7 @@ describe("156 authored object and observation continuity", () => {
       const proposal = director.next(scene)!;
       expect(proposal.meta).toMatchObject({ id: "B08", beat: 1, itemId: id });
       return jobs.next(proposal, { world: scene.world, brain: scene.brain, preferences: scene.preferences, now: scene.now,
-        home: {}, box: scene.home.box, toys: scene.toys, toyIds: model.ids(), carriedToy: model.carried(), toyCount: model.count(), foodCount: 0 })!;
+        home: {}, box: scene.home.box, toys: scene.toys, toyIds: model.ids(), carriedToy: model.carried(), toyCount: model.count(), foodCount: 0 }, scene.now)!;
     };
     const before = model.items();
     expect(director.routineOwnership(scene)).toBe("work");
@@ -211,7 +211,7 @@ describe("156 authored object and observation continuity", () => {
       scene.toys = accessibleCompanionToys(model.available(), scene.world.platforms); scene.carriedToyId = model.carried(); scene.flyingToyIds = model.flyingIds();
       const offer = director.next(scene)!; expect(offer?.meta.id).toBe("M01");
       const action = jobs.next(offer, { world: scene.world, brain: scene.brain, preferences: scene.preferences, now: scene.now,
-        home: {}, box: scene.home.box, toys: scene.toys, toyIds: model.ids(), carriedToy: model.carried(), toyCount: model.count(), foodCount: 0 })!;
+        home: {}, box: scene.home.box, toys: scene.toys, toyIds: model.ids(), carriedToy: model.carried(), toyCount: model.count(), foodCount: 0 }, scene.now)!;
       expect(action).toBeTruthy();
       if (action.kind === "look" && offer.meta.travel) waitingAt.push(scene.now);
       const duration = action.kind === "play" && action.toy?.effect === "toss" ? companionToyPlayDuration("ball") : action.duration;

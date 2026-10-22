@@ -18,10 +18,10 @@ type Input = {
 /** Basic care may replace a nonmeal scene, but never a carried object, an
  * existing job, the entry greeting or the personality's own meal sequence. */
 export function getCompanionPersonalityMeal(director: ReturnType<typeof createCompanionPersonalityDirector>, proposal: PersonalitySceneProposal | undefined,
-  input: Pick<Input, "world" | "brain" | "preferences" | "now" | "carriedToy" | "carriedFood"> & { ownedJob?: boolean; authoredReserved?: boolean }): CompanionAction | undefined {
+  input: Pick<Input, "world" | "brain" | "preferences" | "now" | "carriedToy" | "carriedFood"> & { ownedJob?: boolean; authoredReserved?: boolean }, actionNow: number): CompanionAction | undefined {
   if (!input.world.animated || !input.preferences.roam || input.ownedJob || input.carriedToy || input.carriedFood || proposal?.meta.id.startsWith("entry-") || director.plansMeal()
     || input.authoredReserved && input.brain.hunger < .78) return;
-  return getFoodAction(input.brain, input.world, input.preferences, input.now);
+  return getFoodAction(input.brain, input.world, input.preferences, actionNow);
 }
 
 /** Connect an authored request to the existing real object planners. It never
@@ -30,7 +30,10 @@ export function createCompanionPersonalityJobs(director: ReturnType<typeof creat
   let key = "", misses = 0;
   const carryingShow = new Set(["P02", "P08", "A03", "C07", "C08", "S07", "H07"]);
   return {
-    next(proposal: PersonalitySceneProposal, input: Input): PersonalityJobAction | undefined {
+    // Scene, retry and object planners use visible-active time. Eat cooldowns
+    // come from commitAction on the renderer clock, which can advance while
+    // active time is paused. Keep those two contracts explicit at this bridge.
+    next(proposal: PersonalitySceneProposal, input: Input, actionNow: number): PersonalityJobAction | undefined {
       const command = proposal.delegate;
       if (!command) return proposal.action;
       const currentKey = `${proposal.meta.serial}:${proposal.meta.beat}`;
@@ -80,7 +83,7 @@ export function createCompanionPersonalityJobs(director: ReturnType<typeof creat
         }
       } else if (command.mode === "eat") {
         const foods = proposal.meta.itemId ? world.foods?.filter(food => food.id === proposal.meta.itemId) : world.foods;
-        selected = getFoodAction(brain, { ...world, foods }, p, now);
+        selected = getFoodAction(brain, { ...world, foods }, p, actionNow);
         if (selected?.foodId) director.bind(proposal.meta, selected.foodId);
       } else if (command.mode === "inspect" || command.mode === "compare") {
         // Comparison visits one different real food without rebinding the

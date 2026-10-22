@@ -76,6 +76,10 @@ const matrixInput = (recipe: PersonalitySceneRecipe): PersonalitySceneInput => {
   if (recipe.id === "X-S-return-time") scene.environment = { ...scene.environment!, season: "winter" };
   if (recipe.id === "X-G-return-time") scene.environment = { ...scene.environment!, hour: 8, band: "morning", night: false };
   if (recipe.id === "X-P-return-time") scene.environment = { ...scene.environment!, hour: 19, band: "evening" };
+  // These discretionary TV preludes require an actor already watching
+  // indoors. Keep every route, effect ACK and completion assertion below.
+  if (["C04", "A11", "X-P-house", "X-C-house", "X-A-house", "X-M-house", "X-B-house"].includes(recipe.id))
+    scene.world = { ...scene.world, x: scene.home.sofa!.x, y: sofa.y, platformId: sofa.id };
   return scene;
 };
 
@@ -402,7 +406,7 @@ describe("137 one personality scene director", () => {
     expect(director.routineReserved(scene)).toBe(false);
     expect(director.completed()).toEqual([]);
     expect(scene.toys.map(toy => toy.id)).toEqual(toyIds);
-    const meal = getCompanionPersonalityMeal(director, proposal, { ...scene, authoredReserved: director.routineReserved(scene) });
+    const meal = getCompanionPersonalityMeal(director, proposal, { ...scene, authoredReserved: director.routineReserved(scene) }, scene.now);
     expect(meal).toBeDefined();
     expect(["walk", "jump", "eat"]).toContain(meal!.kind);
     expect(scene.world.foods!.some(food => food.id === meal!.foodId)).toBe(true);

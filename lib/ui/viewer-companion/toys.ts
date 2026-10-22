@@ -361,18 +361,16 @@ export function createCompanionToys(rng: () => number = Math.random) {
 }
 export type CompanionToyBeat = { serial: number; kind: "tidy" | "play"; effect?: "pick" | "stash" | "toss" | "put" | "decline" | "spawn" | "nudge"; toyId?: string; point?: Point };
 export type CompanionToyAction = CompanionAction & { toy: CompanionToyBeat };
-/** A real meal or committed care intention always keeps ownership. Shared by
- * both planning and the carried-toy continuation so neither can cut in. */
 const mealRouteProofs = new Map<string, { at: number; until: number; reachable: boolean }>();
-export function companionToyFoodPriority(brain: CompanionBrain, world: CompanionWorld, preferences: CompanionPreferences) {
-  if (brain.foodGoal && brain.foodGoal.remaining > 0 || brain.intention && brain.intention.kind !== "explore" && brain.intention.remaining > 0
-    || brain.episode && brain.episode.remaining > 0) return true;
-  if (!preferences.feeding || brain.hunger < COMPANION_FULL_THRESHOLD || !world.foods?.length) return false;
+/** Only a bounded geometric fact. It never claims ownership, ignores a real
+ * cooldown or reserves an object; callers retain their own care predicates. */
+export function companionMealRouteAvailable(world: CompanionWorld, preferences: CompanionPreferences, activeMs: number) {
+  if (!world.foods?.length) return false;
   // New world wrappers need not re-run8 graph searches on each notice. The
   // exact source,8 food positions and current geometry invalidate immediately;
   // only route facts are cached, never hunger/permissions/owned work. Eight
   // entries expire on the existing active clock, without a timer or polling.
-  const foods = world.foods.slice(0, 8), at = Number.isFinite(brain.activeMs) ? brain.activeMs : 0;
+  const foods = world.foods.slice(0, 8), at = Number.isFinite(activeMs) ? activeMs : 0;
   const key = JSON.stringify([world.x, world.y, world.platformId, preferences.jump,
     foods.map(food => [food.id, food.kind, food.x, food.y, food.platformId]),
     world.platforms.map(p => [p.id, p.x, p.y, p.width, p.kind, p.manualOnly, p.bodyOnly])]);
@@ -383,6 +381,14 @@ export function companionToyFoodPriority(brain: CompanionBrain, world: Companion
   mealRouteProofs.delete(key); mealRouteProofs.set(key, { at, until: at + 6000, reachable });
   if (mealRouteProofs.size > 8) mealRouteProofs.delete(mealRouteProofs.keys().next().value!);
   return reachable;
+}
+/** A real meal or committed care intention always keeps ownership. Shared by
+ * both planning and the carried-toy continuation so neither can cut in. */
+export function companionToyFoodPriority(brain: CompanionBrain, world: CompanionWorld, preferences: CompanionPreferences) {
+  if (brain.foodGoal && brain.foodGoal.remaining > 0 || brain.intention && brain.intention.kind !== "explore" && brain.intention.remaining > 0
+    || brain.episode && brain.episode.remaining > 0) return true;
+  if (!preferences.feeding || brain.hunger < COMPANION_FULL_THRESHOLD || !world.foods?.length) return false;
+  return companionMealRouteAvailable(world, preferences, brain.activeMs ?? 0);
 }
 export function companionToyMotivation(p: CompanionPreferences, brain: CompanionBrain, world: CompanionWorld) {
   const social = p.personality === "affectionate" && p.petting && world.pointer && (world.pointer.stableMs ?? 0) >= 900

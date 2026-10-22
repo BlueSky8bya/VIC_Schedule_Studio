@@ -39,7 +39,7 @@ const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
 const frames = (page: Page) => page.evaluate(() => (window as ProbeWindow).agency141?.frames ?? []);
 const now = (page: Page) => page.evaluate(() => performance.now());
-const latest = async (page: Page) => (await frames(page)).at(-1);
+const latest = (page: Page) => page.evaluate(() => (window as ProbeWindow).agency141?.frames.at(-1));
 const genuine = (frame: Frame) => frame.visible && frame.decoded;
 const washing = (frame: Frame) => genuine(frame) && frame.washing && frame.platform === "companion-home-floor-400" && frame.command === "wash" && frame.state === "play" && frame.brush?.visible;
 
@@ -298,8 +298,13 @@ test("141 tidy actual wash stays on mat400 through lamp geometry delivery wheel 
   await home.locator('[data-home-action="toys"]').click(); const toy = page.locator(".vc-toy"); await expect(toy).toHaveCount(1); await expect(toy).toHaveAttribute("data-falling", "false", { timeout: 6000 });
   const id = (await toy.getAttribute("data-toy-id"))!; await actor(page).focus(); await actor(page).press("Space"); await page.mouse.move(2, 2);
   await expect(toy).toHaveCount(0, { timeout: 65_000 });
-  await expect.poll(async () => (await frames(page)).some(frame => washing(frame)), { timeout: 35_000, intervals: [50] }).toBe(true);
-  const first = (await frames(page)).find(frame => washing(frame))!; expect(["T05", "X-T-house", "routine-wash"]).toContain(first.scene);
+  let firstObserved: Frame | undefined;
+  await expect.poll(async () => {
+    const current = await latest(page);
+    if (current && washing(current)) firstObserved ??= current;
+    return Boolean(firstObserved);
+  }, { timeout: 35_000, intervals: [50] }).toBe(true);
+  const first = firstObserved!; expect(["T05", "X-T-house", "routine-wash"]).toContain(first.scene);
   await expect(page.locator(".vc-wash-tool")).toBeVisible(); await snapshot(page, "brush-visible-before-geometry");
   const operations: number[] = [];
   const geometryOperations: WashGeometryOperation[] = [];

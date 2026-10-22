@@ -17,9 +17,9 @@ describe("140 real basic meals cannot be starved by personality fallback", () =>
   it.each(COMPANION_PERSONALITIES)("%s leaves an empty scene unowned so a proved middle-hunger meal proceeds without object mutation", personality => {
     const scene = input(personality), director = createCompanionPersonalityDirector([]);
     const entry = director.next(scene)!;
-    expect(getCompanionPersonalityMeal(director, entry, scene)).toBeUndefined();
+    expect(getCompanionPersonalityMeal(director, entry, scene, scene.now)).toBeUndefined();
     const ready = director.next(scene); expect(ready).toBeUndefined();
-    const before = JSON.stringify(scene), meal = getCompanionPersonalityMeal(director, ready, scene);
+    const before = JSON.stringify(scene), meal = getCompanionPersonalityMeal(director, ready, scene, scene.now);
     expect(meal).toMatchObject({ kind: "walk", foodId: "actual-apple", target: { x: 300, y: 600, platformId: floor.id } });
     expect(JSON.stringify(scene)).toBe(before); expect(director.completed()).toEqual([]);
   });
@@ -29,7 +29,7 @@ describe("140 real basic meals cannot be starved by personality fallback", () =>
     scene.world.foods = [...scene.world.foods!, { id: "actual-bread", kind: "bread", x: 500, y: 600, platformId: floor.id }];
     const director = createCompanionPersonalityDirector([recipe]); director.next(scene);
     const offer = director.next(scene)!; expect(offer.meta.id).toBe(id); expect(director.plansMeal()).toBe(true);
-    expect(getCompanionPersonalityMeal(director, offer, scene)).toBeUndefined();
+    expect(getCompanionPersonalityMeal(director, offer, scene, scene.now)).toBeUndefined();
   });
 
   it.each(["feeding", "roam", "enabled", "paused", "animated", "full", "unreachable", "owned", "carried-toy", "carried-food"])("does not steal care or bypass %s", flag => {
@@ -40,6 +40,6 @@ describe("140 real basic meals cannot be starved by personality fallback", () =>
     if (flag === "full") scene.brain.hunger = .34;
     if (flag === "unreachable") scene.world.foods = [{ ...scene.world.foods![0], x: 200, y: 100, platformId: "missing-loft" }];
     expect(getCompanionPersonalityMeal(director, ready, { ...scene, ownedJob: flag === "owned", carriedToy: flag === "carried-toy" ? "real-toy" : undefined,
-      carriedFood: flag === "carried-food" ? "real-food" : undefined })).toBeUndefined();
+      carriedFood: flag === "carried-food" ? "real-food" : undefined }, scene.now)).toBeUndefined();
   });
 });

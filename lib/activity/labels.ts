@@ -634,6 +634,7 @@ export const ACT: Record<string, TargetLabel> = {
   // categories are counted; the strict storage branch below rejects item IDs.
   "companion-profile-page": { name: "빅타민 프로필 보기", area: "설정", opts: { together: "함께 지내기", discover: "도감", dress: "옷장", settings: "환경설정" } },
   "companion-collection-category": { name: "빅타민 도감 종류", area: "설정", opts: { food: "냠냠 도감", toy: "장난감 도감", behavior: "추억 도감", moment: "특별한 순간" } },
+  "companion-memory-filter": { name: "빅타민 추억 종류", area: "설정", opts: { all: "전체", expression: "표정", pose: "포즈", life: "생활" } },
   "companion-collection-inspect": { name: "빅타민 도감 항목 살펴보기", area: "설정", opts: { food: "냠냠 도감", toy: "장난감 도감", behavior: "표정·포즈·행동", moment: "특별한 순간" } },
   "companion-collection-page": { name: "빅타민 도감·옷장 넘기기", area: "설정", opts: { prev: "이전", next: "다음" } },
   "companion-accessory-select": { name: "빅타민 장신구 살펴보기", area: "설정" },

@@ -1134,6 +1134,16 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       // Prepare only the imminent jump stage, within the shared3-image/
       //2-decode budget. Never fan out all four stages on every pose sample.
       if (action?.kind === "jump" && drawingRow >= 3 && drawingRow <= 5) spriteSources[drawingRow + 1].forEach(src => requestSprite.current(src));
+      // Current and immediate jump-stage sources keep their request priority.
+      // Only then prepare one later play packet during the real owned route;
+      // this remains advisory within the existing cache and onset budgets.
+      const imminentPlay = status === action?.kind && !reduced && gfxMode() === "full" && action.personalityScene
+        ? personalityDirector.imminentPlay(action.personalityScene,action.kind,effective,brain.current.activeMs) : undefined;
+      if (imminentPlay) {
+        const first = sampleCompanionPlay(imminentPlay,0);
+        const column = Math.max(0,Math.min(15,Math.floor(first.phase*15)));
+        requestSprite.current(selectCompanionSprite(registration.rows[first.row][column],first.row,column).src);
+      }
       if (drawingRow !== paintedRow || column !== paintedColumn) {
         el.style.setProperty("--vc-column", `${column / 15 * 100}%`);
         el.style.setProperty("--vc-row", `${drawingRow / (registration.rows.length - 1) * 100}%`);
@@ -1181,7 +1191,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const privateRoom = support.startsWith("companion-home"), command = action?.personalityScene?.command;
       const lookingOut = privateRoom && status === "look" && (action?.scene?.id === 31 || command?.kind === "watch" && getCompanionHomeTv() === "off");
       const face = expressions.sample({
-        token: `${began}:${status}:${action?.play ?? ""}`, status, play: action?.play, phase: clamp((performance.now() - began) / Math.max(1, total), 0, 1),
+        token: `${began}:${status}:${action?.play ?? ""}`, status, play: action?.play, pose: drawingRow, phase: clamp((performance.now() - began) / Math.max(1, total), 0, 1),
         personality: effective.personality, atHome: privateRoom, energy: brain.current.energy, food: expressionFood?.kind,
         foodRefused: Boolean(action?.foodRefusal), petting: Boolean(pressure.pressure || hoverPetting || petStarted > 0 && performance.now() < petUntil && performance.now() - petStarted < COMPANION_TIMING.petReward + 100), busy: status === "eat" || status === "sleep" || Boolean(expressionToy),
         userNear: Boolean(pointer && Math.hypot(pointer.x - display.x, pointer.y - display.y) < size * 1.7),
@@ -2743,7 +2753,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         if (deferredPersonalityToy && !actualToyIds.includes(deferredPersonalityToy)) deferredPersonalityToy = undefined;
         for (const id of storedPersonalityFoods) if (!liveFoods.some(food => food.id === id) && food.current?.carried() !== id) storedPersonalityFoods.delete(id);
         let priorityMeal = !manualWashPending && !personalityDirector.manualWash() && !food.current?.carried() && !toys.current?.carried() && !household.active() && !toyPlanner.active() && brain.current.hunger >= .78
-          ? getFoodAction(brain.current, householdWorld, effective, brain.current.activeMs) : undefined;
+          ? getFoodAction(brain.current, householdWorld, effective, now) : undefined;
         let foodSupply: RuntimeAction | undefined;
         const sceneMemory = effective.learnFromYou ? scenes.checkpoint() : undefined;
         // The actual audible source supplies mood; coarse local listening
@@ -2784,7 +2794,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         if (routines.current() && !personalityDirector.current()?.routine) routines.cancel(brain.current.activeMs);
         const routineOwner = Boolean(household.active() || toyPlanner.active() || food.current?.carried() || toys.current?.carried() || personalityDirector.current()?.routine);
         if (!priorityMeal && !foodSupply && !routineOwner) {
-          const meal = effective.feeding ? getFoodAction(brain.current, householdWorld, effective, brain.current.activeMs) : undefined;
+          const meal = effective.feeding ? getFoodAction(brain.current, householdWorld, effective, now) : undefined;
           const canSupply = Boolean(effective.feeding && liveFoods.length < 8 && householdHome.dispenser && findCompanionToyRoute(householdWorld, householdHome.dispenser, householdPlatforms, effective.jump));
           const request = routines.next({ ...sceneInput, active: !overlayActive && !premiereActive && !pendingMonth && !returning && !reduced && gfxMode() !== "off" && !workspaceBusyRef.current && presence.phase === "active",
             entryReady: personalityDirector.entryReady(), owned: routineOwner, authoredReserved, authoredLeisure: authoredOwnership === "leisure",
@@ -2802,12 +2812,12 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         if (!manualWashing && !priorityMeal && !foodSupply) {
           priorityMeal = getCompanionPersonalityMeal(personalityDirector, authoredOffer, { world: householdWorld, brain: brain.current, preferences: effective,
             now: brain.current.activeMs, carriedToy: toys.current?.carried(), carriedFood: food.current?.carried(), ownedJob: household.active() || toyPlanner.active(),
-            authoredReserved: personalityDirector.routineReserved(sceneInput) });
+            authoredReserved: personalityDirector.routineReserved(sceneInput) }, now);
           if (priorityMeal) { yieldedMeal = true; personalityDirector.cancel(); authoredOffer = undefined; }
         }
         const authored = authoredOffer ? personalityJobs.next(authoredOffer, { world: toyWorld, brain: brain.current, preferences: effective, now: brain.current.activeMs,
           home: householdHome, box: toyBox, toys: settledToys, toyIds: toys.current?.ids(), carriedToy: toys.current?.carried(), carriedFood: food.current?.carried(),
-          toyCount: toys.current?.count() ?? 0, foodCount: liveFoods.length + (food.current?.carried() ? 1 : 0), occupied: toys.current?.occupied(), tastes: toyTastes.current ?? undefined }) : undefined;
+          toyCount: toys.current?.count() ?? 0, foodCount: liveFoods.length + (food.current?.carried() ? 1 : 0), occupied: toys.current?.occupied(), tastes: toyTastes.current ?? undefined }, now) : undefined;
         const errand = !publicLifeOffer && !foodSupply && !authoredOffer && !priorityMeal && !signatureFirst && !scenes.current() && !toyPlanner.active() && !overlayActive && !premiereActive && !pendingMonth && !returning && !reduced && gfxMode() !== "off"
           ? household.next({ brain: brain.current, world: householdWorld, visibleFoods: liveFoods, preferences: effective, now: brain.current.activeMs, home: householdHome, count: liveFoods.length + (food.current?.carried() ? 1 : 0), carried: food.current?.carried(), occupied: toys.current?.occupied() }) : undefined;
         if (!authoredOffer && !errand && !scenes.current() && food.current?.carried()) food.current.releaseCarry(food.current.carried()!);

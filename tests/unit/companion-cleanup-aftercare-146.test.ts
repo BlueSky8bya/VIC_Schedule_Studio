@@ -46,7 +46,7 @@ describe("146 one feasible hygiene follow-up survives optional outside admission
    s.toys=model.available();s.toyCount=model.count();s.carriedToyId=model.carried();s.brain.activeMs=s.now;
    if(!planner.active()&&!model.carried()&&!d.current()?.routine){const request=a.next(owners(s,d));if(request){expect(request.kind).not.toBe("outing");expect(d.startRoutine(request.recipe,s.now,request.itemId,request.outsideGoal)).toBe(true);}}
    const p=nextCompanionPersonalityScene(d,s);if(!p){s.now+=220;continue;}
-   const action=jobs.next(p,{world:s.world,brain:s.brain,preferences:s.preferences,now:s.now,home:{},box:s.home.box,toys:s.toys,toyIds:model.ids(),carriedToy:model.carried(),toyCount:model.count(),foodCount:0});
+   const action=jobs.next(p,{world:s.world,brain:s.brain,preferences:s.preferences,now:s.now,home:{},box:s.home.box,toys:s.toys,toyIds:model.ids(),carriedToy:model.carried(),toyCount:model.count(),foodCount:0}, s.now);
    if(!action){s.now+=220;continue;}s.now+=action.duration;
    if(action.kind==="walk"||action.kind==="jump"){s.world={...s.world,...action.target};if(model.carried())expect(model.carry(model.carried()!,{x:s.world.x,y:s.world.y-30})).toBe(true);}
    if(action.toy?.effect){const beat=action.toy;let ok=false;

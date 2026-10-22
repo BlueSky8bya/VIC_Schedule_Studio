@@ -35,7 +35,7 @@ function fixture(segments = 8) {
   const offer = () => {
     refresh(); const proposal = nextCompanionPersonalityScene(director, input);
     return proposal && jobs.next(proposal, { world: input.world, brain: input.brain, preferences: input.preferences, now: input.now, home: {}, box,
-      toys: input.toys, toyIds: model.ids(), carriedToy: model.carried(), toyCount: model.count(), foodCount: 0 });
+      toys: input.toys, toyIds: model.ids(), carriedToy: model.carried(), toyCount: model.count(), foodCount: 0 }, input.now);
   };
   const apply = (action: PersonalityJobAction) => {
     actions.push(action); const from = input.world;

@@ -1,4 +1,4 @@
-import { COMPANION_MEMORY_BOOK } from "@/lib/ui/viewer-companion/memory-book-order";
+import { COMPANION_MEMORY_BOOK, COMPANION_MEMORY_FILTERS, filterCompanionMemories } from "@/lib/ui/viewer-companion/memory-book-order";
 import { COMPANION_SITUATION_IDS } from "@/lib/ui/viewer-companion/moments";
 import { selectCompanionCollectionIndex } from "./helpers/companion-collection";
 import { expect, test, type Page } from "@playwright/test";
@@ -112,4 +112,72 @@ test("memory undiscovered expressions and actions keep names and native portrait
     await expect(list.locator(`[data-collection-index="${index}"] canvas`)).toHaveCount(0);
   }
   await book.screenshot({ path: resolve(output, "unknown-expression-action-silhouettes.png") });
+});
+
+for (const [surface, dark, width, height] of [["viewer", false, 1440, 1000], ["studio", true, 1440, 900], ["preview", false, 1440, 1000], ["viewer", true, 1050, 760], ["viewer", false, 1050, 650]] as const) test(`density memory ${surface} ${width}x${height}: family paging preserves identity and encounter hints`, async ({ page }) => {
+  await seed(page, dark); await page.setViewportSize({ width, height });
+  const home = await open(page, surface); await home.locator('[data-home-action="book"]').click();
+  const book = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
+  await book.getByRole("tab", { name: "도감", exact: true }).click();
+  await book.locator('[data-act="companion-collection-category"][data-act-opt="behavior"]').click();
+  const list = book.getByRole("list", { name: "추억 도감", exact: true }), filters = book.getByRole("group", { name: "추억 종류", exact: true });
+  for (const [key] of COMPANION_MEMORY_FILTERS) {
+    const view = filterCompanionMemories(key); await filters.locator(`[data-act-opt="${key}"]`).click();
+    await selectCompanionCollectionIndex(page, list, view.length - 1);
+    await list.locator(`[data-collection-index="${view.length - 1}"]`).click();
+    const memory = view.at(-1)!;
+    await expect(book.locator(".rhh-memory-detail strong")).toHaveText(memory.name);
+    await expect(book.locator(".rhh-memory-detail p")).toHaveText(memory.hint);
+    await expect(book.locator('[data-page-direction="next"]')).toBeDisabled();
+    await expect(filters.locator(`[data-act-opt="${key}"]`)).toHaveAttribute("aria-pressed", "true");
+    if (height <= 700) {
+      await book.locator(".rhh-memory-detail").scrollIntoViewIfNeeded(); await expect(book.locator(".rhh-memory-detail strong")).toBeInViewport();
+      await book.screenshot({ path: resolve(output, `density-${surface}-${width}x${height}-${key}-detail.png`) });
+      await book.locator('[data-page-direction="next"]').scrollIntoViewIfNeeded(); await expect(book.locator('[data-page-direction="next"]')).toBeInViewport();
+    }
+    await book.screenshot({ path: resolve(output, `density-${surface}-${width}x${height}-${key}.png`) });
+    await filters.locator('[data-act-opt="all"]').click();
+    await expect(book.locator(".rhh-memory-detail strong")).toHaveText(memory.name);
+    const selected = list.locator('[aria-pressed="true"]');
+    await expect(selected).toHaveAccessibleName(memory.name + " · 만났어요");
+  }
+  await page.setViewportSize({ width: width === 1050 ? 1440 : 1050, height: 760 });
+  await expect(book.locator(".rhh-memory-detail strong")).toHaveText(filterCompanionMemories("life").at(-1)!.name);
+  await expect(book.locator('[data-page-direction="next"]')).toBeInViewport();
+});
+
+test("density memory filters retain unknown silhouettes and never acknowledge other families", async ({ page }) => {
+  await seed(page, false, COMPANION_FOOD_KINDS, COMPANION_TOY_KINDS, true, false);
+  const home = await open(page, "viewer"); await home.locator('[data-home-action="book"]').click();
+  const book = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
+  await book.getByRole("tab", { name: "도감", exact: true }).click();
+  await book.locator('[data-act="companion-collection-category"][data-act-opt="behavior"]').click();
+  const before = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCollection")!).seen);
+  await book.locator('[data-act="companion-memory-filter"][data-act-opt="expression"]').click();
+  await expect(book.locator(".rhh-memory-detail strong")).toHaveText("???");
+  await expect(book.locator(".rhh-memory-detail p")).toHaveText("아직 발견하지 못했어요.");
+  await expect(book.locator(".rhh-memory-detail [data-collection-art-id]")).toHaveCount(0);
+  await page.waitForTimeout(1400);
+  const after = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCollection")!).seen);
+  expect(after).toEqual(before);
+  for (const [, name] of COMPANION_MEMORY_FILTERS) await expect(book.getByRole("group", { name: "추억 종류", exact: true })).toContainText(name);
+});
+
+test("density actual repeated pickups supply the unimpressed face and witnessed memory", async ({ page }) => {
+  await seed(page, false, COMPANION_FOOD_KINDS, COMPANION_TOY_KINDS, false, false);
+  await open(page, "viewer", 21);
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCollection")!).behaviors.includes("expression:unimpressed"))).toBe(false);
+  const actor = page.locator(".vc-actor"), companion = page.locator(".vc-companion");
+  // Distinct real pickups create the existing handling appraisal. Ordinary
+  // taps are not a physical tumble and cannot supply recentMishap.
+  for (let i = 0; i < 4; i++) {
+    const box = (await actor.boundingBox())!, start = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+    await page.mouse.move(start.x, start.y); await page.mouse.down(); await page.mouse.move(start.x + 8, start.y - 15, { steps: 4 });
+    await page.waitForTimeout(180); await page.mouse.up(); await page.mouse.move(2, 2);
+    await expect(companion).not.toHaveAttribute("data-state", "held"); await page.waitForTimeout(700);
+  }
+  await expect(companion).toHaveAttribute("data-mood", /sulky|disappointed/);
+  await expect(companion).toHaveAttribute("data-expression", "unimpressed");
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCollection")!).behaviors.includes("expression:unimpressed"))).toBe(true);
+  await page.screenshot({ path: resolve(output, "density-native-unimpressed.png") });
 });

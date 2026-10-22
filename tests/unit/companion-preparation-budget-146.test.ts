@@ -32,7 +32,7 @@ describe("146 stationary preparation shares a real progress budget across entry 
   for(let n=0;n<30&&workedAt===undefined;n++) {
    s.toys=model.available();s.toyCount=model.count();s.carriedToyId=model.carried();s.brain.activeMs=s.now;
    const p=nextCompanionPersonalityScene(d,s);if(!p){s.now+=220;continue;}
-   const a=jobs.next(p,{world:s.world,brain:s.brain,preferences:s.preferences,now:s.now,home:{},box:s.home.box,toys:s.toys,toyIds:model.ids(),carriedToy:model.carried(),toyCount:model.count(),foodCount:0});
+   const a=jobs.next(p,{world:s.world,brain:s.brain,preferences:s.preferences,now:s.now,home:{},box:s.home.box,toys:s.toys,toyIds:model.ids(),carriedToy:model.carried(),toyCount:model.count(),foodCount:0}, s.now);
    if(!a){s.now+=220;continue;}log.push(`${Math.round(s.now-began)}:${p.meta.id}:${a.kind}:${p.meta.command.kind}`);
    s.now+=a.duration;
    if(a.kind==="walk"||a.kind==="jump"){s.world={...s.world,...a.target};workedAt=s.now;}

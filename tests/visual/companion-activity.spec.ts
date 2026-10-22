@@ -35,8 +35,34 @@ const new141Targets = ["companion-home-curtain#open", "companion-home-curtain#sh
 const new142Targets = ["companion-personality-open"];
 const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-shake", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets, ...new110Targets, ...new111Targets, ...new115Targets, ...new135Targets, ...new141Targets, ...new142Targets];
 const retired110Target = "companion-radio-mood#lively";
-const readFixtureTargets = [...sampleTargets, ...new137Targets, retired110Target];
+const memoryFilterTargets = ["companion-memory-filter#all", "companion-memory-filter#expression", "companion-memory-filter#pose", "companion-memory-filter#life"];
+const readFixtureTargets = [...sampleTargets, ...new137Targets, ...memoryFilterTargets, retired110Target];
 const at = Date.parse("2026-06-10T03:00:00Z");
+
+for (const surface of ["viewer", "studio"] as const) test(`density ${surface}: memory family pointer and keys emit one fixed use per activation`, async ({ page }) => {
+  await setup(page, surface);
+  const home = await openCompanionHome(page); await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true }); await waitForOverlayEntrance(dialog);
+  await dialog.getByRole("tab", { name: "도감", exact: true }).click();
+  await dialog.locator('[data-act="companion-collection-category"][data-act-opt="behavior"]').click();
+  const filters = dialog.getByRole("group", { name: "추억 종류", exact: true });
+  const button = (key: string) => filters.locator(`[data-act-opt="${key}"]`);
+  await button("expression").click();
+  await button("pose").focus(); await button("pose").press("Enter");
+  await button("life").focus(); await button("life").press("Space");
+  await button("life").press("Home"); await expect(button("all")).toBeFocused();
+  await button("all").press("End"); await expect(button("life")).toBeFocused();
+  await expect(button("life")).toHaveAttribute("aria-pressed", "true");
+  const monthTitle = page.locator(".poster-chrome-title,.studio-month-label").first();
+  const selectedCalendar = await monthTitle.innerText();
+  await button("life").press("ArrowRight"); await expect(button("life")).toHaveAttribute("aria-pressed", "true");
+  expect(await monthTitle.innerText()).toBe(selectedCalendar);
+  await dialog.getByRole("button", { name: "닫기", exact: true }).click();
+  await flush(page, memoryFilterTargets.map(target => ({ target, n: target.endsWith("#life") ? 2 : 1 })));
+  const actual = capture.get(page)!.events.filter(event => event.target?.startsWith("companion-memory-filter#"));
+  expect(actual.map(event => event.target)).toEqual([memoryFilterTargets[1], memoryFilterTargets[2], memoryFilterTargets[3], memoryFilterTargets[0], memoryFilterTargets[3]]);
+  expect(actual.every(event => event.meta === null && event.durMs === null)).toBe(true);
+});
 const auditPrefix = process.env.VIC_ACTIVITY_AUDIT_PREFIX ?? ".scratch-pw/companion-activity";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
 
@@ -621,7 +647,7 @@ test("110 developer views show book and unified memory uses while old radio mood
   await usage.locator('[data-act="usage-show-all"]').click();
   await page.locator('[data-act="activity-expand-all"]').click();
   await timeline.locator(".act-lines > summary").click();
-  for (const target of [...new110Targets, ...new115Targets, ...new135Targets, ...new137Targets, ...new141Targets, ...new142Targets]) {
+  for (const target of [...new110Targets, ...new115Targets, ...new135Targets, ...new137Targets, ...new141Targets, ...new142Targets, ...memoryFilterTargets]) {
     const name = describeTarget("ui.click", target).name;
     const usageRow = usage.locator('.usage-list:not([data-retired]) > li').filter({ hasText: name }), timelineRow = timeline.getByText(name, { exact: true });
     await usageRow.scrollIntoViewIfNeeded(); await expect(usageRow).toBeInViewport();

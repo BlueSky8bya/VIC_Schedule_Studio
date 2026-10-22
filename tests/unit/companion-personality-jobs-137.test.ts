@@ -56,7 +56,7 @@ function fixture(id: string, count = 1, firstKind: CompanionToyKind = "star-wand
       home: { pantry, bin: box, dispenser: scene.home.dispenser }, box,
       toys: scene.toys, toyIds: toys.ids(), carriedToy: toys.carried(), carriedFood: carriedFood?.id,
       toyCount: toys.count(), foodCount: (scene.world.foods?.length ?? 0) + Number(Boolean(carriedFood)), occupied: toys.occupied(),
-    });
+    }, scene.now);
   };
   const apply = (action: PersonalityJobAction) => {
     const meta = action.personalityScene;

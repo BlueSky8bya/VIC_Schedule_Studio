@@ -10,6 +10,7 @@ import { createCompanionPersonalityJobs, getCompanionPersonalityMeal } from "@/l
 import { createCompanionHousehold } from "@/lib/ui/viewer-companion/household";
 import { accessibleCompanionToys, createCompanionToyPlanner, createCompanionToys } from "@/lib/ui/viewer-companion/toys";
 import { companionToyReturnDelivered, companionToyReturnTarget, sampleCompanionToyReturn } from "@/lib/ui/viewer-companion/toy-return";
+import { COMPANION_TOY_KINDS, COMPANION_TOY_WEIGHTS } from "@/lib/ui/viewer-companion/toy-catalog";
 
 const floor:Platform={id:"companion-home-floor",x:0,y:600,width:1000,kind:"floor",manualOnly:true};
 const source=(id:string)=>COMPANION_PERSONALITY_SCENES.find(recipe=>recipe.id===id)!;
@@ -27,6 +28,101 @@ const playAndFinish=(director:ReturnType<typeof createCompanionPersonalityDirect
   input.now+=proposal.action!.duration;director.complete(proposal.meta);return proposal;
 };
 const realToy={id:"same-real-toy",kind:"ball" as const,x:180,y:600,platformId:floor.id,angle:0,held:false,carried:false};
+
+describe("142 same-ID play release keeps bounded preparation before its real return", () => {
+  function released(ack: "ok" | "failed" | "stale" | "foreign-serial" | "foreign-id" = "ok", longPose = false) {
+    const masses = COMPANION_TOY_KINDS.map(kind => COMPANION_TOY_WEIGHTS[kind]);
+    const feather = COMPANION_TOY_KINDS.indexOf("feather");
+    const draw = (masses.slice(0, feather).reduce((sum, mass) => sum + mass, 0) + masses[feather] / 2) / masses.reduce((sum, mass) => sum + mass, 0);
+    const model = createCompanionToys(() => draw), input = scene();
+    model.sync([floor], { width: 1100, height: 720 }, 0);
+    const id = model.spawn({ x: 180, y: 570, platformId: floor.id }, 0)!;
+    for (let at = 0; at <= 3000; at += 16) model.tick(at);
+    expect(model.available()[0].kind).toBe("feather");
+    input.now = 3000; input.world.x = model.available()[0].x; input.brain.hunger = .5;
+    input.preferences.sleep = false; input.home.dispenser = { x: 380, y: 600, platformId: floor.id };
+    const refresh = () => {
+      input.toys = accessibleCompanionToys(model.available(), input.world.platforms);
+      input.toyCount = model.count(); input.carriedToyId = model.carried(); input.flyingToyIds = model.flyingIds();
+      input.brain.activeMs = input.now;
+    };
+    refresh();
+    const recipe = source("S05"), director = createCompanionPersonalityDirector([longPose
+      ? { ...recipe, steps: recipe.steps.map((step, index) => index === 2 ? { kind: "pose", pose: "stretch", ms: 1501 } : step) }
+      : recipe]);
+    enter(director, input);
+    const inspected = director.next(input)!;
+    expect(inspected.delegate).toMatchObject({ kind: "toy", mode: "inspect" });
+    input.now += 600; director.resolve(inspected.meta, true, id, input.now);
+    const played = director.next(input)!, playStarted = input.now;
+    expect(played.delegate).toMatchObject({ kind: "toy", mode: "play" });
+    expect(model.pick(id, input.world)).toBe(true);
+    expect(model.carry(id, { x: input.world.x, y: 576 })).toBe(true);
+    input.now += 1100;
+    expect(model.put(id, { x: input.world.x, y: 576, platformId: floor.id }, input.now, true)).toBe(true);
+    const releasedAt = input.now;
+    director.resolve(ack === "foreign-serial" ? { ...played.meta, serial: played.meta.serial + 1 } : played.meta,
+      ack !== "failed", ack === "foreign-id" ? "unrelated-id" : id, ack === "stale" ? playStarted - 1 : input.now);
+    input.now += 1; model.tick(input.now); refresh();
+    expect(input.toys).toEqual([]); expect(model.flyingIds()).toEqual([id]);
+    const request = () => ({ ...input, active: true, entryReady: true, canOuting: false,
+      authoredReserved: director.routineReserved(input), meal: { canSupply: true } });
+    return { input, director, model, id, releasedAt, refresh, request };
+  }
+
+  it("keeps catalog S05 stretch then same-ID physical return and bow instead of a nonurgent meal", () => {
+    const h = released();
+    expect(createCompanionRoutineArbiter().next({ ...h.request(), authoredReserved: false })?.kind).toBe("meal");
+    expect(h.director.routineOwnership(h.input)).toBe("work");
+    expect(createCompanionRoutineArbiter().next(h.request())).toBeUndefined();
+    const stretch = h.director.next(h.input)!;
+    expect(stretch.meta).toMatchObject({ id: "S05", beat: 2 }); expect(stretch.action?.kind).toBe("stretch");
+    h.input.now += stretch.action!.duration; h.model.tick(h.input.now); h.refresh(); h.director.complete(stretch.meta);
+    expect(h.model.flyingIds()).toEqual([]);
+    const returned = h.director.next(h.input)!;
+    expect(returned.meta.itemId).toBe(h.id); expect(returned.delegate).toMatchObject({ kind: "toy", mode: "return" });
+    const toy = h.model.available()[0], toToy = findPlatformRoute(h.input.world, toy, h.input.world.platforms, true, toy.platformId)!;
+    expect(toToy).toBeTruthy(); h.input.world = { ...h.input.world, ...toy };
+    expect(h.model.pick(h.id, h.input.world)).toBe(true);
+    const route = findPlatformRoute(h.input.world, h.input.home.box!, h.input.world.platforms, true, floor.id)!;
+    expect(route).toBeTruthy();
+    for (const step of route) { h.input.world = { ...h.input.world, ...step.target }; h.input.now += 300; expect(h.model.carry(h.id, { x: h.input.world.x, y: 570 })).toBe(true); }
+    h.input.world = { ...h.input.world, ...h.input.home.box! };
+    const target = companionToyReturnTarget({ left: 470, top: 525, width: 60, height: 25 })!;
+    expect(h.model.carry(h.id, sampleCompanionToyReturn(h.model.items()[0], target, 1))).toBe(true);
+    expect(companionToyReturnDelivered(h.model.items()[0], target)).toBe(true);
+    expect(h.model.stash(h.id)).toBe(true); h.director.resolve(returned.meta, true, h.id, h.input.now); h.refresh();
+    const bow = h.director.next(h.input)!; expect(bow.meta).toMatchObject({ id: "S05", beat: 4 }); expect(bow.action?.play).toBe("bow");
+    h.input.now += bow.action!.duration; h.director.complete(bow.meta);
+    expect(h.director.completed()).toContain("S05"); expect(h.model.count()).toBe(0);
+    expect(createCompanionRoutineArbiter().next(h.request())?.kind).toBe("meal");
+  });
+
+  it.each(["failed", "stale", "foreign-serial", "foreign-id"] as const)("does not grant the new preparation reservation after %s ACK", ack => {
+    const h = released(ack); expect(h.director.routineReserved(h.input)).toBe(false);
+    expect(createCompanionRoutineArbiter().next(h.request())?.kind).toBe("meal");
+    expect(h.director.completed()).toEqual([]);
+  });
+
+  it.each(["held", "removed", "foreign-flight", "deadline", "missing-box", "long-pose", "disabled", "roam-off", "cancelled"] as const)("does not reserve invalid %s continuation", condition => {
+    const h = released("ok", condition === "long-pose");
+    if (condition === "held" || condition === "removed") { expect(h.model.grab(h.id)).toBe(true); if (condition === "removed") expect(h.model.returnHeld(h.id)).toBe(true); h.refresh(); }
+    if (condition === "foreign-flight") h.input.flyingToyIds = ["unrelated-flight"];
+    if (condition === "deadline") h.input.now = h.releasedAt + 1500; // No gravity tick: time alone must invalidate even a stale flying observation.
+    if (condition === "missing-box") delete h.input.home.box;
+    if (condition === "disabled") h.input.preferences.enabled = false;
+    if (condition === "roam-off") h.input.preferences.roam = false;
+    if (condition === "cancelled") h.director.cancel();
+    expect(h.director.routineReserved(h.input)).toBe(false); expect(h.director.completed()).toEqual([]);
+  });
+
+  it.each(["hunger", "energy"] as const)("retains urgent %s care and hard ownership ahead of this soft reservation", need => {
+    const h = released(); if (need === "hunger") h.input.brain.hunger = .78; else { h.input.brain.energy = .18; h.input.preferences.sleep = true; }
+    expect(h.director.routineReserved(h.input)).toBe(true);
+    expect(createCompanionRoutineArbiter().next(h.request())?.kind).toBe(need === "hunger" ? "meal" : "nap");
+    expect(createCompanionRoutineArbiter().next({ ...h.request(), owned: true })).toBeUndefined();
+  });
+});
 
 describe("142 real progress, finite rest and mandatory meal admission",()=>{
   it("does not turn high-energy S01 into doze/cozy/stretch masquerading as sleep",()=>{
@@ -157,7 +253,7 @@ describe("142 real progress, finite rest and mandatory meal admission",()=>{
     for(let decision=0;decision<60&&model.count();decision++) {
       input.toys=accessibleCompanionToys(model.available(),input.world.platforms);input.toyCount=model.count();input.carriedToyId=model.carried();
       const proposal=director.next(input)!;expect(proposal.meta.id).toBe("S03");
-      const action=jobs.next(proposal,{world:input.world,brain:input.brain,preferences:input.preferences,now:input.now,home:{},box:input.home.box,toys:input.toys,toyIds:model.ids(),carriedToy:model.carried(),toyCount:model.count(),foodCount:0})!;
+      const action=jobs.next(proposal,{world:input.world,brain:input.brain,preferences:input.preferences,now:input.now,home:{},box:input.home.box,toys:input.toys,toyIds:model.ids(),carriedToy:model.carried(),toyCount:model.count(),foodCount:0}, input.now)!;
       expect(action).toBeTruthy();
       if(action.kind==="walk"||action.kind==="jump") {input.world={...input.world,...action.target};if(model.carried())expect(model.carry(id,{x:input.world.x,y:input.world.y-30})).toBe(true);}
       input.now+=action.duration;
@@ -468,11 +564,11 @@ describe("142 routine checkpoints retain real authored work and bounded closure"
     const {input,director}=restOwner();input.brain.hunger=hunger;
     input.world.foods=[{id:"actual-meal",kind:"carrot",x:180,y:600,platformId:floor.id}];
     const request={...input,authoredReserved:director.routineReserved(input)};expect(request.authoredReserved).toBe(true);
-    const before=JSON.stringify(director.current()),meal=getCompanionPersonalityMeal(director,undefined,request);
+    const before=JSON.stringify(director.current()),meal=getCompanionPersonalityMeal(director,undefined,request, request.now);
     if(hunger<.78)expect(meal).toBeUndefined();else expect(meal).toMatchObject({kind:"walk",foodId:"actual-meal",target:{x:180,y:600,platformId:floor.id}});
     expect(JSON.stringify(director.current())).toBe(before);
-    expect(getCompanionPersonalityMeal(director,undefined,{...request,ownedJob:true})).toBeUndefined();
-    input.preferences.feeding=false;expect(getCompanionPersonalityMeal(director,undefined,request)).toBeUndefined();
+    expect(getCompanionPersonalityMeal(director,undefined,{...request,ownedJob:true}, request.now)).toBeUndefined();
+    input.preferences.feeding=false;expect(getCompanionPersonalityMeal(director,undefined,request, request.now)).toBeUndefined();
   });
   it.each([.65,.77,.78])("a real empty-food dispenser stays behind soft ownership except urgent hunger%s",hunger=>{
     const {input,director}=restOwner();input.brain.hunger=hunger;input.world.foods=[];input.home.dispenser={x:380,y:600,platformId:floor.id};
@@ -548,7 +644,7 @@ describe("142 an interrupted greeting cannot permanently block common living",()
     const proposal=director.next(input)!;expect(proposal.meta.id).toBe("routine-meal");expect(proposal.delegate).toEqual({kind:"food",mode:"spawn"});
     const job=createCompanionPersonalityJobs(director,createCompanionHousehold(),createCompanionToyPlanner()).next(proposal,{
       world:input.world,brain:input.brain,preferences:input.preferences,now:input.now,home:{dispenser:input.home.dispenser},
-      toys:[],toyIds:[],toyCount:0,foodCount:0});
+      toys:[],toyIds:[],toyCount:0,foodCount:0},input.now);
     expect(job).toMatchObject({kind:"walk",target:input.home.dispenser,personalityScene:{id:"routine-meal"}});
     expect(job?.household?.effect).not.toBe("spawn");expect(director.completed()).toEqual([]);
     // This pure host models the real meal ACK. Only the native renderer test

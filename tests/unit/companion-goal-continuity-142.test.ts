@@ -53,7 +53,7 @@ describe("142 goals survive scene variety and empty scenes yield to real behavio
     for(let decision=0;decision<150&&model.count();decision++) {
       input.toys=accessibleCompanionToys(model.available(),input.world.platforms);input.toyCount=model.count();input.carriedToyId=model.carried();input.brain.activeMs=input.now;
       const proposal=nextCompanionPersonalityScene(director,input)!;expect(proposal.meta.id).toBe("T01");
-      const action=jobs.next(proposal,{world:input.world,brain:input.brain,preferences:input.preferences,now:input.now,home:{},box:input.home.box,toys:input.toys,toyIds:model.ids(),carriedToy:model.carried(),toyCount:model.count(),foodCount:0})!;
+      const action=jobs.next(proposal,{world:input.world,brain:input.brain,preferences:input.preferences,now:input.now,home:{},box:input.home.box,toys:input.toys,toyIds:model.ids(),carriedToy:model.carried(),toyCount:model.count(),foodCount:0}, input.now)!;
       expect(action).toBeTruthy();const meta=action.personalityScene;
       if(action.kind==="walk"||action.kind==="jump") {
         input.world={...input.world,...action.target};expect(input.world.y).toBe(room.y);
@@ -97,7 +97,7 @@ describe("142 goals survive scene variety and empty scenes yield to real behavio
     const input=scene("gourmet");input.brain.hunger=hunger;input.brain.life={...input.brain.life!,tastedFoods:["potato"]};
     input.world.foods=[{id:"main",kind:"carrot",x:180,y:600,platformId:floor.id},{id:"peer",kind:"bagel",x:150,y:600,platformId:floor.id},{id:"other",kind:"bread",x:270,y:600,platformId:floor.id}];
     const director=createCompanionPersonalityDirector([source("G04")]),jobs=createCompanionPersonalityJobs(director,createCompanionHousehold(()=>0),createCompanionToyPlanner());enter(director,input);
-    const offer=()=>{const p=director.next(input)!;expect(p).toBeTruthy();const a=jobs.next(p,{world:input.world,brain:input.brain,preferences:input.preferences,now:input.now,home:{},toys:[],toyCount:0,foodCount:3})!;expect(a).toBeTruthy();return {p,a};};
+    const offer=()=>{const p=director.next(input)!;expect(p).toBeTruthy();const a=jobs.next(p,{world:input.world,brain:input.brain,preferences:input.preferences,now:input.now,home:{},toys:[],toyCount:0,foodCount:3}, input.now)!;expect(a).toBeTruthy();return {p,a};};
     const first=offer();expect(first.p.meta.itemId).toBe("main");
     if(compare){
       expect(first.p.meta).toMatchObject({beat:0,itemId:"main",comparisonItemId:"peer"});
@@ -167,7 +167,7 @@ function fixture(startOutside=false, recipes=COMPANION_PERSONALITY_SCENES.filter
  refresh();const entry=director.next(input)!;expect(entry.meta.id).toBe('entry-'+input.preferences.personality);director.complete(entry.meta);input.now+=entry.action!.duration;
  function step() {
   refresh();const proposal=director.next(input);if(!proposal){input.now+=250;return false;}
-  const action=jobs.next(proposal,{world:input.world,brain:input.brain,preferences:input.preferences,now:input.now,home:{pantry:input.home.floor},box,toys:input.toys,toyIds:toys.ids(),carriedToy:toys.carried(),toyCount:toys.count(),foodCount:0,occupied:toys.occupied()});
+  const action=jobs.next(proposal,{world:input.world,brain:input.brain,preferences:input.preferences,now:input.now,home:{pantry:input.home.floor},box,toys:input.toys,toyIds:toys.ids(),carriedToy:toys.carried(),toyCount:toys.count(),foodCount:0,occupied:toys.occupied()}, input.now);
   if(!action){input.now+=250;return false;}
   const from=input.world.platformId;
   if(action.kind==='walk'||action.kind==='jump'){

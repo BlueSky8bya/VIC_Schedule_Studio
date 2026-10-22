@@ -256,7 +256,7 @@ describe("143 nine situational goals and fixed physical bindings",()=>{
     const effects:{effect:string;id?:string;at:number;point:{x:number;y:number;platformId?:string}}[]=[],travel:{id?:string;carried?:string;point:{x:number;y:number;platformId?:string}}[]=[];
     const step=()=>{
       refresh();const proposal=d.next(scene);if(!proposal)return false;
-      const action=jobs.next(proposal,{world:scene.world,brain:scene.brain,preferences:scene.preferences,now:scene.now,home:{pantry:scene.home.floor},box:scene.home.box,toys:scene.toys,toyIds:model.ids(),carriedToy:model.carried(),toyCount:model.count(),foodCount:scene.world.foods?.length??0,occupied:model.occupied()});
+      const action=jobs.next(proposal,{world:scene.world,brain:scene.brain,preferences:scene.preferences,now:scene.now,home:{pantry:scene.home.floor},box:scene.home.box,toys:scene.toys,toyIds:model.ids(),carriedToy:model.carried(),toyCount:model.count(),foodCount:scene.world.foods?.length??0,occupied:model.occupied()}, scene.now);
       if(!action){scene.now+=50;return true;}
       const meta=action.personalityScene;scene.now+=action.duration;
       if(action.kind==="walk"||action.kind==="jump"){
