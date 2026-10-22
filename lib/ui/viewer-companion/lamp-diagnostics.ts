@@ -1,9 +1,9 @@
 /** Opt-in, memory-only lamp diagnostics. No network, storage enumeration or
  * identity/schedule/collection/learned-memory reads. Never owns actor state. */
 const numbers = new Set(['at','serial','progress','duration','x','y','displayY','handX','handY','handDOMX','handDOMY','actorWidth','actorHeight','knobX','knobY','knobWidth','knobHeight','paintHeight','paintWidth','paintCssWidth','buttonHeight','pull','feedbackOpacity','baselineAt','baselineHeight','baselineWidth','baselineCssWidth','neutralAt','receiptAt','contactAge','viewportWidth','viewportHeight','dpr','viewportScale','textPx','weight','roomWidth','roomHeight','homeCount','visibleHomeCount']);
-const booleans = new Set(['lit','wantedLit','prepared','paintedCurrent','reachTouch','touching','witness','canLight','active','visible','sourceMatches','samePlane','feedbackVisible','baseline','effectApplied','effectSucceeded','authoredApplied','enabled','roam','jump','sleep','petting','learnFromYou','appReduced','reduced','comfort','premiere','ambient','hidden','focused','paused','pressed','keyboardHeld','placing','overlay','workspaceBusy','presenceActive','sameOwner','supported','contactPresent','receiptReady','owned','allowed']);
+const booleans = new Set(['lit','wantedLit','prepared','paintedCurrent','reachTouch','touching','witness','canLight','active','visible','sourceMatches','samePlane','feedbackVisible','baseline','effectApplied','effectSucceeded','authoredApplied','enabled','roam','jump','sleep','petting','learnFromYou','appReduced','reduced','comfort','premiere','ambient','hidden','focused','paused','pressed','keyboardHeld','placing','overlay','workspaceBusy','presenceActive','sameOwner','supported','contactPresent','receiptReady','owned','allowed','controllerConnected']);
 const strings: Record<string,ReadonlySet<string>> = {
-  stage:new Set(['paint','launch','clear','effect','missing-contact','render']),owner:new Set(['home-life','authored','other']),
+  stage:new Set(['paint','launch','clear','effect','missing-contact','render','controller']),owner:new Set(['home-life','authored','other']),
   kind:new Set(['play','jump','walk','sleep','look','stretch','idle','other']),
   gfx:new Set(['full','lite','soft','off']),support:new Set(['home-floor','home-other','outside']),
   personality:new Set(['balanced','performer','curious','affectionate','sleepy','tidy','mischievous','gourmet','homebody']),
@@ -41,12 +41,23 @@ export function measureLampDiagnosticPoint(actor:HTMLElement,sprite:HTMLElement,
   p=matrix.transformPoint(p);return{x:box.left+p.x-Math.min(...corners.map(p=>p.x)),y:box.top+p.y-Math.min(...corners.map(p=>p.y))};
   } catch { return; }
 }
-export function installLampDiagnostics(context:()=>Readonly<Record<string,unknown>>) {
+type LampContext=()=>Readonly<Record<string,unknown>>;
+type LampSession={record:(facts:Readonly<Record<string,unknown>>)=>void;connect:(context:LampContext)=>void;disconnect:(context:LampContext)=>void;dispose:()=>void};
+let session:LampSession|undefined;
+function ensureLampDiagnostics():LampSession|undefined {
   try {
   if(typeof window==='undefined'||new URLSearchParams(location.search).get('lampTrace')!=='1')return;
-  const buffer=createLampDiagnosticBuffer(context,process.env.APP_COMMIT??'dev');
-  const button=document.createElement('button');button.type='button';button.textContent='전등 진단 저장';button.dataset.lampTrace='';button.dataset.activityManual='';button.setAttribute('aria-label','전등 진단 저장');
-  Object.assign(button.style,{position:'fixed',right:'16px',bottom:'16px',zIndex:'2147483000',padding:'12px 16px',border:'1px solid #75644b',borderRadius:'12px',background:'#fff9e8',color:'#302b23',font:'600 14px system-ui',cursor:'pointer'});
+  if(session)return session;
+  let context:LampContext|undefined;
+  const buffer=createLampDiagnosticBuffer(()=>({viewportWidth:innerWidth,viewportHeight:innerHeight,dpr:devicePixelRatio,hidden:document.hidden,focused:document.hasFocus(),...context?.(),controllerConnected:Boolean(context)}),process.env.APP_COMMIT??'dev');
+  const panel=document.createElement('section');panel.setAttribute('aria-label','전등 진단');panel.dataset.lampTrace='';
+  Object.assign(panel.style,{position:'fixed',right:'16px',top:'16px',zIndex:'2147483000',maxWidth:'calc(100vw - 32px)',width:'320px',padding:'16px',border:'2px solid #75644b',borderRadius:'14px',background:'#fff9e8',color:'#302b23',boxShadow:'0 4px 24px #0003',font:'14px system-ui',pointerEvents:'none'});
+  const title=document.createElement('strong');title.textContent='전등 진단 모드';title.style.fontSize='20px';
+  const status=document.createElement('p');status.textContent='빅타민 동작 연결 대기';status.style.margin='8px 0';
+  const help=document.createElement('p');help.textContent='점프가 반복되면 아래 버튼을 눌러 주세요.';help.style.margin='8px 0';
+  const button=document.createElement('button');button.type='button';button.textContent='전등 진단 저장';button.dataset.activityManual='';button.setAttribute('aria-label','전등 진단 저장');
+  Object.assign(button.style,{width:'100%',padding:'12px 16px',border:'1px solid #75644b',borderRadius:'10px',background:'#75644b',color:'#fff',font:'700 17px system-ui',cursor:'pointer',pointerEvents:'auto'});
+  panel.append(title,status,help,button);
   let exported=false,timer:number|undefined;
   const download=()=>{
     try {
@@ -54,9 +65,23 @@ export function installLampDiagnostics(context:()=>Readonly<Record<string,unknow
     link.href=url;link.download=`VIC-lamp-diagnostic-${Date.now()}.json`;link.dataset.activityManual='';document.body.append(link);link.click();link.remove();window.setTimeout(()=>URL.revokeObjectURL(url),1000);exported=true;button.textContent='전등 진단 다시 저장';
     } catch { button.textContent='전등 진단 저장 재시도'; }
   };
-  const click=(event:MouseEvent)=>{event.stopPropagation();download();};button.addEventListener('click',click);document.body.append(button);
+  const click=(event:MouseEvent)=>{event.stopPropagation();download();};button.addEventListener('click',click);document.body.append(panel);
   // One local download after observing a light attempt; manual save remains
   // available if the failure starts later. No repeat background capture job.
-  return {...buffer,record(facts:Readonly<Record<string,unknown>>) { buffer.record(facts);if(timer===undefined&&facts.stage==='paint')timer=window.setTimeout(()=>{if(!exported)download();},12000); },dispose(){clearTimeout(timer);button.removeEventListener('click',click);button.remove();}};
+  session={record(facts) { buffer.record(facts);if(timer===undefined&&facts.stage==='paint')timer=window.setTimeout(()=>{if(!exported)download();},12000); },
+    connect(next){context=next;status.textContent='빅타민 동작 기록 중';buffer.record({stage:'controller',at:performance.now(),controllerConnected:true});},
+    disconnect(previous){if(context!==previous)return;context=undefined;status.textContent='빅타민 동작 연결 대기';buffer.record({stage:'controller',at:performance.now(),controllerConnected:false});},
+    dispose(){clearTimeout(timer);button.removeEventListener('click',click);panel.remove();}};
+  return session;
   } catch { return; }
+}
+/** Root-owned UI survives a disabled, blocked or reconstructed actor. */
+export function mountLampDiagnosticsUI() {
+  const current=ensureLampDiagnostics();
+  return ()=>{if(current&&session===current){current.dispose();session=undefined;}};
+}
+/** Actor supplies observations only; its cleanup cannot remove the controls. */
+export function installLampDiagnostics(context:LampContext) {
+  const current=ensureLampDiagnostics();if(!current)return;current.connect(context);
+  return {record:current.record,dispose(){current.disconnect(context);}};
 }

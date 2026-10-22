@@ -10,7 +10,7 @@ import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
 import { getPublicSchedule } from "@/lib/schedules/public-loader";
 import { timed } from "@/lib/perf/perf";
 
-export default async function HomePage() {
+export default async function HomePage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
   // actor 조회(로그인 사용자면 GoTrue 왕복)와 공개 일정 로드는 서로 독립이다 — 예전엔 줄을 세워
   // actor를 기다린 뒤에야 일정을 부르기 시작해 익명 시청자의 TTFB에 왕복 하나가 그대로 얹혔다.
   // 같이 출발시킨다. 공개 일정은 어느 분기에서도(익명·시청자) 쓰이고, 캐시 히트면 비용도 거의 0이다.
@@ -60,7 +60,10 @@ export default async function HomePage() {
   // 이로써 공개 `/` 페이지는 StudioShell을 모듈 그래프에서 참조하지 않아, 비로그인/시청자가
   // 스튜디오 JS·CSS(220KB) 청크를 받지 않는다(LCP·FCP 개선의 핵심).
   if (actor.role !== "viewer") {
-    redirect("/studio");
+    // Keep only this explicit local diagnostic opt-in on the existing fixed
+    // role destination. No identity, arbitrary query or redirect target follows.
+    const query = await searchParams;
+    redirect(query?.lampTrace === "1" ? "/studio?lampTrace=1" : "/studio");
   }
 
   const schedule = await schedulePromise;

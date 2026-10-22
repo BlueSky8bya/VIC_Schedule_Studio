@@ -36,6 +36,7 @@ import { resolveCurrentActor } from "@/lib/auth/actor";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { FONT_STACKS } from "@/lib/ui/font-prefs";
 import { GfxProbe } from "@/components/ui/gfx-probe";
+import { LampDiagnosticEntry } from "@/components/ui/lamp-diagnostic-entry";
 import { PANEL_SECTION_BOOTSTRAP } from "@/lib/ui/panel-section-preferences";
 
 // #7: 텍스트 스티커 글꼴 선택지(한글 지원). next/font로 로드해 CSS 변수로 노출한다.
@@ -160,6 +161,7 @@ export default function RootLayout({
           }}
         />
         {children}
+        <LampDiagnosticEntry />
         {/* (세로 전용 잠금 오버레이 제거 — P0-RESP-1. 가로 휴대폰은 MOBILE_QUERY의
             (max-height ≤640 + coarse) 절이 이미 모바일 레이아웃으로 잡아 정상 사용 가능한데,
             오버레이가 그 위를 통째로 덮어 사용 자체를 막고 있었다. aria-hidden인데 뒤 UI가

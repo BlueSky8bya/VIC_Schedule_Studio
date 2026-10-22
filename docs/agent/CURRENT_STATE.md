@@ -52,7 +52,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 5. PRIVACY-20260921: resolve remaining visit/recurring retention policy and restricted local recovery-backup removal after its2026-10-24 window. No automatic future run is scheduled.
 ## Last Verified
 
-Lamp633 reported-option reproduction:2 native+1 guarded deployed case and independent review passed; quality39774053314/Vercel/public fullSHA verified. Actual user tab was not read. No200 restart;36 remains0/UNVERIFIED. [Record](plans/PLAN-20261022-lamp-user-settings.md); exact release receipt in .scratch-pw/site-daily/state.json.
+Owner lamp failure remains OPEN after633. Diagnostic9f566c6 local5 units/1 fixture/1 guarded deployed exporter and independent review passed; quality39778352752/Vercel/fullSHA verified. Actual owner failure export is pending; no lamp-fix claim and no200. [Plan](plans/PLAN-20261022-lamp-live-trace.md).
 
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.
