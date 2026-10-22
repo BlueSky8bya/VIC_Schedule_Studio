@@ -2,7 +2,7 @@
 
 | ID | Status | Record |
 |---|---|---|
-| DENSITY-MEMORY-20261022 | Verified;production confirmation pending | [Plan](PLAN-20261022-density.md) |
+| FOCUSED-QA-20261022 | Urgent lamp reach, then risk-based daily selection; no200 this task | [Plan](PLAN-20261022-focused-qa.md) |
 | EXPRESSION-R26 | New method needed;36 UNVERIFIED | [R26](PLAN-20261022-expression-video-review.md) |
 | COMPANION-ACTIVITY-145 | Local full gates and three final reviews passed; actual release confirmation pending | [145 plan](PLAN-20261020-145-companion-activity-criteria.md) |
 | PRIVACY-20260921 | Deployed containment verified; historical Git exposure, realtime/provider and retention follow-up remain | [Privacy audit](../verification/PRIVACY-20260921.md) |

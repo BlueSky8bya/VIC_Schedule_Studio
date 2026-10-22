@@ -1,0 +1,23 @@
+# Lamp hotfix and focused daily QA
+
+Latest owner instruction (2026-10-22 KST) supersedes blanket full200/restart and universal three-review/full-media requirements for every companion edit. Fix the lamp first with narrowly relevant real checks; no200 run in this task. Preserve the original full-suite certifier and original failures; selected verification never claims full200 or normal-speed36 approval.
+
+## First: actual lamp contact
+
+The local reach subtracts20percent of body size, leaving the hand18.4px below the cord for a92px actor. Independent source review confirms the sampler/runtime accept44–46px separation, while the existing native test trusts the same touch attribute. Fix this concrete geometry failure rather than adjusting the general platform jump limit. A finite local rise must put the calibrated hand at the real handle, stay under the measured ceiling, return to the same support and honor jumping OFF/manual ownership. Tight contact tolerance accounts only for adjacent sprite-anchor variation. Native proof measures the painted hand and real knob rather than trusting an emitted label.
+
+Run affected reach/contact unit tests, type/lint/build and a few selected production-fixture lamp journeys across shared viewer/studio/preview, retaining actual frames and errors. Review the exact fix independently. Commit only the hotfix scope and verify actual production before reporting release. Do not wait for broad QA redesign to ship a verified urgent fix.
+
+## Then: daily selection and continuity
+
+Investigate all existing planner/runner/finalizer/automation constraints. Research first-party regression-selection, failure isolation, test-layer and sharding sources. Implement bounded risk-based selection with rotating weekly coverage, affected dependency checks and explicit per-case outcomes. A failure keeps its original outcome and blocks its affected scope; it does not automatically invalidate unrelated valid results or restart200. Product changes invalidate affected cases and unknown/global dependencies conservatively, not every unrelated case by default. Resume remaining cases on exactly the same frozen build and scenario configuration; cross-build reuse needs a verified complete relevant dependency fingerprint and stays labeled reused evidence rather than fresh execution.
+
+Use one production build per relevant source version, bounded related tests and selected independent review; full suite is a separately labeled scheduled/exceptional audit, not a mandatory hotfix release gate. A seven-day rotation is a coverage schedule, never proof of7-day stability or exhaustive configurations. Preserve all failures, originals, scoped evidence, security guards, no-live-DB policy and G22 fixed semantic metadata. Unknowns remain unverified. No new model/API/dependency, paid service, user data collection or UI undo buttons.
+
+Update executable policy, tests, current docs and the existing09:00 heartbeat through the automation tool; preserve schedule and notification intent. Record actual runtime/case counts and limits. Existing site/32B results remain immutable;36 expressions remain UNVERIFIED.
+
+## Status
+
+Lamp local verification complete:99 affected units/5files and3 production-fixture journeys passed, native46.2s. Shared viewer2560 compact, studio1494 panel and preview1920 compact each prove real opaque source/pose/CSS-projected contact at the measured handle rectangle, OFF→sleep→ON→wash→exit. Actual rectangle edge distance is<=1.25px for all touch frames and at least2 independently measured frames before each effect; no emitted touch label alone proves it. Ceiling envelope, jumping OFF, ordinary platform maxRise, nonlamp TV/radio/curtain/chest behavior and finite return remain. No public/private/auth/API or human control was added; G22 existing fixed lamp events remain, autonomous contact is excluded from human-use analytics.
+
+R01 had1P2F when a zero-size centre tolerance flickered at the edge of a real4px-wide knob. R02 had all3 functional sequences but2 oracle failures from requiring centre<=3px instead of physical rectangle overlap. All original sources/builds/raw/media/results remain unchanged. R03 changes only that observer's geometry criterion and tightens the all-touch edge bound3.25→1.25; it reuses the R02 production build only after every non-test/non-doc source dependency matched. Actual new3-case run passed once with retry0; no old failure was rewritten and no old native PASS was relabeled fresh. Original ac32 full200/UI32/three-review release stays evidence for its exact older revision. Independent source acceptance966832c9/dc20c7a5 retained; final focused evidence review and actual deployment pending. Research/process implementation continues separately.

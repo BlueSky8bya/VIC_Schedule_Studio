@@ -7,11 +7,11 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Food/memory verified;production confirmation pending;36 UNVERIFIED. [Plan](plans/PLAN-20261022-density.md).
+Urgent lamp release, then focused daily QA;36 UNVERIFIED. [Plan](plans/PLAN-20261022-focused-qa.md).
 
 Criteria145: optional TV bow and separate actual10s activity/repetition verified. Final frozen110/27/9/2, full gates and three independent final reviews passed; scoped commit and actual production confirmation pending. [145 plan](plans/PLAN-20261020-145-companion-activity-criteria.md).
 
-Scheduled: daily companion QA is ACTIVE at09:00 KST in the current thread. The current user authorizes bounded companion reproduce/fix/independent-review/verify/report work; unrelated operations remain excluded. [Factory and scope](plans/PLAN-20261020-142-companion-agent-and-daily-qa.md). Do not overlap an active run.144 proves a separate scheduled execution; its second factory failed and release stays held. All processes closed and originals preserved.
+Scheduled: daily site QA remains ACTIVE at09:00 KST. Owner2026-10-22 supersedes blanket200/restart/all-media release gates: use changed-risk checks, weekly rotation and valid same-build continuation. No200 in this task. Preserve original full certifier, failures, privacy and actual-scope labels. [Focused QA](plans/PLAN-20261022-focused-qa.md).
 
 Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user.125 explicitly authorizes unnecessary Vercel deployment cleanup/optimization; unrelated cleanup, bulk DB UPDATE, paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
 
@@ -52,6 +52,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 5. PRIVACY-20260921: resolve remaining visit/recurring retention policy and restricted local recovery-backup removal after its2026-10-24 window. No automatic future run is scheduled.
 ## Last Verified
 
-Last verified release `e4f56c8f1cfc988bfca174e4a06127ef9facb51f`: [143 closure](plans/PLAN-20261020-143-companion-living-and-collections.md#출시-확인). Unit5100/lastregressions175/type/lint/harness P; frozen fe7bffde/build1Dy_mFKNi-EY380rSVIar: pure1723/110unique native/27entries/9actual90s/two4-IDreturns,skip/retry0,cleanup/originalpreserved.3fresh non-author accepts/finalizer P;9D143 formaladoptions deferred (actualCfinal+next observed,requirednote absent).417literal/302art indexrawbytes/protectedasset verified. Remotequality39376172009/Vercelsuccess; freshanonymous fullSHA/chunks/9compasslayout/2manualchoices-balancedpersist/5TVpictures/independentcurtain-light/240food60toybook P14:55 KST. Production sample excludes9life,actualbroadcast/authRLS/OBS. Scheduled144 is a separate run;153models/normalization are not nativeexhaustive.
+Latest verified release `ac32d7b2f02223c7c11050027375b3abbc4a967d`: current frozen source925672a5/buildKK3 passed original200/200, fresh same-build UI32, all6672 unit/type/lint/build and three actual independent final reviews/strict finalizer. Remote quality39755802475 and actual public full40SHA/25 static assets twice verified. Normal-speed36 remains0/UNVERIFIED after both official32B control reviews failed4/6. [Release and limits](plans/PLAN-20261022-density.md#2026-10-22--actual-release-and-primary-sync-closed).
+
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.

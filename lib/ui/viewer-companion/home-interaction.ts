@@ -1,7 +1,7 @@
 import { COMPANION_JUMP_LIMITS, nearestPlatform, platformLandingX, type Platform } from "./brain";
 import { nearestVerticalCompanionSupport } from "./support-landing";
 
-type Point = Readonly<{ x: number; y: number }>;
+type Point = Readonly<{ x: number; y: number; width?: number; height?: number }>;
 export const COMPANION_WASH_SUPPORT = "companion-home-floor-400";
 const floor = (id: string) => /^companion-home-floor(?:-\d+)?$/.test(id);
 
@@ -36,22 +36,41 @@ export function companionHomeResidentFloor(id: string, point: Point, platforms: 
 
 /** A finite reach rises and returns on the existing action clock. Room art
  * grows beyond its260px default while the actor stays92px. Scale this local
- * control hop with the measured floor/ceiling gap, preserving the ordinary
- * platform-jump limit. Ceiling clearance and actual contact still own ACK. */
-export function sampleCompanionHomeReach(input: { hand: Point; contact: Point; footY: number; ceiling: number; size: number; progress: number; jump: boolean }) {
+ * control hop to the actual hand/handle gap. This is a same-support reach,
+ * bounded by the measured ceiling, not an ordinary platform transfer. */
+export function sampleCompanionHomeReach(input: { hand: Point; contact: Point; footY: number; ceiling: number; size: number; progress: number; jump: boolean; cord?: boolean }) {
   const { hand, contact, footY, ceiling, size } = input;
   if (![hand.x, hand.y, contact.x, contact.y, footY, ceiling, size, input.progress].every(Number.isFinite) || size <= 0) return;
   const p = Math.max(0, Math.min(1, input.progress));
   const phase = Math.min(1, p / .28, (1 - p) / .22);
   const envelope = phase * phase * (3 - 2 * phase);
   const room = Math.max(0, footY - ceiling - size * .72);
-  const wanted = Math.max(0, hand.y - contact.y - size * .2);
-  const controlRise = COMPANION_JUMP_LIMITS.maxRise * Math.max(1, (footY - ceiling) / 260);
+  const cord = input.cord === true;
+  const wanted = Math.max(0, hand.y - contact.y - (cord ? 0 : size * .2));
+  const controlRise = cord ? room : COMPANION_JUMP_LIMITS.maxRise * Math.max(1, (footY - ceiling) / 260);
   const lift = input.jump ? Math.min(controlRise, room, wanted) * envelope : 0;
   const from = { x: hand.x, y: hand.y - lift };
-  const reachable = Math.hypot(from.x - contact.x, from.y - contact.y) <= size * .48;
+  const reachable = cord ? companionHomeCordTouches(from, contact, size) : Math.hypot(from.x - contact.x, from.y - contact.y) <= size * .48;
   const touching = reachable && p >= .32 && p <= .76;
   return { lift, from, to: touching ? contact : from, touching };
+}
+
+/** Adjacent authored hand anchors vary by about1.5px at the normal92px size.
+ * A body-width proximity is not physical hand-to-control contact. */
+export function companionHomeContactTolerance(size: number) {
+  return Math.max(2, size * .03);
+}
+
+/** The knob is a real rectangle, not a zero-size centre. Its edge can touch
+ * the calibrated opaque3x3 source patch without their centres coinciding. */
+export function companionHomeCordTouches(hand: Point, contact: Point, size: number) {
+  if (![hand.x, hand.y, contact.x, contact.y, size].every(Number.isFinite) || size <= 0) return false;
+  if (contact.width !== undefined || contact.height !== undefined) {
+    if (!Number.isFinite(contact.width) || !Number.isFinite(contact.height) || contact.width! <= 0 || contact.height! <= 0) return false;
+    return Math.hypot(Math.max(0, Math.abs(hand.x - contact.x) - contact.width! / 2),
+      Math.max(0, Math.abs(hand.y - contact.y) - contact.height! / 2)) <= Math.max(1, size / 80);
+  }
+  return Math.hypot(hand.x - contact.x, hand.y - contact.y) <= companionHomeContactTolerance(size);
 }
 
 export function companionRoomBodyLight(point: Point, room: { left: number; right: number; top: number; bottom: number } | undefined, grade: number): number {

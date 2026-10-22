@@ -9,6 +9,8 @@ import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
+import contactAnchors from "@/lib/ui/viewer-companion/home-contact-anchors-157.json";
+import { installCompanionPaintedSource157, type PaintedSource157Window } from "./helpers/companion-painted-source-157";
 
 const output = process.env.COMPANION164_OUTPUT ?? ".scratch-pw/reach164-observations";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(m => m[1]));
@@ -16,7 +18,7 @@ type Surface = "viewer" | "studio" | "preview";
 type Proof = { rejected: string[]; errors: string[]; notes: unknown[] };
 const proofs = new Map<Page, Proof>();
 type ReachWindow = Window & { reach164?: { frames: ReachFrame[]; stop: () => void } };
-type ReachFrame = { at: number; x: number; y: number; state: string; support: string; life: string; command: string; reaching: string; lit: boolean; touching: boolean; knob: { x: number; y: number }; room: { width: number; height: number }; transform: string };
+type ReachFrame = { at: number; x: number; y: number; state: string; support: string; life: string; command: string; reaching: string; lit: boolean; touching: boolean; knob: { x: number; y: number }; room: { width: number; height: number }; transform: string; physical?: { distance: number; edgeDistance: number; point: { x: number; y: number }; source: string; pose: number; ceilingClearance: number } };
 test.use({ storageState: { cookies: [], origins: [] }, serviceWorkers: "block" });
 test.setTimeout(70000);
 test.beforeEach(async ({ page, context, baseURL }) => {
@@ -74,17 +76,43 @@ async function open(page: Page, surface: Surface, compact: boolean) {
   return house;
 }
 async function observe(page: Page) {
-  await page.evaluate(() => {
+  await installCompanionPaintedSource157(page);
+  await page.evaluate(anchors => {
     let raf = 0; const frames: ReachFrame[] = [], start = performance.now();
+    // Independent read-only CSS projection of the actual adopted opaque
+    // head/ear patch. No runtime touch flag or runtime projection is reused.
+    const project = (actor: HTMLElement, sprite: HTMLElement, point: { x: number; y: number }) => {
+      const width = parseFloat(getComputedStyle(sprite).width);
+      let p = new DOMPoint(point.x / 80 * width, point.y / 80 * width);
+      for (let node: HTMLElement | null = sprite; node && node !== actor; node = node.parentElement) {
+        const css = getComputedStyle(node), origin = css.transformOrigin.split(" ").map(Number.parseFloat);
+        const matrix = new DOMMatrixReadOnly(css.transform);
+        p = matrix.transformPoint(new DOMPoint(p.x - origin[0], p.y - origin[1]));
+        p = new DOMPoint(p.x + origin[0] + node.offsetLeft, p.y + origin[1] + node.offsetTop);
+      }
+      const matrix = new DOMMatrixReadOnly(getComputedStyle(actor).transform), box = actor.getBoundingClientRect();
+      const corners = [[0, 0], [actor.offsetWidth, 0], [0, actor.offsetHeight], [actor.offsetWidth, actor.offsetHeight]].map(([x,y]) => matrix.transformPoint(new DOMPoint(x,y)));
+      p = matrix.transformPoint(p);
+      return { x: box.left + p.x - Math.min(...corners.map(p => p.x)), y: box.top + p.y - Math.min(...corners.map(p => p.y)) };
+    };
     const tick = () => {
       const actor = document.querySelector<HTMLElement>(".vc-companion"), body = actor?.getBoundingClientRect();
       const lamp = document.querySelector<HTMLElement>(".vc-home [data-home-action=light]"), knob = lamp?.querySelector(".vc-home-lamp-handle")?.getBoundingClientRect();
       const room = document.querySelector(".vc-home-room")?.getBoundingClientRect();
-      if (actor && body && lamp && knob && room && frames.length < 3200) frames.push({ at: performance.now() - start, x: body.left + body.width / 2, y: body.bottom, state: actor.dataset.state ?? "", support: actor.dataset.platform ?? "", life: actor.dataset.homeLife ?? "", command: actor.dataset.personalityCommand ?? "", reaching: actor.dataset.homeReaching ?? "", lit: lamp.getAttribute("aria-pressed") === "true", touching: lamp.hasAttribute("data-companion-touch"), knob: { x: knob.left + knob.width / 2, y: knob.top + knob.height / 2 }, room: { width: room.width, height: room.height }, transform: actor.style.transform });
+      if (actor && body && lamp && knob && room && frames.length < 3200) {
+        const anchor = anchors.frames.find(p => p.physicalIndex === Number(actor.dataset.pose));
+        const sprite = actor.querySelector<HTMLElement>(".vc-sprite");
+        const source = (window as PaintedSource157Window).companionPaintedSource157?.inspect(actor);
+        const point = anchor && sprite && source?.passed && source.source === anchors.source.src ? project(actor, sprite, anchor) : undefined;
+        frames.push({ at: performance.now() - start, x: body.left + body.width / 2, y: body.bottom, state: actor.dataset.state ?? "", support: actor.dataset.platform ?? "", life: actor.dataset.homeLife ?? "", command: actor.dataset.personalityCommand ?? "", reaching: actor.dataset.homeReaching ?? "", lit: lamp.getAttribute("aria-pressed") === "true", touching: lamp.hasAttribute("data-companion-touch"), knob: { x: knob.left + knob.width / 2, y: knob.top + knob.height / 2 }, room: { width: room.width, height: room.height }, transform: actor.style.transform,
+          physical: point && source ? { point, distance: Math.hypot(point.x - knob.left - knob.width / 2, point.y - knob.top - knob.height / 2),
+            edgeDistance: Math.hypot(Math.max(knob.left - point.x, 0, point.x - knob.right), Math.max(knob.top - point.y, 0, point.y - knob.bottom)),
+            source: source.source, pose: source.pose, ceilingClearance: body.top - room.top } : undefined });
+      }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick); (window as ReachWindow).reach164 = { frames, stop() { cancelAnimationFrame(raf); } };
-  });
+  }, contactAnchors);
 }
 for (const [surface, width, compact, source] of [
   ["viewer", 1100, true, "floor"], ["viewer", 1494, true, "floor"], ["viewer", 1700, true, "floor"], ["viewer", 1920, true, "floor"], ["viewer", 2560, true, "floor"], ["viewer", 1494, false, "floor"],
@@ -119,6 +147,8 @@ for (const [surface, width, compact, source] of [
   await expect.poll(() => page.evaluate(() => { const frames = (window as ReachWindow).reach164!.frames, contact = frames.find(f => f.touching); return Boolean(contact && frames.some(f => f.state === "sleep" && f.at > contact.at && f.y > contact.y + 20)); })).toBe(true);
   const frames = await page.evaluate(() => (window as ReachWindow).reach164!.frames);
   const contact = frames.find(f => f.touching); expect(contact).toBeTruthy();
+  const realContact = frames.filter(f => f.reaching === "light" && f.physical && f.physical.edgeDistance <= 1.25);
+  expect(realContact.length, "actual opaque head/ear must reach the measured cord, independent of touch flag").toBeGreaterThanOrEqual(2);
   expect(frames.find(f => !f.lit)!.at).toBeGreaterThanOrEqual(contact!.at);
   expect(frames.some(f => f.state === "sleep" && f.at > contact!.at && f.y > contact!.y + 20)).toBe(true);
   expect(frames.filter((f, i) => f.reaching === "light" && frames[i - 1]?.reaching !== "light")).toHaveLength(1);
@@ -134,4 +164,12 @@ for (const [surface, width, compact, source] of [
   const on = sequence.find(f => f.at > contact!.at + 500 && f.lit);
   expect(on).toBeTruthy();
   expect(sequence.some(f => f.at > contact!.at + 500 && f.at <= on!.at && f.touching)).toBe(true);
+  expect(sequence.filter(f => f.at > contact!.at + 500 && f.at <= on!.at && f.reaching === "light" && f.physical && f.physical.edgeDistance <= 1.25).length,
+    "awake lamp ON also requires independent actual contact").toBeGreaterThanOrEqual(2);
+  for (const frame of sequence.filter(f => f.touching)) {
+    expect(frame.physical, "a touch flag requires a measured current opaque source").toBeTruthy();
+    // The real knob moves by up to3 CSSpx while tugged. Record the exact
+    // rectangle distance rather than treating a half-body gap as contact.
+    expect(frame.physical!.edgeDistance).toBeLessThanOrEqual(1.25);
+  }
 });
