@@ -1369,14 +1369,16 @@ html[data-reduce-motion] .dvm-railside-btn { transition: none; }
 .dvm-tab .dvm-tab-access.is-sub,
 .dvm-tab.is-sub .dvm-tab-access,
 .agenda-vod-access.is-sub,
-.dvm-head .dvm-host.dvm-access.is-sub {
+.dvm-head .dvm-host.dvm-access.is-sub,
+.dvm-locked .dvm-host.dvm-access.is-sub {
   border: 1px solid rgb(124 92 196 / 40%);
   background: #fff;
   color: #6a4fa6;
 }
 .dvm-tab.is-plus .dvm-tab-access,
 .agenda-vod-access.is-plus,
-.dvm-head .dvm-host.dvm-access.is-plus {
+.dvm-head .dvm-host.dvm-access.is-plus,
+.dvm-locked .dvm-host.dvm-access.is-plus {
   border: 1px solid rgb(124 92 196 / 30%);
   background: linear-gradient(135deg, #8b6fd6, #7556c4 55%, #b067a8);
   color: #fff;
@@ -1385,7 +1387,7 @@ html[data-reduce-motion] .dvm-railside-btn { transition: none; }
   padding: 1px 6px;
   border-radius: var(--r-pill);
 }
-.dvm-head .dvm-host.dvm-access { font-weight: 700; }
+:is(.dvm-head, .dvm-locked) .dvm-host.dvm-access { font-weight: 700; }
 .dvm-vod[data-access="sub"] .dvm-thumb { box-shadow: 0 0 0 1px rgb(124 92 196 / 18%); }
 .dvm-vod[data-access="plus"] .dvm-thumb { box-shadow: 0 0 0 1px rgb(124 92 196 / 30%); }
 .dvm-vod[data-access] .dvm-thumb:hover { box-shadow: 0 0 0 1px rgb(124 92 196 / 38%), 0 10px 22px rgb(110 70 190 / 22%); }
@@ -1567,6 +1569,45 @@ html[data-reduce-motion] .dvm-railside-btn { transition: none; }
 .dvm-cover img {
   filter: url(#vod-cover-sharpen);
 }
+/* 구독·구독+ 안내 카드(2026-10-23) — 숲 임베드는 구독 전용을 재생하지 않는다. 커버를 낮추고 가운데에
+   단계 배지 + 한 줄 + '숲에서 보기'(숲 페이지에선 로그인한 구독자가 바로 본다). */
+.dvm-vod[data-access] .dvm-cover img { opacity: 0.42; }
+.dvm-vod[data-access] .dvm-thumb:hover { transform: none; }
+.dvm-locked {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: #fff;
+  text-align: center;
+}
+.dvm-locked p {
+  margin: 0;
+  font-size: var(--text-body);
+  font-weight: 600;
+  text-shadow: 0 1px 6px rgb(0 0 0 / 55%);
+}
+.dvm-locked .dvm-host { margin: 0; align-self: center; }
+.dvm-locked-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(135deg, #8b6fd6, #7556c4 55%, #b067a8);
+  box-shadow: 0 6px 16px rgb(110 70 190 / 35%);
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  transition: transform var(--dur-1) var(--ease), filter var(--dur-1) var(--ease);
+}
+.dvm-locked.is-sub .dvm-locked-go { background: #7a63b8; }
+.dvm-locked-go:hover { filter: brightness(1.08); }
+.dvm-locked-go:active { transform: scale(var(--press-scale)); }
 /* 키 토글 피드백 토스트(🔇 음소거 / 🔊 소리 켬) — 영상 왼쪽 아래, 떠올랐다 사라진다. */
 .dvm-notice {
   position: absolute;

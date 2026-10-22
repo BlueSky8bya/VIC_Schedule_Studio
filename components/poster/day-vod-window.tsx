@@ -1396,6 +1396,9 @@ export function DayVodWindow({
                               // 대기 슬롯은 주 슬롯이 선 뒤에 붙인다 — 창을 열자마자 무거운 플레이어 둘이
                               // 같이 로드되면 첫 재생이 그만큼 늦어진다(2026-09-18).
                               if (!active && !dayVodStandbyOn.has(vod.titleNo)) return null;
+                              // 구독·구독+(0154/0155): 숲 임베드가 재생을 거부하고 자체 안내만 띄운다(2026-10-23 실측 —
+                              // 커버 밑에 깔려 ▶이 죽은 단추가 됐다). 무거운 플레이어를 싣지 않고 아래 안내 카드로 숲에 보낸다.
+                              if (vod.access) return null;
                               return (
                                 <iframe
                                   allow="autoplay; fullscreen; encrypted-media"
@@ -1428,13 +1431,33 @@ export function DayVodWindow({
                                   src={`https://videoimg.sooplive.com/php/SnapshotLoad.php?${vod.thumbQuery}`}
                                 />
                               ) : null}
-                              <span className="dvm-play">
-                                <Play size={16} strokeWidth={2.6} />
-                              </span>
+                              {vod.access ? null : (
+                                <span className="dvm-play">
+                                  <Play size={16} strokeWidth={2.6} />
+                                </span>
+                              )}
                               {vod.durationMs > 0 ? (
                                 <em className="dvm-dur">{formatVodDuration(vod.durationMs)}</em>
                               ) : null}
                             </span>
+                            {/* 구독 전용 안내 — 숲 페이지에선 로그인한 구독자가 바로 본다(임베드는 로그인 상태를 못 쓴다). */}
+                            {vod.access ? (
+                              <div className={`dvm-locked is-${vod.access}`}>
+                                <span className={`dvm-host dvm-access is-${vod.access}`}>{VOD_ACCESS_LABEL[vod.access]}</span>
+                                <p>{vod.access === "sub" ? "구독자 전용 영상이에요" : "구독자 전용 다시보기예요"}</p>
+                                <a
+                                  className="dvm-locked-go"
+                                  data-act="vod-replay"
+                                  href={playerUrl}
+                                  onClick={() => hapticTick()}
+                                  rel="noopener noreferrer"
+                                  target="_blank"
+                                >
+                                  숲에서 보기
+                                  <ExternalLink aria-hidden="true" size={13} strokeWidth={2.6} />
+                                </a>
+                              </div>
+                            ) : null}
                             {/* 키 토글 피드백(🔇/🔊) — 마지막으로 다룬 방송 위에만, 1.4초 뒤 사라짐. */}
                             {dayVodNotice && dayVodFocusRef.current === vod.titleNo ? (
                               <span aria-live="polite" className="dvm-notice" key={dayVodNotice.n} role="status">
