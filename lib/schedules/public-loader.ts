@@ -11,7 +11,7 @@ import {
   PRODUCT_TIMEZONE,
   isPosterThemeKey
 } from "@/lib/domain/schedule-types";
-import type { PosterThemeKey } from "@/lib/domain/schedule-types";
+import type { PosterThemeKey, PublicVodEntry } from "@/lib/domain/schedule-types";
 import { getCurrentKstYearMonth } from "@/lib/calendar/month";
 import { createClient } from "@supabase/supabase-js";
 import { unstable_cache } from "next/cache";
@@ -326,8 +326,9 @@ const loadPublicScheduleData = unstable_cache(
       eventHeartsRes,
       hopeRes,
       vodsRes,
-      timelinesRes
-    ] = await timed("publicSchedule:db(8 parallel queries)", () =>
+      timelinesRes,
+      uploadsRes
+    ] = await timed("publicSchedule:db(9 parallel queries)", () =>
       Promise.all([
         supabase
           .from("calendars")
@@ -381,16 +382,23 @@ const loadPublicScheduleData = unstable_cache(
           .from("vod_timeline")
           .select("title_no, entry_count, author_nick")
           .gt("entry_count", 0)
-          .limit(1000)
+          .limit(1000),
+        // 구독 전용 업로드 영상(0155) — 숲 '구독' 배지. 다시보기(구독+)와 같은 창에 한 단계 아래로.
+        supabase
+          .from("vod_upload")
+          .select("title_no, upload_day, title, duration_ms, thumb, reg_date")
+          .eq("auth_no", 107)
+          .order("upload_day", { ascending: false })
+          .limit(500)
       ])
     );
 
     // Partial failures must not replace the cached schedule with lost tags,
     // palette, counts or VODs. Messages/codes from DB responses stay internal.
-    if ([calendarRes, tagsRes, paletteRes, eventHeartsRes, hopeRes, vodsRes, timelinesRes].some(result => result.error)) {
+    if ([calendarRes, tagsRes, paletteRes, eventHeartsRes, hopeRes, vodsRes, timelinesRes, uploadsRes].some(result => result.error)) {
       throw new Error("Public schedule unavailable");
     }
-    if (![tagsRes.data, paletteRes.data, eventHeartsRes.data, hopeRes.data, vodsRes.data, timelinesRes.data].every(Array.isArray)) {
+    if (![tagsRes.data, paletteRes.data, eventHeartsRes.data, hopeRes.data, vodsRes.data, timelinesRes.data, uploadsRes.data].every(Array.isArray)) {
       throw new Error("Public schedule unavailable");
     }
     const calendar = calendarRes.data;
@@ -454,7 +462,7 @@ const loadPublicScheduleData = unstable_cache(
               titleNo: Number(row.title_no),
               ...(host ? { host } : {}),
               ...(hostId ? { hostId } : {}),
-              ...(Number(row.auth_no) === 107 ? { plus: true } : {}),
+              ...(Number(row.auth_no) === 107 ? { access: "plus" as const } : {}),
               title: typeof row.title === "string" ? row.title : "",
               durationMs: Number(row.duration_ms) || 0,
               chapters: tl ? Number(tl.entry_count) || 0 : 0,
@@ -468,7 +476,30 @@ const loadPublicScheduleData = unstable_cache(
               thumbQuery
             };
           })
-          .filter((v) => Number.isFinite(v.titleNo) && v.titleNo > 0);
+          .filter((v) => Number.isFinite(v.titleNo) && v.titleNo > 0)
+          .map((v): PublicVodEntry => v)
+          .concat(
+            // 구독 전용 업로드(0155) — 명시적 DTO. 썸네일은 SnapshotLoad가 아닌 직접 jpg라 숲 호스트만 https로 싣는다.
+            ((uploadsRes.data as { title_no: number; upload_day: string; title: string; duration_ms: number; thumb: string; reg_date?: string }[] | null) ?? [])
+              .map((row) => {
+                const thumb = typeof row.thumb === "string" ? row.thumb.trim() : "";
+                const thumbUrl = /^(https:)?\/\/[a-z0-9.-]+\.sooplive\.(com|co\.kr)\/[^\s"'<>]+$/i.test(thumb)
+                  ? (thumb.startsWith("//") ? `https:${thumb}` : thumb)
+                  : undefined;
+                return {
+                  dateKey: String(row.upload_day).slice(0, 10),
+                  titleNo: Number(row.title_no),
+                  access: "sub" as const,
+                  title: typeof row.title === "string" ? row.title : "",
+                  durationMs: Number(row.duration_ms) || 0,
+                  chapters: 0,
+                  timelineBy: "",
+                  thumbQuery: "",
+                  ...(thumbUrl ? { thumbUrl } : {})
+                };
+              })
+              .filter((v) => Number.isSafeInteger(v.titleNo) && v.titleNo > 0 && /^\d{4}-\d{2}-\d{2}$/.test(v.dateKey))
+          );
       })(),
       events: eventsRes.map((row) => ({
         ...mapEvent(row, Date.now()),

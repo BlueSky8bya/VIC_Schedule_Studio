@@ -12,7 +12,9 @@
 
 ## 목록 (번호 → 목적)
 
-**Pending (2026-10-23)**: [0154_vod_archive_plus_public.sql](0154_vod_archive_plus_public.sql) — 공개 읽기에 구독플러스 다시보기(auth_no 107) 메타 포함(101·107만, 그 외 차단). 날짜 다시보기 창의 보랏빛 '구플' 탭용. 앱은 적용 전에도 101만 받아 안전(배포 순서 무관). PGlite 테스트 `tests/sql/vod-archive-plus-public.mjs`.
+**Pending (2026-10-23)**: [0155_vod_upload.sql](0155_vod_upload.sql) — 구독 전용 업로드 영상 표(숲 '구독' 배지, file_type NORMAL + 107). anon은 107만 읽기, service_role 쓰기. **앱 배포 전에 적용**(공개 로더가 이 표를 읽는다). 적용 후 `node scripts/backfill-vod-uploads.mjs`로 30건 채움. PGlite 테스트 `tests/sql/vod-upload.mjs`.
+
+**Applied 2026-10-23 KST**: [0154_vod_archive_plus_public.sql](0154_vod_archive_plus_public.sql) — 공개 읽기에 구독플러스 다시보기(auth_no 107) 메타 포함(101·107만, 그 외 차단). 날짜 다시보기 창의 보랏빛 '구플' 탭용. 앱은 적용 전에도 101만 받아 안전(배포 순서 무관). PGlite 테스트 `tests/sql/vod-archive-plus-public.mjs`.
 
 **Applied 2026-10-17 KST**: [0152_event_hearts_read_initplan.sql](0152_event_hearts_read_initplan.sql) — own-heart SELECT keeps the same roles/row predicate while evaluating stable auth.uid once per statement. Guarded transaction; no row/grant/RLS-owner changes. Isolated two-user/NULL/anon/write/rollback/idempotence tests and independent review passed. [Provider verification](../../docs/agent/verification/SUPABASE_PROVIDER-20261017.md).
 

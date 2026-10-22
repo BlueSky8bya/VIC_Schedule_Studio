@@ -163,7 +163,12 @@ export type PublicVodEntry = {
   titleNo: number;
   title: string;
   durationMs: number;
-  plus?: boolean; // 구독플러스(구독자 전용, SOOP auth_no=107 — 0154). 창 탭·칩이 프리미엄 색이 된다
+  // 숲 시청 권한 단계(2026-10-23 소유자: 일반 < 구독 < 구독+). 없음 = 일반(전체 공개 다시보기).
+  // "plus" = 구독자 전용 다시보기(vod_archive auth_no 107, 0154, 숲 '구독+' 배지),
+  // "sub" = 구독자 전용 업로드 영상(vod_upload, 0155, 숲 '구독' 배지). 재생 권한은 숲 플레이어가 판단.
+  access?: "sub" | "plus";
+  // 업로드 영상 썸네일(직접 jpg, 숲 호스트 https만) — 다시보기는 thumbQuery를 쓴다.
+  thumbUrl?: string;
   // 팬 타임라인(0071) 요약 — **타임라인 항목 개수**(화면 표기 "타임라인 N개"; 챕터=[코너] 헤더 수는
   // 본문을 받아야 안다)·작성자 닉(크레딧). 본문(entries)은 무거워서 번들에 안 싣고 펼칠 때
   // /api/public/[slug]/vod-timeline에서 따로 받는다. 필드명은 0071 당시 이름 그대로(값 의미만 주석으로).

@@ -78,8 +78,11 @@ export default async function VisualPosterFixture({
     ],
     vods: [
       { titleNo: 900000001, title: "샘플 다시보기", dateKey: "2026-06-18", durationMs: 7200000 },
-      // plus=1 → 같은 날 구독플러스(0154) 한 편 — 창 탭·모바일 칩의 프리미엄 색 실측용(기준선 영향 없음).
-      ...(sp?.plus === "1" ? [{ titleNo: 900000002, title: "플러스뱅송 - 샘플", dateKey: "2026-06-18", durationMs: 3900000, plus: true }] : [])
+      // plus=1 → 같은 날 구독 업로드(0155)·구독+ 다시보기(0154) 한 편씩 — 단계별 색 실측용(기준선 영향 없음).
+      ...(sp?.plus === "1" ? [
+        { titleNo: 900000002, title: "[기타] 샘플 먹는 영상!", dateKey: "2026-06-18", durationMs: 210000, access: "sub" as const },
+        { titleNo: 900000003, title: "플러스뱅송 - 샘플", dateKey: "2026-06-18", durationMs: 3900000, access: "plus" as const }
+      ] : [])
     ]
   } : shown;
   // tent=1 → 6/16~19에 미정·떡밥 비교 묶음(가린 떡밥 stub 포함) — 미정 표시 회귀 실측용(2026-10-05).

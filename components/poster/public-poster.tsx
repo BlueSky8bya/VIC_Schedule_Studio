@@ -134,7 +134,7 @@ import { popInnerOverlay, pushInnerOverlay } from "@/lib/ui/overlay-pop";
 import { VIEW_COOKIE, parseViewCookie, writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
 import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
 import { useSoopLive } from "@/components/poster/use-soop-live";
-import { DayVodWindow, formatVodDuration } from "@/components/poster/day-vod-window";
+import { DayVodWindow, formatVodDuration, VOD_ACCESS_HINT, VOD_ACCESS_LABEL } from "@/components/poster/day-vod-window";
 import { createWheelStepper, normalizeWheelDelta, stepCalZoom } from "@/lib/ui/calendar-zoom";
 import { useIdleAfter } from "@/lib/ui/use-idle";
 // 포스터 CSS는 이 컴포넌트와 함께 로드(루트 레이아웃 전역 import 제거에 대응). PublicPoster가 쓰이는
@@ -911,7 +911,7 @@ export function PublicPoster({
         thumbQuery?: string;
         host?: string; // 합방 게스트 출연분(0075) — 호스트 닉. 칩·창에 "합방 · ○○" 배지
         hostId?: string; // 호스트 숲 아이디 — 칩이 방송국 링크가 된다(2026-09-17)
-        plus?: boolean; // 구독플러스(구독자 전용, 0154) — 칩·창이 프리미엄 색
+        access?: "sub" | "plus"; // 숲 권한 단계(일반 < 구독 < 구독+, 0154/0155) — 칩·창 색
       }[]
     >();
     for (const v of schedule.vods ?? []) {
@@ -3902,20 +3902,20 @@ export function PublicPoster({
                   {interactive
                     ? (vodsByDate.get(cell.isoDate) ?? []).map((vod, vi, arr) => (
                         <a
-                          className={`agenda-link vod agenda-vod-inline${vod.plus ? " is-plus" : ""}`}
+                          className={`agenda-link vod agenda-vod-inline${vod.access ? ` is-${vod.access}` : ""}`}
                           data-act="vod-replay"
                           href={`https://vod.sooplive.co.kr/player/${vod.titleNo}`}
                           key={vod.titleNo}
                           onClick={() => hapticTick()}
                           rel="noopener noreferrer"
                           target="_blank"
-                          title={vod.host ? `합방 · ${vod.host} 방송국${vod.title ? ` — ${vod.title}` : ""}` : vod.plus ? `구독플러스 · ${vod.title || "구독자 전용 다시보기"}` : vod.title || undefined}
+                          title={vod.host ? `합방 · ${vod.host} 방송국${vod.title ? ` — ${vod.title}` : ""}` : vod.access ? `${VOD_ACCESS_LABEL[vod.access]} · ${vod.title || VOD_ACCESS_HINT[vod.access]}` : vod.title || undefined}
                         >
                           <Play aria-hidden="true" size={13} strokeWidth={2.6} />
                           {/* 합방 게스트 출연분(0075) — 다른 채널임을 짧게(모바일은 '합방'만, 호스트는 툴팁). */}
                           {vod.host ? <em className="agenda-vod-host">합방</em> : null}
-                          {/* 구독플러스(0154) — 같은 칩, 색만 프리미엄 + '구플' 각인. */}
-                          {vod.plus ? <em className="agenda-vod-host agenda-vod-plus">구플</em> : null}
+                          {/* 구독 / 구독+(0154/0155) — 같은 칩, 색만 단계별 + 숲 배지와 같은 각인. */}
+                          {vod.access ? <em className={`agenda-vod-host agenda-vod-access is-${vod.access}`}>{VOD_ACCESS_LABEL[vod.access]}</em> : null}
                           {/* 라벨 = VOD 제목(넘치면 …). 제목이 비어 있을 때만 '다시보기 N' 폴백. */}
                           <span className="agenda-vod-title">
                             {vod.title || `다시보기${arr.length > 1 ? ` ${vi + 1}` : ""}`}

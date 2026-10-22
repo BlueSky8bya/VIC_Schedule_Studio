@@ -906,7 +906,11 @@ html[data-reduce-motion] .mb-live-dot {
   background: var(--studio-action-tint-hi);
   color: var(--studio-action-strong);
 }
-/* 구독플러스(0154) — 같은 칩, 숲 파랑 대신 옅은 라벤더(창의 구플 탭과 같은 색). */
+/* 구독(0155)·구독+(0154) — 같은 칩, 숲 파랑 대신 라벤더(창의 탭과 같은 단계: 구독 단색 < 구독+ 그라데이션). */
+.agenda-link.vod.is-sub {
+  background: #f5f2fb;
+  color: #6a5694;
+}
 .agenda-link.vod.is-plus {
   background: linear-gradient(135deg, #f4eeff, #f9eef7);
   color: #5b3f94;
@@ -1338,32 +1342,53 @@ html[data-reduce-motion] .dvm-railside-btn { transition: none; }
 }
 .dvm-tab.is-on b,
 .dvm-tab.is-on em { color: #9a6a0c; } /* 단색 금(그라데이션 clip은 가운데 점(::before)을 지웠다) */
-/* 구독플러스(0154, 2026-10-23 소유자: "색만 살짝 구플처럼 프리미엄하게") — 같은 탭 문법, 금 대신 보랏빛.
-   선택되면 흰 알약 대신 옅은 라벤더→로즈 그라데이션 + 보라 헤어라인. '구플' 각인은 머리줄 배지와 같은 재질. */
+/* 숲 권한 단계(2026-10-23 소유자: 일반 < 구독 < 구독+) — 같은 탭 문법, 금 대신 보랏빛 한 계열에서 진하기만 오른다.
+   구독(업로드 영상, 0155) = 옅은 라벤더 단색 + 테두리만 있는 각인. 구독+(다시보기, 0154) = 라벤더→로즈 그라데이션 + 꽉 찬 각인.
+   각인 글자는 숲 카드 배지와 같은 말('구독' / '구독+'). */
+.dvm-tab.is-sub { color: #8a7aa8; }
 .dvm-tab.is-plus { color: #7a5fae; }
-.dvm-tab.is-plus:hover { color: #5b3f94; }
+.dvm-tab:is(.is-sub, .is-plus):hover { color: #5b3f94; }
+.dvm-tab.is-sub.is-on {
+  background: #f5f2fb;
+  box-shadow: inset 0 0 0 1px rgb(124 92 196 / 18%), 0 1px 3px rgb(80 50 140 / 12%);
+  color: #6a5694;
+}
 .dvm-tab.is-plus.is-on {
   background: linear-gradient(135deg, #f6f0ff, #efe7ff 55%, #fbeef6);
   box-shadow: inset 0 0 0 1px rgb(124 92 196 / 26%), 0 1px 3px rgb(80 50 140 / 18%);
   color: #5b3f94;
 }
-.dvm-tab.is-plus.is-on b,
-.dvm-tab.is-plus.is-on em { color: #5b3f94; }
-.dvm-tab .dvm-tab-plus,
-.agenda-vod-plus,
-.dvm-head .dvm-host.dvm-plus {
+.dvm-tab.is-sub.is-on :is(b, em) { color: #6a5694; }
+.dvm-tab.is-plus.is-on :is(b, em) { color: #5b3f94; }
+/* 각인: 탭 안 · 모바일 칩 · 머리줄 배지가 한 재질. */
+.dvm-tab .dvm-tab-access,
+.agenda-vod-access,
+.dvm-head .dvm-host.dvm-access {
+  letter-spacing: 0.02em;
+}
+.dvm-tab .dvm-tab-access.is-sub,
+.dvm-tab.is-sub .dvm-tab-access,
+.agenda-vod-access.is-sub,
+.dvm-head .dvm-host.dvm-access.is-sub {
+  border: 1px solid rgb(124 92 196 / 40%);
+  background: #fff;
+  color: #6a4fa6;
+}
+.dvm-tab.is-plus .dvm-tab-access,
+.agenda-vod-access.is-plus,
+.dvm-head .dvm-host.dvm-access.is-plus {
   border: 1px solid rgb(124 92 196 / 30%);
   background: linear-gradient(135deg, #8b6fd6, #7556c4 55%, #b067a8);
   color: #fff;
-  letter-spacing: 0.02em;
 }
-.dvm-tab .dvm-tab-plus {
-  padding: 2px 6px;
+.dvm-tab .dvm-tab-access {
+  padding: 1px 6px;
   border-radius: var(--r-pill);
 }
-.dvm-head .dvm-host.dvm-plus { font-weight: 700; }
-.dvm-vod[data-plus] .dvm-thumb { box-shadow: 0 0 0 1px rgb(124 92 196 / 30%); }
-.dvm-vod[data-plus] .dvm-thumb:hover { box-shadow: 0 0 0 1px rgb(124 92 196 / 38%), 0 10px 22px rgb(110 70 190 / 22%); }
+.dvm-head .dvm-host.dvm-access { font-weight: 700; }
+.dvm-vod[data-access="sub"] .dvm-thumb { box-shadow: 0 0 0 1px rgb(124 92 196 / 18%); }
+.dvm-vod[data-access="plus"] .dvm-thumb { box-shadow: 0 0 0 1px rgb(124 92 196 / 30%); }
+.dvm-vod[data-access] .dvm-thumb:hover { box-shadow: 0 0 0 1px rgb(124 92 196 / 38%), 0 10px 22px rgb(110 70 190 / 22%); }
 .dvm-body {
   min-height: 0;
   overflow-y: auto;
@@ -1609,7 +1634,7 @@ html[data-reduce-motion] .dvm-notice {
   transition: background-color var(--dur-1) var(--ease);
 }
 .dvm-thumb:hover .dvm-play { background: rgb(var(--studio-action-rgb) / 80%); }
-.dvm-vod[data-plus] .dvm-thumb:hover .dvm-play { background: rgb(117 86 196 / 85%); } /* 구독플러스 — 보랏빛 */
+.dvm-vod[data-access] .dvm-thumb:hover .dvm-play { background: rgb(117 86 196 / 85%); } /* 구독·구독+ — 보랏빛 */
 .dvm-dur {
   position: absolute;
   right: 8px;

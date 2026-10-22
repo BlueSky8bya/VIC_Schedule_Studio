@@ -1,6 +1,7 @@
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { BJ_ID } from "@/lib/broadcast/soop";
 import { syncVodArchive, syncVodArchiveDeep } from "@/lib/broadcast/vod-archive";
+import { syncVodUploads } from "@/lib/broadcast/vod-upload";
 import { syncXlitSynonymsChecked } from "@/lib/search/xlit-sync";
 import { createWorkBudget, singleFlight, type WorkBudget } from "./work-budget";
 
@@ -179,6 +180,8 @@ async function runVodPipeline(budget = createWorkBudget(50_000)): Promise<{
   }
   if (deep) await syncVodArchiveDeep(budget);
   else await syncVodArchive(1, budget);
+  // 구독 전용 업로드(0155) — 같은 박자. 스윕 때만 전 페이지 + 사라진 행 정리.
+  await syncVodUploads(deep, budget);
   // Chat has its own scheduled route/queue. Do not tie it to archive timestamps,
   // broadcast state or share this request's time budget with timeline rebuilds.
   return { ran: true, tier, sinceEndMin: sinceEnd };

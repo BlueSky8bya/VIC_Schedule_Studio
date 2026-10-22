@@ -97,7 +97,7 @@ beforeEach(() => {
 afterEach(() => { expect(fetch).not.toHaveBeenCalled(); vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe("public schedule failures never become successful empty cache values", () => {
-  for (const failure of ["lookup", "calendar", "public_schedule_events", "broadcast_tags", "color_palette", "get_event_heart_counts", "get_teaser_hope_counts", "vod_archive", "vod_timeline"]) {
+  for (const failure of ["lookup", "calendar", "public_schedule_events", "broadcast_tags", "color_palette", "get_event_heart_counts", "get_teaser_hope_counts", "vod_archive", "vod_timeline", "vod_upload"]) {
     it(`rejects ${failure} failure and recovers on the next healthy read`, async () => {
       const { getPublicSchedule } = await import("@/lib/schedules/public-loader");
       state.failure = failure;

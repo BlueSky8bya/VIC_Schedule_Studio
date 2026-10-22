@@ -578,20 +578,30 @@ html[data-theme="dark"] :is(.dvm-tab.is-on, .dvm-tab:hover) {
   box-shadow: var(--gs-metal-edge);
 }
 html[data-theme="dark"] .dvm-tab.is-on :is(b, em) { color: var(--accent-strong); }
-/* 구독플러스(0154) — 밤에도 같은 보랏빛 재질, 밝기만 낮춘다. */
+/* 구독(0155) < 구독+(0154) — 밤에도 같은 보랏빛 재질, 밝기만 낮춘다. */
+html[data-theme="dark"] .dvm-tab.is-sub { color: #ad9fcc; }
 html[data-theme="dark"] .dvm-tab.is-plus { color: #c4b3ec; }
+html[data-theme="dark"] .dvm-tab.is-sub:is(.is-on, :hover) {
+  background: #2c2838; color: #d8ccf5;
+  box-shadow: inset 0 0 0 1px rgb(196 170 255 / 18%), 0 1px 3px rgb(0 0 0 / 30%);
+}
 html[data-theme="dark"] .dvm-tab.is-plus:is(.is-on, :hover) {
   background: linear-gradient(135deg, #3a2f57, #2e2846 60%, #3b2a4a); color: #e2d6ff;
   box-shadow: inset 0 0 0 1px rgb(196 170 255 / 30%), 0 1px 3px rgb(0 0 0 / 30%);
 }
+html[data-theme="dark"] .dvm-tab.is-sub.is-on :is(b, em) { color: #d8ccf5; }
 html[data-theme="dark"] .dvm-tab.is-plus.is-on :is(b, em) { color: #e2d6ff; }
-html[data-theme="dark"] :is(.dvm-tab-plus, .agenda-vod-plus, .dvm-host.dvm-plus) {
+html[data-theme="dark"] :is(.dvm-tab.is-sub .dvm-tab-access, .agenda-vod-access.is-sub, .dvm-host.dvm-access.is-sub) {
+  background: transparent; border-color: rgb(196 170 255 / 40%); color: #d1c2f5;
+}
+html[data-theme="dark"] :is(.dvm-tab.is-plus .dvm-tab-access, .agenda-vod-access.is-plus, .dvm-host.dvm-access.is-plus) {
   background: linear-gradient(135deg, #4a3a73, #3b2e5c 55%, #533a63); border-color: rgb(196 170 255 / 34%); color: #ece4ff;
 }
 /* 위 :is(.agenda-detail-backdrop.is-pop …) 특이도와 같아지도록 .agenda-vod-inline까지 — 뒤에 있어 이긴다. */
+html[data-theme="dark"] .agenda-link.vod.agenda-vod-inline.is-sub { background: #29263a; color: #cbbfe9; }
 html[data-theme="dark"] .agenda-link.vod.agenda-vod-inline.is-plus { background: #2d2742; color: #d6c8fb; }
-html[data-theme="dark"] .agenda-link.vod.agenda-vod-inline.is-plus .agenda-vod-dur { color: #b8a6e6; }
-html[data-theme="dark"] .dvm-vod[data-plus] .dvm-thumb { box-shadow: 0 0 0 1px rgb(196 170 255 / 34%); }
+html[data-theme="dark"] .agenda-link.vod.agenda-vod-inline:is(.is-sub, .is-plus) .agenda-vod-dur { color: #b8a6e6; }
+html[data-theme="dark"] .dvm-vod[data-access] .dvm-thumb { box-shadow: 0 0 0 1px rgb(196 170 255 / 28%); }
 html[data-theme="dark"] .vch-item[data-depth] .vch-label { color: var(--ink-soft); }
 html[data-theme="dark"] .vch-item.is-active {
   background: var(--accent-soft); border-color: rgb(255 216 115 / 18%);
