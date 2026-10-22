@@ -293,12 +293,12 @@ html:is([data-reduce-motion],[data-gfx="off"],[data-gfx="soft"]) .vc-tv-picture 
 .vc-home :is(.vc-home-tv, .vc-home-lamp):active { transform: none; }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home-lamp-light,
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home-room::before { transition: none; }
-html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-home-lamp { --vc-lamp-pull: 0px !important; }
+/* A finite physical tug is an actual control effect. Soft graphics removes
+   its transition, not the3px effect required by autonomous lamp contact. */
+html:is([data-reduce-motion], [data-gfx="off"]) .vc-home-lamp { --vc-lamp-pull: 0px !important; }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) :is(.vc-home-lamp-paint, .vc-home-lamp-cord-feedback) { transition: none; }
-@media (prefers-reduced-motion: reduce) {
-  .vc-home-lamp { --vc-lamp-pull: 0px !important; }
-  .vc-home-lamp-paint, .vc-home-lamp-cord-feedback { transition: none; }
-}
+/* The app motion toggle owns motion policy; an OS-only media preference
+   must not silently disable a runtime-permitted control acknowledgement. */
 @container (max-width: 310px) {
   /* Below310 CSS px, real45px furniture inputs need another depth row.
      Floating homes use the requested wider host; only cramped rails need it. */

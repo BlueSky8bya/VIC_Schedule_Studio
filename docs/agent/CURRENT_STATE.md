@@ -52,7 +52,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 5. PRIVACY-20260921: resolve remaining visit/recurring retention policy and restricted local recovery-backup removal after its2026-10-24 window. No automatic future run is scheduled.
 ## Last Verified
 
-Latest product release469fc5eca15f22e9a19f6dbdee8db30ece69dc76: lamp physical reach99units/3native/independent review, remote quality39762693722/Vercel/public40SHA verified. No200 in this task. Prior ac32 full200/UI32/6672 units remain historical exact-source evidence. Normal-speed36 stays0/UNVERIFIED. [Focused record](plans/PLAN-20261022-focused-qa.md).
+Default-home lamp follow-up:4 actual native cases passed at262px (both approaches, soft graphics, OS reduced-motion/app reduceOFF), unchanged physical contact criterion; related units/type/lint/build passed. Deployment confirmation belongs to the exact release receipt in .scratch-pw/site-daily/state.json. No200 restart;36 remains0/UNVERIFIED. [Follow-up](plans/PLAN-20261022-lamp-default-followup.md).
 
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "baselineRegistration": 200,
-  "additionalLampCases": 14,
+  "additionalLampCases": 18,
   "baselineReporterSha256": "159d3fcac2b5371012fd68f2005ebcf1a8b8db26cd3b3aeb721744d718e9c2d2",
   "registrationOnly": true,
   "cases": [
@@ -1716,6 +1716,42 @@
       "project": "",
       "estimatedSeconds": 70,
       "estimateSource": "conservative timeout; not observed"
+    },
+    {
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 viewer 1494 panel near-left lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "reason": "reported-default-house-failure",
+      "id": "0422257506dd80052e69d511faec7583110f7ef8707ea335350b08850276c255",
+      "estimateSource": "new default-panel regression registration; not current PASS"
+    },
+    {
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 viewer 1494 panel near-right lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "reason": "reported-default-house-failure",
+      "id": "dca1702ae405e15da591b64494cde58be3a582ea8f6ac791c16bcbfc627aa9a8",
+      "estimateSource": "new default-panel regression registration; not current PASS"
+    },
+    {
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 viewer 1494 panel soft lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "reason": "reported-default-house-failure",
+      "id": "0300fefa03646ef45f10b47df3c4af9eb2e19b1bfeb9cbff87a68ef86adcd736",
+      "estimateSource": "new default-panel regression registration; not current PASS"
+    },
+    {
+      "file": "tests/visual/companion-house-reach-164.spec.ts",
+      "title": "164 viewer 1494 panel os-reduced lamp off physically returns to sleep",
+      "project": "",
+      "estimatedSeconds": 70,
+      "reason": "reported-default-house-failure",
+      "id": "1036afc6b20800b98a8ce4af4f655e921d081095871eb8d8c2b68129205b35d8",
+      "estimateSource": "new default-panel regression registration; not current PASS"
     }
   ],
   "dailyScenarios": [

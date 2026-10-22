@@ -1048,6 +1048,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (attention) data("attention", attention.kind); else el.removeAttribute("data-attention");
       if (attention?.goal) data("intent", attention.goal.kind); else el.removeAttribute("data-intent");
       const sample = visual.sample({ row, phase: clamp(frame / 15, 0, 1), status, x: isDetailGuest() ? displayFrame.x : x - carrier.x, y: isDetailGuest() ? displayFrame.y : y - carrier.y, now: presentationNow, grip: normalizedGrip, reduced: forceNeutralPose || reduced || gfxMode() === "off", attention: attendedPoint ? { direction: Math.abs(attendedPoint.x - x) < 3 ? brain.current.heading : attendedPoint.x < x ? -1 : 1, elevation: clamp((y - size * .5 - attendedPoint.y) / 160, -1, 1) } : undefined });
+      // Row9 contact deliberately ignores the generic observation attention.
+      // Face the actual cord during this owned local action, even when the
+      // safe floor ends just beside it and the last walk faced the other way.
+      if (homeContact?.kind === "light" && status === "play" && isHomeFloor(support) && supportedNow()
+        && !pressed && !keyboardHeld && !placing) sample.facing = homeContact.point.x < x ? -1 : 1;
       if (forceNeutralPose) { heldPivot = false; releasedPivotAt = -Infinity; }
       forceNeutralPose = false;
       if (status === "held") { heldPivot = true; releasedPivotAt = Infinity; }
@@ -1109,6 +1114,12 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         displayOpacity = 1 - p;
       } else if (hiding?.sheet) displayOpacity = hide.phase === "found" ? Math.min(1, hide.progress * 4) : 1;
       const interaction = homeContact?.element.isConnected && isHomeFloor(support) && supportedNow() ? homeContact : undefined;
+      // The handle itself moves during a finite tug. Keep contact on its
+      // measured current rectangle, rather than an earlier layout sample.
+      if (interaction?.kind === "light") {
+        const current = homeContactPoint("light", interaction.element);
+        if (current) interaction.point = current;
+      }
       const previousCarry = paintedSelection && accessoryModule?.companionHomeContactAnchor(paintedSelection, interaction?.kind === "light" || interaction?.kind === "curtain");
       const previousHand = previousCarry && paintedSelection ? projectCompanionSpritePoint({ size, display, shape, pressure, response, facing: sample.facing, sway, chew: 0, cell: paintedSelection.frame }, previousCarry) : null;
       const reach = interaction && previousHand ? sampleCompanionHomeReach({ hand: previousHand, contact: interaction.point, footY: display.y, ceiling: bedScene?.clip.top ?? 0, size, progress: (performance.now() - began) / total, jump: effective.jump, cord: interaction.kind === "light" }) : undefined;

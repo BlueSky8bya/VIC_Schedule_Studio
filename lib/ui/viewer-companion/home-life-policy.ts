@@ -104,7 +104,11 @@ export function planCompanionHomeLifeControl(input: {
     || Math.abs(world.y - source.y) > 2 || world.x < source.x || world.x > source.x + source.width
     || Math.abs(stance.y - target.y) > 2 || stance.x < target.x || stance.x > target.x + target.width) return;
   const homeLife = { serial: decision.plan.serial, command: decision.command };
-  if (world.platformId !== stance.platformId || Math.hypot(world.x - stance.x, world.y - stance.y) > 24) {
+  // The narrow cord needs the actual stance even when we are already nearby.
+  // Other furniture keeps its existing body-sized approach allowance.
+  const needsAlignment = decision.command.kind === "light" ? Math.abs(world.x - stance.x) > 1
+    : Math.hypot(world.x - stance.x, world.y - stance.y) > 24;
+  if (world.platformId !== stance.platformId || needsAlignment) {
     const step = findCompanionToyRoute(world, stance, world.platforms, p.jump)?.[0];
     if (!step) return;
     const speed = p.speed === "relaxed" ? 65 : p.speed === "lively" ? 135 : 100;

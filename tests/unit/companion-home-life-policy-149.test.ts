@@ -141,6 +141,46 @@ describe("149 continuous room life policy", () => {
       expect(planCompanionHomeLifeControl({ decision, world, preferences: DEFAULT_COMPANION_PREFERENCES, stance, contact, ...changed })).toBeUndefined();
   });
 
+  it("walks the remaining near-cord gap on either side before light ON or OFF", () => {
+    const floor: Platform = { id: "companion-home-floor", x: 0, y: 500, width: 700, kind: "floor", manualOnly: true };
+    const stance = { x: 330, y: floor.y, platformId: floor.id }, contact = { x: 330, y: 300 };
+    for (const phase of ["awake", "sleep"] as const) {
+      const decision = createCompanionHomeLifePolicy(() => .9).next(input({ phase, lightLit: phase === "sleep" }));
+      expect(decision.command?.kind).toBe("light");
+      for (const offset of [-24, -20, -12, -2, 2, 12, 20, 24]) {
+        const world: CompanionWorld = { ...stance, x: stance.x + offset, platforms: [floor], width: 1000, height: 700, animated: true };
+        const job = planCompanionHomeLifeControl({ decision, world, preferences: DEFAULT_COMPANION_PREFERENCES, stance, contact });
+        expect(job).toMatchObject({ kind: "walk", target: stance, homeLife: { travel: true } });
+        const aligned = planCompanionHomeLifeControl({ decision, world: { ...world, ...stance }, preferences: DEFAULT_COMPANION_PREFERENCES, stance, contact });
+        expect(aligned).toMatchObject({ kind: "play", homeLife: { interactionContact: contact } });
+      }
+      for (const offset of [-1.5, 1.5]) {
+        const world: CompanionWorld = { ...stance, y: stance.y + offset, platforms: [floor], width: 1000, height: 700, animated: true };
+        expect(planCompanionHomeLifeControl({ decision, world, preferences: DEFAULT_COMPANION_PREFERENCES, stance, contact }))
+          .toMatchObject({ kind: "play", homeLife: { interactionContact: contact } });
+      }
+    }
+  });
+
+  it("aligns authored light steps instead of spending them beside the cord", () => {
+    const floor: Platform = { id: "companion-home-floor", x: 0, y: 500, width: 700, kind: "floor", manualOnly: true };
+    for (const lit of [true, false]) for (const offset of [-20, 8, 0]) {
+      const recipes: PersonalitySceneRecipe[] = [{ id: "light-alignment", label: "fixture", personality: "balanced", major: true, triggers: ["free"], steps: [{ kind: "light", lit }, { kind: "watch", ms: 900 }] }];
+      const director = createCompanionPersonalityDirector(recipes, () => .5);
+      const scene: PersonalitySceneInput = { world: { x: 330 + offset, y: 501.5, platformId: floor.id, platforms: [floor], width: 1000, height: 700, animated: true },
+        brain: { ...createBrain(0, () => .5), energy: .9, hunger: .2 }, preferences: { ...DEFAULT_COMPANION_PREFERENCES, personality: "balanced" }, now: 0,
+        home: { light: { x: 330, y: 500, platformId: floor.id }, contacts: { light: { x: 330, y: 300 } } }, toys: [], tv: "off", lightLit: !lit };
+      const entry = director.next(scene)!; director.complete(entry.meta); scene.now = 100;
+      const offered = director.next(scene);
+      expect(offered?.meta.command).toMatchObject({ kind: "light", lit });
+      if (offset) {
+        expect(offered?.action?.kind).toBe("walk"); expect(offered?.meta.travel).toBe(true);
+        director.complete(offered!.meta); scene.world = { ...scene.world, x: 330, y: 500 }; scene.now = 500;
+        expect(director.next(scene)?.action?.kind).toBe("play");
+      } else expect(offered?.action?.kind).toBe("play");
+    }
+  });
+
   it("normalizes an authored light OFF before comparison, avoiding a needless OFF-then-ON contact", () => {
     const floor: Platform = { id: "companion-home-floor", x: 0, y: 500, width: 700, kind: "floor", manualOnly: true };
     const recipes: PersonalitySceneRecipe[] = [{ id: "policy-proof", label: "fixture", personality: "balanced", major: true, triggers: ["free"], steps: [{ kind: "light", lit: false }, { kind: "watch", ms: 900 }] }];

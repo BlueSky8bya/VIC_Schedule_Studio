@@ -47,13 +47,13 @@ test.afterEach(async ({ page }, info) => {
   await page.screenshot({ path: resolve(output, name + ".png") }).catch(() => {});
   expect(proof.errors).toEqual([]); expect(proof.rejected).toEqual([]); proofs.delete(page);
 });
-async function seed(page: Page) {
-  await page.addInitScript(({ prefs, memory, epoch, key }) => {
-    for (const [k, v] of Object.entries({ [key]: epoch, "vic.gfxPref": "max", "vic.gfx": JSON.stringify({ mode: "full", at: Date.now(), v: 3 }), "vic.reduceMotion": "off", "vic.dark": "off", "vic.sound": "off", "vic.ambient": "off", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(k, v);
+async function seed(page: Page, soft = false) {
+  await page.addInitScript(({ prefs, memory, epoch, key, soft }) => {
+    for (const [k, v] of Object.entries({ [key]: epoch, "vic.gfxPref": soft ? "auto" : "max", "vic.gfx": JSON.stringify({ mode: soft ? "soft" : "full", at: Date.now(), v: 3 }), "vic.reduceMotion": "off", "vic.dark": "off", "vic.sound": "off", "vic.ambient": "off", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(k, v);
     localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, personality: "balanced", personalitySource: "manual", roam: false, feeding: true, sleep: true, petting: false, learnFromYou: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, rarePrank: false }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...memory, energy: .9, hunger: .05 }));
     localStorage.setItem("vic.companionHomeLight.v1", JSON.stringify({ version: 1, lit: true }));
-  }, { prefs: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY });
+  }, { prefs: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY, soft });
 }
 async function open(page: Page, surface: Surface, compact: boolean) {
   const response = await page.goto(surface === "viewer" ? `/visual-fixture/poster?hour=0${compact ? "&avatar=1" : ""}` : "/visual-fixture/studio?role=owner&y=2025&m=10&hour=0&weather=clear");
@@ -118,9 +118,12 @@ for (const [surface, width, compact, source] of [
   ["viewer", 1100, true, "floor"], ["viewer", 1494, true, "floor"], ["viewer", 1700, true, "floor"], ["viewer", 1920, true, "floor"], ["viewer", 2560, true, "floor"], ["viewer", 1494, false, "floor"],
   ["studio", 1494, true, "floor"], ["studio", 1920, true, "floor"], ["studio", 2560, true, "floor"], ["studio", 1494, false, "floor"], ["preview", 1920, true, "floor"], ["preview", 1494, false, "floor"],
   ["viewer", 2560, true, "sofa"], ["studio", 1920, true, "sofa"],
+  ["viewer", 1494, false, "near-left"], ["viewer", 1494, false, "near-right"],
+  ["viewer", 1494, false, "soft"], ["viewer", 1494, false, "os-reduced"],
 ] as const) test(`164 ${surface} ${width} ${compact ? "compact" : "panel"} ${source} lamp off physically returns to sleep`, async ({ page }) => {
   await page.setViewportSize({ width, height: 937 });
-  await seed(page); const house = await open(page, surface, compact), actor = page.locator(".vc-companion");
+  if (source === "os-reduced") await page.emulateMedia({ reducedMotion: "reduce" });
+  await seed(page, source === "soft"); const house = await open(page, surface, compact), actor = page.locator(".vc-companion");
   // Keep the initial lamp state stable during layout/placement. Native ON
   // starts the existing living loop immediately before observing the intent.
   await house.locator('[data-home-action="personality"]').click();
@@ -131,6 +134,16 @@ for (const [surface, width, compact, source] of [
   // Changing motion preferences reconstructs the controller. Finish a native
   // placement on its freshly measured support before issuing the sleep key.
   await placeCompanionOnHomeFloor(page);
+  if (source === "near-left" || source === "near-right") {
+    const knob = (await house.locator(".vc-home-lamp-handle").boundingBox())!, floor = (await house.locator(".vc-home-floor").boundingBox())!;
+    await actor.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true }).press("p");
+    // The default panel's right storage excludes a20px-right body stance.
+    // Eight pixels is still a real missed-cord gap within the safe floor.
+    await page.mouse.click(knob.x + knob.width / 2 + (source === "near-left" ? -20 : 8), floor.y + floor.height - 14);
+    await page.mouse.move(2, 2); await expect(actor).not.toHaveAttribute("data-state", "jump");
+    await expect(actor).toHaveAttribute("data-platform", /^companion-home-floor/);
+    proofs.get(page)!.notes.push({ stage: "near-cord-native-placement", source, actor: await actor.boundingBox(), knob: await house.locator(".vc-home-lamp-handle").boundingBox() });
+  }
   if (source === "sofa") {
     const cushion = (await house.locator(".vc-home-cushion").boundingBox())!;
     await actor.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true }).press("p");
@@ -140,6 +153,9 @@ for (const [surface, width, compact, source] of [
   await expect(house).toHaveAttribute("data-home-presentation", compact ? "compact" : "panel");
   await expect(house.locator(".vc-home-room")).toHaveAttribute("data-night", "true");
   await expect(house.locator("[data-home-action=light]")).toHaveAttribute("aria-pressed", "true");
+  if (source === "soft") await expect(page.locator("html")).toHaveAttribute("data-gfx", "soft");
+  if (source === "os-reduced") expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(true);
+  proofs.get(page)!.notes.push({ stage: "actual-environment", ...await page.evaluate(() => ({ gfx: document.documentElement.dataset.gfx, reduced: document.documentElement.hasAttribute("data-reduce-motion"), osReduced: matchMedia("(prefers-reduced-motion: reduce)").matches, homeWidth: document.querySelector(".vc-home-room")!.getBoundingClientRect().width })) });
   await observe(page);
   await actor.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true }).press("n"); await page.mouse.move(2, 2);
   await expect(house.locator("[data-home-action=light]")).toHaveAttribute("aria-pressed", "false", { timeout: 18000 });

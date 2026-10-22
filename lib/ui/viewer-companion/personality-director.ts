@@ -1234,7 +1234,9 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
           const point = command.kind === "curtain" ? input.home.curtain ?? input.home.window : input.home[command.kind];
           const contact = input.home.contacts?.[command.kind];
           if (!safe(point) || !safe(contact)) { if (command.optional) { advance(); continue; } finish(false); return; }
-          if (Math.hypot(point.x - world.x, point.y - world.y) > 24 || point.platformId !== world.platformId) {
+          const needsAlignment = command.kind === "light" ? Math.abs(point.x - world.x) > 1
+            : Math.hypot(point.x - world.x, point.y - world.y) > 24;
+          if (needsAlignment || point.platformId !== world.platformId) {
             const offered = go(point, command, input); if (offered) return offered;
             if (command.optional) { advance(); continue; } finish(false); return;
           }
