@@ -165,7 +165,7 @@ export type PublicVodEntry = {
   durationMs: number;
   // 숲 시청 권한 단계(2026-10-23 소유자: 일반 < 구독 < 구독+). 없음 = 일반(전체 공개 다시보기).
   // "plus" = 구독자 전용 다시보기(vod_archive auth_no 107, 0154, 숲 '구독+' 배지),
-  // "sub" = 구독자 전용 업로드 영상(vod_upload, 0155, 숲 '구독' 배지). 재생 권한은 숲 플레이어가 판단.
+  // "sub" = 구독자 전용 업로드 영상(vod_archive upload=true, 0156, 숲 '구독' 배지). 재생 권한은 숲 플레이어가 판단.
   access?: "sub" | "plus";
   // 업로드 영상 썸네일(직접 jpg, 숲 호스트 https만) — 다시보기는 thumbQuery를 쓴다.
   thumbUrl?: string;

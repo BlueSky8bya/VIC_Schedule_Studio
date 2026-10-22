@@ -326,9 +326,8 @@ const loadPublicScheduleData = unstable_cache(
       eventHeartsRes,
       hopeRes,
       vodsRes,
-      timelinesRes,
-      uploadsRes
-    ] = await timed("publicSchedule:db(9 parallel queries)", () =>
+      timelinesRes
+    ] = await timed("publicSchedule:db(8 parallel queries)", () =>
       Promise.all([
         supabase
           .from("calendars")
@@ -369,11 +368,11 @@ const loadPublicScheduleData = unstable_cache(
         supabase.rpc("get_teaser_hope_counts", { p_calendar_id: calendarId }),
         // 다시보기 아카이브(0068) — 공개 메타만(번호·날짜·길이). 최신순 1000행 한도(PostgREST
         // 기본 cap과 같은 값이라 잘려도 '가장 오래된 다시보기'부터 빠진다 — 안전한 방향).
-        // auth_no=101(전체 공개) + 107(구독플러스 전용 — 2026-10-23 소유자: 창에 프리미엄 색 탭으로, 0154).
-        // 재생 권한은 숲 플레이어가 판단한다. 그 밖(미상 0·102 등)은 제외.
+        // auth_no=101(전체 공개) + 107(구독자 전용 — 2026-10-23 소유자, 0154). upload=true는 업로드 영상(0156, 숲 '구독'),
+        // 107 다시보기는 숲 '구독+'. 재생 권한은 숲 플레이어가 판단한다. 그 밖(미상 0·102 등)은 제외.
         supabase
           .from("vod_archive")
-          .select("title_no, broadcast_day, title, duration_ms, thumb, guest, host_nick, host_id, reg_date, auth_no")
+          .select("title_no, broadcast_day, title, duration_ms, thumb, guest, host_nick, host_id, reg_date, auth_no, upload")
           .in("auth_no", [101, 107])
           .order("broadcast_day", { ascending: false })
           .limit(1000),
@@ -382,23 +381,16 @@ const loadPublicScheduleData = unstable_cache(
           .from("vod_timeline")
           .select("title_no, entry_count, author_nick")
           .gt("entry_count", 0)
-          .limit(1000),
-        // 구독 전용 업로드 영상(0155) — 숲 '구독' 배지. 다시보기(구독+)와 같은 창에 한 단계 아래로.
-        supabase
-          .from("vod_upload")
-          .select("title_no, upload_day, title, duration_ms, thumb, reg_date")
-          .eq("auth_no", 107)
-          .order("upload_day", { ascending: false })
-          .limit(500)
+          .limit(1000)
       ])
     );
 
     // Partial failures must not replace the cached schedule with lost tags,
     // palette, counts or VODs. Messages/codes from DB responses stay internal.
-    if ([calendarRes, tagsRes, paletteRes, eventHeartsRes, hopeRes, vodsRes, timelinesRes, uploadsRes].some(result => result.error)) {
+    if ([calendarRes, tagsRes, paletteRes, eventHeartsRes, hopeRes, vodsRes, timelinesRes].some(result => result.error)) {
       throw new Error("Public schedule unavailable");
     }
-    if (![tagsRes.data, paletteRes.data, eventHeartsRes.data, hopeRes.data, vodsRes.data, timelinesRes.data, uploadsRes.data].every(Array.isArray)) {
+    if (![tagsRes.data, paletteRes.data, eventHeartsRes.data, hopeRes.data, vodsRes.data, timelinesRes.data].every(Array.isArray)) {
       throw new Error("Public schedule unavailable");
     }
     const calendar = calendarRes.data;
@@ -445,61 +437,43 @@ const loadPublicScheduleData = unstable_cache(
             (t) => [Number(t.title_no), t]
           )
         );
-        return ((vodsRes.data as { title_no: number; broadcast_day: string; title: string; duration_ms: number; thumb: string; guest?: boolean; host_nick?: string; host_id?: string; reg_date?: string; auth_no?: number }[] | null) ?? [])
-          .map((row) => {
+        return ((vodsRes.data as { title_no: number; broadcast_day: string; title: string; duration_ms: number; thumb: string; guest?: boolean; host_nick?: string; host_id?: string; reg_date?: string; auth_no?: number; upload?: boolean }[] | null) ?? [])
+          .map((row): PublicVodEntry => {
+            const upload = row.upload === true;
             // 합방 게스트 출연분(0075)만 호스트 닉·아이디를 싣는다(둘 다 숲 공개 채널 정보). 아이디는 방송국 링크용.
             const host = row.guest === true && typeof row.host_nick === "string" && row.host_nick.trim() ? row.host_nick.trim() : undefined;
             const hostId = host && typeof row.host_id === "string" && /^[a-z0-9_]{2,30}$/i.test(row.host_id.trim()) ? row.host_id.trim() : undefined;
             const tl = tlByNo.get(Number(row.title_no));
             // 썸네일은 쿼리 문자열만(접두 반복 전송 안 함). column·t까지 보존해야 스트리머가
             // 지정한 썸네일 지점이 나온다 — rowKey만 남기면 0초 컷(2026-09-01 실측 수정).
-            const thumbQuery =
-              typeof row.thumb === "string" && row.thumb.includes("?")
-                ? row.thumb.slice(row.thumb.indexOf("?") + 1)
-                : "";
+            // 업로드 영상(0156)은 SnapshotLoad가 아닌 직접 jpg — 숲 호스트 https만 그대로 싣는다.
+            const thumb = typeof row.thumb === "string" ? row.thumb.trim() : "";
+            const thumbUrl = upload && /^(https:)?\/\/[a-z0-9.-]+\.sooplive\.(com|co\.kr)\/[^\s"'<>]+$/i.test(thumb)
+              ? (thumb.startsWith("//") ? `https:${thumb}` : thumb)
+              : undefined;
+            const thumbQuery = !upload && thumb.includes("?") ? thumb.slice(thumb.indexOf("?") + 1) : "";
             return {
               dateKey: String(row.broadcast_day).slice(0, 10),
               titleNo: Number(row.title_no),
               ...(host ? { host } : {}),
               ...(hostId ? { hostId } : {}),
-              ...(Number(row.auth_no) === 107 ? { access: "plus" as const } : {}),
+              ...(Number(row.auth_no) === 107 ? { access: upload ? ("sub" as const) : ("plus" as const) } : {}),
               title: typeof row.title === "string" ? row.title : "",
               durationMs: Number(row.duration_ms) || 0,
               chapters: tl ? Number(tl.entry_count) || 0 : 0,
               // 방송 시작 시각 = VOD 등록 시각 − 길이(숲은 방송이 끝나면 VOD를 등록한다). 방송 세션 기록과 분 단위 일치(실측).
               ...(() => {
+                if (upload) return {}; // 업로드는 방송이 아니라 '방송 시작 시각'이 없다
                 const reg = row.reg_date ? Date.parse(row.reg_date) : Number.NaN;
                 const dur = Number(row.duration_ms) || 0;
                 return Number.isFinite(reg) && dur > 0 ? { startedAt: new Date(reg - dur).toISOString() } : {};
               })(),
               timelineBy: tl && typeof tl.author_nick === "string" ? tl.author_nick : "",
-              thumbQuery
+              thumbQuery,
+              ...(thumbUrl ? { thumbUrl } : {})
             };
           })
-          .filter((v) => Number.isFinite(v.titleNo) && v.titleNo > 0)
-          .map((v): PublicVodEntry => v)
-          .concat(
-            // 구독 전용 업로드(0155) — 명시적 DTO. 썸네일은 SnapshotLoad가 아닌 직접 jpg라 숲 호스트만 https로 싣는다.
-            ((uploadsRes.data as { title_no: number; upload_day: string; title: string; duration_ms: number; thumb: string; reg_date?: string }[] | null) ?? [])
-              .map((row) => {
-                const thumb = typeof row.thumb === "string" ? row.thumb.trim() : "";
-                const thumbUrl = /^(https:)?\/\/[a-z0-9.-]+\.sooplive\.(com|co\.kr)\/[^\s"'<>]+$/i.test(thumb)
-                  ? (thumb.startsWith("//") ? `https:${thumb}` : thumb)
-                  : undefined;
-                return {
-                  dateKey: String(row.upload_day).slice(0, 10),
-                  titleNo: Number(row.title_no),
-                  access: "sub" as const,
-                  title: typeof row.title === "string" ? row.title : "",
-                  durationMs: Number(row.duration_ms) || 0,
-                  chapters: 0,
-                  timelineBy: "",
-                  thumbQuery: "",
-                  ...(thumbUrl ? { thumbUrl } : {})
-                };
-              })
-              .filter((v) => Number.isSafeInteger(v.titleNo) && v.titleNo > 0 && /^\d{4}-\d{2}-\d{2}$/.test(v.dateKey))
-          );
+          .filter((v) => Number.isFinite(v.titleNo) && v.titleNo > 0 && /^\d{4}-\d{2}-\d{2}$/.test(v.dateKey));
       })(),
       events: eventsRes.map((row) => ({
         ...mapEvent(row, Date.now()),

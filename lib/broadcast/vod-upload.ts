@@ -4,9 +4,10 @@ import { BJ_ID } from "@/lib/broadcast/soop";
 import { kstStringToIso, VOD_DAY_CUTOFF_HOURS } from "./vod-archive";
 import { createWorkBudget, singleFlight, type WorkBudget } from "./work-budget";
 
-// 구독 전용 업로드 영상 수집기(0155, 2026-10-23 소유자) — 숲 카드의 '구독' 배지(업로드 + auth_no 107).
-// '구독+'(다시보기 + 107)는 vod_archive가 맡는다. 목록 API는 다시보기·업로드·클립을 한데 주므로
-// file_type=NORMAL + 107만 고른다. 비공식 API라 실패는 조용히 스킵(기존 행 유지, fail-soft).
+// 구독 전용 업로드 영상 수집기(0155→0156, 2026-10-23 소유자) — 숲 카드의 '구독' 배지(업로드 + auth_no 107).
+// vod_archive에 upload=true 행으로 쓴다(0156: 검색·팬 타임라인이 같은 말뭉치를 읽도록. 방송 통계·스윕·채팅 큐는
+// upload 행을 뺀다 — guest 행과 같은 자리). 목록 API는 다시보기·업로드·클립을 한데 주므로 NORMAL + 107만 고른다.
+// 비공식 API라 실패는 조용히 스킵(기존 행 유지, fail-soft).
 // 호출처: runVodPipeline(평시 1페이지, 12시간 스윕 때 전 페이지 + 사라진 행 정리).
 
 const PER_PAGE = 60;
@@ -120,15 +121,15 @@ async function runUploadSync(full: boolean, budget = createWorkBudget(20_000)): 
     if (page === lastPage || res.size === 0) complete = full;
   }
   try {
-    const known = await db.from("vod_upload").select("title_no").abortSignal(budget.signal(5000));
+    const known = await db.from("vod_archive").select("title_no").eq("upload", true).abortSignal(budget.signal(5000));
     if (known.error) return failed;
     const knownIds = new Set(((known.data as { title_no: number }[] | null) ?? []).map((r) => Number(r.title_no)));
     if (rows.size > 0) {
       const now = new Date().toISOString();
-      const { error } = await db.from("vod_upload").upsert(
+      const { error } = await db.from("vod_archive").upsert(
         [...rows.values()].map((r) => ({
-          title_no: r.titleNo, upload_day: r.uploadDay, title: r.title, duration_ms: r.durationMs,
-          thumb: r.thumb, reg_date: r.regDate, auth_no: r.authNo, synced_at: now
+          title_no: r.titleNo, broadcast_day: r.uploadDay, title: r.title, duration_ms: r.durationMs,
+          thumb: r.thumb, reg_date: r.regDate, auth_no: r.authNo, upload: true, guest: false, synced_at: now
         })),
         { onConflict: "title_no" }
       ).abortSignal(budget.signal(5000));
@@ -138,7 +139,7 @@ async function runUploadSync(full: boolean, budget = createWorkBudget(20_000)): 
     const gone = complete && rows.size > 0 ? [...knownIds].filter((id) => !rows.has(id)) : [];
     let deleted = 0;
     if (gone.length > 0 && gone.length <= 5) {
-      const { error } = await db.from("vod_upload").delete().in("title_no", gone).abortSignal(budget.signal(5000));
+      const { error } = await db.from("vod_archive").delete().eq("upload", true).in("title_no", gone).abortSignal(budget.signal(5000));
       if (!error) deleted = gone.length;
     }
     const fresh = [...rows.keys()].some((id) => !knownIds.has(id));

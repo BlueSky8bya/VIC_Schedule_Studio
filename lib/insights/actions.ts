@@ -1042,6 +1042,7 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
       .from("vod_archive")
       .select("broadcast_day, duration_ms, reg_date")
       .eq("guest", false) // 합방 게스트 출연분(0075)은 토리님 방송시간이 아니다
+      .eq("upload", false) // 업로드 영상(0156)도 방송시간이 아니다
       .gte("broadcast_day", fromStart)
       .lt("broadcast_day", nextMonthStart)
   ]);
@@ -1926,6 +1927,7 @@ export async function getMemberInsightsAction(
       .from("vod_archive")
       .select("broadcast_day, duration_ms, reg_date")
       .eq("guest", false) // 합방 게스트 출연분(0075) 제외
+      .eq("upload", false) // 업로드 영상(0156) 제외
       .gte("broadcast_day", sixStart)
       .lt("broadcast_day", nextMonthStart)
   ]);

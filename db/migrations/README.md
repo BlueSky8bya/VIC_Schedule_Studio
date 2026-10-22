@@ -12,7 +12,9 @@
 
 ## 목록 (번호 → 목적)
 
-**Pending (2026-10-23)**: [0155_vod_upload.sql](0155_vod_upload.sql) — 구독 전용 업로드 영상 표(숲 '구독' 배지, file_type NORMAL + 107). anon은 107만 읽기, service_role 쓰기. **앱 배포 전에 적용**(공개 로더가 이 표를 읽는다). 적용 후 `node scripts/backfill-vod-uploads.mjs`로 30건 채움. PGlite 테스트 `tests/sql/vod-upload.mjs`.
+**2026-10-23 구독·구독+ 파이프라인**: [0156_vod_access_pipeline.sql](0156_vod_access_pipeline.sql) — 업로드 영상을 vod_archive(upload=true)로 합치고, 검색·트렌드·인물·사전·채팅 분석 함수 12개와 타임라인/챕터 공개 정책의 `auth_no=101`을 101·107로 넓힘. upload 행은 방송 통계·스윕 삭제·채팅 큐·트렌드 최근 방송일에서 제외. 함수 본문 = 운영 현재 정의에서 그 치환만(트랜잭션 롤백 시험 통과). **앱 배포 직전 적용.** 그 뒤 [0157_drop_vod_upload.sql](0157_drop_vod_upload.sql)은 **새 앱 배포 뒤** 적용.
+
+**Applied 2026-10-23 KST**: [0155_vod_upload.sql](0155_vod_upload.sql) — 구독 전용 업로드 영상 표(숲 '구독' 배지, file_type NORMAL + 107). anon은 107만 읽기, service_role 쓰기. **앱 배포 전에 적용**(공개 로더가 이 표를 읽는다). 적용 후 `node scripts/backfill-vod-uploads.mjs`로 30건 채움. PGlite 테스트 `tests/sql/vod-upload.mjs`.
 
 **Applied 2026-10-23 KST**: [0154_vod_archive_plus_public.sql](0154_vod_archive_plus_public.sql) — 공개 읽기에 구독플러스 다시보기(auth_no 107) 메타 포함(101·107만, 그 외 차단). 날짜 다시보기 창의 보랏빛 '구플' 탭용. 앱은 적용 전에도 101만 받아 안전(배포 순서 무관). PGlite 테스트 `tests/sql/vod-archive-plus-public.mjs`.
 

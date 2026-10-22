@@ -214,6 +214,7 @@ export async function syncVodArchive(pages = 1, budget = createWorkBudget(30_000
       .from("vod_archive")
       .select("title_no, bno, broadcast_day, title, duration_ms, reg_date, comment_cnt, like_cnt, read_cnt, auth_no, thumb")
       .eq("guest", false)
+      .eq("upload", false) // 업로드 영상(0156)은 방송 체인 대상이 아니다
       .order("reg_date", { ascending: false, nullsFirst: false })
       .limit(40).abortSignal(budget.signal(5000));
     if (recent.error) return { ok: false, upserted: 0 };

@@ -1,5 +1,5 @@
-// 구독 전용 업로드 영상(0155) 초기 백필 — 숲 카드의 '구독' 배지(file_type NORMAL + auth_no 107).
-// chapi 목록 전 페이지를 읽어 vod_upload에 upsert한다(Supabase REST, service_role). 이후는 runVodPipeline이 맡는다.
+// 구독 전용 업로드 영상 백필(0155→0156) — 숲 카드의 '구독' 배지(file_type NORMAL + auth_no 107).
+// chapi 목록 전 페이지를 읽어 vod_archive에 upload=true 행으로 upsert한다(Supabase REST, service_role). 이후는 runVodPipeline이 맡는다.
 //
 // 사용: node scripts/backfill-vod-uploads.mjs [--dry]
 // 파싱 규칙은 lib/broadcast/vod-upload.ts와 같아야 한다(제목 'M월 D일' 우선, 없으면 등록 시각 − 6시 경계).
@@ -67,21 +67,21 @@ for (let page = 1; page <= lastPage; page++) {
     if (!uploadDay) throw new Error(`날짜 귀속 실패: ${item.title_no}`);
     const dur = Number(item.ucc?.total_file_duration);
     rows.set(Number(item.title_no), {
-      title_no: Number(item.title_no), upload_day: uploadDay, title,
+      title_no: Number(item.title_no), broadcast_day: uploadDay, title,
       duration_ms: Number.isFinite(dur) && dur > 0 ? Math.round(dur) : 0,
       thumb: typeof item.ucc?.thumb === "string" ? item.ucc.thumb : "",
-      reg_date: regDate, auth_no: 107, synced_at: new Date().toISOString()
+      reg_date: regDate, auth_no: 107, upload: true, guest: false, synced_at: new Date().toISOString()
     });
   }
   await sleep(250);
 }
 
-const list = [...rows.values()].sort((a, b) => a.upload_day.localeCompare(b.upload_day));
-for (const r of list) console.log(r.upload_day, r.title_no, r.title.slice(0, 40));
+const list = [...rows.values()].sort((a, b) => a.broadcast_day.localeCompare(b.broadcast_day));
+for (const r of list) console.log(r.broadcast_day, r.title_no, r.title.slice(0, 40));
 console.log(`구독 전용 업로드 ${list.length}건 (페이지 ${lastPage})`);
 if (DRY || list.length === 0) process.exit(0);
 
-const res = await fetch(`${SUPABASE_URL}/rest/v1/vod_upload?on_conflict=title_no`, {
+const res = await fetch(`${SUPABASE_URL}/rest/v1/vod_archive?on_conflict=title_no`, {
   method: "POST",
   headers: {
     apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, "Content-Type": "application/json",

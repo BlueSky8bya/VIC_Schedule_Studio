@@ -52,6 +52,16 @@ async function fetchChatFiles(titleNo: number, timeoutMs: number): Promise<ChatF
   } catch { return null; }
 }
 
+// 구독자 전용 다시보기(auth_no 107, 0156): 보기 API가 files를 비워 채팅 주소를 안 준다. 대표 썸네일의
+// rowKey(…_N_r)와 채팅 rowKey(…_N_c)는 같은 파일을 가리킨다(2026-10-23 실측: 101 VOD에서 대응 확인, 107 VOD에서
+// 무인증 200 + 채팅 XML). 그 한 파일을 VOD 전체 길이로 본다 — 여러 파일로 갈린 107은 첫 썸네일 파일만 잡힌다.
+export function deriveChatFileFromThumb(thumb: unknown, durationMs: number): ChatFile[] | null {
+  if (typeof thumb !== "string") return null;
+  const m = /rowKey=(\d{8}_[0-9A-Fa-f]+_\d+_\d+)_r(?:&|$)/.exec(thumb);
+  if (!m || !Number.isFinite(durationMs) || durationMs <= 0 || durationMs > 7 * 86400_000) return null;
+  return [{ chat: `https://videoimg.sooplive.co.kr/php/ChatLoadSplit.php?rowKey=${m[1]}_c`, durationSec: durationMs / 1000 }];
+}
+
 // XML 조각에서 (본문, 발화자 표식, 시각)만 뽑는다 — 파서 없이도 <chat>…</chat> 구조가 고정이다.
 // 발화자 표식(<u>)은 구간별 고유 수를 세는 데만 쓰고 이 모듈 밖으로 나가지 않는다.
 const CHAT_RE = /<chat>([\s\S]*?)<\/chat>/g;
@@ -249,7 +259,7 @@ export async function syncVodChat(titleNos: number[], chunkBudget = 60, timeBudg
     // 뒤의 대상(방금 올라온 방송)은 매 실행 손도 못 댔다(실측: 한 실행에 1~2개만 갱신).
     const target = createWorkBudget(Math.floor(work.remaining() / (list.length - i)));
     const [archive, previous, labels] = await Promise.all([
-      db.from("vod_archive").select("title,auth_no,broadcast_day").eq("title_no", titleNo)
+      db.from("vod_archive").select("title,auth_no,broadcast_day,upload,thumb,duration_ms").eq("title_no", titleNo)
         .abortSignal(work.signal(5000)).maybeSingle(),
       db.from("vod_chat_job").select("revision,state,complete").eq("title_no", titleNo)
         .abortSignal(work.signal(5000)).maybeSingle(),
@@ -257,11 +267,17 @@ export async function syncVodChat(titleNos: number[], chunkBudget = 60, timeBudg
         .abortSignal(work.signal(5000)).limit(400)
     ]);
     if (archive.error || previous.error || labels.error) { ok = false; continue; }
-    if (archive.data?.auth_no !== 101) continue;
+    // 전체 공개(101) + 구독자 전용 다시보기(107, 0156). 업로드 영상은 생방 채팅이 없다.
+    if (!archive.data) continue;
+    const authNo = archive.data.auth_no;
+    if ((authNo !== 101 && authNo !== 107) || archive.data.upload === true) continue;
     const prev = previous.data as ChatJob | null;
     const remaining = target.remaining(5000);
     if (remaining <= 0) continue;
-    const files = await fetchChatFiles(titleNo, Math.min(8000, remaining));
+    const viewFiles = await fetchChatFiles(titleNo, Math.min(8000, remaining));
+    const files = authNo === 107 && viewFiles !== null && viewFiles.length === 0
+      ? deriveChatFileFromThumb(archive.data.thumb, Number(archive.data.duration_ms))
+      : viewFiles;
     const words = docWordSet([String(archive.data.title ?? ""),
       ...((labels.data ?? []) as { label: string }[]).map(r => r.label)]);
     const plan: Chunk[] = [];

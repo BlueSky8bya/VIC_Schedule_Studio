@@ -17,7 +17,7 @@ async function gate() {
 export async function getTimelineManagement(titleNo?: number): Promise<{ ok: true; rows: TimelineManagementRow[] } | { ok: false; error: string }> {
   const db = await gate();
   if (!db) return { ok: false, error: "타임라인 관리 권한이 없습니다." };
-  let query = db.from("vod_archive").select("title_no,title,broadcast_day").eq("auth_no", 101).order("reg_date", { ascending: false }).limit(40);
+  let query = db.from("vod_archive").select("title_no,title,broadcast_day").in("auth_no", [101, 107]).order("reg_date", { ascending: false }).limit(40);
   if (titleNo !== undefined) {
     if (!Number.isSafeInteger(titleNo) || titleNo <= 0) return { ok: false, error: "영상 번호를 확인해 주세요." };
     query = query.eq("title_no", titleNo);

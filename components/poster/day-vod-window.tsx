@@ -1490,7 +1490,12 @@ export function DayVodWindow({
                                방송 블록이 자기 높이 안에 레일을 가두므로 다 펼쳐도 안 길다. */
                             defaultOpen
                             durationMs={vod.durationMs}
-                            onJump={(sec) => jumpDayVod(vod.titleNo, sec)}
+                            /* 구독·구독+는 임베드가 재생을 거부한다 — 타임라인·채팅 반응 지점은 숲을 그 초부터 새 탭으로. */
+                            onJump={(sec) =>
+                              vod.access
+                                ? window.open(`${playerUrl}?change_second=${Math.max(0, Math.floor(sec))}`, "_blank", "noopener,noreferrer")
+                                : jumpDayVod(vod.titleNo, sec)
+                            }
                             startedAt={vod.startedAt}
                             register={registerDayVodChapterApi}
                             slug={slug}

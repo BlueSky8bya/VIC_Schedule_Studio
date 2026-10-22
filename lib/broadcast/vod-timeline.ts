@@ -159,6 +159,7 @@ async function runVodPipeline(budget = createWorkBudget(50_000)): Promise<{
   const { data } = await supabase
     .from("vod_archive")
     .select("synced_at")
+    .eq("upload", false) // 업로드 영상(0156)은 자기 수집기 박자 — 다시보기 수집 주기 판정에서 뺀다
     .order("synced_at", { ascending: false })
     .limit(1).abortSignal(budget.signal(5000));
   const lastIso = (data as { synced_at: string }[] | null)?.[0]?.synced_at;
@@ -173,6 +174,7 @@ async function runVodPipeline(budget = createWorkBudget(50_000)): Promise<{
     const { data: oldest } = await supabase
       .from("vod_archive")
       .select("synced_at")
+      .eq("upload", false)
       .order("synced_at", { ascending: true })
       .limit(1).abortSignal(budget.signal(5000));
     const oldestIso = (oldest as { synced_at: string }[] | null)?.[0]?.synced_at;
