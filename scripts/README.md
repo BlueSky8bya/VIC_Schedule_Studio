@@ -27,6 +27,7 @@
 | `recolor-tags.mjs` | 태그 색 일괄 재배정 | 🎨 일회성 마이그레이션 |
 | `sort-tags-by-usage.mjs` | 사용량 기준 태그 정렬 | 🎨 일회성 |
 | `taxonomy-probe.mjs` | 태그 분류 체계 탐색/분석 | 🔍 조사 |
+| `scratch-retention/` | 모든 worktree의 `.scratch-pw` 로컬 QA 증거 보존 정책(기한·총량·여유 공간·슬림·하드링크 중복 제거). 기본 dry-run, `--apply`로 실행. companion-daily runner가 시작·종료 때 호출 — [`scratch-retention/README.md`](scratch-retention/README.md). DB 무관 | 🔧 상시 도구 |
 | `ambient-qa/` | **계절 배경 비주얼 QA 하네스**(2026-09-05, PLAN-20260905-005): 결정적 fixture 캡처·contact sheet·diff·셀프테스트 — [`ambient-qa/README.md`](ambient-qa/README.md). DB 무관 | 🔧 상시 도구 |
 | `companion-qa/` | 빅타민 일일 검사: 격리 소스 사본의 유한 모델·production build·실제9성격90초 관찰·UI/연속 행동 후보 보고. 운영 DB/원본 변경 없이 실행하며, 원 실패와 범위를 보존 — [`companion-qa/README.md`](companion-qa/README.md) | 🔧 상시 도구 |
 | `backfill-vod-timelines.mjs` | 이전 단일 댓글 파서 점검용. **0124 이후 쓰기 거부**: 대표 지정·노출 설정을 우회하지 않도록 통합 수집기가 갱신한다. `--dry`는 이전 파서 비교만 하며 대댓글·후보 분류 검증이 아니다 | 🔍 이전 파서 점검 |
