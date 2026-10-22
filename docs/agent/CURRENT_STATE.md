@@ -7,7 +7,7 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Urgent: owner confirms2a6 still cannot switch OFF in default home. Reproduce actual current settings; lamp-only fix, no200. [Active plan](plans/PLAN-20261022-lamp-user-settings.md). Daily09:00 risk/weekly QA remains;36 UNVERIFIED.
+Urgent OPEN: owner still reports lamp failure after633. Capture actual local lamp state; do not infer actual-user success from isolated PASS. Lamp only, no200. [Plan](plans/PLAN-20261022-lamp-live-trace.md). Daily09:00 remains;36 UNVERIFIED.
 
 Criteria145: optional TV bow and separate actual10s activity/repetition verified. Final frozen110/27/9/2, full gates and three independent final reviews passed; scoped commit and actual production confirmation pending. [145 plan](plans/PLAN-20261020-145-companion-activity-criteria.md).
 
@@ -52,7 +52,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 5. PRIVACY-20260921: resolve remaining visit/recurring retention policy and restricted local recovery-backup removal after its2026-10-24 window. No automatic future run is scheduled.
 ## Last Verified
 
-Default-home lamp follow-up:4 actual native cases passed at262px (both approaches, soft graphics, OS reduced-motion/app reduceOFF), unchanged physical contact criterion; related units/type/lint/build passed. Deployment confirmation belongs to the exact release receipt in .scratch-pw/site-daily/state.json. No200 restart;36 remains0/UNVERIFIED. [Follow-up](plans/PLAN-20261022-lamp-default-followup.md).
+Lamp633 reported-option reproduction:2 native+1 guarded deployed case and independent review passed; quality39774053314/Vercel/public fullSHA verified. Actual user tab was not read. No200 restart;36 remains0/UNVERIFIED. [Record](plans/PLAN-20261022-lamp-user-settings.md); exact release receipt in .scratch-pw/site-daily/state.json.
 
 
 Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.

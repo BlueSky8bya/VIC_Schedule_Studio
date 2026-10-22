@@ -65,6 +65,7 @@ import { COMPANION_ACCESSORY_NAMES, type CompanionAccessoryId } from "@/lib/ui/v
 import { advanceCompanionMealWait, projectCompanionMouth } from "@/lib/ui/viewer-companion/mouth";
 import { advanceCompanionPlayPresentation, type CompanionPlayPresentation } from "@/lib/ui/viewer-companion/play-presentation";
 import { advanceCompanionHomeContactPresentation, companionLampPresentationReady, observeCompanionLampPresentation, type CompanionLampPresentation } from "@/lib/ui/viewer-companion/home-contact-presentation";
+import { installLampDiagnostics, measureLampDiagnosticPoint } from "@/lib/ui/viewer-companion/lamp-diagnostics";
 import { COMPANION_FEED_RETRY_MS, rememberCompanionOutcomes } from "@/lib/ui/viewer-companion/planner";
 import { companionSofaFlightMs, sampleCompanionSofaTravel, type CompanionSofaTravelShape } from "@/lib/ui/viewer-companion/sofa-travel";
 import { createCompanionFoodCuriosity } from "@/lib/ui/viewer-companion/novel-food";
@@ -601,6 +602,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     let homeContact: { serial: number; kind: HomeContactKind; element: Element; point: { x: number; y: number; width?: number; height?: number }; startedAt: number; lampPrepared?: boolean;
       lampPaint?: { button: HTMLButtonElement; paint: HTMLElement; art: HTMLElement[]; feedback: HTMLElement[] } } | undefined;
     let homeLampPresentation: CompanionLampPresentation | undefined;
+    let lampDiagnostic: ReturnType<typeof installLampDiagnostics> = undefined;
     let homeRadioPending: AbortController | undefined, homeRadioRequestedAt = 0;
     let touchedLamp: HTMLButtonElement | null = null;
     const showLampContact = (lamp: HTMLButtonElement | null) => {
@@ -622,6 +624,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         ...(kind === "light" ? { width: rect.width, height: rect.height } : {}) };
     };
     const clearHomeContact = () => {
+      if (homeContact?.kind === "light") lampDiagnostic?.record({ stage:"clear",at:performance.now(),serial:homeContact.serial,prepared:homeContact.lampPrepared===true,lit:getCompanionHomeLight(),effectApplied:homeLifeEffectApplied,effectSucceeded:homeLifeEffectSucceeded,authoredApplied:personalityEffectApplied });
       homeContact?.lampPaint?.button.removeAttribute("data-companion-reaching");
       homeRadioPending?.abort(); homeRadioPending = undefined; homeRadioRequestedAt = 0;
       homeContact = undefined; homeInteractionWitness = undefined; homeLampPresentation = undefined;
@@ -944,6 +947,16 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     let sofaDepth: CompanionSofaDepth = "clear";
     let sofaContact: { point: CompanionSofaPoint; body: readonly CompanionSofaPoint[]; depth: CompanionSofaDepth } | undefined;
     const effective = reduced ? { ...preferences, roam: false, jump: false, ambientPrank: false } : preferences;
+    lampDiagnostic = installLampDiagnostics(() => {
+      const read=(key:string)=>{try{return localStorage.getItem(key);}catch{return null;}};
+      const homes=[...document.querySelectorAll<HTMLElement>(".vc-home")];
+      const visible=homes.filter(node=>node.checkVisibility({checkOpacity:true,checkVisibilityCSS:true})&&node.getBoundingClientRect().width>0);
+      const room=visible[0]?.querySelector(".vc-home-room")?.getBoundingClientRect();
+      const suffix=location.pathname.startsWith("/studio")?".studio":"";
+      return {personality:preferencesRef.current.personality,speed:preferencesRef.current.speed,enabled:preferencesRef.current.enabled,roam:preferencesRef.current.roam,jump:effective.jump,sleep:preferencesRef.current.sleep,petting:preferencesRef.current.petting,learnFromYou:preferencesRef.current.learnFromYou,
+        viewportWidth:innerWidth,viewportHeight:innerHeight,dpr:devicePixelRatio,viewportScale:visualViewport?.scale??1,textPx:Number(read("vic.calText"+suffix)),font:read("vic.font"+suffix)??"base",weight:Number(read("vic.calWeight"+suffix)),
+        gfx:gfxMode(),appReduced:document.documentElement.hasAttribute("data-reduce-motion"),reduced,comfort:document.documentElement.hasAttribute("data-eye-comfort"),premiere:read("vic.premiereStage")!=="off",ambient:read("vic.ambient")!=="off",hidden:document.hidden,focused:document.hasFocus(),homeCount:homes.length,visibleHomeCount:visible.length,roomWidth:room?.width,roomHeight:room?.height};
+    });
     const paintedStyles = new WeakMap<HTMLElement, Map<string, string>>();
     const style = (node: HTMLElement, name: string, value: string) => {
       let values = paintedStyles.get(node);
@@ -1297,14 +1310,21 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         const source = `/companion/home/155/lamp-${lit ? "on" : "off"}.webp`;
         const active = paintedCurrent && effective.enabled && effective.roam && !pause && !document.hidden && !pressed && !keyboardHeld && !placing
           && !overlayActive && !workspaceBusyRef.current && presence.phase === "active" && canCompanionSetHomeLight();
-        homeLampPresentation = observeCompanionLampPresentation(homeLampPresentation, { at: performance.now(), serial: interaction.serial, active, bodyTouch: touchingControl,
+        const lampPaintSample = { at: performance.now(), serial: interaction.serial, active, bodyTouch: touchingControl,
           visible: nodes.paint.isConnected && art.isConnected && paint.width > 0 && paint.height > 0
             && nodes.paint.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && art.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }),
           sourceMatches: path(getComputedStyle(art).borderImageSource) === source && path(feedbackCss.borderImageSource) === source,
           samePlane: samePlane(artRect) && samePlane(feedbackRect) && feedbackCss.clipPath.startsWith("polygon("),
           requestedPull: parseFloat(getComputedStyle(nodes.button).getPropertyValue("--vc-lamp-pull")), height: paint.height, width: paint.width,
           cssWidth: parseFloat(paintCss.width), buttonHeight: button.height,
-          feedbackVisible: feedback.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }), feedbackOpacity: Number(feedbackCss.opacity) });
+          feedbackVisible: feedback.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }), feedbackOpacity: Number(feedbackCss.opacity) };
+        homeLampPresentation = observeCompanionLampPresentation(homeLampPresentation,lampPaintSample);
+        const command=action?.homeLife?.command??action?.personalityScene?.command;
+        lampDiagnostic?.record({stage:"paint",at:performance.now(),serial:interaction.serial,owner:action?.homeLife?"home-life":action?.personalityScene?"authored":"other",kind:status,progress:(performance.now()-began)/total,duration:total,contactAge:performance.now()-interaction.startedAt,
+          x,y,displayY:display.y,handX:actualHand?.x,handY:actualHand?.y,knobX:targetContact?.x,knobY:targetContact?.y,knobWidth:targetContact?.width,knobHeight:targetContact?.height,prepared:interaction.lampPrepared===true,paintedCurrent,reachTouch:reach?.touching??false,touching:touchingControl,witness:homeInteractionWitness===interaction.serial,
+          lit:getCompanionHomeLight(),wantedLit:command?.kind==="light"?command.lit:undefined,canLight:canCompanionSetHomeLight(),active:lampPaintSample.active,visible:lampPaintSample.visible,sourceMatches:lampPaintSample.sourceMatches,samePlane:lampPaintSample.samePlane,pull:lampPaintSample.requestedPull,paintHeight:paint.height,paintWidth:paint.width,paintCssWidth:lampPaintSample.cssWidth,buttonHeight:button.height,feedbackVisible:lampPaintSample.feedbackVisible,feedbackOpacity:lampPaintSample.feedbackOpacity,
+          baseline:Boolean(homeLampPresentation.baseline),baselineAt:homeLampPresentation.baseline?.at,baselineHeight:homeLampPresentation.baseline?.height,baselineWidth:homeLampPresentation.baseline?.width,baselineCssWidth:homeLampPresentation.baseline?.cssWidth,neutralAt:homeLampPresentation.neutral?.at,receiptAt:homeLampPresentation.receiptAt,receiptReady:companionLampPresentationReady(homeLampPresentation,interaction.serial,performance.now(),active),
+          effectApplied:homeLifeEffectApplied,effectSucceeded:homeLifeEffectSucceeded,authoredApplied:personalityEffectApplied,sameOwner:action?.homeLife?homeLifePolicy.current()?.serial===action.homeLife.serial:action?.personalityScene?personalityDirector.owns(action.personalityScene):false,paused:pause,pressed:Boolean(pressed),keyboardHeld:Boolean(keyboardHeld),placing:Boolean(placing),overlay:overlayActive,workspaceBusy:workspaceBusyRef.current,presenceActive:presence.phase==="active",supported:supportedNow(),gfx:gfxMode(),reduced,speed:effective.speed});
       }
       const paw = interactionTool.current;
       if (paw) {
@@ -1468,6 +1488,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       el.toggleAttribute("data-native-sofa", nativeResident);
       const actorOffset = nativeResident && bedScene ? { x: bedScene.anchorX, y: bedScene.anchorY } : { x: 0, y: 0 };
       style(el, "transform", `translate3d(${(display.x - size / 2 - actorOffset.x).toFixed(3)}px,${(display.y - size - actorOffset.y).toFixed(3)}px,0) scale(${display.scale})`);
+      if (lampDiagnostic && interaction?.kind === "light" && hand) {
+        const point=measureLampDiagnosticPoint(el,image,hand),rect=el.getBoundingClientRect();
+        lampDiagnostic.record({stage:"render",at:performance.now(),serial:interaction.serial,x:rect.left+rect.width/2,y:rect.bottom,displayY:display.y,actorWidth:rect.width,actorHeight:rect.height,handDOMX:point?.x,handDOMY:point?.y,lit:getCompanionHomeLight(),touching:touchingControl,paintedCurrent});
+      }
       // One owner/write restores a released/outside body to1 immediately and
       // preserves premiere/hide fades without a transient1→room-alpha commit.
       style(el, "opacity", String(displayOpacity));
@@ -2270,6 +2294,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
             art: ["off","on"].map(state => button.querySelector<HTMLElement>(`.vc-home-lamp-art[data-lamp-state="${state}"]`)!),
             feedback: ["off","on"].map(state => button.querySelector<HTMLElement>(`.vc-home-lamp-cord-feedback[data-lamp-state="${state}"]`)!) } : undefined };
       }
+      if (homeContact?.kind === "light") lampDiagnostic?.record({stage:"launch",at:now,serial:homeContact.serial,x,y,knobX:homeContact.point.x,knobY:homeContact.point.y,contactPresent:true,lit:getCompanionHomeLight(),canLight:canCompanionSetHomeLight()});
       if (homeContact) ensureWardrobe(true);
       if (next.personalityScene?.command.kind === "wash" || homeContact) spriteSources[9].forEach(src => requestSprite.current(src));
       personalityActivity.record(next, { x, y }, brain.current.activeMs, effective.personality);
@@ -2907,6 +2932,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       }
       let row = 0, frame = 0, status = "idle";
       if (action) {
+        if (!homeContact && (action.homeLife?.command.kind === "light" || action.personalityScene?.command.kind === "light")) lampDiagnostic?.record({stage:"missing-contact",at:now,kind:action.kind,owner:action.homeLife?"home-life":"authored",x,y,progress:(now-began)/total,duration:total,contactPresent:false,lit:getCompanionHomeLight(),canLight:canCompanionSetHomeLight(),supported:supportedNow(),paused:pause,hidden:document.hidden});
         if (homeContact && ["light","tv","curtain","radio"].includes(homeContact.kind)) {
           // Readiness belongs to this contact owner and is one-way. A later
           // geometry/source invalidation must never rewind an airborne arc.
@@ -3002,6 +3028,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           if (allowed && lifeBeat.command.kind === "tv" && canCompanionSetHomeTv()) setCompanionHomeTv(lifeBeat.command.state, { source: "companion" });
           const actual = lifeBeat.command.kind === "light" ? getCompanionHomeLight() : getCompanionHomeTv();
           homeLifeEffectSucceeded = Boolean(allowed && actual === (lifeBeat.command.kind === "light" ? lifeBeat.command.lit : lifeBeat.command.state));
+          if (lifeBeat.command.kind === "light") lampDiagnostic?.record({stage:"effect",at:now,serial:homeContact?.serial,owner:"home-life",active:input.active,enabled:input.enabled,owned:input.owned,allowed:Boolean(allowed),lit:getCompanionHomeLight(),wantedLit:lifeBeat.command.lit,canLight:canCompanionSetHomeLight(),effectApplied:homeLifeEffectApplied,effectSucceeded:homeLifeEffectSucceeded,sameOwner:homeLifePolicy.current()?.serial===lifeBeat.serial});
           if (homeLifeEffectSucceeded && previous !== actual) {
             data("personalityEffect", lifeBeat.command.kind);
             learnAgent("home-control", undefined, true, { generation:agentActionGeneration, personality:agentActionPersonality });
@@ -4741,6 +4768,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (capturePosition.current === captureForSurface) capturePosition.current = null;
       persistCare(true);
       sceneDepart();
+      lampDiagnostic?.dispose();
       stopped = true; routineEvent.current = () => {}; pendingFeeds.cancel(); clearSupportWait(); cancelTravelGoal(); cancelHomeJourney(); clearTimeout(preludeTimer); homeDeparture = undefined; el.removeAttribute("data-home-window"); resetHide(); resetInertia(); returning = undefined; premiereDisplay = undefined; premiereBounce = undefined; premiereExit = undefined; el.inert = false; el.removeAttribute("aria-hidden"); el.removeAttribute("data-premiere-companion"); el.removeAttribute("data-premiere-source"); el.removeAttribute("data-returning"); stopHover(); cancelAnimationFrame(followRaf); geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(raf); clearTimeout(timer); clearTimeout(clickGuard); clearTimeout(parkedLayoutTimer); clearAction(); control.current = null; observer.disconnect(); offGeometry?.(); hearts.dispose();
       cardPlay.clear();
       releaseOverlayDrag(); perchAnimation?.cancel(); disconnectOverlay(); cancelAnimationFrame(overlayRaf);

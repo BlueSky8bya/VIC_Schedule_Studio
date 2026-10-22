@@ -2,7 +2,7 @@
 
 | ID | Status | Record |
 |---|---|---|
-| LAMP-USER-167 | Actual2a6 user failure reopened; obtain current options and reproduce lamp only | [Plan](PLAN-20261022-lamp-user-settings.md) |
+| LAMP-LIVE-168 | Actual failure reopened after633; capture actual gate/geometry before any completion claim | [Plan](PLAN-20261022-lamp-live-trace.md) |
 | EXPRESSION-R26 | New method needed;36 UNVERIFIED | [R26](PLAN-20261022-expression-video-review.md) |
 | COMPANION-ACTIVITY-145 | Local full gates and three final reviews passed; actual release confirmation pending | [145 plan](PLAN-20261020-145-companion-activity-criteria.md) |
 | PRIVACY-20260921 | Deployed containment verified; historical Git exposure, realtime/provider and retention follow-up remain | [Privacy audit](../verification/PRIVACY-20260921.md) |
