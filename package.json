@@ -5,7 +5,7 @@
   "scripts": {
     "predev": "node scripts/generate-ambient-art-metadata.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/generate-ambient-art-metadata.mjs && node scripts/prepare-companion-catalog-bounds.mjs",
+    "prebuild": "node scripts/deployment-output/prepare.mjs && node scripts/generate-ambient-art-metadata.mjs && node scripts/prepare-companion-catalog-bounds.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --max-warnings=0",

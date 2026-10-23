@@ -2,6 +2,7 @@
 
 | ID | Status | Record |
 |---|---|---|
+| SHOWCASE-TOY-STORAGE-20261023 | Local scoped20 verified; push/cloud cleanup await human confirmation | [Plan](PLAN-20261023-showcase-transients-toy-storage.md) |
 | LAMP-LIVE-168 | Actual failure reproduced;170 bounded alignment passes3 native cases; independent actual/deployed verification pending | [Plan](PLAN-20261022-lamp-live-trace.md) |
 | EXPRESSION-R26 | New method needed;36 UNVERIFIED | [R26](PLAN-20261022-expression-video-review.md) |
 | COMPANION-ACTIVITY-145 | Local full gates and three final reviews passed; actual release confirmation pending | [145 plan](PLAN-20261020-145-companion-activity-criteria.md) |

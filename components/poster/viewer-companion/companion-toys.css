@@ -3,17 +3,22 @@
    swept contact, carry or opening hold; hover spring stays on the child art. */
 .vc-toy{position:absolute;left:0;top:0;display:flex;align-items:flex-end;justify-content:center;width:44px;height:44px;padding:0;border:0;background:transparent;box-shadow:none;pointer-events:auto;cursor:grab;touch-action:none;transform-origin:50% 100%;will-change:transform;transition:none}
 .vc-toys[hidden],.vc-toy[hidden]{display:none}
-.vc-toy>.vc-toy-art{display:block;flex:0 0 auto;width:var(--vc-toy-art-width,28px);height:var(--vc-toy-art-height,28px);object-fit:contain;filter:var(--vc-toy-color) drop-shadow(0 2px 1px #5d422528);pointer-events:none;transition:transform var(--dur-spring-smooth) var(--ease-spring)}
-.vc-toy:hover>.vc-toy-art,.vc-toy:focus-visible>.vc-toy-art{transform:scale(1.12)}
+.vc-toy>.vc-toy-art{display:block;flex:0 0 auto;width:var(--vc-toy-art-width,28px);height:var(--vc-toy-art-height,28px);object-fit:contain;filter:var(--vc-toy-color) drop-shadow(0 2px 1px #5d422528);pointer-events:none}
+.vc-toy>:is(.vc-toy-art,.vc-toy-axis-art){transform-origin:50% 50%;transform:rotate(var(--vc-toy-art-rotation,0deg));scale:var(--vc-toy-hover-scale,1);transition:scale var(--dur-spring-smooth) var(--ease-spring)}
+.vc-toy:hover,.vc-toy:focus-visible{--vc-toy-hover-scale:1.12}
+.vc-toy>.vc-toy-axis-art{display:none;position:absolute;left:50%;bottom:0;translate:-50% 0;pointer-events:none;filter:brightness(var(--vc-item-room-light,1)) var(--vc-toy-color) drop-shadow(0 2px 1px #5d422528)}
+.vc-toy[data-axis-painted]>.vc-toy-art{opacity:0}
+.vc-toy[data-axis-painted]>.vc-toy-axis-art{display:block}
 .vc-toy:focus-visible{outline:2px solid var(--accent,#5077aa);outline-offset:-3px;border-radius:12px}
 .vc-toy:where(:hover,:focus):not(:focus-visible){outline:none;box-shadow:none}
 .vc-toy[data-held=true]{cursor:grabbing}
 .vc-toy[data-carried=true]{pointer-events:none}
-.vc-toy[data-carried=true]>.vc-toy-art{transform:scale(var(--vc-toy-play-scale,1)) scaleX(var(--vc-toy-play-facing,1));transition:none}
+.vc-toy[data-carried=true]>:is(.vc-toy-art,.vc-toy-axis-art){transform:rotate(var(--vc-toy-art-rotation,0deg)) scale(var(--vc-toy-play-scale,1)) scaleX(var(--vc-toy-play-facing,1));scale:1;transition:none}
+.vc-toy[data-kind=rocking-horse]>:is(.vc-toy-art,.vc-toy-axis-art){transform-origin:50% 100%}
 .vc-toy[data-play-effect]::after{content:"";position:absolute;left:50%;top:65%;pointer-events:none;opacity:var(--vc-toy-effect-opacity,0);transform:translate(var(--vc-toy-effect-x,0px),var(--vc-toy-effect-y,0px));width:14px;height:4px;border-radius:3px;background:#64b8d4;box-shadow:inset 3px 0 #e9b14e}
 .vc-toy[data-play-effect=bubble]::after{width:9px;height:9px;border:1px solid #72b7c2;border-radius:50%;background:#e6fbff80;box-shadow:inset 2px 2px #fff9}
 .vc-toy[data-play-effect=ping]::after{width:10px;height:10px;background:#ffe38b;box-shadow:none;clip-path:polygon(50% 0,62% 36%,100% 50%,62% 64%,50% 100%,38% 64%,0 50%,38% 36%)}
 .vc-toy[data-play-effect=none]::after{display:none}
 .vc-toy:disabled{opacity:1}
-[data-gfx=off] .vc-toy>.vc-toy-art,[data-gfx=soft] .vc-toy>.vc-toy-art,[data-reduce-motion] .vc-toy>.vc-toy-art{filter:var(--vc-toy-color);transition:none;transform:none}
-@media(prefers-reduced-motion:reduce){.vc-toy>.vc-toy-art{transition:none}}
+[data-gfx=off] .vc-toy>:is(.vc-toy-art,.vc-toy-axis-art),[data-gfx=soft] .vc-toy>:is(.vc-toy-art,.vc-toy-axis-art),[data-reduce-motion] .vc-toy>:is(.vc-toy-art,.vc-toy-axis-art){filter:brightness(var(--vc-item-room-light,1)) var(--vc-toy-color);transition:none;transform:none}
+@media(prefers-reduced-motion:reduce){.vc-toy>:is(.vc-toy-art,.vc-toy-axis-art){transition:none}}

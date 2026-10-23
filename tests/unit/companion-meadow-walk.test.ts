@@ -6,6 +6,18 @@ const viewport = { width: 1440, height: 960 };
 function random(seed = 19) { let n = seed; return () => { n = n * 1664525 + 1013904223 >>> 0; return n / 4294967296; }; }
 
 describe("the temporary companion meadow walk", () => {
+  it("departs from an actual outdoor foot and rebases a user drag without snapping to the old walk", () => {
+    const controller = createCompanionMeadowWalk(random());
+    controller.place({ x: 90, y: 900 }, viewport);
+    const first = controller.sample(0, viewport, DEFAULT_COMPANION_PREFERENCES, false)!;
+    expect(first.x).toBeCloseTo(90, 8); expect(first.groundY).toBeCloseTo(900, 8);
+    for (let i = 0; i < 30; i++) controller.sample(50, viewport, DEFAULT_COMPANION_PREFERENCES);
+    controller.place({ x: 750, y: 650 }, viewport);
+    const dragged = controller.sample(0, viewport, DEFAULT_COMPANION_PREFERENCES, false)!;
+    expect(dragged.x).toBeCloseTo(750, 8); expect(dragged.groundY).toBeCloseTo(650, 8);
+    const resumed = controller.sample(50, viewport, DEFAULT_COMPANION_PREFERENCES)!;
+    expect(Math.hypot(resumed.x - dragged.x, resumed.groundY - dragged.groundY)).toBeLessThan(1);
+  });
   it.each(COMPANION_PERSONALITIES)("keeps %s on grass with short pauses and continuous varied travel", personality => {
     const controller = createCompanionMeadowWalk(random());
     const prefs = { ...DEFAULT_COMPANION_PREFERENCES, personality };

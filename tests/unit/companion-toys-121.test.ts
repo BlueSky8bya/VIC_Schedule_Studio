@@ -9,6 +9,8 @@ vi.mock("react", async original => ({ ...await original<typeof import("react")>(
   useRef: (initial: unknown) => component.refs[component.refIndex++] ?? (component.refs[component.refIndex - 1] = { current: initial }),
   useState: (initial: unknown) => { const index = component.stateIndex++; if (!(index in component.states)) component.states[index] = initial; return [component.states[index], (next: unknown) => { component.states[index] = typeof next === "function" ? next(component.states[index]) : next; }]; },
   useCallback: (callback: unknown) => callback,
+  // This direct-call controller harness reads the store at each explicit render.
+  useSyncExternalStore: (_subscribe: unknown, getSnapshot: () => unknown) => getSnapshot(),
   useEffect: (callback: () => void) => { component.effects.push(callback); },
   useImperativeHandle: (ref: { current: unknown }, create: () => unknown) => { ref.current = create(); }
 }));
@@ -211,6 +213,13 @@ describe("actual toy planner effects and acknowledgements", () => {
 });
 
 describe("shared native toy controller ownership", () => {
+  function presentationMethods() {
+    const attributes = new Set<string>();
+    return {
+      toggleAttribute: (name: string, force: boolean) => { if (force) attributes.add(name); else attributes.delete(name); return force; },
+      querySelector: () => null,
+    };
+  }
   async function harness() {
     component.refs = []; component.states = []; component.activity.mockReset();
     vi.spyOn(Math, "random").mockReturnValue(0);
@@ -237,7 +246,7 @@ describe("shared native toy controller ownership", () => {
       getBoundingClientRect: vi.fn(() => ({ left: 500, right: 580, top: 300, bottom: 360 })), setAttribute: (key: string, value: string) => attrs.set(key, value), removeAttribute: (key: string) => attrs.delete(key) };
     vi.stubGlobal("document", { querySelector: () => box });
     const h = await harness(); h.ref.current!.tick(1800); const actual = h.ref.current!.available()[0];
-    const node = { style: { transform: "", setProperty: vi.fn() }, dataset: {} as Record<string, string>, hidden: false, setPointerCapture: vi.fn(), hasPointerCapture: vi.fn(() => true), releasePointerCapture: vi.fn() };
+    const node = { ...presentationMethods(), style: { transform: "", setProperty: vi.fn() }, dataset: {} as Record<string, string>, hidden: false, setPointerCapture: vi.fn(), hasPointerCapture: vi.fn(() => true), releasePointerCapture: vi.fn() };
     (h.button.props.ref as (node: unknown) => void)(node);
     const event = (x = actual.x, y = actual.y) => ({ button: 0, pointerId: 7, clientX: x, clientY: y, currentTarget: node, preventDefault: vi.fn(), stopPropagation: vi.fn() });
     (h.button.props.onPointerDown as (event: unknown) => void)(event());
@@ -251,7 +260,7 @@ describe("shared native toy controller ownership", () => {
     const h = await harness(), control = h.ref.current!;
     const style = { visibility: "visible", display: "block", opacity: "1" };
     const document = { hidden: false, defaultView: { getComputedStyle: vi.fn(() => style) } }; vi.stubGlobal("document", document);
-    const node = { ownerDocument: document, style: { transform: "", setProperty: vi.fn() }, dataset: {} as Record<string, string>, hidden: false, isConnected: true, getBoundingClientRect: vi.fn(() => ({ left: 410, top: 330, width: 44, height: 44 })) };
+    const node = { ...presentationMethods(), ownerDocument: document, style: { transform: "", setProperty: vi.fn() }, dataset: {} as Record<string, string>, hidden: false, isConnected: true, getBoundingClientRect: vi.fn(() => ({ left: 410, top: 330, width: 44, height: 44 })) };
     (h.button.props.ref as (node: unknown) => void)(node);
     control.tick(1800); const actual = control.available()[0]; h.onExperience.mockClear();
     return { ...h, control, node, actual, document, style };
@@ -288,7 +297,8 @@ describe("shared native toy controller ownership", () => {
     const h = await heldOverBox(); component.activity.mockClear();
     if (mode === "pause") h.ref.current!.pause(2100);
     else if (mode === "blocked") h.render(true);
-    else if (mode === "unmount") { const cleanup = component.effects[1]() as unknown as () => void; cleanup(); }
+    // Optional retained-session flight/subscription/input effects precede pause cleanup.
+    else if (mode === "unmount") { const cleanup = component.effects[4]() as unknown as () => void; cleanup(); }
     else {
       if (mode === "planner-cancel") { h.ref.current!.cancel(2100); expect(h.attrs.has("data-toy-over")).toBe(true); }
       const key = mode === "lost-capture" ? "onLostPointerCapture" : "onPointerCancel";
@@ -303,7 +313,7 @@ describe("shared native toy controller ownership", () => {
     vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { frames.set(++serial, callback); return serial; }); vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
     vi.stubGlobal("document", { querySelector: () => null });
     const h = await harness(); h.ref.current!.tick(1800); const actual = h.ref.current!.available()[0];
-    const node = { style: { transform: "", setProperty: vi.fn() }, dataset: {} as Record<string, string>, hidden: false, setPointerCapture: vi.fn(), hasPointerCapture: vi.fn(() => true), releasePointerCapture: vi.fn() };
+    const node = { ...presentationMethods(), style: { transform: "", setProperty: vi.fn() }, dataset: {} as Record<string, string>, hidden: false, setPointerCapture: vi.fn(), hasPointerCapture: vi.fn(() => true), releasePointerCapture: vi.fn() };
     (h.button.props.ref as (node: unknown) => void)(node);
     const start = { x: actual.x - 13, y: actual.y - 31 }, event = (point = start) => ({ button: 0, pointerId: 7, clientX: point.x, clientY: point.y, currentTarget: node, preventDefault: vi.fn(), stopPropagation: vi.fn() });
     (h.button.props.onPointerDown as (event: unknown) => void)(event()); const initial = node.style.transform;
@@ -323,7 +333,7 @@ describe("shared native toy controller ownership", () => {
     const frames = new Map<number, FrameRequestCallback>(); let serial = 0;
     vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { frames.set(++serial, callback); return serial; }); vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
     const h = await harness(); h.ref.current!.tick(1800); const actual = h.ref.current!.available()[0];
-    const node = { style: { transform: "", setProperty: vi.fn() }, dataset: {} as Record<string, string>, hidden: false, setPointerCapture: vi.fn(), hasPointerCapture: vi.fn(() => true), releasePointerCapture: vi.fn() }; (h.button.props.ref as (node: unknown) => void)(node);
+    const node = { ...presentationMethods(), style: { transform: "", setProperty: vi.fn() }, dataset: {} as Record<string, string>, hidden: false, setPointerCapture: vi.fn(), hasPointerCapture: vi.fn(() => true), releasePointerCapture: vi.fn() }; (h.button.props.ref as (node: unknown) => void)(node);
     const event = { button: 0, pointerId: 9, clientX: actual.x, clientY: actual.y - 22, currentTarget: node, preventDefault: vi.fn(), stopPropagation: vi.fn() };
     (h.button.props.onPointerDown as (event: unknown) => void)(event);
     vi.mocked(performance.now).mockReturnValue(2020); (h.button.props.onPointerMove as (event: unknown) => void)({ ...event, clientX: actual.x + 40 });
@@ -382,7 +392,7 @@ describe("shared native toy controller ownership", () => {
     const h = await harness(), control = h.ref.current!;
     vi.stubGlobal("document", { hidden: false });
     const rect = { left: 410, top: 330, width: 44, height: 44 };
-    const node = { style: { transform: "", setProperty: vi.fn() }, dataset: {} as Record<string, string>, hidden: false, isConnected: true, getBoundingClientRect: vi.fn(() => rect) };
+    const node = { ...presentationMethods(), style: { transform: "", setProperty: vi.fn() }, dataset: {} as Record<string, string>, hidden: false, isConnected: true, getBoundingClientRect: vi.fn(() => rect) };
     (h.button.props.ref as (node: unknown) => void)(node);
     // A unit DOM node with its own measured rectangle. The completion source
     // must use this displayed centroid, rather than the model's floor point.
@@ -409,7 +419,7 @@ describe("shared native toy controller ownership", () => {
   it.each(["hidden-document", "detached-node", "hidden-node", "empty-rectangle"] as const)("consumes a pending ACK without discovery when its actual presentation is %s", async boundary => {
     const h = await harness(), control = h.ref.current!;
     const document = { hidden: false }; vi.stubGlobal("document", document);
-    const node = { style: { transform: "", setProperty: vi.fn() }, dataset: {} as Record<string, string>, hidden: false, isConnected: true, getBoundingClientRect: vi.fn(() => ({ left: 410, top: 330, width: boundary === "empty-rectangle" ? 0 : 44, height: 44 })) };
+    const node = { ...presentationMethods(), style: { transform: "", setProperty: vi.fn() }, dataset: {} as Record<string, string>, hidden: false, isConnected: true, getBoundingClientRect: vi.fn(() => ({ left: 410, top: 330, width: boundary === "empty-rectangle" ? 0 : 44, height: 44 })) };
     (h.button.props.ref as (node: unknown) => void)(node);
     control.tick(1800); const actual = control.available()[0]; h.onExperience.mockClear();
     expect(control.pick(actual.id, actual)).toBe(true); expect(control.put(actual.id, actual, 2000, false, true)).toBe(true);

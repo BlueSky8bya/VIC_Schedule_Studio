@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { useShowcase } from "@/components/shared/ambient/showcase";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { loadCompanionCollection, subscribeCompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { createCompanionMeadowWalk } from "@/lib/ui/viewer-companion/meadow-walk";
@@ -9,18 +8,21 @@ import { createCompanionMotion, nextCompanionPaint } from "@/lib/ui/viewer-compa
 import { companionMotionClips, companionSpriteMetadata, peekDecodedCompanionSprite, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { companionPreviewDrawing, createCompanionPreviewPreparation } from "@/lib/ui/viewer-companion/wardrobe-preview";
 import "./companion-meadow-walk.css";
+import type { CompanionShowcaseSession } from "@/lib/ui/viewer-companion/showcase-session";
+import { bindCompanionShowcaseInput } from "@/lib/ui/viewer-companion/showcase-input";
+import { logActivity } from "@/lib/activity/client";
 
 /** The normal resident is already suspended by showcase. This temporary
  * drawing borrows the same registered pixels and equipped accessory without
  * relocating its actual calendar support or borrowing any carried object. */
-export function CompanionMeadowWalk({ preferences, available, reduced, night }: { preferences: CompanionPreferences; available: boolean; reduced: boolean; night: boolean }) {
-  const showcase = useShowcase();
-  if (!showcase || !available || !preferences.enabled) return null;
-  return <MeadowDrawing preferences={preferences} reduced={reduced} night={night} />;
+export function CompanionMeadowWalk({ preferences, available, reduced, night, session }: { preferences: CompanionPreferences; available: boolean; reduced: boolean; night: boolean; session: CompanionShowcaseSession }) {
+  useSyncExternalStore(session.subscribe, session.snapshot, () => 0);
+  if (!session.has("pet") || !available || !preferences.enabled) return null;
+  return <MeadowDrawing preferences={preferences} reduced={reduced} night={night} session={session} />;
 }
 
-function MeadowDrawing({ preferences, reduced, night }: { preferences: CompanionPreferences; reduced: boolean; night: boolean }) {
-  const host = useRef<HTMLDivElement>(null), body = useRef<HTMLSpanElement>(null), facing = useRef<HTMLSpanElement>(null), pose = useRef<HTMLSpanElement>(null), sprite = useRef<HTMLSpanElement>(null), canvas = useRef<HTMLCanvasElement>(null), shadow = useRef<HTMLSpanElement>(null);
+function MeadowDrawing({ preferences, reduced, night, session }: { preferences: CompanionPreferences; reduced: boolean; night: boolean; session: CompanionShowcaseSession }) {
+  const host = useRef<HTMLDivElement>(null), body = useRef<HTMLButtonElement>(null), facing = useRef<HTMLSpanElement>(null), pose = useRef<HTMLSpanElement>(null), sprite = useRef<HTMLSpanElement>(null), canvas = useRef<HTMLCanvasElement>(null), shadow = useRef<HTMLSpanElement>(null);
   const back = useRef<HTMLSpanElement>(null), front = useRef<HTMLSpanElement>(null), gift = useRef<HTMLSpanElement>(null);
   const preferencesRef = useRef(preferences); preferencesRef.current = preferences;
   const reducedRef = useRef(reduced); reducedRef.current = reduced;
@@ -37,14 +39,16 @@ function MeadowDrawing({ preferences, reduced, night }: { preferences: Companion
     let accessory = loadCompanionCollection().gifts.equipped;
     let disposed = false, generation = 0, raf = 0, retryTimer = 0, retryCount = 0, retryRow = -1;
     let previousAt = 0, previousPaint = 0, activeTime = 0, cell = "", registered = "", requestedRow = -1, preparedRow = -1;
+    const initial = session.point("pet");
+    if (initial) walker.place(initial, { width: innerWidth, height: innerHeight });
     let current = walker.sample(0, { width: innerWidth, height: innerHeight }, preferencesRef.current, false);
     const ensureWardrobe = () => {
       if (!accessory || painter) return;
       void import("@/lib/ui/viewer-companion/accessory").then(module => { if (!disposed && !painter) { painter = module.createCompanionAccessoryPainter(hosts); refresh(); } }).catch(() => { /* An optional attachment chunk cannot disable the walk. */ });
     };
     const restricted = () => reducedRef.current || document.documentElement.hasAttribute("data-reduce-motion") || ["off", "soft"].includes(document.documentElement.dataset.gfx ?? "");
-    const active = () => !disposed && !document.hidden && document.documentElement.hasAttribute("data-showcase");
-    const animated = () => active() && !restricted() && (document.hasFocus() || preferencesRef.current.activeWhileVisible);
+    const active = () => !disposed && !document.hidden && session.has("pet") && session.visible("pet");
+    const animated = () => active() && session.active() && !bodyPlane.hasAttribute("data-showcase-held") && !restricted() && (document.hasFocus() || preferencesRef.current.activeWhileVisible);
     const cancel = () => { generation++; cancelAnimationFrame(raf); clearTimeout(retryTimer); retryTimer = 0; raf = 0; previousAt = 0; };
     const paint = (now: number) => {
       if (!current) return false;
@@ -70,6 +74,7 @@ function MeadowDrawing({ preferences, reduced, night }: { preferences: Companion
       element.dataset.state = current.status; element.dataset.purpose = current.purpose; element.dataset.leg = String(current.leg);
       element.dataset.x = current.x.toFixed(3); element.dataset.y = current.y.toFixed(3); element.dataset.groundY = current.groundY.toFixed(3);
       element.dataset.accessory = accessory ?? "none"; element.dataset.paintedAt = now.toFixed(1);
+      session.move("pet", { x: current.x, y: current.groundY }, false);
       element.hidden = false;
       return true;
     };
@@ -110,6 +115,8 @@ function MeadowDrawing({ preferences, reduced, night }: { preferences: Companion
     const refresh = () => {
       cancel(); requestedRow = -1;
       if (!active()) { element.hidden = true; return; }
+      const stored = session.point("pet");
+      if (stored && current && (Math.abs(stored.x - current.x) > .1 || Math.abs(stored.y - current.groundY) > .1)) walker.place(stored, { width: innerWidth, height: innerHeight });
       // Visibility/resize/quiet changes retain the same walk destination and
       // foot. Their elapsed hidden time never becomes an offscreen leap.
       current = walker.sample(0, { width: innerWidth, height: innerHeight }, preferencesRef.current, animated());
@@ -117,22 +124,27 @@ function MeadowDrawing({ preferences, reduced, night }: { preferences: Companion
       else element.hidden = true;
     };
     refreshRef.current = refresh;
+    const offSession = session.subscribe(refresh);
+    const offInput = bindCompanionShowcaseInput(element, session, node => node.hasAttribute("data-showcase-pet") ? "pet" : undefined, () => preferencesRef.current.drag, () => {
+      logActivity("ui.click", { target: "companion-drag" });
+      if (!session.active() && session.visible("pet")) session.releasePet();
+    });
     const off = subscribeCompanionCollection(value => { accessory = value.gifts.equipped; ensureWardrobe(); if (active()) paint(performance.now()); });
     const observer = new MutationObserver(refresh);
     observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-gfx", "data-reduce-motion"] });
     window.addEventListener("resize", refresh); window.visualViewport?.addEventListener("resize", refresh);
     document.addEventListener("visibilitychange", refresh); window.addEventListener("focus", refresh); window.addEventListener("blur", refresh);
     ensureWardrobe(); refresh();
-    return () => { disposed = true; cancel(); if (refreshRef.current === refresh) refreshRef.current = () => {}; off(); observer.disconnect(); painter?.clear(); window.removeEventListener("resize", refresh); window.visualViewport?.removeEventListener("resize", refresh); document.removeEventListener("visibilitychange", refresh); window.removeEventListener("focus", refresh); window.removeEventListener("blur", refresh); };
-  }, []);
+    return () => { disposed = true; cancel(); if (refreshRef.current === refresh) refreshRef.current = () => {}; off(); offSession(); offInput(); observer.disconnect(); painter?.clear(); window.removeEventListener("resize", refresh); window.visualViewport?.removeEventListener("resize", refresh); document.removeEventListener("visibilitychange", refresh); window.removeEventListener("focus", refresh); window.removeEventListener("blur", refresh); };
+  }, [session]);
   // React setting changes need the same wakeup as focus/resize. Keep the
   // mounted controller, active clock and destination; cancel only its pending
   // paint/decode generation. In particular, OFF -> ON must wake a stopped RAF.
   useEffect(() => { refreshRef.current(); }, [preferences.enabled, preferences.roam, preferences.jump, preferences.personality, preferences.animalMode, preferences.speed, preferences.activeWhileVisible, reduced]);
-  return <div aria-label="초원을 산책하는 빅타민" className="vc-meadow-walk" data-night={night ? "1" : undefined} hidden ref={host} role="img">
+  return <div aria-label="초원을 산책하는 빅타민" className="vc-meadow-walk" data-night={night ? "1" : undefined} hidden ref={host} role="group">
     <span className="vc-meadow-walk-shadow" ref={shadow} aria-hidden="true" />
-    <span className="vc-meadow-walk-body" ref={body} aria-hidden="true"><span className="vc-meadow-walk-facing" ref={facing}><span className="vc-pose" ref={pose}>
+    <button className="vc-meadow-walk-body" ref={body} data-showcase-pet="" data-activity-manual="" type="button" aria-label="빅타민 · 잡아서 옮기기"><span className="vc-meadow-walk-facing" ref={facing}><span className="vc-pose" ref={pose}>
       <span className="vc-wearable vc-wearable-back" ref={back} /><span className="vc-sprite" ref={sprite}><canvas width="192" height="192" ref={canvas} /></span><span className="vc-wearable vc-wearable-front" ref={front} /><span className="vc-wearable vc-gift-prop" ref={gift} />
-    </span></span></span>
+    </span></span></button>
   </div>;
 }

@@ -1,0 +1,1123 @@
+{
+  "version": 1,
+  "scope": "Vercel build output only; repository originals and historical receipts stay in place.",
+  "created": "2026-10-23",
+  "entries": [
+    {
+      "path": "public/companion/audio/radio/radio-01.ogg",
+      "bytes": 1130208,
+      "sha256": "6d249e348ca333c48da3a512fc889fe5d9b81809c9220905aaa75a28196f717b",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-02.ogg",
+      "bytes": 1058576,
+      "sha256": "b9a380b5323ce2f2c459dd4cd315d1ef5fdf3cb674ca03049efb9030e3a73f2e",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-03.ogg",
+      "bytes": 922810,
+      "sha256": "2f55878c854bc78b097d7c54f7b70e24a73ed8de8984451fa9dc6102c287e073",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-04.ogg",
+      "bytes": 716928,
+      "sha256": "4fd5b43e21a3b4632bf6e1918c1c63024b470be6af0086c7a1e0e29f252e8551",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-05.ogg",
+      "bytes": 464113,
+      "sha256": "865d87b1ee0263c2963ed5af5e3992958c6c002a4c89a84a27e8b7cc2ec60f60",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-06.ogg",
+      "bytes": 1053715,
+      "sha256": "8a9b8ffebd59f97265280c47ec3fc7618d005ea78b5aec82788ec33ab5648fdf",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-07.ogg",
+      "bytes": 664335,
+      "sha256": "29b1c6afce631aba808e817486575451dc996a01d9052c730df057c8a7d6c19a",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-08.ogg",
+      "bytes": 673056,
+      "sha256": "159132b26bd5f9a0183a5dcb0b09c88ffa4e07b7741eb53015386799a1f7478f",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-09.ogg",
+      "bytes": 667396,
+      "sha256": "962354e5cb58135b35fae21f14e2da6e3103ef94d52d995c3f74b467e67d3237",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-10.ogg",
+      "bytes": 756848,
+      "sha256": "c1a9d7b70dd32be22bcebc36a5ba819ee9ed4d1bb2c911b6756650a5b0a398eb",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-11.ogg",
+      "bytes": 796003,
+      "sha256": "92cef4a0af34aed88e1fd857ce62aa34693af2ae9e473e3ede4330f276b764c9",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-12.ogg",
+      "bytes": 992001,
+      "sha256": "30980ef884f620e8f7843451e083062bcc9e8fabcde6d6af633e07749721eaf4",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-13.ogg",
+      "bytes": 702769,
+      "sha256": "5e58dc3bcfc4b8064db1dc9a0f4641a2f46eeac86645f1491b1598b1b249f9b4",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-14.ogg",
+      "bytes": 1096175,
+      "sha256": "1749b291645686aa403b006c7f53459a4f2b96b94b98adea3fbc4a32e0098349",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-15.ogg",
+      "bytes": 449931,
+      "sha256": "486c4ec9f634b2113e4711b95dcf41adfcbb7bcc0232e3bd44e0596e09ede728",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-16.ogg",
+      "bytes": 610270,
+      "sha256": "908ee14b4b7ebae8c6eff15084f3f86d9756bbe24eb6aa1ced578ac784b1349a",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-17.ogg",
+      "bytes": 648836,
+      "sha256": "e39230e3bde5eaef1bfc55536e4d1abfe03ea076b87d5650150885fa1fbe63c6",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-18.ogg",
+      "bytes": 583947,
+      "sha256": "04fc0a01e9a687a2d8727702f20aba6c0e539763ff0d78ab11184152d5c95042",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-19.ogg",
+      "bytes": 986997,
+      "sha256": "5a8e036d16e4b8556f71cceec3bda74ed6d110cff8949e11b5b9444df9a24b3d",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-20.ogg",
+      "bytes": 505110,
+      "sha256": "74934cd2979de8c0d3e472ee293a2cf13331742939eca52cd194a6eed0bc32ac",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-21.ogg",
+      "bytes": 621964,
+      "sha256": "e20294550b29a7ea77bf6b2594835fbc8112cebdeff1b4f20904378820db00f2",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-22.ogg",
+      "bytes": 430836,
+      "sha256": "9a063b3f251b2f1a1a1952e35c53969ee9aee99a54a63e7dce125481fa6b5478",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-23.ogg",
+      "bytes": 480151,
+      "sha256": "4b3cfcb3e9fee842a0d6a971dcaeb163ddf8869174d5757bca40aead5df74d4b",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-24.ogg",
+      "bytes": 867108,
+      "sha256": "aab027077877c6a5a9f887d2a18f47f4f9d26ed2242df1eb777526308f58443f",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-25.ogg",
+      "bytes": 409432,
+      "sha256": "223756329132831a2f46a5931da8f12264b0ea6263197b79e767895bf290db57",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-26.ogg",
+      "bytes": 429924,
+      "sha256": "f4c0bdec4c49e55b0f2a77e002dc0f4dd885fedab27c2db297908ba4aa52b50c",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-27.ogg",
+      "bytes": 695392,
+      "sha256": "f386c6bbc4cad8100f741a6829befd8517b6b1615904813f8a70f439b4a21973",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-28.ogg",
+      "bytes": 1047470,
+      "sha256": "f10f90364a766dafa3d73538ebb3dc35e08f664a22a5d661370c4d0a5bf36cec",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-29.ogg",
+      "bytes": 521838,
+      "sha256": "6c2f17bad03f2f07b83d408d4db475419a2eb981c6c6d5a3d74b41988b887507",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-30.ogg",
+      "bytes": 1034195,
+      "sha256": "33f7267a3759560551e5591d3181cf5c953bb354ce356ef6a23130155d296ae2",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-31.ogg",
+      "bytes": 849560,
+      "sha256": "67c46770a2ea7bad3e5537480b7e53e13c96533dfe4faf19faba0072471f8a8b",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/audio/radio/radio-32.ogg",
+      "bytes": 486327,
+      "sha256": "7b36db6388999a0bdfa8b7b2e329a27fc26705af04b731f2ac0d201547dc6b8e",
+      "reason": "inactive-radio-v155"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-00-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 164362,
+      "sha256": "2a092682a39da0b0236d285be4470e7cb1d1881dc67e1a7ced22275c1446d72f",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-00-big-eyes-v1.webp",
+      "bytes": 163740,
+      "sha256": "931b609d1f26f3b47499d40be16607c4aeebb882fe4c595e724521c2be30918a",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-00.webp",
+      "bytes": 173858,
+      "sha256": "afff6fc5214a8728269867dceb4a06f4cc4b920b04571afc78fdd393b74100b2",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-01-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 165126,
+      "sha256": "ed61dc55a2be9a0b982f75984db1a6f5fc33eb5039fab6e0560c4e6d7dd3f5af",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-01-big-eyes-v1.webp",
+      "bytes": 163742,
+      "sha256": "0d390be16b3e2a74521cc213faef487b07acdbc738dc074bd2fd7d632c5b736f",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-01.webp",
+      "bytes": 175164,
+      "sha256": "b5e87de9b4faf8a398f2dd48184af55a3263423d34650df061f3bd469264dc17",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-02-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 157274,
+      "sha256": "136a9016e7d1004ade49a523403df5d22131170fea7e466f5b481a0403f9c6ca",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-02-big-eyes-v1.webp",
+      "bytes": 158066,
+      "sha256": "9ee557d5c328c2d2eda101a3c1ddb2ad1d1278be9e6379d6abdfac311d470423",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-02.webp",
+      "bytes": 168360,
+      "sha256": "26dad603ef17fdd12f9e3d494494f35a9f7e3f310b959cac381683c2fc2e98c1",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-03-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 145950,
+      "sha256": "87abfe9bc6fa7ea6cb2119ffd8551ce0f64ce070d436b2de4dfce0666a79777e",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-03-big-eyes-v1.webp",
+      "bytes": 155722,
+      "sha256": "7ee14a8df38d4ef2e731257d6c7ff288a163dc8d8efd3619283e0c523b0763af",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-03.webp",
+      "bytes": 160344,
+      "sha256": "0c0ba17d0c4ca574c255310ec8769caa219bf4635d2836c1871c94802eba5feb",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-04-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 167164,
+      "sha256": "9a9b7672fbaf499da4cf099d432b7c2e91651ff6acc9ea7686c26f2290c8e549",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-04-big-eyes-v1.webp",
+      "bytes": 149268,
+      "sha256": "3a34792635b5175dd5079d8769ad3567c46883ef56a94d8ccd0fe1c27db6a3a1",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-04.webp",
+      "bytes": 169234,
+      "sha256": "bb76b8be50458a12dfb32f52377a507cafe633e09fe8cab0e2b26770d35a54c4",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-05-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 174536,
+      "sha256": "87454559ac52af0c9e9223a48b453c20159ca900e770d23e1f5ee35077e7470e",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-05-big-eyes-v1.webp",
+      "bytes": 172854,
+      "sha256": "fc7ec3749e6f779b462fc08a1900aec7fb819d8209ac682357dcf28aed4d4583",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-05.webp",
+      "bytes": 184450,
+      "sha256": "8c6b8460bd799af880431c07f9e08386ed056bf097d91fa298857286c0499e00",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-06-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 145826,
+      "sha256": "5e65c4df1c2c61effb909c1cfa801c8946bc01bc1d5ccf729779f859dff85ca5",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-06-big-eyes-v1.webp",
+      "bytes": 129486,
+      "sha256": "62f37ec11e482f6b17930b7cb0225e48de429436a62a794338d33f82c32eeb65",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-06.webp",
+      "bytes": 147692,
+      "sha256": "5449bb353fbe66ea58476460cab035d5eb41eb309999eec651abd24a54c97545",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-07-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 159892,
+      "sha256": "ba7d3454271f6ccaebf6388a8decac22e392143f9dc64dba8fdccc97f490e744",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-07-big-eyes-v1.webp",
+      "bytes": 160282,
+      "sha256": "3bccc0c9a02e925e644cf0fb2e90b91bc41c85e27a440102d6442922edf74255",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-07.webp",
+      "bytes": 170488,
+      "sha256": "f9e3dd9ac8954720e6ec65aeb76f123e8d30ed1f9dd35fd04424ed9f52f443bb",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-08-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 180794,
+      "sha256": "ed435a22da5b601fb2513a793556bee67f91904f15bba768ceca609c3c905904",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-08-big-eyes-v1.webp",
+      "bytes": 172352,
+      "sha256": "1fb5cbeeac7d073be7c092cba0f1d47df41808decbf186e7aca2600fbc85be11",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-08.webp",
+      "bytes": 196996,
+      "sha256": "b064ee103dbaa86ef351b73446a825cf7f64cca9e136c89b2a216c99580ac7f7",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-09-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 152422,
+      "sha256": "1d16f85cb13bc7a4e1776a999fb29c7ef9f44ecb5874f22832f1d5142f01496c",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-09-big-eyes-v1.webp",
+      "bytes": 156436,
+      "sha256": "a158224f322ff21558a11ff2a3580d9e1cb874abd60acf93819250e53c0fd2fc",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-09.webp",
+      "bytes": 166778,
+      "sha256": "ebae13fb511ef341f3d712c0a82951070f3f51a67c1093b54a144de30c45c210",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-10-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 158294,
+      "sha256": "e5b6839d05949bc128e48e5204663d9c80b692aa9453c5716e922ce8acc6bc0f",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-10-big-eyes-v1.webp",
+      "bytes": 158168,
+      "sha256": "880f2f3944b2d3a251492595a1111b42e0ba21690d90dca623a812477bd729cd",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-10.webp",
+      "bytes": 165944,
+      "sha256": "026c0d35e20c017572a0c65639a58dfdc26b914b2ae770c7da95fd3390f48284",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-11-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 133002,
+      "sha256": "793b8882c3be864e4eae3e05b633af7ab2fd87ae3b40da0fdaed5daa89e82f81",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-11-big-eyes-v1.webp",
+      "bytes": 127814,
+      "sha256": "2705810df4eeec11de4d798e86e741b9045f503dc7cb05534693314ae75b2633",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-11.webp",
+      "bytes": 136800,
+      "sha256": "50421660a255d66f0afa572acd8b67e687ca7d77134a6b92ef230368012268c8",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-12-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 158332,
+      "sha256": "94c44e49a265340a324d56d436b6e446362f15b02b5e9b2a638c5c353f634b01",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-12-big-eyes-v1.webp",
+      "bytes": 160510,
+      "sha256": "258c85cb80ed43d9112ceb98fc21777abf7548c05f9ff9a75ed99a25b579040b",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-12.webp",
+      "bytes": 170712,
+      "sha256": "2a514941d2aabf59dc15400e2791d0248df8239f13dc878130f0364b90e51cf7",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-13-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 168526,
+      "sha256": "efcda71cd7a8f22eac7fdf822f78d432c0faf91d364c0ca3ba7e95f635401e3b",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-13-big-eyes-v1.webp",
+      "bytes": 162074,
+      "sha256": "6ce0910b951af5b9b9304e117cb119dc298dd2b1fc35d4890eecea99792958cf",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-13.webp",
+      "bytes": 169894,
+      "sha256": "b3f5bd88c4a2576755b67610a20cace26a6df4ec52c9ec236626937cfe2eb75b",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-14-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 120134,
+      "sha256": "a1c27e5d5ae0ec27e8a55936e77b8d368410a1c30bc4a40bc67afea05d38dc31",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-14-big-eyes-v1.webp",
+      "bytes": 123230,
+      "sha256": "55821c7d67ae054054975de6a607b41b145a3bfc0f76245d0dac9dc8bdad3e36",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-14.webp",
+      "bytes": 127902,
+      "sha256": "59975ef0f697ba9f0a6624e44a74a0134e5e42f6b62f3a0391bf25155ecf340e",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-15-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 152962,
+      "sha256": "11da2dfa4eb22b6440af877e56f447ba7a5421e797837e419d40f40fcfc07083",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-15-big-eyes-v1.webp",
+      "bytes": 153866,
+      "sha256": "d15c29285afe60ab1bd6f6d537e8e17e68d6cc58b9c5e95e8d3f9d0a45c15581",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-15.webp",
+      "bytes": 158224,
+      "sha256": "bfd07b387b0e5ac66912e16c6830febf716b1be3c5ed2aa45616ceec7f2b3100",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-16-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 162654,
+      "sha256": "724c6d16390dd48eee565700762f812c6b46df66c0a3346801fab2362f2739fd",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-16-big-eyes-v1.webp",
+      "bytes": 159210,
+      "sha256": "b016add52685525090938b257c59499266df77c701c56c21e70c76e9f6de8e71",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-16.webp",
+      "bytes": 172298,
+      "sha256": "098020f8201d6d3c3d4896a9f441d6240a6225b283f10d4832833284ec1234e3",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-17-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 160426,
+      "sha256": "6ddf3c5be3c62e6778028e6f35c1e679b1a3c179f8e09b96d482447c325e0ce7",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-17-big-eyes-v1.webp",
+      "bytes": 176642,
+      "sha256": "4954b7272a0e99bb9712737c655fa80ec7803a57462d2ef4200180733c32482b",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-17.webp",
+      "bytes": 181340,
+      "sha256": "3c8f4e43fa6b5ac8c4dd239f9f8557804cf1f1a979cd0d4e4372b2258d7e24e7",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-18-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 156946,
+      "sha256": "f47f11ba7e8e01bb97cb94dccb99fc53bcd5daa1fc2878606a528c155031c0f8",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-18-big-eyes-v1.webp",
+      "bytes": 169986,
+      "sha256": "92c3c99b5f0077711b0d383823a18c8fa5c1a8ff9ce114719fe751fbc7786321",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-action-18.webp",
+      "bytes": 173850,
+      "sha256": "a2dd11f56e22a543211f4a6c9d7322103362675a906c352223f2b7f12a4edfe5",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-episodes-104-v1.webp",
+      "bytes": 89414,
+      "sha256": "c8a66edbb01cc423ecebe0bf37b5a8ac3233fa7ae22c9a6735a8b85854771d6c",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-20-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 145454,
+      "sha256": "f7a46b631d0755f9af0079501cc8890e2f614a3661e7812650659e1aa3c3f813",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-20-big-eyes-v1.webp",
+      "bytes": 159360,
+      "sha256": "a8b6300791b7cc15dadb66f762b394b6190677aaf5b3e765f34324ece060c912",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-20.webp",
+      "bytes": 178848,
+      "sha256": "6afbcc7de678f4e5e32bc5f31475fcaa746accbd6455d20ce5294c4c41a3f3f9",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-21-ear-v2-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 135494,
+      "sha256": "52bdd0c379f3c74823944bfe64cbed59c4005072821afacd03950336c5b9748c",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-21-ear-v2-big-eyes-v1.webp",
+      "bytes": 139092,
+      "sha256": "f3a0c5b3c854696bc052c3c98d50e9ce4cfd9eb900c26f7b7115264e89ad450b",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-21-ear-v2.webp",
+      "bytes": 194668,
+      "sha256": "43f1322eb335302defddce11efc67f0dc739ebdd77b32ee1a29c214f2f3d9d36",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-21.webp",
+      "bytes": 160748,
+      "sha256": "22a6edec047bedc0d2b575a3f1063d9198ddfe72663eb7dea14533b9af7a0c4e",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-22-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 138290,
+      "sha256": "17f09125496eca21669a70a10859edf6d35479082b2c00c72cdd98785343dc7a",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-22-big-eyes-v1.webp",
+      "bytes": 147150,
+      "sha256": "aa89ea446108603fa77658264c77da1bdfdb1e14c8beca71c0650d5f0d25895b",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-22.webp",
+      "bytes": 159892,
+      "sha256": "88a9c9560167adcca96fb8b02e6064279e7a874697d797fc0625281af651614e",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-23-recover-v2-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 138056,
+      "sha256": "531184428f6a56e46bd1ef8b60c954c9c0c7fddb56f25a70b6411768b0e401b4",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-23-recover-v2-big-eyes-v1.webp",
+      "bytes": 146752,
+      "sha256": "3fad5f651551855e84b063de46876076b2998d7a3efcf5b1bd77dd9151b61f55",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-23-recover-v2.webp",
+      "bytes": 147436,
+      "sha256": "c1e9c5f2ff08389777a86ff3fc798e807edec56a45b747554a78da23bcc73b46",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-23.webp",
+      "bytes": 184146,
+      "sha256": "2ad1f9d35004d103797f2ecb652dbc46dc86cb96a44303d25da30e20a1ae7560",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-24-ear-v2-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 114482,
+      "sha256": "998dd54026d9e6bff5abf69ecea1b9547129f4d87d84a32c83391d4a8e6d2a4d",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-24-ear-v2-big-eyes-v1.webp",
+      "bytes": 115426,
+      "sha256": "08cbb0fea9eb64c067725d8be3ed492d3ff59f2b8ec0c92fc86d004a0c58788b",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-24-ear-v2.webp",
+      "bytes": 62140,
+      "sha256": "b4fea9d582da5b815f499287c409b02e74c604933293a71b2a2d4f01d33e9f1f",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-24.webp",
+      "bytes": 136780,
+      "sha256": "b8b7a0c392bf6b3331c0b6082666bec65b2015fdf937bebe06b170c27c9853c1",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-25-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 135990,
+      "sha256": "aa5452a2d0bb21a0455ed852876277eccec41ccb7f52e75fbaaa8dba9c9607bb",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-25-big-eyes-v1.webp",
+      "bytes": 143680,
+      "sha256": "7087e8b43076e7fab10a873b0797dbbee68cbcdaac2f9f8b070c55b6b72b5a63",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-25.webp",
+      "bytes": 166148,
+      "sha256": "00f49cec79de308d3c8dc9ffaaf87a6466ad75c086a63bfec1f12bb706f727a6",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-26-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 123578,
+      "sha256": "a03772c2f3fcf4c7ebbeaa76a19261640b079d38a41c56f12b013a4f192ca8cc",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-26-big-eyes-v1.webp",
+      "bytes": 135844,
+      "sha256": "cb15545467be93ec224d85b5376bb1a4bcf2bafe04397211887d24433135ccde",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-26.webp",
+      "bytes": 146882,
+      "sha256": "d7e209e4d46cc616ac0e7f380621ab6ce18c082888b4300420edcd5369bedecb",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-27-ear-v2-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 147022,
+      "sha256": "800794261c544bd1bd0b038125680c1ac022c5c45e449c587c604d5887aac1fa",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-27-ear-v2-big-eyes-v1.webp",
+      "bytes": 146976,
+      "sha256": "e50988fd0aca11a07a10a40f2af5179dcb1faf6989cd8e658102161f0ccbf705",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-27-ear-v2.webp",
+      "bytes": 105584,
+      "sha256": "e1a3e9082f0dc2913fd6adfc1e4bf394debd7a846f05116135fee64c581d2e26",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-27.webp",
+      "bytes": 156926,
+      "sha256": "d82cfc385f669240dd61737ae39a2b49e6d5e32d0262481771a339d91ae8ace7",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-28-ear-v2-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 106398,
+      "sha256": "4abe40fa4f7214e82eec91ace885fdac174d754425d96dac1c3b33738b0ca944",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-28-ear-v2-big-eyes-v1.webp",
+      "bytes": 99154,
+      "sha256": "e04f8fdcc643d8175059347ec47e6728cfc6ec85386ce8fae59912b358f6a246",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-28-ear-v2.webp",
+      "bytes": 47546,
+      "sha256": "a3071f7303d53d7daa73964a308b69d3f95a18bc401c3f799f10adbda3c67958",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-28.webp",
+      "bytes": 113844,
+      "sha256": "b505b08698007b8f0cdf3d84aae7f0124790dd04cf3741c59d3ce43541b1f3c3",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-29-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 133368,
+      "sha256": "74b44e72c8a223e3c6466491c62c2a039169d7d2253a3aa4942802f8a57a9dd9",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-29-big-eyes-v1.webp",
+      "bytes": 138692,
+      "sha256": "3bbe6a82ff49328465952392af4b5836dbc36a23d60edf33ebf203fe1af07cb0",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-29.webp",
+      "bytes": 151054,
+      "sha256": "95ea1c8789d7098b21ee1e6cbdd9ac31f9029a2955059160cffa4a33e9b9d741",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-30-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 132742,
+      "sha256": "3b8e942d6c07a794ba6f8cde0978935b9ba159a9077e8d4b5e423bbb3b05f0db",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-30-big-eyes-v1.webp",
+      "bytes": 138788,
+      "sha256": "cb0e404a21b9ae485b95f58f7d9e373a757f1199524757b7c04db4f9f89b2f4d",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-30.webp",
+      "bytes": 151250,
+      "sha256": "fad69e613e593e4ad18c84381b7956f9026885c365add6792062b6136cc1fe81",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-31-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 130846,
+      "sha256": "08e73a5a333ec1c6d2323e2be3def92eb8729008ce5117d637c56ca94ca21f5a",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-31-big-eyes-v1.webp",
+      "bytes": 134524,
+      "sha256": "0b8d3e1d888a791831c43f9460c1ca17416b89df66b7156ee8bfd31ccadf411b",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-31.webp",
+      "bytes": 151498,
+      "sha256": "b18d2ebfa3846e25d23eaf71207b32d08240b1ebe58895875318626ef3dceeeb",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-32-throw-big-eyes-v1-body-outline-v1.webp",
+      "bytes": 140602,
+      "sha256": "9e8a8223d86974e5b9477e9cba907361b8d42033779642361354784ce6642268",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-32-throw-big-eyes-v1.webp",
+      "bytes": 144294,
+      "sha256": "a9c13187878b4a46d1c4f3e661110008d20ba6e3c6f1c303c9e5b66de0fd0551",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/victamin-play-32-throw.webp",
+      "bytes": 144392,
+      "sha256": "53a28edde66f22bf8e18226edecfda019a32087088839a1c31125768fb18232e",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-00-expression-119-v1.webp",
+      "bytes": 416936,
+      "sha256": "77a33184dc3e8fd70e8a4169585f61214d8bfbb652e107b5ab056c1eee18969b",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-00-motion-115-v1.webp",
+      "bytes": 177446,
+      "sha256": "7792523dc32a6228791607f6f60a60bf596f66215add3a2e862d7f4a6aa2d3ad",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-00-unified-114-v1.webp",
+      "bytes": 187398,
+      "sha256": "2ae5d4d287777b4362c321eaec1ffef5fd93d0dbf36cae5a6bb1d576616993fe",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-01-unified-114-v1.webp",
+      "bytes": 187956,
+      "sha256": "01418d058e4700dbb5c35db78cca5d35ea850ea645456c92782346f31bc6d59b",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-02-unified-114-v1.webp",
+      "bytes": 193788,
+      "sha256": "8edf4b3881d27694e9c1037f4bf866c9df7b23958693aaa2246609ba1fb98f57",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-03-unified-114-v1.webp",
+      "bytes": 181784,
+      "sha256": "f2fb5cd861455d8299cd4f60f7e5ec5a6bbf4a9dfbed5c2a42a24fcb15ac7b3a",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-04-motion-115-v1.webp",
+      "bytes": 185672,
+      "sha256": "1bd74a1f75b2a3f694f85bd68ac8691c5be01cb400408709295e8d0601246e98",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-04-unified-114-v1.webp",
+      "bytes": 197024,
+      "sha256": "089147fa6a4bf7318ef719c801c8bb0bc7d22c2fbb905e21c9453cc1e2733c90",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-05-unified-114-v1.webp",
+      "bytes": 195986,
+      "sha256": "6046d9b9374d046875a7a05b3cae0cf4175656dc70b78e71b53fb1cb01868121",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-06-unified-114-v1.webp",
+      "bytes": 171348,
+      "sha256": "1dbb4cc87a16106e453e991c8fd6ee5b1e723466d2b872c0a45b6e78fa000579",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-07-unified-114-v1.webp",
+      "bytes": 192790,
+      "sha256": "3a8a496ac513189188226e1dac9bfc24607aeed1d5e49cd1b32cb0e348f6108e",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-08-unified-114-v1.webp",
+      "bytes": 204158,
+      "sha256": "f0dffe0c16eb2f4bb1279d29fda90178327f12efe16de1cd4f490a83f196c181",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-09-happiness-131-v1.webp",
+      "bytes": 366210,
+      "sha256": "eaa134b4001477439dae456989d255e4cf723da31fbc5c3809f6b6d85285fcdb",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-09-motion-115-v1.webp",
+      "bytes": 177716,
+      "sha256": "1d6e0208c5c37b2d3081a0b9635968b5130b1cf5a6292b726e24f8122ab93444",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-09-unified-114-v1.webp",
+      "bytes": 194152,
+      "sha256": "3a55ffca812392b9e6547eb71ae3687dc28c46a02659bd79fd8fedb6922c709b",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-10-unified-114-v1.webp",
+      "bytes": 186594,
+      "sha256": "61f8b35ba28c8e5fdd0eb0c865c39a52e41396b6bad52aa4e7c94e977b4ee5b5",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-11-unified-114-v1.webp",
+      "bytes": 173488,
+      "sha256": "99698dfbaae574efde6c16abd5f21321ef08e4c5a37d7b25db49152d4c534a6f",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-12-unified-114-v1.webp",
+      "bytes": 197830,
+      "sha256": "ad083b29336bdc25542fb2121c13e88de5058808c74e7d31fc0603f07479c3d5",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-13-unified-114-v1.webp",
+      "bytes": 201156,
+      "sha256": "3dd4d194edae5a7675ba08ef6095c354797416dd833c2ce7422382088ca2b853",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-14-unified-114-v1.webp",
+      "bytes": 156056,
+      "sha256": "5470cad7c7c417d340048ba135bc9af0665af41dd77fa747cd7245a3a70f0c86",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-15-unified-114-v1.webp",
+      "bytes": 194988,
+      "sha256": "14f72968e05467ce60630cbceb07cb2adae22a8050254848675996f97bf68ff7",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-16-expression-119-v1.webp",
+      "bytes": 410430,
+      "sha256": "cd843900c6ffad194c336c0a5a07293230434c5d012d5f54c546bd7bb1fb6003",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-16-face-118-v1.webp",
+      "bytes": 410758,
+      "sha256": "17c96fe6080085cc8772bedc4dcb89de37a9c60c9166722db5b38ee6fabac8c9",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-16-motion-115-v1.webp",
+      "bytes": 181466,
+      "sha256": "7ccd9be9d284d81c0b0b9c73f7ddd64c3dc23d23a334fe0f740d7d386831a088",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-16-unified-114-v1.webp",
+      "bytes": 193424,
+      "sha256": "1907bee10d85fc9155c5505629d24f6ffa31ca86edc82cd73e9c742b78dce565",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-17-unified-114-v1.webp",
+      "bytes": 183486,
+      "sha256": "f1fe8a418e68328ed33c1410983dc019d889691970044825a887adfcc86113c0",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-action-18-unified-114-v1.webp",
+      "bytes": 145230,
+      "sha256": "d376c4ec8c4a0cb3adc7d833b73d607a4ac815267afa9fcba2c339b746eb4e27",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-episodes-00-expression-119-v1.webp",
+      "bytes": 223938,
+      "sha256": "9874a6c3fbe8b5f2d27de0975e2d9719116eeecbbce0dee3c5a0634e9758321e",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-episodes-00-motion-115-v1.webp",
+      "bytes": 103540,
+      "sha256": "504243213ed58faced07def94e24041e29d68efb59eff451ec128e2d0297ec67",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-episodes-00-unified-114-v1.webp",
+      "bytes": 109650,
+      "sha256": "8d54cddd6ae768178b39f23d5a4b61344c86208fade10c8b9b2b4b679259295a",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-play-00-unified-114-v1.webp",
+      "bytes": 179940,
+      "sha256": "b236d6f7eee0ce9794b821da52501bcdd6ccb1011fe5ae1b8dae869b56e4ea55",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-play-01-unified-114-v1.webp",
+      "bytes": 171056,
+      "sha256": "c0c4b95b09a56be0278aecc7368eedb3644a9b367c72f43224ee1767cba01fd4",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-play-02-unified-114-v1.webp",
+      "bytes": 158834,
+      "sha256": "b0255d1645432ca6a6a70b95fcf7d704e0bd3636febac83b4cfb5b19d1369318",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-play-03-motion-115-v1.webp",
+      "bytes": 160766,
+      "sha256": "f1f501c02392c11b0f6f3e1cc2b97b34a00193b3eb1eef3b7dd8f7ca50fd152d",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-play-03-unified-114-v1.webp",
+      "bytes": 174242,
+      "sha256": "09a60b2fec9ccdf7a25d3a2d39cad74ff40bb9baba2819b3b8c21d6a35c3a4cc",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-play-04-unified-114-v1.webp",
+      "bytes": 139646,
+      "sha256": "39b49d5a9b360c44dcabf4d5abae0458420f206fa0c1148065ebcc9b89f7fbf3",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-play-05-unified-114-v1.webp",
+      "bytes": 158824,
+      "sha256": "bec624531f56ac56b22c1ea1a9dd2a7f25575be54571ba5106ebf65339495c85",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-play-06-unified-114-v1.webp",
+      "bytes": 145394,
+      "sha256": "37eded639daf9d153931b736fc4c6fd415ff07c489173a348069d2a89b629e92",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-play-07-unified-114-v1.webp",
+      "bytes": 153496,
+      "sha256": "1368b3b2744f75480f109c04bbdbc1b27dbd068848475b90cfc1f98d9aa7aa95",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-play-08-unified-114-v1.webp",
+      "bytes": 125520,
+      "sha256": "7349f4fb5cf0430e1983119972d2c743b623f67f7a4d0915a978596af6777879",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-play-09-unified-114-v1.webp",
+      "bytes": 164226,
+      "sha256": "4588745a8adb132970adfc39a5e647f85dae08f836531f9569f9f996ee3e4114",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-play-10-unified-114-v1.webp",
+      "bytes": 169610,
+      "sha256": "7a45516ac1c6835439a2df0647a34baf75df6ec591e59cd594600fa9658f4719",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-play-11-unified-114-v1.webp",
+      "bytes": 164914,
+      "sha256": "24fa3fb1967e37826cb5bd1d74a31d7ea699e5b626045f441b96595206232508",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-play-12-motion-115-v1.webp",
+      "bytes": 157640,
+      "sha256": "14d9d65c5044f3db9771a07b4672bcdfa6cdb932b8e561c228798aa6607bd68b",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/hd/vitamin-play-12-unified-114-v1.webp",
+      "bytes": 169518,
+      "sha256": "afe9c11f790fd44380e16cec6a7f0e04b8f5c286dccf359b742a5ef4dba0dbed",
+      "reason": "superseded-hd-sprites"
+    },
+    {
+      "path": "public/companion/victamin-clean.webp",
+      "bytes": 164524,
+      "sha256": "edcbded8440f0d78a86ad335998a7a5df5530986880d6f51eb2abd49fc4844dc",
+      "reason": "superseded-flat-and-audience-sprites"
+    },
+    {
+      "path": "public/companion/victamin-fluid.webp",
+      "bytes": 987198,
+      "sha256": "140a2485bd3afbdcd072c6456146ea9b7074d9c71bafe1fbd01241b38aed2ef9",
+      "reason": "superseded-flat-and-audience-sprites"
+    },
+    {
+      "path": "public/companion/victamin-motion.webp",
+      "bytes": 1332324,
+      "sha256": "535d67d02bac975e0f2c41b3d34dadcb393b9ba1cfab3d87187a5017a9d5d24f",
+      "reason": "superseded-flat-and-audience-sprites"
+    },
+    {
+      "path": "public/companion/vitamin-fluid-q95.webp",
+      "bytes": 1107594,
+      "sha256": "daa9251b37ccb9cf6dbf174c74341711f6eb3e1bc604ad2dd360201fd57712ff",
+      "reason": "superseded-flat-and-audience-sprites"
+    },
+    {
+      "path": "public/companion/vitamin-keyposes-2x.webp",
+      "bytes": 132352,
+      "sha256": "8035b61f31b12e0d5f143ab2ce40044288bb4c73ea70721bad09758ca86f5972",
+      "reason": "superseded-flat-and-audience-sprites"
+    },
+    {
+      "path": "public/premiere/victamin-audience-big-eyes-v1.webp",
+      "bytes": 329670,
+      "sha256": "43fb169a7dcca892062fe0e7cadcfc7f23362820b8ed29facf755c3fc38702eb",
+      "reason": "superseded-flat-and-audience-sprites"
+    },
+    {
+      "path": "public/premiere/victamin-audience.webp",
+      "bytes": 324218,
+      "sha256": "47e7d666446792bd53f26241f2f082e9a16e8a0bb4f500bd257035d6c97df1d2",
+      "reason": "superseded-flat-and-audience-sprites"
+    }
+  ]
+}

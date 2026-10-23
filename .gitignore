@@ -24,3 +24,5 @@ playwright-report/
 
 # Operational row backups contain pseudonymous personal data; never publish.
 /docs/agent/backups/*presence*.json
+# Vercel build-only staging; source originals stay at their historical paths.
+/.deployment-output-archive/

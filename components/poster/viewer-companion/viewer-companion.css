@@ -83,6 +83,9 @@ html :is(.poster-page,[data-companion-event="ordinary"]) .event-heart[data-compa
 @keyframes vc-bonk { from { transform: scale(.5); opacity: 1; } to { transform: scale(1.8) translateY(-8px); opacity: .2; } }
 .vc-food-layer { position: fixed; inset: 0; z-index: 76; pointer-events: none; }
 .vc-food-layer[hidden] { display: none; }
+html[data-showcase] :is(.vc-food-layer,.vc-toys) { z-index: 66; }
+html[data-showcase] :is(.vc-food,.vc-toy):not([data-showcase-lease]) { display: none; }
+:is(.vc-food,.vc-toy)[data-showcase-held] { cursor: grabbing; }
 .vc-food { position: absolute; width: 44px; height: 44px; margin: -38px 0 0 -22px; padding: 4px; border: 0; background: transparent; border-radius: var(--r-pill); pointer-events: auto; touch-action: none; cursor: grab; user-select: none; transition: none; }
 .vc-food span { display: block; width: 36px; height: 36px; transform: scale(var(--vc-nibble, 1)); transform-origin: bottom center; pointer-events: none; }
 .vc-food[data-eating] span { transform-origin: center; }

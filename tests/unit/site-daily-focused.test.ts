@@ -7,17 +7,26 @@ import {caseId,caseFingerprint,nativeCaseFingerprint,productDependencies,actualO
 import {sha,writeNew,verifyFiles,verifyRun,hashJson,manifest} from '../../scripts/site-daily/receipts.mjs';
 // @ts-expect-error Offline Node tooling.
 import {validatePlan,options} from '../../scripts/site-daily/scoped-native.mjs';
+// @ts-expect-error Offline policy excludes only explicitly retired registrations.
+import {planDaily,partitionRetiredCaseObservations} from '../../scripts/site-daily/policy.mjs';
 const catalog=JSON.parse(fs.readFileSync(path.resolve('scripts/site-daily/native-catalog.json'),'utf8'));
 const fingerprint=(value='a')=>caseFingerprint({files:[{path:'lib/product.ts',sha256:value.repeat(64)}],scenario:{buildId:'exact-build',id:'scenario'},runtime:{node:'22',chromium:'fixed'}});
 const raw=(overrides:Record<string,unknown>={})=>({expectedStatus:'passed',status:'expected',results:[{status:'passed',retry:0,duration:200,errors:[]}],...overrides});
 describe('focused daily selection and immutable continuation',()=>{
-  it('balances 237 actual registrations into seven nonduplicated, bounded-cost buckets',()=>{
-    const buckets=weeklyBuckets(catalog.cases);expect(buckets).toHaveLength(7);expect(buckets.flatMap((b:{cases:unknown[]})=>b.cases)).toHaveLength(237);
+  it('balances 250 actual registrations into seven nonduplicated, bounded-cost buckets',()=>{
+    const buckets=weeklyBuckets(catalog.cases);expect(buckets).toHaveLength(7);expect(buckets.flatMap((b:{cases:unknown[]})=>b.cases)).toHaveLength(250);
     const costs=buckets.map((b:{estimatedWorkerSeconds:number})=>b.estimatedWorkerSeconds);expect(Math.max(...costs)-Math.min(...costs)).toBeLessThanOrEqual(125);
     expect(catalog.registrationOnly).toBe(true);expect(catalog.additionalLampCases).toBe(21);
     expect(catalog.additionalLivingIntentMotionCases).toBe(7);
     expect(catalog.additionalMeadowWalkCases).toBe(5);
+    expect(catalog.additionalMeadowSessionCases).toBe(3);expect(catalog.additionalToyMechanicsCases).toBe(2);
+    expect(catalog.additionalShowcaseResetCases).toBe(8);
     expect(catalog.cases.filter((c:{file:string})=>c.file==='tests/visual/meadow-walk.spec.ts')).toHaveLength(5);
+    expect(catalog.cases.filter((c:{file:string})=>c.file==='tests/visual/meadow-session.spec.ts')).toHaveLength(3);
+    expect(catalog.cases.filter((c:{file:string})=>c.file==='tests/visual/companion-toy-axis.spec.ts')).toHaveLength(2);
+    expect(catalog.cases.filter((c:{file:string})=>c.file==='tests/visual/showcase-reset.spec.ts')).toHaveLength(8);
+    expect(catalog.cases.some((c:{title:string})=>c.title==='meadow requires an exposed resident and reduced motion and OFF stay effective')).toBe(true);
+    expect(catalog.cases.some((c:{title:string})=>c.title.startsWith('meadow cold sprite failure recovers'))).toBe(false);
     expect(catalog.cases.filter((c:{file:string})=>c.file==='tests/visual/companion-intent-motion.spec.ts')).toHaveLength(6);
   });
   it('covers the fixed catalog over seven completed days, and catches up after a missed day',()=>{
@@ -26,7 +35,7 @@ describe('focused daily selection and immutable continuation',()=>{
       const plan=selectDailyCases({catalog:catalog.cases,day:`2026-10-${day}`,observations});expect(plan.cases.length).toBeLessThanOrEqual(42);expect(plan.fullCertification).toBe(false);
       for(const c of plan.cases){seen.add(c.id);observations.push({id:c.id,day:`2026-10-${day}`,outcome:'passed',receiptVerified:true,actualExecuted:true});}
     }
-    expect(seen.size).toBe(237);
+    expect(seen.size).toBe(250);
     const missed=selectDailyCases({catalog:catalog.cases,day:'2026-10-30',observations:observations.filter(x=>x.day!=='2026-10-25')});
     expect(missed.cases.some((c:{id:string})=>observations.some(x=>x.day==='2026-10-25'&&x.id===c.id))).toBe(true);
   });
@@ -35,6 +44,28 @@ describe('focused daily selection and immutable continuation',()=>{
     const selected=selectDailyCases({catalog:catalog.cases,day:'2026-10-23',observations:[{...o,day:'2026-10-23'},{...o,day:'2026-10-21'}]});expect(selected.cases.some((x:{id:string})=>x.id===c.id)).toBe(false);
     const failed=selectDailyCases({catalog:catalog.cases,day:'2026-10-23',observations:[{...o,day:'2026-10-23'},{...o,day:'2026-10-23',outcome:'failed'}]});expect(failed.cases[0].id).toBe(c.id);
     const reused=selectDailyCases({catalog:catalog.cases,day:'2026-10-23',observations:[{...o,day:'2026-10-23',outcome:'reused',actualExecuted:false}],priorityIds:[c.id]});expect(reused.cases[0].id).toBe(c.id);
+  });
+  it('keeps a verified retired receipt historical while its replacement remains unobserved',()=>{
+    const retired=catalog.retiredRegistrations.find((r:{title:string})=>r.title==='meadow cold sprite failure recovers and reduced motion and OFF stay effective');
+    expect(retired.id).toBe('18c75d96b0a0a4b84710b11703d1b8681227dba35b8ac97325ae925e582c6196');
+    const observations=catalog.cases.filter((c:{id:string})=>c.id!==retired.replacementId).map((c:{id:string})=>({id:c.id,day:'2026-10-23',outcome:'passed',receiptVerified:true,actualExecuted:true}));
+    observations.push({id:retired.id,day:'2026-10-23',outcome:'passed',receiptVerified:true,actualExecuted:true});
+    const original=JSON.stringify(observations),plan=planDaily({day:'2026-10-23',caseObservations:observations});
+    expect(plan.companion.selection.cases.map((c:{id:string})=>c.id)).toEqual([retired.replacementId]);
+    expect(plan.companion.selection.retiredObservations).toEqual([{...retired,observedDay:'2026-10-23',outcome:'passed',actualExecuted:true,oldEvidencePreserved:true,passTransferred:false}]);
+    expect(JSON.stringify(observations)).toBe(original);
+  });
+  it('does not silently discard unknown, unverified or future retired observations',()=>{
+    const retired=catalog.retiredRegistrations[0],row={id:retired.id,day:'2026-10-23',outcome:'passed',receiptVerified:true,actualExecuted:true};
+    const shared=catalog.cases.filter((c:{file:string})=>c.file==='tests/visual/showcase-reset.spec.ts').map((c:{id:string})=>({...row,id:c.id}));
+    expect(shared).toHaveLength(8);
+    const known=planDaily({day:'2026-10-23',caseObservations:shared});
+    expect(known.companion.selection.retiredObservations).toEqual([]);
+    expect(known.companion.selection.cases.every((c:{id:string})=>!shared.some((observation:{id:string})=>observation.id===c.id))).toBe(true);
+    expect(()=>planDaily({day:'2026-10-23',caseObservations:[...shared,{...row,id:caseId({file:'tests/visual/unknown.spec.ts',title:'unknown',project:''})}]})).toThrow('invalid-observation');
+    expect(()=>planDaily({day:'2026-10-23',caseObservations:[{...row,receiptVerified:false}]})).toThrow('invalid-retired-observation');
+    expect(()=>planDaily({day:'2026-10-23',caseObservations:[{...row,day:'2026-10-24'}]})).toThrow('future-observation');
+    expect(()=>partitionRetiredCaseObservations({day:'2026-10-23',observations:[row],catalog:{...catalog,retiredRegistrations:[{...retired,id:'0'.repeat(64)}]}})).toThrow('invalid-retired-registration');
   });
   it('keeps pending risk explicitly when the hard case cap is reached',()=>{
     const ids=catalog.cases.slice(0,45).map((x:{id:string})=>x.id);const p=selectDailyCases({catalog:catalog.cases,day:'2026-10-23',priorityIds:ids});expect(p.pendingPriorityIds).toHaveLength(3);

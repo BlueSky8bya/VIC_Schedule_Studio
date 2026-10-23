@@ -22,16 +22,21 @@ import { WEATHER_LABEL, weatherOptionsForMonth, type Weather } from "@/component
 import type { GfxPref } from "@/lib/ui/gfx";
 import { hapticTick } from "@/lib/ui/haptics";
 import { PanelSection } from "@/components/shared/panel-section";
+import { COMPANION_SHOWCASE_EVENT } from "@/lib/ui/viewer-companion/showcase-session";
 
 let active = false;
 const listeners = new Set<() => void>();
 
 function set(on: boolean): void {
   if (typeof document === "undefined" || active === on) return;
+  // Borrow only objects already exposed on the real background. Capture
+  // before opacity/inert removes the calendar and room from hit testing.
+  window.dispatchEvent(new CustomEvent(COMPANION_SHOWCASE_EVENT, { detail: { active: on, phase: "before" } }));
   active = on;
   if (on) document.documentElement.setAttribute("data-showcase", "1");
   else document.documentElement.removeAttribute("data-showcase");
   for (const l of listeners) l();
+  window.dispatchEvent(new CustomEvent(COMPANION_SHOWCASE_EVENT, { detail: { active: on, phase: "after" } }));
 }
 export const enterShowcase = () => set(true);
 export const exitShowcase = () => set(false);
@@ -486,14 +491,14 @@ export function ShowcaseExit({ settings }: { settings?: ShowcaseSettings | null 
   const surfaceRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     if (!on) return;
-    const trigger = document.activeElement;
+    const trigger = document.activeElement, surface = surfaceRef.current;
     // Opacity/pointer-events on parents do not disable descendants that opt
     // back into pointer-events:auto. Keep the underlying app out of hit testing
     // and keyboard navigation; the body portal and global ambient input stay live.
     const previous = new Map<HTMLElement, boolean>();
     const isolate = () => {
       for (const node of document.body.children) {
-        if (!(node instanceof HTMLElement) || node === surfaceRef.current || node.matches(".vc-meadow-walk")) continue;
+        if (!(node instanceof HTMLElement) || node === surfaceRef.current || node.matches(".vc-meadow-walk,.vc-food-layer,.vc-toys")) continue;
         if (!previous.has(node)) previous.set(node, node.inert);
         node.inert = true;
       }
@@ -505,7 +510,15 @@ export function ShowcaseExit({ settings }: { settings?: ShowcaseSettings | null 
     return () => {
       observer.disconnect();
       for (const [node, inert] of previous) node.inert = inert;
-      if (trigger instanceof HTMLElement && trigger.isConnected) trigger.focus({ preventScroll: true });
+      // A dragged meadow actor stays connected through this commit. React
+      // restores its pre-commit selection after layout-effect cleanup; an
+      // immediate focus() here would be overwritten, then lost to BODY when
+      // that actor hands its foot back and unmounts. Restore after the commit.
+      queueMicrotask(() => {
+        const focused = document.activeElement;
+        const anotherDialog = focused instanceof HTMLElement && focused.closest('[role="dialog"]') && !surface?.contains(focused);
+        if (!active && !document.hidden && !anotherDialog && trigger instanceof HTMLElement && trigger.isConnected && !trigger.matches(":disabled") && !trigger.closest("[inert],[hidden],[aria-hidden=true]")) trigger.focus({ preventScroll: true });
+      });
     };
   }, [on]);
   const [setOpen, setSetOpen] = useState(false);
@@ -537,6 +550,10 @@ export function ShowcaseExit({ settings }: { settings?: ShowcaseSettings | null 
       }
       const target=e.target as HTMLElement;
       if(target?.closest?.('.showcase-set'))return;
+      // Only the admitted physical buttons own meadow arrows/Space/Enter.
+      // Let their layer capture handler consume those keys before the normal
+      // calendar shortcuts; Escape above always keeps its exit priority.
+      if(target?.closest?.('button[data-showcase-lease],button[data-showcase-pet]') && ["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," ","Enter"].includes(e.key))return;
       if(target?.closest?.('input,select,textarea,button,[contenteditable="true"]')){
         e.stopPropagation();return;
       }
@@ -554,7 +571,12 @@ export function ShowcaseExit({ settings }: { settings?: ShowcaseSettings | null 
     if (!on) setSetOpen(false);
   }, [on]);
   // 언마운트(화면 전환)되면 감상 모드도 끝낸다 — 속성이 남아 다음 화면이 빈 채로 뜨지 않게.
-  useEffect(() => () => set(false), []);
+  useEffect(() => {
+    const leave = () => set(false);
+    const restored = (event: PageTransitionEvent) => { if (event.persisted) leave(); };
+    window.addEventListener("pagehide", leave); window.addEventListener("pageshow", restored);
+    return () => { window.removeEventListener("pagehide", leave); window.removeEventListener("pageshow", restored); leave(); };
+  }, []);
   if (!on || typeof document === "undefined") return null;
   return createPortal(
     <div ref={surfaceRef} role="region" aria-label="배경 감상" tabIndex={-1} style={{ outline: "none" }}>

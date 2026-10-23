@@ -1,10 +1,11 @@
 "use client";
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, useSyncExternalStore } from "react";
 import { companionToyBoxDropReady, createCompanionToys, COMPANION_TOY_NAMES, type CompanionToy, type CompanionToyKind, type CompanionToyAttachment } from "@/lib/ui/viewer-companion/toys";
 import type { Platform } from "@/lib/ui/viewer-companion/brain";
 import { logActivity } from "@/lib/activity/client";
-import { CompanionToyArt } from "./companion-toy-art";
+import { CompanionToyLiveArt } from "./companion-toy-live-art";
+import { paintCompanionToyAxis } from "@/lib/ui/viewer-companion/toy-motion-paint";
 import type { CompanionToyExperience } from "@/lib/ui/viewer-companion/toy-tastes";
 import { createCompanionInputFrame } from "@/lib/ui/viewer-companion/input-frame";
 import "./companion-toys.css";
@@ -13,6 +14,8 @@ import { companionRoomItemLight, type CompanionRoomLightRect } from "@/lib/ui/vi
 import { createCompanionItemAnchors } from "@/lib/ui/viewer-companion/item-anchor";
 import { companionCalendarAnchorIdentity, type CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
 import { attachCompanionElementPoint, followCompanionElementPoint, type CompanionAnchorFrame, type CompanionElementPoint } from "@/lib/ui/viewer-companion/element-anchor";
+import type { CompanionShowcaseSession } from "@/lib/ui/viewer-companion/showcase-session";
+import { bindCompanionShowcaseInput } from "@/lib/ui/viewer-companion/showcase-input";
 
 type Point = { x: number; y: number; platformId?: string };
 type RestingSource = { platformId: string; element: Element; identity?: string; frame: CompanionAnchorFrame; point: CompanionElementPoint };
@@ -43,9 +46,12 @@ export type CompanionToyControl = {
   stash: (id: string) => boolean;
   cancel: (now: number) => void;
 };
-type Props = { blocked: boolean; hidden?: boolean; onActivity: (direct?: boolean) => void; onCount: (count: number) => void; onReturned?: () => void; onExperience?: (kind: CompanionToyKind, outcome: CompanionToyExperience, source?: Readonly<{ x: number; y: number }>) => void };
-export const CompanionToys = forwardRef<CompanionToyControl, Props>(function CompanionToys({ blocked, hidden = false, onActivity, onCount, onReturned, onExperience }, ref) {
+type Props = { blocked: boolean; hidden?: boolean; showcaseSession?: CompanionShowcaseSession; onActivity: (direct?: boolean) => void; onCount: (count: number) => void; onReturned?: () => void; onExperience?: (kind: CompanionToyKind, outcome: CompanionToyExperience, source?: Readonly<{ x: number; y: number }>) => void };
+export const CompanionToys = forwardRef<CompanionToyControl, Props>(function CompanionToys({ blocked, hidden = false, showcaseSession, onActivity, onCount, onReturned, onExperience }, ref) {
+  useSyncExternalStore(showcaseSession?.subscribe ?? (() => () => {}), showcaseSession?.snapshot ?? (() => 0), () => 0);
+  const layer = useRef<HTMLDivElement>(null);
   const model = useRef<ReturnType<typeof createCompanionToys> | null>(null);
+  const driveLeaseFlights = useRef<() => void>(() => {});
   model.current ??= createCompanionToys();
   const world = model.current, nodes = useRef(new Map<string, HTMLButtonElement>()), count = useRef(0);
   const itemAnchors = useRef<ReturnType<typeof createCompanionItemAnchors> | null>(null);
@@ -97,24 +103,29 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     if (onlyId && toy.id !== onlyId) return;
     const node = nodes.current.get(toy.id);
     if (!node) return;
+    const lease = showcaseSession?.point(`toy:${toy.id}`);
+    node.toggleAttribute("data-showcase-lease", Boolean(lease));
     if (!toy.carried) playDrawings.current.delete(toy.id);
     const drawing = playDrawings.current.get(toy.id);
     if (!drawing) playExposure.current.delete(toy.id);
     const detail = drawing?.effect;
-    const local = { "--vc-toy-play-scale": String(drawing?.scale ?? 1), "--vc-toy-play-facing": String(drawing?.facing ?? 1), "--vc-toy-effect-opacity": String(detail?.opacity ?? 0), "--vc-toy-effect-x": `${(detail?.x ?? 0) * (drawing?.facing ?? 1) * (drawing?.size ?? 80) / 80}px`, "--vc-toy-effect-y": `${(detail?.y ?? 0) * (drawing?.size ?? 80) / 80}px` };
+    const image = node.querySelector<HTMLImageElement>(".vc-toy-art"), axisCanvas = node.querySelector<HTMLCanvasElement>(".vc-toy-axis-art");
+    const axisPainted = Boolean(axisCanvas && image && paintCompanionToyAxis(axisCanvas, image, toy.kind, drawing?.use === "spin" ? drawing.rotation : 0));
+    node.toggleAttribute("data-axis-painted", axisPainted);
+    const local = { "--vc-toy-art-rotation": `${(toy.angle + (axisCanvas ? 0 : drawing?.rotation ?? 0)).toFixed(3)}deg`, "--vc-toy-play-scale": String(drawing?.scale ?? 1), "--vc-toy-play-facing": String(drawing?.facing ?? 1), "--vc-toy-effect-opacity": String(detail?.opacity ?? 0), "--vc-toy-effect-x": `${(detail?.x ?? 0) * (drawing?.facing ?? 1) * (drawing?.size ?? 80) / 80}px`, "--vc-toy-effect-y": `${(detail?.y ?? 0) * (drawing?.size ?? 80) / 80}px` };
     let localStyles = paintedPlay.current.get(node);
     if (!localStyles) { localStyles = new Map(); paintedPlay.current.set(node, localStyles); }
     for (const [key, value] of Object.entries(local)) if (localStyles.get(key) !== value) { node.style.setProperty(key, value); localStyles.set(key, value); }
     if (drawing) { node.dataset.toyUse = drawing.use; node.dataset.playEffect = detail?.kind ?? "none"; }
     else { delete node.dataset.toyUse; delete node.dataset.playEffect; }
-    const light = companionRoomItemLight(toy, roomLight.current.room, roomLight.current.grade);
+    const light = lease ? 1 : companionRoomItemLight(toy, roomLight.current.room, roomLight.current.grade);
     if (paintedLight.current.get(node) !== light) { node.style.setProperty("--vc-item-room-light", String(light)); paintedLight.current.set(node, light); }
     if (toy.held || toy.carried || !toy.platformId) { restingSources.current.delete(toy.id); retainedSources.current.delete(toy.id); }
-    const anchor = toy.platformId && !toy.hidden && !toy.held && !toy.carried ? retainedSources.current.get(toy.id) ?? anchorFor.current?.(toy.platformId) : undefined;
+    const anchor = !lease && toy.platformId && !toy.hidden && !toy.held && !toy.carried ? retainedSources.current.get(toy.id) ?? anchorFor.current?.(toy.platformId) : undefined;
     const element = anchor?.element ?? restingSources.current.get(toy.id)?.element;
     const visibilitySource = element?.matches(".vc-home-floor") ? element.parentElement : element;
     const sourceHidden = Boolean(visibilitySource?.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]"));
-    node.hidden = Boolean(toy.hidden || sourceHidden);
+    node.hidden = lease ? !showcaseSession!.visible(`toy:${toy.id}`) : Boolean(showcaseSession?.active() || toy.hidden || sourceHidden);
     const source = anchor?.element && !sourceHidden
       ? { element: anchor.element, left: anchor.left, top: anchor.top } : undefined;
     if (anchor?.element && toy.platformId && anchor.width && anchor.height && (!sourceHidden || !restingSources.current.has(toy.id))) {
@@ -122,20 +133,22 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
       const point = attachCompanionElementPoint(toy, frame);
       if (point) restingSources.current.set(toy.id, { platformId: toy.platformId, element: anchor.element, identity: companionCalendarAnchorIdentity(anchor.element), frame, point });
     }
-    const point = itemAnchors.current!.project(node, toy, source);
-    const transform = "translate3d(" + point.x.toFixed(3) + "px," + point.y.toFixed(3) + "px,0) translate(-50%,-100%) rotate(" + (toy.angle + (drawing?.rotation ?? 0)).toFixed(2) + "deg)";
+    const point = itemAnchors.current!.project(node, lease ?? toy, lease ? undefined : source);
+    // Placement is one native anchor. Rotation belongs to the painted art,
+    // never this44px hit box: its bottom pivot previously orbited the toy.
+    const transform = "translate3d(" + point.x.toFixed(3) + "px," + point.y.toFixed(3) + "px,0) translate(-50%,-100%)";
     if (drawing?.visible && !toy.hidden && !blockedRef.current && !document.hidden && node.isConnected && !node.closest("[hidden],[inert]")
       && point.x + 22 > 0 && point.x - 22 < innerWidth && point.y > 0 && point.y - 44 < innerHeight) {
-      const image = node.querySelector<HTMLImageElement>(".vc-toy-art");
-      if (image?.complete && image.naturalWidth) {
+      if (image?.complete && image.naturalWidth && (!axisCanvas || axisPainted)) {
         const now = performance.now(), previous = playExposure.current.get(toy.id);
-        playExposure.current.set(toy.id, { at: now, ms: (previous?.ms ?? 0) + (previous ? Math.min(100, Math.max(0, now - previous.at)) : 0), changed: (previous?.changed ?? 0) + (previous?.transform === transform ? 0 : 1), transform });
+        const visualTransform = `${transform}|${local["--vc-toy-art-rotation"]}|${axisCanvas?.dataset.motionAngle ?? ""}|${local["--vc-toy-play-scale"]}`;
+        playExposure.current.set(toy.id, { at: now, ms: (previous?.ms ?? 0) + (previous ? Math.min(100, Math.max(0, now - previous.at)) : 0), changed: (previous?.changed ?? 0) + (previous?.transform === visualTransform ? 0 : 1), transform: visualTransform });
       } else playExposure.current.delete(toy.id);
     } else playExposure.current.delete(toy.id);
     if (painted.current.get(node) !== transform) { node.style.transform = transform; painted.current.set(node, transform); }
     for (const [key, value] of Object.entries({ held: String(toy.held), carried: String(toy.carried), kind: toy.kind, platform: toy.platformId ?? "", falling: String(!toy.held && !toy.carried && !toy.platformId && !toy.hidden) })) if (node.dataset[key] !== value) node.dataset[key] = value;
-    node.disabled = blockedRef.current;
-  }); }, [world]);
+    node.disabled = blockedRef.current && !(showcaseSession?.active() && lease);
+  }); }, [world, showcaseSession]);
   const refresh = useCallback(() => {
     const next = world.items();
     const ids = new Set(next.map(toy => toy.id));
@@ -146,6 +159,30 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     if (count.current !== next.length) { count.current = next.length; onCount(next.length); }
     paint();
   }, [world, onCount, paint]);
+  useEffect(() => {
+    if (!showcaseSession) return;
+    let frame = 0, disposed = false;
+    const allowed = () => !disposed && !document.hidden && !blockedRef.current && showcaseSession.has("pet") && !showcaseSession.active();
+    const tick = (now: number) => {
+      frame = 0; if (!allowed()) return;
+      world.tick(now); paint();
+      if (world.moving()) frame = requestAnimationFrame(tick);
+    };
+    const wake = () => { if (!frame && allowed() && world.moving()) frame = requestAnimationFrame(tick); };
+    driveLeaseFlights.current = wake;
+    const off = showcaseSession.subscribe(wake);
+    return () => { disposed = true; cancelAnimationFrame(frame); off(); if (driveLeaseFlights.current === wake) driveLeaseFlights.current = () => {}; };
+  }, [showcaseSession, world, paint]);
+  useEffect(() => {
+    if (!showcaseSession) return;
+    const off = showcaseSession.subscribe(() => paint());
+    const clear = showcaseSession.subscribeClear(ids => { for (const toy of world.items()) if (ids.has(`toy:${toy.id}`)) world.forget(toy.id); refresh(); });
+    return () => { off(); clear(); };
+  }, [showcaseSession, paint, refresh, world]);
+  useEffect(() => {
+    if (!showcaseSession || !layer.current) return;
+    return bindCompanionShowcaseInput(layer.current, showcaseSession, node => node.dataset.toyId ? `toy:${node.dataset.toyId}` : undefined, () => !hidden && (showcaseSession.active() || !blockedRef.current), () => logActivity("ui.click", { target: "companion-toy-drop" }));
+  }, [showcaseSession, hidden]);
   const pauseModel = useCallback((now: number) => {
     dragFrame.current!.cancel();
     clearDropBox();
@@ -185,9 +222,9 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
       world.sync(platforms, bounds, now, smallHomeFloors, attachments); paint();
     },
     tick(now) { world.tick(now); if (world.count() !== count.current) refresh(); else paint(); },
-    spawn(point, now, autonomous = false, occupied) { if (blockedRef.current) return; const id = world.spawn(point, now, occupied); if (id) { refresh(); if (!autonomous) { const toy = world.items().find(item => item.id === id); if (toy) onExperience?.(toy.kind, "taken-out"); } onActivity(); } return id; },
+    spawn(point, now, autonomous = false, occupied) { if (blockedRef.current) return; const id = world.spawn(point, now, occupied); if (id) { refresh(); driveLeaseFlights.current(); if (!autonomous) { const toy = world.items().find(item => item.id === id); if (toy) onExperience?.(toy.kind, "taken-out"); } onActivity(); } return id; },
     occupied: world.occupied,
-    available: world.available, ids: world.ids, flyingIds: world.flyingIds, count: () => count.current, moving: world.moving, carried: world.carried,
+    available: () => world.available().filter(toy => !showcaseSession?.has(`toy:${toy.id}`)), ids: world.ids, flyingIds: world.flyingIds, count: () => count.current, moving: world.moving, carried: world.carried,
     item: id => world.items().find(toy => toy.id === id),
     witnessPlay(id) {
       const node = nodes.current.get(id), exposure = playExposure.current.get(id), image = node?.querySelector<HTMLImageElement>(".vc-toy-art");
@@ -200,7 +237,7 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     },
     pause: pauseModel,
     resume(now) { if (!blockedRef.current) world.resume(now); },
-    pick(id, point) { const ok = world.pick(id, point); if (ok) { pendingPlays.current.delete(id); pendingCarriedPlays.current.add(id); } paint(id); return ok; },
+    pick(id, point) { if (showcaseSession?.has(`toy:${id}`)) return false; const ok = world.pick(id, point); if (ok) { pendingPlays.current.delete(id); pendingCarriedPlays.current.add(id); } paint(id); return ok; },
     carry(id, point, drawing) { const ok = world.carry(id, point); if (ok && drawing) playDrawings.current.set(id, drawing); else playDrawings.current.delete(id); paint(id); return ok; },
     put(id, point, now, toss, asPlay = false) { const toy = world.items().find(item => item.id === id), ok = world.put(id, point, now, toss); paint(); if (ok) { pendingCarriedPlays.current.delete(id); if (toy && asPlay) pendingPlays.current.set(id, { kind: toy.kind, outcome: "played" }); onActivity(); } return ok; },
     nudge(id, point, now) { const toy = world.items().find(item => item.id === id), ok = world.nudge(id, point, now); paint(); if (ok) { if (toy) pendingPlays.current.set(id, { kind: toy.kind, outcome: "played" }); onActivity(); } return ok; },
@@ -229,14 +266,14 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     },
     stash(id) { const toy = world.items().find(item => item.id === id), ok = world.stash(id); if (ok) { pendingCarriedPlays.current.delete(id); pendingPlays.current.delete(id); refresh(); if (toy) onExperience?.(toy.kind, "tidied"); } return ok; },
     cancel(now) { pendingPlays.current.clear(); pendingCarriedPlays.current.clear(); world.releaseCarry(now); paint(); },
-  }), [world, paint, refresh, onActivity, pauseModel, onExperience]);
+  }), [world, paint, refresh, onActivity, pauseModel, onExperience, showcaseSession]);
   useEffect(() => {
     const now = performance.now();
     if (blocked) {
       // Model pause safely releases both pointer and keyboard holds in place,
       // then freezes every flight until the same host explicitly resumes.
       pauseModel(now);
-    } else world.resume(now);
+    } else { world.resume(now); driveLeaseFlights.current(); }
     paint();
   }, [blocked, world, paint, pauseModel]);
   useEffect(() => () => { pauseModel(performance.now()); }, [pauseModel]);
@@ -273,8 +310,8 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     else { world.drop(current.id, performance.now(), cancelled ? { x: 0, y: 0 } : current.moved ? current.velocity : { x: 35, y: -130 }); if (!cancelled) logActivity("ui.click", { target: "companion-toy-drop" }); }
     paint(); onActivity(true);
   };
-  return <div className="vc-toys" aria-label="빅타민 장난감" data-companion-toys="" hidden={hidden}>
-    {items.map(toy => <button key={toy.id} ref={node => { if (node) { nodes.current.set(toy.id, node); paint(); } else { const previous = nodes.current.get(toy.id); if (previous) itemAnchors.current!.clear(previous); nodes.current.delete(toy.id); } }} className="vc-toy" data-companion-toy="" data-toy-id={toy.id} data-activity-manual="" data-act="companion-toy-grab" aria-label={COMPANION_TOY_NAMES[toy.kind] + " 잡기"} disabled={blocked} type="button"
+  return <div className="vc-toys" ref={layer} aria-label="빅타민 장난감" data-companion-toys="" data-showcase-active={showcaseSession?.active() ? "" : undefined} hidden={hidden}>
+    {items.map(toy => <button key={toy.id} ref={node => { if (node) { nodes.current.set(toy.id, node); showcaseSession?.register(`toy:${toy.id}`, { kind: "toy", node: () => nodes.current.get(toy.id), point: () => { const rect = nodes.current.get(toy.id)?.getBoundingClientRect(); return rect ? { x: rect.left + rect.width / 2, y: rect.bottom } : undefined; }, eligible: () => { const item = world.items().find(item => item.id === toy.id); return Boolean(item && !item.held && !item.carried && !item.hidden && !world.flyingIds().includes(toy.id) && !/^companion-home/.test(item.platformId ?? "")); } }); paint(); } else { const previous = nodes.current.get(toy.id); if (previous) itemAnchors.current!.clear(previous); nodes.current.delete(toy.id); showcaseSession?.unregister(`toy:${toy.id}`); } }} className="vc-toy" data-companion-toy="" data-toy-id={toy.id} data-activity-manual="" data-act="companion-toy-grab" aria-label={COMPANION_TOY_NAMES[toy.kind] + " 잡기"} disabled={blocked && !(showcaseSession?.active() && showcaseSession.has(`toy:${toy.id}`))} type="button"
       onPointerDown={event => {
         if (blockedRef.current || drag.current || event.button !== 0) return;
         const position = grab(toy.id); if (!position) return;
@@ -322,6 +359,6 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
         } else if (event.key === "Escape" && current.held) {
           if (world.drop(toy.id, performance.now())) { logActivity("ui.click", { target: "companion-toy-drop" }); onActivity(true); paint(); }
         }
-      }}><CompanionToyArt kind={toy.kind} /></button>)}
+      }}><CompanionToyLiveArt kind={toy.kind} /></button>)}
   </div>;
 });

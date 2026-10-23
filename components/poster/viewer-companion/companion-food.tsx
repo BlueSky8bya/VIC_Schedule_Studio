@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { logActivity } from "@/lib/activity/client";
 import type { CompanionFood as Food, Platform } from "@/lib/ui/viewer-companion/brain";
 import { COMPANION_HOME_FLOOR_FOOD, COMPANION_HOME_FLOOR_INSET, COMPANION_TRASH_DISCARD_MS, MAX_COMPANION_FOOD, attachCompanionFood, companionFoodJostle, companionTrashProgress, followCompanionFood, followCompanionViewportFloorFood, isCompanionHomeFloorFoodSupport, isCompanionViewportFloorFoodSupport, placeCompanionFood, presentCompanionFood, rebaseCompanionFoodBodySupport, rebaseCompanionFoodSupport, receiveCompanionHomeFloorFood, safeCompanionAttachedFood, type CompanionFoodAttachment, type CompanionFoodDropSupport, type CompanionFoodPresentation } from "@/lib/ui/viewer-companion/food";
@@ -17,6 +17,8 @@ import { COMPANION_FOOD_NAMES as names, isCompanionFoodKind } from "@/lib/ui/vie
 import { CompanionFruit } from "./companion-fruit";
 import { companionRoomItemLight, type CompanionRoomLightRect } from "@/lib/ui/viewer-companion/room-light";
 import { createCompanionItemAnchors } from "@/lib/ui/viewer-companion/item-anchor";
+import type { CompanionShowcaseSession } from "@/lib/ui/viewer-companion/showcase-session";
+import { bindCompanionShowcaseInput } from "@/lib/ui/viewer-companion/showcase-input";
 
 type Point = { x: number; y: number };
 export type CompanionFoodControl = {
@@ -39,7 +41,7 @@ export type CompanionFoodControl = {
   scatter: (point: Point, radius: number, strength?: number) => number;
   clear: () => void;
 };
-type Props = { enabled: boolean; blocked: boolean; monthKey: string; returnFocus: () => void; onLanded?: () => void; onDiscard?: (id: string) => void };
+type Props = { enabled: boolean; blocked: boolean; monthKey: string; showcaseSession?: CompanionShowcaseSession; returnFocus: () => void; onLanded?: () => void; onDiscard?: (id: string) => void };
 type Drag = { id: string; pointer: number; node: HTMLButtonElement; start: Point; point: Point; offset: Point; moved: boolean; wasFalling: boolean; startHome?: HomeAnchor; time: number; velocity: Point };
 type Hover = { id: string; bin: HTMLElement; point: Point; since: number; pinned: boolean };
 type Discard = { id: string; bin: HTMLElement; node: HTMLElement; animation?: Animation; timer: ReturnType<typeof setTimeout> };
@@ -64,7 +66,8 @@ const transform = (point: Point) => `translate3d(${point.x.toFixed(3)}px,${point
  * presentation only write transforms; React commits placement/removal. Native
  * capture owns only real drag/trash gestures. Pointer taps never arm a global
  * placement mode; keyboard grab/arrow/put-down remains an explicit alternative. */
-export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function CompanionFood({ enabled, blocked, monthKey, returnFocus, onLanded, onDiscard }, ref) {
+export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function CompanionFood({ enabled, blocked, monthKey, showcaseSession, returnFocus, onLanded, onDiscard }, ref) {
+  useSyncExternalStore(showcaseSession?.subscribe ?? (() => () => {}), showcaseSession?.snapshot ?? (() => 0), () => 0);
   const landed = useRef(onLanded); landed.current = onLanded;
   // This local scene notification marks an actual human removal only. Food
   // IDs never enter activity metadata, discovery or the autonomous trash path.
@@ -113,6 +116,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   }, []);
   const update = useCallback((next: Food[]) => {
     const ids = new Set(next.map(food => food.id));
+    const retired = current.current.filter(food => !ids.has(food.id)).map(food => food.id);
     for (const [id, node] of nodes.current) if (!ids.has(id)) itemAnchors.current!.clear(node);
     if (carried.current && !ids.has(carried.current)) carried.current = undefined;
     for (const id of jostles.current.keys()) if (!ids.has(id)) cancelJostle(id);
@@ -124,11 +128,14 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     for (const id of drops.current.keys()) if (!ids.has(id)) { drops.current.delete(id); presentations.current.delete(id); }
     if (!drops.current.size) { cancelAnimationFrame(dropFrame.current); dropFrame.current = 0; }
     current.current = next; setFoods(next);
-  }, [cancelJostle]);
+    for (const id of retired) showcaseSession?.forget(`food:${id}`);
+  }, [cancelJostle, showcaseSession]);
   const choose = useCallback((id: string | null) => { if (selection.current !== id) keyboardMoved.current = false; selection.current = id; setSelected(id); }, []);
   const paint = useCallback((food: Food, presentation?: CompanionFoodPresentation) => {
     const node = nodes.current.get(food.id); if (!node || discard.current?.id === food.id) return;
-    const hidden = visibility.current.get(food.id) === false;
+    const lease = showcaseSession?.point(`food:${food.id}`);
+    const hidden = lease ? !showcaseSession!.visible(`food:${food.id}`) : showcaseSession?.active() || visibility.current.get(food.id) === false;
+    node.toggleAttribute("data-showcase-lease", Boolean(lease));
     // Like the resident's data-platform, expose only the anonymous current
     // physical support for native contact diagnostics, never a date/event ID.
     const platform = food.platformId ?? "";
@@ -137,18 +144,18 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     if (node.hidden !== hidden) node.hidden = hidden;
     if (node.hasAttribute("data-falling") !== drops.current.has(food.id)) node.toggleAttribute("data-falling", drops.current.has(food.id));
     if (node.hasAttribute("data-carried") !== (carried.current === food.id)) node.toggleAttribute("data-carried", carried.current === food.id);
-    const pose = presentation ?? { x: food.x, y: food.y, scale: 1, rotation: 0 };
+    const pose = lease ? { x: lease.x, y: lease.y, scale: 1, rotation: 0 } : presentation ?? { x: food.x, y: food.y, scale: 1, rotation: 0 };
     const bound = attachments.current.get(food.id);
     // Resting ink shares the browser's scroll transform with its real floor.
     // Keep the origin paired with the logical point, not a later rect read:
     // room lighting or a React commit must not cancel compositor scrolling.
-    const source = !hidden && !presentation && !drops.current.has(food.id) && food.id !== dragging.current?.id
+    const source = !lease && !hidden && !presentation && !drops.current.has(food.id) && food.id !== dragging.current?.id
       && food.id !== carried.current && food.id !== selection.current && !node.hasAttribute("data-discarding")
       && !bound?.viewportFloor && !bound?.pending && bound?.element && bound.origin
       && bound.identity === companionCalendarAnchorIdentity(bound.element)
       ? { element: bound.element, left: bound.origin.x, top: bound.origin.y } : undefined;
     const next = transform(itemAnchors.current!.project(node, pose, source)), cached = painted.current.get(node);
-    const light = companionRoomItemLight(pose, roomLight.current.room, roomLight.current.grade);
+    const light = lease ? 1 : companionRoomItemLight(pose, roomLight.current.room, roomLight.current.grade);
     if (cached?.light !== light) node.style.setProperty("--vc-item-room-light", String(light));
     if (cached?.transform !== next) node.style.transform = next;
     const art = node.firstElementChild as HTMLElement | null;
@@ -158,7 +165,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     if (cached?.nibble !== nibble) node.style.setProperty("--vc-nibble", nibble);
     if (cached?.eating !== eating) node.toggleAttribute("data-eating", eating);
     painted.current.set(node, { transform: next, nibble, eating, light });
-  }, [cancelJostle]);
+  }, [cancelJostle, showcaseSession]);
   const resetNibble = useCallback((id?: string) => {
     for (const food of current.current) if ((!id || food.id === id) && !drops.current.has(food.id)) { presentations.current.delete(food.id); paint(food); }
   }, [paint]);
@@ -571,14 +578,16 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     // Logical destinations reserve space during finite falls too. Presentation
     // coordinates and IDs never leave this local physics bridge.
     occupied: () => current.current.map(({ x, y }) => ({ x, y })),
-    foods: () => current.current.filter(food => !attachments.current.get(food.id)?.pending && !drops.current.has(food.id) && visibility.current.get(food.id) !== false && food.id !== selection.current && food.id !== dragging.current?.id && food.id !== discard.current?.id && food.id !== carried.current),
+    foods: () => current.current.filter(food => !showcaseSession?.has(`food:${food.id}`) && !attachments.current.get(food.id)?.pending && !drops.current.has(food.id) && visibility.current.get(food.id) !== false && food.id !== selection.current && food.id !== dragging.current?.id && food.id !== discard.current?.id && food.id !== carried.current),
     contains: id => current.current.some(food => food.id === id),
     consume(id) {
+      if (showcaseSession?.has(`food:${id}`)) return false;
       if (attachments.current.get(id)?.pending || drops.current.has(id) || visibility.current.get(id) === false || selection.current === id || dragging.current?.id === id || discard.current?.id === id || carried.current === id || !current.current.some(food => food.id === id)) return false;
       if ((document.activeElement as HTMLElement | null)?.dataset.food === id) focusReturn.current();
       presentations.current.delete(id); update(current.current.filter(food => food.id !== id)); setMessage("빅타민이 밥을 맛있게 먹었어요."); return true;
     },
     stash(id) {
+      if (showcaseSession?.has(`food:${id}`)) return false;
       if (attachments.current.get(id)?.pending || drops.current.has(id) || visibility.current.get(id) === false || selection.current === id || dragging.current?.id === id || discard.current?.id === id || carried.current === id || !current.current.some(food => food.id === id)) return false;
       if ((document.activeElement as HTMLElement | null)?.dataset.food === id) focusReturn.current();
       cancelJostle(id); presentations.current.delete(id); attachments.current.delete(id);
@@ -603,6 +612,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     },
     pause(next) { operating.current = enabled && !blocked && !next; setPaused(next); if (next) interrupt(); else followAttachments(); },
     beginCarry(id) {
+      if (showcaseSession?.has(`food:${id}`)) return false;
       const food = current.current.find(item => item.id === id);
       if (!operating.current || document.hidden || carried.current || !food || !nodes.current.has(id) || attachments.current.get(id)?.pending || drops.current.has(id) || presentations.current.has(id)
         || visibility.current.get(id) === false || selection.current || dragging.current || discard.current) return false;
@@ -693,6 +703,16 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     for (const id of renderedTransforms.current.keys()) if (!nodes.current.has(id)) renderedTransforms.current.delete(id);
     for (const food of current.current) paint(food, presentations.current.get(food.id));
   });
+  useEffect(() => {
+    if (!showcaseSession) return;
+    const off = showcaseSession.subscribe(() => { for (const food of current.current) paint(food, presentations.current.get(food.id)); });
+    const clear = showcaseSession.subscribeClear(ids => update(current.current.filter(food => !ids.has(`food:${food.id}`))));
+    return () => { off(); clear(); };
+  }, [showcaseSession, paint, update]);
+  useEffect(() => {
+    if (!showcaseSession || !layer.current) return;
+    return bindCompanionShowcaseInput(layer.current, showcaseSession, node => node.dataset.food ? `food:${node.dataset.food}` : undefined, () => enabled && !blocked, () => logActivity("ui.click", { target: "companion-food-move" }));
+  }, [showcaseSession, enabled, blocked]);
   useLayoutEffect(() => { if (selected) nodes.current.get(selected)?.focus({ preventScroll: true }); }, [selected]);
   useEffect(() => { interrupt(); update([]); choose(null); setMessage(""); }, [enabled, choose, interrupt, update]);
   const foodMonth = useRef(monthKey);
@@ -792,8 +812,8 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
 
   useEffect(() => () => itemAnchors.current!.clearAll(), []);
   if (!enabled) return null;
-  return <div className="vc-food-layer" ref={layer} hidden={blocked || paused} data-sfx="off">
-    {foods.map(food => <button type="button" className="vc-food" key={food.id} ref={node => { if (node) nodes.current.set(food.id, node); else { const previous = nodes.current.get(food.id); if (previous) itemAnchors.current!.clear(previous); nodes.current.delete(food.id); } }} data-activity-manual="" data-food={food.id} data-kind={food.kind} data-selected={selected === food.id ? "" : undefined}
+  return <div className="vc-food-layer" ref={layer} hidden={blocked || paused && !showcaseSession?.hasKind("food")} data-showcase-active={showcaseSession?.active() ? "" : undefined} data-sfx="off">
+    {foods.map(food => <button type="button" className="vc-food" key={food.id} ref={node => { if (node) { nodes.current.set(food.id, node); showcaseSession?.register(`food:${food.id}`, { kind: "food", node: () => nodes.current.get(food.id), point: () => { const rect = nodes.current.get(food.id)?.getBoundingClientRect(); return rect ? { x: rect.left + rect.width / 2, y: rect.bottom - 6 } : undefined; }, eligible: () => !attachments.current.get(food.id)?.home && !attachments.current.get(food.id)?.pending && !drops.current.has(food.id) && carried.current !== food.id && dragging.current?.id !== food.id && selection.current !== food.id && discard.current?.id !== food.id }); } else { const previous = nodes.current.get(food.id); if (previous) itemAnchors.current!.clear(previous); nodes.current.delete(food.id); showcaseSession?.unregister(`food:${food.id}`); } }} data-activity-manual="" data-food={food.id} data-kind={food.kind} data-selected={selected === food.id ? "" : undefined}
       style={{ left: 0, top: 0, transform: transform(food) }} aria-label={`빅타민 밥 ${names[food.kind]} · 잡아서 옮기기`} aria-describedby="vc-food-help"
       onPointerDown={event => {
         if (!operating.current || event.button !== 0 || dragging.current) return;

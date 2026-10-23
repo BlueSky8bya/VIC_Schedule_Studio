@@ -1,6 +1,6 @@
 import{AREAS,PERSONALITIES,BASELINE,ALWAYS_UNITS,AREA_UNITS,SEQUENCE_CONTRACTS,dayOrdinal,affectedAreas}from'./catalog.mjs';
 import fs from 'node:fs';
-import {selectDailyCases} from './selection.mjs';
+import {caseId,selectDailyCases} from './selection.mjs';
 const nativeCatalog=JSON.parse(fs.readFileSync(new URL('./native-catalog.json',import.meta.url),'utf8'));
 const object=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const keys=(x,allowed)=>object(x)&&Object.keys(x).every(k=>allowed.includes(k));
@@ -44,6 +44,26 @@ export function rankAreas({day,history=[],signals,changedFiles=[]}){
   }).sort((a,b)=>b.score-a.score||AREAS.indexOf(a.area)-AREAS.indexOf(b.area));
   return {ranked,affected,aggregate};
 }
+/** Explicitly retired registrations retain historical proof, never new PASS. */
+export function partitionRetiredCaseObservations({day,observations=[],catalog=nativeCatalog}){
+  dayOrdinal(day);
+  if(!Array.isArray(observations)||!Array.isArray(catalog.cases)||!Array.isArray(catalog.retiredRegistrations??[]))throw Error('invalid-retired-observation-input');
+  const activeIds=new Set(catalog.cases.map(c=>c.id)),retired=new Map();
+  for(const entry of catalog.retiredRegistrations??[]){
+    if(!keys(entry,['id','file','title','replacementId','reason'])||!/^tests\/visual\/[a-z0-9-]+\.spec\.ts$/.test(entry.file)||typeof entry.title!=='string'||!entry.title.trim()||entry.id!==caseId({...entry,project:''})||activeIds.has(entry.id)||!activeIds.has(entry.replacementId)||!catalog.cases.some(c=>c.id===entry.replacementId&&c.file===entry.file)||retired.has(entry.id)||typeof entry.reason!=='string'||!entry.reason.trim())throw Error('invalid-retired-registration');
+    retired.set(entry.id,entry);
+  }
+  const activeObservations=[],retiredObservations=[];
+  for(const item of observations){
+    const declaration=retired.get(item?.id);
+    if(!declaration){activeObservations.push(item);continue;}
+    if(item.receiptVerified!==true||typeof item.actualExecuted!=='boolean'||!['passed','failed','not-run','reused'].includes(item.outcome))throw Error('invalid-retired-observation');
+    dayOrdinal(item.day);if(item.day>day)throw Error('future-observation');
+    retiredObservations.push({...declaration,observedDay:item.day,outcome:item.outcome,actualExecuted:item.actualExecuted,oldEvidencePreserved:true,passTransferred:false});
+  }
+  // Unknown IDs deliberately remain for selectDailyCases to reject.
+  return {activeObservations,retiredObservations};
+}
 export function planDaily({day,history=[],signals,changedFiles=[],caseObservations=[],budgetMinutes=20}){
   if(!Number.isInteger(budgetMinutes)||budgetMinutes<20||budgetMinutes>90)throw Error('invalid-budget');
   const now=dayOrdinal(day),rank=rankAreas({day,history,signals,changedFiles}),focus=rank.ranked[0].area;
@@ -54,7 +74,8 @@ export function planDaily({day,history=[],signals,changedFiles=[],caseObservatio
   const units=[...new Set([...ALWAYS_UNITS,...AREA_UNITS[focus],...AREA_UNITS[explorer]])];
   const lamp=changedFiles.some(f=>/home-interaction|house-reach-164|home-life-policy|home-contact-presentation|companion-home\.css/.test(f));
   const risky=nativeCatalog.cases.filter(c=>lamp?/164 (?:viewer 2560 compact floor|studio 1494 panel floor|preview 1920 compact floor|viewer 1494 panel (?:near-left|near-right|soft|os-reduced|cord-hover|owner-away|owner-hover)) lamp off/.test(c.title):rank.affected.companionChanged||confirmedRegression?/142 floating home tidy|143 studio sofa stays aligned|157 viewer night same-ID return|142 daily (?:tidy|gourmet|balanced):/.test(c.title):false).map(c=>c.id);
-  const selection=selectDailyCases({catalog:nativeCatalog.cases,day,observations:caseObservations,priorityIds:risky,workerBudgetSeconds:1500,maxCases:42});
+  const observationScope=partitionRetiredCaseObservations({day,observations:caseObservations});
+  const selection={...selectDailyCases({catalog:nativeCatalog.cases,day,observations:observationScope.activeObservations,priorityIds:risky,workerBudgetSeconds:1500,maxCases:42}),retiredObservations:observationScope.retiredObservations};
   return {schemaVersion:2,kind:'site-daily-triage-plan',day,budgetMinutes,repairAndReleaseBudgetSeparate:true,focusArea:focus,explorationArea:explorer,areaRanking:rank.ranked,changedImpact:rank.affected,signals:rank.aggregate,offlineUnitFiles:units,
     companion:{mode:'risk-and-weekly-rotation',fullRequired:false,reasons:[...(rank.affected.companionChanged?['source-or-oracle-changed']:[]),...(confirmedRegression?['unresolved-confirmed-regression']:[]),...(sweepDue?['weekly-coverage-debt-not-full-restart']:[])],lastFullDay:lastFull,rotatingPersonalities:personalities,allNineIdeaAudit:false,expectedSelectedCases:selection.cases.length,selection,dailyScenarios:nativeCatalog.dailyScenarios,releaseEligible:false,
       command:['node','scripts/site-daily/scoped-native.mjs','--plan','<new-output>/plan.json']},

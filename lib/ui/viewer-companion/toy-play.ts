@@ -2,22 +2,26 @@ import type { CompanionToyKind } from "./toy-catalog";
 
 /** The object keeps its real identity and carry owner throughout this finite
  * performance. These are drawing offsets, never a spawn, pickup or reward. */
-export type CompanionToyUse = "ball-toss" | "wheel-push" | "cube-turn" | "spin" | "peek" | "jingle" | "music" | "cuddle" | "stack" | "flutter" | "string-bounce" | "fish" | "tap" | "groom" | "foam-shot";
+export type CompanionToyUse = "ball-toss" | "wheel-push" | "floor-roll" | "rock" | "balance" | "cube-turn" | "spin" | "peek" | "jingle" | "music" | "cuddle" | "stack" | "flutter" | "string-bounce" | "fish" | "tap" | "groom" | "foam-shot";
 export const COMPANION_TOY_USES = Object.freeze({
-  ball: "ball-toss", blocks: "stack", "paper-plane": "flutter", spool: "string-bounce", hoop: "ball-toss", pinwheel: "spin", bell: "jingle", feather: "flutter",
-  duck: "cuddle", "spinning-top": "spin", "toy-car": "wheel-push", train: "wheel-push", dice: "ball-toss", "rocking-horse": "cuddle", "squeaky-carrot": "cuddle", "star-wand": "jingle",
+  ball: "ball-toss", blocks: "stack", "paper-plane": "flutter", spool: "floor-roll", hoop: "floor-roll", pinwheel: "spin", bell: "jingle", feather: "flutter",
+  duck: "cuddle", "spinning-top": "spin", "toy-car": "wheel-push", train: "wheel-push", dice: "floor-roll", "rocking-horse": "rock", "squeaky-carrot": "cuddle", "star-wand": "jingle",
   kaleidoscope: "peek", tambourine: "music", maraca: "jingle", "yo-yo": "string-bounce", "plush-fish": "cuddle", "ribbon-ball": "ball-toss", "stacking-rings": "stack", "toy-rocket": "flutter",
   "bubble-wand": "flutter", kite: "flutter", boomerang: "flutter", "flying-disc": "flutter", "mini-skateboard": "wheel-push", "jump-rope": "string-bounce", "toy-drum": "music", xylophone: "music",
   harmonica: "music", "toy-trumpet": "music", "hand-puppet": "cuddle", "cup-and-ball": "string-bounce", "paddle-ball": "string-bounce", "slinky-spring": "string-bounce", "toy-camera": "peek", "toy-telescope": "peek",
-  "magnetic-fishing": "fish", "windup-crab": "wheel-push", "balancing-bird": "flutter", "jigsaw-puzzle": "stack", "shape-sorter": "stack", "gear-board": "cube-turn", "wooden-bowling": "ball-toss", "mini-tuho": "fish",
-  "foam-dart-blaster": "foam-shot", "mini-dollhouse": "stack", "battle-top-launcher": "spin", "puzzle-cube": "cube-turn", "modeling-clay-tub": "stack", "heart-compact": "peek", "virtual-pet-keyring": "peek", "transforming-robot": "cube-turn",
-  "loop-race-track": "wheel-push", "mini-game-console": "tap", "capsule-machine": "cube-turn", "stud-brick-castle": "stack",
+  "magnetic-fishing": "fish", "windup-crab": "wheel-push", "balancing-bird": "balance", "jigsaw-puzzle": "tap", "shape-sorter": "tap", "gear-board": "tap", "wooden-bowling": "tap", "mini-tuho": "tap",
+  "foam-dart-blaster": "foam-shot", "mini-dollhouse": "tap", "battle-top-launcher": "spin", "puzzle-cube": "cube-turn", "modeling-clay-tub": "tap", "heart-compact": "peek", "virtual-pet-keyring": "peek", "transforming-robot": "cube-turn",
+  "loop-race-track": "tap", "mini-game-console": "tap", "capsule-machine": "tap", "stud-brick-castle": "tap",
   "pangtteok-cushion": "cuddle", "tori-keycap-clicker": "tap", "tori-photocard": "peek", otamatone: "music", "tail-comb": "groom", "card-mirror": "peek", "airy-velvet-tint": "tap", "half-wallet": "tap",
   "power-bank": "tap", "wireless-earbuds": "peek", "sewing-kit": "tap", "matte-turbo-lighter": "tap", "herbal-lip-balm": "tap", "ceramic-safety-cutter": "tap", "tori-blanket": "cuddle", "tori-tumbler": "cuddle",
   "tori-acrylic-stand": "peek", "practice-baseball-bat": "jingle", "practice-baseball-glove": "cuddle", "cheer-pompom": "jingle", "broadcast-microphone": "music", "vr-headset": "peek", "vr-fishing-rod": "fish", "drawing-tablet": "tap",
 } satisfies Readonly<Record<CompanionToyKind, CompanionToyUse>>);
 
-const durations: Readonly<Record<CompanionToyUse, number>> = Object.freeze({ "ball-toss": 2600, "wheel-push": 2800, "cube-turn": 3100, spin: 2700, peek: 2700, jingle: 2500, music: 2900, cuddle: 2500, stack: 2900, flutter: 2800, "string-bounce": 2800, fish: 2900, tap: 2400, groom: 2700, "foam-shot": 2900 });
+const durations: Readonly<Record<CompanionToyUse, number>> = Object.freeze({ "ball-toss": 2600, "wheel-push": 2800, "floor-roll": 2800, rock: 2800, balance: 2700, "cube-turn": 3100, spin: 2700, peek: 2700, jingle: 2500, music: 2900, cuddle: 2500, stack: 2900, flutter: 2800, "string-bounce": 2800, fish: 2900, tap: 2400, groom: 2700, "foam-shot": 2900 });
+/** Multi-part boards, sets and containers stay planted. This art is a single
+ * illustration: contact feedback must not pretend the whole set is a ball,
+ * spinning gear, moving car, loose jigsaw piece or loose stacking block. */
+export const COMPANION_GROUNDED_TOY_CONTROLS: ReadonlySet<CompanionToyKind> = new Set(["jigsaw-puzzle", "shape-sorter", "gear-board", "wooden-bowling", "mini-tuho", "mini-dollhouse", "modeling-clay-tub", "loop-race-track", "capsule-machine", "stud-brick-castle"]);
 export const companionToyPlayDuration = (kind: CompanionToyKind) => durations[COMPANION_TOY_USES[kind]];
 export type CompanionToyPlayPose = {
   use: CompanionToyUse; row: number; phase: number; lift: number; lean: number; shift: number; compression: number;
@@ -52,15 +56,31 @@ export function sampleCompanionToyPlay(kind: CompanionToyKind, progress: number,
   } else if (use === "wheel-push") {
     toy.floorMix = active; toy.x = Math.sin(clamp((p - .18) / .65) * Math.PI) * 22 * active; toy.rotation = Math.sin(p * Math.PI * 4) * active * 4;
     pose.lean = active * 8; pose.compression = active * .035;
+  } else if (use === "floor-roll") {
+    // Roll along the support and gently return, rather than throwing the
+    // whole spool/hoop/die overhead. Rotation belongs to the image centre.
+    const travel = Math.sin(clamp((p - .18) / .65) * Math.PI) * 20 * active;
+    toy.floorMix = active; toy.x = travel; toy.rotation = travel * 8;
+    pose.lean = travel * .25; pose.lift = 0;
+  } else if (use === "rock") {
+    toy.floorMix = active; toy.rotation = Math.sin(p * Math.PI * 6) * active * 9;
+    pose.lean = -toy.rotation * .5; pose.lift = 0;
+  } else if (use === "balance") {
+    toy.rotation = Math.sin(p * Math.PI * 4) * active * 5;
+    pose.lean = -toy.rotation * .5; pose.lift = 0;
   } else if (use === "cube-turn") {
     // Two deliberate quarter-turns, separated by an inspecting pause.
     const first = window(p, .18, .48), second = window(p, .56, .86);
     toy.x = -2 * active; toy.y = -5 * active; toy.rotation = 90 * first - 90 * second;
     pose.lean = -4 * first + 5 * second; pose.compression = (first + second) * .018;
   } else if (use === "spin") {
-    toy.floorMix = kind === "pinwheel" ? 0 : active;
-    toy.rotation = 720 * smooth(p); toy.y = kind === "pinwheel" ? -7 * active : 0;
-    pose.lean = -4 * envelope;
+    // Put down, release into a stationary spin, then pick the same object up.
+    // The rotor renderer consumes this angle around the object's own axis;
+    // never apply it to the floor anchor or to the pinwheel's shaft.
+    toy.floorMix = kind === "pinwheel" ? 0 : smooth(p / .18) * smooth((1 - p) / .18);
+    toy.rotation = 720 * smooth(clamp((p - .16) / .68));
+    toy.y = kind === "pinwheel" ? -7 * active : 0;
+    pose.lean = -4 * envelope; pose.lift = 0;
   } else if (use === "peek") {
     toy.x = 11 * active; toy.y = -18 * active; toy.rotation = -18 * active;
     pose.lean = 4 * active; pose.lift = -active * .8;
@@ -71,6 +91,10 @@ export function sampleCompanionToyPlay(kind: CompanionToyKind, progress: number,
     toy.rotation = rhythm * active * (use === "music" ? 12 : 25);
     pose.lift -= Math.abs(rhythm) * envelope * 2.8; pose.lean = -rhythm * envelope * 5; pose.compression = Math.max(0, rhythm) * envelope * .025;
     if (use === "music" && ["harmonica", "toy-trumpet", "broadcast-microphone", "otamatone"].includes(kind)) { toy.x += active * 8; toy.y -= active * 9; }
+    if (kind === "toy-drum" || kind === "xylophone") {
+      toy.floorMix = active; toy.x = toy.y = toy.rotation = 0;
+      pose.effect = { kind: "ping", opacity: Math.sin(p * Math.PI * 10) ** 2 * active, x: rhythm * 7, y: -10, rotation: 0 };
+    }
   } else if (use === "cuddle") {
     toy.x = -4 * active; toy.y = -3 * active; toy.scale = 1 - Math.sin(p * Math.PI * 4) ** 2 * active * .06;
     toy.rotation = Math.sin(p * Math.PI * 2) * active * 8; pose.lean = -Math.sin(p * Math.PI * 2) * envelope * 7;
@@ -96,6 +120,10 @@ export function sampleCompanionToyPlay(kind: CompanionToyKind, progress: number,
   } else { // Closed pocket props and controls receive little taps only.
     const tap = Math.sin(p * Math.PI * 6) ** 2 * active;
     toy.y = tap * 3; toy.rotation = wave * active * 5; pose.lean = tap * 4; pose.compression = tap * .018;
+    if (COMPANION_GROUNDED_TOY_CONTROLS.has(kind)) {
+      toy.floorMix = active; toy.y = toy.rotation = 0;
+      pose.effect = { kind: "ping", opacity: tap * .7, x: wave * 6, y: -12, rotation: 0 };
+    }
   }
   return pose;
 }

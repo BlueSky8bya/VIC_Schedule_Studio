@@ -15,6 +15,8 @@ vi.mock("react", async original => ({ ...await original<typeof import("react")>(
   },
   useRef: (initial: unknown) => harness.refs[harness.ref++] ?? (harness.refs[harness.ref - 1] = { current: initial }),
   useCallback: (callback: unknown) => callback,
+  // This direct-call controller harness reads the store at each explicit render.
+  useSyncExternalStore: (_subscribe: unknown, getSnapshot: () => unknown) => getSnapshot(),
   useImperativeHandle: (_ref: unknown, create: () => CompanionFoodControl) => { harness.api = create(); },
   useEffect: (effect: () => void | (() => void)) => { harness.effects.push(effect); },
   useLayoutEffect: (effect: () => void | (() => void)) => { harness.layouts.push(effect); },
@@ -212,7 +214,7 @@ describe("actual food-controller carry and physical scatter callbacks", () => {
     const carried = await spawn(), bin = node(); bin.attributes.set("data-companion-trash", "");
     expect(api().beginCarry(carried)).toBe(true); api().carry(carried, { x: 622, y: 435 });
     expect(api().discardCarry(carried, bin as unknown as HTMLElement)).toBe(true); vi.advanceTimersByTime(180);
-    await spawn(); harness.effects[0]();
+    await spawn(); harness.effects[2]();
     expect(api().foods()).toHaveLength(0); expect(harness.discarded).not.toHaveBeenCalled();
   });
   it("rejects invalid native card/day/panel snapshots before a delayed scan while retaining the true viewport floor", async () => {
@@ -387,12 +389,12 @@ describe("actual food-controller carry and physical scatter callbacks", () => {
     const id = await spawn(); api().beginCarry(id); api().carry(id, { x: 330, y: 260 }); api().pause(true);
     expect(api().carried()).toBeUndefined(); expect(api().contains(id)).toBe(true); expect(frames.size).toBe(0);
     await render(); api().pause(false); await render(); expect(api().beginCarry(id)).toBe(true);
-    // Enabled cleanup, month rebinding and blocked pause precede the native
-    // document input/visibility subscription in this component adapter.
-    const dispose = harness.effects[3]() as () => void; hidden = true; documentEvents.get("visibilitychange")!();
+    // Two optional showcase bindings precede enabled cleanup, month rebinding,
+    // blocked pause and the native document input/visibility subscription.
+    const dispose = harness.effects[5]() as () => void; hidden = true; documentEvents.get("visibilitychange")!();
     expect(api().carried()).toBeUndefined(); expect(frames.size).toBe(0); hidden = false;
     expect(api().beginCarry(id)).toBe(true); dispose(); expect(api().carried()).toBeUndefined(); expect(frames.size).toBe(0);
-    await render(); expect(api().beginCarry(id)).toBe(true); harness.effects[0]();
+    await render(); expect(api().beginCarry(id)).toBe(true); harness.effects[2]();
     expect(api().carried()).toBeUndefined(); expect(api().contains(id)).toBe(false); expect(frames.size).toBe(0);
   });
   it("scatter physically moves at most three settled snacks, leaves held/eaten food alone and finishes without activity", async () => {

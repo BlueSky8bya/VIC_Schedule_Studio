@@ -28,6 +28,13 @@ export function createCompanionMeadowWalk(random: () => number = Math.random) {
     y: viewport.height * (.35 + p.v * .65),
   });
   return {
+    /** A real outdoor placement owns its exact foot, including a drag across
+     * the future calendar cover. Future legs depart from that foot smoothly. */
+    place(location: { x: number; y: number }, viewport: Viewport) {
+      if (![location.x, location.y, viewport.width, viewport.height].every(Number.isFinite) || viewport.width <= 0 || viewport.height <= 0) return;
+      point = { u: (location.x - Math.max(60, viewport.width * .16)) / Math.max(1, viewport.width * .72 - 60), v: (location.y / viewport.height - .35) / .65 };
+      leg = undefined; wait = 450;
+    },
     /** Roaming can stop between feet, but an already airborne hop owns its
      * finite landing. No further leg starts while roam is OFF. */
     settling: () => leg?.gait === "hop" && leg.elapsed >= leg.duration * .13,

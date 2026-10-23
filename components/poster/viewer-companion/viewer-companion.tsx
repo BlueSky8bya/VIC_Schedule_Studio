@@ -119,6 +119,8 @@ import { gfxMode as readGfxMode } from "@/lib/ui/gfx";
 import { hapticSuccess } from "@/lib/ui/haptics";
 import { CompanionFood, type CompanionFoodControl } from "./companion-food";
 import { CompanionMeadowWalk } from "./companion-meadow-walk";
+import { createCompanionShowcaseSession } from "@/lib/ui/viewer-companion/showcase-session";
+import { usePathname } from "next/navigation";
 import { CompanionToys, type CompanionToyControl } from "./companion-toys";
 // Keep a cold stamp/gift's Suspense boundary local. Suspending the whole
 // resident also disconnects its layout-owned decoded picture temporarily.
@@ -143,6 +145,11 @@ const spriteSources = registration.rows.map((_, row) => companionSpriteSources(r
  * input/snack coordinates; titles and account data never enter its brain.
  * Imperative transform/frame writes never re-render the calendar on a tick. */
 export default function ViewerCompanion({ onOpenBook, root, preferences, blocked, overlayOpen, workspaceBusy = false, editing = false, agenda, monthKey, context, reduced, homeHost, homeVisible, launcherHost = null, compactHost = null, premiereCue = null, onPremiereJoin, positionMemory, fixtureFood }: Props) {
+  const [showcaseSession] = useState(createCompanionShowcaseSession);
+  const pathname = usePathname();
+  useEffect(() => { showcaseSession.attach(); return () => showcaseSession.dispose(); }, [showcaseSession]);
+  useEffect(() => { showcaseSession.clear(); }, [showcaseSession, monthKey, pathname]);
+  useEffect(() => { if (!preferences.enabled) showcaseSession.forget("pet"); }, [showcaseSession, preferences.enabled]);
   const preferencesRef = useRef(preferences); preferencesRef.current = preferences;
   const environmentContext = useRef(context); environmentContext.current = context;
   const fallbackContext = () => ({ slug: "vic", year: Number(monthKey.split("-")[0]), month: Number(monthKey.split("-")[1]) });
@@ -546,6 +553,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     let homeEntryFloor: string | undefined;
     let pendingHomeRecall: HTMLElement | undefined;
     const pendingFeeds = createCompanionFeedCommands<HTMLElement>();
+    type ItemGeometry = { platforms: Platform[]; landings: readonly Platform[]; contacts: readonly Platform[]; anchor: CompanionGeometrySubscription["anchor"] };
+    let itemGeometry: CompanionGeometrySubscription | undefined;
+    const itemCommands: ((snapshot: ItemGeometry) => void)[] = [];
+    const cancelItemCommands = () => { itemGeometry?.(); itemGeometry = undefined; itemCommands.length = 0; };
     const cancelHomeJourney = () => { pendingHomeRecall = undefined; homeJourney = false; homeWakeUntil = 0; strandedSince = 0; homeWaitingGeometry = homeValidationRequested = homeLookUsed = false; homeLegs = 0; homeEntryFloor = undefined; el.removeAttribute("data-home-journey"); el.removeAttribute("data-home-waiting"); el.removeAttribute("data-home-wait-pose"); };
     // A retired transparent panel anchor cannot keep a stale world grounded
     // while its next geometry delivery selects an actual lower support.
@@ -1984,17 +1995,54 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       cancelAnimationFrame(raf); clearTimeout(timer); schedule();
       setAnnouncement("빅타민이 포근한 자리로 돌아가요.");
     };
-    const manualFeedAllowed = () => !stopped && !pause && !overlayActive && !overlayRef.current && !document.hidden && !premiereActive && !hiding && !workspaceBusyRef.current && preferencesRef.current.enabled && preferencesRef.current.feeding;
+    const independentItemsAllowed = () => showcaseSession.has("pet") && !showcaseSession.active() && !document.documentElement.hasAttribute("data-showcase") && !stopped && !blocked && !page.inert && !overlayActive && !overlayRef.current && !document.hidden && !premiereActive && !workspaceBusyRef.current && preferencesRef.current.enabled;
+    const manualFeedAllowed = () => !stopped && (!pause || independentItemsAllowed()) && !overlayActive && !overlayRef.current && !document.hidden && !premiereActive && (!hiding || independentItemsAllowed()) && !workspaceBusyRef.current && preferencesRef.current.enabled && preferencesRef.current.feeding;
     const manualFeedSource = (source: HTMLElement) => source.isConnected && source === document.querySelector(".vc-home .vc-dispenser-slot") && !source.parentElement?.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]");
-    const emitManualFeed = ({ source, kind }: CompanionFeedCommand<HTMLElement>) => {
+    const emitManualFeed = ({ source, kind }: CompanionFeedCommand<HTMLElement>, supports: readonly Platform[] = geometryTracker?.landings() ?? []) => {
       const outlet = source.getBoundingClientRect();
       if (outlet.width <= 0 || outlet.height <= 0) return;
-      const id = food.current?.spawn(kind, { x: outlet.left + outlet.width / 2, y: outlet.bottom + 2 }, source, false, undefined, toys.current?.occupied(), (geometryTracker?.landings() ?? []).filter(p => isHomeFloor(p.id)));
+      const id = food.current?.spawn(kind, { x: outlet.left + outlet.width / 2, y: outlet.bottom + 2 }, source, false, undefined, toys.current?.occupied(), supports.filter(p => isHomeFloor(p.id)));
       if (id) playCompanionSound("feed", preferencesRef.current);
       return id;
     };
+    const requestItemGeometry = (command: (snapshot: ItemGeometry) => void) => {
+      if (!independentItemsAllowed() || itemCommands.length >= 8) return;
+      itemCommands.push(command); if (itemGeometry) return;
+      // The life observer is intentionally disconnected for a covered pet.
+      // One requested immutable measurement serves the room controls without
+      // seeding/moving the resident or retaining another geometry observer.
+      itemGeometry = observeCompanionPlatforms(page, next => {
+        const reader = itemGeometry; if (!reader) return;
+        reader(); itemGeometry = undefined;
+        const commands = itemCommands.splice(0); if (!independentItemsAllowed()) return;
+        const landings = reader.landings(), small = reader.landings(32), contacts = small.filter(p => isCompanionHomeFloorFoodSupport(p.id)).slice(0, 8);
+        const snapshot: ItemGeometry = { platforms: next, landings, contacts, anchor: id => reader.anchor(id) };
+        food.current?.sync(next, snapshot.anchor, small);
+        toys.current?.sync([...next, ...landings], { width: innerWidth, height: innerHeight }, performance.now(), contacts, snapshot.anchor);
+        for (const queued of commands) { if (!independentItemsAllowed()) break; queued(snapshot); }
+      }, { size, identity: geometryIdentity, getHome: () => document.querySelector<HTMLElement>(".vc-home-cushion") });
+    };
+    const spawnManualToy = (snapshot: ItemGeometry = { platforms, landings: landingPlatforms, contacts: toyHomeContacts, anchor: toyAnchor }) => {
+      const box = document.querySelector<HTMLElement>(".vc-home [data-home-action='toys']"), rect = box?.getBoundingClientRect();
+      if (!box || !rect || rect.width <= 0 || box.closest("[hidden],[inert]")) return;
+      const opening = box.querySelector<HTMLElement>(".vc-toy-box-opening")?.getBoundingClientRect();
+      if (!opening || opening.width <= 0 || opening.height <= 0) return;
+      toys.current?.sync([...snapshot.platforms, ...snapshot.landings], { width: innerWidth, height: innerHeight }, performance.now(), snapshot.contacts, snapshot.anchor);
+      const cx = opening.left + opening.width / 2;
+      const hint = [...snapshot.contacts, ...snapshot.landings].filter(p => !p.bodyOnly && (isCompanionHomeFloorFoodSupport(p.id) || isHomeFloor(p.id)) && p.y > opening.bottom)
+        .sort((a, b) => Math.abs(platformLandingX(a, cx, 9) - cx) - Math.abs(platformLandingX(b, cx, 9) - cx))[0];
+      if (!hint) return;
+      toys.current?.resume(performance.now());
+      const id = toys.current?.spawn({ x: cx, y: opening.bottom, platformId: hint.id }, performance.now(), false, food.current?.occupied());
+      if (id) { personalityDirector.observeEffect("toy", brain.current.activeMs); humanToyAt = brain.current.activeMs; playCompanionSound("play", preferencesRef.current); nextDecision = performance.now(); schedule(); }
+    };
+    const releaseMeadowForDirectControl = () => {
+      if (!independentItemsAllowed()) return;
+      cancelItemCommands(); resetHide(); showcaseSession.releasePet();
+    };
     control.current = {
       place: () => { if (!hiding && !isDetailGuest() && preferences.drag) {
+        releaseMeadowForDirectControl();
         beginManualTransfer();
         radioInbox.clear();
         instrumentInbox.clear();
@@ -2002,12 +2050,12 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         if (overlayActive) { overlayPlacing = true; el.dataset.placing = ""; setAnnouncement("빅타민을 놓을 곳을 한 번 눌러 주세요."); return; }
         interruptReturn(); stopHover(); awaitingAtX = false; pendingMonth = false; clearAction(); releaseHold(); petUntil = 0; afterPetLanding = false; restAfterLanding = false; placing = true; el.dataset.placing = "";
       } },
-      rest: () => { cancelManualWash(); if (!hiding && preferences.sleep) { radioInbox.clear(); instrumentInbox.clear(); cancelHomeJourney(); interruptReturn(); pendingMonth = false; clearAction(); releaseHold(); afterPetLanding = false; restAfterLanding = false; petUntil = 0;
+      rest: () => { releaseMeadowForDirectControl(); cancelManualWash(); if (!hiding && preferences.sleep) { radioInbox.clear(); instrumentInbox.clear(); cancelHomeJourney(); interruptReturn(); pendingMonth = false; clearAction(); releaseHold(); afterPetLanding = false; restAfterLanding = false; petUntil = 0;
         if (!supportedNow()) { settle({ x, y }); if (reduced) startRest(); else restAfterLanding = true; }
         else startRest();
       } },
-      home: () => { if (hiding || pause || overlayActive || premiereActive || !document.hasFocus()) return; sceneEvent({ kind: "home-called", wallTime: Date.now() }); playCompanionSound("cushion", preferencesRef.current); recallHome(); },
-      radio: () => { if (!pause && !overlayActive && !premiereActive && !workspaceBusyRef.current && document.hasFocus() && !document.hidden) { logActivity("ui.click", { target: getCompanionRadioToggleIntent() === "stop" ? "companion-radio-stop" : "companion-radio-play" }); void toggleCompanionRadio(); } },
+      home: () => { releaseMeadowForDirectControl(); if (hiding || pause || overlayActive || premiereActive || !document.hasFocus()) return; sceneEvent({ kind: "home-called", wallTime: Date.now() }); playCompanionSound("cushion", preferencesRef.current); recallHome(); },
+      radio: () => { if ((!pause || independentItemsAllowed()) && !overlayActive && !premiereActive && !workspaceBusyRef.current && document.hasFocus() && !document.hidden) { logActivity("ui.click", { target: getCompanionRadioToggleIntent() === "stop" ? "companion-radio-stop" : "companion-radio-play" }); void toggleCompanionRadio(); } },
       feed: () => {
         if (!manualFeedAllowed()) { pendingFeeds.cancel(); return; }
         radioInbox.clear();
@@ -2021,12 +2069,14 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         const source = document.querySelector<HTMLElement>(".vc-home .vc-dispenser-slot");
         if (!source || !manualFeedSource(source)) { pendingFeeds.cancel(); return; }
         const command = { source, kind, month: monthKey, settings: preferencesRef.current };
+        if (independentItemsAllowed()) { requestItemGeometry(snapshot => { if (manualFeedAllowed() && manualFeedSource(source)) emitManualFeed(command, snapshot.landings); }); return; }
         // Do not let a later click overtake an earlier unprepared command.
         // A ready successful placement keeps its immediate input response.
         if (!pendingFeeds.pending() && geometryReady && emitManualFeed(command)) return;
         if (pendingFeeds.enqueue(command)) { connectGeometry(); geometryTracker?.revalidate(true); }
       },
       wash: () => {
+        releaseMeadowForDirectControl();
         if (stopped || pause || hiding || overlayActive || premiereActive || workspaceBusyRef.current || pendingMonth || returning || pressed || keyboardHeld || placing || !document.hasFocus() || document.hidden || !preferencesRef.current.enabled) return;
         if (reduced || gfxMode() === "off") { setAnnouncement("씻는 동작은 생동감 있는 동작을 켜면 볼 수 있어요."); return; }
         const source = document.querySelector<HTMLElement>(".vc-home [data-home-action='wash']");
@@ -2045,18 +2095,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       },
       clearFood: () => { pendingHomeRecall = undefined; pendingFeeds.cancel(); food.current?.clear(); },
       toys: () => {
+        if (independentItemsAllowed()) { requestItemGeometry(spawnManualToy); return; }
         if (pause || overlayActive || premiereActive || document.hidden) return;
-        const box = document.querySelector<HTMLElement>(".vc-home [data-home-action='toys']"), rect = box?.getBoundingClientRect();
-        if (!box || !rect || rect.width <= 0 || box.closest("[hidden],[inert]")) return;
-        const opening = box.querySelector<HTMLElement>(".vc-toy-box-opening")?.getBoundingClientRect();
-        if (!opening || opening.width <= 0 || opening.height <= 0) return;
-        toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, performance.now(), toyHomeContacts, toyAnchor);
-        const cx = opening.left + opening.width / 2;
-        const hint = [...toyHomeContacts, ...landingPlatforms].filter(p => !p.bodyOnly && (isCompanionHomeFloorFoodSupport(p.id) || isHomeFloor(p.id)) && p.y > opening.bottom)
-          .sort((a, b) => Math.abs(platformLandingX(a, cx, 9) - cx) - Math.abs(platformLandingX(b, cx, 9) - cx))[0];
-        if (!hint) return;
-        const id = toys.current?.spawn({ x: cx, y: opening.bottom, platformId: hint.id }, performance.now(), false, food.current?.occupied());
-        if (id) { personalityDirector.observeEffect("toy", brain.current.activeMs); humanToyAt = brain.current.activeMs; playCompanionSound("play", preferencesRef.current); nextDecision = performance.now(); schedule(); }
+        spawnManualToy();
       },
       toyChanged: () => { if (!pause && !document.hidden && !stopped) { nextDecision = Math.min(nextDecision, performance.now() + 100); schedule(); } },
       toyReturned: () => { if (!toys.current?.count()) expressionCleanup++; personalityDirector.event("toy-returned", brain.current.activeMs); },
@@ -3813,6 +3854,15 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       tickPremiere(performance.now()); return true;
     };
     const sync = () => {
+      if (!independentItemsAllowed()) cancelItemCommands();
+      const returnedMeadowPet = showcaseSession.takeReturnedPet();
+      if (returnedMeadowPet) {
+        // A visible background return rejoins the same life at its actual
+        // last foot. Covered returns stay leased/hidden, never home-reset.
+        x = returnedMeadowPet.x; y = returnedMeadowPet.y; support = "";
+        clearAction(); cancelHomeJourney(); pendingPosition.current = null;
+        needsLanding = true; homeOccluded = false; resetInertia();
+      }
       poseWitness.reset();
       graphicsMode = readGfxMode();
       publishHomeCurtain(lastPoseSample.status, Boolean(document.hidden || overlayRef.current || workspaceBusyRef.current || premiereRef.current.cue?.phase && !["idle", "return", "prelude"].includes(premiereRef.current.cue.phase)));
@@ -3825,7 +3875,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const html = document.documentElement;
       const wantsOverlay = overlayRef.current;
       const livePrelude = preludeCue();
-      const next = blocked || document.hidden || page.inert || html.hasAttribute("data-showcase") || html.hasAttribute("data-ambient-pause") && hasAmbientPauseOutside("poster-window", livePrelude ? [livePrelude.owner] : []);
+      const ordinaryPause = blocked || document.hidden || page.inert || html.hasAttribute("data-showcase") || html.hasAttribute("data-ambient-pause") && hasAmbientPauseOutside("poster-window", livePrelude ? [livePrelude.owner] : []);
+      const next = ordinaryPause || showcaseSession.has("pet");
       if (next || wantsOverlay) cancelManualWash();
       if (next || wantsOverlay) { watchPaintMs = watchPaintAt = 0; pendingHomeRecall = undefined; pendingFeeds.cancel(); clearTimeout(parkedLayoutTimer); clearSupportWait(); }
       if (next) cardPlay.clear();
@@ -3835,7 +3886,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         clearTimeout(hideWakeTimer);
         cancelAnimationFrame(raf); clearTimeout(timer); cancelAnimationFrame(followRaf); followRaf = 0;
         offGeometry?.(); offGeometry = undefined; geometryReady = false; hearts.pause(true);
-        pause = next; started = true; overlayActive = wantsOverlay; setSuspended(next); food.current?.pause(next || wantsOverlay);
+        pause = next; started = true; overlayActive = wantsOverlay; setSuspended(ordinaryPause); food.current?.pause(ordinaryPause || wantsOverlay);
         lastTick = lastNeeds = lastCare = lastPaint = performance.now();
         if (next) { cancelGuestInput(); el.hidden = true; return; }
         if (wantsOverlay && (!hiding.sheet || !hiding.ready)) { el.hidden = true; return; }
@@ -3911,7 +3962,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       // A hard-pause release may resume the same already-open window. Seed
       // this new controller there too; established residents never reseed.
       if (!next && needsOverlayWorldSeed()) connectGeometry();
-      food.current?.pause(next || overlayActive);
+      food.current?.pause(ordinaryPause || overlayActive);
+      // A covered meadow foot alone pauses the resident, not the user's
+      // calendar/room controls or their other real objects.
+      setSuspended(ordinaryPause);
       if (next === pause && started) {
         if (overlayChanged && !pause) {
           if (overlayActive) updateOverlayPerch();
@@ -3920,7 +3974,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         }
         armPrelude(); return;
       }
-      started = true; pause = next; setSuspended(next); if (next) { pendingCue = undefined; hideBed(); el.hidden = true; }
+      started = true; pause = next; if (next) { pendingCue = undefined; hideBed(); el.hidden = true; }
       if (pause) { if (isDetailGuest()) cancelGuestInput(); else releaseOverlayDrag(); }
       if (pause) { overlayPlacing = false; delete el.dataset.placing; }
       cancelAnimationFrame(raf); clearTimeout(timer); lastTick = performance.now(); lastNeeds = lastTick; lastPaint = lastTick;
@@ -4766,12 +4820,26 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     document.addEventListener("pointerout", outsideDocument, { passive: true });
     document.addEventListener("keydown", keyboardModality, true);
     button.addEventListener("pointerdown", down); button.addEventListener("pointermove", move); button.addEventListener("pointerleave", leave); button.addEventListener("pointerup", up); button.addEventListener("pointercancel", up); button.addEventListener("lostpointercapture", lostCapture); button.addEventListener("keydown", key);
+    let showcaseOwnership = "";
+    const offShowcase = showcaseSession.subscribe(() => {
+      // Pointer placement updates its drawing only. The life controller needs
+      // the admission/release/inert edge, never one full sync per mouse frame.
+      const next = `${showcaseSession.active()}:${showcaseSession.has("pet")}:${page.inert}`;
+      if (showcaseOwnership === next) return;
+      showcaseOwnership = next; sync();
+    });
+    const unregisterShowcasePet = showcaseSession.register("pet", {
+      kind: "pet", node: () => el, point: () => displayedPoint(),
+      eligible: () => preferencesRef.current.enabled && !blocked && !overlayRef.current && !workspaceBusyRef.current && !premiereActive && !isHomeSupport(support) && !pressed && !keyboardHeld && !placing,
+    });
     sync();
     // Initial/back navigation may already be inside the rail's CSS entrance.
     // Geometry invalidation granted its FLIP lease; run that existing finite
     // follower once instead of leaving an idle14Hz body/front behind the rail.
     followLayout();
     return () => {
+      offShowcase(); unregisterShowcasePet();
+      cancelItemCommands();
       offHabits();
       offLife();
       offRadio(); offRadioPreferences(); radioInbox.clear(); instrumentInbox.clear(); window.removeEventListener(COMPANION_INSTRUMENT_EVENT, instrumentPlayed);
@@ -4826,7 +4894,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       hideBed();
       el.removeAttribute("data-native-sofa"); front?.removeAttribute("data-native-sofa"); clearSofaNames();
     };
-  }, [ready, root, worldPreferencesKey, blocked, agenda, monthKey, reduced, geometryIdentity, positionMemory, discover, workExpressions]);
+  }, [ready, root, worldPreferencesKey, blocked, agenda, monthKey, reduced, geometryIdentity, positionMemory, discover, workExpressions, showcaseSession]);
 
   if (!ready) return null;
   const closeHome = homeShelf.close;
@@ -4846,7 +4914,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
   const homeLighting = companionRoomLighting(homeEnvironment, homeCurtain.phase, homeLampLit) as CSSProperties;
   const house = <CompanionHome lighting={homeLighting} care={care} preferences={preferences} inactive={overlayOpen || performanceActive} owner={premiereCue?.owner} unreadCollection={unreadCollection} radioPlaying={radioPlaying} environment={homeEnvironment} curtain={homeCurtain} toyCount={toyCount} onToyBox={() => { logActivity("ui.click", { target: "companion-home-toys" }); control.current?.toys(); }} onPersonality={() => onOpenBook("personality")} onAction={act} onClose={homeVisible ? undefined : closeHome} />;
   return createPortal(<>
-    <CompanionMeadowWalk preferences={preferences} available={!blocked && !overlayOpen && !performanceActive} reduced={reduced} night={homeEnvironment.night} />
+    <CompanionMeadowWalk preferences={preferences} available={!blocked && !overlayOpen && !performanceActive && !agenda} reduced={reduced} night={homeEnvironment.night} session={showcaseSession} />
     {/* This portal already owns body. Keep the floating room before its fixed
         resident so native CSS anchors also work when the short house scrolls. */}
     {compactActive && compactHost ? <div id={`${actorId}-home`} className="vc-compact-home" ref={compactHome} hidden={!homeExpanded} data-companion-home-owner={premiereCue?.owner} data-pm-exit="5" inert={overlayOpen || performanceActive ? true : undefined} aria-hidden={overlayOpen || performanceActive ? true : undefined} data-sfx="off" onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (homeExpanded) logActivity("ui.click", { target: "companion-home-close" }); closeHome(); } }}>
@@ -4878,8 +4946,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       <div><strong>{COMPANION_ACCESSORY_NAMES[openedGift]} 선물!</strong><button className="button" type="button" data-sfx="off" data-act="companion-accessory-equip" data-act-opt="on" onClick={() => { if (equipCompanionAccessory(openedGift)) { hapticSuccess(); playCompanionSound("equip", preferencesRef.current); setOpenedGift(null); actor.current?.focus({ preventScroll: true }); } }}>착용하기</button></div>
       <button className="vc-keepsake-close" type="button" aria-label="받은 선물 닫기" data-act="companion-gift-dismiss" onClick={() => { setOpenedGift(null); actor.current?.focus({ preventScroll: true }); }}><X size={17} aria-hidden="true" /></button>
     </aside>}
-    <div className="vc-bed-foreground" style={homeLighting} ref={bedForeground} hidden aria-hidden="true"><CompanionBedForeground /></div><CompanionFood ref={food} enabled={preferences.feeding} blocked={blocked || overlayOpen} monthKey={monthKey} onDiscard={id => foodDiscarded.current(id)} onLanded={() => { playCompanionSound("land", preferencesRef.current); }} returnFocus={() => { if (!overlayRef.current && !body.current?.hidden) actor.current?.focus({ preventScroll: true }); }} />
-    <CompanionToys ref={toys} hidden={!preferences.enabled} blocked={!preferences.enabled || blocked || overlayOpen || workspaceBusy || suspended || performanceActive} onCount={setToyCount} onExperience={(kind, outcome, point) => {
+    <div className="vc-bed-foreground" style={homeLighting} ref={bedForeground} hidden aria-hidden="true"><CompanionBedForeground /></div><CompanionFood ref={food} showcaseSession={showcaseSession} enabled={preferences.feeding} blocked={blocked || overlayOpen} monthKey={monthKey} onDiscard={id => foodDiscarded.current(id)} onLanded={() => { playCompanionSound("land", preferencesRef.current); }} returnFocus={() => { if (!overlayRef.current && !body.current?.hidden) actor.current?.focus({ preventScroll: true }); }} />
+    <CompanionToys ref={toys} showcaseSession={showcaseSession} hidden={!preferences.enabled} blocked={!preferences.enabled || blocked || overlayOpen || workspaceBusy || suspended || performanceActive} onCount={setToyCount} onExperience={(kind, outcome, point) => {
       if (outcome === "played") routineEvent.current("played");
       const known = loadCompanionTastes().toys.includes(kind);
       const committed = recordCompanionToyExperience(kind, outcome, preferencesRef.current.learnFromYou !== false);

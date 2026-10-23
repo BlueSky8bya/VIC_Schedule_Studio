@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { COMPANION_TOY_KINDS, COMPANION_TOY_NAMES, getCompanionToyArt } from "@/lib/ui/viewer-companion/toy-catalog";
-import { COMPANION_TOY_USES, companionToyPlayDuration, sampleCompanionToyPlay } from "@/lib/ui/viewer-companion/toy-play";
+import { COMPANION_GROUNDED_TOY_CONTROLS, COMPANION_TOY_USES, companionToyPlayDuration, sampleCompanionToyPlay } from "@/lib/ui/viewer-companion/toy-play";
 
 describe("finite use of the same real companion toy", () => {
   it("assigns every catalog identity a deliberate use and a bounded complete performance", () => {
     expect(Object.keys(COMPANION_TOY_USES).sort()).toEqual([...COMPANION_TOY_KINDS].sort());
     expect(COMPANION_TOY_KINDS).toHaveLength(84);
-    expect(new Set(Object.values(COMPANION_TOY_USES)).size).toBe(15);
+    expect(new Set(Object.values(COMPANION_TOY_USES)).size).toBe(18);
     for (const kind of COMPANION_TOY_KINDS) {
       expect(companionToyPlayDuration(kind), kind).toBeGreaterThanOrEqual(2400);
       expect(companionToyPlayDuration(kind), kind).toBeLessThanOrEqual(3100);
@@ -71,5 +71,27 @@ describe("finite use of the same real companion toy", () => {
     expect(COMPANION_TOY_NAMES["cheer-pompom"]).toBe("SBO 응원 폼폼");
     expect(getCompanionToyArt("cheer-pompom")).toBe("/companion/home/146/toy-cheer-pompom.webp");
     expect(COMPANION_TOY_USES["cheer-pompom"]).toBe("jingle");
+  });
+
+  it("keeps tops on their support throughout the actual spin and reserves pickup for the ends", () => {
+    for (const kind of ["spinning-top", "battle-top-launcher"] as const) for (let i = 180; i <= 820; i++) {
+      const pose = sampleCompanionToyPlay(kind, i / 1000);
+      expect(pose.toy.floorMix, kind).toBe(1); expect(pose.toy.x, kind).toBe(0); expect(pose.toy.y, kind).toBe(0);
+      expect(pose.lift, kind).toBe(0);
+    }
+    expect(sampleCompanionToyPlay("pinwheel", .5).toy.floorMix).toBe(0);
+  });
+
+  it("uses floor rolls, rocker balance and planted multi-part controls instead of tossing complete sets", () => {
+    for (const kind of ["spool", "hoop", "dice"] as const) {
+      const pose = sampleCompanionToyPlay(kind, .5);
+      expect(pose.use).toBe("floor-roll"); expect(pose.toy.floorMix).toBe(1); expect(pose.toy.y).toBe(0); expect(pose.toy.x).toBeGreaterThan(15);
+    }
+    expect(sampleCompanionToyPlay("rocking-horse", .4).use).toBe("rock");
+    expect(sampleCompanionToyPlay("balancing-bird", .4).use).toBe("balance");
+    for (const kind of [...COMPANION_GROUNDED_TOY_CONTROLS, "toy-drum", "xylophone"] as const) {
+      const pose = sampleCompanionToyPlay(kind, .5);
+      expect(pose.toy, kind).toMatchObject({ x: 0, y: 0, rotation: 0, floorMix: 1 });
+    }
   });
 });

@@ -347,6 +347,9 @@ export function createCompanionToys(rng: () => number = Math.random) {
       return { x: point.x, y: point.y };
     }),
     ids: () => [...objects.keys()],
+    // A route/month departure retires only the objects owned by its temporary
+    // outdoor lease. It is neither a collection nor a tidying experience.
+    forget: (id: string) => remove(id),
     count: () => objects.size,
     visit: (visitor: (toy: Readonly<CompanionToy>) => void) => objects.forEach(visitor),
     available: () => [...objects.values()].filter(toy => !toy.hidden && !toy.held && !toy.carried && !flights.has(toy.id) && !waiting.has(toy.id)).map(toy => ({ ...toy })),

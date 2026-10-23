@@ -1901,12 +1901,116 @@
       "estimateSource": "new meadow registration estimate; current PASS comes only from verified per-case receipts"
     },
     {
-      "id": "18c75d96b0a0a4b84710b11703d1b8681227dba35b8ac97325ae925e582c6196",
+      "id": "6b443f342618d920bcf8248ac3529cb31bc1cb45656071f7e06074d04da06b0f",
       "file": "tests/visual/meadow-walk.spec.ts",
-      "title": "meadow cold sprite failure recovers and reduced motion and OFF stay effective",
+      "title": "meadow requires an exposed resident and reduced motion and OFF stay effective",
       "project": "",
       "estimatedSeconds": 35,
-      "estimateSource": "new meadow registration estimate; current PASS comes only from verified per-case receipts"
+      "estimateSource": "new admission/OFF registration estimate; not cold-sprite recovery or current-source PASS"
+    },
+    {
+      "id": "1ea07bdda74a424465568ea90885b77389a6106da7202f82f58da14fd5710353",
+      "file": "tests/visual/companion-toy-axis.spec.ts",
+      "title": "toy mechanics all 84 normal: upright axes and planted controls",
+      "project": "",
+      "estimatedSeconds": 20,
+      "estimateSource": "new ownership/axis registration estimate; current PASS requires verified per-case execution receipts"
+    },
+    {
+      "id": "aee5befda3083a83368e36911345dfb6b62c0d2818c25dbf8b08056ba83b376c",
+      "file": "tests/visual/companion-toy-axis.spec.ts",
+      "title": "toy mechanics all 84 reduced: upright axes and planted controls",
+      "project": "",
+      "estimatedSeconds": 20,
+      "estimateSource": "new ownership/axis registration estimate; current PASS requires verified per-case execution receipts"
+    },
+    {
+      "id": "523373b4aa448cd70e866556583d59d3b6cf94d7c37172f800889efdcdc61851",
+      "file": "tests/visual/meadow-session.spec.ts",
+      "title": "meadow viewer: only exposed real objects travel and covered placements remain until screen departure",
+      "project": "",
+      "estimatedSeconds": 85,
+      "estimateSource": "new ownership/axis registration estimate; current PASS requires verified per-case execution receipts"
+    },
+    {
+      "id": "d3a622d31f08d3b80b38272cd83263753d8c6d045a8c92288dcc1ed516c79d63",
+      "file": "tests/visual/meadow-session.spec.ts",
+      "title": "meadow owner: only exposed real objects travel and covered placements remain until screen departure",
+      "project": "",
+      "estimatedSeconds": 85,
+      "estimateSource": "new ownership/axis registration estimate; current PASS requires verified per-case execution receipts"
+    },
+    {
+      "id": "db4a79f1bd6829b3f07a35078d5dcd7745ee2b2195cc07669cc34a28a6c34cd7",
+      "file": "tests/visual/meadow-session.spec.ts",
+      "title": "meadow preview: only exposed real objects travel and covered placements remain until screen departure",
+      "project": "",
+      "estimatedSeconds": 85,
+      "estimateSource": "new ownership/axis registration estimate; current PASS requires verified per-case execution receipts"
+    },
+    {
+      "id": "96727265c94bd6d2f038dc154a42b05aa7ae6ff9b59fa8e97aa5c4afe73a9425",
+      "file": "tests/visual/showcase-reset.spec.ts",
+      "title": "showcase background clicks cannot activate hidden studio controls",
+      "project": "",
+      "estimatedSeconds": 8,
+      "estimateSource": "observed-2026-10-23-1792753226909-ff4899ec shared-control duration; historical only, not current-source PASS"
+    },
+    {
+      "id": "60aac573fc07429f4a97940e4b663373288f285939a5c6077de41da8de60ddda",
+      "file": "tests/visual/showcase-reset.spec.ts",
+      "title": "showcase experiments end on exit; calendar months control seasons again",
+      "project": "",
+      "estimatedSeconds": 17,
+      "estimateSource": "observed-2026-10-23-1792753226909-ff4899ec shared-control duration; historical only, not current-source PASS"
+    },
+    {
+      "id": "6241a3226608c10155a32f3b492ce09649460d998990885200e89dddf55baf7f",
+      "file": "tests/visual/showcase-reset.spec.ts",
+      "title": "calendar stays interactive while backdrop images are pending",
+      "project": "",
+      "estimatedSeconds": 6,
+      "estimateSource": "observed-2026-10-23-1792753226909-ff4899ec shared-control duration; historical only, not current-source PASS"
+    },
+    {
+      "id": "a625d3b7cf2e0fbf610072e7b89cb667dd4b183cc7857824dcbc0078cefe1b6a",
+      "file": "tests/visual/showcase-reset.spec.ts",
+      "title": "single meadow consumes arrows after mouse entry and restores focus",
+      "project": "",
+      "estimatedSeconds": 8,
+      "estimateSource": "observed-2026-10-23-1792753226909-ff4899ec shared-control duration; historical only, not current-source PASS"
+    },
+    {
+      "id": "f8137b75bde7e0068ae65613423fa3d05611580cf380bfdc5633b7737d7b4062",
+      "file": "tests/visual/showcase-reset.spec.ts",
+      "title": "single meadow consumes arrows after keyboard entry and restores focus",
+      "project": "",
+      "estimatedSeconds": 8,
+      "estimateSource": "observed-2026-10-23-1792753226909-ff4899ec shared-control duration; historical only, not current-source PASS"
+    },
+    {
+      "id": "cdf0d440e776e0e0b07b9f7835ed14bcf4439d0dfcf421330566052c44403fd4",
+      "file": "tests/visual/showcase-reset.spec.ts",
+      "title": "single meadow opens for viewer; environment choices are local to viewing",
+      "project": "",
+      "estimatedSeconds": 16,
+      "estimateSource": "observed-2026-10-23-1792753226909-ff4899ec shared-control duration; historical only, not current-source PASS"
+    },
+    {
+      "id": "b910af5d9c0fbbb94434f3900aef8e163cd9707ea5a1ddb6c62abeff9df2b6df",
+      "file": "tests/visual/showcase-reset.spec.ts",
+      "title": "single meadow opens for owner; environment choices are local to viewing",
+      "project": "",
+      "estimatedSeconds": 16,
+      "estimateSource": "observed-2026-10-23-1792753226909-ff4899ec shared-control duration; historical only, not current-source PASS"
+    },
+    {
+      "id": "3678989f65091ddc0f4ef6e71e12c0d027cfc7f79aba9bc9be41563b0894b281",
+      "file": "tests/visual/showcase-reset.spec.ts",
+      "title": "single meadow opens for preview; environment choices are local to viewing",
+      "project": "",
+      "estimatedSeconds": 16,
+      "estimateSource": "observed-2026-10-23-1792753226909-ff4899ec shared-control duration; historical only, not current-source PASS"
     }
   ],
   "dailyScenarios": [
@@ -2031,5 +2135,17 @@
   "scenarioLimit": "Nine fixed, explicit 2026-10-22 registration scenarios. Weekly rotation of cases is not all configuration combinations; changing scenarios requires refreshed registration IDs.",
   "additionalReplayCases": 4,
   "additionalLivingIntentMotionCases": 7,
-  "additionalMeadowWalkCases": 5
+  "additionalMeadowWalkCases": 5,
+  "additionalMeadowSessionCases": 3,
+  "additionalToyMechanicsCases": 2,
+  "retiredRegistrations": [
+    {
+      "id": "18c75d96b0a0a4b84710b11703d1b8681227dba35b8ac97325ae925e582c6196",
+      "file": "tests/visual/meadow-walk.spec.ts",
+      "title": "meadow cold sprite failure recovers and reduced motion and OFF stay effective",
+      "replacementId": "6b443f342618d920bcf8248ac3529cb31bc1cb45656071f7e06074d04da06b0f",
+      "reason": "Cold-sprite test replaced by exposed-resident admission/OFF contract; old evidence remains historical, no PASS transfer."
+    }
+  ],
+  "additionalShowcaseResetCases": 8
 }
