@@ -36,7 +36,7 @@ import { canCompanionSetHomeLight, getCompanionHomeLight, getServerCompanionHome
 import { companionRoomLighting } from "@/lib/ui/viewer-companion/room-lighting";
 import { companionHomeLifePhaseFor, createCompanionHomeLifePolicy, planCompanionHomeLifeControl, type CompanionHomeLifeAction, type CompanionHomeLifePhase } from "@/lib/ui/viewer-companion/home-life-policy";
 import { canCompanionSetCurtain, getCompanionCurtainChoice, setCompanionCurtainChoice, subscribeCompanionCurtainChoice } from "@/lib/ui/viewer-companion/home-curtain-control";
-import { companionHomeCordTouches, companionHomeOpeningContact, companionHomeResidentFloor, companionRoomBodyLight, COMPANION_WASH_SUPPORT, sampleCompanionHomeReach } from "@/lib/ui/viewer-companion/home-interaction";
+import { companionCurtainControlStance, companionHomeCordPoint, companionHomeCordTouches, companionHomeOpeningContact, companionHomeResidentFloor, companionRoomBodyLight, COMPANION_WASH_SUPPORT, nearestCompanionHomeCordAnchor, sampleCompanionHomeReach, type CompanionHomeCordAnchor } from "@/lib/ui/viewer-companion/home-interaction";
 import { COMPANION_THROW_LIMITS, createCompanionThrow, createCompanionThrowVelocity, stepCompanionThrow, type CompanionThrowState, type CompanionThrowVelocity } from "@/lib/ui/viewer-companion/throw";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { companionWorldPreferencesKey } from "@/lib/ui/viewer-companion/preferences";
@@ -611,12 +611,19 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     let roomBodyGrade = 1;
     let homeInteractionWitness: number | undefined, homeContactSerial = 0;
     type HomeContactKind = "tv" | "light" | "curtain" | "radio" | "dispenser" | "box" | "bin";
-    let homeContact: { serial: number; kind: HomeContactKind; element: Element; point: { x: number; y: number; width?: number; height?: number }; startedAt: number; lampPrepared?: boolean;
+    let homeContact: { serial: number; kind: HomeContactKind; element: Element; point: { x: number; y: number; width?: number; height?: number }; startedAt: number; lampPrepared?: boolean; curtainAnchor?: CompanionHomeCordAnchor;
       lampPaint?: { button: HTMLButtonElement; paint: HTMLElement; art: HTMLElement[]; feedback: HTMLElement[] } } | undefined;
     let homeLampPresentation: CompanionLampPresentation | undefined;
     let lampDiagnostic: ReturnType<typeof installLampDiagnostics> = undefined;
     let homeRadioPending: AbortController | undefined, homeRadioRequestedAt = 0;
     let touchedLamp: HTMLButtonElement | null = null;
+    let touchedCurtain: HTMLButtonElement | null = null;
+    const showCurtainContact = (curtain: HTMLButtonElement | null) => {
+      if (touchedCurtain === curtain) return;
+      touchedCurtain?.removeAttribute("data-companion-touch");
+      touchedCurtain = curtain;
+      touchedCurtain?.setAttribute("data-companion-touch", "");
+    };
     const showLampContact = (lamp: HTMLButtonElement | null) => {
       if (touchedLamp === lamp) return;
       touchedLamp?.removeAttribute("data-companion-touch");
@@ -624,16 +631,16 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       touchedLamp?.setAttribute("data-companion-touch", "");
     };
     const homeContactElement = (kind: HomeContactKind): Element | null => {
-      const selector = { tv: ".vc-home-tv-paint", light: ".vc-home-lamp-handle", curtain: ".vc-curtain-control > span", radio: ".vc-radio-button .vc-object-paint", dispenser: ".vc-dispenser-slot", box: ".vc-toy-box-opening", bin: ".vc-home-trash" }[kind];
+      const selector = { tv: ".vc-home-tv-paint", light: ".vc-home-lamp-handle", curtain: ".vc-curtain-handle", radio: ".vc-radio-button .vc-object-paint", dispenser: ".vc-dispenser-slot", box: ".vc-toy-box-opening", bin: ".vc-home-trash" }[kind];
       return document.querySelector(".vc-home " + selector);
     };
     const homeContactPoint = (kind: HomeContactKind, element: Element) => {
       const rect = element.getBoundingClientRect();
       if (!element.isConnected || !rect.width || !rect.height || element.closest("[hidden],[inert],[data-panel-collapsed]")) return;
       if (kind === "box") return companionHomeOpeningContact(rect, x);
+      if (kind === "curtain" || kind === "light") return companionHomeCordPoint(rect);
       return { x: rect.left + rect.width * (kind === "tv" ? .36 : kind === "radio" ? .2 : .5),
-        y: kind === "curtain" ? rect.bottom : kind === "bin" ? rect.top + rect.height * .16 : rect.top + rect.height * (kind === "radio" ? .8 : .5),
-        ...(kind === "light" ? { width: rect.width, height: rect.height } : {}) };
+        y: kind === "bin" ? rect.top + rect.height * .16 : rect.top + rect.height * (kind === "radio" ? .8 : .5) };
     };
     const clearHomeContact = () => {
       if (homeContact?.kind === "light") lampDiagnostic?.record({ stage:"clear",at:performance.now(),serial:homeContact.serial,prepared:homeContact.lampPrepared===true,lit:getCompanionHomeLight(),effectApplied:homeLifeEffectApplied,effectSucceeded:homeLifeEffectSucceeded,authoredApplied:personalityEffectApplied });
@@ -641,6 +648,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       homeRadioPending?.abort(); homeRadioPending = undefined; homeRadioRequestedAt = 0;
       homeContact = undefined; homeInteractionWitness = undefined; homeLampPresentation = undefined;
       showLampContact(null);
+      showCurtainContact(null);
       if (interactionTool.current) interactionTool.current.hidden = true;
       el.removeAttribute("data-home-reaching");
     };
@@ -1086,7 +1094,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       // Row9 contact deliberately ignores the generic observation attention.
       // Face the actual cord during this owned local action, even when the
       // safe floor ends just beside it and the last walk faced the other way.
-      if (homeContact?.kind === "light" && status === "play" && isHomeFloor(support) && supportedNow()
+      if ((homeContact?.kind === "light" || homeContact?.kind === "curtain") && status === "play" && isHomeFloor(support) && supportedNow()
         && !pressed && !keyboardHeld && !placing) sample.facing = homeContact.point.x < x ? -1 : 1;
       if (forceNeutralPose) { heldPivot = false; releasedPivotAt = -Infinity; }
       forceNeutralPose = false;
@@ -1151,17 +1159,32 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const interaction = homeContact?.element.isConnected && isHomeFloor(support) && supportedNow() ? homeContact : undefined;
       // The handle itself moves during a finite tug. Keep contact on its
       // measured current rectangle, rather than an earlier layout sample.
-      if (interaction?.kind === "light") {
-        const current = homeContactPoint("light", interaction.element);
+      const cord = interaction?.kind === "light" || interaction?.kind === "curtain";
+      if (interaction && cord) {
+        const current = homeContactPoint(interaction.kind, interaction.element);
         if (current) interaction.point = current;
       }
-      const previousCarry = paintedSelection && accessoryModule?.companionHomeContactAnchor(paintedSelection, interaction?.kind === "light" || interaction?.kind === "curtain");
+      // The real safe stance can already lie directly under the cord in a
+      // compact room. Pin the closest projected opaque top/edge, rather than
+      // always reaching from a side that is then20px away from this handle.
+      // One action keeps this source region through every animation frame.
+      if (interaction?.kind === "curtain" && !interaction.curtainAnchor && paintedSelection && registration.rows[9].includes(paintedSelection.physicalIndex) && accessoryModule) {
+        const selected=paintedSelection, landmarks=accessoryModule;
+        const candidates=(["top","left","right"] as const).flatMap(anchor => {
+          const source=landmarks.companionHomeContactAnchor(selected,true,anchor==="top"?undefined:anchor);
+          const point=source && projectCompanionSpritePoint({size,display,shape,pressure,response,facing:sample.facing,sway,chew:0,cell:selected.frame},source);
+          return point?[{anchor,point}]:[];
+        });
+        interaction.curtainAnchor=nearestCompanionHomeCordAnchor(candidates,interaction.point);
+      }
+      const curtainSide = interaction?.kind === "curtain" && interaction.curtainAnchor !== "top" ? interaction.curtainAnchor : undefined;
+      const previousCarry = paintedSelection && accessoryModule?.companionHomeContactAnchor(paintedSelection, cord, curtainSide);
       const previousHand = previousCarry && paintedSelection ? projectCompanionSpritePoint({ size, display, shape, pressure, response, facing: sample.facing, sway, chew: 0, cell: paintedSelection.frame }, previousCarry) : null;
-      const reachFloor = interaction?.kind === "light" ? supportById(support) : undefined;
+      const reachFloor = cord ? supportById(support) : undefined;
       const horizontal = reachFloor && !reachFloor.bodyOnly && bedScene ? { bodyX: display.x,
-        left: Math.max(platformLandingX(reachFloor,reachFloor.x),bedScene.clip.left+size*display.scale/2),
-        right: Math.min(platformLandingX(reachFloor,reachFloor.x+reachFloor.width),bedScene.clip.right-size*display.scale/2) } : undefined;
-      const reach = interaction && previousHand ? sampleCompanionHomeReach({ hand: previousHand, contact: interaction.point, footY: display.y, ceiling: bedScene?.clip.top ?? 0, size, progress: (performance.now() - began) / total, jump: effective.jump, cord: interaction.kind === "light", horizontal }) : undefined;
+        left: interaction?.kind === "curtain" ? Math.max(reachFloor.x,bedScene.clip.left+size*display.scale*.38) : Math.max(platformLandingX(reachFloor,reachFloor.x),bedScene.clip.left+size*display.scale/2),
+        right: interaction?.kind === "curtain" ? Math.min(reachFloor.x+reachFloor.width,bedScene.clip.right-size*display.scale*.38) : Math.min(platformLandingX(reachFloor,reachFloor.x+reachFloor.width),bedScene.clip.right-size*display.scale/2) } : undefined;
+      const reach = interaction && previousHand ? sampleCompanionHomeReach({ hand: previousHand, contact: interaction.point, footY: display.y, ceiling: bedScene?.clip.top ?? 0, size, progress: (performance.now() - began) / total, jump: effective.jump, cord, horizontal }) : undefined;
       if (reach) display = { ...display, x: display.x + reach.shiftX, y: display.y - reach.lift };
       const roomLight = companionRoomBodyLight(display, bedScene?.clip, roomBodyGrade);
       style(el, "--vc-body-room-light", String(roomLight));
@@ -1304,13 +1327,27 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (action?.kind === "sleep" && paintedCurrent && status === "sleep") {
         const at = performance.now(); if (sleepPaintAt) sleepPaintMs += Math.min(100, Math.max(0, at - sleepPaintAt)); sleepPaintAt = at;
       } else sleepPaintAt = 0;
-      const hand = paintedSelection && accessoryModule?.companionHomeContactAnchor(paintedSelection, interaction?.kind === "light" || interaction?.kind === "curtain");
+      const hand = paintedSelection && accessoryModule?.companionHomeContactAnchor(paintedSelection, cord, curtainSide);
       let actualHand = hand && paintedSelection ? projectCompanionSpritePoint({ ...projection, cell: paintedSelection.frame }, hand) : null;
       let targetContact = interaction?.point;
-      let touchingControl = Boolean(reach?.touching && paintedCurrent && actualHand && targetContact && (interaction?.kind === "light"
+      let touchingControl = Boolean(reach?.touching && paintedCurrent && actualHand && targetContact && (cord
         ? companionHomeCordTouches(actualHand, targetContact, size) : Math.hypot(actualHand.x - targetContact.x, actualHand.y - targetContact.y) <= size * .5));
       // Lamp contact is shown on the real cord, without rays over the pet's face.
       showLampContact(touchingControl && interaction?.kind === "light" ? interaction.element.closest("button") : null);
+      showCurtainContact(touchingControl && interaction?.kind === "curtain" ? interaction.element.closest("button") : null);
+      if (touchingControl && interaction?.kind === "curtain" && actualHand && targetContact) {
+        // The rendered handle drops2px only after real contact. Move the same
+        // body by that finite tug on this paint; no remote visual feedback.
+        const current = homeContactPoint("curtain",interaction.element);
+        if (current && Math.abs(current.x-targetContact.x) <= .05 && Math.abs(current.y-targetContact.y) <= 2.25
+          && Math.abs(current.width!-targetContact.width!) <= .05 && Math.abs(current.height!-targetContact.height!) <= .05) {
+          const dy = current.y-targetContact.y;
+          display.y += dy; actualHand = { ...actualHand,y:actualHand.y+dy };
+          interaction.point = targetContact = current;
+          touchingControl = companionHomeCordTouches(actualHand,current,size);
+        } else touchingControl = false;
+        if (!touchingControl) showCurtainContact(null);
+      }
       if (touchingControl && interaction?.kind === "light" && actualHand && targetContact) {
         // Soft graphics moves the real knob immediately on this same paint.
         // Carry the touching body with that finite vertical tug before the
@@ -1855,6 +1892,13 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (!isDetailGuest()) return;
       inputPaintQueued = false; hideClock(performance.now()); cancelAnimationFrame(raf); clearTimeout(timer); lastTick = performance.now(); schedule();
     };
+    const acknowledgeAffection = (invited = false) => {
+      brain.current = recordCompanionEvent(brain.current, "petted");
+      if (invited) brain.current = { ...brain.current, affection: Math.min(1, brain.current.affection + .12) };
+      experience(invited ? "reassured" : "petted"); persistCare(true); invitedUntil = 0;
+      logActivity("ui.click", { target: "companion-pet" });
+      hapticSuccess(); publishCare(); setAnnouncement("빅타민이 쓰다듬기를 좋아해요. 조금 더 친해졌어요.");
+    };
     const affection = () => {
       el.removeAttribute("data-home-wait-pose");
       // A passing hover may offer a short reaction, not erase an accepted
@@ -1868,16 +1912,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       petUntil = performance.now() + (reduced ? 650 : COMPANION_TIMING.petReward);
       petResponse = guest || reduced || gfxMode() !== "full" ? [] : [...companionPettingResponse(preferences.personality, effective)];
       petResponseUntil = petUntil + 8000;
-      brain.current = recordCompanionEvent(brain.current, "petted");
-      if (invited) brain.current = { ...brain.current, affection: Math.min(1, brain.current.affection + .12) };
-      experience(invited ? "reassured" : "petted"); persistCare(true); invitedUntil = 0;
-      // One acknowledged gesture/reward, never a pose or pointer sample.
-      logActivity("ui.click", { target: "companion-pet" });
+      acknowledgeAffection(invited);
       data("mood", "happy");
       // One deliberate reward, never pointermove audio. Both feedback buses
       // retain the app's master/category/volume/hidden-tab preferences.
-      queueSituation("petting-comfort", [9]); hapticSuccess(); pendingCue = "pet";
-      publishCare(); setAnnouncement("빅타민이 쓰다듬기를 좋아해요. 조금 더 친해졌어요.");
+      queueSituation("petting-comfort", [9]); pendingCue = "pet";
       // Direct input acknowledges immediately, even when reduced-motion's
       // ambient pose loop sleeps for 400ms. Each new tap owns a fresh pulse.
       paint(9, 0, "petted");
@@ -2854,7 +2893,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
             // curtain approaches the real cord at the edge of that window.
             const contactFloor = toyPlatforms.filter(p => isHomeFloor(p.id) && !p.bodyOnly)
               .sort((a,b) => Math.abs(platformLandingX(a,contact.x)-contact.x)-Math.abs(platformLandingX(b,contact.x)-contact.x))[0];
-            if (contactFloor) personalityHome[kind] = { x: platformLandingX(contactFloor,contact.x), y: contactFloor.y, platformId: contactFloor.id };
+            if (kind === "curtain") {
+              const stance=bedScene && companionCurtainControlStance(contact,bedScene.clip,toyPlatforms,size);
+              if (stance) personalityHome.curtain=stance;
+            } else if (contactFloor) personalityHome[kind] = { x: platformLandingX(contactFloor,contact.x), y: contactFloor.y, platformId: contactFloor.id };
           }
         }
         for (const toy of settledToys) {
@@ -4831,6 +4873,17 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     const unregisterShowcasePet = showcaseSession.register("pet", {
       kind: "pet", node: () => el, point: () => displayedPoint(),
       eligible: () => preferencesRef.current.enabled && !blocked && !overlayRef.current && !workspaceBusyRef.current && !premiereActive && !isHomeSupport(support) && !pressed && !keyboardHeld && !placing,
+      interact: kind => {
+        if (!preferencesRef.current.enabled || blocked || overlayRef.current || workspaceBusyRef.current || premiereActive || document.hidden) return;
+        // Care remains owned by this real resident while its calendar drawing
+        // is paused. Never paint or wake the hidden room/planner from input.
+        if (kind === "pet" && preferencesRef.current.petting) { acknowledgeAffection(); playCompanionSound("pet", preferencesRef.current); }
+        else if (kind === "bonk" && preferencesRef.current.petting) { experience("bonked"); logActivity("ui.click", { target: "companion-bonk" }); }
+        else if (kind === "shake" && preferencesRef.current.drag) { hurtTrust("rough-play", performance.now()); logActivity("ui.click", { target: "companion-shake" }); }
+        else if ((kind === "drag" || kind === "throw") && preferencesRef.current.drag) { brain.current = recordCompanionEvent(brain.current, "dragged"); if (kind === "drag") experience("played"); logActivity("ui.click", { target: kind === "throw" ? "companion-throw" : "companion-drag" }); }
+        else if (kind === "rest" && preferencesRef.current.sleep) { logActivity("ui.click", { target: "companion-rest" }); playCompanionSound("sleep", preferencesRef.current); }
+        else if (kind === "rested" && preferencesRef.current.sleep) { brain.current = recordCompanionEvent(brain.current, "rested"); persistCare(true); publishCare(); }
+      },
     });
     sync();
     // Initial/back navigation may already be inside the rail's CSS entrance.

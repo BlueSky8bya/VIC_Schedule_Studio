@@ -1,6 +1,6 @@
 # Current State — VIC Schedule Studio
 
-Last Updated: 2026-10-23 (KST)
+Last Updated: 2026-10-24 (KST)
 Project Version: 0.1.0
 
 Current work only. Completed plans/rounds are evidence, not instructions. Previous accumulated state is preserved byte-for-byte in [the snapshot](archive/20261017-CURRENT_STATE-before-platform-remediation.snapshot.txt); use topic records for current behavior.
@@ -13,7 +13,7 @@ Criteria145: optional TV bow and separate actual10s activity/repetition verified
 
 Scheduled: daily site QA remains ACTIVE at09:00 KST. Owner2026-10-22 supersedes blanket200/restart/all-media release gates: use changed-risk checks, weekly rotation and valid same-build continuation. No200 in this task. Preserve original full certifier, failures, privacy and actual-scope labels. [Focused QA](plans/PLAN-20261022-focused-qa.md).
 
-Current: meadow session/toys/storage locally verified:20 scoped cases (5 new/15 verified reuse), type/lint/build;6896 units across whole+guarded retry. Push/cloud cleanup await latest Hub confirmation;Vercel connected, CLI absent. [Plan](plans/PLAN-20261023-showcase-transients-toy-storage.md).
+Current: outdoor direct input/curtain art/contact pass25 scoped proofs (16 fresh+9 verified reuse),6924 units/type/lint/build and two non-author reviews. Owner push confirmation pending; production8c59 lacks new cord/output reduction.11 old deployments deleted; owner still sees10.01/10GB. [Plan](plans/PLAN-20261023-showcase-transients-toy-storage.md).
 
 Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user.125 explicitly authorizes unnecessary Vercel deployment cleanup/optimization; unrelated cleanup, bulk DB UPDATE, paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
 

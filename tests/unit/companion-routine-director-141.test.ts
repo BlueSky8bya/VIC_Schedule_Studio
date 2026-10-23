@@ -51,8 +51,9 @@ describe("141 common routines execute through the existing physical director", (
     director.startRoutine(recipe([command]), 0); scene.world.x = 215;
     const travel = director.next(scene)!; expect(travel.meta.travel).toBe(true); expect(travel.action?.kind).toBe("walk");
     director.complete(travel.meta); director.resolve(travel.meta, true); expect(director.current()?.beat).toBe(0);
-    // Light reaches its narrow measured stance; other controls keep24px.
-    scene.world.x = kind === "light" ? scene.home.light!.x : 216; scene.now += 100;
+    // The two pull cords require their measured floor stance; TV/radio
+    // retain their ordinary furniture approach tolerance.
+    scene.world.x = kind === "light" ? scene.home.light!.x : kind === "curtain" ? scene.home.window!.x : 216; scene.now += 100;
     const interaction = director.next(scene)!; expect(interaction.meta.travel).toBeUndefined();
     expect(interaction.action?.kind).toBe("play"); expect(interaction.meta.interactionContact).toEqual(scene.home.contacts![kind]);
     expect(interaction.action?.personalityScene.interactionContact).toEqual(scene.home.contacts![kind]);

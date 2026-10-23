@@ -67,7 +67,7 @@ const transform = (point: Point) => `translate3d(${point.x.toFixed(3)}px,${point
  * capture owns only real drag/trash gestures. Pointer taps never arm a global
  * placement mode; keyboard grab/arrow/put-down remains an explicit alternative. */
 export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function CompanionFood({ enabled, blocked, monthKey, showcaseSession, returnFocus, onLanded, onDiscard }, ref) {
-  useSyncExternalStore(showcaseSession?.subscribe ?? (() => () => {}), showcaseSession?.snapshot ?? (() => 0), () => 0);
+  useSyncExternalStore(showcaseSession?.subscribe ?? (() => () => {}), showcaseSession?.ownershipSnapshot ?? (() => 0), () => 0);
   const landed = useRef(onLanded); landed.current = onLanded;
   // This local scene notification marks an actual human removal only. Food
   // IDs never enter activity metadata, discovery or the autonomous trash path.
@@ -144,7 +144,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     if (node.hidden !== hidden) node.hidden = hidden;
     if (node.hasAttribute("data-falling") !== drops.current.has(food.id)) node.toggleAttribute("data-falling", drops.current.has(food.id));
     if (node.hasAttribute("data-carried") !== (carried.current === food.id)) node.toggleAttribute("data-carried", carried.current === food.id);
-    const pose = lease ? { x: lease.x, y: lease.y, scale: 1, rotation: 0 } : presentation ?? { x: food.x, y: food.y, scale: 1, rotation: 0 };
+    const pose = lease ? { x: lease.x, y: lease.y, scale: 1, scaleX: lease.scaleX ?? 1, scaleY: lease.scaleY ?? 1, rotation: lease.rotation ?? 0 } : presentation ?? { x: food.x, y: food.y, scale: 1, rotation: 0 };
     const bound = attachments.current.get(food.id);
     // Resting ink shares the browser's scroll transform with its real floor.
     // Keep the origin paired with the logical point, not a later rect read:
@@ -711,8 +711,19 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   }, [showcaseSession, paint, update]);
   useEffect(() => {
     if (!showcaseSession || !layer.current) return;
-    return bindCompanionShowcaseInput(layer.current, showcaseSession, node => node.dataset.food ? `food:${node.dataset.food}` : undefined, () => enabled && !blocked, () => logActivity("ui.click", { target: "companion-food-move" }));
-  }, [showcaseSession, enabled, blocked]);
+    return bindCompanionShowcaseInput(layer.current, showcaseSession, node => node.dataset.food ? `food:${node.dataset.food}` : undefined, () => enabled && !blocked, () => logActivity("ui.click", { target: "companion-food-move" }), {
+      quiet: () => reduced() || ["off", "soft"].includes(graphics.current),
+      item: "food",
+      onDiscard: id => {
+        const foodId = id.slice("food:".length);
+        if (!current.current.some(item => item.id === foodId)) return;
+        const resident = document.querySelector<HTMLButtonElement>(".vc-meadow-walk-body");
+        if (resident && !resident.closest("[hidden]")) resident.focus({ preventScroll: true }); else focusReturn.current();
+        presentations.current.delete(foodId); update(current.current.filter(item => item.id !== foodId));
+        choose(null); setMessage("밥을 치웠어요."); discarded.current?.(foodId); logActivity("ui.click", { target: "companion-food-discard" });
+      },
+    });
+  }, [showcaseSession, enabled, blocked, choose, update]);
   useLayoutEffect(() => { if (selected) nodes.current.get(selected)?.focus({ preventScroll: true }); }, [selected]);
   useEffect(() => { interrupt(); update([]); choose(null); setMessage(""); }, [enabled, choose, interrupt, update]);
   const foodMonth = useRef(monthKey);

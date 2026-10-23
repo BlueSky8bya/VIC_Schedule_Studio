@@ -539,6 +539,11 @@ export function ShowcaseExit({ settings }: { settings?: ShowcaseSettings | null 
   useEffect(() => {
     if (!on) return;
     const onKey = (e: KeyboardEvent) => {
+      const target=e.target as HTMLElement;
+      const actor = target?.closest?.('button[data-showcase-lease],button[data-showcase-pet]');
+      // A held object owns its first Escape, exactly like the calendar
+      // controls. A second Escape retains the shared appreciation exit.
+      if (actor && e.key === "Escape" && (actor.hasAttribute("data-showcase-held") || actor.hasAttribute("data-showcase-placing"))) return;
       if (e.key === "Escape") {
         if(document.querySelector('.sc-date-picker'))return;
         if(document.querySelector('.sc-date-calendar')){e.stopPropagation();document.querySelector<HTMLButtonElement>('[data-act="showcase-date"]')?.click();return;}
@@ -548,12 +553,11 @@ export function ShowcaseExit({ settings }: { settings?: ShowcaseSettings | null 
         else exitShowcase();
         return;
       }
-      const target=e.target as HTMLElement;
       if(target?.closest?.('.showcase-set'))return;
       // Only the admitted physical buttons own meadow arrows/Space/Enter.
       // Let their layer capture handler consume those keys before the normal
       // calendar shortcuts; Escape above always keeps its exit priority.
-      if(target?.closest?.('button[data-showcase-lease],button[data-showcase-pet]') && ["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," ","Enter"].includes(e.key))return;
+      if(actor && ["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," ","Enter","Delete","Backspace","p","P","n","N"].includes(e.key))return;
       if(target?.closest?.('input,select,textarea,button,[contenteditable="true"]')){
         e.stopPropagation();return;
       }

@@ -1,0 +1,206 @@
+{
+  "version": 1,
+  "logicalCell": 80,
+  "textureCell": 192,
+  "source": {
+    "src": "/companion/hd/vitamin-action-09-eye-scale-143-v1.webp",
+    "sha256": "14ff5ce9a8477cd6b928ed3149e2a98ba8cb67a2c7b093dffcc99d6c7990044b",
+    "bytes": 385804,
+    "width": 1536,
+    "height": 384
+  },
+  "frames": [
+    {
+      "physicalIndex": 144,
+      "index": 0,
+      "left": {
+        "x": 20,
+        "y": 35
+      },
+      "right": {
+        "x": 62.083333,
+        "y": 50
+      }
+    },
+    {
+      "physicalIndex": 145,
+      "index": 1,
+      "left": {
+        "x": 22.083333,
+        "y": 35
+      },
+      "right": {
+        "x": 62.916667,
+        "y": 50
+      }
+    },
+    {
+      "physicalIndex": 146,
+      "index": 2,
+      "left": {
+        "x": 22.5,
+        "y": 35
+      },
+      "right": {
+        "x": 62.5,
+        "y": 50
+      }
+    },
+    {
+      "physicalIndex": 147,
+      "index": 3,
+      "left": {
+        "x": 22.5,
+        "y": 35
+      },
+      "right": {
+        "x": 62.5,
+        "y": 50
+      }
+    },
+    {
+      "physicalIndex": 148,
+      "index": 4,
+      "left": {
+        "x": 22.5,
+        "y": 35
+      },
+      "right": {
+        "x": 62.083333,
+        "y": 50
+      }
+    },
+    {
+      "physicalIndex": 149,
+      "index": 5,
+      "left": {
+        "x": 21.666667,
+        "y": 35
+      },
+      "right": {
+        "x": 62.083333,
+        "y": 50
+      }
+    },
+    {
+      "physicalIndex": 150,
+      "index": 6,
+      "left": {
+        "x": 22.5,
+        "y": 35
+      },
+      "right": {
+        "x": 62.5,
+        "y": 50
+      }
+    },
+    {
+      "physicalIndex": 151,
+      "index": 7,
+      "left": {
+        "x": 21.666667,
+        "y": 35
+      },
+      "right": {
+        "x": 62.916667,
+        "y": 50
+      }
+    },
+    {
+      "physicalIndex": 152,
+      "index": 8,
+      "left": {
+        "x": 21.666667,
+        "y": 35
+      },
+      "right": {
+        "x": 62.083333,
+        "y": 50
+      }
+    },
+    {
+      "physicalIndex": 153,
+      "index": 9,
+      "left": {
+        "x": 21.25,
+        "y": 35
+      },
+      "right": {
+        "x": 62.083333,
+        "y": 50
+      }
+    },
+    {
+      "physicalIndex": 154,
+      "index": 10,
+      "left": {
+        "x": 19.583333,
+        "y": 35
+      },
+      "right": {
+        "x": 62.083333,
+        "y": 50
+      }
+    },
+    {
+      "physicalIndex": 155,
+      "index": 11,
+      "left": {
+        "x": 20,
+        "y": 35
+      },
+      "right": {
+        "x": 62.5,
+        "y": 50
+      }
+    },
+    {
+      "physicalIndex": 156,
+      "index": 12,
+      "left": {
+        "x": 20,
+        "y": 35
+      },
+      "right": {
+        "x": 61.666667,
+        "y": 50
+      }
+    },
+    {
+      "physicalIndex": 157,
+      "index": 13,
+      "left": {
+        "x": 20,
+        "y": 35
+      },
+      "right": {
+        "x": 61.666667,
+        "y": 50
+      }
+    },
+    {
+      "physicalIndex": 158,
+      "index": 14,
+      "left": {
+        "x": 20.833333,
+        "y": 35
+      },
+      "right": {
+        "x": 62.916667,
+        "y": 50
+      }
+    },
+    {
+      "physicalIndex": 159,
+      "index": 15,
+      "left": {
+        "x": 21.666667,
+        "y": 35
+      },
+      "right": {
+        "x": 62.916667,
+        "y": 50
+      }
+    }
+  ]
+}

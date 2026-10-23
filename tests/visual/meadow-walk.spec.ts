@@ -5,7 +5,7 @@ import {SETTINGS_EPOCH,SETTINGS_EPOCH_KEY} from '@/lib/ui/motion';
 import {fulfillReadOnlyFont} from './helpers/readonly-font';
 import {placeCompanionOnExposedBackground,enterCompanionMeadow} from './helpers/companion-outdoor';
 
-const out=process.env.MEADOW_WALK_OUTPUT??'.scratch-pw/meadow-walk-proof';
+const out=process.env.MEADOW_WALK_OUTPUT??(process.env.COMPANION_QA_OUTPUT?`${process.env.COMPANION_QA_OUTPUT}/meadow-walk`:'.scratch-pw/meadow-walk-proof');
 const fonts=new Set([...readFileSync('app/fonts.css','utf8').matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(m=>m[1]));
 test.use({storageState:{cookies:[],origins:[]},serviceWorkers:'block',video:{mode:'on',size:{width:1920,height:1080}},trace:'retain-on-failure'});
 test.setTimeout(100000);
@@ -72,11 +72,11 @@ async function enterWithExposedResident(page:Page,label:string){
     for(const type of ['focusin','focusout'])window.addEventListener(type,event=>{
       const target=event.target;if(target instanceof HTMLElement)focusLog.push({at:performance.now(),type,tag:target.tagName,className:target.className,act:target.dataset.act});
     },true);
-    const pointerLog:{at:number;x:number;y:number;hitPet:boolean;tag:string;className:string;petBox?:{left:number;right:number;top:number;bottom:number}}[]=[];
+    const pointerLog:{at:number;x:number;y:number;pointerId:number;trusted:boolean;hitPet:boolean;tag:string;className:string;petBox?:{left:number;right:number;top:number;bottom:number}}[]=[];
     (window as Window&{__meadowPointerLog?:typeof pointerLog}).__meadowPointerLog=pointerLog;
     window.addEventListener('pointerdown',event=>{
       const target=event.target;if(!(target instanceof Element))return;const body=document.querySelector<HTMLElement>('.vc-meadow-walk-body'),box=body?.getBoundingClientRect();
-      pointerLog.push({at:performance.now(),x:event.clientX,y:event.clientY,hitPet:Boolean(target.closest('.vc-meadow-walk-body')),tag:target.tagName,className:target.getAttribute('class')??'',petBox:box?{left:box.left,right:box.right,top:box.top,bottom:box.bottom}:undefined});
+      pointerLog.push({at:performance.now(),x:event.clientX,y:event.clientY,pointerId:event.pointerId,trusted:event.isTrusted,hitPet:Boolean(target.closest('.vc-meadow-walk-body')),tag:target.tagName,className:target.getAttribute('class')??'',petBox:box?{left:box.left,right:box.right,top:box.top,bottom:box.bottom}:undefined});
     },true);
   });
   const before=await page.evaluate(()=>(window as Window&{__meadowAdmissionWitness?:{before:{exposed:boolean}}}).__meadowAdmissionWitness!.before);
@@ -161,12 +161,20 @@ for(const surface of ['viewer','owner','preview']as const){
       // command arrives. Use the native locator's bounded stability/hit test.
       await finalBody.hover({timeout:5000});await page.mouse.down();
       const actual=await page.evaluate(()=>{
-        const body=document.querySelector<HTMLElement>('.vc-meadow-walk-body'),log=(window as Window&{__meadowPointerLog?:{hitPet:boolean}[]}).__meadowPointerLog;
-        return {pointer:log?.at(-1),held:Boolean(body?.hasAttribute('data-showcase-held'))};
+        const body=document.querySelector<HTMLElement>('.vc-meadow-walk-body'),log=(window as Window&{__meadowPointerLog?:{hitPet:boolean;pointerId:number;trusted:boolean;x:number;y:number}[]}).__meadowPointerLog,pointer=log?.at(-1);
+        return {pointer,held:Boolean(body?.hasAttribute('data-showcase-held')),captured:Boolean(pointer&&body?.hasPointerCapture(pointer.pointerId))};
       });
       acquisition.push(actual);
       writeFileSync(`${out}/${surface}-pointer-acquisition.json`,JSON.stringify(acquisition,null,2));
-      if(actual.pointer?.hitPet){expect(actual.held).toBe(true);acquired=true;}
+      if(actual.pointer?.hitPet){
+        expect(actual.pointer.trusted).toBe(true);expect(actual.captured).toBe(true);
+        // A press captures without becoming a drag: only actual motion beyond
+        // the unchanged6px threshold should paint and mark the held creature.
+        await page.mouse.move(actual.pointer.x+(actual.pointer.x<page.viewportSize()!.width/2?12:-12),actual.pointer.y);
+        const moved=await finalBody.evaluate((node,pointerId)=>({held:node.hasAttribute('data-showcase-held'),captured:node.hasPointerCapture(pointerId)}),actual.pointer.pointerId);
+        acquisition.push({stage:'real-native-move-after-capture',...moved});writeFileSync(`${out}/${surface}-pointer-acquisition.json`,JSON.stringify(acquisition,null,2));
+        expect(moved.captured).toBe(true);expect(moved.held).toBe(true);acquired=true;
+      }
       else await page.mouse.up();
     }
     expect(acquired).toBe(true);

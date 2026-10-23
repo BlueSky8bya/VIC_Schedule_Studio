@@ -13,16 +13,18 @@ const catalog=JSON.parse(fs.readFileSync(path.resolve('scripts/site-daily/native
 const fingerprint=(value='a')=>caseFingerprint({files:[{path:'lib/product.ts',sha256:value.repeat(64)}],scenario:{buildId:'exact-build',id:'scenario'},runtime:{node:'22',chromium:'fixed'}});
 const raw=(overrides:Record<string,unknown>={})=>({expectedStatus:'passed',status:'expected',results:[{status:'passed',retry:0,duration:200,errors:[]}],...overrides});
 describe('focused daily selection and immutable continuation',()=>{
-  it('balances 250 actual registrations into seven nonduplicated, bounded-cost buckets',()=>{
-    const buckets=weeklyBuckets(catalog.cases);expect(buckets).toHaveLength(7);expect(buckets.flatMap((b:{cases:unknown[]})=>b.cases)).toHaveLength(250);
+  it('balances 260 actual registrations into seven nonduplicated, bounded-cost buckets',()=>{
+    const buckets=weeklyBuckets(catalog.cases);expect(buckets).toHaveLength(7);expect(buckets.flatMap((b:{cases:unknown[]})=>b.cases)).toHaveLength(260);
     const costs=buckets.map((b:{estimatedWorkerSeconds:number})=>b.estimatedWorkerSeconds);expect(Math.max(...costs)-Math.min(...costs)).toBeLessThanOrEqual(125);
     expect(catalog.registrationOnly).toBe(true);expect(catalog.additionalLampCases).toBe(21);
     expect(catalog.additionalLivingIntentMotionCases).toBe(7);
     expect(catalog.additionalMeadowWalkCases).toBe(5);
     expect(catalog.additionalMeadowSessionCases).toBe(3);expect(catalog.additionalToyMechanicsCases).toBe(2);
     expect(catalog.additionalShowcaseResetCases).toBe(8);
+    expect(catalog.additionalCurtainReachCases).toBe(9);expect(catalog.additionalMeadowManualInputCases).toBe(1);
     expect(catalog.cases.filter((c:{file:string})=>c.file==='tests/visual/meadow-walk.spec.ts')).toHaveLength(5);
-    expect(catalog.cases.filter((c:{file:string})=>c.file==='tests/visual/meadow-session.spec.ts')).toHaveLength(3);
+    expect(catalog.cases.filter((c:{file:string})=>c.file==='tests/visual/meadow-session.spec.ts')).toHaveLength(4);
+    expect(catalog.cases.filter((c:{file:string})=>c.file==='tests/visual/companion-curtain-reach.spec.ts')).toHaveLength(9);
     expect(catalog.cases.filter((c:{file:string})=>c.file==='tests/visual/companion-toy-axis.spec.ts')).toHaveLength(2);
     expect(catalog.cases.filter((c:{file:string})=>c.file==='tests/visual/showcase-reset.spec.ts')).toHaveLength(8);
     expect(catalog.cases.some((c:{title:string})=>c.title==='meadow requires an exposed resident and reduced motion and OFF stay effective')).toBe(true);
@@ -35,7 +37,7 @@ describe('focused daily selection and immutable continuation',()=>{
       const plan=selectDailyCases({catalog:catalog.cases,day:`2026-10-${day}`,observations});expect(plan.cases.length).toBeLessThanOrEqual(42);expect(plan.fullCertification).toBe(false);
       for(const c of plan.cases){seen.add(c.id);observations.push({id:c.id,day:`2026-10-${day}`,outcome:'passed',receiptVerified:true,actualExecuted:true});}
     }
-    expect(seen.size).toBe(250);
+    expect(seen.size).toBe(260);
     const missed=selectDailyCases({catalog:catalog.cases,day:'2026-10-30',observations:observations.filter(x=>x.day!=='2026-10-25')});
     expect(missed.cases.some((c:{id:string})=>observations.some(x=>x.day==='2026-10-25'&&x.id===c.id))).toBe(true);
   });
@@ -66,6 +68,17 @@ describe('focused daily selection and immutable continuation',()=>{
     expect(()=>planDaily({day:'2026-10-23',caseObservations:[{...row,receiptVerified:false}]})).toThrow('invalid-retired-observation');
     expect(()=>planDaily({day:'2026-10-23',caseObservations:[{...row,day:'2026-10-24'}]})).toThrow('future-observation');
     expect(()=>partitionRetiredCaseObservations({day:'2026-10-23',observations:[row],catalog:{...catalog,retiredRegistrations:[{...retired,id:'0'.repeat(64)}]}})).toThrow('invalid-retired-registration');
+  });
+  it('prioritizes exact changed curtain and showcase input contracts without treating registration as a current observation',()=>{
+    for(const [file,families,expected]of [
+      ['lib/ui/viewer-companion/curtain-contact-anchors.json',['tests/visual/companion-curtain-reach.spec.ts'],9],
+      ['lib/ui/viewer-companion/showcase-input.ts',['tests/visual/meadow-session.spec.ts','tests/visual/meadow-walk.spec.ts','tests/visual/companion-toy-axis.spec.ts'],11],
+    ] as const){
+      const plan=planDaily({day:'2026-10-23',changedFiles:[file]});
+      const selected=plan.companion.selection.cases.filter((c:{file:string})=>(families as readonly string[]).includes(c.file));
+      expect(selected).toHaveLength(expected);expect(selected.every((c:{reason:string})=>c.reason==='changed-or-failed-risk')).toBe(true);
+      expect(plan.companion.selection.actualCoverageClaim).toBe(false);expect(plan.companion.selection.fullCertification).toBe(false);
+    }
   });
   it('keeps pending risk explicitly when the hard case cap is reached',()=>{
     const ids=catalog.cases.slice(0,45).map((x:{id:string})=>x.id);const p=selectDailyCases({catalog:catalog.cases,day:'2026-10-23',priorityIds:ids});expect(p.pendingPriorityIds).toHaveLength(3);

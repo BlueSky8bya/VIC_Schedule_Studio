@@ -67,10 +67,19 @@ describe("157 accepted petting dismisses only interrupted voluntary ownership",(
  });
  it("unaccepted passive hover never invokes the accepted-owner cancellation",()=>{
   const host=readFileSync("components/poster/viewer-companion/viewer-companion.tsx","utf8");
+  const acknowledged=host.slice(host.indexOf("    const acknowledgeAffection = ("),host.indexOf("    const affection = () => {"));
   const affection=host.slice(host.indexOf("    const affection = () => {"),host.indexOf("    const isOtherControl"));
   const hover=host.slice(host.indexOf("    const hover = (event:"),host.indexOf("    const leave ="));
   expect(affection.indexOf("clearForPetting(); personalityDirector.interruptForPetting(petOwnership)")).toBeGreaterThan(0);
-  expect(affection.indexOf("interruptForPetting")).toBeLessThan(affection.indexOf('experience(invited ? "reassured" : "petted")'));
+  // The same real care/learning acknowledgement is shared with the admitted
+  // meadow resident. Normal acceptance must still revoke voluntary ownership
+  // before calling that helper; moving its body did not move its ordering.
+  const interruption=affection.indexOf("interruptForPetting"),acknowledgement=affection.indexOf("acknowledgeAffection(invited)");
+  expect(affection.indexOf("if (!preferences.petting) return;")).toBeLessThan(interruption);
+  expect(acknowledgement).toBeGreaterThan(interruption);
+  expect(acknowledged).toContain('brain.current = recordCompanionEvent(brain.current, "petted")');
+  expect(acknowledged).toContain('experience(invited ? "reassured" : "petted"); persistCare(true)');
+  expect(acknowledged.match(/target: "companion-pet"/g)).toHaveLength(1);
   expect(hover).not.toContain("interruptForPetting");
   expect(host).toContain("homeLifeInput(phase, !next.petResponse &&");expect(host).toContain("homeLifeInput(pending.phase, !pending.original.petResponse &&");
   expect(host).toContain("target, petResponse: true");

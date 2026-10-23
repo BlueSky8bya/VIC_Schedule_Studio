@@ -5,6 +5,7 @@
 .vc-toys[hidden],.vc-toy[hidden]{display:none}
 .vc-toy>.vc-toy-art{display:block;flex:0 0 auto;width:var(--vc-toy-art-width,28px);height:var(--vc-toy-art-height,28px);object-fit:contain;filter:var(--vc-toy-color) drop-shadow(0 2px 1px #5d422528);pointer-events:none}
 .vc-toy>:is(.vc-toy-art,.vc-toy-axis-art){transform-origin:50% 50%;transform:rotate(var(--vc-toy-art-rotation,0deg));scale:var(--vc-toy-hover-scale,1);transition:scale var(--dur-spring-smooth) var(--ease-spring)}
+.vc-toy[data-showcase-lease]>:is(.vc-toy-art,.vc-toy-axis-art){transform:rotate(var(--vc-toy-art-rotation,0deg)) scale(var(--vc-showcase-impact-x,1),var(--vc-showcase-impact-y,1))}
 .vc-toy:hover,.vc-toy:focus-visible{--vc-toy-hover-scale:1.12}
 .vc-toy>.vc-toy-axis-art{display:none;position:absolute;left:50%;bottom:0;translate:-50% 0;pointer-events:none;filter:brightness(var(--vc-item-room-light,1)) var(--vc-toy-color) drop-shadow(0 2px 1px #5d422528)}
 .vc-toy[data-axis-painted]>.vc-toy-art{opacity:0}

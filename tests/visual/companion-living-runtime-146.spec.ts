@@ -87,8 +87,46 @@ for(const personality of COMPANION_PERSONALITIES.filter(p=>p!=="homebody"))test(
 });
 test("146 gourmet commits to one real meal instead of walking between several food goals",async({page})=>{
  const home=await fixture(page,"gourmet","viewer",.7),button=home.getByRole("button",{name:"밥 꺼내기",exact:true});
- for(let n=0;n<3;n++){await button.focus();await button.press("Enter");await expect(page.locator(".vc-food")).toHaveCount(n+1);}
+ // Native home dispensing can leave a meal inside the resident's36px mouth
+ // reach. A legitimate adjacent meal has no owned approach to observe.
+ // Place the real resident and each original food on a distant shared floor
+ // through the public placement/drag controls, before enabling roaming.
+ const viewport=page.viewportSize()!,pet=page.locator(".vc-companion"),actor=pet.getByRole("button",{name:"빅타민 · 쓰다듬고 옮기기",exact:true});
+ await actor.focus();await actor.press("p");await expect(pet).toHaveAttribute("data-placing","");
+ await page.mouse.click(viewport.width*.25,viewport.height-18);await page.mouse.move(2,2);
+ await expect(pet).not.toHaveAttribute("data-placing");await expect(pet).toHaveAttribute("data-platform",/^viewport-floor(?:-\d+)?$/);await expect(pet).not.toHaveAttribute("data-state","jump");
+ // Fixed month controls can raise the supported floor above the click aim.
+ // Use the actually landed resident's painted feet, not a guessed plane.
+ const floorY=await pet.evaluate(node=>node.getBoundingClientRect().bottom);expect(Number.isFinite(floorY)).toBe(true);
+ for(let n=0;n<3;n++){
+  await button.focus();await button.press("Enter");await expect(page.locator(".vc-food")).toHaveCount(n+1);
+  const food=page.locator(".vc-food").nth(n);await expect(food).toBeVisible();await expect(food).not.toHaveAttribute("data-falling");
+  const id=await food.getAttribute("data-food"),readLanding=()=>food.evaluate(node=>{const rect=node.getBoundingClientRect();return {id:(node as HTMLElement).dataset.food,falling:node.hasAttribute("data-falling"),visible:node.checkVisibility({checkOpacity:true,checkVisibilityCSS:true}),x:rect.x,y:rect.y,width:rect.width,height:rect.height};});
+  await expect.poll(async()=>{const before=await readLanding();await page.waitForTimeout(100);const after=await readLanding();return before.id===id&&after.id===id&&!before.falling&&!after.falling&&before.visible&&after.visible&&before.width>0&&before.height>0&&Math.max(Math.abs(before.x-after.x),Math.abs(before.y-after.y),Math.abs(before.width-after.width),Math.abs(before.height-after.height))<.1;},{timeout:6000,message:"the same newly dispensed food has landed with stable actual bounds before grabbing"}).toBe(true);
+  const grip=await food.evaluateHandle(node=>{
+   let down:{id:string|undefined;pointer:number;trusted:boolean}|undefined;
+   node.addEventListener("pointerdown",event=>{const pointer=event as PointerEvent;down={id:(node as HTMLElement).dataset.food,pointer:pointer.pointerId,trusted:pointer.isTrusted};},{once:true,capture:true});
+   return {read:()=>({id:down?.id,currentId:(node as HTMLElement).dataset.food,trusted:down?.trusted,captured:Boolean(down&&node.hasPointerCapture(down.pointer))})};
+  });
+  const rect=(await food.boundingBox())!,target={x:viewport.width*(.65+n*.1),y:floorY};
+  try{
+   await page.mouse.move(rect.x+rect.width/2,rect.y+rect.height/2);await page.mouse.down();
+   expect(await grip.evaluate(probe=>probe.read()),"the trusted native grab captures the intended original food").toEqual({id,currentId:id,trusted:true,captured:true});
+   await page.mouse.move(target.x,target.y-(rect.height/2-6),{steps:18});await page.waitForTimeout(180);await page.mouse.up();await page.mouse.move(2,2);
+  }finally{await grip.dispose();}
+  await expect(food).toHaveAttribute("data-food",id!);await expect(food).not.toHaveAttribute("data-selected");await expect(food).not.toHaveAttribute("data-carried");await expect(food).not.toHaveAttribute("data-falling");
+  await expect(food).toHaveAttribute("data-platform",/^viewport-floor-food(?:-\d+)?$/);
+  await expect.poll(()=>food.evaluate((node,target)=>{const rect=node.getBoundingClientRect();return Math.hypot(rect.x+rect.width/2-target.x,rect.bottom-6-target.y);},target),{message:"the original food settles at the actual native drag destination"}).toBeLessThan(2);
+ }
  await expect(page.locator(".vc-food[data-falling]")).toHaveCount(0);
+ const placement=await page.evaluate(()=>{
+  const actor=document.querySelector<HTMLElement>(".vc-companion")!,body=actor.getBoundingClientRect();
+  return {roam:JSON.parse(localStorage.getItem("vic.viewerCompanion")??"{}").roam,actor:{x:body.x+body.width/2,y:body.bottom,platform:actor.dataset.platform},foods:[...document.querySelectorAll<HTMLElement>(".vc-food")].map(node=>{const rect=node.getBoundingClientRect();return {id:node.dataset.food,x:rect.x+rect.width/2,y:rect.bottom-6,platform:node.dataset.platform,held:node.hasAttribute("data-selected")||node.hasAttribute("data-carried")||node.hasAttribute("data-falling"),visible:node.checkVisibility({checkOpacity:true,checkVisibilityCSS:true})};})};
+ });
+ await test.info().attach("146-gourmet-native-placement",{body:JSON.stringify(placement,null,2),contentType:"application/json"});
+ expect(placement.roam).toBe(false);expect(placement.actor.platform).toMatch(/^viewport-floor(?:-\d+)?$/);expect(Math.abs(placement.actor.y-floorY)).toBeLessThan(2);
+ for(const food of placement.foods){expect(food.platform).toMatch(/^viewport-floor-food(?:-\d+)?$/);expect(food.held).toBe(false);expect(food.visible).toBe(true);expect(Math.abs(food.y-placement.actor.y)).toBeLessThan(2);expect(Math.hypot(food.x-placement.actor.x,food.y-placement.actor.y),"every candidate starts beyond mouth reach plus a real approach margin").toBeGreaterThan(120);}
+ for(let i=0;i<placement.foods.length;i++)for(let j=i+1;j<placement.foods.length;j++)expect(Math.hypot(placement.foods[i].x-placement.foods[j].x,placement.foods[i].y-placement.foods[j].y),"the physical candidates occupy distinct floor positions").toBeGreaterThan(64);
  const foodIds=await page.locator(".vc-food").evaluateAll(nodes=>nodes.map(node=>(node as HTMLElement).dataset.food!));
  expect(new Set(foodIds).size).toBe(3);
  const foodIdsIn=(frame:QaObservation)=>(frame.items??"").split("|")[0].split(",").filter(Boolean);

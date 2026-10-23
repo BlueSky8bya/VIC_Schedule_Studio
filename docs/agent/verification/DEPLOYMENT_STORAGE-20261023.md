@@ -1,6 +1,6 @@
 # Deployment output storage — 2026-10-23
 
-Status: local packaging prepared and tested; provider cleanup, remote output measurement and release are not established by this record.
+Status: local packaging verified and11 old deployments actually removed by the authorized CLI cleanup. Current follow-up release and provider-billed GB reduction are not established. The initial inventory/tooling observations below remain historical evidence.
 
 ## What was measured
 
@@ -57,3 +57,25 @@ The observed releases' Git source public files total 3,707,324,599 bytes: curren
 Purpose-limited receipts are `provider-inventory.json` and `provider-source-size-estimates.json` in the same excluded evidence folder. No provider deployment, alias, policy, paid plan or credential was changed. Any cloud deletion requires the current owner's confirmation of the exact list under the latest instruction.
 
 The connected tool inventory currently has no deployment deletion operation or retention-policy update field. An existing-CLI check found no Vercel executable in PATH, this project or the existing npm global installation. Therefore no CLI authentication request was made: this is missing tooling, not a demonstrated account-authentication failure. No package download, login, token extraction or deletion was attempted. The connector's successful read access does not establish CLI authentication or deletion capability. Direct cloud cleanup remains pending that concrete capability and the latest human confirmation; the code/package reduction does not depend on it.
+
+## Authorized CLI cleanup and current follow-up
+
+The owner subsequently explicitly requested CLI installation and old-deployment deletion. Vercel CLI65.2.0 was installed globally, without a project dependency or lockfile change. Its device authorization completed successfully: the CLI logged `Success! Logged in.` and returned the intended scoped project. The owner's later device-page code error arrived after that successful login; no additional authentication was required.
+
+Fresh project/deployment/alias metadata revalidated the exact11 old unaliased/nonrollback IDs. The actual scoped `remove` command used `--safe --yes --non-interactive`, exited0 and reported11 removals. The post-list retained the protected productionbf980b81 and rollbacka749c7d, plus a newly concurrent14fdd9c0 build, which was not touched. No project, alias or retention policy was deleted or altered. Sanitized before/after metadata, exact invocation and actual CLI output are preserved locally in `.scratch-pw/deployment-storage-20261023/{authorized-before-delete,delete-invocation,after-delete-11}.json` and `cli-delete-old-11.log`.
+
+The CLI usage query for the current billing period returned unavailable costs, not zero usage. Neither11 deletions nor51,717,773 raw output bytes establish a provider-billed GB reduction; already accrued GB-month is separate. No CPU or memory refund is claimed.
+
+The follow-up adds three generated curtain WebP assets totaling11,430B. Independent current-source checks preserved all613 prior source/Git/package hashes and resolved the current67 sprite/radio URLs plus3 curtain URLs, with no archived runtime reference. Current public source is616 files/185,769,829B; unchanged archive186 leaves430 files/134,052,056B by measured inventory projection. This uses the already verified separate packaging fixture plus exact new-file accounting, not a new remote deployment measurement. Evidence: excluded `.scratch-pw/showcase-curtain-20261023/review-boundary-package.json`. Current native failures and follow-up release remain in the active plan; this storage record is not a UI release approval.
+
+## Owner recheck on production8c59f40 — 23:32 KST
+
+Fresh connected provider metadata lists four current VIC deployments:8c59f401,14fdd9c0,bf980b81,a749c7d. All11 original deleted IDs remain absent.8c59f401192ce12f03f40430ed41ce260a897533 is Ready and owns all three main aliases. This recheck changed no provider resource. The team has three projects; the two other projects each list three deployments. Their deployment contents were not inspected or deleted.
+
+The current billing-cycle CLI usage and project breakdown both returned unavailable billing data. The authenticated dashboard Usage value was not obtained through the connector; current GB and the account-specific cause of the remaining warning are therefore unverified. The documented daily maxima/GB-month aggregation explain why deletion does not retroactively erase previous usage, but do not prove this account's exact warning cause or quota recovery. Do not promise an immediate reset or a particular GB reduction.
+
+The new cord is **not deployed**. All three new public asset URLs on the main production domain return404. The actual8c59f401 Git tree contains neither those files nor the output preparer; its prebuild does not call the new packaging stage. Both the cord and51,717,773B output reduction remain local, pending current UI verification and human push confirmation under the latest owner instruction. The previously reported11 cloud deletions are already real and independent of that unreleased code.
+
+Local bounded evidence: `.scratch-pw/deployment-storage-20261023/{provider-recheck-8c59,public-curtain-8c59-recheck}.json`, current-cycle/project CLI logs, and the original deletion invocation/output. No raw authentication material or operational application data was collected.
+
+At23:34KST the owner reported the currently displayed value as10.01GB/10GB. This is owner-observed display evidence, not a successful CLI/API measurement. The selected date range and per-project/metric breakdown were not supplied. Quota recovery is not established; no further unrelated project or protected rollback deletion is inferred from that rounded0.01GB overage.

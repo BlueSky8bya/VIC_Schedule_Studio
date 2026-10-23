@@ -2,6 +2,43 @@ import { COMPANION_JUMP_LIMITS, nearestPlatform, platformLandingX, type Platform
 import { nearestVerticalCompanionSupport } from "./support-landing";
 
 type Point = Readonly<{ x: number; y: number; width?: number; height?: number }>;
+export type CompanionHomeCordAnchor = "top" | "left" | "right";
+/** Use an existing opaque part that is actually beneath this handle. A room
+ * can put the same cord beside OR directly above the safe floor stance.
+ * Selecting a side merely from facing misses the latter by half a body.
+ * The owner pins this choice for its finite action, avoiding pose-height
+ * jumps when neighbouring source cells differ by a fraction of a pixel. */
+export function nearestCompanionHomeCordAnchor(candidates: readonly { anchor: CompanionHomeCordAnchor; point: Point }[], contact: Point): CompanionHomeCordAnchor | undefined {
+  if (![contact.x,contact.y].every(Number.isFinite)) return;
+  return candidates.filter(candidate => [candidate.point.x,candidate.point.y].every(Number.isFinite))
+    .reduce<{ anchor: CompanionHomeCordAnchor; distance: number } | undefined>((best,candidate) => {
+      const distance=Math.abs(candidate.point.x-contact.x);
+      return !best || distance < best.distance ? { anchor:candidate.anchor,distance } : best;
+    },undefined)?.anchor;
+}
+/** Both hanging controls use the actual painted knob rectangle. The long
+ * rope/button hit target must never stand in for the small handle below it. */
+export function companionHomeCordPoint(rect: { left: number; top: number; width: number; height: number }): Point | undefined {
+  if (![rect.left,rect.top,rect.width,rect.height].every(Number.isFinite) || rect.width <= 0 || rect.height <= 0) return;
+  return { x: rect.left+rect.width/2, y: rect.top+rect.height/2, width: rect.width, height: rect.height };
+}
+/** A wall-side handle is nudged with the existing side of the body. Standing
+ * the actor centre directly on that handle can put half its silhouette outside
+ * the room. Approach on an actual floor with the same opaque-body clearance
+ * used by room geometry, leaving the source09 side patch beside the handle.
+ * The window/looking stance itself is unchanged. */
+export function companionCurtainControlStance(contact: Point, room: { left: number; right: number }, platforms: readonly Platform[], size: number) {
+  if (![contact.x,contact.y,room.left,room.right,size].every(Number.isFinite) || size <= 0 || room.right <= room.left) return;
+  const bodyHalf=size*.38+3, reach=size*.27;
+  const preferred=contact.x-room.left < bodyHalf+reach ? contact.x+reach
+    : room.right-contact.x < bodyHalf+reach ? contact.x-reach : contact.x;
+  return platforms.flatMap(platform => {
+    if (!floor(platform.id) || platform.bodyOnly || ![platform.x,platform.y,platform.width].every(Number.isFinite) || platform.width <= 0) return [];
+    const left=Math.max(platformLandingX(platform,platform.x),room.left+bodyHalf), right=Math.min(platformLandingX(platform,platform.x+platform.width),room.right-bodyHalf);
+    if (left > right) return [];
+    return [{x:Math.max(left,Math.min(right,preferred)),y:platform.y,platformId:platform.id}];
+  }).sort((a,b)=>Math.abs(a.x-preferred)-Math.abs(b.x-preferred))[0];
+}
 export const COMPANION_WASH_SUPPORT = "companion-home-floor-400";
 const floor = (id: string) => /^companion-home-floor(?:-\d+)?$/.test(id);
 

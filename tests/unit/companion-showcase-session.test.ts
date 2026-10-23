@@ -20,6 +20,17 @@ function fixture() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("same-object meadow admission and screen-session position", () => {
+  it("only forwards acknowledged input to the one admitted real resident while appreciation is active", () => {
+    const { session, emit } = fixture(), interact = vi.fn();
+    session.register("pet", { kind: "pet", node: () => node({ left: 44, right: 136, top: 808, bottom: 900 }), point: () => ({ x: 90, y: 900 }), interact });
+    session.interact("pet"); expect(interact).not.toHaveBeenCalled();
+    emit(true, "before"); session.interact("pet"); expect(interact.mock.calls).toEqual([["pet"]]);
+    const ownership = session.ownershipSnapshot(), revision = session.snapshot();
+    session.move("pet", { x: 94, y: 900 }); expect(session.snapshot()).toBeGreaterThan(revision); expect(session.ownershipSnapshot()).toBe(ownership);
+    Object.assign(document, { hidden: true }); session.interact("drag"); expect(interact).toHaveBeenCalledTimes(1);
+    Object.assign(document, { hidden: false }); emit(false, "after"); session.interact("pet"); expect(interact).toHaveBeenCalledTimes(1);
+    session.clear(); session.interact("pet"); expect(interact).toHaveBeenCalledTimes(1); session.dispose();
+  });
   it("requires the entire visible footprint to clear calendar, room and viewport edges", () => {
     expect(exposedCompanionShowcaseRect(companionShowcaseFootprint({ x: 90, y: 900 }, { width: 92, height: 92 }), viewport, [calendar, home])).toBe(true);
     expect(exposedCompanionShowcaseRect(companionShowcaseFootprint({ x: 385, y: 900 }, { width: 44, height: 44 }), viewport, [calendar])).toBe(false);

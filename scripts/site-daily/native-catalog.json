@@ -2011,6 +2011,86 @@
       "project": "",
       "estimatedSeconds": 16,
       "estimateSource": "observed-2026-10-23-1792753226909-ff4899ec shared-control duration; historical only, not current-source PASS"
+    },
+    {
+      "id": "316e42d04144c4f5ccf4a60747418a34df8fa8f73b3e6fbc84a832b54ccbd407",
+      "file": "tests/visual/companion-curtain-reach.spec.ts",
+      "title": "curtain viewer narrow-compact physically reaches the painted handle before closing and continuing care",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "new registration estimate; no actual current-source PASS"
+    },
+    {
+      "id": "7a12fc68cc59a7323a6aa468de2162372b1452aa6ceef534705f07072896b79c",
+      "file": "tests/visual/companion-curtain-reach.spec.ts",
+      "title": "curtain viewer default-panel physically reaches the painted handle before closing and continuing care",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "new registration estimate; no actual current-source PASS"
+    },
+    {
+      "id": "fd39bf505a25fd9a0892475dff9b6398c525af9f75f16b0a1b4ac63e2e3ea3d7",
+      "file": "tests/visual/companion-curtain-reach.spec.ts",
+      "title": "curtain viewer wide-compact physically reaches the painted handle before closing and continuing care",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "new registration estimate; no actual current-source PASS"
+    },
+    {
+      "id": "411414a3876c53fef5fd68b6e3ecd8f122c81e255af2018becb94f2057302316",
+      "file": "tests/visual/companion-curtain-reach.spec.ts",
+      "title": "curtain studio narrow-compact physically reaches the painted handle before closing and continuing care",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "new registration estimate; no actual current-source PASS"
+    },
+    {
+      "id": "0d2bb6400d817427606babe1516541bb2939827808b4979f3911d57e1b5f306a",
+      "file": "tests/visual/companion-curtain-reach.spec.ts",
+      "title": "curtain studio default-panel physically reaches the painted handle before closing and continuing care",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "new registration estimate; no actual current-source PASS"
+    },
+    {
+      "id": "996a70a9bf2b20cff36aa3c3d084869fb02bc3cbae242a3952269057597a4c3c",
+      "file": "tests/visual/companion-curtain-reach.spec.ts",
+      "title": "curtain studio wide-compact physically reaches the painted handle before closing and continuing care",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "new registration estimate; no actual current-source PASS"
+    },
+    {
+      "id": "5addbec1b61fcf53816a0517cf698b5235611b0e18816be16f03ec07df7b5853",
+      "file": "tests/visual/companion-curtain-reach.spec.ts",
+      "title": "curtain preview narrow-compact physically reaches the painted handle before closing and continuing care",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "new registration estimate; no actual current-source PASS"
+    },
+    {
+      "id": "47d9485a0947bd47dff3da458003486a2c394ca99cba175a8fe1a13e294d9832",
+      "file": "tests/visual/companion-curtain-reach.spec.ts",
+      "title": "curtain preview default-panel physically reaches the painted handle before closing and continuing care",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "new registration estimate; no actual current-source PASS"
+    },
+    {
+      "id": "3687deda64e6c1ce53444cf4e130c91f940c2c0d18fd03ebb183435f89c76304",
+      "file": "tests/visual/companion-curtain-reach.spec.ts",
+      "title": "curtain preview wide-compact physically reaches the painted handle before closing and continuing care",
+      "project": "",
+      "estimatedSeconds": 70,
+      "estimateSource": "new registration estimate; no actual current-source PASS"
+    },
+    {
+      "id": "5e6b5d5e265275145a3b7a4a9b80cd2b8426088b51d4da648f57b433a7f25a38",
+      "file": "tests/visual/meadow-session.spec.ts",
+      "title": "meadow viewer: real pet gestures and concurrent physical item releases keep original care and painted motion",
+      "project": "",
+      "estimatedSeconds": 110,
+      "estimateSource": "new registration estimate; no actual current-source PASS"
     }
   ],
   "dailyScenarios": [
@@ -2147,5 +2227,7 @@
       "reason": "Cold-sprite test replaced by exposed-resident admission/OFF contract; old evidence remains historical, no PASS transfer."
     }
   ],
-  "additionalShowcaseResetCases": 8
+  "additionalShowcaseResetCases": 8,
+  "additionalCurtainReachCases": 9,
+  "additionalMeadowManualInputCases": 1
 }

@@ -7,8 +7,9 @@ export const COMPANION_SHOWCASE_EVENT = "vic:showcase-transition";
 export type ShowcasePoint = { x: number; y: number };
 export type ShowcaseRect = { left: number; top: number; right: number; bottom: number };
 type Kind = "pet" | "food" | "toy";
-type Participant = { kind: Kind; node: () => HTMLElement | undefined | null; point: () => ShowcasePoint | undefined; eligible?: () => boolean };
-export type CompanionShowcaseLease = ShowcasePoint & { width: number; height: number; bottomOffset: number; kind: Kind };
+export type CompanionShowcasePetInteraction = "pet" | "bonk" | "drag" | "throw" | "shake" | "rest" | "rested";
+type Participant = { kind: Kind; node: () => HTMLElement | undefined | null; point: () => ShowcasePoint | undefined; eligible?: () => boolean; interact?: (kind: CompanionShowcasePetInteraction) => void };
+export type CompanionShowcaseLease = ShowcasePoint & { width: number; height: number; bottomOffset: number; kind: Kind; rotation?: number; scaleX?: number; scaleY?: number };
 type Transition = { active: boolean; phase: "before" | "after" };
 const validRect = (r: ShowcaseRect) => [r.left, r.top, r.right, r.bottom].every(Number.isFinite) && r.right > r.left && r.bottom > r.top;
 export function companionShowcaseFootprint(point: ShowcasePoint, size: { width: number; height: number }): ShowcaseRect {
@@ -54,10 +55,16 @@ export function readCompanionShowcaseCovers(): ShowcaseRect[] {
 export function createCompanionShowcaseSession() {
   const participants = new Map<string, Participant>(), leases = new Map<string, CompanionShowcaseLease>(), listeners = new Set<() => void>(), clearing = new Set<(ids: ReadonlySet<string>) => void>();
   let active = false, revision = 0, covers: ShowcaseRect[] = [], frame = 0, attached = false, followUntil = 0;
+  let ownershipRevision = 0, ownershipKey = "";
   let layoutObserver: MutationObserver | undefined;
   let returnedPet: ShowcasePoint | undefined;
   let roomCovers: { node: HTMLElement; rect: ShowcaseRect }[] = [];
-  const notify = () => { revision++; for (const listener of listeners) listener(); };
+  const notify = () => {
+    revision++;
+    const key = `${active}:${[...leases.keys()].join("|")}`;
+    if (ownershipKey !== key) { ownershipKey = key; ownershipRevision++; }
+    for (const listener of listeners) listener();
+  };
   const viewport = () => ({ width: innerWidth, height: innerHeight });
   const exposed = (lease: CompanionShowcaseLease) => exposedCompanionShowcaseRect(companionShowcaseFootprint({ x: lease.x, y: lease.y + lease.bottomOffset }, lease), viewport(), covers);
   const restoredCovers = () => [...readCompanionShowcaseCovers(), ...roomCovers.filter(cover => !cover.node.isConnected).map(cover => cover.rect)];
@@ -147,10 +154,18 @@ export function createCompanionShowcaseSession() {
     subscribe(listener: () => void) { listeners.add(listener); return () => { listeners.delete(listener); }; },
     subscribeClear(listener: (ids: ReadonlySet<string>) => void) { clearing.add(listener); return () => { clearing.delete(listener); }; },
     snapshot: () => revision,
+    // Per-input transforms still notify their imperative painters. React
+    // only needs admission/exit/removal, not a component commit per pixel.
+    ownershipSnapshot: () => ownershipRevision,
     active: () => active,
     has: (id: string) => leases.has(id),
     hasKind: (kind: Kind) => [...leases.values()].some(lease => lease.kind === kind),
     point: (id: string) => leases.get(id),
+    /** Direct acknowledged input reaches the existing resident's care/learning
+     * owner. The meadow never manufactures a second brain or collection. */
+    interact(kind: CompanionShowcasePetInteraction) {
+      if (active && leases.has("pet") && !document.hidden) participants.get("pet")?.interact?.(kind);
+    },
     takeReturnedPet() { const point = returnedPet; returnedPet = undefined; return point; },
     releasePet() {
       const pet = leases.get("pet"); if (!pet || active) return false;
@@ -163,6 +178,10 @@ export function createCompanionShowcaseSession() {
       lease.x = Math.max(lease.width / 2, Math.min(innerWidth - lease.width / 2, point.x));
       lease.y = Math.max(lease.height - lease.bottomOffset, Math.min(innerHeight - 8 - lease.bottomOffset, point.y));
       if (publish) notify();
+    },
+    present(id: string, pose?: { rotation: number; scaleX: number; scaleY: number }) {
+      const lease = leases.get(id); if (!lease) return;
+      lease.rotation = pose?.rotation ?? 0; lease.scaleX = pose?.scaleX ?? 1; lease.scaleY = pose?.scaleY ?? 1;
     },
     forget(id: string) { if (leases.delete(id)) notify(); },
     clear,

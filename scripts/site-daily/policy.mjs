@@ -73,7 +73,16 @@ export function planDaily({day,history=[],signals,changedFiles=[],caseObservatio
   const sweepDue=now-dayOrdinal(lastFull)>=7,confirmedRegression=known.some((r,index)=>r.area==='companion'&&r.verified&&r.status==='failed'&&r.regression&&!known.some((pass,passIndex)=>pass.area==='companion'&&pass.verified&&pass.kind==='full'&&pass.status==='passed'&&(pass.day>r.day||pass.day===r.day&&passIndex>index)));
   const units=[...new Set([...ALWAYS_UNITS,...AREA_UNITS[focus],...AREA_UNITS[explorer]])];
   const lamp=changedFiles.some(f=>/home-interaction|house-reach-164|home-life-policy|home-contact-presentation|companion-home\.css/.test(f));
-  const risky=nativeCatalog.cases.filter(c=>lamp?/164 (?:viewer 2560 compact floor|studio 1494 panel floor|preview 1920 compact floor|viewer 1494 panel (?:near-left|near-right|soft|os-reduced|cord-hover|owner-away|owner-hover)) lamp off/.test(c.title):rank.affected.companionChanged||confirmedRegression?/142 floating home tidy|143 studio sofa stays aligned|157 viewer night same-ID return|142 daily (?:tidy|gourmet|balanced):/.test(c.title):false).map(c=>c.id);
+  const curtain=changedFiles.some(f=>/home-curtain|curtain-contact|curtain-reach|home-interaction|home-contact-presentation|companion-home\.(?:css|tsx)/.test(f));
+  const showcase=changedFiles.some(f=>/showcase|meadow|companion-food|companion-toys/.test(f));
+  // The changed real-input/contact contracts lead the queue. Historical
+  // registrations and ordinary weekly rotation remain separate evidence.
+  const risky=[...new Set([
+    ...nativeCatalog.cases.filter(c=>curtain&&c.file==='tests/visual/companion-curtain-reach.spec.ts').map(c=>c.id),
+    ...nativeCatalog.cases.filter(c=>showcase&&['tests/visual/meadow-session.spec.ts','tests/visual/meadow-walk.spec.ts','tests/visual/companion-toy-axis.spec.ts'].includes(c.file)).map(c=>c.id),
+    ...nativeCatalog.cases.filter(c=>lamp&&/164 (?:viewer 2560 compact floor|studio 1494 panel floor|preview 1920 compact floor|viewer 1494 panel (?:near-left|near-right|soft|os-reduced|cord-hover|owner-away|owner-hover)) lamp off/.test(c.title)).map(c=>c.id),
+    ...nativeCatalog.cases.filter(c=>(rank.affected.companionChanged||confirmedRegression)&&/142 floating home tidy|143 studio sofa stays aligned|157 viewer night same-ID return|142 daily (?:tidy|gourmet|balanced):/.test(c.title)).map(c=>c.id),
+  ])];
   const observationScope=partitionRetiredCaseObservations({day,observations:caseObservations});
   const selection={...selectDailyCases({catalog:nativeCatalog.cases,day,observations:observationScope.activeObservations,priorityIds:risky,workerBudgetSeconds:1500,maxCases:42}),retiredObservations:observationScope.retiredObservations};
   return {schemaVersion:2,kind:'site-daily-triage-plan',day,budgetMinutes,repairAndReleaseBudgetSeparate:true,focusArea:focus,explorationArea:explorer,areaRanking:rank.ranked,changedImpact:rank.affected,signals:rank.aggregate,offlineUnitFiles:units,

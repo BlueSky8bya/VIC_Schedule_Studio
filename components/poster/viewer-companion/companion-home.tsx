@@ -81,7 +81,13 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
   return <PanelSection inert={inactive ? true : undefined} aria-hidden={inactive ? true : undefined} ref={room} title="빅타민 집" sectionKey="companion-home" headingAction="companion-home-fold" collapsible={!onClose} headingData={{ "data-home-action": "fold" }} actions={<>{onPersonality && <button type="button" className="vc-home-personality" data-home-action="personality" data-act="companion-personality-open" data-tip={`성격 바꾸기 · ${COMPANION_PERSONALITY_NAMES[preferences.personality]}`} aria-label={`성격 바꾸기 · ${COMPANION_PERSONALITY_NAMES[preferences.personality]}`} onClick={onPersonality}><Sparkles size={15} aria-hidden="true" /><span>{COMPANION_PERSONALITY_NAMES[preferences.personality]}</span></button>}{onClose && <button type="button" data-home-action="close" data-act="companion-home-close" data-tip="닫기" className="vc-home-close" onClick={onClose} aria-label="빅타민 집 닫기"><X size={15} strokeWidth={1.7} /></button>}</>} className="vc-home" aria-label="빅타민 집" data-home-presentation={onClose ? "compact" : "panel"} data-size={preferences.size} data-sfx="off" data-pm-exit="5" data-companion-home-owner={owner}>
     <div className="vc-home-room" style={lighting ?? companionRoomLighting(environment, curtain.phase, lampLit) as CSSProperties} data-season={environment?.season} data-weather={environment?.weather} data-band={environment?.band} data-phase={resolveCompanionWindowScene(environment).phase} data-night={environment?.night || undefined} data-lamp-lit={lampLit || undefined} data-tv={tv}>
       <HomeWindow environment={environment} curtain={curtain} inactive={inactive} />
-      <button type="button" className="vc-curtain-control" data-home-decoration-control="" data-home-action="curtain" data-act="companion-home-curtain" data-act-opt={curtainControl.next} aria-label={curtainControl.label} data-tip={curtainControl.label} onClick={() => setCompanionCurtainChoice(curtainControl.next)}><span aria-hidden="true" /></button>
+      <button type="button" className="vc-curtain-control" data-home-decoration-control="" data-home-action="curtain" data-act="companion-home-curtain" data-act-opt={curtainControl.next} aria-label={curtainControl.label} data-tip={curtainControl.label} onClick={() => setCompanionCurtainChoice(curtainControl.next)}>
+        <span className="vc-curtain-paint" aria-hidden="true">
+          <span className="vc-curtain-collar" />
+          <span className="vc-curtain-rope" />
+          <span className="vc-curtain-handle" />
+        </span>
+      </button>
       <div className="vc-home-shelf">
       <svg className="vc-home-shelf-art" width="108" height="55" viewBox="0 0 108 55" preserveAspectRatio="none" fill="none" aria-hidden="true" focusable="false">
         <defs>

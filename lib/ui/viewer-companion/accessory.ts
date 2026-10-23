@@ -1,6 +1,7 @@
 import { companionEyeScale143Source, companionEyeScale143Eyes } from "./eye-scale-143";
 import anchors from "./accessory-anchors.json";
 import homeContactAnchors from "./home-contact-anchors-157.json";
+import curtainContactAnchors from "./curtain-contact-anchors.json";
 import { companionEyeAccessorySpan, companionEyeViewScale } from "./accessory-eye-fit";
 import mouths from "./mouth-anchors.json";
 import { getCompanionCollectionArtFrame, type CompanionCollectionArtFrame } from "./collection-art";
@@ -172,10 +173,21 @@ export function companionCarryAnchor(selected: CompanionSpriteSelection): Landma
  * head/ear pixels. Transport still uses the chest. Row9 points are bound to
  * opaque3x3 patches in its exact immutable source, never invented hands or
  * an extended reach. Other adopted poses keep their measured ear-root. */
-export function companionHomeContactAnchor(selected: CompanionSpriteSelection, overhead = false): Landmark | null {
+export function companionHomeContactAnchor(selected: CompanionSpriteSelection, overhead = false, side?: "left" | "right"): Landmark | null {
   const carried = companionCarryAnchor(selected);
   if (!carried || !overhead) return carried;
   const pose = poses.get(selected.physicalIndex)!;
+  // A wall-side cord is nudged by the existing fluffy body edge. These
+  // immutable opaque3x3 source patches add no limb and leave lamp/transport
+  // anchors unchanged. The caller projects the correct side through facing.
+  if (side) {
+    const edge = curtainContactAnchors.frames.find(frame => frame.physicalIndex === selected.physicalIndex);
+    const frame = companionSpriteMetadata.frames[selected.physicalIndex], actual = frame && companionSpriteMetadata.atlases[frame.atlas], source = curtainContactAnchors.source;
+    const point = edge?.[side];
+    if (!edge || !actual || !point || edge.index !== selected.index || actual.src !== source.src || actual.sha256 !== source.sha256
+      || actual.bytes !== source.bytes || ![point.x,point.y].every(Number.isFinite)) return null;
+    return { ...pose.head, x: point.x, y: point.y };
+  }
   const point = homeContactAnchors.frames.find(frame => frame.physicalIndex === selected.physicalIndex);
   if (point) {
     const frame = companionSpriteMetadata.frames[selected.physicalIndex], actual = companionSpriteMetadata.atlases[frame.atlas], source = homeContactAnchors.source;

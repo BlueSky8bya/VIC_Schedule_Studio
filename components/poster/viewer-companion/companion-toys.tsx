@@ -48,7 +48,7 @@ export type CompanionToyControl = {
 };
 type Props = { blocked: boolean; hidden?: boolean; showcaseSession?: CompanionShowcaseSession; onActivity: (direct?: boolean) => void; onCount: (count: number) => void; onReturned?: () => void; onExperience?: (kind: CompanionToyKind, outcome: CompanionToyExperience, source?: Readonly<{ x: number; y: number }>) => void };
 export const CompanionToys = forwardRef<CompanionToyControl, Props>(function CompanionToys({ blocked, hidden = false, showcaseSession, onActivity, onCount, onReturned, onExperience }, ref) {
-  useSyncExternalStore(showcaseSession?.subscribe ?? (() => () => {}), showcaseSession?.snapshot ?? (() => 0), () => 0);
+  useSyncExternalStore(showcaseSession?.subscribe ?? (() => () => {}), showcaseSession?.ownershipSnapshot ?? (() => 0), () => 0);
   const layer = useRef<HTMLDivElement>(null);
   const model = useRef<ReturnType<typeof createCompanionToys> | null>(null);
   const driveLeaseFlights = useRef<() => void>(() => {});
@@ -112,7 +112,7 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     const image = node.querySelector<HTMLImageElement>(".vc-toy-art"), axisCanvas = node.querySelector<HTMLCanvasElement>(".vc-toy-axis-art");
     const axisPainted = Boolean(axisCanvas && image && paintCompanionToyAxis(axisCanvas, image, toy.kind, drawing?.use === "spin" ? drawing.rotation : 0));
     node.toggleAttribute("data-axis-painted", axisPainted);
-    const local = { "--vc-toy-art-rotation": `${(toy.angle + (axisCanvas ? 0 : drawing?.rotation ?? 0)).toFixed(3)}deg`, "--vc-toy-play-scale": String(drawing?.scale ?? 1), "--vc-toy-play-facing": String(drawing?.facing ?? 1), "--vc-toy-effect-opacity": String(detail?.opacity ?? 0), "--vc-toy-effect-x": `${(detail?.x ?? 0) * (drawing?.facing ?? 1) * (drawing?.size ?? 80) / 80}px`, "--vc-toy-effect-y": `${(detail?.y ?? 0) * (drawing?.size ?? 80) / 80}px` };
+    const local = { "--vc-showcase-impact-x": String(lease?.scaleX ?? 1), "--vc-showcase-impact-y": String(lease?.scaleY ?? 1), "--vc-toy-art-rotation": `${((lease?.rotation ?? toy.angle) + (axisCanvas ? 0 : drawing?.rotation ?? 0)).toFixed(3)}deg`, "--vc-toy-play-scale": String(drawing?.scale ?? 1), "--vc-toy-play-facing": String(drawing?.facing ?? 1), "--vc-toy-effect-opacity": String(detail?.opacity ?? 0), "--vc-toy-effect-x": `${(detail?.x ?? 0) * (drawing?.facing ?? 1) * (drawing?.size ?? 80) / 80}px`, "--vc-toy-effect-y": `${(detail?.y ?? 0) * (drawing?.size ?? 80) / 80}px` };
     let localStyles = paintedPlay.current.get(node);
     if (!localStyles) { localStyles = new Map(); paintedPlay.current.set(node, localStyles); }
     for (const [key, value] of Object.entries(local)) if (localStyles.get(key) !== value) { node.style.setProperty(key, value); localStyles.set(key, value); }
@@ -181,7 +181,10 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
   }, [showcaseSession, paint, refresh, world]);
   useEffect(() => {
     if (!showcaseSession || !layer.current) return;
-    return bindCompanionShowcaseInput(layer.current, showcaseSession, node => node.dataset.toyId ? `toy:${node.dataset.toyId}` : undefined, () => !hidden && (showcaseSession.active() || !blockedRef.current), () => logActivity("ui.click", { target: "companion-toy-drop" }));
+    return bindCompanionShowcaseInput(layer.current, showcaseSession, node => node.dataset.toyId ? `toy:${node.dataset.toyId}` : undefined, () => !hidden && (showcaseSession.active() || !blockedRef.current), () => logActivity("ui.click", { target: "companion-toy-drop" }), {
+      quiet: () => document.documentElement.hasAttribute("data-reduce-motion") || ["off", "soft"].includes(document.documentElement.dataset.gfx ?? ""),
+      item: "toy", tapThrow: true, onGrab: () => logActivity("ui.click", { target: "companion-toy-grab" }),
+    });
   }, [showcaseSession, hidden]);
   const pauseModel = useCallback((now: number) => {
     dragFrame.current!.cancel();

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const output = process.env.COMPANION_TOY_AXIS_OUTPUT ?? ".scratch-pw/toy-axis-proof";
+const output = process.env.COMPANION_TOY_AXIS_OUTPUT ?? (process.env.COMPANION_QA_OUTPUT ? `${process.env.COMPANION_QA_OUTPUT}/toy-axis` : ".scratch-pw/toy-axis-proof");
 test.use({ viewport: { width: 1760, height: 1050 }, serviceWorkers: "block" });
 for (const reduced of [false, true]) test(`toy mechanics all 84 ${reduced ? "reduced" : "normal"}: upright axes and planted controls`, async ({ page, context, baseURL }) => {
   const rejected: string[] = [], errors: string[] = [], origin = new URL(baseURL!).origin;
