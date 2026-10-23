@@ -1,3 +1,4 @@
+import { companionTraceMode } from "./helpers/companion-evidence-policy";
 import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -21,7 +22,7 @@ function phaseSummary(frames: Frame[]) {
   return { samples: frames.length, physicalSeatSamples: eligible.length, missingLayers: eligible.filter(f => !f.actor || !f.front), maxDx: maximum("dx"), maxDy: maximum("dy"), maxActorDy: maximum("actorDy"), candidatesOver2CssPx: visible.filter(f => Math.max(Math.abs(f.dx), Math.abs(f.dy), Math.abs(f.actorDy)) >= 2) };
 }
 
-test.use({ storageState: { cookies: [], origins: [] }, serviceWorkers: "block", video: { mode: "on", size: { width: 1920, height: 1100 } }, trace: "on" });
+test.use({ storageState: { cookies: [], origins: [] }, serviceWorkers: "block", video: { mode: "on", size: { width: 1920, height: 1100 } }, trace: companionTraceMode() });
 test.setTimeout(75000);
 test.beforeEach(async ({ page, context, baseURL }) => {
   const p = { errors: [] as string[], unexpected: [] as string[] }; proof.set(page, p);

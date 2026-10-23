@@ -1,3 +1,4 @@
+import { companionTraceMode } from "./helpers/companion-evidence-policy";
 import { expect, test, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -34,7 +35,7 @@ function sourceBinding() {
 }
 
 test.use({ viewport: { width: 1920, height: 850 }, deviceScaleFactor: 1, serviceWorkers: "block", hasTouch: false,
-  trace: "on", video: { mode: "on", size: { width: 1920, height: 850 } } });
+  trace: companionTraceMode(), video: { mode: "on", size: { width: 1920, height: 850 } } });
 test.setTimeout(75_000);
 test.beforeEach(async ({ page, context, baseURL }) => {
   const binding = sourceBinding();

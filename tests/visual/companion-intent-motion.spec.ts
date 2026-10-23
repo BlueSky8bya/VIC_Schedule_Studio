@@ -1,3 +1,4 @@
+import { companionTraceMode } from "./helpers/companion-evidence-policy";
 import { expect, test } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
@@ -11,7 +12,7 @@ import { guardCompanionQa, startCompanionQaProbe, finishCompanionQa, type DailyP
 // run and its incomplete reporter remain unchanged.
 test.use({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 1,
   serviceWorkers: "block", storageState: { cookies: [], origins: [] },
-  isMobile: false, hasTouch: false, trace: "on",
+  isMobile: false, hasTouch: false, trace: companionTraceMode(),
   video: { mode: "on", size: { width: 1440, height: 1100 } } });
 test.setTimeout(145_000);
 

@@ -1,3 +1,4 @@
+import { companionTraceMode } from "./helpers/companion-evidence-policy";
 import { test, expect, type Page } from "@playwright/test";
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -30,7 +31,7 @@ const sofaProofs = new WeakMap<Page,SofaProof156>();
 const sofaWindows = new WeakMap<Page,{began:number;ended:number;dimensions:{client:number;full:number;overflow:string}}>();
 const sha256 = (value: string | Buffer) => createHash("sha256").update(value).digest("hex");
 test.use({ viewport: { width: 1920, height: 850 }, deviceScaleFactor:1, serviceWorkers: "block",
-  trace:"on",video:{mode:"on",size:{width:1920,height:850}} });
+  trace:companionTraceMode(),video:{mode:"on",size:{width:1920,height:850}} });
 test.setTimeout(100_000);
 test.beforeEach(async ({ page, context, baseURL }, info) => {
   await enableCompanion143Diagnostics(page);

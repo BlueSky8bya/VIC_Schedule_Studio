@@ -1,3 +1,4 @@
+import { companionTraceMode } from "./helpers/companion-evidence-policy";
 import { companionSpriteSources } from "@/lib/ui/viewer-companion/sprite-quality";
 import { expect, test, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
@@ -20,7 +21,7 @@ type Proof = { errors: string[]; rejected: string[]; notes: unknown[]; build: st
 const proofs = new WeakMap<Page, Proof>();
 const hash = (data: Buffer | string) => createHash("sha256").update(data).digest("hex");
 
-test.use({ viewport: { width: 1920, height: 1100 }, storageState: { cookies: [], origins: [] }, serviceWorkers: "block", trace: captureOff ? "off" : "on", video: { mode: captureOff ? "off" : "on", size: { width: 1920, height: 1100 } } });
+test.use({ viewport: { width: 1920, height: 1100 }, storageState: { cookies: [], origins: [] }, serviceWorkers: "block", trace: captureOff ? "off" : companionTraceMode(), video: { mode: captureOff ? "off" : "on", size: { width: 1920, height: 1100 } } });
 test.setTimeout(90000);
 test.beforeEach(async ({ page, context, baseURL }) => {
   const proof: Proof = { errors: [], rejected: [], notes: [], build: readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim(), chunks: [], pending: [] }; proofs.set(page, proof);

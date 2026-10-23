@@ -1,3 +1,4 @@
+import { companionTraceMode } from "./helpers/companion-evidence-policy";
 import { expect, test } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
@@ -8,7 +9,7 @@ import { guardCompanionQa, startCompanionQaProbe, finishCompanionQa, type DailyP
 import { companionInterestInspection, matchCompanionExplorationWitness, type ExplorationInputAttempt } from "./helpers/companion-exploration-witness";
 
 test.use({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 1, serviceWorkers: "block",
-  storageState: { cookies: [], origins: [] }, trace: "on", video: { mode: "on", size: { width: 1440, height: 1100 } } });
+  storageState: { cookies: [], origins: [] }, trace: companionTraceMode(), video: { mode: "on", size: { width: 1440, height: 1100 } } });
 test.setTimeout(205_000);
 
 test("living exploration viewer: a real newly placed toy is inspected before the same exploration resumes", async ({ page, context, baseURL }, info) => {

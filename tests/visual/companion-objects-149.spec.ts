@@ -1,3 +1,4 @@
+import { companionTraceMode } from "./helpers/companion-evidence-policy";
 import { expect, test, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -23,7 +24,7 @@ type Frame = NativeHomeControlFrame & { at: number; state: string; play: string;
 type ObjectWindow = Window & { objects149?: { frames: Frame[]; meals: { at: number; kind: string }[]; discoveries: { at: number; toys: string[] }[]; stop(): void } };
 type Proof = { errors: string[]; rejected: string[]; build: string; notes: unknown[]; html?: { path: string; sha256: string }; chunks: { path: string; sha256: string; matchesBuild: boolean }[]; pending: Promise<void>[] };
 const proofs = new WeakMap<Page, Proof>();
-test.use({ viewport: { width: 1920, height: 1100 }, storageState: { cookies: [], origins: [] }, serviceWorkers: "block", trace: "on", video: { mode: "on", size: { width: 1920, height: 1100 } } });
+test.use({ viewport: { width: 1920, height: 1100 }, storageState: { cookies: [], origins: [] }, serviceWorkers: "block", trace: companionTraceMode(), video: { mode: "on", size: { width: 1920, height: 1100 } } });
 test.setTimeout(110000);
 test.beforeEach(async ({ page, context, baseURL }) => {
   const buildRoot = process.env.VISUAL_TEST_BUILD_DIR ?? ".next", proof: Proof = { errors: [], rejected: [], build: readFileSync(resolve(buildRoot, "BUILD_ID"), "utf8").trim(), notes: [], chunks: [], pending: [] }; proofs.set(page, proof);

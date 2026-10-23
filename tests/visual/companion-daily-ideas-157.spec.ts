@@ -1,3 +1,4 @@
+import { companionTraceMode } from "./helpers/companion-evidence-policy";
 import { expect, test, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -46,7 +47,7 @@ async function samples(page: Page) {
 }
 
 test.use({ viewport: { width: 1920, height: 1100 }, deviceScaleFactor: 1, serviceWorkers: "block", hasTouch: false,
-  storageState: { cookies: [], origins: [] }, trace: "on", video: { mode: "on", size: { width: 1920, height: 1100 } } });
+  storageState: { cookies: [], origins: [] }, trace: companionTraceMode(), video: { mode: "on", size: { width: 1920, height: 1100 } } });
 test.setTimeout(125_000);
 
 test.afterEach(async ({ page }, info) => {

@@ -1,3 +1,4 @@
+import { companionTraceMode } from "./helpers/companion-evidence-policy";
 import { expect, test, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -36,7 +37,7 @@ const firstBow = (observed: QaObservation[]) => {
 };
 
 test.use({ viewport: { width: 1920, height: 1100 }, deviceScaleFactor: 1, serviceWorkers: "block", hasTouch: false,
-  trace: "on", video: { mode: "on", size: { width: 1920, height: 1100 } }, storageState: { cookies: [], origins: [] } });
+  trace: companionTraceMode(), video: { mode: "on", size: { width: 1920, height: 1100 } }, storageState: { cookies: [], origins: [] } });
 test.setTimeout(130_000);
 
 for (const surface of ["viewer", "studio", "preview"] as const) test(`156 ${surface} cold bow packet keeps a full actual onset and following activity`, async ({ page, context, baseURL }, info) => {

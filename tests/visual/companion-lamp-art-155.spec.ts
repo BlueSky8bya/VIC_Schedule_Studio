@@ -1,3 +1,4 @@
+import { companionTraceMode } from "./helpers/companion-evidence-policy";
 import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -13,7 +14,7 @@ import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 const out=process.env.COMPANION155_OUTPUT??'.scratch-pw/companion-155';
 const fonts=new Set([...readFileSync(resolve('app/fonts.css'),'utf8').matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match=>match[1]));
 const proofs=new WeakMap<Page,{errors:string[];unexpected:string[];notes:unknown[]}>();
-test.use({storageState:{cookies:[],origins:[]},serviceWorkers:'block',trace:'on',video:'on'});
+test.use({storageState:{cookies:[],origins:[]},serviceWorkers:'block',trace:companionTraceMode(),video:'on'});
 test.setTimeout(45000);
 test.beforeEach(async ({ page, context, baseURL }) => {
   const proof = { errors: [] as string[], unexpected: [] as string[], notes: [] as unknown[] }; proofs.set(page, proof);
