@@ -16,6 +16,7 @@ import {
   Play,
   Search,
   Sprout,
+  Upload,
   X
 } from "lucide-react";
 import {
@@ -134,7 +135,7 @@ import { popInnerOverlay, pushInnerOverlay } from "@/lib/ui/overlay-pop";
 import { VIEW_COOKIE, parseViewCookie, writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
 import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
 import { useSoopLive } from "@/components/poster/use-soop-live";
-import { DayVodWindow, formatVodDuration, VOD_ACCESS_HINT, VOD_ACCESS_LABEL, VodAccessBadge } from "@/components/poster/day-vod-window";
+import { DayVodNote, DayVodWindow, formatVodDuration, VOD_ACCESS_HINT, VOD_ACCESS_LABEL, VodAccessBadge } from "@/components/poster/day-vod-window";
 import { createWheelStepper, normalizeWheelDelta, stepCalZoom } from "@/lib/ui/calendar-zoom";
 import { useIdleAfter } from "@/lib/ui/use-idle";
 // 포스터 CSS는 이 컴포넌트와 함께 로드(루트 레이아웃 전역 import 제거에 대응). PublicPoster가 쓰이는
@@ -3347,6 +3348,9 @@ export function PublicPoster({
               </div>
             );
           })}
+          {/* 일정 없는 날의 기록 표시 — 다시보기·올린 영상이 있으면 칸이 비어 보이지 않게(호버 전용 ▶는 못 찾는다).
+              일정이 있는 날은 카드가 주인공이라 그대로 호버 ▶만. 포스터(비인터랙티브)엔 cellVods가 없어 안 그려진다. */}
+          {cellVods && events.length === 0 ? <DayVodNote vods={cellVods} /> : null}
         </div>
       </article>
     );
@@ -3911,7 +3915,12 @@ export function PublicPoster({
                           target="_blank"
                           title={vod.host ? `합방 · ${vod.host} 방송국${vod.title ? ` — ${vod.title}` : ""}` : vod.access ? `${VOD_ACCESS_LABEL[vod.access]} · ${vod.title || VOD_ACCESS_HINT[vod.access]}` : vod.title || undefined}
                         >
-                          <Play aria-hidden="true" size={13} strokeWidth={2.6} />
+                          {/* 올린 영상(구독)은 ⤒, 방송 다시보기는 ▶ — PC 칸 표시(DayVodNote)와 같은 모양 말. */}
+                          {vod.access === "sub" ? (
+                            <Upload aria-hidden="true" size={13} strokeWidth={2.6} />
+                          ) : (
+                            <Play aria-hidden="true" size={13} strokeWidth={2.6} />
+                          )}
                           {/* 합방 게스트 출연분(0075) — 다른 채널임을 짧게(모바일은 '합방'만, 호스트는 툴팁). */}
                           {vod.host ? <em className="agenda-vod-host">합방</em> : null}
                           {/* 구독 / 구독+(0154/0155) — 같은 칩, 색만 단계별 + 숲 배지와 같은 각인. */}

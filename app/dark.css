@@ -591,6 +591,9 @@ html[data-theme="dark"] .dvm-tab.is-plus:is(.is-on, :hover) {
 }
 html[data-theme="dark"] .dvm-tab.is-sub.is-on :is(b, em) { color: #d8ccf5; }
 html[data-theme="dark"] .dvm-tab.is-plus.is-on :is(b, em) { color: #e2d6ff; }
+/* 일정 없는 날의 기록 표시(DayVodNote) — 다시보기 칩의 밤 파랑, 올린 영상은 중립 잉크. */
+html[data-theme="dark"] .day-vod-note.is-replay { color: #9ab6eb; }
+html[data-theme="dark"] .day-vod-note.is-upload { color: var(--ink-soft); }
 html[data-theme="dark"] .vod-access-badge.is-sub {
   background: transparent; border-color: rgb(196 170 255 / 40%); color: #d1c2f5;
 }

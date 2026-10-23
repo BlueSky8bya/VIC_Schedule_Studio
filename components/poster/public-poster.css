@@ -1022,6 +1022,44 @@ html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
   animation-duration: 1ms;
   animation-iteration-count: 1;
 }
+/* 일정 없는 날의 기록 표시(DayVodNote, 2026-10-23 소유자) — 호버 전용 ▶는 터치·첫 방문자에게 안 보여 빈 날처럼
+   읽혔다. 칸 몸통 첫 줄에 조용한 한 줄: 카드가 아니라 '기록'이므로 면·테두리 없이 글자+아이콘만, 카드보다 작고 옅게
+   (칸의 주인공은 일정 카드). 방송 다시보기 = 다시보기 의미색(숲 파랑, UI-02). 올린 영상 = 중립 잉크 + ⤒ — '방송한 날'이
+   아니라 '올린 날'임을 색과 모양으로 가른다. 글자는 머리줄 기념일 글씨와 같은 확대 규칙(--cal-zoom × --cal-text). */
+.day-vod-note {
+  display: flex;
+  align-items: center;
+  gap: calc(4px * var(--cal-zoom, 1));
+  min-width: 0;
+  padding: 1px 2px;
+  font-size: calc(var(--text-caption) * var(--cal-zoom, 1) * min(var(--cal-text, 1), 1.15));
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  opacity: 0.82;
+  transition: opacity var(--dur-1) var(--ease);
+}
+.public-day.has-vod:hover .day-vod-note { opacity: 1; }
+.day-vod-note.is-replay { color: var(--studio-action-strong, #1e5aa8); }
+.day-vod-note.is-upload { color: var(--gs-metal-ink, #3d4a5c); }
+.day-vod-note .dvn-icon {
+  flex: none;
+  width: 1.05em;
+  height: 1.05em;
+}
+.day-vod-note .dvn-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.day-vod-note :is(.dvn-dur, .dvn-more) {
+  flex: none;
+  font-style: normal;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.8;
+}
+.day-vod-note .vod-access-badge { margin-left: 1px; }
 /* 날짜 다시보기 '창' — 화면 중앙의 작은 창(팝오버 → 창 승격, 2026-08-31 사용자 결정).
    백드롭은 일정 상세와 같은 딤 재질, 창은 썸네일 미리보기 + 제목 + 챕터를 세로로. */
 .day-vod-backdrop {

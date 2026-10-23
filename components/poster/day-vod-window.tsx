@@ -3,7 +3,7 @@
 // 날짜 다시보기 창/페이지(2026-09-17 페이지 승격) — **한 구현**: 시청자 화면은 /replay/<날짜> 페이지(variant="page"),
 // 편집실 미리보기·fixture·/onair는 같은 컴포넌트를 창(variant="modal")으로 띄운다(G-18). 플레이어(숲 임베드 iframe
 // API)·부 탭·머리줄·가로 띠·챕터 레일·키보드가 전부 여기 있다. 히스토리 스택·본문 스크롤 잠금은 껍데기(포스터/페이지) 몫.
-import { ExternalLink, PanelLeft, PanelRight, Play, X } from "lucide-react";
+import { ExternalLink, PanelLeft, PanelRight, Play, Upload, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getDayMark } from "@/lib/calendar/holidays";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -171,6 +171,39 @@ function formatShortDate(value: string) {
 }
 
 // 다시보기 길이(ms) → "5시간 12분" / "45분". 초는 버린다 — 칩에서 초 단위는 소음이다.
+/**
+ * 일정 없는 날의 기록 표시(2026-10-23 소유자) — 다시보기·올린 영상이 있는데 칸이 비어 보이던 자리.
+ * 호버 전용 ▶는 터치·첫 방문자에게 안 보인다(발견성) → 칸 몸통에 조용한 한 줄을 상시로 둔다.
+ * 방송 다시보기는 ▶ + "다시보기"(+길이), 업로드 영상은 ⤒ + "올린 영상" — 유튜브의 '실시간 스트리밍 / 게시일'
+ * 구분처럼 '방송한 날'과 '올린 날'을 모양·말로 가른다(업로드는 그 날 방송이 아닐 수 있다).
+ * 칸 클릭은 원래대로 다시보기 창(칸 전체가 눌리는 대상). 비인터랙티브(포스터)엔 그리지 않는다.
+ */
+export function DayVodNote({ vods }: { vods: { durationMs: number; access?: "sub" | "plus" }[] }) {
+  const replays = vods.filter((v) => v.access !== "sub");
+  const uploads = vods.length - replays.length;
+  if (replays.length > 0) {
+    const total = replays.reduce((n, v) => n + (v.durationMs > 0 ? v.durationMs : 0), 0);
+    const dur = formatVodDuration(total);
+    const allPlus = replays.every((v) => v.access === "plus");
+    return (
+      <span className="day-vod-note is-replay" title={uploads > 0 ? `다시보기 ${replays.length}편 · 올린 영상 ${uploads}편` : undefined}>
+        <Play aria-hidden="true" className="dvn-icon" strokeWidth={2.4} />
+        <span className="dvn-label">다시보기{replays.length > 1 ? ` ${replays.length}편` : ""}</span>
+        {dur ? <em className="dvn-dur">{dur}</em> : null}
+        {uploads > 0 ? <em className="dvn-more">+영상 {uploads}</em> : null}
+        {allPlus ? <VodAccessBadge access="plus" small /> : null}
+      </span>
+    );
+  }
+  return (
+    <span className="day-vod-note is-upload" title="이 날 숲에 올라온 영상이에요 — 촬영·방송한 날과 다를 수 있어요">
+      <Upload aria-hidden="true" className="dvn-icon" strokeWidth={2.4} />
+      <span className="dvn-label">올린 영상{uploads > 1 ? ` ${uploads}편` : ""}</span>
+      <VodAccessBadge access="sub" small />
+    </span>
+  );
+}
+
 export function formatVodDuration(ms: number): string {
   const totalMin = Math.round(ms / 60_000);
   if (totalMin < 1) return "";
@@ -1398,7 +1431,7 @@ export function DayVodWindow({
                           type="button"
                         >
                           {/* 업로드 영상(구독)은 방송의 '부'가 아니다 — '영상'. 부 번호는 다시보기끼리만 센다. */}
-                          <b>{v.access === "sub" ? "영상" : `${list.slice(0, i + 1).filter((x) => x.access !== "sub").length}부`}</b>
+                          <b>{v.access === "sub" ? "올린 영상" : `${list.slice(0, i + 1).filter((x) => x.access !== "sub").length}부`}</b>
                           {v.durationMs > 0 ? <em>{formatVodDuration(v.durationMs)}</em> : null}
                           {v.host ? <i>합방</i> : null}
                           {v.access ? <VodAccessBadge access={v.access} small /> : null}
