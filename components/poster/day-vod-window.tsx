@@ -1430,11 +1430,17 @@ export function DayVodWindow({
                           title={v.access ? `${VOD_ACCESS_LABEL[v.access]} · ${v.title || VOD_ACCESS_HINT[v.access]}` : v.title || undefined}
                           type="button"
                         >
-                          {/* 업로드 영상(구독)은 방송의 '부'가 아니다 — '영상'. 부 번호는 다시보기끼리만 센다. */}
-                          <b>{v.access === "sub" ? "올린 영상" : `${list.slice(0, i + 1).filter((x) => x.access !== "sub").length}부`}</b>
-                          {v.durationMs > 0 ? <em>{formatVodDuration(v.durationMs)}</em> : null}
-                          {v.host ? <i>합방</i> : null}
-                          {v.access ? <VodAccessBadge access={v.access} small /> : null}
+                          {/* 구독 업로드는 종류만 간결하게 표시하고, 부 번호는 다시보기끼리만 센다. */}
+                          {v.access === "sub" ? (
+                            <><VodAccessBadge access="sub" small /><b>업로드</b></>
+                          ) : (
+                            <>
+                              <b>{list.slice(0, i + 1).filter((x) => x.access !== "sub").length}부</b>
+                              {v.durationMs > 0 ? <em>{formatVodDuration(v.durationMs)}</em> : null}
+                              {v.host ? <i>합방</i> : null}
+                              {v.access ? <VodAccessBadge access={v.access} small /> : null}
+                            </>
+                          )}
                         </button>
                       ))}
                     </div>

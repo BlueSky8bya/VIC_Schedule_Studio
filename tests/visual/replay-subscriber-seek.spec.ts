@@ -14,6 +14,16 @@ for (const access of ["sub", "plus"] as const) for (const width of [1440, 390]) 
       window.open = (url, name, features) => { target.__seekOpens!.push({ url: String(url), target: name, features }); return null; };
     });
     await page.goto(`/visual-fixture/vod-seek?access=${access}`);
+    const tabs = page.getByRole("tablist", { name: "이 날의 다시보기", exact: true }).getByRole("tab");
+    await expect(tabs).toHaveCount(2);
+    if (access === "sub") {
+      await expect(tabs).toHaveText([/구독\s*업로드/, /구독\s*업로드/]);
+      await expect(tabs.locator("em")).toHaveCount(0);
+      await expect(tabs.locator("b")).toHaveText(["업로드", "업로드"]);
+    } else {
+      await expect(tabs.locator("b")).toHaveText(["1부", "2부"]);
+      await expect(tabs.locator("em")).toHaveText(["10분", "10분"]);
+    }
     const link = page.getByRole("link", { name: "숲에서 보기", exact: true });
     await expect(link).toHaveAttribute("href", "https://vod.sooplive.co.kr/player/42?change_second=125");
     await expect(page.locator("iframe")).toHaveCount(0);
@@ -24,6 +34,9 @@ for (const access of ["sub", "plus"] as const) for (const width of [1440, 390]) 
     expect(await page.evaluate(() => (window as Window & { __seekOpens?: unknown[] }).__seekOpens)).toEqual([{ url: "https://vod.sooplive.co.kr/player/42?change_second=300", target: "_blank", features: "noopener,noreferrer" }]);
     await expect(link).toHaveAttribute("href", "https://vod.sooplive.co.kr/player/42?change_second=300");
     await expect(page.locator("iframe")).toHaveCount(0);
+    await tabs.nth(1).click();
+    await expect(tabs.nth(1)).toHaveAttribute("aria-selected", "true");
+    await expect(link).toHaveAttribute("href", "https://vod.sooplive.co.kr/player/43");
     await page.screenshot({ path: test.info().outputPath("subscriber-seek.png") });
     await Promise.all(proof.pending);
     expect(proof.errors).toEqual([]); expect(proof.rejected).toEqual([]); expect(proof.mutations).toEqual([]); expect(proof.liveReads).toEqual([]);
