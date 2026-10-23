@@ -69,7 +69,7 @@ describe("scratch retention plan", () => {
   it("keeps every run a kept run cites, even when no state file mentions it", () => {
     const { root } = repo();
     const base = unit(root, "site-daily/native/n1-base", 30, 10, { "result.json": { status: "failed" } });
-    const mid = unit(root, "site-daily/native/n2-mid", 29, 10, { "result.json": { status: "failed", continueFrom: base + "\\result.json" } });
+    const mid = unit(root, "site-daily/native/n2-mid", 29, 10, { "result.json": { status: "failed", continueFrom: path.join(base, "result.json") } });
     unit(root, "site-daily/native/n3-unrelated", 28, 10, { "result.json": { status: "failed" } });
     unit(root, "site-daily/native/n4-newest", 1, 10, { "result.json": { status: "failed", reuseBuild: mid.replaceAll("\\", "/") } });
     const p = plan({ roots: [root], worktrees: [], now: NOW, policy: policy({ keepLatestPerFactory: 1 }), refs: new Set() });
