@@ -714,6 +714,15 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     return bindCompanionShowcaseInput(layer.current, showcaseSession, node => node.dataset.food ? `food:${node.dataset.food}` : undefined, () => enabled && !blocked, () => logActivity("ui.click", { target: "companion-food-move" }), {
       quiet: () => reduced() || ["off", "soft"].includes(graphics.current),
       item: "food",
+      onReclaim: (id, point) => {
+        const foodId = id.slice("food:".length);
+        if (!operating.current || !current.current.some(item => item.id === foodId)) return false;
+        cancelJostle(foodId); attachments.current.delete(foodId); presentations.current.delete(foodId); drops.current.delete(foodId);
+        const node = nodes.current.get(foodId); if (node) itemAnchors.current!.clear(node);
+        visibility.current.set(foodId, true);
+        update(current.current.map(item => item.id === foodId ? { ...item, ...point, platformId: undefined } : item));
+        return true;
+      },
       onDiscard: id => {
         const foodId = id.slice("food:".length);
         if (!current.current.some(item => item.id === foodId)) return;
@@ -723,7 +732,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         choose(null); setMessage("밥을 치웠어요."); discarded.current?.(foodId); logActivity("ui.click", { target: "companion-food-discard" });
       },
     });
-  }, [showcaseSession, enabled, blocked, choose, update]);
+  }, [showcaseSession, enabled, blocked, choose, update, cancelJostle]);
   useLayoutEffect(() => { if (selected) nodes.current.get(selected)?.focus({ preventScroll: true }); }, [selected]);
   useEffect(() => { interrupt(); update([]); choose(null); setMessage(""); }, [enabled, choose, interrupt, update]);
   const foodMonth = useRef(monthKey);

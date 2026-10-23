@@ -184,8 +184,17 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     return bindCompanionShowcaseInput(layer.current, showcaseSession, node => node.dataset.toyId ? `toy:${node.dataset.toyId}` : undefined, () => !hidden && (showcaseSession.active() || !blockedRef.current), () => logActivity("ui.click", { target: "companion-toy-drop" }), {
       quiet: () => document.documentElement.hasAttribute("data-reduce-motion") || ["off", "soft"].includes(document.documentElement.dataset.gfx ?? ""),
       item: "toy", tapThrow: true, onGrab: () => logActivity("ui.click", { target: "companion-toy-grab" }),
+      onReclaim: (id, point) => {
+        const toyId = id.slice("toy:".length);
+        if (blockedRef.current || !world.grab(toyId)) return false;
+        restingSources.current.delete(toyId); retainedSources.current.delete(toyId);
+        pendingPlays.current.delete(toyId); pendingCarriedPlays.current.delete(toyId);
+        const node = nodes.current.get(toyId); if (node) itemAnchors.current!.clear(node);
+        world.drag(toyId, point); world.drop(toyId, performance.now(), { x: 0, y: 0 });
+        return true;
+      },
     });
-  }, [showcaseSession, hidden]);
+  }, [showcaseSession, hidden, world]);
   const pauseModel = useCallback((now: number) => {
     dragFrame.current!.cancel();
     clearDropBox();

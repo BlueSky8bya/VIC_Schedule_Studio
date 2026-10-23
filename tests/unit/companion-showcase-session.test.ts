@@ -124,6 +124,32 @@ describe("same-object meadow admission and screen-session position", () => {
     expect(retired).toEqual(["toy:one"]); expect(session.has("toy:one")).toBe(false); session.dispose();
   });
 
+  it("reclaims an exposed survivor at its current foot before the ordinary owner paints it, once", () => {
+    const { session, emit, flush } = fixture(), retired = vi.fn();
+    session.subscribeClear(retired);
+    session.register("toy:one", { kind: "toy", node: () => node({ left: 68, right: 112, top: 856, bottom: 900 }), point: () => ({ x: 90, y: 900 }) });
+    emit(true, "before"); session.move("toy:one", { x: 250, y: 840 });
+    const adopt = vi.fn(() => { expect(session.has("toy:one")).toBe(false); return true; });
+    expect(session.reclaim("toy:one", adopt)).toBe(false); expect(adopt).not.toHaveBeenCalled();
+    emit(false, "after"); flush(); const revision = session.snapshot();
+    expect(session.reclaim("toy:one", adopt)).toBe(true); expect(adopt.mock.calls).toEqual([[{ x: 250, y: 840 }]]);
+    expect(session.snapshot()).toBe(revision + 1); expect(retired).not.toHaveBeenCalled();
+    expect(session.reclaim("toy:one", adopt)).toBe(false); expect(adopt).toHaveBeenCalledTimes(1);
+    session.dispose();
+  });
+
+  it("preserves a rejected or throwing reclaim and rejects covered items without adoption", () => {
+    const { session, emit, flush } = fixture();
+    session.register("food:one", { kind: "food", node: () => node({ left: 68, right: 112, top: 856, bottom: 900 }), point: () => ({ x: 90, y: 900 }) });
+    emit(true, "before"); emit(false, "after"); flush(); const revision = session.snapshot();
+    expect(session.reclaim("food:one", point => { point.x = 400; return false; })).toBe(false);
+    expect(session.point("food:one")).toMatchObject({ x: 90, y: 900 }); expect(session.snapshot()).toBe(revision);
+    expect(() => session.reclaim("food:one", () => { throw new Error("not ready"); })).toThrow("not ready");
+    expect(session.has("food:one")).toBe(true); expect(session.snapshot()).toBe(revision);
+    session.move("food:one", { x: 650, y: 700 }); const adopt = vi.fn(() => true);
+    expect(session.reclaim("food:one", adopt)).toBe(false); expect(adopt).not.toHaveBeenCalled(); session.dispose();
+  });
+
   it("invalidates actual layout insertions/attributes while ignoring actor and procedural paint", () => {
     const element = (kind: "own" | "box" | "body") => {
       const value = { nodeType: 1, matches: (selector: string) => selector.includes(".vc-companion") ? kind === "own" : kind === "box", closest: (selector: string) => (selector.includes(".vc-companion") ? kind === "own" : kind === "box") ? value : null, querySelector: () => null };

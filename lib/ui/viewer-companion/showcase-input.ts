@@ -9,6 +9,7 @@ export type CompanionShowcaseInputOptions = {
   onHold?: (held: boolean) => void; onGrab?: () => void; onMove?: (from: ShowcasePoint, to: ShowcasePoint) => void;
   onFlight?: (flying: boolean, point?: ShowcasePoint & Partial<Pick<CompanionThrowState, "elapsedMs" | "vy">>) => void;
   onRelease?: (thrown: boolean) => void; onRest?: () => void; onDiscard?: (id: string) => void;
+  onReclaim?: (id: string, point: ShowcasePoint) => boolean;
 };
 
 /** Real buttons retain pointer capture, keyboard hold/drop and direct
@@ -94,6 +95,10 @@ export function bindCompanionShowcaseInput(layer: HTMLElement, session: Companio
   };
   const down = (event: PointerEvent) => {
     const item = owns(event); if (!item || !allowed() || event.button !== 0) return;
+    if (!session.active() && options.onReclaim) {
+      if (!session.reclaim(item.id, point => options.onReclaim!(item.id, point))) stop(event);
+      return;
+    }
     stop(event); if (drag) return;
     cancelFlight(item.id); finishKeyboard(); options.onHoverEnd?.(); session.present(item.id);
     const point = session.point(item.id)!;
@@ -128,6 +133,10 @@ export function bindCompanionShowcaseInput(layer: HTMLElement, session: Companio
   const key = (event: KeyboardEvent) => {
     const item = owns(event); if (!item || !allowed()) return;
     const arrows = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key);
+    if (!session.active() && options.onReclaim && (arrows || [" ", "Enter"].includes(event.key) || options.onDiscard && ["Delete", "Backspace"].includes(event.key))) {
+      if (!session.reclaim(item.id, point => options.onReclaim!(item.id, point))) stop(event);
+      return;
+    }
     if (event.key === "Escape") { if (keyboard || placing || drag) { stop(event); if (keyboard) finishKeyboard(); cancelHold(); } return; }
     if (options.onDiscard && ["Delete", "Backspace"].includes(event.key)) { stop(event); if (!event.repeat) { cancelFlight(item.id); cancelHold(); options.onDiscard(item.id); } return; }
     if (options.pet && event.key.toLowerCase() === "n" && options.onRest) { stop(event); if (!event.repeat) { cancelFlight(item.id); cancelHold(); options.onRest(); } return; }

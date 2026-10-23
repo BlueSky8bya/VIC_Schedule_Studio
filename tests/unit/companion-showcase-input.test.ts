@@ -39,6 +39,33 @@ it("records one anonymous completion after a real moved pointer release and igno
   expect(h.point).toMatchObject({ x: 130, y: 145 }); expect(h.complete.mock.calls).toEqual([[]]);
   h.send("lostpointercapture"); h.send("pointerup"); h.send("click"); expect(h.complete).toHaveBeenCalledTimes(1); h.stop();
 });
+
+it.each(["pointerdown", "Enter", "ArrowRight", "Delete"])("hands an inactive survivor to ordinary input on %s without consuming or logging that event", input => {
+  const adopt = vi.fn(() => true), h = fixture({ onReclaim: adopt, ...(input === "Delete" ? { onDiscard: vi.fn() } : {}) });
+  const reclaim = vi.fn((id: string, receive: (point: { x: number; y: number }) => boolean) => receive({ x: h.point.x, y: h.point.y }));
+  h.session.reclaim = reclaim;
+  const event = input === "pointerdown" ? h.send(input) : h.send("keydown", { key: input, repeat: false });
+  expect(event.defaultPrevented).toBe(false); expect(reclaim).toHaveBeenCalledTimes(1);
+  expect(adopt).toHaveBeenCalledWith("local-item", { x: 100, y: 100 });
+  expect(h.button.capture.size).toBe(0); expect(h.complete).not.toHaveBeenCalled(); h.stop();
+});
+
+it("retains showcase capture during appreciation and never reclaims a blocked or unsupported input", () => {
+  const adopt = vi.fn(() => true), h = fixture({ item: "toy", onReclaim: adopt }); h.session.reclaim = vi.fn();
+  h.send("keydown", { key: "Tab" }); expect(h.session.reclaim).not.toHaveBeenCalled();
+  h.send("keydown", { key: "Delete" }); h.send("keydown", { key: "Backspace" }); expect(h.session.reclaim).not.toHaveBeenCalled();
+  h.session.active = () => true;
+  expect(h.send("pointerdown").defaultPrevented).toBe(true); h.send("pointercancel");
+  expect(h.session.reclaim).not.toHaveBeenCalled(); h.session.active = () => false; h.block();
+  h.send("pointerdown"); h.send("keydown", { key: "Enter" }); expect(h.session.reclaim).not.toHaveBeenCalled(); expect(adopt).not.toHaveBeenCalled(); h.stop();
+});
+
+it.each(["pointerdown", "ArrowRight"])("consumes %s when the ordinary owner cannot reclaim yet", input => {
+  const h = fixture({ onReclaim: vi.fn(() => false) }); h.session.reclaim = vi.fn(() => false);
+  const event = input === "pointerdown" ? h.send(input) : h.send("keydown", { key: input });
+  expect(event.defaultPrevented).toBe(true); expect(h.point).toMatchObject({ x: 100, y: 100 });
+  expect(h.button.capture.size).toBe(0); expect(h.complete).not.toHaveBeenCalled(); h.stop();
+});
 it("does not log a no-motion tap, canceled transfer or unmount", () => {
   const h = fixture(); h.send("pointerdown"); h.send("pointerup"); expect(h.complete).not.toHaveBeenCalled();
   h.send("pointerdown"); h.send("pointermove", { clientX: 160 }); h.send("pointercancel"); expect(h.complete).not.toHaveBeenCalled();

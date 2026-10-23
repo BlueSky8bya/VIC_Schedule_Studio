@@ -192,3 +192,64 @@ test("slow jump packets keep the resident painted through immediate departure", 
   } finally { release(); }
   await page.keyboard.press("Escape"); await expectHomecoming(page);
 });
+
+for (const surface of ["viewer", "studio", "preview"] as const) {
+  test(`${surface}: surviving food and toy hand their actual foot back to normal home drag and storage`, async ({ page }, info) => {
+    const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
+    await page.goto(surface === "viewer" ? "/visual-fixture/poster?ambient=spring" : `/visual-fixture/studio?role=developer&y=2026&m=3${surface === "preview" ? "&viewer=1" : ""}`);
+    const home = await openCompanionHome(page); await placeCompanionOnHomeFloor(page);
+    await home.getByRole("button", { name: "밥 꺼내기", exact: true }).click();
+    const food = page.locator(".vc-food").last(); await expect(food).not.toHaveAttribute("data-falling");
+    const foodId = await food.getAttribute("data-food"); await placeItem(page, food, { x: 90, y: 990 }); await expect(food).toHaveAttribute("data-platform", /^viewport-floor/);
+    await home.getByRole("button", { name: "장난감 상자 열기", exact: true }).click();
+    const toy = page.locator(".vc-toy").last(); await expect(toy).toHaveAttribute("data-falling", "false");
+    await placeItem(page, toy, { x: 170, y: 990 }); await expect(toy).toHaveAttribute("data-platform", /^viewport-floor/);
+    await enterCompanionMeadow(page); await expect(page.locator(".vc-meadow-walk")).toHaveAttribute("data-state", "idle");
+    // Different from the pre-entry world position, so old owner coordinates
+    // cannot accidentally satisfy a first-grab continuity check.
+    await placeItem(page, food, { x: 90, y: 900 }); await placeItem(page, toy, { x: 170, y: 950 });
+    await page.keyboard.press("Escape"); await expectHomecoming(page);
+    const take = async (item: Locator) => {
+      await expect(item).toBeVisible(); await expect(item).toHaveAttribute("data-showcase-lease", "");
+      const before = (await item.boundingBox())!;
+      await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2); await page.mouse.down();
+      await expect(item).not.toHaveAttribute("data-showcase-lease");
+      const after = (await item.boundingBox())!;
+      expect(Math.hypot(after.x - before.x, after.y - before.y)).toBeLessThan(2);
+    };
+    await take(food);
+    const floor = (await home.locator(".vc-home-floor").boundingBox())!;
+    await page.mouse.move(floor.x + floor.width * .18, floor.y + floor.height - 20, { steps: 18 });
+    await expect(food).toBeVisible(); await page.waitForTimeout(180); await page.mouse.up(); await page.mouse.move(2, 2);
+    await expect(food).toBeVisible(); await expect(food).toHaveAttribute("data-platform", /^companion-home-floor/);
+    await take(toy);
+    const box = home.locator('[data-home-action="toys"]'), target = (await box.boundingBox())!;
+    await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2, { steps: 18 });
+    await expect(toy).toBeVisible(); await expect(box).toHaveAttribute("data-toy-over", "");
+    await page.waitForTimeout(180); await page.mouse.up(); await page.mouse.move(2, 2); await expect(toy).toHaveCount(0);
+    await page.screenshot({ path: info.outputPath("survivor-home-drop.png") });
+    await enterCompanionMeadow(page); await page.keyboard.press("Escape"); await expectHomecoming(page);
+    await expect(page.locator(`[data-food="${foodId}"]`)).toBeVisible(); await expect(food).toHaveAttribute("data-platform", /^companion-home-floor/);
+    expect(errors).toEqual([]);
+  });
+}
+
+test("surviving items use their ordinary keyboard hold and move from the painted outdoor position", async ({ page }) => {
+  await page.goto("/visual-fixture/poster?ambient=spring"); const home = await openCompanionHome(page); await placeCompanionOnHomeFloor(page);
+  await home.getByRole("button", { name: "밥 꺼내기", exact: true }).click(); const food = page.locator(".vc-food").last();
+  await expect(food).not.toHaveAttribute("data-falling"); await placeItem(page, food, { x: 90, y: 990 }); await expect(food).toHaveAttribute("data-platform", /^viewport-floor/);
+  await home.getByRole("button", { name: "장난감 상자 열기", exact: true }).click(); const toy = page.locator(".vc-toy").last();
+  await expect(toy).toHaveAttribute("data-falling", "false"); await placeItem(page, toy, { x: 170, y: 990 }); await expect(toy).toHaveAttribute("data-platform", /^viewport-floor/);
+  await enterCompanionMeadow(page); await expect(page.locator(".vc-meadow-walk")).toHaveAttribute("data-state", "idle");
+  await placeItem(page, food, { x: 90, y: 900 }); await placeItem(page, toy, { x: 170, y: 950 });
+  await page.keyboard.press("Escape"); await expectHomecoming(page);
+  const foodBefore = (await food.boundingBox())!; await food.focus(); await food.press("Enter");
+  await expect(food).not.toHaveAttribute("data-showcase-lease"); await expect(food).toHaveAttribute("data-selected", "");
+  expect(Math.abs((await food.boundingBox())!.y - foodBefore.y)).toBeLessThan(2);
+  await food.press("ArrowRight"); expect((await food.boundingBox())!.x - foodBefore.x).toBeCloseTo(24, 0); await food.press("Enter");
+  const toyBefore = (await toy.boundingBox())!; await toy.focus(); await toy.press("Enter");
+  await expect(toy).not.toHaveAttribute("data-showcase-lease"); await expect(toy).toHaveAttribute("data-held", "true");
+  expect(Math.abs((await toy.boundingBox())!.y - toyBefore.y)).toBeLessThan(2);
+  await toy.press("ArrowRight"); expect((await toy.boundingBox())!.x - toyBefore.x).toBeCloseTo(16, 0);
+  await toy.press("Escape"); await expect(toy).toHaveAttribute("data-held", "false");
+});

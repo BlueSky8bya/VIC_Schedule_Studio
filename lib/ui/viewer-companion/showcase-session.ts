@@ -199,6 +199,18 @@ export function createCompanionShowcaseSession() {
       const lease = leases.get(id); if (!lease) return;
       lease.rotation = pose?.rotation ?? 0; lease.scaleX = pose?.scaleX ?? 1; lease.scaleY = pose?.scaleY ?? 1;
     },
+    /** The next deliberate input returns a survivor to its ordinary owner.
+     * Remove the screen cover rule before that owner paints the same foot. */
+    reclaim(id: string, adopt: (point: ShowcasePoint) => boolean) {
+      const lease = leases.get(id);
+      if (active || !lease || lease.kind === "pet" || !exposed(lease)) return false;
+      leases.delete(id);
+      let adopted = false;
+      try { adopted = adopt({ x: lease.x, y: lease.y }); }
+      finally { if (!adopted) leases.set(id, lease); }
+      if (!adopted) return false;
+      notify(); return true;
+    },
     forget(id: string) { if (leases.delete(id)) notify(); },
     clear,
   };
