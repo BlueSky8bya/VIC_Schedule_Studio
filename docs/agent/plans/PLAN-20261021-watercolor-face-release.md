@@ -1,6 +1,6 @@
 # Watercolor food/toy stamps and corrected companion faces
 
-Owner explicitly approved 2026-10-21 KST: “좋아 이 수채화 도장으로 음식이랑 장난감 도감에 적용해줘. 이전에 수정한 빅타민 표정까지 전부 배포하자”. This supersedes earlier local-only/no-deployment scope for these exact changes. Approved backing assets are corrected R22 watercolor-v3, demonstrated with actual food/toy UI in R23; rejected R21/v1/v2 and all original/rejected evidence remain local and preserved.
+Owner explicitly approved 2026-10-21 KST (소유자 승인, 원문 비공개): apply the watercolor seals to the food and toy collections and deploy them together with the previously revised companion expressions. This supersedes earlier local-only/no-deployment scope for these exact changes. Approved backing assets are corrected R22 watercolor-v3, demonstrated with actual food/toy UI in R23; rejected R21/v1/v2 and all original/rejected evidence remain local and preserved.
 
 Plan: start from current remote main53f27aa (166 eye-depth/continuous-lid improvements), copy only the scoped catalogue display-order, selected watercolor backing, R20 face-axis/meaning/transition fixes and affected tests; verify current unit/build/type/lint/harness and actual13 catalogue/expression/petting/eyewear cases; obtain independent final integration reviews; commit/push only the scoped tree; verify actual deployed fullSHA and corrected public assets/rendered UI. Primary dirty work and unrelated ab488 site-daily/art/docs changes stay outside this release.
 
