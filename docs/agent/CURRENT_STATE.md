@@ -25,6 +25,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 |---|---|---|---|
 | COMPANION-ACTIVITY-145 | Local gates and three final reviews passed | Scoped commit/push then actual fullSHA/deployed viewer check | [145 plan](plans/PLAN-20261020-145-companion-activity-criteria.md) |
 | OPS-VERCEL-QUOTA | Open | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
+| OPS-STORAGE | Approval | Gate ready;6 deletion candidates;quota unproven | [Record](verification/DEPLOYMENT_STORAGE-20261024.md) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
 | ART-PINE-PILOT | Awaiting Owner | Owner selects reference PNGs to remove; freeze replacement run only afterward | [Pine handoff](../ambient/HANDOFF-20260908-pine.md) |

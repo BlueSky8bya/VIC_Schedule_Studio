@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "ignoreCommand": "node scripts/deployment-output/ignore-build.mjs",
   "regions": ["icn1"],
   "crons": [
     {
