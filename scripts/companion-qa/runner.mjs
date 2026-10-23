@@ -10,6 +10,7 @@ import { pathToFileURL } from 'node:url';
 import { universe, dailyCases, coverageFor, PURE_SUITES, NATIVE_SUITES, NATIVE_GREP, NATIVE_ENTRY_TITLES, NATIVE_FLOATING_TIDY_TITLES, NATIVE_NARROW_WASH_TITLES, NATIVE_CAR_USE_TITLES, PLANNED_NATIVE_CASE_COUNT, MODELED_RECIPE_COUNT } from './catalog.mjs';
 import { sha, writeNewJson, evidenceFiles, writeReport } from './report.mjs';
 import { AUDITED_MACHINE_METADATA, AUDITED_MACHINE_METADATA_BYTES, validateAuditedMachineMetadata } from './machine-metadata.mjs';
+import { guardBeforeRun, afterRun } from '../scratch-retention/retention.mjs';
 
 export function loopbackOrigin(value) {
   const url = new URL(value);
@@ -177,6 +178,9 @@ export function registeredAgentRegressions(available, learnerExists) {
 export async function run(options) {
   const model = universe(), ordinal = Math.floor((Date.now() + 9 * 3600000) / 86400000), cases = dailyCases(ordinal);
   if (options.plan) { process.stdout.write(JSON.stringify({ universe: model, selectedNativeCases: cases, nativeCoverage: coverageFor([]), executes: false }, null, 2) + '\n'); return 0; }
+  // Prune old local evidence under the scratch retention policy, then refuse to
+  // start when the volume would still be below the disk floor.
+  guardBeforeRun(path.resolve(options.root), { log: line => process.stdout.write(`Scratch retention: ${line}\n`) });
   const root = path.resolve(options.root), started = new Date(), deadline = started.valueOf() + options.budgetMinutes * 60000;
   const runId = kst(started).replace(/[^0-9]/g, '') + '-' + process.pid + '-' + randomUUID().slice(0, 8);
   const directory = path.join(root, '.scratch-pw', 'companion-daily', runId), workspace = path.join(directory, 'workspace'), attempt = path.join(directory, 'attempt-01');
@@ -288,6 +292,9 @@ export async function run(options) {
     // expression happens to select every registered native case.
     if (options.nativeGrep && result.status === 'completed-scoped-checks') result.status = 'completed-diagnostic-checks';
     writeReport(directory, result); writeNewJson(path.join(directory, 'evidence-manifest.json'), { files: evidenceFiles(attempt), report: ['source-freeze.json', 'universe.json', 'report.json', 'report.md', 'report.html'].filter(file => fs.existsSync(path.join(directory, file))).map(file => ({ path: file, sha256: sha(fs.readFileSync(path.join(directory, file))) })) });
+    // After the manifest: drop the webpack cache and NTFS-compress text. Evidence
+    // bytes, the manifest and workspace/.next (minus cache/) stay verifiable.
+    try { const freed = afterRun(directory); process.stdout.write(`Scratch retention: removed ${(freed / 2 ** 30).toFixed(2)} GiB build cache from this run\n`); } catch (error) { process.stderr.write(`Scratch retention skipped: ${String(error.message ?? error)}\n`); }
     process.stdout.write(`Companion QA: ${result.status}; local evidence ${directory}\n`);
   }
   return result.status === 'completed-scoped-checks' ? 0 : 1;
