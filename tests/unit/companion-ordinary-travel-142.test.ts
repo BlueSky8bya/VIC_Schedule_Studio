@@ -144,7 +144,8 @@ describe('142 actual same-floor endpoints avoid repeated ordinary A-to-B walks',
  });
  it('also defers an actual reverse first hop toward a different nominal platform',()=>{
   const h=host(),broad={...floor,id:'ordinary-floor',manualOnly:false,width:600};h.world.platforms=[broad];h.world.platformId=broad.id;
-  finish(h,{kind:'walk',target:{x:186.289,y:broad.y,platformId:broad.id},duration:1500,direction:1},10000);
+  // A genuine takeoff walk remains necessary beyond the exact hop's range.
+  finish(h,{kind:'walk',target:{x:386.289,y:broad.y,platformId:broad.id},duration:1500,direction:1},10000);
   const left:Platform={id:'left-landing',kind:'date',x:70,y:broad.y-70,width:40};h.world.platforms=[...h.world.platforms,left];
   const route=findCompanionToyRoute(h.world,{x:90,y:left.y,platformId:left.id},h.world.platforms,true);
   expect(route?.[0]).toMatchObject({kind:'walk',target:{x:90,platformId:broad.id}});
@@ -232,7 +233,7 @@ describe('142 a dense calendar cannot starve the real cushion-to-floor exit',()=
   expect(passage.safe).toBe(true);expect(passage.x).toBe(h.world.x);
  });
  it('finishes a proved multi-hop escape from a wider safe seat instead of endlessly reversing its local walk',()=>{
-  // A separate wider-support model covers the walk-before-jump path. It is
+  // A separate wider-support model covers the cushion's required alignment. It is
   // intentionally distinct from the observed native81px DOM opening above.
   const {h,p}=dense('gourmet',{...actualSeat,x:62.28125,width:81.015625});let now=10000;
   const legs:{kind:string;support:string|undefined;from:number;to:number}[]=[];

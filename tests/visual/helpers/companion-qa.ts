@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import { mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { resolve, sep } from "node:path";
 import { COMPANION_PLAY_TIMING } from "@/lib/ui/viewer-companion/timing";
+import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
 import { inspectTrace, traceSufficiency, traceContextComplete, type QaFrame } from "../../../scripts/companion-qa/trace-checks.mjs";
 import { fulfillReadOnlyFont } from "./readonly-font";
@@ -22,6 +23,10 @@ export async function readCompanion143Diagnostics(page:Page):Promise<Companion14
     return value?.version===1&&Array.isArray(value.records)?value.records.slice(0,24):[];});
 }
 export type QaObservation = QaFrame & { sourceClipMeasured: boolean; scene: string; serial: string; beat: string; platform: string; frame: number; pose: number; play: string; foodAftertaste: string;
+  sceneItemId?: string;
+  sceneGoal?: { x: number; y: number; platformId: string; stepX: number; stepY: number; stepPlatformId: string };
+  travel?: { goal: string; targetX: number | null; remaining: number | null; stage: string };
+  travelTurn?: { direction: string; phase: number };
   paintedSource?: PaintedSource157Proof;
   homeLife?: { phase: string; scene: string; serial: string; beat: string; reaching: string; lampTouch: boolean };
   curiousCompletion: CuriousCompletionSnapshot };
@@ -52,7 +57,7 @@ export async function guardCompanionQa(page: Page, context: BrowserContext, base
     }
     if (request.method() === "POST" && url.pathname === "/visual-fixture/studio" && preview.has(request.headers()["next-action"])) {
       // This exact read is fulfilled locally, never executed on the server.
-      return import("@/lib/schedules/sample-public-data").then(({ samplePublicScheduleData }) => route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":"fixture"}\n1:${JSON.stringify(samplePublicScheduleData)}\n` }));
+      return route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":"fixture"}\n1:${JSON.stringify(samplePublicScheduleData)}\n` });
     }
     if (!["GET", "HEAD"].includes(request.method())) { proof.mutations.push(`${request.method()} ${url.pathname}`); return route.abort(); }
     const synthetic = companionSyntheticRead157(request.method(), url, Date.now());
@@ -228,6 +233,12 @@ export async function startCompanionQaProbe(page: Page, options: { sampleInterva
           personality: preferences.personality, hunger, energy, outsideVisible, command: actor?.dataset.personalityCommand ?? "", play: actor?.dataset.play ?? "",
           jumpSource: Boolean(paintedSource?.passed && decoded && texture && frame && sprite && texture.currentSrc.endsWith(metadata.atlases[frame.atlas].src) && [5,6,7].some(row => metadata.rows[row].includes(pose))),
           platform, scene: actor?.dataset.personalityScene ?? actor?.dataset.scene ?? "", serial: actor?.dataset.personalitySerial ?? "", beat: actor?.dataset.personalityBeat ?? actor?.dataset.sceneBeat ?? "", effect: actor?.dataset.personalityEffect ?? "", goal: actor?.dataset.foodGoal ?? "",
+          sceneItemId: actor?.dataset.personalityItem ?? "",
+          sceneGoal: actor?.dataset.personalityGoalX !== undefined ? { x: Number(actor.dataset.personalityGoalX), y: Number(actor.dataset.personalityGoalY), platformId: actor.dataset.personalityGoalPlatform ?? "",
+            stepX: Number(actor.dataset.personalityStepX), stepY: Number(actor.dataset.personalityStepY), stepPlatformId: actor.dataset.personalityStepPlatform ?? "" } : undefined,
+          travel: { goal: actor?.dataset.travelGoal ?? "", targetX: actor?.dataset.travelTargetX ? Number(actor.dataset.travelTargetX) : null,
+            remaining: actor?.dataset.travelRemaining ? Number(actor.dataset.travelRemaining) : null, stage: actor?.dataset.travelStage ?? "" },
+          travelTurn: actor?.dataset.travelTurn ? { direction: actor.dataset.travelTurn, phase: Number(actor.dataset.travelTurnPhase) } : undefined,
           foodAftertaste: actor?.dataset.foodAftertaste ?? "",
           homeLife: actor?.dataset.homeLife ? { phase: actor.dataset.homeLife, scene: actor.dataset.homeLifeScene ?? "", serial: actor.dataset.homeLifeSerial ?? "", beat: actor.dataset.homeLifeBeat ?? "", reaching: actor.dataset.homeReaching ?? "",
             lampTouch: Boolean(document.querySelector(".vc-home-lamp[data-companion-touch]")) } : undefined,

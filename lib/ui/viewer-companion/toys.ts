@@ -418,8 +418,19 @@ export function createCompanionToyPlanner() {
     stop(now, 500);
   };
   type Input = { world: CompanionWorld; brain: CompanionBrain; preferences: CompanionPreferences; now: number; toys: readonly CompanionToy[]; existingIds?: readonly string[]; carriedId?: string; count: number; box?: Point; tastes?: CompanionTastes; intent?: { mode: "play" | "return" | "spawn"; targetId?: string; kinds?: readonly CompanionToyKind[]; homeFloorEntry?: boolean } };
-  const eligible = ({ world, brain, preferences: p, now }: Input) => p.enabled && p.roam && world.animated && !world.paused && Number.isFinite(now)
-    && brain.energy >= .25 && brain.hunger < .8 && !companionToyFoodPriority(brain, world, p) && companionToyMotivation(p, brain, world).interested;
+  const eligible = (input: Input) => {
+    const { world, brain, preferences: p, now } = input;
+    // A picked same-ID object is already physical work, not a new leisure
+    // admission. Crossing.25 during its finite return must not drop the toy
+    // and repeat pickup/look loops. Emergency fatigue and all human/meal/
+    // ownership guards still win; the original route budget/deadline stay.
+    const carryingReturn = job?.kind === "tidy" && job.stage === "deliver" && job.toyId
+      && input.carriedId === job.toyId && (!input.existingIds || input.existingIds.includes(job.toyId))
+      && now < job.deadline && job.budget > 0;
+    return p.enabled && p.roam && world.animated && !world.paused && Number.isFinite(now)
+      && (brain.energy >= .25 || carryingReturn && brain.energy > .18) && brain.hunger < .8
+      && !companionToyFoodPriority(brain, world, p) && companionToyMotivation(p, brain, world).interested;
+  };
   const routeBetween = (input: Input, from: Point, target: Point) => {
     return findCompanionToyRoute(from, target, input.world.platforms, input.preferences.jump, input.intent?.homeFloorEntry === true || input.intent?.mode === "return" || input.preferences.personality === "tidy");
   };

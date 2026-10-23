@@ -61,7 +61,9 @@ const matrixInput = (recipe: PersonalitySceneRecipe): PersonalitySceneInput => {
   if(recipe.id==="D143-T")scene.toys=[];
   if(recipe.id==="D157-S")scene.brain.energy=.9;
   if(recipe.id==="D157-T"){scene.toys=[];scene.toyCount=0;}
-  if(recipe.id==="D157-H")scene.world={...scene.world,x:130,y:room.y,platformId:room.id};
+  // The local-floor exploration prelude is a real room departure. It no
+  // longer invents the same72px ritual while already touring the calendar.
+  if(["D157-C","D157-H"].includes(recipe.id))scene.world={...scene.world,x:130,y:room.y,platformId:room.id};
   if (recipe.id === "T06") scene.world.foods = scene.world.foods!.map((food, i) => i === 1 ? { ...food, x: 205 } : food);
   if (["T05", "X-T-house"].includes(recipe.id)) scene.toys = [];
   if (recipe.id === "T07") { scene.toys = []; scene.world.foods = []; }

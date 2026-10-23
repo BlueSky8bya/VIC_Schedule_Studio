@@ -1061,7 +1061,16 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const attendedPoint = companionAttentionPoint(attention, attendedSupport ? [attendedSupport] : [], attention?.goal?.foodId ? food.current?.foods() : []);
       if (attention) data("attention", attention.kind); else el.removeAttribute("data-attention");
       if (attention?.goal) data("intent", attention.goal.kind); else el.removeAttribute("data-intent");
-      const sample = visual.sample({ row, phase: clamp(frame / 15, 0, 1), status, x: isDetailGuest() ? displayFrame.x : x - carrier.x, y: isDetailGuest() ? displayFrame.y : y - carrier.y, now: presentationNow, grip: normalizedGrip, reduced: forceNeutralPose || reduced || gfxMode() === "off", attention: attendedPoint ? { direction: Math.abs(attendedPoint.x - x) < 3 ? brain.current.heading : attendedPoint.x < x ? -1 : 1, elevation: clamp((y - size * .5 - attendedPoint.y) / 160, -1, 1) } : undefined });
+      // Only a proved autonomous departure offers a heading cue. The actual
+      // route owns world motion; direct handling, recovery, quiet modes and
+      // furniture contact keep their existing registered presentation.
+      const travelDirection = !forceNeutralPose && !reduced && gfxMode() === "full"
+        && !overlayActive && !premiereActive && !pressed && !keyboardHeld && !placing && !returning && !homeContact
+        && travel >= 0 && action && (status === "walk" || status === "jump") && status === action.kind
+        && Math.abs(action.target.x - origin.x) > 2 ? action.target.x < origin.x ? -1 as const : 1 as const : undefined;
+      const sample = visual.sample({ row, phase: clamp(frame / 15, 0, 1), status, x: isDetailGuest() ? displayFrame.x : x - carrier.x, y: isDetailGuest() ? displayFrame.y : y - carrier.y, now: presentationNow, grip: normalizedGrip, reduced: forceNeutralPose || reduced || gfxMode() === "off", travelDirection, attention: attendedPoint ? { direction: Math.abs(attendedPoint.x - x) < 3 ? brain.current.heading : attendedPoint.x < x ? -1 : 1, elevation: clamp((y - size * .5 - attendedPoint.y) / 160, -1, 1) } : undefined });
+      if (sample.turn) { data("travelTurn", String(sample.turn.direction)); data("travelTurnPhase", sample.turn.phase.toFixed(4)); }
+      else { el.removeAttribute("data-travel-turn"); el.removeAttribute("data-travel-turn-phase"); }
       // Row9 contact deliberately ignores the generic observation attention.
       // Face the actual cord during this owned local action, even when the
       // safe floor ends just beside it and the last walk faced the other way.
@@ -2055,7 +2064,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         const focusedItem = document.activeElement instanceof HTMLElement ? document.activeElement.dataset.toyId : undefined;
         const ownedId = personalityDirector.current()?.itemId;
         if (ownedId && focusedItem === ownedId) yieldedPersonalityItem = interruptedPersonalityItem = ownedId;
-        personalityDirector.cancel();
+        // Moving a separate toy may invite a finite investigation after its
+        // real release. Keep only a safe, unowned exploratory destination;
+        // other chores/manual work still yield through the normal cancel.
+        if (!personalityDirector.retainExplorationForToyInput()) personalityDirector.cancel();
         if (action?.toyMishap) action = { ...action, toyMishap: undefined };
         toyMishapWitnessed = false;
         toyPlanner.cancel(brain.current.activeMs); toys.current?.cancel(performance.now()); toyPlanner.wake(brain.current.activeMs); scenes.cancel();
@@ -2281,7 +2293,14 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       }
       if (next.scene) { data("scene", String(next.scene.id)); data("sceneBeat", String(next.scene.beat)); } else { el.removeAttribute("data-scene"); el.removeAttribute("data-scene-beat"); }
       if (next.toy) data("toyAction", next.toy.kind); else el.removeAttribute("data-toy-action");
-      if (next.personalityScene) { data("personalityScene", next.personalityScene.id); data("personalitySerial", String(next.personalityScene.serial)); data("personalityBeat", String(next.personalityScene.beat)); data("personalityCommand", next.personalityScene.command.kind); } else { el.removeAttribute("data-personality-scene"); el.removeAttribute("data-personality-serial"); el.removeAttribute("data-personality-beat"); el.removeAttribute("data-personality-command"); }
+      if (next.personalityScene) { data("personalityScene", next.personalityScene.id); data("personalitySerial", String(next.personalityScene.serial)); data("personalityBeat", String(next.personalityScene.beat)); data("personalityCommand", next.personalityScene.command.kind);
+        if (next.personalityScene.itemId) data("personalityItem", next.personalityScene.itemId); else el.removeAttribute("data-personality-item");
+      } else { el.removeAttribute("data-personality-scene"); el.removeAttribute("data-personality-serial"); el.removeAttribute("data-personality-beat"); el.removeAttribute("data-personality-command"); el.removeAttribute("data-personality-item"); }
+      const personalityGoal = next.personalityScene?.goal;
+      if (personalityGoal && next.personalityScene?.command.kind === "go") {
+        data("personalityGoalX", String(personalityGoal.x)); data("personalityGoalY", String(personalityGoal.y)); data("personalityGoalPlatform", personalityGoal.platformId ?? "");
+        data("personalityStepX", String(next.target.x)); data("personalityStepY", String(next.target.y)); data("personalityStepPlatform", next.target.platformId ?? "");
+      } else for (const key of ["goal-x", "goal-y", "goal-platform", "step-x", "step-y", "step-platform"]) el.removeAttribute(`data-personality-${key}`);
       if (next.personalitySignature) data("personalityActivity", next.personalitySignature); else el.removeAttribute("data-personality-activity");
       const sceneKind = next.homeLife && !next.homeLife.travel ? next.homeLife.command.kind
         : next.personalityScene && !next.personalityScene.travel ? next.personalityScene.command.kind : undefined;

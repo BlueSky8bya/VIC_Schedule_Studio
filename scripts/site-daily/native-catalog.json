@@ -1811,6 +1811,62 @@
       "estimatedSeconds": 10,
       "estimateSource": "new synthetic UI regression; estimate only, not actual PASS",
       "id": "12670a79182574ff3d4ce5ab846807806ca0b3927c6f4a394c03b93ba6376d76"
+    },
+    {
+      "file": "tests/visual/companion-intent-motion.spec.ts",
+      "title": "living intent motion viewer curious: ninety actual seconds with a fresh physical toy and next activity",
+      "project": "",
+      "estimatedSeconds": 115,
+      "estimateSource": "declared 90s actual observation plus native setup; not current-source PASS",
+      "id": "ed0ad60b649ec4d2e68fee67e47e943c9921c1078d67f3ae71be060d043f3de0"
+    },
+    {
+      "file": "tests/visual/companion-intent-motion.spec.ts",
+      "title": "living intent motion viewer gourmet: ninety actual seconds with a fresh physical toy and next activity",
+      "project": "",
+      "estimatedSeconds": 115,
+      "estimateSource": "declared 90s actual observation plus native setup; not current-source PASS",
+      "id": "0b3b9ac7bf06673657a163c207dbdca57ecdb51a97c395ceb20399cce09008e5"
+    },
+    {
+      "file": "tests/visual/companion-intent-motion.spec.ts",
+      "title": "living intent motion studio curious: ninety actual seconds with a fresh physical toy and next activity",
+      "project": "",
+      "estimatedSeconds": 115,
+      "estimateSource": "declared 90s actual observation plus native setup; not current-source PASS",
+      "id": "be7d38345ab04da42cb98e4dc4d3244d0c0cb9723a85183e6fa17490dc445434"
+    },
+    {
+      "file": "tests/visual/companion-intent-motion.spec.ts",
+      "title": "living intent motion studio gourmet: ninety actual seconds with a fresh physical toy and next activity",
+      "project": "",
+      "estimatedSeconds": 115,
+      "estimateSource": "declared 90s actual observation plus native setup; not current-source PASS",
+      "id": "718c43188c3864022b9b5934de27f9fd4fcdc782aaf4dd3368eef7387501d1d7"
+    },
+    {
+      "file": "tests/visual/companion-intent-motion.spec.ts",
+      "title": "living intent motion preview curious: ninety actual seconds with a fresh physical toy and next activity",
+      "project": "",
+      "estimatedSeconds": 115,
+      "estimateSource": "declared 90s actual observation plus native setup; not current-source PASS",
+      "id": "2f7f464e5c7c8f9f7661b64342df851cd14c743e7d8002d7b2ce305c09764f9d"
+    },
+    {
+      "file": "tests/visual/companion-intent-motion.spec.ts",
+      "title": "living intent motion preview gourmet: ninety actual seconds with a fresh physical toy and next activity",
+      "project": "",
+      "estimatedSeconds": 115,
+      "estimateSource": "declared 90s actual observation plus native setup; not current-source PASS",
+      "id": "baae1dcf05768578b830e53dc7d302c01cd9b04b5ec19f9366196f47d8c0f360"
+    },
+    {
+      "file": "tests/visual/companion-exploration-resume.spec.ts",
+      "title": "living exploration viewer: a real newly placed toy is inspected before the same exploration resumes",
+      "project": "",
+      "estimatedSeconds": 130,
+      "estimateSource": "real condition-based input and >=90s observation, not a completed outcome",
+      "id": "41bbcf2cde8617c0306e7feb47d10951c2a9c0a0a67968766cca5048e4f8b02b"
     }
   ],
   "dailyScenarios": [
@@ -1933,5 +1989,6 @@
     }
   ],
   "scenarioLimit": "Nine fixed, explicit 2026-10-22 registration scenarios. Weekly rotation of cases is not all configuration combinations; changing scenarios requires refreshed registration IDs.",
-  "additionalReplayCases": 4
+  "additionalReplayCases": 4,
+  "additionalLivingIntentMotionCases": 7
 }

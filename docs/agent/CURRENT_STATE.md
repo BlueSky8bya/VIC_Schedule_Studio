@@ -1,6 +1,6 @@
 # Current State — VIC Schedule Studio
 
-Last Updated: 2026-10-22 (KST)
+Last Updated: 2026-10-23 (KST)
 Project Version: 0.1.0
 
 Current work only. Completed plans/rounds are evidence, not instructions. Previous accumulated state is preserved byte-for-byte in [the snapshot](archive/20261017-CURRENT_STATE-before-platform-remediation.snapshot.txt); use topic records for current behavior.
@@ -51,6 +51,8 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 4. VERIFY-REAL-SESSION: use synthetic canaries and real authority; fixture/service-role tests never establish genuine-login RLS.
 5. PRIVACY-20260921: resolve remaining visit/recurring retention policy and restricted local recovery-backup removal after its2026-10-24 window. No automatic future run is scheduled.
 ## Last Verified
+
+Living intent/motion: final immutable SM5 build satisfies25 selected native cases (23 fresh+2 verified same-build proofs),424 files/6,840 units, type/lint/harness/build. Actual unfinished-go inspection/resume, confirmed-object play/return, three shared surfaces and adjacent life regressions are verified; broader configurations/normal-speed36 remain outside this scope. Release/public fullSHA receipts belong to the local report and ledger. [Topic evidence](plans/PLAN-20261023-living-intent-and-motion.md).
 
 Actual lamp trace2e669e72 has16 touch paints/0receipts; matched viewer geometry342x260/full graphics/DPR0.9 fails before170 (c49c947d). Bounded physical alignment preserves strict1.25px and passes final3 native cases177e87a8,99 related units/type/lint/build. Source review accepted; actual independent/deployed result pending. No200. [Plan](plans/PLAN-20261022-lamp-live-trace.md).
 

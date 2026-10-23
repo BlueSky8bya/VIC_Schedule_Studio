@@ -317,6 +317,11 @@ describe("143 a real meal's existing cue survives necessary wash before one reac
    expect(d.active()).toBe(false);
   }
   actualRoutine();s.meal=undefined;const wash=a.next(s)!;expect(wash.kind).toBe("wash");expect(d.startRoutine(wash.recipe,s.now)).toBe(true);actualRoutine();
+  // This fixture checks the old8s cue boundary, not a minimum route duration.
+  // A proved direct hop may finish the real wash sooner; explicitly enter the
+  // same post8s/pre15s observation window without inventing another action.
+  s.now=Math.max(s.now,mealAt+8001);s.brain.activeMs=s.now;
+  d.observeProgress({now:s.now,active:true,point:s.world});
   expect(washed).toBe(1);expect(mealAt).toBeGreaterThan(0);expect(s.now-mealAt).toBeGreaterThan(8000);expect(s.now-mealAt).toBeLessThan(15000);
   expect(d.completed()).toEqual([...(priorMinor?["G12"]:[]),"routine-meal","routine-wash"]);return{s,d,a,mealAt};
  }

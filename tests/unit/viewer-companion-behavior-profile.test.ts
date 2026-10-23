@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getCompanionBehaviorProfile } from "@/lib/ui/viewer-companion/behavior-profile";
-import { cancelCompanionTravelGoal, commitAction, createBrain, getAction, type CompanionAction, type CompanionBrain, type CompanionWorld, type Platform } from "@/lib/ui/viewer-companion/brain";
+import { cancelCompanionTravelGoal, commitAction, createBrain, findPlatformRoute, getAction, reachablePlatforms, type CompanionAction, type CompanionBrain, type CompanionWorld, type Platform } from "@/lib/ui/viewer-companion/brain";
 import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { companionPlayDuration } from "@/lib/ui/viewer-companion/timing";
 import { deliberateCompanionAction } from "@/lib/ui/viewer-companion/deliberation";
@@ -155,8 +155,15 @@ describe("independent companion species, motivation and gait", () => {
   });
 
   it("carries the gait into multi-step expeditions, rather than applying it only to local wandering", () => {
-    const ledges: Platform[] = [floor, { id: "low", x: 100, y: 580, width: 120, kind: "card" }, { id: "mid", x: 150, y: 460, width: 120, kind: "card" }, { id: "high", x: 250, y: 340, width: 100, kind: "card" }];
+    // A distant route needs a real takeoff walk. Nearby reachable launches
+    // correctly skip that walk and therefore cannot establish its gait.
+    const ledges: Platform[] = [floor, { id: "low", x: 400, y: 580, width: 120, kind: "card" }, { id: "mid", x: 450, y: 460, width: 120, kind: "card" }, { id: "high", x: 550, y: 340, width: 100, kind: "card" }];
     const context = { ...world, x: 40, platforms: ledges };
+    const route = findPlatformRoute(context, { x: 600, y: 340, platformId: "high" }, ledges)!;
+    expect(route[0].kind).toBe("walk"); expect(route.filter(step => step.kind === "jump").length).toBeGreaterThanOrEqual(2);
+    const firstJump = route.find(step => step.kind === "jump")!;
+    const firstLanding = ledges.find(platform => platform.id === firstJump.target.platformId)!;
+    expect(reachablePlatforms(context, [{ ...firstLanding, x: firstJump.target.x - 12, width: 24 }])).toEqual([]);
     const relaxed = getAction(healthy(), context, { ...prefs, speed: "relaxed" }, 100000, () => .5);
     const lively = getAction(healthy(), context, { ...prefs, speed: "lively" }, 100000, () => .5);
     expect(relaxed).toMatchObject({ kind: "walk", pace: "amble", intention: { kind: "explore" } });

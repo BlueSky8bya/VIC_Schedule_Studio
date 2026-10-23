@@ -112,7 +112,13 @@ describe("environment-driven finite companion intentions", () => {
     const first = getAction(fresh(), world, prefs, 0, () => .5), brain = commitAction(fresh(), first, 0);
     for (const changes of [{ roam: false }, { jump: false }, { enabled: false }]) {
       const action = getAction(brain, world, { ...prefs, ...changes }, 5000, () => .5);
-      expect(action.intention).toBeUndefined(); expect(action.kind).not.toBe("jump");
+      expect(action.kind).not.toBe("jump");
+      if (changes.jump === false) {
+        // Disabling jumps revokes the foreign expedition, not an otherwise
+        // valid ordinary same-floor walk with its own retained gait.
+        expect(action.intention?.targetId).not.toBe(brain.intention?.targetId);
+        if (action.intention) expect(action.intention.targetId).toBe(world.platformId);
+      } else expect(action.intention).toBeUndefined();
     }
     const food = { id: "snack", x: 50, y: 700, platformId: floor.id, kind: "apple" as const };
     const eating = getAction({ ...brain, hunger: .8 }, { ...world, foods: [food] }, prefs, 5000, () => .5);

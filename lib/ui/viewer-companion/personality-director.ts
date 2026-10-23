@@ -19,6 +19,7 @@ import { companionWashSteps } from "./wash-journey";
 
 import { planCompanionOutsideRoute, companionOutsideRouteFact, boundedCompanionOutsideObserver, type CompanionOutsideGoal, type CompanionOutsideObserver } from "./outside-route";
 import { companionLocalFloorStep, companionOrdinaryRoomFloor } from "./safe-room-floor";
+import { createCompanionExplorationMemory, type CompanionToyObservation } from "./exploration-memory";
 
 type Point = { x: number; y: number; platformId?: string };
 export type PersonalityHome = Partial<Record<"sofa" | "floor" | "window" | "pad" | "box" | "dispenser" | "tv" | "light" | "curtain" | "radio", Point>> & {
@@ -49,11 +50,13 @@ export type PersonalityProgressObservation = {
   now: number; active: boolean; point?: Point; carriedToyId?: string; carriedFoodId?: string;
   controls?: { tv?: CompanionHomeTvState; light?: boolean; curtain?: "open" | "shade" | "closed"; radio?: boolean };
 };
-export type PersonalitySceneBeat = { id: string; serial: number; beat: number; command: SceneBeat; itemId?: string; comparisonItemId?: string; travel?: true; routine?: true; manual?: true; homeFloorEntry?: true; interactionContact?: { x: number; y: number }; propShow?: true };
+export type PersonalitySceneBeat = { id: string; serial: number; beat: number; command: SceneBeat; itemId?: string; comparisonItemId?: string; travel?: true; routine?: true; manual?: true; homeFloorEntry?: true; interactionContact?: { x: number; y: number }; propShow?: true; /** Exact proved destination, distinct from this route's next actual leg. */ goal?: Point };
 export type PersonalitySceneAction = CompanionAction & { personalityScene: PersonalitySceneBeat; personalitySignature: CompanionPreferences["personality"] };
 export type PersonalitySceneProposal = { meta: PersonalitySceneBeat; action?: PersonalitySceneAction; delegate?: Extract<SceneBeat, { kind: "toy" | "food" }> };
 export type CompanionToyAdmissionObserver = (fact: Readonly<Record<string, unknown>>) => void;
 const safe = (point: Point | undefined): point is Point => Boolean(point && [point.x, point.y].every(Number.isFinite));
+const arrived = (point: Point | undefined, world: CompanionWorld, range = 24) => safe(point)
+  && point.platformId === world.platformId && Math.hypot(point.x-world.x, point.y-world.y) < range;
 const atHome = (id?: string) => /^companion-home(?:-floor)?(?:-\d+)?$/.test(id ?? "");
 const ACTUAL_PROGRESS_BUDGET_MS = 8000;
 // Admission and execution share the same real authored-sleep condition.
@@ -67,6 +70,7 @@ const restExpression = (step: SceneBeat) => step.kind === "sleep"
  * audio, learning, analytics or speculative object mutation happens here. */
 export function createCompanionPersonalityDirector(recipes: readonly PersonalitySceneRecipe[] = COMPANION_PERSONALITY_SCENES, rng: () => number = Math.random, outsideObserver?:CompanionOutsideObserver, toyAdmissionObserver?: CompanionToyAdmissionObserver, onCompleted?: (receipt: { id: string; success: true; abbreviated: false }) => void) {
   const outsideDiagnostic=boundedCompanionOutsideObserver(outsideObserver);
+  const explorationMemory = createCompanionExplorationMemory();
   const approvedRecipes = recipes.filter(recipe => recipe.id.startsWith("D157-")).slice(0, 9);
   const toyAdmissionSeen = toyAdmissionObserver ? new Set<string>() : undefined;
   const admission = (recipe: PersonalitySceneRecipe, input: PersonalitySceneInput, reason: string, admitted = false) => {
@@ -91,7 +95,8 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
     return admitted;
   };
   let serial = 0, selected: CompanionPreferences["personality"] | undefined, first = true, cursor = 0;
-  let active: { recipe: PersonalitySceneRecipe; serial: number; beat: number; started: number; progressed: number; attempts: number; itemId?: string; comparisonItemId?: string; lastX: number; lastY: number; count: number; routine?: true; manual?: true; abbreviated?: true; waking?: true; closureAt?: number; goal?: { beat: number; id: string; fraction?: number }; quietHome?: true; quietMaterial?: true; quietControls?: PersonalityProgressObservation["controls"]; tvChoice?: {beat:number;state:CompanionHomeTvState}; tvWatch?: { beat: number; started: number; duration: number; point: Point }; settlingToy?: { id: string; until: number } } | undefined;
+  let active: { recipe: PersonalitySceneRecipe; serial: number; beat: number; started: number; progressed: number; attempts: number; itemId?: string; comparisonItemId?: string; lastX: number; lastY: number; count: number; routine?: true; manual?: true; abbreviated?: true; waking?: true; closureAt?: number; goal?: { beat: number; id: string; fraction?: number }; explorationGoals?: Map<number, CompanionOutsideGoal>; inspection?: CompanionToyObservation; quietHome?: true; quietMaterial?: true; quietControls?: PersonalityProgressObservation["controls"]; tvChoice?: {beat:number;state:CompanionHomeTvState}; tvWatch?: { beat: number; started: number; duration: number; point: Point }; settlingToy?: { id: string; until: number } } | undefined;
+  let suspendedExploration: NonNullable<typeof active> | undefined;
   let entrySerial: number | undefined, entryFinished = false, lastPosition: Point | undefined;
   // Existing active time only, including the initial personal preparation.
   // A completed entry/observation/pose/scene never refills this shared budget.
@@ -197,6 +202,16 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
     if (recentPurposes.size > 12) recentPurposes.delete(recentPurposes.keys().next().value!);
   };
   const finish = (success: boolean, reason?: "progress-timeout"|"duration-timeout"|"outside-unavailable") => {
+    if (active?.recipe.id === "curious-interest" && suspendedExploration) {
+      // A borrowed inspection has no whole-scene/learning receipt. Restore
+      // the exact owner, beat and destination, even when its real toy vanished.
+      // Ordinary cancellation explicitly clears this slot before reaching here.
+      const spent = Math.max(0, now-active.started);
+      active = suspendedExploration; suspendedExploration = undefined;
+      active.started += spent; active.progressed = now;
+      if (lastPosition) { active.lastX = lastPosition.x; active.lastY = lastPosition.y; }
+      return;
+    }
     if (active) {
       if(active.recipe.id==="routine-outing")outsideDiagnostic?.({stage:"routine-finished",outcome:success,beat:active.beat,reason:reason??(success?"completed":"cancelled")});
       if (success) {
@@ -286,6 +301,11 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
   const available = (recipe: PersonalitySceneRecipe, input: PersonalitySceneInput) => {
     if ((failures.get(recipe.id) ?? -Infinity) > now || !recipe.triggers.every(key => trigger(key, input))) return admission(recipe,input,(failures.get(recipe.id) ?? -Infinity) > now ? "failure-cooldown" : "missing-trigger");
     const { world: w, brain: b, preferences: p, home } = input, id = recipe.id;
+    // The local-floor prelude is preparation for leaving the private room,
+    // never a72px backwards ritual at each calendar stop. Public exploration
+    // earns its pauses through an actual new place, not a free-choice timer.
+    if (id === "D157-C" && !atHome(w.platformId)) return false;
+    if (exploratoryRecipe(recipe) && !explorationPlans(recipe, input)) return false;
     // Give a newly arrived public visitor its existing personality cadence
     // before choosing optional indoor viewing. A later visit may choose TV;
     // this never cancels an existing owner, direct event or required chore.
@@ -513,6 +533,51 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
       .find(point=>findCompanionToyRoute(input.world,point,input.world.platforms,input.preferences.jump));
     return Boolean(first && candidates.some(plane=>plane.id!==first.platformId && findCompanionToyRoute(first,{x:platformLandingX(plane,plane.x+plane.width/2),y:plane.y,platformId:plane.id},input.world.platforms,input.preferences.jump)));
   };
+  const exploratoryRecipe = (recipe: PersonalitySceneRecipe) => recipe.personality === "curious"
+    && ["D157-C", "D143-C", "C05", "C10"].includes(recipe.id);
+  const explorationPlans = (recipe: PersonalitySceneRecipe, input: PersonalitySceneInput) => {
+    const goals = new Map<number, CompanionOutsideGoal>(), chosen = new Set<string>();
+    let source = input.world;
+    for (const [beat, step] of recipe.steps.entries()) {
+      if (step.kind !== "go" || !["outside", "novel-place"].includes(step.target)) continue;
+      const candidates = companionOutsidePlatforms({ ...source, platforms: input.world.platforms.filter(plane => explorationMemory.novel(plane) && !chosen.has(plane.id)) }, input.brain.visited);
+      const point = candidates.map(plane => ({ x: platformLandingX(plane, plane.x+plane.width/2), y: plane.y, platformId: plane.id }))
+        .find(point => findCompanionToyRoute(source, point, input.world.platforms, input.preferences.jump));
+      const plane = point && input.world.platforms.find(plane => plane.id === point.platformId);
+      if (!point || !plane) return;
+      chosen.add(plane.id); goals.set(beat, { id: plane.id, fraction: (point.x-plane.x)/plane.width });
+      source = { ...source, ...point };
+    }
+    return goals.size ? goals : undefined;
+  };
+  const investigateChangedToy = (input: PersonalitySceneInput) => {
+    const owner = active, { world, brain, preferences: p } = input, step = owner?.recipe.steps[owner.beat];
+    const settledAt = events.get("toy-settled");
+    if (!owner || suspendedExploration || owner.routine || owner.manual || owner.itemId || owner.comparisonItemId
+      || !exploratoryRecipe(owner.recipe) || p.personality !== "curious" || !p.enabled || !p.roam
+      || !world.animated || world.paused || input.busy || !actualOutside(world)
+      || step?.kind !== "go" || !["outside", "novel-place"].includes(step.target)
+      || input.carriedToyId || input.carriedFoodId || brain.foodGoal || brain.intention && brain.intention.kind !== "explore"
+      || brain.episode && brain.episode.remaining > 0 && brain.episode.phase !== "finish"
+      || brain.hunger >= .78 || brain.energy <= .25 || settledAt === undefined || settledAt > now || now-settledAt >= 15000) return;
+    const destination = targetFor(step.target, input);
+    // A landed go has already fulfilled its purpose. Borrowing it here would
+    // manufacture a return trip solely to finish a stale arrival condition.
+    if (!safe(destination) || arrived(destination, world)) return;
+    const toy = input.toys.slice(0, 4).filter(toy => !input.flyingToyIds?.includes(toy.id) && explorationMemory.novelToy(toy, world)
+      && Math.hypot(toy.x-world.x, toy.y-world.y) <= 160)
+      .sort((a, b) => Math.hypot(a.x-world.x, a.y-world.y)-Math.hypot(b.x-world.x, b.y-world.y))
+      .find(toy => {
+        const point = toy.stance ?? toy, approach = findCompanionToyRoute(world, point, world.platforms, p.jump);
+        return approach && approach.length <= 2 && findCompanionToyRoute(point, destination, world.platforms, p.jump);
+      });
+    if (!toy) return;
+    explorationMemory.inspectToy(toy, world);
+    suspendedExploration = owner;
+    active = { recipe: { id: "curious-interest", label: "새로 멈춘 물건을 확인하고 탐험 이어가기", personality: "curious", major: false,
+      triggers: [], steps: [{ kind: "toy", mode: "inspect", limit: 1 }] }, serial: ++serial, beat: 0, started: now, progressed: now,
+      attempts: 0, count: 0, itemId: toy.id, lastX: world.x, lastY: world.y };
+  };
   const localFloorPoint = (input: PersonalitySceneInput): Point | undefined => {
     const direction = active?.recipe.id === "D157-M" ? -(input.brain.heading ?? 1) : input.brain.heading;
     const local = companionLocalFloorStep(input.world, direction);
@@ -527,6 +592,14 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
   };
   const targetFor = (target: Extract<SceneBeat, { kind: "go" }>["target"], input: PersonalitySceneInput): Point | undefined => {
     const { world, home } = input;
+    const exploration = active?.explorationGoals?.get(active.beat);
+    if (exploration && (target === "outside" || target === "novel-place")) {
+      const plane = world.platforms.find(plane => plane.id === exploration.id);
+      // A scroll reprojects the same goal. A removed/unsafe support cannot be
+      // silently replaced by another curiosity target or credited as arrival.
+      return plane && companionOutsideSupport(plane)
+        ? { x: platformLandingX(plane, plane.x+plane.width*exploration.fraction), y: plane.y, platformId: plane.id } : undefined;
+    }
     if (target === "local-floor") {
       if (active && active.goal?.beat === active.beat && active.goal.fraction !== undefined) {
         const plane = world.platforms.find(value => value.id === active!.goal!.id);
@@ -662,6 +735,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
     if (!step) return;
     const speed = input.preferences.speed === "relaxed" ? 65 : input.preferences.speed === "lively" ? 135 : 100;
     const offered = action(command, { ...step, pace: input.preferences.personality === "sleepy" ? "amble" : "scoot", duration: step.kind === "jump" ? 850 : Math.max(220, Math.abs(step.target.x - input.world.x) / speed * 1000) }, input);
+    if (command.kind === "go") { offered.meta.goal = { ...point }; offered.action!.personalityScene.goal = { ...point }; }
     // Bind only an actually issued post-return floor route. Its arrival
     // may retain short required grooming without a fake ACK or clock refill.
     const tail = active?.recipe.steps.slice(active.beat + 1) ?? [];
@@ -838,18 +912,30 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
     observeEffect,
     progressDeadline: () => actualProgressAt === undefined ? undefined
       : Math.min(actualProgressAt + ACTUAL_PROGRESS_BUDGET_MS, initialProgressDeadline ?? Infinity),
-    event(key: SceneTrigger, at: number) { if (Number.isFinite(at)) events.set(key, at); },
+    event(key: SceneTrigger, at: number) { if (Number.isFinite(at)) { events.set(key, at); if (key === "layout") explorationMemory.layoutChanged(); } },
+    /** Moving an unrelated real toy may change what is interesting, but need
+     * not erase this unowned public trip. The human still owns the held toy;
+     * runtime finishes only its current physical movement before re-proving. */
+    retainExplorationForToyInput() {
+      const step = active?.recipe.steps[active.beat];
+      return Boolean(active && !active.routine && !active.manual && !active.itemId && !active.comparisonItemId
+        && !carried && !carriedFood && exploratoryRecipe(active.recipe)
+        && step?.kind === "go" && ["outside", "novel-place"].includes(step.target)
+        && active.explorationGoals?.has(active.beat));
+    },
     cancel() {
       // An interrupted issued greeting is dismissed, not completed. It must
       // not lock common needs forever; no scene/reward/progress ACK is made.
       if (entrySerial !== undefined && !entryFinished) { entryFinished = true; entrySerial = undefined; }
-      finish(false);
+      suspendedExploration = undefined; finish(false);
     },
     /** Only an acknowledged direct touch may dismiss an interrupted voluntary
      * itinerary. Real item/care/control owners survive; dismissal grants no
      * completion, failed-task cooldown, progress, event or learning credit. */
     interruptForPetting(input: Pick<PersonalitySceneInput, "brain" | "preferences" | "carriedToyId" | "carriedFoodId">) {
       const {brain,preferences:p}=input;
+      if (active?.recipe.id === "curious-interest" && p.enabled && p.petting && !input.carriedToyId && !input.carriedFoodId
+        && !carried && !carriedFood) { active = undefined; suspendedExploration = undefined; return true; }
       if(!active||active.routine||active.itemId||active.comparisonItemId||carried||carriedFood||input.carriedToyId||input.carriedFoodId
         ||!p.enabled||!p.petting||![brain.hunger,brain.energy].every(Number.isFinite)||brain.hunger>=.78||brain.energy<=.18
         ||brain.foodGoal||brain.intention&&brain.intention.kind!=="explore"||brain.episode&&brain.episode.remaining>0&&brain.episode.phase!=="finish")return false;
@@ -997,6 +1083,8 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
       const timely = Number.isFinite(acknowledgedAt) && acknowledgedAt >= now;
       if (Number.isFinite(acknowledgedAt) && acknowledgedAt >= now) now = acknowledgedAt;
       if (!success) { if (beat.command.optional) advance(); else finish(false); return; }
+      if (timely && beat.command.kind === "toy" && beat.command.mode === "inspect" && itemId
+        && active.itemId === itemId && active.inspection?.id === itemId) explorationMemory.confirmToyInspection(active.inspection);
       const ownPlayRelease = beat.command.kind === "toy" && beat.command.mode === "play" && Boolean(itemId) && active.itemId === itemId;
       if (itemId) active.itemId = itemId;
       if (timely && ["toy", "food", "wash", "tv", "light", "curtain", "radio"].includes(beat.command.kind)) active.closureAt = acknowledgedAt;
@@ -1055,14 +1143,17 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
       now = Math.max(now, Number.isFinite(input.now) ? input.now : now);
       const { world, preferences: p, brain } = input;
       if (selected !== p.personality) {
-        selected = p.personality; quietHomeUntil = -Infinity; first = true; entryFinished = false; entrySerial = undefined; finish(false); cursor = 0;
+        selected = p.personality; quietHomeUntil = -Infinity; first = true; entryFinished = false; entrySerial = undefined; suspendedExploration = undefined; finish(false); cursor = 0;
         selectedAt = now; lastOutsideAt = lastCleanupAt = -Infinity; outsideVisitAt = undefined; waitingReturns.clear();
         actualProgressAt = undefined; actualPoint = undefined; progressActive = false; controls = undefined; carried = carriedFood = undefined; initialProgressDeadline = undefined;
       }
       if (!p.enabled || (!p.roam && !active?.manual) || !world.animated || world.paused || input.busy || !world.platformId) return;
       const support = world.platforms.find(platform => platform.id === world.platformId);
+      if (!support && active && (active.goal && !world.platforms.some(plane => plane.id === active!.goal!.id)
+        || [...active.explorationGoals?.values() ?? []].some(goal => !world.platforms.some(plane => plane.id === goal.id)))) finish(false);
       if (!support || Math.abs(support.y - world.y) > 2 || world.x < support.x || world.x > support.x + support.width || ["control", "hide"].includes(support.kind)) return;
       const here = { x: world.x, y: world.y, platformId: world.platformId };
+      explorationMemory.observe(world, brain.visited);
       if (actualOutside(world)) { lastOutsideAt = now; outsideVisitAt ??= now; }
       else if (atHome(world.platformId)) outsideVisitAt = undefined;
       lastPosition = here;
@@ -1089,6 +1180,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
         && active.recipe.steps.find(step=>step.kind==="toy")?.mode === "return"
         && active.recipe.steps.slice(active.beat).some(step=>step.kind==="toy"&&step.mode==="return"&&!step.optional)
         && !unfinishedReturn(active.recipe,input)) finish(false);
+      investigateChangedToy(input);
       if (!active) {
         const pool = recipes.filter(recipe => recipe.personality === p.personality && available(recipe, input));
         const choices = selectionChoices(pool,input);
@@ -1128,12 +1220,26 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
         }
         if (recipe) waitingReturns.delete(recipe.id);
         if (recipe) active = { recipe, serial: ++serial, beat: 0, started: now, progressed: now, attempts: 0, lastX: world.x, lastY: world.y, count: 0,
+          ...(exploratoryRecipe(recipe) ? { explorationGoals: explorationPlans(recipe, input) } : {}),
           ...(atHome(world.platformId) && quietHomeRecipe(recipe) ? { quietHome: true as const, quietControls: { tv: input.tv, light: input.lightLit, curtain: input.curtainPhase, radio: input.radioPlaying } } : {}) };
         else return;
       }
       // At most four zero-duration transitions per existing decision.
       for (let transitions = 0; active && transitions < 4; transitions++) {
         let command = active.recipe.steps[active.beat];
+        if (active.recipe.id === "C01" && active.beat === 0) {
+          // A prior successful same-object inspection already supplied this
+          // introduction. Keep the real play/pick/return, omitting only the
+          // repeated sniff/side-peek prefix. This shortened plan earns no
+          // fictitious full-C01 completion or played/collection credit.
+          if (!active.itemId) targetFor("toy", input);
+          const toy = input.toys.find(toy => toy.id === active!.itemId);
+          const playAt = active.recipe.steps.findIndex(step => step.kind === "toy" && step.mode === "play");
+          if (toy && playAt > active.beat && explorationMemory.inspectedToy(toy, world)) {
+            active.abbreviated = true; active.beat = playAt; active.attempts = active.count = 0; active.goal = undefined;
+            command = active.recipe.steps[active.beat];
+          }
+        }
         // The next real object is the continuation of the same chore. Omit
         // repeated preparation/celebration between returns, while keeping
         // each native same-ID delivery and its own completion unchanged.
@@ -1186,7 +1292,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
           const point = targetFor(command.target, input);
           if (safe(point)) attention = point;
           const arrivalRange = command.target === "toy" && active.recipe.id === "D157-M" ? 8 : command.target === "toy" || command.target === "food" ? 34 : 24;
-          if (safe(point) && point.platformId === world.platformId && Math.hypot(point.x - world.x, point.y - world.y) < arrivalRange) { advance(); continue; }
+          if (arrived(point, world, arrivalRange)) { advance(); continue; }
           const offered = safe(point) ? go(point, command, input) : undefined;
           if (offered) return offered;
           if (!point && ["toy", "toy-other-side"].includes(command.target) && waitingForOwnToy(input)) {
@@ -1223,6 +1329,15 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
             if (!main || !partner || brain.hunger >= .65 || Math.hypot(partner.x-main.x,partner.y-main.y) > 160
               || partner.platformId !== world.platformId || Math.hypot(partner.x-world.x,partner.y-world.y) > 72) { advance(); continue; }
             active.comparisonItemId = partner.id;
+          }
+          // The existing full toy jobs also make the object familiar. A later
+          // unrelated settle event must not rediscover that unchanged toy.
+          if (command.kind === "toy" && command.mode !== "spawn") {
+            const toy = input.toys.find(toy => toy.id === active!.itemId);
+            if (toy) {
+              const observation = explorationMemory.inspectToy(toy, world);
+              if (command.mode === "inspect") active.inspection = observation;
+            }
           }
           return { meta: meta(command), delegate: command };
         }

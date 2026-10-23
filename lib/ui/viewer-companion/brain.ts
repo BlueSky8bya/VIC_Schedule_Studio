@@ -218,11 +218,22 @@ export function findPlatformRoute(origin: SupportedPoint, target: SupportedPoint
       Math.hypot(platformLandingX(a, target.x) - target.x, a.y - target.y)
       - Math.hypot(platformLandingX(b, target.x) - target.x, b.y - target.y));
     for (const platform of choices) {
-      const takeoffX = node.platform.manualOnly ? node.x : platformLandingX(node.platform, platformLandingX(platform, target.x));
+      let takeoffX = node.platform.manualOnly ? node.x : platformLandingX(node.platform, platformLandingX(platform, target.x));
       // An offered snack is the only manual destination. Prove a landing at
       // its actual x so no traversal across that otherwise unsafe top follows.
       const landingX = platform.manualOnly ? finalX : platformLandingX(platform, takeoffX);
       const collision = platform.manualOnly ? { ...platform, x: landingX - 12, width: 24 } : platform;
+      // Plan the next hop before asking for a takeoff walk. The occupied
+      // point is already on this real support: if it can reach the very same
+      // reserved landing, a short alignment/reverse adds no physical value.
+      // Use an exact landing witness, not the wide destination's near edge;
+      // required walks across a long floor keep their original proof below.
+      const exactLanding = { ...collision, x: landingX - 12, width: 24 };
+      // The cushion's full-body rim passage is stronger than this generic
+      // foot/landing proof. Keep its original measured alignment: a diagonal
+      // shortcut can require a huge clearance arc above the room's header.
+      if (node.platform.id !== "companion-home" && platform.id !== "companion-home"
+        && reachablePlatforms({ x: node.x, y: node.platform.y }, [exactLanding]).length) takeoffX = node.x;
       if (!reachablePlatforms({ x: takeoffX, y: node.platform.y }, [collision]).length) continue;
       const steps = [...node.steps];
       if (Math.abs(takeoffX - node.x) > 1) steps.push({ kind: "walk", target: { x: takeoffX, y: node.platform.y, platformId: node.platform.id } });

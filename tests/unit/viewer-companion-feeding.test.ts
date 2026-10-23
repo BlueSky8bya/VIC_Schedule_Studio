@@ -43,10 +43,10 @@ describe("local companion feeding and animal habits", () => {
     expect(recordCompanionEvent({ ...brain, hunger: COMPANION_FULL_THRESHOLD }, "ate").hunger).toBe(0);
   });
 
-  it("finds a concrete three-jump route with explicit walking before takeoff", () => {
+  it("finds a concrete three-jump route without aligning a launch that is already reachable", () => {
     const route = findPlatformRoute(world, food, world.platforms)!;
     expect(route).not.toBeNull();
-    expect(route[0].kind).toBe("walk");
+    expect(route[0].kind).toBe("jump");
     expect(route.filter(step => step.kind === "jump").map(step => step.target.platformId)).toEqual(["low", "mid", "high"]);
     let point = { x: world.x, y: world.y, platformId: world.platformId };
     for (const step of route) {

@@ -70,7 +70,9 @@ function fixture(segments = 8) {
 
 describe("140 toy work budgets follow the proved complete round trip", () => {
   it("carries one actual far-away ID home over more than18 route steps without a drop, ready loop or retry", () => {
-    const host = fixture(), actual = host.model.available()[0], started = host.input.now;
+    // Ten real gaps each way keep this longer than the old18-step budget
+    // even after needless takeoff alignment walks have been removed.
+    const host = fixture(11), actual = host.model.available()[0], started = host.input.now;
     const approach = findCompanionToyRoute(host.input.world, actual, host.input.world.platforms, true)!;
     const back = findCompanionToyRoute(actual, host.input.home.box!, host.input.world.platforms, true)!;
     expect(approach.length + back.length).toBeGreaterThan(18);

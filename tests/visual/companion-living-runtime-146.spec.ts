@@ -4,6 +4,7 @@ import {resolve} from "node:path";
 import {SETTINGS_EPOCH,SETTINGS_EPOCH_KEY} from "@/lib/ui/motion";
 import {DEFAULT_COMPANION_PREFERENCES,COMPANION_PERSONALITIES,type CompanionPersonality} from "@/lib/ui/viewer-companion/preferences";
 import {DEFAULT_COMPANION_MEMORY} from "@/lib/ui/viewer-companion/care";
+import {COMPANION_PERSONALITY_SCENES} from "@/lib/ui/viewer-companion/personality-scene-catalog";
 import {chooseCompanionPersonality,openCompanionHome,placeCompanionOnHomeFloor} from "./helpers/companion-home";
 import {settlePanelLayout} from "./helpers/panel-layout";
 import {guardCompanionQa,startCompanionQaProbe,type DailyProof,type QaObservation} from "./helpers/companion-qa";
@@ -91,23 +92,31 @@ test("146 gourmet commits to one real meal instead of walking between several fo
  const foodIds=await page.locator(".vc-food").evaluateAll(nodes=>nodes.map(node=>(node as HTMLElement).dataset.food!));
  expect(new Set(foodIds).size).toBe(3);
  const foodIdsIn=(frame:QaObservation)=>(frame.items??"").split("|")[0].split(",").filter(Boolean);
+   // A real authored meal owns its same physical item before the ordinary
+   // brain starts an eating episode. Read both actual ownership channels;
+   // retain unknown/conflicting IDs so a target switch cannot disappear.
+   const mealOwners=new Set(["routine-meal",...COMPANION_PERSONALITY_SCENES.filter(recipe=>recipe.steps.some(step=>step.kind==="food"&&step.mode==="eat")).map(recipe=>recipe.id)]);
+   const goalsIn=(frame:QaObservation)=>[frame.goal,frame.command==="food"&&mealOwners.has(frame.scene)?frame.sceneItemId:undefined].filter((id):id is string=>Boolean(id));
  await startCompanionQaProbe(page);await roam(page);
  // A stopped-roam eat sprite can precede the real outing. Start from the
  // observed enabled session, then require a newly acquired physical target.
  await expect.poll(async()=>(await samples(page)).some(f=>f.roam===true&&f.eligible&&f.visible&&f.decoded&&f.state==="eat"&&foodIds.includes(f.goal??"")),{timeout:80000,intervals:[500]}).toBe(true);
  const observed=await samples(page),roamIndex=observed.findIndex(f=>f.roam===true&&f.eligible);
  expect(roamIndex).toBeGreaterThanOrEqual(0);
- const active=observed.slice(roamIndex),acquired=active.find(f=>f.goal&&foodIds.includes(f.goal)),firstEat=active.find(f=>f.eligible&&f.visible&&f.decoded&&f.state==="eat"&&foodIds.includes(f.goal??""));
+   const active=observed.slice(roamIndex),acquired=active.find(f=>goalsIn(f).some(id=>foodIds.includes(id))),firstEat=active.find(f=>f.eligible&&f.visible&&f.decoded&&f.state==="eat"&&foodIds.includes(f.goal??""));
  expect(acquired).toBeTruthy();expect(firstEat).toBeTruthy();
- const goal=acquired!.goal!;
- expect(active.some(f=>f.at<acquired!.at&&!f.goal),"roam begins before the food goal is acquired").toBe(true);
+   const goal=goalsIn(acquired!)[0];
+   expect(active.some(f=>f.at<acquired!.at&&goalsIn(f).length===0),"roam begins before the food goal is acquired").toBe(true);
  expect(firstEat!.at,"acquisition precedes the actual meal").toBeGreaterThan(acquired!.at);
  expect(firstEat!.goal,"the approached food is the food actually eaten").toBe(goal);
- const commitment=active.filter(f=>f.at<=firstEat!.at),goals=new Set(commitment.filter(f=>f.goal).map(f=>f.goal));
+   const commitment=active.filter(f=>f.at<=firstEat!.at),goals=new Set(commitment.flatMap(goalsIn));
  expect(goals.size,"one committed physical food before the first actual meal").toBe(1);
- expect(commitment.some(f=>f.command==="compare"&&(f.walkSource||f.jumpSource)),"comparison cannot create a second travel destination").toBe(false);
+   expect(commitment.some(f=>{
+    const step=COMPANION_PERSONALITY_SCENES.find(recipe=>recipe.id===f.scene)?.steps[Number(f.beat)];
+    return (f.command==="compare"||f.command==="food"&&step?.kind==="food"&&step.mode==="compare")&&(f.walkSource||f.jumpSource);
+   }),"comparison cannot create a second travel destination").toBe(false);
  expect(commitment.filter(f=>f.at>=acquired!.at).every(f=>foodIdsIn(f).includes(goal)),"the same physical food stays present throughout approach").toBe(true);
- const travel=commitment.filter(f=>f.goal===goal&&f.visible&&f.decoded&&(f.walkSource||f.jumpSource));
+   const travel=commitment.filter(f=>goalsIn(f).includes(goal)&&f.visible&&f.decoded&&(f.walkSource||f.jumpSource));
  expect(travel.length,"a decoded approach to the committed food is observed").toBeGreaterThanOrEqual(2);
  expect(Math.max(...travel.map(f=>f.x))-Math.min(...travel.map(f=>f.x))+Math.max(...travel.map(f=>f.y))-Math.min(...travel.map(f=>f.y)),"the approach actually changes the actor's painted position").toBeGreaterThan(4);
  await expect.poll(()=>page.locator(".vc-food").evaluateAll((nodes,id)=>nodes.some(node=>(node as HTMLElement).dataset.food===id),goal),{timeout:25000,intervals:[250]}).toBe(false);

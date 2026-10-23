@@ -15,6 +15,9 @@ export type CompanionMotionInput = {
   /** A proved target may orient a stationary observation. It never changes
    * world position, travel heading or a captured/manual performance. */
   attention?: { direction: -1 | 1; elevation: number };
+  /** Only an active autonomous walk/jump may offer its proved heading. This
+   * finite presentation cue never changes the route or delays its movement. */
+  travelDirection?: -1 | 1;
 };
 export type CompanionMotionPose = {
   row: number;
@@ -24,6 +27,8 @@ export type CompanionMotionPose = {
   scaleX: number;
   scaleY: number;
   tilt: number;
+  /** Read-only finite body-turn phase. No pupil/eye-shape change is implied. */
+  turn?: { direction: -1 | 1; phase: number };
 };
 type Options = {
   clips?: Readonly<Record<number, readonly number[]>>;
@@ -126,6 +131,8 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
   let previousX = 0, previousY = 0, previousNow = 0;
   let enteredAt = 0, walkDistance = 0, walkSteps = 0, travelLean = 0;
   let facing: -1 | 1 = 1;
+  let travelDirection: -1 | 1 | undefined;
+  let turn: { from: -1 | 1; direction: -1 | 1; began: number } | undefined;
   type Scalars = Pick<CompanionMotionPose, "bob" | "scaleX" | "scaleY" | "tilt">;
   const neutral = (): Scalars => ({ bob: 0, scaleX: 1, scaleY: 1, tilt: 0 });
   let shown = neutral();
@@ -147,8 +154,20 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
         && Math.abs(dx) < .05 && Math.abs(dy) < .05
         && input.attention && (input.attention.direction === -1 || input.attention.direction === 1) && Number.isFinite(input.attention.elevation)
         ? input.attention : undefined;
+      const heading = !input.reduced && ["walk", "jump"].includes(input.status)
+        && (input.travelDirection === -1 || input.travelDirection === 1) ? input.travelDirection : undefined;
+      // Begin on the action's first paint, before a slow-start walk has moved
+      // enough to infer its direction. A small body/ear lean leads the mirror;
+      // keeping facing at±1 preserves the eye/accessory footprint throughout.
+      if (heading !== travelDirection) {
+        turn = heading && heading !== facing ? { from: facing, direction: heading, began: now } : undefined;
+        travelDirection = heading;
+      }
+      const turnPhase = turn ? clamp((now - turn.began) / 140, 0, 1) : 1;
+      if (turn && turnPhase < 1) facing = turnPhase < .36 ? turn.from : turn.direction;
+      else if (heading) { facing = heading; turn = undefined; }
       // A hand moves the body in world space; it is not a walking intention.
-      if (!(row === 8 && input.status === "held") && input.status !== "play" && Math.abs(dx) >= .05) facing = dx < 0 ? -1 : 1;
+      else if (!(row === 8 && input.status === "held") && input.status !== "play" && Math.abs(dx) >= .05) facing = dx < 0 ? -1 : 1;
       else if (attention) facing = attention.direction;
       if (entered) { enteredAt = now; walkDistance = 0; walkSteps = 0; travelLean = 0; }
       else if (row === 2 || row === 20) walkDistance += Math.abs(dx);
@@ -243,10 +262,22 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
       Object.assign(next, companionMaterialScale(next.scaleY));
       if (seconds > 0) for (const key of Object.keys(target) as (keyof Scalars)[]) velocity[key] = clamp((next[key] - shown[key]) / seconds, key === "scaleX" || key === "scaleY" ? -2 : -60, key === "scaleX" || key === "scaleY" ? 2 : 60);
       if (t >= 1 || input.reduced) mixing = false;
+      // The clip mixer remembers only its own pose. Including the decorative
+      // turn in this state would inherit it again at each jump-row change.
       shown = next;
+      const presented = { ...next };
+      // Apply after the ordinary100ms clip correction so that entering a new
+      // row cannot cancel its anticipation. This is strictly local material
+      // motion: support coordinates and collision/landing witnesses stay put.
+      const turning = turn && turnPhase < 1 ? Math.sin(turnPhase * Math.PI) : 0;
+      if (turning && turn) {
+        presented.tilt += turn.direction * facing * 3 * turning;
+        Object.assign(presented, companionMaterialScale(presented.scaleY * (1 - .025 * turning)));
+      }
       return {
         row, column: frames[index], facing,
-        bob: rounded(next.bob), scaleX: rounded(next.scaleX), scaleY: rounded(next.scaleY), tilt: rounded(next.tilt),
+        bob: rounded(presented.bob), scaleX: rounded(presented.scaleX), scaleY: rounded(presented.scaleY), tilt: rounded(presented.tilt),
+        ...(turn && turnPhase < 1 ? { turn: { direction: turn.direction, phase: rounded(turnPhase) } } : {}),
       };
     },
   };
