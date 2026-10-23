@@ -13,7 +13,7 @@ Criteria145: optional TV bow and separate actual10s activity/repetition verified
 
 Scheduled: daily site QA remains ACTIVE at09:00 KST. Owner2026-10-22 supersedes blanket200/restart/all-media release gates: use changed-risk checks, weekly rotation and valid same-build continuation. No200 in this task. Preserve original full certifier, failures, privacy and actual-scope labels. [Focused QA](plans/PLAN-20261022-focused-qa.md).
 
-Meadow: shared entry, one seasonal meadow, seven detailed flora types and companion walks; two controls.13 native cases passed; production proof follows the release receipt. [Plan](plans/PLAN-20261023-meadow-walk.md). QA storage16.45GB cumulative reclaimed; raw failures preserved.
+Meadow: shared entry, one seasonal meadow, seven detailed flora types and companion walks; two controls.13 native PASS; bf980b81 deployed, public fullSHA/viewing verified. [Plan](plans/PLAN-20261023-meadow-walk.md). QA storage16.45GB cumulative reclaimed; raw failures preserved.
 
 Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user.125 explicitly authorizes unnecessary Vercel deployment cleanup/optimization; unrelated cleanup, bulk DB UPDATE, paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
 
