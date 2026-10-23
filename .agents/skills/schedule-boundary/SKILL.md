@@ -1,3 +1,10 @@
+---
+name: schedule-boundary
+description: >
+  Checklist for keeping the public/private schedule boundary intact when changing
+  public schedule APIs, studio loaders, event DTOs or Supabase policies.
+---
+
 # Schedule Boundary Skill
 
 Use this skill when changing public schedule APIs, studio loaders, event DTOs, or Supabase policies.
