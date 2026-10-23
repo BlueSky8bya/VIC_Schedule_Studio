@@ -2018,12 +2018,23 @@ html[data-theme="dark"] .rhh-companion-settings .rhh-wardrobe-fitting-stage[data
 .rhh-collection-page-position { position: relative; display: flex; align-items: center; justify-content: center; justify-self: center; box-sizing: border-box; width: min(100%, 220px); min-width: var(--companion-hit-size, 44px); height: var(--companion-hit-size, 44px); padding: 5px 6px; border-radius: var(--r-pill); }
 .rhh-collection-page-position:hover { background: var(--companion-blue); }
 .rhh-collection-page-position:has(input:focus-visible) { outline: 2px solid var(--companion-accent); outline-offset: 2px; }
+/* 쪽 점(2026-10-23 소유자) — 포인터는 상자(44px)가 받고 '실측 가장 가까운 점'을 고른다(pager.tsx nearestPageDot).
+   호버 = 고를 점(data-hover)이 큰 원으로 통통 커지고 양옆 점이 한 박자 작게 따라 오르는 물결(--spring-bouncy) — '지금 이 점을
+   고르고 있다'를 손끝에. 크기 변화는 transform만(레이아웃·이웃 위치 불변 → 고르는 자리가 흔들리지 않는다). 동작 줄이기면 즉시. */
 .rhh-collection-page-dots { display: grid; grid-template-columns: repeat(var(--collection-dot-count), minmax(0, 1fr)); align-items: center; justify-items: center; gap: clamp(1px, calc(28px / var(--collection-dot-count)), 4px); width: 100%; height: 10px; pointer-events: none; }
-.rhh-collection-page-dots > span { width: min(100%, 5px); height: 5px; border-radius: var(--r-pill); background: var(--companion-soft); opacity: .35; }
+.rhh-collection-page-dots > span { width: min(100%, 5px); height: 5px; border-radius: var(--r-pill); background: var(--companion-soft); opacity: .35; transform: scale(1); transition: transform var(--dur-spring-bouncy, .6s) var(--spring-bouncy, var(--ease-spring, ease)), opacity .18s ease, background-color .18s ease; }
 .rhh-collection-page-dots > span[data-unread] { background: var(--companion-discovery); opacity: 1; }
-.rhh-collection-page-dots > span[aria-current="page"] { width: min(100%, 9px); height: 9px; background: var(--companion-accent); opacity: 1; }
+.rhh-collection-page-dots > span[aria-current="page"] { width: min(100%, 9px); height: 9px; background: var(--companion-accent); opacity: 1; } /* 현재 쪽은 실제 크기(점 줄 상자 안) */
 .rhh-collection-page-dots > span[aria-current="page"][data-unread] { background: linear-gradient(to bottom, var(--companion-accent) 0 50%, var(--companion-discovery) 50% 100%); }
-.rhh-companion-settings input.rhh-collection-page-rail { position: absolute; inset: 0; box-sizing: border-box; width: 100%; min-width: var(--companion-hit-size, 44px); height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+.rhh-collection-page-dots > span[data-hover] { opacity: 1; background-color: var(--companion-accent); transform: scale(2.5); }
+.rhh-collection-page-dots > span[data-hover] + span, .rhh-collection-page-dots > span:has(+ span[data-hover]) { opacity: .85; transform: scale(1.6); }
+.rhh-collection-page-dots > span[data-hover] + span + span, .rhh-collection-page-dots > span:has(+ span + span[data-hover]) { opacity: .6; transform: scale(1.22); }
+.rhh-collection-page-dots > span[aria-current="page"][data-hover] { transform: scale(1.4); }
+.rhh-collection-page-dots > span[aria-current="page"]:is([data-hover] + span, :has(+ span[data-hover])) { transform: scale(1.12); }
+.rhh-collection-page-position:active .rhh-collection-page-dots > span[data-hover]:not([aria-current]) { transform: scale(2.05); transition-duration: .08s; }
+.rhh-collection-page-position:has(.rhh-collection-page-dots > span[data-hover]) { cursor: pointer; }
+html[data-reduce-motion] .rhh-collection-page-dots > span { transition: none; }
+.rhh-companion-settings input.rhh-collection-page-rail { position: absolute; inset: 0; box-sizing: border-box; width: 100%; min-width: var(--companion-hit-size, 44px); height: 100%; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; pointer-events: none; } /* 키보드·화면낭독 전용 — 포인터는 점 단추가 받는다 */
 .rhh-companion-settings input.rhh-collection-page-rail:disabled { cursor: default; }
 @media (max-height: 700px) {
   .rhh-companion-experience > [role="tabpanel"] { --companion-preview-size: 148px; }
@@ -2098,9 +2109,8 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 .rhh-companion-settings .rhh-collection-page-position { flex-direction: column; gap: 6px; width: 100%; min-width: 0; height: auto; min-height: max(48px, var(--companion-hit-size, 44px)); padding: 5px 12px; }
 .rhh-collection-page-number { display: inline-flex; align-items: baseline; justify-content: center; gap: 6px; font-size: 15px; font-variant-numeric: tabular-nums; line-height: 1.2; }
 .rhh-collection-page-number > span { opacity: .7; font-size: 13px; }
-.rhh-companion-settings .rhh-collection-page-dots { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 4px; height: auto; min-height: 9px; }
-.rhh-companion-settings .rhh-collection-page-dots > span { flex: none; width: 5px; }
-.rhh-companion-settings .rhh-collection-page-dots > span[aria-current="page"] { width: 9px; }
+.rhh-companion-settings .rhh-collection-page-dots { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 5px; height: auto; min-height: 9px; }
+.rhh-companion-settings .rhh-collection-page-dots > span { flex: none; }
 .rhh-companion-settings .rhh-collection-page-arrow { font-size: max(15px, var(--text-ui)); }
 @media (max-height: 800px) {
   .rhh-companion-settings .rhh-collection-book .rhh-collection-detail { padding: 12px 14px; gap: 14px; }
