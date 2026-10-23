@@ -18,8 +18,9 @@ const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 // 창 탭·머리줄·모바일 칩이 이 한 곳을 쓴다(G-18).
 export const VOD_ACCESS_LABEL = { sub: "구독", plus: "구독+" } as const;
 export const VOD_ACCESS_HINT = {
-  sub: "구독자 전용 영상 — 구독하면 볼 수 있어요",
-  plus: "구독자 전용 다시보기 — 구독하면 볼 수 있어요"
+  // 안내 문구(2026-10-23 소유자): 구독 배지 = '구독자 전용', 구독+ 배지 = '구독+ 전용'.
+  sub: "구독자 전용 — 구독하면 볼 수 있어요",
+  plus: "구독+ 전용 — 구독+로 구독하면 볼 수 있어요"
 } as const;
 
 /** 권한 배지 한 부품 — 머리줄·안내 카드(기본)와 탭·모바일 칩(small). '+'는 CSS로 그린다(글꼴 '+'가 위로 떴다). */
@@ -1514,7 +1515,7 @@ export function DayVodWindow({
                             {vod.access ? (
                               <div className={`dvm-locked is-${vod.access}`}>
                                 <VodAccessBadge access={vod.access} />
-                                <p>{vod.access === "sub" ? "구독자 전용 영상이에요" : "구독자 전용 다시보기예요"}</p>
+                                <p>{vod.access === "sub" ? "구독자 전용이에요" : "구독+ 전용이에요"}</p>
                                 <a
                                   className="dvm-locked-go"
                                   data-act="vod-replay"
