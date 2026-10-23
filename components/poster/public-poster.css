@@ -906,14 +906,14 @@ html[data-reduce-motion] .mb-live-dot {
   background: var(--studio-action-tint-hi);
   color: var(--studio-action-strong);
 }
-/* 구독(0155)·구독+(0154) — 같은 칩, 숲 파랑 대신 라벤더(창의 탭과 같은 단계: 구독 단색 < 구독+ 그라데이션). */
+/* 구독(0155)·구독+(0154) — 같은 칩, 숲 파랑 대신 무채 금속(은·흑, 창의 탭과 같은 단계: 구독 단색 < 구독+ 그라데이션). */
 .agenda-link.vod.is-sub {
-  background: #f5f2fb;
-  color: #6a5694;
+  background: var(--access-sub-tint);
+  color: var(--access-sub-ink);
 }
 .agenda-link.vod.is-plus {
-  background: linear-gradient(135deg, #f4eeff, #f9eef7);
-  color: #5b3f94;
+  background: var(--access-plus-tint);
+  color: var(--access-plus-ink);
 }
 /* 기간 안내(support_kind period) '자세히 보기' — 하늘색 띠와 같은 색 언어(정형화, globals .sb-period). */
 .agenda-link.period {
@@ -1380,24 +1380,44 @@ html[data-reduce-motion] .dvm-railside-btn { transition: none; }
 }
 .dvm-tab.is-on b,
 .dvm-tab.is-on em { color: #9a6a0c; } /* 단색 금(그라데이션 clip은 가운데 점(::before)을 지웠다) */
-/* 숲 권한 단계(2026-10-23 소유자: 일반 < 구독 < 구독+) — 같은 탭 문법, 금 대신 보랏빛 한 계열에서 진하기만 오른다.
-   구독(업로드 영상, 0155) = 옅은 라벤더 단색 + 테두리만 있는 각인. 구독+(다시보기, 0154) = 라벤더→로즈 그라데이션 + 꽉 찬 각인.
-   각인 글자는 숲 카드 배지와 같은 말('구독' / '구독+'). */
-.dvm-tab.is-sub { color: #8a7aa8; }
-.dvm-tab.is-plus { color: #7a5fae; }
-.dvm-tab:is(.is-sub, .is-plus):hover { color: #5b3f94; }
+/* 숲 권한 단계(2026-10-23 소유자: 일반 < 구독 < 구독+) — **무채 금속** 계열(UI-02 개정): 상태 의미색 8개(업도움 장미·기간 청록·
+   선택 물파랑·신규 초록·오늘 금·미정 주황·떡밥 보라·다시보기 숲파랑) 어느 색상과도 겹치지 않는 유일한 자리가 채도 0 쪽이다.
+   카드 등급 은유 그대로 — 구독 = 은(플래티넘: 옅은 슬레이트·테두리 각인), 구독+ = 흑(오닉스: 흑연 그라데이션·꽉 찬 각인+윗면 광택).
+   값은 아래 토큰 한 벌(밤은 dark.css에서 반전: 구독+ 각인이 밝은 백금). 각인 글자는 숲 카드 배지와 같은 말. */
+:root {
+  --access-sub-ink: #3f4a59;
+  --access-sub-ink-soft: #66717f;
+  --access-sub-tint: #f1f3f6;
+  --access-sub-line: rgb(100 116 139 / 30%);
+  --access-sub-badge-bg: #fff;
+  --access-sub-badge-line: rgb(100 116 139 / 55%);
+  --access-sub-badge-ink: #3f4a59;
+  --access-sub-cta: #4b5563;
+  --access-plus-ink: #16191d;
+  --access-plus-ink-soft: #3b4048;
+  --access-plus-tint: linear-gradient(135deg, #f5f6f8, #e8eaee 60%, #f1f2f4);
+  --access-plus-line: rgb(17 24 39 / 26%);
+  --access-plus-badge-bg: linear-gradient(135deg, #454b54, #1b1e23 55%, #30353c);
+  --access-plus-badge-line: rgb(17 24 39 / 60%);
+  --access-plus-badge-ink: #f6f7f8;
+  --access-plus-sheen: rgb(255 255 255 / 22%);
+}
+.dvm-tab.is-sub { color: var(--access-sub-ink-soft); }
+.dvm-tab.is-plus { color: var(--access-plus-ink-soft); }
+.dvm-tab.is-sub:hover { color: var(--access-sub-ink); }
+.dvm-tab.is-plus:hover { color: var(--access-plus-ink); }
 .dvm-tab.is-sub.is-on {
-  background: #f5f2fb;
-  box-shadow: inset 0 0 0 1px rgb(124 92 196 / 18%), 0 1px 3px rgb(80 50 140 / 12%);
-  color: #6a5694;
+  background: var(--access-sub-tint);
+  box-shadow: inset 0 0 0 1px var(--access-sub-line), 0 1px 3px rgb(15 23 42 / 10%);
+  color: var(--access-sub-ink);
 }
 .dvm-tab.is-plus.is-on {
-  background: linear-gradient(135deg, #f6f0ff, #efe7ff 55%, #fbeef6);
-  box-shadow: inset 0 0 0 1px rgb(124 92 196 / 26%), 0 1px 3px rgb(80 50 140 / 18%);
-  color: #5b3f94;
+  background: var(--access-plus-tint);
+  box-shadow: inset 0 0 0 1px var(--access-plus-line), 0 1px 3px rgb(15 23 42 / 16%);
+  color: var(--access-plus-ink);
 }
-.dvm-tab.is-sub.is-on :is(b, em) { color: #6a5694; }
-.dvm-tab.is-plus.is-on :is(b, em) { color: #5b3f94; }
+.dvm-tab.is-sub.is-on :is(b, em) { color: var(--access-sub-ink); }
+.dvm-tab.is-plus.is-on :is(b, em) { color: var(--access-plus-ink); }
 /* 권한 배지(VodAccessBadge, 2026-10-23 정돈) — 머리줄·안내 카드·탭·모바일 칩이 한 부품. 높이 고정 + line-height 1 +
    가운데 정렬이라 옆 단추·글자와 수평이 맞는다(예전엔 .dvm-host를 빌려 써 align-self:start·24px·1.5행간이 끼어 들쭉날쭉했다).
    '+'는 따로 그린다 — 작은 글씨에서 글꼴의 '+'가 위로 떠 보였다. 테두리 폭은 두 단계 같게(1px) — 크기가 안 흔들린다. */
@@ -1445,18 +1465,19 @@ html[data-reduce-motion] .dvm-railside-btn { transition: none; }
 }
 .vod-access-badge .vab-plus::after { transform: rotate(90deg); }
 .vod-access-badge.is-sub {
-  border-color: rgb(124 92 196 / 42%);
-  background: #fff;
-  color: #6a4fa6;
+  border-color: var(--access-sub-badge-line);
+  background: var(--access-sub-badge-bg);
+  color: var(--access-sub-badge-ink);
 }
 .vod-access-badge.is-plus {
-  background: linear-gradient(135deg, #8b6fd6, #7556c4 55%, #b067a8);
-  color: #fff;
+  border-color: var(--access-plus-badge-line);
+  background: var(--access-plus-badge-bg);
+  box-shadow: inset 0 1px 0 var(--access-plus-sheen); /* 윗면 한 줄 광택 — 검정 카드의 금속감 */
+  color: var(--access-plus-badge-ink);
 }
 .dvm-tab .vod-access-badge { margin-left: 7px; }
-.dvm-vod[data-access="sub"] .dvm-thumb { box-shadow: 0 0 0 1px rgb(124 92 196 / 18%); }
-.dvm-vod[data-access="plus"] .dvm-thumb { box-shadow: 0 0 0 1px rgb(124 92 196 / 30%); }
-.dvm-vod[data-access] .dvm-thumb:hover { box-shadow: 0 0 0 1px rgb(124 92 196 / 38%), 0 10px 22px rgb(110 70 190 / 22%); }
+.dvm-vod[data-access="sub"] .dvm-thumb { box-shadow: 0 0 0 1px var(--access-sub-line); }
+.dvm-vod[data-access="plus"] .dvm-thumb { box-shadow: 0 0 0 1px var(--access-plus-line); }
 .dvm-body {
   min-height: 0;
   overflow-y: auto;
@@ -1663,14 +1684,15 @@ html[data-reduce-motion] .dvm-railside-btn { transition: none; }
   height: 36px;
   padding: 0 16px;
   border-radius: var(--r-pill);
-  background: linear-gradient(135deg, #8b6fd6, #7556c4 55%, #b067a8);
-  box-shadow: 0 6px 16px rgb(110 70 190 / 35%);
+  background: var(--access-plus-badge-bg);
+  box-shadow: inset 0 1px 0 var(--access-plus-sheen), 0 6px 16px rgb(15 23 42 / 30%);
   color: #fff;
   font-weight: 700;
   text-decoration: none;
   transition: transform var(--dur-1) var(--ease), filter var(--dur-1) var(--ease);
 }
-.dvm-locked.is-sub .dvm-locked-go { background: #7a63b8; }
+.dvm-locked .dvm-locked-go { border: 1px solid rgb(255 255 255 / 22%); color: var(--access-plus-badge-ink); } /* 어두운 썸네일 위에서도 흑 단추 윤곽이 남게 */
+.dvm-locked.is-sub .dvm-locked-go { background: var(--access-sub-cta); color: #fff; }
 .dvm-locked-go:hover { filter: brightness(1.08); }
 .dvm-locked-go:active { transform: scale(var(--press-scale)); }
 /* 키 토글 피드백 토스트(🔇 음소거 / 🔊 소리 켬) — 영상 왼쪽 아래, 떠올랐다 사라진다. */
@@ -1740,7 +1762,7 @@ html[data-reduce-motion] .dvm-notice {
   transition: background-color var(--dur-1) var(--ease);
 }
 .dvm-thumb:hover .dvm-play { background: rgb(var(--studio-action-rgb) / 80%); }
-.dvm-vod[data-access] .dvm-thumb:hover .dvm-play { background: rgb(117 86 196 / 85%); } /* 구독·구독+ — 보랏빛 */
+/* 구독·구독+ 썸네일엔 ▶가 없다(안내 카드) — 별도 호버 색 불필요. */
 .dvm-dur {
   position: absolute;
   right: 8px;

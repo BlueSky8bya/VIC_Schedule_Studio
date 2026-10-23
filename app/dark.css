@@ -578,33 +578,45 @@ html[data-theme="dark"] :is(.dvm-tab.is-on, .dvm-tab:hover) {
   box-shadow: var(--gs-metal-edge);
 }
 html[data-theme="dark"] .dvm-tab.is-on :is(b, em) { color: var(--accent-strong); }
-/* 구독(0155) < 구독+(0154) — 밤에도 같은 보랏빛 재질, 밝기만 낮춘다. */
-html[data-theme="dark"] .dvm-tab.is-sub { color: #ad9fcc; }
-html[data-theme="dark"] .dvm-tab.is-plus { color: #c4b3ec; }
+/* 구독(0155) < 구독+(0154) — 무채 금속 토큰의 밤 값. 구독+ 각인은 밤에 '밝은 백금'으로 반전해야 흑 계열이 묻히지 않는다. */
+html[data-theme="dark"] {
+  --access-sub-ink: #d3d8df;
+  --access-sub-ink-soft: #a3abb6;
+  --access-sub-tint: #262a30;
+  --access-sub-line: rgb(203 213 225 / 22%);
+  --access-sub-badge-bg: transparent;
+  --access-sub-badge-line: rgb(203 213 225 / 45%);
+  --access-sub-badge-ink: #d3d8df;
+  --access-sub-cta: #5b6573;
+  --access-plus-ink: #f3f4f6;
+  --access-plus-ink-soft: #c9ced5;
+  --access-plus-tint: linear-gradient(135deg, #34383f, #2a2e34 60%, #33373d);
+  --access-plus-line: rgb(229 231 235 / 30%);
+  --access-plus-badge-bg: linear-gradient(135deg, #f4f5f7, #d3d7dd 55%, #eceef1);
+  --access-plus-badge-line: rgb(255 255 255 / 40%);
+  --access-plus-badge-ink: #15181c;
+  --access-plus-sheen: rgb(255 255 255 / 70%);
+}
+html[data-theme="dark"] .dvm-tab.is-sub { color: var(--access-sub-ink-soft); }
+html[data-theme="dark"] .dvm-tab.is-plus { color: var(--access-plus-ink-soft); }
 html[data-theme="dark"] .dvm-tab.is-sub:is(.is-on, :hover) {
-  background: #2c2838; color: #d8ccf5;
-  box-shadow: inset 0 0 0 1px rgb(196 170 255 / 18%), 0 1px 3px rgb(0 0 0 / 30%);
+  background: var(--access-sub-tint); color: var(--access-sub-ink);
+  box-shadow: inset 0 0 0 1px var(--access-sub-line), 0 1px 3px rgb(0 0 0 / 30%);
 }
 html[data-theme="dark"] .dvm-tab.is-plus:is(.is-on, :hover) {
-  background: linear-gradient(135deg, #3a2f57, #2e2846 60%, #3b2a4a); color: #e2d6ff;
-  box-shadow: inset 0 0 0 1px rgb(196 170 255 / 30%), 0 1px 3px rgb(0 0 0 / 30%);
+  background: var(--access-plus-tint); color: var(--access-plus-ink);
+  box-shadow: inset 0 0 0 1px var(--access-plus-line), 0 1px 3px rgb(0 0 0 / 30%);
 }
-html[data-theme="dark"] .dvm-tab.is-sub.is-on :is(b, em) { color: #d8ccf5; }
-html[data-theme="dark"] .dvm-tab.is-plus.is-on :is(b, em) { color: #e2d6ff; }
+html[data-theme="dark"] .dvm-tab.is-sub.is-on :is(b, em) { color: var(--access-sub-ink); }
+html[data-theme="dark"] .dvm-tab.is-plus.is-on :is(b, em) { color: var(--access-plus-ink); }
 /* 일정 없는 날의 기록 표시(DayVodNote) — 다시보기 칩의 밤 파랑, 올린 영상은 중립 잉크. */
 html[data-theme="dark"] .day-vod-note.is-replay { color: #9ab6eb; }
 html[data-theme="dark"] .day-vod-note.is-upload { color: var(--ink-soft); }
-html[data-theme="dark"] .vod-access-badge.is-sub {
-  background: transparent; border-color: rgb(196 170 255 / 40%); color: #d1c2f5;
-}
-html[data-theme="dark"] .vod-access-badge.is-plus {
-  background: linear-gradient(135deg, #4a3a73, #3b2e5c 55%, #533a63); border-color: rgb(196 170 255 / 34%); color: #ece4ff;
-}
 /* 위 :is(.agenda-detail-backdrop.is-pop …) 특이도와 같아지도록 .agenda-vod-inline까지 — 뒤에 있어 이긴다. */
-html[data-theme="dark"] .agenda-link.vod.agenda-vod-inline.is-sub { background: #29263a; color: #cbbfe9; }
-html[data-theme="dark"] .agenda-link.vod.agenda-vod-inline.is-plus { background: #2d2742; color: #d6c8fb; }
-html[data-theme="dark"] .agenda-link.vod.agenda-vod-inline:is(.is-sub, .is-plus) .agenda-vod-dur { color: #b8a6e6; }
-html[data-theme="dark"] .dvm-vod[data-access] .dvm-thumb { box-shadow: 0 0 0 1px rgb(196 170 255 / 28%); }
+html[data-theme="dark"] .agenda-link.vod.agenda-vod-inline.is-sub { background: var(--access-sub-tint); color: var(--access-sub-ink); }
+html[data-theme="dark"] .agenda-link.vod.agenda-vod-inline.is-plus { background: var(--access-plus-tint); color: var(--access-plus-ink); }
+html[data-theme="dark"] .agenda-link.vod.agenda-vod-inline.is-sub .agenda-vod-dur { color: var(--access-sub-ink-soft); }
+html[data-theme="dark"] .agenda-link.vod.agenda-vod-inline.is-plus .agenda-vod-dur { color: var(--access-plus-ink-soft); }
 html[data-theme="dark"] .vch-item[data-depth] .vch-label { color: var(--ink-soft); }
 html[data-theme="dark"] .vch-item.is-active {
   background: var(--accent-soft); border-color: rgb(255 216 115 / 18%);
