@@ -1,0 +1,21 @@
+# Seasonal departure and homecoming — 2026-10-24 KST
+
+Owner request: clicking seasonal viewing immediately starts a visible jump from the resident's actual location while the calendar/panels fade; land on meadow grass. On exit, return the same resident directly to its house shower pad. Permanently discard outdoor food/toys covered by the restored calendar/panels; they must not reappear on re-entry.
+
+Scope: shared viewer/studio/preview session, finite meadow presentation, existing home geometry and physical item owners. Preserve original art, care, collection, desktop-only preference and reduced-motion controls. No server/data/auth change. Ambient entry/exit keep existing semantic activity targets and both developer displays; autonomous arrival/disposal are not fabricated human actions or item metadata.
+
+Implementation: pet can depart its actual home/calendar support; shared finite entry jump independent of autonomous roaming. Exit relinquishes pet immediately and queues measured shower support; no walking back. Existing item-clear owners receive only covered leased item IDs after restored layout measurement. Visible outdoor items retain identity. Layout cover changes continue to hide exposed retained items without admitting new objects.
+
+Verification planned: meaningful session/trajectory unit checks; type/lint/full units/build; production fixture viewer/studio jump, covered/exposed food and toy cleanup, shower arrival, repeat trips and reduced-motion; independent G-21 boundary/UX/QA review. User authorized modification and deployment in this chat. Worktree C:/Projects/VIC-worktrees/20261024-season-jump-return, branch codex/season-jump-return, base origin/main a9003a9e. No pending matching board request.
+
+## Acceptance and release
+
+Implementation accepted locally. Latest upstreamab548573 included; concurrent documentation-only Vercel-build skipping adds deployment configuration/tooling and its own unit checks, without changing the tested client presentation. Typecheck, zero-warning lint, full425 unit files/6927 tests, production build and harness pass; upstream deployment-ignore contracts checked separately. Same rendered client build: `0EiSKgvUHsxk7ZUX0uWdd`.
+
+Eight unique rendered cases pass after correcting outdated test assumptions: viewer/studio/preview departure, reduced motion, folded+compact-house return, delayed jump-image loading, original owner physical-item/care interactions, and owner continuous walking. First painted departure at25.2/31.9/32.3ms for viewer/studio/preview; maximum measured airborne lift during the calendar fade123.3px. Actual canvas pixels, native input, original resident DOM identity, exact shower support, covered item DOM removal, exposed item survival and no resurrection on re-entry are checked. Compact return is measured at1380×900 while resizing during appreciation; this is bounded desktop fixture coverage, not all devices or a full companion certification.
+
+Original failures remain in this worktree's `.scratch-pw/season-jump-return`: the old item scenario clicked storage through the newly returned resident and entered before a fresh toy finished falling; native keyboard activation and actual settled-support assertions correct the scenario. The old narrow studio scenario now opens its actual panel before finding seasonal controls. A1280px edge-of-topology attempt was not used as compact success; the final test asserts a real visible compact house at1380px. No production behavior was changed to satisfy those harness corrections.
+
+G-21 non-author review found and verified fixes for folded-house expansion, synchronous covered-item retirement before rapid re-entry, and immediate decoded-frame fallback while jump packets load. Final independent review reports no remaining blockers. Existing decoder limits, one meadow paint chain, normal user control priorities and automatic-action telemetry exclusions remain.
+
+This is a topic-only client presentation/session change; current cross-project goals, server boundaries and operational blockers are unchanged. Publish this verified source under the owner's explicit request. Exact commit/deployment/public verification receipt: `C:/Projects/context-hub/docs/results/vic-season-jump-return-20261024.json`. Scratch follows the repository retention policy and the owner's same-session worktree-removal instruction.

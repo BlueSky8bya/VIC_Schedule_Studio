@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { loadCompanionCollection, subscribeCompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { createCompanionMeadowWalk } from "@/lib/ui/viewer-companion/meadow-walk";
@@ -32,7 +32,7 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
   const preferencesRef = useRef(preferences); preferencesRef.current = preferences;
   const reducedRef = useRef(reduced); reducedRef.current = reduced;
   const refreshRef = useRef<() => void>(() => {});
-  useEffect(() => {
+  useLayoutEffect(() => {
     const element = host.current, bodyPlane = body.current, facingPlane = facing.current, posePlane = pose.current, spritePlane = sprite.current, drawing = canvas.current, shadowPlane = shadow.current;
     if (!element || !bodyPlane || !facingPlane || !posePlane || !spritePlane || !drawing || !shadowPlane || !back.current || !front.current || !gift.current) return;
     const context = drawing.getContext("2d");
@@ -45,8 +45,11 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
     let disposed = false, generation = 0, raf = 0, retryTimer = 0, retryCount = 0, retryRow = -1;
     let previousAt = 0, previousPaint = 0, activeTime = 0, cell = "", registered = "", requestedRow = -1;
     const initial = session.point("pet");
-    if (initial) walker.place(initial, { width: innerWidth, height: innerHeight });
-    let current = walker.sample(0, { width: innerWidth, height: innerHeight }, preferencesRef.current, false);
+    let fallback = initial?.pose === undefined ? undefined : selectCompanionSprite(initial.pose);
+    let fallbackImage = fallback ? peekDecodedCompanionSprite(fallback.src) : undefined;
+    let fallbackRow = fallback ? companionSpriteMetadata.rows.findIndex(row => row.includes(fallback!.physicalIndex)) : 0;
+    if (initial) walker.enter(initial, { width: innerWidth, height: innerHeight });
+    let current = walker.sample(0, { width: innerWidth, height: innerHeight }, preferencesRef.current, !reducedRef.current && !document.documentElement.hasAttribute("data-reduce-motion") && !["off", "soft"].includes(document.documentElement.dataset.gfx ?? ""));
     const petting = createCompanionPettingGesture(), touch = createCompanionPettingContact(), inertia = createCompanionHeldInertia(), shake = createCompanionHeldShake();
     let reaction: { play?: CompanionPlay; row?: number; began: number; duration: number; name: string } | undefined;
     let held = false, flying = false, flightPhase = 0, hoverUntil = 0, feedbackUntil = 0, shaken = false, responseSerial = 0;
@@ -71,10 +74,15 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
       const phase = held ? 0 : flying ? flightPhase : authored?.phase ?? (reaction ? age / reaction.duration : current.phase);
       const status = held ? "held" : flying ? "jump" : authored ? "play" : reaction?.name ?? (activeTime < hoverUntil ? "petted" : current.status);
       const sample = motion.sample({ row, phase, status, x: current.x, y: current.y, now: activeTime, reduced: restricted(), travelDirection: status === "walk" || status === "jump" && !flying ? current.direction : undefined });
-      const selection = selectCompanionSprite(companionSpriteMetadata.rows[sample.row][sample.column], sample.row, sample.column);
-      const image = peekDecodedCompanionSprite(selection.src);
+      const requested = selectCompanionSprite(companionSpriteMetadata.rows[sample.row][sample.column], sample.row, sample.column);
+      const decoded = peekDecodedCompanionSprite(requested.src);
+      const selection = decoded ? requested : fallback, image = decoded ?? fallbackImage;
       element.dataset.requestedRow = String(sample.row);
-      if (!image) return false;
+      // Borrow the resident's already-painted pixels while the next packet
+      // warms. Network/decode latency must never hide or stop its entry arc.
+      if (!decoded) void prepare(sample.row, generation);
+      if (!image || !selection) return false;
+      if (decoded) { fallback = selection; fallbackImage = decoded; fallbackRow = sample.row; }
       const key = `${selection.src}:${selection.index}`;
       if (key !== cell) {
         const frame = companionPreviewDrawing(selection, image.naturalWidth, image.naturalHeight);
@@ -91,7 +99,7 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
       const hanging = restricted() ? { tilt: 0, stretch: 0, active: false } : boundCompanionHeldPose(inertia.sample(now), { x: current.x - 46, y: current.y - 92 }, { x: 46, y: 46 }, 92, { width: innerWidth, height: innerHeight });
       posePlane.style.transform = `translate(${contact.x.toFixed(3)}px,${(sample.bob + contact.y + (authored?.lift ?? 0)).toFixed(3)}px) rotate(${(sample.tilt + contact.tilt + hanging.tilt + (authored?.lean ?? 0)).toFixed(3)}deg) scale(${(sample.scaleX + contact.squash - hanging.stretch).toFixed(4)},${(sample.scaleY - contact.squash + hanging.stretch).toFixed(4)})`;
       painter?.paint(selection, accessory, false);
-      element.dataset.row = String(sample.row); element.dataset.pose = String(selection.physicalIndex);
+      element.dataset.row = String(decoded ? sample.row : fallbackRow); element.dataset.pose = String(selection.physicalIndex);
       element.dataset.state = status; element.dataset.purpose = reaction?.name ?? (held ? "held" : current.purpose); element.dataset.leg = String(current.leg);
       element.dataset.reaction = reaction?.play ?? reaction?.name ?? "none";
       element.dataset.x = current.x.toFixed(3); element.dataset.y = current.y.toFixed(3); element.dataset.groundY = current.groundY.toFixed(3);
@@ -102,20 +110,21 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
     };
     const schedule = (token: number) => {
       const finiteFeedback = () => Boolean(reaction || held || activeTime < hoverUntil || activeTime < feedbackUntil);
-      if (!interactive() || !animated() && !finiteFeedback() || animated() && !preferencesRef.current.roam && !walker.settling() && !finiteFeedback() || token !== generation) return;
+      if (raf || !interactive() || !animated() && !finiteFeedback() || animated() && !preferencesRef.current.roam && !walker.settling() && !finiteFeedback() || token !== generation) return;
       raf = requestAnimationFrame(now => {
+        raf = 0;
         const due = nextCompanionPaint(now, previousPaint, 30);
         if (due === null) { schedule(token); return; }
         previousPaint = due;
         const delta = previousAt ? Math.min(80, Math.max(0, now - previousAt)) : 0; previousAt = now; activeTime += delta;
-        current = walker.sample(delta, { width: innerWidth, height: innerHeight }, preferencesRef.current, animated());
+        current = walker.sample(delta, { width: innerWidth, height: innerHeight }, preferencesRef.current, animated() || walker.settling() && !restricted() && !held && !flying && !reaction);
         if (!current) { element.hidden = true; return; }
         if (!paint(now)) { void prepare(Number(element.dataset.requestedRow ?? current.row), token); return; }
         schedule(token);
       });
     };
     const prepare = async (row: number, token: number) => {
-      if (requestedRow === row || token !== generation) return;
+      if (requestedRow >= 0 || retryTimer || token !== generation) return;
       requestedRow = row;
       const ready = await preparation(row, () => active() && token === generation);
       if (token !== generation) return;
@@ -131,7 +140,7 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
         return;
       }
       retryCount=0;retryRow=-1;element.dataset.loadState='ready';
-      previousAt = 0;
+      if (!raf) previousAt = 0;
       paint(performance.now()); schedule(token);
     };
     const refresh = () => {
@@ -141,7 +150,7 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
       if (stored && current && (Math.abs(stored.x - current.x) > .1 || Math.abs(stored.y - current.groundY) > .1)) walker.place(stored, { width: innerWidth, height: innerHeight });
       // Visibility/resize/quiet changes retain the same walk destination and
       // foot. Their elapsed hidden time never becomes an offscreen leap.
-      current = walker.sample(0, { width: innerWidth, height: innerHeight }, preferencesRef.current, animated());
+      current = walker.sample(0, { width: innerWidth, height: innerHeight }, preferencesRef.current, animated() || walker.settling() && !restricted() && !held && !flying && !reaction);
       if (current) { if (!paint(performance.now())) void prepare(Number(element.dataset.requestedRow ?? current.row), generation); else schedule(generation); }
       else element.hidden = true;
     };

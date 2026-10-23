@@ -121,3 +121,28 @@ describe("the temporary companion meadow walk", () => {
     for (let i = 0; i < 1800; i++) expect(controller.sample(50, viewport, changed)!.status).not.toBe("jump");
   });
 });
+
+
+describe("direct seasonal departure", () => {
+  it("jumps from the actual home foot immediately even with autonomous roam and jump disabled", () => {
+    const walker = createCompanionMeadowWalk(() => .5), view = { width: 1440, height: 1000 };
+    const prefs = { ...DEFAULT_COMPANION_PREFERENCES, roam: false, jump: false };
+    walker.enter({ x: 160, y: 500 }, view);
+    const start = walker.sample(0, view, prefs)!;
+    expect(start).toMatchObject({ x: 160, y: 500, status: "jump", row: 3 });
+    const frames = Array.from({ length: 14 }, () => walker.sample(50, view, prefs)!);
+    expect(frames.some(frame => frame.groundY - frame.y > 100)).toBe(true);
+    expect(frames.at(-1)).toMatchObject({ status: "idle", row: 0 });
+    expect(frames.at(-1)!.groundY).toBeCloseTo(824.5);
+    expect(walker.settling()).toBe(false);
+    expect(walker.sample(50, view, prefs)!.x).toBe(frames.at(-1)!.x);
+  });
+  it("lands immediately without an arc for reduced motion and lets direct placement cancel entry", () => {
+    const walker = createCompanionMeadowWalk(() => .5), view = { width: 1440, height: 1000 };
+    walker.enter({ x: 160, y: 500 }, view);
+    const quiet = walker.sample(0, view, DEFAULT_COMPANION_PREFERENCES, false)!;
+    expect(quiet.status).toBe("idle"); expect(quiet.y).toBe(quiet.groundY); expect(walker.settling()).toBe(false);
+    walker.enter({ x: 160, y: 500 }, view); walker.place({ x: 250, y: 800 }, view);
+    expect(walker.sample(0, view, DEFAULT_COMPANION_PREFERENCES)!).toMatchObject({ x: 250, y: 800 });
+  });
+});

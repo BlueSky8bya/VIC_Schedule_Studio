@@ -1925,25 +1925,25 @@
       "estimateSource": "new ownership/axis registration estimate; current PASS requires verified per-case execution receipts"
     },
     {
-      "id": "523373b4aa448cd70e866556583d59d3b6cf94d7c37172f800889efdcdc61851",
+      "id": "343492729f1e209cf9746b818c6598ba27216f78766f30ad3ee09648ee9cc618",
       "file": "tests/visual/meadow-session.spec.ts",
-      "title": "meadow viewer: only exposed real objects travel and covered placements remain until screen departure",
+      "title": "meadow viewer: resident departs and covered placements retire on shower-pad return",
       "project": "",
       "estimatedSeconds": 85,
       "estimateSource": "new ownership/axis registration estimate; current PASS requires verified per-case execution receipts"
     },
     {
-      "id": "d3a622d31f08d3b80b38272cd83263753d8c6d045a8c92288dcc1ed516c79d63",
+      "id": "1ed55ef3c91bf97192b120646edf2c792599da8d88c904880aad7820bbcb8d50",
       "file": "tests/visual/meadow-session.spec.ts",
-      "title": "meadow owner: only exposed real objects travel and covered placements remain until screen departure",
+      "title": "meadow owner: resident departs and covered placements retire on shower-pad return",
       "project": "",
       "estimatedSeconds": 85,
       "estimateSource": "new ownership/axis registration estimate; current PASS requires verified per-case execution receipts"
     },
     {
-      "id": "db4a79f1bd6829b3f07a35078d5dcd7745ee2b2195cc07669cc34a28a6c34cd7",
+      "id": "3db0984a70d221d7d1af9fa5493a37a98d145c4aa08427cbc584dc054e5de65c",
       "file": "tests/visual/meadow-session.spec.ts",
-      "title": "meadow preview: only exposed real objects travel and covered placements remain until screen departure",
+      "title": "meadow preview: resident departs and covered placements retire on shower-pad return",
       "project": "",
       "estimatedSeconds": 85,
       "estimateSource": "new ownership/axis registration estimate; current PASS requires verified per-case execution receipts"

@@ -40,6 +40,7 @@ async function enterWithExposedResident(page:Page,label:string){
   // not qualify. Open/settle the real section first, then prove its full box.
   await page.waitForFunction(()=>Boolean(window.__vicAmbient));
   const section=page.locator('[data-panel-section-toggle="season"]:visible').first();
+  if(!await section.count()){const expand=page.getByRole('button',{name:'패널 펼치기',exact:true});if(await expand.isVisible()){await expand.focus();await expand.press('Enter');}}
   if(await section.getAttribute('aria-expanded')==='false')await section.click();
   await placeCompanionOnExposedBackground(page,180);
   await page.evaluate(()=>{
@@ -60,7 +61,7 @@ async function enterWithExposedResident(page:Page,label:string){
     (window as Window&{__meadowAdmissionProbe?:typeof witness}).__meadowAdmissionProbe=witness;
     const capture=(event:Event)=>{const detail=(event as CustomEvent<{phase:string;active:boolean}>).detail;if(detail?.phase==='before'&&detail.active){
       window.removeEventListener('vic:showcase-transition',capture,true);
-      const firstPaint=()=>{const host=document.querySelector<HTMLElement>('.vc-meadow-walk'),body=host?.querySelector<HTMLElement>('.vc-meadow-walk-body');if(!host||host.hidden||!body||host.dataset.loadState!=='ready'||!host.dataset.paintedAt)return;const box=body.getBoundingClientRect();record.initialPaint={x:Number(host.dataset.x),ground:Number(host.dataset.groundY),box:{x:box.x,y:box.y,width:box.width,height:box.height}};observer.disconnect();clearTimeout(timer);};
+      const firstPaint=()=>{const host=document.querySelector<HTMLElement>('.vc-meadow-walk'),body=host?.querySelector<HTMLElement>('.vc-meadow-walk-body');if(!host||host.hidden||!body||!host.dataset.paintedAt)return;const box=body.getBoundingClientRect();record.initialPaint={x:Number(host.dataset.x),ground:Number(host.dataset.groundY),box:{x:box.x,y:box.y,width:box.width,height:box.height}};observer.disconnect();clearTimeout(timer);};
       // Read the first actual drawing locally, independent of the latency of
       // subsequent Node/driver round trips. This observer never moves it.
       const observer=new MutationObserver(firstPaint),timer=setTimeout(()=>observer.disconnect(),15000);
@@ -138,7 +139,10 @@ for(const surface of ['viewer','owner','preview']as const){
     const subsequentLegs=observed.samples.filter(r=>r.leg>=2);
     expect(subsequentLegs.length).toBeGreaterThan(20);
     expect(subsequentLegs.every(r=>r.ground>observed.height*.5&&r.ground<observed.height*.95)).toBe(true);
-    const jumps=observed.samples.slice(1).map((r,i)=>Math.hypot(r.x-observed.samples[i].x,r.y-observed.samples[i].y));
+    // The requested700ms departure spans the calendar-to-meadow distance.
+    // Subsequent autonomous legs retain their ordinary walking speed bound.
+    const strolling=observed.samples.filter(r=>r.leg>=1);
+    const jumps=strolling.slice(1).map((r,i)=>Math.hypot(r.x-strolling[i].x,r.y-strolling[i].y));
     expect(Math.max(...jumps)).toBeLessThan(60);
     await page.screenshot({path:`${out}/${surface}-meadow.png`});
     if(surface==='viewer'){

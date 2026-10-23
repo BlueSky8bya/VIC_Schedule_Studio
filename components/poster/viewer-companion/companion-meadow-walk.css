@@ -1,4 +1,4 @@
-.vc-meadow-walk { position: fixed; inset: 0; z-index: 65; pointer-events: none; animation: vc-meadow-arrive .35s ease-out both; }
+.vc-meadow-walk { position: fixed; inset: 0; z-index: 65; pointer-events: none; }
 .vc-meadow-walk[hidden] { display: none; }
 .vc-meadow-walk-body { position: absolute; top: 0; left: 0; width: 92px; height: 92px; margin: 0; padding: 0; border: 0; background: transparent; box-shadow: none; pointer-events: auto; touch-action: none; cursor: grab; transform-origin: 50% 100%; will-change: transform; transition: none; }
 .vc-meadow-walk-body[data-showcase-held] { cursor: grabbing; }
@@ -7,5 +7,3 @@
 .vc-meadow-walk .vc-sprite > canvas { display: block; width: 100%; height: 100%; }
 .vc-meadow-walk-shadow { position: absolute; top: 0; left: 0; width: 52px; height: 10px; border-radius: 50%; background: #233d3340; filter: blur(2px); transform-origin: 50% 50%; }
 .vc-meadow-walk[data-night] .vc-meadow-walk-body { filter: brightness(.78) saturate(.88); }
-@keyframes vc-meadow-arrive { from { opacity: 0; } to { opacity: 1; } }
-html[data-reduce-motion] .vc-meadow-walk, html[data-gfx="off"] .vc-meadow-walk, html[data-gfx="soft"] .vc-meadow-walk { animation: none; }

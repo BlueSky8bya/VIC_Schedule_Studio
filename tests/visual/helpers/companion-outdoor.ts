@@ -16,7 +16,13 @@ export async function placeCompanionOnExposedBackground(page: Page, x = 90) {
 export async function enterCompanionMeadow(page: Page) {
   await page.waitForFunction(() => Boolean(window.__vicAmbient));
   const section = page.locator('[data-panel-section-toggle="season"]:visible').first();
+  if (!await section.count()) {
+    const expand = page.getByRole("button", { name: "패널 펼치기", exact: true });
+    if (await expand.isVisible()) { await expand.focus(); await expand.press("Enter"); }
+  }
   if (await section.getAttribute("aria-expanded") === "false") await section.click();
   const trigger = page.locator('[data-act="ambient-showcase"]:visible').first();
-  await expect(trigger).toBeVisible(); await trigger.click(); return trigger;
+  await expect(trigger).toBeVisible();
+  await trigger.click();
+  return trigger;
 }

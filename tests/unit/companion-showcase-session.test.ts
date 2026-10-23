@@ -50,27 +50,28 @@ describe("same-object meadow admission and screen-session position", () => {
     session.dispose();
   });
 
-  it("retains a dragged covered foot across exit and re-entry, then hands an exposed pet back to life", () => {
+  it("returns a covered pet home immediately and admits the home resident on the next departure", () => {
     const { session, emit, flush } = fixture();
-    session.register("pet", { kind: "pet", node: () => node({ left: 44, right: 136, top: 808, bottom: 900 }), point: () => ({ x: 90, y: 900 }) });
-    emit(true, "before"); session.move("pet", { x: 650, y: 700 });
-    emit(false, "after"); flush();
-    expect(session.has("pet")).toBe(true); expect(session.visible("pet")).toBe(false); expect(session.takeReturnedPet()).toBeUndefined();
-    emit(true, "before"); expect(session.visible("pet")).toBe(true); expect(session.point("pet")).toMatchObject({ x: 650, y: 700 });
-    session.move("pet", { x: 90, y: 900 }); emit(false, "after"); flush();
-    expect(session.has("pet")).toBe(false); expect(session.takeReturnedPet()).toEqual({ x: 90, y: 900 }); expect(session.takeReturnedPet()).toBeUndefined();
+    session.register("pet", { kind: "pet", node: () => node({ left: 80, right: 172, top: 400, bottom: 492 }), point: () => ({ x: 126, y: 492 }) });
+    emit(true, "before"); expect(session.has("pet")).toBe(true);
+    session.move("pet", { x: 650, y: 700 }); emit(false, "after");
+    expect(session.has("pet")).toBe(false);
+    expect(session.takeReturnedPet()).toEqual({ x: 650, y: 700, home: true });
+    expect(session.takeReturnedPet()).toBeUndefined(); flush();
+    emit(true, "before"); expect(session.point("pet")).toMatchObject({ x: 126, y: 492 });
     session.dispose();
   });
 
   it("keeps food and toy identity and foot offsets and retires only leased physical items on screen change", () => {
-    const { session, emit } = fixture();
+    const { session, emit, flush } = fixture();
     session.register("food:one", { kind: "food", node: () => node({ left: 68, right: 112, top: 862, bottom: 906 }), point: () => ({ x: 90, y: 900 }) });
     session.register("toy:one", { kind: "toy", node: () => node({ left: 168, right: 212, top: 856, bottom: 900 }), point: () => ({ x: 190, y: 900 }) });
     emit(true, "before"); session.move("food:one", { x: 650, y: 700 }); emit(false, "after");
     expect(session.visible("food:one")).toBe(false); expect(session.visible("toy:one")).toBe(true);
-    expect(session.point("food:one")).toMatchObject({ bottomOffset: 6, x: 650, y: 700 });
-    const cleared: string[][] = []; session.subscribeClear(ids => cleared.push([...ids].sort())); session.clear();
-    expect(cleared).toEqual([["food:one", "toy:one"]]); expect(session.hasKind("food")).toBe(false); expect(session.hasKind("toy")).toBe(false);
+    expect(session.point("food:one")).toBeUndefined();
+    const cleared: string[][] = []; session.subscribeClear(ids => cleared.push([...ids].sort())); flush();
+    expect(cleared).toEqual([]); expect(session.has("food:one")).toBe(false);
+    session.clear(); expect(cleared).toEqual([["toy:one"]]); expect(session.hasKind("food")).toBe(false); expect(session.hasKind("toy")).toBe(false);
     session.dispose(); expect(createCompanionShowcaseSession().hasKind("food")).toBe(false);
   });
 
@@ -85,14 +86,30 @@ describe("same-object meadow admission and screen-session position", () => {
     session.dispose(); emit(true, "before"); events.dispatchEvent(show); expect(retired).toHaveLength(2);
   });
 
-  it("a direct ordinary-view request can release a covered pet at its same foot while item leases remain", () => {
+  it("permanently retires covered food and toys but keeps exposed physical identities", () => {
     const { session, emit, flush } = fixture();
-    session.register("pet", { kind: "pet", node: () => node({ left: 44, right: 136, top: 808, bottom: 900 }), point: () => ({ x: 90, y: 900 }) });
+    const retired: string[][] = []; session.subscribeClear(ids => retired.push([...ids].sort()));
+    for (const [id, x] of [["food:covered", 90], ["toy:covered", 190], ["toy:exposed", 290]] as const) {
+      session.register(id, { kind: id.startsWith("food") ? "food" : "toy", node: () => node({ left: x - 22, right: x + 22, top: 856, bottom: 900 }), point: () => ({ x, y: 900 }) });
+    }
+    emit(true, "before"); session.move("food:covered", { x: 650, y: 700 }); session.move("toy:covered", { x: 700, y: 700 });
+    emit(false, "after"); flush();
+    expect(retired).toEqual([["food:covered", "toy:covered"]]);
+    expect(session.has("food:covered")).toBe(false); expect(session.has("toy:covered")).toBe(false);
+    expect(session.point("toy:exposed")).toMatchObject({ x: 290, y: 900 });
+    session.unregister("food:covered"); session.unregister("toy:covered");
+    emit(true, "before"); expect(session.has("food:covered")).toBe(false); expect(session.has("toy:covered")).toBe(false);
+    expect(session.has("toy:exposed")).toBe(true); session.dispose();
+  });
+
+  it("commits covered-item deletion before an immediate re-entry can cancel layout frames", () => {
+    const { session, emit, flush } = fixture();
     session.register("toy:one", { kind: "toy", node: () => node({ left: 168, right: 212, top: 856, bottom: 900 }), point: () => ({ x: 190, y: 900 }) });
-    emit(true, "before"); session.move("pet", { x: 650, y: 700 }); expect(session.releasePet()).toBe(false);
-    emit(false, "after"); flush(); expect(session.visible("pet")).toBe(false);
-    expect(session.releasePet()).toBe(true); expect(session.has("pet")).toBe(false); expect(session.takeReturnedPet()).toEqual({ x: 650, y: 700 });
-    expect(session.has("toy:one")).toBe(true); expect(session.releasePet()).toBe(false); session.dispose();
+    const retired: string[] = [];
+    session.subscribeClear(ids => { for (const id of ids) { retired.push(id); session.unregister(id); } });
+    emit(true, "before"); session.move("toy:one", { x: 700, y: 700 });
+    emit(false, "after"); emit(true, "before"); flush();
+    expect(retired).toEqual(["toy:one"]); expect(session.has("toy:one")).toBe(false); session.dispose();
   });
 
   it("invalidates actual layout insertions/attributes while ignoring actor and procedural paint", () => {

@@ -1,15 +1,15 @@
 import { companionLayoutMotionMs } from "./element-anchor";
 
-/** The meadow borrows existing physical actors. Admission happens before the
- * calendar is hidden; a room/calendar object never becomes an outdoor one just
- * because its cover disappeared. Coordinates are memory-only for this mount. */
+/** The meadow borrows the resident and already-exposed physical items before
+ * the calendar is hidden. Departure may start at home or a calendar ledge;
+ * covered food/toys never enter just because their cover disappeared. */
 export const COMPANION_SHOWCASE_EVENT = "vic:showcase-transition";
 export type ShowcasePoint = { x: number; y: number };
 export type ShowcaseRect = { left: number; top: number; right: number; bottom: number };
 type Kind = "pet" | "food" | "toy";
 export type CompanionShowcasePetInteraction = "pet" | "bonk" | "drag" | "throw" | "shake" | "rest" | "rested";
 type Participant = { kind: Kind; node: () => HTMLElement | undefined | null; point: () => ShowcasePoint | undefined; eligible?: () => boolean; interact?: (kind: CompanionShowcasePetInteraction) => void };
-export type CompanionShowcaseLease = ShowcasePoint & { width: number; height: number; bottomOffset: number; kind: Kind; rotation?: number; scaleX?: number; scaleY?: number };
+export type CompanionShowcaseLease = ShowcasePoint & { width: number; height: number; bottomOffset: number; kind: Kind; pose?: number; rotation?: number; scaleX?: number; scaleY?: number };
 type Transition = { active: boolean; phase: "before" | "after" };
 const validRect = (r: ShowcaseRect) => [r.left, r.top, r.right, r.bottom].every(Number.isFinite) && r.right > r.left && r.bottom > r.top;
 export function companionShowcaseFootprint(point: ShowcasePoint, size: { width: number; height: number }): ShowcaseRect {
@@ -57,7 +57,7 @@ export function createCompanionShowcaseSession() {
   let active = false, revision = 0, covers: ShowcaseRect[] = [], frame = 0, attached = false, followUntil = 0;
   let ownershipRevision = 0, ownershipKey = "";
   let layoutObserver: MutationObserver | undefined;
-  let returnedPet: ShowcasePoint | undefined;
+  let returnedPet: (ShowcasePoint & { home?: boolean }) | undefined;
   let roomCovers: { node: HTMLElement; rect: ShowcaseRect }[] = [];
   const notify = () => {
     revision++;
@@ -69,6 +69,14 @@ export function createCompanionShowcaseSession() {
   const exposed = (lease: CompanionShowcaseLease) => exposedCompanionShowcaseRect(companionShowcaseFootprint({ x: lease.x, y: lease.y + lease.bottomOffset }, lease), viewport(), covers);
   const restoredCovers = () => [...readCompanionShowcaseCovers(), ...roomCovers.filter(cover => !cover.node.isConnected).map(cover => cover.rect)];
   const returnExposedPet = () => { const pet = leases.get("pet"); if (!active && pet && exposed(pet)) { returnedPet = { x: pet.x, y: pet.y }; leases.delete("pet"); } };
+  const discardCoveredItems = () => {
+    const ids = new Set([...leases].filter(([, lease]) => lease.kind !== "pet" && !exposed(lease)).map(([id]) => id));
+    if (!ids.size) return;
+    for (const id of ids) leases.delete(id);
+    // Physical food/toy owners remove the actual objects. No collection or
+    // care reward is produced by automatic homecoming cleanup.
+    for (const listener of clearing) listener(ids);
+  };
   const transition = (event: Event) => {
     const detail = (event as CustomEvent<Transition>).detail;
     if (!detail || typeof detail.active !== "boolean") return;
@@ -80,19 +88,21 @@ export function createCompanionShowcaseSession() {
         const node = participant.node(), point = participant.point();
         if (!node || !point || node.hidden || node.closest("[hidden],[inert],[aria-hidden=true]")) continue;
         const rect = node.getBoundingClientRect(), style = getComputedStyle(node);
-        if (style.visibility === "hidden" || style.display === "none" || Number(style.opacity || 1) <= .05 || !exposedCompanionShowcaseRect(rect, viewport(), covers)) continue;
-        leases.set(id, { ...point, width: rect.width, height: rect.height, bottomOffset: rect.bottom - point.y, kind: participant.kind });
+        if (style.visibility === "hidden" || style.display === "none" || Number(style.opacity || 1) <= .05 || participant.kind !== "pet" && !exposedCompanionShowcaseRect(rect, viewport(), covers)) continue;
+        const pose = node.dataset?.pose === undefined ? undefined : Number(node.dataset.pose);
+        leases.set(id, { ...point, width: rect.width, height: rect.height, bottomOffset: rect.bottom - point.y, kind: participant.kind, ...(Number.isInteger(pose) ? { pose } : {}) });
       }
       active = true; notify();
     } else if (detail.phase === "after" && !detail.active) {
-      // The ordinary room is temporarily detached while the resident is
-      // suspended. Keep pre-entry covers until React restores that layout;
-      // an absent room during cleanup is not exposed grass.
-      active = false; notify();
+      // Homecoming returns the same resident immediately, even when its
+      // meadow foot lies behind the restored calendar or a panel.
+      const pet = leases.get("pet");
+      if (pet) { returnedPet = { x: pet.x, y: pet.y, home: true }; leases.delete("pet"); }
+      active = false; covers = [...covers, ...restoredCovers()]; discardCoveredItems(); notify();
       if (!frame) frame = requestAnimationFrame(() => {
         if (active) { frame = 0; return; }
         covers = [...covers, ...restoredCovers()]; notify();
-        frame = requestAnimationFrame(() => { frame = 0; if (active) return; covers = restoredCovers(); returnExposedPet(); notify(); });
+        frame = requestAnimationFrame(() => { frame = 0; if (active) return; covers = restoredCovers(); discardCoveredItems(); notify(); });
       });
     }
   };

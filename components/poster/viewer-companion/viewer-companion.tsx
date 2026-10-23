@@ -120,6 +120,7 @@ import { hapticSuccess } from "@/lib/ui/haptics";
 import { CompanionFood, type CompanionFoodControl } from "./companion-food";
 import { CompanionMeadowWalk } from "./companion-meadow-walk";
 import { createCompanionShowcaseSession } from "@/lib/ui/viewer-companion/showcase-session";
+import { setPanelSectionExpanded } from "@/lib/ui/panel-section-preferences";
 import { usePathname } from "next/navigation";
 import { CompanionToys, type CompanionToyControl } from "./companion-toys";
 // Keep a cold stamp/gift's Suspense boundary local. Suspending the whole
@@ -552,6 +553,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     let homeWaitingGeometry = false, homeValidationRequested = false, homeLookUsed = false, homeLegs = 0;
     let homeEntryFloor: string | undefined;
     let pendingHomeRecall: HTMLElement | undefined;
+    let pendingShowcaseHomeReturn = false;
     const pendingFeeds = createCompanionFeedCommands<HTMLElement>();
     type ItemGeometry = { platforms: Platform[]; landings: readonly Platform[]; contacts: readonly Platform[]; anchor: CompanionGeometrySubscription["anchor"] };
     let itemGeometry: CompanionGeometrySubscription | undefined;
@@ -3899,11 +3901,17 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (!independentItemsAllowed()) cancelItemCommands();
       const returnedMeadowPet = showcaseSession.takeReturnedPet();
       if (returnedMeadowPet) {
-        // A visible background return rejoins the same life at its actual
-        // last foot. Covered returns stay leased/hidden, never home-reset.
-        x = returnedMeadowPet.x; y = returnedMeadowPet.y; support = "";
         clearAction(); cancelHomeJourney(); pendingPosition.current = null;
-        needsLanding = true; homeOccluded = false; resetInertia();
+        supportMotion.reset(); resetInertia(); afterPetLanding = restAfterLanding = false;
+        if (returnedMeadowPet.home) {
+          pendingShowcaseHomeReturn = true; needsLanding = false;
+          support = COMPANION_WASH_SUPPORT; homeOccluded = true; el.hidden = true;
+          setHomeExpanded(true);
+          setPanelSectionExpanded("companion-home", true);
+        } else {
+          x = returnedMeadowPet.x; y = returnedMeadowPet.y; support = "";
+          needsLanding = true; homeOccluded = false;
+        }
       }
       poseWitness.reset();
       graphicsMode = readGfxMode();
@@ -4396,6 +4404,19 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (homeContact) { const currentContact = homeContactPoint(homeContact.kind, homeContact.element); if (currentContact) homeContact.point = currentContact; else clearHomeContact(); }
       food.current?.sync(platforms, id => geometryTracker?.anchor(id), geometryTracker?.landings(32));
       toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, geometryAt, toyHomeContacts, toyAnchor);
+      if (pendingShowcaseHomeReturn) {
+        const mat = landingPlatforms.find(platform => platform.id === COMPANION_WASH_SUPPORT && platform.bodyOnly);
+        // A folded/remounting house keeps this request until its real shower
+        // stance is measured. Never substitute a calendar or a generic floor.
+        if (!mat) { homeOccluded = true; el.hidden = true; return; }
+        pendingShowcaseHomeReturn = false; freshHomePending = false;
+        clearAction(); needsLanding = false; awaitingAtX = false; homeOccluded = false;
+        x = platformLandingX(mat, mat.x + mat.width / 2); y = mat.y; support = mat.id;
+        worldSeeded = true; returnTargetValid = true;
+        presence.focus(visibleActive(), geometryAt, true); el.removeAttribute("data-dreaming");
+        lastTick = lastNeeds = lastCare = lastPaint = geometryAt; nextDecision = geometryAt + 1450;
+        refreshAnchors(geometryAt); paint(0, 0, "idle"); schedule(); return;
+      }
       if (homeJourney && !platforms.some(p => p.id === "companion-home")) {
         if (!openHomeRecallTarget()) {
           cancelHomeJourney(); clearAction();
@@ -4872,7 +4893,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     });
     const unregisterShowcasePet = showcaseSession.register("pet", {
       kind: "pet", node: () => el, point: () => displayedPoint(),
-      eligible: () => preferencesRef.current.enabled && !blocked && !overlayRef.current && !workspaceBusyRef.current && !premiereActive && !isHomeSupport(support) && !pressed && !keyboardHeld && !placing,
+      eligible: () => preferencesRef.current.enabled && !blocked && !overlayRef.current && !workspaceBusyRef.current && !premiereActive && !pressed && !keyboardHeld && !placing,
       interact: kind => {
         if (!preferencesRef.current.enabled || blocked || overlayRef.current || workspaceBusyRef.current || premiereActive || document.hidden) return;
         // Care remains owned by this real resident while its calendar drawing

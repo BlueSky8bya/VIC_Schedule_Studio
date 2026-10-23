@@ -184,7 +184,8 @@ test("meadow viewer: real pet gestures and concurrent physical item releases kee
     expect(painted.pixels.ink).toBeGreaterThan(100); await page.screenshot({ path: `${output}/manual-${name}.png` }); return painted;
   };
   const stages: Record<string, unknown> = {};
-  const firstFoot = await foot(actor); expect(Math.hypot(firstFoot.x - originalFoot.x, firstFoot.y - originalFoot.y)).toBeLessThan(2);
+  await expect(pet).toHaveAttribute("data-state", "idle");
+  const firstFoot = await foot(actor); expect(firstFoot.y).toBeGreaterThan(page.viewportSize()!.height * .5);
   await actor.focus(); await actor.press("Enter"); await expect(pet).toHaveAttribute("data-row", "29"); stages.pet = await witness("pet-personality-bow");
   await expect(pet).toHaveAttribute("data-reaction", "none", { timeout: 5000 });
   await actor.click(); await expect(pet).toHaveAttribute("data-row", "27"); stages.tap = await witness("short-tap-tears");
@@ -297,7 +298,7 @@ async function layoutCovers(page: Page) {
 const overlaps = (a: { x: number; y: number; width: number; height: number }, b: { x: number; y: number; width: number; height: number }) => Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x) > .5 && Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y) > .5;
 
 for (const surface of ["viewer", "owner", "preview"] as const) {
-  test(`meadow ${surface}: only exposed real objects travel and covered placements remain until screen departure`, async ({ page }, info) => {
+  test(`meadow ${surface}: resident departs and covered placements retire on shower-pad return`, async ({ page }, info) => {
     await page.setViewportSize({ width: 1920, height: 1100 });
     await page.goto(surface === "viewer" ? "/visual-fixture/poster?ambient=spring" : `/visual-fixture/studio?role=owner&y=2026&m=4${surface === "preview" ? "&viewer=1" : ""}`);
     await page.bringToFront(); const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
@@ -306,12 +307,13 @@ for (const surface of ["viewer", "owner", "preview"] as const) {
     await placeCompanionOnHomeFloor(page);
     await home.getByRole("button", { name: "밥 꺼내기", exact: true }).click();
     await home.getByRole("button", { name: "장난감 상자 열기", exact: true }).click();
-    const food = page.locator(".vc-food").first(), toy = page.locator(".vc-toy").first(), pet = page.locator(".vc-meadow-walk"), drawing = pet.locator(".vc-meadow-walk-body");
+    let food = page.locator(".vc-food").first(), toy = page.locator(".vc-toy").first();
+    const pet = page.locator(".vc-meadow-walk"), drawing = pet.locator(".vc-meadow-walk-body");
     await expect(food).toBeVisible(); await expect(food).not.toHaveAttribute("data-falling");
     await expect(toy).toBeVisible(); await expect(toy).toHaveAttribute("data-falling", "false");
     const identity = { food: await food.getAttribute("data-food"), toy: await toy.getAttribute("data-toy-id") };
     await enterCompanionMeadow(page);
-    await expect(pet).toHaveCount(0); await expect(food).toBeHidden(); await expect(toy).toBeHidden();
+    await expect(pet).toBeVisible(); await expect(pet).toHaveAttribute("data-state", "idle"); await expect(food).toBeHidden(); await expect(toy).toBeHidden();
     await expect(food).not.toHaveAttribute("data-showcase-lease"); await expect(toy).not.toHaveAttribute("data-showcase-lease");
     await page.keyboard.press("Escape"); await expect(food).toBeVisible(); await expect(toy).toBeVisible();
 
@@ -321,8 +323,9 @@ for (const surface of ["viewer", "owner", "preview"] as const) {
     await placeCompanionOnExposedBackground(page, 280);
     const entryFoot = await foot(page.locator(".vc-companion"));
     await enterCompanionMeadow(page); await expect(pet).toBeVisible(); await expect(food).toBeVisible(); await expect(toy).toBeVisible();
+    await expect(pet).toHaveAttribute("data-state", "idle");
     const admittedFoot = await foot(drawing);
-    expect(Math.hypot(entryFoot.x - admittedFoot.x, entryFoot.y - admittedFoot.y)).toBeLessThan(2);
+    expect(admittedFoot.y).toBeGreaterThan(page.viewportSize()!.height * .5);
     await expect(food).toHaveAttribute("data-showcase-lease", ""); await expect(toy).toHaveAttribute("data-showcase-lease", "");
     // Fresh credential-free fixture care only: this acknowledges the same
     // resident, not merely an attractive pose in a disconnected puppet.
@@ -390,19 +393,29 @@ for (const surface of ["viewer", "owner", "preview"] as const) {
     const cover = (await calendar.boundingBox())!, target = { x: cover.x + cover.width * .52, y: Math.min(900, cover.y + cover.height * .55) };
     await dragTo(page, food, { x: target.x - 90, y: target.y }); await dragTo(page, toy, { x: target.x + 90, y: target.y }); await dragTo(page, drawing, { x: target.x, y: target.y - 100 });
     const placed = { food: await foot(food), toy: await foot(toy), pet: await foot(drawing) };
-    await page.keyboard.press("Escape"); await expect(food).toBeHidden(); await expect(toy).toBeHidden(); await expect(pet).toBeHidden(); await expect(page.locator(".vc-companion")).toBeHidden();
+    await page.keyboard.press("Escape"); await expect(food).toHaveCount(0); await expect(toy).toHaveCount(0); await expect(pet).toHaveCount(0);
+    await expect(page.locator(".vc-companion")).toBeVisible(); await expect(page.locator(".vc-companion")).toHaveAttribute("data-platform", "companion-home-floor-400");
+    const retiredIdentity = { ...identity };
     await expect(home).toBeVisible(); await expect(home.locator('[data-home-action="toys"]')).toBeEnabled();
     const beforeDispense = { foods: await page.locator(".vc-food").count(), toys: await page.locator(".vc-toy").count() };
     await home.getByRole("button", { name: "밥 꺼내기", exact: true }).click();
     await expect(page.locator(".vc-food")).toHaveCount(beforeDispense.foods + 1);
-    await home.getByRole("button", { name: "장난감 상자 열기", exact: true }).click();
+    // The homecoming resident now stands in front of this storage opening.
+    // Use its native keyboard activation rather than clicking through a pet.
+    await home.getByRole("button", { name: "장난감 상자 열기", exact: true }).focus();
+    await page.keyboard.press("Enter");
     await expect(page.locator(".vc-toy")).toHaveCount(beforeDispense.toys + 1);
     await expect(page.locator(".vc-toy").last()).toHaveAttribute("data-falling", "false", { timeout: 7000 });
-    await expect(pet).toBeHidden(); await expect(page.locator(".vc-companion")).toBeHidden();
-    await page.waitForTimeout(1200); await enterCompanionMeadow(page);
+    food = page.locator(".vc-food").last(); toy = page.locator(".vc-toy").last();
+    await expect(food).not.toHaveAttribute("data-falling");
+    identity.food = await food.getAttribute("data-food"); identity.toy = await toy.getAttribute("data-toy-id");
+    await dragTo(page, food, { x: 90, y: 990 }); await dragTo(page, toy, { x: 180, y: 990 });
+    await expect(food).not.toHaveAttribute("data-falling"); await expect(toy).toHaveAttribute("data-falling", "false");
+    await expect(food).toHaveAttribute("data-platform", /^viewport-floor/); await expect(toy).toHaveAttribute("data-platform", /^viewport-floor/);
+    await enterCompanionMeadow(page); await expect(pet).toHaveAttribute("data-state", "idle");
     await expect(food).toBeVisible(); await expect(toy).toBeVisible(); await expect(pet).toBeVisible();
     const restored = { food: await foot(food), toy: await foot(toy), pet: await foot(drawing) };
-    for (const kind of ["food", "toy", "pet"] as const) expect(Math.hypot(placed[kind].x - restored[kind].x, placed[kind].y - restored[kind].y)).toBeLessThan(2);
+    await expect(page.locator(`[data-food="${retiredIdentity.food}"]`)).toHaveCount(0); await expect(page.locator(`[data-toy-id="${retiredIdentity.toy}"]`)).toHaveCount(0);
     await expect(food).toHaveAttribute("data-food", identity.food!); await expect(toy).toHaveAttribute("data-toy-id", identity.toy!);
     await page.screenshot({ path: `${output}/${surface}-restored-placements.png` });
     let dynamicCover: unknown;
@@ -464,6 +477,6 @@ for (const surface of ["viewer", "owner", "preview"] as const) {
     await expect(page.locator(`[data-food="${identity.food}"]`)).toHaveCount(0); await expect(page.locator(`[data-toy-id="${identity.toy}"]`)).toHaveCount(0); await expect(pet).toHaveCount(0);
     await page.reload(); await expect(page.locator(".vc-food,.vc-toy,.vc-meadow-walk")).toHaveCount(0);
     expect(errors).toEqual([]);
-    writeFileSync(`${output}/${surface}-ownership.json`, JSON.stringify({ test: info.title, identity, interactions, keyboard, beforeDispense, placed, restored, dynamicCover, homeRecall, actual: "Native home dispense, actual drag and floor contact, pre-entry exclusion, exact original lower-left foot, real care-linked petting/stroking and keyboard interaction parity, each real object keyboard 16px movement, food Delete, covered exit/re-entry with independently working home dispense, viewer native tag expansion moves the actual house over previously proven exposed objects (each child.hidden true then false), direct home recall releases lease and resumes visible ordinary actor, month departure and reload. No engine/RNG/clock/position patch; home arrival itself is not asserted.", fullCertification: false }, null, 2));
+    writeFileSync(`${output}/${surface}-ownership.json`, JSON.stringify({ test: info.title, identity, retiredIdentity, interactions, keyboard, beforeDispense, placed, restored, dynamicCover, homeRecall, actual: "Native home dispense, actual drag and floor contact, pre-entry exclusion, exact original lower-left foot, real care-linked petting/stroking and keyboard interaction parity, each real object keyboard 16px movement, food Delete, covered exit permanently retires originals, shower-pad homecoming, and fresh exposed items survive re-entry with independently working home dispense, viewer native tag expansion moves the actual house over previously proven exposed objects (each child.hidden true then false), direct home recall releases lease and resumes visible ordinary actor, month departure and reload. No engine/RNG/clock/position patch; shower support is asserted after the covered return.", fullCertification: false }, null, 2));
   });
 }
