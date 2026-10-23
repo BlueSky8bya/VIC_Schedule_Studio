@@ -1,11 +1,11 @@
 // P0 depth contracts against a freshly built, fixture-enabled server. Never starts/rebuilds a server.
 // node scripts/ambient-qa/depth-check.mjs --base http://127.0.0.1:3100
-// Optional: --only matrix,determinism,seal,still,cache,pan,mobile --out .scratch-pw/qa/r18-depth
+// Optional: --only matrix,determinism,still,cache,mobile --out .scratch-pw/qa/r18-depth
 // --baseline (matrix only, no new-depth assertions) --build <server-revision-label> --width 1024 --height 768
 import fs from "node:fs";
 import path from "node:path";
 import {
-  BASE, BANDS, VIEWPORT, advance, assertServer, captureCanvas, ensureDir, fixtureUrl,
+  BASE, VIEWPORT, advance, assertServer, captureCanvas, ensureDir, fixtureUrl,
   gitInfo, launch, newPage, nowIso, openFixture, parseArgs, state, writeJson
 } from "./lib.mjs";
 
@@ -15,11 +15,11 @@ const out = String(args.out ?? ".scratch-pw/qa/r18-depth");
 const baseline = args.baseline === true;
 const viewport = { width: Number(args.width ?? VIEWPORT.width), height: Number(args.height ?? VIEWPORT.height) };
 if (!Object.values(viewport).every(n => Number.isInteger(n) && n > 640 && n <= 4096)) throw new Error("Desktop width/height must be integers in 641..4096");
-const suites = ["matrix", "determinism", "seal", "still", "cache", "pan", "mobile"];
+const suites = ["matrix", "determinism", "still", "cache", "mobile"];
 const selected = args.only ? String(args.only).split(",") : baseline ? ["matrix"] : suites;
 if (selected.some(name => !suites.includes(name))) throw new Error(`Unknown suite: ${selected.join(",")}`);
 if (baseline && selected.some(name => name !== "matrix")) throw new Error("--baseline supports only matrix; new behavior gates must run on the new build");
-const allBiomes = ["meadow", "forest", "mountain", "hill", "pond", "valley", "tidal", "sandy", "rocky", "sea", "deep"];
+const allBiomes = ["meadow"];
 const allSeasons = ["spring", "summer", "autumn", "winter"];
 const biomes = args.biomes ? String(args.biomes).split(",") : allBiomes;
 const seasons = args.seasons ? String(args.seasons).split(",") : allSeasons;
@@ -95,23 +95,8 @@ try {
     });
   }
 
-  if (selected.includes("seal")) {
-    const bandHashes = [];
-    for (const band of BANDS) await run(`deep seal ${band}`, async () => {
-      const entries = [];
-      for (const season of seasons) for (const weather of ["clear", "cloud", "rain", "snow", "fog", "wind"]) {
-        await openFixture(page, url(sc("deep", season, band, weather), { t: 1000, pointer: pointers[2] }));
-        const frame = await snapshot(page, `deep-seal-${band}-${season}-${weather}`);
-        entries.push({ season, weather, hash: frame.hash });
-      }
-      check(`deep ${band}: ${seasons.length} seasons and six weather states sealed`, new Set(entries.map(e => e.hash)).size === 1, entries);
-      bandHashes.push(entries[0]?.hash);
-    });
-    check("deep six time bands remain distinct", bandHashes.length === 6 && new Set(bandHashes).size === 6, bandHashes);
-  }
-
   if (selected.includes("still")) for (const gate of [{ camera: "plain" }, { reduced: 1 }]) {
-    for (const biome of ["meadow", "mountain", "sea", "deep"]) await run(`still ${biome} ${JSON.stringify(gate)}`, async () => {
+    for (const biome of ["meadow"]) await run(`still ${biome} ${JSON.stringify(gate)}`, async () => {
       await openFixture(page, url(sc(biome), { ...gate, t: 1500, pointer: pointers[2] }));
       const before = await snapshot(page, `${biome}-still-${Object.keys(gate)[0]}-before`, true);
       await page.evaluate(() => window.__vicAmbient.forcePointer({ x: 0, y: 0 }));
@@ -133,29 +118,6 @@ try {
     check(`${biome} pointer causes no extra depth cache bake`, Number.isFinite(before?.bakes) && before.bakes === after?.bakes, { before, after });
     check(`${biome} depth cache bounded`, Number.isFinite(after?.bytes) && after.bytes <= 64 * 1024 * 1024 && after.entries <= 12, after);
   });
-
-  if (selected.includes("pan")) for (const [from, to] of [["meadow", "forest"], ["sandy", "sea"], ["sea", "deep"]]) {
-    await run(`pan ${from}-${to}`, async () => {
-      await openFixture(page, url(sc(from), { t: 1500, pointer: pointers[2] }));
-      await page.evaluate(() => {
-        window.__depthDepart = [];
-        window.addEventListener("vic:biome-depart", e => window.__depthDepart.push({ ...e.detail, t: window.__vicAmbient.time() }));
-      });
-      check(`${from}-${to} navigation accepted`, await page.evaluate(target => window.__vicAmbient.goTo(target), to));
-      await page.waitForFunction(target => window.__vicAmbient.scene().loaded?.includes(target), to);
-      await advance(page, 1000 / 60);
-      const started = await raw(page);
-      const depart = await page.evaluate(() => window.__depthDepart.at(-1));
-      check(`${from}-${to} departure contract`, started.moving === true && depart?.dur === 0.62, { started, depart });
-      await advance(page, 600);
-      const nearEnd = await snapshot(page, `pan-${from}-${to}-600`, true);
-      check(`${from}-${to} still moving at 600ms`, nearEnd.detail.moving === true, { detail: nearEnd.detail, t: nearEnd.state.t });
-      await advance(page, 1000 / 30);
-      const arrived = await snapshot(page, `pan-${from}-${to}-633`, true);
-      check(`${from}-${to} arrives first frame after 620ms`, arrived.detail.moving === false && arrived.state.biome === to,
-        { detail: arrived.detail, elapsed: arrived.state.t - (depart?.t ?? NaN) });
-    });
-  }
 
   if (selected.includes("mobile")) for (const viewport of [{ width: 390, height: 844 }, { width: 844, height: 390 }]) {
     await run(`mobile ${viewport.width}x${viewport.height}`, async () => {

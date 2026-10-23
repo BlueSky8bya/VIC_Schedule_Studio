@@ -118,6 +118,7 @@ import { requestCompanionPanelSide } from "@/lib/ui/viewer-companion/panel-play"
 import { gfxMode as readGfxMode } from "@/lib/ui/gfx";
 import { hapticSuccess } from "@/lib/ui/haptics";
 import { CompanionFood, type CompanionFoodControl } from "./companion-food";
+import { CompanionMeadowWalk } from "./companion-meadow-walk";
 import { CompanionToys, type CompanionToyControl } from "./companion-toys";
 // Keep a cold stamp/gift's Suspense boundary local. Suspending the whole
 // resident also disconnects its layout-owned decoded picture temporarily.
@@ -4845,6 +4846,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
   const homeLighting = companionRoomLighting(homeEnvironment, homeCurtain.phase, homeLampLit) as CSSProperties;
   const house = <CompanionHome lighting={homeLighting} care={care} preferences={preferences} inactive={overlayOpen || performanceActive} owner={premiereCue?.owner} unreadCollection={unreadCollection} radioPlaying={radioPlaying} environment={homeEnvironment} curtain={homeCurtain} toyCount={toyCount} onToyBox={() => { logActivity("ui.click", { target: "companion-home-toys" }); control.current?.toys(); }} onPersonality={() => onOpenBook("personality")} onAction={act} onClose={homeVisible ? undefined : closeHome} />;
   return createPortal(<>
+    <CompanionMeadowWalk preferences={preferences} available={!blocked && !overlayOpen && !performanceActive} reduced={reduced} night={homeEnvironment.night} />
     {/* This portal already owns body. Keep the floating room before its fixed
         resident so native CSS anchors also work when the short house scrolls. */}
     {compactActive && compactHost ? <div id={`${actorId}-home`} className="vc-compact-home" ref={compactHome} hidden={!homeExpanded} data-companion-home-owner={premiereCue?.owner} data-pm-exit="5" inert={overlayOpen || performanceActive ? true : undefined} aria-hidden={overlayOpen || performanceActive ? true : undefined} data-sfx="off" onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (homeExpanded) logActivity("ui.click", { target: "companion-home-close" }); closeHome(); } }}>

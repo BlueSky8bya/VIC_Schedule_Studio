@@ -1,3 +1,5 @@
+> 2026-10-23: 이 기록의 비초원 지도는 [사용자 요청으로 퇴역](../retired-maps-20261023.md)했습니다. 아래 내용은 당시 기록이며 현재 실행·검수 명령이 아닙니다.
+
 # R72 — Mountain cliff activity
 
 Authorized: integrate the accepted summer mountain concept and constrain seasonal material interaction to its foreground cliff. Steps: preserve generator original; reuse terrain depth and material engine; enforce a source-space cliff boundary for spawn, wind, drag and collision; verify captures and boundary tests. Summer first; other seasonal art remains pending. No push requested. No data, role or KST changes.

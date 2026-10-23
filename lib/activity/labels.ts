@@ -34,6 +34,8 @@ export type TargetLabel = {
 // 기록 보존이 90일이라 당분간 집계에 계속 나타난다. 사전 항목 자체는 지우지 않는다 —
 // 지우면 옛 기록이 '이름 미등록'으로 떨어져 더 못 읽게 된다.
 const RETIRED_TARGETS = new Set([
+  // 2026-10-23: historical map actions stay readable, never unused-feature suggestions.
+  "biome-move", "biome-map-pick", "biome-map-fold",
   "companion-radio-mood", // All moods now play; personality decides reaction.
   // 2026-09-19 점검 — 코드 어디서도 더는 기록되지 않는 값들(스캐너로 대조). 남겨 두면 '한 번도 안 쓴
   // 기능'처럼 후보 목록에 끼어 목록이 거짓말을 한다. 이름은 옛 기록을 읽기 위해 그대로 둔다.
@@ -465,7 +467,7 @@ export const ACT: Record<string, TargetLabel> = {
   "studio-calm-toggle": { name: "차분한 편집실 켜기/끄기", area: "편집실", hint: "옛 기록(토글 제거 2026-09-04 — 항상 ON)" },
   "poster-theme-select": { name: "포스터 테마", area: "편집실", hint: "설정 → 포스터 테마(관리자만)" },
   "gfx-pref-select": { name: "배경 효과", area: "편집실", hint: "설정 → 배경 효과(자동·최대·가볍게)", opts: { max: "항상 최대" } },
-  "ambient-showcase": { name: "배경 감상 시작", area: "배경 감상", hint: "아바타 자리·시청자 레일의 '○○ 감상하기' 버튼 — 달력·필터를 숨기고 계절 배경만(Esc/알약으로 복귀). 설정 줄은 2026-09-04 제거" },
+  "ambient-showcase": { name: "배경 감상 시작", area: "배경 감상", hint: "계절 배경의 감상하기 — 초원 산책으로 전환, Esc/나가기로 달력 복귀" },
   "ambient-showcase-exit": { name: "배경 감상 나가기", area: "배경 감상", hint: "감상 모드 상단 알약" },
   "ambient-toggle-viewer": { name: "계절 배경", area: "시청자 화면", hint: "옆 레일의 켜기·흐리게·끄기. 편집실 설정과 같은 상태(기기에 저장)" },
   "ambient-mode-select": { name: "계절 배경", area: "편집실", hint: "설정 → 계절 배경(켜기·흐리게·끄기)" },
@@ -474,8 +476,8 @@ export const ACT: Record<string, TargetLabel> = {
   "dev-world-weather": { name: "월드 날씨", area: "편집실", hint: "설정 → 월드 날씨(개발자만)" },
   "dev-world-day": { name: "월드 날", area: "편집실", hint: "옛 기록(2026-09-05 제거)" },
   "dev-art-board-open": { name: "아트 보드 열기", area: "편집실", hint: "설정 모달 → /studio/ambient-art — 계절 배경 그림 자리·코덱스 프롬프트 관리(2026-09-04)" },
-  "biome-move": { name: "바이옴 이동(쉐브론)", area: "배경 감상", hint: "감상 모드 가장자리 쉐브론(PLAN-20260904-004) — 방향키·WASD·스와이프와 같은 이동. data-dir = up/down/left/right" },
-  "biome-map-pick": { name: "바이옴 미니맵 선택", area: "배경 감상", hint: "감상 모드 미니맵 점(열한 화면) — data-biome = 목적지" },
+  "biome-move": { name: "바이옴 이동(쉐브론)", area: "배경 감상", hint: "옛 기록. 초원 단일화로 지도 이동 제거(2026-10-23)" },
+  "biome-map-pick": { name: "바이옴 미니맵 선택", area: "배경 감상", hint: "옛 기록. 초원 단일화로 미니맵 제거(2026-10-23)" },
   "art-prompt-copy-pilot": {
     name: "아트 보드 파일럿 프롬프트 복사",
     area: "편집실",
@@ -491,7 +493,7 @@ export const ACT: Record<string, TargetLabel> = {
     area: "설정",
     hint: "개발자 전용. 별똥별·혜성을 쉬지 않고 되풀이해 확인한다(평균 1분·9분을 기다릴 수 없다)"
   },
-  "showcase-sky-event": { name: "감상 중 하늘 사건", area: "배경 감상", hint: "개발자만. 설정의 하늘 사건과 같은 상태" },
+  "showcase-sky-event": { name: "감상 중 하늘 사건", area: "배경 감상", hint: "감상 세션에서만 선택. 실제 밤·날씨 조건은 유지" },
   "art-prompt-copy-missing": {
     name: "아트 보드 남은 파일 프롬프트 복사",
     area: "편집실",
@@ -560,12 +562,12 @@ export const ACT: Record<string, TargetLabel> = {
   "close-detail": { name: "일정 상세 닫기(X)", area: "시청자 화면" },
   "close-detail-grab": { name: "일정 상세 손잡이로 닫기", area: "시청자 화면" },
   "close-public-insights": { name: "이 달 기록 닫기", area: "시청자 화면" },
-  "biome-map-fold": { name: "지도 접기/펼치기", area: "배경 감상" },
-  "ambient-showcase-settings": { name: "감상 중 설정 열기", area: "배경 감상", hint: "감상 화면 오른쪽 위 톱니(개발자만)" },
-  "showcase-date": { name: "감상 중 날짜 선택", area: "배경 감상", hint: "개발자만. 날짜 선택 달력 열기" },
-  "showcase-season": { name: "감상 중 계절", area: "배경 감상", hint: "개발자만. 자동은 달력 달을 따른다" },
-  "showcase-band": { name: "감상 중 시간대", area: "배경 감상", hint: "개발자만. 설정의 월드 시간대와 같은 상태" },
-  "showcase-weather": { name: "감상 중 날씨", area: "배경 감상", hint: "개발자만. 설정의 월드 날씨와 같은 상태" },
+  "biome-map-fold": { name: "지도 접기/펼치기", area: "배경 감상", hint: "옛 기록. 미니맵 제거(2026-10-23)" },
+  "ambient-showcase-settings": { name: "감상 중 설정 열기", area: "배경 감상", hint: "감상 화면 오른쪽 위 환경 조절 — 모든 역할, 감상 세션 한정" },
+  "showcase-date": { name: "감상 중 날짜 선택", area: "배경 감상", hint: "감상 날짜 선택 — 나가면 원래 달력 배경으로 복귀" },
+  "showcase-season": { name: "감상 중 계절", area: "배경 감상", hint: "감상 계절 선택 — 자동은 달력 달을 따르고 나가면 원래 배경으로 복귀" },
+  "showcase-band": { name: "감상 중 시간대", area: "배경 감상", hint: "감상 세션의 시간대 선택" },
+  "showcase-weather": { name: "감상 중 날씨", area: "배경 감상", hint: "감상 세션의 날씨 선택" },
   "showcase-gfx": { name: "감상 중 배경 효과", area: "배경 감상", hint: "설정의 배경 효과와 같은 상태" },
   "vlog-role": { name: "세션 로그 역할", area: "이용 기록" },
   "vlog-stay": { name: "세션 로그 체류", area: "이용 기록" },

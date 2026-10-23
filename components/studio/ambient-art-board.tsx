@@ -40,7 +40,7 @@ import { kstToday, type SeasonKey } from "@/components/shared/ambient/registry";
 import { previewOf } from "@/components/shared/ambient/art/preview";
 import { localizeArtPromptPaths } from "@/components/shared/ambient/art/prompt-paths";
 import { codexById, CODEX_KINDS, HABITAT_LABEL, type CodexEntry } from "@/components/shared/ambient/world/codex";
-import { BIOMES } from "@/components/shared/ambient/world/biomes";
+import { ECOLOGICAL_REGIONS } from "@/components/shared/ambient/world/biomes";
 import { TIER_DOTS, TIER_LABEL } from "@/components/shared/ambient/world/rarity";
 import { BAND_LABEL } from "@/components/shared/ambient/world/time";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -210,7 +210,7 @@ const CodexRow = memo(function CodexRow({
         <code>{entry.id}</code>
       </td>
       <td className="cx-where">
-        {entry.biomes.map((b) => BIOMES[b].nameKo).join("·")}
+        {entry.biomes.map((b) => ECOLOGICAL_REGIONS[b]).join("·")}
         <i>{HABITAT_LABEL[entry.habitat]}</i>
       </td>
       <td className="cx-when">{bandsLabel(entry.bands)}</td>

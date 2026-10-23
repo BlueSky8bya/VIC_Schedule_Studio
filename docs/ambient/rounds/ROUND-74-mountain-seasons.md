@@ -1,3 +1,5 @@
+> 2026-10-23: 이 기록의 비초원 지도는 [사용자 요청으로 퇴역](../retired-maps-20261023.md)했습니다. 아래 내용은 당시 기록이며 현재 실행·검수 명령이 아닙니다.
+
 # R74 — Complete mountain seasons
 
 Owner explicitly requests spring/autumn/winter mountain now. Preserve approved summer geometry and cliff boundary, generate each seasonal terrain with built-in image_gen, route every mountain season through shared material/depth/sky engine, verify source matte and rendered interaction across seasons. No push requested. No server permissions or KST changes.

@@ -1,3 +1,5 @@
+> 2026-10-23: 이 기록의 비초원 지도는 [사용자 요청으로 퇴역](../retired-maps-20261023.md)했습니다. 아래 내용은 당시 기록이며 현재 실행·검수 명령이 아닙니다.
+
 # R76 — Sandy shore
 
 Owner accepted the front-facing beach with sand in the lower third. Implement four matched seasonal scenes, continuous depth parallax, and subtle movement of the existing painted waves. No flying decorations, animals, or unrelated props. Owner authorized commit/push on 2026-09-16.

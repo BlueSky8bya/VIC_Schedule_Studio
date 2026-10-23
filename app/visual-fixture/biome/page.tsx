@@ -1,13 +1,13 @@
 import { notFound } from "next/navigation";
 import { BiomeFixture } from "@/components/shared/ambient/biome-fixture";
 import { isSeasonKey, type SeasonKey } from "@/components/shared/ambient/registry";
-import { isBiomeKey, type BiomeKey } from "@/components/shared/ambient/world/biomes";
+import { isBiomeKey, type ActiveBiomeKey } from "@/components/shared/ambient/world/biomes";
 import { DAY_BANDS, type DayBand } from "@/components/shared/ambient/world/time";
 import { WEATHER_LABEL, type Weather } from "@/components/shared/ambient/world/weather";
 
 // 바이옴 결정적 fixture(2026-09-05, PLAN-20260905-005 P0) — 검증 전용. `VISUAL_TEST_FIXTURE=1`일 때만 열린다(프로덕션 404).
 // 달력·크롬 없이 캔버스 하나. 파라미터(전부 선택, 기본값 = 초원·봄·점심·맑음·시드 42·t 0):
-//   biome=meadow|forest|mountain|hill|pond|valley|tidal|sandy|rocky|sea|deep
+//   biome=meadow (retired destinations are rejected)
 //   season=spring|summer|autumn|winter   band=dawn|morning|noon|dusk|evening|night   weather=clear|cloud|rain|snow|fog|wind
 //   skyEvent=shooting-star|comet (되풀이 강제 — 드문 하늘 사건을 캡처로 잡을 때)
 //   hour=18.5(KST 소수 시간 — 띠 대신 연속 시각으로 세운다)
@@ -28,7 +28,8 @@ export default async function BiomeFixturePage({ searchParams }: { searchParams?
   if (process.env.VISUAL_TEST_FIXTURE !== "1") notFound();
   const sp = (await searchParams) ?? {};
   const season: SeasonKey = isSeasonKey(sp.season) ? sp.season : "spring";
-  const biome: BiomeKey = isBiomeKey(sp.biome) ? sp.biome : "meadow";
+  if (sp.biome !== undefined && !isBiomeKey(sp.biome)) notFound();
+  const biome: ActiveBiomeKey = isBiomeKey(sp.biome) ? sp.biome : "meadow";
   const bandParam: DayBand | undefined = (DAY_BANDS as readonly string[]).includes(sp.band ?? "") ? (sp.band as DayBand) : undefined;
   const weather: Weather = sp.weather && sp.weather in WEATHER_LABEL ? (sp.weather as Weather) : "clear";
   // 하늘 사건 강제(2026-09-08) — 별똥별·혜성은 평균 1분·9분에 한 번이라 캡처로 잡으려면 되풀이시켜야 한다.

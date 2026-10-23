@@ -45,7 +45,7 @@ import Link from "next/link";
 import { AmbientLayer } from "@/components/shared/ambient/ambient-layer";
 import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
 import { pickAmbient, type SeasonKey } from "@/components/shared/ambient/registry";
-import { ShowcaseExit, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
+import { ShowcaseExit, useShowcaseEnvironment, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
 import { PanelSection } from "@/components/shared/panel-section";
 import { SettingsButton } from "@/components/shared/settings-button";
 import { CompanionHomeLauncherSlot, CompanionHomeShelfSlot } from "@/components/shared/companion-home-slots";
@@ -1044,16 +1044,21 @@ export function StudioShell({
     if (at) setDevWorld((f) => (f.biome === at ? f : { ...f, biome: at }));
     setDevSeason(season);
   };
-  const worldForce =
-    ambientWorldForce ??
-    (effectiveRole === "developer" && Object.values(devWorld).some(v => v !== undefined) ? devWorld : undefined);
+  const scenery = useShowcaseEnvironment({
+    year: view.year, month: view.month,
+    seasonForce: ambientForce ?? devSeason,
+    worldForce: ambientWorldForce ??
+      (effectiveRole === "developer" && Object.values(devWorld).some(v => v !== undefined) ? devWorld : undefined),
+    gfxPref: gfxPrefState, onChangeGfxPref: changeGfxPref
+  });
+  const worldForce = scenery.worldForce;
   // 배경 감상 모드는 공용(components/shared/ambient/showcase.tsx: enterShowcase/<ShowcaseExit/>/<ShowcaseButton/>) —
   // 진입은 아바타 자리의 큰 버튼 + 설정 줄, 나가기는 Esc/상단 알약(body 포털). 무거운 모달(태그·인사이트·이용 기록)이
   // 떠 있는 동안은 배경을 일시정지한다(blur 백드롭이 매 프레임 다시 흐려지는 비용 — lib/ui/ambient-pause.ts).
   // Ordinary studio windows share the viewer pause owner. Seasonal canvases
   // pause while the companion keeps its shared quiet window/home policy.
   useAmbientPause(!viewerMode && (modal !== null || editorVisible || mobileEditId !== null || searchOpen), "poster-window");
-  const ambientSeason = pickAmbient(view.month, ambientForce ?? devSeason).season;
+  const ambientSeason = pickAmbient(view.month, scenery.seasonForce).season;
   // 포스터 테마(2026-09-03, 물빛 테마와 함께 입구 복원) — 소유자만, 서버(updatePosterThemeAction)도
   // owner 검사. 낙관적으로 먼저 바꿔 보이고(미리보기 즉시), 실패면 되돌린다. 성공 후 router.refresh로
   // 서버 스냅샷(시청자 미리보기)까지 동기화.
@@ -7382,7 +7387,7 @@ export function StudioShell({
         if (modal === null) modalOpenerRef.current = document.activeElement as HTMLElement | null;
         setCompanionPersonality(destination === "personality"); setCompanionBook(true); setModal("settings");
       }} root={shellRef} preferences={companionPrefs}
-        context={{ slug: schedule.calendar.slug, year: view.year, month: view.month, season: pickAmbient(worldForce?.month ?? view.month, ambientForce ?? devSeason).season, force: worldForce }}
+        context={{ slug: schedule.calendar.slug, year: view.year, month: view.month, season: pickAmbient(worldForce?.month ?? view.month, scenery.seasonForce).season, force: worldForce }}
         positionMemory={staffCompanionPositionMemory}
         blocked={Boolean(monthPick || passcodeModal || navMsg)}
         workspaceBusy={Boolean(dragEventId || spanDrag)}
@@ -7411,7 +7416,7 @@ export function StudioShell({
                 설정의 셀렉트·배경 효과 잠금과 같은 경로(changeAmbientMode)를 타서 설정 안 상태와 한 몸.
                 점선 박스 **밖·위**에 둔다 — 안에 절대 배치하면 박스의 둥근 윗변이 카드 위로 삐져나온다(2026-09-04 소유자 사진).
                 감상 진입은 개발자만 — 세계가 다 만들어지기 전엔 관리자에게 배경으로만 보인다. */}
-            <ViewerAmbientControl collapsible className="slot-showcase" onChange={changeAmbientMode} season={ambientSeason} showcase={effectiveRole === "developer"} />
+            <ViewerAmbientControl collapsible className="slot-showcase" onChange={changeAmbientMode} season={ambientSeason} />
             {companionDesktop && companionPrefs.enabled ? <div className="vc-home-host" ref={companionHomeHostRef} /> : null}
             {/* 아바타 빈 자리 — 관리자·개발자만(시청자 역할 미리보기엔 없다). */}
             {avatarRoleOk ? (
@@ -7496,7 +7501,7 @@ export function StudioShell({
           컴포넌트). 물결은 제 배경이 없는 완전 투명 컨테이너라 body의 아이보리(--paper) 위에 옅은 결만
           얹고("모래 위 얕은 물결"), 오늘(KST) 계절 레이어가 그 위에. 보이는 조건은 CSS가 판단
           (app/metal-water.css `.gs-tide`, app/ambient.css `.gs-season`). */}
-      <AmbientLayer force={ambientForce ?? devSeason} month={view.month} slug={schedule.calendar.slug} worldForce={worldForce} year={view.year} />
+      <AmbientLayer force={scenery.seasonForce} month={view.month} slug={schedule.calendar.slug} worldForce={worldForce} year={view.year} />
       <header className="studio-topbar">
         {/* 왼쪽 칸: 좁은 PC에서도 집 진입은 같은 헤더 시작점에 둔다. */}
         <div className="studio-left">
@@ -7610,24 +7615,8 @@ export function StudioShell({
         </div>
       ) : null}
 
-      {/* 감상 중 오른쪽 위 톱니(2026-09-05 소유자) — 감상하면서 계절·시간대·날씨·배경 효과를 바꿔 바로 확인한다.
-          값은 설정 모달과 **같은 상태**(devWorld·gfxPref)라 두 자리가 어긋나지 않는다. 시간대·날씨 강제는 개발자만
-          (관리자·시청자는 실제 시간만 본다 — 설정 모달의 개발자 줄과 같은 규칙, 미리보기 중인 역할에도 안 보인다). */}
-      <ShowcaseExit
-        settings={
-          effectiveRole === "developer"
-            ? {
-                seasonForce: devSeason,
-                onChangeSeasonForce: changeDevSeason,
-                month: view.month,
-                year: view.year,
-                world: { force: devWorld, onChange: setDevWorld },
-                gfxPref: gfxPrefState,
-                onChangeGfxPref: changeGfxPref
-              }
-            : null
-        }
-      />
+      {/* Scenery controls are local to this viewing session for every role. */}
+      <ShowcaseExit settings={scenery.settings} />
 
       {/* (#9 키보드 단축키 안내바는 달력 패널 안으로 이사 — 아래 .studio-calendar-panel 참고.
           셸의 형제로 두면 margin으로 폭을 흉내 내야 했고 실측에서 왼쪽 끝이 12px 어긋났다.) */}

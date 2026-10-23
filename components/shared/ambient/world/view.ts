@@ -319,11 +319,7 @@ const HZ_COLORS: Record<SeasonKey, { haze: string; hill: string; hill2: string; 
 
 /** 지평선 띠를 한 번 굽는다(w×(hz+24)) — 안개 그라데이션 + 낮은 언덕 두 겹 + 작은 나무 줄(실루엣). 결정적(폭·계절 시드).
  *  장면은 바탕을 그린 뒤 이것을 위에 얹는다(캔버스 위 12%). 채도가 낮고 밝아 "멀다"로 읽힌다. */
-export type HorizonProfile = "land" | "sea" | "mountain";
-/** profile "sea" = 먼 언덕·나무 줄 없이 안개 띠와 수평선만(바다·해안은 뭍의 능선이 있으면 거짓말이 된다).
- *  profile "mountain" = 같음 — 산은 봉우리 자체가 원경이라, 그 뒤에 초원의 언덕·나무 줄이 비치면 "봉우리 속 언덕"이 된다
- *  (QA 라운드 1 D-2, MOUNTAIN_DEPTH_RULES §1). */
-export function bakeHorizon(season: SeasonKey, w: number, h: number, dpr = 1, profile: HorizonProfile = "land"): HTMLCanvasElement {
+export function bakeHorizon(season: SeasonKey, w: number, h: number, dpr = 1): HTMLCanvasElement {
   const hz = horizonY(h);
   // 띠는 지평선 아래로 **길게** 이어진다(옛 24px). 24px 안에서 안개를 0으로 떨어뜨리면 그 끝이 44장 전부에
   // 전폭 가로 이음매로 보였다(검토 라운드2 #1: "흐린 원경 띠가 뚝 끝나고 지면이 시작한다"). 화면 높이의 16%에
@@ -363,14 +359,12 @@ export function bakeHorizon(season: SeasonKey, w: number, h: number, dpr = 1, pr
     g.fill();
     g.restore();
   };
-  if (profile === "land") {
-    hill(aboveHz(h, 0.06), h * 0.022, col.hill, 0.5, 1.3); // 진폭도 hz 비례가 아니라 절대치(= 옛 hz·0.18)
-    hill(aboveHz(h, 0.034), h * 0.017, col.hill2, 0.5, 4.1);
-  }
+  hill(aboveHz(h, 0.06), h * 0.022, col.hill, 0.5, 1.3); // 진폭도 hz 비례가 아니라 절대치(= 옛 hz·0.18)
+  hill(aboveHz(h, 0.034), h * 0.017, col.hill2, 0.5, 4.1);
   // 작은 나무 줄 — 지평선 바로 위에 실루엣(둥근 수관 + 짧은 줄기), 겨울은 나목 점. 드문드문·옅게(먼 숲의 윤곽).
   // 먼 숲 실루엣 줄(라운드 5 A#8 — 옛 "같은 크기 원+막대 롤리팝 20여 개 한 줄"): 세 종(둥근 참나무·삼각 소나무·낮은 관목) × 크기 3단(±35%),
   // 무리 3~5 + 빈 구간, 기준선 y ±4px 흩기, 줄기 폭은 수관에 비례. 픽셀 격자(2px)로 찍어 AA 없음.
-  const n = profile === "land" ? Math.round(w / 34) : 0;
+  const n = Math.round(w / 34);
   g.fillStyle = col.tree;
   let skip = 0;
   let runLeft = 0;

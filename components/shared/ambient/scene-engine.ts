@@ -28,7 +28,7 @@ import { drawDepthHaze, drawLightPass } from "@/components/shared/ambient/world/
 import { lerpLight, lightAt, NEUTRAL_LIGHT, setCurrentLight, type Light } from "@/components/shared/ambient/world/light";
 import { createParticles, windDirOf } from "@/components/shared/ambient/world/particles";
 import type { SkyEventKind } from "@/components/shared/ambient/world/sky-events";
-import type { BiomeKey, Dir } from "@/components/shared/ambient/world/biomes";
+import type { ActiveBiomeKey, Dir } from "@/components/shared/ambient/world/biomes";
 
 export type Quality = 0 | 1 | 2;
 
@@ -48,7 +48,7 @@ export type WorldCtx = {
     hour?: number;
     band?: DayBand;
     weather?: Weather;
-    biome?: BiomeKey;
+    biome?: ActiveBiomeKey;
     /** 달력 날(1~31) 강제 — 달 위상 스윕 검증용(fixture, 2026-09-06 라운드 6 결정 5). 없으면 viewDay. */
     day?: number;
     seed?: number;
@@ -137,7 +137,7 @@ export interface Scene {
   /** 검증·디버그용 상태(window.__vicAmbient.scene) — 입자 위치 몇 개, 카운터. */
   debug?(): Record<string, unknown>;
   /** 세계 장면(world-scene.ts)만 — 바이옴 이동. React 내비(showcase.tsx)가 __vicAmbient.goTo로 부른다. */
-  nav?: { go(target: BiomeKey | Dir): boolean; at(): BiomeKey; moving(): boolean; exits(): Record<Dir, BiomeKey | null> };
+  nav?: { go(target: ActiveBiomeKey | Dir): boolean; at(): ActiveBiomeKey; moving(): boolean; exits(): Record<Dir, ActiveBiomeKey | null> };
   /** 이 날씨의 입자를 장면이 스스로 그린다(초원 겨울의 착지 눈송이) — 엔진 입자층이 겹치지 않게 건너뛴다. */
   ownsWeather?(w: Weather): boolean;
   /** "닫힌 방" — 계절·날씨가 닿지 않는 장면(깊은 바다, 2026-09-06 소유자). true면 엔진이 대기 안개·조명
@@ -178,9 +178,9 @@ type AmbientDebug = {
   /** 검증용 강제(시각·날씨·날) — null이면 실제로 복귀 */
   forceWorld: (f: WorldCtx["force"] | null) => void;
   /** 바이옴 이동(감상 모드에서만 초원 밖으로) — 방향 또는 키. 세계 장면이 아니면 false. */
-  goTo: (target: BiomeKey | Dir) => boolean;
-  biome: () => BiomeKey;
-  exits: () => Record<Dir, BiomeKey | null>;
+  goTo: (target: ActiveBiomeKey | Dir) => boolean;
+  biome: () => ActiveBiomeKey;
+  exits: () => Record<Dir, ActiveBiomeKey | null>;
   /** 정지 화면(생동감 OFF) 상태에서 한 장 다시 그린다 — 이동 직후 등. */
   redraw: () => void;
   // ── 결정적 재현(PLAN-20260905-005 P0) — 검증 하네스(scripts/ambient-qa)가 쓴다 ──

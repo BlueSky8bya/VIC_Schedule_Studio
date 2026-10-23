@@ -6,10 +6,9 @@ mkdirSync(OUT, { recursive: true });
 const BANDS = ["dawn", "morning", "noon", "dusk", "evening", "night"];
 const SCEN = [
   { id: "s16", biome: "meadow", season: "summer", weather: "clear", seed: 42 },
-  { id: "s10", biome: "mountain", season: "autumn", weather: "fog", seed: 42 },
-  { id: "s09w", biome: "mountain", season: "winter", band: "morning", seed: 42, weathers: ["clear", "cloud", "snow", "fog", "wind", "rain"] },
-  { id: "s02w", biome: "forest", season: "autumn", band: "dusk", seed: 42, weathers: ["clear", "cloud", "rain", "fog", "wind"] },
-  { id: "s12w", biome: "pond", season: "spring", band: "dawn", seed: 42, weathers: ["clear", "fog", "rain", "cloud"] },
+  { id: "s18w", biome: "meadow", season: "winter", band: "morning", seed: 42, weathers: ["clear", "cloud", "snow", "fog", "wind", "rain"] },
+  { id: "s04w", biome: "meadow", season: "autumn", band: "dusk", seed: 42, weathers: ["clear", "cloud", "rain", "fog", "wind"] },
+  { id: "s20w", biome: "meadow", season: "spring", band: "dawn", seed: 42, weathers: ["clear", "fog", "rain", "cloud"] },
 ];
 const b = await launch();
 const lstar = (rgb) => { const f = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }; const Y = 0.2126 * f(rgb[0]) + 0.7152 * f(rgb[1]) + 0.0722 * f(rgb[2]); return Y <= 0.008856 ? 903.3 * Y : 116 * Math.cbrt(Y) - 16; };

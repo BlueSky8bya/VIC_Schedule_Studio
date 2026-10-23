@@ -13,7 +13,7 @@ Criteria145: optional TV bow and separate actual10s activity/repetition verified
 
 Scheduled: daily site QA remains ACTIVE at09:00 KST. Owner2026-10-22 supersedes blanket200/restart/all-media release gates: use changed-risk checks, weekly rotation and valid same-build continuation. No200 in this task. Preserve original full certifier, failures, privacy and actual-scope labels. [Focused QA](plans/PLAN-20261022-focused-qa.md).
 
-QA storage:11.56GB reclaimed; cumulative16.45GB; existing QA69.90GB. Scoped PASS trace growth fixed; failure traces/videos/manual policy preserved. [Plan](plans/PLAN-20261023-qa-deep-storage.md).
+Meadow: shared entry, one seasonal meadow, seven detailed flora types and companion walks; two controls.13 native cases passed; production proof follows the release receipt. [Plan](plans/PLAN-20261023-meadow-walk.md). QA storage16.45GB cumulative reclaimed; raw failures preserved.
 
 Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user.125 explicitly authorizes unnecessary Vercel deployment cleanup/optimization; unrelated cleanup, bulk DB UPDATE, paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
 
@@ -29,7 +29,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
 | ART-PINE-PILOT | Awaiting Owner | Owner selects reference PNGs to remove; freeze replacement run only afterward | [Pine handoff](../ambient/HANDOFF-20260908-pine.md) |
 | RULE-ART-COMPLETION | Awaiting Owner | Review presentation/legacy-source placement and B/C choices | [Plan](plans/PLAN-20260909-014-rule-preservation-and-art-completion.md) |
-| MARINE-RESUME | Paused by owner | Static concepts retained; seasonal layers/waves future work | [Handoff](handoffs/20260916-marine-biomes-resume.md) |
 | AMB-QA-18 | Planned | Reproduce candidates on one fixed build | [QA](../ambient/QA_PROGRESS.md) |
 | VERIFY-REAL-SESSION | Planned | Genuine roles/unlock/revocation/device/storage/RLS; reconcile old public issue labels | [Checks](verification/OPEN_CHECKS.md) |
 

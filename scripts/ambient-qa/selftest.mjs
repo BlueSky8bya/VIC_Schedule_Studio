@@ -1,5 +1,5 @@
 // 결정성 셀프테스트(PLAN-20260905-005 P0) — 하네스 자체가 믿을 만한지 스모크 시나리오 셋으로 잰다.
-//   node scripts/ambient-qa/selftest.mjs [--base http://127.0.0.1:3100] [--only 3,10,14]
+//   node scripts/ambient-qa/selftest.mjs [--base http://127.0.0.1:3100] [--only 3,17,18]
 // 검사: ① 같은 URL 두 번 = 같은 픽셀 ② advance(1000) = advance(250)×4 = URL t=1000 ③ 얼림(실시간이 흘러도 t·픽셀 불변)
 //       ④ 시간대 바꾸면 world().band가 따라오고 픽셀이 달라진다 ⑤ 시드 바꾸면 픽셀이 달라진다 ⑥ 허용 날씨 표(여름 눈 없음)
 //       ⑦ 도착 상태(pending 0 · frozen · running false · settledT = t) ⑧ 페이지 에러 0.
@@ -55,20 +55,11 @@ for (const sc of list) {
   const hF2 = await shot();
   const sF2 = await state(page);
   check("③ frozen: real time passes, t/frame unchanged", hF1 === hF2 && tF1 === sF2.t && sF2.running === false, `t=${tF1}→${sF2.t}`);
-  // ④ 시간대 — 깊은 바다도 이제 **띠는 읽는다**(2026-09-06 라운드 10, 소유자 우선순위 A): 계약이 "30 해시 동일"에서
-  // "띠마다 5날씨 해시 동일"로 바뀌었다. 날씨 봉인은 ⑨에서 따로 검사한다.
-  const sealed = sc.biome === "deep";
+  // ④ 초원 시간대 — 낮과 밤은 실제 세계 시간과 픽셀에 반영된다.
   const other = sc.band === "night" ? "noon" : "night";
   const sBand = await openFixture(page, fixtureUrl(sc, { band: other, t: 1500 }, base));
   const hBand = await shot();
   check(`④ band ${sc.band} → ${other} changes frame + world().band`, sBand.world.band === other && hBand !== h1, `band=${sBand.world.band} ${h1}→${hBand}`);
-  if (sealed) {
-    // ⑨ 날씨 봉인(깊은 바다) — 같은 띠에서 날씨를 바꿔도 픽셀이 같아야 한다(계절·날씨는 여전히 닿지 않는 방).
-    const otherW = sc.weather === "clear" ? "fog" : "clear";
-    await openFixture(page, fixtureUrl(sc, { weather: otherW, t: 1500 }, base));
-    const hW = await shot();
-    check(`⑨ deep: weather ${sc.weather} → ${otherW} 봉인 유지(픽셀 불변)`, hW === h1, `${h1}→${hW}`);
-  }
   // ⑤ 시드
   await openFixture(page, fixtureUrl({ ...sc, seed: 7 }, { t: 1500 }, base));
   const hSeed = await shot();

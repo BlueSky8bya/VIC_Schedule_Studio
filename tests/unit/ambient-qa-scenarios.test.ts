@@ -9,9 +9,11 @@ import { SEASON_MONTH as FIXTURE_SEASON_MONTH } from "@/components/shared/ambien
 // 비주얼 QA 하네스의 시나리오 표(scripts/ambient-qa/scenarios.mjs)가 엔진의 키·규칙과 어긋나지 않는지 — 표가 틀리면
 // 캡처가 조용히 기본값(초원·봄·점심·맑음)으로 떨어져 검사가 다른 장면을 본다.
 describe("ambient-qa — 대표 시나리오 표", () => {
-  it("프로토콜 §4.2의 16개, id는 1~16 유일", () => {
-    expect(SCENARIOS.length).toBe(16);
-    expect([...new Set(SCENARIOS.map((s) => s.id))].sort((a, b) => a - b)).toEqual(Array.from({ length: 16 }, (_, i) => i + 1));
+  it("초원 사계절만 남기고 기존 초원 id를 유지한다", () => {
+    expect(SCENARIOS.length).toBe(7);
+    expect([...new Set(SCENARIOS.map((s) => s.id))].sort((a, b) => a - b)).toEqual([3, 4, 16, 17, 18, 19, 20]);
+    expect(new Set(SCENARIOS.map((s) => s.biome))).toEqual(new Set(["meadow"]));
+    expect(new Set(SCENARIOS.map((s) => s.season))).toEqual(new Set(SEASON_KEYS));
   });
   it("바이옴·계절·시간대 키가 엔진 것과 같다", () => {
     for (const s of SCENARIOS) {
@@ -30,9 +32,9 @@ describe("ambient-qa — 대표 시나리오 표", () => {
     expect(SEASON_MONTH).toEqual(FIXTURE_SEASON_MONTH);
     for (const season of SEASON_KEYS) expect(seasonOfMonth(SEASON_MONTH[season])).toBe(season);
   });
-  it("스모크 셋은 표 안에 있고 바이옴 성격이 서로 다르다", () => {
+  it("스모크 셋은 실제 초원과 서로 다른 계절을 검사한다", () => {
     const smoke = SMOKE_IDS.map((id) => SCENARIOS.find((s) => s.id === id));
     expect(smoke.every(Boolean)).toBe(true);
-    expect(new Set(smoke.map((s) => s!.biome)).size).toBe(SMOKE_IDS.length);
+    expect(new Set(smoke.map((s) => s!.season)).size).toBe(SMOKE_IDS.length);
   });
 });

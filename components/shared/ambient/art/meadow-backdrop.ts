@@ -11,6 +11,7 @@ import winterGeometry from "./meadow-winter-layer-geometry.json";
 import type { SeasonKey } from "../registry";
 import { meadowLayerGroundCrop } from "./backdrop-manifest";
 import { ridgeTexture, paintMeadowRidge } from "./meadow-ridge";
+import { MeadowGarden } from './meadow-garden';
 
 type Layer = keyof typeof geometry;
 type Cache = { c: HTMLCanvasElement; key: string; width: number; height: number; y: number };
@@ -32,7 +33,9 @@ export class MeadowBackdrop {
   version = 0;
   bakes = 0;
   private geometry: typeof geometry;
+  private garden: MeadowGarden;
   constructor(private season: SeasonKey = "spring") {
+    this.garden = new MeadowGarden(season);
     this.geometry = GEOMETRIES[season];
     beginLoad();
     // Uncached optional detail image: release its decoded bitmap after composition.
@@ -116,6 +119,7 @@ export class MeadowBackdrop {
       const start = Math.round(blend);
       g.drawImage(this.nearGround ?? this.images.ground!, start / scale, 0, 1536 - start / scale, 1024, tile.x + start, c.y, c.tileWidth - start, c.height);
     }
+    this.garden.drawGround(g,w,h);
     g.restore();
   }
   private cache(layer: "far" | "frame", f: Frame): Cache {
@@ -207,7 +211,7 @@ export class MeadowBackdrop {
     return true;
   }
   drawFar(g: CanvasRenderingContext2D, f: Frame) { return this.draw("far", g, f); }
-  drawForeground(g: CanvasRenderingContext2D, f: Frame) { return this.pending || this.draw("frame", g, f); }
-  debug() { return { season: this.season, ready: this.ready, version: this.version, bakes: this.bakes, layers: LAYERS, bytes: Object.values(this.caches).reduce((n, v) => n + v.c.width * v.c.height * 4, 0), nearDetailBytes: this.nearGround ? this.nearGround.width * this.nearGround.height * 4 : 0, maskedBytes:Object.values(this.masked).reduce((n,v)=>n+v.c.width*v.c.height*4,0), sourcePixels: 3 * 1536 * 1024 }; }
-  dispose() { this.disposed = true; this.detailImage?.removeAttribute("src");this.detailImage=undefined; if(this.nearGround)this.nearGround.width=this.nearGround.height=1;this.nearGround=undefined; this.images = {}; for(const v of Object.values(this.masked))v.c.width=v.c.height=1;this.masked={}; for (const v of Object.values(this.caches)) v.c.width = v.c.height = 1; this.caches = {}; }
+  drawForeground(g: CanvasRenderingContext2D, f: Frame) { if(this.pending)return true;const drawn=this.draw("frame",g,f);if(this.ready)this.garden.drawBreeze(g,f);return drawn; }
+  debug() { return { garden: this.garden.debug(), season: this.season, ready: this.ready, version: this.version, bakes: this.bakes, layers: LAYERS, bytes: Object.values(this.caches).reduce((n, v) => n + v.c.width * v.c.height * 4, 0), nearDetailBytes: this.nearGround ? this.nearGround.width * this.nearGround.height * 4 : 0, maskedBytes:Object.values(this.masked).reduce((n,v)=>n+v.c.width*v.c.height*4,0), sourcePixels: 3 * 1536 * 1024 }; }
+  dispose() { this.garden.dispose(); this.disposed = true; this.detailImage?.removeAttribute("src");this.detailImage=undefined; if(this.nearGround)this.nearGround.width=this.nearGround.height=1;this.nearGround=undefined; this.images = {}; for(const v of Object.values(this.masked))v.c.width=v.c.height=1;this.masked={}; for (const v of Object.values(this.caches)) v.c.width = v.c.height = 1; this.caches = {}; }
 }

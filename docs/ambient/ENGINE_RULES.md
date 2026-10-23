@@ -1,5 +1,7 @@
 # Current ambient engine rules
 
+> 2026-10-23 최신 사용자 정정: [초원 단일화·산책](../agent/plans/PLAN-20261023-meadow-walk.md)이 아래의 다중 지도·개발자 전용 감상·장식 추가 대기를 대체합니다. 현재 활성 지도는 초원 하나이며 사계절/날씨/하늘/공유 입력을 유지합니다. 지도·방향 이동·전용 QA는 [퇴역](retired-maps-20261023.md)했고 현재 새 식생은 근거리의 2배 표본 atlas와 제한된 군락 렌더입니다. 나머지 과거 장면별 수치·대기 상태는 역사 기록이며 현행 실행 지시가 아닙니다.
+
 Updated: 2026-10-15. Scope: scene engine, world services, camera, creatures and ambient control wiring. [AGENTS](../../AGENTS.md) supplies global boundaries; [README](README.md) routes to the specific visual grammar.
 
 ## P0 depth amendment — ADR-0022

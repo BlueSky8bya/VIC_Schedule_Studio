@@ -1,20 +1,11 @@
-import {harmonizeMaterial} from '../world/material-palette';
-import {containCliff} from '../world/mountain-geometry';
 import type { SeasonKey } from "../registry";
 import { paintSeasonalMaterial, seasonalMaterialPath } from "../art/seasonal-material";
 import { pointerBreeze } from "../world/pointer-breeze";
-import {applyMaterialSurface,sampleMaterialSurface,type MaterialSurface} from '../world/terrain-material';
 import { meadowDressingEnabled } from "../world/meadow-policy";
 import { drawMeadowImage, drawMeadowFacing } from "../world/meadow-softness";
 import { meadowActivityTop, meadowActivityAlpha, meadowDistance, meadowSize, meadowSpeed } from "../world/meadow-activity";
-import { anchorToSurface, withReliefSurface, scopedDepthTier, surfaceMotionFactor } from "../world/depth-render";
-import { ReliefLayers } from "../world/relief-render";
-import { reliefLayerCount, reliefMotion } from "../world/terrain-perspective";
+import { anchorToSurface } from "../world/depth-render";
 import { MeadowBackdrop } from "../art/meadow-backdrop";
-import {forestFogStrength} from '../world/forest-detail';
-import {ForestTrees} from '../art/forest-trees';
-import {rootedPass} from '../world/rooted-order';
-import { HillBackdrop } from "../art/hill-backdrop";
 import { drawDepthGround, withDepthLayer } from "../world/depth-render";
 // 가을 — "낙엽이 소복한 땅을 위에서 내려다본다". **바탕**(2026-09-04 사용자: "가을만 일반 화면") — 마른 흙 얼룩(올리브·
 // 엄버, 채도 낮춤)·시든 풀포기(황갈)·잔가지·조약돌·버섯(갈색 갓에 크림 점) 몇을 크기별 결정적으로 한 번 굽는다. 그 위에
@@ -119,39 +110,21 @@ type Cache = { x: number; y: number; t: number };
 type Speck = { x: number; y: number; vx: number; vy: number; life: number };
 type Whirl = { x: number; y: number; vx: number; vy: number; t0: number; dur: number } | null;
 
-export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "meadow" | "hill" | "pond" | "valley" | "forest" | "mountain" = "meadow"): Scene {
+export function createAutumn(seed: number, season:SeasonKey = "autumn"): Scene {
   const SPECIES:Species[]=AUTUMN_SPECIES.map((sp,i)=>{
     if(season==='autumn')return sp;
     if(season==='summer')return {...sp,needle:false,colors:['#78b95e','#91c96a','#64aa56'],size:sp.size};
     if(season==='spring')return {shape:i,colors:[['#e4a6b5','#f1c8ce','#dba0b6'],['#e8d4b2','#f2debf','#ead1b6'],['#cdb5d5','#e5cddd','#d7bfd8']][i%3],size:[25,42],weight:sp.weight};
     return {shape:i,colors:['#bba67b','#c5b18a','#ac9871'],size:[34,60],weight:sp.weight};
   });
-  const backdrop = biome !== "meadow" ? new HillBackdrop(season,biome) : new MeadowBackdrop(season);
-  const forest=biome==='forest'?new ForestTrees(season):null;
-  const terrainAlpha = (x:number,y:number,w:number,h:number) => backdrop instanceof HillBackdrop ? backdrop.activityAlpha(x,y,w,h) : 1;
-  const relief = biome!=='meadow'?new ReliefLayers():null;
-  const materialSurface:MaterialSurface={slopeX:0,slopeY:0,flowX:0,flowY:0,water:0};
-  const terrainDistanceAt = (x:number,y:number) => backdrop instanceof HillBackdrop ? backdrop.distance(x,y,w,h)??0 : 0;
-  // Reuse the accepted meadow appearance curves with a terrain-derived distance.
-  // This virtual row is never used for position, rendering or pointer coordinates.
-  const perspectiveY = (x:number,y:number) => {
-    const d=backdrop instanceof HillBackdrop?backdrop.distance(x,y,w,h):undefined;
-    const top=meadowActivityTop(h);
-    return d===undefined?y:top+d*(h-top);
-  };
-  const containMountain = (l:Leaf,dt=0) => {
-    if(biome!=='mountain'||!(backdrop instanceof HillBackdrop)||!backdrop.ready)return;
-    const edge=(x:number)=>backdrop.activityEdge(x,w,h)??h;
-    containCliff(l,edge,l.s*2+24,dt);
-  };
-  let mountainPlaced=false;
+  const backdrop = new MeadowBackdrop(season);
+  const perspectiveY = (_x: number, y: number) => y;
   let backdropVersion = -1;
   const rand = rng(seed);
   const leaves: Leaf[] = [];
   const caches: Cache[] = [];
   const specks: Speck[] = [];
   let sprites: HTMLCanvasElement[][] = [];
-  let materialMist=new WeakMap<HTMLCanvasElement,HTMLCanvasElement>();
   let shadows: HTMLCanvasElement[] = [];
   let acornSpr: Sprite | null = null;
   let acornShadow: HTMLCanvasElement | null = null;
@@ -221,7 +194,6 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
   function bake() {
     if (sprites.length) return;
     sprites = [];
-    materialMist=new WeakMap();
     shadows = [];
     for (const sp of SPECIES) {
       const row: HTMLCanvasElement[] = [];
@@ -279,11 +251,6 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
           g.moveTo(0, R0 * 0.88);
           g.lineTo(sp.shape === 4 ? 0 : R0 * 0.06, R0 * 1.22);
           g.stroke();
-        }
-        if(biome!=='meadow'){
-          const pixels=g.getImageData(0,0,SPR,SPR);
-          harmonizeMaterial(pixels.data,biome,season);
-          g.putImageData(pixels,0,0);
         }
         row.push(c);
       }
@@ -478,15 +445,7 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
     const [lo, hi] = SPECIES[sp].size;
     // 축척(PLAN-004 §2): 낙엽은 나무의 1/12 — 옛 30~76을 LEAF_K(≈.36)로 줄인다(물리 반지름·집기 판정도 s에 비례하므로 같이 줄어든다).
     const leaf:Leaf = { x: rand() * w, y: groundY(0.12 + rand() * 0.86), vx: 0, vy: 0, a: rand() * TAU, va: 0, s: (lo + rand() * (hi - lo)) * LEAF_K, sp, col: Math.floor(rand() * SPECIES[sp].colors.length), lift: 0, flip: 0, flipV: 0, fall: falling ? 1 : 0, ph: rand() * TAU, fade: 0, born: t };
-    if(biome==='mountain'&&backdrop instanceof HillBackdrop&&backdrop.ready){
-      let edge=backdrop.activityEdge(leaf.x,w,h)??h*.8;
-      for(let i=0;i<16&&edge+leaf.s*2+48>h;i++){
-        leaf.x=rand()*w;edge=backdrop.activityEdge(leaf.x,w,h)??h*.8;
-      }
-      const start=Math.min(h-8,edge+leaf.s*2+32);
-      leaf.y=start+rand()*Math.max(0,h-8-start);
-    }
-    containMountain(leaf);return leaf;
+    return leaf;
   }
   /** 도토리는 최대 6 — 넘치면 가장 오래된 것이 옅어진다. */
   function capAcorns() {
@@ -686,7 +645,7 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
 
   function targetCount(f: Frame) {
     const areaK = clamp((f.w * f.h) / 1_440_000, 0.55, 1.5);
-    return Math.round(lerp(26, 220, f.load) * areaK * (biome==='mountain'?.3:1));
+    return Math.round(lerp(26, 220, f.load) * areaK);
   }
   const liveLeaves = () => leaves.reduce((n, l) => n + (l.sp !== ACORN && l.fade === 0 ? 1 : 0), 0);
 
@@ -751,10 +710,6 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
       for (let i = caches.length - 1; i >= 0; i--) if (caches[i].x > w || caches[i].y > h) caches.splice(i, 1);
     },
     step(f) {
-      if(biome==='mountain'&&backdrop.ready&&!mountainPlaced){
-        mountainPlaced=true;leaves.length=0;
-        for(let i=0;i<targetCount(f);i++)leaves.push(spawn(f.t));
-      }
       // 조명 전이가 끝나 그림자 채널이 바뀌었으면 바탕을 한 번 다시 굽는다(라운드 4 AMB-T1-03).
       // 아트가 뒤늦게 도착해도(자리 PNG는 비동기) 바탕을 다시 굽는다 — 이 확인이 resize에만 있어서, 리사이즈가
       // 없는 화면에서는 나무가 세션 내내 코드 대체물로 남았다(2026-09-07, 초원의 옛 소나무). land.ts와 같은 규칙.
@@ -988,13 +943,9 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
       const acornFr = Math.pow(0.1, dt);
       const spinFr = Math.pow(0.04, dt);
       const wEnv = whirl ? Math.sin(Math.PI * clamp((t - whirl.t0) / whirl.dur, 0, 1)) : 0;
-      const surfaceOrigin=backdrop instanceof HillBackdrop?backdrop.screenPoint(0,0,w,h):null;
-      const surfaceExtent=backdrop instanceof HillBackdrop?backdrop.screenPoint(1,1,w,h):null;
-      const surfaceWidth=surfaceOrigin&&surfaceExtent?surfaceExtent.x-surfaceOrigin.x:0;
-      const surfaceHeight=surfaceOrigin&&surfaceExtent?surfaceExtent.y-surfaceOrigin.y:0;
       for (let i = leaves.length - 1; i >= 0; i--) {
         const l = leaves[i];
-        if (biome!=='mountain' && l.y < gy() && l.fade === 0) l.fade = .001;
+        if (l.y < gy() && l.fade === 0) l.fade = .001;
         if (l.fade > 0) {
           l.fade += dt / 0.7;
           if (l.fade >= 1) {
@@ -1010,7 +961,7 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
           const dur = l.sp === ACORN ? 0.9 : 1.3;
           l.fall = Math.max(0, l.fall - dt / dur);
           if (l.sp !== ACORN) {
-            l.x += Math.sin(t * 3.1 + l.ph) * 34 * dt * (biome!=='meadow'?meadowSpeed(perspectiveY(l.x,l.y),h):1);
+            l.x += Math.sin(t * 3.1 + l.ph) * 34 * dt;
             l.a += Math.sin(t * 2.2 + l.ph) * 1.6 * dt;
           } else l.a += 3 * dt;
           if (l.fall === 0) land(l);
@@ -1075,12 +1026,7 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
         }
         l.vx += fx * dt;
         l.vy += fy * dt;
-        let wet=0;
-        if(surfaceOrigin&&surfaceWidth>0&&surfaceHeight>0&&!acorn){
-          sampleMaterialSurface(biome,(l.x-surfaceOrigin.x)/surfaceWidth,(l.y-surfaceOrigin.y)/surfaceHeight,season,materialSurface);
-          wet=applyMaterialSurface(l,materialSurface,dt,surfaceWidth/2580,surfaceHeight/860)??0;
-        }
-        const fr = acorn ? acornFr : wet>0?Math.pow(.02+.55*wet,dt):groundFr;
+        const fr = acorn ? acornFr : groundFr;
         l.vx *= fr;
         l.vy *= fr;
         l.va *= spinFr;
@@ -1092,11 +1038,10 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
         else if (l.x > w + m) l.x -= w + 2 * m;
         // 세로 랩은 땅(지평선~아래) 안에서 — 위로 날아간 잎은 아래에서 다시 들어온다(지평선 띠 = 먼 곳, 잎이 놓이지 않는다).
         const top = gy();
-        if (biome!=='mountain' && l.y < top) l.fade = Math.max(.001, l.fade);
+        if (l.y < top) l.fade = Math.max(.001, l.fade);
         else if (l.y > h + m) l.y -= h - top + m;
       }
       for (const l of leaves) {
-        containMountain(l,dt);
         if (l.lift > 0 && l.fall === 0) l.lift = Math.max(0, l.lift - dt * 1.6);
         if (l.flipV > 0) {
           l.flip += l.flipV * dt;
@@ -1152,11 +1097,10 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
           }
         }
       }
-      for(const l of leaves)containMountain(l,dt);
     },
     draw(g, f) {
       if (backdrop.drawPending(g, f)) return;
-      if (ground && (biome === "meadow" || !backdrop.ready)) drawDepthGround(g, ground, f.w, f.h, false, "both", horizonY(f.h));
+      if (ground) drawDepthGround(g, ground, f.w, f.h, false, "both", horizonY(f.h));
       // 하늘(라운드 5, world/sky.ts) — 계절 × 날씨 판, 지평선 띠 아래.
       {
         const sk = skyKey(season, f.weather.now, f.time.band, f.w, f.h);
@@ -1169,19 +1113,14 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
         }
         withDepthLayer(g, "sky", () => {
           g.save();
-          if (backdrop.ready && biome === "meadow") { g.beginPath(); g.rect(0, 0, f.w, horizonY(f.h)); g.clip(); }
-          if (biome !== "meadow" && backdrop.ready) g.drawImage(skyC!, 0, Math.max(0,Math.floor(horizonY(f.h))-2),skyC!.width,1,0,0,f.w,f.h);
-          drawSky(g, skyC!, cloudC, f.w, f.t, f.weather.now, () => drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: (f.solarHorizon ?? horizonY(f.h)) * 0.35, solarPath: true, solarHorizon: f.solarHorizon ?? horizonY(f.h), terrainOccludes: biome!=='meadow' }));
+          if (backdrop.ready) { g.beginPath(); g.rect(0, 0, f.w, horizonY(f.h)); g.clip(); }
+          drawSky(g, skyC!, cloudC, f.w, f.t, f.weather.now, () => drawSkyLive(g, f.w, f, seed, Math.min(horizonY(f.h) * 0.92, hillCrestY(f.h) - 4), { moonY: (f.solarHorizon ?? horizonY(f.h)) * 0.35, solarPath: true, solarHorizon: f.solarHorizon ?? horizonY(f.h), terrainOccludes: false }));
           g.restore();
         });
       }
       // 3/4 시점의 지평선 띠(위 12%) — 먼 언덕·작은 나무 줄·안개. 바탕 위, 모든 것 아래.
       // 별·달·해 — 먼 언덕 꼭대기(hz·.3) 위에만(언덕에 가린다).
 
-      if (ground && biome !== "meadow" && backdrop.ready && relief) {
-        const count=reliefLayerCount(scopedDepthTier(g));
-        withReliefSurface(g,(x,y)=>reliefMotion(terrainDistanceAt(x,y),count),(off,tier)=>relief.draw(g,ground!,f.w,f.h,off,tier,terrainDistanceAt));
-      }
       if (!backdrop.drawFar(g, f) && horizon) drawDepthGround(g, horizon, f.w, horizon.height, true);
       if (!meadowDressingEnabled()) return;
       // (서리 안개 층은 **삭제**했다 — 2026-09-07, AMB-D3-04. 화면 위 34%에 걸린 `mist` 그라데이션이 엔진 대기 안개와 이중으로
@@ -1202,13 +1141,10 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
       }
     },
     splitHaze: () => true,
-    fogBeforeAirborne: () => !!forest,
     /** 대기 안개 **뒤**의 층(2026-09-07, AMB-D3-04·AMB-A3-02) — 서 있는 것(나무)과 지면 위 입자(낙엽·도토리·다람쥐)를
      *  **y 오름차순 한 대열**로 그린다. 안개가 이미 땅 위에 얹혀 있으므로 여기 물체는 자기 거리만큼만 잠긴다. */
     drawAirborne(g, f) {
       if (backdrop.pending) return;
-      const forestEntries=forest&&backdrop instanceof HillBackdrop?forest.entries(backdrop,f.w,f.h,f.depthTier):[];
-      const flushForest=rootedPass(forestEntries,t=>forest?.draw(g,t));
       const drawLeaf = (l: Leaf, shadow: boolean) => {
         const acorn = l.sp === ACORN;
         if (acorn && (!acornSpr || !acornShadow)) return;
@@ -1220,7 +1156,7 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
         const sq = l.fall > 0 || l.lift > 0.5 ? 1 : GROUND_SQUASH;
         const sx = l.flipV > 0 ? Math.cos(l.flip) : 1;
         // 거리 흐림 — 다람쥐만 옅어지고 도토리·낙엽은 그대로면 괴리가 생긴다(2026-09-04 소유자).
-        const alpha = (1 - l.fade) * depthFade(visualY, f.h) * meadowActivityAlpha(visualY - l.s * .6, f.h) * terrainAlpha(l.x,l.y-l.s*.6,f.w,f.h);
+        const alpha = (1 - l.fade) * depthFade(visualY, f.h) * meadowActivityAlpha(visualY - l.s * .6, f.h);
         g.save();anchorToSurface(g,l.y,l.x);
         if (shadow) {
           g.globalAlpha = (l.fall > 0 ? 0.08 + 0.1 * (1 - l.fall) : 0.16 + up * 0.12) * alpha;
@@ -1238,14 +1174,6 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
         } else {
           g.scale(k * sx, k);
           drawMeadowImage(g,shadow ? shadows[l.sp] : sprites[l.sp][l.col], -SPR / 2, -SPR / 2,SPR,SPR,visualY,f.h);
-          if(forest&&!shadow&&backdrop instanceof HillBackdrop){
-            const source=sprites[l.sp][l.col];let mask=materialMist.get(source);
-            if(!mask){mask=document.createElement('canvas');mask.width=source.width;mask.height=source.height;
-              const mg=mask.getContext('2d')!;mg.drawImage(source,0,0);mg.globalCompositeOperation='source-in';
-              mg.fillStyle='rgb(228 232 234)';mg.fillRect(0,0,mask.width,mask.height);materialMist.set(source,mask);}
-            g.globalAlpha*=forestFogStrength(backdrop.distance(l.x,l.y,f.w,f.h)??1,f.light.groundFog);
-            drawMeadowImage(g,mask,-SPR/2,-SPR/2,SPR,SPR,visualY,f.h);
-          }
         }
         g.restore();
       };
@@ -1299,14 +1227,12 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
       let ti = 0;
       let sqDone = !squirrel || !squirrelSpr;
       const flush = (yLim: number) => {
-        if (!meadowDressingEnabled()) {flushForest(yLim);return;}
+        if (!meadowDressingEnabled()) return;
         for (;;) {
-          if (ti >= treeSpots.length && sqDone) {flushForest(yLim);return;}
+          if (ti >= treeSpots.length && sqDone) return;
           const ty = ti < treeSpots.length ? treeSpots[ti].y : Infinity;
           const sy = sqDone || !squirrel ? Infinity : squirrel.y;
-          if (Math.min(ty, sy) > yLim) {flushForest(yLim);return;}
-          // Future actors must interleave with forest roots as well as leaves.
-          flushForest(Math.min(ty,sy));
+          if (Math.min(ty, sy) > yLim) return;
           if (sy <= ty) {
             sqDone = true;
             drawSquirrel();
@@ -1344,12 +1270,7 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
       for (let i = 0; i < leaves.length; i++) {
         const l = leaves[i];
         const visualY=perspectiveY(l.x,l.y);
-        if (l.fall > 0 || l.fade > 0 || meadowActivityAlpha(visualY - l.s * .6, f.h)*terrainAlpha(l.x,l.y-l.s*.6,f.w,f.h) < .2) continue;
-        if(forest&&backdrop instanceof HillBackdrop&&forest.entries(backdrop,f.w,f.h,f.depthTier).some(t=>{
-          const count=reliefLayerCount(f.depthTier??'full');
-          const delta=reliefMotion(terrainDistanceAt(l.x,l.y),count)-reliefMotion(terrainDistanceAt(t.x,t.y),count);
-          return forest.occludes(t,l.x+(f.surfaceOffset?.x??0)*delta,l.y+(f.surfaceOffset?.y??0)*delta,l.y);
-        }))continue;
+        if (l.fall > 0 || l.fade > 0 || meadowActivityAlpha(visualY - l.s * .6, f.h) < .2) continue;
         const d = Math.hypot(l.x - f.p.x, l.y - f.p.y);
         if (d < Math.max(7, l.s * 0.55 * meadowSize(visualY,f.h)) && d < bd) {
           bd = d;
@@ -1383,19 +1304,15 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn", biome: "
       }
       grabbed = -1;
     },
-    ready() { return !backdrop.pending && !forest?.pending && !!ground; },
+    ready() { return !backdrop.pending && !!ground; },
     drawForeground(g, f) { return backdrop.drawForeground(g, f); },
-    skyHorizon:backdrop instanceof HillBackdrop?(w,h)=>backdrop.skyHorizon(w,h):undefined,
-    surfaceMotion:biome!=='meadow'?(x,y,tier)=>backdrop.ready?reliefMotion(terrainDistanceAt(x,y),reliefLayerCount(tier)):surfaceMotionFactor((y-horizonY(h))/Math.max(1,h-horizonY(h))):undefined,
-    dispose() { backdrop.dispose(); relief?.dispose(); forest?.dispose(); },
+    dispose() { backdrop.dispose(); },
     debug() {
       return {
-        forest:forest?.debug(),
         materialSeason: season,
         backdrop: backdrop.debug(),
-        relief: relief?.debug(),
-        biome,
-        terrainPerspective: biome!=='meadow',
+        biome: "meadow",
+        terrainPerspective: false,
         perspectiveSamples: [.25,.5,.75].flatMap(x=>[.52,.65,.8].map(y=>{
           const vy=perspectiveY(x*w,y*h);
           return {x:x*w,y:y*h,distance:meadowDistance(vy,h),size:meadowSize(vy,h),speed:meadowSpeed(vy,h),alpha:meadowActivityAlpha(vy,h)};

@@ -6,17 +6,16 @@
 // 상태는 모듈 전역(속성 하나) — 어느 화면의 버튼이든 같은 스위치. 나가기 = Esc 또는 상단 알약(body 포털이라 숨김
 // 규칙에 안 걸린다). 버튼은 계절 아이콘으로 "지금 계절을 보러 가자"를 말한다.
 //
-// 바이옴 세계(PLAN-20260904-004 §5, 소유자 ③④): 감상 중엔 **방향키·WASD·스와이프·가장자리 쉐브론·미니맵**으로 열한 화면을 오간다
-// (초원 ↔ 연못·숲·언덕·계곡·산·해안 셋·먼바다·깊은 바다). 카메라는 엔진 안의 세계 장면이 620ms로 미끄러지고, 여기(ShowcaseNav)는 입력을
-// `window.__vicAmbient.goTo()`로 넣고 `vic:biome` 이벤트로 도착 알약·미니맵을 갱신한다. 시청자 화면도 같은 컴포넌트(ShowcaseExit 안).
+// 2026-10-23: everyone shares one meadow. Viewing keeps only exit and environment controls;
+// the retired map, directional shortcuts and swipe navigation are intentionally absent.
 
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { ShowcaseDate, shiftShowcaseDay } from "./showcase-date";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Flower2, Haze, Leaf, Power, Settings2, Snowflake, Sparkles, Waves } from "lucide-react";
+import { ChevronDown, Flower2, Haze, Leaf, Power, Settings2, Snowflake, Sparkles, Waves } from "lucide-react";
 import { kstToday, type SeasonKey } from "@/components/shared/ambient/registry";
 import { type AmbientMode, ambientMode, setAmbientMode } from "@/lib/ui/motion";
-import { BIOME_ROWS, BIOMES, type BiomeKey, type Dir } from "@/components/shared/ambient/world/biomes";
+import { BIOMES } from "@/components/shared/ambient/world/biomes";
 import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
 import type { DayBand } from "@/components/shared/ambient/world/time";
 import { WEATHER_LABEL, weatherOptionsForMonth, type Weather } from "@/components/shared/ambient/world/weather";
@@ -59,7 +58,7 @@ export function ShowcaseButton({ season, className = "", compact = false }: { se
       className={`showcase-btn showcase-btn-${season} ${className}`.trim()}
       data-act="ambient-showcase"
       onClick={() => enterShowcase()}
-      title="방향키로 이동 · Esc로 나가기"
+      title="초원에서 함께 산책하기 · Esc로 나가기"
       type="button"
     >
       <span className="showcase-btn-glow" aria-hidden="true" />
@@ -126,14 +125,13 @@ export function AmbientModeSegment({
 export function ViewerAmbientControl({
   season,
   className = "",
-  showcase = false,
+  showcase = true,
   collapsible = false,
   onChange
 }: {
   season: SeasonKey;
   className?: string;
-  /** 감상 진입 버튼을 보일지. **개발자만 true**(2026-09-04 소유자: 세계가 다 만들어지기 전엔 관리자·시청자에게
-   *  배경으로만 보이게 하고 감상 모드는 감춘다). 다 만들면 한꺼번에 열어 보여 준다. */
+  /** Shared viewer/staff entry. Noninteractive surfaces can explicitly omit it. */
   showcase?: boolean;
   /** Viewer and its previews share the same optional panel disclosure. */
   collapsible?: boolean;
@@ -167,290 +165,16 @@ export function ViewerAmbientControl({
   );
 }
 
-const KEY_DIR: Record<string, Dir> = {
-  ArrowUp: "up",
-  ArrowDown: "down",
-  ArrowLeft: "left",
-  ArrowRight: "right",
-  w: "up",
-  s: "down",
-  a: "left",
-  d: "right",
-  W: "up",
-  S: "down",
-  A: "left",
-  D: "right"
-};
-const DIR_KO: Record<Dir, string> = { up: "위", down: "아래", left: "왼쪽", right: "오른쪽" };
-
-function goTo(target: BiomeKey | Dir): boolean {
-  return window.__vicAmbient?.goTo(target) ?? false;
-}
-
-/** 바이옴 내비(감상 중에만, body 포털) — 가장자리 쉐브론 4 · 미니맵(3×3 + 아래 2) · 도착 알약. 입력은 ShowcaseExit의 키 핸들러와 여기의
- *  스와이프가 goTo로 넣는다. 상태의 진실은 엔진(__vicAmbient.biome/exits) + vic:biome 이벤트. */
-// 가 본 곳 — 기기에 남긴다(localStorage). 도감이 서버로 오기 전까지의 임시 자리(P2에서 계정 기록으로 승격).
-const SEEN_KEY = "vic.biomeSeen";
-// 지도를 접어 뒀는지 — 기기에 남긴다(감상에 들어올 때마다 다시 접게 하지 않는다).
-const MAP_OPEN_KEY = "vic.biomeMapOpen";
-function readMapOpen(): boolean {
-  try {
-    return window.localStorage.getItem(MAP_OPEN_KEY) === "1";
-  } catch {
-    return true;
-  }
-}
-function readSeen(): BiomeKey[] {
-  const base: BiomeKey[] = ["meadow"];
-  try {
-    const raw = JSON.parse(window.localStorage.getItem(SEEN_KEY) || "[]") as unknown;
-    if (!Array.isArray(raw)) return base;
-    const ks = raw.filter((k): k is BiomeKey => typeof k === "string" && k in BIOMES);
-    return ks.includes("meadow") ? ks : [...base, ...ks];
-  } catch {
-    return base;
-  }
-}
-function saveSeen(list: BiomeKey[]): BiomeKey[] {
-  try {
-    window.localStorage.setItem(SEEN_KEY, JSON.stringify(list));
-  } catch {
-    /* 무시 */
-  }
-  return list;
-}
-
-// 지도 칸에 적는 짧은 이름 — 62px 칸에 들어가야 한다(긴 이름은 머리줄이 맡는다).
-const SHORT: Record<BiomeKey, string> = {
-  valley: "계곡",
-  pond: "민물",
-  mountain: "산",
-  hill: "언덕",
-  meadow: "초원",
-  forest: "숲",
-  tidal: "갯벌",
-  sandy: "모래",
-  rocky: "암석",
-  shallow: "얕은바다",
-  sea: "먼바다",
-  deep: "깊은바다"
-};
-
-function ShowcaseNav() {
-  const [biome, setBiome] = useState<BiomeKey>("meadow");
-  const [exits, setExits] = useState<Record<Dir, BiomeKey | null>>({ up: null, down: null, left: null, right: null });
-  // 가 본 곳은 **기기에 남는다**(감상에서 나갔다 들어오면 다 처음으로 돌아가던 문제, 2026-09-04 소유자).
-  const [visited, setVisited] = useState<BiomeKey[]>(() => readSeen());
-  // 지도 접기 — 서버 렌더와 첫 프레임을 맞추려 기본 true로 시작하고, 마운트 뒤 저장값을 읽는다.
-  const [mapOpen, setMapOpenState] = useState(false);
-  useEffect(() => setMapOpenState(readMapOpen()), []);
-  const setMapOpen = (next: boolean | ((v: boolean) => boolean)) => {
-    setMapOpenState((v) => {
-      const nv = typeof next === "function" ? next(v) : next;
-      try {
-        window.localStorage.setItem(MAP_OPEN_KEY, nv ? "1" : "0");
-      } catch {
-        /* 저장 실패는 무시 — 이번 세션만 유지된다 */
-      }
-      hapticTick();
-      return nv;
-    });
-  };
-  const [pill, setPill] = useState<{ text: string; sub?: string; key: number } | null>(null);
-  const [preparing, setPreparing] = useState<BiomeKey | null>(null);
-  const [bounce, setBounce] = useState<Dir | null>(null);
-  const pillTimer = useRef<number | null>(null);
-  const bounceTimer = useRef<number | null>(null);
-  const moveTimer = useRef<number | null>(null);
-  const swipe = useRef<{ x: number; y: number; t: number } | null>(null);
-
-  useEffect(() => {
-    const sync = () => {
-      const a = window.__vicAmbient;
-      if (!a) return;
-      setBiome(a.biome());
-      setExits(a.exits());
-    };
-    sync();
-    const iv = window.setInterval(sync, 500);
-    const onArrive = (e: Event) => {
-      setPreparing(null);
-      const d = (e as CustomEvent<{ biome: BiomeKey; first: boolean; season: SeasonKey; band: string; snap?: boolean }>).detail;
-      setBiome(d.biome);
-      setVisited((v) => (v.includes(d.biome) ? v : saveSeen([...v, d.biome])));
-      sync();
-      if (d.snap) return;
-      hapticTick();
-      // 도착 알약은 **바이옴 이름만**(2026-09-04 소유자). 계절·시간대는 화면이 이미 말하고,
-      // 어떤 동식물이 사는지는 도감에서 직접 만나 채우는 재미라 미리 알려 주지 않는다.
-      setPill({ text: BIOMES[d.biome].nameKo, key: Date.now() });
-      if (pillTimer.current) window.clearTimeout(pillTimer.current);
-      pillTimer.current = window.setTimeout(() => setPill(null), 1400);
-    };
-    const onBounce = (e: Event) => {
-      const d = (e as CustomEvent<{ dir: string }>).detail;
-      const dir = (["up", "down", "left", "right"] as Dir[]).find((k) => k === d.dir) ?? null;
-      setBounce(dir);
-      if (bounceTimer.current) window.clearTimeout(bounceTimer.current);
-      bounceTimer.current = window.setTimeout(() => setBounce(null), 260);
-      setPill({ text: "여긴 아직 없어요", key: Date.now() });
-      if (pillTimer.current) window.clearTimeout(pillTimer.current);
-      pillTimer.current = window.setTimeout(() => setPill(null), 1200);
-    };
-    // 떠나는 순간 방향을 문서에 적는다 — 그 쪽 쉐브론이 밀려나며 빛나고, 화면 가장자리에 진행 방향 빛이 스친다.
-    const onDepart = (e: Event) => {
-      setPreparing(null);
-      const d = (e as CustomEvent<{ dx: number; dy: number; dur: number }>).detail;
-      const dir: Dir = d.dx !== 0 ? (d.dx > 0 ? "right" : "left") : d.dy > 0 ? "down" : "up";
-      const root = document.documentElement;
-      root.setAttribute("data-biome-move", dir);
-      if (moveTimer.current) window.clearTimeout(moveTimer.current);
-      moveTimer.current = window.setTimeout(() => root.removeAttribute("data-biome-move"), Math.max(240, d.dur * 1000));
-    };
-    const onLoading = (e: Event) => {
-      const d=(e as CustomEvent<{to?:BiomeKey;state:string}>).detail;
-      if(pillTimer.current)window.clearTimeout(pillTimer.current);
-      setPill(null);
-      setPreparing(d.state==='loading'&&d.to?d.to:null);
-      if(d.state==='error')setPill({text:"배경을 불러오지 못했어요",sub:"방향키를 다시 눌러 시도해 주세요",key:Date.now()});
-    };
-    window.addEventListener("vic:biome-loading", onLoading);
-    window.addEventListener("vic:biome-depart", onDepart);
-    window.addEventListener("vic:biome", onArrive);
-    window.addEventListener("vic:biome-bounce", onBounce);
-    // 스와이프(터치·펜) — 60px 이상 한 방향.
-    const onDown = (e: PointerEvent) => {
-      if (e.pointerType === "mouse") return;
-      swipe.current = { x: e.clientX, y: e.clientY, t: e.timeStamp };
-    };
-    const onUp = (e: PointerEvent) => {
-      const s = swipe.current;
-      swipe.current = null;
-      if (!s || e.timeStamp - s.t > 700) return;
-      const dx = e.clientX - s.x;
-      const dy = e.clientY - s.y;
-      if (Math.max(Math.abs(dx), Math.abs(dy)) < 60) return;
-      // 손가락 방향의 반대로 세계가 온다(왼쪽으로 쓸면 오른쪽 화면).
-      const dir: Dir = Math.abs(dx) > Math.abs(dy) ? (dx < 0 ? "right" : "left") : dy < 0 ? "down" : "up";
-      goTo(dir);
-    };
-    window.addEventListener("pointerdown", onDown, { passive: true });
-    window.addEventListener("pointerup", onUp, { passive: true });
-    return () => {
-      window.clearInterval(iv);
-      window.removeEventListener("vic:biome-loading", onLoading);
-      window.removeEventListener("vic:biome-depart", onDepart);
-      document.documentElement.removeAttribute("data-biome-move");
-      if (moveTimer.current) window.clearTimeout(moveTimer.current);
-      window.removeEventListener("vic:biome", onArrive);
-      window.removeEventListener("vic:biome-bounce", onBounce);
-      window.removeEventListener("pointerdown", onDown);
-      window.removeEventListener("pointerup", onUp);
-      if (pillTimer.current) window.clearTimeout(pillTimer.current);
-      if (bounceTimer.current) window.clearTimeout(bounceTimer.current);
-    };
-  }, []);
-
-  const chev = (dir: Dir, Icon: typeof ChevronUp) => (
-    <button
-      aria-label={exits[dir] ? `${DIR_KO[dir]}: ${BIOMES[exits[dir]!].nameKo}` : `${DIR_KO[dir]}: 없음`}
-      className={`biome-chev biome-chev-${dir}${exits[dir] ? "" : " none"}${bounce === dir ? " bounce" : ""}`}
-      data-act="biome-move"
-      data-dir={dir}
-      key={dir}
-      onClick={() => goTo(dir)}
-      title={exits[dir] ? BIOMES[exits[dir]!].nameKo : "여긴 아직 없어요"}
-      type="button"
-    >
-      <Icon aria-hidden="true" size={22} />
-    </button>
-  );
-
-  return (
-    <>
-      {chev("up", ChevronUp)}
-      {chev("down", ChevronDown)}
-      {chev("left", ChevronLeft)}
-      {chev("right", ChevronRight)}
-      {/* 지도 — 계산기 버튼 판이 아니라 **읽히는 지도**로(2026-09-04 소유자). 머리줄에 지금 있는 곳과 진행 막대,
-          칸마다 이름(안 가 본 곳은 ?), 뭍/바다 구역을 나눠 적는다. 현재 칸은 링 + 굵은 이름. */}
-      <nav aria-label="바이옴 지도" className="biome-map" data-biome={biome} data-open={mapOpen ? "1" : "0"}>
-        {/* 머리줄이 곧 접기 손잡이 — 접으면 '지금 있는 곳 + 진행 막대'만 남는다(2026-09-05 소유자). */}
-        <button
-          aria-expanded={mapOpen}
-          aria-label={mapOpen ? "지도 접기" : "지도 펼치기"}
-          className="biome-map-head"
-          data-act="biome-map-fold"
-          onClick={() => setMapOpen((v) => !v)}
-          type="button"
-        >
-          <span className="biome-map-here" data-water={BIOMES[biome].land ? undefined : "1"} />
-          <span className="biome-map-title">{BIOMES[biome].nameKo}</span>
-          <span className="biome-map-count">
-            {visited.length}<i>/{Object.keys(BIOMES).length}</i>
-          </span>
-          <ChevronDown aria-hidden="true" className="biome-map-chev" size={14} />
-        </button>
-        <div className="biome-map-bar">
-          <i style={{ width: `${(visited.length / Object.keys(BIOMES).length) * 100}%` }} />
-        </div>
-        {BIOME_ROWS.map((row, i) => {
-          const sea = row.length === 1;
-          const firstSea = sea && BIOME_ROWS.findIndex((r) => r.length === 1) === i;
-          return (
-            <div key={i}>
-              {i === 0 ? <p className="biome-map-cap">육지</p> : null}
-              {firstSea ? <p className="biome-map-cap sea">바다</p> : null}
-              <div className={`biome-map-row${sea ? " wide" : ""}`}>
-                {row.map((k) => {
-                  const def = BIOMES[k];
-                  const on = k === biome;
-                  const seen = visited.includes(k);
-                  const near = (Object.keys(exits) as Dir[]).some((d) => exits[d] === k);
-                  return (
-                    <button
-                      aria-current={on ? "location" : undefined}
-                      aria-label={seen ? def.nameKo : "아직 못 가 본 곳"}
-                      className={`biome-dot${on ? " on" : ""}${seen ? " seen" : ""}${near ? " near" : ""} biome-dot-${k}`}
-                      data-act="biome-map-pick"
-                      data-biome={k}
-                      key={k}
-                      onClick={() => goTo(k)}
-                      title={seen ? def.nameKo : "아직 못 가 본 곳"}
-                      type="button"
-                    >
-                      <span className="biome-dot-name">{seen ? SHORT[k] : ""}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </nav>
-      {preparing ? (
-        <div className="biome-pill" role="status" aria-live="polite" data-biome-loading={preparing}>
-          <span className="biome-pill-main">{BIOMES[preparing].nameKo}{[0, 8].includes((BIOMES[preparing].nameKo.charCodeAt(BIOMES[preparing].nameKo.length - 1) - 0xac00) % 28) ? "로" : "으로"} 이동중..</span>
-        </div>
-      ) : pill ? (
-        <div className="biome-pill" key={pill.key} role="status">
-          <span className="biome-pill-main">{pill.text}</span>
-          {pill.sub ? <span className="biome-pill-sub">{pill.sub}</span> : null}
-        </div>
-      ) : null}
-    </>
-  );
-}
-
 // ── 감상 중 배경 설정(2026-09-05 소유자: "감상하면서 시간대·날씨 바꿔 가며 바로 확인") ────────────────────
 // 감상 모드에선 편집실 크롬이 전부 사라져 설정 모달로 갈 길이 없다(나가서 → 톱니 → 고르고 → 다시 감상 = 왕복 4번).
 // 그래서 오른쪽 위 꼭짓점에 톱니 하나. 여는 판은 **바꾸면 바로 보이는 것들만** 담는다: 계절 · 시간대 · 날씨 · 배경 효과.
-// 값의 진실은 여전히 편집실 상태(devWorld / gfxPref)라 설정 모달과 한 상태다 — 여기서 바꾸면 저기도 바뀐다.
+// Everyone can experiment locally. Leaving the meadow restores the outside world; only the shared graphics preference persists.
 // 시간대·날씨는 장면을 다시 굽지 않고 엔진에 바로 들어가고(scene-engine forceWorld), 계절만 캔버스를 다시 만든다.
 type WorldForce = NonNullable<WorldCtx["force"]>;
 
 export type ShowcaseSettings = {
-  /** 계절 강제(null = 달력 달을 따라간다). 개발자 QA용 — 넘기지 않으면 톱니 자체가 없다. */
+  /** Season override for this viewing session; null follows the calendar. */
+  sessionOnly?: boolean;
   seasonForce: SeasonKey | null;
   onChangeSeasonForce: (season: SeasonKey | null) => void;
   /** 보고 있는 달 — 계절이 '자동'일 때 날씨 목록을 정한다. */
@@ -460,6 +184,37 @@ export type ShowcaseSettings = {
   gfxPref: GfxPref;
   onChangeGfxPref: (pref: GfxPref) => void;
 };
+
+/** Local scenery experiments never change the calendar or grant studio authority. */
+export function useShowcaseEnvironment({
+  month, year, seasonForce = null, worldForce, gfxPref, onChangeGfxPref
+}: {
+  month: number;
+  year: number;
+  seasonForce?: SeasonKey | null;
+  worldForce?: WorldCtx["force"];
+  gfxPref: GfxPref;
+  onChangeGfxPref: (pref: GfxPref) => void;
+}) {
+  const on = useShowcase();
+  const [preview, setPreview] = useState<{ season?: SeasonKey | null; force?: WorldForce }>({});
+  useEffect(() => {
+    if (!on) setPreview(previous => Object.keys(previous).length ? {} : previous);
+  }, [on]);
+  const season = on && preview.season !== undefined ? preview.season : seasonForce;
+  const force = on && preview.force !== undefined ? preview.force : worldForce;
+  const settings: ShowcaseSettings = {
+    sessionOnly: true,
+    month, year, seasonForce: season,
+    onChangeSeasonForce: value => setPreview(previous => ({ ...previous, season: value })),
+    world: {
+      force: force ?? {},
+      onChange: value => setPreview(previous => ({ ...previous, force: value }))
+    },
+    gfxPref, onChangeGfxPref
+  };
+  return { seasonForce: season, worldForce: force, settings };
+}
 
 const AUTO = "auto";
 const BANDS: { value: DayBand; label: string }[] = [
@@ -725,7 +480,7 @@ function ShowcaseSettingsPanel({ s, open, onOpen }: { s: ShowcaseSettings; open:
   );
 }
 
-/** 감상 중 상단 알약(나가기) + Esc + 바이옴 내비 + (개발자) 배경 설정 톱니. 한 화면에 하나만 두면 된다(body 포털). */
+/** Shared meadow controls. The body portal stays reachable while the underlying app is inert. */
 export function ShowcaseExit({ settings }: { settings?: ShowcaseSettings | null } = {}) {
   const on = useShowcase();
   const surfaceRef = useRef<HTMLDivElement>(null);
@@ -738,7 +493,7 @@ export function ShowcaseExit({ settings }: { settings?: ShowcaseSettings | null 
     const previous = new Map<HTMLElement, boolean>();
     const isolate = () => {
       for (const node of document.body.children) {
-        if (!(node instanceof HTMLElement) || node === surfaceRef.current) continue;
+        if (!(node instanceof HTMLElement) || node === surfaceRef.current || node.matches(".vc-meadow-walk")) continue;
         if (!previous.has(node)) previous.set(node, node.inert);
         node.inert = true;
       }
@@ -759,7 +514,7 @@ export function ShowcaseExit({ settings }: { settings?: ShowcaseSettings | null 
   // outside settings (normally automatic), including date/time/direction.
   // Graphics preference is intentionally persistent and is not part of this snapshot.
   useEffect(() => {
-    if (on && settings && !before.current) {
+    if (on && settings && !settings.sessionOnly && !before.current) {
       before.current = { season: settings.seasonForce, force: { ...settings.world.force } };
     } else if (!on && before.current) {
       const saved = before.current;
@@ -785,14 +540,8 @@ export function ShowcaseExit({ settings }: { settings?: ShowcaseSettings | null 
       if(target?.closest?.('input,select,textarea,button,[contenteditable="true"]')){
         e.stopPropagation();return;
       }
-      // 방향키·WASD = 바이옴 이동(PLAN-004). 페이지 스크롤은 막는다.
-      const dir = KEY_DIR[e.key];
-      if (dir && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        e.preventDefault();
-        e.stopPropagation();
-        goTo(dir);
-        return;
-      }
+      // Keep calendar arrow shortcuts out of the meadow; there are no map destinations.
+      if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) e.preventDefault();
       // 감상 중엔 다른 단축키를 전부 삼킨다 — ←/→ 달 이동이 계절(배경)을 바꿔 감상이 깨졌다(2026-09-04 사용자). 브라우저
       // 기본 동작(새로고침·탭 이동)은 막지 않는다(stopPropagation만).
       e.stopPropagation();
@@ -809,7 +558,6 @@ export function ShowcaseExit({ settings }: { settings?: ShowcaseSettings | null 
   if (!on || typeof document === "undefined") return null;
   return createPortal(
     <div ref={surfaceRef} role="region" aria-label="배경 감상" tabIndex={-1} style={{ outline: "none" }}>
-      {/* 안내는 짧게 — 긴 설명은 감상을 방해한다(2026-09-04 소유자). 이동은 쉐브론·미니맵이 스스로 말한다. */}
       {/* 눈 아이콘을 뺐다(2026-09-05 소유자: "굳이 눈모양을 넣은 이유가 뭐야, 쓸모 없잖아") — 나가는
           버튼에 '보다'를 그려 두면 뜻이 반대고, 키 칩 [Esc] + "나가기"가 이미 무엇을·어떻게를 다 말한다.
           같은 이유로 title도 없앴다(보이는 글자를 그대로 되풀이할 뿐이었다). */}
@@ -817,7 +565,6 @@ export function ShowcaseExit({ settings }: { settings?: ShowcaseSettings | null 
         <span className="showcase-exit-key">Esc</span>
         나가기
       </button>
-      <ShowcaseNav />
       {settings ? <ShowcaseSettingsPanel onOpen={setSetOpen} open={setOpen} s={settings} /> : null}
     </div>,
     document.body

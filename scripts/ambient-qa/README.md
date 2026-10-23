@@ -1,5 +1,7 @@
 # scripts/ambient-qa/ — 계절 배경 비주얼 QA 하네스
 
+2026-10-23 소유자 변경: 감상/달력 배경은 초원 한 곳만 사용한다. 아래의 과거 다중 맵·이동 설명은 이번 범위에서 폐기됐다. 현행 표는 사계절 초원 7개 사례(3·4·16·17·18·19·20), 스모크는 가을·봄·겨울 3·17·18이다. 실행한 선택 범위와 미실행을 구분한다. 전체 표 실행을 매번 강제하지 않는다.
+
 봄 초원 3레이어: `node scripts/ambient-qa/meadow-layer-check.mjs`는 새 소스·깊이 이동·입력·밤 천체를 실제 fixture에서 검사한다. `node scripts/ambient-meadow-layers.mjs`는 원본 크기와 RGB 마스크 측정값을 읽기 전용으로 검증한다. 근거와 한계는 [ROUND-21](../../docs/ambient/rounds/ROUND-21-meadow-camera.md).
 
 > 📖 PLAN-20260905-005 P0·P1(2026-09-05). 규칙·절차는 [`docs/ambient/`](../../docs/ambient/README.md)(프로토콜 §4~§7), 이 폴더는 **도구**만.
@@ -17,28 +19,28 @@ npm run build && VISUAL_TEST_FIXTURE=1 npx next start -p 3100 -H 127.0.0.1
 
 ## 결정적 fixture
 
-`/visual-fixture/biome?biome=mountain&season=autumn&band=dusk&weather=fog&seed=42&t=1500&load=1&camera=showcase`
+`/visual-fixture/biome?biome=meadow&season=autumn&band=dusk&weather=fog&seed=42&t=1500&load=1&camera=showcase`
 
 - 같은 URL = 같은 픽셀. 엔진은 얼려져(`force.freeze`) rAF 루프를 돌리지 않고, 페이지가 `ready()` → `advance(t)`로 t까지만 시간을 흘린 뒤 `__vicAmbient.settledT`를 적는다.
 - `advance(ms, stepMs=1000/60)` = 고정 dt로 step·draw n회. 첫 advance 앞에 dt=0 굽기 ↔ 에셋 안정을 **3회 고정** 반복(타이밍 무관).
-- 브라우저 콘솔: `__vicAmbient.advance(250)` · `.time()` · `.forcePointer({x:700,y:600})` · `.forceWorld({band:"night",weather:"rain",biome:"pond",seed:42,freeze:true,pin:true})` · `.pending()` · `.weatherOptions()`.
+- 브라우저 콘솔: `__vicAmbient.advance(250)` · `.time()` · `.forcePointer({x:700,y:600})` · `.forceWorld({band:"night",weather:"rain",biome:"meadow",seed:42,freeze:true,pin:true})` · `.pending()` · `.weatherOptions()`. 도구의 비초원 이름 입력은 오류로 거부한다.
 - `pointer=x,y`로 포인터를 고정하면 생물의 위협 반응을 결정적으로 볼 수 있다(기본 = 화면 밖).
 
 ## 명령
 
 | 명령 | 하는 일 |
 |---|---|
-| `npm run ambient:qa:selftest` | 결정성 셀프테스트(스모크 3: 초원·가을 / 산·가을·안개 / 깊은 바다·밤). ①같은 URL ②advance 동치 ③얼림 ④시간대 ⑤시드 ⑥허용 날씨 ⑦도착 상태 ⑧에러 0 |
-| `npm run ambient:qa:capture -- --round 01 --phase before [--smoke\|--only 3,10] [--kinds static,temporal,band,weather] [--seed 42]` | 프레임 캡처 → `.scratch-pw/qa/r01/before/<sid>/` + `index.md` |
+| `npm run ambient:qa:selftest` | 초원 스모크 3·17·18 결정성. ①같은 URL ②advance 동치 ③얼림 ④시간대 ⑤시드 ⑥허용 날씨 ⑦도착 상태 ⑧에러 0 |
+| `npm run ambient:qa:capture -- --round 01 --phase before [--smoke\|--only 3,17] [--kinds static,temporal,band,weather] [--seed 42]` | 프레임 캡처 → `.scratch-pw/qa/r01/before/<sid>/` + `index.md` |
 | `npm run ambient:qa:sheet -- --round 01 --phase before [--smoke]` | `temporal-sheet.png` · `band-sheet.png` · `weather-sheet.png` · `static-gray.png` |
 | `npm run ambient:qa:diff -- --round 01 --phase before [--smoke]` | 시간 시트 인접 프레임 히트맵 `temporal-diff-*.png` + `diff.json`(블록 에너지 = 이음매 힌트) |
 | `npm run ambient:qa:diff -- --round 01 --compare before,after` | 전/후 같은 파일끼리 히트맵 + `compare.md` |
 | `npm run ambient:qa:capture -- --round 01 --phase before --only 3,4 --kinds long` | **긴 시간 시트**(15~30s, 1초 간격 16장) — 첫 랜덤 이벤트(다람쥐 16~24s) 창. 같은 폴더에 덧붙여진다(기존 종류 유지). `sheet`가 `long-sheet.png`, `diff`가 `long-diff-*.png`를 만든다 |
 | `… --only 3 --kinds static,long --seed 7` | 다른 시드는 `<sid>-seed7` 폴더로 따로(기본 42는 접미사 없음) |
 | `node scripts/ambient-qa/spawn-probe.mjs --only 3 --seeds 24 [--band dusk]` | **스폰 프로브**: 시드별로 다람쥐·회오리(debug `[x,y,…]` 배열)의 첫 등장 자리와 경로 최소 y를 재서 v < .18(지평선 띠) 비율을 낸다 — A-1 수용 기준 |
-| `node scripts/ambient-qa/light-probe.mjs [outDir]` | **조명 프로브**(라운드 2): s16·s10 여섯 띠의 지면 L*(y560~820)·하늘띠 L*(y0~60)·채도비·해시(아침=점심 판정) + s09/s02/s12 날씨별 해시·입자 카운터("맑음과 동일 해시" 판정) — T-1·W-1·D-3 수용 기준. 결과 `light-probe.txt` |
+| `node scripts/ambient-qa/light-probe.mjs [outDir]` | 초원 여름 여섯 띠, 겨울·가을·봄 날씨별 지면/하늘 L*·채도·해시·입자 기록. 결과 `light-probe.txt` |
 
-시나리오 표: `scenarios.mjs`(프로토콜 §4.2의 16개, 스모크 = 3·10·14). 단위 테스트 `tests/unit/ambient-qa-scenarios.test.ts`가 바이옴 키·허용 날씨를 대조한다.
+시나리오 표: `scenarios.mjs`(사계절 초원 7개, 스모크 = 3·17·18). 단위 테스트 `tests/unit/ambient-qa-scenarios.test.ts`가 활성 키·계절·허용 날씨를 대조한다. 삭제한 맵 사례의 id를 초원으로 재사용하지 않는다.
 
 ## 산출물 구조(검사 에이전트가 읽는 형태)
 
@@ -64,10 +66,10 @@ r01/compare-before-after/<sid>/<file>.png + compare.md
 
 Use an identified production build with `VISUAL_TEST_FIXTURE=1`. These scripts never start or rebuild a server:
 
-- `node scripts/ambient-qa/depth-check.mjs --build <label>`: 44 combinations × 3 pointer positions, deterministic advances, deep season/weather seal, still gates, cache stability, pan timing and mobile mount exclusion. `--only` selects suites; `--width 1024 --height 768` changes viewport and pointer positions. `--baseline` records original matrix screenshots without pretending the old build exposes depth fields.
-- `node scripts/ambient-qa/depth-perf.mjs --phase after --build <label> --modes max --seconds 30`: raw RAF, drawImage calls and estimated canvas allocations. Run alone, separately from captures/builds/tests; use identical browser/viewport/CPU/headful settings for before/after. `--cpu 4` and `--headful` describe separate environments.
+- `node scripts/ambient-qa/depth-check.mjs --build <label>`: meadow × four seasons × three pointer positions, deterministic advances, still gates, cache stability and mobile mount exclusion. `--only matrix,determinism,still,cache,mobile` selects suites; retired seal/pan suites are rejected. `--width 1024 --height 768` changes viewport and pointer positions.
+- `node scripts/ambient-qa/depth-perf.mjs --phase after --build <label> --modes max --seconds 30`: idle/pointer raw RAF, drawImage calls and estimated canvas allocations. Run alone, separately from captures/builds/tests; use identical browser/viewport/CPU/headful settings for before/after. `--cpu 4` and `--headful` describe separate environments.
 - `node scripts/ambient-qa/depth-load-check.mjs --phase after --build <label>`: synthetic 35ms contention, automatic stop and actual-click bounded recovery; max/lite and stationary gates. Run alone.
-- `node scripts/ambient-qa/depth-edges.mjs --build <label>`: 4K/DPR1.5 allocation/opacity, pan edges, mouse/touch/leave, zoom/scroll actual hit and mobile breakpoints. `--only large,pan,input,mobile` selects suites. Mobile evidence is emulation.
+- `node scripts/ambient-qa/depth-edges.mjs --build <label>`: meadow 4K/DPR1.5 allocation/opacity, mouse/touch/leave, zoom/scroll actual hit and mobile breakpoints. `--only large,input,mobile` selects suites. Mobile evidence is emulation.
 - Fixture controls: `gfx=auto|max|lite|off`, `reduced=0|1`, `load=auto` (no forced load), `camera=plain` (stationary). Mobile reports `data-biome-fixture-disabled=mobile`; it must not wait for an engine that should never mount.
 
 PNG/JSON evidence is local under `.scratch-pw/qa/r18-depth`. Canvas byte estimates exclude decoded images and GPU duplication. No database or genuine-device claims follow from these fixtures.
@@ -76,7 +78,7 @@ PNG/JSON evidence is local under `.scratch-pw/qa/r18-depth`. Canvas byte estimat
 
 - `node scripts/ambient-qa/sky-cohesion-check.mjs before|after|verified`: R27 role matte seams, four-season plain/showcase ridges, five weather banks, three moon dates and two forced sky events. Outputs 30 scene captures + 12 UI captures under `.scratch-pw/qa/r27/`. Role preview's viewed June may override season query, so only the eight biome ridge captures establish all-season coverage. Requires an identified running fixture build.
 
-- `node scripts/ambient-qa/sky-map-check.mjs verified`: R25 four-season north/south skies, six cloud weather views, five non-meadow occlusion views and actual preview controls. Requires a running identified fixture build; outputs `.scratch-pw/qa/r25/verified/`. `before` captures the baseline; `final` omits the five additional scenes.
+- `node scripts/ambient-qa/sky-map-check.mjs verified`: four-season meadow north/south skies, six cloud weather views and actual preview controls. Retired non-meadow occlusion captures are removed. Requires a running identified fixture build; outputs `.scratch-pw/qa/r25/verified/`.
 - `node scripts/ambient-qa/cloud-atlas-check.mjs`: reads the immutable source and checks all 30 measured regions have nonempty bodies and blank separation gutters; never edits pixels. Celestial/time and analytical cloud-cycle tests are in `tests/unit/ambient-celestial.test.ts`.
 
 R26 uses `sky-map-check.mjs r26-before` / `r26-after` under the existing r25 output root for paired 14-scene captures. The cloud source check follows `cloud-atlas-layout.json`, verifies 30 unique selected cells and their exact measured bounds, and writes `.scratch-pw/qa/r26/atlas-layout.json`.

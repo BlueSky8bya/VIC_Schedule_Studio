@@ -15,10 +15,6 @@ try{
   await openFixture(page,fixtureUrl({biome:'meadow',season:'summer',band:'noon',weather},{gfx:'max',y:2026,day:15,skyBearing:'south'}));
   await advance(page,1500);const shot=await captureCanvas(page);const name=`cloud-${weather}`;fs.writeFileSync(`${out}/${name}.png`,shot.png);shots.push({name,hash:shot.hash});
  }
- if(phase==='verified')for(const biome of ['pond','forest','mountain','sandy','sea']){
-  await openFixture(page,fixtureUrl({biome,season:'summer',band:'night',weather:'cloud'},{gfx:'max',y:2026,day:15,skyBearing:'south'}));
-  await advance(page,1500);const shot=await captureCanvas(page);const name=`occlusion-${biome}`;fs.writeFileSync(`${out}/${name}.png`,shot.png);shots.push({name,hash:shot.hash});
- }
  await openFixture(page,fixtureUrl({biome:'meadow',season:'summer',band:'noon',weather:'cloud'},{gfx:'max',y:2026,day:15,live:1}));
  if(phase!=='before'){
   await page.getByLabel('하늘 방향',{exact:true}).selectOption('north');

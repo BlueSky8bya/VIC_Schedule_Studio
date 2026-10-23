@@ -4,7 +4,7 @@
 
 ## Delivery
 
-- Four 2172×724 ground/far-woodland panoramas and four 1254×1254 isolated tree atlases. Exact requests, frozen inputs, original bytes and runtime SHA256 receipts: [art run](../../../art-src/배경층/숲/작업회차/20260915-분리레이어-시안02/request.md), [delivery](../../../art-src/배경층/숲/작업회차/20260915-분리레이어-시안02/delivery.json). Composition authorization applies to these forest layers, not the separate pine catalogue.
+- Four 2172×724 ground/far-woodland panoramas and four 1254×1254 isolated tree atlases. Exact requests, frozen inputs, original bytes and runtime SHA256 receipts: [art run](../retired-maps-20261023.md), [delivery](../retired-maps-20261023.md). Composition authorization applies to these forest layers, not the separate pine catalogue.
 - Eighteen rooted instances from four tree forms. Central clearing/sky stay open. Source-space ground contours drive material size, fading, speed and parallax; each standing tree and contact shadow shares its root transform. No horizontal stretching or terrain-strip deformation of trees. Two near edge roots stay visible on narrow desktop crops.
 - Trees and seasonal material interleave by root/foot y. Existing disabled animal path also merges at each actor foot, avoiding the future actor-behind-tree ordering bug found by B. Actual animals remain disabled. Future animals must use this queue and surface anchoring.
 - Canopy interior key color is removed; mixed edge magenta is neutralized. Alpha-aware picking rejects hidden material and compensates for tree/material parallax differences. Held material stays in front while dragging.

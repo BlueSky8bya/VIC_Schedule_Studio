@@ -134,22 +134,15 @@ export function retainDepthOwners(owners: object[]) {
 export function depthCacheStats() { return { bakes, entries: cache.length, bytes: cache.reduce((n, e) => n + e.c.width * e.c.height * 4, 0) }; }
 
 /** P0 procedural foreground only: low edge vegetation/water marks, no standing objects. */
-export function bakeDepthFrame(w: number, h: number, biome: string, season: string, seed: number) {
+export function bakeDepthFrame(w: number, h: number, season: string, seed: number) {
   const c = document.createElement("canvas"); c.width = Math.ceil(w + 64); c.height = 96;
   const g = c.getContext("2d")!;
-  const deep = biome === "deep";
-  const water = biome === "sea" || biome === "shallow";
-  const gravel = ["tidal", "sandy", "rocky", "pond", "valley", "mountain"].includes(biome);
-  const pale = season === "winter" && !water;
-  g.fillStyle = deep ? "rgba(110,153,172,.12)" : water ? "rgba(120,175,183,.12)" : pale ? "rgba(180,198,214,.24)" : "rgba(86,112,97,.22)";
+  g.fillStyle = season === "winter" ? "rgba(180,198,214,.24)" : "rgba(86,112,97,.22)";
   for (let i = 0; i < 12; i++) {
     const side = i < 6 ? 0 : w - 110;
     const x = 32 + side + ((i * 29 + seed) % 110);
     const y = 56 + ((i * 17 + seed) % 30);
-    if (deep) g.fillRect(x, y, 2, 2); // Suspended matter; never a seabed or surface stripe.
-    else if (water) g.fillRect(x, y, 8 + i % 3 * 4, 2);
-    else if (gravel) g.fillRect(x, y + 4, 3 + i % 3, 2); // Flat ground marks, no shoreline-crossing grass.
-    else { g.fillRect(x, y, 2, 8); g.fillRect(x - 4, y + 3, 2, 5); g.fillRect(x + 4, y + 2, 2, 6); }
+    g.fillRect(x, y, 2, 8); g.fillRect(x - 4, y + 3, 2, 5); g.fillRect(x + 4, y + 2, 2, 6);
   }
   return { c, y: h - 64 };
 }

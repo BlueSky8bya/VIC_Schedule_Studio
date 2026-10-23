@@ -1,3 +1,5 @@
+> 2026-10-23: 이 기록의 비초원 지도는 [사용자 요청으로 퇴역](../retired-maps-20261023.md)했습니다. 아래 내용은 당시 기록이며 현재 실행·검수 명령이 아닙니다.
+
 # R80 — Apply saved marine concepts
 
 Owner requested immediate activation and push of saved open-sea/deep-sea concepts. Supersedes archive-only status of both images. Reuse shallow's static concept renderer for all three marine cells; runtime PNGs are byte-identical copies of archived generator outputs. No regeneration.

@@ -1,5 +1,7 @@
 # 바이옴 문법(Biome Grammar) — 열한 화면의 시각 규칙(2026-09-05)
 
+> 2026-10-23 최신 사용자 정정: [초원 단일화·산책](../agent/plans/PLAN-20261023-meadow-walk.md)이 아래의 다중 지도·개발자 전용 감상·장식 추가 대기를 대체합니다. 현재 활성 지도는 초원 하나이며 사계절/날씨/하늘/공유 입력을 유지합니다. 지도·방향 이동·전용 QA는 [퇴역](retired-maps-20261023.md)했고 현재 새 식생은 근거리의 2배 표본 atlas와 제한된 군락 렌더입니다. 나머지 과거 장면별 수치·대기 상태는 역사 기록이며 현행 실행 지시가 아닙니다.
+
 > 에이전트(검사)와 구현(장면 코드)이 **같이 참조하는 구체 규칙**. 추상어 대신 수치·자리·조건으로 적는다.
 > 좌표는 `world/view.ts` 정규화 v(지평선 아래 0 → 화면 아래 1), 크기는 `world/scale.ts SIZE`(근경 1× px, 원경은 `depthScale .6→1`).
 > 기준 화면 1400×860. 시간·날씨 공통 규칙은 [SEASON_TIME_WEATHER_GRAMMAR](SEASON_TIME_WEATHER_GRAMMAR.md), 산 전용은 [MOUNTAIN_DEPTH_RULES](MOUNTAIN_DEPTH_RULES.md), 판정은 [IMMERSION_BREAK_RULES](IMMERSION_BREAK_RULES.md).

@@ -1,3 +1,5 @@
+> 2026-10-23: 이 기록의 비초원 지도는 [사용자 요청으로 퇴역](../../ambient/retired-maps-20261023.md)했습니다. 아래 내용은 당시 기록이며 현재 실행·검수 명령이 아닙니다.
+
 # Marine biomes — resume here
 
 Updated 2026-09-16 KST. Owner requested open-sea and then deep-sea concepts, followed by archiving and pushing all current work. Stop after this delivery; resume implementation in a later session.

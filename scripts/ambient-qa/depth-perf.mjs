@@ -10,8 +10,8 @@ const seconds = Number(args.seconds ?? 30);
 const cpu = Number(args.cpu ?? 1);
 if (!(seconds > 0 && seconds <= 600) || !(cpu >= 1)) throw new Error("Invalid seconds/cpu");
 const modes = String(args.modes ?? "max,auto,lite").split(",");
-const scenarios = String(args.scenarios ?? "idle,pointer,pan").split(",");
-if (modes.some((x) => !["max", "auto", "lite"].includes(x)) || scenarios.some((x) => !["idle", "pointer", "pan"].includes(x))) throw new Error("Invalid modes/scenarios");
+const scenarios = String(args.scenarios ?? "idle,pointer").split(",");
+if (modes.some((x) => !["max", "auto", "lite"].includes(x)) || scenarios.some((x) => !["idle", "pointer"].includes(x))) throw new Error("Invalid modes/scenarios");
 const base = String(args.base ?? BASE);
 const phase = String(args.phase ?? "after");
 const out = path.join(".scratch-pw", "qa", "r18-depth", `perf-${phase}`);
@@ -71,7 +71,7 @@ try {
         };
         const before = snapshot();
         const gaps = [], states = [];
-        let prev = 0, begin = 0, lastNav = -3000, navAttempts = 0, navAccepted = 0, lastState = -1000;
+        let prev = 0, begin = 0, lastState = -1000;
         await new Promise((resolve) => {
           const tick = (now) => {
             if (!begin) begin = now;
@@ -80,10 +80,6 @@ try {
             const elapsed = now - begin;
             if (scenario === "pointer") {
               window.dispatchEvent(new PointerEvent("pointermove", { pointerType: "mouse", clientX: 700 + Math.sin(elapsed / 1300) * 650, clientY: 430 + Math.sin(elapsed / 1900) * 370, bubbles: true }));
-            }
-            if (scenario === "pan" && elapsed - lastNav >= 2500) {
-              lastNav = elapsed; navAttempts++;
-              if (a.goTo(a.biome() === "meadow" ? "forest" : "meadow")) navAccepted++;
             }
             if (elapsed - lastState >= 1000) { lastState = elapsed; states.push({ ms: elapsed, load: a.load, q: a.q, running: a.running, tier: a.scene().depthTier ?? null }); }
             if (elapsed >= seconds * 1000) resolve(); else requestAnimationFrame(tick);
@@ -94,13 +90,13 @@ try {
         a.freeze(true);
         const sorted = gaps.slice().sort((x, y) => x - y);
         const durationMs = gaps.reduce((x, y) => x + y, 0);
-        return { before, after, durationMs, raf: { samples: gaps.length, mean: durationMs / gaps.length, p95: sorted[Math.ceil(sorted.length * .95) - 1], max: sorted.at(-1), over34Ratio: gaps.filter((x) => x > 34).length / gaps.length }, drawImageCalls: after.instrumentation.draws - before.instrumentation.draws, newCanvasAllocations: after.instrumentation.created - before.instrumentation.created, navAttempts, navAccepted, states };
+        return { before, after, durationMs, raf: { samples: gaps.length, mean: durationMs / gaps.length, p95: sorted[Math.ceil(sorted.length * .95) - 1], max: sorted.at(-1), over34Ratio: gaps.filter((x) => x > 34).length / gaps.length }, drawImageCalls: after.instrumentation.draws - before.instrumentation.draws, newCanvasAllocations: after.instrumentation.created - before.instrumentation.created, states };
       }, { seconds, scenario });
       const row = { mode, scenario, url, ...measurement, errors };
       results.measurements.push(row);
       fs.writeFileSync(path.join(out, `${mode}-${scenario}.json`), JSON.stringify(row, null, 2) + "\n");
       fs.writeFileSync(path.join(out, "summary.json"), JSON.stringify(results, null, 2) + "\n");
-      console.log(`${phase} ${mode}/${scenario}: mean=${row.raf.mean.toFixed(2)} p95=${row.raf.p95.toFixed(2)} late=${(row.raf.over34Ratio * 100).toFixed(2)}% draws=${row.drawImageCalls} newCanvas=${row.newCanvasAllocations} nav=${row.navAccepted}`);
+      console.log(`${phase} ${mode}/${scenario}: mean=${row.raf.mean.toFixed(2)} p95=${row.raf.p95.toFixed(2)} late=${(row.raf.over34Ratio * 100).toFixed(2)}% draws=${row.drawImageCalls} newCanvas=${row.newCanvasAllocations}`);
     } finally { await context.close(); }
   }
 } finally { await browser.close(); }

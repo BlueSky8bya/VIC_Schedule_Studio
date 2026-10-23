@@ -22,19 +22,7 @@ export const KO = {
   band: { dawn: "새벽", morning: "아침", noon: "점심", dusk: "노을", evening: "저녁", night: "밤" },
   weather: { clear: "맑음", cloud: "흐림", rain: "비", snow: "눈", fog: "안개", wind: "바람" },
   season: { spring: "봄", summer: "여름", autumn: "가을", winter: "겨울" },
-  biome: {
-    valley: "계곡",
-    pond: "민물",
-    mountain: "산",
-    hill: "들판·언덕",
-    meadow: "초원",
-    forest: "숲",
-    tidal: "갯벌",
-    sandy: "모래해안",
-    rocky: "암석해안",
-    sea: "먼바다",
-    deep: "깊은 바다"
-  }
+  biome: { meadow: "초원" }
 };
 
 /** `--k v` · `--k=v` · `--flag` → 객체. 위치 인자는 `_`. */
@@ -70,6 +58,8 @@ export const titleOf = (sc) =>
 
 export function fixtureUrl(sc, over = {}, base = BASE) {
   const q = { biome: sc.biome, season: sc.season, band: sc.band, weather: sc.weather, seed: sc.seed ?? 42, t: 0, load: 1, camera: "showcase", ...over };
+  if (q.biome !== undefined && q.biome !== "meadow") throw new Error("Retired ambient destination: " + q.biome);
+  q.biome = "meadow";
   const qs = Object.entries(q)
     .filter(([, v]) => v !== undefined && v !== null)
     .map(([k, v]) => `${k}=${encodeURIComponent(String(v))}`)

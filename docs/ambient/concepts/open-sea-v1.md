@@ -1,6 +1,6 @@
 # Open sea concept v1
 
-Generated with built-in imagegen on 2026-09-16 KST. No reference images supplied. Owner subsequently requested activation in R80; the unchanged image now displays as a static runtime concept. Image: [open-sea-v1.png](open-sea-v1.png).
+Generated with built-in imagegen on 2026-09-16 KST. No reference images supplied. Owner subsequently requested activation in R80; the unchanged image now displays as a static runtime concept. Image: [open-sea-v1.png](../retired-maps-20261023.md).
 
 Raw source copied unchanged: `C:/Users/im917/.codex/generated_images/01a08b85-9859-73e2-bac5-05ce6f2f5a1d/exec-ce459f4c-c7e6-4388-a0f6-4107561ce888.png`.
 

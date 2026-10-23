@@ -734,15 +734,14 @@ html[data-theme="dark"] .public-event .event-heart { color: #e4d9d2; }
 html[data-theme="dark"] .public-event .event-heart.on { color: #ff9cb7; }
 
 /* Viewing controls stay readable over every season/biome without tinting art. */
-html[data-theme="dark"] :is(.showcase-btn, .showcase-exit, .biome-map, .biome-chev, .biome-pill) {
+html[data-theme="dark"] :is(.showcase-btn, .showcase-exit) {
   background: rgb(var(--glass-panel) / 94%); color: var(--ink); border-color: var(--night-line);
   box-shadow: var(--shadow-2), var(--gs-metal-edge);
 }
 html[data-theme="dark"] .showcase-btn { --showcase-ink: var(--accent-strong); }
 html[data-theme="dark"] .showcase-btn:hover { background: var(--night-raised); box-shadow: var(--shadow-3); }
 html[data-theme="dark"] :is(.sc-set-heading button, .sc-set-reset, .sc-set-location,
-  .sc-set-now, .sc-set-name, .sc-set-chip, .sc-set-hours, .sc-set-more summary,
-  .biome-map-title, .biome-map-count, .biome-map-here) { color: var(--ink-soft); }
+  .sc-set-now, .sc-set-name, .sc-set-chip, .sc-set-hours, .sc-set-more summary) { color: var(--ink-soft); }
 html[data-theme="dark"] :is(.sc-set-chip, .sc-set-datetime input, .sc-set-location) {
   background: var(--surface-2); border-color: var(--night-line); color: var(--ink-soft);
 }
@@ -779,12 +778,6 @@ html[data-theme="dark"] .sc-date-calendar [data-day-tone="red"] { color: #ff9b94
 html[data-theme="dark"] .sc-date-calendar [data-day-tone="blue"] { color: #98bdff; }
 html[data-theme="dark"] .sc-date-picker button:focus-visible { outline-color: #a9dfb7; background: var(--green-soft); }
 html[data-theme="dark"] .sc-set-time-range { color-scheme: dark; accent-color: #a1bf94; }
-html[data-theme="dark"] :is(.biome-map-cap, .biome-pill small) { color: var(--muted); }
-html[data-theme="dark"] .biome-dot { background: #344435; border-color: var(--night-line); }
-html[data-theme="dark"] :is(.biome-dot-pond, .biome-dot-sea, .biome-dot-deep) { background: #304450; }
-html[data-theme="dark"] .biome-dot .biome-dot-name { color: var(--ink-soft); }
-html[data-theme="dark"] .biome-dot.on { border-color: #b5d3bd; }
-html[data-theme="dark"] .biome-dot.on .biome-dot-name { color: var(--ink); }
 
 /* Real schedules also contain untagged cards, support periods and inline VODs. */
 html[data-theme="dark"] :is(.public-event, .studio-event-pill):not([data-color]):not([data-mixed]):not(.teaser) {

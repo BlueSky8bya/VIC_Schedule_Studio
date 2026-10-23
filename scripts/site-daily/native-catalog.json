@@ -1867,6 +1867,46 @@
       "estimatedSeconds": 130,
       "estimateSource": "real condition-based input and >=90s observation, not a completed outcome",
       "id": "41bbcf2cde8617c0306e7feb47d10951c2a9c0a0a67968766cca5048e4f8b02b"
+    },
+    {
+      "id": "eb2f94f87b92eb1ba8f808e4b18fa937862643510e517506d994ed18ea99da93",
+      "file": "tests/visual/meadow-walk.spec.ts",
+      "title": "meadow walk viewer: painted continuous stroll and safe calendar return",
+      "project": "",
+      "estimatedSeconds": 45,
+      "estimateSource": "new meadow registration estimate; current PASS comes only from verified per-case receipts"
+    },
+    {
+      "id": "83fde2f73c59bd394050d62d84f3634ca70d5769f5fe4c41b0ce70f6482a3d77",
+      "file": "tests/visual/meadow-walk.spec.ts",
+      "title": "meadow walk owner: painted continuous stroll and safe calendar return",
+      "project": "",
+      "estimatedSeconds": 45,
+      "estimateSource": "new meadow registration estimate; current PASS comes only from verified per-case receipts"
+    },
+    {
+      "id": "ae464b898cc77ff496c095daef480afff5737cf059e353fc19d692425ef939ae",
+      "file": "tests/visual/meadow-walk.spec.ts",
+      "title": "meadow walk preview: painted continuous stroll and safe calendar return",
+      "project": "",
+      "estimatedSeconds": 45,
+      "estimateSource": "new meadow registration estimate; current PASS comes only from verified per-case receipts"
+    },
+    {
+      "id": "9f740251d2f48e133c5264ffc508e5a7ec85f6e8cf5b271a0ab3414f9bafa826",
+      "file": "tests/visual/meadow-walk.spec.ts",
+      "title": "meadow four seasons retain distinct flora and only two viewing controls",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "new meadow registration estimate; current PASS comes only from verified per-case receipts"
+    },
+    {
+      "id": "18c75d96b0a0a4b84710b11703d1b8681227dba35b8ac97325ae925e582c6196",
+      "file": "tests/visual/meadow-walk.spec.ts",
+      "title": "meadow cold sprite failure recovers and reduced motion and OFF stay effective",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "new meadow registration estimate; current PASS comes only from verified per-case receipts"
     }
   ],
   "dailyScenarios": [
@@ -1990,5 +2030,6 @@
   ],
   "scenarioLimit": "Nine fixed, explicit 2026-10-22 registration scenarios. Weekly rotation of cases is not all configuration combinations; changing scenarios requires refreshed registration IDs.",
   "additionalReplayCases": 4,
-  "additionalLivingIntentMotionCases": 7
+  "additionalLivingIntentMotionCases": 7,
+  "additionalMeadowWalkCases": 5
 }

@@ -55,19 +55,19 @@ Source UTF-8 bytes: 59266
 | 117-119 | 이관 | AMB-01, ART-02 | 계절 캔버스 장면과 카메라 | 현행 바이옴/flat·stand·shadow 및 심해 예외로 대응한다. |
 | 120-122 | 이관 | AMB-26, ART-03 | 겨울 자국·눈가루, 가을 낙엽, 봄 꽃/나비 상호작용과 오행 색 | 실제 반응은 계절 생성 함수에서, 색/화풍은 ART-03에서 유지한다. |
 | 123-124 | 이관 | AMB-12 | 계절 배경 기본 OFF, 기기별 유지·페인트 전 복원, OFF 게이트 | on/dim/off 현행 상태로 대응한다. |
-| 125-127 | 코드 | components/shared/ambient/scenes/summer.ts:createSummer, components/shared/ambient/scenes/spring.ts:createSpring, components/shared/ambient/scenes/autumn.ts:SPECIES, components/shared/ambient/scenes/winter.ts:createWinter | 파문·나비·7종 낙엽·발자국의 구체 행동 | AMB-26에서 찾을 함수와 실측 범위를 연결하며 개별 행동 구현은 코드가 소유한다. |
+| 125-127 | 코드 | components/shared/ambient/scenes/autumn.ts:createAutumn, components/shared/ambient/art/seasonal-material.ts:paintSeasonalMaterial | 계절 소재의 구체 행동 | 2026-10-23 초원 단일화로 구형 다중 장면을 퇴역하고 현재 공유 사계절 소재 실행으로 연결한다. 옛 물가 파문·봄 나비 검수는 현재 관측으로 주장하지 않는다. |
 | 128-128 | 이관 | AMB-02, AMB-09 | 실제 KST 특수일 우선, sprites/ground 사전 굽기 | SPECIAL_DAYS/pickAmbient 및 캐시 원칙 유지. |
 | 129-130 | 이관 | AMB-27, AMB-11 | frame governor·가시 하한·줌 좌표 보정 | 측정 절차와 실제 offsetWidth/zoom 조건 복원. |
 | 131-133 | 이관 | AMB-11, AMB-01 | 1700px 이상 studio 줌 실측과 단일 배경 시스템 | 현재 캔버스 크기/포인터 보정·WaterTide 직접 장착 금지를 유지한다. |
 | 134-138 | 이관 | AMB-09, AMB-10, AMB-27 | load 0–1, +0.06/−0.15 매90프레임, max1/lite0.3, 점진 조절 | 현행 코드와 일치하는 수치·측정 조건을 복원한다. |
 | 139-140 | 이관 | AMB-10, AMB-09, AMB-19 | soft 효과 저해상도, DPR mount 고정, 아트 캐시와 우리 생물 그림 | 현재 LOD 구현 수치로 연결한다. |
 | 141-147 | 이관 | AMB-19, AMB-20, ART-03 | 동물도 오리지널 픽셀아트, Noto는 임시 대체, drawFacing/drawSprite 구분 | 철회된 동물 제작 금지를 다시 활성화하지 않고 새 아트 목표를 보존한다. |
-| 148-155 | 코드 | components/shared/ambient/scenes/summer.ts:createSummer, components/shared/ambient/scenes/winter.ts:createWinter, components/shared/ambient/scenes/autumn.ts:createAutumn, components/shared/ambient/scenes/autumn.ts:ACORN_MAX, components/shared/ambient/scenes/spring.ts:createSpring, components/shared/ambient/scenes/spring.ts:ROWS | 계절별 이벤트·도토리 상한6·봄12줄·재렌더 방지 | 각 계절 행동 코드를 정본으로 연결하고 AMB-26에서 숫자 및 실제 행동을 함께 검수하게 한다. |
+| 148-155 | 코드 | components/shared/ambient/scenes/autumn.ts:createAutumn, components/shared/ambient/scenes/autumn.ts:ACORN_MAX | 계절별 이벤트·도토리 상한6·구형 봄12줄·재렌더 방지 | 2026-10-23 퇴역 장면의 봄12줄 규격을 제거한다. 보존한 공유 초원 코드의 실제 활성 분기를 기준으로 검수하며 비활성 장식은 실행 관측이 아니다. |
 | 156-156 | 이관 | AMB-09, AMB-03 | 크기별 결정적 바탕 rng와 감상 키 처리 | 다시 굽기 결정성과 감상 진입/종료 입력을 보존한다. |
 | 157-161 | 이관 | AMB-19, AMB-20, ART-11 | 수중 물고기 top-view silhouette와 라이선스 출처 | 카메라 적용 범위를 현행 예외와 함께 보존한다. |
 | 162-166 | 이관 | AMB-20, AMB-21 | 오리 직립·좌우반전·ethogram·상태별 수면선·접촉 그림자 | 물 위에 뜬 것처럼 보이지 않는 관찰 조건과 상태별 구현을 유지한다. |
-| 167-167 | 코드 | components/shared/ambient/scenes/summer.ts:fishTarget, components/shared/ambient/scenes/summer.ts:bigTarget | 물고기 목표2–14×면적, 큰 개체 load0.6/0.9, 가장자리 출입 | AMB-26에 코드의 저부하0 예외까지 연결한다. |
-| 168-176 | 코드 | components/shared/ambient/scenes/util.ts:threat, components/shared/ambient/scenes/summer.ts:createSummer, components/shared/ambient/scenes/winter.ts:createWinter, components/shared/ambient/scenes/autumn.ts:createAutumn, components/shared/ambient/scenes/spring.ts:createSpring | 속도/loom 위협, 90px 놀람 전염·140px splash·1초 먹이, 동물별 행동 | AMB-21/26은 실측 절차를 소유하고 세부 행동 수치는 동일 함수의 debug와 분기에서 조회한다. |
+| 167-167 | 의도적 삭제 | — | 물고기 목표2–14×면적, 큰 개체 load0.6/0.9, 가장자리 출입 | 2026-10-23 사용자가 초원 외 모든 지도를 퇴역했다. 민물·바다 전용 물고기 실행과 전용 QA를 삭제하며 생물 원본·생태 metadata는 지도 로더가 아니다. |
+| 168-176 | 코드 | components/shared/ambient/scenes/util.ts:threat, components/shared/ambient/scenes/autumn.ts:createAutumn | 속도/loom 위협·개별 생물 행동 | 2026-10-23 퇴역한 물가·구형 계절 장면의 먹이·출입 행동은 제거했다. 공용 위협 함수와 초원 활성 분기만 실행 근거로 확인한다. |
 | 177-177 | 이관 | AMB-21 | 새 행동에 실재 ethology 주석과 debug counter 필수 | 설명만 있는 행동을 완료로 보고하지 않는 증거 계약 유지. |
 | 178-183 | 이관 | ART-01, ART-07, AMB-13 | 모든 그림 슬롯·정본 파일명·대체물·ArtSet/props 공유와 늦은 도착 rebake | 별도 슬롯/파일 목록을 만들지 않고 현재 API와 상태 구분을 유지한다. |
 | 184-188 | 이관 | ART-07, ART-02 | 조립한 도형 식물 반려, 슬롯+fallback 경로, standing 3/4와 접촉 앵커 | 원문 금지와 카메라 예외의 적용 대상을 보존한다. |

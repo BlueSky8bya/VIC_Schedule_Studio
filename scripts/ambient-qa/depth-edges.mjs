@@ -8,7 +8,8 @@ import { BASE, parseArgs, fixtureUrl, openFixture, advance, assertServer, captur
 const args = parseArgs();
 const base = String(args.base ?? BASE);
 const out = String(args.out ?? ".scratch-pw/qa/r18-depth/edges");
-const selected = new Set(String(args.only ?? "large,pan,input,mobile").split(","));
+const selected = new Set(String(args.only ?? "large,input,mobile").split(","));
+if ([...selected].some(name => !["large", "input", "mobile"].includes(name))) throw new Error("Unknown meadow spatial suite");
 fs.mkdirSync(out, { recursive: true });
 const report = { build: args.build ?? null, base, source: gitInfo(), started: new Date().toISOString(), checks: [], errors: [],
   limitations: ["Mobile checks use Chromium emulation, not physical devices.", "Memory gate counts depth pool, transition panel and foreground only; excludes existing scene sources, decode and GPU copies.", "Alpha checks read raw canvas edges, not page-composited screenshots."] };
@@ -43,7 +44,7 @@ try {
   const large = await newContext({ viewport: { width: 3840, height: 2160 }, deviceScaleFactor: 1.5 });
   try {
     const page = await large.newPage();
-    for (const biome of selected.has("large") ? ["mountain", "pond", "sea", "deep"] : []) await run("4K " + biome, async () => {
+    for (const biome of selected.has("large") ? ["meadow"] : []) await run("4K " + biome, async () => {
       await openFixture(page, url(biome));
       await advance(page, 250);
       const origin = await edgeAlpha(page);
@@ -62,23 +63,8 @@ try {
   const desktop = await newContext({ viewport: { width: 1400, height: 860 }, deviceScaleFactor: 1 });
   try {
     const page = await desktop.newPage();
-    for (const [from, to, axis] of selected.has("pan") ? [["meadow", "forest", "horizontal"], ["sea", "deep", "vertical"]] : []) await run(axis + " pan", async () => {
-      await openFixture(page, url(from));
-      await page.evaluate(() => window.__vicAmbient.forcePointer({ x: 1400, y: 860 }));
-      await advance(page, 500);
-      const accepted = await page.evaluate(to => window.__vicAmbient.goTo(to), to);
-      await page.evaluate(() => window.__vicAmbient.ready());
-      await advance(page, 0);
-      await advance(page, 300);
-      const middle = await snapshot(page, axis + "-middle");
-      await advance(page, 400);
-      const end = await snapshot(page, axis + "-end");
-      check(axis + " arrives", accepted && end.scene.biome === to && !end.scene.moving, { middle: middle.scene, end: end.scene });
-      check(axis + " pan depth memory <80MiB", allocated(middle.scene.depthCache) < 80 * 1024 * 1024 && allocated(end.scene.depthCache) < 80 * 1024 * 1024, { middle: middle.scene.depthCache, end: end.scene.depthCache });
-      check(axis + " pan raw edges opaque", middle.alpha.every(e => e.gaps === 0) && end.alpha.every(e => e.gaps === 0), { middle: middle.alpha, end: end.alpha });
-    });
     if (selected.has("input")) await run("pointer semantics and zoom", async () => {
-      await openFixture(page, url("pond"));
+      await openFixture(page, url("meadow"));
       await advance(page, 250);
       check("no mouse starts centered", centered((await detail(page)).depth));
       await page.evaluate(() => window.dispatchEvent(new PointerEvent("pointermove", { pointerType: "touch", clientX: 0, clientY: 0 })));
@@ -123,7 +109,7 @@ try {
         return { available: true, before, after, duck: s.duck, x, y };
       });
       check("zoom + scroll actual duck hit", hit.available && hit.after > hit.before, hit);
-      await snapshot(page, "zoom-pond");
+      await snapshot(page, "zoom-meadow");
     });
   } finally { await desktop.close(); }
 

@@ -1,3 +1,5 @@
+> 2026-10-23: 이 기록의 비초원 지도는 [사용자 요청으로 퇴역](../retired-maps-20261023.md)했습니다. 아래 내용은 당시 기록이며 현재 실행·검수 명령이 아닙니다.
+
 # R78 — Shallow sea placement and concept
 
 Owner requested minimap/navigation placement and a shallow sea concept. Twelve biomes now: three coast cells feed shallow (y=2), open sea (y=3), deep (y=4). Returning north preserves the coast column; marine left/right remain blocked. Existing saved string keys remain valid.

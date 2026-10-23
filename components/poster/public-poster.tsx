@@ -44,7 +44,7 @@ import { AmbientLayer } from "@/components/shared/ambient/ambient-layer";
 import { TeaserCountdown as TeaserBigCountdown } from "@/components/shared/teaser-countdown";
 import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
 import { pickAmbient } from "@/components/shared/ambient/registry";
-import { ShowcaseExit, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
+import { ShowcaseExit, useShowcaseEnvironment, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
 import { PanelSection } from "@/components/shared/panel-section";
 import { SettingsButton } from "@/components/shared/settings-button";
 import { CompanionHomeLauncherSlot, CompanionHomeShelfSlot } from "@/components/shared/companion-home-slots";
@@ -868,6 +868,11 @@ export function PublicPoster({
   // 연다. 상태는 공용 훅 한 벌(components/shared/use-settings-prefs.ts), 목록도 편집실과 같은 컴포넌트.
   // 포스터 테마·개발자 시간여행 줄은 편집실(소유자·개발자) 몫이라 여기선 넘기지 않는다.
   const settingsPrefs = useSettingsPrefs();
+  const scenery = useShowcaseEnvironment({
+    year: view.year, month: view.month,
+    seasonForce: ambientForce, worldForce: ambientWorldForce,
+    gfxPref: settingsPrefs.gfxPref, onChangeGfxPref: settingsPrefs.changeGfxPref
+  });
   const companionDesktop = useCompanionDesktop();
   useEffect(() => { if (!companionDesktop) setCompanionBook(false); }, [companionDesktop]);
   const insightsOpen = sheet !== null;
@@ -4155,15 +4160,15 @@ export function PublicPoster({
     >
       {/* 앰비언트 배경(ADR-0016 물결 + ADR-0017 계절, components/shared/ambient — 편집실과 같은
           컴포넌트). 표면(data-export-surface) 밖의 페이지 배경에만 얹혀 공식 PNG 캡처엔 안 들어간다. */}
-      <div className="pm-ambient-shell" data-pm-exit="4">{!showAgenda ? <AmbientLayer force={ambientForce} month={view.month} slug={schedule.calendar.slug} worldForce={ambientWorldForce} year={view.year} /> : null}</div>
-      <ShowcaseExit />
+      <div className="pm-ambient-shell" data-pm-exit="4">{!showAgenda ? <AmbientLayer force={scenery.seasonForce} month={view.month} slug={schedule.calendar.slug} worldForce={scenery.worldForce} year={view.year} /> : null}</div>
+      <ShowcaseExit settings={scenery.settings} />
       {companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed ? <ViewerCompanion onOpenBook={destination => {
         // A warm child's layout effect can focus its radio before our passive
         // opener effect. Remember the real activation while it still owns focus.
         if (sheet !== "settings") settingsOpenerRef.current = document.activeElement as HTMLElement | null;
         setCompanionPersonality(destination === "personality"); setCompanionBook(true); setSheet("settings");
       }} root={posterRootRef} preferences={settingsPrefs.companionPrefs}
-        context={{ slug: schedule.calendar.slug, year: view.year, month: view.month, season: pickAmbient(ambientWorldForce?.month ?? view.month, ambientForce ?? null).season, force: ambientWorldForce }}
+        context={{ slug: schedule.calendar.slug, year: view.year, month: view.month, season: pickAmbient(scenery.worldForce?.month ?? view.month, scenery.seasonForce).season, force: scenery.worldForce }}
         positionMemory={positionMemory}
         fixtureFood={fixtureCompanionFood}
               blocked={Boolean(monthPick || giftCard || gachaOpen)}
@@ -5057,7 +5062,7 @@ export function PublicPoster({
                 <SoopLiveBeacon inRail live={soopLive} />
                 {renderLegendFilter(true)}
                 {/* 배경 감상 진입(2026-09-04) — 레일 맨 아래, 태그 필터 밑의 조용한 계절 버튼(시청자·비로그인 모두). */}
-                {interactive ? <ViewerAmbientControl collapsible className="rail-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
+                {interactive ? <ViewerAmbientControl collapsible className="rail-showcase" season={pickAmbient(view.month, scenery.seasonForce).season} /> : null}
               </>
             )}
           </aside>
@@ -5089,7 +5094,7 @@ export function PublicPoster({
             <div className="slot-legend" data-pm-exit="2">{renderLegendFilter(false)}</div>
             {/* 아바타 scene에선 계절 배경 카드가 아바타 자리 위쪽으로(레일이 접히므로). 점선 박스 **밖·위** —
                 안에 절대 배치하면 박스의 둥근 윗변이 카드 위로 삐져나온다(2026-09-04 소유자, 편집실과 동일). */}
-            {interactive ? <ViewerAmbientControl collapsible className="slot-showcase" season={pickAmbient(view.month, ambientForce ?? null).season} /> : null}
+            {interactive ? <ViewerAmbientControl collapsible className="slot-showcase" season={pickAmbient(view.month, scenery.seasonForce).season} /> : null}
             {companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed ? <div className="vc-home-host" ref={companionHomeHostRef} /> : null}
             {/* 아바타 빈 자리 — 관리자·개발자(avatarSlot)·/onair 고정 scene에만. 일반 시청자 패널은 카드까지만. */}
             {avatarCapable ? (
