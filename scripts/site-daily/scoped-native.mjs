@@ -10,16 +10,21 @@ import {snapshotEligible,childEnvironment,ownedTerminationCommand} from '../comp
 import {AUDITED_MACHINE_METADATA,validateAuditedMachineMetadata} from '../companion-qa/machine-metadata.mjs';
 import {dayOrdinal} from './catalog.mjs';
 import {caseId,nativeCaseFingerprint,productDependencies,flattenReporter,actualOutcome,continuationCases} from './selection.mjs';
-import {sha,hashJson,writeNew,regular,manifest,verifyFiles,verifyRun} from './receipts.mjs';
+import {sha,hashJson,writeNew,regular,manifest,verifyFiles,verifyRun,verifyBuildReceipt,selectBuildReceipt,readBuildHistory,rememberBuildReceipt} from './receipts.mjs';
 export function options(argv){
   const o={root:process.cwd(),minutes:15,listOnly:false};
-  const names={'--root':'root','--plan':'plan','--continue-from':'prior','--receipt-sha':'receiptSha','--reuse-build':'reuseBuild','--build-receipt-sha':'buildReceiptSha','--minutes':'minutes','--source-manifest':'sourceManifest'};
+  const names={'--root':'root','--plan':'plan','--continue-from':'prior','--receipt-sha':'receiptSha','--reuse-build':'reuseBuild','--build-receipt-sha':'buildReceiptSha','--build-history':'buildHistory','--minutes':'minutes','--source-manifest':'sourceManifest'};
   for(let i=0;i<argv.length;i++)if(argv[i]==='--list-only')o.listOnly=true;else if(names[argv[i]]){const value=argv[++i];if(!value||value.startsWith('--'))throw Error('missing-option-value');o[names[argv[i-1]]]=value;}else throw Error('unknown-option');
   o.root=path.resolve(o.root);o.minutes=Number(o.minutes);
   if(!o.plan||!Number.isInteger(o.minutes)||o.minutes<2||o.minutes>30||o.prior&&!o.receiptSha||o.reuseBuild&&!o.buildReceiptSha||o.prior&&o.reuseBuild)throw Error('invalid-scoped-options');return o;
 }
 const buildExclude=p=>p==='cache'||p.startsWith('cache/');
 const escape=value=>value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+export function buildHistoryCandidateFile(o){
+  if(o.prior||o.reuseBuild)return undefined;
+  if(o.buildHistory)return o.buildHistory;
+  const file=path.join(o.root,'.scratch-pw/site-daily/build-history.json');return fs.existsSync(file)?file:undefined;
+}
 export function validateSourceManifest(rows){
   if(!Array.isArray(rows)||rows.length>10000||rows.some(file=>typeof file!=='string'||file.includes('\\')||!snapshotEligible(file))||new Set(rows).size!==rows.length)throw Error('invalid-explicit-source-manifest');
   return rows;
@@ -33,7 +38,7 @@ export async function run(o){
   const started=Date.now(),deadline=started+o.minutes*60000,root=o.root;
   const plan=JSON.parse(fs.readFileSync(o.plan,'utf8')),selected=validatePlan(plan);
   const prior=o.prior?verifyRun(o.prior,o.receiptSha):undefined;
-  const reusable=o.reuseBuild?verifyRun(o.reuseBuild,o.buildReceiptSha):prior;
+  let reusable=o.reuseBuild?verifyBuildReceipt(o.reuseBuild,o.buildReceiptSha):prior;
   const out=path.join(root,'.scratch-pw/site-daily/native',plan.day+'-'+Date.now()+'-'+randomUUID().slice(0,8)),workspace=path.join(out,'workspace');
   fs.mkdirSync(workspace,{recursive:true});writeNew(path.join(out,'plan.json'),plan);
   const git=args=>execFileSync('git',['--no-optional-locks','-C',root,...args],{encoding:'utf8',windowsHide:true,maxBuffer:32*1024*1024});
@@ -51,8 +56,13 @@ export async function run(o){
   const runtime={node:process.version,platform:process.platform,arch:process.arch,...Object.fromEntries(['next','@playwright/test','playwright-core'].map(name=>[name,JSON.parse(fs.readFileSync(path.join(root,'node_modules',name,'package.json'))).version]))};
   const browser=await import(pathToFileURL(path.join(root,'node_modules/playwright-core/index.mjs')).href);const executable=browser.chromium.executablePath();runtime.chromiumExecutableSha=sha(fs.readFileSync(executable));
   const productKey=hashJson({files:productDependencies(sourceFiles),runtime});
+  const buildHistory=buildHistoryCandidateFile(o);
+  if(buildHistory){
+    const choice=selectBuildReceipt(readBuildHistory(buildHistory),productKey);reusable=choice.selected;
+    writeNew(path.join(out,'build-candidates.json'),{version:1,productKey,selected:reusable?{receipt:reusable.receipt,sha256:reusable.receiptSha}:null,rejected:choice.rejected,casePassReuse:false});
+  }
   const networkLog=path.join(out,'network-denied.jsonl'),guard={NODE_OPTIONS:`--import=${pathToFileURL(path.join(workspace,'scripts/companion-qa/network-guard.mjs')).href}`,COMPANION_QA_NETWORK_LOG:networkLog,GIT_CEILING_DIRECTORIES:out};
-  const children=new Set(),closed=new WeakMap(),stages=[];let interrupted=false,cleanupOk=true,buildId=null,buildFiles=null,rows=[],continuation={run:selected,reuse:[],invalidated:[],fullRestart:false},failure=null;
+  const children=new Set(),closed=new WeakMap(),stages=[];let interrupted=false,cleanupOk=true,buildId=null,buildFiles=null,buildReuse=null,rows=[],continuation={run:selected,reuse:[],invalidated:[],fullRestart:false},failure=null;
   function own(child){children.add(child);closed.set(child,new Promise(resolve=>child.once('close',resolve)));return child;}
   async function stop(child){
     if(!child)return;
@@ -74,6 +84,7 @@ export async function run(o){
     if(!o.listOnly){
       if(reusable&&reusable.result.productKey===productKey){
         for(const item of reusable.build.files){const from=regular(path.join(reusable.dir,'workspace/.next'),item.path),target=path.join(workspace,'.next',item.path);fs.mkdirSync(path.dirname(target),{recursive:true});fs.copyFileSync(from,target,fs.constants.COPYFILE_EXCL);if(sha(fs.readFileSync(target))!==item.sha256)throw Error('build-copy-mutated');}
+        buildReuse={version:1,verification:prior?'case-run':'build',receipt:path.resolve(prior?o.prior:reusable.buildOrigin.receipt),sha256:prior?o.receiptSha:reusable.buildOrigin.sha256};
         stages.push({name:'verified-product-build-reuse',code:0,wallMs:0});
       }
       else{if(await command('metadata',['scripts/generate-ambient-art-metadata.mjs'])!==0||await command('build',['node_modules/next/dist/bin/next','build'])!==0)throw Error('focused-build-failed');}
@@ -106,7 +117,9 @@ export async function run(o){
   const guardsClear=!fs.existsSync(networkLog)||fs.statSync(networkLog).size===0;
   const cases=selected.map(c=>{const reuse=continuation.reuse.find(x=>x.id===c.id),raw=rows.find(x=>x.id===c.id);return reuse?{id:c.id,fingerprint:reuse.fingerprint,outcome:'reused',proofRef:reuse.proofRef,proofSha:reuse.proofSha}:{id:c.id,fingerprint:o.listOnly?hashJson({registrationOnly:c.id}):continuation.fingerprint?.(c)??hashJson({id:c.id,failedBeforeFingerprint:true}),outcome:raw?actualOutcome(raw):'not-run'};});
   const evidence=manifest(out,{exclude:p=>p==='workspace'||p.startsWith('workspace/')});if(fs.existsSync(path.join(workspace,'scoped.generated.config.ts')))evidence.push({path:'workspace/scoped.generated.config.ts',sha256:sha(fs.readFileSync(path.join(workspace,'scoped.generated.config.ts')))});
-  const result={schemaVersion:1,kind:'focused-native-result',day:plan.day,at:new Date().toISOString(),wallMs:Date.now()-started,fullCertification:false,normal36:'UNVERIFIED',runtime,productKey,buildId,integrity:{sourceUnchanged:sourceUnchanged&&buildUnchanged,guardsClear,ownedProcessesClosed:cleanupOk&&!interrupted},executedIds:continuation.run.map(c=>c.id),cases,stages,evidence,failure,listOnly:o.listOnly,notSelected:plan.companion.selection.notSelected??[],scopeSatisfied:!o.listOnly&&!failure&&sourceUnchanged&&buildUnchanged&&guardsClear&&cleanupOk&&!interrupted&&cases.every(c=>['passed','reused'].includes(c.outcome)),independentReview:'required-for-the-changed-scope-not-per-item-full-media'};
-  const file=path.join(out,'result.json');writeNew(file,result);return {file,sha256:sha(fs.readFileSync(file)),scopeSatisfied:result.scopeSatisfied,listOnly:o.listOnly,selected:cases.length,actualPassed:cases.filter(c=>c.outcome==='passed').length,reused:cases.filter(c=>c.outcome==='reused').length,failure,wallMs:result.wallMs};
+  const result={schemaVersion:1,kind:'focused-native-result',day:plan.day,at:new Date().toISOString(),wallMs:Date.now()-started,fullCertification:false,normal36:'UNVERIFIED',runtime,productKey,buildId,buildReuse,integrity:{sourceUnchanged:sourceUnchanged&&buildUnchanged,guardsClear,ownedProcessesClosed:cleanupOk&&!interrupted},executedIds:continuation.run.map(c=>c.id),cases,stages,evidence,failure,listOnly:o.listOnly,notSelected:plan.companion.selection.notSelected??[],scopeSatisfied:!o.listOnly&&!failure&&sourceUnchanged&&buildUnchanged&&guardsClear&&cleanupOk&&!interrupted&&cases.every(c=>['passed','reused'].includes(c.outcome)),independentReview:'required-for-the-changed-scope-not-per-item-full-media'};
+  const file=path.join(out,'result.json');writeNew(file,result);const digest=sha(fs.readFileSync(file));let buildHistoryUpdate;
+  if(!o.listOnly)try{buildHistoryUpdate=rememberBuildReceipt(file,digest,path.join(root,'.scratch-pw/site-daily/build-history.json'));}catch(error){buildHistoryUpdate={remembered:false,reason:error.message,casePassReuse:false};}
+  return {file,sha256:digest,scopeSatisfied:result.scopeSatisfied,listOnly:o.listOnly,selected:cases.length,actualPassed:cases.filter(c=>c.outcome==='passed').length,reused:cases.filter(c=>c.outcome==='reused').length,failure,wallMs:result.wallMs,buildHistoryUpdate};
 }
 if(process.argv[1]&&pathToFileURL(path.resolve(process.argv[1])).href===import.meta.url)run(options(process.argv.slice(2))).then(r=>{console.log(JSON.stringify(r));if(!r.scopeSatisfied&&!r.listOnly)process.exitCode=1;}).catch(()=>{console.error('Focused QA stopped; preserve evidence. No full-suite fallback.');process.exitCode=1;});

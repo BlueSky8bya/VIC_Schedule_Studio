@@ -18,6 +18,8 @@ node scripts/site-daily/scoped-native.mjs --plan <동일 계획>/plan.json --con
 
 `runner`의 기본은 계획만 생성한다. `--changed <경로 배열 JSON>`, `--signals <허용 집계 JSON>`, `--ideas <목록 JSON>`도 지원한다. `--base` 없이 HEAD만 비교하면 그동안 커밋한 변경을 놓칠 수 있으므로 마지막 검사 ref를 전달한다. `--list-only`는 현재 exact 등록만 대조하며 실제 실행/PASS가 아니다. `--reuse-build <result.json> --build-receipt-sha <SHA>`는 입력이 같은 검증된 빌드만 복사하고 native는 새로 실행한다.
 
+`scoped-native`는 별도 옵션이 없으면 해당 checkout의 `.scratch-pw/site-daily/build-history.json`에서 같은 제품 입력의 검증된 빌드를 먼저 찾는다. `--build-history <pinned receipt 배열 JSON>`으로 후보 목록을 명시할 수 있다. 종료한 실행의 빌드 무결성이 확인되면 이 전용 목록을 원본 compile 영수증으로 접어 원자적으로 갱신하고 최대200개를 유지한다. 테스트 실패와 빌드 실패는 구별한다. 정상 빌드 뒤 테스트가 실패해도 빌드 바이트만 재사용할 수 있고, 실패 사례는 다시 실제 실행한다. 이 목록은 case-history나 PASS 인증이 아니다. 파일·제품 입력·런타임·guard·종료 증명이 맞지 않으면 재사용하지 않는다. CLI의 `buildHistoryUpdate.reason`이 있으면 갱신 누락을 다음 점검에 이월하며 원검사 결과와 구분한다.
+
 ## 주간 회전과 이월
 
 `native-catalog.json`은 과거200개 등록과 전등21개·구독 영상 시각 링크4개·승인된 생활 의도/이동의6개 공유 표면 관측과 실제 탐험 도중 실물 조사·원목적 재개1개를 합친232개의 **등록 목록**이다. 새6개는 viewer/studio/preview × 탐험둥이/먹보의 실제90초와 중간 새 실물 장난감 입력을 기록하며, 등록만으로 새 자극에 대한 특정 반응·반복 감소·정상속도 영상 승인을 뜻하지 않는다. 기본262px 집의 근거리 좌/우 진입·soft·OS reduce 회귀4개와 줄 hover/제보된 옵션 조합3개도 포함한다. 과거 실제 시간은 선택 비용의 추정값이며 현재 PASS나 실측 절감이 아니다. 긴 순서부터 가장 가벼운 묶음에 배치해7개 묶음을 만들고, 실제 성공 관측이 가장 오래되거나 없는 사례를 우선한다. missed day/실패/예산 초과의 미실행은 이월한다. 필수 위험 사례가42개 상한에 걸리면 `pendingPriorityIds`에 남긴다. 실패가 많은 주에는7일 내 전부 끝난다고 보장하지 않고 실제 고유 관측 수/누락을 보고한다. 7일간 매일 한 영역을 관측했다는 상태도 모든 설정의 안정성 인증이 아니다.
@@ -50,6 +52,17 @@ node scripts/site-daily/qa-storage.mjs --root <같은 프로젝트> --state <같
 일일 기본은3분·2GiB·1000파일이며 원본을 전부 다시 복사하지 않는다. 현재 state의 작업·native·build가 실제 종료한 뒤 실행한다. 프로젝트별 작은 cursor/미완료 목록과 `.scratch-pw/site-daily/qa-storage-schedule.json`의 명시 루트 순환을 사용한다. 매일 모든 QA JSON/영상 내용을 다시 읽지 않으며, 예산 초과·잠김·작업 중인 항목은 다음 실행으로 이월한다. 전체 저장공간 집계는 주간 또는 용량 급증 때 한정한다.
 
 결과에는 경로별 논리 크기, 처리한 단일 링크 파일의 실제 할당량 전후 차이, 처리·생략·실패·이월을 기록한다. 기존 하드링크 때문에 경로별 합산을 물리적 고유 점유량으로 표현하지 않는다. ZIP·영상·이미지는 이미 압축되어 추가 절감이 작을 수 있으며, 절감률을 미리 보장하지 않는다. 원 report/receipt와 실패 증거를 보존하고 과거부터 없던 참조는 새로운 압축 회귀와 구분한다. 상태 변화 없는 반복 결과는 조용히 유지하며 큰 용량 증가·무결성 오류·의미 있는 절감·사용자 판단이 필요한 내용만 알린다.
+
+2026-10-23 추가 승인으로 [캐시 회수 계획](../../docs/agent/plans/PLAN-20261023-qa-reclaim.md)의 **종료된 QA snapshot의 검증에서 제외된 재생성용 `.next/cache`만** 삭제할 수 있다. 위의 삭제 금지 제한은 이 범위에서만 대체된다. 전체 snapshot, runtime 빌드, `.next/types`, 원본 영상·trace·실패, 소스·자산과 현재 작업 checkout의 빌드는 보존한다. 크기·이름·날짜가 비슷한 ZIP을 중복으로 취급하지 않는다.
+
+`qa-reclaim.mjs`는 기본적으로 계획만 생성한다. 정확한 `result/build/source-freeze` 바인딩, 단일 링크·안전 경로·파일 SHA와 실제 할당량, 종료 state/프로세스와 문서 참조를 확인한다. 해당 root 및 primary의 reports/plans/state/history를 제한된 크기로 자동 보호하며 추가 `--reference`도 합친다. 직접/상대 링크, 보호 파일집합·해시·활성 상태가 달라지면 적용을 중단한다. 세부 native 작업 영수증과 삭제 전후 참조/제어 해시를 남긴다. 원본 증거를 다시 복사해 용량을 늘리지 않는다.
+
+```powershell
+node scripts/site-daily/qa-reclaim.mjs --root <확인한 프로젝트> --state <현재 primary state.json> --minutes 3 --max-bytes 2147483648 --max-files 1000
+node scripts/site-daily/qa-reclaim.mjs --root <같은 프로젝트> --state <같은 state.json> --minutes 3 --max-bytes 2147483648 --max-files 1000 --apply --plan <출력 plan.json> --plan-sha <출력 SHA256>
+```
+
+일일 저장공간 관리의 **계획+적용 합계3분·2GiB·1000파일** 안에서 캐시 회수를 우선하고 남은 예산에 기존 무손실 압축을 수행한다. 최소24시간 지난 종료 자료만 순환하며 시간/파일/바이트를 잔여 예산으로 전달한다. 선택 캐시보다 한도가 작거나 보호·무결성 증명이 부족하면 보류/이월한다. 새 QA 실행이나 docs/state 변경과 동시에 적용하지 않는다. 실제 유지 중인 case-history 원증거의 무결성 검사는 이미 수행한 같은 실행 결과를 재사용하고, 회수 후 영향을 받은 retained 증거를 확인한다. 매일 전체 원영상/300GB를 다시 해시하지 않는다. 주간 인벤토리에서 실제 절감·누락·보호된 고유 증거와 성장률을 비교한다.
 
 ## 아이디어·프라이버시·검수
 
