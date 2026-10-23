@@ -133,15 +133,28 @@ describe("direct seasonal departure", () => {
     const frames = Array.from({ length: 14 }, () => walker.sample(50, view, prefs)!);
     expect(frames.some(frame => frame.groundY - frame.y > 100)).toBe(true);
     expect(frames.at(-1)).toMatchObject({ status: "idle", row: 0 });
-    expect(frames.at(-1)!.groundY).toBeCloseTo(824.5);
+    expect(frames.every(frame => Math.abs(frame.x - 160) < .00001)).toBe(true);
+    expect(frames.at(-1)!.groundY).toBeCloseTo(500);
     expect(walker.settling()).toBe(false);
     expect(walker.sample(50, view, prefs)!.x).toBe(frames.at(-1)!.x);
+  });
+  it.each([{ x: 90, y: 950, ground: 950 }, { x: 1330, y: 500, ground: 500 }, { x: 750, y: 100, ground: 374 }])("lands directly beneath the original foot at $x/$y", ({ x, y, ground }) => {
+    const walker = createCompanionMeadowWalk(() => .5), view = { width: 1440, height: 1000 };
+    walker.enter({ x, y }, view);
+    const prefs = { ...DEFAULT_COMPANION_PREFERENCES, roam: false, jump: false };
+    for (let index = 0; index < 14; index++) {
+      const frame = walker.sample(50, view, prefs)!;
+      expect(frame.x).toBeCloseTo(x); expect(frame.groundY).toBeGreaterThanOrEqual(y - .00001);
+    }
+    const landed = walker.sample(0, view, prefs)!;
+    expect(landed.x).toBeCloseTo(x); expect(landed.y).toBeCloseTo(ground);
+    expect(landed.status).toBe("idle");
   });
   it("lands immediately without an arc for reduced motion and lets direct placement cancel entry", () => {
     const walker = createCompanionMeadowWalk(() => .5), view = { width: 1440, height: 1000 };
     walker.enter({ x: 160, y: 500 }, view);
     const quiet = walker.sample(0, view, DEFAULT_COMPANION_PREFERENCES, false)!;
-    expect(quiet.status).toBe("idle"); expect(quiet.y).toBe(quiet.groundY); expect(walker.settling()).toBe(false);
+    expect(quiet.status).toBe("idle"); expect(quiet.x).toBeCloseTo(160); expect(quiet.y).toBeCloseTo(500); expect(walker.settling()).toBe(false);
     walker.enter({ x: 160, y: 500 }, view); walker.place({ x: 250, y: 800 }, view);
     expect(walker.sample(0, view, DEFAULT_COMPANION_PREFERENCES)!).toMatchObject({ x: 250, y: 800 });
   });

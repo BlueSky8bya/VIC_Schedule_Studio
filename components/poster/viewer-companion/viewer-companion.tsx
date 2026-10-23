@@ -133,7 +133,7 @@ import "./viewer-companion.css";
 
 type Props = { onOpenBook: (destination?: "personality") => void; root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; workspaceBusy?: boolean; editing?: boolean; agenda: boolean; monthKey: string; context?: CompanionHomeEnvironmentContext; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; launcherHost?: HTMLElement | null; compactHost?: HTMLElement | null; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void; positionMemory?: CompanionPositionMemory; fixtureFood?: CompanionFoodKind };
 type Control = Record<Exclude<CompanionHomeAction, "book"> | "place" | "rest" | "toys" | "toyChanged" | "toyTouched" | "toyReturned", () => void>;
-type RuntimeAction = CompanionAction & { petResponse?: true; homeLife?: CompanionHomeLifeAction["homeLife"]; toyPerformance?: { id: string; kind: CompanionToyKind }; foodAftertaste?: CompanionFoodAftertaste; workExpression?: CompanionWorkExpressionOffer; personalityScene?: PersonalitySceneBeat; personalityJobEnd?: true; foodRefusal?: { foodId: string; kind: CompanionFoodKind }; toyMishap?: CompanionToyTripWitness; personalitySignature?: CompanionPreferences["personality"]; scene?: CompanionSceneAction["scene"]; toy?: CompanionToyAction["toy"]; toyApproach?: { element: HTMLElement; effect: "stash" | "spawn"; duration: number }; household?: CompanionHouseholdBeat; radio?: { generation: number; reaction: CompanionRadioReaction; bpm: number; instrument?: CompanionInstrumentReaction } };
+type RuntimeAction = CompanionAction & { showcaseHomecoming?: true; petResponse?: true; homeLife?: CompanionHomeLifeAction["homeLife"]; toyPerformance?: { id: string; kind: CompanionToyKind }; foodAftertaste?: CompanionFoodAftertaste; workExpression?: CompanionWorkExpressionOffer; personalityScene?: PersonalitySceneBeat; personalityJobEnd?: true; foodRefusal?: { foodId: string; kind: CompanionFoodKind }; toyMishap?: CompanionToyTripWitness; personalitySignature?: CompanionPreferences["personality"]; scene?: CompanionSceneAction["scene"]; toy?: CompanionToyAction["toy"]; toyApproach?: { element: HTMLElement; effect: "stash" | "spawn"; duration: number }; household?: CompanionHouseholdBeat; radio?: { generation: number; reaction: CompanionRadioReaction; bpm: number; instrument?: CompanionInstrumentReaction } };
 const sampleWorldMusic = (music: NonNullable<RuntimeAction["radio"]>, age: number) => music.instrument ? sampleCompanionInstrumentReaction(music.instrument, age, music.bpm) : sampleCompanionRadioReaction(music.reaction, age, music.bpm);
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -553,7 +553,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     let homeWaitingGeometry = false, homeValidationRequested = false, homeLookUsed = false, homeLegs = 0;
     let homeEntryFloor: string | undefined;
     let pendingHomeRecall: HTMLElement | undefined;
-    let pendingShowcaseHomeReturn = false;
+    let pendingShowcaseHomeReturn: { x: number; y: number; scale: number } | undefined;
     const pendingFeeds = createCompanionFeedCommands<HTMLElement>();
     type ItemGeometry = { platforms: Platform[]; landings: readonly Platform[]; contacts: readonly Platform[]; anchor: CompanionGeometrySubscription["anchor"] };
     let itemGeometry: CompanionGeometrySubscription | undefined;
@@ -3519,7 +3519,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           if (completed.kind === "jump" && verticalLanding) verticalRecoveryX = undefined;
           let arrivalPlay: CompanionAction["play"] = undefined;
           if (completed.kind === "jump" && !completed.homeLife && shakenReleasePending && supportedNow() && !homeJourney && !ejected && !overlayActive && !workspaceBusyRef.current && !reduced && gfxMode() !== "off") arrivalPlay = "dizzy";
-          else if (completed.kind === "jump" && !completed.homeLife && !completed.foodId && !completed.episode && !completed.scene && !completed.toy && !completed.personalityScene && !homeJourney && !restAfterLanding && !ejected && !overlayActive && !workspaceBusyRef.current && !reduced && gfxMode() !== "off" && presence.phase === "active") {
+          else if (completed.kind === "jump" && !completed.showcaseHomecoming && !completed.homeLife && !completed.foodId && !completed.episode && !completed.scene && !completed.toy && !completed.personalityScene && !homeJourney && !restAfterLanding && !ejected && !overlayActive && !workspaceBusyRef.current && !reduced && gfxMode() !== "off" && presence.phase === "active") {
             const landing = supportById(support);
             const node = geometryTracker?.anchor(support)?.element?.closest<HTMLElement>(".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],[data-companion-event='ordinary'][data-eventid]");
             const ordinary = Boolean(node && !node.matches(".selected,.primary-selected,.dragging-src,.span-drag-src,.connect-target,.connect-hover,.connect-dim,.filter-dim,.is-editing,.is-selected") && collectCompanionHideTargets(page).some(target => target.element === node));
@@ -3904,7 +3904,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         clearAction(); cancelHomeJourney(); pendingPosition.current = null;
         supportMotion.reset(); resetInertia(); afterPetLanding = restAfterLanding = false;
         if (returnedMeadowPet.home) {
-          pendingShowcaseHomeReturn = true; needsLanding = false;
+          pendingShowcaseHomeReturn = { x: returnedMeadowPet.x, y: returnedMeadowPet.y, scale: returnedMeadowPet.scale ?? 1 }; needsLanding = false;
           support = COMPANION_WASH_SUPPORT; homeOccluded = true; el.hidden = true;
           setHomeExpanded(true);
           setPanelSectionExpanded("companion-home", true);
@@ -4409,13 +4409,19 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         // A folded/remounting house keeps this request until its real shower
         // stance is measured. Never substitute a calendar or a generic floor.
         if (!mat) { homeOccluded = true; el.hidden = true; return; }
-        pendingShowcaseHomeReturn = false; freshHomePending = false;
-        clearAction(); needsLanding = false; awaitingAtX = false; homeOccluded = false;
-        x = platformLandingX(mat, mat.x + mat.width / 2); y = mat.y; support = mat.id;
+        const departure = pendingShowcaseHomeReturn;
+        pendingShowcaseHomeReturn = undefined; freshHomePending = false;
+        clearAction(); stopHover(); petUntil = 0; needsLanding = false; awaitingAtX = false; homeOccluded = false;
+        x = departure.x; y = departure.y; support = "";
+        pickupScale = departure.scale; pickupAt = geometryAt; pickupOffset = { x: 0, y: 0 };
         worldSeeded = true; returnTargetValid = true;
         presence.focus(visibleActive(), geometryAt, true); el.removeAttribute("data-dreaming");
         lastTick = lastNeeds = lastCare = lastPaint = geometryAt; nextDecision = geometryAt + 1450;
-        refreshAnchors(geometryAt); paint(0, 0, "idle"); schedule(); return;
+        const target = { x: platformLandingX(mat, mat.x + mat.width / 2), y: mat.y, platformId: mat.id };
+        const quiet = reduced || document.documentElement.hasAttribute("data-reduce-motion") || ["off", "soft"].includes(gfxMode());
+        if (quiet) { x = target.x; y = target.y; support = mat.id; pickupScale = 1; paint(0, 0, "idle"); }
+        else { launch({ kind: "jump", target, duration: 700, jumpHeight: 120, showcaseHomecoming: true }, geometryAt); paint(3, 0, "jump"); }
+        refreshAnchors(geometryAt); schedule(); return;
       }
       if (homeJourney && !platforms.some(p => p.id === "companion-home")) {
         if (!openHomeRecallTarget()) {

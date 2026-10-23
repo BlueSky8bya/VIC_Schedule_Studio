@@ -9,7 +9,7 @@ export type ShowcaseRect = { left: number; top: number; right: number; bottom: n
 type Kind = "pet" | "food" | "toy";
 export type CompanionShowcasePetInteraction = "pet" | "bonk" | "drag" | "throw" | "shake" | "rest" | "rested";
 type Participant = { kind: Kind; node: () => HTMLElement | undefined | null; point: () => ShowcasePoint | undefined; eligible?: () => boolean; interact?: (kind: CompanionShowcasePetInteraction) => void };
-export type CompanionShowcaseLease = ShowcasePoint & { width: number; height: number; bottomOffset: number; kind: Kind; pose?: number; rotation?: number; scaleX?: number; scaleY?: number };
+export type CompanionShowcaseLease = ShowcasePoint & { width: number; height: number; bottomOffset: number; kind: Kind; pose?: number; displayY?: number; displayScale?: number; rotation?: number; scaleX?: number; scaleY?: number };
 type Transition = { active: boolean; phase: "before" | "after" };
 const validRect = (r: ShowcaseRect) => [r.left, r.top, r.right, r.bottom].every(Number.isFinite) && r.right > r.left && r.bottom > r.top;
 export function companionShowcaseFootprint(point: ShowcasePoint, size: { width: number; height: number }): ShowcaseRect {
@@ -57,7 +57,7 @@ export function createCompanionShowcaseSession() {
   let active = false, revision = 0, covers: ShowcaseRect[] = [], frame = 0, attached = false, followUntil = 0;
   let ownershipRevision = 0, ownershipKey = "";
   let layoutObserver: MutationObserver | undefined;
-  let returnedPet: (ShowcasePoint & { home?: boolean }) | undefined;
+  let returnedPet: (ShowcasePoint & { home?: boolean; scale?: number }) | undefined;
   let roomCovers: { node: HTMLElement; rect: ShowcaseRect }[] = [];
   const notify = () => {
     revision++;
@@ -97,7 +97,7 @@ export function createCompanionShowcaseSession() {
       // Homecoming returns the same resident immediately, even when its
       // meadow foot lies behind the restored calendar or a panel.
       const pet = leases.get("pet");
-      if (pet) { returnedPet = { x: pet.x, y: pet.y, home: true }; leases.delete("pet"); }
+      if (pet) { returnedPet = { x: pet.x, y: pet.displayY ?? pet.y, home: true, ...(pet.displayY === undefined ? {} : { scale: pet.displayScale }) }; leases.delete("pet"); }
       active = false; covers = [...covers, ...restoredCovers()]; discardCoveredItems(); notify();
       if (!frame) frame = requestAnimationFrame(() => {
         if (active) { frame = 0; return; }
@@ -188,6 +188,12 @@ export function createCompanionShowcaseSession() {
       lease.x = Math.max(lease.width / 2, Math.min(innerWidth - lease.width / 2, point.x));
       lease.y = Math.max(lease.height - lease.bottomOffset, Math.min(innerHeight - 8 - lease.bottomOffset, point.y));
       if (publish) notify();
+    },
+    /** Displayed airborne foot is distinct from the ground used by input. */
+    presentPet(point: { y: number; scale: number }) {
+      const pet = leases.get("pet");
+      if (!pet || ![point.y, point.scale].every(Number.isFinite)) return;
+      pet.displayY = point.y; pet.displayScale = point.scale;
     },
     present(id: string, pose?: { rotation: number; scaleX: number; scaleY: number }) {
       const lease = leases.get(id); if (!lease) return;

@@ -47,6 +47,36 @@ async function expectHomecoming(page: Page) {
   expect(contact.y).toBeGreaterThanOrEqual(contact.mat.top - 2); expect(contact.y).toBeLessThanOrEqual(contact.mat.bottom + 2);
 }
 
+async function recordHomecoming(page: Page) {
+  return page.evaluate(() => {
+    const actor = document.querySelector<HTMLElement>(".vc-meadow-walk")!;
+    const departure = { x: Number(actor.dataset.x), y: Number(actor.dataset.y) };
+    const frames: { x: number; y: number; state: string; at: number }[] = [];
+    const started = performance.now();
+    (window as Window & { homecoming?: { departure: typeof departure; frames: typeof frames } }).homecoming = { departure, frames };
+    const sample = () => {
+      const pet = document.querySelector<HTMLElement>(".vc-companion");
+      if (pet && !pet.hidden) {
+        const box = pet.getBoundingClientRect();
+        frames.push({ x: box.left + box.width / 2, y: box.bottom, state: pet.dataset.state ?? "", at: performance.now() - started });
+      }
+      if (performance.now() - started < 3500) requestAnimationFrame(sample);
+    }; requestAnimationFrame(sample);
+    return departure;
+  });
+}
+
+async function expectReturnJump(page: Page, departure: { x: number; y: number }) {
+  await expectHomecoming(page);
+  const frames = await page.evaluate(() => (window as Window & { homecoming?: { frames: { x: number; y: number; state: string; at: number }[] } }).homecoming!.frames);
+  const jump = frames.filter(frame => frame.state === "jump");
+  expect(jump.length).toBeGreaterThan(5);
+  expect(Math.hypot(jump[0].x - departure.x, jump[0].y - departure.y)).toBeLessThan(30);
+  expect(jump[0].at).toBeLessThan(350);
+  for (let index = 1; index < jump.length; index++) expect(Math.hypot(jump[index].x - jump[index - 1].x, jump[index].y - jump[index - 1].y)).toBeLessThan(180);
+  return frames;
+}
+
 for (const surface of ["viewer", "studio", "preview"] as const) {
   test(`${surface}: home departure jumps during fade and covered physical items are removed on shower-pad return`, async ({ page }, info) => {
     const errors: string[] = []; page.on("pageerror", error => errors.push(error.message));
@@ -65,6 +95,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) {
     const foodIds = await page.locator(".vc-food").evaluateAll(nodes => nodes.map(node => (node as HTMLElement).dataset.food!));
     const toyIds = await page.locator(".vc-toy").evaluateAll(nodes => nodes.map(node => (node as HTMLElement).dataset.toyId!));
     const cover = await page.locator(surface === "viewer" || surface === "preview" ? ".public-calendar-area:visible" : ".studio-calendar-panel:visible").first().boundingBox(); expect(cover).not.toBeNull();
+    const source = await page.locator(".vc-companion").evaluate(node => { const rect = node.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.bottom }; });
     await page.evaluate(() => {
       const frames: { at: number; state: string; opacity: number; lift: number; x: number; y: number; ordinaryVisible: boolean }[] = [];
       let started = performance.now();
@@ -79,15 +110,20 @@ for (const surface of ["viewer", "studio", "preview"] as const) {
     });
     await enterCompanionMeadow(page); const meadow = page.locator(".vc-meadow-walk");
     await expect(meadow).toBeVisible(); await expect(meadow).toHaveAttribute("data-state", "idle", { timeout: 7000 });
-    const frames = await page.evaluate(() => (window as Window & { seasonFrames?: { at: number; state: string; opacity: number; lift: number; ordinaryVisible: boolean }[] }).seasonFrames ?? []);
+    const frames = await page.evaluate(() => (window as Window & { seasonFrames?: { at: number; state: string; opacity: number; lift: number; x: number; y: number; ordinaryVisible: boolean }[] }).seasonFrames ?? []);
     await info.attach("departure-frames", { body: JSON.stringify(frames), contentType: "application/json" });
     expect(frames[0]?.at).toBeLessThan(200);
     expect(frames.some(frame => frame.state === "jump" && frame.lift > 30 && frame.opacity > .05 && frame.opacity < 1)).toBe(true);
     expect(frames.every(frame => !frame.ordinaryVisible)).toBe(true);
+    expect(frames.every(frame => Math.abs(frame.x - source.x) < 2)).toBe(true);
+    expect(frames.at(-1)!.y).toBeGreaterThanOrEqual(source.y - 2);
     const covered = { x: cover!.x + cover!.width / 2, y: cover!.y + cover!.height * .6 };
     await placeItem(page, page.locator(`[data-food="${foodIds[0]}"]`), covered);
     await placeItem(page, page.locator(`[data-toy-id="${toyIds[0]}"]`), { x: covered.x + 70, y: covered.y });
-    await page.keyboard.press("Escape"); await expectHomecoming(page);
+    const departure = await recordHomecoming(page);
+    await page.keyboard.press("Escape");
+    const returnFrames = await expectReturnJump(page, departure);
+    await info.attach("return-frames", { body: JSON.stringify(returnFrames), contentType: "application/json" });
     await expect(page.locator(`[data-food="${foodIds[0]}"]`)).toHaveCount(0); await expect(page.locator(`[data-toy-id="${toyIds[0]}"]`)).toHaveCount(0);
     await expect(page.locator(`[data-food="${foodIds[1]}"]`)).toBeVisible(); await expect(page.locator(`[data-toy-id="${toyIds[1]}"]`)).toBeVisible();
     expect(await petIdentity!.evaluate(node => node.isConnected && node === document.querySelector(".vc-companion"))).toBe(true);
@@ -111,12 +147,30 @@ test("folded house opens on return and compact house restores its shower pad", a
   await placeCompanionOnExposedBackground(page, 180);
   const fold = home.locator('[data-home-action="fold"]'); if (await fold.getAttribute("aria-expanded") === "true") await fold.click();
   await enterCompanionMeadow(page); await expect(page.locator(".vc-meadow-walk")).toBeVisible();
-  await page.keyboard.press("Escape"); await expect(fold).toHaveAttribute("aria-expanded", "true"); await expectHomecoming(page);
+  const departure = await recordHomecoming(page);
+  await page.keyboard.press("Escape"); await expect(fold).toHaveAttribute("aria-expanded", "true"); await expectReturnJump(page, departure);
   await enterCompanionMeadow(page); await expect(page.locator(".vc-meadow-walk")).toBeVisible();
   await page.setViewportSize({ width: 1380, height: 900 });
   await expect(page.locator(".vc-meadow-walk")).toBeVisible();
   await page.keyboard.press("Escape"); await expectHomecoming(page);
   await expect(page.locator(".vc-compact-home")).toBeVisible();
+});
+
+test("local low landing keeps its horizontal position and an airborne exit jumps from the painted foot", async ({ page }, info) => {
+  await page.goto("/visual-fixture/poster?ambient=spring"); await openCompanionHome(page);
+  await placeCompanionOnExposedBackground(page, 90);
+  const source = await page.locator(".vc-companion").evaluate(node => { const rect = node.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.bottom }; });
+  await enterCompanionMeadow(page); const meadow = page.locator(".vc-meadow-walk");
+  await expect(meadow).toHaveAttribute("data-state", "jump");
+  await page.waitForFunction(() => { const pet = document.querySelector<HTMLElement>(".vc-meadow-walk"); return pet && Number(pet.dataset.groundY) - Number(pet.dataset.y) > 65; });
+  const departure = await recordHomecoming(page);
+  expect(departure.x).toBeCloseTo(source.x, 0); expect(departure.y).toBeLessThan(source.y - 40);
+  await page.keyboard.press("Escape"); const frames = await expectReturnJump(page, departure);
+  await info.attach("airborne-return-frames", { body: JSON.stringify(frames), contentType: "application/json" });
+  await placeCompanionOnExposedBackground(page, 90); await enterCompanionMeadow(page);
+  await expect(meadow).toHaveAttribute("data-state", "idle");
+  const foot = await meadow.evaluate(node => ({ x: Number((node as HTMLElement).dataset.x), y: Number((node as HTMLElement).dataset.y) }));
+  expect(foot.x).toBeCloseTo(source.x, 0); expect(foot.y).toBeCloseTo(source.y, 0);
 });
 
 test("slow jump packets keep the resident painted through immediate departure", async ({ page }) => {

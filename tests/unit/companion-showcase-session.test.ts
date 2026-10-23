@@ -75,6 +75,18 @@ describe("same-object meadow admission and screen-session position", () => {
     session.dispose(); expect(createCompanionShowcaseSession().hasKind("food")).toBe(false);
   });
 
+  it("hands an airborne painted foot and scale back without replacing the outdoor input ground", () => {
+    const { session, emit } = fixture();
+    session.register("pet", { kind: "pet", node: () => node({ left: 44, right: 136, top: 808, bottom: 900 }), point: () => ({ x: 90, y: 900 }) });
+    emit(true, "before"); session.move("pet", { x: 850, y: 700 });
+    session.presentPet({ y: 560, scale: .88 });
+    expect(session.point("pet")).toMatchObject({ x: 850, y: 700 });
+    session.presentPet({ y: NaN, scale: 1 });
+    emit(false, "after");
+    expect(session.takeReturnedPet()).toEqual({ x: 850, y: 560, scale: .88, home: true });
+    expect(session.takeReturnedPet()).toBeUndefined(); session.dispose();
+  });
+
   it("retires same-mount bfcache leases on pagehide and persisted pageshow", () => {
     const { session, emit, events } = fixture();
     session.register("toy:one", { kind: "toy", node: () => node({ left: 168, right: 212, top: 856, bottom: 900 }), point: () => ({ x: 190, y: 900 }) });

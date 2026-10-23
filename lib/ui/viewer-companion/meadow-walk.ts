@@ -33,7 +33,9 @@ export function createCompanionMeadowWalk(random: () => number = Math.random) {
      * Autonomous roam/jump settings do not cancel this requested departure. */
     enter(location: { x: number; y: number }, viewport: Viewport) {
       if (![location.x, location.y, viewport.width, viewport.height].every(Number.isFinite) || viewport.width <= 0 || viewport.height <= 0) return;
-      point = { u: .52, v: .73 }; leg = undefined; wait = 650;
+      const groundY = Math.max(location.y, viewport.height * .35 + 24);
+      point = { u: (location.x - Math.max(60, viewport.width * .16)) / Math.max(1, viewport.width * .72 - 60), v: (groundY / viewport.height - .35) / .65 };
+      leg = undefined; wait = 650;
       arrival = { from: { ...location }, elapsed: 0 };
     },
     /** A real outdoor placement owns its exact foot, including a drag across

@@ -105,6 +105,7 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
       element.dataset.x = current.x.toFixed(3); element.dataset.y = current.y.toFixed(3); element.dataset.groundY = current.groundY.toFixed(3);
       element.dataset.accessory = accessory ?? "none"; element.dataset.paintedAt = now.toFixed(1);
       session.move("pet", { x: current.x, y: current.groundY }, false);
+      session.presentPet({ y: current.y, scale: current.scale });
       element.hidden = false;
       return true;
     };
