@@ -13,7 +13,7 @@ Criteria145: optional TV bow and separate actual10s activity/repetition verified
 
 Scheduled: daily site QA remains ACTIVE at09:00 KST. Owner2026-10-22 supersedes blanket200/restart/all-media release gates: use changed-risk checks, weekly rotation and valid same-build continuation. No200 in this task. Preserve original full certifier, failures, privacy and actual-scope labels. [Focused QA](plans/PLAN-20261022-focused-qa.md).
 
-QA storage:9.36GB reclaimed; existing QA72.10GB. Scoped PASS trace growth fixed; failure traces/videos/manual policy preserved. [Plan](plans/PLAN-20261023-qa-deep-storage.md).
+QA storage:11.56GB reclaimed; cumulative16.45GB; existing QA69.90GB. Scoped PASS trace growth fixed; failure traces/videos/manual policy preserved. [Plan](plans/PLAN-20261023-qa-deep-storage.md).
 
 Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user.125 explicitly authorizes unnecessary Vercel deployment cleanup/optimization; unrelated cleanup, bulk DB UPDATE, paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
 
