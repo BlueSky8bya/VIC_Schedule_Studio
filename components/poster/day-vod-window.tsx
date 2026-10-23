@@ -22,6 +22,20 @@ export const VOD_ACCESS_HINT = {
   plus: "구독자 전용 다시보기 — 구독하면 볼 수 있어요"
 } as const;
 
+/** 권한 배지 한 부품 — 머리줄·안내 카드(기본)와 탭·모바일 칩(small). '+'는 CSS로 그린다(글꼴 '+'가 위로 떴다). */
+export function VodAccessBadge({ access, small = false }: { access: "sub" | "plus"; small?: boolean }) {
+  return (
+    <span
+      aria-label={VOD_ACCESS_LABEL[access]}
+      className={`vod-access-badge is-${access}${small ? " is-small" : ""}`}
+      title={VOD_ACCESS_HINT[access]}
+    >
+      구독
+      {access === "plus" ? <span aria-hidden="true" className="vab-plus" /> : null}
+    </span>
+  );
+}
+
 export type DayVod = {
   titleNo: number;
   title: string;
@@ -1292,12 +1306,8 @@ export function DayVodWindow({
                         합방 · {sel.host} 방송국
                       </span>
                     ) : null}
-                    {/* 구독플러스(0154, 2026-10-23 소유자) — 일반 다시보기와 같은 창, 색만 프리미엄. 재생 권한은 숲 플레이어 몫. */}
-                    {sel?.access ? (
-                      <span className={`dvm-host dvm-access is-${sel.access}`} title={VOD_ACCESS_HINT[sel.access]}>
-                        {VOD_ACCESS_LABEL[sel.access]}
-                      </span>
-                    ) : null}
+                    {/* 구독·구독+(0154/0156) — 일반 다시보기와 같은 창, 색만 단계별. 재생 권한은 숲 플레이어 몫. */}
+                    {sel?.access ? <VodAccessBadge access={sel.access} /> : null}
                     {/* 타임라인 자리 좌/우(2026-09-19 소유자) — 설정의 계절 세그먼트와 같은 알약 문법. */}
                     <div aria-label="타임라인 자리" className="dvm-railside" role="radiogroup">
                       <button
@@ -1391,7 +1401,7 @@ export function DayVodWindow({
                           <b>{v.access === "sub" ? "영상" : `${list.slice(0, i + 1).filter((x) => x.access !== "sub").length}부`}</b>
                           {v.durationMs > 0 ? <em>{formatVodDuration(v.durationMs)}</em> : null}
                           {v.host ? <i>합방</i> : null}
-                          {v.access ? <i className="dvm-tab-access">{VOD_ACCESS_LABEL[v.access]}</i> : null}
+                          {v.access ? <VodAccessBadge access={v.access} small /> : null}
                         </button>
                       ))}
                     </div>
@@ -1464,7 +1474,7 @@ export function DayVodWindow({
                             {/* 구독 전용 안내 — 숲 페이지에선 로그인한 구독자가 바로 본다(임베드는 로그인 상태를 못 쓴다). */}
                             {vod.access ? (
                               <div className={`dvm-locked is-${vod.access}`}>
-                                <span className={`dvm-host dvm-access is-${vod.access}`}>{VOD_ACCESS_LABEL[vod.access]}</span>
+                                <VodAccessBadge access={vod.access} />
                                 <p>{vod.access === "sub" ? "구독자 전용 영상이에요" : "구독자 전용 다시보기예요"}</p>
                                 <a
                                   className="dvm-locked-go"

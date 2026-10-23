@@ -591,10 +591,10 @@ html[data-theme="dark"] .dvm-tab.is-plus:is(.is-on, :hover) {
 }
 html[data-theme="dark"] .dvm-tab.is-sub.is-on :is(b, em) { color: #d8ccf5; }
 html[data-theme="dark"] .dvm-tab.is-plus.is-on :is(b, em) { color: #e2d6ff; }
-html[data-theme="dark"] :is(.dvm-tab.is-sub .dvm-tab-access, .agenda-vod-access.is-sub, .dvm-host.dvm-access.is-sub) {
+html[data-theme="dark"] .vod-access-badge.is-sub {
   background: transparent; border-color: rgb(196 170 255 / 40%); color: #d1c2f5;
 }
-html[data-theme="dark"] :is(.dvm-tab.is-plus .dvm-tab-access, .agenda-vod-access.is-plus, .dvm-host.dvm-access.is-plus) {
+html[data-theme="dark"] .vod-access-badge.is-plus {
   background: linear-gradient(135deg, #4a3a73, #3b2e5c 55%, #533a63); border-color: rgb(196 170 255 / 34%); color: #ece4ff;
 }
 /* 위 :is(.agenda-detail-backdrop.is-pop …) 특이도와 같아지도록 .agenda-vod-inline까지 — 뒤에 있어 이긴다. */
