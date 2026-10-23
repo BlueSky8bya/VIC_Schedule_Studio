@@ -1779,6 +1779,38 @@
       "reason": "owner-reported-options-exact",
       "id": "b43d42d8fd85ccd68294942e2348b3b3feb3284ca64e8a5848560d181c4e492a",
       "estimateSource": "native regression registration for reported options/pointer condition; registration is not PASS"
+    },
+    {
+      "file": "tests/visual/replay-subscriber-seek.spec.ts",
+      "title": "subscriber sub initial and chapter seek stays external at 1440px",
+      "project": "",
+      "estimatedSeconds": 10,
+      "estimateSource": "new synthetic UI regression; estimate only, not actual PASS",
+      "id": "8d9622c52b949f36c8789cf75afb61c2ed32886bb72b97c5ccce57025fd7675c"
+    },
+    {
+      "file": "tests/visual/replay-subscriber-seek.spec.ts",
+      "title": "subscriber sub initial and chapter seek stays external at 390px",
+      "project": "",
+      "estimatedSeconds": 10,
+      "estimateSource": "new synthetic UI regression; estimate only, not actual PASS",
+      "id": "dca5269ce2bf47402251f699fb51a81e77ce926fd21ab3abe6ffa3ef31d9e2df"
+    },
+    {
+      "file": "tests/visual/replay-subscriber-seek.spec.ts",
+      "title": "subscriber plus initial and chapter seek stays external at 1440px",
+      "project": "",
+      "estimatedSeconds": 10,
+      "estimateSource": "new synthetic UI regression; estimate only, not actual PASS",
+      "id": "ca442b282969fc3e6e3324b487476e8cd4d5192080489da88213c63e41fc795b"
+    },
+    {
+      "file": "tests/visual/replay-subscriber-seek.spec.ts",
+      "title": "subscriber plus initial and chapter seek stays external at 390px",
+      "project": "",
+      "estimatedSeconds": 10,
+      "estimateSource": "new synthetic UI regression; estimate only, not actual PASS",
+      "id": "12670a79182574ff3d4ce5ab846807806ca0b3927c6f4a394c03b93ba6376d76"
     }
   ],
   "dailyScenarios": [
@@ -1900,5 +1932,6 @@
       "seconds": 90
     }
   ],
-  "scenarioLimit": "Nine fixed, explicit 2026-10-22 registration scenarios. Weekly rotation of cases is not all configuration combinations; changing scenarios requires refreshed registration IDs."
+  "scenarioLimit": "Nine fixed, explicit 2026-10-22 registration scenarios. Weekly rotation of cases is not all configuration combinations; changing scenarios requires refreshed registration IDs.",
+  "additionalReplayCases": 4
 }

@@ -87,10 +87,36 @@ for(const personality of COMPANION_PERSONALITIES.filter(p=>p!=="homebody"))test(
 test("146 gourmet commits to one real meal instead of walking between several food goals",async({page})=>{
  const home=await fixture(page,"gourmet","viewer",.7),button=home.getByRole("button",{name:"밥 꺼내기",exact:true});
  for(let n=0;n<3;n++){await button.focus();await button.press("Enter");await expect(page.locator(".vc-food")).toHaveCount(n+1);}
- await expect(page.locator(".vc-food[data-falling]")).toHaveCount(0);await startCompanionQaProbe(page);await roam(page);
- await expect.poll(()=>page.locator(".vc-food").count(),{timeout:80000,intervals:[500]}).toBeLessThan(3);
- const frames=await samples(page),firstEat=frames.find(f=>f.state==="eat");expect(firstEat).toBeTruthy();
- const goals=new Set(frames.filter(f=>f.at<=firstEat!.at&&f.goal).map(f=>f.goal));
+ await expect(page.locator(".vc-food[data-falling]")).toHaveCount(0);
+ const foodIds=await page.locator(".vc-food").evaluateAll(nodes=>nodes.map(node=>(node as HTMLElement).dataset.food!));
+ expect(new Set(foodIds).size).toBe(3);
+ const foodIdsIn=(frame:QaObservation)=>(frame.items??"").split("|")[0].split(",").filter(Boolean);
+ await startCompanionQaProbe(page);await roam(page);
+ // A stopped-roam eat sprite can precede the real outing. Start from the
+ // observed enabled session, then require a newly acquired physical target.
+ await expect.poll(async()=>(await samples(page)).some(f=>f.roam===true&&f.eligible&&f.visible&&f.decoded&&f.state==="eat"&&foodIds.includes(f.goal??"")),{timeout:80000,intervals:[500]}).toBe(true);
+ const observed=await samples(page),roamIndex=observed.findIndex(f=>f.roam===true&&f.eligible);
+ expect(roamIndex).toBeGreaterThanOrEqual(0);
+ const active=observed.slice(roamIndex),acquired=active.find(f=>f.goal&&foodIds.includes(f.goal)),firstEat=active.find(f=>f.eligible&&f.visible&&f.decoded&&f.state==="eat"&&foodIds.includes(f.goal??""));
+ expect(acquired).toBeTruthy();expect(firstEat).toBeTruthy();
+ const goal=acquired!.goal!;
+ expect(active.some(f=>f.at<acquired!.at&&!f.goal),"roam begins before the food goal is acquired").toBe(true);
+ expect(firstEat!.at,"acquisition precedes the actual meal").toBeGreaterThan(acquired!.at);
+ expect(firstEat!.goal,"the approached food is the food actually eaten").toBe(goal);
+ const commitment=active.filter(f=>f.at<=firstEat!.at),goals=new Set(commitment.filter(f=>f.goal).map(f=>f.goal));
  expect(goals.size,"one committed physical food before the first actual meal").toBe(1);
- expect(frames.some(f=>f.at<=firstEat!.at&&f.command==="compare"&&(f.walkSource||f.jumpSource)),"comparison cannot create a second travel destination").toBe(false);
+ expect(commitment.some(f=>f.command==="compare"&&(f.walkSource||f.jumpSource)),"comparison cannot create a second travel destination").toBe(false);
+ expect(commitment.filter(f=>f.at>=acquired!.at).every(f=>foodIdsIn(f).includes(goal)),"the same physical food stays present throughout approach").toBe(true);
+ const travel=commitment.filter(f=>f.goal===goal&&f.visible&&f.decoded&&(f.walkSource||f.jumpSource));
+ expect(travel.length,"a decoded approach to the committed food is observed").toBeGreaterThanOrEqual(2);
+ expect(Math.max(...travel.map(f=>f.x))-Math.min(...travel.map(f=>f.x))+Math.max(...travel.map(f=>f.y))-Math.min(...travel.map(f=>f.y)),"the approach actually changes the actor's painted position").toBeGreaterThan(4);
+ await expect.poll(()=>page.locator(".vc-food").evaluateAll((nodes,id)=>nodes.some(node=>(node as HTMLElement).dataset.food===id),goal),{timeout:25000,intervals:[250]}).toBe(false);
+ // Removal and the following action must also reach the read-only trace;
+ // an eat label or one stale eating sprite is not completion evidence.
+ await expect.poll(async()=>(await samples(page)).some(f=>f.at>firstEat!.at&&!foodIdsIn(f).includes(goal)&&f.roam===true&&f.eligible&&f.visible&&f.decoded&&f.sourceClipMeasured&&f.paintedSource?.passed&&f.state!=="eat"&&f.state!=="idle"&&!f.wash?.row9),{timeout:12000,intervals:[250]}).toBe(true);
+ const frames=await samples(page),removed=frames.find(f=>f.at>firstEat!.at&&!foodIdsIn(f).includes(goal));expect(removed).toBeTruthy();
+ const eating=frames.filter(f=>f.at>=firstEat!.at&&f.at<removed!.at&&f.eligible&&f.visible&&f.decoded&&f.state==="eat");
+ expect(eating.length,"the same-ID meal has a nonempty decoded eating interval").toBeGreaterThanOrEqual(2);
+ expect(eating.every(f=>f.goal===goal)).toBe(true);
+ expect(eating.some(f=>f.wash?.row9),"the actual eating source is painted before physical consumption").toBe(true);
 });

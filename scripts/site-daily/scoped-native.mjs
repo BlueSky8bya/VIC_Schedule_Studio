@@ -13,13 +13,17 @@ import {caseId,nativeCaseFingerprint,productDependencies,flattenReporter,actualO
 import {sha,hashJson,writeNew,regular,manifest,verifyFiles,verifyRun} from './receipts.mjs';
 export function options(argv){
   const o={root:process.cwd(),minutes:15,listOnly:false};
-  const names={'--root':'root','--plan':'plan','--continue-from':'prior','--receipt-sha':'receiptSha','--reuse-build':'reuseBuild','--build-receipt-sha':'buildReceiptSha','--minutes':'minutes'};
+  const names={'--root':'root','--plan':'plan','--continue-from':'prior','--receipt-sha':'receiptSha','--reuse-build':'reuseBuild','--build-receipt-sha':'buildReceiptSha','--minutes':'minutes','--source-manifest':'sourceManifest'};
   for(let i=0;i<argv.length;i++)if(argv[i]==='--list-only')o.listOnly=true;else if(names[argv[i]]){const value=argv[++i];if(!value||value.startsWith('--'))throw Error('missing-option-value');o[names[argv[i-1]]]=value;}else throw Error('unknown-option');
   o.root=path.resolve(o.root);o.minutes=Number(o.minutes);
   if(!o.plan||!Number.isInteger(o.minutes)||o.minutes<2||o.minutes>30||o.prior&&!o.receiptSha||o.reuseBuild&&!o.buildReceiptSha||o.prior&&o.reuseBuild)throw Error('invalid-scoped-options');return o;
 }
 const buildExclude=p=>p==='cache'||p.startsWith('cache/');
 const escape=value=>value.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+export function validateSourceManifest(rows){
+  if(!Array.isArray(rows)||rows.length>10000||rows.some(file=>typeof file!=='string'||file.includes('\\')||!snapshotEligible(file))||new Set(rows).size!==rows.length)throw Error('invalid-explicit-source-manifest');
+  return rows;
+}
 export function validatePlan(plan){
   dayOrdinal(plan.day);const cases=plan.companion?.selection?.cases;
   if(!Array.isArray(cases)||!cases.length||cases.length>60||new Set(cases.map(c=>c.id)).size!==cases.length||cases.some(c=>c.id!==caseId(c)||!/^tests\/visual\/[a-z0-9-]+\.spec\.ts$/.test(c.file)||!c.title||c.project!==''))throw Error('invalid-exact-selection');
@@ -36,7 +40,9 @@ export async function run(o){
   const tracked=git(['ls-files','-z']).split('\0').filter(Boolean),dirty=git(['diff','--name-only','-z','HEAD']).split('\0').filter(Boolean);
   const machine=AUDITED_MACHINE_METADATA.map(e=>validateAuditedMachineMetadata(e.path,fs.readFileSync(regular(root,e.path)),{tracked:tracked.includes(e.path),headUnchanged:!dirty.includes(e.path)}));
   const extra=['selection.mjs','policy.mjs','runner.mjs','receipts.mjs','scoped-native.mjs','native-catalog.json'].map(p=>'scripts/site-daily/'+p).filter(p=>fs.existsSync(path.join(root,p)));
-  const files=[...new Set([...tracked.filter(snapshotEligible),...extra,...machine.map(x=>x.path)])].sort();
+  let approved=[];
+  if(o.sourceManifest){if(fs.lstatSync(o.sourceManifest).isSymbolicLink()||!fs.statSync(o.sourceManifest).isFile()||fs.statSync(o.sourceManifest).size>1024*1024)throw Error('bounded-regular-source-manifest-required');approved=validateSourceManifest(JSON.parse(fs.readFileSync(o.sourceManifest,'utf8')));}
+  const files=[...new Set([...tracked.filter(snapshotEligible),...extra,...approved,...machine.map(x=>x.path)])].sort();
   const sourceFiles=[];
   for(const file of files){if(!fs.existsSync(path.join(root,file)))continue;const bytes=fs.readFileSync(regular(root,file)),target=path.join(workspace,file);fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,bytes,{flag:'wx'});sourceFiles.push({path:file,sha256:sha(bytes)});}
   const freeze={head:git(['rev-parse','HEAD']).trim(),contentDigest:hashJson(sourceFiles),sourceFiles,credentialsCopied:0,privateArtCopied:0,auditedMachineJson:machine.length};writeNew(path.join(out,'source-freeze.json'),freeze);

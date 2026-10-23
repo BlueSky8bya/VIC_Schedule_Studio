@@ -36,6 +36,12 @@ export type DayVod = {
   startedAt?: string; // 방송 시작 시각(ISO) — 타임라인의 '실제 시각' 표기(2026-09-18 소유자)
 };
 
+export function buildDayVodWatchUrl(titleNo: number, sec?: number): string {
+  const base = `https://vod.sooplive.co.kr/player/${titleNo}`;
+  const at = sec !== undefined && Number.isFinite(sec) ? Math.max(0, Math.floor(sec)) : 0;
+  return at > 0 ? `${base}?change_second=${at}` : base;
+}
+
 // 숲 임베드 iframe API의 Pload 명령 — PonReady를 받은 플레이어에게 재생 설정을 통째로 넘긴다.
 // autoPlay:false = 초기화만(지정 포스터+▶ 대기 — 실측: 이 상태의 ▶ 클릭은 엄격 차단 브라우저에서도
 // 소리 켠 재생). autoPlay:true + mutePlay:false = 음소거로 시동 걸고 스스로 소리를 켜는 공식 경로.
@@ -263,9 +269,8 @@ export function DayVodWindow({
   const dayVodTimeRef = useRef(new Map<number, number>()); // 최근 timeUpdate currentTime(←/→ 상대 탐색)
   // 숲 플레이어로 나가는 링크 — 인라인 재생 중이면 그 지점(change_second)부터. 3초 미만이면 처음부터(붙이지 않는다).
   const vodWatchUrl = (titleNo: number) => {
-    const base = `https://vod.sooplive.co.kr/player/${titleNo}`;
     const sec = Math.floor(dayVodTimeRef.current.get(titleNo) ?? 0);
-    return sec >= 3 ? `${base}?change_second=${sec}` : base;
+    return buildDayVodWatchUrl(titleNo, sec >= 3 ? sec : undefined);
   };
   // 재생 위치 구독(2026-09-03) — 챕터 레일이 현재 챕터를 따라가게 currentTime을 흘려준다.
   // setState로 포스터 전체를 초당 4번 다시 그리지 않고, 레일만 자기 상태(현재 챕터 idx가
@@ -334,10 +339,12 @@ export function DayVodWindow({
   // 방송 길이(초) — 시킹 목표를 끝 몇 초 앞으로 묶는다(없는 지점으로 보내 '도착 못 함'이 되던 경우 차단).
   const vodDurSecRef = useRef(new Map<number, number>());
   vodDurSecRef.current = new Map(vods.map((v) => [v.titleNo, v.durationMs / 1000]));
+  const externalVodIdsRef = useRef(new Set<number>());
+  externalVodIdsRef.current = new Set(vods.filter((v) => v.access).map((v) => v.titleNo));
   const clampVodSec = (titleNo: number, sec: number) => {
     const dur = vodDurSecRef.current.get(titleNo) ?? 0;
     const max = dur > 30 ? dur - 5 : Number.POSITIVE_INFINITY;
-    return Math.max(0, Math.min(sec, max));
+    return Number.isFinite(sec) ? Math.max(0, Math.min(sec, max)) : 0;
   };
   const dayVodSettled = (titleNo: number) => {
     const at = dayVodSettledAtRef.current.get(titleNo);
@@ -627,6 +634,7 @@ export function DayVodWindow({
   flushDayVodWantSecRef.current = flushDayVodWantSec;
   const promoteDayVodStandby = useCallback(
     (titleNo: number, sec: number, muted: boolean) => {
+      if (externalVodIdsRef.current.has(titleNo)) return;
       const active = dayVodActiveRef.current.get(titleNo) ?? "a";
       const standby: VodSlot = active === "a" ? "b" : "a";
       const newKey = dayVodSlotKey(titleNo, standby);
@@ -676,6 +684,7 @@ export function DayVodWindow({
   // 바꾸고 반대편을 리로드해, 아직 받고 있던 iframe을 버리고 처음부터 다시 받았다(첫 재생이 느리던 원인).
   const bootDayVod = useCallback(
     (titleNo: number, sec: number, muted: boolean) => {
+      if (externalVodIdsRef.current.has(titleNo)) return;
       const active = dayVodActiveRef.current.get(titleNo) ?? "a";
       const activeKey = dayVodSlotKey(titleNo, active);
       if (dayVodLoadedRef.current.has(activeKey)) {
@@ -763,7 +772,7 @@ export function DayVodWindow({
         clearDayVodTitle(from);
       }
       const sec = startSec ?? dayVodResumeRef.current.get(to) ?? null;
-      if (sec !== null) {
+      if (sec !== null && !externalVodIdsRef.current.has(to)) {
         const k = dayVodSlotKey(to, "a");
         dayVodPendingRef.current.set(k, sec);
         if (isVodSoundAutoplayBlocked()) dayVodMutedRef.current.add(k);
@@ -945,6 +954,12 @@ export function DayVodWindow({
     const sec = clampVodSec(titleNo, secRaw);
     setDayVodJump({ titleNo, sec }); // ↗ 새 탭 링크의 초 표기 동기화
     dayVodFocusRef.current = titleNo;
+    // 구독 영상은 재생기를 만들지 않는다. 검색/URL 진입은 링크와 레일 시각만 준비하고,
+    // 새 탭은 사용자가 숲 링크나 챕터를 직접 누를 때 연다.
+    if (externalVodIdsRef.current.has(titleNo)) {
+      notifyDayVodTime(titleNo, sec);
+      return;
+    }
     // 챕터 점프가 ←/→ 묶음을 이긴다 — 남은 키 목표가 늦게 날아가 챕터 자리를 덮지 않게.
     dayVodKeyTargetRef.current.delete(titleNo);
     window.clearTimeout(dayVodKeyTimerRef.current);
@@ -997,7 +1012,7 @@ export function DayVodWindow({
     if (initialSeekDoneRef.current) return;
     initialSeekDoneRef.current = true;
     const target = initialSel ?? vods[0]?.titleNo;
-    if (!target || !initialSec || !(initialSec > 0)) return;
+    if (!target || !initialSec || !Number.isFinite(initialSec) || !(initialSec > 0)) return;
     // 한 틱 뒤 — 챕터 레일·가로 띠가 시각 구독을 등록한 다음이라야 재생 머리가 그 지점에 선다
     // (동기로 부르면 알림이 허공에 가서 머리가 0에 남는다 — 실측).
     const t = window.setTimeout(() => jumpDayVod(target, Math.floor(initialSec)), 50);
@@ -1083,6 +1098,7 @@ export function DayVodWindow({
         e.preventDefault();
         const titleNo = dayVodFocusRef.current ?? selNo;
         if (titleNo === null) return;
+        if (externalVodIdsRef.current.has(titleNo)) return;
         const now = performance.now();
         if (now - dayVodSpaceAtRef.current < VOD_SPACE_MIN_GAP_MS) return; // 연타 억제
         dayVodSpaceAtRef.current = now;
@@ -1180,7 +1196,12 @@ export function DayVodWindow({
             const sel = list.find((v) => v.titleNo === dayVodSel) ?? list[0];
             const selIdx = sel ? list.indexOf(sel) : -1;
             const selLabel = sel ? sel.title || `다시보기${list.length > 1 ? ` ${selIdx + 1}` : ""}` : "";
-            const selPlayerUrl = sel ? `https://vod.sooplive.co.kr/player/${sel.titleNo}` : "";
+            const selPlayerUrl = sel ? buildDayVodWatchUrl(sel.titleNo) : "";
+            const initialExternalSec = sel?.access && sel.titleNo === (initialSel ?? list[0]?.titleNo)
+              && initialSec !== undefined && Number.isFinite(initialSec) && initialSec > 0
+              ? clampVodSec(sel.titleNo, Math.floor(initialSec)) : undefined;
+            const externalSec = dayVodJump?.titleNo === sel?.titleNo ? dayVodJump?.sec : initialExternalSec;
+            const externalPlayerUrl = sel ? buildDayVodWatchUrl(sel.titleNo, externalSec) : "";
             const wd = new Date(`${dateKey}T00:00:00Z`).getUTCDay();
             const mark = getDayMark(dateKey);
             const tone = wd === 0 || Boolean(mark?.isHoliday) ? " red" : wd === 6 ? " saturday" : "";
@@ -1448,7 +1469,7 @@ export function DayVodWindow({
                                 <a
                                   className="dvm-locked-go"
                                   data-act="vod-replay"
-                                  href={playerUrl}
+                                  href={externalPlayerUrl}
                                   onClick={() => hapticTick()}
                                   rel="noopener noreferrer"
                                   target="_blank"
@@ -1470,8 +1491,8 @@ export function DayVodWindow({
                               data-act="vod-replay"
                               href={
                                 dayVodJump?.titleNo === vod.titleNo
-                                  ? `${playerUrl}?change_second=${dayVodJump.sec}`
-                                  : playerUrl
+                                  ? buildDayVodWatchUrl(vod.titleNo, dayVodJump.sec)
+                                  : vod.access ? externalPlayerUrl : playerUrl
                               }
                               onClick={() => hapticTick()}
                               rel="noopener noreferrer"
@@ -1491,11 +1512,10 @@ export function DayVodWindow({
                             defaultOpen
                             durationMs={vod.durationMs}
                             /* 구독·구독+는 임베드가 재생을 거부한다 — 타임라인·채팅 반응 지점은 숲을 그 초부터 새 탭으로. */
-                            onJump={(sec) =>
-                              vod.access
-                                ? window.open(`${playerUrl}?change_second=${Math.max(0, Math.floor(sec))}`, "_blank", "noopener,noreferrer")
-                                : jumpDayVod(vod.titleNo, sec)
-                            }
+                            onJump={(sec) => {
+                              jumpDayVod(vod.titleNo, sec);
+                              if (vod.access) window.open(buildDayVodWatchUrl(vod.titleNo, clampVodSec(vod.titleNo, sec)), "_blank", "noopener,noreferrer");
+                            }}
                             startedAt={vod.startedAt}
                             register={registerDayVodChapterApi}
                             slug={slug}
