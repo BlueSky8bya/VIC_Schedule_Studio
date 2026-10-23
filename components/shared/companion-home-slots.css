@@ -29,7 +29,7 @@
   pointer-events: auto;
 }
 .button.vc-home-launcher:hover:not(:disabled) { border-color: var(--header-control-line); background: var(--header-control-hover); color: var(--header-control-ink); box-shadow: var(--shadow-3); }
-.button.vc-home-launcher:focus:not(:focus-visible) { outline: none; }
+.button.vc-home-launcher { outline: none; }
 html[data-pchrome] .vc-home-launcher .vc-home-launcher-label,
 .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .vc-home-launcher .vc-home-launcher-label { display: none; }
 html[data-pchrome] .vc-home-launcher,

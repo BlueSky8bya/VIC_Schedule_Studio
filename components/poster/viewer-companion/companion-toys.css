@@ -10,8 +10,7 @@
 .vc-toy>.vc-toy-axis-art{display:none;position:absolute;left:50%;bottom:0;translate:-50% 0;pointer-events:none;filter:brightness(var(--vc-item-room-light,1)) var(--vc-toy-color) drop-shadow(0 2px 1px #5d422528)}
 .vc-toy[data-axis-painted]>.vc-toy-art{opacity:0}
 .vc-toy[data-axis-painted]>.vc-toy-axis-art{display:block}
-.vc-toy:focus-visible{outline:2px solid var(--accent,#5077aa);outline-offset:-3px;border-radius:12px}
-.vc-toy:where(:hover,:focus):not(:focus-visible){outline:none;box-shadow:none}
+html .vc-toy{outline:none;box-shadow:none}
 .vc-toy[data-held=true]{cursor:grabbing}
 .vc-toy[data-carried=true]{pointer-events:none}
 .vc-toy[data-carried=true]>:is(.vc-toy-art,.vc-toy-axis-art){transform:rotate(var(--vc-toy-art-rotation,0deg)) scale(var(--vc-toy-play-scale,1)) scaleX(var(--vc-toy-play-facing,1));scale:1;transition:none}

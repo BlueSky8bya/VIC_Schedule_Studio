@@ -18,9 +18,9 @@
 .vc-inertia { filter: brightness(var(--vc-body-room-light, 1)); transition: filter var(--dur-2) var(--ease); }
 .vc-bed-foreground[hidden] { display: none; }
 .vc-actor { position: absolute; left: 12%; bottom: 0; width: 76%; height: 76%; border: 0; padding: 0; overflow: visible; background: transparent; border-radius: 50%; cursor: grab; pointer-events: auto; touch-action: none; user-select: none; }
-/* The global button focus rule must not restore a circular pet halo. A small
-   ink baseline preserves keyboard focus without painting over the character. */
-html .vc-companion .vc-actor { outline: none; box-shadow: none; }
+/* Physical objects never inherit pointer or keyboard focus halos. Their
+   inner art keeps feedback; the resident retains its small ink baseline. */
+html .vc-companion .vc-actor, html .vc-food, html .vc-gift-open { outline: none; box-shadow: none; }
 .vc-actor:focus-visible::before { content: ""; position: absolute; left: 50%; bottom: -6px; width: 24px; height: 2px; border-radius: 1px; background: var(--ink); opacity: .65; transform: translateX(-50%); pointer-events: none; }
 .vc-companion[data-pointer-focus] .vc-actor:focus-visible::before { opacity: 0; }
 .vc-companion:is([data-sofa-depth="seat"],[data-sofa-depth="back"]) .vc-actor:focus-visible::before { top: -6px; bottom: auto; }
@@ -44,7 +44,6 @@ html .vc-companion .vc-actor { outline: none; box-shadow: none; }
 .vc-gift-prop { z-index: 3; filter: drop-shadow(0 1px 1px #5c443526); }
 .vc-gift-open { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; padding: 0; border: 0; background: transparent; border-radius: var(--r-md); pointer-events: auto; cursor: pointer; touch-action: manipulation; }
 .vc-gift-open[hidden] { display: none; }
-.vc-gift-open:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: 1px; }
 .vc-gift-open:not(:disabled):hover::after { content: ""; position: absolute; width: 6px; height: 6px; right: 5px; top: 7px; border-radius: 50%; background: #fff2ae; box-shadow: 0 0 7px #fff2ae; }
 .vc-keepsake-notice { position: fixed; z-index: 78; bottom: 28px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; width: min(350px, calc(100vw - 32px)); box-sizing: border-box; padding: 18px; border: 1px solid var(--line); border-radius: var(--r-xl); background: rgb(var(--glass-panel) / 97%); color: var(--ink); box-shadow: var(--elev-2); font: inherit; font-size: var(--text-body, 13.5px); line-height: 1.5; animation: vc-keepsake-enter .35s var(--ease); }
 .vc-keepsake-notice strong { display: block; padding-right: 28px; font-size: var(--text-ui, 15px); }
@@ -89,8 +88,6 @@ html[data-showcase] :is(.vc-food,.vc-toy):not([data-showcase-lease]) { display: 
 .vc-food { position: absolute; width: 44px; height: 44px; margin: -38px 0 0 -22px; padding: 4px; border: 0; background: transparent; border-radius: var(--r-pill); pointer-events: auto; touch-action: none; cursor: grab; user-select: none; transition: none; }
 .vc-food span { display: block; width: 36px; height: 36px; transform: scale(var(--vc-nibble, 1)); transform-origin: bottom center; pointer-events: none; }
 .vc-food[data-eating] span { transform-origin: center; }
-.vc-food:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 0; }
-.vc-food:where(:hover, :focus):not(:focus-visible) { outline: none; box-shadow: none; }
 /* The button owns the44px contact and the span owns nibbling/arrival. Only
    the inner picture responds, keeping the pointer/fall/carry foot stationary. */
 .vc-food > span > .vc-fruit { transform-box: border-box; transform-origin: 50% 100%; transition: transform var(--dur-spring-smooth) var(--spring-smooth, var(--ease-spring)), filter var(--dur-1) var(--ease); }

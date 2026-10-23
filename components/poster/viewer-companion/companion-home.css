@@ -184,7 +184,6 @@ body:has(.vc-cushion-button:active) .vc-bed-foreground .vc-sofa-feedback { --vc-
    Anchor this painting directly so the enlarged bin stays fully clickable. */
 /*90% paint size preserves the floor baseline and original native hit target. */
 .vc-home-trash > .vc-home-object-image { position: absolute; left: 50%; margin-left: calc(var(--vc-bin-paint-width) / -2); bottom: calc(var(--vc-bin-paint-width) * -8.28 / 73.8); width: var(--vc-bin-paint-width); height: calc(var(--vc-bin-paint-width) * 229 / 256); }
-.vc-home button:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: 2px; }
 .vc-home button:disabled { opacity: .38; cursor: default; }
 .vc-home-close:active { transform: scale(var(--press-scale)); }
 .vc-home-close { transition: transform var(--dur-spring-smooth) var(--spring-smooth, var(--ease-spring)), color var(--dur-1) var(--ease), background-color var(--dur-1) var(--ease); }
@@ -246,8 +245,7 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-curtain-c
 .vc-curtain-rope { position: absolute; left: calc(7px - var(--vc-curtain-rope-width) / 2); top: calc(var(--vc-curtain-collar-height) * 64 / 99 - .5px); width: var(--vc-curtain-rope-width); height: max(0px, calc(var(--vc-curtain-cord-height) + var(--vc-curtain-pull) + 4px - var(--vc-curtain-handle-height) - var(--vc-curtain-collar-height) * 64 / 99)); background: url('/companion/home/20261023/curtain-rope.webp') center top / 100% auto repeat-y; }
 .vc-curtain-handle { position: absolute; left: calc(7px - var(--vc-curtain-handle-width) / 2); top: calc(var(--vc-curtain-cord-height) + var(--vc-curtain-pull) + 3px - var(--vc-curtain-handle-height)); width: var(--vc-curtain-handle-width); height: var(--vc-curtain-handle-height); background: url('/companion/home/20261023/curtain-handle.webp') center / 100% 100% no-repeat; }
 .vc-curtain-control:not(:disabled):is(:active, [data-companion-touch]) { --vc-curtain-pull: 2px; }
-html .vc-home button:where(:hover, :focus):not(:focus-visible) { outline: none; box-shadow: none; }
-.vc-home button:focus-visible { outline: 2px solid var(--ink-soft); outline-offset: 2px; }
+html .vc-home button, html .vc-home button:focus-visible { outline: none; box-shadow: none; }
 /* The resident's finite reach owns the cord preview until its real3px tug.
    Pointer hover/focus must not erase its measured neutral baseline. */
 .vc-home-lamp:not(:disabled):not([data-companion-reaching]):is(:has(.vc-home-lamp-cord-hit:hover, .vc-home-lamp-cord-core:hover), :focus-visible) { --vc-lamp-pull: 1.5px; --vc-lamp-feedback: 1; }
