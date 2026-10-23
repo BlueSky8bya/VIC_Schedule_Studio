@@ -2026,7 +2026,8 @@ html[data-theme="dark"] .rhh-companion-settings .rhh-wardrobe-fitting-stage[data
 .rhh-collection-page-dots > span[data-unread] { background: var(--companion-discovery); opacity: 1; }
 .rhh-collection-page-dots > span[aria-current="page"] { width: min(100%, 9px); height: 9px; background: var(--companion-accent); opacity: 1; } /* 현재 쪽은 실제 크기(점 줄 상자 안) */
 .rhh-collection-page-dots > span[aria-current="page"][data-unread] { background: linear-gradient(to bottom, var(--companion-accent) 0 50%, var(--companion-discovery) 50% 100%); }
-.rhh-collection-page-dots > span[data-hover] { opacity: 1; background-color: var(--companion-accent); transform: scale(2.5); }
+.rhh-collection-page-dots > span[data-hover] { opacity: 1; transform: scale(2.5); }
+.rhh-collection-page-dots > span[data-hover]:not([data-unread]) { background-color: var(--companion-accent); }
 .rhh-collection-page-dots > span[data-hover] + span, .rhh-collection-page-dots > span:has(+ span[data-hover]) { opacity: .85; transform: scale(1.6); }
 .rhh-collection-page-dots > span[data-hover] + span + span, .rhh-collection-page-dots > span:has(+ span + span[data-hover]) { opacity: .6; transform: scale(1.22); }
 .rhh-collection-page-dots > span[aria-current="page"][data-hover] { transform: scale(1.4); }

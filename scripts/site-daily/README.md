@@ -36,6 +36,21 @@ source freeze, 제품/자산/스타일/빌드 입력, 정확한 테스트·공�
 
 각 attempt는 새 경로에 저장한다. `scopeSatisfied`는 선택 항목만의 결과이며 `fullCertification:false`, `normal36:UNVERIFIED`를 유지한다. 재시도/skip/누락/expected-failure/불완전 reporter는 PASS가 아니다. 새 report는 원본을 수정하지 않으며 결과 SHA를 별도 ledger에 고정한다. 이 무결성 검사는 서명·검수자 신원 인증·자동 출시 승인이 아니다.
 
+## QA 저장공간 관리
+
+2026-10-23 사용자 승인으로 일일 점검 뒤 **원경로 유지 무손실 압축**을 수행한다. 상세 계약은 [저장공간·발견 표시 계획](../../docs/agent/plans/PLAN-20261023-qa-storage-and-unread-hover.md)에 있다. 과거 별도 retention의 삭제·하드링크 정책을 이 승인으로 재실행하지 않는다. ZIP으로 옮기고 원본을 지우거나 영상 화질을 낮추지 않는다.
+
+`qa-storage.mjs`는 기본적으로 계획만 생성한다. 명시한 한 프로젝트의 `.scratch-pw`/`.scratchNN`에서 최소24시간 지난 압축 가능한 파일을 선별하고, `--apply --plan <plan.json> --plan-sha <SHA256>`로 그 계획만 적용한다. Windows NTFS의 `compact.exe /EXE:LZX`를 파일별로 사용하며 전후 SHA256·원경로·참조 파일을 검사한다. 하드링크, junction/symlink, 원본 자산, 비공개 설정, 진행 중인 검사·빌드·활성 state는 제외한다. 적용은 기존 PASS·관측일·정상속도 검수 상태를 바꾸지 않는다.
+
+```powershell
+node scripts/site-daily/qa-storage.mjs --root <확인한 프로젝트> --state <현재 primary state.json> --reference <보존할 원영수증> --minutes 3 --max-bytes 2147483648 --max-files 1000
+node scripts/site-daily/qa-storage.mjs --root <같은 프로젝트> --state <같은 state.json> --apply --plan <출력 plan.json> --plan-sha <출력 SHA256> --minutes 3 --max-bytes 2147483648 --max-files 1000
+```
+
+일일 기본은3분·2GiB·1000파일이며 원본을 전부 다시 복사하지 않는다. 현재 state의 작업·native·build가 실제 종료한 뒤 실행한다. 프로젝트별 작은 cursor/미완료 목록과 `.scratch-pw/site-daily/qa-storage-schedule.json`의 명시 루트 순환을 사용한다. 매일 모든 QA JSON/영상 내용을 다시 읽지 않으며, 예산 초과·잠김·작업 중인 항목은 다음 실행으로 이월한다. 전체 저장공간 집계는 주간 또는 용량 급증 때 한정한다.
+
+결과에는 경로별 논리 크기, 처리한 단일 링크 파일의 실제 할당량 전후 차이, 처리·생략·실패·이월을 기록한다. 기존 하드링크 때문에 경로별 합산을 물리적 고유 점유량으로 표현하지 않는다. ZIP·영상·이미지는 이미 압축되어 추가 절감이 작을 수 있으며, 절감률을 미리 보장하지 않는다. 원 report/receipt와 실패 증거를 보존하고 과거부터 없던 참조는 새로운 압축 회귀와 구분한다. 상태 변화 없는 반복 결과는 조용히 유지하며 큰 용량 증가·무결성 오류·의미 있는 절감·사용자 판단이 필요한 내용만 알린다.
+
 ## 아이디어·프라이버시·검수
 
 영역+problemKey로 제안/승인/완료/거절을 합친다. 사용자 이득×근거 신뢰도 대비 구현+토큰+유지 비용으로 제안 최대3개, 승인 후 동시 구현2개를 기본으로 한다. 승인받은1·2번과 버그 수정은 계속하고 실행취소/다시실행 버튼 제안은 재추진하지 않는다. 기존 완료된156/157의9개를 재등록하지 않는다. 새 기능은 채택받되 기존 승인을 반복 확인하지 않는다.

@@ -13,6 +13,8 @@ Criteria145: optional TV bow and separate actual10s activity/repetition verified
 
 Scheduled: daily site QA remains ACTIVE at09:00 KST. Owner2026-10-22 supersedes blanket200/restart/all-media release gates: use changed-risk checks, weekly rotation and valid same-build continuation. No200 in this task. Preserve original full certifier, failures, privacy and actual-scope labels. [Focused QA](plans/PLAN-20261022-focused-qa.md).
 
+QA storage: daily cold compression preserves paths/hashes and skips active/protected/hardlinked work;3min/2GiB/1000 files, no deletion. Unread-dot hover fixed. [Evidence](plans/PLAN-20261023-qa-storage-and-unread-hover.md).
+
 Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user.125 explicitly authorizes unnecessary Vercel deployment cleanup/optimization; unrelated cleanup, bulk DB UPDATE, paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
 
 Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, owner-only private content, Google+passcode/session binding, KST and serial writes remain mandatory. Companion defaults ON only for PC without saved choice; explicit choices persist. Mobile companion stays excluded. Actual OBS hardware/real-session/provider evidence stays distinct from fixtures.
@@ -52,7 +54,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 5. PRIVACY-20260921: resolve remaining visit/recurring retention policy and restricted local recovery-backup removal after its2026-10-24 window. No automatic future run is scheduled.
 ## Last Verified
 
-Living intent/motion: final immutable SM5 build satisfies25 selected native cases (23 fresh+2 verified same-build proofs),424 files/6,840 units, type/lint/harness/build. Actual unfinished-go inspection/resume, confirmed-object play/return, three shared surfaces and adjacent life regressions are verified; broader configurations/normal-speed36 remain outside this scope. Release/public fullSHA receipts belong to the local report and ledger. [Topic evidence](plans/PLAN-20261023-living-intent-and-motion.md).
+Living AI396024fc released;25 scoped native proofs/6,840 units verified. [Evidence](plans/PLAN-20261023-living-intent-and-motion.md). Broader cases/normal36 remain unverified.
 
 Actual lamp trace2e669e72 has16 touch paints/0receipts; matched viewer geometry342x260/full graphics/DPR0.9 fails before170 (c49c947d). Bounded physical alignment preserves strict1.25px and passes final3 native cases177e87a8,99 related units/type/lint/build. Source review accepted; actual independent/deployed result pending. No200. [Plan](plans/PLAN-20261022-lamp-live-trace.md).
 
