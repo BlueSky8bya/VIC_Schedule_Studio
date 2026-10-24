@@ -15,7 +15,7 @@
 .vc-wash-tool { position: fixed; left: 0; top: 0; z-index: 77; width: 24px; height: 38px; transform-origin: 8px 7px; pointer-events: none; filter: brightness(var(--vc-body-room-light, 1)) drop-shadow(0 1px 1px #795b3924); }
 .vc-wash-tool[hidden], .vc-home-touch-tool[hidden] { display: none; }
 .vc-home-touch-tool { position: fixed; left: 0; top: 0; z-index: 77; width: 18px; height: 18px; transform-origin: center; pointer-events: none; filter: brightness(var(--vc-body-room-light, 1)); }
-.vc-inertia { filter: brightness(var(--vc-body-room-light, 1)); transition: filter var(--dur-2) var(--ease); }
+.vc-inertia { filter: brightness(var(--vc-body-room-light, 1)) var(--vc-scene-light-filter, brightness(1)); transition: filter var(--dur-2) var(--ease); }
 .vc-bed-foreground[hidden] { display: none; }
 .vc-actor { position: absolute; left: 12%; bottom: 0; width: 76%; height: 76%; border: 0; padding: 0; overflow: visible; background: transparent; border-radius: 50%; cursor: grab; pointer-events: auto; touch-action: none; user-select: none; }
 /* Physical objects never inherit pointer or keyboard focus halos. Their
@@ -185,7 +185,9 @@ html[data-gfx="off"] .vc-dream i { animation: none; opacity: .7; }
 
 /* Item portals cannot inherit the room. Their current physical foot supplies
    this bounded grade; focus targets remain outside the filtered artwork. */
+.vc-food { filter: var(--vc-scene-light-filter, brightness(1)); }
 .vc-food > span { filter: brightness(var(--vc-item-room-light, 1)); }
+.vc-toy { filter: var(--vc-scene-light-filter, brightness(1)); }
 .vc-toys .vc-toy > .vc-toy-art { filter: brightness(var(--vc-item-room-light, 1)) var(--vc-toy-color) drop-shadow(0 2px 1px #5d422528); }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-toys .vc-toy > .vc-toy-art { filter: brightness(var(--vc-item-room-light, 1)) var(--vc-toy-color); }
 

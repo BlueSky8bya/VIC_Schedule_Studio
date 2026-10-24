@@ -5978,7 +5978,11 @@ export function StudioShell({
         e.preventDefault();
         kbd("kbd-save");
         if (editorVisible && form.publicTitle.trim()) saveEvent();
-        else flashSavedChip();
+        else {
+          flashSavedChip();
+          const hasDraft = [...editDraftsRef.current.values()].some(draft => draft.ts >= Date.now() - DRAFT_TTL_MS);
+          flashToast(hasDraft ? "입력은 임시 보관 중이에요. 카드를 열어 저장해 주세요" : "새로 저장할 변경사항이 없어요");
+        }
         return;
       }
       // Alt+N: 새 일정 카드 열기/닫기(하나의 키로 통일). 제목칸에 포커스가 있어도 동작하도록

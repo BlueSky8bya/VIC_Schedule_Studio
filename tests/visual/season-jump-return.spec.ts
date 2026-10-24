@@ -1,4 +1,4 @@
-import { test, expect, type Page, type Locator } from "@playwright/test";
+import { test, expect, type Page, type Locator, type TestInfo } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
@@ -6,9 +6,14 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { enterCompanionMeadow, placeCompanionOnExposedBackground } from "./helpers/companion-outdoor";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
+import { companionTraceMode } from "./helpers/companion-evidence-policy";
 
 const fonts = new Set([...readFileSync("app/fonts.css", "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
-test.use({ storageState: { cookies: [], origins: [] }, viewport: { width: 1920, height: 1100 }, serviceWorkers: "block", video: { mode: "retain-on-failure", size: { width: 1920, height: 1080 } } });
+// These native frame/latency oracles measure one active seasonal world.
+// Concurrent full worlds contend for this machine's GPU and input queue;
+// serialize this file without changing its timing, motion or contact limits.
+test.describe.configure({ mode: "serial" });
+test.use({ storageState: { cookies: [], origins: [] }, viewport: { width: 1920, height: 1100 }, serviceWorkers: "block", video: { mode: "on", size: { width: 1920, height: 1080 } }, trace: companionTraceMode() });
 test.setTimeout(90000);
 test.beforeEach(async ({ page, context, baseURL }, info) => {
   const origin = new URL(baseURL!).origin;
@@ -49,32 +54,87 @@ async function expectHomecoming(page: Page) {
 
 async function recordHomecoming(page: Page) {
   return page.evaluate(() => {
-    const actor = document.querySelector<HTMLElement>(".vc-meadow-walk")!;
-    const departure = { x: Number(actor.dataset.x), y: Number(actor.dataset.y) };
-    const frames: { x: number; y: number; state: string; at: number }[] = [];
-    const started = performance.now();
-    (window as Window & { homecoming?: { departure: typeof departure; frames: typeof frames } }).homecoming = { departure, frames };
-    const sample = () => {
-      const pet = document.querySelector<HTMLElement>(".vc-companion");
-      if (pet && !pet.hidden) {
-        const box = pet.getBoundingClientRect();
-        frames.push({ x: box.left + box.width / 2, y: box.bottom, state: pet.dataset.state ?? "", at: performance.now() - started });
+    const departureFoot = () => {
+      const actor = document.querySelector<HTMLElement>(".vc-meadow-walk");
+      if (actor && !actor.hidden) return { x: Number(actor.dataset.x), y: Number(actor.dataset.y), state: actor.dataset.state ?? "", lift: Number(actor.dataset.groundY) - Number(actor.dataset.y) };
+      const ordinary = document.querySelector<HTMLElement>(".vc-companion")!, box = ordinary.getBoundingClientRect();
+      return { x: box.left + box.width / 2, y: box.bottom, state: ordinary.dataset.state ?? "", lift: 0 };
+    };
+    const setupDeparture = departureFoot();
+    const probe = { setupDeparture, departure: setupDeparture, entrySource: null as { x: number; y: number } | null,
+      armedAt: performance.now(), inputAt: null as number | null, transitionAt: null as number | null,
+      frames: [] as { x: number; y: number; state: string; at: number; fromSetupMs: number }[] };
+    // Browser-native input delivery is the latency origin. The preceding
+    // evaluate/keyboard controller round trip is retained separately.
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.repeat || !event.isTrusted || probe.inputAt !== null) return;
+      probe.inputAt = event.timeStamp;
+      // The shared window capture handler can synchronously dispatch its
+      // transition before this later key listener. Keep that pre-exit foot.
+      if (probe.transitionAt === null) probe.departure = departureFoot();
+    };
+    const onEntryPointer = (event: PointerEvent) => {
+      if (!(event.target instanceof Element) || !event.target.closest('[data-act="ambient-showcase"]')) return;
+      const box = document.querySelector(".vc-companion")!.getBoundingClientRect();
+      if (box.width > 0 && box.height > 0) probe.entrySource = { x: box.left + box.width / 2, y: box.bottom };
+    };
+    const onTransition = (event: Event) => {
+      const detail = (event as CustomEvent<{ active: boolean; phase: string }>).detail;
+      if (!detail || detail.phase !== "before") return;
+      if (detail.active) {
+        // Opening the season controls can move the real house. The source
+        // belongs to this actual entry frame, not an earlier setup layout.
+        const box = document.querySelector(".vc-companion")!.getBoundingClientRect();
+        if (!probe.entrySource && box.width > 0 && box.height > 0) probe.entrySource = { x: box.left + box.width / 2, y: box.bottom };
+        return;
       }
-      if (performance.now() - started < 3500) requestAnimationFrame(sample);
+      if (probe.transitionAt !== null) return;
+      probe.transitionAt = performance.now();
+      if (probe.inputAt === null) probe.departure = departureFoot();
+    };
+    document.addEventListener("pointerdown", onEntryPointer, true);
+    window.addEventListener("keydown", onKey, true);
+    window.addEventListener("vic:showcase-transition", onTransition, true);
+    (window as Window & { homecoming?: typeof probe }).homecoming = probe;
+    const sample = () => {
+      const now = performance.now(), origin = probe.inputAt ?? probe.transitionAt;
+      const pet = document.querySelector<HTMLElement>(".vc-companion");
+      if (origin !== null && pet && !pet.hidden && getComputedStyle(pet).display !== "none") {
+        const box = pet.getBoundingClientRect();
+        probe.frames.push({ x: box.left + box.width / 2, y: box.bottom, state: pet.dataset.state ?? "", at: now - origin, fromSetupMs: now - probe.armedAt });
+      }
+      if (now - (origin ?? probe.armedAt) < (origin === null ? 10000 : 3500)) requestAnimationFrame(sample);
+      else { document.removeEventListener("pointerdown", onEntryPointer, true); window.removeEventListener("keydown", onKey, true); window.removeEventListener("vic:showcase-transition", onTransition, true); }
     }; requestAnimationFrame(sample);
-    return departure;
   });
 }
 
-async function expectReturnJump(page: Page, departure: { x: number; y: number }) {
+async function expectReturnJump(page: Page, info: TestInfo, attachment = "return-frames") {
+  // Preserve the observed frames even when a later timing/contact assertion
+  // fails. The bounded wait observes product DOM without changing its clock.
+  let observationError: unknown;
+  try {
+    await page.waitForFunction(() => {
+      const pet = document.querySelector<HTMLElement>(".vc-companion");
+      return pet && !pet.hidden && pet.dataset.platform === "companion-home-floor-400" && pet.dataset.state !== "jump" && !document.querySelector(".vc-meadow-walk");
+    }, undefined, { timeout: 7000 });
+  } catch (error) { observationError = error; }
+  const record = await page.evaluate(() => {
+    const probe = (window as Window & { homecoming?: { setupDeparture: { x: number; y: number }; entrySource: { x: number; y: number } | null; departure: { x: number; y: number; state: string; lift: number }; armedAt: number; inputAt: number | null; transitionAt: number | null; frames: { x: number; y: number; state: string; at: number; fromSetupMs: number }[] } }).homecoming!;
+    return { ...probe, inputFromSetupMs: probe.inputAt === null ? null : probe.inputAt - probe.armedAt,
+      transitionFromInputMs: probe.inputAt === null || probe.transitionAt === null ? null : probe.transitionAt - probe.inputAt };
+  });
+  await info.attach(attachment, { body: JSON.stringify(record), contentType: "application/json" });
+  if (observationError) throw observationError;
   await expectHomecoming(page);
-  const frames = await page.evaluate(() => (window as Window & { homecoming?: { frames: { x: number; y: number; state: string; at: number }[] } }).homecoming!.frames);
+  expect(record.inputAt).not.toBeNull(); expect(record.transitionAt).not.toBeNull();
+  const { frames, departure } = record;
   const jump = frames.filter(frame => frame.state === "jump");
   expect(jump.length).toBeGreaterThan(5);
   expect(Math.hypot(jump[0].x - departure.x, jump[0].y - departure.y)).toBeLessThan(30);
   expect(jump[0].at).toBeLessThan(350);
   for (let index = 1; index < jump.length; index++) expect(Math.hypot(jump[index].x - jump[index - 1].x, jump[index].y - jump[index - 1].y)).toBeLessThan(180);
-  return frames;
+  return record;
 }
 
 for (const surface of ["viewer", "studio", "preview"] as const) {
@@ -120,10 +180,9 @@ for (const surface of ["viewer", "studio", "preview"] as const) {
     const covered = { x: cover!.x + cover!.width / 2, y: cover!.y + cover!.height * .6 };
     await placeItem(page, page.locator(`[data-food="${foodIds[0]}"]`), covered);
     await placeItem(page, page.locator(`[data-toy-id="${toyIds[0]}"]`), { x: covered.x + 70, y: covered.y });
-    const departure = await recordHomecoming(page);
+    await recordHomecoming(page);
     await page.keyboard.press("Escape");
-    const returnFrames = await expectReturnJump(page, departure);
-    await info.attach("return-frames", { body: JSON.stringify(returnFrames), contentType: "application/json" });
+    await expectReturnJump(page, info);
     await expect(page.locator(`[data-food="${foodIds[0]}"]`)).toHaveCount(0); await expect(page.locator(`[data-toy-id="${toyIds[0]}"]`)).toHaveCount(0);
     await expect(page.locator(`[data-food="${foodIds[1]}"]`)).toBeVisible(); await expect(page.locator(`[data-toy-id="${toyIds[1]}"]`)).toBeVisible();
     expect(await petIdentity!.evaluate(node => node.isConnected && node === document.querySelector(".vc-companion"))).toBe(true);
@@ -142,13 +201,13 @@ test("reduced motion: quiet meadow entry and immediate shower-pad homecoming", a
   await page.keyboard.press("Escape"); await expectHomecoming(page);
 });
 
-test("folded house opens on return and compact house restores its shower pad", async ({ page }) => {
+test("folded house opens on return and compact house restores its shower pad", async ({ page }, info) => {
   await page.goto("/visual-fixture/poster?ambient=spring"); const home = await openCompanionHome(page);
   await placeCompanionOnExposedBackground(page, 180);
   const fold = home.locator('[data-home-action="fold"]'); if (await fold.getAttribute("aria-expanded") === "true") await fold.click();
   await enterCompanionMeadow(page); await expect(page.locator(".vc-meadow-walk")).toBeVisible();
-  const departure = await recordHomecoming(page);
-  await page.keyboard.press("Escape"); await expect(fold).toHaveAttribute("aria-expanded", "true"); await expectReturnJump(page, departure);
+  await recordHomecoming(page);
+  await page.keyboard.press("Escape"); await expectReturnJump(page, info); await expect(fold).toHaveAttribute("aria-expanded", "true");
   await enterCompanionMeadow(page); await expect(page.locator(".vc-meadow-walk")).toBeVisible();
   await page.setViewportSize({ width: 1380, height: 900 });
   await expect(page.locator(".vc-meadow-walk")).toBeVisible();
@@ -158,23 +217,48 @@ test("folded house opens on return and compact house restores its shower pad", a
 
 test("local low landing keeps its horizontal position and an airborne exit jumps from the painted foot", async ({ page }, info) => {
   await page.goto("/visual-fixture/poster?ambient=spring"); await openCompanionHome(page);
+  // A genuine home departure still jumps. An already exposed resident now
+  // enters quietly by owner instruction, so it cannot set up an airborne exit.
+  await placeCompanionOnHomeFloor(page);
+  await recordHomecoming(page); await enterCompanionMeadow(page);
+  await page.waitForFunction(() => { const actor = document.querySelector<HTMLElement>(".vc-meadow-walk"); return actor?.dataset.state === "jump" && Number(actor.dataset.groundY) - Number(actor.dataset.y) > 65; });
+  await page.keyboard.press("Escape"); const record = await expectReturnJump(page, info, "airborne-return-frames");
+  expect(record.departure.state).toBe("jump"); expect(record.departure.lift).toBeGreaterThan(40);
+  expect(record.entrySource).not.toBeNull();
+  expect(record.departure.x).toBeCloseTo(record.entrySource!.x, 0); expect(record.departure.y).toBeLessThan(record.entrySource!.y - 40);
   await placeCompanionOnExposedBackground(page, 90);
-  const source = await page.locator(".vc-companion").evaluate(node => { const rect = node.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.bottom }; });
+  const exposedSource = await page.locator(".vc-companion").evaluate(node => { const rect = node.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.bottom }; });
+  await page.evaluate(() => {
+    const frames: { x: number; y: number; state: string }[] = [], began = performance.now();
+    (window as Window & { exposedEntryFrames?: typeof frames }).exposedEntryFrames = frames;
+    const sample = () => {
+      const actor = document.querySelector<HTMLElement>(".vc-meadow-walk");
+      if (actor && !actor.hidden) frames.push({ x: Number(actor.dataset.x), y: Number(actor.dataset.y), state: actor.dataset.state ?? "" });
+      if (performance.now() - began < 5000) requestAnimationFrame(sample);
+    }; requestAnimationFrame(sample);
+  });
   await enterCompanionMeadow(page); const meadow = page.locator(".vc-meadow-walk");
-  await expect(meadow).toHaveAttribute("data-state", "jump");
-  await page.waitForFunction(() => { const pet = document.querySelector<HTMLElement>(".vc-meadow-walk"); return pet && Number(pet.dataset.groundY) - Number(pet.dataset.y) > 65; });
-  const departure = await recordHomecoming(page);
-  expect(departure.x).toBeCloseTo(source.x, 0); expect(departure.y).toBeLessThan(source.y - 40);
-  await page.keyboard.press("Escape"); const frames = await expectReturnJump(page, departure);
-  await info.attach("airborne-return-frames", { body: JSON.stringify(frames), contentType: "application/json" });
-  await placeCompanionOnExposedBackground(page, 90); await enterCompanionMeadow(page);
+  let entryObservationError: unknown;
+  try { await page.waitForFunction(() => ((window as Window & { exposedEntryFrames?: unknown[] }).exposedEntryFrames?.length ?? 0) >= 6, undefined, { timeout: 5000 }); }
+  catch (error) { entryObservationError = error; }
+  const entryFrames = await page.evaluate(() => (window as Window & { exposedEntryFrames?: { x: number; y: number; state: string }[] }).exposedEntryFrames ?? []);
+  await info.attach("exposed-quiet-entry-frames", { body: JSON.stringify({ exposedSource, frames: entryFrames }), contentType: "application/json" });
+  if (entryObservationError) throw entryObservationError;
+  expect(entryFrames.every(frame => frame.state !== "jump")).toBe(true);
+  expect(entryFrames.every(frame => Math.abs(frame.x - exposedSource.x) < 1 && Math.abs(frame.y - exposedSource.y) < 1)).toBe(true);
   await expect(meadow).toHaveAttribute("data-state", "idle");
   const foot = await meadow.evaluate(node => ({ x: Number((node as HTMLElement).dataset.x), y: Number((node as HTMLElement).dataset.y) }));
-  expect(foot.x).toBeCloseTo(source.x, 0); expect(foot.y).toBeCloseTo(source.y, 0);
+  expect(foot.x).toBeCloseTo(exposedSource.x, 0); expect(foot.y).toBeCloseTo(exposedSource.y, 0);
 });
 
 test("slow jump packets keep the resident painted through immediate departure", async ({ page }) => {
-  await page.goto("/visual-fixture/poster?ambient=spring"); await openCompanionHome(page); await placeCompanionOnHomeFloor(page);
+  await page.goto("/visual-fixture/poster?ambient=spring");
+  // Decoder/startup contention is a separate precondition from the held jump
+  // packets below. Keep the packet visibility/ink/1s/2s assertions unchanged.
+  const resident = page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
+  const room = page.getByRole("region", { name: "빅타민 집", exact: true }), launcher = page.getByRole("button", { name: "빅타민 집 열기", exact: true });
+  await expect.poll(async () => await resident.isVisible() && (await room.isVisible() || await launcher.isVisible()), { timeout: 20000 }).toBe(true);
+  await openCompanionHome(page); await placeCompanionOnHomeFloor(page);
   let release!: () => void, requested = 0;
   const pending = new Promise<void>(resolve => { release = resolve; });
   await page.route(/\/companion\/hd\/vitamin-action-0[3456]-/, async route => { requested++; await pending; await route.continue(); });

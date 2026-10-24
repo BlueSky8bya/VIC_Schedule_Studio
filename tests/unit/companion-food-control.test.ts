@@ -1,3 +1,5 @@
+// Controller ownership harness excludes the separately tested scene material hook.
+vi.mock("@/lib/ui/scene-material", () => ({ useCompanionSceneMaterial: () => ({ apply: () => {} }) }));
 import type { ReactElement, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CompanionFoodControl } from "@/components/poster/viewer-companion/companion-food";

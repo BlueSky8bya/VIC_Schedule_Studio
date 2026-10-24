@@ -10,14 +10,13 @@ import type {
 import type { TrendStack } from "@/lib/insights/actions";
 import type { PublicBroadcastMonth } from "@/lib/schedules/public-loader";
 import { BroadcastHours } from "@/components/studio/broadcast-hours";
-import { HighlightCards, type HighlightCard } from "@/components/studio/highlight-cards";
 import { StackTrendChart } from "@/components/studio/stack-trend-chart";
 import { hapticTick } from "@/lib/ui/haptics";
 
 // 시청자(비로그인 포함)용 '이 달 기록'.
 //
 // 관리자 인사이트와 '같은 차트 컴포넌트'를 그대로 쓴다(BroadcastHours / StackTrendChart /
-// HighlightCards) — 디자인이 두 갈래로 갈라지지 않게. 다른 건 데이터 출처와 노출 수위뿐이다.
+// 방송 시간) — 디자인이 두 갈래로 갈라지지 않게. 다른 건 데이터 출처와 노출 수위뿐이다.
 //
 // 공개 경계: 여기 오는 데이터는 전부 공개 로더에서 온 것뿐이다 — 공개 일정, 태그, 하트 집계,
 // 그리고 집계만 내주는 RPC의 방송 시간(0049 월별 / 0050 일별). 방문자 수·동시 접속
@@ -264,40 +263,6 @@ export function PublicInsights({
   // 네 장은 **한 가지 골격**만 쓴다: [아이콘] [라벨 / 값]. 값은 항상 main(라벨 바로 아래 같은 자리,
   // 같은 크기)이다. 예전엔 '최다요일'만 값을 sub(오른쪽 큰 글씨)에 넣어서, 같은 격자 안에서 어떤
   // 카드는 값이 왼쪽 아래에 어떤 카드는 오른쪽에 붙어 울퉁불퉁해 보였다(특히 모바일).
-  const highlights: HighlightCard[] = [
-    {
-      key: "top",
-      emoji: "💗",
-      tone: "top",
-      label: ["인기", "컨텐츠"],
-      main: d.popular[0]?.title ?? "—"
-    },
-    {
-      key: "wd",
-      emoji: "🔥",
-      tone: "wd",
-      label: ["컨텐츠", "최다요일"],
-      main: d.busiestWeekday !== null ? `${WEEKDAY[d.busiestWeekday]}요일` : "—"
-    },
-    {
-      key: "days",
-      emoji: "📺",
-      tone: "day",
-      label: ["이 달", "방송일"],
-      // 방송 기록을 못 불러왔으면 '0일'이 아니라 '—'다 — 0일은 "쉬었다"는 뜻이라 거짓이 된다.
-      main: loading || failed ? "—" : `${d.broadcastDays}일`
-    },
-    {
-      key: "next",
-      emoji: "🗓️",
-      tone: "hour",
-      label: ["다음", "방송"],
-      // 날짜와 제목을 한 줄로 — 시트 위쪽 '다음 방송' 줄과 같은 표기(17일 · 소통하면서)라 읽는 법이
-      // 두 번 바뀌지 않는다. 길면 …로 잘리고 호버/탭하면 전체가 뜬다.
-      main: d.next ? `${Number(d.next.dateKey.slice(8, 10))}일 · ${d.next.title}` : "—"
-    }
-  ];
-
   // 백드롭 클릭으로는 닫지 않는다(신고 반영) — 방송 중 '같이보기' 위에서 이 시트를 쓸 때
   // 바깥을 잘못 누르면 시트가 닫히며 화면이 훅 바뀌는 사고가 났다. 닫기는 조준된 행동만:
   // X 버튼 · Esc · (폰) 뒤로가기.
@@ -414,11 +379,6 @@ export function PublicInsights({
             />
           </div>
 
-          {/* 하이라이트 — 관리자와 같은 카드. 방문 기반(최다 방문일·시간대)은 공개판에서 제외. */}
-          <div className="pi-card">
-            <span className="pi-label">하이라이트</span>
-            <HighlightCards cards={highlights} />
-          </div>
         </div>
       </section>
     </div>

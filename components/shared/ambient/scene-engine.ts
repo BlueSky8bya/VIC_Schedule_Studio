@@ -21,6 +21,7 @@ import { type SeasonKey } from "@/components/shared/ambient/registry";
 import { worldTime, type DayBand, type WorldTime } from "@/components/shared/ambient/world/time";
 import { weatherOptionsForMonth, type DayWeather, type Weather } from "@/components/shared/ambient/world/weather";
 import { readAmbientEnvironment } from "@/components/shared/ambient/world/environment";
+import { createSceneMaterialPublisher } from "./world/material-light";
 import { pendingLoads } from "@/components/shared/ambient/loading";
 import { monthTraces, type Trace } from "@/components/shared/ambient/world/traces";
 import {drawFogField} from "@/components/shared/ambient/world/fog";
@@ -127,6 +128,8 @@ export interface Scene {
   resize(f: Frame): void;
   step(f: Frame): void;
   draw(g: CanvasRenderingContext2D, f: Frame): void;
+  /** True only after an actual backdrop draw, including a pending-art plate. */
+  backdropPainted?(): boolean;
   /** True when a scene supplied its own near layer; false retains the fallback. */
   drawForeground?(g: CanvasRenderingContext2D, f: Frame): boolean;
   /** Airborne material clears near grass, but still receives scene lighting. */
@@ -484,12 +487,20 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     frame.hot = Number.isFinite(l) ? { x: (l - rectL) / zoomF, y: (tp - rectT) / zoomF, w: (rgt - l) / zoomF, h: (btm - tp) / zoomF } : null;
     dbg.hot = frame.hot;
   };
+  const material = createSceneMaterialPublisher(canvas);
   const paintFrame = () => {
     g.setTransform(dpr, 0, 0, dpr, 0, 0);
     g.clearRect(0, 0, w, h);
     setCurrentLight(frame.light);
     frame.depthTier = tierNow();
     scene.draw(g, frame);
+    const ready = scene.ready?.() ?? true;
+    // The pending plate is dark only in the night band; its evening plate
+    // stays pale until artwork replaces it. Match that actually drawn plate.
+    const darkBackdrop = ready ? frame.time.night : frame.time.band === "night";
+    material.backdrop(Boolean((scene.backdropPainted?.() ?? ready) && darkBackdrop));
+    if (ready) material.publish(frame.light, frame.time.night, { width: w, height: h, floor: scene.fogFloor ? x => scene.fogFloor!(x, frame) : undefined, key: scene.fogFloorKey?.(frame) ?? "" });
+    else material.clear();
     if (scene.composed) return;
     // 닫힌 방(깊은 바다) — 계절·날씨·시간대가 닿지 않는다. 장면이 자기 대기를 통째로 소유한다.
     if (scene.sealed?.()) return;
@@ -902,6 +913,7 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
 
   return () => {
     disposed = true;
+    material.dispose();
     stop();
     if (recoveryTimer) clearTimeout(recoveryTimer);
     if (probeRaf) cancelAnimationFrame(probeRaf);

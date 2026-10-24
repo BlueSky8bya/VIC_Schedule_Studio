@@ -20,7 +20,7 @@ const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v
 export function createCompanionMeadowWalk(random: () => number = Math.random) {
   let point: Point = { u: .52, v: .73 }, leg: Leg | undefined, wait = 450;
   let direction: -1 | 1 = 1, serial = 0, previousGait: Gait = "walk";
-  let arrival: { from: { x: number; y: number }; elapsed: number } | undefined;
+  let arrival: { from: { x: number; y: number }; elapsed: number; inScene: boolean } | undefined;
   const draw = () => { const value = random(); return Number.isFinite(value) ? clamp(value, 0, .999999) : .5; };
   const project = (p: Point, viewport: Viewport) => ({
     x: Math.max(60, viewport.width * .16) + p.u * Math.max(1, viewport.width * .72 - 60),
@@ -31,12 +31,12 @@ export function createCompanionMeadowWalk(random: () => number = Math.random) {
   return {
     /** Direct seasonal input starts one finite jump from the actual resident.
      * Autonomous roam/jump settings do not cancel this requested departure. */
-    enter(location: { x: number; y: number }, viewport: Viewport) {
+    enter(location: { x: number; y: number }, viewport: Viewport, inScene = false) {
       if (![location.x, location.y, viewport.width, viewport.height].every(Number.isFinite) || viewport.width <= 0 || viewport.height <= 0) return;
-      const groundY = Math.max(location.y, viewport.height * .35 + 24);
+      const groundY = inScene ? location.y : Math.max(location.y, viewport.height * .35 + 24);
       point = { u: (location.x - Math.max(60, viewport.width * .16)) / Math.max(1, viewport.width * .72 - 60), v: (groundY / viewport.height - .35) / .65 };
       leg = undefined; wait = 650;
-      arrival = { from: { ...location }, elapsed: 0 };
+      arrival = { from: { ...location }, elapsed: 0, inScene };
     },
     /** A real outdoor placement owns its exact foot, including a drag across
      * the future calendar cover. Future legs depart from that foot smoothly. */
@@ -54,11 +54,11 @@ export function createCompanionMeadowWalk(random: () => number = Math.random) {
         arrival.elapsed = animate ? Math.min(700, arrival.elapsed + clamp(Number.isFinite(delta) ? delta : 0, 0, 80)) : 700;
         const p = arrival.elapsed / 700, to = project(point, viewport), from = arrival.from;
         const progress = sampleCompanionTravel(p), groundY = from.y + (to.y - from.y) * progress;
-        const lift = Math.sin(Math.PI * p) * Math.max(0, Math.min(140, Math.min(from.y, to.y) - 100));
+        const lift = arrival.inScene ? 0 : Math.sin(Math.PI * p) * Math.max(0, Math.min(140, Math.min(from.y, to.y) - 100));
         direction = to.x < from.x ? -1 : 1;
         const sample: CompanionMeadowSample = { x: from.x + (to.x - from.x) * progress, y: groundY - lift, groundY, scale: 1 + (.80 + point.v * .20 - 1) * progress,
-          row: p < .12 ? 3 : p < .5 ? 4 : p < .84 ? 5 : 6, phase: p < .12 ? p / .12 : p < .5 ? (p - .12) / .38 : p < .84 ? (p - .5) / .34 : (p - .84) / .16,
-          status: p < 1 ? "jump" : "idle", purpose: "stroll", direction, leg: serial };
+          row: arrival.inScene ? 0 : p < .12 ? 3 : p < .5 ? 4 : p < .84 ? 5 : 6, phase: arrival.inScene ? 0 : p < .12 ? p / .12 : p < .5 ? (p - .12) / .38 : p < .84 ? (p - .5) / .34 : (p - .84) / .16,
+          status: p < 1 && !arrival.inScene ? "jump" : "idle", purpose: "stroll", direction, leg: serial };
         if (p >= 1) { arrival = undefined; sample.row = 0; sample.phase = 0; }
         return sample;
       }

@@ -29,6 +29,7 @@ export function createWorld(season: SeasonKey, initial: ActiveBiomeKey = "meadow
     let disposed = false;
     let loading = true;
     let loadError = false;
+    let backdropPainted = false;
     const owner = {};
     const pointer = createDepthPointer();
     const particles = createParticles(seed, true);
@@ -76,6 +77,7 @@ export function createWorld(season: SeasonKey, initial: ActiveBiomeKey = "meadow
       composed: true,
       dispose() {
         disposed = true;
+        backdropPainted = false;
         if (front) front.c.width = front.c.height = 1;
         front = undefined;
         clearDepthCache();
@@ -111,7 +113,9 @@ export function createWorld(season: SeasonKey, initial: ActiveBiomeKey = "meadow
           scene!.drawAirborne?.(context, local);
           drawLightPass(context, frame.w, frame.h, frame.light, scene!.fogFloor ? x => scene!.fogFloor!(x, local) : null, scene!.fogFloorKey?.(local) ?? "", false);
         }, frame.depthTier ?? "full", owner));
+        backdropPainted = true;
       },
+      backdropPainted: () => backdropPainted,
       pointerDown(frame, onBackground) { return inView(() => scene?.pointerDown?.(localFrame(frame), onBackground) ?? false); },
       pointerUp(frame) { inView(() => scene?.pointerUp?.(localFrame(frame))); },
       ownsWeather(weather) { return scene?.ownsWeather?.(weather) ?? false; },

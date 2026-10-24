@@ -14,7 +14,6 @@ import {
   Lock,
   Radio,
   TrendingUp,
-  Trophy
 } from "lucide-react";
 import {
   type CSSProperties,
@@ -25,7 +24,6 @@ import {
 } from "react";
 import { DeveloperPanel } from "@/components/developer/developer-panel";
 import { BroadcastHours } from "@/components/studio/broadcast-hours";
-import { HighlightCards } from "@/components/studio/highlight-cards";
 import { SecurityPanel } from "@/components/studio/security-panel";
 import { StackTrendChart } from "@/components/studio/stack-trend-chart";
 import { TrendDeltaBadge } from "@/components/studio/trend-delta-badge";
@@ -79,7 +77,6 @@ const PANELS = [
   { key: "trend", label: "트렌드", icon: LineChart },
   { key: "content", label: "일정", icon: CalendarDays },
   { key: "engagement", label: "참여", icon: Heart },
-  { key: "highlight", label: "하이라이트", icon: Trophy },
   { key: "live", label: "실시간", icon: Radio },
   { key: "visits", label: "방문", icon: TrendingUp },
   { key: "security", label: "보안", icon: Lock },
@@ -1192,88 +1189,6 @@ export function InsightsDashboard({
     );
   }
 
-  function renderHighlights() {
-    if (loading || visitsLoading) {
-      return (
-        <div className="insight-skel" aria-hidden="true">
-          <span />
-          <span />
-        </div>
-      );
-    }
-    if (!data) {
-      return <p className="insight-empty">불러오지 못했어요.</p>;
-    }
-    const peakDay =
-      visits?.hasData ? [...visits.all.days].sort((a, b) => b.total - a.total)[0] : null;
-    const peakHour = visits?.hasData
-      ? visits.all.hours.reduce(
-          (best, slot, h) => (slot.total > best.c ? { h, c: slot.total } : best),
-          { h: -1, c: 0 }
-        )
-      : null;
-    const top = data.engagement.topEvents[0] ?? null;
-    const bw = data.content.busiestWeekday;
-    // 라벨은 [윗줄, 아랫줄] 2분할(모바일은 항상 두 줄, 웹은 긴 것만). 오른쪽 큰 수치는 sub.
-    const cards: {
-      key: string;
-      emoji: string;
-      tone: string;
-      label: [string, string];
-      main: string;
-      sub: string;
-      heart?: boolean;
-    }[] = [
-      {
-        key: "day",
-        emoji: "🗓️",
-        tone: "day",
-        label: ["방문", "최다일"],
-        main: peakDay && peakDay.total > 0 ? `${month}/${peakDay.day}` : "—",
-        sub: peakDay && peakDay.total > 0 ? `${peakDay.total}명` : ""
-      },
-      {
-        key: "hour",
-        emoji: "⏰",
-        tone: "hour",
-        label: ["최고 방문", "시간대"],
-        main: peakHour && peakHour.c > 0 ? `${peakHour.h}시` : "—",
-        sub: peakHour && peakHour.c > 0 ? `${peakHour.c}명` : ""
-      },
-      {
-        key: "top",
-        emoji: "💗",
-        tone: "top",
-        label: ["인기", "컨텐츠"],
-        main: top ? top.title : "—",
-        sub: top ? `${top.count}` : "",
-        heart: true
-      },
-      {
-        // 요일은 오른쪽에 큰 글자로(다른 카드의 수치 자리). 본문은 비우고 라벨만.
-        key: "wd",
-        emoji: "🔥",
-        tone: "wd",
-        label: ["컨텐츠", "최다요일"],
-        main: "",
-        sub: bw !== null ? WEEKDAY[bw] : "—"
-      }
-    ];
-    // #16 결론형 헤드라인 — 표 위에 "무슨 일이 일어났나"를 한 줄 메시지로(숫자 나열 대신 결론).
-    const hp: string[] = [];
-    if (bw !== null) hp.push(`${WEEKDAY[bw]}요일 콘텐츠 집중`);
-    if (peakHour && peakHour.c > 0) hp.push(`${peakHour.h}시 방문 피크`);
-    else if (peakDay && peakDay.total > 0) hp.push(`${month}/${peakDay.day} 방문 최다`);
-    if (top) hp.push(`'${top.title}' 인기`);
-    const headline = hp.length > 0 ? hp.join(" · ") : `${month}월 요약`;
-    return (
-      <>
-        <p className="insight-headline">{headline}</p>
-        <HighlightCards cards={cards} />
-      </>
-    );
-  }
-
   return (
     <div className="insights">
       <div className="insights-head">
@@ -1472,9 +1387,6 @@ export function InsightsDashboard({
               );
             })}
           </section>
-
-          {/* 4) 이 달의 하이라이트 */}
-          <section className="insights-panel">{renderHighlights()}</section>
 
           {/* 5) 실시간 — 개발자 전용(아랫줄) */}
           <section className="insights-panel">

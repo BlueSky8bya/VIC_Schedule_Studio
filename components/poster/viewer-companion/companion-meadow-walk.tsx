@@ -17,6 +17,7 @@ import type { CompanionPlay } from "@/lib/ui/viewer-companion/brain";
 import { boundCompanionHeldPose, createCompanionHeldInertia } from "@/lib/ui/viewer-companion/held-inertia";
 import { createCompanionHeldShake } from "@/lib/ui/viewer-companion/held-shake";
 import { playCompanionSound } from "@/lib/ui/viewer-companion/companion-sound";
+import { useCompanionSceneMaterial } from "@/lib/ui/scene-material";
 
 /** One temporary presentation of the actual admitted resident. Shared contact,
  * pose and throw samplers supply input feedback; care stays with its real brain. */
@@ -27,6 +28,7 @@ export function CompanionMeadowWalk({ preferences, available, reduced, night, se
 }
 
 function MeadowDrawing({ preferences, reduced, night, session }: { preferences: CompanionPreferences; reduced: boolean; night: boolean; session: CompanionShowcaseSession }) {
+  const sceneMaterial = useCompanionSceneMaterial();
   const host = useRef<HTMLDivElement>(null), body = useRef<HTMLButtonElement>(null), facing = useRef<HTMLSpanElement>(null), pose = useRef<HTMLSpanElement>(null), sprite = useRef<HTMLSpanElement>(null), canvas = useRef<HTMLCanvasElement>(null), shadow = useRef<HTMLSpanElement>(null);
   const back = useRef<HTMLSpanElement>(null), front = useRef<HTMLSpanElement>(null), gift = useRef<HTMLSpanElement>(null);
   const preferencesRef = useRef(preferences); preferencesRef.current = preferences;
@@ -48,7 +50,7 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
     let fallback = initial?.pose === undefined ? undefined : selectCompanionSprite(initial.pose);
     let fallbackImage = fallback ? peekDecodedCompanionSprite(fallback.src) : undefined;
     let fallbackRow = fallback ? companionSpriteMetadata.rows.findIndex(row => row.includes(fallback!.physicalIndex)) : 0;
-    if (initial) walker.enter(initial, { width: innerWidth, height: innerHeight });
+    if (initial) walker.enter(initial, { width: innerWidth, height: innerHeight }, initial.enteredFromScene);
     let current = walker.sample(0, { width: innerWidth, height: innerHeight }, preferencesRef.current, !reducedRef.current && !document.documentElement.hasAttribute("data-reduce-motion") && !["off", "soft"].includes(document.documentElement.dataset.gfx ?? ""));
     const petting = createCompanionPettingGesture(), touch = createCompanionPettingContact(), inertia = createCompanionHeldInertia(), shake = createCompanionHeldShake();
     let reaction: { play?: CompanionPlay; row?: number; began: number; duration: number; name: string } | undefined;
@@ -107,6 +109,7 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
       session.move("pet", { x: current.x, y: current.groundY }, false);
       session.presentPet({ y: current.y, scale: current.scale });
       element.hidden = false;
+      sceneMaterial.apply(bodyPlane, { x: current.x, y: current.groundY });
       return true;
     };
     const schedule = (token: number) => {
@@ -209,7 +212,7 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
     document.addEventListener("visibilitychange", refresh); window.addEventListener("focus", refresh); window.addEventListener("blur", refresh);
     ensureWardrobe(); refresh();
     return () => { disposed = true; cancel(); if (refreshRef.current === refresh) refreshRef.current = () => {}; off(); offSession(); offInput(); observer.disconnect(); painter?.clear(); window.removeEventListener("resize", refresh); window.visualViewport?.removeEventListener("resize", refresh); document.removeEventListener("visibilitychange", refresh); window.removeEventListener("focus", refresh); window.removeEventListener("blur", refresh); };
-  }, [session]);
+  }, [session, sceneMaterial]);
   // React setting changes need the same wakeup as focus/resize. Keep the
   // mounted controller, active clock and destination; cancel only its pending
   // paint/decode generation. In particular, OFF -> ON must wake a stopped RAF.

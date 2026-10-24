@@ -24,6 +24,23 @@ const success = async () => ({ ok: true as const, id: "synthetic" });
 const failure = async () => ({ ok: false as const, error: "synthetic failure" });
 
 describe("serialized studio save batches", () => {
+  it("does not invent a save or timestamp for a shortcut without a write", async () => {
+    const queue = useStudioWriteQueue({ current: Promise.resolve() });
+    expect(status()).toBe("idle");
+    expect(hooks.cells[1].value).toBeNull();
+    queue.flashSavedChip();
+    await vi.runAllTimersAsync();
+    expect(status()).toBe("idle");
+    expect(hooks.cells[1].value).toBeNull();
+    await queue.enqueueWrite(success);
+    await vi.runAllTimersAsync();
+    const savedAt = hooks.cells[1].value;
+    vi.advanceTimersByTime(120000);
+    queue.flashSavedChip();
+    await vi.runAllTimersAsync();
+    expect(status()).toBe("saved");
+    expect(hooks.cells[1].value).toBe(savedAt);
+  });
   it.each([false, true])("keeps a same-batch failure after later success (throws=%s)", async throws => {
     const queue = useStudioWriteQueue({ current: Promise.resolve() });
     const order: string[] = [];

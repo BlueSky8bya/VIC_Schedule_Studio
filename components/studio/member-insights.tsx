@@ -4,7 +4,7 @@ import { tagColor } from "@/lib/tags/dark-palette";
 
 import "@/components/studio/insights-charts.css";
 
-import { CalendarDays, ChevronLeft, ChevronRight, Heart, LineChart, Lock, Trophy } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Heart, LineChart, Lock } from "lucide-react";
 import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
@@ -18,7 +18,6 @@ import {
   type MemberInsightsData,
   type OwnerSecurityData
 } from "@/lib/insights/actions";
-import { HighlightCards } from "@/components/studio/highlight-cards";
 import { BroadcastHours } from "@/components/studio/broadcast-hours";
 import { SecurityPanel } from "@/components/studio/security-panel";
 import { StackTrendChart } from "@/components/studio/stack-trend-chart";
@@ -26,15 +25,14 @@ import { TrendDeltaBadge } from "@/components/studio/trend-delta-badge";
 import { monthProgress } from "@/lib/insights/month-progress";
 import { hapticTick } from "@/lib/ui/haptics";
 
-// 관리자·매니저용 월별 인사이트 — 수치 없는 4패널(트렌드·일정·참여·하이라이트).
+// 관리자·매니저용 월별 인사이트 — 수치 없는 3패널(트렌드·일정·참여).
 // 데이터는 getMemberInsightsAction이 이미 수치를 빼고(보안/시스템/방문 원시값 없음, 막대는 0~1 비율)
 // 내려주므로 여기선 그대로 그린다. 허용된 하트 합계(이 달/누적)만 숫자로 보인다.
 // 트렌드가 첫 탭 = 기본 화면 — 개발자판(insights-dashboard)과 같은 순서(2026-08-31 사용자 지시).
 const PANELS = [
   { key: "trend", label: "트렌드", icon: LineChart },
   { key: "content", label: "일정", icon: CalendarDays },
-  { key: "engagement", label: "참여", icon: Heart },
-  { key: "highlight", label: "하이라이트", icon: Trophy }
+  { key: "engagement", label: "참여", icon: Heart }
 ] as const;
 
 const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"];
@@ -396,49 +394,12 @@ export function MemberInsights({
     );
   }
 
-  function renderHighlights(d: MemberInsightsData) {
-    const bw = d.highlight.busiestWeekday;
-    const cards: { key: string; emoji: string; tone: string; label: [string, string]; main: string; sub?: string }[] = [
-      {
-        key: "day",
-        emoji: "🗓️",
-        tone: "day",
-        label: ["방문", "최다일"],
-        main: d.highlight.peakDay ? fmtMonthDay(d.highlight.peakDay) : "—"
-      },
-      {
-        key: "hour",
-        emoji: "⏰",
-        tone: "hour",
-        label: ["최고 방문", "시간대"],
-        main: d.highlight.peakHour !== null ? `${d.highlight.peakHour}시` : "—"
-      },
-      {
-        key: "top",
-        emoji: "💗",
-        tone: "top",
-        label: ["인기", "컨텐츠"],
-        main: d.highlight.topTitle ?? "—"
-      },
-      {
-        key: "wd",
-        emoji: "🔥",
-        tone: "wd",
-        label: ["컨텐츠", "최다요일"],
-        main: "",
-        sub: bw !== null ? WEEKDAY[bw] : "—"
-      }
-    ];
-    return <HighlightCards cards={cards} />;
-  }
-
   // 인덱스 평행 배열이 아니라 key로 짝을 맞춘다 — 탭 순서를 바꿀 때 렌더러가 따라오지 않아
   // 엉뚱한 패널이 그려지는 사고를 구조적으로 막는다.
   const renderers: Record<string, (d: MemberInsightsData) => ReactNode> = {
     content: renderContent,
     engagement: renderEngagement,
-    trend: renderTrend,
-    highlight: renderHighlights
+    trend: renderTrend
   };
 
   return (

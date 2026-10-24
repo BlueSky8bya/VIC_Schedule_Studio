@@ -11,6 +11,7 @@ import { createCompanionInputFrame } from "@/lib/ui/viewer-companion/input-frame
 import "./companion-toys.css";
 import type { CompanionToyPlayPose } from "@/lib/ui/viewer-companion/toy-play";
 import { companionRoomItemLight, type CompanionRoomLightRect } from "@/lib/ui/viewer-companion/room-light";
+import { useCompanionSceneMaterial } from "@/lib/ui/scene-material";
 import { createCompanionItemAnchors } from "@/lib/ui/viewer-companion/item-anchor";
 import { companionCalendarAnchorIdentity, type CompanionGeometryAnchor } from "@/lib/ui/viewer-companion/geometry";
 import { attachCompanionElementPoint, followCompanionElementPoint, type CompanionAnchorFrame, type CompanionElementPoint } from "@/lib/ui/viewer-companion/element-anchor";
@@ -71,6 +72,7 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
   const playDrawings = useRef(new Map<string, ToyDrawing>());
   const playExposure = useRef(new Map<string, { at: number; ms: number; changed: number; transform: string }>());
   const roomLight = useRef<{ room?: CompanionRoomLightRect; grade: number }>({ grade: 1 });
+  const sceneMaterial = useCompanionSceneMaterial();
   const blockedRef = useRef(blocked); blockedRef.current = blocked;
   const dropBox = useRef<HTMLButtonElement | null>(null);
   const clearDropBox = useCallback(() => { dropBox.current?.removeAttribute("data-toy-over"); dropBox.current = null; }, []);
@@ -148,7 +150,8 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     if (painted.current.get(node) !== transform) { node.style.transform = transform; painted.current.set(node, transform); }
     for (const [key, value] of Object.entries({ held: String(toy.held), carried: String(toy.carried), kind: toy.kind, platform: toy.platformId ?? "", falling: String(!toy.held && !toy.carried && !toy.platformId && !toy.hidden) })) if (node.dataset[key] !== value) node.dataset[key] = value;
     node.disabled = blockedRef.current && !(showcaseSession?.active() && lease);
-  }); }, [world, showcaseSession]);
+    sceneMaterial.apply(node, lease ?? toy);
+  }); }, [world, showcaseSession, sceneMaterial]);
   const refresh = useCallback(() => {
     const next = world.items();
     const ids = new Set(next.map(toy => toy.id));

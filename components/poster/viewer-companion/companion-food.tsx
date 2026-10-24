@@ -16,6 +16,7 @@ import { COMPANION_CARD_PLAY_EVENT } from "@/lib/ui/viewer-companion/card-play";
 import { COMPANION_FOOD_NAMES as names, isCompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { CompanionFruit } from "./companion-fruit";
 import { companionRoomItemLight, type CompanionRoomLightRect } from "@/lib/ui/viewer-companion/room-light";
+import { useCompanionSceneMaterial } from "@/lib/ui/scene-material";
 import { createCompanionItemAnchors } from "@/lib/ui/viewer-companion/item-anchor";
 import type { CompanionShowcaseSession } from "@/lib/ui/viewer-companion/showcase-session";
 import { bindCompanionShowcaseInput } from "@/lib/ui/viewer-companion/showcase-input";
@@ -86,6 +87,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   const dropFrame = useRef(0), lastDropPaint = useRef(0), suspending = useRef(false), animateDrops = useRef<() => void>(() => {});
   const painted = useRef(new WeakMap<HTMLElement, { transform: string; nibble?: string; eating?: boolean; light?: number }>());
   const roomLight = useRef<{ room?: CompanionRoomLightRect; grade: number }>({ grade: 1 });
+  const sceneMaterial = useCompanionSceneMaterial();
   const renderedTransforms = useRef(new Map<string, string>());
   const serial = useRef(0), dragging = useRef<Drag | null>(null), hover = useRef<Hover | null>(null), discard = useRef<Discard | null>(null);
   const carried = useRef<string | undefined>(undefined);
@@ -165,7 +167,8 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     if (cached?.nibble !== nibble) node.style.setProperty("--vc-nibble", nibble);
     if (cached?.eating !== eating) node.toggleAttribute("data-eating", eating);
     painted.current.set(node, { transform: next, nibble, eating, light });
-  }, [cancelJostle, showcaseSession]);
+    sceneMaterial.apply(node, pose);
+  }, [cancelJostle, showcaseSession, sceneMaterial]);
   const resetNibble = useCallback((id?: string) => {
     for (const food of current.current) if ((!id || food.id === id) && !drops.current.has(food.id)) { presentations.current.delete(food.id); paint(food); }
   }, [paint]);

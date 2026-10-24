@@ -13,8 +13,9 @@ const catalog=JSON.parse(fs.readFileSync(path.resolve('scripts/site-daily/native
 const fingerprint=(value='a')=>caseFingerprint({files:[{path:'lib/product.ts',sha256:value.repeat(64)}],scenario:{buildId:'exact-build',id:'scenario'},runtime:{node:'22',chromium:'fixed'}});
 const raw=(overrides:Record<string,unknown>={})=>({expectedStatus:'passed',status:'expected',results:[{status:'passed',retry:0,duration:200,errors:[]}],...overrides});
 describe('focused daily selection and immutable continuation',()=>{
-  it('balances 260 actual registrations into seven nonduplicated, bounded-cost buckets',()=>{
-    const buckets=weeklyBuckets(catalog.cases);expect(buckets).toHaveLength(7);expect(buckets.flatMap((b:{cases:unknown[]})=>b.cases)).toHaveLength(260);
+  it('balances the current registrations into seven nonduplicated, bounded-cost buckets',()=>{
+    const buckets=weeklyBuckets(catalog.cases);expect(buckets).toHaveLength(7);expect(buckets.flatMap((b:{cases:unknown[]})=>b.cases)).toHaveLength(catalog.cases.length);
+    expect(new Set(buckets.flatMap((b:{cases:{id:string}[]})=>b.cases.map(c=>c.id))).size).toBe(catalog.cases.length);
     const costs=buckets.map((b:{estimatedWorkerSeconds:number})=>b.estimatedWorkerSeconds);expect(Math.max(...costs)-Math.min(...costs)).toBeLessThanOrEqual(125);
     expect(catalog.registrationOnly).toBe(true);expect(catalog.additionalLampCases).toBe(21);
     expect(catalog.additionalLivingIntentMotionCases).toBe(7);
@@ -31,15 +32,23 @@ describe('focused daily selection and immutable continuation',()=>{
     expect(catalog.cases.some((c:{title:string})=>c.title.startsWith('meadow cold sprite failure recovers'))).toBe(false);
     expect(catalog.cases.filter((c:{file:string})=>c.file==='tests/visual/companion-intent-motion.spec.ts')).toHaveLength(6);
   });
-  it('covers the fixed catalog over seven completed days, and catches up after a missed day',()=>{
+  it('rotates the current catalog within daily budgets and catches up deferred or missed cases',()=>{
     const observations:Record<string,unknown>[]=[];const seen=new Set();
     for(let day=23;day<=29;day++){
       const plan=selectDailyCases({catalog:catalog.cases,day:`2026-10-${day}`,observations});expect(plan.cases.length).toBeLessThanOrEqual(42);expect(plan.fullCertification).toBe(false);
       for(const c of plan.cases){seen.add(c.id);observations.push({id:c.id,day:`2026-10-${day}`,outcome:'passed',receiptVerified:true,actualExecuted:true});}
     }
-    expect(seen.size).toBe(260);
+    expect(seen.size).toBeGreaterThan(0);expect(seen.size).toBeLessThanOrEqual(catalog.cases.length);
     const missed=selectDailyCases({catalog:catalog.cases,day:'2026-10-30',observations:observations.filter(x=>x.day!=='2026-10-25')});
     expect(missed.cases.some((c:{id:string})=>observations.some(x=>x.day==='2026-10-25'&&x.id===c.id))).toBe(true);
+    // Catalog growth can exceed seven days' budget. Unobserved registrations
+    // remain in the oldest-first rotation; seven buckets are no full QA claim.
+    for(let offset=0;offset<7&&seen.size<catalog.cases.length;offset++){
+      const day=new Date(Date.UTC(2026,9,30+offset)).toISOString().slice(0,10);
+      const next=selectDailyCases({catalog:catalog.cases,day,observations});expect(next.cases.length).toBeLessThanOrEqual(42);
+      for(const c of next.cases){seen.add(c.id);observations.push({id:c.id,day,outcome:'passed',receiptVerified:true,actualExecuted:true});}
+    }
+    expect(seen.size).toBe(catalog.cases.length);
   });
   it('does not let old input overwrite a newer observation or reused evidence advance the day',()=>{
     const c=catalog.cases[0],o={id:c.id,receiptVerified:true,actualExecuted:true,outcome:'passed'};

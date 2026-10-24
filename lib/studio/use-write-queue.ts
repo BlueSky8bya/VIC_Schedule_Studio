@@ -137,7 +137,8 @@ export function useStudioWriteQueue(
     }
   }
 
-  // Ctrl+S로 저장할 카드가 없을 때(이미 다 저장됨) — 저장중→저장됨을 잠깐 보여 확인시킨다.
+  // A shortcut with no write cannot invent progress or a completion time.
+  // Preserve the actual queue's pending/failed/saved state and timestamp.
   function flashSavedChip(): void {
     if (savingCountRef.current > 0) return;
     // 저장할 것이 없는 Ctrl+S는 실패한 쓰기를 재전송한 것이 아니다.
@@ -145,18 +146,6 @@ export function useStudioWriteQueue(
       setSaveState("failed");
       return;
     }
-    if (savedTimerRef.current) {
-      window.clearTimeout(savedTimerRef.current);
-      savedTimerRef.current = null;
-    }
-    setSaveState("saving");
-    savedTimerRef.current = window.setTimeout(() => {
-      if (savingCountRef.current === 0) {
-        setSaveState("saved");
-        setLastSavedKst(nowKstHm());
-      }
-      savedTimerRef.current = null;
-    }, 600);
   }
 
   return {

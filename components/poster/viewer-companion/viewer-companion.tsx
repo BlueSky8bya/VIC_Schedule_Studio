@@ -34,6 +34,7 @@ import { createCompanionPersonalityJobs, getCompanionPersonalityMeal } from "@/l
 import { canCompanionSetHomeTv, companionHomeTvControl, getCompanionHomeTv, setCompanionHomeTv } from "@/lib/ui/viewer-companion/home-room-media";
 import { canCompanionSetHomeLight, getCompanionHomeLight, getServerCompanionHomeLight, setCompanionHomeLight, subscribeCompanionHomeLight } from "@/lib/ui/viewer-companion/home-light";
 import { companionRoomLighting } from "@/lib/ui/viewer-companion/room-lighting";
+import { useCompanionSceneMaterial } from "@/lib/ui/scene-material";
 import { companionHomeLifePhaseFor, createCompanionHomeLifePolicy, planCompanionHomeLifeControl, type CompanionHomeLifeAction, type CompanionHomeLifePhase } from "@/lib/ui/viewer-companion/home-life-policy";
 import { canCompanionSetCurtain, getCompanionCurtainChoice, setCompanionCurtainChoice, subscribeCompanionCurtainChoice } from "@/lib/ui/viewer-companion/home-curtain-control";
 import { companionCurtainControlStance, companionHomeCordPoint, companionHomeCordTouches, companionHomeOpeningContact, companionHomeResidentFloor, companionRoomBodyLight, COMPANION_WASH_SUPPORT, nearestCompanionHomeCordAnchor, sampleCompanionHomeReach, type CompanionHomeCordAnchor } from "@/lib/ui/viewer-companion/home-interaction";
@@ -147,6 +148,7 @@ const spriteSources = registration.rows.map((_, row) => companionSpriteSources(r
  * Imperative transform/frame writes never re-render the calendar on a tick. */
 export default function ViewerCompanion({ onOpenBook, root, preferences, blocked, overlayOpen, workspaceBusy = false, editing = false, agenda, monthKey, context, reduced, homeHost, homeVisible, launcherHost = null, compactHost = null, premiereCue = null, onPremiereJoin, positionMemory, fixtureFood }: Props) {
   const [showcaseSession] = useState(createCompanionShowcaseSession);
+  const sceneMaterial = useCompanionSceneMaterial();
   const pathname = usePathname();
   useEffect(() => { showcaseSession.attach(); return () => showcaseSession.dispose(); }, [showcaseSession]);
   useEffect(() => { showcaseSession.clear(); }, [showcaseSession, monthKey, pathname]);
@@ -1552,6 +1554,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       el.toggleAttribute("data-native-sofa", nativeResident);
       const actorOffset = nativeResident && bedScene ? { x: bedScene.anchorX, y: bedScene.anchorY } : { x: 0, y: 0 };
       style(el, "transform", `translate3d(${(display.x - size / 2 - actorOffset.x).toFixed(3)}px,${(display.y - size - actorOffset.y).toFixed(3)}px,0) scale(${display.scale})`);
+      sceneMaterial.apply(inertiaLayer, display);
       if (lampDiagnostic && interaction?.kind === "light" && hand) {
         const point=measureLampDiagnosticPoint(el,image,hand),rect=el.getBoundingClientRect();
         lampDiagnostic.record({stage:"render",at:performance.now(),serial:interaction.serial,x:rect.left+rect.width/2,y:rect.bottom,displayY:display.y,actorWidth:rect.width,actorHeight:rect.height,handDOMX:point?.x,handDOMY:point?.y,lit:getCompanionHomeLight(),touching:touchingControl,paintedCurrent});
@@ -4974,7 +4977,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       hideBed();
       el.removeAttribute("data-native-sofa"); front?.removeAttribute("data-native-sofa"); clearSofaNames();
     };
-  }, [ready, root, worldPreferencesKey, blocked, agenda, monthKey, reduced, geometryIdentity, positionMemory, discover, workExpressions, showcaseSession]);
+  }, [ready, root, worldPreferencesKey, blocked, agenda, monthKey, reduced, geometryIdentity, positionMemory, discover, workExpressions, showcaseSession, sceneMaterial]);
 
   if (!ready) return null;
   const closeHome = homeShelf.close;

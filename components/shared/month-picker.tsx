@@ -1,7 +1,7 @@
 "use client";
 
 import { CalendarCheck, ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { hapticTick } from "@/lib/ui/haptics";
 import "./month-picker.css";
@@ -52,6 +52,9 @@ export function MonthTitleButton({
       className={`month-title-btn${open ? " is-open" : ""} ${className}`}
       data-act="month-title"
       onClick={(e) => {
+        // Pointer activation does not focus buttons in every browser. Keep the
+        // actual opener available for the dialog's focus return on close.
+        e.currentTarget.focus({ preventScroll: true });
         hapticTick();
         onOpen(e.currentTarget.getBoundingClientRect());
       }}
@@ -95,6 +98,41 @@ export function MonthPicker({
     });
   };
   const panelRef = useRef<HTMLDivElement>(null);
+  const [popStyle, setPopStyle] = useState<CSSProperties>();
+  useLayoutEffect(() => {
+    const panel = panelRef.current;
+    const opener = document.activeElement;
+    return () => {
+      const focused = document.activeElement;
+      // A later deliberate focus change belongs to its new control. Restore
+      // synchronously only while focus still belongs to this closing dialog.
+      if (focused !== document.body && !panel?.contains(focused)) return;
+      if (opener instanceof HTMLElement && opener.isConnected && !opener.closest("[inert]")) {
+        opener.focus({ preventScroll: true });
+      }
+    };
+  }, []);
+  // Clamp the measured panel, including its footer, rather than an assumed
+  // height. ResizeObserver also covers font loading and viewport changes.
+  useLayoutEffect(() => {
+    const panel = panelRef.current;
+    if (narrow || !anchor || !panel) return;
+    const position = () => {
+      const maxLeft = Math.max(12, window.innerWidth - 12 - panel.offsetWidth);
+      const maxTop = Math.max(12, window.innerHeight - 12 - panel.offsetHeight);
+      const left = Math.max(12, Math.min(maxLeft, anchor.left + anchor.width / 2 - panel.offsetWidth / 2));
+      const top = Math.max(12, Math.min(maxTop, anchor.bottom + 8));
+      setPopStyle((current) => current?.left === left && current?.top === top ? current : { left, top });
+    };
+    position();
+    const observer = new ResizeObserver(position);
+    observer.observe(panel);
+    window.addEventListener("resize", position);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", position);
+    };
+  }, [anchor, narrow]);
   // 연도 레일 끌기·던지기(2026-09-28 소유자: 잡고 휙 던지면 촤르륵). 레일은 해마다 key로 다시 마운트되므로
   // 포인터는 바깥 고정 래퍼가 잡는다. STEP px마다 한 해, 놓는 순간 속도만큼 관성 스텝(간격이 점점 벌어짐).
   const drag = useRef<{ on: boolean; lastX: number; lastT: number; acc: number; moved: number; vx: number }>({
@@ -186,6 +224,7 @@ export function MonthPicker({
   // and Studio pickers retain their current unrestricted navigation.
   const canPrevYear = !bounds || year > bounds.min;
   const canNextYear = !bounds || year < bounds.max;
+  const onTodayMonth = year === today.year && view.year === today.year && view.month === today.month;
   const months = useMemo(() => Array.from({ length: 12 }, (_, i) => ({ year, month: i + 1 })), [year]);
 
   // 열리면 보고 있는 달(같은 해면) 또는 첫 활성 달에 포커스 — 키보드만으로도 고를 수 있게.
@@ -197,41 +236,48 @@ export function MonthPicker({
     (cur ?? first)?.focus({ preventScroll: true });
   }, [year]);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onClose();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  const onPanelKey = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    // Consume Escape before the dialog's propagation guard, so it can never
+    // reach a calendar shortcut or get swallowed before a window listener.
+    e.stopPropagation();
+    if (e.key === "Escape") {
+      e.preventDefault();
+      onClose();
+      return;
+    }
+    if (e.key !== "Tab") return;
+    const controls = Array.from(e.currentTarget.querySelectorAll<HTMLElement>(
+      "button:not(:disabled), a[href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]"
+    )).filter((control) => control.tabIndex >= 0 && control.getClientRects().length > 0 && !control.closest("[inert]"));
+    const index = controls.indexOf(document.activeElement as HTMLElement);
+    if (!controls.length) {
+      e.preventDefault();
+      e.currentTarget.focus({ preventScroll: true });
+    } else if (index < 0 || (e.shiftKey ? index === 0 : index === controls.length - 1)) {
+      e.preventDefault();
+      controls[e.shiftKey ? controls.length - 1 : 0]?.focus({ preventScroll: true });
+    }
+  };
 
-  // 격자 화살표 이동(3열). Enter/Space는 버튼 기본 동작.
+  // 격자 화살표 이동(PC 3열·모바일 4열). Enter/Space는 버튼 기본 동작.
   const onGridKey = (e: ReactKeyboardEvent<HTMLDivElement>) => {
-    const step: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 3, ArrowUp: -3 };
+    const columns = narrow ? 4 : 3;
+    const step: Record<string, number> = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: columns, ArrowUp: -columns };
     const d = step[e.key];
     if (d === undefined) {
-      if (e.key === "PageUp" && canPrevYear) setYear((y) => y - 1);
-      if (e.key === "PageDown" && canNextYear) setYear((y) => y + 1);
+      if (e.key === "PageUp" || e.key === "PageDown") {
+        e.preventDefault();
+        if (e.key === "PageUp" && canPrevYear) setYear((y) => y - 1);
+        if (e.key === "PageDown" && canNextYear) setYear((y) => y + 1);
+      }
       return;
     }
     e.preventDefault();
     const buttons = Array.from(e.currentTarget.querySelectorAll<HTMLButtonElement>(".mp-month"));
     const i = buttons.findIndex((b) => b === document.activeElement);
     const j = i < 0 ? 0 : Math.max(0, Math.min(11, i + d));
-    buttons[j]?.focus();
+    buttons[j]?.focus({ preventScroll: true });
   };
-
-  // PC 팝오버 좌표 — 제목 바로 아래, 화면 안으로 클램프.
-  const popStyle: CSSProperties | undefined =
-    !narrow && anchor
-      ? {
-          left: Math.max(12, Math.min(window.innerWidth - 12 - 324, anchor.left + anchor.width / 2 - 162)),
-          top: Math.min(window.innerHeight - 12 - 260, anchor.bottom + 8)
-        }
-      : undefined;
 
   // body 포털 — 포스터 래퍼(transform 스케일)가 만드는 스태킹 컨텍스트 안에서는 z-index를 아무리 올려도
   // 좌하단 계정 원(globals 9000, body 직속) 밑에 깔린다(2026-09-27 실측: 모바일 시트의 9월 칸을 덮음).
@@ -250,10 +296,11 @@ export function MonthPicker({
         className={`mp-panel${scrubbing ? " is-scrubbing" : ""}`}
         // 피커가 떠 있는 동안은 키의 주인이다 — 밑의 ←/→(월 이동)·T(오늘) 전역 핸들러까지 안 간다
         // (React 17+의 stopPropagation은 루트 밖 native 리스너도 막는다).
-        onKeyDown={(e) => e.stopPropagation()}
+        onKeyDown={onPanelKey}
         ref={panelRef}
         role="dialog"
-        style={popStyle}
+        style={!narrow ? popStyle : undefined}
+        tabIndex={-1}
       >
         {narrow ? <span aria-hidden="true" className="mp-grab" /> : null}
         {/* 연도 레일 — 가운데 해가 크고, 양옆 이웃 해는 작고 흐리게. ‹ ›나 이웃 해를 누르면 레일이 그
@@ -349,23 +396,22 @@ export function MonthPicker({
             );
           })}
         </div>
-        {/* 오늘 달로 — 연도만 되감는 게 아니라 곧장 이번 달을 고른다(2026-09-28 소유자). 격자 폭을 다 쓰는
-            버튼 하나. 이미 이번 달을 보고 있고 그 해에 있을 때만 숨긴다. */}
-        {!(year === today.year && view.year === today.year && view.month === today.month) ? (
-          <button
-            className="mp-today-btn"
-            data-act="mp-today"
-            onClick={() => {
-              hapticTick();
-              onPick(today);
-            }}
-            type="button"
-          >
-            <CalendarCheck aria-hidden="true" size={16} strokeWidth={2.4} />
-            <span>오늘로</span>
-            <em>{ymLabel(today)}</em>
-          </button>
-        ) : null}
+        {/* 같은 높이의 유용한 바닥 행 — 이미 이번 달이면 상태를 알려 주고, 다른 달·해이면 오늘로 이동한다.
+            숨김 때문에 현재 달을 지날 때 창 높이가 튀던 이전 동작을 대체한다(2026-10-24 소유자). */}
+        <button
+          className="mp-today-btn"
+          data-act="mp-today"
+          disabled={onTodayMonth}
+          onClick={() => {
+            hapticTick();
+            onPick(today);
+          }}
+          type="button"
+        >
+          <CalendarCheck aria-hidden="true" size={16} strokeWidth={2.4} />
+          <span>{onTodayMonth ? "이번 달" : "오늘로"}</span>
+          <em>{ymLabel(today)}</em>
+        </button>
       </div>
     </div>,
     document.body

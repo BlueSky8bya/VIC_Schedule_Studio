@@ -51,7 +51,7 @@
 .month-title-btn:focus-visible .month-title-text > *,
 .month-title-btn.is-open .month-title-text,
 .month-title-btn.is-open .month-title-text > * {
-  color: var(--selection-border);
+  color: var(--month-action-ink, var(--selection-border));
 }
 .month-title-btn:hover .month-title-text,
 .month-title-btn:focus-visible .month-title-text,
@@ -110,7 +110,10 @@
 }
 .is-pop .mp-panel {
   position: fixed;
-  width: var(--mp-w);
+  width: min(var(--mp-w), calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border-radius: var(--r-lg);
   transform-origin: top center;
   animation: mp-pop-in var(--dur-spring-smooth, var(--dur-3)) var(--spring-smooth, var(--ease-enter)) both;
@@ -127,6 +130,9 @@
 }
 .is-sheet .mp-panel {
   width: 100%;
+  max-height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border-radius: var(--r-xl, 20px) var(--r-xl, 20px) 0 0;
   padding: 8px 16px calc(16px + env(safe-area-inset-bottom, 0px));
   animation: mp-sheet-up var(--dur-spring-smooth, var(--dur-3)) var(--spring-smooth, var(--ease-enter)) both;
@@ -396,16 +402,22 @@
   opacity: 0.7;
   font-variant-numeric: tabular-nums;
 }
-.mp-today-btn:hover {
+.mp-today-btn:hover:not(:disabled) {
   background: var(--selection-border);
   border-color: var(--selection-border);
   color: #fff;
 }
-.mp-today-btn:hover em {
+.mp-today-btn:hover:not(:disabled) em {
   opacity: 0.85;
 }
-.mp-today-btn:active {
+.mp-today-btn:active:not(:disabled) {
   transform: scale(var(--press-scale));
+}
+.mp-today-btn:disabled {
+  border-color: var(--line);
+  background: transparent;
+  color: var(--ink);
+  cursor: default;
 }
 .mp-today-btn:focus-visible {
   outline: 2px solid var(--selection-border);

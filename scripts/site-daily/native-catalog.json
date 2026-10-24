@@ -2091,6 +2091,222 @@
       "project": "",
       "estimatedSeconds": 110,
       "estimateSource": "new registration estimate; no actual current-source PASS"
+    },
+    {
+      "id": "e85a8805d542457c3d98ee6684ff65b6126c136dd72a444e11db5861ae735392",
+      "file": "tests/visual/calendar-platform-accepted.spec.ts",
+      "title": "month picker viewer desktop keeps height keyboard and return focus",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "18490063b1f92cef81fe2cf60f2e5ec4e536097a6cb1a2ba709510394d73ce2f",
+      "file": "tests/visual/calendar-platform-accepted.spec.ts",
+      "title": "month picker studio desktop keeps height keyboard and return focus",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "554560e59f6dfa605e6f265fcf8129e6fffa20852e52e18e2b76338c345fdde5",
+      "file": "tests/visual/calendar-platform-accepted.spec.ts",
+      "title": "month picker preview desktop keeps height keyboard and return focus",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "0ed7c215e72ad79ff20b7a6c363aead5a101079c7ac325a95a75bb1f3f3ac3c2",
+      "file": "tests/visual/calendar-platform-accepted.spec.ts",
+      "title": "save feedback desktop distinguishes no-op memory draft and actual Ctrl S",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "6e101e74aa681c2546ce41f42ebdfa21ad1b45bbbc4ea144da53b1e67855a044",
+      "file": "tests/visual/calendar-platform-accepted.spec.ts",
+      "title": "failed save stays failed after no-op and explicit recovery saves once",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "a9100ef1b040137e09ff717273c8d9f791dd0ede798962a1d6282730f2787b98",
+      "file": "tests/visual/calendar-platform-accepted.spec.ts",
+      "title": "public records desktop removes highlights and preserves data retry",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "a95e1933aee92df21d84b0eac9d35784730ca40a8b7d959de705f0d6fecd9d97",
+      "file": "tests/visual/calendar-platform-accepted.spec.ts",
+      "title": "studio owner insights removes highlights and keeps every remaining tab",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "44f4e20083cb30887e79abf3d30cd01f86d95dd681c3fa13cf7025abe5906c8f",
+      "file": "tests/visual/calendar-platform-accepted.spec.ts",
+      "title": "studio developer insights removes highlights and keeps every remaining tab",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "ec87e7e80bc2679fdba24a903dcea2a1c0bb9091fc2d770b02d39cfde4f35f89",
+      "file": "tests/visual/calendar-platform-accepted.spec.ts",
+      "title": "month picker viewer mobile keeps height keyboard and return focus",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "b03c664aee73ee4574f2f9780fb3b0ab72bc41d87712a4df64b57d2a20d335ac",
+      "file": "tests/visual/calendar-platform-accepted.spec.ts",
+      "title": "save feedback mobile distinguishes no-op memory draft and actual Ctrl S",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "9ab4fd41c13d2e55c668fc58c69dd20750cc05efee02067802c7ff60836578c7",
+      "file": "tests/visual/calendar-platform-accepted.spec.ts",
+      "title": "public records mobile removes highlights and preserves remaining cards",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "c267cb9999cc5c5f439cf22996c883f06aa64e3eec8fba8280537ef7da42fcfb",
+      "file": "tests/visual/season-jump-return.spec.ts",
+      "title": "viewer: home departure jumps during fade and covered physical items are removed on shower-pad return",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "a6c5458ef43b6bf22567e0618b15237f76ae6e687037fffd403a3f497be381ba",
+      "file": "tests/visual/season-jump-return.spec.ts",
+      "title": "studio: home departure jumps during fade and covered physical items are removed on shower-pad return",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "a5ce88b7c3cf7af87da7204ffa8e3f87e81a2509618c281b2c174a25dea16805",
+      "file": "tests/visual/season-jump-return.spec.ts",
+      "title": "preview: home departure jumps during fade and covered physical items are removed on shower-pad return",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "c30c8ac01e6d8532fcaadd0d56c94d645c5c97b8049c7355c14c74913f1e3970",
+      "file": "tests/visual/season-jump-return.spec.ts",
+      "title": "reduced motion: quiet meadow entry and immediate shower-pad homecoming",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "f4535506f7fa7c309f48052013b3ba39a4c8646eab79c59f6b2d43c24ae46549",
+      "file": "tests/visual/season-jump-return.spec.ts",
+      "title": "folded house opens on return and compact house restores its shower pad",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "c1fa10c7df57a8da73f35e02aa365168b9846bdfb91b98b4150785b88a1cb867",
+      "file": "tests/visual/season-jump-return.spec.ts",
+      "title": "local low landing keeps its horizontal position and an airborne exit jumps from the painted foot",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "ad1c6ff0cd410fca196c4d11d33d775e9072d27b25f8d91d2968d23310596a8b",
+      "file": "tests/visual/season-jump-return.spec.ts",
+      "title": "slow jump packets keep the resident painted through immediate departure",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "6228dff345aa0effaa7440a34ce340b70487d5de857787cebec7471b65becc9c",
+      "file": "tests/visual/season-jump-return.spec.ts",
+      "title": "viewer: surviving food and toy hand their actual foot back to normal home drag and storage",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "318dafe3e1fba7096ef14620291e2ab05bd5a8a7d29cba7b5465a8baf6dddc74",
+      "file": "tests/visual/season-jump-return.spec.ts",
+      "title": "studio: surviving food and toy hand their actual foot back to normal home drag and storage",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "6e2cc82af8ef9ae1f2df486048fbc8a898dafb77b0149ee1e504d41fd3f012c1",
+      "file": "tests/visual/season-jump-return.spec.ts",
+      "title": "preview: surviving food and toy hand their actual foot back to normal home drag and storage",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "c569ad08831a56e8dd0ac3f13bef6bcb87325b533f5cc8fa24d8536d06e532d8",
+      "file": "tests/visual/season-jump-return.spec.ts",
+      "title": "surviving items use their ordinary keyboard hold and move from the painted outdoor position",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "e20077cf6c296b96ee1459ac1e2544b9b58dd190d16e240c89f1ae19c2838eac",
+      "file": "tests/visual/season-material-accepted.spec.ts",
+      "title": "night month title remains readable while shared month chooser keeps neutral panel ink",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "efbd4ba306509b33710156b9b2979d9ea3824c1978776086f68591567ee7263a",
+      "file": "tests/visual/season-material-accepted.spec.ts",
+      "title": "exposed resident food and toy share spatial scene material and lose it when background is off",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "71c777def5814b79ac610ead3fb6822ce82f5e300ca8acb1889ce2e4b0550af2",
+      "file": "tests/visual/season-material-accepted.spec.ts",
+      "title": "already exposed viewer resident enters appreciation without a new jump",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "51b86be942ef2093cfa3fc43b4c677e51295cf62a088c0384cfaabff8e7f3c4c",
+      "file": "tests/visual/season-material-accepted.spec.ts",
+      "title": "already exposed preview resident enters appreciation without a new jump",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "24d6a93b1779906316c241b3d209c348e506bc4de282282092f5c4bf808b6f36",
+      "file": "tests/visual/season-material-accepted.spec.ts",
+      "title": "already exposed studio resident enters appreciation without a new jump",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted selected scope estimate, not PASS"
     }
   ],
   "dailyScenarios": [

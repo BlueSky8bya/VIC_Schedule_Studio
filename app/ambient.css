@@ -14,6 +14,15 @@
 .gs-season {
   display: none;
 }
+/* Only the transparent public chrome sits directly on the seasonal sky.
+   Studio's opaque title bar keeps its normal paper ink. */
+@media (min-width: 641px) {
+  html[data-ambient-night]:not([data-ambient="off"]):not([data-ambient="dim"]):not([data-ambient-dim]):not([data-gfx="off"]):not([data-gfx="soft"]) .poster-chrome-title {
+    --month-action-ink: #e5efff;
+    color: #f4f7ff;
+    text-shadow: 0 1px 3px #101a2e, 0 0 6px #101a2e80;
+  }
+}
 @media (min-width: 641px) {
   html:not([data-gfx="soft"]):not([data-gfx="off"]):is(:not([data-ambient="off"]), [data-ambient-pet]) .gs-season {
     display: block;

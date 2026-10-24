@@ -124,6 +124,19 @@ describe("the temporary companion meadow walk", () => {
 
 
 describe("direct seasonal departure", () => {
+  it("keeps an already exposed actor's foot and scale continuous without a new entry jump", () => {
+    const walker = createCompanionMeadowWalk(() => .5), view = { width: 1440, height: 1000 };
+    const prefs = { ...DEFAULT_COMPANION_PREFERENCES, roam: false, jump: false };
+    walker.enter({ x: 90, y: 100 }, view, true);
+    const first = walker.sample(0, view, prefs)!;
+    expect(first).toMatchObject({ x: 90, y: 100, groundY: 100, scale: 1, status: "idle", row: 0 });
+    for (let i = 0; i < 14; i++) {
+      const sample = walker.sample(50, view, prefs)!;
+      expect(sample.status).not.toBe("jump");
+      expect(sample.x).toBeCloseTo(90); expect(sample.y).toBeCloseTo(100); expect(sample.groundY).toBeCloseTo(100);
+    }
+    expect(walker.settling()).toBe(false);
+  });
   it("jumps from the actual home foot immediately even with autonomous roam and jump disabled", () => {
     const walker = createCompanionMeadowWalk(() => .5), view = { width: 1440, height: 1000 };
     const prefs = { ...DEFAULT_COMPANION_PREFERENCES, roam: false, jump: false };

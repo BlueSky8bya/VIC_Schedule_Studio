@@ -9,7 +9,7 @@ export type ShowcaseRect = { left: number; top: number; right: number; bottom: n
 type Kind = "pet" | "food" | "toy";
 export type CompanionShowcasePetInteraction = "pet" | "bonk" | "drag" | "throw" | "shake" | "rest" | "rested";
 type Participant = { kind: Kind; node: () => HTMLElement | undefined | null; point: () => ShowcasePoint | undefined; eligible?: () => boolean; interact?: (kind: CompanionShowcasePetInteraction) => void };
-export type CompanionShowcaseLease = ShowcasePoint & { width: number; height: number; bottomOffset: number; kind: Kind; pose?: number; displayY?: number; displayScale?: number; rotation?: number; scaleX?: number; scaleY?: number };
+export type CompanionShowcaseLease = ShowcasePoint & { width: number; height: number; bottomOffset: number; kind: Kind; pose?: number; enteredFromScene?: boolean; displayY?: number; displayScale?: number; rotation?: number; scaleX?: number; scaleY?: number };
 type Transition = { active: boolean; phase: "before" | "after" };
 const validRect = (r: ShowcaseRect) => [r.left, r.top, r.right, r.bottom].every(Number.isFinite) && r.right > r.left && r.bottom > r.top;
 export function companionShowcaseFootprint(point: ShowcasePoint, size: { width: number; height: number }): ShowcaseRect {
@@ -90,7 +90,8 @@ export function createCompanionShowcaseSession() {
         const rect = node.getBoundingClientRect(), style = getComputedStyle(node);
         if (style.visibility === "hidden" || style.display === "none" || Number(style.opacity || 1) <= .05 || participant.kind !== "pet" && !exposedCompanionShowcaseRect(rect, viewport(), covers)) continue;
         const pose = node.dataset?.pose === undefined ? undefined : Number(node.dataset.pose);
-        leases.set(id, { ...point, width: rect.width, height: rect.height, bottomOffset: rect.bottom - point.y, kind: participant.kind, ...(Number.isInteger(pose) ? { pose } : {}) });
+        const enteredFromScene = participant.kind === "pet" && exposedCompanionShowcaseRect(rect, viewport(), covers);
+        leases.set(id, { ...point, width: rect.width, height: rect.height, bottomOffset: rect.bottom - point.y, kind: participant.kind, ...(Number.isInteger(pose) ? { pose } : {}), ...(enteredFromScene ? { enteredFromScene: true } : {}) });
       }
       active = true; notify();
     } else if (detail.phase === "after" && !detail.active) {

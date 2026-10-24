@@ -6,4 +6,4 @@ html .vc-meadow-walk-body { outline: none; box-shadow: none; }
 .vc-meadow-walk-facing { display: block; width: 100%; height: 100%; transform-origin: 50% 100%; }
 .vc-meadow-walk .vc-sprite > canvas { display: block; width: 100%; height: 100%; }
 .vc-meadow-walk-shadow { position: absolute; top: 0; left: 0; width: 52px; height: 10px; border-radius: 50%; background: #233d3340; filter: blur(2px); transform-origin: 50% 50%; }
-.vc-meadow-walk[data-night] .vc-meadow-walk-body { filter: brightness(.78) saturate(.88); }
+.vc-meadow-walk-body { filter: var(--vc-scene-light-filter, brightness(1)); }
