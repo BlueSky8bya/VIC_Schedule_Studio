@@ -132,7 +132,7 @@ import { useHomeShelf } from "./use-home-shelf";
 import { companionInitialHomePoint } from "@/lib/ui/viewer-companion/home-entry";
 import "./viewer-companion.css";
 
-type Props = { onOpenBook: (destination?: "personality") => void; root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; workspaceBusy?: boolean; editing?: boolean; agenda: boolean; monthKey: string; context?: CompanionHomeEnvironmentContext; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; launcherHost?: HTMLElement | null; compactHost?: HTMLElement | null; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void; positionMemory?: CompanionPositionMemory; fixtureFood?: CompanionFoodKind };
+type Props = { onOpenBook: (destination?: "personality") => void; root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; preserveWorldPresentation?: boolean; workspaceBusy?: boolean; editing?: boolean; agenda: boolean; monthKey: string; context?: CompanionHomeEnvironmentContext; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; launcherHost?: HTMLElement | null; compactHost?: HTMLElement | null; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void; positionMemory?: CompanionPositionMemory; fixtureFood?: CompanionFoodKind };
 type Control = Record<Exclude<CompanionHomeAction, "book"> | "place" | "rest" | "toys" | "toyChanged" | "toyTouched" | "toyReturned", () => void>;
 type RuntimeAction = CompanionAction & { showcaseHomecoming?: true; petResponse?: true; homeLife?: CompanionHomeLifeAction["homeLife"]; toyPerformance?: { id: string; kind: CompanionToyKind }; foodAftertaste?: CompanionFoodAftertaste; workExpression?: CompanionWorkExpressionOffer; personalityScene?: PersonalitySceneBeat; personalityJobEnd?: true; foodRefusal?: { foodId: string; kind: CompanionFoodKind }; toyMishap?: CompanionToyTripWitness; personalitySignature?: CompanionPreferences["personality"]; scene?: CompanionSceneAction["scene"]; toy?: CompanionToyAction["toy"]; toyApproach?: { element: HTMLElement; effect: "stash" | "spawn"; duration: number }; household?: CompanionHouseholdBeat; radio?: { generation: number; reaction: CompanionRadioReaction; bpm: number; instrument?: CompanionInstrumentReaction } };
 const sampleWorldMusic = (music: NonNullable<RuntimeAction["radio"]>, age: number) => music.instrument ? sampleCompanionInstrumentReaction(music.instrument, age, music.bpm) : sampleCompanionRadioReaction(music.reaction, age, music.bpm);
@@ -146,7 +146,7 @@ const spriteSources = registration.rows.map((_, row) => companionSpriteSources(r
 /** One optional local creature. It senses geometry, heart occupancy and local
  * input/snack coordinates; titles and account data never enter its brain.
  * Imperative transform/frame writes never re-render the calendar on a tick. */
-export default function ViewerCompanion({ onOpenBook, root, preferences, blocked, overlayOpen, workspaceBusy = false, editing = false, agenda, monthKey, context, reduced, homeHost, homeVisible, launcherHost = null, compactHost = null, premiereCue = null, onPremiereJoin, positionMemory, fixtureFood }: Props) {
+export default function ViewerCompanion({ onOpenBook, root, preferences, blocked, overlayOpen, preserveWorldPresentation = false, workspaceBusy = false, editing = false, agenda, monthKey, context, reduced, homeHost, homeVisible, launcherHost = null, compactHost = null, premiereCue = null, onPremiereJoin, positionMemory, fixtureFood }: Props) {
   const [showcaseSession] = useState(createCompanionShowcaseSession);
   const sceneMaterial = useCompanionSceneMaterial();
   const pathname = usePathname();
@@ -4992,6 +4992,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
   };
   const act = (kind: CompanionHomeAction) => { if (kind === "book") { onOpenBook(); return; } control.current?.[kind](); };
   const performanceActive = Boolean(premiereCue?.generation && premiereCue.phase !== "idle" && (premiereCue.phase === "return" || premiereCue.target - syncedNow() <= 166000));
+  // Only the chooser may retain paused props; hard/hidden/OFF owners win.
+  const retainPresentation = preserveWorldPresentation && !blocked && !suspended && !performanceActive && !document.hidden;
   // The room and its foreground receive the same material object in one React
   // commit. A geometry/rAF copy must never stage the two sofa surfaces.
   const homeLighting = companionRoomLighting(homeEnvironment, homeCurtain.phase, homeLampLit) as CSSProperties;
@@ -5029,8 +5031,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       <div><strong>{COMPANION_ACCESSORY_NAMES[openedGift]} 선물!</strong><button className="button" type="button" data-sfx="off" data-act="companion-accessory-equip" data-act-opt="on" onClick={() => { if (equipCompanionAccessory(openedGift)) { hapticSuccess(); playCompanionSound("equip", preferencesRef.current); setOpenedGift(null); actor.current?.focus({ preventScroll: true }); } }}>착용하기</button></div>
       <button className="vc-keepsake-close" type="button" aria-label="받은 선물 닫기" data-act="companion-gift-dismiss" onClick={() => { setOpenedGift(null); actor.current?.focus({ preventScroll: true }); }}><X size={17} aria-hidden="true" /></button>
     </aside>}
-    <div className="vc-bed-foreground" style={homeLighting} ref={bedForeground} hidden aria-hidden="true"><CompanionBedForeground /></div><CompanionFood ref={food} showcaseSession={showcaseSession} enabled={preferences.feeding} blocked={blocked || overlayOpen} monthKey={monthKey} onDiscard={id => foodDiscarded.current(id)} onLanded={() => { playCompanionSound("land", preferencesRef.current); }} returnFocus={() => { if (!overlayRef.current && !body.current?.hidden) actor.current?.focus({ preventScroll: true }); }} />
-    <CompanionToys ref={toys} showcaseSession={showcaseSession} hidden={!preferences.enabled} blocked={!preferences.enabled || blocked || overlayOpen || workspaceBusy || suspended || performanceActive} onCount={setToyCount} onExperience={(kind, outcome, point) => {
+    <div className="vc-bed-foreground" style={homeLighting} ref={bedForeground} hidden aria-hidden="true"><CompanionBedForeground /></div><CompanionFood ref={food} retainPresentation={retainPresentation} showcaseSession={showcaseSession} enabled={preferences.feeding} blocked={blocked || overlayOpen} monthKey={monthKey} onDiscard={id => foodDiscarded.current(id)} onLanded={() => { playCompanionSound("land", preferencesRef.current); }} returnFocus={() => { if (!overlayRef.current && !body.current?.hidden) actor.current?.focus({ preventScroll: true }); }} />
+    <CompanionToys ref={toys} retainPresentation={retainPresentation} showcaseSession={showcaseSession} hidden={!preferences.enabled} blocked={!preferences.enabled || blocked || overlayOpen || workspaceBusy || suspended || performanceActive} onCount={setToyCount} onExperience={(kind, outcome, point) => {
       if (outcome === "played") routineEvent.current("played");
       const known = loadCompanionTastes().toys.includes(kind);
       const committed = recordCompanionToyExperience(kind, outcome, preferencesRef.current.learnFromYou !== false);

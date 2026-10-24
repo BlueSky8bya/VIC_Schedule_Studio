@@ -2307,6 +2307,54 @@
       "project": "",
       "estimatedSeconds": 35,
       "estimateSource": "unexecuted selected scope estimate, not PASS"
+    },
+    {
+      "id": "695bb5092a910f8910d3eda2115bc4d8644351d5087eb9a7c47d0cb27bfcff34",
+      "file": "tests/visual/month-picker-world.spec.ts",
+      "title": "viewer: month chooser preserves the painted house resident food and settled toy through repeated Escape",
+      "project": "",
+      "estimatedSeconds": 45,
+      "estimateSource": "unexecuted scoped estimate, not PASS"
+    },
+    {
+      "id": "2b7c649061aa30dba86a858c5b4f845ac05af7b916e4aed96195955bace83ce6",
+      "file": "tests/visual/month-picker-world.spec.ts",
+      "title": "studio: month chooser preserves the painted house resident food and settled toy through repeated Escape",
+      "project": "",
+      "estimatedSeconds": 45,
+      "estimateSource": "unexecuted scoped estimate, not PASS"
+    },
+    {
+      "id": "1a58c237d6d0ec899a082367d768de815de60c5753dee37f8477736fd5389dda",
+      "file": "tests/visual/month-picker-world.spec.ts",
+      "title": "preview: month chooser preserves the painted house resident food and settled toy through repeated Escape",
+      "project": "",
+      "estimatedSeconds": 45,
+      "estimateSource": "unexecuted scoped estimate, not PASS"
+    },
+    {
+      "id": "9ad0ca4e33373c032131d4fc1319d2588276a9c51a5e4bb662c466a9c0eb0a9a",
+      "file": "tests/visual/month-picker-world.spec.ts",
+      "title": "actual month selection still navigates while home and screen-floor objects retain their own sources",
+      "project": "",
+      "estimatedSeconds": 45,
+      "estimateSource": "unexecuted scoped estimate, not PASS"
+    },
+    {
+      "id": "d28a68e49712da2d417b0b8b2ab45f93b30653470a481ee5797874f056081631",
+      "file": "tests/visual/month-picker-world.spec.ts",
+      "title": "settings still hides food and master OFF stays authoritative after closing the month chooser",
+      "project": "",
+      "estimatedSeconds": 45,
+      "estimateSource": "unexecuted scoped estimate, not PASS"
+    },
+    {
+      "file": "tests/visual/month-picker-world.spec.ts",
+      "title": "viewer month chooser preserves home-floor food and viewport-floor toy on both axes through five Escape cycles",
+      "project": "",
+      "estimatedSeconds": 45,
+      "estimateSource": "unexecuted scoped estimate, not PASS",
+      "id": "911388f35ccdebdfbe951b26874e11258a7357a64fb600006304ecaef228c6dd"
     }
   ],
   "dailyScenarios": [

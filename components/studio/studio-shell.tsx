@@ -7403,10 +7403,11 @@ export function StudioShell({
       }} root={shellRef} preferences={companionPrefs}
         context={{ slug: schedule.calendar.slug, year: view.year, month: view.month, season: pickAmbient(worldForce?.month ?? view.month, scenery.seasonForce).season, force: worldForce }}
         positionMemory={staffCompanionPositionMemory}
-        blocked={Boolean(monthPick || passcodeModal || navMsg)}
+        blocked={Boolean(passcodeModal || navMsg)}
         workspaceBusy={Boolean(dragEventId || spanDrag)}
         editing={companionEditing}
-        overlayOpen={Boolean(editorVisible || mobileEditId !== null || modal || searchOpen || dayVodPop || saveState === "saving")}
+        overlayOpen={Boolean(monthPick || editorVisible || mobileEditId !== null || modal || searchOpen || dayVodPop || saveState === "saving")}
+        preserveWorldPresentation={Boolean(monthPick && !(editorVisible || mobileEditId !== null || modal || searchOpen || dayVodPop || saveState === "saving"))}
         homeHost={companionHomeHost} homeVisible={Boolean(avatarEditor && panel.open && !isNarrow)}
         launcherHost={companionLauncherHost} compactHost={companionCompactHost}
         agenda={isNarrow} monthKey={`${view.year}-${view.month}`} reduced={reduceMotion} /> : null}

@@ -42,7 +42,7 @@ export type CompanionFoodControl = {
   scatter: (point: Point, radius: number, strength?: number) => number;
   clear: () => void;
 };
-type Props = { enabled: boolean; blocked: boolean; monthKey: string; showcaseSession?: CompanionShowcaseSession; returnFocus: () => void; onLanded?: () => void; onDiscard?: (id: string) => void };
+type Props = { enabled: boolean; blocked: boolean; retainPresentation?: boolean; monthKey: string; showcaseSession?: CompanionShowcaseSession; returnFocus: () => void; onLanded?: () => void; onDiscard?: (id: string) => void };
 type Drag = { id: string; pointer: number; node: HTMLButtonElement; start: Point; point: Point; offset: Point; moved: boolean; wasFalling: boolean; startHome?: HomeAnchor; time: number; velocity: Point };
 type Hover = { id: string; bin: HTMLElement; point: Point; since: number; pinned: boolean };
 type Discard = { id: string; bin: HTMLElement; node: HTMLElement; animation?: Animation; timer: ReturnType<typeof setTimeout> };
@@ -67,7 +67,7 @@ const transform = (point: Point) => `translate3d(${point.x.toFixed(3)}px,${point
  * presentation only write transforms; React commits placement/removal. Native
  * capture owns only real drag/trash gestures. Pointer taps never arm a global
  * placement mode; keyboard grab/arrow/put-down remains an explicit alternative. */
-export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function CompanionFood({ enabled, blocked, monthKey, showcaseSession, returnFocus, onLanded, onDiscard }, ref) {
+export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function CompanionFood({ enabled, blocked, retainPresentation = false, monthKey, showcaseSession, returnFocus, onLanded, onDiscard }, ref) {
   useSyncExternalStore(showcaseSession?.subscribe ?? (() => () => {}), showcaseSession?.ownershipSnapshot ?? (() => 0), () => 0);
   const landed = useRef(onLanded); landed.current = onLanded;
   // This local scene notification marks an actual human removal only. Food
@@ -835,7 +835,10 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
 
   useEffect(() => () => itemAnchors.current!.clearAll(), []);
   if (!enabled) return null;
-  return <div className="vc-food-layer" ref={layer} hidden={blocked || paused && !showcaseSession?.hasKind("food")} data-showcase-active={showcaseSession?.active() ? "" : undefined} data-sfx="off">
+  // A month chooser borrows input, not the settled food's painted position.
+  // Other overlays keep their established hiding policy. Inert also guards
+  // the food keyboard handler, which hidden used to make unreachable.
+  return <div className="vc-food-layer" ref={layer} hidden={!retainPresentation && (blocked || paused && !showcaseSession?.hasKind("food"))} inert={retainPresentation && (blocked || paused) ? true : undefined} data-showcase-active={showcaseSession?.active() ? "" : undefined} data-sfx="off">
     {foods.map(food => <button type="button" className="vc-food" key={food.id} ref={node => { if (node) { nodes.current.set(food.id, node); showcaseSession?.register(`food:${food.id}`, { kind: "food", node: () => nodes.current.get(food.id), point: () => { const rect = nodes.current.get(food.id)?.getBoundingClientRect(); return rect ? { x: rect.left + rect.width / 2, y: rect.bottom - 6 } : undefined; }, eligible: () => !attachments.current.get(food.id)?.home && !attachments.current.get(food.id)?.pending && !drops.current.has(food.id) && carried.current !== food.id && dragging.current?.id !== food.id && selection.current !== food.id && discard.current?.id !== food.id }); } else { const previous = nodes.current.get(food.id); if (previous) itemAnchors.current!.clear(previous); nodes.current.delete(food.id); showcaseSession?.unregister(`food:${food.id}`); } }} data-activity-manual="" data-food={food.id} data-kind={food.kind} data-selected={selected === food.id ? "" : undefined}
       style={{ left: 0, top: 0, transform: transform(food) }} aria-label={`빅타민 밥 ${names[food.kind]} · 잡아서 옮기기`} aria-describedby="vc-food-help"
       onPointerDown={event => {

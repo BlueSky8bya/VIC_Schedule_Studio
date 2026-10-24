@@ -6,7 +6,7 @@ import { createCompanionToys, createCompanionToyPlanner, companionToyFoodPriorit
 import { createBrain, type CompanionWorld, type Platform } from "@/lib/ui/viewer-companion/brain";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 
-const component = vi.hoisted(() => ({ refs: [] as { current: unknown }[], refIndex: 0, states: [] as unknown[], stateIndex: 0, effects: [] as (() => void)[], activity: vi.fn() }));
+const component = vi.hoisted(() => ({ refs: [] as { current: unknown }[], refIndex: 0, states: [] as unknown[], stateIndex: 0, effects: [] as (() => void)[], layoutEffects: [] as (() => void)[], activity: vi.fn() }));
 vi.mock("react", async original => ({ ...await original<typeof import("react")>(),
   useRef: (initial: unknown) => component.refs[component.refIndex++] ?? (component.refs[component.refIndex - 1] = { current: initial }),
   useState: (initial: unknown) => { const index = component.stateIndex++; if (!(index in component.states)) component.states[index] = initial; return [component.states[index], (next: unknown) => { component.states[index] = typeof next === "function" ? next(component.states[index]) : next; }]; },
@@ -14,6 +14,9 @@ vi.mock("react", async original => ({ ...await original<typeof import("react")>(
   // This direct-call controller harness reads the store at each explicit render.
   useSyncExternalStore: (_subscribe: unknown, getSnapshot: () => unknown) => getSnapshot(),
   useEffect: (callback: () => void) => { component.effects.push(callback); },
+  // This harness commits callbacks at its explicit render boundary; native
+  // layout timing and visibility are exercised in the browser regression.
+  useLayoutEffect: (callback: () => void) => { component.layoutEffects.push(callback); },
   useImperativeHandle: (ref: { current: unknown }, create: () => unknown) => { ref.current = create(); }
 }));
 vi.mock("@/lib/activity/client", () => ({ logActivity: component.activity }));
@@ -229,9 +232,9 @@ describe("shared native toy controller ownership", () => {
     const { CompanionToys } = await import("@/components/poster/viewer-companion/companion-toys");
     const ref: { current: import("@/components/poster/viewer-companion/companion-toys").CompanionToyControl | null } = { current: null }, onActivity = vi.fn(), onExperience = vi.fn();
     const render = (blocked = false) => {
-      component.refIndex = component.stateIndex = 0; component.effects = [];
+      component.refIndex = component.stateIndex = 0; component.effects = []; component.layoutEffects = [];
       const tree = (CompanionToys as unknown as { render: (props: unknown, ref: unknown) => ReactElement }).render({ blocked, onActivity, onCount: vi.fn(), onExperience }, ref);
-      component.effects.forEach(effect => effect()); return tree;
+      component.layoutEffects.forEach(effect => effect()); component.effects.forEach(effect => effect()); return tree;
     };
     render(); ref.current!.sync([floor], bounds, 0); ref.current!.spawn(point, 0);
     const tree = render(), button = (tree.props as { children: ReactElement[] }).children[0] as ReactElement<Record<string, unknown>>;

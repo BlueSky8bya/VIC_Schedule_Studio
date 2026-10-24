@@ -4175,8 +4175,9 @@ export function PublicPoster({
         context={{ slug: schedule.calendar.slug, year: view.year, month: view.month, season: pickAmbient(scenery.worldForce?.month ?? view.month, scenery.seasonForce).season, force: scenery.worldForce }}
         positionMemory={positionMemory}
         fixtureFood={fixtureCompanionFood}
-              blocked={Boolean(monthPick || giftCard || gachaOpen)}
-              overlayOpen={Boolean(sheet || dayVodPop || agendaDetail)}
+        blocked={Boolean(giftCard || gachaOpen)}
+        overlayOpen={Boolean(monthPick || sheet || dayVodPop || agendaDetail)}
+        preserveWorldPresentation={Boolean(monthPick && !(sheet || dayVodPop || agendaDetail))}
         premiereCue={companionPremiere.cue} onPremiereJoin={companionPremiere.onJoin}
         homeHost={companionHomeHost} homeVisible={Boolean(sceneOn && panel.open && !showAgenda)}
         launcherHost={companionLauncherHost} compactHost={companionCompactHost}

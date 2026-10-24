@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState, useSyncExternalStore } from "react";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { companionToyBoxDropReady, createCompanionToys, COMPANION_TOY_NAMES, type CompanionToy, type CompanionToyKind, type CompanionToyAttachment } from "@/lib/ui/viewer-companion/toys";
 import type { Platform } from "@/lib/ui/viewer-companion/brain";
 import { logActivity } from "@/lib/activity/client";
@@ -21,6 +21,18 @@ import { bindCompanionShowcaseInput } from "@/lib/ui/viewer-companion/showcase-i
 type Point = { x: number; y: number; platformId?: string };
 type RestingSource = { platformId: string; element: Element; identity?: string; frame: CompanionAnchorFrame; point: CompanionElementPoint };
 type ToyDrawing = { rotation: number; scale: number; facing: number; size: number; visible: boolean; use: CompanionToyPlayPose["use"]; effect: CompanionToyPlayPose["effect"] };
+// A paused month chooser leaves the real room painted. Its input-only home
+// gates are not missing floors; actual hiding/folding and other inert owners
+// remain unavailable. Use the same rule for painting and retained attachment.
+function hiddenToySource(source: Element | null | undefined, retainRoom: boolean) {
+  if (source && !source.isConnected) return true;
+  let blocked = source?.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]");
+  while (blocked) {
+    if (!retainRoom || blocked.matches("[hidden],[data-panel-collapsed]") || !blocked.matches(".vc-home,.vc-compact-home")) return true;
+    blocked = blocked.parentElement?.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]");
+  }
+  return false;
+}
 export type CompanionToyControl = {
   setRoomLight: (room?: CompanionRoomLightRect, grade?: number) => void;
   sync: (platforms: readonly Platform[], bounds: { width: number; height: number }, now: number, smallHomeFloors?: readonly Platform[], getAnchor?: (id: string) => CompanionGeometryAnchor | undefined) => void;
@@ -47,8 +59,8 @@ export type CompanionToyControl = {
   stash: (id: string) => boolean;
   cancel: (now: number) => void;
 };
-type Props = { blocked: boolean; hidden?: boolean; showcaseSession?: CompanionShowcaseSession; onActivity: (direct?: boolean) => void; onCount: (count: number) => void; onReturned?: () => void; onExperience?: (kind: CompanionToyKind, outcome: CompanionToyExperience, source?: Readonly<{ x: number; y: number }>) => void };
-export const CompanionToys = forwardRef<CompanionToyControl, Props>(function CompanionToys({ blocked, hidden = false, showcaseSession, onActivity, onCount, onReturned, onExperience }, ref) {
+type Props = { blocked: boolean; hidden?: boolean; retainPresentation?: boolean; showcaseSession?: CompanionShowcaseSession; onActivity: (direct?: boolean) => void; onCount: (count: number) => void; onReturned?: () => void; onExperience?: (kind: CompanionToyKind, outcome: CompanionToyExperience, source?: Readonly<{ x: number; y: number }>) => void };
+export const CompanionToys = forwardRef<CompanionToyControl, Props>(function CompanionToys({ blocked, hidden = false, retainPresentation = false, showcaseSession, onActivity, onCount, onReturned, onExperience }, ref) {
   useSyncExternalStore(showcaseSession?.subscribe ?? (() => () => {}), showcaseSession?.ownershipSnapshot ?? (() => 0), () => 0);
   const layer = useRef<HTMLDivElement>(null);
   const model = useRef<ReturnType<typeof createCompanionToys> | null>(null);
@@ -74,6 +86,7 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
   const roomLight = useRef<{ room?: CompanionRoomLightRect; grade: number }>({ grade: 1 });
   const sceneMaterial = useCompanionSceneMaterial();
   const blockedRef = useRef(blocked); blockedRef.current = blocked;
+  const retainPresentationRef = useRef(retainPresentation); retainPresentationRef.current = retainPresentation;
   const dropBox = useRef<HTMLButtonElement | null>(null);
   const clearDropBox = useCallback(() => { dropBox.current?.removeAttribute("data-toy-over"); dropBox.current = null; }, []);
   const grab = (id: string) => {
@@ -126,7 +139,7 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     const anchor = !lease && toy.platformId && !toy.hidden && !toy.held && !toy.carried ? retainedSources.current.get(toy.id) ?? anchorFor.current?.(toy.platformId) : undefined;
     const element = anchor?.element ?? restingSources.current.get(toy.id)?.element;
     const visibilitySource = element?.matches(".vc-home-floor") ? element.parentElement : element;
-    const sourceHidden = Boolean(visibilitySource?.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]"));
+    const sourceHidden = hiddenToySource(visibilitySource, retainPresentationRef.current && blockedRef.current);
     node.hidden = lease ? !showcaseSession!.visible(`toy:${toy.id}`) : Boolean(showcaseSession?.active() || toy.hidden || sourceHidden);
     const source = anchor?.element && !sourceHidden
       ? { element: anchor.element, left: anchor.left, top: anchor.top } : undefined;
@@ -152,6 +165,10 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
     node.disabled = blockedRef.current && !(showcaseSession?.active() && lease);
     sceneMaterial.apply(node, lease ?? toy);
   }); }, [world, showcaseSession, sceneMaterial]);
+  // Switching between the chooser and another pause can change presentation
+  // while input stays blocked. Repaint that finite change without resuming or
+  // restarting the toy model.
+  useLayoutEffect(() => { paint(); }, [retainPresentation, paint]);
   const refresh = useCallback(() => {
     const next = world.items();
     const ids = new Set(next.map(toy => toy.id));
@@ -225,7 +242,7 @@ export const CompanionToys = forwardRef<CompanionToyControl, Props>(function Com
         let rect = readings.get(bound.element);
         if (!rect) { rect = bound.element.getBoundingClientRect(); readings.set(bound.element, rect); }
         const visibilitySource = bound.element.matches(".vc-home-floor") ? bound.element.parentElement : bound.element;
-        const hidden = rect.width <= 0 || rect.height <= 0 || Boolean(visibilitySource?.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]"));
+        const hidden = rect.width <= 0 || rect.height <= 0 || hiddenToySource(visibilitySource, retainPresentationRef.current && blockedRef.current);
         const frame = hidden ? bound.frame : { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
         const point = followCompanionElementPoint(bound.point, frame);
         if (!point) return;
