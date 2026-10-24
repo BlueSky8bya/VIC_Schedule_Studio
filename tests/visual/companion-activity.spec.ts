@@ -33,11 +33,29 @@ const new137Targets = ["companion-personality#curious", "companion-personality#b
 const new135Targets = ["companion-home-tv#on", "companion-home-tv#off", "companion-home-tv#next", "companion-home-light#on", "companion-home-light#off"];
 const new141Targets = ["companion-home-curtain#open", "companion-home-curtain#shade", "companion-home-curtain#closed"];
 const new142Targets = ["companion-personality-open"];
+const drawingDiscardTargets = ["bp-discard-keep", "bp-discard-confirm"];
 const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-shake", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets, ...new110Targets, ...new111Targets, ...new115Targets, ...new135Targets, ...new141Targets, ...new142Targets];
 const retired110Target = "companion-radio-mood#lively";
 const memoryFilterTargets = ["companion-memory-filter#all", "companion-memory-filter#expression", "companion-memory-filter#pose", "companion-memory-filter#life"];
-const readFixtureTargets = [...sampleTargets, ...new137Targets, ...memoryFilterTargets, retired110Target];
+const readFixtureTargets = [...sampleTargets, ...new137Targets, ...memoryFilterTargets, ...drawingDiscardTargets, retired110Target];
 const at = Date.parse("2026-06-10T03:00:00Z");
+
+test("drawing discard pointer and keyboard each emit one fixed action without content", async ({page}) => {
+  await setup(page,"studio");
+  await page.goto("/visual-fixture/studio?role=developer&viewer=1");
+  await page.locator('[data-act="open-drawing-board"]').click();
+  const surface=page.locator(".bp-draw-surface");await surface.waitFor();
+  await page.getByRole("button",{name:"펜",exact:true}).first().click();
+  const b=(await surface.boundingBox())!;await page.mouse.move(b.x+b.width*.3,b.y+b.height*.45);await page.mouse.down();await page.mouse.move(b.x+b.width*.6,b.y+b.height*.5,{steps:20});await page.mouse.up();
+  await page.getByRole("button",{name:"일정 그림판 닫기",exact:true}).click();
+  await page.getByRole("button",{name:"계속 그리기",exact:true}).click();
+  await page.getByRole("button",{name:"일정 그림판 닫기",exact:true}).click();
+  await page.getByRole("button",{name:"지우고 닫기",exact:true}).focus();await page.keyboard.press("Enter");
+  await expect(page.locator(".broadcast-panel")).toHaveCount(0);
+  await flush(page,drawingDiscardTargets.map(target=>({target})));
+  for(const target of drawingDiscardTargets){expect(count(page,target)).toBe(1);const event=capture.get(page)!.events.find(e=>e.target===target)!;expect(event.meta).toBeNull();}
+  expect(capture.get(page)!.events.some(e=>e.target?.includes("2026-06")&&e.kind==="ui.click")).toBe(false);
+});
 
 for (const surface of ["viewer", "studio"] as const) test(`density ${surface}: memory family pointer and keys emit one fixed use per activation`, async ({ page }) => {
   await setup(page, surface);
@@ -583,13 +601,13 @@ test("developer timeline and low-use list render companion features from synthet
   await expect(page.getByRole("button", { name: /적게 쓰인 기능/ })).toBeVisible();
   const usage = page.locator(".vcard").filter({ has: page.locator('[data-act="usage-open"]') });
   const showAll = usage.locator('[data-act="usage-show-all"]'); if (await showAll.isVisible()) await showAll.click();
-  for (const target of sampleTargets) await expect(usage.locator(".usage-list > li").filter({ hasText: describeTarget("ui.click", target).name })).toBeVisible();
+  for (const target of [...sampleTargets, ...drawingDiscardTargets]) await expect(usage.locator(".usage-list > li").filter({ hasText: describeTarget("ui.click", target).name })).toBeVisible();
   await page.locator('[data-act="activity-expand-all"]').click();
   const timeline = page.locator(".vcard").filter({ has: page.locator('[data-act="activity-open"]') });
   await expect(timeline.locator(".act-gist-open")).toContainText("빅타민");
   await expect(timeline.locator(".act-gist-open")).not.toContainText("둘러보기만");
   await timeline.locator(".act-lines > summary").click();
-  for (const target of sampleTargets) await expect(timeline.getByText(describeTarget("ui.click", target).name, { exact: true })).toBeVisible();
+  for (const target of [...sampleTargets, ...drawingDiscardTargets]) await expect(timeline.getByText(describeTarget("ui.click", target).name, { exact: true })).toBeVisible();
   await expect(timeline.getByText("빅타민 보라 하트 지우기", { exact: true })).toBeVisible();
   expect(capture.get(page)!.reads).toEqual(expect.arrayContaining(["getDayVisitDetailAction", "getActivityDayAction", "getActivityUsageAction"]));
   await usage.scrollIntoViewIfNeeded();

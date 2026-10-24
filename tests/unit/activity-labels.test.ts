@@ -52,6 +52,8 @@ describe("위치(area)를 준다 — 이름만으로는 찾아갈 수 없다", (
   // 위치 = 화면에서 갈 수 있는 한 곳(2026-09-05 정리). 묶음 이름('관리'·'공통')은 폐지하고
   // 창이면 그 창 이름을 그대로 쓴다 — 목록만 보고도 어디인지 알 수 있어야 한다.
   it("주요 항목에 위치가 붙는다", () => {
+    expect(describeTarget("ui.click", "bp-discard-keep")).toMatchObject({ name: "그림판 계속 그리기", area: "그림판" });
+    expect(describeTarget("ui.click", "bp-discard-confirm")).toMatchObject({ name: "그림판 지우고 닫기", area: "그림판" });
     expect(describeTarget("ui.click", "sticker-delete").area).toBe("옛 화면");
     expect(describeTarget("ui.click", "manage-tags").area).toBe("태그 편집");
     expect(describeTarget("ui.click", "schedule-card").area).toBe("시청자 화면");

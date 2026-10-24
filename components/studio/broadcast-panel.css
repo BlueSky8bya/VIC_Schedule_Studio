@@ -44,6 +44,30 @@ html[data-reduce-motion] .broadcast-panel > * {
   padding: 12px 20px 6px;
   background: transparent;
 }
+
+/* Confirmation replaces the board's active dialog; no second nested modal. */
+.bp-discard {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgb(var(--studio-action-rgb) / 12%);
+  animation: none;
+}
+.bp-discard-card {
+  max-width: 460px;
+  padding: 24px;
+  border: 1px solid var(--line, #e3ded6);
+  border-radius: var(--r-lg);
+  background: var(--studio-workbench);
+  box-shadow: var(--elev-3);
+}
+.bp-discard-card h2 { margin: 0; font-size: var(--text-title); }
+.bp-discard-card p { color: var(--studio-action-text); }
+.bp-discard-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
+.bp-discard-actions button { min-height: 44px; }
 .bp-header h2 {
   margin: 0;
   font-size: var(--text-title);

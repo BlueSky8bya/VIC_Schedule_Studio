@@ -1529,6 +1529,11 @@
 .bcast-daily {
   position: relative; /* 일별 값 툴팁(.bcast-tip)의 기준 */
 }
+.bcast-daily:focus-visible {
+  outline: 2px solid var(--violet);
+  outline-offset: 4px;
+  border-radius: var(--r-xs);
+}
 
 .bcast-tip {
   position: absolute;

@@ -3,9 +3,9 @@
 // 차트 스타일은 편집실·시청자 양쪽에서 공유한다(어느 화면에서 열든 같은 차트).
 import "@/components/studio/insights-charts.css";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { TrendDeltaBadge } from "@/components/studio/trend-delta-badge";
-import { monthProgress } from "@/lib/insights/month-progress";
+import { kstYm, monthProgress } from "@/lib/insights/month-progress";
 
 // 방송시간(시간, 소수) → "32시간 30분" 표기. 0이면 "0분".
 export function fmtHoursLabel(h: number): string {
@@ -52,7 +52,29 @@ export function BroadcastHours({
   });
 
   const [active, setActive] = useState<number | null>(null);
+  const [inspectedDay, setInspectedDay] = useState(0);
+  const focusDay = Math.min(inspectedDay, Math.max(0, daily.length - 1));
+  const inspectedDayRef = useRef(focusDay);
+  inspectedDayRef.current = focusDay;
+  const focusedRef = useRef(false);
+  const instructionsId = useId();
   const clearTimer = useRef<number | null>(null);
+  useEffect(() => () => {
+    if (clearTimer.current !== null) window.clearTimeout(clearTimer.current);
+  }, []);
+  // A shorter/new viewed month must not leave a focused date or tooltip out of range.
+  const viewedMonthRef = useRef(lastYm);
+  useLayoutEffect(() => {
+    const changedMonth = viewedMonthRef.current !== lastYm;
+    viewedMonthRef.current = lastYm;
+    const next = changedMonth ? 0 : inspectedDayRef.current;
+    setInspectedDay(next);
+    setActive(focusedRef.current && daily.length > 0 ? next : null);
+    if (clearTimer.current !== null) window.clearTimeout(clearTimer.current);
+  }, [lastYm, daily.length]);
+  const isFutureDay = (i: number) => lastYm > kstYm() || Boolean(partial && i + 1 > partial.elapsedDays);
+  const dayLabel = (i: number) => `${i + 1}일 · ${isFutureDay(i)
+    ? "아직 오지 않은 날" : fmtHoursLabel(daily[i] ?? 0)}`;
   // 값 툴팁 위치 — 활성 막대 중심에 두되, 툴팁 '실제 폭'의 절반만큼 양 끝에서 물러난다.
   // (예전엔 고정 32px로만 clamp해서, 1일·말일 툴팁이 폭 절반(≈60px)을 넘겨 패널
   //  overflow-x:hidden에 잘려 나갔다. 폭은 글자 수에 따라 변하니 재서 계산한다.)
@@ -75,8 +97,11 @@ export function BroadcastHours({
   const showDay = (i: number, touch: boolean) => {
     if (clearTimer.current) window.clearTimeout(clearTimer.current);
     setActive(i);
+    setInspectedDay(i);
     // 모바일(탭)은 호버-아웃이 없으니 잠깐 보여주고 자동으로 지운다.
-    if (touch) clearTimer.current = window.setTimeout(() => setActive(null), 2200);
+    if (touch) clearTimer.current = window.setTimeout(() => {
+      if (!focusedRef.current) setActive(null);
+    }, 2200);
   };
 
   // P2-INSIGHT-1: 차트 텍스트 대안(sr-only) — 막대·색 없이도 같은 정보.
@@ -126,12 +151,42 @@ export function BroadcastHours({
         </span>
       </div>
       {/* 일별 막대는 빈 달이어도 항상 보여준다(어디에 쌓일지 미리 보이게 — 월별과 대칭). */}
+      <span className="sr-only" id={instructionsId}>방향키로 날짜를 이동하고 Home·End로 처음·마지막 날을 확인하세요.</span>
       <div
         className="bcast-daily"
         ref={dailyRef}
-        aria-label="이 달 일별 방송 시간"
+        role={daily.length > 0 ? "slider" : "group"}
+        tabIndex={daily.length > 0 ? 0 : undefined}
+        aria-label="이 달 일별 방송 시간 조회 날짜"
+        aria-describedby={instructionsId}
+        aria-orientation={daily.length > 0 ? "horizontal" : undefined}
+        aria-valuemin={daily.length > 0 ? 1 : undefined}
+        aria-valuemax={daily.length || undefined}
+        aria-valuenow={daily.length > 0 ? focusDay + 1 : undefined}
+        aria-valuetext={daily.length > 0 ? dayLabel(focusDay) : undefined}
+        onFocus={() => {
+          focusedRef.current = true;
+          if (clearTimer.current !== null) window.clearTimeout(clearTimer.current);
+          if (daily.length > 0) setActive(focusDay);
+        }}
+        onBlur={() => {
+          focusedRef.current = false;
+          setActive(null);
+          if (clearTimer.current !== null) window.clearTimeout(clearTimer.current);
+        }}
+        onKeyDown={(e) => {
+          if (!daily.length || e.altKey || e.ctrlKey || e.metaKey) return;
+          const delta = e.key === "ArrowRight" || e.key === "ArrowUp" ? 1
+            : e.key === "ArrowLeft" || e.key === "ArrowDown" ? -1 : null;
+          if (delta === null && e.key !== "Home" && e.key !== "End") return;
+          e.preventDefault();
+          e.stopPropagation();
+          const next = e.key === "Home" ? 0 : e.key === "End" ? daily.length - 1
+            : Math.max(0, Math.min(daily.length - 1, focusDay + (delta ?? 0)));
+          showDay(next, false);
+        }}
         onPointerLeave={(e) => {
-          if (e.pointerType === "mouse") setActive(null);
+          if (e.pointerType === "mouse" && !focusedRef.current) setActive(null);
         }}
       >
         {active != null ? (
@@ -143,15 +198,15 @@ export function BroadcastHours({
                 tipLeft ?? `${((active + 0.5) / Math.max(1, daily.length)) * 100}%`
             }}
           >
-            {active + 1}일 · {fmtHoursLabel(daily[active] ?? 0)}
+            {dayLabel(active)}
           </div>
         ) : null}
         {daily.map((v, i) => (
           <div
             // 이번 달이면 아직 오지 않은 날은 흐리게 — '방송 안 함'과 '아직 안 옴'은 다르다.
-            className={`bcast-dcol${partial && i + 1 > partial.elapsedDays ? " fut" : ""}`}
+            className={`bcast-dcol${isFutureDay(i) ? " fut" : ""}`}
             key={i}
-            aria-label={`${i + 1}일 ${fmtHoursLabel(v)}`}
+            aria-hidden="true"
             onPointerEnter={(e) => {
               if (e.pointerType === "mouse") showDay(i, false);
             }}

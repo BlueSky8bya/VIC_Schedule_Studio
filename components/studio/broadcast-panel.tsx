@@ -171,6 +171,8 @@ type Props = {
   onRestoreSent: (dateKeys: string[]) => void; // 통합 undo/redo가 날짜 목록을 되돌릴 때
   onMonthNav: (delta: number) => void; // 날짜 고르기 달력 월 이동(±1) — 데이터는 호출자가 갱신
   onClose: () => void;
+  // Human browser-back requests use the same guard as X/Escape. False = keep this overlay.
+  closeRequestRef?: { current: (() => boolean) | null };
 };
 
 // 선택된 획의 기하 스냅샷(이동/확대 undo용) — 좌표·굵기만.
@@ -195,6 +197,19 @@ type HistAction =
     }
   // 부분 선택이 획을 분할해 장면 배열 구조가 바뀔 때 — 전/후 장면 스냅샷(얕은 배열 복사).
   | { t: "scene"; before: Stroke[]; after: Stroke[] };
+
+function historyHasContent(action: HistAction): boolean {
+  const ink = (strokes: Stroke[]) => strokes.some((stroke) => stroke.tool !== "eraser");
+  switch (action.t) {
+    case "stroke": return action.stroke.tool !== "eraser";
+    case "scene": return ink(action.before) || ink(action.after);
+    case "sent": return action.before.length > 0 || action.after.length > 0;
+    case "cols": case "chips": return action.before.size > 0 || action.after.size > 0;
+    case "xform": return Boolean(action.strokes && ink(action.strokes.targets)) ||
+      Boolean(action.cols && (action.cols.before.size > 0 || action.cols.after.size > 0));
+    case "layers": return false;
+  }
+}
 
 // 판서판 위 날짜 컬럼의 자유 배치 상태(그림판답게 끌어서 이동·크기 조절 — 선택 도구에서만).
 // h: 세로 손잡이로 정한 명시 높이(minHeight). 없으면 내용 높이(자동).
@@ -260,7 +275,8 @@ export function BroadcastPanel({
   onRemoveDay,
   onRestoreSent,
   onMonthNav,
-  onClose
+  onClose,
+  closeRequestRef
 }: Props) {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
@@ -581,6 +597,61 @@ export function BroadcastPanel({
   colsRef.current = cols;
   const sentRef = useRef(sentDateKeys);
   sentRef.current = sentDateKeys;
+  const [discardAsk, setDiscardAsk] = useState(false);
+  const discardAskRef = useRef(discardAsk);
+  discardAskRef.current = discardAsk;
+  const discardKeepRef = useRef<HTMLButtonElement | null>(null);
+  const discardOpenerRef = useRef<HTMLElement | null>(null);
+  const restoreDiscardFocusRef = useRef(false);
+  const cancelDiscard = useCallback(() => {
+    restoreDiscardFocusRef.current = true;
+    setDiscardAsk(false);
+  }, []);
+  const requestClose = useCallback(() => {
+    if (discardAsk) {
+      cancelDiscard();
+      return false;
+    }
+    // Empty layer/tool changes alone are not work to discard. Both history stacks
+    // count: an undone stroke or removed card can still be recovered until close.
+    const hasWork = store.strokes().some((stroke) => stroke.tool !== "eraser") ||
+      Boolean(drawingRef.current && drawingRef.current.tool !== "eraser") ||
+      sentRef.current.length > 0 || histRef.current.some(historyHasContent);
+    if (hasWork) {
+      discardOpenerRef.current = document.activeElement as HTMLElement | null;
+      // The color picker is a body portal outside this board's inert siblings.
+      // Dismiss it like light-dismiss, keeping the current selected color/tool.
+      setColorPop(null);
+      setKbdHelp(false);
+      setDiscardAsk(true);
+      return false;
+    }
+    onClose();
+    return true;
+  }, [cancelDiscard, discardAsk, onClose, store]);
+  useLayoutEffect(() => {
+    if (!closeRequestRef) return;
+    closeRequestRef.current = requestClose;
+    return () => { closeRequestRef.current = null; };
+  }, [closeRequestRef, requestClose]);
+  useLayoutEffect(() => {
+    if (!discardAsk) {
+      if (restoreDiscardFocusRef.current) {
+        restoreDiscardFocusRef.current = false;
+        const opener = discardOpenerRef.current;
+        if (opener?.isConnected && rootRef.current?.contains(opener)) opener.focus({ preventScroll: true });
+        if (!opener || document.activeElement !== opener || !rootRef.current?.contains(opener)) {
+          closeBtnRef.current?.focus({ preventScroll: true });
+        }
+      }
+      return;
+    }
+    const siblings = Array.from(rootRef.current?.children ?? [])
+      .filter((el): el is HTMLElement => el instanceof HTMLElement && !el.classList.contains("bp-discard"));
+    for (const el of siblings) el.inert = true;
+    discardKeepRef.current?.focus({ preventScroll: true });
+    return () => { for (const el of siblings) el.inert = false; };
+  }, [discardAsk]);
   const hasSentOnceRef = useRef(sentDateKeys.length > 0);
   const layersRef = useRef(layers);
   layersRef.current = layers;
@@ -1532,6 +1603,7 @@ export function BroadcastPanel({
   // 붙여넣기 — 패널이 열려 있을 때만. 입력칸에 포커스가 있으면 그쪽이 임자다(텍스트 붙여넣기).
   useEffect(() => {
     const onPaste = (e: ClipboardEvent) => {
+      if (discardAskRef.current) { e.preventDefault(); return; }
       const t = e.target as HTMLElement | null;
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
       // 화면 캡처(PrtSc·캡처 도구)는 files가 비고 items에만 들어오는 브라우저가 있다 —
@@ -3442,6 +3514,23 @@ export function BroadcastPanel({
   // 전역 단축키 차단은 호출자(studio-shell)가 broadcastOpen 가드로 수행 — 여기선 Esc/Tab만.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (discardAsk) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          cancelDiscard();
+        } else if (e.key === "Tab") {
+          e.preventDefault();
+          const buttons = rootRef.current?.querySelectorAll<HTMLButtonElement>(".bp-discard button");
+          const next = document.activeElement === buttons?.[0] ? buttons?.[1] : buttons?.[0];
+          next?.focus();
+        } else if (e.key !== "Enter" && e.key !== " ") {
+          // Keep board shortcuts/undo from changing the pending discard decision.
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        return;
+      }
       const layerDrag = layerDragRef.current;
       if (e.key === "Escape" && layerDrag) {
         e.preventDefault();
@@ -3479,7 +3568,7 @@ export function BroadcastPanel({
           rangeSelect.clearSelection();
           return;
         }
-        onClose();
+        requestClose();
         return;
       }
       // ── 선택한 그림 복사/잘라내기/붙여넣기 ──
@@ -3642,7 +3731,9 @@ export function BroadcastPanel({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [
-    onClose,
+    requestClose,
+    discardAsk,
+    cancelDiscard,
     rangeSelect,
     doUndo,
     doRedo,
@@ -3672,6 +3763,7 @@ export function BroadcastPanel({
     };
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
+      if (discardAskRef.current) return;
       if (
         target &&
         (target.tagName === "INPUT" ||
@@ -3877,7 +3969,19 @@ export function BroadcastPanel({
   );
 
   return (
-    <div className="broadcast-panel" role="dialog" aria-modal="true" aria-label="일정 그림판" ref={rootRef}>
+    <div className="broadcast-panel" role={discardAsk ? "alertdialog" : "dialog"} aria-modal="true" aria-label={discardAsk ? "그림판 내용을 지우고 닫을까요?" : "일정 그림판"} aria-describedby={discardAsk ? "bp-discard-detail" : undefined} ref={rootRef}>
+      {discardAsk ? (
+        <div className="bp-discard">
+          <div className="bp-discard-card">
+            <h2>닫으면 작성 내용이 지워져요</h2>
+            <p id="bp-discard-detail">그림과 배치한 일정, 되돌리기 기록을 복구할 수 없어요.</p>
+            <div className="bp-discard-actions">
+              <button className="bp-command-button" type="button" ref={discardKeepRef} onClick={cancelDiscard} data-act="bp-discard-keep">계속 그리기</button>
+              <button className="bp-command-button danger" type="button" onClick={onClose} data-act="bp-discard-confirm">지우고 닫기</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
       <header className="bp-header">
         <h2>🖊️ 일정 그림판</h2>
         {/* 사용법 한 줄 설명 제거(2026-09-05 소유자: "주저리 설명 다 없애") — 버튼 이름
@@ -3885,7 +3989,7 @@ export function BroadcastPanel({
         <button
           aria-label="일정 그림판 닫기"
           className="bp-close"
-          onClick={onClose}
+          onClick={requestClose}
           ref={closeBtnRef}
           type="button"
          data-act="일정 그림판 닫기">

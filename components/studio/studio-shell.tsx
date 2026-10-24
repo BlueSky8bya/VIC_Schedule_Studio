@@ -1837,6 +1837,7 @@ export function StudioShell({
   const bcMonth = broadcastMonth?.month ?? view.month;
   const broadcastCells = useMemo(() => buildCalendarMonth(bcYear, bcMonth), [bcYear, bcMonth]);
   const broadcastTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const broadcastCloseRequestRef = useRef<(() => boolean) | null>(null);
   const broadcastDays = useMemo(() => {
     if (!broadcastOpen) return [];
     // 보고 있는 달 42칸 전체(전월/익월 회색 날짜도 선택 가능) + 이미 보낸 날짜(다른 달일 수
@@ -2006,7 +2007,14 @@ export function StudioShell({
       // 맨 위 레이어 하나만 닫는다. 보통 동시에 하나만 열리지만, 겹쳐도 위→아래 순으로.
       // 방송 판서가 맨 위(미리보기 위에 뜸) — 뒤로가기는 판서만 닫고 상태도 소멸(G3a).
       if (broadcastOpen) {
-        closeBroadcastPanel();
+        if (broadcastCloseRequestRef.current && !broadcastCloseRequestRef.current()) {
+          // The browser consumed this overlay entry before asking. Keep the board
+          // and restore exactly that entry; a later X/confirmed close removes it normally.
+          backClosingRef.current = false;
+          window.history.pushState({ vicOverlay: true }, "");
+        } else if (!broadcastCloseRequestRef.current) {
+          closeBroadcastPanel();
+        }
       } else if (teaserPickerOpen) {
         setTeaserPickerOpen(false);
       } else if (passcodeModal !== null) {
@@ -7235,6 +7243,7 @@ export function StudioShell({
         />
         {broadcastOpen ? (
           <BroadcastPanel
+            closeRequestRef={broadcastCloseRequestRef}
             cells={broadcastCells}
             days={broadcastDays}
             monthLabel={`${bcYear}년 ${bcMonth}월`}

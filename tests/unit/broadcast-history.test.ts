@@ -7,6 +7,21 @@ import {
 import { createStrokeStore, type Stroke } from "@/lib/broadcast/stroke-engine";
 
 describe("broadcast unified history", () => {
+  it("폐기 확인은 undo와 redo 모두 조회하되 사라진 미래나 상한 밖 기록은 포함하지 않는다", () => {
+    const history = createBroadcastHistory<string>(2);
+    history.push("ink");
+    history.undo();
+    expect(history.some((a) => a === "ink")).toBe(true);
+    history.push("empty-layer");
+    expect(history.some((a) => a === "ink")).toBe(false);
+    history.push("card");
+    history.push("empty-layer");
+    expect(history.some((a) => a === "card")).toBe(true);
+    history.push("empty-layer");
+    expect(history.some((a) => a === "card")).toBe(false);
+    history.clear();
+    expect(history.some(() => true)).toBe(false);
+  });
   it("획·배치가 섞여도 한 순서로 undo/redo한다", () => {
     const history = createBroadcastHistory<string>();
     history.push("stroke-1");

@@ -6,6 +6,7 @@ export type BroadcastHistory<T> = {
   redo: () => T | null;
   canUndo: () => boolean;
   canRedo: () => boolean;
+  some: (predicate: (action: T) => boolean) => boolean;
   clear: () => void;
   sizes: () => { undo: number; redo: number };
 };
@@ -41,6 +42,7 @@ export function createBroadcastHistory<T>(
     },
     canUndo: () => undoStack.length > 0,
     canRedo: () => redoStack.length > 0,
+    some: (predicate) => undoStack.some(predicate) || redoStack.some(predicate),
     clear() {
       undoStack = [];
       redoStack = [];

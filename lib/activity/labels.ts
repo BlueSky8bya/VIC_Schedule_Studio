@@ -362,6 +362,8 @@ export const ACT: Record<string, TargetLabel> = {
   "io-worldcup": { name: "월드컵 기능 켜기", area: "편집실" },
 
   // 일정 그림판(판서)
+  "bp-discard-keep": { name: "그림판 계속 그리기", area: "그림판" },
+  "bp-discard-confirm": { name: "그림판 지우고 닫기", area: "그림판" },
   "bp-eyedrop": { name: "스포이드(색 집기)", area: "그림판", hint: "그림에서 색을 찍어 펜 색으로" },
   "bp-fill": { name: "색 채우기", area: "그림판", hint: "선 안쪽을 현재 색으로 (G)" },
   "bp-region-enter": { name: "영역 선택 시작", area: "그림판", hint: "붙여넣은 그림에서 일부만 오려내기" },
