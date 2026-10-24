@@ -102,14 +102,22 @@ export function MonthPicker({
   useLayoutEffect(() => {
     const panel = panelRef.current;
     const opener = document.activeElement;
+    // SSR desktop chrome may be replaced by the mobile agenda while this
+    // portal is open. Remember its owning surface before that node detaches.
+    const owner = opener instanceof HTMLElement ? opener.closest(".poster-page,.studio-shell") : null;
     return () => {
       const focused = document.activeElement;
       // A later deliberate focus change belongs to its new control. Restore
       // synchronously only while focus still belongs to this closing dialog.
       if (focused !== document.body && !panel?.contains(focused)) return;
-      if (opener instanceof HTMLElement && opener.isConnected && !opener.closest("[inert]")) {
-        opener.focus({ preventScroll: true });
-      }
+      const available = (node: Element | null): node is HTMLElement => node instanceof HTMLElement
+        && node.isConnected && node.getClientRects().length > 0
+        && !node.closest("[inert],[hidden]") && getComputedStyle(node).visibility === "visible";
+      const replacement = owner?.isConnected
+        ? Array.from(owner.querySelectorAll<HTMLElement>('[data-act="month-title"]')).find(available)
+        : undefined;
+      const target = available(opener) ? opener : replacement;
+      target?.focus({ preventScroll: true });
     };
   }, []);
   // Clamp the measured panel, including its footer, rather than an assumed

@@ -62,6 +62,21 @@ async function tabCycle(page: Page) {
 async function inspectMonthPicker(page: Page, context: BrowserContext, base: string, info: TestInfo, surface: "viewer" | "studio" | "preview", mobile = false) {
   const s = await setup(page, context, base), [year, month] = kstYm().split("-").map(Number);
   await page.goto(surface === "viewer" ? `/visual-fixture/poster?monthLink=1&month=${kstYm()}` : `/visual-fixture/studio?role=owner${surface === "preview" ? "&viewer=1" : ""}&y=${year}&m=${month}`);
+  if (mobile) {
+    // A cold anonymous page can open its SSR desktop header before the mobile
+    // layout replaces it. Exercise that same real responsive replacement with
+    // an open dialog; waiting for a settled mobile header alone hid the bug.
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await expect(page.locator(".public-calendar-header")).toBeVisible();
+    await monthTitle(page).click(); await expect(chooser(page)).toBeVisible();
+    const oldTitle = await monthTitle(page).elementHandle();
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.locator(".agenda-title")).toBeVisible();
+    expect(await oldTitle!.evaluate(node => node.isConnected)).toBe(false);
+    await page.keyboard.press("Escape"); await expect(chooser(page)).toHaveCount(0);
+    await expect(monthTitle(page)).toBeFocused();
+    await oldTitle!.dispose();
+  }
   await settlePanelLayout(page); await monthTitle(page).click(); await expect(chooser(page)).toBeVisible(); await settlePanelLayout(page);
   const heights = [(await chooser(page).boundingBox())!.height];
   await expect(chooser(page).locator('[data-act="mp-today"]')).toBeDisabled();
@@ -89,7 +104,7 @@ async function inspectMonthPicker(page: Page, context: BrowserContext, base: str
   const scrollBefore = await page.evaluate(() => ({ x: scrollX, y: scrollY }));
   await page.keyboard.press("Escape"); await expect(chooser(page)).toHaveCount(0); await expect(monthTitle(page)).toBeFocused();
   expect(await page.evaluate(() => ({ x: scrollX, y: scrollY }))).toEqual(scrollBefore);
-  await finish(page, info, s.proof, { surface, mobile, viewedKst: { year, month }, heights, tabsAtToday, tabsAway, nativeArrowPageTodayMonthEsc: true, focusReturnedAfterEveryClose: true });
+  await finish(page, info, s.proof, { surface, mobile, responsiveOpenerReplacement: mobile, viewedKst: { year, month }, heights, tabsAtToday, tabsAway, nativeArrowPageTodayMonthEsc: true, focusReturnedAfterEveryClose: true });
 }
 
 test("month picker viewer desktop keeps height keyboard and return focus", async ({ page, context, baseURL }, info) => inspectMonthPicker(page, context, baseURL!, info, "viewer"));
