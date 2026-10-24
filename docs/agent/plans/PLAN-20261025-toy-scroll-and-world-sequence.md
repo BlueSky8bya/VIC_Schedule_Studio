@@ -22,7 +22,7 @@ No auth/DTO/KST/data/API/dependency/art changes. Synthetic fixtures and public s
 Current narrow implementation and test fixtures must be independently reviewed before integration. Production deployment requires exact fullSHA and public actual input verification; a local unit result or a diagnostic marked code0 is not release acceptance.
 
 
-## Actual final local evidence
+## Product6 local evidence (superseded for current acceptance)
 
 - Product input `ffce2b4728733359d45b444b987410c26a48f30eef6445db36f32a3c5e66fe83`, BUILD_ID `qT0whNDzVCmXF6I2OgkD0`. One compile for this input; the build is reused independently of case PASS.
 - Immutable compile/smoke: native `2026-10-25-1792884504893-1e7aceea/result.json`, SHA256 `e6db42975bfb2314e15dafdc725564f49551bf9357d08ac3c677c119e1d25708`, one actual PASS.
@@ -37,3 +37,25 @@ Current narrow implementation and test fixtures must be independently reviewed b
 These are PC Chromium fixture/public interactions and bounded original rAF observations, not real login, physical mobile-device or all-personality certification. The full1100px compact combined workflow remains unverified; its legitimate panel scrim blocked the earlier caller workflow. Ready-scene lighting is checked; neutral material during new scene loading is recorded separately, not certified as a ready-scene matrix. Normal36 remains0/UNVERIFIED; no full200/all-nine claim. Actual obstacle coverage or viewport resizing may still choose the nearest safe toy landing; no designated exact release point is required.
 
 External final authority: `.scratch-pw/site-daily/sequence-20261025/release.json`, `report.html` and `independent-final/`. Only that closure may claim an actual deployed fullSHA after remote quality and public interactions pass. Preserve the original99842 public335.578/525.592px failure and every intermediate product/fixture/observation failure. Do not relabel an old result PASS. Do not delete this worktree while these protected source QA references remain active.
+
+
+## Production acceptance follow-up (still active)
+
+The first implementation a3e9a288 passed its bounded local evidence and independent review, but production acceptance did not pass. Preserve `public-scroll3/result.json`: at1920×780 a real44×44 toy was given the pet body tier; the house bottom637.1875 overlaps that body's protected top637.08, even though the actual toy has28.8px clear space. The initial requested x210 was moved to the calendar; later wheel/middle native floor re-clipping moved it again. This remains a product failure, not normal minimum correction for the toy footprint.
+
+Add a separately cached full44×44 viewport toy tier to the existing coalesced geometry scan, with the same actual obstacles/controls/house and200 cap. Never reuse the snack's shorter44×38 footprint, publish a fake full-width floor or enlarge the creature body graph. Supply it consistently to main and independent/manual item geometry. Preserve the small physical point; autonomous access still needs a separately measured body-safe stance within the existing48px pick reach. Relevant regressions include44-vs38 clearance, cache/copy/source disposal, bounds, actual short/tall viewer/studio scrolling, current native scope and public repeat.
+
+`public-attempt1` also reported hidden4, but all four are the existing expression canvas on/off switch while the decoded resident remains painted in all2450rAF frames; this is an oracle classification error, independently confirmed. Preserve that original FAIL. New observations separate only the exact expression canvas transitions and additionally require the decoded sprite or actual face canvas to remain painted. Do not exclude other hidden nodes or weaken object/arrival/ownership assertions. Product6 approval remains scoped to its original evidence; the next product input needs fresh related observations and a new independent approval/public release.
+
+
+## Final product8 local evidence
+
+The independent reviewer caught a second boundary issue before integration: combining home8 + toy200 must not truncate the occupied tail toy span before the model's existing occupied-first200 cap. The helper now passes independently bounded208 candidates; the final model still caps200 after ownership retention. A home8 + toy0..199/current199 regression confirms the current physical toy is retained.
+
+- Product `fff1c121f52ee50dedcb8e51ef55dafc63c0d88c4b83817788fc3f46a581f1d6`, BUILD_ID `kbqMiqOs5IiEQDu8Unl66`. Compile/smoke native `2026-10-25-1792885565758-8d3a7ef1/result.json`, SHA256 `a610980b923db0499897c02dd2d75d12e8216898d4d2dbf44675f5cc20b63029`.
+- Same-build scoped native `2026-10-25-1792885686963-57bace27/result.json`, SHA256 `ac9f690d1911a7200582d2aad91c73b5356592f5fe21278fc107d2804f87ca2f`: selected23 = fresh22 + verified smoke1 reused; failed/unrun0; all source/guard/owned teardown checks true. Product7's compile is preserved and not reused for product8.
+- Actual macro22 viewer2453/studio2998 rAF, each8 real month selections/24 chooser cycles/16 season toggles: original physical hidden changes0, arrival restarts0, unwanted month jumps0; same nodes, ready lighting and decoded sprite/canvas paint checks pass. Maximum item drift0/.000610px.
+- Actual scroll23 at780 and880px heights, viewer and studio, four PASS: actual calendar/left-gap/middle scroll ranges181/181/52,210/210/210,81/81/81,110/110/110px; horizontal drift0. The same full44px toy is really below the house with minimum28.8125px gap. Actual input24 two PASS starts native and checks Space ownership, pointer anchor release and22/−60px motion.
+- Eight ad hoc UI cases stay separate from catalog23. Current type/lint/296 related units/harness passed. One compile per product input; no rebuild for a test failure. Original first deployment failure and all provisional product6/7 artifacts remain unchanged.
+
+Final non-author integration review is in `sequence-20261025/independent-final8/`; deployed fullSHA/public original condition/remote CI remain authoritative only in the external `release.json`. The previous release attempt a3e9a288 is explicitly not accepted by the combined public closure. No additional idea-discovery completion or normal36/full200/all-personality certification is created.

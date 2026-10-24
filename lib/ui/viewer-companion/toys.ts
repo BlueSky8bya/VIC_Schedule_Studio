@@ -26,11 +26,17 @@ type Flight = { at: number; lastAt: number; x: number; y: number; vx: number; vy
 const clamp = (n: number, low: number, high: number) => Math.max(low, Math.min(high, n));
 const valid = (point: Point) => [point.x, point.y].every(Number.isFinite);
 // The pet's transparent panel support is an attachment, not an object ledge.
-const panelFloor = (platform: Platform) => /^companion-panel-floor(?:-food)?(?:-\d+)?$/.test(platform.id);
+const panelFloor = (platform: Platform) => /^companion-panel-floor(?:-(?:food|toy))?(?:-\d+)?$/.test(platform.id);
 const floor = (platform: Platform) => !platform.bodyOnly && !["control", "hide"].includes(platform.kind) && !panelFloor(platform);
 const roomFloor = (platform: Platform) => !platform.bodyOnly && platform.kind === "floor" && /^companion-home-floor(?:-\d+)?$/.test(platform.id);
 const roomContact = (platform: Platform) => roomFloor(platform) || platform.kind === "floor" && isCompanionHomeFloorFoodSupport(platform.id);
-const viewportFloor = (platform: Platform) => platform.kind === "floor" && /^viewport-floor(?:-food)?(?:-\d+)?$/.test(platform.id);
+const viewportFloor = (platform: Platform) => platform.kind === "floor" && /^viewport-floor(?:-(?:food|toy))?(?:-\d+)?$/.test(platform.id);
+/** Only the measured full44px toy tier and the existing room item tier. */
+export function companionToySmallFloorContacts(supports: readonly Platform[]): Platform[] {
+  const safe = supports.filter(p => p.kind === "floor" && !p.bodyOnly);
+  return [...safe.filter(p => isCompanionHomeFloorFoodSupport(p.id)).slice(0, 8),
+    ...safe.filter(p => /^viewport-floor-toy(?:-\d+)?$/.test(p.id)).slice(0, 200)];
+}
 const homeContacts = (platforms: readonly Platform[]) => platforms.filter(p => roomContact(p)
   && (!roomFloor(p) || !platforms.some(small => isCompanionHomeFloorFoodSupport(small.id) && Math.abs(small.y - p.y) <= .5)));
 /** Source ejections use the exact descending crossing, so a coarse host tick
@@ -51,8 +57,9 @@ function firstHomeContact(source: Point, vx: number, vy: number, contacts: reado
  * body-safe approach stance is projected within its existing48px pick reach. */
 export function accessibleCompanionToys(toys: readonly CompanionToy[], supports: readonly Platform[]): CompanionToy[] {
   return toys.slice(0, MAX_COMPANION_TOYS).flatMap(toy => {
-    if (!isCompanionHomeFloorFoodSupport(toy.platformId)) return [toy];
-    const stance = supports.slice(0, 400).filter(p => roomFloor(p) && Math.abs(p.y - toy.y) <= .5 && Math.abs(platformLandingX(p, toy.x) - toy.x) <= 48)
+    const home = isCompanionHomeFloorFoodSupport(toy.platformId), smallViewport = /^viewport-floor-toy(?:-\d+)?$/.test(toy.platformId ?? "");
+    if (!home && !smallViewport) return [toy];
+    const stance = supports.slice(0, 400).filter(p => (home ? roomFloor(p) : p.kind === "floor" && !p.manualOnly && !p.bodyOnly && /^viewport-floor(?:-\d+)?$/.test(p.id)) && Math.abs(p.y - toy.y) <= .5 && Math.abs(platformLandingX(p, toy.x) - toy.x) <= 48)
       .sort((a, b) => Math.abs(platformLandingX(a, toy.x) - toy.x) - Math.abs(platformLandingX(b, toy.x) - toy.x))[0];
     return stance ? [{ ...toy, stance: { x: platformLandingX(stance, toy.x), y: stance.y, platformId: stance.id } }] : [];
   });
@@ -153,7 +160,7 @@ export function createCompanionToys(rng: () => number = Math.random) {
   const reconcile = (at: number, attachments: readonly CompanionToyAttachment[] = []) => {
     for (const toy of objects.values()) {
       if (toy.held || toy.carried || flights.has(toy.id) || waiting.has(toy.id)) continue;
-      if (/^viewport-floor(?:-food)?(?:-\d+)?$/.test(toy.platformId ?? "")) {
+      if (/^viewport-floor(?:-(?:food|toy))?(?:-\d+)?$/.test(toy.platformId ?? "")) {
         // Scroll can split/re-number the screen floor around calendar ink.
         // Those spans are safe intervals, not a physical source that scales
         // an object's horizontal fraction. Keep its actual screen X whenever
@@ -176,13 +183,13 @@ export function createCompanionToys(rng: () => number = Math.random) {
     }
   };
   return {
-    sync(next: readonly Platform[], bounds: { width: number; height: number }, at: number, smallHomeFloors: readonly Platform[] = [], attachments: readonly CompanionToyAttachment[] = []) {
+    sync(next: readonly Platform[], bounds: { width: number; height: number }, at: number, smallFloors: readonly Platform[] = [], attachments: readonly CompanionToyAttachment[] = []) {
       if (![bounds.width, bounds.height, at].every(Number.isFinite) || bounds.width <= 0 || bounds.height <= 0) return;
       const measuredById = new Map<string, Platform>();
       // The host supplies current followed geometry before its cached full-
       // scan landing twins. Keep that first sample paired with the display
       // anchor; a later stale twin must not undo the scroll translation.
-      for (const p of [...smallHomeFloors.filter(p => p.kind === "floor" && isCompanionHomeFloorFoodSupport(p.id)).slice(0, 8), ...next.slice(0, 400)]) {
+      for (const p of [...companionToySmallFloorContacts(smallFloors), ...next.slice(0, 400)]) {
         if (p.id && !p.bodyOnly && !panelFloor(p) && [p.x, p.y, p.width].every(Number.isFinite) && p.width > 0 && !measuredById.has(p.id)) measuredById.set(p.id, p);
       }
       const measured = [...measuredById.values()];

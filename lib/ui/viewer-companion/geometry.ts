@@ -24,6 +24,7 @@ const MEASUREMENT_INTERVAL_MS = 120;
 const CLEARANCE = 3;
 const DEFAULT_SIZE = 76;
 const FOOD_SIZE = 32;
+const TOY_SIZE = 44;
 // The fruit's 32px art has a 44px native hit target, reaching 38px above its foot.
 // Reserve that hit target around controls without imposing the pet's 92px fit.
 const FOOD_FOOTPRINT = { width: 44, height: 38 };
@@ -155,6 +156,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
   let previous = "";
   let landingSnapshot: Platform[] = [];
   let foodLandingSnapshot: CompanionFoodDropSupport[] = [];
+  let toyLandingSnapshot: Platform[] = [];
   const observed = new Set<Element>();
   let observedHome: HTMLElement | null = null;
   // Retain anonymous line geometry relative to its actual text parent. A
@@ -185,7 +187,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     const validationOnly = pendingValidationOnly; pendingValidationOnly = false;
     const notifyUnchanged = notifyNextMeasurement; notifyNextMeasurement = false;
     if (!root.isConnected) {
-      anchors.clear(); homeFloorFamilies.clear(); followedIds = []; retainedIds.clear(); landingSnapshot = []; foodLandingSnapshot = [];
+      anchors.clear(); homeFloorFamilies.clear(); followedIds = []; retainedIds.clear(); landingSnapshot = []; foodLandingSnapshot = []; toyLandingSnapshot = [];
       if (previous !== "[]" || notifyUnchanged) { previous = "[]"; onChange([], validationOnly); }
       return;
     }
@@ -195,6 +197,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     const platforms: Platform[] = [];
     const landings: Platform[] = [];
     const foodLandings: CompanionFoodDropSupport[] = [];
+    const toyLandings: Platform[] = [];
     const nextAnchors = new Map<string, AnchorSnapshot>();
     const paintedDayEdges: AnchorSnapshot[] = [];
     const remember = (platform: Platform, anchor?: Element, rect?: DOMRect) => {
@@ -439,6 +442,13 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       // its real house floor is published. First-contact selection still sorts
       // by physical height rather than this list order.
       rememberFood("viewport-floor-food", safeCompanionSurfaces({ x: 12, y: floorY, width: width - 24 }, ordinaryObstacles, FOOD_SIZE, viewport, FOOD_FOOTPRINT), "floor");
+      // Toys have a full44px hit target. Reuse this scan's real obstacles, but
+      // neither the pet's large body tier nor the snack's shorter38px target.
+      const toySpans = safeCompanionSurfaces({ x: 12, y: floorY, width: width - 24 }, ordinaryObstacles, TOY_SIZE, viewport, HOME_ITEM_FOOTPRINT);
+      for (let i = 0; i < toySpans.length && toyLandings.length < MAX_PLATFORMS; i++) {
+        const platform: Platform = { id: `viewport-floor-toy${i ? `-${i}` : ""}`, ...toySpans[i], kind: "floor", manualOnly: true };
+        toyLandings.push(platform); nextAnchors.set(platform.id, { platform });
+      }
       // These are existing visible physical edges, not extra rows or invented
       // heights. Header bottoms leave the92px cell inside the viewport; every
       // weekday glyph and complete control above that edge stays an obstacle.
@@ -613,8 +623,9 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     anchors = new Map([...nextAnchors].map(([id, snapshot]) => [id, { ...snapshot, platform: copyPlatform(snapshot.platform) }]));
     landingSnapshot = landings.map(copyPlatform);
     foodLandingSnapshot = foodLandings.map(copyFoodSupport);
+    toyLandingSnapshot = toyLandings.map(copyPlatform);
     // Suppress equal layout deliveries, including a countdown's text mutation.
-    const signature = JSON.stringify([platforms, landings, foodLandings]);
+    const signature = JSON.stringify([platforms, landings, foodLandings, toyLandings]);
     dirtyTextScopes.clear();
     if (signature !== previous || notifyUnchanged || homeChanged) { previous = signature; onChange(platforms, validationOnly); }
   }
@@ -695,10 +706,10 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     // An explicit command may need one completion even when no safe support
     // appeared. Ordinary finite follow validation still suppresses equal data.
     revalidate: (notifyUnchanged = false) => { notifyNextMeasurement ||= notifyUnchanged; enqueue(true); },
-    // Fresh baseline copies, paired with anchor(). Only the cached food32 tier
-    // differs from the configured pet size; no caller triggers a new scan.
+    // Fresh baseline copies, paired with anchor(). The cached food32 and full44 toy tiers
+    // differ from the configured pet size; no caller triggers a new scan.
     // Callers own deliberate release rebasing; this performs no layout work.
-    landings: (requestedSize?: number) => requestedSize === FOOD_SIZE ? foodLandingSnapshot.map(copyFoodSupport) : landingSnapshot.map(copyPlatform),
+    landings: (requestedSize?: number) => requestedSize === FOOD_SIZE ? foodLandingSnapshot.map(copyFoodSupport) : requestedSize === TOY_SIZE ? toyLandingSnapshot.map(copyPlatform) : landingSnapshot.map(copyPlatform),
     // Food captures its own small set of anchor offsets at placement. Expose
     // the already measured baseline, without enlarging the pet's follow pair
     // or doing an additional selector/Range/rect read.
@@ -708,7 +719,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
       return { element: snapshot.anchor, left: snapshot.rect?.left ?? 0, top: snapshot.rect?.top ?? 0, ...(snapshot.rect ? { width: snapshot.rect.width, height: snapshot.rect.height } : {}), ...(snapshot.identity ? { identity: snapshot.identity } : {}) };
     },
     follow(requested: readonly string[]): CompanionFollowSample[] {
-      if (!root.isConnected) { anchors.clear(); homeFloorFamilies.clear(); followedIds = []; retainedIds.clear(); landingSnapshot = []; foodLandingSnapshot = []; return []; }
+      if (!root.isConnected) { anchors.clear(); homeFloorFamilies.clear(); followedIds = []; retainedIds.clear(); landingSnapshot = []; foodLandingSnapshot = []; toyLandingSnapshot = []; return []; }
       followedIds = [...new Set(requested)].slice(0, 7).filter(id => !isCompanionPanelFloor(id));
       for (const id of retainedIds) {
         if (!followedIds.includes(id)) { anchors.delete(id); retainedIds.delete(id); }

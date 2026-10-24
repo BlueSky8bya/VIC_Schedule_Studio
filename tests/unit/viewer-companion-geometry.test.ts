@@ -153,6 +153,24 @@ function addStructuralSurfaces(fixture: ReturnType<typeof geometryFixture>, band
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("121 deliberate native floors and ribbon contact", () => {
+  it("measures a full44px viewport toy below a house that excludes the larger creature", () => {
+    const f = geometryFixture(), house = addHouseFloor(f); house.house.rect = box(100, 500, 360, 210);
+    let body: Platform[] = []; const sub = observeCompanionPlatforms(f.root, next => { body = next; }, { size: 92, home: f.home as unknown as HTMLElement }); f.flush();
+    const contains = (p: Platform) => p.x <= 210 && p.x + p.width >= 210;
+    expect(body.filter(p => /^viewport-floor(?:-\d+)?$/.test(p.id)).some(contains)).toBe(false);
+    expect(sub.landings(44).some(contains)).toBe(true);
+    expect(sub.landings(44).every(p => /^viewport-floor-toy(?:-\d+)?$/.test(p.id) && p.manualOnly)).toBe(true);
+    const reads = f.range.getClientRects.mock.calls.length, copied = sub.landings(44); copied[0].x = -999;
+    expect(sub.landings(44)[0].x).not.toBe(-999); expect(f.range.getClientRects).toHaveBeenCalledTimes(reads);
+    f.sourceRoot.isConnected = false; sub.follow([]); expect(sub.landings(44)).toEqual([]); sub();
+  });
+  it("keeps all44px of a viewport toy clear where the shorter38px snack target fits", () => {
+    const f = geometryFixture(), control = new FixtureElement(); control.rect = box(190, 700, 40, 40); f.controls.push(control);
+    const sub = observeCompanionPlatforms(f.root, () => {}, { size: 92 }); f.flush();
+    const contains = (p: Platform) => p.x <= 210 && p.x + p.width >= 210;
+    expect(sub.landings(32).filter(p => /^viewport-floor-food(?:-\d+)?$/.test(p.id)).some(contains)).toBe(true);
+    expect(sub.landings(44).some(contains)).toBe(false); sub();
+  });
   it("catches a released creature on the first real ribbon without adding glyphs to manual landings", () => {
     const f = geometryFixture(), band = new FixtureElement(), control = new FixtureElement();
     band.rect = box(100, 420, 400, 22); addStructuralSurfaces(f, [band]);

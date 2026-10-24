@@ -88,7 +88,7 @@ import { createCompanionScenes, type CompanionSceneAction, type CompanionSceneEv
 import { COMPANION_WORK_SIGNAL, validCompanionWorkSignal } from "@/lib/ui/viewer-companion/work-signals";
 import { createCompanionSceneStore } from "@/lib/ui/viewer-companion/scene-memory";
 import { COMPANION_SCENE_SIGNAL, emitCompanionWardrobePreference, validCompanionSceneSignal } from "@/lib/ui/viewer-companion/scene-signals";
-import { accessibleCompanionToys, findCompanionToyRoute, companionToyFoodPriority, createCompanionToyPlanner, type CompanionToyAction } from "@/lib/ui/viewer-companion/toys";
+import { companionToySmallFloorContacts, accessibleCompanionToys, findCompanionToyRoute, companionToyFoodPriority, createCompanionToyPlanner, type CompanionToyAction } from "@/lib/ui/viewer-companion/toys";
 import { companionToyReturnDelivered, companionToyReturnTarget, planCompanionToyBoxApproach, sampleCompanionToyReturn, validCompanionToyBoxApproach } from "@/lib/ui/viewer-companion/toy-return";
 import { companionFoodDisposalDelivered, companionFoodDisposalTarget, sampleCompanionFoodDisposal } from "@/lib/ui/viewer-companion/food-disposal";
 import { createCompanionFeedCommands, type CompanionFeedCommand } from "@/lib/ui/viewer-companion/feed-command";
@@ -560,7 +560,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     let sceneMonthPending = Boolean(saved && saved.monthKey !== monthKey);
     const monthStarted = performance.now(), monthReadyAt = monthStarted + (reduced ? 0 : 340);
     const incomingHome = incoming?.monthKey === monthKey && (incoming.anchor?.kind === "home" || incoming.anchor?.kind === "home-floor") ? incoming.anchor.kind : undefined;
-    let platforms: Platform[] = [], landingPlatforms: Platform[] = [], toyHomeContacts: Platform[] = [], x = saved?.x ?? transferredPoint?.x ?? innerWidth * .68, y = saved?.y ?? transferredPoint?.y ?? innerHeight - 18, support = saved?.atHome ? saved.homeSupportId ?? "companion-home" : incomingHome === "home" ? "companion-home" : incomingHome === "home-floor" ? "companion-home-floor" : viewportHandoff?.platform.id ?? "";
+    let platforms: Platform[] = [], landingPlatforms: Platform[] = [], toySmallFloors: Platform[] = [], x = saved?.x ?? transferredPoint?.x ?? innerWidth * .68, y = saved?.y ?? transferredPoint?.y ?? innerHeight - 18, support = saved?.atHome ? saved.homeSupportId ?? "companion-home" : incomingHome === "home" ? "companion-home" : incomingHome === "home-floor" ? "companion-home-floor" : viewportHandoff?.platform.id ?? "";
     let positionEntryWait = false;
     let homeJourney: false | "called" | "automatic" = false;
     let homeWakeUntil = 0, strandedSince = 0, homeRetryAt = 0;
@@ -1691,7 +1691,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       }
       const shifts = new Map<string, (point: { x: number; y: number }) => { x: number; y: number }>();
       for (const sample of samples) {
-        const id = sample.platform.id, before = anchorSeen.get(id), platform = supportById(id) ?? toyHomeContacts.find(p => p.id === id);
+        const id = sample.platform.id, before = anchorSeen.get(id), platform = supportById(id) ?? toySmallFloors.find(p => p.id === id);
         const fromFrame = before?.frame ?? sample.sourceFrame, toFrame = sample.currentFrame;
         const fallback = before ? { x: sample.anchorX - before.x, y: sample.anchorY - before.y }
           : platform ? { x: sample.platform.x - platform.x, y: sample.platform.y - platform.y } : { x: 0, y: 0 };
@@ -1703,7 +1703,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           if (sample.platform.heart) platform.heart = { ...sample.platform.heart };
         }
       }
-      if (pressed || keyboardHeld || placing || flight) { supportMotion.reset(now); if (hasPlatformSnapshot) toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, now, toyHomeContacts, toyAnchor); return bedMoved || returnMoved; }
+      if (pressed || keyboardHeld || placing || flight) { supportMotion.reset(now); if (hasPlatformSnapshot) toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, now, toySmallFloors, toyAnchor); return bedMoved || returnMoved; }
       const shift = (id: string | undefined, point: { x: number; y: number }) => shifts.get(id ?? "")?.(point) ?? { x: 0, y: 0 };
       const from = shift(support, action ? origin : { x, y }), to = shift(action?.target.platformId ?? support, action ? action.target : { x, y });
       if (homeContact) { const moved = shift(support, homeContact.point); homeContact.point.x += moved.x; homeContact.point.y += moved.y; }
@@ -1732,7 +1732,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       x += dx; y += dy; carrier.x += dx; carrier.y += dy;
       if (scroll && dy && !pendingMonth && !reduced && gfxMode() !== "off" && !isHomeSupport(support) && action?.kind !== "jump" && !playFalling) supportMotion.push(dy, now);
       if (isHomeSupport(support) || pressed || keyboardHeld || reduced || gfxMode() === "off") supportMotion.reset(now);
-      if (hasPlatformSnapshot) toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, now, toyHomeContacts, toyAnchor);
+      if (hasPlatformSnapshot) toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, now, toySmallFloors, toyAnchor);
       return Boolean(dx || dy || bedMoved || returnMoved);
     };
     const continuousMotion = () => Boolean(expressionAnimating || performance.now() < interactionUntil || toys.current?.moving() || action?.toy?.effect === "stash" && toys.current?.carried() || isFoodDisposal(action) && food.current?.carried() || homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && (action.accessory || action.radio || ["walk", "jump", "heart", "hide", "stretch", "shake", "eat", "play"].includes(action.kind)));
@@ -2112,14 +2112,14 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         const reader = itemGeometry; if (!reader) return;
         reader(); itemGeometry = undefined;
         const commands = itemCommands.splice(0); if (!independentItemsAllowed()) return;
-        const landings = reader.landings(), small = reader.landings(32), contacts = small.filter(p => isCompanionHomeFloorFoodSupport(p.id)).slice(0, 8);
+        const landings = reader.landings(), small = reader.landings(32), contacts = companionToySmallFloorContacts([...small, ...reader.landings(44)]);
         const snapshot: ItemGeometry = { platforms: next, landings, contacts, anchor: id => reader.anchor(id) };
         food.current?.sync(next, snapshot.anchor, small);
         toys.current?.sync([...next, ...landings], { width: innerWidth, height: innerHeight }, performance.now(), contacts, snapshot.anchor);
         for (const queued of commands) { if (!independentItemsAllowed()) break; queued(snapshot); }
       }, { size, identity: geometryIdentity, getHome: () => document.querySelector<HTMLElement>(".vc-home-cushion") });
     };
-    const spawnManualToy = (snapshot: ItemGeometry = { platforms, landings: landingPlatforms, contacts: toyHomeContacts, anchor: toyAnchor }) => {
+    const spawnManualToy = (snapshot: ItemGeometry = { platforms, landings: landingPlatforms, contacts: toySmallFloors, anchor: toyAnchor }) => {
       const box = document.querySelector<HTMLElement>(".vc-home [data-home-action='toys']"), rect = box?.getBoundingClientRect();
       if (!box || !rect || rect.width <= 0 || box.closest("[hidden],[inert]")) return;
       const opening = box.querySelector<HTMLElement>(".vc-toy-box-opening")?.getBoundingClientRect();
@@ -3275,7 +3275,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
             const close = currentBox && rect && rect.width > 0 && rect.height > 0 && !currentBox.closest("[hidden],[inert],[aria-hidden='true']") && isHomeFloor(support) && supportedNow() && Math.abs(x - rect.left - rect.width / 2) <= size + rect.width / 2 && Math.abs(y - rect.bottom) <= 140;
             if (close && opening && opening.width > 0 && opening.height > 0 && (toyBeat.effect === "stash" || homeContact?.kind === "box" && homeInteractionWitness === homeContact.serial)) {
               const cx = opening.left + opening.width / 2;
-              const hint = toyHomeContacts.filter(p => p.y > opening.bottom).sort((a, b) => Math.abs(platformLandingX(a, cx, 9) - cx) - Math.abs(platformLandingX(b, cx, 9) - cx))[0];
+              const hint = toySmallFloors.filter(p => isCompanionHomeFloorFoodSupport(p.id) && p.y > opening.bottom).sort((a, b) => Math.abs(platformLandingX(a, cx, 9) - cx) - Math.abs(platformLandingX(b, cx, 9) - cx))[0];
               success = toyBeat.effect === "stash" ? Boolean(toyBeat.toyId && openingElement === toyReturnAim?.element && companionToyReturnDelivered(toyReturnPainted, companionToyReturnTarget(opening)) && toys.current?.stash(toyBeat.toyId)) : toys.current?.spawn({ x: cx, y: opening.bottom, platformId: hint?.id ?? support }, now, true, food.current?.occupied()) ?? false;
             }
           }
@@ -4458,13 +4458,13 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       // carried per-frame by its actual anchor, including nested/fixed panels.
       platforms = next.filter(p => p.y >= size + 8 && p.y <= innerHeight - 12);
       landingPlatforms = [...(geometryTracker?.landings() ?? [])].filter(p => p.y >= size + 8 && p.y <= innerHeight - 12);
-      toyHomeContacts = [...(geometryTracker?.landings(32) ?? [])].filter(p => isCompanionHomeFloorFoodSupport(p.id)).slice(0, 8);
+      toySmallFloors = companionToySmallFloorContacts([...(geometryTracker?.landings(32) ?? []), ...(geometryTracker?.landings(44) ?? [])]);
       hasPlatformSnapshot = true; viewportHandoff = undefined;
       const viewportChanged = viewportRecovery.take({ validationOnly, hasSafePlatforms: platforms.length > 0, inputOwned: Boolean(pressed || keyboardHeld || placing) });
       measureBed();
       if (homeContact) { const currentContact = homeContactPoint(homeContact.kind, homeContact.element); if (currentContact) homeContact.point = currentContact; else clearHomeContact(); }
       food.current?.sync(platforms, id => geometryTracker?.anchor(id), geometryTracker?.landings(32));
-      toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, geometryAt, toyHomeContacts, toyAnchor);
+      toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, geometryAt, toySmallFloors, toyAnchor);
       if (pendingShowcaseHomeReturn) {
         const mat = landingPlatforms.find(platform => platform.id === COMPANION_WASH_SUPPORT && platform.bodyOnly);
         // A folded/remounting house keeps this request until its real shower
