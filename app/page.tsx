@@ -9,6 +9,7 @@ import { resolveCurrentActor } from "@/lib/auth/actor";
 import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
 import { getPublicSchedule } from "@/lib/schedules/public-loader";
 import { timed } from "@/lib/perf/perf";
+import { isPublicMonth, parsePublicMonth } from "@/lib/ui/public-month-link";
 
 export default async function HomePage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
   // actor 조회(로그인 사용자면 GoTrue 왕복)와 공개 일정 로드는 서로 독립이다 — 예전엔 줄을 세워
@@ -23,6 +24,10 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
 
   // 새로고침 복원: 쿠키에서 직전 화면 상태를 읽어 서버 렌더 초기값으로 넘긴다(깜빡임 없음).
   const mem = parseViewCookie((await cookies()).get(VIEW_COOKIE)?.value);
+  const query = await searchParams;
+  const linkedMonth = parsePublicMonth(query?.month);
+  const rememberedMonth = { year: mem.sy, month: mem.sm };
+  const initialView = linkedMonth ?? (isPublicMonth(rememberedMonth) ? rememberedMonth : null);
   // 휴대폰이면 모바일 레이아웃을 서버에서 처음부터 그려 데스크톱 레이아웃 깜빡임을 없앤다.
   const narrow = isMobileUserAgent((await headers()).get("user-agent") ?? "");
 
@@ -46,8 +51,9 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       <PublicPoster
         accountSwitch
         anonymous
-        initialYear={typeof mem.sy === "number" ? mem.sy : undefined}
-        initialMonth={typeof mem.sm === "number" ? mem.sm : undefined}
+        syncMonthUrl
+        initialYear={initialView?.year}
+        initialMonth={initialView?.month}
         initialNarrow={narrow}
         schedule={schedule}
         toggleHeartAction={toggleEventHeartAction}
@@ -62,7 +68,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   if (actor.role !== "viewer") {
     // Keep only this explicit local diagnostic opt-in on the existing fixed
     // role destination. No identity, arbitrary query or redirect target follows.
-    const query = await searchParams;
     redirect(query?.lampTrace === "1" ? "/studio?lampTrace=1" : "/studio");
   }
 
@@ -73,8 +78,9 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     <PublicPoster
       accountSwitch
       accountEmail={actor.email}
-      initialYear={typeof mem.sy === "number" ? mem.sy : undefined}
-      initialMonth={typeof mem.sm === "number" ? mem.sm : undefined}
+      syncMonthUrl
+      initialYear={initialView?.year}
+      initialMonth={initialView?.month}
       initialNarrow={narrow}
       schedule={schedule}
       toggleHeartAction={toggleEventHeartAction}

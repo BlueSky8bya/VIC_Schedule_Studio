@@ -4,6 +4,12 @@
 > 남기는 자리다 — 되돌리기 비싼 변경, 마이그레이션, 공개 경계 변경만 적는다.
 > 포맷·import 정리·소소한 오타는 적지 않는다.
 
+## v0.1.0 — 2026-10-24
+
+### CHG-20261024-001 — Address public months and recover Studio replay metadata
+
+Explicit validated public `month=YYYY-MM` precedes the remembered month; standalone month changes retain history state/query/fragment. The existing overlay pop owner preserves a selected month when a sheet closes. Embedded preview/onair URLs and owner/developer redirects remain unchanged. Studio caches only valid successful public VOD responses, retries temporary failures, coalesces reads and suppresses obsolete replies or mismatched selections. No API DTO/role/RLS/schema/tracking expansion. Final local15 actual UI cases and6991 units pass (one existing active-process QA skip); original failures remain retained. Exact release identity and independent review live with the daily receipt. Recovery is a scoped application revert; no data operation. [Plan](plans/PLAN-20261024-public-month-replay-recovery.md).
+
 ## v0.1.0 — 2026-10-22 (verified candidate)
 
 ### CHG-20261022-001 — Bind secondary writes to caller scope and preserve tags on failure

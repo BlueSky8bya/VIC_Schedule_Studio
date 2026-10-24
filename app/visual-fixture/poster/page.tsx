@@ -4,6 +4,7 @@ import { isSeasonKey } from "@/components/shared/ambient/registry";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { buildPremiereFixture } from "@/lib/schedules/premiere-fixture";
 import { tentativeFixtureEvents } from "../tentative-events";
+import { parsePublicMonth } from "@/lib/ui/public-month-link";
 import { isCompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 
 // 비주얼 회귀 테스트 전용 fixture 페이지 — 고정된 공개 샘플 데이터로 포스터를 렌더한다.
@@ -15,12 +16,13 @@ export const dynamic = "force-dynamic";
 export default async function VisualPosterFixture({
   searchParams
 }: {
-  searchParams?: Promise<{ avatar?: string; teaser?: string; fixed?: string; hearts?: string; ambient?: string; hour?: string; companionFood?: string; links?: string; plus?: string; signedIn?: string; tent?: string; premiere?: string; count?: string; gap?: string; scenario?: string; rehearsal?: string }>;
+  searchParams?: Promise<{ monthLink?: string; month?: string | string[]; avatar?: string; teaser?: string; fixed?: string; hearts?: string; ambient?: string; hour?: string; companionFood?: string; links?: string; plus?: string; signedIn?: string; tent?: string; premiere?: string; count?: string; gap?: string; scenario?: string; rehearsal?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
   }
   const sp = await searchParams;
+  const linkedMonth = sp?.monthLink === "1" ? parsePublicMonth(sp.month) : null;
   // teaser=<초> — 지금부터 N초 뒤 공개되는 '최초공개' 일정을 하나 끼워 넣는다(테스트 전용).
   // 시간에 걸린 기능이라 고정 샘플로는 검증이 안 된다: 공개 전 제목이 DOM에 새지 않는지,
   // 카운트다운이 0에서 실제로 공개 요청을 쏘는지를 브라우저에서 보려면 '곧 공개될 것'이 필요하다.
@@ -100,12 +102,13 @@ export default async function VisualPosterFixture({
       ambientWorldForce={hour === undefined ? undefined : { hour, weather: "clear" }}
       fixtureCompanionFood={isCompanionFoodKind(sp?.companionFood) ? sp.companionFood : undefined}
       anonymous={sp?.signedIn !== "1"}
-      accountSwitch={sp?.signedIn !== undefined}
+      accountSwitch={sp?.signedIn !== undefined || sp?.monthLink === "1"}
+      syncMonthUrl={sp?.monthLink === "1"}
       avatarFixed={fixed}
       avatarSlot={avatar}
       initialNarrow={false}
-      initialYear={2026}
-      initialMonth={6}
+      initialYear={linkedMonth?.year ?? 2026}
+      initialMonth={linkedMonth?.month ?? 6}
       schedule={premiereSchedule}
       premiereFixture={premiereFixture}
       premiereEnabled={Boolean(sp?.premiere)}

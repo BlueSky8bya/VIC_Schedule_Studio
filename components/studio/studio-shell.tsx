@@ -98,6 +98,7 @@ import {
 } from "@/lib/studio/drag-physics";
 import type { CurrentActor } from "@/lib/auth/actor";
 import { createPublicSearchRevision, usePublicSearchSession } from "@/components/shared/use-public-search-session";
+import { createPublicVodCache } from "@/lib/schedules/public-vod-cache";
 import {
   assignSupportLanes,
   supportDepthByCell,
@@ -2160,34 +2161,31 @@ export function StudioShell({
   // 이 두 오버레이는 히스토리 스택(overlayDepth)에 안 들어가서 overlayLocked로는 안 걸린다.
   const overlayKeysBlockedRef = useRef(false);
   overlayKeysBlockedRef.current = dayVodPop !== null || searchOpen;
-  const publicVodsRef = useRef<Map<string, DayVod[]> | null>(null);
-  const loadPublicVods = async (): Promise<Map<string, DayVod[]>> => {
-    if (publicVodsRef.current) return publicVodsRef.current;
-    const map = new Map<string, DayVod[]>();
-    try {
-      const res = await fetch(`/api/public/${schedule.calendar.slug}/events`);
-      const json = (await res.json()) as { vods?: (DayVod & { dateKey: string })[] };
-      for (const v of json.vods ?? []) {
-        const list = map.get(v.dateKey) ?? [];
-        list.push(v);
-        map.set(v.dateKey, list);
-      }
-    } catch {
-      /* 못 받으면 빈 창 대신 열지 않는다 */
-    }
-    publicVodsRef.current = map;
-    return map;
-  };
+  const publicVods = useMemo(() => createPublicVodCache(schedule.calendar.slug), [schedule.calendar.slug]);
+  const replayRequest = useRef(0);
+  const replayContext = `${schedule.calendar.slug}/${view.year}/${view.month}/${viewerMode}/${previewRole}/${modal}/${editorVisible}`;
+  const replayContextRef = useRef(replayContext);
+  replayContextRef.current = replayContext;
+  useEffect(() => () => { replayRequest.current++; publicVods.cancel(); }, [publicVods]);
+  useEffect(() => { replayRequest.current++; }, [replayContext]);
+  // Reopening search is a new intent; its pending older replay must stay closed.
+  useEffect(() => { if (searchOpen) replayRequest.current++; }, [searchOpen]);
   const onStudioReplay = (dateKey: string, titleNo: number, sec?: number) => {
+    const request = ++replayRequest.current, scope = replayContext;
+    const current = () => request === replayRequest.current && scope === replayContextRef.current;
     setSearchOpen(false);
-    void loadPublicVods().then((map) => {
+    void publicVods.load().then((map) => {
+      if (!current()) return;
       const vods = map.get(dateKey) ?? [];
       const idx = vods.findIndex((v) => v.titleNo === titleNo);
       if (vods.length === 0) {
-        flashToast("이 날 다시보기 정보를 아직 못 받았어요");
+        flashToast("이 날 등록된 다시보기가 없어요");
         return;
       }
-      setDayVodPop({ dateKey, part: idx >= 0 ? idx + 1 : undefined, sec, vods });
+      if (idx < 0) { flashToast("이 다시보기를 찾지 못했어요"); return; }
+      setDayVodPop({ dateKey, part: idx + 1, sec, vods });
+    }).catch(() => {
+      if (current()) flashToast("다시보기 정보를 못 불러왔어요. 다시 눌러 주세요");
     });
   };
 

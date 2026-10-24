@@ -133,7 +133,9 @@ import { createPublicSearchRevision, usePublicSearchSession } from "@/components
 import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
 import { captureFlip, playFlip } from "@/lib/ui/list-flip";
 import { popInnerOverlay, pushInnerOverlay } from "@/lib/ui/overlay-pop";
-import { VIEW_COOKIE, parseViewCookie, writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
+import { writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
+import { usePublicMonthLink } from "@/lib/ui/use-public-month-link";
+import { isPublicMonth, PUBLIC_MONTH_BOUNDS } from "@/lib/ui/public-month-link";
 import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
 import { useSoopLive } from "@/components/poster/use-soop-live";
 import { DayVodNote, DayVodWindow, formatVodDuration, VOD_ACCESS_HINT, VOD_ACCESS_LABEL, VodAccessBadge } from "@/components/poster/day-vod-window";
@@ -172,6 +174,8 @@ type PublicPosterProps = {
   toggleHeartAction?: (eventId: string, token?: string) => Promise<HeartResult>;
   // 시청자 화면에서 계정 변경(로그아웃) 버튼을 보일지. 실제 시청자 페이지에서만 true.
   accountSwitch?: boolean;
+  /** Standalone public route only; embedded previews must never opt in. */
+  syncMonthUrl?: boolean;
   // 현재 로그인한 구글 이메일 — "계정변경" 옆에 표시해 어떤 계정으로 들어와 있는지 보여준다.
   accountEmail?: string | null;
   // 비로그인(익명) 시청자 — 공개 포스터만 본다. 하트(서버 1인1하트)는 숨기고, 계정 칸은
@@ -589,6 +593,7 @@ export function PublicPoster({
   initialNarrow = false,
   toggleHeartAction,
   accountSwitch = false,
+  syncMonthUrl = false,
   accountEmail = null,
   anonymous = false,
   previewNote,
@@ -696,26 +701,20 @@ export function PublicPoster({
     const timer = window.setTimeout(() => setPopIntro(false), 2600);
     return () => window.clearTimeout(timer);
   }, []);
-  const [view, setView] = useState({
+  const monthLinkEnabled = syncMonthUrl && accountSwitch && !previewNav;
+  const [view, setViewState] = useState({
     year: initialYear ?? schedule.calendar.defaultYear,
     month: initialMonth ?? schedule.calendar.defaultMonth
   });
-  // /replay 등에서 뒤로 돌아오면 Next 라우터 캐시가 **떠날 때의 RSC**(옛 initialYear/Month)로 다시
-  // 마운트한다 — 그 사이 moveMonth가 쿠키에 적어 둔 달(검색 → 다시보기 때 옮긴 달)이 무시됐다(실측).
-  // 시청자 화면(accountSwitch)만: 마운트 직후 쿠키 달이 다르면 그 달로. 서버가 준 초기값이 곧 쿠키라
-  // 보통은 같아서 아무 일도 없다.
-  useEffect(() => {
-    if (!accountSwitch || typeof document === "undefined") return;
-    const raw = document.cookie
-      .split("; ")
-      .find((c) => c.startsWith(`${VIEW_COOKIE}=`))
-      ?.slice(VIEW_COOKIE.length + 1);
-    const mem = parseViewCookie(raw); // parseViewCookie가 decodeURIComponent까지 한다
-    if (typeof mem.sy === "number" && typeof mem.sm === "number") {
-      setView((v) => (v.year === mem.sy && v.month === mem.sm ? v : { year: mem.sy!, month: mem.sm! }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- 마운트 1회
-  }, []);
+  const setView = useCallback<typeof setViewState>((action) => {
+    setViewState(previous => {
+      const next = typeof action === "function" ? action(previous) : action;
+      return monthLinkEnabled && !isPublicMonth(next) ? previous : next;
+    });
+  }, [monthLinkEnabled]);
+  // Restore cached-route mounts too, with an explicit public link ahead of the
+  // remembered month. Neither Studio previews nor /onair opt into URL writes.
+  const onPublicMonthPop = usePublicMonthLink(view, setView, monthLinkEnabled, accountSwitch);
   const cells = useMemo(() => buildCalendarMonth(view.year, view.month), [view]);
   const today = getTodayKst();
   // 업 도움은 기간(종료일, KST)이 지나면 전부 자동으로 내린다 — 달력 띠·줄 칸·우측 안내 카드
@@ -1674,6 +1673,7 @@ export function PublicPoster({
   // (편집실 안에서 열렸을 때의 조정은 위 pushInnerOverlay/popInnerOverlay가 맡는다.)
   useEffect(() => {
     function onPop() {
+      onPublicMonthPop(ignoreDayVodPop.current || ignoreInsightsPop.current || dayVodOpenRef.current || insightsOpenRef.current);
       // 날짜 다시보기 창의 메아리(X/백드롭 닫기 후 우리가 부른 history.back()) — 무시하고
       // 카운터만 디스패치 뒤에 내린다(인사이트와 같은 microtask 이유).
       if (ignoreDayVodPop.current) {
@@ -1707,7 +1707,7 @@ export function PublicPoster({
     }
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, []);
+  }, [onPublicMonthPop]);
   // 좁은 화면(모바일 + 태블릿/좁은 창 ≤1040px) 시청자는 세로 아젠다(목록) 전용 — 월간 그리드/캡쳐는
   // PC로 유도. 표면은 1840 고정 캔버스라 좁을수록 통째로 축소돼(900px면 0.49배 → 본문 6px) 읽을 수
   // 없다. 표면 내부를 화면 폭에 맞춰 재배치하는 건 금지(스티커 좌표가 어긋남 — ADR-0004)라, 대신
@@ -2729,14 +2729,15 @@ export function PublicPoster({
     }
   }
   function moveMonth(offset: number) {
+    const next = getAdjacentMonth(view.year, view.month, offset);
+    if (monthLinkEnabled && !isPublicMonth(next)) return;
     if (offset !== 0) playSfx(offset > 0 ? "page" : "page-prev");
     didNavigateRef.current = true;
     setDayVodPop(null); // 팝오버는 화면 고정 좌표라 달이 바뀌면 근거를 잃는다
     setMonthDir(offset >= 0 ? "next" : "prev");
-    const next = getAdjacentMonth(view.year, view.month, offset);
     setView(next);
     onViewChange?.(next.year, next.month); // 부모(편집실)에 바뀐 달 알림
-    // 보던 달을 쿠키에 기록 → 새로고침 시 서버가 읽어 그 달로 바로 렌더(URL·라우터 안 건드림).
+    // 보던 달을 쿠키에 기록해 서버 초기 렌더도 복원한다. 공개 URL은 별도 공유 hook이 동기화한다.
     // 월은 화면 구분 없이 하나(sy/sm)로 통일한다 — 시청자에서 본 달이 계정 전환 후 편집실로도
     // 이어진다("마지막 본 달"). 꾸미기는 편집 맥락이 달라 별도 키(dy/dm)를 유지. 편집실 미리보기는
     // accountSwitch=false라 여기서 안 쓰고, onViewChange로 편집실 쿠키(sy/sm)가 처리한다.
@@ -4200,6 +4201,7 @@ export function PublicPoster({
       {/* 월 피커(제목 클릭) — 편집실과 같은 부품. fixed라 캡처 PNG 밖. */}
       {monthPick ? (
         <MonthPicker
+          bounds={monthLinkEnabled ? PUBLIC_MONTH_BOUNDS : undefined}
           anchor={monthPick.anchor}
           narrow={isNarrow}
           onClose={() => setMonthPick(null)}
@@ -5177,6 +5179,7 @@ export function PublicPoster({
             톡은 moveMonth 안이 아니라 여기서 울린다(안에 넣으면 jumpToday·스와이프가 두 번 울린다). */}
         <button
           className="mb-step"
+          disabled={monthLinkEnabled && view.year === PUBLIC_MONTH_BOUNDS.min && view.month === 1}
           onClick={() => {
             hapticTick();
             moveMonth(-1);
@@ -5253,6 +5256,7 @@ export function PublicPoster({
         {!isNarrow ? <TodayFab onClick={jumpToday} visible={!onTodayMonth} /> : null}
         <button
           className="mb-step"
+          disabled={monthLinkEnabled && view.year === PUBLIC_MONTH_BOUNDS.max && view.month === 12}
           onClick={() => {
             hapticTick();
             moveMonth(1);

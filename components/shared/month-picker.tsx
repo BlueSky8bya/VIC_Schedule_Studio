@@ -71,7 +71,8 @@ export function MonthPicker({
   narrow,
   anchor,
   onPick,
-  onClose
+  onClose,
+  bounds
 }: {
   view: YM;
   today: YM;
@@ -79,6 +80,7 @@ export function MonthPicker({
   anchor: DOMRect | null; // PC 팝오버 기준(제목 버튼). 모바일은 무시.
   onPick: (ym: YM) => void;
   onClose: () => void;
+  bounds?: { min: number; max: number };
 }) {
   const [year, setYearRaw] = useState(view.year);
   // 해를 바꾸는 방향 — 연도 레일과 월 격자가 그 방향으로 미끄러진다(2026-09-28 소유자: 숫자만 바뀌니
@@ -86,7 +88,8 @@ export function MonthPicker({
   const [dir, setDir] = useState<"prev" | "next" | "jump">("jump");
   const setYear = (next: number | ((y: number) => number)) => {
     setYearRaw((y) => {
-      const n = typeof next === "function" ? next(y) : next;
+      const requested = typeof next === "function" ? next(y) : next;
+      const n = bounds ? Math.max(bounds.min, Math.min(bounds.max, requested)) : requested;
       setDir(n < y ? "prev" : n > y ? "next" : "jump");
       return n;
     });
@@ -179,9 +182,10 @@ export function MonthPicker({
       drag.current.moved = 0;
     }
   };
-  // 연도는 제한 없이 오간다. 오늘 해로 한 번에 돌아오는 칩만 둔다(멀리 갔을 때).
-  const canPrevYear = true;
-  const canNextYear = true;
+  // Standalone public links supply their serializable range; existing embedded
+  // and Studio pickers retain their current unrestricted navigation.
+  const canPrevYear = !bounds || year > bounds.min;
+  const canNextYear = !bounds || year < bounds.max;
   const months = useMemo(() => Array.from({ length: 12 }, (_, i) => ({ year, month: i + 1 })), [year]);
 
   // 열리면 보고 있는 달(같은 해면) 또는 첫 활성 달에 포커스 — 키보드만으로도 고를 수 있게.
@@ -291,6 +295,7 @@ export function MonthPicker({
                   aria-label={`${y}년으로`}
                   className={cls}
                   data-act="mp-year-pick"
+                  disabled={Boolean(bounds && (y < bounds.min || y > bounds.max))}
                   key={d}
                   onClick={() => {
                     hapticTick();
