@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Platform } from "@/lib/ui/viewer-companion/brain";
-import { companionViewportFloorAbove, companionWorldHiddenReason, firstCompanionSupportBelow, nearestVerticalCompanionSupport, recoverCompanionDropAtViewportFloor, recoverCompanionPassiveFloor, recoverCompanionVerticalSupport } from "@/lib/ui/viewer-companion/support-landing";
+import { captureCompanionViewportFloor, restoreCompanionViewportFloor, companionViewportFloorAbove, companionWorldHiddenReason, firstCompanionSupportBelow, nearestVerticalCompanionSupport, recoverCompanionDropAtViewportFloor, recoverCompanionPassiveFloor, recoverCompanionVerticalSupport } from "@/lib/ui/viewer-companion/support-landing";
 
 const span = (id: string, x: number, y: number, width: number, kind: Platform["kind"] = "card"): Platform => ({ id, x, y, width, kind });
 
@@ -283,5 +283,53 @@ describe("companion vertical support recovery", () => {
     expect(nearestVerticalCompanionSupport(point, platforms)).toBe(near);
     expect(point).toEqual({ x: 100, y: 500 }); expect(platforms).toEqual([far, near]);
     expect(near).toEqual(span("near", 80, 510, 80));
+  });
+});
+
+
+describe("volatile viewport floor presentation across a real month change", () => {
+  const root = { isConnected: true };
+  const context = () => ({ point: { x: 210, y: 682 }, platform: span("viewport-floor", 20, 682, 960, "floor"), root,
+    viewport: { width: 1000, height: 700 }, size: 92, monthKey: "2026-10", pathname: "/",
+    state: { enabled: true, visible: true, blocked: false, reduced: false, held: false, airborne: false, carrying: false, owned: false, resting: false } });
+  it("carries the exact measured screen plane and never mutates or invents a new platform list", () => {
+    const before = context(), snapshot = captureCompanionViewportFloor(before)!;
+    const next = { ...before, monthKey: "2026-8" }, original = structuredClone(snapshot);
+    const carried = restoreCompanionViewportFloor(snapshot, next)!;
+    expect(carried.point).toEqual(before.point); expect(carried.platform).toEqual(before.platform);
+    expect(carried.monthKey).toBe("2026-8"); expect(snapshot).toEqual(original);
+    expect(carried.platform).not.toBe(before.platform);
+  });
+  it.each(["enabled", "visible", "blocked", "reduced", "held", "airborne", "carrying", "owned"] as const)("rejects a revoked or owned capture and restore: %s", key => {
+    const before = context(), snapshot = captureCompanionViewportFloor(before)!;
+    before.state[key] = !["enabled", "visible"].includes(key);
+    expect(captureCompanionViewportFloor(before)).toBeUndefined();
+    expect(restoreCompanionViewportFloor(snapshot, { ...before, monthKey: "2026-8" })).toBeUndefined();
+  });
+  it.each(["same month", "different root", "detached root", "pathname", "viewport width", "viewport height", "footprint", "changed point"])("revokes handoff on %s", reason => {
+    const before = context(), snapshot = captureCompanionViewportFloor(before)!;
+    const next = { ...context(), monthKey: "2026-8" };
+    if (reason === "same month") next.monthKey = before.monthKey;
+    if (reason === "different root") next.root = { isConnected: true };
+    if (reason === "detached root") { next.root = { isConnected: false }; }
+    if (reason === "pathname") next.pathname = "/studio";
+    if (reason === "viewport width") next.viewport.width -= 1;
+    if (reason === "viewport height") next.viewport.height -= 1;
+    if (reason === "footprint") next.size -= 1;
+    if (reason === "changed point") next.point.x += 1;
+    expect(restoreCompanionViewportFloor(snapshot, next)).toBeUndefined();
+  });
+  it.each(["calendar", "home", "food tier", "unknown", "body only", "manual", "off plane", "outside span", "NaN"])("does not lend an unproved floor: %s", reason => {
+    const next = context();
+    if (reason === "calendar") next.platform.id = "date-1-floor";
+    if (reason === "home") next.platform.id = "companion-home-floor";
+    if (reason === "food tier") next.platform.id = "viewport-floor-food";
+    if (reason === "unknown") next.platform.kind = "card";
+    if (reason === "body only") next.platform.bodyOnly = true;
+    if (reason === "manual") next.platform.manualOnly = true;
+    if (reason === "off plane") next.point.y -= 2;
+    if (reason === "outside span") next.platform.x = 300;
+    if (reason === "NaN") next.platform.width = NaN;
+    expect(captureCompanionViewportFloor(next)).toBeUndefined();
   });
 });

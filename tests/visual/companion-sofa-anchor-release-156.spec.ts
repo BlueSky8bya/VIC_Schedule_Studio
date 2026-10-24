@@ -87,11 +87,17 @@ async function probe(page: Page) {
       const node = document.querySelector<HTMLElement>(".vc-companion"), button = node?.querySelector<HTMLElement>(".vc-actor"), r = node?.getBoundingClientRect();
       const css = node && getComputedStyle(node), texture = node?.querySelector<HTMLImageElement>(".vc-texture"), sprite = node?.querySelector<HTMLElement>(".vc-sprite");
       const t = texture && getComputedStyle(texture), s = sprite && getComputedStyle(sprite);
+      const anchorName = css?.getPropertyValue("position-anchor").trim() ?? "";
+      const floor = [...document.querySelectorAll<HTMLElement>(".vc-home-floor")].find(element => element.style.getPropertyValue("anchor-name").split(",").map(name => name.trim()).includes(anchorName));
+      const floorRect = floor?.getBoundingClientRect();
       p.frames.push({ at, phase: p.phase, native: node?.hasAttribute("data-native-sofa") ?? false, state: node?.dataset.state ?? "", platform: node?.dataset.platform ?? "",
         sameActor: node === actor && actor.isConnected, sameInput: button === input && input.isConnected, inputFocused: document.activeElement === input,
         visible: Boolean(node && r && !node.hidden && !document.hidden && r.width > 0 && r.height > 0 && css?.display !== "none" && css?.visibility === "visible" && Number(css?.opacity) > .05
           && node.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && r.right > 0 && r.bottom > 0 && r.left < innerWidth && r.top < innerHeight),
         positionAnchor: css?.getPropertyValue("position-anchor").trim() ?? "", inlinePositionAnchor: node?.style.getPropertyValue("position-anchor").trim() ?? "", position: css?.position ?? "",
+        floorAnchor: floor && floorRect ? { name: anchorName, native: Boolean(node?.hasAttribute("data-native-item-anchor")), connected: floor.isConnected,
+          visible: floor.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && !floor.closest("[hidden],[data-panel-collapsed]"),
+          rect: { x: floorRect.x, y: floorRect.y, width: floorRect.width, height: floorRect.height } } : null,
         homeScroll: document.querySelector<HTMLElement>(".vc-compact-home .vc-home")?.scrollTop ?? 0, pose: Number(node?.dataset.pose ?? -1), decoded: Boolean(texture?.complete && texture.naturalWidth),
         cell: texture && sprite && t && s ? { currentPath: new URL(texture.currentSrc || texture.src, location.href).pathname, connectedToSprite: texture.isConnected && texture.parentElement === sprite,
           naturalWidth: texture.naturalWidth, naturalHeight: texture.naturalHeight, textureWidth: parseFloat(t.width), textureHeight: parseFloat(t.height), spriteWidth: parseFloat(s.width), spriteHeight: parseFloat(s.height),

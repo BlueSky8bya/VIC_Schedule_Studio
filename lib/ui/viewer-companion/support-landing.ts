@@ -154,6 +154,33 @@ const restartSupportAllowed = (state: CompanionRestartSupportState) => state.ena
 const validRestartFrame = (frame: RestartFrame | undefined): frame is RestartFrame & { width: number; height: number } => Boolean(frame
   && [frame.left, frame.top, frame.width, frame.height].every(value => typeof value === "number" && Number.isFinite(value)) && frame.width! > 0 && frame.height! > 0);
 
+export type CompanionViewportFloorCheckpoint = Readonly<{
+  point: Readonly<{ x: number; y: number }>; platform: Readonly<Platform>; root: RestartNode;
+  viewport: Readonly<{ width: number; height: number }>; size: number; monthKey: string; pathname: string;
+}>;
+type ViewportFloorContext = Omit<RestartSupportContext, "anchor"> & { pathname: string };
+/** A viewport floor is the same screen plane across months, without a DOM
+ * source. This volatile checkpoint lends presentation only until the first
+ * real measurement. It is never a calendar ledge or an autonomous world scan. */
+export function captureCompanionViewportFloor(context: ViewportFloorContext): CompanionViewportFloorCheckpoint | undefined {
+  const { state, platform, point, viewport, size } = context;
+  if (!state.enabled || !state.visible || state.blocked || state.reduced || state.held || state.airborne || state.carrying || state.owned
+    || !context.root.isConnected || !context.monthKey || !context.pathname
+    || !platform || !/^viewport-floor(?:-\d+)?$/.test(platform.id) || platform.kind !== "floor" || platform.bodyOnly || platform.manualOnly
+    || ![point.x, point.y, platform.x, platform.y, platform.width, platform.x + platform.width, viewport.width, viewport.height, size].every(Number.isFinite)
+    || size <= 0 || platform.width <= 0 || viewport.width <= size || viewport.height <= size
+    || point.x < size / 2 + 4 || point.x > viewport.width - size / 2 - 4 || point.y < size + 8 || point.y > viewport.height - 12
+    || point.x < platform.x || point.x > platform.x + platform.width || Math.abs(point.y - platform.y) >= 1) return;
+  return { point: { ...point }, platform: { id: platform.id, x: platform.x, y: platform.y, width: platform.width, kind: "floor" },
+    root: context.root, viewport: { ...viewport }, size, monthKey: context.monthKey, pathname: context.pathname };
+}
+export function restoreCompanionViewportFloor(snapshot: CompanionViewportFloorCheckpoint | undefined, context: Omit<ViewportFloorContext, "platform">): CompanionViewportFloorCheckpoint | undefined {
+  if (!snapshot || snapshot.root !== context.root || snapshot.pathname !== context.pathname || snapshot.monthKey === context.monthKey
+    || snapshot.size !== context.size || snapshot.viewport.width !== context.viewport.width || snapshot.viewport.height !== context.viewport.height
+    || snapshot.point.x !== context.point.x || snapshot.point.y !== context.point.y) return;
+  return captureCompanionViewportFloor({ ...context, platform: snapshot.platform });
+}
+
 /** Capture only an actual grounded non-home support. Actor opacity/hidden is
  * deliberately absent: closing the old controller hides it during a modal. */
 export function captureCompanionRestartSupport(context: RestartSupportContext): CompanionRestartSupport | undefined {

@@ -69,6 +69,31 @@ describe("156 sofa world-space observation integrity", () => {
     expect(result.issues).toEqual([]); expect(result.flightFrames).toBe(4); expect(result.nextActionAt).not.toBeNull();
     expect(trace).toEqual(untouched);
   });
+  const landedFloor = () => {
+    const trace = complete();
+    for (const sample of trace.slice(7)) {
+      sample.platform = "companion-home-floor-1"; sample.positionAnchor = sample.inlinePositionAnchor = "--vc-item-1";
+      sample.floorAnchor = { name: "--vc-item-1", native: true, connected: true, visible: true, rect: { x: 100, y: 263.328, width: 200, height: 80 } };
+    }
+    return trace;
+  };
+  it("allows a new measured home-floor anchor only after the decoded flight has actually landed", () => {
+    const trace = landedFloor(), original = structuredClone(trace);
+    expect(auditSofaWorldTransfer156(trace).issues).toEqual([]); expect(trace).toEqual(original);
+  });
+  it.each(["held", "flight", "wrong source", "wash mat", "hidden source", "detached source", "wrong name", "off floor", "wrong plane"])("rejects an unproved native floor after release: %s", reason => {
+    const trace = landedFloor(), sample = trace[7];
+    if (reason === "held") sample.state = "held";
+    if (reason === "flight") sample.state = "jump";
+    if (reason === "wrong source") sample.platform = "date-1-floor";
+    if (reason === "wash mat") sample.platform = "companion-home-floor-400";
+    if (reason === "hidden source") sample.floorAnchor!.visible = false;
+    if (reason === "detached source") sample.floorAnchor!.connected = false;
+    if (reason === "wrong name") sample.floorAnchor!.name = "--vc-item-other";
+    if (reason === "off floor") sample.floorAnchor!.rect.x = 500;
+    if (reason === "wrong plane") sample.floorAnchor!.rect.y += 5;
+    expect(auditSofaWorldTransfer156(trace).issues.length).toBeGreaterThan(0);
+  });
   const alterations: [string, (trace: SofaWorldFrame156[]) => void][] = [
     ["retained anchor", trace => { trace[4].positionAnchor = "--old-sofa"; }],
     ["inline association", trace => { trace[4].inlinePositionAnchor = "--old-sofa"; }],

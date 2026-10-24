@@ -153,6 +153,19 @@ export function createCompanionToys(rng: () => number = Math.random) {
   const reconcile = (at: number, attachments: readonly CompanionToyAttachment[] = []) => {
     for (const toy of objects.values()) {
       if (toy.held || toy.carried || flights.has(toy.id) || waiting.has(toy.id)) continue;
+      if (/^viewport-floor(?:-food)?(?:-\d+)?$/.test(toy.platformId ?? "")) {
+        // Scroll can split/re-number the screen floor around calendar ink.
+        // Those spans are safe intervals, not a physical source that scales
+        // an object's horizontal fraction. Keep its actual screen X whenever
+        // safe; a newly covered point moves only to the closest real landing.
+        let nearest: Platform | undefined, distance = Infinity;
+        for (const candidate of platforms) {
+          if (!floor(candidate) || !viewportFloor(candidate)) continue;
+          const delta = Math.abs(platformLandingX(candidate, toy.x, 9) - toy.x);
+          if (delta < distance || delta === distance && candidate.id === toy.platformId) { nearest = candidate; distance = delta; }
+        }
+        if (nearest) { bind(toy, nearest, toy.x); continue; }
+      }
       const support = platforms.find(p => p.id === toy.platformId && floor(p));
       if (support) bind(toy, support, support.x + support.width * (toy.fraction ?? .5));
       else {

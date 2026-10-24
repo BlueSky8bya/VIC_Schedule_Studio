@@ -6,6 +6,7 @@ export type SofaWorldFrame156 = {
   at: number; phase: string; native: boolean; state: string; platform: string;
   sameActor: boolean; sameInput: boolean; inputFocused: boolean; visible: boolean;
   positionAnchor: string; inlinePositionAnchor: string; position: string;
+  floorAnchor?: { name: string; native: boolean; connected: boolean; visible: boolean; rect: { x: number; y: number; width: number; height: number } } | null;
   homeScroll: number; pose: number; decoded: boolean;
   cell: CuriousTextureCellMeasurement | null;
   left: number; top: number; width: number; height: number;
@@ -42,6 +43,18 @@ const registered = (frame: SofaWorldFrame156, rows: readonly number[]) => frame.
   && curiousTextureCellMatches(frame.pose, frame.cell)
   && rows.some(row => companionSpriteMetadata.rows[row]?.includes(frame.pose));
 
+function groundedNativeFloor(frame: SofaWorldFrame156) {
+  const anchor = frame.floorAnchor, body = frame.rect, floor = anchor?.rect;
+  if (frame.phase !== "world-release" || ["held", "jump"].includes(frame.state) || frame.native
+    || !/^companion-home-floor(?:-\d+)?$/.test(frame.platform) || frame.platform === "companion-home-floor-400" || !anchor?.native || !anchor.connected || !anchor.visible
+    || !anchor.name.startsWith("--vc-item-") || frame.positionAnchor !== anchor.name || frame.inlinePositionAnchor !== anchor.name
+    || !body || !floor || !Object.values(floor).every(Number.isFinite) || floor.width <= 0 || floor.height <= 0) return false;
+  const x = body.x + body.width / 2, y = body.y + body.height;
+  // The ordinary room floor plane is six CSS pixels above its measured bottom.
+  // The wash-mat stance (400) has a different source/plane and is not admitted.
+  return x >= floor.x - 1 && x <= floor.x + floor.width + 1 && Math.abs(y - (floor.y + floor.height - 6)) < 1;
+}
+
 /** Audit every world sample from the FIRST actually observed anchor release,
  * including hidden/missing/stale/wrong-owner observations. Native scroll and
  * its prepaint candidates remain in raw; this does not adjudicate old143.
@@ -57,7 +70,7 @@ export function auditSofaWorldTransfer156(frames: readonly SofaWorldFrame156[]) 
   for (let i = 0; i < world.length; i++) {
     const frame = world[i];
     if (!Number.isFinite(frame.at) || i && (frame.at <= world[i - 1].at || frame.at - world[i - 1].at > 250)) issues.push(`observation continuity:${i}`);
-    if (frame.native || frame.positionAnchor !== "auto" || frame.inlinePositionAnchor !== "") issues.push(`anchor association retained:${i}`);
+    if ((frame.native || frame.positionAnchor !== "auto" || frame.inlinePositionAnchor !== "") && !groundedNativeFloor(frame)) issues.push(`anchor association retained:${i}`);
     if (!frame.sameActor || !frame.sameInput || !frame.visible || !frame.rect) issues.push(`body/input ownership or visibility:${i}`);
     if (sofaWorldRectError156(frame) >= 1) issues.push(`world transform/BCR mismatch:${i}`);
     if (frame.phase === "world-input" && frame.state === "held" && !frame.inputFocused) issues.push(`native input focus lost:${i}`);
