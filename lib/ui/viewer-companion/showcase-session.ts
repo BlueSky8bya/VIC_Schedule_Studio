@@ -36,17 +36,24 @@ export function companionShowcaseLayoutMutation(record: Pick<MutationRecord, "ty
   if (changed.length && changed.every(node => node.nodeType === 1 && (node as HTMLElement).matches(OWN_DRAWING_SELECTOR))) return false;
   return layoutNode(record.target) || changed.some(node => node.nodeType === 1 && ((node as HTMLElement).matches(LAYOUT_SELECTOR) || Boolean((node as HTMLElement).querySelector(COVER_SELECTOR))));
 }
-function visible(node: HTMLElement): boolean {
-  if (!node.isConnected || node.closest("[hidden],[aria-hidden=true]") || node.closest(".vc-companion,.vc-meadow-walk,.vc-food-layer,.vc-toys,.gs-season,.gs-tide,.showcase-surface")) return false;
+function visible(node: HTMLElement, retainHomePaint = false): boolean {
+  if (!node.isConnected || node.closest("[hidden]") || node.closest(".vc-companion,.vc-meadow-walk,.vc-food-layer,.vc-toys,.gs-season,.gs-tide,.showcase-surface")) return false;
+  // A modal's home input gate does not remove its painted room. Material
+  // occlusion may retain that ink; showcase admission keeps its strict gate.
+  let inaccessible = node.closest("[aria-hidden=true]");
+  while (inaccessible) {
+    if (!retainHomePaint || !inaccessible.matches(".vc-home,.vc-compact-home")) return false;
+    inaccessible = inaccessible.parentElement?.closest("[aria-hidden=true]") ?? null;
+  }
   for (let parent: HTMLElement | null = node; parent; parent = parent.parentElement) {
     const style = getComputedStyle(parent);
     if (style.display === "none" || style.visibility === "hidden" || Number(style.opacity || 1) <= .05) return false;
   }
   return true;
 }
-export function readCompanionShowcaseCovers(): ShowcaseRect[] {
+export function readCompanionShowcaseCovers({ retainHomePaint = false }: { retainHomePaint?: boolean } = {}): ShowcaseRect[] {
   if (typeof document === "undefined") return [];
-  return [...document.querySelectorAll<HTMLElement>(COVER_SELECTOR)].filter(visible).flatMap(node => {
+  return [...document.querySelectorAll<HTMLElement>(COVER_SELECTOR)].filter(node => visible(node, retainHomePaint)).flatMap(node => {
     const rect = node.getBoundingClientRect();
     return validRect(rect) ? [{ left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom }] : [];
   });
@@ -82,7 +89,7 @@ export function createCompanionShowcaseSession() {
     if (!detail || typeof detail.active !== "boolean") return;
     if (detail.phase === "before" && detail.active) {
       covers = readCompanionShowcaseCovers();
-      roomCovers = [...document.querySelectorAll<HTMLElement>(".vc-home")].filter(visible).map(node => ({ node, rect: node.getBoundingClientRect() }));
+      roomCovers = [...document.querySelectorAll<HTMLElement>(".vc-home")].filter(node => visible(node)).map(node => ({ node, rect: node.getBoundingClientRect() }));
       for (const [id, participant] of participants) {
         if (leases.has(id) || participant.eligible?.() === false) continue;
         const node = participant.node(), point = participant.point();

@@ -73,7 +73,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   // This local scene notification marks an actual human removal only. Food
   // IDs never enter activity metadata, discovery or the autonomous trash path.
   const discarded = useRef(onDiscard); discarded.current = onDiscard;
-  const [foods, setFoods] = useState<Food[]>([]), [selected, setSelected] = useState<string | null>(null), [paused, setPaused] = useState(blocked);
+  const [foods, setFoods] = useState<Food[]>([]), [selected, setSelected] = useState<string | null>(null), [paused, setPaused] = useState(false);
   const [message, setMessage] = useState("");
   const current = useRef<Food[]>([]), selection = useRef<string | null>(null), platforms = useRef<readonly CompanionFoodDropSupport[]>([]), layer = useRef<HTMLDivElement>(null);
   const keyboardMoved = useRef(false);
@@ -613,7 +613,10 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       platforms.current = (landings ?? next).map(platform => ({ ...platform })); if (getAnchor) anchorFor.current = getAnchor;
       followAttachments();
     },
-    pause(next) { operating.current = enabled && !blocked && !next; setPaused(next); if (next) interrupt(); else followAttachments(); },
+    // Prop-owned overlays already block input/paint in this render. Store only
+    // an independent runtime pause, so closing a retained overlay never writes
+    // a stale hidden attribute and restarts the snack's arrival animation.
+    pause(next) { operating.current = enabled && !blocked && !next; setPaused(next && !blocked); if (next) interrupt(); else followAttachments(); },
     beginCarry(id) {
       if (showcaseSession?.has(`food:${id}`)) return false;
       const food = current.current.find(item => item.id === id);
@@ -748,7 +751,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     update(current.current.filter(food => { const bound = attachments.current.get(food.id); return Boolean(bound?.home || bound?.panel || bound?.viewportFloor || bound?.pending); }));
     choose(null); setMessage("");
   }, [monthKey, choose, interrupt, update]);
-  useEffect(() => { if (blocked) interrupt(); setPaused(blocked); }, [blocked, interrupt]);
+  useEffect(() => { if (blocked) interrupt(); }, [blocked, interrupt]);
   useEffect(() => {
     if (!enabled) return;
     const down = (event: PointerEvent) => {

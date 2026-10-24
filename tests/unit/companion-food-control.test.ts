@@ -91,6 +91,20 @@ beforeEach(async () => {
 afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); });
 
 describe("actual food-controller carry and physical scatter callbacks", () => {
+  it("releases a prop-owned pause in the first closing render while preserving independent runtime pauses", async () => {
+    const id = await spawn();
+    await render(true, true); api().pause(true);
+    await render(true, false);
+    expect((tree as Element).props.hidden).toBe(false);
+    expect(api().contains(id)).toBe(true);
+    api().pause(true); await render();
+    expect((tree as Element).props.hidden).toBe(true);
+    expect(api().beginCarry(id)).toBe(false);
+    api().pause(false); await render();
+    expect((tree as Element).props.hidden).toBe(false);
+    await render(true, true); api().pause(false);
+    expect(api().beginCarry(id)).toBe(false);
+  });
   const shown = (id: string) => {
     const match = nodeById.get(id)!.style.transform.match(/translate3d\(([-\d.]+)px,([-\d.]+)px/)!;
     return { x: Number(match[1]), y: Number(match[2]) };

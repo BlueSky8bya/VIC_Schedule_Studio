@@ -2355,6 +2355,38 @@
       "estimatedSeconds": 45,
       "estimateSource": "unexecuted scoped estimate, not PASS",
       "id": "911388f35ccdebdfbe951b26874e11258a7357a64fb600006304ecaef228c6dd"
+    },
+    {
+      "file": "tests/visual/month-picker-material.spec.ts",
+      "title": "viewer 1920: month chooser preserves indoor material and food paint on every observed transition frame",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted transition scope estimate, not PASS",
+      "id": "97a024912de2908d6f73a1c9a230af3c1601e8cc1677bd2f4f1e27c0c2ce22a0"
+    },
+    {
+      "file": "tests/visual/month-picker-material.spec.ts",
+      "title": "studio 1920: month chooser preserves indoor material and food paint on every observed transition frame",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted transition scope estimate, not PASS",
+      "id": "e09b72dce4aea6a67b5dc7c8ce61a9e86fcfb41090c11bb8462795eef733406b"
+    },
+    {
+      "file": "tests/visual/month-picker-material.spec.ts",
+      "title": "preview 1920: month chooser preserves indoor material and food paint on every observed transition frame",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted transition scope estimate, not PASS",
+      "id": "f0ef024b895fdeea74138945e5e78efe1f13f2368a72daa1eccce59beb2b9061"
+    },
+    {
+      "file": "tests/visual/month-picker-material.spec.ts",
+      "title": "viewer 1100: month chooser preserves indoor material and food paint on every observed transition frame",
+      "project": "",
+      "estimatedSeconds": 35,
+      "estimateSource": "unexecuted transition scope estimate, not PASS",
+      "id": "50a0455c9ceecbf7cb9221bb01ff37087256e0ef33b8b4c1fddca070aeb42b4f"
     }
   ],
   "dailyScenarios": [

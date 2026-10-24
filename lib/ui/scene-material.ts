@@ -9,7 +9,7 @@ let sequence = 0;
 let coversCache: ReturnType<typeof readCompanionShowcaseCovers> | undefined;
 function coversForPaint() {
   if (!coversCache) {
-    coversCache = readCompanionShowcaseCovers();
+    coversCache = readCompanionShowcaseCovers({ retainHomePaint: true });
     // Stable layout is reused across actor/item paint callbacks. Actual
     // layout/scroll/resize events below invalidate it; no frame polling.
   }
