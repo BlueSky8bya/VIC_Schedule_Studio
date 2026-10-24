@@ -16,7 +16,7 @@ export type SceneBeat = (
   | { kind: "curtain"; phase: "open" | "shade" | "closed" }
   | { kind: "toy"; mode: "play" | "return" | "inspect" | "toss" | "nudge" | "spawn"; kinds?: readonly CompanionToyKind[]; limit?: number }
   | { kind: "food"; mode: "eat" | "tidy" | "inspect" | "compare" | "spawn" }
-  | { kind: "watch"; ms: number }
+  | { kind: "watch"; ms: number; at?: "tv" }
   | { kind: "sleep"; ms: number }
   | { kind: "wash"; ms: number }
   | { kind: "hide"; ms: number }
@@ -78,7 +78,7 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   // C03 계기: 실제 종이비행기가 있고, 날리기·도착·회수가 성립하는 안전한 목적지가 확인된다.
   { id: "C03", label: "종이비행기의 도착 지점 조사", personality: "curious", major: true, triggers: ["toy"], steps: [t("inspect", ["paper-plane"]), t("toss", ["paper-plane"]), w(900), g("toy"), t("inspect", ["paper-plane"]), t("return", ["paper-plane"])] },
   // C04 계기: 실제 TV 시청을 시작할 수 있고, 사람이 최근 끄거나 고정한 선택을 침범하지 않는 자유 기회다.
-  { id: "C04", label: "TV 다섯 채널 중 한 번 비교하기", personality: "curious", major: true, triggers: ["tv"], steps: [g("sofa"), tv("nature"), w(1400), tv("next"), w(3000), opt(p("bow"))] },
+  { id: "C04", label: "TV 다섯 채널 중 한 번 비교하기", personality: "curious", major: true, triggers: ["tv"], steps: [tv("nature"), { kind: "watch", ms: 1400, at: "tv" }, tv("next"), w(3000), opt(p("bow"))] },
   // C05 계기: 실제 월 이동·레이아웃 변경이 끝나 새 안전 구간이 확인됐으며 사용자의 입력이 끝났다.
   { id: "C05", label: "달력이 바뀐 뒤 안전한 새 자리 하나", personality: "curious", major: true, triggers: ["layout"], steps: [p("sniff"), g("outside"), p("sniff"), g("outside"), p("bow")] },
   { id: "C06", label: "멈춘 공을 늦게 톡", personality: "curious", major: false, triggers: ["toy", "toy-settled"], steps: [w(500), g("toy"), t("nudge", ["ball"]), p("bow")] },

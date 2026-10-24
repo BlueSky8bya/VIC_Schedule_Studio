@@ -15,6 +15,7 @@ import {
 import { formatVodDuration } from "@/components/poster/day-vod-window";
 import { formatTimecode } from "@/components/poster/vod-chapters";
 import { hapticTick } from "@/lib/ui/haptics";
+import type { PublicSearchSession } from "@/components/shared/use-public-search-session";
 
 // 시청자 검색 시트(PLAN-20260918-023) — "예전에 이런 게 있었던 것 같은데 언제, 어디 시간대였지?"
 //
@@ -35,6 +36,8 @@ const SUGGEST_DEBOUNCE_MS = 120; // 제안 목록(값싼 RPC). 본검색은 Ente
 const MIN_CHARS = 1; // 정규화 후 글자 수. 한 글자는 서버가 사전에 있을 때만 결과를 준다(메·롤·숲).
 
 type Props = {
+  session: PublicSearchSession;
+  revision: symbol;
   slug: string;
   myHeartIds: ReadonlySet<string>;
   tags: BroadcastTag[];
@@ -128,9 +131,23 @@ function ChipsBox({ children }: { children: ReactNode }) {
   );
 }
 
-export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickEvent, onPickVod, onReplay }: Props) {
-  const [q, setQ] = useState("");
-  const [submitted, setSubmitted] = useState<string | null>(null); // Enter(또는 칩·제안 클릭)로 확정된 검색어 — 본검색은 이것만 본다
+const rowKey = (row: Row): string => JSON.stringify(row.kind === "event"
+  ? [row.kind, row.dateKey, row.hit.eventId]
+  : [row.kind, row.dateKey, row.titleNo, row.kind === "chapter" ? row.sec : null]);
+
+export function PublicSearch({ session, revision, ...props }: Props) {
+  const [owner, setOwner] = useState({ session, generation: 0 });
+  if (owner.session !== session) {
+    setOwner({ session, generation: owner.generation + 1 });
+    return null;
+  }
+  return <PublicSearchContent key={`${props.slug}:${owner.generation}`} {...props} revision={revision} session={session} />;
+}
+
+function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbOf, onClose, onPickEvent, onPickVod, onReplay }: Props) {
+  const [initial] = useState(() => session.current);
+  const [q, setQ] = useState(initial?.q ?? "");
+  const [submitted, setSubmitted] = useState<string | null>(initial?.submitted ?? null); // Enter(또는 칩·제안 클릭)로 확정된 검색어 — 본검색은 이것만 본다
   const [suggest, setSuggest] = useState<PublicSearchSuggest[]>([]);
   const [sugCursor, setSugCursor] = useState(-1);
   // 모바일(2026-09-18 소유자): 결과가 오면 키보드를 내리고, 다시보기·챕터는 창 대신 숲 링크(새 탭)로 간다. 640px = 시트 모바일 CSS 기준.
@@ -142,11 +159,13 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
   }, []);
-  const [result, setResult] = useState<PublicSearchResult | null>(null);
+  const [response, setResponse] = useState<{ revision: symbol; value: PublicSearchResult } | null>(initial && initial.revision === revision && initial.result && initial.resultFor === initial.submitted?.trim() ? { revision, value: initial.result } : null);
+  const result = response && response.revision === revision ? response.value : null;
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
-  const [cursor, setCursor] = useState(-1); // 키보드 ↑↓ 현재 행(-1 = 입력창)
+  const [selectedRow, setSelectedRow] = useState<string | null>(initial?.selectedRow ?? null);
   const [sort, setSort] = useState<SearchSort>(() => {
+    if (initial) return initial.sort;
     try {
       const v = window.localStorage.getItem("vic_search_sort");
       return SEARCH_SORTS.some((s) => s.key === v) ? (v as SearchSort) : "relevance";
@@ -156,17 +175,25 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
   });
   const changeSort = (next: SearchSort) => {
     setSort(next);
-    setCursor(-1);
+    setSelectedRow(null);
     try {
       window.localStorage.setItem("vic_search_sort", next);
     } catch {
       /* 저장 못 해도 동작엔 지장 없음 */
     }
   };
-  const [expanded, setExpanded] = useState<ReadonlySet<number>>(new Set());
+  const [expanded, setExpanded] = useState<ReadonlySet<number>>(initial?.expanded ?? new Set());
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const scrollTopRef = useRef(initial?.scrollTop ?? 0);
+  const restoreRef = useRef(initial ? { top: initial.scrollTop, selectedRow: initial.selectedRow, expanded: initial.expanded } : null);
+  const completedRef = useRef<{ submitted: string | null; revision: symbol } | null>(initial && initial.revision === revision && initial.result && initial.resultFor === initial.submitted?.trim() ? { submitted: initial.submitted, revision } : null);
+  const resultForRef = useRef<string | null>(initial && initial.revision === revision ? initial.resultFor : null);
+  useLayoutEffect(() => {
+    session.current = { revision, q, submitted, result, resultFor: resultForRef.current, sort, selectedRow, expanded,
+      scrollTop: scrollTopRef.current };
+  });
 
   // 입력 전 제안: 요즘 뜨는 말(0079) — 시트 열 때 한 번, 실패하면 조용히 없음.
   const [trends, setTrends] = useState<PublicSearchTrend[]>([]);
@@ -203,10 +230,13 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
 
   // 확정 검색어(submitted) → 요청. 입력 중엔 본검색을 하지 않는다(키 입력마다 무거운 RPC를 부르던 방식은 2026-09-18 폐기 —
   // 서버 부하로 '잠시 안 돼요'가 잦았다). 새 확정이 오면 이전 요청은 끊는다.
-  const resultForRef = useRef<string | null>(null);
   const submit = (term?: string) => {
     const t = (term ?? q).trim();
     if (normalize(t).length < MIN_CHARS) return;
+    abortRef.current?.abort();
+    restoreRef.current = null;
+    completedRef.current = null;
+    scrollTopRef.current = 0;
     setQ(t);
     setSuggest([]);
     setSugCursor(-1);
@@ -215,11 +245,16 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
   };
   useEffect(() => {
     abortRef.current?.abort();
-    setCursor(-1);
+    if (completedRef.current?.submitted === submitted && completedRef.current.revision === revision) return;
+    const restoring = restoreRef.current ?? (completedRef.current && completedRef.current.revision !== revision
+      ? { top: scrollTopRef.current, selectedRow: session.current?.selectedRow ?? null, expanded: session.current?.expanded ?? new Set<number>() } : null);
+    restoreRef.current = restoring;
+    if (!restoring) setSelectedRow(null);
     const term = submitted?.trim() ?? "";
     if (!term) {
       resultForRef.current = null;
-      setResult(null);
+      completedRef.current = null;
+      setResponse(null);
       setBusy(false);
       setFailed(false);
       return;
@@ -237,13 +272,14 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
         const json = (await res.json()) as PublicSearchResult;
         if (ctl.signal.aborted) return;
         resultForRef.current = term;
-        setResult(json);
-        setCursor(-1);
+        completedRef.current = { submitted, revision };
+        setResponse({ revision, value: json });
+        setSelectedRow(restoring?.selectedRow ?? null);
         if (window.matchMedia("(max-width: 640px)").matches) inputRef.current?.blur(); // 키보드 내림 — 결과가 화면을 차지하게
-        setExpanded(new Set());
-        listRef.current?.scrollTo({ top: 0 });
+        setExpanded(restoring?.expanded ?? new Set());
+        if (!restoring) listRef.current?.scrollTo({ top: 0 });
       } catch (err) {
-        if ((err as { name?: string }).name === "AbortError") return;
+        if (ctl.signal.aborted || (err as { name?: string }).name === "AbortError") return;
         setFailed(true);
       } finally {
         if (!ctl.signal.aborted) setBusy(false);
@@ -251,7 +287,7 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
     };
     void run();
     return () => ctl.abort();
-  }, [submitted, slug]);
+  }, [submitted, slug, revision, session]);
 
   // 입력 중 제안(0096): 확정 검색어와 다른 글자가 들어오면 120ms 뒤 값싼 제안 RPC. 결과는 아래 목록으로.
   const typing = q.trim().length > 0 && q.trim() !== (submitted?.trim() ?? "");
@@ -323,8 +359,19 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
     return out;
   }, [ordered, expanded]);
 
+  const cursor = rows.findIndex(row => rowKey(row) === selectedRow);
+  const setCursor = (next: number | ((current: number) => number)) => setSelectedRow(previous => {
+    const current = rows.findIndex(row => rowKey(row) === previous);
+    const index = typeof next === "function" ? next(current) : next;
+    return rows[index] ? rowKey(rows[index]) : null;
+  });
+  useLayoutEffect(() => {
+    if (result && selectedRow && !rows.some(row => rowKey(row) === selectedRow)) setSelectedRow(null);
+  }, [result, rows, selectedRow]);
+
   const pick = (row: Row) => {
     hapticTick();
+    if (session.current) session.current = { ...session.current, selectedRow: rowKey(row), scrollTop: listRef.current?.scrollTop ?? 0 };
     if (row.kind === "event") onPickEvent(row.dateKey, row.hit.eventId ?? "");
     else if (row.kind === "vod") onPickVod(row.dateKey, row.titleNo);
     // 편집실(2026-09-18 소유자): 챕터 행은 곧장 다시보기 창의 그 시각 — 방송 행 위에 '그 날로'가 이미 있어 챕터마다 중복은 없앰.
@@ -393,13 +440,22 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
   }, []);
   const onScroll = () => {
     measure();
+    if (result && listRef.current) {
+      scrollTopRef.current = listRef.current.scrollTop;
+      if (session.current) session.current.scrollTop = scrollTopRef.current;
+    }
     setScrolling(true);
     if (scrollIdleRef.current) window.clearTimeout(scrollIdleRef.current);
     scrollIdleRef.current = window.setTimeout(() => setScrolling(false), 900);
   };
   useLayoutEffect(() => {
+    if (result && restoreRef.current && completedRef.current?.revision === revision) {
+      if (listRef.current) listRef.current.scrollTop = restoreRef.current.top;
+      scrollTopRef.current = listRef.current?.scrollTop ?? restoreRef.current.top;
+      restoreRef.current = null;
+    }
     measure();
-  }, [measure, ordered, expanded]);
+  }, [measure, ordered, expanded, result, revision]);
   const jumpToDay = (dateKey: string) => {
     const el = listRef.current;
     const sec = el?.querySelector<HTMLElement>(`[data-day="${dateKey}"]`);
@@ -643,7 +699,12 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
   // 백드롭 클릭으로는 닫지 않는다('이 달 기록'과 같은 결정 — 조준된 행동만: X · Esc · 뒤로가기).
   return (
     <div className="pi-backdrop ps-backdrop" role="presentation">
-      <section aria-label="검색" className={`pi-sheet ps-sheet${studio ? " is-studio" : ""}`} role="dialog" aria-modal="true">
+      <section aria-label="검색" className={`pi-sheet ps-sheet${studio ? " is-studio" : ""}`} role="dialog" aria-modal="true"
+        onKeyDown={event => {
+          if (event.key === "Escape") {
+            event.preventDefault(); event.stopPropagation(); onClose();
+          }
+        }}>
         <header className="pi-head ps-head">
           <label className="ps-field">
             <Search aria-hidden="true" size={17} strokeWidth={2.4} />
@@ -666,8 +727,17 @@ export function PublicSearch({ slug, myHeartIds, tags, thumbOf, onClose, onPickE
                 className="ps-clear"
                 data-act="search-clear"
                 onClick={() => {
+                  abortRef.current?.abort();
+                  restoreRef.current = null;
+                  completedRef.current = null;
+                  resultForRef.current = null;
+                  scrollTopRef.current = 0;
+                  session.current = null;
                   setQ("");
                   setSubmitted(null);
+                  setResponse(null);
+                  setExpanded(new Set());
+                  setSelectedRow(null);
                   inputRef.current?.focus();
                 }}
                 type="button"

@@ -129,6 +129,7 @@ import { useCompanionDesktop } from "@/lib/ui/viewer-companion/capability";
 import type { CompanionPositionMemory } from "@/lib/ui/viewer-companion/position-memory";
 import { restoreDialogOpener, useFocusTrap } from "@/lib/ui/use-focus-trap";
 import { hapticSuccess, hapticTick, hapticWarn } from "@/lib/ui/haptics";
+import { createPublicSearchRevision, usePublicSearchSession } from "@/components/shared/use-public-search-session";
 import { useSheetDragClose } from "@/lib/ui/use-sheet-drag-close";
 import { captureFlip, playFlip } from "@/lib/ui/list-flip";
 import { popInnerOverlay, pushInnerOverlay } from "@/lib/ui/overlay-pop";
@@ -833,6 +834,8 @@ export function PublicPoster({
   // 뒤로가기 닫기 규약은 시트 종류와 무관하게 하나라, 아래 insightsOpen/setInsightsOpen 이름의
   // 기존 배관(1690~)을 그대로 태운다: 열림 = 어느 시트든 열림, 닫기 = 어느 시트든 닫기.
   const [sheet, setSheet] = useState<null | "insights" | "search" | "settings">(null);
+  const searchRevision = useMemo(() => createPublicSearchRevision(schedule), [schedule]);
+  const searchSession = usePublicSearchSession(JSON.stringify([schedule.calendar.slug, accountEmail, anonymous, Boolean(previewNote)]));
   const [companionBook, setCompanionBook] = useState(false);
   const [companionPersonality, setCompanionPersonality] = useState(false);
   const settingsOpenerRef = useRef<HTMLElement | null>(null);
@@ -4643,6 +4646,8 @@ export function PublicPoster({
       {/* 검색 시트 — 공개 검색 API(일정·다시보기·챕터)만. 같은 pi-* 껍데기, 같은 히스토리 칸. */}
       {sheet === "search" ? (
         <PublicSearch
+          session={searchSession}
+          revision={searchRevision}
           myHeartIds={bookmarkSet}
           onClose={() => setSheet(null)}
           onPickEvent={onSearchPickEvent}

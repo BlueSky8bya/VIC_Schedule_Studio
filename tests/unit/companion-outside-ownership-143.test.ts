@@ -432,6 +432,34 @@ describe("143 a real meal's existing cue survives necessary wash before one reac
 });
 
 describe("143 a genuinely completed required TV observation closes its same-owner finite tail",()=>{
+ function comparisonReady(painted=true){
+  const s=scene("curious"),sofa:Platform={id:"companion-home",x:90,y:560,width:160,kind:"date"};
+  s.world={...s.world,platforms:[{...floor,width:720},sofa,outside],x:150};
+  s.home.sofa={x:170,y:sofa.y,platformId:sofa.id};s.home.tv={x:650,y:floor.y,platformId:floor.id};s.home.contacts={tv:{x:650,y:570}};s.canTv=true;
+  const d=createCompanionPersonalityDirector([source("C04")],()=>.5),a=createCompanionRoutineArbiter();enter(d,s);a.next(s);
+  for(let i=0;i<20;i++){
+   const p=d.next(s)!;expect(p).toBeTruthy();
+   if(p.meta.command.kind==="watch"&&p.meta.command.at==="tv"&&!p.meta.travel){
+    const duration=p.action!.duration;s.now+=duration;s.brain.activeMs=s.now;d.observeProgress({now:s.now,active:true,point:s.world});
+    d.complete(p.meta,painted?{at:s.now,success:true,active:true,tv:s.tv,point:{...s.world},duration,elapsedMs:duration,paintedMs:duration-50}:undefined);
+    s.now=Math.max(8500,s.now);s.brain.activeMs=s.now;return{s,d,a};
+   }
+   if(p.meta.command.kind==="tv"&&!p.meta.travel){s.now+=p.action!.duration;s.brain.activeMs=s.now;s.tv=p.meta.command.state==="next"?"toys":p.meta.command.state;d.observeProgress({now:s.now,active:true,point:s.world,controls:{tv:s.tv}});d.resolve(p.meta,true,undefined,s.now);}
+   else advance(s,p,d);
+  }
+  throw Error("Actual first comparison watch missing");
+ }
+ it("retains only the immediate second channel control after actual first-watch paint when an outing is due",()=>{
+  const {s,d,a}=comparisonReady();
+  const due=createCompanionRoutineArbiter();due.next({...s,now:0});expect(due.next({...s,authoredReserved:true,authoredLeisure:true})?.kind).toBe("outing");
+  expect(d.routineOwnership(s)).toBe("work");expect(a.next({...s,authoredReserved:d.routineReserved(s),authoredLeisure:d.routineOwnership(s)==="leisure"})).toBeUndefined();
+  expect(d.next(s)?.meta.command.kind).toBe("tv");
+ });
+ it.each(["no-paint","expired","off","manual","moved"])("cannot retain the next comparison control with %s",gate=>{
+  const {s,d}=comparisonReady(gate!=="no-paint");
+  if(gate==="expired")s.now+=3501;if(gate==="off")s.tv="off";if(gate==="manual")s.canTv=false;if(gate==="moved")s.world.x-=80;
+  expect(d.routineOwnership(s)).not.toBe("work");
+ });
  type ClosureDirector143=ReturnType<typeof createCompanionPersonalityDirector>;
  function closureReady143(recipe:PersonalitySceneRecipe=source("C04"),requiredTail=true){
   // Generic required-tail safety regression. Actual C04/X-C-house bows are
@@ -465,7 +493,7 @@ describe("143 a genuinely completed required TV observation closes its same-owne
   const c=closureReady143(source(id)),{s,d,a}=c;expect(c.controls).toBe(2);expect(c.watchOne).toBe(1400);
   expect(s.now-c.lastControlAt).toBeGreaterThan(3500);expect(c.p.action).toMatchObject({kind:"look",duration:id==="C04"?3000:2600});
   const deadline=d.progressDeadline();closureFinish143(c);
-  expect(d.current()?.beat).toBe(5);expect(d.routineReserved(s)).toBe(true);expect(d.routineOwnership(s)).toBe("work");
+  expect(d.current()?.beat).toBe(c.p.meta.beat+1);expect(d.routineReserved(s)).toBe(true);expect(d.routineOwnership(s)).toBe("work");
   expect(a.next(closureOwnership143(c))).toBeUndefined();expect(d.progressDeadline()).toBe(deadline);
   const bow=d.next(s)!;expect(bow.meta.command).toMatchObject({kind:"pose",pose:"bow"});expect(bow.action).toMatchObject({kind:"play",play:"bow"});
   advance(s,bow,d);expect(d.completed()).toEqual([id]);expect(d.progressDeadline()).toBe(deadline);
@@ -504,7 +532,7 @@ describe("143 a genuinely completed required TV observation closes its same-owne
   if(gate==="point-drift")change.point={...c.s.world,x:c.s.world.x+3};if(gate==="wrong-support")change.point={...c.s.world,platformId:floor.id};
   if(gate==="old")change.at=at-1;if(gate==="nan")change.at=NaN;if(gate==="infinity")change.at=Infinity;
   const deadline=c.d.progressDeadline();closureFinish143(c,change);
-  expect(c.d.current()?.beat).toBe(5);expect(c.d.routineReserved(c.s)).toBe(false);expect(c.d.progressDeadline()).toBe(deadline);expect(c.d.completed()).toEqual([]);
+  expect(c.d.current()?.beat).toBe(c.p.meta.beat+1);expect(c.d.routineReserved(c.s)).toBe(false);expect(c.d.progressDeadline()).toBe(deadline);expect(c.d.completed()).toEqual([]);
  });
  it("does not accept even a claimed full paint before the offered finite observation has elapsed",()=>{
   const c=closureReady143(),{s,d,p}=c,duration=p.action!.duration;s.now+=duration-1;s.brain.activeMs=s.now;d.observeProgress({now:s.now,active:true,point:s.world});
@@ -513,7 +541,7 @@ describe("143 a genuinely completed required TV observation closes its same-owne
  it.each(["wrong-serial","wrong-beat","travel"])("does not advance or retain a %s callback as a real watch closure",gate=>{
   const c=closureReady143(),{s,d,p}=c,duration=p.action!.duration;s.now+=duration;s.brain.activeMs=s.now;d.observeProgress({now:s.now,active:true,point:s.world});
   const meta={...p.meta};if(gate==="wrong-serial")meta.serial++;if(gate==="wrong-beat")meta.beat++;if(gate==="travel")meta.travel=true;
-  d.complete(meta,{at:s.now,success:true,active:true,tv:s.tv,point:s.world,duration,elapsedMs:duration,paintedMs:duration-50});expect(d.current()?.beat).toBe(4);
+  d.complete(meta,{at:s.now,success:true,active:true,tv:s.tv,point:s.world,duration,elapsedMs:duration,paintedMs:duration-50});expect(d.current()?.beat).toBe(c.p.meta.beat);
   d.complete(p.meta);expect(d.routineReserved(s)).toBe(false);expect(d.completed()).toEqual([]);
  });
  it("does not grant another recipe the completed watch's same-serial closure",()=>{
@@ -522,7 +550,7 @@ describe("143 a genuinely completed required TV observation closes its same-owne
   expect(d.routineReserved(s)).toBe(false);expect(d.completed()).toEqual([]);
  });
  it.each(["optional","manual-tv-lease"])("does not upgrade %s observation into a required-TV completion",gate=>{
-  const recipe=source("C04");const changed=gate==="optional"?{...recipe,steps:recipe.steps.map((step,index)=>index===4?{...step,optional:true}:step)}:recipe;
+  const recipe=source("C04");const changed=gate==="optional"?{...recipe,steps:recipe.steps.map(step=>step.kind==="watch"&&step.at!=="tv"?{...step,optional:true}:step)}:recipe;
   const c=closureReady143(changed);
   if(gate==="manual-tv-lease"){c.s.canTv=false;c.p=c.d.next(c.s)!;}
   closureFinish143(c);expect(c.d.routineReserved(c.s)).toBe(false);expect(c.d.completed()).toEqual([]);

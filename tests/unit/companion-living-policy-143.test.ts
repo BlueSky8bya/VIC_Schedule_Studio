@@ -117,7 +117,8 @@ describe("143 private space and real outside goals",()=>{
   });
   it("leaves post-cleanup floor continuation distinct from necessary TV/sleep/homebody sofa goals",()=>{
     for(const id of ["T05","X-T-return-time","A11"])expect(COMPANION_PERSONALITY_SCENES.find(r=>r.id===id)!.steps.some(s=>s.kind==="go"&&s.target==="sofa")).toBe(false);
-    for(const id of ["S01","S03","C04","G05","H01"])expect(COMPANION_PERSONALITY_SCENES.find(r=>r.id===id)!.steps.some(s=>s.kind==="go"&&s.target==="sofa")).toBe(true);
+    for(const id of ["S01","S03","G05","H01"])expect(COMPANION_PERSONALITY_SCENES.find(r=>r.id===id)!.steps.some(s=>s.kind==="go"&&s.target==="sofa")).toBe(true);
+    expect(COMPANION_PERSONALITY_SCENES.find(r=>r.id==="C04")!.steps.filter(s=>s.kind==="watch")).toEqual([{kind:"watch",ms:1400,at:"tv"},{kind:"watch",ms:3000}]);
     expect(COMPANION_PERSONALITY_SCENES).toHaveLength(162);
   });
 });

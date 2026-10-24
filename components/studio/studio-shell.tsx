@@ -97,6 +97,7 @@ import {
   swayOffset
 } from "@/lib/studio/drag-physics";
 import type { CurrentActor } from "@/lib/auth/actor";
+import { createPublicSearchRevision, usePublicSearchSession } from "@/components/shared/use-public-search-session";
 import {
   assignSupportLanes,
   supportDepthByCell,
@@ -886,6 +887,8 @@ export function StudioShell({
     });
   }, []);
   const effectiveRole: MembershipRole = previewRole ?? actor.role;
+  const searchSession = usePublicSearchSession(JSON.stringify([schedule.calendar.slug, actor.email, actor.role, previewRole, viewerMode]));
+  const searchRevision = useMemo(() => createPublicSearchRevision(events, tags, schedule.vods), [events, tags, schedule.vods]);
   // 미리보기 화면이 보는 역할이 관리자인가(관리자 본인 + "관리자 미리보기" 둘 다 포함).
   const isEffectivelyOwner = effectiveRole === "owner";
   // 편집실 아바타 자리 — 시청자와 같이 보며 작업할 때를 위해 편집실(작업화면)에도 우측/좌측 1/4
@@ -8851,6 +8854,8 @@ export function StudioShell({
       ) : null}
       {searchOpen ? (
         <PublicSearch
+          session={searchSession}
+          revision={searchRevision}
           myHeartIds={EMPTY_HEARTS}
           onClose={() => setSearchOpen(false)}
           onPickEvent={onStudioSearchPickEvent}

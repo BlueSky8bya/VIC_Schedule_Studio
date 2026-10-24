@@ -223,8 +223,8 @@ describe("157 required finite basic source subject", () => {
   it("uses the actual registered required subjects without making their source IDs a production branch", () => {
     expect(COMPANION_PERSONALITY_SCENES.find(r => r.id === "S05")?.steps[2]).toEqual({ kind: "pose", pose: "stretch" });
     const c04 = COMPANION_PERSONALITY_SCENES.find(r => r.id === "C04");
-    expect(c04?.steps[2]).toEqual({ kind: "watch", ms: 1400 });
-    expect(c04?.steps[4]).toEqual({ kind: "watch", ms: 3000 });
+    expect(c04?.steps[1]).toEqual({ kind: "watch", ms: 1400, at: "tv" });
+    expect(c04?.steps[3]).toEqual({ kind: "watch", ms: 3000 });
     expect(c04?.steps.at(-1)).toMatchObject({ kind: "pose", pose: "bow", optional: true });
     const c = offered([pose("stretch")], () => {}, { id: "another-required-basic-source" });
     expect(rowOf(c)).toBe(16);
@@ -233,6 +233,35 @@ describe("157 required finite basic source subject", () => {
     const c = tvWatch(ms);
     expect(c.p.action).toMatchObject({ kind: "look", duration: ms });
     expect(c.p.meta.command).toEqual({ kind: "watch", ms }); expect(rowOf(c)).toBe(1);
+  });
+  it("compares at the actual TV before taking the existing sofa route for its second watch", () => {
+    const c = offered([{ kind: "watch", ms: 1400, at: "tv" }, { kind: "go", target: "sofa" }, { kind: "watch", ms: 3000 }], s => {
+      s.world.x = 650; s.tv = "nature";
+    }, { triggers: ["tv"] });
+    expect(c.p.action).toMatchObject({ kind: "look", duration: 1400, target: { x: 650, platformId: floor.id } });
+    expect(c.p.meta.travel).not.toBe(true); expect(rowOf(c)).toBe(1);
+    expect(c.d.finitePosePresentation({ ...c.p.meta, command: { kind: "watch", ms: 1400 } }, "look")).toBeUndefined();
+    c.s.now += 1400; c.d.complete(c.p.meta);
+    const sofaRoute = c.d.next(c.s);
+    expect(sofaRoute?.meta.travel).toBe(true);
+    expect(sofaRoute?.meta.goal?.platformId).toBe(sofa.id);
+  });
+  it("approaches the actual TV rather than granting a near-TV watch anywhere on the same floor", () => {
+    const c = offered([{ kind: "watch", ms: 1400, at: "tv" }], s => { s.tv = "nature"; }, { triggers: ["tv"] });
+    expect(c.p.meta.travel).toBe(true);
+    expect(c.p.action?.target).toMatchObject({ x: 650, platformId: floor.id });
+    expect(rowOf(c)).toBeUndefined();
+  });
+  it.each(["off", "manual", "missing", "body-only"])("never certifies a TV-front watch with %s", gate => {
+    const s = context(), d = createCompanionPersonalityDirector([recipe([{ kind: "watch", ms: 1400, at: "tv" }], { triggers: ["tv"] })], () => .5);
+    s.world.x = 650; s.tv = "nature"; enter(d,s);
+    if (gate === "off") s.tv = "off";
+    if (gate === "manual") s.canTv = false;
+    if (gate === "missing") s.home.tv = undefined;
+    if (gate === "body-only") s.world.platforms = s.world.platforms.map(p => p.id === floor.id ? { ...p, bodyOnly: true } : p);
+    const p = d.next(s);
+    expect(p?.action && d.finitePosePresentation(p.meta,p.action.kind)).toBeFalsy();
+    expect(d.completed()).not.toContain("required-basic-source-fixture");
   });
   it("does not turn ordinary watch or an introductory source into a TV-owned look", () => {
     const c = offered([{ kind: "watch", ms: 1400 }]);

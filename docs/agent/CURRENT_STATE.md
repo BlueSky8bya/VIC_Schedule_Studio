@@ -11,7 +11,7 @@ Urgent lamp170: actual failure trace obtained and reproduced at full graphics/21
 
 Criteria145: optional TV bow and separate actual10s activity/repetition verified. Final frozen110/27/9/2, full gates and three independent final reviews passed; scoped commit and actual production confirmation pending. [145 plan](plans/PLAN-20261020-145-companion-activity-criteria.md).
 
-Scheduled: daily site QA remains ACTIVE at09:00 KST. Owner2026-10-22 supersedes blanket200/restart/all-media release gates: use changed-risk checks, weekly rotation and valid same-build continuation. No200 in this task. Preserve original full certifier, failures, privacy and actual-scope labels. [Focused QA](plans/PLAN-20261022-focused-qa.md).
+Daily09:00 ACTIVE: independent risk checks and project-wide idea discovery; weekly rotation/same-build continuation, no blanket200. Preserve original failures/privacy; normal36 UNVERIFIED. [QA](plans/PLAN-20261022-focused-qa.md).
 
 Current: outdoor direct input/curtain art/contact pass25 scoped proofs (16 fresh+9 verified reuse),6924 units/type/lint/build and two non-author reviews. Owner push confirmation pending; production8c59 lacks new cord/output reduction.11 old deployments deleted; owner still sees10.01/10GB. [Plan](plans/PLAN-20261023-showcase-transients-toy-storage.md).
 

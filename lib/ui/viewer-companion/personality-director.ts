@@ -9,7 +9,7 @@ import type { CompanionToyKind } from "./toy-catalog";
 import type { CompanionPreferences } from "./preferences";
 import { getCompanionBehaviorProfile } from "./behavior-profile";
 import type { CompanionHomeEnvironment } from "./home-environment";
-import { normalizeCompanionHomeTv, randomCompanionHomeTvChannel, type CompanionHomeTvState } from "./home-room-media";
+import { COMPANION_HOME_TV_CHANNELS, normalizeCompanionHomeTv, randomCompanionHomeTvChannel, type CompanionHomeTvState } from "./home-room-media";
 import { COMPANION_PERSONALITY_SCENES, type PersonalitySceneRecipe, type SceneBeat, type SceneTrigger } from "./personality-scene-catalog";
 import { companionPersonalityPlayAllowed } from "./personality-activity";
 import type { CompanionRadioMood } from "./radio-reaction";
@@ -95,7 +95,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
     return admitted;
   };
   let serial = 0, selected: CompanionPreferences["personality"] | undefined, first = true, cursor = 0;
-  let active: { recipe: PersonalitySceneRecipe; serial: number; beat: number; started: number; progressed: number; attempts: number; itemId?: string; comparisonItemId?: string; lastX: number; lastY: number; count: number; routine?: true; manual?: true; abbreviated?: true; waking?: true; closureAt?: number; goal?: { beat: number; id: string; fraction?: number }; explorationGoals?: Map<number, CompanionOutsideGoal>; inspection?: CompanionToyObservation; quietHome?: true; quietMaterial?: true; quietControls?: PersonalityProgressObservation["controls"]; tvChoice?: {beat:number;state:CompanionHomeTvState}; tvWatch?: { beat: number; started: number; duration: number; point: Point }; settlingToy?: { id: string; until: number } } | undefined;
+  let active: { recipe: PersonalitySceneRecipe; serial: number; beat: number; started: number; progressed: number; attempts: number; itemId?: string; comparisonItemId?: string; lastX: number; lastY: number; count: number; routine?: true; manual?: true; abbreviated?: true; waking?: true; closureAt?: number; goal?: { beat: number; id: string; fraction?: number }; explorationGoals?: Map<number, CompanionOutsideGoal>; inspection?: CompanionToyObservation; quietHome?: true; quietMaterial?: true; quietControls?: PersonalityProgressObservation["controls"]; tvChoice?: {beat:number;state:CompanionHomeTvState}; tvWatch?: { beat: number; started: number; duration: number; point: Point }; tvComparison?: { beat: number; at: number }; settlingToy?: { id: string; until: number } } | undefined;
   let suspendedExploration: NonNullable<typeof active> | undefined;
   let entrySerial: number | undefined, entryFinished = false, lastPosition: Point | undefined;
   // Existing active time only, including the initial personal preparation.
@@ -786,12 +786,25 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
     const before = owner.recipe.steps.slice(0,owner.beat);
     if (before.some(step => step.kind === "go" && (step.target === "pointer" || step.target === "outside"))
       || !before.some(step => step.kind === "tv") && !owner.recipe.triggers.includes("tv")) return false;
-    return [input.home.sofa,input.home.tv].every(point => {
+    return [command.at === "tv" ? input.home.tv : input.home.sofa,input.home.tv].every(point => {
       const plane = point && input.world.platforms.find(platform => platform.id === point.platformId);
       return safe(point) && Boolean(plane && !plane.bodyOnly && !["control","hide"].includes(plane.kind)
         && [plane.x,plane.y,plane.width].every(Number.isFinite) && plane.width > 0
         && Math.abs(point.y-plane.y) <= 2 && point.x >= plane.x && point.x <= plane.x+plane.width);
     });
+  };
+  // Only a decoded TV-front comparison may retain its immediately next
+  // control, within the existing3.5s closure. No new clock or progress credit.
+  const requiredTvComparisonControl = (input: PersonalitySceneInput) => {
+    const owner=active, command=owner?.recipe.steps[owner.beat], next=owner?.recipe.steps[(owner?.beat ?? 0)+1];
+    const witness=owner?.tvComparison, point=input.home.tv;
+    const plane=point && input.world.platforms.find(p=>p.id===point.platformId);
+    return Boolean(owner && witness && witness.beat===owner.beat && input.now>=witness.at && input.now-witness.at<=3500
+      && command?.kind==="tv" && !command.optional && next?.kind==="watch" && !next.optional && next.at!=="tv"
+      && input.canTv!==false && input.tv!=="off" && safe(input.home.contacts?.tv) && arrived(point,input.world)
+      && point && plane && !plane.bodyOnly && !["control","hide"].includes(plane.kind)
+      && [plane.x,plane.y,plane.width].every(Number.isFinite) && plane.width>0
+      && Math.abs(point.y-plane.y)<=2 && point.x>=plane.x && point.x<=plane.x+plane.width);
   };
   // A physical return may finish short grooming after its actually issued
   // floor route arrives. Queries grant no ACK/progress/reward and retain the
@@ -846,7 +859,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
     // director fail that exact job and let real care arbitrate next normally.
     if (head && !head.optional && (head.kind === "toy" && head.mode !== "spawn" && !toyReady(head)
       || head.kind === "food" && (!p.feeding || head.mode !== "spawn" && !world.foods?.some(food => (!owner.itemId || food.id === owner.itemId) && connected(food))))) return false;
-    if (requiredTvWatch(input)) return true;
+    if (requiredTvWatch(input) || requiredTvComparisonControl(input)) return true;
     const work = tail.some(step => {
       if (step.optional) return false;
       if (step.kind === "toy") {
@@ -892,7 +905,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
   const routineOwnership = (input:PersonalitySceneInput):"work"|"leisure"|undefined => {
     if(!routineReserved(input))return;
     const owner=active!;
-    if (requiredTvWatch(input)) return "work";
+    if (requiredTvWatch(input) || requiredTvComparisonControl(input)) return "work";
     const tail=owner.recipe.steps.slice(owner.beat), closure=owner.closureAt!==undefined && input.now-owner.closureAt<=3500
       && tail.some(step=>!step.optional) && tail.every(step=>step.kind==="pose"||step.kind==="watch") && tail.reduce((ms,step)=>ms+pureDuration(step,input),0)<=3500;
     // A safe decision boundary may yield optional TV/radio entertainment.
@@ -1058,7 +1071,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
       const expiresAt = Math.min(active.progressed + 7500, active.started + 60000);
       const subject = (row: number) => ({ row, expiresAt });
       if (command.kind === "watch" && beat.command.kind === "watch" && kind === "look"
-        && command.ms === beat.command.ms && active.tvWatch?.beat === active.beat) return subject(1);
+        && command.ms === beat.command.ms && command.at === beat.command.at && active.tvWatch?.beat === active.beat) return subject(1);
       if (command.kind !== "pose" || beat.command.kind !== "pose" || command.pose !== beat.command.pose
         || command.ms !== beat.command.ms || kind !== command.pose) return;
       if (command.pose === "stretch") return subject(16);
@@ -1131,6 +1144,9 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
         && safe(watch.point) && watch.point.platformId === offeredWatch.point.platformId
         && Math.hypot(watch.point.x-offeredWatch.point.x,watch.point.y-offeredWatch.point.y) <= 2) {
         now = watch.at; active.closureAt = watch.at;
+        const subject=active.recipe.steps[active.beat];
+        if (subject.kind === "watch" && subject.at === "tv" && beat.command.at === subject.at && beat.command.ms === subject.ms)
+          active.tvComparison = { beat: active.beat+1, at: watch.at };
       }
       // Sleep is a legitimate need, not a physical-progress ACK: only the
       // runtime proves painted sleep. Preserve its one finite wake stretch.
@@ -1250,6 +1266,12 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
         }
         if(command?.kind==="tv" && command.state==="next" && input.canTv!==false) {
           const choice=active.tvChoice?.beat===active.beat ? active.tvChoice : {beat:active.beat,state:randomCompanionHomeTvChannel(rng)};
+          // A comparison made at the TV must offer a different second picture.
+          // Other free channel choices retain the existing weighted policy.
+          if (choice.state !== "off" && choice.state === normalizeCompanionHomeTv(input.tv)
+            && active.recipe.steps.slice(0,active.beat).some(step => step.kind === "watch" && step.at === "tv")) {
+            choice.state = COMPANION_HOME_TV_CHANNELS[(COMPANION_HOME_TV_CHANNELS.indexOf(choice.state)+1)%COMPANION_HOME_TV_CHANNELS.length];
+          }
           active.tvChoice=choice;command={...command,state:choice.state};
         }
         if (!command) { finish(true); return; }
@@ -1371,10 +1393,17 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
           // Do not silently reset an outside meeting back to the TV sofa.
           const watchesTv = watchTargetsTv(active.recipe, active.beat);
           active.tvWatch = undefined;
-          if (watchesTv && input.tv !== "off" && input.home.sofa && world.platformId !== input.home.sofa.platformId) { const offered = go(input.home.sofa, command, input); if (offered) return offered; }
+          if (command.at === "tv" && (!requiredTvWatch(input) || input.canTv === false)) { finish(false); return; }
+          const watchPoint = command.at === "tv" ? input.home.tv : input.home.sofa;
+          const atWatchPoint = watchPoint && world.platformId === watchPoint.platformId
+            && (command.at !== "tv" || arrived(watchPoint, world));
+          if (watchesTv && input.tv !== "off" && watchPoint && !atWatchPoint) {
+            const offered = go(watchPoint, command, input); if (offered) return offered;
+            if (!command.optional) { finish(false); return; }
+          }
           if (watchesTv && input.home.tv) attention = input.home.tv;
           const duration = Math.min(3500, Math.max(650, command.ms));
-          if (requiredTvWatch(input) && input.canTv !== false && world.platformId === input.home.sofa?.platformId)
+          if (requiredTvWatch(input) && input.canTv !== false && atWatchPoint)
             active.tvWatch = { beat: active.beat, started: now, duration, point: { ...here } };
           return action(command, { kind: "look", direction: (attention?.x ?? input.home.tv?.x ?? world.x) < world.x ? -1 : 1, target: here, duration, ...(attention ? { attention: { kind: "social", point: attention } } : {}) }, input);
         }
