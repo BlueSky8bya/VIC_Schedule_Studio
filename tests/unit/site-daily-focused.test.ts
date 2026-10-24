@@ -39,8 +39,15 @@ describe('focused daily selection and immutable continuation',()=>{
       for(const c of plan.cases){seen.add(c.id);observations.push({id:c.id,day:`2026-10-${day}`,outcome:'passed',receiptVerified:true,actualExecuted:true});}
     }
     expect(seen.size).toBeGreaterThan(0);expect(seen.size).toBeLessThanOrEqual(catalog.cases.length);
-    const missed=selectDailyCases({catalog:catalog.cases,day:'2026-10-30',observations:observations.filter(x=>x.day!=='2026-10-25')});
-    expect(missed.cases.some((c:{id:string})=>observations.some(x=>x.day==='2026-10-25'&&x.id===c.id))).toBe(true);
+    // The caller carries known missed IDs explicitly. An absent observation
+    // alone cannot distinguish that day from never-observed registrations,
+    // which can still remain after seven bounded runs as the catalog grows.
+    const missedIds=observations.filter(x=>x.day==='2026-10-25').map(x=>x.id);
+    const missed=selectDailyCases({catalog:catalog.cases,day:'2026-10-30',observations:observations.filter(x=>x.day!=='2026-10-25'),priorityIds:missedIds});
+    expect(missedIds.length).toBeGreaterThan(0);
+    expect(missedIds.every(id=>missed.cases.some((c:{id:string;reason:string})=>c.id===id&&c.reason==='changed-or-failed-risk'))).toBe(true);
+    expect(missed.pendingPriorityIds).toEqual([]);expect(missed.cases.length).toBeLessThanOrEqual(42);
+    expect(missed.estimatedWorkerSeconds).toBeLessThanOrEqual(1500);
     // Catalog growth can exceed seven days' budget. Unobserved registrations
     // remain in the oldest-first rotation; seven buckets are no full QA claim.
     for(let offset=0;offset<7&&seen.size<catalog.cases.length;offset++){
