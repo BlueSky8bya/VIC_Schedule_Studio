@@ -332,6 +332,8 @@ export const ACT: Record<string, TargetLabel> = {
   "search-chips-more": { name: "검색 칩 더보기", area: "시청자 화면", hint: "관련·태그 칩 줄 펼치기/접기" },
   "vod-clock-toggle": { name: "다시보기 시각 표기", area: "시청자 화면", hint: "경과 ↔ 실제 시각(KST)" },
   "vod-timeline-select": { name: "팬 타임라인 선택", area: "시청자 화면", hint: "대표·다른 작성자의 타임라인 전환" },
+  "vod-timeline-find": { name: "영상 안 타임라인 찾기", area: "시청자 화면", hint: "이미 열린 타임라인 안에서 찾기 — 입력 내용은 기록하지 않음" },
+  "vod-timeline-find-clear": { name: "타임라인 찾기 지우기", area: "시청자 화면" },
   "vod-timeline-manage": { name: "팬 타임라인 관리", area: "편집실", hint: "대표 지정·노출 설정" },
   "vod-rail-left": { name: "타임라인 왼쪽에", area: "시청자 화면", hint: "다시보기 창 — 영상 기준 레일 자리" },
   "vod-rail-right": { name: "타임라인 오른쪽에", area: "시청자 화면", hint: "다시보기 창 — 영상 기준 레일 자리" },

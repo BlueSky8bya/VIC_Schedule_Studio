@@ -2,10 +2,11 @@
 
 import { RhhSelect } from "@/components/studio/rhh-select";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { ChevronRight, Clock3, Heart, Laugh } from "lucide-react";
+import { ChevronRight, Clock3, Heart, Laugh, Search, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import type { PublicVodChatProfile, PublicVodTimeline } from "@/lib/domain/schedule-types";
 import { hapticTick } from "@/lib/ui/haptics";
+import { logActivity } from "@/lib/activity/client";
 
 // 다시보기 챕터(팬 타임라인, 0071) — PC 날짜 팝오버·모바일 아젠다 칩 아래 공용.
 //
@@ -126,6 +127,11 @@ export function VodChapters({
     const variant = bundle?.variants?.find((v) => v.id === selectedTimeline);
     return variant ? { authorNick: variant.authorNick, entries: variant.entries } : bundle;
   }, [bundle, selectedTimeline]);
+  const [find, setFind] = useState("");
+  const canFind = (timeline?.entries.length ?? 0) >= 20;
+  const normalizeFind = (text: string) => text.normalize("NFKC").replace(/\s+/g, "").toLocaleLowerCase("ko");
+  const findTerm = canFind ? normalizeFind(find) : "";
+  const filtering = findTerm.length > 0;
   const creditedAuthor = timeline?.authorNick ?? timelineBy;
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -135,6 +141,17 @@ export function VodChapters({
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const hoverRef = useRef(false); // 레일 위에 마우스가 있으면 자동 추적 스크롤을 멈춘다(읽는 중)
   const followRef = useRef(false); // 이번 activeIdx 변경이 재생 추적에서 왔는지(→ 자동 스크롤)
+  const beforeFindTop = useRef<number | null>(null);
+  const findRef = useRef<HTMLInputElement>(null);
+  const revealAfterFind = useRef(false);
+  const changeFind = (value: string) => {
+    if (!filtering && normalizeFind(value)) beforeFindTop.current = scrollRef.current?.scrollTop ?? 0;
+    if (filtering && !normalizeFind(value)) {
+      followRef.current = true;
+      revealAfterFind.current = true;
+    }
+    setFind(value);
+  };
   // 잘린 라벨 전문 툴팁(2026-09-03 사용자 요청) — 말줄임된 항목에만, 120ms 뒤 그 항목 안에 absolute로
   // (아래쪽, 레일 바닥에 닿으면 위쪽). fixed는 창의 등장 애니메이션이 남긴 transform 때문에 기준이
   // 창 박스가 돼 좌표가 어긋났다(실측). 항목 안이면 레일 스크롤과 함께 움직이고 z-index만 챙기면 된다.
@@ -246,10 +263,22 @@ export function VodChapters({
       });
     });
   }, [subscribeTime, open, secs, durationMs]);
+  useEffect(() => {
+    const scroller = scrollRef.current;
+    if (scroller) {
+      if (filtering) scroller.scrollTop = 0;
+      else if (beforeFindTop.current !== null) {
+        scroller.scrollTop = beforeFindTop.current;
+        beforeFindTop.current = null;
+      }
+    }
+    window.clearTimeout(tipTimerRef.current);
+    setTip(null);
+  }, [findTerm, filtering]);
   // 재생 추적으로 현재 챕터가 바뀌면 레일이 따라간다 — 마우스가 레일 위면 멈춤(사용자 스크롤과
   // 싸우지 않게). nearest + 스크롤러의 scroll-padding으로 sticky 코너 헤더 밑에 숨지 않는다.
   useEffect(() => {
-    if (activeIdx === null) return;
+    if (activeIdx === null || filtering) return; // A text search owns the visible list until cleared.
     // 현재 항목이 접힌 코너 안이면 펼친다(어디쯤인지는 항상 보여야 한다).
     const gi = groupsRef.current.findIndex((g) => g.items.some((it) => it.idx === activeIdx));
     if (gi >= 0) {
@@ -262,12 +291,14 @@ export function VodChapters({
     }
     if (!followRef.current) return;
     followRef.current = false;
-    if (hoverRef.current) return;
+    const reveal = revealAfterFind.current;
+    revealAfterFind.current = false;
+    if (hoverRef.current && !reveal) return;
     const el = scrollRef.current?.querySelector<HTMLElement>(`[data-idx="${activeIdx}"]`);
     if (!el) return;
     const reduce = document.documentElement.hasAttribute("data-reduce-motion");
     el.scrollIntoView({ block: "nearest", behavior: reduce ? "auto" : "smooth" });
-  }, [activeIdx]);
+  }, [activeIdx, filtering]);
 
   // 펼친 순간에만 본문을 받아온다(자동 펼침 포함) — 접힌 칩마다 미리 받으면 낭비.
   // ⚠ loading을 의존성/가드에 넣지 않는다 — setLoading(true)가 이 effect를 재실행시키면
@@ -328,6 +359,10 @@ export function VodChapters({
   // 챕터 수 = 코너 헤더가 있는 카드 수(본문을 받은 뒤에만 안다). 번들의 `chapters`는 **타임라인 항목 수**다 —
   // 머리에 "챕터 139개"로 적혀 있어 챕터(코너)와 타임라인(항목)이 뒤바뀌어 읽혔다(2026-09-04 사용자).
   const sectionCount = useMemo(() => groups.filter((g) => g.section).length, [groups]);
+  // A display projection only: playback, strip, folding and shortcuts retain original indices.
+  const visibleGroups = groups.map((g, gi) => ({ ...g, gi, items: !filtering || normalizeFind(g.section ?? "").includes(findTerm)
+    ? g.items : g.items.filter(e => normalizeFind(e.label).includes(findTerm)) })).filter(g => g.items.length > 0);
+  const foundCount = visibleGroups.reduce((n, g) => n + g.items.length, 0);
   const groupsRef = useRef(groups);
   groupsRef.current = groups;
   // 키보드 조종(2026-09-17): ↑/↓ 항목, [ ] 코너. 최신 상태는 ref로 읽어 한 번만 등록한다.
@@ -337,6 +372,7 @@ export function VodChapters({
     const jump = navRef.current.onJump;
     const item = groupsRef.current.flatMap((g) => g.items).find((it) => it.idx === idx);
     if (!item || !jump) return;
+    setFind(""); // Explicit global chapter/section navigation reveals its destination in the full list.
     followRef.current = true; // 키보드는 손이 레일 위에 없다 — 자동 스크롤로 보여 준다
     setActiveIdx(idx);
     jump(item.sec);
@@ -458,6 +494,8 @@ export function VodChapters({
               options={bundle!.variants!.map((v, i) => ({ value: v.id, label: `${i === 0 ? "대표" : `다른 타임라인 ${i}`} · ${v.authorNick || "팬"} · ${v.entries.length}개` }))}
               onChange={(id) => {
                 setSelectedTimeline(id);
+                setFind("");
+                beforeFindTop.current = null;
                 setFolded(new Set());
                 setTip(null);
                 const next = bundle?.variants?.find((v) => v.id === id);
@@ -506,6 +544,22 @@ export function VodChapters({
       ) : (
         /* 스크롤 래퍼는 목록과 분리 — 날짜 창(단일 방송)에선 이 래퍼만 흐르고 미리보기는 고정.
            columns를 스크롤 요소에 직접 걸면 높이 제한이 열 개수를 불리므로(가로 넘침) 분리 필수. */
+        <>
+        {canFind ? (
+          <div className="vch-find">
+            <label className="vch-find-field">
+              <Search aria-hidden="true" size={14} />
+              <input aria-label="이 영상 타임라인에서 찾기" autoComplete="off" data-act="vod-timeline-find" data-activity-manual=""
+                onFocus={event => {
+                  // Returning from the adjacent clear control is still the same find interaction.
+                  if (!event.currentTarget.closest(".vch-find")?.contains(event.relatedTarget)) logActivity("ui.click", { target: "vod-timeline-find" });
+                }}
+                onChange={e => changeFind(e.target.value)} placeholder="타임라인에서 찾기" ref={findRef} type="search" value={find} />
+            </label>
+            {find ? <button aria-label="타임라인 찾기 지우기" data-act="vod-timeline-find-clear" onClick={() => { changeFind(""); findRef.current?.focus(); }} type="button"><X aria-hidden="true" size={16} /></button> : null}
+            {filtering ? <span className="vch-find-count" role="status">{foundCount} / {timeline.entries.length}</span> : null}
+          </div>
+        ) : null}
         <div
           className="vch-scroll"
           onPointerEnter={() => {
@@ -519,13 +573,15 @@ export function VodChapters({
           ref={scrollRef}
         >
           <div className="vch-list">
-            {groups.map((g, gi) => (
-              <section className="vch-group" data-folded={folded.has(gi) ? "" : undefined} key={gi}>
+            {filtering && foundCount === 0 ? <p className="vch-note">일치하는 타임라인이 없어요.</p> : null}
+            {visibleGroups.map((g) => {
+              const gi = g.gi, isFolded = !filtering && folded.has(gi);
+              return <section className="vch-group" data-folded={isFolded ? "" : undefined} key={gi}>
                 {g.section ? (
                   <div className="vch-sec">
                     {/* 이름 = 접기, ▶ = 이 코너 처음으로 점프(2026-09-17). 항목 수는 접혔을 때 무게를 알린다. */}
-                    <button
-                      aria-expanded={!folded.has(gi)}
+                    {filtering ? <span className="vch-sec-name">{g.section}<em className="vch-sec-n">{g.items.length}</em></span> : <button
+                      aria-expanded={!isFolded}
                       className="vch-sec-name"
                       data-act="vod-section-fold"
                       onBlur={hideTip}
@@ -546,7 +602,7 @@ export function VodChapters({
                       <span aria-hidden="true" className="vch-caret">{folded.has(gi) ? "▸" : "▾"}</span>
                       {g.section}
                       <em className="vch-sec-n">{g.items.length}</em>
-                    </button>
+                    </button>}
                     {onJump ? (
                       <button
                         aria-label={`${g.section} 처음부터`}
@@ -554,7 +610,7 @@ export function VodChapters({
                         data-act="vod-chapter-jump"
                         onClick={() => {
                           hapticTick();
-                          jumpTo(g.items[0].idx);
+                          jumpTo(groups[gi].items[0].idx);
                         }}
                         title="이 코너 처음부터"
                         type="button"
@@ -569,7 +625,7 @@ export function VodChapters({
                     ) : null}
                   </div>
                 ) : null}
-                {folded.has(gi) ? null : g.items.map((e) => (
+                {isFolded ? null : g.items.map((e) => (
                   <a
                     aria-current={activeIdx === e.idx ? "true" : undefined}
                     className={`vch-item${activeIdx === e.idx ? " is-active" : ""}${
@@ -607,10 +663,11 @@ export function VodChapters({
                     ) : null}
                   </a>
                 ))}
-              </section>
-            ))}
+              </section>;
+            })}
           </div>
         </div>
+        </>
       )}
       {strip}
     </div>

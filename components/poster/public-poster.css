@@ -1872,6 +1872,56 @@ a.dvm-host-link:active {
   font-size: var(--text-caption);
   color: #a3aec9;
 }
+.vch-find {
+  display: flex;
+  align-items: center;
+  flex: none;
+  gap: var(--space-1);
+  margin-block: var(--space-1);
+}
+.vch-find-field {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: var(--space-2);
+  min-height: var(--control-hit);
+  padding-inline: var(--space-2);
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+}
+.vch-find-field input {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-label);
+}
+.vch-find-field:focus-within { outline: 2px solid var(--studio-action); outline-offset: 1px; }
+.vch-find-field input:focus { outline: 0; }
+.vch-find-field input::-webkit-search-cancel-button { display: none; }
+.vch-find > button {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: var(--control-hit);
+  height: var(--control-hit);
+  border: 0;
+  border-radius: var(--r-control);
+  background: var(--surface-2);
+  color: var(--ink);
+  cursor: pointer;
+}
+.vch-find-count {
+  flex: none;
+  font-size: var(--text-caption);
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
 /* 실패 안내는 버튼(다시 시도) — 글자 모양은 .vch-note 그대로, 누를 수 있다는 것만 밑줄로(2026-09-28). */
 .vch-note.vch-retry {
   appearance: none;
@@ -8715,6 +8765,14 @@ html[data-reduce-motion] .public-calendar-header .viewer-actions .account-form {
   color: var(--ink, #23303f);
 }
 
+.ps-applied-query {
+  margin: 0;
+  padding: var(--space-1) var(--space-card);
+  color: var(--ink-soft);
+  font-size: var(--text-caption);
+  overflow-wrap: anywhere;
+}
+.ps-applied-query strong { color: var(--ps-accent); }
 /* 교정 안내 — 영타(shfo)·오타(노레)를 사전어로 바꿔 찾았을 때 한 줄. */
 .ps-corrected {
   margin: -2px 16px 6px;

@@ -43,6 +43,15 @@ async function fixture() {
 }
 
 describe("completed companion input owns its activity event", () => {
+  it("records timeline find entry once through focus and omits its typed value and following pointer click", async () => {
+    const f = await fixture();
+    f.logger.logActivity("ui.click", { target: "vod-timeline-find" }); // focus: Tab or pointer
+    f.click(true, false, false, "vod-timeline-find"); // delegated pointer click suppressed
+    f.click(false, false, false, "vod-timeline-find-clear"); // native Enter/Space or pointer click
+    const events = await f.events();
+    expect(events.map((event: {target:string}) => event.target)).toEqual(["vod-timeline-find", "vod-timeline-find-clear"]);
+    expect(events.every((event:{meta:unknown}) => event.meta == null)).toBe(true);
+  });
   it("captures visible activity and new personality choices while completed toy gestures count once without IDs", async () => {
     const f = await fixture();
     f.click(false, false, false, "companion-active-visible", "off");

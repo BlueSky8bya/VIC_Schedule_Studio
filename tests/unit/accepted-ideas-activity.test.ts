@@ -14,7 +14,7 @@ afterEach(()=>{state.values=[];vi.unstubAllGlobals();});
 it('renders adopted controls by the same safe fixed labels in timeline and least-used features',async()=>{
   vi.stubGlobal('React',await import('react'));
   const {ActivityUsage}=await import('@/components/developer/activity-usage'),{ActivityTimeline}=await import('@/components/developer/activity-timeline');
-  const targets=['share-public-event','copy-app-link','theme-mode-select#dark'];
+  const targets=['share-public-event','copy-app-link','theme-mode-select#dark','vod-timeline-find','vod-timeline-find-clear','insights-tab'];
   const rows:UsageRow[]=targets.map(target=>({kind:'ui.click',label:'누름',target,total:1,roles:{developer:1},auto:false}));
   const at=Date.parse('2026-10-24T15:00:00Z');
   const visit:ActivityVisit={key:'synthetic-visit',account:'계정 #1',role:'developer',device:'desktop',startMs:at,endMs:at+2000,items:targets.map((target,i)=>({t:at+i*1000,kind:'ui.click',label:'누름',target,targetLabel:null,source:'client',meta:null,durMs:null}))};

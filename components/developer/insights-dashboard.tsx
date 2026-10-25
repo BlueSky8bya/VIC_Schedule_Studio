@@ -50,6 +50,7 @@ import {
 import { SessionLogFilter } from "@/components/developer/session-log-filter";
 import { ScrollPosition } from "@/components/developer/scroll-position";
 import { hapticTick } from "@/lib/ui/haptics";
+import { InsightsTabs, insightTabStep } from "@/components/shared/insights-tabs";
 
 // 보고 있는 달 기준의 "월별 인사이트". 실시간/보안/시스템은 달과 무관, 방문/일정/참여는 그 달 기준.
 // META·헬퍼는 일별 방문 모달(DayVisitModal)에서도 그대로 재사용 → 색/표기 단일 출처(드리프트 방지).
@@ -69,7 +70,7 @@ export const DEVICE_META: { key: string; label: string; color: string }[] = [
 ];
 const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"];
 
-// 통일성: 비개발자에게 배포하는 4패널(트렌드·일정·참여·하이라이트)을 2×4 격자 윗줄에 두고,
+// 통일성: 비개발자와 공유하는 3패널(트렌드·일정·참여)을 윗줄에 두고,
 // 개발자 전용(실시간·방문·보안·시스템)은 아랫줄에. 아래 트랙 섹션 순서도 이와 일치해야 한다
 // (CSS가 data-active=n ↔ nth-child로 짝을 맞춘다 — 여기만 바꾸면 안 된다).
 // 트렌드가 첫 탭 = 기본 화면(2026-08-31 사용자 지시 — 열자마자 흐름부터).
@@ -82,9 +83,6 @@ const PANELS = [
   { key: "security", label: "보안", icon: Lock },
   { key: "system", label: "시스템", icon: Cog }
 ] as const;
-// 탭/패널 격자 열 수 — CSS의 .insights-tabs(repeat(4,1fr))와 방향키·스와이프 행 이동에 함께 쓴다.
-const GRID_COLS = 4;
-
 function kst(iso: string | null): Date | null {
   if (!iso) return null;
   const d = new Date(iso);
@@ -452,7 +450,7 @@ export function InsightsDashboard({
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement | null;
       if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
-      // 탭이 4×2 격자라 방향키도 격자처럼: ←→는 ±1(순서), ↑↓는 ±4(행 이동). 끝에서 막힘.
+      // Follow the same actual row layout as the shared tab control.
       const LEN = PANELS.length;
       if (e.key === "ArrowLeft") {
         e.preventDefault();
@@ -462,10 +460,10 @@ export function InsightsDashboard({
         setIndex((i) => Math.min(LEN - 1, i + 1));
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        setIndex((i) => (i - GRID_COLS >= 0 ? i - GRID_COLS : i));
+        setIndex((i) => insightTabStep(i, "ArrowUp", LEN));
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
-        setIndex((i) => (i + GRID_COLS < LEN ? i + GRID_COLS : i));
+        setIndex((i) => insightTabStep(i, "ArrowDown", LEN));
       }
     };
     window.addEventListener("keydown", onKey);
@@ -1195,21 +1193,7 @@ export function InsightsDashboard({
         <p className="insights-month">{month}월 인사이트</p>
         {/* (수동 새로고침 버튼은 2026-09-04 사용자 결정으로 제거 — 방문 칸은 20초 자동 갱신, 나머지는 열 때 최신.) */}
       </div>
-      <div className="insights-tabs" role="tablist" aria-label="인사이트 영역">
-        {PANELS.map((p, i) => (
-          <button
-            aria-selected={i === index}
-            className={`insights-tab ${i === index ? "active" : ""}`}
-            key={p.key}
-            onClick={() => go(i)}
-            role="tab"
-            type="button"
-           data-act="insights-tab">
-            <p.icon aria-hidden="true" size={14} />
-            {p.label}
-          </button>
-        ))}
-      </div>
+      <InsightsTabs active={index} onChange={go} tabs={PANELS} />
 
       <div
         className="insights-viewport"

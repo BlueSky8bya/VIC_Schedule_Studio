@@ -160,8 +160,10 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
   }, []);
-  const [response, setResponse] = useState<{ revision: symbol; value: PublicSearchResult } | null>(initial && initial.revision === revision && initial.result && initial.resultFor === initial.submitted?.trim() ? { revision, value: initial.result } : null);
+  const [response, setResponse] = useState<{ revision: symbol; term: string; value: PublicSearchResult } | null>(initial && initial.revision === revision && initial.result && initial.resultFor === initial.submitted?.trim() ? { revision, term: initial.resultFor, value: initial.result } : null);
   const result = response && response.revision === revision ? response.value : null;
+  // Keep the visible result and its query atomic, including while another request is pending or fails.
+  const resultQuery = result && response ? response.term : "";
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const [selectedRow, setSelectedRow] = useState<string | null>(initial?.selectedRow ?? null);
@@ -285,7 +287,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
         if (ctl.signal.aborted) return;
         resultForRef.current = term;
         completedRef.current = { submitted, revision };
-        setResponse({ revision, value: json });
+        setResponse({ revision, term, value: json });
         setSelectedRow(restoring?.selectedRow ?? null);
         if (window.matchMedia("(max-width: 640px)").matches) inputRef.current?.blur(); // 키보드 내림 — 결과가 화면을 차지하게
         setExpanded(restoring?.expanded ?? new Set());
@@ -392,6 +394,8 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
   };
 
   const onInputKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // An IME confirmation Enter belongs to composition, not search or result activation.
+    if (e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return;
     // 제안 목록이 떠 있으면 ↑↓는 제안을, Enter는 고른 제안(없으면 입력 그대로)을 확정한다.
     if (sugOpen) {
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
@@ -584,11 +588,11 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
             )}
             <span className="ps-main">
               <span className="ps-title">
-                <Highlight text={e.title} q={q} />
+                <Highlight text={e.title} q={resultQuery} />
               </span>
               {e.snippet ? (
                 <span className="ps-meta">
-                  <Highlight text={e.snippet} q={q} />
+                  <Highlight text={e.snippet} q={resultQuery} />
                 </span>
               ) : null}
             </span>
@@ -620,7 +624,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
                 </span>
                 <span className="ps-main">
                   <span className="ps-title">
-                    <Highlight text={v.title} q={q} />
+                    <Highlight text={v.title} q={resultQuery} />
                   </span>
                   <span className="ps-meta">
                     다시보기{v.hostNick ? ` · 합방 ${v.hostNick}` : ""}
@@ -649,12 +653,12 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
                     <div className={`ps-chapter-wrap${c.parent ? " is-child" : ""}`} key={`${c.sec}:${c.label}`}>
                       {showSection ? (
                         <span className={`ps-section${c.matchedOn === "section" ? " is-hit" : ""}`}>
-                          <Highlight text={c.section} q={q} />
+                          <Highlight text={c.section} q={resultQuery} />
                         </span>
                       ) : null}
                       {showParent ? (
                         <span className="ps-parent-head">
-                          <Highlight text={c.parent} q={q} />
+                          <Highlight text={c.parent} q={resultQuery} />
                         </span>
                       ) : null}
                       {rowBtn(
@@ -669,7 +673,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
                                 const k = KIND_ICON[c.matchedOn];
                                 return <k.Icon aria-label={k.label} className={`ps-note${k.cls}`} size={12} />;
                               })() : null}
-                              <Highlight text={KIND_ICON[c.matchedOn] ? stripLeadMark(c.label) : c.label} q={q} />
+                              <Highlight text={KIND_ICON[c.matchedOn] ? stripLeadMark(c.label) : c.label} q={resultQuery} />
                             </span>
                           </span>
                           <span className="ps-side">
@@ -812,6 +816,11 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
         ) : null}
         </header>
 
+        {result && resultQuery !== q.trim() ? (
+          <p className="ps-applied-query" role="status">
+            <strong>{resultQuery}</strong> 결과 · {busy ? "새 검색 중…" : "Enter로 새 검색"}
+          </p>
+        ) : null}
         {hasResults ? (
           <div className="ps-toolbar">
             <div className="ps-seg" ref={segRef} role="group" aria-label="정렬">
@@ -964,7 +973,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
             {failed ? <p className="ps-hint ps-fail">검색이 잠시 안 돼요. 다시 시도해 주세요.</p> : null}
             {empty ? (
               <p className="ps-hint">
-                <strong>&ldquo;{q.trim()}&rdquo;</strong> 없음. 다른 말로 찾아보세요.
+                <strong>&ldquo;{resultQuery}&rdquo;</strong> 없음. 다른 말로 찾아보세요.
               </p>
             ) : null}
             <div className="ps-results" key={`${result?.query ?? ""}|${sort}`}>

@@ -24,6 +24,7 @@ import { StackTrendChart } from "@/components/studio/stack-trend-chart";
 import { TrendDeltaBadge } from "@/components/studio/trend-delta-badge";
 import { monthProgress } from "@/lib/insights/month-progress";
 import { hapticTick } from "@/lib/ui/haptics";
+import { InsightsTabs } from "@/components/shared/insights-tabs";
 
 // 관리자·매니저용 월별 인사이트 — 수치 없는 3패널(트렌드·일정·참여).
 // 데이터는 getMemberInsightsAction이 이미 수치를 빼고(보안/시스템/방문 원시값 없음, 막대는 0~1 비율)
@@ -405,23 +406,7 @@ export function MemberInsights({
   return (
     <div className="insights">
       <p className="insights-month">{month}월 인사이트</p>
-      <div className="insights-tabs" role="tablist" aria-label="인사이트 영역">
-        {panels.map((p, i) => (
-          <button
-            aria-selected={i === index}
-            className={`insights-tab ${i === index ? "active" : ""}${
-              p.key === "security" ? " insights-tab-wide" : ""
-            }`}
-            key={p.key}
-            onClick={() => setIndex(i)}
-            role="tab"
-            type="button"
-           data-act="insights-tab">
-            <p.icon aria-hidden="true" size={14} />
-            {p.label}
-          </button>
-        ))}
-      </div>
+      <InsightsTabs active={index} onChange={setIndex} tabs={panels} />
 
       <div
         className="insights-viewport"

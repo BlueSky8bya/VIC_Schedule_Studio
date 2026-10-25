@@ -84,9 +84,16 @@
 }
 
 .insights-tabs {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 8px;
+}
+
+.insights-tab-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: inherit;
 }
 
 .insights-tab {
@@ -121,10 +128,6 @@
   border-color: #6b5bd6;
   color: #fff;
   box-shadow: 0 4px 12px -4px rgb(107 91 214 / 55%);
-}
-
-.insights-tab-wide {
-  grid-column: 1 / -1;
 }
 
 .insights-viewport {

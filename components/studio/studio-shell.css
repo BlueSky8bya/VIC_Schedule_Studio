@@ -13347,7 +13347,7 @@ html[data-reduce-motion] .member-row:hover {
     overflow-x: auto;
   }
 
-  /* 탭 8개(4×2)는 스크롤 없이 통째로 보이게 — overflow-x:auto가 세로 축까지 잘라
+  /* 실제 탭 수에 맞춘 공용 행은 스크롤 없이 통째로 보이게 — overflow-x:auto가 세로 축까지 잘라
      몇 px짜리 스크롤이 생겼다(사용자 지적). 버튼을 압축해 두 줄이 그대로 들어간다. */
   .modal-card-developer .insights-tabs {
     gap: var(--space-1);
