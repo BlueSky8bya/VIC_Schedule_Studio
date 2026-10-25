@@ -1,9 +1,55 @@
 import { expect, test } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
+import sharp from "sharp";
 
 const output = process.env.COMPANION_TOY_AXIS_OUTPUT ?? (process.env.COMPANION_QA_OUTPUT ? `${process.env.COMPANION_QA_OUTPUT}/toy-axis` : ".scratch-pw/toy-axis-proof");
 test.use({ viewport: { width: 1760, height: 1050 }, serviceWorkers: "block" });
+
+for (const mode of ["full", "reduced", "soft", "off"] as const) test(`axis toy room material ${mode}: dimmed painted pixels`, async ({ page, context, baseURL }) => {
+  const origin = new URL(baseURL!).origin, errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await context.route("**/*", route => {
+    const request = route.request(), url = new URL(request.url());
+    return url.origin === origin && ["GET", "HEAD"].includes(request.method()) && !url.pathname.startsWith("/api/") ? route.continue() : route.abort();
+  });
+  // A fixed mechanical pose isolates material pixels from rotor motion. This
+  // synthetic room sample complements the native shared-home control cases.
+  await page.goto("/visual-fixture/toy-motion?reduced=1");
+  await expect(page.locator("[data-motion-ready=true]")).toHaveCount(1);
+  await page.evaluate(mode => {
+    document.documentElement.dataset.gfx = mode === "reduced" ? "full" : mode;
+    document.documentElement.toggleAttribute("data-reduce-motion", mode === "reduced");
+  }, mode);
+  mkdirSync(output, { recursive: true });
+  for (const kind of ["spinning-top", "battle-top-launcher", "pinwheel"]) {
+    const toy = page.locator(`.vc-toy[data-kind="${kind}"]`), art = toy.locator("canvas");
+    await expect(toy).toHaveAttribute("data-axis-painted", "");
+    await toy.evaluate(node => node.style.setProperty("--vc-item-room-light", "1"));
+    const bright = await toy.screenshot({ path: resolve(output, `material-${mode}-${kind}-bright.png`) });
+    await toy.evaluate(node => node.style.setProperty("--vc-item-room-light", ".4"));
+    const dim = await toy.screenshot({ path: resolve(output, `material-${mode}-${kind}-dim.png`) });
+    const filter = await art.evaluate(node => getComputedStyle(node).filter);
+    expect(filter).toContain("brightness(0.4)");
+    expect(filter).toContain("saturate(1.2)");
+    expect(filter).toContain("contrast(1.06)");
+    const pixels = async (bytes: Buffer) => (await sharp(bytes).removeAlpha().raw().toBuffer());
+    const before = await pixels(bright), after = await pixels(dim);
+    expect(after.length).toBe(before.length);
+    let darkened = 0, lightened = 0;
+    for (let i = 0; i < before.length; i += 3) {
+      const delta = before[i] + before[i + 1] + before[i + 2] - after[i] - after[i + 1] - after[i + 2];
+      if (delta > 60) darkened++;
+      if (delta < -30) lightened++;
+    }
+    expect(darkened).toBeGreaterThan(30);
+    expect(lightened).toBe(0);
+    await toy.evaluate(node => node.style.setProperty("--vc-item-room-light", "1"));
+    expect(await art.evaluate(node => getComputedStyle(node).filter)).toContain("brightness(1)");
+  }
+  expect(errors).toEqual([]);
+});
+
 for (const reduced of [false, true]) test(`toy mechanics all 84 ${reduced ? "reduced" : "normal"}: upright axes and planted controls`, async ({ page, context, baseURL }) => {
   const rejected: string[] = [], errors: string[] = [], origin = new URL(baseURL!).origin;
   page.on("pageerror", error => errors.push(error.message));

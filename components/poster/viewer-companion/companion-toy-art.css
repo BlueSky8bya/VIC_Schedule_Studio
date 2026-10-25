@@ -1,3 +1,6 @@
 /* A modest, shared color lift keeps small toys as legible as food. Neutral
    unknown silhouettes override the filter in the collection, not the source. */
-.vc-toy-art { --vc-toy-color: saturate(1.2) contrast(1.06); display: block; object-fit: contain; filter: var(--vc-toy-color); }
+/* The live rotor canvas is an image sibling, so it needs the same material
+   variable. A missing var invalidates its entire room-brightness filter. */
+.vc-toy-art, .vc-toy-axis-art { --vc-toy-color: saturate(1.2) contrast(1.06); }
+.vc-toy-art { display: block; object-fit: contain; filter: var(--vc-toy-color); }
