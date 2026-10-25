@@ -1,0 +1,27 @@
+# Mobile support/period usability study
+
+Status: Adopted implementation and independent review verified2026-10-26. Exact release/CI/provider/public confirmation is maintained in the durable coordinator receipt.
+
+## Adopted implementation — 2026-10-26
+
+The current owner explicitly requests applying the cozy prototype to actual mobile schedules and checking three overlapping notices, readable full titles and scroll/animation stability. This supersedes the earlier layout-adoption wait and proposal-only release limit for this exact feature; prior study results remain historical evidence. Standing2026-10-25 authorization covers applicable checks, independent review and exact scoped release.
+
+Use one shared mobile notice context for viewer/anonymous/preview/studio. Titles remain complete; period/support kinds and real links remain distinct. Preserve owner/developer editing through existing callbacks, KST expiry, public DTOs and desktop geometry. Context follows the leading visible calendar date after scrolling settles. To prevent timeline movement, reserve the maximum title-stack height for the current month's overlapping notice groups and one shared detail/action row; animate only internal highlights/details with the existing flipSpring. Single-day notices omit range text. All manual controls use fixed semantic analytics targets; automatic scroll tracking creates no human activity.
+
+Verification: production-build synthetic fixtures at320/390px, three realistic overlaps including support, long titles, cross-month and one-day cases, related/unrelated dates, native scroll/focus, rapid selection, external link/edit callbacks, filter/month navigation, app reduced-motion authority (including when OS differs), unchanged card coordinates/width/scroll position during notice changes. Run typecheck/lint/unit/build/harness and independent boundary/role/UX/QA review. No real DB mutations or credentials in fixtures. Record actual limitations and final exact release separately.
+
+Actual result and limits: [implementation verification](../verification/MOBILE_SUPPORT_CONTEXT-20261026.md).13 mobile production-build cases passed, including all five surfaces at320/390px and hidden support editing. Month/filter reuse received source review; no new comprehensive rendered month/filter matrix is claimed. The durable run `C:/Users/im917/.codex/vic-pipeline/runs/20261026-mobile-cozy/` owns the current rollout stage and exact release receipts; DAILY-0900 remains the active continuation route until confirmation.
+
+## Historical proposal phase — through 2026-10-25
+
+The following proposal-only limits and next steps describe the previous phase; the adopted implementation above supersedes them for the selected cozy layout.
+
+Owner2026-10-25 asks for practical mobile design proposals for period/support notices without reducing broadcast-card width, while keeping readable titles and useful links. Adopted copy correction: a single-day notice needs no redundant date-range text at all. New layout choices remain proposals until human adoption.
+
+Source: actual preferred named checkout at229749ce; isolated `C:/Projects/VIC-worktrees/20261025-mobile-period-ux`, `codex/mobile-period-ux`, preserves primary assets and ongoing pipeline work. Current human instructions and shared G02–08/G18/G20 apply. Do not restore retired UI or widen public/private authority.
+
+Implement only the shared single-day date-line rule in viewer/studio/preview, preserving multi-day/cross-month ranges, title, external link and existing edit form meaning. Guard synthetic test data with the existing VISUAL_TEST_FIXTURE route. Use a production build and actual browser interactions; distinguish responsive desktop emulation from physical phones/human usability testing. Check320/390px, long text, overlapping ranges, middle-of-period entry, one-step links, keyboard/focus, escape/return and calendar-card width.
+
+Compare a compact horizontal notice below broadcast cards, a connector confined to existing date space, and a separate period collection. Provide an interactive comparison and observed limitations; no invented conversion/time/people-test scores. Keep novel designs out of product code pending adoption. Routine source tests/type/lint/build/harness and independent review apply to the actual copy fix. Audit excludes test/agent operations from human activity analytics. No DB writes, production credentials, native goals, other-chat messages or schedule changes. Publishing/push is outside this proposal run without the required current authorization.
+
+Result: [dated study](../../ux/MOBILE_PERIOD_STUDY-20261025.md). Actual production-build fixtures cover missing/equal/multi-day text, titles/links, owner/developer edit presence, viewer preview and320/390px reflow. Source-independent code and UX reviews accepted their exact pins; prototype interaction findings were fixed and rechecked. Full build/typecheck/lint and10 editor/DTO regressions passed. The final documentation harness and scoped check receipts are preserved in `C:/Users/im917/.codex/vic-pipeline/runs/20261025-mobile-period-ux/`; only executed receipts establish their result. No product release or real-device/RLS coverage is claimed. Next: human chooses a layout; implement the chosen behavior once across viewer/studio/preview, then perform its own integration checks and separately authorized release. Existing copy draft and evidence remain in this named worktree.

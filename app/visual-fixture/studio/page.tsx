@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { supportContextFixture } from "../support-context";
 // 실제 /studio는 (studio)/layout.tsx가 이 CSS들을 선로드한다 — fixture는 그 레이아웃 밖이라
 // 직접 가져와야 프로덕션 빌드에서도 실물과 같은 스타일로 렌더된다(dev는 CSS를 전부 실어 가려짐).
 // poster CSS도 필요: 편집실 모바일 아젠다(.agenda/.agenda-rail 골격)가 포스터 CSS의 기본
@@ -22,12 +23,22 @@ export const dynamic = "force-dynamic";
 export default async function VisualStudioFixture({
   searchParams,
 }: {
-  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; y?: string; m?: string; biome?: string; chain?: string; tent?: string; gift?: string; premiere?: string; companionDrag?: string }>;
+  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; y?: string; m?: string; biome?: string; chain?: string; tent?: string; gift?: string; premiere?: string; companionDrag?: string; supportUX?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
   }
   const sp = await searchParams;
+  const cozy = sp?.supportUX === "cozy" ? supportContextFixture() : null;
+  // The studio retains teaser=true after release and needs a masked edit entry
+  // before release. The public preview receives only the resolved fixture data.
+  const cozyStudioEvents = cozy ? [
+    ...cozy.events.map(event => event.id === "cozy-period-vote"
+      ? { ...event, teaser: true, teaserRevealAt: new Date(Date.now() - 60_000).toISOString() } : event),
+    { ...cozy.events[0], id: "cozy-hidden-support", startsAt: `${cozy.focusDate}T20:00:00+09:00`,
+      publicTitle: "STUDIO_HIDDEN_SUPPORT_CANARY", supportUrl: "https://example.com/hidden-support",
+      teaser: true, teaserRevealAt: new Date(Date.now() + 24 * 3600000).toISOString(), sortOrder: 2 }
+  ] : undefined;
   const premiereSeconds = Number(sp?.premiere);
   const at = Date.now();
   const teaser = premiereSeconds > 0 ? buildPremiereFixture(at, [premiereSeconds], at).entries[0].event : null;
@@ -51,6 +62,12 @@ export default async function VisualStudioFixture({
   // y=2025&m=11 → 보는 달 강제(계절도 흔적도 **달**에서 나온다). 기본 2026-06.
   const y = sp?.y !== undefined && /^\d{4}$/.test(sp.y) ? Number(sp.y) : 2026;
   const m = sp?.m !== undefined && /^\d{1,2}$/.test(sp.m) && Number(sp.m) >= 1 && Number(sp.m) <= 12 ? Number(sp.m) : 6;
+  const supportUxEvents = [undefined, "2026-06-19", "2026-06-22"].map((endDateKey, index) => ({
+    id: `fixture-support-ux-${index}`, startsAt: "2026-06-19T00:00:00+09:00", endDateKey,
+    isAllDay: true, isSupport: true, supportKind: "period" as const, supportUrl: "https://example.com/fixture",
+    publicTitle: ["하루 안내", "같은 날 종료 안내", "여러 날 안내"][index], status: "scheduled" as const,
+    visibilityScope: "public" as const, category: "stream" as const, tagIds: [], primaryTagIds: [], sortOrder: index
+  }));
   return (
     <StudioShell
       ambientForce={ambient}
@@ -62,7 +79,13 @@ export default async function VisualStudioFixture({
       }}
       hasUnlockSession={false}
       schedule={
-        premiereSchedule ?? (sp?.companionDrag === "1" ? {
+        cozy ? { ...sampleStudioSchedule, events: cozyStudioEvents ?? cozy.events,
+          viewerModePreview: { ...sampleStudioSchedule.viewerModePreview, events: cozy.events }
+        } : premiereSchedule ?? (sp?.supportUX === "1" ? {
+          ...sampleStudioSchedule,
+          events: [...sampleStudioSchedule.events, ...supportUxEvents],
+          viewerModePreview: { ...sampleStudioSchedule.viewerModePreview, events: [...sampleStudioSchedule.viewerModePreview.events, ...supportUxEvents] }
+        } : sp?.companionDrag === "1" ? {
           ...sampleStudioSchedule,
           // A past-month start beside the existing period fixture. Up-support
           // expires against actual KST today even in old calendar months, so
@@ -121,7 +144,7 @@ export default async function VisualStudioFixture({
               : sampleStudioSchedule)
         )
       }
-      initialView={{ year: y, month: m }}
+      initialView={{ year: cozy?.year ?? y, month: cozy?.month ?? m }}
       initialViewerMode={viewer}
       initialNarrow={false}
       initialPanel={panel}

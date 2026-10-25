@@ -2,6 +2,8 @@
 
 // The room must be styled before its lazy companion runtime can mount.
 import "./viewer-companion/companion-home.css";
+import { AgendaSupportContext } from "@/components/shared/agenda-support-context";
+import { createAgendaNotices } from "@/lib/ui/agenda-notices";
 
 import {
   CalendarCheck,
@@ -109,6 +111,7 @@ import {
   eventColorStyle,
   getAdjacentMonth,
   getEventDateKey,
+  hasSupportDateRange,
   getEventsForDate,
   eventMatchesTagFilter,
   getEventSpan,
@@ -1149,13 +1152,15 @@ export function PublicPoster({
   const detailSheetRef = useRef<HTMLDivElement | null>(null);
   const detailTrapRef = useFocusTrap<HTMLDivElement>(agendaDetail !== null);
   const detailReturnRef = useRef<{ target: HTMLElement | null; sheet: HTMLElement | null } | null>(null);
+  const agendaSupportOpenerRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
     if (agendaDetail) {
       const attribute = agendaDetail.support ? "data-supportid" : "data-eventid";
-      detailReturnRef.current = { target: agendaDetail.support ? posterRootRef.current?.querySelector<HTMLElement>(`[${attribute}="${CSS.escape(agendaDetail.event.id)}"]`) ?? null : publicDetailCard(agendaDetail.event.id, agendaDetail.dateKey), sheet: detailSheetRef.current };
+      detailReturnRef.current = { target: agendaDetail.support ? agendaSupportOpenerRef.current ?? posterRootRef.current?.querySelector<HTMLElement>(`[${attribute}="${CSS.escape(agendaDetail.event.id)}"]`) ?? null : publicDetailCard(agendaDetail.event.id, agendaDetail.dateKey), sheet: detailSheetRef.current };
     } else if (detailReturnRef.current) {
       const { target, sheet: previousSheet } = detailReturnRef.current;
       detailReturnRef.current = null;
+      agendaSupportOpenerRef.current = null;
       const active = document.activeElement;
       // A newly opened search/settings window or another deliberate control
       // owns focus. Closing this detail must never reclaim it from there.
@@ -3428,6 +3433,7 @@ export function PublicPoster({
       cell: MonthCell;
       day: ReturnType<typeof classifyDay>;
       mark: ReturnType<typeof getDayMark>;
+      hasNotice: boolean;
       list: { event: PublicScheduleEvent; support: boolean }[];
     };
     const filtering = filterActive;
@@ -3436,7 +3442,7 @@ export function PublicPoster({
     for (const cell of cells.filter((c) => c.inCurrentMonth)) {
       // 색상 안내에서 태그를 고르면, 그 태그에 맞는 일정만 남긴다(필터에 안 맞으면 제외).
       const support = liveEvents.filter(
-        (e) => e.isSupport && getEventDateKey(e) === cell.isoDate && !isDimmedByFilter(e)
+        (e) => e.isSupport && getEventDateKey(e) <= cell.isoDate && (e.endDateKey ?? getEventDateKey(e)) >= cell.isoDate && !isDimmedByFilter(e)
       );
       const evs = liveEvents
         .filter(
@@ -3448,17 +3454,17 @@ export function PublicPoster({
         // created_at 순으로 남아 PC에서 바꾼 순서가 모바일에 안 보였다.
         .sort((a, b) => a.sortOrder - b.sortOrder);
       const list = [
-        ...support.map((event) => ({ event, support: true })),
         ...evs.map((event) => ({ event, support: false }))
       ];
       const mark = getDayMark(cell.isoDate);
       // 필터가 없으면 1일~말일 모든 날을 보여준다(빈 날은 "예정된 공개 일정 없음").
       // 필터 중이면 조건에 맞는 일정이 있는 날만 남긴다.
-      if (list.length > 0 || !filtering) {
+      if (list.length > 0 || support.length > 0 || !filtering) {
         groups.push({
           cell,
           day: classifyDay(cell.isoDate, cell.weekday, today),
           mark,
+          hasNotice: support.length > 0,
           list
         });
       }
@@ -3482,7 +3488,7 @@ export function PublicPoster({
     };
     for (const group of groups) {
       // 오늘·특별한 날(공휴일/절기/월드컵)은 비어 있어도 접지 않는다 — 찾는 날이니까.
-      const collapsible = group.list.length === 0 && !group.mark && !group.day.isToday;
+      const collapsible = group.list.length === 0 && !group.hasNotice && !group.mark && !group.day.isToday;
       if (collapsible) {
         emptyRun.push(group);
       } else {
@@ -3493,6 +3499,15 @@ export function PublicPoster({
     flushRun();
 
     return (
+      <AgendaSupportContext key={`${view.year}-${view.month}`}
+        notices={createAgendaNotices(liveEvents.filter(event => !isDimmedByFilter(event)), view.year, view.month)}
+        fallbackDate={today.startsWith(firstDay.slice(0, 7)) ? today : firstDay}
+        onDetail={(id, origin) => {
+          const event = liveEvents.find(item => item.id === id);
+          if (!event) return;
+          hapticTick(); agendaDetailOriginRef.current = origin.getBoundingClientRect(); agendaSupportOpenerRef.current = origin;
+          setAgendaDetail({ event, support: true, dateKey: getEventDateKey(event) });
+        }}>
       <section
         className="agenda"
         onTouchEnd={onAgendaTouchEnd}
@@ -3667,6 +3682,7 @@ export function PublicPoster({
                 return (
                   <button
                     className="agenda-gap"
+                    data-flip-key={row.days[0].cell.isoDate}
                     key={row.key}
                     onClick={() => {
                       hapticTick();
@@ -3888,12 +3904,12 @@ export function PublicPoster({
                               </button>
                             ) : null}
                           </p>
-                          {support ? (
+                          {support ? hasSupportDateRange(getEventDateKey(event), event.endDateKey) ? (
                             <p className="agenda-sub">
                               {formatShortDate(cell.isoDate)} ~{" "}
                               {formatShortDate(event.endDateKey ?? cell.isoDate)}
                             </p>
-                          ) : end && end !== cell.isoDate ? (
+                          ) : null : end && end !== cell.isoDate ? (
                             <p className="agenda-sub">~ {formatShortDate(end)}까지</p>
                           ) : null}
                           {/* 형식색 점은 PC와 동일하게 '마지막 서브 줄 오른쪽'에 함께 둔다 — 서브 빈
@@ -4009,6 +4025,7 @@ export function PublicPoster({
           )}
         </div>
       </section>
+      </AgendaSupportContext>
     );
   }
 

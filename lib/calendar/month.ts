@@ -797,6 +797,11 @@ export function getEventSpan<T extends PublicScheduleEvent | StudioScheduleEvent
   };
 }
 
+/** Date header already identifies a single-day notice; only real ranges need a second line. */
+export function hasSupportDateRange(startDateKey: string, endDateKey?: string | null): boolean {
+  return Boolean(endDateKey && endDateKey !== startDateKey);
+}
+
 function toMonthCell(date: Date, inCurrentMonth: boolean): MonthCell {
   return {
     isoDate: [

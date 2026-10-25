@@ -281,6 +281,8 @@ export const ACT: Record<string, TargetLabel> = {
   "agenda-mark": { name: "날짜 기념 표시", area: "시청자 화면" },
   "agenda-gap": { name: "빈 날 접기", area: "시청자 화면" },
   "agenda-link": { name: "일정 링크 열기", area: "시청자 화면" },
+  "agenda-support-select": { name: "기간·업도움 선택", area: "모바일 일정" },
+  "agenda-support-detail": { name: "기간·업도움 상세", area: "모바일 일정" },
   "agenda-legend-tag": { name: "태그 필터", area: "시청자 화면", hint: "태그별 합계" },
   "agenda-legend-clear": { name: "필터 해제", area: "시청자 화면" },
   "legend-clear": { name: "필터 해제", area: "시청자 화면" },

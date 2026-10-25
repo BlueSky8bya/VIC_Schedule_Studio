@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { supportContextFixture } from "../support-context";
 import { PublicPoster } from "@/components/poster/public-poster";
 import { isSeasonKey } from "@/components/shared/ambient/registry";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
@@ -13,15 +14,23 @@ import { isCompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 // force-dynamic: 플래그를 요청 시점(런타임)에 읽는다(빌드 때 프리렌더로 굳어 404가 박히는 걸 방지).
 export const dynamic = "force-dynamic";
 
+async function fixtureHeartAction() {
+  "use server";
+  // Nonpersistent control rendering only; this fixture never calls the real heart RPC.
+  if (process.env.VISUAL_TEST_FIXTURE !== "1") return { ok: false as const, error: "테스트 화면이 아닙니다." };
+  return { ok: true as const, count: 1 };
+}
+
 export default async function VisualPosterFixture({
   searchParams
 }: {
-  searchParams?: Promise<{ navSpan?: string; monthLink?: string; month?: string | string[]; avatar?: string; teaser?: string; fixed?: string; hearts?: string; ambient?: string; hour?: string; companionFood?: string; links?: string; plus?: string; signedIn?: string; tent?: string; premiere?: string; count?: string; gap?: string; scenario?: string; rehearsal?: string }>;
+  searchParams?: Promise<{ supportUX?: string; navSpan?: string; monthLink?: string; month?: string | string[]; avatar?: string; teaser?: string; fixed?: string; hearts?: string; ambient?: string; hour?: string; companionFood?: string; links?: string; plus?: string; signedIn?: string; tent?: string; premiere?: string; count?: string; gap?: string; scenario?: string; rehearsal?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
   }
   const sp = await searchParams;
+  const cozy = sp?.supportUX === "cozy" ? supportContextFixture() : null;
   const linkedMonth = sp?.monthLink === "1" ? parsePublicMonth(sp.month) : null;
   // teaser=<초> — 지금부터 N초 뒤 공개되는 '최초공개' 일정을 하나 끼워 넣는다(테스트 전용).
   // 시간에 걸린 기능이라 고정 샘플로는 검증이 안 된다: 공개 전 제목이 DOM에 새지 않는지,
@@ -76,6 +85,8 @@ export default async function VisualPosterFixture({
     events: [...shown.events,
       { ...shown.events[0], id: "fixture-untagged", startsAt: "2026-06-18T12:00:00+09:00", endsAt: undefined, publicTitle: "태그 없는 일정", tagIds: [], primaryTagIds: [] },
       { ...shown.events[0], id: "fixture-period", startsAt: "2026-06-19T12:00:00+09:00", endsAt: undefined, publicTitle: "기간 안내", tagIds: [], primaryTagIds: [], isSupport: true, supportKind: "period" as const, supportUrl: "https://example.com/fixture" },
+      { ...shown.events[0], id: "fixture-period-same-end", startsAt: "2026-06-19T12:00:00+09:00", endsAt: undefined, endDateKey: "2026-06-19", publicTitle: "같은 날 종료 안내", tagIds: [], primaryTagIds: [], isSupport: true, supportKind: "period" as const, supportUrl: "https://example.com/fixture" },
+      { ...shown.events[0], id: "fixture-period-multi", startsAt: "2026-06-19T12:00:00+09:00", endsAt: undefined, endDateKey: "2026-06-22", publicTitle: "여러 날 기간 안내", tagIds: [], primaryTagIds: [], isSupport: true, supportKind: "period" as const, supportUrl: "https://example.com/fixture" },
       { ...shown.events[0], id: "fixture-up", startsAt: "2026-06-20T12:00:00+09:00", endsAt: undefined, endDateKey: "2026-06-22", publicTitle: "업 도움", tagIds: [], primaryTagIds: [], isSupport: true, supportKind: "up" as const, supportUrl: "https://example.com/fixture" }
     ],
     vods: [
@@ -106,14 +117,15 @@ export default async function VisualPosterFixture({
       ambientWorldForce={hour === undefined ? undefined : { hour, weather: "clear" }}
       fixtureCompanionFood={isCompanionFoodKind(sp?.companionFood) ? sp.companionFood : undefined}
       anonymous={sp?.signedIn !== "1"}
+      toggleHeartAction={cozy ? fixtureHeartAction : undefined}
       accountSwitch={sp?.signedIn !== undefined || sp?.monthLink === "1"}
       syncMonthUrl={sp?.monthLink === "1"}
       avatarFixed={fixed}
       avatarSlot={avatar}
       initialNarrow={false}
-      initialYear={linkedMonth?.year ?? 2026}
-      initialMonth={linkedMonth?.month ?? 6}
-      schedule={premiereSchedule}
+      initialYear={cozy?.year ?? linkedMonth?.year ?? 2026}
+      initialMonth={cozy?.month ?? linkedMonth?.month ?? 6}
+      schedule={cozy ? { ...premiereSchedule, events: cozy.events } : premiereSchedule}
       premiereFixture={premiereFixture}
       premiereEnabled={Boolean(sp?.premiere)}
       previewNav={sp?.rehearsal === "1" ? <span>미리보기</span> : undefined}

@@ -1,4 +1,6 @@
 "use client";
+import { AgendaSupportContext } from "@/components/shared/agenda-support-context";
+import { createAgendaNotices, noticeIsActive } from "@/lib/ui/agenda-notices";
 
 // Share the viewer's first-paint room styles; keep the runtime and art lazy.
 import "@/components/poster/viewer-companion/companion-home.css";
@@ -110,6 +112,7 @@ import {
   eventColorStyle,
   getAdjacentMonth,
   getEventDateKey,
+  hasSupportDateRange,
   getEventsForDate,
   eventMatchesTagFilter,
   getEventSpan,
@@ -6238,6 +6241,12 @@ export function StudioShell({
   function renderMobile() {
     const monthCells = cells.filter((c) => c.inCurrentMonth);
     const filtering = tagFilters.length > 0;
+    // Studio retains the original teaser flag after release. Resolve its existing
+    // display gate before projecting these minimal presentation fields.
+    const mobileNotices = createAgendaNotices(liveEvents.filter(event => !isDimmedByFilter(event) && !teaserStillHidden(event)).map(event => ({
+      id: event.id, startsAt: event.startsAt, endDateKey: event.endDateKey, isSupport: event.isSupport,
+      publicTitle: event.publicTitle, supportKind: event.supportKind, supportUrl: event.supportUrl, teaser: false
+    })), view.year, view.month);
     return (
       <div className="studio-mobile">
         {/* 헤더 + 역할 바 — 스크롤해도 관리 창 바로 위까지 같이 따라온다(sticky). */}
@@ -6312,6 +6321,13 @@ export function StudioShell({
           {companionDesktop && companionPrefs.enabled ? <CompanionHomeShelfSlot onHost={companionCompactHostRef} side={avatarSide} /> : null}
           {/* 인사이트 진입(개발자·관리자·매니저·작업자)은 아래 색상 필터 레일 맨 위로 옮겼다. */}
 
+          <AgendaSupportContext key={`${view.year}-${view.month}`}
+            notices={mobileNotices}
+            fallbackDate={today.startsWith(`${view.year}-${String(view.month).padStart(2, "0")}`) ? today : `${view.year}-${String(view.month).padStart(2, "0")}-01`}
+            onEdit={canEdit ? (id, origin) => {
+              const event = liveEvents.find(item => item.id === id);
+              if (event) openMobileEdit(event, origin);
+            } : undefined}>
           <section
             className="agenda agenda-studio"
             onTouchEnd={onAgendaTouchEnd}
@@ -6400,7 +6416,9 @@ export function StudioShell({
               const day = classifyDay(cell.isoDate, cell.weekday, today);
               const mark = getDayMark(cell.isoDate);
               const dayEvents = mobileAgendaEvents
-                .filter((e) => getEventDateKey(e) === cell.isoDate)
+                // Unreleased notices retain a masked edit entry and the existing
+                // teaser gate; resolved notices live in the shared context board.
+                .filter((e) => (!e.isSupport || teaserStillHidden(e)) && getEventDateKey(e) === cell.isoDate)
                 // 편집실 드래그로 정한 같은 날 표시 순서(sort_order)를 편집실 모바일 아젠다도 따른다.
                 // 이걸 빼면 달력(getEventsForDate)만 순서를 반영하고 모바일은 created_at 순으로 남아
                 // 편집자가 바꾼 순서가 폰에서 안 보였다(public-poster 아젠다와 동일 조치).
@@ -6410,7 +6428,7 @@ export function StudioShell({
               const shownEvents = filtering
                 ? dayEvents.filter((e) => !isDimmedByFilter(e))
                 : dayEvents;
-              if (filtering && shownEvents.length === 0) {
+              if (filtering && shownEvents.length === 0 && !mobileNotices.some(notice => noticeIsActive(notice, cell.isoDate))) {
                 return null;
               }
               return (
@@ -6452,7 +6470,7 @@ export function StudioShell({
                       const tentCls = event.isTentative ? " tentative" : ""; // 미정: 색 바에 빗금 + '미정' 칩
                       // 업 도움: 시청자 화면처럼 기간 + "도우러 가기" 링크를 인라인으로 보여준다.
                       // (링크를 누르려면 <a>가 필요해 편집 버튼으로 감싸지 않고, 따로 "수정"을 둔다.)
-                      if (event.isSupport) {
+                      if (event.isSupport && !teaserStillHidden(event)) {
                         const sEnd = event.endDateKey ?? cell.isoDate;
                         return (
                           <div
@@ -6475,9 +6493,9 @@ export function StudioShell({
                                   </span>
                                 ) : null}
                               </p>
-                              <p className="agenda-sub">
+                              {hasSupportDateRange(getEventDateKey(event), sEnd) ? <p className="agenda-sub">
                                 {formatShortDate(cell.isoDate)} ~ {formatShortDate(sEnd)}
-                              </p>
+                              </p> : null}
                               {/* 도우러 가기 + 수정을 한 줄에 둬 카드 높이를 줄인다. */}
                               <div className="m-support-actions">
                                 {event.supportUrl ? (
@@ -6629,6 +6647,7 @@ export function StudioShell({
             })}
           </div>
           </section>
+          </AgendaSupportContext>
         </div>
 
         {canEdit ? (
