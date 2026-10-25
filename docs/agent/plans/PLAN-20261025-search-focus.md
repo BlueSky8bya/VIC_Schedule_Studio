@@ -1,0 +1,9 @@
+# Shared search dialog focus repair — 2026-10-25
+
+Daily discovery on exact512c683a found native Tab leaving the modal search after its clear/close buttons on viewer1440 and390px. Original fixture observations and normal-speed recordings remain under `.scratch-pw/site-daily/daily-20261025-0900/attempt1/`. Same-query Enter retry works; adding a visible retry button is a separate unadopted idea and is not implemented by this repair.
+
+Reuse the existing shared `useFocusTrap` in PublicSearch across viewer, studio and preview. Keep initial search input, explicit submission, query/result/selection/scroll restoration and Escape behavior. Capture the opener before passive autofocus; restore on close only while focus still belongs to this dialog or body, preserving a deliberate focus change to another surface. No API, collection, role, KST or dependency change. Existing semantic search/clear/close targets and timeline/least-used metadata remain unchanged (G22).
+
+Acceptance: fresh guarded native keyboard traversal/return on viewer/preview390/1440 and studio1440 (narrow studio has no search entry) plus existing search return-context regression, type/lint/relevant units/build, non-author review, exact deployed SHA and public native interaction. This is a confirmed defect repair under existing authorization, not re-proposing the completed month picker feature. The prior monthly keyboard acceptance remains unchanged. Raw case receipts and release authority belong to the daily evidence root; full200/normal36/real login/mobile hardware remain unverified.
+
+Primary guidance: [W3C APG modal dialog](https://www.w3.org/WAI/ARIA/apg/patterns/dialog-modal/) specifies containment, Escape and logical focus return. This pattern is interaction guidance; Chromium fixtures do not establish physical-device or screen-reader certification.

@@ -16,6 +16,7 @@ import { formatVodDuration } from "@/components/poster/day-vod-window";
 import { formatTimecode } from "@/components/poster/vod-chapters";
 import { hapticTick } from "@/lib/ui/haptics";
 import type { PublicSearchSession } from "@/components/shared/use-public-search-session";
+import { useFocusTrap } from "@/lib/ui/use-focus-trap";
 
 // 시청자 검색 시트(PLAN-20260918-023) — "예전에 이런 게 있었던 것 같은데 언제, 어디 시간대였지?"
 //
@@ -184,6 +185,17 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
   };
   const [expanded, setExpanded] = useState<ReadonlySet<number>>(initial?.expanded ?? new Set());
   const inputRef = useRef<HTMLInputElement>(null);
+  const sheetRef = useFocusTrap<HTMLElement>(true);
+  useLayoutEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const sheet = sheetRef.current;
+    return () => {
+      const active = document.activeElement;
+      // A result may deliberately open another surface. Its new focus wins.
+      if (active !== document.body && !sheet?.contains(active)) return;
+      if (opener?.isConnected && opener.getClientRects().length && !opener.closest("[inert],[hidden]")) opener.focus({ preventScroll: true });
+    };
+  }, [sheetRef]);
   const listRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const scrollTopRef = useRef(initial?.scrollTop ?? 0);
@@ -700,6 +712,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
   return (
     <div className="pi-backdrop ps-backdrop" role="presentation">
       <section aria-label="검색" className={`pi-sheet ps-sheet${studio ? " is-studio" : ""}`} role="dialog" aria-modal="true"
+        ref={sheetRef}
         onKeyDown={event => {
           if (event.key === "Escape") {
             event.preventDefault(); event.stopPropagation(); onClose();

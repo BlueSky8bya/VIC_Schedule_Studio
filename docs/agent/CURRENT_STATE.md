@@ -1,19 +1,13 @@
 # Current State — VIC Schedule Studio
 
-Last Updated: 2026-10-24 (KST)
+Last Updated: 2026-10-25 (KST)
 Project Version: 0.1.0
 
 Current work only. Completed plans/rounds are evidence, not instructions. Previous accumulated state is preserved byte-for-byte in [the snapshot](archive/20261017-CURRENT_STATE-before-platform-remediation.snapshot.txt); use topic records for current behavior.
 
 ## Current Objective
 
-Urgent lamp170: actual failure trace obtained and reproduced at full graphics/2133x1050/DPR0.9. Finite bounded hand alignment passes the failed condition plus two nearby cases; independent actual review and deployed full-condition verification pending. Lamp only, no200. [Plan](plans/PLAN-20261022-lamp-live-trace.md). Daily09:00 remains;36 UNVERIFIED.
-
-Criteria145: optional TV bow and separate actual10s activity/repetition verified. Final frozen110/27/9/2, full gates and three independent final reviews passed; scoped commit and actual production confirmation pending. [145 plan](plans/PLAN-20261020-145-companion-activity-criteria.md).
-
-Daily09:00 ACTIVE: independent risk checks and project-wide idea discovery; weekly rotation/same-build continuation, no blanket200. Preserve original failures/privacy; normal36 UNVERIFIED. [QA](plans/PLAN-20261022-focused-qa.md).
-
-Current: outdoor direct input/curtain art/contact pass25 scoped proofs (16 fresh+9 verified reuse),6924 units/type/lint/build and two non-author reviews. Owner push confirmation pending; production8c59 lacks new cord/output reduction.11 old deployments deleted; owner still sees10.01/10GB. [Plan](plans/PLAN-20261023-showcase-transients-toy-storage.md).
+Daily09:00 ACTIVE: existing-function verification and project-wide idea discovery are separate required stages. Risk/weekly rotation and verified same-build continuation; no blanket200. Current search dialog focus repair and evidence: [plan](plans/PLAN-20261025-search-focus.md). Daily status, exact releases, completed/rejected/pending proposal keys and carryover are authoritative in primary `.scratch-pw/site-daily/state.json`; historical plans do not create new approval gates. Preserve original failures/privacy; normal36 UNVERIFIED. [QA](plans/PLAN-20261022-focused-qa.md).
 
 Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user.125 explicitly authorizes unnecessary Vercel deployment cleanup/optimization; unrelated cleanup, bulk DB UPDATE, paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
 
@@ -23,7 +17,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| COMPANION-ACTIVITY-145 | Local gates and three final reviews passed | Scoped commit/push then actual fullSHA/deployed viewer check | [145 plan](plans/PLAN-20261020-145-companion-activity-criteria.md) |
+| DAILY-0900 | Active | Separate risk verification/discovery; adopted work through exact release, preserve carryover | [Search focus](plans/PLAN-20261025-search-focus.md) |
 | OPS-VERCEL-QUOTA | Open | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-STORAGE | Watch | Gate released;6 deleted;quota refresh unproven | [Record](verification/DEPLOYMENT_STORAGE-20261024.md) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
@@ -35,7 +29,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Blockers
 
-- Criteria145: local evidence and finalizer passed; release remains pending until exact public fullSHA and deployed result are verified. Previous failed runs and three-remediation cap remain in the topic plan.
 
 - Supabase dashboard login/Free-Nano quotas confirmed. Free has no managed daily backups/PITR; local081 backup covers diagnostics only. Some CPU/memory/IO dashboard graphs failed to load. Full recovery and real-device evidence remain separate.
 - Mobile/screen reader and formal flash/fanout capacity remain unverified; fixtures do not establish actual OBS performance. Broadcaster hardware work remains deferred by the user.
@@ -46,7 +39,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 ## Next Exact Steps
 
-0. COMPANION-ACTIVITY-145: literal companion commit→remote quality/Vercel→new anonymous deployed fullSHA/UI verification. [145 details](plans/PLAN-20261020-145-companion-activity-criteria.md).
+0. DAILY-0900: validate primary state/receipts and dedupe completed proposals; separate verification/discovery, finish authorized repairs with independent review and exact release, record unexecuted scope.
 1. OPS-DB-QUOTA/OPS-VERCEL-QUOTA: compare post-release route/RPC/cost with the same period/denominator, recheck Hobby restrictions/reset status; define the Free-plan full-backup/recovery path and recheck unavailable compute graphs. No automatic future run was created.
 2. ART-PINE-PILOT: only on owner curation, remove named references and freeze fresh variants2/3 request. Preserve the old pilot/approved inputs.
 3. RULE-ART-COMPLETION: wait for pending presentation/source-policy choices; unrelated work grants no approval.
