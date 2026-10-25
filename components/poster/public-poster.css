@@ -10715,3 +10715,24 @@ html[data-reduce-motion] .gacha-card,
 html[data-reduce-motion] .gacha-rays {
   animation: none;
 }
+
+/* Same shared public detail in calendar, agenda and studio preview. */
+.agenda-detail-navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+  margin-top: var(--space-4, 16px);
+  border-top: 1px solid var(--line, rgb(128 128 128 / 18%));
+  padding-top: var(--space-3, 12px);
+}
+.agenda-detail-navigation .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1, 4px);
+  min-height: 44px;
+  font: inherit;
+}
+.agenda-detail-navigation > span { color: var(--ink-soft); font-size: var(--text-ui-sm, 13px); white-space: nowrap; }
+.public-event.detail-current, .agenda-event.detail-current { outline: 2px solid var(--studio-action, #4b86c9); outline-offset: 2px; }

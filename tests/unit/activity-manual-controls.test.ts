@@ -43,6 +43,13 @@ async function fixture() {
 }
 
 describe("completed companion input owns its activity event", () => {
+  it("captures detail navigation native clicks once with fixed names and no event/title payload", async () => {
+    const f = await fixture();
+    for (const target of ["detail-next-event", "detail-previous-event", "settings-tab"]) f.click(false, false, false, target, target === "settings-tab" ? "motion" : null);
+    const events = await f.events();
+    expect(events.map((event:{target:string})=>event.target)).toEqual(["detail-next-event","detail-previous-event","settings-tab#motion"]);
+    expect(events.every((event:{meta:unknown})=>event.meta==null)).toBe(true);
+  });
   it("records timeline find entry once through focus and omits its typed value and following pointer click", async () => {
     const f = await fixture();
     f.logger.logActivity("ui.click", { target: "vod-timeline-find" }); // focus: Tab or pointer

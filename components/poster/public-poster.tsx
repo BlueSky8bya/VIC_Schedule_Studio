@@ -136,6 +136,8 @@ import { popInnerOverlay, pushInnerOverlay } from "@/lib/ui/overlay-pop";
 import { writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
 import { usePublicMonthLink } from "@/lib/ui/use-public-month-link";
 import { usePublicEventLink } from "@/lib/ui/use-public-event-link";
+import { publicEventNavigation } from "@/lib/ui/public-event-navigation";
+import { PublicEventNavigation } from "./public-event-navigation";
 import { PublicEventShare } from "@/components/poster/public-event-share";
 import { isPublicMonth, PUBLIC_MONTH_BOUNDS } from "@/lib/ui/public-month-link";
 import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
@@ -1063,6 +1065,11 @@ export function PublicPoster({
   );
   // 일정 상세 — 모바일 아젠다는 하단 시트, PC 달력은 카드 옆 앵커 팝오버(anchor 있으면 팝오버).
   // 공개 DTO(PublicScheduleEvent + 공개 태그)만 사용 — 비공개 필드 자체가 없다.
+  const publicDetailCard = useCallback((id: string, dateKey: string) => {
+    const card = `[data-eventid="${CSS.escape(id)}"]`;
+    return posterRootRef.current?.querySelector<HTMLElement>(`.public-day[data-date="${dateKey}"] ${card}, .agenda-day[data-flip-key="${dateKey}"] ${card}`)
+      ?? posterRootRef.current?.querySelector<HTMLElement>(card) ?? null;
+  }, []);
   const [agendaDetail, setAgendaDetail] = useState<{
     event: PublicScheduleEvent;
     support: boolean;
@@ -1070,8 +1077,8 @@ export function PublicPoster({
     // PC: 클릭한 카드의 뷰포트 좌표(팝오버 앵커). 포스터는 transform 축소라 gBCR=화면 좌표 그대로.
     anchor?: { x: number; y: number; w: number; h: number };
   } | null>(null);
-  const onPublicEventPop = usePublicEventLink(monthLinkEnabled, view, schedule.events, agendaDetail?.event.id ?? null, (event, dateKey) => {
-    const el = posterRootRef.current?.querySelector<HTMLElement>(`[data-eventid="${CSS.escape(event.id)}"]`);
+  const { onPop: onPublicEventPop, replaceDetailAddress } = usePublicEventLink(monthLinkEnabled, view, schedule.events, agendaDetail?.event.id ?? null, (event, dateKey) => {
+    const el = publicDetailCard(event.id, dateKey);
     const r = el?.getBoundingClientRect(), agenda = matchMedia(POSTER_AGENDA_QUERY).matches;
     agendaDetailOriginRef.current = agenda ? r ?? null : null;
     detailAnchorElRef.current = agenda ? null : el ?? null;
@@ -1140,6 +1147,21 @@ export function PublicPoster({
   // 모두 뷰포트(fixed) 좌표 — 포스터 표면 transform 축소와 무관하게 gBCR 그대로 유효하다.
   const detailAnchorElRef = useRef<HTMLElement | null>(null);
   const detailSheetRef = useRef<HTMLDivElement | null>(null);
+  const detailTrapRef = useFocusTrap<HTMLDivElement>(agendaDetail !== null);
+  const detailReturnRef = useRef<{ target: HTMLElement | null; sheet: HTMLElement | null } | null>(null);
+  useEffect(() => {
+    if (agendaDetail) {
+      const attribute = agendaDetail.support ? "data-supportid" : "data-eventid";
+      detailReturnRef.current = { target: agendaDetail.support ? posterRootRef.current?.querySelector<HTMLElement>(`[${attribute}="${CSS.escape(agendaDetail.event.id)}"]`) ?? null : publicDetailCard(agendaDetail.event.id, agendaDetail.dateKey), sheet: detailSheetRef.current };
+    } else if (detailReturnRef.current) {
+      const { target, sheet: previousSheet } = detailReturnRef.current;
+      detailReturnRef.current = null;
+      const active = document.activeElement;
+      // A newly opened search/settings window or another deliberate control
+      // owns focus. Closing this detail must never reclaim it from there.
+      if ((!active || active === document.body || previousSheet?.contains(active)) && target?.isConnected && target.getClientRects().length) target.focus({ preventScroll: true });
+    }
+  }, [agendaDetail, publicDetailCard]);
   // B1(시청자 모바일 시트, 2026-08-27): 손잡이·헤더를 잡고 끌어 닫기 — 편집실 모바일 편집 시트와 같은 훅
   // (1:1 추적·위로 러버밴딩·릴리스 속도 스프링·닫힘 임계 햅틱). PC 팝오버(anchor)는 이동 드래그가
   // 따로 있어 바인딩하지 않는다. 같은 요소에 ref 둘 → 콜백 ref로 합친다.
@@ -2710,6 +2732,26 @@ export function PublicPoster({
     const matchesTentative = !statusFilters.includes("tentative") || Boolean(event.isTentative);
     return !(matchesTag && matchesBookmark && matchesTier && matchesTentative);
   }
+  const detailEvents = agendaDetail && !agendaDetail.support && !agendaDetail.event.teaser
+    ? publicEventNavigation(liveEvents, view, event => !isDimmedByFilter(event)) : [];
+  const detailEventPosition = detailEvents.findIndex(item => item.event.id === agendaDetail?.event.id);
+  const navigateDetail = (direction: -1 | 1) => {
+    if (detailEventPosition < 0) return false;
+    const next = detailEvents[detailEventPosition + direction];
+    if (!next) return false;
+    const el = publicDetailCard(next.event.id, next.dateKey);
+    if (!el) return false;
+    el.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "instant" });
+    const r = el.getBoundingClientRect(), agenda = matchMedia(POSTER_AGENDA_QUERY).matches;
+    agendaDetailOriginRef.current = agenda ? r : null;
+    detailAnchorElRef.current = agenda ? null : el;
+    setDetailManual(null);
+    replaceDetailAddress(next.event.id);
+    setAgendaDetail({ event: next.event, support: false, dateKey: next.dateKey, ...(!agenda ? { anchor: { x: r.left, y: r.top, w: r.width, h: r.height } } : {}) });
+    hapticTick();
+    playSfx("tab");
+    return true;
+  };
 
   // 월 전환 슬라이드 방향(아젠다): 다음 달=왼쪽으로, 이전 달=오른쪽으로 밀려 들어온다.
   const [monthDir, setMonthDir] = useState<"next" | "prev">("next");
@@ -3256,7 +3298,7 @@ export function PublicPoster({
               : null;
             return (
               <div
-                className={`${eventClass}${openDesktopDetail ? " is-clickable" : ""}`}
+                className={`${eventClass}${openDesktopDetail ? " is-clickable" : ""}${agendaDetail?.event.id === event.id ? " detail-current" : ""}`}
                 data-eventid={event.id} /* 공개 순간 폭죽 좌표를 잡는 앵커 */
                 data-chain={chainKeys.get(event.id)}
                 data-color={mixed ? undefined : colors[0]?.key}
@@ -3390,6 +3432,7 @@ export function PublicPoster({
     };
     const filtering = filterActive;
     const groups: DayGroup[] = [];
+    const firstDay = `${view.year}-${String(view.month).padStart(2, "0")}-01`;
     for (const cell of cells.filter((c) => c.inCurrentMonth)) {
       // 색상 안내에서 태그를 고르면, 그 태그에 맞는 일정만 남긴다(필터에 안 맞으면 제외).
       const support = liveEvents.filter(
@@ -3397,7 +3440,8 @@ export function PublicPoster({
       );
       const evs = liveEvents
         .filter(
-          (e) => !e.isSupport && getEventDateKey(e) === cell.isoDate && !isDimmedByFilter(e)
+          (e) => !e.isSupport && (getEventDateKey(e) === cell.isoDate ||
+            (cell.isoDate === firstDay && getEventDateKey(e) < firstDay && Boolean(e.endDateKey && e.endDateKey >= firstDay))) && !isDimmedByFilter(e)
         )
         // 편집실 드래그로 바꾼 같은 날 표시 순서(sort_order)를 아젠다도 따른다. 없으면(모두 0)
         // 로드 순서 유지. 이걸 빼면 달력(getEventsForDate)만 순서를 반영하고 모바일 아젠다는
@@ -3769,7 +3813,7 @@ export function PublicPoster({
                     };
                     return (
                       <div
-                        className={`agenda-event tappable${!support && event.isTentative ? " tentative" : ""}${justRevealed.has(rawEvent.id) ? " just-revealed" : ""}`}
+                        className={`agenda-event tappable${!support && event.isTentative ? " tentative" : ""}${justRevealed.has(rawEvent.id) ? " just-revealed" : ""}${!support && agendaDetail?.event.id === event.id ? " detail-current" : ""}`}
                         data-act="schedule-card"
                         data-eventid={support ? undefined : event.id}
                         data-supportid={support ? event.id : undefined}
@@ -4428,6 +4472,7 @@ export function PublicPoster({
                   }`}
                   ref={(el) => {
                     detailSheetRef.current = el;
+                    detailTrapRef.current = el;
                     detailDragSheetRef.current = el;
                   }}
                   role="dialog"
@@ -4642,6 +4687,7 @@ export function PublicPoster({
                       </button>
                     </div>
                   ) : null}
+                  {!support && !teaserActive ? <PublicEventNavigation position={detailEventPosition} total={detailEvents.length} title={event.publicTitle} onNavigate={navigateDetail} /> : null}
                 </div>
                 {companionDesktop && settingsPrefs.companionPrefs.enabled ? <CompanionDetailBridge eventId={!support && !teaserActive && Boolean(event.publicTitle) ? event.id : null} sheetRef={detailSheetRef} ready={!anchor || Boolean(pos)} /> : null}
               </div>

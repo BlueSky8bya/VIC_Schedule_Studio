@@ -259,7 +259,7 @@ export function StudioSettingsList({
   // 성격별 묶음 제목 → 둥근 카드 안 줄들 → 필요할 때만 묶음 아래 한 줄 설명. 줄 이름은 짧게(UI-15),
   // 설명은 '모르면 못 고르는 것'에만 단다. 줄 순서는 자주 바꾸는 것(화면)부터.
   // 왼쪽 탭(2026-10-06 소유자: "왼쪽에 탭으로 관리하는 식으로" — macOS 시스템 설정·디스코드·VS Code 설정 벤치마킹).
-  // 넓은 창: 왼쪽 묶음 목록 + 오른쪽엔 고른 묶음만. 좁은 곳(폰·편집실 모바일 팝오버): 탭 없이 묶음을 위아래로 쌓는다 —
+  // 넓은 창은 세로 탭, 좁은 창은 가로 탭으로 같은 선택 묶음만 표시한다(2026-10-25 채택).
   // 판단은 화면 폭이 아니라 **이 목록이 놓인 상자의 폭**(컨테이너 쿼리, settings-modal.css)이라 좁은 팝오버에서도 맞다.
   const tabs: { key: TabKey; label: string; icon: ReactNode; tone: Tone; web?: boolean }[] = [
     // 순서(2026-10-06 소유자): 글자 → 소리 → 나머지. 창을 열면 글자 탭부터.
@@ -331,12 +331,31 @@ export function StudioSettingsList({
   }, [current]);
   // 왼쪽 탭의 선택 하이라이트 — 항목마다 배경을 켜지 않고, 알약 하나가 고른 항목으로 미끄러진다(macOS 사이드바).
   const navRef = useRef<HTMLElement | null>(null);
+  const [navVertical, setNavVertical] = useState(false);
   const [navPill, setNavPill] = useState<{ y: number; h: number; ready: boolean } | null>(null);
   const tabSig = tabs.map((t) => t.key).join(",");
   useLayoutEffect(() => {
-    const el = navRef.current?.querySelector<HTMLElement>(`[data-tab="${current}"]`);
-    if (!el || el.offsetParent === null) return; // 좁은 곳(탭 숨김)에선 재지 않는다
-    setNavPill((prev) => ({ y: el.offsetTop, h: el.offsetHeight, ready: prev !== null }));
+    const nav = navRef.current;
+    if (!nav) return;
+    const update = () => {
+      const vertical = getComputedStyle(nav).flexDirection === "column";
+      setNavVertical(vertical);
+      const visible = Array.from(nav.querySelectorAll<HTMLButtonElement>("[data-tab]")).filter(el => el.offsetParent !== null);
+      const el = visible.find(el => el.dataset.tab === current);
+      if (!el) {
+        if (visible[0]) setActiveTab(visible[0].dataset.tab as TabKey);
+        return;
+      }
+      if (vertical) setNavPill(prev => prev?.y === el.offsetTop && prev.h === el.offsetHeight ? prev : { y: el.offsetTop, h: el.offsetHeight, ready: prev !== null });
+      else {
+        setNavPill(null);
+        nav.scrollLeft = Math.max(0, el.offsetLeft - (nav.clientWidth - el.offsetWidth) / 2);
+      }
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(nav);
+    return () => observer.disconnect();
   }, [current, tabSig]);
   const pane = (key: TabKey, extra = "") => ({
     className: `rhh-group${extra ? ` ${extra}` : ""}${current === key ? " is-active" : ""}`,
@@ -345,14 +364,15 @@ export function StudioSettingsList({
     "aria-labelledby": `rhh-tab-${key}`
   });
   const onTabKey = (e: ReactKeyboardEvent<HTMLButtonElement>) => {
-    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    const forward = navVertical ? "ArrowDown" : "ArrowRight", backward = navVertical ? "ArrowUp" : "ArrowLeft";
+    if (![forward, backward, "Home", "End"].includes(e.key)) return;
     e.preventDefault();
     const nav = e.currentTarget.parentElement;
     // 이 기기에서 실제로 보이는 탭만(폰에서 숨는 웹 전용 묶음 제외).
     const visible = tabs.filter((t) => nav?.querySelector<HTMLElement>(`[data-tab="${t.key}"]`)?.offsetParent != null);
     if (visible.length === 0) return;
     const i = visible.findIndex((t) => t.key === current);
-    const next = visible[(i + (e.key === "ArrowDown" ? 1 : -1) + visible.length) % visible.length];
+    const next = visible[e.key === "Home" ? 0 : e.key === "End" ? visible.length - 1 : (i + (e.key === forward ? 1 : -1) + visible.length) % visible.length];
     playSfx("tab");
     setActiveTab(next.key);
     logActivity("ui.click", { target: `settings-tab#${next.key}` });
@@ -362,7 +382,7 @@ export function StudioSettingsList({
   return (
     <div className="rhh-tabs">
       <div className="rhh-tabs-grid">
-      <nav aria-label="설정 묶음" aria-orientation="vertical" className="rhh-nav" ref={navRef} role="tablist">
+      <nav aria-label="설정 묶음" aria-orientation={navVertical ? "vertical" : "horizontal"} className="rhh-nav" ref={navRef} role="tablist">
         {navPill ? (
           <span
             aria-hidden="true"

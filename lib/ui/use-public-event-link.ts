@@ -35,7 +35,7 @@ export function usePublicEventLink(enabled: boolean, view: PublicMonth, events: 
   }, [enabled, detailId]);
   // The poster's existing single pop owner knows whether this is an overlay
   // close/echo. Never revive a dismissed incoming detail from its older entry.
-  return useCallback((preserveOverlay: boolean) => {
+  const onPop = useCallback((preserveOverlay: boolean) => {
     if (!enabled) return;
     if (preserveOverlay) {
       const url = new URL(window.location.href);
@@ -50,4 +50,15 @@ export function usePublicEventLink(enabled: boolean, view: PublicMonth, events: 
     if (incoming.current) { incoming.current = null; callbacks.current.close(); }
     read();
   }, [enabled, read]);
+  const replaceDetailAddress = useCallback((id: string) => {
+    if (!enabled || !publicEventForMonth(events, id, view)) return;
+    const url = new URL(window.location.href), month = readPublicMonth(url);
+    if (month?.year !== view.year || month.month !== view.month) return;
+    url.searchParams.set('event', id);
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash);
+    processed.current = url.href;
+    incoming.current = id;
+    dismissed.current = null;
+  }, [enabled, events, view]);
+  return { onPop, replaceDetailAddress };
 }
