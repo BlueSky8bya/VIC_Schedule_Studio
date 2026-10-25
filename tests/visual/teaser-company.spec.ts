@@ -1,4 +1,67 @@
 import { expect, test, type Page } from "@playwright/test";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import sharp from "sharp";
+const lightsticks: { frame: number; pivot: [number, number]; hull: [number, number][] }[] = JSON.parse(readFileSync("art-src/최초공개/응원단/작업회차/20261026-응원봉방향교정/고정입력/부착좌표.json", "utf8"));
+
+for (const reduced of [false, true]) test(`audience lightsticks point upward in all16 cells ${reduced ? "reduced" : "normal"}`, async ({ page }) => {
+  // Compare the same decoded source RGBA in both PNGs. Browser WebP YUV
+  // decoding differs slightly from libvips; that is not an artwork change.
+  const originalPng = await sharp("public/premiere/victamin-audience-body-outline-v1.webp").png().toBuffer();
+  await page.route("**/premiere/victamin-audience-body-outline-v1.webp", route => route.fulfill({ contentType: "image/png", body: originalPng }));
+  await page.setViewportSize({ width: 1280, height: 1200 });
+  await page.goto("/visual-fixture/poster?premiere=60");
+  await expect(page.locator(".pm-fan:visible")).toHaveCount(6);
+  // A source-size mechanical sheet isolates each actual atlas cell/CSS from
+  // the native score. The existing native tests below cover cheer and seating.
+  const frames = lightsticks.map(({ frame }) => frame);
+  await page.evaluate(({ frames, reduced }) => {
+    document.documentElement.toggleAttribute("data-reduce-motion", reduced);
+    const source = document.querySelector(".pm-fan-art")!;
+    const sheet = document.createElement("div"); sheet.className = "pm-stage"; sheet.dataset.stickSheet = ""; sheet.dataset.original = "";
+    sheet.style.cssText = "position:fixed;inset:0 auto auto 0;width:1024px;height:1024px;z-index:2147483646;background:#201e27;transform:none;overflow:hidden";
+    for (const frame of frames) {
+      const fan = document.createElement("div"); fan.className = "pm-fan";
+      fan.style.cssText = `position:absolute;left:${frame % 4 * 256}px;top:${Math.floor(frame / 4) * 256}px;bottom:auto;width:256px;height:256px;transform:none;transition:none;--fan-hop:0px;--fan-depth:1;--fan-frame-x:${frame % 4 * 100 / 3}%;--fan-frame-y:${Math.floor(frame / 4) * 100 / 3}%`;
+      fan.append(source.cloneNode(true)); sheet.append(fan);
+    }
+    const style = document.createElement("style");
+    style.textContent = "[data-stick-sheet] *{transition:none!important}[data-stick-sheet][data-original] .pm-fan-art::before{background-image:url('/premiere/victamin-audience-body-outline-v1.webp')}";
+    document.body.append(style, sheet);
+  }, { frames, reduced });
+  const sheet = page.locator("[data-stick-sheet]");
+  const output = process.env.PREMIERE_LIGHTSTICK_OUTPUT ?? ".scratch-pw/premiere-lightstick/pixels";
+  mkdirSync(output, { recursive: true });
+  const before = await sheet.screenshot({ path: `${output}/${reduced ? "reduced" : "normal"}-before.png` });
+  await sheet.evaluate(node => node.removeAttribute("data-original"));
+  const after = await sheet.screenshot({ path: `${output}/${reduced ? "reduced" : "normal"}-after.png` });
+  const raw = async (bytes: Buffer) => sharp(bytes).ensureAlpha().raw().toBuffer();
+  const original = await raw(before), corrected = await raw(after), observations = [];
+  for (const { frame, pivot, hull: outline } of lightsticks) {
+    const bounds = (points: readonly (readonly number[])[]) => ({ left: Math.min(...points.map(p => p[0])) - 2, right: Math.max(...points.map(p => p[0])) + 2, top: Math.min(...points.map(p => p[1])) - 2, bottom: Math.max(...points.map(p => p[1])) + 2 });
+    const regions = [bounds(outline), bounds(outline.map(([x, y]) => [pivot[0] * 2 - x, pivot[1] * 2 - y]))];
+    let beforeY = 0, afterY = 0, beforeCount = 0, afterCount = 0, protectedChanges = 0, restoredPaper = 0;
+    const inside = (x: number, y: number) => { let hit = false; for (let i = 0, j = outline.length - 1; i < outline.length; j = i++) { const a = outline[i], b = outline[j]; if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) hit = !hit; } return hit; };
+    for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) {
+      const i = ((Math.floor(frame / 4) * 256 + y) * 1024 + frame % 4 * 256 + x) * 4;
+      const purple = (data: Buffer) => data[i + 2] > 100 && data[i + 2] > data[i] * 1.03 && data[i + 2] > data[i + 1] * 1.3 && data[i] > 30;
+      if (purple(original)) { beforeY += y; beforeCount++; }
+      if (purple(corrected)) { afterY += y; afterCount++; }
+      if (inside(x + .5, y + .5) && corrected[i] > 160 && corrected[i + 1] > 120 && corrected[i + 2] > 80 && !purple(corrected)) restoredPaper++;
+      if (!regions.some(r => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) && !original.subarray(i, i + 4).equals(corrected.subarray(i, i + 4))) protectedChanges++;
+    }
+    observations.push({ frame, pivot, beforeCount, afterCount, beforeY: beforeY / beforeCount, afterY: afterY / afterCount, protectedChanges, restoredPaper });
+    expect(beforeCount).toBeGreaterThan(100); expect(afterCount).toBeGreaterThan(100);
+    expect(beforeY / beforeCount).toBeGreaterThan(pivot[1] + 8);
+    expect(afterY / afterCount).toBeLessThan(pivot[1] - 8);
+    expect(protectedChanges).toBe(0);
+    // The original bulb hid paper layers. A clip-only rotation leaves a body
+    // hole and must fail even when all pixels outside the prop boxes match.
+    // Outward-swing cells3–5 have only a thin paper edge behind the bulb;
+    // upright cells overlap the main body and require a substantial repair.
+    expect(restoredPaper).toBeGreaterThan([3, 4, 5].includes(frame) ? 0 : 100);
+  }
+  writeFileSync(`${output}/${reduced ? "reduced" : "normal"}.json`, JSON.stringify(observations, null, 2));
+});
 
 test.beforeEach(async ({ context }) => {
   await context.route("**/*", route => route.request().method() === "POST" ? route.fulfill({ status: 500, body: "" }) : route.continue());

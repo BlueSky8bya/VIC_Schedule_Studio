@@ -1,0 +1,102 @@
+{
+  "source": {
+    "path": "public/premiere/victamin-audience-body-outline-v1.webp",
+    "sha256": "67b49ec357f692ac72300664acd5d946a83e1bd239339e7b31bfc1acb81a8c2f"
+  },
+  "native": {
+    "path": "art-src/최초공개/응원단/작업회차/20261026-응원봉방향교정/원본/가려진종이층복원.png",
+    "sha256": "4cb00a23e6d1b4f9a65dc641d3d8aff68b44fc0afc6fcb499b67cec706f08320"
+  },
+  "output": {
+    "path": "public/premiere/victamin-audience-lightsticks-up-v1.png",
+    "sha256": "431b092a41abbc59a8d744ddb04e93c57924a06505ead7b7a2cfd3a5df4e1791",
+    "bytes": 1221322
+  },
+  "method": "Single imagegen paper restoration inside old bulb footprints; original bulbs half-turned around measured attachments; all other decoded RGBA preserved exactly. PNG keeps exact pixels.",
+  "imagegenCalls": 1,
+  "frames": [
+    {
+      "frame": 0,
+      "restoredPaperPixels": 812,
+      "movedBulbPixels": 855
+    },
+    {
+      "frame": 1,
+      "restoredPaperPixels": 344,
+      "movedBulbPixels": 1002
+    },
+    {
+      "frame": 2,
+      "restoredPaperPixels": 799,
+      "movedBulbPixels": 838
+    },
+    {
+      "frame": 3,
+      "restoredPaperPixels": 444,
+      "movedBulbPixels": 963
+    },
+    {
+      "frame": 4,
+      "restoredPaperPixels": 171,
+      "movedBulbPixels": 1007
+    },
+    {
+      "frame": 5,
+      "restoredPaperPixels": 279,
+      "movedBulbPixels": 979
+    },
+    {
+      "frame": 6,
+      "restoredPaperPixels": 482,
+      "movedBulbPixels": 921
+    },
+    {
+      "frame": 7,
+      "restoredPaperPixels": 774,
+      "movedBulbPixels": 774
+    },
+    {
+      "frame": 8,
+      "restoredPaperPixels": 728,
+      "movedBulbPixels": 790
+    },
+    {
+      "frame": 9,
+      "restoredPaperPixels": 751,
+      "movedBulbPixels": 771
+    },
+    {
+      "frame": 10,
+      "restoredPaperPixels": 677,
+      "movedBulbPixels": 948
+    },
+    {
+      "frame": 11,
+      "restoredPaperPixels": 786,
+      "movedBulbPixels": 843
+    },
+    {
+      "frame": 12,
+      "restoredPaperPixels": 529,
+      "movedBulbPixels": 919
+    },
+    {
+      "frame": 13,
+      "restoredPaperPixels": 637,
+      "movedBulbPixels": 967
+    },
+    {
+      "frame": 14,
+      "restoredPaperPixels": 646,
+      "movedBulbPixels": 984
+    },
+    {
+      "frame": 15,
+      "restoredPaperPixels": 767,
+      "movedBulbPixels": 999
+    }
+  ],
+  "changedPixels": 29327,
+  "protectedChanges": 0,
+  "approval": "User-requested direction repair; producer observation and technical checks only. No independent art PASS or new owner visual approval inferred. Original source and historical exclusions unchanged."
+}

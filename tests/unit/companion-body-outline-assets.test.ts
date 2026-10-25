@@ -86,7 +86,7 @@ describe("101 complete body/outline style activation", () => {
       expect(slot.anchor).toEqual({ centerX: 40, footY: 80 });
     }
     const css = readFileSync("components/poster/premiere/premiere-stage.css", "utf8");
-    expect(css).toContain("url('/premiere/victamin-audience-body-outline-v1.webp')"); expect(css).not.toContain("url('/premiere/victamin-audience-big-eyes-v1.webp')");
+    expect(css).toContain("url('/premiere/victamin-audience-lightsticks-up-v1.png')"); expect(css).not.toContain("url('/premiere/victamin-audience-big-eyes-v1.webp')");
     expect(receipt.audience.runtimeExclusionsPreserved).toEqual([9, 10]);
   });
 
