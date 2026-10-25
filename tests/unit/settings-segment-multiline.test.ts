@@ -11,14 +11,24 @@ beforeEach(async () => { vi.stubGlobal("React", await import("react")); activity
 afterEach(() => vi.unstubAllGlobals());
 
 describe("shared multiline SettingsSegment", () => {
-  it("keeps the default single-row control and native keyboard clicks unchanged", () => {
+  it("gives a single-row group one tab stop while preserving pointer clicks", () => {
     const change = vi.fn(), element = SettingsSegment({ value: "sleepy", options, onChange: change, ariaLabel: "성격", dataAct: "companion-personality" });
     expect(element.props["data-multiline"]).toBeUndefined();
     expect(element.props.style).toMatchObject({ "--n": 8, "--i": 2, "--rows": 1, "--row": 0 });
-    expect(controls(element).every(control => control.props.onKeyDown === undefined && control.props.tabIndex === undefined)).toBe(true);
+    expect(controls(element).map(control => control.props.tabIndex)).toEqual([-1, -1, 0, -1, -1, -1, -1, -1]);
     (controls(element)[5].props.onClick as () => void)();
     expect(change).toHaveBeenCalledExactlyOnceWith("gourmet");
     expect(activity).not.toHaveBeenCalled(); // Existing document click delegation owns it.
+  });
+
+  it.each([['ArrowRight', 1], ['ArrowDown', 1], ['ArrowLeft', 2], ['ArrowUp', 2], ['End', 2], ['Home', 0]])("single-row %s selects and focuses without duplicate activity", (key, expected) => {
+    const choices = options.slice(0, 3), change = vi.fn(), focus = choices.map(() => ({ focus: vi.fn() }));
+    const element = SettingsSegment({ value: choices[0].value, options: choices, onChange: change, ariaLabel: 'choice', dataAct: 'display-mode' });
+    const event = { key, preventDefault: vi.fn(), stopPropagation: vi.fn(), currentTarget: { parentElement: { querySelectorAll: () => focus } } };
+    (controls(element)[0].props.onKeyDown as (e: unknown) => void)(event);
+    expect(focus[expected].focus).toHaveBeenCalledOnce();
+    expect(change).toHaveBeenCalledTimes(expected === 0 ? 0 : 1);
+    expect(activity).toHaveBeenCalledTimes(expected === 0 ? 0 : 1);
   });
 
   it("positions the shared thumb by row and column with one selected tab stop", () => {

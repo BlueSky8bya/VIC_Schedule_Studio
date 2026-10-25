@@ -27,10 +27,11 @@ export function SettingsSegment<T extends string | number>({
   const columnCount = Math.max(1, Math.min(options.length, Number.isFinite(columns) ? Math.floor(columns!) : options.length));
   const rows = Math.max(1, Math.ceil(options.length / columnCount)), selected = Math.max(0, options.findIndex(option => option.value === value));
   const onKey = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
-    if (rows === 1 || !options.length) return;
+    if (!options.length) return;
+    const stride = rows === 1 ? 1 : columnCount;
     const next = event.key === "Home" ? 0 : event.key === "End" ? options.length - 1
       : event.key === "ArrowRight" ? (index + 1) % options.length : event.key === "ArrowLeft" ? (index - 1 + options.length) % options.length
-        : event.key === "ArrowDown" ? (index + columnCount) % options.length : event.key === "ArrowUp" ? (index - columnCount + options.length) % options.length : -1;
+        : event.key === "ArrowDown" ? (index + stride) % options.length : event.key === "ArrowUp" ? (index - stride + options.length) % options.length : -1;
     if (next < 0) return;
     event.preventDefault(); event.stopPropagation();
     if (options[next].value !== value || onReselect) {
@@ -70,9 +71,9 @@ export function SettingsSegment<T extends string | number>({
             if (o.value !== value) onChange(o.value);
             else onReselect?.(o.value);
           }}
-          onKeyDown={rows > 1 ? event => onKey(event, index) : undefined}
+          onKeyDown={event => onKey(event, index)}
           role="radio"
-          tabIndex={rows > 1 ? o.value === value ? 0 : -1 : undefined}
+          tabIndex={index === selected ? 0 : -1}
           type="button"
         >
           {o.label}

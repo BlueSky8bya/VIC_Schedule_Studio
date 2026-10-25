@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
 import { hapticTick } from "@/lib/ui/haptics";
+import { loginRecoveryHref } from "@/lib/auth/login-recovery-link";
 
 // 현재 주소를 안드로이드 크롬으로 여는 인텐트 URL.
 function chromeIntentUrl() {
@@ -36,6 +37,7 @@ export function InAppBrowserNotice({
   );
   const [android, setAndroid] = useState(initialAndroid);
   const [copied, setCopied] = useState(false);
+  const [manualLink, setManualLink] = useState<string | null>(null);
   const formWrapRef = useRef<HTMLDivElement>(null);
   const autoTried = useRef(false);
   // 크롬 자동전환 상태 공유(여러 효과에서). opened=크롬이 떠 웹뷰가 가려짐, returned=복귀 처리 1회만.
@@ -222,13 +224,16 @@ export function InAppBrowserNotice({
     window.location.replace(chromeIntentUrl());
   }
   async function copyLink() {
+    const href = loginRecoveryHref(new URL(window.location.href));
     try {
-      await navigator.clipboard.writeText(window.location.href);
+      await navigator.clipboard.writeText(href);
       setCopied(true);
+      setManualLink(null);
       hapticTick();
       window.setTimeout(() => setCopied(false), 1500);
     } catch {
-      // 클립보드 권한 없으면 무시(주소창 직접 복사 가능).
+      setCopied(false);
+      setManualLink(href);
     }
   }
 
@@ -247,6 +252,15 @@ export function InAppBrowserNotice({
           {copied ? "복사됨" : "링크 복사"}
         </button>
       </div>
+      {manualLink ? (
+        <div className="inapp-manual-link">
+          <p role="status">자동 복사가 차단됐어요. 아래 주소를 길게 눌러 복사한 뒤 Chrome이나 Safari에서 열어주세요.</p>
+          <label>
+            로그인 주소
+            <input aria-label="수동 복사용 로그인 주소" onFocus={event => event.currentTarget.select()} readOnly type="text" value={manualLink} />
+          </label>
+        </div>
+      ) : null}
     </div>
   );
 }

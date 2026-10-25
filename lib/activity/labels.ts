@@ -516,6 +516,7 @@ export const ACT: Record<string, TargetLabel> = {
   "google-login": { name: "Google로 로그인", area: "계정" },
   "open-in-chrome": { name: "Chrome으로 열기", area: "계정", hint: "앱 내 브라우저 안내" },
   "copy-app-link": { name: "링크 복사", area: "계정", hint: "앱 내 브라우저 안내" },
+  "share-public-event": { name: "일정 링크 복사", area: "일정" },
   "member-add": { name: "멤버 추가", area: "옛 화면" },
   "security-retry": { name: "보안 정보 다시 시도", area: "인사이트" },
   "passcode-change-open": { name: "비밀번호 변경 열기", area: "설정" },

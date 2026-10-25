@@ -4,6 +4,12 @@
 > 남기는 자리다 — 되돌리기 비싼 변경, 마이그레이션, 공개 경계 변경만 적는다.
 > 포맷·import 정리·소소한 오타는 적지 않는다.
 
+## v0.1.0 — 2026-10-25
+
+### CHG-20261025-001 — Share one public event and recover copied login entries
+
+Canonical public month/event links resolve solely against the existing public DTO; no new loader, API, role, DB access or tracking. Masked teaser, support, draft and non-public candidates fail closed. Closing/navigating clears stale event context and existing overlay history remains the single pop owner. The keyboard search opener dismisses detail like the pointer opener. Clipboard denial exposes selectable safe addresses; login addresses omit transient query/fragment and retain only known sanitized destination paths. Shared setting radio groups gain one Tab stop and native arrows/Home/End using existing fixed activity targets. Recovery: scoped application revert; no data operation. Actual validation and independent release evidence: [plan](plans/PLAN-20261025-public-link-and-controls.md).
+
 ## v0.1.0 — 2026-10-24
 
 ### CHG-20261024-001 — Address public months and recover Studio replay metadata

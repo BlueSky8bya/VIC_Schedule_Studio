@@ -888,6 +888,13 @@ select {
   margin-top: 2px;
 }
 
+.inapp-manual-link { margin-top: 12px; text-align: left; }
+.inapp-manual-link label { display: grid; gap: 6px; }
+.inapp-manual-link input { width: 100%; min-width: 0; box-sizing: border-box; user-select: text; }
+.public-event-share { display: grid; gap: 6px; margin: 8px 0; }
+.public-event-share label { display: grid; gap: 6px; }
+.public-event-share input { width: 100%; min-width: 0; box-sizing: border-box; user-select: text; }
+
 /* 크롬 자동전환 중 짧게 보이는 표시(빈 화면 방지). 전환되면 곧 사라진다. */
 .inapp-trying {
   display: flex;

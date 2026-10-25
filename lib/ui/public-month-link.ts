@@ -22,6 +22,8 @@ export function readPublicMonth(url: URL): PublicMonth | null {
 export function publicMonthHref(url: URL, view: PublicMonth): string | null {
   if (!isPublicMonth(view)) return null;
   const next = new URL(url);
+  const previous = readPublicMonth(next);
+  if (!previous || previous.year !== view.year || previous.month !== view.month) next.searchParams.delete("event");
   next.searchParams.set("month", `${view.year}-${String(view.month).padStart(2, "0")}`);
   return next.pathname + next.search + next.hash;
 }

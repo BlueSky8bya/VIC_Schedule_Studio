@@ -135,6 +135,8 @@ import { captureFlip, playFlip } from "@/lib/ui/list-flip";
 import { popInnerOverlay, pushInnerOverlay } from "@/lib/ui/overlay-pop";
 import { writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
 import { usePublicMonthLink } from "@/lib/ui/use-public-month-link";
+import { usePublicEventLink } from "@/lib/ui/use-public-event-link";
+import { PublicEventShare } from "@/components/poster/public-event-share";
 import { isPublicMonth, PUBLIC_MONTH_BOUNDS } from "@/lib/ui/public-month-link";
 import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
 import { useSoopLive } from "@/components/poster/use-soop-live";
@@ -1008,6 +1010,7 @@ export function PublicPoster({
       if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
       if (dayVodOpenRef.current || insightsOpenRef.current) return;
       e.preventDefault();
+      setAgendaDetail(null); // Match the pointer opener: one active window.
       setSheet("search");
     };
     window.addEventListener("keydown", onKey);
@@ -1067,6 +1070,14 @@ export function PublicPoster({
     // PC: 클릭한 카드의 뷰포트 좌표(팝오버 앵커). 포스터는 transform 축소라 gBCR=화면 좌표 그대로.
     anchor?: { x: number; y: number; w: number; h: number };
   } | null>(null);
+  const onPublicEventPop = usePublicEventLink(monthLinkEnabled, view, schedule.events, agendaDetail?.event.id ?? null, (event, dateKey) => {
+    const el = posterRootRef.current?.querySelector<HTMLElement>(`[data-eventid="${CSS.escape(event.id)}"]`);
+    const r = el?.getBoundingClientRect(), agenda = matchMedia(POSTER_AGENDA_QUERY).matches;
+    agendaDetailOriginRef.current = agenda ? r ?? null : null;
+    detailAnchorElRef.current = agenda ? null : el ?? null;
+    setDetailManual(null);
+    setAgendaDetail({ event, support: false, dateKey, ...(!agenda && r ? { anchor: { x: r.left, y: r.top, w: r.width, h: r.height } } : {}) });
+  }, () => setAgendaDetail(null));
   const premiereReadRef = useRef<{ id: string; dateKey: string } | null>(null);
   useEffect(() => {
     if (premiere.frame.phase !== "idle" || !premiereReadRef.current) return;
@@ -1673,7 +1684,9 @@ export function PublicPoster({
   // (편집실 안에서 열렸을 때의 조정은 위 pushInnerOverlay/popInnerOverlay가 맡는다.)
   useEffect(() => {
     function onPop() {
-      onPublicMonthPop(ignoreDayVodPop.current || ignoreInsightsPop.current || dayVodOpenRef.current || insightsOpenRef.current);
+      const preserveOverlay = ignoreDayVodPop.current || ignoreInsightsPop.current || dayVodOpenRef.current || insightsOpenRef.current;
+      onPublicMonthPop(preserveOverlay);
+      onPublicEventPop(preserveOverlay);
       // 날짜 다시보기 창의 메아리(X/백드롭 닫기 후 우리가 부른 history.back()) — 무시하고
       // 카운터만 디스패치 뒤에 내린다(인사이트와 같은 microtask 이유).
       if (ignoreDayVodPop.current) {
@@ -1707,7 +1720,7 @@ export function PublicPoster({
     }
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, [onPublicMonthPop]);
+  }, [onPublicMonthPop, onPublicEventPop]);
   // 좁은 화면(모바일 + 태블릿/좁은 창 ≤1040px) 시청자는 세로 아젠다(목록) 전용 — 월간 그리드/캡쳐는
   // PC로 유도. 표면은 1840 고정 캔버스라 좁을수록 통째로 축소돼(900px면 0.49배 → 본문 6px) 읽을 수
   // 없다. 표면 내부를 화면 폭에 맞춰 재배치하는 건 금지(스티커 좌표가 어긋남 — ADR-0004)라, 대신
@@ -2734,6 +2747,7 @@ export function PublicPoster({
     if (offset !== 0) playSfx(offset > 0 ? "page" : "page-prev");
     didNavigateRef.current = true;
     setDayVodPop(null); // 팝오버는 화면 고정 좌표라 달이 바뀌면 근거를 잃는다
+    setAgendaDetail(null);
     setMonthDir(offset >= 0 ? "next" : "prev");
     setView(next);
     onViewChange?.(next.year, next.month); // 부모(편집실)에 바뀐 달 알림
@@ -4545,6 +4559,7 @@ export function PublicPoster({
                       })}
                     </ul>
                   ) : null}
+                  {!support && !teaserActive && Boolean(event.publicTitle) ? <PublicEventShare dateKey={dateKey} id={event.id} key={event.id} /> : null}
                   {detailTags.length > 0 ? (
                     <div aria-label="태그" className="agenda-detail-tags">
                       {detailTags.map(({ tag, bg, border, primary }, ti) => (

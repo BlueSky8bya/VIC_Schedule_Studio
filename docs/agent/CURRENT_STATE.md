@@ -7,7 +7,7 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-Daily09:00 ACTIVE: existing-function verification and project-wide idea discovery are separate required stages. Risk/weekly rotation and verified same-build continuation; no blanket200. Current search dialog focus repair and evidence: [plan](plans/PLAN-20261025-search-focus.md). Daily status, exact releases, completed/rejected/pending proposal keys and carryover are authoritative in primary `.scratch-pw/site-daily/state.json`; historical plans do not create new approval gates. Preserve original failures/privacy; normal36 UNVERIFIED. [QA](plans/PLAN-20261022-focused-qa.md).
+Daily09:00 ACTIVE: existing-function verification and project-wide idea discovery are separate required stages. Risk/weekly rotation and verified same-build continuation; no blanket200. Adopted public link/control work: [record](plans/PLAN-20261025-public-link-and-controls.md). Daily status, exact releases, completed/rejected/pending proposal keys and carryover are authoritative in primary `.scratch-pw/site-daily/state.json`; historical plans do not create new approval gates. Preserve original failures/privacy; normal36 UNVERIFIED. [QA](plans/PLAN-20261022-focused-qa.md).
 
 Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user.125 explicitly authorizes unnecessary Vercel deployment cleanup/optimization; unrelated cleanup, bulk DB UPDATE, paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
 
