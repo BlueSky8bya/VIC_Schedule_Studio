@@ -189,7 +189,7 @@ describe("broadcast inking callsite contracts", () => {
     expect(drawingLayers).toContain("onPointerCancel={onLayerPointerCancel}");
     expect(drawingLayers).toContain("if (layerDragRef.current) return");
     expect(drawingLayers).toContain("layerDragClickBlockedRef.current && e.detail > 0");
-    expect(drawingLayers).toContain('aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"');
+    expect(drawingLayers).toContain('aria-keyshortcuts="F2 Alt+ArrowUp Alt+ArrowDown"');
     expect(drawingLayers).toContain("<GripVertical");
     expect(drawingLayers).not.toContain("bp-layer-order");
     expect(panelCss).not.toContain(".bp-layer-order");

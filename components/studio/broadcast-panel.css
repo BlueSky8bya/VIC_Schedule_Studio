@@ -1067,10 +1067,10 @@ html[data-reduce-motion] .bp-layer-item {
   font-size: var(--text-label);
   font-style: normal;
   font-weight: 600;
-  color: #4b4468;
+  color: var(--ink-soft);
 }
 .bp-layer-item.active .bp-layer-select em {
-  color: #2f2a45;
+  color: var(--ink);
 }
 .bp-layer-select:focus-visible {
   border-radius: var(--r-xs);
@@ -2679,6 +2679,35 @@ html[data-reduce-motion] .bp-width:active,
 html[data-reduce-motion] .bp-layer-btn:active,
 html[data-reduce-motion] .bp-layer-add:active {
   transform: none;
+}
+
+/* Names edit in the existing row; keep the thumbnail canvas mounted and the
+   same row height/material rather than adding another panel or action button. */
+.bp-layer-item.renaming > .bp-layer-select {
+  grid-area: 1 / 1;
+  visibility: hidden;
+}
+.bp-layer-item.renaming > .bp-layer-actions {
+  grid-area: 1 / 2;
+}
+.bp-layer-name-input {
+  grid-area: 1 / 1;
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--selection-border);
+  border-radius: var(--r-xs);
+  outline: none;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+.bp-layer-name-input:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 1px;
 }
 
 /* Batch 9c: native iPad portrait and narrow-mobile compositions. */

@@ -62,6 +62,7 @@ import type { MonthCell } from "@/lib/calendar/month";
 import { getTodayKst, splitEventTitle } from "@/lib/calendar/month";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { hapticTick } from "@/lib/ui/haptics";
+import { logActivity } from "@/lib/activity/client";
 import { createBroadcastHistory } from "@/lib/broadcast/history";
 import {
   isPenContact,
@@ -188,6 +189,7 @@ type HistAction =
   | { t: "cols"; before: Map<string, ColBox>; after: Map<string, ColBox>; chips?: ChipDyChange | null }
   | { t: "sent"; before: string[]; after: string[]; colsBefore: Map<string, ColBox> }
   | { t: "layers"; before: PanelLayer[]; after: PanelLayer[] }
+  | { t: "layer-name"; id: string; before: string; after: string }
   | { t: "chips"; before: Map<string, number>; after: Map<string, number> }
   | {
       t: "xform";
@@ -207,7 +209,7 @@ function historyHasContent(action: HistAction): boolean {
     case "cols": case "chips": return action.before.size > 0 || action.after.size > 0;
     case "xform": return Boolean(action.strokes && ink(action.strokes.targets)) ||
       Boolean(action.cols && (action.cols.before.size > 0 || action.cols.after.size > 0));
-    case "layers": return false;
+    case "layers": case "layer-name": return false;
   }
 }
 
@@ -332,7 +334,14 @@ export function BroadcastPanel({
     return () => mo.disconnect();
   }, []);
   const penPalette = darkTheme ? [INK_DARK, ...PEN_COLORS.slice(1)] : PEN_COLORS;
-  const [penWidth, setPenWidth] = useState(PEN_WIDTHS[2]);
+  // Only the three ink tools remember separate session widths. Shapes keep the
+  // existing pen family; changing tools never copies the previous tool's size.
+  const [inkWidths, setInkWidths] = useState({ pen: PEN_WIDTHS[2], hl: PEN_WIDTHS[2], eraser: PEN_WIDTHS[2] });
+  const widthKey = tool === "hl" || tool === "eraser" ? tool : "pen";
+  const penWidth = inkWidths[widthKey];
+  const setPenWidth = useCallback((width: number) => {
+    setInkWidths((current) => ({ ...current, [widthKey]: width }));
+  }, [widthKey]);
   // '색 직접 고르기' 팝오버 — 네이티브 OS 색상판 대신 태그 편집과 같은 인라인 피커를 재사용
   // (주변과 같은 디자인 언어: 같은 트레이·SV 영역·톤 필터). openedWith = 취소 시 복귀 색.
   const [colorPop, setColorPop] = useState<{
@@ -347,6 +356,32 @@ export function BroadcastPanel({
   const [layers, setLayers] = useState<PanelLayer[]>(() => [
     { id: "layer-1", name: "레이어 1", vis: true }
   ]);
+  const [renamingLayerId, setRenamingLayerId] = useState<string | null>(null);
+  const renamingLayerIdRef = useRef<string | null>(null);
+  const layerNameInputRef = useRef<HTMLInputElement | null>(null);
+  const layerNameReturnRef = useRef<HTMLButtonElement | null>(null);
+  const layerNamePendingFocusRef = useRef<HTMLButtonElement | null>(null);
+  useLayoutEffect(() => {
+    if (!renamingLayerId) {
+      const trigger = layerNamePendingFocusRef.current;
+      layerNamePendingFocusRef.current = null;
+      if (trigger?.isConnected) trigger.focus({ preventScroll: true });
+      return;
+    }
+    layerNameInputRef.current?.focus({ preventScroll: true });
+    layerNameInputRef.current?.select();
+  }, [renamingLayerId]);
+  useEffect(() => {
+    if (!renamingLayerId) return;
+    const blurOutside = (event: PointerEvent) => {
+      const input = layerNameInputRef.current;
+      // Layer/canvas drags prevent the browser's default focus change. Commit
+      // before that gesture without stealing its focus or pointer ownership.
+      if (input && event.target !== input) input.blur();
+    };
+    window.addEventListener("pointerdown", blurOutside, true);
+    return () => window.removeEventListener("pointerdown", blurOutside, true);
+  }, [renamingLayerId]);
   const [activeLayerId, setActiveLayerId] = useState("layer-1");
   const [layerOrderStatus, setLayerOrderStatus] = useState("");
   const [layerDragUi, setLayerDragUi] = useState<{
@@ -2598,7 +2633,7 @@ export function BroadcastPanel({
     activateDrawingTool(toolAfterInkColorPick(tool));
   }
 
-  function restoreColorPickerContext(context: NonNullable<typeof colorPop>) {
+  const restoreColorPickerContext = useCallback((context: NonNullable<typeof colorPop>) => {
     setPenColor(context.openedWith);
     setTool(context.openedWithTool);
     const layerStillExists =
@@ -2606,7 +2641,7 @@ export function BroadcastPanel({
       layersRef.current.some((layer) => layer.id === context.openedWithLayerId);
     if (layerStillExists) setActiveLayerId(context.openedWithLayerId);
     setColorPop(null);
-  }
+  }, []);
 
   // rAF 병합 플러시 — move마다가 아니라 프레임당 한 번만 그린다(G3b).
   const flushDraw = useCallback(() => {
@@ -3017,6 +3052,8 @@ export function BroadcastPanel({
       store.setStrokes(a.before);
       setStrokeSel([]); // 분할 전으로 돌아가면 분할 조각 선택은 무효
       replayAll();
+    } else if (a.t === "layer-name") {
+      setLayers((current) => current.map((layer) => layer.id === a.id ? { ...layer, name: a.before } : layer));
     } else {
       setLayers(a.before);
       // 일정은 목록 밖 고정 레이어라 그대로 유지. 사라진 그림 레이어만 사용 가능 레이어로 복귀.
@@ -3066,6 +3103,8 @@ export function BroadcastPanel({
       store.setStrokes(a.after);
       setStrokeSel([]);
       replayAll();
+    } else if (a.t === "layer-name") {
+      setLayers((current) => current.map((layer) => layer.id === a.id ? { ...layer, name: a.after } : layer));
     } else {
       setLayers(a.after);
       if (activeLayerId !== BG_LAYER_ID && !a.after.some((l) => l.id === activeLayerId)) {
@@ -3422,12 +3461,45 @@ export function BroadcastPanel({
   }
 
   function onLayerKeyDown(e: React.KeyboardEvent<HTMLButtonElement>, id: string) {
+    if (e.key === "F2" && !e.altKey && !e.ctrlKey && !e.metaKey && id !== BG_LAYER_ID) {
+      e.preventDefault();
+      e.stopPropagation();
+      startLayerRename(id, e.currentTarget);
+      return;
+    }
     if (!e.altKey || (e.key !== "ArrowUp" && e.key !== "ArrowDown")) {
       return;
     }
     e.preventDefault();
     e.stopPropagation();
     moveLayer(id, e.key === "ArrowUp" ? "up" : "down");
+  }
+
+  function startLayerRename(id: string, trigger: HTMLButtonElement) {
+    if (!layersRef.current.some((layer) => layer.id === id)) return;
+    finishLiveStroke();
+    setActiveLayerId(id);
+    layerNamePendingFocusRef.current = null;
+    layerNameReturnRef.current = trigger;
+    renamingLayerIdRef.current = id;
+    setRenamingLayerId(id);
+  }
+
+  function finishLayerRename(id: string, value: string, commit: boolean, restoreFocus = false) {
+    // Enter/Escape unmounts the input; a following blur must not commit twice.
+    if (renamingLayerIdRef.current !== id) return;
+    layerNamePendingFocusRef.current = restoreFocus ? layerNameReturnRef.current : null;
+    renamingLayerIdRef.current = null;
+    setRenamingLayerId(null);
+    const name = value.replace(/\s+/g, " ").trim().slice(0, 32);
+    const before = layersRef.current;
+    const current = before.find((layer) => layer.id === id);
+    if (commit && name && current && name !== current.name) {
+      const after = before.map((layer) => layer.id === id ? { ...layer, name } : layer);
+      setLayers(after);
+      pushHist({ t: "layer-name", id, before: current.name, after: name });
+      logActivity("ui.click", { target: "bp-layer-rename" });
+    }
   }
 
   function toggleLayerVisibility(id: string) {
@@ -3548,6 +3620,9 @@ export function BroadcastPanel({
       }
       // 색 팝오버가 열려 있는 동안엔 팝오버가 키보드(Esc/입력)를 갖는다 — 패널 단축키 정지.
       if (colorPopRef.current) return;
+      // Inline name input owns Escape, IME and editing shortcuts. Tab still
+      // uses the existing modal focus trap instead of escaping the board.
+      if (renamingLayerIdRef.current && e.key !== "Tab") return;
       if (e.key === "Escape") {
         // 우선순위: 부분 선택 취소 → 스포이드 취소 → 카드/획 다중선택 해제 → 날짜 선택 해제 → 창 닫기.
         if (imgRegionRef.current) {
@@ -3764,6 +3839,15 @@ export function BroadcastPanel({
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       if (discardAskRef.current) return;
+      // Consume at window capture, before the picker's document handler closes
+      // it and this same Escape can reach the board's window-bubble close path.
+      // This also covers typing in the picker's HEX input.
+      if (colorPopRef.current && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        restoreColorPickerContext(colorPopRef.current);
+        return;
+      }
       if (
         target &&
         (target.tagName === "INPUT" ||
@@ -3807,12 +3891,13 @@ export function BroadcastPanel({
           hapticTick();
           setPenWidth(next);
           activateDrawingTool(toolAfterInkWidthPick(tool));
+          logActivity("ui.click", { target: "bp-width" });
         }
       }
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [tool, penWidth, kbdHelp]);
+  }, [tool, penWidth, kbdHelp, setPenWidth, restoreColorPickerContext]);
 
   // 최초 포커스 + body scroll lock(열림 동안 뒤 화면 스크롤 금지).
   useEffect(() => {
@@ -4936,7 +5021,7 @@ export function BroadcastPanel({
           if (!l) return null;
           return (
           <div
-            className={`bp-layer-item${l.vis ? "" : " off"}${l.id === activeLayerId ? " active" : ""}${layerDragUi?.id === l.id ? " dragging" : ""}${layerDragUi?.beforeId === l.id ? " drop-before" : ""}`}
+            className={`bp-layer-item${renamingLayerId === l.id ? " renaming" : ""}${l.vis ? "" : " off"}${l.id === activeLayerId ? " active" : ""}${layerDragUi?.id === l.id ? " dragging" : ""}${layerDragUi?.beforeId === l.id ? " drop-before" : ""}`}
             data-layer-id={l.id}
             key={l.id}
             role="listitem"
@@ -4947,11 +5032,11 @@ export function BroadcastPanel({
             }
           >
             <button
-              aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+              aria-keyshortcuts="F2 Alt+ArrowUp Alt+ArrowDown"
               aria-label={`${l.name}, 끌어서 순서 변경`}
               aria-pressed={l.id === activeLayerId}
               className="bp-layer-select"
-              title="클릭해 선택 · 끌어서 순서 변경 · Alt+↑/↓"
+              title={`${l.name} · 이름 더블클릭/F2 · 끌어서 순서 변경 · Alt+↑/↓`}
               type="button"
               onClick={(e) => {
                 if (layerDragRef.current) return;
@@ -4962,6 +5047,14 @@ export function BroadcastPanel({
                 setActiveLayerId(l.id);
               }}
               onKeyDown={(e) => onLayerKeyDown(e, l.id)}
+              onDoubleClick={(e) => {
+                // Drag capture retargets click/dblclick to this button. Use
+                // the actual name bounds so its thumbnail/grip still drag.
+                const name = e.currentTarget.querySelector(".bp-layer-meta")?.getBoundingClientRect();
+                if (!name || e.clientX < name.left || e.clientX > name.right || e.clientY < name.top || e.clientY > name.bottom) return;
+                e.preventDefault();
+                startLayerRename(l.id, e.currentTarget);
+              }}
               onLostPointerCapture={onLayerPointerCancel}
               onPointerCancel={onLayerPointerCancel}
               onPointerDown={(e) => onLayerPointerDown(e, l.id)}
@@ -4990,6 +5083,27 @@ export function BroadcastPanel({
                 <em>{l.name.replace(/^레이어 (?=\d+$)/, "")}</em>
               </span>
             </button>
+            {renamingLayerId === l.id ? (
+              <input
+                aria-label="레이어 이름"
+                className="bp-layer-name-input"
+                data-act="bp-layer-rename"
+                data-activity-manual=""
+                defaultValue={l.name}
+                maxLength={32}
+                onBlur={(e) => finishLayerRename(l.id, e.currentTarget.value, true)}
+                onKeyDown={(e) => {
+                  e.stopPropagation();
+                  if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+                  if (e.key === "Enter" || e.key === "Escape") {
+                    e.preventDefault();
+                    finishLayerRename(l.id, e.currentTarget.value, e.key === "Enter", true);
+                  }
+                }}
+                ref={layerNameInputRef}
+                type="text"
+              />
+            ) : null}
             <div className="bp-layer-actions">
               <button
                 aria-label={`${l.name} 표시`}
