@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { PublicScheduleEvent } from "@/lib/domain/schedule-types";
 import {
   agendaNoticeGroupAt,
+  agendaNoticesInRange,
+  agendaNoticeStacks,
   createAgendaNotices,
   groupAgendaNotices,
   noticeIsActive,
@@ -131,6 +133,23 @@ describe("agenda notice public presentation", () => {
 });
 
 describe("agenda notice date context", () => {
+  it("does not show yesterday's ended or tomorrow's notice as active today", () => {
+    const input = [notice("ended", "2026-10-18", "2026-10-19"), notice("current", "2026-10-19", "2026-10-21"), notice("future", "2026-10-21")];
+    expect(agendaNoticesInRange(input, "2026-10-20").map(item => item.id)).toEqual(["current"]);
+    expect(agendaNoticesInRange(input, "2026-10-25")).toEqual([]);
+    expect(agendaNoticesInRange(input, "2026-10-19", "2026-10-21").map(item => item.id)).toEqual(["ended", "current", "future"]);
+  });
+
+  it("reserves actual simultaneous stacks rather than every connected notice in the month", () => {
+    const input = [notice("a", "2026-10-01", "2026-10-03"), notice("b", "2026-10-03", "2026-10-05"), notice("c", "2026-10-05", "2026-10-07"), notice("d", "2026-10-07", "2026-10-09")];
+    expect(groupAgendaNotices(input)[0].notices).toHaveLength(4);
+    const stacks = agendaNoticeStacks(input);
+    expect(Math.max(...stacks.map(stack => stack.length))).toBe(2);
+    expect(stacks.map(stack => stack.map(item => item.id))).toEqual([["a"], ["a", "b"], ["b", "c"], ["c", "d"]]);
+    expect(agendaNoticeStacks(input, [{ date: "2026-10-02", endDate: "2026-10-08" }]).at(-1)).toHaveLength(4);
+    expect(agendaNoticeStacks([])).toEqual([]);
+  });
+
   it("keeps three partially overlapping notices together while only matching dates are active", () => {
     const input = [
       notice("vote", "2026-10-26", "2026-10-29"),

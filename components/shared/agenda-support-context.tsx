@@ -2,7 +2,8 @@
 
 import { ArrowUpRight, Pin, Sprout } from "lucide-react";
 import { type CSSProperties, type ReactNode, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { agendaNoticeGroupAt, groupAgendaNotices, noticeIsActive, noticeRangeText, type AgendaNotice } from "@/lib/ui/agenda-notices";
+import { agendaNoticesInRange, agendaNoticeStacks, noticeIsActive, noticeRangeText, type AgendaNotice } from "@/lib/ui/agenda-notices";
+import { agendaReadingLabel, mostVisibleAgendaDate, sameAgendaReadingDate, type AgendaReadingDate } from "@/lib/ui/agenda-reading-context";
 import { flipSpring, FLIP_MS, FLIP_SPRING } from "@/lib/ui/flip-motion";
 import { REDUCE_MOTION_EVENT, reduceMotionEnabled } from "@/lib/ui/motion";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -19,19 +20,31 @@ type Props = {
 
 /** Shared by public/anonymous/preview/studio. Automatic context never emits activity. */
 export function AgendaSupportContext({ notices, fallbackDate, children, onDetail, onEdit }: Props) {
-  const hostRef = useRef<HTMLDivElement>(null), boardRef = useRef<HTMLElement>(null), detailRef = useRef<HTMLDivElement>(null);
-  const [date, setDate] = useState(fallbackDate), [manual, setManual] = useState<{ id: string; date: string } | null>(null);
+  const hostRef = useRef<HTMLDivElement>(null), boardRef = useRef<HTMLElement>(null), markerRef = useRef<HTMLSpanElement>(null);
+  const [reading, setReading] = useState<AgendaReadingDate>({ date: fallbackDate });
+  const [presented, setPresented] = useState<AgendaReadingDate>(reading);
+  const [manual, setManual] = useState<{ id: string; date: string } | null>(null);
+  const [gapRanges, setGapRanges] = useState<AgendaReadingDate[]>([]);
   const [stackHeight, setStackHeight] = useState(0), [reduced, setReduced] = useState(false);
   const id = useId(), footerId = `${id}-detail`;
-  const groups = useMemo(() => groupAgendaNotices(notices), [notices]);
-  const groupsRef = useRef(groups);
-  groupsRef.current = groups;
-  const group = agendaNoticeGroupAt(groups, date);
-  const selected = (manual?.date === date ? group?.notices.find(notice => notice.id === manual.id) : undefined)
-    ?? group?.notices.find(notice => noticeIsActive(notice, date));
-  const captionDate = selected && selected.start === selected.end && !noticeIsActive(selected, date) ? selected.start : date;
+  const stacks = useMemo(() => agendaNoticeStacks(notices, gapRanges), [notices, gapRanges]);
+  const visible = agendaNoticesInRange(notices, presented.date, presented.endDate);
+  const selected = (manual?.date === presented.date ? visible.find(notice => notice.id === manual.id) : undefined) ?? visible[0];
+  const held = !sameAgendaReadingDate(reading, presented);
   const signature = notices.map(n => `${n.id}:${n.title}:${n.start}:${n.end}`).join("|");
-  const firstMotion = useRef(true);
+  const motionDates = useRef(new Set<string>()), scheduleReadRef = useRef<() => void>(() => {});
+
+  // Re-rendered/filter-collapsed children can change both the visible date and
+  // the range stacks. The signature comparison keeps this to one extra commit.
+  useLayoutEffect(() => {
+    const ranges = Array.from(hostRef.current?.querySelectorAll<HTMLElement>(".agenda-gap[data-flip-key]") ?? [], node => ({ date: node.dataset.flipKey!, endDate: node.dataset.flipEnd }));
+    setGapRanges(previous => JSON.stringify(previous) === JSON.stringify(ranges) ? previous : ranges);
+    hostRef.current?.querySelectorAll<HTMLElement>(".agenda-day[data-flip-key],.agenda-gap[data-flip-key]").forEach(node => {
+      if (notices.length && node.dataset.flipKey === reading.date) node.dataset.noticeReading = "true";
+      else delete node.dataset.noticeReading;
+    });
+    scheduleReadRef.current();
+  }, [children, reading.date, notices.length]);
 
   useEffect(() => {
     const update = () => setReduced(reduceMotionEnabled());
@@ -75,50 +88,78 @@ export function AgendaSupportContext({ notices, fallbackDate, children, onDetail
       observer.disconnect(); window.removeEventListener("resize", measure); window.removeEventListener("scroll", measure);
       window.visualViewport?.removeEventListener("resize", measure); window.visualViewport?.removeEventListener("scroll", measure);
     };
-  }, [signature]);
+  }, [signature, gapRanges]);
 
   useEffect(() => {
     const host = hostRef.current, flow = host?.querySelector<HTMLElement>(".agenda-flow");
     if (!host || !flow) return;
-    let timer: ReturnType<typeof setTimeout> | undefined;
+    let frame = 0;
+    const surface = host.closest(".studio-mobile,.public-calendar-shell");
+    const header = surface?.querySelector<HTMLElement>(".m-topstick,.agenda-header");
+    const footer = surface?.querySelector<HTMLElement>(".m-actionrail")
+      ?? surface?.closest(".poster-page")?.querySelector<HTMLElement>(".agenda-monthbar");
     const read = () => {
-      if (document.hidden || detailRef.current?.contains(document.activeElement)) return;
+      frame = 0;
+      if (document.hidden || !flow.offsetWidth) return;
       const rect = flow.getBoundingClientRect();
-      if (rect.top >= window.innerHeight || !flow.offsetWidth) return;
+      const viewport = window.visualViewport;
+      const viewportTop = viewport?.offsetTop ?? 0;
+      const viewportBottom = Math.min(window.innerHeight, viewport ? viewport.offsetTop + viewport.height : window.innerHeight);
+      const boardRect = boardRef.current?.getBoundingClientRect();
+      const boardBottom = boardRect && boardRect.bottom > viewportTop && boardRect.top < viewportBottom ? boardRect.bottom : viewportTop;
+      const top = Math.max(rect.top, viewportTop, header?.getBoundingClientRect().bottom ?? viewportTop, boardBottom);
+      const bottom = Math.min(rect.bottom, viewportBottom, footer?.getBoundingClientRect().top ?? viewportBottom);
       const rows = Array.from(flow.querySelectorAll<HTMLElement>(".agenda-day[data-flip-key],.agenda-gap[data-flip-key]"));
-      let leading = rows[0];
-      for (const row of rows) { if (row.getBoundingClientRect().top <= rect.top + 24) leading = row; else break; }
-      const last = rows.at(-1), lastRect = last?.getBoundingClientRect();
-      if (flow.scrollTop > 0 && flow.scrollTop + flow.clientHeight >= flow.scrollHeight - 2
-        && last && lastRect && lastRect.top < rect.bottom && lastRect.bottom > rect.top) leading = last;
-      const next = leading?.dataset.flipKey;
-      const focused = document.activeElement instanceof Element ? document.activeElement.closest<HTMLElement>("[data-notice-id]")?.dataset.noticeId : undefined;
-      if (next && focused && !agendaNoticeGroupAt(groupsRef.current, next)?.notices.some(notice => notice.id === focused)) return;
-      if (next) setDate(previous => previous === next ? previous : next);
+      const next = mostVisibleAgendaDate(rows.map(row => {
+        const box = row.getBoundingClientRect();
+        return { date: row.dataset.flipKey!, endDate: row.dataset.flipEnd, top: box.top, bottom: box.bottom };
+      }), top, bottom);
+      if (!next) return;
+      setReading(previous => sameAgendaReadingDate(previous, next) ? previous : next);
+      // Keep a focused action's DOM and URL stable, but never freeze the screen
+      // date. The date-follow control is deliberately outside this focus pin.
+      const focused = document.activeElement instanceof Element ? document.activeElement.closest(".asc-row,.asc-detail a,.asc-detail button:not(.asc-follow)") : null;
+      if (!focused || !boardRef.current?.contains(focused)) {
+        setPresented(previous => sameAgendaReadingDate(previous, next) ? previous : next);
+      }
     };
     const schedule = (event?: Event) => {
-      if (event?.target instanceof Element && event.target !== flow && event.type === "scroll") return;
-      clearTimeout(timer); timer = setTimeout(read, 180);
+      if (event?.type === "scroll" && event.target instanceof Element && event.target !== flow) return;
+      if (!frame) frame = requestAnimationFrame(read);
     };
+    scheduleReadRef.current = schedule;
     flow.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule); host.addEventListener("focusout", schedule);
+    document.addEventListener("visibilitychange", schedule);
+    window.visualViewport?.addEventListener("resize", schedule); window.visualViewport?.addEventListener("scroll", schedule);
+    const observer = new ResizeObserver(() => schedule()); observer.observe(flow);
     schedule();
-    return () => { clearTimeout(timer); flow.removeEventListener("scroll", schedule); window.removeEventListener("resize", schedule); host.removeEventListener("focusout", schedule); };
+    return () => {
+      cancelAnimationFrame(frame); observer.disconnect(); scheduleReadRef.current = () => {};
+      flow.removeEventListener("scroll", schedule); window.removeEventListener("scroll", schedule);
+      window.removeEventListener("resize", schedule); host.removeEventListener("focusout", schedule);
+      document.removeEventListener("visibilitychange", schedule);
+      window.visualViewport?.removeEventListener("resize", schedule); window.visualViewport?.removeEventListener("scroll", schedule);
+    };
   }, [signature]);
 
   useLayoutEffect(() => {
-    if (firstMotion.current) { firstMotion.current = false; return; }
-    if (!reduced && detailRef.current) flipSpring(detailRef.current, "translateY(4px)");
-  }, [selected?.id, date, reduced]);
+    const key = `${reading.date}:${reading.endDate ?? ""}`;
+    if (motionDates.current.has(key)) return;
+    const first = motionDates.current.size === 0;
+    motionDates.current.add(key);
+    if (!first && !reduced && markerRef.current) flipSpring(markerRef.current, "scale(.94)");
+  }, [reading, reduced]);
 
   const row = (notice: AgendaNotice, measure = false) => {
     const Icon = notice.kind === "period" ? Pin : Sprout;
     const content = <><Icon aria-hidden="true" size={15} /><span className="asc-title">{notice.title}</span></>;
     return measure ? <div className="asc-row" key={notice.id}>{content}</div> : (
       <button className="asc-row" key={notice.id} id={`${id}-${notice.id}`} type="button"
-        data-kind={notice.kind} data-active={noticeIsActive(notice, date)} data-notice-id={notice.id} data-supportid={notice.id}
+        data-kind={notice.kind} data-active={noticeIsActive(notice, reading.date) || Boolean(reading.endDate && agendaNoticesInRange([notice], reading.date, reading.endDate).length)} data-notice-id={notice.id} data-supportid={notice.id}
         aria-pressed={selected?.id === notice.id} aria-expanded={selected?.id === notice.id} aria-controls={footerId}
-        data-act="agenda-support-select" onClick={() => { hapticTick(); setManual({ id: notice.id, date }); }}>
+        data-act="agenda-support-select" onClick={event => { event.currentTarget.focus({ preventScroll: true }); hapticTick(); setManual({ id: notice.id, date: presented.date }); }}>
         {content}<span className="asc-row-mark" aria-hidden="true" />
       </button>
     );
@@ -126,26 +167,34 @@ export function AgendaSupportContext({ notices, fallbackDate, children, onDetail
 
   return (
     <div className="agenda-with-notices" data-has-notices={notices.length > 0} ref={hostRef}
-      onFocusCapture={event => { if (event.target instanceof HTMLElement) revealAgendaFrame(event.target); }}
+      onFocusCapture={event => {
+        const target = event.target;
+        // Moving a pointer-focused row before its click lands consumes the
+        // first tap. Reveal on keyboard focus or explicit scroller entry only.
+        if (target instanceof HTMLElement && (target.matches(":focus-visible") || target.classList.contains("agenda-flow"))) revealAgendaFrame(target);
+      }}
       style={{ "--asc-spring": FLIP_SPRING, "--asc-motion-ms": `${FLIP_MS}ms` } as CSSProperties}>
-      {notices.length > 0 ? <section className="agenda-support-board" ref={boardRef} aria-label="기간·업도움" data-reading-date={date} data-reduced={reduced}>
+      {notices.length > 0 ? <section className="agenda-support-board" ref={boardRef} aria-label="기간·업도움" data-reading-date={reading.date} data-reading-end={reading.endDate} data-presented-date={presented.date} data-held={held} data-reduced={reduced}>
         <div className="asc-detail-slot" id={footerId} role="region" aria-label="선택한 안내의 기간과 링크">
-          <div className="asc-detail" ref={detailRef} data-kind={selected?.kind}>
+          <div className="asc-detail" data-kind={selected?.kind}>
             <div className="asc-meta">
-              <div className="asc-head"><h2>기간·업도움</h2><span aria-live="polite">{Number(captionDate.slice(5, 7))}.{Number(captionDate.slice(8, 10))}{captionDate === date ? " 기준" : " 안내"}</span></div>
-              {selected ? noticeRangeText(selected) ? <b className="asc-range">{noticeRangeText(selected)}</b> : null : <span className="asc-no-active">진행 중인 안내 없음</span>}
+              <div className="asc-head"><h2>기간·업도움</h2></div>
+              {selected ? <span className="asc-caption">{noticeRangeText(selected) ? <b className="asc-range">{noticeRangeText(selected)}</b> : null}{held ? <span className="asc-held">{noticeRangeText(selected) ? " · " : ""}{agendaReadingLabel(presented)} 선택 유지</span> : null}</span> : <span className="asc-no-active">해당 날짜의 안내 없음</span>}
             </div>
+            <button className="asc-action asc-follow" type="button" data-act="agenda-support-follow-view" aria-label={`${reading.date}${reading.endDate ? `부터 ${reading.endDate}까지` : ""} 화면 기준 안내 따라가기`} title="가장 많이 보이는 날짜 기준 · 누르면 선택을 해제하고 따라갑니다" onClick={event => {
+              event.currentTarget.focus({ preventScroll: true }); hapticTick(); setManual(null); setPresented(reading);
+            }}><span ref={markerRef} aria-live="polite" aria-atomic="true"><b>{agendaReadingLabel(reading)}</b><small>화면 기준</small></span></button>
             {selected ? <>
-              {onDetail ? <button className="asc-action" type="button" data-act="agenda-support-detail" onClick={event => onDetail(selected.id, event.currentTarget)}>상세</button> : null}
-              {selected.url ? <a className="asc-action asc-link" data-act="agenda-link" aria-label={selected.kind === "period" ? "자세히 보기" : "도우러 가기"} title={selected.kind === "period" ? "자세히 보기" : "도우러 가기"} href={selected.url} target="_blank" rel="noopener noreferrer"><ArrowUpRight aria-hidden="true" size={18} /></a> : null}
-              {onEdit ? <button className="asc-action" type="button" data-act="m-support-edit" onClick={event => onEdit(selected.id, event.currentTarget)}>수정</button> : null}
+              {onDetail ? <button className="asc-action" type="button" data-act="agenda-support-detail" onClick={event => { event.currentTarget.focus({ preventScroll: true }); onDetail(selected.id, event.currentTarget); }}>상세</button> : null}
+              {selected.url ? <a className="asc-action asc-link" data-act="agenda-link" onPointerDown={event => event.currentTarget.focus({ preventScroll: true })} aria-label={selected.kind === "period" ? "자세히 보기" : "도우러 가기"} title={selected.kind === "period" ? "자세히 보기" : "도우러 가기"} href={selected.url} target="_blank" rel="noopener noreferrer"><ArrowUpRight aria-hidden="true" size={18} /></a> : null}
+              {onEdit ? <button className="asc-action" type="button" data-act="m-support-edit" onClick={event => { event.currentTarget.focus({ preventScroll: true }); onEdit(selected.id, event.currentTarget); }}>수정</button> : null}
             </> : null}
           </div>
         </div>
         <div className="asc-stack" style={stackHeight ? { minHeight: stackHeight } : undefined}>
-          {group?.notices.map(notice => row(notice))}
+          {visible.map(notice => row(notice))}
         </div>
-        <div className="asc-measures" aria-hidden="true" inert>{groups.map(g => <div className="asc-measure-group" key={g.start}>{g.notices.map(n => row(n, true))}</div>)}</div>
+        <div className="asc-measures" aria-hidden="true" inert>{stacks.map((stack, index) => <div className="asc-measure-group" key={index}>{stack.map(n => row(n, true))}</div>)}</div>
       </section> : null}
       {children}
     </div>

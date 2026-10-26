@@ -6281,7 +6281,9 @@ export function StudioShell({
               </div>
               <MobileCalendarTitle year={view.year} month={view.month} open={monthPick !== null}
                 onOpen={() => setMonthPick({ anchor: null })} failed={saveState === "failed"}
-                caption={saveState === "failed" ? "저장 실패" : `${schedule.calendar.title} · 편집실`} />
+                caption={saveState === "saving" ? "저장 중…" : saveState === "failed" ? "저장 실패"
+                  : saveState === "saved" && lastSavedKst ? "저장됨"
+                  : `${schedule.calendar.title} · 편집실`} />
               <span className="sr-only">역할: {roleDisplay.label}</span>
               {/* Preserve the existing account action's header cell.
                   로그아웃하면 익명 상태로 공개 포스터를 계속 본다(계정 바꾸려면 다시 로그인). */}

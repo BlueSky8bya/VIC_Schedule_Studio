@@ -42,6 +42,24 @@ export function agendaNoticeGroupAt(groups: readonly AgendaNoticeGroup[], date: 
     ?? [...groups].reverse().find(group => group.start <= date) ?? groups[0];
 }
 export function noticeIsActive(notice: AgendaNotice, date: string): boolean { return notice.start <= date && date <= notice.end; }
+
+/** A collapsed empty-date row is explicitly a range, so include each intersecting notice. */
+export function agendaNoticesInRange(notices: readonly AgendaNotice[], date: string, endDate = date): AgendaNotice[] {
+  return notices.filter(notice => notice.start <= endDate && date <= notice.end);
+}
+
+/** Actual simultaneous stacks, not the union of a transitively connected month-long chain.
+ * A maximum can only grow at a notice start. Collapsed date ranges add their own union. */
+export function agendaNoticeStacks(notices: readonly AgendaNotice[], ranges: readonly { date: string; endDate?: string }[] = []): AgendaNotice[][] {
+  const seen = new Set<string>();
+  const contexts: { date: string; endDate?: string }[] = [...new Set(notices.map(notice => notice.start))].map(date => ({ date }));
+  return [...contexts, ...ranges].flatMap(range => {
+      const active = agendaNoticesInRange(notices, range.date, range.endDate);
+      const key = active.map(notice => notice.id).join("|");
+      if (!active.length || seen.has(key)) return [];
+      seen.add(key); return [active];
+    });
+}
 export function noticeRangeText(notice: AgendaNotice): string {
   const short = (date: string) => `${Number(date.slice(5, 7))}.${Number(date.slice(8, 10))}`;
   return hasSupportDateRange(notice.start, notice.end) ? `${short(notice.start)}–${short(notice.end)}` : "";

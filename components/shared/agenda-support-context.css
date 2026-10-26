@@ -1,17 +1,17 @@
-.agenda-with-notices { --asc-header-height:0px; --asc-board-height:0px; }
+.agenda-with-notices { --asc-header-height:0px; --asc-board-height:0px; --asc-blue:light-dark(#286779,#a6d9e4); --asc-soft:light-dark(#e4f0f1,#384e52); }
 .agenda-support-board {
   --asc-panel:light-dark(#fffaf1,#302a24); --asc-ink:light-dark(#514336,#f2e6d7); --asc-muted:light-dark(#786959,#c7b6a2);
   --asc-rule:light-dark(#e6dccb,#564a3d); --asc-blue:light-dark(#286779,#a6d9e4); --asc-soft:light-dark(#e4f0f1,#384e52);
   --asc-rose:light-dark(#9b4961,#edb3c4); --asc-rose-soft:light-dark(#f4e6e9,#523b42); --asc-shadow:light-dark(rgb(92 65 36 / .12),rgb(0 0 0 / .25));
   position:sticky; top:var(--asc-header-height); z-index:7; isolation:isolate; width:100%; box-sizing:border-box;
-  margin:0; padding:7px 10px 0; border:1px solid var(--asc-rule); border-radius:var(--r-card,16px);
+  margin:0; padding:8px 12px; border:1px solid var(--asc-rule); border-radius:var(--r-card,16px);
   color:var(--asc-ink); background:var(--asc-panel); box-shadow:0 6px 18px -11px var(--asc-shadow);
 }
 .asc-head { display:flex; align-items:center; justify-content:space-between; gap:4px; }
-.asc-head h2 { margin:0; font-size:var(--text-label,13px); line-height:1.4; color:var(--asc-blue); }
-.asc-head > span { font-size:var(--text-caption,12px); color:var(--asc-muted); white-space:nowrap; }
-.asc-stack { position:relative; }
-.asc-row { display:flex; align-items:center; gap:7px; box-sizing:border-box; width:100%; min-height:var(--control-hit,44px); padding:5px 5px; border:0; border-radius:10px; text-align:left; font:inherit; color:var(--asc-ink); background:transparent; }
+.asc-head h2 { margin:0; font-size:var(--text-caption,12px); line-height:1.2; color:var(--asc-blue); }
+.asc-stack { position:relative; box-sizing:border-box; padding-top:4px; }
+.asc-stack,.asc-measure-group { display:flex; flex-direction:column; gap:2px; }
+.asc-row { display:flex; align-items:center; gap:7px; box-sizing:border-box; width:100%; min-height:var(--control-hit,44px); padding:6px 5px; border:0; border-radius:10px; text-align:left; font:inherit; color:var(--asc-ink); background:transparent; }
 .asc-row > svg { flex:0 0 15px; color:var(--asc-blue); }
 .asc-row[data-kind="up"] > svg { color:var(--asc-rose); }
 .asc-title { flex:1; min-width:0; font-size:var(--text-body,14px); font-weight:700; line-height:1.4; white-space:normal; word-break:keep-all; overflow-wrap:anywhere; }
@@ -22,15 +22,23 @@
 .asc-row[data-active="true"][data-kind="up"] .asc-row-mark { background:var(--asc-rose); }
 .asc-detail-slot { box-sizing:border-box; height:44px; overflow:clip; }
 .asc-detail { display:flex; align-items:center; gap:4px; height:100%; }
-.asc-meta { display:flex; flex:1; min-width:0; flex-direction:column; color:var(--asc-blue); font-size:var(--text-caption,12px); line-height:1.4; }
+.asc-meta { display:flex; flex:1; min-width:0; flex-direction:column; color:var(--asc-blue); font-size:var(--text-caption,12px); line-height:1.2; }
 .asc-detail[data-kind="up"] .asc-meta { color:var(--asc-rose); }
 .asc-range { font-weight:600; overflow-wrap:anywhere; }
+.asc-caption { overflow-wrap:anywhere; }
+.asc-held { color:var(--asc-muted); }
 .asc-action { display:inline-flex; flex:none; align-items:center; justify-content:center; gap:2px; box-sizing:border-box; width:44px; min-height:44px; padding:0; border:0; border-radius:10px; background:transparent; color:var(--asc-blue); font:inherit; font-size:var(--text-caption,12px); text-decoration:none; }
 .asc-link { background:var(--asc-soft); }
+.asc-follow { background:var(--asc-soft); color:var(--asc-blue); }
+.asc-follow > span { display:flex; align-items:center; flex-direction:column; gap:1px; }
+.asc-follow b { font-size:var(--text-caption,12px); line-height:1.2; white-space:nowrap; }
+.asc-follow small { font-size:10px; line-height:1.2; white-space:nowrap; }
+.agenda-support-board[data-held="true"] .asc-follow { box-shadow:inset 0 0 0 1px var(--asc-blue); }
 .asc-action:focus-visible { outline-offset:-2px; }
 .asc-detail[data-kind="up"] .asc-link { background:var(--asc-rose-soft); color:var(--asc-rose); }
 .asc-no-active { color:var(--asc-muted); font-size:var(--text-caption,12px); }
-.asc-measures { position:absolute; top:31px; left:10px; right:10px; visibility:hidden; pointer-events:none; z-index:-1; }
+.asc-measures { position:absolute; top:56px; left:12px; right:12px; visibility:hidden; pointer-events:none; z-index:-1; }
+.asc-measure-group { padding-top:4px; }
 .asc-measure-group .asc-row::after { content:""; flex:0 0 5px; }
 /* Measure the actual toolbar, clip scroll content only so rail popovers escape. */
 .agenda-with-notices > .agenda.agenda { box-sizing:border-box; height:var(--asc-frame-height,calc(100svh - 240px)); min-height:0; margin-top:0; padding-block:8px; align-items:stretch; }
@@ -43,6 +51,8 @@
 .agenda-with-notices .agenda .agenda-legend .panel-section-body > * { flex-shrink:0; }
 .agenda-with-notices .agenda-day { scroll-margin-block:8px; }
 .agenda-with-notices .agenda-day { box-shadow:0 4px 12px -9px rgb(90 66 37 / .2); }
+.agenda-with-notices :is(.agenda-day,.agenda-gap)[data-notice-reading="true"] { box-shadow:inset 0 0 0 1px var(--asc-blue),0 4px 12px -9px rgb(90 66 37 / .2); }
+.agenda-with-notices .agenda-day[data-notice-reading="true"] .agenda-when { color:var(--asc-blue); transition:color 160ms ease; }
 .agenda-with-notices .agenda-event { border-radius:var(--r-card,12px); }
 @media (hover:hover) and (pointer:fine) {
   .asc-row,.asc-action { transition:background 180ms ease,box-shadow 180ms ease; }
@@ -52,9 +62,10 @@
   .asc-link:hover svg { transform:translate(2px,-2px); }
   /* Highlight only: the schedule's position/width do not animate on hover. */
   .agenda-with-notices .agenda-day:hover { box-shadow:0 7px 18px -10px rgb(90 66 37 / .25); }
+  .agenda-with-notices .agenda-day[data-notice-reading="true"]:hover { box-shadow:inset 0 0 0 1px var(--asc-blue),0 7px 18px -10px rgb(90 66 37 / .25); }
   .agenda-with-notices .agenda .agenda-event:hover { transform:none; }
 }
-[data-reduce-motion="1"] .asc-detail,[data-reduce-motion="1"] .asc-action svg { transition:none !important; transform:none !important; }
+[data-reduce-motion="1"] .asc-follow > span,[data-reduce-motion="1"] .asc-action svg { transition:none !important; transform:none !important; }
 
 /* A short phone cannot fit the whole header/notice board plus usable tags.
    Let the full notice board leave in normal document flow; the last viewport

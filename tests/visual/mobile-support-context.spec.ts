@@ -488,11 +488,12 @@ async function wheelToDate(page: Page, date: string) {
 async function openCozy(page: Page, path: string) {
   await page.goto(path);
   await expect(hostOf(page)).toHaveCount(1);
-  await expect(rowsOf(page)).toHaveCount(3);
+  await expect(boardOf(page)).toBeVisible();
   await settle(page);
   // The initial fallback is today, but a month begins with older rows. Align
   // the actual reading position before checking selection/focusout stability.
   await wheelToDate(page, supportContextFixture().focusDate);
+  await expect(rowsOf(page)).toHaveCount(3);
 }
 
 async function leaveBoardFocus(page: Page) {
@@ -543,7 +544,7 @@ for (const width of [320, 390]) test.describe(`mobile${width}`, () => {
       const short = (date: string) => `${Number(date.slice(5, 7))}.${Number(date.slice(8, 10))}`;
       await expect(boardOf(page).locator(".asc-range")).toHaveText(`${short(source.startsAt.slice(0, 10))}–${short(source.endDateKey!)}`);
       expect(frames.at(-1)!.ms).toBeGreaterThanOrEqual(520);
-      expect(frames.some(frame => frame.transform !== "none")).toBe(true);
+      expect(frames.every(frame => frame.transform === "none"), "The action strip remains still; only the date marker may animate").toBe(true);
       const first = before.cards[0];
       for (const frame of frames) {
         expect(Math.abs(frame.scrollY - before.scrollY)).toBeLessThan(.5);
@@ -625,13 +626,17 @@ for (const width of [320, 390]) test.describe(`mobile${width}`, () => {
     await page.mouse.wheel(0, 220);
     await expect.poll(() => flowOf(page).evaluate(node => node.scrollTop)).toBeGreaterThan(before.flowScrollTop + 20);
     await page.waitForTimeout(250);
-    await expect(boardOf(page)).toHaveAttribute("data-reading-date", date!);
+    await expect(boardOf(page)).not.toHaveAttribute("data-reading-date", date!);
+    await expect(boardOf(page)).toHaveAttribute("data-presented-date", date!);
+    await expect(boardOf(page)).toHaveAttribute("data-held", "true");
     await expect(link).toHaveAttribute("href", href!);
     await expect(link).toBeFocused();
     const focused = await geometry(page);
     assertStable(before, focused, false);
-    await page.keyboard.press("Tab");
-    await expect(boardOf(page)).not.toHaveAttribute("data-reading-date", date!);
+    await boardOf(page).locator('[data-act="agenda-support-follow-view"]').focus();
+    await page.keyboard.press("Enter");
+    await expect(boardOf(page)).toHaveAttribute("data-held", "false");
+    await expect.poll(async () => (await boardOf(page).getAttribute("data-presented-date")) === (await boardOf(page).getAttribute("data-reading-date"))).toBe(true);
     receipts.get(page)!.measurements = { before, focused, reducedFrames: frames.length, afterBlur: await geometry(page) };
   });
 });
@@ -915,7 +920,15 @@ test.describe("preview-short-landscape568x320", () => {
   test("full notices and native records return targets remain reachable around the 206px frame", async ({ page }) => {
     test.setTimeout(60_000); await seed(page, true, true);
     await page.goto("/visual-fixture/studio?supportUX=cozy&role=owner&viewer=1");
-    await expect(page.locator(".viewer-fullscreen")).toBeVisible(); await expect(rowsOf(page)).toHaveCount(3); await settle(page);
+    await expect(page.locator(".viewer-fullscreen")).toBeVisible(); await expect(boardOf(page)).toBeVisible(); await settle(page);
+    // The board now shows only notices for the actual viewed date. Establish
+    // the three-overlap day in the real short reading frame, then keep that
+    // explicit notice selection while returning to inspect the full board.
+    await flowOf(page).focus();
+    await wheelToDate(page, supportContextFixture().focusDate);
+    await rowsOf(page).first().focus();
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
+    await settle(page); await expect(rowsOf(page)).toHaveCount(3);
     const titleInk = () => rowsOf(page).evaluateAll(rows => {
       const header = document.querySelector<HTMLElement>(".agenda-header")!.getBoundingClientRect();
       const footer = document.querySelector<HTMLElement>(".agenda-monthbar")!.getBoundingClientRect();
@@ -969,7 +982,7 @@ test.describe("preview-short-landscape568x320", () => {
     // all three notices active in the visible date rather than a later teaser.
     await page.setViewportSize({ width: 390, height: 844 }); await settle(page);
     // Reset mobile Chrome's capture viewport after rotation before the portrait artifact.
-    await page.reload(); await expect(rowsOf(page)).toHaveCount(3); await settle(page);
+    await page.reload(); await expect(boardOf(page)).toBeVisible(); await settle(page);
     await page.locator('.agenda-monthbar [data-act="mb-act"]').tap();
     await page.evaluate(() => new Promise<void>(resolve => setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => resolve())), 0)));
     await settle(page);

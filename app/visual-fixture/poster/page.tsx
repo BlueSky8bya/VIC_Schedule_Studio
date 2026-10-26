@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { agendaFrameFixture, supportContextFixture } from "../support-context";
+import { agendaFrameFixture, readingContextFixture, supportContextFixture } from "../support-context";
 import { PublicPoster } from "@/components/poster/public-poster";
 import { isSeasonKey } from "@/components/shared/ambient/registry";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
@@ -30,7 +30,7 @@ export default async function VisualPosterFixture({
     notFound();
   }
   const sp = await searchParams;
-  const cozy = sp?.supportUX === "cozy" ? supportContextFixture() : sp?.supportUX === "frame-none" ? agendaFrameFixture() : null;
+  const cozy = sp?.supportUX === "reading" ? readingContextFixture() : sp?.supportUX === "cozy" ? supportContextFixture() : sp?.supportUX === "frame-none" ? agendaFrameFixture() : null;
   const linkedMonth = sp?.monthLink === "1" ? parsePublicMonth(sp.month) : null;
   // teaser=<초> — 지금부터 N초 뒤 공개되는 '최초공개' 일정을 하나 끼워 넣는다(테스트 전용).
   // 시간에 걸린 기능이라 고정 샘플로는 검증이 안 된다: 공개 전 제목이 DOM에 새지 않는지,

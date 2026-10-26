@@ -3740,6 +3740,7 @@ export function PublicPoster({
                   <button
                     className="agenda-gap"
                     data-flip-key={row.days[0].cell.isoDate}
+                    data-flip-end={row.days[row.days.length - 1].cell.isoDate}
                     key={row.key}
                     onClick={() => {
                       hapticTick();

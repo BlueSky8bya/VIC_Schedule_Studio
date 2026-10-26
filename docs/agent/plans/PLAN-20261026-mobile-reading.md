@@ -1,0 +1,15 @@
+# Mobile reading context and save gallery — 2026-10-26
+
+Current owner adoption: capture owner/developer saving/saved/failed states with three overlapping notices, compare stable header/dates, investigate19-day context while20-day content is being read, research better date linkage/motion and redesign cramped board padding using rendered snapshots.
+
+Latest follow-up: all three states have visible text in the existing month-caption line: `저장 중…`, `저장됨`, `저장 실패`. Initial idle or a saved state without a real lastSavedKst does not claim success. No new badge/row or queue semantics.
+
+L2 plan: first reproduce the old behavior with a fixed synthetic19/20 fixture and a six-state save gallery. Define a visible reading-date anchor instead of treating a tiny trailing previous-day fragment as the current day. Pair the board date and corresponding visible date card with a clear text/shape highlight; bounded color/opacity feedback follows the single in-app reduced-motion authority. Preserve focused actions without silently presenting an old date as current. Give the board real breathing room while retaining full titles,44px actions and usable date/tag frames across narrow/short layouts. Compare before/after screenshots and exact geometry.
+
+Boundary: shared public/studio/preview implementation, KST helpers, unchanged write queue/permission checks/public DTOs. Synthetic intercepted writes only, no production DB mutation. Automatic reading/highlight/save feedback remains excluded from human activity analytics (G-22); audit existing explicit controls.
+
+Verification: six owner/developer state captures,19→20 boundary/rapid scroll/long card/focus safety,0/3 notices,320/390 portrait and short/coarse landscape, light/dark, in-app reduced motion, relevant units/type/lint/build/harness and independent review. Adopted scope continues through exact release confirmation; real login/RLS/physical-device evidence remains separate. Prior worktree cleanup was policy-blocked: reuse its clean owned branch; do not retry its deletion.
+
+Implementation and scoped local verification are complete. [Current evidence and original failures](../verification/MOBILE_READING-20261026.md). Exact release confirmation is kept in durable controller work `mobile-reading-20261026` and its deployment receipt; local PASS alone does not establish release. Before captures found24th dominant while23rd was reported. Final state/selection changes retain0px header/date/card drift and show every save caption. Research informs a design decision, not a claim to infer a viewer's eye gaze.
+
+Implementation: one shared most-visible clipped date/range, event-driven rAF, separate current and focus-preserved presentation,44px explicit follow control and matching inset card cue. Only intersecting notices show by default. Measure actual simultaneous stacks and collapsed ranges, retaining complete titles and fixed geometry. The date marker alone may use the shared spring once per encountered date; no toolbar/card translation. G22 fixed follow-control capture and both developer displays extend the existing accepted-ideas activity tests; automatic context/save feedback remains excluded.

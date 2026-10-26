@@ -113,11 +113,14 @@ async function waitWrite(page: Page, count: number) {
   await expect.poll(() => Boolean(proofs.get(page)!.release)).toBe(true);
   await expect(feedback(page)).toHaveAttribute("data-state", "saving");
   await expect(status(page)).toContainText("저장 중");
+  await expect(page.locator(".studio-mobile .mobile-month-caption")).toBeVisible();
+  await expect(page.locator(".studio-mobile .mobile-month-caption")).toHaveText("저장 중…");
 }
 
 async function release(page: Page, ok: boolean) {
   proofs.get(page)!.release!(ok);
   await expect(feedback(page)).toHaveAttribute("data-state", ok ? "saved" : "failed");
+  await expect(page.locator(".studio-mobile .mobile-month-caption")).toHaveText(ok ? "저장됨" : "저장 실패");
 }
 
 for (const view of [
@@ -132,6 +135,7 @@ for (const view of [
     await expect(feedback(page)).toHaveAttribute("aria-hidden", "true");
     await expect(feedback(page).locator("*")).toHaveCount(0); await expect(feedback(page)).not.toHaveAttribute("title");
     await expect(status(page)).toHaveText(""); await expect(gear(page)).toHaveAccessibleName("설정");
+    await expect(page.locator(".studio-mobile .mobile-month-caption")).not.toHaveText(/저장됨|저장 중|저장 실패/);
     await editFirst(page, "합성 헤더 성공"); await waitWrite(page, 1);
     const pending = await layout(page); proofs.get(page)!.measurements.pending = pending;
     // A pending save must not disable unrelated settings or move the gear.
