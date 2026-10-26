@@ -71,7 +71,7 @@ async function inspectMonthPicker(page: Page, context: BrowserContext, base: str
     await monthTitle(page).click(); await expect(chooser(page)).toBeVisible();
     const oldTitle = await monthTitle(page).elementHandle();
     await page.setViewportSize({ width: 390, height: 844 });
-    await expect(page.locator(".agenda-title")).toBeVisible();
+    await expect(page.locator(".mobile-calendar-title")).toBeVisible();
     expect(await oldTitle!.evaluate(node => node.isConnected)).toBe(false);
     await page.keyboard.press("Escape"); await expect(chooser(page)).toHaveCount(0);
     await expect(monthTitle(page)).toBeFocused();
@@ -125,7 +125,10 @@ async function interceptWrites(context: BrowserContext, base: string, rejectFirs
   });
   return writes;
 }
-const saveStatus = (page: Page) => page.locator(".save-status").evaluateAll(nodes => nodes.map(node => ({ text: node.textContent, title: node.getAttribute("title"), state: node.className })));
+async function saveStatus(page: Page) {
+  const mobile = page.locator(".studio-mobile .mobile-save-feedback");
+  return (await mobile.count() ? mobile : page.locator(".save-status")).evaluateAll(nodes => nodes.map(node => ({ text: node.textContent, title: node.getAttribute("title"), state: node.getAttribute("data-state") ?? node.className })));
+}
 async function editFirst(page: Page, mobile: boolean) {
   const pill = page.locator(mobile ? '[data-act="agenda-event"][data-companion-event="ordinary"]' : '.studio-event-pill[data-companion-event="ordinary"]').first();
   if (mobile) await pill.click(); else await pill.dblclick();
@@ -152,8 +155,15 @@ async function saveFeedback(page: Page, context: BrowserContext, base: string, i
   if (mobile) await expect(input(page, mobile)).toHaveValue(draft); else await expect(input(page, mobile)).toHaveText(draft);
   await expect(page.locator(".draft-restored:visible")).toContainText("임시 저장본을 불러왔어요");
   await page.keyboard.press("Control+s"); await expect.poll(() => writes.length).toBe(1);
-  await expect(page.locator(".save-status.saving")).toBeVisible();
-  await expect(page.locator(".save-status.saved .ss-time")).toHaveText(/^\d{2}:\d{2}$/);
+  if (mobile) {
+    await expect(page.locator('.mobile-save-feedback[data-state="saving"]')).toBeVisible();
+    await expect(page.locator('.mobile-save-feedback[data-state="saved"]')).toBeVisible();
+    await expect(page.locator(".m-settings-slot [role=status]")).toContainText("저장됨");
+    await expect(page.locator(".mobile-save-feedback")).toHaveAttribute("title", /\d{2}:\d{2}.*KST/);
+  } else {
+    await expect(page.locator(".save-status.saving")).toBeVisible();
+    await expect(page.locator(".save-status.saved .ss-time")).toHaveText(/^\d{2}:\d{2}$/);
+  }
   expect(writes[0].op).toBe("save"); expect(writes[0].payload.id).toBe(id); expect(writes[0].payload.publicTitle).toBe(draft); expect(writes[0].payload.visibilityScope).toBe("public");
   await expect(pill).toContainText(draft);
   if (mobile && await input(page, mobile).count()) await closeEditor(page, mobile);

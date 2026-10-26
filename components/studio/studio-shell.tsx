@@ -32,6 +32,7 @@ import {
   Eye,
   Heart,
   Keyboard,
+  LogIn,
   LogOut,
   Pencil,
   Pin,
@@ -51,6 +52,8 @@ import { pickAmbient, type SeasonKey } from "@/components/shared/ambient/registr
 import { ShowcaseExit, useShowcaseEnvironment, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
 import { PanelSection } from "@/components/shared/panel-section";
 import { SettingsButton } from "@/components/shared/settings-button";
+import { MobileCalendarTitle } from "@/components/shared/mobile-calendar-title";
+import { MobileSaveFeedback } from "@/components/shared/mobile-save-feedback";
 import { CompanionHomeLauncherSlot, CompanionHomeShelfSlot } from "@/components/shared/companion-home-slots";
 import { CompanionDetailBridge } from "@/components/poster/viewer-companion/companion-detail-bridge";
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
@@ -349,7 +352,13 @@ export function StudioShell({
     }
   }
   // (P2-KST-1: nowKstHm은 lib/calendar/month.ts 단일 출처에서 import.)
-  // 저장 상태 칩 — 데스크톱 헤더·모바일 역할바 양쪽에서 같은 모양으로 쓴다.
+  function renderSaveRecovery() {
+    return failedSaveRecoveryRef.current.available(Date.now(), canRecoverSavedForm).length > 0 && !viewerMode && !previewRole ? (
+      <button className="button" type="button" data-act="editor-recover-failed-save" onClick={recoverFailedSave}
+        aria-label="입력 복구" title="보관한 입력을 다시 열어요. 10분 동안 이 화면에서만 보관해요.">복구</button>
+    ) : null;
+  }
+  // Desktop retains its detailed chip; mobile projects the same queue in the gear slot.
   function renderSaveStatus() {
     return (
       <>
@@ -372,10 +381,7 @@ export function StudioShell({
         </em>
         {saveState === "saved" && lastSavedKst ? <b className="ss-time">{lastSavedKst}</b> : null}
       </span>
-      {failedSaveRecoveryRef.current.available(Date.now(), canRecoverSavedForm).length > 0 && !viewerMode && !previewRole ? (
-        <button className="button" type="button" data-act="editor-recover-failed-save" onClick={recoverFailedSave}
-          aria-label="입력 복구" title="보관한 입력을 다시 열어요. 10분 동안 이 화면에서만 보관해요.">복구</button>
-      ) : null}
+      {renderSaveRecovery()}
       </>
     );
   }
@@ -6262,19 +6268,18 @@ export function StudioShell({
         <div className="m-scroll-region">
           <div className="m-topstick">
             <header className="agenda-header">
-              {/* 모바일 왼쪽은 저장 상태만 둔다. 배포 버전은 PC 화면 하단에서 복사한다.
-                  설정은 아래 월 이동 줄에 둔다. */}
-              <div className="m-head-left">
-                {renderSaveStatus()}
+              <div className="m-settings-slot">
+                <SettingsButton open={modal === "settings"} dataAct="studio-settings" onClick={() => { hapticTick(); setCompanionBook(false); setModal("settings"); }} />
+                <MobileSaveFeedback state={saveState} lastSavedKst={lastSavedKst} />
               </div>
-              <h1>
-                {schedule.calendar.title}
-                {/* 월 표기는 바로 아래 월 내비가 담당 — 중복·겹침 제거(사용자 요청). */}
-                <span>편집실</span>
-              </h1>
+              <MobileCalendarTitle year={view.year} month={view.month} open={monthPick !== null}
+                onOpen={() => setMonthPick({ anchor: null })} failed={saveState === "failed"}
+                caption={saveState === "failed" ? "저장 실패" : `${schedule.calendar.title} · 편집실`} />
               <span className="sr-only">역할: {roleDisplay.label}</span>
               {/* Preserve the existing account action's header cell.
                   로그아웃하면 익명 상태로 공개 포스터를 계속 본다(계정 바꾸려면 다시 로그인). */}
+              <div className="m-head-actions">
+              {renderSaveRecovery()}
               {actor.isAuthenticated ? (
                 <form className="m-head-logout" action="/api/auth/logout" method="post" data-act="logout">
                   <button
@@ -6284,47 +6289,16 @@ export function StudioShell({
                     type="submit"
                   >
                     <LogOut aria-hidden="true" size={12} strokeWidth={2.5} />
-                    로그아웃
+                    <span className="sr-only">로그아웃</span>
                   </button>
                 </form>
               ) : (
                 <Link className="m-head-logout button" href="/login" data-act="login">
-                  로그인
+                  <span className="sr-only">로그인</span><LogIn aria-hidden="true" size={16} />
                 </Link>
               )}
-            </header>
-
-            {/* P0-A11Y-1: 월 이동을 스와이프 없이도 — 보이는 ◀ ▶(44px 터치 타깃). 스와이프·키보드와
-                같은 moveMonth 경로라 슬라이드/햅틱도 동일. */}
-            <div className="m-month-nav">
-              <div aria-label="월 이동" className="m-month-switch" role="group">
-              <button
-                aria-label="이전 달"
-                className="m-month-btn"
-                onClick={() => moveMonth(-1)} data-act="month-prev"
-                type="button"
-              >
-                <ChevronLeft aria-hidden="true" size={20} strokeWidth={2.5} />
-              </button>
-              <MonthTitleButton onOpen={() => setMonthPick({ anchor: null })} open={monthPick !== null}>
-                <strong aria-live="polite">
-                  {view.year}년 {view.month}월
-                </strong>
-              </MonthTitleButton>
-              <button
-                aria-label="다음 달"
-                className="m-month-btn"
-                onClick={() => moveMonth(1)} data-act="month-next"
-                type="button"
-              >
-                <ChevronRight aria-hidden="true" size={20} strokeWidth={2.5} />
-              </button>
               </div>
-              {/* 2026-10-16 owner placement exception to UI-18: studio settings
-                  sit beside month navigation; viewer keeps its header gear.
-                  The 44px control, settings modal and focus/history stay shared. */}
-              <SettingsButton open={modal === "settings"} dataAct="studio-settings" onClick={() => { hapticTick(); setCompanionBook(false); setModal("settings"); }} />
-            </div>
+            </header>
           </div>
 
           {companionDesktop && companionPrefs.enabled ? <CompanionHomeShelfSlot onHost={companionCompactHostRef} side={avatarSide} /> : null}
@@ -6681,10 +6655,9 @@ export function StudioShell({
           </AgendaSupportContext>
         </div>
 
-        {/* 하단 엄지존 액션레일 — 옛 '< >' 자리. 월 이동은 좌우 스와이프로(달력을 쓸면 넘어감).
-            누르기 쉬운 핵심 버튼(미리보기·비공개)을 엄지 닿는 바닥에 모았다.
-            계정변경(로그아웃)은 헤더 우상단으로 옮겼다(저장됨 칩이 있던 자리). */}
+        {/* Visible month steps share the thumb toolbar with Today and Preview. */}
         <nav className="m-actionrail" aria-label="편집실 도구">
+          <button className="button m-month-btn" aria-label="이전 달" data-act="month-prev" type="button" onClick={() => moveMonth(-1)}><ChevronLeft aria-hidden="true" size={20} /></button>
           {/* '오늘' — 시청자 화면과 같은 복귀 버튼(사용자 요청). 항상 미리보기 바로 왼쪽
               (비공개 버튼이 있는 역할은 그 사이) — 역할이 달라도 같은 자리라 근육기억 유지. */}
           <button
@@ -6694,7 +6667,7 @@ export function StudioShell({
             type="button"
            data-act="m-io-pill">
             <CalendarCheck aria-hidden="true" size={16} />
-            오늘
+            <span className="sr-only">오늘</span>
           </button>
           {/* 오른쪽: 미리보기 / 시청자 화면 — 계정변경과 위치 swap. */}
           {isDeveloper ? (
@@ -6707,6 +6680,7 @@ export function StudioShell({
               시청자 화면
             </button>
           )}
+          <button className="button m-month-btn" aria-label="다음 달" data-act="month-next" type="button" onClick={() => moveMonth(1)}><ChevronRight aria-hidden="true" size={20} /></button>
         </nav>
 
         {canEdit && mobileEditId !== null ? renderMobileEditSheet() : null}

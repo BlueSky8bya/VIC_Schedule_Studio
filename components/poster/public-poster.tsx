@@ -51,6 +51,7 @@ import { pickAmbient } from "@/components/shared/ambient/registry";
 import { ShowcaseExit, useShowcaseEnvironment, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
 import { PanelSection } from "@/components/shared/panel-section";
 import { SettingsButton } from "@/components/shared/settings-button";
+import { MobileCalendarTitle } from "@/components/shared/mobile-calendar-title";
 import { CompanionHomeLauncherSlot, CompanionHomeShelfSlot } from "@/components/shared/companion-home-slots";
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
@@ -3732,8 +3733,7 @@ export function PublicPoster({
               기록
             </button>
           ) : null}
-          {/* 미리보기 '편집실로 가기'는 색상 필터 박스 '아래'에 — 박스가 vh 고정이라 스크롤해도
-              안 들썩이고(인사이트 버튼과 동일), 우상단 대신 엄지 닿는 아래쪽이라 누르기 쉽다. */}
+          {previewNav ? <div className="agenda-legend-nav">{previewNav}</div> : null}
           {companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed ? <CompanionHomeLauncherSlot onHost={companionLauncherHostRef} /> : null}
           </div>
         ) : null}
@@ -4995,16 +4995,9 @@ export function PublicPoster({
             {settingsButton}
             {/* 시청자 미리보기 진입 시 — 제목 왼쪽 여백 칸에 안내(작게). */}
             {previewNote ? <span className="agenda-preview-left">{previewNote}</span> : null}
-            {/* 웹과 같은 문법(2026-09-17 소유자): 제목 = 보고 있는 달, 아랫줄 = 데뷔 D+. */}
-            <h1 className="agenda-title">
-              <span className="title-spark" aria-hidden="true">✨️</span>
-              {/* 제목 = 월 피커 버튼(편집실과 같은 부품). 모바일은 ▾가 눌림을 말한다. */}
-              <MonthTitleButton onOpen={() => setMonthPick({ anchor: null })} open={monthPick !== null}>
-                {view.year}년 {String(view.month).padStart(2, "0")}월
-              </MonthTitleButton>
-              <span className="title-spark" aria-hidden="true">✨️</span>
-            </h1>
-            {/* 모바일 미리보기 복귀는 하단 도구줄에서 월 이동·검색·오늘과 함께 제공한다. */}
+            <MobileCalendarTitle year={view.year} month={view.month} open={monthPick !== null}
+              onOpen={() => setMonthPick({ anchor: null })}
+              caption={debutDPlus(today) === null ? undefined : `데뷔 ${debutDPlus(today)!.toLocaleString("ko-KR")}일째`} />
             {accountSwitch ? (
               // 이 헤더는 모바일 전용(agenda-header, showAgenda=isNarrow). 익명 로그인은
               // /api/auth/login으로 바로 POST하되, 클릭 시점에 handleMobileLogin이 환경을
@@ -5037,17 +5030,6 @@ export function PublicPoster({
                 </button>
               </form>
             ) : null}
-            {(() => {
-              const dplus = debutDPlus(today);
-              if (dplus === null) return null;
-              const days = dplus.toLocaleString("ko-KR");
-              return (
-                // 모바일은 한 줄만(2026-09-17 소유자: D+ 없이 "데뷔 N일째"로 압축).
-                <span className="agenda-month agenda-debut" title={`D+${days}`}>
-                  데뷔 {days}일째
-                </span>
-              );
-            })()}
             {accountSwitch && accountEmail ? (
               <PlainEmail className="account-email agenda-email" title={accountEmail} value={accountEmail} />
             ) : null}
@@ -5335,7 +5317,7 @@ export function PublicPoster({
 
       {/* 월 이동 버튼을 하단 좌·우에 띄운다(가운데는 비워 '맨 위로' 버튼과 안 겹치게).
           시청자·아젠다·꾸미기 모두 — 달력을 보며 월을 넘기기 쉽게(HCI). 상단 월 pill은 폐지. */}
-      <nav className={`agenda-monthbar${isNarrow && previewNav ? " has-preview" : ""}`} data-pm-exit="3" aria-label="월 이동">
+      <nav className="agenda-monthbar" data-pm-exit="3" aria-label="월 이동">
         {/* 스와이프(2629)는 톡이 울리는데 화살표는 맨손이었다 — 같은 동작은 같은 감촉.
             톡은 moveMonth 안이 아니라 여기서 울린다(안에 넣으면 jumpToday·스와이프가 두 번 울린다). */}
         <button
@@ -5411,7 +5393,6 @@ export function PublicPoster({
           </div>
         ) : null}
 
-        {isNarrow && previewNav ? <div className="agenda-toolbar-preview">{previewNav}</div> : null}
 
         {/* PC '오늘' — 지도 앱 '내 위치' 문법: 오늘 달을 벗어났을 때만 › 옆에 떠오른다(헤더에 상자를
             더하지 않아 제목 대칭·크기 문제가 없다). 모바일은 위 mb-center의 오늘/LIVE가 담당. */}

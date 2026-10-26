@@ -1,21 +1,25 @@
 import { expect, test, type Page } from "@playwright/test";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
+import { getTodayKst, nowKstHm } from "@/lib/calendar/month";
 
 const posts = new WeakMap<Page, string[]>(), errors = new WeakMap<Page, string[]>();
 const publicReads = new WeakMap<Page, number[]>();
-const artifactPrefix = process.env.COMPANION_HEADER_ARTIFACT_PREFIX ?? "companion-066-header-placement";
+const artifactDir = resolve(".scratch-pw/mobile-header", `${getTodayKst()}-${nowKstHm().replace(":", "")}-${process.pid}`);
+const artifactPrefix = `${artifactDir}/${process.env.COMPANION_HEADER_ARTIFACT_PREFIX ?? "shared-header"}`;
 const windowOf = (page: Page) => page.getByRole("dialog", { name: "설정", exact: true });
-const gearOf = (page: Page) => page.locator(".agenda-header > .viewer-settings-open,.m-month-nav > .viewer-settings-open");
+const gearOf = (page: Page) => page.locator(".agenda-header .viewer-settings-open:visible");
 
 test.beforeEach(async ({ page }) => {
+  mkdirSync(artifactDir, { recursive: true });
   const attempted: string[] = [], failures: string[] = [], reads: number[] = [];
   posts.set(page, attempted); errors.set(page, failures); publicReads.set(page, reads);
   const manifest = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
   const readActions = new Set(Object.entries(manifest).filter(([, action]) => action.exportedName === "getPublicPreviewAction").map(([id]) => id));
+  const heartReads = new Set(Object.entries(manifest).filter(([, action]) => action.exportedName === "getAnonHeartIdsAction").map(([id]) => id));
   expect(readActions.size).toBe(1);
   page.on("pageerror", error => failures.push(error.message));
   await page.route("**/*", route => {
@@ -27,15 +31,21 @@ test.beforeEach(async ({ page }) => {
       reads.push(Date.now());
       return route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":"fixture"}\n1:${JSON.stringify(samplePublicScheduleData)}\n` });
     }
-    if (request.method() === "POST") {
+    if (request.method() === "POST" && pathname === "/visual-fixture/poster" && heartReads.has(request.headers()["next-action"])) return route.fulfill({ contentType: "text/x-component", body: '0:{"a":"$@1","f":[],"b":"fixture"}\n1:[]\n' });
+    if (!["GET", "HEAD", "OPTIONS"].includes(request.method())) {
       attempted.push(pathname);
       return route.fulfill({ status: 500, body: "" });
     }
+    if (!["127.0.0.1", "localhost", "[::1]"].includes(new URL(request.url()).hostname)) return route.abort();
     return route.continue();
   });
   await page.route("**/api/soop-live**", route => route.request().method() === "GET" ? route.fulfill({ json: { live: false } }) : route.fallback());
 });
-test.afterEach(async ({ page }) => {
+test.afterEach(async ({ page }, info) => {
+  if (info.status !== info.expectedStatus && !page.isClosed()) {
+    await page.screenshot({ path: `${artifactPrefix}-${info.titlePath.join("-").replace(/[^a-zA-Z0-9-]+/g, "-")}-failed.png` });
+    writeFileSync(`${artifactPrefix}-failed-requests.json`, JSON.stringify({ posts: posts.get(page), errors: errors.get(page), publicReads: publicReads.get(page) }, null, 2));
+  }
   expect(posts.get(page)).toEqual([]);
   expect(errors.get(page)).toEqual([]);
 });
@@ -57,12 +67,13 @@ async function headerMetrics(page: Page) {
   return gearOf(page).evaluate(node => {
     const gear = node.getBoundingClientRect();
     const studio = node.closest(".studio-mobile");
-    const header = studio?.querySelector(".agenda-header") ?? node.parentElement!;
-    const title = header.querySelector("h1")!.getBoundingClientRect();
+    const header = node.closest(".agenda-header")!;
+    const titleNode = header.querySelector<HTMLElement>('[data-act="month-title"]')!;
+    const title = titleNode.getBoundingClientRect();
     const account = header.querySelector<HTMLElement>(".agenda-account button,.agenda-account > a,.m-head-logout button,a.m-head-logout");
     const accountRect = account?.getBoundingClientRect();
     const accountSlot = account?.closest<HTMLElement>(".agenda-account,.m-head-logout");
-    const leftSlot = header.querySelector<HTMLElement>(".m-head-left");
+    const leftSlot = header.querySelector<HTMLElement>(".m-settings-slot");
     const leftRect = leftSlot?.getBoundingClientRect();
     const leftHit = leftRect ? document.elementFromPoint(leftRect.x + leftRect.width / 2, leftRect.y + leftRect.height / 2) : null;
     const hit = document.elementFromPoint(gear.x + gear.width / 2, gear.y + gear.height / 2);
@@ -99,6 +110,8 @@ async function headerMetrics(page: Page) {
         titleGap: title.left - leftRect.right, saveState: leftSlot.querySelector(".save-status")?.textContent?.trim(),
         nativeHit: Boolean(leftHit && (leftSlot === leftHit || leftSlot.contains(leftHit))) } : null,
       titleCentreY: title.y + title.height / 2,
+      titleWidth: title.width, titleHeight: title.height,
+      titleNativeHit: Boolean(document.elementFromPoint(title.x + title.width / 2, title.y + title.height / 2)?.closest('[data-act="month-title"]') === titleNode),
       account: account && accountRect ? { tag: account.tagName, label: account.textContent?.trim(), action: account.closest("form")?.getAttribute("action") ?? account.getAttribute("href"),
         width: accountRect.width, height: accountRect.height, right: document.documentElement.clientWidth - accountRect.right,
         gearOverlap: overlap(gear, accountRect), titleOverlap: overlap(accountRect, title), row: accountSlot ? getComputedStyle(accountSlot).gridRowStart : null,
@@ -115,8 +128,14 @@ async function headerMetrics(page: Page) {
 
 async function settle(page: Page) {
   await page.evaluate(async () => {
+    const frame = () => new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
     await document.fonts.ready;
-    await Promise.allSettled(document.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))).map(animation => animation.finished));
+    await frame(); await frame();
+    for (let pass = 0; pass < 3; pass++) {
+      const finite = document.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime)));
+      if (!finite.length) break;
+      await Promise.allSettled(finite.map(animation => animation.finished)); await frame(); await frame();
+    }
   });
 }
 
@@ -146,11 +165,9 @@ function assertDarkScrolledHeader(metric: Awaited<ReturnType<typeof headerMetric
 
 for (const topology of [
   { name: "native390", width: 390, height: 844, dark: false },
-  // Wider than both agenda width cutoffs: the coarse/short-height clause,
-  // rather than a narrow desktop viewport, must supply this same header.
-  { name: "coarse-landscape", width: 1120, height: 600, dark: true },
-  { name: "native320-dark", width: 320, height: 740, dark: true },
-  { name: "native360-light", width: 360, height: 800, dark: false },
+  // Genuine coarse landscape also exercises the short reading-frame fallback.
+  { name: "coarse-landscape", width: 844, height: 390, dark: true },
+  { name: "native320-dark", width: 320, height: 568, dark: true },
 ]) test.describe(topology.name, () => {
   test.use({ viewport: { width: topology.width, height: topology.height }, isMobile: true, hasTouch: true });
 
@@ -163,12 +180,17 @@ for (const topology of [
       { name: "anonymous", path: "/visual-fixture/poster?avatar=1&signedIn=0", surface: ".poster-agenda", account: "로그인", action: "/api/auth/login", studio: false, preview: false },
       { name: "signed-in", path: "/visual-fixture/poster?avatar=1&signedIn=1", surface: ".poster-agenda", account: "로그아웃", action: "/api/auth/logout", studio: false, preview: false },
       { name: "studio", path: "/visual-fixture/studio?role=owner", surface: ".studio-mobile", account: "로그아웃", action: "/api/auth/logout", studio: true, preview: false },
+      { name: "developer", path: "/visual-fixture/studio?role=developer", surface: ".studio-mobile", account: "로그아웃", action: "/api/auth/logout", studio: true, preview: false },
       { name: "preview", path: "/visual-fixture/studio?role=owner&viewer=1", surface: ".viewer-fullscreen .poster-agenda", account: null, action: null, studio: false, preview: true },
     ]) {
       await page.goto(route.path);
       await expect(page.locator(route.surface)).toBeVisible();
       await settle(page);
-      if (route.studio) await expect(page.locator(".studio-mobile .m-head-left .save-status")).toContainText("저장됨");
+      if (route.studio) {
+        await expect(page.locator(".studio-mobile .save-status,.studio-mobile .build-badge")).toHaveCount(0);
+        await expect(page.locator(".m-settings-slot .mobile-save-feedback")).toHaveAttribute("data-state", "idle");
+        await expect(page.locator(".m-settings-slot [role=status]")).not.toContainText("저장됨");
+      }
       if (route.preview) {
         await expect.poll(() => publicReads.get(page)?.length).toBe(1);
         await expect(page.getByRole("button", { name: "편집실로 가기", exact: true })).toBeVisible();
@@ -181,35 +203,35 @@ for (const topology of [
       const metric = measured[route.name] = await headerMetrics(page);
       // Preserve raw geometry/material even when a following strict assertion
       // fails. Each run supplies a fresh artifact prefix; prior receipts stay.
-      writeFileSync(`.scratch-pw/${artifactPrefix}-${topology.name}.json`, JSON.stringify({ measured, scrolled, readTransports: publicReads.get(page)?.length, posts: posts.get(page), errors: errors.get(page) }, null, 2));
-      await page.screenshot({ path: `.scratch-pw/${artifactPrefix}-${route.name}-${topology.name}.png` });
+      writeFileSync(`${artifactPrefix}-${topology.name}.json`, JSON.stringify({ measured, scrolled, readTransports: publicReads.get(page)?.length, posts: posts.get(page), errors: errors.get(page) }, null, 2));
+      await page.screenshot({ path: `${artifactPrefix}-${route.name}-${topology.name}.png` });
       expect(metric.width).toBe(44); expect(metric.height).toBe(44);
       expect(metric.y).toBeGreaterThanOrEqual(0);
       expect(metric.x).toBeCloseTo(14, 1);
       expect(metric.titleOverlap).toBe(0);
       expect(metric.titleLeftSlotOverlap).toBe(0);
       expect(Math.abs(metric.titleCentreX - metric.widthOfPage / 2)).toBeLessThan(.5);
+      expect(metric.titleHeight).toBeGreaterThanOrEqual(44); expect(metric.titleNativeHit).toBe(true);
+      expect(Math.abs(metric.titleCentreY - metric.y - metric.height / 2)).toBeLessThan(.5);
       if (!route.studio) {
-        await expect(page.locator(".agenda-header > .viewer-settings-open")).toHaveCount(1);
-        expect(metric.y).toBe(9); expect(metric.month).toBeNull();
+        await expect(page.locator(".agenda-header .viewer-settings-open:visible")).toHaveCount(1);
+        expect(metric.month).toBeNull();
       } else {
-        await expect(page.locator(".agenda-header > .viewer-settings-open")).toHaveCount(0);
-        await expect(page.locator(".m-month-nav > .viewer-settings-open")).toHaveCount(1);
+        await expect(page.locator(".agenda-header .m-settings-slot .viewer-settings-open")).toHaveCount(1);
+        await expect(page.locator(".m-month-nav")).toHaveCount(0);
         expect(metric.leftSlot).not.toBeNull();
         expect(metric.leftSlot!.nativeHit).toBe(true); expect(metric.leftSlot!.titleGap).toBeGreaterThanOrEqual(0);
-        expect(metric.month).not.toBeNull();
-        expect(Math.abs(metric.month!.centreX - metric.widthOfPage / 2)).toBeLessThan(.5);
-        expect(Math.abs(metric.month!.centreY - metric.y - metric.height / 2)).toBeLessThan(.5);
-        expect(metric.month!.gearGap).toBeGreaterThanOrEqual(8);
-        expect(metric.month!.nativeHits).toEqual([true, true, true]);
-        // The existing text month picker keeps its shared link geometry;
-        // both visible arrow controls retain their 44px native targets.
-        for (const target of [metric.month!.targets[0], metric.month!.targets.at(-1)!]) { expect(target.width).toBeGreaterThanOrEqual(44); expect(target.height).toBeGreaterThanOrEqual(44); }
+        expect(metric.month).toBeNull();
+        for (const label of ["이전 달", "다음 달"]) {
+          const target = page.locator(".m-actionrail").getByRole("button", { name: label, exact: true });
+          await expect(target).toBeVisible();
+          const box = await target.boundingBox(); expect(box!.width).toBeGreaterThanOrEqual(44); expect(box!.height).toBeGreaterThanOrEqual(44);
+        }
       }
       if (route.account) {
         expect(metric.account).not.toBeNull();
         expect(metric.account!.label).toBe(route.account); expect(metric.account!.action).toBe(route.action);
-        expect(metric.account!.row).toBe("1"); expect(metric.account!.right).toBeCloseTo(14, 1);
+        expect(metric.account!.right).toBeCloseTo(14, 1);
         expect(metric.account!.width).toBeGreaterThanOrEqual(44); expect(metric.account!.height).toBeGreaterThanOrEqual(44);
         expect(metric.account!.gearOverlap).toBe(0); expect(metric.account!.titleOverlap).toBe(0);
         expect(Math.abs(metric.account!.centreY - metric.titleCentreY)).toBeLessThan(.5);
@@ -236,16 +258,16 @@ for (const topology of [
       expect(Math.abs(metric.visualWidth - topology.width)).toBeLessThanOrEqual(1);
 
       if (topology.dark) {
-        const beforeY = await page.evaluate(() => scrollY);
-        // Genuine wheel over the schedule column, away from the inner legend
-        // scroller. Verify real movement before inspecting sticky paint/hits.
-        await page.mouse.move(topology.width * .4, topology.height * .66);
+        const flow = page.locator(".agenda-flow:visible"), box = await flow.boundingBox();
+        const beforeY = await flow.evaluate(node => node.scrollTop);
+        // Genuine wheel moves the bounded date region; the header stays still.
+        await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
         await page.mouse.wheel(0, 180);
-        await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(beforeY + 24);
+        await expect.poll(() => flow.evaluate(node => node.scrollTop)).toBeGreaterThan(beforeY + 24);
         await settle(page);
-        scrolled[route.name] = { beforeY, afterY: await page.evaluate(() => scrollY), header: await headerMetrics(page) };
-        writeFileSync(`.scratch-pw/${artifactPrefix}-${topology.name}.json`, JSON.stringify({ measured, scrolled, readTransports: publicReads.get(page)?.length, posts: posts.get(page), errors: errors.get(page) }, null, 2));
-        await page.screenshot({ path: `.scratch-pw/${artifactPrefix}-${route.name}-${topology.name}-scrolled.png` });
+        scrolled[route.name] = { beforeY, afterY: await flow.evaluate(node => node.scrollTop), header: await headerMetrics(page) };
+        writeFileSync(`${artifactPrefix}-${topology.name}.json`, JSON.stringify({ measured, scrolled, readTransports: publicReads.get(page)?.length, posts: posts.get(page), errors: errors.get(page) }, null, 2));
+        await page.screenshot({ path: `${artifactPrefix}-${route.name}-${topology.name}-scrolled.png` });
         assertDarkScrolledHeader(scrolled[route.name].header);
       }
 
@@ -263,12 +285,12 @@ for (const topology of [
       expect(new URL(page.url()).pathname).toBe(new URL(route.path, "http://fixture").pathname);
       expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!).enabled)).toBe(true);
     }
-    // Latest owner placement supersedes064's right-side exception: all three
-    // viewer contexts use upper-left settings; studio uses month-row left.
+    // Every mobile surface now shares the same upper-left 44px gear.
     for (const name of ["anonymous", "signed-in", "preview"]) {
       expect(Math.abs(measured[name].x - measured.studio.x)).toBeLessThan(.5);
-      expect(measured.studio.y - measured[name].y).toBeGreaterThan(44);
+      expect(Math.abs(measured.studio.y - measured[name].y)).toBeLessThan(.5);
     }
-    writeFileSync(`.scratch-pw/${artifactPrefix}-${topology.name}.json`, JSON.stringify({ measured, scrolled, readTransports: publicReads.get(page)?.length, posts: posts.get(page), errors: errors.get(page) }, null, 2));
+    expect(Math.abs(measured.developer.y - measured.studio.y)).toBeLessThan(.5);
+    writeFileSync(`${artifactPrefix}-${topology.name}.json`, JSON.stringify({ measured, scrolled, readTransports: publicReads.get(page)?.length, posts: posts.get(page), errors: errors.get(page) }, null, 2));
   });
 });

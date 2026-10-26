@@ -1,0 +1,27 @@
+/* Shared mobile header: keep the caption inside the existing 44px hit area. */
+.agenda-header:has(.mobile-calendar-title) {
+  grid-template-columns:44px minmax(0,1fr) 44px; gap:0 8px;
+  padding-block:8px; margin-bottom:0;
+}
+.agenda-header .mobile-calendar-title {
+  grid-column:2; grid-row:1; min-width:0; margin:0; line-height:1;
+}
+.agenda-header .mobile-month-title { display:flex; align-items:center; justify-content:center; min-width:0; width:100%; min-height:44px; padding:0; }
+.agenda-header .mobile-month-title .month-title-text { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; min-width:0; }
+.agenda-header .mobile-month-label { font-size:var(--text-title,22px); font-weight:800; line-height:1.1; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.agenda-header .mobile-month-caption { display:block; max-width:100%; font-size:var(--text-caption,12px); line-height:1.2; font-weight:600; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.agenda-header .mobile-month-caption[data-failed="true"] { color:light-dark(#a02e28,#ffb2a8); }
+.agenda-header .m-settings-slot { position:relative; grid-column:1; grid-row:1; width:44px; height:44px; justify-self:start; margin-inline-start:max(0px,calc(env(safe-area-inset-left,0px) - var(--m-agenda-pad-x,14px))); }
+.agenda-header:has([data-act="editor-recover-failed-save"]) { grid-template-columns:88px minmax(0,1fr) 88px; column-gap:0; }
+.agenda-header .m-head-actions { display:flex; gap:0; align-items:center; grid-column:3; grid-row:1; justify-self:end; }
+.agenda-header .m-head-actions :is(.button,.m-head-logout) { box-sizing:border-box; display:inline-grid; place-items:center; width:44px; height:44px; min-width:44px; min-height:44px; margin:0; padding:0; }
+.agenda-header:has(.mobile-calendar-title) .agenda-account button { box-sizing:border-box; width:44px; min-width:44px; height:44px; min-height:44px; padding:0; }
+.agenda-header:has(.mobile-calendar-title) .agenda-account button > span { position:absolute; width:1px; height:1px; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.mobile-save-feedback { position:absolute; right:-1px; bottom:-1px; display:grid; place-items:center; width:17px; height:17px; border-radius:50%; pointer-events:none; color:light-dark(#196b48,#b6e6c8); background:var(--surface); box-shadow:0 0 0 2px var(--surface); }
+.mobile-save-feedback:empty { display:none; }
+.mobile-save-feedback[data-state="saving"] { color:var(--muted); }
+.mobile-save-feedback[data-state="saving"] svg { animation:mobile-save-spin 1s linear infinite; }
+.mobile-save-feedback[data-state="failed"] { color:light-dark(#a02e28,#ffb2a8); }
+@keyframes mobile-save-spin { to { transform:rotate(360deg); } }
+html[data-reduce-motion] .mobile-save-feedback svg { animation:none; }
+@media (max-height:480px) { .agenda-header:has(.mobile-calendar-title) { padding-block:4px; } }

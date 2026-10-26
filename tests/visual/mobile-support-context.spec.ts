@@ -9,7 +9,7 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 
 // A feature folder follows scripts/scratch-retention's 14-day policy. A fresh
 // run folder preserves failures and never overwrites a previous receipt.
-const artifacts = resolve(".scratch-pw/mobile-agenda-frame", `${getTodayKst()}-${nowKstHm().replace(":", "")}-${process.pid}`);
+const artifacts = resolve(".scratch-pw/mobile-header-context", `${getTodayKst()}-${nowKstHm().replace(":", "")}-${process.pid}`);
 const expectedNotices = [
   { id: "cozy-period-vote", title: "빅토리의 다음 무대를 응원하는 시청자 인기 투표에 참여해 주세요", url: "https://example.com/period-vote", kind: "period" },
   { id: "cozy-period-goods", title: "가을 한정 굿즈 사전 신청과 배송 일정 안내를 확인해 주세요", url: "https://example.com/period-goods", kind: "period" },
@@ -159,9 +159,13 @@ function assertFrame(m: FrameMetrics, hasNotices: boolean, footerState: "today" 
   expect(m.filterBody.height).toBeGreaterThanOrEqual(44);
   expect(["auto", "scroll"]).toContain(m.filterBody.overflowY);
   expect(m.insights.hit).toBe(true);
-  expect(m.preview).toBeNull();
-  expect(Math.abs(m.insights.bottom - m.rail.bottom)).toBeLessThan(.5);
-  if (m.footer.preview) within(m.footer.preview, m.footer, "footer preview");
+  if (m.preview) {
+    within(m.preview, m.rail, "preview return");
+    expect(m.preview.hit).toBe(true); expect(m.preview.height).toBeGreaterThanOrEqual(44);
+    expect(m.insights.bottom).toBeLessThanOrEqual(m.preview.y - 4);
+    expect(Math.abs(m.preview.bottom - m.rail.bottom)).toBeLessThan(.5);
+  } else expect(Math.abs(m.insights.bottom - m.rail.bottom)).toBeLessThan(.5);
+  expect(m.footer.preview).toBeNull();
   expect(m.inkBelowFooter).toBe(false);
   for (const control of m.footer.controls) {
     within(control, { x: 0, y: 0, right: m.viewport.width, bottom: m.viewport.height }, "footer control");
@@ -187,7 +191,12 @@ function assertLandscapeFrame(m: FrameMetrics) {
   expect(Math.abs(m.flow.bottom - m.rail.bottom)).toBeLessThan(.5);
   expect(m.flow.right).toBeLessThanOrEqual(m.rail.x - 4);
   expect(m.filter.bottom).toBeLessThanOrEqual(m.insights.y - 4);
-  expect(m.insights.hit).toBe(true); expect(Math.abs(m.insights.bottom - m.rail.bottom)).toBeLessThan(.5);
+  expect(m.insights.hit).toBe(true);
+  if (m.preview) {
+    expect(m.preview.hit).toBe(true); expect(m.preview.height).toBeGreaterThanOrEqual(44);
+    expect(m.insights.bottom).toBeLessThanOrEqual(m.preview.y - 4);
+    expect(Math.abs(m.preview.bottom - m.rail.bottom)).toBeLessThan(.5);
+  } else expect(Math.abs(m.insights.bottom - m.rail.bottom)).toBeLessThan(.5);
   expect(m.filter.collapsible).toBe(false); expect(m.filter.toggles).toBe(0);
   expect(m.heading.title?.replace(/\s+/g, "")).toBe("태그필터"); expect(m.heading.textLines).toBe(1);
   expect(["auto", "scroll"]).toContain(m.filterBody.overflowY); expect(m.filterBody.hidden).toBe(false);
@@ -235,8 +244,8 @@ for (const width of [320, 390]) for (const height of [568, 844]) for (const dark
         const initial = await frameMetrics(page);
         receipts.get(page)!.measurements.frameProbe = { surface: surface.name, notices, phase: "initial", initial };
         assertFrame(initial, notices);
-        expect(Boolean(initial.footer.preview)).toBe(surface.name === "preview");
-        if (surface.name === "preview") expect(initial.footer.controls.some(control => control.name === "편집실로 가기" && control.hit)).toBe(true);
+        expect(Boolean(initial.preview)).toBe(surface.name === "preview");
+        if (surface.name === "preview") await expect(hostOf(page).locator(".agenda-legend-nav").getByRole("button", { name: "편집실로 가기", exact: true })).toBeVisible();
         if (!surface.edit) expect(initial.footer.controls.filter(control => ["이전 달", "다음 달"].includes(control.title)).length).toBe(2);
         const flow = flowOf(page);
         expect(initial.flow.scrollHeight).toBeGreaterThan(initial.flow.clientHeight + 20);
@@ -384,6 +393,7 @@ async function geometry(page: Page) {
       // alone would falsely report ordinary scrolling as a layout change.
       cards: [...node.querySelectorAll<HTMLElement>(".agenda-event[data-eventid]")].map(card => ({ id: card.dataset.eventid, ...rect(card), y: card.getBoundingClientRect().y - flowRect.y + flow.scrollTop })),
       heartCount: hearts.length,
+      noticeHeader: { ...rect(board.querySelector(".asc-detail-slot")!), bottom: board.querySelector(".asc-detail-slot")!.getBoundingClientRect().bottom + scrollY },
       footer: [...board.querySelectorAll<HTMLElement>(".asc-detail > *")].map(el => ({ ...rect(el), right: el.getBoundingClientRect().right })),
       detailTransform: getComputedStyle(board.querySelector(".asc-detail")!).transform
     };
@@ -398,6 +408,8 @@ function assertReadable(g: Geometry) {
   expect(g.board.x).toBeGreaterThanOrEqual(0);
   expect(g.board.x + g.board.width).toBeLessThanOrEqual(g.pageWidth + 1);
   expect(g.cards.length).toBeGreaterThan(3);
+  expect(g.noticeHeader.height).toBe(44);
+  expect(g.stack.y).toBeGreaterThanOrEqual(g.noticeHeader.bottom - .5);
   for (const [index, row] of g.rows.entries()) {
     expect(row.titleClip, row.id).toBe(false);
     expect(row.allInkInside, row.id).toBe(true);
@@ -523,6 +535,7 @@ for (const width of [320, 390]) test.describe(`mobile${width}`, () => {
       await expect(boardOf(page).locator(`.asc-row[data-notice-id="${item.id}"]`)).toHaveAttribute("aria-pressed", "true");
       await expect(boardOf(page).locator(".asc-detail")).toHaveAttribute("data-kind", item.kind);
       const link = boardOf(page).locator("a.asc-link");
+      await expect(link).toHaveAccessibleName(item.kind === "period" ? "자세히 보기" : "도우러 가기");
       await expect(link).toHaveAttribute("href", item.url);
       await expect(link).toHaveAttribute("target", "_blank");
       expect((await link.getAttribute("rel"))?.split(/\s+/)).toEqual(expect.arrayContaining(["noopener", "noreferrer"]));
@@ -888,8 +901,90 @@ for (const width of [320, 390]) test.describe(`preview-footer${width}`, () => {
     expect(label.text.clip).toBe("none"); expect(label.text.opacity).toBeGreaterThan(0); expect(label.text.inkInside).toBe(true);
     expect(label.dot.width).toBeGreaterThan(3); expect(label.dot.height).toBeGreaterThan(3);
     expect(label.dot.clip).toBe("none"); expect(label.dot.opacity).toBeGreaterThan(0);
-    await expect(footer.getByRole("button", { name: "편집실로 가기", exact: true })).toBeVisible();
+    await expect(hostOf(page).locator(".agenda-legend-nav").getByRole("button", { name: "편집실로 가기", exact: true })).toBeVisible();
+    await expect(footer.locator(".agenda-toolbar-preview")).toHaveCount(0);
+    await expect(footer).not.toHaveClass(/has-preview/);
     receipts.get(page)!.measurements.previewFooter = { off, on, label };
     await page.screenshot({ path: resolve(artifacts, `preview-footer-${width}-live.png`) });
+  });
+});
+
+test.describe("preview-short-landscape568x320", () => {
+  test.use({ viewport: { width: 568, height: 320 }, isMobile: true, hasTouch: true });
+
+  test("full notices and native records return targets remain reachable around the 206px frame", async ({ page }) => {
+    test.setTimeout(60_000); await seed(page, true, true);
+    await page.goto("/visual-fixture/studio?supportUX=cozy&role=owner&viewer=1");
+    await expect(page.locator(".viewer-fullscreen")).toBeVisible(); await expect(rowsOf(page)).toHaveCount(3); await settle(page);
+    const titleInk = () => rowsOf(page).evaluateAll(rows => {
+      const header = document.querySelector<HTMLElement>(".agenda-header")!.getBoundingClientRect();
+      const footer = document.querySelector<HTMLElement>(".agenda-monthbar")!.getBoundingClientRect();
+      return rows.map(row => {
+        const title = row.querySelector(".asc-title")!, range = document.createRange(); range.selectNodeContents(title);
+        return { id: (row as HTMLElement).dataset.noticeId, text: title.textContent, lines: [...range.getClientRects()].map(r => {
+          const hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+          return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, hit: Boolean(hit && (hit === row || row.contains(hit))), inside: r.top >= header.bottom - .5 && r.bottom <= footer.top + .5 && r.left >= 0 && r.right <= innerWidth + .5 };
+        }) };
+      });
+    });
+    const initial = await geometry(page), initialFrame = await frameMetrics(page), initialInk = await titleInk();
+    receipts.get(page)!.measurements.shortPreview = { phase: "notices-before-scroll", initial, initialFrame, initialInk };
+    assertReadable(initial);
+    expect(initialInk.every(title => title.lines.length > 0 && title.lines.every(line => line.inside && line.hit))).toBe(true);
+    await page.screenshot({ path: resolve(artifacts, "preview-568x320-notices.png") });
+
+    // A genuine outer wheel leaves the complete static board in document flow.
+    const board = await boardOf(page).boundingBox();
+    await page.mouse.move(board!.x + board!.width * .4, board!.y + board!.height / 2); await page.mouse.wheel(0, 10_000);
+    await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(initial.scrollY + 20); await settle(page);
+    const reading = await frameMetrics(page);
+    receipts.get(page)!.measurements.shortPreview = { phase: "reading-frame", initial, initialFrame, initialInk, reading };
+    assertLandscapeFrame(reading); expect(reading.frame.height).toBeGreaterThanOrEqual(206);
+    expect(reading.filterBody.height).toBeGreaterThanOrEqual(44); expect(reading.preview).not.toBeNull();
+    const records = hostOf(page).locator(".agenda-legend-insights"), back = hostOf(page).locator(".agenda-legend-nav").getByRole("button", { name: "편집실로 가기", exact: true });
+    const target = (locator: Locator) => locator.evaluate(node => {
+      const r = node.getBoundingClientRect(), hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
+      return { x: r.x, y: r.y, right: r.right, bottom: r.bottom, width: r.width, height: r.height, hit: Boolean(hit && (hit === node || node.contains(hit))) };
+    });
+    const recordsTarget = await target(records), returnTarget = await target(back);
+    for (const button of [recordsTarget, returnTarget]) {
+      expect(button.width).toBeGreaterThanOrEqual(44); expect(button.height).toBeGreaterThanOrEqual(44); expect(button.hit).toBe(true);
+      expect(button.y).toBeGreaterThanOrEqual(reading.header.bottom - .5); expect(button.bottom).toBeLessThanOrEqual(reading.footer.y - 8 + .5);
+    }
+    expect(recordsTarget.bottom).toBeLessThanOrEqual(returnTarget.y - 4);
+    await page.screenshot({ path: resolve(artifacts, "preview-568x320-reading-frame.png") });
+
+    // The margin belongs to the outer document, away from either inner scroller.
+    await page.mouse.move(5, 160); await page.mouse.wheel(0, -10_000);
+    await expect.poll(() => page.evaluate(() => scrollY)).toBeLessThan(.5); await settle(page);
+    const returned = await geometry(page), returnedFrame = await frameMetrics(page), returnedInk = await titleInk();
+    receipts.get(page)!.measurements.shortPreview = { phase: "notices-reachable-again", initial, initialFrame, initialInk, reading, recordsTarget, returnTarget, returned, returnedFrame, returnedInk };
+    assertReadable(returned); assertStable(initial, returned);
+    expect(returnedFrame.documentHeight).toBe(initialFrame.documentHeight);
+    expect(returnedInk.every(title => title.lines.length > 0 && title.lines.every(line => line.inside && line.hit))).toBe(true);
+    expect(receipts.get(page)!.previewReads).toBe(1);
+    await page.screenshot({ path: resolve(artifacts, "preview-568x320-notices-returned.png") });
+
+    // Delivery capture uses the real Today action and reading scroller, with
+    // all three notices active in the visible date rather than a later teaser.
+    await page.setViewportSize({ width: 390, height: 844 }); await settle(page);
+    // Reset mobile Chrome's capture viewport after rotation before the portrait artifact.
+    await page.reload(); await expect(rowsOf(page)).toHaveCount(3); await settle(page);
+    await page.locator('.agenda-monthbar [data-act="mb-act"]').tap();
+    await page.evaluate(() => new Promise<void>(resolve => setTimeout(() => requestAnimationFrame(() => requestAnimationFrame(() => resolve())), 0)));
+    await settle(page);
+    const today = supportContextFixture().focusDate;
+    await flowOf(page).evaluate((flow, date) => {
+      const day = flow.querySelector<HTMLElement>(`.agenda-day[data-flip-key="${date}"]`)!;
+      flow.scrollTo({ top: flow.scrollTop + day.getBoundingClientRect().top - flow.getBoundingClientRect().top - 12, behavior: "instant" });
+    }, today);
+    await expect(boardOf(page)).toHaveAttribute("data-reading-date", today);
+    await expect(rowsOf(page)).toHaveCount(3); await expect(boardOf(page).locator('.asc-stack > .asc-row[data-active="true"]')).toHaveCount(3);
+    await expect(page.locator(".copy-toast")).toHaveCount(0); await settle(page);
+    const delivery = await geometry(page), deliveryFrame = await frameMetrics(page);
+    assertReadable(delivery); assertFrame(deliveryFrame, true);
+    const deliveryPath = resolve(artifacts, "mobile-header-preview-three.png");
+    writeFileSync(deliveryPath, await page.screenshot(), { flag: "wx" });
+    receipts.get(page)!.measurements.deliveryPreview = { today, delivery, deliveryFrame, path: deliveryPath, activeNotices: 3, dark: true };
   });
 });

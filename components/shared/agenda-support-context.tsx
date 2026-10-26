@@ -129,19 +129,21 @@ export function AgendaSupportContext({ notices, fallbackDate, children, onDetail
       onFocusCapture={event => { if (event.target instanceof HTMLElement) revealAgendaFrame(event.target); }}
       style={{ "--asc-spring": FLIP_SPRING, "--asc-motion-ms": `${FLIP_MS}ms` } as CSSProperties}>
       {notices.length > 0 ? <section className="agenda-support-board" ref={boardRef} aria-label="기간·업도움" data-reading-date={date} data-reduced={reduced}>
-        <div className="asc-head"><h2>기간·업도움</h2><span aria-live="polite">{Number(captionDate.slice(5, 7))}.{Number(captionDate.slice(8, 10))}{captionDate === date ? " 기준" : " 안내"}</span></div>
-        <div className="asc-stack" style={stackHeight ? { minHeight: stackHeight } : undefined}>
-          {group?.notices.map(notice => row(notice))}
-        </div>
         <div className="asc-detail-slot" id={footerId} role="region" aria-label="선택한 안내의 기간과 링크">
           <div className="asc-detail" ref={detailRef} data-kind={selected?.kind}>
+            <div className="asc-meta">
+              <div className="asc-head"><h2>기간·업도움</h2><span aria-live="polite">{Number(captionDate.slice(5, 7))}.{Number(captionDate.slice(8, 10))}{captionDate === date ? " 기준" : " 안내"}</span></div>
+              {selected ? noticeRangeText(selected) ? <b className="asc-range">{noticeRangeText(selected)}</b> : null : <span className="asc-no-active">진행 중인 안내 없음</span>}
+            </div>
             {selected ? <>
-              <div className="asc-meta"><span>{selected.kind === "period" ? "기간 안내" : "업 도움"}</span>{noticeRangeText(selected) ? <b className="asc-range">{noticeRangeText(selected)}</b> : null}</div>
               {onDetail ? <button className="asc-action" type="button" data-act="agenda-support-detail" onClick={event => onDetail(selected.id, event.currentTarget)}>상세</button> : null}
-              {selected.url ? <a className="asc-action asc-link" data-act="agenda-link" href={selected.url} target="_blank" rel="noopener noreferrer">{selected.kind === "period" ? "자세히 보기" : "도우러 가기"}<ArrowUpRight aria-hidden="true" size={13} /></a> : null}
+              {selected.url ? <a className="asc-action asc-link" data-act="agenda-link" aria-label={selected.kind === "period" ? "자세히 보기" : "도우러 가기"} title={selected.kind === "period" ? "자세히 보기" : "도우러 가기"} href={selected.url} target="_blank" rel="noopener noreferrer"><ArrowUpRight aria-hidden="true" size={18} /></a> : null}
               {onEdit ? <button className="asc-action" type="button" data-act="m-support-edit" onClick={event => onEdit(selected.id, event.currentTarget)}>수정</button> : null}
-            </> : <span className="asc-no-active">이 날짜에 진행 중인 안내가 없어요</span>}
+            </> : null}
           </div>
+        </div>
+        <div className="asc-stack" style={stackHeight ? { minHeight: stackHeight } : undefined}>
+          {group?.notices.map(notice => row(notice))}
         </div>
         <div className="asc-measures" aria-hidden="true" inert>{groups.map(g => <div className="asc-measure-group" key={g.start}>{g.notices.map(n => row(n, true))}</div>)}</div>
       </section> : null}

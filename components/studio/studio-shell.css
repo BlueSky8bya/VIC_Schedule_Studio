@@ -5368,56 +5368,9 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   color: var(--studio-action-text);
   font-weight: 600;
 }
-/* 모바일 헤더 왼쪽1열은 저장 상태만 담는다. 별도 버전 세그먼트는 PC로 옮겼다. */
-.studio-mobile .agenda-header .m-head-left {
-  grid-column: 1;
-  grid-row: 1;
-  justify-self: start;
-  align-self: center;
-  display: inline-flex;
-  flex-direction: column;
-  align-items: stretch;
-  min-width: 0;
-  border: 1px solid var(--line, #e8e1d6);
-  border-radius: var(--r-md);
-  background: var(--surface, #fffdf6);
-  overflow: hidden;
-  box-shadow: var(--shadow-1, 0 1px 2px rgb(80 60 20 / 6%));
-}
-/* 저장 상태는 바깥 캡슐 안에서 상태색과 점을 유지한다. */
-.studio-mobile .agenda-header .m-head-left .save-status {
-  align-self: stretch;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  /* 전역 min-height(36px)가 조용한 상태 칩을 키우지 않게 한다. */
-  min-width: 0;
-  min-height: 0;
-  padding: 3px 11px;
-}
-.studio-mobile .agenda-header .m-head-left .save-status.failed {
-  background: var(--status-danger-fill);
-}
-/* Account stays upper-right; settings owns the left of the separate month row. */
-.studio-mobile .agenda-header .m-head-logout {
-  grid-column: 3;
-  grid-row: 1;
-  justify-self: end;
-  align-self: center;
-}
-.studio-mobile .agenda-header a.m-head-logout.button,
-.studio-mobile .agenda-header .m-head-logout .button {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-height: var(--control-hit, 44px);
-  padding: 0 11px;
-  border-radius: var(--r-pill);
-  font-size: var(--text-caption);
-  font-weight: 600;
-  line-height: 1;
-  white-space: nowrap;
+/* Header controls share the viewer's 44px gear/account geometry. */
+.studio-mobile .agenda-header .m-head-actions :is(.button,.m-head-logout) {
+  box-sizing:border-box; width:44px; height:44px; min-width:44px; min-height:44px; padding:0; margin:0;
 }
 .studio-mobile .agenda-header .m-head-logout svg {
   flex: none;
@@ -10229,7 +10182,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   top: 0;
   z-index: 12;
   margin: 0 calc(-1 * var(--m-agenda-pad-x, 14px));
-  padding: max(9px, env(safe-area-inset-top, 0px)) var(--m-agenda-pad-x, 14px) 8px;
+  padding: max(8px, env(safe-area-inset-top, 0px)) var(--m-agenda-pad-x, 14px) 8px;
   background: linear-gradient(180deg, #f4f6fb 88%, rgb(244 246 251 / 0%));
 }
 /* 스튜디오 헤더는 컴팩트하게(고정 영역을 너무 키우지 않게) */
@@ -10239,46 +10192,6 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   padding: 0;
   border: 0;
   background: none;
-}
-/* P0-A11Y-1: 모바일 월 이동 — 스와이프를 몰라도 보이는 ◀ ▶. 터치 타깃 44px. */
-.studio-mobile .m-month-nav {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  align-items: center;
-  margin: 2px 0 10px;
-}
-.studio-mobile .m-month-switch {
-  grid-column: 2;
-  grid-row: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 14px;
-}
-/* The studio's month-row placement remains distinct from the viewer header,
-   with the same left safe-area alignment and shared 44px settings control. */
-.studio-mobile .m-month-nav > .viewer-settings-open {
-  grid-column: 1;
-  grid-row: 1;
-  justify-self: start;
-  align-self: center;
-  margin-inline-start: max(0px, calc(env(safe-area-inset-left, 0px) - var(--m-agenda-pad-x, 14px)));
-}
-@media (max-width: 360px) {
-  /* Keep all 44px targets apart when the two side columns become narrower. */
-  .studio-mobile .m-month-switch { gap: 6px; }
-  /* Save metadata gives up padding before the centered title or account target. */
-  .studio-mobile .agenda-header .m-head-left .save-status {
-    padding-inline: var(--space-1);
-  }
-}
-.studio-mobile .m-month-nav strong {
-  min-width: 118px;
-  text-align: center;
-  font-size: var(--text-ui); /* 15 */
-  font-weight: 600;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
 }
 .studio-mobile .m-month-btn {
   display: inline-grid;
@@ -10303,11 +10216,10 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   transition-duration: var(--dur-1);
   transition-timing-function: var(--ease-exit);
 }
-/* The shared .agenda-header h1 responsive scale also leaves room for the
-   studio's real account action on small phones; do not fix it at28px. */
-.studio-mobile .agenda-header h1 span {
-  font-size: var(--text-body); /* 13→13.5 수렴 */
-}
+/* Compact header uses the same month/caption and gear slot as the viewer. */
+.studio-mobile .m-topstick .agenda-header:has(.mobile-calendar-title) { margin:0; padding:0; }
+.m-actionrail > :is(.m-month-btn,.m-io-today) { flex:0 0 44px; width:44px; padding:0; }
+.m-actionrail > .m-month-btn { color:var(--violet); }
 /* 역할 바: 유동 너비 — 한 줄에 나눠 갖고 스크롤 없이 보이게(넘치면 어쩔 수 없이 줄어듦) */
 
 .studio-mobile .private-warning {
