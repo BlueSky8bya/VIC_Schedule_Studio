@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import type { PublicSearchResult } from "@/lib/domain/schedule-types";
 import type { SearchSort } from "@/lib/search/group";
+import type { SearchResultKind } from "@/lib/search/result-kind";
 
 export type PublicSearchSnapshot = {
   revision: symbol;
@@ -11,6 +12,7 @@ export type PublicSearchSnapshot = {
   result: PublicSearchResult | null;
   resultFor: string | null;
   sort: SearchSort;
+  kind: SearchResultKind;
   selectedRow: string | null;
   expanded: ReadonlySet<number>;
   scrollTop: number;

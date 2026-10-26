@@ -1,0 +1,13 @@
+.pi-record-month{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
+.pi-record-month strong{min-width:0;text-align:center;flex:1;font-variant-numeric:tabular-nums}
+.pi-record-month .pi-close{flex-shrink:0}
+.pi-record-month .pi-close:disabled{opacity:.35;cursor:default}
+.pi-stat-action{color:inherit;font:inherit;text-align:left;cursor:pointer}
+.pi-stat-action[aria-expanded="true"]{outline:2px solid currentColor;outline-offset:1px}
+.pi-stat-action small{display:block;font-size:10px;opacity:.7;margin-top:5px}
+.pi-stat-action:focus-visible,.pi-record-event:focus-visible{outline:2px solid currentColor;outline-offset:2px}
+.pi-record-events:not([hidden]){margin-top:16px;padding-top:12px;border-top:1px solid var(--line,#e8dfcf)}
+.pi-record-events h3{font-size:14px;margin:0 0 10px}.pi-record-date h4{font-size:12px;opacity:.72;margin:12px 0 5px}
+.pi-record-event{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:10px 12px;margin:5px 0;border:1px solid var(--line,#e8dfcf);border-radius:10px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.pi-record-event span{min-width:0;overflow-wrap:anywhere}
+@media(max-width:420px){.pi-head{gap:6px}.pi-record-month{gap:2px}.pi-record-month strong{font-size:14px}.pi-record-month .pi-close{width:40px;min-width:40px}}

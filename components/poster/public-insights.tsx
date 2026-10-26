@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { X } from "lucide-react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import type {
   BroadcastTag,
   ColorPaletteEntry,
@@ -12,6 +12,10 @@ import type { PublicBroadcastMonth } from "@/lib/schedules/public-loader";
 import { BroadcastHours } from "@/components/studio/broadcast-hours";
 import { StackTrendChart } from "@/components/studio/stack-trend-chart";
 import { hapticTick } from "@/lib/ui/haptics";
+import { adjacentRecordMonth, groupRecordDates, recordMonthEvents, type PublicRecordGroup } from "@/lib/insights/public-record";
+import type {PublicRecordSession} from "@/lib/ui/use-public-record-session";
+import {useFocusTrap} from "@/lib/ui/use-focus-trap";
+import "./public-record.css";
 
 // 시청자(비로그인 포함)용 '이 달 기록'.
 //
@@ -39,6 +43,8 @@ type Props = {
   palette: ColorPaletteEntry[];
   heartCounts: Record<string, number>;
   onClose: () => void;
+  session: PublicRecordSession;
+  onPickEvent: (id:string,dateKey:string) => void;
 };
 
 function ymOf(year: number, month: number) {
@@ -58,21 +64,34 @@ function weekdayOf(dateKey: string) {
 }
 
 export function PublicInsights({
-  year,
-  month,
+  year: viewedYear,
+  month: viewedMonth,
   events,
   tags,
   palette,
   heartCounts,
-  onClose
+  onClose,
+  session,
+  onPickEvent
 }: Props) {
+  const [initial]=useState(()=>session.current);
+  const [recordMonth,setRecordMonth]=useState(initial?.month??{year:Math.min(9999,Math.max(2001,viewedYear)),month:viewedMonth});
+  const {year,month}=recordMonth;
+  const [group,setGroup]=useState<PublicRecordGroup|null>(initial?.group??null);
+  const bodyRef=useRef<HTMLDivElement>(null),sheetRef=useFocusTrap<HTMLElement>(true);
+  const close=()=>{session.current=null;onClose();};
+  const closeRef=useRef(close);closeRef.current=close;
+  useLayoutEffect(()=>{if(!initial)return;const body=bodyRef.current;if(!body)return;body.scrollTop=initial.scrollTop;const focus=initial.focusId?body.querySelector<HTMLElement>(`[data-record-event="${CSS.escape(initial.focusId)}"]`):null;focus?.focus({preventScroll:true});},[initial]);
+  const selectedEvents=useMemo(()=>recordMonthEvents(events,tags,recordMonth),[events,tags,recordMonth]);
+  const dates=groupRecordDates(group==='rest'?selectedEvents.rest:selectedEvents.content);
+  const move=(direction:-1|1)=>{const next=adjacentRecordMonth(recordMonth,direction);if(!next)return;hapticTick();setGroup(null);setRecordMonth(next);};
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {e.preventDefault();closeRef.current();}
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, []);
 
   // 방송 기록(집계)은 시트를 열 때 공개 API에서 가져온다 — 어느 화면(공개 포스터·꾸미기·편집실
   // 미리보기)에서 열어도 같은 값이 뜬다(예전엔 페이지가 prop으로 넘겨줘야 해서, 미리보기·꾸미기에선
@@ -268,18 +287,22 @@ export function PublicInsights({
   // X 버튼 · Esc · (폰) 뒤로가기.
   return (
     <div className="pi-backdrop" role="presentation">
-      <section aria-label={`${month}월 기록`} className="pi-sheet" role="dialog" aria-modal="true">
+      <section aria-label={`${month}월 기록`} className="pi-sheet" role="dialog" aria-modal="true" ref={sheetRef}>
         <header className="pi-head">
-          <strong>
+          <div className="pi-record-month" role="group" aria-label="기록 월 이동">
+          <button type="button" className="pi-close" data-act="record-month" data-act-opt="previous" aria-label="이전 달 기록" disabled={!adjacentRecordMonth(recordMonth,-1)} onClick={()=>move(-1)}><ChevronLeft size={18}/></button>
+          <strong aria-live="polite" aria-atomic="true">
             {year}년 {String(month).padStart(2, "0")}월 기록
           </strong>
+          <button type="button" className="pi-close" data-act="record-month" data-act-opt="next" aria-label="다음 달 기록" disabled={!adjacentRecordMonth(recordMonth,1)} onClick={()=>move(1)}><ChevronRight size={18}/></button>
+          </div>
           {/* 백드롭(아래)은 톡이 울리는데 X만 조용했다 — 조준해서 누른 쪽이 더 죽어 있으면 안 된다. */}
           <button
             aria-label="닫기"
             className="pi-close"
             onClick={() => {
               hapticTick();
-              onClose();
+              close();
             }}
             type="button"
            data-act="close-public-insights">
@@ -287,23 +310,27 @@ export function PublicInsights({
           </button>
         </header>
 
-        <div className="pi-body insights">
+        <div className="pi-body insights" ref={bodyRef}>
+          {viewedYear<2001?<p className="pi-empty">방송 기록은2001년부터 확인할 수 있어요.</p>:null}
           {/* 일정 요약 — 관리자 '일정' 패널과 같은 타일 구성(휴뱅은 컨텐츠에서 빠지고 따로 센다). */}
           <div className="pi-card">
             <span className="pi-label">일정</span>
             <div className="pi-stats">
-              <div className="pi-stat">
+              <button type="button" className="pi-stat pi-stat-action" aria-expanded={group==='content'} aria-controls="public-record-events" data-act="record-summary" data-act-opt="content" onClick={()=>{hapticTick();setGroup(group==='content'?null:'content');}}>
                 <b>{d.contentCount}개</b>
                 <span>이번 달 컨텐츠</span>
-              </div>
-              <div className="pi-stat">
+                <small>일정 보기</small>
+              </button>
+              <button type="button" className="pi-stat pi-stat-action" aria-expanded={group==='days'} aria-controls="public-record-events" data-act="record-summary" data-act-opt="days" onClick={()=>{hapticTick();setGroup(group==='days'?null:'days');}}>
                 <b>{d.contentDays}일</b>
                 <span>컨텐츠 있는 날</span>
-              </div>
-              <div className="pi-stat">
+                <small>날짜별 보기</small>
+              </button>
+              <button type="button" className="pi-stat pi-stat-action" aria-expanded={group==='rest'} aria-controls="public-record-events" data-act="record-summary" data-act-opt="rest" onClick={()=>{hapticTick();setGroup(group==='rest'?null:'rest');}}>
                 <b>{d.restDays}일</b>
                 <span>휴뱅 날</span>
-              </div>
+                <small>날짜별 보기</small>
+              </button>
               <div className="pi-stat">
                 <b>{d.busiestWeekday !== null ? `${WEEKDAY[d.busiestWeekday]}요일` : "—"}</b>
                 <span>바쁜 요일</span>
@@ -312,6 +339,15 @@ export function PublicInsights({
                 <b>{d.quietestWeekday !== null ? `${WEEKDAY[d.quietestWeekday]}요일` : "—"}</b>
                 <span>한가한 요일</span>
               </div>
+            </div>
+            <div id="public-record-events" className="pi-record-events" hidden={!group}>
+              {group?<><h3>{group==='rest'?'휴뱅 날':group==='days'?'컨텐츠 있는 날':'이번 달 컨텐츠'}</h3>
+              {dates.length===0?<p className="pi-empty">이 달에는 해당하는 일정이 없어요.</p>:dates.map(date=><section key={date.dateKey} aria-label={date.dateKey} className="pi-record-date">
+                <h4>{Number(date.dateKey.slice(5,7))}월 {Number(date.dateKey.slice(8,10))}일</h4>
+                {date.events.map(event=><button key={event.id} type="button" className="pi-record-event" data-act="record-event-open" data-record-event={event.id} onClick={()=>{
+                  hapticTick();session.current={month:recordMonth,group,scrollTop:bodyRef.current?.scrollTop??0,focusId:event.id};onPickEvent(event.id,date.dateKey);
+                }}><span>{event.teaser?'공개 예정 일정':event.publicTitle.split('\n')[0]||'제목 없는 일정'}</span><ChevronRight aria-hidden="true" size={16}/></button>)}
+              </section>)}</>:null}
             </div>
             <p className="pi-next">
               <span>다음 방송</span>

@@ -17,6 +17,8 @@ import { formatTimecode } from "@/components/poster/vod-chapters";
 import { hapticTick } from "@/lib/ui/haptics";
 import type { PublicSearchSession } from "@/components/shared/use-public-search-session";
 import { useFocusTrap } from "@/lib/ui/use-focus-trap";
+import { SEARCH_RESULT_KINDS, countSearchKinds, filterSearchKind, type SearchResultKind } from "@/lib/search/result-kind";
+import "./public-search-kind.css";
 
 // 시청자 검색 시트(PLAN-20260918-023) — "예전에 이런 게 있었던 것 같은데 언제, 어디 시간대였지?"
 //
@@ -167,6 +169,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
   const [selectedRow, setSelectedRow] = useState<string | null>(initial?.selectedRow ?? null);
+  const [kind, setKind] = useState<SearchResultKind>(initial?.kind ?? "all");
   const [sort, setSort] = useState<SearchSort>(() => {
     if (initial) return initial.sort;
     try {
@@ -205,7 +208,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
   const completedRef = useRef<{ submitted: string | null; revision: symbol } | null>(initial && initial.revision === revision && initial.result && initial.resultFor === initial.submitted?.trim() ? { submitted: initial.submitted, revision } : null);
   const resultForRef = useRef<string | null>(initial && initial.revision === revision ? initial.resultFor : null);
   useLayoutEffect(() => {
-    session.current = { revision, q, submitted, result, resultFor: resultForRef.current, sort, selectedRow, expanded,
+    session.current = { revision, q, submitted, result, resultFor: resultForRef.current, sort, kind, selectedRow, expanded,
       scrollTop: scrollTopRef.current };
   });
 
@@ -333,8 +336,8 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
   const sugOpen = typing && suggest.length > 0;
 
   const groups: SearchDayGroup[] = useMemo(
-    () => (result ? sortSearchGroups(groupSearchHits(personalizeHits(result.hits, myHeartIds)), sort) : []),
-    [result, myHeartIds, sort]
+    () => (result ? sortSearchGroups(groupSearchHits(personalizeHits(filterSearchKind(result.hits, kind), myHeartIds)), sort) : []),
+    [result, myHeartIds, sort, kind]
   );
   const exactGroups = useMemo(() => groups.filter((g) => g.exact), [groups]);
   const similarGroups = useMemo(() => groups.filter((g) => !g.exact), [groups]);
@@ -706,11 +709,14 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
     </section>
   );
 
-  const empty = Boolean(submitted) && !busy && result && groups.length === 0;
+  const empty = Boolean(submitted) && !busy && result && result.hits.length === 0;
   const hasResults = Boolean(result && groups.length > 0);
+  const hasLoadedResults = Boolean(result?.hits.length);
+  const kindCounts = countSearchKinds(result?.hits ?? []);
+  const kindEmpty = hasLoadedResults && !hasResults && !busy;
   const related = result?.related;
   const hasRelated = Boolean((related?.people?.length ?? 0) > 0 || (related?.terms?.length ?? 0) > 0);
-  const hitCount = result?.hits.length ?? 0;
+  const hitCount = kindCounts[kind];
 
   // 백드롭 클릭으로는 닫지 않는다('이 달 기록'과 같은 결정 — 조준된 행동만: X · Esc · 뒤로가기).
   return (
@@ -755,6 +761,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
                   setResponse(null);
                   setExpanded(new Set());
                   setSelectedRow(null);
+                  setKind("all");
                   inputRef.current?.focus();
                 }}
                 type="button"
@@ -821,7 +828,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
             <strong>{resultQuery}</strong> 결과 · {busy ? "새 검색 중…" : "Enter로 새 검색"}
           </p>
         ) : null}
-        {hasResults ? (
+        {hasLoadedResults ? (
           <div className="ps-toolbar">
             <div className="ps-seg" ref={segRef} role="group" aria-label="정렬">
               {thumbPos ? (
@@ -850,7 +857,15 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
                 </button>
               ))}
             </div>
-            <span className="ps-count">{hitCount >= 200 ? "200+" : hitCount}</span>
+            <span className="ps-count" aria-live="polite">{kind === "all" && hitCount >= 200 ? "200+" : hitCount}</span>
+            <div className="ps-kind-filter" role="group" aria-label="검색 결과 종류">
+              {SEARCH_RESULT_KINDS.map(item=><button key={item.key} type="button" className={`ps-kind-button${kind===item.key?" on":""}`}
+                aria-pressed={kind===item.key} data-act="search-kind" data-act-opt={item.key}
+                onClick={()=>{if(kind===item.key)return;hapticTick();restoreRef.current=null;scrollTopRef.current=0;if(listRef.current)listRef.current.scrollTop=0;setSelectedRow(null);setKind(item.key);}}>
+                {item.label}<span>{kindCounts[item.key]}</span>
+              </button>)}
+            </div>
+            <p className="ps-kind-scope">{kindCounts.all>=200?"현재 불러온 최대200개 안에서 골라 봐요. 전체 검색 결과와 다를 수 있어요.":"현재 불러온 검색 결과에서 골라 봐요."}</p>
           </div>
         ) : null}
         {result?.corrected ? (
@@ -971,6 +986,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
               </div>
             ) : null}
             {failed ? <p className="ps-hint ps-fail">검색이 잠시 안 돼요. 다시 시도해 주세요.</p> : null}
+            {kindEmpty ? <p className="ps-hint" role="status">현재 불러온 결과에 {SEARCH_RESULT_KINDS.find(item=>item.key===kind)?.label} 적중은 없어요. 다른 종류를 골라 보세요.</p> : null}
             {empty ? (
               <p className="ps-hint">
                 <strong>&ldquo;{resultQuery}&rdquo;</strong> 없음. 다른 말로 찾아보세요.

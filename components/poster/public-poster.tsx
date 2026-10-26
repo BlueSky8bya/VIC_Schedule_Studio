@@ -3,6 +3,7 @@
 // The room must be styled before its lazy companion runtime can mount.
 import "./viewer-companion/companion-home.css";
 import { scrollAgendaTarget } from "@/lib/ui/agenda-scroll";
+import {usePublicRecordSession} from "@/lib/ui/use-public-record-session";
 import { AgendaSupportContext } from "@/components/shared/agenda-support-context";
 import { createAgendaNotices } from "@/lib/ui/agenda-notices";
 
@@ -843,6 +844,25 @@ export function PublicPoster({
   const [sheet, setSheet] = useState<null | "insights" | "search" | "settings">(null);
   const searchRevision = useMemo(() => createPublicSearchRevision(schedule), [schedule]);
   const searchSession = usePublicSearchSession(JSON.stringify([schedule.calendar.slug, accountEmail, anonymous, Boolean(previewNote)]));
+  const recordScope=JSON.stringify([schedule.calendar.slug,accountEmail,anonymous,Boolean(previewNote)]);
+  const recordSession=usePublicRecordSession(recordScope);
+  const [recordDetail,setRecordDetail]=useState<{id:string;dateKey:string;scope:string;origin:YM;scroll:{x:number;y:number};ready:boolean}|null>(null);
+  const recordDetailRef=useRef(recordDetail);recordDetailRef.current=recordDetail;
+  const recordDetailDepthRef=useRef(false),recordDetailBackClosing=useRef(false),ignoreRecordDetailPop=useRef(false);
+  const recordCancelPending=useRef(false),sheetRef=useRef(sheet);sheetRef.current=sheet;
+  const recordReturnActionRef=useRef<((back?:boolean)=>boolean)|null>(null);
+  const recordCancelActionRef=useRef<(()=>void)|null>(null);
+  const recordOpenerRef=useRef<HTMLElement|null>(null),recordWasOpen=useRef(false);
+  useLayoutEffect(()=>{
+    const open=sheet==='insights',previous=recordWasOpen.current;recordWasOpen.current=open;
+    if(open&&!previous)recordOpenerRef.current=document.activeElement as HTMLElement|null;
+    else if(!open&&previous){
+      recordSession.current=null;
+      const active=document.activeElement;
+      if(sheet===null&&(!active||active===document.body||active.closest('.pi-sheet'))&&recordOpenerRef.current?.isConnected)recordOpenerRef.current.focus({preventScroll:true});
+      recordOpenerRef.current=null;
+    }
+  },[sheet,recordSession]);
   const [companionBook, setCompanionBook] = useState(false);
   const [companionPersonality, setCompanionPersonality] = useState(false);
   const settingsOpenerRef = useRef<HTMLElement | null>(null);
@@ -1081,6 +1101,55 @@ export function PublicPoster({
     // PC: 클릭한 카드의 뷰포트 좌표(팝오버 앵커). 포스터는 transform 축소라 gBCR=화면 좌표 그대로.
     anchor?: { x: number; y: number; w: number; h: number };
   } | null>(null);
+  recordReturnActionRef.current=(back=false)=>{
+    const ticket=recordDetailRef.current;if(!ticket)return false;
+    if(back)recordDetailBackClosing.current=true;
+    recordDetailRef.current=null;setRecordDetail(null);setAgendaDetail(null);
+    const offset=(ticket.origin.year-view.year)*12+ticket.origin.month-view.month;
+    if(offset!==0)moveMonth(offset,true);
+    requestAnimationFrame(()=>window.scrollTo({left:ticket.scroll.x,top:ticket.scroll.y,behavior:'instant'}));
+    return true;
+  };
+  recordCancelActionRef.current=()=>{
+    if(recordDetailRef.current)recordCancelPending.current=true;
+    recordDetailRef.current=null;setRecordDetail(null);recordSession.current=null;
+  };
+  const pickRecordEvent=(id:string,dateKey:string)=>{
+    const event=liveEvents.find(item=>item.id===id&&!item.isSupport);if(!event)return;
+    setRecordDetail({id,dateKey,scope:recordScope,origin:{...view},scroll:{x:scrollX,y:scrollY},ready:false});
+    const [year,month]=dateKey.split('-').map(Number),offset=(year-view.year)*12+month-view.month;
+    if(offset!==0)moveMonth(offset,true);
+  };
+  useEffect(()=>{
+    if(!recordDetail||recordDetail.ready)return;
+    if(recordDetail.scope!==recordScope||sheet!=='insights'){recordCancelActionRef.current?.();return;}
+    const event=liveEvents.find(item=>item.id===recordDetail.id&&!item.isSupport);
+    if(!event){recordReturnActionRef.current?.();return;}
+    let frame=0,attempts=0,stopped=false;
+    const open=()=>{
+      if(stopped||recordDetailRef.current!==recordDetail)return;
+      const el=publicDetailCard(event.id,recordDetail.dateKey);
+      if(!el||!el.getClientRects().length){if(++attempts<8){frame=requestAnimationFrame(open);return;}recordReturnActionRef.current?.();return;}
+      const r=el.getBoundingClientRect(),agenda=matchMedia(POSTER_AGENDA_QUERY).matches;
+      agendaDetailOriginRef.current=agenda?r:null;detailAnchorElRef.current=agenda?null:el;setDetailManual(null);
+      setAgendaDetail({event,support:false,dateKey:recordDetail.dateKey,...(!agenda?{anchor:{x:r.left,y:r.top,w:r.width,h:r.height}}:{})});
+      setRecordDetail({...recordDetail,ready:true});
+    };
+    frame=requestAnimationFrame(open);return()=>{stopped=true;cancelAnimationFrame(frame);};
+  },[recordDetail,recordScope,sheet,liveEvents,publicDetailCard]);
+  useEffect(()=>{
+    if(recordDetail&&(recordDetail.scope!==recordScope||sheet!=='insights')){recordCancelActionRef.current?.();setAgendaDetail(null);}
+  },[recordDetail,recordScope,sheet]);
+  // Record -> detail is a second explicit level under the same pop owner.
+  // Keep the record's original history entry and consume only this level on Back.
+  useEffect(()=>{
+    const open=recordDetail!==null,previous=recordDetailDepthRef.current;if(open===previous)return;
+    recordDetailDepthRef.current=open;
+    if(open){window.history.pushState({vicRecordDetail:true},'');pushInnerOverlay();}
+    else if(recordDetailBackClosing.current){recordDetailBackClosing.current=false;popInnerOverlay();}
+    else{ignoreRecordDetailPop.current=true;window.history.back();}
+  },[recordDetail]);
+  useEffect(()=>()=>{if(recordDetailDepthRef.current){popInnerOverlay();recordDetailDepthRef.current=false;}},[]);
   const { onPop: onPublicEventPop, replaceDetailAddress } = usePublicEventLink(monthLinkEnabled, view, schedule.events, agendaDetail?.event.id ?? null, (event, dateKey) => {
     const el = publicDetailCard(event.id, dateKey);
     const r = el?.getBoundingClientRect(), agenda = matchMedia(POSTER_AGENDA_QUERY).matches;
@@ -1128,7 +1197,7 @@ export function PublicPoster({
   useEffect(() => {
     if (!agendaDetail) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setAgendaDetail(null);
+      if (e.key === "Escape") {if(!recordReturnActionRef.current?.())setAgendaDetail(null);}
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -1172,7 +1241,7 @@ export function PublicPoster({
   // (1:1 추적·위로 러버밴딩·릴리스 속도 스프링·닫힘 임계 햅틱). PC 팝오버(anchor)는 이동 드래그가
   // 따로 있어 바인딩하지 않는다. 같은 요소에 ref 둘 → 콜백 ref로 합친다.
   const { sheetRef: detailDragSheetRef, dragBind: detailDragBind } = useSheetDragClose({
-    onClose: () => setAgendaDetail(null)
+    onClose: () => {if(!recordReturnActionRef.current?.())setAgendaDetail(null);}
   });
   // B2(시청자 모바일, 2026-08-27): 시트가 무관한 위치에서 올라오지 않고 **탭한 카드 자리에서 자라난다**
   // (matched geometry — 편집실 모바일 편집 시트와 같은 문법). 탭 순간의 카드 rect를 기억했다가 시트
@@ -1209,6 +1278,7 @@ export function PublicPoster({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [agendaDetail?.event.id, agendaDetail?.anchor]);
   const closeAgendaDetailAnimated = () => {
+    if(recordReturnActionRef.current?.())return;
     const el = detailSheetRef.current;
     const origin = agendaDetailOriginRef.current;
     if (!el || !origin || agendaDetail?.anchor || reduceMotionEnabled()) {
@@ -1296,9 +1366,9 @@ export function PublicPoster({
       if (t?.closest(".agenda-detail-sheet")) return;
       if (t?.closest(".vc-companion[data-overlay='quiet'] .vc-actor")) return; // sleeping pet owns its direct lift; keep this window
       if (document.querySelector(".vc-companion[data-overlay='quiet'][data-placing]") && !t?.closest("button,a,input,select,textarea,[role='button']")) return;
-      if (t?.closest(".public-event.is-clickable")) return; // 카드 클릭 → 상세 교체가 처리
-      if (t?.closest(".support-bar.is-clickable")) return; // 업도움 띠 클릭 → 상세 교체가 처리
-      setAgendaDetail(null);
+      if (t?.closest(".public-event.is-clickable,.support-bar.is-clickable")) {if(recordDetailRef.current)recordCancelActionRef.current?.();return;} // Deliberate replacement owns the detail.
+      if(recordDetailRef.current&&t?.closest("button,a,input,select,textarea,[role='button']")){recordCancelActionRef.current?.();setAgendaDetail(null);return;}
+      if(!recordReturnActionRef.current?.())setAgendaDetail(null);
     };
     const id = window.setTimeout(() => document.addEventListener("pointerdown", onDown, true), 0);
     return () => {
@@ -1312,7 +1382,7 @@ export function PublicPoster({
     if (!sheet) return;
     // 카드가 DOM에서 사라지면(월 이동 등) 상세도 닫는다 — 허공을 가리키는 선을 안 남긴다.
     if (!el || !el.isConnected) {
-      setAgendaDetail(null);
+      if(!recordReturnActionRef.current?.())setAgendaDetail(null);
       return;
     }
     const r = el.getBoundingClientRect();
@@ -1712,9 +1782,14 @@ export function PublicPoster({
   // (편집실 안에서 열렸을 때의 조정은 위 pushInnerOverlay/popInnerOverlay가 맡는다.)
   useEffect(() => {
     function onPop() {
-      const preserveOverlay = ignoreDayVodPop.current || ignoreInsightsPop.current || dayVodOpenRef.current || insightsOpenRef.current;
+      const preserveOverlay = ignoreRecordDetailPop.current || Boolean(recordDetailRef.current) || ignoreDayVodPop.current || ignoreInsightsPop.current || dayVodOpenRef.current || insightsOpenRef.current;
       onPublicMonthPop(preserveOverlay);
       onPublicEventPop(preserveOverlay);
+      if(ignoreRecordDetailPop.current){
+        ignoreRecordDetailPop.current=false;queueMicrotask(popInnerOverlay);
+        if(recordCancelPending.current){recordCancelPending.current=false;if(sheetRef.current==='insights')setSheet(null);}
+        return;
+      }
       // 날짜 다시보기 창의 메아리(X/백드롭 닫기 후 우리가 부른 history.back()) — 무시하고
       // 카운터만 디스패치 뒤에 내린다(인사이트와 같은 microtask 이유).
       if (ignoreDayVodPop.current) {
@@ -1740,15 +1815,17 @@ export function PublicPoster({
         setDayVodPop(null);
         return;
       }
+      if(recordDetailRef.current){recordReturnActionRef.current?.(true);return;}
       if (insightsOpenRef.current) {
         insightsBackClosing.current = true;
+        recordSession.current=null;
         setInsightsOpen(false);
         return;
       }
     }
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, [onPublicMonthPop, onPublicEventPop]);
+  }, [onPublicMonthPop, onPublicEventPop,recordSession]);
   // 좁은 화면(모바일 + 태블릿/좁은 창 ≤1040px) 시청자는 세로 아젠다(목록) 전용 — 월간 그리드/캡쳐는
   // PC로 유도. 표면은 1840 고정 캔버스라 좁을수록 통째로 축소돼(900px면 0.49배 → 본문 6px) 읽을 수
   // 없다. 표면 내부를 화면 폭에 맞춰 재배치하는 건 금지(스티커 좌표가 어긋남 — ADR-0004)라, 대신
@@ -2789,9 +2866,10 @@ export function PublicPoster({
       window.location.assign(`/login?next=${encodeURIComponent("/")}`);
     }
   }
-  function moveMonth(offset: number) {
+  function moveMonth(offset: number, preserveRecord = false) {
     const next = getAdjacentMonth(view.year, view.month, offset);
     if (monthLinkEnabled && !isPublicMonth(next)) return;
+    if(!preserveRecord&&recordDetailRef.current)recordCancelActionRef.current?.();
     if (offset !== 0) playSfx(offset > 0 ? "page" : "page-prev");
     didNavigateRef.current = true;
     setDayVodPop(null); // 팝오버는 화면 고정 좌표라 달이 바뀌면 근거를 잃는다
@@ -4565,7 +4643,7 @@ export function PublicPoster({
                         type="button"
                         onClick={() => {
                           hapticTick();
-                          setAgendaDetail(null);
+                          closeAgendaDetailAnimated();
                         }}
                         data-act="close-detail"
                       >
@@ -4714,8 +4792,11 @@ export function PublicPoster({
         : null}
       {/* 시청자 '이 달 기록' — 공개 데이터만(공개 일정·태그·하트 집계·방송시간 집계 RPC).
           방문자/동시접속 같은 운영 지표는 안 들어간다. fixed 오버레이라 캡쳐 PNG 밖. */}
-      {sheet === "insights" ? (
+      {sheet === "insights" && !recordDetail && !recordCancelPending.current ? (
         <PublicInsights
+          key={recordScope}
+          session={recordSession}
+          onPickEvent={pickRecordEvent}
           events={liveEvents}
           heartCounts={heartCounts}
           month={view.month}
