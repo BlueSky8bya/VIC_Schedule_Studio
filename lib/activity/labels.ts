@@ -343,6 +343,7 @@ export const ACT: Record<string, TargetLabel> = {
   "vod-timeline-select": { name: "팬 타임라인 선택", area: "시청자 화면", hint: "대표·다른 작성자의 타임라인 전환" },
   "vod-timeline-find": { name: "영상 안 타임라인 찾기", area: "시청자 화면", hint: "이미 열린 타임라인 안에서 찾기 — 입력 내용은 기록하지 않음" },
   "vod-timeline-find-clear": { name: "타임라인 찾기 지우기", area: "시청자 화면" },
+  "vod-timeline-current": { name: "현재 장면 목록 보기", area: "시청자 화면", hint: "영상 시각을 바꾸지 않고 현재 장면의 목록 위치만 표시" },
   "vod-timeline-manage": { name: "팬 타임라인 관리", area: "편집실", hint: "대표 지정·노출 설정" },
   "vod-rail-left": { name: "타임라인 왼쪽에", area: "시청자 화면", hint: "다시보기 창 — 영상 기준 레일 자리" },
   "vod-rail-right": { name: "타임라인 오른쪽에", area: "시청자 화면", hint: "다시보기 창 — 영상 기준 레일 자리" },
@@ -727,7 +728,8 @@ export const ACT: Record<string, TargetLabel> = {
   "companion-heart-clear": { name: "빅타민 보라 하트 지우기", area: "빅타민", hint: "실제 하트 집계를 바꾸지 않는 장난 하트" },
   "companion-card-restore": { name: "빅타민이 기울인 일정 바로잡기", area: "빅타민" },
   "text-size": { name: "글씨 크기", area: "설정", hint: "달력 글씨 크기(px) 끌개" },
-  "text-size-reset": { name: "글씨 크기 기본으로", area: "설정" },
+  "text-size-reset": { name: "글씨 크기 기본으로", area: "설정", retired: true },
+  "text-style-reset": { name: "글자 설정 기본으로", area: "설정", hint: "기존 기본 버튼으로 글꼴·크기·굵기를 함께 복원" },
   "font-select": { name: "글꼴", area: "설정", hint: "글꼴 타일 — 고른 글꼴까지 셉니다", opts: FONT_OPT_NAMES },
   "text-weight-select": {
     name: "글씨 굵기",

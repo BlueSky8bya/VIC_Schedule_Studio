@@ -2,7 +2,7 @@
 
 import { RhhSelect } from "@/components/studio/rhh-select";
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
-import { ChevronRight, Clock3, Heart, Laugh, Search, X } from "lucide-react";
+import { ChevronRight, Clock3, Heart, Laugh, LocateFixed, Search, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import type { PublicVodChatProfile, PublicVodTimeline } from "@/lib/domain/schedule-types";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -144,6 +144,8 @@ export function VodChapters({
   const beforeFindTop = useRef<number | null>(null);
   const findRef = useRef<HTMLInputElement>(null);
   const revealAfterFind = useRef(false);
+  const [revealRequest, setRevealRequest] = useState(0);
+  const revealPending = useRef(false);
   const changeFind = (value: string) => {
     if (!filtering && normalizeFind(value)) beforeFindTop.current = scrollRef.current?.scrollTop ?? 0;
     if (filtering && !normalizeFind(value)) {
@@ -365,6 +367,38 @@ export function VodChapters({
   const foundCount = visibleGroups.reduce((n, g) => n + g.items.length, 0);
   const groupsRef = useRef(groups);
   groupsRef.current = groups;
+  // A deliberate reveal moves only the list. Never seek, clear a search, steal focus,
+  // or let a later playback update repeat this scroll while the user is browsing.
+  useEffect(() => {
+    if (!revealPending.current) return;
+    revealPending.current = false;
+    if (activeIdx === null || filtering || !open) return;
+    const rail = scrollRef.current;
+    const item = rail?.querySelector<HTMLElement>(`[data-idx="${activeIdx}"]`);
+    if (!rail || !item) return;
+    const bounds = rail.getBoundingClientRect(), row = item.getBoundingClientRect();
+    const heading = item.closest(".vch-group")?.querySelector(".vch-sec");
+    const scale = rail.offsetHeight > 0 ? bounds.height / rail.offsetHeight : 1;
+    const top = bounds.top + (heading?.getBoundingClientRect().height ?? 0) + 8 * scale;
+    const bottom = bounds.bottom - 28 * scale; // Keep the label above the existing bottom fade.
+    // Studio CSS zoom changes screen coordinates; scrollBy still consumes local CSS px.
+    const delta = (row.top < top ? row.top - top : row.bottom > bottom ? row.bottom - bottom : 0) / scale;
+    if (delta) rail.scrollBy({ top: delta, behavior: document.documentElement.hasAttribute("data-reduce-motion") ? "instant" : "smooth" });
+  }, [revealRequest, activeIdx, filtering, open]);
+  const revealCurrent = () => {
+    if (activeIdx === null || filtering || !open) return;
+    const gi = groups.findIndex((g) => g.items.some((item) => item.idx === activeIdx));
+    setFolded((prev) => {
+      if (!prev.has(gi)) return prev;
+      const next = new Set(prev);
+      next.delete(gi);
+      return next;
+    });
+    hideTip();
+    hapticTick();
+    revealPending.current = true;
+    setRevealRequest((value) => value + 1);
+  };
   // 키보드 조종(2026-09-17): ↑/↓ 항목, [ ] 코너. 최신 상태는 ref로 읽어 한 번만 등록한다.
   const navRef = useRef({ activeIdx, onJump });
   navRef.current = { activeIdx, onJump };
@@ -428,10 +462,19 @@ export function VodChapters({
             {nowItem ? (
               <>
                 <span aria-hidden="true" className="vch-now-dot" />
-                <span className="vch-now-main">
+                <button
+                  aria-label="타임라인에서 현재 장면 보기"
+                  className="vch-now-main vch-now-reveal"
+                  data-act="vod-timeline-current"
+                  disabled={!open || filtering}
+                  onClick={revealCurrent}
+                  title="타임라인에서 현재 장면 보기"
+                  type="button"
+                >
                   {nowSection ? <em className="vch-now-sec">{nowSection}</em> : null}
                   <b className="vch-now-label">{nowItem.label}</b>
-                </span>
+                  <LocateFixed aria-hidden="true" className="vch-now-locate" size={13} />
+                </button>
               </>
             ) : null}
             <span className="vch-now-time" ref={nowTimeRef}>

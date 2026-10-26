@@ -2042,7 +2042,7 @@ a.dvm-host-link:active {
 .dvm-vod .vch-list {
   max-height: none;
   overflow: visible;
-  padding: 8px;
+  padding: 8px 8px 32px; /* The final row can clear the rail's existing 28px bottom fade. */
 }
 /* 레일 머리 — '챕터 N개'가 접기 링크가 아니라 패널 제목처럼 읽히게(날짜와 같은 15px 급 +
    크레딧 보조). 접기 기능 자체는 그대로 산다(다중 방송 날 유용). */
@@ -2331,6 +2331,20 @@ html[data-reduce-motion] .vch-nowbar { animation-duration: 1ms;
   min-width: 0;
   overflow: hidden;
 }
+.vch-now-reveal {
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.vch-now-locate { flex: none; align-self: center; color: var(--ink-soft); opacity: 0.6; }
+.vch-now-reveal:hover:not(:disabled) .vch-now-locate { opacity: 1; }
+.vch-now-reveal:disabled { cursor: default; }
+.vch-now-reveal:disabled .vch-now-locate { display: none; }
 .vch-now-sec {
   flex: none;
   font-style: normal;

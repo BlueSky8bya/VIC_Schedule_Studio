@@ -516,9 +516,16 @@ export function StudioSettingsList({
               <b className="rhh-vol-num rhh-px">{textPx}px</b>
               <button
                 className="rhh-link rhh-preview"
-                data-act="text-size-reset"
-                disabled={textPx === TEXT_PX_BASE}
-                onClick={() => onChangeTextPx(TEXT_PX_BASE)}
+                aria-label="글자 설정 기본으로"
+                data-act="text-style-reset"
+                disabled={textPx === TEXT_PX_BASE && font.id === FONT_BASE && font.weight === 0}
+                onClick={() => {
+                  setFontPeek(null);
+                  font.change(FONT_BASE);
+                  font.changeWeight(0);
+                  onChangeTextPx(TEXT_PX_BASE);
+                }}
+                title="글꼴·크기·굵기를 기본값으로"
                 type="button"
               >
                 기본
