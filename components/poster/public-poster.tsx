@@ -4401,6 +4401,9 @@ export function PublicPoster({
             const teaserActive = Boolean(
               event.teaser && event.teaserRevealAt && Date.parse(event.teaserRevealAt) > syncedNow()
             );
+            const detailTier = !support && !teaserActive
+              ? heartTier(heartCounts[event.id] ?? 0, topEventIds.has(event.id), maxHeart)
+              : null;
             // 카드와 같은 연속 강도 — 위 10Hz 루프가 CSS 변수로 흘려보낸다. 여기선 '무엇을
             // 그릴지'(문구 전환)만 판단한다. 이산 단계(hs1~hs4)는 폐기.
             const detailHype = teaserActive && detailRemainS !== null && detailRemainS <= HYPE_WINDOW_S;
@@ -4649,19 +4652,34 @@ export function PublicPoster({
                           )}
                         </span>
                       </h2>
-                      {/* 제목은 전체 폭을 쓰고 관심 단계는 같은 시작선의 작은 메타 정보로 둔다.
-                          같은 heartTier 단일 출처·숫자 비노출은 유지한다. */}
-                      {(() => {
-                        if (support) return null;
-                        const t = heartTier(heartCounts[event.id] ?? 0, topEventIds.has(event.id), maxHeart);
-                        if (!t) return null;
-                        return (
-                          <span aria-label={`관심 단계: ${t.label}`} className={`adt-badge tier-${t.key}`}>
-                            {t.key === "top" ? "👑 " : null}
-                            {t.label}
-                          </span>
-                        );
-                      })()}
+                    </div>
+                  ) : null}
+                  {/* One shared metadata strip: wrapping tags keep their own
+                      column, so the right-hand rank never covers their text. */}
+                  {!teaserActive && (detailTags.length > 0 || detailTier) ? (
+                    <div className="agenda-detail-metadata">
+                      {detailTags.length > 0 ? (
+                        <div aria-label="태그" className="agenda-detail-tags">
+                          {detailTags.map(({ tag, bg, border, primary }, ti) => (
+                            <span
+                              className={`agenda-detail-tag${primary ? " primary" : ""}${
+                                revealStagger(detailJustRevealed, main, ti).className
+                              }`}
+                              key={tag.id}
+                              style={revealStagger(detailJustRevealed, main, ti).style}
+                            >
+                              <i aria-hidden="true" style={{ backgroundColor: bg, borderColor: border }} />
+                              {tag.displayName}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                      {detailTier ? (
+                        <span aria-label={`관심 단계: ${detailTier.label}`} className={`adt-badge tier-${detailTier.key}`}>
+                          {detailTier.key === "top" ? "👑 " : null}
+                          {detailTier.label}
+                        </span>
+                      ) : null}
                     </div>
                   ) : null}
                   {!support && subs.length > 0 ? (
@@ -4678,25 +4696,6 @@ export function PublicPoster({
                   ) : null}
                   {!teaserActive ? (
                     <div className="agenda-detail-footer">
-                      {detailTags.length > 0 ? (
-                        <div aria-label="태그" className="agenda-detail-tags">
-                          {detailTags.map(({ tag, bg, border, primary }, ti) => (
-                            <span
-                              className={`agenda-detail-tag${primary ? " primary" : ""}${
-                                revealStagger(detailJustRevealed, main, subs.length + 1 + ti).className
-                              }`}
-                              key={tag.id}
-                              style={revealStagger(detailJustRevealed, main, subs.length + 1 + ti).style}
-                            >
-                              <i
-                                aria-hidden="true"
-                                style={{ backgroundColor: bg, borderColor: border }}
-                              />
-                              {tag.displayName}
-                            </span>
-                          ))}
-                        </div>
-                      ) : null}
                       {!support ? <PublicEventCalendar event={event} /> : null}
                       {support && event.supportUrl ? (
                         <a

@@ -3731,8 +3731,11 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   gap: 8px;
   font-size: var(--text-body);
   font-weight: 600;
-  /* 2열에서 이름이 두 줄로 꺾이지 않게 — 폭(레일 252)으로 5글자까지 한 줄 보장. */
-  white-space: nowrap;
+  /* Short names keep their natural single line; a long public tag must not
+     enlarge the grid and intercept clicks on the calendar beside the rail. */
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 /* A2: 클릭 가능한 범례 항목 */
 .public-legend-vertical .legend-item {
@@ -8151,14 +8154,38 @@ html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
 .agenda-detail-tags {
   display: flex;
   flex-wrap: wrap;
+  min-width: 0;
   gap: var(--space-1) var(--space-2);
   margin: 0;
+}
+
+.agenda-detail-metadata {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+  padding: var(--space-2);
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--surface-2);
+}
+.agenda-detail-metadata:has(.adt-badge) {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+.agenda-detail-metadata > .adt-badge {
+  grid-column: -2 / -1;
+  justify-self: end;
 }
 
 .agenda-detail-tag {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
+  min-width: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
   min-height: calc(var(--control-hit) - var(--space-2));
   border: 0;
   border-radius: var(--r-pill);

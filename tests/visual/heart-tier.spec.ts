@@ -64,7 +64,7 @@ test.describe("heart tier — 테두리 링", () => {
     }
   });
 
-  test("상세 팝오버 관심 단계 배지는 제목 다음 왼쪽 메타 — 네 단계 텍스트 유지", async ({
+  test("상세 팝오버 관심 단계 배지는 태그 오른쪽 메타 — 네 단계 텍스트 유지", async ({
     page, context, baseURL
   }, info) => {
     const proof = await guardCompanionQa(page, context, baseURL!);
@@ -90,18 +90,18 @@ test.describe("heart tier — 테두리 링", () => {
     for (const key of ["warm", "hot", "blaze", "top"]) {
       const card = page.locator(`.public-event[data-tier="${key}"]`).first();
       await card.click();
-      const badge = page.locator(".agenda-detail-sheet .agenda-detail-heading > .adt-badge");
+      const badge = page.locator(".agenda-detail-sheet .agenda-detail-metadata > .adt-badge");
       await badge.waitFor();
       await settlePanelLayout(page);
       seen[key] = ((await badge.textContent()) ?? "").trim();
       await expect(badge).toHaveClass(new RegExp(`tier-${key}`));
-      // Full-width title first, then a separate left-aligned metadata badge.
+      // Full-width title first, then rank docked right without covering tags.
       const [tb, bb, hb] = await Promise.all([
         page.locator(".agenda-detail-sheet .agenda-detail-heading > .agenda-detail-title").boundingBox(),
         badge.boundingBox(),
-        page.locator(".agenda-detail-sheet .agenda-detail-heading").boundingBox()
+        page.locator(".agenda-detail-sheet .agenda-detail-metadata").boundingBox()
       ]);
-      expect(Math.abs(bb!.x - tb!.x)).toBeLessThan(1);
+      expect(bb!.x).toBeGreaterThan(tb!.x);
       expect(bb!.y).toBeGreaterThanOrEqual(tb!.y + tb!.height);
       expect(tb!.width).toBeGreaterThanOrEqual(hb!.width - 1);
       expect(bb!.x + bb!.width).toBeLessThanOrEqual(hb!.x + hb!.width + 1);

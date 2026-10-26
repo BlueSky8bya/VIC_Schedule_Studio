@@ -6,6 +6,8 @@ import { getTodayKst } from "@/lib/calendar/month";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { guardCompanionQa } from "./helpers/companion-qa";
 import { settlePanelLayout } from "./helpers/panel-layout";
+import { companionTraceMode } from "./helpers/companion-evidence-policy";
+test.use({ serviceWorkers: "block", video: "on", trace: companionTraceMode() });
 
 // The guarded poster fixture supplies the same synthetic public event. Preview
 // reads below are fulfilled locally; no studio loader or external Google request runs.
@@ -22,7 +24,7 @@ const previewFixture = {
 const dialog = (page: Page) => page.getByRole("dialog", { name: "일정 상세", exact: true });
 type NativeObservation = Window & { detailActivations?: { target: string; trusted: boolean }[] };
 
-async function setup(page: Page, context: BrowserContext, base: string) {
+async function setup(page: Page, context: BrowserContext, base: string, previewData = previewFixture) {
   const proof = await guardCompanionQa(page, context, base);
   context.on("requestfailed", request => proof.syntheticReads.push(`denied:${new URL(request.url()).pathname}`));
   const manifest = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
@@ -44,7 +46,7 @@ async function setup(page: Page, context: BrowserContext, base: string) {
     const request = route.request(), url = new URL(request.url());
     if (url.origin === base && request.method() === "POST" && previewActions.has(request.headers()["next-action"])) {
       proof.syntheticReads.push("detail-preview-read-fixture");
-      return route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":${JSON.stringify(proof.build)}}\n1:${JSON.stringify(previewFixture)}\n` });
+      return route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":${JSON.stringify(proof.build)}}\n1:${JSON.stringify(previewData)}\n` });
     }
     return route.fallback();
   });
@@ -108,7 +110,7 @@ async function inspect(page: Page) {
     const rect = node.getBoundingClientRect();
     return { sheet: { x: rect.x, right: rect.right, width: rect.width, height: rect.height, scrollWidth: node.scrollWidth, clientWidth: node.clientWidth },
       title: box(".agenda-detail-title")!, badge: box(".adt-badge"), body: box(".agenda-detail-subs"),
-      tags: box(".agenda-detail-tags"), calendar: box('[data-act="add-google-calendar"]'),
+      metadata: box(".agenda-detail-metadata"), tags: box(".agenda-detail-tags"), calendar: box('[data-act="add-google-calendar"]'),
       date: box(".agenda-detail-date")!, close: box(".agenda-detail-close")!,
       pageOverflow: document.documentElement.scrollWidth > innerWidth + 1,
       activeInside: node.contains(document.activeElement), surface: { background: getComputedStyle(node).backgroundColor, blur: getComputedStyle(node).backdropFilter } };
@@ -131,10 +133,11 @@ function assertLayout(value: Awaited<ReturnType<typeof inspect>>, width: number)
   expect(value.surface.blur).toBe("none");
   expect(value.badge).not.toBeNull();
   expect(value.badge!.y).toBeGreaterThanOrEqual(value.title.bottom);
-  expect(Math.abs(value.badge!.x - value.title.x)).toBeLessThan(1);
-  expect(value.body!.y).toBeGreaterThanOrEqual(value.badge!.bottom);
-  expect(value.tags!.y).toBeGreaterThanOrEqual(value.body!.bottom);
-  expect(value.calendar!.y).toBeGreaterThan(value.tags!.bottom);
+  expect(value.metadata!.y).toBeGreaterThanOrEqual(value.title.bottom);
+  expect(value.badge!.right).toBeGreaterThan(value.tags!.right);
+  expect(value.tags!.right + 4).toBeLessThanOrEqual(value.badge!.x);
+  expect(value.body!.y).toBeGreaterThanOrEqual(value.metadata!.bottom);
+  expect(value.calendar!.y).toBeGreaterThan(value.body!.bottom);
   expect(value.calendar!.height).toBeGreaterThanOrEqual(44);
   expect(value.calendar!.scrollWidth).toBeLessThanOrEqual(value.calendar!.clientWidth + 1);
 }
@@ -193,6 +196,63 @@ for (const width of [320, 390, 1440]) for (const surface of ["viewer", "preview"
   });
 }
 
+const metadataCases = ["many", "long", "tags-only", "rank-only", "empty", "single"] as const;
+const stressTags = samplePublicScheduleData.tags.map((tag, i) => ({ ...tag,
+  displayName: i === 0 ? "아주긴태그이름으로줄바꿈과인기도충돌여부를확인합니다".repeat(3) : tag.displayName
+}));
+const stressFixture = { ...previewFixture, tags: stressTags, events: metadataCases.map((kind, i) => ({
+  ...previewFixture.events[0], id: `fixture-meta-${kind}`, startsAt: `2026-10-${String(i + 1).padStart(2, "0")}T20:00:00+09:00`, endsAt: `2026-10-${String(i + 1).padStart(2, "0")}T23:00:00+09:00`,
+  heartCount: kind === "tags-only" || kind === "empty" ? 0 : 45,
+  tagIds: kind === "rank-only" || kind === "empty" ? [] : kind === "many" ? stressTags.map(t => t.id) : kind === "long" ? [stressTags[0].id] : ["tag-full-track"],
+  primaryTagIds: kind === "rank-only" || kind === "empty" ? [] : [kind === "many" || kind === "long" ? stressTags[0].id : "tag-full-track"]
+})) };
+
+for (const [width, theme] of [[320, "light"], [390, "dark"], [1440, "light"], [1920, "dark"]] as const)
+test(`detail metadata preview ${width} ${theme}: many long missing tags and rank never overlap`, async ({ page, context, baseURL }, info) => {
+  test.setTimeout(110_000);await page.setViewportSize({ width, height: 1000 });
+  const proof = await setup(page, context, baseURL!, stressFixture);
+  await context.addInitScript(theme => { localStorage.setItem("vic.dark", theme === "dark" ? "on" : "off"); }, theme);
+  await page.goto("/visual-fixture/studio?viewer=1&role=owner&y=2026&m=10");await settlePanelLayout(page);
+  if (theme === "dark") await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  else await expect(page.locator("html")).not.toHaveAttribute("data-theme", "dark");
+  const filterBounds = await page.locator(".avatar-slot .public-legend-vertical .legend-item").evaluateAll(nodes => nodes.map(node => {
+    const n = node as HTMLElement, group = n.closest(".public-legend-vertical")!, a = n.getBoundingClientRect(), b = group.getBoundingClientRect(), p = n.closest(".avatar-slot")!.getBoundingClientRect();
+    return { x:a.x, right:a.right, groupX:b.x, groupRight:b.right, panelX:p.x, panelRight:p.right, overflow:n.scrollWidth>n.clientWidth+1 };
+  }));
+  if (width >= 1680) expect(filterBounds.length).toBeGreaterThan(0);
+  for (const b of filterBounds) {expect(b.overflow).toBe(false);expect(b.x).toBeGreaterThanOrEqual(b.groupX);expect(b.right).toBeLessThanOrEqual(b.groupRight);expect(b.groupX).toBeGreaterThanOrEqual(b.panelX - 1);expect(b.groupRight).toBeLessThanOrEqual(b.panelRight + 1);}
+  const facts = [];
+  for (const kind of metadataCases) {
+    const card = page.locator(`${width < 640 ? ".agenda-event" : ".public-event"}[data-eventid="fixture-meta-${kind}"]`).first();
+    await card.click();const detail = dialog(page);await expect(detail).toBeVisible();await settlePanelLayout(page);
+    const hasTags = kind !== "rank-only" && kind !== "empty", hasRank = kind !== "tags-only" && kind !== "empty";
+    await expect(detail.locator(".agenda-detail-tag")).toHaveCount(hasTags ? kind === "many" ? stressTags.length : 1 : 0);
+    await expect(detail.locator(".adt-badge")).toHaveCount(hasRank ? 1 : 0);
+    await expect(detail.locator(".agenda-detail-metadata")).toHaveCount(hasTags || hasRank ? 1 : 0);
+    const layout = await detail.evaluate(node => {
+      const rect = (n: Element) => {const r = n.getBoundingClientRect();return { x:r.x, right:r.right, y:r.y, bottom:r.bottom, height:r.height };};
+      const tags = [...node.querySelectorAll<HTMLElement>(".agenda-detail-tag")], rank = node.querySelector(".adt-badge"), meta = node.querySelector(".agenda-detail-metadata");
+      return { sheetOverflow:node.scrollWidth>node.clientWidth+1, pageOverflow:document.documentElement.scrollWidth>innerWidth+1,
+        meta:meta ? rect(meta) : null, rank:rank ? rect(rank) : null,
+        tags:tags.map(t => ({...rect(t),text:t.textContent,overflow:t.scrollWidth>t.clientWidth+1})),
+        body:rect(node.querySelector(".agenda-detail-subs")!), title:rect(node.querySelector(".agenda-detail-title")!) };
+    });
+    expect(layout.sheetOverflow).toBe(false);expect(layout.pageOverflow).toBe(false);
+    for (const t of layout.tags) {
+      expect(t.overflow, t.text ?? "tag").toBe(false);
+      expect(t.x).toBeGreaterThanOrEqual(layout.meta!.x);expect(t.right).toBeLessThanOrEqual(layout.meta!.right);
+      if (layout.rank) expect(t.right + 4).toBeLessThanOrEqual(layout.rank.x);
+    }
+    if (layout.meta) {expect(layout.meta.y).toBeGreaterThanOrEqual(layout.title.bottom);expect(layout.body.y).toBeGreaterThanOrEqual(layout.meta.bottom);}
+    if (kind === "many") expect(new Set(layout.tags.map(t => Math.round(t.y))).size).toBeGreaterThan(1);
+    if (kind === "long") {expect(layout.tags[0].text).toBe(stressTags[0].displayName);expect(layout.tags[0].height).toBeGreaterThan(40);}
+    if (kind === "many" || kind === "long" || kind === "empty") await info.attach(`metadata-${kind}`, { body:await detail.screenshot(),contentType:"image/png" });
+    const link=detail.getByRole("link",{name:"Google 캘린더에 추가",exact:true});await expect(link).toBeVisible();await link.focus();await page.keyboard.press("Tab");expect(await detail.evaluate(n=>n.contains(document.activeElement))).toBe(true);
+    await page.keyboard.press("Escape");await expect(detail).toHaveCount(0);await expect(card).toBeFocused();facts.push({kind,layout});
+  }
+  await finish(page, info, proof, {width,theme,facts,filterBounds,sharedPreviewComponent:true,syntheticTagStress:true,emptyMetadataOmitted:true,limits:"Long/many metadata scenarios execute through the same public poster in credential-free preview; viewer's ordinary two-tag and all-tier paths run separately."});
+});
+
 test("detail support and teaser: actions stay type-specific without empty content cards", async ({ page, context, baseURL }, info) => {
   test.setTimeout(75_000);
   await page.setViewportSize({ width: 390, height: 844 });
@@ -211,7 +271,7 @@ test("detail support and teaser: actions stay type-specific without empty conten
   await page.goto("/visual-fixture/poster?teaser=600");
   await page.locator('.agenda [data-eventid="00000000-0000-4000-8000-000000000001"]').first().click();
   await expect(dialog(page)).toHaveClass(/is-teaser/);
-  await expect(dialog(page).locator(".agenda-detail-heading,.agenda-detail-footer,.agenda-detail-subs")).toHaveCount(0);
+  await expect(dialog(page).locator(".agenda-detail-heading,.agenda-detail-metadata,.agenda-detail-footer,.agenda-detail-subs")).toHaveCount(0);
   await expect(dialog(page).locator('[data-act="dt-hope"]')).toBeVisible();
   await expect(dialog(page).locator('[data-act="add-google-calendar"]')).toHaveCount(0);
   await finish(page, info, proof, { supportWholeTitleAndOriginalLink: true, supportHasNoCalendarOrRank: true,
