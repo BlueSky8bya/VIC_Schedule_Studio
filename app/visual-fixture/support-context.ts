@@ -25,3 +25,13 @@ export function supportContextFixture() {
   ]).flat()];
   return { year: Number(today.slice(0, 4)), month: Number(today.slice(5, 7)), focusDate: today, events };
 }
+
+/** Fixed long month without notices, for header-to-toolbar framing. */
+export function agendaFrameFixture() {
+  const events: PublicScheduleEvent[] = Array.from({ length: 31 }, (_, i) => ({
+    id: `frame-stream-${i + 1}`, startsAt: `2026-07-${String(i + 1).padStart(2, "0")}T20:00:00+09:00`,
+    isAllDay: true, publicTitle: "시청자와 함께하는 방송\n오늘의 이야기를 나눠요", status: "scheduled",
+    visibilityScope: "public", category: "stream", tagIds: [], primaryTagIds: [], sortOrder: 0
+  }));
+  return { year: 2026, month: 7, focusDate: "2026-07-15", events };
+}

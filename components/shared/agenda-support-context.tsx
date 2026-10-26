@@ -6,6 +6,7 @@ import { agendaNoticeGroupAt, groupAgendaNotices, noticeIsActive, noticeRangeTex
 import { flipSpring, FLIP_MS, FLIP_SPRING } from "@/lib/ui/flip-motion";
 import { REDUCE_MOTION_EVENT, reduceMotionEnabled } from "@/lib/ui/motion";
 import { hapticTick } from "@/lib/ui/haptics";
+import { revealAgendaFrame } from "@/lib/ui/agenda-scroll";
 import "./agenda-support-context.css";
 
 type Props = {
@@ -42,51 +43,67 @@ export function AgendaSupportContext({ notices, fallbackDate, children, onDetail
   // Reserve the maximum once per width/font/data change. Scroll/selection never changes this height.
   useLayoutEffect(() => {
     const host = hostRef.current, board = boardRef.current;
-    if (!host || !board) return;
+    if (!host) return;
     const surface = host.closest(".studio-mobile,.public-calendar-shell") ?? host.parentElement;
     const header = surface?.querySelector<HTMLElement>(".m-topstick,.agenda-header");
+    const agenda = host.querySelector<HTMLElement>(":scope > .agenda");
+    const footer = surface?.querySelector<HTMLElement>(".m-actionrail")
+      ?? surface?.closest(".poster-page")?.querySelector<HTMLElement>(".agenda-monthbar")
+      ?? document.querySelector<HTMLElement>(".agenda-monthbar");
     const measure = () => {
       const max = Math.max(0, ...Array.from(host.querySelectorAll<HTMLElement>(".asc-measure-group"), node => node.getBoundingClientRect().height));
       setStackHeight(previous => Math.abs(previous - max) < .1 ? previous : max);
       host.style.setProperty("--asc-header-height", `${header?.getBoundingClientRect().height ?? 0}px`);
-      host.style.setProperty("--asc-board-height", `${board.getBoundingClientRect().height}px`);
+      if (!agenda) return;
+      const viewport = window.visualViewport;
+      const visibleBottom = Math.min(window.innerHeight, viewport ? viewport.offsetTop + viewport.height : window.innerHeight);
+      const footerTop = footer?.getBoundingClientRect().top;
+      const bottom = footerTop !== undefined && footer?.offsetWidth ? Math.min(visibleBottom, footerTop) : visibleBottom - 8;
+      (surface as HTMLElement | null)?.style.setProperty("--asc-footer-space", `${Math.max(0, window.innerHeight - bottom)}px`);
+      const readingTop = agenda.getBoundingClientRect().top + (host.closest(".viewer-preview-overlay") ? 0 : window.scrollY);
+      host.style.setProperty("--asc-frame-height", `${Math.max(0, bottom - readingTop)}px`);
     };
     measure();
     const observer = new ResizeObserver(measure);
-    observer.observe(board); if (header) observer.observe(header);
+    if (board) observer.observe(board); if (header) observer.observe(header); if (footer) observer.observe(footer);
     host.querySelectorAll(".asc-measure-group").forEach(node => observer.observe(node));
-    return () => observer.disconnect();
+    window.addEventListener("resize", measure);
+    window.addEventListener("scroll", measure, { passive: true });
+    window.visualViewport?.addEventListener("resize", measure);
+    window.visualViewport?.addEventListener("scroll", measure);
+    return () => {
+      observer.disconnect(); window.removeEventListener("resize", measure); window.removeEventListener("scroll", measure);
+      window.visualViewport?.removeEventListener("resize", measure); window.visualViewport?.removeEventListener("scroll", measure);
+    };
   }, [signature]);
 
   useEffect(() => {
-    const host = hostRef.current, board = boardRef.current;
-    if (!host || !board) return;
+    const host = hostRef.current, flow = host?.querySelector<HTMLElement>(".agenda-flow");
+    if (!host || !flow) return;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const read = () => {
       if (document.hidden || detailRef.current?.contains(document.activeElement)) return;
-      const rect = board.getBoundingClientRect();
-      if (rect.top >= window.innerHeight || !board.offsetWidth) return;
-      const rows = Array.from(host.querySelectorAll<HTMLElement>(".agenda-day[data-flip-key],.agenda-gap[data-flip-key]"));
+      const rect = flow.getBoundingClientRect();
+      if (rect.top >= window.innerHeight || !flow.offsetWidth) return;
+      const rows = Array.from(flow.querySelectorAll<HTMLElement>(".agenda-day[data-flip-key],.agenda-gap[data-flip-key]"));
       let leading = rows[0];
-      for (const row of rows) { if (row.getBoundingClientRect().top <= rect.bottom + 24) leading = row; else break; }
-      // At the document end the final day cannot reach the sticky reading line.
-      // Follow that visible day without adding blank space or moving any cards.
-      const page = document.scrollingElement, last = rows.at(-1), lastRect = last?.getBoundingClientRect();
-      if (page && page.scrollTop > 0 && page.scrollTop + page.clientHeight >= page.scrollHeight - 2
-        && last && lastRect && lastRect.top < window.innerHeight && lastRect.bottom > rect.bottom) leading = last;
+      for (const row of rows) { if (row.getBoundingClientRect().top <= rect.top + 24) leading = row; else break; }
+      const last = rows.at(-1), lastRect = last?.getBoundingClientRect();
+      if (flow.scrollTop > 0 && flow.scrollTop + flow.clientHeight >= flow.scrollHeight - 2
+        && last && lastRect && lastRect.top < rect.bottom && lastRect.bottom > rect.top) leading = last;
       const next = leading?.dataset.flipKey;
       const focused = document.activeElement instanceof Element ? document.activeElement.closest<HTMLElement>("[data-notice-id]")?.dataset.noticeId : undefined;
       if (next && focused && !agendaNoticeGroupAt(groupsRef.current, next)?.notices.some(notice => notice.id === focused)) return;
       if (next) setDate(previous => previous === next ? previous : next);
     };
     const schedule = (event?: Event) => {
-      if (event?.target instanceof Element && !event.target.contains(host) && !host.contains(event.target)) return;
+      if (event?.target instanceof Element && event.target !== flow && event.type === "scroll") return;
       clearTimeout(timer); timer = setTimeout(read, 180);
     };
-    window.addEventListener("scroll", schedule, { capture: true, passive: true });
+    flow.addEventListener("scroll", schedule, { passive: true });
     window.addEventListener("resize", schedule); host.addEventListener("focusout", schedule);
     schedule();
-    return () => { clearTimeout(timer); window.removeEventListener("scroll", schedule, true); window.removeEventListener("resize", schedule); host.removeEventListener("focusout", schedule); };
+    return () => { clearTimeout(timer); flow.removeEventListener("scroll", schedule); window.removeEventListener("resize", schedule); host.removeEventListener("focusout", schedule); };
   }, [signature]);
 
   useLayoutEffect(() => {
@@ -109,6 +126,7 @@ export function AgendaSupportContext({ notices, fallbackDate, children, onDetail
 
   return (
     <div className="agenda-with-notices" data-has-notices={notices.length > 0} ref={hostRef}
+      onFocusCapture={event => { if (event.target instanceof HTMLElement) revealAgendaFrame(event.target); }}
       style={{ "--asc-spring": FLIP_SPRING, "--asc-motion-ms": `${FLIP_MS}ms` } as CSSProperties}>
       {notices.length > 0 ? <section className="agenda-support-board" ref={boardRef} aria-label="기간·업도움" data-reading-date={date} data-reduced={reduced}>
         <div className="asc-head"><h2>기간·업도움</h2><span aria-live="polite">{Number(captionDate.slice(5, 7))}.{Number(captionDate.slice(8, 10))}{captionDate === date ? " 기준" : " 안내"}</span></div>

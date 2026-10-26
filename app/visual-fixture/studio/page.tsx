@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { supportContextFixture } from "../support-context";
+import { agendaFrameFixture, supportContextFixture } from "../support-context";
 // 실제 /studio는 (studio)/layout.tsx가 이 CSS들을 선로드한다 — fixture는 그 레이아웃 밖이라
 // 직접 가져와야 프로덕션 빌드에서도 실물과 같은 스타일로 렌더된다(dev는 CSS를 전부 실어 가려짐).
 // poster CSS도 필요: 편집실 모바일 아젠다(.agenda/.agenda-rail 골격)가 포스터 CSS의 기본
@@ -29,10 +29,10 @@ export default async function VisualStudioFixture({
     notFound();
   }
   const sp = await searchParams;
-  const cozy = sp?.supportUX === "cozy" ? supportContextFixture() : null;
+  const cozy = sp?.supportUX === "cozy" ? supportContextFixture() : sp?.supportUX === "frame-none" ? agendaFrameFixture() : null;
   // The studio retains teaser=true after release and needs a masked edit entry
   // before release. The public preview receives only the resolved fixture data.
-  const cozyStudioEvents = cozy ? [
+  const cozyStudioEvents = cozy && sp?.supportUX === "cozy" ? [
     ...cozy.events.map(event => event.id === "cozy-period-vote"
       ? { ...event, teaser: true, teaserRevealAt: new Date(Date.now() - 60_000).toISOString() } : event),
     { ...cozy.events[0], id: "cozy-hidden-support", startsAt: `${cozy.focusDate}T20:00:00+09:00`,

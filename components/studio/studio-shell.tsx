@@ -1,4 +1,5 @@
 "use client";
+import { scrollAgendaTarget } from "@/lib/ui/agenda-scroll";
 import { AgendaSupportContext } from "@/components/shared/agenda-support-context";
 import { createAgendaNotices, noticeIsActive } from "@/lib/ui/agenda-notices";
 
@@ -586,7 +587,6 @@ export function StudioShell({
     return () => window.clearTimeout(t);
   }, []);
   // 모바일 하단 관리(태그·멤버) 펼침 상태.
-  const [mobileMgmt, setMobileMgmt] = useState<null | "tags">(null);
   // 일정은 로컬 상태로 들고 낙관적으로 갱신한다 — 잇기·복붙·저장·삭제가 서버 왕복/새로고침을
   // 기다리지 않고 화면에 즉시 반영되게 해서 "하는 맛"을 살린다. 서버 데이터가 바뀌면 다시 맞춘다.
   const [events, setEvents] = useState(schedule.events);
@@ -2131,9 +2131,8 @@ export function StudioShell({
   // 그 날 칸을 잠시 밝힌다(시청자 화면의 .cell-flash와 같은 애니메이션) — 달 이동 슬라이드가 끝난 뒤.
   // 클래스는 state(flashDate)로 칸 className에 들어간다 — DOM에 직접 넣으면 selectEvent 리렌더가 지운다(실측).
   const flashStudioDay = (dateKey: string) => {
-    document
-      .querySelector<HTMLElement>(`.studio-day[data-isodate="${dateKey}"], [data-flip-key="${dateKey}"]`)
-      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    const day = document.querySelector<HTMLElement>(`.studio-day[data-isodate="${dateKey}"], [data-flip-key="${dateKey}"]`);
+    if (!scrollAgendaTarget(day)) day?.scrollIntoView({ behavior: "smooth", block: "center" });
     setFlashDate(null);
     window.setTimeout(() => setFlashDate(dateKey), 0);
     if (flashTimerRef.current) window.clearTimeout(flashTimerRef.current);
@@ -2231,9 +2230,7 @@ export function StudioShell({
     window.setTimeout(
       () => {
         if (isNarrow) {
-          document
-            .querySelector(".studio-mobile .agenda-day.today")
-            ?.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+          scrollAgendaTarget(document.querySelector<HTMLElement>(".studio-mobile .agenda-day.today"));
         }
         flashStudioDay(today);
       },
@@ -6101,11 +6098,13 @@ export function StudioShell({
   function openMobileEdit(event: StudioScheduleEvent, originEl?: HTMLElement) {
     hapticTick(); // 카드 탭 손맛(Android만; iOS·미지원은 조용히 무시)
     mobileEditOriginRef.current = originEl?.getBoundingClientRect() ?? null;
+    mobileEditOpenerRef.current = originEl ?? null;
     selectEvent(event);
     setMobileEditId(event.id);
   }
   function openMobileAdd(isoDate: string, originEl?: HTMLElement) {
     mobileEditOriginRef.current = originEl?.getBoundingClientRect() ?? null;
+    mobileEditOpenerRef.current = originEl ?? null;
     selectDate(isoDate, true); // 빈 폼 또는 같은 날짜의 임시 내용 복원까지 처리
     setMobileEditId("new");
   }
@@ -6195,6 +6194,16 @@ export function StudioShell({
   // B2(모바일): 시트가 무관한 위치에서 나타나지 않고, 탭한 그 카드 자리에서 자라난다
   // (matched geometry). 탭 순간의 카드 rect를 기억해 뒀다가 시트 마운트 직후 FLIP으로 재생.
   const mobileEditOriginRef = useRef<DOMRect | null>(null);
+  const mobileEditOpenerRef = useRef<HTMLElement | null>(null);
+  const mobileEditWasOpenRef = useRef(false);
+  useEffect(() => {
+    if (mobileEditId !== null) { mobileEditWasOpenRef.current = true; return; }
+    if (!mobileEditWasOpenRef.current) return;
+    mobileEditWasOpenRef.current = false;
+    const opener = mobileEditOpenerRef.current;
+    mobileEditOpenerRef.current = null;
+    restoreDialogOpener(opener);
+  }, [mobileEditId]);
   useLayoutEffect(() => {
     if (mobileEditId === null) return;
     const el = mobileSheetRef.current;
@@ -6335,7 +6344,7 @@ export function StudioShell({
           >
             {/* 오른쪽 레일: (위) 인사이트 진입 버튼 + (아래) 색상 필터 — 같은 92px 폭으로 세로로 쌓는다(편집실). */}
             <div className="agenda-rail">
-            <PanelSection as="aside" title="태그 필터" sectionKey="tag-filter" collapsible className="agenda-legend agenda-legend-studio" aria-label="태그 필터">
+            <PanelSection as="aside" title="태그필터" sectionKey="tag-filter" collapsible={false} className="agenda-legend agenda-legend-studio" aria-label="태그 필터">
               {(() => {
                 const tops = legendTags.filter((t) => (t.parentId ?? null) === null);
                 const legendBtn = (tag: (typeof tops)[number]) => {
@@ -6408,6 +6417,7 @@ export function StudioShell({
             </div>
 
             <div
+              role="region" aria-label="날짜별 일정" tabIndex={0}
               className={`agenda-flow${isFirstReveal && !didNavigateRef.current ? " cal-reveal" : ""}`}
               data-enter={didNavigateRef.current ? monthDir : undefined}
               key={`${view.year}-${view.month}`}
@@ -6645,42 +6655,31 @@ export function StudioShell({
                 </div>
               );
             })}
+              {canEdit ? (
+                <section className="m-manage">
+                  <h2>관리</h2>
+                  {/* 단계 배포: 태그 '정의 편집'은 v3 역할(현재 개발자)만. 그 외엔 진입 자체를 숨겨
+                      레거시 사용자가 v3 구조를 보거나 덮어쓰지 못하게 한다. */}
+                  {taxonomyV3 ? (
+                    <>
+                      <button
+                        className="button m-io m-io-tags"
+                        onClick={() => (blockedByPreview() ? null : setModal("tags"))}
+                        type="button"
+                       data-act="m-io-tags">
+                        태그 이름 · 색상 · 순서
+                      </button>
+
+                    </>
+                  ) : null}
+                  {/* (매니저 관리 접이는 멤버 관리 철수(2026-09-04, ADR-0018)로 제거.) */}
+                </section>
+              ) : null}
+
           </div>
           </section>
           </AgendaSupportContext>
         </div>
-
-        {canEdit ? (
-          <section className="m-manage">
-            <h2>관리</h2>
-            {/* 단계 배포: 태그 '정의 편집'은 v3 역할(현재 개발자)만. 그 외엔 진입 자체를 숨겨
-                레거시 사용자가 v3 구조를 보거나 덮어쓰지 못하게 한다. */}
-            {taxonomyV3 ? (
-              <>
-                <button
-                  className="button m-io m-io-tags"
-                  onClick={() => (blockedByPreview() ? null : setMobileMgmt(mobileMgmt === "tags" ? null : "tags"))}
-                  type="button"
-                 data-act="m-io-tags">
-                  태그 이름 · 색상 · 순서 {mobileMgmt === "tags" ? "▲" : "▼"}
-                </button>
-                {mobileMgmt === "tags" && !previewRole ? (
-                  <TagLegendEditor
-                    canEdit
-                    onTagAdded={applyTagAdd}
-                    onTagRemoved={applyTagRemove}
-                    onTagsUpdated={applyTagUpdates}
-                    palette={palette}
-                    removeTagAction={removeTagAction}
-                    saveTagsAction={saveTagsAction}
-                    tags={tags}
-                  />
-                ) : null}
-              </>
-            ) : null}
-            {/* (매니저 관리 접이는 멤버 관리 철수(2026-09-04, ADR-0018)로 제거.) */}
-          </section>
-        ) : null}
 
         {/* 하단 엄지존 액션레일 — 옛 '< >' 자리. 월 이동은 좌우 스와이프로(달력을 쓸면 넘어감).
             누르기 쉬운 핵심 버튼(미리보기·비공개)을 엄지 닿는 바닥에 모았다.

@@ -4,7 +4,7 @@
   --asc-rule:light-dark(#e6dccb,#564a3d); --asc-blue:light-dark(#286779,#a6d9e4); --asc-soft:light-dark(#e4f0f1,#384e52);
   --asc-rose:light-dark(#9b4961,#edb3c4); --asc-rose-soft:light-dark(#f4e6e9,#523b42); --asc-shadow:light-dark(rgb(92 65 36 / .12),rgb(0 0 0 / .25));
   position:sticky; top:var(--asc-header-height); z-index:7; isolation:isolate; width:100%; box-sizing:border-box;
-  margin:0 0 8px; padding:4px 10px 3px; border:1px solid var(--asc-rule); border-radius:var(--r-card,16px);
+  margin:0; padding:4px 10px 3px; border:1px solid var(--asc-rule); border-radius:var(--r-card,16px);
   color:var(--asc-ink); background:var(--asc-panel); box-shadow:0 6px 18px -11px var(--asc-shadow);
 }
 .asc-head { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:27px; }
@@ -31,11 +31,16 @@
 .asc-no-active { color:var(--asc-muted); font-size:var(--text-caption,12px); }
 .asc-measures { position:absolute; top:31px; left:10px; right:10px; visibility:hidden; pointer-events:none; z-index:-1; }
 .asc-measure-group .asc-row::after { content:""; flex:0 0 5px; }
-.agenda-with-notices[data-has-notices="true"] :is(.agenda-rail,.agenda-legend-rail) {
-  top:calc(var(--asc-header-height) + var(--asc-board-height) + 8px); z-index:6;
-  height:max(120px,calc(100svh - var(--asc-header-height) - var(--asc-board-height) - 90px));
-}
-.agenda-with-notices[data-has-notices="true"] .agenda-day { scroll-margin-top:calc(var(--asc-header-height) + var(--asc-board-height) + 12px); }
+/* Measure the actual toolbar, clip scroll content only so rail popovers escape. */
+.agenda-with-notices > .agenda.agenda { box-sizing:border-box; height:var(--asc-frame-height,calc(100svh - 240px)); min-height:0; margin-top:0; padding-block:8px; align-items:stretch; }
+.agenda-with-notices > .agenda > .agenda-flow { box-sizing:border-box; min-height:0; height:100%; align-content:start; grid-auto-rows:max-content; overflow-y:auto; overflow-x:hidden; overscroll-behavior-y:contain; scroll-padding-block:8px; border-radius:var(--r-card,16px); }
+.agenda-with-notices > .agenda > :is(.agenda-rail,.agenda-legend-rail) { position:relative; top:auto; z-index:6; height:100%; min-height:0; }
+.agenda-with-notices .agenda .agenda-legend { display:flex; flex-direction:column; gap:4px; padding-block:4px; flex:1; min-height:0; max-height:none; overflow:visible; }
+.agenda-with-notices .agenda .agenda-legend > .panel-section-heading { flex:none; }
+.agenda-with-notices .agenda .agenda-legend .panel-section-title { font-size:var(--text-body); white-space:nowrap; }
+.agenda-with-notices .agenda .agenda-legend > .panel-section-body { display:flex; flex-direction:column; gap:6px; min-height:0; overflow-y:auto; overscroll-behavior-y:contain; }
+.agenda-with-notices .agenda .agenda-legend .panel-section-body > * { flex-shrink:0; }
+.agenda-with-notices .agenda-day { scroll-margin-block:8px; }
 .agenda-with-notices .agenda-day { box-shadow:0 4px 12px -9px rgb(90 66 37 / .2); }
 .agenda-with-notices .agenda-event { border-radius:var(--r-card,12px); }
 @media (hover:hover) and (pointer:fine) {
@@ -49,3 +54,28 @@
   .agenda-with-notices .agenda .agenda-event:hover { transform:none; }
 }
 [data-reduce-motion="1"] .asc-detail,[data-reduce-motion="1"] .asc-action svg { transition:none !important; transform:none !important; }
+
+/* A short phone cannot fit the whole header/notice board plus usable tags.
+   Let the full notice board leave in normal document flow; the last viewport
+   still fits a complete date/filter frame above the floating toolbar. */
+@media (max-height:480px) {
+  .agenda-support-board { position:static; }
+  .agenda-with-notices > .agenda.agenda { height:max(168px,var(--asc-frame-height,168px)); }
+}
+
+/* Actual toolbar footprint replaces guessed padding; management stays after
+   the dates inside their reading region. */
+.public-calendar-shell.agenda-mode:has(.agenda-with-notices),
+.studio-mobile:has(.agenda-with-notices) { padding-bottom:var(--asc-footer-space,74px); }
+.public-calendar-shell.agenda-mode:has(.agenda-with-notices) > .agenda-header { margin-bottom:0; }
+
+/* A label needs no 44px button hit box. Keep all narrow filter headings equal. */
+.agenda-with-notices .agenda .agenda-legend { --panel-section-hit:28px; }
+/* Preview return shares the thumb toolbar; all five actions retain 44px hits. */
+.agenda-monthbar.has-preview { gap:8px; }
+.agenda-monthbar.has-preview .mb-step { width:44px; height:44px; }
+.agenda-monthbar.has-preview .mb-center { flex:0 0 auto; gap:4px; padding:0; }
+.agenda-monthbar.has-preview .mb-act { justify-content:center; width:44px; padding:0; }
+.agenda-monthbar.has-preview .mb-act:not(.live) > span { position:absolute; width:1px; height:1px; margin:-1px; padding:0; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+.agenda-toolbar-preview { display:flex; flex:1; min-width:0; pointer-events:auto; }
+.agenda-toolbar-preview > .button { width:100%; min-height:44px; padding-inline:8px; font-size:var(--text-body); }

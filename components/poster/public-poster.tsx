@@ -2,6 +2,7 @@
 
 // The room must be styled before its lazy companion runtime can mount.
 import "./viewer-companion/companion-home.css";
+import { scrollAgendaTarget } from "@/lib/ui/agenda-scroll";
 import { AgendaSupportContext } from "@/components/shared/agenda-support-context";
 import { createAgendaNotices } from "@/lib/ui/agenda-notices";
 
@@ -970,8 +971,8 @@ export function PublicPoster({
         document.querySelector<HTMLElement>(`.public-day[data-date="${dateKey}"]`) ??
         document.querySelector<HTMLElement>(`.agenda-day[data-flip-key="${dateKey}"]`);
       // scrollIntoView 금지 — .poster-stage(잘라내기 상자)까지 스크롤해 표면 위쪽이 잘린 채 굳는다
-      // (2026-10-05: 요일 줄·첫 주가 사라지고 고정 띠만 뜸). 창만 스크롤한다.
-      if (el) {
+      // (2026-10-05: 요일 줄·첫 주가 사라지고 고정 띠만 뜸). 모바일은 읽기 영역, 데스크톱은 창만 이동한다.
+      if (el && !scrollAgendaTarget(el)) {
         const r = el.getBoundingClientRect();
         window.scrollTo({ top: window.scrollY + r.top + r.height / 2 - window.innerHeight / 2, behavior: "smooth" });
       }
@@ -2746,7 +2747,7 @@ export function PublicPoster({
     if (!next) return false;
     const el = publicDetailCard(next.event.id, next.dateKey);
     if (!el) return false;
-    el.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "instant" });
+    if (!scrollAgendaTarget(el, "nearest", "instant")) el.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "instant" });
     const r = el.getBoundingClientRect(), agenda = matchMedia(POSTER_AGENDA_QUERY).matches;
     agendaDetailOriginRef.current = agenda ? r : null;
     detailAnchorElRef.current = agenda ? null : el;
@@ -2828,7 +2829,7 @@ export function PublicPoster({
   // '오늘' 행으로 아젠다를 스크롤(가운데 정렬). 오늘에 표시할 행이 없으면(공개 일정 없는 날) 무시.
   const todayRowRef = useRef<HTMLDivElement>(null);
   function scrollToToday() {
-    todayRowRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    scrollAgendaTarget(todayRowRef.current);
   }
   // 오늘이 '현재 필터'로도 보이는가 — DOM(렌더 타이밍)이 아니라 데이터로 판정한다(오늘 날짜에 필터를
   // 통과하는 일정이 하나라도 있나). 보이면 필터를 유지하고 오늘로만 스크롤, 안 보이면 필터를 풀고 오늘로.
@@ -3519,7 +3520,7 @@ export function PublicPoster({
         {interactive ? (
           <div className="agenda-legend-rail" data-pm-exit="2">
           {legendTags.length > 0 || canHeart ? (
-          <PanelSection as="aside" title="태그 필터" sectionKey="tag-filter" collapsible className="agenda-legend" aria-label="색상 안내(태그 필터)">
+          <PanelSection as="aside" title="태그필터" sectionKey="tag-filter" collapsible={false} className="agenda-legend" aria-label="색상 안내(태그 필터)">
             {(() => {
               const legendBtn = (tag: (typeof legendTags)[number]) => {
                 const v = tagVisual.visualOf(tag.id);
@@ -3655,12 +3656,12 @@ export function PublicPoster({
           ) : null}
           {/* 미리보기 '편집실로 가기'는 색상 필터 박스 '아래'에 — 박스가 vh 고정이라 스크롤해도
               안 들썩이고(인사이트 버튼과 동일), 우상단 대신 엄지 닿는 아래쪽이라 누르기 쉽다. */}
-          {previewNav ? <div className="agenda-legend-nav">{previewNav}</div> : null}
           {companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed ? <CompanionHomeLauncherSlot onHost={companionLauncherHostRef} /> : null}
           </div>
         ) : null}
 
         <div
+          role="region" aria-label="날짜별 일정" tabIndex={0}
           className={`agenda-flow${popIntro && !didNavigateRef.current ? " cal-reveal" : ""}`}
           data-enter={didNavigateRef.current ? monthDir : undefined}
           key={`${view.year}-${view.month}`}
@@ -4922,7 +4923,7 @@ export function PublicPoster({
               </MonthTitleButton>
               <span className="title-spark" aria-hidden="true">✨️</span>
             </h1>
-            {/* 미리보기 이동 버튼(편집실)은 제목 우측이 아니라 색상 필터 박스 아래로 옮겼다(엄지존). */}
+            {/* 모바일 미리보기 복귀는 하단 도구줄에서 월 이동·검색·오늘과 함께 제공한다. */}
             {accountSwitch ? (
               // 이 헤더는 모바일 전용(agenda-header, showAgenda=isNarrow). 익명 로그인은
               // /api/auth/login으로 바로 POST하되, 클릭 시점에 handleMobileLogin이 환경을
@@ -5253,7 +5254,7 @@ export function PublicPoster({
 
       {/* 월 이동 버튼을 하단 좌·우에 띄운다(가운데는 비워 '맨 위로' 버튼과 안 겹치게).
           시청자·아젠다·꾸미기 모두 — 달력을 보며 월을 넘기기 쉽게(HCI). 상단 월 pill은 폐지. */}
-      <nav className="agenda-monthbar" data-pm-exit="3" aria-label="월 이동">
+      <nav className={`agenda-monthbar${isNarrow && previewNav ? " has-preview" : ""}`} data-pm-exit="3" aria-label="월 이동">
         {/* 스와이프(2629)는 톡이 울리는데 화살표는 맨손이었다 — 같은 동작은 같은 감촉.
             톡은 moveMonth 안이 아니라 여기서 울린다(안에 넣으면 jumpToday·스와이프가 두 번 울린다). */}
         <button
@@ -5328,6 +5329,8 @@ export function PublicPoster({
             })()}
           </div>
         ) : null}
+
+        {isNarrow && previewNav ? <div className="agenda-toolbar-preview">{previewNav}</div> : null}
 
         {/* PC '오늘' — 지도 앱 '내 위치' 문법: 오늘 달을 벗어났을 때만 › 옆에 떠오른다(헤더에 상자를
             더하지 않아 제목 대칭·크기 문제가 없다). 모바일은 위 mb-center의 오늘/LIVE가 담당. */}
