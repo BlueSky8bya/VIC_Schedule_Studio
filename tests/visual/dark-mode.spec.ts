@@ -335,8 +335,9 @@ for (const mobile of [false, true]) {
       expect((await page.locator(".dvm-strip").boundingBox())!.width).toBeGreaterThan(300);
     }
     for (let i = 0; i < 2; i++) {
-      const picker = page.getByRole("combobox", { name: "이 날의 영상 선택" });
-      await picker.selectOption({ index: i });
+      const picker = page.getByRole("button", { name: "이 날의 영상 선택" });
+      await picker.click();
+      await page.getByRole("listbox",{name:"이 날의 영상 선택"}).getByRole("option").nth(i).click();
       await capture(page, info, `replay-part-${i + 1}`);
     }
     await page.locator(".day-vod-modal").focus();

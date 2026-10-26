@@ -3,11 +3,13 @@
 // 날짜 다시보기 창/페이지(2026-09-17 페이지 승격) — **한 구현**: 시청자 화면은 /replay/<날짜> 페이지(variant="page"),
 // 편집실 미리보기·fixture·/onair는 같은 컴포넌트를 창(variant="modal")으로 띄운다(G-18). 플레이어(숲 임베드 iframe
 // API)·부 탭·머리줄·가로 띠·챕터 레일·키보드가 전부 여기 있다. 히스토리 스택·본문 스크롤 잠금은 껍데기(포스터/페이지) 몫.
-import { ChevronDown, ExternalLink, PanelLeft, PanelRight, Play, Upload, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Check, ChevronDown, ExternalLink, PanelLeft, PanelRight, Play, Upload, X } from "lucide-react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { getDayMark } from "@/lib/calendar/holidays";
 import { hapticTick } from "@/lib/ui/haptics";
 import { logActivity } from "@/lib/activity/client";
+import { trackPopoverLayout } from "@/lib/ui/popover-layout";
 import { VodChapters, type VodChaptersApi } from "@/components/poster/vod-chapters";
 import "./public-poster.css";
 import "./poster-metal-water.css";
@@ -51,33 +53,88 @@ export type DayVod = {
   startedAt?: string; // 방송 시작 시각(ISO) — 타임라인의 '실제 시각' 표기(2026-09-18 소유자)
 };
 
-/** Native selection keeps its full option titles, while the closed header shows
- * only current/total. Uploads retain their own numbering, not replay parts. */
+/** Pointer/keyboard share a single fixed activity event; opening/cancelling a
+ * picker and choosing the current item are not video selections. */
+export function commitVodPartSelection(vods: readonly DayVod[], selected: number, next: number, onSelect: (titleNo: number) => void) {
+  if (next === selected || !vods.some(v => v.titleNo === next)) return;
+  logActivity("ui.click", { target: "vod-part-select" });
+  onSelect(next);
+}
+
 export function VodPartPicker({ vods, selected, onSelect }: {
   vods: readonly DayVod[]; selected: DayVod; onSelect: (titleNo: number) => void;
 }) {
+  return vods.length > 1 ? <VodPartMenu vods={vods} selected={selected} onSelect={onSelect} /> : null;
+}
+
+function VodPartMenu({vods,selected,onSelect}:{vods:readonly DayVod[];selected:DayVod;onSelect:(titleNo:number)=>void}) {
+  const [open,setOpen]=useState(false),[active,setActive]=useState(0);
+  const [pos,setPos]=useState<{left:number;top:number;width:number;height:number}|null>(null);
+  const trigger=useRef<HTMLButtonElement>(null),menu=useRef<HTMLDivElement>(null),id=useId();
+  const selectedIndex=Math.max(0,vods.findIndex(v=>v.titleNo===selected.titleNo)),count=vods.length;
+  useLayoutEffect(()=>{
+    if(!open)return;
+    setActive(selectedIndex);
+    const update=()=>{
+      if(!trigger.current)return;
+      const r=trigger.current.getBoundingClientRect(),width=Math.min(420,innerWidth-24),below=innerHeight-r.bottom-20;
+      const height=Math.min(360,Math.max(100,below>=160?below:r.top-20));
+      const next={left:Math.max(12,Math.min(r.left,innerWidth-width-12)),top:below>=160?r.bottom+8:Math.max(12,r.top-height-8),width,height};
+      setPos(p=>p&&p.left===next.left&&p.top===next.top&&p.width===next.width&&p.height===next.height?p:next);
+    };
+    update();
+    return trackPopoverLayout({update,elements:()=>[trigger.current]});
+  },[open,selectedIndex,count]);
+  useEffect(()=>{if(open&&pos)menu.current?.focus({preventScroll:true});},[open,pos]);
+  useEffect(()=>{if(open)document.getElementById(`${id}-${active}`)?.scrollIntoView({block:"nearest"});},[open,active,id,pos]);
+  useEffect(()=>{
+    if(!open)return;
+    const outside=(e:PointerEvent)=>{if(!trigger.current?.contains(e.target as Node)&&!menu.current?.contains(e.target as Node))setOpen(false);};
+    document.addEventListener("pointerdown",outside,true);
+    return()=>document.removeEventListener("pointerdown",outside,true);
+  },[open]);
+  const close=()=>{setOpen(false);trigger.current?.focus({preventScroll:true});};
+  const choose=(i:number)=>{close();const next=vods[i];if(next)commitVodPartSelection(vods,selected.titleNo,next.titleNo,onSelect);};
   const replayCount = vods.filter(v => v.access !== "sub").length;
   const uploadCount = vods.length - replayCount;
   const before = vods.slice(0, vods.findIndex(v => v.titleNo === selected.titleNo) + 1);
   const upload = selected.access === "sub";
   const index = before.filter(v => (v.access === "sub") === upload).length;
   const counter = upload ? `영상 ${index} / ${uploadCount}` : `${index} / ${replayCount}부`;
-  let replay = 0, uploads = 0;
-  return <span className="dvm-part-picker" data-single={vods.length === 1 || undefined}>
-    <span aria-hidden={vods.length > 1 ? true : undefined} className="dvm-part-counter">{counter}{vods.length > 1 ? <ChevronDown aria-hidden="true" size={13} /> : null}</span>
-    {vods.length > 1 ? <select aria-label="이 날의 영상 선택" data-act="vod-part-select" data-activity-manual
-      onChange={event => {
-        const next = Number(event.currentTarget.value);
-        if (next === selected.titleNo || !vods.some(v => v.titleNo === next)) return;
-        logActivity("ui.click", { target: "vod-part-select" });
-        onSelect(next);
-      }} value={selected.titleNo}>
-      {vods.map(v => {
-        const number = v.access === "sub" ? `영상 ${++uploads} / ${uploadCount}` : `${++replay} / ${replayCount}부`;
-        return <option key={v.titleNo} value={v.titleNo}>{number} · {v.title || "다시보기"}{v.durationMs > 0 ? ` · ${formatVodDuration(v.durationMs)}` : ""}{v.access ? ` · ${VOD_ACCESS_LABEL[v.access]}` : ""}{v.host ? " · 합방" : ""}</option>;
+  let replay=0,uploads=0;
+  return <>
+    <button aria-label="이 날의 영상 선택" aria-controls={id} aria-expanded={open} aria-haspopup="listbox"
+      className="dvm-part-picker" data-vod-part-control data-act="vod-part-select" data-activity-manual
+      onClick={()=>setOpen(v=>!v)} onKeyDown={e=>{
+        if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();setOpen(true);}
+        else if(e.key==="Escape"&&open){e.preventDefault();e.stopPropagation();close();}
+      }} ref={trigger} type="button">
+      <span className="dvm-part-counter">{counter}</span><ChevronDown aria-hidden="true" size={12}/>
+    </button>
+    {open&&pos?createPortal(<div aria-label="이 날의 영상 선택" aria-activedescendant={`${id}-${active}`}
+      className="dvm-part-menu" data-vod-part-menu id={id} ref={menu} role="listbox" tabIndex={-1}
+      style={{left:pos.left,top:pos.top,width:pos.width,maxHeight:pos.height}}
+      onKeyDown={e=>{
+        e.stopPropagation();
+        if(e.key==="Escape"){e.preventDefault();close();}
+        else if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();setActive(i=>Math.max(0,Math.min(vods.length-1,i+(e.key==="ArrowDown"?1:-1))));}
+        else if(e.key==="Home"||e.key==="End"){e.preventDefault();setActive(e.key==="Home"?0:vods.length-1);}
+        else if(e.key==="Enter"||e.key===" "){e.preventDefault();choose(active);}
+        else if(e.key==="Tab"){close();}
+      }}>
+      {vods.map((v,i)=>{
+        const number=v.access==="sub"?`영상 ${++uploads}`:`${++replay}부`;
+        return <button aria-selected={v.titleNo===selected.titleNo} className="dvm-part-option" data-active={i===active}
+          data-activity-manual data-act="vod-part-select" id={`${id}-${i}`} key={v.titleNo} onClick={()=>choose(i)}
+          onPointerMove={()=>setActive(i)} role="option" tabIndex={-1} type="button">
+          <span className="dvm-part-number">{number}</span>
+          <span className="dvm-part-info"><span className="dvm-part-name">{v.title||"다시보기"}</span>
+          <span className="dvm-part-meta">{v.durationMs>0?<span>{formatVodDuration(v.durationMs)}</span>:null}{v.access?<VodAccessBadge access={v.access} small/>:null}{v.host?<span>합방 · {v.host}</span>:null}</span></span>
+          {v.titleNo===selected.titleNo?<Check aria-hidden="true" className="dvm-part-check" size={15}/>:<span/>}
+        </button>;
       })}
-    </select> : null}
-  </span>;
+    </div>,document.body):null}
+  </>;
 }
 
 export function buildDayVodWatchUrl(titleNo: number, sec?: number): string {
@@ -1121,14 +1178,15 @@ export function DayVodWindow({
   }, []);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if(target?.closest("[data-vod-part-menu]"))return;
       if (e.key === "Escape") {
         onClose();
         return;
       }
       if (e.ctrlKey || e.metaKey || e.altKey) return;
-      const target = e.target as HTMLElement | null;
       const tag = target?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target?.isContentEditable) return;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target?.isContentEditable || target?.closest("[data-vod-part-control]")) return;
       const list = vods;
       const selNo = dayVodSelRef.current ?? list[0]?.titleNo ?? null;
       // ? = 단축키 안내 토글(2번). 다른 키를 쓰면 안내는 접힌다(배웠으니).

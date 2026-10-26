@@ -14,18 +14,22 @@ for (const access of ["sub", "plus"] as const) for (const width of [1440, 390]) 
       window.open = (url, name, features) => { target.__seekOpens!.push({ url: String(url), target: name, features }); return null; };
     });
     await page.goto(`/visual-fixture/vod-seek?access=${access}`);
-    const picker = page.getByRole("combobox", { name: "이 날의 영상 선택", exact: true });
-    const options = picker.locator("option");
+    const picker = page.getByRole("button", { name: "이 날의 영상 선택", exact: true });
+    await picker.click();
+    const options = page.getByRole("listbox",{name:"이 날의 영상 선택"}).getByRole("option");
     await expect(options).toHaveCount(2);
     if (access === "sub") {
-      await expect(options).toHaveText([/영상 1 \/ 2.*구독/, /영상 2 \/ 2.*구독/]);
+      await expect(options).toHaveText([/영상 1.*구독/, /영상 2.*구독/]);
       await expect(page.locator(".dvm-part-counter")).toHaveText("영상 1 / 2");
     } else {
-      await expect(options).toHaveText([/1 \/ 2부.*10분.*구독\+/, /2 \/ 2부.*10분.*구독\+/]);
+      await expect(options).toHaveText([/1부.*10분.*구독/, /2부.*10분.*구독/]);
+      await expect(options.locator('.vod-access-badge[aria-label="구독+"]')).toHaveCount(2);
     }
+    await page.keyboard.press("Escape");
     const link = page.getByRole("link", { name: "숲에서 보기", exact: true });
     await expect(link).toHaveAttribute("href", "https://vod.sooplive.co.kr/player/42?change_second=125");
     await expect(page.locator("iframe")).toHaveCount(0);
+    await page.locator(".day-vod-modal").focus();
     await page.keyboard.press("Space");
     expect(await page.evaluate(() => (window as Window & { __seekOpens?: unknown[] }).__seekOpens)).toEqual([]);
     await page.getByText("합성 챕터", { exact: true }).click();
@@ -33,8 +37,9 @@ for (const access of ["sub", "plus"] as const) for (const width of [1440, 390]) 
     expect(await page.evaluate(() => (window as Window & { __seekOpens?: unknown[] }).__seekOpens)).toEqual([{ url: "https://vod.sooplive.co.kr/player/42?change_second=300", target: "_blank", features: "noopener,noreferrer" }]);
     await expect(link).toHaveAttribute("href", "https://vod.sooplive.co.kr/player/42?change_second=300");
     await expect(page.locator("iframe")).toHaveCount(0);
-    await picker.selectOption("43");
-    await expect(picker).toHaveValue("43");
+    await picker.click();
+    await page.getByRole("option").nth(1).click();
+    await expect(page.locator(".dvm-head .dvm-title")).toHaveText("합성 다른 영상");
     await expect(link).toHaveAttribute("href", "https://vod.sooplive.co.kr/player/43");
     await page.screenshot({ path: test.info().outputPath("subscriber-seek.png") });
     await Promise.all(proof.pending);
