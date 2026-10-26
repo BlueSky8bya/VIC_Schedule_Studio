@@ -3,6 +3,7 @@
 // The room must be styled before its lazy companion runtime can mount.
 import "./viewer-companion/companion-home.css";
 import { scrollAgendaTarget } from "@/lib/ui/agenda-scroll";
+import { PublicEventCalendar } from "./public-event-calendar";
 import {usePublicRecordSession} from "@/lib/ui/use-public-record-session";
 import { AgendaSupportContext } from "@/components/shared/agenda-support-context";
 import { createAgendaNotices } from "@/lib/ui/agenda-notices";
@@ -142,9 +143,6 @@ import { popInnerOverlay, pushInnerOverlay } from "@/lib/ui/overlay-pop";
 import { writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
 import { usePublicMonthLink } from "@/lib/ui/use-public-month-link";
 import { usePublicEventLink } from "@/lib/ui/use-public-event-link";
-import { publicEventNavigation } from "@/lib/ui/public-event-navigation";
-import { PublicEventNavigation } from "./public-event-navigation";
-import { PublicEventShare } from "@/components/poster/public-event-share";
 import { isPublicMonth, PUBLIC_MONTH_BOUNDS } from "@/lib/ui/public-month-link";
 import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
 import { useSoopLive } from "@/components/poster/use-soop-live";
@@ -1151,7 +1149,7 @@ export function PublicPoster({
     else{ignoreRecordDetailPop.current=true;window.history.back();}
   },[recordDetail]);
   useEffect(()=>()=>{if(recordDetailDepthRef.current){popInnerOverlay();recordDetailDepthRef.current=false;}},[]);
-  const { onPop: onPublicEventPop, replaceDetailAddress } = usePublicEventLink(monthLinkEnabled, view, schedule.events, agendaDetail?.event.id ?? null, (event, dateKey) => {
+  const { onPop: onPublicEventPop } = usePublicEventLink(monthLinkEnabled, view, schedule.events, agendaDetail?.event.id ?? null, (event, dateKey) => {
     const el = publicDetailCard(event.id, dateKey);
     const r = el?.getBoundingClientRect(), agenda = matchMedia(POSTER_AGENDA_QUERY).matches;
     agendaDetailOriginRef.current = agenda ? r ?? null : null;
@@ -2816,26 +2814,6 @@ export function PublicPoster({
     const matchesTentative = !statusFilters.includes("tentative") || Boolean(event.isTentative);
     return !(matchesTag && matchesBookmark && matchesTier && matchesTentative);
   }
-  const detailEvents = agendaDetail && !agendaDetail.support && !agendaDetail.event.teaser
-    ? publicEventNavigation(liveEvents, view, event => !isDimmedByFilter(event)) : [];
-  const detailEventPosition = detailEvents.findIndex(item => item.event.id === agendaDetail?.event.id);
-  const navigateDetail = (direction: -1 | 1) => {
-    if (detailEventPosition < 0) return false;
-    const next = detailEvents[detailEventPosition + direction];
-    if (!next) return false;
-    const el = publicDetailCard(next.event.id, next.dateKey);
-    if (!el) return false;
-    if (!scrollAgendaTarget(el, "nearest", "instant")) el.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "instant" });
-    const r = el.getBoundingClientRect(), agenda = matchMedia(POSTER_AGENDA_QUERY).matches;
-    agendaDetailOriginRef.current = agenda ? r : null;
-    detailAnchorElRef.current = agenda ? null : el;
-    setDetailManual(null);
-    replaceDetailAddress(next.event.id);
-    setAgendaDetail({ event: next.event, support: false, dateKey: next.dateKey, ...(!agenda ? { anchor: { x: r.left, y: r.top, w: r.width, h: r.height } } : {}) });
-    hapticTick();
-    playSfx("tab");
-    return true;
-  };
 
   // 월 전환 슬라이드 방향(아젠다): 다음 달=왼쪽으로, 이전 달=오른쪽으로 밀려 들어온다.
   const [monthDir, setMonthDir] = useState<"next" | "prev">("next");
@@ -4700,7 +4678,7 @@ export function PublicPoster({
                       })}
                     </ul>
                   ) : null}
-                  {!support && !teaserActive && Boolean(event.publicTitle) ? <PublicEventShare dateKey={dateKey} id={event.id} key={event.id} /> : null}
+                  {!support && !teaserActive ? <PublicEventCalendar event={event} /> : null}
                   {detailTags.length > 0 ? (
                     <div aria-label="태그" className="agenda-detail-tags">
                       {detailTags.map(({ tag, bg, border, primary }, ti) => (
@@ -4783,7 +4761,6 @@ export function PublicPoster({
                       </button>
                     </div>
                   ) : null}
-                  {!support && !teaserActive ? <PublicEventNavigation position={detailEventPosition} total={detailEvents.length} title={event.publicTitle} onNavigate={navigateDetail} /> : null}
                 </div>
                 {companionDesktop && settingsPrefs.companionPrefs.enabled ? <CompanionDetailBridge eventId={!support && !teaserActive && Boolean(event.publicTitle) ? event.id : null} sheetRef={detailSheetRef} ready={!anchor || Boolean(pos)} /> : null}
               </div>

@@ -34,6 +34,8 @@ export type TargetLabel = {
 // 기록 보존이 90일이라 당분간 집계에 계속 나타난다. 사전 항목 자체는 지우지 않는다 —
 // 지우면 옛 기록이 '이름 미등록'으로 떨어져 더 못 읽게 된다.
 const RETIRED_TARGETS = new Set([
+  // 2026-10-26 human removal: readable history, excluded from active candidates.
+  "share-public-event", "detail-previous-event", "detail-next-event",
   // 2026-10-23: historical map actions stay readable, never unused-feature suggestions.
   "biome-move", "biome-map-pick", "biome-map-fold",
   "companion-radio-mood", // All moods now play; personality decides reaction.
@@ -525,6 +527,8 @@ export const ACT: Record<string, TargetLabel> = {
   "open-in-chrome": { name: "Chrome으로 열기", area: "계정", hint: "앱 내 브라우저 안내" },
   "copy-app-link": { name: "링크 복사", area: "계정", hint: "앱 내 브라우저 안내" },
   "share-public-event": { name: "일정 링크 복사", area: "일정" },
+  "add-google-calendar": { name: "Google 캘린더에 일정 추가", area: "일정" },
+  "editor-tags-clear": { name: "현재 일정 태그 선택 비우기", area: "편집실" },
   "detail-previous-event": { name: "상세에서 이전 일정", area: "일정" },
   "detail-next-event": { name: "상세에서 다음 일정", area: "일정" },
   "member-add": { name: "멤버 추가", area: "옛 화면" },

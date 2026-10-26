@@ -86,41 +86,41 @@ test('Navigation settings resize 320: hidden desktop category falls back without
 });
 
 const detail=(page:Page)=>page.getByRole('dialog',{name:'일정 상세',exact:true});
-for(const width of [1440,390])test(`Navigation history ${width}: incoming link steps reload back forward and outside card`,async({page,context,baseURL},info)=>{
+async function retiredControlsAbsent(page:Page){
+ await expect(detail(page).getByRole('navigation',{name:'일정 이동'})).toHaveCount(0);
+ await expect(detail(page).locator('[data-act="share-public-event"], [data-act="detail-previous-event"], [data-act="detail-next-event"], .public-event-share, .agenda-detail-navigation')).toHaveCount(0);
+ await expect(detail(page).getByText('복사됨',{exact:true})).toHaveCount(0);
+ await expect(detail(page).getByRole('textbox')).toHaveCount(0);
+}
+for(const width of [1440,390])test(`Navigation history ${width}: incoming link reload back forward and outside card`,async({page,context,baseURL},info)=>{
  const proof=await setup(page,context,baseURL!,width),clean='/visual-fixture/poster?monthLink=1&month=2026-06';
- await page.goto(clean);await settlePanelLayout(page);await page.goto(clean+'&event=evt-001');await expect(detail(page)).toContainText('픽크타 1일차');
- await detail(page).getByRole('button',{name:'다음 일정',exact:true}).click();await expect(detail(page)).toContainText('픽크타 4일차');await page.reload();await expect(detail(page)).toContainText('픽크타 4일차');
+ await page.goto(clean);await settlePanelLayout(page);await page.goto(clean+'&event=evt-002');await expect(detail(page)).toContainText('픽크타 4일차');await retiredControlsAbsent(page);
+ await page.reload();await expect(detail(page)).toContainText('픽크타 4일차');
  await page.goBack();await expect(detail(page)).toHaveCount(0);expect(new URL(page.url()).searchParams.get('month')).toBe('2026-06');await page.goForward();await expect(detail(page)).toContainText('픽크타 4일차');
  if(width===1440){await page.locator('.public-event[data-eventid="evt-001"]').first().click();await expect(detail(page)).toContainText('픽크타 1일차');}
  await page.keyboard.press('Escape');await expect(detail(page)).toHaveCount(0);expect(new URL(page.url()).searchParams.has('event')).toBe(false);
- await finish(page,info,proof,{width,incomingStepsReloadBackForward:true,outsideCardDirectReplacement:width===1440,closeRemovesIncomingAddress:true});
+ await finish(page,info,proof,{width,incomingReloadBackForward:true,retiredControlsAbsent:true,outsideCardDirectReplacement:width===1440,closeRemovesIncomingAddress:true});
 });
-for(const width of [1440,390])test(`Navigation spanning ${width}: previous month event is reachable once and keeps current month`,async({page,context,baseURL},info)=>{
+for(const width of [1440,390])test(`Navigation spanning ${width}: incoming previous-month event keeps current month and focus`,async({page,context,baseURL},info)=>{
  const proof=await setup(page,context,baseURL!,width);await page.goto('/visual-fixture/poster?navSpan=1&monthLink=1&month=2026-06&event=fixture-nav-span');await expect(detail(page)).toContainText('전월에서 이어진 공개 일정');await settlePanelLayout(page);
- await expect(detail(page).locator('.agenda-detail-date')).toContainText('6.1');await expect(detail(page).getByRole('button',{name:'이전 일정',exact:true})).toBeDisabled();
- await detail(page).getByRole('button',{name:'다음 일정',exact:true}).click();await expect(detail(page)).toContainText('픽크타 1일차');await detail(page).getByRole('button',{name:'이전 일정',exact:true}).click();await expect(detail(page)).toContainText('전월에서 이어진 공개 일정');
+ await expect(detail(page).locator('.agenda-detail-date')).toContainText('6.1');await retiredControlsAbsent(page);
  expect(new URL(page.url()).searchParams.get('month')).toBe('2026-06');await page.reload();await expect(detail(page)).toContainText('전월에서 이어진 공개 일정');await page.keyboard.press('Escape');
  const card=page.locator(`${width===390?'.agenda-day[data-flip-key="2026-06-01"]':'.public-day[data-date="2026-06-01"]'} [data-eventid="fixture-nav-span"]`).first();await expect(card).toBeFocused();
- await finish(page,info,proof,{width,monthSpanningEventReachable:true,firstIntersectingDay:'2026-06-01',shareReloadAndFocus:true,noDuplicateNavigationTarget:true});
+ await finish(page,info,proof,{width,monthSpanningEventReachable:true,firstIntersectingDay:'2026-06-01',incomingReloadAndFocus:true,retiredControlsAbsent:true});
 });
 for(const surface of ['viewer','preview'] as const)for(const width of [1440,390])
-test(`Navigation details ${surface} ${width}: same window boundaries link focus and no extra read`,async({page,context,baseURL},info)=>{
+test(`Navigation retired detail ${surface} ${width}: compact body tags interest and focus remain`,async({page,context,baseURL},info)=>{
  const proof=await setup(page,context,baseURL!,width);await page.goto(surface==='viewer'?'/visual-fixture/poster?monthLink=1&month=2026-06':'/visual-fixture/studio?role=owner&viewer=1&y=2026&m=6');await settlePanelLayout(page);
- const root=surface==='preview'?page.locator('.viewer-fullscreen'):page.locator('body'),card=(id:string)=>root.locator(`${width===390?'.agenda-event':'.public-event'}[data-eventid="${id}"]`).first();
- const originalUrl=page.url();await card('evt-001').click();await expect(detail(page)).toContainText('픽크타 1일차');
- await detail(page).evaluate(e=>(window as Window & {originalDetail?:Element}).originalDetail=e);
- const nav=detail(page).getByRole('navigation',{name:'일정 이동'}),previous=nav.getByRole('button',{name:'이전 일정',exact:true}),next=nav.getByRole('button',{name:'다음 일정',exact:true});
- await expect(previous).toBeDisabled();await next.focus();await page.keyboard.press('Enter');await expect(detail(page)).toContainText('픽크타 4일차');
- expect(await detail(page).evaluate(e=>(window as Window & {originalDetail?:Element}).originalDetail===e)).toBe(true);await expect(card('evt-002')).toHaveClass(/detail-current/);
- if(surface==='viewer')expect(new URL(page.url()).searchParams.get('event')).toBe('evt-002');else expect(page.url()).toBe(originalUrl);
- await detail(page).locator('[data-act="share-public-event"]').click();const href=await page.evaluate(()=>(window as Window & {copied?:string[]}).copied?.[0]);expect(new URL(href!).searchParams.get('event')).toBe('evt-002');
- await info.attach('detail-next',{body:await page.screenshot(),contentType:'image/png'});
- let steps=1;while(await next.isEnabled()&&steps<12){await next.click();steps++;}await expect(next).toBeDisabled();await expect(previous).toBeFocused();expect(steps).toBe(6);
+ const root=surface==='preview'?page.locator('.viewer-fullscreen'):page.locator('body'),card=root.locator(`${width===390?'.agenda-event':'.public-event'}[data-eventid="evt-002"]`).first();
+ const originalUrl=page.url();await card.click();await expect(detail(page)).toContainText('픽크타 4일차');await retiredControlsAbsent(page);
+ await expect(detail(page).locator('.agenda-detail-tags')).toBeVisible();
+ const bounds=await detail(page).evaluate(e=>({height:e.getBoundingClientRect().height,scrollWidth:e.scrollWidth,clientWidth:e.clientWidth}));expect(bounds.scrollWidth).toBeLessThanOrEqual(bounds.clientWidth+1);
  for(let i=0;i<8;i++){await page.keyboard.press('Tab');expect(await detail(page).evaluate(e=>e.contains(document.activeElement))).toBe(true);}
- while(await previous.isEnabled()){await previous.click();}await expect(previous).toBeDisabled();await expect(next).toBeFocused();
- await page.keyboard.press('Escape');await expect(detail(page)).toHaveCount(0);await expect(card('evt-001')).toBeFocused();
- if(surface==='viewer')expect(new URL(page.url()).searchParams.has('event')).toBe(false);
- await finish(page,info,proof,{surface,width,sameDom:true,boundarySteps:steps,shareFollowsCurrent:true,tabContained:true,escapeReturnsToSelectedCard:true,previewAddressUntouched:surface==='preview',limit:'Synthetic public events; no actual role authentication.'});
+ await page.keyboard.press('Escape');await expect(detail(page)).toHaveCount(0);await expect(card).toBeFocused();
+ if(surface==='viewer')expect(new URL(page.url()).searchParams.has('event')).toBe(false);else expect(page.url()).toBe(originalUrl);
+ await card.click();await expect(detail(page)).toBeVisible();await detail(page).getByRole('button',{name:'닫기',exact:true}).click();await expect(detail(page)).toHaveCount(0);await expect(card).toBeFocused();
+ await card.click();await expect(detail(page)).toBeVisible();await info.attach('retired-detail',{body:await page.screenshot(),contentType:'image/png'});
+ await finish(page,info,proof,{surface,width,retiredControlsAbsent:true,bodyAndTagsRetained:true,tabContained:true,escapeAndXReturn:true,previewAddressUntouched:surface==='preview',bounds,limit:'Synthetic public events; no actual role authentication.'});
 });
 
 for(const width of [1440,390])test(`Navigation detail single filter ${width}: one ordinary item omits controls`,async({page,context,baseURL},info)=>{

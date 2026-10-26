@@ -155,6 +155,7 @@ import { PrivateLayerPanel } from "@/components/private-layer/private-layer-pane
 import { TagLegendEditor } from "@/components/tags/tag-legend-editor";
 import { DateTimePicker } from "@/components/studio/datetime-picker";
 import { TagPicker } from "@/components/tags/tag-picker";
+import { ClearEventTags } from "@/components/tags/clear-event-tags";
 import { ReadonlyEventDetail } from "@/components/studio/readonly-event-detail";
 import { RoleBadge } from "@/components/studio/role-badge";
 import { useStudioWriteQueue } from "@/lib/studio/use-write-queue";
@@ -5623,6 +5624,12 @@ export function StudioShell({
 
   // 2계층: 일정 하나에 콘텐츠 태그 최대 MAX_EVENT_TAGS개. 같은 태그 재클릭=해제. 카드 색은
   // 대분류로 합쳐 ≤2색 + 나머지 점 줄로 표시(month.ts).
+  function clearEventTags() {
+    if (!canEdit) return;
+    setForm((current) => ({ ...current, tagIds: [], primaryTagIds: [] }));
+    hapticTick();
+  }
+
   function selectTag(tagId: string) {
     setForm((current) => {
       if (current.tagIds.includes(tagId)) {
@@ -7082,13 +7089,14 @@ export function StudioShell({
 
             {/* 태그 그룹 — 대분류→세부 드릴다운 + 검색(2계층). 카드 색은 대분류로 ≤2 표시. */}
             <section className="me-group me-tag-group" aria-label="태그 선택">
-              <div className="me-grouphead">
+              <div className="me-grouphead event-tags-heading">
                 <span className="me-grouptitle">
                   태그{" "}
                   <b className="tp-count" title={`최대 ${maxEventTags}개까지 고를 수 있어요`}>
                     {form.tagIds.length}/{maxEventTags}
                   </b>
                 </span>
+                <ClearEventTags disabled={!canEdit || form.tagIds.length === 0} onClear={clearEventTags} />
               </div>
               <TagPicker
                 max={maxEventTags}
@@ -8681,12 +8689,15 @@ export function StudioShell({
             </div>
 
             <section className="tag-picker" aria-label="태그 선택">
+              <div className="event-tags-heading">
               <h3>
                 태그{" "}
                 <b className="tp-count" title={`최대 ${maxEventTags}개까지 고를 수 있어요`}>
                   {form.tagIds.length}/{maxEventTags}
                 </b>
               </h3>
+              <ClearEventTags disabled={!canEdit || form.tagIds.length === 0} onClear={clearEventTags} />
+              </div>
               <TagPicker
                 disabled={!canEdit}
                 max={maxEventTags}

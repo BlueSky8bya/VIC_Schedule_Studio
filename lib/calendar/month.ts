@@ -224,7 +224,7 @@ export type EventSpan = {
   showTitle: boolean;
 };
 
-function addDays(isoDate: string, days: number): string {
+export function addDays(isoDate: string, days: number): string {
   const [y, m, d] = isoDate.split("-").map(Number);
   const dt = new Date(Date.UTC(y, m - 1, d + days));
   return [

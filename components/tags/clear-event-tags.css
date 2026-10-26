@@ -1,0 +1,4 @@
+.event-tags-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.event-tags-clear { border: 0; background: transparent; color: var(--ink-soft); padding: 4px 8px; min-height: 28px; font: inherit; font-size: var(--text-ui-sm, 13px); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.event-tags-clear:disabled { opacity: .45; }
+@media (pointer: coarse) { .event-tags-clear { min-height: 44px; } }

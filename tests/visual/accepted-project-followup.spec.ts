@@ -25,15 +25,15 @@ for(const width of [1440,390])test(`Event incoming history ${width}: native back
  await page.goBack();await expect(detail(page)).toHaveCount(0);await page.goForward();await expect(detail(page)).toContainText('픽크타 1일차');
  await page.keyboard.press('Escape');await expect(detail(page)).toHaveCount(0);
  await page.getByRole('button',{name:/기록/}).first().click();await expect(page.locator('.pi-sheet')).toBeVisible();await page.goBack();await expect(page.locator('.pi-sheet')).toHaveCount(0);await expect(detail(page)).toHaveCount(0);expect(new URL(page.url()).searchParams.has('event')).toBe(false);
- await page.getByRole('button',{name:/기록/}).first().click();await expect(page.locator('.pi-sheet')).toBeVisible();await page.locator('.pi-close').click();await expect(page.locator('.pi-sheet')).toHaveCount(0);await page.getByRole('button',{name:'다음 달',exact:true}).first().click();await expect(page.locator('h1').first()).toContainText(/2026년\s*0?7월/);await expect(detail(page)).toHaveCount(0);
+ await page.getByRole('button',{name:/기록/}).first().click();await expect(page.locator('.pi-sheet')).toBeVisible();await page.locator('[data-act="close-public-insights"]').click();await expect(page.locator('.pi-sheet')).toHaveCount(0);await page.getByRole('button',{name:'다음 달',exact:true}).first().click();await expect(page.locator('h1').first()).toContainText(/2026년\s*0?7월/);await expect(detail(page)).toHaveCount(0);
  await page.goto('/visual-fixture/poster?monthLink=1&month=2026-07&event=evt-001');await settlePanelLayout(page);await expect(detail(page)).toHaveCount(0);
  await page.goto('/visual-fixture/poster?monthLink=1&month=2026-06&teaser=3600&event=fixture-teaser');await settlePanelLayout(page);await expect(detail(page)).toHaveCount(0);await expect(page.locator('[data-act="share-public-event"]')).toHaveCount(0);
  await finish(page,info,proof,{width,backForward:true,overlayBackAndX:true,wrongMonthFailClosed:true,maskedTeaserFailClosed:true});
 });
-for(const width of [1440,390])test(`Studio embedded preview share ${width}: canonical public destination and return`,async({page,context,baseURL},info)=>{
+for(const width of [1440,390])test(`Studio embedded preview calendar ${width}: canonical public destination and return`,async({page,context,baseURL},info)=>{
  await page.setViewportSize({width,height:1100});const proof=await setup(page,context,baseURL!);
  await page.goto('/visual-fixture/studio?role=developer&y=2026&m=6&viewer=1');await settlePanelLayout(page);await expect(page.locator('.viewer-fullscreen .poster-page')).toBeVisible();const before=page.url();
  const root=page.locator('.viewer-fullscreen');await root.locator(width===390?'.agenda-event[data-eventid="evt-001"]':'.public-event[data-eventid="evt-001"]').first().click();await expect(detail(page)).toContainText('픽크타 1일차');
- await detail(page).locator('[data-act="share-public-event"]').click();await expect.poll(()=>page.evaluate(()=>(window as Window & {copied?:string}).copied)).toBe(baseURL+'/?month=2026-06&event=evt-001');expect(page.url()).toBe(before);await page.keyboard.press('Escape');await expect(detail(page)).toHaveCount(0);await expect(page.locator('.viewer-fullscreen')).toBeVisible();
- await finish(page,info,proof,{width,actualEmbeddedPreview:true,urlUnchanged:true,canonicalPublicShare:true,escapedDetailPreservesPreview:true});
+ await expect(detail(page).locator('[data-act="share-public-event"]')).toHaveCount(0);expect(new URL((await detail(page).locator('[data-act="add-google-calendar"]').getAttribute('href'))!).origin).toBe('https://calendar.google.com');expect(page.url()).toBe(before);await page.keyboard.press('Escape');await expect(detail(page)).toHaveCount(0);await expect(page.locator('.viewer-fullscreen')).toBeVisible();
+ await finish(page,info,proof,{width,actualEmbeddedPreview:true,urlUnchanged:true,publicGoogleCalendarLink:true,escapedDetailPreservesPreview:true});
 });
