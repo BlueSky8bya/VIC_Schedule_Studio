@@ -54,7 +54,8 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
     let current = walker.sample(0, { width: innerWidth, height: innerHeight }, preferencesRef.current, !reducedRef.current && !document.documentElement.hasAttribute("data-reduce-motion") && !["off", "soft"].includes(document.documentElement.dataset.gfx ?? ""));
     const petting = createCompanionPettingGesture(), touch = createCompanionPettingContact(), inertia = createCompanionHeldInertia(), shake = createCompanionHeldShake();
     let reaction: { play?: CompanionPlay; row?: number; began: number; duration: number; name: string } | undefined;
-    let held = false, flying = false, flightPhase = 0, hoverUntil = 0, feedbackUntil = 0, shaken = false, responseSerial = 0;
+    let held = false, flying = false, flightPhase = 0, hoverUntil = 0, feedbackUntil = 0, shaken = false, responseSerial = 0, dizzyAfterFlight = false;
+    let heldPoint: { x: number; y: number } | undefined;
     const ensureWardrobe = () => {
       if (!accessory || painter) return;
       void import("@/lib/ui/viewer-companion/accessory").then(module => { if (!disposed && !painter) { painter = module.createCompanionAccessoryPainter(hosts); refresh(); } }).catch(() => { /* An optional attachment chunk cannot disable the walk. */ });
@@ -72,19 +73,24 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
       }
       const age = reaction ? Math.max(0, activeTime - reaction.began) : 0;
       const authored = reaction?.play ? sampleCompanionPlay(reaction.play, age / reaction.duration, restricted()) : undefined;
+      const heldReaction = held && !restricted() ? shake.sample(now) : { active: false, phase: 0 };
       const row = held ? 8 : flying ? COMPANION_THROW_ROW : authored?.row ?? reaction?.row ?? (activeTime < hoverUntil ? 9 : current.row);
       const phase = held ? 0 : flying ? flightPhase : authored?.phase ?? (reaction ? age / reaction.duration : current.phase);
       const status = held ? "held" : flying ? "jump" : authored ? "play" : reaction?.name ?? (activeTime < hoverUntil ? "petted" : current.status);
       const sample = motion.sample({ row, phase, status, x: current.x, y: current.y, now: activeTime, reduced: restricted(), travelDirection: status === "walk" || status === "jump" && !flying ? current.direction : undefined });
-      const requested = selectCompanionSprite(companionSpriteMetadata.rows[sample.row][sample.column], sample.row, sample.column);
+      // The same hanging motion keeps ownership of the body; shaking changes
+      // only its authored drawing, exactly like the ordinary resident.
+      const drawingRow = heldReaction.active ? 22 : sample.row;
+      const column = heldReaction.active ? Math.min(companionSpriteMetadata.rows[22].length - 1, Math.floor(Math.floor(heldReaction.phase * 6) / 6 * companionSpriteMetadata.rows[22].length)) : sample.column;
+      const requested = selectCompanionSprite(companionSpriteMetadata.rows[drawingRow][column], drawingRow, column);
       const decoded = peekDecodedCompanionSprite(requested.src);
       const selection = decoded ? requested : fallback, image = decoded ?? fallbackImage;
-      element.dataset.requestedRow = String(sample.row);
+      element.dataset.requestedRow = String(drawingRow);
       // Borrow the resident's already-painted pixels while the next packet
       // warms. Network/decode latency must never hide or stop its entry arc.
-      if (!decoded) void prepare(sample.row, generation);
+      if (!decoded) void prepare(drawingRow, generation);
       if (!image || !selection) return false;
-      if (decoded) { fallback = selection; fallbackImage = decoded; fallbackRow = sample.row; }
+      if (decoded) { fallback = selection; fallbackImage = decoded; fallbackRow = drawingRow; }
       const key = `${selection.src}:${selection.index}`;
       if (key !== cell) {
         const frame = companionPreviewDrawing(selection, image.naturalWidth, image.naturalHeight);
@@ -101,9 +107,10 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
       const hanging = restricted() ? { tilt: 0, stretch: 0, active: false } : boundCompanionHeldPose(inertia.sample(now), { x: current.x - 46, y: current.y - 92 }, { x: 46, y: 46 }, 92, { width: innerWidth, height: innerHeight });
       posePlane.style.transform = `translate(${contact.x.toFixed(3)}px,${(sample.bob + contact.y + (authored?.lift ?? 0)).toFixed(3)}px) rotate(${(sample.tilt + contact.tilt + hanging.tilt + (authored?.lean ?? 0)).toFixed(3)}deg) scale(${(sample.scaleX + contact.squash - hanging.stretch).toFixed(4)},${(sample.scaleY - contact.squash + hanging.stretch).toFixed(4)})`;
       painter?.paint(selection, accessory, false);
-      element.dataset.row = String(decoded ? sample.row : fallbackRow); element.dataset.pose = String(selection.physicalIndex);
+      element.dataset.row = String(decoded ? drawingRow : fallbackRow); element.dataset.pose = String(selection.physicalIndex);
       element.dataset.state = status; element.dataset.purpose = reaction?.name ?? (held ? "held" : current.purpose); element.dataset.leg = String(current.leg);
       element.dataset.reaction = reaction?.play ?? reaction?.name ?? "none";
+      element.toggleAttribute("data-held-dizzy", heldReaction.active);
       element.dataset.x = current.x.toFixed(3); element.dataset.y = current.y.toFixed(3); element.dataset.groundY = current.groundY.toFixed(3);
       element.dataset.accessory = accessory ?? "none"; element.dataset.paintedAt = now.toFixed(1);
       session.move("pet", { x: current.x, y: current.groundY }, false);
@@ -150,6 +157,7 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
     const refresh = () => {
       cancel(); requestedRow = -1;
       if (!active()) { element.hidden = true; return; }
+      if (restricted()) { shake.reset(); inertia.reset(); dizzyAfterFlight = false; shaken = false; if (reaction?.play === "dizzy") reaction = undefined; }
       const stored = session.point("pet");
       if (stored && current && (Math.abs(stored.x - current.x) > .1 || Math.abs(stored.y - current.groundY) > .1)) walker.place(stored, { width: innerWidth, height: innerHeight });
       // Visibility/resize/quiet changes retain the same walk destination and
@@ -170,6 +178,7 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
     const respond = (name: string, play?: CompanionPlay, row = 9, duration = 900) => {
       const stored = session.point("pet"); if (stored) walker.place(stored, { width: innerWidth, height: innerHeight });
       reaction = { name, play, row, began: activeTime, duration: play ? companionPlayDuration(play, restricted()) : duration }; refresh();
+      if (play === "dizzy") playCompanionSound("dizzy", preferencesRef.current);
     };
     const affection = () => {
       if (!preferencesRef.current.petting) return;
@@ -186,13 +195,30 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
         const bonk = companionTapReaction({ elapsed, moved: 0, cancelled: false, recentMishap: false });
         if (bonk) { session.interact("bonk"); respond("bonked", bonk); } else affection();
       },
-      onHold: value => { held = value; if (value) { reaction = undefined; shaken = false; const point = session.point("pet")!; shake.begin(point.x, point.y, performance.now()); playCompanionSound("lift", preferencesRef.current); } refresh(); },
-      onMove: (from, to) => { const now = performance.now(); if (held && !restricted()) { inertia.push(to.x - from.x, to.y - from.y, now); shake.push(to.x, to.y, now); if (!shaken && shake.sample(now).active) { shaken = true; session.interact("shake"); } } feedbackUntil = activeTime + 600; },
+      onGrab: () => { reaction = undefined; dizzyAfterFlight = false; shake.reset(); inertia.reset(); },
+      onHold: (value, at) => { held = value; if (value) { reaction = undefined; shaken = false; heldPoint = session.point("pet"); if (heldPoint) shake.begin(heldPoint.x, heldPoint.y, at); playCompanionSound("lift", preferencesRef.current); } refresh(); },
+      onSample: (point, at) => {
+        if (held && !restricted()) {
+          if (heldPoint) inertia.push(point.x - heldPoint.x, point.y - heldPoint.y, at);
+          shake.push(point.x, point.y, at);
+          if (!shaken && shake.sample(at).active) { shaken = true; session.interact("shake"); }
+        }
+        heldPoint = point;
+      },
+      onMove: () => { feedbackUntil = activeTime + 600; },
+      onCancel: () => { reaction = undefined; dizzyAfterFlight = false; heldPoint = undefined; shaken = false; shake.reset(); inertia.reset(); refresh(); },
       onFlight: (value, point) => {
         if (point) flightPhase = (point.elapsedMs ?? 0) < 70 ? 0 : (point.vy ?? 0) < -70 ? .3 : (point.vy ?? 0) < 70 ? .55 : .85;
-        if (flying === value) return; flying = value; if (!value) feedbackUntil = activeTime + 300; refresh();
+        if (flying === value) return; flying = value;
+        if (!value && dizzyAfterFlight && !restricted()) { dizzyAfterFlight = false; respond("dizzy", "dizzy"); }
+        else { if (!value) feedbackUntil = activeTime + 300; refresh(); }
       },
-      onRelease: thrown => { session.interact(thrown ? "throw" : "drag"); if (!thrown && shaken) respond("dizzy", "dizzy"); },
+      onRelease: thrown => {
+        session.interact(thrown ? "throw" : "drag");
+        const dizzy = !restricted() && shake.consume(performance.now());
+        dizzyAfterFlight = thrown && dizzy; heldPoint = undefined; shaken = false; inertia.reset(); shake.reset();
+        if (!thrown && dizzy) respond("dizzy", "dizzy");
+      },
       onRest: () => { if (preferencesRef.current.sleep) { session.interact("rest"); respond("sleep", undefined, 11, 12000); } },
       onHover: event => {
         if (!preferencesRef.current.petting || event.pointerType !== "mouse" || event.buttons !== 0 || held || flying) return;

@@ -1,6 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { bindCompanionShowcaseInput, type CompanionShowcaseInputOptions } from "@/lib/ui/viewer-companion/showcase-input";
 import type { CompanionShowcaseSession } from "@/lib/ui/viewer-companion/showcase-session";
+import { createCompanionHeldShake } from "@/lib/ui/viewer-companion/held-shake";
 
 class InputElement extends EventTarget {
   attributes = new Set<string>(); capture = new Set<number>(); focus = vi.fn();
@@ -154,6 +155,54 @@ it("keeps a fast coalesced release when the parent aggregate and frame delivery 
   expect(h.complete).toHaveBeenCalledTimes(1); expect(moved).toHaveBeenCalledTimes(2);
   const batch = [...frames.values()]; frames.clear(); now += 16; for (const callback of batch) callback(now);
   expect(h.point.y).toBeLessThan(68); h.stop();
+});
+
+it("delivers clamped physical sample times to held reactions without multiplying action completions", () => {
+  let now = 1000; vi.spyOn(performance, "now").mockImplementation(() => now);
+  const sample = vi.fn(), hold = vi.fn(), moved = vi.fn(), h = fixture({ onSample: sample, onHold: hold, onMove: moved });
+  h.send("pointerdown", { isTrusted: true, timeStamp: 700 });
+  now = 1200;
+  h.send("pointermove", { isTrusted: true, buttons: 1, timeStamp: 1100, clientX: 800, clientY: 150, getCoalescedEvents: () => [
+    { isTrusted: true, pointerId: 1, buttons: 1, clientX: 130, clientY: 120, timeStamp: 900 },
+    { isTrusted: true, pointerId: 1, buttons: 1, clientX: 800, clientY: 150, timeStamp: 970 }
+  ] });
+  expect(hold).toHaveBeenCalledWith(true, 900);
+  expect(sample.mock.calls).toEqual([[{ x: 130, y: 120 }, 900], [{ x: 400, y: 150 }, 970]]);
+  expect(moved).toHaveBeenCalledTimes(1); expect(h.complete).not.toHaveBeenCalled();
+  h.send("pointercancel"); expect(h.complete).not.toHaveBeenCalled(); h.stop();
+});
+
+it("cancels a flight reaction before reporting its stopped state instead of inventing a landing", () => {
+  let now = 0, serial = 0; vi.spyOn(performance, "now").mockImplementation(() => now);
+  vi.stubGlobal("requestAnimationFrame", () => ++serial);
+  const order: string[] = [], h = fixture({ onCancel: () => order.push("cancel"), onFlight: value => order.push(value ? "flying" : "stopped") }); h.session.active = () => true;
+  h.send("pointerdown"); now = 20; h.send("pointermove", { clientX: 130 }); now = 40; h.send("pointerup", { clientX: 160 });
+  expect(order).toContain("flying"); order.length = 0;
+  window.dispatchEvent(new Event("blur"));
+  expect(order[0]).toBe("cancel"); expect(order[1]).toBe("stopped"); h.stop();
+});
+
+it("keeps an earned real shake available to a normal thrown release", () => {
+  let now = 0; vi.spyOn(performance, "now").mockImplementation(() => now); vi.stubGlobal("requestAnimationFrame", () => 1);
+  const detector = createCompanionHeldShake(), release = vi.fn((thrown: boolean) => ({ thrown, dizzy: detector.consume(now) }));
+  const h = fixture({ onHold: (held, at) => { if (held) detector.begin(h.point.x, h.point.y, at); }, onSample: (point, at) => detector.push(point.x, point.y, at), onCancel: () => detector.reset(), onRelease: release });
+  h.session.active = () => true; h.send("pointerdown");
+  for (now = 16; now <= 800; now += 16) {
+    const leg = Math.floor(now / 200), phase = now / 200 - leg;
+    h.send("pointermove", { clientX: 100 + 70 * (leg % 2 ? 1 - phase : phase) });
+  }
+  now = 800; expect(detector.sample(now).active).toBe(true); h.send("pointerup");
+  expect(release).toHaveReturnedWith({ thrown: true, dizzy: true }); expect(h.complete).toHaveBeenCalledTimes(1); h.stop();
+});
+
+it("revokes pending flight reactions before a tick sees input or visibility become unavailable", () => {
+  let now = 0; vi.spyOn(performance, "now").mockImplementation(() => now);
+  const frames: FrameRequestCallback[] = []; vi.stubGlobal("requestAnimationFrame", (frame: FrameRequestCallback) => { frames.push(frame); return frames.length; });
+  const order: string[] = [], release = vi.fn(), h = fixture({ onCancel: () => order.push("cancel"), onFlight: value => order.push(value ? "flying" : "stopped"), onRelease: release });
+  h.session.active = () => true;
+  h.send("pointerdown"); now = 20; h.send("pointermove", { clientX: 130 }); now = 40; h.send("pointerup", { clientX: 160 });
+  expect(order).toContain("flying"); order.length = 0; h.block(); now = 56; frames.shift()!(now);
+  expect(order).toEqual(["cancel", "stopped"]); expect(release).toHaveBeenCalledTimes(1); h.stop();
 });
 
 it("keeps a genuine physical pause as deliberate placement even when delivery is delayed", () => {

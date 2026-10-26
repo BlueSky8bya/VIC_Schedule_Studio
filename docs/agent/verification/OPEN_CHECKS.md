@@ -83,6 +83,12 @@ Initial read-only production/source investigation on 2026-09-21. Fan timeline co
 - Remaining: deploy/observe the fan timeline correction, including target `207499291`. Invocation timing still depends on the external cron/viewer traffic; 10 minutes is a throttle, not a maximum visibility delay. The timestamp throttle is not a distributed lease. Chat file failure/retry and recovery are separate outstanding work; `vod-chat.ts` is unchanged. No backfill, commit or deployment performed.
 - Follow-up local implementation: [multiple fan timelines](../plans/PLAN-20260921-024-vod-timeline-variants.md), [ADR-0027](../decisions/ADR-0027-fan-timeline-variants.md). Same-author replies, alternative selector and persistent studio moderation implemented; migration 0124 prepared and verified in isolated Postgres, not applied to production. Shared ingest/moderation now use a per-VOD advisory lock and reject older completed snapshots; the polling throttle itself remains non-exclusive.
 
+## COMPANION-PANEL-REPORT-20261026 — reported disappearance during side play
+
+The owner observed a missing resident around an autonomous panel-side change; the exact viewer/studio surface is not remembered. Original autonomous actor path was observed accepting the actual side request at98.825s, with629 frames continuously visible through the7s return. Both wide surfaces and narrow exposed-resident/fold/scroll side callbacks also stayed visible. Narrow callback coverage does not establish arrow-perch or natural-decision coverage. Panel product behavior was not changed on a conjecture. [Scope, original failures and evidence](AGENDA_COMPANION_DETAIL-20261026.md).
+
+Keep this report unconfirmed. A distinct recurrence/geometry should capture existing hidden reason, hide phase/event, platform, journey and actual bounds to separate deliberate hiding from lost support; no new production tracking is authorized. Do not repeatedly run the same90s case as proof that the report cannot occur. Physical devices and untested geometry remain separate.
+
 ## Deferred product choices
 
 No current request to implement attendance, VOD full-text search, special-day ambient content, or replace the remaining poster themes. Existing plans are research/backlog only.

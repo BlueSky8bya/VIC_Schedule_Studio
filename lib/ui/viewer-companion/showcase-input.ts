@@ -6,7 +6,8 @@ export type CompanionShowcaseInputOptions = {
   canDrag?: () => boolean; quiet?: () => boolean; pet?: boolean; tapThrow?: boolean; item?: "food" | "toy";
   onTap?: (elapsed: number) => void; onActivate?: () => void;
   onHover?: (event: PointerEvent) => void; onHoverEnd?: () => void;
-  onHold?: (held: boolean) => void; onGrab?: () => void; onMove?: (from: ShowcasePoint, to: ShowcasePoint) => void;
+  onHold?: (held: boolean, at: number) => void; onGrab?: () => void; onMove?: (from: ShowcasePoint, to: ShowcasePoint) => void;
+  onSample?: (point: ShowcasePoint, at: number) => void; onCancel?: () => void;
   onFlight?: (flying: boolean, point?: ShowcasePoint & Partial<Pick<CompanionThrowState, "elapsedMs" | "vy">>) => void;
   onRelease?: (thrown: boolean) => void; onRest?: () => void; onDiscard?: (id: string) => void;
   onReclaim?: (id: string, point: ShowcasePoint) => boolean;
@@ -47,14 +48,15 @@ export function bindCompanionShowcaseInput(layer: HTMLElement, session: Companio
     for (const [key, frame] of flights) if (!id || id === key) { cancelAnimationFrame(frame); flights.delete(key); reset.push(key); }
     if (id && !reset.includes(id)) reset.push(id);
     for (const key of reset) { session.present(key); const point = session.point(key); if (point) session.move(key, point); }
+    if (reset.length) options.onCancel?.();
     options.onFlight?.(false);
   };
-  const held = (node: HTMLElement, value: boolean) => { node.toggleAttribute("data-showcase-held", value); options.onHold?.(value); };
+  const held = (node: HTMLElement, value: boolean, at = performance.now()) => { node.toggleAttribute("data-showcase-held", value); options.onHold?.(value, at); };
   const finishKeyboard = (publish = true) => { if (keyboard) { const previous = keyboard; keyboard = undefined; held(previous.node, false); if (publish && previous.moved) { onComplete(); options.onRelease?.(false); } } };
   const cancelHold = () => {
     placing = false; layer.querySelector<HTMLElement>("[data-showcase-placing]")?.removeAttribute("data-showcase-placing"); finishKeyboard(false);
     if (drag) { const previous = drag; drag = undefined; held(previous.node, false); if (previous.node.hasPointerCapture(previous.pointer)) previous.node.releasePointerCapture(previous.pointer); }
-    velocity.reset(); options.onHoverEnd?.();
+    velocity.reset(); options.onHoverEnd?.(); options.onCancel?.();
   };
   const releaseFlight = (id: string, release?: CompanionThrowVelocity) => {
     const point = session.point(id), impulse = release ?? velocity.release(performance.now());
@@ -70,7 +72,7 @@ export function bindCompanionShowcaseInput(layer: HTMLElement, session: Companio
     let impact: ReturnType<typeof createCompanionFoodGravity> | undefined;
     const tick = (now: number) => {
       flights.delete(id);
-      if (!allowed() || !session.active() || !session.has(id) || document.hidden || options.quiet?.()) { session.present(id); const point = session.point(id); if (point) session.move(id, point); options.onFlight?.(false); return; }
+      if (!allowed() || !session.active() || !session.has(id) || document.hidden || options.quiet?.()) { options.onCancel?.(); session.present(id); const point = session.point(id); if (point) session.move(id, point); options.onFlight?.(false); return; }
       if (food) {
         const sample = food.sample(now); session.present(id, sample); session.move(id, sample);
         if (sample.active) flights.set(id, requestAnimationFrame(tick)); else options.onFlight?.(false, sample);
@@ -110,14 +112,15 @@ export function bindCompanionShowcaseInput(layer: HTMLElement, session: Companio
     if (drag.pointer !== event.pointerId) return;
     stop(event); if (!canDrag()) return;
     if (!drag.moved && Math.hypot(event.clientX - drag.dx - drag.from.x, event.clientY - drag.dy - drag.from.y) <= 6) return;
-    if (!drag.moved) { drag.moved = true; held(drag.node, true); }
+    const samples = inputSamples(event, performance.now());
+    if (!drag.moved) { drag.moved = true; held(drag.node, true, samples[0].at); }
     const before = session.point(drag.id); if (!before) return;
     const from = { x: before.x, y: before.y };
-    for (const sample of inputSamples(event, performance.now())) {
+    for (const sample of samples) {
       // Use the same canonical bounds as the final drawing. Historical points
       // update only the bounded sampler; painters and care see one current move.
       session.move(drag.id, { x: sample.event.clientX - drag.dx, y: sample.event.clientY - drag.dy }, false);
-      const point = session.point(drag.id)!; velocity.push(point.x, point.y, sample.at);
+      const point = session.point(drag.id)!; velocity.push(point.x, point.y, sample.at); options.onSample?.({ x: point.x, y: point.y }, sample.at);
     }
     const after = session.point(drag.id)!; session.move(drag.id, after); options.onMove?.(from, after);
   };
@@ -126,7 +129,7 @@ export function bindCompanionShowcaseInput(layer: HTMLElement, session: Companio
     stop(event); if (event.type === "pointerup") move(event);
     const current = drag; drag = undefined; held(current.node, false);
     if (current.node.hasPointerCapture(event.pointerId)) current.node.releasePointerCapture(event.pointerId);
-    if (event.type !== "pointerup" || !allowed()) { velocity.reset(); return; }
+    if (event.type !== "pointerup" || !allowed()) { velocity.reset(); options.onCancel?.(); return; }
     if (current.moved) { const thrown = releaseFlight(current.id, velocity.release(inputAt(event, performance.now()))); onComplete(); options.onRelease?.(thrown); }
     else { velocity.reset(); if (options.tapThrow && canDrag()) { const thrown = releaseFlight(current.id, { vx: 35, vy: -130 }); onComplete(); options.onRelease?.(thrown); } else options.onTap?.(performance.now() - current.at); }
   };

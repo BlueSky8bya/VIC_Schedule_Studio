@@ -4564,16 +4564,14 @@ export function PublicPoster({
                       <span />
                     </div>
                   ) : null}
-                  {/* 모바일: 손잡이 줄만 끌어서 닫기 그립 존(sticky, 얇게). 날짜줄·X는 본문과 함께 흐른다 —
-                      헤더까지 sticky로 두면 X(44px) 때문에 두꺼워져 스크롤 시 제목을 가렸다(사용자 리포트). */}
+                  {/* Mobile keeps its thin swipe grip; the shared date-header X
+                      stays in normal content flow so it cannot cover the title. */}
                   {anchor ? null : (
                     <div className="agenda-detail-top" {...detailDragBind}>
-                      {/* 손잡이 = 접근 가능한 닫기 버튼(탭 = 닫기, iOS 그래버 문법). 모바일엔 X가 없다 —
-                          손잡이 탭·스와이프·배경 탭·Esc 네 경로면 충분(사용자 결정). 드래그 뒤 꼬리 click은
-                          훅의 onClickCapture가 삼킨다. */}
+                      {/* The grip still closes on tap or swipe. The hook consumes
+                          the trailing click after an actual drag. */}
                       <button
                         aria-label="닫기"
-                        autoFocus
                         className="agenda-detail-grab"
                         data-act="close-detail-grab"
                         onClick={() => {
@@ -4613,47 +4611,46 @@ export function PublicPoster({
                         </span>
                       );
                     })()}
-                    {/* X는 PC 팝오버만(모바일은 손잡이가 닫기). */}
-                    {anchor ? (
-                      <button
-                        aria-label="닫기"
-                        autoFocus
-                        className="agenda-detail-close"
-                        type="button"
-                        onClick={() => {
-                          hapticTick();
-                          closeAgendaDetailAnimated();
-                        }}
-                        data-act="close-detail"
-                      >
-                        <X aria-hidden="true" size={16} strokeWidth={2.5} />
-                      </button>
-                    ) : null}
+                    {/* One visible 44px close control in desktop, mobile and preview. */}
+                    <button
+                      aria-label="닫기"
+                      autoFocus
+                      className="agenda-detail-close"
+                      type="button"
+                      onClick={() => {
+                        hapticTick();
+                        closeAgendaDetailAnimated();
+                      }}
+                      data-act="close-detail"
+                    >
+                      <X aria-hidden="true" size={16} strokeWidth={2.5} />
+                    </button>
                   </div>
                   {/* 떡밥은 제목 줄 생략 — 카드가 이미 ???를 말했고, 팝오버는 '기대' 무대다
                       (아래 오브가 주인공). 중복 줄이 위계를 흐렸다(사용자 지적). */}
                   {!teaserActive ? (
-                    <p className="agenda-detail-title">
-                      <span className="adt-text">
-                        {!support && event.isTentative ? (
-                          <span className="evt-tentative">미정</span>
-                        ) : null}
-                        {support ? (
-                          <>
-                            <i aria-hidden="true" className="sb-sprout">
-                              {event.supportKind === "period" ? <Pin size={13} strokeWidth={2.2} /> : <Sprout size={13} strokeWidth={2.2} />}
-                            </i>{" "}
-                            {event.publicTitle}
-                          </>
-                        ) : detailJustRevealed ? (
-                          <ScrambleText text={main} />
-                        ) : (
-                          main
-                        )}
-                      </span>
-                      {/* 관심 단계 배지 — 제목 줄 오른쪽 끝(좌 제목 ↔ 우 배지). 카드 링만으론 관심↔
-                          높은↔폭발 구분이 어려워 글자로 명시(사용자). 같은 heartTier 단일 출처,
-                          하트 숫자는 비노출. 별도 줄로 두면 좌우 균형이 무너져 제목 줄에 붙인다. */}
+                    <div className="agenda-detail-heading">
+                      <h2 className="agenda-detail-title">
+                        <span className="adt-text">
+                          {!support && event.isTentative ? (
+                            <span className="evt-tentative">미정</span>
+                          ) : null}
+                          {support ? (
+                            <>
+                              <i aria-hidden="true" className="sb-sprout">
+                                {event.supportKind === "period" ? <Pin size={13} strokeWidth={2.2} /> : <Sprout size={13} strokeWidth={2.2} />}
+                              </i>{" "}
+                              {event.publicTitle}
+                            </>
+                          ) : detailJustRevealed ? (
+                            <ScrambleText text={main} />
+                          ) : (
+                            main
+                          )}
+                        </span>
+                      </h2>
+                      {/* 제목은 전체 폭을 쓰고 관심 단계는 같은 시작선의 작은 메타 정보로 둔다.
+                          같은 heartTier 단일 출처·숫자 비노출은 유지한다. */}
                       {(() => {
                         if (support) return null;
                         const t = heartTier(heartCounts[event.id] ?? 0, topEventIds.has(event.id), maxHeart);
@@ -4665,7 +4662,7 @@ export function PublicPoster({
                           </span>
                         );
                       })()}
-                    </p>
+                    </div>
                   ) : null}
                   {!support && subs.length > 0 ? (
                     <ul className="agenda-detail-subs">
@@ -4679,36 +4676,40 @@ export function PublicPoster({
                       })}
                     </ul>
                   ) : null}
-                  {!support && !teaserActive ? <PublicEventCalendar event={event} /> : null}
-                  {detailTags.length > 0 ? (
-                    <div aria-label="태그" className="agenda-detail-tags">
-                      {detailTags.map(({ tag, bg, border, primary }, ti) => (
-                        <span
-                          className={`agenda-detail-tag${primary ? " primary" : ""}${
-                            revealStagger(detailJustRevealed, main, subs.length + 1 + ti).className
-                          }`}
-                          key={tag.id}
-                          style={revealStagger(detailJustRevealed, main, subs.length + 1 + ti).style}
-                        >
-                          <i
-                            aria-hidden="true"
-                            style={{ backgroundColor: bg, borderColor: border }}
-                          />
-                          {tag.displayName}
-                        </span>
-                      ))}
+                  {!teaserActive ? (
+                    <div className="agenda-detail-footer">
+                      {detailTags.length > 0 ? (
+                        <div aria-label="태그" className="agenda-detail-tags">
+                          {detailTags.map(({ tag, bg, border, primary }, ti) => (
+                            <span
+                              className={`agenda-detail-tag${primary ? " primary" : ""}${
+                                revealStagger(detailJustRevealed, main, subs.length + 1 + ti).className
+                              }`}
+                              key={tag.id}
+                              style={revealStagger(detailJustRevealed, main, subs.length + 1 + ti).style}
+                            >
+                              <i
+                                aria-hidden="true"
+                                style={{ backgroundColor: bg, borderColor: border }}
+                              />
+                              {tag.displayName}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
+                      {!support ? <PublicEventCalendar event={event} /> : null}
+                      {support && event.supportUrl ? (
+                        <a
+                          className={`agenda-link${event.supportKind === "period" ? " period" : ""}`}
+                          href={event.supportUrl}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                          data-act="agenda-link">
+                          {event.supportKind === "period" ? "자세히 보기" : "도우러 가기"}
+                          <ExternalLink aria-hidden="true" size={13} />
+                        </a>
+                      ) : null}
                     </div>
-                  ) : null}
-                  {support && event.supportUrl ? (
-                    <a
-                      className={`agenda-link${event.supportKind === "period" ? " period" : ""}`}
-                      href={event.supportUrl}
-                      rel="noopener noreferrer"
-                      target="_blank"
-                     data-act="agenda-link">
-                      {event.supportKind === "period" ? "자세히 보기" : "도우러 가기"}
-                      <ExternalLink aria-hidden="true" size={13} />
-                    </a>
                   ) : null}
                   {/* (다시보기 버튼은 일정 상세에서 뺐다 — 2026-08-31 사용자 결정. 진입로는
                       날짜 쪽으로 일원화: PC = 날짜 칸 클릭 팝오버, 모바일 = 날짜 줄 인라인 칩.) */}

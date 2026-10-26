@@ -2,8 +2,9 @@
 
 import { ArrowUpRight, Pin, Sprout } from "lucide-react";
 import { type CSSProperties, type ReactNode, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { agendaNoticesInRange, agendaNoticeStacks, noticeIsActive, noticeRangeText, type AgendaNotice } from "@/lib/ui/agenda-notices";
-import { agendaReadingLabel, mostVisibleAgendaDate, sameAgendaReadingDate, type AgendaReadingDate } from "@/lib/ui/agenda-reading-context";
+import { agendaReadingAnchor, agendaReadingLabel, anchoredAgendaDate, sameAgendaReadingDate, type AgendaReadingDate } from "@/lib/ui/agenda-reading-context";
 import { flipSpring, FLIP_MS, FLIP_SPRING } from "@/lib/ui/flip-motion";
 import { REDUCE_MOTION_EVENT, reduceMotionEnabled } from "@/lib/ui/motion";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -25,10 +26,13 @@ export function AgendaSupportContext({ notices, fallbackDate, children, onDetail
   const [presented, setPresented] = useState<AgendaReadingDate>(reading);
   const [manual, setManual] = useState<{ id: string; date: string } | null>(null);
   const [gapRanges, setGapRanges] = useState<AgendaReadingDate[]>([]);
+  const [flowElement, setFlowElement] = useState<HTMLElement | null>(null);
+  const ringRef = useRef<HTMLSpanElement>(null), ringReady = useRef(false);
   const [stackHeight, setStackHeight] = useState(0), [reduced, setReduced] = useState(false);
   const id = useId(), footerId = `${id}-detail`;
   const stacks = useMemo(() => agendaNoticeStacks(notices, gapRanges), [notices, gapRanges]);
   const visible = agendaNoticesInRange(notices, presented.date, presented.endDate);
+  const populated = visible.length > 0;
   const selected = (manual?.date === presented.date ? visible.find(notice => notice.id === manual.id) : undefined) ?? visible[0];
   const held = !sameAgendaReadingDate(reading, presented);
   const signature = notices.map(n => `${n.id}:${n.title}:${n.start}:${n.end}`).join("|");
@@ -40,11 +44,33 @@ export function AgendaSupportContext({ notices, fallbackDate, children, onDetail
     const ranges = Array.from(hostRef.current?.querySelectorAll<HTMLElement>(".agenda-gap[data-flip-key]") ?? [], node => ({ date: node.dataset.flipKey!, endDate: node.dataset.flipEnd }));
     setGapRanges(previous => JSON.stringify(previous) === JSON.stringify(ranges) ? previous : ranges);
     hostRef.current?.querySelectorAll<HTMLElement>(".agenda-day[data-flip-key],.agenda-gap[data-flip-key]").forEach(node => {
-      if (notices.length && node.dataset.flipKey === reading.date) node.dataset.noticeReading = "true";
+      if (node.dataset.flipKey === reading.date) node.dataset.noticeReading = "true";
       else delete node.dataset.noticeReading;
     });
+    setFlowElement(hostRef.current?.querySelector<HTMLElement>(".agenda-flow") ?? null);
     scheduleReadRef.current();
   }, [children, reading.date, notices.length]);
+
+  // One paint-only outline follows the real row's width/height. Cards never
+  // move or resize for the highlight, and an interrupted transition starts
+  // from its actual displayed position rather than its previous target.
+  useLayoutEffect(() => {
+    const ring = ringRef.current, flow = flowElement;
+    const row = flow?.querySelector<HTMLElement>(`[data-flip-key="${reading.date}"]`);
+    if (!ring || !flow) return;
+    if (!row) { ring.style.transition = "none"; ring.style.transform = ""; ring.style.opacity = "0"; ringReady.current = false; return; }
+    const update = () => {
+      const before = ring.getBoundingClientRect(), target = row.getBoundingClientRect(), frame = flow.getBoundingClientRect();
+      const animate = ringReady.current && !reduced && before.width > 0 && before.height > 0;
+      ring.style.transition = "none"; ring.style.transform = "";
+      Object.assign(ring.style, { left: `${target.left - frame.left + flow.scrollLeft}px`, top: `${target.top - frame.top + flow.scrollTop}px`, width: `${target.width}px`, height: `${target.height}px`, opacity: "1" });
+      if (animate) flipSpring(ring, `translate(${before.left - target.left}px,${before.top - target.top}px) scale(${before.width / target.width},${before.height / target.height})`, { origin: "top left", ms: 280, easing: "cubic-bezier(.2,.8,.2,1)" });
+      ringReady.current = true;
+    };
+    update();
+    const observer = new ResizeObserver(update); observer.observe(row);
+    return () => observer.disconnect();
+  }, [flowElement, reading.date, children, reduced]);
 
   useEffect(() => {
     const update = () => setReduced(reduceMotionEnabled());
@@ -53,7 +79,7 @@ export function AgendaSupportContext({ notices, fallbackDate, children, onDetail
   }, []);
 
   // Measure every overlap group's complete titles, not a guessed number of lines.
-  // Reserve the maximum once per width/font/data change. Scroll/selection never changes this height.
+  // Populated groups share a reservation; an empty date keeps only its toolbar.
   useLayoutEffect(() => {
     const host = hostRef.current, board = boardRef.current;
     if (!host) return;
@@ -88,7 +114,7 @@ export function AgendaSupportContext({ notices, fallbackDate, children, onDetail
       observer.disconnect(); window.removeEventListener("resize", measure); window.removeEventListener("scroll", measure);
       window.visualViewport?.removeEventListener("resize", measure); window.visualViewport?.removeEventListener("scroll", measure);
     };
-  }, [signature, gapRanges]);
+  }, [signature, gapRanges, populated, stackHeight]);
 
   useEffect(() => {
     const host = hostRef.current, flow = host?.querySelector<HTMLElement>(".agenda-flow");
@@ -110,7 +136,7 @@ export function AgendaSupportContext({ notices, fallbackDate, children, onDetail
       const top = Math.max(rect.top, viewportTop, header?.getBoundingClientRect().bottom ?? viewportTop, boardBottom);
       const bottom = Math.min(rect.bottom, viewportBottom, footer?.getBoundingClientRect().top ?? viewportBottom);
       const rows = Array.from(flow.querySelectorAll<HTMLElement>(".agenda-day[data-flip-key],.agenda-gap[data-flip-key]"));
-      const next = mostVisibleAgendaDate(rows.map(row => {
+      const next = anchoredAgendaDate(rows.map(row => {
         const box = row.getBoundingClientRect();
         return { date: row.dataset.flipKey!, endDate: row.dataset.flipEnd, top: box.top, bottom: box.bottom };
       }), top, bottom);
@@ -133,7 +159,14 @@ export function AgendaSupportContext({ notices, fallbackDate, children, onDetail
     window.addEventListener("resize", schedule); host.addEventListener("focusout", schedule);
     document.addEventListener("visibilitychange", schedule);
     window.visualViewport?.addEventListener("resize", schedule); window.visualViewport?.addEventListener("scroll", schedule);
-    const observer = new ResizeObserver(() => schedule()); observer.observe(flow);
+    const measureTail = () => {
+      const last = Array.from(flow.querySelectorAll<HTMLElement>(".agenda-day[data-flip-key],.agenda-gap[data-flip-key]")).at(-1);
+      if (last) flow.style.setProperty("--asc-tail-space", `${Math.max(8, flow.clientHeight - agendaReadingAnchor(0, flow.clientHeight) - last.getBoundingClientRect().height)}px`);
+      schedule();
+    };
+    const observer = new ResizeObserver(measureTail); observer.observe(flow);
+    flow.querySelectorAll(".agenda-day,.agenda-gap").forEach(row => observer.observe(row));
+    measureTail();
     schedule();
     return () => {
       cancelAnimationFrame(frame); observer.disconnect(); scheduleReadRef.current = () => {};
@@ -142,7 +175,7 @@ export function AgendaSupportContext({ notices, fallbackDate, children, onDetail
       document.removeEventListener("visibilitychange", schedule);
       window.visualViewport?.removeEventListener("resize", schedule); window.visualViewport?.removeEventListener("scroll", schedule);
     };
-  }, [signature]);
+  }, [signature, children]);
 
   useLayoutEffect(() => {
     const key = `${reading.date}:${reading.endDate ?? ""}`;
@@ -174,14 +207,14 @@ export function AgendaSupportContext({ notices, fallbackDate, children, onDetail
         if (target instanceof HTMLElement && (target.matches(":focus-visible") || target.classList.contains("agenda-flow"))) revealAgendaFrame(target);
       }}
       style={{ "--asc-spring": FLIP_SPRING, "--asc-motion-ms": `${FLIP_MS}ms` } as CSSProperties}>
-      {notices.length > 0 ? <section className="agenda-support-board" ref={boardRef} aria-label="기간·업도움" data-reading-date={reading.date} data-reading-end={reading.endDate} data-presented-date={presented.date} data-held={held} data-reduced={reduced}>
+      {notices.length > 0 ? <section className="agenda-support-board" ref={boardRef} aria-label="기간·업도움" data-reading-date={reading.date} data-reading-end={reading.endDate} data-presented-date={presented.date} data-held={held} data-empty={visible.length === 0} data-reduced={reduced}>
         <div className="asc-detail-slot" id={footerId} role="region" aria-label="선택한 안내의 기간과 링크">
           <div className="asc-detail" data-kind={selected?.kind}>
             <div className="asc-meta">
               <div className="asc-head"><h2>기간·업도움</h2></div>
               {selected ? <span className="asc-caption">{noticeRangeText(selected) ? <b className="asc-range">{noticeRangeText(selected)}</b> : null}{held ? <span className="asc-held">{noticeRangeText(selected) ? " · " : ""}{agendaReadingLabel(presented)} 선택 유지</span> : null}</span> : <span className="asc-no-active">해당 날짜의 안내 없음</span>}
             </div>
-            <button className="asc-action asc-follow" type="button" data-act="agenda-support-follow-view" aria-label={`${reading.date}${reading.endDate ? `부터 ${reading.endDate}까지` : ""} 화면 기준 안내 따라가기`} title="가장 많이 보이는 날짜 기준 · 누르면 선택을 해제하고 따라갑니다" onClick={event => {
+            <button className="asc-action asc-follow" type="button" data-act="agenda-support-follow-view" aria-label={`${reading.date}${reading.endDate ? `부터 ${reading.endDate}까지` : ""} 화면 기준 안내 따라가기`} title="일정 위쪽 읽기선 기준 · 누르면 선택을 해제하고 따라갑니다" onClick={event => {
               event.currentTarget.focus({ preventScroll: true }); hapticTick(); setManual(null); setPresented(reading);
             }}><span ref={markerRef} aria-live="polite" aria-atomic="true"><b>{agendaReadingLabel(reading)}</b><small>화면 기준</small></span></button>
             {selected ? <>
@@ -191,12 +224,13 @@ export function AgendaSupportContext({ notices, fallbackDate, children, onDetail
             </> : null}
           </div>
         </div>
-        <div className="asc-stack" style={stackHeight ? { minHeight: stackHeight } : undefined}>
+        <div className="asc-stack" style={visible.length && stackHeight ? { minHeight: stackHeight } : undefined}>
           {visible.map(notice => row(notice))}
         </div>
         <div className="asc-measures" aria-hidden="true" inert>{stacks.map((stack, index) => <div className="asc-measure-group" key={index}>{stack.map(n => row(n, true))}</div>)}</div>
       </section> : null}
       {children}
+      {flowElement ? createPortal(<span className="agenda-reading-ring" ref={ringRef} aria-hidden="true" />, flowElement) : null}
     </div>
   );
 }

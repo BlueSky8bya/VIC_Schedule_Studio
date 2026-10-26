@@ -5120,8 +5120,9 @@ html[data-reduce-motion] .dt-count.is-final .dt-count-core strong {
    닫기 44px 타깃·라벨 11px·본문 대비는 끝까지 지킨다. */
 @media (max-width: 320px) {
   .agenda-detail-backdrop .agenda-detail-sheet {
-    padding-left: 12px;
-    padding-right: 12px;
+    --detail-inset: 12px;
+    padding-left: var(--detail-inset);
+    padding-right: var(--detail-inset);
   }
   .dt-count {
     width: 112px;
@@ -7715,13 +7716,14 @@ html[data-reduce-motion] .pi-retry:active {
 }
 
 .agenda-detail-sheet {
+  --detail-inset: var(--space-4);
   width: 100%;
   max-height: 70svh;
   overflow-y: auto;
   overscroll-behavior: contain;
   border-radius: var(--r-xl) var(--r-xl) 0 0;
   background: var(--surface, #fffdf6);
-  padding: var(--space-4) var(--space-4)
+  padding: var(--space-4) var(--detail-inset)
     calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
   box-shadow: var(--shadow-3);
   animation: agenda-detail-up var(--dur-spring-smooth, var(--dur-3))
@@ -7742,16 +7744,15 @@ html[data-reduce-motion] .pi-retry:active {
 .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
   pointer-events: auto;
 }
-/* 애플식 재질 카드 — 프로스트 유리(반투명+블러+채도), 헤어라인 테두리, 이중 부드러운 그림자,
-   연속 라운드(20px), 스프링 등장. 색은 절제: 대표 태그 색은 맨 위 3px 액센트 라인과
-   리더 선/도트에만 쓰고 본문은 조용한 잉크 위계로 둔다. */
+/* Shared opaque surface keeps the schedule behind a detail from competing
+   with its text. Tag accents, rounded shape and the existing spring remain. */
 .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
   position: fixed;
   width: 344px;
   max-height: min(64vh, 520px);
   border-radius: var(--r-xl);
   border: 1px solid rgb(120 100 60 / 16%);
-  background: #fffdf6;
+  background: var(--surface, #fffdf6);
   padding: 0 20px 18px;
   overflow: hidden auto;
   box-shadow:
@@ -7759,19 +7760,6 @@ html[data-reduce-motion] .pi-retry:active {
     0 2px 8px rgb(80 64 32 / 7%);
   animation: detail-pop-in var(--dur-spring-smooth, 0.34s)
     var(--spring-smooth, cubic-bezier(0.34, 1.4, 0.5, 1)) both;
-}
-@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  /* C1(2026-08-27): 모바일 바텀시트도 같은 재질 — 딤 위에 떠 있는 프로스트 유리. */
-  .agenda-detail-backdrop:not(.is-pop) .agenda-detail-sheet {
-    background: var(--material-bg-strong, rgb(255 255 255 / 86%));
-    -webkit-backdrop-filter: var(--material-blur, blur(18px) saturate(1.5));
-    backdrop-filter: var(--material-blur, blur(18px) saturate(1.5));
-  }
-  .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
-    background: var(--material-bg-strong, rgb(var(--glass-panel) / 84%));
-    -webkit-backdrop-filter: var(--material-blur, blur(18px) saturate(1.5));
-    backdrop-filter: var(--material-blur, blur(18px) saturate(1.5));
-  }
 }
 /* 맨 위 3px — 이 일정의 색(대표 태그 1~2색) 액센트 라인. 유일하게 색이 크게 말하는 곳. */
 .agenda-detail-backdrop.is-pop .agenda-detail-sheet::before {
@@ -7840,44 +7828,6 @@ html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
   cursor: grab;
   touch-action: none;
   user-select: none;
-  align-items: center;
-  padding-bottom: 10px;
-  margin-bottom: 12px;
-  border-bottom: 1px solid rgb(120 100 60 / 12%);
-}
-/* 날짜 = 헤더의 주인공(사용자 요청: 더 크게). 요일·기간·특별한 날이 한 줄 위계로 정렬. */
-.agenda-detail-backdrop.is-pop .agenda-detail-day {
-  font-size: var(--text-display);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-  font-variant-numeric: tabular-nums;
-}
-.agenda-detail-backdrop.is-pop .agenda-detail-date {
-  font-size: var(--text-body);
-  font-weight: 600;
-  color: #8b7f63;
-}
-/* 제목 — 큰 잉크 앵커. 세부 줄은 조용한 보조 위계. */
-.agenda-detail-backdrop.is-pop .agenda-detail-title {
-  font-size: 22px;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-  line-height: 1.24;
-  color: #2b2415;
-  text-wrap: balance;
-}
-.agenda-detail-backdrop.is-pop .agenda-detail-subs li {
-  color: #6f6754;
-  font-size: var(--text-ui);
-  font-weight: 600;
-  line-height: 1.5;
-}
-/* 태그 칩 — 중립 재질 필(색은 점만). Apple 세그먼트처럼 조용하게. */
-.agenda-detail-backdrop.is-pop .agenda-detail-tag {
-  border: 0;
-  background: rgb(120 100 60 / 7%);
-  font-weight: 600;
-  color: #57503c;
 }
 /* 업도움 '도우러 가기' — 카드의 유일한 CTA: 띠·액센트와 같은 초록의 전폭 필 버튼.
    (기존 노란 외곽선 버튼은 재질 카드와 안 어울렸다 — 색·형·타이포를 카드 문법에 맞춘다.) */
@@ -7922,19 +7872,8 @@ html[data-reduce-motion] .agenda-detail-backdrop.is-pop .agenda-detail-sheet {
   opacity: 1;
 }
 /* 닫기 — 원형 고스트 + 호버 90° 회전(앱 공통 X 손맛: .bp-close/.pi-close와 동일). */
-.agenda-detail-backdrop.is-pop .agenda-detail-close {
-  width: 32px;
-  height: 32px;
-  border: 0;
-  border-radius: var(--r-pill);
-  background: rgb(60 46 20 / 7%);
-  color: #6b6350;
-  transition:
-    background var(--dur-1) var(--ease),
-    transform var(--dur-2) var(--spring-bouncy, var(--ease-spring, var(--ease)));
-}
 .agenda-detail-backdrop.is-pop .agenda-detail-close:hover {
-  background: rgb(60 46 20 / 13%);
+  background: var(--selection-fill);
   transform: rotate(90deg);
 }
 .agenda-detail-backdrop.is-pop .agenda-detail-close:active {
@@ -8075,8 +8014,8 @@ html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
   position: sticky;
   top: 0;
   z-index: 2;
-  margin: calc(-1 * var(--space-4)) calc(-1 * var(--space-4)) 0;
-  padding: 6px var(--space-4) 8px;
+  margin: calc(-1 * var(--space-4)) calc(-1 * var(--detail-inset)) 0;
+  padding: 6px var(--detail-inset) 8px;
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
@@ -8114,7 +8053,10 @@ html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-2);
-  margin-bottom: var(--space-2);
+  min-width: 0;
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
+  border-bottom: var(--stroke-hairline) solid var(--line);
 }
 
 .agenda-detail-date {
@@ -8129,46 +8071,74 @@ html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
   justify-content: center;
   width: var(--control-hit);
   height: var(--control-hit);
-  border: var(--stroke-hairline) solid var(--line);
-  border-radius: var(--r-control);
+  flex: none;
+  border: 0;
+  border-radius: var(--r-pill);
   background: var(--surface-2);
   color: var(--ink-soft);
   cursor: pointer;
+  transition:
+    background var(--dur-1) var(--ease),
+    transform var(--dur-2) var(--spring-bouncy, var(--ease-spring, var(--ease)));
 }
 
 .agenda-detail-close:active {
   transform: scale(var(--press-scale));
 }
 
-.agenda-detail-title {
-  display: flex;
-  align-items: center;
+/* One reading order and token scale in the desktop popover, agenda and preview. */
+.agenda-detail-heading {
+  display: grid;
+  justify-items: start;
   gap: var(--space-2);
-  margin: 0 0 var(--space-2);
+  margin-bottom: var(--space-3);
+}
+.agenda-detail-title {
+  min-width: 0;
+  width: 100%;
+  margin: 0;
   color: var(--ink);
   font-size: var(--text-title);
   font-weight: var(--weight-bold);
-  line-height: var(--lh-tight, 1.25);
+  line-height: var(--lh-snug, 1.35);
+  letter-spacing: -0.015em;
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .agenda-detail-subs {
   display: grid;
-  gap: var(--space-1);
-  margin: 0 0 var(--space-3);
-  padding: 0 0 0 var(--space-3);
-  border-left: 2px solid var(--line);
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-card);
+  background: var(--surface-2);
   list-style: none;
   color: var(--ink-soft);
   font-size: var(--text-body);
+  font-weight: var(--weight-regular, 400);
   line-height: var(--lh-body);
+  overflow-wrap: anywhere;
+}
+.agenda-detail-footer {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+.agenda-detail-footer:empty { display: none; }
+.agenda-detail-footer .public-event-calendar { margin: 0; }
+.agenda-detail-footer .public-event-calendar > .button {
+  border-radius: var(--r-card);
+  box-shadow: var(--elev-1);
+  font-size: var(--text-body);
 }
 
 .agenda-detail-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-2);
-  margin-bottom: var(--space-2);
+  gap: var(--space-1) var(--space-2);
+  margin: 0;
 }
 
 .agenda-detail-tag {
@@ -8176,11 +8146,11 @@ html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
   align-items: center;
   gap: var(--space-1);
   min-height: calc(var(--control-hit) - var(--space-2));
-  border: var(--stroke-hairline) solid var(--line);
+  border: 0;
   border-radius: var(--r-pill);
   background: var(--surface-2);
   padding: var(--space-1) var(--space-3);
-  color: var(--ink);
+  color: var(--ink-soft);
   font-size: var(--text-label);
   font-weight: var(--weight-semibold);
 }
@@ -8197,23 +8167,12 @@ html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
   border: 1px solid transparent;
   border-radius: var(--r-pill);
 }
-/* 제목 줄 = 좌 제목 ↔ 우 관심 단계 배지(2026-08-27). 헤더(날짜↔닫기)와 같은 좌우 리듬.
-   배지는 제목과 baseline을 맞춘 작은 알약 — 단계 색 글자 + 옅은 같은 색 채움. 제목이 길면
-   배지가 다음 줄 오른쪽 끝으로 내려간다(margin-left:auto). */
-.agenda-detail-title {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-1) var(--space-3);
-}
 .agenda-detail-title .adt-text {
   min-width: 0;
 }
 .adt-badge {
   flex: none;
-  margin-left: auto;
-  padding: 2px 10px;
+  padding: var(--space-1) var(--space-2);
   border: var(--stroke-hairline) solid color-mix(in srgb, var(--tier-c) 40%, transparent);
   border-radius: var(--r-pill);
   background: color-mix(in srgb, var(--tier-c) 10%, transparent);
@@ -8255,7 +8214,9 @@ html[data-reduce-motion] .agenda-detail-close:active {
 }
 
 .agenda-detail-day {
+  font-size: var(--text-body);
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .agenda-detail-day.red {

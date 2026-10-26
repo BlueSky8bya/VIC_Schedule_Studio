@@ -1,4 +1,6 @@
 import { expect, test } from "@playwright/test";
+import { guardCompanionQa } from "./helpers/companion-qa";
+import { settlePanelLayout } from "./helpers/panel-layout";
 
 // 관심 단계 = 카드 테두리 링(2026-08-27, 불꽃 알약 대체) 회귀 게이트.
 //  · 티어 카드마다 .tier-ring 1개, 1위엔 .tier-crown, 옛 .event-popular(불꽃 줄) 0.
@@ -62,27 +64,49 @@ test.describe("heart tier — 테두리 링", () => {
     }
   });
 
-  test("상세 팝오버 제목 줄 오른쪽에 관심 단계 배지 — 단계마다 다른 텍스트, 제목과 같은 줄", async ({
-    page
-  }) => {
+  test("상세 팝오버 관심 단계 배지는 제목 다음 왼쪽 메타 — 네 단계 텍스트 유지", async ({
+    page, context, baseURL
+  }, info) => {
+    const proof = await guardCompanionQa(page, context, baseURL!);
+    // The fixture also requests the bare public root. Its initiator remains
+    // unconfirmed; isolate that exact GET instead of invoking the real loader.
+    await context.route("**/*", route => {
+      const request = route.request(), url = new URL(request.url());
+      if (url.origin === baseURL && url.pathname === "/" && request.method() === "GET") {
+        proof.syntheticReads.push("excluded-public-root-get");
+        return route.fulfill({ status: 404, contentType: "text/plain", body: "Public root excluded from synthetic fixture QA." });
+      }
+      return route.fallback();
+    });
+    await page.addInitScript(() => {
+      localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, enabled: false }));
+      localStorage.setItem("vic.ambient", "off"); localStorage.setItem("vic.sound", "off");
+    });
     await page.goto("/visual-fixture/poster?hearts=1");
     await page.locator("[data-export-surface]").waitFor();
-    await page.waitForTimeout(600);
+    await settlePanelLayout(page);
     const seen: Record<string, string> = {};
+    const positions = [];
     for (const key of ["warm", "hot", "blaze", "top"]) {
       const card = page.locator(`.public-event[data-tier="${key}"]`).first();
       await card.click();
-      const badge = page.locator(".agenda-detail-sheet .agenda-detail-title .adt-badge");
+      const badge = page.locator(".agenda-detail-sheet .agenda-detail-heading > .adt-badge");
       await badge.waitFor();
+      await settlePanelLayout(page);
       seen[key] = ((await badge.textContent()) ?? "").trim();
       await expect(badge).toHaveClass(new RegExp(`tier-${key}`));
-      // 좌 제목 ↔ 우 배지: 배지가 제목 텍스트 오른쪽에, 제목 줄 안에(별도 줄 아님)
-      const [tb, bb] = await Promise.all([
-        page.locator(".agenda-detail-sheet .agenda-detail-title .adt-text").boundingBox(),
-        badge.boundingBox()
+      // Full-width title first, then a separate left-aligned metadata badge.
+      const [tb, bb, hb] = await Promise.all([
+        page.locator(".agenda-detail-sheet .agenda-detail-heading > .agenda-detail-title").boundingBox(),
+        badge.boundingBox(),
+        page.locator(".agenda-detail-sheet .agenda-detail-heading").boundingBox()
       ]);
-      expect(bb!.x).toBeGreaterThan(tb!.x + tb!.width - 1);
-      expect(Math.abs(bb!.y + bb!.height / 2 - (tb!.y + tb!.height / 2))).toBeLessThan(tb!.height);
+      expect(Math.abs(bb!.x - tb!.x)).toBeLessThan(1);
+      expect(bb!.y).toBeGreaterThanOrEqual(tb!.y + tb!.height);
+      expect(tb!.width).toBeGreaterThanOrEqual(hb!.width - 1);
+      expect(bb!.x + bb!.width).toBeLessThanOrEqual(hb!.x + hb!.width + 1);
+      positions.push({ key, title: tb, badge: bb, heading: hb });
+      if (key === "top") await info.attach("top-tier-meta", { body: await page.locator(".agenda-detail-sheet").screenshot(), contentType: "image/png" });
       await page.keyboard.press("Escape");
       await page.locator(".agenda-detail-sheet").waitFor({ state: "detached" });
     }
@@ -91,6 +115,13 @@ test.describe("heart tier — 테두리 링", () => {
     await page.locator(".public-event:not([data-tier])").first().click();
     await page.locator(".agenda-detail-sheet").waitFor();
     await expect(page.locator(".agenda-detail-sheet .adt-badge")).toHaveCount(0);
+    await Promise.all(proof.pending);
+    expect(proof.errors).toEqual([]); expect(proof.rejected).toEqual([]);
+    expect(proof.mutations).toEqual([]); expect(proof.liveReads).toEqual([]);
+    expect(proof.chunks.length).toBeGreaterThan(0);
+    expect(proof.chunks.every(chunk => chunk.served === chunk.local)).toBe(true);
+    await info.attach("tier-meta-observation", { body: JSON.stringify({ seen, positions, noTierHasNoBadge: true, build: proof.build,
+      syntheticReads: proof.syntheticReads, fixtureOnly: true, noRealDbReadOrWrite: true }), contentType: "application/json" });
   });
 
   test("표면 자연 높이: 하트 유무 동일(링은 높이 0)", async ({ page }) => {

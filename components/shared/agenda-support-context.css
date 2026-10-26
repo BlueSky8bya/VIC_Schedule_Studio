@@ -42,7 +42,10 @@
 .asc-measure-group .asc-row::after { content:""; flex:0 0 5px; }
 /* Measure the actual toolbar, clip scroll content only so rail popovers escape. */
 .agenda-with-notices > .agenda.agenda { box-sizing:border-box; height:var(--asc-frame-height,calc(100svh - 240px)); min-height:0; margin-top:0; padding-block:8px; align-items:stretch; }
-.agenda-with-notices > .agenda > .agenda-flow { box-sizing:border-box; min-height:0; height:100%; align-content:start; grid-auto-rows:max-content; overflow-y:auto; overflow-x:hidden; overscroll-behavior-y:contain; scroll-padding-block:8px; border-radius:var(--r-card,16px); }
+.agenda-with-notices > .agenda > .agenda-flow { position:relative; box-sizing:border-box; min-height:0; height:100%; align-content:start; grid-auto-rows:max-content; overflow-y:auto; overflow-x:hidden; overscroll-behavior-y:contain; scroll-padding-block:8px; border-radius:var(--r-card,16px); }
+/* Scroll room is content, never padding: stale large padding can impose a
+   minimum border-box height when the notice board expands in this commit. */
+.agenda-with-notices > .agenda > .agenda-flow::after { content:""; display:block; height:max(0px,calc(var(--asc-tail-space,8px) - 8px)); flex-shrink:0; pointer-events:none; }
 .agenda-with-notices > .agenda > :is(.agenda-rail,.agenda-legend-rail) { position:relative; top:auto; z-index:6; height:100%; min-height:0; }
 .agenda-with-notices .agenda .agenda-legend { display:flex; flex-direction:column; gap:4px; padding-block:4px; flex:1; min-height:0; max-height:none; overflow:visible; }
 .agenda-with-notices .agenda .agenda-legend > .panel-section-heading { flex:none; }
@@ -51,8 +54,10 @@
 .agenda-with-notices .agenda .agenda-legend .panel-section-body > * { flex-shrink:0; }
 .agenda-with-notices .agenda-day { scroll-margin-block:8px; }
 .agenda-with-notices .agenda-day { box-shadow:0 4px 12px -9px rgb(90 66 37 / .2); }
-.agenda-with-notices :is(.agenda-day,.agenda-gap)[data-notice-reading="true"] { box-shadow:inset 0 0 0 1px var(--asc-blue),0 4px 12px -9px rgb(90 66 37 / .2); }
-.agenda-with-notices .agenda-day[data-notice-reading="true"] .agenda-when { color:var(--asc-blue); transition:color 160ms ease; }
+.agenda-reading-ring { position:absolute; z-index:4; pointer-events:none; box-sizing:border-box; border:1.5px solid var(--asc-blue); border-radius:var(--r-card,16px); opacity:0; }
+.agenda-with-notices .agenda-when { transition:color 200ms ease; }
+.agenda-with-notices .agenda-day[data-notice-reading="true"] .agenda-when { color:var(--asc-blue); }
+.agenda-support-board[data-empty="true"] .asc-stack { display:none; }
 .agenda-with-notices .agenda-event { border-radius:var(--r-card,12px); }
 @media (hover:hover) and (pointer:fine) {
   .asc-row,.asc-action { transition:background 180ms ease,box-shadow 180ms ease; }
@@ -62,10 +67,11 @@
   .asc-link:hover svg { transform:translate(2px,-2px); }
   /* Highlight only: the schedule's position/width do not animate on hover. */
   .agenda-with-notices .agenda-day:hover { box-shadow:0 7px 18px -10px rgb(90 66 37 / .25); }
-  .agenda-with-notices .agenda-day[data-notice-reading="true"]:hover { box-shadow:inset 0 0 0 1px var(--asc-blue),0 7px 18px -10px rgb(90 66 37 / .25); }
+  .agenda-with-notices .agenda-day[data-notice-reading="true"]:hover { box-shadow:0 7px 18px -10px rgb(90 66 37 / .25); }
   .agenda-with-notices .agenda .agenda-event:hover { transform:none; }
 }
 [data-reduce-motion="1"] .asc-follow > span,[data-reduce-motion="1"] .asc-action svg { transition:none !important; transform:none !important; }
+[data-reduce-motion="1"] .agenda-with-notices .agenda-when { transition:none; }
 
 /* A short phone cannot fit the whole header/notice board plus usable tags.
    Let the full notice board leave in normal document flow; the last viewport

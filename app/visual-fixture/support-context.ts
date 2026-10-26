@@ -60,3 +60,18 @@ export function readingContextFixture() {
   }).flat()];
   return { year: 2026, month: 10, focusDate: "2026-10-20", events };
 }
+
+/** Unequal day heights and short final days: no live reads or clock overrides. */
+export function agendaContinuityFixture() {
+  const base = (id: string, day: number, title: string): PublicScheduleEvent => ({
+    id, startsAt: `2026-10-${String(day).padStart(2, "0")}T20:00:00+09:00`, isAllDay: true, publicTitle: title,
+    status: "scheduled", visibilityScope: "public", category: "stream", tagIds: [], primaryTagIds: [], sortOrder: 0
+  });
+  const events: PublicScheduleEvent[] = Array.from({ length: 31 }, (_, index) => base(`continuity-day-${index + 1}`, index + 1,
+    [19, 21, 27].includes(index + 1) ? "오늘의 방송\n시청자와 이야기하기\n긴 이야기 이어서\n다음 코너 이야기\n다시 함께 이야기\n마지막 인사" : "방송"));
+  events.push(
+    { ...base("continuity-month-end", 28, "28일부터 31일까지 · 월말 안내를 모두 확인해 주세요"), isSupport: true, supportKind: "period", endDateKey: "2026-10-31", supportUrl: "https://example.com/month-end" },
+    ...Array.from({ length: 3 }, (_, index) => ({ ...base(`continuity-overlap-${index}`, 20, ["다음 무대를 함께 응원하는 시청자 인기 투표 안내", "가을 한정 굿즈 사전 신청과 배송 일정 안내", "함께 나눌 시청자 여러분의 사연 모집 안내"][index]), isSupport: true as const, supportKind: "period" as const, endDateKey: "2026-10-20", supportUrl: `https://example.com/overlap-${index}` }))
+  );
+  return { year: 2026, month: 10, focusDate: "2026-10-20", events };
+}
