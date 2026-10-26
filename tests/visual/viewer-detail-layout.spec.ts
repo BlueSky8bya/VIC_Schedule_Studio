@@ -229,6 +229,15 @@ test(`detail metadata preview ${width} ${theme}: many long missing tags and rank
     await expect(detail.locator(".agenda-detail-tag")).toHaveCount(hasTags ? kind === "many" ? stressTags.length : 1 : 0);
     await expect(detail.locator(".adt-badge")).toHaveCount(hasRank ? 1 : 0);
     await expect(detail.locator(".agenda-detail-metadata")).toHaveCount(hasTags || hasRank ? 1 : 0);
+    const toggle=detail.getByRole("button",{name:"태그 펼치기",exact:true});
+    if (kind === "many" || kind === "long") {
+      await expect(toggle).toBeVisible();await expect(toggle).toHaveAttribute("aria-expanded","false");
+      const folded=await detail.locator(".agenda-detail-tags").evaluate(n=>({height:n.getBoundingClientRect().height,row:Number.parseFloat(getComputedStyle(n).maxHeight)}));
+      expect(folded.height).toBeLessThanOrEqual(folded.row+1);expect(folded.row).toBeLessThanOrEqual(36);
+      await info.attach(`folded-${kind}`,{body:await detail.screenshot(),contentType:"image/png"});
+      await toggle.click();const fold=detail.getByRole("button",{name:"태그 접기",exact:true});await expect(fold).toHaveAttribute("aria-expanded","true");
+      await fold.focus();await page.keyboard.press("Space");await expect(toggle).toHaveAttribute("aria-expanded","false");await page.keyboard.press("Enter");await expect(fold).toHaveAttribute("aria-expanded","true");
+    } else await expect(detail.locator(".agenda-detail-tags-toggle")).toHaveCount(0);
     const layout = await detail.evaluate(node => {
       const rect = (n: Element) => {const r = n.getBoundingClientRect();return { x:r.x, right:r.right, y:r.y, bottom:r.bottom, height:r.height };};
       const tags = [...node.querySelectorAll<HTMLElement>(".agenda-detail-tag")], rank = node.querySelector(".adt-badge"), meta = node.querySelector(".agenda-detail-metadata");
@@ -251,6 +260,24 @@ test(`detail metadata preview ${width} ${theme}: many long missing tags and rank
     await page.keyboard.press("Escape");await expect(detail).toHaveCount(0);await expect(card).toBeFocused();facts.push({kind,layout});
   }
   await finish(page, info, proof, {width,theme,facts,filterBounds,sharedPreviewComponent:true,syntheticTagStress:true,emptyMetadataOmitted:true,limits:"Long/many metadata scenarios execute through the same public poster in credential-free preview; viewer's ordinary two-tag and all-tier paths run separately."});
+});
+
+test("detail tag disclosure: same open instance responds to resize without sticky overflow", async ({page,context,baseURL},info) => {
+  const name="반가운가을방송소식안내예고";
+  const fixture={...previewFixture,tags:previewFixture.tags.map(t=>({...t,displayName:name})),events:[{...previewFixture.events[0],tagIds:["tag-full-track"],primaryTagIds:["tag-full-track"]}]};
+  // Stay within the same agenda topology; switching desktop/agenda remounts
+  // the existing studio preview and closes its detail independently of tags.
+  await page.setViewportSize({width:390,height:1000});const proof=await setup(page,context,baseURL!,fixture);
+  await page.goto("/visual-fixture/studio?viewer=1&role=owner&y=2026&m=10");await settlePanelLayout(page);
+  await page.locator('.agenda-event[data-eventid="fixture-detail-layout"]').first().click();const detail=dialog(page);await settlePanelLayout(page);
+  const group=detail.locator(".agenda-detail-tag-group"),toggle=detail.getByRole("button",{name:"태그 펼치기",exact:true});
+  await group.evaluate(n=>n.setAttribute("data-resize-canary","same"));await expect(toggle).toHaveCount(0);
+  await page.setViewportSize({width:320,height:1000});await settlePanelLayout(page);await expect(toggle).toBeVisible();
+  await expect(group).toHaveAttribute("data-resize-canary","same");await expect(detail.locator(".agenda-detail-tags")).toHaveCSS("max-height","36px");
+  await toggle.click();await expect(detail.locator(".agenda-detail-tag-label")).toHaveText(name);await detail.getByRole("button",{name:"태그 접기",exact:true}).click();
+  await page.setViewportSize({width:390,height:1000});await settlePanelLayout(page);await expect(toggle).toHaveCount(0);await expect(group).toHaveAttribute("data-resize-canary","same");
+  await page.keyboard.press("Escape");await expect(detail).toHaveCount(0);
+  await finish(page,info,proof,{sameInstance:true,widths:[390,320,390],toggleOnlyWhenOverflow:true,expandedFullText:true,limits:"Same agenda topology only; crossing desktop/agenda remount closes the existing preview detail."});
 });
 
 test("detail support and teaser: actions stay type-specific without empty content cards", async ({ page, context, baseURL }, info) => {

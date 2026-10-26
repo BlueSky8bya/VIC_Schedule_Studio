@@ -4,6 +4,7 @@
 import "./viewer-companion/companion-home.css";
 import { scrollAgendaTarget } from "@/lib/ui/agenda-scroll";
 import { PublicEventCalendar } from "./public-event-calendar";
+import { PublicDetailTags } from "./public-detail-tags";
 import {usePublicRecordSession} from "@/lib/ui/use-public-record-session";
 import { AgendaSupportContext } from "@/components/shared/agenda-support-context";
 import { createAgendaNotices } from "@/lib/ui/agenda-notices";
@@ -4659,7 +4660,7 @@ export function PublicPoster({
                   {!teaserActive && (detailTags.length > 0 || detailTier) ? (
                     <div className="agenda-detail-metadata">
                       {detailTags.length > 0 ? (
-                        <div aria-label="태그" className="agenda-detail-tags">
+                        <PublicDetailTags key={event.id}>
                           {detailTags.map(({ tag, bg, border, primary }, ti) => (
                             <span
                               className={`agenda-detail-tag${primary ? " primary" : ""}${
@@ -4669,10 +4670,10 @@ export function PublicPoster({
                               style={revealStagger(detailJustRevealed, main, ti).style}
                             >
                               <i aria-hidden="true" style={{ backgroundColor: bg, borderColor: border }} />
-                              {tag.displayName}
+                              <span className="agenda-detail-tag-label">{tag.displayName}</span>
                             </span>
                           ))}
-                        </div>
+                        </PublicDetailTags>
                       ) : null}
                       {detailTier ? (
                         <span aria-label={`관심 단계: ${detailTier.label}`} className={`adt-badge tier-${detailTier.key}`}>

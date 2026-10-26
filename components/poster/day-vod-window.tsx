@@ -3,7 +3,7 @@
 // 날짜 다시보기 창/페이지(2026-09-17 페이지 승격) — **한 구현**: 시청자 화면은 /replay/<날짜> 페이지(variant="page"),
 // 편집실 미리보기·fixture·/onair는 같은 컴포넌트를 창(variant="modal")으로 띄운다(G-18). 플레이어(숲 임베드 iframe
 // API)·부 탭·머리줄·가로 띠·챕터 레일·키보드가 전부 여기 있다. 히스토리 스택·본문 스크롤 잠금은 껍데기(포스터/페이지) 몫.
-import { ExternalLink, PanelLeft, PanelRight, Play, Upload, X } from "lucide-react";
+import { ChevronDown, ExternalLink, PanelLeft, PanelRight, Play, Upload, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getDayMark } from "@/lib/calendar/holidays";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -50,6 +50,35 @@ export type DayVod = {
   thumbUrl?: string; // 업로드 영상 썸네일(직접 jpg) — 다시보기는 thumbQuery
   startedAt?: string; // 방송 시작 시각(ISO) — 타임라인의 '실제 시각' 표기(2026-09-18 소유자)
 };
+
+/** Native selection keeps its full option titles, while the closed header shows
+ * only current/total. Uploads retain their own numbering, not replay parts. */
+export function VodPartPicker({ vods, selected, onSelect }: {
+  vods: readonly DayVod[]; selected: DayVod; onSelect: (titleNo: number) => void;
+}) {
+  const replayCount = vods.filter(v => v.access !== "sub").length;
+  const uploadCount = vods.length - replayCount;
+  const before = vods.slice(0, vods.findIndex(v => v.titleNo === selected.titleNo) + 1);
+  const upload = selected.access === "sub";
+  const index = before.filter(v => (v.access === "sub") === upload).length;
+  const counter = upload ? `영상 ${index} / ${uploadCount}` : `${index} / ${replayCount}부`;
+  let replay = 0, uploads = 0;
+  return <span className="dvm-part-picker" data-single={vods.length === 1 || undefined}>
+    <span aria-hidden={vods.length > 1 ? true : undefined} className="dvm-part-counter">{counter}{vods.length > 1 ? <ChevronDown aria-hidden="true" size={13} /> : null}</span>
+    {vods.length > 1 ? <select aria-label="이 날의 영상 선택" data-act="vod-part-select" data-activity-manual
+      onChange={event => {
+        const next = Number(event.currentTarget.value);
+        if (next === selected.titleNo || !vods.some(v => v.titleNo === next)) return;
+        logActivity("ui.click", { target: "vod-part-select" });
+        onSelect(next);
+      }} value={selected.titleNo}>
+      {vods.map(v => {
+        const number = v.access === "sub" ? `영상 ${++uploads} / ${uploadCount}` : `${++replay} / ${replayCount}부`;
+        return <option key={v.titleNo} value={v.titleNo}>{number} · {v.title || "다시보기"}{v.durationMs > 0 ? ` · ${formatVodDuration(v.durationMs)}` : ""}{v.access ? ` · ${VOD_ACCESS_LABEL[v.access]}` : ""}{v.host ? " · 합방" : ""}</option>;
+      })}
+    </select> : null}
+  </span>;
+}
 
 export function buildDayVodWatchUrl(titleNo: number, sec?: number): string {
   const base = `https://vod.sooplive.co.kr/player/${titleNo}`;
@@ -810,7 +839,7 @@ export function DayVodWindow({
   // 있을 때만 이어 튼다(없으면 커버+▶ 대기). 자동 재생은 새 iframe의 PonReady가 pending을 집어 첫 Pload{autoPlay}로
   // 쏘는 기존 경로(챕터 점프와 같은 길) — 차단이 기억된 브라우저는 음소거 시동.
   const switchDayVod = useCallback(
-    (from: number | null, to: number, startSec: number | null) => {
+    (from: number | null, to: number, startSec: number | null, focusStage = true) => {
       if (from === to) return;
       if (from !== null) {
         const wasPlaying = dayVodAliveRef.current.has(from) && !dayVodPausedRef.current.has(from);
@@ -832,7 +861,7 @@ export function DayVodWindow({
       dayVodEndedRef.current.delete(to);
       setDayVodSel(to);
       setDayVodJump(null);
-      dayVodModalRef.current?.focus({ preventScroll: true });
+      if (focusStage) dayVodModalRef.current?.focus({ preventScroll: true });
     },
     [clearDayVodTitle]
   );
@@ -1099,7 +1128,7 @@ export function DayVodWindow({
       if (e.ctrlKey || e.metaKey || e.altKey) return;
       const target = e.target as HTMLElement | null;
       const tag = target?.tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || target?.isContentEditable) return;
       const list = vods;
       const selNo = dayVodSelRef.current ?? list[0]?.titleNo ?? null;
       // ? = 단축키 안내 토글(2번). 다른 키를 쓰면 안내는 접힌다(배웠으니).
@@ -1293,6 +1322,9 @@ export function DayVodWindow({
                       {Number(dateKey.slice(0, 4))}.{formatShortDate(dateKey)} (
                       {WEEKDAYS[wd]})
                     </b>
+                    {sel ? <VodPartPicker vods={list} selected={sel} onSelect={next => {
+                      hapticTick();switchDayVod(sel.titleNo, next, null, false);
+                    }} /> : null}
                     {/* 제목은 머리줄로(2026-09-17 대개편 2번: 영상 아래 있어 '뭘 보는지'가 가장 늦게 읽혔다).
                         링크는 **지금 보고 있는 지점**부터 이어 본다 — 누르는 순간 currentTime을 change_second로
                         (pointerdown/enter에도 갱신해 가운데 클릭·새 탭도 같은 지점). */}
@@ -1319,8 +1351,6 @@ export function DayVodWindow({
                       >
                         {selLabel}
                       </a>
-                      </span>
-                    ) : null}
                     {/* 합방 게스트 출연분(0075) — 다른 스트리머 방송국의 다시보기임을 밝히는 칩. 누르면 그 방송국 메인(2026-09-17). */}
                     {sel?.host && sel.hostId ? (
                       <a
@@ -1342,6 +1372,8 @@ export function DayVodWindow({
                     ) : null}
                     {/* 구독·구독+(0154/0156) — 일반 다시보기와 같은 창, 색만 단계별. 재생 권한은 숲 플레이어 몫. */}
                     {sel?.access ? <VodAccessBadge access={sel.access} /> : null}
+                      </span>
+                    ) : null}
                     {/* 타임라인 자리 좌/우(2026-09-19 소유자) — 설정의 계절 세그먼트와 같은 알약 문법. */}
                     <div aria-label="타임라인 자리" className="dvm-railside" role="radiogroup">
                       <button
@@ -1412,40 +1444,6 @@ export function DayVodWindow({
                       <X aria-hidden="true" size={16} strokeWidth={2.5} />
                     </button>
                   </div>
-                  {list.length > 1 && sel ? (
-                    /* 영상 탭(1번) — 하루 여러 방송을 한 무대에서 바꿔 본다. 썸네일 대신 "N부 · 길이" 텍스트 칩,
-                       보고 있는 영상은 금색(오늘·기록 언어). 클릭 = 무대 교체(이어보기 지점이 있으면 거기부터). */
-                    <div aria-label="이 날의 다시보기" className="dvm-tabs" role="tablist">
-                      {list.map((v, i) => (
-                        <button
-                          aria-selected={v.titleNo === sel.titleNo}
-                          className={`dvm-tab${v.titleNo === sel.titleNo ? " is-on" : ""}${v.access ? ` is-${v.access}` : ""}`}
-                          data-act="vod-tab"
-                          key={v.titleNo}
-                          onClick={() => {
-                            if (v.titleNo === sel.titleNo) return;
-                            hapticTick();
-                            switchDayVod(sel.titleNo, v.titleNo, null);
-                          }}
-                          role="tab"
-                          title={v.access ? `${VOD_ACCESS_LABEL[v.access]} · ${v.title || VOD_ACCESS_HINT[v.access]}` : v.title || undefined}
-                          type="button"
-                        >
-                          {/* 구독 업로드는 종류만 간결하게 표시하고, 부 번호는 다시보기끼리만 센다. */}
-                          {v.access === "sub" ? (
-                            <><VodAccessBadge access="sub" small /><b>업로드</b></>
-                          ) : (
-                            <>
-                              <b>{list.slice(0, i + 1).filter((x) => x.access !== "sub").length}부</b>
-                              {v.durationMs > 0 ? <em>{formatVodDuration(v.durationMs)}</em> : null}
-                              {v.host ? <i>합방</i> : null}
-                              {v.access ? <VodAccessBadge access={v.access} small /> : null}
-                            </>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
                   <div className="dvm-body">
                     {(sel ? [sel] : []).map((vod) => {
                       const playerUrl = selPlayerUrl;

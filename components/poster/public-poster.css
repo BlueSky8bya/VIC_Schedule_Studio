@@ -1189,6 +1189,38 @@ html[data-reduce-motion] .day-vod-modal {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.dvm-title-wrap > .vod-access-badge { flex: none; }
+.dvm-part-picker {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: var(--space-1) var(--space-2);
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-size: var(--text-label);
+  font-weight: 600;
+}
+.dvm-part-counter { display: inline-flex; align-items: center; gap: var(--space-1); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.dvm-part-picker select { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.dvm-part-picker:has(select:focus-visible) { outline: 2px solid var(--studio-action); outline-offset: 2px; }
+.dvm-part-picker:has(select):hover { background: var(--selection-fill); }
+@media (pointer: coarse) { .dvm-part-picker { min-height: var(--control-hit); } }
+@media (max-width: 640px) {
+  .dvm-head { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: var(--space-2); padding: var(--space-3); }
+  .day-vod-modal .dvm-head > .dvp-date { grid-row: 1; grid-column: 1; font-size: var(--text-body); }
+  .dvm-part-picker { grid-row: 1; grid-column: 2; }
+  .dvm-head > .dvm-close:not(.dvm-help) { grid-row: 1; grid-column: 3; }
+  .dvm-title-wrap { grid-row: 2; grid-column: 1; }
+  .dvm-title-wrap > .dvm-host { min-width: 0; max-width: 40%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .dvm-railside { grid-row: 2; grid-column: 2; }
+  .dvm-head > .dvm-help { grid-row: 2; grid-column: 3; }
 }
 .dvm-head .dvm-title {
   flex: 0 1 auto; /* 글자 폭만 링크 — 빈 자리는 링크가 아니다 */
@@ -8157,6 +8189,42 @@ html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
   min-width: 0;
   gap: var(--space-1) var(--space-2);
   margin: 0;
+}
+.agenda-detail-tag-group {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: var(--space-1);
+}
+.agenda-detail-tag-group:has(.agenda-detail-tags-toggle) { grid-template-columns: minmax(0, 1fr) auto; }
+.agenda-detail-tag-group[data-expanded="false"] .agenda-detail-tags {
+  max-height: calc(var(--control-hit) - var(--space-2));
+  overflow: hidden;
+}
+.agenda-detail-tag-label { min-width: 0; overflow-wrap: anywhere; }
+.agenda-detail-tag-group[data-expanded="false"] .agenda-detail-tag-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.agenda-detail-tags-toggle {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: calc(var(--control-hit) - var(--space-2));
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+.agenda-detail-tags-toggle:hover { background: var(--selection-fill); }
+.agenda-detail-tags-toggle:active { transform: scale(var(--press-scale)); }
+.agenda-detail-tags-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+@media (pointer: coarse) {
+  .agenda-detail-tags-toggle { width: var(--control-hit); min-height: var(--control-hit); }
 }
 
 .agenda-detail-metadata {
