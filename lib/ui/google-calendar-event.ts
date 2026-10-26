@@ -1,6 +1,6 @@
 import type { PublicScheduleEvent } from '@/lib/domain/schedule-types';
 import { PRODUCT_TIMEZONE } from '@/lib/domain/schedule-types';
-import { addDays, getEventDateKey } from '@/lib/calendar/month';
+import { addDays, getEventDateKey, splitEventTitleOutline } from '@/lib/calendar/month';
 
 const validDateKey = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) &&
   Number.isFinite(Date.parse(value + 'T00:00:00Z')) && new Date(value + 'T00:00:00Z').toISOString().slice(0,10) === value;
@@ -28,10 +28,15 @@ export function googleCalendarEventHref(event: PublicScheduleEvent): string | nu
   }
   const url = new URL('https://calendar.google.com/calendar/r/eventedit');
   url.searchParams.set('action','TEMPLATE');
-  url.searchParams.set('text',event.publicTitle);
+  // Match the calendar's first-line title and subtopic outline. Google flattens
+  // newlines in its title input, so put every remaining line in the description.
+  const { main, subs } = splitEventTitleOutline(event.publicTitle.replace(/\r\n?/g,'\n').trim());
+  const outline = subs.map(({text,depth}) => '  '.repeat(depth) + (/^(?:[-*•·]\s|\d+[.)]\s)/.test(text) ? text : '• ' + text)).join('\n');
+  const details = [outline,event.publicDescription?.trim()].filter(Boolean).join('\n\n');
+  url.searchParams.set('text',main.trim());
   url.searchParams.set('dates',dates);
   url.searchParams.set('stz',PRODUCT_TIMEZONE);
   url.searchParams.set('etz',PRODUCT_TIMEZONE);
-  if (event.publicDescription) url.searchParams.set('details',event.publicDescription);
+  if (details) url.searchParams.set('details',details);
   return url.href;
 }

@@ -26,3 +26,25 @@ it('never serializes unexpected private metadata, owner identity or IDs',()=>{
 });
 it('fails closed if the exclusive all-day end exceeds four-digit years',()=>expect(googleCalendarEventHref(event({startsAt:'9999-12-31T00:00:00+09:00'}))).toBeNull());
 it('rejects impossible timed end dates instead of Date.parse normalization',()=>expect(googleCalendarEventHref(event({isAllDay:false,startsAt:'2026-02-28T20:00:00+09:00',endsAt:'2026-02-30T22:00:00+09:00'}))).toBeNull());
+
+it('keeps the first title line and moves the public outline above the description',()=>{
+  const url=new URL(googleCalendarEventHref(event({publicTitle:'합성 새 출발 방송!\n새 아바타·의상 공개\n  표정 소개\n함께 이야기해요',publicDescription:'방송 안내\n스포일러 없이 즐겨 주세요.'}))!);
+  expect(url.searchParams.get('text')).toBe('합성 새 출발 방송!');
+  expect(url.searchParams.get('details')).toBe('• 새 아바타·의상 공개\n  • 표정 소개\n• 함께 이야기해요\n\n방송 안내\n스포일러 없이 즐겨 주세요.');
+});
+it('formats CRLF and existing list markers without duplicating bullets',()=>{
+  const url=new URL(googleCalendarEventHref(event({publicTitle:'  첫 방송  \r\n- 새 의상\r\n  • 새 표정\r\n\r\n2. 짧은 Q&A',publicDescription:'  공개 본문  '}))!);
+  expect(url.searchParams.get('text')).toBe('첫 방송');
+  expect(url.searchParams.get('details')).toBe('- 새 의상\n  • 새 표정\n2. 짧은 Q&A\n\n공개 본문');
+});
+it('does not guess a subtitle from punctuation or truncate a long single-line title',()=>{
+  const title='새 기능 - 소개 / A & B: 긴 제목 '+ '가'.repeat(120);
+  const url=new URL(googleCalendarEventHref(event({publicTitle:title,publicDescription:'   '}))!);
+  expect(url.searchParams.get('text')).toBe(title);
+  expect(url.searchParams.has('details')).toBe(false);
+});
+it('uses the first meaningful line after leading blank lines and retains all subtopics',()=>{
+  const url=new URL(googleCalendarEventHref(event({publicTitle:'\r\n\r\n주제\r\n하위 내용\r마지막 내용'}))!);
+  expect(url.searchParams.get('text')).toBe('주제');
+  expect(url.searchParams.get('details')).toBe('• 하위 내용\n• 마지막 내용');
+});

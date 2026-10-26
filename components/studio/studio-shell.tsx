@@ -2864,7 +2864,7 @@ export function StudioShell({
     ox: number;
     oy: number;
   } | null>(null);
-  // 사용자가 헤더를 잡아 끌면 그 자리가 우선(수동 배치) — 다른 날짜/일정을 고르면 자동 배치로 복귀.
+  // 수동 배치는 이 셸이 살아 있는 동안 기억한다. 닫기/대상 변경은 유지, 새로고침은 초기화.
   const [editorPopManual, setEditorPopManual] = useState<{ left: number; top: number } | null>(
     null
   );
@@ -3025,12 +3025,24 @@ export function StudioShell({
       let mTop = manual.top;
       if (mTop + size.h > vpBottomL) mTop = vpBottomL - size.h;
       if (mTop < vpTopL) mTop = vpTopL;
-      const mLeft = Math.max(140 - size.w, Math.min(manual.left, ws.clientWidth - 140));
+      const mLeft = Math.max(8, Math.min(manual.left, ws.clientWidth - size.w - 8));
       const adj = { left: Math.round(mLeft), top: Math.round(mTop) };
       if (adj.left !== manual.left || adj.top !== manual.top) {
         editorPopManualRef.current = adj;
         setEditorPopManual(adj);
       }
+      // A reopened editor has fresh content and anchor geometry. Keep the chosen
+      // position, but refresh its measured readiness and entrance origin.
+      const next = {
+        ...adj,
+        ox: Math.round(Math.max(0, Math.min(anchor.x - adj.left, size.w))),
+        oy: Math.round(Math.max(0, Math.min(anchor.y - adj.top, size.h)))
+      };
+      setEditorPopPos((p) =>
+        p && p.left === next.left && p.top === next.top && p.ox === next.ox && p.oy === next.oy
+          ? p
+          : next
+      );
       return;
     }
     const popW = size.w;
@@ -3177,14 +3189,10 @@ export function StudioShell({
     window.addEventListener("pointercancel", onUp);
     window.addEventListener("blur", onUp); // 캡처가 실패한 환경의 최후 안전망(창 포커스 이탈 = 종료)
   }
-  // 다른 날짜/일정을 고르면(editorKey 증가) 수동 배치를 버리고 새 앵커 옆 자동 배치로.
-  useEffect(() => {
-    setEditorPopManual(null);
-  }, [editorKey]);
+  // Manual placement survives closing and choosing another event; no storage or server write.
   useLayoutEffect(() => {
     if (!editorVisible || isNarrow) {
       setEditorPopPos(null);
-      setEditorPopManual(null);
       setEditorAnchorPt(null);
       return;
     }
