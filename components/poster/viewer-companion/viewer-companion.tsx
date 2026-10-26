@@ -73,6 +73,8 @@ import { companionSofaFlightMs, sampleCompanionSofaTravel, type CompanionSofaTra
 import { createCompanionFoodCuriosity } from "@/lib/ui/viewer-companion/novel-food";
 import { createCompanionHousehold, type CompanionHouseholdBeat, type CompanionHouseholdHome } from "@/lib/ui/viewer-companion/household";
 import { createCompanionViewportRecovery } from "@/lib/ui/viewer-companion/viewport-recovery";
+import { createCompanionVisibilityRecovery, recoverCompanionVisibilityFloor, VISIBILITY_RECOVERY_DELAY_MS } from "@/lib/ui/viewer-companion/visibility-recovery";
+import { createCompanionVisibilityDiagnostics } from "@/lib/ui/viewer-companion/visibility-diagnostics";
 import { companionPositionPoint, resolveCompanionPosition, type CompanionPositionMemory, type CompanionPositionSnapshot } from "@/lib/ui/viewer-companion/position-memory";
 import { companionGripProfile } from "@/lib/ui/viewer-companion/contact-grip";
 import { companionMaterialScale } from "@/lib/ui/viewer-companion/material-scale";
@@ -149,6 +151,7 @@ const spriteSources = registration.rows.map((_, row) => companionSpriteSources(r
  * Imperative transform/frame writes never re-render the calendar on a tick. */
 export default function ViewerCompanion({ onOpenBook, root, preferences, blocked, overlayOpen, preserveWorldPresentation = false, workspaceBusy = false, editing = false, agenda, monthKey, context, reduced, homeHost, homeVisible, launcherHost = null, compactHost = null, premiereCue = null, onPremiereJoin, positionMemory, fixtureFood }: Props) {
   const [showcaseSession] = useState(createCompanionShowcaseSession);
+  const [visibilityRecovery] = useState(() => createCompanionVisibilityRecovery());
   const sceneMaterial = useCompanionSceneMaterial();
   const pathname = usePathname();
   const presentationScope = useRef({ monthKey, pathname, blocked, agenda, enabled: preferences.enabled, overlayOpen });
@@ -852,6 +855,17 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     let verticalRecoveryX: number | undefined;
     let verticalLanding = false;
     const viewportRecovery = createCompanionViewportRecovery({ width: innerWidth, height: innerHeight });
+    const visibilityDiagnostics = createCompanionVisibilityDiagnostics(process.env.APP_COMMIT ?? "dev");
+    let visibilityRecoveryTimer: ReturnType<typeof setTimeout> | undefined;
+    let visibilityRecovering = false;
+    let visibilityRecoveryTarget: string | undefined;
+    let visibilityRecoveryAction: RuntimeAction | undefined;
+    let visibilityLastRecord = "";
+    let visibilityLastReason = "";
+    let visibilityRecordedMissing = false;
+    let visibilitySide: "left" | "right" | "none" = "none";
+    let visibilityContext: { kind: "panel-transition" | "scroll" | "resize"; at: number } | undefined;
+    let visibilityIncidentContext: "panel-transition" | "scroll" | "resize" | "none" = "none";
     let presentationNow = 0;
     const hideSeek = createCompanionHideSeek();
     let hiding: { personalityScene?: PersonalitySceneBeat; target: CompanionHideTarget; from: { x: number; y: number }; sheet?: HTMLElement; ready?: boolean } | undefined;
@@ -1605,6 +1619,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (el.hidden) stopHover();
       } finally {
         if (!watchPainted) watchPaintMs = watchPaintAt = 0;
+        observeVisibility();
       }
     };
     const displayedPoint = (): CompanionReturnPoint => {
@@ -1737,6 +1752,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     };
     const continuousMotion = () => Boolean(expressionAnimating || performance.now() < interactionUntil || toys.current?.moving() || action?.toy?.effect === "stash" && toys.current?.carried() || isFoodDisposal(action) && food.current?.carried() || homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && (action.accessory || action.radio || ["walk", "jump", "heart", "hide", "stretch", "shake", "eat", "play"].includes(action.kind)));
     const followLayout = (event?: Event) => {
+      if (event?.type === "vic:side-panel") visibilityContext = { kind: "panel-transition", at: performance.now() };
+      else if (event?.type === "scroll") visibilityContext = { kind: "scroll", at: performance.now() };
+      else if (event?.type === "resize") visibilityContext = { kind: "resize", at: performance.now() };
       if (premiereActive && event?.target === window.visualViewport) { viewportResized(); return; }
       // A compact room can unmount while the creature is parked. Drop its
       // front immediately at the topology event, before the120ms rescan.
@@ -1744,6 +1762,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         bedScene = undefined; syncRoomItemLight(); hideBed();
         if (isHomeSupport(support) && !pressed && !keyboardHeld && !placing && action?.kind !== "jump" && !playFalling) {
           homeOccluded = true; data("hiddenReason", "home"); el.hidden = true; stopHover();
+          observeVisibility();
         }
       }
       if (stopped || pause || premiereActive || isDetailGuest() || hiding) return;
@@ -1835,7 +1854,13 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (invitation && action?.scene?.id === 10) scenes.complete(action as CompanionSceneAction);
       clearAction(false, false, invitation);
     };
-    const settle = (point: { x: number; y: number }, nearby = false, atX = false) => {
+    const settle = (point: { x: number; y: number }, nearby = false, atX = false, measuredFloor?: { platformId: string; x: number; y: number }) => {
+      // Visibility recovery may name only an existing freshly measured floor.
+      // Keep that exact destination instead of attracting to a nearby date.
+      const visibilityFloor = measuredFloor && [...platforms, ...landingPlatforms].find(p => p.id === measuredFloor.platformId
+        && p.kind === "floor" && /^viewport-floor(?:-\d+)?$/.test(p.id) && !p.manualOnly && !p.bodyOnly
+        && p.y === measuredFloor.y && measuredFloor.x >= p.x && measuredFloor.x <= p.x + p.width);
+      if (measuredFloor && !visibilityFloor) return;
       // One lost-support episode owns one body-width escape budget. Fresh
       // scans cannot repeatedly move this origin to ratchet across columns.
       if (atX) verticalRecoveryX ??= point.x;
@@ -1849,8 +1874,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const bed = bedScene?.anchor.isConnected ? bedScene : undefined;
       const contact = sofaContact && Math.hypot(sofaContact.point.x - point.x, sofaContact.point.y - point.y) <= 1 ? sofaContact : undefined;
       const sofa = !nearby && !atX && bed ? companionSofaRelease(point, { left: bed.left, right: bed.left + bed.width, top: bed.top, bottom: bed.top + bed.height }, supportById("companion-home"), landingPlatforms, size, contact) : null;
-      const contactPlatform = sofa ? supportById(sofa.platformId) : atX ? recoverCompanionVerticalSupport(point, platforms, landingPlatforms) : nearby ? nearestPlatform(point, platforms)
-        : firstCompanionSupportBelow(point, landingPlatforms) ?? companionViewportFloorAbove(point, landingPlatforms);
+      const contactPlatform = visibilityFloor ?? (sofa ? supportById(sofa.platformId) : atX ? recoverCompanionVerticalSupport(point, platforms, landingPlatforms) : nearby ? nearestPlatform(point, platforms)
+        : firstCompanionSupportBelow(point, landingPlatforms) ?? companionViewportFloorAbove(point, landingPlatforms));
       const recovery = !contactPlatform && !sofa ? atX
         ? recoverCompanionPassiveFloor(point, landingPlatforms, size, verticalRecoveryX)
         : !nearby ? recoverCompanionDropAtViewportFloor(point, landingPlatforms) : undefined : undefined;
@@ -1866,7 +1891,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       const raisedFloor = !sofa && !nearby && !atX && p.y < point.y - .5;
       origin = { x, y }; action = { kind: "jump", target, duration: sofa ? 400 : 650 }; began = performance.now(); total = action.duration; travel = sofa ? -4 : nearby || raisedFloor || atX && target.y < point.y ? -3 : -1;
       if (jumpRecoveryContext) { action = { ...action, ...jumpRecoveryContext }; jumpRecoveryContext = undefined; }
-      if (reduced) { x = target.x; y = target.y; support = target.platformId ?? ""; verticalRecoveryX = undefined; clearAction(); }
+      if (visibilityFloor) visibilityRecoveryAction = action;
+      if (reduced || visibilityFloor && ["off", "soft"].includes(gfxMode())) { x = target.x; y = target.y; support = target.platformId ?? ""; verticalRecoveryX = undefined; clearAction(); }
       brain.current = recordCompanionEvent(brain.current, "landed");
     };
     const recoverJumpGeometry = (now: number) => {
@@ -1885,6 +1911,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       waitingForSupport = true;
       cancelAnimationFrame(raf); clearTimeout(timer); inputPaintQueued = false;
       hideBed(); stopHover(); data("hiddenReason", awaitingAtX || "support"); el.hidden = true;
+      observeVisibility();
       // One final validation catches a transient reflow. Afterwards the same
       // passive observer waits for actual DOM/scroll/font events: no brain,
       // rAF, timer or repeated geometry request runs while support is missing.
@@ -1923,6 +1950,99 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       return true;
     };
     const supportedNow = () => { const p = supportById(support); return Boolean(p && Math.abs(y - p.y) <= 2 && x >= p.x && x <= p.x + p.width); };
+    type VisibilityRecord = Parameters<typeof visibilityDiagnostics.record>[0];
+    type VisibilityFault = "bounds" | "support" | "vertical" | null;
+    function visibilityState(): { reason: VisibilityRecord["reason"]; fault: VisibilityFault; eligible: boolean; protected: boolean } {
+      if (hiding) return { reason: "schedule-hide", fault: null, eligible: false, protected: true };
+      const direct = Boolean(pressed || keyboardHeld || placing || overlayDrag || overlayPlacing || guestKeyboardHeld);
+      if (stopped || pause || blocked || !preferencesRef.current.enabled || !page || page.inert || !visibleActive() || document.hidden
+        || workspaceBusyRef.current || overlayActive || overlayRef.current || isDetailGuest() || showcaseSession.has("pet")
+        || document.documentElement.hasAttribute("data-showcase") || premiereActive || premiereBounce || direct || awaitingAtX === "drop") {
+        return { reason: "owned", fault: null, eligible: false, protected: true };
+      }
+      if (homeOccluded && isHomeSupport(support)) return { reason: "home-hidden", fault: null, eligible: false, protected: true };
+      if (!worldSeeded || !initialGeometryMeasured || !hasPlatformSnapshot || restartSupport || freshHomePending || pendingPosition.current
+        || pendingMonth || viewportHandoff || premiereAwaitingGeometry) return { reason: "pending", fault: null, eligible: false, protected: true };
+      const ownLanding = visibilityRecovering && action === visibilityRecoveryAction;
+      const pickup = Boolean(pickupScale !== 1 || pickupOffset.x || pickupOffset.y) && performance.now() - pickupAt < 200;
+      if (presence.phase !== "active" || homeOccluded || isHomeSupport(support) || homeJourney || returning || flight
+        || action && !ownLanding || afterPetLanding || needsLanding || playFalling || pickup
+        || food.current?.carried() || toys.current?.carried()) return { reason: "owned", fault: null, eligible: false, protected: true };
+      // The paint gate permits any existing world while travelling. Diagnosis
+      // instead proves this idle actor's exact current support and bounds.
+      const outside = companionWorldHiddenReason({ point: { x, y }, viewport: { width: innerWidth, height: innerHeight }, size,
+        awaiting: false, hasSupport: true, pendingMonth: false, homeOccluded: false, atHome: false }) === "bounds";
+      if (outside) return { reason: "offscreen", fault: "bounds", eligible: true, protected: false };
+      if (awaitingAtX === "vertical") return { reason: "lost-support", fault: "vertical", eligible: true, protected: false };
+      if (!supportedNow()) return { reason: "lost-support", fault: "support", eligible: true, protected: false };
+      return { reason: "visible", fault: null, eligible: false, protected: false };
+    }
+    function recordVisibility(stage: VisibilityRecord["stage"], reason: VisibilityRecord["reason"]) {
+      if (!el) return;
+      const abnormal = reason === "offscreen" || reason === "lost-support";
+      const previousReason = visibilityLastReason; visibilityLastReason = reason ?? "";
+      if (stage === "observed") {
+        const intentionalHidden = reason !== "visible" && el.hidden;
+        const returned = reason === "visible" && visibilityRecordedMissing && !el.hidden;
+        if (!abnormal && !intentionalHidden && !returned) { visibilityLastRecord = ""; return; }
+        if (abnormal && !["offscreen", "lost-support"].includes(previousReason)) visibilityIncidentContext = visibilityContext && performance.now() - visibilityContext.at <= 7000 ? visibilityContext.kind : "none";
+        visibilityRecordedMissing = abnormal || intentionalHidden;
+      } else if (stage === "recovered") visibilityRecordedMissing = false;
+      const platform = supportById(support);
+      const category: VisibilityRecord["support"] = isHomeSupport(support) ? "home" : platform?.kind === "floor" ? "floor"
+        : platform?.kind === "card" ? "card" : platform?.kind === "date" ? "calendar" : platform?.kind === "control" ? "control" : "none";
+      const key = `${stage}:${reason}:${category}:${visibilitySide}:${el.hidden}:${Boolean(awaitingAtX)}`;
+      if (key === visibilityLastRecord) return;
+      visibilityLastRecord = key;
+      visibilityDiagnostics.record({ stage, reason, support: category,
+        action: action && ["panel", "walk", "jump"].includes(action.kind) ? action.kind as "panel" | "walk" | "jump" : action ? "other" : "idle",
+        side: visibilitySide, x, y, width: innerWidth, height: innerHeight, size, hidden: el.hidden, awaiting: Boolean(awaitingAtX), reduced,
+        ...(abnormal || stage === "recovery" || stage === "recovered" || stage === "unavailable" ? { context: visibilityIncidentContext } : {}) });
+    }
+    function observeVisibility(hasFreshGeometry = false) {
+      if (stopped || !page || !el) return;
+      if (hasFreshGeometry) {
+        const side = page.querySelector<HTMLElement>(".panel-place-ctl .ppc-side[aria-pressed='true']")?.dataset.companionPanelSide;
+        visibilitySide = side === "left" || side === "right" ? side : "none";
+      }
+      const state = visibilityState();
+      if (visibilityRecovering && !state.protected) {
+        if (action && action === visibilityRecoveryAction) return;
+        if (state.reason === "visible") {
+          // Only the ordinary decoded paint may complete recovery. A measured
+          // target alone never lends visibility or fabricates a successful fix.
+          if (el.hidden) return;
+          const reachedTarget = support === visibilityRecoveryTarget;
+          visibilityRecovering = false; visibilityRecoveryTarget = undefined; visibilityRecoveryAction = undefined;
+          recordVisibility(reachedTarget ? "recovered" : "cancelled", "visible");
+        }
+      } else if (visibilityRecovering) {
+        visibilityRecovering = false; visibilityRecoveryTarget = undefined; visibilityRecoveryAction = undefined;
+        recordVisibility("cancelled", state.reason);
+      }
+      recordVisibility("observed", state.reason);
+      const floor = hasFreshGeometry && state.eligible ? recoverCompanionVisibilityFloor({ point: { x, y }, viewport: { width: innerWidth, height: innerHeight }, size }, [...platforms, ...landingPlatforms]) : undefined;
+      const decision = visibilityRecovery.observe({ now: performance.now(), reason: state.fault, eligible: state.eligible,
+        hasFreshGeometry, hasSafeFloor: Boolean(floor) });
+      if (decision === "cancel") { clearTimeout(visibilityRecoveryTimer); visibilityRecoveryTimer = undefined; }
+      if (decision === "arm" && visibilityRecoveryTimer === undefined) {
+        visibilityRecoveryTimer = setTimeout(() => {
+          visibilityRecoveryTimer = undefined;
+          observeVisibility();
+          // This is one delivery request owned by a real missing-state episode.
+          // No recurring watchdog, scan or drawing loop runs while it waits.
+          if (visibilityState().eligible) { connectGeometry(); offGeometry?.revalidate(true); }
+        }, VISIBILITY_RECOVERY_DELAY_MS);
+      } else if (decision === "unavailable") recordVisibility("unavailable", state.reason);
+      else if (decision === "recover" && floor && visibilityState().eligible) {
+        clearTimeout(visibilityRecoveryTimer); visibilityRecoveryTimer = undefined;
+        visibilityRecovering = true; visibilityRecoveryTarget = floor.platformId;
+        recordVisibility("recovery", state.reason);
+        settle({ x: floor.x, y: floor.y }, false, true, floor);
+        lastTick = lastNeeds = lastCare = lastPaint = performance.now(); nextDecision = lastTick + 900;
+        schedule();
+      }
+    }
     const accessorySpace = (id: CompanionAccessoryId) => {
       const occupied = supportById(support);
       const headroom = Math.min(y, ...platforms.filter(p => p.id !== support && p.y < y - 2 && x + size / 2 > p.x && x - size / 2 < p.x + p.width).map(p => y - p.y));
@@ -2698,6 +2818,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         const hide = hideSeek.sample(presentationNow);
         if (hide.phase === "hidden") {
           clearAction(); data("hidePhase", "hidden"); el.hidden = true;
+          observeVisibility();
           hideHint(true);
           offGeometry?.(); offGeometry = undefined; geometryReady = false;
           cancelAnimationFrame(followRaf); followRaf = 0; hearts.pause(true); lastNeeds = lastCare = now;
@@ -2771,7 +2892,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (!action && !pressed && !keyboardHeld && !placing && ["resting", "yawning", "parked", "waking"].includes(phase)) {
         const elapsed = presence.elapsed(now);
         if (overlayActive || supportedNow()) paint(presence.pose.row, (elapsed / (phase === "waking" ? COMPANION_TIMING.presenceWake : COMPANION_TIMING.presenceYawn)) * 15, presence.pose.status);
-        else { stopHover(); el.hidden = true; }
+        else { stopHover(); el.hidden = true; observeVisibility(); }
         if (phase === "parked") {
           toys.current?.pause(now);
           resetInertia();
@@ -3444,7 +3565,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           row = 13; frame = p * 15;
           if (!panelImpact && p >= .55) {
             panelImpact = true;
-            if (!overlayActive && !workspaceBusyRef.current && !reduced && gfxMode() !== "off" && action.panelSide) requestCompanionPanelSide(geometryTracker?.anchor(support)?.element, action.panelSide);
+            if (!overlayActive && !workspaceBusyRef.current && !reduced && gfxMode() !== "off" && action.panelSide
+              && requestCompanionPanelSide(geometryTracker?.anchor(support)?.element, action.panelSide)) visibilityContext = { kind: "panel-transition", at: now };
           }
         } else if (action.kind === "sniff") { row = 1; frame = p * 15; }
         else if (action.kind === "eat") {
@@ -3507,6 +3629,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         else if (action.kind === "shake") { row = 17; frame = p * 15; }
         if (p >= 1) {
           const completed = action, completedTravel = travel, completedOrigin = origin;
+          const visibilityLanding = completed === visibilityRecoveryAction;
           let afterMealReaction: CompanionFoodAftertaste | undefined;
           if(completed.workExpression && workExpressions.complete(completed.workExpression,{eligible:workAllowed()&&overlayActive&&!pressed&&!keyboardHeld&&!placing,
             kind:completed.kind,pose:completed.personalityScene?.command.kind==="pose",travel:Boolean(completed.personalityScene?.travel)})) {
@@ -3553,14 +3676,14 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
             petUntil = now + (reduced ? 400 : 1100);
           }
           if (completed.kind === "jump") pendingCue = "land";
-          if ((completed.kind === "jump" || completed.kind === "walk" && completed.pace === "scoot") && wardrobe.current.equipped && !["magic-pocket", "propeller-hat"].includes(wardrobe.current.equipped)
+          if (!visibilityLanding && (completed.kind === "jump" || completed.kind === "walk" && completed.pace === "scoot") && wardrobe.current.equipped && !["magic-pocket", "propeller-hat"].includes(wardrobe.current.equipped)
             && brain.current.activeMs >= accessoryHabitAt && Math.random() < .25) {
             accessoryHabitAt = brain.current.activeMs + 45000; accessoryReadyAt = Math.min(accessoryReadyAt, brain.current.activeMs + 1000);
           }
           if (completed.accessory && (accessoryWitnessed & 6) === 6 && wardrobe.current.equipped === completed.accessory) queueSituation("accessory-trick", [9]);
           if (rested && isHomeSupport(support)) queueSituation("home-rested", [0, 9, 11, 12, 40]);
           if (["walk", "jump", "heart", "hide", "play"].includes(action.kind)) { x = action.target.x; y = action.target.y; support = action.target.platformId ?? support; }
-          if (["walk", "jump"].includes(completed.kind) && !isHomeSupport(support) && supportedNow() && Math.hypot(x - completedOrigin.x, y - completedOrigin.y) >= 24) {
+          if (!visibilityLanding && ["walk", "jump"].includes(completed.kind) && !isHomeSupport(support) && supportedNow() && Math.hypot(x - completedOrigin.x, y - completedOrigin.y) >= 24) {
             if (activityArrival?.action===completed && !pause && !document.hidden && !overlayActive && !premiereActive && !workspaceBusyRef.current
               && !returning && !homeJourney && presence.phase === "active" && !reduced && gfxMode() !== "off")
               publicLife.arrive(completed,activityArrival.from,{world:{...homeRouteWorld(),animated:true},brain:brain.current,preferences:effective,now:brain.current.activeMs});
@@ -3577,7 +3700,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           if (completed.kind === "jump" && verticalLanding) verticalRecoveryX = undefined;
           let arrivalPlay: CompanionAction["play"] = undefined;
           if (completed.kind === "jump" && !completed.homeLife && shakenReleasePending && supportedNow() && !homeJourney && !ejected && !overlayActive && !workspaceBusyRef.current && !reduced && gfxMode() !== "off") arrivalPlay = "dizzy";
-          else if (completed.kind === "jump" && !completed.showcaseHomecoming && !completed.homeLife && !completed.foodId && !completed.episode && !completed.scene && !completed.toy && !completed.personalityScene && !homeJourney && !restAfterLanding && !ejected && !overlayActive && !workspaceBusyRef.current && !reduced && gfxMode() !== "off" && presence.phase === "active") {
+          else if (!visibilityLanding && completed.kind === "jump" && !completed.showcaseHomecoming && !completed.homeLife && !completed.foodId && !completed.episode && !completed.scene && !completed.toy && !completed.personalityScene && !homeJourney && !restAfterLanding && !ejected && !overlayActive && !workspaceBusyRef.current && !reduced && gfxMode() !== "off" && presence.phase === "active") {
             const landing = supportById(support);
             const node = geometryTracker?.anchor(support)?.element?.closest<HTMLElement>(".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],[data-companion-event='ordinary'][data-eventid]");
             const ordinary = Boolean(node && !node.matches(".selected,.primary-selected,.dragging-src,.span-drag-src,.connect-target,.connect-hover,.connect-dim,.filter-dim,.is-editing,.is-selected") && collectCompanionHideTargets(page).some(target => target.element === node));
@@ -3956,6 +4079,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       tickPremiere(performance.now()); return true;
     };
     const sync = () => {
+      try {
       if (!independentItemsAllowed()) cancelItemCommands();
       const returnedMeadowPet = showcaseSession.takeReturnedPet();
       if (returnedMeadowPet) {
@@ -4088,6 +4212,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       cancelAnimationFrame(raf); clearTimeout(timer); lastTick = performance.now(); lastNeeds = lastTick; lastPaint = lastTick;
       if (pause) { clearTimeout(preludeTimer); preludeDeadline = 0; homeDeparture = undefined; returning = undefined; el.removeAttribute("data-returning"); pickupScale = 1; perchAnimation?.cancel(); disconnectOverlay(); cancelAnimationFrame(overlayRaf); overlayRaf = 0; stopHover(); needsLanding = needsLanding || action?.kind === "jump" || playFalling || Boolean(pressed) || keyboardHeld || afterPetLanding; afterPetLanding = false; restAfterLanding = false; supportMotion.reset(); style(reactionLayer, "transform", "translate3d(0,0px,0) scale(1,1)"); persistCare(true); clearAction(); clearTimeout(parkedLayoutTimer); offGeometry?.(); offGeometry = undefined; geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(followRaf); followRaf = 0; geometryReady = false; hearts.pause(true); releaseHold(); placing = false; delete el.dataset.placing; setHomeExpanded(false); }
       else { presence.focus((!overlayActive || workCanExpress()) && (homeJourney === "called" || visibleActive()), lastTick, !overlayActive && homeJourney === "called"); if (overlayActive) { if (workAllowed()) connectGeometry(); else updateOverlayPerch(); } else connectGeometry(); hearts.pause(overlayActive || presence.phase === "parked"); if (needsLanding) { needsLanding = false; settle({ x, y }); } nextDecision = performance.now() + 600; if (presence.phase !== "parked") schedule(); armPrelude(); }
+      } finally { observeVisibility(); }
     };
     const focusChanged = () => {
       if (!document.hasFocus()) { radioInbox.clear(); instrumentInbox.clear(); if (action?.radio) clearAction(); cancelEpisode(); pointer = pointerAnchor = undefined; pointerStableSince = 0; }
@@ -4780,6 +4905,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       // finish before restoring staff handoff coordinates. Neither that scan
       // nor an empty visibility snapshot completes the initial world seed.
       initialGeometryMeasured ||= !pendingPosition.current && !pendingMonth && Boolean(supportById(support));
+      observeVisibility(true);
       if (wasFreshHomePending && !freshHomePending && !stopped && !pause && !overlayActive && !premiereActive && !hiding) {
         lastTick = lastNeeds = lastCare = lastPaint = performance.now(); nextDecision = lastTick + 1100;
         paint(presence.pose.row, 0, presence.pose.status); cancelAnimationFrame(raf); clearTimeout(timer); schedule();
@@ -4838,6 +4964,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       lastTick = lastNeeds = lastPaint = performance.now(); schedule();
     };
     const viewportResized = () => {
+      visibilityContext = { kind: "resize", at: performance.now() };
       if (premiereActive) {
         readPremiereBounds();
         if (premiereSource) premiereInterrupted = true;
@@ -4979,6 +5106,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     // follower once instead of leaving an idle14Hz body/front behind the rail.
     followLayout();
     return () => {
+      clearTimeout(visibilityRecoveryTimer); visibilityRecoveryTimer = undefined;
+      visibilityRecovery.reset(); visibilityDiagnostics.dispose();
       const nextScope = presentationScope.current;
       const lease = floorPresentationSource.current;
       const ownedFloor = el.hasAttribute("data-native-item-anchor") && lease?.support === support
@@ -5054,7 +5183,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       hideBed();
       el.removeAttribute("data-native-sofa"); front?.removeAttribute("data-native-sofa"); clearSofaNames();
     };
-  }, [ready, root, worldPreferencesKey, blocked, agenda, monthKey, pathname, reduced, geometryIdentity, positionMemory, discover, workExpressions, showcaseSession, sceneMaterial]);
+  }, [ready, root, worldPreferencesKey, blocked, agenda, monthKey, pathname, reduced, geometryIdentity, positionMemory, discover, workExpressions, showcaseSession, sceneMaterial, visibilityRecovery]);
 
   if (!ready) return null;
   const closeHome = homeShelf.close;

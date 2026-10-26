@@ -19,7 +19,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| COMPANION-PANEL-REPORT-20261026 | Unreproduced | Preserve original autonomous/wide/narrow observations; recheck distinct recurrence geometry, no conjectural behavior replacement | [Checks](verification/OPEN_CHECKS.md#companion-panel-report-20261026--reported-disappearance-during-side-play) |
+| COMPANION-PANEL-REPORT-20261026 | Watch original cause | Inspect bounded local recurrence evidence on a distinct real failure; preserve original unconfirmed report | [Contract](verification/COMPANION_VISIBILITY-20261026.md) |
 | DAILY-0900 | Active | Separate risk verification/discovery; adopted work through exact release, preserve carryover | [Search focus](plans/PLAN-20261025-search-focus.md) |
 | OPS-VERCEL-QUOTA | Open | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-STORAGE | Watch | Gate released;6 deleted;quota refresh unproven | [Record](verification/DEPLOYMENT_STORAGE-20261024.md) |

@@ -87,7 +87,7 @@ Initial read-only production/source investigation on 2026-09-21. Fan timeline co
 
 The owner observed a missing resident around an autonomous panel-side change; the exact viewer/studio surface is not remembered. Original autonomous actor path was observed accepting the actual side request at98.825s, with629 frames continuously visible through the7s return. Both wide surfaces and narrow exposed-resident/fold/scroll side callbacks also stayed visible. Narrow callback coverage does not establish arrow-perch or natural-decision coverage. Panel product behavior was not changed on a conjecture. [Scope, original failures and evidence](AGENDA_COMPANION_DETAIL-20261026.md).
 
-Keep this report unconfirmed. A distinct recurrence/geometry should capture existing hidden reason, hide phase/event, platform, journey and actual bounds to separate deliberate hiding from lost support; no new production tracking is authorized. Do not repeatedly run the same90s case as proof that the report cannot occur. Physical devices and untested geometry remain separate.
+Keep the original cause unconfirmed. The owner's later2026-10-26 instruction explicitly adopts bounded device-local automatic classification/evidence and safe measured recovery; this replaces the earlier “no new production tracking is authorized” restriction only for that local purpose. Do not persist event/platform IDs or schedule/identity data, upload diagnostics, or add autonomous events to human analytics. [Current contract and verification](COMPANION_VISIBILITY-20261026.md). Do not repeatedly run the same90s case as proof that the report cannot occur. Physical devices and untested geometry remain separate.
 
 ## Deferred product choices
 
