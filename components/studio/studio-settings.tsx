@@ -608,7 +608,7 @@ export function StudioSettingsList({
           </div>
           </div>
         </div>
-        <p className="rhh-group-foot">글꼴은 화면 전체에, 크기·굵기는 달력 일정 글자에 적용돼요. 달력 위 Ctrl+휠 확대는 고른 크기에서 시작해요.</p>
+        <p className="rhh-group-foot">글꼴·크기는 화면 전체에, 굵기는 달력 일정 글자에 적용돼요. 달력 위 Ctrl+휠 확대는 고른 크기에서 시작해요.</p>
       </section>
 
       {/* 소리(2026-10-06 — OS·게임 소리 설정 벤치마킹): 전체 켜기 → 음량(끌고 떼면 그 크기로 한 번, 미리 듣기) →
