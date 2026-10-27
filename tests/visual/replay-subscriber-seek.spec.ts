@@ -6,11 +6,12 @@ for (const access of ["sub", "plus"] as const) for (const width of [1440, 390]) 
     const proof = await guardCompanionQa(page, context, baseURL!);
     await page.setViewportSize({ width, height: 1000 });
     let mockReads = 0;
-    await context.route("**/api/public/fixture/vod-timeline?*", route => { mockReads++; return route.fulfill({ json: { authorNick: "합성", entries: [{ sec: 0, label: "처음", section: null }, { sec: 300, label: "합성 챕터", section: null }], variants: [] } }); });
+    await context.route("**/api/public/fixture/vod-timeline?*", route => { mockReads++; return route.fulfill({ json: { authorNick: "합성", entries: [{ sec: 0, label: "처음", section: null }, { sec: 1, label: "합성1초", section: null }, { sec: 2, label: "합성2초", section: null }, { sec: 300, label: "합성 챕터", section: null }], variants: [] } }); });
     await context.route("**/api/public/fixture/vod-chat?*", route => { mockReads++; return route.fulfill({ json: { binSec: 30, bins: [] } }); });
     await page.addInitScript(() => {
       const target = window as Window & { __seekOpens?: { url: string; target?: string; features?: string }[] };
       target.__seekOpens = [];
+      document.addEventListener("click",event=>{if((event.target as Element)?.closest('a[href^="https://vod.sooplive.co.kr/player/"]'))event.preventDefault();},true);
       window.open = (url, name, features) => { target.__seekOpens!.push({ url: String(url), target: name, features }); return null; };
     });
     await page.goto(`/visual-fixture/vod-seek?access=${access}`);
@@ -32,6 +33,13 @@ for (const access of ["sub", "plus"] as const) for (const width of [1440, 390]) 
     await page.locator(".day-vod-modal").focus();
     await page.keyboard.press("Space");
     expect(await page.evaluate(() => (window as Window & { __seekOpens?: unknown[] }).__seekOpens)).toEqual([]);
+    for(const sec of [1,2]){
+      await page.getByText('합성'+sec+'초',{exact:true}).click();
+      const arrow=page.locator('.dvm-ext');await arrow.hover();await arrow.click();
+      await expect(arrow).toHaveAttribute('href','https://vod.sooplive.co.kr/player/42?change_second='+sec);
+      await expect(link).toHaveAttribute('href','https://vod.sooplive.co.kr/player/42?change_second='+sec);
+    }
+    await page.evaluate(()=>{(window as Window & {__seekOpens?:unknown[]}).__seekOpens=[];});
     await page.getByText("합성 챕터", { exact: true }).click();
     await expect.poll(() => page.evaluate(() => (window as Window & { __seekOpens?: unknown[] }).__seekOpens?.length)).toBe(1);
     expect(await page.evaluate(() => (window as Window & { __seekOpens?: unknown[] }).__seekOpens)).toEqual([{ url: "https://vod.sooplive.co.kr/player/42?change_second=300", target: "_blank", features: "noopener,noreferrer" }]);

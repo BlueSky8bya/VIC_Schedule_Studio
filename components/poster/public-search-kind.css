@@ -1,7 +1,7 @@
 .ps-toolbar{flex-wrap:wrap}
 .ps-kind-filter{display:flex;flex-wrap:wrap;gap:6px;flex-basis:100%;padding-top:4px}
-.ps-kind-button{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:5px 12px;border:1px solid var(--line,#e8dfcf);border-radius:999px;background:transparent;color:inherit;font:inherit;font-size:13px;cursor:pointer}
-.ps-kind-button span{font-size:11px;opacity:.7;font-variant-numeric:tabular-nums}
+.ps-kind-button{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:5px 12px;border:1px solid var(--line,#e8dfcf);border-radius:999px;background:transparent;color:inherit;font:inherit;font-size:calc(13px * var(--cal-text, 1));cursor:pointer}
+.ps-kind-button span{font-size:calc(11px * var(--cal-text, 1));opacity:.7;font-variant-numeric:tabular-nums}
 .ps-kind-button.on{background:var(--paper,#fff);border-color:currentColor;font-weight:700}
 .ps-kind-button:focus-visible{outline:2px solid currentColor;outline-offset:2px}
-.ps-kind-scope{flex-basis:100%;margin:0;font-size:11px;line-height:1.5;opacity:.72}
+.ps-kind-scope{flex-basis:100%;margin:0;font-size:calc(11px * var(--cal-text, 1));line-height:1.5;opacity:.72}

@@ -2509,9 +2509,14 @@ export function StudioShell({
       document.documentElement.style.setProperty("--dock-top", `${top}px`);
     };
     update();
+    // Text preferences and chrome compaction can resize the sticky header
+    // without a window resize. Keep the existing measured dock below it.
+    const dockResize = new ResizeObserver(update);
+    document.querySelectorAll(".studio-topbar,.studio-actionbar").forEach(el => dockResize.observe(el));
     window.addEventListener("scroll", update, { passive: true });
     window.addEventListener("resize", update);
     return () => {
+      dockResize.disconnect();
       window.removeEventListener("scroll", update);
       window.removeEventListener("resize", update);
       document.documentElement.style.removeProperty("--dock-top");

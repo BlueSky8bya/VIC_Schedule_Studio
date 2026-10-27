@@ -24,12 +24,12 @@ export function setFlingDelete(on: boolean): void {
 }
 
 // 글씨 크기(2026-10-06 소유자: "달력 크기 설정은 없애고, 글씨를 px로 미리보며 고르고, 그걸 기본으로 휠 확대") —
-// 달력 글자(일정 제목·세부·날짜·요일·기념일) 크기의 기본값. 기준은 일정 제목 px(원래 14px). 나머지 글자는 같은 비율로
+// 일정 제목을 기준으로 달력과 공용 UI 글자를 함께 비례 조절하는 기본값. 기준은 일정 제목 px(원래 14px). 나머지 글자는 같은 비율로
 // 따라간다: <html style="--cal-text: px/14">. Ctrl+휠 확대(--cal-zoom)는 이 크기에 곱해진다 — 고른 크기가 100%.
 // 페인트 전 적용은 app/layout.tsx 스크립트가 같은 키로 한다(처음 열 때 글씨가 한 번 튀지 않게).
 export const TEXT_PX_BASE = 14;
 export const TEXT_PX_MIN = 12;
-export const TEXT_PX_MAX = 20;
+export const TEXT_PX_MAX = 30;
 
 // 글씨 크기는 화면별로 따로(2026-10-06 소유자: "편집실과 시청자 화면은 카드 폭이 달라 따로 설정") — 화면 판정은
 // lib/ui/pref-surface(편집실 안의 시청자 화면 미리보기도 시청자 쪽). 2026-10-10: 편집실 값이 없을 때 시청자 값을 이어받던
@@ -49,12 +49,13 @@ export function textPxPref(surface: TextSurface = textSurface()): number {
 export function applyTextPx(px: number): void {
   try {
     document.documentElement.style.setProperty("--cal-text", String(px / TEXT_PX_BASE));
+    document.documentElement.toggleAttribute("data-large-text", px > 20);
   } catch {
     /* no-op */
   }
 }
 export function setTextPxPref(px: number, surface: TextSurface = textSurface()): void {
-  const v = Math.min(TEXT_PX_MAX, Math.max(TEXT_PX_MIN, Math.round(px * 2) / 2));
+  const v = Number.isFinite(px) ? Math.min(TEXT_PX_MAX, Math.max(TEXT_PX_MIN, Math.round(px * 2) / 2)) : TEXT_PX_BASE;
   try {
     window.localStorage.setItem(surfaceKey(TEXT_KEY, surface), String(v));
   } catch {

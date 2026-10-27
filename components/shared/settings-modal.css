@@ -1101,10 +1101,10 @@ html[data-reduce-motion] .rhh-panes .rhh-group.is-active .rhh-group-card > .role
   line-height: 1;
 }
 .rhh-size-a.small {
-  font-size: 11px;
+  font-size: calc(11px * var(--cal-text, 1));
 }
 .rhh-size-a.big {
-  font-size: 18px;
+  font-size: calc(18px * var(--cal-text, 1));
 }
 .rhh-px {
   width: 3.4em;
@@ -1123,7 +1123,7 @@ html[data-reduce-motion] .rhh-panes .rhh-group.is-active .rhh-group-card > .role
   padding: 6px 12px;
   color: var(--ink, #23303f);
   font: inherit;
-  font-size: 14px;
+  font-size: calc(14px * var(--cal-text, 1));
   font-weight: 600;
   line-height: 1.2;
   cursor: pointer;
@@ -1190,7 +1190,7 @@ html[data-reduce-motion] .rhh-font-grid button {
 }
 .rhh-preview-cap {
   color: var(--muted, #7a7464);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--cal-text, 1));
   font-weight: 700;
 }
 @container rhh (min-width: 600px) {
@@ -1411,7 +1411,7 @@ html[data-theme="dark"] .rhh-text-preview .pv-band {
   word-break: keep-all;
   line-height: 1.25;
   color: var(--muted, #8a8476);
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--cal-text, 1));
   font-weight: 700;
   letter-spacing: 0.02em;
 }
@@ -1464,7 +1464,7 @@ html[data-theme="dark"] .rhh-text-preview .pv-band {
 .rhh-font-sample {
   min-width: 2.2em;
   border-radius: 6px;
-  font-size: 19px;
+  font-size: calc(19px * var(--cal-text, 1));
   font-weight: 700;
   line-height: 1.15;
   color: transparent;
@@ -1503,7 +1503,7 @@ html[data-theme="dark"] .rhh-text-preview .pv-band {
 .rhh-font-name {
   max-width: 100%;
   color: var(--muted, #7a7464);
-  font-size: 11px;
+  font-size: calc(11px * var(--cal-text, 1));
   font-weight: 600;
   line-height: 1.2;
   text-align: center;
@@ -1607,7 +1607,7 @@ html[data-reduce-motion] .rhh-font-check {
   padding: 0 6px;
   color: var(--ink, #23303f);
   font: inherit;
-  font-size: 13px;
+  font-size: calc(13px * var(--cal-text, 1));
   font-weight: 600;
   cursor: pointer;
   transition:
@@ -2130,7 +2130,7 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-collecti
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companion-settings [data-discovery-cue] :is(.rhh-collection-stamp, .rhh-collection-recent) { animation: none; }
 
 /*113: a quiet persistent discovery mark; never a pulse or another loop. */
-.rhh-companion-settings .rhh-collection-unread[data-unread] { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 50%; background: var(--companion-ink); color: var(--companion-ground); font-size: 12px; font-weight: 800; line-height: 1; pointer-events: none; }
+.rhh-companion-settings .rhh-collection-unread[data-unread] { display: inline-flex; flex: none; align-items: center; justify-content: center; width: 17px; height: 17px; border-radius: 50%; background: var(--companion-ink); color: var(--companion-ground); font-size: calc(12px * var(--cal-text, 1)); font-weight: 800; line-height: 1; pointer-events: none; }
 .rhh-companion-settings .rhh-collection-heading > .rhh-collection-unread { margin-left: 0; }
 .rhh-companion-settings .rhh-collection-tile > .rhh-collection-unread { position: absolute; top: 7px; left: 7px; z-index: 1; }
 .rhh-companion-settings .rhh-collection-tile[data-unread][data-recent]::after { display: none; }
@@ -2166,8 +2166,8 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 .rhh-companion-settings .rhh-collection-book .rhh-collection-tile > span:not([aria-hidden="true"]):not(.vc-collection-art):not(.rhh-collection-rarity):not(.rhh-collection-unread):not(.rhh-collection-state) { height: 2.7em; min-height: 2.7em; font-size: max(15px, var(--text-ui)); line-height: 1.35; }
 .rhh-companion-settings .rhh-collection-book .rhh-food-grid .rhh-collection-tile > .rhh-collection-rarity { align-self: center; justify-self: center; padding: 2px 9px; line-height: 1.4; font-size: max(13px, var(--text-caption)); }
 .rhh-companion-settings .rhh-collection-page-position { flex-direction: column; gap: 6px; width: 100%; min-width: 0; height: auto; min-height: max(48px, var(--companion-hit-size, 44px)); padding: 5px 12px; }
-.rhh-collection-page-number { display: inline-flex; align-items: baseline; justify-content: center; gap: 6px; font-size: 15px; font-variant-numeric: tabular-nums; line-height: 1.2; }
-.rhh-collection-page-number > span { opacity: .7; font-size: 13px; }
+.rhh-collection-page-number { display: inline-flex; align-items: baseline; justify-content: center; gap: 6px; font-size: calc(15px * var(--cal-text, 1)); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.rhh-collection-page-number > span { opacity: .7; font-size: calc(13px * var(--cal-text, 1)); }
 .rhh-companion-settings .rhh-collection-page-dots { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 5px; height: auto; min-height: 9px; }
 .rhh-companion-settings .rhh-collection-page-dots > span { flex: none; }
 .rhh-companion-settings .rhh-collection-page-arrow { font-size: max(15px, var(--text-ui)); }
@@ -2206,3 +2206,20 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 
 /* Keep the memory filter row inside the same fixed notebook on every tab. */
 .rhh-companion-settings .rhh-collection-book:has(> .rhh-memory-filters) { gap: 10px; }
+
+/* At large reading sizes, keep labels and controls in separate measured rows.
+   The existing preview remains available below; ordinary14px layout is unchanged. */
+html[data-large-text] .rhh-text-layout { grid-template-columns: minmax(0, 1fr); }
+html[data-large-text] .rhh-text-controls { order: -1; }
+html[data-large-text] .rhh-text-stage { position: static; }
+html[data-large-text] .rhh-preview-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+html[data-large-text] .rhh-text-controls .role-help-haptics { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+html[data-large-text] .rhh-text-controls .rhh-volume { flex: none; width: 100%; flex-wrap: wrap; justify-content: flex-start; }
+html[data-large-text] .rhh-volume input[type="range"] { max-width: none; min-width: 90px; }
+html[data-large-text] .rhh-font-group { grid-template-columns: minmax(0, 1fr); }
+html[data-large-text] .rhh-font-group-label { padding: 4px 0; text-align: left; }
+html[data-large-text] .rhh-nav-item { white-space: normal; overflow-wrap: anywhere; line-height: 1.25; }
+html[data-large-text] .rhh-nav-item .rhh-ico { flex: none; }
+@container rhh (max-width: 599px) {
+ html[data-large-text] .rhh-font-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

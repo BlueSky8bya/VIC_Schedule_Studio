@@ -22,7 +22,7 @@ export const SUPPORT_CARD_GAP = 4;
 
 /** 띠의 top(CSS calc 문자열) — 칸 원점 기준. 머리줄 높이는 각 화면 CSS의 --day-head-h. */
 export function supportBarTop(lane: number): string {
-  return `calc(var(--day-head-h) + ${SUPPORT_HEAD_GAP + lane * SUPPORT_LANE_STEP}px * var(--cal-zoom, 1))`;
+  return `calc(var(--day-head-h) + (${SUPPORT_HEAD_GAP}px + ${lane} * (var(--support-bar-base-height, 22px) + 2px)) * var(--cal-zoom, 1))`;
 }
 
 /**
@@ -31,6 +31,5 @@ export function supportBarTop(lane: number): string {
  */
 export function supportListPad(depth: number): string | null {
   if (depth <= 0) return null;
-  const px = SUPPORT_HEAD_GAP + (depth - 1) * SUPPORT_LANE_STEP + SUPPORT_BAR_H + SUPPORT_CARD_GAP;
-  return `calc(${px}px * var(--cal-zoom, 1))`;
+  return `calc((${SUPPORT_HEAD_GAP + SUPPORT_CARD_GAP}px + ${depth} * var(--support-bar-base-height, 22px) + ${(depth - 1) * 2}px) * var(--cal-zoom, 1))`;
 }

@@ -95,3 +95,10 @@
 
 /* A label needs no 44px button hit box. Keep all narrow filter headings equal. */
 .agenda-with-notices .agenda .agenda-legend { --panel-section-hit:28px; }
+
+/* The existing observer follows the actual, text-aware notice toolbar. */
+html[data-large-text] .asc-detail-slot { height: auto; min-height: 44px; overflow: visible; }
+html[data-large-text] .asc-detail { height: auto; min-height: 44px; }
+html[data-large-text] .asc-head h2 { overflow-wrap: anywhere; }
+html[data-large-text] .asc-action { width: max(44px, 2.5em); min-height: max(44px, 2.5em); }
+html[data-large-text] .asc-follow small { white-space: normal; overflow-wrap: anywhere; }

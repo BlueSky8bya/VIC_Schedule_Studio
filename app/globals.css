@@ -163,8 +163,8 @@
      SF 스타일 '역할' 스케일 — px 산재(한 패널에 10~18px 11종) 대신 6역할로 수렴한다.
      값은 현재 관행의 대표값 스냅(정의 시점 시각 변화 0). 화면별 리디자인 슬라이스에서
      점진 치환하고, 웹(≥641px) 상향이 필요한 역할은 그 화면 미디어쿼리에서 토큰을 재정의. */
-  --text-micro: 10.5px; /* 극소 보조(날짜 마크·칩 안 숫자·각주의 각주) — 이보다 작은 8~9.5px는 raw 유지 */
-  --text-caption: 11px; /* 보조 각주·배지 소문자 */
+  --text-micro: calc(10.5px * var(--cal-text, 1)); /* 극소 보조(날짜 마크·칩 안 숫자·각주의 각주) — 이보다 작은 8~9.5px는 raw 유지 */
+  --text-caption: calc(11px * var(--cal-text, 1)); /* 보조 각주·배지 소문자 */
   /* 상태 세그먼트(라디오 묶음)의 강조 기법 — 계절 배경(.ambient-seg)과 아바타 자리(.avatar-ctl-seg)가
      같은 손으로 그려지도록 한곳에 둔다(2026-09-05 소유자: "하이라이팅 기법이 주변과 동떨어져 있다").
      고른 칸 = **테두리 없는 옅은 틴트 면 + 안쪽 흰 헤어라인**, 안 고른 칸 = 조용한 글자(투명도).
@@ -175,13 +175,14 @@
   --seg-on-accent: rgb(var(--studio-action-rgb) / 16%); /* 고름 — 물빛(ADR-0029: 크롬 보라 철수, 보라는 떡밥만) */
   --seg-on-accent-ink: var(--studio-action-text);
   --seg-off-op: 0.72;
-  --text-label: 12.5px; /* 필드 라벨·범례·힌트 */
-  --text-body: 13.5px; /* 본문·목록 */
-  --text-ui: 15px; /* 버튼·칩·세그먼트 */
-  --text-input: 16px; /* 입력칸(iOS 확대 방지 하한) */
-  --text-title: 18px; /* 패널 제목 */
-  --text-display: 20px; /* 화면 제목·월 표기 */
-  --text-hero: 28px;
+  --text-label: calc(12.5px * var(--cal-text, 1)); /* 필드 라벨·범례·힌트 */
+  --text-body: calc(13.5px * var(--cal-text, 1)); /* 본문·목록 */
+  --text-ui: calc(15px * var(--cal-text, 1)); /* 버튼·칩·세그먼트 */
+  --text-input: max(16px, calc(16px * var(--cal-text, 1))); /* 입력칸(iOS 확대 방지 하한) */
+  --text-title: calc(18px * var(--cal-text, 1)); /* 패널 제목 */
+  --text-display: calc(20px * var(--cal-text, 1)); /* 화면 제목·월 표기 */
+  --text-hero: calc(28px * var(--cal-text, 1));
+  --support-bar-base-height: max(22px, calc(14.3px * var(--cal-text, 1) + 4px));
   --lh-body: 1.5;
   --lh-relaxed: 1.65;
   --tracking-tight: -0.01em;
@@ -592,7 +593,7 @@ select {
   position: absolute;
   left: 0;
   top: 0;
-  font-size: 30px;
+  font-size: calc(30px * var(--cal-text, 1));
   filter: drop-shadow(0 2px 4px rgb(0 0 0 / 25%));
   animation: burst-core-pop 1100ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
 }
@@ -617,7 +618,7 @@ select {
 .burst-bit.emoji {
   width: auto;
   height: auto;
-  font-size: 16px;
+  font-size: calc(16px * var(--cal-text, 1));
   font-weight: 800; /* 글자 입자(한글날 ㄱㄴㄷ)가 가늘게 묻히지 않게 */
   line-height: 1;
 }
@@ -753,7 +754,7 @@ select {
   letter-spacing: 0.08em;
 }
 .auth-panel-login h1 {
-  font-size: 24px;
+  font-size: calc(24px * var(--cal-text, 1));
 }
 .auth-panel-login form {
   width: 100%;
@@ -770,7 +771,7 @@ select {
   width: 64px;
   height: 64px;
   border-radius: var(--r-xl); /* 20 (토큰화) */
-  font-size: 32px;
+  font-size: calc(32px * var(--cal-text, 1));
   background: linear-gradient(135deg, #eef5f4, #efeaff);
   box-shadow: 0 10px 22px -10px rgb(120 110 160 / 50%);
   margin-bottom: 2px;
@@ -962,7 +963,7 @@ select {
   border-radius: var(--r-pill);
   background: #ffffff;
   color: #3c4043;
-  font-size: 16px;
+  font-size: calc(16px * var(--cal-text, 1));
   font-weight: 600;
   box-shadow: var(--shadow-2);
   transition:
@@ -991,7 +992,7 @@ select {
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
   padding: 0 14px;
-  font-size: 16px;
+  font-size: calc(16px * var(--cal-text, 1));
 }
 .passcode-input-row .button {
   min-height: 46px;
@@ -1127,7 +1128,7 @@ html[data-reduce-motion] .passcode-box .button {
      레인 간격은 편집실 26(=22+4), 시청자 24(=22+2, 2026-09-02 "틈 과함" 결정을 살린 최소 틈이자
      위 Spacing 예외의 정확한 하한). 값을 바꾸면 studio-shell.tsx의 레인 계산과 public-poster.tsx의
      SUPPORT_LANE_STEP을 함께 고쳐야 한다(카드가 띠를 덮는다). */
-  height: 22px;
+  height: var(--support-bar-base-height);
   /* 대각선 무늬 제거(2026-08-03, 사용자 결정) — 글자 가독성을 해쳤다. 은은한 장미 그라데이션
      단색 띠 + 진한 장미 글자. 흰 하이라이트 한 줄로 '눌리는 리본' 질감. */
   background: linear-gradient(180deg, #ffc9d3, #ffadbe);
@@ -1882,7 +1883,7 @@ html[data-reduce-motion] .system-state-action {
 }
 .mn-inner {
   display: inline-block;
-  font-size: 26px;
+  font-size: calc(26px * var(--cal-text, 1));
   font-weight: 800;
   line-height: 1;
   text-shadow:
@@ -1916,7 +1917,7 @@ html[data-reduce-motion] .system-state-action {
   animation: mn-travel 3.2s cubic-bezier(0.3, 0.1, 0.4, 1) forwards;
 }
 .mn-dance .mn-inner {
-  font-size: 30px;
+  font-size: calc(30px * var(--cal-text, 1));
   animation:
     mn-born 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both,
     mn-bob 0.54s ease-in-out 0.4s infinite alternate;
@@ -1976,7 +1977,7 @@ html[data-theme="dark"] .mn-inner {
   background: rgb(31 41 55 / 88%);
   padding: 4px 12px;
   color: #fff;
-  font-size: 13px;
+  font-size: calc(13px * var(--cal-text, 1));
   font-weight: 700;
   white-space: nowrap;
   pointer-events: none;

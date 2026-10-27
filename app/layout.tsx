@@ -37,6 +37,7 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { FONT_STACKS } from "@/lib/ui/font-prefs";
 import { GfxProbe } from "@/components/ui/gfx-probe";
 import { LampDiagnosticEntry } from "@/components/ui/lamp-diagnostic-entry";
+import { TEXT_PX_BASE, TEXT_PX_MIN, TEXT_PX_MAX } from "@/lib/ui/edit-prefs";
 import { PANEL_SECTION_BOOTSTRAP } from "@/lib/ui/panel-section-preferences";
 
 // #7: 텍스트 스티커 글꼴 선택지(한글 지원). next/font로 로드해 CSS 변수로 노출한다.
@@ -146,7 +147,7 @@ export default function RootLayout({
               "var vc=/(?:^|; )vic_view=([^;]*)/.exec(document.cookie),pv=false;try{pv=!!vc&&JSON.parse(decodeURIComponent(vc[1])).v===1}catch(e){}" +
               "var st=location.pathname.split('/').indexOf('studio')>-1&&!pv,X=st?'.studio':'';" +
               // 일정 제목 px ÷ 14 = --cal-text. 범위 밖이면 기본.
-              "var tx=Number(s.getItem('vic.calText'+X));if(tx>=12&&tx<=20)d.style.setProperty('--cal-text',String(tx/14));" +
+              `var tx=Number(s.getItem('vic.calText'+X));if(tx>=${TEXT_PX_MIN}&&tx<=${TEXT_PX_MAX}){d.style.setProperty('--cal-text',String(tx/${TEXT_PX_BASE}));d.toggleAttribute('data-large-text',tx>20)}` +
               "var FS=" +
               JSON.stringify(FONT_STACKS) +
               ";var fo=FS[s.getItem('vic.font'+X)];if(fo)d.style.setProperty('--app-font',fo);var fw=Number(s.getItem('vic.calWeight'+X));if(fw===100)d.style.setProperty('--cal-weight','100');if(fw===100)d.style.setProperty('--cal-stroke','0.35px');" +

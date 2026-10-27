@@ -401,10 +401,12 @@ export function DayVodWindow({
   const dayVodAliveRef = useRef(new Set<number>());
   const dayVodPausedRef = useRef(new Set<number>());
   const dayVodTimeRef = useRef(new Map<number, number>()); // 최근 timeUpdate currentTime(←/→ 상대 탐색)
-  // 숲 플레이어로 나가는 링크 — 인라인 재생 중이면 그 지점(change_second)부터. 3초 미만이면 처음부터(붙이지 않는다).
-  const vodWatchUrl = (titleNo: number) => {
-    const sec = Math.floor(dayVodTimeRef.current.get(titleNo) ?? 0);
-    return buildDayVodWatchUrl(titleNo, sec >= 3 ? sec : undefined);
+  // 숲 플레이어로 나가는 링크 — 인라인 재생 중이면 그 지점(change_second)부터. 명시한1·2초도 보존한다.
+  const vodWatchUrl = (titleNo: number, fallback?: string) => {
+    const known = dayVodTimeRef.current.get(titleNo);
+    if (known === undefined && fallback) return fallback; // Keep an initial/external-only seek before the player reports time.
+    const sec = Math.floor(known ?? 0);
+    return buildDayVodWatchUrl(titleNo, sec);
   };
   // 재생 위치 구독(2026-09-03) — 챕터 레일이 현재 챕터를 따라가게 currentTime을 흘려준다.
   // setState로 포스터 전체를 초당 4번 다시 그리지 않고, 레일만 자기 상태(현재 챕터 idx가
@@ -1600,7 +1602,16 @@ export function DayVodWindow({
                                   ? buildDayVodWatchUrl(vod.titleNo, dayVodJump.sec)
                                   : vod.access ? externalPlayerUrl : playerUrl
                               }
-                              onClick={() => hapticTick()}
+                              onClick={(e) => {
+                                hapticTick();
+                                e.currentTarget.href = vodWatchUrl(vod.titleNo, e.currentTarget.href);
+                              }}
+                              onPointerDown={(e) => {
+                                e.currentTarget.href = vodWatchUrl(vod.titleNo, e.currentTarget.href);
+                              }}
+                              onPointerEnter={(e) => {
+                                e.currentTarget.href = vodWatchUrl(vod.titleNo, e.currentTarget.href);
+                              }}
                               rel="noopener noreferrer"
                               target="_blank"
                               title="숲에서 크게 보기"

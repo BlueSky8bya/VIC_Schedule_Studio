@@ -4,10 +4,10 @@
 .pi-record-month .pi-close:disabled{opacity:.35;cursor:default}
 .pi-stat-action{color:inherit;font:inherit;text-align:left;cursor:pointer}
 .pi-stat-action[aria-expanded="true"]{outline:2px solid currentColor;outline-offset:1px}
-.pi-stat-action small{display:block;font-size:10px;opacity:.7;margin-top:5px}
+.pi-stat-action small{display:block;font-size:calc(10px * var(--cal-text, 1));opacity:.7;margin-top:5px}
 .pi-stat-action:focus-visible,.pi-record-event:focus-visible{outline:2px solid currentColor;outline-offset:2px}
 .pi-record-events:not([hidden]){margin-top:16px;padding-top:12px;border-top:1px solid var(--line,#e8dfcf)}
-.pi-record-events h3{font-size:14px;margin:0 0 10px}.pi-record-date h4{font-size:12px;opacity:.72;margin:12px 0 5px}
+.pi-record-events h3{font-size:calc(14px * var(--cal-text, 1));margin:0 0 10px}.pi-record-date h4{font-size:calc(12px * var(--cal-text, 1));opacity:.72;margin:12px 0 5px}
 .pi-record-event{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:10px 12px;margin:5px 0;border:1px solid var(--line,#e8dfcf);border-radius:10px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .pi-record-event span{min-width:0;overflow-wrap:anywhere}
 .pi-top li.pi-popular-item{display:block;padding:0}
@@ -16,4 +16,4 @@
 .pi-popular-event>svg{flex:none;color:var(--muted)}
 .pi-popular-event:hover{background:var(--surface-3,var(--surface-2))}
 .pi-popular-event:focus-visible{outline:2px solid var(--focus-ring,var(--accent));outline-offset:2px}
-@media(max-width:420px){.pi-head{gap:6px}.pi-record-month{gap:2px}.pi-record-month strong{font-size:14px}.pi-record-month .pi-close{width:40px;min-width:40px}}
+@media(max-width:420px){.pi-head{gap:6px}.pi-record-month{gap:2px}.pi-record-month strong{font-size:calc(14px * var(--cal-text, 1))}.pi-record-month .pi-close{width:40px;min-width:40px}}

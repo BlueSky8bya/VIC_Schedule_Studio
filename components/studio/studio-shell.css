@@ -73,7 +73,7 @@ body::-webkit-scrollbar {
 
 .studio-topbar h1 {
   margin: 0;
-  font-size: 24px;
+  font-size: calc(24px * var(--cal-text, 1));
 }
 /* 왼쪽 칸: 공유 집 진입. 화면 하단 메타와 독립된 헤더 시작점을 유지한다. */
 .studio-left {
@@ -158,7 +158,7 @@ body::-webkit-scrollbar {
   transition-timing-function: var(--ease-exit);
 }
 .studio-month-label strong {
-  font-size: clamp(26px, 2.5vw, 44px);
+  font-size: calc(clamp(26px, 2.5vw, 44px) * var(--cal-text, 1));
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--ink, #1c2433);
@@ -639,7 +639,7 @@ body::-webkit-scrollbar {
     margin-bottom: 4px;
     padding: 9px 12px;
     border-radius: var(--r-md);
-    font-size: 13px;
+    font-size: calc(13px * var(--cal-text, 1));
   }
   .draft-restored-discard {
     padding: 5px 13px;
@@ -1064,7 +1064,7 @@ html[data-reduce-motion] .cal-zoom-float {
   color: var(--studio-action-text);
 }
 .dp-live-tile strong {
-  font-size: 26px;
+  font-size: calc(26px * var(--cal-text, 1));
   font-weight: 600;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -1078,10 +1078,10 @@ html[data-reduce-motion] .cal-zoom-float {
     padding: 12px 16px;
   }
   .dp-live-tile strong {
-    font-size: 30px;
+    font-size: calc(30px * var(--cal-text, 1));
   }
   .dp-live-tile span {
-    font-size: 13px;
+    font-size: calc(13px * var(--cal-text, 1));
   }
 }
 .developer-panel-list {
@@ -1213,13 +1213,13 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
   }
   .badge-criteria .bc-flame {
     min-width: 60px;
-    font-size: 17px;
+    font-size: calc(17px * var(--cal-text, 1));
   }
   .badge-criteria .bc-body b {
     font-size: var(--text-ui);
   }
   .badge-criteria .bc-body em {
-    font-size: 13px;
+    font-size: calc(13px * var(--cal-text, 1));
   }
 }
 
@@ -1233,7 +1233,7 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
 }
 @media (min-width: 1000px) {
   .vt-occ-note {
-    font-size: 13px;
+    font-size: calc(13px * var(--cal-text, 1));
   }
 }
 
@@ -1543,7 +1543,7 @@ html[data-reduce-motion] .scrollpos-tag {
   flex: none;
   width: 9px;
   color: var(--muted);
-  font-size: 9px;
+  font-size: calc(9px * var(--cal-text, 1));
 }
 .act-dev {
   flex: none;
@@ -1710,7 +1710,7 @@ html[data-reduce-motion] .act-live::before {
 .act-t i {
   display: block;
   font-style: normal;
-  font-size: 9.5px;
+  font-size: calc(9.5px * var(--cal-text, 1));
   line-height: 1.2;
   opacity: 0.7;
 }
@@ -1766,7 +1766,7 @@ html[data-reduce-motion] .act-live::before {
   align-self: center;
   flex: none;
   color: var(--muted);
-  font-size: 9.5px;
+  font-size: calc(9.5px * var(--cal-text, 1));
   font-style: normal;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -1887,7 +1887,7 @@ html[data-reduce-motion] .act-live::before {
 }
 .upick-btn span {
   color: var(--muted);
-  font-size: 9px;
+  font-size: calc(9px * var(--cal-text, 1));
 }
 .upick-btn:hover {
   border-color: var(--studio-action-tint);
@@ -2792,7 +2792,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   .dtp-time.is-direct .dtp-wheels { gap: 6px; margin-right: calc(var(--control-hit, 44px) + 4px); }
 }
 .dtp-wheel-cap.dtp-wheel-entry { top: -38px; height: 36px; display: flex; align-items: center; justify-content: center; gap: 1px; color: var(--studio-action-text); font-variant-numeric: tabular-nums; }
-.dtp-wheel-entry .dtp-time-input { font-size: 22px; font-weight: 700; line-height: 1.25; width: 2.15ch; padding: 2px 1px; }
+.dtp-wheel-entry .dtp-time-input { font-size: calc(22px * var(--cal-text, 1)); font-weight: 700; line-height: 1.25; width: 2.15ch; padding: 2px 1px; }
 .dtp-wheel-unit { color: var(--muted); font-size: var(--text-body); font-weight: 600; }
 .dtp-time-input {
   box-sizing: content-box;
@@ -2877,7 +2877,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   scroll-snap-align: center;
   border: 0;
   background: transparent;
-  font-size: 16px;
+  font-size: calc(16px * var(--cal-text, 1));
   font-weight: 600;
   color: var(--studio-action-line);
   cursor: pointer;
@@ -3045,7 +3045,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   transform: scale(var(--press-scale));
 }
 .rest-menu-emoji {
-  font-size: 16px;
+  font-size: calc(16px * var(--cal-text, 1));
   line-height: 1;
 }
 
@@ -3198,7 +3198,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 @media (min-width: 1000px) {
   .vcrit,
   .vlive {
-    font-size: 12px;
+    font-size: calc(12px * var(--cal-text, 1));
   }
 }
 /* 방문 차트 미세 상호작용(손맛) — 막대 호버 시 밝게, 미니달력·히트맵 칸은 살짝 떠오르며 또렷이. */
@@ -3264,7 +3264,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 .dsess-x {
   margin-top: 2px;
   text-align: center;
-  font-size: 8px;
+  font-size: calc(8px * var(--cal-text, 1));
   font-weight: 600;
   color: var(--muted);
   height: 10px;
@@ -3314,7 +3314,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 .vt-day {
   margin-top: 4px;
   text-align: center;
-  font-size: 9px;
+  font-size: calc(9px * var(--cal-text, 1));
   font-weight: 600;
   color: var(--muted);
 }
@@ -3383,7 +3383,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   top: 100%;
   transform: translateX(50%);
   margin-top: 3px;
-  font-size: 8.5px;
+  font-size: calc(8.5px * var(--cal-text, 1));
   font-weight: 600;
   color: var(--muted);
   pointer-events: none;
@@ -3417,7 +3417,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   background: var(--studio-action);
   color: #fff;
   font-style: normal;
-  font-size: 8.5px;
+  font-size: calc(8.5px * var(--cal-text, 1));
   font-weight: 600;
   white-space: nowrap;
 }
@@ -3437,7 +3437,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 @media (min-width: 1000px) {
   .vt-hours-empty {
-    font-size: 13px;
+    font-size: calc(13px * var(--cal-text, 1));
   }
 }
 /* 관리자 접속 세션 — 하루=한 행, 가로 24h 축에 머문 구간을 기기색 막대로(수면/스크린타임 타임라인). */
@@ -3538,7 +3538,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
     font-size: var(--text-label);
   }
   .own-axis {
-    font-size: 11.5px;
+    font-size: calc(11.5px * var(--cal-text, 1));
   }
 }
 /* 일별 방문 상세 모달(개발자가 달력 날짜 클릭 → 그날 통계). 차트는 vt-*·own-* 재사용. */
@@ -3555,7 +3555,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   gap: 6px;
 }
 .dv-total strong {
-  font-size: 30px;
+  font-size: calc(30px * var(--cal-text, 1));
   font-weight: 600;
   line-height: 1;
   color: var(--ink);
@@ -3652,7 +3652,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   border: 1px solid var(--studio-action-tint-hi);
 }
 .vsum-kpis b {
-  font-size: 16px;
+  font-size: calc(16px * var(--cal-text, 1));
   font-weight: 600;
   color: var(--ink-soft);
   line-height: 1.1;
@@ -3705,7 +3705,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   display: flex;
   gap: 3px;
   margin-left: 19px;
-  font-size: 9px;
+  font-size: calc(9px * var(--cal-text, 1));
   font-weight: 600;
   color: var(--muted);
 }
@@ -3729,7 +3729,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 .vmini-h {
   text-align: center;
-  font-size: 9px;
+  font-size: calc(9px * var(--cal-text, 1));
   font-weight: 600;
   color: var(--muted);
 }
@@ -3902,7 +3902,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 @media (min-width: 1000px) {
   .sys-email {
-    font-size: 14.5px;
+    font-size: calc(14.5px * var(--cal-text, 1));
   }
 }
 /* 커밋 해시 — 코드 칩(고정폭). */
@@ -4002,7 +4002,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   margin-left: 4px;
   padding: 0 5px;
   border-radius: var(--r-pill);
-  font-size: 9.5px;
+  font-size: calc(9.5px * var(--cal-text, 1));
   font-weight: 600;
   background: #fff3e0;
   color: #b5651d;
@@ -4068,10 +4068,10 @@ html[data-reduce-motion] .dtp-pop-x:active {
   }
   .vlog-line2,
   .vlog-t {
-    font-size: 12px;
+    font-size: calc(12px * var(--cal-text, 1));
   }
   .vrecent-role {
-    font-size: 12px;
+    font-size: calc(12px * var(--cal-text, 1));
   }
 }
 .dv-sessions {
@@ -4120,14 +4120,14 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 @media (min-width: 1000px) {
   .dv-total strong {
-    font-size: 38px;
+    font-size: calc(38px * var(--cal-text, 1));
   }
   .dv-total span {
     font-size: var(--text-ui);
   }
   .dv-breakdown li,
   .dv-sessions li {
-    font-size: 14px;
+    font-size: calc(14px * var(--cal-text, 1));
   }
 }
 /* 월별 하트 막대(분홍) — 빈 막대 하나로 높이만 표시. */
@@ -4409,7 +4409,7 @@ html[data-reduce-motion] .perf-windows button.active {
   
   
   .vt-legend li {
-    font-size: 13px;
+    font-size: calc(13px * var(--cal-text, 1));
   }
   .vt-day {
     font-size: var(--text-caption);
@@ -4449,7 +4449,7 @@ html[data-reduce-motion] .perf-windows button.active {
 .vt-hlabel {
   margin-top: 3px;
   text-align: center;
-  font-size: 8.5px;
+  font-size: calc(8.5px * var(--cal-text, 1));
   font-weight: 600;
   color: var(--muted);
   height: 10px;
@@ -5531,7 +5531,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
 .studio-left-panel h2,
 .event-editor-panel h2 {
   margin: 0;
-  font-size: 22px;
+  font-size: calc(22px * var(--cal-text, 1));
   color: var(--ink);
   letter-spacing: -0.01em;
 }
@@ -5614,7 +5614,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
 }
 .detail-value {
   margin: 0;
-  font-size: 16px;
+  font-size: calc(16px * var(--cal-text, 1));
   font-weight: 600;
   line-height: 1.5;
   color: var(--ink);
@@ -5673,7 +5673,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
 
 .studio-left-panel .button {
   min-height: 44px;
-  font-size: 16.5px;
+  font-size: calc(16.5px * var(--cal-text, 1));
 }
 
 /* 일정 편집 패널: 주제목(날짜)은 살짝 작게, 부제목(새 일정/일정 수정)은 살짝 크게. */
@@ -5959,7 +5959,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   padding: calc(9px * var(--cal-zoom, 1)) calc(5px * var(--cal-zoom, 1));
   /* 요일 헤더 — vw 기준(화면 폭). 일정 글자와 같은 박자. cqi가 아니라 패널 여닫음에 안 흔들린다. */
   /* 2026-09-17: 시청자 포스터 요일(17px/800, letter-spacing .05em)을 화면 px로 환산(100vw/1840, 셸 zoom 상쇄). 하한 12px. */
-  font-size: max(12px, calc(100vw * 17 / 1840 / var(--shell-zoom, 1) * var(--cal-zoom, 1) * var(--cal-text, 1)));
+  font-size: calc(max(12px, calc(100vw * 17 / 1840 / var(--shell-zoom, 1) * var(--cal-zoom, 1))) * var(--cal-text, 1));
   font-weight: 800;
   letter-spacing: 0.05em;
   text-align: center;
@@ -6027,7 +6027,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   position: relative;
   /* 날짜 숫자 크기와 머리줄 높이를 한 식에서 — 띠 top(lib/ui/support-bar.ts)이 --day-head-h를 쓴다. 원본 수치 근거는
      .studio-day-head strong 주석. 머리줄 = 위 4px + 숫자 + 아래 2px, 최소 22px(2026-10-10). */
-  --day-num-fs: max(12px, calc(100vw * 20 / 1840 / var(--shell-zoom, 1) * var(--cal-zoom, 1) * var(--cal-text, 1)));
+  --day-num-fs: calc(max(12px, calc(100vw * 20 / 1840 / var(--shell-zoom, 1) * var(--cal-zoom, 1))) * var(--cal-text, 1));
   --day-head-h: max(22px, calc(var(--day-num-fs) + 6px));
   /* --cal-zoom(A안 방송용 확대, 기본 1): 칸·글자·간격이 함께 비례 — transform 없이 레이아웃만
      커져 드래그 좌표·삽입선 판정이 그대로 유효하다. 세로는 원래 내용 따라 자라는 구조라 안전. */
@@ -6986,7 +6986,7 @@ html[data-reduce-motion] .teaser-gate-row.gate-shake,
   /* 일정 글자 — vw(화면 폭) 기준. cqi(달력 칸 폭)는 편집패널 여닫을 때 매 프레임 재계산되며 끊김 +
      글자 크기/카드 높이 점프를 만들어 vw로 되돌렸다. clamp 경계(13~19)로 어떤 화면에서도 과하지 않게. */
   /* 2026-09-17: 시청자 포스터 제목(14px/800, lh 1.2)을 화면 px로 환산(100vw/1840, 셸 zoom 상쇄). 하한 12px. */
-  font-size: max(12px, calc(100vw * 14 / 1840 / var(--shell-zoom, 1) * var(--cal-zoom, 1) * var(--cal-text, 1)));
+  font-size: calc(max(12px, calc(100vw * 14 / 1840 / var(--shell-zoom, 1) * var(--cal-zoom, 1))) * var(--cal-text, 1));
   /* 굵기·헤일로는 색/무늬별 가독성 규칙(eventInkStyle)이 CSS 변수로 준다 — 시청자 포스터와 동일.
      태그 선택·저장하면 그 태그 색에 맞춰 즉시(렌더 시점) 반영된다. */
   font-weight: clamp(600, calc(var(--evt-weight, 800) + var(--cal-weight, 0)), 900);
@@ -7030,7 +7030,7 @@ html[data-reduce-motion] .teaser-gate-row.gate-shake,
      (제목과 같이 커지므로 '서브만 키워 뚱뚱해지는' 악순환이 아니라 비례 확대. 편집실은 스티커
      좌표 제약이 없어 안전.) 최소 12px로 가독성 확보. */
   /* 2026-09-17: 시청자 포스터 세부(12.5px/800, lh 1.25)를 화면 px로 환산(100vw/1840, 셸 zoom 상쇄). 하한 11px. */
-  font-size: max(11px, calc(100vw * 12.5 / 1840 / var(--shell-zoom, 1) * var(--cal-zoom, 1) * var(--cal-text, 1)));
+  font-size: calc(max(11px, calc(100vw * 12.5 / 1840 / var(--shell-zoom, 1) * var(--cal-zoom, 1))) * var(--cal-text, 1));
   font-weight: 800;
   line-height: 1.25;
 }
@@ -7119,7 +7119,7 @@ html[data-reduce-motion] .teaser-gate-row.gate-shake,
    레인 간격·top은 inline에서 calZoom을 곱하므로(스튜디오 셸) 높이·글자만 여기서 따라간다.
    17 → 22(2026-09-19): 더블클릭 표적이 너무 좁았다. 레인 간격 26과 짝(틈 4×배율). */
 .studio-day .support-bar {
-  height: calc(22px * var(--cal-zoom, 1));
+  height: calc(var(--support-bar-base-height) * var(--cal-zoom, 1));
 }
 /* Ribbon labels use the shared font/zoom/text-size contract in globals.css. */
 
@@ -8281,11 +8281,11 @@ textarea:disabled {
   }
   
   .studio-poster-title {
-    font-size: 34px;
+    font-size: calc(34px * var(--cal-text, 1));
     white-space: normal;
   }
   .studio-poster-title span {
-    font-size: 22px;
+    font-size: calc(22px * var(--cal-text, 1));
   }
 
   .studio-role-tools {
@@ -9130,7 +9130,7 @@ html[data-theme="dark"] .tag-cpop { --cpop-error-ink: #ffabb0; }
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
   padding: 0 14px;
-  font-size: 16px;
+  font-size: calc(16px * var(--cal-text, 1));
 }
 /* 비밀번호 틀림 — 입력칸을 좌우로 짧게 흔들고 붉은 테두리(실패 연출). */
 @keyframes passcode-shake {
@@ -9292,7 +9292,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
   padding: 0 14px;
-  font-size: 16px;
+  font-size: calc(16px * var(--cal-text, 1));
 }
 
 /* (.memo-lines / .memo-line* / .line-remove 메모 줄 편집기 제거 — 참조 0) */
@@ -9540,7 +9540,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   border-radius: var(--r-md);
   background: #fff;
   color: var(--sd-ink);
-  font-size: 22px;
+  font-size: calc(22px * var(--cal-text, 1));
   font-weight: 600;
   line-height: 1;
   cursor: pointer;
@@ -10098,7 +10098,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   background: linear-gradient(135deg, var(--accent), var(--green));
   /* 이모지 글자는 자체 여백/베이스라인이 있어 grid 중앙정렬이 어긋난다.
      line-height = 원 높이, text-align center, overflow hidden으로 정확히 가운데 맞춘다. */
-  font-size: 34px;
+  font-size: calc(34px * var(--cal-text, 1));
   line-height: 50px;
   text-align: center;
   overflow: hidden;
@@ -10645,6 +10645,17 @@ html[data-theme="dark"] .studio-shell.studio-narrow .agenda-rail { background: t
   pointer-events: none;
   background: transparent;
   border-color: var(--line);
+}
+/* Larger type keeps the same measured popover ownership, with room for its
+   existing date/options. The placement hook observes the actual width. */
+html[data-large-text] .event-editor-panel form,
+html[data-large-text] .event-detail-readonly {
+  width: min(560px, calc(100vw - 24px));
+}
+html[data-large-text] .support-visit {
+  min-height: calc(1.5em + 12px);
+  line-height: 1.5;
+  text-align: center;
 }
 /* 비공개 범위 배지 */
 .m-scope-badge {
@@ -13649,7 +13660,7 @@ body.span-dragging * {
   border-radius: var(--r-pill);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 55%), var(--elev-2);
-  font-size: calc(var(--text-label) * var(--cal-zoom, 1) * var(--cal-text, 1));
+  font-size: calc(var(--text-label) * var(--cal-zoom, 1));
   font-weight: 900;
   white-space: nowrap;
   transition: box-shadow var(--dur-spring-smooth, 0.5s) var(--spring-smooth, var(--ease));
@@ -13849,7 +13860,7 @@ html[data-theme="dark"] .studio-shell {
   background: color-mix(in srgb, var(--copy-ink) 9%, transparent);
   padding: 4px 10px;
   color: var(--copy-ink);
-  font-size: max(12px, calc(100vw * 13 / 1840 / var(--shell-zoom, 1) * var(--cal-zoom, 1) * var(--cal-text, 1)));
+  font-size: calc(max(12px, calc(100vw * 13 / 1840 / var(--shell-zoom, 1) * var(--cal-zoom, 1))) * var(--cal-text, 1));
   pointer-events: none;
   animation:
     paste-preview-in 0.36s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)) both,
@@ -13987,3 +13998,6 @@ html[data-reduce-motion] .paste-preview {
   letter-spacing: 0.02em;
   pointer-events: none;
 }
+
+html[data-large-text] .tag-legend-filter { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
+html[data-large-text] .tag-legend-filter > span { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }

@@ -53,9 +53,9 @@ for(const surface of ['viewer','studio'] as const)for(const width of [1440,1920]
   const slider=page.getByRole('slider',{name:'달력 글씨 크기(px)',exact:true});await expect(slider).toBeVisible();
   await slider.focus();await slider.press('Home');await expect(slider).toHaveValue('12');
   const small=await label.evaluate(e=>Number.parseFloat(getComputedStyle(e).fontSize));
-  await slider.press('End');await expect(slider).toHaveValue('20');
+  await slider.press('End');await expect(slider).toHaveValue('30');
   const large=await label.evaluate(e=>Number.parseFloat(getComputedStyle(e).fontSize));
-  expect(large/before).toBeCloseTo(20/14,2);expect(large/small).toBeCloseTo(20/12,2);
+  expect(large/before).toBeCloseTo(30/14,2);expect(large/small).toBeCloseTo(30/12,2);
   await page.keyboard.press('Escape');await expect(slider).toHaveCount(0);await page.mouse.move(1,1);await settlePanelLayout(page);
   if(studio&&await page.locator('.panel-scrim').isVisible()){
     await page.getByRole('button',{name:'패널 접기',exact:true}).click();await settlePanelLayout(page);
