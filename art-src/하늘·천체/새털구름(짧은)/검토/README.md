@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: b914b4f79cfd89b41df39aa3a5243c99e84820009631802db0eb64ef246e4ef8 -->
-<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: bd6a5d6fc5f061f0490f6bd4a0f06bc18cc1c26b3eb4b025754ae512d47596bb -->
+<!-- content-sha256: 4d3137798b62166c2b0e5653a44686f9dafb1f11f92075785ed977f2f980bed0 -->
+<!-- source-sha256: 6df27b2c04536ebe5a648cd345b8311256c5971cbb5dce59cf9747a3201286ed; state-sha256: bd6a5d6fc5f061f0490f6bd4a0f06bc18cc1c26b3eb4b025754ae512d47596bb -->
 
 # cloud-wisp 검토
 

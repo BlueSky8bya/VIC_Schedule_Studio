@@ -1,6 +1,6 @@
 # Current State — VIC Schedule Studio
 
-Last Updated: 2026-10-26 (KST)
+Last Updated: 2026-10-27 (KST)
 Project Version: 0.1.0
 
 Current work only. Completed plans/rounds are evidence, not instructions. Previous accumulated state is preserved byte-for-byte in [the snapshot](archive/20261017-CURRENT_STATE-before-platform-remediation.snapshot.txt); use topic records for current behavior.
@@ -8,6 +8,8 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 ## Current Objective
 
 Daily idea proposals require at least3 distinct observed candidates; fewer remains incomplete. Latest human instruction supersedes old maximum/zero-proposal completion clauses. Exclude completed/rejected/pending duplicates and preserve their exact adoption/release records in primary daily state.
+
+Owner2026-10-27: exclude fan timeline **administration** from future idea discovery (not viewer replay/timeline/search). Ecology generation/codex plans are retired; sky/celestial, current meadow and companion collection books remain. Original sources/frozen evidence stay intact. [Current contract](plans/PLAN-20261027-support-search-celestial.md).
 
 Daily09:00 ACTIVE: existing-function verification and project-wide idea discovery are separate required stages. Risk/weekly rotation and verified same-build continuation; no blanket200. Settings/detail navigation contract: [record](plans/PLAN-20261025-settings-and-detail-navigation.md). Daily status, exact releases, completed/rejected/pending proposal keys and carryover are authoritative in primary `.scratch-pw/site-daily/state.json`; historical plans do not create new approval gates. Preserve original failures/privacy; normal36 UNVERIFIED. [QA](plans/PLAN-20261022-focused-qa.md).
 
@@ -25,7 +27,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 | OPS-STORAGE | Watch | Gate released;6 deleted;quota refresh unproven | [Record](verification/DEPLOYMENT_STORAGE-20261024.md) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
-| ART-PINE-PILOT | Awaiting Owner | Owner selects reference PNGs to remove; freeze replacement run only afterward | [Pine handoff](../ambient/HANDOFF-20260908-pine.md) |
 | RULE-ART-COMPLETION | Awaiting Owner | Review presentation/legacy-source placement and B/C choices | [Plan](plans/PLAN-20260909-014-rule-preservation-and-art-completion.md) |
 | AMB-QA-18 | Planned | Reproduce candidates on one fixed build | [QA](../ambient/QA_PROGRESS.md) |
 | VERIFY-REAL-SESSION | Planned | Genuine roles/unlock/revocation/device/storage/RLS; reconcile old public issue labels | [Checks](verification/OPEN_CHECKS.md) |
@@ -36,7 +37,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 - Supabase dashboard login/Free-Nano quotas confirmed. Free has no managed daily backups/PITR; local081 backup covers diagnostics only. Some CPU/memory/IO dashboard graphs failed to load. Full recovery and real-device evidence remain separate.
 - Mobile/screen reader and formal flash/fanout capacity remain unverified; fixtures do not establish actual OBS performance. Broadcaster hardware work remains deferred by the user.
 - Continuously unfocused OS-window gestures and the separate viewer food-approach focus-transition check remain [open](verification/OPEN_CHECKS.md#companion-096-focus--실제-viewer-창-전환).
-- Pine curation remains owner-only: all nine references retained. Existing frozen pilot has stale manifest contract; replace it, never normalize/promote. No new pine generation authorized by platform work.
 - Art legacy-source policy/B/C selections remain owner decisions. Style captures stay byte/name intact and classification-only; prior attachment authorization never permits copying them into deliveries.
 - Broader historical analytics/visit cleanup and recurring cleanup remain excluded. Local restricted recovery backup is separate from provider backup/PITR.
 
@@ -44,7 +44,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 0. DAILY-0900: validate primary state/receipts and dedupe completed proposals; separate verification/discovery, finish authorized repairs with independent review and exact release, record unexecuted scope.
 1. OPS-DB-QUOTA/OPS-VERCEL-QUOTA: compare post-release route/RPC/cost with the same period/denominator, recheck Hobby restrictions/reset status; define the Free-plan full-backup/recovery path and recheck unavailable compute graphs. No automatic future run was created.
-2. ART-PINE-PILOT: only on owner curation, remove named references and freeze fresh variants2/3 request. Preserve the old pilot/approved inputs.
 3. RULE-ART-COMPLETION: wait for pending presentation/source-policy choices; unrelated work grants no approval.
 4. VERIFY-REAL-SESSION: use synthetic canaries and real authority; fixture/service-role tests never establish genuine-login RLS.
 5. PRIVACY-20260921: resolve remaining visit/recurring retention policy and restricted local recovery-backup removal after its2026-10-24 window. No automatic future run is scheduled.

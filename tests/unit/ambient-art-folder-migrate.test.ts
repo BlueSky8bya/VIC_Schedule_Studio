@@ -57,12 +57,13 @@ afterEach(() => {
 });
 
 describe("Korean art folders", () => {
-  it("keeps 193 identities distinct, merges starfish under animals and resolves historical inputs", () => {
+  it("keeps nine active sky identities and preserves historical input paths", () => {
     const paths = buildEntities(artManifest()).map(entityPath);
-    expect(paths).toHaveLength(193);
-    expect(new Set(paths).size).toBe(193);
+    expect(paths).toHaveLength(9);
+    expect(new Set(paths).size).toBe(9);
     expect(paths).not.toContain("art-src/지형/불가사리");
-    expect(paths).toContain("art-src/동물/불가사리");
+    expect(paths.every((p:string)=>p.startsWith("art-src/하늘·천체/"))).toBe(true);
+    expect(relocateArtPath("art-src/animal/animal-starfish/raw/evidence.png")).toBe("art-src/동물/불가사리/raw/evidence.png");
     expect(inputPath("inputs/baseline/tree-pine-1.png")).toBe("고정입력/합격참고/tree-pine-1.png");
     expect(inputPath("고정입력/합격참고/tree-pine-1.png")).toBe("고정입력/합격참고/tree-pine-1.png");
     const target = relocateArtPath(frozen);

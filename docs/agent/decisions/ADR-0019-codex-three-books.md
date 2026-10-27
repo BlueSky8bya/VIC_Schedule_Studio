@@ -1,6 +1,7 @@
 # ADR-0019 — 도감 세 권(물고기·곤충·동물)과 "동물도 우리가 그린다"
 
-Status: Accepted
+Status: Superseded
+- Superseded by: Owner2026-10-27 retired the ecology catalogue/generation plans. Sky/celestial and existing original evidence remain; no restoration implied. [Current contract](../plans/PLAN-20261027-support-search-celestial.md).
 - Date: 2026-09-07
 - Supersedes(부분): ADR-0017 ⑧의 "**동물은 손으로 그리지 않는다 — Noto Emoji 에셋만**" 조항. 무생물 소품·식생 규칙은
   그대로다(ADR-0017 ⑮ 아트 자리 체계 위에서 확장된다).

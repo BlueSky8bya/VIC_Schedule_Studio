@@ -3941,7 +3941,7 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
    같은 이유로 이미 정해 둔 순서 — studio-shell.css "업 도움 띠는 '오늘/선택' 링보다 위").
    링은 17px 남짓 가려져도 나머지 테두리와 칸 배경이 '오늘'을 계속 말한다. */
 .public-day .support-bar {
-  z-index: 6;
+  z-index: var(--z-cal-ribbon, 9);
   transition:
     opacity var(--dur-2) var(--ease),
     filter var(--dur-2) var(--ease);
@@ -5725,17 +5725,9 @@ html[data-reduce-motion] .pop-bloom {
   /* 17 → 22(2026-09-19, 근거는 app/globals.css .support-bar 주석). 스텝 SUPPORT_LANE_STEP=24와 짝. */
   height: calc(22px * var(--cal-zoom, 1));
 }
-/* 글씨 크기 설정은 띠 글자에 1.15배(≈16px)까지만 — 띠 높이는 레인 간격·칸별 띠 여백에 묶인 고정값이라, 20px이면
-   글자가 띠를 꽉 채웠다(2026-10-10 실측). 굵기 설정은 띠에 걸지 않는다(이미 900, 보조 안내가 일정보다 튀지 않게). */
-.public-day .support-bar span,
-.public-day .support-bar .sb-cta {
-  font-size: calc(var(--text-micro) * var(--cal-zoom, 1) * min(var(--cal-text, 1), 1.15));
-}
-.public-day .support-bar.sb-solo .sb-go {
-  font-size: calc(var(--text-caption) * var(--cal-zoom, 1) * min(var(--cal-text, 1), 1.15));
-}
+/* Shared13px labels follow the complete calendar text-size range; no surface cap. */
 .public-day .support-bar.sb-head {
-  z-index: 7;
+  z-index: var(--z-cal-ribbon-head, 10);
 }
 
 /* 다른 달 날짜는 일/토 색도 회색으로 */
@@ -6136,8 +6128,8 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
 
 /* 오늘 칸 금테. 칸 자신의 inset box-shadow는 자식(일정 카드)에 항상 가려져 테두리가 카드 밑으로
    끊겨 보인다 → 카드 위에 얹는 오버레이(::after)로 그린다.
-   z는 편집실과 같은 토큰(--z-cal-select-ring: 8) — 업 도움·기간 안내 띠(6·7)보다 위다
-   (2026-09-05 소유자 결정: 오늘 강조를 끊지 않는다). 클릭은 통과. */
+   z는 편집실과 같은 토큰(--z-cal-select-ring: 8). 최신2026-10-27 사용자 지시로
+   기간·업도움 띠(9·10)는 교차 구간에서 링 위에 남긴다. 클릭은 통과. */
 .public-day.today::after {
   content: "";
   position: absolute;

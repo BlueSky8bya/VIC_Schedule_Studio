@@ -10,7 +10,7 @@ Start here for `components/shared/ambient/**`, ambient artwork or QA. Read the m
 | Scene visuals | [VISUAL_DIRECTION](VISUAL_DIRECTION.md), relevant [BIOME_GRAMMAR](BIOME_GRAMMAR.md) section | Existing scene and [IMMERSION_BREAK_RULES](IMMERSION_BREAK_RULES.md) |
 | Time/weather/season | ENGINE_RULES time section and [SEASON_TIME_WEATHER_GRAMMAR](SEASON_TIME_WEATHER_GRAMMAR.md) | `world/sun.ts`, `time.ts`, `weather.ts`, `light.ts` |
 | Mountain layers | [MOUNTAIN_DEPTH_RULES](MOUNTAIN_DEPTH_RULES.md) | `scenes/land.ts`, `world/view.ts` |
-| Creature placement/behavior | ENGINE_RULES creature section and relevant BIOME_GRAMMAR section | `world/codex.ts`, `rarity.ts`, affected scene |
+| Ecology catalogue retirement | [Current retirement contract](../agent/plans/PLAN-20261027-support-search-celestial.md) | No active species catalogue; sky/celestial and current meadow remain. Historical source/evidence never creates a generation task. |
 | Art entity/source/migration | [Art catalogue](../../art-src/목록.md), matching entity prompt, [source rules](../../art-src/AGENTS.md) | [ART_PIPELINE](ART_PIPELINE.md), [Manifest](../../components/shared/ambient/art/manifest.ts) |
 | Art generation/review | Exact run request and frozen inputs, [ART_RULES](ART_RULES.md) | Entity reference/rejection/source/review entry points; full file plan does not expand this delivery |
 | Style captures (game screenshots/icons) | [공통화풍참고 README](../../art-src/공통화풍참고/README.md), ART_RULES ART-14 | `scripts/ambient-style-refs.mjs`, `art-src/공통화풍참고/<게임>/색인.json`; classifier agent `.claude/agents/style-ref-classifier.md` |

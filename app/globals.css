@@ -262,15 +262,13 @@
   --z-cal-cell-head: 1; /* 날짜 머리글 */
   --z-cal-range: 3; /* 칸 범위 선택 음영 */
   --z-cal-dim: 4; /* 다른 달 흐림 베일 */
-  /* 선택/오늘 링(::after) — 띠(6·7)보다 **위**(2026-09-05 소유자 결정: 오늘을 더 강조).
-     띠가 오늘 칸을 지나면 금색 실선이 그어지지만, 오늘 표식이 끊기지 않는 쪽을 택했다.
-     (8은 '칸 자체'를 띄우는 --z-cal-cell-raised와 숫자만 같고 축이 다르다 — 저건 그리드 안에서의
-     칸, 이건 칸 **안**에서의 오버레이다.) */
+  /* 2026-10-27: crossing ribbons and their text remain above the today/selection ring.
+     The ring stays visible around the rest of the date cell without striking through text. */
   --z-cal-select-ring: 8;
   --z-cal-leader: 5; /* 팝오버→앵커 칸 리더 라인 */
   --z-cal-focus-ring: 6; /* 키보드 포커스 링(::after) */
-  --z-cal-ribbon: 6; /* 업도움 띠 조각 */
-  --z-cal-ribbon-head: 7; /* 띠 시작 조각(라벨이 뒤 조각 위로 흘러야 함) */
+  --z-cal-ribbon: 9; /* 업도움 띠 조각 */
+  --z-cal-ribbon-head: 10; /* 띠 시작 조각·이어지는 라벨 */
   --z-cal-cell-raised: 8; /* 포커스로 띄운 칸 자체 */
   --z-cal-pop: 12; /* 편집 팝오버 — 칸 내부(1~9) 전부보다 위 */
 
@@ -1110,6 +1108,7 @@ html[data-reduce-motion] .passcode-box .button {
    z-index 4 — 일정 카드(이어진 막대 포함, 최대 3)보다 항상 위. 어느 날짜가 강조된 기간인지는
    카드에 가려지면 안 된다. 다른 달 베일(::after, 4)·스티커 레이어(5)는 그대로 위에 남는다. */
 .support-bar {
+  --support-label-size: calc(13px * var(--cal-zoom, 1) * var(--cal-text, 1));
   position: absolute;
   z-index: 4;
   display: flex;
@@ -1158,7 +1157,8 @@ html[data-reduce-motion] .passcode-box .button {
   gap: 5px;
   min-width: 0;
   padding: 0 6px;
-  font-size: var(--text-micro);
+  font-size: var(--support-label-size);
+  line-height: 1.1;
   font-weight: 900;
   white-space: nowrap;
 }
@@ -1175,7 +1175,7 @@ html[data-reduce-motion] .passcode-box .button {
   width: 100%;
   gap: 4px;
   padding: 0 5px;
-  font-size: var(--text-micro);
+  font-size: var(--support-label-size);
 }
 
 .support-bar .sb-title {
@@ -1190,7 +1190,7 @@ html[data-reduce-motion] .passcode-box .button {
 .support-bar.sb-solo .sb-go {
   flex: none;
   margin-left: auto;
-  font-size: var(--text-caption);
+  font-size: var(--support-label-size);
   font-style: normal;
   font-weight: 900;
   color: rgb(159 18 57 / 78%);
@@ -1209,7 +1209,7 @@ html[data-reduce-motion] .support-bar.sb-solo.is-clickable.is-hover .sb-go {
 .support-bar .sb-cta {
   font-style: normal;
   font-weight: 800;
-  font-size: var(--text-micro);
+  font-size: var(--support-label-size);
   color: rgb(159 18 57 / 78%);
   border-bottom: 1px dotted rgb(159 18 57 / 45%);
   transition: transform 0.16s var(--ease, ease), color 0.16s var(--ease, ease);

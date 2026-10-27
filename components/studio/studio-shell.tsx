@@ -208,6 +208,7 @@ import {
 import { useIdleAfter } from "@/lib/ui/use-idle";
 import { trackSettle } from "@/lib/ui/settle-track";
 import { supportBarTop, supportListPad } from "@/lib/ui/support-bar";
+import { validateSupportUrl } from "@/lib/schedules/event-validation";
 import { toBroadcastPanelDays } from "@/lib/schedules/broadcast-dto";
 import {
   hapticDelete,
@@ -6728,6 +6729,8 @@ export function StudioShell({
   // data-kind = 색 테마 스위치(장미↔보라) — 부품은 공유하고 변수만 갈아입는다(정형화).
   // ('업 도움 기간' 제목 줄은 제거 — 바로 위 종류 칩이 이미 무엇의 기간인지 말한다.)
   function renderSupportFields(editable: boolean) {
+    const supportHref = form.supportUrl.trim();
+    const validPreview = Boolean(supportHref) && validateSupportUrl(supportHref).ok;
     return (
       <div className="support-fields" data-kind={form.supportKind}>
         <div className="support-duration">
@@ -6876,6 +6879,7 @@ export function StudioShell({
           </span>
           <input
             className="support-link-input"
+            aria-invalid={Boolean(supportHref) && !validPreview || undefined}
             disabled={!editable}
             inputMode="url"
             onChange={(event) =>
@@ -6886,17 +6890,17 @@ export function StudioShell({
             value={form.supportUrl}
           />
           {/* 이미 설정된 링크는 바로 눌러 확인할 수 있게(같은 줄 끝에 작게). */}
-          {form.supportUrl.trim() ? (
+          {validPreview ? (
             <a
               className="support-visit"
-              href={form.supportUrl}
+              href={supportHref}
               rel="noopener noreferrer"
               target="_blank"
              data-act="support-visit">
               <ExternalLink aria-hidden="true" size={13} />
               링크 열어 확인
             </a>
-          ) : null}
+          ) : supportHref ? <span className="support-visit support-link-invalid" role="status">https 주소를 확인해 주세요</span> : null}
         </label>
       </div>
     );

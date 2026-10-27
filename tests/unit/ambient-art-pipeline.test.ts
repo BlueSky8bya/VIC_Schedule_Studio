@@ -23,9 +23,10 @@ function workspace() {
   fs.mkdirSync(path.join(directory, "public/ambient/art"), { recursive: true });
   return directory;
 }
-async function fixture(size = 1024, noise = false, wide = false) {
+async function fixture(size = 1024, noise = false, wide = false, notched = false) {
   const pixels = Buffer.alloc(size * size * 4);
   for (let y = size * (wide ? 3 / 8 : 1 / 8); y < size * (wide ? 5 / 8 : 7 / 8); y++) for (let x = size * (wide ? 1 / 8 : 1 / 4); x < size * (wide ? 7 / 8 : 3 / 4); x++) {
+    if (notched && x >= size / 2 && y < size / 2) continue;
     const i = (y * size + x) * 4;
     pixels[i] = noise && (x + y) % 2 ? 180 : 70;
     pixels[i + 1] = 110;
@@ -35,14 +36,14 @@ async function fixture(size = 1024, noise = false, wide = false) {
   return sharp(pixels, { raw: { width: size, height: size, channels: 4 } }).png().toBuffer();
 }
 
-async function approvedTwig(workspaceRoot: string) {
-  const { runDir, request } = pipeline.createRequest({ workspaceRoot, family: "twig", runId: "반영", variants: [2] });
+async function approvedCloudWisp(workspaceRoot: string) {
+  const { runDir, request } = pipeline.createRequest({ workspaceRoot, family: "cloud-wisp", runId: "반영", variants: [2] });
   const raw = await fixture(1024, false, true);
-  fs.writeFileSync(path.join(runDir, `${paths.ART_DIR.raw}/twig-2.png`), raw);
+  fs.writeFileSync(path.join(runDir, `${paths.ART_DIR.raw}/cloud-wisp-2.png`), raw);
   expect((await pipeline.normalizeRun({ workspaceRoot, runDir })).status).not.toBe("fail");
   pipeline.reviewRun({ workspaceRoot, runDir, decision: "approved", reviewer: "owner", note: "Owner approved the isolated fixture." });
-  const archive = path.join(workspaceRoot, path.posix.join(entityDirectory("twig"), "생성본/2/공통/twig-2.png"));
-  return { runDir, request, raw, archive, publicFile: path.join(workspaceRoot, "public/ambient/art/twig-2.png") };
+  const archive = path.join(workspaceRoot, path.posix.join(entityDirectory("cloud-wisp"), "생성본/2/공통/cloud-wisp-2.png"));
+  return { runDir, request, raw, archive, publicFile: path.join(workspaceRoot, "public/ambient/art/cloud-wisp-2.png") };
 }
 afterEach(() => {
   vi.restoreAllMocks();
@@ -55,48 +56,61 @@ afterEach(() => {
 });
 
 describe("art pipeline boundaries", () => {
-  it("requests exactly two complete pine packs and protects accepted filenames", () => {
+  it("refuses retired seasonal pine generation packs before creating any files", () => {
     const workspaceRoot = workspace();
-    for (const file of ["tree-pine-1.png", "tree-pine-autumn-1.png", "tree-pine-winter-1.png"]) fs.writeFileSync(path.join(workspaceRoot, "public/ambient/art", file), "accepted");
-    const result = pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "파일럿", dry: true });
-    expect(result.request.files).toEqual(["tree-pine-2.png", "tree-pine-3.png", "tree-pine-autumn-2.png", "tree-pine-autumn-3.png", "tree-pine-winter-2.png", "tree-pine-winter-3.png"]);
-    expect(result.prompt).toContain("파일 6장");
-    expect(result.prompt).toContain(paths.inputPath("inputs/baseline/tree-pine-1.png"));
-    expect(result.prompt).toContain("art-src/나무/소나무/작업회차/파일럿/원본");
+    const accepted = path.join(workspaceRoot, "public/ambient/art/tree-pine-1.png");
+    fs.writeFileSync(accepted, "accepted historical bytes");
+    for (const selection of [{ variants: [2, 3] }, { files: ["tree-pine-2.png"] }]) {
+      expect(() => pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "퇴역", ...selection })).toThrow(/Unknown art family or slot/);
+    }
+    expect(fs.readFileSync(accepted, "utf8")).toBe("accepted historical bytes");
+    expect(fs.existsSync(path.join(workspaceRoot, "art-src"))).toBe(false);
+    expect(paths.relocateArtPath("art-src/tree/tree-pine/runs/20260909-pilot-01/raw/tree-pine-2.png"))
+      .toBe("art-src/나무/소나무/작업회차/20260909-파일럿-01/원본/tree-pine-2.png");
+  });
+
+  it("requests only the selected moon phases and protects accepted filenames", () => {
+    const workspaceRoot = workspace();
+    fs.writeFileSync(path.join(workspaceRoot, "public/ambient/art/moon-phase-1.png"), "accepted");
+    const result = pipeline.createRequest({ workspaceRoot, family: "moon-phase", runId: "파일럿", variants: [2, 3], dry: true });
+    expect(result.request.files).toEqual(["moon-phase-2.png", "moon-phase-3.png"]);
+    expect(result.prompt).toContain("파일 2장");
+    expect(result.prompt).toContain(paths.inputPath("inputs/baseline/moon-phase-1.png"));
+    expect(result.prompt).toContain("art-src/하늘·천체/달(위상)/작업회차/파일럿/원본");
     expect(result.prompt).not.toContain("inputs 사본");
     expect(result.prompt).not.toContain("docs/ambient/reference/");
     expect(result.prompt).not.toMatch(/public\/ambient\/art\/[a-z]/);
     expect(result.prompt).toContain("전체 변형 수·과거 반려 수량은 추가 납품 지시가 아니다");
     expect(fs.existsSync(result.runDir)).toBe(false);
-    expect(() => pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "덮어쓰기", variants: [1] })).toThrow(/Accepted asset protected/);
-    expect(() => pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "부분", files: ["tree-pine-2.png"] })).toThrow(/Incomplete seasonal pack/);
+    expect(() => pipeline.createRequest({ workspaceRoot, family: "moon-phase", runId: "덮어쓰기", variants: [1] })).toThrow(/Accepted asset protected/);
+    expect(pipeline.createRequest({ workspaceRoot, family: "moon-phase", runId: "부분", files: ["moon-phase-2.png"], dry: true }).request.files).toEqual(["moon-phase-2.png"]);
   });
 
   it("freezes curated entity references as attachments and refuses ones without free-license provenance", async () => {
     const workspaceRoot = workspace();
-    const referenceDir = path.join(workspaceRoot, path.posix.join(entityDirectory("tree-pine"), "레퍼런스"));
+    const referenceDir = path.join(workspaceRoot, path.posix.join(entityDirectory("moon-phase"), "레퍼런스"));
     fs.mkdirSync(referenceDir, { recursive: true });
     const image = await fixture(64);
-    fs.writeFileSync(path.join(referenceDir, "oga-example-pine.png"), image);
+    fs.writeFileSync(path.join(referenceDir, "oga-example-moon.png"), image);
     fs.writeFileSync(path.join(referenceDir, "웹후보.md"), "링크만 있는 후보는 첨부 대상이 아니다.");
 
-    expect(() => pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "출처없음", dry: true })).toThrow(/no provenance sidecar/);
-    const card = path.join(referenceDir, "oga-example-pine.png.json");
+    expect(() => pipeline.createRequest({ workspaceRoot, family: "moon-phase", runId: "출처없음", dry: true })).toThrow(/no provenance sidecar/);
+    const card = path.join(referenceDir, "oga-example-moon.png.json");
     fs.writeFileSync(card, JSON.stringify({ license: "CC BY-NC 3.0", author: "someone" }));
-    expect(() => pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "라이선스검사", dry: true })).toThrow(/not a free license/);
+    expect(() => pipeline.createRequest({ workspaceRoot, family: "moon-phase", runId: "라이선스검사", dry: true })).toThrow(/not a free license/);
     // Attribution-only licenses are accepted since the owner widened the policy on 2026-09-11.
-    fs.writeFileSync(card, JSON.stringify({ license: "CC BY-SA 4.0", author: "someone", source: "https://example.test/pine" }));
-    expect(pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "표시라이선스", dry: true }).request.inputs.some((input: { kind: string }) => input.kind === "inspiration")).toBe(true);
+    fs.writeFileSync(card, JSON.stringify({ license: "CC BY-SA 4.0", author: "someone", source: "https://example.test/moon" }));
+    expect(pipeline.createRequest({ workspaceRoot, family: "moon-phase", runId: "표시라이선스", dry: true }).request.inputs.some((input: { kind: string }) => input.kind === "inspiration")).toBe(true);
 
-    fs.writeFileSync(card, JSON.stringify({ license: "CC0", author: "someone", source: "https://example.test/pine" }));
-    const result = pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "레퍼런스첨부" });
+    fs.writeFileSync(card, JSON.stringify({ license: "CC0", author: "someone", source: "https://example.test/moon" }));
+    const result = pipeline.createRequest({ workspaceRoot, family: "moon-phase", runId: "레퍼런스첨부" });
     const collected = result.request.inputs.filter((input: { kind: string }) => input.kind === "inspiration");
     expect(collected).toHaveLength(1);
-    expect(collected[0].path).toBe(paths.inputPath("inputs/collected/oga-example-pine.png"));
-    expect(collected[0].source).toContain("레퍼런스/oga-example-pine.png");
+    expect(collected[0].path).toBe(paths.inputPath("inputs/collected/oga-example-moon.png"));
+    expect(collected[0].source).toContain("레퍼런스/oga-example-moon.png");
     // The frozen copy is what actually reaches the generator, so its bytes must match the curated file.
     expect(fs.readFileSync(path.join(result.runDir, collected[0].path)).equals(image)).toBe(true);
-    expect(result.prompt).toContain(`형태 발상만: \`${path.posix.join(entityDirectory("tree-pine"), "작업회차/레퍼런스첨부", collected[0].path)}\``);
+    expect(result.prompt).toContain(`형태 발상만: \`${path.posix.join(entityDirectory("moon-phase"), "작업회차/레퍼런스첨부", collected[0].path)}\``);
     expect(result.prompt).toContain("그림으로 첨부");
     expect(result.prompt).not.toContain("그리기 전에 열어 볼 고정 입력");
     expect(result.prompt).not.toContain("웹후보");
@@ -105,27 +119,27 @@ describe("art pipeline boundaries", () => {
   it("allows Korean run names with spaces while refusing new English or traversal folders", () => {
     const workspaceRoot = workspace();
     const runId = "20260909 · 1차 (검토)";
-    const request = pipeline.createRequest({ workspaceRoot, family: "twig", runId, variants: [2], dry: true });
+    const request = pipeline.createRequest({ workspaceRoot, family: "cloud-wisp", runId, variants: [2], dry: true });
     expect(path.basename(request.runDir)).toBe(runId);
     for (const invalid of ["pilot", "한글-pilot", "../탈출", "회차/탈출", "회차\\탈출", "후행 "]) {
-      expect(() => pipeline.createRequest({ workspaceRoot, family: "twig", runId: invalid, dry: true })).toThrow(/Korean folder name/);
+      expect(() => pipeline.createRequest({ workspaceRoot, family: "cloud-wisp", runId: invalid, dry: true })).toThrow(/Korean folder name/);
     }
     expect(fs.existsSync(path.join(workspaceRoot, "art-src"))).toBe(false);
   });
 
-  it("routes seasonal slots to their entity and inherits all reasons from historical batches", () => {
+  it("routes current sky slots to their entity and inherits all reasons from historical batches", () => {
     const workspaceRoot = workspace();
-    const oak = pipeline.createRequest({ workspaceRoot, family: "tree-oak-spring", runId: "계절", variants: [1], dry: true });
-    expect(oak.runDir.replaceAll("\\", "/")).toContain(path.posix.join(entityDirectory("tree-oak"), "작업회차/계절"));
-    expect(oak.request.files).toEqual(["tree-oak-spring-1.png"]);
-    const directory = path.join(workspaceRoot, path.posix.join(entityDirectory("tree-pine"), "반려본/접수-소나무-3차"));
+    const cloud = pipeline.createRequest({ workspaceRoot, family: "cloud-low", runId: "계절", variants: [1], dry: true });
+    expect(cloud.runDir.replaceAll("\\", "/")).toContain(path.posix.join(entityDirectory("cloud-low"), "작업회차/계절"));
+    expect(cloud.request.files).toEqual(["cloud-low-1.png"]);
+    const directory = path.join(workspaceRoot, path.posix.join(entityDirectory("moon-phase"), "반려본/접수-달-3차"));
     fs.mkdirSync(directory, { recursive: true });
-    const issues = ["texture", "diversity", "snow", "trunk"].map((ruleId) => ({ ruleId, status: "open", observed: `Historical ${ruleId}` }));
+    const issues = ["texture", "diversity", "phase", "terminator"].map((ruleId) => ({ ruleId, status: "open", observed: `Historical ${ruleId}` }));
     fs.writeFileSync(path.join(directory, "review.json"), JSON.stringify({ kind: "legacy-rejection", decision: "rejected", historicalDate: "2026-09-08", issues: [...issues, { ruleId: "closed", status: "resolved", observed: "Do not repeat" }] }));
-    const next = pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "다음", dry: true });
+    const next = pipeline.createRequest({ workspaceRoot, family: "moon-phase", runId: "다음", dry: true });
     expect(next.request.priorRejections).toHaveLength(4);
     expect(next.request.priorRejections.every((issue: { evidenceKind: string }) => issue.evidenceKind === "imported-historical-rejection")).toBe(true);
-    expect(next.prompt).toContain("Historical trunk");
+    expect(next.prompt).toContain("Historical terminator");
     expect(next.prompt).not.toContain("Do not repeat");
     expect(fs.existsSync(next.runDir)).toBe(false);
   });
@@ -134,7 +148,7 @@ describe("art pipeline boundaries", () => {
     const workspaceRoot = workspace();
     for (let index = 0; index < 4; index += 1) {
       const folder = index === 0 ? "반려본" : paths.ART_DIR.runs;
-      const directory = path.join(workspaceRoot, entityDirectory("tree-pine"), folder, `이전-${index}차`);
+      const directory = path.join(workspaceRoot, entityDirectory("moon-phase"), folder, `이전-${index}차`);
       fs.mkdirSync(directory, { recursive: true });
       fs.writeFileSync(path.join(directory, "review.json"), JSON.stringify({
         kind: index === 0 ? "legacy-rejection" : undefined, decision: "rejected",
@@ -142,7 +156,7 @@ describe("art pipeline boundaries", () => {
         issues: [{ ruleId: `reason-${index}`, status: index === 0 ? "open" : "resolved", observed: `Batch ${index} evidence` }],
       }));
     }
-    const next = pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "다음", dry: true });
+    const next = pipeline.createRequest({ workspaceRoot, family: "moon-phase", runId: "다음", dry: true });
     expect(next.request.priorRejections).toHaveLength(1);
     expect(next.request.priorRejections[0].ruleId).toBe("reason-0");
     expect(next.prompt).toContain("Batch 0 evidence");
@@ -152,35 +166,35 @@ describe("art pipeline boundaries", () => {
 
   it("refreshes only empty prepared text while keeping frozen images byte-identical", () => {
     const workspaceRoot = workspace();
-    const baseline = path.join(workspaceRoot, "public/ambient/art/tree-pine-1.png");
+    const baseline = path.join(workspaceRoot, "public/ambient/art/moon-phase-1.png");
     fs.writeFileSync(baseline, "approved-image-bytes");
-    const prepared = pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "준비" });
-    const frozen = path.join(prepared.runDir, paths.inputPath("inputs/baseline/tree-pine-1.png"));
+    const prepared = pipeline.createRequest({ workspaceRoot, family: "moon-phase", runId: "준비" });
+    const frozen = path.join(prepared.runDir, paths.inputPath("inputs/baseline/moon-phase-1.png"));
     const before = fs.readFileSync(frozen);
-    const updated = pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "준비", refreshPrepared: true });
+    const updated = pipeline.createRequest({ workspaceRoot, family: "moon-phase", runId: "준비", refreshPrepared: true });
     expect(updated.request.priorRejections).toEqual([]);
     expect(fs.readFileSync(frozen)).toEqual(before);
     fs.writeFileSync(baseline, "changed-live-source");
-    expect(() => pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "준비", refreshPrepared: true })).toThrow(/cannot replace frozen images/);
+    expect(() => pipeline.createRequest({ workspaceRoot, family: "moon-phase", runId: "준비", refreshPrepared: true })).toThrow(/cannot replace frozen images/);
     fs.writeFileSync(baseline, before);
-    fs.writeFileSync(path.join(prepared.runDir, `${paths.ART_DIR.raw}/tree-pine-2.png`), "delivered-image");
-    expect(() => pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "준비", refreshPrepared: true })).toThrow(/empty, unreviewed/);
+    fs.writeFileSync(path.join(prepared.runDir, `${paths.ART_DIR.raw}/moon-phase-2.png`), "delivered-image");
+    expect(() => pipeline.createRequest({ workspaceRoot, family: "moon-phase", runId: "준비", refreshPrepared: true })).toThrow(/empty, unreviewed/);
   });
 
-  // Real six-image normalization and byte/tamper checks, not a 5s performance
+  // Real two-image normalization and byte/tamper checks, not a 5s performance
   // contract. A serial Linux CI run still exceeded 5s; preserve every assertion
   // and full-size input with a bounded image-pipeline deadline.
   it("reads migrated legacy frozen paths without rewriting request, review or reference bytes", async () => {
     const workspaceRoot = workspace();
-    for (const file of ["tree-pine-1.png", "tree-pine-autumn-1.png", "tree-pine-winter-1.png"]) {
+    for (const file of ["moon-phase-1.png"]) {
       fs.writeFileSync(path.join(workspaceRoot, "public/ambient/art", file), await fixture(64));
     }
-    const sheet = path.join(workspaceRoot, "docs/ambient/reference/tree-pine.png");
+    const sheet = path.join(workspaceRoot, "docs/ambient/reference/moon-phase.png");
     fs.mkdirSync(path.dirname(sheet), { recursive: true });
     fs.writeFileSync(sheet, await fixture(64));
-    const prepared = pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "20260909-파일럿-01", dry: true });
-    const oldRun = "art-src/tree/tree-pine/runs/20260909-pilot-01";
-    const oldPrompt = `Frozen legacy instructions: ${oldRun}/raw; ${oldRun}/inputs/baseline/tree-pine-1.png\n`;
+    const prepared = pipeline.createRequest({ workspaceRoot, family: "moon-phase", runId: "20260909-파일럿-01", dry: true });
+    const oldRun = "art-src/sky/moon-phase/runs/20260909-pilot-01";
+    const oldPrompt = `Frozen legacy instructions: ${oldRun}/raw; ${oldRun}/inputs/baseline/moon-phase-1.png\n`;
     const payload = { ...prepared.request };
     delete payload.requestSha256;
     payload.runId = "20260909-pilot-01";
@@ -206,95 +220,100 @@ describe("art pipeline boundaries", () => {
       fs.unlinkSync(source);
     }
     const runDir = path.join(workspaceRoot, paths.relocateArtPath(oldRun));
-    expect(() => pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "20260909-파일럿-01", refreshPrepared: true })).toThrow(/legacy request stays frozen/);
+    expect(() => pipeline.createRequest({ workspaceRoot, family: "moon-phase", runId: "20260909-파일럿-01", refreshPrepared: true })).toThrow(/legacy request stays frozen/);
     for (const file of request.files) fs.writeFileSync(path.join(runDir, paths.ART_DIR.raw, file), await fixture());
     await pipeline.normalizeRun({ workspaceRoot, runDir: oldRun });
     expect(() => pipeline.promoteRun({ workspaceRoot, runDir: oldRun })).toThrow(/Unapproved/);
     for (const [name, bytes] of frozen) {
       expect(fs.readFileSync(path.join(workspaceRoot, paths.relocateArtPath(`${oldRun}/${name}`)))).toEqual(bytes);
     }
-    expect(fs.existsSync(path.join(runDir, paths.ART_DIR.normalized, "tree-pine-2.png"))).toBe(true);
+    expect(fs.existsSync(path.join(runDir, paths.ART_DIR.normalized, "moon-phase-2.png"))).toBe(true);
     expect(fs.existsSync(path.join(runDir, "inputs"))).toBe(false);
-    fs.appendFileSync(path.join(runDir, paths.inputPath("inputs/baseline/tree-pine-1.png")), "tampered");
-    expect(() => pipeline.promoteRun({ workspaceRoot, runDir })).toThrow(/Input snapshot changed: inputs\/baseline\/tree-pine-1.png/);
+    fs.appendFileSync(path.join(runDir, paths.inputPath("inputs/baseline/moon-phase-1.png")), "tampered");
+    expect(() => pipeline.promoteRun({ workspaceRoot, runDir })).toThrow(/Input snapshot changed: inputs\/baseline\/moon-phase-1.png/);
   }, 30_000);
 
-  it("measures singleton candidate against same-name baseline without hiding failure", async () => {
+  it("measures one requested sky candidate against same-name baseline without hiding failure", async () => {
     const workspaceRoot = workspace();
     const candidateDir = path.join(workspaceRoot, "candidate"), baselineDir = path.join(workspaceRoot, "baseline");
     fs.mkdirSync(candidateDir); fs.mkdirSync(baselineDir);
-    fs.writeFileSync(path.join(candidateDir, "acorn.png"), await fixture(64, true));
-    fs.writeFileSync(path.join(baselineDir, "acorn.png"), await fixture(64));
-    const report = await checker.checkArt({ family: "acorn", dir: candidateDir, baselineDir });
+    fs.writeFileSync(path.join(candidateDir, "sun-disc-1.png"), await fixture(64, true));
+    fs.writeFileSync(path.join(baselineDir, "sun-disc-1.png"), await fixture(64));
+    const report = await checker.checkArt({ family: "sun-disc", dir: candidateDir, baselineDir, expectedFiles: ["sun-disc-1.png"] });
     expect(report.status).toBe("fail");
-    expect(report.checks).toEqual(expect.arrayContaining([expect.objectContaining({ ruleId: "texture.baseline", asset: "acorn.png", status: "fail" }), expect.objectContaining({ ruleId: "pine.trunk", status: "not-applicable" })]));
-    const cli = spawnSync(process.execPath, ["scripts/ambient-art-check.mjs", "acorn", "--dir", candidateDir, "--baseline", baselineDir, "--json"], { encoding: "utf8" });
+    expect(report.checks).toEqual(expect.arrayContaining([expect.objectContaining({ ruleId: "texture.baseline", asset: "sun-disc-1.png", status: "fail" }), expect.objectContaining({ ruleId: "pine.trunk", status: "not-applicable" })]));
+    const cli = spawnSync(process.execPath, ["scripts/ambient-art-check.mjs", "sun-disc", "--dir", candidateDir, "--baseline", baselineDir, "--json"], { encoding: "utf8" });
     expect(cli.status).toBe(1);
     expect(JSON.parse(cli.stdout).status).toBe("fail");
   });
 
-  it("detects missing seasonal companions without inferring seasons from availability", async () => {
+  it("detects a missing requested sky variant without inferring seasonal companions from availability", async () => {
     const dir = workspace();
-    fs.writeFileSync(path.join(dir, "tree-pine-2.png"), await fixture(64));
-    const report = await checker.checkArt({ family: "tree-pine", dir });
-    expect(report.checks).toEqual(expect.arrayContaining([expect.objectContaining({ ruleId: "seasons.complete", status: "fail" })]));
+    fs.writeFileSync(path.join(dir, "moon-phase-2.png"), await fixture(64));
+    const report = await checker.checkArt({ family: "moon-phase", dir, expectedFiles: ["moon-phase-2.png", "moon-phase-3.png"] });
+    expect(report.status).toBe("fail");
+    expect(report.checks).toEqual(expect.arrayContaining([
+      expect.objectContaining({ ruleId: "files.present", asset: "moon-phase-3.png", status: "fail" }),
+      expect.objectContaining({ ruleId: "seasons.identity", status: "not-applicable" })
+    ]));
+    expect(report.checks.some((check: { ruleId: string }) => check.ruleId === "seasons.complete")).toBe(false);
   });
 
   it("keeps raw immutable and requires owner approval of exact artifacts before publishing", async () => {
     const workspaceRoot = workspace();
-    const { runDir, request } = pipeline.createRequest({ workspaceRoot, family: "acorn", runId: "파일럿", variants: [1] });
+    const { runDir, request } = pipeline.createRequest({ workspaceRoot, family: "sun-disc", runId: "파일럿", variants: [1] });
     expect(request.mode).toBe("style-pilot");
     const raw = await fixture();
-    fs.writeFileSync(path.join(runDir, `${paths.ART_DIR.raw}/acorn.png`), raw);
+    fs.writeFileSync(path.join(runDir, `${paths.ART_DIR.raw}/sun-disc-1.png`), raw);
     const report = await pipeline.normalizeRun({ workspaceRoot, runDir });
     expect(report.status).toBe("unmeasured");
-    expect(fs.readFileSync(path.join(runDir, `${paths.ART_DIR.raw}/acorn.png`))).toEqual(raw);
+    expect(fs.readFileSync(path.join(runDir, `${paths.ART_DIR.raw}/sun-disc-1.png`))).toEqual(raw);
     expect(() => pipeline.promoteRun({ workspaceRoot, runDir })).toThrow(/Unapproved/);
     pipeline.reviewRun({ workspaceRoot, runDir, decision: "approved", reviewer: "owner", note: "Owner approved this test fixture after viewing review.png." });
     expect(pipeline.promoteRun({ workspaceRoot, runDir }).applied).toBe(false);
-    expect(fs.existsSync(path.join(workspaceRoot, "public/ambient/art/acorn.png"))).toBe(false);
-    const normalized = fs.readFileSync(path.join(runDir, `${paths.ART_DIR.normalized}/acorn.png`));
-    fs.appendFileSync(path.join(runDir, `${paths.ART_DIR.normalized}/acorn.png`), "changed");
+    expect(fs.existsSync(path.join(workspaceRoot, "public/ambient/art/sun-disc-1.png"))).toBe(false);
+    const normalized = fs.readFileSync(path.join(runDir, `${paths.ART_DIR.normalized}/sun-disc-1.png`));
+    fs.appendFileSync(path.join(runDir, `${paths.ART_DIR.normalized}/sun-disc-1.png`), "changed");
     expect(() => pipeline.promoteRun({ workspaceRoot, runDir, apply: true })).toThrow(/Artwork changed/);
-    fs.writeFileSync(path.join(runDir, `${paths.ART_DIR.normalized}/acorn.png`), normalized);
+    fs.writeFileSync(path.join(runDir, `${paths.ART_DIR.normalized}/sun-disc-1.png`), normalized);
     expect(pipeline.promoteRun({ workspaceRoot, runDir, apply: true }).applied).toBe(true);
-    expect(fs.readFileSync(path.join(workspaceRoot, "public/ambient/art/acorn.png"))).toEqual(normalized);
-    expect(fs.readFileSync(path.join(workspaceRoot, path.posix.join(entityDirectory("acorn"), "생성본/1/가을/acorn.png")))).toEqual(raw);
-    expect(fs.readFileSync(path.join(runDir, `${paths.ART_DIR.raw}/acorn.png`))).toEqual(raw);
+    expect(fs.readFileSync(path.join(workspaceRoot, "public/ambient/art/sun-disc-1.png"))).toEqual(normalized);
+    expect(fs.readFileSync(path.join(workspaceRoot, path.posix.join(entityDirectory("sun-disc"), "생성본/1/공통/sun-disc-1.png")))).toEqual(raw);
+    expect(fs.readFileSync(path.join(runDir, `${paths.ART_DIR.raw}/sun-disc-1.png`))).toEqual(raw);
     const receipt = JSON.parse(fs.readFileSync(path.join(runDir, "published.json"), "utf8"));
     expect(receipt).toMatchObject({ schemaVersion: 2, status: "completed", requestSha256: request.requestSha256,
       artifactsSha256: pipeline.sha256(fs.readFileSync(path.join(runDir, "artifacts.json"))),
       reviewSha256: pipeline.sha256(fs.readFileSync(path.join(runDir, "review.json"))),
-      files: [{ file: "acorn.png", raw: { target: path.posix.join(entityDirectory("acorn"), "생성본/1/가을/acorn.png"), sha256: pipeline.sha256(raw) },
-        normalized: { target: "public/ambient/art/acorn.png", sha256: pipeline.sha256(normalized) } }]
+      files: [{ file: "sun-disc-1.png", raw: { target: path.posix.join(entityDirectory("sun-disc"), "생성본/1/공통/sun-disc-1.png"), sha256: pipeline.sha256(raw) },
+        normalized: { target: "public/ambient/art/sun-disc-1.png", sha256: pipeline.sha256(normalized) } }]
     });
     expect(() => pipeline.promoteRun({ workspaceRoot, runDir, apply: true })).toThrow(/Accepted asset protected/);
   });
 
   it("archives a numbered multi-season raw file once under its common canonical path", async () => {
     const workspaceRoot = workspace();
-    const { runDir, raw, archive, publicFile } = await approvedTwig(workspaceRoot);
+    const { runDir, raw, archive, publicFile } = await approvedCloudWisp(workspaceRoot);
     const plan = pipeline.promoteRun({ workspaceRoot, runDir });
-    expect(plan.copies.map((copy: { target: string }) => copy.target)).toEqual(["public/ambient/art/twig-2.png", path.posix.join(entityDirectory("twig"), "생성본/2/공통/twig-2.png")]);
+    expect(plan.copies.map((copy: { target: string }) => copy.target)).toEqual(["public/ambient/art/cloud-wisp-2.png", path.posix.join(entityDirectory("cloud-wisp"), "생성본/2/공통/cloud-wisp-2.png")]);
     if (process.platform === "win32") expect(pipeline.promoteRun({ workspaceRoot, runDir: runDir.replace(workspaceRoot, workspaceRoot.toUpperCase()) }).copies).toEqual(plan.copies);
-    expect(fs.existsSync(path.join(workspaceRoot, path.posix.join(entityDirectory("twig"), "생성본")))).toBe(false);
+    expect(fs.existsSync(path.join(workspaceRoot, path.posix.join(entityDirectory("cloud-wisp"), "생성본")))).toBe(false);
     pipeline.promoteRun({ workspaceRoot, runDir, apply: true });
     expect(fs.readFileSync(archive)).toEqual(raw);
-    expect(fs.readFileSync(path.join(runDir, `${paths.ART_DIR.raw}/twig-2.png`))).toEqual(raw);
-    expect(fs.readFileSync(publicFile)).toEqual(fs.readFileSync(path.join(runDir, `${paths.ART_DIR.normalized}/twig-2.png`)));
+    expect(fs.readFileSync(path.join(runDir, `${paths.ART_DIR.raw}/cloud-wisp-2.png`))).toEqual(raw);
+    expect(fs.readFileSync(publicFile)).toEqual(fs.readFileSync(path.join(runDir, `${paths.ART_DIR.normalized}/cloud-wisp-2.png`)));
   });
 
   it.each(["archive-file", "archive-parent-file", "archive-linked-parent", "receipt-file", "receipt-directory", "receipt-dangling-link"])("preflights every destination before any copy: %s", async (collision) => {
     const workspaceRoot = workspace();
-    const { runDir, archive, publicFile } = await approvedTwig(workspaceRoot);
+    const { runDir, archive, publicFile } = await approvedCloudWisp(workspaceRoot);
     const publication = path.join(runDir, "published.json");
     if (collision === "archive-file") {
       fs.mkdirSync(path.dirname(archive), { recursive: true });
       fs.writeFileSync(archive, "legacy raw, protected");
     } else if (collision === "archive-parent-file") {
-      fs.writeFileSync(path.join(workspaceRoot, path.posix.join(entityDirectory("twig"), "생성본")), "user file");
+      fs.writeFileSync(path.join(workspaceRoot, path.posix.join(entityDirectory("cloud-wisp"), "생성본")), "user file");
     } else if (collision === "archive-linked-parent") {
-      fs.symlinkSync(path.join(workspaceRoot, "public/ambient/art"), path.join(workspaceRoot, path.posix.join(entityDirectory("twig"), "생성본")), "junction");
+      fs.symlinkSync(path.join(workspaceRoot, "public/ambient/art"), path.join(workspaceRoot, path.posix.join(entityDirectory("cloud-wisp"), "생성본")), "junction");
     } else if (collision === "receipt-file") fs.writeFileSync(publication, "existing receipt");
     else if (collision === "receipt-directory") fs.mkdirSync(publication);
     else fs.symlinkSync(path.join(workspaceRoot, "missing-receipt-directory"), publication, "junction");
@@ -310,24 +329,24 @@ describe("art pipeline boundaries", () => {
 
   it("rejects changed prompt snapshots and failed candidate approvals", async () => {
     const workspaceRoot = workspace();
-    const changed = pipeline.createRequest({ workspaceRoot, family: "acorn", runId: "변경", variants: [1] });
+    const changed = pipeline.createRequest({ workspaceRoot, family: "sun-disc", runId: "변경", variants: [1] });
     fs.appendFileSync(path.join(changed.runDir, "request.md"), "Changed requested files");
     await expect(pipeline.normalizeRun({ workspaceRoot, runDir: changed.runDir })).rejects.toThrow(/prompt changed/);
-    const failed = pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "실패", variants: [2] });
-    for (const file of failed.request.files) fs.writeFileSync(path.join(failed.runDir, paths.ART_DIR.raw, file), await fixture());
+    const failed = pipeline.createRequest({ workspaceRoot, family: "moon-phase", runId: "실패", variants: [2] });
+    for (const file of failed.request.files) fs.writeFileSync(path.join(failed.runDir, paths.ART_DIR.raw, file), await fixture(1024, false, true));
     expect((await pipeline.normalizeRun({ workspaceRoot, runDir: failed.runDir })).status).toBe("fail");
     expect(() => pipeline.reviewRun({ workspaceRoot, runDir: failed.runDir, decision: "approved", reviewer: "owner", note: "test" })).toThrow(/Failed measurements/);
-    pipeline.reviewRun({ workspaceRoot, runDir: failed.runDir, decision: "rejected", reviewer: "owner", note: "Winter image has no snow", ruleId: "pine.snow.coverage" });
-    expect(JSON.parse(fs.readFileSync(path.join(failed.runDir, "review.json"), "utf8")).issues[0].ruleId).toBe("pine.snow.coverage");
-    const next = pipeline.createRequest({ workspaceRoot, family: "tree-pine", runId: "다음", variants: [2], dry: true });
-    expect(next.prompt).toContain("Winter image has no snow");
+    pipeline.reviewRun({ workspaceRoot, runDir: failed.runDir, decision: "rejected", reviewer: "owner", note: "Moon silhouette is too wide", ruleId: "shape.slot-fill" });
+    expect(JSON.parse(fs.readFileSync(path.join(failed.runDir, "review.json"), "utf8")).issues[0].ruleId).toBe("shape.slot-fill");
+    const next = pipeline.createRequest({ workspaceRoot, family: "moon-phase", runId: "다음", variants: [2], dry: true });
+    expect(next.prompt).toContain("Moon silhouette is too wide");
     expect(next.request.priorRejections).toHaveLength(1);
   });
 
   it("rolls back only its new files after a failed multi-file copy", async () => {
     const workspaceRoot = workspace();
-    const { runDir, request } = pipeline.createRequest({ workspaceRoot, family: "twig", runId: "복구", variants: [1, 2] });
-    for (const file of request.files) fs.writeFileSync(path.join(runDir, paths.ART_DIR.raw, file), await fixture(1024, false, true));
+    const { runDir, request } = pipeline.createRequest({ workspaceRoot, family: "cloud-wisp", runId: "복구", variants: [1, 2] });
+    for (const [index, file] of request.files.entries()) fs.writeFileSync(path.join(runDir, paths.ART_DIR.raw, file), await fixture(1024, false, true, index > 0));
     await pipeline.normalizeRun({ workspaceRoot, runDir });
     pipeline.reviewRun({ workspaceRoot, runDir, decision: "approved", reviewer: "owner", note: "Owner approved both test assets." });
     const publicDir = path.join(workspaceRoot, "public/ambient/art");
@@ -342,15 +361,15 @@ describe("art pipeline boundaries", () => {
     expect(() => pipeline.promoteRun({ workspaceRoot, runDir, apply: true })).toThrow(/simulated disk failure/);
     expect(fs.readdirSync(publicDir)).toEqual(["keep.png"]);
     expect(fs.readFileSync(path.join(publicDir, "keep.png"), "utf8")).toBe("existing");
-    expect(fs.existsSync(path.join(workspaceRoot, path.posix.join(entityDirectory("twig"), "생성본/1/공통/twig-1.png")))).toBe(false);
+    expect(fs.existsSync(path.join(workspaceRoot, path.posix.join(entityDirectory("cloud-wisp"), "생성본/1/공통/cloud-wisp-1.png")))).toBe(false);
     expect(fs.existsSync(path.join(runDir, "published.json"))).toBe(false);
     expect(fs.existsSync(path.join(runDir, "publish-recovery.json"))).toBe(false);
   });
 
   it.each(["copy", "receipt"])("preserves uncertain partial %s bytes and records recovery after rolling back owned copies", async (stage) => {
     const workspaceRoot = workspace();
-    const { runDir, raw, archive, publicFile } = await approvedTwig(workspaceRoot);
-    const protectedFiles = ["request.md", "request.json", "artifacts.json", "review.json", `${paths.ART_DIR.raw}/twig-2.png`, `${paths.ART_DIR.normalized}/twig-2.png`];
+    const { runDir, raw, archive, publicFile } = await approvedCloudWisp(workspaceRoot);
+    const protectedFiles = ["request.md", "request.json", "artifacts.json", "review.json", `${paths.ART_DIR.raw}/cloud-wisp-2.png`, `${paths.ART_DIR.normalized}/cloud-wisp-2.png`];
     const before = new Map(protectedFiles.map((file) => [file, fs.readFileSync(path.join(runDir, file))]));
     const publication = path.join(runDir, "published.json"), partialTarget = stage === "copy" ? archive : publication;
     const write = fs.writeFileSync.bind(fs), copy = fs.copyFileSync.bind(fs);
@@ -367,7 +386,7 @@ describe("art pipeline boundaries", () => {
     expect(fs.readFileSync(partialTarget, "utf8")).toBe("partial output");
     if (stage === "receipt") expect(fs.existsSync(archive)).toBe(false);
     for (const [file, bytes] of before) expect(fs.readFileSync(path.join(runDir, file))).toEqual(bytes);
-    expect(fs.readFileSync(path.join(runDir, `${paths.ART_DIR.raw}/twig-2.png`))).toEqual(raw);
+    expect(fs.readFileSync(path.join(runDir, `${paths.ART_DIR.raw}/cloud-wisp-2.png`))).toEqual(raw);
     const recovery = JSON.parse(fs.readFileSync(path.join(runDir, "publish-recovery.json"), "utf8"));
     expect(recovery.status).toBe("recovery-required");
     expect(recovery.recovery).toEqual([expect.objectContaining({ target: path.relative(workspaceRoot, partialTarget).replaceAll("\\", "/") })]);
@@ -380,8 +399,8 @@ describe("art pipeline boundaries", () => {
 
   it("rejects a run moved beneath a different entity before writing", async () => {
     const workspaceRoot = workspace();
-    const { runDir } = await approvedTwig(workspaceRoot);
-    const moved = path.join(workspaceRoot, path.posix.join(entityDirectory("acorn"), "작업회차/반영"));
+    const { runDir } = await approvedCloudWisp(workspaceRoot);
+    const moved = path.join(workspaceRoot, path.posix.join(entityDirectory("sun-disc"), "작업회차/반영"));
     fs.mkdirSync(path.dirname(moved), { recursive: true });
     fs.renameSync(runDir, moved);
     const copy = vi.spyOn(fs, "copyFileSync");
@@ -391,7 +410,7 @@ describe("art pipeline boundaries", () => {
 
   it("retains the full recovery record on the exception when recovery metadata cannot be written", async () => {
     const workspaceRoot = workspace();
-    const { runDir, archive, publicFile } = await approvedTwig(workspaceRoot);
+    const { runDir, archive, publicFile } = await approvedCloudWisp(workspaceRoot);
     const publication = path.join(runDir, "published.json"), recoveryFile = path.join(runDir, "publish-recovery.json");
     const write = fs.writeFileSync.bind(fs);
     vi.spyOn(fs, "writeFileSync").mockImplementation((file, data, options) => {
@@ -413,7 +432,7 @@ describe("art pipeline boundaries", () => {
 
   it("detects source mutation during copying and preserves changed bytes for recovery", async () => {
     const workspaceRoot = workspace();
-    const { runDir, archive, publicFile } = await approvedTwig(workspaceRoot);
+    const { runDir, archive, publicFile } = await approvedCloudWisp(workspaceRoot);
     const copy = fs.copyFileSync.bind(fs);
     vi.spyOn(fs, "copyFileSync").mockImplementation((source, destination, flags) => {
       if (String(destination) === archive) fs.appendFileSync(source, "external change");
@@ -421,7 +440,7 @@ describe("art pipeline boundaries", () => {
     });
     expect(() => pipeline.promoteRun({ workspaceRoot, runDir, apply: true })).toThrow(/Copy verification failed.*recovery-required/);
     expect(fs.existsSync(publicFile)).toBe(false);
-    expect(fs.readFileSync(archive)).toEqual(fs.readFileSync(path.join(runDir, `${paths.ART_DIR.raw}/twig-2.png`)));
+    expect(fs.readFileSync(archive)).toEqual(fs.readFileSync(path.join(runDir, `${paths.ART_DIR.raw}/cloud-wisp-2.png`)));
     const recovery = JSON.parse(fs.readFileSync(path.join(runDir, "publish-recovery.json"), "utf8"));
     expect(recovery.recovery[0].reason).toContain("Target changed");
     expect(fs.existsSync(path.join(runDir, "published.json"))).toBe(false);
@@ -429,7 +448,7 @@ describe("art pipeline boundaries", () => {
 
   it("blocks an internally intact request whose source contract is stale", async () => {
     const workspaceRoot = workspace();
-    const { runDir, request } = pipeline.createRequest({ workspaceRoot, family: "acorn", runId: "낡은계약", variants: [1] });
+    const { runDir, request } = pipeline.createRequest({ workspaceRoot, family: "sun-disc", runId: "낡은계약", variants: [1] });
     const payload = { ...request };
     delete payload.requestSha256;
     payload.sources[0].sha256 = "0".repeat(64);

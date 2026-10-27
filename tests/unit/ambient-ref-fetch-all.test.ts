@@ -19,17 +19,32 @@ describe("reference batch queries", () => {
     expect(batch.cleanName("Crucian carp")).toBe("crucian carp");
   });
 
-  it("derives pixel queries from the slot name and vocabulary groups, photos from the species name", () => {
-    const crucian = batch.entityQueries(entity("fish-crucian"), manifest, vocabulary);
-    expect(crucian.specific).toBe("crucian carp");
-    expect(crucian.groups).toContain("pond fish");
-    expect(crucian.photo).toBe("Crucian carp");
-    const pine = batch.entityQueries(entity("tree-pine"), manifest, vocabulary);
-    expect(pine.groups).toEqual(["conifer"]);
-    expect(pine.photo).toBe("pine tree");
-    // Groups with fewer members come first so a stag beetle asks for stag beetles before generic beetles.
-    const stag = batch.entityQueries(entity("bug-stagbeetle"), manifest, vocabulary);
-    expect(stag.groups.indexOf("stag beetle")).toBeLessThan(stag.groups.indexOf("beetle"));
+  it("derives pixel queries and vocabulary groups for every active sky slot, with specific photo names", () => {
+    const active = buildEntities(manifest);
+    expect(active).toHaveLength(9);
+    expect(active.every((item: { category: string }) => item.category === "sky")).toBe(true);
+    const expected = [
+      ["sun-disc", "sun", "sun", "sun in sky"],
+      ["moon-phase", "moon", "moon", "moon phases"],
+      ["comet", "comet", "moon", "comet"],
+      ["shooting-star", "shooting star", "moon", "meteor night sky"],
+      ["cloud-low", "cloud", "cloud", "cumulus cloud"],
+      ["cloud-mid", "cloud", "cloud", "altocumulus cloud"],
+      ["cloud-high", "cloud", "cloud", "cirrus cloud"],
+      ["cloud-wisp", "cloud", "cloud", "cirrus cloud"],
+      ["cloud-storm", "storm cloud", "cloud", "cumulonimbus cloud"]
+    ];
+    for (const [id, specific, group, photo] of expected) {
+      expect(batch.entityQueries(entity(id), manifest, vocabulary)).toMatchObject({ specific, groups: [group], photo });
+    }
+    expect(entity("tree-pine")).toBeUndefined();
+    // A narrow cloud group still precedes a broad group; the production vocabulary currently has one group per sky slot.
+    const orderedVocabulary = { ...vocabulary, groups: { ...vocabulary.groups,
+      "cloud-strand": { ko: "짧은 구름", members: ["cloud-wisp"] },
+      "sky-cloud": { ko: "구름 무리", members: ["cloud-low", "cloud-mid", "cloud-wisp"] }
+    } };
+    const cloud = batch.entityQueries(entity("cloud-wisp"), manifest, orderedVocabulary);
+    expect(cloud.groups).toEqual(["cloud strand", "sky cloud", "cloud"]);
   });
 
   it("matches packs by head-noun token so 'ant' never matches 'plant'", () => {

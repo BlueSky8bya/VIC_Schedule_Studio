@@ -4,6 +4,8 @@ Scope: this tree. [Root AGENTS](../AGENTS.md) supplies shared permissions. This 
 
 ## Task routing
 
+Owner2026-10-27: active art catalogue contains only sky/celestial slots. Ecology species/plant generation is retired; old folders/frozen requests remain historical evidence and never authorize new generation. Preserve all original assets and references. [Current contract](../docs/agent/plans/PLAN-20261027-support-search-celestial.md).
+
 | Task | Read |
 |---|---|
 | Find an entity | [Entity catalogue](목록.md), then `<한글 범주>/<한글 엔티티>/프롬프트.md` |

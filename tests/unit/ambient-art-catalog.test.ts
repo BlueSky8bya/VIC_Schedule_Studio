@@ -40,26 +40,35 @@ describe("entity catalog boundaries", () => {
     const manifest = artManifest();
     const entities = buildEntities(manifest);
     const get = (id: string) => entities.find((entity: { id: string }) => entity.id === id);
-    expect(entities).toHaveLength(193);
+    expect(entities).toHaveLength(9);
     expect(entities.flatMap((entity: { slotIds: string[] }) => entity.slotIds).sort()).toEqual(manifest.ART_SLOTS.map((slot: { id: string }) => slot.id).sort());
     const filenames = entities.flatMap((entity: { files: { filename: string }[] }) => entity.files.map((asset) => asset.filename));
-    expect(filenames).toHaveLength(419);
-    expect(new Set(filenames).size).toBe(419);
+    expect(filenames).toHaveLength(40);
+    expect(new Set(filenames).size).toBe(40);
     expect(filenames.sort()).toEqual(manifest.ART_SLOTS.flatMap(manifest.slotFiles).sort());
-    expect(get("tree-oak").slotIds).toHaveLength(4);
-    expect(get("tree-oak").files).toHaveLength(24);
-    expect(get("tree-pine").slotIds).toHaveLength(3);
-    expect(get("tree-pine").files).toHaveLength(24);
-    expect(get("tree-pine").files[0]).toMatchObject({ filename: "tree-pine-1.png", season: null, seasonKo: "공통", relativePath: "생성본/1/공통/tree-pine-1.png" });
-    expect(get("tree-oak").files[0]).toMatchObject({ season: "spring", relativePath: "생성본/1/봄/tree-oak-spring-1.png" });
-    expect(get("sapling").slotIds).toEqual(["sapling-green", "sapling-autumn", "sapling-bare"]);
-    expect(get("snowman-1").files).toEqual([{ filename: "snowman-1.png", slotId: "snowman-1", variant: 1, season: "winter", seasonKo: "겨울", relativePath: "생성본/1/겨울/snowman-1.png" }]);
-    expect(get("starfish")).toBeUndefined();
-    expect(get("animal-starfish")).toMatchObject({ category: "animal", slotIds: ["starfish", "animal-starfish"] });
-    expect(get("animal-starfish").files.map((file: { filename: string }) => file.filename)).toEqual(["starfish.png", "animal-starfish-1.png", "animal-starfish-2.png"]);
-    expect(familySlots("tree-oak")).toHaveLength(4);
-    expect(familySlots("tree-oak-spring")).toHaveLength(1);
-    expect(manifest.ART_FAMILIES["tree-oak"]).toBeUndefined();
+    expect(manifest.ART_SLOTS).toHaveLength(9);
+    expect(entities.every((entity: { category: string; slotIds: string[] }) => entity.category === "sky" && entity.slotIds.length === 1)).toBe(true);
+    expect(get("cloud-low").slotIds).toEqual(["cloud-low"]);
+    expect(get("cloud-low").files).toHaveLength(8);
+    expect(get("moon-phase").slotIds).toEqual(["moon-phase"]);
+    expect(get("moon-phase").files).toHaveLength(8);
+    expect(get("moon-phase").files[0]).toMatchObject({ filename: "moon-phase-1.png", season: null, seasonKo: "공통", relativePath: "생성본/1/공통/moon-phase-1.png" });
+    expect(get("cloud-low").files[0]).toMatchObject({ season: null, relativePath: "생성본/1/공통/cloud-low-1.png" });
+    for (const retired of ["tree-pine", "tree-oak", "sapling", "snowman-1", "starfish", "animal-starfish"]) expect(get(retired)).toBeUndefined();
+    expect(familySlots("cloud-low")).toHaveLength(1);
+    expect(familySlots("moon-phase")).toHaveLength(1);
+    expect(manifest.ART_FAMILIES).toEqual({});
+
+    // Synthetic sky slots retain the generic grouping and numeric-singleton contracts.
+    const grouped = buildEntities({ ...manifest, ART_SLOTS: ["spring", "summer", "autumn", "winter"].map((season) => ({
+      ...manifest.ART_SLOTS[0], id: `cloud-low-${season}`, variants: 6, seasons: [season]
+    })) });
+    expect(grouped).toHaveLength(1);
+    expect(grouped[0].slotIds).toHaveLength(4);
+    expect(grouped[0].files).toHaveLength(24);
+    expect(grouped[0].files[0]).toMatchObject({ season: "spring", relativePath: "생성본/1/봄/cloud-low-spring-1.png" });
+    const singleton = buildEntities({ ...manifest, ART_SLOTS: [{ ...manifest.ART_SLOTS[0], id: "sun-disc-1", variants: undefined, seasons: ["winter"] }] });
+    expect(singleton[0].files).toEqual([{ filename: "sun-disc-1.png", slotId: "sun-disc-1", variant: 1, season: "winter", seasonKo: "겨울", relativePath: "생성본/1/겨울/sun-disc-1.png" }]);
   });
 
   it("keeps unmaterialized entries unlinked and creates selected routers without images", () => {
@@ -68,14 +77,14 @@ describe("entity catalog boundaries", () => {
     expect(first.entities).toEqual([]);
     expect(files(workspaceRoot)).toHaveLength(1);
     const index = fs.readFileSync(path.join(workspaceRoot, "art-src/목록.md"), "utf8");
-    expect(index).toContain("207 slots");
-    expect(index).toContain("193엔티티");
+    expect(index).toContain("9 slots");
+    expect(index).toContain("9엔티티");
     expect(index).not.toContain("[프롬프트]");
     expect(syncCatalog({ workspaceRoot, check: true }).status).toBe("pass");
-    expect(syncCatalog({ workspaceRoot, entityIds: ["acorn"], check: true }).status).toBe("fail");
+    expect(syncCatalog({ workspaceRoot, entityIds: ["sun-disc"], check: true }).status).toBe("fail");
     expect(files(workspaceRoot)).toHaveLength(1);
-    expect(syncCatalog({ workspaceRoot, entityIds: ["acorn"] }).entities).toEqual(["acorn"]);
-    expect(fs.readFileSync(path.join(workspaceRoot, "art-src/소품/도토리/프롬프트.md"), "utf8")).toContain("생성본/1/가을/acorn.png");
+    expect(syncCatalog({ workspaceRoot, entityIds: ["sun-disc"] }).entities).toEqual(["sun-disc"]);
+    expect(fs.readFileSync(path.join(workspaceRoot, "art-src/하늘·천체/해/프롬프트.md"), "utf8")).toContain("생성본/1/공통/sun-disc-1.png");
     expect(files(workspaceRoot).every((file) => file.endsWith(".md"))).toBe(true);
     expect(syncCatalog({ workspaceRoot, check: true }).status).toBe("pass");
     expect(() => syncCatalog({ workspaceRoot, entityIds: ["../escape"] })).toThrow(/Unknown art entity/);
@@ -83,24 +92,25 @@ describe("entity catalog boundaries", () => {
 
   it("prepares all entry points without images, runs or variant folders and checks without writing", () => {
     const workspaceRoot = workspace();
-    const options = parseCatalogArgs(["--all", "--category", "bug", "--entity", "acorn"]);
+    const options = parseCatalogArgs(["--all", "--category", "sky", "--entity", "sun-disc"]);
     const entities = buildEntities(artManifest());
     const first = syncCatalog({ ...options, workspaceRoot, check: true });
     expect(first.status).toBe("fail");
-    expect(first.changes).toHaveLength(966);
+    expect(first.changes).toHaveLength(46);
     expect(files(workspaceRoot)).toEqual([]);
     expect(fs.existsSync(path.join(workspaceRoot, "art-src"))).toBe(false);
 
     const result = syncCatalog({ ...options, workspaceRoot });
-    expect(result.entities).toHaveLength(193);
+    expect(result.entities).toHaveLength(9);
     expect(files(workspaceRoot)).toHaveLength(entities.length * 5 + 1);
     expect(files(workspaceRoot).every((file) => file.endsWith(".md"))).toBe(true);
     const index = fs.readFileSync(path.join(workspaceRoot, "art-src/목록.md"), "utf8");
-    expect(index.match(/\[프롬프트\]\(/g)).toHaveLength(193);
+    expect(index.match(/\[프롬프트\]\(/g)).toHaveLength(9);
     expect(index).toContain("| 실제 폴더 (art-src/ 기준) | 내부 ID |");
-    expect(index).toContain("| 소품 | 도토리 | 소품/도토리 | prop/acorn |");
+    expect(index).toContain("| 하늘·천체 | 해 | 하늘·천체/해 | sky/sun-disc | 1 | 2 |");
     expect(index).not.toContain("| 지형 | 불가사리 |");
-    expect(index).toContain("| 동물 | 불가사리 | 동물/불가사리 | animal/animal-starfish | 2 | 3 |");
+    expect(index).not.toContain("animal/animal-starfish");
+    expect(index).toContain("| 하늘·천체 | 달(위상) | 하늘·천체/달(위상) | sky/moon-phase | 1 | 8 |");
     for (const entity of entities) {
       const directory = path.join(workspaceRoot, entityPath(entity));
       expect(fs.readdirSync(directory).sort()).toEqual(["프롬프트.md", "레퍼런스", "반려본", "생성본", "검토"].sort());
@@ -120,15 +130,17 @@ describe("entity catalog boundaries", () => {
 
   it("adds category and explicit selections as a union while keeping existing and public entities", () => {
     const workspaceRoot = workspace();
-    const note = write(workspaceRoot, "art-src/소품/도토리/notes.md", "Owner reference plan");
-    const accepted = write(workspaceRoot, "public/ambient/art/rock-1.png", "accepted original bytes");
-    const options = parseCatalogArgs(["--category", "bug,bug", "--category", "bug", "--entity", "tree-pine,tree-pine"]);
+    const note = write(workspaceRoot, "art-src/하늘·천체/해/notes.md", "Owner reference plan");
+    const accepted = write(workspaceRoot, "public/ambient/art/cloud-mid-1.png", "accepted original bytes");
+    const selected = syncCatalog({ workspaceRoot, entityIds: ["moon-phase", "moon-phase"] });
+    expect(selected.entities.sort()).toEqual(["sun-disc", "cloud-mid", "moon-phase"].sort());
+    expect(fs.existsSync(path.join(workspaceRoot, "art-src/하늘·천체/구름(낮은)"))).toBe(false);
+    const options = parseCatalogArgs(["--category", "sky,sky", "--category", "sky", "--entity", "moon-phase,moon-phase"]);
     const entities = buildEntities(artManifest());
-    const bugs = entities.filter((entity: { category: string }) => entity.category === "bug");
-    expect(bugs).toHaveLength(39);
+    const sky = entities.filter((entity: { category: string }) => entity.category === "sky");
+    expect(sky).toHaveLength(9);
     const result = syncCatalog({ ...options, workspaceRoot });
-    expect(result.entities.sort()).toEqual([...bugs.map((entity: { id: string }) => entity.id), "acorn", "rock", "tree-pine"].sort());
-    expect(fs.existsSync(path.join(workspaceRoot, "art-src/나무/참나무"))).toBe(false);
+    expect(result.entities.sort()).toEqual(sky.map((entity: { id: string }) => entity.id).sort());
     expect(fs.readFileSync(note, "utf8")).toBe("Owner reference plan");
     expect(fs.readFileSync(accepted, "utf8")).toBe("accepted original bytes");
     expect(syncCatalog({ ...options, workspaceRoot, check: true }).status).toBe("pass");
@@ -150,32 +162,32 @@ describe("entity catalog boundaries", () => {
 
   it("routes actual references, legacy rejection and pending run while preserving every existing byte", () => {
     const workspaceRoot = workspace();
-    const entity = "art-src/나무/소나무";
+    const entity = "art-src/하늘·천체/달(위상)";
     const run = `${entity}/작업회차/시험회차`;
     const originals = [
-      write(workspaceRoot, "public/ambient/art/tree-pine-1.png", "accepted-normalized"),
-      write(workspaceRoot, `${entity}/생성본/2/공통/tree-pine-2.png`, "legacy-original"),
-      write(workspaceRoot, `${entity}/레퍼런스/pine.png`, "inspiration"),
-      write(workspaceRoot, `${entity}/레퍼런스/pine.png.json`, JSON.stringify({ source: "example", role: "inspiration" })),
+      write(workspaceRoot, "public/ambient/art/moon-phase-1.png", "accepted-normalized"),
+      write(workspaceRoot, `${entity}/생성본/2/공통/moon-phase-2.png`, "legacy-original"),
+      write(workspaceRoot, `${entity}/레퍼런스/moon.png`, "inspiration"),
+      write(workspaceRoot, `${entity}/레퍼런스/moon.png.json`, JSON.stringify({ source: "example", role: "inspiration" })),
       write(workspaceRoot, `${entity}/반려본/과거2차/review.json`, JSON.stringify({ decision: "rejected", note: "texture" })),
-      write(workspaceRoot, `${entity}/반려본/과거2차/2/공통/tree-pine-2.png`, "rejected-original"),
-      write(workspaceRoot, `${run}/request.json`, JSON.stringify({ files: ["tree-pine-2.png"] })),
+      write(workspaceRoot, `${entity}/반려본/과거2차/2/공통/moon-phase-2.png`, "rejected-original"),
+      write(workspaceRoot, `${run}/request.json`, JSON.stringify({ files: ["moon-phase-2.png"] })),
       write(workspaceRoot, `${run}/request.md`, "frozen exact request"),
       write(workspaceRoot, `${run}/review.json`, JSON.stringify({ decision: "pending" })),
-      write(workspaceRoot, `${run}/고정입력/합격참고/tree-pine-1.png`, "frozen-baseline"),
+      write(workspaceRoot, `${run}/고정입력/합격참고/moon-phase-1.png`, "frozen-baseline"),
       write(workspaceRoot, "art-src/공통화풍참고/모여봐요 동물의 숲/shared.png", "shared-style")
     ];
     const before = originals.map((file) => fs.readFileSync(file));
     const result = syncCatalog({ workspaceRoot });
-    expect(result.entities).toEqual(["tree-pine"]);
+    expect(result.entities).toEqual(["moon-phase"]);
     expect(originals.map((file) => fs.readFileSync(file))).toEqual(before);
     expect(files(workspaceRoot).filter((file) => file.endsWith(".png"))).toHaveLength(6);
     const prompt = fs.readFileSync(path.join(workspaceRoot, entity, "프롬프트.md"), "utf8");
     expect(prompt).toContain("준비본, 현재 납품 없음");
     expect(prompt).toContain("<작업회차/시험회차/request.md>");
-    expect(prompt).toContain("24파일");
+    expect(prompt).toContain("8파일");
     expect(prompt).not.toContain("frozen exact request");
-    expect(fs.readFileSync(path.join(workspaceRoot, entity, "레퍼런스/README.md"), "utf8")).toContain("pine.png.json");
+    expect(fs.readFileSync(path.join(workspaceRoot, entity, "레퍼런스/README.md"), "utf8")).toContain("moon.png.json");
     expect(fs.readFileSync(path.join(workspaceRoot, entity, "반려본/README.md"), "utf8")).toContain("과거2차/review.json");
     expect(syncCatalog({ workspaceRoot, check: true }).status).toBe("pass");
     fs.writeFileSync(originals[1], "changed-original-same-name");
@@ -189,7 +201,7 @@ describe("entity catalog boundaries", () => {
   });
 
   it("lists only direct image/sidecar reference pairs (png, gif, jpg, webp) and preserves unrelated or incomplete reference material", () => {
-    const workspaceRoot = workspace(), entity = "art-src/소품/도토리";
+    const workspaceRoot = workspace(), entity = "art-src/하늘·천체/해";
     const local = `${entity}/레퍼런스`, shared = "art-src/공통화풍참고/모여봐요 동물의 숲";
     const originals = [];
     for (const directory of [local, shared]) {
@@ -216,21 +228,21 @@ describe("entity catalog boundaries", () => {
 
   it("protects unowned and manually edited generated documents before writing any catalog change", () => {
     const workspaceRoot = workspace();
-    const manual = write(workspaceRoot, "art-src/소품/도토리/레퍼런스/README.md", "Owner notes must survive.");
-    expect(syncCatalog({ workspaceRoot, all: true, check: true }).conflicts).toEqual(["art-src/소품/도토리/레퍼런스/README.md"]);
+    const manual = write(workspaceRoot, "art-src/하늘·천체/해/레퍼런스/README.md", "Owner notes must survive.");
+    expect(syncCatalog({ workspaceRoot, all: true, check: true }).conflicts).toEqual(["art-src/하늘·천체/해/레퍼런스/README.md"]);
     expect(() => syncCatalog({ workspaceRoot, all: true })).toThrow(/Unowned documents protected/);
     expect(files(workspaceRoot)).toEqual([manual]);
     expect(fs.readFileSync(manual, "utf8")).toBe("Owner notes must survive.");
 
     const second = workspace();
-    syncCatalog({ workspaceRoot: second, entityIds: ["acorn"] });
-    const generated = path.join(second, "art-src/소품/도토리/레퍼런스/README.md");
+    syncCatalog({ workspaceRoot: second, entityIds: ["sun-disc"] });
+    const generated = path.join(second, "art-src/하늘·천체/해/레퍼런스/README.md");
     fs.appendFileSync(generated, "\nOwner added a reference note.\n");
     const index = path.join(second, "art-src/목록.md"), before = fs.readFileSync(index, "utf8");
-    expect(() => syncCatalog({ workspaceRoot: second, all: true, entityIds: ["tree-oak"] })).toThrow(/Unowned documents protected/);
+    expect(() => syncCatalog({ workspaceRoot: second, all: true, entityIds: ["cloud-low"] })).toThrow(/Unowned documents protected/);
     expect(fs.readFileSync(generated, "utf8")).toContain("Owner added a reference note.");
     expect(fs.readFileSync(index, "utf8")).toBe(before);
-    expect(fs.existsSync(path.join(second, "art-src/나무/참나무"))).toBe(false);
+    expect(fs.existsSync(path.join(second, "art-src/하늘·천체/구름(낮은)"))).toBe(false);
   });
 
   it("reports late parent-file and target-directory collisions before writing any entity", () => {
@@ -254,7 +266,7 @@ describe("entity catalog boundaries", () => {
     expect(fs.existsSync(path.join(workspaceRoot, entityPath(first)))).toBe(false);
   });
 
-  it.each(["art-src/목록.md", "art-src/나무"])("rejects a dangling link at %s before any catalog write", (relative) => {
+  it.each(["art-src/목록.md", "art-src/하늘·천체"])("rejects a dangling link at %s before any catalog write", (relative) => {
     const workspaceRoot = workspace();
     const original = write(workspaceRoot, "owner-note.md", "Keep my notes.");
     const link = path.join(workspaceRoot, relative);
@@ -274,23 +286,23 @@ describe("entity catalog boundaries", () => {
   });
 
   it("routes translated run folders while preserving historical request fields and input bytes", () => {
-    const workspaceRoot = workspace(), entity = "art-src/나무/소나무";
+    const workspaceRoot = workspace(), entity = "art-src/하늘·천체/달(위상)";
     const run = `${entity}/작업회차/20260909-파일럿-01`;
     const originals = [
-      write(workspaceRoot, `${run}/request.json`, JSON.stringify({ runId: "20260909-pilot-01", files: ["tree-pine-2.png"], inputs: [{ path: "inputs/baseline/tree-pine-1.png", sha256: "frozen-baseline-hash" }, { path: "inputs/reference/pine.png", sha256: "frozen-reference-hash" }] })),
-      write(workspaceRoot, `${run}/request.md`, "art-src/tree/tree-pine/runs/20260909-pilot-01/inputs/baseline/tree-pine-1.png"),
+      write(workspaceRoot, `${run}/request.json`, JSON.stringify({ runId: "20260909-pilot-01", files: ["moon-phase-2.png"], inputs: [{ path: "inputs/baseline/moon-phase-1.png", sha256: "frozen-baseline-hash" }, { path: "inputs/reference/moon.png", sha256: "frozen-reference-hash" }] })),
+      write(workspaceRoot, `${run}/request.md`, "art-src/sky/moon-phase/runs/20260909-pilot-01/inputs/baseline/moon-phase-1.png"),
       write(workspaceRoot, `${run}/review.json`, JSON.stringify({ decision: "pending" })),
-      write(workspaceRoot, `${run}/고정입력/합격참고/tree-pine-1.png`, "immutable baseline"),
-      write(workspaceRoot, `${run}/고정입력/레퍼런스/pine.png`, "immutable reference"),
-      write(workspaceRoot, `${run}/원본/tree-pine-2.png`, "delivered raw"),
-      write(workspaceRoot, `${run}/정리본/tree-pine-2.png`, "normalized bytes")
+      write(workspaceRoot, `${run}/고정입력/합격참고/moon-phase-1.png`, "immutable baseline"),
+      write(workspaceRoot, `${run}/고정입력/레퍼런스/moon.png`, "immutable reference"),
+      write(workspaceRoot, `${run}/원본/moon-phase-2.png`, "delivered raw"),
+      write(workspaceRoot, `${run}/정리본/moon-phase-2.png`, "normalized bytes")
     ];
     const before = originals.map((file) => fs.readFileSync(file));
-    expect(syncCatalog({ workspaceRoot }).entities).toEqual(["tree-pine"]);
+    expect(syncCatalog({ workspaceRoot }).entities).toEqual(["moon-phase"]);
     const prompt = fs.readFileSync(path.join(workspaceRoot, entity, "프롬프트.md"), "utf8");
     expect(prompt).toContain("요청 1장 / 원본 1장 / 정리본 1장");
     expect(prompt).toContain("<작업회차/20260909-파일럿-01/request.md>");
-    for (const current of ["원본", "고정입력", "고정입력/합격참고/tree-pine-1.png", "고정입력/레퍼런스/pine.png"]) {
+    for (const current of ["원본", "고정입력", "고정입력/합격참고/moon-phase-1.png", "고정입력/레퍼런스/moon.png"]) {
       expect(prompt).toContain(`<작업회차/20260909-파일럿-01/${current}>`);
     }
     expect(prompt).toContain("요청서 안의 옛 경로는 위의 현재 경로로 읽으며 파일명·입력 해시는 유지한다.");

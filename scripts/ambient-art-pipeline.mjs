@@ -126,7 +126,7 @@ export function defaultRunId(workspaceRoot, entityDir, now = new Date()) {
   throw new Error(`Too many automatic runs today under ${entityDir}`);
 }
 
-export function createRequest({ family = "tree-pine", runId = null, variants = [2, 3], files: requestedFiles, workspaceRoot = root, dry = false, refreshPrepared = false, styleLimit = 6 }) {
+export function createRequest({ family = "sun-disc", runId = null, variants = [2, 3], files: requestedFiles, workspaceRoot = root, dry = false, refreshPrepared = false, styleLimit = 6 }) {
   const { slotFiles, batchPrompt } = artManifest();
   const slots = familySlots(family);
   const files = requestedFiles ?? slots.flatMap((s) => slotFiles(s).filter((_, i) => variants.includes(i + 1)));

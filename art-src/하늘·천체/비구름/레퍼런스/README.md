@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 08ac1a8859ad28ac628a81a0e73d578527aa45d3fdc0d2676dfe42ba011570ca -->
-<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 6fd8c3dd9057a6578a4e1a7c5dfd908ea6f0a4b222b72d631810086620e0b972 -->
+<!-- content-sha256: fae564b7e9cf9dcd54eb4968c603fe946da4227523b87450778bcd234bf66869 -->
+<!-- source-sha256: 6df27b2c04536ebe5a648cd345b8311256c5971cbb5dce59cf9747a3201286ed; state-sha256: 6fd8c3dd9057a6578a4e1a7c5dfd908ea6f0a4b222b72d631810086620e0b972 -->
 
 # cloud-storm 레퍼런스
 

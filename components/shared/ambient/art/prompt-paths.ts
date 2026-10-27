@@ -1,4 +1,4 @@
-import { artSlot, CATEGORY_KO, type ArtCategory } from "./manifest";
+import { CATEGORY_KO, type ArtCategory } from "./manifest";
 
 // Only fresh clipboard output uses current folder labels. Frozen manifest/request bytes stay intact.
 // Match known workspace path forms, never runtime URLs, filenames, arbitrary prose or external URLs.
@@ -11,7 +11,7 @@ export function localizeArtPromptPaths(prompt: string): string {
       return name ? `${prefix}art-src/공통화풍참고/` : matched;
     }
     if (matched.endsWith("incoming-*/")) {
-      return `${prefix}art-src/${CATEGORY_KO.tree}/${artSlot("tree-pine")!.nameKo}/반려본/`;
+      return `${prefix}art-src/<범주명>/<엔티티명>/반려본/`;
     }
     return `${prefix}art-src/<범주명>/<엔티티명>/작업회차/<회차>/원본`;
   })

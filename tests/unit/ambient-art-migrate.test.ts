@@ -19,8 +19,8 @@ async function fixture() {
   const workspaceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "vic-art-migrate-test-"));
   temporary.push(workspaceRoot);
   const png = await sharp({ create: { width: 8, height: 8, channels: 4, background: "#71826d" } }).png().toBuffer();
-  put(workspaceRoot, "art-src/acorn.png", png);
-  put(workspaceRoot, "art-src/pebble-1.png", png);
+  put(workspaceRoot, "art-src/sun-disc-1.png", png);
+  put(workspaceRoot, "art-src/moon-phase-1.png", png);
   put(workspaceRoot, "art-src/incoming-pine/tree-pine-winter-1.png", png);
   const protectedPaths = [
     "public/ambient/art/tree-pine-1.png",
@@ -93,13 +93,13 @@ describe("recorded art migration", () => {
 
   it("preserves canonical names and bytes, protects public/run snapshots and repeats completed calls without writes", async () => {
     const { workspaceRoot, png, protectedPaths } = await fixture();
-    const image = "art-src/공통화풍참고/소품/nut.png", sidecar = `${image}.json`;
-    const provenance = json({ source: "example", category: "prop", image: "nut.png" });
+    const image = "art-src/공통화풍참고/하늘·천체/nut.png", sidecar = `${image}.json`;
+    const provenance = json({ source: "example", category: "sky", image: "nut.png" });
     put(workspaceRoot, image, png);
     put(workspaceRoot, sidecar, provenance);
-    const receipt = await migration.planMigration({ workspaceRoot, references: { visualMethod: "inspected", moves: [{ selected: "candidate", entity: "acorn", category: "prop", sourceImage: image, sourceSidecar: sidecar, imageSha256: hash(png), sidecarSha256: hash(provenance), reason: "shape", confidence: "high" }] } });
+    const receipt = await migration.planMigration({ workspaceRoot, references: { visualMethod: "inspected", moves: [{ selected: "candidate", entity: "sun-disc", category: "sky", sourceImage: image, sourceSidecar: sidecar, imageSha256: hash(png), sidecarSha256: hash(provenance), reason: "shape", confidence: "high" }] } });
     const before = sourceBytes(workspaceRoot, receipt);
-    expect(receipt.plan.moves.map((item: { target: string }) => item.target)).toContain("art-src/소품/도토리/생성본/1/가을/acorn.png");
+    expect(receipt.plan.moves.map((item: { target: string }) => item.target)).toContain("art-src/하늘·천체/해/생성본/1/공통/sun-disc-1.png");
     expect(receipt.plan.moves.map((item: { target: string }) => item.target)).toContain("art-src/나무/소나무/반려본/접수-소나무/tree-pine-winter-1.png");
     const protectedBefore = protectedPaths.map((file) => fs.readFileSync(path.join(workspaceRoot, file)));
     const save = vi.fn();
@@ -149,7 +149,7 @@ describe("recorded art migration", () => {
     const { workspaceRoot } = await fixture();
     const receipt = await migration.planMigration({ workspaceRoot });
     const original = sourceBytes(workspaceRoot, receipt);
-    for (const destination of ["art-src/../../outside.png", "public/ambient/art/acorn.png", "art-src/tree/tree-pine/runs/pilot/acorn.png", "art-src/나무/소나무/작업회차/시험회차/acorn.png", "art-src/이관기록/acorn.png"]) {
+    for (const destination of ["art-src/../../outside.png", "public/ambient/art/sun-disc-1.png", "art-src/tree/tree-pine/runs/pilot/sun-disc-1.png", "art-src/나무/소나무/작업회차/시험회차/sun-disc-1.png", "art-src/이관기록/sun-disc-1.png"]) {
       const changed = structuredClone(receipt);
       changed.plan.moves[0].target = destination;
       changed.planSha256 = hash(json(changed.plan));
@@ -157,9 +157,9 @@ describe("recorded art migration", () => {
     }
     const redirected = path.join(workspaceRoot, "redirected");
     fs.mkdirSync(redirected);
-    const entityParent = path.join(workspaceRoot, "art-src/소품");
+    const entityParent = path.join(workspaceRoot, "art-src/하늘·천체");
     fs.mkdirSync(entityParent, { recursive: true });
-    fs.symlinkSync(redirected, path.join(entityParent, "도토리"), "junction");
+    fs.symlinkSync(redirected, path.join(entityParent, "해"), "junction");
     expect(() => migration.applyMigration({ workspaceRoot, receipt })).toThrow(/Linked path forbidden/);
     expect(sourceBytes(workspaceRoot, receipt)).toEqual(original);
     expect(fs.readdirSync(redirected)).toEqual([]);

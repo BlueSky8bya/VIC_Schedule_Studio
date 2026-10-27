@@ -1,48 +1,37 @@
 "use client";
 
-// 앰비언트 아트 보드(2026-09-04, 2026-09-07 개정) — 계절 배경의 모든 그림 자리(매니페스트)를 한 화면에서 관리한다: 지금 화면이 쓰는
+// 앰비언트 아트 보드 — 하늘·천체 그림 자리(매니페스트)를 한 화면에서 관리한다: 지금 화면이 쓰는
 // 대체물(코드 도형·이모지·실루엣) ↔ 납품된 PNG(`public/ambient/art/<id>.png`), 자리 규격(계절·카메라·크기·변형·도트 격자),
-// 코덱스 프롬프트 복사(파일럿·보이는 것만·1차·2차·전체·자리별). 파일을 폴더에 넣고 새로고침하면 상태가 바뀐다(서버가 폴더를 읽는다).
+// 코덱스 프롬프트 복사(파일럿·보이는 것만·전체·자리별). 파일을 폴더에 넣고 새로고침하면 상태가 바뀐다(서버가 폴더를 읽는다).
 // 개발자 전용(라우트가 막는다).
-//
-// 개정 내용(2026-09-07): ① **빈 자리**(대체물조차 없는 26자리)를 대기와 구분해 따로 세고 거른다 — 바이옴 정체성 결손이 여기 있다.
-// ② **파일럿 배치**(ENTITY_ART_PLAN §4, 12장)를 자리마다 표시하고 그 프롬프트만 따로 뽑는다. ③ 자리마다 **도트 격자·블록·저장 변**을
-// 보여 준다(결정 ⓐ′ — 코덱스가 지킬 수와 우리가 줄이는 배수가 한 화면에 있어야 어긋나지 않는다). ④ 카드 98장이 한 번에 대체물을
-// 굽던 것을 **화면에 들어올 때만** 굽게 바꿨다(IntersectionObserver) + 카드 메모이즈 + 검색어 지연.
 
 import type React from "react";
 import { memo, useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Route } from "next";
-import { ArrowLeft, BookOpen, Check, ClipboardCopy, Search } from "lucide-react";
+import { ArrowLeft, Check, ClipboardCopy, Search } from "lucide-react";
 import "./ambient-art-board.css";
 import {
   ART_DIR,
   ART_SLOTS,
   batchPrompt,
   CATEGORY_KO,
-  codexMasterPrompt,
   dotBlock,
   pilotFiles,
   pilotPrompt,
   pilotSlots,
   SEASON_KO,
   slotFiles,
-  slotPrompt,
   targetEdge,
   type ArtCategory,
   type ArtFileInfo,
   type ArtSlot,
   type PresentArt
 } from "@/components/shared/ambient/art/manifest";
-import { kstToday, type SeasonKey } from "@/components/shared/ambient/registry";
+import type { SeasonKey } from "@/components/shared/ambient/registry";
 import { previewOf } from "@/components/shared/ambient/art/preview";
 import { localizeArtPromptPaths } from "@/components/shared/ambient/art/prompt-paths";
-import { codexById, CODEX_KINDS, HABITAT_LABEL, type CodexEntry } from "@/components/shared/ambient/world/codex";
-import { ECOLOGICAL_REGIONS } from "@/components/shared/ambient/world/biomes";
-import { TIER_DOTS, TIER_LABEL } from "@/components/shared/ambient/world/rarity";
-import { BAND_LABEL } from "@/components/shared/ambient/world/time";
 import { hapticTick } from "@/lib/ui/haptics";
 
 type Props = {
@@ -54,29 +43,7 @@ type Props = {
 
 
 const SEASONS: SeasonKey[] = ["spring", "summer", "autumn", "winter"];
-/** 달 목록을 사람이 읽는 줄로 — 1~12 전부면 "사철", 이어진 구간은 "4~10월", 흩어지면 쉼표. */
-function monthsLabel(months: readonly number[]): string {
-  if (months.length >= 12) return "사철";
-  const sorted = [...months].sort((a, b) => a - b);
-  const runs: [number, number][] = [];
-  for (const mo of sorted) {
-    const last = runs[runs.length - 1];
-    if (last && mo === last[1] + 1) last[1] = mo;
-    else runs.push([mo, mo]);
-  }
-  // 12월과 1월이 이어지면 겨울을 가로지르는 한 구간이다(11~3월).
-  if (runs.length > 1 && runs[0][0] === 1 && runs[runs.length - 1][1] === 12) {
-    const first = runs.shift()!;
-    runs[runs.length - 1][1] = first[1] + 12;
-  }
-  return runs.map(([a, b]) => (a === b ? `${a}월` : `${a}~${((b - 1) % 12) + 1}월`)).join(", ");
-}
-/** 시간대 목록 — 여섯이면 "종일". */
-const bandsLabel = (bands: readonly string[]): string =>
-  bands.length >= 6 ? "종일" : bands.map((b) => BAND_LABEL[b as keyof typeof BAND_LABEL]).join("·");
-const CATS: ArtCategory[] = ["tree", "plant", "ground", "water", "prop", "sky", "fish", "bug", "animal"];
-const WAVES = [1, 2, 3] as const;
-const MONTH_NUMS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+const CATS: ArtCategory[] = ["sky"];
 
 /** 지금 화면 필터 — "대기"를 다시 둘로 가른다: 대체물이라도 있는 자리 ↔ 아무것도 안 그려지는 자리. */
 type NowFilter = "all" | "sub" | "none";
@@ -114,7 +81,7 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
-/** 카드 하나가 화면에 들어왔는가 — 자리 98개가 한꺼번에 대체물을 굽지 않게 한다(굽기는 캔버스 합성이라 카드당 수 ms).
+/** 카드 하나가 화면에 들어왔는가 — 모든 자리가 한꺼번에 대체물을 굽지 않게 한다(굽기는 캔버스 합성이라 카드당 수 ms).
  *  **관찰 대상은 카드 자체다.** 미리보기 칸은 `display: contents`라 상자가 없어서, 거기에 옵서버를 걸면 영영 교차하지 않는다. */
 function useInView<T extends HTMLElement>() {
   const ref = useRef<T>(null);
@@ -170,72 +137,7 @@ function NowPreview({ slot, seen }: { slot: ArtSlot; seen: boolean }) {
   return <div ref={ref} style={{ display: "contents" }} />;
 }
 
-type CardProps = { slot: ArtSlot; files: ArtFileInfo[]; stamp: number; onCopy: (text: string, label: string) => void; i: number };
-
-/** 도감 표의 한 줄(2026-09-07) — 모여봐요 동물의 숲 도감 페이지와 **같은 형식**: 그림 · 이름 · 사는 곳 · 때 · 크기 ·
- *  희귀도 · **월별 열두 칸**. 열두 칸이 이 형식의 핵심이다 — "몇 월에 나오나"를 글로 읽는 것과 칸으로 보는 것은
- *  전혀 다른 일이고(“5~9월”은 읽어야 알지만 칸은 한눈에 들어온다), 종을 세로로 쌓았을 때 **달의 띠가 보인다**.
- *  내용은 우리 것이다 — 참고한 것은 표의 생김새뿐(ADR-0019 결정 3). */
-const CodexRow = memo(function CodexRow({
-  slot,
-  entry,
-  files,
-  stamp,
-  onCopy,
-  month
-}: {
-  slot: ArtSlot;
-  entry: CodexEntry;
-  files: ArtFileInfo[];
-  stamp: number;
-  onCopy: (t: string, l: string) => void;
-  month: number;
-}) {
-  const want = slotFiles(slot);
-  const done = files.length >= want.length;
-  const here = entry.months.includes(month);
-  return (
-    <tr data-state={done ? "done" : files.length ? "partial" : "todo"} data-now={here ? "1" : "0"}>
-      <td className="cx-pic">
-        <span className="art-cell">
-          {files.length ? (
-            <Image alt={slot.nameKo} height={40} loading="lazy" src={`${ART_DIR}/${files[0].file}?v=${stamp}`} unoptimized width={40} />
-          ) : (
-            <NowPreview seen slot={slot} />
-          )}
-        </span>
-      </td>
-      <td className="cx-name">
-        <strong>{entry.nameKo}</strong>
-        <code>{entry.id}</code>
-      </td>
-      <td className="cx-where">
-        {entry.biomes.map((b) => ECOLOGICAL_REGIONS[b]).join("·")}
-        <i>{HABITAT_LABEL[entry.habitat]}</i>
-      </td>
-      <td className="cx-when">{bandsLabel(entry.bands)}</td>
-      <td className="cx-size">
-        {entry.sizeCm[0]}~{entry.sizeCm[1]}cm
-      </td>
-      <td className={`cx-tier tier-${entry.tier}`} title={TIER_LABEL[entry.tier]}>
-        {TIER_DOTS[entry.tier]}
-      </td>
-      <td className="cx-months">
-        <span className="cx-mgrid">
-          {MONTH_NUMS.map((mo) => (
-            <i aria-hidden="true" className={entry.months.includes(mo) ? "on" : ""} data-now={mo === month ? "1" : "0"} key={mo} />
-          ))}
-        </span>
-        <em>{monthsLabel(entry.months)}</em>
-      </td>
-      <td className="cx-do">
-        <button className="art-btn small" data-act="art-slot-prompt-copy" onClick={() => onCopy(slotPrompt(slot), `${slot.nameKo} 프롬프트`)} type="button">
-          <ClipboardCopy aria-hidden="true" size={12} />
-        </button>
-      </td>
-    </tr>
-  );
-});
+type CardProps = { slot: ArtSlot; files: ArtFileInfo[]; stamp: number; i: number };
 
 const Card = memo(function Card({ slot, files, stamp, i }: CardProps) {
   const { ref, seen } = useInView<HTMLAnchorElement>();
@@ -308,16 +210,9 @@ export function AmbientArtBoard({ present, stamp }: Props) {
   const [state, setState] = useState<"all" | "todo" | "done">("all");
   const [nowF, setNowF] = useState<NowFilter>("all");
   const [pilotOnly, setPilotOnly] = useState(false);
-  // 생성 차수 — 도감 종에만 있다(1 = 바이옴 정체성부터, 3 = 마지막). 장식 자리는 차수가 없어 "전부"에서만 보인다.
-  const [wave, setWave] = useState<"all" | 1 | 2 | 3>("all");
-  // 밀도 — 카드(그림을 본다) / 목록(129종을 훑는다). 자리가 206개가 되면서 "훑기"가 별개의 일이 됐다.
-  // DOM은 같고 CSS만 바뀐다(`data-density`) — 두 벌을 만들면 둘이 어긋난다.
-  const [density, setDensity] = useState<"card" | "list" | "table">("card");
-  // 지금 달(KST) — 도감 표에서 "이번 달" 열을 표시한다. 동숲 도감을 볼 때 제일 먼저 찾는 것이 그것이다.
-  const nowMonth = useMemo(() => kstToday().m, []);
   const [sort, setSort] = useState<SortKey>("declared");
   const [q, setQ] = useState("");
-  const dq = useDeferredValue(q); // 타이핑마다 100장을 다시 거르지 않는다
+  const dq = useDeferredValue(q); // 타이핑마다 모든 자리를 다시 거르지 않는다
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
@@ -342,7 +237,7 @@ export function AmbientArtBoard({ present, stamp }: Props) {
       window.removeEventListener("scroll", onScroll);
     };
   }, []);
-  // "/"로 검색으로 뛴다 — 자리가 100개라 스크롤보다 이름을 치는 쪽이 빠르다.
+  // "/"로 이름·id 검색으로 뛴다.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -359,8 +254,6 @@ export function AmbientArtBoard({ present, stamp }: Props) {
 
   const stats = useMemo(() => {
     let done = 0;
-    let p1 = 0;
-    let p1done = 0;
     let empty = 0;
     let pilotWant = 0;
     let pilotDone = 0;
@@ -368,29 +261,19 @@ export function AmbientArtBoard({ present, stamp }: Props) {
       const ok = isDone(s);
       if (ok) done++;
       if (!ok && s.now === "none") empty++;
-      if (s.phase === 1) {
-        p1++;
-        if (ok) p1done++;
-      }
       if (s.pilot) {
         const want = pilotFiles(s);
         pilotWant += want.length;
         pilotDone += want.filter((n) => (present[s.id] ?? []).some((f) => f.file === n)).length;
       }
     }
-    // 도감 세 권 — 종 자리(2차)만 센다. 진행률의 분모가 "그릴 자리 수"라야 도감 화면의 진행률과 같은 뜻이 된다.
-    const books = CODEX_KINDS.map((k) => {
-      const list = ART_SLOTS.filter((sl) => sl.phase === 2 && sl.category === (k as string));
-      return { kind: k, total: list.length, done: list.filter((sl) => isDone(sl)).length };
-    });
-    return { total: ART_SLOTS.length, done, p1, p1done, empty, pilotWant, pilotDone, books };
+    return { total: ART_SLOTS.length, done, empty, pilotWant, pilotDone };
   }, [present, isDone]);
 
   const visible = useMemo(() => {
     const n = dq.trim().toLowerCase();
     const list = ART_SLOTS.filter((s) => {
       if (pilotOnly && !s.pilot) return false;
-      if (wave !== "all" && (codexById(s.id)?.wave ?? 0) !== wave) return false;
       if (season !== "all" && !s.seasons.includes(season)) return false;
       if (cat !== "all" && s.category !== cat) return false;
       const ok = isDone(s);
@@ -404,9 +287,9 @@ export function AmbientArtBoard({ present, stamp }: Props) {
     if (sort === "big") return [...list].sort((a, b) => Math.max(b.px[0], b.px[1]) - Math.max(a.px[0], a.px[1]));
     if (sort === "empty") return [...list].sort((a, b) => Number(b.now === "none") - Number(a.now === "none"));
     return list;
-  }, [season, cat, state, nowF, pilotOnly, wave, sort, dq, isDone]);
+  }, [season, cat, state, nowF, pilotOnly, sort, dq, isDone]);
 
-  // 카드 100장을 메모이즈하려면 넘기는 함수가 렌더마다 새로 만들어지면 안 된다 — setState·hapticTick만 쓰므로 의존성이 없다.
+  // 모든 복사 동작은 같은 경로 현지화·클립보드·알림을 쓴다.
   const copy = useCallback(async (text: string, label: string) => {
     hapticTick();
     const currentPrompt = localizeArtPromptPaths(text);
@@ -417,8 +300,7 @@ export function AmbientArtBoard({ present, stamp }: Props) {
     if (ok) hapticTick();
   }, []);
 
-  // 아직 안 온 파일들(보이는 자리 기준) — **자리가 아니라 파일** 단위다. 변형이 둘인 자리는 한 장만 와 있을 수 있다
-  // (소나무 -1은 배달, -2는 아직). 자리 단위로 다시 부탁하면 이미 합격한 그림을 다시 만들게 된다.
+  // 아직 안 온 파일들(보이는 자리 기준) — 변형별 납품 상태를 보존하며 파일 단위로 부탁한다.
   const missingFiles = useMemo(() => {
     const out: string[] = [];
     for (const s of visible) {
@@ -428,31 +310,27 @@ export function AmbientArtBoard({ present, stamp }: Props) {
     return out;
   }, [visible, present]);
 
-  // 자리가 206개가 되면서 "1차 / 2차" 두 덩어리로는 못 읽는다 — **갈래별로** 나누고 머리를 스티키로 붙인다.
-  // 순서는 화면에서의 층 순서와 같다: 땅에 선 것 → 땅 → 물 → 하늘 → 그 안에 사는 것.
+  // 하늘·천체 자리의 진행과 납품 상태를 같은 카드 격자로 보여 준다.
   const groups = useMemo(() => {
-    const order: ArtCategory[] = ["tree", "plant", "ground", "water", "prop", "sky", "fish", "bug", "animal"];
-    return order
-      .map((k) => {
-        const list = visible.filter((s2) => s2.category === k);
-        const all = ART_SLOTS.filter((s2) => s2.category === k);
-        return { key: k, list, done: all.filter((s2) => isDone(s2)).length, total: all.length };
-      })
-      .filter((g) => g.list.length > 0);
+    return CATS.map((k) => {
+      const list = visible.filter((s2) => s2.category === k);
+      const all = ART_SLOTS.filter((s2) => s2.category === k);
+      return { key: k, list, done: all.filter((s2) => isDone(s2)).length, total: all.length };
+    }).filter((g) => g.list.length > 0);
   }, [visible, isDone]);
   const visibleFiles = visible.reduce((n, s) => n + slotFiles(s).length, 0);
   const pilotCount = pilotSlots().reduce((n, s) => n + pilotFiles(s).length, 0);
 
   return (
-    <main className="art-board" data-art-board data-density={density}>
+    <main className="art-board" data-art-board>
       <header className="art-board-head">
         <div className="art-head-left">
           <a className="art-back" data-act="art-back" href="/studio">
             <ArrowLeft aria-hidden="true" size={12} /> 편집실
           </a>
-          <h1>계절 배경 아트 보드</h1>
+          <h1>하늘·천체 아트 보드</h1>
           <p className="art-lede">
-            자리마다 그림 한 장. PNG를 <code>public/ambient/art/</code>에 표의 id 이름으로 넣으면 장면이 바로 쓴다.
+            하늘·천체 자리의 그림을 관리한다. PNG를 <code>public/ambient/art/</code>에 자리의 id 이름으로 넣으면 장면이 바로 쓴다.
           </p>
           {/* 파이프라인 설명은 한 번 알면 필요 없다 — 매번 첫 화면을 먹지 않게 접는다(2026-09-08 PLAN-010). */}
           <details className="art-help">
@@ -465,8 +343,7 @@ export function AmbientArtBoard({ present, stamp }: Props) {
             </p>
           </details>
         </div>
-        {/* 통계는 **한 줄**이다(PLAN-010). 여섯 칸으로 벌려 놓으니 "0/40 도감·물고기"처럼 시작도 안 한 것이
-            합격 진행률과 같은 무게를 가졌다. 지금 움직이는 수만 남긴다 — 1차 자리 진행 · 파일럿 · 빈 자리. */}
+        {/* 통계는 한 줄로 보여 준다 — 자리 진행 · 파일럿 · 빈 자리. */}
         <div className="art-summary">
           <span className="art-sum-main">
             <b>{stats.done}</b>
@@ -483,7 +360,7 @@ export function AmbientArtBoard({ present, stamp }: Props) {
       </header>
       <div className="art-board-bar" ref={barRef}>
         <div className="art-board-bar-inner">
-          {/* 자주 쓰는 것은 "남은 파일만" 하나다 — 나머지 다섯은 서랍으로(PLAN-010). */}
+          {/* 자주 쓰는 "남은 파일만"을 앞에 두고 다른 프롬프트는 서랍으로 접는다. */}
           <div className="art-board-actions">
             <button
               className="art-btn primary"
@@ -517,20 +394,13 @@ export function AmbientArtBoard({ present, stamp }: Props) {
                 >
                   보이는 것 {visible.length}자리 · {visibleFiles}장
                 </button>
-                <button className="art-btn small" data-act="art-prompt-copy-1" onClick={() => void copy(codexMasterPrompt(1), "1차 프롬프트")} type="button">
-                  1차(초목·지형)
-                </button>
-                <button className="art-btn small" data-act="art-prompt-copy-2" onClick={() => void copy(codexMasterPrompt(2), "2차 프롬프트")} type="button">
-                  2차(생물)
-                </button>
-                <button className="art-btn small" data-act="art-prompt-copy-all" onClick={() => void copy(codexMasterPrompt(), "전체 프롬프트")} type="button">
+                <button className="art-btn small" data-act="art-prompt-copy-all" onClick={() => void copy(batchPrompt(ART_SLOTS, "하늘·천체 전체"), "전체 프롬프트")} type="button">
                   전체
                 </button>
               </div>
             </details>
           </div>
-          {/* 칩 40개가 같은 무게로 깔려 있어 **지금 무엇이 켜졌는지 스캔이 안 됐다**(PLAN-010).
-              상시 노출은 넷 — 검색 · 범주 · 상태 · 정렬. 쓰임이 드문 계절·차수·"지금"·파일럿은 서랍으로 내린다. */}
+          {/* 검색 · 범주 · 상태 · 정렬은 바로 보여 주고 계절·"지금"·파일럿은 서랍으로 접는다. */}
           <div className="art-board-filters" role="group" aria-label="필터">
             <label className="art-search">
               <Search aria-hidden="true" size={13} />
@@ -562,15 +432,6 @@ export function AmbientArtBoard({ present, stamp }: Props) {
                 </option>
               ))}
             </select>
-            <button
-              aria-pressed={density === "table"}
-              className="art-chip"
-              data-act="art-view-codex"
-              onClick={() => setDensity(density === "table" ? "card" : "table")}
-              type="button"
-            >
-              <BookOpen aria-hidden="true" size={12} /> 도감
-            </button>
             <details className="art-more">
               <summary>필터 더</summary>
               <div className="art-more-body">
@@ -581,16 +442,6 @@ export function AmbientArtBoard({ present, stamp }: Props) {
                   {SEASONS.map((k) => (
                     <button aria-pressed={season === k} className="art-chip" data-act="art-filter" key={k} onClick={() => setSeason(k)} type="button">
                       {SEASON_KO[k]}
-                    </button>
-                  ))}
-                </div>
-                <div className="art-seg" role="group" aria-label="생성 차수">
-                  <button aria-pressed={wave === "all"} className="art-chip" data-act="art-filter" onClick={() => setWave("all")} type="button">
-                    차수 전부
-                  </button>
-                  {WAVES.map((w) => (
-                    <button aria-pressed={wave === w} className="art-chip" data-act="art-filter" key={w} onClick={() => setWave(w)} type="button">
-                      {w}차
                     </button>
                   ))}
                 </div>
@@ -625,49 +476,11 @@ export function AmbientArtBoard({ present, stamp }: Props) {
               {g.done}/{g.total}
             </em>
           </h2>
-          {density === "table" && (g.key === "fish" || g.key === "bug" || g.key === "animal") ? (
-            <div className="cx-wrap">
-              <table className="cx-table">
-                <thead>
-                  <tr>
-                    <th scope="col">그림</th>
-                    <th scope="col">이름</th>
-                    <th scope="col">사는 곳</th>
-                    <th scope="col">때</th>
-                    <th scope="col">크기</th>
-                    <th scope="col">희귀도</th>
-                    <th scope="col">
-                      나오는 달
-                      <span className="cx-mhead" aria-hidden="true">
-                        {MONTH_NUMS.map((mo) => (
-                          <i data-now={mo === nowMonth ? "1" : "0"} key={mo}>
-                            {mo}
-                          </i>
-                        ))}
-                      </span>
-                    </th>
-                    <th scope="col">
-                      <span className="sr-only">프롬프트</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {g.list.map((s2) => {
-                    const e2 = codexById(s2.id);
-                    return e2 ? (
-                      <CodexRow entry={e2} files={present[s2.id] ?? []} key={s2.id} month={nowMonth} onCopy={copy} slot={s2} stamp={stamp} />
-                    ) : null;
-                  })}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="art-grid">
-              {g.list.map((s, i) => (
-                <Card files={present[s.id] ?? []} i={i} key={s.id} onCopy={copy} slot={s} stamp={stamp} />
-              ))}
-            </div>
-          )}
+          <div className="art-grid">
+            {g.list.map((s, i) => (
+              <Card files={present[s.id] ?? []} i={i} key={s.id} slot={s} stamp={stamp} />
+            ))}
+          </div>
         </section>
       ))}
       {!groups.length ? <p className="art-none">조건에 맞는 자리가 없다. 필터를 풀어 보라.</p> : null}

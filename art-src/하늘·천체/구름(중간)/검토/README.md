@@ -1,6 +1,6 @@
 <!-- ambient-art-catalog:generated v1 -->
-<!-- content-sha256: 9b27ddbd177c6c2e38740cc837ebb9aff904bfbf1829bf39d9bf6e63d7dba409 -->
-<!-- source-sha256: 53ef8f7167e52d9df6967477960aa8ab7d9b5bcb697e4b5c4594925a64ee47c1; state-sha256: 019b0f2da799acaa40910e0bf8b5c85ab8ae687e71575205df0983116473c583 -->
+<!-- content-sha256: c36acec863a13bf740fbf8de8d7e3d9ef3ac0c473d528b2c0c34218ed4035d51 -->
+<!-- source-sha256: 6df27b2c04536ebe5a648cd345b8311256c5971cbb5dce59cf9747a3201286ed; state-sha256: 019b0f2da799acaa40910e0bf8b5c85ab8ae687e71575205df0983116473c583 -->
 
 # cloud-mid 검토
 

@@ -34,6 +34,7 @@ export type TargetLabel = {
 // 기록 보존이 90일이라 당분간 집계에 계속 나타난다. 사전 항목 자체는 지우지 않는다 —
 // 지우면 옛 기록이 '이름 미등록'으로 떨어져 더 못 읽게 된다.
 const RETIRED_TARGETS = new Set([
+  "art-view-codex", "art-prompt-copy-1", "art-prompt-copy-2",
   // 2026-10-26 human removal: readable history, excluded from active candidates.
   "share-public-event", "detail-previous-event", "detail-next-event",
   // 2026-10-23: historical map actions stay readable, never unused-feature suggestions.
@@ -311,7 +312,7 @@ export const ACT: Record<string, TargetLabel> = {
   "search-clear": { name: "검색어 지우기", area: "시청자 화면" },
   "search-tag-chip": { name: "검색 태그 제안", area: "시청자 화면" },
   "search-sort": { name: "검색 정렬", area: "시청자 화면", hint: "관련도·최신·오래된·인기" },
-  "search-kind": { name: "검색 결과 종류", area: "시청자 화면", opts: { all:"전체",event:"일정",vod:"다시보기",chapter:"챕터" } },
+  "search-kind": { name: "검색 결과 종류", area: "시청자 화면", opts: { all:"전체",event:"일정",vod:"다시보기",chat:"채팅",timeline:"타임라인",chapter:"챕터(이전 통합 필터)" } },
   "record-month": { name: "기록 월 이동", area: "시청자 화면", opts: { previous:"이전 달",next:"다음 달" } },
   "record-summary": { name: "기록 근거 보기", area: "시청자 화면", opts: { content:"컨텐츠 일정",days:"컨텐츠 날짜",rest:"휴뱅 날짜" } },
   "record-event-open": { name: "기록에서 공개 일정 보기", area: "시청자 화면" },
@@ -931,6 +932,7 @@ const OPTION_NAME: Record<string, string> = {
 /** target을 사람이 읽는 이름으로. 못 풀면 이름을 지어내지 않고 '이름 미등록'으로 표시한다. */
 export function describeTarget(kind: string, target: string): TargetLabel {
   if (!target) return { name: "(대상 없음)" };
+  if (target === "search-kind#chapter") return { name: "검색 결과 종류 · 챕터(이전 통합 필터)", area: "시청자 화면", retired: true };
   // 철수한 기능은 사전 어디서 풀리든 retired 표식을 얹는다(항목마다 박아두면 흩어져서 샌다).
   const mark = (label: TargetLabel, retired: boolean): TargetLabel =>
     retired ? { ...label, retired: true } : label;

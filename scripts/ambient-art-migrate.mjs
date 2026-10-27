@@ -63,7 +63,9 @@ export async function planMigration({ workspaceRoot = root, references = { moves
     const directory = `art-src/${batch}`;
     if (!fs.existsSync(inside(workspaceRoot, directory))) continue;
     for (const name of fs.readdirSync(inside(workspaceRoot, directory)).filter((file) => file.endsWith(".png")).sort()) {
-      if (byFile.get(name)?.entity.id !== "tree-pine") throw new Error(`Unexpected rejected pine file: ${name}`);
+      // Recovery-only historical names; retirement must not invalidate existing rejected originals.
+      // This does not register any slot or permit a new ecology generation request.
+      if (!/^tree-pine(?:-(?:autumn|winter))?-[1-8]\.png$/.test(name)) throw new Error(`Unexpected rejected pine file: ${name}`);
       await add(`${directory}/${name}`, relocateArtPath(`art-src/tree/tree-pine/반려본/${batch}/${name}`), {
         kind: "legacy-rejected", batch,
         evidence: "docs/ambient/history/20260909-pine-handoff-before-routing.md",

@@ -8,13 +8,14 @@ import type {BroadcastTag,PublicSearchHit,PublicScheduleEvent} from '@/lib/domai
 describe('returned search kinds',()=>{
  const hits:PublicSearchHit[]=[{kind:'event',eventId:'public-event',dateKey:'2026-06-16',title:'public schedule',snippet:'',score:1,popularity:0,exact:true},{kind:'vod',titleNo:123,dateKey:'2026-06-16',title:'public recording',snippet:'',durationMs:3600000,score:1,popularity:0,exact:true},{kind:'chapter',titleNo:123,sec:120,dateKey:'2026-06-16',title:'public chapter',snippet:'public recording',durationMs:3600000,score:1,popularity:0,exact:true}];
  it('counts original hits once and retains the VOD context for chapter-only results',()=>{
-  expect(countSearchKinds(hits)).toEqual({all:3,event:1,vod:1,chapter:1});
-  const chapters=filterSearchKind(hits,'chapter'),group=groupSearchHits(chapters)[0];
+  expect(countSearchKinds(hits)).toEqual({all:3,event:1,vod:1,chat:0,timeline:1});
+  const chapters=filterSearchKind(hits,'timeline'),group=groupSearchHits(chapters)[0];
   expect(chapters).toHaveLength(1);expect(group.events).toHaveLength(0);expect(group.vods[0].title).toBe('public recording');expect(group.vods[0].chapters[0].sec).toBe(120);expect(group.vods[0].matched).toBe(false);
  });
+ it('separates chat from timeline on existing chapter hits without changing the public DTO',()=>{const chat={...hits[2],matchedOn:'chat'};const mixed=[...hits,chat];expect(countSearchKinds(mixed)).toEqual({all:4,event:1,vod:1,chat:1,timeline:1});expect(filterSearchKind(mixed,'chat')).toEqual([chat]);expect(filterSearchKind(mixed,'timeline')).toEqual([hits[2]]);expect(groupSearchHits(filterSearchKind(mixed,'chat'))[0].vods[0].title).toBe('public recording');});
  it('does not invent missing-kind hits, mutate source order, or claim complete retrieval beyond the returned set',()=>{
   const bounded=Array.from({length:200},(_,i)=>({...hits[0],eventId:`public-${i}`}));
-  expect(countSearchKinds(bounded)).toEqual({all:200,event:200,vod:0,chapter:0});expect(filterSearchKind(bounded,'chapter')).toEqual([]);expect(filterSearchKind(hits,'all')).toEqual(hits);expect(hits.map(h=>h.kind)).toEqual(['event','vod','chapter']);
+  expect(countSearchKinds(bounded)).toEqual({all:200,event:200,vod:0,chat:0,timeline:0});expect(filterSearchKind(bounded,'timeline')).toEqual([]);expect(filterSearchKind(hits,'all')).toEqual(hits);expect(hits.map(h=>h.kind)).toEqual(['event','vod','chapter']);
  });
  it('does not include chapter rows when only explicitly matched VOD hits are chosen',()=>{const groups=groupSearchHits(filterSearchKind(hits,'vod'));expect(groups[0].vods[0].allChapters).toEqual([]);expect(filterSearchKind(hits,'event').every(h=>h.kind==='event')).toBe(true);});
 });

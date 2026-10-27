@@ -1,10 +1,10 @@
-// 전 엔티티 레퍼런스 일괄 수집(2026-09-11, 소유자 지시) — 자리 이름과 부류에서 질의를 만들어
+// 현재 하늘·천체 엔티티 레퍼런스 일괄 수집(2026-09-11, 소유자 지시) — 자리 이름과 부류에서 질의를 만들어
 // OpenGameArt 픽셀아트와 위키미디어 커먼즈 사진을 각 엔티티 `레퍼런스/`에 사이드카와 함께 받는다.
 //
 //   node scripts/ambient-ref-fetch-all.mjs --dry                       # 엔티티별 질의만 본다(네트워크 없음)
 //   node scripts/ambient-ref-fetch-all.mjs                             # 전부(이미 그림이 있는 엔티티는 건너뛴다)
-//   node scripts/ambient-ref-fetch-all.mjs --only fish-crucian,rock    # 일부만
-//   node scripts/ambient-ref-fetch-all.mjs --skip tree-pine --pixel 4 --photo 3 --license free --sources oga,commons
+//   node scripts/ambient-ref-fetch-all.mjs --only sun-disc,cloud-wisp    # 일부만
+//   node scripts/ambient-ref-fetch-all.mjs --skip cloud-storm --pixel 4 --photo 3 --license free --sources oga,commons
 //   node scripts/ambient-ref-fetch-all.mjs --refill                    # 이미 그림이 있어도 상한까지 채운다
 //
 // 라이선스 정책(소유자 결정 2026-09-11): 자유 라이선스 전부(CC0·퍼블릭 도메인·CC-BY·CC-BY-SA·OGA-BY), NC·ND·GPL·출처 불명 제외.
@@ -32,44 +32,14 @@ export function cleanName(nameEn) {
 
 /** OpenGameArt는 게임 소품 이름으로 검색된다. 종 이름이 안 통하거나 머리 단어가 잡동사니를 부르는 자리만 덮어쓴다. */
 const OGA_QUERY = {
-  pinecone: "pinecone", footlog: "fallen log", "grass-tall": "tall grass", "grass-dry": "dry grass", "sea-stack": "sea rock", "tide-pool": "tide pool",
-  "swim-ring": "swim ring float", "snow-pile": "snow", "snow-drift": "snow", "soil-mound": "dirt mound", molehill: "mole hill", "grass-patch": "grass",
-  "gravel-patch": "gravel", "moss-patch": "moss", "shell-clam": "seashell", "seaweed-clump": "seaweed", "silver-grass": "grass", "dune-grass": "grass",
-  "berry-bush": "berry bush", "flower-white": "flower", "flower-violet": "flower", "flower-cream": "flower", "dandelion-puff": "dandelion",
-  "cloud-low": "cloud", "cloud-mid": "cloud", "cloud-high": "cloud", "cloud-wisp": "cloud", "cloud-storm": "storm cloud", "sun-disc": "sun", "moon-phase": "moon",
-  "shooting-star": "shooting star", "fish-ray": "stingray", "fish-jelly": "jellyfish", "fish-whale-shadow": "whale", "fish-dolphinfish": "mahi",
-  "bug-cabbagewhite": "white butterfly", "bug-blue": "blue butterfly", "bug-comma": "butterfly", "bug-waterstrider": "water strider",
-  "animal-raccoondog": "raccoon", "animal-leopardcat": "wild cat", "animal-mallard": "duck", "animal-mandarinduck": "duck", "animal-porpoise": "dolphin",
-  "animal-turtle-sea": "sea turtle", "animal-softshell": "turtle", "animal-terrapin": "turtle", "animal-ratsnake": "snake", "animal-fieldmouse": "mouse",
-  "animal-waterdeer": "deer", "animal-roedeer": "deer", "animal-hare": "rabbit", "animal-woodpecker": "woodpecker", "animal-skylark": "lark",
-  "animal-gull": "seagull", "animal-spoonbill": "spoonbill", "animal-fiddlercrab": "crab", "animal-mudcrab": "crab", "animal-hermitcrab": "hermit crab",
-  "animal-treefrog": "frog", "animal-anemone": "sea anemone", "animal-minkewhale": "whale"
+  "sun-disc": "sun", "moon-phase": "moon", comet: "comet", "shooting-star": "shooting star",
+  "cloud-low": "cloud", "cloud-mid": "cloud", "cloud-high": "cloud", "cloud-wisp": "cloud", "cloud-storm": "storm cloud"
 };
 
 /** 커먼즈는 실물 사진이다 — 종 이름은 그대로, 소품·하늘은 사진에서 찾을 이름으로. */
 const PHOTO_QUERY = {
-  "tree-oak": "oak tree", "tree-pine": "pine tree", "tree-birch": "birch tree", sapling: "tree sapling", shrub: "shrub", sprout: "seedling sprout",
-  "grass-tuft": "grass tuft", "grass-tall": "foxtail grass Setaria", "grass-dry": "dry grass", "silver-grass": "Miscanthus sinensis", reed: "Phragmites reed",
-  cattail: "Typha cattail", sedge: "Carex sedge", "dune-grass": "marram grass dune", "seaweed-clump": "seaweed on beach", lilypad: "water lily pad",
-  lotus: "lotus flower Nelumbo", puddle: "puddle", pebble: "pebble", rock: "rock outcrop", boulder: "boulder", twig: "twig", log: "log wood", stump: "tree stump",
-  driftwood: "driftwood", "shell-clam": "clam shell", "gravel-patch": "gravel", "moss-patch": "moss", fern: "fern frond", bramble: "bramble Rubus",
-  "berry-bush": "berry bush", "flower-white": "white wildflower", "flower-violet": "violet wildflower", "flower-cream": "cream wildflower",
-  mushroom: "mushroom forest floor", acorn: "acorn", pinecone: "pine cone", feather: "bird feather", icicle: "icicle", "snow-pile": "snow pile",
-  "snow-drift": "snowdrift", "snowman-1": "snowman", "snowman-2": "snowman", "snowman-3": "snowman", daisy: "daisy Bellis", clover: "clover Trifolium",
-  "dandelion-flower": "dandelion flower", "dandelion-puff": "dandelion seed head", "soil-mound": "soil mound", molehill: "molehill", "grass-patch": "grass patch",
-  "sea-stack": "sea stack", "tide-pool": "tide pool", "swim-ring": "swim ring", footlog: "fallen tree trunk", "sun-disc": "sun in sky", "moon-phase": "moon phases",
-  comet: "comet", "shooting-star": "meteor night sky", "cloud-low": "cumulus cloud", "cloud-mid": "altocumulus cloud", "cloud-high": "cirrus cloud",
-  "cloud-wisp": "cirrus cloud", "cloud-storm": "cumulonimbus cloud", "fish-ray": "stingray", "fish-jelly": "siphonophore", "fish-whale-shadow": "sperm whale",
-  "fish-seabass": "Sebastes schlegelii", "fish-sweetfish": "Plecoglossus altivelis", "fish-lenok": "Brachymystax lenok", "fish-halibut": "righteye flounder",
-  "bug-blue": "Lycaenidae butterfly", "bug-comma": "Polygonia c-album", "bug-spider": "Nephila clavata", "animal-fieldmouse": "Apodemus agrarius",
-  "animal-squirrel": "Sciurus vulgaris", "animal-hare": "Lepus coreanus", "animal-leopardcat": "Prionailurus bengalensis",
-  "animal-turtle-sea": "loggerhead sea turtle", "animal-terrapin": "Mauremys reevesii", "animal-porpoise": "finless porpoise", "animal-fiddlercrab": "fiddler crab",
-  "animal-mudcrab": "Helice tridens", "animal-anemone": "sea anemone", "animal-starfish": "starfish",
-  // Common names that collide with sports, cities or other meanings on Commons get the species name instead.
-  "bug-cricket": "Gryllidae cricket insect", "bug-grasshopper": "Acrididae grasshopper", "bug-locust": "Locusta migratoria", "bug-mantis": "Mantis religiosa",
-  "bug-katydid": "Tettigoniidae katydid", "animal-seal": "Phoca largha spotted seal", "fish-bitterling": "Rhodeus uyekii", "fish-eel": "Anguilla japonica",
-  "fish-snakehead": "Channa argus", "fish-goby": "Gobiidae goby fish", "fish-wrasse": "Labridae wrasse", "fish-mullet": "Mugil cephalus", "fish-shad": "Konosirus punctatus",
-  "animal-mole": "Talpidae mole animal", "animal-bat": "Rhinolophus horseshoe bat", "animal-crow": "Corvus macrorhynchos", "animal-swallow": "Hirundo rustica"
+  "sun-disc": "sun in sky", "moon-phase": "moon phases", comet: "comet", "shooting-star": "meteor night sky",
+  "cloud-low": "cumulus cloud", "cloud-mid": "altocumulus cloud", "cloud-high": "cirrus cloud", "cloud-wisp": "cirrus cloud", "cloud-storm": "cumulonimbus cloud"
 };
 
 const PHOTO_EXCLUDE = /\b(map|range|distribution|skeleton|microscop\w*|micrograph|SEM|fossil|diagram|logo|icon|chart|stamp|coin|statue|scale|eggs?|larvae?|pupa|cocoon|nymph|caterpillar|nest|track|footprint|dish|food|market|cooked|sushi|fillet|caught|fishing|drawer|label)\b/i;

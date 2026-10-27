@@ -150,9 +150,7 @@ export function createAutumn(seed: number, season:SeasonKey = "autumn"): Scene {
   let gh = 0;
   let gdpr = 0;
   // 바탕 소품 아트(버섯·잔가지·조약돌·마른 풀 + 있으면 관목·바위·그루터기·통나무) — 모두 도착하면 version이 올라 바탕을 한 번 다시 굽는다.
-  const groundArt = new ArtSet(["mushroom", "twig", "pebble", "grass-dry", "shrub-autumn", "rock", "stump", "log", "tree-oak-autumn", "tree-pine-autumn"], {
-    scaleOf: { "tree-oak-autumn": 3, "tree-pine-autumn": 3 }
-  });
+  const groundArt = new ArtSet([]); // Retired ecology art must not issue background image requests.
   let gav = -1;
   let gsh = ""; // 바탕에 구운 그림자의 조명 키(라운드 4) — 달라지면 한 번 다시 굽는다
   let skyC: HTMLCanvasElement | null = null; // 하늘 판(라운드 5) — 계절 × 날씨
