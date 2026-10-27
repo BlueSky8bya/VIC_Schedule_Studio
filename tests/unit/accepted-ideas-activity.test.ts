@@ -5,7 +5,7 @@ import { describeTarget } from '@/lib/activity/labels';
 import type { ActivityVisit, UsageRow } from '@/lib/activity/query';
 
 const state=vi.hoisted(()=>({values:[] as unknown[]}));
-vi.mock('react',async original=>({...await original<typeof import('react')>(),useEffect:()=>{},useRef:(initial:unknown)=>({current:initial}),useState:(initial:unknown)=>[state.values.length?state.values.shift():typeof initial==='function'?(initial as ()=>unknown)():initial,()=>{}]}));
+vi.mock('react',async original=>({...await original<typeof import('react')>(),useEffect:()=>{},useLayoutEffect:()=>{},useRef:(initial:unknown)=>({current:initial}),useState:(initial:unknown)=>[state.values.length?state.values.shift():typeof initial==='function'?(initial as ()=>unknown)():initial,()=>{}]}));
 vi.mock('@/lib/analytics/guard',()=>({skipAnalyticsClient:()=>false}));
 vi.mock('@/lib/activity/query',()=>({getActivityDayAction:vi.fn(),getActivityUsageAction:vi.fn()}));
 vi.mock('@/components/developer/scroll-position',()=>({ScrollPosition:()=>null}));
@@ -93,4 +93,20 @@ it('commits direct time controls once and records only their fixed identity',asy
   const initial=TimePartInput({value:21,max:23,part:'hour',onChange:change,hasSelection:false});
   initial.props.onKeyDown({key:'Enter',nativeEvent:{isComposing:false},preventDefault,stopPropagation}); initial.props.onBlur();
   expect(change).toHaveBeenCalledTimes(3);expect(change).toHaveBeenLastCalledWith(21);expect(record).toHaveBeenCalledTimes(3);
+});
+
+it('advances valid two-digit time once while preserving composition and blur deduplication',async()=>{
+  vi.stubGlobal('React',await import('react'));
+  const activity=await import('@/lib/activity/client'),record=vi.spyOn(activity,'logActivity').mockImplementation(()=>{});
+  const {TimePartInput}=await import('@/components/studio/datetime-picker');
+  const change=vi.fn(),advance=vi.fn();
+  const control=TimePartInput({value:0,max:23,part:'hour',onChange:change,onAdvance:advance});
+  const input=(value:string,isComposing=false)=>control.props.onChange({currentTarget:{value},nativeEvent:{isComposing}});
+  input('2');expect(advance).not.toHaveBeenCalled();
+  input('21',true);expect(change).not.toHaveBeenCalled();expect(advance).not.toHaveBeenCalled();
+  input('21');control.props.onBlur();
+  expect(change).toHaveBeenCalledExactlyOnceWith(21);expect(advance).toHaveBeenCalledTimes(1);
+  expect(record).toHaveBeenCalledExactlyOnceWith('ui.click',{target:'dtp-time-input#hour'});
+  input('24');expect(advance).toHaveBeenCalledTimes(1);control.props.onBlur();
+  expect(change).toHaveBeenCalledTimes(1);expect(record).toHaveBeenCalledTimes(1);
 });

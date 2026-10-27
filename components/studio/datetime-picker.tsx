@@ -1,12 +1,13 @@
 "use client";
 
 import { CalendarDays, ChevronLeft, ChevronRight, X } from "lucide-react";
-import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
+import { type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { getDayMark } from "@/lib/calendar/holidays";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
 import { hapticTick } from "@/lib/ui/haptics";
 import { logActivity } from "@/lib/activity/client";
+import { parseTimePart, timePartComplete } from '@/lib/ui/time-entry';
 
 // 떡밥 공개 시각용 커스텀 날짜·시간 선택기 — 네이티브 datetime-local 대신 앱 톤에 맞춘 전용 UI.
 // 웹(≥641px): 트리거 아래 팝오버. 모바일(≤640px): 아래에서 올라오는 바텀시트.
@@ -51,15 +52,20 @@ function daysInMonth(y: number, m: number) {
 
 const ITEM = 36; // 휠 한 칸 높이(px) — CSS .dtp-wheel-item height와 일치해야 한다.
 
-export function TimePartInput({ value, max, part, onChange, cancelBlur, hasSelection = true }: { value: number; max: number; part: "hour" | "minute"; onChange: (value: number) => void; cancelBlur?: Readonly<{ current: boolean }>; hasSelection?: boolean }) {
+export function TimePartInput({ value, max, part, onChange, cancelBlur, hasSelection = true, inputRef, onAdvance, onPrevious }: { value: number; max: number; part: "hour" | "minute"; onChange: (value: number) => void; cancelBlur?: Readonly<{ current: boolean }>; hasSelection?: boolean; inputRef?: RefObject<HTMLInputElement | null>; onAdvance?: () => void; onPrevious?: () => void }) {
   const [draft, setDraft] = useState(() => z2(value));
+  const draftRef = useRef(draft), focused = useRef(false);
   const committed = useRef(value);
   const selected = useRef(hasSelection);
-  useEffect(() => { committed.current = value; selected.current = hasSelection; setDraft(z2(value)); }, [value, hasSelection]);
-  const parsed = /^\d{1,2}$/.test(draft) && Number(draft) <= max ? Number(draft) : null;
+  useLayoutEffect(() => {
+    const changed = value !== committed.current;
+    committed.current = value; selected.current = hasSelection;
+    if (changed || !focused.current) { draftRef.current = z2(value); setDraft(z2(value)); }
+  }, [value, hasSelection]);
+  const parsed = parseTimePart(draft, max);
   const commit = (next: number | null) => {
-    if (next === null) { setDraft(z2(committed.current)); return; }
-    setDraft(z2(next));
+    if (next === null) { draftRef.current = z2(committed.current); setDraft(draftRef.current); return; }
+    draftRef.current = z2(next); setDraft(draftRef.current);
     if (selected.current && next === committed.current) return;
     committed.current = next;
     selected.current = true;
@@ -81,13 +87,19 @@ export function TimePartInput({ value, max, part, onChange, cancelBlur, hasSelec
     data-activity-manual=""
     inputMode="numeric"
     maxLength={2}
-    onBlur={() => { if (!cancelBlur?.current) commit(parsed); }}
-    onChange={event => setDraft(event.currentTarget.value)}
-    onFocus={event => event.currentTarget.select()}
+    onBlur={() => { focused.current = false; if (!cancelBlur?.current) commit(parseTimePart(draftRef.current, max)); }}
+    onChange={event => {
+      const next = event.currentTarget.value;
+      draftRef.current = next; setDraft(next);
+      if (!(event.nativeEvent as InputEvent | undefined)?.isComposing && timePartComplete(next, max)) { commit(parseTimePart(next, max)); onAdvance?.(); }
+    }}
+    onFocus={event => { focused.current = true; event.currentTarget.select(); }}
     onKeyDown={event => {
       if (event.nativeEvent.isComposing || event.keyCode === 229) return;
-      if (event.key === "Enter") { event.preventDefault(); event.stopPropagation(); commit(parsed); return; }
+      if (event.key === "Enter") { event.preventDefault(); event.stopPropagation(); commit(parsed); if (parsed !== null) onAdvance?.(); return; }
+      if (event.key === ':') { event.preventDefault(); event.stopPropagation(); if (part === 'hour' && parsed !== null) { commit(parsed); onAdvance?.(); } return; }
       if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      if (onPrevious && ((event.key === 'Backspace' && !draftRef.current) || (event.key === 'ArrowLeft' && event.currentTarget.selectionStart === 0 && event.currentTarget.selectionEnd === 0))) { event.preventDefault(); event.stopPropagation(); onPrevious(); return; }
       const next = event.key === "ArrowUp" ? Math.min(max, (parsed ?? committed.current) + 1)
         : event.key === "ArrowDown" ? Math.max(0, (parsed ?? committed.current) - 1)
           : event.key === "Home" ? 0 : event.key === "End" ? max : null;
@@ -96,7 +108,8 @@ export function TimePartInput({ value, max, part, onChange, cancelBlur, hasSelec
     }}
     pattern="[0-9]*"
     role="spinbutton"
-    title={part === "hour" ? "시 00–23" : "분 00–59"}
+    ref={inputRef}
+    title={part === "hour" ? "시 00–23 · 두 자리 입력하면 분으로" : "분 00–59"}
     type="text"
     value={draft}
   />;
@@ -107,27 +120,36 @@ function Wheel({
   value,
   onChange,
   label,
-  keyboardInput = false
+  keyboardInput = false,
+  caption
 }: {
   count: number;
   value: number;
   onChange: (n: number) => void;
   label: string;
   keyboardInput?: boolean;
+  caption?: ReactNode;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [active, setActive] = useState(value);
   const settleRef = useRef<number | null>(null);
   const progAt = useRef(0); // 프로그램적 스크롤 시각 — 그로 인한 settle은 onChange를 건너뛴다.
+  const latest = useRef({ value, onChange });
+  useLayoutEffect(() => { latest.current = { value, onChange }; }, [value, onChange]);
 
   // 외부 값이 바뀌면(또는 처음) 그 칸이 가운데 오게 스크롤.
-  useEffect(() => {
+  useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
+    // A pending settle from the previous value must not overwrite fast direct entry.
+    // Layout timing cancels it before a timer can run between commit and passive effects.
+    if (settleRef.current) { window.clearTimeout(settleRef.current); settleRef.current = null; }
     progAt.current = Date.now();
     el.scrollTop = value * ITEM;
     setActive(value);
   }, [value]);
+
+  useEffect(() => () => { if (settleRef.current) window.clearTimeout(settleRef.current); }, []);
 
   const onScroll = () => {
     const el = ref.current;
@@ -142,7 +164,7 @@ function Wheel({
       const idx = Math.max(0, Math.min(count - 1, Math.round(el.scrollTop / ITEM)));
       el.scrollTo({ top: idx * ITEM, behavior: "smooth" });
       // 방금 프로그램적으로 맞춘 스크롤이 일으킨 settle이면 값 쓰지 않음(열자마자 자동 기록 방지).
-      if (Date.now() - progAt.current > 140) onChange(idx);
+      if (Date.now() - progAt.current > 140 && idx !== latest.current.value) latest.current.onChange(idx);
     }, 90);
   };
 
@@ -182,7 +204,7 @@ function Wheel({
 
   return (
     <div className="dtp-wheel-col">
-      <span className="dtp-wheel-cap">{label}</span>
+      <span className={`dtp-wheel-cap${caption ? ' dtp-wheel-entry' : ''}`}>{caption ?? label}</span>
       <div className="dtp-wheel-wrap">
         <div className="dtp-wheel-band" aria-hidden="true" />
         <div
@@ -256,6 +278,9 @@ export function DateTimePicker({
   const [anchor, setAnchor] = useState<{ left: number; top: number; width: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
   const cancelInputCommit = useRef(false);
+  const hourRef = useRef<HTMLInputElement | null>(null), minuteRef = useRef<HTMLInputElement | null>(null), confirmRef = useRef<HTMLButtonElement | null>(null);
+  const focusMinute = () => { minuteRef.current?.focus(); minuteRef.current?.select(); };
+  const focusHour = () => { hourRef.current?.focus(); hourRef.current?.select(); };
 
   const init = p ?? nowKstParts();
   const [viewY, setViewY] = useState(init.y);
@@ -388,7 +413,7 @@ export function DateTimePicker({
   const today = nowKstParts();
 
   const panel = (
-    <div className="dtp-panel" role="dialog" aria-label="공개 시각 선택" onClick={(e) => e.stopPropagation()}>
+    <div className="dtp-panel" role="dialog" aria-label="공개 시각 선택" onClick={(e) => e.stopPropagation()} onKeyDown={e => { if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) e.stopPropagation(); }}>
       {mobile ? (
         <div className="dtp-grip" aria-hidden="true" />
       ) : null}
@@ -435,18 +460,14 @@ export function DateTimePicker({
             })}
           </div>
         </div>
-        <div className="dtp-time">
+        <div className={`dtp-time${mobile ? '' : ' is-direct'}`}>
           {mobile ? <div className="dtp-readout" aria-hidden="true">
             {base.hh < 12 ? "오전" : "오후"} {base.hh % 12 === 0 ? 12 : base.hh % 12}:{z2(base.mm)}
-          </div> : <div className="dtp-readout dtp-direct" role="group" aria-label="공개 시각 직접 입력">
-            <TimePartInput cancelBlur={cancelInputCommit} hasSelection={p !== null} max={23} onChange={setHour} part="hour" value={base.hh} />
-            <span aria-hidden="true">:</span>
-            <TimePartInput cancelBlur={cancelInputCommit} hasSelection={p !== null} max={59} onChange={setMin} part="minute" value={base.mm} />
-          </div>}
-          <div className="dtp-wheels">
-            <Wheel count={24} keyboardInput={!mobile} label="시" onChange={setHour} value={base.hh} />
-            <span className="dtp-colon" aria-hidden="true">:</span>
-            <Wheel count={60} keyboardInput={!mobile} label="분" onChange={setMin} value={base.mm} />
+          </div> : null}
+          <div className="dtp-wheels" role={mobile ? undefined : 'group'} aria-label={mobile ? undefined : '공개 시각 직접 입력'}>
+            <Wheel count={24} keyboardInput={!mobile} label="시" onChange={setHour} value={base.hh} caption={!mobile ? <><TimePartInput cancelBlur={cancelInputCommit} hasSelection={p !== null} max={23} onChange={setHour} part="hour" value={base.hh} inputRef={hourRef} onAdvance={focusMinute} /><span className="dtp-wheel-unit" aria-hidden="true">시</span></> : undefined} />
+            {mobile ? <span className="dtp-colon" aria-hidden="true">:</span> : null}
+            <Wheel count={60} keyboardInput={!mobile} label="분" onChange={setMin} value={base.mm} caption={!mobile ? <><TimePartInput cancelBlur={cancelInputCommit} hasSelection={p !== null} max={59} onChange={setMin} part="minute" value={base.mm} inputRef={minuteRef} onPrevious={focusHour} onAdvance={() => confirmRef.current?.focus()} /><span className="dtp-wheel-unit" aria-hidden="true">분</span></> : undefined} />
           </div>
         </div>
       </div>
@@ -457,7 +478,7 @@ export function DateTimePicker({
         <button className="dtp-foot-btn ghost" onClick={setToday} type="button" data-act="dtp-foot-btn">
           지금
         </button>
-        <button className="dtp-foot-btn primary" onClick={close} type="button" data-act="dtp-foot-btn">
+        <button className="dtp-foot-btn primary" onClick={close} ref={confirmRef} type="button" data-act="dtp-foot-btn">
           확인
         </button>
       </div>
