@@ -4815,6 +4815,7 @@ export function PublicPoster({
             </div>
             <div className="settings-modal-body">
               <StudioSettingsList
+                sectionMemory={{ value: settingsPrefs.settingsTab, onChange: settingsPrefs.changeSettingsTab }}
                 companionBook={companionBook}
                 companionPersonality={companionPersonality}
                 ambientMode={settingsPrefs.ambientMode}

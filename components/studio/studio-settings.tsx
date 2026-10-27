@@ -21,6 +21,7 @@ import { POSTER_THEMES, type PosterThemeKey } from "@/lib/domain/schedule-types"
 import type { GfxMode, GfxPref } from "@/lib/ui/gfx";
 import type { AmbientMode } from "@/lib/ui/motion";
 import { RhhSelect } from "@/components/studio/rhh-select";
+import type { SettingsTabKey } from "@/components/shared/use-settings-prefs";
 import { AmbientModeSegment } from "@/components/shared/ambient/showcase";
 import type { SeasonKey } from "@/components/shared/ambient/registry";
 import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
@@ -41,6 +42,7 @@ type WeatherOpt = "real" | Weather;
 type SeasonOpt = "real" | SeasonKey;
 
 export type StudioSettingsProps = {
+  sectionMemory?: { value: SettingsTabKey; onChange: (tab: SettingsTabKey) => void };
   /** Same controls, opened directly from the house book. */
   companionBook?: boolean;
   /** Open the existing book directly at its shared personality controls. */
@@ -93,7 +95,7 @@ export type StudioSettingsProps = {
   devMonth?: number;
 };
 
-type TabKey = "screen" | "text" | "motion" | "sound" | "bg" | "edit" | "viewer" | "dev" | "companion";
+type TabKey = SettingsTabKey;
 
 export type SoundSettings = {
   on: boolean;
@@ -203,6 +205,7 @@ function CompanionSettings({ preferences, onChange, globalSoundOn, globalSoundVo
 }
 
 export function StudioSettingsList({
+  sectionMemory,
   companionBook = false,
   companionPersonality = false,
   canManageTimelines = false,
@@ -229,6 +232,7 @@ export function StudioSettingsList({
   ambientMode,
   onChangeAmbientMode,
   gfxPref,
+  gfxAuto,
   onChangeGfxPref,
   posterTheme,
   onChangePosterTheme,
@@ -246,7 +250,9 @@ export function StudioSettingsList({
     ...weatherOptionsForMonth(weatherMonth).map((w) => ({ value: w as WeatherOpt, label: WEATHER_LABEL[w] }))
   ];
   const hasEditGroup = canManageTimelines || flingDelete !== null;
-  const [activeTab, setActiveTab] = useState<TabKey>("text");
+  const [localTab, setLocalTab] = useState<TabKey>("text");
+  const activeTab = sectionMemory?.value ?? localTab;
+  const setActiveTab = sectionMemory?.onChange ?? setLocalTab;
   // 글꼴 미리보기 — 타일에 마우스를 올리면 아래 미리보기만 그 글꼴로(고르기 전 둘러보기), 누르면 고른다.
   const [fontPeek, setFontPeek] = useState<string | null>(null);
   // 소리 견본 — 누른 타일이 소리 나는 동안 한 번 통 튀고 물결이 퍼진다.
@@ -262,7 +268,7 @@ export function StudioSettingsList({
   // 넓은 창은 세로 탭, 좁은 창은 가로 탭으로 같은 선택 묶음만 표시한다(2026-10-25 채택).
   // 판단은 화면 폭이 아니라 **이 목록이 놓인 상자의 폭**(컨테이너 쿼리, settings-modal.css)이라 좁은 팝오버에서도 맞다.
   const tabs: { key: TabKey; label: string; icon: ReactNode; tone: Tone; web?: boolean }[] = [
-    // 순서(2026-10-06 소유자): 글자 → 소리 → 나머지. 창을 열면 글자 탭부터.
+    // Keep the established order; the first opening/reload starts at text.
     { key: "text", label: "글자", icon: <Type size={15} />, tone: "water" },
     { key: "sound", label: "소리", icon: <Volume2 size={15} />, tone: "water" },
     { key: "screen", label: "화면", icon: <SunMoon size={15} />, tone: "water" },
@@ -356,7 +362,7 @@ export function StudioSettingsList({
     const observer = new ResizeObserver(update);
     observer.observe(nav);
     return () => observer.disconnect();
-  }, [current, tabSig]);
+  }, [current, tabSig, setActiveTab]);
   const pane = (key: TabKey, extra = "") => ({
     className: `rhh-group${extra ? ` ${extra}` : ""}${current === key ? " is-active" : ""}`,
     id: `rhh-tab-${key}-panel`,
@@ -819,7 +825,7 @@ export function StudioSettingsList({
               lockedLabel="끄기"
               onChange={onChangeGfxPref}
               options={[
-                { value: "auto", label: "자동 조절" },
+                { value: "auto", label: gfxAuto === "lite" ? "자동 · 가볍게" : gfxAuto === "soft" ? "자동 · 효과 쉬기" : "자동 · 풍부하게" },
                 { value: "max", label: "항상 최대" },
                 { value: "lite", label: "가볍게" }
               ]}

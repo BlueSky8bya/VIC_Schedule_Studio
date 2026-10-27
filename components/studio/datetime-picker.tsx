@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { getDayMark } from "@/lib/calendar/holidays";
 import { MOBILE_QUERY } from "@/lib/ui/breakpoints";
 import { hapticTick } from "@/lib/ui/haptics";
+import { logActivity } from "@/lib/activity/client";
 
 // 떡밥 공개 시각용 커스텀 날짜·시간 선택기 — 네이티브 datetime-local 대신 앱 톤에 맞춘 전용 UI.
 // 웹(≥641px): 트리거 아래 팝오버. 모바일(≤640px): 아래에서 올라오는 바텀시트.
@@ -50,16 +51,69 @@ function daysInMonth(y: number, m: number) {
 
 const ITEM = 36; // 휠 한 칸 높이(px) — CSS .dtp-wheel-item height와 일치해야 한다.
 
+export function TimePartInput({ value, max, part, onChange, cancelBlur, hasSelection = true }: { value: number; max: number; part: "hour" | "minute"; onChange: (value: number) => void; cancelBlur?: Readonly<{ current: boolean }>; hasSelection?: boolean }) {
+  const [draft, setDraft] = useState(() => z2(value));
+  const committed = useRef(value);
+  const selected = useRef(hasSelection);
+  useEffect(() => { committed.current = value; selected.current = hasSelection; setDraft(z2(value)); }, [value, hasSelection]);
+  const parsed = /^\d{1,2}$/.test(draft) && Number(draft) <= max ? Number(draft) : null;
+  const commit = (next: number | null) => {
+    if (next === null) { setDraft(z2(committed.current)); return; }
+    setDraft(z2(next));
+    if (selected.current && next === committed.current) return;
+    committed.current = next;
+    selected.current = true;
+    onChange(next);
+    // Fixed control identity only; no entered time, date, title or metadata.
+    logActivity("ui.click", { target: `dtp-time-input#${part}` });
+  };
+  return <input
+    aria-label={part === "hour" ? "공개 시 (24시간)" : "공개 분"}
+    aria-invalid={parsed === null || undefined}
+    aria-valuemax={max}
+    aria-valuemin={0}
+    aria-valuenow={parsed ?? committed.current}
+    aria-valuetext={`${parsed ?? committed.current}${part === "hour" ? "시" : "분"}`}
+    autoComplete="off"
+    className="dtp-time-input"
+    data-act="dtp-time-input"
+    data-act-opt={part}
+    data-activity-manual=""
+    inputMode="numeric"
+    maxLength={2}
+    onBlur={() => { if (!cancelBlur?.current) commit(parsed); }}
+    onChange={event => setDraft(event.currentTarget.value)}
+    onFocus={event => event.currentTarget.select()}
+    onKeyDown={event => {
+      if (event.nativeEvent.isComposing || event.keyCode === 229) return;
+      if (event.key === "Enter") { event.preventDefault(); event.stopPropagation(); commit(parsed); return; }
+      if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      const next = event.key === "ArrowUp" ? Math.min(max, (parsed ?? committed.current) + 1)
+        : event.key === "ArrowDown" ? Math.max(0, (parsed ?? committed.current) - 1)
+          : event.key === "Home" ? 0 : event.key === "End" ? max : null;
+      if (next === null) return;
+      event.preventDefault(); event.stopPropagation(); commit(next); event.currentTarget.select();
+    }}
+    pattern="[0-9]*"
+    role="spinbutton"
+    title={part === "hour" ? "시 00–23" : "분 00–59"}
+    type="text"
+    value={draft}
+  />;
+}
+
 function Wheel({
   count,
   value,
   onChange,
-  label
+  label,
+  keyboardInput = false
 }: {
   count: number;
   value: number;
   onChange: (n: number) => void;
   label: string;
+  keyboardInput?: boolean;
 }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [active, setActive] = useState(value);
@@ -150,6 +204,7 @@ function Wheel({
               <button
                 className={`dtp-wheel-item${i === active ? " on" : ""}`}
                 key={i}
+                tabIndex={keyboardInput ? -1 : 0}
                 onClick={() => {
                   // 긁다가 멈춘 직후의 우발 클릭은 1회 무시. 그 외엔 어느 칸(±1·±2 포함)이든 눌러 선택.
                   if (justDragged.current) {
@@ -200,6 +255,7 @@ export function DateTimePicker({
   const [mobile, setMobile] = useState(false);
   const [anchor, setAnchor] = useState<{ left: number; top: number; width: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const cancelInputCommit = useRef(false);
 
   const init = p ?? nowKstParts();
   const [viewY, setViewY] = useState(init.y);
@@ -224,6 +280,7 @@ export function DateTimePicker({
   };
   const openPicker = () => {
     if (disabled) return;
+    cancelInputCommit.current = false;
     const cur = parse(value) ?? nowKstParts();
     setViewY(cur.y);
     setViewM(cur.m);
@@ -231,14 +288,19 @@ export function DateTimePicker({
     hapticTick();
     setOpen(true);
   };
-  const close = () => setOpen(false);
+  const close = () => { setOpen(false); triggerRef.current?.focus({ preventScroll: true }); };
 
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") close();
+      if (e.key !== "Escape") return;
+      if (e.isComposing || e.keyCode === 229) { e.stopPropagation(); return; }
+      // Restoring focus blurs the still-mounted input before React removes it.
+      // Mark cancellation first so that blur cannot commit an Escape draft.
+      cancelInputCommit.current = true;
+      e.preventDefault(); e.stopPropagation(); close();
     };
-    document.addEventListener("keydown", onKey);
+    document.addEventListener("keydown", onKey, true);
     // 웹 팝오버: 바깥 스크롤/리사이즈 시 닫지 말고 트리거를 따라 위치만 갱신한다(닫혀 사라지지 않게).
     // 단, 시간 휠 내부 스크롤(피커 안)은 무시 — 휠이 위치 맞추며 낸 scroll까지 처리하면 깜빡인다.
     const onScroll = (e: Event) => {
@@ -253,7 +315,7 @@ export function DateTimePicker({
     window.addEventListener("scroll", onScroll, true);
     window.addEventListener("resize", onResize);
     return () => {
-      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("keydown", onKey, true);
       window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", onResize);
     };
@@ -374,13 +436,17 @@ export function DateTimePicker({
           </div>
         </div>
         <div className="dtp-time">
-          <div className="dtp-readout" aria-hidden="true">
+          {mobile ? <div className="dtp-readout" aria-hidden="true">
             {base.hh < 12 ? "오전" : "오후"} {base.hh % 12 === 0 ? 12 : base.hh % 12}:{z2(base.mm)}
-          </div>
+          </div> : <div className="dtp-readout dtp-direct" role="group" aria-label="공개 시각 직접 입력">
+            <TimePartInput cancelBlur={cancelInputCommit} hasSelection={p !== null} max={23} onChange={setHour} part="hour" value={base.hh} />
+            <span aria-hidden="true">:</span>
+            <TimePartInput cancelBlur={cancelInputCommit} hasSelection={p !== null} max={59} onChange={setMin} part="minute" value={base.mm} />
+          </div>}
           <div className="dtp-wheels">
-            <Wheel count={24} label="시" onChange={setHour} value={base.hh} />
+            <Wheel count={24} keyboardInput={!mobile} label="시" onChange={setHour} value={base.hh} />
             <span className="dtp-colon" aria-hidden="true">:</span>
-            <Wheel count={60} label="분" onChange={setMin} value={base.mm} />
+            <Wheel count={60} keyboardInput={!mobile} label="분" onChange={setMin} value={base.mm} />
           </div>
         </div>
       </div>

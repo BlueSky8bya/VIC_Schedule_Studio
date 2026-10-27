@@ -1039,7 +1039,9 @@ export function StudioShell({
     changeAmbientMode,
     gfxPref: gfxPrefState,
     gfxAuto,
-    changeGfxPref
+    changeGfxPref,
+    settingsTab,
+    changeSettingsTab
   } = useSettingsPrefs(onGfxAuto);
   // Position-only handoff lives for this shell, outside either engine's
   // mount. Actual staff authority gates it; role preview changes no authority.
@@ -1243,6 +1245,7 @@ export function StudioShell({
   function renderSettingsList() {
     return (
       <StudioSettingsList
+        sectionMemory={{ value: settingsTab, onChange: changeSettingsTab }}
         companionBook={companionBook}
         companionPersonality={companionPersonality}
         textPx={textPx}

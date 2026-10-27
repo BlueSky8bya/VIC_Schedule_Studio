@@ -401,6 +401,7 @@ export const ACT: Record<string, TargetLabel> = {
   "dtp-trigger": { name: "날짜·시간 고르기 열기", area: "편집실" },
   "dtp-cell": { name: "날짜 고르기", area: "편집실" },
   "dtp-wheel-item": { name: "시간 고르기", area: "편집실" },
+  "dtp-time-input": { name: "공개 시각 직접 입력", area: "편집실", opts: { hour: "시", minute: "분" } },
   "dtp-foot-btn": { name: "날짜·시간 확인/취소", area: "편집실" },
 
   // 태그 편집

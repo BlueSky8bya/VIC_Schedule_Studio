@@ -42,7 +42,11 @@ import { applyFont, applyWeight, FONT_BASE, fontPref, setFontPref, setWeightPref
 import { PREF_SURFACE_EVENT } from "@/lib/ui/pref-surface";
 import { DEFAULT_COMPANION_PREFERENCES, getCompanionPreferences, setCompanionPreferences, subscribeCompanionPreferences, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 
+export type SettingsTabKey = "screen" | "text" | "motion" | "sound" | "bg" | "edit" | "viewer" | "dev" | "companion";
+
 export type SettingsPrefs = {
+  settingsTab: SettingsTabKey;
+  changeSettingsTab: (tab: SettingsTabKey) => void;
   hapticsSupported: boolean;
   hapticsOn: boolean;
   toggleHaptics: () => void;
@@ -84,6 +88,9 @@ export type SettingsPrefs = {
  * @param onGfxAuto 자동 판정이 스스로 품질을 내렸을 때(vic:gfx-auto). 편집실은 토스트로 알린다.
  */
 export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsPrefs {
+  // Host lifetime only: closing a settings window retains its section;
+  // reloading the page starts at text. No storage or activity on restoration.
+  const [settingsTab, changeSettingsTab] = useState<SettingsTabKey>("text");
   // This is an unread hydration seed, not the product default. Read the saved
   // master first so a stored OFF never mounts/decodes a pet for one frame when
   // desktop capability becomes available before this passive effect runs.
@@ -336,6 +343,8 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
   }, []);
 
   return {
+    settingsTab,
+    changeSettingsTab,
     hapticsSupported,
     hapticsOn,
     toggleHaptics,
