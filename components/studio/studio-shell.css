@@ -73,7 +73,7 @@ body::-webkit-scrollbar {
 
 .studio-topbar h1 {
   margin: 0;
-  font-size: calc(24px * var(--cal-text, 1));
+  font-size: calc(24px * var(--ui-text-scale, 1));
 }
 /* 왼쪽 칸: 공유 집 진입. 화면 하단 메타와 독립된 헤더 시작점을 유지한다. */
 .studio-left {
@@ -158,7 +158,7 @@ body::-webkit-scrollbar {
   transition-timing-function: var(--ease-exit);
 }
 .studio-month-label strong {
-  font-size: calc(clamp(26px, 2.5vw, 44px) * var(--cal-text, 1));
+  font-size: calc(var(--text-month) / var(--shell-zoom, 1));
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--ink, #1c2433);
@@ -639,7 +639,7 @@ body::-webkit-scrollbar {
     margin-bottom: 4px;
     padding: 9px 12px;
     border-radius: var(--r-md);
-    font-size: calc(13px * var(--cal-text, 1));
+    font-size: calc(13px * var(--ui-text-scale, 1));
   }
   .draft-restored-discard {
     padding: 5px 13px;
@@ -1064,7 +1064,7 @@ html[data-reduce-motion] .cal-zoom-float {
   color: var(--studio-action-text);
 }
 .dp-live-tile strong {
-  font-size: calc(26px * var(--cal-text, 1));
+  font-size: calc(26px * var(--heading-text-scale, 1));
   font-weight: 600;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -1078,10 +1078,10 @@ html[data-reduce-motion] .cal-zoom-float {
     padding: 12px 16px;
   }
   .dp-live-tile strong {
-    font-size: calc(30px * var(--cal-text, 1));
+    font-size: calc(30px * var(--heading-text-scale, 1));
   }
   .dp-live-tile span {
-    font-size: calc(13px * var(--cal-text, 1));
+    font-size: calc(13px * var(--ui-text-scale, 1));
   }
 }
 .developer-panel-list {
@@ -1213,13 +1213,13 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
   }
   .badge-criteria .bc-flame {
     min-width: 60px;
-    font-size: calc(17px * var(--cal-text, 1));
+    font-size: calc(17px * var(--ui-text-scale, 1));
   }
   .badge-criteria .bc-body b {
     font-size: var(--text-ui);
   }
   .badge-criteria .bc-body em {
-    font-size: calc(13px * var(--cal-text, 1));
+    font-size: calc(13px * var(--ui-text-scale, 1));
   }
 }
 
@@ -1233,7 +1233,7 @@ html[data-reduce-motion] .insights-track > .insights-panel > * {
 }
 @media (min-width: 1000px) {
   .vt-occ-note {
-    font-size: calc(13px * var(--cal-text, 1));
+    font-size: calc(13px * var(--ui-text-scale, 1));
   }
 }
 
@@ -1543,7 +1543,7 @@ html[data-reduce-motion] .scrollpos-tag {
   flex: none;
   width: 9px;
   color: var(--muted);
-  font-size: calc(9px * var(--cal-text, 1));
+  font-size: calc(9px * var(--ui-text-scale, 1));
 }
 .act-dev {
   flex: none;
@@ -1710,7 +1710,7 @@ html[data-reduce-motion] .act-live::before {
 .act-t i {
   display: block;
   font-style: normal;
-  font-size: calc(9.5px * var(--cal-text, 1));
+  font-size: calc(9.5px * var(--ui-text-scale, 1));
   line-height: 1.2;
   opacity: 0.7;
 }
@@ -1766,7 +1766,7 @@ html[data-reduce-motion] .act-live::before {
   align-self: center;
   flex: none;
   color: var(--muted);
-  font-size: calc(9.5px * var(--cal-text, 1));
+  font-size: calc(9.5px * var(--ui-text-scale, 1));
   font-style: normal;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -1887,7 +1887,7 @@ html[data-reduce-motion] .act-live::before {
 }
 .upick-btn span {
   color: var(--muted);
-  font-size: calc(9px * var(--cal-text, 1));
+  font-size: calc(9px * var(--ui-text-scale, 1));
 }
 .upick-btn:hover {
   border-color: var(--studio-action-tint);
@@ -2792,7 +2792,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   .dtp-time.is-direct .dtp-wheels { gap: 6px; margin-right: calc(var(--control-hit, 44px) + 4px); }
 }
 .dtp-wheel-cap.dtp-wheel-entry { top: -38px; height: 36px; display: flex; align-items: center; justify-content: center; gap: 1px; color: var(--studio-action-text); font-variant-numeric: tabular-nums; }
-.dtp-wheel-entry .dtp-time-input { font-size: calc(22px * var(--cal-text, 1)); font-weight: 700; line-height: 1.25; width: 2.15ch; padding: 2px 1px; }
+.dtp-wheel-entry .dtp-time-input { font-size: calc(22px * var(--ui-text-scale, 1)); font-weight: 700; line-height: 1.25; width: 2.15ch; padding: 2px 1px; }
 .dtp-wheel-unit { color: var(--muted); font-size: var(--text-body); font-weight: 600; }
 .dtp-time-input {
   box-sizing: content-box;
@@ -2877,7 +2877,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   scroll-snap-align: center;
   border: 0;
   background: transparent;
-  font-size: calc(16px * var(--cal-text, 1));
+  font-size: calc(16px * var(--ui-text-scale, 1));
   font-weight: 600;
   color: var(--studio-action-line);
   cursor: pointer;
@@ -3045,7 +3045,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   transform: scale(var(--press-scale));
 }
 .rest-menu-emoji {
-  font-size: calc(16px * var(--cal-text, 1));
+  font-size: calc(16px * var(--ui-text-scale, 1));
   line-height: 1;
 }
 
@@ -3198,7 +3198,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 @media (min-width: 1000px) {
   .vcrit,
   .vlive {
-    font-size: calc(12px * var(--cal-text, 1));
+    font-size: calc(12px * var(--ui-text-scale, 1));
   }
 }
 /* 방문 차트 미세 상호작용(손맛) — 막대 호버 시 밝게, 미니달력·히트맵 칸은 살짝 떠오르며 또렷이. */
@@ -3264,7 +3264,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 .dsess-x {
   margin-top: 2px;
   text-align: center;
-  font-size: calc(8px * var(--cal-text, 1));
+  font-size: calc(8px * var(--ui-text-scale, 1));
   font-weight: 600;
   color: var(--muted);
   height: 10px;
@@ -3314,7 +3314,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 .vt-day {
   margin-top: 4px;
   text-align: center;
-  font-size: calc(9px * var(--cal-text, 1));
+  font-size: calc(9px * var(--ui-text-scale, 1));
   font-weight: 600;
   color: var(--muted);
 }
@@ -3383,7 +3383,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   top: 100%;
   transform: translateX(50%);
   margin-top: 3px;
-  font-size: calc(8.5px * var(--cal-text, 1));
+  font-size: calc(8.5px * var(--ui-text-scale, 1));
   font-weight: 600;
   color: var(--muted);
   pointer-events: none;
@@ -3417,7 +3417,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   background: var(--studio-action);
   color: #fff;
   font-style: normal;
-  font-size: calc(8.5px * var(--cal-text, 1));
+  font-size: calc(8.5px * var(--ui-text-scale, 1));
   font-weight: 600;
   white-space: nowrap;
 }
@@ -3437,7 +3437,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 @media (min-width: 1000px) {
   .vt-hours-empty {
-    font-size: calc(13px * var(--cal-text, 1));
+    font-size: calc(13px * var(--ui-text-scale, 1));
   }
 }
 /* 관리자 접속 세션 — 하루=한 행, 가로 24h 축에 머문 구간을 기기색 막대로(수면/스크린타임 타임라인). */
@@ -3538,7 +3538,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
     font-size: var(--text-label);
   }
   .own-axis {
-    font-size: calc(11.5px * var(--cal-text, 1));
+    font-size: calc(11.5px * var(--ui-text-scale, 1));
   }
 }
 /* 일별 방문 상세 모달(개발자가 달력 날짜 클릭 → 그날 통계). 차트는 vt-*·own-* 재사용. */
@@ -3555,7 +3555,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   gap: 6px;
 }
 .dv-total strong {
-  font-size: calc(30px * var(--cal-text, 1));
+  font-size: calc(30px * var(--heading-text-scale, 1));
   font-weight: 600;
   line-height: 1;
   color: var(--ink);
@@ -3652,7 +3652,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   border: 1px solid var(--studio-action-tint-hi);
 }
 .vsum-kpis b {
-  font-size: calc(16px * var(--cal-text, 1));
+  font-size: calc(16px * var(--ui-text-scale, 1));
   font-weight: 600;
   color: var(--ink-soft);
   line-height: 1.1;
@@ -3705,7 +3705,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   display: flex;
   gap: 3px;
   margin-left: 19px;
-  font-size: calc(9px * var(--cal-text, 1));
+  font-size: calc(9px * var(--ui-text-scale, 1));
   font-weight: 600;
   color: var(--muted);
 }
@@ -3729,7 +3729,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 .vmini-h {
   text-align: center;
-  font-size: calc(9px * var(--cal-text, 1));
+  font-size: calc(9px * var(--ui-text-scale, 1));
   font-weight: 600;
   color: var(--muted);
 }
@@ -3902,7 +3902,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 @media (min-width: 1000px) {
   .sys-email {
-    font-size: calc(14.5px * var(--cal-text, 1));
+    font-size: calc(14.5px * var(--ui-text-scale, 1));
   }
 }
 /* 커밋 해시 — 코드 칩(고정폭). */
@@ -4002,7 +4002,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   margin-left: 4px;
   padding: 0 5px;
   border-radius: var(--r-pill);
-  font-size: calc(9.5px * var(--cal-text, 1));
+  font-size: calc(9.5px * var(--ui-text-scale, 1));
   font-weight: 600;
   background: #fff3e0;
   color: #b5651d;
@@ -4068,10 +4068,10 @@ html[data-reduce-motion] .dtp-pop-x:active {
   }
   .vlog-line2,
   .vlog-t {
-    font-size: calc(12px * var(--cal-text, 1));
+    font-size: calc(12px * var(--ui-text-scale, 1));
   }
   .vrecent-role {
-    font-size: calc(12px * var(--cal-text, 1));
+    font-size: calc(12px * var(--ui-text-scale, 1));
   }
 }
 .dv-sessions {
@@ -4120,14 +4120,14 @@ html[data-reduce-motion] .dtp-pop-x:active {
 }
 @media (min-width: 1000px) {
   .dv-total strong {
-    font-size: calc(38px * var(--cal-text, 1));
+    font-size: calc(38px * var(--heading-text-scale, 1));
   }
   .dv-total span {
     font-size: var(--text-ui);
   }
   .dv-breakdown li,
   .dv-sessions li {
-    font-size: calc(14px * var(--cal-text, 1));
+    font-size: calc(14px * var(--ui-text-scale, 1));
   }
 }
 /* 월별 하트 막대(분홍) — 빈 막대 하나로 높이만 표시. */
@@ -4409,7 +4409,7 @@ html[data-reduce-motion] .perf-windows button.active {
   
   
   .vt-legend li {
-    font-size: calc(13px * var(--cal-text, 1));
+    font-size: calc(13px * var(--ui-text-scale, 1));
   }
   .vt-day {
     font-size: var(--text-caption);
@@ -4449,7 +4449,7 @@ html[data-reduce-motion] .perf-windows button.active {
 .vt-hlabel {
   margin-top: 3px;
   text-align: center;
-  font-size: calc(8.5px * var(--cal-text, 1));
+  font-size: calc(8.5px * var(--ui-text-scale, 1));
   font-weight: 600;
   color: var(--muted);
   height: 10px;
@@ -5531,7 +5531,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
 .studio-left-panel h2,
 .event-editor-panel h2 {
   margin: 0;
-  font-size: calc(22px * var(--cal-text, 1));
+  font-size: calc(22px * var(--ui-text-scale, 1));
   color: var(--ink);
   letter-spacing: -0.01em;
 }
@@ -5614,7 +5614,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
 }
 .detail-value {
   margin: 0;
-  font-size: calc(16px * var(--cal-text, 1));
+  font-size: calc(16px * var(--ui-text-scale, 1));
   font-weight: 600;
   line-height: 1.5;
   color: var(--ink);
@@ -5673,7 +5673,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
 
 .studio-left-panel .button {
   min-height: 44px;
-  font-size: calc(16.5px * var(--cal-text, 1));
+  font-size: calc(16.5px * var(--ui-text-scale, 1));
 }
 
 /* 일정 편집 패널: 주제목(날짜)은 살짝 작게, 부제목(새 일정/일정 수정)은 살짝 크게. */
@@ -8281,11 +8281,11 @@ textarea:disabled {
   }
   
   .studio-poster-title {
-    font-size: calc(34px * var(--cal-text, 1));
+    font-size: calc(34px * var(--ui-text-scale, 1));
     white-space: normal;
   }
   .studio-poster-title span {
-    font-size: calc(22px * var(--cal-text, 1));
+    font-size: calc(22px * var(--ui-text-scale, 1));
   }
 
   .studio-role-tools {
@@ -9130,7 +9130,7 @@ html[data-theme="dark"] .tag-cpop { --cpop-error-ink: #ffabb0; }
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
   padding: 0 14px;
-  font-size: calc(16px * var(--cal-text, 1));
+  font-size: calc(16px * var(--ui-text-scale, 1));
 }
 /* 비밀번호 틀림 — 입력칸을 좌우로 짧게 흔들고 붉은 테두리(실패 연출). */
 @keyframes passcode-shake {
@@ -9292,7 +9292,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
   padding: 0 14px;
-  font-size: calc(16px * var(--cal-text, 1));
+  font-size: calc(16px * var(--ui-text-scale, 1));
 }
 
 /* (.memo-lines / .memo-line* / .line-remove 메모 줄 편집기 제거 — 참조 0) */
@@ -9540,7 +9540,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   border-radius: var(--r-md);
   background: #fff;
   color: var(--sd-ink);
-  font-size: calc(22px * var(--cal-text, 1));
+  font-size: calc(22px * var(--ui-text-scale, 1));
   font-weight: 600;
   line-height: 1;
   cursor: pointer;
@@ -10098,7 +10098,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   background: linear-gradient(135deg, var(--accent), var(--green));
   /* 이모지 글자는 자체 여백/베이스라인이 있어 grid 중앙정렬이 어긋난다.
      line-height = 원 높이, text-align center, overflow hidden으로 정확히 가운데 맞춘다. */
-  font-size: calc(34px * var(--cal-text, 1));
+  font-size: calc(34px * var(--ui-text-scale, 1));
   line-height: 50px;
   text-align: center;
   overflow: hidden;
@@ -13660,7 +13660,7 @@ body.span-dragging * {
   border-radius: var(--r-pill);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 55%), var(--elev-2);
-  font-size: calc(var(--text-label) * var(--cal-zoom, 1));
+  font-size: calc(var(--calendar-text-label) * var(--cal-zoom, 1));
   font-weight: 900;
   white-space: nowrap;
   transition: box-shadow var(--dur-spring-smooth, 0.5s) var(--spring-smooth, var(--ease));

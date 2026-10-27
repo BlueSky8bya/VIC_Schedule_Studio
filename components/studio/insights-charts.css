@@ -153,7 +153,7 @@
   justify-content: center;
   gap: 8px;
   color: #6b5bd6;
-  font-size: 12px;
+  font-size: calc(12px * var(--ui-text-scale));
   font-weight: 600;
   pointer-events: none;
   animation: insights-veil-in var(--dur-2) var(--ease);
@@ -327,7 +327,7 @@
 }
 
 .insight-tile strong {
-  font-size: 26px;
+  font-size: var(--text-metric);
   font-weight: 600;
   line-height: 1;
   color: #4a3f72;
@@ -343,7 +343,7 @@
 }
 
 .insight-tile span {
-  font-size: 12px;
+  font-size: calc(12px * var(--ui-text-scale));
   font-weight: 600;
   color: #8a82a6;
   /* 라벨이 두 줄이 되더라도 단어 중간에서 끊기지 않게(예: "한가한 / 요일"). */
@@ -405,7 +405,7 @@
 
 .insight-note {
   margin: 8px 0 0;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--ui-text-scale));
   font-weight: 600;
   color: #9a93ad;
 }
@@ -416,14 +416,14 @@
   border-radius: var(--r-md);
   background: linear-gradient(180deg, #f4f1ff, #efeaff);
   color: #4b3fb0;
-  font-size: 14px;
+  font-size: calc(14px * var(--ui-text-scale));
   font-weight: 600;
   letter-spacing: 0.01em;
 }
 
 @media (min-width: 641px) {
 .insight-headline {
-    font-size: 16px;
+    font-size: calc(16px * var(--ui-text-scale));
   }
 }
 
@@ -434,7 +434,7 @@
 
 .insight-subhead {
   margin: 20px 0 11px;
-  font-size: 12px;
+  font-size: calc(12px * var(--ui-text-scale));
   font-weight: 600;
   color: #8b7a59;
 }
@@ -486,7 +486,7 @@
 }
 
 .insight-bar-count {
-  font-size: 12px;
+  font-size: calc(12px * var(--ui-text-scale));
   font-weight: 600;
   color: #6b6480;
   min-width: 28px;
@@ -520,7 +520,7 @@
 }
 
 .insight-rows li strong {
-  font-size: 13px;
+  font-size: calc(13px * var(--ui-text-scale));
   font-weight: 600;
   color: #3a3550;
   overflow: hidden;
@@ -532,7 +532,7 @@
 .insight-banner {
   padding: 11px 14px;
   border-radius: var(--r-md);
-  font-size: 13px;
+  font-size: calc(13px * var(--ui-text-scale));
   font-weight: 600;
   line-height: 1.4;
 }
@@ -551,7 +551,7 @@
 
 .insight-empty {
   margin: 12px 0;
-  font-size: 13px;
+  font-size: calc(13px * var(--ui-text-scale));
   font-weight: 600;
   color: #9a93ad;
 }
@@ -706,7 +706,7 @@
 
 .insight-next > span {
   flex: none;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--ui-text-scale));
   font-weight: 600;
   color: #5b6bd6;
 }
@@ -726,7 +726,7 @@
 
 .insight-trend {
   margin-left: 6px;
-  font-size: 12px;
+  font-size: calc(12px * var(--ui-text-scale));
   font-weight: 600;
   font-style: normal;
 }
@@ -746,7 +746,7 @@
 /* (.insight-list* 목록 제거 — 참조 0) */
 .insights-month {
   margin: 0;
-  font-size: 13px;
+  font-size: calc(13px * var(--ui-text-scale));
   font-weight: 600;
   color: #6b5bd6;
   letter-spacing: 0.01em;
@@ -863,7 +863,7 @@
   border-radius: var(--r-pill);
   background: transparent;
   padding: 5px 14px;
-  font-size: 12px;
+  font-size: calc(12px * var(--ui-text-scale));
   font-weight: 600;
   color: #6b5b95;
   cursor: pointer;
@@ -987,7 +987,7 @@
 .trend-head .insight-trend,
 .trend-new {
   margin-left: auto;
-  font-size: 12px;
+  font-size: calc(12px * var(--ui-text-scale));
   font-weight: 600;
   font-style: normal;
 }
@@ -1083,9 +1083,9 @@
 .trend-bcol > span {
   margin-top: 3px;
   /* 1줄("5월")이든 2줄("26년/1월")이든 같은 높이를 차지해 막대 시작(바닥선)이 어긋나지 않게. */
-  height: 20px;
+  height: 2.3em;
   text-align: center;
-  font-size: 9px;
+  font-size: calc(9px * var(--ui-text-scale));
   font-weight: 600;
   color: #b3acc6;
   line-height: 1.15;
@@ -1094,7 +1094,7 @@
 .trend-x em {
   display: block;
   font-style: normal;
-  font-size: 7.5px;
+  font-size: calc(7.5px * var(--ui-text-scale));
   color: #c5bfd6;
 }
 
@@ -1130,7 +1130,7 @@
   white-space: nowrap;
   background: #3a3550;
   color: #fff;
-  font-size: 10px;
+  font-size: calc(10px * var(--ui-text-scale));
   font-weight: 600;
   padding: 2px 7px;
   border-radius: var(--r-xs);
@@ -1211,7 +1211,7 @@
 .vt-day {
   margin-top: 4px;
   text-align: center;
-  font-size: 9px;
+  font-size: calc(9px * var(--ui-text-scale));
   font-weight: 600;
   color: #9a93ad;
 }
@@ -1227,7 +1227,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 11.5px;
+  font-size: calc(11.5px * var(--ui-text-scale));
   font-weight: 600;
   color: #6b6480;
 }
@@ -1272,7 +1272,7 @@
   }
 }
 .vt-tip > strong {
-  font-size: 12px;
+  font-size: calc(12px * var(--ui-text-scale));
   font-weight: 600;
   padding-bottom: 3px;
   border-bottom: 1px solid rgb(255 255 255 / 18%);
@@ -1293,7 +1293,7 @@
   gap: 3px 12px;
 }
 .vt-tip-note {
-  font-size: 10px;
+  font-size: calc(10px * var(--ui-text-scale));
   font-weight: 600;
   color: #cfc9e0;
 }
@@ -1324,7 +1324,7 @@
 }
 @media (min-width: 641px) {
   .vt-legend li {
-    font-size: 13px;
+    font-size: calc(13px * var(--ui-text-scale));
   }
   .vt-day {
     font-size: var(--text-caption);
@@ -1427,12 +1427,12 @@
 
 .bcast-dx {
   margin-top: 2px;
-  height: 11px;
+  height: 1.3em;
   text-align: center;
-  font-size: 8px;
+  font-size: calc(8px * var(--ui-text-scale));
   font-weight: 600;
   color: #c5bfd6;
-  line-height: 1;
+  line-height: 1.3;
 }
 
 .bcast-empty {
@@ -1448,7 +1448,7 @@
     font-size: var(--text-label);
   }
 .bcast-dx {
-    font-size: 9px;
+    font-size: calc(9px * var(--ui-text-scale));
   }
 }
 
@@ -1475,14 +1475,14 @@
 
 @media (min-width: 641px) {
 .insights-month {
-    font-size: 16px;
+    font-size: calc(16px * var(--ui-text-scale));
   }
 .insights-refresh {
     width: 32px;
     height: 32px;
   }
 .insights-tab {
-    font-size: 14px;
+    font-size: calc(14px * var(--ui-text-scale));
     padding: 11px 10px;
     gap: 7px;
   }
@@ -1491,45 +1491,45 @@
     min-height: 72px;
   }
 .insight-tile strong {
-    font-size: 34px;
+    font-size: var(--text-metric);
     min-height: 36px;
   }
 .insight-tile[data-text] strong {
-    font-size: 22px;
+    font-size: var(--text-title);
   }
 .insight-tile span {
-    font-size: 14px;
+    font-size: calc(14px * var(--ui-text-scale));
   }
 .insight-tile[data-tone="heart"] strong {
-    font-size: 52px;
+    font-size: var(--text-metric-large);
   }
 .insight-tile[data-tone="heart"] span {
-    font-size: 16px;
+    font-size: calc(16px * var(--ui-text-scale));
   }
 .insight-subhead {
-    font-size: 14px;
+    font-size: calc(14px * var(--ui-text-scale));
   }
 .insight-note {
-    font-size: 13px;
+    font-size: calc(13px * var(--ui-text-scale));
   }
 .insight-bar-label {
-    font-size: 14px;
+    font-size: calc(14px * var(--ui-text-scale));
   }
 .insight-bar-count {
     font-size: var(--text-body);
   }
 .insight-rows li span {
-    font-size: 14px;
+    font-size: calc(14px * var(--ui-text-scale));
   }
 .insight-rows li strong {
-    font-size: 14.5px;
+    font-size: calc(14.5px * var(--ui-text-scale));
   }
 .insight-banner,
   .insight-empty {
-    font-size: 14.5px;
+    font-size: calc(14.5px * var(--ui-text-scale));
   }
 .insight-next > span {
-    font-size: 13px;
+    font-size: calc(13px * var(--ui-text-scale));
   }
 .insight-next > strong {
     font-size: var(--text-title);
@@ -1545,7 +1545,7 @@
     content: "\00a0";
   }
 .hl-tip {
-    font-size: 26px;
+    font-size: calc(26px * var(--ui-text-scale));
     font-weight: 600;
     padding: 10px 16px;
     border-radius: var(--r-md);
@@ -1554,15 +1554,15 @@
     left: clamp(220px, var(--tip-x, 50%), calc(100% - 220px));
   }
 .trend-head > span {
-    font-size: 16px;
+    font-size: calc(16px * var(--ui-text-scale));
   }
 .trend-spark {
     height: 72px;
     gap: 13px;
   }
 .trend-bcol > span {
-    height: 28px;
-    font-size: 13px;
+    height: 2.3em;
+    font-size: calc(13px * var(--ui-text-scale));
   }
 .trend-x em {
     font-size: var(--text-micro);
@@ -1573,7 +1573,7 @@
 .insights-tab {
     gap: 0;
     padding: 8px 6px;
-    font-size: 12px;
+    font-size: calc(12px * var(--ui-text-scale));
   }
 .insights-tab svg {
     display: none;
@@ -1714,7 +1714,7 @@
   border-radius: var(--r-sm);
   background: transparent;
   padding: 7px 9px 7px 11px;
-  font-size: 14.5px;
+  font-size: calc(14.5px * var(--ui-text-scale));
   font-weight: 600;
   color: #3a3550;
   text-align: left;
@@ -1764,7 +1764,7 @@
   border-radius: var(--r-pill);
   background: var(--surface-2, #f5f7fb);
   padding: 7px;
-  font-size: 13px;
+  font-size: calc(13px * var(--ui-text-scale));
   font-weight: 600;
   color: #64748b;
   cursor: pointer;

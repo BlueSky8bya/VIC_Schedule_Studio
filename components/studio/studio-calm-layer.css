@@ -475,13 +475,13 @@ html[data-studio-calm] .studio-shell .event-editor-panel .tp-group {
   padding-inline: 12px;
 }
 .studio-shell[data-chrome="3"] .studio-topbar h1 {
-  font-size: calc(17px * var(--cal-text, 1));
+  font-size: calc(17px * var(--ui-text-scale, 1));
 }
 .studio-shell[data-chrome="3"] .studio-month-label {
   gap: 4px;
 }
 .studio-shell[data-chrome="3"] .studio-month-label strong {
-  font-size: calc(22px * var(--cal-text, 1));
+  font-size: calc(var(--text-month) / var(--shell-zoom, 1));
 }
 .studio-shell[data-chrome="3"] .month-nav-btn {
   width: 34px;
@@ -896,7 +896,17 @@ html[data-large-text] .studio-tools .stool { min-width: 0; white-space: normal; 
 html[data-large-text] .studio-tools .stool span { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
 html[data-large-text] .studio-tools .stool:last-child:nth-child(odd) { grid-column: 1 / -1; }
 /* Compression may simplify account controls, but must not counteract the
-   selected reading size of the month itself. Its grid column is measured. */
+   shared month hierarchy. Its grid column is measured and its shell zoom is compensated. */
 html[data-large-text] .studio-shell .studio-month-label strong {
-  font-size: calc(clamp(26px, 2.5vw, 44px) * var(--cal-text, 1));
+  font-size: calc(var(--text-month) / var(--shell-zoom, 1));
+}
+
+/* The status track is content-sized, including intermediate type preferences.
+   A compact24px icon width must not survive after the role-card rule shows text. */
+@media (min-width: 1180px) {
+ .studio-shell .studio-role-tools .studio-meta-capsule { min-width: max-content; }
+ .studio-shell[data-chrome] .studio-role-tools .studio-meta-capsule .save-status {
+   width: max-content; min-width: max-content; flex: 0 0 auto;
+ }
+ .studio-shell[data-chrome] .studio-role-tools .studio-meta-capsule .save-status em { flex: none; }
 }
