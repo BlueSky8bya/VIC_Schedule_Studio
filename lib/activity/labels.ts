@@ -290,6 +290,7 @@ export const ACT: Record<string, TargetLabel> = {
   "agenda-legend-tag": { name: "태그 필터", area: "시청자 화면", hint: "태그별 합계" },
   "agenda-legend-clear": { name: "필터 해제", area: "시청자 화면" },
   "legend-clear": { name: "필터 해제", area: "시청자 화면" },
+  "legend-mine": { name: "내 관심 필터", area: "시청자 화면" },
   "tag-legend-filter": { name: "태그 필터(편집실)", area: "편집실" },
   "event-heart": { name: "하트 누르기", area: "시청자 화면" },
   "dt-hope": { name: "기대돼요", area: "시청자 화면" },

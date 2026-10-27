@@ -15,7 +15,7 @@ afterEach(()=>{state.values=[];vi.unstubAllGlobals();vi.restoreAllMocks();});
 it('renders current and retired control history safely in both developer views',async()=>{
   vi.stubGlobal('React',await import('react'));
   const {ActivityUsage}=await import('@/components/developer/activity-usage'),{ActivityTimeline}=await import('@/components/developer/activity-timeline');
-  const targets=['art-view-codex','art-prompt-copy-1','art-prompt-copy-2','search-kind#chapter','dtp-time-input#hour','dtp-time-input#minute','bp-recent-color','bp-width','bp-layer-rename','detail-tags-toggle','vod-part-select','vod-tab','vod-timeline-current','text-style-reset','text-size-reset','agenda-support-follow-view','add-google-calendar','editor-tags-clear','editor-tags-swap','share-public-event','copy-app-link','theme-mode-select#dark','vod-timeline-find','vod-timeline-find-clear','insights-tab','settings-tab#motion','detail-previous-event','detail-next-event','search-kind#all','search-kind#event','search-kind#vod','art-prompt-copy-all','search-kind#chat','search-kind#timeline','search-kind#chapter','record-month#previous','record-month#next','record-summary#content','record-summary#days','record-summary#rest','record-event-open'];
+  const targets=['legend-mine','art-view-codex','art-prompt-copy-1','art-prompt-copy-2','search-kind#chapter','dtp-time-input#hour','dtp-time-input#minute','bp-recent-color','bp-width','bp-layer-rename','detail-tags-toggle','vod-part-select','vod-tab','vod-timeline-current','text-style-reset','text-size-reset','agenda-support-follow-view','add-google-calendar','editor-tags-clear','editor-tags-swap','share-public-event','copy-app-link','theme-mode-select#dark','vod-timeline-find','vod-timeline-find-clear','insights-tab','settings-tab#motion','detail-previous-event','detail-next-event','search-kind#all','search-kind#event','search-kind#vod','art-prompt-copy-all','search-kind#chat','search-kind#timeline','search-kind#chapter','record-month#previous','record-month#next','record-summary#content','record-summary#days','record-summary#rest','record-event-open'];
   const rows:UsageRow[]=targets.map(target=>({kind:'ui.click',label:'누름',target,total:1,roles:{developer:1},auto:false}));
   const at=Date.parse('2026-10-24T15:00:00Z');
   const visit:ActivityVisit={key:'synthetic-visit',account:'계정 #1',role:'developer',device:'desktop',startMs:at,endMs:at+2000,items:targets.map((target,i)=>({t:at+i*1000,kind:'ui.click',label:'누름',target,targetLabel:null,source:'client',meta:null,durMs:null}))};
@@ -30,7 +30,7 @@ it('renders current and retired control history safely in both developer views',
     expect(describeTarget('ui.click',target).retired).toBe(true);
     expect(retired).toContain(describeTarget('ui.click',target).name);
   }
-  for(const target of ['vod-timeline-current','text-style-reset','record-event-open','copy-app-link','search-kind#event'])expect(describeTarget('ui.click',target).retired).not.toBe(true);
+  for(const target of ['legend-mine','vod-timeline-current','text-style-reset','record-event-open','copy-app-link','search-kind#event'])expect(describeTarget('ui.click',target).retired).not.toBe(true);
   expect(usage+timeline).not.toContain('이름 미등록');expect(usage+timeline).not.toMatch(/evt-001|access_token|secret/);
 });
 
@@ -41,7 +41,7 @@ it('captures each fixed record/search control once through the real collector wi
     vi.stubGlobal('fetch',transport);vi.stubGlobal('document',{addEventListener:(name:string,handler:(e:unknown)=>void)=>handlers.set(name,handler),visibilityState:'visible'});
     vi.stubGlobal('window',{addEventListener:()=>{},setTimeout,clearTimeout,sessionStorage:{getItem:()=>null}});
     const {startClickTracking,logActivity}=await import('@/lib/activity/client');startClickTracking();
-    const targets=['dtp-time-input#hour','dtp-time-input#minute','bp-recent-color','bp-width','detail-tags-toggle','vod-timeline-current','text-style-reset','agenda-support-follow-view','add-google-calendar','editor-tags-clear','editor-tags-swap','search-kind#all','search-kind#event','search-kind#vod','art-prompt-copy-all','search-kind#chat','search-kind#timeline','search-kind#chapter','record-month#previous','record-month#next','record-summary#content','record-summary#days','record-summary#rest','record-event-open'];
+    const targets=['legend-mine','dtp-time-input#hour','dtp-time-input#minute','bp-recent-color','bp-width','detail-tags-toggle','vod-timeline-current','text-style-reset','agenda-support-follow-view','add-google-calendar','editor-tags-clear','editor-tags-swap','search-kind#all','search-kind#event','search-kind#vod','art-prompt-copy-all','search-kind#chat','search-kind#timeline','search-kind#chapter','record-month#previous','record-month#next','record-summary#content','record-summary#days','record-summary#rest','record-event-open'];
     for(const target of targets){const [action,opt]=target.split('#');const element={tagName:'BUTTON',hasAttribute:()=>false,matches:()=>false,getAttribute:(name:string)=>name==='data-act'?action:name==='data-act-opt'?opt??null:null};handlers.get('click')!({target:{closest:()=>element}});}
     handlers.get('click')!({target:{closest:()=>({tagName:'BUTTON',hasAttribute:(name:string)=>name==='data-activity-manual',getAttribute:()=> 'vod-part-select'})}});
     logActivity('ui.click',{target:'bp-layer-rename'});

@@ -3862,13 +3862,11 @@ export function BroadcastPanel({
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       if (discardAskRef.current) return;
-      // Consume at window capture, before the picker's document handler closes
-      // it and this same Escape can reach the board's window-bubble close path.
-      // This also covers typing in the picker's HEX input.
+      // Composition belongs to the text field/IME, including the shared HEX picker.
+      if (e.isComposing || e.keyCode === 229) return;
+      // The shared picker now consumes Escape at window capture. Leave this
+      // overlay to its one cancel handler instead of restoring the draft twice.
       if (colorPopRef.current && e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        restoreColorPickerContext(colorPopRef.current);
         return;
       }
       if (

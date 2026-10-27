@@ -1,7 +1,7 @@
 "use client";
 
 import { Undo2 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   applyToneHsv,
@@ -16,6 +16,7 @@ import {
 import { hapticTick } from "@/lib/ui/haptics";
 import type { TagKind } from "@/lib/domain/schedule-types";
 import { deriveDarkTagColors } from "@/lib/tags/dark-palette";
+import { parseHexInput } from "@/lib/tags/hex-input";
 
 // 커스텀 색 피커 — 색 스와치를 누르면 뜨는 팝오버. 연구/벤치마킹(팝오버 패턴 + 색 영역+색조 슬라이더)
 // 기준: 네이티브 OS 피커 대신 앱 디자인에 맞는 인라인 피커. 좌표로 채도·명도, 슬라이더로 색조,
@@ -61,6 +62,11 @@ export function ColorPickerPopover({
   const presets = useMemo(() => spectrumColors(kind === "modifier"), [kind]);
   const [hsv, setHsv] = useState(() => hexToHsv(value));
   const [hexText, setHexText] = useState(value);
+  const [hexError, setHexError] = useState(false);
+  const hexErrorId = useId();
+  const hexInputRef = useRef<HTMLInputElement | null>(null);
+  const composingRef = useRef(false);
+  const skipHexFocusSnapshotRef = useRef(false);
   // 실행취소 스택 — 조작 '직전' hex를 쌓는다(드래그는 시작 때 1번만). 잘못 눌러 색이 바뀌어도 되돌린다.
   const [history, setHistory] = useState<string[]>([]);
   const svRef = useRef<HTMLDivElement | null>(null);
@@ -84,6 +90,7 @@ export function ColorPickerPopover({
       return;
     }
     setHexText(hex);
+    setHexError(false);
     if (skipEmitRef.current) {
       skipEmitRef.current = false;
       return;
@@ -110,6 +117,7 @@ export function ColorPickerPopover({
     skipEmitRef.current = roundTrip !== hex.toLowerCase();
     setHsv(next);
     setHexText(value);
+    setHexError(false);
     // hex는 내부 파생값 — value 변화에만 반응한다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value]);
@@ -118,13 +126,47 @@ export function ColorPickerPopover({
   function snapshot() {
     setHistory((prev) => [...prev, hex].slice(-30));
   }
+
+  function chooseHsv(next: ReturnType<typeof hexToHsv>) {
+    setHexText(hsvToHex(next.h, next.s, next.v));
+    setHexError(false);
+    setHsv(next);
+  }
+
+  function editHex(text: string) {
+    const result = parseHexInput(text);
+    setHexText(result.state === "complete" ? result.hex : text);
+    setHexError(result.state === "invalid");
+    if (result.state === "complete") setHsv(hexToHsv(result.hex));
+  }
+
+  function finish() {
+    const input = hexInputRef.current;
+    if (composingRef.current) {
+      input?.focus({ preventScroll: true });
+      return;
+    }
+    const result = parseHexInput(hexText);
+    if (result.state !== "complete") {
+      setHexError(true);
+      // Correcting invalid text must not add a new undo snapshot of the current color.
+      if (input && document.activeElement !== input) {
+        skipHexFocusSnapshotRef.current = true;
+        input.focus({ preventScroll: true });
+      }
+      return;
+    }
+    setHexText(result.hex);
+    setHexError(false);
+    onClose();
+  }
   // 실행취소 — 직전 색으로. 스택이 비면 아무 것도 안 한다.
   function undo() {
     setHistory((prev) => {
       if (prev.length === 0) return prev;
       hapticTick();
       const target = prev[prev.length - 1];
-      setHsv(hexToHsv(target)); // 위 effect가 onChange로 부모까지 되돌린다.
+      chooseHsv(hexToHsv(target)); // 위 effect가 onChange로 부모까지 되돌린다.
       return prev.slice(0, -1);
     });
   }
@@ -140,13 +182,23 @@ export function ColorPickerPopover({
       onCancel();
     }
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onCancel();
+      if (e.key !== "Escape") return;
+      if (e.isComposing || e.keyCode === 229 || composingRef.current) {
+        // Let the IME handle cancellation without closing an underlying modal.
+        e.stopPropagation();
+        return;
+      }
+      // This portal is above the tag editor modal. Handle its Escape before the
+      // underlying modal's dirty-close gate can open a discard confirmation.
+      e.preventDefault();
+      e.stopPropagation();
+      onCancel();
     }
     document.addEventListener("mousedown", onDown);
-    document.addEventListener("keydown", onKey);
+    window.addEventListener("keydown", onKey, true);
     return () => {
       document.removeEventListener("mousedown", onDown);
-      document.removeEventListener("keydown", onKey);
+      window.removeEventListener("keydown", onKey, true);
     };
   }, [onCancel]);
 
@@ -155,13 +207,13 @@ export function ColorPickerPopover({
     if (!rect) return;
     const s = clamp01((e.clientX - rect.left) / rect.width) * 100;
     const v = (1 - clamp01((e.clientY - rect.top) / rect.height)) * 100;
-    setHsv((cur) => ({ ...cur, s: Math.round(s), v: Math.round(v) }));
+    chooseHsv({ ...hsv, s: Math.round(s), v: Math.round(v) });
   }
   function pickHue(e: React.PointerEvent) {
     const rect = hueRef.current?.getBoundingClientRect();
     if (!rect) return;
     const h = clamp01((e.clientX - rect.left) / rect.width) * 360;
-    setHsv((cur) => ({ ...cur, h: Math.round(h) }));
+    chooseHsv({ ...hsv, h: Math.round(h) });
   }
 
   const con = inkContrast(hex);
@@ -266,13 +318,40 @@ export function ColorPickerPopover({
         </span>
         <input
           aria-label="hex 코드"
+          aria-invalid={hexError || undefined}
+          aria-describedby={hexError ? hexErrorId : undefined}
           className="cpop-hex"
           onChange={(e) => {
-            const t = e.target.value;
-            setHexText(t);
-            if (/^#[0-9a-fA-F]{6}$/.test(t)) setHsv(hexToHsv(t));
+            const text = e.target.value;
+            if (composingRef.current || (e.nativeEvent as InputEvent).isComposing) {
+              setHexText(text);
+              setHexError(false);
+              return;
+            }
+            editHex(text);
           }}
-          onFocus={snapshot}
+          onCompositionStart={() => {
+            composingRef.current = true;
+            setHexError(false);
+          }}
+          onCompositionEnd={(e) => {
+            composingRef.current = false;
+            editHex(e.currentTarget.value);
+          }}
+          onFocus={() => {
+            if (skipHexFocusSnapshotRef.current) {
+              skipHexFocusSnapshotRef.current = false;
+              return;
+            }
+            snapshot();
+          }}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter" || composingRef.current || e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return;
+            e.preventDefault();
+            e.stopPropagation();
+            finish();
+          }}
+          ref={hexInputRef}
           spellCheck={false}
           value={hexText}
         />
@@ -287,9 +366,9 @@ export function ColorPickerPopover({
           <Undo2 aria-hidden="true" size={16} />
         </button>
       </div>
-      {recentColors.length > 0 ? <div className="cpop-recent" role="group" aria-label="최근 확정한 색">
+      {hexError ? <p className={`cpop-theme-note cpop-hex-error${recentColors.length > 0 ? " has-recent" : ""}`} id={hexErrorId} role="status">6자리 색상코드를 확인해 주세요</p> : recentColors.length > 0 ? <div className="cpop-recent" role="group" aria-label="최근 확정한 색">
         <span>최근</span>
-        {recentColors.slice(0,5).map(color => <button key={color} type="button" className="cpop-recent-swatch" aria-label={`최근 색 ${color}`} aria-pressed={hex.toLowerCase()===color.toLowerCase()} style={{background:color}} data-act="bp-recent-color" onClick={()=>{hapticTick();snapshot();setHsv(hexToHsv(color));}} />)}
+        {recentColors.slice(0,5).map(color => <button key={color} type="button" className="cpop-recent-swatch" aria-label={`최근 색 ${color}`} aria-pressed={hex.toLowerCase()===color.toLowerCase()} style={{background:color}} data-act="bp-recent-color" onClick={()=>{hapticTick();snapshot();chooseHsv(hexToHsv(color));}} />)}
       </div> : <p className="cpop-theme-note">라이트 · 다크 색상 함께 자동 맞춤</p>}
       {!con.passesAA ? <p className="cpop-warn">글자가 흐릴 수 있어요</p> : null}
 
@@ -308,7 +387,7 @@ export function ColorPickerPopover({
               onClick={() => {
                 hapticTick();
                 snapshot();
-                setHsv(hexToHsv(preview));
+                chooseHsv(hexToHsv(preview));
               }}
               style={{ background: preview, color: ink, borderColor: "transparent" }}
               type="button"
@@ -336,7 +415,7 @@ export function ColorPickerPopover({
                 onClick={() => {
                   hapticTick();
                   snapshot();
-                  setHsv(hexToHsv(c));
+                  chooseHsv(hexToHsv(c));
                 }}
                 style={{ background: c }}
                 type="button"
@@ -356,7 +435,7 @@ export function ColorPickerPopover({
         ) : (
           <span />
         )}
-        <button className="button primary cpop-done" onClick={onClose} type="button" data-act="cpop-done">
+        <button className="button primary cpop-done" onClick={finish} type="button" data-act="cpop-done">
           완료
         </button>
       </div>

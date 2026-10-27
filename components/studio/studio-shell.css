@@ -6045,10 +6045,8 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
 .studio-day:focus-visible {
   outline: none;
   background: var(--selection-fill);
-  /* ⚠ 이웃 칸의 업도움 띠(--z-cal-ribbon-head까지)보다 위.
-     .studio-day는 z-index가 없어 쌓임 맥락을 만들지 않으므로, **이웃 칸의 자식**들이 같은
-     맥락에서 겨룬다. 예전 z:2로는 옆 칸 띠가 이 칸 모서리를 덮어 링이 잘려 보였다(실측). */
-  z-index: var(--z-cal-cell-raised, 8);
+  /* 셀 자체는 쌓임 맥락을 만들지 않는다. 링만 ::after에서 올려야 옆 날짜에서
+     이어지는 기간안내 글자가 포커스/편집 칸 배경에 잘리지 않는다. */
 }
 .studio-day:focus-visible::after {
   content: "";
@@ -6295,11 +6293,6 @@ body.cell-range-dragging {
 }
 .studio-day.editing-new:focus-visible {
   outline-offset: -5px; /* 초록 점선을 보라선 안쪽으로 물린다 */
-  z-index: 8;
-}
-/* 신규 편집 중인 칸은 포커스가 없어도 이웃 띠에 안 덮이게(초록 점선도 같은 문제를 겪는다). */
-.studio-day.editing-new {
-  z-index: 7;
 }
 
 .studio-day-head {
@@ -8859,6 +8852,11 @@ html[data-reduce-motion] .tge-help-panel {
 .cpop-theme-pair { display: flex; gap: 3px; flex: none; }
 .cpop-theme-pair .cpop-preview { width: 27px; min-width: 27px; }
 .cpop-theme-note { margin: 5px 0 0; font-size: var(--text-caption); color: var(--muted); }
+.tag-cpop { --cpop-error-ink: #a33236; }
+html[data-theme="dark"] .tag-cpop { --cpop-error-ink: #ffabb0; }
+.cpop-hex-error { color: var(--cpop-error-ink); }
+.cpop-hex-error.has-recent { min-height: 26px; display: flex; align-items: center; }
+.cpop-hex[aria-invalid="true"] { border-color: var(--cpop-error-ink); }
 .cpop-recent{display:flex;align-items:center;justify-content:center;gap:8px;min-height:26px;margin:5px 0 0}
 .cpop-recent>span{font-size:var(--text-caption);color:var(--muted)}
 .cpop-recent-swatch{width:26px;height:26px;flex:none;padding:0;border:1px solid var(--line);border-radius:7px;cursor:pointer;box-shadow:inset 0 0 0 1px rgb(255 255 255 / 18%)}

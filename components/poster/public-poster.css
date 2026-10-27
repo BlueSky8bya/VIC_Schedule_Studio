@@ -3777,6 +3777,7 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
 .public-legend-vertical .legend-mods,
 .public-legend-vertical .legend-heart-help,
 .public-legend-vertical .legend-status-help,
+.public-legend-vertical .legend-filter-actions,
 .public-legend-vertical .legend-clear {
   grid-column: 1 / -1;
 }
@@ -3900,8 +3901,21 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   margin: 0; /* 칸이 여백을 쥔다 — 칩 자체 여백이 남으면 중심선이 밀린다 */
 }
 
-.legend-clear {
-  margin-top: var(--space-2); /* 맨 아래(미정 밑)로 옮기며 위 점선 블록과 띄움 */
+.legend-filter-actions {
+  display: grid;
+  min-width: 0;
+  margin-top: var(--space-2);
+}
+.legend-filter-actions.has-mine {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--space-1);
+}
+.public-legend-vertical .legend-filter-actions > .legend-clear {
+  grid-column: auto;
+}
+.legend-clear,
+.legend-mine {
+  margin-top: 0;
   border: 1px solid var(--line);
   border-radius: var(--r-pill);
   background: var(--surface);
@@ -3910,15 +3924,41 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   font-size: var(--text-label);
   font-weight: 600;
   cursor: pointer;
+  min-width: 0;
+  white-space: nowrap;
+  line-height: 1.2;
   /* 이 버튼은 '자리 예약'(아래 is-hidden)까지 신경 쓴 컨트롤인데 정작 누름 반응만 빠져 있었다. */
   transition:
     transform var(--dur-1) var(--ease),
     background var(--dur-1) var(--ease);
 }
-.legend-clear:hover {
+.legend-mine {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.legend-mine .liquid-heart {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.legend-mine.active {
+  border-color: var(--accent);
+  color: var(--ink);
   background: var(--surface-2, #fdf6e8);
 }
-.legend-clear:active {
+.legend-mine:focus-visible,
+.legend-clear:focus-visible {
+  outline: 2px solid var(--focus-ring, var(--accent));
+  outline-offset: 2px;
+}
+.legend-clear:hover,
+.legend-mine:hover {
+  background: var(--surface-2, #fdf6e8);
+}
+.legend-clear:active,
+.legend-mine:active {
   transform: scale(var(--press-scale));
 }
 /* 필터 없을 때도 자리(높이)는 유지하되 안 보이게 — 켤 때 레이아웃이 안 밀려 칩이 제자리에 있다. */
@@ -6968,6 +7008,36 @@ html[data-reduce-motion] .heart-toast {
   aspect-ratio: 16 / 9;
   background: #14090e;
 }
+.slc-thumbnail {
+  position: absolute;
+  inset: 0;
+}
+.slc-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 45%, var(--surface) 0%, var(--surface-2) 55%, var(--paper) 100%);
+  color: var(--ink-soft);
+}
+.slc-fallback::before {
+  content: "";
+  position: absolute;
+  width: 54%;
+  aspect-ratio: 1;
+  border: var(--stroke-hairline) solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  opacity: 0.65;
+}
+.slc-fallback-tv {
+  position: relative;
+  width: 27%;
+  height: auto;
+  max-width: 82px;
+  filter: drop-shadow(0 3px 0 var(--line-soft));
+}
 .slc-player img {
   position: absolute;
   inset: 0;
@@ -6975,7 +7045,7 @@ html[data-reduce-motion] .heart-toast {
   height: 100%;
   object-fit: cover;
   border: 0;
-  /* 썸네일은 정지 이미지 — 로드되면 부드럽게 페이드-인. 그 전엔 어두운 판 + LIVE 배지. */
+  /* 썸네일은 정지 이미지 — 실제 로드 성공 뒤 기존 페이드-인으로 보여 준다. */
   opacity: 0;
   animation: slc-video-in 0.6s var(--ease) 0.2s forwards;
 }
@@ -6988,6 +7058,15 @@ html[data-reduce-motion] .slc-player img {
   animation-duration: 1ms;
   animation-iteration-count: 1;
   opacity: 1;
+}
+.slc-thumbnail img[data-visible="true"]:not([data-fade]) {
+  opacity: 1;
+  animation: none;
+}
+.slc-thumbnail[data-state] img[hidden] {
+  visibility: hidden;
+  opacity: 0;
+  animation: none;
 }
 .slc-badge {
   position: absolute;

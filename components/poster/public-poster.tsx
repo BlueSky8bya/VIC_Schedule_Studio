@@ -4259,8 +4259,24 @@ export function PublicPoster({
           새로 생기면서 위 색칩들이 위로 밀려, 방금 누른 칩이 커서 밑에서 벗어나 다시 끄려면
           마우스를 옮겨야 했다. 항상 자리만 잡아두고 보이기만 토글하면 칩이 안 움직여, 같은
           자리에서 따닥 눌러 켜고 끌 수 있다. */}
-      <button
-        className={`legend-clear${filterActive ? "" : " is-hidden"}`}
+      <div className={`legend-filter-actions${canHeart ? " has-mine" : ""}`}>
+        {canHeart ? (
+          <button
+            aria-pressed={bookmarkedOnly}
+            className={`legend-mine${bookmarkedOnly ? " active" : ""}`}
+            data-act="legend-mine"
+            onClick={() => {
+              hapticTick();
+              withAgendaFlip(() => setBookmarkedOnly((v) => !v));
+            }}
+            type="button"
+          >
+            <LiquidHeart ratio={interestRatio} />
+            내 관심
+          </button>
+        ) : null}
+        <button
+          className={`legend-clear${filterActive ? "" : " is-hidden"}`}
         onClick={() => {
           hapticTick();
           clearFilters();
@@ -4270,7 +4286,8 @@ export function PublicPoster({
         tabIndex={filterActive ? 0 : -1}
        data-act="legend-clear">
         필터 해제
-      </button>
+        </button>
+      </div>
     </PanelSection>
   );
 

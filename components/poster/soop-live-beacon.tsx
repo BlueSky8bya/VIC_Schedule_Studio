@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Tv } from "lucide-react";
 import { reduceMotionEnabled } from "@/lib/ui/motion";
 import type { SoopLive } from "@/components/poster/use-soop-live";
 
@@ -13,6 +14,56 @@ import type { SoopLive } from "@/components/poster/use-soop-live";
 // 배지·제목·보러가기 링크는 남는다.
 
 const THUMB_REFRESH_MS = 60_000;
+
+function LiveThumbnail({ src }: { src: string | null }) {
+  const [loadedFrame, setLoadedFrame] = useState<{ src: string; fadeIn: boolean } | null>(null);
+  const [result, setResult] = useState<{ src: string; status: "loaded" | "error" } | null>(null);
+  const currentSrcRef = useRef(src);
+  currentSrcRef.current = src;
+  const state = src ? (result?.src === src ? result.status : "loading") : "unavailable";
+  const visibleSrc = state === "loaded"
+    ? src
+    : state === "loading" && result?.status !== "error" ? loadedFrame?.src ?? null : null;
+  // Keep a successful frame while the next URL loads. URL keys preserve the
+  // pending image's DOM node when it becomes the displayed frame.
+  const imageSources = src
+    ? [...new Set([loadedFrame?.src, src].filter((url): url is string => Boolean(url)))]
+    : [];
+
+  return (
+    <div className="slc-thumbnail" data-state={state}>
+      {!visibleSrc ? (
+        <div className="slc-fallback" aria-hidden="true">
+          <Tv className="slc-fallback-tv" strokeWidth={1.4} />
+        </div>
+      ) : null}
+      {imageSources.map((imageSrc) => (
+        // Remote thumbnail refreshes bypass next/image's proxy cache. The existing
+        // watch link and caption name the broadcast; the preview itself is decorative.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          alt=""
+          aria-hidden="true"
+          data-current={imageSrc === src ? "true" : undefined}
+          data-visible={imageSrc === visibleSrc ? "true" : undefined}
+          data-fade={loadedFrame?.src === imageSrc && loadedFrame.fadeIn ? "true" : undefined}
+          hidden={imageSrc !== visibleSrc}
+          key={imageSrc}
+          onLoad={() => {
+            if (imageSrc !== currentSrcRef.current) return;
+            setLoadedFrame(previous => previous?.src === imageSrc ? previous : { src: imageSrc, fadeIn: previous === null });
+            setResult({ src: imageSrc, status: "loaded" });
+          }}
+          onError={() => {
+            if (imageSrc !== currentSrcRef.current) return;
+            setResult({ src: imageSrc, status: "error" });
+          }}
+          src={imageSrc}
+        />
+      ))}
+    </div>
+  );
+}
 
 export function SoopLiveBeacon({ live, inRail = false }: { live: SoopLive | null; inRail?: boolean }) {
   const [reduce, setReduce] = useState(false);
@@ -30,7 +81,7 @@ export function SoopLiveBeacon({ live, inRail = false }: { live: SoopLive | null
 
   if (!live?.isLive) return null;
   // 방송번호(bno)가 있을 때만 썸네일 — liveimg 서버가 bno 기준으로 현재 방송 장면을 준다.
-  // bno 없으면 어두운 판 + LIVE 배지만.
+  // bno가 없거나 이미지가 아직 없으면 같은 자리에 TV 장식과 LIVE 배지를 보여 준다.
   const thumbSrc = live.bno
     ? `https://liveimg.sooplive.co.kr/m/${live.bno}?t=${thumbTick}`
     : null;
@@ -41,15 +92,8 @@ export function SoopLiveBeacon({ live, inRail = false }: { live: SoopLive | null
       data-reduce={reduce ? "" : undefined}
     >
       <div className="slc-player">
-        {thumbSrc ? (
-          // 외부 라이브 썸네일(수십 초마다 갱신되는 서명 없는 원격 이미지)이라 next/image
-          // 최적화 대상이 아니다 — 프록시 캐시가 오히려 낡은 장면을 보여준다.
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            alt={`라이브 방송 미리보기: ${live.title ?? ""}`}
-            src={thumbSrc}
-          />
-        ) : null}
+        {/* 같은 방송의 60초 갱신은 직전 성공 화면을 유지한다. 방송이 바뀔 때만 처음부터 시작한다. */}
+        <LiveThumbnail key={live.bno || "unavailable"} src={thumbSrc} />
         <span className="slc-badge">
           <i aria-hidden="true" />
           LIVE
