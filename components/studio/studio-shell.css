@@ -8859,6 +8859,11 @@ html[data-reduce-motion] .tge-help-panel {
 .cpop-theme-pair { display: flex; gap: 3px; flex: none; }
 .cpop-theme-pair .cpop-preview { width: 27px; min-width: 27px; }
 .cpop-theme-note { margin: 5px 0 0; font-size: var(--text-caption); color: var(--muted); }
+.cpop-recent{display:flex;align-items:center;justify-content:center;gap:8px;min-height:26px;margin:5px 0 0}
+.cpop-recent>span{font-size:var(--text-caption);color:var(--muted)}
+.cpop-recent-swatch{width:26px;height:26px;flex:none;padding:0;border:1px solid var(--line);border-radius:7px;cursor:pointer;box-shadow:inset 0 0 0 1px rgb(255 255 255 / 18%)}
+.cpop-recent-swatch:hover,.cpop-recent-swatch:focus-visible{outline:2px solid var(--focus-ring,var(--accent));outline-offset:2px}
+.cpop-recent-swatch[aria-pressed="true"]{outline:1px solid var(--ink);outline-offset:2px}
 /* 실행취소 — 잘못 눌러 색이 바뀌어도 직전으로. 미리보기·삭제 버튼과 같은 사각 아이콘 톤(통일). */
 .cpop-undo {
   flex: 0 0 auto;

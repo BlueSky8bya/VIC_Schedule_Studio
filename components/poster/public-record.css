@@ -10,4 +10,10 @@
 .pi-record-events h3{font-size:14px;margin:0 0 10px}.pi-record-date h4{font-size:12px;opacity:.72;margin:12px 0 5px}
 .pi-record-event{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:10px 12px;margin:5px 0;border:1px solid var(--line,#e8dfcf);border-radius:10px;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
 .pi-record-event span{min-width:0;overflow-wrap:anywhere}
+.pi-top li.pi-popular-item{display:block;padding:0}
+.pi-popular-event{display:grid;grid-template-columns:24px minmax(0,1fr) minmax(32px,84px) 15px;align-items:center;gap:var(--space-2);width:100%;min-width:0;min-height:var(--control-hit);padding:var(--space-2) var(--space-3);border:0;border-radius:inherit;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.pi-popular-event .pi-top-title{flex:1;min-width:0}
+.pi-popular-event>svg{flex:none;color:var(--muted)}
+.pi-popular-event:hover{background:var(--surface-3,var(--surface-2))}
+.pi-popular-event:focus-visible{outline:2px solid var(--focus-ring,var(--accent));outline-offset:2px}
 @media(max-width:420px){.pi-head{gap:6px}.pi-record-month{gap:2px}.pi-record-month strong{font-size:14px}.pi-record-month .pi-close{width:40px;min-width:40px}}

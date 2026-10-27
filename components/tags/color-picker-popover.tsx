@@ -44,7 +44,8 @@ export function ColorPickerPopover({
   onClose,
   onCancel,
   onToggleKind,
-  canClear
+  canClear,
+  recentColors = []
 }: {
   value: string; // 현재 색(hex)
   anchor: DOMRect; // 트리거(스와치) 화면 좌표 — 여기에 붙여 띄운다(포털이라 부모 overflow에 안 잘림).
@@ -55,6 +56,7 @@ export function ColorPickerPopover({
   onCancel: () => void; // 바깥 클릭 / Esc — 확정 안 하고 열었을 때 색으로 되돌리며 닫는다.
   onToggleKind?: () => void; // 콘텐츠↔형식 전환(행에서 라벨 뺀 대신 여기로 옮김)
   canClear: boolean;
+  recentColors?: readonly string[];
 }) {
   const presets = useMemo(() => spectrumColors(kind === "modifier"), [kind]);
   const [hsv, setHsv] = useState(() => hexToHsv(value));
@@ -182,7 +184,8 @@ export function ColorPickerPopover({
   const vh = typeof window !== "undefined" ? window.innerHeight : 800;
   const left = Math.max(8, Math.min(anchor.right - POP_W, vw - POP_W - 8));
   const below = anchor.bottom + 8;
-  const top = below + POP_H > vh ? Math.max(8, anchor.top - POP_H - 8) : below;
+  const popHeight = POP_H + (recentColors.length > 0 ? 8 : 0);
+  const top = below + popHeight > vh ? Math.max(8, anchor.top - popHeight - 8) : below;
 
   const body = (
     <div
@@ -284,7 +287,10 @@ export function ColorPickerPopover({
           <Undo2 aria-hidden="true" size={16} />
         </button>
       </div>
-      <p className="cpop-theme-note">라이트 · 다크 색상 함께 자동 맞춤</p>
+      {recentColors.length > 0 ? <div className="cpop-recent" role="group" aria-label="최근 확정한 색">
+        <span>최근</span>
+        {recentColors.slice(0,5).map(color => <button key={color} type="button" className="cpop-recent-swatch" aria-label={`최근 색 ${color}`} aria-pressed={hex.toLowerCase()===color.toLowerCase()} style={{background:color}} data-act="bp-recent-color" onClick={()=>{hapticTick();snapshot();setHsv(hexToHsv(color));}} />)}
+      </div> : <p className="cpop-theme-note">라이트 · 다크 색상 함께 자동 맞춤</p>}
       {!con.passesAA ? <p className="cpop-warn">글자가 흐릴 수 있어요</p> : null}
 
       {/* 톤 프리셋 — 색조는 그대로 두고 톤(파스텔~깊게)만. '필터'처럼: 각 버튼을 '현재 색조에 그

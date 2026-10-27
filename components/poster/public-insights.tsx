@@ -81,7 +81,18 @@ export function PublicInsights({
   const bodyRef=useRef<HTMLDivElement>(null),sheetRef=useFocusTrap<HTMLElement>(true);
   const close=()=>{session.current=null;onClose();};
   const closeRef=useRef(close);closeRef.current=close;
-  useLayoutEffect(()=>{if(!initial)return;const body=bodyRef.current;if(!body)return;body.scrollTop=initial.scrollTop;const focus=initial.focusId?body.querySelector<HTMLElement>(`[data-record-event="${CSS.escape(initial.focusId)}"]`):null;focus?.focus({preventScroll:true});},[initial]);
+  useLayoutEffect(()=>{
+    if(!initial)return;const body=bodyRef.current;if(!body)return;
+    body.scrollTop=initial.scrollTop;
+    // Outside-pointer default focus and the old detail's passive cleanup finish
+    // after this mount's layout effect. Restore the record once they are done.
+    const frame=requestAnimationFrame(()=>{
+      body.scrollTop=initial.scrollTop;
+      const focus=initial.focusId?body.querySelector<HTMLElement>(`[data-record-event="${CSS.escape(initial.focusId)}"]`):null;
+      focus?.focus({preventScroll:true});
+    });
+    return()=>cancelAnimationFrame(frame);
+  },[initial]);
   const selectedEvents=useMemo(()=>recordMonthEvents(events,tags,recordMonth),[events,tags,recordMonth]);
   const dates=groupRecordDates(group==='rest'?selectedEvents.rest:selectedEvents.content);
   const move=(direction:-1|1)=>{const next=adjacentRecordMonth(recordMonth,direction);if(!next)return;hapticTick();setGroup(null);setRecordMonth(next);};
@@ -237,6 +248,7 @@ export function PublicInsights({
     const ranked = monthContent
       .map((e) => ({
         id: e.id,
+        dateKey: e.startsAt.slice(0, 10),
         title: e.publicTitle.split("\n")[0],
         count: heartCounts[e.id] ?? 0
       }))
@@ -246,6 +258,7 @@ export function PublicInsights({
     const topCount = ranked[0]?.count ?? 0;
     const popular = ranked.map((r) => ({
       id: r.id,
+      dateKey: r.dateKey,
       title: r.title,
       ratio: topCount > 0 ? r.count / topCount : 0
     }));
@@ -389,12 +402,19 @@ export function PublicInsights({
               <span className="pi-label">빅타민들이 많이 누른 일정</span>
               <ol className="pi-top">
                 {d.popular.map((p, i) => (
-                  <li key={p.id}>
+                  <li key={p.id} className="pi-popular-item">
+                    <button type="button" className="pi-popular-event" data-act="record-event-open" data-record-event={`popular:${p.id}`} onClick={() => {
+                      hapticTick();
+                      session.current={month:recordMonth,group,scrollTop:bodyRef.current?.scrollTop??0,focusId:`popular:${p.id}`};
+                      onPickEvent(p.id,p.dateKey);
+                    }}>
                     <span className="pi-rank">{["🥇", "🥈", "🥉"][i]}</span>
                     <span className="pi-top-title">{p.title}</span>
-                    <span className="pi-bar heart">
+                    <span className="pi-bar heart" aria-hidden="true">
                       <i style={{ width: `${Math.round(p.ratio * 100)}%` }} />
                     </span>
+                    <ChevronRight aria-hidden="true" size={15}/>
+                    </button>
                   </li>
                 ))}
               </ol>

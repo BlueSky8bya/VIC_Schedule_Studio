@@ -1,0 +1,15 @@
+# Record entry, exact recent colors, mouse cursor — 2026-10-27
+
+Local implementation and verification completed under current human adoption. Exact release/readback is selected by primary daily state and durable `runs/20261027-record-colors-brush`; this repository record alone is not external deployment proof.
+
+Scope: public record popular row uses the existing public detail/popover/history/session callback. No return button. Board recent5 committed custom colors use session memory and a centered compact row. Shared HEX↔HSV conversion keeps fractional precision. Mouse SVG cursor uses the same stroke pressure factor, rounded to quarter-pixels, with no new loop or ink-policy change.
+
+G-22: reuse `record-event-open`; new fixed `bp-recent-color` is registered/readable in both timeline and least-used views. Pointer/keyboard collection-to-display uses the existing guarded collector; no HEX, event identity/title, pressure samples or cursor/autonomous events are collected.
+
+Related units96/96, typecheck/lint/document harness and the immutable production build pass. Final9 native cases execute fresh on BUILD_ID `gaMDtL5sOYK-A4uu-6XAL`; result `2026-10-27-1793079342773-c1dcb5bb/result.json`, SHA256 `b5cf5c91c15ae47d9e525fccfd97f0ddfb174e567d2eb71f0906e666b8593a96`. All1389 product dependency files match the frozen product bytes. Screenshots wait for real appearance animations; no clock/style/geometry patch.
+
+Actual scope: viewer1440 light/1920 dark/390 shared-detail outside/X/Esc/Back with month/scroll/focus restoration; preview1440 empty-popularity + existing summary detail/outside-return path; owner1440/developer1920 exact5-color order/cap/Esc cancel/keyboard reuse/centered geometry/session disposal; mouse2/18px/63px highlighter/native cursor/real ink/undo/redo/other tools and synthetic pen-hover boundary; shared tag HEX and390 popup bounds. Populated popularity in the studio preview was not observed because the fixture has no hearts; the shared component and callback were reviewed, and its existing detail-return route was executed.
+
+Non-author source review found and resolved the popular-list parent24px grid and mouse pressure-width mismatch. Actual first native focus-return failure was fixed with a cancellable next-frame restore. Original attempts remain immutable: first1P/3F/2interrupted/3unrun; second6P/3fixture-driver failures; third8P/1mobile-X-selector failure. Subsequent9P capture and final settled9P use the verified same build. Two product builds, three verified build reuse attempts, zero case PASS reuse; final case success does not rewrite old reports. One unit callsite-contract failure was resolved by retaining the original stylus event entry point. Native receipts, media and independent review remain in the durable run.
+
+No full200, actual login/RLS, physical stylus/OBS, performance saving or normal36 claim. Cursor SVG is the actual computed CSS source rendered separately for inspection, not an OS-cursor screenshot. Existing daily same-ball evidence-insufficient failure remains pending; this UI work does not erase it.

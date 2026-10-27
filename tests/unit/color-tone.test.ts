@@ -3,11 +3,18 @@ import {
   applyTone,
   applyToneHsv,
   hexToHue,
+  hexToHsv,
+  hsvToHex,
   inkContrast,
   TONE_PRESETS
 } from "@/lib/tags/color-tone";
 
 describe("color-tone", () => {
+  it("preserves exact HEX channels through the shared picker round trip", () => {
+    const levels=[0,1,17,127,128,254,255];
+    const samples=['#23695f','#c56885',...levels.flatMap(r=>levels.flatMap(g=>levels.map(b=>'#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join(''))))];
+    for(const input of samples){const hsv=hexToHsv(input);expect(hsvToHex(hsv.h,hsv.s,hsv.v)).toBe(input);}
+  });
   it("applyTone은 색조(hue)를 유지하고 톤만 바꾼다", () => {
     const base = "#2f63d6"; // 파랑(hue ~220)
     const baseHue = hexToHue(base);

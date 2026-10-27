@@ -387,6 +387,7 @@ export const ACT: Record<string, TargetLabel> = {
   "bp-tool": { name: "그림판 도구 고르기", area: "그림판" },
   "bp-width": { name: "도구 굵기", area: "그림판" },
   "bp-color": { name: "펜 색", area: "그림판" },
+  "bp-recent-color": { name: "그림판 최근 확정 색 고르기", area: "그림판" },
   "bp-col-x": { name: "칸 비우기", area: "그림판" },
   "bp-send": { name: "그림판에 날짜 보내기", area: "그림판" },
   "bp-layer-btn": { name: "레이어 버튼", area: "그림판" },

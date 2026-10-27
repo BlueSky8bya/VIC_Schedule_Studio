@@ -56,6 +56,8 @@ import {
 } from "lucide-react";
 
 import { ColorPickerPopover } from "@/components/tags/color-picker-popover";
+import { rememberCustomColor } from "@/lib/broadcast/recent-colors";
+import { mouseInkCursor, mousePenFootprint } from "@/lib/broadcast/mouse-cursor";
 import type { BroadcastPanelDay, BroadcastPanelEvent } from "@/lib/schedules/broadcast-dto";
 import { getDayMark } from "@/lib/calendar/holidays";
 import type { MonthCell } from "@/lib/calendar/month";
@@ -320,6 +322,7 @@ export function BroadcastPanel({
   const lastFitRef = useRef({ w: 0, h: 0, scale: 0 });
   const [tool, setTool] = useState<BroadcastTool>("pen");
   const [penColor, setPenColor] = useState(PEN_COLORS[0]);
+  const [recentCustomColors, setRecentCustomColors] = useState<string[]>([]);
   // 화면 모드 — <html data-theme>를 지켜본다. 기본 펜 색(검정↔흰색)을 고른 채면 모드가 바뀔 때 같이 바꾼다.
   const [darkTheme, setDarkTheme] = useState(false);
   useEffect(() => {
@@ -2754,6 +2757,15 @@ export function BroadcastPanel({
       `stroke='%234b4468' stroke-width='1.5'/%3E%3C/svg%3E`;
     return `url("data:image/svg+xml;charset=utf-8,${svg}") ${r + 2} ${r + 2}, crosshair`;
   }, [penWidth]);
+  const inkCursor = useMemo(() => tool === "pen" || tool === "hl"
+    ? mouseInkCursor(tool, tool === "hl" ? penWidth * 3.5 : mousePenFootprint(penWidth), penColor)
+    : undefined, [tool, penWidth, penColor]);
+  const liveMouseCursorKeyRef = useRef<string | null>(null);
+  function resetMouseCursor() {
+    liveMouseCursorKeyRef.current = null;
+    const cursor = picking ? "" : tool === "eraser" ? eraserCursor : inkCursor ?? "";
+    if (drawSurfaceRef.current && drawSurfaceRef.current.style.cursor !== cursor) drawSurfaceRef.current.style.cursor = cursor;
+  }
 
   const StylusCursorIcon =
     tool === "pen"
@@ -2775,6 +2787,7 @@ export function BroadcastPanel({
   // 마우스의 CSS cursor는 스타일러스 접촉에서 보장되지 않는다. React state를 240Hz로 갱신하지
   // 않고 DOM transform만 바꿔, pen hover/접촉 위치에 도구 footprint와 아이콘을 띄운다.
   function updateStylusCursor(e: React.PointerEvent<HTMLDivElement>, boardRect?: DOMRect | null) {
+    if (e.pointerType === "mouse" && !drawingRef.current) resetMouseCursor();
     const activePenPointerId =
       activePointerTypeRef.current === "pen" ? activePtrRef.current : null;
     const action = resolveStylusCursorAction(
@@ -2977,6 +2990,14 @@ export function BroadcastPanel({
       const f = widthFactor(s, sp.x, sp.y);
       if (appendPoint(live.points, { x: sp.x, y: sp.y, p: f })) added = true;
     }
+    if (live.tool === "pen" && e.pointerType === "mouse") {
+      const diameter = mousePenFootprint(live.width, live.points[live.points.length - 1]?.p);
+      const key = `${live.color}:${diameter}`;
+      if (liveMouseCursorKeyRef.current !== key) {
+        liveMouseCursorKeyRef.current = key;
+        e.currentTarget.style.cursor = mouseInkCursor("pen", diameter, live.color);
+      }
+    }
     const previousPredictionCount = predictedPointsRef.current.length;
     const predicted =
       live.tool === "pen" &&
@@ -2998,6 +3019,7 @@ export function BroadcastPanel({
   }
   function endDraw(e?: React.PointerEvent<HTMLDivElement>) {
     hideStylusCursor(e);
+    resetMouseCursor();
     if (!drawingRef.current) return;
     if (e && e.pointerId !== activePtrRef.current) return; // 다른 포인터의 up 무시
     if (e && activePointerTypeRef.current === "pen") {
@@ -3007,6 +3029,7 @@ export function BroadcastPanel({
   }
   function cancelDraw(e: React.PointerEvent<HTMLDivElement>) {
     hideStylusCursor(e);
+    resetMouseCursor();
     if (!drawingRef.current || e.pointerId !== activePtrRef.current) return;
     if (activePointerTypeRef.current === "pen") {
       lastPenContactTsRef.current = e.timeStamp;
@@ -4444,10 +4467,16 @@ export function BroadcastPanel({
                 canClear={false}
                 kind="modifier"
                 value={penColor}
+                recentColors={recentCustomColors}
                 onCancel={() => restoreColorPickerContext(colorPop)}
                 onChange={applyInkColor}
                 onClear={() => {}}
-                onClose={() => setColorPop(null)}
+                onClose={() => {
+                  if (penColor.toLowerCase() !== colorPop.openedWith.toLowerCase()) {
+                    setRecentCustomColors(current => rememberCustomColor(current, penColor));
+                  }
+                  setColorPop(null);
+                }}
               />
             ) : null}
           </div>
@@ -4759,7 +4788,7 @@ export function BroadcastPanel({
             style={{
               pointerEvents: tool === "select" && !picking ? "none" : "auto",
               // 지우개: 실제 지워지는 크기 그대로의 원 커서 — 어디까지 닦일지 보고 지운다.
-              cursor: tool === "eraser" ? eraserCursor : undefined
+              cursor: picking ? undefined : tool === "eraser" ? eraserCursor : inkCursor
             }}
             onLostPointerCapture={cancelDraw}
             onPointerCancel={cancelDraw}

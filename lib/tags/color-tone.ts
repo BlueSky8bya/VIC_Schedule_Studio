@@ -103,7 +103,9 @@ export function hexToHsv(hex: string): { h: number; s: number; v: number } {
     h = ((h * 60) % 360 + 360) % 360;
   }
   const s = max === 0 ? 0 : d / max;
-  return { h, s: Math.round(s * 100), v: Math.round(max * 100) };
+  // Keep channel precision through a picker round trip. Integer percentages
+  // changed an explicitly entered HEX even before any HSV control was moved.
+  return { h, s: s * 100, v: max * 100 };
 }
 
 export function hsvToHex(h: number, s: number, v: number): string {
