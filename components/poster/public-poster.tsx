@@ -4263,7 +4263,7 @@ export function PublicPoster({
         {canHeart ? (
           <button
             aria-pressed={bookmarkedOnly}
-            className={`legend-mine${bookmarkedOnly ? " active" : ""}`}
+            className={`legend-item legend-mine${bookmarkedOnly ? " active" : ""}`}
             data-act="legend-mine"
             onClick={() => {
               hapticTick();
@@ -4271,7 +4271,9 @@ export function PublicPoster({
             }}
             type="button"
           >
-            <LiquidHeart ratio={interestRatio} />
+            <i aria-hidden="true" className="legend-mine-mark">
+              <LiquidHeart ratio={interestRatio} />
+            </i>
             내 관심
           </button>
         ) : null}

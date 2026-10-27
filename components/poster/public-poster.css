@@ -3913,8 +3913,7 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
 .public-legend-vertical .legend-filter-actions > .legend-clear {
   grid-column: auto;
 }
-.legend-clear,
-.legend-mine {
+.legend-clear {
   margin-top: 0;
   border: 1px solid var(--line);
   border-radius: var(--r-pill);
@@ -3932,29 +3931,23 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
     transform var(--dur-1) var(--ease),
     background var(--dur-1) var(--ease);
 }
-.legend-mine {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
+/* Personal interest uses the same mark column and filter row as the tags above. */
+.public-legend-vertical .legend-mine > i {
+  display: grid;
+  place-items: center;
+  border: 0;
 }
 .legend-mine .liquid-heart {
-  width: 14px;
-  height: 14px;
+  width: 18px;
+  height: 18px;
   flex: none;
-}
-.legend-mine.active {
-  border-color: var(--accent);
-  color: var(--ink);
-  background: var(--surface-2, #fdf6e8);
 }
 .legend-mine:focus-visible,
 .legend-clear:focus-visible {
   outline: 2px solid var(--focus-ring, var(--accent));
   outline-offset: 2px;
 }
-.legend-clear:hover,
-.legend-mine:hover {
+.legend-clear:hover {
   background: var(--surface-2, #fdf6e8);
 }
 .legend-clear:active,
