@@ -9622,7 +9622,8 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
 }
 /* 스크롤 중엔 '현재' 말풍선만(모든 점에 말풍선이 생겼으므로), 호버는 그 점만 */
 .ps-rail.is-scrolling .ps-rail-dot.is-now .ps-rail-tip,
-.ps-rail-dot:hover .ps-rail-tip {
+.ps-rail-dot:hover .ps-rail-tip,
+.ps-rail-dot:focus-visible .ps-rail-tip {
   opacity: 1;
   transform: translate(0, -50%);
 }

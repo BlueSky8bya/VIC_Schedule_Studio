@@ -12,7 +12,8 @@ import dynamic from "next/dynamic";
 import { RowLabel, SettingsSegment, Switch } from "@/components/shared/settings-controls";
 import type { Route } from "next";
 import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, ALargeSmall, Type, Bold, Check, Volume1, Volume2, VolumeX, Wrench, PartyPopper, Heart, BellRing, EyeOff, MousePointerClick, Pointer, CircleDot, ToggleRight, ToggleLeft, PanelTopOpen, X, ChevronLeft, ChevronRight, Grab, ArrowDownToLine, Save, Link2, Unlink, Undo2, Redo2, LockOpen, CircleAlert } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { useFontLoading } from '@/components/shared/use-font-loading';
 import { playSfx, type SfxName, type SoundCategory, type SoundCats } from "@/lib/ui/sfx";
 import type { ThemeMode } from "@/lib/ui/theme";
 import { TEXT_PX_BASE, TEXT_PX_MAX, TEXT_PX_MIN } from "@/lib/ui/edit-prefs";
@@ -257,10 +258,12 @@ export function StudioSettingsList({
   const [fontPeek, setFontPeek] = useState<string | null>(null);
   // 소리 견본 — 누른 타일이 소리 나는 동안 한 번 통 튀고 물결이 퍼진다.
   const [playingSample, setPlayingSample] = useState<SfxName | null>(null);
-  const previewFont = FONT_STACKS[fontPeek ?? font.id] || undefined;
+  const fontLoading = useFontLoading(id => { setFontPeek(null); font.change(id); });
+  const fontStateId = useId();
+  const previewId = fontPeek && fontLoading.status[fontPeek] === 'ready' ? fontPeek : font.id;
+  const previewFont = FONT_STACKS[previewId] || undefined;
   // 타일 견본 글자는 자기 글꼴로 그린다 — 글꼴 묶음이 화면에 들어올 때 한꺼번에 받고(설정을 연 사람만),
   // 받기 전엔 반짝이는 자리표시로 둔다(대체 글꼴로 그렸다가 바뀌며 튀지 않게).
-  const [fontsReady, setFontsReady] = useState<ReadonlySet<string>>(() => new Set([FONT_BASE]));
   // 설정 창 재설계(2026-10-06 소유자: "많아진 설정에 맞게, 벤치마킹해서") — 애플 설정 앱의 묶음 목록:
   // 성격별 묶음 제목 → 둥근 카드 안 줄들 → 필요할 때만 묶음 아래 한 줄 설명. 줄 이름은 짧게(UI-15),
   // 설명은 '모르면 못 고르는 것'에만 단다. 줄 순서는 자주 바꾸는 것(화면)부터.
@@ -315,6 +318,7 @@ export function StudioSettingsList({
     return () => cancelAnimationFrame(raf);
   }, [current, textPx, font.id, font.weight]);
   const fontGridRef = useRef<HTMLDivElement | null>(null);
+  const ensureFont = fontLoading.ensure;
   useEffect(() => {
     const grid = fontGridRef.current;
     if (!grid || typeof IntersectionObserver === "undefined") return;
@@ -323,18 +327,13 @@ export function StudioSettingsList({
       if (started || !entries.some((e) => e.isIntersecting)) return;
       started = true;
       io.disconnect();
-      const css = getComputedStyle(document.documentElement);
       for (const f of FONT_OPTIONS) {
-        if (!f.stack) continue;
-        const fam = f.stack.replace(/var\((--[\w-]+)\)/g, (_m, v: string) => css.getPropertyValue(v).trim() || "sans-serif");
-        Promise.all([document.fonts.load(`400 24px ${fam}`, "가나Aa"), document.fonts.load(`700 24px ${fam}`, "가나Aa")])
-          .catch(() => null)
-          .then(() => setFontsReady((prev) => new Set(prev).add(f.id)));
+        void ensureFont(f.id);
       }
     });
     io.observe(grid);
     return () => io.disconnect();
-  }, [current]);
+  }, [current, ensureFont]);
   // 왼쪽 탭의 선택 하이라이트 — 항목마다 배경을 켜지 않고, 알약 하나가 고른 항목으로 미끄러진다(macOS 사이드바).
   const navRef = useRef<HTMLElement | null>(null);
   const [navVertical, setNavVertical] = useState(false);
@@ -524,8 +523,9 @@ export function StudioSettingsList({
                 className="rhh-link rhh-preview"
                 aria-label="글자 설정 기본으로"
                 data-act="text-style-reset"
-                disabled={textPx === TEXT_PX_BASE && font.id === FONT_BASE && font.weight === 0}
+                disabled={textPx === TEXT_PX_BASE && font.id === FONT_BASE && font.weight === 0 && !fontLoading.requested}
                 onClick={() => {
+                  fontLoading.cancelSelection();
                   setFontPeek(null);
                   font.change(FONT_BASE);
                   font.changeWeight(0);
@@ -549,28 +549,31 @@ export function StudioSettingsList({
                   <span className="rhh-font-group-label">{g.label}</span>
                   <div className="rhh-font-tiles">
                     {FONT_OPTIONS.filter((f) => g.kinds.includes(f.kind)).map((f) => {
-                      const on = f.id === font.id;
-                      const ready = fontsReady.has(f.id);
+                      const ready = fontLoading.status[f.id] === 'ready';
+                      const failed = fontLoading.status[f.id] === 'error';
+                      const on = f.id === font.id && ready;
                       return (
                         <button
                           aria-checked={on}
                           aria-label={f.label}
-                          className={`rhh-font-tile${on ? " on" : ""}`}
+                          aria-busy={fontLoading.status[f.id] === 'loading'}
+                          aria-describedby={failed ? `${fontStateId}-${f.id}` : undefined}
+                          className={`rhh-font-tile${on ? " on" : ""}${failed ? " is-error" : ""}`}
                           data-act="font-select"
                           data-act-opt={f.id}
                           key={f.id}
                           onBlur={() => setFontPeek(null)}
                           onClick={() => {
-                            if (!on) font.change(f.id);
+                            void fontLoading.select(f.id);
                           }}
                           onFocus={() => setFontPeek(f.id)}
                           onMouseEnter={() => setFontPeek(f.id)}
                           role="radio"
-                          title={f.label}
+                          title={failed ? `${f.label} · 다시 누르면 재시도` : f.label}
                           type="button"
                         >
-                          <span aria-hidden="true" className={`rhh-font-sample${ready ? " ready" : ""}`} style={f.stack ? { fontFamily: f.stack } : undefined}>
-                            가나
+                          <span aria-hidden={failed ? undefined : true} id={failed ? `${fontStateId}-${f.id}` : undefined} className={`rhh-font-sample${ready ? " ready" : ""}${failed ? " error" : ""}`} style={ready && f.stack ? { fontFamily: f.stack } : undefined}>
+                            {failed ? '불러오기 실패' : '가나'}
                           </span>
                           <span className="rhh-font-name">{f.label}</span>
                           {on ? (

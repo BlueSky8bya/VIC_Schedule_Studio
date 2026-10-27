@@ -58,9 +58,10 @@ function formatDayLabel(dateKey: string): string {
   const wd = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
   return `${y}.${String(m).padStart(2, "0")}.${String(d).padStart(2, "0")} ${WEEKDAYS[wd]}`;
 }
-function formatMonthLabel(dateKey: string): string {
-  const [y, m] = dateKey.split("-").map(Number);
-  return `${String(y).slice(2)}.${String(m).padStart(2, "0")}`;
+function formatRailDayLabel(dateKey: string, days: readonly string[]): string {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const year = days.some(day => !day.startsWith(`${y}-`)) ? `${y}.` : '';
+  return `${year}${m}.${d} (${WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()]})`;
 }
 const normalize = (s: string) => s.toLowerCase().replace(/[\s\p{P}\p{S}]+/gu, "");
 // 팬이 라벨 앞에 붙인 표식 이모지 중 **우리 종류 아이콘과 뜻이 겹치는 것만**(🎵🎶🎤🎧🎼♪♫🕺💃) 표시에서 뗀다.
@@ -1039,7 +1040,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
                     type="button"
                   >
                     {/* 말풍선은 모든 점에 두고 CSS가 현재·호버일 때만 보인다(2026-09-18 소유자: 호버하면 날짜도) */}
-                    <span className="ps-rail-tip">{formatMonthLabel(d)}</span>
+                    <span className="ps-rail-tip">{formatRailDayLabel(d, railDays)}</span>
                   </button>
                 );
               })}

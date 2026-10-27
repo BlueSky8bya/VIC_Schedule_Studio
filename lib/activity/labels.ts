@@ -317,6 +317,7 @@ export const ACT: Record<string, TargetLabel> = {
   "record-event-open": { name: "기록에서 공개 일정 보기", area: "시청자 화면" },
   "search-expand-vod": { name: "검색 챕터 더 보기", area: "시청자 화면", hint: "한 다시보기의 적중 챕터 전부 펼치기" },
   "search-rail-jump": { name: "검색 날짜 레일", area: "시청자 화면", hint: "오른쪽 점을 눌러 그 날짜로" },
+  "editor-tags-swap": { name: "일정 태그 색 순서 교환", area: "편집실", hint: "앞의 두 콘텐츠 색만 교환, 나머지 선택 유지" },
   "search-scroll-top": { name: "검색 맨 위로", area: "시청자 화면" },
   "search-related-person": { name: "검색 관련 인물 칩", area: "시청자 화면", hint: "함께 자주 나온 사람" },
   "search-related-term": { name: "검색 관련 검색어 칩", area: "시청자 화면" },

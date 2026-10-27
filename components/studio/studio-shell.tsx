@@ -155,7 +155,8 @@ import { PrivateLayerPanel } from "@/components/private-layer/private-layer-pane
 import { TagLegendEditor } from "@/components/tags/tag-legend-editor";
 import { DateTimePicker } from "@/components/studio/datetime-picker";
 import { TagPicker } from "@/components/tags/tag-picker";
-import { ClearEventTags } from "@/components/tags/clear-event-tags";
+import { EventTagActions } from "@/components/tags/clear-event-tags";
+import { contentColorTagIds, swapContentColorOrder } from "@/lib/tags/swap-content-colors";
 import { ReadonlyEventDetail } from "@/components/studio/readonly-event-detail";
 import { RoleBadge } from "@/components/studio/role-badge";
 import { useStudioWriteQueue } from "@/lib/studio/use-write-queue";
@@ -1443,6 +1444,7 @@ export function StudioShell({
     [selectedEventId, visibleEvents]
   );
   const [form, setForm] = useState<EventForm>(() => createEmptyForm());
+  const tagSwapPair = useRef<{ after: string; pair: string[] } | null>(null);
   // One public, content-free input boundary. Changing title/body never creates
   // another signal, and private/teaser editors never enter this lifecycle.
   const companionEditing = Boolean(!viewerMode && editorVisible && form.visibilityScope === "public" && !form.teaser && !modal && !searchOpen);
@@ -5655,6 +5657,19 @@ export function StudioShell({
     });
   }
 
+  function swapEventTagColors() {
+    if (!canEdit) return;
+    const before = form.tagIds.join('|');
+    const context = `${selectedDate}|${selectedEventId ?? ''}|`;
+    const pair = tagSwapPair.current?.after === context + before ? tagSwapPair.current.pair : contentColorTagIds(form.tagIds, viewTags);
+    const next = swapContentColorOrder(form.tagIds, viewTags, pair);
+    if (!next) return;
+    tagSwapPair.current = { after: context + next.join('|'), pair };
+    setForm(current => {
+      return current.tagIds.join('|') === before ? { ...current, tagIds: next, primaryTagIds: contentColorTagIds(next, viewTags) } : current;
+    });
+  }
+
   // #4: 태그 추가/삭제/저장을 새로고침 없이 로컬 상태에 즉시 반영(달력 색도 바로 갱신).
   function applyTagAdd(tag: BroadcastTag, color: ColorPaletteEntry) {
     setTags((prev) => [...prev, tag]);
@@ -7109,7 +7124,7 @@ export function StudioShell({
                     {form.tagIds.length}/{maxEventTags}
                   </b>
                 </span>
-                <ClearEventTags disabled={!canEdit || form.tagIds.length === 0} onClear={clearEventTags} />
+                <EventTagActions disabled={!canEdit || form.tagIds.length === 0} canSwap={!!swapContentColorOrder(form.tagIds, viewTags)} onSwap={swapEventTagColors} onClear={clearEventTags} />
               </div>
               <TagPicker
                 max={maxEventTags}
@@ -8709,7 +8724,7 @@ export function StudioShell({
                   {form.tagIds.length}/{maxEventTags}
                 </b>
               </h3>
-              <ClearEventTags disabled={!canEdit || form.tagIds.length === 0} onClear={clearEventTags} />
+              <EventTagActions disabled={!canEdit || form.tagIds.length === 0} canSwap={!!swapContentColorOrder(form.tagIds, viewTags)} onSwap={swapEventTagColors} onClear={clearEventTags} />
               </div>
               <TagPicker
                 disabled={!canEdit}

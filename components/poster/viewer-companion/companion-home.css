@@ -82,6 +82,10 @@
 .vc-home-close:hover { color: var(--ink); background: rgb(var(--glass-head)); }
 .vc-home-personality { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: var(--vc-object-min-hit); min-height: var(--vc-object-min-hit); padding: 0 6px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--ink); font: inherit; font-size: calc(var(--text-body) / var(--shell-zoom, 1)); cursor: pointer; }
 .vc-home-personality:hover { background: rgb(var(--glass-head)); }
+.vc-home[data-panel-collapsible][data-panel-collapsed] > .panel-section-heading .panel-section-actions,
+html[data-panel-sections~="companion-home"] .vc-home[data-panel-collapsible] > .panel-section-heading .panel-section-actions { display: none; }
+.vc-home[data-panel-collapsible][data-panel-collapsed] > .panel-section-heading,
+html[data-panel-sections~="companion-home"] .vc-home[data-panel-collapsible] > .panel-section-heading { grid-template-columns: minmax(0, 1fr); column-gap: 0; }
 /* Storage has room-appropriate scale. The glass uses the remaining wall
    width after the enlarged native targets and their shared gap. */
 .vc-home-window { position: absolute; z-index: 1; left: var(--vc-window-left); top: var(--vc-window-top); box-sizing: border-box; width: var(--vc-window-width); height: auto; aspect-ratio: 38 / 23; padding: 6px; border: 1px solid color-mix(in srgb, var(--vc-wood-edge) 65%, transparent); border-radius: 14px 14px 9px 9px; background: linear-gradient(110deg, var(--vc-wood-light), var(--vc-wood)); box-shadow: 0 3px 5px var(--vc-soft-shadow), inset 0 1px 1px #fff9; pointer-events: none; }
