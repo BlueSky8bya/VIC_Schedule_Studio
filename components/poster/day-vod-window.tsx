@@ -1478,8 +1478,10 @@ export function DayVodWindow({
                     </button>
                     {dayVodKeysOpen ? (
                       <div className="dvm-keys" role="note">
+                        {sel?.access ? <p className="dvm-keys-external">재생은 숲에서</p> : <>
                         <span><kbd>Space</kbd></span><span>재생 / 일시정지</span>
                         <span><kbd>←</kbd><kbd>→</kbd></span><span>10초 이동</span>
+                        </>}
                         <span><kbd>↑</kbd><kbd>↓</kbd></span><span>이전 / 다음 타임라인</span>
                         <span><kbd>[</kbd><kbd>]</kbd></span><span>이전 / 다음 챕터</span>
                         {list.length > 1 ? (

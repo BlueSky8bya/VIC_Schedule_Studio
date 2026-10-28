@@ -38,7 +38,7 @@ const acceptedSearchTargets = ["search-submit"];
 const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-shake", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets, ...new110Targets, ...new111Targets, ...new115Targets, ...new135Targets, ...new141Targets, ...new142Targets];
 const retired110Target = "companion-radio-mood#lively";
 const memoryFilterTargets = ["companion-memory-filter#all", "companion-memory-filter#expression", "companion-memory-filter#pose", "companion-memory-filter#life"];
-const readFixtureTargets = [...sampleTargets, ...new137Targets, ...memoryFilterTargets, ...drawingDiscardTargets, ...acceptedSearchTargets, retired110Target];
+const readFixtureTargets = [...sampleTargets, ...new137Targets, ...memoryFilterTargets, ...drawingDiscardTargets, ...acceptedSearchTargets, "companion-learning-reset", retired110Target];
 const at = Date.parse("2026-06-10T03:00:00Z");
 
 test("drawing discard pointer and keyboard each emit one fixed action without content", async ({page}) => {
@@ -472,6 +472,10 @@ for (const surface of ["viewer", "studio"] as const) {
     await learning.click(); await expect(learning).toBeChecked({ checked: !learningBefore });
     await learning.click(); await expect(learning).toBeChecked({ checked: learningBefore });
     await panel.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
+    expect(count(page, "companion-learning-reset")).toBe(0);
+    const resetConfirm = panel.getByRole("button", { name: "배운 습관 초기화 확정", exact: true });
+    if (surface === "viewer") await resetConfirm.click();
+    else { await expect(panel.getByRole("button", { name: "취소", exact: true })).toBeFocused(); await page.keyboard.press("Tab"); await expect(resetConfirm).toBeFocused(); await page.keyboard.press("Enter"); }
     await panel.getByRole("tab", { name: "움직임", exact: true }).click();
     await panel.getByRole("radiogroup", { name: "빅타민 걸음", exact: true }).getByRole("radio", { name: "발랄하게", exact: true }).click();
     await flush(page, [{ target: "companion-speed#lively" }]);
@@ -484,10 +488,12 @@ for (const surface of ["viewer", "studio"] as const) {
     const personality = panel.getByRole("radiogroup", { name: "빅타민 성격", exact: true });
     const balanced = personality.getByRole("radio", { name: "동글이", exact: true });
     await balanced.click(); await balanced.focus(); await balanced.press("Enter");
-    await balanced.press("Home"); await personality.getByRole("radio", { name: "재롱둥이", exact: true }).press("Home");
-    await flush(page, [{ target: "companion-personality#balanced", n: 3 }, { target: "companion-personality#performer", n: 2 }]);
+    await flush(page, [{ target: "companion-personality#balanced", n: 3 }]);
+    const firstPersonality = personality.getByRole("radio").first(), firstTarget = `companion-personality#${await firstPersonality.getAttribute("data-act-opt")}`, firstCount = count(page, firstTarget);
+    await balanced.press("Home"); await expect(firstPersonality).toBeChecked(); await firstPersonality.press("Home");
+    await flush(page, [{ target: firstTarget, n: firstCount + 2 }]);
     expect(count(page, "companion-personality#balanced")).toBe(3);
-    expect(count(page, "companion-personality#performer")).toBe(2);
+    expect(count(page, firstTarget)).toBe(firstCount + 2);
   });
 
   test(`109 ${surface}: native radio, range, food pages and throw emit fixed uses once`, async ({ page }) => {
@@ -689,7 +695,7 @@ test("110 developer views show book and unified memory uses while old radio mood
   await usage.locator('[data-act="usage-show-all"]').click();
   await page.locator('[data-act="activity-expand-all"]').click();
   await timeline.locator(".act-lines > summary").click();
-  for (const target of [...new110Targets, ...new115Targets, ...new135Targets, ...new137Targets, ...new141Targets, ...new142Targets, ...memoryFilterTargets]) {
+  for (const target of [...new110Targets, ...new115Targets, ...new135Targets, ...new137Targets, ...new141Targets, ...new142Targets, ...memoryFilterTargets, "companion-learning-reset"]) {
     const name = describeTarget("ui.click", target).name;
     const usageRow = usage.locator('.usage-list:not([data-retired]) > li').filter({ hasText: name }), timelineRow = timeline.getByText(name, { exact: true });
     await usageRow.scrollIntoViewIfNeeded(); await expect(usageRow).toBeInViewport();

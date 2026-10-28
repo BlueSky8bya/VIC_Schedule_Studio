@@ -29,6 +29,38 @@ const companionToggleActions: Record<CompanionToggle, string> = {
   drag: "companion-drag-enabled", petting: "companion-petting-enabled", feeding: "companion-feeding-enabled", learnFromYou: "companion-learning-enabled"
 };
 
+// Mount only for the visible basic settings page. Leaving it discards a pending
+// confirmation, without reading/resetting learned data or storing a new choice.
+function LearnedStateReset({ id }: { id: string }) {
+  const [confirming, setConfirming] = useState(false), [completed, setCompleted] = useState(false);
+  const opener = useRef<HTMLButtonElement>(null), cancel = useRef<HTMLButtonElement>(null), restoreFocus = useRef(false);
+  useLayoutEffect(() => {
+    if (confirming) cancel.current?.focus();
+    else if (restoreFocus.current) { restoreFocus.current = false; opener.current?.focus({ preventScroll: true }); }
+  }, [confirming]);
+  const dismiss = () => { restoreFocus.current = true; setConfirming(false); };
+  return <div className={`rhh-habit-actions${confirming ? " rhh-reset-confirmation" : ""}`}
+    role={confirming ? "group" : undefined} aria-labelledby={confirming ? `${id}-reset-question` : undefined}
+    onKeyDownCapture={event => { if (confirming && event.key === "Escape") { event.preventDefault(); event.stopPropagation(); dismiss(); } }}>
+    {confirming ? <>
+      <p className="rhh-trait-reset-note"><strong id={`${id}-reset-question`}>배운 내용을 초기화할까요?</strong><span id={`${id}-reset-note`}>습관·취향·특성 초기화 · 도감·선물 유지</span></p>
+      <div className="rhh-reset-buttons">
+        <button className="rhh-link" data-activity-manual="" onClick={dismiss} ref={cancel} type="button">취소</button>
+        <button aria-describedby={`${id}-reset-note`} aria-label="배운 습관 초기화 확정" className="rhh-link rhh-reset-confirm" data-act="companion-learning-reset" data-activity-manual="" onClick={() => {
+          resetCompanionHabits(); resetCompanionTastes(); hapticTick(); playSfx("tab");
+          // Opening/cancelling is preparatory UI, not a completed reset. Keep
+          // the existing fixed target, one explicit completion and no metadata.
+          logActivity("ui.click", { target: "companion-learning-reset" });
+          setCompleted(true); dismiss();
+        }} type="button">초기화</button>
+      </div>
+    </> : <>
+      <p className="rhh-trait-reset-note" id={`${id}-reset-note`} role={completed ? "status" : undefined}>{completed ? "초기화했어요. 도감·선물은 유지돼요." : "습관·취향·특성 초기화 · 도감·선물 유지"}</p>
+      <button aria-describedby={`${id}-reset-note`} aria-label="배운 습관 초기화" className="rhh-link" data-act="companion-learning-reset" data-activity-manual="" onClick={() => { setCompleted(false); setConfirming(true); }} ref={opener} type="button">초기화</button>
+    </>}
+  </div>;
+}
+
 /** Shared setting controls stay editable while OFF, so a quiet preset can be prepared first. */
 export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn, active, radio, personalityRequest = 0 }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; globalSoundOn: boolean; active: boolean; radio: ReactNode; personalityRequest?: number }) {
   const [tab, setTab] = useState<CompanionTab>("personality");
@@ -130,7 +162,7 @@ export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn
         </div>
         {row("learnFromYou", "함께 지내며 배우기", <Heart size={15} />)}
       </div>
-      <div className="rhh-habit-actions"><p className="rhh-trait-reset-note" id={`${id}-reset-note`}>습관·취향·특성 초기화 · 도감·선물 유지</p><button aria-describedby={`${id}-reset-note`} aria-label="배운 습관 초기화" className="rhh-link" data-act="companion-learning-reset" onClick={() => { resetCompanionHabits(); resetCompanionTastes(); hapticTick(); playSfx("tab"); }} type="button">초기화</button></div>
+      {active && tab === "personality" ? <LearnedStateReset id={id} /> : null}
     </div>
   </div>;
 }

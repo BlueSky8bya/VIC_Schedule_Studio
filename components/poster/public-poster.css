@@ -1309,10 +1309,19 @@ html[data-reduce-motion] .day-vod-modal {
 }
 html[data-reduce-motion] .dvm-keys { animation-duration: 1ms;
   animation-iteration-count: 1; }
-.dvm-keys > span:nth-child(odd) {
+.dvm-keys > span:nth-of-type(odd) {
   display: inline-flex;
   gap: 3px;
   justify-content: flex-end;
+}
+.dvm-keys-external {
+  grid-column: 1 / -1;
+  margin: 0 0 2px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid currentColor;
+  border-color: color-mix(in srgb, currentColor 18%, transparent);
+  text-align: center;
+  font: inherit;
 }
 .dvm-keys kbd {
   display: inline-grid;

@@ -1907,6 +1907,13 @@ html[data-theme="dark"] .vic-settings .rhh-companion-settings .rhh-switch.on { b
 .rhh-companion-settings .rhh-trait-reason { grid-template-columns: minmax(0, 1fr); gap: 4px; border-top: 0; border-radius: var(--r-md); background: var(--companion-lilac); padding: var(--space-3); }
 .rhh-companion-settings .rhh-trait-reason > span:first-child { color: var(--companion-soft); }
 .rhh-companion-settings .rhh-habit-actions { border-color: var(--companion-line); }
+.rhh-companion-settings .rhh-reset-confirmation { flex-direction: row; flex-wrap: wrap; padding: var(--space-3); border: 1px solid var(--companion-line); border-radius: var(--r-md); background: var(--companion-ground); }
+.rhh-reset-confirmation .rhh-trait-reset-note { flex: 1 1 180px; }
+.rhh-reset-confirmation .rhh-trait-reset-note strong { display: block; margin-bottom: var(--space-1); color: var(--companion-ink); font-weight: 600; }
+.rhh-reset-confirmation .rhh-trait-reset-note > span { display: block; }
+.rhh-reset-buttons { display: flex; flex: none; gap: var(--space-2); margin-left: auto; }
+.vic-settings .rhh-reset-buttons .rhh-link { min-width: 64px; }
+.vic-settings .rhh-reset-buttons .rhh-reset-confirm { background: var(--companion-peach); }
 .rhh-companion-settings .rhh-collection-heading { gap: var(--space-2); margin-bottom: var(--space-3); }
 .rhh-companion-settings .rhh-collection-heading > .vc-collection-art { width: 44px; height: 44px; }
 .rhh-companion-settings .rhh-collection-heading h3 { font-size: var(--text-title, 18px); font-weight: 700; }
