@@ -1372,7 +1372,7 @@ export function StudioShell({
   // 구글 시트식 날짜 칸 범위 선택(마우스 전용, 시각 강조) + 텍스트 긁힘 방지.
   // (P1-MULTI-0로 제거했다가 사용자 요청으로 복원 — 방송 중 기간을 보라 하이라이트로 짚어주는
   //  실사용 용도가 있었다. '액션 없는 상태'가 아니라 그 자체가 판서/설명 도구다.)
-  const { setRef: rangeSelectRef, selected: rangeSelected } = useCellRangeSelect<HTMLDivElement>();
+  const { setRef: rangeSelectRef, selected: rangeSelected } = useCellRangeSelect<HTMLDivElement>({ resetKey: `${view.year}-${view.month}` });
   const setMonthGridRef = useCallback(
     (el: HTMLDivElement | null) => {
       monthGridRef(el);

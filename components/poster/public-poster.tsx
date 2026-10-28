@@ -759,7 +759,7 @@ export function PublicPoster({
   const monthGridRef = useEqualChainHeights<HTMLDivElement>([schedule.events, view]);
   // 구글 시트식 날짜 칸 범위 선택(마우스 전용, 시각 강조) + 텍스트 긁힘 방지.
   // (P1-MULTI-0로 제거했다가 사용자 요청으로 복원 — 방송 중 기간을 짚어주는 실사용 도구.)
-  const { setRef: rangeSelectRef, selected: rangeSelected } = useCellRangeSelect<HTMLDivElement>();
+  const { setRef: rangeSelectRef, selected: rangeSelected } = useCellRangeSelect<HTMLDivElement>({ resetKey: `${view.year}-${view.month}` });
   const setMonthGridRef = useCallback(
     (el: HTMLDivElement | null) => {
       monthGridRef(el);

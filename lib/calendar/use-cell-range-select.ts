@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState, type RefObject } from "react";
+import { useCallback, useLayoutEffect, useRef, useState, type RefObject } from "react";
 
 // 달력 날짜 칸을 마우스로 드래그해 '직선(날짜 연속) 범위'로 "선택"만 한다(시각 강조).
 // - 마우스 전용: 터치는 기존 스크롤/롱프레스(휴방 메뉴)와 충돌하지 않게 건드리지 않는다.
@@ -25,6 +25,10 @@ const MOVE_THRESHOLD = 5; // 이만큼 움직여야 드래그(=선택) 시작 �
 
 type Options = {
   enabled?: boolean;
+  // Calendar indices belong to one viewed month. Reset through the existing
+  // complete cleanup path before another month's cells are painted. Other
+  // consumers can omit this key and retain their current selection lifecycle.
+  resetKey?: string;
   // 이 요소들 '안'에서 시작한 pointerdown은 그리드 밖이어도 선택을 지우지 않는다 —
   // "판서판으로 보내기" 버튼·도구줄처럼 선택을 '소비'하는 UI가 클릭 전에 선택을
   // 잃지 않게 한다(onDocDown이 click보다 먼저 오는 문제, D2-b).
@@ -52,6 +56,7 @@ function sameSet(a: Set<number>, b: Set<number>): boolean {
 
 export function useCellRangeSelect<T extends HTMLElement>({
   enabled = true,
+  resetKey,
   exemptRefs,
   escapeClears = true,
   clickToggles = false
@@ -82,6 +87,9 @@ export function useCellRangeSelect<T extends HTMLElement>({
     resetInternalsRef.current?.();
     apply(new Set());
   }, [apply]);
+  useLayoutEffect(() => {
+    if (resetKey !== undefined) clearSelection();
+  }, [clearSelection, resetKey]);
   // 키보드 선택 경로(Enter/Space) — Ctrl+클릭과 같은 '개별 토글'. 포인터 훅과 같은 Set을 쓰고,
   // Shift 확장 기준(lastAnchor)도 Ctrl+클릭과 동일하게 갱신한다(G3a-r WARN: 안 하면 키보드
   // 토글 뒤 Shift+클릭이 과거 마우스 앵커에 붙는다).

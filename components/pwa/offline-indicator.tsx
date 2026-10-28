@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
-// 오프라인/온라인 상태를 인앱으로 알린다. 오프라인이면 하단 pill 배지("오프라인 · 마지막 동기화 N분 전"
-// — 지금 보는 건 공개 일정 스냅샷이라는 신호), 온라인 복귀 시 잠깐 초록 토스트("다시 온라인").
+// Keep the existing badge/toast. Network status does not establish a screen
+// transition or a successful editor write; snapshot age describes public data only.
 // 마지막 동기화 시각은 서비스워커가 공개 스냅샷을 갱신할 때 postMessage로 보내준다.
 const LAST_SYNC_KEY = "vic:lastSync";
 const SNAPSHOT_KEY = "/__offline_snapshot"; // SW의 공개 스냅샷 캐시 키와 일치해야 함
@@ -33,14 +33,15 @@ function readLastSync(): number | null {
   }
 }
 
-function agoLabel(at: number | null): string {
-  if (!at) return "";
-  const mins = Math.floor((Date.now() - at) / 60000);
-  if (mins < 1) return "방금 동기화";
-  if (mins < 60) return `마지막 동기화 ${mins}분 전`;
+export function offlineSnapshotHint(at: number | null, now = Date.now()): string {
+  if (!at || !Number.isFinite(at) || at < 0) return "저장·갱신 확인 필요";
+  if (at > now) return "공개 일정 보관 시각 확인 필요";
+  const mins = Math.floor((now - at) / 60000);
+  if (mins < 1) return "공개 일정 방금 보관";
+  if (mins < 60) return `공개 일정 ${mins}분 전 보관`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `마지막 동기화 ${hrs}시간 전`;
-  return `마지막 동기화 ${Math.floor(hrs / 24)}일 전`;
+  if (hrs < 24) return `공개 일정 ${hrs}시간 전 보관`;
+  return `공개 일정 ${Math.floor(hrs / 24)}일 전 보관`;
 }
 
 export function OfflineIndicator() {
@@ -121,7 +122,7 @@ export function OfflineIndicator() {
           <span className="netstat-txt">
             오프라인
             <span className="netstat-sub">
-              {lastSync ? ` · ${agoLabel(lastSync)}` : " · 공개 일정만 표시"}
+              {` · ${offlineSnapshotHint(lastSync)}`}
             </span>
           </span>
         </div>
