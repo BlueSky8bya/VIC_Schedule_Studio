@@ -96,9 +96,11 @@ type ProbeWindow = Window & { wash162?: { frames: Frame[]; stop: () => void } };
 async function probe(page: Page) {
   await installCompanionPaintedSource157(page);
   await page.evaluate(() => { const frames: Frame[] = []; const began = performance.now(); let raf = 0;
-    const tick = () => { const actor = document.querySelector<HTMLElement>(".vc-companion"), matrix = new DOMMatrixReadOnly(actor?.style.transform), size = parseFloat(actor?.style.getPropertyValue("--vc-size") ?? "92"), brush = document.querySelector<HTMLElement>(".vc-wash-tool"), pad = document.querySelector(".vc-home-wash-stance")?.getBoundingClientRect();
+    const tick = () => { const actor = document.querySelector<HTMLElement>(".vc-companion"), rect = actor?.getBoundingClientRect(), brush = document.querySelector<HTMLElement>(".vc-wash-tool"), pad = document.querySelector(".vc-home-wash-stance")?.getBoundingClientRect();
       const paintedSource=(window as PaintedSource157Window).companionPaintedSource157?.inspect(actor);
-      frames.push({ paintedSource,sourcePaint:paintedSource?.passed===true, at: performance.now() - began, x: matrix.m41 + size / 2, y: matrix.m42 + size, state: actor?.dataset.state ?? "", platform: actor?.dataset.platform ?? "", scene: actor?.dataset.personalityScene ?? "", washing: actor?.hasAttribute("data-washing") ?? false, brush: Boolean(brush && !brush.hidden && getComputedStyle(brush).visibility !== "hidden"), pad: pad ? { x: pad.left + pad.width / 2, y: pad.top + pad.height * .72 } : null }); raf = requestAnimationFrame(tick); };
+      // Native item/sofa anchors supply a viewport origin outside the inline
+      // transform. Compare rendered body and pad in the same viewport plane.
+      frames.push({ paintedSource,sourcePaint:paintedSource?.passed===true, at: performance.now() - began, x: rect ? rect.left + rect.width / 2 : NaN, y: rect?.bottom ?? NaN, state: actor?.dataset.state ?? "", platform: actor?.dataset.platform ?? "", scene: actor?.dataset.personalityScene ?? "", washing: actor?.hasAttribute("data-washing") ?? false, brush: Boolean(brush && !brush.hidden && getComputedStyle(brush).visibility !== "hidden"), pad: pad ? { x: pad.left + pad.width / 2, y: pad.top + pad.height * .72 } : null }); raf = requestAnimationFrame(tick); };
     raf = requestAnimationFrame(tick); (window as ProbeWindow).wash162 = { frames, stop() { cancelAnimationFrame(raf); } };
   });
 }

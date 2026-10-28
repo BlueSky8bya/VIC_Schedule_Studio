@@ -234,18 +234,29 @@ for (const [surface, width] of [["viewer", 1920], ["studio", 2400]] as const) te
   expect(await screenImage.evaluate(async(node:HTMLImageElement)=>{await node.decode();return node.complete&&node.naturalWidth>0;})).toBe(true);
   const actual = await home.evaluate(node => {
     const box = (selector: string) => { const r = node.querySelector(selector)!.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
-    const lamp = box(".vc-home-lamp-paint"), circle = box(".vc-home-lamp-handle"), cord = box(".vc-curtain-control > span"), window = box(".vc-home-window");
+    const lamp = box(".vc-home-lamp-paint"), circle = box(".vc-home-lamp-handle"), cord = box(".vc-curtain-rope"), collar = box(".vc-curtain-collar"), handle = box(".vc-curtain-handle"), window = box(".vc-home-window");
     const picture = node.querySelector<HTMLElement>(".vc-home-tv-screen")!, clip = node.querySelector<SVGClipPathElement>(".vc-home-tv-projection clipPath")!;
-    return { lamp, circle, cord, window, rodImage: box(".vc-window-curtain-stage"), curtainHit: box(".vc-curtain-control"), lampHit: box(".vc-home-lamp"), bodySrc: node.querySelector(".vc-home-tv-body")!.getAttribute("src"), clip: clip.querySelector("path")!.getAttribute("d"), pictureTransform: getComputedStyle(picture).transform };
+    return { lamp, circle, cord, collar, handle, window, rodImage: box(".vc-window-curtain-stage"), curtainHit: box(".vc-curtain-control"), lampHit: box(".vc-home-lamp"), bodySrc: node.querySelector(".vc-home-tv-body")!.getAttribute("src"), clip: clip.querySelector("path")!.getAttribute("d"), pictureTransform: getComputedStyle(picture).transform };
   });
   expect(actual.bodySrc).toBe("/companion/home/136/tv-body.webp"); expect(actual.clip).toMatch(/^M133 167/);
   expect(actual.circle.x).toBeGreaterThan(actual.lamp.x + actual.lamp.width / 2); expect(actual.circle.y + actual.circle.height).toBeLessThanOrEqual(actual.lamp.y + actual.lamp.height + .5);
-  expect(Math.abs(actual.cord.y - actual.rodImage.y - actual.rodImage.height * 17 / 192)).toBeLessThan(.75); expect(actual.cord.height).toBeGreaterThan(60);
+  // The collar ring, not the full hit-wrapper or rope crop top, owns the
+  // registered rod point. Keep native collar/rope/handle seams continuous.
+  const ringY = actual.collar.y + actual.collar.height * 35 / 99;
+  expect(Math.abs(ringY - actual.rodImage.y - actual.rodImage.height * 17 / 192)).toBeLessThan(.75);
+  // The60px minimum describes the connected pull assembly, including the
+  // native collar/handle crops; the straight rope band is only one piece.
+  expect(actual.handle.y + actual.handle.height - ringY).toBeGreaterThan(60);
+  expect(actual.cord.height).toBeGreaterThan(0);
   expect(Math.abs(actual.cord.x + actual.cord.width / 2 - actual.rodImage.x - actual.rodImage.width * 10 / 256)).toBeLessThan(.75);
+  expect(Math.abs(actual.collar.x + actual.collar.width / 2 - actual.cord.x - actual.cord.width / 2)).toBeLessThan(.75);
+  expect(Math.abs(actual.handle.x + actual.handle.width / 2 - actual.cord.x - actual.cord.width / 2)).toBeLessThan(.75);
+  expect(Math.abs(actual.cord.y - actual.collar.y - actual.collar.height + .5)).toBeLessThan(.75);
+  expect(Math.abs(actual.cord.y + actual.cord.height - actual.handle.y - 1)).toBeLessThan(.75);
   expect(actual.cord.x + actual.cord.width / 2).toBeGreaterThan(actual.rodImage.x);
   expect(actual.cord.x + actual.cord.width / 2).toBeLessThan(actual.rodImage.x + actual.rodImage.width * .1);
   for (const rect of [actual.curtainHit, actual.lampHit]) { expect(rect.width).toBeGreaterThanOrEqual(44); expect(rect.height).toBeGreaterThanOrEqual(44); }
-  proofs.get(page)!.notes.push({ surface, actual, televisionRasterUnchanged: true, lampRaster: "selected wood-base pair155", contactSelectors: [".vc-home-lamp-handle", ".vc-curtain-control > span"], sourceGlassPixelProof: "companion-personality-layout-142.test.ts" });
+  proofs.get(page)!.notes.push({ surface, actual, televisionRasterUnchanged: true, lampRaster: "selected wood-base pair155", contactSelectors: [".vc-home-lamp-handle", ".vc-curtain-handle"], sourceGlassPixelProof: "companion-personality-layout-142.test.ts" });
   if (surface === "studio") {
     await home.locator('[data-home-action="book"]').click();
     const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
