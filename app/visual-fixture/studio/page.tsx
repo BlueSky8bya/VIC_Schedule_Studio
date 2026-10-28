@@ -11,6 +11,8 @@ import { StudioShell } from "@/components/studio/studio-shell";
 import { isSeasonKey } from "@/components/shared/ambient/registry";
 import { isBiomeKey } from "@/components/shared/ambient/world/biomes";
 import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
+import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
+import { CALENDAR_PREVIEW_TITLE, CALENDAR_PREVIEW_SUBTITLE } from '@/lib/ui/calendar-preview-sample';
 import { tentativeFixtureEvents } from "../tentative-events";
 import { buildPremiereFixture } from "@/lib/schedules/premiere-fixture";
 import { getTodayKst } from "@/lib/calendar/month";
@@ -29,7 +31,12 @@ export default async function VisualStudioFixture({
     notFound();
   }
   const sp = await searchParams;
-  const cozy = sp?.supportUX === "continuity" ? agendaContinuityFixture() : sp?.supportUX === "reading" ? readingContextFixture() : sp?.supportUX === "cozy" ? supportContextFixture() : sp?.supportUX === "frame-none" ? agendaFrameFixture() : null;
+  const typographyOnly = ['preview-text','title-only','span-only'].includes(sp?.supportUX ?? '') ? {
+    year: 2026, month: 6, focusDate: '2026-06-04', events: [{ ...samplePublicScheduleData.events[0],
+      publicTitle: CALENDAR_PREVIEW_TITLE + (sp?.supportUX === 'preview-text' ? '\n' + CALENDAR_PREVIEW_SUBTITLE : ''), startsAt: '2026-06-04T20:00:00+09:00', endsAt: '2026-06-04T23:00:00+09:00',
+      ...(sp?.supportUX === 'span-only' ? { endDateKey: '2026-06-06', endsAt: '2026-06-06T23:00:00+09:00' } : {}) }]
+  } : null;
+  const cozy = typographyOnly ?? (sp?.supportUX === "continuity" ? agendaContinuityFixture() : sp?.supportUX === "reading" ? readingContextFixture() : sp?.supportUX === "cozy" ? supportContextFixture() : sp?.supportUX === "frame-none" ? agendaFrameFixture() : null);
   // The studio retains teaser=true after release and needs a masked edit entry
   // before release. The public preview receives only the resolved fixture data.
   const cozyStudioEvents = cozy && sp?.supportUX === "cozy" ? [

@@ -7,6 +7,7 @@ import { buildPremiereFixture } from "@/lib/schedules/premiere-fixture";
 import { tentativeFixtureEvents } from "../tentative-events";
 import { parsePublicMonth } from "@/lib/ui/public-month-link";
 import { isCompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
+import { CALENDAR_PREVIEW_TITLE, CALENDAR_PREVIEW_SUBTITLE } from '@/lib/ui/calendar-preview-sample';
 
 // 비주얼 회귀 테스트 전용 fixture 페이지 — 고정된 공개 샘플 데이터로 포스터를 렌더한다.
 // 인증·DB·시각(오늘 강조는 6월 뷰라 안 걸림)에 의존하지 않아 매번 동일하게 나온다.
@@ -30,13 +31,18 @@ export default async function VisualPosterFixture({
     notFound();
   }
   const sp = await searchParams;
-  const cozy = sp?.detailUX === "1" ? {
+  const typographyOnly = ['preview-text','title-only','span-only'].includes(sp?.supportUX ?? '') ? {
+    year: 2026, month: 6, focusDate: '2026-06-04', events: [{ ...samplePublicScheduleData.events[0],
+      publicTitle: CALENDAR_PREVIEW_TITLE + (sp?.supportUX === 'preview-text' ? '\n' + CALENDAR_PREVIEW_SUBTITLE : ''), startsAt: '2026-06-04T20:00:00+09:00', endsAt: '2026-06-04T23:00:00+09:00',
+      ...(sp?.supportUX === 'span-only' ? { endDateKey: '2026-06-06', endsAt: '2026-06-06T23:00:00+09:00' } : {}) }]
+  } : null;
+  const cozy = typographyOnly ?? (sp?.detailUX === "1" ? {
     year: 2026, month: 10,
     events: [{ ...samplePublicScheduleData.events[0], id: "fixture-detail-layout",
       startsAt: "2026-10-01T20:00:00+09:00", endsAt: "2026-10-01T23:00:00+09:00",
       publicTitle: "새로운 방송을 함께 준비하는 가을 이야기와 앞으로의 계획\n- 첫 번째 소식\n함께 나눌 이야기와 앞으로의 방송 계획\n- 시청자 질문\n여러분이 보내 주신 질문을 소개합니다",
       heartCount: 45, tagIds: ["tag-full-track", "tag-collab"], primaryTagIds: ["tag-full-track"] }]
-  } : sp?.supportUX === "continuity" ? agendaContinuityFixture() : sp?.supportUX === "reading" ? readingContextFixture() : sp?.supportUX === "cozy" ? supportContextFixture() : sp?.supportUX === "frame-none" ? agendaFrameFixture() : null;
+  } : sp?.supportUX === "continuity" ? agendaContinuityFixture() : sp?.supportUX === "reading" ? readingContextFixture() : sp?.supportUX === "cozy" ? supportContextFixture() : sp?.supportUX === "frame-none" ? agendaFrameFixture() : null);
   const linkedMonth = sp?.monthLink === "1" ? parsePublicMonth(sp.month) : null;
   // teaser=<초> — 지금부터 N초 뒤 공개되는 '최초공개' 일정을 하나 끼워 넣는다(테스트 전용).
   // 시간에 걸린 기능이라 고정 샘플로는 검증이 안 된다: 공개 전 제목이 DOM에 새지 않는지,

@@ -12,11 +12,14 @@ import dynamic from "next/dynamic";
 import { RowLabel, SettingsSegment, Switch } from "@/components/shared/settings-controls";
 import type { Route } from "next";
 import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, ALargeSmall, Type, Bold, Check, Volume1, Volume2, VolumeX, Wrench, PartyPopper, Heart, BellRing, EyeOff, MousePointerClick, Pointer, CircleDot, ToggleRight, ToggleLeft, PanelTopOpen, X, ChevronLeft, ChevronRight, Grab, ArrowDownToLine, Save, Link2, Unlink, Undo2, Redo2, LockOpen, CircleAlert } from "lucide-react";
-import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type RefObject } from "react";
+import { useCalendarPreviewMetrics } from '@/components/shared/use-calendar-preview-metrics';
+import { CALENDAR_PREVIEW_TITLE, CALENDAR_PREVIEW_SUBTITLE } from '@/lib/ui/calendar-preview-sample';
 import { useFontLoading } from '@/components/shared/use-font-loading';
 import { playSfx, type SfxName, type SoundCategory, type SoundCats } from "@/lib/ui/sfx";
 import type { ThemeMode } from "@/lib/ui/theme";
 import { TEXT_PX_BASE, TEXT_PX_MAX, TEXT_PX_MIN } from "@/lib/ui/edit-prefs";
+import { POSTER_AGENDA_QUERY } from "@/lib/ui/breakpoints";
 import { FONT_BASE, FONT_OPTIONS, FONT_STACKS, type FontKind, type WeightStep } from "@/lib/ui/font-prefs";
 import { POSTER_THEMES, type PosterThemeKey } from "@/lib/domain/schedule-types";
 import type { GfxMode, GfxPref } from "@/lib/ui/gfx";
@@ -43,6 +46,7 @@ type WeatherOpt = "real" | Weather;
 type SeasonOpt = "real" | SeasonKey;
 
 export type StudioSettingsProps = {
+  previewRoot?: RefObject<HTMLElement | null>;
   sectionMemory?: { value: SettingsTabKey; onChange: (tab: SettingsTabKey) => void };
   /** Same controls, opened directly from the house book. */
   companionBook?: boolean;
@@ -171,17 +175,39 @@ function CompanionRadioSettings({ companionAudible, globalSoundOn }: { companion
   const [preferences, setPreferences] = useState<CompanionRadioPreferences | null>(null);
   const [snapshot, setSnapshot] = useState<ReturnType<typeof getCompanionRadioSnapshot> | null>(null);
   const [pending, setPending] = useState(false), requestToken = useRef(0);
+  const [playFailed, setPlayFailed] = useState(false);
+  const playlistSelection = preferences?.excludedIds.join('|');
   useEffect(() => {
     const requests = requestToken;
-    const readPreferences = () => setPreferences(getCompanionRadioPreferences()), readPlayer = () => setSnapshot(getCompanionRadioSnapshot());
+    const readPreferences = () => setPreferences(getCompanionRadioPreferences()), readPlayer = () => { const next = getCompanionRadioSnapshot(); setSnapshot(next); if (next.playing) setPlayFailed(false); };
     readPreferences(); readPlayer();
     const offPreferences = subscribeCompanionRadioPreferences(readPreferences), offPlayer = subscribeCompanionRadio(readPlayer);
     return () => { requests.current++; offPreferences(); offPlayer(); };
   }, []);
+  useEffect(() => {
+    requestToken.current++; setPending(false); setPlayFailed(false);
+  }, [companionAudible, globalSoundOn, preferences?.enabled, preferences?.volume, playlistSelection]);
+  useEffect(() => {
+    // The player intentionally stops on hidden/agenda surfaces. Its late
+    // promise belongs to that canceled request, not to a playback failure.
+    const cancel = () => { requestToken.current++; setPending(false); setPlayFailed(false); };
+    const visibility = () => { if (document.hidden) cancel(); };
+    const resize = () => { if (matchMedia(POSTER_AGENDA_QUERY).matches) cancel(); };
+    document.addEventListener("visibilitychange", visibility);
+    window.addEventListener("resize", resize);
+    window.addEventListener("pagehide", cancel);
+    return () => { document.removeEventListener("visibilitychange", visibility); window.removeEventListener("resize", resize); window.removeEventListener("pagehide", cancel); };
+  }, []);
   if (!preferences) return null;
-  const change = (patch: Partial<CompanionRadioPreferences>) => setPreferences(setCompanionRadioPreferences(patch));
-  const play = (start: () => Promise<boolean>) => { const token = ++requestToken.current; setPending(true); void start().finally(() => { if (requestToken.current === token) setPending(false); }); };
-  const stop = () => { requestToken.current++; setPending(false); stopCompanionRadio("human"); };
+  const change = (patch: Partial<CompanionRadioPreferences>) => { setPlayFailed(false); setPreferences(setCompanionRadioPreferences(patch)); };
+  const play = (start: () => Promise<boolean>) => {
+    const token = ++requestToken.current; setPending(true); setPlayFailed(false);
+    const settled = (ok: boolean) => { if (requestToken.current === token) { setPlayFailed(!ok); setPending(false); } };
+    // Start inside the original native gesture so audio-resume permission
+    // is preserved. A late result still belongs only to this request token.
+    try { void start().then(settled, () => settled(false)); } catch { settled(false); }
+  };
+  const stop = () => { requestToken.current++; setPending(false); setPlayFailed(false); stopCompanionRadio("human"); };
   const selected = COMPANION_RADIO_TRACKS.filter(track => !preferences.excludedIds.includes(track.id));
   const pool = selected;
   const blocked = !globalSoundOn || !companionAudible || !preferences.enabled || preferences.volume === 0;
@@ -190,7 +216,7 @@ function CompanionRadioSettings({ companionAudible, globalSoundOn }: { companion
     <div className="role-help-haptics"><RowLabel icon={<Volume2 size={15} />} tone="water">집 라디오</RowLabel><Switch dataAct="companion-radio-enabled" dataActOpt={preferences.enabled ? "off" : "on"} label="빅타민 라디오 켜기/끄기" on={preferences.enabled} onToggle={() => change({ enabled: !preferences.enabled })} /></div>
     <div className="role-help-haptics rhh-stack-sm"><RowLabel icon={<Volume1 size={15} />} tone="water">라디오 음량</RowLabel><div className="rhh-volume"><VolumeX aria-hidden="true" size={15} /><input aria-label="라디오 음량" aria-valuetext={`${preferences.volume}%`} data-act="companion-radio-volume" data-sfx="off" max={100} min={0} onChange={event => change({ volume: Number(event.currentTarget.value) })} step={5} style={{ "--vol": `${preferences.volume}%` } as CSSProperties} type="range" value={preferences.volume} /><Volume2 aria-hidden="true" size={15} /><b className="rhh-vol-num">{preferences.volume}</b></div></div>
     <div className="role-help-haptics"><RowLabel icon={<Sparkles size={15} />} tone="leaf">음악에 반응하기</RowLabel><Switch dataAct="companion-radio-react" dataActOpt={preferences.react ? "off" : "on"} label="빅타민 음악 반응 켜기/끄기" on={preferences.react} onToggle={() => change({ react: !preferences.react })} /></div>
-    <div className="rhh-radio-now"><p aria-live="polite">{pending ? "준비 중" : snapshot?.playing && currentTrack ? currentTrack.title : pool.length ? "재생 대기" : "선택한 곡이 없어요."}</p><div className="rhh-radio-actions"><button className="rhh-link" data-act="companion-radio-play" data-sfx="off" disabled={blocked || !pool.length || pending || snapshot?.playing} onClick={() => play(toggleCompanionRadio)} type="button">재생</button><button className="rhh-link" data-act="companion-radio-next" data-sfx="off" disabled={blocked || !pool.length || pending} onClick={() => play(nextCompanionRadio)} type="button">다음 곡</button><button className="rhh-link" data-act="companion-radio-stop" data-sfx="off" disabled={!snapshot?.playing && !pending} onClick={stop} type="button">정지</button></div></div>
+    <div className="rhh-radio-now"><p aria-live="polite">{pending ? "준비 중" : snapshot?.playing && currentTrack ? currentTrack.title : playFailed ? "재생하지 못했어요" : pool.length ? "재생 대기" : "선택한 곡이 없어요."}</p><div className="rhh-radio-actions"><button className="rhh-link" data-act="companion-radio-play" data-sfx="off" disabled={blocked || !pool.length || pending || snapshot?.playing} onClick={() => play(toggleCompanionRadio)} type="button">재생</button><button className="rhh-link" data-act="companion-radio-next" data-sfx="off" disabled={blocked || !pool.length || pending} onClick={() => play(nextCompanionRadio)} type="button">다음 곡</button><button className="rhh-link" data-act="companion-radio-stop" data-sfx="off" disabled={!snapshot?.playing && !pending} onClick={stop} type="button">정지</button></div></div>
     <div className="rhh-radio-attribution"><span>{currentTrack?.credit ?? "Kevin MacLeod (incompetech.com)"}</span><a data-act="companion-radio-source" href={currentTrack?.sourceUrl ?? "https://incompetech.com/music/royalty-free/music.html"} rel="noopener noreferrer" target="_blank">원본</a><a data-act="companion-radio-license" href="https://creativecommons.org/licenses/by/4.0/" rel="noopener noreferrer" target="_blank">CC BY 4.0</a><small>음량보정 · Opus</small></div>
     <details className="rhh-radio-playlist"><summary data-act="companion-radio-list" data-activity-manual="" onClick={event => logActivity("ui.click", { target: event.currentTarget.closest("details")?.open ? "companion-radio-list#close" : "companion-radio-list#open" })}>곡 고르기 <span>{selected.length}/{COMPANION_RADIO_TRACKS.length}</span></summary><ul>{COMPANION_RADIO_TRACKS.map(track => {
       const included = !preferences.excludedIds.includes(track.id);
@@ -206,6 +232,7 @@ function CompanionSettings({ preferences, onChange, globalSoundOn, globalSoundVo
 }
 
 export function StudioSettingsList({
+  previewRoot,
   sectionMemory,
   companionBook = false,
   companionPersonality = false,
@@ -283,40 +310,67 @@ export function StudioSettingsList({
     ...(devWorld ? [{ key: "dev" as const, label: "개발자", icon: <Wrench size={15} />, tone: "metal" as const, web: true }] : [])
   ];
   const current: TabKey = companionBook && companionAvailable ? "companion" : tabs.some((t) => t.key === activeTab) ? activeTab : "text";
-  // 미리보기 = 지금 이 화면의 진짜 달력 실측(2026-10-06 소유자: "설정 미리보기와 편집실·시청자 화면 카드가 똑같이 나와야").
-  // 편집실 카드 글자는 화면 폭 환산, 시청자 포스터는 화면에 맞춰 통째로 축소 — 이름뿐인 14px로는 줄바꿈이 달랐다.
-  // 창 뒤 달력의 칸 폭·카드 안쪽 여백·제목의 실제 화면 글자 크기를 재서 그대로 쓴다(글씨 크기를 바꾸면 다시 잰다).
-  // 달력 칸이 없는 곳(모바일 목록)은 이름 크기로 그린다.
-  const [pvMetrics, setPvMetrics] = useState<{ w: number; pv: number; cellPad: number; padL: number; padR: number } | null>(null);
-  useEffect(() => {
-    if (current !== "text") return;
-    let raf = 0;
+  // One source root and painted metrics for calendar grids and agenda lists.
+  // The specimen contains fixed example text, never a copy of a user's draft.
+  const pvMetrics = useCalendarPreviewMetrics(previewRoot, current === 'text', textPx, font.id, font.weight);
+  const previewStageRef = useRef<HTMLDivElement>(null);
+  const [previewPaintScale, setPreviewPaintScale] = useState(1);
+  useLayoutEffect(() => {
+    const stage = previewStageRef.current;
+    if (!stage || current !== 'text') return;
+    let frame = 0;
     const measure = () => {
-      const titles = Array.from(document.querySelectorAll<HTMLElement>(".pill-main strong:not(.span-cont), .public-event .event-main p:not(.span-cont)"));
-      for (const title of titles) {
-        const card = title.closest<HTMLElement>(".studio-event-pill, .public-event");
-        const cell = title.closest<HTMLElement>(".studio-day, .public-day");
-        if (!card || !cell || card.classList.contains("span") || title.offsetParent === null || !title.offsetHeight) continue;
-        const tr = title.getBoundingClientRect();
-        const cr = card.getBoundingClientRect();
-        const cl = cell.getBoundingClientRect();
-        if (tr.width <= 0) continue;
-        const scale = tr.height / title.offsetHeight;
-        const cs = getComputedStyle(title);
-        return {
-          w: Math.round(cl.width),
-          pv: (parseFloat(cs.fontSize) * scale) / 14,
-          cellPad: Math.max(0, (cl.width - cr.width) / 2),
-          padL: tr.left - cr.left + parseFloat(cs.paddingLeft) * scale,
-          padR: cr.right - tr.right + parseFloat(cs.paddingRight) * scale
-        };
-      }
-      return null;
+      frame = 0;
+      const style = getComputedStyle(stage), width = Number.parseFloat(style.width);
+      const layout = style.boxSizing === 'border-box' ? width : width + Number.parseFloat(style.paddingLeft) + Number.parseFloat(style.paddingRight) + Number.parseFloat(style.borderLeftWidth) + Number.parseFloat(style.borderRightWidth);
+      const scale = stage.getBoundingClientRect().width / layout;
+      if (Number.isFinite(scale) && scale > 0) setPreviewPaintScale(previous => Math.abs(previous - scale) < .00001 ? previous : scale);
     };
-    // 글씨 크기는 <html> 변수라 카드가 같은 프레임에 바뀐다 — 다음 프레임에 잰다.
-    raf = requestAnimationFrame(() => setPvMetrics(measure()));
-    return () => cancelAnimationFrame(raf);
-  }, [current, textPx, font.id, font.weight]);
+    const schedule = () => { if (!frame) frame = requestAnimationFrame(measure); };
+    const observer = new ResizeObserver(schedule), dialog = stage.closest('[role="dialog"]');
+    observer.observe(stage); dialog?.addEventListener('animationend', schedule); dialog?.addEventListener('transitionend', schedule); window.addEventListener('resize', schedule); schedule();
+    return () => { if (frame) cancelAnimationFrame(frame); observer.disconnect(); dialog?.removeEventListener('animationend', schedule); dialog?.removeEventListener('transitionend', schedule); window.removeEventListener('resize', schedule); };
+  }, [current]);
+  const previewMetricsStyle = pvMetrics ? {
+    '--pv': pvMetrics.titleFontSize / 14,
+    '--pv-cell-w': `${pvMetrics.cellWidth}px`,
+    '--pv-card-w': `${pvMetrics.cardWidth}px`,
+    '--pv-card-offset': `${pvMetrics.cardLeft}px`,
+    '--pv-card-pl': `${pvMetrics.cardPaddingLeft}px`,
+    '--pv-card-pr': `${pvMetrics.cardPaddingRight}px`,
+    '--pv-card-pt': `${pvMetrics.cardPaddingTop}px`,
+    '--pv-card-pb': `${pvMetrics.cardPaddingBottom}px`,
+    '--pv-sub-left': `${pvMetrics.subLeft}px`,
+    '--pv-sub-gap': `${pvMetrics.subGap}px`,
+    '--pv-title-min-height': `${pvMetrics.titleMinHeight}px`,
+    '--pv-title-overflow': pvMetrics.titleOverflowX,
+    '--pv-title-ellipsis': pvMetrics.titleTextOverflow,
+    '--pv-title-w': `${pvMetrics.titleWidth}px`,
+    '--pv-title-size': `${pvMetrics.titleFontSize}px`,
+    '--pv-title-line': `${pvMetrics.titleLineHeight}px`,
+    '--pv-title-weight': pvMetrics.titleFontWeight,
+    '--pv-title-spacing': `${pvMetrics.titleLetterSpacing}px`,
+    '--pv-title-stroke': `${pvMetrics.titleStrokeWidth}px`,
+    '--pv-title-space': pvMetrics.titleWhiteSpace,
+    '--pv-title-break': pvMetrics.titleWordBreak,
+    '--pv-title-wrap': pvMetrics.titleOverflowWrap,
+    '--pv-sub-w': `${pvMetrics.subWidth}px`,
+    '--pv-sub-size': `${pvMetrics.subFontSize}px`,
+    '--pv-sub-line': `${pvMetrics.subLineHeight}px`,
+    '--pv-sub-weight': pvMetrics.subFontWeight,
+    '--pv-sub-spacing': `${pvMetrics.subLetterSpacing}px`,
+    '--pv-sub-stroke': `${pvMetrics.subStrokeWidth}px`,
+    '--pv-sub-space': pvMetrics.subWhiteSpace,
+    '--pv-sub-break': pvMetrics.subWordBreak,
+    '--pv-sub-wrap': pvMetrics.subOverflowWrap,
+    '--pv-date-size': `${pvMetrics.dateFontSize}px`,
+    '--pv-date-line': `${pvMetrics.dateLineHeight}px`,
+    '--pv-date-weight': pvMetrics.dateFontWeight,
+    // The studio settings subtree itself has native zoom. Cancel that host
+    // scale once; the metrics already describe pixels painted on the page.
+    zoom: 1 / previewPaintScale,
+    fontFamily: previewFont || pvMetrics.fontFamily
+  } as CSSProperties : { '--pv': textPx / TEXT_PX_BASE, fontFamily: previewFont } as CSSProperties;
   const fontGridRef = useRef<HTMLDivElement | null>(null);
   const ensureFont = fontLoading.ensure;
   useEffect(() => {
@@ -430,37 +484,24 @@ export function StudioSettingsList({
         <div className="rhh-text-layout">
           {/* 미리보기 — 바쁜 날(띠·기념일·두 색·미정 빗금·최초공개·하트·세부 줄)과 한가한 날을 나란히.
               달력 카드와 같은 비율(제목 14 · 세부 12.5 · 날짜 20 · 기념일 11px × 글씨 크기)·같은 굵기 규칙. */}
-          <div className="rhh-text-stage" aria-hidden="true">
+          <div className="rhh-text-stage" ref={previewStageRef} aria-hidden="true" data-preview-topology={pvMetrics?.kind} data-preview-measured={pvMetrics ? '' : undefined} data-preview-has-card={String(pvMetrics?.hasCard ?? false)} data-preview-has-sub={String(pvMetrics?.hasSub ?? false)}>
             <div
               className="rhh-preview-pair"
-              style={
-                {
-                  "--pv": pvMetrics?.pv ?? textPx / TEXT_PX_BASE,
-                  ...(pvMetrics
-                    ? {
-                        "--pv-cell-w": `${pvMetrics.w}px`,
-                        "--pv-cell-pad": `${pvMetrics.cellPad}px`,
-                        "--pv-card-pl": `${pvMetrics.padL}px`,
-                        "--pv-card-pr": `${pvMetrics.padR}px`
-                      }
-                    : {}),
-                  fontFamily: previewFont
-                } as CSSProperties
-              }
+              style={previewMetricsStyle}
             >
+              {!pvMetrics?.hasCard ? <div className="rhh-preview-col"><span className="rhh-preview-cap">지금 화면의 날짜칸</span><div className="rhh-text-preview pv-empty-preview"><span>일정 미리보기</span><span>—</span></div></div> : <>
               <div className="rhh-preview-col">
                 <span className="rhh-preview-cap">일정이 많은 날</span>
                 <div className="rhh-text-preview">
                   <div className="pv-head">
-                    <span className="pv-date">1</span>
+                  <span className="pv-date">1</span>
                     <span className="pv-mark">🎉 데뷔 1주년</span>
                   </div>
                   <span className="pv-band">🌱 업도움 · 굿즈 사전 판매</span>
                   <div className="pv-card pv-mixed">
-                    <b>빅토리 재 데뷔 합니다!!!</b>
+                    <b><span className="pv-title-text">{CALENDAR_PREVIEW_TITLE}</span></b>
                     <ul>
-                      <li>뉴아바타 · 뉴헤어</li>
-                      <li>새로워진 api 공개</li>
+                      <li>{CALENDAR_PREVIEW_SUBTITLE}</li>
                     </ul>
                     <i className="pv-heart">♥</i>
                   </div>
@@ -495,6 +536,7 @@ export function StudioSettingsList({
                   </div>
                 </div>
               </div>
+              </>}
             </div>
           </div>
           <div className="rhh-group-card rhh-text-controls">

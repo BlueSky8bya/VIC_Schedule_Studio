@@ -1176,10 +1176,13 @@ html[data-reduce-motion] .rhh-font-grid button {
 .rhh-text-stage {
   background: #f4f3ef;
   padding-bottom: 6px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
 }
 .rhh-preview-pair {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  grid-template-columns: var(--pv-cell-w, 236px);
   gap: 8px;
   align-items: start;
 }
@@ -1199,7 +1202,7 @@ html[data-reduce-motion] .rhh-font-grid button {
     display: none;
   }
   .rhh-text-layout {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 236px) minmax(0, 1fr);
     align-items: start;
   }
   /* 넓은 창에선 미리보기가 왼쪽 칸 — 오른쪽 손잡이가 길어져도 칸 위에 붙어 있는다. */
@@ -1300,6 +1303,80 @@ html[data-reduce-motion] .rhh-font-grid button {
 .rhh-text-preview .pv-card li {
   font-size: calc(12.5px * var(--pv, 1));
   line-height: 1.25;
+}
+
+/* A measured specimen keeps the current calendar's painted pixels. The
+   stage may scroll horizontally; it never shrinks the specimen or invents
+   another line width to fit the settings pane. */
+.rhh-text-stage[data-preview-measured] .rhh-text-preview {
+  box-sizing: border-box;
+  width: var(--pv-cell-w);
+  padding-inline: 0;
+}
+.rhh-text-stage[data-preview-measured] .pv-card {
+  display: block;
+  box-sizing: border-box;
+  width: var(--pv-card-w);
+  margin-left: calc(var(--pv-card-offset) - 1px);
+  padding-top: max(0px, calc(var(--pv-card-pt) - 1px));
+  padding-bottom: max(0px, calc(var(--pv-card-pb) - 1px));
+}
+.rhh-text-stage[data-preview-measured] .pv-card ul {
+  margin-left: calc(var(--pv-sub-left) - var(--pv-card-pl) - 9px);
+  margin-top: var(--pv-sub-gap);
+}
+.rhh-text-stage[data-preview-has-sub="false"] .pv-card ul { display: none; }
+.pv-empty-preview { min-height: 90px; display: grid; align-content: center; justify-items: center; gap: 4px; color: var(--muted); font-size: var(--text-label); }
+.rhh-text-stage[data-preview-measured] .pv-card b {
+  display: flex;
+  width: var(--pv-title-w);
+  max-width: none;
+  min-height: var(--pv-title-min-height);
+  font-size: var(--pv-title-size);
+  font-weight: var(--pv-title-weight);
+  line-height: var(--pv-title-line);
+  letter-spacing: var(--pv-title-spacing);
+  -webkit-text-stroke-width: var(--pv-title-stroke);
+  white-space: var(--pv-title-space);
+  word-break: var(--pv-title-break);
+  overflow-wrap: var(--pv-title-wrap);
+}
+.rhh-text-stage[data-preview-measured] .pv-title-text {
+  display: block;
+  width: 100%;
+  overflow-x: var(--pv-title-overflow);
+  text-overflow: var(--pv-title-ellipsis);
+}
+.rhh-text-stage[data-preview-measured] .pv-card li {
+  box-sizing: content-box;
+  width: var(--pv-sub-w);
+  font-size: var(--pv-sub-size);
+  font-weight: var(--pv-sub-weight);
+  line-height: var(--pv-sub-line);
+  letter-spacing: var(--pv-sub-spacing);
+  -webkit-text-stroke-width: var(--pv-sub-stroke);
+  white-space: var(--pv-sub-space);
+  word-break: var(--pv-sub-break);
+  overflow-wrap: var(--pv-sub-wrap);
+}
+.rhh-text-stage[data-preview-measured] .pv-date {
+  font-size: var(--pv-date-size);
+  font-weight: var(--pv-date-weight);
+  line-height: var(--pv-date-line);
+}
+.rhh-text-stage[data-preview-topology="agenda"] .pv-card {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: var(--pv-card-pt) var(--pv-card-pr) var(--pv-card-pb) var(--pv-card-pl);
+}
+.rhh-text-stage[data-preview-topology="agenda"] .pv-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 10px;
+  border-radius: 4px;
+  background: #e9c17f;
 }
 .rhh-text-preview .pv-heart {
   position: absolute;

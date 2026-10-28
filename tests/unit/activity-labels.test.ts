@@ -14,6 +14,9 @@ import {
 //   3) 모르는 값은 이름을 지어내지 않고 '이름 미등록'으로 표시한다(원문은 개발자 정보·복사본에만)
 
 describe("이름은 화면에 쓰인 말로", () => {
+  it("uses the same fixed search-submit label in developer timeline and usage views", () => {
+    expect(describeTarget("ui.click", "search-submit")).toMatchObject({name: "검색 실행", area: "시청자 화면"});
+  });
   it("코드 이름이 아니라 버튼 문구로 부른다", () => {
     // broadcast-panel은 코드 이름일 뿐, 화면 버튼은 '🖊️ 일정 그림판'이다.
     expect(describeTarget("section.enter", "broadcast-panel").name).toBe("일정 그림판");

@@ -730,8 +730,10 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
           }
         }}>
         <header className="pi-head ps-head">
-          <label className="ps-field">
-            <Search aria-hidden="true" size={17} strokeWidth={2.4} />
+          <div className="ps-field" role="search" aria-label="일정 검색">
+            <button aria-label="검색 실행" className="ps-submit" data-act="search-submit" disabled={normalize(q).length < MIN_CHARS} onClick={() => submit()} type="button">
+              <Search aria-hidden="true" size={17} strokeWidth={2.4} />
+            </button>
             <input
               aria-label="검색어"
               autoComplete="off"
@@ -770,7 +772,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
                 <X size={13} strokeWidth={2.6} />
               </button>
             ) : null}
-          </label>
+          </div>
           <button
             aria-label="닫기"
             className="pi-close"

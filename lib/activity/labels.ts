@@ -311,6 +311,7 @@ export const ACT: Record<string, TargetLabel> = {
   "mb-search": { name: "검색 열기(모바일)", area: "시청자 화면", hint: "하단 알약 — 옛 '관심' 자리" },
   "close-public-search": { name: "검색 닫기", area: "시청자 화면" },
   "search-clear": { name: "검색어 지우기", area: "시청자 화면" },
+  "search-submit": { name: "검색 실행", area: "시청자 화면" },
   "search-tag-chip": { name: "검색 태그 제안", area: "시청자 화면" },
   "search-sort": { name: "검색 정렬", area: "시청자 화면", hint: "관련도·최신·오래된·인기" },
   "search-kind": { name: "검색 결과 종류", area: "시청자 화면", opts: { all:"전체",event:"일정",vod:"다시보기",chat:"채팅",timeline:"타임라인",chapter:"챕터(이전 통합 필터)" } },

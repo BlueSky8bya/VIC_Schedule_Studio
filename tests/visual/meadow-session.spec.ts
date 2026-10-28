@@ -319,7 +319,7 @@ for (const surface of ["viewer", "owner", "preview"] as const) {
 
     // Native drag throws settle on the actual screen floor before admission.
     await dragTo(page, food, { x: 90, y: 990 }); await expect(food).toHaveAttribute("data-platform", /^viewport-floor(?:-food)?(?:-\d+)?$/, { timeout: 7000 });
-    await dragTo(page, toy, { x: 180, y: 990 }); await expect(toy).toHaveAttribute("data-platform", /^viewport-floor(?:-food)?(?:-\d+)?$/, { timeout: 7000 });
+    await dragTo(page, toy, { x: 180, y: 990 }); await expect(toy).toHaveAttribute("data-platform", /^viewport-floor-toy(?:-\d+)?$/, { timeout: 7000 });
     await placeCompanionOnExposedBackground(page, 280);
     const entryFoot = await foot(page.locator(".vc-companion"));
     await enterCompanionMeadow(page); await expect(pet).toBeVisible(); await expect(food).toBeVisible(); await expect(toy).toBeVisible();

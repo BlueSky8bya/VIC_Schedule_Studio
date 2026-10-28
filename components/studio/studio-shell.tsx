@@ -1247,6 +1247,7 @@ export function StudioShell({
   function renderSettingsList() {
     return (
       <StudioSettingsList
+        previewRoot={shellRef}
         sectionMemory={{ value: settingsTab, onChange: changeSettingsTab }}
         companionBook={companionBook}
         companionPersonality={companionPersonality}

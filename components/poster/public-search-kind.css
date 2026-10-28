@@ -5,3 +5,22 @@
 .ps-kind-button.on{background:var(--paper,#fff);border-color:currentColor;font-weight:700}
 .ps-kind-button:focus-visible{outline:2px solid currentColor;outline-offset:2px}
 .ps-kind-scope{flex-basis:100%;margin:0;font-size:calc(11px * var(--ui-text-scale, 1));line-height:1.5;opacity:.72}
+/* Keep the existing magnifier and input alignment; only its native hit area
+   becomes a button. No form means an IME confirmation cannot submit twice. */
+.ps-submit {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  margin-inline: -7.5px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.ps-submit:hover:not(:disabled) { background: rgb(var(--selection-rgb) / 10%); color: var(--ink); }
+.ps-submit:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.ps-submit:disabled { opacity: .4; cursor: default; }

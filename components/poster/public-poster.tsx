@@ -4834,6 +4834,7 @@ export function PublicPoster({
             </div>
             <div className="settings-modal-body">
               <StudioSettingsList
+                previewRoot={posterRootRef}
                 sectionMemory={{ value: settingsPrefs.settingsTab, onChange: settingsPrefs.changeSettingsTab }}
                 companionBook={companionBook}
                 companionPersonality={companionPersonality}

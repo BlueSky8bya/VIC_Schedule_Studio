@@ -34,10 +34,11 @@ const new135Targets = ["companion-home-tv#on", "companion-home-tv#off", "compani
 const new141Targets = ["companion-home-curtain#open", "companion-home-curtain#shade", "companion-home-curtain#closed"];
 const new142Targets = ["companion-personality-open"];
 const drawingDiscardTargets = ["bp-discard-keep", "bp-discard-confirm"];
+const acceptedSearchTargets = ["search-submit"];
 const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-shake", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets, ...new110Targets, ...new111Targets, ...new115Targets, ...new135Targets, ...new141Targets, ...new142Targets];
 const retired110Target = "companion-radio-mood#lively";
 const memoryFilterTargets = ["companion-memory-filter#all", "companion-memory-filter#expression", "companion-memory-filter#pose", "companion-memory-filter#life"];
-const readFixtureTargets = [...sampleTargets, ...new137Targets, ...memoryFilterTargets, ...drawingDiscardTargets, retired110Target];
+const readFixtureTargets = [...sampleTargets, ...new137Targets, ...memoryFilterTargets, ...drawingDiscardTargets, ...acceptedSearchTargets, retired110Target];
 const at = Date.parse("2026-06-10T03:00:00Z");
 
 test("drawing discard pointer and keyboard each emit one fixed action without content", async ({page}) => {
@@ -55,6 +56,29 @@ test("drawing discard pointer and keyboard each emit one fixed action without co
   await flush(page,drawingDiscardTargets.map(target=>({target})));
   for(const target of drawingDiscardTargets){expect(count(page,target)).toBe(1);const event=capture.get(page)!.events.find(e=>e.target===target)!;expect(event.meta).toBeNull();}
   expect(capture.get(page)!.events.some(e=>e.target?.includes("2026-06")&&e.kind==="ui.click")).toBe(false);
+});
+
+test("Accepted search submit pointer and keys each emit one fixed activity without query content", async ({ page }, info) => {
+  await setup(page, "studio"); const syntheticQuery = "합성검색민감문구"; let searchRequests = 0;
+  const origin = new URL(process.env.VIC_ACTIVITY_BASE_URL ?? "http://127.0.0.2:3100").origin;
+  await page.route("**/api/public/*/search**", route => {
+    const request = route.request(), url = new URL(request.url()); if (request.method() !== "GET" || url.origin !== origin) return route.fallback();
+    if (url.pathname.endsWith("/search/trending")) return route.fulfill({ json: { trends: [] } });
+    if (url.pathname.endsWith("/search/suggest")) return route.fulfill({ json: { items: [] } });
+    if (!/^\/api\/public\/[^/]+\/search$/.test(url.pathname)) return route.fallback();
+    searchRequests++; return route.fulfill({ json: { query: syntheticQuery, hits: [{ dateKey: "2026-06-16", score: 1, exact: true, popularity: .5, kind: "event", eventId: "evt-001", title: "공개 합성 일정", snippet: "로컬 검증", startTime: "20:00" }] } });
+  });
+  await page.getByRole("button", { name: "검색", exact: true }).filter({ visible: true }).first().click();
+  const dialog = page.getByRole("dialog", { name: "검색", exact: true }), input = dialog.getByRole("searchbox", { name: "검색어", exact: true }), submit = dialog.locator('[data-act="search-submit"]');
+  await input.fill(syntheticQuery); await expect(submit).toHaveAttribute("aria-label", "검색 실행");
+  for (const [index, mode] of ["pointer", "Enter", "Space"].entries()) {
+    if (mode === "pointer") await submit.click(); else { await submit.focus(); await submit.press(mode); }
+    await expect.poll(() => searchRequests).toBe(index + 1); await expect(dialog.locator('[data-act="search-hit-event"]')).toHaveCount(1);
+    await flush(page, [{ target: "search-submit", n: index + 1 }]); expect(count(page, "search-submit")).toBe(index + 1);
+  }
+  const events = capture.get(page)!.events.filter(event => event.target === "search-submit");
+  expect(events).toHaveLength(3); expect(events.every(event => event.meta === null && event.durMs === null)).toBe(true); expect(JSON.stringify(capture.get(page)!.events)).not.toContain(syntheticQuery);
+  await info.attach("search-submit-fixed-activity", { body: JSON.stringify({ activations: ["pointer", "Enter", "Space"], searchRequests, events, oneFixedUsePerActivation: true, syntheticQueryAbsentFromAllActivity: true, noOperatingWrites: true }), contentType: "application/json" });
 });
 
 for (const surface of ["viewer", "studio"] as const) test(`density ${surface}: memory family pointer and keys emit one fixed use per activation`, async ({ page }) => {
@@ -642,7 +666,7 @@ test("109 developer timeline and least-used list show the new fixed controls fro
   await usage.locator('[data-act="usage-show-all"]').click();
   await page.locator('[data-act="activity-expand-all"]').click();
   await timeline.locator(".act-lines > summary").click();
-  for (const target of new109Targets) {
+  for (const target of [...new109Targets, ...acceptedSearchTargets]) {
     const name = describeTarget("ui.click", target).name;
     await expect(usage.locator(".usage-list > li").filter({ hasText: name })).toBeVisible();
     await expect(timeline.getByText(name, { exact: true })).toBeVisible();

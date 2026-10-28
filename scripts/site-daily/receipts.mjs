@@ -30,6 +30,18 @@ export function verifyFiles(root,rows){
 }
 const buildExclude=p=>p==='cache'||p.startsWith('cache/');
 const plainMessage=value=>String(value??'').split(String.fromCharCode(27)).join('').replace(/\[[0-9;]*m/g,'');
+/** A controlled stop preserves completed cases, never the run's failure status.
+ * Match its bound generated config and real assertion failures, not just text. */
+export function controlledMaxFailureStop(reporter,result,configText){
+  if(reporter?.errors?.length!==1||result.failure!=='selected-native-failed-or-budget'||result.listOnly!==false)return false;
+  const match=/^Testing stopped early after ([1-9]\d*) maximum allowed failures\.$/.exec(plainMessage(reporter.errors[0].message));
+  const prefix="import {defineConfig} from '@playwright/test';export default defineConfig(";
+  if(!match||!configText.startsWith(prefix)||!configText.endsWith(');'))return false;
+  let config;try{config=JSON.parse(configText.slice(prefix.length,-2));}catch{return false;}
+  const limit=Number(match[1]);if(config.maxFailures!==limit||config.retries!==0||!result.stages?.some(s=>s.name==='registration'&&s.code===0)||!result.stages?.some(s=>s.name==='native'&&s.code===1))return false;
+  const failed=flattenReporter(reporter).filter(row=>row.expectedStatus==='passed'&&row.status==='unexpected'&&!row.annotations?.some(a=>['skip','fixme','fail'].includes(a.type))&&row.results.length===1&&row.results[0].retry===0&&['failed','timedOut'].includes(row.results[0].status)&&Number.isFinite(row.results[0].duration)&&row.results[0].duration>0&&row.results[0].errors?.length>0);
+  return failed.length>=limit;
+}
 /** A verified build is not a verified test result. Never feed this into continuationCases. */
 export function verifyBuildReceipt(resultFile,expectedSha,seen=new Set()){
   if(!/^[a-f0-9]{64}$/.test(expectedSha??''))throw Error('pinned-result-sha-required');
@@ -156,7 +168,10 @@ export function verifyRun(resultFile,expectedSha,seen=new Set(),cache=new Map())
   if(planned.length!==r.cases.length||new Set(planned.map(c=>c.id)).size!==planned.length)throw Error('plan-binding-mismatch');
   const reporter=fs.existsSync(path.join(dir,'playwright.json'))?JSON.parse(fs.readFileSync(regular(dir,'playwright.json'))):undefined;
   const budgetOnly=reporter?.errors?.length===1&&/^Timed out waiting \d+(?:\.\d+)?s for the test suite to run$/.test(String(reporter.errors[0].message).split(String.fromCharCode(27)).join('').replace(/\[[0-9;]*m/g,''))&&r.failure==='selected-native-failed-or-budget';
-  if(reporter&&(!Array.isArray(reporter.errors)||reporter.errors.length&&!budgetOnly))throw Error('global-reporter-error');
+  const configPath='workspace/scoped.generated.config.ts';
+  const configBound=r.evidence.some(e=>e.path===configPath&&/^[a-f0-9]{64}$/.test(e.sha256));
+  const controlledStop=reporter&&configBound&&controlledMaxFailureStop(reporter,r,fs.readFileSync(regular(dir,configPath),'utf8'));
+  if(reporter&&(!Array.isArray(reporter.errors)||reporter.errors.length&&!budgetOnly&&!controlledStop))throw Error('global-reporter-error');
   const actual=reporter?flattenReporter(reporter):[];
   for(const row of actual)for(const result of row.results)for(const attachment of result.attachments??[])if(attachment.path){const relative=path.relative(dir,path.resolve(attachment.path)).replaceAll('\\','/');if(!safeRelative(relative)||!r.evidence.some(e=>e.path===relative))throw Error('unbound-reporter-attachment');}
   const allowed=new Set(r.executedIds);if(actual.some(x=>!allowed.has(x.id))||new Set(r.cases.map(x=>x.id)).size!==r.cases.length)throw Error('unexpected-case');
