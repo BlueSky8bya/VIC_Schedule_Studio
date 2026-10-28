@@ -3,7 +3,7 @@ import { writeFile } from "node:fs/promises";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { COMPANION_PANEL_PREVIEW_MS, COMPANION_PANEL_SIDE_EVENT } from "@/lib/ui/viewer-companion/panel-play";
+import { COMPANION_PANEL_SIDE_EVENT } from "@/lib/ui/viewer-companion/panel-play";
 import { placeCompanionOnExposedBackground } from "./helpers/companion-outdoor";
 
 type PanelFrame = { at: number; visible: boolean; same: boolean; reason?: string; platform?: string; state?: string; hidePhase?: string; hideEvent?: string; journey?: string; x: number; y: number };
@@ -30,6 +30,7 @@ async function finishVisibilityProbe(page: Page) {
   });
 }
 
+const RETIRED_PANEL_RETURN_MS = 7000;
 const prefix = process.env.COMPANION_PANEL_PREFIX ?? ".scratch-pw/companion-069-panel";
 const narrowVariant = Number(process.env.COMPANION_PANEL_WIDTH ?? 1920) < 1500;
 const observations = new WeakMap<Page, { posts: string[]; errors: string[] }>();
@@ -41,7 +42,7 @@ test.beforeEach(async ({ page }) => {
   await page.route("**/api/soop-live**", route => route.request().method() === "GET" ? route.fulfill({ json: { live: false } }) : route.fallback());
 });
 
-test("natural panel decision retains its real arrow contact through impact and automatic return", async ({ page }) => {
+test("natural panel decision retains its real arrow contact through painted impact without a timed return", async ({ page }) => {
   test.skip(process.env.COMPANION_NATURAL_PANEL !== "1", "Explicit long-running native90s gate scenario");
   test.setTimeout(300_000);
   await page.addInitScript(({ key, epoch, preferences }) => {
@@ -85,7 +86,7 @@ test("natural panel decision retains its real arrow contact through impact and a
     }
   }
   const events = await page.evaluate(() => (window as Window & { naturalPanelEvents?: unknown[] }).naturalPanelEvents ?? []);
-  if (events.length) await page.waitForTimeout(COMPANION_PANEL_PREVIEW_MS + 900);
+  if (events.length) await page.waitForTimeout(RETIRED_PANEL_RETURN_MS + 900);
   const frames = await finishVisibilityProbe(page);
   await writeFile(`${prefix}-natural.json`, JSON.stringify({ events, attempts, frames, ...observations.get(page), scope: "Native93s held warmup, actual RNG/brain/impact path; no timing/RNG/controller replacement" }, null, 2));
   expect(events, "The bounded real random decision must actually press the shared control").toHaveLength(1);
@@ -94,7 +95,7 @@ test("natural panel decision retains its real arrow contact through impact and a
 });
 test.afterEach(async ({ page }) => { expect(observations.get(page)).toEqual({ posts: [], errors: [] }); });
 
-for (const surface of ["viewer", "studio"] as const) test(`${surface} actual arrow ${narrowVariant ? "callback with an exposed resident" : "perch"}, reversible local side and a human choice superseding play`, async ({ page }) => {
+for (const surface of ["viewer", "studio"] as const) test(`${surface} actual arrow ${narrowVariant ? "callback with an exposed resident" : "perch"}, rejects remote requests and preserves the human choice`, async ({ page }) => {
   test.setTimeout(35000);
   await page.addInitScript(({ key, epoch, preferences, care }) => {
     for (const [name, value] of Object.entries({ [key]: epoch, "vic.reduceMotion": "off", "vic.gfxPref": "max", "vic.ambient": "off", "vic.sound": "off", "vic_avatar_side": "left" })) localStorage.setItem(name, value);
@@ -138,23 +139,17 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} actual arr
   });
   if (!narrowVariant) expect(Math.abs(perch.foot - (perch.top - 3))).toBeLessThan(2);
   expect(perch.controlReachable).toBe(true);
-  // This controlled capability invocation verifies the shared callback's
-  // lifetime; the 90s/5.5% natural decision and gates have seeded unit coverage.
+  // Remote custom events are not physical contact evidence and fail closed.
   const request = () => right.evaluate((node, name) => !node.dispatchEvent(new CustomEvent(name, { bubbles: true, cancelable: true, detail: { side: "right" } })), COMPANION_PANEL_SIDE_EVENT);
+  expect(await request()).toBe(false); await expect(left).toHaveAttribute("aria-pressed", "true");
   await startVisibilityProbe(page);
-  expect(await request()).toBe(true); await expect(right).toHaveAttribute("aria-pressed", "true");
-  expect(await page.evaluate(() => localStorage.getItem("vic_avatar_side"))).toBe("left");
-  await expect(left).toHaveAttribute("aria-pressed", "true", { timeout: COMPANION_PANEL_PREVIEW_MS + 1500 });
-  await page.waitForTimeout(650);
-  const transitionFrames = await finishVisibilityProbe(page);
-  await writeFile(`${prefix}-${surface}-transition.json`, JSON.stringify({ surface, viewport: page.viewportSize(), variant, transitionFrames, ...observations.get(page) }, null, 2));
-  expect(transitionFrames.length).toBeGreaterThan(20);
-  expect(transitionFrames.filter(frame => !frame.same || !frame.visible), "The same creature remains painted and inside the viewport during the side preview and return").toEqual([]);
-  expect(await request()).toBe(true); await expect(right).toHaveAttribute("aria-pressed", "true");
-  await right.click();
+  await right.click(); await expect(right).toHaveAttribute("aria-pressed", "true");
   expect(await page.evaluate(() => localStorage.getItem("vic_avatar_side"))).toBe("right");
-  await page.waitForTimeout(COMPANION_PANEL_PREVIEW_MS + 150);
+  await page.waitForTimeout(RETIRED_PANEL_RETURN_MS + 150);
   await expect(right).toHaveAttribute("aria-pressed", "true");
+  const transitionFrames = await finishVisibilityProbe(page);
+  expect(transitionFrames.filter(frame => !frame.same || !frame.visible)).toEqual([]);
+  await writeFile(`${prefix}-${surface}-transition.json`, JSON.stringify({ surface, viewport: page.viewportSize(), variant, transitionFrames, remoteRequestRejected: true, ...observations.get(page) }, null, 2));
   await page.screenshot({ path: `${prefix}-${surface}.png` });
   await writeFile(`${prefix}-${surface}.json`, JSON.stringify({ surface, perch, savedSide: await page.evaluate(() => localStorage.getItem("vic_avatar_side")), ...observations.get(page) }, null, 2));
 });

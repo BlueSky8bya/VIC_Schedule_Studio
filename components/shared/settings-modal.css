@@ -1193,7 +1193,7 @@ html[data-reduce-motion] .rhh-font-grid button {
   font-size: calc(11.5px * var(--ui-text-scale, 1));
   font-weight: 700;
 }
-@container rhh (min-width: 600px) {
+@container rhh-panes (min-width: 600px) {
   /* 넓은 창에선 왼쪽 탭 이름이 이미 '글자' — 제목 줄을 접어 한 화면에 들어오게. */
   .rhh-text-tab .rhh-group-title {
     display: none;
@@ -2207,19 +2207,26 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 /* Keep the memory filter row inside the same fixed notebook on every tab. */
 .rhh-companion-settings .rhh-collection-book:has(> .rhh-memory-filters) { gap: 10px; }
 
-/* At large reading sizes, keep labels and controls in separate measured rows.
-   The existing preview remains available below; ordinary14px layout is unchanged. */
-html[data-large-text] .rhh-text-layout { grid-template-columns: minmax(0, 1fr); }
-html[data-large-text] .rhh-text-controls { order: -1; }
-html[data-large-text] .rhh-text-stage { position: static; }
-html[data-large-text] .rhh-preview-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-html[data-large-text] .rhh-text-controls .role-help-haptics { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
-html[data-large-text] .rhh-text-controls .rhh-volume { flex: none; width: 100%; flex-wrap: wrap; justify-content: flex-start; }
-html[data-large-text] .rhh-volume input[type="range"] { max-width: none; min-width: 90px; }
-html[data-large-text] .rhh-font-group { grid-template-columns: minmax(0, 1fr); }
-html[data-large-text] .rhh-font-group-label { padding: 4px 0; text-align: left; }
-html[data-large-text] .rhh-nav-item { white-space: normal; overflow-wrap: anywhere; line-height: 1.25; }
-html[data-large-text] .rhh-nav-item .rhh-ico { flex: none; }
-@container rhh (max-width: 599px) {
- html[data-large-text] .rhh-font-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+/* Text controls never change topology at a reading-size threshold. The
+   real pane width alone selects the shared desktop/narrow arrangement. */
+.vic-settings .modal-card:has(.rhh-tabs) .modal-head { min-height: 72px; }
+.rhh-panes { container: rhh-panes / inline-size; scrollbar-gutter: stable; }
+.rhh-text-controls > .role-help-haptics:has([data-act="text-size"]) { display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 36px 36px; gap: 0; }
+.rhh-text-controls .rhh-volume { display: grid; grid-template-columns: 16px minmax(90px, 1fr) 28px 68px 64px; gap: 8px; width: 100%; height: 36px; flex: none; }
+.rhh-text-controls .rhh-volume input[type="range"] { width: 100%; min-width: 0; max-width: none; }
+.rhh-text-controls .rhh-px { width: auto; min-width: 0; max-width: 100%; white-space: nowrap; }
+.rhh-text-preview .pv-mark { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+@container rhh-panes (max-width: 599px) {
+  .rhh-text-tab > .rhh-group-title { min-height: 44px; display: flex; align-items: center; }
+  .rhh-text-controls { display: contents; }
+  .rhh-text-controls > .role-help-haptics { margin: 0; padding: 12px 14px; border: 1px solid; border-color: inherit; border-radius: var(--r-md); background: inherit; }
+  .rhh-text-controls > .role-help-haptics:has([data-act="text-size"]) { order: -2; }
+  .rhh-text-stage { order: -1; position: static; }
+  .rhh-text-controls .rhh-volume { grid-template-columns: minmax(60px, 1fr) 68px 64px; }
+  .rhh-text-controls .rhh-size-a { display: none; }
+  .rhh-text-controls .rhh-font-group { grid-template-columns: minmax(0, 1fr); }
+  .rhh-text-controls .rhh-font-group-label { padding: 4px 0; text-align: left; }
+  .rhh-text-controls .rhh-font-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+@container rhh (max-width: 599px) { .rhh-nav-item { height: 50px; min-height: 50px; line-height: 1.25; } }
+@container rhh-panes (max-width: 400px) { .rhh-preview-pair { grid-template-columns: minmax(0, 1fr); } }

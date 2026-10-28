@@ -1,9 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { PANEL_WIDE_QUERY } from "@/lib/ui/breakpoints";
 import { hapticTick } from "@/lib/ui/haptics";
-import { COMPANION_PANEL_PREVIEW_MS } from "./viewer-companion/panel-play";
 
 // 달력 옆 패널의 상태(단일 출처, 2026-09-17 소유자 결정) — 편집실·시청자·시청자 미리보기가 같은 훅을 쓴다.
 //
@@ -43,14 +42,6 @@ export function useSidePanel(opts: { enabled: boolean; fixedSide?: PanelSide }) 
   const [wide, setWide] = useState(true);
   const [side, setSide] = useState<PanelSide>(fixedSide ?? "left");
   const [open, setOpen] = useState(true);
-  const previewTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const cancelPreview = useCallback((restore = false) => {
-    if (previewTimer.current === undefined) return;
-    clearTimeout(previewTimer.current);
-    previewTimer.current = undefined;
-    if (restore) setSide(fixedSide ?? readSide());
-  }, [fixedSide]);
-  useEffect(() => () => cancelPreview(), [cancelPreview]);
   // 밀어낼 때 달력이 잃는 폭의 비율(창 폭 대비) — 편집실이 달력을 이 비율로 통째로 줄여(--cal-zoom에 곱함) 시청자
   // 포스터의 '폭 기준 축소'와 같은 결과를 낸다: 패널을 펴도 달력이 한눈에(2026-09-17 소유자·관리자 취향). 패널 폭 식은
   // CSS 토큰 --side-panel-w(globals.css)와 같다.
@@ -71,7 +62,6 @@ export function useSidePanel(opts: { enabled: boolean; fixedSide?: PanelSide }) 
     setOpen(fixedSide ? true : mq.matches ? !readCollapsed() : false);
     setReady(true);
     const sync = () => {
-      cancelPreview(true);
       const w = mq.matches;
       setWide(w);
       // 폭 기준을 넘나들면 자동값으로 되돌린다 — 좁아지면 접히고, 다시 넓어지면 기억한 대로 펼친다.
@@ -84,37 +74,32 @@ export function useSidePanel(opts: { enabled: boolean; fixedSide?: PanelSide }) 
     // 다른 인스턴스(편집실 셸 ↔ 미리보기 포스터는 훅이 따로다)가 저장값을 바꾸면 따라간다 — 저장값은 마운트 때만 읽으므로
     // 이 이벤트가 없으면 미리보기에서 옮긴 패널이 편집실로 돌아왔을 때 옛 자리에 있었다(2026-09-17 소유자).
     // 같은 창 안이라 `storage` 이벤트는 안 울린다 → 쓴 쪽이 직접 쏘는 커스텀 이벤트.
-    const onPeer = () => {
-      cancelPreview();
-      setSide(fixedSide ?? readSide());
+    const onPeer = (event: Event) => {
+      // A fold/open sync is not a new side choice. It must not silently undo
+      // a physically witnessed local move in either mounted surface.
+      if ((event as CustomEvent<{ kind?: string }>).detail?.kind !== "open") setSide(fixedSide ?? readSide());
       if (!fixedSide && mq.matches) setOpen(!readCollapsed());
     };
     mq.addEventListener("change", sync);
     window.addEventListener("resize", onResize);
     window.addEventListener(SYNC_EVENT, onPeer);
     return () => {
-      cancelPreview();
       mq.removeEventListener("change", sync);
       window.removeEventListener("resize", onResize);
       window.removeEventListener(SYNC_EVENT, onPeer);
     };
-  }, [enabled, fixedSide, cancelPreview]);
+  }, [enabled, fixedSide]);
 
-  // A pet's occasional button play is a reversible local presentation. Only a
-  // human pickSide writes vic_avatar_side; any later human control wins.
+  // Only actual contact changes local presentation. No timer/fold/resize
+  // secretly restores the saved side; only a human side choice persists it.
   const previewSide = useCallback((next: PanelSide) => {
-    if (!enabled || fixedSide || !ready || !open || next === side || previewTimer.current !== undefined) return;
+    if (!enabled || fixedSide || !ready || !open || next === side) return;
     setSide(next);
-    previewTimer.current = setTimeout(() => {
-      previewTimer.current = undefined;
-      setSide(readSide());
-    }, COMPANION_PANEL_PREVIEW_MS);
   }, [enabled, fixedSide, ready, open, side]);
 
   const pickSide = useCallback(
     (next: PanelSide) => {
       if (fixedSide) return;
-      cancelPreview();
       hapticTick();
       setSide(next);
       try {
@@ -122,14 +107,13 @@ export function useSidePanel(opts: { enabled: boolean; fixedSide?: PanelSide }) 
       } catch {
         /* 저장 불가 환경 무시 */
       }
-      window.dispatchEvent(new Event(SYNC_EVENT));
+      window.dispatchEvent(new CustomEvent(SYNC_EVENT, { detail: { kind: "side" } }));
     },
-    [fixedSide, cancelPreview]
+    [fixedSide]
   );
 
   const toggle = useCallback(() => {
     if (fixedSide) return;
-    cancelPreview(true);
     hapticTick();
     setOpen((cur) => {
       const next = !cur;
@@ -141,16 +125,15 @@ export function useSidePanel(opts: { enabled: boolean; fixedSide?: PanelSide }) 
           /* 무시 */
         }
         // setState 콜백 안에서 동기 dispatch하면 다른 인스턴스의 setState가 렌더 중에 겹친다 — 다음 틱에.
-        window.setTimeout(() => window.dispatchEvent(new Event(SYNC_EVENT)), 0);
+        window.setTimeout(() => window.dispatchEvent(new CustomEvent(SYNC_EVENT, { detail: { kind: "open" } })), 0);
       }
       return next;
     });
-  }, [fixedSide, wide, cancelPreview]);
+  }, [fixedSide, wide]);
 
   const close = useCallback(() => {
-    cancelPreview(true);
     setOpen(false);
-  }, [cancelPreview]);
+  }, []);
 
   const mode: PanelMode = wide ? "push" : "overlay";
   // 떠 있는 패널은 Esc로도 닫힌다(밖을 누르는 것과 같은 결).

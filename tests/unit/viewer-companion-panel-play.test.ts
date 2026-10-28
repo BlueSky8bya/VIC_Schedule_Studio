@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { commitAction, createBrain, getAction, type CompanionWorld, type Platform } from "@/lib/ui/viewer-companion/brain";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
-import { COMPANION_PANEL_SIDE_EVENT, COMPANION_PANEL_SIDE_SELECTOR, requestCompanionPanelSide } from "@/lib/ui/viewer-companion/panel-play";
+import { COMPANION_PANEL_SIDE_EVENT, COMPANION_PANEL_SIDE_SELECTOR, requestCompanionPanelSide, type CompanionPanelContact } from "@/lib/ui/viewer-companion/panel-play";
 import { COMPANION_TIMING } from "@/lib/ui/viewer-companion/timing";
 
 const arrow: Platform = { id: "panel-side-right", x: 500, y: 737, width: 36, kind: "control", panelSide: "right" };
@@ -50,33 +50,46 @@ function controlFixture() {
     closest: () => locked ? element : null,
     getBoundingClientRect: () => ({ left: 500, top: 740, right: 536, bottom: 784, width: 36, height: 44 }), click,
   });
-  return { element, attributes, doc, win, style, click, lock: (value: boolean) => { locked = value; }, reduce: (value: boolean) => { reduced = value; } };
+  const contact = (): CompanionPanelContact => ({ source: element as unknown as Element, point: { x: 518, y: 740 }, platformId: "panel-side-right", targetPlatformId: "panel-side-right", painted: true, heldMs: 120 });
+  return { element, attributes, doc, win, style, click, contact, lock: (value: boolean) => { locked = value; }, reduce: (value: boolean) => { reduced = value; } };
 }
 
 describe("exact shared panel capability", () => {
   it("dispatches only the typed reversible port, never a browser click", () => {
     const f = controlFixture(), accepted = vi.fn((event: Event) => event.preventDefault());
     const element = f.element as unknown as Element;
-    expect(requestCompanionPanelSide(element, "right")).toBe(false);
+    expect(requestCompanionPanelSide(element, "right", f.contact())).toBe(false);
     f.element.addEventListener(COMPANION_PANEL_SIDE_EVENT, accepted);
-    expect(requestCompanionPanelSide(element, "right")).toBe(true);
+    expect(requestCompanionPanelSide(element, "right", f.contact())).toBe(true);
     expect(accepted).toHaveBeenCalledTimes(1);
-    expect((accepted.mock.calls[0][0] as CustomEvent).detail).toEqual({ side: "right" });
+    expect((accepted.mock.calls[0][0] as CustomEvent).detail).toEqual({ side: "right", contact: f.contact() });
     expect(f.click).not.toHaveBeenCalled();
   });
   it("fails closed for stale, active, inert, reduced, hidden or offscreen controls", () => {
     const f = controlFixture(), accepted = vi.fn((event: Event) => event.preventDefault());
     f.element.addEventListener(COMPANION_PANEL_SIDE_EVENT, accepted);
     const element = f.element as unknown as Element;
-    expect(requestCompanionPanelSide(element, "left")).toBe(false);
-    f.attributes.set("aria-pressed", "true"); expect(requestCompanionPanelSide(element, "right")).toBe(false); f.attributes.set("aria-pressed", "false");
-    f.attributes.set("disabled", ""); expect(requestCompanionPanelSide(element, "right")).toBe(false); f.attributes.delete("disabled");
-    f.lock(true); expect(requestCompanionPanelSide(element, "right")).toBe(false); f.lock(false);
-    f.reduce(true); expect(requestCompanionPanelSide(element, "right")).toBe(false); f.reduce(false);
-    f.doc.hidden = true; expect(requestCompanionPanelSide(element, "right")).toBe(false); f.doc.hidden = false;
-    f.style.opacity = "0"; expect(requestCompanionPanelSide(element, "right")).toBe(false); f.style.opacity = "1";
-    f.win.innerHeight = 750; expect(requestCompanionPanelSide(element, "right")).toBe(false); f.win.innerHeight = 800;
-    f.element.isConnected = false; expect(requestCompanionPanelSide(element, "right")).toBe(false);
+    expect(requestCompanionPanelSide(element, "left", f.contact())).toBe(false);
+    f.attributes.set("aria-pressed", "true"); expect(requestCompanionPanelSide(element, "right", f.contact())).toBe(false); f.attributes.set("aria-pressed", "false");
+    f.attributes.set("disabled", ""); expect(requestCompanionPanelSide(element, "right", f.contact())).toBe(false); f.attributes.delete("disabled");
+    f.lock(true); expect(requestCompanionPanelSide(element, "right", f.contact())).toBe(false); f.lock(false);
+    f.reduce(true); expect(requestCompanionPanelSide(element, "right", f.contact())).toBe(false); f.reduce(false);
+    f.doc.hidden = true; expect(requestCompanionPanelSide(element, "right", f.contact())).toBe(false); f.doc.hidden = false;
+    f.style.opacity = "0"; expect(requestCompanionPanelSide(element, "right", f.contact())).toBe(false); f.style.opacity = "1";
+    f.win.innerHeight = 750; expect(requestCompanionPanelSide(element, "right", f.contact())).toBe(false); f.win.innerHeight = 800;
+    f.element.isConnected = false; expect(requestCompanionPanelSide(element, "right", f.contact())).toBe(false);
     expect(accepted).not.toHaveBeenCalled(); expect(f.click).not.toHaveBeenCalled();
+  });
+});
+
+describe("painted panel impact contract", () => {
+  it("rejects remote, stale, unpainted, wrong-platform and unwitnessed contact", () => {
+    const f = controlFixture(), element = f.element as unknown as Element, accepted = vi.fn((event: Event) => event.preventDefault());
+    f.element.addEventListener(COMPANION_PANEL_SIDE_EVENT, accepted);
+    const base = f.contact(), invalid = [undefined, { ...base, source: {} as Element }, { ...base, point: { x: 499, y: 740 } }, { ...base, point: { x: 518, y: 738.749 } }, { ...base, point: { x: 518, y: 741.251 } }, { ...base, point: { x: NaN, y: 740 } }, { ...base, platformId: "viewport-floor" }, { ...base, targetPlatformId: "panel-side-left" }, { ...base, painted: false }, { ...base, heldMs: 99.99 }, { ...base, heldMs: Infinity }, { ...base, point: undefined }];
+    for (const proof of invalid) expect(requestCompanionPanelSide(element, "right", proof as CompanionPanelContact)).toBe(false);
+    expect(accepted).not.toHaveBeenCalled(); expect(f.click).not.toHaveBeenCalled();
+    expect(requestCompanionPanelSide(element, "right", { ...base, heldMs: 100, point: { x: 518, y: 741.25 } })).toBe(true);
+    expect(accepted).toHaveBeenCalledTimes(1);
   });
 });

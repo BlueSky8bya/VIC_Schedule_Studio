@@ -3,7 +3,7 @@
 import { ArrowLeftToLine, ArrowRightToLine, PanelLeft, PanelRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { PanelSide } from "@/lib/ui/use-side-panel";
-import { COMPANION_PANEL_SIDE_EVENT, COMPANION_PANEL_SIDE_SELECTOR } from "@/lib/ui/viewer-companion/panel-play";
+import { COMPANION_PANEL_SIDE_EVENT, COMPANION_PANEL_SIDE_SELECTOR, companionPanelContactMatches, type CompanionPanelContact } from "@/lib/ui/viewer-companion/panel-play";
 import "./panel-place-control.css";
 
 // 하단 중앙 알약 [⇤ | 패널 | ⇥] — 편집실·시청자·시청자 미리보기가 같은 부품을 쓴다(2026-09-17 소유자: 통일).
@@ -46,10 +46,12 @@ export function PanelPlaceControl({
     if (!root || !sides || !onCompanionSide) return;
     const request = (event: Event) => {
       const target = event.target;
-      const next = (event as CustomEvent<{ side?: unknown }>).detail?.side;
+      const detail = (event as CustomEvent<{ side?: unknown; contact?: CompanionPanelContact }>).detail;
+      const next = detail?.side;
       if (!(target instanceof HTMLButtonElement) || !root.contains(target) || !target.matches(COMPANION_PANEL_SIDE_SELECTOR)
         || (next !== "left" && next !== "right") || next === side
-        || target.getAttribute("data-companion-panel-side") !== next || target.disabled) return;
+        || target.getAttribute("data-companion-panel-side") !== next || target.disabled
+        || !companionPanelContactMatches(target, next, detail?.contact)) return;
       event.preventDefault();
       onCompanionSide(next);
     };

@@ -118,7 +118,7 @@ import { COMPANION_HOME_FLOOR_INSET, isCompanionHomeFloorFoodSupport } from "@/l
 import { acquireDecodedCompanionSprite, canDecodeCompanionSprite, companionMotionClips, companionSpriteMetadata as registration, companionSpriteSources, decodeCompanionSprite, isCompanionSpriteDecoded, peekDecodedCompanionSprite, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { companionNextPlayRow, companionTapReaction, sampleCompanionCozySleep, sampleCompanionPlay } from "@/lib/ui/viewer-companion/play";
 import { COMPANION_CARD_PLAY_EVENT, createCompanionCardPlay } from "@/lib/ui/viewer-companion/card-play";
-import { requestCompanionPanelSide } from "@/lib/ui/viewer-companion/panel-play";
+import { companionPanelFootMatches, requestCompanionPanelSide } from "@/lib/ui/viewer-companion/panel-play";
 import { gfxMode as readGfxMode } from "@/lib/ui/gfx";
 import { hapticSuccess } from "@/lib/ui/haptics";
 import { CompanionFood, type CompanionFoodControl } from "./companion-food";
@@ -538,6 +538,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     const hearts = createCompanionHearts(page);
     const cardPlay = createCompanionCardPlay();
     let playImpact = false, playFalling = false, panelImpact = false, mishapUntil = 0;
+    let panelContact: { element: Element; began: number; lastAt: number; heldMs: number } | undefined;
     let moodPose = "", moodStarted = 0;
     const workAllowed = () => editingRef.current && preferences.enabled && preferences.roam && !reduced && gfxMode() !== "off"
       && companionPresenceActive({ focused: document.hasFocus(), visible: !document.hidden, activeWhileVisible: preferences.activeWhileVisible, blocked: blocked || workspaceBusyRef.current });
@@ -1055,6 +1056,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     el.style.setProperty("--vc-size", `${size}px`);
     const paint = (row: number, frame: number, status: string) => {
       if (el.hidden) poseWitness.reset();
+      let panelContactWitnessed = false;
       let watchPainted = false;
       try {
       bedNeedsPaint = false;
@@ -1178,6 +1180,14 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         shape.scaleY *= 1 - radioMotion.squash; shape.scaleX = 1 / shape.scaleY;
       }
       if (neutralVerticalRecovery) Object.assign(shape, { bob: 0, tilt: 0, scaleX: 1, scaleY: 1 });
+      // Close only the authored <=4px arrow clearance during this finite toe
+      // press. A moved/unrelated ledge cannot pull a remote body into contact.
+      const panelTarget = action?.kind === "panel" && status === "panel" && support === action.target.platformId && supportedNow()
+        ? geometryTracker?.anchor(support)?.element : undefined;
+      if (panelTarget && action?.kind === "panel" && panelTarget.getAttribute("data-companion-panel-side") === action.panelSide) {
+        const rect = panelTarget.getBoundingClientRect(), gap = rect.top - y, phase = clamp((performance.now() - began) / total, 0, 1);
+        if (gap >= 0 && gap <= 4 && x >= rect.left && x <= rect.right) shape.bob += gap * clamp(Math.min(phase / .25, (1 - phase) / .15), 0, 1);
+      }
       const inertiaScale = companionMaterialScale(1 + sway.stretch);
       style(inertiaLayer, "transform", `rotate(${sway.tilt.toFixed(3)}deg) scale(${inertiaScale.scaleX.toFixed(4)},${inertiaScale.scaleY.toFixed(4)})`);
       const pressure = touch.sample(performance.now(), reduced || gfxMode() === "off" || neutralVerticalRecovery);
@@ -1616,8 +1626,29 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       // One owner/write restores a released/outside body to1 immediately and
       // preserves premiere/hide fades without a transient1→room-alpha commit.
       style(el, "opacity", String(displayOpacity));
+      // This exact decoded pose has now adopted all native transforms. Count
+      // only consecutive visible contact paints; a pause never accrues time.
+      if (action?.kind === "panel" && status === "panel" && !panelImpact && action.panelSide
+        && support === action.target.platformId && supportedNow() && panelTarget && paintedCurrent && drawingRow === 13
+        && preferencesRef.current.enabled && preferencesRef.current.roam && preferencesRef.current.panelPrank
+        && !pause && !document.hidden && !pressed && !keyboardHeld && !placing && !returning && !pendingMonth
+        && !overlayActive && !premiereActive && !workspaceBusyRef.current && !reduced && gfxMode() !== "off" && presence.phase === "active") {
+        const point = paintedSelection ? projectCompanionSpritePoint({ ...projection, cell: paintedSelection.frame }, { x: 40 - paintedSelection.frame.x, y: 80 - paintedSelection.frame.y }) : null;
+        const foot = point ? { source: panelTarget, point, platformId: support, targetPlatformId: action.target.platformId!, painted: true } : undefined;
+        if (foot && companionPanelFootMatches(panelTarget, action.panelSide, foot)) {
+          panelContactWitnessed = true;
+          const at = performance.now(), elapsed = panelContact ? at - panelContact.lastAt : Infinity;
+          panelContact = panelContact?.element === panelTarget && panelContact.began === began && elapsed >= 0 && elapsed <= 150
+            ? { ...panelContact, lastAt: at, heldMs: panelContact.heldMs + elapsed } : { element: panelTarget, began, lastAt: at, heldMs: 0 };
+          if ((at - began) / total >= .55 && requestCompanionPanelSide(panelTarget, action.panelSide, { ...foot, heldMs: panelContact.heldMs })) {
+            panelImpact = true; visibilityContext = { kind: "panel-transition", at };
+          }
+        }
+      }
+
       if (el.hidden) stopHover();
       } finally {
+        if (!panelContactWitnessed) panelContact = undefined;
         if (!watchPainted) watchPaintMs = watchPaintAt = 0;
         observeVisibility();
       }
@@ -1752,6 +1783,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     };
     const continuousMotion = () => Boolean(expressionAnimating || performance.now() < interactionUntil || toys.current?.moving() || action?.toy?.effect === "stash" && toys.current?.carried() || isFoodDisposal(action) && food.current?.carried() || homeDeparture || premiereActive || premiereBounce || overlayDrag?.guest || guestKeyboardHeld || returning || heldInertia.sample(performance.now()).active || pickupScale !== 1 && performance.now() - pickupAt < 200 || pendingMonth || pressed || keyboardHeld || action && (action.accessory || action.radio || ["walk", "jump", "heart", "hide", "stretch", "shake", "eat", "play"].includes(action.kind)));
     const followLayout = (event?: Event) => {
+      // Even reselecting the already active side is a newer human intent.
+      // A pending toe press must never override it after its contact delay.
+      if (event?.type === "vic:side-panel" && action?.kind === "panel") {
+        clearAction(); nextDecision = performance.now() + 900;
+      }
       if (event?.type === "vic:side-panel") visibilityContext = { kind: "panel-transition", at: performance.now() };
       else if (event?.type === "scroll") visibilityContext = { kind: "scroll", at: performance.now() };
       else if (event?.type === "resize") visibilityContext = { kind: "resize", at: performance.now() };
@@ -1846,7 +1882,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       for (const key of ["data-episode", "data-episode-phase", "data-episode-variant", "data-episode-food"]) el.removeAttribute(key);
     };
     const cancelHousehold = () => { household.cancel(); const carried = food.current?.carried(); if (carried) food.current?.releaseCarry(carried); if (action?.household) action = { ...action, household: undefined }; el.removeAttribute("data-household"); };
-    const clearAction = (preserveEpisode = false, preserveHousehold = false, preserveScene = false, preserveHomeLife = false) => { if (!preserveHomeLife) cancelHomeLife(); witnessedCheerHops = 0; aftertastePaintAt = aftertastePaintMs = 0; el.removeAttribute("data-food-aftertaste"); activityArrival=undefined; el.dataset.lifePurpose="ordinary"; if (!preserveScene && action?.personalityScene?.id.startsWith("entry-") && !personalityDirector.entryReady()) personalityDirector.cancel(); clearHomeContact(); sleepPaintAt = 0; watchPaintMs = watchPaintAt = 0; if (washTool.current) washTool.current.hidden = true; el.removeAttribute("data-washing"); if (!preserveScene) { scenes.cancel(); toyPlanner.cancel(brain.current.activeMs); toys.current?.cancel(performance.now()); } if (!preserveHousehold) cancelHousehold(); el.removeAttribute("data-food-curiosity"); clearThrow(); sofaTravelActive = false; sofaFlightShape = undefined; ballisticCoefficient = null; el.removeAttribute("data-sofa-flight"); if (!preserveEpisode) { jumpRecoveryContext = undefined; brain.current = { ...brain.current, episode: undefined }; el.removeAttribute("data-episode"); el.removeAttribute("data-episode-phase"); el.removeAttribute("data-episode-variant"); el.removeAttribute("data-episode-food"); el.removeAttribute("data-food-goal"); } else if (brain.current.episode) data("episodePhase", brain.current.episode.phase); if (homeDeparture?.flying) homeDeparture = undefined; action = null; toyReturnAim = undefined; toyReturnPainted = undefined; foodDisposalAim = undefined; foodDisposalPainted = undefined; heldShake.reset(); shakenReleasePending = undefined; shakenGroundColumn = undefined; runTrip = runHop = undefined; runUpCurve = false; el.removeAttribute("data-trip"); el.removeAttribute("data-run-up"); el.removeAttribute("data-held-dizzy"); food.current?.nibble(); heartResult = null; sleeping = false; playImpact = playFalling = panelImpact = false; el.removeAttribute("data-attention"); el.removeAttribute("data-intent"); el.removeAttribute("data-play"); el.removeAttribute("data-play-beat"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); paintedStyles.delete(effect.current); } };
+    const clearAction = (preserveEpisode = false, preserveHousehold = false, preserveScene = false, preserveHomeLife = false) => { if (!preserveHomeLife) cancelHomeLife(); witnessedCheerHops = 0; aftertastePaintAt = aftertastePaintMs = 0; el.removeAttribute("data-food-aftertaste"); activityArrival=undefined; el.dataset.lifePurpose="ordinary"; if (!preserveScene && action?.personalityScene?.id.startsWith("entry-") && !personalityDirector.entryReady()) personalityDirector.cancel(); clearHomeContact(); sleepPaintAt = 0; watchPaintMs = watchPaintAt = 0; if (washTool.current) washTool.current.hidden = true; el.removeAttribute("data-washing"); if (!preserveScene) { scenes.cancel(); toyPlanner.cancel(brain.current.activeMs); toys.current?.cancel(performance.now()); } if (!preserveHousehold) cancelHousehold(); el.removeAttribute("data-food-curiosity"); clearThrow(); sofaTravelActive = false; sofaFlightShape = undefined; ballisticCoefficient = null; el.removeAttribute("data-sofa-flight"); if (!preserveEpisode) { jumpRecoveryContext = undefined; brain.current = { ...brain.current, episode: undefined }; el.removeAttribute("data-episode"); el.removeAttribute("data-episode-phase"); el.removeAttribute("data-episode-variant"); el.removeAttribute("data-episode-food"); el.removeAttribute("data-food-goal"); } else if (brain.current.episode) data("episodePhase", brain.current.episode.phase); if (homeDeparture?.flying) homeDeparture = undefined; action = null; toyReturnAim = undefined; toyReturnPainted = undefined; foodDisposalAim = undefined; foodDisposalPainted = undefined; heldShake.reset(); shakenReleasePending = undefined; shakenGroundColumn = undefined; runTrip = runHop = undefined; runUpCurve = false; el.removeAttribute("data-trip"); el.removeAttribute("data-run-up"); el.removeAttribute("data-held-dizzy"); food.current?.nibble(); heartResult = null; sleeping = false; playImpact = playFalling = panelImpact = false; panelContact = undefined; el.removeAttribute("data-attention"); el.removeAttribute("data-intent"); el.removeAttribute("data-play"); el.removeAttribute("data-play-beat"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); paintedStyles.delete(effect.current); } };
     const clearForPetting = () => {
       cancelManualWash();
       petResponse = [];
@@ -3563,11 +3599,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
           }
         } else if (action.kind === "panel") {
           row = 13; frame = p * 15;
-          if (!panelImpact && p >= .55) {
-            panelImpact = true;
-            if (!overlayActive && !workspaceBusyRef.current && !reduced && gfxMode() !== "off" && action.panelSide
-              && requestCompanionPanelSide(geometryTracker?.anchor(support)?.element, action.panelSide)) visibilityContext = { kind: "panel-transition", at: now };
-          }
+          // The actual painted foot owns this effect after adoption, below.
         } else if (action.kind === "sniff") { row = 1; frame = p * 15; }
         else if (action.kind === "eat") {
           // A missing packet may retain another visible pose. Wait finitely
