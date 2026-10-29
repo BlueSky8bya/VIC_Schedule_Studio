@@ -175,6 +175,8 @@ type PublicPosterProps = {
   initialMonth?: number;
   // 월을 바꿀 때 부모(편집실)에 알린다 — 시청자 미리보기에서 본 달을 편집실로 돌아갈 때 잇기 위함.
   onViewChange?: (year: number, month: number) => void;
+  // A parent-owned drawing board owns its keys; never part of the public DTO.
+  calendarShortcutsBlocked?: boolean;
   // Optional client-only staff preview handoff; never part of PublicSchedule.
   positionMemory?: CompanionPositionMemory;
   // (canExport 삭제 — 일정표 캡쳐 기능 제거, 2026-07-31. decorate·스티커 액션 props 삭제 — 꾸미기 기능 제거, 2026-08-27.)
@@ -596,6 +598,7 @@ export function PublicPoster({
   initialMonth,
   initialYear,
   onViewChange,
+  calendarShortcutsBlocked = false,
   positionMemory,
   schedule: sourceSchedule,
   premiereEnabled = process.env.NEXT_PUBLIC_PREMIERE_STAGE !== "0",
@@ -2771,7 +2774,8 @@ export function PublicPoster({
 
   // 시청자에서 ←/→ 로 월 이동(입력 칸 안에서는 무시).
   useEffect(() => {
-    if (showAgenda) {
+    // Parent-owned overlays keep their own shortcuts and return ownership on close.
+    if (showAgenda || calendarShortcutsBlocked) {
       return;
     }
     function onKey(event: KeyboardEvent) {
@@ -2805,7 +2809,7 @@ export function PublicPoster({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showAgenda, view.year, view.month]);
+  }, [showAgenda, view.year, view.month, calendarShortcutsBlocked]);
 
   // D: 이 일정의 대표 태그(최대 2개) 색. 2개면 그 일정 안에서 그라데이션(경계는 일정 가운데).
   function eventColors(event: PublicScheduleEvent) {

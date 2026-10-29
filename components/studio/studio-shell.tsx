@@ -7274,6 +7274,7 @@ export function StudioShell({
           // 하트 세션 델타의 소유자 — 같은 브라우저 탭에서 개발자→관리자처럼 계정을 바꿔 미리보기를
           // 열면 이전 계정의 낙관적 하트가 섞이지 않게 계정별로 나눈다(accountSwitch가 아니라 표시 없음).
           accountEmail={actor.email}
+          calendarShortcutsBlocked={broadcastOpen}
           ambientWorldForce={worldForce}
           avatarSlot={avatarRoleOk}
           initialMonth={view.month}

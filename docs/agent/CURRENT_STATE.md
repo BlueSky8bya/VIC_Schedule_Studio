@@ -7,6 +7,8 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
+P-04 adopted2286: board keyboard ownership verified/reviewed; scoped release and exact deployed confirmation in progress, then owner checklist. P-05/06 deferred. [Plan](plans/PLAN-20261029-board-keyboard-ownership.md).
+
 Before daily work, read primary `C:/Projects/VIC_Schedule_Studio/docs/agent/handoffs/boss-decisions.md`. Owner2026-10-29 delegates exact proposal adoption to the research-PC Telegram secretary's date/ID/채택/owner-message-number rows. Only recorded new adoptions proceed; completed/rejected decisions remain.
 
 Daily idea proposals require at least3 distinct observed candidates; fewer remains incomplete. Latest human instruction supersedes old maximum/zero-proposal completion clauses. Exclude completed/rejected/pending duplicates and preserve their exact adoption/release records in primary daily state.
