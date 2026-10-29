@@ -14,7 +14,7 @@ StudioShell이 기존 broadcastOpen을 공용 PublicPoster의 선택적 client-o
 
 typecheck/lint/관련 unit/build, production fixture owner/developer×1440/1920 실제 키 입력, 단독 공개 달력 회귀. 날짜 포커스·월 유지, 도구와 카드 1px·Shift10px 이동, 그림판 월 버튼, 닫기 후 기존 달력 키 복귀를 확인한다. 기존 획은 포인터 이동이며 방향키 이동 기능은 없다. 새 획 방향키 기능을 추가하지 않고 펜/형광펜/지우개 실물 회귀로 기존 동작을 확인한다. 보드 쓰기는 메모리 fixture에만 하며 운영 DB/실제 auth/RLS/OBS 보증은 하지 않는다. 비작성 독립 검수 후 관련 파일만 commit·origin/main 반영하고 CI/provider/실제 공개 fullSHA를 대조한다. fullCertification=false; 생활36 미검증 유지.
 
-현재 단계: 구현·실제 검증·비작성 독립 검수 완료, 관련 범위 출시 진행. P-05/06 보류 유지.
+현재 단계: 구현·실제 검증·비작성 독립 검수·운영 출시 확인 완료. P-04 사장 체크리스트 답 대기, P-05/06 보류 유지.
 
 ## 실제 검증 결과
 
@@ -23,7 +23,15 @@ typecheck/lint/관련 unit/build, production fixture owner/developer×1440/1920 
 - 비작성 독립 검수: 두 제품 파일·8건 receipt·대표 렌더 대조, No issues. G22 기존 고정 target/label·키보드/포인터·개발자 활동 타임라인과 최소 사용 통계 계약·자동화 guard 보존 확인. 새 수집/행동 추가 없음.
 - 원관찰 실패와 첫 시도3실패/3미실행 보존. 같은 월 판정에서 `innerText`/`textContent` 관찰 표현만 교정했으며 제품 판정 기준을 낮추지 않았다. 실제 auth/RLS·OBS·실기기·모바일·생활36은 미검증, fullCertification=false.
 
-절대 결과 경로: `C:/Users/im917/.codex/vic-pipeline/runs/20261029-adopted-board-keyboard/`. 원검사 `checks-summary.json`, 최종 실물 `native-summary.json`, 독립 검수 `independent-review.md`, 실제 완료 화면 `after-P-20261029-04.png`, 완료보고서 `report-1440.png`. 원제안의 변경 후 가상 그림과 실제 완료 화면은 별도 자료다. CI/provider/공개 fullSHA 출시 증거는 같은 경로의 `release-record.json`에 실제 확인 후 기록한다.
+절대 결과 경로: `C:/Users/im917/.codex/vic-pipeline/runs/20261029-adopted-board-keyboard/`. 원검사 `checks-summary.json`, 최종 실물 `native-summary.json`, 독립 검수 `independent-review.md`, 실제 완료 화면 `after-P-20261029-04.png`, 완료보고서 `report-1440.png`. 원제안의 변경 후 가상 그림과 실제 완료 화면은 별도 자료다. CI/provider/공개 fullSHA 출시 증거는 같은 경로의 `release-record.json`에 실제 확인 결과를 기록했다.
+
+## 운영 출시 확인
+
+제품 출시 SHA `b05389060a6625b772e64c3991e44e230d5593c3`. 관련7파일만 commit·일반 main push 완료. [정확한 SHA의 CI](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/40849720544) success, Vercel `dpl_Gih5LxHeSGE75ffZsCQibyj1tKzs` production READY와 team/project·gitSource SHA 일치 확인. 실제 공개 `/api/soop-live` fullSHA도 같고, 공개1440밝음/1920어두움에서 ←/→ 왕복·T 복귀·편집 제어 부재·새 키 차단 client chunk를 확인했다. 운영 fixture 경로는 숨김 상태다.
+
+`release-record.json`, `ci-readback.json`, `provider-readback.json`, `public-readback-final.json`이 실제 출시 근거다. Vercel 연결 도구의 팀 접근403은 보존하고 기존 인증 CLI로 같은 대상만 확인했다. 초기 CI 미등록 관찰도 보존했으며 재배포·강제 push·운영 DB 쓰기 없음. 실제 로그인한 운영 그림판은 미검증이며 owner/developer production fixture8건과 구분한다. 문서 완료 후속 SHA는 `documentation-followup.json`에 별도 기록하고 제품 출시 SHA와 혼동하지 않는다.
+
+현재15분 heartbeat 대상은 새 대화 `01a186f6-e297-7752-9679-37329d079172`, 옛 대상0건. 주간 `vic` 일요일10시 설정은 유지했으며 이번 세션에서 자동화 변경은 하지 않았다. 실제 readback은 `automation-readback.json`. 기존 worktree와 무관한 미커밋 QA는 보존한다.
 
 ## 사장 확인 체크리스트
 
