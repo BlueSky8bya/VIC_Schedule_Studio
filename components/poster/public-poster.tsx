@@ -45,6 +45,7 @@ import type { CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { logActivity } from "@/lib/activity/client";
+import { usePopoverReturnToAnchor } from "@/components/shared/use-popover-return-to-anchor";
 import { AmbientLayer } from "@/components/shared/ambient/ambient-layer";
 // 카드 안 D-n/시계는 이 파일의 TeaserCountdown, 팝오버 큰 카운트다운은 편집실 게이트와 공용 컴포넌트.
 import { TeaserCountdown as TeaserBigCountdown } from "@/components/shared/teaser-countdown";
@@ -1356,6 +1357,15 @@ export function PublicPoster({
   const detailKeyRef = useRef<string | null>(null);
   detailKeyRef.current = detailKey;
   const detailShownKeyRef = useRef<string | null>(null);
+  const detailReturn = usePopoverReturnToAnchor(hasDetailPop, () => {
+    if (detailDragActiveRef.current) return;
+    if (detailKeyRef.current) detailSavedPosRef.current.delete(detailKeyRef.current);
+    if (detailSnapTimerRef.current) window.clearTimeout(detailSnapTimerRef.current);
+    setDetailSnapback(false);
+    detailManualRef.current = null;
+    setDetailManual(null);
+    placeDetailPopover();
+  }, "detail-return-to-anchor");
   // PC 팝오버가 떠 있는 동안 달력은 그대로 살아 있다(배경 pointer-events:none) — 다른 일정을
   // 누르면 '한 번에' 그 일정의 상세로 교체된다. 바깥 닫기는 여기(문서 레벨)서: 시트 안도,
   // 새 상세로 교체될 일정 카드도 아닌 곳을 누르면 닫는다. 여는 클릭이 바로 닫지 않게 다음 틱부터.
@@ -1502,6 +1512,7 @@ export function PublicPoster({
       window.removeEventListener("pointercancel", onUp);
       window.removeEventListener("blur", onUp);
       if (moved) {
+        detailReturn.markDragged();
         hapticTick();
         // 화면 밖에서 놓으면 스프링으로 팅 튕겨 '전부 보이는' 자리로 복귀(편집실과 동일 문법).
         const w = sheet.offsetWidth;
@@ -4579,10 +4590,9 @@ export function PublicPoster({
                   {/* PC: 이동 손잡이 그립(액센트 그라데이션 띠) — 잡아 끌면 통째로 이동. */}
                   {anchor ? (
                     <div
-                      aria-hidden="true"
+                      {...detailReturn.bind}
                       className="detail-grab"
                       onPointerDown={onDetailDragStart}
-                      title="끌어서 이동"
                     >
                       <span />
                     </div>

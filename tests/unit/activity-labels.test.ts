@@ -14,6 +14,12 @@ import {
 //   3) 모르는 값은 이름을 지어내지 않고 '이름 미등록'으로 표시한다(원문은 개발자 정보·복사본에만)
 
 describe("이름은 화면에 쓰인 말로", () => {
+  it("names adopted hue and window-return controls in both developer views", () => {
+    for(const [target,name] of [["cpop-hue","색조 미세 조절"],["detail-return-to-anchor","일정 상세 위치 복원"],["editor-return-to-anchor","일정 편집 위치 복원"]]) {
+      expect(describeTarget("ui.click",target)).toMatchObject({name});
+      expect(ACT[target]).toBeDefined();
+    }
+  });
   it("uses the same fixed search-submit label in developer timeline and usage views", () => {
     expect(describeTarget("ui.click", "search-submit")).toMatchObject({name: "검색 실행", area: "시청자 화면"});
   });

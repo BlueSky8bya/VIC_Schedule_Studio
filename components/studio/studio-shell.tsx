@@ -217,6 +217,7 @@ import {
   hapticTick
 } from "@/lib/ui/haptics";
 import { logActivity, logSettled } from "@/lib/activity/client";
+import { usePopoverReturnToAnchor } from "@/components/shared/use-popover-return-to-anchor";
 import { setBandHover } from "@/lib/ui/band-hover";
 import { useSectionActivity } from "@/lib/activity/use-section";
 import { reduceMotionEnabled } from "@/lib/ui/motion";
@@ -2899,6 +2900,14 @@ export function StudioShell({
   // 드래그 진행 중 플래그(ref) — 이동 프레임마다 상태를 안 거치므로, rAF 동기화 루프가
   // '지금은 손이 잡고 있다'를 상태와 무관하게 알 수 있어야 자동 좌표로 안 되돌린다.
   const editorPopDragActiveRef = useRef(false);
+  const editorReturn = usePopoverReturnToAnchor(!isNarrow && editorVisible, () => {
+    if (editorPopDragActiveRef.current) return;
+    if (editorSnapTimerRef.current) window.clearTimeout(editorSnapTimerRef.current);
+    setEditorPopSnapback(false);
+    editorPopManualRef.current = null;
+    setEditorPopManual(null);
+    placeEditorPopover();
+  }, "editor-return-to-anchor");
   // ⚠ 대형 모니터에선 .studio-shell에 CSS zoom(≥1700px: 0.9, ≥2400px: 0.8)이 걸린다.
   // getBoundingClientRect는 zoom '반영 후' 화면 px를 주지만, 우리가 쓰는 CSS left/top과 SVG
   // 좌표는 zoom이 '곱해지기 전' 로컬 px로 해석된다 → 화면 px를 그대로 쓰면 모든 좌표가
@@ -3148,6 +3157,7 @@ export function StudioShell({
       window.removeEventListener("pointercancel", onUp);
       window.removeEventListener("blur", onUp);
       if (moved) {
+        editorReturn.markDragged();
         hapticTick();
         // 화면 밖으로 나간 채 놓으면 — 꾸미기 스티커처럼 '전부 보이는' 자리까지 스프링으로
         // 팅 튕겨 복귀한다(드래그 중엔 자유, 파묻힌 채 방치 금지 — 사용자 요청).
@@ -8509,10 +8519,9 @@ export function StudioShell({
               {renderTeaserGate(
                 <>
                   <div
-                    aria-hidden="true"
+                    {...editorReturn.bind}
                     className="editor-grab"
                     onPointerDown={onEditorPopDragStart}
-                    title="끌어서 이동"
                   >
                     <span />
                   </div>
@@ -8562,10 +8571,9 @@ export function StudioShell({
             {/* 이동 손잡이 — 카드 맨 위 전폭 스트립(모드 색 틴트 + 중앙 필). 헤더 바도 같이
                 끌 수 있지만, '여길 잡으면 된다'가 보이는 전용 그립을 따로 둔다. */}
             <div
-              aria-hidden="true"
+              {...editorReturn.bind}
               className="editor-grab"
               onPointerDown={onEditorPopDragStart}
-              title="끌어서 이동"
             >
               <span />
             </div>

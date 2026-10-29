@@ -17,6 +17,7 @@ import { hapticTick } from "@/lib/ui/haptics";
 import type { TagKind } from "@/lib/domain/schedule-types";
 import { deriveDarkTagColors } from "@/lib/tags/dark-palette";
 import { parseHexInput } from "@/lib/tags/hex-input";
+import { logSettled } from "@/lib/activity/client";
 
 // 커스텀 색 피커 — 색 스와치를 누르면 뜨는 팝오버. 연구/벤치마킹(팝오버 패턴 + 색 영역+색조 슬라이더)
 // 기준: 네이티브 OS 피커 대신 앱 디자인에 맞는 인라인 피커. 좌표로 채도·명도, 슬라이더로 색조,
@@ -72,34 +73,25 @@ export function ColorPickerPopover({
   const svRef = useRef<HTMLDivElement | null>(null);
   const hueRef = useRef<HTMLDivElement | null>(null);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const popup = rootRef.current;
+    hueRef.current?.focus({ preventScroll: true });
+    return () => {
+      const active = document.activeElement;
+      // A deliberate switch to another swatch/control owns its new focus.
+      if (opener?.isConnected && (active === document.body || popup?.contains(active))) opener.focus({ preventScroll: true });
+    };
+  }, []);
 
   const hex = useMemo(() => hsvToHex(hsv.h, hsv.s, hsv.v), [hsv]);
 
-  // hex가 '사용자 조작으로' 바뀔 때만 부모에 반영한다. 첫 렌더(마운트)에서는 부르지 않는다 —
-  // 안 그러면 피커를 '열기만' 해도 현재 색이 bgHex로 박혀(안 건드렸는데 커스텀 처리) 버린다.
-  const mounted = useRef(false);
+  // Only an explicit edit emits. Recording its echo before notifying the parent
+  // keeps rapid keyboard/undo edits and equivalent red endpoints (0/360) local.
   // 마지막으로 부모에 올려보낸 hex — 부모가 그 값을 다시 value로 내려주면 '내 에코'라 무시한다.
   const lastEmittedRef = useRef<string>(value.toLowerCase());
-  // 부모(value)로부터 동기화 중이면 다음 emit을 한 번 건너뛴다(부모 값을 다시 부모에 되쏘지 않게).
-  const skipEmitRef = useRef(false);
   // 드래그(sv/hue 포인터 잡은 동안)에는 부모 동기화가 손 위치와 싸우지 않게 잠시 무시한다.
   const draggingRef = useRef(false);
-  useEffect(() => {
-    if (!mounted.current) {
-      mounted.current = true;
-      return;
-    }
-    setHexText(hex);
-    setHexError(false);
-    if (skipEmitRef.current) {
-      skipEmitRef.current = false;
-      return;
-    }
-    lastEmittedRef.current = hex.toLowerCase();
-    onChange(hex);
-    // onChange는 매 렌더 안정적이지 않을 수 있어 hex만 의존.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hex]);
 
   // 부모의 value가 바깥 요인(실행취소·서버 재검증·다른 곳의 변경)으로 바뀌면 내부 hsv/hex도 따라간다.
   // 예외: 내가 방금 올려보낸 값의 에코, 드래그 중, 이미 같은 색.
@@ -110,11 +102,7 @@ export function ColorPickerPopover({
     if (incoming === hex.toLowerCase()) return;
     if (!/^#[0-9a-f]{6}$/.test(incoming)) return;
     const next = hexToHsv(value);
-    const roundTrip = hsvToHex(next.h, next.s, next.v).toLowerCase();
-    // hsv 왕복(hsvToHex(hexToHsv)) 반올림 차이로 emit이 나가면 부모 값을 미묘하게 덮어쓴다 → 건너뛴다.
-    // 단, 왕복 결과가 지금 hex와 같으면 [hex] effect가 아예 안 돌므로 스킵 플래그를 세우지 않는다.
-    lastEmittedRef.current = roundTrip;
-    skipEmitRef.current = roundTrip !== hex.toLowerCase();
+    lastEmittedRef.current = incoming;
     setHsv(next);
     setHexText(value);
     setHexError(false);
@@ -128,16 +116,21 @@ export function ColorPickerPopover({
   }
 
   function chooseHsv(next: ReturnType<typeof hexToHsv>) {
-    setHexText(hsvToHex(next.h, next.s, next.v));
+    const nextHex = hsvToHex(next.h, next.s, next.v);
+    setHexText(nextHex);
     setHexError(false);
     setHsv(next);
+    if (nextHex.toLowerCase() !== lastEmittedRef.current) {
+      lastEmittedRef.current = nextHex.toLowerCase();
+      onChange(nextHex);
+    }
   }
 
   function editHex(text: string) {
     const result = parseHexInput(text);
     setHexText(result.state === "complete" ? result.hex : text);
     setHexError(result.state === "invalid");
-    if (result.state === "complete") setHsv(hexToHsv(result.hex));
+    if (result.state === "complete") chooseHsv(hexToHsv(result.hex));
   }
 
   function finish() {
@@ -162,13 +155,11 @@ export function ColorPickerPopover({
   }
   // 실행취소 — 직전 색으로. 스택이 비면 아무 것도 안 한다.
   function undo() {
-    setHistory((prev) => {
-      if (prev.length === 0) return prev;
-      hapticTick();
-      const target = prev[prev.length - 1];
-      chooseHsv(hexToHsv(target)); // 위 effect가 onChange로 부모까지 되돌린다.
-      return prev.slice(0, -1);
-    });
+    if (history.length === 0) return;
+    hapticTick();
+    const target = history[history.length - 1];
+    setHistory(history.slice(0, -1));
+    chooseHsv(hexToHsv(target));
   }
 
   // 바깥 클릭 / Esc = '취소'(light-dismiss). '완료'를 안 눌렀으니 확정하지 않고, 열었을 때
@@ -182,6 +173,16 @@ export function ColorPickerPopover({
       onCancel();
     }
     function onKey(e: KeyboardEvent) {
+      // This body portal owns Tab before the underlying tag modal's document
+      // capture trap. Keep its actual controls reachable in both directions.
+      if (e.key === "Tab") {
+        const list = Array.from(rootRef.current?.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])') ?? []).filter(el => el.getClientRects().length > 0);
+        if (!list.length) return;
+        e.preventDefault(); e.stopPropagation();
+        const at = list.indexOf(document.activeElement as HTMLElement);
+        list[at < 0 ? (e.shiftKey ? list.length - 1 : 0) : (at + (e.shiftKey ? -1 : 1) + list.length) % list.length].focus({ preventScroll: true });
+        return;
+      }
       if (e.key !== "Escape") return;
       if (e.isComposing || e.keyCode === 229 || composingRef.current) {
         // Let the IME handle cancellation without closing an underlying modal.
@@ -288,8 +289,27 @@ export function ColorPickerPopover({
       {/* 색조 슬라이더 */}
       <div
         aria-label="색조"
+        aria-valuemin={0}
+        aria-valuemax={360}
+        aria-valuenow={hsv.h}
+        aria-valuetext={`${Math.round(hsv.h)}도`}
         className="cpop-hue"
+        data-act="cpop-hue"
+        data-activity-manual=""
+        role="slider"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.nativeEvent.isComposing || e.altKey || e.ctrlKey || e.metaKey) return;
+          const next = e.key === "Home" ? 0 : e.key === "End" ? 360 : e.key === "ArrowRight" || e.key === "ArrowUp" ? Math.min(360, hsv.h + 1) : e.key === "ArrowLeft" || e.key === "ArrowDown" ? Math.max(0, hsv.h - 1) : null;
+          if (next === null) return;
+          e.preventDefault(); e.stopPropagation();
+          if (next === hsv.h) return;
+          if (!e.repeat) snapshot();
+          chooseHsv({ ...hsv, h: next });
+          logSettled("ui.click", "cpop-hue", "cpop-hue");
+        }}
         onPointerDown={(e) => {
+          e.currentTarget.focus({ preventScroll: true });
           e.currentTarget.setPointerCapture(e.pointerId);
           draggingRef.current = true;
           snapshot();
@@ -300,6 +320,7 @@ export function ColorPickerPopover({
         }}
         onPointerUp={() => {
           draggingRef.current = false;
+          logSettled("ui.click", "cpop-hue", "cpop-hue");
         }}
         onPointerCancel={() => {
           draggingRef.current = false;

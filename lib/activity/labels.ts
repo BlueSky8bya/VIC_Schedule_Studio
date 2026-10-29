@@ -419,6 +419,9 @@ export const ACT: Record<string, TargetLabel> = {
   "cpop-swatch": { name: "색 고르기", area: "태그 편집" },
   "cpop-kind-swap": { name: "색 방식 바꾸기", area: "태그 편집" },
   "cpop-done": { name: "색 고르기 완료", area: "태그 편집" },
+  "cpop-hue": { name: "색조 미세 조절", area: "태그 편집" },
+  "detail-return-to-anchor": { name: "일정 상세 위치 복원", area: "일정" },
+  "editor-return-to-anchor": { name: "일정 편집 위치 복원", area: "편집" },
   "tp-chip": { name: "태그 고르기", area: "편집실" },
 
   // 멤버·보안

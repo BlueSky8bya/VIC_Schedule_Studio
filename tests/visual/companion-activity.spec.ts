@@ -35,10 +35,28 @@ const new141Targets = ["companion-home-curtain#open", "companion-home-curtain#sh
 const new142Targets = ["companion-personality-open"];
 const drawingDiscardTargets = ["bp-discard-keep", "bp-discard-confirm"];
 const acceptedSearchTargets = ["search-submit"];
+const adoptedPrecisionTargets = ["detail-return-to-anchor", "editor-return-to-anchor", "cpop-hue"];
+
+for(const surface of ["viewer","studio"] as const)test(`Adopted precision activity ${surface}`,async({page},info)=>{
+  await setup(page,surface);const opener=page.locator(surface==="viewer"?'.public-event.is-clickable:visible':'.studio-event-pill:visible').first();
+  if(surface==="viewer")await opener.click();else await opener.dblclick();
+  const panel=page.locator(surface==="viewer"?'.agenda-detail-sheet:visible':'.event-editor-panel:visible'),grip=panel.getByRole('button',{name:'창 위치 복원',exact:true}),target=surface==="viewer"?'detail-return-to-anchor':'editor-return-to-anchor';
+  await grip.click();await flush(page);expect(count(page,target)).toBe(0);
+  await grip.dblclick();await grip.press('Enter');await grip.press('Space');await flush(page,[{target,n:3}]);expect(count(page,target)).toBe(3);
+  expect(targets(page).some(v=>v?.includes('auto:.detail-grab')||v?.includes('auto:.editor-grab'))).toBe(false);
+  if(surface==="studio"){
+    await page.keyboard.press('Escape');await page.getByRole('button',{name:'태그 편집',exact:true}).click();const swatch=page.locator('button[aria-label="태그 색 바꾸기"]:not(:disabled)').first();await swatch.focus();await swatch.press('Enter');
+    const hue=page.getByRole('slider',{name:'색조',exact:true});await expect(hue).toBeFocused();for(let i=0;i<3;i++)await hue.press('ArrowRight');await page.waitForTimeout(800);await flush(page,[{target:'cpop-hue'}]);expect(count(page,'cpop-hue')).toBe(1);
+    const b=(await hue.boundingBox())!;await page.mouse.click(b.x+b.width*.6,b.y+b.height/2);await page.waitForTimeout(800);await flush(page,[{target:'cpop-hue',n:2}]);expect(count(page,'cpop-hue')).toBe(2);
+  }
+  const events=capture.get(page)!.events.filter(e=>adoptedPrecisionTargets.includes(e.target??''));expect(events.every(e=>e.durMs===null)).toBe(true);
+  expect(JSON.stringify(events)).not.toMatch(/#[0-9a-f]{6}|evt-|fixture-detail/);
+  await info.attach('precision-activity',{body:JSON.stringify({surface,events,onlyFixedTargets:true,allWritesIntercepted:true}),contentType:'application/json'});
+});
 const sampleTargets = ["companion-pet", "companion-bonk", "companion-food-spawn", "companion-drag", "companion-shake", "companion-heart-clear", "companion-speed#lively", "companion-card-restore", "tag-filter-fold#close", "season-panel-fold#open", "premiere-resume", "premiere-other-month", "premiere-exit#calendar", "premiere-read", "premiere-cheer", "premiere-rehearsal", ...new109Targets, ...new110Targets, ...new111Targets, ...new115Targets, ...new135Targets, ...new141Targets, ...new142Targets];
 const retired110Target = "companion-radio-mood#lively";
 const memoryFilterTargets = ["companion-memory-filter#all", "companion-memory-filter#expression", "companion-memory-filter#pose", "companion-memory-filter#life"];
-const readFixtureTargets = [...sampleTargets, ...new137Targets, ...memoryFilterTargets, ...drawingDiscardTargets, ...acceptedSearchTargets, "companion-learning-reset", retired110Target];
+const readFixtureTargets = [...sampleTargets, ...new137Targets, ...memoryFilterTargets, ...drawingDiscardTargets, ...acceptedSearchTargets, ...adoptedPrecisionTargets, "companion-learning-reset", retired110Target];
 const at = Date.parse("2026-06-10T03:00:00Z");
 
 test("drawing discard pointer and keyboard each emit one fixed action without content", async ({page}) => {
@@ -695,7 +713,7 @@ test("110 developer views show book and unified memory uses while old radio mood
   await usage.locator('[data-act="usage-show-all"]').click();
   await page.locator('[data-act="activity-expand-all"]').click();
   await timeline.locator(".act-lines > summary").click();
-  for (const target of [...new110Targets, ...new115Targets, ...new135Targets, ...new137Targets, ...new141Targets, ...new142Targets, ...memoryFilterTargets, "companion-learning-reset"]) {
+  for (const target of [...new110Targets, ...new115Targets, ...new135Targets, ...new137Targets, ...new141Targets, ...new142Targets, ...memoryFilterTargets, ...adoptedPrecisionTargets, "companion-learning-reset"]) {
     const name = describeTarget("ui.click", target).name;
     const usageRow = usage.locator('.usage-list:not([data-retired]) > li').filter({ hasText: name }), timelineRow = timeline.getByText(name, { exact: true });
     await usageRow.scrollIntoViewIfNeeded(); await expect(usageRow).toBeInViewport();

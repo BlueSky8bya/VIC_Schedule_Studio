@@ -43,6 +43,18 @@ async function fixture() {
 }
 
 describe("completed companion input owns its activity event", () => {
+  it("excludes grip click noise and batches hue edits under fixed readable targets", async () => {
+    const f = await fixture();
+    for (const target of ["detail-return-to-anchor", "editor-return-to-anchor"]) {
+      f.click(true, false, false, target); f.click(true, false, false, target);
+      f.logger.logActivity("ui.click", { target });
+    }
+    for (let i=0;i<3;i++) { f.click(true,false,false,"cpop-hue"); f.logger.logSettled("ui.click","cpop-hue","cpop-hue"); }
+    const events=await f.events();
+    expect(events.map((event:{target:string})=>event.target)).toEqual(["detail-return-to-anchor","editor-return-to-anchor","cpop-hue"]);
+    expect(events[0].meta).toBeNull();expect(events[1].meta).toBeNull();
+    expect(events[2].meta).toEqual({hops:3});
+  });
   it("captures detail navigation native clicks once with fixed names and no event/title payload", async () => {
     const f = await fixture();
     for (const target of ["detail-next-event", "detail-previous-event", "settings-tab"]) f.click(false, false, false, target, target === "settings-tab" ? "motion" : null);

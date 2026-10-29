@@ -1,0 +1,8 @@
+/* Same quiet grip on both windows; only keyboard focus adds an inset cue. */
+.detail-grab[role="button"]:focus-visible,
+.editor-grab[role="button"]:focus-visible { outline: none; }
+.detail-grab[role="button"]:focus-visible > span,
+.editor-grab[role="button"]:focus-visible > span {
+  outline: 2px solid var(--focus-ring, #6c91a8);
+  outline-offset: 3px;
+}

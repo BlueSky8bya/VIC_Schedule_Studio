@@ -123,6 +123,20 @@ for (const scenario of [{ width: 1440, surface: 'owner' }, { width: 1920, surfac
   } finally { await media.close(); }
 });
 
+test('Adopted radio positive master volume preserves pending failure', async ({page,context,baseURL},info)=>{
+  const proof=await radioSetup(page,context,baseURL!,1440,'owner');let release!:()=>void,requests=0;
+  const held=new Promise<void>(resolve=>{release=resolve;});
+  await context.route('**/companion/audio/radio/*.ogg',async route=>{const q=route.request();if(q.method()!=='GET'||new URL(q.url()).origin!==baseURL)return route.fallback();requests++;proof.syntheticReads.push('held-invalid-media-for-positive-volume-regression');await held;await route.fulfill({status:200,contentType:'audio/ogg',body:Buffer.from('invalid synthetic audio')});});
+  try{
+    const radio=await openRadio(page),status=radio.locator('.rhh-radio-now p');await radio.locator('.rhh-radio-actions [data-act="companion-radio-play"]').click();await expect.poll(()=>requests).toBe(1);await expect(status).toHaveText('준비 중');
+    // Controlled preference notification keeps the same mounted radio. Switching
+    // settings tabs would unmount it and intentionally discard local pending state.
+    await page.evaluate(()=>{const before=Number(localStorage.getItem('vic.soundVol')??60);localStorage.setItem('vic.soundVol',String(before+5));window.dispatchEvent(new Event('vic:sound'));});
+    await expect(status).toHaveText('준비 중');release();await expect(status).toHaveText('재생하지 못했어요');
+    await finish(page,info,proof,{positiveVolumeChangeDuringPending:true,preferenceChangeIsSyntheticNotification:true,requests,failurePreserved:true,noOperatingMedia:true});
+  }finally{release();}
+});
+
 test('Accepted radio pending stop and unmount ignore late invalid media responses', async ({ page, context, baseURL }, info) => {
   const proof = await radioSetup(page, context, baseURL!, 1440, 'owner');
   const held: { release: () => void; done: Promise<void> }[] = [], lateResponses: { result: string; failure?: string }[] = []; let requests = 0;

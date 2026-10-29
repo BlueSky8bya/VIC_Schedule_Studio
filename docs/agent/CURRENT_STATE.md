@@ -7,6 +7,8 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
+Before daily work, read primary `C:/Projects/VIC_Schedule_Studio/docs/agent/handoffs/boss-decisions.md`. Owner2026-10-29 delegates exact proposal adoption to the research-PC Telegram secretary's date/ID/채택/owner-message-number rows. Only recorded new adoptions proceed; completed/rejected decisions remain.
+
 Daily idea proposals require at least3 distinct observed candidates; fewer remains incomplete. Latest human instruction supersedes old maximum/zero-proposal completion clauses. Exclude completed/rejected/pending duplicates and preserve their exact adoption/release records in primary daily state.
 
 Owner2026-10-27: exclude fan timeline **administration** from future idea discovery (not viewer replay/timeline/search). Ecology generation/codex plans are retired; sky/celestial, current meadow and companion collection books remain. Original sources/frozen evidence stay intact. [Current contract](plans/PLAN-20261027-support-search-celestial.md).
