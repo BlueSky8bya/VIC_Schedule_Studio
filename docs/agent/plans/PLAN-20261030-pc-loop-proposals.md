@@ -34,6 +34,25 @@ Original attempt1 build/type/lint failure from removing CalendarDays still used 
 
 New original P-20261030-02 correction2559 and its support row were read during this correction. They require card-present reproduction, no unintended card/other-date changes and distinct focus/selection. This is the next separate correction; it has not been implemented or declared verified by the P03 evidence.
 
+## 고침 2 기록
+
+Owner2559 and primary support-review identify card-present date-key reproduction, unchanged card coordinates/other dates, distinct focus/selection and matching card-present before/after images. The drawing board exists only inside the authorized owner/developer public-snapshot preview, not the ordinary editor or public page. Initial baseline attempt used the ordinary editor and could not find its absent entry; this observer failure is preserved, not a product regression. Repeat uses the actual supported preview path.
+
+Scope: reproduce pointer-click to arrows/Space/Enter without forcing focus, inspect card left/top plus one-Undo history and exactly which checked dates change. Preserve the established multi-date checkbox intent; intentionally selected dates are not new incidental selections. Only observed defects will change. Focus/selection visual distinction is an explicit support requirement. Current product equals pre-correction origin/main bfae2641b46c818bdeeba336c95797aa299ebfe8. Result: `C:/Users/im917/.codex/vic-pipeline/runs/20261030-board-date-correction/`. Production-build fixtures, types/lint/relevant units/harness, non-author review and exact release follow. Actual production login remains separate and unverified.
+
+Current-product baseline2 passed2/2 in owner1440 light/developer1920 dark with no forced focus: card movement was not reproduced; direction keys changed no checked dates, Space changed its exact target, and card left/top stayed16px/16px with one Undo removing the original sent card. This preserves the owner's original real-session observation as unconfirmed rather than claiming it was disproved or fixed. The confirmed presentation problem was the solid focus outline resembling selected cells.
+
+Correction is CSS only: keyboard focus becomes an inner2px dashed outline at-4px; selected fill/solid inset ring, geometry, native role/aria-checked, range and multi-date toggle semantics stay intact. Final native2/2 passed on new BUILD_ID O5WURDn54TaNW2pNe6lfg, including exact selected-date sets after both Space and Enter, unchanged coordinates and one-Undo history. Before/after four card-present pairs cover focus-after-arrow and selection-after-Space at1440 light/1920 dark. Before product equals fetched pre-change origin/main bfae2641 and the verified preceding productKey; immutable baseline/final receipts and image SHA are adjacent. Report uses eight actual PNG img elements;1440/390 report renders decode8/8 with overflow0. The PC-only board capability is unchanged; a390px report is not a mobile-board test.
+
+Typecheck/whole lint/7 relevant unit files60 tests passed. G22 keeps existing manual bp-date-select fixed-target capture, duplicate suppression and shared developer labels; focus navigation is excluded from selection analytics. The existing mocked capture/transport/catalog test is the evidence limit, not operating aggregate usage. No API/schema/auth/KST/DTO/dependency/operating-write change. Source non-author review and final harness/release evidence accompany release-record.json; research support alone may update its original status.
+
+### 고침 2 확인 체크리스트
+
+- P-20261030-02: 카드가 있는 그림판에서 날짜 클릭 → 방향키 → Space·Enter 뒤 카드가 고정되는지 봐 주세요.
+- P-20261030-02: 점선 초점과 채움·실선 선택이 구분되는지 봐 주세요.
+- P-20261030-02: Space·Enter가 그 초점 날짜만 토글하고 다른 날짜를 새로 고르지 않는지 봐 주세요.
+
+
 ## 사장 확인 체크리스트
 
 - P-20261030-01: 공개 시각을 바꾼 뒤 Esc로 닫으면 원래 값이 남고, 확인할 때만 바뀌는지 확인해 주세요.

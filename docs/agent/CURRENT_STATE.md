@@ -7,7 +7,7 @@ Current work only. Completed plans/rounds are evidence, not instructions. Previo
 
 ## Current Objective
 
-P-20261030-03 correction2548 verified; exact release/checklist in the [plan](plans/PLAN-20261030-pc-loop-proposals.md). P-02 correction2559 next: card-present keyboard/selection proof. P-01 checklist pending; P-20261029-05/06 deferred.
+P02 correction2559 verified; exact release/[checklist](plans/PLAN-20261030-pc-loop-proposals.md). P03 correction2548 released. P01 pending; P-20261029-05/06 deferred. Real-session2559 unconfirmed.
 
 Before daily work, read primary `C:/Projects/VIC_Schedule_Studio/docs/agent/handoffs/boss-decisions.md`. Owner2026-10-29 delegates exact proposal adoption to the research-PC Telegram secretary's date/ID/채택/owner-message-number rows. Only recorded new adoptions proceed; completed/rejected decisions remain.
 

@@ -2,7 +2,7 @@
 
 | ID | Status | Record |
 |---|---|---|
-| PC-LOOP-20261030 | P03 correction2548 verified; release evidence. P02 correction2559: reproduce card-present keys/selection | [Plan](PLAN-20261030-pc-loop-proposals.md) |
+| PC-LOOP-20261030 | P02 correction2559 verified; exact release/checklist. P03 released; original real-session observation unconfirmed | [Plan](PLAN-20261030-pc-loop-proposals.md) |
 | SHOWCASE-TOY-STORAGE-20261023 | Current25 proofs/6924 units/two non-author reviews pass; Owner push confirmation pending.11 old releases deleted; quota10.01/10GB remains | [Plan](PLAN-20261023-showcase-transients-toy-storage.md) |
 | SCRATCH-RETENTION | Policy + companion-daily hooks merged to main (owner-approved 2026-10-23); applied once to real scratch (167.6→53.2 GiB). Site-daily wiring and heartbeat adaptation pending owner | [Plan](PLAN-20261023-scratch-retention.md) |
 | LAMP-LIVE-168 | Actual failure reproduced;170 bounded alignment passes3 native cases; independent actual/deployed verification pending | [Plan](PLAN-20261022-lamp-live-trace.md) |

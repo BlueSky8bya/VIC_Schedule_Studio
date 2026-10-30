@@ -249,8 +249,9 @@ html[data-reduce-motion] .bp-close:active {
   background: var(--violet-soft);
 }
 .bp-mini-cell:focus-visible {
-  outline: 2px solid var(--violet);
-  outline-offset: -2px;
+  /* Keyboard focus stays distinct from the selected cell's solid inset ring. */
+  outline: 2px dashed var(--violet);
+  outline-offset: -4px;
 }
 .bp-mini-cell.picked {
   background: rgb(var(--selection-rgb) / 20%);
