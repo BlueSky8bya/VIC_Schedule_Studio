@@ -21,6 +21,7 @@ import { SEARCH_RESULT_KINDS, countSearchKinds, filterSearchKind, type SearchRes
 import "./public-search-kind.css";
 import { filterSearchMonth, searchResultMonths } from '@/lib/search/result-month';
 import { logActivity } from '@/lib/activity/client';
+import { SearchMonthPicker } from './search-month-picker';
 
 // 시청자 검색 시트(PLAN-20260918-023) — "예전에 이런 게 있었던 것 같은데 언제, 어디 시간대였지?"
 //
@@ -868,21 +869,14 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
                 </button>
               ))}
             </div>
-            <label className="ps-month-filter">
-              <CalendarDays aria-hidden="true" size={14} />
-              <select aria-label="불러온 결과 연월" value={activeMonth} data-act="search-month" data-activity-manual=""
-                onChange={event => {
-                  const next = event.currentTarget.value;
+            <SearchMonthPicker months={months} value={activeMonth}
+                count={!activeMonth && kind === "all" && hitCount >= 200 ? "200+" : hitCount}
+                onChange={next => {
                   restoreRef.current = null; scrollTopRef.current = 0;
                   if (listRef.current) listRef.current.scrollTop = 0;
                   setSelectedRow(null); setMonth(next); hapticTick();
                   logActivity('ui.click', { target: `search-month#${next ? 'filter' : 'all'}` });
-                }}>
-                <option value="">전체 연월</option>
-                {months.map(key => <option key={key} value={key}>{key.slice(0, 4)}년 {Number(key.slice(5))}월</option>)}
-              </select>
-            </label>
-            <span className="ps-count" aria-live="polite">{!activeMonth && kind === "all" && hitCount >= 200 ? "200+" : hitCount}</span>
+                }} />
             <div className="ps-kind-filter" role="group" aria-label="검색 결과 종류">
               {SEARCH_RESULT_KINDS.map(item=><button key={item.key} type="button" className={`ps-kind-button${kind===item.key?" on":""}`}
                 aria-pressed={kind===item.key} data-act="search-kind" data-act-opt={item.key}

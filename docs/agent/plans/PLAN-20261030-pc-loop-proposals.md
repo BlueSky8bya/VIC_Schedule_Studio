@@ -18,6 +18,22 @@ Use the existing preferred checkout and one CAS owner; implement the three scope
 
 Durable result folder: `C:/Users/im917/.codex/vic-pipeline/runs/20261030-adopted-pc-controls/`. Files: report.html, report-1440.png, report-390.png, before-P-20261030-01/02/03.png paired with after-P-20261030-01/02/03.png, pairs.json, native-summary.json, independent-review.md and release-record.json. The corrected original proposal report remains at the original site-daily/20261030-review/report.html; its pre-repair HTML is preserved in the durable result folder. Real-login/RLS/device/OBS/screen-reader/operating analytics and normal36 remain unverified.
 
+## 고침 1 기록
+
+Owner2548 and the primary support-review row identify four corrections to P-20261030-03: a32px rounded app period menu matching the sort controls, calendar icon/count inside its trigger, adjacent sort/period controls without the old auto margin, and matching1440/390 before/after images with the proposal ID on every checklist item. This supersedes the earlier native-select presentation only. Loaded-result filtering, public DTOs, role authority, KST keys and no-refetch/session contracts remain unchanged.
+
+Scope: shared search picker/CSS and its existing fixture spec; no API/schema/dependency changes. Preserve original support row and failures. Validate keyboard navigation, selected state, nested Esc/outside/Tab ownership, counts/kinds/chat/timeline, reopen/query reset, mobile/dark geometry and G22 fixed-target capture/catalogue. Type/lint/unit/build/harness and actual non-author review precede exact release. Before product equals fetched origin/main b5cfff8d52e76ddc3c8ee2865fc418528f299cec; original screenshots retained in the prior immutable native receipt. Results: `C:/Users/im917/.codex/vic-pipeline/runs/20261030-search-month-correction/`. Verification: five newly executed production-build fixture cases passed across anonymous1440/390, signed-in viewer1920 dark, owner1440 and preview1440. Final BUILD_ID BRdb77291uUaymO_fmsrd. Actual assertions cover menu/child bounds,32px trigger, exact sort background equality in light/dark, adjacent PC controls, nested Esc/focus/outside/Tab, no-refetch, kinds/counts/date groups/chat/timeline and reopen/query reset. Typecheck/whole lint/8 unit files80 tests/harness443 documents passed. Both1440×1000 and390×1000 pairs are actual matched scenes; report uses six real adjacent img files and renders at both widths with decoded6/6 and overflow0. G22 retains the existing fixed filter/all target with no dates or query metadata; mocked capture/transport/shared developer labels remain the coverage limit. Trigger/menu navigation and dismissal are excluded from filter-activation analytics. React audit: extracted one shared picker, primitive effect dependency, cleaned listeners, no added fetch/storage/dependency.
+
+Original attempt1 build/type/lint failure from removing CalendarDays still used by result rows is preserved; import restored. Attempt2 passed5/5 but predates the independently found dark mismatch and is not final visual evidence. Final attempt3 passed5/5 after mobile full-row/dark fixes. Three compiles, including the original failed compile; no full200/normal36 restart. Actual-login/RLS/device/OBS/screen-reader/operating analytics remain unverified. Exact integration/release results are in release-record.json beside the report; support's own status remains theirs to update.
+
+### 고침 1 확인 체크리스트
+
+- P-20261030-03: PC 연월 버튼이 정렬 바로 옆32px 알약이며 달력·연월·개수가 안에 함께 있는지 확인해 주세요.
+- P-20261030-03: PC/휴대폰 목록 선택·방향키·Esc·초점 복귀·다시 열기를 확인해 주세요.
+- P-20261030-03: 같은1440/390 전후 그림의 주변 균형과 읽힘을 확인해 주세요.
+
+New original P-20261030-02 correction2559 and its support row were read during this correction. They require card-present reproduction, no unintended card/other-date changes and distinct focus/selection. This is the next separate correction; it has not been implemented or declared verified by the P03 evidence.
+
 ## 사장 확인 체크리스트
 
 - P-20261030-01: 공개 시각을 바꾼 뒤 Esc로 닫으면 원래 값이 남고, 확인할 때만 바뀌는지 확인해 주세요.
