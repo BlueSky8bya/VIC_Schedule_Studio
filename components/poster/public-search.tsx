@@ -19,6 +19,8 @@ import type { PublicSearchSession } from "@/components/shared/use-public-search-
 import { useFocusTrap } from "@/lib/ui/use-focus-trap";
 import { SEARCH_RESULT_KINDS, countSearchKinds, filterSearchKind, type SearchResultKind } from "@/lib/search/result-kind";
 import "./public-search-kind.css";
+import { filterSearchMonth, searchResultMonths } from '@/lib/search/result-month';
+import { logActivity } from '@/lib/activity/client';
 
 // 시청자 검색 시트(PLAN-20260918-023) — "예전에 이런 게 있었던 것 같은데 언제, 어디 시간대였지?"
 //
@@ -171,6 +173,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
   const [failed, setFailed] = useState(false);
   const [selectedRow, setSelectedRow] = useState<string | null>(initial?.selectedRow ?? null);
   const [kind, setKind] = useState<SearchResultKind>(initial?.kind ?? "all");
+  const [month, setMonth] = useState(initial?.month ?? '');
   const [sort, setSort] = useState<SearchSort>(() => {
     if (initial) return initial.sort;
     try {
@@ -209,7 +212,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
   const completedRef = useRef<{ submitted: string | null; revision: symbol } | null>(initial && initial.revision === revision && initial.result && initial.resultFor === initial.submitted?.trim() ? { submitted: initial.submitted, revision } : null);
   const resultForRef = useRef<string | null>(initial && initial.revision === revision ? initial.resultFor : null);
   useLayoutEffect(() => {
-    session.current = { revision, q, submitted, result, resultFor: resultForRef.current, sort, kind, selectedRow, expanded,
+    session.current = { revision, q, submitted, result, resultFor: resultForRef.current, sort, kind, month, selectedRow, expanded,
       scrollTop: scrollTopRef.current };
   });
 
@@ -258,6 +261,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
     setQ(t);
     setSuggest([]);
     setSugCursor(-1);
+    if (t !== submitted?.trim()) setMonth('');
     // 같은 말을 다시 Enter — 실패했던 검색의 재시도 경로(문자열이 같아도 다시 부르게 참조를 바꾼다)
     setSubmitted((prev) => (prev === t ? `${t} ` : t));
   };
@@ -292,6 +296,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
         resultForRef.current = term;
         completedRef.current = { submitted, revision };
         setResponse({ revision, term, value: json });
+        setMonth(current => searchResultMonths(json.hits).includes(current) ? current : '');
         setSelectedRow(restoring?.selectedRow ?? null);
         if (window.matchMedia("(max-width: 640px)").matches) inputRef.current?.blur(); // 키보드 내림 — 결과가 화면을 차지하게
         setExpanded(restoring?.expanded ?? new Set());
@@ -336,9 +341,12 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
   }, [q, typing, slug]);
   const sugOpen = typing && suggest.length > 0;
 
+  const months = useMemo(() => searchResultMonths(result?.hits ?? []), [result]);
+  const activeMonth = months.includes(month) ? month : '';
+  const monthHits = useMemo(() => filterSearchMonth(result?.hits ?? [], activeMonth), [result, activeMonth]);
   const groups: SearchDayGroup[] = useMemo(
-    () => (result ? sortSearchGroups(groupSearchHits(personalizeHits(filterSearchKind(result.hits, kind), myHeartIds)), sort) : []),
-    [result, myHeartIds, sort, kind]
+    () => (result ? sortSearchGroups(groupSearchHits(personalizeHits(filterSearchKind(monthHits, kind), myHeartIds)), sort) : []),
+    [result, monthHits, myHeartIds, sort, kind]
   );
   const exactGroups = useMemo(() => groups.filter((g) => g.exact), [groups]);
   const similarGroups = useMemo(() => groups.filter((g) => !g.exact), [groups]);
@@ -713,7 +721,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
   const empty = Boolean(submitted) && !busy && result && result.hits.length === 0;
   const hasResults = Boolean(result && groups.length > 0);
   const hasLoadedResults = Boolean(result?.hits.length);
-  const kindCounts = countSearchKinds(result?.hits ?? []);
+  const kindCounts = countSearchKinds(monthHits);
   const kindEmpty = hasLoadedResults && !hasResults && !busy;
   const related = result?.related;
   const hasRelated = Boolean((related?.people?.length ?? 0) > 0 || (related?.terms?.length ?? 0) > 0);
@@ -860,7 +868,21 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
                 </button>
               ))}
             </div>
-            <span className="ps-count" aria-live="polite">{kind === "all" && hitCount >= 200 ? "200+" : hitCount}</span>
+            <label className="ps-month-filter">
+              <CalendarDays aria-hidden="true" size={14} />
+              <select aria-label="불러온 결과 연월" value={activeMonth} data-act="search-month" data-activity-manual=""
+                onChange={event => {
+                  const next = event.currentTarget.value;
+                  restoreRef.current = null; scrollTopRef.current = 0;
+                  if (listRef.current) listRef.current.scrollTop = 0;
+                  setSelectedRow(null); setMonth(next); hapticTick();
+                  logActivity('ui.click', { target: `search-month#${next ? 'filter' : 'all'}` });
+                }}>
+                <option value="">전체 연월</option>
+                {months.map(key => <option key={key} value={key}>{key.slice(0, 4)}년 {Number(key.slice(5))}월</option>)}
+              </select>
+            </label>
+            <span className="ps-count" aria-live="polite">{!activeMonth && kind === "all" && hitCount >= 200 ? "200+" : hitCount}</span>
             <div className="ps-kind-filter" role="group" aria-label="검색 결과 종류">
               {SEARCH_RESULT_KINDS.map(item=><button key={item.key} type="button" className={`ps-kind-button${kind===item.key?" on":""}`}
                 aria-pressed={kind===item.key} data-act="search-kind" data-act-opt={item.key}
@@ -868,7 +890,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
                 {item.label}<span>{kindCounts[item.key]}</span>
               </button>)}
             </div>
-            <p className="ps-kind-scope">{kindCounts.all>=200?"현재 불러온 최대200개 안에서 골라 봐요. 전체 검색 결과와 다를 수 있어요.":"현재 불러온 검색 결과에서 골라 봐요."}</p>
+            <p className="ps-kind-scope">{(result?.hits.length ?? 0)>=200?"현재 불러온 최대200개 안에서 골라 봐요. 전체 검색 결과와 다를 수 있어요.":"현재 불러온 검색 결과에서 연월·종류를 골라 봐요."}</p>
           </div>
         ) : null}
         {result?.corrected ? (

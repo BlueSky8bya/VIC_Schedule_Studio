@@ -13,6 +13,7 @@ export type PublicSearchSnapshot = {
   resultFor: string | null;
   sort: SearchSort;
   kind: SearchResultKind;
+  month: string;
   selectedRow: string | null;
   expanded: ReadonlySet<number>;
   scrollTop: number;

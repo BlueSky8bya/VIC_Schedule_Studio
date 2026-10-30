@@ -3550,6 +3550,8 @@ export function BroadcastPanel({
     // 날짜 피커는 다중 선택이 기본 의도 — 수식키 없는 클릭도 개별 토글(체크박스 문법).
     clickToggles: true
   });
+  const [dateFocus, setDateFocus] = useState<string | null>(null);
+  const dateFocusIndex = Math.max(0, cells.findIndex(cell => cell.isoDate === dateFocus));
 
   const selectedDateKeys = useCallback(() => {
     const out: string[] = [];
@@ -4575,14 +4577,34 @@ export function BroadcastPanel({
                     aria-label={`${Number(cell.isoDate.slice(5, 7))}월 ${cell.dayOfMonth}일${isToday ? ", 오늘" : ""}${sent ? ", 그림판에 보냄" : ""}${evs.length > 0 ? ` (일정 ${evs.length}개)` : ""}`}
                     className={cls}
                     data-cell-index={i}
+                    data-act="bp-date-select"
+                    data-activity-manual=""
+                    onClick={() => logActivity('ui.click', { target: 'bp-date-select' })}
                     key={cell.isoDate}
                     role="checkbox"
-                    tabIndex={0}
+                    tabIndex={i === dateFocusIndex ? 0 : -1}
+                    onFocus={() => setDateFocus(cell.isoDate)}
                     onKeyDown={(e) => {
+                      if (/^(ArrowLeft|ArrowRight|ArrowUp|ArrowDown|Home|End)$/.test(e.key)) e.stopPropagation();
+                      if (e.nativeEvent.isComposing || e.keyCode === 229) return;
+                      if (e.altKey || e.ctrlKey || e.metaKey) {
+                        if (/^(ArrowLeft|ArrowRight|ArrowUp|ArrowDown|Home|End)$/.test(e.key)) e.preventDefault();
+                        return;
+                      }
+                      const target = e.key === 'ArrowLeft' ? i - 1 : e.key === 'ArrowRight' ? i + 1
+                        : e.key === 'ArrowUp' ? i - 7 : e.key === 'ArrowDown' ? i + 7
+                          : e.key === 'Home' ? i - (i % 7) : e.key === 'End' ? i + 6 - (i % 7) : null;
+                      if (target !== null) {
+                        e.preventDefault(); e.stopPropagation();
+                        const next = Math.max(0, Math.min(cells.length - 1, target));
+                        e.currentTarget.parentElement?.querySelector<HTMLElement>(`[data-cell-index="${next}"]`)?.focus({ preventScroll: true });
+                        return;
+                      }
                       if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
+                        e.preventDefault(); e.stopPropagation();
                         hapticTick();
                         rangeSelect.toggleIndex(i);
+                        logActivity('ui.click', { target: 'bp-date-select' });
                       }
                     }}
                   >

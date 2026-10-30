@@ -10,7 +10,7 @@ for(const role of ['owner','developer'])for(const width of [1440,1920])test(`boa
  const month=page.locator('.poster-chrome-title'),opener=page.locator('[data-act="open-drawing-board"]'),board=page.getByRole('dialog',{name:'일정 그림판',exact:true});
  const original=await month.textContent()??'';await opener.click();await expect(board).toBeVisible();await settlePanelLayout(page);
  const day=board.getByRole('checkbox',{name:/^6월 1일/});await day.focus();const focusBefore=await day.getAttribute('aria-label');
- for(const key of ['ArrowRight','ArrowLeft','t']){await page.keyboard.press(key);await settlePanelLayout(page);await expect(month).toHaveText(original);await expect(day).toBeFocused();await expect(board.locator('.bp-picker-toggle')).toHaveText('2026년 6월');}
+ for(const key of ['ArrowRight','ArrowLeft','t']){await page.keyboard.press(key);await settlePanelLayout(page);await expect(month).toHaveText(original);await expect(board.getByRole('checkbox',{name:key==='ArrowRight'?/^6월 2일/:/^6월 1일/})).toBeFocused();await expect(board.locator('.bp-picker-toggle')).toHaveText('2026년 6월');}
  await info.attach('after-P-20261029-04',{body:await page.screenshot(),contentType:'image/png'});
  await board.getByRole('button',{name:'다음 달',exact:true}).click();await expect(board.locator('.bp-picker-toggle')).toHaveText('2026년 7월');await expect(month).toHaveText(original);await board.getByRole('button',{name:'이전 달',exact:true}).click();await expect(day).toBeVisible();
  await board.getByRole('button',{name:'일정 그림판 닫기',exact:true}).click();await expect(board).toHaveCount(0);await expect(opener).toBeFocused();await page.keyboard.press('ArrowRight');await expect(month).not.toHaveText(original);await page.keyboard.press('ArrowLeft');await expect(month).toHaveText(original);

@@ -270,10 +270,12 @@ export function DateTimePicker({
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
-  const p = parse(value);
   const [openState, setOpenState] = useState(false);
   const open = openProp ?? openState;
   const setOpen = (v: boolean) => (onOpenChange ? onOpenChange(v) : setOpenState(v));
+  const [draftValue, setDraftValue] = useState(value);
+  const p = parse(open ? draftValue : value);
+  const wasOpen = useRef(false);
   const [mobile, setMobile] = useState(false);
   const [anchor, setAnchor] = useState<{ left: number; top: number; width: number } | null>(null);
   const triggerRef = useRef<HTMLButtonElement | null>(null);
@@ -285,6 +287,17 @@ export function DateTimePicker({
   const init = p ?? nowKstParts();
   const [viewY, setViewY] = useState(init.y);
   const [viewM, setViewM] = useState(init.m);
+
+  // Controlled browser-back/open paths share the same transaction as the trigger.
+  useLayoutEffect(() => {
+    if (open && !wasOpen.current) {
+      const current = parse(value) ?? nowKstParts();
+      setDraftValue(value);
+      setViewY(current.y); setViewM(current.m);
+      cancelInputCommit.current = false;
+    }
+    wasOpen.current = open;
+  }, [open, value]);
 
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_QUERY);
@@ -306,6 +319,7 @@ export function DateTimePicker({
   const openPicker = () => {
     if (disabled) return;
     cancelInputCommit.current = false;
+    setDraftValue(value);
     const cur = parse(value) ?? nowKstParts();
     setViewY(cur.y);
     setViewM(cur.m);
@@ -313,7 +327,8 @@ export function DateTimePicker({
     hapticTick();
     setOpen(true);
   };
-  const close = () => { setOpen(false); triggerRef.current?.focus({ preventScroll: true }); };
+  const close = () => { cancelInputCommit.current = true; setOpen(false); triggerRef.current?.focus({ preventScroll: true }); };
+  const confirm = () => { onChange(draftValue); close(); };
 
   useEffect(() => {
     if (!open) return;
@@ -357,7 +372,7 @@ export function DateTimePicker({
       justSwiped.current = false; // 좌우로 민 직후의 우발 날짜 클릭은 무시
       return;
     }
-    onChange(fmtValue({ y: viewY, m: viewM, d, hh: base.hh, mm: base.mm }));
+    setDraftValue(fmtValue({ y: viewY, m: viewM, d, hh: base.hh, mm: base.mm }));
     hapticTick();
   };
   // 달력 좌우 스와이프(또는 마우스 드래그)로 월 이동 — 왼쪽으로 밀면 다음 달.
@@ -376,8 +391,8 @@ export function DateTimePicker({
       stepMonth(dx < 0 ? 1 : -1);
     }
   };
-  const setHour = (hh: number) => onChange(fmtValue({ ...base, hh }));
-  const setMin = (mm: number) => onChange(fmtValue({ ...base, mm }));
+  const setHour = (hh: number) => setDraftValue(current => fmtValue({ ...(parse(current) ?? base), hh }));
+  const setMin = (mm: number) => setDraftValue(current => fmtValue({ ...(parse(current) ?? base), mm }));
   const stepMonth = (dir: number) => {
     let y = viewY;
     let m = viewM + dir;
@@ -396,13 +411,12 @@ export function DateTimePicker({
     const n = nowKstParts(); // 정확한 현재 KST(분 반올림/내림 없이 그대로)
     setViewY(n.y);
     setViewM(n.m);
-    onChange(fmtValue(n));
+    setDraftValue(fmtValue(n));
     hapticTick();
   };
   const clear = () => {
-    onChange("");
+    setDraftValue("");
     hapticTick();
-    close();
   };
 
   const firstWd = weekdayOf(viewY, viewM, 1);
@@ -478,7 +492,7 @@ export function DateTimePicker({
         <button className="dtp-foot-btn ghost" onClick={setToday} type="button" data-act="dtp-foot-btn">
           지금
         </button>
-        <button className="dtp-foot-btn primary" onClick={close} ref={confirmRef} type="button" data-act="dtp-foot-btn">
+        <button className="dtp-foot-btn primary" onClick={confirm} ref={confirmRef} type="button" data-act="dtp-foot-btn">
           확인
         </button>
       </div>
@@ -495,7 +509,7 @@ export function DateTimePicker({
         type="button"
        data-act="dtp-trigger">
         <CalendarDays aria-hidden="true" size={16} />
-        <span className="dtp-trigger-text">{fmtLabel(p)}</span>
+        <span className="dtp-trigger-text">{fmtLabel(parse(value))}</span>
       </button>
       {open
         ? createPortal(

@@ -315,6 +315,8 @@ export const ACT: Record<string, TargetLabel> = {
   "search-tag-chip": { name: "검색 태그 제안", area: "시청자 화면" },
   "search-sort": { name: "검색 정렬", area: "시청자 화면", hint: "관련도·최신·오래된·인기" },
   "search-kind": { name: "검색 결과 종류", area: "시청자 화면", opts: { all:"전체",event:"일정",vod:"다시보기",chat:"채팅",timeline:"타임라인",chapter:"챕터(이전 통합 필터)" } },
+  "search-month": { name: "불러온 검색 결과 연월", area: "시청자 화면", opts: { all: "전체 연월", filter: "연월 좁히기" }, hint: "선택한 날짜·검색어는 기록하지 않음" },
+  "bp-date-select": { name: "그림판 날짜 선택", area: "그림판", hint: "날짜·일정 내용은 기록하지 않음" },
   "record-month": { name: "기록 월 이동", area: "시청자 화면", opts: { previous:"이전 달",next:"다음 달" } },
   "record-summary": { name: "기록 근거 보기", area: "시청자 화면", opts: { content:"컨텐츠 일정",days:"컨텐츠 날짜",rest:"휴뱅 날짜" } },
   "record-event-open": { name: "기록에서 공개 일정 보기", area: "시청자 화면" },
