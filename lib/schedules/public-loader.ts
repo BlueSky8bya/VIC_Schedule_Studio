@@ -120,30 +120,6 @@ function createPublicReadClient() {
   );
 }
 
-export type PublicScheduleReadiness = { ok: true } | {
-  ok: false;
-  reason: "unconfigured" | "unavailable" | "missing" | "timeout";
-};
-
-/** Bounded anonymous readiness only. This intentionally does NOT warm the
- * full schedule/heart Data Cache or claim to keep every Fluid instance alive.
- * The route owns the deadline; its signal reaches the actual HTTP query.
- */
-export async function probePublicScheduleRead(signal: AbortSignal): Promise<PublicScheduleReadiness> {
-  if (signal.aborted) return { ok: false, reason: "timeout" };
-  try {
-    const client = createPublicReadClient();
-    if (!client) return { ok: false, reason: "unconfigured" };
-    const { data, error } = await client.from("calendars").select("id")
-      .eq("slug", "vic").eq("is_public", true).abortSignal(signal).maybeSingle();
-    if (signal.aborted) return { ok: false, reason: "timeout" };
-    if (error) return { ok: false, reason: "unavailable" };
-    return data ? { ok: true } : { ok: false, reason: "missing" };
-  } catch {
-    return { ok: false, reason: signal.aborted ? "timeout" : "unavailable" };
-  }
-}
-
 export async function getPublicSchedule(
   calendarSlug: string,
   options: {

@@ -277,24 +277,3 @@ describe("public VOD chat distinguishes genuine absence and unavailable analysis
     expect(await getPublicSearchRelatedTerms("합성 검색어")).toEqual([]);
   });
 });
-
-describe("public readiness is a bounded id-only anonymous query", () => {
-  it("passes the caller signal to the real query builder without loading events", async () => {
-    const { probePublicScheduleRead } = await import("@/lib/schedules/public-loader"); const abort = new AbortController();
-    expect(await probePublicScheduleRead(abort.signal)).toEqual({ ok: true });
-    expect(state.probeSignals).toEqual([abort.signal]);
-    expect(state.publicReads).toEqual([{ table: "calendars", columns: "id", range: undefined, order: [], filters: [["eq:slug", "vic"], ["eq:is_public", true]] }]);
-  });
-  it("abort terminates an in-progress query instead of racing abandoned work", async () => {
-    state.probeWait = true;
-    const { probePublicScheduleRead } = await import("@/lib/schedules/public-loader"); const abort = new AbortController();
-    const result = probePublicScheduleRead(abort.signal); abort.abort();
-    expect(await result).toEqual({ ok: false, reason: "timeout" });
-  });
-  it("configuration absence is not healthy sample data", async () => {
-    state.configured = false;
-    const { probePublicScheduleRead } = await import("@/lib/schedules/public-loader");
-    expect(await probePublicScheduleRead(new AbortController().signal)).toEqual({ ok: false, reason: "unconfigured" });
-    expect(state.publicReads).toEqual([]);
-  });
-});
