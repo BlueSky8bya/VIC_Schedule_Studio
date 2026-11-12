@@ -37,7 +37,7 @@ jobs:
       - name: Ping broadcast-poll
         env:
           # 배포 도메인. 커스텀 도메인을 쓰면 저장소 Variables에 SITE_URL을 넣어 덮어쓴다.
-          SITE_URL: ${{ vars.SITE_URL || 'https://vic-schedule-studio.vercel.app' }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://victory-live.com' }}
           # Vercel 환경변수 CRON_SECRET과 '같은 값'을 저장소 Secrets에 CRON_SECRET로 넣어야 한다.
           # (prod 엔드포인트가 Bearer로 인증 — 없으면 401.)
           CRON_SECRET: ${{ secrets.CRON_SECRET }}

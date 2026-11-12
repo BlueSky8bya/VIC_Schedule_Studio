@@ -22,7 +22,7 @@ jobs:
     steps:
       - name: Fetch a slice of VOD chat terms
         env:
-          SITE_URL: ${{ vars.SITE_URL || 'https://vic-schedule-studio.vercel.app' }}
+          SITE_URL: ${{ vars.SITE_URL || 'https://victory-live.com' }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
           code=$(curl -sS --max-time 90 -o /tmp/out.txt -w "%{http_code}" \

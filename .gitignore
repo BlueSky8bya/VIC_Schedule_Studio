@@ -26,3 +26,8 @@ playwright-report/
 /docs/agent/backups/*presence*.json
 # Vercel build-only staging; source originals stay at their historical paths.
 /.deployment-output-archive/
+
+# Cloudflare (OpenNext)
+.open-next/
+.wrangler/
+.dev.vars*

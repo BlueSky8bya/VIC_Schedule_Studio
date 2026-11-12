@@ -19,5 +19,5 @@
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", "tmp", ".scratch-pw"]
+  "exclude": ["node_modules", "tmp", ".scratch-pw", ".open-next", "cloudflare"]
 }

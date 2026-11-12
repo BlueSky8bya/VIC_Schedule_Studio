@@ -35,7 +35,10 @@
     "ambient:qa:selftest": "node scripts/ambient-qa/selftest.mjs",
     "ambient:qa:capture": "node scripts/ambient-qa/capture.mjs",
     "ambient:qa:sheet": "node scripts/ambient-qa/sheet.mjs",
-    "ambient:qa:diff": "node scripts/ambient-qa/diff.mjs"
+    "ambient:qa:diff": "node scripts/ambient-qa/diff.mjs",
+    "cf:build": "opennextjs-cloudflare build",
+    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf:deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
@@ -50,6 +53,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.8",
+    "@opennextjs/cloudflare": "^1.20.17",
     "@playwright/test": "^1.49.0",
     "@testing-library/react": "^16.1.0",
     "@types/node": "^22.9.0",
@@ -60,7 +64,8 @@
     "pg": "^8.21.0",
     "typescript": "^5.6.3",
     "vite": "6.4.3",
-    "vitest": "4.1.11"
+    "vitest": "4.1.11",
+    "wrangler": "^4.161.0"
   },
   "overrides": {
     "postcss": "8.5.28",
