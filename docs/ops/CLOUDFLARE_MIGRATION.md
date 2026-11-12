@@ -28,3 +28,15 @@
 | 7 | 에이전트 | 새 주소 실화면 확인(익명 포스터·로그인·비공개 해제·저장) → `0158` DB 적용 → cron-job.org 워밍 핑 끄기(Workers는 콜드 스타트 없음) |
 | 8 | 개발자 | 토리님께 안내문 전달 |
 | 9 | 에이전트 | 2026-12-13 Vercel 정지 해제 뒤 옛 주소 → 새 주소 리다이렉트만 하는 배포, 그 뒤 Vercel 프로젝트 정리(soccer-tactics·wak-schedule 포함, 삭제는 확인 후) |
+
+## 정리(2026-11-13)
+
+이전 뒤 쓸모없어진 것을 걷어냈다(브랜치 `cleanup/post-cloudflare`).
+
+- **Vercel 잔재:** `@vercel/analytics`·`@vercel/speed-insights`, `vercel.json`, `.vercelignore`, ignore-build 게이트, `VERCEL_*` 환경값 읽기(커밋은 `WORKERS_CI_COMMIT_SHA`→`APP_COMMIT`), `maxDuration` 선언. 9번의 옛 주소 리다이렉트는 이 저장소가 아니라 별도 최소 프로젝트로 해야 한다(`vercel.json` 없음).
+- **배포 묶음:** 퇴역 공개 자산 186개(약 49MiB)를 Workers Builds(`WORKERS_CI=1`)에서도 묶음 밖으로 옮긴다.
+- **`/api/warm` 삭제:** cron-job.org의 워밍 핑 작업을 끈다(그 전까지는 404, 무해).
+- **안 쓰는 파일:** `revealTeaserAction`, `PublicEventShare`, `WaterTide` 컴포넌트, rail lab 스크립트.
+- **비공개 일정 레이어(코드):** 공개 일정만 읽고 쓴다. 최초공개 게이트 비밀번호(확인·변경)만 남김. `PRIVATE_DATA_ENC_KEY`는 더 쓰지 않는다 → Worker Secret에서 `wrangler secret delete PRIVATE_DATA_ENC_KEY`, `SUPABASE_STORAGE_BUCKET`도 같이.
+- **DB `0159_retire_private_layer.sql`:** 작성만 함, **미적용**. 위 코드가 배포·확인된 뒤 소유자 승인 받고 적용(되돌릴 수 없는 삭제).
+- 자체 성능 측정(`perf_samples`·인사이트 '서버 성능')은 유지.
