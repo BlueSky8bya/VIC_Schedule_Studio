@@ -17,7 +17,6 @@
 | `link-actions.ts` | 일정 잇기(체인) |
 | `tag-actions.ts` | 태그 배정·생성·색 |
 | `heart-actions.ts` / `heart-tiers.ts` | 하트 / 인기 단계 |
-| `teaser-actions.ts` | 떡밥(공개 예약) |
 
 **규칙**: studio→public 넘길 땐 객체 spread 말고 **명시적 DTO 구성**. private/embargo/work/
 codename/editor/request 류 필드는 공개 응답에 절대 포함 금지(`.claude/rules/public-private-boundary.md`).
