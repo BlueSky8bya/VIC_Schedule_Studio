@@ -1067,7 +1067,7 @@ export function StudioSettingsList({
           <p className="rhh-group-foot">이 기기·이 창에서만 바뀌고 저장되지 않아요.</p>
           {/* 시스템(2026-11-13 인사이트에서 이동) — 묶음을 열 때만 그린다(그때 서버를 부른다). */}
           {current === "dev" ? <SystemPanel /> : null}
-          {/* 지난 해 인사이트(0160 연간 아카이브) — 같은 규칙: 묶음을 열 때만. */}
+          {/* 연간 인사이트 보관함(0160·0164) — 같은 규칙: 묶음을 열 때만. */}
           {current === "dev" ? <InsightsArchivePanel /> : null}
         </section>
       ) : null}

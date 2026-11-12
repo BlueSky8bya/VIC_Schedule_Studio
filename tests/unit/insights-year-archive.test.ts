@@ -20,6 +20,7 @@ import {
   builtBeforeYearEnd,
   canOverwriteYear,
   canPurgeYear,
+  isYearClosed,
   monthsToArchive,
   monthsToBuild,
   purgeArchivedYear,
@@ -35,39 +36,59 @@ const all12 = Array.from({ length: 12 }, (_, i) => i + 1);
 afterEach(() => vi.clearAllMocks());
 
 describe("연간 아카이브 달 고르기(KST)", () => {
-  it("지난해는 12달, 올해는 지난달까지, 미래·첫 해 이전은 없다", () => {
+  it("끝난 해만 통째로 12달 — 올해·미래·첫 해(2024) 이전은 없다", () => {
     const now = kst("2026-11-13T10:00:00");
-    expect(monthsToArchive(2026, now)).toEqual(all12.slice(0, 10));
+    expect(monthsToArchive(2026, now)).toEqual([]);
     expect(monthsToArchive(2027, now)).toEqual([]);
-    expect(monthsToArchive(2025, now)).toEqual([]);
+    expect(monthsToArchive(2025, now)).toEqual(all12);
+    expect(monthsToArchive(2024, now)).toEqual(all12);
+    expect(monthsToArchive(2023, now)).toEqual([]);
     expect(monthsToArchive(2026, kst("2027-01-01T00:05:00"))).toEqual(all12);
+    expect(isYearClosed(2026, now)).toBe(false);
+    expect(isYearClosed(2025, now)).toBe(true);
   });
 
   it("KST 자정 경계: UTC로는 12/31이어도 KST 1/1이면 지난해 전체", () => {
     // 2026-12-31T15:30Z = 2027-01-01 00:30 KST
     expect(monthsToArchive(2026, Date.parse("2026-12-31T15:30:00Z"))).toEqual(all12);
-    // 2026-12-31T14:30Z = 2026-12-31 23:30 KST → 아직 올해, 11월까지
-    expect(monthsToArchive(2026, Date.parse("2026-12-31T14:30:00Z"))).toEqual(all12.slice(0, 11));
+    // 2026-12-31T14:30Z = 2026-12-31 23:30 KST → 아직 끝나지 않은 해
+    expect(monthsToArchive(2026, Date.parse("2026-12-31T14:30:00Z"))).toEqual([]);
   });
 });
 
 describe("원본 삭제 가드", () => {
+  const rows = (builtAt: string, months = all12) => months.map((month) => ({ month, builtAt }));
+  const autoBuilt = "2026-12-31T15:10:00Z"; // 2027-01-01 00:10 KST 자동 실행본
   it("올해는 절대 지우지 않는다", () => {
-    expect(canPurgeYear(2027, all12, kst("2027-12-31T23:00:00"))).toBe(false);
+    expect(canPurgeYear(2027, rows("2027-01-02T00:00:00Z"), kst("2027-12-31T23:00:00"))).toBe(false);
   });
   it("다음 해 2월 1일 전엔 지우지 않는다", () => {
-    expect(canPurgeYear(2026, all12, kst("2027-01-31T23:59:00"))).toBe(false);
-    expect(canPurgeYear(2026, all12, kst("2027-02-01T00:00:00"))).toBe(true);
+    expect(canPurgeYear(2026, rows(autoBuilt), kst("2027-01-31T23:59:00"))).toBe(false);
+    expect(canPurgeYear(2026, rows(autoBuilt), kst("2027-02-01T00:00:00"))).toBe(true);
   });
   it("12달이 다 있어야 지운다", () => {
-    expect(canPurgeYear(2026, all12.slice(0, 11), kst("2027-03-01T00:00:00"))).toBe(false);
+    expect(canPurgeYear(2026, rows(autoBuilt, all12.slice(0, 11)), kst("2027-03-01T00:00:00"))).toBe(false);
   });
-  it("첫 해 이전은 대상이 아니다", () => {
-    expect(canPurgeYear(2025, all12, kst("2027-03-01T00:00:00"))).toBe(false);
+  it("첫 해(2024) 이전은 대상이 아니다", () => {
+    expect(canPurgeYear(2023, rows("2024-01-02T00:00:00Z"), kst("2027-03-01T00:00:00"))).toBe(false);
   });
-  it("삭제가 열린 해는 덮어쓰지 않는다", () => {
-    expect(canOverwriteYear(2026, kst("2027-01-15T00:00:00"))).toBe(true);
-    expect(canOverwriteYear(2026, kst("2027-02-01T00:00:00"))).toBe(false);
+  it("손으로 막 만든 지난 해는 30일이 지나야 지운다", () => {
+    // 2026-11-13에 2025를 만들면 이미 2026-02-01이 지났지만, 보관본이 30일 묵어야 한다.
+    const manual = "2026-11-13T01:00:00Z";
+    expect(canPurgeYear(2025, rows(manual), kst("2026-11-13T12:00:00"))).toBe(false);
+    expect(canPurgeYear(2025, rows(manual), kst("2026-12-12T09:00:00"))).toBe(false);
+    expect(canPurgeYear(2025, rows(manual), kst("2026-12-13T11:00:00"))).toBe(true);
+    // 한 달이라도 30일 안쪽이면 그 해 전체를 미룬다.
+    const mixed = [...rows(manual, all12.slice(0, 11)), { month: 12, builtAt: "2026-12-10T00:00:00Z" }];
+    expect(canPurgeYear(2025, mixed, kst("2026-12-20T00:00:00"))).toBe(false);
+  });
+  it("삭제가 시작될 수 있는 해는 덮어쓰지 않는다", () => {
+    expect(canOverwriteYear(2026, rows(autoBuilt), kst("2027-01-15T00:00:00"))).toBe(true);
+    expect(canOverwriteYear(2026, rows("2027-01-20T00:00:00Z"), kst("2027-02-05T00:00:00"))).toBe(true); // 만든 지 30일 안
+    expect(canOverwriteYear(2026, rows(autoBuilt), kst("2027-02-05T00:00:00"))).toBe(false);
+    // 2월 1일이 지난 뒤 손으로 만든 지난 해: 30일 동안은 다시 만들 수 있다.
+    expect(canOverwriteYear(2025, rows("2026-11-13T01:00:00Z"), kst("2026-11-20T00:00:00"))).toBe(true);
+    expect(canOverwriteYear(2025, [], kst("2026-11-20T00:00:00"))).toBe(false);
   });
 });
 
@@ -171,9 +192,9 @@ describe("buildYearArchive", () => {
     const { db, upserts } = fakeDb([]);
     mocks.admin.mockReturnValue(db);
     mocks.insights.mockResolvedValue({ ok: false, error: "x" });
-    const r = await buildYearArchive({ year: 2026, now: kst("2026-03-05T00:00:00") });
+    const r = await buildYearArchive({ year: 2025, now: kst("2026-03-05T00:00:00"), deadlineMs: Date.now() + 60_000 });
     if ("error" in r) throw new Error(r.error);
-    expect(r.failed).toEqual([1, 2]);
+    expect(r.failed).toEqual(all12);
     expect(upserts).toHaveLength(0);
     expect(r.done).toBe(false);
   });

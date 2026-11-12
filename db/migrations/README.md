@@ -12,6 +12,8 @@
 
 ## 목록 (번호 → 목적)
 
+**2026-11-13 원본 통계 삭제 가드·성능 표본 7일**: [0164_stats_retention_guard.sql](0164_stats_retention_guard.sql) — `purge_stats_batch`가 DB에서도 '끝난 해 · 다음 해 2/1 이후 · 12달 보관본(연말 뒤 생성) · 모두 만든 지 30일 넘음'을 확인(아니면 예외). `perf_samples`는 7일만(즉시 1회 + 매일 03:45 KST `vic-perf-retention`). 0162·0163 번호는 다시보기 채팅 묶음(별도 브랜치)에 예약.
+
 **2026-11-13 연간 인사이트 아카이브·DB 정리**: [0160_insights_year_archive.sql](0160_insights_year_archive.sql) — `insights_year_archive`(월별 인사이트 숫자 JSON) + `purge_stats_batch`(원본 통계 배치 삭제, service_role 전용). **앱 배포 전에 적용**(설정 '지난 해 인사이트'·매시 크론이 이 표를 읽는다; 적용 전엔 오류 문구만). [0161_db_housekeeping.sql](0161_db_housekeeping.sql) — 재시도 20회 이상 빠진 조각 채팅 작업을 마무리해 상태 JSON 비움(≈16MB) + pg_cron 실행 로그 7일 보관 작업. 순서 무관(앱 배포 전후 모두 안전). 적용 뒤 [../maintenance/0161-vacuum-vod-chat-job.sql](../maintenance/0161-vacuum-vod-chat-job.sql)를 **따로** 실행해 디스크를 돌려받는다.
 
 **2026-11-13 비공개 레이어 철수**: [0159_retire_private_layer.sql](0159_retire_private_layer.sql) — 비공개 범위 정책·`has_private_unlock`·`is_active_worker`를 지우고 `event_private_meta`·`private_unlock_grants`·`support_campaigns` 테이블, `events.secret_cipher`·`private_layer_settings.unlock_duration_minutes` 열을 삭제. `save_event_atomic`·`replace_event_tags_atomic`은 같은 시그니처로 재정의(공개 전용). 최초공개 게이트 비밀번호는 그대로. **비공개 코드 철수 앱을 배포·확인한 뒤, 소유자 승인 후 적용**(되돌릴 수 없는 삭제). 같은 날 [0158_pg_cron_cloudflare_domain.sql](0158_pg_cron_cloudflare_domain.sql)은 새 도메인이 응답한 뒤 적용.

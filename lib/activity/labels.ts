@@ -791,9 +791,9 @@ export const ACT: Record<string, TargetLabel> = {
 
   // 인사이트 — 보기 전환
   "perf-hours": { name: "서버 성능 시간 범위", area: "설정", hint: "설정 창 개발자 묶음(2026-11-13 전엔 인사이트 시스템 탭)", opts: { day: "24시간", week: "7일" } },
-  "insights-archive-year": { name: "지난 해 인사이트 연도", area: "설정", hint: "설정 창 개발자 묶음 — 연간 아카이브(0160)" },
-  "insights-archive-month": { name: "지난 해 인사이트 달", area: "설정", hint: "설정 창 개발자 묶음 — 연간 아카이브(0160)" },
-  "insights-archive-build": { name: "지난 해 인사이트 만들기", area: "설정", hint: "올해(지난달까지)·지난해 아카이브를 지금 계산" },
+  "insights-archive-year": { name: "연간 보관함 연도", area: "설정", hint: "설정 창 개발자 묶음 — 연간 아카이브(0160)" },
+  "insights-archive-month": { name: "연간 보관함 달", area: "설정", hint: "설정 창 개발자 묶음 — 연간 아카이브(0160)" },
+  "insights-archive-build": { name: "연간 보관함 만들기", area: "설정", hint: "끝난 해(12월 31일 지남)를 통째로 지금 계산" },
   "visit-view": { name: "방문 일별/주별", area: "인사이트", opts: { day: "일별", week: "주별" } },
   "visit-dim": { name: "방문 역할별/기기별", area: "인사이트", opts: { role: "역할별", device: "기기별" } },
 

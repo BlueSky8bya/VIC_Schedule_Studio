@@ -5,6 +5,8 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { RowLabel, SettingsSegment } from "@/components/shared/settings-controls";
 import type { ArchiveMonth } from "@/lib/insights/archive";
+// archive.ts는 서버 전용 모듈을 끌어오므로 값은 여기서만 따로 둔다(lib/insights/archive.ts STATS_START_YEAR와 같다).
+const STATS_START_YEAR = 2026;
 import { announceIfStaleDeployment } from "@/lib/net/stale-deploy";
 import {
   buildInsightsArchiveAction,
@@ -12,9 +14,9 @@ import {
   listInsightsArchiveYearsAction
 } from "@/lib/insights/archive-actions";
 
-// 지난 해 인사이트(설정 창 '개발자' 탭, 개발자 전용, 0160). 연간 아카이브의 **숫자**를 같은 인사이트 화면으로 다시 그린다.
-// 1월 1일(KST) 자동으로 지난해가 채워지고, '지금 만들기'는 올해(지난달까지)·지난해를 시험으로 계산한다.
-// 이 묶음이 그려질 때만 서버를 부른다. 인사이트 화면 코드는 고를 때만 불러온다.
+// 연간 인사이트 보관함(설정 창 '개발자' 탭, 개발자 전용, 0160·0164). 보관된 **숫자**를 같은 인사이트 화면으로 다시 그린다.
+// 한 해 통째로만 만든다(2026-11-13 소유자) — 1월 1일(KST) 자동으로 지난해가 채워지고, 버튼은 12월 31일이 지난 해에만 켜진다.
+// 연도는 첫 일정이 있는 해부터 올해까지. 이 묶음이 그려질 때만 서버를 부른다. 인사이트 화면 코드는 고를 때만 불러온다.
 const InsightsDashboard = dynamic(
   () => import("@/components/developer/insights-dashboard").then((m) => m.InsightsDashboard),
   { ssr: false, loading: () => <p className="rhh-val">불러오는 중…</p> }
@@ -28,6 +30,8 @@ export function InsightsArchivePanel() {
   const [error, setError] = useState<string | null>(null);
   const [building, setBuilding] = useState<string | null>(null);
   const [reload, setReload] = useState(0);
+  const [currentYear, setCurrentYear] = useState<number | null>(null);
+  const [canBuild, setCanBuild] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -36,7 +40,9 @@ export function InsightsArchivePanel() {
         if (!alive) return;
         if (!r.ok) return setError(r.error);
         setYears(r.years);
-        setYear((y) => y ?? r.years[0] ?? null);
+        setCurrentYear(r.currentYear);
+        // 처음엔 가장 최근에 끝난 해 — 올해는 아직 만들 수 없다.
+        setYear((y) => y ?? r.years.find((x) => x < r.currentYear) ?? r.years[0] ?? null);
       })
       .catch((error) => {
         announceIfStaleDeployment(error);
@@ -51,12 +57,14 @@ export function InsightsArchivePanel() {
     if (year === null) return;
     let alive = true;
     setMonths(null);
+    setCanBuild(false);
     getInsightsArchiveAction(year)
       .then((r) => {
         if (!alive) return;
         if (!r.ok) return setError(r.error);
         setError(null);
         setMonths(r.months);
+        setCanBuild(r.canBuild);
         setMonth((m) => (m !== null && r.months.some((x) => x.month === m) ? m : (r.months.at(-1)?.month ?? null)));
       })
       .catch((error) => {
@@ -97,10 +105,22 @@ export function InsightsArchivePanel() {
   }
 
   const picked = months?.find((m) => m.month === month) ?? null;
+  const yearOpen = year !== null && currentYear !== null && year >= currentYear;
+  const footnote =
+    error ??
+    (yearOpen
+      ? "12월 31일이 지나야 만들 수 있어요."
+      : months && months.length === 0
+        ? year !== null && year < STATS_START_YEAR
+          ? "아직 보관된 기록이 없어요. 이 해는 방문 통계 전이라 일정 숫자만 담겨요."
+          : "아직 보관된 기록이 없어요. 1월 1일에 지난해가 자동으로 보관돼요."
+        : months && months.length > 0 && !canBuild
+          ? "원본 기록을 정리한 해라 다시 만들 수 없어요."
+          : "매년 1월 1일 지난해를 통째로 보관하고, 2월 1일 뒤(보관 30일 후) 그 해 원본 기록을 지워요.");
 
   return (
     <>
-      <h3 className="rhh-group-title rhh-subgroup-title">지난 해 인사이트</h3>
+      <h3 className="rhh-group-title rhh-subgroup-title">연간 인사이트 보관함</h3>
       <div className="rhh-group-card">
         <div className="role-help-haptics">
           <RowLabel icon={<CalendarRange size={15} />} tone="metal">
@@ -128,7 +148,7 @@ export function InsightsArchivePanel() {
           <button
             className="rhh-link"
             data-act="insights-archive-build"
-            disabled={year === null || building !== null}
+            disabled={year === null || building !== null || !canBuild}
             onClick={build}
             type="button"
           >
@@ -148,12 +168,7 @@ export function InsightsArchivePanel() {
           </div>
         ) : null}
       </div>
-      <p className="rhh-group-foot">
-        {error ??
-          (months && months.length === 0
-            ? "이 해는 아직 아카이브가 없어요. 1월 1일에 지난해가 자동으로 저장돼요."
-            : "매년 1월 1일 지난해 달별 숫자를 저장하고, 2월 1일부터 그 해 원본 기록을 지워요.")}
-      </p>
+      <p className="rhh-group-foot">{footnote}</p>
       {picked && year !== null ? (
         <div className="rhh-archive-view">
           <InsightsDashboard archived={picked.payload} key={`${year}-${picked.month}`} month={picked.month} year={year} />

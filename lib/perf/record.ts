@@ -13,6 +13,8 @@ function sampleRate(): number {
 
 // after() removes the DB write from the response path, but still uses runtime
 // resources. Build/non-request contexts and recording failures are skipped.
+// perf_samples keeps 7 days (0164 daily pg_cron 'vic-perf-retention'); the
+// 서버 성능 panel only reads 24h/7d windows.
 export function recordPerfSample(label: string, durMs: number): void {
   // dev에서는 기록하지 않는다. 두 가지 이유: ① 로컬 표본이 운영 지표를 오염 ② dev에서
   // 렌더 중 after() 예약이 이후 cookies() 호출을 "inside after"로 오검출시켜

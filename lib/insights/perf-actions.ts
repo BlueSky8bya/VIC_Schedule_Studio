@@ -27,7 +27,8 @@ export async function getPerfStatsAction(hours: number): Promise<PerfStatsResult
   if (!supabase) {
     return { ok: false, error: "Supabase 서비스 키가 설정되지 않았습니다." };
   }
-  const safeHours = Math.max(1, Math.min(720, Math.round(hours))); // 1시간~30일
+  // 1시간~7일 — 표본은 7일만 남는다(0164 vic-perf-retention, 화면 창도 24시간·7일뿐).
+  const safeHours = Math.max(1, Math.min(168, Math.round(hours)));
   const since = new Date(Date.now() - safeHours * 3600 * 1000).toISOString();
   const { data, error } = await supabase.rpc("get_perf_stats", { p_since: since });
   if (error) {
