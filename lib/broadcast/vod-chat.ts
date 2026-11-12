@@ -21,6 +21,18 @@ import { kstDayKey } from "@/lib/calendar/month";
 const VIEW_API = "https://api.m.sooplive.co.kr/station/video/a/view";
 const CHUNK_SEC = 300;
 const BIN_SEC = 30;
+// 빠진 조각 재시도 한도(2026-11-13): 끝까지 훑었는데 몇 조각이 영영 안 받아지는 다시보기가 상태(JSON 누적표, 편당
+// 수백 KB)를 끝없이 들고 있었다 — 465행에 25MB, 그중 재시도 52회짜리가 106편. 한도를 넘으면 받은 만큼으로 마무리
+// (이미 공개된 스냅샷 유지, 상태 비움, 완료와 같은 재점검 주기)한다. 빠진 조각은 정기 재점검 때 처음부터 다시 시도한다.
+export const MAX_GAP_RETRIES = 20;
+
+/** 한 번 훑은 결과로 이 작업을 끝낼지. gaveUp = 빠진 조각이 남았지만 재시도 한도에 닿아 마무리. */
+export function chatJobOutcome(traversed: boolean, missing: number, prevRetries: number) {
+  const whole = traversed && missing === 0;
+  const retries = traversed && !whole ? prevRetries + 1 : 0;
+  const gaveUp = !whole && traversed && retries >= MAX_GAP_RETRIES;
+  return { complete: whole || gaveUp, retries: gaveUp ? 0 : retries, gaveUp };
+}
 const UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120";
 
 type ViewFile = { chat?: string; duration?: number | string; file_order?: number | string };
@@ -332,8 +344,9 @@ export async function syncVodChat(titleNos: number[], chunkBudget = 60, timeBudg
       }
     }
     const traversed = !!files?.length && plan.length > 0 && state.cursor >= plan.length;
-    const complete = traversed && state.missing.length === 0;
-    state.retries = traversed && !complete ? state.retries + 1 : 0;
+    const outcome = chatJobOutcome(traversed, state.missing.length, state.retries);
+    const complete = outcome.complete;
+    state.retries = outcome.retries;
     const ageDays = (Date.parse(kstDayKey()) - Date.parse(String(archive.data.broadcast_day))) / 86400_000;
     // 완료된 방송의 재점검(2026-09-28 Vercel Active CPU 초과 대응): 예전엔 14일 안은 매일, 그 뒤 매달 다시
     // 전체를 받아 파싱했다(388편 → 하루 13편 × 35초 CPU). 타임라인이 바뀌면 트리거가 즉시 다시 잡으므로
