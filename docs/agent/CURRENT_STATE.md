@@ -24,7 +24,8 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 | ID | Status | Next | Record |
 |---|---|---|---|
 | COMPANION-ACTIVITY-145 | Local gates and three final reviews passed | Scoped commit/push then actual fullSHA/deployed viewer check | [145 plan](plans/PLAN-20261020-145-companion-activity-criteria.md) |
-| OPS-VERCEL-QUOTA | Open | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
+| OPS-CLOUDFLARE-MOVE | In progress | Vercel paused (CPU 4h4m/4h) until 2026-12-13; moving to Cloudflare Workers Paid + victory-live.com, no further Vercel use. Code ready; account/domain/secrets steps next | [Runbook](../ops/CLOUDFLARE_MIGRATION.md) |
+| OPS-VERCEL-QUOTA | Superseded by OPS-CLOUDFLARE-MOVE | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-STORAGE | Watch | Gate released;6 deleted;quota refresh unproven | [Record](verification/DEPLOYMENT_STORAGE-20261024.md) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
