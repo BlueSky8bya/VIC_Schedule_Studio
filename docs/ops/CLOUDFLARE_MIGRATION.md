@@ -40,3 +40,10 @@
 - **비공개 일정 레이어(코드):** 공개 일정만 읽고 쓴다. 최초공개 게이트 비밀번호(확인·변경)만 남김. `PRIVATE_DATA_ENC_KEY`는 더 쓰지 않는다 → Worker Secret에서 `wrangler secret delete PRIVATE_DATA_ENC_KEY`, `SUPABASE_STORAGE_BUCKET`도 같이.
 - **DB `0159_retire_private_layer.sql`:** 작성만 함, **미적용**. 위 코드가 배포·확인된 뒤 소유자 승인 받고 적용(되돌릴 수 없는 삭제).
 - 자체 성능 측정(`perf_samples`·인사이트 '서버 성능')은 유지.
+
+## 익명 첫 화면 캐시 (2026-11-13)
+
+- `cloudflare/worker.ts` → `lib/edge/anon-home-cache.ts`. 익명 `GET /`(쿼리는 `month` 하나만 허용)을 Workers Cache API에 담는다. 열쇠 = 첫 달(쿼리 → `vic_view` sy/sm) · 휴대폰 여부(UA) · 로딩 톤(`vic_lt`).
+- 우회: `sb-*` 로그인 쿠키, 허용 목록 밖 쿠키(`vic_view`·`vic_lt`·Cloudflare `__cf_bm` 등만 허용), 다른 쿼리, RSC/서버 액션 헤더, GET 외 메서드. Set-Cookie가 붙은 응답·200 HTML이 아닌 응답은 담지 않는다.
+- 수명: 20초까지 그대로, 20~60초는 내주면서 뒤에서 새로 만듦, 60초 지나면 버림. **편집은 시청자 첫 화면에 최대 약 60초 늦게** 반영된다(로그인한 편집실·관리자는 우회라 즉시). 브라우저 쪽 헤더는 그대로 no-store.
+- 확인: 응답 헤더 `x-vic-edge-cache: miss|hit|stale|bypass`. Worker가 서울 placement라 캐시도 서울 한 곳에 모인다 — 미국 입구↔서울 왕복은 그대로 남고, 줄어드는 건 SSR·DB 시간(로컬 실측 hit 수 ms).
