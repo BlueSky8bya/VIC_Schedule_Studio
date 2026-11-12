@@ -86,7 +86,7 @@ export async function POST(request: Request) {
 
   // 로컬 개발 전용 테스트 비번 — 실제 비번을 건드리지 않고 비공개 레이어/최초공개 게이트를
   // 열어볼 수 있게 한다. 이중 잠금: ① NODE_ENV=development(로컬 next dev)가 아니면 코드가
-  // 죽는다(Vercel은 항상 production — 환경변수를 실수로 올려도 무력) ② 환경변수
+  // 죽는다(배포 빌드는 항상 production — 환경변수를 실수로 올려도 무력) ② 환경변수
   // PRIVATE_LAYER_TEST_PASSCODE(.env.local, git 미추적)가 없으면 무력.
   const testPass =
     process.env.NODE_ENV === "development"

@@ -5,30 +5,30 @@ import { dirname, join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { readGitHead, resolveBuildCommit } from "@/scripts/build-commit";
 
-const vercel = "a".repeat(40), explicit = "b".repeat(40), github = "c".repeat(40), local = "d".repeat(40);
+const workers = "a".repeat(40), explicit = "b".repeat(40), github = "c".repeat(40), local = "d".repeat(40);
 
 describe("build revision metadata", () => {
-  it("keeps Vercel's deployed revision ahead of explicit, CI and local metadata", () => {
+  it("keeps the Cloudflare Workers Builds revision ahead of explicit, CI and local metadata", () => {
     const readHead = vi.fn(() => local);
-    expect(resolveBuildCommit({ VERCEL_GIT_COMMIT_SHA: vercel, APP_COMMIT: explicit, GITHUB_SHA: github }, readHead)).toBe(vercel);
+    expect(resolveBuildCommit({ WORKERS_CI_COMMIT_SHA: workers, APP_COMMIT: explicit, GITHUB_SHA: github }, readHead)).toBe(workers);
     expect(readHead).not.toHaveBeenCalled();
   });
 
   it("accepts an explicit source-archive revision before GitHub or local HEAD", () => {
     const readHead = vi.fn(() => local);
-    expect(resolveBuildCommit({ VERCEL_GIT_COMMIT_SHA: " ", APP_COMMIT: ` ${explicit.toUpperCase()}\n`, GITHUB_SHA: github }, readHead)).toBe(explicit);
+    expect(resolveBuildCommit({ WORKERS_CI_COMMIT_SHA: " ", APP_COMMIT: ` ${explicit.toUpperCase()}\n`, GITHUB_SHA: github }, readHead)).toBe(explicit);
     expect(readHead).not.toHaveBeenCalled();
   });
 
   it("uses GitHub's checked-out revision when higher-priority values are invalid", () => {
     const readHead = vi.fn(() => local);
-    expect(resolveBuildCommit({ VERCEL_GIT_COMMIT_SHA: "dev", APP_COMMIT: "release-tag", GITHUB_SHA: github }, readHead)).toBe(github);
+    expect(resolveBuildCommit({ WORKERS_CI_COMMIT_SHA: "dev", APP_COMMIT: "release-tag", GITHUB_SHA: github }, readHead)).toBe(github);
     expect(readHead).not.toHaveBeenCalled();
   });
 
   it.each([undefined, "", "  ", "dev", "35dd86a", "not-a-commit", "g".repeat(40), "a".repeat(41)])("falls back to one Git HEAD read for unavailable or invalid metadata: %j", value => {
     const readHead = vi.fn(() => local);
-    expect(resolveBuildCommit({ VERCEL_GIT_COMMIT_SHA: value, APP_COMMIT: value, GITHUB_SHA: value }, readHead)).toBe(local);
+    expect(resolveBuildCommit({ WORKERS_CI_COMMIT_SHA: value, APP_COMMIT: value, GITHUB_SHA: value }, readHead)).toBe(local);
     expect(readHead).toHaveBeenCalledTimes(1);
   });
 

@@ -29,7 +29,7 @@ export function resolveBuildCommit(
   environment: Readonly<Record<string, string | undefined>> = process.env,
   readHead: () => string | undefined = readGitHead
 ): string {
-  for (const candidate of [environment.VERCEL_GIT_COMMIT_SHA, environment.APP_COMMIT, environment.GITHUB_SHA]) {
+  for (const candidate of [environment.WORKERS_CI_COMMIT_SHA, environment.APP_COMMIT, environment.GITHUB_SHA]) {
     const commit = validCommit(candidate);
     if (commit) return commit;
   }

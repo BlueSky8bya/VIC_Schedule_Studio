@@ -23,9 +23,6 @@ test.beforeAll(async () => {
     const cookie = req.headers.cookie ?? "";
     const id = cookie.match(/(?:^|; )lifecycle_case=([^;]+)/)?.[1] ?? "";
     const capture = captures.get(id);
-    if (req.method === "GET" && ["/_vercel/insights/script.js", "/_vercel/speed-insights/script.js"].includes(url.pathname)) {
-      res.writeHead(200, { "content-type": "application/javascript" }).end("/* local analytics stub */"); return;
-    }
     if (url.pathname === "/api/activity" && req.method === "POST") {
       const chunks: Buffer[] = [];
       req.on("data", chunk => chunks.push(chunk));

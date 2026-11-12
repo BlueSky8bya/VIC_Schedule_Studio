@@ -9,8 +9,6 @@ import { singleFlight, createWorkBudget } from "@/lib/broadcast/work-budget";
 // 공개-안전 응답만 반환(비공개 데이터와 무관). 실제 SOOP 호출은 lib/broadcast/soop(단일 출처).
 
 export const dynamic = "force-dynamic";
-// after()의 다시보기 동기화가 응답 후에도 완주할 시간(Vercel Hobby 기본 10초 초과 방지).
-export const maxDuration = 60;
 
 // SOOP를 이 간격으로만 두드린다(시청자 수와 무관 — 서버가 캐시해 SOOP 부하 고정).
 // 짧을수록 뱅온/뱅종 반영이 빠르지만 비공식 API라 과도하면 차단 위험 → 20초가 균형.

@@ -1,9 +1,9 @@
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 
 // 크론 라우트 인증 — 두 열쇠 중 하나면 통과한다.
-//  1) CRON_SECRET(Vercel env): GitHub Actions·cron-job.org 등 바깥에서 부르는 길.
+//  1) CRON_SECRET(Worker Secret): GitHub Actions·cron-job.org 등 바깥에서 부르는 길.
 //  2) DB Vault의 `vic_cron_token`(0128): pg_cron + pg_net이 DB 안에서 부르는 길. 토큰은 DB가 만들고 DB에만 있어
-//     Vercel env를 손대지 않아도 되고, 비교는 서비스 롤 RPC(cron_token_matches)가 DB 안에서 한다.
+//     호스팅 비밀값을 손대지 않아도 되고, 비교는 서비스 롤 RPC(cron_token_matches)가 DB 안에서 한다.
 // 두 길 다 Bearer 헤더 하나로 통일 — 라우트마다 인증 코드를 따로 쓰지 않는다.
 export async function isCronAuthorized(req: Request): Promise<boolean> {
   const header = req.headers.get("authorization") ?? "";

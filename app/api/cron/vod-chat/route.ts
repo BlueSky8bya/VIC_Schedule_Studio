@@ -9,7 +9,6 @@ import { isCronAuthorized } from "@/lib/auth/cron-auth";
 // GitHub Actions invokes this even while live: GET /api/cron/vod-chat?limit=4&chunks=120
 // CRON_SECRET과 Bearer 인증이 필수(broadcast-poll과 같은 규약). 원문·닉은 저장하지 않는다.
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
 
 export async function GET(req: Request) {
   const budget = createWorkBudget(50_000);
@@ -33,7 +32,7 @@ export async function GET(req: Request) {
   const result = await syncVodChat(targets, chunks, Math.min(35_000, budget.remaining(8000)), budget);
   // 새 단어가 들어왔으면 **가벼운 것만** 다시 배운다(조각을 실제로 받았을 때만).
   // ⚠ search_term_graph_rebuild는 여기서 부르지 않는다(2026-09-19): 최적화 뒤에도 63초라
-  // 이 라우트의 maxDuration 60초를 넘겨, 채팅이 들어오는 날마다 크론이 통째로 타임아웃했다
+  // 당시 이 라우트의 60초 한도를 넘겨, 채팅이 들어오는 날마다 크론이 통째로 타임아웃했다
   // (그 바람에 줄임말·요즘 말 갱신도 함께 죽고 있었다). 무거운 재빌드는 pg_cron이 밤에 돌린다
   // (db/migrations/0120, cron.job 'vic-search-graph' → public.search_graph_nightly()).
   if (result.chunks > 0) {

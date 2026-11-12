@@ -863,7 +863,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
         developerEmails,
         dbOwnerEmail,
         bindingOk,
-        commit: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? null,
+        commit: process.env.APP_COMMIT && process.env.APP_COMMIT !== "dev" ? process.env.APP_COMMIT.slice(0, 7) : null,
         // 빌드(배포) 시각 — next.config의 BUILD_TIME(빌드 시점 UTC). 로컬은 현재 시각으로 폴백.
         deployedAt: process.env.BUILD_TIME ?? new Date().toISOString()
       }

@@ -26,7 +26,7 @@ export function snapshotEligible(relative) {
   if (parts.some(part => /^(?:\.env(?:\..*)?|\.git|\.vercel|\.scratch.*|node_modules|제작기록|feedback_sources|user_turns|contracts?|capture_state)$/i.test(part))) return false;
   if (parts[0] === 'art-src') return false; // Never copy private source art or generation contracts.
   return ['app', 'components', 'lib', 'public', 'tests', 'scripts', 'docs'].includes(parts[0])
-    || /^(?:package(?:-lock)?\.json|tsconfig\.json|next-env\.d\.ts|next\.config\.[a-z]+|postcss\.config\.[a-z]+|eslint\.config\.[a-z]+|vitest\.config\.ts|playwright\.visual\.config\.ts|AGENTS\.md|\.gitignore|\.vercelignore|\.gitattributes)$/.test(relative);
+    || /^(?:package(?:-lock)?\.json|tsconfig\.json|next-env\.d\.ts|next\.config\.[a-z]+|postcss\.config\.[a-z]+|eslint\.config\.[a-z]+|vitest\.config\.ts|playwright\.visual\.config\.ts|AGENTS\.md|\.gitignore|\.gitattributes)$/.test(relative);
 }
 export function childEnvironment(source, extra = {}) {
   const allowed = ['PATH', 'Path', 'SystemRoot', 'WINDIR', 'COMSPEC', 'PATHEXT', 'TEMP', 'TMP', 'TMPDIR', 'HOME', 'USERPROFILE', 'LOCALAPPDATA', 'APPDATA', 'NUMBER_OF_PROCESSORS'];
