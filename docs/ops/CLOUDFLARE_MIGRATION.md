@@ -21,8 +21,8 @@
 |---|---|---|
 | 1 | 개발자 | Cloudflare 가입 → Workers Paid 구독 → Registrar에서 `victory-broadcast.com` 구매 |
 | 2 | 개발자 | 터미널에서 `npx wrangler login` |
-| 3 | 에이전트 | `wrangler r2 bucket create vic-schedule-studio-cache`, `wrangler d1 create vic-schedule-studio-tags` → `wrangler.jsonc`의 database_id 채움 |
-| 4 | 개발자 | 비밀 옮기기: `npx vercel env pull .env.cf-prod --environment=production --yes` → `NEXT_PUBLIC_SITE_URL=https://victory-broadcast.com`으로 고침 → `npx wrangler secret bulk .env.cf-prod` → 파일 삭제 |
+| 3 | 에이전트 | D1 `vic-schedule-studio-tags` 생성 완료(2026-11-13, APAC). R2는 대시보드에서 R2 활성화 후 `wrangler r2 bucket create vic-schedule-studio-cache` |
+| 4 | 개발자 | 비밀 옮기기: `node scripts/cloudflare/push-secrets.mjs`(.env.local 정본 → wrangler stdin, CRON_SECRET 새로 생성) → 출력된 CRON_SECRET을 GitHub Actions secret에도 넣기. **`vercel env pull` 금지**: Sensitive 값은 "[SENSITIVE]" 자리표시로 와서 2026-11-13에 가짜값 8개와 Vercel 시스템 변수 21개가 올라갔다(시스템 변수는 삭제함). `NEXT_PUBLIC_SITE_URL`은 wrangler.jsonc `vars` |
 | 5 | 개발자 | 대시보드 Workers → vic-schedule-studio → Settings → Builds → GitHub 저장소 연결. Build command `npx opennextjs-cloudflare build`, Deploy command `npx opennextjs-cloudflare deploy`, Build variables에 `NEXT_PUBLIC_SUPABASE_URL`·`NEXT_PUBLIC_SUPABASE_ANON_KEY`·`NEXT_PUBLIC_SITE_URL` |
 | 6 | 개발자 | Supabase → Authentication → URL Configuration: Site URL `https://victory-broadcast.com`, Redirect URLs에 `https://victory-broadcast.com/**` 추가(옛 주소는 이전 끝날 때까지 유지) |
 | 7 | 에이전트 | 새 주소 실화면 확인(익명 포스터·로그인·비공개 해제·저장) → `0158` DB 적용 → cron-job.org 워밍 핑 끄기(Workers는 콜드 스타트 없음) |
