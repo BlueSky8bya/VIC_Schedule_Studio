@@ -4,7 +4,7 @@ import { resolveCurrentActor } from "@/lib/auth/actor";
 import { isMobileUserAgent } from "@/lib/auth/in-app-browser";
 import { parseMonthParams } from "@/lib/calendar/month";
 import { getStudioSchedule } from "@/lib/schedules/studio-loader";
-import { getUnlockState } from "@/lib/private-layer/unlock";
+import { getPasscodeState } from "@/lib/private-layer/passcode-state";
 import { parseViewCookie, VIEW_COOKIE } from "@/lib/ui/view-cookie";
 
 type StudioMonthPageProps = {
@@ -14,11 +14,11 @@ type StudioMonthPageProps = {
 // 월 북마크/콜드 엔트리 전용 라우트(런타임 월 이동은 라우트 없이 상태로만 — ADR 참고).
 export default async function StudioMonthPage({ params }: StudioMonthPageProps) {
   const { year, month } = await params;
-  const [actor, unlock] = await Promise.all([
+  const [actor, passcode] = await Promise.all([
     resolveCurrentActor("vic"),
-    getUnlockState("vic")
+    getPasscodeState("vic")
   ]);
-  const schedule = await getStudioSchedule("vic", { actor, unlock });
+  const schedule = await getStudioSchedule("vic", { actor });
   const mem = parseViewCookie((await cookies()).get(VIEW_COOKIE)?.value);
   const narrow = isMobileUserAgent((await headers()).get("user-agent") ?? "");
 
@@ -34,8 +34,7 @@ export default async function StudioMonthPage({ params }: StudioMonthPageProps) 
   return (
     <StudioShell
       actor={actor}
-      hasUnlockSession={unlock.hasUnlockSession}
-      isDefaultPasscode={unlock.isDefaultPasscode}
+      isDefaultPasscode={passcode.isDefaultPasscode}
       schedule={schedule}
       initialView={urlView ?? cookieView}
       initialViewerMode={mem.v === 1}

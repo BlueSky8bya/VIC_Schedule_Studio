@@ -1,12 +1,12 @@
 import { createEmptyForm, DRAFT_TTL_MS, draftFingerprint, type EditDraft, type EventForm } from "./editor-model";
 
-export type SaveRecovery = { attempt: number; session: number; targetId: string; dateKey: string; originalScope: EventForm["visibilityScope"]; form: EventForm; at: number };
+export type SaveRecovery = { attempt: number; session: number; targetId: string; dateKey: string; originalScope: string; form: EventForm; at: number };
 const copyForm = (form: EventForm): EventForm => ({ ...form, tagIds: [...form.tagIds], primaryTagIds: [...form.primaryTagIds] });
 
-export function canRecoverSaveSnapshot(item: SaveRecovery, access: { canEdit: boolean; unlocked: boolean; owner: boolean; readOnly: boolean }, target?: { visibilityScope: string }): boolean {
+// 공개 범위만 복구한다(비공개 레이어 철수, 0159). 옛 비공개 행이 대상이면 거부.
+export function canRecoverSaveSnapshot(item: SaveRecovery, access: { canEdit: boolean; readOnly: boolean }, target?: { visibilityScope: string }): boolean {
   if (!access.canEdit || access.readOnly || (item.form.id && !target)) return false;
-  const allowed = (scope: string) => scope === "public" || (access.unlocked
-    && (scope === "work" || (access.owner && (scope === "owner_private" || scope === "embargo"))));
+  const allowed = (scope: string) => scope === "public";
   return allowed(item.form.visibilityScope) && allowed(item.originalScope) && (!target || allowed(target.visibilityScope));
 }
 

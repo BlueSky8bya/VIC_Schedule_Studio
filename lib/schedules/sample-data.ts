@@ -1,6 +1,6 @@
 import type { StudioSchedule } from "@/lib/domain/schedule-types";
 // 공개 안전 데이터(팔레트·태그·캘린더)는 공개 전용 파일에서 가져와 얹는다. 이 파일은 그 위에
-// privateMeta·엠바고/작업 일정 같은 스튜디오 전용/비공개 데이터만 추가한다.
+// 스튜디오 전용 필드(상태·정렬 등)를 가진 편집실 샘플만 추가한다. (비공개 샘플은 0159 철수로 제거.)
 import {
   defaultPalette,
   defaultTags,
@@ -111,52 +111,6 @@ export const sampleStudioSchedule: StudioSchedule = {
       tagIds: ["tag-full-track", "tag-collab"],
       primaryTagIds: ["tag-full-track", "tag-collab"],
       sortOrder: 1
-    },
-    {
-      id: "evt-007",
-      startsAt: "2026-06-12T20:00:00+09:00",
-      endsAt: "2026-06-12T22:30:00+09:00",
-      isAllDay: false,
-      publicTitle: "비공개 합방 리허설",
-      status: "scheduled",
-      visibilityScope: "owner_private",
-      category: "collab",
-      tagIds: ["tag-collab"],
-      primaryTagIds: ["tag-collab"],
-      sortOrder: 1,
-      privateMeta: {
-        eventId: "evt-007",
-        privateTitle: "게스트 실명 엠바고",
-        privateMemo: "공개 전까지 방송 화면 공유 금지.",
-        editorNote: "공개명은 합뱅 예정으로만 사용"
-      }
-    },
-    {
-      id: "evt-008",
-      startsAt: "2026-06-19T19:00:00+09:00",
-      endsAt: "2026-06-19T21:00:00+09:00",
-      isAllDay: false,
-      publicTitle: "썸네일/공지 작업",
-      status: "scheduled",
-      visibilityScope: "work",
-      category: "notice",
-      tagIds: ["tag-calm"],
-      primaryTagIds: ["tag-calm"],
-      sortOrder: 1,
-      privateMeta: {
-        eventId: "evt-008",
-        privateTitle: "월말 공지 이미지 작업",
-        privateMemo: "포스터용 문구와 SOOP 게시글 링크 점검.",
-        editorNote: "작업자에게만 공유"
-      }
-    }
-  ],
-  variantGroups: [
-    {
-      id: "vg-001",
-      name: "6월 중순 합방/대체 방송",
-      promotionState: "active",
-      promotedEventId: "evt-007"
     }
   ],
   // 미리보기는 서버 공개 스냅샷만 쓰므로(P0-SEC-2) 샘플에서도 공개 샘플 데이터를 그대로 쓴다 —

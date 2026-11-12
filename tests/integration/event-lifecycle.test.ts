@@ -48,10 +48,6 @@ vi.mock("@/lib/auth/server", () => ({
       auth: { persistSession: false }
     })
 }));
-// 비공개 잠금은 '해제 안 된 상태'로 둔다 — 서버가 비공개 저장을 거절하는지 확인하기 위해서다.
-vi.mock("@/lib/private-layer/unlock", () => ({
-  getUnlockState: async () => ({ hasUnlockSession: false })
-}));
 vi.mock("@/lib/activity/record", () => ({ recordActivity: async () => {} }));
 
 const {
@@ -195,13 +191,13 @@ describe.skipIf(!configured)("일정 쓰기 — 서버 왕복(실제 DB)", () =>
     await reorderEventsAction({ dateKey: PAST_DAY, orderedIds: [id], movedId: id });
   });
 
-  it("잠금 해제 없이는 비공개 범위로 저장할 수 없다(서버 2차 방어)", async () => {
+  it("비공개 범위로는 저장할 수 없다(비공개 레이어 철수, 서버 2차 방어)", async () => {
     const res = await saveEventAction({
       ...base,
       publicTitle: `${MARK} 비공개 시도`,
-      visibilityScope: "work"
+      visibilityScope: "work" as "public"
     });
     expect(res.ok).toBe(false);
-    if (!res.ok) expect(res.error).toContain("잠금 해제");
+    if (!res.ok) expect(res.error).toContain("권한");
   });
 });

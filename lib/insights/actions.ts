@@ -88,18 +88,10 @@ export type InsightsData = {
     monthly: { ym: string; count: number }[]; // 6개월(타깃 월로 끝남)
     topEvents: { title: string; count: number }[]; // 이 달 인기 일정 TOP
   };
+  // 편집실 비밀번호(최초공개 게이트) 상태. 잠금해제 세션·접근자 목록은 2026-11-13 철수(0159).
   security: {
     passcodeVersion: number | null;
     passcodeUpdatedAt: string | null;
-    unlockDurationMinutes: number | null;
-    activeUnlocks: { email: string; expiresAt: string }[];
-    // (members 목록은 멤버 관리 철수(2026-09-04, ADR-0018)로 제거.)
-    // 비공개를 열 수 있는 사람을 역할별로. 활성 세션이면 expiresAt·userId가
-    // 채워지고(개별 만료용), 없으면 둘 다 null("세션 없음").
-    access: {
-      owners: AccessPerson[];
-      developers: AccessPerson[];
-    };
   };
   system: {
     ownerEmails: string[];
@@ -112,9 +104,6 @@ export type InsightsData = {
 };
 
 export type InsightsResult = { ok: true; data: InsightsData } | { ok: false; error: string };
-
-// 비공개 접근 자격자 한 명 — 활성 잠금 세션이 있으면 expiresAt(만료시간)·userId가 채워진다.
-export type AccessPerson = { email: string; expiresAt: string | null; userId: string | null };
 
 // '오늘(KST)' 키는 단일 출처(kstDayKey)를 쓴다 — 적재(day 컬럼)와 조회가 어긋나지 않게.
 const todayKstKey = (): string => kstDayKey();
@@ -613,7 +602,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
   const todayKey = todayKstKey();
   const curYm = `${y}-${pad(m)}`;
 
-  const [eventsRangeRes, tagsRangeRes, nextRes, paletteRes, heartCountsRes, unlockRes, passcodeRes] =
+  const [eventsRangeRes, tagsRangeRes, nextRes, paletteRes, heartCountsRes, passcodeRes] =
     await Promise.all([
       supabase
         .from("events")
@@ -639,16 +628,9 @@ export async function getInsightsAction(year: number, month: number): Promise<In
         .limit(40),
       supabase.from("color_palette").select("key, bg_color, border_color").eq("calendar_id", calendarId),
       supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }),
-      // P0-PRIV-2: 잠금해제는 auth-세션 결속 grants가 정본(legacy unlock_sessions는 미사용).
-      supabase
-        .from("private_unlock_grants")
-        .select("user_id, expires_at")
-        .eq("calendar_id", calendarId)
-        .gt("expires_at", new Date().toISOString())
-        .order("expires_at", { ascending: true }),
       supabase
         .from("private_layer_settings")
-        .select("passcode_version, passcode_updated_at, unlock_duration_minutes")
+        .select("passcode_version, passcode_updated_at")
         .eq("calendar_id", calendarId)
         .maybeSingle()
     ]);
@@ -795,34 +777,16 @@ export async function getInsightsAction(year: number, month: number): Promise<In
   // 이메일 해석 — 계정 목록을 한 번 받아 채우고 필요한 것만 개별 조회(위 makeEmailResolver).
   const emailFor = makeEmailResolver(supabase!);
 
-  const unlockRows = (unlockRes.data ?? []) as { user_id: string; expires_at: string }[];
-  // 활성 세션을 한 번만 이메일 해석 → activeUnlocks(목록)와 access(역할별 매핑)에서 함께 쓴다.
-  const unlockResolved = await Promise.all(
-    unlockRows.map(async (u) => ({
-      userId: u.user_id,
-      email: (await emailFor(u.user_id)) ?? "(알 수 없음)",
-      expiresAt: u.expires_at
-    }))
-  );
-  const activeUnlocks = unlockResolved.map((u) => ({ email: u.email, expiresAt: u.expiresAt }));
-  const unlockByEmail = new Map(
-    unlockResolved.map((u) => [u.email, { userId: u.userId, expiresAt: u.expiresAt }])
-  );
-  const toAccess = (email: string): AccessPerson => {
-    const s = unlockByEmail.get(email);
-    return { email, expiresAt: s?.expiresAt ?? null, userId: s?.userId ?? null };
-  };
   const passcode = passcodeRes.data as {
     passcode_version?: number;
     passcode_updated_at?: string;
-    unlock_duration_minutes?: number;
   } | null;
 
   const ownerEmails = getOwnerEmails();
   const dbOwnerEmail = await emailFor(cal.owner_id as string | undefined);
   const bindingOk = Boolean(ownerEmails[0] && dbOwnerEmail && ownerEmails[0] === dbOwnerEmail);
 
-  // 비공개 접근 자격자(매니저 제외) — 소유자(env)·개발자(platform_admins). (작업자 철수 2026-08-27)
+  // 개발자(platform_admins) 이메일 — 시스템 패널 표시용.
   const { data: adminRows } = await supabase.from("platform_admins").select("email");
   const developerEmails = [
     ...new Set(
@@ -831,11 +795,6 @@ export async function getInsightsAction(year: number, month: number): Promise<In
         .filter((e): e is string => Boolean(e))
     )
   ];
-  const access = {
-    owners: ownerEmails.map(toAccess),
-    developers: developerEmails.map(toAccess)
-  };
-
   return {
     ok: true,
     data: {
@@ -853,10 +812,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
       engagement: { monthHearts, totalHearts, monthly, topEvents },
       security: {
         passcodeVersion: passcode?.passcode_version ?? null,
-        passcodeUpdatedAt: passcode?.passcode_updated_at ?? null,
-        unlockDurationMinutes: passcode?.unlock_duration_minutes ?? null,
-        activeUnlocks,
-        access
+        passcodeUpdatedAt: passcode?.passcode_updated_at ?? null
       },
       system: {
         ownerEmails,
@@ -1706,13 +1662,10 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
 }
 
 // 관리자(소유자) 전용 보안 데이터 — 개발자 인사이트 보안 패널과 같되 '개발자' 섹션은 뺀다.
-// owner/developer만(서버 검증) — 매니저·작업자에겐 절대 내려가지 않는다(민감: 이메일·세션).
+// owner/developer만(서버 검증). 잠금해제 세션 수·접근자 목록은 2026-11-13 철수(0159).
 export type OwnerSecurityData = {
-  activeUnlockCount: number;
   passcodeVersion: number | null;
   passcodeUpdatedAt: string | null;
-  unlockDurationMinutes: number | null;
-  access: { owners: AccessPerson[]; developers: AccessPerson[] };
 };
 export type OwnerSecurityResult =
   | { ok: true; data: OwnerSecurityData }
@@ -1734,69 +1687,17 @@ export async function getOwnerSecurityAction(): Promise<OwnerSecurityResult> {
   }
   const calendarId = cal.id as string;
 
-  const [unlockRes, passcodeRes, adminRes] = await Promise.all([
-    // P0-PRIV-2: 잠금해제는 auth-세션 결속 grants가 정본(legacy unlock_sessions는 미사용).
-    supabase
-      .from("private_unlock_grants")
-      .select("user_id, expires_at")
-      .eq("calendar_id", calendarId)
-      .gt("expires_at", new Date().toISOString())
-      .order("expires_at", { ascending: true }),
-    supabase
-      .from("private_layer_settings")
-      .select("passcode_version, passcode_updated_at, unlock_duration_minutes")
-      .eq("calendar_id", calendarId)
-      .maybeSingle(),
-    // 개발자(platform_admins) 이메일 — 관리자 화면엔 표시하지 않고, "지금 연 계정" 수에서 제외할 때만 쓴다.
-    supabase.from("platform_admins").select("email")
-  ]);
-
-  const emailFor = makeEmailResolver(supabase);
-
-  // 관리자 화면은 개발자가 없는 듯 다룬다 → 개발자 세션은 "지금 연 계정" 수에서 처음부터 뺀다.
-  const developerEmailSet = new Set(
-    ((adminRes.data ?? []) as { email?: string }[])
-      .map((a) => normalizeEmail(a.email))
-      .filter((e): e is string => Boolean(e))
-  );
-  const unlockRows = (unlockRes.data ?? []) as { user_id: string; expires_at: string }[];
-  // 예전엔 for + await로 한 사람씩 줄 세워 물었다(N × 왕복). 이제 목록 한 번이면 다 채워지므로
-  // 병렬로 해석해도 왕복이 늘지 않는다.
-  const unlockResolved = await Promise.all(
-    unlockRows.map(async (u) => ({
-      userId: u.user_id,
-      email: (await emailFor(u.user_id)) ?? "(알 수 없음)",
-      expiresAt: u.expires_at
-    }))
-  );
-  const unlockByEmail = new Map<string, { userId: string; expiresAt: string }>();
-  let activeNonDevCount = 0;
-  for (const u of unlockResolved) {
-    unlockByEmail.set(u.email, { userId: u.userId, expiresAt: u.expiresAt });
-    if (!developerEmailSet.has(u.email)) activeNonDevCount += 1;
-  }
-  const toAccess = (email: string): AccessPerson => {
-    const s = unlockByEmail.get(email);
-    return { email, expiresAt: s?.expiresAt ?? null, userId: s?.userId ?? null };
-  };
-
-  const passcode = passcodeRes.data as {
-    passcode_version?: number;
-    passcode_updated_at?: string;
-    unlock_duration_minutes?: number;
-  } | null;
+  const { data: passcode } = await supabase
+    .from("private_layer_settings")
+    .select("passcode_version, passcode_updated_at")
+    .eq("calendar_id", calendarId)
+    .maybeSingle();
 
   return {
     ok: true,
     data: {
-      activeUnlockCount: activeNonDevCount,
-      passcodeVersion: passcode?.passcode_version ?? null,
-      passcodeUpdatedAt: passcode?.passcode_updated_at ?? null,
-      unlockDurationMinutes: passcode?.unlock_duration_minutes ?? null,
-      access: {
-        owners: getOwnerEmails().map(toAccess),
-        developers: []
-      }
+      passcodeVersion: (passcode?.passcode_version as number | undefined) ?? null,
+      passcodeUpdatedAt: (passcode?.passcode_updated_at as string | undefined) ?? null
     }
   };
 }

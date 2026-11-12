@@ -2,23 +2,18 @@ import { NextResponse } from "next/server";
 import { recordActivity } from "@/lib/activity/record";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { resolveCurrentActor } from "@/lib/auth/actor";
-import { getCurrentAuthSessionId, getCurrentSupabaseUser } from "@/lib/auth/server";
+import { getCurrentSupabaseUser } from "@/lib/auth/server";
 import { canUsePrivateLayer } from "@/lib/permissions/roles";
 import { reservePasscodeAttempt } from "@/lib/private-layer/attempt-limit";
 import { verifyPasscode } from "@/lib/private-layer/passcode";
-import {
-  UNLOCK_GRANT_COOKIE,
-  grantCookieOptions,
-  hashGrantToken,
-  newGrantToken
-} from "@/lib/private-layer/unlock-grant";
 
 const SLUG = "vic";
 // 모든 비밀번호 확인 입구에서 공유하는 10분/5회 원자적 예약 제한.
 
 
-// 비공개 레이어 잠금해제: 비밀번호 확인 → 현재 사용자 세션 발급.
-// owner/developer만 가능(매니저·시청자 불가). 최초공개 게이트(verifyOnly)·비밀번호 변경이 이 라우트를 쓴다.
+// 편집실 최초공개(떡밥) 게이트의 비밀번호 확인 — 맞는지만 답한다. 세션·쿠키는 발급하지 않는다
+// (비공개 레이어 잠금해제 grant는 2026-11-13 철수, 0159). owner/developer만 가능.
+// 경로 이름은 클라이언트 호환을 위해 그대로 둔다. 예전 본문의 verifyOnly 플래그는 무시한다.
 export async function POST(request: Request) {
   const actor = await resolveCurrentActor(SLUG);
 
@@ -31,15 +26,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "로그인이 필요합니다." }, { status: 401 });
   }
 
-  const body = (await request.json().catch(() => ({}))) as {
-    passcode?: string;
-    verifyOnly?: boolean;
-  };
+  const body = (await request.json().catch(() => ({}))) as { passcode?: string };
   const passcode = String(body.passcode ?? "");
-  // verifyOnly: 비밀번호가 맞는지 검증만 하고 grant/쿠키는 발급하지 않는다.
-  // 편집실의 최초공개(떡밥) 일정 게이트가 쓴다 — 게이트 통과가 비공개 레이어 잠금해제로
-  // 번지지 않게 한다. 무차별 대입 방어(시도 기록·차단)는 동일하게 적용된다.
-  const verifyOnly = body.verifyOnly === true;
   if (!passcode || passcode.length > 256) {
     return NextResponse.json({ error: "비밀번호를 입력하세요." }, { status: 400 });
   }
@@ -64,7 +52,7 @@ export async function POST(request: Request) {
 
   const { data: settings } = await supabase
     .from("private_layer_settings")
-    .select("passcode_hash, passcode_version, unlock_duration_minutes")
+    .select("passcode_hash")
     .eq("calendar_id", calendar.id)
     .maybeSingle();
 
@@ -84,7 +72,7 @@ export async function POST(request: Request) {
       { status: attempt === "limited" ? 429 : 503 });
   }
 
-  // 로컬 개발 전용 테스트 비번 — 실제 비번을 건드리지 않고 비공개 레이어/최초공개 게이트를
+  // 로컬 개발 전용 테스트 비번 — 실제 비번을 건드리지 않고 최초공개 게이트를
   // 열어볼 수 있게 한다. 이중 잠금: ① NODE_ENV=development(로컬 next dev)가 아니면 코드가
   // 죽는다(배포 빌드는 항상 production — 환경변수를 실수로 올려도 무력) ② 환경변수
   // PRIVATE_LAYER_TEST_PASSCODE(.env.local, git 미추적)가 없으면 무력.
@@ -98,56 +86,10 @@ export async function POST(request: Request) {
   // 시도는 RPC에서 이미 기록했다. 응답에는 비밀번호/계정 정보를 싣지 않는다.
   if (!passOk) {
     // 행동 기록에는 실패 사실만 남긴다.
-    await recordActivity({ kind: "unlock.fail", meta: { verifyOnly } });
+    await recordActivity({ kind: "unlock.fail", meta: { verifyOnly: true } });
     return NextResponse.json({ error: "비밀번호가 올바르지 않습니다." }, { status: 401 });
   }
 
-  if (verifyOnly) {
-    // 게이트(떡밥) 통과 — grant를 발급하지 않는 확인 전용 경로라 kind를 나눈다.
-    await recordActivity({ kind: "gate.pass" });
-    return NextResponse.json({ ok: true });
-  }
-
-  // P0-PRIV-2(L8): grant는 이 브라우저의 auth 세션에 결속 — 같은 계정의 다른 기기는 안 열린다.
-  const authSessionId = await getCurrentAuthSessionId();
-  if (!authSessionId) {
-    return NextResponse.json({ error: "로그인 세션을 확인할 수 없습니다." }, { status: 401 });
-  }
-
-  const durationMs = settings.unlock_duration_minutes * 60 * 1000;
-  const expiresAt = new Date(Date.now() + durationMs).toISOString();
-  const token = newGrantToken();
-
-  // 이 auth 세션의 기존 grant 정리 후 새 grant 발급(세션당 1개).
-  await supabase
-    .from("private_unlock_grants")
-    .delete()
-    .eq("calendar_id", calendar.id)
-    .eq("user_id", user.id)
-    .eq("auth_session_id", authSessionId);
-
-  const { error } = await supabase.from("private_unlock_grants").insert({
-    token_hash: hashGrantToken(token),
-    user_id: user.id,
-    calendar_id: calendar.id,
-    auth_session_id: authSessionId,
-    passcode_version: settings.passcode_version,
-    expires_at: expiresAt
-  });
-
-  if (error) {
-    // P0-SEC-3: DB 원문 메시지는 서버 로그로만 — 클라이언트에는 일반 안내만.
-    console.error("[api-fail] 비공개 레이어 잠금 해제:", error);
-    return NextResponse.json(
-      { error: "잠금 해제에 실패했어요. 잠시 후 다시 시도해 주세요." },
-      { status: 500 }
-    );
-  }
-
-  await recordActivity({ kind: "unlock.success", meta: { minutes: settings.unlock_duration_minutes } });
-
-  const res = NextResponse.json({ ok: true, expiresAt });
-  // opaque 토큰은 HttpOnly 쿠키에만 — JS로 못 읽고, 응답 본문에도 안 싣는다.
-  res.cookies.set(UNLOCK_GRANT_COOKIE, token, grantCookieOptions(Math.floor(durationMs / 1000)));
-  return res;
+  await recordActivity({ kind: "gate.pass" });
+  return NextResponse.json({ ok: true });
 }

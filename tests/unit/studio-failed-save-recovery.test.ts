@@ -79,22 +79,20 @@ describe("failed save inputs stay independent in session memory", () => {
     expect(store.available(102 + DRAFT_TTL_MS, allow)).toEqual([]);
   });
   it("does not consume a private entry when current permissions reject recovery", () => {
-    const store = new FailedSaveRecovery(), input = entry(1, "private"); input.form.visibilityScope = "owner_private";
+    const store = new FailedSaveRecovery(), input = entry(1, "private"); (input.form as { visibilityScope: string }).visibilityScope = "owner_private";
     const a = store.begin(input, 100); store.fail(a, 101);
     expect(store.available(102, form => form.visibilityScope === "public")).toEqual([]);
     expect(store.take(a, 103, () => false)).toBeNull(); expect(store.take(a, 104, allow)?.form.publicTitle).toBe("private");
   });
-  it("checks original and current target scopes, missing targets, unlock, owner and read-only independently", () => {
+  it("checks original and current target scopes, missing targets and read-only independently", () => {
     const store = new FailedSaveRecovery(), a = store.begin(entry(1, "public input", "real-a", "real-a"), 100);
     store.fail(a, 101); const item = store.available(102, allow)[0];
-    const access = { canEdit: true, unlocked: false, owner: true, readOnly: false };
+    const access = { canEdit: true, readOnly: false };
     expect(canRecoverSaveSnapshot(item, access)).toBe(false);
     expect(canRecoverSaveSnapshot(item, access, { visibilityScope: "public" })).toBe(true);
     expect(canRecoverSaveSnapshot(item, access, { visibilityScope: "owner_private" })).toBe(false);
     expect(canRecoverSaveSnapshot({ ...item, originalScope: "owner_private" }, access, { visibilityScope: "public" })).toBe(false);
-    expect(canRecoverSaveSnapshot({ ...item, originalScope: "owner_private" }, { ...access, unlocked: true, owner: false }, { visibilityScope: "public" })).toBe(false);
-    expect(canRecoverSaveSnapshot({ ...item, originalScope: "owner_private" }, { ...access, unlocked: true }, { visibilityScope: "public" })).toBe(true);
-    expect(canRecoverSaveSnapshot(item, { ...access, unlocked: true }, { visibilityScope: "unknown" })).toBe(false);
+    expect(canRecoverSaveSnapshot(item, access, { visibilityScope: "unknown" })).toBe(false);
     expect(canRecoverSaveSnapshot(item, { ...access, readOnly: true }, { visibilityScope: "public" })).toBe(false);
     expect(canRecoverSaveSnapshot(item, { ...access, canEdit: false }, { visibilityScope: "public" })).toBe(false);
   });

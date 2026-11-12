@@ -6,19 +6,12 @@ import { recordActivity } from "@/lib/activity/record";
 import type {
   EventCategory,
   EventStatus,
-  EventVisibilityScope,
-  MembershipRole
+  EventVisibilityScope
 } from "@/lib/domain/schedule-types";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { canEditEventTags, canEditSchedule, canEditSupport } from "@/lib/permissions/roles";
-import {
-  PRIVATE_PLACEHOLDER_TITLE,
-  encryptSecret,
-  type SecretPayload
-} from "@/lib/private-layer/secret-crypto";
-import { getUnlockState } from "@/lib/private-layer/unlock";
 import { safeActionError } from "@/lib/utils/safe-action-error";
 import {
   validateDateKey,
@@ -44,9 +37,6 @@ export type SaveEventInput = {
   isSupport?: boolean;
   supportKind?: "up" | "period"; // 'period' = 단순 기간 안내(CTA 없음, 링크 선택) — 2026-09-01
   supportUrl?: string;
-  privateTitle?: string;
-  privateMemo?: string;
-  editorNote?: string;
   teaser?: boolean; // 떡밥(가림) 일정
   teaserRevealAt?: string | null; // 공개 시각(ISO). teaser일 때만 의미.
 };
@@ -55,11 +45,9 @@ export type ActionResult = { ok: true; id: string } | { ok: false; error: string
 
 const SLUG = "vic";
 // Service-role lookups do not establish the caller's permission to mutate.
-async function eventScopeError(role: MembershipRole, scope: string): Promise<string | null> {
-  if (!["public", "work", "owner_private", "embargo"].includes(scope)) return "일정을 수정할 권한이 없습니다.";
-  if ((scope === "owner_private" || scope === "embargo") && role !== "owner") return "일정을 수정할 권한이 없습니다.";
-  if (scope !== "public" && !(await getUnlockState(SLUG)).hasUnlockSession) return "비공개 레이어 잠금 해제 후 수정할 수 있습니다.";
-  return null;
+// 비공개 범위 일정은 2026-11-13 철수(0159) — 남아 있는 비공개 행은 편집실에서 손대지 않는다.
+function eventScopeError(scope: string): string | null {
+  return scope === "public" ? null : "일정을 수정할 권한이 없습니다.";
 }
 // (태그 상한 상수는 event-validation.ts로 이동 — 서버 검증과 한 곳에서 관리)
 
@@ -129,24 +117,9 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
     return { ok: false, error: "owner 또는 developer만 일정을 편집할 수 있습니다." };
   }
 
-  // "엠바고"(owner_private, 옛 embargo 포함)는 소유자 전용 — 개발자도 만들 수 없다.
-  if (
-    (input.visibilityScope === "owner_private" || input.visibilityScope === "embargo") &&
-    actor.role !== "owner"
-  ) {
-    return { ok: false, error: "엠바고 일정은 소유자만 만들 수 있습니다." };
-  }
-  // P0-SEC-1(fail-closed, 서버 2차 방어): 비공개 범위 저장은 유효한 비공개 잠금 해제 세션이
-  // 있어야 한다(CLAUDE 규칙 5 — 비공개 접근 = 로그인 + 패스코드). 클라이언트 게이트가
-  // 우회돼도(직접 API 호출 등) 여기서 막힌다. 소유자·개발자도 예외 없음.
+  // 일정은 공개 범위만 저장한다(비공개 레이어 철수, 0159). 직접 호출로 다른 범위가 와도 막는다.
   if (input.visibilityScope !== "public") {
-    const unlock = await getUnlockState(SLUG);
-    if (!unlock.hasUnlockSession) {
-      return {
-        ok: false,
-        error: "비공개 범위 일정은 비공개 레이어 잠금 해제 후에만 저장할 수 있습니다."
-      };
-    }
+    return { ok: false, error: "일정을 수정할 권한이 없습니다." };
   }
 
   const supabase = await createSupabaseServerClient();
@@ -191,28 +164,6 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
   const endDateKey =
     input.endDateKey && input.endDateKey > input.dateKey ? input.endDateKey : null;
 
-  const isPublic = input.visibilityScope === "public";
-
-  // 비공개 이벤트는 제목/설명/private_meta를 암호화해 secret_cipher에 넣고, 평문 컬럼엔
-  // 중립 플레이스홀더만 남긴다(raw DB 접근으로는 본문이 안 보이게). 공개는 평문 유지.
-  // 키 미설정이면 encryptSecret가 throw → 절대 평문으로 저장되지 않도록 깔끔한 에러로 변환.
-  const publicTitleTrim = input.publicTitle.trim() || "새 일정";
-  const publicDescTrim = input.publicDescription.trim() || null;
-  let secretCipher: string | null = null;
-  if (!isPublic) {
-    const payload: SecretPayload = {
-      publicTitle: publicTitleTrim,
-      publicDescription: publicDescTrim ?? undefined,
-      privateTitle: input.privateTitle?.trim() || undefined,
-      privateMemo: input.privateMemo?.trim() || undefined,
-      editorNote: input.editorNote?.trim() || undefined
-    };
-    try {
-      secretCipher = encryptSecret(payload, calendar.id);
-    } catch {
-      return { ok: false, error: "암호화 키 미설정으로 비공개 일정을 저장할 수 없습니다." };
-    }
-  }
 
   const row = {
     calendar_id: calendar.id,
@@ -226,28 +177,20 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
     // 화이트리스트 강제: 'period' 외엔 전부 'up'(기본). 업 도움이 아니면 항상 'up'으로 리셋.
     support_kind: input.isSupport && input.supportKind === "period" ? "period" : "up",
     support_url: input.isSupport ? input.supportUrl?.trim() || null : null,
-    // 비공개는 평문 자리에 플레이스홀더, 공개는 실제 평문.
-    public_title: isPublic ? publicTitleTrim : PRIVATE_PLACEHOLDER_TITLE,
-    public_description: isPublic ? publicDescTrim : null,
-    secret_cipher: secretCipher, // 공개면 null(비공개→공개 전환 시 블롭 제거)
-    visibility_scope: input.visibilityScope,
+    public_title: input.publicTitle.trim() || "새 일정",
+    public_description: input.publicDescription.trim() || null,
+    visibility_scope: "public",
     status: input.status,
     category: input.category,
-    // 떡밥: 공개 일정만 의미(비공개는 어차피 안 보임). 공개 시각 없으면 떡밥 해제로 본다.
+    // 떡밥: 공개 시각 없으면 떡밥 해제로 본다.
     teaser: Boolean(input.teaser) && Boolean(input.teaserRevealAt),
     teaser_reveal_at: input.teaser && input.teaserRevealAt ? input.teaserRevealAt : null,
     updated_at: new Date().toISOString()
   };
 
-  // P0-DATA-2: 본문 + 태그 + 평문 메타를 DB 함수 한 트랜잭션으로(0055). 어느 단계가 실패해도
+  // P0-DATA-2: 본문 + 태그를 DB 함수 한 트랜잭션으로(0055). 어느 단계가 실패해도
   // 전체 롤백 — "본문은 바뀌었는데 태그는 옛것" 같은 부분 커밋이 생기지 않는다.
-  // 비공개 이벤트의 private_meta는 secret_cipher(블롭)에 이미 들어갔다 → 평문 메타는 null로
-  // 보내 행을 남기지 않는다(기존 계약 유지).
-  const hasPrivate =
-    isPublic &&
-    (Boolean(input.privateTitle?.trim()) ||
-      Boolean(input.privateMemo?.trim()) ||
-      Boolean(input.editorNote?.trim()));
+  // p_meta는 4인자 시그니처 호환용으로 늘 null(비공개 메타 철수, 0159가 무시하도록 재정의).
   const { data: rpcId, error: rpcError } = await supabase.rpc("save_event_atomic", {
     p_event_id: input.id ?? null,
     p_row: row,
@@ -256,13 +199,7 @@ export async function saveEventAction(input: SaveEventInput): Promise<ActionResu
       is_primary: input.primaryTagIds.includes(tagId),
       sort_order: index
     })),
-    p_meta: hasPrivate
-      ? {
-          private_title: input.privateTitle?.trim() || "",
-          private_memo: input.privateMemo?.trim() || "",
-          editor_note: input.editorNote?.trim() || ""
-        }
-      : null
+    p_meta: null
   });
   if (rpcError || !rpcId) {
     return { ok: false, error: safeActionError("일정 저장", rpcError) };
@@ -405,7 +342,7 @@ export async function updateSupportSettingsAction(
   if (!ev || ev.calendar_id !== calendar.id || !ev.is_support) {
     return { ok: false, error: "업 도움 일정이 아닙니다." };
   }
-  const scopeError = await eventScopeError(actor.role, ev.visibility_scope);
+  const scopeError = eventScopeError(ev.visibility_scope);
   if (scopeError) return { ok: false, error: scopeError };
 
   // P0-AUTH-1: 날짜 형식 + 링크 스킴(https만) 검증 — 공개 포스터에서 시청자가 클릭하는 값.
@@ -487,7 +424,7 @@ export async function updateEventTagsAction(
   if (!ev || ev.calendar_id !== calendar.id) {
     return { ok: false, error: "일정을 찾을 수 없습니다." };
   }
-  const scopeError = await eventScopeError(actor.role, ev.visibility_scope);
+  const scopeError = eventScopeError(ev.visibility_scope);
   if (scopeError) return { ok: false, error: scopeError };
   // P0-AUTH-1: payload 검증(개수/중복/대표 부분집합/이 캘린더의 활성 태그) — 조용한 slice 대신 거부.
   const tagCheck = await validateTagAssignment(admin, calendar.id, tagIds, primaryTagIds);

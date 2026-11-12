@@ -1,7 +1,6 @@
 import {beforeEach, describe, expect, it, vi} from "vitest";
-const state = vi.hoisted(() => ({role:"developer",scope:"public",unlock:false,rpcError:false,noUpdated:false,writes:[] as string[],predicates:[] as unknown[][]}));
+const state = vi.hoisted(() => ({role:"developer",scope:"public",rpcError:false,noUpdated:false,writes:[] as string[],predicates:[] as unknown[][]}));
 vi.mock("@/lib/auth/actor",()=>({resolveCurrentActor:async()=>({role:state.role})}));
-vi.mock("@/lib/private-layer/unlock",()=>({getUnlockState:async()=>({hasUnlockSession:state.unlock})}));
 vi.mock("next/cache",()=>({revalidatePath:vi.fn()}));
 vi.mock("@/lib/schedules/cache",()=>({revalidatePublicSchedule:vi.fn()}));
 vi.mock("@/lib/activity/record",()=>({recordActivity:vi.fn()}));
@@ -21,23 +20,16 @@ vi.mock("@/lib/auth/admin",()=>({createSupabaseAdminClient:()=>fakeClient("admin
 vi.mock("@/lib/auth/server",()=>({createSupabaseServerClient:async()=>fakeClient("server")}));
 const {updateEventTagsAction,updateSupportSettingsAction}=await import("@/lib/schedules/event-actions");
 const operations={tags:()=>updateEventTagsAction("event",[],[]),support:()=>updateSupportSettingsAction("event",{endDateKey:"2025-10-22"})};
-beforeEach(()=>{Object.assign(state,{role:"developer",scope:"public",unlock:false,rpcError:false,noUpdated:false,writes:[],predicates:[]});});
+beforeEach(()=>{Object.assign(state,{role:"developer",scope:"public",rpcError:false,noUpdated:false,writes:[],predicates:[]});});
 describe.each(Object.entries(operations))("%s secondary write",(_name,run)=>{
-  it.each(["owner_private","embargo","work","unknown"])("rejects locked/developer %s before any write",async(scope)=>{
-    state.scope=scope;expect((await run()).ok).toBe(false);expect(state.writes).toEqual([]);
-  });
-  it("does not let an unlocked developer modify owner-only content",async()=>{
-    state.scope="owner_private";state.unlock=true;expect((await run()).ok).toBe(false);expect(state.writes).toEqual([]);
-  });
-  it("requires owner private unlock too",async()=>{
-    state.role="owner";state.scope="owner_private";expect((await run()).ok).toBe(false);expect(state.writes).toEqual([]);
+  // 비공개 레이어 철수(0159) 뒤엔 남은 비공개 행을 owner·developer 누구도 수정하지 못한다.
+  it.each(["owner","developer"])("rejects %s on every non-public scope before any write",async(role)=>{
+    for(const scope of ["owner_private","embargo","work","unknown"]){
+      state.role=role;state.scope=scope;state.writes=[];expect((await run()).ok).toBe(false);expect(state.writes).toEqual([]);
+    }
   });
   it.each(["owner","developer"])("keeps %s public editing",async(role)=>{
     state.role=role;expect((await run()).ok).toBe(true);expect(state.writes.length).toBe(1);expect(state.writes[0]).toMatch(/^server:/);
-  });
-  it("permits unlocked owner private and unlocked developer work",async()=>{
-    state.role="owner";state.scope="owner_private";state.unlock=true;expect((await run()).ok).toBe(true);
-    state.role="developer";state.scope="work";expect((await run()).ok).toBe(true);
   });
   it("rejects viewer before any write",async()=>{state.role="viewer";expect((await run()).ok).toBe(false);expect(state.writes).toEqual([]);});
 });

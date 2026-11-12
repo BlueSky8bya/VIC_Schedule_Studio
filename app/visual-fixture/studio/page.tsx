@@ -84,7 +84,6 @@ export default async function VisualStudioFixture({
         isAuthenticated: true,
         role
       }}
-      hasUnlockSession={false}
       schedule={
         cozy ? { ...sampleStudioSchedule, events: cozyStudioEvents ?? cozy.events,
           viewerModePreview: { ...sampleStudioSchedule.viewerModePreview, events: cozy.events }

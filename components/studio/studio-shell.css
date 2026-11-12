@@ -7320,14 +7320,6 @@ html[data-reduce-motion] .cal-zoom-peek .peek-close:active {
   justify-content: flex-end;
 }
 
-/* 비공개 일정 표시(태그색 위에 점선 링) */
-.studio-event-pill.embargo,
-.studio-event-pill.work,
-.studio-event-pill.owner_private {
-  outline: 2px dashed rgb(0 0 0 / 35%);
-  outline-offset: -3px;
-}
-
 /* 선택된 일정 — 테두리 색만 진하게(연결된 좌/우는 테두리 두께가 0이라 자동으로 표시 안 됨).
    인라인 borderColor(태그색)보다 우선해야 하므로 !important. 두께는 그대로라 레이아웃 흔들림 없음. */
 /* 선택된 체인(클릭한 카드와 이어진 일정들) — 이어진 칸엔 테두리 강조를 주지 않고 옅은 배경만. */
@@ -7478,33 +7470,6 @@ html[data-reduce-motion] .delete-snack {
   font-weight: 600;
   box-shadow: var(--elev-3);
   animation: copy-toast-in 160ms ease-out;
-}
-/* 잠금해제 "여는 중" 단계: 두 줄(주 메시지 + 안내)로 핸드셰이크 단계를 또렷하게 */
-.private-unlocking {
-  align-items: flex-start;
-  max-width: min(440px, calc(100vw - 32px));
-  text-align: left;
-}
-.private-unlocking-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.private-unlocking-text strong {
-  font-size: var(--text-body);
-  font-weight: 600;
-}
-.private-unlocking-text em {
-  font-size: var(--text-label);
-  font-style: normal;
-  font-weight: 600;
-  color: rgb(255 255 255 / 72%);
-}
-/* 모바일은 컴팩트가 생명 — 부연 설명 줄은 빼고 핵심 한 줄만 남긴다. */
-@media (max-width: 999px) {
-  .private-unlocking-text em {
-    display: none;
-  }
 }
 .private-loading-spinner {
   width: 15px;
@@ -10661,17 +10626,6 @@ html[data-large-text] .support-visit {
   line-height: 1.5;
   text-align: center;
 }
-/* 비공개 범위 배지 */
-.m-scope-badge {
-  flex: 0 0 auto;
-  margin-left: 6px;
-  padding: 1px 7px;
-  border-radius: var(--r-pill);
-  font-size: var(--text-caption); /* 10.5→11 수렴 */
-  font-weight: 600;
-  background: #eef0f4;
-  color: #5b6472;
-}
 /* 🔮 떡밥(가림) — 모바일 편집실 일정에 표시(시청자에겐 ???). */
 .m-teaser-badge {
   flex: 0 0 auto;
@@ -10683,18 +10637,6 @@ html[data-large-text] .support-visit {
   background: var(--studio-silver);
   color: var(--teaser-deep);
   white-space: nowrap;
-}
-.m-scope-badge.embargo {
-  background: #fdeccd;
-  color: #9a6a06;
-}
-.m-scope-badge.work {
-  background: #e3edff;
-  color: #2f5bd0;
-}
-.m-scope-badge.owner_private {
-  background: #fde2e7;
-  color: #c0334c;
 }
 .m-add-event {
   margin-top: 2px;

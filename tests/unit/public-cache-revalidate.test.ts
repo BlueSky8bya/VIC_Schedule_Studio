@@ -30,9 +30,6 @@ vi.mock("@/lib/auth/actor", () => ({
   })
 }));
 vi.mock("@/lib/activity/record", () => ({ recordActivity: async () => {} }));
-vi.mock("@/lib/private-layer/unlock", () => ({
-  getUnlockState: async () => ({ hasUnlockSession: true })
-}));
 vi.mock("@/lib/schedules/event-validation", () => ({
   validateDateKey: () => ({ ok: true }),
   validateSupportUrl: () => ({ ok: true }),

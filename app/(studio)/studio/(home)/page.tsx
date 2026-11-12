@@ -3,7 +3,7 @@ import { StudioShell } from "@/components/studio/studio-shell";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { isMobileUserAgent } from "@/lib/auth/in-app-browser";
 import { getStudioSchedule } from "@/lib/schedules/studio-loader";
-import { getUnlockState } from "@/lib/private-layer/unlock";
+import { getPasscodeState } from "@/lib/private-layer/passcode-state";
 import { parseViewCookie, VIEW_COOKIE } from "@/lib/ui/view-cookie";
 import { timed } from "@/lib/perf/perf";
 
@@ -16,12 +16,12 @@ export default async function StudioPage({
   // 권한 게이트는 StudioShell이 검사한다(없으면 조용히 무시). (panel=members는 멤버 관리 철수로 제거.)
   const panelParam = (await searchParams)?.panel;
   const initialPanel = panelParam === "tags" ? panelParam : undefined;
-  const [actor, unlock] = await Promise.all([
+  const [actor, passcode] = await Promise.all([
     timed("page:/studio actor", () => resolveCurrentActor("vic")),
-    timed("page:/studio unlock", () => getUnlockState("vic"))
+    timed("page:/studio passcode", () => getPasscodeState("vic"))
   ]);
   const schedule = await timed("page:/studio studioSchedule", () =>
-    getStudioSchedule("vic", { actor, unlock })
+    getStudioSchedule("vic", { actor })
   );
   const mem = parseViewCookie((await cookies()).get(VIEW_COOKIE)?.value);
   const narrow = isMobileUserAgent((await headers()).get("user-agent") ?? "");
@@ -29,8 +29,7 @@ export default async function StudioPage({
   return (
     <StudioShell
       actor={actor}
-      hasUnlockSession={unlock.hasUnlockSession}
-      isDefaultPasscode={unlock.isDefaultPasscode}
+      isDefaultPasscode={passcode.isDefaultPasscode}
       schedule={schedule}
       initialView={
         typeof mem.sy === "number" && typeof mem.sm === "number"

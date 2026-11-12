@@ -1385,11 +1385,8 @@ export function InsightsDashboard({
             {withData((d) => (
               <SecurityPanel
                 data={{
-                  activeUnlockCount: d.security.activeUnlocks.length,
                   passcodeVersion: d.security.passcodeVersion,
-                  passcodeUpdatedAt: d.security.passcodeUpdatedAt,
-                  unlockDurationMinutes: d.security.unlockDurationMinutes,
-                  access: d.security.access
+                  passcodeUpdatedAt: d.security.passcodeUpdatedAt
                 }}
                 onChangePasscode={onChangePasscode}
               />

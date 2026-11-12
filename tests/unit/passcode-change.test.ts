@@ -47,7 +47,8 @@ it("updates only the version whose password was verified", async () => {
   expect(db.filters).toEqual([["calendar_id", "calendar"], ["passcode_version", 7]]);
   expect(db.update).toHaveBeenCalledWith(expect.objectContaining({ passcode_version: 8 }));
   expect(db.insert).not.toHaveBeenCalled();
-  expect(db.remove).toHaveBeenCalledTimes(1);
+  // 잠금해제 grant 테이블은 0159로 철수 — 비밀번호 변경은 다른 테이블을 지우지 않는다.
+  expect(db.remove).not.toHaveBeenCalled();
 });
 
 it.each([null, { message: "sensitive-detail" }])("rejects concurrent version changes or database failures without revoking grants", async (error) => {

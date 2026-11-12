@@ -140,9 +140,7 @@ import {
 import {
   canEditEventTags,
   canEditSchedule,
-  canEditSupport,
-  canReadOwnerPrivate,
-  canReadPrivateLayer
+  canEditSupport
 } from "@/lib/permissions/roles";
 import { isTaxonomyV3, legacyTagView } from "@/lib/tags/taxonomy";
 import { tagColor } from "@/lib/tags/dark-palette";
@@ -187,8 +185,6 @@ import {
   SUPPORT_DURATIONS,
   ROLE_LABEL,
   ROLE_DESC,
-  SCOPE_LABEL,
-  PRIVATE_FILTER,
   TENTATIVE_FILTER,
   type CopiedEvent,
   type EditDraft,
@@ -268,7 +264,6 @@ const PublicPoster = dynamic(
 type StudioShellProps = {
   actor: CurrentActor;
   schedule: StudioSchedule;
-  hasUnlockSession: boolean;
   // 현재 비밀번호가 아직 초기값(0219)인지 — 비번 변경 폼 placeholder 힌트 분기.
   isDefaultPasscode?: boolean;
   // 새로고침 복원용 초기값(서버가 쿠키에서 읽어 넘긴다). 없으면 기본(현재 달/편집실).
@@ -292,7 +287,6 @@ type StudioShellProps = {
 export function StudioShell({
   actor,
   schedule,
-  hasUnlockSession,
   isDefaultPasscode,
   initialView,
   initialViewerMode = false,
@@ -389,12 +383,6 @@ export function StudioShell({
       </>
     );
   }
-  // 비밀번호 확인 후 팝업이 닫히고 비공개 일정이 서버에서 다시 불러와지는 동안 "불러오는 중" 표시.
-  // ⚠ useTransition으로 감싸지 않는다 — startTransition(() => router.refresh())로 부르면
-  // refresh의 RSC 응답이 클라 트리에 반영되지 않는 문제가 재현됐다(Playwright 실측:
-  // 전환 밖의 router.refresh(잠그기 경로)는 정상, 전환 안(해제 경로)만 유실). 로딩 표시는
-  // 수동 플래그로 유지하고, 반영 효과(아래 useEffect)가 끈다.
-  const [loadingPrivate, setLoadingPrivate] = useState(false);
   // 페이지 이동(꾸미기·계정 변경 등)은 서버 왕복이라 즉시 안 바뀐다 → 눌렀다는 신호를 띄운다.
   const [navMsg, setNavMsg] = useState<string | null>(null);
   function startNav(message: string) {
@@ -404,31 +392,9 @@ export function StudioShell({
   }
   // 모바일 아젠다 월 전환 방향(시청자 화면과 동일한 슬라이드 애니메이션용).
   const [monthDir, setMonthDir] = useState<"next" | "prev">("next");
-  // 방송사고 방지: 새로고침/진입 시 항상 공개(일반) 모드가 기본. 잠금 세션이 있어도
-  // 사용자가 직접 토글해야 비공개 일정이 보인다.
-  const [showPrivate, setShowPrivate] = useState(false);
-  // 비밀번호 팝업은 다른 모달(인사이트 등) '위에' 따로 띄우는 독립 오버레이다 → 인사이트를 닫지 않으니
-  // 취소 시 리로드 없이 그 보안 패널이 그대로 남는다. "unlock"=잠금 해제, "change"=비밀번호 변경.
-  const [passcodeModal, setPasscodeModal] = useState<"unlock" | "change" | null>(null);
-  // 방금 잠금 해제했다면(=pendingUnlockReveal), refresh로 세션이 반영(hasUnlockSession=true)되는
-  // 즉시 비공개 표시를 켠다. refresh 과정에서 showPrivate 상태가 유실되더라도 확실히 다시 켜진다.
-  useEffect(() => {
-    // 잠금해제 직후의 문서 리로드를 건너온 '방금 풀었으니 보여줘' 의도(1회 소비).
-    // 소비 후엔 플래그가 없으므로 이후 일반 F5는 '진입 시 공개 기본'(방송사고 방지) 그대로.
-    let fromReload = false;
-    try {
-      fromReload = window.sessionStorage.getItem("vic:unlockReveal") === "1";
-      if (fromReload) window.sessionStorage.removeItem("vic:unlockReveal");
-    } catch {
-      // 접근 불가 환경이면 무시.
-    }
-    if (fromReload && hasUnlockSession) {
-      setShowPrivate(true);
-    }
-    if (hasUnlockSession) {
-      setLoadingPrivate(false); // 세션 반영 확인 → "여는 중" 종료
-    }
-  }, [hasUnlockSession]);
+  // 비밀번호 변경 팝업은 다른 모달(인사이트 등) '위에' 따로 띄우는 독립 오버레이다 → 인사이트를 닫지 않으니
+  // 취소 시 리로드 없이 그 보안 패널이 그대로 남는다.
+  const [passcodeModal, setPasscodeModal] = useState<"change" | null>(null);
   // (members 모달은 멤버 관리 철수(2026-09-04)로 제거, settings 모달은 같은 날 도구 카드 톱니에서 열린다.)
   const [searchOpen, setSearchOpen] = useState(false);
   const [flashDate, setFlashDate] = useState<string | null>(null);
@@ -698,15 +664,13 @@ export function StudioShell({
   }
   function isDimmedByFilter(event: StudioScheduleEvent) {
     if (tagFilters.length === 0) return false;
-    const matchesPrivate =
-      tagFilters.includes(PRIVATE_FILTER) && event.visibilityScope !== "public";
     const matchesTentative = tagFilters.includes(TENTATIVE_FILTER) && Boolean(event.isTentative);
     // 2계층: 대분류 필터는 그 하위 세부를 가진 이벤트까지 포함(전체집합 매칭).
     const matchesTag = tagFilters.some(
       (id) =>
-        id !== PRIVATE_FILTER && id !== TENTATIVE_FILTER && eventMatchesTagFilter(event, id, viewTags)
+        id !== TENTATIVE_FILTER && eventMatchesTagFilter(event, id, viewTags)
     );
-    return !(matchesPrivate || matchesTentative || matchesTag);
+    return !(matchesTentative || matchesTag);
   }
   // 태그 필터 아래 상태 필터(태그가 아닌 것) — PC 범례·모바일 레일이 같은 목록을 쓴다.
   const statusFilterItems = [{ id: TENTATIVE_FILTER, label: "미정", swatchClass: "tent-swatch" }];
@@ -1125,8 +1089,6 @@ export function StudioShell({
   };
   // (휴식 넛지 — 2026-09-03 도입, 2026-09-04 철수: 관리자가 안 쓸 기능이라 사용자 결정. 코드는 git 이력,
   //  옛 행동 기록의 라벨(rest-nudge*)만 사전에 남긴다.)
-  const canReadPrivate =
-    canReadPrivateLayer(effectiveRole, hasUnlockSession) && showPrivate;
 
 
   // 미리보기 중 변경 차단(보기 전용). 막았으면 true. (문구는 짧게 — 모바일 컴팩트.)
@@ -1312,21 +1274,10 @@ export function StudioShell({
     );
   }
 
+  // 일정은 모두 공개 범위다(비공개 레이어 철수, 0159). 혹시 남은 다른 범위 행은 그리지 않는다.
   const visibleEvents = useMemo(
-    () =>
-      events.filter((event) => {
-        if (event.visibilityScope === "public") {
-          return true;
-        }
-        if (!canReadPrivate) {
-          return false;
-        }
-        if (event.visibilityScope === "owner_private") {
-          return canReadOwnerPrivate(actor.role);
-        }
-        return true;
-      }),
-    [actor.role, canReadPrivate, events]
+    () => events.filter((event) => event.visibilityScope === "public"),
+    [events]
   );
   const cells = useMemo(() => buildCalendarMonth(view.year, view.month), [view]);
   // 업 도움은 기간(종료일, KST)이 지나면 편집실에서도 자동으로 내린다 — 시청자 화면과 동일하게
@@ -4930,7 +4881,7 @@ export function StudioShell({
 
   function canRecoverSavedForm(saved: EventForm, recovery: SaveRecovery) {
     const target = saved.id ? eventsRef.current.find(item => canonId(item.id) === canonId(saved.id!)) : undefined;
-    return canRecoverSaveSnapshot(recovery, { canEdit, unlocked: canReadPrivate, owner: effectiveRole === "owner", readOnly: viewerMode || Boolean(previewRole) }, target);
+    return canRecoverSaveSnapshot(recovery, { canEdit, readOnly: viewerMode || Boolean(previewRole) }, target);
   }
   function recoverFailedSave() {
     if (!canEdit || blockedByPreview()) return;
@@ -4984,17 +4935,6 @@ export function StudioShell({
     const isNew = !form.id;
     // 기존 카드면 '지금 배열에 있는' id로 통일(temp였다가 실제로 바뀐 경우 실제 id).
     const tempId = existing?.id ?? form.id ?? `temp-${Math.random().toString(36).slice(2)}`;
-    // P0-SEC-1(fail-closed): 잠금 상태에서 비공개 범위를 **조용히 공개로 바꾸지 않는다**.
-    // 예전엔 데스크톱에서 `"public"`으로 강제 변환했고 모바일은 잠금 없이 통과시켰다 —
-    // 둘 다 위험(전자는 비공개 내용이 소리 없이 공개, 후자는 잠금 게이트 우회). 이제 모든
-    // 장치에서 동일하게: 비공개 범위 저장은 비공개 보기(잠금 해제)가 켜져 있어야 하고,
-    // 아니면 저장을 거부하고 이유를 말한다(서버도 동일 검증 — 클라 게이트는 1차 방어일 뿐).
-    if (form.visibilityScope !== "public" && !canReadPrivate) {
-      setActionError(
-        "비공개 범위(엠바고·작업자)는 '비공개 일정 보기'를 켠 상태에서만 저장할 수 있어요."
-      );
-      return;
-    }
     const scope: EventVisibilityScope = form.visibilityScope;
     const companionPublicSave = scope === "public" && !form.teaser;
     const endDateKey =
@@ -5890,12 +5830,6 @@ export function StudioShell({
   // 복사본 삽입 공통 경로 — Ctrl+V 붙여넣기가 쓴다(targetDate 파라미터화 유지).
   function insertEventCopy(payload: CopiedEvent, targetDate: string, toast: string, sourceId: string | null = null) {
     if (!canEdit) return;
-    // P0-SEC-1(fail-closed): 잠금 상태에서 비공개 일정을 붙여넣으면 예전엔 공개로 강제 변환
-    // 됐다 — 비공개 '내용'이 공개 일정으로 복제되는 유출 경로. 조용한 변환 대신 거부한다.
-    if (payload.visibilityScope !== "public" && !canReadPrivate) {
-      flashToast("비공개 일정은 '비공개 일정 보기'를 켠 뒤 복제할 수 있어요");
-      return;
-    }
     const scope: EventVisibilityScope = payload.visibilityScope;
     const endDateKey =
       payload.isSupport && payload.spanDays > 0
@@ -6145,7 +6079,7 @@ export function StudioShell({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canEdit, selectedEventId, clipboard, selectedDate, modal, canReadPrivate, events, editorVisible, form, teaserGateActive]);
+  }, [canEdit, selectedEventId, clipboard, selectedDate, modal, events, editorVisible, form, teaserGateActive]);
 
   // 모바일 아젠다도 데스크톱과 동일하게 — 비공개 일정은 "비공개 일정 보기"로 직접 켜기 전까진
   // 누구에게도(개발자·소유자 포함) 보이지 않는다. 방송사고 방지: 진입/새로고침 시 항상 공개 기본.
@@ -6523,11 +6457,6 @@ export function StudioShell({
                                   </i>{" "}
                                   {event.publicTitle}
                                 </span>
-                                {event.visibilityScope !== "public" ? (
-                                  <span className={`m-scope-badge ${event.visibilityScope}`}>
-                                    {SCOPE_LABEL[event.visibilityScope]}
-                                  </span>
-                                ) : null}
                               </p>
                               {hasSupportDateRange(getEventDateKey(event), sEnd) ? <p className="agenda-sub">
                                 {formatShortDate(cell.isoDate)} ~ {formatShortDate(sEnd)}
@@ -6605,11 +6534,6 @@ export function StudioShell({
                               {teaserStillHidden(event) ? (
                                 <span className="m-teaser-badge" title={teaserBadgeTitle(event.teaserRevealAt)}>
                                   🔮 최초공개
-                                </span>
-                              ) : null}
-                              {event.visibilityScope !== "public" ? (
-                                <span className={`m-scope-badge ${event.visibilityScope}`}>
-                                  {SCOPE_LABEL[event.visibilityScope]}
                                 </span>
                               ) : null}
                             </p>
@@ -7540,17 +7464,6 @@ export function StudioShell({
           </button>
         </div>
       ) : null}
-      {loadingPrivate ? (
-        // 잠금해제 핸드셰이크 2단계(여는 중). 패널의 "확인 중…"(검증)과 ⚠배너(활성) 사이
-        // 단계를 명확히 보여 "확인됐는데 아직 안 보이는" 모호한 순간을 없앤다.
-        <div className="private-loading private-unlocking" role="status" aria-live="polite">
-          <span className="private-loading-spinner" aria-hidden="true" />
-          <span className="private-unlocking-text">
-            <strong>{isNarrow ? "비공개 여는 중…" : "🔓 비공개 레이어를 여는 중입니다…"}</strong>
-            <em>비밀번호가 확인됐어요. 비공개 일정을 불러오고 있습니다.</em>
-          </span>
-        </div>
-      ) : null}
       {navMsg ? (
         <div className="private-loading" role="status" aria-live="polite">
           <span className="private-loading-spinner" aria-hidden="true" />
@@ -8102,7 +8015,6 @@ export function StudioShell({
                       const teaserHidden = teaserStillHidden(event);
                       const pillClass = [
                         "studio-event-pill",
-                        event.visibilityScope,
                         teaserHidden ? "teaser" : "", // 떡밥(가림, 미공개) — 보라 점선으로 표시
                         inSelChain ? "selected" : "",
                         isSel ? "primary-selected" : "",
@@ -9045,7 +8957,7 @@ export function StudioShell({
         </div>
       ) : null}
 
-      {/* 비밀번호 팝업 — 다른 모달(인사이트) 위에 따로 띄우는 독립 오버레이(z-index 더 높음).
+      {/* 비밀번호 변경 팝업 — 다른 모달(인사이트) 위에 따로 띄우는 독립 오버레이(z-index 더 높음).
           연 모달을 닫지 않으니 취소/X/배경 클릭 시 리로드 없이 그 화면(보안 패널)이 그대로 드러난다. */}
       {passcodeModal ? (
         <div
@@ -9063,7 +8975,7 @@ export function StudioShell({
         >
           <div className="modal-card" aria-modal="true" role="dialog" ref={passcodeTrapRef}>
             <div className="modal-head">
-              <h2>{passcodeModal === "change" ? "비밀번호 변경" : "비공개 일정"}</h2>
+              <h2>비밀번호 변경</h2>
               <button
                 aria-label="닫기"
                 className="modal-close"
@@ -9078,28 +8990,7 @@ export function StudioShell({
               canManage={canEdit}
               isDefaultPasscode={isDefaultPasscode}
               onDone={() => setPasscodeModal(null)}
-              onUnlocked={() => {
-                // 잠금 해제 성공 → 곧장 문서 리로드로 비공개 상태를 싣는다.
-                // ⚠ router.refresh()/서버액션 revalidatePath로는 안 된다(Playwright 실측):
-                // 비번 모달이 닫히며 오버레이 스택이 히스토리를 되감는 순간, 라우터가 방금
-                // 도착한 RSC 페이로드를 버려 화면이 잠긴 채 남는 레이스가 있다(모달이 없는
-                // '지금 잠그기' 경로만 정상이던 이유). 리로드는 이 레이스가 원천 불가능.
-                // '방금 풀었으니 보여줘' 의도는 1회용 sessionStorage 플래그로 리로드를 건너
-                // 전달한다 — 일반 F5의 '진입 시 공개 기본'(방송사고 방지) 규칙은 그대로다.
-                // ⚠ 여기서 setPasscodeModal(null) 등 상태 변경 금지 — 모달이 닫히면 오버레이
-                // 스택 효과가 history.back()을 호출하는데, 그 되감기가 진행 중인 리로드/refresh
-                // 네비게이션을 취소해 화면이 잠긴 채 남는다(Playwright로 확정한 근본 원인:
-                // 리로드 후에도 브라우저가 이전 render id를 그대로 물고 있었다).
-                // 모달은 "확인 중…" 상태 그대로 두고 문서 리로드가 모든 걸 새로 시작하게 한다.
-                try {
-                  window.sessionStorage.setItem("vic:unlockReveal", "1");
-                } catch {
-                  // 저장 불가 환경이면 리로드 후 수동으로 '비공개 일정 보기'만 누르면 된다.
-                }
-                window.location.reload();
-              }}
               setPasscodeAction={setPasscodeAction}
-              startChanging={passcodeModal === "change"}
             />
           </div>
         </div>

@@ -3,8 +3,7 @@ import type { DarkTagColors } from "@/lib/tags/dark-palette";
 export const PRODUCT_TIMEZONE = "Asia/Seoul" as const;
 
 // "developer"는 플랫폼 레벨 슈퍼관리자(시스템 유지보수자)로, "owner"(스트리머)와 구분된다.
-// 개발자는 모든 캘린더를 읽고/편집할 수 있지만, 공개 API 출력은 동일하게 유지되고
-// 비공개 레이어 읽기에는 여전히 잠금해제 세션이 필요하다.
+// 개발자는 모든 캘린더를 읽고/편집할 수 있지만, 공개 API 출력은 동일하게 유지된다.
 // 역할 세 종류: 개발자·관리자(owner)·시청자. (worker 철수 2026-08-27 ADR-0015, manager(신뢰 멤버) 철수
 // 2026-09-04 ADR-0018 — 멤버 관리 기능 자체가 프로젝트에서 빠졌다. 옛 행동 기록의 "manager" 문자열은
 // 라벨 사전(lib/activity/labels.ts)이 판독용으로만 안다.)
@@ -12,11 +11,11 @@ export type MembershipRole = "developer" | "owner" | "viewer";
 
 export type EventStatus = "draft" | "scheduled" | "live" | "done" | "cancelled";
 
-export type EventVisibilityScope = "public" | "embargo" | "work" | "owner_private";
+// 비공개 레이어(embargo·work·owner_private)는 2026-11-13 철수했다(0159). DB enum은 남아 있지만
+// 앱이 읽고 쓰는 일정은 공개 범위뿐이다. 최초공개 게이트는 공개 일정의 teaser로 동작한다.
+export type EventVisibilityScope = "public";
 
 export type EventCategory = "stream" | "collab" | "notice" | "support" | "dayoff";
-
-export type VariantPromotionState = "draft" | "active" | "promoted" | "archived";
 
 // 팔레트 색 키. 기본 13색(gray·lavender·blue·pink·mint·yellow·orange·beige·sky·lime·red·indigo·teal)에
 // 더해, 태그 추가 시 동적으로 생성되는 색(gen-XXXX)도 있으므로 string으로 둔다.
@@ -76,8 +75,6 @@ export type PublicScheduleEvent = {
   tagIds: string[];
   primaryTagIds: string[];
   sortOrder: number;
-  variantGroupId?: string;
-  variantLabel?: string;
   heartCount?: number; // A: 일정별 관심(하트) 집계 수. 숫자 자체는 노출하지 않고 "관심 높음" 판정에만 쓴다.
   // 최초공개 '기대돼요' 집계(0060) — 공개 전엔 기대 버튼 카운트, 공개 후엔 "n명이 기다렸어요" 배지.
   // 익명 집계 수만(토큰/계정 비노출) — 공개 안전.
@@ -89,24 +86,9 @@ export type PublicScheduleEvent = {
   teaserRevealAt?: string; // 공개 시각(ISO·UTC). teaser=true일 때만.
 };
 
-export type PrivateEventMeta = {
-  eventId: string;
-  privateTitle?: string;
-  privateMemo?: string;
-  editorNote?: string;
-};
-
 export type StudioScheduleEvent = Omit<PublicScheduleEvent, "status" | "visibilityScope"> & {
   status: EventStatus;
   visibilityScope: EventVisibilityScope;
-  privateMeta?: PrivateEventMeta;
-};
-
-export type VariantGroup = {
-  id: string;
-  name: string;
-  promotionState: VariantPromotionState;
-  promotedEventId?: string;
 };
 
 // (P2-PROTO-1: Proposal/RequestItem/SupportCampaign 타입 제거 — 초기 프로토타입의 잔재로,
@@ -263,5 +245,4 @@ export type StudioSchedule = Omit<PublicSchedule, "events"> & {
   // 생일 선물 미리보기 스위치(0141, 개발자 설정) — 편집실 전용, 공개 응답엔 없다.
   birthdayGiftPreview?: boolean;
   events: StudioScheduleEvent[];
-  variantGroups: VariantGroup[];
 };

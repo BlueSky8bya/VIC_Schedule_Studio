@@ -3,8 +3,7 @@ import {
   canEditEventTags,
   canEditSchedule,
   canEditSupport,
-  canReadOwnerPrivate,
-  canReadPrivateLayer
+  canUsePrivateLayer
 } from "@/lib/permissions/roles";
 
 // 역할은 세 종류뿐: owner(관리자)·developer·viewer. (worker 철수 2026-08-27 ADR-0015, manager 철수
@@ -23,16 +22,9 @@ describe("role permissions", () => {
     expect(canEditEventTags("viewer")).toBe(false);
   });
 
-  it("private layer reads need unlock; owner/developer only", () => {
-    expect(canReadPrivateLayer("owner", true)).toBe(true);
-    expect(canReadPrivateLayer("developer", true)).toBe(true);
-    expect(canReadPrivateLayer("viewer", true)).toBe(false);
-    expect(canReadPrivateLayer("owner", false)).toBe(false);
-  });
-
-  it("shows owner_private to the owner only (not even developer)", () => {
-    expect(canReadOwnerPrivate("owner")).toBe(true);
-    expect(canReadOwnerPrivate("developer")).toBe(false);
-    expect(canReadOwnerPrivate("viewer")).toBe(false);
+  it("editor passcode (teaser gate, passcode change) is owner/developer only", () => {
+    expect(canUsePrivateLayer("owner")).toBe(true);
+    expect(canUsePrivateLayer("developer")).toBe(true);
+    expect(canUsePrivateLayer("viewer")).toBe(false);
   });
 });

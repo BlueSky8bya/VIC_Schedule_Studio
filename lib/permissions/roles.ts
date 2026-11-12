@@ -24,18 +24,8 @@ export function canEditEventTags(role: MembershipRole) {
   return role === "owner" || role === "developer";
 }
 
-// 비공개 레이어(잠금 해제·비밀번호 확인)를 쓸 수 있는 자격. 소유자·개발자만. 편집실의 비공개 보기 UI는
-// ADR-0014로 철수했고, 이 자격은 최초공개 게이트(verifyOnly)·비밀번호 변경에 쓰인다.
+// 편집실 비밀번호(최초공개 게이트 확인·비밀번호 변경)를 쓸 수 있는 자격. 소유자·개발자만.
+// (비공개 보기 UI는 ADR-0014, 비공개 일정·잠금해제 세션은 2026-11-13 0159로 철수.)
 export function canUsePrivateLayer(role: MembershipRole) {
   return role === "owner" || role === "developer";
-}
-
-// 위 자격이 있고 + 유효한 잠금해제 세션이 있어야 비공개(work/엠바고) 행이 실제로 보인다.
-export function canReadPrivateLayer(role: MembershipRole, hasUnlockSession: boolean) {
-  return canUsePrivateLayer(role) && hasUnlockSession;
-}
-
-// "엠바고"(DB owner_private, 옛 '나만'·'엠바고' 통합) 일정은 소유자 전용. 개발자도 볼 수 없다.
-export function canReadOwnerPrivate(role: MembershipRole) {
-  return role === "owner";
 }

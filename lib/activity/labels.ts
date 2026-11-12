@@ -430,7 +430,7 @@ export const ACT: Record<string, TargetLabel> = {
   "member-role-toggle": { name: "멤버 역할 바꾸기", area: "옛 화면" },
   "access-expire": { name: "잠금해제 즉시 만료", area: "옛 화면" },
   "insight-change-passcode": { name: "비밀번호 변경", area: "인사이트" },
-  "passcode-submit": { name: "비밀번호 확인", area: "편집실" },
+  "passcode-submit": { name: "비밀번호 확인", area: "편집실", hint: "비공개 레이어 잠금해제 폼 — 2026-11-13 철수", retired: true },
 
 
   // 시청자 화면 기타
@@ -548,7 +548,7 @@ export const ACT: Record<string, TargetLabel> = {
   "detail-next-event": { name: "상세에서 다음 일정", area: "일정" },
   "member-add": { name: "멤버 추가", area: "옛 화면" },
   "security-retry": { name: "보안 정보 다시 시도", area: "인사이트" },
-  "passcode-change-open": { name: "비밀번호 변경 열기", area: "설정" },
+  "passcode-change-open": { name: "비밀번호 변경 열기", area: "설정", hint: "잠금해제 폼 안의 변경 버튼 — 2026-11-13 철수", retired: true },
   "passcode-change-save": { name: "비밀번호 변경 저장", area: "설정" },
   "passcode-change-cancel": { name: "비밀번호 변경 취소", area: "설정" },
   "sticker-font-weight": { name: "글자 굵기", area: "옛 화면" },

@@ -30,9 +30,7 @@ vi.mock("next/headers", () => ({ cookies: async () => ({ getAll: () => [] }) }))
 vi.mock("@/lib/auth/config", () => ({ isSupabaseConfigured: () => state.configured }));
 vi.mock("@/lib/perf/perf", () => ({ timed: (_label: string, run: () => Promise<unknown>) => run() }));
 vi.mock("@/lib/auth/actor", () => ({ resolveCurrentActor: async () => ({ role: "owner", isAuthenticated: true, email: null }) }));
-vi.mock("@/lib/private-layer/unlock", () => ({ getUnlockState: async () => ({ hasUnlockSession: true }) }));
 vi.mock("@/lib/auth/admin", () => ({ createSupabaseAdminClient: () => null }));
-vi.mock("@/lib/private-layer/secret-crypto", () => ({ isCiphertext: () => false, decryptSecret: vi.fn() }));
 vi.mock("@supabase/supabase-js", () => ({ createClient: () => client() }));
 vi.mock("@/lib/auth/server", () => ({ createSupabaseServerClient: async () => client() }));
 
@@ -82,8 +80,7 @@ function event(index = 0): Record<string, unknown> {
     support_kind: null, support_url: null, start_time: null, end_time: null,
     is_all_day: true, is_tentative: false, public_title: "공개 합성 일정", public_description: null,
     status: "scheduled", sort_order: 0, category: "stream", teaser: false,
-    teaser_reveal_at: null, event_tags: [], visibility_scope: "public", secret_cipher: null,
-    event_private_meta: null,
+    teaser_reveal_at: null, event_tags: [], visibility_scope: "public",
   };
 }
 
@@ -160,13 +157,13 @@ describe("studio pagination shares the same safe read mechanism", () => {
     expect(reads.map(read => read.range)).toEqual([[0, 999], [1000, 1999]]);
     for (const read of reads) {
       expect(read.order).toEqual(["date_key", "created_at", "id"]);
-      expect(read.filters).toEqual([["is:deleted_at", null], ["eq:calendar_id", "fixture-calendar"]]);
+      expect(read.filters).toEqual([["is:deleted_at", null], ["eq:visibility_scope", "public"], ["eq:calendar_id", "fixture-calendar"]]);
     }
   });
   it("does not let developer pagination expose owner_private rows", async () => {
     state.studioEvents = Array.from({ length: 1001 }, (_, index) => ({ ...event(index), visibility_scope: index === 1000 ? "owner_private" : "public" }));
     const { getStudioSchedule } = await import("@/lib/schedules/studio-loader");
-    const result = await getStudioSchedule("vic", { actor: { role: "developer", isAuthenticated: true, email: null }, unlock: { hasUnlockSession: true, passcodeSet: true, isDefaultPasscode: false } });
+    const result = await getStudioSchedule("vic", { actor: { role: "developer", isAuthenticated: true, email: null } });
     expect(result.events).toHaveLength(1000); expect(result.events.every(row => row.visibilityScope === "public")).toBe(true);
   });
   it("fails the studio read when a later page fails", async () => {

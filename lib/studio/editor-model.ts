@@ -152,15 +152,6 @@ export const ROLE_LABEL: Record<MembershipRole, string> = {
   viewer: "시청자"
 };
 
-// 비-owner(개발자의 시청자 미리보기) 읽기전용 상세에서 쓰는 평이한 공개 범위 라벨.
-// "엠바고"(DB owner_private, 옛 '나만'·'엠바고' 통합)는 소유자 전용. work는 "작업자".
-export const VISIBILITY_LABEL: Record<EventVisibilityScope, string> = {
-  public: "모두",
-  embargo: "엠바고",
-  work: "작업자",
-  owner_private: "엠바고"
-};
-
 // A3: 역할 배지의 "?"를 누르면 뜨는 한 줄 책임 + 할 수 있는 것/없는 것. 빈 버튼으로 권한을
 // 추론하게 두지 않는다. (매니저 철수 2026-09-04 ADR-0018 — '멤버' 항목도 뺐다.)
 export const ROLE_DESC: Record<MembershipRole, { summary: string; can: string[] }> = {
@@ -178,16 +169,7 @@ export const ROLE_DESC: Record<MembershipRole, { summary: string; can: string[] 
   }
 };
 
-export const SCOPE_LABEL: Record<EventVisibilityScope, string> = {
-  public: "모두",
-  embargo: "엠바고",
-  work: "작업자",
-  owner_private: "엠바고"
-};
-
-// 색상 필터에 섞어 쓰는 특수 필터 id — 태그가 아니라 "비공개(공개 아님) 일정"을 골라본다.
-export const PRIVATE_FILTER = "__private__";
-// 같은 자리의 '미정' 필터(2026-10-05 소유자) — 아직 확정 안 된(빗금) 일정만 골라본다.
+// 색상 필터에 섞어 쓰는 특수 필터 id — '미정' 필터(2026-10-05 소유자) — 아직 확정 안 된(빗금) 일정만 골라본다.
 export const TENTATIVE_FILTER = "__tentative__";
 
 export function createEmptyForm(): EventForm {

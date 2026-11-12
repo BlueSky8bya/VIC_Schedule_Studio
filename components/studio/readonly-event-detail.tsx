@@ -9,7 +9,6 @@ import type {
   BroadcastTag,
   StudioScheduleEvent
 } from "@/lib/domain/schedule-types";
-import { VISIBILITY_LABEL } from "@/lib/studio/editor-model";
 import type { createTagVisualResolver } from "@/lib/tags/tag-visual";
 
 type Props = {
@@ -54,10 +53,6 @@ export function ReadonlyEventDetail({ selectedDate, selectedEvent, legendTags, t
           <div className="detail-row">
             <span className="detail-label">제목</span>
             <p className="detail-value">{selectedEvent.publicTitle || "(제목 없음)"}</p>
-          </div>
-          <div className="detail-row">
-            <span className="detail-label">공개 범위</span>
-            <p className="detail-value">{VISIBILITY_LABEL[selectedEvent.visibilityScope]}</p>
           </div>
           {selectedEvent.tagIds.length > 0 ? (
             <div className="detail-row">
