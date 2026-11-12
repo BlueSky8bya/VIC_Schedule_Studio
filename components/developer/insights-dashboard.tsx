@@ -8,10 +8,8 @@ import {
   CalendarDays,
   ChevronLeft,
   ChevronRight,
-  Cog,
   Heart,
   LineChart,
-  Lock,
   Radio,
   TrendingUp,
 } from "lucide-react";
@@ -24,10 +22,8 @@ import {
 } from "react";
 import { DeveloperPanel } from "@/components/developer/developer-panel";
 import { BroadcastHours } from "@/components/studio/broadcast-hours";
-import { SecurityPanel } from "@/components/studio/security-panel";
 import { StackTrendChart } from "@/components/studio/stack-trend-chart";
 import { TrendDeltaBadge } from "@/components/studio/trend-delta-badge";
-import { PlainEmail } from "@/components/ui/plain-email";
 import {
   getInsightsAction,
   getTrendAction,
@@ -38,7 +34,6 @@ import {
   type VisitTrends
 } from "@/lib/insights/actions";
 import { kstDay, monthProgress } from "@/lib/insights/month-progress";
-import { getPerfStatsAction, type PerfStatRow } from "@/lib/insights/perf-actions";
 import {
   HEART_BLAZE_MIN,
   HEART_BLAZE_RATIO,
@@ -71,30 +66,17 @@ export const DEVICE_META: { key: string; label: string; color: string }[] = [
 const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"];
 
 // 통일성: 비개발자와 공유하는 3패널(트렌드·일정·참여)을 윗줄에 두고,
-// 개발자 전용(실시간·방문·보안·시스템)은 아랫줄에. 아래 트랙 섹션 순서도 이와 일치해야 한다
+// 개발자 전용(실시간·방문)은 아랫줄에. 아래 트랙 섹션 순서도 이와 일치해야 한다
 // (CSS가 data-active=n ↔ nth-child로 짝을 맞춘다 — 여기만 바꾸면 안 된다).
 // 트렌드가 첫 탭 = 기본 화면(2026-08-31 사용자 지시 — 열자마자 흐름부터).
+// (보안·시스템은 2026-11-13 설정 창으로 옮겼다 — 보안 묶음·개발자 묶음.)
 const PANELS = [
   { key: "trend", label: "트렌드", icon: LineChart },
   { key: "content", label: "일정", icon: CalendarDays },
   { key: "engagement", label: "참여", icon: Heart },
   { key: "live", label: "실시간", icon: Radio },
-  { key: "visits", label: "방문", icon: TrendingUp },
-  { key: "security", label: "보안", icon: Lock },
-  { key: "system", label: "시스템", icon: Cog }
+  { key: "visits", label: "방문", icon: TrendingUp }
 ] as const;
-function kst(iso: string | null): Date | null {
-  if (!iso) return null;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return null;
-  return new Date(d.getTime() + 9 * 3600 * 1000);
-}
-function fmtDateTime(iso: string | null): string {
-  const k = kst(iso);
-  return k
-    ? `${k.getUTCMonth() + 1}.${k.getUTCDate()} ${String(k.getUTCHours()).padStart(2, "0")}:${String(k.getUTCMinutes()).padStart(2, "0")}`
-    : "—";
-}
 function weekdayLabel(wd: number | null): string {
   return wd !== null ? `${WEEKDAY[wd]}요일` : "—";
 }
@@ -332,15 +314,7 @@ function StackBar({
   );
 }
 
-export function InsightsDashboard({
-  year,
-  month,
-  onChangePasscode
-}: {
-  year: number;
-  month: number;
-  onChangePasscode?: () => void;
-}) {
+export function InsightsDashboard({ year, month }: { year: number; month: number }) {
   const [index, setIndex] = useState(0);
   const [data, setData] = useState<InsightsData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -361,10 +335,6 @@ export function InsightsDashboard({
   const sessionListRef = useRef<HTMLUListElement | null>(null);
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
-  // 서버 성능(시스템 패널) — 라벨별 응답시간 통계. 시간창(시간 단위) 전환 가능.
-  const [perf, setPerf] = useState<PerfStatRow[] | null>(null);
-  const [perfHours, setPerfHours] = useState(24);
-  const [perfLoading, setPerfLoading] = useState(false); // 시간창 전환 후 다시 불러오는 중(클릭 피드백)
 
   useEffect(() => {
     let alive = true;
@@ -400,22 +370,6 @@ export function InsightsDashboard({
       alive = false;
     };
   }, [year, month]);
-
-  // 서버 성능 통계 — 마운트 + 시간창 변경 시 로드(개발자 전용·저빈도라 항상 가볍게).
-  useEffect(() => {
-    let alive = true;
-    setPerfLoading(true);
-    getPerfStatsAction(perfHours).then((r) => {
-      if (!alive) return;
-      setPerf(r.ok ? r.rows : null);
-      setPerfLoading(false);
-    }).catch(() => {
-      if (alive) { setPerf(null); setPerfLoading(false); }
-    });
-    return () => {
-      alive = false;
-    };
-  }, [perfHours]);
 
   // 일별/주별·역할별/기기별을 바꾸면 막대가 바뀌므로 떠 있던 분해 툴팁은 지운다.
   useEffect(() => {
@@ -1379,132 +1333,6 @@ export function InsightsDashboard({
 
           {/* 6) 방문(이 달) — 개발자 전용 */}
           <section className="insights-panel">{renderVisits()}</section>
-
-          {/* 7) 보안·접근 — 공용 SecurityPanel(개발자는 개발자 섹션까지 모두 표시) */}
-          <section className="insights-panel">
-            {withData((d) => (
-              <SecurityPanel
-                data={{
-                  passcodeVersion: d.security.passcodeVersion,
-                  passcodeUpdatedAt: d.security.passcodeUpdatedAt
-                }}
-                onChangePasscode={onChangePasscode}
-              />
-            ))}
-          </section>
-
-          {/* 8) 시스템·운영 */}
-          <section className="insights-panel">
-            {withData((d) => (
-              <>
-                {d.system.bindingOk ? null : (
-                  <div className="insight-banner warn">
-                    ⚠ 등록된 관리자와 실제 DB 관리자가 달라요 — 관리자 저장이 실패할 수 있어요.
-                    <br />
-                    실제 DB 관리자:{" "}
-                    {d.system.dbOwnerEmail ? <PlainEmail value={d.system.dbOwnerEmail} /> : "—"}
-                  </div>
-                )}
-                <h4 className="insight-subhead">관리자 계정 ({d.system.ownerEmails.length})</h4>
-                {d.system.ownerEmails.length === 0 ? (
-                  <p className="insight-empty">등록된 관리자 계정이 없어요.</p>
-                ) : (
-                  <ul className="sys-emails">
-                    {d.system.ownerEmails.map((e) => (
-                      <li key={e}>
-                        <span className="sys-dot" style={{ background: roleColor("owner") }} />
-                        <PlainEmail className="sys-email" value={e} />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <h4 className="insight-subhead">개발자 계정 ({d.system.developerEmails.length})</h4>
-                {d.system.developerEmails.length === 0 ? (
-                  <p className="insight-empty">등록된 개발자 계정이 없어요.</p>
-                ) : (
-                  <ul className="sys-emails">
-                    {d.system.developerEmails.map((e) => (
-                      <li key={e}>
-                        <span className="sys-dot" style={{ background: roleColor("developer") }} />
-                        <PlainEmail className="sys-email" value={e} />
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <h4 className="insight-subhead">배포</h4>
-                <ul className="insight-rows">
-                  <li>
-                    <span>버전(커밋)</span>
-                    <strong className="sys-commit">{d.system.commit ?? "로컬"}</strong>
-                  </li>
-                  <li>
-                    <span>배포 시각(KST)</span>
-                    <strong>{fmtDateTime(d.system.deployedAt)}</strong>
-                  </li>
-                </ul>
-
-                {/* 서버 성능 — 구간별 응답시간(라벨별 p95 느린 순). "여기가 평소/벤치보다 느리다"를 본다. */}
-                <div className="perf-head-row">
-                  <h4 className="insight-subhead" style={{ margin: 0 }}>
-                    서버 성능
-                  </h4>
-                  <div className="perf-windows" role="group" aria-label="시간 범위" aria-busy={perfLoading}>
-                    {[24, 168].map((h) => (
-                      <button
-                        aria-pressed={perfHours === h}
-                        className={perfHours === h ? "active" : ""}
-                        data-act="perf-hours"
-                        data-act-opt={h === 24 ? "day" : "week"}
-                        key={h}
-                        onClick={() => {
-                          if (perfHours === h) return;
-                          hapticTick();
-                          setPerfHours(h);
-                        }}
-                        type="button"
-                      >
-                        {h >= 168 ? "7일" : `${h}시간`}
-                      </button>
-                    ))}
-                    {perfLoading ? <span className="perf-spin" aria-label="불러오는 중" role="status" /> : null}
-                  </div>
-                </div>
-                {perf === null ? (
-                  <p className="insight-empty">{perfLoading ? "불러오는 중…" : "성능 정보를 불러오지 못했어요."}</p>
-                ) : perf.length === 0 ? (
-                  <p className="insight-empty">아직 표본이 없어요 — 요청이 쌓이면 채워져요.</p>
-                ) : (
-                  <div className={`perf-table${perfLoading ? " is-loading" : ""}`}>
-                    <div className="perf-row perf-thead">
-                      <span>구간</span>
-                      <span title="전체 요청 중 균등 추출한 표본 수">표본</span>
-                      <span>평균</span>
-                      <span>p95</span>
-                      <span>최대</span>
-                    </div>
-                    {perf.map((r) => (
-                      <div className="perf-row" key={r.label}>
-                        <span className="perf-label" title={r.label}>
-                          {r.label}
-                        </span>
-                        <span className="perf-num">{r.n}</span>
-                        <span className="perf-num">{r.avgMs}</span>
-                        <span
-                          className="perf-num perf-p95"
-                          data-slow={r.p95Ms >= 300 ? "" : undefined}
-                          data-warn={r.p95Ms >= 120 && r.p95Ms < 300 ? "" : undefined}
-                        >
-                          {r.p95Ms}
-                        </span>
-                        <span className="perf-num">{r.maxMs}</span>
-                      </div>
-                    ))}
-                    <p className="perf-foot">단위 ms · p95 = 느린 5% 기준선(빨강 ≥300, 주황 ≥120)</p>
-                  </div>
-                )}
-              </>
-            ))}
-          </section>
         </div>
       </div>
 

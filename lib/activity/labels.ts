@@ -429,7 +429,7 @@ export const ACT: Record<string, TargetLabel> = {
   // 멤버·보안
   "member-role-toggle": { name: "멤버 역할 바꾸기", area: "옛 화면" },
   "access-expire": { name: "잠금해제 즉시 만료", area: "옛 화면" },
-  "insight-change-passcode": { name: "비밀번호 변경", area: "인사이트" },
+  "insight-change-passcode": { name: "비밀번호 변경", area: "설정", hint: "설정 창 보안 묶음(2026-11-13 전엔 인사이트 보안 탭) — 기록 연속을 위해 id 유지" },
   "passcode-submit": { name: "비밀번호 확인", area: "편집실", hint: "비공개 레이어 잠금해제 폼 — 2026-11-13 철수", retired: true },
 
 
@@ -547,7 +547,7 @@ export const ACT: Record<string, TargetLabel> = {
   "detail-previous-event": { name: "상세에서 이전 일정", area: "일정" },
   "detail-next-event": { name: "상세에서 다음 일정", area: "일정" },
   "member-add": { name: "멤버 추가", area: "옛 화면" },
-  "security-retry": { name: "보안 정보 다시 시도", area: "인사이트" },
+  "security-retry": { name: "보안 정보 다시 시도", area: "설정" },
   "passcode-change-open": { name: "비밀번호 변경 열기", area: "설정", hint: "잠금해제 폼 안의 변경 버튼 — 2026-11-13 철수", retired: true },
   "passcode-change-save": { name: "비밀번호 변경 저장", area: "설정" },
   "passcode-change-cancel": { name: "비밀번호 변경 취소", area: "설정" },
@@ -660,7 +660,7 @@ export const ACT: Record<string, TargetLabel> = {
     name: "설정 묶음 고르기",
     area: "설정",
     hint: "설정 창 왼쪽 목록(글자·소리·화면·움직임·배경…)",
-    opts: { text: "글자", sound: "소리", screen: "화면", motion: "움직임", bg: "배경", edit: "편집", viewer: "시청자 화면", companion: "빅타민", dev: "개발자" }
+    opts: { text: "글자", sound: "소리", screen: "화면", motion: "움직임", bg: "배경", edit: "편집", viewer: "시청자 화면", security: "보안", companion: "빅타민", dev: "개발자" }
   },
   // 빅타민 — 자동 행동이 아니라 사람이 고른 설정·직접 교감만 기록한다.
   // 이 사전은 저장 allowlist도 겸하므로 옵션은 화면의 고정 값만 등록한다.
@@ -788,7 +788,7 @@ export const ACT: Record<string, TargetLabel> = {
   "mp-month": { name: "달 고르기: 달 누르기", area: "시청자 화면", hint: "편집실·시청자 공용" },
 
   // 인사이트 — 보기 전환
-  "perf-hours": { name: "서버 성능 시간 범위", area: "인사이트", opts: { day: "24시간", week: "7일" } },
+  "perf-hours": { name: "서버 성능 시간 범위", area: "설정", hint: "설정 창 개발자 묶음(2026-11-13 전엔 인사이트 시스템 탭)", opts: { day: "24시간", week: "7일" } },
   "visit-view": { name: "방문 일별/주별", area: "인사이트", opts: { day: "일별", week: "주별" } },
   "visit-dim": { name: "방문 역할별/기기별", area: "인사이트", opts: { role: "역할별", device: "기기별" } },
 

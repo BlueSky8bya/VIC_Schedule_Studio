@@ -3,8 +3,9 @@
 import type { ComponentType, KeyboardEvent } from "react";
 
 // Real tabs fill every row: shared views first, then the developer-only views.
+// Developer = 3 shared + 2 developer-only (security/system moved to settings 2026-11-13) → [3, 2].
 export function insightTabRows(count: number): number[] {
-  return count <= 4 ? [count] : [Math.floor(count / 2), Math.ceil(count / 2)];
+  return count <= 4 ? [count] : [Math.ceil(count / 2), Math.floor(count / 2)];
 }
 
 export function insightTabStep(index: number, key: string, count: number): number {

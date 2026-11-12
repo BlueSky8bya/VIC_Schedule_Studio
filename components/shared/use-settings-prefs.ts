@@ -42,7 +42,7 @@ import { applyFont, applyWeight, FONT_BASE, fontPref, setFontPref, setWeightPref
 import { PREF_SURFACE_EVENT } from "@/lib/ui/pref-surface";
 import { DEFAULT_COMPANION_PREFERENCES, getCompanionPreferences, setCompanionPreferences, subscribeCompanionPreferences, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 
-export type SettingsTabKey = "screen" | "text" | "motion" | "sound" | "bg" | "edit" | "viewer" | "dev" | "companion";
+export type SettingsTabKey = "screen" | "text" | "motion" | "sound" | "bg" | "edit" | "viewer" | "security" | "dev" | "companion";
 
 export type SettingsPrefs = {
   settingsTab: SettingsTabKey;

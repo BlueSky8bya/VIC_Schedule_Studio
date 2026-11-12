@@ -88,19 +88,7 @@ export type InsightsData = {
     monthly: { ym: string; count: number }[]; // 6개월(타깃 월로 끝남)
     topEvents: { title: string; count: number }[]; // 이 달 인기 일정 TOP
   };
-  // 편집실 비밀번호(최초공개 게이트) 상태. 잠금해제 세션·접근자 목록은 2026-11-13 철수(0159).
-  security: {
-    passcodeVersion: number | null;
-    passcodeUpdatedAt: string | null;
-  };
-  system: {
-    ownerEmails: string[];
-    developerEmails: string[];
-    dbOwnerEmail: string | null;
-    bindingOk: boolean;
-    commit: string | null;
-    deployedAt: string; // 빌드(배포) 시각
-  };
+  // (보안·시스템 패널은 2026-11-13 설정 창으로 옮겼다 — getOwnerSecurityAction·getSystemInfoAction.)
 };
 
 export type InsightsResult = { ok: true; data: InsightsData } | { ok: false; error: string };
@@ -602,7 +590,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
   const todayKey = todayKstKey();
   const curYm = `${y}-${pad(m)}`;
 
-  const [eventsRangeRes, tagsRangeRes, nextRes, paletteRes, heartCountsRes, passcodeRes] =
+  const [eventsRangeRes, tagsRangeRes, nextRes, paletteRes, heartCountsRes] =
     await Promise.all([
       supabase
         .from("events")
@@ -627,12 +615,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
         .order("date_key", { ascending: true })
         .limit(40),
       supabase.from("color_palette").select("key, bg_color, border_color").eq("calendar_id", calendarId),
-      supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }),
-      supabase
-        .from("private_layer_settings")
-        .select("passcode_version, passcode_updated_at")
-        .eq("calendar_id", calendarId)
-        .maybeSingle()
+      supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId })
     ]);
 
   // 휴뱅(방송 안 함) 일정 id 집합 — 콘텐츠/방송 집계에서 제외.
@@ -774,27 +757,6 @@ export async function getInsightsAction(year: number, month: number): Promise<In
   const monthly = monthKeys.map((k) => ({ ym: k, count: monthlyMap.get(k) ?? 0 }));
   const topEvents = topThisMonth.sort((a, b) => b.count - a.count).slice(0, 5);
 
-  // 이메일 해석 — 계정 목록을 한 번 받아 채우고 필요한 것만 개별 조회(위 makeEmailResolver).
-  const emailFor = makeEmailResolver(supabase!);
-
-  const passcode = passcodeRes.data as {
-    passcode_version?: number;
-    passcode_updated_at?: string;
-  } | null;
-
-  const ownerEmails = getOwnerEmails();
-  const dbOwnerEmail = await emailFor(cal.owner_id as string | undefined);
-  const bindingOk = Boolean(ownerEmails[0] && dbOwnerEmail && ownerEmails[0] === dbOwnerEmail);
-
-  // 개발자(platform_admins) 이메일 — 시스템 패널 표시용.
-  const { data: adminRows } = await supabase.from("platform_admins").select("email");
-  const developerEmails = [
-    ...new Set(
-      ((adminRows ?? []) as { email?: string }[])
-        .map((a) => normalizeEmail(a.email))
-        .filter((e): e is string => Boolean(e))
-    )
-  ];
   return {
     ok: true,
     data: {
@@ -809,20 +771,62 @@ export async function getInsightsAction(year: number, month: number): Promise<In
         quietestWeekday,
         tags
       },
-      engagement: { monthHearts, totalHearts, monthly, topEvents },
-      security: {
-        passcodeVersion: passcode?.passcode_version ?? null,
-        passcodeUpdatedAt: passcode?.passcode_updated_at ?? null
-      },
-      system: {
-        ownerEmails,
-        developerEmails,
-        dbOwnerEmail,
-        bindingOk,
-        commit: process.env.APP_COMMIT && process.env.APP_COMMIT !== "dev" ? process.env.APP_COMMIT.slice(0, 7) : null,
-        // 빌드(배포) 시각 — next.config의 BUILD_TIME(빌드 시점 UTC). 로컬은 현재 시각으로 폴백.
-        deployedAt: process.env.BUILD_TIME ?? new Date().toISOString()
-      }
+      engagement: { monthHearts, totalHearts, monthly, topEvents }
+    }
+  };
+}
+
+// 시스템 정보(개발자 전용) — 설정 창 '개발자' 묶음이 열릴 때만 부른다(2026-11-13 인사이트에서 이동).
+// 계정 목록 조회(listUsers)가 무거워 인사이트를 열 때마다 하지 않는다.
+export type SystemInfo = {
+  ownerEmails: string[];
+  developerEmails: string[];
+  dbOwnerEmail: string | null;
+  bindingOk: boolean;
+  commit: string | null;
+  deployedAt: string; // 빌드(배포) 시각
+};
+export type SystemInfoResult = { ok: true; data: SystemInfo } | { ok: false; error: string };
+
+export async function getSystemInfoAction(): Promise<SystemInfoResult> {
+  const actor = await resolveCurrentActor(SLUG);
+  if (!isDeveloperOrFixture(actor)) {
+    return { ok: false, error: "개발자만 볼 수 있어요." };
+  }
+  const supabase = createSupabaseAdminClient();
+  if (!supabase) {
+    return { ok: false, error: "Supabase 서비스 키가 설정되지 않았습니다." };
+  }
+  const { data: cal } = await supabase.from("calendars").select("owner_id").eq("slug", SLUG).maybeSingle();
+  if (!cal) {
+    return { ok: false, error: "캘린더를 찾을 수 없습니다." };
+  }
+
+  // 이메일 해석 — 계정 목록을 한 번 받아 채우고 필요한 것만 개별 조회(위 makeEmailResolver).
+  const emailFor = makeEmailResolver(supabase);
+  const ownerEmails = getOwnerEmails();
+  const [dbOwnerEmail, { data: adminRows }] = await Promise.all([
+    emailFor(cal.owner_id as string | undefined),
+    // 개발자(platform_admins) 이메일.
+    supabase.from("platform_admins").select("email")
+  ]);
+  const developerEmails = [
+    ...new Set(
+      ((adminRows ?? []) as { email?: string }[])
+        .map((a) => normalizeEmail(a.email))
+        .filter((e): e is string => Boolean(e))
+    )
+  ];
+  return {
+    ok: true,
+    data: {
+      ownerEmails,
+      developerEmails,
+      dbOwnerEmail,
+      bindingOk: Boolean(ownerEmails[0] && dbOwnerEmail && ownerEmails[0] === dbOwnerEmail),
+      commit: process.env.APP_COMMIT && process.env.APP_COMMIT !== "dev" ? process.env.APP_COMMIT.slice(0, 7) : null,
+      // 빌드(배포) 시각 — next.config의 BUILD_TIME(빌드 시점 UTC). 로컬은 현재 시각으로 폴백.
+      deployedAt: process.env.BUILD_TIME ?? new Date().toISOString()
     }
   };
 }
@@ -1661,7 +1665,7 @@ export async function getDayVisitDetailAction(dateKey: string): Promise<DayVisit
   };
 }
 
-// 관리자(소유자) 전용 보안 데이터 — 개발자 인사이트 보안 패널과 같되 '개발자' 섹션은 뺀다.
+// 보안 데이터 — 설정 창 '보안' 묶음(관리자·개발자 공용)이 열릴 때 부른다.
 // owner/developer만(서버 검증). 잠금해제 세션 수·접근자 목록은 2026-11-13 철수(0159).
 export type OwnerSecurityData = {
   passcodeVersion: number | null;

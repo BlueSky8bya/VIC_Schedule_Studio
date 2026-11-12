@@ -4,7 +4,7 @@ import { tagColor } from "@/lib/tags/dark-palette";
 
 import "@/components/studio/insights-charts.css";
 
-import { CalendarDays, ChevronLeft, ChevronRight, Heart, LineChart, Lock } from "lucide-react";
+import { CalendarDays, ChevronLeft, ChevronRight, Heart, LineChart } from "lucide-react";
 import {
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
@@ -12,14 +12,8 @@ import {
   useRef,
   useState
 } from "react";
-import {
-  getMemberInsightsAction,
-  getOwnerSecurityAction,
-  type MemberInsightsData,
-  type OwnerSecurityData
-} from "@/lib/insights/actions";
+import { getMemberInsightsAction, type MemberInsightsData } from "@/lib/insights/actions";
 import { BroadcastHours } from "@/components/studio/broadcast-hours";
-import { SecurityPanel } from "@/components/studio/security-panel";
 import { StackTrendChart } from "@/components/studio/stack-trend-chart";
 import { TrendDeltaBadge } from "@/components/studio/trend-delta-badge";
 import { monthProgress } from "@/lib/insights/month-progress";
@@ -46,24 +40,12 @@ function fmtMonthDay(dateKey: string): string {
   return `${mm}/${dd}(${wd})`;
 }
 
-export function MemberInsights({
-  year,
-  month,
-  canSecurity = false,
-  onChangePasscode
-}: {
-  year: number;
-  month: number;
-  // 보안 탭은 관리자(소유자)에게만 — 매니저·작업자에겐 탭도 데이터도 없다.
-  canSecurity?: boolean;
-  onChangePasscode?: () => void;
-}) {
+// (보안 탭은 2026-11-13 설정 창 '보안' 묶음으로 옮겼다 — components/studio/security-panel.)
+export function MemberInsights({ year, month }: { year: number; month: number }) {
   const [index, setIndex] = useState(0);
   const [data, setData] = useState<MemberInsightsData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [securityData, setSecurityData] = useState<OwnerSecurityData | null>(null);
-  const [securityError, setSecurityError] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -84,36 +66,8 @@ export function MemberInsights({
     };
   }, [year, month]);
 
-  // 보안 데이터(관리자 전용)는 별도 액션으로 — 월과 무관(현재 세션·암호·자격자).
-  useEffect(() => {
-    if (!canSecurity) return;
-    let alive = true;
-    setSecurityError(null);
-    getOwnerSecurityAction().then((r) => {
-      if (!alive) return;
-      if (r.ok) setSecurityData(r.data);
-      else setSecurityError(r.error); // 조용히 실패해 스켈레톤이 영원히 뜨던 문제 → 에러 노출+재시도
-    }).catch(() => {
-      if (alive) setSecurityError("보안 정보를 불러오지 못했어요.");
-    });
-    return () => {
-      alive = false;
-    };
-  }, [canSecurity]);
-
-  // 보안 로드 실패 시 사용자가 직접 다시 시도.
-  function retrySecurity() {
-    setSecurityError(null);
-    getOwnerSecurityAction().then((r) => {
-      if (r.ok) setSecurityData(r.data);
-      else setSecurityError(r.error);
-    }).catch(() => setSecurityError("보안 정보를 불러오지 못했어요."));
-  }
-
-  // 보안 탭(관리자 전용)을 마지막에 더한 실제 패널 목록. 키보드/스와이프 경계도 이 길이를 쓴다.
-  const panels = canSecurity
-    ? [...PANELS, { key: "security" as const, label: "보안", icon: Lock }]
-    : PANELS;
+  // 실제 패널 목록. 키보드/스와이프 경계도 이 길이를 쓴다.
+  const panels = PANELS;
   const lastIndexRef = useRef(0); // 키보드 핸들러(고정 등록)가 호출 시점의 최신 경계를 읽도록.
   lastIndexRef.current = panels.length - 1;
 
@@ -148,34 +102,6 @@ export function MemberInsights({
       }
     }
   };
-
-  function renderSecurity() {
-    if (securityError && !securityData) {
-      return (
-        <p className="insight-empty">
-          보안 정보를 불러오지 못했어요.
-          <button className="button" data-act="security-retry" onClick={retrySecurity} style={{ marginLeft: 8 }} type="button">
-            다시 시도
-          </button>
-        </p>
-      );
-    }
-    if (!securityData) {
-      return (
-        <div className="insight-skel" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
-      );
-    }
-    return (
-      <SecurityPanel
-        data={securityData}
-        onChangePasscode={onChangePasscode}
-      />
-    );
-  }
 
   function withData(render: (d: MemberInsightsData) => ReactNode) {
     if (loading) {
@@ -421,7 +347,7 @@ export function MemberInsights({
         >
           {panels.map((p) => (
             <section className="insights-panel" key={p.key}>
-              {p.key === "security" ? renderSecurity() : withData(renderers[p.key])}
+              {withData(renderers[p.key])}
             </section>
           ))}
         </div>

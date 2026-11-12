@@ -326,6 +326,22 @@ html[data-reduce-motion] .vic-settings .rhh-menu { animation-duration: 1ms;
   font-size: var(--text-label, 12.5px);
   line-height: 1.45;
 }
+/* 한 묶음 안의 두 번째 제목(개발자 탭의 '시스템') — 위 카드와 묶음 사이만큼 띄운다. */
+.rhh-group-title.rhh-subgroup-title { margin-top: 14px; }
+/* 읽기 전용 값(보안·시스템) — 줄 오른쪽에 조용히. 긴 이메일은 줄 안에서 줄바꿈. */
+.vic-settings .rhh-val {
+  min-width: 0;
+  margin: 0;
+  color: var(--ink-soft, #5b6070);
+  font-size: var(--text-body, 13.5px);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.vic-settings .rhh-val-list { display: grid; justify-items: end; gap: 2px; }
+.vic-settings .rhh-val-mono { font-family: var(--font-mono, ui-monospace, monospace); }
+.vic-settings .rhh-perf { padding: 0 0 12px; }
+.vic-settings .rhh-perf .perf-table { margin: 0; }
 /* The learned description is actual settings content, not a muted footnote.
    The same tokens and markup serve viewer, studio and preview. */
 .rhh-habit-card {

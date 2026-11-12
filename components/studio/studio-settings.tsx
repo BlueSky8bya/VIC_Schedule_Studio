@@ -11,7 +11,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { RowLabel, SettingsSegment, Switch } from "@/components/shared/settings-controls";
 import type { Route } from "next";
-import { BookA, CloudSun, Eye, Gauge, Leaf, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, ALargeSmall, Type, Bold, Check, Volume1, Volume2, VolumeX, Wrench, PartyPopper, Heart, BellRing, EyeOff, MousePointerClick, Pointer, CircleDot, ToggleRight, ToggleLeft, PanelTopOpen, X, ChevronLeft, ChevronRight, Grab, ArrowDownToLine, Save, Link2, Unlink, Undo2, Redo2, LockOpen, CircleAlert } from "lucide-react";
+import { BookA, CloudSun, Eye, Gauge, Leaf, Lock, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, ALargeSmall, Type, Bold, Check, Volume1, Volume2, VolumeX, Wrench, PartyPopper, Heart, BellRing, EyeOff, MousePointerClick, Pointer, CircleDot, ToggleRight, ToggleLeft, PanelTopOpen, X, ChevronLeft, ChevronRight, Grab, ArrowDownToLine, Save, Link2, Unlink, Undo2, Redo2, LockOpen, CircleAlert } from "lucide-react";
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type RefObject } from "react";
 import { useCalendarPreviewMetrics } from '@/components/shared/use-calendar-preview-metrics';
 import { CALENDAR_PREVIEW_TITLE, CALENDAR_PREVIEW_SUBTITLE } from '@/lib/ui/calendar-preview-sample';
@@ -38,6 +38,8 @@ import { COMPANION_RADIO_MOOD_NAMES, COMPANION_RADIO_TRACKS } from "@/lib/ui/vie
 import { getCompanionRadioPreferences, setCompanionRadioPreferences, subscribeCompanionRadioPreferences, type CompanionRadioPreferences } from "@/lib/ui/viewer-companion/radio-preferences";
 import { getCompanionRadioSnapshot, nextCompanionRadio, playCompanionRadioTrack, stopCompanionRadio, subscribeCompanionRadio, toggleCompanionRadio } from "@/lib/ui/viewer-companion/radio-player";
 import { logActivity } from "@/lib/activity/client";
+import { SecurityPanel } from "@/components/studio/security-panel";
+import { SystemPanel } from "@/components/developer/system-panel";
 
 /** 개발자 세계 시간 여행(2026-09-04 소유자: "개발자는 시간대에 영향받지 않고 마음대로 왔다갔다 오류 확인") — 세션 한정, 저장 안 함. */
 export type DevWorldForce = NonNullable<WorldCtx["force"]>;
@@ -90,6 +92,9 @@ export type StudioSettingsProps = {
   posterTheme: PosterThemeKey | null;
   onChangePosterTheme: (theme: PosterThemeKey) => void;
   posterThemeSaving: boolean;
+  // 보안(2026-11-13 인사이트에서 이동) — **effectiveRole이 관리자·개발자**일 때만 넘긴다. 편집실 비밀번호
+  // 정보·변경. null이면 탭 자체가 없다(시청자·비로그인·역할 미리보기·시청자 화면).
+  security?: { onChangePasscode: () => void } | null;
   // 개발자 월드 강제 — **effectiveRole이 개발자**일 때만 넘긴다(미리보기 중인 역할엔 줄 자체가 없다).
   // season/onChangeSeason: 감상 톱니에서 계절을 강제해 두고 나오면 편집실 배경이 그 계절로 남는데, 되돌릴 손잡이가
   // 설정에 없었다(2026-09-05 소유자: "가을에서 봄으로 바꾸고 돌아오니 가을로 못 돌아와"). 같은 상태를 여기서도 연다.
@@ -268,6 +273,7 @@ export function StudioSettingsList({
   posterTheme,
   onChangePosterTheme,
   posterThemeSaving,
+  security = null,
   devWorld = null,
   birthdayPreview = null,
   devMonth = 1
@@ -310,6 +316,7 @@ export function StudioSettingsList({
     { key: "bg", label: "배경", icon: <Leaf size={15} />, tone: "leaf", web: true },
     ...(hasEditGroup ? [{ key: "edit" as const, label: "편집", icon: <PenLine size={15} />, tone: "metal" as const }] : []),
     ...(posterTheme !== null ? [{ key: "viewer" as const, label: "시청자 화면", icon: <Palette size={15} />, tone: "rose" as const }] : []),
+    ...(security ? [{ key: "security" as const, label: "보안", icon: <Lock size={15} />, tone: "metal" as const }] : []),
     ...(devWorld ? [{ key: "dev" as const, label: "개발자", icon: <Wrench size={15} />, tone: "metal" as const, web: true }] : [])
   ];
   const current: TabKey = companionBook && companionAvailable ? "companion" : tabs.some((t) => t.key === activeTab) ? activeTab : "text";
@@ -934,6 +941,14 @@ export function StudioSettingsList({
         </section>
       ) : null}
 
+      {/* 보안 — 관리자·개발자. 묶음을 열 때만 그린다(그때 서버를 부른다). */}
+      {security ? (
+        <section {...pane("security")}>
+          <h3 className="rhh-group-title" id="rhh-tab-security-title">보안</h3>
+          {current === "security" ? <SecurityPanel onChangePasscode={security.onChangePasscode} /> : null}
+        </section>
+      ) : null}
+
       {/* 개발자 월드 강제(PLAN-20260904-003) — 시간대·날씨를 실제와 무관하게 밀어 넣어 검사한다. 세션 한정(저장 안 함),
           effectiveRole이 개발자일 때만 묶음이 생긴다. 날씨는 실제 기상이 아니라 날짜 시드 난수(world/weather.ts)라 "자동".
           계절에 없는 날씨(여름의 눈)는 목록에서 뺀다. */}
@@ -1048,6 +1063,8 @@ export function StudioSettingsList({
             </div>
           </div>
           <p className="rhh-group-foot">이 기기·이 창에서만 바뀌고 저장되지 않아요.</p>
+          {/* 시스템(2026-11-13 인사이트에서 이동) — 묶음을 열 때만 그린다(그때 서버를 부른다). */}
+          {current === "dev" ? <SystemPanel /> : null}
         </section>
       ) : null}
       </div>

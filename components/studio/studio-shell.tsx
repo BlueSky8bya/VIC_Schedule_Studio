@@ -140,7 +140,8 @@ import {
 import {
   canEditEventTags,
   canEditSchedule,
-  canEditSupport
+  canEditSupport,
+  canUsePrivateLayer
 } from "@/lib/permissions/roles";
 import { isTaxonomyV3, legacyTagView } from "@/lib/tags/taxonomy";
 import { tagColor } from "@/lib/tags/dark-palette";
@@ -1177,7 +1178,7 @@ export function StudioShell({
 
   // (비공개 일정 보기 토글·지금 잠그기는 2026-08-27 철수 — 관리자가 안 쓰는 기능(ADR-0014). 서버의
   //  비공개 모델·권한 검사는 그대로고 편집실 UI만 없앴다. 비밀번호는 최초공개 게이트·변경에만 쓴다.)
-  // 비밀번호 변경 팝업 열기 — 다른 모달(인사이트) 위에 따로 띄운다(그 모달은 닫지 않음 →
+  // 비밀번호 변경 팝업 열기 — 설정 창(보안 묶음) 위에 따로 띄운다(그 창은 닫지 않음 →
   // 취소하면 리로드 없이 그 화면 그대로 드러난다).
   function openChangePasscode() {
     setPasscodeModal("change");
@@ -1255,6 +1256,8 @@ export function StudioShell({
         reduceMotion={reduceMotion}
         devMonth={view.month}
         canManageTimelines={canEdit && !previewRole}
+        // 보안 묶음 — 관리자·개발자(미리보기 중인 역할 기준: 시청자 미리보기엔 없다). 서버 액션도 역할을 다시 본다.
+        security={canUsePrivateLayer(effectiveRole) ? { onChangePasscode: openChangePasscode } : null}
         // 개발자 전용 줄은 **미리보기 중인 역할**에도 안 보여야 한다 — raw isDeveloper면 개발자가 관리자로
         // 미리보기 중일 때 그대로 노출된다(2026-09-05 소유자 사진 2).
         devWorld={effectiveRole === "developer" ? { force: devWorld, onChange: setDevWorld, season: devSeason, onChangeSeason: changeDevSeason } : null}
@@ -8939,26 +8942,17 @@ export function StudioShell({
             {modal === "dayVisit" ? <DayVisitModal dateKey={selectedDate} /> : null}
             {modal === "developer" ? (
               isDevInsights ? (
-                <InsightsDashboard
-                  month={view.month}
-                  onChangePasscode={canEdit ? openChangePasscode : undefined}
-                  year={view.year}
-                />
+                <InsightsDashboard month={view.month} year={view.year} />
               ) : (
-                <MemberInsights
-                  canSecurity={isEffectivelyOwner}
-                  month={view.month}
-                  onChangePasscode={canEdit ? openChangePasscode : undefined}
-                  year={view.year}
-                />
+                <MemberInsights month={view.month} year={view.year} />
               )
             ) : null}
           </div>
         </div>
       ) : null}
 
-      {/* 비밀번호 변경 팝업 — 다른 모달(인사이트) 위에 따로 띄우는 독립 오버레이(z-index 더 높음).
-          연 모달을 닫지 않으니 취소/X/배경 클릭 시 리로드 없이 그 화면(보안 패널)이 그대로 드러난다. */}
+      {/* 비밀번호 변경 팝업 — 설정 창 위에 따로 띄우는 독립 오버레이(z-index 더 높음).
+          연 창을 닫지 않으니 취소/X/배경 클릭 시 리로드 없이 그 화면(보안 묶음)이 그대로 드러난다. */}
       {passcodeModal ? (
         <div
           className="modal-backdrop modal-backdrop-passcode"

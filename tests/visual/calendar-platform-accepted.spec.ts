@@ -224,7 +224,8 @@ for (const role of ["owner", "developer"] as const) test(`studio ${role} insight
   await page.goto(`/visual-fixture/studio?role=${role}&y=2026&m=6`); await settlePanelLayout(page);
   const open = page.locator('[data-act="manage-insights"]'); if (!await open.isVisible()) await page.locator('[data-act="panel-toggle"]').click(); await open.click();
   await expect(page.locator(".bcast-daily")).toBeVisible();
-  const labels = role === "owner" ? ["트렌드", "일정", "참여", "보안"] : ["트렌드", "일정", "참여", "실시간", "방문", "보안", "시스템"];
+  // 보안·시스템은 2026-11-13 설정 창으로 옮겼다.
+  const labels = role === "owner" ? ["트렌드", "일정", "참여"] : ["트렌드", "일정", "참여", "실시간", "방문"];
   const tabs = page.getByRole("tablist", { name: "인사이트 영역" }).getByRole("tab"); await expect(tabs).toHaveText(labels);
   const track = page.locator(".insights-track"), panels = track.locator(":scope > .insights-panel"); await expect(panels).toHaveCount(labels.length);
   const contents: { label: string; text: string }[] = [];
@@ -236,8 +237,6 @@ for (const role of ["owner", "developer"] as const) test(`studio ${role} insight
     if (label === "참여") await expect(panel).toContainText(role === "owner" ? "이번 달 인기 컨텐츠 TOP" : "관심 단계 받는 기준");
     if (label === "실시간") await expect(panel).toContainText("접속 현황을 불러오지 못했어요");
     if (label === "방문") await expect(panel).toContainText("시청자");
-    if (label === "보안") await expect(panel).toContainText(role === "owner" ? "보안 정보를 불러오지 못했어요" : "비공개 잠금 암호");
-    if (label === "시스템") await expect(panel).toContainText("관리자 계정");
     contents.push({ label, text: (await panel.innerText()).slice(0, 160) });
   }
   await expect(page.getByRole("tab", { name: "하이라이트", exact: true })).toHaveCount(0); await expect(page.locator(".highlight-grid,.highlight-card")).toHaveCount(0); await expect(track).not.toContainText("REMOVED_HIGHLIGHT_CANARY");
