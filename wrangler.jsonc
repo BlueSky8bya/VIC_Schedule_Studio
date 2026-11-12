@@ -4,8 +4,8 @@
   "main": "cloudflare/worker.ts",
   "compatibility_date": "2026-11-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
-  // 도메인은 Cloudflare Registrar에서 산 victory-live.com. workers.dev 주소는 이전 검증용으로 남긴다.
-  "routes": [{ "pattern": "victory-live.com", "custom_domain": true }],
+  // 도메인은 Cloudflare Registrar에서 산 victory-broadcast.com. workers.dev 주소는 이전 검증용으로 남긴다.
+  "routes": [{ "pattern": "victory-broadcast.com", "custom_domain": true }],
   "workers_dev": true,
   "assets": {
     "directory": ".open-next/assets",

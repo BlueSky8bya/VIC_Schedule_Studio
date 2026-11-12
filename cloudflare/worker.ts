@@ -16,7 +16,7 @@ export default {
     const path = CRON_ROUTES[controller.cron];
     const secret = env.CRON_SECRET?.trim();
     if (!path || !secret) return;
-    const origin = env.NEXT_PUBLIC_SITE_URL ?? "https://victory-live.com";
+    const origin = env.NEXT_PUBLIC_SITE_URL ?? "https://victory-broadcast.com";
     const request = new Request(new URL(path, origin), {
       headers: { authorization: `Bearer ${secret}` }
     });

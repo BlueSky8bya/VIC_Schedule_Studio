@@ -27,7 +27,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 |---|---|---|---|
 | COMPANION-PANEL-REPORT-20261026 | Watch original cause | Inspect bounded local recurrence evidence on a distinct real failure; preserve original unconfirmed report | [Contract](verification/COMPANION_VISIBILITY-20261026.md) |
 | DAILY-0900 | Active | Separate risk verification/discovery; adopted work through exact release, preserve carryover | [Search focus](plans/PLAN-20261025-search-focus.md) |
-| OPS-CLOUDFLARE-MOVE | In progress | Vercel paused (CPU 4h4m/4h) until 2026-12-13; moving to Cloudflare Workers Paid + victory-live.com, no further Vercel use. Code ready; account/domain/secrets steps next | [Runbook](../ops/CLOUDFLARE_MIGRATION.md) |
+| OPS-CLOUDFLARE-MOVE | In progress | Vercel paused (CPU 4h4m/4h) until 2026-12-13; moving to Cloudflare Workers Paid + victory-broadcast.com, no further Vercel use. Code ready; account/domain/secrets steps next | [Runbook](../ops/CLOUDFLARE_MIGRATION.md) |
 | OPS-VERCEL-QUOTA | Superseded by OPS-CLOUDFLARE-MOVE | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-STORAGE | Watch | Gate released;6 deleted;quota refresh unproven | [Record](verification/DEPLOYMENT_STORAGE-20261024.md) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |

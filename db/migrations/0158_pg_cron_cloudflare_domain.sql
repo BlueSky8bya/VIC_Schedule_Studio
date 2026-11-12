@@ -7,7 +7,7 @@ select cron.schedule(
   '*/5 * * * *',
   $job$
   select net.http_get(
-    url := 'https://victory-live.com/api/cron/vod-chat?limit=4&chunks=120',
+    url := 'https://victory-broadcast.com/api/cron/vod-chat?limit=4&chunks=120',
     headers := jsonb_build_object(
       'Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'vic_cron_token'),
       'User-Agent', 'vic-pg-cron/1'
