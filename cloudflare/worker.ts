@@ -1,12 +1,12 @@
 // Cloudflare Worker 진입점: OpenNext가 만든 Next 핸들러에 예약 작업(scheduled)만 덧붙인다.
-// 매일 방송 확인(예전 vercel.json cron)을 Workers Cron Trigger가 맡는다.
+// 1분마다 방송 확인(시청자 없을 때의 백업 폴러). GitHub Actions 5분 폴러를 대신한다(2026-11-13).
 // 빌드 산출물(.open-next)은 `opennextjs-cloudflare build` 뒤에만 생긴다(tsconfig에서 제외, wrangler esbuild가 묶음).
 import handler from "../.open-next/worker.js";
 
 type Env = { CRON_SECRET?: string; NEXT_PUBLIC_SITE_URL?: string };
 
 const CRON_ROUTES: Record<string, string> = {
-  "0 18 * * *": "/api/cron/broadcast-poll"
+  "* * * * *": "/api/cron/broadcast-poll"
 };
 
 export default {
