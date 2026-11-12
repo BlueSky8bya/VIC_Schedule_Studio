@@ -30,6 +30,7 @@ import { PresenceBeacon } from "@/components/presence/presence-beacon";
 import { RouteBeacon } from "@/components/activity/route-beacon";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { OfflineIndicator } from "@/components/pwa/offline-indicator";
+import { StaleDeployGuard } from "@/components/pwa/stale-deploy-guard";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { FONT_STACKS } from "@/lib/ui/font-prefs";
@@ -174,6 +175,8 @@ export default function RootLayout({
         </Suspense>
         {/* 오프라인/온라인 상태 인앱 표시(배지+복귀 토스트) — export surface 바깥(body 직속)이라 캡쳐 무영향. */}
         <OfflineIndicator />
+        {/* 새 배포 뒤 옛 탭의 Server Action 실패를 새로고침으로 복구 — 렌더 없음. */}
+        <StaleDeployGuard />
         {/* 그래픽 여력 판정(눈 편한 테마 필터 vs 라이트 팔레트) — 렌더 없음, 기기당 30일 1회. */}
         <GfxProbe />
         {/* 배포 확인용 커밋 해시는 개발자 화면(편집실 액션바 중앙)에만 표시한다(studio-shell). */}

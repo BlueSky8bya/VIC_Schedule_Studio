@@ -3,6 +3,7 @@
 // The room must be styled before its lazy companion runtime can mount.
 import "./viewer-companion/companion-home.css";
 import { scrollAgendaTarget } from "@/lib/ui/agenda-scroll";
+import { announceIfStaleDeployment } from "@/lib/net/stale-deploy";
 import { PublicEventCalendar } from "./public-event-calendar";
 import { PublicDetailTags } from "./public-detail-tags";
 import {usePublicRecordSession} from "@/lib/ui/use-public-record-session";
@@ -2627,6 +2628,7 @@ export function PublicPoster({
         // (되돌리기 자체가 안 돌았다). 둘을 한 자리에서 같게 처리한다.
         let ok = false;
         let count: number | null = null;
+        let staleDeploy = false;
         try {
           // 비로그인인데 아직 토큰이 없으면(마운트 효과 전 첫 클릭) 여기서 즉석 생성한다.
           // 생성 실패(사생활 모드)면 빈 값으로 보내져 서버가 거절 → 아래 롤백+토스트 경로.
@@ -2638,7 +2640,9 @@ export function PublicPoster({
           const result = await toggleHeartAction(id, token);
           ok = result.ok;
           if (result.ok) count = result.count;
-        } catch {
+        } catch (error) {
+          // 배포가 바뀐 뒤의 옛 탭 — 아래 롤백은 그대로 하고, "새 버전" 안내를 함께 띄운다(lib/net/stale-deploy.ts).
+          staleDeploy = announceIfStaleDeployment(error);
           ok = false;
         }
         const cur = heartOpRef.current.get(id);
@@ -2666,6 +2670,7 @@ export function PublicPoster({
         // 이미 있는 하트 토스트 자리를 그대로 쓴다(새 UI 없음).
         hapticWarn();
         playSfx("error");
+        if (staleDeploy) return; // "새 버전" 안내가 이미 떴다 — 같은 실패를 토스트로 두 번 말하지 않는다.
         setHeartToast("하트를 저장하지 못했어요 — 잠시 뒤 다시 눌러주세요.");
         if (heartToastTimerRef.current) {
           window.clearTimeout(heartToastTimerRef.current);

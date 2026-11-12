@@ -1532,6 +1532,25 @@ html[data-eye-comfort="lite"]:not([data-theme="dark"]) .public-event:not(.teaser
   font-size: var(--text-ui);
   font-weight: var(--weight-bold);
 }
+/* 새 배포 안내(components/pwa/stale-deploy-guard.tsx) — 오프라인 배지와 같은 경고 톤, 새로고침은 버튼으로만. */
+.netstat-toast.netstat-update {
+  background: var(--status-warning-fill);
+  border-color: var(--status-warning);
+}
+.netstat-action {
+  min-height: calc(var(--control-hit) - var(--space-3));
+  padding: 0 var(--space-3);
+  border: var(--stroke-hairline) solid var(--status-warning);
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.netstat-dismiss {
+  padding: 0 var(--space-2);
+  border-color: transparent;
+}
 
 /* 위치 중립(상단/하단 어디든 자연스럽게) — scale+fade만 */
 @keyframes netstat-rise {

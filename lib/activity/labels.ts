@@ -371,6 +371,8 @@ export const ACT: Record<string, TargetLabel> = {
   "private-warning-btn": { name: "비공개 경고 띠", area: "편집실" },
   "delete-snack-undo": { name: "삭제 되돌리기", area: "편집실" },
   "draft-restored-discard": { name: "임시 저장 버리기", area: "편집실" },
+  "stale-deploy-reload": { name: "새 버전 새로고침", area: "공통" },
+  "stale-deploy-dismiss": { name: "새 버전 안내 닫기", area: "공통" },
   "editor-recover-failed-save": { name: "저장 실패 입력 복구", area: "편집실" },
   "kbd-hints-btn": { name: "단축키 안내", area: "편집실" },
   "shortcut-help-title": { name: "단축키 안내 접기", area: "옛 화면" },
