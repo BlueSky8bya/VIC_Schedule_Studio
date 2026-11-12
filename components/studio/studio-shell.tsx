@@ -1186,6 +1186,47 @@ export function StudioShell({
   function openChangePasscode() {
     setPasscodeModal("change");
   }
+  // 비밀번호 변경 팝업 — 설정 창 위에 따로 띄우는 독립 오버레이(z-index 더 높음). 연 창을 닫지 않으니 취소/X/배경
+  // 클릭 시 리로드 없이 그 화면(보안 묶음)이 그대로 드러난다. 편집실과 시청자 화면 미리보기(포스터 설정 창) 둘 다 그린다.
+  function renderPasscodeModal() {
+    if (!passcodeModal) return null;
+    return (
+      <div
+        className="modal-backdrop modal-backdrop-passcode"
+        onMouseDown={(e) => {
+          backdropPressRef.current = e.target === e.currentTarget;
+        }}
+        onMouseUp={(e) => {
+          if (backdropPressRef.current && e.target === e.currentTarget) {
+            setPasscodeModal(null);
+          }
+          backdropPressRef.current = false;
+        }}
+        role="presentation"
+      >
+        <div className="modal-card" aria-modal="true" role="dialog" ref={passcodeTrapRef}>
+          <div className="modal-head">
+            <h2>비밀번호 변경</h2>
+            <button
+              aria-label="닫기"
+              className="modal-close"
+              data-act="close-modal"
+              onClick={() => setPasscodeModal(null)}
+              type="button"
+            >
+              <X aria-hidden="true" size={18} />
+            </button>
+          </div>
+          <PrivateLayerPanel
+            canManage={canEdit}
+            isDefaultPasscode={isDefaultPasscode}
+            onDone={() => setPasscodeModal(null)}
+            setPasscodeAction={setPasscodeAction}
+          />
+        </div>
+      </div>
+    );
+  }
 
   // 미리보기 드롭다운: 바깥을 누르거나 Esc로 닫는다.
   useEffect(() => {
@@ -7223,6 +7264,15 @@ export function StudioShell({
           // "n명이 기다렸어요" 배지는 당분간 개발자 확인용만(사용자 결정 — 카운팅은 쌓되
           // 관리자·시청자에겐 아직 비노출). 역할 미리보기(effectiveRole)가 아니라 실제 역할 기준.
           toggleHeartAction={toggleEventHeartAction}
+          // 시청자 화면 미리보기의 설정 창 — **실제 로그인 역할**이 볼 수 있는 탭(관리자: 보안 / 개발자: 보안·개발자)을
+          // 그대로 둔다(2026-11-13 소유자). 편집실 설정은 역할 미리보기(effectiveRole)를 따르는 것과 다르다 —
+          // 시청자 화면은 '보는 사람'이 같은 직원이라 자기 손잡이가 사라질 이유가 없다. 서버 액션은 역할을 다시 본다.
+          staffSettings={{
+            security: canUsePrivateLayer(actor.role) ? { onChangePasscode: openChangePasscode } : null,
+            devWorld: actor.role === "developer" ? { force: devWorld, onChange: setDevWorld, season: devSeason, onChangeSeason: changeDevSeason } : null,
+            birthdayPreview: actor.role === "developer" ? { on: birthdayPreview, toggle: toggleBirthdayPreview, open: openGachaPreview } : null,
+            devMonth: view.month
+          }}
         />
         {broadcastOpen ? (
           <BroadcastPanel
@@ -7238,6 +7288,7 @@ export function StudioShell({
             sentDateKeys={broadcastSent}
           />
         ) : null}
+        {renderPasscodeModal()}
       </div>
     );
   }
@@ -8966,44 +9017,7 @@ export function StudioShell({
         </div>
       ) : null}
 
-      {/* 비밀번호 변경 팝업 — 설정 창 위에 따로 띄우는 독립 오버레이(z-index 더 높음).
-          연 창을 닫지 않으니 취소/X/배경 클릭 시 리로드 없이 그 화면(보안 묶음)이 그대로 드러난다. */}
-      {passcodeModal ? (
-        <div
-          className="modal-backdrop modal-backdrop-passcode"
-          onMouseDown={(e) => {
-            backdropPressRef.current = e.target === e.currentTarget;
-          }}
-          onMouseUp={(e) => {
-            if (backdropPressRef.current && e.target === e.currentTarget) {
-              setPasscodeModal(null);
-            }
-            backdropPressRef.current = false;
-          }}
-          role="presentation"
-        >
-          <div className="modal-card" aria-modal="true" role="dialog" ref={passcodeTrapRef}>
-            <div className="modal-head">
-              <h2>비밀번호 변경</h2>
-              <button
-                aria-label="닫기"
-                className="modal-close"
-                data-act="close-modal"
-                onClick={() => setPasscodeModal(null)}
-                type="button"
-              >
-                <X aria-hidden="true" size={18} />
-              </button>
-            </div>
-            <PrivateLayerPanel
-              canManage={canEdit}
-              isDefaultPasscode={isDefaultPasscode}
-              onDone={() => setPasscodeModal(null)}
-              setPasscodeAction={setPasscodeAction}
-            />
-          </div>
-        </div>
-      ) : null}
+      {renderPasscodeModal()}
     </main>
   );
 }

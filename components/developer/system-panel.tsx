@@ -6,6 +6,7 @@ import { RowLabel, SettingsSegment } from "@/components/shared/settings-controls
 import { PlainEmail } from "@/components/ui/plain-email";
 import { getSystemInfoAction, type SystemInfo } from "@/lib/insights/actions";
 import { getPerfStatsAction, type PerfStatRow } from "@/lib/insights/perf-actions";
+import { announceIfStaleDeployment } from "@/lib/net/stale-deploy";
 
 // 시스템 묶음(설정 창 '개발자' 탭, 개발자 전용) — 계정 연결·배포 버전·서버 성능.
 // 2026-11-13 인사이트 '시스템' 탭에서 옮겼다. 이 묶음이 화면에 그려질 때만 서버를 부른다.
@@ -44,7 +45,8 @@ export function SystemPanel() {
         if (r.ok) setInfo(r.data);
         else setInfoError(true);
       })
-      .catch(() => {
+      .catch((error) => {
+        announceIfStaleDeployment(error);
         if (alive) setInfoError(true);
       });
     return () => {
@@ -62,7 +64,8 @@ export function SystemPanel() {
         setPerf(r.ok ? r.rows : null);
         setPerfLoading(false);
       })
-      .catch(() => {
+      .catch((error) => {
+        announceIfStaleDeployment(error);
         if (alive) {
           setPerf(null);
           setPerfLoading(false);
@@ -103,7 +106,8 @@ export function SystemPanel() {
           <RowLabel icon={<GitCommitHorizontal size={15} />} tone="metal">
             버전(커밋)
           </RowLabel>
-          <span className="rhh-val rhh-val-mono">{info ? (info.commit ?? "로컬") : pending}</span>
+          {/* 고정폭 글꼴은 커밋 해시에만 — 안내 문구("불러오지 못했어요"·"로컬")는 옆 줄들과 같은 글꼴. */}
+          <span className={info?.commit ? "rhh-val rhh-val-mono" : "rhh-val"}>{info ? (info.commit ?? "로컬") : pending}</span>
         </div>
         <div className="role-help-haptics">
           <RowLabel icon={<Clock3 size={15} />} tone="metal">

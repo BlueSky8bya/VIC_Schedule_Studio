@@ -93,8 +93,9 @@ export type StudioSettingsProps = {
   posterTheme: PosterThemeKey | null;
   onChangePosterTheme: (theme: PosterThemeKey) => void;
   posterThemeSaving: boolean;
-  // 보안(2026-11-13 인사이트에서 이동) — **effectiveRole이 관리자·개발자**일 때만 넘긴다. 편집실 비밀번호
-  // 정보·변경. null이면 탭 자체가 없다(시청자·비로그인·역할 미리보기·시청자 화면).
+  // 보안(2026-11-13 인사이트에서 이동) — 편집실은 **effectiveRole**, 시청자 화면 미리보기는 **실제 역할**이
+  // 관리자·개발자일 때만 넘긴다(PublicPoster staffSettings). 편집실 비밀번호 정보·변경. null이면 탭 자체가 없다
+  // (시청자·비로그인·공개 `/`).
   security?: { onChangePasscode: () => void } | null;
   // 개발자 월드 강제 — **effectiveRole이 개발자**일 때만 넘긴다(미리보기 중인 역할엔 줄 자체가 없다).
   // season/onChangeSeason: 감상 톱니에서 계절을 강제해 두고 나오면 편집실 배경이 그 계절로 남는데, 되돌릴 손잡이가

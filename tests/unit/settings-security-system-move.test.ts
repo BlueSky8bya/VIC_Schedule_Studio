@@ -21,8 +21,14 @@ describe("settings security/system move", () => {
     expect(settings).toMatch(/current === "dev" \? <SystemPanel \/>/);
     const shell = read("components/studio/studio-shell.tsx");
     expect(shell).toContain("security={canUsePrivateLayer(effectiveRole) ? { onChangePasscode: openChangePasscode } : null}");
-    // 시청자 화면(공개 포스터)의 설정 창에는 보안 묶음이 없다.
-    expect(read("components/poster/public-poster.tsx")).not.toMatch(/\bsecurity=\{/);
+    // 시청자 화면(포스터) 설정 창은 staffSettings로만 직원 탭을 받는다 — 공개 `/`는 넘기지 않고,
+    // 편집실의 시청자 화면 미리보기는 **실제 역할**(actor.role)로 넘긴다(2026-11-13 소유자).
+    const poster = read("components/poster/public-poster.tsx");
+    expect(poster).toContain("security={staffSettings?.security ?? null}");
+    expect(poster).toContain("devWorld={staffSettings?.devWorld ?? null}");
+    expect(read("app/page.tsx")).not.toMatch(/staffSettings/);
+    expect(shell).toContain("security: canUsePrivateLayer(actor.role) ? { onChangePasscode: openChangePasscode } : null");
+    expect(shell).toContain('devWorld: actor.role === "developer" ?');
   });
 
   it("removes security and system panels from both insights surfaces", () => {

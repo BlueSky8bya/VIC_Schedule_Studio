@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { RowLabel, SettingsSegment } from "@/components/shared/settings-controls";
 import type { ArchiveMonth } from "@/lib/insights/archive";
+import { announceIfStaleDeployment } from "@/lib/net/stale-deploy";
 import {
   buildInsightsArchiveAction,
   getInsightsArchiveAction,
@@ -37,7 +38,10 @@ export function InsightsArchivePanel() {
         setYears(r.years);
         setYear((y) => y ?? r.years[0] ?? null);
       })
-      .catch(() => alive && setError("아카이브 목록을 불러오지 못했어요."));
+      .catch((error) => {
+        announceIfStaleDeployment(error);
+        if (alive) setError("아카이브 목록을 불러오지 못했어요.");
+      });
     return () => {
       alive = false;
     };
@@ -55,7 +59,10 @@ export function InsightsArchivePanel() {
         setMonths(r.months);
         setMonth((m) => (m !== null && r.months.some((x) => x.month === m) ? m : (r.months.at(-1)?.month ?? null)));
       })
-      .catch(() => alive && setError("아카이브를 불러오지 못했어요."));
+      .catch((error) => {
+        announceIfStaleDeployment(error);
+        if (alive) setError("아카이브를 불러오지 못했어요.");
+      });
     return () => {
       alive = false;
     };
@@ -81,7 +88,8 @@ export function InsightsArchivePanel() {
         if (!r.report.remaining.length || !r.report.built.length) break;
         only = r.report.remaining;
       }
-    } catch {
+    } catch (error) {
+      announceIfStaleDeployment(error);
       setError("아카이브를 만들지 못했어요.");
     }
     setBuilding(null);

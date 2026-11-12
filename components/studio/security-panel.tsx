@@ -4,6 +4,7 @@ import { KeyRound, Lock } from "lucide-react";
 import { useEffect, useState } from "react";
 import { RowLabel } from "@/components/shared/settings-controls";
 import { getOwnerSecurityAction, type OwnerSecurityData } from "@/lib/insights/actions";
+import { announceIfStaleDeployment } from "@/lib/net/stale-deploy";
 import { hapticTick } from "@/lib/ui/haptics";
 
 // 보안 묶음(설정 창, 관리자·개발자 공용) — 편집실 비밀번호(최초공개 게이트) 정보와 변경 버튼.
@@ -34,7 +35,8 @@ export function SecurityPanel({ onChangePasscode }: { onChangePasscode: () => vo
         if (r.ok) setData(r.data);
         else setError(true);
       })
-      .catch(() => {
+      .catch((error) => {
+        announceIfStaleDeployment(error);
         if (alive) setError(true);
       });
     return () => {

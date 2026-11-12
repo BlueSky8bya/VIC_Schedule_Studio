@@ -28,6 +28,7 @@ import {
   X
 } from "lucide-react";
 import {
+  type ComponentProps,
   type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type MouseEvent as ReactMouseEvent,
@@ -179,6 +180,9 @@ type PublicPosterProps = {
   onViewChange?: (year: number, month: number) => void;
   // A parent-owned drawing board owns its keys; never part of the public DTO.
   calendarShortcutsBlocked?: boolean;
+  // 직원 설정 탭(보안·개발자) — 편집실의 시청자 화면 미리보기에서만 **실제 로그인 역할** 기준으로 넘긴다
+  // (2026-11-13 소유자: "미리보기에서도 그 권한으로 볼 수 있는 탭은 그대로"). 공개 `/`는 익명·시청자만이라 없음.
+  staffSettings?: Pick<ComponentProps<typeof StudioSettingsList>, "security" | "devWorld" | "birthdayPreview" | "devMonth"> | null;
   // Optional client-only staff preview handoff; never part of PublicSchedule.
   positionMemory?: CompanionPositionMemory;
   // (canExport 삭제 — 일정표 캡쳐 기능 제거, 2026-07-31. decorate·스티커 액션 props 삭제 — 꾸미기 기능 제거, 2026-08-27.)
@@ -601,6 +605,7 @@ export function PublicPoster({
   initialYear,
   onViewChange,
   calendarShortcutsBlocked = false,
+  staffSettings = null,
   positionMemory,
   schedule: firstSchedule,
   premiereEnabled = process.env.NEXT_PUBLIC_PREMIERE_STAGE !== "0",
@@ -4902,6 +4907,10 @@ export function PublicPoster({
                 posterTheme={null}
                 posterThemeSaving={false}
                 reduceMotion={settingsPrefs.reduceMotion}
+                security={staffSettings?.security ?? null}
+                devWorld={staffSettings?.devWorld ?? null}
+                birthdayPreview={staffSettings?.birthdayPreview ?? null}
+                devMonth={staffSettings?.devMonth}
               />
             </div>
           </div>

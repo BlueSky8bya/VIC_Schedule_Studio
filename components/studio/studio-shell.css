@@ -8279,9 +8279,10 @@ textarea:disabled {
   backdrop-filter: blur(3px);
   animation: fade-up var(--dur-2) var(--ease) both;
 }
-/* 비밀번호 팝업은 다른 모달(인사이트 등) 위에 겹쳐 뜬다 — z-index를 더 높여 항상 맨 위로. */
+/* 비밀번호 팝업은 다른 모달(인사이트 등) 위에 겹쳐 뜬다 — z-index를 더 높여 항상 맨 위로.
+   시청자 화면 미리보기의 설정 창(.vic-settings 97, settings-modal.css) 위에도 떠야 한다(2026-11-13). */
 .modal-backdrop-passcode {
-  z-index: 60;
+  z-index: 98;
 }
 .modal-card {
   position: relative; /* 닫기 경고 오버레이(.modal-discard-ask)의 기준 */
