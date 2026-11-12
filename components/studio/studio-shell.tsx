@@ -7544,10 +7544,11 @@ export function StudioShell({
               data-act="io-preview"
             >
               <Eye aria-hidden="true" size={16} />
-              {/* 라벨은 하나 — "시청자 화면"(관리자) / "미리보기". 긴 쌍("…보여주기")은 2026-09-05 폐기:
-                  칸 폭을 다 먹어 글자를 못 키웠고, 짧은 이름만으로 뜻이 온전하다. 압축 2단계부턴
-                  눈 아이콘만 남는다(aria-label/title이 이름을 지킨다) — studio-calm-layer.css ⑤. */}
-              <span className="lbl">{isEffectivelyOwner ? "시청자 화면" : "미리보기"}</span>
+              {/* 라벨은 모든 역할 "미리보기" 하나. 관리자용 "시청자 화면"은 등분 칸을 넘쳐 압축 2단계를 부르고, 그 단계가
+                  로그아웃까지 아이콘으로 접었다(2026-11-13 소유자: "개발자는 글자가 보이는데 관리자로 바꾸면 접힌다").
+                  긴 쌍("…보여주기")은 2026-09-05 폐기. 압축 2단계부턴 눈 아이콘만 남는다(aria-label/title이 이름을 지킨다)
+                  — studio-calm-layer.css ⑤. */}
+              <span className="lbl">미리보기</span>
             </button>
           )}
           {actor.isAuthenticated ? (
