@@ -33,6 +33,7 @@ import {
   type VisitSummary,
   type VisitTrends
 } from "@/lib/insights/actions";
+import type { ArchivePayload } from "@/lib/insights/archive";
 import { kstDay, monthProgress } from "@/lib/insights/month-progress";
 import {
   HEART_BLAZE_MIN,
@@ -314,7 +315,16 @@ function StackBar({
   );
 }
 
-export function InsightsDashboard({ year, month }: { year: number; month: number }) {
+// archived: 연간 아카이브(0160)의 숫자로 같은 화면을 다시 그린다 — 서버를 부르지 않고, 실시간 칸은 보관하지 않는다.
+export function InsightsDashboard({
+  year,
+  month,
+  archived
+}: {
+  year: number;
+  month: number;
+  archived?: ArchivePayload;
+}) {
   const [index, setIndex] = useState(0);
   const [data, setData] = useState<InsightsData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -337,6 +347,16 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
   const [trendLoading, setTrendLoading] = useState(true);
 
   useEffect(() => {
+    if (archived) {
+      setData(archived.insights);
+      setError(archived.insights ? null : "이 달 인사이트가 아카이브에 없어요.");
+      setLoading(false);
+      setVisits(archived.visits);
+      setVisitsLoading(false);
+      setTrend(archived.trend);
+      setTrendLoading(false);
+      return;
+    }
     let alive = true;
     getInsightsAction(year, month)
       .then((r) => {
@@ -369,7 +389,7 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
     return () => {
       alive = false;
     };
-  }, [year, month]);
+  }, [year, month, archived]);
 
   // 일별/주별·역할별/기기별을 바꾸면 막대가 바뀌므로 떠 있던 분해 툴팁은 지운다.
   useEffect(() => {
@@ -380,7 +400,7 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
   // 방문 패널을 보는 동안엔 20초마다 새로고침 — 지금 내가 보고 있는(진행 중) 세션까지 거의
   // 실시간으로 반영(모달 최초 로드 이후 생긴 세션·갱신된 체류시간이 들어온다).
   useEffect(() => {
-    if (PANELS[index]?.key !== "visits") return;
+    if (archived || PANELS[index]?.key !== "visits") return;
     let alive = true;
     const poll = startForegroundPoll({
       run: async (signal) => {
@@ -393,7 +413,7 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
       alive = false;
       poll.stop();
     };
-  }, [index, year, month]);
+  }, [index, year, month, archived]);
 
   const go = (i: number) => setIndex(Math.max(0, Math.min(PANELS.length - 1, i)));
 
@@ -1144,7 +1164,7 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
   return (
     <div className="insights">
       <div className="insights-head">
-        <p className="insights-month">{month}월 인사이트</p>
+        <p className="insights-month">{archived ? `${year}년 ${month}월 인사이트` : `${month}월 인사이트`}</p>
         {/* (수동 새로고침 버튼은 2026-09-04 사용자 결정으로 제거 — 방문 칸은 20초 자동 갱신, 나머지는 열 때 최신.) */}
       </div>
       <InsightsTabs active={index} onChange={go} tabs={PANELS} />
@@ -1328,7 +1348,7 @@ export function InsightsDashboard({ year, month }: { year: number; month: number
 
           {/* 5) 실시간 — 개발자 전용(아랫줄) */}
           <section className="insights-panel">
-            <DeveloperPanel />
+            {archived ? <p className="insight-empty">실시간 접속은 아카이브에 보관하지 않아요.</p> : <DeveloperPanel />}
           </section>
 
           {/* 6) 방문(이 달) — 개발자 전용 */}

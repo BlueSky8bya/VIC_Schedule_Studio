@@ -40,6 +40,7 @@ import { getCompanionRadioSnapshot, nextCompanionRadio, playCompanionRadioTrack,
 import { logActivity } from "@/lib/activity/client";
 import { SecurityPanel } from "@/components/studio/security-panel";
 import { SystemPanel } from "@/components/developer/system-panel";
+import { InsightsArchivePanel } from "@/components/developer/insights-archive-panel";
 
 /** 개발자 세계 시간 여행(2026-09-04 소유자: "개발자는 시간대에 영향받지 않고 마음대로 왔다갔다 오류 확인") — 세션 한정, 저장 안 함. */
 export type DevWorldForce = NonNullable<WorldCtx["force"]>;
@@ -1065,6 +1066,8 @@ export function StudioSettingsList({
           <p className="rhh-group-foot">이 기기·이 창에서만 바뀌고 저장되지 않아요.</p>
           {/* 시스템(2026-11-13 인사이트에서 이동) — 묶음을 열 때만 그린다(그때 서버를 부른다). */}
           {current === "dev" ? <SystemPanel /> : null}
+          {/* 지난 해 인사이트(0160 연간 아카이브) — 같은 규칙: 묶음을 열 때만. */}
+          {current === "dev" ? <InsightsArchivePanel /> : null}
         </section>
       ) : null}
       </div>

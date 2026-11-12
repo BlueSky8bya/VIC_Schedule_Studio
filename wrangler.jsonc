@@ -29,7 +29,8 @@
   },
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DOQueueHandler"] }],
   // 방송 감지 1분(2026-11-13 소유자): GitHub Actions 5분(실측 수 시간 간격)·매일 1회를 이 하나로 합쳤다.
-  "triggers": { "crons": ["* * * * *"] },
+  // 매시 7분 = 연간 인사이트 아카이브·원본 통계 정리(0160). 할 일 없으면 조회 몇 번으로 끝난다.
+  "triggers": { "crons": ["* * * * *", "7 * * * *"] },
   // 유료 Workers 요청당 CPU 한도. 기본 30초면 충분하지만 폭주 시 비용 상한으로 둔다.
   "limits": { "cpu_ms": 30000 },
   // 한국 요청이 미국 데이터센터(EWR·LAX)로 가서, Supabase(AWS 서울) 옆에서 실행한다. supabase.co 주소는 Cloudflare 프록시라

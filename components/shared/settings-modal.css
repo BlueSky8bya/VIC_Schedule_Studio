@@ -342,6 +342,10 @@ html[data-reduce-motion] .vic-settings .rhh-menu { animation-duration: 1ms;
 .vic-settings .rhh-val-mono { font-family: var(--font-mono, ui-monospace, monospace); }
 .vic-settings .rhh-perf { padding: 0 0 12px; }
 .vic-settings .rhh-perf .perf-table { margin: 0; }
+/* 지난 해 인사이트(0160) — 달 고르기는 카드 폭 전체(6칸 × 2줄), 아래에 인사이트 화면을 그대로 싣는다. */
+.vic-settings .rhh-archive-months { display: block; padding: 10px 12px; }
+.vic-settings .rhh-archive-months .rhh-seg { width: 100%; }
+.vic-settings .rhh-archive-view { min-width: 0; margin-top: 12px; }
 /* The learned description is actual settings content, not a muted footnote.
    The same tokens and markup serve viewer, studio and preview. */
 .rhh-habit-card {

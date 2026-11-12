@@ -8,6 +8,7 @@ import { canEditSchedule } from "@/lib/permissions/roles";
 import { accountHashOf } from "@/lib/insights/account-hash";
 import { sanitizeVisitKey } from "@/lib/activity/kinds";
 import { fetchAllRows } from "@/lib/db/paginate";
+import { isInsightsSystem } from "@/lib/insights/system-context";
 import { kstDayKey } from "@/lib/calendar/month";
 import {
   durMs,
@@ -564,8 +565,8 @@ function ownerSessionsFrom(rows: SessionRow[]): OwnerSession[] {
 }
 
 export async function getInsightsAction(year: number, month: number): Promise<InsightsResult> {
-  const actor = await resolveCurrentActor(SLUG);
-  if (!isDeveloperOrFixture(actor)) {
+  // 연간 아카이브(0160)는 서버 시스템 문맥에서 같은 집계를 부른다 — lib/insights/system-context.ts.
+  if (!isInsightsSystem() && !isDeveloperOrFixture(await resolveCurrentActor(SLUG))) {
     return { ok: false, error: "개발자만 볼 수 있는 화면입니다." };
   }
   const supabase = createSupabaseAdminClient();
@@ -940,8 +941,7 @@ function mergeVodFallback(sess: BcastRow[], vods: VodFallbackRow[]): BcastRow[] 
 
 // 트렌드 패널용 — 방문·컨텐츠의 최근 6개월 월별 추이. (하트 6개월은 getInsightsAction이 이미 줌.)
 export async function getTrendAction(year: number, month: number): Promise<TrendResult> {
-  const actor = await resolveCurrentActor(SLUG);
-  if (!isDeveloperOrFixture(actor)) {
+  if (!isInsightsSystem() && !isDeveloperOrFixture(await resolveCurrentActor(SLUG))) {
     return { ok: false, error: "개발자만 볼 수 있는 화면입니다." };
   }
   const supabase = createSupabaseAdminClient();
@@ -1279,8 +1279,7 @@ export async function getVisitTrendsAction(
   year: number,
   month: number
 ): Promise<VisitTrendsResult> {
-  const actor = await resolveCurrentActor(SLUG);
-  if (!isDeveloperOrFixture(actor)) {
+  if (!isInsightsSystem() && !isDeveloperOrFixture(await resolveCurrentActor(SLUG))) {
     return { ok: false, error: "개발자만 볼 수 있는 화면입니다." };
   }
   const supabase = createSupabaseAdminClient();

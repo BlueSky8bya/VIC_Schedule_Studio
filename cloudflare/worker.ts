@@ -8,7 +8,9 @@ type Env = { CRON_SECRET?: string; NEXT_PUBLIC_SITE_URL?: string };
 type Ctx = { waitUntil(p: Promise<unknown>): void; passThroughOnException?(): void };
 
 const CRON_ROUTES: Record<string, string> = {
-  "* * * * *": "/api/cron/broadcast-poll"
+  "* * * * *": "/api/cron/broadcast-poll",
+  // 연간 인사이트 아카이브(1/1 KST부터 지난해)·원본 통계 정리(다음 해 2/1부터) — lib/insights/archive.ts.
+  "7 * * * *": "/api/cron/insights-archive"
 };
 
 export default {
