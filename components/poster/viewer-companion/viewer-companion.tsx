@@ -5244,7 +5244,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       {/* The stable room carrier is moved here by the layout handoff. */}
     </div> : null}
     <span className="vc-wash-tool" ref={washTool} hidden aria-hidden="true"><svg width="24" height="38" viewBox="0 0 24 38" focusable="false"><path d="M6 12h5l2 20q-3 6-7 0Z" fill="#e6a052" stroke="#78522e" strokeWidth="1.5" /><path d="M4 3q4-3 9 0v10H4Z" fill="#fff5df" stroke="#78522e" strokeWidth="1.5" /><path d="M6 4v7m3-7v7m3-7v7" stroke="#76a79a" strokeWidth="1.4" /><g fill="#fffdf6" stroke="#b1cbd1" strokeWidth=".8"><circle cx="15" cy="8" r="3" /><circle cx="19" cy="4" r="2" /><circle cx="19" cy="11" r="2" /></g><path d="m20 17 1 2 2 1-2 1-1 2-1-2-2-1 2-1Z" fill="#f8db89" /></svg></span>
-    <span className="vc-home-touch-tool" ref={interactionTool} hidden aria-hidden="true"><svg width="18" height="18" viewBox="0 0 18 18" focusable="false"><path d="M9 3v3M3 8l3 1M13 8l3-1" fill="none" stroke="#b48144" strokeWidth="1.6" strokeLinecap="round" /></svg></span>
+    {/* Contact marker only — no ink. The three wobbling rays drawn here read as a loading spinner on
+        빅타민's head while it pressed the TV/curtain/radio (2026-11-13 owner: remove every loading-like
+        mark). The positioned empty span stays as the measured contact witness. */}
+    <span className="vc-home-touch-tool" ref={interactionTool} hidden aria-hidden="true" />
     <CompanionDiscoveryFlight notice={discovery} enabled={preferences.enabled && !blocked && !overlayOpen && !performanceActive && !suspended} onComplete={finishDiscovery} />
     <div className="vc-companion" ref={body} hidden data-sfx="off" data-size="large" data-overlay={overlayOpen ? "quiet" : undefined} data-workspace-busy={workspaceBusy ? "" : undefined}>
     <span className="vc-contact-shadow" ref={shadow} aria-hidden="true" />
