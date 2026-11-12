@@ -29,7 +29,7 @@ export function StaleDeployGuard() {
   return (
     <div className="netstat" aria-live="polite">
       <div className="netstat-toast netstat-update" role="status">
-        <span>새 버전이 나와서 새로고침이 필요해요</span>
+        <span>새로고침이 필요해요</span>
         <button className="netstat-action" data-act="stale-deploy-reload" onClick={() => window.location.reload()} type="button">
           새로고침
         </button>
