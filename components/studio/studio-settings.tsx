@@ -234,7 +234,7 @@ function CompanionRadioSettings({ companion, globalSoundOn, globalSoundVolume }:
 }
 
 /** One shared companion experience; controls load only on its environment page. */
-const CompanionBehaviorSettings = dynamic(() => import("@/components/shared/companion-settings").then(module => module.CompanionBehaviorSettings), { loading: () => <span aria-live="polite" className="rhh-companion-loading" role="status">불러오는 중</span> });
+const CompanionBehaviorSettings = dynamic(() => import("@/components/shared/companion-settings").then(module => module.CompanionBehaviorSettings), { loading: () => null });
 function CompanionSettings({ preferences, onChange, globalSoundOn, globalSoundVolume, active, initialPersonality = false }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; globalSoundOn: boolean; globalSoundVolume: number; active: boolean; initialPersonality?: boolean }) {
   return <CompanionProfile active={active} preferences={preferences} initialPersonality={initialPersonality} environment={(settingsActive, personalityRequest) => <CompanionBehaviorSettings active={settingsActive} personalityRequest={personalityRequest} preferences={preferences} onChange={onChange} globalSoundOn={globalSoundOn} radio={<CompanionRadioSettings companion={preferences} globalSoundOn={globalSoundOn} globalSoundVolume={globalSoundVolume} />} />} />;
 }

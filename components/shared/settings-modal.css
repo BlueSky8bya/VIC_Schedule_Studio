@@ -2033,7 +2033,6 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 .rhh-toy-detail .vc-toy-art { width: 80px; height: 80px; object-fit: contain; }
 .rhh-toy-unknown { width: 54px; height: 54px; color: var(--companion-soft); opacity: .5; }
 .rhh-companion-experience .rhh-collection-heading > .rhh-collection-count { flex: none; margin-left: auto; border: 1px solid var(--companion-line); border-radius: var(--r-pill); background: var(--companion-paper); padding: 3px 9px; color: var(--companion-soft); font-size: var(--text-caption); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.rhh-companion-experience .rhh-companion-loading { display: grid; place-items: center; min-height: 160px; padding: var(--space-4); color: var(--companion-soft); font-size: var(--text-body); }
 .rhh-companion-experience > [role="tabpanel"] > .rhh-companion-settings { padding: 0; border: 0; background: transparent; }
 .rhh-companion-experience .rhh-companion-settings .rhh-companion-master { margin-top: 0; }
 .rhh-companion-experience .rhh-companion-settings .rhh-companion-nav { margin: 0; }

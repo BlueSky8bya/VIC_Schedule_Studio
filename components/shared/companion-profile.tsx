@@ -20,7 +20,8 @@ import type { CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { playSfx } from "@/lib/ui/sfx";
 import { logActivity } from "@/lib/activity/client";
 
-const loading = () => <span aria-live="polite" className="rhh-companion-loading" role="status">불러오는 중</span>;
+// 지연 로드 중엔 아무것도 그리지 않는다 — "불러오는 중" 표시는 소유자 요청으로 전부 철거(2026-11-13).
+const loading = () => null;
 const CompanionDiscovery = dynamic(() => import("./companion-discovery").then(module => module.CompanionDiscovery), { loading });
 const CompanionWardrobe = dynamic(() => import("./companion-wardrobe").then(module => module.CompanionWardrobe), { loading });
 const CompanionWardrobePreview = dynamic(() => import("./companion-wardrobe-preview").then(module => module.CompanionWardrobePreview), { loading });
