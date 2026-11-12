@@ -508,6 +508,9 @@ export function StudioShell({
   const mTitleRef = useRef<HTMLTextAreaElement>(null);
   // 데스크톱 편집 패널의 제목칸 — 일정 선택 후 글자 키를 누르면 바로 여기로 포커스를 옮긴다.
   const editorTitleRef = useRef<HTMLDivElement>(null);
+  // 한글 IME는 한 음절의 compositionend 직후 같은 키 입력에서 다음 음절 compositionstart를 낸다. 그 틈에 DOM을 다시 쓰면
+  // 조합이 끊겨 다음 음절이 투명하게 그려졌다(2026-11-13 소유자 실측) → 정규화는 조합이 이어지지 않을 때만 한다.
+  const titleComposingRef = useRef(false);
   function fitTitleHeight() {
     const el = mTitleRef.current;
     if (!el) return;
@@ -8562,9 +8565,20 @@ export function StudioShell({
                 contentEditable={canEdit}
                 data-companion-editor-perch=""
                 data-act="title-input"
+                onCompositionStart={() => {
+                  titleComposingRef.current = true;
+                }}
                 onCompositionEnd={(event) => {
-                  const text = normalizeEditableText(event.currentTarget);
+                  titleComposingRef.current = false;
+                  const el = event.currentTarget;
+                  const text = readEditableText(el);
                   setForm((current) => ({ ...current, publicTitle: text }));
+                  // 다음 음절 조합이 곧바로 시작되면 건너뛰고, 마지막 음절 뒤에서 정규화한다.
+                  setTimeout(() => {
+                    if (titleComposingRef.current || !el.isConnected) return;
+                    const normalized = normalizeEditableText(el);
+                    setForm((current) => (current.publicTitle === normalized ? current : { ...current, publicTitle: normalized }));
+                  }, 0);
                 }}
                 onInput={(event) => {
                   // 조합(한글 IME) 중엔 DOM을 다시 쓰면 조합이 끊긴다 — 값만 읽고, 정규화는 조합 끝에.
