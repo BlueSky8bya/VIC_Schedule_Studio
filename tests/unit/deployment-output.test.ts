@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 // @ts-expect-error This build-time module is outside the application runtime.
-import { ARCHIVE_DIRECTORY, isVercelBuild, prepareDeploymentOutput } from '../../scripts/deployment-output/prepare.mjs';
+import { ARCHIVE_DIRECTORY, isCloudBuild, prepareDeploymentOutput } from '../../scripts/deployment-output/prepare.mjs';
 
 const sha = (bytes: Buffer | string) => createHash('sha256').update(bytes).digest('hex');
 type Entry = { path: string; bytes: number; sha256: string; reason: string };
@@ -23,12 +23,12 @@ function fixture(count = 2) {
 }
 
 describe('deployment-only public asset archive', () => {
-  it('runs automatically only in a Linux Vercel preview or production build', () => {
-    expect(isVercelBuild({ VERCEL: '1', VERCEL_ENV: 'production' }, 'linux')).toBe(true);
-    expect(isVercelBuild({ VERCEL: '1', VERCEL_ENV: 'preview' }, 'linux')).toBe(true);
-    expect(isVercelBuild({ VERCEL: '1', VERCEL_ENV: 'production' }, 'win32')).toBe(false);
-    expect(isVercelBuild({ VERCEL: '1', VERCEL_ENV: 'development' }, 'linux')).toBe(false);
-    expect(isVercelBuild({}, 'linux')).toBe(false);
+  it('runs automatically only in a Linux Cloudflare Workers build', () => {
+    expect(isCloudBuild({ WORKERS_CI: '1' }, 'linux')).toBe(true);
+    expect(isCloudBuild({ WORKERS_CI: '1' }, 'win32')).toBe(false);
+    expect(isCloudBuild({ CI: 'true', GITHUB_ACTIONS: 'true' }, 'linux')).toBe(false);
+    expect(isCloudBuild({ VERCEL: '1', VERCEL_ENV: 'production' }, 'linux')).toBe(false);
+    expect(isCloudBuild({}, 'linux')).toBe(false);
   });
 
   it('checks the real exact archive without moving any repository original', () => {
@@ -173,7 +173,6 @@ describe('deployment-only public asset archive', () => {
   });
 
   it('keeps build staging excluded and runs before metadata and next build', () => {
-    expect(fs.readFileSync('.vercelignore', 'utf8')).toContain(`/${ARCHIVE_DIRECTORY}/`);
     expect(fs.readFileSync('.gitignore', 'utf8')).toContain(`/${ARCHIVE_DIRECTORY}/`);
     const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
     expect(pkg.scripts.prebuild).toMatch(/^node scripts\/deployment-output\/prepare\.mjs && node scripts\/generate-ambient-art-metadata\.mjs/);

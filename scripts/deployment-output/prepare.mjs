@@ -12,8 +12,9 @@ const inside = (root, target) => target.startsWith(`${root}${path.sep}`);
 const sourceExtensions = /\.(?:tsx?|jsx?|css|json|mjs)$/;
 const allowedAsset = /^public\/(?:companion\/(?:hd\/[^/]+\.webp|audio\/radio\/radio-(?:0[1-9]|[12]\d|3[0-2])\.ogg|(?:victamin-motion|vitamin-fluid-q95|victamin-fluid|victamin-clean|vitamin-keyposes-2x)\.webp)|premiere\/(?:victamin-audience|victamin-audience-big-eyes-v1)\.webp)$/;
 
-export function isVercelBuild(env = process.env, platform = process.platform) {
-  return platform === 'linux' && env.VERCEL === '1' && ['production', 'preview'].includes(env.VERCEL_ENV);
+// Cloudflare Workers Builds sets WORKERS_CI=1. Local and GitHub quality builds keep every source file.
+export function isCloudBuild(env = process.env, platform = process.platform) {
+  return platform === 'linux' && env.WORKERS_CI === '1';
 }
 
 function checkedPath(root, relative) {
@@ -141,6 +142,6 @@ export function prepareDeploymentOutput({ root = process.cwd(), stage = false, m
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const args = process.argv.slice(2);
   if (args.some(argument => argument !== '--check')) throw Error('Usage: node scripts/deployment-output/prepare.mjs [--check]');
-  if (!args.includes('--check') && !isVercelBuild()) console.log('Deployment output: local source checkout retained (not a Vercel cloud build).');
+  if (!args.includes('--check') && !isCloudBuild()) console.log('Deployment output: local source checkout retained (not a Cloudflare Workers build).');
   else console.log(`Deployment output: ${JSON.stringify(prepareDeploymentOutput({ stage: !args.includes('--check') }))}`);
 }
