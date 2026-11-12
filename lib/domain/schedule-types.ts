@@ -238,6 +238,9 @@ export type PublicSchedule = {
   palette: ColorPaletteEntry[];
   vods?: PublicVodEntry[]; // 다시보기 아카이브(없으면 빈 취급 — 샘플/오프라인 모드)
   myHeartIds?: string[]; // A: 현재 로그인 사용자가 관심 표시한 일정 id 목록(본인 것만, 개인 상태 복원용)
+  // 첫 화면 데이터 창(lib/schedules/schedule-window.ts) — 있으면 ranges(KST YYYY-MM-DD, to 없으면 미래 전부)에
+  // 걸친 일정·다시보기(+떡밥)만 실렸고, 포스터가 나머지를 공개 API에서 받아 합친다. 없으면 전체.
+  window?: { ranges: { from: string; to?: string }[] };
 };
 
 export type StudioSchedule = Omit<PublicSchedule, "events"> & {

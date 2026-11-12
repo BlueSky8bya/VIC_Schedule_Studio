@@ -10,6 +10,16 @@ import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
 import { getPublicSchedule } from "@/lib/schedules/public-loader";
 import { timed } from "@/lib/perf/perf";
 import { isPublicMonth, parsePublicMonth } from "@/lib/ui/public-month-link";
+import { kstDayKey } from "@/lib/calendar/month";
+import type { PublicSchedule } from "@/lib/domain/schedule-types";
+import { shownRange, upcomingRange, windowPublicSchedule } from "@/lib/schedules/schedule-window";
+
+// 첫 화면엔 보는 달 ±1달과 오늘 앞 달~미래만 싣는다(나머지는 포스터가 공개 API에서 받아 합친다 — schedule-window.ts).
+function firstPaintSchedule(schedule: PublicSchedule, view: { year: number; month: number } | null): PublicSchedule {
+  const [ty, tm] = kstDayKey().split("-").map(Number);
+  const shown = view ?? { year: schedule.calendar.defaultYear, month: schedule.calendar.defaultMonth };
+  return windowPublicSchedule(schedule, [shownRange(shown), upcomingRange({ year: ty, month: tm })]);
+}
 
 export default async function HomePage({ searchParams }: { searchParams?: Promise<Record<string, string | string[] | undefined>> }) {
   // actor 조회(로그인 사용자면 GoTrue 왕복)와 공개 일정 로드는 서로 독립이다 — 예전엔 줄을 세워
@@ -55,7 +65,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         initialYear={initialView?.year}
         initialMonth={initialView?.month}
         initialNarrow={narrow}
-        schedule={schedule}
+        schedule={firstPaintSchedule(schedule, initialView)}
         toggleHeartAction={toggleEventHeartAction}
       />
     );
@@ -82,7 +92,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       initialYear={initialView?.year}
       initialMonth={initialView?.month}
       initialNarrow={narrow}
-      schedule={schedule}
+      schedule={firstPaintSchedule(schedule, initialView)}
       toggleHeartAction={toggleEventHeartAction}
     />
   );

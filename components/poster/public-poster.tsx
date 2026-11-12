@@ -6,6 +6,7 @@ import { scrollAgendaTarget } from "@/lib/ui/agenda-scroll";
 import { announceIfStaleDeployment } from "@/lib/net/stale-deploy";
 import { PublicEventCalendar } from "./public-event-calendar";
 import { PublicDetailTags } from "./public-detail-tags";
+import { useFullSchedule } from "./use-full-schedule";
 import {usePublicRecordSession} from "@/lib/ui/use-public-record-session";
 import { AgendaSupportContext } from "@/components/shared/agenda-support-context";
 import { createAgendaNotices } from "@/lib/ui/agenda-notices";
@@ -601,7 +602,7 @@ export function PublicPoster({
   onViewChange,
   calendarShortcutsBlocked = false,
   positionMemory,
-  schedule: sourceSchedule,
+  schedule: firstSchedule,
   premiereEnabled = process.env.NEXT_PUBLIC_PREMIERE_STAGE !== "0",
   premiereFixture,
   initialNarrow = false,
@@ -623,6 +624,8 @@ export function PublicPoster({
 }: PublicPosterProps) {
   const posterRootRef = useRef<HTMLDivElement | null>(null);
   const premiereBlockedRef = useRef(false);
+  // `/`는 첫 화면 창만 싣고 온다(schedule.window) — 나머지 달은 마운트 즉시 공개 API에서 받아 합친다.
+  const sourceSchedule = useFullSchedule(firstSchedule);
   const [revealedEvents, setRevealedEvents] = useState<Record<string, PublicScheduleEvent>>({});
   const [goneTeaserIds, setGoneTeaserIds] = useState<Set<string>>(() => new Set());
   const [rehearsal, setRehearsal] = useState<PremiereFixture | undefined>();
