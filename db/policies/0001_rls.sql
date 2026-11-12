@@ -1,3 +1,6 @@
+-- ⚠ 역사 기록(2026-11-13): db/migrations/0159_retire_private_layer.sql이 이 파일이 만드는 비공개 레이어 객체
+-- (event_private_meta·support_campaigns·has_private_unlock·is_active_worker·비공개 범위 정책)를 철수했다.
+-- 다시 적용하지 말 것 — 지운 객체가 되살아나거나(테이블 없음으로) 실패한다. 현재 정의는 마이그레이션이 정본.
 alter table public.calendars enable row level security;
 alter table public.trusted_members enable row level security;
 alter table public.private_layer_settings enable row level security;

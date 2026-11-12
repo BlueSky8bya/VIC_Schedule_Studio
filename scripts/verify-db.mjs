@@ -28,7 +28,7 @@ const policies = await client.query(
   `select count(*)::int as n from pg_policies where schemaname='public'`
 );
 const funcs = await client.query(
-  `select proname from pg_proc where proname in ('is_developer','is_calendar_admin','is_calendar_owner','has_private_unlock') order by proname`
+  `select proname from pg_proc where proname in ('is_developer','is_calendar_admin','is_calendar_owner','reserve_private_unlock_attempt') order by proname`
 );
 
 console.log("public 테이블 수:", tables.rows[0].n);

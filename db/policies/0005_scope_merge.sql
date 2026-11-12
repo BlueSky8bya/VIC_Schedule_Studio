@@ -1,3 +1,6 @@
+-- ⚠ 역사 기록(2026-11-13): db/migrations/0159_retire_private_layer.sql이 이 파일이 만드는 비공개 레이어 객체
+-- (event_private_meta·support_campaigns·has_private_unlock·is_active_worker·비공개 범위 정책)를 철수했다.
+-- 다시 적용하지 말 것 — 지운 객체가 되살아나거나(테이블 없음으로) 실패한다. 현재 정의는 마이그레이션이 정본.
 -- 작업자/매니저 권한 개편 + "엠바고"·"나만" 통합(owner_private = 소유자 전용 "엠바고").
 --  - "작업자"(work): 작업자 + 관리자(owner/dev)만 잠금해제 후 읽는다. 매니저는 비공개를 전혀 못 봄.
 --  - "엠바고"(owner_private): 소유자 전용(0004 정책 그대로). 옛 embargo는 0025로 owner_private로 이전.

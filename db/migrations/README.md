@@ -12,6 +12,8 @@
 
 ## 목록 (번호 → 목적)
 
+**2026-11-13 비공개 레이어 철수**: [0159_retire_private_layer.sql](0159_retire_private_layer.sql) — 비공개 범위 정책·`has_private_unlock`·`is_active_worker`를 지우고 `event_private_meta`·`private_unlock_grants`·`support_campaigns` 테이블, `events.secret_cipher`·`private_layer_settings.unlock_duration_minutes` 열을 삭제. `save_event_atomic`·`replace_event_tags_atomic`은 같은 시그니처로 재정의(공개 전용). 최초공개 게이트 비밀번호는 그대로. **비공개 코드 철수 앱을 배포·확인한 뒤, 소유자 승인 후 적용**(되돌릴 수 없는 삭제). 같은 날 [0158_pg_cron_cloudflare_domain.sql](0158_pg_cron_cloudflare_domain.sql)은 새 도메인이 응답한 뒤 적용.
+
 **2026-10-23 구독·구독+ 파이프라인**: [0156_vod_access_pipeline.sql](0156_vod_access_pipeline.sql) — 업로드 영상을 vod_archive(upload=true)로 합치고, 검색·트렌드·인물·사전·채팅 분석 함수 12개와 타임라인/챕터 공개 정책의 `auth_no=101`을 101·107로 넓힘. upload 행은 방송 통계·스윕 삭제·채팅 큐·트렌드 최근 방송일에서 제외. 함수 본문 = 운영 현재 정의에서 그 치환만(트랜잭션 롤백 시험 통과). **앱 배포 직전 적용.** 그 뒤 [0157_drop_vod_upload.sql](0157_drop_vod_upload.sql)은 **새 앱 배포 뒤** 적용.
 
 **Applied 2026-10-23 KST**: [0155_vod_upload.sql](0155_vod_upload.sql) — 구독 전용 업로드 영상 표(숲 '구독' 배지, file_type NORMAL + 107). anon은 107만 읽기, service_role 쓰기. **앱 배포 전에 적용**(공개 로더가 이 표를 읽는다). 적용 후 `node scripts/backfill-vod-uploads.mjs`로 30건 채움. PGlite 테스트 `tests/sql/vod-upload.mjs`.
