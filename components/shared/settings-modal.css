@@ -346,6 +346,9 @@ html[data-reduce-motion] .vic-settings .rhh-menu { animation-duration: 1ms;
 .vic-settings .rhh-archive-months { display: block; padding: 10px 12px; }
 .vic-settings .rhh-archive-months .rhh-seg { width: 100%; }
 .vic-settings .rhh-archive-view { min-width: 0; margin-top: 12px; }
+/* 설정 창 안 아카이브: 인사이트 패널의 overscroll-behavior: contain이 휠 연쇄를 끊어, 포인터가 대시보드 위면 설정 창이
+   더 안 올라갔다(2026-11-13 소유자). 여기선 패널 끝에서 바깥 설정 창으로 이어 스크롤한다. 인사이트 모달은 그대로. */
+.vic-settings .rhh-archive-view .insights-panel { overscroll-behavior: auto; }
 /* The learned description is actual settings content, not a muted footnote.
    The same tokens and markup serve viewer, studio and preview. */
 .rhh-habit-card {

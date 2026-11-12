@@ -8,12 +8,12 @@ export function insightTabRows(count: number): number[] {
   return count <= 4 ? [count] : [Math.ceil(count / 2), Math.floor(count / 2)];
 }
 
-export function insightTabStep(index: number, key: string, count: number): number {
+// rows: 줄 배치를 직접 줄 때(설정 창 아카이브 = [1, 3]). 없으면 위 기본 배치.
+export function insightTabStep(index: number, key: string, count: number, rows: readonly number[] = insightTabRows(count)): number {
   if (key === "Home") return 0;
   if (key === "End") return count - 1;
   if (key === "ArrowLeft") return Math.max(0, index - 1);
   if (key === "ArrowRight") return Math.min(count - 1, index + 1);
-  const rows = insightTabRows(count);
   if (rows.length === 1) return index;
   const row = index < rows[0] ? 0 : 1;
   const nextRow = key === "ArrowUp" ? row - 1 : key === "ArrowDown" ? row + 1 : row;
@@ -23,11 +23,13 @@ export function insightTabStep(index: number, key: string, count: number): numbe
   return (nextRow === 0 ? 0 : rows[0]) + Math.min(rows[nextRow] - 1, Math.floor(center * rows[nextRow]));
 }
 
-export function InsightsTabs({ tabs, active, onChange }: {
+export function InsightsTabs({ tabs, active, onChange, rows }: {
   tabs: readonly { key: string; label: string; icon: ComponentType<{ "aria-hidden"?: boolean; size?: number }> }[];
   active: number;
   onChange: (index: number) => void;
+  rows?: readonly number[];
 }) {
+  const layout = rows ?? insightTabRows(tabs.length);
   const onKey = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.altKey || event.ctrlKey || event.metaKey || event.nativeEvent.isComposing ||
       !["Home", "End", "ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
@@ -36,7 +38,7 @@ export function InsightsTabs({ tabs, active, onChange }: {
     if (index < 0) return;
     event.preventDefault();
     event.stopPropagation();
-    const next = insightTabStep(index, event.key, tabs.length);
+    const next = insightTabStep(index, event.key, tabs.length, layout);
     // Native click keeps pointer/keyboard on the same single activity path.
     buttons[next]?.focus();
     if (next !== active) buttons[next]?.click();
@@ -44,7 +46,7 @@ export function InsightsTabs({ tabs, active, onChange }: {
   if (tabs.length <= 1) return null;
   let offset = 0;
   return <div aria-label="인사이트 영역" className="insights-tabs" onKeyDown={onKey} role="tablist">
-    {insightTabRows(tabs.length).map((length, row) => {
+    {layout.map((length, row) => {
       const start = offset;
       offset += length;
       return <div className="insights-tab-row" key={row} role="presentation">

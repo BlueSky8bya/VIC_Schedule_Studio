@@ -78,6 +78,8 @@ const PANELS = [
   { key: "live", label: "실시간", icon: Radio },
   { key: "visits", label: "방문", icon: TrendingUp }
 ] as const;
+const ARCHIVE_PANELS = PANELS.filter((p) => p.key !== "live");
+const ARCHIVE_TAB_ROWS = [1, ARCHIVE_PANELS.length - 1];
 function weekdayLabel(wd: number | null): string {
   return wd !== null ? `${WEEKDAY[wd]}요일` : "—";
 }
@@ -326,6 +328,10 @@ export function InsightsDashboard({
   archived?: ArchivePayload;
 }) {
   const [index, setIndex] = useState(0);
+  // 아카이브엔 실시간 칸이 없다(보관하지 않음) — 탭·트랙·점·키보드가 모두 이 목록 하나를 따른다.
+  // 탭 배치는 설정 창 안에서만 트렌드 1행 + 일정·참여·방문 3열(2026-11-13 소유자).
+  const panels = archived ? ARCHIVE_PANELS : PANELS;
+  const tabRows = archived ? ARCHIVE_TAB_ROWS : undefined;
   const [data, setData] = useState<InsightsData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -400,7 +406,7 @@ export function InsightsDashboard({
   // 방문 패널을 보는 동안엔 20초마다 새로고침 — 지금 내가 보고 있는(진행 중) 세션까지 거의
   // 실시간으로 반영(모달 최초 로드 이후 생긴 세션·갱신된 체류시간이 들어온다).
   useEffect(() => {
-    if (archived || PANELS[index]?.key !== "visits") return;
+    if (archived || panels[index]?.key !== "visits") return;
     let alive = true;
     const poll = startForegroundPoll({
       run: async (signal) => {
@@ -413,9 +419,9 @@ export function InsightsDashboard({
       alive = false;
       poll.stop();
     };
-  }, [index, year, month, archived]);
+  }, [index, year, month, archived, panels]);
 
-  const go = (i: number) => setIndex(Math.max(0, Math.min(PANELS.length - 1, i)));
+  const go = (i: number) => setIndex(Math.max(0, Math.min(panels.length - 1, i)));
 
   // 지금 보고 있는 칸만 그 칸의 데이터 소스를 다시 불러 즉시 갱신(전체 모달 재로드 아님).
   // (패널별 수동 새로고침(refreshPanel)은 2026-09-04 제거 — 방문 칸은 20초 자동 갱신.)
@@ -425,7 +431,7 @@ export function InsightsDashboard({
       const t = e.target as HTMLElement | null;
       if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
       // Follow the same actual row layout as the shared tab control.
-      const LEN = PANELS.length;
+      const LEN = panels.length;
       if (e.key === "ArrowLeft") {
         e.preventDefault();
         setIndex((i) => Math.max(0, i - 1));
@@ -434,15 +440,15 @@ export function InsightsDashboard({
         setIndex((i) => Math.min(LEN - 1, i + 1));
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        setIndex((i) => insightTabStep(i, "ArrowUp", LEN));
+        setIndex((i) => insightTabStep(i, "ArrowUp", LEN, tabRows));
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
-        setIndex((i) => insightTabStep(i, "ArrowDown", LEN));
+        setIndex((i) => insightTabStep(i, "ArrowDown", LEN, tabRows));
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [panels, tabRows]);
 
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const onSwipeStart = (e: ReactPointerEvent) => {
@@ -462,7 +468,7 @@ export function InsightsDashboard({
     const dy = e.clientY - s.y;
     const ax = Math.abs(dx);
     const ay = Math.abs(dy);
-    const LEN = PANELS.length;
+    const LEN = panels.length;
     // 가로 스와이프만 패널 전환(±1). 세로는 패널 내용 스크롤과 겹쳐서 쓰지 않는다(웹은 방향키로 격자 이동).
     if (ax > 45 && ax > ay * 1.3) {
       const next = Math.max(0, Math.min(LEN - 1, index + (dx < 0 ? 1 : -1)));
@@ -1162,12 +1168,12 @@ export function InsightsDashboard({
   }
 
   return (
-    <div className="insights">
+    <div className="insights" data-archived={archived ? "" : undefined}>
       <div className="insights-head">
         <p className="insights-month">{archived ? `${year}년 ${month}월 인사이트` : `${month}월 인사이트`}</p>
         {/* (수동 새로고침 버튼은 2026-09-04 사용자 결정으로 제거 — 방문 칸은 20초 자동 갱신, 나머지는 열 때 최신.) */}
       </div>
-      <InsightsTabs active={index} onChange={go} tabs={PANELS} />
+      <InsightsTabs active={index} onChange={go} rows={tabRows} tabs={panels} />
 
       <div
         className="insights-viewport"
@@ -1346,10 +1352,12 @@ export function InsightsDashboard({
             })}
           </section>
 
-          {/* 5) 실시간 — 개발자 전용(아랫줄) */}
-          <section className="insights-panel">
-            {archived ? <p className="insight-empty">실시간 접속은 아카이브에 보관하지 않아요.</p> : <DeveloperPanel />}
-          </section>
+          {/* 5) 실시간 — 개발자 전용(아랫줄). 아카이브엔 칸 자체가 없다(panels와 같은 순서 유지). */}
+          {archived ? null : (
+            <section className="insights-panel">
+              <DeveloperPanel />
+            </section>
+          )}
 
           {/* 6) 방문(이 달) — 개발자 전용 */}
           <section className="insights-panel">{renderVisits()}</section>
@@ -1367,14 +1375,14 @@ export function InsightsDashboard({
           <ChevronLeft aria-hidden="true" size={18} />
         </button>
         <div className="insights-dots" aria-hidden="true">
-          {PANELS.map((p, i) => (
+          {panels.map((p, i) => (
             <span className={i === index ? "on" : ""} key={p.key} />
           ))}
         </div>
         <button
           aria-label="다음"
           className="insights-arrow"
-          disabled={index === PANELS.length - 1}
+          disabled={index === panels.length - 1}
           onClick={() => go(index + 1)}
           type="button"
          data-act="insights-panel-next">
