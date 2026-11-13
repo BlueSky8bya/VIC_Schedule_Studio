@@ -20,6 +20,32 @@
   }
 }
 
+@keyframes cal-skel-doodle-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0);
+  }
+
+  25% {
+    transform: translateY(-3px) rotate(-3deg);
+  }
+
+  50% {
+    transform: translateY(-6px) rotate(0);
+  }
+
+  75% {
+    transform: translateY(-3px) rotate(3deg);
+  }
+}
+
+.cal-skel-doodle {
+  display: block;
+  width: 120px;
+  height: 120px;
+  animation: cal-skel-doodle-bob 1.4s var(--ease) infinite;
+}
+
 .cal-skel-stage {
   min-height: 100svh;
   display: flex;
@@ -66,6 +92,12 @@
     background: var(--surface);
     padding: var(--space-card);
     box-shadow: var(--shadow-2);
+  }
+
+  .cal-skel-doodle {
+    order: 1;
+    width: 64px;
+    height: 64px;
   }
 
   .cal-skel-note {
@@ -174,6 +206,7 @@
   }
 }
 
+html[data-reduce-motion] .cal-skel-doodle,
 html[data-reduce-motion] .cal-skel-note,
 html[data-reduce-motion] .cal-skel-month,
 html[data-reduce-motion] .cal-skel-cell {

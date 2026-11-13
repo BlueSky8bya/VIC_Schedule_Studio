@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
 import { hapticTick } from "@/lib/ui/haptics";
 import { loginRecoveryHref } from "@/lib/auth/login-recovery-link";
+import { ToriDoodle } from "@/components/shared/tori-doodle";
 
 // 현재 주소를 안드로이드 크롬으로 여는 인텐트 URL.
 function chromeIntentUrl() {
@@ -239,6 +240,7 @@ export function InAppBrowserNotice({
 
   return (
     <div className="auth-warning inapp-notice">
+      <ToriDoodle className="inapp-doodle" size={84} />
       <strong>기본 브라우저로 열어주세요</strong>
       <p>Google 보안정책으로 로그인이 차단됩니다.</p>
       <p>Chrome이나 Safari로 열어주세요.</p>

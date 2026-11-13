@@ -7575,7 +7575,8 @@ export function StudioShell({
           <SettingsButton open={modal === "settings"} dataAct="studio-settings" onClick={() => { hapticTick(); setCompanionBook(false); setModal("settings"); }} />
           <ThemeToggleButton dataAct="studio-theme-toggle" />
           {/* 개발자만 — 아직 보지 않은 사이트 제보 수(PC 헤더만, 2026-11-13 소유자). */}
-          {actor.role === "developer" ? <ReportInboxButton /> : null}
+          {/* 관리자 화면 미리보기 중에는 숨긴다 — 미리보기는 그 역할이 보는 그대로(2026-11-13 소유자 "관리자한테는 안 보여야"). */}
+          {actor.role === "developer" && !previewRole ? <ReportInboxButton /> : null}
           {companionDesktop && companionPrefs.enabled ? <CompanionHomeLauncherSlot onHost={companionLauncherHostRef} /> : null}
         </div>
 

@@ -893,6 +893,9 @@ select {
   gap: 8px;
   text-align: left;
 }
+.inapp-doodle {
+  justify-self: center;
+}
 .inapp-notice p {
   margin: 0;
   font-weight: 600;

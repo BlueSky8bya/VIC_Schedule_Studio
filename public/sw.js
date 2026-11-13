@@ -11,6 +11,7 @@
 const CACHE = "vic-offline-v7"; // 버전 올리면 옛 캐시 자동 정리(activate에서).
 const SNAPSHOT_KEY = "/__offline_snapshot"; // 비로그인 공개 포스터 스냅샷의 캐시 키(실제 "/"와 분리).
 const SNAPSHOT_TIME_KEY = "/__offline_snapshot_time"; // Local successful-fetch time; no identity or HTTP clock.
+const DOODLE = "/tori/doodle.webp"; // 오프라인 안내 화면의 토리님 손그림 — 미리 받아 둔다.
 const SNAPSHOT_MIN_INTERVAL = 60_000; // 스냅샷 갱신 최소 간격(ms) — 잦은 재요청 방지.
 
 let lastSnapshotAt = 0;
@@ -30,6 +31,7 @@ self.addEventListener("activate", (event) => {
       const keys = await caches.keys();
       await Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)));
       await self.clients.claim();
+      try { await (await caches.open(CACHE)).add(DOODLE); } catch { /* 없어도 안내 글은 뜬다 */ }
       await refreshSnapshot(); // 첫 방문만으로 바로 오프라인 열람 되게 미리 스냅샷.
     })()
   );
@@ -162,7 +164,7 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return; // 외부 도메인 무시
   if (isPassthrough(url.pathname)) return; // API·인증은 손대지 않음(네트워크)
 
-  if (isStaticAsset(url.pathname)) {
+  if (isStaticAsset(url.pathname) || url.pathname === DOODLE) {
     event.respondWith(cacheFirst(req));
     return;
   }
@@ -203,9 +205,9 @@ async function navHandler(req) {
     const snap = await cache.match(SNAPSHOT_KEY);
     if (snap) return snap; // 오너의 /studio로 들어와도 공개 포스터(읽기 전용)를 보여준다.
     return new Response(
-      "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'>" +
+      "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><style>body{margin:0}</style>" +
         "<div style='font-family:system-ui;display:grid;place-items:center;height:100vh;margin:0;color:#6b5b95;background:#fffafd;text-align:center'>" +
-        "<div><div style='font-size:40px'>🌙</div><p style='font-weight:800'>지금 오프라인이에요</p>" +
+        "<div><img alt='' src='" + DOODLE + "' width='132' height='132' style='display:block;margin:0 auto'><p style='font-weight:800'>지금 오프라인이에요</p>" +
         "<p style='color:#9a93ad;font-size:14px'>인터넷이 연결되면 일정표가 보여요.<br>한 번이라도 열어본 적 있으면 공개 일정이 떠요.</p></div></div>",
       { status: 503, headers: { "content-type": "text/html; charset=utf-8" } }
     );

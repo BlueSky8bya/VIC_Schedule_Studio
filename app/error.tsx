@@ -1,5 +1,7 @@
 "use client";
 
+import { ToriDoodle } from "@/components/shared/tori-doodle";
+
 export default function Error({
   error,
   reset,
@@ -13,6 +15,7 @@ export default function Error({
         className="auth-panel system-state-card"
         aria-labelledby="error-title"
       >
+        <ToriDoodle className="system-state-doodle" size={132} />
         <span
           className="system-state-icon system-state-icon-danger"
           aria-hidden
