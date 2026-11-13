@@ -4,8 +4,8 @@ import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { enableActivityLogging, logActivity, startClickTracking } from "@/lib/activity/client";
 
-// 어느 화면을 얼마나 봤는지(0062). PresenceBeacon과 분리한 이유: 프레즌스 effect의 deps에
-// pathname을 넣으면 SPA 라우팅마다 방문 세션이 끊겼다 다시 시작된다(0061에서 고친 문제의 재발).
+// 어느 화면을 얼마나 봤는지(0062). 개발자에게만 깔린다(app/layout.tsx — 2026-11-13 소유자 결정).
+// (방문 세션 비콘은 같은 날 철수 — 이 비콘이 남은 유일한 화면 기록이다.)
 //
 // 남기는 것은 경로와 월 파라미터뿐 — 쿼리스트링·해시는 자유 입력이 섞일 수 있어 버린다.
 // route.leave의 dur_ms가 그 화면의 실제 체류다(탭을 숨긴 시간도 포함되지만, 방문 자체가

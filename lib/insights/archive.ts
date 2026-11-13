@@ -3,10 +3,8 @@ import { kstDayKey } from "@/lib/calendar/month";
 import {
   getInsightsAction,
   getTrendAction,
-  getVisitTrendsAction,
   type InsightsData,
-  type TrendData,
-  type VisitTrends
+  type TrendData
 } from "@/lib/insights/actions";
 import { runAsInsightsSystem } from "@/lib/insights/system-context";
 
@@ -19,15 +17,18 @@ import { runAsInsightsSystem } from "@/lib/insights/system-context";
 const SLUG = "vic";
 export const ARCHIVE_SCHEMA_VERSION = 1;
 // 보관함은 **한 해 통째로만** 만든다(2026-11-13 소유자): 12월 31일(KST)이 지난 해만. 일정 기록은 2024년부터라
-// 그 해부터 고를 수 있고, 원본 통계(방문·이용·속도)는 2026-06부터라 그 전 해는 일정 숫자만 담긴다.
+// 그 해부터 고를 수 있고, 원본 통계(이용·속도)는 2026-06부터라 그 전 해는 일정 숫자만 담긴다.
 export const FIRST_ARCHIVE_YEAR = 2024;
 export const STATS_START_YEAR = 2026;
 // 만든 지 이만큼 지난 보관본만 원본 삭제 근거가 된다 — 지난 해를 손으로 막 만든 직후 곧바로 지워지지 않게(0164).
 export const PURGE_MIN_AGE_DAYS = 30;
+// visit_session은 2026-11-13부터 더 쌓이지 않는다(방문 기록 철수). 남은 옛 행도 같은 규칙으로 지운다.
 export const PURGE_TABLES = ["activity_event", "visit_session", "perf_samples"] as const;
 const DAY_MS = 86_400_000;
 
-export type ArchivePayload = { insights: InsightsData | null; trend: TrendData | null; visits: VisitTrends | null };
+// 방문 집계(visits)는 2026-11-13 방문 기록 철수로 더 담지 않는다. 그 전에 만든 보관본에 남아 있는
+// visits 칸은 화면이 읽지 않는다(숫자만이라 그대로 둔다).
+export type ArchivePayload = { insights: InsightsData | null; trend: TrendData | null };
 export type ArchiveMonth = { month: number; builtAt: string; payload: ArchivePayload };
 
 export function kstYearMonth(now: number | Date = Date.now()): { year: number; month: number; day: number } {
@@ -83,15 +84,12 @@ export function canOverwriteYear(
   return archived.length > 0 && archived.every((r) => !olderThan(r.builtAt, PURGE_MIN_AGE_DAYS, now));
 }
 
-/** 아카이브에는 숫자만 — 세션 한 줄 한 줄(디버깅 로그)과 '오늘' 수집 상태는 뺀다. */
+/** 아카이브에는 숫자만 — '다음 방송'(그때의 예정)은 뺀다. 알려진 두 칸만 명시적으로 담는다. */
 export function sanitizeForArchive(payload: ArchivePayload): ArchivePayload {
   const insights = payload.insights
     ? { ...payload.insights, content: { ...payload.insights.content, nextBroadcast: null } }
     : null;
-  const visits = payload.visits
-    ? { ...payload.visits, recent: [], health: { todaySessions: 0, openRate: 0, avgStaySec: 0 } }
-    : null;
-  return { insights, trend: payload.trend, visits };
+  return { insights, trend: payload.trend };
 }
 
 type Db = NonNullable<ReturnType<typeof createSupabaseAdminClient>>;
@@ -140,15 +138,13 @@ export function monthsToBuild(
 }
 
 async function computeMonth(year: number, month: number): Promise<ArchivePayload | null> {
-  // nano DB — 세 집계를 동시에 쏘지 않고 차례로. 하나라도 실패하면 그 달은 건너뛰고 다음 실행에서 다시.
+  // nano DB — 두 집계를 동시에 쏘지 않고 차례로. 하나라도 실패하면 그 달은 건너뛰고 다음 실행에서 다시.
   return runAsInsightsSystem(async () => {
     const insights = await getInsightsAction(year, month);
     if (!insights.ok) return null;
     const trend = await getTrendAction(year, month);
     if (!trend.ok) return null;
-    const visits = await getVisitTrendsAction(year, month);
-    if (!visits.ok) return null;
-    return sanitizeForArchive({ insights: insights.data, trend: trend.data, visits: visits.data });
+    return sanitizeForArchive({ insights: insights.data, trend: trend.data });
   });
 }
 

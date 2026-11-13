@@ -2,7 +2,6 @@
 import { useState } from "react";
 import { VodChapters } from "@/components/poster/vod-chapters";
 import { TimelineBoard } from "./timeline-board";
-import { DeveloperPanel } from "@/components/developer/developer-panel";
 import type { TimelineManagementRow } from "@/lib/broadcast/timeline-management-types";
 
 const rows: TimelineManagementRow[] = [{ titleNo: 42, title: "검증용 방송", day: "2020-01-01", pinnedKey: null, representativeKey: "root:1", candidates: [
@@ -16,5 +15,5 @@ export function TimelineFixture() {
   return <><section aria-label="채팅 반응 띠" style={{ width: "min(100%, 1000px)", margin: "20px auto" }}><div ref={setStripHost} /></section><section style={{ width: "min(100%, var(--side-panel-w, 360px))", margin: "20px auto" }} aria-label="공개 타임라인">
     <VodChapters slug="fixture" titleNo={42} durationMs={600000} chapters={3} timelineBy="팬 하나" defaultOpen onJump={setJump} stripHost={stripHost} />
     <output aria-label="이동 시각">{jump}</output>
-  </section><TimelineBoard rows={rows} /><section style={{ width: "min(100%, var(--side-panel-w, 360px))", margin: "20px auto" }} aria-label="개발자 접속 상태"><DeveloperPanel /></section></>;
+  </section><TimelineBoard rows={rows} /></>;
 }

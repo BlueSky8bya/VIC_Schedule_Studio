@@ -1015,105 +1015,6 @@ html[data-reduce-motion] .cal-zoom-float {
   100% { transform: scale(1) rotate(0); opacity: 1; }
 }
 
-/* (.developer-warning / .developer-warning-btn 제거 — 참조 0) */
-
-/* 개발자 창: 접속자 현황(역할별 인원) */
-.developer-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-.developer-panel-hint {
-  margin: 0;
-  color: #6b7280;
-  font-size: var(--text-body);
-}
-.developer-panel-subhead {
-  margin: 4px 0 -2px;
-  font-size: var(--text-label);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: #8b7a59;
-  text-transform: none;
-}
-/* 실시간 2열 — 형제 타일은 같은 높이(1fr)로 두어 값 길이에 따라 어긋나지 않게 한다. */
-.developer-panel-live {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-2);
-  align-items: stretch;
-}
-.developer-panel-live > :only-child { grid-column: 1 / -1; }
-.dp-live-tile {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 2px;
-  padding: 10px 12px;
-  background: var(--studio-silver);
-  border: 1px solid var(--studio-line);
-  border-radius: var(--r-md);
-  color: var(--ink-soft);
-  transition:
-    background-color var(--dur-1) var(--ease),
-    border-color var(--dur-1) var(--ease);
-}
-.dp-live-tile.is-watching {
-  background: var(--studio-silver);
-  border-color: var(--studio-action-tint);
-  color: var(--studio-action-text);
-}
-.dp-live-tile strong {
-  font-size: calc(26px * var(--heading-text-scale, 1));
-  font-weight: 600;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-}
-.dp-live-tile span {
-  font-size: var(--text-label);
-  font-weight: 600;
-}
-@media (min-width: 641px) {
-  .dp-live-tile {
-    padding: 12px 16px;
-  }
-  .dp-live-tile strong {
-    font-size: calc(30px * var(--heading-text-scale, 1));
-  }
-  .dp-live-tile span {
-    font-size: calc(13px * var(--ui-text-scale, 1));
-  }
-}
-.developer-panel-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.developer-panel-list li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 9px 14px;
-  background: #fafafa;
-  border: 1px solid #eee;
-  border-radius: var(--r-sm);
-}
-.developer-panel-list .dp-role {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  color: #374151;
-}
-.developer-panel-list .dp-count {
-  font-weight: 600;
-  font-size: var(--text-title);
-  color: #111827;
-}
-
 /* ── 🛠 인사이트 대시보드 (개발자 전용, 패널 좌우 슬라이딩) ─────────────────────── */
 
 /* 패널 탭 — 8개를 동일 너비 4×2 격자로(좌우 대칭, ragged한 줄바꿈 없음, 동일 히트 타깃). */
@@ -1544,14 +1445,6 @@ html[data-reduce-motion] .scrollpos-tag {
   width: 9px;
   color: var(--muted);
   font-size: calc(9px * var(--ui-text-scale, 1));
-}
-.act-dev {
-  flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  /* 흰 테두리 — 배경이 옅어 민트/파랑이 서로 번져 보이지 않게 또렷이 떨어뜨린다. */
-  box-shadow: 0 0 0 1.5px var(--surface, #fff);
 }
 .act-head-main {
   min-width: 0;
@@ -2301,7 +2194,6 @@ html[data-reduce-motion] .perf-spin {
    웹(>640px): 2단 그리드. 요약·자동문구·풀폭 카드(.full)는 1/-1 스팬, 나머지 .vcard는 반폭 카드.
    가로 720px 모달을 좌우로 채워 빈 공간을 없앤다(빈 공간=결함). 한 행의 두 카드는 높이를 맞춘다.
    모바일: 같은 마크업이 한 줄 세로 스택으로(컴팩트 — 카드 테두리 없이 헤딩·gap만으로 호흡). */
-.vpanel,
 .dayvisit {
   display: flex;
   flex-direction: column;
@@ -3071,13 +2963,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
 .vcard > .insight-subhead:first-child {
   margin-top: 0;
 }
-/* 차트 카드 헤더 — 제목 + 토글(일별/주별·역할/기기)을 한 줄에, 좁으면 토글이 다음 줄로 */
-
-.vcard-foot .vhealth {
-  margin-top: 0;
-}
 @media (min-width: 1000px) {
-  .vpanel,
   .dayvisit {
     display: grid;
     /* minmax(0,1fr): 세션 로그 칩(nowrap 가로 스크롤 행) 같은 넓은 min-content가 칼럼을
@@ -3087,22 +2973,12 @@ html[data-reduce-motion] .dtp-pop-x:active {
     align-items: stretch; /* 한 행 두 카드는 같은 높이(ragged 방지) */
   }
   /* 그리드 아이템이 내용 min-content 아래로 줄어들 수 있어야 내부 가로 스크롤이 동작한다. */
-  .vpanel > *,
   .dayvisit > * {
     min-width: 0;
   }
   /* 풀폭: 요약 블록·자동문구·넓은 차트(히트맵/관리자 세션). 반폭: 일반 .vcard. */
-  .vpanel > .vsum,
-  .vpanel > .vins,
-  .dayvisit > .vsum,
   .vcard.full {
     grid-column: 1 / -1;
-  }
-  /* 요약/자동문구는 이미 자체 박스라 grid gap과 겹치는 아래 마진 제거 */
-  .vpanel > .vsum,
-  .dayvisit > .vsum,
-  .vpanel > .vins {
-    margin-bottom: 0;
   }
   .vcard {
     display: flex;
@@ -3117,8 +2993,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
     margin-bottom: 12px;
   }
   /* 막대 차트는 제목/툴바 아래 남는 높이를 흡수하며 바닥 정렬 → 카드가 늘어나도 빈 바닥 최소화 */
-  .vcard > .vt-chart,
-  .vcard > .vt-hours {
+  .vcard > .vt-chart {
     margin-top: auto;
   }
   /* 범례는 항상 카드 맨 아래에 붙는다 */
@@ -3126,63 +3001,6 @@ html[data-reduce-motion] .dtp-pop-x:active {
     margin-top: 12px;
     margin-bottom: 0;
   }
-}
-/* 차트 카드 토글 줄 — 세그먼트 두 개(일별/주별 · 역할별/기기별)가 카드 폭을 반씩 나눠 갖는다.
-   좁아지면 각 세그먼트가 '한 줄 전체'로 떨어져(들쭉날쭉한 들여쓰기 없음) 위아래로 쌓인다. */
-.vt-toolbar {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 2px 0 16px;
-}
-.vt-toolbar .insights-subtabs {
-  display: flex;
-  flex: 1 1 132px;
-  margin: 0;
-}
-/* 세그먼트 안 버튼은 등폭 — iOS segmented control처럼 균등 분할. */
-.vt-toolbar .insights-subtabs button {
-  flex: 1 1 0;
-  padding-left: 8px;
-  padding-right: 8px;
-  text-align: center;
-  white-space: nowrap;
-}
-/* 소제목 옆 기준 태그 — 무엇을 색/높이로 쟀는지(세션 수·체류 시간·평균 동접…)를 옅은 알약으로. */
-.vcrit {
-  margin-left: 6px;
-  padding: 1px 8px;
-  border-radius: var(--r-pill);
-  background: var(--studio-action-tint-hi);
-  color: var(--ink-soft);
-  font-size: var(--text-micro);
-  font-weight: 600;
-  vertical-align: middle;
-  white-space: nowrap;
-}
-/* 실시간 표시 — 초록 점이 부드럽게 호흡(20초 폴링 갱신 중임을 알림). */
-/* 실시간 표시 — 빨강 계열(라이브/녹화 관습)로 호흡. 안드로이드 기기점(초록)과 색이 안 겹치게. */
-.vlive {
-  position: relative;
-  margin-left: 6px;
-  padding-left: 14px;
-  color: #e11d48;
-  font-size: var(--text-micro);
-  font-weight: 600;
-  vertical-align: middle;
-}
-.vlive::before {
-  content: "";
-  position: absolute;
-  left: 2px;
-  top: 50%;
-  width: 7px;
-  height: 7px;
-  margin-top: -3.5px;
-  border-radius: var(--r-pill);
-  background: #f43f5e;
-  animation: vlive-pulse 1.8s var(--ease, ease) infinite;
 }
 @keyframes vlive-pulse {
   0% {
@@ -3195,79 +3013,12 @@ html[data-reduce-motion] .dtp-pop-x:active {
     box-shadow: 0 0 0 0 rgba(244, 63, 94, 0);
   }
 }
-@media (min-width: 1000px) {
-  .vcrit,
-  .vlive {
-    font-size: calc(12px * var(--ui-text-scale, 1));
-  }
-}
 /* 방문 차트 미세 상호작용(손맛) — 막대 호버 시 밝게, 미니달력·히트맵 칸은 살짝 떠오르며 또렷이. */
-.vt-col,
-.vt-hcol {
+.vt-col {
   cursor: default;
 }
-.vt-col:hover .vt-fill,
-.vt-hcol:hover .vt-fill {
+.vt-col:hover .vt-fill {
   filter: brightness(1.08);
-}
-.vmini-cell {
-  transition: transform 0.12s var(--ease, ease), outline-color 0.12s var(--ease, ease);
-}
-.vmini-cell:not(.empty):hover {
-  outline: 2px solid rgba(52, 211, 153, 0.6);
-  outline-offset: -1px;
-  transform: scale(1.07);
-}
-.vheat-row i {
-  transition: transform 0.1s var(--ease, ease);
-}
-.vheat-row i:hover {
-  transform: scale(1.2);
-  outline: 1.5px solid rgba(124, 92, 245, 0.65);
-}
-/* 일별 세션 수 미니 막대(세션 로그 카드의 월간 추이) — 하루 단위 기록을 모아 한눈에. */
-.dsess {
-  position: relative; /* 호버 수치 툴팁(.vt-tip) clamp 기준 */
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 44px;
-  margin: 20px 0 4px; /* 막대 위 호버 툴팁이 뜰 자리 */
-}
-.dsess-col {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-.dsess-barwrap {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  align-items: flex-end;
-}
-.dsess-bar {
-  width: 100%;
-  min-height: 2px;
-  border-radius: 3px 3px 0 0;
-  background: linear-gradient(180deg, var(--studio-action), var(--studio-action-text));
-  transition: height 0.5s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)), filter 0.12s var(--ease, ease);
-}
-.dsess-col:hover .dsess-bar {
-  filter: brightness(1.12);
-}
-/* 아직 오지 않은 날 — 0인 날과 구분(막대 자리는 남기되 흐리게). */
-.dsess-col.fut {
-  opacity: 0.4;
-}
-.dsess-x {
-  margin-top: 2px;
-  text-align: center;
-  font-size: calc(8px * var(--ui-text-scale, 1));
-  font-weight: 600;
-  color: var(--muted);
-  height: 10px;
 }
 /* 방문 추이: 날짜×역할 스택 막대 + 시간대 분포 */
 .vt-chart {
@@ -3338,483 +3089,6 @@ html[data-reduce-motion] .dtp-pop-x:active {
   width: 10px;
   height: 10px;
   border-radius: 3px;
-}
-.vt-hours {
-  position: relative; /* 분해 툴팁(.vt-tip) clamp 기준 */
-  display: flex;
-  align-items: flex-end;
-  gap: 2px;
-  height: 64px;
-  margin-top: 30px; /* 막대 위(제목 아래)에 분해 툴팁이 뜰 자리 */
-}
-.vt-hcol {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  height: 100%;
-}
-.vt-hbar {
-  width: 100%;
-  min-height: 2px;
-  border-radius: 3px 3px 0 0;
-  /* 중립 배경 — 막대는 역할/기기 색 세그먼트(.vt-fill)로 채워진다. 예전 보라 그라데이션은
-     매니저 색과 헷갈리고, 혹시 fill이 덜 채워질 때 오해를 줘서 .vt-bar와 같은 연회색으로. */
-  background: var(--studio-silver);
-  transition: height 0.5s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1));
-}
-/* 점유 차트가 비었을 때 — 24칸 baseline + 시간축 골격은 그대로 보이되, 막대는 옅게 두고
-   가운데에 작은 안내 pill을 띄운다("죽은 게 아니라 빈 것"임을 알린다). */
-.vt-hours.empty .vt-hbar {
-  background: var(--studio-line);
-}
-/* 아직 안 지난 시간 — 0인 칸과 구분한다. '데이터 없음'과 '아직 안 옴'은 다른 사실이다. */
-.vt-hcol.fut .vt-hbar {
-  opacity: 0.35;
-}
-.vt-hcol.fut .vt-hlabel {
-  opacity: 0.45;
-}
-/* 축의 오른쪽 끝(24시) — 마지막 칸이 23시임을 닫아주는 표시. 라벨 위에 짧은 끝선을 세운다. */
-.vt-hend {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  transform: translateX(50%);
-  margin-top: 3px;
-  font-size: calc(8.5px * var(--ui-text-scale, 1));
-  font-weight: 600;
-  color: var(--muted);
-  pointer-events: none;
-}
-.vt-hend::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: 100%;
-  width: 1px;
-  height: 6px;
-  background: var(--studio-line);
-}
-/* '지금' 마커 — 오늘을 볼 때만. 이 선 오른쪽은 아직 오지 않은 시간이다. */
-.vt-now {
-  position: absolute;
-  top: -6px;
-  bottom: 0;
-  width: 1px;
-  background: var(--studio-action);
-  opacity: 0.55;
-  pointer-events: none;
-}
-.vt-now i {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 1px 5px;
-  border-radius: var(--r-pill);
-  background: var(--studio-action);
-  color: #fff;
-  font-style: normal;
-  font-size: calc(8.5px * var(--ui-text-scale, 1));
-  font-weight: 600;
-  white-space: nowrap;
-}
-.vt-hours-empty {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-  white-space: nowrap;
-  padding: 3px 10px;
-  border-radius: var(--r-pill);
-  background: rgba(255, 255, 255, 0.82);
-  font-size: var(--text-caption);
-  font-weight: 600;
-  color: var(--muted, #9aa0ab);
-}
-@media (min-width: 1000px) {
-  .vt-hours-empty {
-    font-size: calc(13px * var(--ui-text-scale, 1));
-  }
-}
-/* 관리자 접속 세션 — 하루=한 행, 가로 24h 축에 머문 구간을 기기색 막대로(수면/스크린타임 타임라인). */
-.own-sessions {
-  position: relative; /* 호버 툴팁(.own-tip) clamp 기준 */
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 40px; /* 막대 위 툴팁 자리(2줄까지 안 잘리게 넉넉히) */
-}
-.own-row {
-  display: grid;
-  grid-template-columns: 40px 1fr;
-  align-items: center;
-  gap: 8px;
-}
-.own-date {
-  font-size: var(--text-caption);
-  font-weight: 600;
-  color: var(--muted);
-  text-align: right;
-  white-space: nowrap;
-}
-.own-track {
-  position: relative;
-  height: 16px;
-  border-radius: var(--r-xs);
-  background: var(--studio-silver);
-  overflow: hidden;
-}
-.own-seg {
-  position: absolute;
-  top: 2px;
-  bottom: 2px;
-  min-width: 3px;
-  border-radius: var(--r-xs);
-  transition: filter 0.12s var(--ease, ease);
-}
-.own-seg:hover {
-  filter: brightness(1.08);
-}
-/* 막대 = 있었던 구간(연한 판), 안쪽 = 실제로 화면에 떠 있던 시간(진한 색).
-   폭에 체류를 쓰던 때는 자리비움이 섞인 방문이 일찍 끝난 것처럼 그려졌다. */
-.own-seg > i {
-  position: absolute;
-  inset: 0 auto 0 0;
-  border-radius: inherit;
-}
-/* 아직 안 끝난 세션 — 오른쪽 끝을 열어두고(직각) 테두리로 '계속 중'을 표시. */
-.own-seg.live {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  box-shadow: 2px 0 0 var(--studio-action);
-}
-/* 24h 눈금(0·3·…·24) — 시각은 '경계'라 h/24 지점에 정확히 놓는다. 양 끝은 잘리지 않게 안쪽 정렬. */
-.hour-ticks {
-  position: relative;
-  height: 12px;
-  margin-top: 1px;
-  font-size: var(--text-micro);
-  font-weight: 600;
-  color: var(--muted);
-}
-.hour-ticks > span {
-  position: absolute;
-  top: 0;
-  transform: translateX(-50%);
-}
-.hour-ticks > span[data-edge="start"] {
-  transform: none;
-}
-.hour-ticks > span[data-edge="end"] {
-  transform: translateX(-100%);
-}
-.own-axis {
-  margin-left: 48px; /* 40px(날짜) + 8px(gap) — 트랙 시작과 정렬 */
-}
-/* 세션 툴팁 — 막대 바로 위에 띄운다. 선택자를 .vt-tip.own-tip(2-class)로 둬야 뒤에 오는
-   .vt-tip(translateX·bottom) 규칙을 명시도로 이긴다(안 그러면 바 위로 안 올라가 막대에 가림).
-   캐러셀 뷰포트(overflow hidden)에 안 잘리게 좌·우 여백을 툴팁 반폭 이상으로 카드 폭 안에 가둔다. */
-.vt-tip.own-tip {
-  bottom: auto;
-  transform: translate(-50%, calc(-100% - 6px));
-  left: clamp(82px, var(--tip-x, 50%), calc(100% - 82px));
-  max-width: 164px;
-  white-space: normal;
-  text-align: center;
-}
-.vt-tip.own-tip strong {
-  border-bottom: 0;
-  padding-bottom: 0;
-}
-@media (min-width: 1000px) {
-  .own-track {
-    height: 20px;
-  }
-  .own-date {
-    font-size: var(--text-label);
-  }
-  .own-axis {
-    font-size: calc(11.5px * var(--ui-text-scale, 1));
-  }
-}
-/* 일별 방문 상세 모달(개발자가 달력 날짜 클릭 → 그날 통계). 차트는 vt-*·own-* 재사용. */
-.dv-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 10px;
-}
-.dv-total {
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-}
-.dv-total strong {
-  font-size: calc(30px * var(--heading-text-scale, 1));
-  font-weight: 600;
-  line-height: 1;
-  color: var(--ink);
-}
-.dv-total span {
-  font-size: var(--text-body);
-  font-weight: 600;
-  color: var(--muted);
-}
-.dv-breakdown {
-  list-style: none;
-  margin: 0 0 4px;
-  padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 14px;
-}
-.dv-breakdown li {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--text-label);
-  font-weight: 600;
-  color: var(--ink);
-}
-.dv-breakdown li span {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  flex: none;
-}
-.dv-breakdown li b {
-  font-weight: 600;
-  color: var(--ink);
-}
-/* 관리자 세션 — 하루판은 날짜 칼럼 없이 풀폭 트랙. */
-.own-row.solo {
-  grid-template-columns: 1fr;
-}
-.own-axis.solo {
-  margin-left: 0;
-}
-/* 방문 품질 요약 블록(개발자 전용) — 분리 배지 + 시청자/운영진 토글 + KPI 타일. */
-.vsum {
-  display: grid;
-  gap: 10px;
-  margin-bottom: 14px;
-  padding: 12px 14px;
-  border: 1px solid var(--studio-line);
-  border-radius: var(--r-card);
-  background: linear-gradient(180deg, var(--studio-silver), var(--studio-silver));
-}
-.vsum-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.vsum-split {
-  font-size: var(--text-label);
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-.vsum-split b {
-  color: var(--ink-soft);
-  font-weight: 600;
-}
-/* 오른쪽 정렬 — 줄바꿈돼 둘째 줄로 내려가도 오른쪽(엄지 자리)에 붙는다. 일별 모달의 역할별|기기별과 같은 자리.
-   .modal-card-dayVisit .insights-subtabs(0,2,0)가 margin을 되돌리지 않도록 같은 특이도 이상으로. */
-.vsum-head .vsum-toggle,
-.modal-card-dayVisit .vsum-head .vsum-toggle,
-.modal-card-developer .vsum-head .vsum-toggle {
-  flex: 0 0 auto;
-  width: auto;
-  margin: 0 0 0 auto;
-}
-.vsum-kpis {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(62px, 1fr));
-  gap: 8px;
-}
-.vsum-kpis li {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 8px 4px;
-  border-radius: var(--r-md);
-  background: #ffffff;
-  border: 1px solid var(--studio-action-tint-hi);
-}
-.vsum-kpis b {
-  font-size: calc(16px * var(--ui-text-scale, 1));
-  font-weight: 600;
-  color: var(--ink-soft);
-  line-height: 1.1;
-}
-.vsum-kpis span {
-  font-size: var(--text-micro);
-  font-weight: 600;
-  color: var(--muted);
-}
-/* R6 자동 인사이트 문장 */
-.vins {
-  list-style: none;
-  margin: 0 0 12px;
-  padding: 10px 12px;
-  display: grid;
-  gap: 5px;
-  border-radius: var(--r-md);
-  background: var(--studio-silver);
-  font-size: var(--text-label);
-  font-weight: 600;
-  color: var(--ink-soft);
-}
-/* R7 요일×시간 히트맵 */
-.vheat {
-  display: grid;
-  gap: 3px;
-  margin: 6px 0 4px;
-}
-.vheat-row {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-}
-.vheat-wd {
-  flex: 0 0 16px;
-  font-size: var(--text-micro);
-  font-weight: 600;
-  color: var(--muted);
-  text-align: center;
-}
-.vheat-row i {
-  flex: 1;
-  height: 12px;
-  border-radius: 2px;
-}
-/* 히트맵 축 — 칸(=1시간)과 같은 격자로 깔고 3시간마다 칸 중앙에 라벨, 오른쪽 끝에 24.
-   예전엔 0/6/12/18/23을 space-between으로 흩뿌려 라벨이 칸보다 반 칸 왼쪽으로 밀렸다. */
-.vheat-axis {
-  position: relative;
-  display: flex;
-  gap: 3px;
-  margin-left: 19px;
-  font-size: calc(9px * var(--ui-text-scale, 1));
-  font-weight: 600;
-  color: var(--muted);
-}
-.vheat-axis > span {
-  flex: 1;
-  min-width: 0;
-  text-align: center;
-}
-.vheat-axis > b {
-  position: absolute;
-  right: 0;
-  transform: translateX(50%);
-  font-weight: 600;
-}
-/* R8 날짜별 미니 달력 */
-.vmini {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
-  margin: 6px 0 4px;
-}
-.vmini-h {
-  text-align: center;
-  font-size: calc(9px * var(--ui-text-scale, 1));
-  font-weight: 600;
-  color: var(--muted);
-}
-.vmini-cell {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  aspect-ratio: 1;
-  border-radius: var(--r-xs);
-  font-size: var(--text-micro);
-  font-weight: 600;
-  color: var(--ink);
-}
-.vmini-cell.empty {
-  background: transparent !important;
-}
-/* 오늘 = 진행 중(아직 더 쌓인다) / 그 뒤 = 아직 안 옴. 둘 다 '0인 날'과 달리 보여야 한다. */
-.vmini-cell.today {
-  box-shadow: inset 0 0 0 2px var(--studio-action);
-}
-.vmini-cell.fut {
-  opacity: 0.4;
-}
-/* R11 데이터 건강 */
-.vhealth {
-  margin: 8px 2px 0;
-  font-size: var(--text-caption);
-  font-weight: 600;
-  color: var(--muted, #9aa0ab);
-}
-/* R10 최근 세션 로그(접이식) */
-.vrecent {
-  margin-top: 10px;
-}
-.vrecent summary {
-  cursor: pointer;
-  font-size: var(--text-label);
-  font-weight: 600;
-  color: var(--studio-action-text);
-}
-/* ── 세션 로그 피드(.vlog) — 2줄 행 ──
-   행마다 [기기색 점] + 본문(1줄: 역할 배지/이메일 + 시각 / 2줄: 기기 · 체류). 관리자 이메일처럼
-   긴 라벨도 윗줄을 폭 가득 써서 안 잘리고, 모든 역할이 같은 2줄 골격이라 통일감.
-   모바일: 컴팩트(탭 피드백). 웹: 인셋 패널 + zebra + 호버 좌측 액센트 바. */
-/* 세션 로그 필터 — 2026-09-05부터 칩 줄이 아니라 **드롭다운 둘**(역할 · 머문/스쳐감).
-   역할이 다섯(관리자·개발자·시청자·비로그인·역할 확인 못 함)까지 늘어 칩으로는 두 줄로 접혔고,
-   0건 칩이 죽은 버튼처럼 보였다. 두 칸을 등분해 좁은 카드에서도 한 줄로 선다. */
-.vlog-filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 14px;
-  margin: 8px 0 4px;
-}
-/* 한 칸 = [이름][드롭다운]. 이름이 없으면 트리거가 둘 다 "전체 25"라 무엇을 고르는지 알 수 없다. */
-.vlog-f {
-  display: grid;
-  grid-template-columns: auto minmax(0, 132px);
-  align-items: center;
-  gap: 6px;
-}
-.vlog-f-cap {
-  color: var(--muted);
-  font-size: var(--text-caption);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-}
-.vlog-filter .rhh-select {
-  width: 100%;
-  min-width: 0;
-  justify-content: space-between;
-}
-.vlog-filter .rhh-select-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-/* 필터 결과 없음 안내 */
-.vlog-empty {
-  flex: 0 0 auto;
-  padding: 14px 8px;
-  text-align: center;
-  font-size: var(--text-label);
-  font-weight: 600;
-  color: var(--muted);
 }
 /* ── 보안 패널: 잠금 암호 핵심값을 스탯 타일로(키-값 나열 대신). 웹은 크게, 모바일 3열 컴팩트. ── */
 .sec-kpis {
@@ -3918,216 +3192,6 @@ html[data-reduce-motion] .dtp-pop-x:active {
   .vlog-chip {
     font-size: var(--text-label);
     padding: 4px 13px;
-  }
-}
-.vrecent ul.vlog {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  /* 모바일은 내부 스크롤을 두지 않는다 — 리스트만 스크롤되고 전체 패널 스크롤이 막히던
-     문제(중첩 스크롤 트랩). 목록은 패널(.insights-panel) 하나로 함께 스크롤된다. */
-}
-/* 웹: 높이를 고정하고 제 안에서 스크롤한다(2026-09-05 소유자: "세션이 1000개가 넘어가도 지금은
-   쭉 무한으로 늘어난다"). 스크롤바는 그리지 않는다 — 기능만 남긴다(이 창의 공통 규칙, 아래). */
-@media (min-width: 861px) {
-  .vrecent ul.vlog {
-    max-height: 420px;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-}
-.vlog-row {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  min-width: 0;
-  /* ⚠ 목록(.vlog)이 세로 flex + max-height라, 기본 flex-shrink:1이면 행이 컨테이너 높이에 맞춰
-     찌그러져 **줄이 겹쳐 보인다**(2026-09-05 실사고). 스크롤을 두려면 자식은 안 줄어야 한다. */
-  flex: 0 0 auto;
-  padding: 7px 8px;
-  border-radius: var(--r-sm);
-  color: var(--ink);
-  transition: background 0.12s var(--ease, ease);
-}
-.vlog-row:active {
-  background: var(--studio-action-tint-hi);
-}
-.vlog-dot {
-  flex: none;
-  width: 8px;
-  height: 8px;
-  margin-top: 6px; /* 윗줄(배지) 중앙에 맞춤 */
-  border-radius: var(--r-pill);
-}
-.vlog-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.vlog-line1 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.vlog-line2 {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--text-micro);
-  font-weight: 600;
-}
-/* 역할 배지 — 역할별 색(ROLE_META) 알약. owner 이메일이 아주 길면 윗줄 안에서 …로. */
-.vrecent-role {
-  flex: 0 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 2px 9px;
-  border-radius: var(--r-pill);
-  font-size: var(--text-caption);
-  font-weight: 600;
-  color: color-mix(in srgb, var(--rc, var(--ink-soft)) 72%, var(--ink));
-  background: color-mix(in srgb, var(--rc, var(--ink-soft)) 15%, #fff);
-  border: 1px solid color-mix(in srgb, var(--rc, var(--ink-soft)) 32%, transparent);
-}
-/* 겸업(매니저+작업자) 표식 — 배지 안 작은 앰버 칩(작업자색 힌트). */
-.vlog-dual {
-  font-style: normal;
-  margin-left: 4px;
-  padding: 0 5px;
-  border-radius: var(--r-pill);
-  font-size: calc(9.5px * var(--ui-text-scale, 1));
-  font-weight: 600;
-  background: #fff3e0;
-  color: #b5651d;
-}
-.vlog-dev {
-  flex: none;
-  color: var(--muted);
-}
-.vlog-dur {
-  margin-left: auto;
-  flex: none;
-  font-weight: 600;
-  color: var(--ink);
-}
-.vlog-t {
-  margin-left: auto;
-  flex: none;
-  font-size: var(--text-micro);
-  font-variant-numeric: tabular-nums;
-  color: var(--muted);
-}
-.vlog-row.glance {
-  opacity: 0.6;
-}
-.vlog-row.glance .vlog-dur {
-  color: var(--muted);
-  font-weight: 600;
-}
-/* 웹: 로그 테이블 — 인셋 패널 + zebra + 호버 좌측 액센트. */
-@media (min-width: 1000px) {
-  .vrecent ul.vlog {
-    gap: 0;
-    padding: 5px;
-    border: 1px solid var(--studio-line);
-    border-radius: var(--r-md);
-    background: #fff;
-  }
-  .vlog-row {
-    position: relative;
-    padding: 9px 12px 9px 16px;
-  }
-  .vlog-row:nth-child(even) {
-    background: var(--studio-silver);
-  }
-  .vlog-row::before {
-    content: "";
-    position: absolute;
-    left: 5px;
-    top: 8px;
-    bottom: 8px;
-    width: 3px;
-    border-radius: 3px;
-    background: var(--studio-action-text);
-    transform: scaleY(0);
-    transform-origin: center;
-    transition: transform 0.16s var(--ease, ease);
-  }
-  .vlog-row:hover {
-    background: var(--studio-action-tint-hi);
-  }
-  .vlog-row:hover::before {
-    transform: scaleY(1);
-  }
-  .vlog-line2,
-  .vlog-t {
-    font-size: calc(12px * var(--ui-text-scale, 1));
-  }
-  .vrecent-role {
-    font-size: calc(12px * var(--ui-text-scale, 1));
-  }
-}
-.dv-sessions {
-  list-style: none;
-  margin: 8px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.dv-sessions li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: var(--text-label);
-  font-weight: 600;
-  color: var(--ink);
-}
-.dv-sessions .dv-dev {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  flex: none;
-}
-.dv-sessions .dv-time {
-  font-variant-numeric: tabular-nums;
-}
-.dv-sessions b {
-  font-weight: 600;
-  color: var(--ink);
-}
-/* 관리자 방문 계정(이메일일 수 있어 길면 … 처리) — 시각과 기기 사이를 채운다. */
-.dv-sessions .dv-acct {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.dv-sessions em {
-  margin-left: auto;
-  font-style: normal;
-  font-size: var(--text-caption);
-  font-weight: 600;
-  color: var(--muted);
-}
-@media (min-width: 1000px) {
-  .dv-total strong {
-    font-size: calc(38px * var(--heading-text-scale, 1));
-  }
-  .dv-total span {
-    font-size: var(--text-ui);
-  }
-  .dv-breakdown li,
-  .dv-sessions li {
-    font-size: calc(14px * var(--ui-text-scale, 1));
   }
 }
 /* 월별 하트 막대(분홍) — 빈 막대 하나로 높이만 표시. */
@@ -4268,7 +3332,6 @@ html[data-reduce-motion] .dtp-pop-x:active {
     transform: scale(1);
   }
 }
-html[data-reduce-motion] .insights-subtabs button.active,
 html[data-reduce-motion] .perf-windows button.active {
   animation-duration: 1ms;
   animation-iteration-count: 1;
@@ -4389,25 +3452,9 @@ html[data-reduce-motion] .perf-windows button.active {
 /* 데스크톱(>640px)에선 인사이트 글씨를 키운다. 모바일은 컴팩트가 생명이라 기본(작은) 크기를
    그대로 두고, 여기서만 키워 모바일 회귀가 없게 한다. */
 @media (min-width: 1000px) {
-  
-  
-  
-  
-  
-  
-  
+
   /* 참여 하트 타일은 2열(넓음)이라 텍스트를 아주 크게 — N월/누적 하트가 한눈에. */
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
+
   .vt-legend li {
     font-size: calc(13px * var(--ui-text-scale, 1));
   }
@@ -4417,20 +3464,7 @@ html[data-reduce-motion] .perf-windows button.active {
   /* 하이라이트(웹) 스타일도 insights-charts.css로 이동(위 주석 참고). */
 
   /* 트렌드(웹) — 시리즈 라벨·x축·막대를 키워 또렷하게(모바일 기본은 작게 둔다). */
-  
-  
-  
-  
-}
-/* 모바일: 탭 8개가 4열에 들어가도록 아이콘은 숨기고 라벨만(컴팩트). */
-@media (max-width: 999px) {
-  
-  
-  /* 방문 품질 KPI(방문자·세션·스쳐감·바운스·평균/총체류·최고동접·새/재방문 = 9개)는
-     모바일에서 3×3 고정 격자로 — 월별 방문 패널·일일 상세 모두 같은 모양(통일). */
-  .vsum-kpis {
-    grid-template-columns: repeat(3, 1fr);
-  }
+
 }
 /* 활성 패널 진입 시 내용이 살짝 떠오르며 순차로 — 정적이지 않고 생기 있게(HCI: 피드백). */
 @keyframes ins-rise {
@@ -4442,17 +3476,6 @@ html[data-reduce-motion] .perf-windows button.active {
     opacity: 1;
     transform: none;
   }
-}
-
-/* 타일·카드 호버 시 살짝 떠오름(상호작용 피드백). */
-
-.vt-hlabel {
-  margin-top: 3px;
-  text-align: center;
-  font-size: calc(8.5px * var(--ui-text-scale, 1));
-  font-weight: 600;
-  color: var(--muted);
-  height: 10px;
 }
 
 .studio-workspace {
@@ -11724,14 +10747,6 @@ html[data-reduce-motion] .scope-opt.on::after {
     font-size: var(--text-body);
   }
 
-  
-
-  
-
-  
-
-  
-
   .m-edit-actions {
     gap: var(--space-2);
     margin: var(--space-2) calc(-1 * var(--space-4)) 0;
@@ -12881,8 +11896,6 @@ html[data-reduce-motion] .tag-editor .tag-add-in-section:active {
     width: 100%;
   }
 
-  
-
   .members-panel .member-row {
     grid-template-columns: auto minmax(0, 1fr) auto;
   }
@@ -12891,14 +11904,11 @@ html[data-reduce-motion] .tag-editor .tag-add-in-section:active {
     grid-row: 1 / span 2;
   }
 
-  
-
   .members-panel .member-remove {
     grid-column: 3;
     grid-row: 1;
   }
 
-  
 }
 
 html[data-reduce-motion] .member-row,
@@ -13090,9 +12100,7 @@ html[data-reduce-motion] .member-row:hover {
   letter-spacing: var(--tracking-tight);
 }
 
-.modal-card-developer .insights-tabs,
-.modal-card-developer .insights-subtabs,
-.modal-card-dayVisit .insights-subtabs {
+.modal-card-developer .insights-tabs {
   gap: var(--space-1);
   border-radius: var(--r-control);
   background: var(--surface-2);
@@ -13100,25 +12108,12 @@ html[data-reduce-motion] .member-row:hover {
 }
 
 .modal-card-developer .insights-tab,
-.modal-card-developer .insights-subtabs button,
-.modal-card-dayVisit .insights-subtabs button,
 .modal-card-developer .insights-refresh,
 .modal-card-dayVisit .insights-refresh {
   min-height: var(--control-hit);
   border-radius: var(--r-control);
   font-size: var(--text-body);
   font-weight: var(--weight-semibold);
-}
-
-/* 세션 로그 필터 칩 — 같은 분야(역할/머묾)는 무조건 '한 행'(사용자 결정). 칩을 컴팩트
-   알약으로 줄이고, 그래도 못 담는 좁은 폭에선 줄바꿈 대신 그 행만 가로 스크롤. */
-.modal-card-developer .vlog-filter,
-.modal-card-dayVisit .vlog-filter {
-  flex-wrap: nowrap;
-  gap: var(--space-1);
-  overflow-x: auto;
-  padding-bottom: 2px;
-  /* (scrollbar-width: thin 제거 — 전역 '스크롤바 없음'을 덮고 있었다, 2026-09-05.) */
 }
 
 .modal-card-developer .vlog-chip,
@@ -13133,8 +12128,6 @@ html[data-reduce-motion] .member-row:hover {
 }
 
 .modal-card-developer .insights-tab.active,
-.modal-card-developer .insights-subtabs button.active,
-.modal-card-dayVisit .insights-subtabs button.active,
 .modal-card-developer .vlog-chip.on,
 .modal-card-dayVisit .vlog-chip.on {
   background: var(--selection-fill);
@@ -13155,9 +12148,7 @@ html[data-reduce-motion] .member-row:hover {
 .modal-card-developer .vcard,
 .modal-card-dayVisit .vcard,
 .modal-card-developer .insight-tile,
-.modal-card-dayVisit .insight-tile,
-.modal-card-developer .vrecent,
-.modal-card-dayVisit .vrecent {
+.modal-card-dayVisit .insight-tile {
   border: var(--stroke-hairline) solid var(--line);
   border-radius: var(--r-lg);
   background: var(--surface-2);
@@ -13174,18 +12165,6 @@ html[data-reduce-motion] .member-row:hover {
   padding: var(--space-3);
 }
 
-/* 세션 로그 접이 카드 — 테두리·배경만 받고 패딩이 없어 '세션 N건'·칩이 가장자리에
-   붙었다(사용자 지적). 안쪽 숨 + 요약 줄 자체도 클릭 여유. */
-.modal-card-developer .vrecent,
-.modal-card-dayVisit .vrecent {
-  padding: var(--space-3);
-}
-
-.modal-card-developer .vrecent summary,
-.modal-card-dayVisit .vrecent summary {
-  padding: var(--space-1) var(--space-1) var(--space-2);
-}
-
 .modal-card-developer .insight-subhead,
 .modal-card-dayVisit .insight-subhead {
   color: var(--ink);
@@ -13195,26 +12174,13 @@ html[data-reduce-motion] .member-row:hover {
 }
 
 .modal-card-developer .insight-empty,
-.modal-card-dayVisit .insight-empty,
-.modal-card-developer .vlog-empty,
-.modal-card-dayVisit .vlog-empty {
+.modal-card-dayVisit .insight-empty {
   border-radius: var(--r-control);
   background: var(--surface);
   color: var(--muted);
   padding: var(--space-5) var(--space-3);
   font-size: var(--text-body);
   line-height: var(--lh-body);
-}
-
-/* 기록 행 — 정보 나열(비조작)이라 44px 히트 높이가 불필요했다. 성기게 떨어져 스크롤이
-   길어지던 것을 촘촘하게 하되, 가장자리 숨(상하 8·좌우 12)은 남긴다(패딩 0 = 답답, 사용자 지적). */
-.modal-card-developer .dv-sessions li,
-.modal-card-dayVisit .dv-sessions li,
-.modal-card-developer .vlog-row,
-.modal-card-dayVisit .vlog-row {
-  min-height: 0;
-  border-bottom: var(--stroke-hairline) solid var(--line-soft);
-  padding: var(--space-2) var(--space-3);
 }
 
 .modal-card-developer .vt-tip,
@@ -13250,11 +12216,6 @@ html[data-reduce-motion] .member-row:hover {
 .modal-card-developer > .member-insights,
 .modal-card-dayVisit > .dayvisit-wrap {
     padding: var(--space-card);
-  }
-
-  .modal-card-developer .insights-subtabs,
-  .modal-card-dayVisit .insights-subtabs {
-    overflow-x: auto;
   }
 
   /* 실제 탭 수에 맞춘 공용 행은 스크롤 없이 통째로 보이게 — overflow-x:auto가 세로 축까지 잘라

@@ -2037,3 +2037,30 @@ html[data-theme="dark"] .mn-inner {
     transform: translate(-50%, -10px);
   }
 }
+
+/* 일정표 맨 아래 개인정보처리방침·이용약관 한 줄(components/legal/site-legal-footer.tsx).
+   달력 아래 흐름에 작고 조용하게. PC·폰 모두 아래 고정 버튼에 가리지 않게 여백을 둔다. */
+.site-legal-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  /* 아래 여백 = 화면 아래 떠 있는 월 이동·패널 버튼 높이 — 맨 아래로 내려도 글자가 버튼에 겹치지 않게. */
+  padding: 16px 16px calc(84px + env(safe-area-inset-bottom, 0px));
+  color: var(--muted);
+  font-size: var(--text-label);
+  line-height: 1.4;
+}
+.site-legal-footer a {
+  color: inherit;
+  text-decoration: none;
+}
+.site-legal-footer a:hover,
+.site-legal-footer a:focus-visible {
+  color: var(--ink);
+  text-decoration: underline;
+}
+.poster-agenda .site-legal-footer {
+  padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+}

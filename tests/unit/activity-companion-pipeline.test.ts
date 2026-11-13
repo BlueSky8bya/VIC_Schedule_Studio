@@ -114,7 +114,7 @@ describe("companion activity writer boundary", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it.each(["owner", "developer"] as const)("stores %s gestures as internal timeline rows", async role => {
+  it.each(["developer"] as const)("stores %s gestures as internal timeline rows", async role => {
     mocks.actor.mockResolvedValue(actor(role));
     expect(await recordActivityBatch([click("companion-pet"), click("companion-bonk"), click("companion-drag")])).toBe(3);
     expect(db.writes[0].rows).toHaveLength(3);
@@ -123,8 +123,8 @@ describe("companion activity writer boundary", () => {
   });
 
   // 2026-11-13 소유자 결정: 시청자·비로그인·역할 불명의 행동은 행·개수 어떤 형태로도 저장하지 않는다.
-  it.each(["viewer", "anon", "unknown"] as const)("stores nothing for %s gestures", async role => {
-    mocks.actor.mockResolvedValue(role === "anon" ? actor("viewer", false) : { ...actor("viewer"), roleUncertain: role === "unknown" });
+  it.each(["owner", "viewer", "anon", "unknown"] as const)("stores nothing for %s gestures", async role => {
+    mocks.actor.mockResolvedValue(role === "owner" ? actor("owner") : role === "anon" ? actor("viewer", false) : { ...actor("viewer"), roleUncertain: role === "unknown" });
     expect(await recordActivityBatch([click("companion-pet"), click("companion-pet"), click("companion-drag")])).toBe(0);
     expect(db.writes).toEqual([]);
     expect(db.rpc).not.toHaveBeenCalled();
@@ -236,28 +236,26 @@ describe("companion activity query boundary", () => {
     expect(mocks.admin).not.toHaveBeenCalled();
   });
 
-  it("merges observed internal/viewer/anonymous uses without inventing unobserved zero-use features", async () => {
+  it("counts observed developer uses without reading viewer daily counts or inventing zero-use features", async () => {
     db = database({
       activity_event: [
         { kind: "ui.click", target: "companion-pet", role: "developer" },
-        { kind: "ui.click", target: "companion-pet", role: "owner" },
+        { kind: "ui.click", target: "companion-pet", role: "developer" },
         { kind: "ui.click", target: "companion-bonk", role: "developer" },
         { kind: "ui.click", target: null, role: "developer" }
       ],
+      // 2026-11-13부터 쌓이지 않는 표 — 남은 행이 있어도 읽지 않는다.
       activity_daily_count: [
-        { kind: "ui.click", target: "companion-pet", role: "viewer", count: 3 },
-        { kind: "ui.click", target: "companion-pet", role: "anon", count: 4 },
         { kind: "ui.click", target: "companion-drag", role: "anon", count: 2 }
       ]
     });
     mocks.admin.mockReturnValue(db);
     const result = await getActivityUsageAction(7);
     expect(result).toEqual({ ok: true, days: 7, since: "2026-06-05", until: DAY, rows: [
-      { kind: "ui.click", label: "누름", target: "companion-bonk", roles: { developer: 1 }, total: 1, auto: false },
-      { kind: "ui.click", label: "누름", target: "companion-drag", roles: { anon: 2 }, total: 2, auto: false },
-      { kind: "ui.click", label: "누름", target: "companion-pet", roles: { developer: 1, owner: 1, viewer: 3, anon: 4 }, total: 9, auto: false }
+      { kind: "ui.click", label: "누름", target: "companion-bonk", total: 1, auto: false },
+      { kind: "ui.click", label: "누름", target: "companion-pet", total: 2, auto: false }
     ] });
-    expect(db.reads).toHaveLength(2);
+    expect(db.reads.map(read => read.table)).toEqual(["activity_event"]);
     for (const read of db.reads) {
       expect(read.filters).toEqual(expect.arrayContaining([
         { method: "gte", args: ["day", "2026-06-05"] }, { method: "lte", args: ["day", DAY] },
@@ -284,7 +282,7 @@ describe("companion activity query boundary", () => {
     expect(usage.ok).toBe(true);
     if (!usage.ok) throw new Error(usage.error);
     expect(usage.rows.map(row => row.target).sort()).toEqual([...COLLECTION_ACTIONS].sort());
-    expect(usage.rows.every(row => row.total === 1 && row.roles.developer === 1 && !row.auto)).toBe(true);
+    expect(usage.rows.every(row => row.total === 1 && !row.auto)).toBe(true);
     const timeline = await getActivityDayAction(DAY);
     expect(timeline.ok).toBe(true);
     if (!timeline.ok) throw new Error(timeline.error);
@@ -305,11 +303,14 @@ describe("companion activity query boundary", () => {
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error(result.error);
     expect(result.total).toBe(3); expect(result.visits).toHaveLength(1);
-    expect(result.visits[0]).toMatchObject({ key: VISIT, role: "developer", account: "계정 #1", device: "desktop" });
+    expect(result.visits[0]).toMatchObject({ key: VISIT, device: "desktop" });
+    // 역할·계정은 화면 DTO에 싣지 않는다(2026-11-13 — 개발자 본인 기록만, 사람 구분 철수).
+    expect(result.visits[0]).not.toHaveProperty("account");
+    expect(result.visits[0]).not.toHaveProperty("role");
     expect(result.visits[0].items.map(item => ({ kind: item.kind, label: item.label, target: item.target, source: item.source, targetLabel: item.targetLabel }))).toEqual(
       targets.map(target => ({ kind: "ui.click", label: "누름", target, source: "client", targetLabel: null }))
     );
-    expect(db.reads.map(read => read.table)).toEqual(["activity_event", "visit_session"]);
+    expect(db.reads.map(read => read.table)).toEqual(["activity_event"]);
     expect(db.reads[0].filters).toContainEqual({ method: "eq", args: ["day", DAY] });
     expect(db.reads[0].filters).toContainEqual({ method: "eq", args: ["diag", false] });
     expect(db.writes).toEqual([]); expect(db.rpc).not.toHaveBeenCalled();

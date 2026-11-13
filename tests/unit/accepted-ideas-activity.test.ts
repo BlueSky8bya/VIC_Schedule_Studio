@@ -9,19 +9,19 @@ vi.mock('react',async original=>({...await original<typeof import('react')>(),us
 vi.mock('@/lib/analytics/guard',()=>({skipAnalyticsClient:()=>false}));
 vi.mock('@/lib/activity/query',()=>({getActivityDayAction:vi.fn(),getActivityUsageAction:vi.fn()}));
 vi.mock('@/components/developer/scroll-position',()=>({ScrollPosition:()=>null}));
-vi.mock('@/components/developer/insights-dashboard',()=>({deviceLabel:()=>'데스크톱',fmtDur:()=>'1초',hhmm:()=>'00:00',roleColor:()=>'#000'}));
+vi.mock('@/components/developer/insights-dashboard',()=>({deviceLabel:()=>'데스크톱',fmtDur:()=>'1초',hhmm:()=>'00:00'}));
 afterEach(()=>{state.values=[];vi.unstubAllGlobals();vi.restoreAllMocks();});
 
 it('renders current and retired control history safely in both developer views',async()=>{
   vi.stubGlobal('React',await import('react'));
   const {ActivityUsage}=await import('@/components/developer/activity-usage'),{ActivityTimeline}=await import('@/components/developer/activity-timeline');
   const targets=['legend-mine','art-view-codex','art-prompt-copy-1','art-prompt-copy-2','search-kind#chapter','dtp-time-input#hour','dtp-time-input#minute','bp-recent-color','bp-width','bp-layer-rename','detail-tags-toggle','vod-part-select','vod-tab','vod-timeline-current','text-style-reset','text-size-reset','agenda-support-follow-view','add-google-calendar','editor-tags-clear','editor-tags-swap','share-public-event','copy-app-link','theme-mode-select#dark','vod-timeline-find','vod-timeline-find-clear','insights-tab','settings-tab#motion','detail-previous-event','detail-next-event','search-kind#all','search-kind#event','search-kind#vod','art-prompt-copy-all','search-kind#chat','search-kind#timeline','search-kind#chapter','record-month#previous','record-month#next','record-summary#content','record-summary#days','record-summary#rest','record-event-open'];
-  const rows:UsageRow[]=targets.map(target=>({kind:'ui.click',label:'누름',target,total:1,roles:{developer:1},auto:false}));
+  const rows:UsageRow[]=targets.map(target=>({kind:'ui.click',label:'누름',target,total:1,auto:false}));
   const at=Date.parse('2026-10-24T15:00:00Z');
-  const visit:ActivityVisit={key:'synthetic-visit',account:'계정 #1',role:'developer',device:'desktop',startMs:at,endMs:at+2000,items:targets.map((target,i)=>({t:at+i*1000,kind:'ui.click',label:'누름',target,targetLabel:null,source:'client',meta:null,durMs:null}))};
-  state.values=[30,rows,null,false,true,'all','all','all',true,true,false,false,{since:'2026-09-26',until:'2026-10-25'}];
+  const visit:ActivityVisit={key:'synthetic-visit',device:'desktop',startMs:at,endMs:at+2000,items:targets.map((target,i)=>({t:at+i*1000,kind:'ui.click',label:'누름',target,targetLabel:null,source:'client',meta:null,durMs:null}))};
+  state.values=[30,rows,null,false,true,'all','all',true,true,false,false,{since:'2026-09-26',until:'2026-10-25'}];
   const usage=renderToStaticMarkup(createElement(ActivityUsage,{anchor:'2026-10-25'}));
-  state.values=[[visit],[],null,false,new Set([visit.key]),null,true,false,at];
+  state.values=[[visit],null,false,new Set([visit.key]),null,true,false,at];
   const timeline=renderToStaticMarkup(createElement(ActivityTimeline,{dateKey:'2026-10-25'}));
   for(const target of targets){const label=describeTarget('ui.click',target).name;expect(usage).toContain(label);expect(timeline).toContain(label);}
   const retired=usage.match(/<ul class="usage-list" data-retired="1">([\s\S]*?)<\/ul>/)?.[1];

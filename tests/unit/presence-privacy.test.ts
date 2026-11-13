@@ -1,17 +1,8 @@
-import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
-import { DeveloperPanel } from "@/components/developer/developer-panel";
 import { detectDevice } from "@/lib/presence/presence-client";
 
-describe("private aggregate presence", () => {
-  it("renders loading rather than fabricated zero counts and explains session semantics", () => {
-    const html = renderToStaticMarkup(React.createElement(DeveloperPanel));
-    expect(html).toContain('role="status"');
-    expect(html).toContain("불러오는 중");
-    expect(html).toContain("숨겨진 탭은 집계하지 않습니다");
-    expect(html).not.toMatch(/subscribePresence|>0</);
-  });
+// 실시간 접속 현황(동접)·방문 세션은 2026-11-13 철수했다. 남은 것은 기기 분류(설정·행동 기록용)뿐이다.
+describe("local device classification", () => {
   it("retains local device classification without starting a connection", () => {
     vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 (iPhone)" });
     try { expect(detectDevice()).toBe("ios"); }

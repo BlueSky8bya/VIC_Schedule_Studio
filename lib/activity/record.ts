@@ -9,7 +9,7 @@ import {
   deviceFromUserAgent,
   isClientKind,
   isDiagKind,
-  isInternalRole,
+  isTrackedRole,
   isServerKind,
   sanitizeMeta,
   sanitizeDevice,
@@ -55,9 +55,9 @@ async function buildRow(input: ActivityInput): Promise<Row | null> {
   // 로그인은 했는데 역할 판정이 실패했다면(platform_admins 조회 오류) 'viewer'라고 **주장하지 않는다**
   // — 사용량 화면에 "시청자가 편집실 버튼을 눌렀다"는 거짓이 남았다(2026-09-05 소유자 지적).
   const role = actor.isAuthenticated ? (actor.roleUncertain ? "unknown" : actor.role) : "anon";
-  // 2026-11-13 소유자 결정: 시청자·비로그인의 행동은 어떤 형태로도(행·날짜별 개수·진단) 남기지 않는다.
-  // 운영자·개발자 본인의 기록만 남는다(개인정보처리방침과 같은 경계).
-  if (!isInternalRole(role)) return null;
+  // 2026-11-13 소유자 결정: 개발자 본인의 기록만 남긴다(오류 추적). 방송인·시청자·비로그인의 행동은
+  // 어떤 형태로도(행·날짜별 개수·진단) 남기지 않는다(개인정보처리방침과 같은 경계).
+  if (!isTrackedRole(role)) return null;
   const rawHash = actor.isAuthenticated && actor.email ? accountHashOf(actor.email) : null;
 
   let device = input.device;
@@ -93,7 +93,7 @@ async function buildRow(input: ActivityInput): Promise<Row | null> {
   };
 }
 
-// 내부자만 타임라인 행으로 남긴다. 시청자·비로그인은 buildRow에서 이미 걸러진다(2026-11-13).
+// 개발자만 타임라인 행으로 남긴다. 나머지는 buildRow에서 이미 걸러진다(2026-11-13).
 type Row = {
   day: string;
   visit_key: string | null;
@@ -109,7 +109,7 @@ type Row = {
 };
 
 async function persist(rows: Row[]): Promise<void> {
-  const events = rows.filter((r) => isInternalRole(r.role));
+  const events = rows.filter((r) => isTrackedRole(r.role));
   if (events.length === 0) return;
   try {
     const sb = createSupabaseAdminClient();

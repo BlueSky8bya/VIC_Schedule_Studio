@@ -4,15 +4,13 @@ const mocks = vi.hoisted(() => ({
   admin: vi.fn(),
   insights: vi.fn(),
   trend: vi.fn(),
-  visits: vi.fn(),
   actor: vi.fn()
 }));
 vi.mock("@/lib/auth/admin", () => ({ createSupabaseAdminClient: mocks.admin }));
 vi.mock("@/lib/auth/actor", () => ({ resolveCurrentActor: mocks.actor }));
 vi.mock("@/lib/insights/actions", () => ({
   getInsightsAction: mocks.insights,
-  getTrendAction: mocks.trend,
-  getVisitTrendsAction: mocks.visits
+  getTrendAction: mocks.trend
 }));
 
 import {
@@ -112,21 +110,20 @@ describe("다시 계산할 달", () => {
 });
 
 describe("아카이브는 숫자만", () => {
-  it("세션 로그·오늘 수집 상태·다음 방송을 뺀다", () => {
+  it("다음 방송을 빼고, 방문 집계(2026-11-13 철수)는 담지 않는다", () => {
     const payload = {
       insights: { content: { nextBroadcast: { dateKey: "2026-11-14", titles: ["x"] }, thisMonthContent: 3 } },
       trend: { months: ["2026-10"] },
-      visits: { recent: [{ t: 1 }], health: { todaySessions: 5, openRate: 0.5, avgStaySec: 9 }, operators: 2 }
+      visits: { recent: [{ t: 1 }], operators: 2 }
     } as unknown as ArchivePayload;
     const out = sanitizeForArchive(payload) as unknown as {
       insights: { content: { nextBroadcast: unknown; thisMonthContent: number } };
-      visits: { recent: unknown[]; health: { todaySessions: number }; operators: number };
+      trend: { months: string[] };
     };
     expect(out.insights.content.nextBroadcast).toBeNull();
     expect(out.insights.content.thisMonthContent).toBe(3);
-    expect(out.visits.recent).toEqual([]);
-    expect(out.visits.health.todaySessions).toBe(0);
-    expect(out.visits.operators).toBe(2);
+    expect(out.trend.months).toEqual(["2026-10"]);
+    expect(Object.keys(out).sort()).toEqual(["insights", "trend"]);
   });
 });
 
@@ -178,7 +175,6 @@ describe("buildYearArchive", () => {
       return { ok: true, data: { content: { nextBroadcast: null } } };
     });
     mocks.trend.mockResolvedValue({ ok: true, data: { months: [] } });
-    mocks.visits.mockResolvedValue({ ok: true, data: { recent: [], health: {} } });
     const r = await buildYearArchive({ year: 2026, now: kst("2027-01-01T00:10:00"), deadlineMs: Date.now() + 60_000 });
     expect("error" in r).toBe(false);
     if ("error" in r) return;

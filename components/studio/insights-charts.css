@@ -848,44 +848,6 @@
   }
 }
 
-/* (.insights-toolbar 제거 — 참조 0) */
-.insights-subtabs {
-  display: inline-flex;
-  gap: 4px;
-  margin: 2px 0 8px;
-  padding: 3px;
-  border-radius: var(--r-pill);
-  background: #f1edfb;
-}
-
-.insights-subtabs button {
-  border: 0;
-  border-radius: var(--r-pill);
-  background: transparent;
-  padding: 5px 14px;
-  font-size: calc(12px * var(--ui-text-scale));
-  font-weight: 600;
-  color: #6b5b95;
-  cursor: pointer;
-  /* 활성 전환이 툭 끊기지 않게 — 배경·색·그림자가 부드럽게 이어지고 누르면 살짝 눌린다. */
-  transition:
-    background var(--dur-2) var(--ease),
-    color var(--dur-2) var(--ease),
-    box-shadow var(--dur-2) var(--ease),
-    transform var(--dur-1) var(--ease);
-}
-
-.insights-subtabs button:active {
-  transform: scale(var(--press-scale));
-}
-
-.insights-subtabs button.active {
-  background: #fff;
-  color: #4a3f72;
-  box-shadow: 0 1px 4px rgb(107 91 214 / 22%);
-}
-
-.insights-subtabs button.active,
 .perf-windows button.active,
 .role-segment button.active {
   animation: seg-pop 0.3s var(--ease-spring, ease);
@@ -1035,8 +997,7 @@
    덮어써서 막대가 통째로 투명해진다. 실제로 그렇게 나갔다: 이번 달 막대가 사라지고 점선만 공중에
    떠 보였다(2026-08-07). 그래서 채움은 그대로 두고 ::before로 덮는다. */
 .trend-bar.partial,
-.vt-bar.partial,
-.dsess-bar.partial {
+.vt-bar.partial {
   position: relative; /* ::before 덮개 기준 (.dsess-bar는 기본이 static이다) */
   min-height: 5px; /* 값이 작아도 '막대'로 보이게 — 점선만 남으면 떠 있는 선처럼 읽힌다 */
   border-top: 1px dashed rgba(91, 52, 240, 0.55);
@@ -1044,8 +1005,7 @@
   border-top-right-radius: 0;
 }
 .trend-bar.partial::before,
-.vt-bar.partial::before,
-.dsess-bar.partial::before {
+.vt-bar.partial::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -1099,19 +1059,16 @@
 }
 
 .vt-bar,
-.vt-hbar,
 .trend-bar {
   position: relative;
 }
 
 .vt-col,
-.vt-hcol,
 .trend-bcol {
   cursor: default;
 }
 
 .vt-col:hover .vt-bar,
-.vt-hcol:hover .vt-hbar,
 .trend-bcol:hover .trend-bar {
   filter: brightness(1.12) saturate(1.1);
   box-shadow: 0 0 0 2px rgb(107 91 214 / 28%);

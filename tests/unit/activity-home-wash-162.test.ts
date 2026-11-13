@@ -10,7 +10,7 @@ vi.mock("react", async original => ({ ...await original<typeof import("react")>(
 vi.mock("@/lib/analytics/guard", () => ({ skipAnalyticsClient: () => false }));
 vi.mock("@/lib/activity/query", () => ({ getActivityDayAction: vi.fn(), getActivityUsageAction: vi.fn() }));
 vi.mock("@/components/developer/scroll-position", () => ({ ScrollPosition: () => null }));
-vi.mock("@/components/developer/insights-dashboard", () => ({ deviceLabel: () => "데스크톱", fmtDur: () => "1초", hhmm: () => "00:00", roleColor: () => "#000" }));
+vi.mock("@/components/developer/insights-dashboard", () => ({ deviceLabel: () => "데스크톱", fmtDur: () => "1초", hhmm: () => "00:00" }));
 afterEach(() => { state.values = []; vi.useRealTimers(); vi.unstubAllGlobals(); vi.resetModules(); });
 const target = "companion-home-wash";
 describe("162 explicit wash activity without autonomous care metadata", () => {
@@ -21,12 +21,12 @@ describe("162 explicit wash activity without autonomous care metadata", () => {
     vi.stubGlobal("React", await import("react"));
     const { ActivityUsage } = await import("@/components/developer/activity-usage");
     const { ActivityTimeline } = await import("@/components/developer/activity-timeline");
-    const rows: UsageRow[] = [{ kind: "ui.click", label: "누름", target, total: 2, roles: { developer: 2 }, auto: false }];
+    const rows: UsageRow[] = [{ kind: "ui.click", label: "누름", target, total: 2, auto: false }];
     const at = Date.parse("2026-10-20T15:00:00Z");
-    const visit: ActivityVisit = { key: "synthetic-visit", account: "계정 #1", role: "developer", device: "desktop", startMs: at, endMs: at + 2000, items: [{ t: at, kind: "ui.click", label: "누름", target, targetLabel: null, source: "client", meta: null, durMs: null }] };
-    state.values = [30, rows, null, false, false, "all", "all", "all", true, false, false, false, { since: "2026-09-21", until: "2026-10-21" }];
+    const visit: ActivityVisit = { key: "synthetic-visit", device: "desktop", startMs: at, endMs: at + 2000, items: [{ t: at, kind: "ui.click", label: "누름", target, targetLabel: null, source: "client", meta: null, durMs: null }] };
+    state.values = [30, rows, null, false, false, "all", "all", true, false, false, false, { since: "2026-09-21", until: "2026-10-21" }];
     const usage = renderToStaticMarkup(createElement(ActivityUsage, { anchor: "2026-10-21" }));
-    state.values = [[visit], [], null, false, new Set([visit.key]), null, true, false, at];
+    state.values = [[visit], null, false, new Set([visit.key]), null, true, false, at];
     const timeline = renderToStaticMarkup(createElement(ActivityTimeline, { dateKey: "2026-10-21" }));
     expect(usage).toContain("빅타민 샤워패드에서 씻기"); expect(timeline).toContain("빅타민 샤워패드에서 씻기");
   });

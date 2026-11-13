@@ -1,40 +1,20 @@
 "use client";
 
-import { startForegroundPoll } from "@/lib/ui/foreground-poll";
+import { tagColor } from "@/lib/tags/dark-palette";
 
-import { tagColor, themeColor } from "@/lib/tags/dark-palette";
-
-import {
-  CalendarDays,
-  ChevronLeft,
-  ChevronRight,
-  Heart,
-  LineChart,
-  Radio,
-  TrendingUp,
-} from "lucide-react";
-import {
-  type CSSProperties,
-  type PointerEvent as ReactPointerEvent,
-  useEffect,
-  useRef,
-  useState
-} from "react";
-import { DeveloperPanel } from "@/components/developer/developer-panel";
+import { CalendarDays, ChevronLeft, ChevronRight, Heart, LineChart } from "lucide-react";
+import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from "react";
 import { BroadcastHours } from "@/components/studio/broadcast-hours";
 import { StackTrendChart } from "@/components/studio/stack-trend-chart";
 import { TrendDeltaBadge } from "@/components/studio/trend-delta-badge";
 import {
   getInsightsAction,
   getTrendAction,
-  getVisitTrendsAction,
   type InsightsData,
-  type TrendData,
-  type VisitSummary,
-  type VisitTrends
+  type TrendData
 } from "@/lib/insights/actions";
 import type { ArchivePayload } from "@/lib/insights/archive";
-import { kstDay, monthProgress } from "@/lib/insights/month-progress";
+import { monthProgress } from "@/lib/insights/month-progress";
 import {
   HEART_BLAZE_MIN,
   HEART_BLAZE_RATIO,
@@ -43,21 +23,12 @@ import {
   HEART_HOT_RATIO,
   HEART_MIN
 } from "@/lib/schedules/heart-tiers";
-import { SessionLogFilter } from "@/components/developer/session-log-filter";
-import { ScrollPosition } from "@/components/developer/scroll-position";
 import { hapticTick } from "@/lib/ui/haptics";
 import { InsightsTabs, insightTabStep } from "@/components/shared/insights-tabs";
 
-// 보고 있는 달 기준의 "월별 인사이트". 실시간/보안/시스템은 달과 무관, 방문/일정/참여는 그 달 기준.
-// META·헬퍼는 일별 방문 모달(DayVisitModal)에서도 그대로 재사용 → 색/표기 단일 출처(드리프트 방지).
-// (작업자·매니저는 2026-09-04 ADR-0018로 철수 — 범례·필터에서 뺀다. 옛 세션 행의 배지 색만 LEGACY_ROLE_COLOR로 남긴다.)
-export const ROLE_META: { key: string; label: string; color: string }[] = [
-  { key: "anon", label: "비로그인", color: "#c2c7d2" },
-  { key: "viewer", label: "시청자", color: "#9aa0ab" },
-  { key: "owner", label: "관리자", color: "#34d399" },
-  { key: "developer", label: "개발자", color: "#60a5fa" }
-];
-export const LEGACY_ROLE_COLOR: Record<string, string> = { worker: "#f59e0b", manager: "#7c6cf0" };
+// 보고 있는 달 기준의 "월별 인사이트"(개발자 전용) — 트렌드·일정·참여 세 칸.
+// 실시간(동접)·방문 칸은 2026-11-13 방문 기록 철수와 함께 뺐다(이용 기록은 개발자 본인의 행동만 남는다).
+// 기기 표기·시각 헬퍼는 이용 기록(activity-timeline)도 쓴다 → 단일 출처.
 export const DEVICE_META: { key: string; label: string; color: string }[] = [
   { key: "desktop", label: "웹", color: "#6b8cef" },
   { key: "android", label: "안드로이드", color: "#3ddc84" },
@@ -66,20 +37,14 @@ export const DEVICE_META: { key: string; label: string; color: string }[] = [
 ];
 const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"];
 
-// 통일성: 비개발자와 공유하는 3패널(트렌드·일정·참여)을 윗줄에 두고,
-// 개발자 전용(실시간·방문)은 아랫줄에. 아래 트랙 섹션 순서도 이와 일치해야 한다
-// (CSS가 data-active=n ↔ nth-child로 짝을 맞춘다 — 여기만 바꾸면 안 된다).
-// 트렌드가 첫 탭 = 기본 화면(2026-08-31 사용자 지시 — 열자마자 흐름부터).
-// (보안·시스템은 2026-11-13 설정 창으로 옮겼다 — 보안 묶음·개발자 묶음.)
+// 트렌드가 첫 탭 = 기본 화면(2026-08-31 사용자 지시 — 열자마자 흐름부터). 아래 트랙 섹션 순서도
+// 이와 일치해야 한다(CSS가 data-active=n ↔ nth-child로 짝을 맞춘다 — 여기만 바꾸면 안 된다).
+// (보안·시스템은 2026-11-13 설정 창으로 옮겼다. 실시간·방문은 같은 날 철수.)
 const PANELS = [
   { key: "trend", label: "트렌드", icon: LineChart },
   { key: "content", label: "일정", icon: CalendarDays },
-  { key: "engagement", label: "참여", icon: Heart },
-  { key: "live", label: "실시간", icon: Radio },
-  { key: "visits", label: "방문", icon: TrendingUp }
+  { key: "engagement", label: "참여", icon: Heart }
 ] as const;
-const ARCHIVE_PANELS = PANELS.filter((p) => p.key !== "live");
-const ARCHIVE_TAB_ROWS = [1, ARCHIVE_PANELS.length - 1];
 function weekdayLabel(wd: number | null): string {
   return wd !== null ? `${WEEKDAY[wd]}요일` : "—";
 }
@@ -99,225 +64,21 @@ function StatTile({ value, label, tone }: { value: number | string; label: strin
   );
 }
 
-// 막대 호버 시 차트 한 곳에 뜨는 분해 툴팁의 데이터(가로 위치 x%, 총합, 색·라벨·수치 줄들).
-type VtHover = { x: number; total: number; rows: { color: string; label: string; count: number }[] };
-// 시간대 동시 접속(체류) 호버 — 평균/최고 동시 접속 + 역할/기기별 평균(소수).
-type OccHover = { x: number; avg: number; peak: number; rows: { color: string; label: string; val: number }[] };
-// 시간대 점유 표기 — '평균 동시 접속 0.9' 같은 소수는 직관이 약해 '머문 분'으로 환산해 보여준다.
-// avg(=구간 초/3600/관측일수) × 60 = 그 시간대에 하루 평균 머문 분. (일별 모달과 공유 — 관측일 1이라 그날 총 분)
-export const fmtOcc = (n: number) => {
-  const min = n * 60;
-  if (min <= 0) return "0분";
-  if (min < 1) return "1분 미만";
-  return `${Math.round(min)}분`;
-};
-// epoch ms → KST(=UTC+9)로 옮긴 Date(이후 getUTC*가 곧 KST 값). "HH:MM"·요일 표기에 쓴다. (일별 모달과 공유)
-export const kstOf = (ms: number) => new Date(ms + 9 * 3600 * 1000);
+// epoch ms → KST(=UTC+9)로 옮긴 Date(이후 getUTC*가 곧 KST 값). "HH:MM" 표기에 쓴다. (이용 기록과 공유)
+const kstOf = (ms: number) => new Date(ms + 9 * 3600 * 1000);
 export const hhmm = (ms: number) => {
   const d = kstOf(ms);
   return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 };
-// 월별 세션 로그용 — 한 달 범위라 시각만으론 부족하니 "M/D HH:MM"(KST). 일일 모달은 hhmm만.
-export const mdhm = (ms: number) => {
-  const d = kstOf(ms);
-  return `${d.getUTCMonth() + 1}/${d.getUTCDate()} ${hhmm(ms)}`;
-};
-// 체류 시간 표기 — 60초 미만은 '초', 그 이상은 '분'(초 단위 세션 모델이라 짧은 방문도 정확히). (일별 모달과 공유)
+// 머문 시간 표기 — 60초 미만은 '초', 그 이상은 '분'. (이용 기록과 공유)
 export const fmtDur = (seconds: number) => {
   const s = Math.max(0, Math.round(seconds));
   return s < 60 ? `${s}초` : `${Math.round(s / 60)}분`;
 };
-// 세션 로그 역할 배지 색 — 역할별 단일 출처(ROLE_META)에서. (일별 모달과 공유)
-export const roleColor = (key: string) =>
-  ROLE_META.find((m) => m.key === key)?.color ?? LEGACY_ROLE_COLOR[key] ?? "#9aa0ab";
-export const deviceColor = (key: string) =>
-  DEVICE_META.find((m) => m.key === key)?.color ?? "#9aa0ab";
 export const deviceLabel = (key: string) =>
   DEVICE_META.find((m) => m.key === key)?.label ?? key;
-// #rrggbb → rgba(). 접속 세션 막대가 '있었던 구간'(연하게)과 '실제로 떠 있던 시간'(진하게)
-// 두 겹이라 같은 색의 옅은 판이 필요하다. color-mix는 구형 사파리에서 안 먹어 JS로 만든다.
-export const withAlpha = (hex: string, a: number) => {
-  const m = /^#([0-9a-f]{6})$/i.exec(hex.trim());
-  if (!m) return hex;
-  const n = parseInt(m[1], 16);
-  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
-};
 
-// 24시간 축(KST) — 시간 트랙(관리자 접속 세션)용. 시각은 '경계'라 눈금을 h/24 지점에 정확히 놓는다.
-// 3시간 간격 + 양 끝(0·24). 예전엔 0/6/12/18/24 다섯 개를 space-between으로 흩뿌려, 라벨 폭의
-// 절반만큼 어긋나고 사이가 비어 위치를 눈대중으로 외삽하게 했다(그래서 21시 막대가 23시로 읽혔다).
-export function HourTicks({ className = "" }: { className?: string }) {
-  return (
-    <div className={`hour-ticks ${className}`.trim()} aria-hidden="true">
-      {Array.from({ length: 9 }, (_, i) => i * 3).map((h) => (
-        <span
-          data-edge={h === 0 ? "start" : h === 24 ? "end" : undefined}
-          key={h}
-          style={{ left: `${(h / 24) * 100}%` }}
-        >
-          {h}
-        </span>
-      ))}
-    </div>
-  );
-}
-
-// 방문 품질 요약 블록(개발자 전용 — 방문 패널/일일 상세 공용). 토글 순서·기본값은 운영진 → 시청자 → 전체
-// (2026-08-28 관리자 결정: 처음 열면 운영진). 위 분리 배지로 숫자가 부풀었는지 바로 보인다.
-export type VisitScope = "viewer" | "operator" | "all";
-// 처음 열었을 때의 범위 — 방문 패널·일별 모달·요약 블록(비제어형) 셋이 같은 값을 써야 한다.
-export const DEFAULT_VISIT_SCOPE: VisitScope = "all"; // 2026-09-28 소유자: 기본은 전체
-export function VisitSummaryBlock({
-  viewer,
-  operator,
-  all,
-  newVisitors,
-  returningVisitors,
-  scope,
-  onScope
-}: {
-  viewer: VisitSummary;
-  operator: VisitSummary;
-  all: VisitSummary;
-  newVisitors?: number;
-  returningVisitors?: number;
-  // 제어형(부모가 scope를 주면 토글이 부모 상태를 바꿔 아래 그래프까지 즉시 전환). 없으면 내부 상태.
-  scope?: VisitScope;
-  onScope?: (s: VisitScope) => void;
-}) {
-  const [localScope, setLocalScope] = useState<VisitScope>(DEFAULT_VISIT_SCOPE);
-  const cur = scope ?? localScope;
-  const setScope = onScope ?? setLocalScope;
-  const s = cur === "viewer" ? viewer : cur === "operator" ? operator : all;
-  const tabs: { key: VisitScope; label: string }[] = [
-    { key: "operator", label: "운영진" },
-    { key: "viewer", label: "시청자" },
-    { key: "all", label: "전체" }
-  ];
-  return (
-    <div className="vsum">
-      <div className="vsum-head">
-        {/* 분리 배지 순서도 토글과 같게(운영진 → 시청자) — 눈이 두 줄을 오갈 때 자리가 맞아야 한다. */}
-        {/* 세션 수는 뺐다(2026-09-28 소유자: 좁은 폭에서 토글이 줄바꿈되지 않게) — 아래 KPI '세션' 칸이 말한다. */}
-        <span className="vsum-split">
-          운영진 <b>{operator.visitors}</b>명 · 시청자 <b>{viewer.visitors}</b>명
-        </span>
-        <div className="insights-subtabs vsum-toggle">
-          {tabs.map((t) => (
-            <button
-              className={cur === t.key ? "active" : ""}
-              // 안정 id(0062) — 없으면 라벨 텍스트로 유추돼 '시청자'·'운영진'이 각각 다른
-              // 항목으로 잡힌다(사용량 통계에서 같은 토글인데 3줄로 갈라짐).
-              data-act={`visit-scope-${t.key}`}
-              key={t.key}
-              onClick={() => {
-                hapticTick();
-                setScope(t.key);
-              }}
-              type="button"
-            >
-              {t.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      <ul className="vsum-kpis">
-        <li>
-          <b>{s.visitors}</b>
-          <span>방문자</span>
-        </li>
-        <li>
-          <b>{s.sessions}</b>
-          <span>세션</span>
-        </li>
-        <li>
-          <b>{s.glances}</b>
-          <span>스쳐감</span>
-        </li>
-        {/* (바운스 % 칸은 2026-09-04 사용자 결정으로 철수 — 의미 없음.) */}
-        <li>
-          <b>{fmtDur(s.avgSeconds)}</b>
-          <span>평균체류</span>
-        </li>
-        <li>
-          <b>{fmtDur(s.totalSeconds)}</b>
-          <span>총체류</span>
-        </li>
-        <li>
-          <b>{s.peakConcurrent}</b>
-          <span>최고동접</span>
-        </li>
-        {/* R12: 새/재방문(시청자 기준 — 토글과 무관하게 시청자 신호) */}
-        {typeof newVisitors === "number" ? (
-          <li>
-            <b>{newVisitors}</b>
-            <span>새 방문</span>
-          </li>
-        ) : null}
-        {typeof returningVisitors === "number" ? (
-          <li>
-            <b>{returningVisitors}</b>
-            <span>재방문</span>
-          </li>
-        ) : null}
-      </ul>
-    </div>
-  );
-}
-
-// 스택 막대 한 줄(방문 그래프 공용 — 역할/기기 등 meta로 구분). 호버하면 차트 단일 툴팁에 분해 수치를
-// 올려준다(툴팁은 차트 폭 안에서 clamp되어 양 끝에서도 안 잘린다).
-function StackBar({
-  meta,
-  counts,
-  total,
-  max,
-  label,
-  index,
-  count,
-  onHover,
-  onLeave
-}: {
-  meta: { key: string; label: string; color: string }[];
-  counts: Record<string, number>;
-  total: number;
-  max: number;
-  label: string;
-  index: number;
-  count: number;
-  onHover: (tip: VtHover) => void;
-  onLeave: () => void;
-}) {
-  const enter = () => {
-    if (total <= 0) {
-      onLeave();
-      return;
-    }
-    const rows = meta
-      .map((s) => ({ color: s.color, label: s.label, count: counts[s.key] ?? 0 }))
-      .filter((r) => r.count > 0);
-    onHover({ x: ((index + 0.5) / Math.max(1, count)) * 100, total, rows });
-  };
-  return (
-    <div className="vt-col" onPointerEnter={enter} onPointerMove={enter} onPointerLeave={onLeave}>
-      <div className="vt-barwrap">
-        <div className="vt-bar" style={{ height: `${(total / max) * 100}%` }}>
-          <div className="vt-fill">
-            {meta.map((s) => {
-              const c = counts[s.key] ?? 0;
-              return c > 0 ? (
-                <span className="vt-seg" key={s.key} style={{ flexGrow: c, background: s.color }} />
-              ) : null;
-            })}
-          </div>
-        </div>
-      </div>
-      <span className="vt-day">{label}</span>
-    </div>
-  );
-}
-
-// archived: 연간 아카이브(0160)의 숫자로 같은 화면을 다시 그린다 — 서버를 부르지 않고, 실시간 칸은 보관하지 않는다.
+// archived: 연간 아카이브(0160)의 숫자로 같은 화면을 다시 그린다 — 서버를 부르지 않는다.
 export function InsightsDashboard({
   year,
   month,
@@ -328,27 +89,11 @@ export function InsightsDashboard({
   archived?: ArchivePayload;
 }) {
   const [index, setIndex] = useState(0);
-  // 아카이브엔 실시간 칸이 없다(보관하지 않음) — 탭·트랙·점·키보드가 모두 이 목록 하나를 따른다.
-  // 탭 배치는 설정 창 안에서만 트렌드 1행 + 일정·참여·방문 3열(2026-11-13 소유자).
-  const panels = archived ? ARCHIVE_PANELS : PANELS;
-  const tabRows = archived ? ARCHIVE_TAB_ROWS : undefined;
+  // 탭·트랙·점·키보드가 모두 이 목록 하나를 따른다(라이브·아카이브 같은 세 칸).
+  const panels = PANELS;
   const [data, setData] = useState<InsightsData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [visits, setVisits] = useState<VisitTrends | null>(null);
-  const [visitsLoading, setVisitsLoading] = useState(true);
-  const [visitView, setVisitView] = useState<"day" | "week">("day");
-  const [visitDim, setVisitDim] = useState<"role" | "device">("role");
-  const [visitScope, setVisitScope] = useState<VisitScope>(DEFAULT_VISIT_SCOPE); // 운영진/시청자/전체 — 그래프까지 즉시 전환
-  const [vtHover, setVtHover] = useState<VtHover | null>(null);
-  const [vtHourHover, setVtHourHover] = useState<OccHover | null>(null); // 시간대 점유(체류) 분해 툴팁
-  const [ownerTip, setOwnerTip] = useState<{ x: number; top: number; text: string } | null>(null); // 관리자 세션 띠 툴팁
-  const [dsessTip, setDsessTip] = useState<{ x: number; day: number; n: number } | null>(null); // 일별 세션 막대 호버
-  // 세션 로그 역할 필터(2026-09-05 복원 — 이번엔 드롭다운). "all"이면 전 역할.
-  const [logRole, setLogRole] = useState("all");
-  const [logStay, setLogStay] = useState<"all" | "stay" | "glance">("all"); // 머문/스쳐감 필터
-  // 세션 로그 목록은 제 안에서 스크롤하되 스크롤바를 안 그린다 — 위치는 ScrollPosition이 말한다.
-  const sessionListRef = useRef<HTMLUListElement | null>(null);
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
 
@@ -357,8 +102,6 @@ export function InsightsDashboard({
       setData(archived.insights);
       setError(archived.insights ? null : "이 달 인사이트가 아카이브에 없어요.");
       setLoading(false);
-      setVisits(archived.visits);
-      setVisitsLoading(false);
       setTrend(archived.trend);
       setTrendLoading(false);
       return;
@@ -376,14 +119,6 @@ export function InsightsDashboard({
       .finally(() => {
         if (alive) setLoading(false);
       });
-    getVisitTrendsAction(year, month)
-      .then((r) => {
-        if (alive && r.ok) setVisits(r.data);
-      })
-      .catch(() => { /* Keep unavailable data distinct from an empty aggregate. */ })
-      .finally(() => {
-        if (alive) setVisitsLoading(false);
-      });
     getTrendAction(year, month)
       .then((r) => {
         if (alive && r.ok) setTrend(r.data);
@@ -397,34 +132,7 @@ export function InsightsDashboard({
     };
   }, [year, month, archived]);
 
-  // 일별/주별·역할별/기기별을 바꾸면 막대가 바뀌므로 떠 있던 분해 툴팁은 지운다.
-  useEffect(() => {
-    setVtHover(null);
-    setVtHourHover(null);
-  }, [visitView, visitDim]);
-
-  // 방문 패널을 보는 동안엔 20초마다 새로고침 — 지금 내가 보고 있는(진행 중) 세션까지 거의
-  // 실시간으로 반영(모달 최초 로드 이후 생긴 세션·갱신된 체류시간이 들어온다).
-  useEffect(() => {
-    if (archived || panels[index]?.key !== "visits") return;
-    let alive = true;
-    const poll = startForegroundPoll({
-      run: async (signal) => {
-        const r = await getVisitTrendsAction(year, month);
-        if (alive && !signal.aborted && r.ok) setVisits(r.data);
-      },
-      delay: () => 20_000
-    });
-    return () => {
-      alive = false;
-      poll.stop();
-    };
-  }, [index, year, month, archived, panels]);
-
   const go = (i: number) => setIndex(Math.max(0, Math.min(panels.length - 1, i)));
-
-  // 지금 보고 있는 칸만 그 칸의 데이터 소스를 다시 불러 즉시 갱신(전체 모달 재로드 아님).
-  // (패널별 수동 새로고침(refreshPanel)은 2026-09-04 제거 — 방문 칸은 20초 자동 갱신.)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -440,15 +148,15 @@ export function InsightsDashboard({
         setIndex((i) => Math.min(LEN - 1, i + 1));
       } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        setIndex((i) => insightTabStep(i, "ArrowUp", LEN, tabRows));
+        setIndex((i) => insightTabStep(i, "ArrowUp", LEN));
       } else if (e.key === "ArrowDown") {
         e.preventDefault();
-        setIndex((i) => insightTabStep(i, "ArrowDown", LEN, tabRows));
+        setIndex((i) => insightTabStep(i, "ArrowDown", LEN));
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [panels, tabRows]);
+  }, [panels]);
 
   const swipeStart = useRef<{ x: number; y: number } | null>(null);
   const onSwipeStart = (e: ReactPointerEvent) => {
@@ -498,588 +206,6 @@ export function InsightsDashboard({
   const tagMax = Math.max(1, ...(data?.content.tags.map((t) => t.count) ?? [1]));
   const heartMax = Math.max(1, ...(data?.engagement.topEvents.map((t) => t.count) ?? [1]));
 
-  function renderVisits() {
-    if (visitsLoading) {
-      return (
-        <div className="insight-skel" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
-      );
-    }
-    if (!visits || !visits.ready) {
-      return <p className="insight-empty">방문 데이터를 불러올 수 없어요.</p>;
-    }
-    if (!visits.hasData) {
-      return (
-        <p className="insight-empty">
-          {month}월 방문 기록이 아직 없어요. 방문하면 하루 단위로 쌓여 여기에 날짜별·역할별
-          그래프가 그려져요.
-        </p>
-      );
-    }
-    // 토글(시청자/운영진/전체)이 고른 그래프 묶음 — 아래 막대·동접·히트맵·미니달력 전부 이걸 쓴다.
-    const g =
-      visitScope === "viewer" ? visits.viewer : visitScope === "operator" ? visits.operator : visits.all;
-    const scopeLabel = visitScope === "viewer" ? "시청자" : visitScope === "operator" ? "운영진" : "전체";
-    const series = visitView === "day" ? g.days : g.weeks;
-    const meta = visitDim === "role" ? ROLE_META : DEVICE_META;
-    const countsOf = (s: { roles: Record<string, number>; devices: Record<string, number> }) =>
-      visitDim === "role" ? s.roles : s.devices;
-    // 역할별 = '방문'(계정 단위, total=방문수). 기기별 = '기기'(한 계정이 웹·iOS면 둘 다 1대라
-    // 합이 방문수보다 클 수 있다) → 막대 높이·툴팁 합계도 그 차원에 맞춘다.
-    const totalOf = (s: { total: number; devices: Record<string, number> }) =>
-      visitDim === "role" ? s.total : Object.values(s.devices).reduce((a, b) => a + b, 0);
-    const unit = visitDim === "role" ? "명" : "대";
-    const max = Math.max(1, ...series.map(totalOf));
-    // 시간대 막대 높이 스케일은 '평균 동시 접속'의 최댓값 기준(상대 스케일이라 절대치가 작아도 형태가 보임).
-    const om = Math.max(0.0001, ...g.occupancy.map((s) => s.avg));
-    // 이번 달을 보고 있으면 오늘은 아직 안 끝났고, 그 뒤 날짜는 아직 오지 않았다.
-    // 둘 다 '0'과 구분해서 그린다(오늘=진행 중, 이후=아직 안 옴).
-    const todayKey = kstDay();
-    const todayDay =
-      todayKey.slice(0, 7) === `${year}-${String(month).padStart(2, "0")}`
-        ? Number(todayKey.slice(8, 10))
-        : 0;
-    // 관리자 접속 세션을 KST 날짜별로 묶고, 각 세션을 24h 트랙 좌표(시작%·길이%)로 — 수면/스크린타임
-    // 타임라인처럼 "언제·몇 분·어느 기기"를 한 줄로 보여준다(최근 날짜가 위).
-    const devMeta = (k: string) => DEVICE_META.find((m) => m.key === k) ?? DEVICE_META[0];
-    type OwnSeg = {
-      startFrac: number;
-      widthFrac: number;
-      seenFrac: number; // 그 구간 중 실제로 화면에 떠 있던 비율(막대 안쪽 채움)
-      live: boolean;
-      device: string;
-      label: string; // 툴팁: "18:03–18:47 · 45분 · 안드로이드"
-    };
-    const ownerDayMap = new Map<string, { label: string; segs: OwnSeg[] }>();
-    for (const s of visits.ownerSessions) {
-      const d = kstOf(s.startMs);
-      const key = d.toISOString().slice(0, 10);
-      const startFrac = (d.getUTCHours() + d.getUTCMinutes() / 60) / 24;
-      // 폭은 시작~끝(span). 실측 체류를 폭으로 쓰면 자리비움이 섞인 방문이 일찍 끝난 것처럼 그려진다.
-      const spanSec = Math.max(0, Math.round((s.endMs - s.startMs) / 1000));
-      const widthFrac = Math.min(1 - startFrac, Math.max(spanSec / 86400, 0.002));
-      const seenFrac = spanSec > 0 ? Math.min(1, s.seconds / spanSec) : 1;
-      const entry = ownerDayMap.get(key) ?? { label: `${d.getUTCMonth() + 1}/${d.getUTCDate()}`, segs: [] };
-      entry.segs.push({
-        startFrac,
-        widthFrac,
-        seenFrac,
-        live: s.live,
-        device: s.device,
-        label: `${hhmm(s.startMs)}–${s.live ? "지금(계속 중)" : hhmm(s.endMs)} · 화면에 떠 있던 시간 ${fmtDur(s.seconds)} · ${devMeta(s.device).label}`
-      });
-      ownerDayMap.set(key, entry);
-    }
-    const ownerDays = [...ownerDayMap.entries()]
-      .sort((a, b) => (a[0] < b[0] ? 1 : -1))
-      .map(([key, v]) => ({ key, ...v }));
-    const ownerDevices = DEVICE_META.filter((m) => visits.ownerSessions.some((s) => s.device === m.key));
-    const onOwnSeg = (e: ReactPointerEvent<HTMLElement>, text: string) => {
-      const cont = e.currentTarget.closest(".own-sessions") as HTMLElement | null;
-      if (!cont) return;
-      const cr = cont.getBoundingClientRect();
-      const sr = e.currentTarget.getBoundingClientRect();
-      setOwnerTip({ x: ((sr.left + sr.width / 2 - cr.left) / cr.width) * 100, top: sr.top - cr.top, text });
-    };
-    return (
-      // 웹: 2단 대시보드 그리드(.vpanel) — 요약/문구는 풀폭, 차트는 좌우 2열 카드로 가로폭을 채운다.
-      // 모바일: 같은 마크업이 한 줄 세로 스택으로 떨어진다(컴팩트, 카드 테두리 없음).
-      <div className="vpanel">
-        {/* 방문 품질 요약(R1 컷·R2 토글·R4 KPI·R5 분리·R12 새/재방문·R13 최고동접). — 풀폭 */}
-        <VisitSummaryBlock
-          viewer={visits.summaryViewer}
-          operator={visits.summaryOperator}
-          all={visits.summaryAll}
-          newVisitors={visits.newVisitors}
-          returningVisitors={visits.returningVisitors}
-          scope={visitScope}
-          onScope={setVisitScope}
-        />
-        {/* R6: 한 문장 자동 인사이트 — 풀폭 */}
-        {visits.insights.length > 0 ? (
-          <ul className="vins">
-            {visits.insights.map((line, i) => (
-              <li key={i}>💡 {line}</li>
-            ))}
-          </ul>
-        ) : null}
-
-        {/* 방문 추이(일별/주별 · 역할/기기) — 좌측 카드 */}
-        <section className="vcard">
-          <h4 className="insight-subhead">
-            방문 추이 ({scopeLabel}) <span className="vcrit">{visitDim === "role" ? "방문 수" : "기기 수"}</span>
-          </h4>
-          {/* 토글 두 묶음을 좌(일별/주별)·우(역할별/기기별)로 갈라 배치 */}
-          <div className="vt-toolbar">
-            <div className="insights-subtabs">
-              <button
-                className={visitView === "day" ? "active" : ""}
-                data-act="visit-view"
-                data-act-opt="day"
-                onClick={() => {
-                  hapticTick();
-                  setVisitView("day");
-                }}
-                type="button"
-              >
-                일별
-              </button>
-              <button
-                className={visitView === "week" ? "active" : ""}
-                data-act="visit-view"
-                data-act-opt="week"
-                onClick={() => {
-                  hapticTick();
-                  setVisitView("week");
-                }}
-                type="button"
-              >
-                주별
-              </button>
-            </div>
-            <div className="insights-subtabs">
-              <button
-                className={visitDim === "role" ? "active" : ""}
-                data-act="visit-dim"
-                data-act-opt="role"
-                onClick={() => {
-                  hapticTick();
-                  setVisitDim("role");
-                }}
-                type="button"
-              >
-                역할별
-              </button>
-              <button
-                className={visitDim === "device" ? "active" : ""}
-                data-act="visit-dim"
-                data-act-opt="device"
-                onClick={() => {
-                  hapticTick();
-                  setVisitDim("device");
-                }}
-                type="button"
-              >
-                기기별
-              </button>
-            </div>
-          </div>
-          <div
-            className="vt-chart"
-            role="img"
-            aria-label="방문 그래프"
-            onPointerLeave={() => setVtHover(null)}
-          >
-            {visitView === "day"
-              ? g.days.map((d, i) => (
-                  <StackBar
-                    count={g.days.length}
-                    counts={countsOf(d)}
-                    index={i}
-                    key={d.day}
-                    label={d.day % 5 === 0 || d.day === 1 ? String(d.day) : ""}
-                    max={max}
-                    meta={meta}
-                    onHover={setVtHover}
-                    onLeave={() => setVtHover(null)}
-                    total={totalOf(d)}
-                  />
-                ))
-              : g.weeks.map((w, i) => (
-                  <StackBar
-                    count={g.weeks.length}
-                    counts={countsOf(w)}
-                    index={i}
-                    key={w.label}
-                    label={w.label}
-                    max={max}
-                    meta={meta}
-                    onHover={setVtHover}
-                    onLeave={() => setVtHover(null)}
-                    total={totalOf(w)}
-                  />
-                ))}
-            {vtHover ? (
-              <div className="vt-tip" style={{ "--tip-x": `${vtHover.x}%` } as CSSProperties}>
-                <strong>{vtHover.total}{unit}</strong>
-                {vtHover.rows.map((r) => (
-                  <span className="vt-tip-row" key={r.label}>
-                    <i style={{ background: r.color }} />
-                    {r.label}
-                    <b>{r.count}</b>
-                  </span>
-                ))}
-              </div>
-            ) : null}
-          </div>
-          <ul className="vt-legend">
-            {meta.map((r) => (
-              <li key={r.key}>
-                <span style={{ background: r.color }} />
-                {r.label}
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        {/* 시간대별 동시 접속(체류) — 우측 카드 */}
-        <section className="vcard">
-          {/* 위 일별/주별은 '방문 수(첫 진입)'지만, 이 막대는 '그 시각에 떠 있던 인원(체류)'이다. */}
-          <h4 className="insight-subhead">
-            시간대별 동접 (KST) <span className="vcrit">하루 평균 머문 분</span>
-          </h4>
-          <div
-            className={`vt-hours ${g.hasOccupancy ? "" : "empty"}`}
-            role="img"
-            aria-label="시간대별 동시 접속(체류) 분포(역할·기기 분해)"
-            onPointerLeave={() => setVtHourHover(null)}
-          >
-            {g.occupancy.map((slot, h) => {
-              const counts = countsOf(slot);
-              const enter = () => {
-                if (slot.avg <= 0) {
-                  setVtHourHover(null);
-                  return;
-                }
-                const rows = meta
-                  .map((m) => ({ color: m.color, label: m.label, val: counts[m.key] ?? 0 }))
-                  .filter((r) => r.val > 0.001);
-                setVtHourHover({ x: ((h + 0.5) / 24) * 100, avg: slot.avg, peak: slot.peak, rows });
-              };
-              return (
-                <div
-                  className="vt-hcol"
-                  key={h}
-                  onPointerEnter={enter}
-                  onPointerMove={enter}
-                  onPointerLeave={() => setVtHourHover(null)}
-                >
-                  <div className="vt-hbar" style={{ height: `${(slot.avg / om) * 100}%` }}>
-                    <div className="vt-fill">
-                      {meta.map((m) => {
-                        const c = counts[m.key] ?? 0;
-                        // flex-grow 합이 1 미만(평균<1)이면 fill이 막대를 다 못 채워 배경이 비친다 →
-                        // 역할 '비율'(c/총합)로 정규화해 항상 막대 전체를 채운다(높이는 이미 avg가 인코딩).
-                        return c > 0 ? (
-                          <span
-                            className="vt-seg"
-                            key={m.key}
-                            style={{ flexGrow: slot.avg > 0 ? c / slot.avg : 1, background: m.color }}
-                          />
-                        ) : null;
-                      })}
-                    </div>
-                  </div>
-                  {/* 3시간 간격 — 6시간이면 라벨 없는 칸이 몰려 끝 칸을 24시로 오독한다. */}
-                  <span className="vt-hlabel">{h % 3 === 0 ? h : ""}</span>
-                </div>
-              );
-            })}
-            <span aria-hidden className="vt-hend">
-              24
-            </span>
-            {vtHourHover ? (
-              <div className="vt-tip" style={{ "--tip-x": `${vtHourHover.x}%` } as CSSProperties}>
-                <strong>
-                  하루 평균 {fmtOcc(vtHourHover.avg)} 머묾 · 최고 {vtHourHover.peak}명
-                </strong>
-                {vtHourHover.rows.map((r) => (
-                  <span className="vt-tip-row" key={r.label}>
-                    <i style={{ background: r.color }} />
-                    {r.label}
-                    <b>{fmtOcc(r.val)}</b>
-                  </span>
-                ))}
-              </div>
-            ) : null}
-            {g.hasOccupancy ? null : (
-              <span className="vt-hours-empty">아직 핑 없음 · 방문자가 다녀가면 막대가 차올라요</span>
-            )}
-          </div>
-          <ul className="vt-legend">
-            {meta.map((r) => (
-              <li key={r.key}>
-                <span style={{ background: r.color }} />
-                {r.label}
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        {/* R7: 요일×시간 히트맵 — 24열로 넓어 풀폭이 읽기 좋다. */}
-        <section className="vcard full">
-          <h4 className="insight-subhead">
-            요일 × 시간 ({scopeLabel}) <span className="vcrit">세션 수</span>
-          </h4>
-          {(() => {
-            const wdays = ["일", "월", "화", "수", "목", "금", "토"];
-            const hmMax = Math.max(1, ...g.heatmap.flat());
-            return (
-              <div className="vheat" role="img" aria-label="요일×시간 히트맵">
-                {g.heatmap.map((row, wd) => (
-                  <div className="vheat-row" key={wd}>
-                    <span className="vheat-wd">{wdays[wd]}</span>
-                    {row.map((c, h) => (
-                      <i
-                        key={h}
-                        title={`${wdays[wd]} ${h}시 · ${c}세션`}
-                        style={{ background: c > 0 ? themeColor(`rgba(124,92,245,${0.15 + (c / hmMax) * 0.8})`, `rgba(177,151,255,${0.25 + (c / hmMax) * 0.7})`) : themeColor("#f1eef9", "#302d37") }}
-                      />
-                    ))}
-                  </div>
-                ))}
-                {/* 칸(=1시간) 중앙에 3시간마다 라벨 + 오른쪽 끝에 24. 예전엔 0/6/12/18/23을
-                    space-between으로 흩뿌려 라벨이 실제 칸보다 반 칸 왼쪽으로 밀렸다. */}
-                <div className="vheat-axis" aria-hidden="true">
-                  {Array.from({ length: 24 }, (_, h) => (
-                    <span key={h}>{h % 3 === 0 ? h : ""}</span>
-                  ))}
-                  <b>24</b>
-                </div>
-              </div>
-            );
-          })()}
-        </section>
-
-        {/* 관리자(토리님) 전용 접속 세션 — 가로 24h 타임라인이라 풀폭. */}
-        <section className="vcard full">
-          <h4 className="insight-subhead">
-            관리자 접속 세션 (이번 달) <span className="vcrit">하루 = 한 줄</span>
-          </h4>
-          {ownerDays.length > 0 ? (
-            <>
-              <div className="own-sessions" onPointerLeave={() => setOwnerTip(null)}>
-                {ownerDays.map((d) => (
-                  <div className="own-row" key={d.key}>
-                    <span className="own-date">{d.label}</span>
-                    <div className="own-track">
-                      {d.segs.map((s, i) => (
-                        <span
-                          className={`own-seg${s.live ? " live" : ""}`}
-                          key={i}
-                          onPointerEnter={(e) => onOwnSeg(e, s.label)}
-                          onPointerMove={(e) => onOwnSeg(e, s.label)}
-                          onPointerLeave={() => setOwnerTip(null)}
-                          style={{
-                            left: `${s.startFrac * 100}%`,
-                            width: `${s.widthFrac * 100}%`,
-                            background: withAlpha(devMeta(s.device).color, 0.3)
-                          }}
-                          title={s.label}
-                        >
-                          {/* 막대 = 있었던 구간, 안쪽 = 실제로 화면에 떠 있던 시간. */}
-                          <i
-                            style={{
-                              width: `${s.seenFrac * 100}%`,
-                              background: devMeta(s.device).color
-                            }}
-                          />
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-                <HourTicks className="own-axis" />
-                {ownerTip ? (
-                  <div
-                    className="vt-tip own-tip"
-                    style={{ "--tip-x": `${ownerTip.x}%`, top: ownerTip.top } as CSSProperties}
-                  >
-                    <strong>{ownerTip.text}</strong>
-                  </div>
-                ) : null}
-              </div>
-              <ul className="vt-legend">
-                {ownerDevices.map((m) => (
-                  <li key={m.key}>
-                    <span style={{ background: m.color }} />
-                    {m.label}
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : (
-            <p className="insight-empty">
-              아직 관리자 접속 세션이 없어요. 토리님이 접속하면 기기·시간대·머문 시간이 여기 그려져요.
-            </p>
-          )}
-        </section>
-
-        {/* R8: 날짜별 미니 달력 히트맵(체류 긴 날 진하게 — 방문 수가 아니라 총 체류시간). 표시 전용. — 좌측 카드 */}
-        <section className="vcard">
-          <h4 className="insight-subhead">
-            날짜별 <span className="vcrit">체류 시간</span>
-          </h4>
-          {(() => {
-            const firstWd = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
-            const stayMax = Math.max(1, ...g.days.map((d) => d.stay));
-            const wdays = ["일", "월", "화", "수", "목", "금", "토"];
-            return (
-              <div className="vmini">
-                {wdays.map((w) => (
-                  <span className="vmini-h" key={w}>
-                    {w}
-                  </span>
-                ))}
-                {Array.from({ length: firstWd }, (_, i) => (
-                  <span className="vmini-cell empty" key={`b${i}`} />
-                ))}
-                {g.days.map((d) => (
-                  <span
-                    className={`vmini-cell${d.day === todayDay ? " today" : ""}${
-                      todayDay > 0 && d.day > todayDay ? " fut" : ""
-                    }`}
-                    key={d.day}
-                    title={`${month}/${d.day} · 체류 ${fmtDur(d.stay)} · ${d.total}방문${
-                      d.day === todayDay ? " (오늘 — 진행 중)" : ""
-                    }`}
-                    style={{ background: d.stay > 0 ? themeColor(`rgba(52,211,153,${0.18 + (d.stay / stayMax) * 0.75})`, `rgba(40,124,95,${0.3 + (d.stay / stayMax) * 0.65})`) : themeColor("#f3f1ee", "#302d37") }}
-                  >
-                    {d.day}
-                  </span>
-                ))}
-              </div>
-            );
-          })()}
-        </section>
-
-        {/* 개발자 디버깅 푸터(R11 건강 + R10 최근 세션) — 우측 카드 */}
-        <section className="vcard vcard-foot">
-          <h4 className="insight-subhead">
-            세션 로그 <span className="vlive">실시간</span>
-          </h4>
-          <p className="vhealth">
-            오늘 {visits.health.todaySessions}세션 · 미종료 {Math.round(visits.health.openRate * 100)}% · 평균 체류 {fmtDur(visits.health.avgStaySec)}
-          </p>
-          {/* 하루 단위 기록을 모은 월간 추이 — 일별 세션 수 막대 + 평균/최다일 요약. */}
-          {visits.dailySessions.length > 0
-            ? (() => {
-                const dmax = Math.max(1, ...visits.dailySessions);
-                const total = visits.dailySessions.reduce((a, b) => a + b, 0);
-                const active = visits.dailySessions.filter((n) => n > 0).length;
-                const avg = active > 0 ? Math.round(total / active) : 0;
-                const peak = visits.dailySessions.reduce(
-                  (b, n, i) => (n > visits.dailySessions[b] ? i : b),
-                  0
-                );
-                return (
-                  <>
-                    <p className="vhealth">
-                      하루 평균 {avg}세션 · 가장 바쁜 날 {month}/{peak + 1} ({visits.dailySessions[peak]}세션)
-                    </p>
-                    <div
-                      aria-label="일별 세션 수"
-                      className="dsess"
-                      onPointerLeave={() => setDsessTip(null)}
-                      role="img"
-                    >
-                      {visits.dailySessions.map((n, i) => {
-                        const enter = () =>
-                          setDsessTip({
-                            x: ((i + 0.5) / visits.dailySessions.length) * 100,
-                            day: i + 1,
-                            n
-                          });
-                        return (
-                          <div
-                            className={`dsess-col${todayDay > 0 && i + 1 > todayDay ? " fut" : ""}`}
-                            key={i}
-                            onPointerEnter={enter}
-                            onPointerMove={enter}
-                          >
-                            <div className="dsess-barwrap">
-                              <div
-                                className={`dsess-bar${i + 1 === todayDay ? " partial" : ""}`}
-                                style={{ height: `${(n / dmax) * 100}%` }}
-                              />
-                            </div>
-                            <span className="dsess-x">{(i + 1) % 5 === 0 || i === 0 ? i + 1 : ""}</span>
-                          </div>
-                        );
-                      })}
-                      {dsessTip ? (
-                        <div className="vt-tip" style={{ "--tip-x": `${dsessTip.x}%` } as CSSProperties}>
-                          <strong>
-                            {month}/{dsessTip.day} · {dsessTip.n}세션
-                          </strong>
-                        </div>
-                      ) : null}
-                    </div>
-                  </>
-                );
-              })()
-            : null}
-          <details className="vrecent" open>
-            <summary>세션 {visits.recent.length}건 <span className="vcrit">20초마다 갱신</span></summary>
-            {/* 역할 · 머문/스쳐감 — 하루 이용 기록과 같은 컴포넌트(session-log-filter.tsx). */}
-            {visits.recent.length > 0 ? (
-              <SessionLogFilter
-                onRole={setLogRole}
-                onStay={setLogStay}
-                role={logRole}
-                sessions={visits.recent}
-                stay={logStay}
-              />
-            ) : null}
-            <ScrollPosition
-              listRef={sessionListRef}
-              unit="건"
-              watch={`${visits.recent.length}|${logRole}|${logStay}`}
-            />
-            <ul className="vlog" ref={sessionListRef}>
-              {(() => {
-                const shown = visits.recent.filter(
-                  (r) =>
-                    (logRole === "all" || r.role === logRole) &&
-                    (logStay === "all" || (logStay === "stay" ? r.meaningful : !r.meaningful))
-                );
-                if (shown.length === 0) {
-                  return <li className="vlog-empty">조건에 맞는 세션이 없어요.</li>;
-                }
-                return shown.map((r, i) => (
-                <li
-                  className={`vlog-row${r.meaningful ? "" : " glance"}`}
-                  data-pos={mdhm(r.t)}
-                  key={i}
-                >
-                  <span
-                    aria-hidden="true"
-                    className="vlog-dot"
-                    style={{ background: deviceColor(r.device) }}
-                  />
-                  <div className="vlog-main">
-                    <div className="vlog-line1">
-                      <span
-                        className="vrecent-role"
-                        data-role={r.role}
-                        style={{ "--rc": roleColor(r.role) } as CSSProperties}
-                      >
-                        {r.label}
-                        {r.dual ? <em className="vlog-dual">겸</em> : null}
-                      </span>
-                      <time className="vlog-t">{mdhm(r.t)}</time>
-                    </div>
-                    <div className="vlog-line2">
-                      <span className="vlog-dev">{deviceLabel(r.device)}</span>
-                      <span className="vlog-dur">
-                        {fmtDur(r.seconds)}
-                        {r.meaningful ? "" : " · 스쳐감"}
-                      </span>
-                    </div>
-                  </div>
-                </li>
-                ));
-              })()}
-            </ul>
-          </details>
-        </section>
-      </div>
-    );
-  }
-
   function renderTrend() {
     if (trendLoading || loading) {
       return (
@@ -1094,7 +220,6 @@ export function InsightsDashboard({
       return <p className="insight-empty">추이를 불러오지 못했어요.</p>;
     }
     const series = [
-      { key: "visits", label: "👀 방문", values: trend.visits },
       { key: "content", label: "🗓️ 컨텐츠", values: trend.content },
       { key: "hearts", label: "💗 하트", values: data.engagement.monthly.map((x) => x.count) }
     ];
@@ -1161,8 +286,6 @@ export function InsightsDashboard({
           showLegend={false}
           title="💗 하트 받은 태그"
         />
-        <StackTrendChart data={trend.visitsByRole} title="👀 역할별 방문" />
-        <StackTrendChart data={trend.visitsByDevice} title="📱 기기별 접속" />
       </>
     );
   }
@@ -1171,9 +294,8 @@ export function InsightsDashboard({
     <div className="insights" data-archived={archived ? "" : undefined}>
       <div className="insights-head">
         <p className="insights-month">{archived ? `${year}년 ${month}월 인사이트` : `${month}월 인사이트`}</p>
-        {/* (수동 새로고침 버튼은 2026-09-04 사용자 결정으로 제거 — 방문 칸은 20초 자동 갱신, 나머지는 열 때 최신.) */}
       </div>
-      <InsightsTabs active={index} onChange={go} rows={tabRows} tabs={panels} />
+      <InsightsTabs active={index} onChange={go} tabs={panels} />
 
       <div
         className="insights-viewport"
@@ -1351,16 +473,6 @@ export function InsightsDashboard({
               );
             })}
           </section>
-
-          {/* 5) 실시간 — 개발자 전용(아랫줄). 아카이브엔 칸 자체가 없다(panels와 같은 순서 유지). */}
-          {archived ? null : (
-            <section className="insights-panel">
-              <DeveloperPanel />
-            </section>
-          )}
-
-          {/* 6) 방문(이 달) — 개발자 전용 */}
-          <section className="insights-panel">{renderVisits()}</section>
         </div>
       </div>
 

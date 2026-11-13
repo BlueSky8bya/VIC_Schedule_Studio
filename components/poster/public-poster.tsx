@@ -2,6 +2,7 @@
 
 // The room must be styled before its lazy companion runtime can mount.
 import "./viewer-companion/companion-home.css";
+import { SiteLegalFooter } from "@/components/legal/site-legal-footer";
 import { scrollAgendaTarget } from "@/lib/ui/agenda-scroll";
 import { announceIfStaleDeployment } from "@/lib/net/stale-deploy";
 import { PublicEventCalendar } from "./public-event-calendar";
@@ -5290,6 +5291,9 @@ export function PublicPoster({
         </div>
         )}
       </section>
+
+      {/* 개인정보처리방침·이용약관 한 줄(2026-11-13 소유자) — 표면(data-export-surface) 밖, 달력 맨 아래 흐름. */}
+      <SiteLegalFooter />
 
       {/* 개발자 시험 도구는 달력·내보내기 표면 밖의 흐름에 둔다. 고정 버튼은 일정을 가린다. */}
       {canRehearsePremiere && previewNav ? (

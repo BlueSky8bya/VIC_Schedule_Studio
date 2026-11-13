@@ -11,7 +11,7 @@ vi.mock("react", async original => ({ ...await original<typeof import("react")>(
 vi.mock("@/lib/analytics/guard", () => ({ skipAnalyticsClient: () => false }));
 vi.mock("@/lib/activity/query", () => ({ getActivityDayAction: vi.fn(), getActivityUsageAction: vi.fn() }));
 vi.mock("@/components/developer/scroll-position", () => ({ ScrollPosition: () => null }));
-vi.mock("@/components/developer/insights-dashboard", () => ({ deviceLabel: () => "데스크톱", fmtDur: () => "1초", hhmm: () => "00:00", roleColor: () => "#000" }));
+vi.mock("@/components/developer/insights-dashboard", () => ({ deviceLabel: () => "데스크톱", fmtDur: () => "1초", hhmm: () => "00:00" }));
 
 const options = ["shade", "closed", "open"] as const;
 const targets = options.map(option => `companion-home-curtain#${option}`);
@@ -61,14 +61,14 @@ describe("141 direct curtain activity; synthetic transport and developer display
     vi.stubGlobal("React", await import("react"));
     const { ActivityUsage } = await import("@/components/developer/activity-usage");
     const { ActivityTimeline } = await import("@/components/developer/activity-timeline");
-    const rows: UsageRow[] = targets.map(target => ({ kind: "ui.click", label: "누름", target, total: 1, roles: { developer: 1 }, auto: false }));
+    const rows: UsageRow[] = targets.map(target => ({ kind: "ui.click", label: "누름", target, total: 1, auto: false }));
     const at = Date.parse("2026-10-19T15:00:00Z");
-    const visit: ActivityVisit = { key: "synthetic-visit", account: "계정 #1", role: "developer", device: "desktop", startMs: at, endMs: at + 2000, items: targets.map((target, i) => ({ t: at + i * 1000, kind: "ui.click", label: "누름", target, targetLabel: null, source: "client", meta: null, durMs: null })) };
+    const visit: ActivityVisit = { key: "synthetic-visit", device: "desktop", startMs: at, endMs: at + 2000, items: targets.map((target, i) => ({ t: at + i * 1000, kind: "ui.click", label: "누름", target, targetLabel: null, source: "client", meta: null, durMs: null })) };
     // Seed the cards' already-authorized query result state. Their real JSX
     // and shared label lookup render below; no server/DB request is executed.
-    state.values = [30, rows, null, false, false, "all", "all", "all", true, false, false, false, { since: "2026-09-21", until: "2026-10-20" }];
+    state.values = [30, rows, null, false, false, "all", "all", true, false, false, false, { since: "2026-09-21", until: "2026-10-20" }];
     const usage = renderToStaticMarkup(createElement(ActivityUsage, { anchor: "2026-10-20" }));
-    state.values = [[visit], [], null, false, new Set([visit.key]), null, true, false, at];
+    state.values = [[visit], null, false, new Set([visit.key]), null, true, false, at];
     const timeline = renderToStaticMarkup(createElement(ActivityTimeline, { dateKey: "2026-10-20" }));
     for (const name of ["반쯤 닫기", "닫기", "열기"]) {
       expect(usage).toContain(`빅타민 집 커튼 · ${name}`);

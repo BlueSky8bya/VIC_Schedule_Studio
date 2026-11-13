@@ -86,10 +86,8 @@ describe("묶기 순서 — 키 있는 행으로 뼈대를 먼저 세운다", ()
   it("두 번에 나눠 담았으니 방문 안 시간 순서를 다시 맞춘다", () => {
     expect(QUERY).toContain("v.items.sort((a, b) => a.t - b.t)");
   });
-  it("방문의 진짜 구간(visit_session)을 먼저 근거로 쓴다", () => {
-    // 행동 기록만 보면 '첫 키 있는 기록' 이후만 알 수 있다 — 세션 행은 시작 시각을 안다.
-    expect(QUERY).toContain('.from("visit_session")');
-    expect(QUERY).toContain("chooseHostVisit(ev, spanHosts, 60_000)");
+  it("방문 세션(visit_session)은 읽지 않는다 — 2026-11-13 방문 기록 철수", () => {
+    expect(QUERY).not.toContain('.from("visit_session")');
   });
 });
 

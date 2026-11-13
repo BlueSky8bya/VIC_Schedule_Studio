@@ -3,11 +3,9 @@
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { isDeveloperOrFixture } from "@/lib/auth/fixture-dev";
 import { createSupabaseAdminClient } from "@/lib/auth/admin";
-import { getOwnerEmails } from "@/lib/auth/config";
-import { accountHashOf } from "@/lib/insights/account-hash";
 import { ACTIVITY_RETENTION_DAYS, KIND_LABEL } from "@/lib/activity/kinds";
 import { canonRouteTarget } from "@/lib/activity/labels";
-import { chooseHostVisit, type HostVisit } from "@/lib/activity/visit-attach";
+import { chooseHostVisit } from "@/lib/activity/visit-attach";
 import { pruneActivity } from "@/lib/activity/retention";
 import { fetchAllRows } from "@/lib/db/paginate";
 
@@ -18,15 +16,15 @@ import { fetchAllRows } from "@/lib/db/paginate";
 //  - 일정 제목은 저장돼 있지 않다 → 여기서 events를 조인해 붙이되, **공개 일정 제목만** 붙인다.
 //    비공개(work/owner_private)는 제목 대신 범위 라벨만 준다. 이 테이블이 owner_private 우회
 //    경로가 되면 본문 암호화(AES-256-GCM)가 무의미해진다.
-//  - viewer·비로그인은 애초에 account_hash가 null로 저장돼 있어(record.ts) 개인 타임라인이
-//    만들어질 수 없다. 그들의 이벤트는 계정 없는 익명 방문 줄로만 보인다.
+//  - 2026-11-13부터 개발자 본인의 기록만 쌓인다(record.ts isTrackedRole). 그래서 역할·계정을 가르지
+//    않는다 — 방문 = 탭 하나(visit_key)의 묶음일 뿐이다. 방문·체류 세션(visit_session)은 읽지 않는다.
 
 const SLUG = "vic";
 
 // ⚠ PostgREST는 응답 행 수를 서버 설정(기본 1000)으로 자른다 — `.limit(5000)`을 줘도 1000행만
 // 온다. 이 프로젝트가 전에 한 번 당한 함정이고(0051 주변, visit_session 광역 조회), 여기서
 // 또 났다: 하루 기록이 1000행을 넘자 **그 뒤에 생긴 방문이 통째로 사라졌다**(실측 — 화면이
-// 15:29에서 멈췄고 그 뒤 관리자 방문이 안 보였다. 조용히 잘리므로 오류도 안 난다).
+// 15:29에서 멈췄고 그 뒤 방문이 안 보였다. 조용히 잘리므로 오류도 안 난다).
 // 그래서 range()로 끝까지 넘겨 받는다. 상한(hardCap)은 폭주 방지용일 뿐 정상 범위를 안 자른다.
 export type ActivityItem = {
   t: number;
@@ -39,9 +37,7 @@ export type ActivityItem = {
   durMs: number | null;
 };
 export type ActivityVisit = {
-  key: string; // visit_key 또는 "no-key:<n>"
-  account: string; // 이메일(알려진 계정) / "계정 #n" / "익명"
-  role: string;
+  key: string; // visit_key 또는 "nk:<n>"(키 없이 남은 기록 묶음)
   device: string;
   startMs: number;
   endMs: number;
@@ -108,7 +104,6 @@ export async function getActivityDayAction(
     if (!includeDiag) q = q.eq("diag", false);
     return q.order("occurred_at", { ascending: true }).range(from, to);
   });
-  // (행동 기록이 0건이어도 바로 돌아가지 않는다 — 아래 visit_session 구간만 있는 방문도 목록에 올린다.)
 
   // 일정 제목 — 공개 일정만 붙인다. 비공개는 범위 라벨로 대체(제목을 절대 내보내지 않는다).
   //
@@ -163,19 +158,11 @@ export async function getActivityDayAction(
     }
   }
 
-  // 알려진 계정만 이메일로 푼다 — 모르는 계정은 끝까지 익명(#n).
-  // (신뢰 멤버 이메일 해석은 2026-09-04 멤버 관리 철수(ADR-0018)로 제거 — 옛 매니저 기록은 익명 #n.)
-  const hashToEmail = new Map(getOwnerEmails().map((e) => [accountHashOf(e), e] as const));
-  const anonTag = new Map<string, number>();
-
-  // 방문 단위로 묶는다. **두 번에 나눠** 묶는 이유(2026-08-05 실측):
-  // 예전엔 한 번에 훑으면서 visit_key 없는 행을 '그때까지 만들어진 방문'에 얹었다. 그런데
-  // 키 없는 행이 그 탭의 **첫 기록**이면(로드 직후 route.enter — 비콘이 키를 넣기 전) 얹을
-  // 방문이 아직 없어 별도 방문이 만들어지고, 뒤이어 온 같은 탭의 키 있는 기록은 또 다른
-  // 방문이 된다 → 한 탭이 둘로 갈려 "60분 방문인데 항목 1건"이 됐다.
-  // 그래서 ① 키 있는 행으로 방문을 다 만든 뒤 ② 키 없는 행을 계정·역할·시간으로 붙인다.
+  // 방문(탭) 단위로 묶는다. **두 번에 나눠** 묶는 이유(2026-08-05 실측): 키 없는 행이 그 탭의
+  // **첫 기록**이면 얹을 방문이 아직 없어 별도 방문이 생기고, 같은 탭의 키 있는 기록은 또 다른 방문이
+  // 된다 → 한 탭이 둘로 갈렸다. 그래서 ① 키 있는 행으로 방문을 다 만든 뒤 ② 키 없는 행을 시간으로 붙인다.
   const byKey = new Map<string, ActivityVisit>();
-  const hostOf = new Map<string, { key: string; accountHash: string | null; role: string }>();
+  const hostOf = new Map<string, { accountHash: string | null; role: string }>();
   let noKey = 0;
 
   const itemOf = (r: Row): ActivityItem => ({
@@ -188,24 +175,10 @@ export async function getActivityDayAction(
     meta: r.meta,
     durMs: r.dur_ms
   });
-  const accountLabel = (hash: string | null): string => {
-    if (!hash) return "익명";
-    const email = hashToEmail.get(hash);
-    if (email) return email;
-    if (!anonTag.has(hash)) anonTag.set(hash, anonTag.size + 1);
-    return `계정 #${anonTag.get(hash)}`;
-  };
   const openVisit = (key: string, r: Row, item: ActivityItem) => {
-    byKey.set(key, {
-      key,
-      account: accountLabel(r.account_hash),
-      role: r.role,
-      device: r.device,
-      startMs: item.t,
-      endMs: item.t,
-      items: [item]
-    });
-    hostOf.set(key, { key, accountHash: r.account_hash, role: r.role });
+    byKey.set(key, { key, device: r.device, startMs: item.t, endMs: item.t, items: [item] });
+    // 붙이기 판정(chooseHostVisit)용 — 같은 계정·역할의 기록끼리만 잇는다. 화면엔 내보내지 않는다.
+    hostOf.set(key, { accountHash: r.account_hash, role: r.role });
   };
   const addTo = (visit: ActivityVisit, item: ActivityItem) => {
     visit.items.push(item);
@@ -222,96 +195,30 @@ export async function getActivityDayAction(
     else openVisit(r.visit_key, r, item);
   }
 
-  // ②-a 진짜 방문 구간(visit_session)을 먼저 근거로 쓴다. 행동 기록만 보면 그 방문의 '첫
-  // 키 있는 기록' 이후만 알 수 있어, 로드 직후의 키 없는 기록(16:33 route.enter)이 20분 뒤
-  // 시작하는 방문에 안 붙는다(실측). 세션 행은 방문이 실제로 언제 시작했는지 알고 있다.
-  const sessions = await fetchAllRows<{
-    visit_key: string | null;
-    account_hash: string | null;
-    role: string;
-    device: string;
-    started_at: string;
-    last_seen_at: string | null;
-  }>((from, to) =>
-    supabase
-      .from("visit_session")
-      .select("visit_key, account_hash, role, device, started_at, last_seen_at")
-      .eq("day", day)
-      .not("visit_key", "is", null)
-      .range(from, to)
-  );
-  // 같은 visit_key의 여러 구간을 한 방문으로 합친다(0061 — 구간은 탭 숨김마다 끊긴다).
-  const sessionSpans = new Map<string, HostVisit>();
-  const spanDevice = new Map<string, string>();
-  for (const v of sessions) {
-    if (!v.visit_key) continue;
-    if (!spanDevice.has(v.visit_key)) spanDevice.set(v.visit_key, v.device);
-    const st = Date.parse(v.started_at);
-    const en = Date.parse(v.last_seen_at ?? v.started_at);
-    const cur = sessionSpans.get(v.visit_key);
-    if (cur) {
-      cur.startMs = Math.min(cur.startMs, st);
-      cur.endMs = Math.max(cur.endMs, en);
-      continue;
-    }
-    sessionSpans.set(v.visit_key, {
-      key: v.visit_key,
-      accountHash: v.account_hash,
-      role: v.role,
-      startMs: st,
-      endMs: en
-    });
-  }
-  const spanHosts = [...sessionSpans.values()];
-
-  // ②-b 키 없는 행 — 서버 액션(sessionStorage를 못 봄)과 옛 기록(키가 붙기 전 찍힌 것).
+  // ② 키 없는 행 — 서버 액션(sessionStorage를 못 봄)과 키를 못 만든 탭(사생활 모드 등).
   for (const r of rows) {
     if (r.visit_key) continue;
     const item = itemOf(r);
     const hosts = [...byKey.values()].map((v) => ({
       key: v.key,
       accountHash: hostOf.get(v.key)?.accountHash ?? null,
-      role: v.role,
+      role: hostOf.get(v.key)?.role ?? "",
       startMs: v.startMs,
       endMs: v.endMs
     }));
     const ev = { t: item.t, accountHash: r.account_hash, role: r.role };
-    // 세션 구간이 우선 — 방문의 진짜 시작·끝을 아는 쪽이다. 없으면 행동 기록 방문으로 폴백.
-    const span = chooseHostVisit(ev, spanHosts, 60_000);
-    if (span) {
-      const existing = byKey.get(span.key);
-      if (existing) addTo(existing, item);
-      else openVisit(span.key, r, item);
-      continue;
-    }
     const host = chooseHostVisit(ev, hosts);
     if (host) {
       addTo(byKey.get(host.key) as ActivityVisit, item);
       continue;
     }
-    // 붙일 방문이 없으면 계정·역할로 안정적인 키를 만든다. 등장 순서 번호를 쓰면 리포트를
+    // 붙일 방문이 없으면 계정으로 안정적인 키를 만든다. 등장 순서 번호를 쓰면 리포트를
     // 다시 받을 때(진단 포함 여부로 행 수가 달라짐) 번호가 밀려 **다른 방문**을 가리킨다(실측).
     noKey += 1;
-    const key = `nk:${r.account_hash ?? `anon-${noKey}`}:${r.role}`;
+    const key = `nk:${r.account_hash ?? `n${noKey}`}`;
     const existing = byKey.get(key);
     if (existing) addTo(existing, item);
     else openVisit(key, r, item);
-  }
-
-  // ③ 행동 기록이 한 줄도 없는 세션 구간 — 그래도 '방문'이다. 예전엔 activity_event 행이 있어야만
-  // 방문이 만들어져, 접속 시간표에는 "관리자 11분"이 있는데 타임라인에는 그 방문이 아예 없었다
-  // (2026-09-28 소유자 지적). 세션이 뼈대, 행동 기록은 살 — 살이 없어도 뼈대는 보여준다.
-  for (const span of spanHosts) {
-    if (byKey.has(span.key)) continue;
-    byKey.set(span.key, {
-      key: span.key,
-      account: accountLabel(span.accountHash),
-      role: span.role,
-      device: spanDevice.get(span.key) ?? "unknown",
-      startMs: span.startMs,
-      endMs: span.endMs,
-      items: []
-    });
   }
 
   // 두 번에 나눠 담았으니 방문 안 시간 순서를 다시 맞춘다(화면은 시간 순으로 읽는다).
@@ -324,16 +231,14 @@ export async function getActivityDayAction(
 }
 
 // ── 사용량 집계 — "어떤 버튼·화면이 안 쓰이나" ──
-// 내부자는 activity_event(행), 시청자·비로그인은 activity_daily_count(개수)에 있으므로 둘을 합친다.
+// activity_event(개발자 본인의 행)만 센다. 시청자 날짜별 개수(activity_daily_count)는 2026-11-13부터
+// 쌓이지 않아 읽지 않는다(표는 남겨 둔다). 역할 구분도 없다 — 기록되는 사람이 개발자 하나뿐이다.
 // 적은 순으로 보여주는 게 요점이다: 많이 쓰이는 건 이미 알고 있고, 판단이 필요한 건 바닥 쪽이다.
 
 export type UsageRow = {
   kind: string;
   label: string;
   target: string;
-  // 역할별 횟수. 나중에 "이 기능은 매니저만 쓴다" 같은 판단을 하려면 뭉쳐두면 안 된다.
-  // 비로그인은 시청자로 합친다(둘을 가르는 게 지금 판단에 보태는 게 없다).
-  roles: Record<string, number>;
   total: number;
   auto: boolean; // target이 auto: 접두사 = 마크업에서 유추한 id(마크업이 바뀌면 갈라진다)
 };
@@ -361,30 +266,19 @@ export async function getActivityUsageAction(days = 30, anchor?: string): Promis
 
   // 여기도 같은 상한에 걸린다 — 30일치 클릭은 쉽게 1000행을 넘고, 넘는 순간 '적게 쓰인 기능'이
   // 앞쪽 1000행만 보고 순위를 매겨 조용히 틀린 답을 낸다.
-  const [eventRows, countRows] = await Promise.all([
-    fetchAllRows<{ kind: string; target: string | null; role: string }>((from, to) =>
-      supabase
-        .from("activity_event")
-        .select("kind, target, role")
-        .gte("day", since)
-        .lte("day", until)
-        .in("kind", ["ui.click", "section.enter", "route.enter"])
-        .eq("diag", false)
-        .range(from, to)
-    ),
-    fetchAllRows<{ kind: string; target: string | null; role: string; count: number }>((from, to) =>
-      supabase
-        .from("activity_daily_count")
-        .select("kind, target, role, count")
-        .gte("day", since)
-        .lte("day", until)
-        .in("kind", ["ui.click", "section.enter", "route.enter"])
-        .range(from, to)
-    )
-  ]);
+  const eventRows = await fetchAllRows<{ kind: string; target: string | null }>((from, to) =>
+    supabase
+      .from("activity_event")
+      .select("kind, target")
+      .gte("day", since)
+      .lte("day", until)
+      .in("kind", ["ui.click", "section.enter", "route.enter"])
+      .eq("diag", false)
+      .range(from, to)
+  );
 
   const acc = new Map<string, UsageRow>();
-  const bump = (kind: string, target: string | null, role: string, n: number) => {
+  const bump = (kind: string, target: string | null) => {
     // 날짜·id가 든 화면 주소는 한 화면으로 접어 센다(/replay/<날짜> 30개 → 다시보기 페이지 1줄).
     const t = kind.startsWith("route.") && target ? canonRouteTarget(target) : (target ?? "");
     // 대상이 없는 기록(옛 클라이언트가 target 없이 보낸 section.enter/ui.click 몇 건)은 '기능'이 아니다 —
@@ -397,24 +291,15 @@ export async function getActivityUsageAction(days = 30, anchor?: string): Promis
         kind,
         label: KIND_LABEL[kind] ?? kind,
         target: t,
-        roles: {},
         total: 0,
         auto: t.startsWith("auto:")
       };
       acc.set(key, row);
     }
-    // 비로그인은 시청자와 **가른다**. 합쳤더니 "편집실에 시청자"처럼 설명 안 되는 줄이 생겼다
-    // (로그아웃 직후 남은 배치가 세션 없이 올라가 anon으로 기록된 것). 갈라두면 그 자리에서 읽힌다.
-    row.roles[role] = (row.roles[role] ?? 0) + n;
-    row.total += n;
+    row.total += 1;
   };
 
-  for (const r of eventRows) {
-    bump(r.kind, r.target, r.role, 1); // activity_event에는 내부자만 들어간다(0063)
-  }
-  for (const r of countRows) {
-    bump(r.kind, r.target, r.role, r.count ?? 0);
-  }
+  for (const r of eventRows) bump(r.kind, r.target);
 
   // 적은 순 — 판단이 필요한 건 바닥 쪽이다.
   const rows = [...acc.values()].sort((a, b) => a.total - b.total || a.target.localeCompare(b.target));

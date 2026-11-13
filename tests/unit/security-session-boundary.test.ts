@@ -24,7 +24,6 @@ import { resolveCurrentActor } from "@/lib/auth/actor";
 import { getActivityDayAction, getActivityUsageAction } from "@/lib/activity/query";
 import { recordActivityBatch } from "@/lib/activity/record";
 import { POST as logout } from "@/app/api/auth/logout/route";
-import { GET as presence } from "@/app/api/developer/presence/route";
 
 // Real actor/route/reader/writer functions, synthetic Auth/DB only. These tests
 // establish no genuine OAuth, cookie invalidation or production RLS evidence.
@@ -121,11 +120,6 @@ describe("developer-only operational readers", () => {
     state.user = role === "anonymous" ? null : user(role === "owner" ? OWNER : "synthetic-viewer@example.invalid");
     expect(await getActivityDayAction(DAY, true)).toEqual(denied);
     expect(await getActivityUsageAction(7, DAY)).toEqual(denied);
-    const response = await presence();
-    expect(response.status).toBe(role === "anonymous" ? 401 : 403);
-    expect(response.headers.get("cache-control")).toContain("no-store");
-    expect(response.headers.get("vary")).toBe("Cookie");
-    expect(await response.text()).not.toContain(PRIVATE);
     expect(db.reads.every(table => table === "platform_admins")).toBe(true);
     expect(db.writes).toEqual([]); expect(db.rpc).not.toHaveBeenCalled();
   });
@@ -134,7 +128,10 @@ describe("developer-only operational readers", () => {
     state.user = user(DEVELOPER); state.developer = true;
     expect(await getActivityDayAction(DAY)).toEqual({ ok: true, visits: [], total: 0 });
     expect(await getActivityUsageAction(7, DAY)).toMatchObject({ ok: true, rows: [], since: "2026-06-05", until: DAY });
-    expect(db.reads).toEqual(expect.arrayContaining(["activity_event", "visit_session", "activity_daily_count"]));
+    expect(db.reads).toEqual(expect.arrayContaining(["activity_event"]));
+    // 방문 세션·시청자 날짜별 개수는 2026-11-13 철수 — 더는 읽지 않는다.
+    expect(db.reads).not.toContain("visit_session");
+    expect(db.reads).not.toContain("activity_daily_count");
     expect(db.writes).toEqual([]); expect(db.rpc).not.toHaveBeenCalled();
   });
 });

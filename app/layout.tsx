@@ -26,9 +26,8 @@ import "./metal-water.css";
 import "./ambient.css";
 // 포스터/스튜디오 CSS는 각 컴포넌트가 직접 import한다(아래). 루트에서 전역으로 싣지 않음으로써
 // 공개 포스터만 보는 비로그인 시청자가 스튜디오 CSS(220KB)를 렌더 차단으로 받지 않게 한다.
-import { PresenceBeacon } from "@/components/presence/presence-beacon";
 import { RouteBeacon } from "@/components/activity/route-beacon";
-import { isInternalRole } from "@/lib/activity/kinds";
+import { isTrackedRole } from "@/lib/activity/kinds";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { OfflineIndicator } from "@/components/pwa/offline-indicator";
 import { StaleDeployGuard } from "@/components/pwa/stale-deploy-guard";
@@ -91,18 +90,13 @@ export const metadata: Metadata = {
 // 비콘은 actor가 풀리는 대로 스트리밍으로 뒤따라온다(둘 다 화면에 안 그리는 컴포넌트라
 // 늦게 붙어도 시각적 차이 없음).
 async function ActorTail() {
-  // 로그인 사용자만 실시간 프레즌스에 등록(개발자 창 접속자 현황용). 비로그인은 집계 제외.
   const actor = await resolveCurrentActor("vic");
   return (
     <>
-      {/* 방문·행동 기록은 운영자·개발자 본인에게만 깐다(2026-11-13 소유자 결정 — 시청자·비로그인은
-          기록하지 않음, 개인정보처리방침과 같은 경계). 서버도 actor로 한 번 더 막는다. */}
-      {actor.isAuthenticated && !actor.roleUncertain && isInternalRole(actor.role) ? (
-        <>
-          <PresenceBeacon role={actor.role} />
-          <RouteBeacon />
-        </>
-      ) : null}
+      {/* 행동 기록은 개발자 본인에게만 깐다(2026-11-13 소유자 결정 — 오류 추적용. 방송인·시청자·
+          비로그인은 기록하지 않음, 개인정보처리방침과 같은 경계). 서버도 actor로 한 번 더 막는다.
+          방문·체류 세션 비콘은 같은 날 통째로 철수했다. */}
+      {actor.isAuthenticated && !actor.roleUncertain && isTrackedRole(actor.role) ? <RouteBeacon /> : null}
       {/* 오프라인 열람용 서비스워커 — 공개 포스터만 캐시(비공개·스튜디오·쓰기는 손대지 않음).
           신원(이메일/anon)이 바뀌면 캐시를 비워 공유 기기에서 이전 사용자 화면이 안 남게. */}
       <ServiceWorkerRegister

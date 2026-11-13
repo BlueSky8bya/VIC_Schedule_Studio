@@ -12,6 +12,11 @@ const INTERNAL_ROLES = new Set(["owner", "manager", "worker", "developer"]);
 export function isInternalRole(role: string): boolean {
   return INTERNAL_ROLES.has(role);
 }
+/** 이용 기록(방문·화면 이동·버튼)을 남기는 역할 — 개발자 본인만(2026-11-13 소유자 결정, 오류 추적용).
+ *  방송인(owner)·시청자·비로그인은 남기지 않는다. 개인정보처리방침(app/privacy)과 같은 경계. */
+export function isTrackedRole(role: string): boolean {
+  return role === "developer";
+}
 /** 이 역할에 대해 저장할 account_hash. 내부자가 아니면 무조건 null. */
 export function accountHashForRole(role: string, hash: string | null): string | null {
   return isInternalRole(role) ? hash : null;

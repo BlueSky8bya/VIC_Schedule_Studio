@@ -202,6 +202,16 @@ const SECTION: Record<string, TargetLabel> = {
   // (save/esc/outside/cell/collapse/other). "칸 361 vs 저장 176"이 둘러보기인지 포기인지 가르기 위함.
   editor: { name: "편집 카드", area: "편집실", hint: "날짜 칸·일정 카드를 눌러 연 편집 팝오버" },
   "rest-nudge": { name: "휴식 넛지", area: "편집실", hint: "옛 기록(2026-09-03~04에만 있던 50분 휴식 카드, 철수)" },
+  // 2026-11-13 철수: 방문·실시간 탭, 역할 필터, 세션 로그(이용 기록은 개발자 본인만 — 시청자·방송인 기록 중단)
+  "usage-role": { name: "역할 고르기", area: "이용 기록", hint: "옛 기록(2026-11-13 철수)", retired: true },
+  "usage-role-all": { name: "역할 필터: 전체", area: "이용 기록", hint: "옛 기록(2026-11-13 철수)", retired: true },
+  "visit-scope-viewer": { name: "범위: 시청자", area: "인사이트", hint: "옛 기록(2026-11-13 철수)", retired: true },
+  "visit-scope-operator": { name: "범위: 운영진", area: "인사이트", hint: "옛 기록(2026-11-13 철수)", retired: true },
+  "visit-scope-all": { name: "범위: 전체", area: "인사이트", hint: "옛 기록(2026-11-13 철수)", retired: true },
+  "vlog-role": { name: "세션 로그 역할", area: "이용 기록", hint: "옛 기록(2026-11-13 철수)", retired: true },
+  "vlog-stay": { name: "세션 로그 체류", area: "이용 기록", hint: "옛 기록(2026-11-13 철수)", retired: true },
+  "visit-view": { name: "방문 일별/주별", area: "인사이트", opts: { day: "일별", week: "주별" }, hint: "옛 기록(2026-11-13 철수)", retired: true },
+  "visit-dim": { name: "방문 역할별/기기별", area: "인사이트", opts: { role: "역할별", device: "기기별" }, hint: "옛 기록(2026-11-13 철수)", retired: true },
   // 꾸미기는 라우트로 잡히므로 섹션 계측을 뺐다 — 옛 기록만 남는다.
   decorate: { name: "꾸미기", area: "옛 화면", hint: "옛 기록(지금은 화면 진입으로 셈)" }
 };
@@ -463,8 +473,6 @@ export const ACT: Record<string, TargetLabel> = {
   "usage-retired-open": { name: "지운 기능 묶음 접기/펴기", area: "이용 기록" },
   "usage-area": { name: "위치 고르기", area: "이용 기록" },
   "usage-area-all": { name: "위치 필터: 전체", area: "이용 기록" },
-  "usage-role": { name: "역할 고르기", area: "이용 기록" },
-  "usage-role-all": { name: "역할 필터: 전체", area: "이용 기록" },
   "usage-kind": { name: "종류 고르기", area: "이용 기록" },
   "usage-filter-reset": { name: "필터 초기화", area: "이용 기록" },
   "legend-item": { name: "태그 범례 누르기", area: "시청자 화면", hint: "태그로 걸러 보기" },
@@ -478,9 +486,6 @@ export const ACT: Record<string, TargetLabel> = {
   "usage-kind-ui.click": { name: "종류 필터: 버튼", area: "이용 기록" },
   "usage-kind-route.enter": { name: "종류 필터: 화면", area: "이용 기록" },
   "usage-kind-section.enter": { name: "종류 필터: 창", area: "이용 기록" },
-  "visit-scope-viewer": { name: "범위: 시청자", area: "인사이트" },
-  "visit-scope-operator": { name: "범위: 운영진", area: "인사이트" },
-  "visit-scope-all": { name: "범위: 전체", area: "인사이트" },
 
   // ── 2026-08-05: '이름 없는 버튼 여러 개(.button)'로 뭉쳐 있던 것들. 공통 모양(.button)만
   // 걸친 버튼이라 마크업 유추가 전부 한 항목이 됐다 — 소스에 data-act를 박아 갈라냈다.
@@ -603,8 +608,6 @@ export const ACT: Record<string, TargetLabel> = {
   "showcase-band": { name: "감상 중 시간대", area: "배경 감상", hint: "감상 세션의 시간대 선택" },
   "showcase-weather": { name: "감상 중 날씨", area: "배경 감상", hint: "감상 세션의 날씨 선택" },
   "showcase-gfx": { name: "감상 중 배경 효과", area: "배경 감상", hint: "설정의 배경 효과와 같은 상태" },
-  "vlog-role": { name: "세션 로그 역할", area: "이용 기록" },
-  "vlog-stay": { name: "세션 로그 체류", area: "이용 기록" },
   "insights-panel-prev": { name: "인사이트 이전 장", area: "인사이트", hint: "월별 인사이트 창의 ‹" },
   "insights-panel-next": { name: "인사이트 다음 장", area: "인사이트", hint: "월별 인사이트 창의 ›" },
   "minsights-panel-prev": { name: "내 인사이트 이전 장", area: "편집실" },
@@ -794,8 +797,6 @@ export const ACT: Record<string, TargetLabel> = {
   "insights-archive-year": { name: "연간 보관함 연도", area: "설정", hint: "설정 창 개발자 묶음 — 연간 아카이브(0160)" },
   "insights-archive-month": { name: "연간 보관함 달", area: "설정", hint: "설정 창 개발자 묶음 — 연간 아카이브(0160)" },
   "insights-archive-build": { name: "연간 보관함 만들기", area: "설정", hint: "끝난 해(12월 31일 지남)를 통째로 지금 계산" },
-  "visit-view": { name: "방문 일별/주별", area: "인사이트", opts: { day: "일별", week: "주별" } },
-  "visit-dim": { name: "방문 역할별/기기별", area: "인사이트", opts: { role: "역할별", device: "기기별" } },
 
   // 배경 감상 — 날짜 고르기
   "showcase-date-prev": { name: "감상 날짜: 이전 달", area: "배경 감상" },
@@ -808,7 +809,9 @@ export const ACT: Record<string, TargetLabel> = {
   "not-found-home": { name: "없는 페이지에서 홈으로", area: "기타" },
   "settings-privacy": { name: "개인정보처리방침 열기", area: "기타", hint: "설정 창 맨 아래(2026-11-13)" },
   "settings-terms": { name: "이용약관 열기", area: "기타", hint: "설정 창 맨 아래(2026-11-13)" },
-  "legal-home": { name: "약관·방침 → 일정표로", area: "기타" },
+  "footer-privacy": { name: "일정표 맨 아래 → 개인정보처리방침", area: "기타" },
+  "footer-terms": { name: "일정표 맨 아래 → 이용약관", area: "기타" },
+  "legal-home": { name: "약관·방침 → 일정표로 돌아가기", area: "기타" },
   "legal-privacy": { name: "이용약관 → 개인정보처리방침", area: "기타" },
   "legal-terms": { name: "개인정보처리방침 → 이용약관", area: "기타" },
   "art-filter": { name: "아트 보드 필터 칩", area: "편집실", hint: "/studio/ambient-art(개발자) — 상태·계절·차수·지금 화면" },
@@ -1008,13 +1011,6 @@ export function describeTarget(kind: string, target: string): TargetLabel {
   return { name: target, area: "기타", hint: "이름이 등록되지 않은 항목", unnamed: true };
 }
 
-// 역할 표기 — 지표에서 뭉치지 않는다. "이 기능은 매니저만 쓴다" 같은 판단은 역할이 살아 있어야
-// 가능하다.
-//
-// **비로그인(anon)을 시청자로 합치지 않는다.** 합쳤더니 "편집실에 시청자 1"처럼 설명 안 되는
-// 줄이 생겼다(실측). 편집실은 시청자가 못 들어가는데 왜? — 로그아웃 직후 남아 있던 배치가
-// 세션 없이 올라가 anon으로 기록된 것이었다. 둘을 갈라두면 그 자리에서 읽힌다.
-// (매니저·작업자는 철수 — 옛 기록의 이름은 ROLE_NAME에 남기고 순서/필터에서는 뺀다.)
 /**
  * '위치'는 **화면에서 갈 수 있는 한 곳**이다(2026-09-05 정리 — 소유자: "검사·공통·관리·그림판·
  * 일정 그림판… 종류가 왜 이리 많고 뭐가 뭔지 헷갈린다").
@@ -1053,60 +1049,7 @@ export function sortAreas(areas: readonly string[]): string[] {
   return [...areas].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b, "ko"));
 }
 
-export const ROLE_ORDER = ["owner", "developer", "viewer", "anon", "unknown"] as const;
-export const ROLE_NAME: Record<string, string> = {
-  owner: "관리자",
-  manager: "매니저",
-  worker: "작업자",
-  developer: "개발자",
-  viewer: "시청자",
-  anon: "비로그인",
-  // 로그인은 했는데 역할 조회가 실패해 최소 권한으로 떨어진 기록(2026-09-05, lib/auth/actor.ts).
-  // 'viewer'로 적으면 "시청자가 편집실 버튼을 눌렀다"는 거짓이 되므로 따로 남긴다.
-  unknown: "역할 확인 못 함"
-};
-/**
- * 사용량 화면의 역할 필터 계수.
- *
- * ⚠ 2026-09-05: 예전엔 '시청자'가 **비로그인을 포함**했다("시청자가 늘 0건으로 보인다"는 이유).
- * 그 합치기가 소유자 신고("시청자가 누를 수 없는 버튼인데 시청자가 눌렀다고 나온다")의 직접 원인이었다 —
- * 세션이 끊긴 뒤 도착한 관리자·개발자 배치는 anon으로 저장되는데, 화면에서 그게 '시청자 N번'이 됐다.
- * 지금은 합치지 않는다(타임라인이 이미 같은 이유로 갈라 두고 있었다 — 두 화면의 철학이 어긋나 있었다).
- */
-export function usageRoleCount(roles: Record<string, number>, role: string): number {
-  return roles[role] ?? 0;
-}
-
-/** 사용량 화면의 역할 목록. 비로그인·역할 확인 못 함까지 **갈라서** 보여준다(위 주석).
- *  '작업자'·'매니저'는 뺐다(역할 자체가 철수): 고를 수 없는 역할의 필터는 죽은 칩이다.
- *  옛 기록의 횟수는 내역 줄(usageRoleBreakdown)에 이름 그대로 계속 나온다. */
-export const USAGE_ROLE_ORDER = ["owner", "developer", "viewer", "anon", "unknown"] as const;
-
-/** 사용량 화면 역할 내역 — 타임라인과 같은 규칙(갈라서 센다). */
-export function usageRoleBreakdown(roles: Record<string, number>): string {
-  const parts = USAGE_ROLE_ORDER.filter((r) => (roles[r] ?? 0) > 0).map(
-    (r) => `${ROLE_NAME[r]} ${roles[r]}`
-  );
-  for (const [k, v] of Object.entries(roles)) {
-    if (!USAGE_ROLE_ORDER.includes(k as (typeof USAGE_ROLE_ORDER)[number]) && v > 0) {
-      // 목록에서 뺀 옛 역할(매니저·작업자)도 이름이 있으면 사람 말로 — 기록을 버리지 않는다.
-      parts.push(`${ROLE_NAME[k] ?? k} ${v}`);
-    }
-  }
-  return parts.join(" · ") || "기록 없음";
-}
-
-/** 역할별 횟수를 "관리자 3 · 개발자 12" 같은 한 줄로. 0인 역할은 뺀다. */
-export function roleBreakdown(roles: Record<string, number>): string {
-  const parts = ROLE_ORDER.filter((r) => (roles[r] ?? 0) > 0).map(
-    (r) => `${ROLE_NAME[r]} ${roles[r]}`
-  );
-  // 순서에서 뺀 옛 역할(매니저·작업자)은 사람 말로 뒤에 붙이고, 사전에 없는 역할이 생겨도 버리지 않는다(지어내지 않는 원칙).
-  for (const [k, v] of Object.entries(roles)) {
-    if (!ROLE_ORDER.includes(k as (typeof ROLE_ORDER)[number]) && v > 0) parts.push(`${ROLE_NAME[k] ?? k} ${v}`);
-  }
-  return parts.join(" · ") || "기록 없음";
-}
+// (역할 표기·역할별 분해·역할 필터는 2026-11-13 철수 — 이용 기록은 개발자 본인의 기록만 남는다.)
 
 /** This namespace counts explicit operations, never personal contents. Unknown
  * controls still require registeredActivityTarget before they may be sent. */

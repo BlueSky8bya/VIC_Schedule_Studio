@@ -80,9 +80,10 @@ describe("호출부는 페이지네이션 규칙을 재구현하지 않는다", 
     const files = ["lib/activity/query.ts", "lib/insights/actions.ts"];
     for (const f of files) {
       const src = fs.readFileSync(path.join(process.cwd(), f), "utf8");
-      expect(src).toContain('from "@/lib/db/paginate"');
       // 로컬 재구현(자체 PAGE 상수 + range 루프)이 다시 생기면 잡는다.
       expect(src).not.toMatch(/const PAGE = 1000;/);
     }
+    // 큰 표를 끝까지 받는 호출부(행동 기록)는 공용 헬퍼를 쓴다. (인사이트의 방문 세션 조회는 2026-11-13 철수.)
+    expect(fs.readFileSync(path.join(process.cwd(), "lib/activity/query.ts"), "utf8")).toContain('from "@/lib/db/paginate"');
   });
 });

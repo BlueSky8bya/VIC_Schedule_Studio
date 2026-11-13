@@ -35,21 +35,30 @@ let ageTimer: number | null = null;
 let wired = false;
 let clickWired = false;
 
-// 방문(탭) 식별자 — 비콘이 sessionStorage에 넣어둔 값과 같은 키를 읽는다(같은 탭 = 같은 방문).
-// 여기서 만들지는 않는다. 비콘이 아직 안 돌았으면 null로 두고, 다음 이벤트에서 다시 시도한다.
+// 방문(탭) 식별자 — 한 탭의 기록을 한 묶음으로 잇는 키. sessionStorage는 탭을 닫으면 사라지고
+// 사이트 안 이동·새로고침에는 살아남아 "탭 하나 = 방문 하나"가 된다. 값에 KST 날짜를 함께 박아
+// 켜둔 채 자정을 넘기면 새 키로 끊는다(기록의 day와 어긋나지 않게).
+// 2026-11-13 방문 비콘(PresenceBeacon)을 철수하면서 키를 만드는 일을 여기로 옮겼다.
+// sessionStorage·crypto.randomUUID를 못 쓰면 null — 서버가 시간으로 가까운 묶음에 붙인다.
 const VISIT_KEY_STORE = "vic:visitKey";
+const kstDay = () => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
 function currentVisitKey(): string | null {
   try {
-    const raw = window.sessionStorage.getItem(VISIT_KEY_STORE) ?? "";
+    const store = window.sessionStorage;
+    const day = kstDay();
+    const raw = store.getItem(VISIT_KEY_STORE) ?? "";
     const sep = raw.indexOf("|");
-    return sep > 0 ? raw.slice(sep + 1) : null;
+    if (sep > 0 && raw.slice(0, sep) === day) return raw.slice(sep + 1);
+    const key = crypto.randomUUID();
+    store.setItem(VISIT_KEY_STORE, `${day}|${key}`);
+    return key;
   } catch {
     return null;
   }
 }
 
-// 운영자·개발자 화면에서만 켜진다(RouteBeacon은 그들에게만 깔린다 — app/layout.tsx).
-// 시청자·비로그인 화면에서는 기록을 서버로 보내지 않고 버린다(2026-11-13 소유자 결정).
+// 개발자 화면에서만 켜진다(RouteBeacon은 개발자에게만 깔린다 — app/layout.tsx).
+// 그 밖의 화면에서는 기록을 서버로 보내지 않고 버린다(2026-11-13 소유자 결정).
 let enabled = false;
 export function enableActivityLogging(): void {
   enabled = true;
@@ -60,10 +69,8 @@ function send(batch: Pending[], keepalive: boolean): void {
   if (!enabled) return;
   // 자동화 브라우저·로컬 호스트의 행동은 기록하지 않는다(lib/analytics/guard.ts).
   if (skipAnalyticsClient()) return;
-  // 방문 키는 **보낼 때** 다시 찍는다. 쌓을 때만 읽으면, 페이지가 열린 직후의 기록
-  // (route.enter 등)이 비콘보다 먼저 나가 visit_key 없이 저장된다 → 같은 탭인데도 방문이
-  // 둘로 갈려 "60분 방문에 항목 1건"이 됐다(2026-08-05 실측). flush는 최소 몇 초 뒤라
-  // 그때는 키가 있다. 그래도 없으면(사생활 모드 등) null 그대로 — 서버가 계정·시간으로 붙인다.
+  // 방문 키는 **보낼 때** 찍는다(쌓은 기록에 키가 없으면 여기서 채운다). 못 만들면(사생활 모드 등)
+  // null 그대로 — 서버가 시간으로 가까운 묶음에 붙인다.
   const stamped = batch.map((e) => (e.visitKey ? e : { ...e, visitKey: currentVisitKey() }));
   try {
     void fetch("/api/activity", {
@@ -209,7 +216,8 @@ export function logActivity(
     target,
     meta: companion ? null : opts.meta ?? null,
     durMs: !companion && typeof opts.durMs === "number" ? opts.durMs : null,
-    visitKey: currentVisitKey()
+    // 기록이 꺼진 화면(개발자 아님)에서는 키를 만들지도 않는다 — 탭에 식별자를 남기지 않는다.
+    visitKey: enabled ? currentVisitKey() : null
   });
   if (firstAt === 0) firstAt = Date.now();
   // Transport control stays out of Pending/the payload and takes priority over

@@ -42,13 +42,14 @@ describe("진단 층 — 촘촘하되 짧게", () => {
 });
 
 describe("public presence privacy boundary", () => {
-  it("does not create an anonymous presence channel or publish role and tab state", () => {
+  it("does not create an anonymous presence channel, and the visit beacon stays retired", () => {
     const source = fs.readFileSync(path.join(process.cwd(), "lib/presence/presence-client.ts"), "utf8");
-    const beacon = fs.readFileSync(path.join(process.cwd(), "components/presence/presence-beacon.tsx"), "utf8");
     expect(source).not.toMatch(/createBrowserClient|\.channel\(|\.track\(|presenceState/);
-    expect(beacon).not.toContain("startPresence");
-    expect(beacon).toContain('fetch("/api/presence"');
-    expect(beacon).toContain('keepalive: true');
+    // 방문·체류 세션 비콘은 2026-11-13 철수(개발자 행동 기록만 남김).
+    expect(fs.existsSync(path.join(process.cwd(), "components/presence/presence-beacon.tsx"))).toBe(false);
+    expect(fs.existsSync(path.join(process.cwd(), "app/api/presence/route.ts"))).toBe(false);
+    const layout = fs.readFileSync(path.join(process.cwd(), "app/layout.tsx"), "utf8");
+    expect(layout).not.toContain("PresenceBeacon");
   });
 });
 

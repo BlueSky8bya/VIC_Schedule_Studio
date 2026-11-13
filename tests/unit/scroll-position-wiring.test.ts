@@ -2,16 +2,15 @@ import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
-// 스크롤바를 그리지 않는 목록(행동 타임라인 · 적게 쓰인 기능 · 세션 로그 두 곳)은 "지금 어디쯤"을
+// 스크롤바를 그리지 않는 목록(행동 타임라인 · 적게 쓰인 기능)은 "지금 어디쯤"을
 // 다른 수단으로 말해야 한다(2026-09-11 소유자). 표시기는 목록의 직계 자식과 data-pos를 읽으므로,
 // 둘 중 하나만 빠져도 조용히 아무것도 안 나온다 — 그래서 배선을 못으로 박아 둔다.
 const read = (p: string) => fs.readFileSync(path.join(process.cwd(), p), "utf8");
 
 const LISTS: { file: string; list: string }[] = [
   { file: "components/developer/activity-timeline.tsx", list: "act-visits" },
-  { file: "components/developer/activity-usage.tsx", list: "usage-list" },
-  { file: "components/developer/day-visit-modal.tsx", list: "vlog" },
-  { file: "components/developer/insights-dashboard.tsx", list: "vlog" }
+  { file: "components/developer/activity-usage.tsx", list: "usage-list" }
+  // (세션 로그 두 곳은 2026-11-13 방문 기록 철수와 함께 사라졌다.)
 ];
 
 describe("읽는 위치 표시기 배선", () => {

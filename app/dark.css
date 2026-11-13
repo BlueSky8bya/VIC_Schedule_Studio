@@ -372,17 +372,15 @@ html[data-theme="dark"] :is(.rhh-dev-tag, .role-help-preview, .modal-discard-ask
 }
 
 /* ── Records, charts, taxonomy and developer windows ──────────────────── */
-html[data-theme="dark"] :is(.insights-tab, .insights-arrow, .insights-subtabs button,
+html[data-theme="dark"] :is(.insights-tab, .insights-arrow,
   .insight-tile, .insight-next, .insight-trend, .highlight-card, .insight-empty,
-  .insight-banner, .insight-rows li, .insight-change-passcode,
-  .developer-panel-list li, .vt-toolbar, .perf-row, .tag-editor-row) {
+  .insight-banner, .insight-rows li, .insight-change-passcode, .perf-row, .tag-editor-row) {
   background: var(--surface-2);
   border-color: var(--night-line);
   color: var(--ink-soft);
 }
-html[data-theme="dark"] :is(.insights-tab:hover, .insights-arrow:hover:not(:disabled),
-  .insights-subtabs button:hover, .highlight-card:hover, .insight-tile:hover) { background: var(--night-hover); }
-html[data-theme="dark"] :is(.insights-tab.active, .insights-subtabs button.active) {
+html[data-theme="dark"] :is(.insights-tab:hover, .insights-arrow:hover:not(:disabled), .highlight-card:hover, .insight-tile:hover) { background: var(--night-hover); }
+html[data-theme="dark"] :is(.insights-tab.active) {
   background: var(--studio-action-tint);
   color: var(--seg-on-accent-ink);
   border-color: rgb(var(--studio-action-rgb) / 40%);
@@ -390,11 +388,10 @@ html[data-theme="dark"] :is(.insights-tab.active, .insights-subtabs button.activ
 }
 html[data-theme="dark"] :is(.insights-month, .insight-tile strong, .insight-headline,
   .insight-next > strong, .insight-rows li strong, .insight-bar-count,
-  .trend-head strong, .hl-main, .vt-tip > strong, .developer-panel-list .dp-count) { color: var(--ink); }
+  .trend-head strong, .hl-main, .vt-tip > strong) { color: var(--ink); }
 html[data-theme="dark"] :is(.insight-tile span, .insight-note, .insight-subhead, .insight-bar-label,
   .insight-rows li span, .insight-next > span, .insights-refresh, .trend-head > span,
-  .trend-bcol > span, .vt-day, .vt-legend, .vt-tip-note, .bcast-chips, .bcast-dx,
-  .developer-panel-hint, .developer-panel-subhead, .perf-thead, .hl-lbreak) { color: var(--muted); }
+  .trend-bcol > span, .vt-day, .vt-legend, .vt-tip-note, .bcast-chips, .bcast-dx, .perf-thead, .hl-lbreak) { color: var(--muted); }
 html[data-theme="dark"] :is(.insight-bar-track, .insight-skel span, .trend-spark, .bcast-trend) { background-color: var(--surface-2); }
 html[data-theme="dark"] :is(.vt-tip, .bcast-tip, .hl-tip),
 html[data-theme="dark"] .trend-bar::after {
@@ -496,14 +493,12 @@ html[data-theme="dark"] .viewer-ambient-ctl:is(.slot-showcase, .rail-showcase) .
 }
 html[data-theme="dark"] :is(.showcase-gear, .showcase-gear.on, .showcase-set) { background: var(--surface); color: var(--ink-soft); border-color: var(--night-line); }
 
-html[data-theme="dark"] :is(.insight-headline, .dp-live-tile, .dp-live-tile.is-watching,
-  .vsum, .vsum-kpis li, .vins, .vlog-row, .sec-kpis li, .sys-emails li,
+html[data-theme="dark"] :is(.insight-headline, .sec-kpis li, .sys-emails li,
   .sys-commit, .insight-chip, .badge-criteria li, .tge-empty) {
   background: var(--surface-2); color: var(--ink-soft); border-color: var(--night-line);
 }
-html[data-theme="dark"] :is(.highlight-card .hl-main, .highlight-card .hl-label, .access-email,
-  .developer-panel-list .dp-role, .perf-label, .dp-live-tile strong) { color: var(--ink); }
-html[data-theme="dark"] :is(.highlight-card .hl-sub, .perf-num, .dp-live-tile span, .vsum-kpis span) { color: var(--muted); }
+html[data-theme="dark"] :is(.highlight-card .hl-main, .highlight-card .hl-label, .access-email, .perf-label) { color: var(--ink); }
+html[data-theme="dark"] :is(.highlight-card .hl-sub, .perf-num) { color: var(--muted); }
 html[data-theme="dark"] .tge-seg-btn.is-on .tge-seg-n { background: var(--studio-action-tint); color: var(--seg-on-accent-ink); }
 html[data-theme="dark"] :is(.agenda-month, .agenda-debut) { color: var(--accent-strong); }
 html[data-theme="dark"] :is(.agenda-legend-tag, .agenda-title-text, .agenda-title .pill-sub-text,
@@ -565,12 +560,11 @@ html[data-theme="dark"] :is(.auth-panel h1, .auth-panel p, .auth-panel-login .ey
 
 html[data-theme="dark"] .poster-surface { background: var(--surface-2); }
 html[data-theme="dark"] .poster-page :is(.insights-open, .viewer-preview-actions .button, .account-form .button) .lbl { color: var(--ink-soft); }
-html[data-theme="dark"] :is(.agenda-tier-help, .dvm-tabs, .dvm-keys, .vlog) {
+html[data-theme="dark"] :is(.agenda-tier-help, .dvm-tabs, .dvm-keys) {
   background: var(--surface-2); border-color: var(--night-line); color: var(--ink-soft);
   box-shadow: var(--gs-metal-edge);
 }
-html[data-theme="dark"] :is(.agenda-tier-help strong, .dvp-date, .dvm-head .dvp-date,
-  .vsum-kpis b, .vsum-split, .sec-kpis b, .sys-email, .vlog-dur, .bcast-chips strong,
+html[data-theme="dark"] :is(.agenda-tier-help strong, .dvp-date, .dvm-head .dvp-date, .sec-kpis b, .sys-email, .bcast-chips strong,
   .vt-legend li, .badge-criteria .bc-body em) { color: var(--ink-soft); }
 html[data-theme="dark"] .badge-criteria .bc-body b { color: var(--amber); }
 html[data-theme="dark"] :is(.dvm-tab.is-on, .dvm-tab:hover) {
@@ -662,8 +656,6 @@ html[data-theme="dark"] .bp-send { background: var(--studio-action-tint); color:
 html[data-theme="dark"] :is(.bp-weekdays .sun, .bp-mini-cell.sun .bp-mini-num) { color: #ff9b94; }
 html[data-theme="dark"] :is(.bp-weekdays .sat, .bp-mini-cell.sat .bp-mini-num) { color: #98bdff; }
 html[data-theme="dark"] .bp-mini-title { background: var(--violet); color: transparent; }
-html[data-theme="dark"] .vrecent ul.vlog { background: var(--surface-2); }
-html[data-theme="dark"] .vsum-split b { color: var(--ink); }
 html[data-theme="dark"] .art-sec-bar { background: var(--night-hover); }
 html[data-theme="dark"] .rail-info-card { background: var(--night-sheen); border-color: var(--night-line); }
 html[data-theme="dark"] .ric-debut-sub { color: var(--muted); }
@@ -687,8 +679,8 @@ html[data-theme="dark"] .art-empty { background: var(--surface); color: var(--mu
 }
 
 /* Daily visit drill-down shares the same raised controls and readable ink. */
-html[data-theme="dark"] :is(.dv-total strong, .dv-breakdown li b, .act-acct, .act-name, .usage-name) { color: var(--ink); }
-html[data-theme="dark"] :is(.dv-total span, .dv-breakdown li, .act-gist, .act-span, .act-sub,
+html[data-theme="dark"] :is(.act-acct, .act-name, .usage-name) { color: var(--ink); }
+html[data-theme="dark"] :is(.act-gist, .act-span, .act-sub,
   .act-icon, .usage-gist, .usage-span, .upick-label, .usage-area) { color: var(--ink-soft); }
 html[data-theme="dark"] :is(.act-visit, .act-visit[data-open], .act-items, .upick-menu) {
   background: var(--surface-2); color: var(--ink-soft); border-color: var(--night-line);
@@ -866,10 +858,6 @@ html[data-theme="dark"] .agenda-event .event-heart { color: #d5c9c2; }
 html[data-theme="dark"] .agenda-event .event-heart.on { color: #ff9cb7; }
 
 /* Visit data: zero is the dark track, not a white heatmap cell. */
-html[data-theme="dark"] :is(.own-track, .vt-hbar, .vt-hours.empty .vt-hbar) { background: #302d37; }
-html[data-theme="dark"] .vcrit { background: #393244; color: #d0bffa; }
-html[data-theme="dark"] .vt-hours-empty { background: rgb(33 30 28 / 92%); color: var(--ink-soft); }
-html[data-theme="dark"] :is(.vmini-cell, .own-date, .vheat-wd, .vheat-axis, .hour-ticks) { color: var(--ink-soft); }
 /* The light eye-comfort amber veil desaturates every tag into the same brown.
    Dark already has warm paper/ink; keep only a faint neutral highlight on cards. */
 html[data-theme="dark"] :is(.public-event, .studio-event-pill):not([data-mixed]):not(.teaser) {

@@ -17,10 +17,11 @@ describe("archived insights tab layout", () => {
     expect(insightTabStep(3, "End", 4, rows)).toBe(3);
   });
 
-  it("drops the live panel only in the archive and lets settings scroll past it", () => {
+  it("live and archived insights share the same three panels and settings scroll past them", () => {
     const dash = readFileSync("components/developer/insights-dashboard.tsx", "utf8");
-    expect(dash).toContain('PANELS.filter((p) => p.key !== "live")');
-    expect(dash).toContain("{archived ? null : (");
+    // 실시간·방문 칸은 2026-11-13 철수 — 라이브·아카이브 모두 트렌드·일정·참여 세 칸.
+    expect(dash).not.toMatch(/key: "live"|key: "visits"|DeveloperPanel|getVisitTrendsAction/);
+    expect(dash).toContain("const panels = PANELS;");
     const css = readFileSync("components/shared/settings-modal.css", "utf8");
     expect(css).toContain(".vic-settings .rhh-archive-view .insights-panel { overscroll-behavior: auto; }");
   });

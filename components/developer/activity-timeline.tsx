@@ -2,7 +2,7 @@
 
 import { Check, Copy } from "lucide-react";
 import { type CSSProperties, useEffect, useRef, useState } from "react";
-import { deviceLabel, fmtDur, hhmm, roleColor } from "@/components/developer/insights-dashboard";
+import { deviceLabel, fmtDur, hhmm } from "@/components/developer/insights-dashboard";
 import { ScrollPosition } from "@/components/developer/scroll-position";
 import { getActivityDayAction, type ActivityVisit } from "@/lib/activity/query";
 import { describeTarget } from "@/lib/activity/labels";
@@ -15,17 +15,7 @@ import { buildGist, buildStory, describeMeta } from "@/lib/activity/narrative";
 // 표시 원칙:
 //  - 서버 이벤트(실제 변경)와 클라 이벤트(열람)를 점 색으로 구분한다 — "고쳤다"와 "봤다"는 다르다.
 //  - 일정 제목은 공개 일정만 뜬다. 비공개는 범위 라벨로만(서버가 그렇게 내려준다).
-//  - viewer·비로그인은 계정이 저장돼 있지 않아 '익명' 방문 줄로만 보인다(구조적 보장).
-
-const ROLE_LABEL: Record<string, string> = {
-  anon: "비로그인",
-  unknown: "역할 확인 못 함", // 로그인은 했는데 역할 조회가 실패한 기록(2026-09-05, lib/auth/actor.ts)
-  viewer: "시청자",
-  worker: "작업자",
-  manager: "매니저",
-  owner: "관리자",
-  developer: "개발자"
-};
+//  - 개발자 본인의 기록만 남는다(2026-11-13) — 역할·계정을 가르지 않고 탭(방문) 단위로만 묶는다.
 
 // meta 번역은 lib/activity/narrative.ts describeMeta — 화면·복사본이 같은 말을 쓴다.
 // 이름 뒤에 붙여 보여주는 meta — 여기 든 키는 meta 줄에서 뺀다.
@@ -176,7 +166,6 @@ export function ActivityTimeline({
   reloadKey?: number;
 }) {
   const [visits, setVisits] = useState<ActivityVisit[] | null>(null);
-  const [silentVisits, setSilentVisits] = useState<ActivityVisit[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -201,14 +190,8 @@ export function ActivityTimeline({
     getActivityDayAction(dateKey, diag)
       .then((r) => {
         if (!alive) return;
-        if (r.ok) {
-          // 시청자·비로그인은 행동을 줄로 남기지 않는다(2026-08-04 결정 — 날짜별 개수만). 그래서 그들의 방문은
-          // 세션 구간만 있는 '0줄' 줄이 되는데(2026-09-28 세션만 있는 방문도 보이게 한 변경의 부작용), 열어 봐도
-          // 아무것도 없다(2026-10-06 소유자: "추적도 못 하는데 왜 있어?"). 개별 줄 대신 맨 아래 요약 한 줄로 접는다.
-          const silent = r.visits.filter((v) => (v.role === "anon" || v.role === "viewer") && v.items.length === 0);
-          setVisits(r.visits.filter((v) => !silent.includes(v)));
-          setSilentVisits(silent);
-        } else setErr(r.error);
+        if (r.ok) setVisits(r.visits);
+        else setErr(r.error);
       })
       .finally(() => {
         if (alive) {
@@ -276,7 +259,7 @@ export function ActivityTimeline({
     const changes = items.filter((i) => i.source === "server").length;
     const diagN = items.filter((i) => i.kind.startsWith("diag.")).length;
     return [
-      `[${v.account} · ${ROLE_LABEL[v.role] ?? v.role} · ${deviceLabel(v.device)}] ${hhmm(v.startMs)}–${hhmm(v.endMs)}`,
+      `[${deviceLabel(v.device)}] ${hhmm(v.startMs)}–${hhmm(v.endMs)}`,
       `항목 ${items.length}건 (변경 ${changes} · 진단 ${diagN})`
     ].join(NL);
   };
@@ -351,22 +334,13 @@ export function ActivityTimeline({
     await copy(await buildReport(v), key);
   };
 
-  // 같은 계정이 같은 날 여러 탭을 열면 방문이 탭 수만큼 갈라진다(visit_key = 탭). 그게 사실이지만
+  // 같은 날 여러 탭을 열면 방문이 탭 수만큼 갈라진다(visit_key = 탭). 그게 사실이지만
   // 보는 쪽에선 "왜 여기 없지?"가 된다 — 다른 탭 줄에 쌓였을 뿐이다. 그래서 탭 번호를 붙인다.
   const tabNo = new Map<string, { n: number; of: number }>();
-  {
-    const byAccount = new Map<string, ActivityVisit[]>();
-    for (const v of visits) {
-      const list = byAccount.get(v.account);
-      if (list) list.push(v);
-      else byAccount.set(v.account, [v]);
-    }
-    for (const list of byAccount.values()) {
-      if (list.length < 2) continue; // 하나뿐이면 번호가 오히려 소음이다
-      [...list]
-        .sort((a, b) => a.startMs - b.startMs)
-        .forEach((v, i) => tabNo.set(v.key, { n: i + 1, of: list.length }));
-    }
+  if (visits.length > 1) {
+    [...visits]
+      .sort((a, b) => a.startMs - b.startMs)
+      .forEach((v, i) => tabNo.set(v.key, { n: i + 1, of: visits.length }));
   }
 
   return (
@@ -472,23 +446,15 @@ export function ActivityTimeline({
                   <span className="act-caret" aria-hidden="true">
                     {isOpen ? "▾" : "▸"}
                   </span>
-                  {/* 점은 **역할 색**(관리자=민트·개발자=파랑·매니저=보라…). 예전엔 기기 색이라
-                      개발자와 관리자가 같은 파랑으로 보여 줄이 안 갈렸다(실측 지적).
-                      기기는 아래 줄에 글자로 이미 나오므로 색까지 쓸 필요가 없다. */}
-                  <span
-                    className="act-dev"
-                    style={{ background: roleColor(v.role) }}
-                    title={ROLE_LABEL[v.role] ?? v.role}
-                  />
+                  {/* 역할·계정 구분은 2026-11-13 철수(기록되는 사람이 개발자 하나뿐) — 머리는 기기·탭. */}
                   <span className="act-head-main">
-                    <b className="act-acct">{v.account}</b>
-                    <span className="act-sub">
-                      <b style={{ color: roleColor(v.role) }}>{ROLE_LABEL[v.role] ?? v.role}</b> ·{" "}
+                    <b className="act-acct">
                       {deviceLabel(v.device)}
-                      {tabNo.has(v.key)
-                        ? ` · 탭 ${tabNo.get(v.key)!.n}/${tabNo.get(v.key)!.of}`
-                        : ""}
-                      {changes > 0 ? ` · 변경 ${changes}` : ""} · {rows.length}줄
+                      {tabNo.has(v.key) ? ` · 탭 ${tabNo.get(v.key)!.n}/${tabNo.get(v.key)!.of}` : ""}
+                    </b>
+                    <span className="act-sub">
+                      {changes > 0 ? `변경 ${changes} · ` : ""}
+                      {rows.length}줄
                     </span>
                   </span>
                   <span className="act-span">
@@ -588,13 +554,6 @@ export function ActivityTimeline({
           );
         })}
       </ul>
-      {silentVisits.length > 0 ? (
-        <p className="vt-occ-note act-silent">
-          시청자·비로그인 방문 {silentVisits.length}회 · 총{" "}
-          {fmtDur(Math.round(silentVisits.reduce((ms, v) => ms + Math.max(0, v.endMs - v.startMs), 0) / 1000))} — 이 방문들의 행동은 줄로 남기지
-          않고 개수로만 기록해요(이용 집계 참고).
-        </p>
-      ) : null}
       <p className="vt-occ-note">
         진한 줄 = 실제 변경 · 옅은 줄 = 열람 · 비공개는 범위만 · 보존 90일(진단 3일)
         {loadedAt ? ` · ${hhmm(loadedAt)} 기준` : ""}
