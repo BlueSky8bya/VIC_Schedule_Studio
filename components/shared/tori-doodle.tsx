@@ -10,26 +10,34 @@ export function ToriDoodle({ size = 96, className }: { size?: number; className?
 }
 
 /** 손그림 선과 같은 굵은 갈색 선으로 그린 TV — 화면 안에 손그림. 방송 미리보기 카드가 이미지를 기다리는 동안.
- *  clipPath(id 참조)는 쓰지 않는다 — 같은 화면에 숨은 사본이 있으면 url(#id)가 숨은 쪽을 가리켜 그림이 사라졌다.
- *  손그림의 실제 선은 화면 사각형 안에 들어오게 크기·위치를 맞췄다(바깥은 투명). */
+ *  손그림은 SVG <image>가 아니라 그 위에 겹친 평범한 <img>다 — 운영 화면에서 SVG <image>가 같은 주소를 끝내 불러오지
+ *  않아 TV가 비어 보였다(2026-11-13 소유자 "손그림 티비에 안 나와", 주소만 바꾸면 뜸 — 실측). 위치는 TV 화면 칸 기준 %:
+ *  화면 가운데 (88, 100) / 판 (200 × 172), 그림 한 변 106. */
 export function ToriTv({ className }: { className?: string }) {
   return (
-    <svg aria-hidden="true" className={className} viewBox="0 0 200 172">
-      {/* 안테나 */}
-      <path d="M78 40 L58 10 M122 40 L142 12" fill="none" stroke={LINE} strokeLinecap="round" strokeWidth="5" />
-      <circle cx="58" cy="10" fill={LINE} r="6" />
-      <circle cx="142" cy="12" fill={LINE} r="6" />
-      {/* 몸통 */}
-      <rect fill="#fff4dc" height="124" rx="26" stroke={LINE} strokeWidth="5" width="186" x="7" y="38" />
-      {/* 화면 + 손그림 */}
-      <rect fill={SCREEN} height="96" rx="16" width="132" x="22" y="52" />
-      <image height="106" href="/tori/doodle.webp" preserveAspectRatio="xMidYMid meet" width="106" x="35" y="47" />
-      <rect fill="none" height="96" rx="16" stroke={LINE} strokeWidth="4.5" width="132" x="22" y="52" />
-      {/* 손잡이 둘 */}
-      <circle cx="174" cy="80" fill="#ffb07a" r="8" stroke={LINE} strokeWidth="4" />
-      <circle cx="174" cy="112" fill="#ffb07a" r="8" stroke={LINE} strokeWidth="4" />
-      {/* 다리 */}
-      <path d="M44 162 L36 170 M156 162 L164 170" fill="none" stroke={LINE} strokeLinecap="round" strokeWidth="5" />
-    </svg>
+    <span aria-hidden="true" className={className} style={{ position: "relative", display: "inline-block", aspectRatio: "200 / 172" }}>
+      <svg style={{ display: "block", width: "100%", height: "100%" }} viewBox="0 0 200 172">
+        {/* 안테나 */}
+        <path d="M78 40 L58 10 M122 40 L142 12" fill="none" stroke={LINE} strokeLinecap="round" strokeWidth="5" />
+        <circle cx="58" cy="10" fill={LINE} r="6" />
+        <circle cx="142" cy="12" fill={LINE} r="6" />
+        {/* 몸통 */}
+        <rect fill="#fff4dc" height="124" rx="26" stroke={LINE} strokeWidth="5" width="186" x="7" y="38" />
+        {/* 화면 */}
+        <rect fill={SCREEN} height="96" rx="16" stroke={LINE} strokeWidth="4.5" width="132" x="22" y="52" />
+        {/* 손잡이 둘 */}
+        <circle cx="174" cy="80" fill="#ffb07a" r="8" stroke={LINE} strokeWidth="4" />
+        <circle cx="174" cy="112" fill="#ffb07a" r="8" stroke={LINE} strokeWidth="4" />
+        {/* 다리 */}
+        <path d="M44 162 L36 170 M156 162 L164 170" fill="none" stroke={LINE} strokeLinecap="round" strokeWidth="5" />
+      </svg>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        alt=""
+        draggable={false}
+        src="/tori/doodle.webp"
+        style={{ position: "absolute", left: `${(35 / 200) * 100}%`, top: `${(47 / 172) * 100}%`, width: `${(106 / 200) * 100}%`, height: "auto" }}
+      />
+    </span>
   );
 }
