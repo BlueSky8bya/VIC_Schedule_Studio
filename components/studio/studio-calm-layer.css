@@ -129,13 +129,9 @@
   background: rgb(var(--studio-action-rgb) / 12%);
   border-color: rgb(var(--studio-action-rgb) / 32%);
 }
-/* 설정(톱니, 2026-09-04) — 멤버 관리 타일 자리. 슬레이트(금 잉크) 톤, 펼치면 물빛 테두리(단축키와 같은 문법). */
-.stool-settings {
+/* 제보(2026-11-13) — 설정 톱니가 헤더 왼쪽 끝으로 옮겨 간 자리. 옛 설정 타일의 슬레이트(금 잉크) 톤을 잇는다. */
+.stool-report {
   color: #4b5d70;
-}
-.stool-settings.open {
-  background: rgb(75 93 112 / 10%);
-  border-color: rgb(75 93 112 / 28%);
 }
 /* (설정 팝오버는 2026-09-04 같은 날 모달 창으로 바뀜 — .modal-card-settings, studio-shell.css.) */
 /* 차분 모드: 은백 카드 + 은회 글자, 호버에 흰 면. 단축키 펼침은 물빛 테두리. */
@@ -151,8 +147,7 @@ html[data-studio-calm] .stool:hover:not(:disabled) {
   border-color: #c3ccd6;
   color: var(--ink);
 }
-html[data-studio-calm] .stool-kbd.open,
-html[data-studio-calm] .stool-settings.open {
+html[data-studio-calm] .stool-kbd.open {
   background: #fff;
   border-color: var(--studio-action-line);
   color: var(--studio-action-text);

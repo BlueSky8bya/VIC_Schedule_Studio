@@ -38,9 +38,9 @@ async function openDisabledCompanionSettings(page: Page, surface: "viewer" | "st
   if (surface === "studio") {
     const expandPanel = page.getByRole("button", { name: "패널 펼치기", exact: true });
     if (await expandPanel.isVisible()) await expandPanel.click();
-    await expect(page.locator(".stool-settings:visible")).toBeVisible();
+    await expect(page.locator('[data-act="studio-settings"]:visible')).toBeVisible();
   }
-  const settingsButton = surface === "studio" ? page.locator(".stool-settings:visible") : page.getByRole("button", { name: "설정", exact: true });
+  const settingsButton = surface === "studio" ? page.locator('[data-act="studio-settings"]:visible') : page.getByRole("button", { name: "설정", exact: true });
   await settingsButton.click();
   const dialog = page.getByRole("dialog", { name: "설정", exact: true }); await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();

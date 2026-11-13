@@ -7229,13 +7229,14 @@ html[data-reduce-motion] .slc-player img {
   align-self: center;
   margin-inline-start: max(0px, calc(env(safe-area-inset-left, 0px) - var(--m-agenda-pad-x, 14px)));
 }
-/* 밝기 토글(2026-11-13) — 설정 단추와 같은 칸, 바로 오른쪽(44 + 간격 8). 두 단추가 한 자리에 겹치지 않게. */
-.agenda-header > .viewer-settings-open[data-act="theme-toggle"] {
+/* 밝기 토글(2026-11-13) — 설정 단추와 같은 칸, 바로 오른쪽(44 + 간격 8). 두 단추가 한 자리에 겹치지 않게.
+   편집실 모바일(톱니가 .m-settings-slot 안)도 같은 규칙 하나를 쓴다. */
+.agenda-header > .viewer-settings-open:is([data-act="theme-toggle"], [data-act="studio-theme-toggle"]) {
   margin-inline-start: calc(max(0px, calc(env(safe-area-inset-left, 0px) - var(--m-agenda-pad-x, 14px))) + 52px);
 }
 /* 아주 좁은 폰(≤340px)은 제목과 닿는다 — 토글은 접고 설정 창의 '화면 모드'로. */
 @media (max-width: 340px) {
-  .agenda-header > .viewer-settings-open[data-act="theme-toggle"] { display: none; }
+  .agenda-header > .viewer-settings-open:is([data-act="theme-toggle"], [data-act="studio-theme-toggle"]) { display: none; }
 }
 .agenda-header > :is(.agenda-account, .m-head-logout) { margin-inline-end: max(0px, calc(env(safe-area-inset-right, 0px) - var(--m-agenda-pad-x, 14px))); }
 @media (max-width: 480px) {

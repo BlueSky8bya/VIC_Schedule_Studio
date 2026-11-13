@@ -10,7 +10,7 @@ export function restoreDialogOpener(opener: HTMLElement | null, root: ParentNode
   const replacementBook = openerAction === "companion-book-open" || openerAction === "companion-personality-open"
     ? Array.from(root.querySelectorAll<HTMLElement>(`[data-act="${openerAction}"]`)).find(available)
     : undefined;
-  const target = opener && available(opener) ? opener : replacementBook ?? Array.from(root.querySelectorAll<HTMLElement>('[data-act="open-settings"],[data-act="studio-settings"],.stool-settings')).find(available)
+  const target = opener && available(opener) ? opener : replacementBook ?? Array.from(root.querySelectorAll<HTMLElement>('[data-act="open-settings"],[data-act="studio-settings"]')).find(available)
     ?? Array.from(root.querySelectorAll<HTMLElement>('[data-act="panel-toggle"]')).find(available);
   target?.focus({ preventScroll: true });
 }

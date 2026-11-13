@@ -138,8 +138,13 @@ export function ContactAvatar({ size = 44 }: { size?: number }) {
 }
 
 /** 제보 창을 여는 단추. variant: side = 목차 아래 프로필 카드, banner = 본문 홍보 띠의 큰 버튼. */
-// link = 일정표 맨 아래 법적 링크 줄의 글자 단추.
-export function ContactButton({ variant, initialTopic = "bug" }: { variant: "side" | "banner" | "link"; initialTopic?: ReportTopic }) {
+// link = 일정표 맨 아래 법적 링크 줄의 글자 단추. trigger = 화면이 제 단추를 그린다(편집실 도구 타일 '제보', 2026-11-13) —
+// 창·보내기는 이 한 벌을 그대로 쓴다(UI-18).
+export function ContactButton({ variant, initialTopic = "bug", trigger }: {
+  variant?: "side" | "banner" | "link";
+  initialTopic?: ReportTopic;
+  trigger?: (open: () => void) => ReactNode;
+}) {
   const ref = useRef<HTMLDialogElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const uid = useId(); // 제보 창이 한 페이지에 둘(목차 카드·홍보 띠) — id가 겹치지 않게
@@ -213,7 +218,9 @@ export function ContactButton({ variant, initialTopic = "bug" }: { variant: "sid
 
   return (
     <>
-      {variant === "side" ? (
+      {trigger ? (
+        trigger(open)
+      ) : variant === "side" ? (
         <button className={styles.contactSide} data-act="legal-contact-open" onClick={open} type="button">
           <span className={styles.avatarRing}>
             <ContactAvatar />

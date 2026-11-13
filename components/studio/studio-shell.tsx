@@ -39,7 +39,7 @@ import {
   Plus,
   Save,
   Search,
-  Settings,
+  Send,
   Sprout,
   Tags,
   Trash2,
@@ -52,6 +52,8 @@ import { pickAmbient, type SeasonKey } from "@/components/shared/ambient/registr
 import { ShowcaseExit, useShowcaseEnvironment, ViewerAmbientControl } from "@/components/shared/ambient/showcase";
 import { PanelSection } from "@/components/shared/panel-section";
 import { SettingsButton } from "@/components/shared/settings-button";
+import { ThemeToggleButton } from "@/components/shared/theme-toggle-button";
+import { ContactButton } from "@/components/legal/legal-interactive";
 import { MobileCalendarTitle } from "@/components/shared/mobile-calendar-title";
 import { MobileSaveFeedback } from "@/components/shared/mobile-save-feedback";
 import { CompanionHomeLauncherSlot, CompanionHomeShelfSlot } from "@/components/shared/companion-home-slots";
@@ -2281,6 +2283,10 @@ export function StudioShell({
       const target = event.target as HTMLElement | null;
       const tag = target?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) {
+        return;
+      }
+      // 네이티브 모달 창(도구 카드 '제보' = 사이트 제보 <dialog>)이 열려 있으면 그 창이 키의 주인이다.
+      if (document.querySelector("dialog[open]")) {
         return;
       }
       if (overlayLocked) {
@@ -6319,6 +6325,9 @@ export function StudioShell({
                 <SettingsButton open={modal === "settings"} dataAct="studio-settings" onClick={() => { hapticTick(); setCompanionBook(false); setModal("settings"); }} />
                 <MobileSaveFeedback state={saveState} lastSavedKst={lastSavedKst} />
               </div>
+              {/* 밝기 토글(2026-11-13 소유자: "편집실도 시청자 화면과 똑같이") — 톱니 바로 오른쪽, 시청자 헤더와 같은 규칙
+                  (public-poster.css; ≤340px 폰은 제목과 닿아 접고 설정 창의 '화면 모드'로). */}
+              <ThemeToggleButton dataAct="studio-theme-toggle" />
               <MobileCalendarTitle year={view.year} month={view.month} open={monthPick !== null}
                 onOpen={() => setMonthPick({ anchor: null })} failed={saveState === "failed"}
                 caption={saveState === "saving" ? "저장 중…" : saveState === "failed" ? "저장 실패"
@@ -7329,8 +7338,8 @@ export function StudioShell({
   // 동일, data-act 키도 동일(인사이트 집계 연속). 아바타 scene이면 rail [도구|필터|계절 배경|빅타민 집],
   // 준비 전 .studio-left-panel도 도구→필터 순서. 2026-08의 '관리 3종 드롭다운 접기 철회'는 접지 않는 타일로 존중.
   // 2026-09-04: '멤버 관리' 타일은 빠지고(토리님이 안 쓰는 기능 — 설정 팝오버 맨 아래의 조용한 입구로 강등)
-  // 그 자리에 **설정(톱니)** — 스위치 4종·포스터 테마 등 앞으로 생길 설정 전부의 단일 입구. 설정은 역할과
-  // 무관하게 편집실의 모두에게 있으므로 카드는 항상 그린다(다른 타일은 역할 분기 그대로).
+  // 그 자리에 설정(톱니)이 있었고, 2026-11-13 설정은 헤더 왼쪽 끝(시청자 헤더와 같은 톱니 + 밝기 토글)으로 옮겨
+  // 그 타일 자리는 **제보**가 받는다. 제보는 역할과 무관하게 모두에게 있으므로 카드는 항상 그린다(다른 타일은 역할 분기 그대로).
   const showManageTools = canEdit || (isDeveloper && !previewRole);
   const studioToolsPanel = (
     <div className="studio-tools-wrap">
@@ -7408,22 +7417,27 @@ export function StudioShell({
             <span>단축키</span>
           </button>
         ) : null}
-        {/* 설정 — 태그 편집·인사이트와 같은 모달 창(사용자 2026-09-04: 팝오버 금지). */}
-        <button
-          aria-haspopup="dialog"
-          className={`stool stool-settings${modal === "settings" ? " open" : ""}`}
-          data-act="studio-settings"
-          aria-label="설정"
-          data-tip="설정"
-          onClick={() => {
-            hapticTick();
-            setCompanionBook(false); setModal("settings");
-          }}
-          type="button"
-        >
-          <Settings aria-hidden="true" size={18} />
-          <span>설정</span>
-        </button>
+        {/* 제보(2026-11-13 소유자) — 설정 톱니가 헤더 왼쪽 끝(시청자 헤더와 같은 두 단추)으로 옮겨 간 자리. 창·보내기는
+            사이트 제보 한 벌(ContactButton)이고 이 타일은 그 단추 모양만 그린다(UI-18). */}
+        <ContactButton
+          trigger={open => (
+            <button
+              aria-haspopup="dialog"
+              className="stool stool-report"
+              data-act="stool-report"
+              aria-label="제보"
+              data-tip="제보"
+              onClick={() => {
+                hapticTick();
+                open();
+              }}
+              type="button"
+            >
+              <Send aria-hidden="true" size={18} />
+              <span>제보</span>
+            </button>
+          )}
+        />
       </div>
     </div>
   );
@@ -7553,8 +7567,11 @@ export function StudioShell({
           (app/metal-water.css `.gs-tide`, app/ambient.css `.gs-season`). */}
       <AmbientLayer force={scenery.seasonForce} month={view.month} slug={schedule.calendar.slug} worldForce={worldForce} year={view.year} />
       <header className="studio-topbar">
-        {/* 왼쪽 칸: 좁은 PC에서도 집 진입은 같은 헤더 시작점에 둔다. */}
+        {/* 왼쪽 칸: 설정 톱니 + 밝기 토글(2026-11-13 소유자: "시청자 화면이랑 똑같이" — 시청자 헤더 .header-left와 같은
+            두 부품·같은 순서), 그 옆에 집 진입. 좁은 PC에서도 같은 헤더 시작점이다. */}
         <div className="studio-left">
+          <SettingsButton open={modal === "settings"} dataAct="studio-settings" onClick={() => { hapticTick(); setCompanionBook(false); setModal("settings"); }} />
+          <ThemeToggleButton dataAct="studio-theme-toggle" />
           {companionDesktop && companionPrefs.enabled ? <CompanionHomeLauncherSlot onHost={companionLauncherHostRef} /> : null}
         </div>
 
@@ -7592,7 +7609,7 @@ export function StudioShell({
           {/* 저장 칩의 아래 끝선은 역할 배지 버튼의 아래 끝선과 맞춘다. */}
           <div className="studio-meta-capsule">{renderSaveStatus()}</div>
           {/* 계정 모서리(북동, 2026-09-03 배치 대개편): 역할 배지("?" 권한 팝오버)는 미리보기 버튼 **왼쪽**
-              (사용자 지정 순서: 저장 상태 · 관리자 · 시청자 화면 보여주기 · 로그아웃). 관리 도구·설정은 서쪽 rail. */}
+              (사용자 지정 순서: 저장 상태 · 관리자 · 시청자 화면 보여주기 · 로그아웃). 관리 도구는 서쪽 rail, 설정은 헤더 왼쪽 끝. */}
           {renderRoleBadge()}
           {/* 역할 배지·로그아웃은 액션바 오른쪽(단축키 옆)으로 이사(2026-08-27 사용자 지정 배치) —
               헤더는 저장 상태 + 미리보기만. */}

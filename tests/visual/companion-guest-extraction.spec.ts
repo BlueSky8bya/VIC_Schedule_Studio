@@ -157,7 +157,7 @@ test("a hidden studio guest gives a varied card cue and grows continuously under
   await input.click(); await expect(input).toBeFocused();
   // Native keyboard activation permits the existing editor and settings to
   // coexist. The lower guest must yield to the foreground window immediately.
-  const settingsGear = page.locator(".stool-settings"); await settingsGear.focus(); await settingsGear.press("Enter");
+  const settingsGear = page.locator('.studio-topbar [data-act="studio-settings"]'); await settingsGear.focus(); await settingsGear.press("Enter");
   const settings = page.getByRole("dialog", { name: "설정", exact: true }); await expect(settings).toBeVisible();
   await expect(editor(page)).not.toHaveAttribute("data-companion-detail-event");
   await expect(pet(page)).not.toHaveAttribute("data-detail-guest");
