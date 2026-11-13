@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const cell = 192;
 const source = new URL("../public/tori/doodle.webp", import.meta.url);
-const output = new URL("../public/tori/loading-hop-v2.webp", import.meta.url);
+const output = new URL("../public/tori/loading-hop-v3.webp", import.meta.url);
 const { data, info } = await sharp(fileURLToPath(source))
   .ensureAlpha().raw().toBuffer({ resolveWithObject: true });
 const size = info.width;
@@ -14,22 +14,22 @@ if (size !== 512 || info.height !== size || info.channels !== 4) throw Error("Un
 // x/y are the original 512px drawing coordinates. A limb's most mobile
 // section is inside the ellipse, with a soft falloff into the original ink.
 const limbs = [
-  { x: 158, y: 337, rx: 48, ry: 48 }, // back arm
-  { x: 354, y: 331, rx: 62, ry: 57 }, // front arm
+  { x: 158, y: 337, rx: 43, ry: 47 }, // back arm
+  { x: 354, y: 331, rx: 66, ry: 58 }, // front arm
   { x: 235, y: 477, rx: 60, ry: 66 }, // standing foot
   { x: 349, y: 407, rx: 57, ry: 48 }, // lifted foot
 ];
 const rest = [[0,0], [0,0], [0,0], [0,0]];
 const poses = [
   rest,
-  [[-4,10], [2,14], [4,-6], [-5,4]], // crouch
-  [[-9,-10], [16,-20], [-4,-3], [7,3]], // takeoff
-  [[-12,-18], [20,-24], [-16,-22], [-8,-9]], // tuck at the top
-  [[-5,-6], [10,-11], [5,7], [3,7]], // reach for the floor
-  [[-2,11], [5,14], [12,13], [2,-3]], // foot lands ahead of the body
-  [[-9,-10], [16,-19], [-6,-6], [7,2]],
-  [[-11,-17], [18,-23], [-14,-20], [-7,-8]],
-  [[-2,10], [5,13], [10,12], [3,-3]],
+  [[-3,7], [0,10], [4,-6], [-5,4]], // crouch
+  [[-7,-7], [4,-14], [-4,-3], [7,3]], // takeoff
+  [[-8,-11], [5,-20], [-16,-22], [-8,-9]], // tuck at the top
+  [[-4,-4], [2,-8], [5,7], [3,7]], // reach for the floor
+  [[-2,8], [1,11], [12,13], [2,-3]], // foot lands ahead of the body
+  [[-7,-7], [4,-13], [-6,-6], [7,2]],
+  [[-8,-10], [5,-19], [-14,-20], [-7,-8]],
+  [[-2,7], [1,10], [10,12], [3,-3]],
   rest, rest, rest,
 ];
 
@@ -39,17 +39,37 @@ function weight(x, y, { x: cx, y: cy, rx, ry }) {
   return t * t * (3 - 2 * t);
 }
 
+function smoothRamp(value) {
+  const t = Math.max(0, Math.min(1, value));
+  return t * t * (3 - 2 * t);
+}
+
 function displacement(x, y, pose) {
   let dx = 0;
   let dy = 0;
   for (const [index, limb] of limbs.entries()) {
     // Keep the hair and face samples identical to the rest frame.
-    const faceClearance = index < 2 ? Math.max(0, Math.min(1, (y - 292) / 22)) : 1;
+    const faceClearance = index < 2 ? smoothRamp((y - 292) / 25) : 1;
+    // Leave the shoulder and torso ink fixed. The displacement reaches its
+    // full value across the visible hand, keeping its outline thickness.
+    const shoulderClearance = index === 0 ? smoothRamp((184 - x) / 27)
+      : index === 1 ? smoothRamp((x - 306) / 47) : 1;
     // The planted leg bends below the hem, leaving the skirt edge anchored.
-    const hemClearance = index === 2 ? Math.max(0, Math.min(1, (y - 434) / 26)) : 1;
-    const influence = weight(x, y, limb) * faceClearance * hemClearance;
-    dx += influence * pose[index][0];
-    dy += influence * pose[index][1];
+    const hemClearance = index === 2 ? smoothRamp((y - 434) / 26)
+      : index === 3 ? smoothRamp((x - 312) / 32) : 1;
+    const influence = weight(x, y, limb) * faceClearance * shoulderClearance * hemClearance;
+    const [shiftX, shiftY] = pose[index];
+    if (index === 1) {
+      // Swing the front arm about its shoulder, preserving the rounded cuff.
+      const angle = shiftY / 52;
+      const u = x - 306, v = y - 324;
+      const sine = Math.sin(angle), cosine = Math.cos(angle);
+      dx += influence * (shiftX + u * (cosine - 1) - v * sine);
+      dy += influence * (u * sine + v * (cosine - 1));
+    } else {
+      dx += influence * shiftX;
+      dy += influence * shiftY;
+    }
   }
   return [dx, dy];
 }
