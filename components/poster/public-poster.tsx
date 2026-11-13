@@ -5292,18 +5292,20 @@ export function PublicPoster({
         )}
       </section>
 
-      {/* 개인정보처리방침·이용약관 한 줄(2026-11-13 소유자) — 표면(data-export-surface) 밖, 달력 맨 아래 흐름. */}
-      <SiteLegalFooter />
-
-      {/* 개발자 시험 도구는 달력·내보내기 표면 밖의 흐름에 둔다. 고정 버튼은 일정을 가린다. */}
-      {canRehearsePremiere && previewNav ? (
-        <div className="pm-rehearsal-tools" data-pm-exit="3">
-          <button className="pm-rehearsal" data-act="premiere-rehearsal" type="button" data-tip="가상 일정으로 공개 연출 시험"
-            onClick={() => setRehearsal({ startedAt: syncedNow(), offsets: [20, 23], rehearsal: true })}>
-            무대 리허설
-          </button>
-        </div>
-      ) : null}
+      {/* 개인정보처리방침·이용약관 한 줄(2026-11-13 소유자) — 표면(data-export-surface) 밖, 달력 맨 아래 흐름.
+          개발자 시험 도구(무대 리허설)는 같은 줄 오른쪽 끝에 — 높이를 맞춰 한 줄로 보이게(2026-11-13 소유자). */}
+      <SiteLegalFooter
+        end={
+          canRehearsePremiere && previewNav ? (
+            <div className="pm-rehearsal-tools" data-pm-exit="3">
+              <button className="pm-rehearsal" data-act="premiere-rehearsal" type="button" data-tip="가상 일정으로 공개 연출 시험"
+                onClick={() => setRehearsal({ startedAt: syncedNow(), offsets: [20, 23], rehearsal: true })}>
+                무대 리허설
+              </button>
+            </div>
+          ) : null
+        }
+      />
 
       {/* 하단 중앙 [⇤ | 패널 | ⇥] — 편집실과 같은 부품·같은 자리(2026-09-17 소유자). 자리 선택(⇤ ⇥)은 관리자·개발자
           (avatarSlot)만, 일반 시청자·비로그인은 접기/펼치기 하나. /onair 고정 scene엔 없다(사람이 안 만진다). */}

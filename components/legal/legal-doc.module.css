@@ -1,28 +1,35 @@
-/* 개인정보처리방침·이용약관 — 사이트 토큰(--paper·--surface·--ink…)만 쓴다. 다크는 html[data-theme="dark"]가
-   토큰을 바꿔 자동으로 따라온다. 긴 글이라 본문 폭을 68자 안팎으로 묶는다. */
+/* 개인정보처리방침·이용약관 — 사이트 토큰만 쓴다(다크는 html[data-theme="dark"]가 토큰을 바꿔 자동으로 따라온다).
+   색의 뜻: 노랑(--accent) = 번호·핵심 사실, 물빛(--studio-action-rgb) = 법령 조문 링크, 바탕 톤(--surface-2) = 화면 예시·안내. */
 .page {
   min-height: 100dvh;
   background: var(--paper);
   color: var(--ink);
-  padding: 40px 16px 64px;
+  padding: 32px 16px 72px;
 }
 
-.doc {
-  max-width: 720px;
+.shell {
+  max-width: 1040px;
   margin: 0 auto;
-  background: var(--surface);
+}
+
+/* ── 머리 ── */
+.head {
+  padding: 22px 32px 26px;
   border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: 32px 40px 28px;
-  font-size: 15px;
-  line-height: 1.8;
-  word-break: keep-all;
-  overflow-wrap: anywhere;
+  border-radius: 22px;
+  background: var(--surface);
+}
+
+.topRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-bottom: 22px;
 }
 
 .back {
-  display: inline-block;
-  margin-bottom: 18px;
   color: var(--muted);
   font-size: 14px;
   text-decoration: none;
@@ -32,59 +39,217 @@
   color: var(--ink);
 }
 
-.head h1 {
-  margin: 0 0 8px;
-  font-size: 28px;
-  line-height: 1.3;
+.switch {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
 }
 
-.lead {
-  margin: 0 0 4px;
-  color: var(--ink-soft);
-}
-
-.date {
-  margin: 0;
+.switch a {
+  padding: 6px 14px;
+  border-radius: 999px;
   color: var(--muted);
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.switch a[aria-current="page"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--accent-strong);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.head h1 {
+  margin: 0 0 14px;
+  font-size: 30px;
+  line-height: 1.25;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+}
+
+.meta div {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
   font-size: 13px;
 }
 
-/* 한눈에 보기 — 노랑 강조 바탕. 긴 글을 안 읽어도 핵심이 보이게. */
-.summary {
-  margin: 24px 0 8px;
-  padding: 18px 22px;
+.meta dt {
+  color: var(--muted);
+}
+
+.meta dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.facts li {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 10px;
+  row-gap: 2px;
+  padding: 14px 16px;
   border-radius: 16px;
   background: var(--accent-soft);
   border: 1px solid var(--line);
 }
 
-.summary h2 {
-  margin: 0 0 6px;
-  font-size: 16px;
+.factIcon {
+  grid-row: span 2;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--accent-strong);
 }
 
-.summary ul {
-  margin: 0;
-  padding-left: 1.2em;
+.facts strong {
+  font-size: 14.5px;
 }
 
-.summary li + li {
-  margin-top: 4px;
+.facts li > span:last-child {
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ── 본문: 넓은 화면은 왼쪽 목차 고정 + 오른쪽 본문 ── */
+.body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.toc {
+  display: none;
+}
+
+.doc {
+  min-width: 0;
+  padding: 8px 32px 28px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--surface);
+  font-size: 15px;
+  line-height: 1.8;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 1000px) {
+  .body {
+    grid-template-columns: 230px minmax(0, 1fr);
+    align-items: start;
+  }
+  .toc {
+    display: block;
+    position: sticky;
+    top: 20px;
+    padding: 16px 12px;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    background: var(--surface);
+  }
+  .toc p {
+    margin: 0 0 8px 8px;
+    color: var(--muted);
+    font-size: 12.5px;
+    font-weight: 700;
+  }
+  .toc ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .toc a {
+    display: flex;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 8px;
+    color: var(--ink-soft);
+    font-size: 13.5px;
+    line-height: 1.45;
+    text-decoration: none;
+  }
+  .toc a span {
+    flex: none;
+    color: var(--accent-strong);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+  }
+  .toc a:hover {
+    background: var(--surface-2);
+    color: var(--ink);
+  }
 }
 
 .section {
-  scroll-margin-top: 16px;
-  padding-top: 22px;
+  scroll-margin-top: 20px;
+  padding: 24px 0 6px;
+  border-top: 1px solid var(--line-soft);
+}
+
+.section:first-child {
+  border-top: 0;
 }
 
 .section h2 {
-  margin: 8px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
   font-size: 19px;
-  line-height: 1.45;
+  line-height: 1.4;
+}
+
+.num {
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-width: 34px;
+  height: 26px;
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--on-accent, #1c2433);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
 }
 
 .section h3 {
-  margin: 16px 0 4px;
+  margin: 18px 0 6px;
   font-size: 15.5px;
 }
 
@@ -101,22 +266,82 @@
   margin-top: 4px;
 }
 
-.section a,
-.foot a,
-.summary a {
+.section a:not(.law):not(.docLink):not(.mail) {
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
-.note {
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.65;
+/* ── 근거·관련 문서 칩 ── */
+.refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0 12px;
 }
 
+.law,
+.docLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.6;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.law {
+  background: rgb(var(--studio-action-rgb) / 12%);
+  color: rgb(var(--studio-action-rgb));
+}
+
+.docLink {
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+
+.law:hover,
+.docLink:hover {
+  text-decoration: underline;
+}
+
+.mail {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.callout {
+  display: grid;
+  gap: 2px;
+  margin: 10px 0 12px;
+  padding: 12px 16px;
+  border-left: 4px solid var(--accent);
+  border-radius: 0 12px 12px 0;
+  background: var(--surface-2);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.callout p {
+  margin: 0;
+}
+
+/* ── 표 ── */
 .tableWrap {
   margin: 8px 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
 }
 
 .table {
@@ -128,35 +353,215 @@
 
 .table th,
 .table td {
-  padding: 10px;
-  border-bottom: 1px solid var(--line);
+  padding: 10px 14px;
   text-align: left;
   vertical-align: top;
 }
 
 .table th {
-  color: var(--muted);
-  font-weight: 600;
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 700;
   white-space: nowrap;
 }
 
-.foot {
-  margin-top: 32px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line);
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 8px 16px;
-  color: var(--ink-soft);
-  font-size: 14px;
+.table td {
+  border-top: 1px solid var(--line-soft);
 }
 
-/* 로딩 중 빈 문서 틀 — 글줄 자리만 옅게. */
+.table td:first-child {
+  font-weight: 600;
+}
+
+.table code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  font-size: 12.5px;
+}
+
+/* ── 절차 ── */
+.steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+  margin: 10px 0 14px;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.steps li {
+  position: relative;
+  display: grid;
+  gap: 2px;
+  padding: 12px 14px 12px 44px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-size: 13.5px;
+  line-height: 1.5;
+  counter-increment: step;
+}
+
+.steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 12px;
+  top: 12px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent, #1c2433);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.steps li span {
+  color: var(--ink-soft);
+}
+
+/* ── 화면 예시 ── */
+.demo {
+  margin: 10px 0 14px;
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  background: var(--surface-2);
+  overflow: hidden;
+}
+
+.demoStage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 18px 16px;
+  pointer-events: none;
+}
+
+.demo figcaption {
+  padding: 8px 14px;
+  border-top: 1px dashed var(--line);
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.mockCard {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  width: min(260px, 100%);
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 6%);
+}
+
+.mockBar {
+  width: 4px;
+  border-radius: 2px;
+  background: #8ec5ff;
+}
+
+.mockText {
+  display: grid;
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.mockText i {
+  color: var(--muted);
+  font-style: normal;
+  font-size: 12px;
+}
+
+.mockHeart {
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: #e5486b;
+  outline: 2px solid #e5486b;
+  outline-offset: 2px;
+}
+
+.mockRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 13.5px;
+}
+
+.mockGear {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: #5b8fd6;
+  color: #fff;
+}
+
+.mockLabel {
+  font-weight: 600;
+}
+
+.mockSeg {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--surface-2);
+  font-size: 12.5px;
+}
+
+.mockSeg > * {
+  padding: 3px 10px;
+  border-radius: 6px;
+  color: var(--muted);
+}
+
+.mockSeg em {
+  background: var(--surface);
+  color: var(--ink);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.mockGoogle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ── 로딩 틀 ── */
 .skeleton {
   display: grid;
   gap: 14px;
   min-height: 60vh;
+  padding: 32px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--surface);
 }
 
 .skeleton span {
@@ -167,55 +572,61 @@
 }
 
 .skeleton span:first-child {
-  width: 40%;
-  height: 26px;
+  width: 36%;
+  height: 28px;
 }
 
 .skeleton span:nth-child(2) {
-  width: 85%;
+  width: 82%;
 }
 
 .skeleton span:nth-child(3) {
-  width: 70%;
+  width: 68%;
 }
 
 .skeleton span:nth-child(4) {
-  width: 78%;
+  width: 74%;
 }
 
+/* ── 폰 ── */
 @media (max-width: 640px) {
   .page {
-    padding: 16px 12px 40px;
+    padding: 12px 10px 48px;
   }
-  .doc {
-    padding: 22px 18px 18px;
-    border-radius: 16px;
+  .head {
+    padding: 16px 16px 18px;
+    border-radius: 18px;
   }
   .head h1 {
-    font-size: 24px;
+    font-size: 25px;
   }
-  .summary {
-    padding: 14px 16px;
+  .doc {
+    padding: 4px 16px 18px;
+    border-radius: 18px;
   }
-  /* 폰에서는 표를 칸 묶음으로 세운다 — 가로 스크롤 없이, 칸 이름을 앞에 붙여 읽히게. */
+  .section h2 {
+    font-size: 17.5px;
+  }
+  /* 표는 칸 묶음으로 세운다 — 가로 스크롤 없이, 칸 이름을 앞에 붙여 읽히게. */
   .table thead {
     display: none;
   }
   .table tr {
     display: block;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--line);
+    padding: 10px 14px;
+    border-top: 1px solid var(--line-soft);
+  }
+  .table tr:first-child {
+    border-top: 0;
   }
   .table td {
     display: block;
     padding: 2px 0;
     border: 0;
   }
-  .table td:first-child {
-    font-weight: 700;
-  }
   .table td:not(:first-child)::before {
     content: attr(data-label) " · ";
     color: var(--muted);
+    font-weight: 600;
   }
 }
