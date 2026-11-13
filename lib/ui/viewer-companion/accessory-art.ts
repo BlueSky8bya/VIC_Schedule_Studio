@@ -16,7 +16,13 @@ for (const [row, id] of ids.entries()) for (const [column, view] of views.entrie
 }
 for (const [epoch, sheet] of [[114, vector], [115, latestVector]] as const) for (const [row, item] of sheet.frames.entries()) for (const [column, view] of views.entries()) {
   const [left, top, width, height] = item.bounds, scale = companionEyeViewScale(view), offset = 64 - 64 * scale;
-  frames.set(`${item.id}:${view}`, { id: `${item.id}:${view}`, atlas: `accessory-${epoch}`, index: row * 4 + column, x: column * 128, y: row * 128, width: 128, height: 128, content: { x: left * scale + offset, y: top, width: width * scale, height }, src: sheet.src, atlasWidth: sheet.columns * sheet.cell, atlasHeight: sheet.frames.length * sheet.cell, ...(item.paired ? { pairedEyes: true as const } : {}), viewScale: scale });
+  frames.set(`${item.id}:${view}`, { id: `${item.id}:${view}`, atlas: `accessory-${epoch}`, index: row * 4 + column, x: column * 128, y: row * 128, width: 128, height: 128, content: { x: left * scale + offset, y: top, width: width * scale, height }, src: sheet.src.replace("-v1.svg", "-v2.svg"), atlasWidth: sheet.columns * sheet.cell, atlasHeight: sheet.frames.length * sheet.cell, ...(item.paired ? { pairedEyes: true as const } : {}), viewScale: scale });
+}
+for (const [column, view] of views.entries()) {
+  const original = getCompanionCollectionArtFrame("accessory", "baseball-cap", view);
+  if (!original) continue;
+  // Keep the source yaw, registration and scale: only the drawn brim grows.
+  frames.set(original.id, { ...original, index: column, x: column * 128, y: 0, src: "/companion/collection/baseball-cap-brim-v1.svg", atlasWidth: 512, atlasHeight: 128 });
 }
 export function getCompanionAccessoryArtFrame(id: string | undefined, view: CompanionAccessoryView = "front"): CompanionAccessoryArtFrame | undefined {
   if (!id) return undefined;

@@ -109,6 +109,20 @@ describe("adopted pose wardrobe", () => {
       expect(placed.layer).toBe("headwear");
     }
   });
+  it("keeps the widened brims clear of the eyes on tilted and compressed drawings", () => {
+    for (const index of [0, 128, 289, 320, 323, 336, 404, 408, 504, 519]) {
+      const pose = anchors.frames[index];
+      for (const id of ["baseball-cap", "beret", "retro-cap", "detective-hat", "bucket-hat"] as const) {
+        const hat = companionAccessoryPlacement(selectCompanionSprite(index), id)!;
+        const angle = hat.rotation * Math.PI / 180;
+        const lowerEdge = hat.width * hat.art.content.height / hat.art.content.width / 2;
+        for (const eye of pose.eyes) for (const i of [0, 2]) for (const j of [1, 3]) {
+          const distance = (eye.bounds[j] - hat.y) * Math.cos(angle) - (eye.bounds[i] - hat.x) * Math.sin(angle);
+          expect(distance - lowerEdge, `${id}:${index}`).toBeGreaterThan(.2);
+        }
+      }
+    }
+  });
   it("rear views occlude face/chest belongings instead of inventing a face on the back", () => {
     const rear = selectCompanionSprite(326);
     expect(companionAccessoryPlacement(rear, "sunglasses")?.layer).toBe("back");
@@ -161,6 +175,22 @@ describe("adopted pose wardrobe", () => {
     painter.paint(selectCompanionSprite(0), "sunglasses", false);
     expect(back.hidden).toBe(true); expect(front.values.get("clip-path")).toBe("none");
     expect(companionAccessoryPlacement(selected, "satchel")).toEqual(companionAccessoryPlacement(selected, "retro-cap"));
+  });
+  it("projects the fitted temples around the body in either quarter direction and suppresses lenses on the back", () => {
+    for (const id of ["round-glasses", "wire-glasses", "browline-glasses", "heart-glasses", "square-glasses"] as const) {
+      const front = companionAccessoryPlacement(selectCompanionSprite(0), id)!;
+      const right = companionAccessoryPlacement(selectCompanionSprite(320), id)!;
+      const left = companionAccessoryPlacement(selectCompanionSprite(404), id)!;
+      const rear = companionAccessoryPlacement(selectCompanionSprite(326), id)!;
+      expect(front.clips).toBeUndefined();
+      expect([right.mirror, left.mirror]).toEqual([1, -1]);
+      expect(right.clips?.front).toBeTruthy();
+      expect(right.clips?.back).toBeTruthy();
+      expect(right.clips?.front).not.toBe(right.clips?.back);
+      expect(left.clips).toEqual(right.clips);
+      expect(rear.layer).toBe("back");
+      expect(rear.clips).toBeUndefined();
+    }
   });
   it("keeps the retired umbrella's equivalent on the head and animates only the equipped item relative to its gift", () => {
     const selected = selectCompanionSprite(0), umbrella = companionAccessoryPlacement(selected, "leaf-umbrella")!, giftPoint = companionGiftAnchor(selected)!;

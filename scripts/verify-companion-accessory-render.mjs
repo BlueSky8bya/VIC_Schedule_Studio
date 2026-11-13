@@ -3,37 +3,26 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import ts from 'typescript';
+import { build } from 'esbuild';
 import { chromium } from '@playwright/test';
 
 const root = process.cwd(), flag = process.argv.find(value => value.startsWith('--out=')), compact = process.argv.includes('--compact');
 const output = path.resolve(root, flag?.slice(6) ?? '.scratch-pw/companion-110/accessories');
 if (!output.startsWith(path.join(root, '.scratch-pw') + path.sep)) throw Error('QA output must stay in workspace .scratch-pw');
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
-const product = ['lib/ui/viewer-companion/accessory.ts', 'lib/ui/viewer-companion/accessory-catalog.ts', 'lib/ui/viewer-companion/accessory-art.ts', 'lib/ui/viewer-companion/collection-art.ts', 'lib/ui/viewer-companion/accessory-motion.ts', 'lib/ui/viewer-companion/gifts.ts', 'lib/ui/viewer-companion/collection-texture.ts', 'lib/ui/viewer-companion/sprite-quality.ts'];
-const jsonNames = ['accessory-anchors', 'mouth-anchors', 'hd-motion-sprite', 'play-motion-sprite', 'living-motion-sprite', 'accessory-vector-114', 'accessory-vector-115'];
-const sources = new Map(), compiled = {};
-for (const name of product) {
-  const source = await fs.readFile(path.join(root, name), 'utf8'); sources.set(name, source);
-  compiled[name] = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true } }).outputText;
-}
-const json = {};
-for (const name of jsonNames) {
-  const file = `lib/ui/viewer-companion/${name}.json`, bytes = await fs.readFile(file, 'utf8'); sources.set(file, bytes); json[file] = JSON.parse(bytes);
-}
-const cssPath = 'components/poster/viewer-companion/viewer-companion.css', css = await fs.readFile(cssPath, 'utf8'); sources.set(cssPath, css);
-const metadata = { atlases: [], frames: [], rows: [] };
-for (const name of ['hd-motion-sprite', 'play-motion-sprite', 'living-motion-sprite']) {
-  const pack = json[`lib/ui/viewer-companion/${name}.json`], offset = metadata.atlases.length, indexOffset = metadata.frames.length;
-  metadata.atlases.push(...pack.atlases); metadata.frames.push(...pack.frames.map(frame => ({ ...frame, atlas: frame.atlas + offset })));
-  metadata.rows.push(...pack.rows.map(row => row.map(index => index + indexOffset)));
-}
-const anchors = json['lib/ui/viewer-companion/accessory-anchors.json'];
-if (metadata.frames.length !== 520 || anchors.frameCount !== 520 || metadata.rows.length !== 41) throw Error('Audit domain changed; review coverage');
+const { outputFiles, metafile } = await build({metafile: true,stdin:{resolveDir:root, loader:'ts', contents:`
+export { companionAccessoryPlacement, createCompanionAccessoryPainter } from './lib/ui/viewer-companion/accessory';
+export { COMPANION_WEARABLE_IDS as ids, COMPANION_ACCESSORIES as catalogue } from './lib/ui/viewer-companion/accessory-catalog';
+export { sampleCompanionAccessoryMotion } from './lib/ui/viewer-companion/accessory-motion';
+export { selectCompanionSprite as selected, companionSpriteMetadata as metadata } from './lib/ui/viewer-companion/sprite-quality';
+export { default as anchors } from './lib/ui/viewer-companion/accessory-anchors.json';
+`}, bundle:true, format:'iife', globalName:'QA', write:false});
+const css = await fs.readFile('components/poster/viewer-companion/viewer-companion.css','utf8');
+const sources = new Map(await Promise.all([...Object.keys(metafile.inputs).filter(name => name !== "<stdin>"), "components/poster/viewer-companion/viewer-companion.css"].map(async name => [name, await fs.readFile(name, "utf8")])));
 const publicHashes = new Map();
 const browser = await chromium.launch({ headless: true });
 try {
-  const page = await browser.newPage({ viewport: { width: 1664, height: 2300 }, deviceScaleFactor: 1 });
+  const page = await browser.newPage({ viewport: { width: 2080, height: 2300 }, deviceScaleFactor: 1 });
   const errors = [], unknownRequests = []; page.on('pageerror', error => errors.push(error.message));
   await page.route('**/*', async route => {
     const url = new URL(route.request().url());
@@ -43,23 +32,10 @@ try {
     const bytes = await fs.readFile(file); publicHashes.set(file, hash(bytes));
     await route.fulfill({ status: 200, contentType: file.endsWith('.svg') ? 'image/svg+xml' : 'image/webp', body: bytes });
   });
-  await page.setContent(`<base href="http://companion.test/"><style>${css}\nhtml,body{margin:0;background:#f4eddd;color:#302b26;font:12px sans-serif}.audit-grid{display:grid;grid-template-columns:repeat(16,104px)}figure{margin:0;width:104px;height:130px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}figure:nth-child(4n+3),figure:nth-child(4n+4){background:#e8dfcd}.audit-stage{position:relative;width:92px;height:92px}.vc-pose{position:relative}.vc-texture{width:800%;height:200%}figcaption{height:30px;text-align:center;padding:4px 0}.audit-label{padding:10px;background:#e5d9c0;font-size:16px}.audit-grid .vc-wearable{filter:none}</style><div class="audit-label"></div><div class="audit-grid"></div>`);
-  await page.evaluate(({ compiled, json, metadata, anchors }) => {
-    const cache = new Map();
-    const normalize = value => { const parts = []; for (const part of value.split('/')) { if (part === '..') parts.pop(); else if (part !== '.') parts.push(part); } return parts.join('/'); };
-    const load = name => {
-      if (cache.has(name)) return cache.get(name).exports;
-      if (json[name]) return json[name];
-      if (!compiled[name]) throw Error('Unknown QA module ' + name);
-      const qaModule = { exports: {} }; cache.set(name, qaModule);
-      new Function('require', 'exports', 'module', compiled[name])(request => load(normalize((request.startsWith('@/') ? request.slice(2) : name.slice(0, name.lastIndexOf('/') + 1) + request) + (request.endsWith('.json') ? '' : '.ts'))), qaModule.exports, qaModule);
-      return qaModule.exports;
-    };
-    const { companionAccessoryPlacement, createCompanionAccessoryPainter } = load('lib/ui/viewer-companion/accessory.ts');
-    const { COMPANION_WEARABLE_IDS: ids } = load('lib/ui/viewer-companion/gifts.ts');
-    const { COMPANION_ACCESSORIES: catalogue } = load('lib/ui/viewer-companion/accessory-catalog.ts');
-    const { sampleCompanionAccessoryMotion } = load('lib/ui/viewer-companion/accessory-motion.ts');
-    const { selectCompanionSprite: selected } = load('lib/ui/viewer-companion/sprite-quality.ts');
+  await page.setContent(`<base href="http://companion.test/"><style>${css}\nhtml,body{margin:0;background:#f4eddd;color:#302b26;font:12px sans-serif}.audit-grid{display:grid;grid-template-columns:repeat(20,104px)}figure{margin:0;width:104px;height:130px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}figure:nth-child(4n+3),figure:nth-child(4n+4){background:#e8dfcd}.audit-stage{position:relative;width:92px;height:92px}.vc-pose{position:relative}.vc-texture{width:800%;height:200%}figcaption{height:30px;text-align:center;padding:4px 0}.audit-label{padding:10px;background:#e5d9c0;font-size:16px}.audit-grid .vc-wearable{filter:none}</style><div class="audit-label"></div><div class="audit-grid"></div>`);
+  await page.addScriptTag({content:outputFiles[0].text});
+  await page.evaluate(() => {
+    const { companionAccessoryPlacement, createCompanionAccessoryPainter, ids, catalogue, sampleCompanionAccessoryMotion, selected, metadata, anchors } = window.QA;
     const host = () => document.createElement('span');
     let cssWrites = 0, checks = 0, motionChecks = 0;
     const detached = { back: host(), front: host(), gift: host() }, painter = createCompanionAccessoryPainter(detached);
@@ -73,7 +49,7 @@ try {
       if (!CSS.supports('transform', detached.front.style.transform) || !CSS.supports('clip-path', detached.front.style.clipPath)) throw Error(`Invalid browser style ${id}:${index}`);
       const before = cssWrites; for (let count = 0; count < 5; count++) painter.paint(pick, id, false);
       if (before !== cssWrites) throw Error('Unchanged pose rewrites styles');
-      domain.push({ id, physicalIndex: index, orientation: anchors.frames[index].orientation, mirror: placement.mirror, layers: { back: !detached.back.hidden, front: !detached.front.hidden }, clips: placement.clips ?? null }); checks++;
+      domain.push({ id, physicalIndex: index, orientation: anchors.frames[index].orientation, width: placement.width, body: anchors.frames[index].chest.width, face: anchors.frames[index].face, head: anchors.frames[index].head, x: placement.x, y: placement.y, rotation: placement.rotation, mirror: placement.mirror, layers: { back: !detached.back.hidden, front: !detached.front.hidden }, clips: placement.clips ?? null }); checks++;
     }
     for (const id of ['propeller-hat', 'magic-pocket']) for (let index = 0; index < metadata.frames.length; index++) for (const age of [0, 450, 900, 1300, 1600, 2000, 2400, 2600]) {
       const pick = selected(index), motion = sampleCompanionAccessoryMotion(id, age).accessory, placement = companionAccessoryPlacement(pick, id, motion);
@@ -99,7 +75,7 @@ try {
           if (motion) { figure.style.height = '190px'; pose.style.transform = `translateY(${-motion.bodyLift}px) rotate(${motion.bodyLean}deg)`; }
           back.className = 'vc-wearable vc-wearable-back'; front.className = 'vc-wearable vc-wearable-front'; gift.className = 'vc-wearable vc-gift-prop'; body.className = 'vc-sprite'; image.className = 'vc-texture'; image.src = pick.src;
           image.style.transform = `translate(${-pick.index % 8 / 8 * 100}%,${-Math.floor(pick.index / 8) / 2 * 100}%)`;
-          body.style.transform = `translate(${pick.frame.x / 80 * 100}%,${pick.frame.y / 80 * 100}%)`; body.style.clipPath = `inset(${pick.frame.clip.map(value => `${value / 80 * 100}%`).join(' ')})`;
+          body.style.transform = `translate(${pick.frame.x}%,${pick.frame.y}%)`; body.style.clipPath = `inset(${pick.frame.clip.map(value => `${value}%`).join(' ')})`;
           body.append(image); pose.append(back, body, front, gift); stage.append(pose);
           const caption = document.createElement('figcaption'); caption.textContent = humanLabels ? catalogue[id].name : `${id}\n${index} ${facing > 0 ? 'right' : 'left'}${motion ? ` ${age}ms` : ''}`;
           figure.append(stage, caption); grid.append(figure);
@@ -118,18 +94,28 @@ try {
         }))));
       },
     };
-  }, { compiled, json, metadata, anchors });
+  });
   const domain = await page.evaluate(() => ({ ids: window.accessoryQA.ids, critical: window.accessoryQA.critical, checks: window.accessoryQA.checks, motionChecks: window.accessoryQA.motionChecks, domain: window.accessoryQA.domain }));
   await fs.mkdir(output, { recursive: true });
   let sheets = 0;
   if (compact) {
-    const indexes = [0, 304, 323, 326, 404, 440, 500, 513];
-    for (const [index, id] of domain.ids.entries()) await page.evaluate(({ id, indexes, append }) => window.accessoryQA.render(id, indexes, '115: all active fittings,8 representative adopted poses, both facings', undefined, append), { id, indexes, append: index > 0 });
+    const indexes = [0, 144, 32, 128, 267, 320, 404, 326, 504, 519];
+    for (const [index, id] of domain.ids.entries()) await page.evaluate(({ id, indexes, append }) => window.accessoryQA.render(id, indexes, '115: all active fittings,10 representative adopted poses, both facings', undefined, append), { id, indexes, append: index > 0 });
     await page.locator('.audit-grid').screenshot({ path: path.join(output, 'all-active-contact.png') }); sheets++;
   } else for (const id of domain.ids) for (let offset = 0; offset < domain.critical.length; offset += 128) {
     const indexes = domain.critical.slice(offset, offset + 128), name = `wear-${id}-${offset / 128 + 1}.png`;
     await page.evaluate(({ id, indexes }) => window.accessoryQA.render(id, indexes, `${id}: exact adopted painter, native source yaw; each pair right/left`), { id, indexes });
     await page.locator('.audit-grid').screenshot({ path: path.join(output, name) }); sheets++;
+  }
+  if (compact) {
+    for (const id of ['baseball-cap', 'beret', 'round-glasses']) {
+      await page.evaluate(id => {
+        const frames = [...Array.from({ length: 16 }, (_, i) => 320 + i), 404, 408, 504, 519];
+        return window.accessoryQA.render(id, frames, id + ': tumble and low forehead frames, both facings');
+      }, id);
+      await page.locator('.audit-grid').screenshot({ path: path.join(output, `angle-${id}.png`) });
+      sheets++;
+    }
   }
   for (const id of ['propeller-hat', 'magic-pocket']) {
     await page.evaluate(id => window.accessoryQA.render(id, [], `${id}: finite shared-source special sequence,11 ages, both facings`, [0, 260, 520, 780, 1040, 1300, 1560, 1820, 2080, 2340, 2600]), id);

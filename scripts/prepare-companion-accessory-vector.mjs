@@ -93,3 +93,68 @@ for (const [target, contents] of [['public/companion/collection/accessories-115-
   else await fs.writeFile(target, contents);
 }
 console.log(`${process.argv.includes('--check') ? 'Verified' : 'Prepared'} ${latestIds.length * 4} task115 ornament cells; literal eye print reused once`);
+
+// Fitted editions retain the old atlases and their construction above. Brown
+// ink, warm upper light and a darker lower edge follow the character's paper art.
+const brown = '#6f4a32';
+const warmMaterials = [
+  ['#bc9d7c', 'bread', '#dcb88f', '#a47f5f'],
+  ['#9b7f68', 'brim', '#bd9879', '#806049'],
+  ['#c9b494', 'tweed', '#e6cfa6', '#a18a6b'],
+  ['#af987b', 'tweed-brim', '#c8ad89', '#8f735a'],
+  ['#b9c4a5', 'sage', '#d5d9b3', '#8f9f7d'],
+  ['#a3b394', 'sage-brim', '#bfc9a5', '#82956e'],
+  ['#75645a', 'felt', '#a48c76', '#655044'],
+  ['#92819f', 'plum', '#bb9db2', '#76627d'],
+  ['#a0b2ba', 'blue-felt', '#c0cbd0', '#7b9199'],
+  ['#edc5bc', 'rose-cloth', '#ffe1ca', '#d4a69e'],
+  ['#c2cbb3', 'green-cloth', '#e1e4c3', '#a0ad90'],
+  ['#cbbdd9', 'purple-cloth', '#e8d4e2', '#ae96bf'],
+  ['#ffece1', 'cream-cloth', '#fff5e4', '#e6c9b5'],
+  ['#fffdf8', 'paper', '#fff8e7', '#e8cc9c'],
+  ['#f4ce78', 'gold', '#ffe8a5', '#d7a75a'],
+  ['#ead077', 'blade', '#f9e3a0', '#cba75d'],
+  ['#e8cb73', 'brass', '#f8df9a', '#c5a052'],
+];
+const materials = warmMaterials.map(([, id, light, shade]) => `<linearGradient id="${id}" x1="0%" x2="18%" y1="0%" y2="100%"><stop offset="0" stop-color="${light}"/><stop offset="1" stop-color="${shade}"/></linearGradient>`).join('');
+const paint = shape => warmMaterials.reduce((result, [fill,id]) => result.replaceAll(`fill="${fill}"`, `fill="url(#${id})"`), shape)
+  .replaceAll('#916a4d', '#795539').replaceAll('#b18c56', '#9b7043')
+  .replaceAll('#67564d', '#614735').replaceAll('#c48c87', '#a26960').replaceAll('#816c5d', '#74533e')
+  .replaceAll('#77716b', '#79583f').replaceAll('#d5cfc2', '#cfab83');
+
+const eyewearHinges = {
+  'round-glasses': [19, 56, '#795539', 4],
+  'wire-glasses': [20, 58, '#9b7043', 3],
+  'browline-glasses': [19, 50, '#614735', 4],
+  'heart-glasses': [19, 50, '#a26960', 3.4],
+  'square-glasses': [19, 50, '#74533e', 4],
+};
+function fittedView(id, item, view) {
+  const [hinge, y, ink, stroke] = eyewearHinges[id] ?? [];
+  const scale = view === 'quarter' ? .83 : view === 'side' ? .56 : 1;
+  let art = paint(item.shape);
+  if (ink && view !== 'front') {
+    // The projected lens rims keep the calibrated eye centres. Strip the
+    // symmetric front hinges and replace them with a near and far arm.
+    art = art.replace(/(M61 \d+Q64 \d+ 67 \d+)[^"]+"/, '$1"');
+    const left = 64 + (hinge - 64) * scale, right = 128 - left;
+    const near = view === 'side' ? 9 : 11, far = Math.min(124, right + (view === 'side' ? 5 : 10));
+    const arm = (path, color = ink, width = stroke) => `<path d="${path}" fill="none" stroke="${color}" stroke-width="${width}"/>`;
+    if (view === 'back') return arm(`M${left} ${y}Q18 ${y-11} 13 ${y-5}M${right} ${y}Q110 ${y-11} 115 ${y-5}`);
+    const farArm = arm(`M${right-1} ${y+1}Q${right+4} ${y-1} ${far} ${y-6}`, ink, stroke*.72);
+    const nearArm = arm(`M${left+1} ${y+1}Q${left-8} ${y-4} ${near+4} ${y-7}Q${near} ${y-7} ${near} ${y-1}`) +
+      arm(`M${left-3} ${y-1}L${near+5} ${y-6}`, '#e7bc86', .85);
+    return farArm + nearArm + `<g transform="translate(${64 - 64 * scale} 0) scale(${scale} 1)">${art}</g>`;
+  }
+  return `<g transform="translate(${64 - 64 * scale} 0) scale(${scale} 1)">${art}</g>`;
+}
+for (const [epoch, items, extraDefs] of [[114, additions, ''], [115, latest, printDefinition]]) {
+  const chosen = Object.entries(items);
+  const fittedCells = chosen.flatMap(([id, item], row) => ['front', 'quarter', 'side', 'back'].map((view, col) =>
+    `<g transform="translate(${col * 128} ${row * 128})" stroke="${brown}" stroke-width="3.1" stroke-linecap="round" stroke-linejoin="round">${fittedView(id,item,view)}</g>`));
+  const path = `public/companion/collection/accessories-${epoch}-v2.svg`;
+  const fitted = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="${chosen.length * 128}" viewBox="0 0 512 ${chosen.length * 128}"><defs>${materials}${extraDefs}</defs>${fittedCells.join('')}</svg>\n`;
+  if (process.argv.includes('--check')) {
+    if (await fs.readFile(path,'utf8') !== fitted) throw Error(`Fitted accessory source differs: ${path}`);
+  } else await fs.writeFile(path,fitted);
+}

@@ -3,7 +3,7 @@ import { runInNewContext } from "node:vm";
 import { expect, it, vi } from "vitest";
 
 const source = readFileSync("public/sw.js", "utf8");
-const CACHE = "vic-offline-v7";
+const CACHE = source.match(/const CACHE = "(vic-offline-v\d+)"/)![1];
 type Store = Map<string, Map<string, Response>>;
 
 function worker(store: Store = new Map()) {

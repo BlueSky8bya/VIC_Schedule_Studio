@@ -47,6 +47,9 @@ const sourceYaw = (art: CompanionAccessoryArtFrame): -1 | 1 => art.atlas === "ac
 const quarterGlassesEdge = [[0, 52], [10, 52], [15, 49], [23, 47], [31, 48], [38, 51], [43, 56], [49, 61], [53, 57], [60, 54], [71, 53], [79, 55], [87, 60], [92, 63], [102, 54], [108, 50], [115, 51], [128, 51]] as const;
 const polygon = (points: readonly (readonly number[])[]) => `polygon(${points.map(([x, y]) => `${x / 128 * 100}% ${y / 128 * 100}%`).join(",")})`;
 const glassesClips = { front: polygon([...quarterGlassesEdge, [128, 128], [0, 128]]), back: polygon([[0, 0], [128, 0], ...[...quarterGlassesEdge].reverse()]) };
+// Quarter vector rims fit within the lens plane through x=107. The near arm is on the lens
+// plane; the tip of the opposite arm belongs behind the adopted body.
+const fittedGlassesClips = { front: "inset(0 16.40625% 0 0)", back: "inset(0 0 0 83.59375%)" };
 const bagClips = { front: "inset(46% 0 0)", back: "inset(0 0 54%)" };
 const calibratedMouths = new Map(mouths.frames.map(frame => [frame.index, frame]));
 const familyPoint = { head: "head", eyes: "face", "eye-cover": "face", "eye-mask": "face", "chest-badge": "sideChest", "front-bow": "chest", "front-pocket": "chest", "side-prop": "sideBody" } as const;
@@ -65,6 +68,21 @@ function withMotion(placement: Placement, pose: Pose, id: CompanionAccessoryId, 
     const correction = Math.max(0, safeTop - movedTop); x += nx * correction; y += ny * correction;
   }
   return { ...placement, x, y, width, rotation, ...(id === "propeller-hat" ? { rotor: motion.rotor ?? 0 } : {}), ...(id === "magic-pocket" ? { stretchY: 1 + Math.max(0, Math.min(1, motion.aperture ?? 0)) * .16 } : {}) };
+}
+
+// Use the measured eye boxes in the cap's own tilted plane. This keeps the
+// brim clear when a crouch or a roll brings the ear roots close to an eye.
+function clearHeadwearEyes(placement: Placement, pose: Pose): Placement {
+  if (pose.orientation === "back" || pose.eyes.length !== 2) return placement;
+  const angle = placement.rotation * Math.PI / 180, nx = -Math.sin(angle), ny = Math.cos(angle);
+  const halfHeight = placement.width * placement.art.content.height / placement.art.content.width / 2;
+  let eyeTop = Infinity;
+  for (const { bounds } of pose.eyes) {
+    const x = bounds[nx < 0 ? 2 : 0], y = bounds[ny < 0 ? 3 : 1];
+    eyeTop = Math.min(eyeTop, (x - placement.x) * nx + (y - placement.y) * ny);
+  }
+  const lift = Math.max(0, halfHeight + .35 - eyeTop);
+  return lift ? { ...placement, x: placement.x - nx * lift, y: placement.y - ny * lift } : placement;
 }
 
 /** The adopted image owns its attachment. Every authored/rig frame has its
@@ -106,7 +124,7 @@ export function companionAccessoryPlacement(selected: CompanionSpriteSelection, 
     if (!eye || !standingEyeFit) return null;
     const span = companionEyeAccessorySpan(standingEyeFit.span, pose.orientation);
     if (!span) return null;
-    return withMotion({ art, x: pose.face.x, y: pose.face.y, width: span * art.content.width / (48 * (art.viewScale ?? 1)), rotation: pose.face.roll, layer: "front", ...decoration, pivot: { x: 64, y: 64 } }, pose, id, motion);
+    return withMotion({ art, x: pose.face.x, y: pose.face.y, width: span * art.content.width / (48 * (art.viewScale ?? 1)), rotation: pose.face.roll, layer: "front", ...decoration, ...(quarter ? { clips: fittedGlassesClips } : {}), pivot: { x: 64, y: 64 } }, pose, id, motion);
   }
   // The measured ear-root line receives the brim, not the cap's centre.
   // Shift along this pose's own head normal; the parent rig then deforms the
@@ -135,8 +153,9 @@ export function companionAccessoryPlacement(selected: CompanionSpriteSelection, 
     return withMotion({ art, x: pose.face.x + nx * centre + Math.cos(angle) * along, y: pose.face.y + ny * centre + Math.sin(angle) * along, width: height * art.content.width / art.content.height, rotation: point.roll, layer: "front", ...decoration }, pose, id, motion);
   }
   const width = baseWidth * spec.scale, brim = headwear ? width * art.content.height / art.content.width * (id === "propeller-hat" ? .45 : .2) : id === "leaf-umbrella" ? pose.chest.width * .48 : 0, angle = point.roll * Math.PI / 180;
-  return withMotion({ art, x: point.x + Math.sin(angle) * brim, y: point.y - Math.cos(angle) * brim, width, rotation: point.roll - (id === "sunglasses" && quarter ? 12.5 * mirror : 0),
+  const fitted = withMotion({ art, x: point.x + Math.sin(angle) * brim, y: point.y - Math.cos(angle) * brim, width, rotation: point.roll - (id === "sunglasses" && quarter ? 12.5 * mirror : 0),
     layer: headwear ? "headwear" : pose.orientation === "back" && (frontMounted(id) || item.family === "eyes" || item.family === "eye-cover" || item.family === "eye-mask") ? "back" : "front", ...decoration }, pose, id, motion);
+  return headwear ? clearHeadwearEyes(fitted, pose) : fitted;
 }
 
 /** Local80-space anchors for finite special actions. The root world projects
