@@ -116,14 +116,19 @@ export function companionAccessoryPlacement(selected: CompanionSpriteSelection, 
   const item = COMPANION_ACCESSORIES[id], spec = item && { point: familyPoint[item.family], scale: item.scale };
   if (!pose || !source || source.src !== selected.src || pose.index !== selected.index || !spec) return null;
   if (motion && (!Object.values(motion).every(Number.isFinite) || motion.scale <= 0)) return null;
-  const nativePoint = pose[spec.point], art = id === "magic-pocket" && (motion?.aperture ?? 0) > .1 ? companionOpenPocketArt(pose.orientation) : getCompanionAccessoryArtFrame(id, pose.orientation);
+  // Rise and apex share the same quarter-facing drawing. The apex landmark
+  // classifier calls the pressed eyes front-facing, which swaps the artwork
+  // and temple planes in midair even though the head has not turned.
+  const continuingThrowView = selected.physicalIndex >= 504 && selected.physicalIndex <= 507;
+  const view = continuingThrowView && (item.family === "head" || item.family === "eyes" || item.family === "eye-cover") ? "quarter" : pose.orientation;
+  const nativePoint = pose[spec.point], art = id === "magic-pocket" && (motion?.aperture ?? 0) > .1 ? companionOpenPocketArt(pose.orientation) : getCompanionAccessoryArtFrame(id, view);
   const headwear = isCompanionHat(id);
   const seat = headwear ? companionFoldedHatSeat(selected.physicalIndex) : undefined;
   const point = seat ?? nativePoint;
   if (!art || ![point.x, point.y, nativePoint.width, point.roll].every(Number.isFinite) || nativePoint.width <= 0) return null;
-  const quarter = pose.orientation === "quarter";
+  const quarter = view === "quarter";
   const mirror: -1 | 1 = quarter && poseYaw.get(selected.physicalIndex) !== sourceYaw(art) ? -1 : 1;
-  const decoration = { mirror, ...(id === "sunglasses" && quarter ? { pivot: { x: 49, y: 68 }, clips: glassesClips } : id === "satchel" ? { clips: bagClips } : id === "propeller-hat" ? { rearArt: companionPropellerArt(pose.orientation), rotor: 0 } : {}) };
+  const decoration = { mirror, ...(id === "sunglasses" && quarter ? { pivot: { x: 49, y: 68 }, clips: glassesClips } : id === "satchel" ? { clips: bagClips } : id === "propeller-hat" ? { rearArt: companionPropellerArt(view), rotor: 0 } : {}) };
   if (item.family === "eye-mask" && pose.orientation !== "back") {
     const eye = eyeFits.get(selected.physicalIndex);
     if (!eye) return null;
@@ -142,12 +147,12 @@ export function companionAccessoryPlacement(selected: CompanionSpriteSelection, 
     if (!eye) return null;
     // This is the positive eye-axis endpoint, so its short outer chain stays
     // on that same side. Camera yaw must not mirror it back across the nose.
-    return withMotion({ art, x: eye.x, y: eye.y, width: Math.max(eye.width, (standingEyeFit?.width ?? eye.width) * companionEyeViewScale(pose.orientation)), rotation: pose.face.roll, layer: "front", ...decoration, mirror: 1, pivot: { x: 64, y: 64 } }, pose, id, motion);
+    return withMotion({ art, x: eye.x, y: eye.y, width: Math.max(eye.width, (standingEyeFit?.width ?? eye.width) * companionEyeViewScale(view)), rotation: pose.face.roll, layer: "front", ...decoration, mirror: 1, pivot: { x: 64, y: 64 } }, pose, id, motion);
   }
   if (art.pairedEyes && pose.orientation !== "back") {
     const eye = eyeFits.get(selected.physicalIndex);
     if (!eye || !standingEyeFit) return null;
-    const span = companionEyeAccessorySpan(standingEyeFit.span, pose.orientation);
+    const span = companionEyeAccessorySpan(standingEyeFit.span, view);
     if (!span) return null;
     return withMotion({ art, x: pose.face.x, y: pose.face.y, width: span * art.content.width / (48 * (art.viewScale ?? 1)), rotation: pose.face.roll, layer: "front", ...decoration, ...(quarter ? { clips: fittedGlassesClips } : {}), pivot: { x: 64, y: 64 } }, pose, id, motion);
   }
@@ -158,9 +163,12 @@ export function companionAccessoryPlacement(selected: CompanionSpriteSelection, 
   // Ear-root spacing is a stable pivot, but too narrow to size a readable
   // hat at the actual92px pet size. Keep its source-measured body proportion
   // as a lower bound without moving the pivot or hiding the ear tips.
+  // A roll changes the measured body envelope as it turns. Use the upright
+  // key's proportion for the whole turn so the hat doesn't pulse in size.
+  const headwearReference = pose.atlas === 20 ? poses.get(320)!.chest.width : pose.chest.width;
   const baseWidth = item.family === "eyes" && pose.orientation !== "back" && standingFace
-    ? standingFace.width * companionEyeViewScale(pose.orientation)
-    : headwear ? Math.max(nativePoint.width, pose.chest.width * .38) : nativePoint.width;
+    ? standingFace.width * companionEyeViewScale(view)
+    : headwear ? Math.max(nativePoint.width, headwearReference * .38) : nativePoint.width;
   if (frontMounted(id) && pose.orientation !== "back") {
     const angle = point.roll * Math.PI / 180, nx = -Math.sin(angle), ny = Math.cos(angle), depth = (x: number, y: number) => (x - pose.face.x) * nx + (y - pose.face.y) * ny;
     const [left, top, right, bottom] = pose.bodyBounds;

@@ -8,6 +8,7 @@ import { chromium } from '@playwright/test';
 
 const root = process.cwd(), flag = process.argv.find(value => value.startsWith('--out=')), compact = process.argv.includes('--compact');
 const foldedHats = process.argv.includes('--folded-hats');
+const actionWearables = process.argv.includes('--action-wearables');
 const foldedFrames = [[224, 239], [267, 267], [272, 303], [376, 383], [408, 411], [432, 447], [519, 519]]
   .flatMap(([first, last]) => Array.from({ length: last - first + 1 }, (_, index) => first + index));
 const output = path.resolve(root, flag?.slice(6) ?? '.scratch-pw/companion-110/accessories');
@@ -36,6 +37,7 @@ try {
     await route.fulfill({ status: 200, contentType: file.endsWith('.svg') ? 'image/svg+xml' : 'image/webp', body: bytes });
   });
   await page.setContent(`<base href="http://companion.test/"><style>${css}\nhtml,body{margin:0;background:#f4eddd;color:#302b26;font:12px sans-serif}.audit-grid{display:grid;grid-template-columns:repeat(20,104px)}figure{margin:0;width:104px;height:130px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}figure:nth-child(4n+3),figure:nth-child(4n+4){background:#e8dfcd}.audit-stage{position:relative;width:92px;height:92px}.vc-pose{position:relative}.vc-texture{width:800%;height:200%}figcaption{height:30px;text-align:center;padding:4px 0}.audit-label{padding:10px;background:#e5d9c0;font-size:16px}.audit-grid .vc-wearable{filter:none}</style><div class="audit-label"></div><div class="audit-grid"></div>`);
+  if (actionWearables) await page.addStyleTag({ content: '.audit-grid{grid-template-columns:repeat(16,128px);width:2048px}figure{width:128px;height:142px;justify-content:center;gap:15px}figcaption{height:16px;padding:0}' });
   await page.addScriptTag({content:outputFiles[0].text});
   await page.evaluate(() => {
     const { companionAccessoryPlacement, createCompanionAccessoryPainter, ids, catalogue, sampleCompanionAccessoryMotion, selected, metadata, anchors } = window.QA;
@@ -102,7 +104,23 @@ try {
   const domain = await page.evaluate(() => ({ ids: window.accessoryQA.ids, critical: window.accessoryQA.critical, checks: window.accessoryQA.checks, motionChecks: window.accessoryQA.motionChecks, domain: window.accessoryQA.domain }));
   await fs.mkdir(output, { recursive: true });
   let sheets = 0;
-  if (foldedHats) {
+  if (actionWearables) {
+    const { wearables, groups } = await page.evaluate(() => ({
+      wearables: window.QA.ids.filter(id => ['head', 'eyes', 'eye-cover'].includes(window.QA.catalogue[id].family)),
+      groups: Object.fromEntries([
+        ['tumble', [24, 21, 22, 26, 23]],
+        ['throw', [8, 32, 6]],
+      ].map(([name, rows]) => [name, rows.flatMap(row => window.QA.metadata.rows[row])])),
+    }));
+    for (const id of wearables) for (const [name, indexes] of Object.entries(groups)) {
+      await page.evaluate(({ id, name, indexes }) => window.accessoryQA.render(id, indexes, `${id}: ${name}, both facings`), { id, name, indexes });
+      await page.locator('.audit-grid').screenshot({ path: path.join(output, `${name}-${id}.png`) }); sheets++;
+    }
+    for (const id of wearables.filter(id => id === 'retro-cap' || id === 'beret' || id === 'baseball-cap')) {
+      await page.evaluate(id => window.accessoryQA.render(id, [519], `${id}: curled nap`), id);
+      await page.locator('.audit-grid figure').first().screenshot({ path: path.join(output, `nap-${id}.png`) }); sheets++;
+    }
+  } else if (foldedHats) {
     const hats = await page.evaluate(() => window.QA.ids.filter(id => window.QA.catalogue[id].family === 'head'));
     for (const id of hats) {
       await page.evaluate(({ id, indexes }) => window.accessoryQA.render(id, indexes, `${id}: folded ears, both facings`), { id, indexes: foldedFrames });

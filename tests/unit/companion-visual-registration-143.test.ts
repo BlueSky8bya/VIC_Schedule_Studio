@@ -61,7 +61,9 @@ describe("143 standing eyewear scale with actual adopted registration", () => {
     for (const pose of anchors.frames) {
       const selected = selectCompanionSprite(pose.physicalIndex), placed = companionAccessoryPlacement(selected, "wire-glasses")!;
       if (pose.orientation === "back") continue;
-      const view = pose.orientation === "quarter" ? "quarter" : pose.orientation === "side" ? "side" : "front";
+      // The apex drawing retains the rise drawing's quarter-view eye plane.
+      const quarter = pose.orientation === "quarter" || pose.physicalIndex >= 504 && pose.physicalIndex <= 507;
+      const view = quarter ? "quarter" : pose.orientation === "side" ? "side" : "front";
       expect(placed.width).toBeCloseTo(standing.width * companionEyeViewScale(view));
       expect([placed.x, placed.y, placed.rotation]).toEqual([pose.face.x, pose.face.y, pose.face.roll]);
       expect(companionAccessoryPlacement({ ...selected, src: "/not-decoded.webp" }, "wire-glasses")).toBeNull();

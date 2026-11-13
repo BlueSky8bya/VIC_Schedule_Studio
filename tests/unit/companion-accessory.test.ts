@@ -93,7 +93,8 @@ describe("adopted pose wardrobe", () => {
       for (const id of ["round-glasses", "wire-glasses", "browline-glasses", "heart-glasses", "square-glasses"] as const) {
         const placed = companionAccessoryPlacement(selected, id)!, span = Math.hypot(eyes[1].center[0] - eyes[0].center[0], eyes[1].center[1] - eyes[0].center[1]);
         const standing = measured[0].eyes, standingSpan = Math.hypot(standing[1].center[0] - standing[0].center[0], standing[1].center[1] - standing[0].center[1]);
-        const viewScale = pose.orientation === "quarter" ? .83 : pose.orientation === "side" ? .56 : 1;
+        const quarter = pose.orientation === "quarter" || pose.physicalIndex >= 504 && pose.physicalIndex <= 507;
+        const viewScale = quarter ? .83 : pose.orientation === "side" ? .56 : 1;
         expect(placed.width / placed.art.content.width * 48 * placed.art.viewScale!, `${id}:${pose.physicalIndex} standing lens span`).toBeCloseTo(standingSpan * viewScale);
         expect(span).toBeGreaterThan(0);
         expect(placed.rotation).toBeCloseTo(pose.face.roll); expect(placed.pivot).toEqual({ x: 64, y: 64 });
@@ -199,7 +200,7 @@ describe("adopted pose wardrobe", () => {
     }) as unknown as HTMLElement;
     const painter = createCompanionAccessoryPainter({ front: host(styles), back: host(), gift: host() });
     for (const id of COMPANION_WEARABLE_IDS.filter(id => COMPANION_ACCESSORIES[id].family === "head")) {
-      for (const frame of [224, 239, 267, 272, 287, 288, 303, 376, 383, 408, 411, 432, 447, 519]) {
+      for (const frame of [224, 239, 267, 272, 287, 288, 303, 326, 328, 331, 376, 383, 408, 411, 432, 447, 496, 519]) {
         painter.paint(selectCompanionSprite(frame), id, false);
         expect(styles.get("clip-path"), `${id}:${frame}`).toMatch(/^polygon\(evenodd,/);
       }
@@ -212,6 +213,26 @@ describe("adopted pose wardrobe", () => {
     expect(cap.x).toBeGreaterThan(39);
     expect(cap.x).toBeLessThan(42);
     expect(Math.abs(cap.rotation)).toBeLessThan(5);
+  });
+  it("keeps the same hat and glasses projection from throw rise through apex", () => {
+    for (const id of COMPANION_WEARABLE_IDS.filter(id => ["head", "eyes", "eye-cover"].includes(COMPANION_ACCESSORIES[id].family))) {
+      const rise = companionAccessoryPlacement(selectCompanionSprite(500), id)!;
+      for (const frame of [504, 505, 506, 507]) {
+        const apex = companionAccessoryPlacement(selectCompanionSprite(frame), id)!;
+        expect(apex.art, id).toBe(rise.art);
+        expect(apex.mirror, id).toBe(rise.mirror);
+        expect(apex.clips, id).toEqual(rise.clips);
+        expect(Math.abs(apex.width - rise.width), id).toBeLessThan(1);
+      }
+    }
+  });
+  it("keeps each hat's size through upright, side-on and inverted tumble keys", () => {
+    for (const id of COMPANION_WEARABLE_IDS.filter(id => COMPANION_ACCESSORIES[id].family === "head")) {
+      const first = companionAccessoryPlacement(selectCompanionSprite(320), id)!;
+      for (const frame of [323, 326, 328, 331, 334]) {
+        expect(companionAccessoryPlacement(selectCompanionSprite(frame), id)!.width, id).toBeCloseTo(first.width);
+      }
+    }
   });
   it("keeps the retired umbrella's equivalent on the head and animates only the equipped item relative to its gift", () => {
     const selected = selectCompanionSprite(0), umbrella = companionAccessoryPlacement(selected, "leaf-umbrella")!, giftPoint = companionGiftAnchor(selected)!;
