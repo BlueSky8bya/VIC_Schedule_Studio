@@ -1,3 +1,4 @@
+import { companionForegroundEars } from "./accessory-ear-occlusion";
 import { companionEyeScale143Source, companionEyeScale143Eyes } from "./eye-scale-143";
 import anchors from "./accessory-anchors.json";
 import homeContactAnchors from "./home-contact-anchors-157.json";
@@ -83,6 +84,27 @@ function clearHeadwearEyes(placement: Placement, pose: Pose): Placement {
   }
   const lift = Math.max(0, halfHeight + .35 - eyeTop);
   return lift ? { ...placement, x: placement.x - nx * lift, y: placement.y - ny * lift } : placement;
+}
+
+// Subtract the foreground ears from the cap's front plane. The body sprite
+// supplies their original pixels, and the cutouts follow a moving cap.
+function headwearClip(placement: Placement, physicalIndex: number): string {
+  const ears = companionForegroundEars(physicalIndex);
+  if (!ears) return "none";
+  const { art, x, y, rotation, width, mirror = 1 } = placement;
+  const scale = 100 * art.content.width / (width * art.width);
+  const cx = (art.content.x + art.content.width / 2) / art.width * 100;
+  const cy = (art.content.y + art.content.height / 2) / art.height * 100;
+  const angle = rotation * Math.PI / 180, c = Math.cos(angle), s = Math.sin(angle);
+  const points = ["0% 0%", "100% 0%", "100% 100%", "0% 100%", "0% 0%"];
+  for (const ear of ears) {
+    const ring = ear.map(([u, v]) => {
+      const dx = u - x, dy = v - y;
+      return `${(cx + (dx * c + dy * s) * scale * mirror).toFixed(2)}% ${(cy + (-dx * s + dy * c) * scale).toFixed(2)}%`;
+    });
+    points.push(...ring, ring[0], "0% 0%");
+  }
+  return `polygon(evenodd, ${points.join(", ")})`;
 }
 
 /** The adopted image owns its attachment. Every authored/rig frame has its
@@ -223,6 +245,7 @@ type Hosts = { back: HTMLElement; front: HTMLElement; gift: HTMLElement };
  * when an owned item is equipped; the character decoder is untouched. */
 export function createCompanionAccessoryPainter(hosts: Hosts, textures = createCompanionCollectionTextureReadiness()) {
   let accessorySrc: string | undefined, giftSrc: string | undefined;
+  let lastHeadwearClip: { frame: number; art: CompanionAccessoryArtFrame; x: number; y: number; width: number; rotation: number; mirror: Placement["mirror"]; clip: string } | undefined;
   const values = new WeakMap<HTMLElement, Map<string, string>>();
   const style = (node: HTMLElement, key: string, value: string) => {
     let cache = values.get(node); if (!cache) { cache = new Map(); values.set(node, cache); }
@@ -242,6 +265,15 @@ export function createCompanionAccessoryPainter(hosts: Hosts, textures = createC
     style(node, "background-position", `${art.x / Math.max(1, art.atlasWidth - art.width) * 100}% ${art.y / Math.max(1, art.atlasHeight - art.height) * 100}%`);
     if (node.hidden) node.hidden = false;
   };
+  const foregroundClip = (placement: Placement, frame: number) => {
+    const { art, x, y, width, rotation, mirror } = placement;
+    const previous = lastHeadwearClip;
+    if (previous?.frame === frame && previous.art === art && previous.x === x && previous.y === y
+      && previous.width === width && previous.rotation === rotation && previous.mirror === mirror) return previous.clip;
+    const clip = headwearClip(placement, frame);
+    lastHeadwearClip = { frame, art, x, y, width, rotation, mirror, clip };
+    return clip;
+  };
   return {
     paint(selected: CompanionSpriteSelection | undefined, id: CompanionAccessoryId | null, pending: boolean, motion?: CompanionAccessoryTransform) {
       const placement = selected && id ? companionAccessoryPlacement(selected, id, motion) : null;
@@ -257,8 +289,11 @@ export function createCompanionAccessoryPainter(hosts: Hosts, textures = createC
             show(node, placement.rearArt, { ...rotor, roll: rotor.roll + (placement.rotor ?? 0) }, selected, width, { ...placement, pivot: { x: placement.art.content.x + placement.art.content.width / 2, y: 22 } }); style(node, "clip-path", "none"); continue;
           }
           const visible = placement.clips || (placement.layer === "headwear" ? front : (placement.layer === "front") === front);
-          if (visible) { show(node, placement.art, point, selected, width, placement); style(node, "clip-path", placement.clips?.[front ? "front" : "back"] ?? "none"); }
-          else hide(node);
+          if (visible) {
+            show(node, placement.art, point, selected, width, placement);
+            const clip = placement.clips?.[front ? "front" : "back"] ?? (front && placement.layer === "headwear" ? foregroundClip(placement, selected.physicalIndex) : "none");
+            style(node, "clip-path", clip);
+          } else hide(node);
         }
       } else { hide(hosts.back); hide(hosts.front); }
       if (gift && art && selected) { show(hosts.gift, art, gift, selected, gift.width); style(hosts.gift, "z-index", gift.behind ? "0" : "3"); }

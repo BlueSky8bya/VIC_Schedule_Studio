@@ -192,6 +192,17 @@ describe("adopted pose wardrobe", () => {
       expect(rear.clips).toBeUndefined();
     }
   });
+  it("shows the original folded ears through a worn beret and clears the cutout on upright poses", () => {
+    const styles = new Map<string, string>();
+    const host = (values = new Map<string, string>()) => ({
+      hidden: true, style: { setProperty: (key: string, value: string) => values.set(key, value) },
+    }) as unknown as HTMLElement;
+    const painter = createCompanionAccessoryPainter({ front: host(styles), back: host(), gift: host() });
+    painter.paint(selectCompanionSprite(408), "beret", false);
+    expect(styles.get("clip-path")).toMatch(/^polygon\(evenodd,/);
+    painter.paint(selectCompanionSprite(0), "beret", false);
+    expect(styles.get("clip-path")).toBe("none");
+  });
   it("keeps the retired umbrella's equivalent on the head and animates only the equipped item relative to its gift", () => {
     const selected = selectCompanionSprite(0), umbrella = companionAccessoryPlacement(selected, "leaf-umbrella")!, giftPoint = companionGiftAnchor(selected)!;
     expect(umbrella.y).toBeLessThan(giftPoint.y); expect(umbrella.layer).toBe("headwear");
