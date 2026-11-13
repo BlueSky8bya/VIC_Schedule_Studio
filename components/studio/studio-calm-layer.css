@@ -424,7 +424,7 @@ html[data-studio-calm] .studio-shell .event-editor-panel .tp-group {
    (2026-11-13 소유자: "관리자일 때 미리보기 글자가 안 보인다" — 창 폭 ~1,800px 아래에서 계정 카드가 rail 폭으로 줄어
    네 칸이 다 못 들어가면 2단계가 되는데, 2단계가 미리보기까지 눈 아이콘으로 접고 있었다). */
 .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .actor-badge strong,
-.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .button:not(.io-preview) .lbl,
+.studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .button:not(.io-preview, .preview-dd-trigger) .lbl,
 .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .save-status .ss-time {
   display: none;
 }
