@@ -1,5 +1,4 @@
 import { getCurrentKstYearMonth } from "@/lib/calendar/month";
-import { ToriDoodle } from "@/components/shared/tori-doodle";
 import "./calendar-skeleton.css";
 
 // 라우트 레벨 로딩 스켈레톤. loading.tsx(서버, JS 없음)에서 즉시 렌더된다.
@@ -63,7 +62,10 @@ export function CalendarSkeleton({
       </div>
 
       <div className="cal-skel-mascot" aria-hidden="true">
-        <ToriDoodle className="cal-skel-doodle" size={120} />
+        <div className="cal-skel-doodle">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img alt="" className="cal-skel-hop-strip" draggable={false} height={192} src="/tori/loading-hop-v1.webp" width={2304} />
+        </div>
       </div>
 
       {/* 목적지 텍스트 — 웹에선 "{label} 불러오는 중…" 단독 표시. 모바일에선 카드 헤딩에
