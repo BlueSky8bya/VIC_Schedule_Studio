@@ -2099,3 +2099,16 @@ html[data-theme="dark"] .mn-inner {
 .poster-agenda .site-legal-footer {
   padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
 }
+
+/* 없는 페이지·검색 결과 없음 — 토리님 손그림(components/shared/tori-doodle.tsx) */
+.system-state-doodle {
+  display: block;
+  margin: 0 auto 4px;
+}
+.ps-hint.ps-empty {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding-top: 12px;
+  text-align: center;
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Tv } from "lucide-react";
+import { ToriTv } from "@/components/shared/tori-doodle";
 import { reduceMotionEnabled } from "@/lib/ui/motion";
 import type { SoopLive } from "@/components/poster/use-soop-live";
 
@@ -34,7 +34,7 @@ function LiveThumbnail({ src }: { src: string | null }) {
     <div className="slc-thumbnail" data-state={state}>
       {!visibleSrc ? (
         <div className="slc-fallback" aria-hidden="true">
-          <Tv className="slc-fallback-tv" strokeWidth={1.4} />
+          <ToriTv className="slc-fallback-tv" />
         </div>
       ) : null}
       {imageSources.map((imageSrc) => (

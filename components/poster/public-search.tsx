@@ -1,5 +1,6 @@
 "use client";
 
+import { ToriDoodle } from "@/components/shared/tori-doodle";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ArrowUp, AudioLines, CalendarCheck, CalendarDays, ChevronDown, ChevronRight, Footprints, Gamepad2, Headphones, MessageCircle, Music, Play, Search, Tag, User, X } from "lucide-react";
 import type { BroadcastTag, PublicSearchHit, PublicSearchResult, PublicSearchSuggest, PublicSearchTrend } from "@/lib/domain/schedule-types";
@@ -1007,8 +1008,11 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
             {failed ? <p className="ps-hint ps-fail">검색이 잠시 안 돼요. 다시 시도해 주세요.</p> : null}
             {kindEmpty ? <p className="ps-hint" role="status">현재 불러온 결과에 {SEARCH_RESULT_KINDS.find(item=>item.key===kind)?.label} 적중은 없어요. 다른 종류를 골라 보세요.</p> : null}
             {empty ? (
-              <p className="ps-hint">
-                <strong>&ldquo;{resultQuery}&rdquo;</strong> 없음. 다른 말로 찾아보세요.
+              <p className="ps-hint ps-empty">
+                <ToriDoodle className="ps-empty-doodle" size={84} />
+                <span>
+                  <strong>&ldquo;{resultQuery}&rdquo;</strong> 없음. 다른 말로 찾아보세요.
+                </span>
               </p>
             ) : null}
             <div className="ps-results" key={`${result?.query ?? ""}|${sort}`}>

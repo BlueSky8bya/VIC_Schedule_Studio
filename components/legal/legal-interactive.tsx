@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { Bug, CalendarX, Check, Clock3, EyeOff, Heart, ImagePlus, Lightbulb, Mail as MailIcon, MessageCircle, Send, Settings, X } from "lucide-react";
+import { Bug, CalendarX, Clock3, EyeOff, Heart, ImagePlus, Lightbulb, Mail as MailIcon, MessageCircle, Send, Settings, X } from "lucide-react";
 import { LoadingSpinner } from "@/components/shared/loading-state";
 import { REPORT_MAX_BODY, REPORT_MAX_IMAGE_BYTES, REPORT_MAX_IMAGES, REPORT_RETENTION_DAYS, REPORT_TOPICS, type ReportTopic } from "@/lib/reports/topics";
 import { setThemeMode, themeMode, type ThemeMode } from "@/lib/ui/theme";
 import { CONTACT_AVATAR } from "./contact";
+import { ToriDoodle } from "@/components/shared/tori-doodle";
 import styles from "./legal-doc.module.css";
 
 // 문서 페이지의 '움직이는' 조각들. 문서 본문은 서버 컴포넌트이고, 누를 수 있는 것만 여기 모은다.
@@ -283,9 +284,7 @@ export function ContactButton({ variant, initialTopic = "bug", trigger }: {
 
           {state === "sent" ? (
             <div className={styles.sent} role="status">
-              <span className={styles.sentIcon}>
-                <Check size={26} />
-              </span>
+              <ToriDoodle className={styles.sentDoodle} size={112} />
               <strong>보냈어요. 고맙습니다!</strong>
               <span>{email.trim() ? "답이 필요하면 적어 주신 메일로 연락드릴게요." : "꼼꼼히 읽고 반영할게요."}</span>
               <button className={styles.bannerButton} data-act="legal-contact-done" onClick={() => ref.current?.close()} type="button">

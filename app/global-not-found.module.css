@@ -69,3 +69,10 @@
     --selection-fill: #24364d;
   }
 }
+
+.doodle {
+  display: block;
+  width: 132px;
+  height: 132px;
+  margin: 0 auto 6px;
+}

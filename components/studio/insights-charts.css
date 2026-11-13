@@ -555,6 +555,19 @@
   font-weight: 600;
   color: #9a93ad;
 }
+/* 빈 칸에 토리님 손그림(2026-11-13 소유자: "심심한 곳에 많이") — 글 앞 작은 그림, 그림 하나로 모든 빈 칸이 같은 모양. */
+.insight-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.insight-empty::before {
+  content: "";
+  flex: none;
+  width: 52px;
+  height: 52px;
+  background: url("/tori/doodle.webp") center / contain no-repeat;
+}
 
 @keyframes perf-spin {
   to {

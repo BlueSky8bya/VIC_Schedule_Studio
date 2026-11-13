@@ -7033,11 +7033,12 @@ html[data-reduce-motion] .heart-toast {
   background: var(--surface);
   opacity: 0.65;
 }
+/* 손그림 TV(2026-11-13 소유자: "TV 안에 토리님 캐릭터를 주변 그림체와 어울리게") — 원 안 가운데. */
 .slc-fallback-tv {
   position: relative;
-  width: 27%;
+  width: 46%;
   height: auto;
-  max-width: 82px;
+  max-width: 168px;
   filter: drop-shadow(0 3px 0 var(--line-soft));
 }
 .slc-player img {

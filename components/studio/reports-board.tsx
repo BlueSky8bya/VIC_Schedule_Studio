@@ -7,6 +7,7 @@ import { deleteReportAction, setReportDoneAction, setReportRepliedAction } from 
 import { REPORT_RETENTION_DAYS, REPORT_TOPICS, topicLabel } from "@/lib/reports/topics";
 import { LEGAL_CONTACT_EMAIL } from "@/components/legal/contact";
 import { LoadError, LoadingSpinner } from "@/components/shared/loading-state";
+import { ToriDoodle } from "@/components/shared/tori-doodle";
 import styles from "./reports-board.module.css";
 
 type Row = {
@@ -121,7 +122,12 @@ export function ReportsBoard({ rows: initial, error }: { rows: Row[]; error: str
       </header>
 
       {error ? <LoadError message={error} /> : null}
-      {!error && shown.length === 0 ? <p className={styles.empty}>보여 줄 제보가 없어요.</p> : null}
+      {!error && shown.length === 0 ? (
+        <div className={styles.empty}>
+          <ToriDoodle size={120} />
+          <p>보여 줄 제보가 없어요.</p>
+        </div>
+      ) : null}
 
       <ul className={styles.list}>
         {shown.map((r) => (

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ToriDoodle } from "@/components/shared/tori-doodle";
 
 export default function NotFound() {
   return (
@@ -7,6 +8,7 @@ export default function NotFound() {
         className="auth-panel system-state-card"
         aria-labelledby="not-found-title"
       >
+        <ToriDoodle className="system-state-doodle" size={132} />
         <span className="system-state-icon" aria-hidden>
           404
         </span>

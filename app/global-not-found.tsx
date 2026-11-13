@@ -15,6 +15,9 @@ export default function GlobalNotFound() {
       <body className={styles.body}>
         <main className={styles.page}>
           <section className={styles.card} aria-labelledby="not-found-title">
+            {/* 토리님 손그림(public/tori/doodle.webp) — 이 문서는 앱 레이아웃 밖이라 그림도 평범한 img로. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img alt="" aria-hidden="true" className={styles.doodle} height={132} src="/tori/doodle.webp" width={132} />
             <span className={styles.code} aria-hidden="true">404</span>
             <p className={styles.eyebrow}>VIC Studio</p>
             <h1 id="not-found-title">페이지를 찾을 수 없어요</h1>
