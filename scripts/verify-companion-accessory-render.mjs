@@ -7,6 +7,9 @@ import { build } from 'esbuild';
 import { chromium } from '@playwright/test';
 
 const root = process.cwd(), flag = process.argv.find(value => value.startsWith('--out=')), compact = process.argv.includes('--compact');
+const foldedHats = process.argv.includes('--folded-hats');
+const foldedFrames = [[224, 239], [267, 267], [272, 303], [376, 383], [408, 411], [432, 447], [519, 519]]
+  .flatMap(([first, last]) => Array.from({ length: last - first + 1 }, (_, index) => first + index));
 const output = path.resolve(root, flag?.slice(6) ?? '.scratch-pw/companion-110/accessories');
 if (!output.startsWith(path.join(root, '.scratch-pw') + path.sep)) throw Error('QA output must stay in workspace .scratch-pw');
 const hash = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
@@ -75,7 +78,8 @@ try {
           if (motion) { figure.style.height = '190px'; pose.style.transform = `translateY(${-motion.bodyLift}px) rotate(${motion.bodyLean}deg)`; }
           back.className = 'vc-wearable vc-wearable-back'; front.className = 'vc-wearable vc-wearable-front'; gift.className = 'vc-wearable vc-gift-prop'; body.className = 'vc-sprite'; image.className = 'vc-texture'; image.src = pick.src;
           image.style.transform = `translate(${-pick.index % 8 / 8 * 100}%,${-Math.floor(pick.index / 8) / 2 * 100}%)`;
-          body.style.transform = `translate(${pick.frame.x}%,${pick.frame.y}%)`; body.style.clipPath = `inset(${pick.frame.clip.map(value => `${value}%`).join(' ')})`;
+          body.style.transform = `translate(${pick.frame.x / 80 * 100}%,${pick.frame.y / 80 * 100}%)`;
+          body.style.clipPath = `inset(${pick.frame.clip.map(value => `${value / 80 * 100}%`).join(' ')})`;
           body.append(image); pose.append(back, body, front, gift); stage.append(pose);
           const caption = document.createElement('figcaption'); caption.textContent = humanLabels ? catalogue[id].name : `${id}\n${index} ${facing > 0 ? 'right' : 'left'}${motion ? ` ${age}ms` : ''}`;
           figure.append(stage, caption); grid.append(figure);
@@ -98,34 +102,42 @@ try {
   const domain = await page.evaluate(() => ({ ids: window.accessoryQA.ids, critical: window.accessoryQA.critical, checks: window.accessoryQA.checks, motionChecks: window.accessoryQA.motionChecks, domain: window.accessoryQA.domain }));
   await fs.mkdir(output, { recursive: true });
   let sheets = 0;
-  if (compact) {
-    const indexes = [0, 144, 32, 128, 267, 320, 404, 326, 504, 519];
-    for (const [index, id] of domain.ids.entries()) await page.evaluate(({ id, indexes, append }) => window.accessoryQA.render(id, indexes, '115: all active fittings,10 representative adopted poses, both facings', undefined, append), { id, indexes, append: index > 0 });
-    await page.locator('.audit-grid').screenshot({ path: path.join(output, 'all-active-contact.png') }); sheets++;
-  } else for (const id of domain.ids) for (let offset = 0; offset < domain.critical.length; offset += 128) {
-    const indexes = domain.critical.slice(offset, offset + 128), name = `wear-${id}-${offset / 128 + 1}.png`;
-    await page.evaluate(({ id, indexes }) => window.accessoryQA.render(id, indexes, `${id}: exact adopted painter, native source yaw; each pair right/left`), { id, indexes });
-    await page.locator('.audit-grid').screenshot({ path: path.join(output, name) }); sheets++;
-  }
-  if (compact) {
-    for (const id of ['baseball-cap', 'beret', 'round-glasses']) {
-      await page.evaluate(id => {
-        const frames = [...Array.from({ length: 16 }, (_, i) => 320 + i), 404, 408, 504, 519];
-        return window.accessoryQA.render(id, frames, id + ': tumble and low forehead frames, both facings');
-      }, id);
-      await page.locator('.audit-grid').screenshot({ path: path.join(output, `angle-${id}.png`) });
-      sheets++;
+  if (foldedHats) {
+    const hats = await page.evaluate(() => window.QA.ids.filter(id => window.QA.catalogue[id].family === 'head'));
+    for (const id of hats) {
+      await page.evaluate(({ id, indexes }) => window.accessoryQA.render(id, indexes, `${id}: folded ears, both facings`), { id, indexes: foldedFrames });
+      await page.locator('.audit-grid').screenshot({ path: path.join(output, `wear-${id}.png`) }); sheets++;
     }
+  } else {
+    if (compact) {
+      const indexes = [0, 144, 32, 128, 267, 320, 404, 326, 504, 519];
+      for (const [index, id] of domain.ids.entries()) await page.evaluate(({ id, indexes, append }) => window.accessoryQA.render(id, indexes, '115: all active fittings,10 representative adopted poses, both facings', undefined, append), { id, indexes, append: index > 0 });
+      await page.locator('.audit-grid').screenshot({ path: path.join(output, 'all-active-contact.png') }); sheets++;
+    } else for (const id of domain.ids) for (let offset = 0; offset < domain.critical.length; offset += 128) {
+      const indexes = domain.critical.slice(offset, offset + 128), name = `wear-${id}-${offset / 128 + 1}.png`;
+      await page.evaluate(({ id, indexes }) => window.accessoryQA.render(id, indexes, `${id}: exact adopted painter, native source yaw; each pair right/left`), { id, indexes });
+      await page.locator('.audit-grid').screenshot({ path: path.join(output, name) }); sheets++;
+    }
+    if (compact) {
+      for (const id of ['baseball-cap', 'beret', 'round-glasses']) {
+        await page.evaluate(id => {
+          const frames = [...Array.from({ length: 16 }, (_, i) => 320 + i), 404, 408, 504, 519];
+          return window.accessoryQA.render(id, frames, id + ': tumble and low forehead frames, both facings');
+        }, id);
+        await page.locator('.audit-grid').screenshot({ path: path.join(output, `angle-${id}.png`) });
+        sheets++;
+      }
+    }
+    for (const id of ['propeller-hat', 'magic-pocket']) {
+      await page.evaluate(id => window.accessoryQA.render(id, [], `${id}: finite shared-source special sequence,11 ages, both facings`, [0, 260, 520, 780, 1040, 1300, 1560, 1820, 2080, 2340, 2600]), id);
+      await page.locator('.audit-grid').screenshot({ path: path.join(output, `special-${id}.png`) }); sheets++;
+    }
+    await page.evaluate(async ids => {
+      const grid = document.querySelector('.audit-grid'); grid.style.gridTemplateColumns = 'repeat(5,104px)'; grid.style.width = '520px';
+      for (const [index, id] of ids.entries()) await window.accessoryQA.render(id, [0], `115:${ids.length} active accessories, actual92px default body`, undefined, index > 0, [1], true);
+    }, domain.ids);
+    await page.locator('.audit-grid').screenshot({ path: path.join(output, 'all-active-neutral-92px.png') }); sheets++;
   }
-  for (const id of ['propeller-hat', 'magic-pocket']) {
-    await page.evaluate(id => window.accessoryQA.render(id, [], `${id}: finite shared-source special sequence,11 ages, both facings`, [0, 260, 520, 780, 1040, 1300, 1560, 1820, 2080, 2340, 2600]), id);
-    await page.locator('.audit-grid').screenshot({ path: path.join(output, `special-${id}.png`) }); sheets++;
-  }
-  await page.evaluate(async ids => {
-    const grid = document.querySelector('.audit-grid'); grid.style.gridTemplateColumns = 'repeat(5,104px)'; grid.style.width = '520px';
-    for (const [index, id] of ids.entries()) await window.accessoryQA.render(id, [0], `115:${ids.length} active accessories, actual92px default body`, undefined, index > 0, [1], true);
-  }, domain.ids);
-  await page.locator('.audit-grid').screenshot({ path: path.join(output, 'all-active-neutral-92px.png') }); sheets++;
   const rendered = await page.evaluate(() => window.accessoryQA.snapshots);
   if (errors.length || unknownRequests.length) throw Error(JSON.stringify({ errors, unknownRequests }));
   for (const [name, source] of sources) if (await fs.readFile(name, 'utf8') !== source) throw Error('Source changed during audit: ' + name);

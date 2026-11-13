@@ -1,4 +1,4 @@
-import { companionForegroundEars } from "./accessory-ear-occlusion";
+import { companionFoldedHatSeat, companionForegroundEars } from "./accessory-ear-occlusion";
 import { companionEyeScale143Source, companionEyeScale143Eyes } from "./eye-scale-143";
 import anchors from "./accessory-anchors.json";
 import homeContactAnchors from "./home-contact-anchors-157.json";
@@ -116,9 +116,12 @@ export function companionAccessoryPlacement(selected: CompanionSpriteSelection, 
   const item = COMPANION_ACCESSORIES[id], spec = item && { point: familyPoint[item.family], scale: item.scale };
   if (!pose || !source || source.src !== selected.src || pose.index !== selected.index || !spec) return null;
   if (motion && (!Object.values(motion).every(Number.isFinite) || motion.scale <= 0)) return null;
-  const point = pose[spec.point], art = id === "magic-pocket" && (motion?.aperture ?? 0) > .1 ? companionOpenPocketArt(pose.orientation) : getCompanionAccessoryArtFrame(id, pose.orientation);
-  if (!art || ![point.x, point.y, point.width, point.roll].every(Number.isFinite) || point.width <= 0) return null;
-  const headwear = isCompanionHat(id), quarter = pose.orientation === "quarter";
+  const nativePoint = pose[spec.point], art = id === "magic-pocket" && (motion?.aperture ?? 0) > .1 ? companionOpenPocketArt(pose.orientation) : getCompanionAccessoryArtFrame(id, pose.orientation);
+  const headwear = isCompanionHat(id);
+  const seat = headwear ? companionFoldedHatSeat(selected.physicalIndex) : undefined;
+  const point = seat ?? nativePoint;
+  if (!art || ![point.x, point.y, nativePoint.width, point.roll].every(Number.isFinite) || nativePoint.width <= 0) return null;
+  const quarter = pose.orientation === "quarter";
   const mirror: -1 | 1 = quarter && poseYaw.get(selected.physicalIndex) !== sourceYaw(art) ? -1 : 1;
   const decoration = { mirror, ...(id === "sunglasses" && quarter ? { pivot: { x: 49, y: 68 }, clips: glassesClips } : id === "satchel" ? { clips: bagClips } : id === "propeller-hat" ? { rearArt: companionPropellerArt(pose.orientation), rotor: 0 } : {}) };
   if (item.family === "eye-mask" && pose.orientation !== "back") {
@@ -157,7 +160,7 @@ export function companionAccessoryPlacement(selected: CompanionSpriteSelection, 
   // as a lower bound without moving the pivot or hiding the ear tips.
   const baseWidth = item.family === "eyes" && pose.orientation !== "back" && standingFace
     ? standingFace.width * companionEyeViewScale(pose.orientation)
-    : headwear ? Math.max(point.width, pose.chest.width * .38) : point.width;
+    : headwear ? Math.max(nativePoint.width, pose.chest.width * .38) : nativePoint.width;
   if (frontMounted(id) && pose.orientation !== "back") {
     const angle = point.roll * Math.PI / 180, nx = -Math.sin(angle), ny = Math.cos(angle), depth = (x: number, y: number) => (x - pose.face.x) * nx + (y - pose.face.y) * ny;
     const [left, top, right, bottom] = pose.bodyBounds;
@@ -174,7 +177,7 @@ export function companionAccessoryPlacement(selected: CompanionSpriteSelection, 
     const along = (point.x - pose.face.x) * Math.cos(angle) + (point.y - pose.face.y) * Math.sin(angle);
     return withMotion({ art, x: pose.face.x + nx * centre + Math.cos(angle) * along, y: pose.face.y + ny * centre + Math.sin(angle) * along, width: height * art.content.width / art.content.height, rotation: point.roll, layer: "front", ...decoration }, pose, id, motion);
   }
-  const width = baseWidth * spec.scale, brim = headwear ? width * art.content.height / art.content.width * (id === "propeller-hat" ? .45 : .2) : id === "leaf-umbrella" ? pose.chest.width * .48 : 0, angle = point.roll * Math.PI / 180;
+  const width = baseWidth * spec.scale * (seat?.scale ?? 1), brim = headwear ? width * art.content.height / art.content.width * (id === "propeller-hat" ? .45 : .2) : id === "leaf-umbrella" ? pose.chest.width * .48 : 0, angle = point.roll * Math.PI / 180;
   const fitted = withMotion({ art, x: point.x + Math.sin(angle) * brim, y: point.y - Math.cos(angle) * brim, width, rotation: point.roll - (id === "sunglasses" && quarter ? 12.5 * mirror : 0),
     layer: headwear ? "headwear" : pose.orientation === "back" && (frontMounted(id) || item.family === "eyes" || item.family === "eye-cover" || item.family === "eye-mask") ? "back" : "front", ...decoration }, pose, id, motion);
   return headwear ? clearHeadwearEyes(fitted, pose) : fitted;

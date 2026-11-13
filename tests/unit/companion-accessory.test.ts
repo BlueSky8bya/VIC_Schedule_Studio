@@ -4,7 +4,7 @@ import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 import edition from "../fixtures/companion-eye-scale-143.json";
 import { companionAccessoryAnchor, companionAccessoryPlacement, companionGiftAnchor, createCompanionAccessoryPainter } from "@/lib/ui/viewer-companion/accessory";
-import { COMPANION_ACCESSORIES, currentCompanionAccessory } from "@/lib/ui/viewer-companion/accessory-catalog";
+import { COMPANION_ACCESSORIES, COMPANION_WEARABLE_IDS, currentCompanionAccessory } from "@/lib/ui/viewer-companion/accessory-catalog";
 import { COMPANION_ACCESSORY_IDS } from "@/lib/ui/viewer-companion/gifts";
 import { companionSpriteMetadata, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import anchors from "@/lib/ui/viewer-companion/accessory-anchors.json";
@@ -192,16 +192,26 @@ describe("adopted pose wardrobe", () => {
       expect(rear.clips).toBeUndefined();
     }
   });
-  it("shows the original folded ears through a worn beret and clears the cutout on upright poses", () => {
+  it("shows the original folded ears through every headwear and clears the cutout on upright poses", () => {
     const styles = new Map<string, string>();
     const host = (values = new Map<string, string>()) => ({
       hidden: true, style: { setProperty: (key: string, value: string) => values.set(key, value) },
     }) as unknown as HTMLElement;
     const painter = createCompanionAccessoryPainter({ front: host(styles), back: host(), gift: host() });
-    painter.paint(selectCompanionSprite(408), "beret", false);
-    expect(styles.get("clip-path")).toMatch(/^polygon\(evenodd,/);
-    painter.paint(selectCompanionSprite(0), "beret", false);
-    expect(styles.get("clip-path")).toBe("none");
+    for (const id of COMPANION_WEARABLE_IDS.filter(id => COMPANION_ACCESSORIES[id].family === "head")) {
+      for (const frame of [224, 239, 267, 272, 287, 288, 303, 376, 383, 408, 411, 432, 447, 519]) {
+        painter.paint(selectCompanionSprite(frame), id, false);
+        expect(styles.get("clip-path"), `${id}:${frame}`).toMatch(/^polygon\(evenodd,/);
+      }
+      painter.paint(selectCompanionSprite(0), id, false);
+      expect(styles.get("clip-path")).toBe("none");
+    }
+  });
+  it("seats the bread cap between the folded ear roots in a curled nap", () => {
+    const cap = companionAccessoryPlacement(selectCompanionSprite(519), "retro-cap")!;
+    expect(cap.x).toBeGreaterThan(39);
+    expect(cap.x).toBeLessThan(42);
+    expect(Math.abs(cap.rotation)).toBeLessThan(5);
   });
   it("keeps the retired umbrella's equivalent on the head and animates only the equipped item relative to its gift", () => {
     const selected = selectCompanionSprite(0), umbrella = companionAccessoryPlacement(selected, "leaf-umbrella")!, giftPoint = companionGiftAnchor(selected)!;
