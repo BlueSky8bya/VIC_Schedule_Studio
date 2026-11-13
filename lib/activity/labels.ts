@@ -825,6 +825,8 @@ export const ACT: Record<string, TargetLabel> = {
   "reports-reply-gmail": { name: "제보함: Gmail로 답장 쓰기", area: "편집실" },
   "reports-replied": { name: "제보함: 답장함 표시", area: "편집실" },
   "reports-reply-close": { name: "제보함: 답장 창 닫기", area: "편집실" },
+  "report-inbox": { name: "헤더 → 사이트 제보함(개발자)", area: "편집실", hint: "설정·밝기 옆 받은편지함, 새 제보 수 배지(2026-11-13)" },
+  "reports-reply-send": { name: "제보함: 답장 보내기(Gmail 자동)", area: "편집실" },
   "theme-toggle": { name: "밝기 토글(헤더)", area: "시청자 화면", hint: "설정 단추 옆 해/달 — 밝게↔어둡게(2026-11-13)" },
   "legal-demo-heart": { name: "문서 예시: 하트 눌러 보기", area: "기타" },
   "legal-demo-theme": { name: "문서 예시: 화면 모드", area: "기타", opts: { light: "밝게", dark: "어둡게", system: "자동" } },

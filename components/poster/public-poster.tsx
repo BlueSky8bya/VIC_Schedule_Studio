@@ -4,6 +4,7 @@
 import "./viewer-companion/companion-home.css";
 import { SiteLegalFooter } from "@/components/legal/site-legal-footer";
 import { ThemeToggleButton } from "@/components/shared/theme-toggle-button";
+import { ReportInboxButton } from "@/components/shared/report-inbox-button";
 import { scrollAgendaTarget } from "@/lib/ui/agenda-scroll";
 import { announceIfStaleDeployment } from "@/lib/net/stale-deploy";
 import { PublicEventCalendar } from "./public-event-calendar";
@@ -210,6 +211,8 @@ type PublicPosterProps = {
   previewNav?: ReactNode;
   // 실제 개발자 계정의 시청자 미리보기에서만 허용. 일반 공개 화면에는 전달하지 않는다.
   canRehearsePremiere?: boolean;
+  /** 개발자가 미리보기로 볼 때 헤더에 사이트 제보함 단추(새 제보 수). */
+  showReportInbox?: boolean;
   // 생일 카드·캡슐 뽑기(2026-10-06 소유자) — 편집실 시청자 미리보기에서만 넘긴다. 없으면(시청자 화면 /) 생일 노래만.
   // gachaAnyDay: 개발자 토글 — 생일 당일이 아니어도 뽑기 창이 열린다('지금 열기' 이벤트도 받는다).
   birthdayGift?: boolean;
@@ -624,6 +627,7 @@ export function PublicPoster({
   previewNote,
   previewNav,
   canRehearsePremiere = false,
+  showReportInbox = false,
   birthdayGift = false,
   gachaAnyDay = false,
   avatarSlot = false,
@@ -5083,6 +5087,8 @@ export function PublicPoster({
                   흔들려 버튼이 따라 움직였다(fixed면 안 흔들림). */}
               {/* 설정(2026-09-19 소유자) — 검색·기록·로그인과 같은 줄의 왼쪽 끝. 내용은 편집실 설정 창과 같다. */}
               {settingsButton}
+              {/* 개발자 미리보기 — PC 헤더에만 제보함 단추(2026-11-13 소유자). */}
+              {interactive && showReportInbox ? <ReportInboxButton /> : null}
               {companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed ? <CompanionHomeLauncherSlot onHost={companionLauncherHostRef} /> : null}
             </div>
 

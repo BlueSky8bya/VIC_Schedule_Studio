@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, ExternalLink, Inbox, Mail, MailCheck, Monitor, Reply, Smartphone, Trash2, Undo2, X } from "lucide-react";
-import { deleteReportAction, setReportDoneAction, setReportRepliedAction } from "@/lib/reports/actions";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, ExternalLink, Inbox, Mail, MailCheck, Monitor, Reply, Send, Smartphone, Sparkles, Trash2, Undo2, X } from "lucide-react";
+import { deleteReportAction, sendReplyAction, setReportDoneAction, setReportRepliedAction } from "@/lib/reports/actions";
 import { REPORT_RETENTION_DAYS, REPORT_TOPICS, topicLabel } from "@/lib/reports/topics";
 import { LEGAL_CONTACT_EMAIL } from "@/components/legal/contact";
 import { LoadError, LoadingSpinner } from "@/components/shared/loading-state";
@@ -21,6 +21,7 @@ type Row = {
   imageUrls: string[];
   done_at: string | null;
   replied_at: string | null;
+  seen_at?: string | null;
 };
 
 const fmt = (iso: string) =>
@@ -47,13 +48,27 @@ function defaultReply(r: Row): { subject: string; body: string } {
 }
 
 // 사이트 제보함 — 개발자 전용(app/(studio)/studio/reports). 처리 완료 → 90일 뒤 자동 삭제(lib/reports/report.ts).
-export function ReportsBoard({ rows: initial, error }: { rows: Row[]; error: string | null }) {
+export function ReportsBoard({
+  rows: initial,
+  error,
+  newIds = [],
+  mailReady = false
+}: {
+  rows: Row[];
+  error: string | null;
+  /** 이번에 처음 본 제보(열자마자 '봄' 처리돼 다음부터는 표시 안 됨). */
+  newIds?: string[];
+  /** 서버에 Gmail 발송 비밀값이 있는가 — 없으면 Gmail 창 열기로. */
+  mailReady?: boolean;
+}) {
   const [rows, setRows] = useState(initial);
   const [filter, setFilter] = useState<"open" | "done" | "all">("open");
   const [busy, setBusy] = useState<string | null>(null);
   const [failed, setFailed] = useState<string | null>(null);
   const [viewer, setViewer] = useState<{ urls: string[]; index: number } | null>(null);
   const [reply, setReply] = useState<{ row: Row; subject: string; body: string; opened: boolean } | null>(null);
+  const [sendState, setSendState] = useState<{ status: "idle" | "sending" | "error"; message?: string }>({ status: "idle" });
+  const [sentNote, setSentNote] = useState<string | null>(null);
   const replyRef = useRef<HTMLDialogElement>(null);
   const [, start] = useTransition();
   const shown = rows.filter((r) => (filter === "all" ? true : filter === "open" ? !r.done_at : Boolean(r.done_at)));
@@ -122,6 +137,11 @@ export function ReportsBoard({ rows: initial, error }: { rows: Row[]; error: str
       </header>
 
       {error ? <LoadError message={error} /> : null}
+      {sentNote ? (
+        <p className={styles.sentNote} role="status">
+          <MailCheck size={15} /> {sentNote}
+        </p>
+      ) : null}
       {!error && shown.length === 0 ? (
         <div className={styles.empty}>
           <ToriDoodle size={120} />
@@ -133,6 +153,11 @@ export function ReportsBoard({ rows: initial, error }: { rows: Row[]; error: str
         {shown.map((r) => (
           <li className={`${styles.item}${r.done_at ? ` ${styles.done}` : ""}`} key={r.id}>
             <div className={styles.meta}>
+              {newIds.includes(r.id) ? (
+                <span className={styles.newMark}>
+                  <Sparkles size={12} /> 새 제보
+                </span>
+              ) : null}
               <span className={styles.topic} data-topic={r.topic}>
                 {topicLabel(r.topic)}
               </span>
@@ -178,7 +203,10 @@ export function ReportsBoard({ rows: initial, error }: { rows: Row[]; error: str
                 <button
                   className={`${styles.btn} ${styles.primary}`}
                   data-act="reports-reply"
-                  onClick={() => setReply({ row: r, ...defaultReply(r), opened: false })}
+                  onClick={() => {
+                    setSendState({ status: "idle" });
+                    setReply({ row: r, ...defaultReply(r), opened: false });
+                  }}
                   type="button"
                 >
                   <Reply size={14} /> {r.reply_email}에게 답장
@@ -290,8 +318,15 @@ export function ReportsBoard({ rows: initial, error }: { rows: Row[]; error: str
               <textarea onChange={(e) => setReply({ ...reply, body: e.target.value })} rows={11} value={reply.body} />
             </label>
             <p className={styles.replyNote}>
-              Gmail 쓰기 창이 새 창으로 열립니다. 내용을 확인하고 Gmail에서 보내기를 누르면 전송됩니다.
+              {mailReady
+                ? "보내기를 누르면 3blackspacegames Gmail로 바로 전송되고, 보낸편지함에도 남습니다."
+                : "Gmail 자동 발송이 아직 설정되지 않았어요. Gmail 쓰기 창이 새 창으로 열립니다."}
             </p>
+            {sendState.status === "error" ? (
+              <p className={styles.sendError} role="alert">
+                {sendState.message}
+              </p>
+            ) : null}
             <div className={styles.replyActions}>
               {reply.opened ? (
                 <button
@@ -308,7 +343,7 @@ export function ReportsBoard({ rows: initial, error }: { rows: Row[]; error: str
                 </button>
               ) : null}
               <button
-                className={`${styles.btn} ${styles.primary}`}
+                className={mailReady ? styles.btn : `${styles.btn} ${styles.primary}`}
                 data-act="reports-reply-gmail"
                 onClick={() => {
                   window.open(gmailComposeUrl(reply.row.reply_email ?? "", reply.subject, reply.body), "vic-reply", "popup,width=720,height=760");
@@ -316,8 +351,40 @@ export function ReportsBoard({ rows: initial, error }: { rows: Row[]; error: str
                 }}
                 type="button"
               >
-                <ExternalLink size={14} /> Gmail로 쓰기
+                <ExternalLink size={14} /> Gmail 창으로
               </button>
+              {mailReady ? (
+                <button
+                  className={`${styles.btn} ${styles.send}`}
+                  data-act="reports-reply-send"
+                  disabled={sendState.status === "sending"}
+                  onClick={async () => {
+                    const { row, subject, body } = reply;
+                    setSendState({ status: "sending" });
+                    const res = await sendReplyAction(row.id, subject, body).catch(() => ({ ok: false as const, reason: "send" as const }));
+                    if (res.ok) {
+                      patch(row.id, { replied_at: new Date().toISOString() });
+                      setSendState({ status: "idle" });
+                      setSentNote(`${row.reply_email}에게 답장을 보냈어요.`);
+                      replyRef.current?.close();
+                      return;
+                    }
+                    const why: Record<string, string> = {
+                      "not-configured": "Gmail 자동 발송이 설정되지 않았어요. 'Gmail 창으로'를 눌러 보내 주세요.",
+                      auth: "Gmail 로그인 허락이 만료됐어요. 설정 스크립트를 다시 실행하거나 'Gmail 창으로' 보내 주세요.",
+                      send: "보내지 못했어요. 잠시 뒤 다시 시도하거나 'Gmail 창으로' 보내 주세요.",
+                      "no-email": "이 제보에는 답장 받을 메일이 없어요.",
+                      invalid: "제목과 본문을 확인해 주세요.",
+                      denied: "개발자만 보낼 수 있어요."
+                    };
+                    setSendState({ status: "error", message: why[res.reason] ?? why.send });
+                  }}
+                  type="button"
+                >
+                  {sendState.status === "sending" ? <LoadingSpinner small /> : <Send size={14} />}
+                  {sendState.status === "sending" ? "보내는 중…" : "보내기"}
+                </button>
+              ) : null}
             </div>
           </div>
         </dialog>

@@ -107,6 +107,7 @@ export type ReportRow = {
   images: string[];
   done_at: string | null;
   replied_at: string | null;
+  seen_at: string | null;
 };
 
 /** 제보함 목록 — 캡처는 1시간짜리 서명 주소로. */
@@ -115,7 +116,7 @@ export async function listReports(): Promise<(ReportRow & { imageUrls: string[] 
   if (!db) return null;
   const { data, error } = await db
     .from("site_report")
-    .select("id, created_at, topic, body, reply_email, page, device, images, done_at, replied_at")
+    .select("id, created_at, topic, body, reply_email, page, device, images, done_at, replied_at, seen_at")
     .order("created_at", { ascending: false })
     .limit(200);
   if (error || !data) return null;
@@ -134,6 +135,29 @@ export async function setReportDone(id: string, done: boolean): Promise<boolean>
   if (!db) return false;
   const { error } = await db.from("site_report").update({ done_at: done ? new Date().toISOString() : null }).eq("id", id);
   return !error;
+}
+
+/** 아직 개발자가 보지 않은 제보 수 — 헤더 제보함 단추의 숫자. */
+export async function countUnseenReports(): Promise<number | null> {
+  const db = createSupabaseAdminClient();
+  if (!db) return null;
+  const { count, error } = await db.from("site_report").select("id", { count: "exact", head: true }).is("seen_at", null);
+  return error ? null : count ?? 0;
+}
+
+/** 제보함을 열면 지금까지 들어온 제보를 '봄'으로. */
+export async function markReportsSeen(): Promise<void> {
+  const db = createSupabaseAdminClient();
+  if (!db) return;
+  await db.from("site_report").update({ seen_at: new Date().toISOString() }).is("seen_at", null);
+}
+
+/** 답장 받는 주소는 화면이 보낸 값이 아니라 저장된 제보에서 읽는다. */
+export async function getReplyEmail(id: string): Promise<string | null> {
+  const db = createSupabaseAdminClient();
+  if (!db) return null;
+  const { data } = await db.from("site_report").select("reply_email").eq("id", id).maybeSingle();
+  return (data?.reply_email as string | null | undefined) ?? null;
 }
 
 /** 답장 메일을 보냈다고 표시(제보함의 답장 창에서 Gmail로 보낸 뒤). */

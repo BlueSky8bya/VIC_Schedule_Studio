@@ -1,0 +1,29 @@
+/* 헤더 제보함 단추 — 모양은 설정 단추(.viewer-settings-open)와 같고, 오른쪽 위에 새 제보 수 배지. */
+.report-inbox-btn {
+  position: relative;
+  text-decoration: none;
+}
+.report-inbox-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border: 2px solid var(--surface, #fff);
+  border-radius: 10px;
+  background: #e5486b;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 16px;
+  text-align: center;
+  box-sizing: border-box;
+  pointer-events: none;
+}
+/* 모바일에는 두지 않는다(소유자: 너비 부족) — 혹시 같은 묶음으로 그려져도 숨긴다. */
+@media (max-width: 640px) {
+  .report-inbox-btn {
+    display: none;
+  }
+}

@@ -12,6 +12,8 @@ export default function ReportsFixturePage() {
   return (
     <ReportsBoard
       error={null}
+      mailReady
+      newIds={["f1"]}
       rows={[
         { id: "f1", created_at: new Date(now - 600_000).toISOString(), topic: "schedule", body: "11월 13일 21시 합방이 22시예요.\n방송국 공지 확인했습니다.", reply_email: "viewer@example.com", page: "/", device: "mobile", imageUrls: [0, 1, 2, 3, 4, 5].map(shot), done_at: null, replied_at: null },
         { id: "f2", created_at: new Date(now - 3_600_000).toISOString(), topic: "bug", body: "검색에서 다시보기를 누르면 창이 안 열려요.", reply_email: null, page: "/privacy", device: "desktop", imageUrls: [shot(2)], done_at: null, replied_at: null },

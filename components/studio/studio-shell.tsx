@@ -53,6 +53,7 @@ import { ShowcaseExit, useShowcaseEnvironment, ViewerAmbientControl } from "@/co
 import { PanelSection } from "@/components/shared/panel-section";
 import { SettingsButton } from "@/components/shared/settings-button";
 import { ThemeToggleButton } from "@/components/shared/theme-toggle-button";
+import { ReportInboxButton } from "@/components/shared/report-inbox-button";
 import { ContactButton } from "@/components/legal/legal-interactive";
 import { MobileCalendarTitle } from "@/components/shared/mobile-calendar-title";
 import { MobileSaveFeedback } from "@/components/shared/mobile-save-feedback";
@@ -7281,6 +7282,7 @@ export function StudioShell({
           previewNav={previewNav}
           premiereEnabled={previewReady}
           canRehearsePremiere={actor.role === "developer" && effectiveRole === "developer"}
+          showReportInbox={actor.role === "developer"}
           schedule={previewSchedule}
           // 생일 캡슐 뽑기(2026-10-06 소유자 개정): 지금은 **개발자가 토글을 켰을 때만**, 개발자의 시청자 미리보기에서 날짜 상관없이.
           // 관리자·시청자는 토글과 상관없이 생일 노래만. 나중에 관리자에게 열 때는 이 조건에 owner만 더하면 된다.
@@ -7572,6 +7574,8 @@ export function StudioShell({
         <div className="studio-left">
           <SettingsButton open={modal === "settings"} dataAct="studio-settings" onClick={() => { hapticTick(); setCompanionBook(false); setModal("settings"); }} />
           <ThemeToggleButton dataAct="studio-theme-toggle" />
+          {/* 개발자만 — 아직 보지 않은 사이트 제보 수(PC 헤더만, 2026-11-13 소유자). */}
+          {actor.role === "developer" ? <ReportInboxButton /> : null}
           {companionDesktop && companionPrefs.enabled ? <CompanionHomeLauncherSlot onHost={companionLauncherHostRef} /> : null}
         </div>
 
