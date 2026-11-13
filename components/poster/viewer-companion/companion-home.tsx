@@ -19,6 +19,7 @@ import { COMPANION_TV_ART_VIEWBOX, COMPANION_TV_SCREEN_CLIP, COMPANION_TV_SCREEN
 import { companionCurtainControl, setCompanionCurtainChoice } from "@/lib/ui/viewer-companion/home-curtain-control";
 import { CompanionTvPicture } from "./companion-tv-picture";
 import { companionRoomLighting } from "@/lib/ui/viewer-companion/room-lighting";
+import { revealCompanionHome } from "@/lib/ui/viewer-companion/home-reveal";
 
 export type CompanionHomeAction = "home" | "feed" | "clearFood" | "radio" | "book" | "wash";
 type Props = { care: CompanionCare; preferences: CompanionPreferences; inactive?: boolean; owner?: string; radioPlaying?: boolean; unreadCollection?: boolean; onAction: (action: CompanionHomeAction) => void; onPersonality?: () => void; onClose?: () => void; onToyBox?: () => void; toyCount?: number; environment?: CompanionHomeEnvironment; curtain?: CompanionHomeCurtain; lighting?: CSSProperties };
@@ -65,7 +66,7 @@ export function CompanionBedForeground({ idPrefix = "companion-front" }: { idPre
 /** One small room, shared by the desktop rail and compact portal. The cushion
  * is a real landing anchor; food and care stay in the existing single runtime. */
 export function CompanionHome({ care, preferences, inactive, owner, radioPlaying = false, unreadCollection = false, onAction, onPersonality, onClose, onToyBox, toyCount = 0, environment, lighting, curtain = INITIAL_COMPANION_HOME_CURTAIN }: Props) {
-  const room = useRef<HTMLElement>(null);
+  const room = useRef<HTMLElement>(null), roomArt = useRef<HTMLDivElement>(null);
   const bedId = useId().replace(/:/g, "");
   const tv = useSyncExternalStore(subscribeCompanionHomeTv, getCompanionHomeTv, getServerCompanionHomeTv);
   const lampLit = useSyncExternalStore(subscribeCompanionHomeLight, getCompanionHomeLight, getServerCompanionHomeLight);
@@ -78,17 +79,20 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
   // Its host already owns the panel FLIP. A tiny entry never resizes the room,
   // repeats on care changes, or creates an autonomous animation loop.
   useLayoutEffect(() => { if (room.current) flipSpring(room.current, "translateY(3px)"); }, []);
+  // First paint reads in a fixed order (floor → wall → furniture → props →
+  // pet) instead of whichever picture finished first. Boxes never move.
+  useLayoutEffect(() => roomArt.current ? revealCompanionHome(roomArt.current) : undefined, []);
   return <PanelSection inert={inactive ? true : undefined} aria-hidden={inactive ? true : undefined} ref={room} title="빅타민 집" sectionKey="companion-home" headingAction="companion-home-fold" collapsible={!onClose} headingData={{ "data-home-action": "fold" }} actions={<>{onPersonality && <button type="button" className="vc-home-personality" data-home-action="personality" data-act="companion-personality-open" data-tip={`성격 바꾸기 · ${COMPANION_PERSONALITY_NAMES[preferences.personality]}`} aria-label={`성격 바꾸기 · ${COMPANION_PERSONALITY_NAMES[preferences.personality]}`} onClick={onPersonality}><Sparkles size={15} aria-hidden="true" /><span>{COMPANION_PERSONALITY_NAMES[preferences.personality]}</span></button>}{onClose && <button type="button" data-home-action="close" data-act="companion-home-close" data-tip="닫기" className="vc-home-close" onClick={onClose} aria-label="빅타민 집 닫기"><X size={15} strokeWidth={1.7} /></button>}</>} className="vc-home" aria-label="빅타민 집" data-home-presentation={onClose ? "compact" : "panel"} data-size={preferences.size} data-sfx="off" data-pm-exit="5" data-companion-home-owner={owner}>
-    <div className="vc-home-room" style={lighting ?? companionRoomLighting(environment, curtain.phase, lampLit) as CSSProperties} data-season={environment?.season} data-weather={environment?.weather} data-band={environment?.band} data-phase={resolveCompanionWindowScene(environment).phase} data-night={environment?.night || undefined} data-lamp-lit={lampLit || undefined} data-tv={tv}>
+    <div className="vc-home-room" ref={roomArt} style={lighting ?? companionRoomLighting(environment, curtain.phase, lampLit) as CSSProperties} data-season={environment?.season} data-weather={environment?.weather} data-band={environment?.band} data-phase={resolveCompanionWindowScene(environment).phase} data-night={environment?.night || undefined} data-lamp-lit={lampLit || undefined} data-tv={tv}>
       <HomeWindow environment={environment} curtain={curtain} inactive={inactive} />
-      <button type="button" className="vc-curtain-control" data-home-decoration-control="" data-home-action="curtain" data-act="companion-home-curtain" data-act-opt={curtainControl.next} aria-label={curtainControl.label} data-tip={curtainControl.label} onClick={() => setCompanionCurtainChoice(curtainControl.next)}>
+      <button type="button" className="vc-curtain-control" data-home-layer="wall" data-home-decoration-control="" data-home-action="curtain" data-act="companion-home-curtain" data-act-opt={curtainControl.next} aria-label={curtainControl.label} data-tip={curtainControl.label} onClick={() => setCompanionCurtainChoice(curtainControl.next)}>
         <span className="vc-curtain-paint" aria-hidden="true">
           <span className="vc-curtain-collar" />
           <span className="vc-curtain-rope" />
           <span className="vc-curtain-handle" />
         </span>
       </button>
-      <div className="vc-home-shelf">
+      <div className="vc-home-shelf" data-home-layer="wall">
       <svg className="vc-home-shelf-art" width="108" height="55" viewBox="0 0 108 55" preserveAspectRatio="none" fill="none" aria-hidden="true" focusable="false">
         <defs>
           <linearGradient id={`${bedId}-shelf`} x2=".15" y2="1"><stop stopColor="var(--vc-wood-light)" /><stop offset=".5" stopColor="var(--vc-wood)" /><stop offset="1" stopColor="var(--vc-wood-edge)" /></linearGradient>
@@ -108,7 +112,7 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
         {[0, 1, 2].map(note => <svg className="vc-radio-note" key={note} width="9" height="14" viewBox="0 0 12 18" focusable="false"><path d="M5 3v10c-1.1-.4-3.1.1-3.8 1.3-.7 1.3 0 2.4 1.5 2.4 1.7 0 3.7-1.3 3.7-3V6l4-1V1.8Z" /></svg>)}
       </span>}
       </div>
-      <button type="button" className="vc-home-lamp" data-home-decoration-control="" data-home-action="light" data-act="companion-home-light" data-act-opt={lampLit ? "off" : "on"} data-tip={lampLit ? "전등 켜짐 · 누르면 끄기" : "전등 꺼짐 · 누르면 켜기"} aria-label={lampLit ? "전등 켜짐 · 누르면 끄기" : "전등 꺼짐 · 누르면 켜기"} aria-pressed={lampLit} onClick={() => setCompanionHomeLight(!getCompanionHomeLight())}>
+      <button type="button" className="vc-home-lamp" data-home-layer="wall" data-home-decoration-control="" data-home-action="light" data-act="companion-home-light" data-act-opt={lampLit ? "off" : "on"} data-tip={lampLit ? "전등 켜짐 · 누르면 끄기" : "전등 꺼짐 · 누르면 켜기"} aria-label={lampLit ? "전등 켜짐 · 누르면 끄기" : "전등 꺼짐 · 누르면 켜기"} aria-pressed={lampLit} onClick={() => setCompanionHomeLight(!getCompanionHomeLight())}>
         <span className="vc-home-lamp-paint" aria-hidden="true">
           <span className="vc-home-lamp-art" data-lamp-state="off" />
           <span className="vc-home-lamp-art" data-lamp-state="on" />
@@ -121,9 +125,9 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
       </button>
       <span className="vc-home-light" aria-hidden="true" />
       <span className="vc-home-floor" aria-hidden="true" />
-      <span className="vc-home-lamp-light" aria-hidden="true" />
-      <button type="button" className="vc-home-wash-pad" data-home-decoration-control="" data-home-action="wash" data-act="companion-home-wash" data-tip="샤워패드에서 씻기" aria-label="샤워패드에서 씻기" disabled={!preferences.enabled} onClick={() => onAction("wash")}><span className="vc-home-wash-stance" aria-hidden="true" /><img className="vc-object-paint" src="/companion/home/135/wash-pad-135.webp" width="360" height="153" alt="" aria-hidden="true" draggable={false} decoding="async" loading="lazy" /></button>
-      <button type="button" data-home-action="home" data-activity-manual="" data-tip="집으로 부르기" className="vc-cushion-button" onClick={() => onAction("home")} aria-label="쿠션으로 돌아가 쉬기">
+      <span className="vc-home-lamp-light" data-home-layer="wall" aria-hidden="true" />
+      <button type="button" className="vc-home-wash-pad" data-home-layer="furniture" data-home-decoration-control="" data-home-action="wash" data-act="companion-home-wash" data-tip="샤워패드에서 씻기" aria-label="샤워패드에서 씻기" disabled={!preferences.enabled} onClick={() => onAction("wash")}><span className="vc-home-wash-stance" aria-hidden="true" /><img className="vc-object-paint" src="/companion/home/135/wash-pad-135.webp" width="360" height="153" alt="" aria-hidden="true" draggable={false} decoding="async" loading="lazy" /></button>
+      <button type="button" data-home-action="home" data-activity-manual="" data-tip="집으로 부르기" className="vc-cushion-button" data-home-layer="furniture" onClick={() => onAction("home")} aria-label="쿠션으로 돌아가 쉬기">
         <svg className="vc-plush-bed" width="180" height="100" viewBox="0 0 180 100" fill="none" aria-hidden="true" focusable="false">
           <defs>
             <linearGradient id={`${bedId}-rim`} gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="27" y2="100"><stop stopColor="var(--vc-bed-light)" /><stop offset=".55" stopColor="var(--vc-bed-cloth)" /><stop offset="1" stopColor="var(--vc-bed-shade)" /></linearGradient>
@@ -146,23 +150,23 @@ export function CompanionHome({ care, preferences, inactive, owner, radioPlaying
         </svg>
         <span className="vc-home-cushion" aria-hidden="true" />
       </button>
-      <button type="button" data-home-action="toys" data-act="companion-home-toys" data-activity-manual="" data-tip="장난감 상자" className="vc-toy-box" onClick={onToyBox} disabled={!onToyBox} aria-label="장난감 상자 열기" data-toy-count={Math.max(0, Math.trunc(toyCount))}>
+      <button type="button" data-home-action="toys" data-act="companion-home-toys" data-activity-manual="" data-tip="장난감 상자" className="vc-toy-box" data-home-layer="props" onClick={onToyBox} disabled={!onToyBox} aria-label="장난감 상자 열기" data-toy-count={Math.max(0, Math.trunc(toyCount))}>
         <HomeObjectArt kind="toy-box" />
         <span className="vc-toy-box-opening" aria-hidden="true" />
       </button>
-      <button type="button" className="vc-home-tv" data-home-decoration-control="" data-home-action="tv" data-act="companion-home-tv" data-act-opt={television.option} data-tip={television.label} aria-label={television.label} aria-pressed={tv !== "off"} onClick={() => setCompanionHomeTv(companionHomeTvControl(getCompanionHomeTv()).next, { source: "human" })}>
+      <button type="button" className="vc-home-tv" data-home-layer="furniture" data-home-decoration-control="" data-home-action="tv" data-act="companion-home-tv" data-act-opt={television.option} data-tip={television.label} aria-label={television.label} aria-pressed={tv !== "off"} onClick={() => setCompanionHomeTv(companionHomeTvControl(getCompanionHomeTv()).next, { source: "human" })}>
         <span className="vc-home-tv-paint" aria-hidden="true">
           <img className="vc-home-tv-body" src="/companion/home/136/tv-body.webp" width="512" height="512" alt="" draggable={false} decoding="async" />
           {tv !== "off" && <svg className="vc-home-tv-projection" viewBox={COMPANION_TV_ART_VIEWBOX} focusable="false"><defs><clipPath id={`${bedId}-tv-screen`}><path d={COMPANION_TV_SCREEN_CLIP} /></clipPath></defs><g clipPath={`url(#${bedId}-tv-screen)`}><foreignObject x="0" y="0" width="512" height="512"><div className="vc-home-tv-screen" style={{ transform: COMPANION_TV_SCREEN_TRANSFORM }}><CompanionTvPicture channel={tv} animate={preferences.enabled && !inactive} /></div></foreignObject></g></svg>}
         </span>
       </button>
       {preferences.feeding ? <>
-        <button type="button" data-home-action="feed" data-activity-manual="" data-tip="밥 꺼내기" className="vc-dispenser" onClick={() => onAction("feed")} aria-label="밥 꺼내기">
+        <button type="button" data-home-action="feed" data-activity-manual="" data-tip="밥 꺼내기" className="vc-dispenser" data-home-layer="props" onClick={() => onAction("feed")} aria-label="밥 꺼내기">
           <HomeObjectArt kind="dispenser" className="vc-dispenser-paint" />
           {/* Actual outlet geometry stays fixed while the complete paint moves. */}
           <span className="vc-dispenser-slot" aria-hidden="true" />
         </button>
-        <button type="button" data-home-action="clearFood" data-activity-manual="" data-companion-trash="" data-tip="음식 버리기" className="vc-home-trash" onClick={() => onAction("clearFood")} aria-label="음식 버리기"><HomeObjectArt kind="trash" /></button>
+        <button type="button" data-home-action="clearFood" data-activity-manual="" data-companion-trash="" data-tip="음식 버리기" className="vc-home-trash" data-home-layer="props" onClick={() => onAction("clearFood")} aria-label="음식 버리기"><HomeObjectArt kind="trash" /></button>
       </> : null}
     </div>
     <div className="sr-only"><meter min="0" max="1" value={care.affection} aria-label="빅타민 친밀도" /><meter min="0" max="1" value={1 - care.hunger} aria-label="빅타민 포만감" /><meter min="0" max="1" value={care.energy} aria-label="빅타민 기력" /></div>

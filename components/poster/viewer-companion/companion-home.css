@@ -317,3 +317,23 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) :is(.vc-home-
   .vc-home-room { --vc-room-height: max(285px, calc(130px + 130px / var(--shell-zoom, 1))); }
   .vc-home-shelf { top: max(56px, var(--vc-object-min-hit)); }
 }
+/* Staged first paint (2026-11-13 owner): floor → wall → furniture → props →
+   pet, never download order. home-reveal.ts writes the revealed layer tokens.
+   Paint is hidden with filter: opacity(), never opacity/visibility, so every
+   box, hit target and the runtime's own visibility/opacity reads stay real.
+   The attributes disappear after the sequence; nothing here lingers. */
+@property --vc-home-reveal { syntax: "<number>"; inherits: false; initial-value: 1; }
+@keyframes vc-home-reveal { from { --vc-home-reveal: 0; } to { --vc-home-reveal: 1; } }
+html { --vc-home-reveal-duration: var(--dur-2); }
+html:is([data-reduce-motion], [data-gfx="off"]) { --vc-home-reveal-duration: 0s; }
+.vc-home-room[data-home-reveal], .vc-home-room[data-home-reveal] > [data-home-layer],
+html[data-companion-home-reveal] :is(.vc-companion, .vc-bed-foreground, .vc-discovery-flight) { --vc-home-reveal: 0; filter: opacity(var(--vc-home-reveal)); }
+/* These five already carry the shared room grade; keep it while hidden. */
+.vc-home-room[data-home-reveal] > :is(.vc-home-shelf, .vc-toy-box, .vc-dispenser, .vc-home-trash, .vc-home-wash-pad) { filter: brightness(var(--vc-room-art-grade)) opacity(var(--vc-home-reveal)); }
+.vc-home-room[data-home-reveal~="floor"],
+.vc-home-room[data-home-reveal~="wall"] > [data-home-layer="wall"],
+.vc-home-room[data-home-reveal~="furniture"] > [data-home-layer="furniture"],
+.vc-home-room[data-home-reveal~="props"] > [data-home-layer="props"],
+html[data-companion-home-reveal~="furniture"] .vc-bed-foreground,
+/* The pet owns its discovery flight; it never precedes the pet. */
+html[data-companion-home-reveal~="pet"] :is(.vc-companion, .vc-discovery-flight) { animation: vc-home-reveal var(--vc-home-reveal-duration) var(--ease) both; }

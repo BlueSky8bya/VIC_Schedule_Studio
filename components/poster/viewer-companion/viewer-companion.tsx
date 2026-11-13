@@ -133,6 +133,7 @@ const CompanionCollectionArt = dynamic(() => import("./companion-collection-art"
 import { CompanionBedForeground, CompanionHome, type CompanionHomeAction } from "./companion-home";
 import { useHomeShelf } from "./use-home-shelf";
 import { companionInitialHomePoint } from "@/lib/ui/viewer-companion/home-entry";
+import { holdCompanionHomeReveal } from "@/lib/ui/viewer-companion/home-reveal";
 import "./viewer-companion.css";
 
 type Props = { onOpenBook: (destination?: "personality") => void; root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; preserveWorldPresentation?: boolean; workspaceBusy?: boolean; editing?: boolean; agenda: boolean; monthKey: string; context?: CompanionHomeEnvironmentContext; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; launcherHost?: HTMLElement | null; compactHost?: HTMLElement | null; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void; positionMemory?: CompanionPositionMemory; fixtureFood?: CompanionFoodKind };
@@ -272,6 +273,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
   const homeShelf = useHomeShelf({ active: compactActive, expanded: homeExpanded, monthKey, host: compactHost, launcher: homeLauncher, room: compactHome, setExpanded: setHomeExpanded });
   const [geometryIdentity] = useState(createCompanionGeometryIdentity);
   useEffect(() => { setReady(true); }, []);
+  // The pet is the last layer of the staged home paint; a room that never
+  // shows releases this hold itself (or its short fallback does).
+  useLayoutEffect(() => holdCompanionHomeReveal(document), []);
   useEffect(() => {
     if (!ready || !preferences.enabled) {
       wardrobe.current = { equipped: null, pending: null }; setUnreadCollection(false); setPendingGift(null); setOpenedGift(null); refreshWardrobe.current(); return;

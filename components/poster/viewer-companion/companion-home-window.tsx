@@ -41,7 +41,7 @@ export function HomeWindow({ environment, curtain, inactive }: { environment?: C
     return () => { apply.current = undefined; document.removeEventListener("visibilitychange", update); events.forEach(event => win.removeEventListener(event, update)); transition.dispose(); };
   }, []);
   useLayoutEffect(() => { apply.current?.(); }, [stage, curtain.animate, curtain.active, inactive]);
-  return <div ref={host} className="vc-home-window" aria-hidden="true" data-season={scene.season} data-weather={scene.weather} data-band={environment?.band} data-phase={scene.phase} data-night={environment?.night || undefined} data-curtain={curtain.phase} data-curtain-stage={stage} data-curtain-rest={curtain.rest} data-curtain-motion={curtain.animate && curtain.active && !inactive ? "on" : "off"}>
+  return <div ref={host} className="vc-home-window" data-home-layer="wall" aria-hidden="true" data-season={scene.season} data-weather={scene.weather} data-band={environment?.band} data-phase={scene.phase} data-night={environment?.night || undefined} data-curtain={curtain.phase} data-curtain-stage={stage} data-curtain-rest={curtain.rest} data-curtain-motion={curtain.animate && curtain.active && !inactive ? "on" : "off"}>
     <span className="vc-window-glass">
       <img className="vc-window-landscape" src={scene.landscapeSrc} alt="" width="512" height="384" draggable={false} decoding="async" loading="lazy" />
       {scene.overlaySrc && <img className="vc-window-weather" src={scene.overlaySrc} alt="" width="512" height="384" draggable={false} decoding="async" loading="lazy" />}
