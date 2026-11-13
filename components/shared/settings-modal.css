@@ -2308,8 +2308,10 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
   .rhh-companion-settings .rhh-collection-book .rhh-collection-grid { flex: none; height: 184px; min-height: 184px; }
 }
 
-/* Preserve readable memory specimens when fixed controls leave a short book. */
-.rhh-companion-settings .rhh-collection-book .rhh-behavior-grid { min-block-size: 136px; }
+/* Preserve readable memory specimens when fixed controls leave a short book.
+   104px still holds a 72px specimen and its name; a taller floor pushed the
+   page controls below the fold of the fixed 460px notebook. */
+.rhh-companion-settings .rhh-collection-book .rhh-behavior-grid { min-block-size: 104px; }
 
 /* Keep the memory filter row inside the same fixed notebook on every tab. */
 .rhh-companion-settings .rhh-collection-book:has(> .rhh-memory-filters) { gap: 10px; }
@@ -2372,4 +2374,39 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
   .rhh-nav {
     padding-bottom: 44px;
   }
+}
+
+/* 2026-11-13 owner: the wardrobe card was clipped at the bottom (its content
+   was ~30px taller than the 204px it was given) and the memory book pushed the
+   previous/next row out of the notebook. Both must fit the default view with
+   no scrolling: the wardrobe card never shrinks below its content, its parts
+   are tightened to fit, and the memory summary keeps the compact height. */
+.rhh-companion-settings .rhh-collection-book .rhh-wardrobe-detail { min-height: min-content; padding-block: 10px; }
+.rhh-companion-settings .rhh-collection-book .rhh-wardrobe-fitting-stage { padding: 4px; }
+.rhh-companion-settings .rhh-collection-book .rhh-wardrobe-preview,
+.rhh-companion-settings .rhh-wardrobe-fitting-stage > .rhh-wardrobe-silhouette { width: min(100%, var(--companion-preview-size, 180px), 168px); }
+.rhh-companion-settings .rhh-collection-book .rhh-wardrobe-detail-copy { gap: 6px; }
+.rhh-companion-settings .rhh-collection-book .rhh-wardrobe-description { min-height: 0; }
+.rhh-companion-settings .rhh-collection-book .rhh-accessory-grid { flex: none; height: 112px; min-height: 0; }
+.rhh-companion-settings .rhh-collection-book:has(> .rhh-memory-filters) .rhh-collection-gallery-detail { height: 132px; min-height: 132px; }
+@media (max-height: 800px) {
+  .rhh-companion-settings .rhh-collection-book:has(> .rhh-memory-filters) .rhh-collection-switch > button { flex-direction: row; flex-wrap: wrap; align-content: center; column-gap: 5px; padding: 3px 5px; }
+  .rhh-companion-settings .rhh-collection-book:has(> .rhh-memory-filters) .rhh-collection-gallery-detail { height: 116px; min-height: 116px; }
+  .rhh-companion-settings .rhh-collection-book .rhh-behavior-grid .rhh-collection-tile > .vc-collection-art { width: 60px; height: 60px; }
+}
+@media (max-height: 767px) {
+  .rhh-companion-settings .rhh-collection-book .rhh-wardrobe-kind { display: none; }
+  .rhh-companion-settings .rhh-collection-book .rhh-wardrobe-preview,
+  .rhh-companion-settings .rhh-wardrobe-fitting-stage > .rhh-wardrobe-silhouette { width: min(100%, var(--companion-preview-size, 180px), 136px); }
+  .rhh-companion-settings .rhh-collection-book:has(> .rhh-memory-filters) { gap: 6px; }
+  .rhh-companion-settings .rhh-collection-book:has(> .rhh-memory-filters) .rhh-collection-gallery-detail { height: 112px; min-height: 112px; }
+  .rhh-companion-settings .rhh-collection-book .rhh-behavior-grid { min-block-size: 92px; }
+  .rhh-companion-settings .rhh-collection-book .rhh-behavior-grid .rhh-collection-tile > .vc-collection-art { width: 56px; height: 56px; }
+}
+@media (min-height: 701px) and (max-height: 740px) {
+  .rhh-companion-settings .rhh-collection-book .rhh-wardrobe-detail { padding-block: 5px; }
+  .rhh-companion-settings .rhh-collection-book .rhh-wardrobe-detail-copy { gap: 4px; }
+  .rhh-companion-settings .rhh-collection-book .rhh-wardrobe-preview,
+  .rhh-companion-settings .rhh-wardrobe-fitting-stage > .rhh-wardrobe-silhouette { width: min(100%, var(--companion-preview-size, 180px), 104px); }
+  .rhh-companion-settings .rhh-collection-book:has(> .rhh-memory-filters) .rhh-collection-gallery-detail { height: 104px; min-height: 104px; }
 }
