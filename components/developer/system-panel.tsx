@@ -7,6 +7,7 @@ import { PlainEmail } from "@/components/ui/plain-email";
 import { getSystemInfoAction, type SystemInfo } from "@/lib/insights/actions";
 import { getPerfStatsAction, type PerfStatRow } from "@/lib/insights/perf-actions";
 import { announceIfStaleDeployment } from "@/lib/net/stale-deploy";
+import { LoadingState } from "@/components/shared/loading-state";
 
 // 시스템 묶음(설정 창 '개발자' 탭, 개발자 전용) — 계정 연결·배포 버전·서버 성능.
 // 2026-11-13 인사이트 '시스템' 탭에서 옮겼다. 이 묶음이 화면에 그려질 때만 서버를 부른다.
@@ -76,7 +77,8 @@ export function SystemPanel() {
     };
   }, [perfHours]);
 
-  const pending = infoError ? "불러오지 못했어요" : "불러오는 중…";
+  // 받는 중엔 공용 기다림 표시(고리+문구), 실패하면 그 자리에 문구.
+  const pending = infoError ? "불러오지 못했어요" : <LoadingState variant="inline" />;
 
   return (
     <>
@@ -139,7 +141,11 @@ export function SystemPanel() {
         </div>
         <div className="rhh-perf" aria-busy={perfLoading}>
           {perf === null ? (
-            <p className="rhh-val">{perfLoading ? "불러오는 중…" : "성능 정보를 불러오지 못했어요."}</p>
+            perfLoading ? (
+              <LoadingState className="rhh-val" variant="inline" />
+            ) : (
+              <p className="rhh-val">성능 정보를 불러오지 못했어요.</p>
+            )
           ) : perf.length === 0 ? (
             <p className="rhh-val">아직 표본이 없어요 — 요청이 쌓이면 채워져요.</p>
           ) : (

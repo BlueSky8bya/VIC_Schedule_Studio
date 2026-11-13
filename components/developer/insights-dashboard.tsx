@@ -25,6 +25,7 @@ import {
 } from "@/lib/schedules/heart-tiers";
 import { hapticTick } from "@/lib/ui/haptics";
 import { InsightsTabs, insightTabStep } from "@/components/shared/insights-tabs";
+import { LoadError, LoadingState } from "@/components/shared/loading-state";
 
 // 보고 있는 달 기준의 "월별 인사이트"(개발자 전용) — 트렌드·일정·참여 세 칸.
 // 실시간(동접)·방문 칸은 2026-11-13 방문 기록 철수와 함께 뺐다(이용 기록은 개발자 본인의 행동만 남는다).
@@ -96,6 +97,7 @@ export function InsightsDashboard({
   const [loading, setLoading] = useState(true);
   const [trend, setTrend] = useState<TrendData | null>(null);
   const [trendLoading, setTrendLoading] = useState(true);
+  const [retry, setRetry] = useState(0); // 실패 뒤 '다시 시도' — 같은 요청을 처음처럼 다시 보낸다
 
   useEffect(() => {
     if (archived) {
@@ -107,6 +109,9 @@ export function InsightsDashboard({
       return;
     }
     let alive = true;
+    setLoading(true);
+    setError(null);
+    setTrendLoading(true);
     getInsightsAction(year, month)
       .then((r) => {
         if (!alive) return;
@@ -130,7 +135,7 @@ export function InsightsDashboard({
     return () => {
       alive = false;
     };
-  }, [year, month, archived]);
+  }, [year, month, archived, retry]);
 
   const go = (i: number) => setIndex(Math.max(0, Math.min(panels.length - 1, i)));
 
@@ -190,15 +195,23 @@ export function InsightsDashboard({
   function withData(render: (d: InsightsData) => React.ReactNode) {
     if (loading) {
       return (
-        <div className="insight-skel" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
+        <LoadingState label="인사이트 불러오는 중…">
+          <div className="insight-skel">
+            <span />
+            <span />
+            <span />
+          </div>
+        </LoadingState>
       );
     }
     if (error || !data) {
-      return <p className="insight-empty">{error ?? "불러오지 못했어요."}</p>;
+      return (
+        <LoadError
+          act="insight-retry"
+          message={error ?? "불러오지 못했어요."}
+          onRetry={archived ? undefined : () => setRetry((n) => n + 1)}
+        />
+      );
     }
     return render(data);
   }
@@ -209,15 +222,23 @@ export function InsightsDashboard({
   function renderTrend() {
     if (trendLoading || loading) {
       return (
-        <div className="insight-skel" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
+        <LoadingState label="추이 불러오는 중…">
+          <div className="insight-skel">
+            <span />
+            <span />
+            <span />
+          </div>
+        </LoadingState>
       );
     }
     if (!trend || !data) {
-      return <p className="insight-empty">추이를 불러오지 못했어요.</p>;
+      return (
+        <LoadError
+          act="insight-retry"
+          message="추이를 불러오지 못했어요."
+          onRetry={archived ? undefined : () => setRetry((n) => n + 1)}
+        />
+      );
     }
     const series = [
       { key: "content", label: "🗓️ 컨텐츠", values: trend.content },

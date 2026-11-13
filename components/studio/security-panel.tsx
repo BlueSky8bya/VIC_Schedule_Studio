@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { RowLabel } from "@/components/shared/settings-controls";
 import { getOwnerSecurityAction, type OwnerSecurityData } from "@/lib/insights/actions";
 import { announceIfStaleDeployment } from "@/lib/net/stale-deploy";
+import { LoadingState } from "@/components/shared/loading-state";
 import { hapticTick } from "@/lib/ui/haptics";
 
 // 보안 묶음(설정 창, 관리자·개발자 공용) — 편집실 비밀번호(최초공개 게이트) 정보와 변경 버튼.
@@ -62,9 +63,11 @@ export function SecurityPanel({ onChangePasscode }: { onChangePasscode: () => vo
               다시 시도
             </button>
           ) : (
-            <span className="rhh-val" aria-busy={!data}>
-              {status}
-            </span>
+            data ? (
+              <span className="rhh-val">{status}</span>
+            ) : (
+              <LoadingState className="rhh-val" variant="inline" />
+            )
           )}
         </div>
         <div className="role-help-haptics">

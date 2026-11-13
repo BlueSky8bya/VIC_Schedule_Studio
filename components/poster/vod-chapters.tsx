@@ -7,6 +7,7 @@ import { createPortal } from "react-dom";
 import type { PublicVodChatProfile, PublicVodTimeline } from "@/lib/domain/schedule-types";
 import { hapticTick } from "@/lib/ui/haptics";
 import { logActivity } from "@/lib/activity/client";
+import { LoadingState } from "@/components/shared/loading-state";
 
 // 다시보기 챕터(팬 타임라인, 0071) — PC 날짜 팝오버·모바일 아젠다 칩 아래 공용.
 //
@@ -579,7 +580,7 @@ export function VodChapters({
         ) : null}
       </div>
       {!open ? null : loading ? (
-        <p className="vch-note">불러오는 중…</p>
+        <LoadingState className="vch-note" label="챕터 불러오는 중…" variant="inline" />
       ) : failed || !timeline ? (
         <button className="vch-note vch-retry" data-act="vod-chapters-retry" onClick={() => setFailed(false)} type="button">
           챕터를 불러오지 못했어요 — 다시 시도

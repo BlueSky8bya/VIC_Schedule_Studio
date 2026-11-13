@@ -30,6 +30,7 @@ import { RouteBeacon } from "@/components/activity/route-beacon";
 import { isTrackedRole } from "@/lib/activity/kinds";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { OfflineIndicator } from "@/components/pwa/offline-indicator";
+import { NavProgress } from "@/components/shared/nav-progress";
 import { StaleDeployGuard } from "@/components/pwa/stale-deploy-guard";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
@@ -169,6 +170,11 @@ export default function RootLayout({
         {/* actor 의존 꼬리(위 ActorTail 주석 참고) — 셸 스트리밍을 막지 않게 Suspense 뒤로. */}
         <Suspense fallback={null}>
           <ActorTail />
+        </Suspense>
+        {/* 화면 이동 진행선(링크 클릭 → 새 화면이 그려질 때까지 맨 위 얇은 선) — body 직속, export surface 바깥.
+            useSearchParams를 쓰므로 Suspense로 감싼다(정적 화면 빌드가 막히지 않게). */}
+        <Suspense fallback={null}>
+          <NavProgress />
         </Suspense>
         {/* 오프라인/온라인 상태 인앱 표시(배지+복귀 토스트) — export surface 바깥(body 직속)이라 캡쳐 무영향. */}
         <OfflineIndicator />

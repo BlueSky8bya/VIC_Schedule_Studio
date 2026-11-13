@@ -6,6 +6,7 @@ import { getActivityUsageAction, type UsageRow } from "@/lib/activity/query";
 import { UsagePick } from "@/components/developer/usage-pick";
 import { ScrollPosition } from "@/components/developer/scroll-position";
 import { hapticTick } from "@/lib/ui/haptics";
+import { LoadError, LoadingState } from "@/components/shared/loading-state";
 
 // "적게 쓰인 기능" — 없애도 될 후보를 찾는 화면.
 //
@@ -64,12 +65,14 @@ export function ActivityUsage({
   const listRef = useRef<HTMLUListElement | null>(null);
   // 30초 자동 갱신(reloadKey)에서는 스켈레톤을 띄우지 않는다 — 목록을 읽는 중에 통째로
   // 지웠다 다시 그리면 보던 자리가 맨 위로 튄다(2026-09-11 소유자: "갑자기 새로고침").
-  const hardKey = `${days}|${anchor}`;
+  const [retry, setRetry] = useState(0); // 실패 뒤 '다시 시도'
+  const hardKey = `${days}|${anchor}|${retry}`;
   const lastHardRef = useRef<string | null>(null);
 
   useEffect(() => {
     let alive = true;
-    if (lastHardRef.current !== hardKey) {
+    const hard = lastHardRef.current !== hardKey;
+    if (hard) {
       lastHardRef.current = hardKey;
       setLoading(true);
     }
@@ -82,6 +85,10 @@ export function ActivityUsage({
           setRows(r.rows);
           setSpan({ since: r.since, until: r.until });
         } else setErr(r.error);
+      })
+      .catch(() => {
+        // 요청 자체 실패 — 조용히 '기록 없음'으로 두지 않는다. 자동 갱신 실패는 보던 목록을 지우지 않는다.
+        if (alive && hard) setErr("사용량을 불러오지 못했어요. 연결을 확인하고 다시 시도해 주세요.");
       })
       .finally(() => {
         if (alive) setLoading(false);
@@ -226,13 +233,15 @@ export function ActivityUsage({
           </header>
 
           {loading ? (
-            <div className="act-skeleton" aria-hidden="true">
-              <span />
-              <span />
-              <span />
-            </div>
+            <LoadingState label="사용량 불러오는 중…">
+              <div className="act-skeleton">
+                <span />
+                <span />
+                <span />
+              </div>
+            </LoadingState>
           ) : err ? (
-            <p className="insight-empty">{err}</p>
+            <LoadError act="usage-retry" message={err} onRetry={() => setRetry((n) => n + 1)} />
           ) : !rows || rows.length === 0 ? (
             <p className="insight-empty">아직 쌓인 기록이 없어요.</p>
           ) : (

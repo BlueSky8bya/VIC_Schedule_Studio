@@ -150,6 +150,7 @@ import { toggleEventHeartAction } from "@/lib/schedules/heart-actions";
 import { setBirthdayGiftPreviewAction } from "@/lib/schedules/calendar-actions";
 import { removeTagAction, saveTagsAction } from "@/lib/schedules/tag-actions";
 import { CalendarSkeleton } from "@/components/skeleton/calendar-skeleton";
+import { LoadingState } from "@/components/shared/loading-state";
 import { PrivateLayerPanel } from "@/components/private-layer/private-layer-panel";
 import { TagLegendEditor } from "@/components/tags/tag-legend-editor";
 import { DateTimePicker } from "@/components/studio/datetime-picker";
@@ -231,28 +232,35 @@ import { writeLoadingToneCookie, writeViewCookie } from "@/lib/ui/view-cookie";
 // 모달 콘텐츠는 '열 때만' 로드해 편집실 첫 로딩을 가볍게(특히 인사이트 차트는 1600줄+). 전부 클라
 // 전용 모달(사용자 동작으로 열림)이라 ssr:false. 닫혀 있는 동안엔 번들·실행에 들어가지 않는다.
 const ViewerCompanion = dynamic(() => import("@/components/poster/viewer-companion/viewer-companion"), { ssr: false });
+// 창 틀은 부모가 먼저 띄우므로, 코드가 내려오는 동안 그 안에 공용 기다림 표시를 둔다(빈 창 = 멈춘 것처럼 보였다).
 const InsightsDashboard = dynamic(
   () => import("@/components/developer/insights-dashboard").then((m) => m.InsightsDashboard),
-  { ssr: false }
+  { ssr: false, loading: () => <LoadingState label="인사이트 불러오는 중…" /> }
 );
 const MemberInsights = dynamic(
   () => import("@/components/studio/member-insights").then((m) => m.MemberInsights),
-  { ssr: false }
+  { ssr: false, loading: () => <LoadingState label="인사이트 불러오는 중…" /> }
 );
 // 방송 판서(B안) — owner/developer가 미리보기에서 여는 방송 설명 도구. 열 때만 로드.
 const BroadcastPanel = dynamic(
   () => import("@/components/studio/broadcast-panel").then((m) => m.BroadcastPanel),
-  { ssr: false }
+  { ssr: false, loading: () => <LoadingState label="판서 여는 중…" variant="floating" /> }
 );
 // 편집실 검색(2026-09-18 소유자) — 시청자 검색 시트와 **한 구현**(AGENTS G-18). 결과 클릭은 편집실답게 달력 이동·일정 열기,
 // 다시보기는 옆의 ▶로 /replay 새 탭(편집실엔 다시보기 창이 없다).
-const PublicSearch = dynamic(() => import("@/components/poster/public-search").then((m) => m.PublicSearch), { ssr: false });
+const PublicSearch = dynamic(() => import("@/components/poster/public-search").then((m) => m.PublicSearch), {
+  ssr: false,
+  loading: () => <LoadingState label="검색 여는 중…" variant="floating" />
+});
 const EMPTY_HEARTS: ReadonlySet<string> = new Set();
 // 편집실 다시보기 창(2026-09-18 소유자: 새 탭 말고 시청자와 같은 창). VOD 목록은 편집실 번들에 없어 열 때 공개 일정 API에서 한 번 받는다.
-const DayVodWindow = dynamic(() => import("@/components/poster/day-vod-window").then((m) => m.DayVodWindow), { ssr: false });
+const DayVodWindow = dynamic(() => import("@/components/poster/day-vod-window").then((m) => m.DayVodWindow), {
+  ssr: false,
+  loading: () => <LoadingState label="다시보기 여는 중…" variant="floating" />
+});
 const DayVisitModal = dynamic(
   () => import("@/components/developer/day-visit-modal").then((m) => m.DayVisitModal),
-  { ssr: false }
+  { ssr: false, loading: () => <LoadingState label="이용 기록 불러오는 중…" /> }
 );
 // 시청자 화면 미리보기는 '미리보기 켤 때만' 필요한데, PublicPoster(3800줄+)와 poster.css(59KB)가
 // 편집실 첫 로딩에 늘 실려 있었다. 동적 import로 빼서 편집실 초기 JS·CSS를 크게 줄인다. 미리보기를
@@ -2188,18 +2196,24 @@ export function StudioShell({
   overlayKeysBlockedRef.current = dayVodPop !== null || searchOpen;
   const publicVods = useMemo(() => createPublicVodCache(schedule.calendar.slug), [schedule.calendar.slug]);
   const replayRequest = useRef(0);
+  // 다시보기 목록을 처음 받는 동안(검색 결과 ▶ → 창이 뜨기 전) 공용 기다림 표시 — 예전엔 아무 표시 없이 멈춘 듯 보였다.
+  // 요청 번호로 묶어 늦게 끝난 옛 요청이 새 요청의 표시를 지우지 않게 하고, 맥락이 바뀌면(요청 취소) 함께 거둔다.
+  const [replayLoading, setReplayLoading] = useState(0);
   const replayContext = `${schedule.calendar.slug}/${view.year}/${view.month}/${viewerMode}/${previewRole}/${modal}/${editorVisible}`;
   const replayContextRef = useRef(replayContext);
   replayContextRef.current = replayContext;
   useEffect(() => () => { replayRequest.current++; publicVods.cancel(); }, [publicVods]);
-  useEffect(() => { replayRequest.current++; }, [replayContext]);
+  useEffect(() => { replayRequest.current++; setReplayLoading(0); }, [replayContext]);
   // Reopening search is a new intent; its pending older replay must stay closed.
-  useEffect(() => { if (searchOpen) replayRequest.current++; }, [searchOpen]);
+  useEffect(() => { if (searchOpen) { replayRequest.current++; setReplayLoading(0); } }, [searchOpen]);
   const onStudioReplay = (dateKey: string, titleNo: number, sec?: number) => {
     const request = ++replayRequest.current, scope = replayContext;
     const current = () => request === replayRequest.current && scope === replayContextRef.current;
     setSearchOpen(false);
-    void publicVods.load().then((map) => {
+    setReplayLoading(request);
+    const loaded = publicVods.load();
+    void loaded.finally(() => setReplayLoading((r) => (r === request ? 0 : r))).catch(() => {});
+    void loaded.then((map) => {
       if (!current()) return;
       const vods = map.get(dateKey) ?? [];
       const idx = vods.findIndex((v) => v.titleNo === titleNo);
@@ -8855,6 +8869,9 @@ export function StudioShell({
             {restMenu.hasRest ? "휴방 해제" : "휴방으로 표시"}
           </button>
         </div>
+      ) : null}
+      {replayLoading !== 0 && !dayVodPop ? (
+        <LoadingState label="다시보기 불러오는 중…" variant="floating" />
       ) : null}
       {dayVodPop ? (
         <DayVodWindow

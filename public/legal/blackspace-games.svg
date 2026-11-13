@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="BLACKSPACE GAMES">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5ee7f0"/>
+      <stop offset=".55" stop-color="#8f7bff"/>
+      <stop offset="1" stop-color="#d06bff"/>
+    </linearGradient>
+    <linearGradient id="gh" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#5ee7f0"/>
+      <stop offset="1" stop-color="#c46bff"/>
+    </linearGradient>
+    <radialGradient id="bg" cx=".5" cy=".42" r=".7">
+      <stop offset="0" stop-color="#18213a"/>
+      <stop offset="1" stop-color="#0a0f1e"/>
+    </radialGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="2.2" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <path id="arcTop" d="M 44 120 A 84 84 0 0 1 212 120"/>
+  </defs>
+
+  <rect width="256" height="256" fill="url(#bg)"/>
+  <!-- 바깥 고리 두 겹 -->
+  <circle cx="128" cy="128" r="116" fill="none" stroke="url(#g)" stroke-width="4" filter="url(#glow)"/>
+  <circle cx="128" cy="128" r="104" fill="none" stroke="url(#g)" stroke-width="1.6" opacity=".55"/>
+
+  <!-- 둥근 글자 -->
+  <text font-family="'Arial Black','Segoe UI Black',Impact,sans-serif" font-size="25" font-weight="900" letter-spacing="0.5" fill="url(#gh)" filter="url(#glow)">
+    <textPath href="#arcTop" startOffset="50%" text-anchor="middle">BLACKSPACE</textPath>
+  </text>
+  <text x="128" y="214" text-anchor="middle" font-family="'Arial Black','Segoe UI Black',Impact,sans-serif" font-size="24" font-weight="900" letter-spacing="2" fill="#ffffff" filter="url(#glow)">GAMES</text>
+
+  <!-- 행성 고리(뒤쪽 반) -->
+  <ellipse cx="128" cy="140" rx="74" ry="20" fill="none" stroke="url(#g)" stroke-width="5" opacity=".55" transform="rotate(-12 128 140)"/>
+
+  <!-- 게임패드 -->
+  <g filter="url(#glow)">
+    <path d="M92 104 C 80 104 72 112 69 126 L 62 156 C 59 170 66 180 77 180 C 86 180 92 173 97 165 L 103 156 L 153 156 L 159 165 C 164 173 170 180 179 180 C 190 180 197 170 194 156 L 187 126 C 184 112 176 104 164 104 Z"
+          fill="#141b31" stroke="url(#g)" stroke-width="4" stroke-linejoin="round"/>
+    <!-- 십자 키 -->
+    <path d="M84 124 h8 v-8 h8 v8 h8 v8 h-8 v8 h-8 v-8 h-8 z" fill="none" stroke="#5ee7f0" stroke-width="2.6" stroke-linejoin="round"/>
+    <!-- 버튼 넷 -->
+    <circle cx="164" cy="117" r="4.2" fill="none" stroke="#c46bff" stroke-width="2.4"/>
+    <circle cx="175" cy="128" r="4.2" fill="none" stroke="#c46bff" stroke-width="2.4"/>
+    <circle cx="153" cy="128" r="4.2" fill="none" stroke="#c46bff" stroke-width="2.4"/>
+    <circle cx="164" cy="139" r="4.2" fill="none" stroke="#c46bff" stroke-width="2.4"/>
+    <!-- 스틱 둘 -->
+    <circle cx="111" cy="147" r="9" fill="#0d1326" stroke="url(#g)" stroke-width="3"/>
+    <circle cx="145" cy="147" r="9" fill="#0d1326" stroke="url(#g)" stroke-width="3"/>
+    <!-- 가운데 패드 -->
+    <rect x="114" y="112" width="28" height="15" rx="5" fill="none" stroke="#8f7bff" stroke-width="2.2"/>
+  </g>
+
+  <!-- 행성 고리(앞쪽 반) -->
+  <path d="M 56 158 A 74 20 -12 0 0 202 126" fill="none" stroke="url(#g)" stroke-width="5.5" stroke-linecap="round" transform="rotate(0)" filter="url(#glow)"/>
+
+  <!-- 반짝이 -->
+  <g fill="#b98bff">
+    <path d="M206 92 l2.6 7 7 2.6 -7 2.6 -2.6 7 -2.6 -7 -7 -2.6 7 -2.6 z"/>
+    <path d="M180 184 l2.2 5.5 5.5 2.2 -5.5 2.2 -2.2 5.5 -2.2 -5.5 -5.5 -2.2 5.5 -2.2 z" fill="#d06bff"/>
+    <path d="M236 228 l2 5 5 2 -5 2 -2 5 -2 -5 -5 -2 5 -2 z" fill="#8a93a8"/>
+  </g>
+</svg>

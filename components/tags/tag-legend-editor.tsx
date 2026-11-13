@@ -27,6 +27,7 @@ import {
 import { createTagVisualResolver } from "@/lib/tags/tag-visual";
 import { ColorPickerPopover } from "@/components/tags/color-picker-popover";
 import { hapticTick } from "@/lib/ui/haptics";
+import { LoadingSpinner } from "@/components/shared/loading-state";
 import { edgeForPointer, reorderAtEdge, type ReorderEdge } from "@/lib/tags/reorder";
 
 type TagUpdate = {
@@ -1131,7 +1132,16 @@ export function TagLegendEditor({
           onClick={saveAll}
           type="button"
         >
-          {pending ? "저장 중…" : saved && !dirty ? "✓ 저장됨" : saveLabel}
+          {pending ? (
+            <>
+              <LoadingSpinner small />
+              저장 중…
+            </>
+          ) : saved && !dirty ? (
+            "✓ 저장됨"
+          ) : (
+            saveLabel
+          )}
         </button>
       </div>
     </div>

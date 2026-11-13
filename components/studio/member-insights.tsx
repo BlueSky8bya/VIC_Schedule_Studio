@@ -18,6 +18,7 @@ import { StackTrendChart } from "@/components/studio/stack-trend-chart";
 import { TrendDeltaBadge } from "@/components/studio/trend-delta-badge";
 import { monthProgress } from "@/lib/insights/month-progress";
 import { hapticTick } from "@/lib/ui/haptics";
+import { LoadError, LoadingState } from "@/components/shared/loading-state";
 import { InsightsTabs } from "@/components/shared/insights-tabs";
 
 // 관리자·매니저용 월별 인사이트 — 수치 없는 3패널(트렌드·일정·참여).
@@ -46,9 +47,12 @@ export function MemberInsights({ year, month }: { year: number; month: number })
   const [data, setData] = useState<MemberInsightsData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [retry, setRetry] = useState(0); // 실패 뒤 '다시 시도'
 
   useEffect(() => {
     let alive = true;
+    setLoading(true);
+    setError(null);
     getMemberInsightsAction(year, month)
       .then((r) => {
         if (!alive) return;
@@ -64,7 +68,7 @@ export function MemberInsights({ year, month }: { year: number; month: number })
     return () => {
       alive = false;
     };
-  }, [year, month]);
+  }, [year, month, retry]);
 
   // 실제 패널 목록. 키보드/스와이프 경계도 이 길이를 쓴다.
   const panels = PANELS;
@@ -106,15 +110,17 @@ export function MemberInsights({ year, month }: { year: number; month: number })
   function withData(render: (d: MemberInsightsData) => ReactNode) {
     if (loading) {
       return (
-        <div className="insight-skel" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
+        <LoadingState label="인사이트 불러오는 중…">
+          <div className="insight-skel">
+            <span />
+            <span />
+            <span />
+          </div>
+        </LoadingState>
       );
     }
     if (error || !data) {
-      return <p className="insight-empty">{error ?? "불러오지 못했어요."}</p>;
+      return <LoadError act="insight-retry" message={error ?? "불러오지 못했어요."} onRetry={() => setRetry((n) => n + 1)} />;
     }
     return render(data);
   }

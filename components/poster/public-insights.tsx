@@ -16,6 +16,7 @@ import { adjacentRecordMonth, groupRecordDates, recordMonthEvents, type PublicRe
 import type {PublicRecordSession} from "@/lib/ui/use-public-record-session";
 import {useFocusTrap} from "@/lib/ui/use-focus-trap";
 import "./public-record.css";
+import { LoadError, LoadingState } from "@/components/shared/loading-state";
 
 // 시청자(비로그인 포함)용 '이 달 기록'.
 //
@@ -377,15 +378,18 @@ export function PublicInsights({
             <span className="pi-label">방송 시간</span>
             {/* 로딩 자리표시는 '실제 차트가 착지할 자리'에 같은 높이로 둔다 — 예전엔 한 줄짜리
                 문구였다가 차트(수백 px)로 바뀌면서 아래 카드들이 통째로 밀려 내려갔다. */}
+            {/* 자리표시 위에 공용 기다림 표시(돌아가는 고리 + 문구) — 정지한 회색 상자만으로는 멈춘 것과 구별이 안 됐다. */}
             {loading ? (
-              <div className="pi-skeleton" aria-hidden="true" />
+              <LoadingState label="방송 기록 불러오는 중…">
+                <div className="pi-skeleton" />
+              </LoadingState>
             ) : failed ? (
-              <p className="pi-empty pi-failed">
-                방송 기록을 못 불러왔어요.
-                <button className="pi-retry" onClick={() => setReloadKey((k) => k + 1)} type="button" data-act="pi-retry">
-                  다시 시도
-                </button>
-              </p>
+              <LoadError
+                act="pi-retry"
+                className="pi-failed"
+                message="방송 기록을 못 불러왔어요."
+                onRetry={() => setReloadKey((k) => k + 1)}
+              />
             ) : (
               <BroadcastHours
                 broadcastDaily={broadcastDaily}

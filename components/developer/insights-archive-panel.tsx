@@ -8,6 +8,7 @@ import type { ArchiveMonth } from "@/lib/insights/archive";
 // archive.ts는 서버 전용 모듈을 끌어오므로 값은 여기서만 따로 둔다(lib/insights/archive.ts STATS_START_YEAR와 같다).
 const STATS_START_YEAR = 2026;
 import { announceIfStaleDeployment } from "@/lib/net/stale-deploy";
+import { LoadingSpinner, LoadingState } from "@/components/shared/loading-state";
 import {
   buildInsightsArchiveAction,
   getInsightsArchiveAction,
@@ -19,7 +20,7 @@ import {
 // 연도는 첫 일정이 있는 해부터 올해까지. 이 묶음이 그려질 때만 서버를 부른다. 인사이트 화면 코드는 고를 때만 불러온다.
 const InsightsDashboard = dynamic(
   () => import("@/components/developer/insights-dashboard").then((m) => m.InsightsDashboard),
-  { ssr: false, loading: () => <p className="rhh-val">불러오는 중…</p> }
+  { ssr: false, loading: () => <LoadingState label="인사이트 화면 여는 중…" /> }
 );
 
 export function InsightsArchivePanel() {
@@ -138,7 +139,7 @@ export function InsightsArchivePanel() {
               value={year}
             />
           ) : (
-            <span className="rhh-val">{error ?? "불러오는 중…"}</span>
+            error ? <span className="rhh-val">{error}</span> : <LoadingState className="rhh-val" variant="inline" />
           )}
         </div>
         <div className="role-help-haptics">
@@ -152,9 +153,23 @@ export function InsightsArchivePanel() {
             onClick={build}
             type="button"
           >
-            {building ?? (months?.length ? "다시 만들기" : "지금 만들기")}
+            {building ? (
+              <>
+                <LoadingSpinner small />
+                {building}
+              </>
+            ) : months?.length ? (
+              "다시 만들기"
+            ) : (
+              "지금 만들기"
+            )}
           </button>
         </div>
+        {year !== null && months === null && !error ? (
+          <div className="role-help-haptics">
+            <LoadingState className="rhh-val" label="보관된 달 불러오는 중…" variant="inline" />
+          </div>
+        ) : null}
         {months && months.length > 0 ? (
           <div className="role-help-haptics rhh-archive-months">
             <SettingsSegment<number>

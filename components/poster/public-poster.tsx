@@ -73,15 +73,18 @@ import { playCelebration, playCelebrationTap, playSfx } from "@/lib/ui/sfx";
 import { danceBirthdaySong, popMusicNote } from "@/lib/ui/music-notes";
 import { GachaMachine } from "@/components/poster/gacha-machine";
 import { setBandHover } from "@/lib/ui/band-hover";
+import { LoadingState } from "@/components/shared/loading-state";
 // '이 달 기록' 시트 — 열 때만 로드(시청자 첫 페인트 번들에서 제외).
+// 시트 코드가 내려오는 동안엔 시트 자체가 없으므로 화면 가운데에 공용 기다림 표시를 띄운다
+// (2026-11-13 소유자: 눌렀는데 아무 반응이 없어 멈춘 줄 알았다).
 const PublicInsights = dynamic(
   () => import("@/components/poster/public-insights").then((m) => m.PublicInsights),
-  { ssr: false }
+  { ssr: false, loading: () => <LoadingState label="기록 여는 중…" variant="floating" /> }
 );
 // 검색 시트(PLAN-20260918-023) — 같은 이유로 열 때만 로드. '이 달 기록'과 같은 pi-* 껍데기.
 const PublicSearch = dynamic(
   () => import("@/components/poster/public-search").then((m) => m.PublicSearch),
-  { ssr: false }
+  { ssr: false, loading: () => <LoadingState label="검색 여는 중…" variant="floating" /> }
 );
 import {
   type PublicSchedule,

@@ -8,6 +8,7 @@ import { getActivityDayAction, type ActivityVisit } from "@/lib/activity/query";
 import { describeTarget } from "@/lib/activity/labels";
 import { hapticTick } from "@/lib/ui/haptics";
 import { buildGist, buildStory, describeMeta } from "@/lib/activity/narrative";
+import { LoadError, LoadingState } from "@/components/shared/loading-state";
 
 // 그날 행동 타임라인(0062) — 방문(탭) 단위로 묶어 무엇을 했는지 시각순으로 보여준다.
 // 개발자 전용. 서버가 개발자 여부를 다시 확인하므로 이 컴포넌트는 표시만 맡는다.
@@ -177,12 +178,15 @@ export function ActivityTimeline({
   // 30초 자동 갱신(reloadKey)에서는 스켈레톤을 띄우지 않는다 — 읽는 중에 목록이 통째로
   // 사라졌다 다시 그려지면 보던 자리가 맨 위로 튄다(2026-09-11 소유자: "갑자기 새로고침").
   // 날짜·진단 층이 바뀔 때만 '다시 불러오는 중'을 보여준다.
-  const hardKey = `${dateKey}|${diag}`;
+  // retry = 실패 뒤 '다시 시도'(같은 날을 처음 여는 것처럼 기다림 표시부터).
+  const [retry, setRetry] = useState(0);
+  const hardKey = `${dateKey}|${diag}|${retry}`;
   const lastHardRef = useRef<string | null>(null);
 
   useEffect(() => {
     let alive = true;
-    if (lastHardRef.current !== hardKey) {
+    const hard = lastHardRef.current !== hardKey;
+    if (hard) {
       lastHardRef.current = hardKey;
       setLoading(true);
     }
@@ -192,6 +196,11 @@ export function ActivityTimeline({
         if (!alive) return;
         if (r.ok) setVisits(r.visits);
         else setErr(r.error);
+      })
+      .catch(() => {
+        // 요청 자체가 실패(연결 끊김·배포 교체) — 예전엔 조용히 '기록 없음'으로 보였다. 30초 자동 갱신의
+        // 실패는 보던 목록을 지우지 않는다(다음 주기에 다시 받는다).
+        if (alive && hard) setErr("행동 기록을 불러오지 못했어요. 연결을 확인하고 다시 시도해 주세요.");
       })
       .finally(() => {
         if (alive) {
@@ -209,11 +218,13 @@ export function ActivityTimeline({
     return (
       <section className="vcard">
         <h4 className="insight-subhead">행동 타임라인</h4>
-        <div className="act-skeleton" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
+        <LoadingState label="행동 기록 불러오는 중…">
+          <div className="act-skeleton">
+            <span />
+            <span />
+            <span />
+          </div>
+        </LoadingState>
       </section>
     );
   }
@@ -221,7 +232,7 @@ export function ActivityTimeline({
     return (
       <section className="vcard">
         <h4 className="insight-subhead">행동 타임라인</h4>
-        <p className="insight-empty">{err}</p>
+        <LoadError act="act-retry" message={err} onRetry={() => setRetry((n) => n + 1)} />
       </section>
     );
   }

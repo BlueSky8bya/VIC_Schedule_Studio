@@ -10,10 +10,11 @@ import {
   LegalTable,
   Mail,
   Refs,
-  SettingsDemo,
   SITE_NAME,
   Steps,
-  UiDemo
+  ThemeDemo,
+  UiDemo,
+  Vendor
 } from "@/components/legal/legal-doc";
 
 // 개인정보처리방침. 개인정보 보호법 제30조가 정한 기재 사항 순서로 쓴다. 내용은 실제 코드·DB와 맞춘다 —
@@ -66,11 +67,17 @@ export default function PrivacyPage() {
                   ]
                 ]}
               />
-              <UiDemo caption="일정 카드 오른쪽의 하트. 누르면 위 표 첫 줄의 정보가 저장되고, 다시 누르면 바로 지워집니다.">
+              <UiDemo
+                caption="일정 카드 오른쪽의 하트입니다. 실제 일정표에서 누르면 표 첫 줄의 정보가 저장되고, 다시 누르면 바로 지워집니다. (이 예시는 저장하지 않습니다.)"
+                hint="눌러 보세요"
+              >
                 <HeartDemo />
               </UiDemo>
-              <UiDemo caption="로그인은 이 버튼을 직접 누를 때만 이루어집니다. Google 비밀번호·메일·드라이브 파일은 받지 않습니다.">
-                <GoogleLoginDemo />
+              <UiDemo
+                caption="일정표와 같은 실제 로그인 버튼입니다. 로그인은 이 버튼을 직접 누를 때만 이루어지며, Google 비밀번호·메일·드라이브 파일은 받지 않습니다."
+                hint="실제 로그인"
+              >
+                <GoogleLoginDemo next="/privacy" />
               </UiDemo>
               <p>
                 개발자 이용 기록은 사이트를 만들고 관리하는 개발자 본인의 기록입니다. 시청자와 방송인의 방문이나 버튼 누름은
@@ -120,14 +127,17 @@ export default function PrivacyPage() {
                 head={["이름", "용도", "보관 기간"]}
                 rows={[
                   [<code key="v">vic_view</code>, "마지막으로 본 달 기억", "브라우저를 닫을 때까지"],
-                  [<code key="l">vic_lt</code>, "불러오는 화면의 색", "30일"],
+                  [<code key="l">vic_lt</code>, "페이지가 뜨기 전 잠깐 보이는 로딩 화면을 편집실 모양으로 그릴지 일정표 모양으로 그릴지 기억", "30일"],
                   [<code key="s">sb-…-auth-token</code>, "로그인 상태 유지(로그인한 경우만)", "로그아웃할 때까지"],
                   ["화면 설정 (브라우저 저장소)", "글자 크기·글꼴, 밝기, 소리, 배경 효과, 화면 속 친구(빅타민) 기록", "직접 지울 때까지, 서버로 보내지 않음"],
                   [<code key="a">vic:anonId:v1</code>, "하트용 기기 번호(브라우저 저장소)", "직접 지울 때까지"]
                 ]}
               />
-              <UiDemo caption="설정 창(톱니바퀴)에서 고르는 값들은 이 기기의 브라우저에만 저장됩니다.">
-                <SettingsDemo />
+              <UiDemo
+                caption="설정 창(톱니바퀴)과 같은 실제 화면 모드 버튼입니다. 고른 값은 이 기기의 브라우저에만 저장되고 서버로 보내지 않습니다."
+                hint="바꿔 보세요"
+              >
+                <ThemeDemo />
               </UiDemo>
               <Callout title="거부하는 방법">
                 <p>
@@ -151,14 +161,18 @@ export default function PrivacyPage() {
                 head={["수탁자", "맡긴 업무", "약정"]}
                 rows={[
                   [
-                    "Cloudflare, Inc.",
+                    <Vendor brand="cloudflare" key="cv">
+                      Cloudflare, Inc.
+                    </Vendor>,
                     "웹페이지 전달, 보안, 사이트 서버 실행",
                     <DocLink href="https://www.cloudflare.com/cloudflare-customer-dpa/" key="c">
                       데이터 처리 부속약정
                     </DocLink>
                   ],
                   [
-                    "Supabase, Inc.",
+                    <Vendor brand="supabase" key="sv">
+                      Supabase, Inc.
+                    </Vendor>,
                     "데이터베이스 보관, 로그인 처리",
                     <DocLink href="https://supabase.com/legal/dpa" key="s">
                       데이터 처리 부속약정
@@ -200,8 +214,12 @@ export default function PrivacyPage() {
               </Callout>
               <Refs>
                 <LawRef article="제28조의8" detail="제1항 제3호 가목" />
-                <DocLink href="https://supabase.com/docs/guides/platform/regions">Supabase 지역 안내</DocLink>
-                <DocLink href="https://developers.cloudflare.com/workers/configuration/placement/">Cloudflare 서버 위치 설정</DocLink>
+                <DocLink brand="supabase" href="https://supabase.com/docs/guides/platform/regions">
+                  Supabase 지역 안내
+                </DocLink>
+                <DocLink brand="cloudflare" href="https://developers.cloudflare.com/workers/configuration/placement/">
+                  Cloudflare 서버 위치 설정
+                </DocLink>
               </Refs>
             </>
           )
@@ -217,22 +235,36 @@ export default function PrivacyPage() {
               <h3>브라우저가 직접 연결하는 곳</h3>
               <ul>
                 <li>
-                  <strong>Google</strong>: 로그인 버튼을 누르면 Google 로그인 화면으로 이동합니다. 인증은 Google이 처리하고,
+                  <Vendor brand="google">
+                    <strong>Google</strong>
+                  </Vendor>
+                  : 로그인 버튼을 누르면 Google 로그인 화면으로 이동합니다. 인증은 Google이 처리하고,
                   일정표는 그 결과만 받습니다.
                 </li>
                 <li>
-                  <strong>SOOP</strong>: 방송 미리보기·다시보기 이미지는 브라우저가 SOOP에서 직접 받고, 다시보기 창을 열면 SOOP
+                  <Vendor brand="soop">
+                    <strong>SOOP</strong>
+                  </Vendor>
+                  : 방송 미리보기·다시보기 이미지는 브라우저가 SOOP에서 직접 받고, 다시보기 창을 열면 SOOP
                   영상 플레이어를 불러옵니다. 이때 IP 주소와 브라우저 정보가 SOOP에 전달될 수 있습니다.
                 </li>
-                <li>글꼴은 일정표가 직접 제공하므로 글꼴을 받으려고 외부에 연결하지 않습니다.</li>
+                <li>글꼴과 이 문서의 업체 아이콘은 일정표가 직접 제공하므로, 이것들을 받으려고 외부에 연결하지 않습니다.</li>
               </ul>
               <p>각 서비스가 직접 처리하는 정보는 그 서비스의 방침을 따릅니다.</p>
               <Refs>
                 <LawRef article="제17조" detail="(제3자 제공)" />
-                <DocLink href="https://policies.google.com/privacy">Google 개인정보처리방침</DocLink>
-                <DocLink href="https://www.sooplive.com/policy/policy2.html">SOOP 개인정보처리방침</DocLink>
-                <DocLink href="https://www.cloudflare.com/privacypolicy/">Cloudflare 개인정보처리방침</DocLink>
-                <DocLink href="https://supabase.com/privacy">Supabase 개인정보처리방침</DocLink>
+                <DocLink brand="google" href="https://policies.google.com/privacy">
+                  Google 개인정보처리방침
+                </DocLink>
+                <DocLink brand="soop" href="https://www.sooplive.com/policy/policy2.html">
+                  SOOP 개인정보처리방침
+                </DocLink>
+                <DocLink brand="cloudflare" href="https://www.cloudflare.com/privacypolicy/">
+                  Cloudflare 개인정보처리방침
+                </DocLink>
+                <DocLink brand="supabase" href="https://supabase.com/privacy">
+                  Supabase 개인정보처리방침
+                </DocLink>
               </Refs>
             </>
           )
@@ -262,7 +294,8 @@ export default function PrivacyPage() {
           body: (
             <>
               <p>
-                언제든 내 정보의 열람, 정정, 삭제, 처리 정지를 요청하실 수 있습니다. <Mail />로 보내 주시고, 로그인에 쓴 계정
+                언제든 내 정보의 열람, 정정, 삭제, 처리 정지를 요청하실 수 있습니다. <Mail />로 보내 주시거나 이 페이지의
+                &lsquo;문의하기&rsquo;를 이용해 주세요(문의 창은 메일 앱을 열어 줄 뿐 사이트에 내용을 저장하지 않습니다). 메일은 로그인에 쓴 계정
                 이메일로 보내 주시면 본인 확인이 빠릅니다. 대리인이 요청하시는 경우 위임장을 확인합니다.
               </p>
               <Steps
