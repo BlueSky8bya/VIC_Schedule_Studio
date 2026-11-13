@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const cell = 192;
 const source = new URL("../public/tori/doodle.webp", import.meta.url);
-const output = new URL("../public/tori/loading-hop-v1.webp", import.meta.url);
+const output = new URL("../public/tori/loading-hop-v2.webp", import.meta.url);
 const { data, info } = await sharp(fileURLToPath(source))
   .ensureAlpha().raw().toBuffer({ resolveWithObject: true });
 const size = info.width;
@@ -14,22 +14,22 @@ if (size !== 512 || info.height !== size || info.channels !== 4) throw Error("Un
 // x/y are the original 512px drawing coordinates. A limb's most mobile
 // section is inside the ellipse, with a soft falloff into the original ink.
 const limbs = [
-  { x: 164, y: 333, rx: 34, ry: 38 }, // back arm
-  { x: 351, y: 326, rx: 49, ry: 34 }, // front arm
-  { x: 235, y: 477, rx: 51, ry: 57 }, // standing foot
-  { x: 348, y: 409, rx: 51, ry: 30 }, // lifted foot
+  { x: 158, y: 337, rx: 48, ry: 48 }, // back arm
+  { x: 354, y: 331, rx: 62, ry: 57 }, // front arm
+  { x: 235, y: 477, rx: 60, ry: 66 }, // standing foot
+  { x: 349, y: 407, rx: 57, ry: 48 }, // lifted foot
 ];
 const rest = [[0,0], [0,0], [0,0], [0,0]];
 const poses = [
   rest,
-  [[-5,6], [0,10], [4,-10], [-5,4]],
-  [[-7,-6], [9,-8], [-5,-2], [7,6]],
-  [[-6,-10], [3,-15], [-11,-13], [-7,8]],
-  [[-3,-4], [6,-6], [-6,-6], [1,7]],
-  [[-1,6], [3,9], [4,-8], [4,-7]],
-  [[-8,-5], [9,-10], [-4,-5], [3,6]],
-  [[-6,-9], [3,-14], [-10,-11], [-7,6]],
-  [[-1,5], [1,7], [3,-7], [3,-2]],
+  [[-4,10], [2,14], [4,-6], [-5,4]], // crouch
+  [[-9,-10], [16,-20], [-4,-3], [7,3]], // takeoff
+  [[-12,-18], [20,-24], [-16,-22], [-8,-9]], // tuck at the top
+  [[-5,-6], [10,-11], [5,7], [3,7]], // reach for the floor
+  [[-2,11], [5,14], [12,13], [2,-3]], // foot lands ahead of the body
+  [[-9,-10], [16,-19], [-6,-6], [7,2]],
+  [[-11,-17], [18,-23], [-14,-20], [-7,-8]],
+  [[-2,10], [5,13], [10,12], [3,-3]],
   rest, rest, rest,
 ];
 
@@ -44,7 +44,10 @@ function displacement(x, y, pose) {
   let dy = 0;
   for (const [index, limb] of limbs.entries()) {
     // Keep the hair and face samples identical to the rest frame.
-    const influence = weight(x, y, limb) * Math.max(0, Math.min(1, (y - 292) / 12));
+    const faceClearance = index < 2 ? Math.max(0, Math.min(1, (y - 292) / 22)) : 1;
+    // The planted leg bends below the hem, leaving the skirt edge anchored.
+    const hemClearance = index === 2 ? Math.max(0, Math.min(1, (y - 434) / 26)) : 1;
+    const influence = weight(x, y, limb) * faceClearance * hemClearance;
     dx += influence * pose[index][0];
     dy += influence * pose[index][1];
   }
@@ -77,10 +80,12 @@ const strip = Buffer.alloc(width * cell * 4);
 for (const [frame, pose] of poses.entries()) for (let row = 0; row < cell; row++) for (let column = 0; column < cell; column++) {
   const x = (column + .5) * size / cell - .5, y = (row + .5) * size / cell - .5;
   let sx = x, sy = y;
-  for (let iteration = 0; iteration < 8; iteration++) {
+  for (let iteration = 0; iteration < 20; iteration++) {
     const [dx, dy] = displacement(sx, sy, pose);
-    sx = x - dx;
-    sy = y - dy;
+    const errorX = x - dx - sx, errorY = y - dy - sy;
+    if (Math.abs(errorX) + Math.abs(errorY) < .02) break;
+    sx += errorX * .5;
+    sy += errorY * .5;
   }
   sample(sx, sy, strip, (row * width + frame * cell + column) * 4);
 }
