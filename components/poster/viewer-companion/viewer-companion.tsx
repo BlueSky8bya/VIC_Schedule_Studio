@@ -1333,9 +1333,12 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         outing: action?.personalityScene?.id === "routine-outing" || !privateRoom && status === "walk" && effective.personality === "curious",
         cleanupReceipt: expressionCleanup, meal: expressionMeal, mishap: Boolean(runTrip || action?.toyMishap || heartResult === "removed"),
       }, presentationNow, reduced || gfxMode() === "off" || gfxMode() === "soft" || !currentDrawing || overlayActive || premiereActive || Boolean(pressed || keyboardHeld || placing || interaction || washingPose || aftertaste) || status === "sleep" || status === "held");
-      expressionAnimating = Boolean(face);
+      const canBlink = !face && currentDrawing && status === "idle" && drawingRow === 0 && !cheerQuiet && !overlayActive && !premiereActive && !pressure.pressure;
+      const blink = canBlink ? visual.blink() : 0;
+      expressionAnimating = Boolean(face || canBlink && visual.blinkImminent());
       if (face) requestSprite.current(COMPANION_EXPRESSION_REFERENCE_SRC);
-      const faceVisible = facePainter?.paint(paintedSelection, face);
+      const faceVisible = facePainter?.paint(paintedSelection, face, blink);
+      el.toggleAttribute("data-blink", Boolean(blink && faceVisible));
       if (face && faceVisible) data("expression", face.id); else el.removeAttribute("data-expression");
       const poseMemory = poseWitness({ ...observed, visible: observed.visible && !pause && !overlayActive && !premiereActive }, presentationNow);
       if (poseMemory && recordCompanionObservedPose(poseMemory)) discover({ kind: "behavior", id: poseMemory, source: { x: display.x, y: display.y - size * .4 } });

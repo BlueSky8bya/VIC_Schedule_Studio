@@ -23,9 +23,10 @@ describe("116 whole-pose continuity", () => {
     for (let step = 0; step <= 600; step++) {
       const pose = motion.sample({ row: 20, phase: 0, status: "sprint", x: 100 + step * 220 / 60, y: 300, now: step * 1000 / 60 });
       const key = nativeKeys.get(companionSpriteMetadata.rows[pose.row][pose.column])!;
-      expect([33, 34, 35]).toContain(key); seen.add(key);
+      expect(key).toBe(33);
+      seen.add(pose.column);
     }
-    expect([...seen].sort()).toEqual([33, 34, 35]);
+    expect([...seen].sort()).toEqual([0, 1]);
   });
   it("preserves the unsettled spiral expression across all dizzy phases without smiling key45", () => {
     const motion = createCompanionMotion({ clips: companionMotionClips, rowCount: companionSpriteMetadata.rows.length });

@@ -3,7 +3,7 @@ import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-qualit
 import expressionAnchors from "@/lib/ui/viewer-companion/expression-anchors-161.json";
 
 export type PaintedSource157Proof = {
-  version: 1; passed: boolean; mode: "atlas" | "expression" | "unmeasured"; pose: number; source: string;
+  version: 1; passed: boolean; mode: "atlas" | "expression" | "blink" | "unmeasured"; pose: number; source: string;
   reason: string; cell?: { index: number; grid: number; rows: number; natural: number[] };
   geometry?: { sameParent: boolean; sprite: number[]; canvas?: number[]; matrix: number[]; canvasMatrix?: number[];
     clip: string; canvasClip?: string; offset?: number[] };
@@ -18,7 +18,7 @@ type ExpressionAnchor157 = typeof expressionAnchors.frames[number];
  *163's calibrated eye/brow and mouth patches keep their exact opaque-source
  * admission, including the narrower authored-eye fallback near an ear. */
 export function createCompanionExpressionPixelVerifier157() {
-  function maskExpressionPixels157(source: Uint8ClampedArray, pose: ExpressionAnchor157, reference: ExpressionAnchor157) {
+  function maskExpressionPixels157(source: Uint8ClampedArray, pose: ExpressionAnchor157, reference: ExpressionAnchor157, blinkOnly = false) {
     const size=192,total=size*size,scale=size/80,mask=new Uint8Array(total);
     if(source.length!==total*4||pose.eyes.length!==2||reference.eyes.length!==2)return null;
       const permit=(box:number[],feature=1,skinSamples?:readonly (readonly number[])[])=>{
@@ -36,7 +36,7 @@ export function createCompanionExpressionPixelVerifier157() {
         return true;
       };
       for(let i=0;i<2;i++){
-        const eye=pose.eyes[i],original=reference.eyes[i],view=pose.orientation==="quarter"?.83:1;
+        const eye=pose.eyes[i],original=blinkOnly?eye:reference.eyes[i],view=pose.orientation==="quarter"?.83:1;
         if(eye.center.length!==2||eye.bounds.length!==4||original.bounds.length!==4
           ||![...eye.center,...eye.bounds,...original.bounds].every(Number.isFinite)) return null;
         const sharedWidth=reference.eyes.reduce((sum,eye)=>sum+eye.bounds[2]-eye.bounds[0],0)/2;
@@ -46,22 +46,23 @@ export function createCompanionExpressionPixelVerifier157() {
           Math.max(eye.bounds[2],x+width/2+1)+.65,Math.max(eye.bounds[3],y+height/2+1.2)+.65],1,"skinSamples" in eye?eye.skinSamples:undefined);
         if(!permitted)permit([eye.bounds[0]-.4,eye.bounds[1]-.4,eye.bounds[2]+.4,eye.bounds[3]+.4]);
       }
-      if(pose.mouth){const m=pose.mouth,[left,right]=pose.eyes.map(eye=>eye.center),x=(left[0]+right[0])/2,y=(left[1]+right[1])/2;
+      if(pose.mouth&&!blinkOnly){const m=pose.mouth,[left,right]=pose.eyes.map(eye=>eye.center),x=(left[0]+right[0])/2,y=(left[1]+right[1])/2;
         const angle=Math.atan2(right[1]-left[1],right[0]-left[0]);
         const depth=Math.max(4,(m.x-x)*-Math.sin(angle)+(m.y-y)*Math.cos(angle));
-        const mouthX=x-Math.sin(angle)*depth,mouthY=y+Math.cos(angle)*depth;
+        const mouthX=m.x+Math.max(-.6,Math.min(.6,x-Math.sin(angle)*depth-m.x));
+        const mouthY=m.y+Math.max(-.9,Math.min(.9,y+Math.cos(angle)*depth-m.y));
         permit([Math.min(m.bounds[0]-.5,m.x-3.4,mouthX-3.4),Math.min(m.bounds[1]-.5,m.y-2,mouthY-2),
           Math.max(m.bounds[2]+.5,m.x+3.4,mouthX+3.4),Math.max(m.bounds[3]+.5,m.y+3.6,mouthY+3.6)],2);}
     return mask;
   }
-  function compareExpressionPixels157(source: Uint8ClampedArray, current: Uint8ClampedArray, pose: ExpressionAnchor157, reference: ExpressionAnchor157) {
+  function compareExpressionPixels157(source: Uint8ClampedArray, current: Uint8ClampedArray, pose: ExpressionAnchor157, reference: ExpressionAnchor157, blinkOnly = false) {
     const total=192*192;
     const result={total,alphaCompared:0,alphaMismatch:0,protectedRgbCompared:0,protectedRgbMismatch:0,changedFacePixels:0,maskPixels:0,valid:false};
     if(source.length!==total*4||current.length!==source.length)return result;
-    const mask=maskExpressionPixels157(source,pose,reference);if(!mask)return result;
+    const mask=maskExpressionPixels157(source,pose,reference,blinkOnly);if(!mask)return result;
       for(let p=0;p<total;p++){
-        const i=p*4,x=p%192/2.4,y=Math.floor(p/192)/2.4,m=pose.mouth;
-        const sourceMouth=m&&x>=m.bounds[0]-.6&&x<=m.bounds[2]+.6&&y>=m.bounds[1]-.6&&y<=m.bounds[3]+.6;
+        const i=p*4,x=p%192/2.4,y=Math.floor(p/192)/2.4,m=blinkOnly?null:pose.mouth;
+        const sourceMouth=mask[p]===2&&m&&x>=m.bounds[0]-.6&&x<=m.bounds[2]+.6&&y>=m.bounds[1]-.6&&y<=m.bounds[3]+.6;
         const orange=!sourceMouth&&source[i]>210&&source[i+1]<190&&source[i+2]<135;
         result.alphaCompared++;if(source[i+3]!==current[i+3])result.alphaMismatch++;
         const changed=source[i]!==current[i]||source[i+1]!==current[i+1]||source[i+2]!==current[i+2];
@@ -127,8 +128,9 @@ export async function installCompanionPaintedSource157(page: Page) {
           &&translation(m,frame.x/80*w,frame.y/80*h)&&Boolean(crop&&crop.every((n,i)=>close(n,frame.clip[i]/80*100,.002)));
         if(!sourceGeometry){proof.reason="source-cell-geometry";return proof;}
         if(visible(sprite)&&visible(image)&&!visible(canvas)&&!(actor as HTMLElement).dataset.expression){proof.passed=true;proof.mode="atlas";proof.reason="actual-visible-current-atlas";return proof;}
-        proof.mode="expression";proof.reason="unproved-expression-plane";
-        if(!canvas||!visible(canvas)||visible(sprite)||!(actor as HTMLElement).dataset.expression||canvas.width!==192||canvas.height!==192||canvas.parentElement!==sprite.parentElement)return proof;
+        const blinkOnly=actor?.hasAttribute("data-blink")??false;
+        proof.mode=blinkOnly?"blink":"expression";proof.reason="unproved-expression-plane";
+        if(!canvas||!visible(canvas)||visible(sprite)||(!blinkOnly&&!(actor as HTMLElement).dataset.expression)||canvas.width!==192||canvas.height!==192||canvas.parentElement!==sprite.parentElement)return proof;
         const cs=getComputedStyle(canvas),cw=parseFloat(cs.width),ch=parseFloat(cs.height),cm=matrix(cs.transform),cc=clip(cs.clipPath),cr=canvas.getBoundingClientRect(),sr=sprite.getBoundingClientRect();
         proof.geometry.canvas=[cw,ch];proof.geometry.canvasMatrix=cm;proof.geometry.canvasClip=cs.clipPath;
         proof.geometry.offset=[cr.x-sr.x,cr.y-sr.y,cr.width-sr.width,cr.height-sr.height];
@@ -146,7 +148,7 @@ export async function installCompanionPaintedSource157(page: Page) {
         }
         const actual=canvas.getContext("2d")?.getImageData(0,0,192,192).data;
         if(!actual){proof.reason="unreadable-painted-canvas";return proof;}
-        proof.pixels=compareExpressionPixels157(cache.get(key)!,actual,anchor,reference);
+        proof.pixels=compareExpressionPixels157(cache.get(key)!,actual,anchor,reference,blinkOnly);
         proof.passed=proof.pixels.valid;proof.reason=proof.passed?"exact-current-cell-with-calibrated-face-change":"painted-pixel-mismatch";
       }catch{proof.reason="unmeasured-canvas-or-css";}
       return proof;

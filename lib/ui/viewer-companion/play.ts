@@ -58,9 +58,9 @@ export function sampleCompanionPlay(kind: CompanionPlay, progress: number, reduc
         const shake = clamp(elapsed / 520), envelope = Math.sin(shake * Math.PI) ** 2;
         const lean = Math.sin(shake * Math.PI * 6) * 8 * envelope;
         const compression = .026 * envelope;
-        // Closed strained eyes and a wavy mouth follow each authored left/right
-        // key. Only after the final shake does the calm neutral face return.
-        const expression = elapsed >= 560 ? 1 : lean < -.6 ? .35 : lean > .6 ? .65 : 0;
+        // The head lean supplies direction. Keep one centered strained face
+        // throughout the shake, then settle on the calm authored face.
+        const expression = elapsed >= 560 ? 1 : 0;
         return result(stage.row, expression, stage.beat, 0, lean, 0, compression);
       }
       // Other gestures already own their emotion in the checking/play beat.
@@ -81,10 +81,9 @@ export function sampleCompanionPlay(kind: CompanionPlay, progress: number, reduc
       return result(stage.row, expression, stage.beat, sniffle);
     }
     if (stage.beat === "play") {
-      // These are authored crouch→jump / bow / grooming keys. A sine phase
-      // used to rewind their drawings halfway through each gesture.
-      const forward = kind === "bow" ? Math.min(1, elapsed / 280) : phase;
-      return result(stage.row, forward, stage.beat, kind === "groom" || kind === "bow" ? 0 : -Math.sin(phase * Math.PI) * 9);
+      // Bow down and back up in the opening beat, then hold upright.
+      const gesturePhase = kind === "bow" ? Math.min(1, elapsed / 280) : phase;
+      return result(stage.row, gesturePhase, stage.beat, kind === "groom" || kind === "bow" ? 0 : -Math.sin(phase * Math.PI) * 9);
     }
     return result(stage.row, phase, stage.beat);
   }

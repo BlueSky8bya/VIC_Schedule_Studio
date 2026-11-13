@@ -8,6 +8,8 @@ type Eye = { center: Point; bounds: Point; skinSamples?: readonly Point[] };
 type Anchor = { physicalIndex: number; index: number; source: number; orientation: string; roll: number; eyes: Eye[]; mouth: { x: number; y: number; bounds: number[] } | null };
 const poses = new Map<number, Anchor>(anchors.frames.map(a => [a.physicalIndex, a]));
 const reference = poses.get(anchors.reference)!;
+const sharedEyeWidth = reference.eyes.reduce((sum, eye) => sum + eye.bounds[2] - eye.bounds[0], 0) / 2;
+const sharedEyeHeight = reference.eyes.reduce((sum, eye) => sum + eye.bounds[3] - eye.bounds[1], 0) / 2;
 export const COMPANION_EXPRESSION_REFERENCE_SRC = anchors.sources[reference.source].src;
 const PIXELS = 192, SCALE = PIXELS / 80;
 const mix = (a: number, b: number, p: number) => a + (b - a) * p;
@@ -44,14 +46,18 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
   };
   return {
     hide,
-    paint(selected: CompanionSpriteSelection | undefined, expression: { id: CompanionExpressionId; progress: number } | null) {
-      if (!ctx || !pixels || !selected || !expression) { hide(); return false; }
-      const pose = poses.get(selected.physicalIndex), image = readImage(selected.src), eyeImage = readImage(COMPANION_EXPRESSION_REFERENCE_SRC);
+    paint(selected: CompanionSpriteSelection | undefined, expression: { id: CompanionExpressionId; progress: number } | null, blink = 0) {
+      if (!ctx || !pixels || !selected || (!expression && !blink)) { hide(); return false; }
+      const blinkOnly = !expression;
+      const pose = poses.get(selected.physicalIndex), image = readImage(selected.src);
+      const eyeImage = blinkOnly ? image : readImage(COMPANION_EXPRESSION_REFERENCE_SRC);
       if (!pose || pose.index !== selected.index || anchors.sources[pose.source].src !== selected.src || !image || !eyeImage) { hide(); return false; }
-      const face = sampleCompanionExpression(expression.id, expression.progress);
+      const progress = expression?.progress ?? 0;
+      const face = sampleCompanionExpression(expression?.id ?? "awake", progress);
+      if (face.weight < .005 && (!blinkOnly || blink < .005)) { hide(); return false; }
       const layout = companionFaceLayout(pose);
-      if (face.weight < .005) { hide(); return false; }
-      const key = `${selected.src}:${selected.index}`, draw = `${key}:${expression.id}:${Math.floor(expression.progress * 240)}`;
+      const key = `${selected.src}:${selected.index}`;
+      const draw = expression ? `${key}:${expression.id}:${Math.floor(progress * 240)}` : `${key}:blink:${Math.round(blink * 64)}`;
       if (draw === lastDraw && !canvas.hidden) return true;
       const cell = image.naturalWidth / selected.grid, ox = selected.index % selected.grid * cell, oy = Math.floor(selected.index / selected.grid) * cell;
       if (key !== lastCell) { pixels.clearRect(0, 0, PIXELS, PIXELS); pixels.drawImage(image, ox, oy, cell, cell, 0, 0, PIXELS, PIXELS); original = pixels.getImageData(0, 0, PIXELS, PIXELS); lastCell = key; }
@@ -60,11 +66,10 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
       // Clear every valid face patch before drawing any feature. Clearing
       // a large authored mouth after the eyes used to erase the new eyelids.
       const eyePatches = pose.eyes.map((eye, i) => {
-        const original = reference.eyes[i], view = pose.orientation === "quarter" ? .83 : 1;
-        const sharedWidth = reference.eyes.reduce((sum, eye) => sum + eye.bounds[2] - eye.bounds[0], 0) / 2;
-        const sharedHeight = reference.eyes.reduce((sum, eye) => sum + eye.bounds[3] - eye.bounds[1], 0) / 2;
-        const width = mix(original.bounds[2] - original.bounds[0], sharedWidth, face.weight) * view, height = mix(original.bounds[3] - original.bounds[1], sharedHeight, face.weight) * view;
-        const maskWidth = Math.max(original.bounds[2] - original.bounds[0], sharedWidth) * view, maskHeight = Math.max(original.bounds[3] - original.bounds[1], sharedHeight) * view;
+        const original = blinkOnly ? eye : reference.eyes[i], view = pose.orientation === "quarter" ? .83 : 1;
+        const nativeWidth = original.bounds[2] - original.bounds[0], nativeHeight = original.bounds[3] - original.bounds[1];
+        const width = mix(nativeWidth, sharedEyeWidth, face.weight) * view, height = mix(nativeHeight, sharedEyeHeight, face.weight) * view;
+        const maskWidth = Math.max(nativeWidth, sharedEyeWidth) * view, maskHeight = Math.max(nativeHeight, sharedEyeHeight) * view;
         const [x, y] = eye.center;
         let box = [Math.min(eye.bounds[0], x - maskWidth / 2 - 1) - .65, Math.min(eye.bounds[1], y - maskHeight / 2 - 1.6) - .65, Math.max(eye.bounds[2], x + maskWidth / 2 + 1) + .65, Math.max(eye.bounds[3], y + maskHeight / 2 + 1.2) + .65];
         let fill = background(box, 1, eye.skinSamples);
@@ -72,13 +77,18 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
         if (!fill) { box = [eye.bounds[0] - .4, eye.bounds[1] - .4, eye.bounds[2] + .4, eye.bounds[3] + .4]; fill = background(box); }
         return { original, width, height, x, y, box, fill };
       });
-      const m = pose.mouth;
-      const mouthX = m ? mix(m.x, layout.mouthX, face.weight) : 0, mouthY = m ? mix(m.y, layout.mouthY, face.weight) : 0;
+      const m = blinkOnly ? null : pose.mouth;
+      // Keep the native mouth on its face. A small depth adjustment gives the
+      // new contour clearance from the pupils without sliding across the cheeks.
+      const targetMouthX = m ? m.x + Math.max(-.6, Math.min(.6, layout.mouthX - m.x)) : 0;
+      const targetMouthY = m ? m.y + Math.max(-.9, Math.min(.9, layout.mouthY - m.y)) : 0;
+      const mouthX = m ? mix(m.x, targetMouthX, face.weight) : 0, mouthY = m ? mix(m.y, targetMouthY, face.weight) : 0;
       // One fixed opaque admission corridor covers the native and target
       // mouth throughout the finite morph. It is independently reproducible
       // from the public pose, without requiring a hidden animation phase.
-      const mouthBox = m ? [Math.min(m.bounds[0] - .5, m.x - 3.4, layout.mouthX - 3.4), Math.min(m.bounds[1] - .5, m.y - 2, layout.mouthY - 2), Math.max(m.bounds[2] + .5, m.x + 3.4, layout.mouthX + 3.4), Math.max(m.bounds[3] + .5, m.y + 3.6, layout.mouthY + 3.6)] : undefined;
+      const mouthBox = m ? [Math.min(m.bounds[0] - .5, m.x - 3.4, targetMouthX - 3.4), Math.min(m.bounds[1] - .5, m.y - 2, targetMouthY - 2), Math.max(m.bounds[2] + .5, m.x + 3.4, targetMouthX + 3.4), Math.max(m.bounds[3] + .5, m.y + 3.6, targetMouthY + 3.6)] : undefined;
       const mouthFill = mouthBox ? background(mouthBox, 2) : undefined;
+      if (blinkOnly && eyePatches.some(patch => !patch.fill)) { ctx.restore(); hide(); return false; }
       for (const patch of [...eyePatches, ...(mouthBox ? [{ box: mouthBox, fill: mouthFill }] : [])]) if (patch.fill) { ctx.fillStyle = patch.fill; ctx.fillRect(patch.box[0], patch.box[1], patch.box[2] - patch.box[0], patch.box[3] - patch.box[1]); }
       let painted = 0;
       for (let i = 0; i < 2; i++) {
@@ -88,8 +98,8 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
         // A smiling source pose starts closed. Morph that lid into the target
         // instead of crossfading the old smile bitmap behind a new pupil.
         const nativeDepth = pose.eyes[i].bounds[3] - pose.eyes[i].bounds[1];
-        const sourceClosure = pose.source === 9 || nativeDepth < height * .78 ? 1 : 0;
-        const closure = mix(sourceClosure, i === 0 ? face.leftClosure : face.rightClosure, face.weight);
+        const sourceClosure = pose.source === 9 ? 1 : Math.max(0, Math.min(1, (1 - nativeDepth / height) * 1.3));
+        const closure = blinkOnly ? blink : mix(sourceClosure, i === 0 ? face.leftClosure : face.rightClosure, face.weight);
         const open = mix(1, i === 0 ? face.left : face.right, face.weight) * (1 - closure), referenceCell = eyeImage.naturalWidth / 8;
         const shape = i === 0 ? face.leftShape : face.rightShape, side = i === 0 ? 1 : -1;
         ctx.save(); ctx.translate(x, y); ctx.rotate(layout.angle);
@@ -115,17 +125,23 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
           ctx.closePath(); ctx.clip();
           // The measured brown component excludes its antialiased fringe.
           // Include that fringe so a round source eye is not cropped flat.
-          ctx.drawImage(eyeImage, (original.bounds[0] - .3) / 80 * referenceCell, (original.bounds[1] - .65) / 80 * referenceCell, (original.bounds[2] - original.bounds[0] + .6) / 80 * referenceCell, (original.bounds[3] - original.bounds[1] + 1.3) / 80 * referenceCell, -width / 2 - padX + gazeX, -height / 2 - padY + gazeY, width + padX * 2, height + padY * 2);
+          const sourceCell = blinkOnly ? cell : referenceCell;
+          const sourceX = (blinkOnly ? ox : 0) + (original.bounds[0] - .3) / 80 * sourceCell;
+          const sourceY = (blinkOnly ? oy : 0) + (original.bounds[1] - .65) / 80 * sourceCell;
+          ctx.drawImage(eyeImage, sourceX, sourceY,
+            (original.bounds[2] - original.bounds[0] + .6) / 80 * sourceCell,
+            (original.bounds[3] - original.bounds[1] + 1.3) / 80 * sourceCell,
+            -width / 2 - padX + gazeX, -height / 2 - padY + gazeY, width + padX * 2, height + padY * 2);
           if (face.shine > 0) { ctx.fillStyle = `rgba(255,253,235,${face.shine * face.weight * .9})`; ctx.beginPath(); ctx.ellipse(-width * .12 + gazeX, -height * .17 + gazeY, width * .12, height * .16, -.3, 0, Math.PI * 2); ctx.fill(); }
           ctx.restore();
         }
-        if (closure > .35 && (shape === E.smile || shape === E.squeeze || sourceClosure)) {
+        if (closure > .35 && (blinkOnly || shape === E.smile || shape === E.squeeze || sourceClosure)) {
           // Contracted lids use a soft lower arc, distinct from the happy
           // upper arch. No literal chevron or pointed punctuation eye.
           const t = (closure - .35) / .65;
           ctx.globalAlpha = t * t * (3 - 2 * t);
           ctx.lineWidth = Math.max(1.15, height * .27); ctx.beginPath();
-          const squeeze = shape === E.squeeze ? face.weight : 0;
+          const squeeze = blinkOnly ? .64 : shape === E.squeeze ? face.weight : 0;
           ctx.moveTo(-width * .43, mix(height * .12, -height * .14, squeeze));
           ctx.quadraticCurveTo(0, mix(-height * .62, height * .5, squeeze), width * .43, mix(height * .12, -height * .14, squeeze));
           ctx.stroke(); ctx.globalAlpha = 1;
@@ -142,7 +158,7 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
           const opening = mix(nativeOpen ? .85 : 0, face.open, face.weight);
           // Chattering moves a level mouth along the face normal. Opposite
           // offsets at its corners made a tilted mouth instead of a shiver.
-          const tremble = Math.sin(expression.progress * Math.PI * 18) * face.tremble * face.weight * .65;
+          const tremble = Math.sin(progress * Math.PI * 18) * face.tremble * face.weight * .4;
           const round = face.mouth === M.round ? 1 : face.mouthRound;
           const targetWidth = mix(face.mouth === M.line || face.mouth === M.inhale ? 1.9 : 2.6, face.mouth === M.inhale ? .65 + face.open * .2 : .8 + face.open * .65, round);
           const width = mix((m.bounds[2] - m.bounds[0]) / 2, targetWidth, face.weight);
@@ -174,27 +190,32 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
             ctx.quadraticCurveTo(-width / 2, mid - amplitude, 0, mid);
             ctx.quadraticCurveTo(width / 2, mid + amplitude, width, edge + tremble);
           } else ctx.quadraticCurveTo(0, topCurve + tremble, width, edge + tremble);
-          if (bottomCurve - topCurve > .03 && nativeOpen && face.weight < 1) {
-            // The authored happy mouth has upright sides and a rounded U
-            // floor. Preserve that shape near entry/recovery; a single
-            // quadratic turns it into a pointed V even at almost-zero weight.
-            const sideY = mix(nativeEdge + nativeHeight * .7, (edge * 2 + bottomCurve) / 3, face.weight);
-            const floorY = mix(nativeEdge + nativeHeight, (edge + bottomCurve) / 2, face.weight);
-            const sideX = mix(width, width * 2 / 3, face.weight), floorX = mix(width * .65, width / 3, face.weight);
-            ctx.bezierCurveTo(sideX, sideY, floorX, floorY, 0, floorY);
-            ctx.bezierCurveTo(-floorX, floorY, -sideX, sideY, -width, edge + tremble);
-          } else if (bottomCurve - topCurve > .03) ctx.quadraticCurveTo(0, bottomCurve + tremble, -width, edge + tremble);
-          if (bottomCurve - topCurve > .03) { ctx.fill(); ctx.stroke(); }
-          else ctx.stroke();
+          const depth = Math.max(0, bottomCurve - topCurve);
+          if (depth > 0) {
+            // Split the target quadratic into two cubics. Its floor is the
+            // same path at full weight, so entering the hold has no shape cut.
+            const native = nativeOpen ? 1 - face.weight : 0;
+            const bottom = (edge + bottomCurve) / 2;
+            const sideY = mix((edge * 2 + bottomCurve) / 3, nativeEdge + nativeHeight * .7, native);
+            const floorY = mix(bottom, nativeEdge + nativeHeight, native);
+            const sideX = mix(width * 2 / 3, width, native), floorX = mix(width / 3, width * .65, native);
+            ctx.bezierCurveTo(sideX, sideY + tremble, floorX, floorY + tremble, 0, floorY + tremble);
+            ctx.bezierCurveTo(-floorX, floorY + tremble, -sideX, sideY + tremble, -width, edge + tremble);
+            ctx.fill();
+          }
+          ctx.stroke();
           const tongue = mix(nativeOpen ? .8 : 0, face.mouth === M.grin ? face.open : 0, face.weight);
-          if (face.mouth === M.tongue && face.weight > .01) {
+          if (face.mouth === M.tongue) {
             ctx.globalAlpha = face.weight; ctx.fillStyle = "#d59779"; ctx.strokeStyle = "#9b6450"; ctx.lineWidth = .4;
             const root = Math.max(.2, bottomCurve * .22), tip = root + 1.25 + face.open * .45;
             ctx.beginPath(); ctx.moveTo(-width * .6, root); ctx.lineTo(width * .6, root);
             ctx.bezierCurveTo(width * .6, tip, -width * .6, tip, -width * .6, root);
             ctx.fill(); ctx.stroke(); ctx.globalAlpha = 1;
-          } else if (tongue > .03 && opening > .03) {
+          } else if (tongue > 0 && opening > 0) {
+            const visibility = Math.min(1, opening / .16, tongue / .16);
+            ctx.globalAlpha = visibility * visibility * (3 - 2 * visibility);
             ctx.fillStyle = "#d59779"; ctx.beginPath(); ctx.ellipse(0, Math.max(0, bottomCurve * .28), width * .45, tongue * .55, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.globalAlpha = 1;
           }
           ctx.restore();
       }
@@ -205,14 +226,19 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
       // sprite plane instead, conserving every alpha byte and all non-face /
       // orange-cheek pixels. No source file or body geometry is rewritten.
       const final = ctx.getImageData(0, 0, PIXELS, PIXELS);
-      const admission = Math.min(1, face.weight / .15), sourceBlend = admission * admission * (3 - 2 * admission);
+      const admission = Math.min(1, blinkOnly ? blink / .38 : face.weight / .28);
+      const sourceBlend = admission * admission * (3 - 2 * admission);
       for (let i = 0; i < final.data.length; i += 4) {
         // Orange square cheeks can intersect the eye patch. A source's red
         // laughing mouth/tongue is also orange by RGB, but belongs to the
         // separately bounded mouth patch and must not survive a new face.
-        const x = i / 4 % PIXELS / SCALE, y = Math.floor(i / 4 / PIXELS) / SCALE;
-        const sourceMouth = m && x >= m.bounds[0] - .6 && x <= m.bounds[2] + .6 && y >= m.bounds[1] - .6 && y <= m.bounds[3] + .6;
-        const keep = !allowed[i / 4] || !sourceMouth && original.data[i] > 210 && original.data[i + 1] < 190 && original.data[i + 2] < 135;
+        const feature = allowed[i / 4];
+        const orange = original.data[i] > 210 && original.data[i + 1] < 190 && original.data[i + 2] < 135;
+        let keep = !feature || orange;
+        if (feature === 2 && m && orange) {
+          const x = i / 4 % PIXELS / SCALE, y = Math.floor(i / 4 / PIXELS) / SCALE;
+          keep = x < m.bounds[0] - .6 || x > m.bounds[2] + .6 || y < m.bounds[1] - .6 || y > m.bounds[3] + .6;
+        }
         for (let k = 0; k < 3; k++) final.data[i + k] = keep ? original.data[i + k] : Math.round(mix(original.data[i + k], final.data[i + k], sourceBlend));
         final.data[i + 3] = original.data[i + 3];
       }

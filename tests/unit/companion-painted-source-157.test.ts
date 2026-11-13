@@ -21,7 +21,7 @@ const painterSource=readFileSync("lib/ui/viewer-companion/expression-painter.ts"
 const painterAst=ts.createSourceFile("expression-painter.ts",painterSource,ts.ScriptTarget.Latest,true);
 const painterNodes:ts.Node[]=[];const visit=(node:ts.Node)=>{painterNodes.push(node);ts.forEachChild(node,visit);};visit(painterAst);
 const background=painterNodes.find((node):node is ts.VariableDeclaration=>ts.isVariableDeclaration(node)&&node.name.getText(painterAst)==="background")!;
-const declaration=(name:string)=>painterNodes.find((node):node is ts.VariableDeclaration=>ts.isVariableDeclaration(node)&&node.name.getText(painterAst)===name);
+const declaration=(name:string)=>painterNodes.find((node):node is ts.VariableDeclaration=>ts.isVariableDeclaration(node)&&node.name.getText(painterAst)===name)!;
 const eyePatches=declaration("eyePatches"),mouthCenter=declaration("m"),mouthBox=declaration("mouthBox"),mouthFill=declaration("mouthFill");
 if(!background||!eyePatches||!mouthCenter||!mouthBox||!mouthFill||!eyePatches.initializer||!ts.isCallExpression(eyePatches.initializer)
   ||eyePatches.initializer.expression.getText(painterAst)!=="pose.eyes.map")throw Error("Actual163 painter mask declarations are missing");
@@ -31,20 +31,24 @@ const PIXELS=192,SCALE=PIXELS/80,allowed=new Uint8Array(PIXELS*PIXELS);
 const mix=(a,b,p)=>a+(b-a)*p;
 const face={gazeX:0,gazeY:0,weight:1,smile:.7,open:1,tremble:.3};
 const layout=companionFaceLayout(pose);
+const ${print(declaration("sharedEyeWidth"))};
+const ${print(declaration("sharedEyeHeight"))};
 const pixels={getImageData(left,top,width,height){const data=new Uint8ClampedArray(width*height*4);
   for(let y=0;y<height;y++)for(let x=0;x<width;x++)data.set(source.subarray(((top+y)*PIXELS+left+x)*4,((top+y)*PIXELS+left+x)*4+4),(y*width+x)*4);
   return {data,width,height};}};
 const ${print(background)};
 const ${print(eyePatches)};
 const ${print(mouthCenter)};
+const ${print(declaration("targetMouthX"))};
+const ${print(declaration("targetMouthY"))};
 const ${print(mouthBox)};
 const ${print(mouthFill)};
 return {allowed,eyePatches,mouthBox,mouthFill};`,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText;
-const compilePainterPatches=new Function("source","pose","reference","companionFaceLayout",actualMaskCode);
-const actualPainterPatches=((source,current,reference)=>compilePainterPatches(source,current,reference,companionFaceLayout)) as (source:Uint8ClampedArray,current:typeof pose,reference:typeof pose)=>{
+const compilePainterPatches=new Function("source","pose","reference","companionFaceLayout","blinkOnly",actualMaskCode);
+const actualPainterPatches=((source,current,reference,blinkOnly=false)=>compilePainterPatches(source,current,reference,companionFaceLayout,blinkOnly)) as (source:Uint8ClampedArray,current:typeof pose,reference:typeof pose,blinkOnly?:boolean)=>{
   allowed:NonNullable<ReturnType<typeof direct.mask>>;eyePatches:{box:number[];fill:string|undefined}[];mouthBox:number[]|undefined;mouthFill:string|undefined;
 };
-const actualPainterMask:typeof direct.mask=(source,current,reference)=>actualPainterPatches(source,current,reference).allowed;
+const actualPainterMask:typeof direct.mask=(source,current,reference,blinkOnly)=>actualPainterPatches(source,current,reference,blinkOnly).allowed;
 const original=()=>{const p=new Uint8ClampedArray(192*192*4);for(let i=0;i<p.length;i+=4)p.set([241,221,178,253],i);return p;};
 function fixture(){const source=original(),permitted=mask(source,pose,pose)!;
   const pixel=permitted.findIndex((v,i)=>v===1&&permitted[i-1]===1&&permitted[i+1]===1),painted=source.slice();
@@ -77,6 +81,15 @@ describe("157 actual current-cell canvas comparison shared verbatim with browser
     for(const anchor of anchors.frames){
       const source=original();
       expect(Buffer.compare(Buffer.from(mask(source,anchor,pose)!),Buffer.from(actualPainterMask(source,anchor,pose)!))).toBe(0);
+    }
+  });
+  it("admits just the two eye patches for an idle blink",()=>{
+    const source=original();
+    for(const anchor of anchors.frames.filter(frame=>frame.physicalIndex<16)){
+      const actual=actualPainterPatches(source,anchor,pose,true);
+      expect(actual.mouthBox).toBeUndefined();
+      expect(mask(source,anchor,pose,true)).toEqual(actual.allowed);
+      expect(actual.allowed.includes(2)).toBe(false);
     }
   });
   it("matches the actual painter's opacity/corner admission as well as its boxes",()=>{

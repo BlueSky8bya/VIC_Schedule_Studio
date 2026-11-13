@@ -42,6 +42,8 @@ const FRAME_COUNT = 16;
 // Four curated cells form six ping-pong steps: at the fastest100px/s walk an
 // 80px stride changes drawing7.5 times/s while world travel remains per-rAF.
 const WALK_STRIDE_PX = 80;
+const GESTURE_COMPRESSION: Readonly<Record<number, number>> = { 24: .13, 25: .055, 29: .07, 30: .035, 31: .075 };
+const GESTURE_TILT: Readonly<Record<number, number>> = { 24: 13, 29: 9, 30: 7, 31: -7 };
 const ALL_FRAMES = Object.freeze(Array.from({ length: FRAME_COUNT }, (_, index) => index));
 const LOOP_FPS: Readonly<Record<number, number>> = Object.fromEntries(COMPANION_CLIP_TIMING.filter(clip => clip.frameRate && (clip.playback === "loop" || clip.playback === "hold")).map(clip => [clip.row, clip.frameRate!]));
 const PHASE_ROWS: ReadonlySet<number> = new Set(COMPANION_CLIP_TIMING.filter(clip => clip.playback === "phase" || clip.playback === "hold" && !clip.frameRate).map(clip => clip.row));
@@ -53,6 +55,17 @@ const rounded = (value: number) => Math.round(value * 1e6) / 1e6;
 export function sampleCompanionTravel(progress: number): number {
   const p = Number.isFinite(progress) ? clamp(progress, 0, 1) : 0;
   return p * p * p * (p * (p * 6 - 15) + 10);
+}
+
+const BLINK_CYCLE_MS = 4800, BLINK_AT_MS = 3000, BLINK_LENGTH_MS = 250;
+
+/** Two lids close together over the neutral idle drawing. The blink lives on
+ * the pose clock, so suspending the actor suspends the blink as well. */
+export function sampleCompanionBlink(ageMs: number): number {
+  if (!Number.isFinite(ageMs) || ageMs < 0) return 0;
+  const age = ageMs % BLINK_CYCLE_MS - BLINK_AT_MS;
+  if (age <= 0 || age >= BLINK_LENGTH_MS) return 0;
+  return sampleCompanionTravel(Math.min(age / 90, (BLINK_LENGTH_MS - age) / 120, 1));
 }
 
 /** Consume complete display intervals, including the same tolerance used by
@@ -129,7 +142,7 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
   }
   let previousRow: number | undefined;
   let previousX = 0, previousY = 0, previousNow = 0;
-  let enteredAt = 0, walkDistance = 0, walkSteps = 0, travelLean = 0;
+  let enteredAt = 0, idleAge = 0, walkDistance = 0, walkSteps = 0, travelLean = 0;
   let facing: -1 | 1 = 1;
   let travelDirection: -1 | 1 | undefined;
   let turn: { from: -1 | 1; direction: -1 | 1; began: number } | undefined;
@@ -140,6 +153,13 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
   velocity.scaleX = velocity.scaleY = 0;
   let mixing = false;
   return {
+    blink() {
+      return previousRow === 0 ? sampleCompanionBlink(idleAge) : 0;
+    },
+    blinkImminent() {
+      // Promote the existing idle cadence before the first visible lid move.
+      return previousRow === 0 && idleAge >= BLINK_AT_MS - 80 && idleAge < BLINK_AT_MS + BLINK_LENGTH_MS;
+    },
     sample(input: CompanionMotionInput): CompanionMotionPose {
       const row = Number.isFinite(input.row) ? clamp(Math.floor(input.row), 0, rows - 1) : 0;
       const now = Number.isFinite(input.now) ? Math.max(previousNow, input.now) : previousNow;
@@ -169,7 +189,12 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
       // A hand moves the body in world space; it is not a walking intention.
       else if (!(row === 8 && input.status === "held") && input.status !== "play" && Math.abs(dx) >= .05) facing = dx < 0 ? -1 : 1;
       else if (attention) facing = attention.direction;
-      if (entered) { enteredAt = now; walkDistance = 0; walkSteps = 0; travelLean = 0; }
+      if (row === 0 && !entered && !input.reduced) idleAge = (idleAge + Math.min(100, now - previousNow)) % BLINK_CYCLE_MS;
+      if (entered) {
+        // An interrupted blink resumes with open eyes on the next idle beat.
+        if (previousRow === 0 && sampleCompanionBlink(idleAge) > 0) idleAge = BLINK_AT_MS + BLINK_LENGTH_MS;
+        enteredAt = now; walkDistance = 0; walkSteps = 0; travelLean = 0;
+      }
       else if (row === 2 || row === 20) walkDistance += Math.abs(dx);
       previousRow = row; previousX = x; previousY = y; previousNow = now;
 
@@ -221,6 +246,11 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
       const phase = Number.isFinite(input.phase) ? clamp(input.phase, 0, 1) : 0;
       const attending = attention && !input.reduced && phase > 0 && phase < 1 ? Math.sin(phase * Math.PI) : 0;
       const extension = row === 16 ? Math.sin(phase * Math.PI) : 0;
+      // With a stable drawing underneath, these gestures move the entire
+      // paper body continuously around its existing support pivot.
+      const accent = input.status === "play" && !input.reduced ? Math.sin(phase * Math.PI) ** 2 : 0;
+      const compression = accent * (GESTURE_COMPRESSION[row] ?? 0);
+      const gestureTilt = accent * (row === 26 ? Math.sin(phase * Math.PI * 2) * 6 : GESTURE_TILT[row] ?? 0);
       const shake = row === 17 ? Math.sin(phase * Math.PI * 6) * Math.sin(phase * Math.PI) : 0;
       // A held creature keeps kicking even under a stationary pointer. Only
       // local pose scalars move: the pointer, world support and collision path
@@ -238,10 +268,10 @@ export function createCompanionMotion({ clips = {}, rowCount = FRAME_COUNT, loop
         // A hanging grip must not translate with the rest of the body. Its
         // pivoted extension supplies the downward travel below the hand.
         bob: movingPose ? -Math.abs(Math.sin(stride)) * (row === 20 ? 3.5 : 1.2) : attending ? attending * clamp(attention?.elevation ?? 0, -1, 1) : 0,
-        ...companionMaterialScale(1 - stretch * .018 + extension * .026 + hanging),
+        ...companionMaterialScale(1 - stretch * (row === 20 ? .038 : .018) + extension * .026 + hanging - compression),
         // The existing facing plane mirrors this local lean toward the target;
         // multiplying by direction here would reverse a leftward observation.
-        tilt: (movingPose ? Math.sin(stride) * .75 * facing + travelLean : shake * 2.1 + attending * 1.6) + held * (Math.sin(heldTime * Math.PI * 3.6 + heldGrip.phase) * 5.2 + kick * 1.6 + heldGrip.lean * facing),
+        tilt: gestureTilt + (movingPose ? Math.sin(stride) * (row === 20 ? 2.8 : .75) * facing + travelLean : shake * 2.1 + attending * 1.6) + held * (Math.sin(heldTime * Math.PI * 3.6 + heldGrip.phase) * 5.2 + kick * 1.6 + heldGrip.lean * facing),
       };
       // A100ms Hermite correction carries the last scalar pose and velocity
       // into a new clip. This is a small pose mixer, not alpha ghosting between

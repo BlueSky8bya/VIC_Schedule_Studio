@@ -13,13 +13,23 @@ export const companionSpriteMetadata = {
 };
 const metadata = companionSpriteMetadata;
 
-/** Reuse whole authored poses in one shared playback order. A front-facing
- * upright key is not a running stride, and the smiling dizzy key interrupts
- * the unsettled expression. Keep their source pixels/rig anchors intact. */
+/** Keep the authored cells addressable for calibration and archives. Playback
+ * picks the compatible drawings; motion.ts supplies the continuous accents
+ * for gestures whose adjacent drawings changed face or volume too sharply. */
 export const companionMotionClips: Readonly<Record<number, readonly number[]>> = Object.freeze({
   ...Object.fromEntries(metadata.rows.map((row, index) => [index, Object.freeze(row.map((_, column) => column))])),
-  20: Object.freeze([0, 1, 2, 3, 4, 4, 3, 2, 1, 0]),
+  0: Object.freeze([0, 1, 2, 3, 4, 5, 6, 7, 8, 8, 11, 11, 12, 13, 14, 15]),
+  18: Object.freeze([0, 1, 4, 5, 8, 9, 12, 13, 12, 9, 8, 5, 4, 1, 0, 0]),
+  20: Object.freeze([0, 1]),
+  // The second cycle starts on the same quarter-facing drawing as the first.
+  21: Object.freeze([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 1, 0]),
   22: Object.freeze([0, 1, 2, 3, 4, 5, 6, 7, 6, 5, 4, 3, 2, 1, 0]),
+  24: Object.freeze([0]),
+  25: Object.freeze([8, 9, 10, 11, 12, 13, 14, 15]),
+  26: Object.freeze([8, 9, 10, 11]),
+  29: Object.freeze([8, 9, 10, 11, 12, 13, 14, 15]),
+  30: Object.freeze([8, 9, 10, 11, 12, 13, 14, 15]),
+  31: Object.freeze([8, 9, 10, 11, 12, 13, 14, 15]),
 });
 
 export type CompanionSpriteSelection = {

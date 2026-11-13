@@ -267,11 +267,11 @@ for (const [surface, mode, pattern] of [["viewer", "full", "horizontal"], ["stud
       return !!adopted && frame.textureSrc.endsWith(companionSpriteMetadata.atlases[adopted.atlas].src);
     })).toBe(true);
     const actualKeys = new Set(recover.filter(frame => closed.has(frame.pose)).map(frame => Math.floor(companionSpriteMetadata.rows[23].indexOf(Number(frame.pose)) / 4)));
-    expect(actualKeys).toEqual(new Set([0, 1, 2]));
+    expect(actualKeys).toEqual(new Set([0]));
     const normalEyes = recover.find(frame => frame.pose === normal)!;
     expect(normalEyes.actionAge - 520, "normal eyes follow the560ms shake-and-settle stage, independently of the first sampled recovery frame").toBeGreaterThanOrEqual(559);
     expect(recover.filter(frame => frame.at >= normalEyes.at).every(frame => frame.pose === normal)).toBe(true);
-    expect(new Set(recover.map(frame => frame.poseTransform)).size, "ground recovery must move continuously through the strained keys before its calm final drawing").toBeGreaterThan(8);
+    expect(new Set(recover.map(frame => frame.poseTransform)).size, "ground recovery must move continuously around the centered strained drawing before opening its eyes").toBeGreaterThan(8);
     const brisk = recover.filter(frame => frame.actionAge - 520 <= 560), extrema = recoveryExtrema(brisk);
     expect(extrema.length, `${mode} actual display must resolve at least five alternating extrema from three quick round trips`).toBeGreaterThanOrEqual(5);
     expect(extrema.every((frame, i) => !i || Math.sign(frame.tilt) !== Math.sign(extrema[i - 1].tilt))).toBe(true);

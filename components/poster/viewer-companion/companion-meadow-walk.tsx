@@ -4,6 +4,8 @@ import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react"
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { loadCompanionCollection, subscribeCompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { createCompanionMeadowWalk } from "@/lib/ui/viewer-companion/meadow-walk";
+import { companionMaterialScale } from "@/lib/ui/viewer-companion/material-scale";
+import { createCompanionExpressionPainter } from "@/lib/ui/viewer-companion/expression-painter";
 import { createCompanionMotion, nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
 import { companionMotionClips, companionSpriteMetadata, peekDecodedCompanionSprite, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { companionPreviewDrawing, createCompanionPreviewPreparation } from "@/lib/ui/viewer-companion/wardrobe-preview";
@@ -39,6 +41,7 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
     if (!element || !bodyPlane || !facingPlane || !posePlane || !spritePlane || !drawing || !shadowPlane || !back.current || !front.current || !gift.current) return;
     const context = drawing.getContext("2d");
     if (!context) return;
+    const face = document.createElement("canvas"), facePainter = createCompanionExpressionPainter(face);
     const hosts = { back: back.current, front: front.current, gift: gift.current };
     const walker = createCompanionMeadowWalk(), preparation = createCompanionPreviewPreparation();
     const motion = createCompanionMotion({ clips: companionMotionClips, rowCount: companionSpriteMetadata.rows.length, loopRows: [0, 2, 20], maxFrameRate: 14 });
@@ -91,11 +94,15 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
       if (!decoded) void prepare(drawingRow, generation);
       if (!image || !selection) return false;
       if (decoded) { fallback = selection; fallbackImage = decoded; fallbackRow = drawingRow; }
-      const key = `${selection.src}:${selection.index}`;
+      const blink = drawingRow === 0 && status === "idle" && decoded && !restricted() && interactive() ? motion.blink() : 0;
+      const blinkStep = Math.round(blink * 64);
+      const blinkPainted = facePainter.paint(selection, null, blinkStep / 64);
+      const key = `${selection.src}:${selection.index}:${blinkPainted ? blinkStep : 0}`;
       if (key !== cell) {
         const frame = companionPreviewDrawing(selection, image.naturalWidth, image.naturalHeight);
         context.clearRect(0, 0, drawing.width, drawing.height);
-        context.drawImage(image, frame.sourceX, frame.sourceY, frame.sourceWidth, frame.sourceHeight, 0, 0, drawing.width, drawing.height);
+        if (blinkPainted) context.drawImage(face, 0, 0, drawing.width, drawing.height);
+        else context.drawImage(image, frame.sourceX, frame.sourceY, frame.sourceWidth, frame.sourceHeight, 0, 0, drawing.width, drawing.height);
         const registration = `${frame.x}:${frame.y}:${frame.clip.join(":")}`;
         if (registration !== registered) { spritePlane.style.transform = `translate(${frame.x}%,${frame.y}%)`; spritePlane.style.clipPath = `inset(${frame.clip.map(value => `${value}%`).join(" ")})`; registered = registration; }
         cell = key;
@@ -105,7 +112,8 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
       facingPlane.style.transform = `scaleX(${sample.facing})`;
       const contact = touch.sample(now, restricted());
       const hanging = restricted() ? { tilt: 0, stretch: 0, active: false } : boundCompanionHeldPose(inertia.sample(now), { x: current.x - 46, y: current.y - 92 }, { x: 46, y: 46 }, 92, { width: innerWidth, height: innerHeight });
-      posePlane.style.transform = `translate(${contact.x.toFixed(3)}px,${(sample.bob + contact.y + (authored?.lift ?? 0)).toFixed(3)}px) rotate(${(sample.tilt + contact.tilt + hanging.tilt + (authored?.lean ?? 0)).toFixed(3)}deg) scale(${(sample.scaleX + contact.squash - hanging.stretch).toFixed(4)},${(sample.scaleY - contact.squash + hanging.stretch).toFixed(4)})`;
+      const material = companionMaterialScale(sample.scaleY * (1 - (authored?.compression ?? 0)) - contact.squash + hanging.stretch);
+      posePlane.style.transform = `translate(${contact.x.toFixed(3)}px,${(sample.bob + contact.y + (authored?.lift ?? 0)).toFixed(3)}px) rotate(${(sample.tilt + contact.tilt + hanging.tilt + (authored?.lean ?? 0)).toFixed(3)}deg) scale(${material.scaleX.toFixed(4)},${material.scaleY.toFixed(4)})`;
       painter?.paint(selection, accessory, false);
       element.dataset.row = String(decoded ? drawingRow : fallbackRow); element.dataset.pose = String(selection.physicalIndex);
       element.dataset.state = status; element.dataset.purpose = reaction?.name ?? (held ? "held" : current.purpose); element.dataset.leg = String(current.leg);
