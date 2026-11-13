@@ -13,7 +13,7 @@ const CRON_ROUTES: Record<string, string> = {
   "7 * * * *": "/api/cron/insights-archive"
 };
 
-export default {
+const worker = {
   // 익명 `/`만 짧게 캐시한다(규칙·이유: lib/edge/anon-home-cache.ts). 나머지 요청은 그대로 Next로.
   fetch(request: Request, env: Env, ctx: Ctx) {
     const cache = (caches as unknown as { default: { match(k: string): Promise<Response | undefined>; put(k: string, r: Response): Promise<void> } }).default;
@@ -31,6 +31,8 @@ export default {
     ctx.waitUntil(handler.fetch(request, env, ctx));
   }
 };
+
+export default worker;
 
 // OpenNext 캐시 재생성 큐(Durable Object)를 Worker에서 내보내야 바인딩이 잡힌다.
 export { DOQueueHandler } from "../.open-next/worker.js";

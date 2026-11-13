@@ -28,7 +28,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 | COMPANION-PANEL-REPORT-20261026 | Watch original cause | Inspect bounded local recurrence evidence on a distinct real failure; preserve original unconfirmed report | [Contract](verification/COMPANION_VISIBILITY-20261026.md) |
 | DAILY-0900 | Active | Separate risk verification/discovery; adopted work through exact release, preserve carryover | [Search focus](plans/PLAN-20261025-search-focus.md) |
 | OPS-CLOUDFLARE-MOVE | Live, cleanup pending | Live on victory-broadcast.com via Workers Builds (Vercel paused until 2026-12-13, no further use). Branch cleanup/post-cloudflare removes Vercel leftovers and private-layer code; 0159 written, not applied (owner approval after deploy check) | [Runbook](../ops/CLOUDFLARE_MIGRATION.md) |
-| OPS-VERCEL-QUOTA | Superseded by OPS-CLOUDFLARE-MOVE | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-STORAGE | Watch | Gate released;6 deleted;quota refresh unproven | [Record](verification/DEPLOYMENT_STORAGE-20261024.md) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
@@ -48,7 +47,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 ## Next Exact Steps
 
 0. DAILY-0900: validate primary state/receipts and dedupe completed proposals; separate verification/discovery, finish authorized repairs with independent review and exact release, record unexecuted scope.
-1. OPS-DB-QUOTA/OPS-VERCEL-QUOTA: compare post-release route/RPC/cost with the same period/denominator, recheck Hobby restrictions/reset status; define the Free-plan full-backup/recovery path and recheck unavailable compute graphs. No automatic future run was created.
+1. OPS-DB-QUOTA: compare post-release route/RPC/cost with the same period/denominator; define the Free-plan full-backup/recovery path and recheck unavailable compute graphs. No automatic future run was created.
 3. RULE-ART-COMPLETION: wait for pending presentation/source-policy choices; unrelated work grants no approval.
 4. VERIFY-REAL-SESSION: use synthetic canaries and real authority; fixture/service-role tests never establish genuine-login RLS.
 5. PRIVACY-20260921: resolve remaining visit/recurring retention policy and restricted local recovery-backup removal after its2026-10-24 window. No automatic future run is scheduled.
