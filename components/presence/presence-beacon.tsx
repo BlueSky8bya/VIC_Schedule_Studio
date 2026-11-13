@@ -6,7 +6,7 @@ import { detectDevice } from "@/lib/presence/presence-client";
 import { isContentReady, onContentReady } from "@/lib/presence/content-ready";
 import { skipAnalyticsClient } from "@/lib/analytics/guard";
 
-// 모든 로그인 사용자 화면에 1개 깔리는 보이지 않는 컴포넌트.
+// 운영자·개발자 화면에 1개 깔리는 보이지 않는 컴포넌트.
 // Visit metadata is sent only to the server; never to public Realtime channels.
 // 2) 방문/체류를 '세션 이벤트'로 기록 — 화면이 보이기 시작하면 세션 생성(start), 보이는 동안
 //    하트비트로 last_seen 갱신(touch), 숨기거나 떠나면 종료(end). 재진입하면 새 세션(여러 번 기록).
@@ -44,32 +44,13 @@ function visitKeyFor(day: string): string {
   }
 }
 
-// 비로그인 방문자 기기 식별자(고유 방문자 dedup용) — 하트와 같은 localStorage 키를 재사용한다.
-const ANON_ID_KEY = "vic:anonId:v1";
-function deviceAnonId(): string {
-  try {
-    let t = window.localStorage.getItem(ANON_ID_KEY);
-    if (!t || t.length < 8) {
-      t =
-        typeof crypto !== "undefined" && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `dev-${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`;
-      window.localStorage.setItem(ANON_ID_KEY, t);
-    }
-    return t;
-  } catch {
-    return "";
-  }
-}
-
-export function PresenceBeacon({ role }: { role: MembershipRole | "anon" }) {
+// 운영자·개발자 화면에만 깔린다(app/layout.tsx). 시청자·비로그인 방문은 기록하지 않는다(2026-11-13).
+export function PresenceBeacon({ role }: { role: MembershipRole }) {
   useEffect(() => {
     // 자동화 브라우저·로컬 호스트는 기록하지 않는다(lib/analytics/guard.ts — 2026-09-04 검증 트래픽이 운영 통계를 오염).
     if (skipAnalyticsClient()) return;
 
     const device = detectDevice();
-    // 비로그인이면 고유 방문자 dedup용 기기 토큰을 함께 보낸다(서버가 해시해 account_hash로).
-    const anonId = role === "anon" ? deviceAnonId() : undefined;
     let sessionId: string | null = null;
     let sessionDay: string | null = null; // 이 세션이 기록된 KST 날짜(자정 롤오버 감지용)
     let starting = false;
@@ -89,7 +70,7 @@ export function PresenceBeacon({ role }: { role: MembershipRole | "anon" }) {
       const day = kstDay();
       try {
         // visitKey는 day와 함께 계산한다 — 자정 롤오버로 begin()이 다시 불리면 키도 새로 발급된다.
-        const res = await post("start", { visitKey: visitKeyFor(day), ...(anonId ? { anonId } : {}) });
+        const res = await post("start", { visitKey: visitKeyFor(day) });
         const data = (await res.json().catch(() => null)) as { ok?: boolean; id?: string } | null;
         if (data?.ok && data.id) {
           sessionId = data.id;

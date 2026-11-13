@@ -35,7 +35,7 @@ describe("141 direct curtain activity; synthetic transport and developer display
     vi.stubGlobal("fetch", fetcher);
     vi.stubGlobal("document", { addEventListener: (name: string, listener: (event: unknown) => void) => handlers.set(name, listener), visibilityState: "visible" });
     vi.stubGlobal("window", { addEventListener: () => {}, setTimeout, clearTimeout, sessionStorage: { getItem: () => null } });
-    const client = await import("@/lib/activity/client"); client.startClickTracking();
+    const client = await import("@/lib/activity/client"); client.enableActivityLogging(); client.startClickTracking();
     let now = 0; const control = createCompanionCurtainControl(() => now);
     for (const detail of [1, 0]) {
       for (const option of options) {

@@ -40,7 +40,7 @@ it('captures each fixed record/search control once through the real collector wi
     const handlers=new Map<string,(e:unknown)=>void>(),transport=vi.fn().mockResolvedValue({ok:true});
     vi.stubGlobal('fetch',transport);vi.stubGlobal('document',{addEventListener:(name:string,handler:(e:unknown)=>void)=>handlers.set(name,handler),visibilityState:'visible'});
     vi.stubGlobal('window',{addEventListener:()=>{},setTimeout,clearTimeout,sessionStorage:{getItem:()=>null}});
-    const {startClickTracking,logActivity}=await import('@/lib/activity/client');startClickTracking();
+    const {startClickTracking,logActivity,enableActivityLogging}=await import('@/lib/activity/client');enableActivityLogging();startClickTracking();
     const targets=['legend-mine','dtp-time-input#hour','dtp-time-input#minute','bp-recent-color','bp-width','detail-tags-toggle','vod-timeline-current','text-style-reset','agenda-support-follow-view','add-google-calendar','editor-tags-clear','editor-tags-swap','search-kind#all','search-kind#event','search-kind#vod','art-prompt-copy-all','search-kind#chat','search-kind#timeline','search-kind#chapter','record-month#previous','record-month#next','record-summary#content','record-summary#days','record-summary#rest','record-event-open'];
     for(const target of targets){const [action,opt]=target.split('#');const element={tagName:'BUTTON',hasAttribute:()=>false,matches:()=>false,getAttribute:(name:string)=>name==='data-act'?action:name==='data-act-opt'?opt??null:null};handlers.get('click')!({target:{closest:()=>element}});}
     handlers.get('click')!({target:{closest:()=>({tagName:'BUTTON',hasAttribute:(name:string)=>name==='data-activity-manual',getAttribute:()=> 'vod-part-select'})}});

@@ -6,7 +6,7 @@ import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { getOwnerEmails, normalizeEmail } from "@/lib/auth/config";
 import { canEditSchedule } from "@/lib/permissions/roles";
 import { accountHashOf } from "@/lib/insights/account-hash";
-import { sanitizeVisitKey } from "@/lib/activity/kinds";
+import { isInternalRole, sanitizeVisitKey } from "@/lib/activity/kinds";
 import { fetchAllRows } from "@/lib/db/paginate";
 import { isInsightsSystem } from "@/lib/insights/system-context";
 import { kstDayKey } from "@/lib/calendar/month";
@@ -140,22 +140,22 @@ export async function startVisitSession(
   anonId?: string,
   visitKey?: string
 ): Promise<{ ok: boolean; id?: string }> {
+  void anonId; // 옛 탭이 아직 보낼 수 있는 값 — 저장하지 않는다.
   const actor = await resolveCurrentActor(SLUG);
-  // 비로그인 방문자도 집계한다 — role="anon"(비로그인). 로그인은 실제 역할 + 이메일 해시(하루 1인),
-  // 비로그인은 기기 토큰(localStorage) 해시로 고유 방문자를 센다(없으면 null=세션 단위로만).
-  const isAuthed = actor.isAuthenticated;
+  // 2026-11-13 소유자 결정: 시청자·비로그인 방문은 기록하지 않는다. 운영자·개발자 본인의 방문만 남긴다
+  // (개인정보처리방침과 같은 경계). 옛 탭이 보낸 비콘도 여기서 막힌다.
+  if (!actor.isAuthenticated || actor.roleUncertain || !isInternalRole(actor.role)) return { ok: false };
   const supabase = createSupabaseAdminClient();
   if (!supabase) return { ok: false };
   const safeDevice = DEVICE_SET.has(device) ? device : "desktop";
-  const anonHash = !isAuthed && anonId && anonId.length >= 8 ? accountHashOf(`anon:${anonId}`) : null;
   const nowIso = new Date().toISOString();
   try {
     const { data, error } = await supabase
       .from("visit_session")
       .insert({
         day: todayKstKey(),
-        account_hash: isAuthed && actor.email ? accountHashOf(actor.email) : anonHash,
-        role: isAuthed ? actor.role : "anon",
+        account_hash: actor.email ? accountHashOf(actor.email) : null,
+        role: actor.role,
         device: safeDevice,
         // 탭 수명 그룹 키(0061). 클라 값이라 위조 가능하지만 '구간을 잇는 키'일 뿐 — 역할·계정은
         // 위에서 서버 actor로 확정한다. 길이만 방어적으로 자른다.

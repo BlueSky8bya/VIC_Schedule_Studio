@@ -1073,6 +1073,16 @@ export function StudioSettingsList({
       ) : null}
       </div>
       </div>
+      {/* 개인정보처리방침·이용약관 — 시청자·편집실이 같은 설정 창을 쓰므로 여기 한 곳에만 둔다. */}
+      <p className="rhh-legal">
+        <Link data-act="settings-privacy" href={"/privacy" as Route}>
+          개인정보처리방침
+        </Link>
+        <span aria-hidden="true">·</span>
+        <Link data-act="settings-terms" href={"/terms" as Route}>
+          이용약관
+        </Link>
+      </p>
     </div>
   );
 }

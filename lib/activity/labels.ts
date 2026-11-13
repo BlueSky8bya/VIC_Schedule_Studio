@@ -806,6 +806,11 @@ export const ACT: Record<string, TargetLabel> = {
   // 오류 화면·아트 보드
   "error-retry": { name: "오류 화면 다시 시도", area: "기타", hint: "화면이 깨졌을 때 뜨는 안내의 버튼" },
   "not-found-home": { name: "없는 페이지에서 홈으로", area: "기타" },
+  "settings-privacy": { name: "개인정보처리방침 열기", area: "기타", hint: "설정 창 맨 아래(2026-11-13)" },
+  "settings-terms": { name: "이용약관 열기", area: "기타", hint: "설정 창 맨 아래(2026-11-13)" },
+  "legal-home": { name: "약관·방침 → 일정표로", area: "기타" },
+  "legal-privacy": { name: "이용약관 → 개인정보처리방침", area: "기타" },
+  "legal-terms": { name: "개인정보처리방침 → 이용약관", area: "기타" },
   "art-filter": { name: "아트 보드 필터 칩", area: "편집실", hint: "/studio/ambient-art(개발자) — 상태·계절·차수·지금 화면" },
   "vod-chapters-retry": { name: "챕터 다시 불러오기", area: "다시보기 창" },
 

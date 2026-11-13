@@ -13,6 +13,7 @@ async function fixture() {
   vi.stubGlobal("document", { visibilityState: "hidden", addEventListener: (name: string, listener: () => void) => documentListeners.set(name, listener) });
   vi.stubGlobal("window", { addEventListener: (name: string, listener: () => void) => windowListeners.set(name, listener), setTimeout, clearTimeout, sessionStorage: { getItem: () => "fixture|synthetic-visit" } });
   const logger = await import("@/lib/activity/client");
+  logger.enableActivityLogging();
   logger.startClickTracking();
   const click = (id: string) => documentListeners.get("click")!({ target: { closest: () => ({
     hasAttribute: () => false, matches: () => false,

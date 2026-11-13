@@ -2336,3 +2336,39 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 }
 @container rhh (max-width: 599px) { .rhh-nav-item { height: 50px; min-height: 50px; line-height: 1.25; } }
 @container rhh-panes (max-width: 400px) { .rhh-preview-pair { grid-template-columns: minmax(0, 1fr); } }
+
+/* 설정 창 법적 고지 링크(개인정보처리방침·이용약관) — 작고 조용하게, 탭과 무관하게 늘 보인다.
+   넓은 창: 왼쪽 탭 목록 칸의 바닥(탭 그리드가 창 높이를 다 쓰므로 그 아래에 두면 창 밖으로 잘린다).
+   좁은 창(폰): 묶음 목록이 스크롤되므로 맨 끝에 흐른다. */
+.rhh-tabs {
+  position: relative;
+}
+.rhh-legal {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 10px 0 0;
+  color: var(--muted, #7a7464);
+  font-size: var(--text-caption, 11px);
+  line-height: 1.4;
+}
+.rhh-legal a {
+  color: inherit;
+  text-decoration: none;
+}
+.rhh-legal a:hover,
+.rhh-legal a:focus-visible {
+  text-decoration: underline;
+}
+@container rhh (min-width: 600px) {
+  .rhh-legal {
+    position: absolute;
+    left: 0;
+    bottom: 14px;
+    width: 200px;
+    margin: 0;
+  }
+  .rhh-nav {
+    padding-bottom: 44px;
+  }
+}

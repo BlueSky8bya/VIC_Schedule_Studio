@@ -48,8 +48,16 @@ function currentVisitKey(): string | null {
   }
 }
 
+// 운영자·개발자 화면에서만 켜진다(RouteBeacon은 그들에게만 깔린다 — app/layout.tsx).
+// 시청자·비로그인 화면에서는 기록을 서버로 보내지 않고 버린다(2026-11-13 소유자 결정).
+let enabled = false;
+export function enableActivityLogging(): void {
+  enabled = true;
+}
+
 function send(batch: Pending[], keepalive: boolean): void {
   if (batch.length === 0) return;
+  if (!enabled) return;
   // 자동화 브라우저·로컬 호스트의 행동은 기록하지 않는다(lib/analytics/guard.ts).
   if (skipAnalyticsClient()) return;
   // 방문 키는 **보낼 때** 다시 찍는다. 쌓을 때만 읽으면, 페이지가 열린 직후의 기록

@@ -55,6 +55,9 @@ async function buildRow(input: ActivityInput): Promise<Row | null> {
   // 로그인은 했는데 역할 판정이 실패했다면(platform_admins 조회 오류) 'viewer'라고 **주장하지 않는다**
   // — 사용량 화면에 "시청자가 편집실 버튼을 눌렀다"는 거짓이 남았다(2026-09-05 소유자 지적).
   const role = actor.isAuthenticated ? (actor.roleUncertain ? "unknown" : actor.role) : "anon";
+  // 2026-11-13 소유자 결정: 시청자·비로그인의 행동은 어떤 형태로도(행·날짜별 개수·진단) 남기지 않는다.
+  // 운영자·개발자 본인의 기록만 남는다(개인정보처리방침과 같은 경계).
+  if (!isInternalRole(role)) return null;
   const rawHash = actor.isAuthenticated && actor.email ? accountHashOf(actor.email) : null;
 
   let device = input.device;
@@ -90,9 +93,7 @@ async function buildRow(input: ActivityInput): Promise<Row | null> {
   };
 }
 
-// 내부자 = 타임라인 행, 시청자·비로그인 = 날짜별 카운트(0063). 사용자 결정 2026-08-04(2차):
-// 목적이 "어떤 버튼이 안 쓰이나"라 시청자 쪽은 합계면 충분하고, 버튼 전수 수집을 행으로 남기면
-// 행이 폭증한다. 개인 세션조차 남지 않아 익명성이 집계 구조로 보장된다.
+// 내부자만 타임라인 행으로 남긴다. 시청자·비로그인은 buildRow에서 이미 걸러진다(2026-11-13).
 type Row = {
   day: string;
   visit_key: string | null;
@@ -108,29 +109,12 @@ type Row = {
 };
 
 async function persist(rows: Row[]): Promise<void> {
-  if (rows.length === 0) return;
-  // 진단 행은 역할과 무관하게 이벤트로 남긴다 — 개수로 접으면 '무슨 일이 있었나'가 사라져
-  // 애초에 이 층을 만든 이유가 없어진다. 대신 보존이 3일로 짧다.
-  const events = rows.filter((r) => r.diag || isInternalRole(r.role));
-  const counted = rows.filter((r) => !r.diag && !isInternalRole(r.role));
+  const events = rows.filter((r) => isInternalRole(r.role));
+  if (events.length === 0) return;
   try {
     const sb = createSupabaseAdminClient();
     if (!sb) return;
-    const jobs: Promise<unknown>[] = [];
-    if (events.length > 0) jobs.push(Promise.resolve(sb.from("activity_event").insert(events)));
-    if (counted.length > 0) {
-      // 같은 (날짜·역할·종류·대상)은 클라에서 미리 합쳐 보낸다 — 왕복도 행 잠금도 줄인다.
-      const tally = new Map<string, { day: string; role: string; kind: string; target: string; n: number }>();
-      for (const r of counted) {
-        const target = r.target ?? "";
-        const key = `${r.day}|${r.role}|${r.kind}|${target}`;
-        const hit = tally.get(key);
-        if (hit) hit.n += 1;
-        else tally.set(key, { day: r.day, role: r.role, kind: r.kind, target, n: 1 });
-      }
-      jobs.push(Promise.resolve(sb.rpc("bump_activity_counts", { p_rows: [...tally.values()] })));
-    }
-    await Promise.all(jobs);
+    await sb.from("activity_event").insert(events);
   } catch {
     /* 보조 기능 — 기록 실패는 무시한다(앱 동작을 막지 않는다) */
   }

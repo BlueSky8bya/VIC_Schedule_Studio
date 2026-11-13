@@ -122,18 +122,12 @@ describe("companion activity writer boundary", () => {
     expect(db.rpc).not.toHaveBeenCalled();
   });
 
-  it.each(["viewer", "anon", "unknown"] as const)("folds %s gestures into identity-free daily counts", async role => {
+  // 2026-11-13 소유자 결정: 시청자·비로그인·역할 불명의 행동은 행·개수 어떤 형태로도 저장하지 않는다.
+  it.each(["viewer", "anon", "unknown"] as const)("stores nothing for %s gestures", async role => {
     mocks.actor.mockResolvedValue(role === "anon" ? actor("viewer", false) : { ...actor("viewer"), roleUncertain: role === "unknown" });
-    expect(await recordActivityBatch([click("companion-pet"), click("companion-pet"), click("companion-drag")])).toBe(3);
+    expect(await recordActivityBatch([click("companion-pet"), click("companion-pet"), click("companion-drag")])).toBe(0);
     expect(db.writes).toEqual([]);
-    expect(db.rpc).toHaveBeenCalledOnce();
-    expect(db.rpc).toHaveBeenCalledWith("bump_activity_counts", { p_rows: [
-      { day: DAY, role, kind: "ui.click", target: "companion-pet", n: 2 },
-      { day: DAY, role, kind: "ui.click", target: "companion-drag", n: 1 }
-    ] });
-    expect(JSON.stringify(db.rpc.mock.calls)).not.toContain("synthetic-actor");
-    expect(JSON.stringify(db.rpc.mock.calls)).not.toContain(VISIT);
-    expect(JSON.stringify(db.rpc.mock.calls)).not.toContain("account_hash");
+    expect(db.rpc).not.toHaveBeenCalled();
   });
 
   it("drops client-forged server kinds while sanitizing sensitive payloads before persistence", async () => {
@@ -178,8 +172,8 @@ describe("companion activity writer boundary", () => {
     for (const value of [CANARY, "radio-01", "radio-02", "tumble", "9876"]) expect(JSON.stringify(db.writes)).not.toContain(value);
   });
 
-  it.each(["developer", "viewer", "anon"] as const)("seals every current companion control before %s persistence", async role => {
-    mocks.actor.mockResolvedValue(actor(role === "anon" ? "viewer" : role, role !== "anon"));
+  it.each(["developer"] as const)("seals every current companion control before %s persistence", async role => {
+    mocks.actor.mockResolvedValue(actor(role));
     const controls = Object.entries(ACT).filter(([key]) => isCompanionActivityTarget(key));
     const targets = controls.flatMap(([key, label]) => [key, ...Object.keys(label.opts ?? {}).map(option => `${key}#${option}`)]);
     const events = targets.map(target => ({ ...click(target), meta: { count: 180, on: true, date: DAY, scope: "public", title: CANARY, trackId: "radio-01", favorite: "peach" }, durMs: 9876 }));
@@ -207,7 +201,7 @@ describe("companion activity writer boundary", () => {
     expect(db.rpc).not.toHaveBeenCalled();
   });
 
-  it.each(["developer", "viewer"] as const)("seals legacy automatic companion aliases for %s as canonical fixed controls", async role => {
+  it.each(["developer"] as const)("seals legacy automatic companion aliases for %s as canonical fixed controls", async role => {
     mocks.actor.mockResolvedValue(actor(role));
     const targets = ["auto:companion-enabled", "auto:.companion-enabled", "auto:companion-food-spawn#apple", "auto:.settings-companion-tab#personality"];
     expect(await recordActivityBatch(targets.map(target => ({ ...click(target), meta: { count: 180, on: true, date: DAY }, durMs: 9876 })))).toBe(4);
@@ -226,12 +220,11 @@ describe("companion activity writer boundary", () => {
     for (const value of ["auto:", "apple", "9876", "180"]) expect(JSON.stringify({ writes: db.writes, rpc: db.rpc.mock.calls })).not.toContain(value);
   });
 
-  it.each(["viewer", "anon"] as const)("counts %s collection clicks without a collection/account/session payload", async role => {
+  it.each(["viewer", "anon"] as const)("stores nothing for %s collection clicks", async role => {
     mocks.actor.mockResolvedValue(actor("viewer", role !== "anon"));
-    expect(await recordActivityBatch(COLLECTION_ACTIONS.map(click))).toBe(COLLECTION_ACTIONS.length);
+    expect(await recordActivityBatch(COLLECTION_ACTIONS.map(click))).toBe(0);
     expect(db.writes).toEqual([]);
-    expect(db.rpc).toHaveBeenCalledExactlyOnceWith("bump_activity_counts", { p_rows: COLLECTION_ACTIONS.map(target => ({ day: DAY, role, kind: "ui.click", target, n: 1 })) });
-    for (const value of ["account_hash", VISIT, "synthetic-actor", "foods", "behaviors", "unlocked", "equipped"]) expect(JSON.stringify(db.rpc.mock.calls)).not.toContain(value);
+    expect(db.rpc).not.toHaveBeenCalled();
   });
 });
 

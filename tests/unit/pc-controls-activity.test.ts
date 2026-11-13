@@ -5,7 +5,7 @@ afterEach(()=>{vi.useRealTimers();vi.unstubAllGlobals();vi.resetModules();});
 it('captures manual date/period activation once and displays fixed names in the shared developer catalog',async()=>{
  vi.useFakeTimers();const handlers=new Map<string,(e:unknown)=>void>(),fetcher=vi.fn().mockResolvedValue({ok:true});
  vi.stubGlobal('fetch',fetcher);vi.stubGlobal('document',{addEventListener:(name:string,fn:(e:unknown)=>void)=>handlers.set(name,fn),visibilityState:'visible'});vi.stubGlobal('window',{addEventListener:()=>{},setTimeout,clearTimeout,sessionStorage:{getItem:()=>null}});
- const logger=await import('@/lib/activity/client');logger.startClickTracking();
+ const logger=await import('@/lib/activity/client');logger.enableActivityLogging();logger.startClickTracking();
  for(const target of ['bp-date-select','search-month#filter','search-month#all']){
   const element={hasAttribute:(name:string)=>name==='data-activity-manual',getAttribute:(name:string)=>name==='data-act'?target:null,matches:()=>false};
   handlers.get('click')!({target:{closest:()=>element}}); // delegated pointer/keyboard click is suppressed

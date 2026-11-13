@@ -28,6 +28,7 @@ import "./ambient.css";
 // 공개 포스터만 보는 비로그인 시청자가 스튜디오 CSS(220KB)를 렌더 차단으로 받지 않게 한다.
 import { PresenceBeacon } from "@/components/presence/presence-beacon";
 import { RouteBeacon } from "@/components/activity/route-beacon";
+import { isInternalRole } from "@/lib/activity/kinds";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
 import { OfflineIndicator } from "@/components/pwa/offline-indicator";
 import { StaleDeployGuard } from "@/components/pwa/stale-deploy-guard";
@@ -94,9 +95,14 @@ async function ActorTail() {
   const actor = await resolveCurrentActor("vic");
   return (
     <>
-      {/* 방문 비콘은 비로그인 방문자에게도 깐다 — 일일/월별 인사이트에 '비로그인' 도달까지 잡는다.
-          (로그인은 실제 역할, 비로그인은 role="anon". 서버가 actor로 실제 기록을 확정한다.) */}
-      <PresenceBeacon role={actor.isAuthenticated ? actor.role : "anon"} />
+      {/* 방문·행동 기록은 운영자·개발자 본인에게만 깐다(2026-11-13 소유자 결정 — 시청자·비로그인은
+          기록하지 않음, 개인정보처리방침과 같은 경계). 서버도 actor로 한 번 더 막는다. */}
+      {actor.isAuthenticated && !actor.roleUncertain && isInternalRole(actor.role) ? (
+        <>
+          <PresenceBeacon role={actor.role} />
+          <RouteBeacon />
+        </>
+      ) : null}
       {/* 오프라인 열람용 서비스워커 — 공개 포스터만 캐시(비공개·스튜디오·쓰기는 손대지 않음).
           신원(이메일/anon)이 바뀌면 캐시를 비워 공유 기기에서 이전 사용자 화면이 안 남게. */}
       <ServiceWorkerRegister
@@ -166,9 +172,6 @@ export default function RootLayout({
             (max-height ≤640 + coarse) 절이 이미 모바일 레이아웃으로 잡아 정상 사용 가능한데,
             오버레이가 그 위를 통째로 덮어 사용 자체를 막고 있었다. aria-hidden인데 뒤 UI가
             포커스 가능해 접근성 문제도 있었다.) */}
-        {/* 어느 화면을 얼마나 봤는지(0062). 프레즌스와 분리 — deps에 pathname을 넣으면
-            SPA 라우팅마다 방문 세션이 끊긴다. */}
-        <RouteBeacon />
         {/* actor 의존 꼬리(위 ActorTail 주석 참고) — 셸 스트리밍을 막지 않게 Suspense 뒤로. */}
         <Suspense fallback={null}>
           <ActorTail />

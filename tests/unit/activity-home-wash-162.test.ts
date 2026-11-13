@@ -34,7 +34,7 @@ describe("162 explicit wash activity without autonomous care metadata", () => {
     vi.useFakeTimers(); const handlers = new Map<string, (event: unknown) => void>(), fetcher = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal("fetch", fetcher); vi.stubGlobal("document", { visibilityState: "visible", addEventListener: (name: string, handler: (event: unknown) => void) => handlers.set(name, handler) });
     vi.stubGlobal("window", { addEventListener: () => {}, setTimeout, clearTimeout, sessionStorage: { getItem: () => null } });
-    const logger = await import("@/lib/activity/client"); logger.startClickTracking();
+    const logger = await import("@/lib/activity/client"); logger.enableActivityLogging(); logger.startClickTracking();
     for (const detail of [1, 0]) { const control = { hasAttribute: () => false, getAttribute: (name: string) => name === "data-act" ? target : null, matches: () => false }; handlers.get("click")!({ detail, target: { closest: () => control } }); }
     await vi.advanceTimersByTimeAsync(15000);
     const events = fetcher.mock.calls.flatMap(([, init]) => JSON.parse(init.body).events) as { target: string; meta: unknown; durMs: unknown }[];

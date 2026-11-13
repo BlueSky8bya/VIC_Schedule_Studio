@@ -17,6 +17,7 @@ async function fixture() {
     sessionStorage: { getItem: () => null }
   });
   const logger = await import("@/lib/activity/client");
+  logger.enableActivityLogging();
   logger.startClickTracking();
   const click = (manual: boolean, purple: boolean, pressed = false, id = "companion-food-spawn", option: string | null = null) => {
     const element = {

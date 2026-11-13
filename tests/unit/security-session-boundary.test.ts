@@ -160,7 +160,7 @@ describe("logout and subsequent request separation", () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it("uses local sign-out and resolves later stale client actions as anonymous counts", async () => {
+  it("uses local sign-out and drops later stale client actions instead of storing them", async () => {
     state.user = user(DEVELOPER); state.developer = true;
     expect((await resolveCurrentActor("vic")).role).toBe("developer");
     const response = await logout(new Request("https://synthetic.invalid/api/auth/logout", { method: "POST" }));
@@ -172,14 +172,9 @@ describe("logout and subsequent request separation", () => {
     expect(await recordActivityBatch([{
       kind: "ui.click", target: "companion-pet", visitKey: "00000000-0000-4000-8000-000000000003",
       meta: { role: "developer", account_hash: PRIVATE, email: DEVELOPER }
-    }], { device: "desktop" })).toBe(1);
+    }], { device: "desktop" })).toBe(0);
     expect(db.writes).toEqual([]);
-    expect(db.rpc).toHaveBeenCalledExactlyOnceWith("bump_activity_counts", { p_rows: [
-      { day: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/), role: "anon", kind: "ui.click", target: "companion-pet", n: 1 }
-    ] });
-    expect(JSON.stringify(db.rpc.mock.calls)).not.toContain(PRIVATE);
-    expect(JSON.stringify(db.rpc.mock.calls)).not.toContain(DEVELOPER);
-    expect(JSON.stringify(db.rpc.mock.calls)).not.toContain("visit_key");
+    expect(db.rpc).not.toHaveBeenCalled();
     expect(fetch).not.toHaveBeenCalled();
   });
 });
