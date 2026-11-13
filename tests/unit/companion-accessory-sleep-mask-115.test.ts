@@ -70,7 +70,7 @@ describe("printed sleep masks115", () => {
     const rare = COMPANION_ACCESSORIES["sleep-mask-tori"].weight;
     expect(rare).toBe(.01);
     for (const id of COMPANION_WEARABLE_IDS.filter(id => id !== "sleep-mask-tori")) expect(COMPANION_ACCESSORIES[id].weight).toBeGreaterThan(rare);
-    expect(companionGiftChance(0)).toBe(.0005); expect(companionGiftChance(1)).toBeCloseTo(.007, 10);
+    expect(companionGiftChance(0)).toBe(.15); expect(companionGiftChance(1)).toBe(.35);
   });
 
   it("maps retired fittings only to ordinary equivalents, preserving earned/unread history and never freely granting the Tori print", () => {

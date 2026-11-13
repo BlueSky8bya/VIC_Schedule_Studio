@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
+import { companionExpressionStill } from "@/lib/ui/viewer-companion/expression-memory-still";
 import type { CompanionExpressionId } from "@/lib/ui/viewer-companion/expressions";
 import { COMPANION_EXPRESSION_REFERENCE_SRC, createCompanionExpressionPainter } from "@/lib/ui/viewer-companion/expression-painter";
 import { companionSpriteMetadata, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
@@ -28,7 +29,7 @@ export function CompanionMemoryPortrait({ id, className }: { id: CompanionExpres
       let ready = false;
       try { await Promise.all([...portraitSources].map(prepare)); ready = true; } catch { /* A failed source stays an unpainted portrait. */ }
       if (cancelled || !picture.current) return;
-      const painted = ready && createCompanionExpressionPainter(picture.current, src => images.get(src)).paint(selected, { id, progress: .55 });
+      const painted = ready && createCompanionExpressionPainter(picture.current, src => images.get(src)).paint(selected, { id, progress: companionExpressionStill(id) });
       picture.current.dataset.portraitReady = String(painted);
       picture.current.dispatchEvent(new Event(COMPANION_PORTRAIT_READY_EVENT));
     })();

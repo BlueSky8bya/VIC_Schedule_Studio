@@ -6,6 +6,7 @@ import { COMPANION_EXPRESSIONS } from "@/lib/ui/viewer-companion/expressions";
 import { COMPANION_SITUATION_IDS } from "@/lib/ui/viewer-companion/moments";
 import { companionSpriteMetadata, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { companionMemoryPainted, createCompanionPoseWitness } from "@/lib/ui/viewer-companion/memory-witness";
+import { companionIllustratedMemoryStamp } from "@/lib/ui/viewer-companion/memory-scenes-art";
 import { companionNativeBehaviorStamp } from "@/lib/ui/viewer-companion/native-behavior-stamp";
 import { COMPANION_PERSONALITY_SCENES } from "@/lib/ui/viewer-companion/personality-scene-catalog";
 import { chooseCompanionPreviewBehavior, companionPreviewDuration } from "@/lib/ui/viewer-companion/wardrobe-preview";
@@ -83,6 +84,15 @@ describe("append-only notebook memories", () => {
     raw = JSON.stringify({ ...JSON.parse(raw!), behaviors: ["expression:tv", "pose:walk"] });
     expect(store.recordActivity({ id: "routine-wash", success: true, abbreviated: false })).toBe(true);
     expect(store.load().behaviors).toEqual(["expression:tv", "pose:walk", "activity:routine-wash"]);
+  });
+  it("gives all 24 living scenes an authored illustration at a unique atlas position", () => {
+    const living = COMPANION_NEW_MEMORIES.filter(item => item.family === "activity");
+    expect(living).toHaveLength(24);
+    const frames = living.map(item => companionIllustratedMemoryStamp(item.id));
+    expect(frames.every(Boolean)).toBe(true);
+    expect(new Set(frames.map(frame => frame?.index)).size).toBe(living.length);
+    expect(companionIllustratedMemoryStamp("expression:tv")).toBeUndefined();
+    expect(companionIllustratedMemoryStamp("constructor")).toBeUndefined();
   });
   it("uses exact existing native cells and leaves face/sequence memories out of wardrobe gesture playback", () => {
     for (const memory of COMPANION_NEW_MEMORIES) {

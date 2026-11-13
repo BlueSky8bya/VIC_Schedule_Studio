@@ -105,19 +105,19 @@ describe("earned gifts and explicit equipment", () => {
     expect(normalizeCompanionGifts({ activeMs: -4, equipped: "beret", pending: "sunglasses", unlocked: ["sunglasses"] })).toEqual({ activeMs: 0, interactionCredit: 0, equipped: null, pending: null, unlocked: ["sunglasses"] });
   });
 
-  it("offers exactly 0.05%–0.7% per consumed opportunity, never a tick or reload lottery", () => {
-    expect(companionGiftChance(0)).toBe(.0005); expect(companionGiftChance(1)).toBeCloseTo(.007, 12);
-    expect(companionGiftChance(-10)).toBe(.0005); expect(companionGiftChance(10)).toBeCloseTo(.007, 12);
+  it("offers exactly 15%–35% per consumed opportunity, never a tick or reload lottery", () => {
+    expect(companionGiftChance(0)).toBe(.15); expect(companionGiftChance(1)).toBe(.35);
+    expect(companionGiftChance(-10)).toBe(.15); expect(companionGiftChance(10)).toBe(.35);
     expect(companionGiftChance(NaN)).toBe(0);
     const ready = { ...normalizeCompanionGifts(undefined), activeMs: COMPANION_GIFT_ACTIVE_MS, interactionCredit: 1 };
     // An exhaustive uniform 2000-point grid tests exact boundary density,
     // without statistical flakes or weakening a runtime RNG.
-    for (const [affection, expected] of [[0, 1], [1, 14]]) {
+    for (const [affection, expected] of [[0, 300], [.5, 500], [1, 700]]) {
       let delivered = 0;
       for (let sample = 0; sample < 2000; sample++) if (advanceCompanionGifts(ready, 1, affection, true, () => sample / 2000).pending) delivered++;
       expect(delivered).toBe(expected);
     }
-    const random = vi.fn(() => .007), missed = advanceCompanionGifts(ready, 1, 1, true, random);
+    const random = vi.fn(() => .35), missed = advanceCompanionGifts(ready, 1, 1, true, random);
     expect(missed).toMatchObject({ pending: null, activeMs: 0, interactionCredit: 0 });
     let next = normalizeCompanionGifts(missed);
     for (let tick = 0; tick < 5000; tick++) next = advanceCompanionGifts(next, 250, 1, true, random);

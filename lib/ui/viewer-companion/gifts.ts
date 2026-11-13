@@ -7,7 +7,7 @@ export const COMPANION_GIFT_ACTIVE_MS = 5 * 60 * 1000;
 /** One chance per five active minutes AND a new real care interaction, never
  * per frame/decision. No pity counter, absence catch-up or guaranteed drop. */
 export function companionGiftChance(affection: number): number {
-  return Number.isFinite(affection) ? .0005 + .0065 * Math.max(0, Math.min(1, affection)) : 0;
+  return Number.isFinite(affection) ? (15 + 20 * Math.max(0, Math.min(1, affection))) / 100 : 0;
 }
 export type CompanionGiftState = { pending: CompanionAccessoryId | null; unlocked: CompanionAccessoryId[]; equipped: CompanionAccessoryId | null; activeMs: number; interactionCredit: number };
 export const isCompanionAccessoryId = (value: unknown): value is CompanionAccessoryId => typeof value === "string" && COMPANION_ACCESSORY_IDS.some(id => id === value);

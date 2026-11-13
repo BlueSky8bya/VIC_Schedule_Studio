@@ -3,6 +3,7 @@ import { getCompanionCollectionArtFrame, type CompanionCollectionArtKind } from 
 import { getCompanionAccessoryArtFrame } from "@/lib/ui/viewer-companion/accessory-art";
 import { COMPANION_FOOD_RARITY, isCompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import type { CompanionCollectionRarity } from "@/lib/ui/viewer-companion/collection-rarity";
+import { companionIllustratedMemoryStamp } from "@/lib/ui/viewer-companion/memory-scenes-art";
 import { companionNewMemory } from "@/lib/ui/viewer-companion/memory-catalog";
 import type { CompanionExpressionId } from "@/lib/ui/viewer-companion/expressions";
 import { CompanionMemoryPortrait } from "./companion-memory-portrait";
@@ -33,7 +34,8 @@ export function CompanionCollectionArt({ kind, id, className }: { kind: Companio
   if (memory?.family === "expression") return <CompanionMemoryPortrait id={memory.id.slice("expression:".length) as CompanionExpressionId} className={className} />;
   // Center actual alpha bounds, not the transparent atlas cell. The nested
   // viewport clips neighbours before translating the complete original cell.
-  const frame = kind === "accessory" ? getCompanionAccessoryArtFrame(id) : getCompanionCollectionArtFrame(kind === "food-stamp" ? "food" : kind, id);
+  const illustrated = kind === "behavior-stamp" ? companionIllustratedMemoryStamp(id) : undefined;
+  const frame = illustrated ?? (kind === "accessory" ? getCompanionAccessoryArtFrame(id) : getCompanionCollectionArtFrame(kind === "food-stamp" ? "food" : kind, id));
   if (!frame) return null;
   const classes = ["vc-collection-art", className].filter(Boolean).join(" ");
   if (kind === "food-stamp") {

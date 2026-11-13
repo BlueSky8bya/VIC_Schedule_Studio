@@ -96,7 +96,7 @@ async function placeAtVisibleCentre(page: Page) {
   await expect(creature(page)).toBeVisible();
 }
 
-test("native petting earns a bounded rare opportunity, not a guaranteed five-minute gift", async ({ page }) => {
+test("native petting earns a bounded opportunity, not a guaranteed five-minute gift", async ({ page }) => {
   const safety = await setup(page, { version: 1, situations: [], foods: [], behaviors: [], gifts: { pending: null, unlocked: [], equipped: null, activeMs: 299000, interactionCredit: 0 } });
   expect((await readCollection(page)).gifts).toMatchObject({ pending: null, unlocked: [], equipped: null, interactionCredit: 0 });
   await expect(page.getByRole("button", { name: "빅타민이 가져온 선물 열기", exact: true })).toHaveCount(0);
@@ -108,7 +108,7 @@ test("native petting earns a bounded rare opportunity, not a guaranteed five-min
     const value = (await readCollection(page)).gifts;
     return value.interactionCredit === 1 || value.activeMs < 299000;
   }).toBe(true);
-  // Native time and RNG stay untouched. Whether the rare roll wins or misses,
+  // Native time and RNG stay untouched. Whether the roll wins or misses,
   // it must spend its opportunity; tick-by-tick delivery is unit-tested.
   await expect.poll(async () => (await readCollection(page)).gifts.activeMs, { timeout: 20_000 }).toBeLessThan(299000);
   await expect.poll(async () => (await readCollection(page)).gifts.interactionCredit).toBe(0);
