@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { Bug, CalendarX, Check, Clock3, EyeOff, Heart, ImagePlus, Lightbulb, Mail as MailIcon, MessageCircle, Send, Settings, ShieldCheck, X } from "lucide-react";
+import { Bug, CalendarX, Check, Clock3, EyeOff, Heart, ImagePlus, Lightbulb, Mail as MailIcon, MessageCircle, Send, Settings, X } from "lucide-react";
 import { LoadingSpinner } from "@/components/shared/loading-state";
 import { REPORT_MAX_BODY, REPORT_MAX_IMAGE_BYTES, REPORT_MAX_IMAGES, REPORT_RETENTION_DAYS, REPORT_TOPICS, type ReportTopic } from "@/lib/reports/topics";
 import { setThemeMode, themeMode, type ThemeMode } from "@/lib/ui/theme";
-import { CONTACT_AVATAR, LEGAL_CONTACT_EMAIL } from "./contact";
+import { CONTACT_AVATAR } from "./contact";
 import styles from "./legal-doc.module.css";
 
 // 문서 페이지의 '움직이는' 조각들. 문서 본문은 서버 컴포넌트이고, 누를 수 있는 것만 여기 모은다.
@@ -97,7 +97,7 @@ function GoogleMark() {
 }
 
 // ── 사이트 제보 ──
-// 말머리·내용·캡처(최대 4장)·선택 이메일을 /api/report로 보낸다(lib/reports/report.ts가 검증·저장, 개발자 제보함에 쌓인다).
+// 말머리·내용·캡처(최대 10장)·선택 이메일을 /api/report로 보낸다(lib/reports/report.ts가 검증·저장, 개발자 제보함에 쌓인다).
 // 캡처는 보내기 전에 브라우저에서 긴 변 1600px·webp로 줄인다(저장소 한도 2MB, 올리는 시간도 짧게).
 const MAX_SIDE = 1600;
 
@@ -138,10 +138,10 @@ export function ContactAvatar({ size = 44 }: { size?: number }) {
 }
 
 /** 제보 창을 여는 단추. variant: side = 목차 아래 프로필 카드, banner = 본문 홍보 띠의 큰 버튼. */
-// link = 일정표 맨 아래 법적 링크 줄의 글자 단추. trigger = 화면이 제 단추를 그린다(편집실 도구 타일 '제보', 2026-11-13) —
+// pill = 일정표 맨 아래 줄 왼쪽의 둥근 로고 + 두 줄 글(무대 리허설과 같은 높이, 2026-11-13 소유자). link = 같은 줄의 글자 단추(폰). trigger = 화면이 제 단추를 그린다(편집실 도구 타일 '제보', 2026-11-13) —
 // 창·보내기는 이 한 벌을 그대로 쓴다(UI-18).
 export function ContactButton({ variant, initialTopic = "bug", trigger }: {
-  variant?: "side" | "banner" | "link";
+  variant?: "side" | "banner" | "link" | "pill";
   initialTopic?: ReportTopic;
   trigger?: (open: () => void) => ReactNode;
 }) {
@@ -155,6 +155,7 @@ export function ContactButton({ variant, initialTopic = "bug", trigger }: {
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [message, setMessage] = useState("");
   const [dragOver, setDragOver] = useState(false);
+  const [preview, setPreview] = useState<number | null>(null); // 첨부한 캡처 크게 보기
   const current = REPORT_TOPICS.find((t) => t.value === topic) ?? REPORT_TOPICS[0];
 
   useEffect(() => () => shots.forEach((s) => URL.revokeObjectURL(s.url)), [shots]);
@@ -230,6 +231,16 @@ export function ContactButton({ variant, initialTopic = "bug", trigger }: {
             <span>버그·아이디어 보내기</span>
           </span>
           <MailIcon aria-hidden="true" className={styles.contactSideIcon} size={16} />
+        </button>
+      ) : variant === "pill" ? (
+        <button className={styles.reportPill} data-act="footer-report-pill" onClick={open} type="button">
+          <span className={styles.avatarRing}>
+            <ContactAvatar size={30} />
+          </span>
+          <span className={styles.reportPillText}>
+            <strong>사이트 제보</strong>
+            <span>버그·아이디어 보내기</span>
+          </span>
         </button>
       ) : variant === "link" ? (
         <button className={styles.linkButton} data-act="footer-report" onClick={open} type="button">
@@ -348,22 +359,53 @@ export function ContactButton({ variant, initialTopic = "bug", trigger }: {
                 />
               </div>
               {shots.length ? (
-                <ul className={styles.shots}>
-                  {shots.map((s, i) => (
-                    <li key={s.id}>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img alt={`첨부한 캡처 ${i + 1}`} src={s.url} />
-                      <button
-                        aria-label={`캡처 ${i + 1} 빼기`}
-                        data-act="legal-contact-unattach"
-                        onClick={() => setShots((all) => all.filter((x) => x.id !== s.id))}
-                        type="button"
-                      >
-                        <X size={13} />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <div className={styles.shotsWrap}>
+                  <div className={styles.shotsHead}>
+                    <span>
+                      첨부한 캡처 <b>{shots.length}</b> / {REPORT_MAX_IMAGES}
+                    </span>
+                    <button className={styles.shotsClear} data-act="legal-contact-unattach-all" onClick={() => setShots([])} type="button">
+                      모두 빼기
+                    </button>
+                  </div>
+                  <ul className={styles.shots}>
+                    {shots.map((s, i) => (
+                      <li key={s.id}>
+                        <button
+                          aria-label={`캡처 ${i + 1} 크게 보기`}
+                          className={styles.shotOpen}
+                          data-act="legal-contact-preview"
+                          onClick={() => setPreview(i)}
+                          type="button"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img alt="" src={s.url} />
+                        </button>
+                        <span aria-hidden="true" className={styles.shotNum}>
+                          {i + 1}
+                        </span>
+                        <button
+                          aria-label={`캡처 ${i + 1} 빼기`}
+                          className={styles.shotRemove}
+                          data-act="legal-contact-unattach"
+                          onClick={() => setShots((all) => all.filter((x) => x.id !== s.id))}
+                          type="button"
+                        >
+                          <X size={13} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+              {preview !== null && shots[preview] ? (
+                <div className={styles.lightbox} onClick={() => setPreview(null)} role="presentation">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img alt={`캡처 ${preview + 1}`} src={shots[preview].url} />
+                  <span className={styles.lightboxNum}>
+                    {preview + 1} / {shots.length}
+                  </span>
+                </div>
               ) : null}
               <label className={styles.emailRow}>
                 <span>
@@ -396,14 +438,6 @@ export function ContactButton({ variant, initialTopic = "bug", trigger }: {
                   </span>
                   <span>
                     <b>캡처</b> 다른 사람의 이름·채팅 등 개인정보가 보이지 않게 가려 주세요
-                  </span>
-                </li>
-                <li>
-                  <span className={styles.noteIcon} data-tone="mail">
-                    <ShieldCheck aria-hidden="true" size={14} />
-                  </span>
-                  <span>
-                    <b>개인정보 요청</b> 열람·삭제는 <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>
                   </span>
                 </li>
               </ul>

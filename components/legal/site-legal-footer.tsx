@@ -9,6 +9,10 @@ import { ContactButton } from "./legal-interactive";
 export function SiteLegalFooter({ end }: { end?: ReactNode }) {
   return (
     <footer className="site-legal-footer">
+      {/* 왼쪽 끝 — 사이트 제보(둥근 로고 + 두 줄). 오른쪽 끝의 무대 리허설과 같은 높이(2026-11-13 소유자). */}
+      <div className="site-legal-start">
+        <ContactButton variant="pill" />
+      </div>
       <nav aria-label="약관 및 정책" className="site-legal-links">
         <Link data-act="footer-privacy" href={"/privacy" as Route}>
           개인정보처리방침
@@ -17,9 +21,11 @@ export function SiteLegalFooter({ end }: { end?: ReactNode }) {
         <Link data-act="footer-terms" href={"/terms" as Route}>
           이용약관
         </Link>
-        <span aria-hidden="true">·</span>
-        {/* 폰에도 보이는 제보 입구(PC는 왼쪽 패널 카드도 있다) — 같은 제보 창 */}
-        <ContactButton variant="link" />
+        <span aria-hidden="true" className="site-legal-mobile">·</span>
+        {/* 폰에서는 왼쪽 알약 대신 글자 단추 — 같은 제보 창 */}
+        <span className="site-legal-mobile">
+          <ContactButton variant="link" />
+        </span>
       </nav>
       {end ? <div className="site-legal-end">{end}</div> : null}
     </footer>

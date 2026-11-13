@@ -7,7 +7,7 @@ import { submitReport } from "@/lib/reports/report";
 // 로컬·자동화 브라우저의 요청은 운영 DB에 남기지 않고 성공처럼만 답한다(lib/analytics/guard — 검증 트래픽 오염 방지).
 export const dynamic = "force-dynamic";
 
-const MAX_REQUEST_BYTES = 9 * 1024 * 1024; // 캡처 4장 × 2MB + 글
+const MAX_REQUEST_BYTES = 21 * 1024 * 1024; // 캡처 10장 × 2MB + 글
 
 export async function POST(request: Request) {
   const length = Number(request.headers.get("content-length") ?? "0");

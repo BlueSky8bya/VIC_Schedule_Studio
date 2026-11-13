@@ -9,7 +9,7 @@ export const REPORT_TOPICS = [
 export type ReportTopic = (typeof REPORT_TOPICS)[number]["value"];
 
 export const REPORT_MAX_BODY = 4000;
-export const REPORT_MAX_IMAGES = 4;
+export const REPORT_MAX_IMAGES = 10; // 0168과 같은 값
 export const REPORT_MAX_IMAGE_BYTES = 2 * 1024 * 1024; // 저장소 버킷 한도와 같다(0167)
 export const REPORT_RETENTION_DAYS = 90; // 처리 완료 후 보관 기간 — 개인정보처리방침에 적힌 값
 

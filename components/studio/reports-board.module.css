@@ -139,18 +139,133 @@
   line-height: 1.7;
 }
 
+.path {
+  padding: 1px 8px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.repliedMark {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #6d4fe0;
+  font-weight: 700;
+}
+
+/* 캡처 — 번호 붙은 격자, 누르면 크게(←/→로 넘김) */
+.shotsWrap {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+}
+
+.shotsCount {
+  color: var(--muted);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
 .shots {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 8px;
 }
 
-.shots img {
-  width: 140px;
-  height: 100px;
-  border-radius: 10px;
+.shot {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  padding: 0;
   border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--surface);
+  cursor: zoom-in;
+}
+
+.shot img {
+  display: block;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.shot:hover img {
+  transform: scale(1.04);
+}
+
+.shot span {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: rgb(0 0 0 / 62%);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 700;
+  line-height: 20px;
+}
+
+.viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 32px 72px;
+  background: rgb(8 10 20 / 86%);
+  cursor: zoom-out;
+}
+
+.viewer img {
+  max-width: 100%;
+  max-height: calc(100dvh - 90px);
+  border-radius: 10px;
+  box-shadow: 0 12px 48px rgb(0 0 0 / 45%);
+  cursor: default;
+}
+
+.viewerNav {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  margin-top: -23px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 16%);
+  color: #fff;
+  cursor: pointer;
+}
+
+.prev {
+  left: 16px;
+}
+
+.next {
+  right: 16px;
+}
+
+.viewerNum {
+  position: absolute;
+  bottom: 18px;
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 16%);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .actions {
@@ -194,4 +309,124 @@
   margin-top: 20px;
   color: var(--muted);
   font-size: 12.5px;
+}
+
+.primary {
+  border-color: #8f7bff;
+  background: rgb(143 123 255 / 14%);
+  color: var(--ink);
+}
+
+/* 답장 쓰기 창 */
+.reply {
+  width: min(620px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  padding: 0;
+  border: 0;
+  border-radius: 20px;
+  background: transparent;
+  color: var(--ink);
+}
+
+.reply::backdrop {
+  background: rgb(10 12 24 / 50%);
+  backdrop-filter: blur(3px);
+}
+
+.replyCard {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--surface);
+}
+
+.replyHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.replyHead h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 18px;
+}
+
+.iconBtn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.replyMeta {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-size: 13px;
+}
+
+.replyMeta div {
+  display: flex;
+  gap: 10px;
+}
+
+.replyMeta dt {
+  width: 70px;
+  color: var(--muted);
+}
+
+.replyMeta dd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.field {
+  display: grid;
+  gap: 4px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.replyNote {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.replyActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
 }

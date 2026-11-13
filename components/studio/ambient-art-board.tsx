@@ -325,9 +325,10 @@ export function AmbientArtBoard({ present, stamp }: Props) {
     <main className="art-board" data-art-board>
       <header className="art-board-head">
         <div className="art-head-left">
-          <a className="art-back" data-act="art-back" href="/studio">
+          {/* 편집실로 돌아가기 — 전체 새로고침(<a>) 대신 미리 받아 둔 클라이언트 이동(2026-11-13 소유자: "돌아갈 때 너무 느리다"). */}
+          <Link className="art-back" data-act="art-back" href="/studio" prefetch>
             <ArrowLeft aria-hidden="true" size={12} /> 편집실
-          </a>
+          </Link>
           <h1>하늘·천체 아트 보드</h1>
           <p className="art-lede">
             하늘·천체 자리의 그림을 관리한다. PNG를 <code>public/ambient/art/</code>에 자리의 id 이름으로 넣으면 장면이 바로 쓴다.

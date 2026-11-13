@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
+import { PrefetchKind } from "next/dist/client/components/router-reducer/router-reducer-types";
 import { DayVodWindow, type DayVod } from "@/components/poster/day-vod-window";
 import { useSidePanel } from "@/lib/ui/use-side-panel";
 
@@ -22,6 +23,12 @@ export function ReplayPage({
 }) {
   const router = useRouter();
   const panel = useSidePanel({ enabled: true });
+  // 닫으면 일정표로 간다 — 미리 받아 두어 닫는 즉시 뜨게(2026-11-13 소유자: "돌아갈 때 너무 느리다").
+  useEffect(() => {
+    // 기본 프리페치는 동적 첫 화면의 로딩 틀만 받는다 — 본문까지(full).
+    // (typed routes가 prefetch 옵션 형을 지워 둔다 — 실제 런타임 API 서명으로 부른다.)
+    (router.prefetch as unknown as (href: string, options: { kind: PrefetchKind }) => void)("/", { kind: PrefetchKind.FULL });
+  }, [router]);
   const close = useCallback(() => {
     let sameOrigin = false;
     try {

@@ -2064,6 +2064,26 @@ html[data-theme="dark"] .mn-inner {
   grid-column: 3;
   justify-self: end;
 }
+.site-legal-start {
+  grid-column: 1;
+  grid-row: 1;
+  justify-self: start;
+}
+.site-legal-links {
+  grid-row: 1;
+}
+/* 폰: 왼쪽 알약은 접고 가운데 줄에 '사이트 제보' 글자 단추 */
+.site-legal-mobile {
+  display: none;
+}
+@media (max-width: 640px) {
+  .site-legal-start {
+    display: none;
+  }
+  .site-legal-mobile {
+    display: inline;
+  }
+}
 .site-legal-footer .pm-rehearsal-tools {
   padding: 0;
 }

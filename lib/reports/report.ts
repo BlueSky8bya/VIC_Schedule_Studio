@@ -8,7 +8,7 @@ import {
 } from "@/lib/reports/topics";
 
 // 사이트 제보 저장·정리(0167). 서버 전용 — service_role로만 쓰고 읽는다. 제보 창은 /api/report로 보낸다.
-// 받는 것: 말머리, 내용, 캡처(최대 4장), 선택 이메일, 보낸 화면 경로, 기기 종류(PC/모바일). IP·브라우저 상세는 저장하지 않는다.
+// 받는 것: 말머리, 내용, 캡처(최대 10장), 선택 이메일, 보낸 화면 경로, 기기 종류(PC/모바일). IP·브라우저 상세는 저장하지 않는다.
 
 const BUCKET = "site-reports";
 // 저장소가 넘치지 않게 거는 전체 상한 — 한 시간에 이보다 많이 들어오면 잠시 받지 않는다(도배 방지).
@@ -106,6 +106,7 @@ export type ReportRow = {
   device: string | null;
   images: string[];
   done_at: string | null;
+  replied_at: string | null;
 };
 
 /** 제보함 목록 — 캡처는 1시간짜리 서명 주소로. */
@@ -114,7 +115,7 @@ export async function listReports(): Promise<(ReportRow & { imageUrls: string[] 
   if (!db) return null;
   const { data, error } = await db
     .from("site_report")
-    .select("id, created_at, topic, body, reply_email, page, device, images, done_at")
+    .select("id, created_at, topic, body, reply_email, page, device, images, done_at, replied_at")
     .order("created_at", { ascending: false })
     .limit(200);
   if (error || !data) return null;
@@ -132,6 +133,14 @@ export async function setReportDone(id: string, done: boolean): Promise<boolean>
   const db = createSupabaseAdminClient();
   if (!db) return false;
   const { error } = await db.from("site_report").update({ done_at: done ? new Date().toISOString() : null }).eq("id", id);
+  return !error;
+}
+
+/** 답장 메일을 보냈다고 표시(제보함의 답장 창에서 Gmail로 보낸 뒤). */
+export async function setReportReplied(id: string, replied: boolean): Promise<boolean> {
+  const db = createSupabaseAdminClient();
+  if (!db) return false;
+  const { error } = await db.from("site_report").update({ replied_at: replied ? new Date().toISOString() : null }).eq("id", id);
   return !error;
 }
 

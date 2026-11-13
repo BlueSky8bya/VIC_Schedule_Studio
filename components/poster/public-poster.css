@@ -10936,16 +10936,3 @@ html[data-large-text] { --m-agenda-rail-w: clamp(116px, 38vw, 168px); }
 html[data-large-text] .agenda .agenda-legend .panel-section-title { white-space: normal; overflow-wrap: anywhere; word-break: normal; }
 html[data-large-text] .agenda-legend-tag { overflow-wrap: anywhere; word-break: normal; }
 html[data-large-text] .agenda-legend-tag > span { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }
-
-/* 패널 맨 아래 '사이트 제보' 카드(2026-11-13 소유자) — 태그 필터·계절 배경·빅타민 집 카드와 같은 면·테두리·라운드·그림자.
-   카드 내용(로고·글·아이콘)은 문서 페이지의 같은 단추(components/legal/legal-interactive.tsx)를 그대로 쓴다. */
-.poster-page .avatar-slot .slot-report {
-  flex: none;
-  pointer-events: auto; /* 패널(.avatar-slot)은 달력을 막지 않게 pointer-events:none — 카드마다 다시 켠다 */
-}
-.poster-page .avatar-slot .slot-report > button {
-  background: var(--panel-card-bg);
-  border-color: var(--panel-card-line);
-  border-radius: var(--r-card);
-  box-shadow: var(--panel-card-shadow);
-}

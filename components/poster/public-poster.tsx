@@ -4,7 +4,6 @@
 import "./viewer-companion/companion-home.css";
 import { SiteLegalFooter } from "@/components/legal/site-legal-footer";
 import { ThemeToggleButton } from "@/components/shared/theme-toggle-button";
-import { ContactButton } from "@/components/legal/legal-interactive";
 import { scrollAgendaTarget } from "@/lib/ui/agenda-scroll";
 import { announceIfStaleDeployment } from "@/lib/net/stale-deploy";
 import { PublicEventCalendar } from "./public-event-calendar";
@@ -5287,12 +5286,6 @@ export function PublicPoster({
                 안에 절대 배치하면 박스의 둥근 윗변이 카드 위로 삐져나온다(2026-09-04 소유자, 편집실과 동일). */}
             {interactive ? <ViewerAmbientControl collapsible className="slot-showcase" season={pickAmbient(view.month, scenery.seasonForce).season} /> : null}
             {companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed ? <div className="vc-home-host" ref={companionHomeHostRef} /> : null}
-            {/* 사이트 제보 — 패널 맨 아래 카드(2026-11-13 소유자: "일정표에서도 곧바로 보이게"). 문서 페이지와 같은 제보 창. */}
-            {interactive ? (
-              <div className="slot-report">
-                <ContactButton variant="side" />
-              </div>
-            ) : null}
             {/* 아바타 빈 자리 — 관리자·개발자(avatarSlot)·/onair 고정 scene에만. 일반 시청자 패널은 카드까지만. */}
             {avatarCapable ? (
               <div className="avatar-dock-inner">

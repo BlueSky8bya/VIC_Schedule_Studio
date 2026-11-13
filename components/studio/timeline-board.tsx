@@ -28,7 +28,7 @@ export function TimelineBoard({ rows, error }: { rows: TimelineManagementRow[]; 
   }
   return <main className="timeline-board">
     <header>
-      <Link href="/studio">← 편집실</Link>
+      <Link href="/studio" prefetch>← 편집실</Link>
       <h1>팬 타임라인</h1>
       <p>작성자별 내용을 비교하고 대표·노출을 정해요. 같은 작성자의 이어쓰기는 한 목록으로 묶습니다.</p>
       <form action="/studio/timelines" className="timeline-tools">
