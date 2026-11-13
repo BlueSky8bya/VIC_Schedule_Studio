@@ -20,81 +20,6 @@
   }
 }
 
-/* Match the in-betweens in the loading strip. Keep the original hop peaks and
-   planted poses on their beats. */
-@keyframes cal-skel-hop {
-  0%, 83.333%, 100% { transform: none; }
-  8.333% { transform: rotate(-4deg) scale(1.06, .93); }
-  16.667% { transform: translateY(-7%) rotate(-6deg) scale(.98, 1.03); }
-  25% { transform: translateY(-13%) rotate(-2deg); }
-  29.167% { transform: translateY(-10.5%) rotate(1deg); }
-  33.333% { transform: translateY(-8%) rotate(4deg); }
-  37.5% { transform: translateY(-4%) rotate(3deg) scale(1.035, .96); }
-  41.667% { transform: rotate(2deg) scale(1.07, .92); }
-  45.833% { transform: translateY(-3%) rotate(4deg) scale(1.025, .97); }
-  50% { transform: translateY(-6%) rotate(6deg) scale(.98, 1.02); }
-  58.333% { transform: translateY(-9%) rotate(3deg); }
-  62.5% { transform: translateY(-4.5%) rotate(.5deg) scale(1.02, .975); }
-  66.667% { transform: rotate(-2deg) scale(1.04, .95); }
-  70.833% { transform: rotate(-1.25deg) scale(1.025, .96875); }
-  75% { transform: rotate(-.75deg) scale(1.015, .98125); }
-  79.167% { transform: rotate(-.25deg) scale(1.005, .99375); }
-}
-
-@keyframes cal-skel-hop-shadow {
-  0%, 83.333%, 100% { transform: scaleX(1); opacity: .2; }
-  8.333%, 41.667%, 66.667% { transform: scaleX(1.12); opacity: .24; }
-  16.667%, 33.333%, 50% { transform: scaleX(.82); opacity: .13; }
-  25%, 58.333% { transform: scaleX(.68); opacity: .09; }
-  29.167% { transform: scaleX(.75); opacity: .11; }
-  37.5%, 45.833% { transform: scaleX(.97); opacity: .185; }
-  62.5% { transform: scaleX(.9); opacity: .165; }
-  70.833% { transform: scaleX(1.075); opacity: .225; }
-  75% { transform: scaleX(1.045); opacity: .215; }
-  79.167% { transform: scaleX(1.015); opacity: .205; }
-}
-
-@keyframes cal-skel-hop-frames {
-  to { transform: translateX(-100%); }
-}
-
-.cal-skel-mascot {
-  --cal-skel-hop-duration: 1.5s;
-  position: relative;
-  display: grid;
-  width: 120px;
-  height: 120px;
-}
-
-.cal-skel-mascot::before {
-  content: "";
-  position: absolute;
-  inset: auto 38% 0 30%;
-  height: 6%;
-  border-radius: 50%;
-  background: var(--ink);
-  opacity: .2;
-  animation: cal-skel-hop-shadow var(--cal-skel-hop-duration) step-end infinite;
-}
-
-.cal-skel-doodle {
-  position: relative;
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  transform-origin: 46% 97%;
-  animation: cal-skel-hop var(--cal-skel-hop-duration) step-end infinite;
-}
-
-.cal-skel-hop-strip {
-  display: block;
-  width: 2400%;
-  max-width: none;
-  height: 100%;
-  animation: cal-skel-hop-frames var(--cal-skel-hop-duration) steps(24) infinite;
-}
-
 .cal-skel-stage {
   min-height: 100svh;
   display: flex;
@@ -143,10 +68,9 @@
     box-shadow: var(--shadow-2);
   }
 
-  .cal-skel-mascot {
+  .cal-skel-stage .tori-hop {
     order: 1;
-    width: 64px;
-    height: 64px;
+    --tori-hop-size: 64px;
   }
 
   .cal-skel-note {
@@ -253,12 +177,6 @@
   .cal-skel-cell:nth-child(7n + 6) {
     animation-delay: var(--dur-3);
   }
-}
-
-html[data-reduce-motion] .cal-skel-doodle,
-html[data-reduce-motion] .cal-skel-hop-strip,
-html[data-reduce-motion] .cal-skel-mascot::before {
-  animation: none;
 }
 
 html[data-reduce-motion] .cal-skel-note,

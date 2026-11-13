@@ -1,4 +1,5 @@
 import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { resolveCurrentActor } from "@/lib/auth/actor";
 import { isMobileUserAgent } from "@/lib/auth/in-app-browser";
@@ -20,6 +21,9 @@ export default async function StudioPage({
     timed("page:/studio actor", () => resolveCurrentActor("vic")),
     timed("page:/studio passcode", () => getPasscodeState("vic"))
   ]);
+  // 시청자(비로그인 포함)는 레이아웃이 `/`로 돌려보내지만, Next는 레이아웃과 페이지를 함께 그려서 그 사이에도 편집실 일정
+  // 전체(약 1MB)를 다 만들어 흘려보냈다(2026-11-14 실측: 비로그인 /studio 16초). 페이지에서도 먼저 끊는다.
+  if (actor.role === "viewer") redirect("/");
   const schedule = await timed("page:/studio studioSchedule", () =>
     getStudioSchedule("vic", { actor })
   );

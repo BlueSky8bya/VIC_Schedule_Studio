@@ -585,50 +585,10 @@
   font-weight: 600;
 }
 
-/* ── 로딩 틀 ── */
-.skeleton {
-  display: grid;
-  gap: 14px;
-  min-height: 60vh;
-  padding: 32px;
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  background: var(--surface);
-}
-
-.skeleton span {
-  display: block;
-  height: 14px;
-  border-radius: 7px;
-  background: linear-gradient(90deg, var(--line-soft) 0%, var(--surface-2) 45%, var(--line-soft) 90%);
-  background-size: 220% 100%;
-  animation: legalShimmer 1.2s ease-in-out infinite;
-}
-
-@keyframes legalShimmer {
-  from { background-position: 100% 0; }
-  to { background-position: -100% 0; }
-}
-
-:global(html[data-reduce-motion]) .skeleton span {
-  animation: none;
-}
-
-.skeleton span:first-child {
-  width: 36%;
-  height: 28px;
-}
-
-.skeleton span:nth-child(2) {
-  width: 82%;
-}
-
-.skeleton span:nth-child(3) {
-  width: 68%;
-}
-
-.skeleton span:nth-child(4) {
-  width: 74%;
+/* ── 로딩(뛰는 토리 한 벌 — components/shared/tori-hop) ── */
+.loading {
+  min-height: 70dvh;
+  background: transparent;
 }
 
 /* ── 폰 ── */

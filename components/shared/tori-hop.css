@@ -1,0 +1,160 @@
+/* 뛰는 토리 기다림 그림 — components/shared/tori-hop.tsx. (calendar-skeleton.css에서 옮겨 온 한 벌, 2026-11-14)
+   띠 사이 그림과 박자를 맞춘다. 원래 점프 꼭대기·착지 자세는 제 박자에 둔다. */
+@keyframes tori-hop {
+  0%, 83.333%, 100% { transform: none; }
+  8.333% { transform: rotate(-4deg) scale(1.06, .93); }
+  16.667% { transform: translateY(-7%) rotate(-6deg) scale(.98, 1.03); }
+  25% { transform: translateY(-13%) rotate(-2deg); }
+  29.167% { transform: translateY(-10.5%) rotate(1deg); }
+  33.333% { transform: translateY(-8%) rotate(4deg); }
+  37.5% { transform: translateY(-4%) rotate(3deg) scale(1.035, .96); }
+  41.667% { transform: rotate(2deg) scale(1.07, .92); }
+  45.833% { transform: translateY(-3%) rotate(4deg) scale(1.025, .97); }
+  50% { transform: translateY(-6%) rotate(6deg) scale(.98, 1.02); }
+  58.333% { transform: translateY(-9%) rotate(3deg); }
+  62.5% { transform: translateY(-4.5%) rotate(.5deg) scale(1.02, .975); }
+  66.667% { transform: rotate(-2deg) scale(1.04, .95); }
+  70.833% { transform: rotate(-1.25deg) scale(1.025, .96875); }
+  75% { transform: rotate(-.75deg) scale(1.015, .98125); }
+  79.167% { transform: rotate(-.25deg) scale(1.005, .99375); }
+}
+
+@keyframes tori-hop-shadow {
+  0%, 83.333%, 100% { transform: scaleX(1); opacity: .2; }
+  8.333%, 41.667%, 66.667% { transform: scaleX(1.12); opacity: .24; }
+  16.667%, 33.333%, 50% { transform: scaleX(.82); opacity: .13; }
+  25%, 58.333% { transform: scaleX(.68); opacity: .09; }
+  29.167% { transform: scaleX(.75); opacity: .11; }
+  37.5%, 45.833% { transform: scaleX(.97); opacity: .185; }
+  62.5% { transform: scaleX(.9); opacity: .165; }
+  70.833% { transform: scaleX(1.075); opacity: .225; }
+  75% { transform: scaleX(1.045); opacity: .215; }
+  79.167% { transform: scaleX(1.015); opacity: .205; }
+}
+
+@keyframes tori-hop-frames {
+  to { transform: translateX(-100%); }
+}
+
+@keyframes tori-hop-note-pulse {
+  0%, 100% { opacity: .55; }
+  50% { opacity: 1; }
+}
+
+@keyframes tori-hop-appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.tori-hop {
+  --tori-hop-duration: 1.5s;
+  position: relative;
+  display: grid;
+  flex: none;
+  width: var(--tori-hop-size, 120px);
+  height: var(--tori-hop-size, 120px);
+}
+
+.tori-hop::before {
+  content: "";
+  position: absolute;
+  inset: auto 38% 0 30%;
+  height: 6%;
+  border-radius: 50%;
+  background: var(--ink);
+  opacity: .2;
+  animation: tori-hop-shadow var(--tori-hop-duration) step-end infinite;
+}
+
+.tori-hop-body {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  transform-origin: 46% 97%;
+  animation: tori-hop var(--tori-hop-duration) step-end infinite;
+}
+
+.tori-hop-strip {
+  display: block;
+  width: 2400%;
+  max-width: none;
+  height: 100%;
+  animation: tori-hop-frames var(--tori-hop-duration) steps(24) infinite;
+}
+
+/* 기다림 화면 한 벌: 가운데 토리 + 문구. */
+.tori-hop-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6) var(--space-4);
+}
+
+.tori-hop-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.tori-hop-stage-page {
+  min-height: 100svh;
+  background: var(--surface-2);
+}
+
+/* 이미 보이는 화면 위에 겹칠 때(동적 화면 코드 받는 중). 누르기는 막지 않는다 — 받는 동안 다른 걸 눌러도 된다. */
+.tori-hop-stage-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  background: color-mix(in srgb, var(--surface-2) 60%, transparent);
+  pointer-events: none;
+  animation: tori-hop-appear 160ms ease-out both;
+}
+
+/* 겹칠 때는 뒤 달력 글자와 섞이지 않게 카드에 담는다. */
+.tori-hop-stage-overlay .tori-hop-box {
+  padding: var(--space-6) calc(var(--space-6) * 1.5) var(--space-5, 20px);
+  border: var(--stroke-hairline, 1px) solid var(--line);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--shadow-2);
+}
+
+.tori-hop-stage-overlay .tori-hop-note {
+  font-size: var(--text-title, 17px);
+}
+
+.tori-hop-note {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: var(--text-display);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-tight);
+  text-align: center;
+  animation: tori-hop-note-pulse var(--dur-spring-bouncy) var(--ease) infinite alternate;
+}
+
+@media (max-width: 640px) {
+  .tori-hop-stage {
+    --tori-hop-size: 96px;
+  }
+
+  .tori-hop-note {
+    font-size: var(--text-title, 17px);
+  }
+}
+
+html[data-reduce-motion] .tori-hop-body,
+html[data-reduce-motion] .tori-hop-strip,
+html[data-reduce-motion] .tori-hop::before,
+html[data-reduce-motion] .tori-hop-stage-overlay {
+  animation: none;
+}
+
+html[data-reduce-motion] .tori-hop-note {
+  animation-duration: 1ms;
+  animation-iteration-count: 1;
+}

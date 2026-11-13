@@ -3,3 +3,6 @@ export const VIC_PATH_HEADER = "x-vic-path";
 
 /** 문서형 페이지 — 로딩 화면을 달력·편집실 뼈대 대신 문서 틀로. */
 export const LEGAL_PATHS = new Set(["/privacy", "/terms"]);
+
+/** 문서 경로 → 로딩 문구의 목적지 이름("개인정보처리방침 불러오는 중…"). */
+export const LEGAL_TITLES: Record<string, string> = { "/privacy": "개인정보처리방침", "/terms": "이용약관" };

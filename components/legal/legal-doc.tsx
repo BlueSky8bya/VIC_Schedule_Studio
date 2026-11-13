@@ -173,20 +173,6 @@ function ContactBanner() {
   );
 }
 
-/** 문서로 가는 동안의 로딩 — 같은 바탕과 빈 문서 틀(편집실·달력 뼈대 대신) + 움직이는 줄. */
-export function LegalLoading() {
-  return (
-    <main aria-busy="true" aria-label="불러오는 중" className={styles.page}>
-      <div aria-hidden="true" className={`${styles.shell} ${styles.skeleton}`}>
-        <span />
-        <span />
-        <span />
-        <span />
-      </div>
-    </main>
-  );
-}
-
 /** 법령 조문 바로가기 — 국가법령정보센터 주소. law 기본값은 개인정보 보호법(공식 표기 '개인정보보호법'). */
 export function LawRef({ law = "개인정보보호법", label, article, detail }: { law?: string; label?: string; article?: string; detail?: string }) {
   const href = `https://www.law.go.kr/${encodeURI(`법령/${law}${article ? `/${article}` : ""}`)}`;

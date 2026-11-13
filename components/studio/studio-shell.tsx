@@ -154,6 +154,7 @@ import { setBirthdayGiftPreviewAction } from "@/lib/schedules/calendar-actions";
 import { removeTagAction, saveTagsAction } from "@/lib/schedules/tag-actions";
 import { CalendarSkeleton } from "@/components/skeleton/calendar-skeleton";
 import { LoadingState } from "@/components/shared/loading-state";
+import { ToriHopLoading } from "@/components/shared/tori-hop";
 import { PrivateLayerPanel } from "@/components/private-layer/private-layer-panel";
 import { TagLegendEditor } from "@/components/tags/tag-legend-editor";
 import { DateTimePicker } from "@/components/studio/datetime-picker";
@@ -244,11 +245,14 @@ const MemberInsights = dynamic(
   () => import("@/components/studio/member-insights").then((m) => m.MemberInsights),
   { ssr: false, loading: () => <LoadingState label="인사이트 불러오는 중…" /> }
 );
-// 방송 판서(B안) — owner/developer가 미리보기에서 여는 방송 설명 도구. 열 때만 로드.
-const BroadcastPanel = dynamic(
-  () => import("@/components/studio/broadcast-panel").then((m) => m.BroadcastPanel),
-  { ssr: false, loading: () => <LoadingState label="판서 여는 중…" variant="floating" /> }
-);
+// 방송 판서(B안, '일정 그림판') — owner/developer가 미리보기에서 여는 방송 설명 도구. 첫 화면 묶음엔 넣지 않고,
+// 미리보기에 들어가 한가해지면 미리 받아 둔다(2026-11-14 소유자: "그림판 열 때 왜 이리 오래 걸려" — 누른 뒤에야
+// 큰 코드 묶음을 미국 엣지 너머로 받느라 1~3초). 같은 import()라 미리 받은 묶음을 그대로 쓴다.
+const loadBroadcastPanel = () => import("@/components/studio/broadcast-panel");
+const BroadcastPanel = dynamic(() => loadBroadcastPanel().then((m) => m.BroadcastPanel), {
+  ssr: false,
+  loading: () => <ToriHopLoading label="일정 그림판" variant="overlay" />
+});
 // 편집실 검색(2026-09-18 소유자) — 시청자 검색 시트와 **한 구현**(AGENTS G-18). 결과 클릭은 편집실답게 달력 이동·일정 열기,
 // 다시보기는 옆의 ▶로 /replay 새 탭(편집실엔 다시보기 창이 없다).
 const PublicSearch = dynamic(() => import("@/components/poster/public-search").then((m) => m.PublicSearch), {
@@ -1859,6 +1863,19 @@ export function StudioShell({
   // 절대 안 잡힌다 — "어떤 도구를 얼마나 쓰나"는 여기서만 나온다. 판서가 열려 있으면 그게 우선.
   useSectionActivity(broadcastOpen ? "broadcast-panel" : modal ? `modal:${modal}` : null);
   const [broadcastSent, setBroadcastSent] = useState<string[]>([]);
+  // 그림판 버튼이 보이는 순간(미리보기·PC·편집 권한) 브라우저가 한가할 때 그림판 코드를 미리 받는다 — 누르면 바로 열린다.
+  const canOpenBroadcast = viewerMode && (canEdit || isDeveloper) && !isNarrow;
+  useEffect(() => {
+    if (!canOpenBroadcast) return;
+    const w = window as Window & { requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number; cancelIdleCallback?: (id: number) => void };
+    const warm = () => void loadBroadcastPanel().catch(() => {});
+    if (w.requestIdleCallback) {
+      const id = w.requestIdleCallback(warm, { timeout: 4000 });
+      return () => w.cancelIdleCallback?.(id);
+    }
+    const t = window.setTimeout(warm, 1500);
+    return () => window.clearTimeout(t);
+  }, [canOpenBroadcast]);
   // 판서 날짜 고르기 달력의 월 — 편집실 view와 독립(다른 달 일정도 뽑아온다).
   // 공개 스냅샷(viewerModePreview)은 월 필터 없이 전체 공개 일정을 담고 있어 클라 이동만으로 충분.
   const [broadcastMonth, setBroadcastMonth] = useState<{ year: number; month: number } | null>(null);
@@ -7231,6 +7248,8 @@ export function StudioShell({
             className="button"
             data-act="open-drawing-board"
             onClick={(e) => openBroadcastPanel(e.currentTarget)}
+            onFocus={() => void loadBroadcastPanel().catch(() => {})}
+            onPointerEnter={() => void loadBroadcastPanel().catch(() => {})}
             /* 이름만으론 무엇이 열리는지 모르는 칸 — 호버 상자는 **결과**를 말한다(이름 반복 금지).
                압축 단계로 아이콘만 남으면 data-tip 상자가 이름을 준다. */
             data-tip="일정 그림판"

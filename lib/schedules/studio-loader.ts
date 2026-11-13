@@ -71,7 +71,8 @@ export async function getStudioSchedule(
 
   // 일정은 모두 공개 범위다(비공개 레이어 철수, 0159). 그 밖의 행은 RLS와 아래 필터가 함께 막는다.
   // (P2-PROTO-1: support_campaigns 쿼리 제거 — UI 소비자 0의 죽은 payload.)
-  const [tagsRes, paletteRes, eventsRes] = await Promise.all([
+  // 생일 뽑기 미리보기도 calendar.id·역할만 있으면 되므로 같은 배치에 싣는다 — 예전엔 맨 끝에 따로 await해 DB 왕복이 한 번 더 있었다.
+  const [tagsRes, paletteRes, eventsRes, birthdayGiftPreview] = await Promise.all([
     supabase
       .from("broadcast_tags")
       .select("id, tag_key, display_name, color_key, bg_hex, dark_palette:dark_palette_v3, sort_order, is_default, is_active, parent_id, kind, v3_only")
@@ -93,7 +94,8 @@ export async function getStudioSchedule(
       .order("date_key")
       .order("created_at")
       .order("id")
-      .range(from, to))
+      .range(from, to)),
+    readBirthdayGiftPreview(actor.role, calendar.id as string)
   ]);
   if (tagsRes.error || paletteRes.error || !Array.isArray(tagsRes.data) || !Array.isArray(paletteRes.data)) {
     throw new Error("Studio schedule unavailable");
@@ -110,7 +112,7 @@ export async function getStudioSchedule(
       publicMemo: calendar.public_memo ?? "",
       posterTheme: viewerModePreview.calendar.posterTheme
     },
-    birthdayGiftPreview: await readBirthdayGiftPreview(actor.role, calendar.id as string),
+    birthdayGiftPreview,
     tags: (tagsRes.data ?? []).map(mapTag),
     palette: (paletteRes.data ?? []).map(mapPalette),
     // 쿼리 필터와 별개의 2차 방어 — 공개 범위가 아닌 옛 행은 응답에 싣지 않는다.
