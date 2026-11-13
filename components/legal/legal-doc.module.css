@@ -1128,3 +1128,176 @@
 .toriLinks a {
   justify-content: center;
 }
+
+/* ── 사이트 제보 창 ── */
+.topics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.drop {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 16px 12px;
+  border: 1.5px dashed var(--line);
+  border-radius: 14px;
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.drop strong {
+  font-size: 13.5px;
+}
+
+.drop span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.drop:hover,
+.drop:focus-visible,
+.dropOver {
+  border-color: #8f7bff;
+  background: rgb(143 123 255 / 8%);
+}
+
+.shots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.shots li {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+
+.shots img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.shots button {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 60%);
+  color: #fff;
+  cursor: pointer;
+}
+
+.emailRow {
+  display: grid;
+  gap: 4px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.emailInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+}
+
+.hp {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.dialogNote a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+.formMsg {
+  margin: 0;
+  color: #c2410c;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sendButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 46px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(120deg, #3b2a8f, #5b34f0 55%, #a64fd6);
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.sendButton:disabled {
+  opacity: 0.75;
+  cursor: progress;
+}
+
+.sent {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 18px 0 6px;
+  text-align: center;
+}
+
+.sent strong {
+  font-size: 17px;
+}
+
+.sent > span:not(.sentIcon) {
+  color: var(--ink-soft);
+  font-size: 13.5px;
+}
+
+.sentIcon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgb(34 197 94 / 15%);
+  color: #16a34a;
+}
+
+.sent .bannerButton {
+  margin-top: 8px;
+}
+
+@media (max-width: 640px) {
+  .topics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

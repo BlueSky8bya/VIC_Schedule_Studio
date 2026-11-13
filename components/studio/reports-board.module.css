@@ -1,0 +1,197 @@
+/* 사이트 제보함(개발자 전용) — 사이트 토큰만. */
+.page {
+  min-height: 100dvh;
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 28px 16px 64px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.head {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.head h1 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 24px;
+}
+
+.head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13.5px;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  width: fit-content;
+  color: var(--muted);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.filters {
+  display: inline-flex;
+  width: fit-content;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line-soft);
+}
+
+.filters button {
+  padding: 6px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.filters .on {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 10%);
+}
+
+.empty {
+  padding: 40px 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+.list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: grid;
+  gap: 10px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.done {
+  opacity: 0.7;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  font-size: 13px;
+}
+
+.topic {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 800;
+}
+
+.topic[data-topic="bug"] {
+  background: rgb(239 68 68 / 12%);
+  color: #b91c1c;
+}
+
+.topic[data-topic="schedule"] {
+  background: rgb(var(--studio-action-rgb) / 12%);
+  color: rgb(var(--studio-action-rgb));
+}
+
+.dim {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+}
+
+.doneMark {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.body {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.shots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.shots img {
+  width: 140px;
+  height: 100px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  object-fit: cover;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-soft);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.danger {
+  color: #b91c1c;
+}
+
+.fail {
+  color: #c2410c;
+  font-weight: 700;
+}
+
+.legend {
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 12.5px;
+}

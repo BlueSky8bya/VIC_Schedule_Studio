@@ -3179,9 +3179,9 @@ html[data-reduce-motion] .dtp-pop-x:active {
     font-size: calc(14.5px * var(--ui-text-scale, 1));
   }
 }
-/* 커밋 해시 — 코드 칩(고정폭). */
+/* 커밋 해시 — 칩. 글씨체는 둘레와 같게(2026-11-13 소유자), 자리만 고르게. */
 .sys-commit {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
   background: var(--studio-action-tint-hi);
   color: var(--studio-action-text);
   padding: 1px 8px;

@@ -31,7 +31,7 @@ import type { SeasonKey } from "@/components/shared/ambient/registry";
 import type { WorldCtx } from "@/components/shared/ambient/scene-engine";
 import type { DayBand } from "@/components/shared/ambient/world/time";
 import { WEATHER_LABEL, weatherOptionsForMonth, type Weather } from "@/components/shared/ambient/world/weather";
-import { Clock3 } from "lucide-react";
+import { Clock3, Inbox } from "lucide-react";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { CompanionProfile } from "@/components/shared/companion-profile";
 import { COMPANION_RADIO_MOOD_NAMES, COMPANION_RADIO_TRACKS } from "@/lib/ui/viewer-companion/radio-catalog";
@@ -1060,6 +1060,15 @@ export function StudioSettingsList({
                 은어 사전 초안
               </RowLabel>
               <Link className="rhh-link" data-act="dev-dictionary-open" href={"/studio/search-dictionary" as Route}>
+                열기
+              </Link>
+            </div>
+            {/* 사이트 제보함(0167) — 문서 페이지의 제보 창으로 들어온 버그·일정 오류·아이디어·기타. */}
+            <div className="role-help-haptics rhh-ambient rhh-dev">
+              <RowLabel icon={<Inbox size={15} />} tone="metal">
+                사이트 제보함
+              </RowLabel>
+              <Link className="rhh-link" data-act="dev-reports-open" href={"/studio/reports" as Route}>
                 열기
               </Link>
             </div>

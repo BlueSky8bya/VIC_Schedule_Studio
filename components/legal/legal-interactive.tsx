@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { Bug, Check, Copy, Heart, Lightbulb, Mail as MailIcon, Send, Settings, ShieldCheck, X } from "lucide-react";
+import { Bug, CalendarX, Check, Heart, ImagePlus, Lightbulb, Mail as MailIcon, MessageCircle, Send, Settings, X } from "lucide-react";
+import { LoadingSpinner } from "@/components/shared/loading-state";
+import { REPORT_MAX_BODY, REPORT_MAX_IMAGE_BYTES, REPORT_MAX_IMAGES, REPORT_RETENTION_DAYS, REPORT_TOPICS, type ReportTopic } from "@/lib/reports/topics";
 import { setThemeMode, themeMode, type ThemeMode } from "@/lib/ui/theme";
 import { CONTACT_AVATAR, LEGAL_CONTACT_EMAIL } from "./contact";
 import styles from "./legal-doc.module.css";
@@ -94,14 +96,35 @@ function GoogleMark() {
   );
 }
 
-// ── 문의 ──
-// 문의 창은 메일 앱을 열어 줄 뿐 사이트에 아무것도 저장하지 않는다(개인정보처리방침 '문의' 항목과 같은 경계).
-type Topic = "bug" | "idea" | "privacy";
-const TOPICS: { value: Topic; label: string; icon: ReactNode; subject: string; hint: string }[] = [
-  { value: "bug", label: "버그 제보", icon: <Bug size={16} />, subject: "[버그 제보]", hint: "어떤 화면에서, 무엇을 눌렀을 때, 어떻게 됐는지 적어 주세요. 사용하는 기기(PC·폰)도 알려 주시면 빨라요." },
-  { value: "idea", label: "아이디어", icon: <Lightbulb size={16} />, subject: "[아이디어]", hint: "있으면 좋겠는 기능이나 바뀌면 좋겠는 점을 자유롭게 적어 주세요." },
-  { value: "privacy", label: "개인정보 요청", icon: <ShieldCheck size={16} />, subject: "[개인정보 요청]", hint: "열람·정정·삭제·처리 정지 중 원하는 것을 적고, 로그인에 쓴 계정 이메일로 보내 주세요." }
-];
+// ── 사이트 제보 ──
+// 말머리·내용·캡처(최대 4장)·선택 이메일을 /api/report로 보낸다(lib/reports/report.ts가 검증·저장, 개발자 제보함에 쌓인다).
+// 캡처는 보내기 전에 브라우저에서 긴 변 1600px·webp로 줄인다(저장소 한도 2MB, 올리는 시간도 짧게).
+const MAX_SIDE = 1600;
+
+async function shrinkImage(file: File): Promise<Blob | null> {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+    const w = Math.max(1, Math.round(bitmap.width * scale));
+    const h = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close?.();
+    for (const q of [0.85, 0.7, 0.55]) {
+      const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/webp", q));
+      if (blob && blob.size <= REPORT_MAX_IMAGE_BYTES) return blob;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+type Shot = { id: string; blob: Blob; url: string };
 
 export function ContactAvatar({ size = 44 }: { size?: number }) {
   return CONTACT_AVATAR ? (
@@ -114,21 +137,77 @@ export function ContactAvatar({ size = 44 }: { size?: number }) {
   );
 }
 
-/** 문의 창을 여는 단추. variant: side = 목차 아래 프로필 카드, banner = 본문 홍보 띠의 큰 버튼. */
-export function ContactButton({ variant, initialTopic = "bug" }: { variant: "side" | "banner"; initialTopic?: Topic }) {
+/** 제보 창을 여는 단추. variant: side = 목차 아래 프로필 카드, banner = 본문 홍보 띠의 큰 버튼. */
+export function ContactButton({ variant, initialTopic = "bug" }: { variant: "side" | "banner"; initialTopic?: ReportTopic }) {
   const ref = useRef<HTMLDialogElement>(null);
-  const uid = useId(); // 문의 창이 한 페이지에 둘(목차 카드·홍보 띠) — id가 겹치지 않게
-  const titleId = `${uid}-title`;
-  const textId = `${uid}-text`;
-  const [topic, setTopic] = useState<Topic>(initialTopic);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const uid = useId(); // 제보 창이 한 페이지에 둘(목차 카드·홍보 띠) — id가 겹치지 않게
+  const [topic, setTopic] = useState<ReportTopic>(initialTopic);
   const [text, setText] = useState("");
-  const [copied, setCopied] = useState(false);
-  const current = TOPICS.find((t) => t.value === topic) ?? TOPICS[0];
-  const mailto = `mailto:${LEGAL_CONTACT_EMAIL}?subject=${encodeURIComponent(`${current.subject} 빅토리 방송 일정표`)}&body=${encodeURIComponent(text)}`;
+  const [email, setEmail] = useState("");
+  const [shots, setShots] = useState<Shot[]>([]);
+  const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [message, setMessage] = useState("");
+  const [dragOver, setDragOver] = useState(false);
+  const current = REPORT_TOPICS.find((t) => t.value === topic) ?? REPORT_TOPICS[0];
+
+  useEffect(() => () => shots.forEach((s) => URL.revokeObjectURL(s.url)), [shots]);
+
+  const addFiles = async (files: Iterable<File>) => {
+    const list = [...files].filter((f) => f.type.startsWith("image/"));
+    const room = REPORT_MAX_IMAGES - shots.length;
+    if (list.length === 0) return;
+    if (room <= 0) {
+      setMessage(`캡처는 ${REPORT_MAX_IMAGES}장까지 붙일 수 있어요.`);
+      return;
+    }
+    const added: Shot[] = [];
+    for (const f of list.slice(0, room)) {
+      const blob = await shrinkImage(f);
+      if (blob) added.push({ id: crypto.randomUUID(), blob, url: URL.createObjectURL(blob) });
+    }
+    setMessage(list.length > room ? `캡처는 ${REPORT_MAX_IMAGES}장까지예요. 앞의 ${room}장만 붙였어요.` : added.length < Math.min(list.length, room) ? "읽지 못한 이미지가 있어요." : "");
+    setShots((s) => [...s, ...added]);
+  };
 
   const open = () => {
-    setCopied(false);
+    if (state === "sent") {
+      setState("idle");
+      setText("");
+      setShots([]);
+    }
+    setMessage("");
     ref.current?.showModal();
+  };
+
+  const send = async () => {
+    if (!text.trim()) {
+      setMessage("내용을 적어 주세요.");
+      return;
+    }
+    setState("sending");
+    setMessage("");
+    const form = new FormData();
+    form.set("topic", topic);
+    form.set("body", text.trim());
+    if (email.trim()) form.set("email", email.trim());
+    form.set("page", window.location.pathname);
+    form.set("device", window.matchMedia("(max-width: 640px)").matches ? "mobile" : "desktop");
+    form.set("website", (document.getElementById(`${uid}-hp`) as HTMLInputElement | null)?.value ?? "");
+    shots.forEach((s, i) => form.append("images", s.blob, `shot-${i + 1}.webp`));
+    try {
+      const res = await fetch("/api/report", { method: "POST", body: form });
+      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+      if (res.ok && data?.ok) {
+        setState("sent");
+        return;
+      }
+      setState("error");
+      setMessage(data?.error ?? "보내지 못했어요. 잠시 뒤 다시 시도해 주세요.");
+    } catch {
+      setState("error");
+      setMessage("연결이 끊겼어요. 잠시 뒤 다시 시도해 주세요.");
+    }
   };
 
   return (
@@ -139,7 +218,7 @@ export function ContactButton({ variant, initialTopic = "bug" }: { variant: "sid
             <ContactAvatar />
           </span>
           <span className={styles.contactSideText}>
-            <strong>문의하기</strong>
+            <strong>사이트 제보</strong>
             <span>버그·아이디어 보내기</span>
           </span>
           <MailIcon aria-hidden="true" className={styles.contactSideIcon} size={16} />
@@ -147,81 +226,171 @@ export function ContactButton({ variant, initialTopic = "bug" }: { variant: "sid
       ) : (
         <button className={styles.bannerButton} data-act="legal-contact-banner" onClick={open} type="button">
           <Send aria-hidden="true" size={16} />
-          메일로 보내기
+          제보하기
         </button>
       )}
       <dialog
-        aria-labelledby={titleId}
+        aria-labelledby={`${uid}-title`}
         className={styles.dialog}
         onClick={(e) => {
           if (e.target === ref.current) ref.current?.close(); // 바깥(배경)을 누르면 닫는다
         }}
         ref={ref}
       >
-        <div className={styles.dialogCard}>
+        <div
+          className={styles.dialogCard}
+          onPaste={(e) => {
+            const files = [...e.clipboardData.files];
+            if (files.length) {
+              e.preventDefault();
+              void addFiles(files);
+            }
+          }}
+        >
           <header className={styles.dialogHead}>
             <ContactAvatar size={48} />
             <div>
-              <h2 id={titleId}>운영자에게 문의</h2>
-              <p>{LEGAL_CONTACT_EMAIL}</p>
+              <h2 id={`${uid}-title`}>사이트 제보</h2>
+              <p>개발자에게 바로 전달됩니다</p>
             </div>
             <button aria-label="닫기" className={styles.dialogClose} data-act="legal-contact-close" onClick={() => ref.current?.close()} type="button">
               <X size={18} />
             </button>
           </header>
-          <div className={styles.topics} role="radiogroup" aria-label="문의 종류">
-            {TOPICS.map((t) => (
-              <button
-                aria-checked={topic === t.value}
-                className={topic === t.value ? styles.topicOn : undefined}
-                data-act="legal-contact-topic"
-                data-act-opt={t.value}
-                key={t.value}
-                onClick={() => setTopic(t.value)}
-                role="radio"
-                type="button"
-              >
-                {t.icon}
-                {t.label}
+
+          {state === "sent" ? (
+            <div className={styles.sent} role="status">
+              <span className={styles.sentIcon}>
+                <Check size={26} />
+              </span>
+              <strong>보냈어요. 고맙습니다!</strong>
+              <span>{email.trim() ? "답이 필요하면 적어 주신 메일로 연락드릴게요." : "꼼꼼히 읽고 반영할게요."}</span>
+              <button className={styles.bannerButton} data-act="legal-contact-done" onClick={() => ref.current?.close()} type="button">
+                닫기
               </button>
-            ))}
-          </div>
-          <label className={styles.dialogLabel} htmlFor={textId}>
-            {current.hint}
-          </label>
-          <textarea
-            className={styles.dialogText}
-            id={textId}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="내용을 적으면 메일 본문에 그대로 들어가요."
-            rows={6}
-            value={text}
-          />
-          <p className={styles.dialogNote}>보내기를 누르면 이용하시는 메일 앱이 열립니다. 이 창에 적은 내용은 사이트에 저장되지 않습니다.</p>
-          <div className={styles.dialogActions}>
-            <button
-              className={styles.ghostButton}
-              data-act="legal-contact-copy"
-              onClick={async () => {
-                try {
-                  await navigator.clipboard.writeText(LEGAL_CONTACT_EMAIL);
-                  setCopied(true);
-                } catch {
-                  setCopied(false);
-                }
-              }}
-              type="button"
-            >
-              {copied ? <Check size={15} /> : <Copy size={15} />}
-              {copied ? "주소 복사됨" : "주소 복사"}
-            </button>
-            <a className={styles.bannerButton} data-act="legal-contact-send" href={mailto} onClick={() => ref.current?.close()}>
-              <Send aria-hidden="true" size={16} />
-              메일 앱으로 보내기
-            </a>
-          </div>
+            </div>
+          ) : (
+            <>
+              <div aria-label="말머리" className={styles.topics} role="radiogroup">
+                {REPORT_TOPICS.map((t) => (
+                  <button
+                    aria-checked={topic === t.value}
+                    className={topic === t.value ? styles.topicOn : undefined}
+                    data-act="legal-contact-topic"
+                    data-act-opt={t.value}
+                    key={t.value}
+                    onClick={() => setTopic(t.value)}
+                    role="radio"
+                    type="button"
+                  >
+                    {TOPIC_ICON[t.value]}
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+              <textarea
+                aria-label="제보 내용"
+                className={styles.dialogText}
+                maxLength={REPORT_MAX_BODY}
+                onChange={(e) => setText(e.target.value)}
+                placeholder={current.hint}
+                rows={6}
+                value={text}
+              />
+              <div
+                className={`${styles.drop}${dragOver ? ` ${styles.dropOver}` : ""}`}
+                data-act="legal-contact-attach"
+                onClick={() => fileRef.current?.click()}
+                onDragLeave={() => setDragOver(false)}
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOver(true);
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOver(false);
+                  void addFiles(e.dataTransfer.files);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    fileRef.current?.click();
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+              >
+                <ImagePlus aria-hidden="true" size={20} />
+                <strong>화면 캡처가 있으면 붙여넣거나(Ctrl+V) 눌러서 추가</strong>
+                <span>선택 · 최대 {REPORT_MAX_IMAGES}장</span>
+                <input
+                  accept="image/png,image/jpeg,image/webp"
+                  hidden
+                  multiple
+                  onChange={(e) => {
+                    if (e.target.files) void addFiles(e.target.files);
+                    e.target.value = "";
+                  }}
+                  ref={fileRef}
+                  type="file"
+                />
+              </div>
+              {shots.length ? (
+                <ul className={styles.shots}>
+                  {shots.map((s, i) => (
+                    <li key={s.id}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img alt={`첨부한 캡처 ${i + 1}`} src={s.url} />
+                      <button
+                        aria-label={`캡처 ${i + 1} 빼기`}
+                        data-act="legal-contact-unattach"
+                        onClick={() => setShots((all) => all.filter((x) => x.id !== s.id))}
+                        type="button"
+                      >
+                        <X size={13} />
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              <label className={styles.emailRow}>
+                <span>답장 받을 이메일 (선택)</span>
+                <input
+                  autoComplete="email"
+                  className={styles.emailInput}
+                  inputMode="email"
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="비워 두면 답장 없이 보내요"
+                  type="email"
+                  value={email}
+                />
+              </label>
+              {/* 봇 거르기 — 사람에게는 보이지 않는 칸 */}
+              <input aria-hidden="true" autoComplete="off" className={styles.hp} id={`${uid}-hp`} name="website" tabIndex={-1} type="text" />
+              <p className={styles.dialogNote}>
+                제보는 처리 완료 후 {REPORT_RETENTION_DAYS}일 뒤 캡처와 함께 지워집니다. 캡처에 다른 사람의 개인정보가 보이지 않게 해 주세요.
+                개인정보 열람·삭제 요청은 <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>로 보내 주세요.
+              </p>
+              {message ? (
+                <p className={styles.formMsg} role={state === "error" ? "alert" : "status"}>
+                  {message}
+                </p>
+              ) : null}
+              <button className={styles.sendButton} data-act="legal-contact-send" disabled={state === "sending"} onClick={send} type="button">
+                {state === "sending" ? <LoadingSpinner small /> : <Send aria-hidden="true" size={16} />}
+                {state === "sending" ? "보내는 중…" : "보내기"}
+              </button>
+            </>
+          )}
         </div>
       </dialog>
     </>
   );
 }
+
+const TOPIC_ICON: Record<ReportTopic, ReactNode> = {
+  bug: <Bug size={15} />,
+  schedule: <CalendarX size={15} />,
+  idea: <Lightbulb size={15} />,
+  etc: <MessageCircle size={15} />
+};

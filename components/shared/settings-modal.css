@@ -339,7 +339,8 @@ html[data-reduce-motion] .vic-settings .rhh-menu { animation-duration: 1ms;
   overflow-wrap: anywhere;
 }
 .vic-settings .rhh-val-list { display: grid; justify-items: end; gap: 2px; }
-.vic-settings .rhh-val-mono { font-family: var(--font-mono, ui-monospace, monospace); }
+/* 커밋 해시도 다른 값과 같은 글씨체(2026-11-13 소유자: "버전만 글씨체가 다르다") — 자리만 고르게 맞춘다. */
+.vic-settings .rhh-val-mono { font-variant-numeric: tabular-nums; letter-spacing: 0.02em; }
 .vic-settings .rhh-perf { padding: 0 0 12px; }
 .vic-settings .rhh-perf .perf-table { margin: 0; }
 /* 지난 해 인사이트(0160) — 달 고르기는 카드 폭 전체(6칸 × 2줄), 아래에 인사이트 화면을 그대로 싣는다. */

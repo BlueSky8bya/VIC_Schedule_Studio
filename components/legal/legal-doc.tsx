@@ -1,7 +1,7 @@
 import type { Route } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Bug, ExternalLink, Lightbulb, Mail as MailIcon, Scale, ShieldCheck } from "lucide-react";
+import { Bug, CalendarX, ExternalLink, ImagePlus, Lightbulb, Mail as MailIcon, Scale } from "lucide-react";
 import { LEGAL_CONTACT_EMAIL } from "./contact";
 import { ContactButton } from "./legal-interactive";
 import styles from "./legal-doc.module.css";
@@ -33,7 +33,9 @@ export function LegalDoc({
       <div className={styles.shell}>
         <header className={styles.head}>
           <div className={styles.topRow}>
-            <Link className={styles.back} data-act="legal-home" href="/">
+            {/* 일정표(동적·무거운 첫 화면)는 기본 프리페치가 로딩 틀만 받아, 누른 뒤에야 본문을 받기 시작했다(2026-11-13 소유자:
+                "일정표로 돌아갈 때 너무 느리다"). 문서를 읽는 동안 일정표 전체를 미리 받아 둔다. */}
+            <Link className={styles.back} data-act="legal-home" href="/" prefetch>
               ← 일정표
             </Link>
             <nav aria-label="문서" className={styles.switch}>
@@ -119,10 +121,9 @@ export function LegalDoc({
             <div className={styles.toriCard}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img alt="빅토리 일러스트" className={styles.toriImg} height={240} src="/premiere/tori-invitation.webp" width={240} />
-              <strong>빅토리</strong>
-              <span>방송 일정은 일정표에서</span>
+              <strong>빅토리~!</strong>
               <div className={styles.toriLinks}>
-                <Link className={styles.docLink} data-act="legal-tori-home" href="/">
+                <Link className={styles.docLink} data-act="legal-tori-home" href="/" prefetch>
                   일정표 보기
                 </Link>
                 <DocLink brand="soop" href="https://www.sooplive.com/station/toryvac">
@@ -144,7 +145,6 @@ function ContactBanner() {
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img alt="" aria-hidden="true" className={styles.bannerArt} height={132} src="/premiere/victamin-cheer.webp" width={132} />
       <div className={styles.bannerBody}>
-        <p className={styles.bannerKicker}>여러분의 한 줄이 일정표를 바꿉니다</p>
         <h2 id="legal-contact-banner-h">버그 제보 · 아이디어 대환영</h2>
         <ul className={styles.bannerChips}>
           <li>
@@ -156,12 +156,16 @@ function ContactBanner() {
             있으면 좋을 기능
           </li>
           <li>
-            <ShieldCheck aria-hidden="true" size={14} />
-            개인정보 요청
+            <CalendarX aria-hidden="true" size={14} />
+            틀린 일정
+          </li>
+          <li>
+            <ImagePlus aria-hidden="true" size={14} />
+            캡처 첨부
           </li>
         </ul>
         <div className={styles.bannerActions}>
-          <ContactButton initialTopic="idea" variant="banner" />
+          <ContactButton initialTopic="bug" variant="banner" />
           <span className={styles.bannerMail}>{LEGAL_CONTACT_EMAIL}</span>
         </div>
       </div>
