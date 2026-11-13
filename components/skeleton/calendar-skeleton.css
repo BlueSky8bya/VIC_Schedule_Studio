@@ -20,30 +20,51 @@
   }
 }
 
-@keyframes cal-skel-doodle-bob {
-  0%,
-  100% {
-    transform: translateY(0) rotate(0);
-  }
+/* Each beat holds its drawing. The foot is the pivot for takeoff and landing. */
+@keyframes cal-skel-hop {
+  0%, 75%, 100% { transform: none; }
+  8.333% { transform: rotate(-4deg) scale(1.06, .93); }
+  16.667% { transform: translateY(-7%) rotate(-6deg) scale(.98, 1.03); }
+  25% { transform: translateY(-13%) rotate(-2deg); }
+  33.333% { transform: translateY(-8%) rotate(4deg); }
+  41.667% { transform: rotate(4deg) scale(1.07, .92); }
+  50% { transform: translateY(-6%) rotate(6deg) scale(.98, 1.02); }
+  58.333% { transform: translateY(-9%) rotate(3deg); }
+  66.667% { transform: rotate(-2deg) scale(1.04, .95); }
+}
 
-  25% {
-    transform: translateY(-3px) rotate(-3deg);
-  }
+@keyframes cal-skel-hop-shadow {
+  0%, 75%, 100% { transform: scaleX(1); opacity: .2; }
+  8.333%, 41.667%, 66.667% { transform: scaleX(1.12); opacity: .24; }
+  16.667%, 33.333%, 50% { transform: scaleX(.82); opacity: .13; }
+  25%, 58.333% { transform: scaleX(.68); opacity: .09; }
+}
 
-  50% {
-    transform: translateY(-6px) rotate(0);
-  }
+.cal-skel-mascot {
+  position: relative;
+  display: grid;
+  width: 120px;
+  height: 120px;
+}
 
-  75% {
-    transform: translateY(-3px) rotate(3deg);
-  }
+.cal-skel-mascot::before {
+  content: "";
+  position: absolute;
+  inset: auto 34% 1% 34%;
+  height: 6%;
+  border-radius: 50%;
+  background: var(--ink);
+  opacity: .2;
+  animation: cal-skel-hop-shadow 1.5s step-end infinite;
 }
 
 .cal-skel-doodle {
+  position: relative;
   display: block;
-  width: 120px;
-  height: 120px;
-  animation: cal-skel-doodle-bob 1.4s var(--ease) infinite;
+  width: 100%;
+  height: 100%;
+  transform-origin: 46% 97%;
+  animation: cal-skel-hop 1.5s step-end infinite;
 }
 
 .cal-skel-stage {
@@ -94,7 +115,7 @@
     box-shadow: var(--shadow-2);
   }
 
-  .cal-skel-doodle {
+  .cal-skel-mascot {
     order: 1;
     width: 64px;
     height: 64px;
@@ -207,6 +228,10 @@
 }
 
 html[data-reduce-motion] .cal-skel-doodle,
+html[data-reduce-motion] .cal-skel-mascot::before {
+  animation: none;
+}
+
 html[data-reduce-motion] .cal-skel-note,
 html[data-reduce-motion] .cal-skel-month,
 html[data-reduce-motion] .cal-skel-cell {

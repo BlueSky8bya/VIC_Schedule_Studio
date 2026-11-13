@@ -4,9 +4,8 @@ import "./calendar-skeleton.css";
 
 // 라우트 레벨 로딩 스켈레톤. loading.tsx(서버, JS 없음)에서 즉시 렌더된다.
 //
-// 웹(>640px): 풀 달력 뼈대는 실제 화면과 괴리감이 커서, 목적지에 맞는 간단한 텍스트
-//   ("편집실 불러오는 중…")만 가운데에 보여준다.
-// 모바일(≤640px): 달력 뼈대 + 같은 텍스트를 보여준다.
+// 웹(>640px): 토리 손그림과 목적지에 맞는 로딩 문구를 가운데에 보여준다.
+// 모바일(≤640px): 달력 뼈대 아래에 손그림과 문구를 보여준다.
 //
 // 배경색은 목적지에 맞춘다(studio=편집실 톤, poster=시청자/포스터 크림 톤) — 웹·모바일 공통.
 //
@@ -63,8 +62,9 @@ export function CalendarSkeleton({
         )}
       </div>
 
-      {/* 토리님 손그림 — 기다리는 동안 살짝 들썩인다(동작 줄이기면 멈춤). */}
-      <ToriDoodle className="cal-skel-doodle" size={120} />
+      <div className="cal-skel-mascot" aria-hidden="true">
+        <ToriDoodle className="cal-skel-doodle" size={120} />
+      </div>
 
       {/* 목적지 텍스트 — 웹에선 "{label} 불러오는 중…" 단독 표시. 모바일에선 카드 헤딩에
           이미 달 제목이 있어 label을 숨기고 "불러오는 중…"만 둔다. */}
