@@ -270,7 +270,8 @@
   margin-top: 4px;
 }
 
-.section a:not(.law):not(.docLink):not(.mail) {
+/* 일정표에서 옮겨 온 실제 칩(.agenda-link)은 원래 모양 그대로 — 본문 링크 밑줄을 씌우지 않는다. */
+.section a:not(.law):not(.docLink):not(.mail):not(:global(.agenda-link)) {
   color: inherit;
   text-decoration: underline;
   text-underline-offset: 2px;
@@ -1064,17 +1065,66 @@
   }
 }
 
-/* 다시보기 칩 예시(이용약관) */
-.mockReplay {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  width: fit-content;
-  margin-top: 4px;
-  padding: 3px 10px;
-  border-radius: 8px;
-  background: var(--surface-2);
+/* ── 오른쪽 사이드(토리님 카드) — 넓은 화면에서만, 목차처럼 스크롤을 따라온다 ── */
+.rightSide {
+  display: none;
+}
+
+@media (min-width: 1240px) {
+  .shell {
+    max-width: 1280px;
+  }
+  .body {
+    grid-template-columns: 230px minmax(0, 1fr) 210px;
+  }
+  .rightSide {
+    display: block;
+    position: sticky;
+    top: 20px;
+  }
+  .headArt {
+    display: none;
+  }
+}
+
+.toriCard {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 16px 14px 14px;
   border: 1px solid var(--line);
-  font-size: 12px;
-  font-weight: 700;
+  border-radius: 18px;
+  background: var(--surface);
+  text-align: center;
+}
+
+.toriImg {
+  width: 168px;
+  height: 168px;
+  margin-bottom: 6px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 50% 15%;
+  border: 4px solid var(--surface);
+  box-shadow: 0 0 0 2px var(--accent), 0 8px 24px rgb(0 0 0 / 12%);
+}
+
+.toriCard strong {
+  font-size: 16px;
+}
+
+.toriCard > span {
+  color: var(--muted);
+  font-size: 12.5px;
+}
+
+.toriLinks {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  margin-top: 8px;
+}
+
+.toriLinks a {
+  justify-content: center;
 }

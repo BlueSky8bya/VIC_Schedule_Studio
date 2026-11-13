@@ -20,6 +20,10 @@ import {
 // 개인정보처리방침. 개인정보 보호법 제30조가 정한 기재 사항 순서로 쓴다. 내용은 실제 코드·DB와 맞춘다 —
 // 기록 범위를 바꾸면 이 글도 같이 고친다. 근거: 기록은 개발자만(lib/activity/kinds.ts isTrackedRole),
 // 보관 기한(db/migrations/0165·0166 cron), 하트(0040·0140), 쿠키(lib/ui/view-cookie.ts), 위치(wrangler placement·Supabase 서울).
+// 내용이 고정된 문서라 빌드 때 미리 만들어 둔다(2026-11-13 소유자: "이 두 페이지만 로딩이 2배"). 요청마다 서버 렌더·로그인
+// 확인을 거치지 않고, <Link> 프리페치가 문서 전체를 미리 받아 누르는 즉시 열린다. 이 페이지에서는 로그인 상태를 읽지 않는다.
+export const dynamic = "force-static";
+
 export const metadata: Metadata = {
   title: `개인정보처리방침 · ${SITE_NAME}`,
   description: `${SITE_NAME}의 개인정보 처리 목적·항목·보유 기간·위탁·국외 이전·권리 행사 방법`

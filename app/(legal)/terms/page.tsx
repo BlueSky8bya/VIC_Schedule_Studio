@@ -1,6 +1,8 @@
 import type { Metadata, Route } from "next";
 import Link from "next/link";
 import { CalendarClock, Copyright, Gift, LogIn, Play } from "lucide-react";
+// 다시보기 예시가 일정표의 실제 칩(.agenda-vod-inline) 스타일을 그대로 쓰도록 — 편집실도 같은 파일을 불러 쓴다.
+import "@/components/poster/public-poster.css";
 import {
   BrandIcon,
   Callout,
@@ -16,25 +18,30 @@ import {
 } from "@/components/legal/legal-doc";
 import styles from "@/components/legal/legal-doc.module.css";
 
+// 내용이 고정된 문서라 빌드 때 미리 만들어 둔다(2026-11-13 소유자: "이 두 페이지만 로딩이 2배"). 요청마다 서버 렌더·로그인
+// 확인을 거치지 않고, <Link> 프리페치가 문서 전체를 미리 받아 누르는 즉시 열린다. 이 페이지에서는 로그인 상태를 읽지 않는다.
+export const dynamic = "force-static";
+
 export const metadata: Metadata = {
   title: `이용약관 · ${SITE_NAME}`,
   description: `${SITE_NAME} 이용 조건과 운영 원칙`
 };
 
-// 다시보기 연결 예시 — 일정 카드 아래의 SOOP 다시보기 칩 모양(표시용).
+// 다시보기 연결 예시 — 일정표 목록의 실제 다시보기 칩과 같은 마크업·클래스(public-poster.tsx의 agenda-vod-inline).
 function ReplayDemo() {
   return (
-    <div className={styles.mockCard}>
-      <span className={styles.mockBar} />
-      <span className={styles.mockText}>
-        <b>21시 합방</b>
-        <span className={styles.mockReplay}>
-          <Play aria-hidden="true" size={12} />
-          <BrandIcon brand="soop" size={14} />
-          SOOP 다시보기
-        </span>
-      </span>
-    </div>
+    <a
+      className="agenda-link vod agenda-vod-inline"
+      data-act="legal-demo-replay"
+      href="https://www.sooplive.com/station/toryvac"
+      rel="noopener noreferrer"
+      style={{ width: "min(320px, 100%)" }}
+      target="_blank"
+    >
+      <Play aria-hidden="true" size={13} strokeWidth={2.6} />
+      <span className="agenda-vod-title">마메마메 보스잡기</span>
+      <em className="agenda-vod-dur">13시간 28분</em>
+    </a>
   );
 }
 

@@ -3,7 +3,7 @@ import type { SetAllCookies } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isSupabaseConfigured } from "@/lib/auth/config";
 import { guardedFetch } from "@/lib/net/guarded-fetch";
-import { VIC_PATH_HEADER } from "@/lib/ui/request-path";
+import { LEGAL_PATHS, VIC_PATH_HEADER } from "@/lib/ui/request-path";
 
 // 요청 경로를 서버 컴포넌트(loading.tsx 등)에 헤더로 넘긴다. 쿠키 갱신 뒤에도 최신 쿠키 헤더를 실어야 하므로
 // 매번 request.headers에서 새로 복사한다.
@@ -14,7 +14,8 @@ function passThrough(request: NextRequest) {
 }
 
 export async function middleware(request: NextRequest) {
-  if (!isSupabaseConfigured()) {
+  // 고정 문서(개인정보처리방침·이용약관)는 로그인 상태를 읽지 않는 정적 페이지 — 인증 쿠키 갱신 왕복을 건너뛴다.
+  if (!isSupabaseConfigured() || LEGAL_PATHS.has(request.nextUrl.pathname)) {
     return passThrough(request);
   }
 

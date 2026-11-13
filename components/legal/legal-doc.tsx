@@ -66,7 +66,7 @@ export function LegalDoc({
                 </div>
               </dl>
             </div>
-            {/* 머리 오른쪽 장식 — 토리님 일러스트(공개 자산 public/premiere). 좁은 화면에선 숨긴다. */}
+            {/* 머리 오른쪽 장식 — 토리님 일러스트(공개 자산 public/premiere). 오른쪽 사이드가 생기는 넓은 화면과 폰에선 숨긴다. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img alt="" aria-hidden="true" className={styles.headArt} height={150} src="/premiere/tori-invitation.webp" width={150} />
           </div>
@@ -114,6 +114,23 @@ export function LegalDoc({
             ))}
             <ContactBanner />
           </article>
+          {/* 오른쪽 사이드 — 토리님 카드, 스크롤을 따라온다(넓은 화면만, 2026-11-13 소유자). */}
+          <aside aria-label="빅토리" className={styles.rightSide}>
+            <div className={styles.toriCard}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img alt="빅토리 일러스트" className={styles.toriImg} height={240} src="/premiere/tori-invitation.webp" width={240} />
+              <strong>빅토리</strong>
+              <span>방송 일정은 일정표에서</span>
+              <div className={styles.toriLinks}>
+                <Link className={styles.docLink} data-act="legal-tori-home" href="/">
+                  일정표 보기
+                </Link>
+                <DocLink brand="soop" href="https://www.sooplive.com/station/toryvac">
+                  SOOP 방송국
+                </DocLink>
+              </div>
+            </div>
+          </aside>
         </div>
       </div>
     </main>

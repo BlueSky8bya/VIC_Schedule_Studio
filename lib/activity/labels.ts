@@ -824,6 +824,8 @@ export const ACT: Record<string, TargetLabel> = {
   "legal-contact-topic": { name: "문의 종류", area: "기타", opts: { bug: "버그 제보", idea: "아이디어", privacy: "개인정보 요청" } },
   "legal-contact-copy": { name: "문의 창: 주소 복사", area: "기타" },
   "legal-contact-send": { name: "문의 창: 메일 앱으로 보내기", area: "기타" },
+  "legal-demo-replay": { name: "문서 예시: 다시보기 칩", area: "기타" },
+  "legal-tori-home": { name: "문서 사이드: 일정표 보기", area: "기타" },
   "legal-home": { name: "약관·방침 → 일정표로 돌아가기", area: "기타" },
   "legal-privacy": { name: "이용약관 → 개인정보처리방침", area: "기타" },
   "legal-terms": { name: "개인정보처리방침 → 이용약관", area: "기타" },
