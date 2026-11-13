@@ -2410,3 +2410,9 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
   .rhh-companion-settings .rhh-wardrobe-fitting-stage > .rhh-wardrobe-silhouette { width: min(100%, var(--companion-preview-size, 180px), 104px); }
   .rhh-companion-settings .rhh-collection-book:has(> .rhh-memory-filters) .rhh-collection-gallery-detail { height: 104px; min-height: 104px; }
 }
+/* memory detail: the family badge rides the title row so the fixed-height
+   specimen box never pushes copy (or the art stage) past its bottom edge. */
+.rhh-companion-settings .rhh-collection-book .rhh-memory-detail .rhh-collection-keepsake { flex: none; white-space: nowrap; padding: 2px 8px; }
+.rhh-companion-settings .rhh-collection-book .rhh-memory-detail .rhh-collection-detail-copy > p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+.rhh-companion-settings .rhh-collection-book .rhh-memory-detail { grid-template-rows: minmax(0, 1fr); }
+.rhh-companion-settings .rhh-collection-book .rhh-memory-detail .rhh-collection-detail-copy { max-height: 100%; overflow: hidden; }
