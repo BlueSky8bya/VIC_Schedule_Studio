@@ -20,17 +20,23 @@
   }
 }
 
-/* Each beat holds its drawing. The foot is the pivot for takeoff and landing. */
+/* Match the in-betweens in the loading strip. Keep the original hop peaks and
+   planted poses on their beats. */
 @keyframes cal-skel-hop {
   0%, 75%, 100% { transform: none; }
   8.333% { transform: rotate(-4deg) scale(1.06, .93); }
   16.667% { transform: translateY(-7%) rotate(-6deg) scale(.98, 1.03); }
   25% { transform: translateY(-13%) rotate(-2deg); }
+  29.167% { transform: translateY(-10.5%) rotate(1deg); }
   33.333% { transform: translateY(-8%) rotate(4deg); }
+  37.5% { transform: translateY(-4%) rotate(3deg) scale(1.035, .96); }
   41.667% { transform: rotate(2deg) scale(1.07, .92); }
+  45.833% { transform: translateY(-3%) rotate(4deg) scale(1.025, .97); }
   50% { transform: translateY(-6%) rotate(6deg) scale(.98, 1.02); }
   58.333% { transform: translateY(-9%) rotate(3deg); }
+  62.5% { transform: translateY(-4.5%) rotate(.5deg) scale(1.02, .975); }
   66.667% { transform: rotate(-2deg) scale(1.04, .95); }
+  70.833% { transform: rotate(-1deg) scale(1.02, .975); }
 }
 
 @keyframes cal-skel-hop-shadow {
@@ -38,6 +44,10 @@
   8.333%, 41.667%, 66.667% { transform: scaleX(1.12); opacity: .24; }
   16.667%, 33.333%, 50% { transform: scaleX(.82); opacity: .13; }
   25%, 58.333% { transform: scaleX(.68); opacity: .09; }
+  29.167% { transform: scaleX(.75); opacity: .11; }
+  37.5%, 45.833% { transform: scaleX(.97); opacity: .185; }
+  62.5% { transform: scaleX(.9); opacity: .165; }
+  70.833% { transform: scaleX(1.06); opacity: .22; }
 }
 
 @keyframes cal-skel-hop-frames {
@@ -75,10 +85,10 @@
 
 .cal-skel-hop-strip {
   display: block;
-  width: 1200%;
+  width: 2400%;
   max-width: none;
   height: 100%;
-  animation: cal-skel-hop-frames var(--cal-skel-hop-duration) steps(12) infinite;
+  animation: cal-skel-hop-frames var(--cal-skel-hop-duration) steps(24) infinite;
 }
 
 .cal-skel-stage {
