@@ -22,7 +22,7 @@ import {
   setReduceMotion
 } from "@/lib/ui/motion";
 import { gfxAutoMode, gfxPref, setGfxPref, type GfxMode, type GfxPref } from "@/lib/ui/gfx";
-import { applyThemeMode, setThemeMode, themeMode, type ThemeMode } from "@/lib/ui/theme";
+import { applyThemeMode, setThemeMode, THEME_EVENT, themeMode, type ThemeMode } from "@/lib/ui/theme";
 import {
   playSfx,
   setSoundCat,
@@ -177,6 +177,10 @@ export function useSettingsPrefs(onGfxAuto?: (mode: GfxMode) => void): SettingsP
   const [themeModeState, setThemeModeState] = useState<ThemeMode>("light");
   useEffect(() => {
     setThemeModeState(themeMode());
+    // 헤더의 밝기 토글 등 바깥에서 바꾼 모드도 설정 창에 반영한다.
+    const onTheme = (e: Event) => setThemeModeState((e as CustomEvent<ThemeMode>).detail);
+    window.addEventListener(THEME_EVENT, onTheme);
+    return () => window.removeEventListener(THEME_EVENT, onTheme);
   }, []);
   useEffect(() => {
     if (themeModeState !== "system") return;

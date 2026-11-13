@@ -49,4 +49,13 @@ export function setThemeMode(mode: ThemeMode): void {
     /* 저장소 불가 — 이번 세션만 */
   }
   applyThemeMode(mode);
+  // 같은 화면의 다른 조작부(설정 창의 화면 모드, 헤더의 밝기 토글)가 서로 어긋나지 않게 알린다.
+  try {
+    window.dispatchEvent(new CustomEvent<ThemeMode>(THEME_EVENT, { detail: mode }));
+  } catch {
+    /* no-op */
+  }
 }
+
+/** setThemeMode가 바뀔 때마다 보내는 창 이벤트(detail = 새 모드). */
+export const THEME_EVENT = "vic:theme-mode";

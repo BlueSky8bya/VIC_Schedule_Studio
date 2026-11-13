@@ -815,6 +815,8 @@ export const ACT: Record<string, TargetLabel> = {
   "settings-terms": { name: "이용약관 열기", area: "기타", hint: "설정 창 맨 아래(2026-11-13)" },
   "footer-privacy": { name: "일정표 맨 아래 → 개인정보처리방침", area: "기타" },
   "footer-terms": { name: "일정표 맨 아래 → 이용약관", area: "기타" },
+  "footer-report": { name: "일정표 맨 아래 → 사이트 제보", area: "기타" },
+  "theme-toggle": { name: "밝기 토글(헤더)", area: "시청자 화면", hint: "설정 단추 옆 해/달 — 밝게↔어둡게(2026-11-13)" },
   "legal-demo-heart": { name: "문서 예시: 하트 눌러 보기", area: "기타" },
   "legal-demo-theme": { name: "문서 예시: 화면 모드", area: "기타", opts: { light: "밝게", dark: "어둡게", system: "자동" } },
   "legal-demo-login": { name: "문서 예시: Google 로그인", area: "기타" },

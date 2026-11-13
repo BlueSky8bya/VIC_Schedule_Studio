@@ -7229,6 +7229,14 @@ html[data-reduce-motion] .slc-player img {
   align-self: center;
   margin-inline-start: max(0px, calc(env(safe-area-inset-left, 0px) - var(--m-agenda-pad-x, 14px)));
 }
+/* 밝기 토글(2026-11-13) — 설정 단추와 같은 칸, 바로 오른쪽(44 + 간격 8). 두 단추가 한 자리에 겹치지 않게. */
+.agenda-header > .viewer-settings-open[data-act="theme-toggle"] {
+  margin-inline-start: calc(max(0px, calc(env(safe-area-inset-left, 0px) - var(--m-agenda-pad-x, 14px))) + 52px);
+}
+/* 아주 좁은 폰(≤340px)은 제목과 닿는다 — 토글은 접고 설정 창의 '화면 모드'로. */
+@media (max-width: 340px) {
+  .agenda-header > .viewer-settings-open[data-act="theme-toggle"] { display: none; }
+}
 .agenda-header > :is(.agenda-account, .m-head-logout) { margin-inline-end: max(0px, calc(env(safe-area-inset-right, 0px) - var(--m-agenda-pad-x, 14px))); }
 @media (max-width: 480px) {
   /* The longer account pill now shares this row. Decorations yield first so
@@ -10927,3 +10935,16 @@ html[data-large-text] { --m-agenda-rail-w: clamp(116px, 38vw, 168px); }
 html[data-large-text] .agenda .agenda-legend .panel-section-title { white-space: normal; overflow-wrap: anywhere; word-break: normal; }
 html[data-large-text] .agenda-legend-tag { overflow-wrap: anywhere; word-break: normal; }
 html[data-large-text] .agenda-legend-tag > span { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }
+
+/* 패널 맨 아래 '사이트 제보' 카드(2026-11-13 소유자) — 태그 필터·계절 배경·빅타민 집 카드와 같은 면·테두리·라운드·그림자.
+   카드 내용(로고·글·아이콘)은 문서 페이지의 같은 단추(components/legal/legal-interactive.tsx)를 그대로 쓴다. */
+.poster-page .avatar-slot .slot-report {
+  flex: none;
+  pointer-events: auto; /* 패널(.avatar-slot)은 달력을 막지 않게 pointer-events:none — 카드마다 다시 켠다 */
+}
+.poster-page .avatar-slot .slot-report > button {
+  background: var(--panel-card-bg);
+  border-color: var(--panel-card-line);
+  border-radius: var(--r-card);
+  box-shadow: var(--panel-card-shadow);
+}

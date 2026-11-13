@@ -3,6 +3,8 @@
 // The room must be styled before its lazy companion runtime can mount.
 import "./viewer-companion/companion-home.css";
 import { SiteLegalFooter } from "@/components/legal/site-legal-footer";
+import { ThemeToggleButton } from "@/components/shared/theme-toggle-button";
+import { ContactButton } from "@/components/legal/legal-interactive";
 import { scrollAgendaTarget } from "@/lib/ui/agenda-scroll";
 import { announceIfStaleDeployment } from "@/lib/net/stale-deploy";
 import { PublicEventCalendar } from "./public-event-calendar";
@@ -1743,8 +1745,12 @@ export function PublicPoster({
   const burstId = useRef(0);
   // 시청자 상호작용(필터·북마크) 가능 모드 — 꾸미기 중에는 끈다(스티커 조작과 충돌·포스터 청결).
   const interactive = true;
+  // 설정 + 밝기 토글(2026-11-13 소유자: "설정 아이콘 옆에 다크모드 On/Off, 같은 크기") — 편집실 헤더와 같은 두 단추.
   const settingsButton = interactive ? (
-    <SettingsButton open={sheet === "settings"} onClick={() => { hapticTick(); setCompanionBook(false); setSheet("settings"); }} />
+    <>
+      <SettingsButton open={sheet === "settings"} onClick={() => { hapticTick(); setCompanionBook(false); setSheet("settings"); }} />
+      <ThemeToggleButton />
+    </>
   ) : null;
   // 업도움 띠 그룹 호버 — 띠는 칸마다 별도 조각이라 CSS :hover만으로는 한 조각만 밝아져
   // 마디가 다시 보인다. 같은 일정의 모든 조각을 DOM 클래스 토글로 함께 밝힌다(lib/ui/band-hover).
@@ -5281,6 +5287,12 @@ export function PublicPoster({
                 안에 절대 배치하면 박스의 둥근 윗변이 카드 위로 삐져나온다(2026-09-04 소유자, 편집실과 동일). */}
             {interactive ? <ViewerAmbientControl collapsible className="slot-showcase" season={pickAmbient(view.month, scenery.seasonForce).season} /> : null}
             {companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed ? <div className="vc-home-host" ref={companionHomeHostRef} /> : null}
+            {/* 사이트 제보 — 패널 맨 아래 카드(2026-11-13 소유자: "일정표에서도 곧바로 보이게"). 문서 페이지와 같은 제보 창. */}
+            {interactive ? (
+              <div className="slot-report">
+                <ContactButton variant="side" />
+              </div>
+            ) : null}
             {/* 아바타 빈 자리 — 관리자·개발자(avatarSlot)·/onair 고정 scene에만. 일반 시청자 패널은 카드까지만. */}
             {avatarCapable ? (
               <div className="avatar-dock-inner">

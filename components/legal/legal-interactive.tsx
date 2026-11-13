@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { Bug, CalendarX, Check, Heart, ImagePlus, Lightbulb, Mail as MailIcon, MessageCircle, Send, Settings, X } from "lucide-react";
+import { Bug, CalendarX, Check, Clock3, EyeOff, Heart, ImagePlus, Lightbulb, Mail as MailIcon, MessageCircle, Send, Settings, ShieldCheck, X } from "lucide-react";
 import { LoadingSpinner } from "@/components/shared/loading-state";
 import { REPORT_MAX_BODY, REPORT_MAX_IMAGE_BYTES, REPORT_MAX_IMAGES, REPORT_RETENTION_DAYS, REPORT_TOPICS, type ReportTopic } from "@/lib/reports/topics";
 import { setThemeMode, themeMode, type ThemeMode } from "@/lib/ui/theme";
@@ -18,7 +18,7 @@ export function HeartDemo() {
       <span className={styles.mockBar} />
       <span className={styles.mockText}>
         <b>21시 합방</b>
-        <i>{on ? "기기 번호·일정·시각이 저장된 상태" : "아직 아무것도 저장되지 않은 상태"}</i>
+        <i>{on ? "무작위 문자열·일정·시각이 저장된 상태" : "아직 아무것도 저장되지 않은 상태"}</i>
       </span>
       <button
         aria-label={on ? "하트 취소(예시)" : "하트 누르기(예시)"}
@@ -138,7 +138,8 @@ export function ContactAvatar({ size = 44 }: { size?: number }) {
 }
 
 /** 제보 창을 여는 단추. variant: side = 목차 아래 프로필 카드, banner = 본문 홍보 띠의 큰 버튼. */
-export function ContactButton({ variant, initialTopic = "bug" }: { variant: "side" | "banner"; initialTopic?: ReportTopic }) {
+// link = 일정표 맨 아래 법적 링크 줄의 글자 단추.
+export function ContactButton({ variant, initialTopic = "bug" }: { variant: "side" | "banner" | "link"; initialTopic?: ReportTopic }) {
   const ref = useRef<HTMLDialogElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const uid = useId(); // 제보 창이 한 페이지에 둘(목차 카드·홍보 띠) — id가 겹치지 않게
@@ -222,6 +223,10 @@ export function ContactButton({ variant, initialTopic = "bug" }: { variant: "sid
             <span>버그·아이디어 보내기</span>
           </span>
           <MailIcon aria-hidden="true" className={styles.contactSideIcon} size={16} />
+        </button>
+      ) : variant === "link" ? (
+        <button className={styles.linkButton} data-act="footer-report" onClick={open} type="button">
+          사이트 제보
         </button>
       ) : (
         <button className={styles.bannerButton} data-act="legal-contact-banner" onClick={open} type="button">
@@ -354,23 +359,47 @@ export function ContactButton({ variant, initialTopic = "bug" }: { variant: "sid
                 </ul>
               ) : null}
               <label className={styles.emailRow}>
-                <span>답장 받을 이메일 (선택)</span>
+                <span>
+                  답장 받을 이메일 <em className={styles.optional}>선택 · 적어 주신 분께만 답장할 수 있어요</em>
+                </span>
                 <input
                   autoComplete="email"
                   className={styles.emailInput}
                   inputMode="email"
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="비워 두면 답장 없이 보내요"
+                  placeholder="example@gmail.com"
                   type="email"
                   value={email}
                 />
               </label>
               {/* 봇 거르기 — 사람에게는 보이지 않는 칸 */}
               <input aria-hidden="true" autoComplete="off" className={styles.hp} id={`${uid}-hp`} name="website" tabIndex={-1} type="text" />
-              <p className={styles.dialogNote}>
-                제보는 처리 완료 후 {REPORT_RETENTION_DAYS}일 뒤 캡처와 함께 지워집니다. 캡처에 다른 사람의 개인정보가 보이지 않게 해 주세요.
-                개인정보 열람·삭제 요청은 <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>로 보내 주세요.
-              </p>
+              <ul className={styles.notes}>
+                <li>
+                  <span className={styles.noteIcon} data-tone="time">
+                    <Clock3 aria-hidden="true" size={14} />
+                  </span>
+                  <span>
+                    <b>보관</b> 처리 완료 후 {REPORT_RETENTION_DAYS}일 뒤 캡처와 함께 자동 삭제
+                  </span>
+                </li>
+                <li>
+                  <span className={styles.noteIcon} data-tone="warn">
+                    <EyeOff aria-hidden="true" size={14} />
+                  </span>
+                  <span>
+                    <b>캡처</b> 다른 사람의 이름·채팅 등 개인정보가 보이지 않게 가려 주세요
+                  </span>
+                </li>
+                <li>
+                  <span className={styles.noteIcon} data-tone="mail">
+                    <ShieldCheck aria-hidden="true" size={14} />
+                  </span>
+                  <span>
+                    <b>개인정보 요청</b> 열람·삭제는 <a href={`mailto:${LEGAL_CONTACT_EMAIL}`}>{LEGAL_CONTACT_EMAIL}</a>
+                  </span>
+                </li>
+              </ul>
               {message ? (
                 <p className={styles.formMsg} role={state === "error" ? "alert" : "status"}>
                   {message}
