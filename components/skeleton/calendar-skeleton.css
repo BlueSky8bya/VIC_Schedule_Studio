@@ -23,7 +23,7 @@
 /* Match the in-betweens in the loading strip. Keep the original hop peaks and
    planted poses on their beats. */
 @keyframes cal-skel-hop {
-  0%, 75%, 100% { transform: none; }
+  0%, 83.333%, 100% { transform: none; }
   8.333% { transform: rotate(-4deg) scale(1.06, .93); }
   16.667% { transform: translateY(-7%) rotate(-6deg) scale(.98, 1.03); }
   25% { transform: translateY(-13%) rotate(-2deg); }
@@ -36,18 +36,22 @@
   58.333% { transform: translateY(-9%) rotate(3deg); }
   62.5% { transform: translateY(-4.5%) rotate(.5deg) scale(1.02, .975); }
   66.667% { transform: rotate(-2deg) scale(1.04, .95); }
-  70.833% { transform: rotate(-1deg) scale(1.02, .975); }
+  70.833% { transform: rotate(-1.25deg) scale(1.025, .96875); }
+  75% { transform: rotate(-.75deg) scale(1.015, .98125); }
+  79.167% { transform: rotate(-.25deg) scale(1.005, .99375); }
 }
 
 @keyframes cal-skel-hop-shadow {
-  0%, 75%, 100% { transform: scaleX(1); opacity: .2; }
+  0%, 83.333%, 100% { transform: scaleX(1); opacity: .2; }
   8.333%, 41.667%, 66.667% { transform: scaleX(1.12); opacity: .24; }
   16.667%, 33.333%, 50% { transform: scaleX(.82); opacity: .13; }
   25%, 58.333% { transform: scaleX(.68); opacity: .09; }
   29.167% { transform: scaleX(.75); opacity: .11; }
   37.5%, 45.833% { transform: scaleX(.97); opacity: .185; }
   62.5% { transform: scaleX(.9); opacity: .165; }
-  70.833% { transform: scaleX(1.06); opacity: .22; }
+  70.833% { transform: scaleX(1.075); opacity: .225; }
+  75% { transform: scaleX(1.045); opacity: .215; }
+  79.167% { transform: scaleX(1.015); opacity: .205; }
 }
 
 @keyframes cal-skel-hop-frames {

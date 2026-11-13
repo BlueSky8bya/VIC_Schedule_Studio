@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 const cell = 192;
 const source = new URL("../public/tori/doodle.webp", import.meta.url);
-const output = new URL("../public/tori/loading-hop-v4.webp", import.meta.url);
+const output = new URL("../public/tori/loading-hop-v5.webp", import.meta.url);
 const { data, info } = await sharp(fileURLToPath(source))
   .ensureAlpha().raw().toBuffer({ resolveWithObject: true });
 const size = info.width;
@@ -20,6 +20,7 @@ const limbs = [
   { x: 349, y: 407, rx: 57, ry: 48 }, // lifted foot
 ];
 const rest = [[0,0], [0,0], [0,0], [0,0]];
+const secondLanding = [[-2,7], [1,10], [10,12], [3,-3]];
 const keyPoses = [
   rest,
   [[-3,7], [0,10], [4,-6], [-5,4]], // crouch
@@ -29,18 +30,26 @@ const keyPoses = [
   [[-2,8], [1,11], [12,13], [2,-3]], // foot lands ahead of the body
   [[-7,-7], [4,-13], [-6,-6], [7,2]],
   [[-8,-10], [5,-19], [-14,-20], [-7,-8]],
-  [[-2,7], [1,10], [10,12], [3,-3]],
-  rest, rest, rest,
 ];
 
-// The original poses still land at the same times. Only the fast arm descent,
-// landing and rebound get an in-between drawing, rendered from the same ink.
-const transitions = new Set([3, 4, 5, 7, 8]);
-const poses = keyPoses.flatMap((pose, index) => {
+function interpolatePose(from, to, progress) {
+  return from.map(([x, y], limb) => [
+    x + (to[limb][0] - x) * progress,
+    y + (to[limb][1] - y) * progress,
+  ]);
+}
+
+const transitions = new Set([3, 4, 5, 7]);
+const hops = keyPoses.flatMap((pose, index) => {
   if (!transitions.has(index)) return [pose, pose];
-  const next = keyPoses[index + 1];
-  return [pose, pose.map(([x, y], limb) => [(x + next[limb][0]) / 2, (y + next[limb][1]) / 2])];
+  const next = keyPoses[index + 1] ?? secondLanding;
+  return [pose, interpolatePose(pose, next, .5)];
 });
+
+// Ease out of the second landing over three drawings, then hold the original
+// starting pose across the loop. Match the body and shadow steps in CSS.
+const settle = [.375, .625, .875].map((progress) => interpolatePose(secondLanding, rest, progress));
+const poses = [...hops, secondLanding, ...settle, rest, rest, rest, rest];
 
 function weight(x, y, { x: cx, y: cy, rx, ry }) {
   const radius = Math.hypot((x - cx) / rx, (y - cy) / ry);

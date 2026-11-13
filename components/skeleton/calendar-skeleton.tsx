@@ -64,7 +64,7 @@ export function CalendarSkeleton({
       <div className="cal-skel-mascot" aria-hidden="true">
         <div className="cal-skel-doodle">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img alt="" className="cal-skel-hop-strip" draggable={false} height={192} src="/tori/loading-hop-v4.webp" width={4608} />
+          <img alt="" className="cal-skel-hop-strip" draggable={false} height={192} src="/tori/loading-hop-v5.webp" width={4608} />
         </div>
       </div>
 
