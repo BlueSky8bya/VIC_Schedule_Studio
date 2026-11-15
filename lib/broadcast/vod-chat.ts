@@ -323,8 +323,10 @@ export async function syncVodChat(titleNos: number[], chunkBudget = 60, timeBudg
         let fetched = false;
         try {
           if (chunk.url) {
+            // redirect "manual": Cloudflare Workers(workerd)는 "error"를 TypeError로 거부한다(2026-11-13 이전 뒤
+            // 조각이 전부 실패한 원인). 3xx는 res.ok=false라 따라가지 않고 다음 회차 재시도 칸으로 남는다.
             const res = await fetch(chunk.url, { headers: { "User-Agent": UA }, cache: "no-store",
-              redirect: "error", signal: AbortSignal.timeout(Math.min(8000, timeLeft)) });
+              redirect: "manual", signal: AbortSignal.timeout(Math.min(8000, timeLeft)) });
             if (res.ok) {
               const xml = await res.text();
               if (!/<root(?:\s[^>]*)?>[\s\S]*<\/root>/.test(xml)) throw new Error("invalid chat XML");

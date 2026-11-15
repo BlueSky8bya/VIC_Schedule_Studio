@@ -46,7 +46,9 @@ beforeEach(() => {
       limit: async () => ({ data: [], error: null }) };
     return chain;
   } });
-  fetcher = vi.fn(async (input: string) => {
+  fetcher = vi.fn(async (input: string, init?: RequestInit) => {
+    // Cloudflare Workers(workerd) rejects redirect "error" with a TypeError (2026-11-13 regression).
+    if (init?.redirect === "error") throw new TypeError('Invalid redirect value, must be one of "follow" or "manual"');
     if (input.includes("/video/a/view")) return Response.json({ result: 1, data: { files } }, { status: failView ? 503 : 200 });
     const url = new URL(input);
     if (broken.has(url.searchParams.get("rowKey")!) || broken.has(input)) return new Response(null, { status: 404 });
