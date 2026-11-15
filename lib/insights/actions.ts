@@ -453,6 +453,8 @@ type BcastRow = {
   started_at: string;
   last_live_at: string;
   ended_at: string | null;
+  /** SOOP 방송번호 — 다시보기 폴백이 같은 방송을 두 번 세지 않게 맞춘다(0051 이전 행은 null). */
+  bno?: string | null;
 };
 // 방송시간 집계(트렌드·멤버 인사이트 공용) — 시작일(start_day) 귀속. 유효시간 = coalesce(ended_at,
 // last_live_at) - started_at. 진행 중(ended_at null)은 last_live_at까지 잠정 집계.
@@ -492,16 +494,21 @@ function computeBroadcast(
   return { broadcastHours, broadcastDaily, broadcastDays };
 }
 
-type VodFallbackRow = { broadcast_day: string; duration_ms: number; reg_date: string | null };
-// 세션 기록이 없는 날의 방송시간을 다시보기(VOD) 길이로 채운다(0070 공개 RPC와 동일 규칙).
-// broadcast_session은 2026-06 도입이라 그 이전 시대는 통째로 비어 있었다 — vod_archive(0068)의
-// 길이·등록시각으로 유사 세션 행을 만들어 잇는다. **세션이 있는 날은 세션이 정답**(이중 집계 금지).
+type VodFallbackRow = { broadcast_day: string; duration_ms: number; reg_date: string | null; bno?: string | null };
+// 세션이 잡지 못한 방송의 시간을 다시보기(VOD) 길이로 채운다(공개 RPC 0171과 같은 규칙).
+// broadcast_session은 2026-06 도입이라 그 이전 시대는 통째로 비어 있었고, 구독+ 생방송은 공개 라이브 조회가 못 잡아
+// 세션이 생기지 않는다 — vod_archive(0068)의 길이·등록시각으로 유사 세션 행을 만들어 잇는다.
+// **같은 방송(bno)의 세션이 있으면 세션이 정답**(이중 집계 금지). 예전엔 '그날 세션이 있으면 그날 VOD 전부 제외'라
+// 일반 방송과 같은 날의 구독+ 방송이 빠졌다(2026-11-15, 소유자). bno를 모르는 쪽이 있으면 예전처럼 그날 단위로 뺀다.
 function mergeVodFallback(sess: BcastRow[], vods: VodFallbackRow[]): BcastRow[] {
   const sessDays = new Set(sess.map((r) => r.start_day.slice(0, 10)));
+  const sessBnos = new Set(sess.map((r) => r.bno).filter((b): b is string => !!b));
+  const legacyDays = new Set(sess.filter((r) => !r.bno).map((r) => r.start_day.slice(0, 10)));
   const out = [...sess];
   for (const v of vods) {
     const day = String(v.broadcast_day).slice(0, 10);
-    if (v.reg_date === null || sessDays.has(day)) continue;
+    if (v.reg_date === null) continue;
+    if (v.bno ? sessBnos.has(v.bno) || legacyDays.has(day) : sessDays.has(day)) continue;
     const endMs = Date.parse(v.reg_date);
     if (!Number.isFinite(endMs) || !(v.duration_ms > 0)) continue;
     out.push({
@@ -560,13 +567,13 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
     supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }),
     supabase
       .from("broadcast_session")
-      .select("start_day, started_at, last_live_at, ended_at")
+      .select("start_day, started_at, last_live_at, ended_at, bno")
       .gte("start_day", fromStart)
       .lt("start_day", nextMonthStart),
     // 세션 이전 시대(≤2026-05) 방송시간 폴백용 다시보기 길이(0068) — mergeVodFallback가 합친다.
     supabase
       .from("vod_archive")
-      .select("broadcast_day, duration_ms, reg_date")
+      .select("broadcast_day, duration_ms, reg_date, bno")
       .eq("guest", false) // 합방 게스트 출연분(0075)은 토리님 방송시간이 아니다
       .eq("upload", false) // 업로드 영상(0156)도 방송시간이 아니다
       .gte("broadcast_day", fromStart)
@@ -892,13 +899,13 @@ export async function getMemberInsightsAction(
     // 방송시간 6개월 — 관리자·매니저·작업자도 트렌드에서 볼 수 있게(공개 API엔 여전히 미노출).
     supabase
       .from("broadcast_session")
-      .select("start_day, started_at, last_live_at, ended_at")
+      .select("start_day, started_at, last_live_at, ended_at, bno")
       .gte("start_day", sixStart)
       .lt("start_day", nextMonthStart),
     // 세션 이전 시대 방송시간 폴백(0068 다시보기 길이) — 세션 없는 날만 채운다.
     supabase
       .from("vod_archive")
-      .select("broadcast_day, duration_ms, reg_date")
+      .select("broadcast_day, duration_ms, reg_date, bno")
       .eq("guest", false) // 합방 게스트 출연분(0075) 제외
       .eq("upload", false) // 업로드 영상(0156) 제외
       .gte("broadcast_day", sixStart)
