@@ -1554,6 +1554,14 @@ html[data-eye-comfort="lite"]:not([data-theme="dark"]) .public-event:not(.teaser
   padding: 0 var(--space-2);
   border-color: transparent;
 }
+/* 화면 코드 파일을 못 받았을 때(app/layout.tsx 페인트 전 스크립트 → html[data-load-failed]). 그려진 화면이 눌리지 않는
+   까닭을 말한다. 기다림 화면이 떠 있으면 그 안의 한 줄(components/shared/load-watch)이 말하므로 겹쳐 띄우지 않는다. */
+.netstat-loadfail {
+  display: none;
+}
+html[data-load-failed] body:not(:has([data-load-watch])) .netstat-loadfail {
+  display: flex;
+}
 
 /* 위치 중립(상단/하단 어디든 자연스럽게) — scale+fade만 */
 @keyframes netstat-rise {

@@ -92,6 +92,25 @@
   text-overflow: ellipsis;
 }
 
+/* 8초 뒤에만 보이는 '느림' 덧말(load-watch.tsx의 LOAD_SLOW_MS와 같은 단계). JS 없이 지연 애니메이션으로 켠다. */
+.ls-slow {
+  display: inline-block;
+  max-width: 0;
+  overflow: hidden;
+  visibility: hidden;
+  white-space: pre;
+  vertical-align: bottom;
+  /* steps(1, start): Chrome은 step-end + forwards의 끝 값을 유지하지 않는다(load-watch.css 참고). */
+  animation: ls-slow-in 1ms 8s steps(1, start) forwards;
+}
+
+@keyframes ls-slow-in {
+  to {
+    max-width: 40em;
+    visibility: visible;
+  }
+}
+
 @keyframes ls-spin {
   to {
     transform: rotate(360deg);

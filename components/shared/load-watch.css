@@ -1,0 +1,87 @@
+/* 기다림 상태 한 줄 — components/shared/load-watch.tsx. 시간 단계는 지연 애니메이션(JS 없이),
+   실패·끊김은 <html data-load-failed / data-net-offline>(app/layout.tsx 페인트 전 스크립트). */
+/* 켜고 끄는 순간 전환. steps(1, start) + forwards — Chrome은 step-end + forwards로 끝난 애니메이션의 끝 값을
+   유지하지 않아(2026-11-16 실측) 문구가 끝내 안 나타났다. */
+@keyframes load-watch-in {
+  from, to { visibility: visible; opacity: 1; }
+}
+
+@keyframes load-watch-out {
+  from, to { visibility: hidden; opacity: 0; }
+}
+
+/* 줄들을 한 칸에 겹쳐 두고 자리를 미리 잡는다 — 문구가 나타나도 토리·제목이 밀리지 않는다. */
+.load-watch {
+  display: grid;
+  min-height: calc(var(--text-body, 15px) * 3.2);
+  max-width: min(440px, calc(100vw - 32px));
+  text-align: center;
+}
+
+.load-watch-line {
+  grid-area: 1 / 1;
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-body, 15px);
+  font-weight: var(--weight-semibold);
+  line-height: 1.5;
+  visibility: hidden;
+  opacity: 0;
+}
+
+/* 0~8초: 없음 → 8~30초: 느림 → 30초~: 늦음 + 다시 불러오기. */
+/* 뒤에 적힌 애니메이션이 이긴다 — 30초부터는 out이 in을 덮는다. */
+.load-watch-slow {
+  animation:
+    load-watch-in 1ms 8s steps(1, start) forwards,
+    load-watch-out 1ms 30s steps(1, start) forwards;
+}
+
+.load-watch-stuck {
+  animation: load-watch-in 1ms 30s steps(1, start) forwards;
+}
+
+.load-watch-retry {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  margin-inline-start: var(--space-2, 8px);
+  padding: 0 var(--space-3, 12px);
+  border: var(--stroke-hairline, 1px) solid var(--line);
+  border-radius: var(--r-pill, 999px);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-weight: var(--weight-bold);
+  cursor: pointer;
+}
+
+.load-watch-retry:focus-visible {
+  outline: 2px solid var(--focus-ring, var(--violet, #5b34f0));
+  outline-offset: 2px;
+}
+
+/* 실패·끊김은 시간 단계보다 앞선다 — 사실을 바로 말하고, '불러오는 중…'과 뛰는 토리는 멈춘다. */
+html[data-net-offline] .load-watch-line,
+html[data-load-failed] .load-watch-line {
+  animation: none;
+  visibility: hidden;
+  opacity: 0;
+}
+
+html[data-load-failed]:not([data-net-offline]) .load-watch-failed,
+html[data-net-offline] .load-watch-offline {
+  visibility: visible;
+  opacity: 1;
+  color: var(--status-danger);
+}
+
+html[data-load-failed] :is(.tori-hop-note, .cal-skel-note),
+html[data-net-offline] :is(.tori-hop-note, .cal-skel-note) {
+  display: none;
+}
+
+html[data-load-failed] :is(.tori-hop-body, .tori-hop-strip, .tori-hop::before),
+html[data-net-offline] :is(.tori-hop-body, .tori-hop-strip, .tori-hop::before) {
+  animation-play-state: paused;
+}

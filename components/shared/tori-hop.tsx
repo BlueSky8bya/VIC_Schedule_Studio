@@ -1,3 +1,4 @@
+import { LoadWatch } from "./load-watch";
 import "./tori-hop.css";
 
 // 토리님 손그림이 방방 뛰는 기다림 그림(2026-11-14 소유자: "기다리는 동안 지루하지 않게").
@@ -38,6 +39,7 @@ export function ToriHopLoading({
         <p aria-live="polite" className="tori-hop-note" role="status">
           {label} 불러오는 중…
         </p>
+        <LoadWatch />
       </div>
     </div>
   );

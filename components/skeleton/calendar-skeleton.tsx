@@ -1,4 +1,5 @@
 import { getCurrentKstYearMonth } from "@/lib/calendar/month";
+import { LoadWatch } from "@/components/shared/load-watch";
 import { ToriHop } from "@/components/shared/tori-hop";
 import "./calendar-skeleton.css";
 
@@ -69,6 +70,8 @@ export function CalendarSkeleton({
       <p className="cal-skel-note" role="status">
         <span className="cal-skel-note-label">{label} </span>불러오는 중…
       </p>
+      {/* 오래 걸리면 느린 건지 실패한 건지 말해 준다(components/shared/load-watch). */}
+      <LoadWatch />
     </div>
   );
 }

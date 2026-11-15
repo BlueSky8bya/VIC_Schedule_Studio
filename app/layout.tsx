@@ -1,22 +1,5 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import {
-  Black_Han_Sans,
-  Do_Hyeon,
-  Gaegu,
-  Gamja_Flower,
-  Gowun_Batang,
-  Gowun_Dodum,
-  Gugi,
-  Hi_Melody,
-  IBM_Plex_Sans_KR,
-  Jua,
-  Nanum_Gothic,
-  Nanum_Myeongjo,
-  Nanum_Pen_Script,
-  Noto_Sans_KR,
-  Sunflower
-} from "next/font/google";
 import "./globals.css";
 import "./fonts.css"; // 설정 '글꼴'의 눈누·네이버 글꼴 선언(고른 것만 내려받는다)
 import "./dark.css"; // 다크 모드 보정 한 파일(토큰이 닿지 않는 리터럴 색만)
@@ -36,43 +19,13 @@ import { resolveCurrentActor } from "@/lib/auth/actor";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { FONT_STACKS } from "@/lib/ui/font-prefs";
 import { GfxProbe } from "@/components/ui/gfx-probe";
+import { UiFontBoot } from "@/components/ui/ui-font-boot";
 import { LampDiagnosticEntry } from "@/components/ui/lamp-diagnostic-entry";
 import { TEXT_PX_BASE, TEXT_PX_MIN, TEXT_PX_MAX } from "@/lib/ui/edit-prefs";
 import { PANEL_SECTION_BOOTSTRAP } from "@/lib/ui/panel-section-preferences";
 
-// #7: 텍스트 스티커 글꼴 선택지(한글 지원). next/font로 로드해 CSS 변수로 노출한다.
-// preload:false + subsets 미지정 → 전체 글리프(한글 포함) 로드, 경고 없이.
-const gaegu = Gaegu({ weight: ["400", "700"], variable: "--font-gaegu", display: "swap", preload: false });
-const blackHanSans = Black_Han_Sans({
-  weight: "400",
-  variable: "--font-blackhan",
-  display: "swap",
-  preload: false
-});
-const nanumMyeongjo = Nanum_Myeongjo({
-  weight: ["400", "700", "800"],
-  variable: "--font-myeongjo",
-  display: "swap",
-  preload: false
-});
-const jua = Jua({ weight: "400", variable: "--font-jua", display: "swap", preload: false });
-const doHyeon = Do_Hyeon({ weight: "400", variable: "--font-dohyeon", display: "swap", preload: false });
-const nanumPen = Nanum_Pen_Script({
-  weight: "400",
-  variable: "--font-nanumpen",
-  display: "swap",
-  preload: false
-});
-const gamja = Gamja_Flower({ weight: "400", variable: "--font-gamja", display: "swap", preload: false });
-const gugi = Gugi({ weight: "400", variable: "--font-gugi", display: "swap", preload: false });
-const hiMelody = Hi_Melody({ weight: "400", variable: "--font-himelody", display: "swap", preload: false });
-// 설정 '글꼴'(lib/ui/font-prefs.ts)의 구글 글꼴 — preload: false라 고른 사람만 내려받는다(나눔명조·감자꽃은 위 것을 같이 쓴다).
-const notoSansKr = Noto_Sans_KR({ variable: "--font-noto", display: "swap", preload: false });
-const nanumGothic = Nanum_Gothic({ weight: ["400", "700", "800"], variable: "--font-nanumgothic", display: "swap", preload: false });
-const plexKr = IBM_Plex_Sans_KR({ weight: ["400", "500", "600", "700"], variable: "--font-plex", display: "swap", preload: false });
-const gowunDodum = Gowun_Dodum({ weight: "400", variable: "--font-gowun", display: "swap", preload: false });
-const gowunBatang = Gowun_Batang({ weight: ["400", "700"], variable: "--font-gowunbatang", display: "swap", preload: false });
-const sunflower = Sunflower({ weight: ["300", "500", "700"], variable: "--font-sunflower", display: "swap" }); // 서브셋 없는 글꼴 = 미리 받지 않는다
+// 설정 '글꼴'의 구글 글꼴은 여기서 싣지 않는다 — 고른 사람만 그 글꼴의 선언 CSS를 받는다(lib/ui/ui-font-css, 2026-11-16).
+// 여기서 next/font로 15종을 다 불렀을 때 고르지 않은 글꼴의 @font-face 선언만 압축 후 약 360KB가 모든 화면의 첫 그리기를 막았다.
 
 export const metadata: Metadata = {
   // 탭 제목·아이콘(2026-09-28 소유자): "방송일정 ✨" + 벡터 반짝이(app/icon.svg — Next가 favicon으로 붙인다).
@@ -115,7 +68,6 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${gaegu.variable} ${blackHanSans.variable} ${nanumMyeongjo.variable} ${jua.variable} ${doHyeon.variable} ${nanumPen.variable} ${gamja.variable} ${gugi.variable} ${hiMelody.variable} ${notoSansKr.variable} ${nanumGothic.variable} ${plexKr.variable} ${gowunDodum.variable} ${gowunBatang.variable} ${sunflower.variable}`}
       // 아래 페인트-전 스크립트가 hydration 전에 <html>에 data-eye-comfort/-reduce-motion을
       // 박는다 → 서버 HTML과 불일치로 루트 hydration이 매번 실패했고, 그 여파로 Next 라우터가
       // router.refresh()의 RSC 응답을 버렸다(비공개 잠금해제가 화면에 반영 안 되던 근본 원인,
@@ -158,7 +110,14 @@ export default function RootLayout({
               "if(gm!=='full')d.setAttribute('data-gfx',gm);if(s.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort',gm==='soft'?'lite':'1');d.setAttribute('data-studio-calm','1');" +
               // 계절 배경(vic.ambient, ADR-0017 개정 2 · 2026-09-04 기본 OFF): 저장값이 없으면 'off'.
               // 켜기/흐리게/끄기 중 고른 값이 기기에 남아 다음 방문에 페인트 전에 복원된다.
-              "var am=s.getItem('vic.ambient');if(am!=='on'&&am!=='dim')am='off';if(am!=='on')d.setAttribute('data-ambient',am)}catch(e){}" + PANEL_SECTION_BOOTSTRAP
+              "var am=s.getItem('vic.ambient');if(am!=='on'&&am!=='dim')am='off';if(am!=='on')d.setAttribute('data-ambient',am)}catch(e){}" +
+              // 기다림이 '느린 것'인지 '실패'인지(components/shared/load-watch, 2026-11-16): 화면 코드(/_next/ 스크립트·스타일)를
+              // 못 받으면 data-load-failed, 연결이 끊기면 data-net-offline. '다시 불러오기'(data-load-reload)는 여기서 새로고침한다 —
+              // 화면 코드가 안 와 React 버튼이 죽어 있어도 눌린다.
+              "try{var D=document.documentElement;addEventListener('error',function(e){var t=e.target;if(!t||t===window)return;var u=t.tagName==='SCRIPT'?t.src:(t.tagName==='LINK'&&t.rel==='stylesheet'?t.href:'');if(u&&u.indexOf('/_next/')>-1)D.setAttribute('data-load-failed','1')},true);" +
+              "var N=function(){if(navigator.onLine===false)D.setAttribute('data-net-offline','1');else D.removeAttribute('data-net-offline')};N();addEventListener('online',N);addEventListener('offline',N);" +
+              "document.addEventListener('click',function(e){var b=e.target&&e.target.closest&&e.target.closest('[data-load-reload]');if(b){e.preventDefault();location.reload()}})}catch(e){}" +
+              PANEL_SECTION_BOOTSTRAP
           }}
         />
         {children}
@@ -180,8 +139,19 @@ export default function RootLayout({
         <OfflineIndicator />
         {/* 새 배포 뒤 옛 탭의 Server Action 실패를 새로고침으로 복구 — 렌더 없음. */}
         <StaleDeployGuard />
+        {/* 화면 코드 파일을 못 받았을 때 안내(위 스크립트가 html[data-load-failed]를 단다) — JS 없이 보이고 눌린다. */}
+        <div className="netstat netstat-loadfail">
+          <div className="netstat-toast netstat-update" role="alert">
+            <span>화면 일부를 받지 못했어요</span>
+            <button className="netstat-action" data-load-reload="" type="button">
+              다시 불러오기
+            </button>
+          </div>
+        </div>
         {/* 그래픽 여력 판정(눈 편한 테마 필터 vs 라이트 팔레트) — 렌더 없음, 기기당 30일 1회. */}
         <GfxProbe />
+        {/* 고른 구글 글꼴의 선언 CSS를 받는다(lib/ui/ui-font-css) — 렌더 없음. */}
+        <UiFontBoot />
         {/* 배포 확인용 커밋 해시는 개발자 화면(편집실 액션바 중앙)에만 표시한다(studio-shell). */}
       </body>
     </html>

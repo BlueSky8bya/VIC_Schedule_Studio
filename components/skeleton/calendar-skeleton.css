@@ -80,6 +80,11 @@
     font-weight: var(--weight-semibold);
   }
 
+  /* 느림·실패 한 줄(load-watch)은 문구 아래. */
+  .cal-skel-stage .load-watch {
+    order: 3;
+  }
+
   .cal-skel-note-label,
   .cal-skel-rail,
   .cal-skel-editor {

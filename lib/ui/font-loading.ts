@@ -1,4 +1,5 @@
 import type { FontOption } from './font-prefs';
+import { attachUiFontCss, needsUiFontCss } from './ui-font-css';
 
 const SAMPLE = '가나Aa';
 const unquote = (s: string) => s.trim().replace(/^["']|["']$/g, '');
@@ -33,6 +34,8 @@ async function retryDeclaredFaces(family: string, current: () => boolean) {
 
 export async function loadUiFont(option: FontOption, { retry = false, isCurrent = () => true, timeoutMs = 8000 }: { retry?: boolean; isCurrent?: () => boolean; timeoutMs?: number } = {}): Promise<void> {
   if (!option.stack) return;
+  // 구글 글꼴은 선언 CSS부터 단다(lib/ui/ui-font-css) — 선언이 없으면 아래 fonts.load가 빈 결과로 끝난다.
+  if (needsUiFontCss(option.id)) await attachUiFontCss(option.id);
   const css = getComputedStyle(document.documentElement);
   const resolved = option.stack.replace(/var\((--[\w-]+)\)/g, (_m, v: string) => css.getPropertyValue(v).trim());
   const family = unquote(resolved.split(',')[0]);

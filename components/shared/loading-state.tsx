@@ -40,6 +40,8 @@ export function LoadingState({
       <span className="ls-badge">
         <LoadingSpinner />
         <span className="ls-label">{label}</span>
+        {/* 8초가 넘으면 느린 것일 뿐 멈춘 게 아니라고 덧붙인다(components/shared/load-watch와 같은 단계, 2026-11-16). */}
+        <span className="ls-slow">· 인터넷이 느려 조금 더 걸려요</span>
       </span>
     </div>
   );
