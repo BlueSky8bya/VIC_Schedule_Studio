@@ -699,7 +699,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       experience(kind); persistCare(true); publishCare(); invitedUntil = 0;
     };
     let clickGuard: ReturnType<typeof setTimeout> | undefined;
-    let pressed: { id: number; x: number; y: number; at: number; dx: number; dy: number; dragged: boolean; grabbed: boolean; cancelled: boolean } | null = null;
+    let pressed: { id: number; x: number; y: number; at: number; dx: number; dy: number; dragged: boolean; grabbed: boolean; cancelled: boolean; recaptures?: number } | null = null;
+    // While a hand holds the pet, the page underneath must not start a native
+    // text selection or drag (the viewer calendar's date text is selectable).
+    const blockWhileHeld = (event: Event) => { if (pressed?.grabbed || overlayDrag) event.preventDefault(); };
     const size = COMPANION_SIZE;
     const studio = page.dataset.companionSurface === "studio";
     if (premiereMemory.current.monthKey !== monthKey) premiereMemory.current = { generation: "", monthKey, joined: false, entryId: "", consumedExit: 0 };
@@ -4452,6 +4455,15 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (overlayDrag?.id === event.pointerId && overlayDrag.guest) { cancelGuestInput(true); paint(9, 0, "watch"); return; }
       if (overlayDrag?.id === event.pointerId) { releaseOverlayDrag(); updateOverlayPerch(); return; }
       if (stopped || pause || !pressed || pressed.id !== event.pointerId) return;
+      // Our own releases null `pressed` first, so a loss that still finds the
+      // hand here was taken by the browser mid-grip (seen on the viewer while
+      // shaking over date cells, 2026-11-17). With the button still down,
+      // take the pointer back instead of dropping the pet and letting the
+      // still-pressed mouse start a date-text selection from the drop point.
+      if (pressed.grabbed && !pressed.cancelled && (pressed.recaptures ?? 0) < 8 && button.isConnected && !el.hidden && button.getClientRects().length) {
+        pressed.recaptures = (pressed.recaptures ?? 0) + 1;
+        try { button.setPointerCapture(event.pointerId); return; } catch { /* pointer no longer active: fall through to a real release */ }
+      }
       pressed.cancelled = true; up(event);
     };
     const key = (event: KeyboardEvent) => {
@@ -5114,6 +5126,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     document.addEventListener("pointerup", placementReleased, true); document.addEventListener("pointercancel", placementReleased, true);
     document.addEventListener("pointermove", sensePointer, { passive: true });
     document.addEventListener("pointerout", outsideDocument, { passive: true });
+    document.addEventListener("selectstart", blockWhileHeld, true); document.addEventListener("dragstart", blockWhileHeld, true);
     document.addEventListener("keydown", keyboardModality, true);
     button.addEventListener("pointerdown", down); button.addEventListener("pointermove", move); button.addEventListener("pointerleave", leave); button.addEventListener("pointerup", up); button.addEventListener("pointercancel", up); button.addEventListener("lostpointercapture", lostCapture); button.addEventListener("keydown", key);
     let showcaseOwnership = "";
@@ -5215,6 +5228,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       document.removeEventListener("pointerup", placementReleased, true); document.removeEventListener("pointercancel", placementReleased, true);
       document.removeEventListener("pointermove", sensePointer);
       document.removeEventListener("pointerout", outsideDocument);
+      document.removeEventListener("selectstart", blockWhileHeld, true); document.removeEventListener("dragstart", blockWhileHeld, true);
       document.removeEventListener("keydown", keyboardModality, true);
       button.removeEventListener("pointerdown", down); button.removeEventListener("pointermove", move); button.removeEventListener("pointerleave", leave); button.removeEventListener("pointerup", up); button.removeEventListener("pointercancel", up); button.removeEventListener("lostpointercapture", lostCapture); button.removeEventListener("keydown", key);
       if (pressed && button.hasPointerCapture(pressed.id)) button.releasePointerCapture(pressed.id);
