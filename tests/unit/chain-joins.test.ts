@@ -132,6 +132,21 @@ describe("buildChainJoins", () => {
     expect(j.get("c")?.bandHeadId).toBe("b");
   });
 
+  it("끄는 중(forceStep)인 날에 걸친 띠는 꺾인 띠로 — 줄 높이가 어긋나도 옆 칸을 덮지 않게", () => {
+    const events = [
+      ev({ id: "a", day: "2026-11-11", publicTitle: BODY, linkNext: "b" }),
+      ev({ id: "b", day: "2026-11-12", publicTitle: BODY })
+    ];
+    const j = buildChainJoins(
+      cellsFrom("2026-11-08", 14),
+      (iso) => getEventsForDate(events, iso),
+      undefined,
+      (a, b) => a === "2026-11-11" || b === "2026-11-11"
+    );
+    expect(j.get("a")?.right?.kind).toBe("curve");
+    expect(j.get("a")?.bandSpan).toBeUndefined();
+  });
+
   it("색(대표 태그)이 다른 link_next는 잇지 않는다", () => {
     const events = [
       ev({ id: "a", day: "2026-11-11", primaryTagIds: ["t1"], linkNext: "b" }),

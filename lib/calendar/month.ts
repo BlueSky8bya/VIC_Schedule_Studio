@@ -759,7 +759,9 @@ export type ChainJoin = {
 export function buildChainJoins<T extends PublicScheduleEvent | StudioScheduleEvent>(
   cells: { isoDate: string; weekday: number }[],
   listFor: (isoDate: string) => T[],
-  joinable?: (event: T) => boolean
+  joinable?: (event: T) => boolean,
+  // 이 두 날 사이는 띠 대신 꺾인 띠로(편집실 끌기 중: 놓을 자리가 열리는 칸·원래 칸은 줄 높이가 어긋나 띠가 옆 칸을 덮는다)
+  forceStep?: (fromIso: string, toIso: string) => boolean
 ): Map<string, ChainJoin> {
   const joins = new Map<string, ChainJoin>();
   const get = (id: string) => {
@@ -786,7 +788,12 @@ export function buildChainJoins<T extends PublicScheduleEvent | StudioScheduleEv
     // 떡밥(가림) 카드는 따로 그려지는 ??? 카드라 잇지 않는다(한쪽만 평평해지는 사고 방지).
     if (joinable && (!joinable(last) || !joinable(first))) continue;
     const sameContent = (last.publicTitle ?? "").trim() === (first.publicTitle ?? "").trim();
-    const kind: ChainJoinKind = d.weekday === 6 ? "wrap" : a.length === 1 ? "band" : "curve";
+    const kind: ChainJoinKind =
+      d.weekday === 6
+        ? "wrap"
+        : a.length === 1 && !(forceStep && forceStep(d.isoDate, n.isoDate))
+          ? "band"
+          : "curve";
     get(last.id).right = { kind, otherId: first.id, sameContent };
     get(first.id).left = { kind, otherId: last.id, sameContent };
   }

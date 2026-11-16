@@ -158,9 +158,12 @@ export function stepBandPath(
 
 // 고른 묶음을 한 덩어리로 감싸는 테두리 — 앞 카드 + 띠 + 다음 카드 바깥을 e만큼 띄워 한 줄로 두른다.
 // 카드마다 따로 두르던 점선/실선 링(띠 위에서 끊기고 겹치던 것)을 대신한다.
-export function stepRingPath(S: Box, T: Box, xa: number, xb: number, e: number, convex = STEP_CONVEX): string {
+// stemE = 기둥(칸 사이 틈) 부분만 따로 띄우는 양 — 테두리가 틈 밖으로 나가면 옆 카드·'원래 위치' 상자 점선과 닿는다.
+export function stepRingPath(
+  S: Box, T: Box, xa: number, xb: number, e: number, convex = STEP_CONVEX, stemE = e
+): string {
   return stepOutline(
-    S.left - e, xa - e, xb + e, T.right + e,
+    S.left - e, xa - stemE, xb + stemE, T.right + e,
     { top: S.top - e, bottom: S.bottom + e },
     { top: T.top - e, bottom: T.bottom + e },
     convex + e, Math.max(2, STEP_CONCAVE - e), () => false
@@ -226,7 +229,8 @@ function drawSteps(root: HTMLElement) {
             ? "solid"
             : null;
         if (ringKind) {
-          rings.set(key, stepRingPath(SU, TU, xa, xb, ringKind === "dash" ? 1.75 : 3, convex));
+          // 기둥 부분은 띠 안쪽으로 0.75px 들인다 — 틈(여백 2px) 안에 테두리가 머물러 옆 상자 점선과 겹치지 않는다.
+          rings.set(key, stepRingPath(SU, TU, xa, xb, ringKind === "dash" ? 1.75 : 3, convex, -0.75));
           ringKinds.set(key, ringKind);
           const mark = ringKind === "dash" ? ".primary-selected" : ".detail-current";
           ringSides.set(key, { picked: from.matches(mark) ? "from" : "to", mid: (xa + xb) / 2 });
@@ -273,8 +277,20 @@ function drawSteps(root: HTMLElement) {
         g.style.opacity = getComputedStyle(from).opacity;
         // 몸통을 그렸다는 표시 — 이 뒤에야 CSS가 두 카드의 칠을 비우고 맞닿는 변을 연다(새로고침 직후 깜빡임 방지).
         // 클래스가 아니라 data 속성이라 React가 다시 그려도 지워지지 않는다.
-        if (!from.hasAttribute("data-step-painted")) from.setAttribute("data-step-painted", "");
-        if (!to.hasAttribute("data-step-painted")) to.setAttribute("data-step-painted", "");
+        // 단, 칸이 아직 등장 애니메이션 중이면(새로고침 직후 차르륵) 칸마다 따로 쌓여 다음 칸 배경이 몸통을 덮는다 —
+        // 그동안은 카드가 제 칠을 그대로 가지게 두고, 애니메이션이 끝나면(animationend → 다시 잼) 표시한다.
+        // '칸이 따로 쌓이는가'만 본다(transform·filter가 걸린 칸) — 놓을 칸 강조처럼 색만 바뀌는 애니메이션까지 세면
+        // 끄는 동안 이어진 모양이 풀려 카드 점선과 한 덩어리 점선이 이중으로 보였다(2026-11-17 소유자).
+        const moving = [from, to].some((card) => {
+          const cell = card.closest("article");
+          if (!cell) return false;
+          const cs = getComputedStyle(cell);
+          return cs.transform !== "none" || cs.filter !== "none";
+        });
+        for (const card of [from, to]) {
+          if (moving) card.removeAttribute("data-step-painted");
+          else if (!card.hasAttribute("data-step-painted")) card.setAttribute("data-step-painted", "");
+        }
         // 새로 이어진 순간 — 한 덩어리가 톡 빛났다 가라앉고, 빛 한 줄기가 외곽을 한 바퀴 돈다(한 번만, 첫 그림은 조용히).
         if (fresh && settled) {
           g.classList.add("is-new");
@@ -309,10 +325,15 @@ function drawSteps(root: HTMLElement) {
         el.setAttribute("class", `chain-ring-pair is-${kind}`);
         el.querySelector(".clip-l")?.setAttribute("width", String(side.mid + 9999));
         el.querySelector(".clip-r")?.setAttribute("x", String(side.mid));
-        const left = el.querySelector<SVGPathElement>(".ring-l")!;
-        const right = el.querySelector<SVGPathElement>(".ring-r")!;
-        for (const [path, isPicked] of [[left, side.picked === "from"], [right, side.picked === "to"]] as const) {
-          path.setAttribute("class", `chain-ring is-${kind}${isPicked ? "" : " is-linked"}`);
+        const left = el.querySelector<SVGPathElement>(".ring-l");
+        const right = el.querySelector<SVGPathElement>(".ring-r");
+        if (!left || !right) continue;
+        for (const [path, part, isPicked] of [
+          [left, "ring-l", side.picked === "from"],
+          [right, "ring-r", side.picked === "to"]
+        ] as const) {
+          // ring-l/ring-r는 다음 프레임에 이 경로를 다시 찾는 이름표 — 지우면 두 번째 그리기에서 멈춘다.
+          path.setAttribute("class", `${part} chain-ring is-${kind}${isPicked ? "" : " is-linked"}`);
           if (path.getAttribute("d") !== d) path.setAttribute("d", d);
         }
       }
@@ -521,14 +542,15 @@ export function useEqualChainHeights<T extends HTMLElement>(
 
     // 폭 변화(두 칸 폭 띠 ↔ 한 칸 카드)를 스프링으로 — WAAPI라 매 프레임 다시 쓰는 인라인 폭보다 우선한다.
     // 첫 그림(마운트 직후)과 '동작 줄이기'에선 하지 않는다.
+    // 늘어날 때만, 넘치지 않는 감속 곡선으로 — 줄어드는 쪽은 바로(그 순간 꺾인 띠·'이어서'가 대신 나타나므로
+    // 넓은 채로 줄어드는 동안 옆 칸 카드를 덮었다, 2026-11-17 소유자 "과하게 확장되어 겹침"). 끄는 위치에 따라
+    // 띠 ↔ 꺾인 띠가 번갈아 바뀌어도 넘침이 없어 버벅여 보이지 않는다.
     function slideWidth(el: HTMLElement, from: string, to: string) {
       if (from === to || reduceMotion() || typeof el.animate !== "function") return;
+      if (parseFloat(to) <= parseFloat(from)) return;
       const now = typeof performance !== "undefined" ? performance.now() : 0;
       if (now - (mountedAt.get(root!) ?? now) < 1200) return;
-      el.animate([{ width: from }, { width: to }], {
-        duration: 340,
-        easing: "cubic-bezier(0.34, 1.25, 0.64, 1)"
-      });
+      el.animate([{ width: from }, { width: to }], { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
     }
 
     function equalize() {
@@ -568,7 +590,8 @@ export function useEqualChainHeights<T extends HTMLElement>(
           const subs = head.querySelector(".event-subs, .pill-subs");
           const span = slots.length + 1;
           head.style.setProperty("--band-span", String(span));
-          head.style.setProperty("--band-rows", String(Math.max(1, Math.ceil((subs?.children.length ?? 1) / span))));
+          // 제목도 한 칸으로 쳐서 단마다 고르게 — 예) 제목+3줄, 2칸 → 왼쪽(제목·1줄) / 오른쪽(2줄).
+          head.style.setProperty("--band-rows", String(Math.max(1, Math.ceil(((subs?.children.length ?? 0) + 1) / span))));
           if (Number.isFinite(gap) && gap > 0) head.style.setProperty("--band-col-gap", `${gap.toFixed(1)}px`);
         }
       }
@@ -689,8 +712,16 @@ export function useEqualChainHeights<T extends HTMLElement>(
     mo = typeof MutationObserver !== "undefined" ? new MutationObserver(() => schedule()) : null;
     observe();
     const onSettle = () => schedule();
+    // 카드가 미끄러지는 동안(놓을 자리 열림·닫힘, 원래 위치 등장) 매 프레임 다시 잰다 — 시작 순간부터 끝까지.
+    // 끝(transitionend)에만 재면 그 사이 띠·테두리가 옛 자리에 남아 카드와 겹치고 점선이 둘로 갈라져 보였다.
+    const onMotionStart = () => {
+      pumpUntil = Math.max(pumpUntil, (typeof performance !== "undefined" ? performance.now() : 0) + 480);
+      if (!pumping) pump();
+    };
     root.addEventListener("animationend", onSettle);
     root.addEventListener("transitionend", onSettle);
+    root.addEventListener("transitionrun", onMotionStart);
+    root.addEventListener("animationstart", onMotionStart);
     window.addEventListener("resize", schedule);
 
     cleanupRef.current = () => {
@@ -700,6 +731,8 @@ export function useEqualChainHeights<T extends HTMLElement>(
       mo?.disconnect();
       root.removeEventListener("pointerover", onOver);
       root.removeEventListener("pointerleave", onLeave);
+      root.removeEventListener("transitionrun", onMotionStart);
+      root.removeEventListener("animationstart", onMotionStart);
       root.removeEventListener("animationend", onSettle);
       root.removeEventListener("transitionend", onSettle);
       window.removeEventListener("resize", schedule);

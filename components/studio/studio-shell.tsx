@@ -3457,7 +3457,13 @@ export function StudioShell({
           }
           return [...l.slice(0, idx), dragged, ...l.slice(idx)];
         };
-    return buildChainJoins(cells, listFor, (e) => !teaserStillHidden(e));
+    const touched = dragged ? new Set([dropSlot!.day, getEventDateKey(dragged)]) : null;
+    return buildChainJoins(
+      cells,
+      listFor,
+      (e) => !teaserStillHidden(e),
+      touched ? (a, b) => touched.has(a) || touched.has(b) : undefined
+    );
     // canonId는 임시↔실제 id 대응표(ref)를 읽는 함수라 렌더마다 새로 만들어진다 — deps에 넣으면 memo가 매번 깨진다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cells, liveEvents, dragEventId, dropSlot]);

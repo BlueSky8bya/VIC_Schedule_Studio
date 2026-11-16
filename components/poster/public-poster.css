@@ -6779,18 +6779,23 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
   position: relative;
   z-index: 3;
 }
-/* 같은 글 띠(여러 칸 폭) — 본문 줄을 칸마다 한 단씩 나눠 흘린다(위→아래, 다음 단). 한 단에만 쌓이면 오른쪽 칸이
-   비어 한쪽으로 쏠려 보였다(2026-11-17 소유자). 단 간격은 useEqualChainHeights가 재서 둘째 단이 옆 칸 카드들의
-   글자 시작선에 맞는다. 세로 레일도 단마다 하나씩 — 양쪽이 같은 무게로 보이게. */
-.band-head[data-band-w] .event-subs,
-.band-head[data-band-w] .pill-subs {
+/* 같은 글 띠(여러 칸 폭) — 제목과 본문 줄을 칸마다 한 단씩 고르게 나눠 흘린다(위→아래, 다음 단). 한 단에만
+   쌓이면 오른쪽 칸이 비어 한쪽으로 쏠려 보였다(2026-11-17 소유자 "불균형"). 예) 제목+3줄, 2칸 → 왼쪽(제목·1줄),
+   오른쪽(2줄)으로 두 단 높이가 같다. 단 간격은 useEqualChainHeights가 재서 둘째 단이 옆 칸 카드들의 글자 시작선에
+   맞는다. 세로 레일은 줄마다(단마다 이어짐) — 양쪽이 같은 무게. */
+.band-head[data-band-w] {
+  display: grid !important;
   grid-template-columns: repeat(var(--band-span, 1), minmax(0, 1fr));
   grid-template-rows: repeat(var(--band-rows, 1), auto);
   grid-auto-flow: column;
   column-gap: var(--band-col-gap, 24px);
-  align-content: start;
-  padding-left: 0;
-  border-left-color: transparent;
+  row-gap: 2px;
+  align-content: center;
+  align-items: center;
+}
+.band-head[data-band-w] .event-subs,
+.band-head[data-band-w] .pill-subs {
+  display: contents;
 }
 .band-head[data-band-w] .event-subs::before {
   display: none;
@@ -6805,19 +6810,11 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
   content: "";
   position: absolute;
   left: 0;
-  top: -0.5px;
-  bottom: -0.5px;
+  top: -1px;
+  bottom: -1px;
   width: 2px;
   background: currentColor;
   opacity: 0.3;
-}
-/* 시청자 칸마다 일정 층(.day-events)이 쌓임 맥락이라, 머리 카드가 옆 칸 위로 뻗으면 옆 칸 층에 깔려
-   오른쪽 반이 안 눌린다 — 머리 카드가 있는 칸의 층만 한 단계 올린다. */
-.public-day .day-events:has(> .band-head) {
-  z-index: 9;
-}
-.public-day.outside .day-events:has(> .band-head) {
-  z-index: 3;
 }
 .chain-curves {
   position: absolute;
