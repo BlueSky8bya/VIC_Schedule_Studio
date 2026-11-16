@@ -6797,6 +6797,14 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
 .band-head[data-band-w] .pill-subs {
   display: contents;
 }
+/* 글 덩어리가 칸 수보다 적은 띠 — 띠 가운데에(단 나눔 없이). */
+.band-head[data-band-w][data-band-sparse] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto;
+  grid-auto-flow: row;
+  justify-items: center;
+  text-align: center;
+}
 .band-head[data-band-w] .event-subs::before {
   display: none;
 }

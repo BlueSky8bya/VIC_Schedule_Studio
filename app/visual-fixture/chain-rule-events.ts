@@ -59,6 +59,26 @@ export function chainRuleFixtureEvents(): PublicScheduleEvent[] {
 
     ev("cr-29-wow", "29", "와우 레이드\n검은바위 나락", 0, "tag-variety-game", "cr-30-wow"),
     ev("cr-29-song", "29", "20시 노래 방송\n신청곡 받아요", 1, "tag-song"),
-    ev("cr-30-wow", "30", "와우 레이드\n검은바위 나락", 0, "tag-variety-game")
+    ev("cr-30-wow", "30", "와우 레이드\n검은바위 나락", 0, "tag-variety-game"),
+    // 7월 첫 주 — 릴동파형(2026-11-17 소유자): 일 드래프트 → 월~수 같은 글 띠(제목 한 줄) → 목·금·토 각각 → 일 폐막식
+    ...lildongpa()
   ];
+}
+
+function lildongpa(): PublicScheduleEvent[] {
+  const days = ["05", "06", "07", "08", "09", "10", "11", "12"];
+  const titles = [
+    "릴동파 드래프트 - 아바타요",
+    "릴동파 연습",
+    "릴동파 연습",
+    "릴동파 연습",
+    "릴동파 개막식 골프 출전",
+    "릴동파 2일차 골프 출전",
+    "릴동파 3일차 봅슬레이 출전",
+    "릴동파 폐막식"
+  ];
+  return days.map((d, i) => ({
+    ...ev(`cr-ld-${d}`, d, titles[i], 0, "tag-calm", i < days.length - 1 ? `cr-ld-${days[i + 1]}` : undefined),
+    startsAt: `2026-07-${d}T20:00:00+09:00`
+  }));
 }

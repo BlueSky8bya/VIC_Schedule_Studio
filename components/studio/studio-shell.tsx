@@ -3405,6 +3405,8 @@ export function StudioShell({
             el.removeEventListener("transitionend", land);
           };
           el.addEventListener("transitionend", land);
+          // 이어진 띠가 같은 장면부터 따라오도록 움직임 시작을 알린다(flipSpring과 같은 신호).
+          window.dispatchEvent(new CustomEvent("vic:layout-motion", { detail: { element: el, ms: 240 } }));
           requestAnimationFrame(() => {
             el.style.transition = "transform var(--dur-3, 240ms) var(--ease, ease)";
             el.style.transform = "";

@@ -321,21 +321,14 @@ function drawSteps(root: HTMLElement) {
         // 그동안은 카드가 제 칠을 그대로 가지게 두고, 애니메이션이 끝나면(animationend → 다시 잼) 표시한다.
         // '칸이 따로 쌓이는가'만 본다(transform·filter가 걸린 칸) — 놓을 칸 강조처럼 색만 바뀌는 애니메이션까지 세면
         // 끄는 동안 이어진 모양이 풀려 카드 점선과 한 덩어리 점선이 이중으로 보였다(2026-11-17 소유자).
-        // 카드를 끄는 동안(놓을 자리 상자가 있음)도 비우지 않는다 — 놓을 자리가 열리고 닫히며 카드가 매 프레임 미끄러지는데
-        // 몸통은 구조상 한 프레임 늦게 따라와, 비운 카드가 몸통 밖으로 5~13px 삐져 글자만 깜빡였다(2026-11-17 매 프레임 실측).
-        // 그동안 카드는 제 칠을 갖고 몸통은 그 뒤에서 이어 준다 — 늦어도 카드에 가려 안 보인다. 놓으면 다시 한 도형.
-        const dragging = Boolean(root.querySelector(".drop-gap, .dragging-src"));
-        // 놓은 직후 카드가 미끄러지는 동안(착지 transform·간격 margin 전환 등 끝이 있는 움직임)도 마찬가지.
-        const landing = isSliding(from) || isSliding(to);
-        const moving =
-          dragging ||
-          landing ||
-          [from, to].some((card) => {
-            const cell = card.closest("article");
-            if (!cell) return false;
-            const cs = getComputedStyle(cell);
-            return cs.transform !== "none" || cs.filter !== "none";
-          });
+        // (끄는 동안·착지 중에도 비운 채 둔다 — '화면에 실제로 그려진 뒤' 기준으로 매 프레임 재 보니 몸통이 늦는 장면이
+        //  0이었다. 카드 칠을 되살리면 오히려 둥근 모서리가 띠 옆에 비쳐 보였다, 2026-11-17 소유자.)
+        const moving = [from, to].some((card) => {
+          const cell = card.closest("article");
+          if (!cell) return false;
+          const cs = getComputedStyle(cell);
+          return cs.transform !== "none" || cs.filter !== "none";
+        });
         for (const card of [from, to]) {
           if (!moving) paintedNow.add(card);
           if (moving) card.removeAttribute("data-step-painted");
@@ -343,9 +336,14 @@ function drawSteps(root: HTMLElement) {
         }
         // 새로 이어진 순간 — 한 덩어리가 톡 빛났다 가라앉고, 빛 한 줄기가 외곽을 한 바퀴 돈다(한 번만, 첫 그림은 조용히).
         if (fresh && settled) {
-          g.classList.add("is-new");
-          g.addEventListener("animationend", () => g?.classList.remove("is-new"), { once: true });
-          startSheen(root, { key: `s:${key}`, from: groupOf(root, from), to: groupOf(root, to) });
+          // 끄는 동안(미리보기)엔 번쩍임·빛 없이 바로 — 놓을 자리를 옮길 때마다 터지면 툭툭 끊겨 보였다. 서서히
+          // 띄우는 것도 안 된다: 카드 칠은 이미 비어 있어 몸통이 흐린 동안 글자만 떠 보였다(매 프레임 실측 7프레임).
+          const previewing = Boolean(root.querySelector(".drop-gap.on, .dragging-src"));
+          if (!previewing) {
+            g.classList.add("is-new");
+            g.addEventListener("animationend", () => g?.classList.remove("is-new"), { once: true });
+            startSheen(root, { key: `s:${key}`, from: groupOf(root, from), to: groupOf(root, to) });
+          }
         }
       }
     }
@@ -615,10 +613,14 @@ export function useEqualChainHeights<T extends HTMLElement>(
           continue;
         }
         const s = scaleOf(head);
-        const w = (tail.getBoundingClientRect().right - head.getBoundingClientRect().left) / s;
+        // 뒤로 더 이어지면(평평한 오른쪽 변, 음수 마진) 그 넘침만큼 더 — 마지막 빈 자리 끝에서 멈추면 다음 칸 조각과 사이에
+        // 틈이 벌어졌다(2026-11-17 소유자 '릴동파 25·26일 끊김').
+        const overhang = Math.max(0, -parseFloat(getComputedStyle(head).marginRight) || 0);
+        const w = (tail.getBoundingClientRect().right - head.getBoundingClientRect().left) / s + overhang;
         if (w > 0) {
           const target = `${Math.round(w * 10) / 10}px`;
           // 새로 띠 머리가 되면(끌기 미리보기 등) 제 칸 폭에서 띠 폭으로 부드럽게 늘어난다.
+          const fresh = !head.hasAttribute("data-band-w");
           head.style.width = target;
           head.setAttribute("data-band-w", "");
           // 본문 줄을 칸마다 한 단씩 — 두 칸 폭 띠의 오른쪽이 비어 한쪽으로 쏠려 보이지 않게(2026-11-17 소유자
@@ -635,8 +637,26 @@ export function useEqualChainHeights<T extends HTMLElement>(
           const span = slots.length + 1;
           head.style.setProperty("--band-span", String(span));
           // 제목도 한 칸으로 쳐서 단마다 고르게 — 예) 제목+3줄, 2칸 → 왼쪽(제목·1줄) / 오른쪽(2줄).
-          head.style.setProperty("--band-rows", String(Math.max(1, Math.ceil(((subs?.children.length ?? 0) + 1) / span))));
+          const blocks = (subs?.children.length ?? 0) + 1;
+          head.style.setProperty("--band-rows", String(Math.max(1, Math.ceil(blocks / span))));
+          // 글 덩어리가 칸 수보다 적으면(예: 제목 한 줄인데 세 칸 폭) 단으로 나누지 않고 띠 가운데에 — 왼쪽에 몰려 나머지
+          // 칸이 비어 보이지 않게(2026-11-17 소유자 '릴동파 연습').
+          head.toggleAttribute("data-band-sparse", blocks < span);
           if (Number.isFinite(gap) && gap > 0) head.style.setProperty("--band-col-gap", `${gap.toFixed(1)}px`);
+          // 새로 띠가 되는 순간 — 제 칸 폭에서 옆 칸까지 왼→오른쪽으로 쭉 펼쳐지듯 드러난다(모양은 처음부터 최종이라
+          // 글자가 찌그러지거나 다시 흐르지 않는다). 끌기 미리보기에서 꺾인 띠 ↔ 띠가 툭툭 바뀌던 것(2026-11-17 소유자).
+          const now = typeof performance !== "undefined" ? performance.now() : 0;
+          if (fresh && !reduceMotion() && now - (mountedAt.get(root!) ?? now) > 1200 && typeof head.animate === "function") {
+            const r = parseFloat(cs.borderTopLeftRadius) || 8;
+            const hide = Math.max(0, w - cw);
+            head.animate(
+              [
+                { clipPath: `inset(-4px ${hide.toFixed(1)}px -4px -4px round ${r}px)` },
+                { clipPath: `inset(-4px -4px -4px -4px round ${r}px)` }
+              ],
+              { duration: 260, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }
+            );
+          }
         }
       }
       // 더는 띠 머리가 아닌 카드(끌기 미리보기·순서 변경으로 꺾인 띠가 된 경우)의 넓힌 폭을 되돌린다 — 안 그러면
@@ -647,6 +667,7 @@ export function useEqualChainHeights<T extends HTMLElement>(
         el.style.removeProperty("--band-span");
         el.style.removeProperty("--band-rows");
         el.style.removeProperty("--band-col-gap");
+        el.removeAttribute("data-band-sparse");
       }
       const pills = Array.from(root!.querySelectorAll<HTMLElement>("[data-chain]"));
       // 지난번에 맞춰 준 칸 중 더는 묶음이 아닌 것(이음이 바뀜)도 되돌린다 — 높이가 남아 빈 칸처럼 보이지 않게.
@@ -777,6 +798,13 @@ export function useEqualChainHeights<T extends HTMLElement>(
     root.addEventListener("animationend", onSettle);
     root.addEventListener("transitionend", onSettle);
     root.addEventListener("transitionrun", onMotionStart);
+    // 착지 애니메이션(FLIP)처럼 transform을 '전환 없이' 먼저 걸고 시작하는 움직임은 transitionrun이 한 박자 늦다 —
+    // 시작을 알리는 이벤트(vic:layout-motion)에 바로 다시 잰다(그리기 전).
+    const onLayoutMotion = () => {
+      equalize();
+      onMotionStart();
+    };
+    window.addEventListener("vic:layout-motion", onLayoutMotion);
     root.addEventListener("animationstart", onMotionStart);
     window.addEventListener("resize", schedule);
 
@@ -788,6 +816,7 @@ export function useEqualChainHeights<T extends HTMLElement>(
       root.removeEventListener("pointerover", onOver);
       root.removeEventListener("pointerleave", onLeave);
       root.removeEventListener("transitionrun", onMotionStart);
+      window.removeEventListener("vic:layout-motion", onLayoutMotion);
       root.removeEventListener("animationstart", onMotionStart);
       root.removeEventListener("animationend", onSettle);
       root.removeEventListener("transitionend", onSettle);
