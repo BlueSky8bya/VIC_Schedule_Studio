@@ -6840,6 +6840,20 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
 .chain-step-tint {
   pointer-events: none;
 }
+/* 한 도형 몸통 — 카드는 글·하트만 얹고 칠·테두리는 꺾인 띠 도형이 그린다(편집실 선택 바탕·덧칠 포함 전부 비움). */
+.public-event.chain-step-solid,
+.studio-event-pill.chain-step-solid {
+  background: transparent !important;
+  border-color: transparent !important;
+}
+/* 이어진 카드엔 카드 단위 그림자·안쪽 광택(차분한 편집실 0 0 0 1px 헤어라인 포함)을 두지 않는다 — 한 도형 위에
+   카드 모양 선이 따로 비쳐 띠와 카드 사이에 세로·가로 줄이 남았다(2026-11-16 소유자 확대 사진). */
+.public-event.chain-step-from,
+.public-event.chain-step-to,
+.studio-event-pill.chain-step-from,
+.studio-event-pill.chain-step-to {
+  box-shadow: none !important;
+}
 [data-chain-hot].chain-step-from,
 [data-chain-hot].chain-step-to,
 .chain-step.is-hot {
@@ -6849,7 +6863,6 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
   transition: filter 0.28s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 .chain-step-body {
-  stroke-width: 1.5px;
   stroke-linejoin: round;
   pointer-events: visiblePainted;
   cursor: pointer;
@@ -6888,23 +6901,13 @@ html[data-theme="dark"] .card-sheen {
   85% { opacity: 1; }
   100% { stroke-dashoffset: 0; opacity: 0; }
 }
-/* 새로 이어진 순간 — 띠가 앞 카드 쪽에서 통 자라나고(스프링 오버슈트), 두 카드가 살짝 튀었다 가라앉는다. */
+/* 새로 이어진 순간 — 한 덩어리가 톡 빛났다 가라앉는다(모양은 그대로라 글자와 어긋나지 않는다) + 외곽 빛 한 바퀴. */
 .chain-step.is-new {
-  transform-box: view-box;
-  animation: chain-step-grow 0.56s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation: chain-step-pulse 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
-@keyframes chain-step-grow {
-  0% { transform: scaleY(0.05); opacity: 0; }
-  35% { opacity: 1; }
-  100% { transform: scaleY(1); opacity: 1; }
-}
-[data-chain-pop] {
-  animation: chain-card-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1;
-}
-@keyframes chain-card-pop {
-  0% { transform: scale(1); }
-  40% { transform: scale(1.035); }
-  100% { transform: scale(1); }
+@keyframes chain-step-pulse {
+  0% { filter: brightness(1.22) drop-shadow(0 0 7px var(--chain-color)); }
+  100% { filter: brightness(1) drop-shadow(0 0 0 transparent); }
 }
 /* 고른 묶음을 한 덩어리로 두르는 테두리(카드 위 층). 카드마다 두르던 링은 이어진 조각에선 끈다 —
    카드 링과 띠 테두리가 따로 놀며 점선·실선이 겹치고 끊겼다(2026-11-16 소유자). */
@@ -6950,13 +6953,11 @@ html[data-reduce-motion] .chain-ring {
   animation: none;
 }
 html[data-reduce-motion] .chain-step.is-new,
-html[data-reduce-motion] [data-chain-pop],
 html[data-reduce-motion] .card-sheen {
   animation: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .chain-step.is-new,
-  [data-chain-pop],
   .card-sheen {
     animation: none;
   }

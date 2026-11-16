@@ -3404,6 +3404,10 @@ export function PublicPoster({
               join?.bandSpan ? "band-head" : "",
               join?.right?.kind === "curve" ? "chain-step-from" : "",
               join?.left?.kind === "curve" ? "chain-step-to" : "",
+              // 단색 카드는 칠·테두리를 꺾인 띠 도형에 맡긴다(이음새 없음). 2색 카드는 제 그라데이션을 그대로.
+              (join?.right?.kind === "curve" || join?.left?.kind === "curve") && colors.length < 2
+                ? "chain-step-solid"
+                : "",
               isDimmedByFilter(event) ? "dimmed" : "",
               // 미정 = 빗금(이어진 칸 전부 — 한 일정이 칸마다 달라 보이지 않게). 글자 칩은 없다(제목 정렬 유지).
               event.isTentative ? "tentative" : "",

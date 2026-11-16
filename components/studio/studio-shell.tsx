@@ -8306,6 +8306,10 @@ export function StudioShell({
                         join?.bandSpan ? "band-head" : "",
                         join?.right?.kind === "curve" ? "chain-step-from" : "",
                         join?.left?.kind === "curve" ? "chain-step-to" : "",
+                        // 단색 카드는 칠·테두리를 꺾인 띠 도형에 맡긴다(시청자 화면과 같은 규칙).
+                        (join?.right?.kind === "curve" || join?.left?.kind === "curve") && colors.length < 2
+                          ? "chain-step-solid"
+                          : "",
                         joinRight ? "link-join-right" : "",
                         joinLeft ? "link-join-left" : "",
                         draggable ? "draggable" : "",

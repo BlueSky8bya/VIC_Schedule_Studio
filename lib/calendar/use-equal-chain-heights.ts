@@ -52,6 +52,13 @@ function borderWidthOf(el: HTMLElement): number {
   const w = parseFloat(getComputedStyle(el).borderTopWidth);
   return Number.isFinite(w) && w > 0 ? w : 1;
 }
+// 한 도형 몸통의 채움 — 배경을 비운 카드(.chain-step-solid)에 지정된 태그 색(인라인). 없으면 계산값.
+function solidFillOf(from: HTMLElement, to: HTMLElement): string {
+  for (const el of [from, to]) {
+    if (el.classList.contains("chain-step-solid") && el.style.backgroundColor) return el.style.backgroundColor;
+  }
+  return fillOf(from, to);
+}
 function fillOf(from: HTMLElement, to: HTMLElement): string {
   for (const el of [from, to]) {
     const bg = getComputedStyle(el).backgroundColor;
@@ -200,8 +207,16 @@ function drawSteps(root: HTMLElement) {
         const TB = local(to.getBoundingClientRect());
         const convex = convexOf(from);
         const sw = borderWidthOf(from);
-        const { d, originX, originY, xa, xb } = stepBandPath(SB, TB, convex, sw);
-        const overlays = flatOverlaysOf(from);
+        const { originX, originY, xa, xb } = stepBandPath(SB, TB, convex, sw);
+        // (2026-11-16 소유자 "중간에 단차") 몸통 = 앞 카드(띠로 붙은 조각 포함) + 기둥 + 다음 카드 전체를 한 도형으로.
+        // 두 카드는 배경·테두리를 비우고(.chain-step-solid) 이 도형이 칠·테두리를 한 번에 맡는다 — 카드와 띠가 따로
+        // 칠해지며 생기던 색 경계·테두리 어긋남이 구조적으로 없다. 테두리 두께 = 카드 테두리 두께, 절반 안쪽에 선다.
+        const SU = unionBox(groupOf(root, from), local);
+        const TU = unionBox(groupOf(root, to), local);
+        const d = stepRingPath(SU, TU, xa, xb, -sw / 2, convex);
+        const overlays = flatOverlaysOf(
+          root.querySelector<HTMLElement>(".studio-event-pill:not(.chain-step-solid)") ?? from
+        );
         // 한 덩어리 테두리 — 편집실에서 편집 중으로 고른 조각(점선) 또는 시청자 화면에서 상세를 연 조각(실선).
         const ringKind = from.matches(".primary-selected") || to.matches(".primary-selected")
           ? "dash"
@@ -209,7 +224,7 @@ function drawSteps(root: HTMLElement) {
             ? "solid"
             : null;
         if (ringKind) {
-          rings.set(key, stepRingPath(SB, TB, xa, xb, ringKind === "dash" ? 1.75 : 3, convex));
+          rings.set(key, stepRingPath(SU, TU, xa, xb, ringKind === "dash" ? 1.75 : 3, convex));
           ringKinds.set(key, ringKind);
         }
         // 고른 묶음(편집실 .selected/.primary-selected)이면 띠도 선택색 테두리로 — 무엇이 묶였는지 보이게.
@@ -247,19 +262,16 @@ function drawSteps(root: HTMLElement) {
           l.style.fill = overlays[i];
         });
         if (body.getAttribute("d") !== d) body.setAttribute("d", d);
-        body.style.fill = fillOf(from, to);
+        body.style.fill = solidFillOf(from, to);
         body.style.stroke = stroke;
-        // 새로 생긴 띠 — 앞 카드 쪽에서 통 자라나고, 두 카드가 살짝 튀었다 가라앉는다(한 번만). 첫 그림은 조용히.
+        body.style.strokeWidth = `${sw}px`;
+        // 카드가 흐려지는 상태(끌기 원래 자리·필터 흐림)는 몸통도 같이 흐린다.
+        g.style.opacity = getComputedStyle(from).opacity;
+        // 새로 이어진 순간 — 한 덩어리가 톡 빛났다 가라앉고, 빛 한 줄기가 외곽을 한 바퀴 돈다(한 번만, 첫 그림은 조용히).
         if (fresh && settled) {
           g.classList.add("is-new");
           g.addEventListener("animationend", () => g?.classList.remove("is-new"), { once: true });
-          // 카드 쪽 표시는 클래스가 아니라 data 속성 — React가 다시 그리며 className을 덮어써도 남는다.
-          for (const card of [from, to]) {
-            card.removeAttribute("data-chain-pop");
-            void card.offsetWidth;
-            card.setAttribute("data-chain-pop", "");
-            window.setTimeout(() => card.removeAttribute("data-chain-pop"), 600);
-          }
+          startSheen(root, { key: `s:${key}`, from: groupOf(root, from), to: groupOf(root, to) });
         }
       }
     }
