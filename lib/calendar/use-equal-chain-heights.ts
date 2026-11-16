@@ -519,6 +519,18 @@ export function useEqualChainHeights<T extends HTMLElement>(
       });
     }
 
+    // 폭 변화(두 칸 폭 띠 ↔ 한 칸 카드)를 스프링으로 — WAAPI라 매 프레임 다시 쓰는 인라인 폭보다 우선한다.
+    // 첫 그림(마운트 직후)과 '동작 줄이기'에선 하지 않는다.
+    function slideWidth(el: HTMLElement, from: string, to: string) {
+      if (from === to || reduceMotion() || typeof el.animate !== "function") return;
+      const now = typeof performance !== "undefined" ? performance.now() : 0;
+      if (now - (mountedAt.get(root!) ?? now) < 1200) return;
+      el.animate([{ width: from }, { width: to }], {
+        duration: 340,
+        easing: "cubic-bezier(0.34, 1.25, 0.64, 1)"
+      });
+    }
+
     function equalize() {
       if (cancelled) {
         return;
@@ -537,9 +549,28 @@ export function useEqualChainHeights<T extends HTMLElement>(
         }
         const s = scaleOf(head);
         const w = (tail.getBoundingClientRect().right - head.getBoundingClientRect().left) / s;
-        if (w > 0) head.style.width = `${Math.round(w * 10) / 10}px`;
+        if (w > 0) {
+          const target = `${Math.round(w * 10) / 10}px`;
+          // 새로 띠 머리가 되면(끌기 미리보기 등) 제 칸 폭에서 띠 폭으로 부드럽게 늘어난다.
+          if (!head.hasAttribute("data-band-w")) slideWidth(head, `${head.offsetWidth}px`, target);
+          head.style.width = target;
+          head.setAttribute("data-band-w", "");
+        }
+      }
+      // 더는 띠 머리가 아닌 카드(끌기 미리보기·순서 변경으로 꺾인 띠가 된 경우)의 넓힌 폭을 되돌린다 — 안 그러면
+      // 두 칸 폭이 남아 옆 칸 카드 위로 겹친다. 띠 폭에서 제 칸 폭으로 부드럽게 줄어든다.
+      for (const el of Array.from(root!.querySelectorAll<HTMLElement>("[data-band-w]:not([data-band-head])"))) {
+        const from = el.style.width;
+        el.style.width = "";
+        el.removeAttribute("data-band-w");
+        if (from) slideWidth(el, from, `${el.offsetWidth}px`);
       }
       const pills = Array.from(root!.querySelectorAll<HTMLElement>("[data-chain]"));
+      // 지난번에 맞춰 준 칸 중 더는 묶음이 아닌 것(이음이 바뀜)도 되돌린다 — 높이가 남아 빈 칸처럼 보이지 않게.
+      for (const p of Array.from(root!.querySelectorAll<HTMLElement>("[data-eq-h]"))) {
+        p.style.minHeight = "";
+        p.removeAttribute("data-eq-h");
+      }
       for (const p of pills) {
         p.style.minHeight = ""; // 먼저 초기화해 자연 높이를 잰다
       }
@@ -566,6 +597,7 @@ export function useEqualChainHeights<T extends HTMLElement>(
         }
         for (const el of group) {
           el.style.minHeight = `${max}px`;
+          el.setAttribute("data-eq-h", "");
         }
       }
       drawSteps(root!);

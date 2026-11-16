@@ -1399,16 +1399,6 @@ export function StudioShell({
   // 이어진 일정 묶음 키 + 묶음 칸 높이 맞추기(글자 수 달라도 이음새 안 어긋나게).
   const chainKeys = useMemo(() => buildChainKeys(visibleEvents), [visibleEvents]);
   const paintGroups = useMemo(() => buildPaintGroups(visibleEvents), [visibleEvents]);
-  // 이어진 일정 잇기(2026-11-16) — 시청자 화면과 같은 판정(buildChainJoins): 앞날 마지막 = 다음날 첫 카드일 때만.
-  const chainJoins = useMemo(
-    () =>
-      buildChainJoins(
-        cells,
-        (iso) => getEventsForDate(liveEvents, iso).filter((e) => !e.isSupport),
-        (e) => !teaserStillHidden(e)
-      ),
-    [cells, liveEvents]
-  );
   // 이어진 칸 높이 맞추기 — callback ref라 그리드가 어떤 경로로 (재)마운트되든(미리보기 복귀·
   // 잠금 로딩·월 변경 등) 항상 새 요소에 자동 재설정된다. deps는 데이터 변화 시 보강용.
   const monthGridRef = useEqualChainHeights<HTMLDivElement>([visibleEvents, view]);
@@ -3443,6 +3433,30 @@ export function StudioShell({
     overId: string | null;
     after: boolean;
   } | null>(null);
+  // 이어진 일정 잇기(2026-11-16) — 시청자 화면과 같은 판정(buildChainJoins): 앞날 마지막 = 다음날 첫 카드일 때만.
+  // 카드를 끄는 동안엔 '놓으면 될 순서'로 판정한다(2026-11-17 소유자) — 놓을 자리 미리보기가 뜨는 순간 이어진 일정도
+  // 놓은 뒤 모양(예: 두 칸 폭 띠 → 꺾인 띠)으로 바뀌어 보인다. 옛 판정 그대로면 두 칸 폭 띠가 자리만 내려가 옆 칸
+  // 카드들 위로 겹쳤다. 끄는 카드는 이어진 일정이 아니다(이어진 일정은 묶음 끌기) — 끄는 카드 자신은 이음에 안 낀다.
+  const chainJoins = useMemo(() => {
+    const base = (iso: string) => getEventsForDate(liveEvents, iso).filter((e) => !e.isSupport);
+    const dragged =
+      dragEventId && dropSlot ? liveEvents.find((e) => canonId(e.id) === canonId(dragEventId)) : undefined;
+    const listFor = !dragged
+      ? base
+      : (iso: string) => {
+          const l = base(iso).filter((e) => canonId(e.id) !== canonId(dragged.id));
+          if (iso !== dropSlot!.day) return l;
+          let idx = l.length;
+          if (dropSlot!.overId) {
+            const oi = l.findIndex((e) => canonId(e.id) === canonId(dropSlot!.overId!));
+            if (oi >= 0) idx = dropSlot!.after ? oi + 1 : oi;
+          }
+          return [...l.slice(0, idx), dragged, ...l.slice(idx)];
+        };
+    return buildChainJoins(cells, listFor, (e) => !teaserStillHidden(e));
+    // canonId는 임시↔실제 id 대응표(ref)를 읽는 함수라 렌더마다 새로 만들어진다 — deps에 넣으면 memo가 매번 깨진다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cells, liveEvents, dragEventId, dropSlot]);
   const dragGhostRef = useRef<HTMLElement | null>(null);
   const dragInfoRef = useRef<{
     id: string;
