@@ -12,6 +12,16 @@ function scaleOf(el: HTMLElement): number {
 // 곡선 이음(buildChainJoins의 curve) — 앞날 카드(data-curve-from) 오른쪽에서 다음날 카드(data-curve-to)
 // 왼쪽까지 부드러운 S자. 선은 앞 카드 칸 안의 <svg data-curve-svg>에 그린다(칸 기준 좌표, overflow visible).
 // 색은 앞 카드 테두리색(태그 색) — 이 일정의 색으로 이어진다.
+// 곡선 색 = 카드에 지정된 태그 테두리색(인라인). 편집실은 고르면 테두리를 투명으로 바꾸므로 계산값만 믿으면
+// 선이 사라지고 흰 테두리만 남는다 — 인라인 → 계산값(투명 아님) → 배경색 순으로 고른다.
+function curveColorOf(el: HTMLElement): string {
+  if (el.style.borderColor) return el.style.borderColor;
+  const cs = getComputedStyle(el);
+  const b = cs.borderTopColor;
+  if (b && b !== "transparent" && !/rgba\([^)]*,\s*0\)$/.test(b)) return b;
+  return cs.backgroundColor || "currentColor";
+}
+
 function drawCurves(root: HTMLElement) {
   for (const svg of Array.from(root.querySelectorAll<SVGSVGElement>("svg[data-curve-svg]"))) {
     const keys = (svg.dataset.curveSvg ?? "").split(" ").filter(Boolean);
@@ -32,12 +42,17 @@ function drawCurves(root: HTMLElement) {
         const y2 = (b.top - hostRect.top + b.height / 2) / s;
         const k = Math.max(22, (x2 - x1) * 0.9 + 14);
         const d = `M${x1.toFixed(1)},${y1.toFixed(1)} C${(x1 + k).toFixed(1)},${y1.toFixed(1)} ${(x2 - k).toFixed(1)},${y2.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}`;
-        const color = getComputedStyle(from).borderTopColor || "currentColor";
+        // 고른 묶음(편집실 .selected/.primary-selected)이면 곡선도 선택색으로 굵게 — 카드만 강조되고
+        // 선은 그대로면 무엇이 묶였는지 안 보인다(2026-11-16 소유자: "너무 희어서 잘 안 보여").
+        const picked = from.matches(".selected, .primary-selected") || to.matches(".selected, .primary-selected");
+        const color = picked ? "" : curveColorOf(from);
+        const paint = (prop: "stroke" | "fill") => (color ? ` style="${prop}:${color}"` : "");
+        const cls = picked ? " is-selected" : "";
         markup +=
-          `<path class="chain-curve-halo" d="${d}"/>` +
-          `<path class="chain-curve-line" d="${d}" style="stroke:${color}"/>` +
-          `<circle class="chain-curve-dot" r="3.2" cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}" style="fill:${color}"/>` +
-          `<circle class="chain-curve-dot" r="3.2" cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" style="fill:${color}"/>`;
+          `<path class="chain-curve-halo${cls}" d="${d}"/>` +
+          `<path class="chain-curve-line${cls}" d="${d}"${paint("stroke")}/>` +
+          `<circle class="chain-curve-dot${cls}" r="3.2" cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}"${paint("fill")}/>` +
+          `<circle class="chain-curve-dot${cls}" r="3.2" cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}"${paint("fill")}/>`;
       }
     }
     if (svg.dataset.drawn !== markup) {

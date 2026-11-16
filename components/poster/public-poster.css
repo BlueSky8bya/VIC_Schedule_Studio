@@ -6812,6 +6812,14 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
 .chain-curve-line {
   stroke-width: 3.5px;
 }
+/* 편집실에서 고른 묶음의 곡선 — 카드 선택 점선과 같은 선택색 */
+.chain-curve-line.is-selected {
+  stroke: var(--selection-border, #2f7fe0);
+  stroke-width: 4.5px;
+}
+.chain-curve-dot.is-selected {
+  fill: var(--selection-border, #2f7fe0);
+}
 .chain-cont {
   margin-left: 0.35em;
   font-size: 0.78em;

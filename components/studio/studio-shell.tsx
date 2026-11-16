@@ -8181,13 +8181,16 @@ export function StudioShell({
                       // 통째로 빗나갔다(대나무 마디 링의 진범). KST 정본 헬퍼 사용.
                       const evStartKey = getEventDateKey(event);
                       const evEndKey = event.endDateKey ?? evStartKey;
+                      // (2026-11-16) 실제로 붙어 그려지는 쪽(띠·줄바뀜)만 — 곡선·끊긴 이음은 둥근 카드라 선택 테두리도 닫는다.
                       const joinRight =
                         cell.isoDate === evEndKey &&
                         Boolean(event.linkNext) &&
-                        visibleEvents.some((o) => o.id === event.linkNext);
+                        visibleEvents.some((o) => o.id === event.linkNext) &&
+                        (evEndKey !== evStartKey || Boolean(join?.flatRight));
                       const joinLeft =
                         cell.isoDate === evStartKey &&
-                        visibleEvents.some((o) => o.linkNext === event.id);
+                        visibleEvents.some((o) => o.linkNext === event.id) &&
+                        (evEndKey !== evStartKey || Boolean(join?.flatLeft));
                       const draggable = canEdit && !span.isMulti;
                       // 우클릭-드래그로 잇기 중: 이을 수 있는 상대는 강조(hover면 더 강하게), 나머지는 흐림.
                       const connecting = connectCandidates.size > 0;

@@ -117,6 +117,21 @@ describe("buildChainJoins", () => {
     expect(j.get("b")?.flatLeft).toBe(true);
   });
 
+  it("3일 묶음 — 첫날 앞에 다른 일정이 있으면 1→2일은 곡선, 2→3일은 띠(2일은 한 줄 머리)", () => {
+    const events = [
+      ev({ id: "15시", day: "2026-11-10", sortOrder: 0 }),
+      ev({ id: "a", day: "2026-11-10", sortOrder: 1, publicTitle: BODY, linkNext: "b" }),
+      ev({ id: "b", day: "2026-11-11", publicTitle: BODY, linkNext: "c" }),
+      ev({ id: "c", day: "2026-11-12", publicTitle: BODY })
+    ];
+    const j = joinsOf(events);
+    expect(j.get("a")?.right?.kind).toBe("curve");
+    expect(j.get("b")?.left?.kind).toBe("curve");
+    expect(j.get("b")?.right?.kind).toBe("band");
+    expect(j.get("b")?.bandSpan).toBe(2);
+    expect(j.get("c")?.bandHeadId).toBe("b");
+  });
+
   it("색(대표 태그)이 다른 link_next는 잇지 않는다", () => {
     const events = [
       ev({ id: "a", day: "2026-11-11", primaryTagIds: ["t1"], linkNext: "b" }),

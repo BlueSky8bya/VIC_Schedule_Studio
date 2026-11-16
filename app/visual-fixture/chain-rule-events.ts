@@ -2,6 +2,7 @@ import type { PublicScheduleEvent } from "@/lib/domain/schedule-types";
 
 // 이어진 일정 잇기 규칙(2026-11-16, lib/calendar/month.ts buildChainJoins) 실측용 fixture — DB 쓰기 없음.
 // 2026-06(fixture 기본 달)의 샘플 일정이 없는 날에 경우별로 깐다.
+//  · 6/2→6/3→6/4 3일: 첫날 앞에 합방 → 곡선 + 띠
 //  · 6/9→6/10 곡선: 9일 15시 합방 → 하종와, 10일 하종와(같은 글 → 한 줄) → 17시 합방
 //  · 6/17→6/18 띠(글 다름): 17일 와우 하나뿐 → 칸마다 제 글, 평평한 변
 //  · 6/23→6/24 띠(같은 글): 23일 하종와 하나뿐 → 두 칸 폭 한 장, 24일 17시 합방은 띠 아래
@@ -34,6 +35,11 @@ function ev(
 
 export function chainRuleFixtureEvents(): PublicScheduleEvent[] {
   return [
+    // 3일 묶음: 2일 앞에 합방 → 2→3일 곡선, 3→4일 띠(3일이 한 줄 머리, 4일 빈 자리)
+    ev("cr-02-collab", "02", "14시 합방\n더빙게임", 0, "tag-collab"),
+    ev("cr-02-hjw", "02", HJW, 1, "tag-full-track", "cr-03-hjw"),
+    ev("cr-03-hjw", "03", HJW, 0, "tag-full-track", "cr-04-hjw"),
+    ev("cr-04-hjw", "04", HJW, -1, "tag-full-track"),
     ev("cr-09-collab", "09", "15시 합방 w.뿡치헌콕\n더빙게임", 0, "tag-collab"),
     ev("cr-09-hjw", "09", HJW, 1, "tag-full-track", "cr-10-hjw"),
     ev("cr-10-hjw", "10", HJW, 0, "tag-full-track"),
