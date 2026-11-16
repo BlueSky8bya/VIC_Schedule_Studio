@@ -8217,6 +8217,8 @@ export function StudioShell({
                         span.isMulti && !span.roundRight ? "no-right" : "",
                         slim ? "chain-slim" : "",
                         join?.bandSpan ? "band-head" : "",
+                        join?.right?.kind === "curve" ? "chain-step-from" : "",
+                        join?.left?.kind === "curve" ? "chain-step-to" : "",
                         joinRight ? "link-join-right" : "",
                         joinLeft ? "link-join-left" : "",
                         draggable ? "draggable" : "",

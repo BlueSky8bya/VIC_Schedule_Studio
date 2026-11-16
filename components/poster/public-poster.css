@@ -6761,7 +6761,7 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
 /* ── 이어진 일정 잇기(2026-11-16 소유자) — 편집실·시청자·미리보기 공용(이 파일은 편집실도 불러온다) ──
    판정은 lib/calendar/month.ts buildChainJoins: 앞날 마지막 = 다음날 첫 카드일 때만 잇는다.
    · 같은 글 띠: 머리 카드(.band-head)가 여러 칸 폭(폭은 useEqualChainHeights가 잰다), 뒤 칸은 빈 자리(.band-slot).
-   · 곡선: 칸 안 svg(.chain-curves)에 앞 카드 → 다음날 카드 S자. 색은 앞 카드 테두리색.
+   · 꺾인 띠: 칸 안 svg(.chain-curves)에 앞 카드 → 다음날 카드로 칸 사이 틈에서 꺾여 오르내리는 몸통(카드 색).
    · 이어 받은 카드 꼬리표(.chain-cont "이어서"/"N일부터"), 글이 같으면 한 줄(.chain-slim). */
 .band-slot {
   pointer-events: none;
@@ -6795,30 +6795,123 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
   height: 1px;
   overflow: visible;
   pointer-events: none;
-  z-index: 10;
+  /* 카드 뒤 — 띠가 카드와 맞닿는 변은 카드가 덮어 한 몸으로 보인다. 칸 배경보다는 위. */
+  z-index: 1;
 }
-.chain-curve-halo,
-.chain-curve-line {
+/* 편집실 카드는 쌓임 맥락이 없어 띠(z 1) 아래로 깔린다 — 달력 카드만 한 단계 위로. */
+.studio-month-grid .studio-event-pill {
+  z-index: 2;
+}
+/* ── 꺾인 띠(2026-11-16 소유자 C안, 애플식 — 부드럽고 통통) ──
+   몸통: 카드와 같은 채움·테두리. 맞닿는 변은 카드 쪽 테두리·모서리를 지워 이음새가 없다(폭은 그대로라 줄바꿈 불변). */
+.public-event.chain-step-from,
+.studio-event-pill.chain-step-from {
+  border-right-color: transparent !important;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.public-event.chain-step-to,
+.studio-event-pill.chain-step-to {
+  border-left-color: transparent !important;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+/* 이어진 두 카드는 그림자·들림을 끈다 — 띠 쪽으로 그림자가 지면 이음새가 생기고, 한쪽만 뜨면 어긋난다.
+   대신 손을 올리면 두 카드와 띠가 같이 밝아진다(.chain-hot / .is-hot). */
+.public-event.chain-step-from,
+.public-event.chain-step-to,
+.studio-event-pill.chain-step-from,
+.studio-event-pill.chain-step-to {
+  box-shadow: none;
+  transition: filter 0.28s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.public-event.chain-step-from:hover,
+.public-event.chain-step-to:hover,
+.studio-event-pill.chain-step-from:hover,
+.studio-event-pill.chain-step-to:hover {
+  transform: none;
+  box-shadow: none;
+}
+/* 편집실 카드의 안쪽 하이라이트 그림자도 띠 쪽 이음새가 되므로 끈다(시청자 카드와 같은 평면). */
+.studio-month-grid .studio-event-pill.chain-step-from,
+.studio-month-grid .studio-event-pill.chain-step-to {
+  box-shadow: none;
+}
+.chain-step-tint {
+  pointer-events: none;
+}
+.chain-hot.chain-step-from,
+.chain-hot.chain-step-to,
+.chain-step.is-hot {
+  filter: brightness(1.04) saturate(1.12);
+}
+.chain-step {
+  transition: filter 0.28s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+.chain-step-body {
+  stroke-width: 1.5px;
+  stroke-linejoin: round;
+  pointer-events: visiblePainted;
+  cursor: pointer;
+  transition: stroke 0.2s ease;
+}
+/* 빛 한 줄기 — 손을 올린 순간 띠 가장자리를 따라 한 번 스친다(유리 위 반사광). */
+.chain-step-sheen {
   fill: none;
+  stroke: rgb(255 255 255 / 0);
+  stroke-width: 2.4px;
   stroke-linecap: round;
+  stroke-dasharray: 16 84;
+  stroke-dashoffset: 100;
+  pointer-events: none;
 }
-.chain-curve-halo {
-  stroke: var(--cal-cell, #fffefb);
-  stroke-width: 7px;
+.chain-step.is-hot .chain-step-sheen {
+  stroke: rgb(255 255 255 / 0.8);
+  animation: chain-step-sheen 0.95s cubic-bezier(0.4, 0, 0.2, 1) 1 both;
 }
-.studio-day .chain-curve-halo {
-  stroke: var(--surface, #fff);
+html[data-theme="dark"] .chain-step.is-hot .chain-step-sheen {
+  stroke: rgb(255 255 255 / 0.42);
 }
-.chain-curve-line {
-  stroke-width: 3.5px;
+@keyframes chain-step-sheen {
+  from { stroke-dashoffset: 100; }
+  to { stroke-dashoffset: -16; }
 }
-/* 편집실에서 고른 묶음의 곡선 — 카드 선택 점선과 같은 선택색 */
-.chain-curve-line.is-selected {
-  stroke: var(--selection-border, #2f7fe0);
-  stroke-width: 4.5px;
+/* 새로 이어진 순간 — 띠가 앞 카드 쪽에서 통 자라나고(스프링 오버슈트), 두 카드가 살짝 튀었다 가라앉는다. */
+.chain-step.is-new {
+  transform-box: view-box;
+  animation: chain-step-grow 0.56s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
-.chain-curve-dot.is-selected {
-  fill: var(--selection-border, #2f7fe0);
+@keyframes chain-step-grow {
+  0% { transform: scaleY(0.05); opacity: 0; }
+  35% { opacity: 1; }
+  100% { transform: scaleY(1); opacity: 1; }
+}
+.chain-pop {
+  animation: chain-card-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1;
+}
+@keyframes chain-card-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.035); }
+  100% { transform: scale(1); }
+}
+/* 편집실에서 고른 묶음 — 띠 테두리도 카드 선택 점선과 같은 선택색 점선 + 옅은 선택색 번짐. */
+.chain-step.is-selected .chain-step-body {
+  stroke: var(--selection-border, #2f7fe0) !important;
+  stroke-width: 2.2px;
+  stroke-dasharray: 5 3.5;
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--selection-border, #2f7fe0) 35%, transparent));
+}
+html[data-reduce-motion] .chain-step.is-new,
+html[data-reduce-motion] .chain-pop,
+html[data-reduce-motion] .chain-step.is-hot .chain-step-sheen {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chain-step.is-new,
+  .chain-pop,
+  .chain-step.is-hot .chain-step-sheen {
+    animation: none;
+  }
 }
 .chain-cont {
   margin-left: 0.35em;

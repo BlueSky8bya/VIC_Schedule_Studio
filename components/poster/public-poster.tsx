@@ -3402,6 +3402,8 @@ export function PublicPoster({
               span.isMulti && !span.roundRight ? "no-right" : "",
               slim ? "chain-slim" : "",
               join?.bandSpan ? "band-head" : "",
+              join?.right?.kind === "curve" ? "chain-step-from" : "",
+              join?.left?.kind === "curve" ? "chain-step-to" : "",
               isDimmedByFilter(event) ? "dimmed" : "",
               // 미정 = 빗금(이어진 칸 전부 — 한 일정이 칸마다 달라 보이지 않게). 글자 칩은 없다(제목 정렬 유지).
               event.isTentative ? "tentative" : "",

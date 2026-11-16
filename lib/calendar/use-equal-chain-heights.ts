@@ -9,57 +9,243 @@ function scaleOf(el: HTMLElement): number {
   return w > 0 && r > 0 ? r / w : 1;
 }
 
-// 곡선 이음(buildChainJoins의 curve) — 앞날 카드(data-curve-from) 오른쪽에서 다음날 카드(data-curve-to)
-// 왼쪽까지 부드러운 S자. 선은 앞 카드 칸 안의 <svg data-curve-svg>에 그린다(칸 기준 좌표, overflow visible).
-// 색은 앞 카드 테두리색(태그 색) — 이 일정의 색으로 이어진다.
-// 곡선 색 = 카드에 지정된 태그 테두리색(인라인). 편집실은 고르면 테두리를 투명으로 바꾸므로 계산값만 믿으면
-// 선이 사라지고 흰 테두리만 남는다 — 인라인 → 계산값(투명 아님) → 배경색 순으로 고른다.
-function curveColorOf(el: HTMLElement): string {
+// 꺾인 띠 이음(buildChainJoins의 curve 판정 — 2026-11-16 소유자 C안) — 앞날 카드(data-curve-from)의 오른쪽 변과
+// 다음날 카드(data-curve-to)의 왼쪽 변을, 칸 사이 틈에서 위/아래로 꺾여 오르내리는 '카드와 같은 몸통'으로 잇는다.
+// 선이 아니라 띠라서 카드와 같은 채움·테두리색이고, 카드 뒤(z 1)에 깔려 맞닿는 변은 카드가 덮는다.
+// 굵기 = 칸 사이 틈을 10~14px로 묶은 값 — 좁아도 10px 아래로 가늘어지지 않고, 넓어도 14px 위로 답답해지지 않는다.
+// 모서리는 볼록 7px·오목 5px로 둥글려 꺾임이 부드럽다. svg는 앞 카드 칸 안(칸 기준 좌표).
+const STEP_MIN = 10;
+const STEP_MAX = 14;
+const STEP_CONVEX = 7;
+const STEP_CONCAVE = 5;
+
+// 색: 테두리 = 카드에 지정된 태그 테두리색(인라인). 편집실은 고르면 테두리를 투명으로 바꾸므로 계산값만 믿으면
+// 띠가 사라진다 — 인라인 → 계산값(투명 아님) 순. 채움 = 카드 계산 배경색(2색 카드면 다음 카드 → 테두리색).
+function opaque(c: string | undefined): boolean {
+  return Boolean(c && c !== "transparent" && !/rgba\([^)]*,\s*0\)$/.test(c));
+}
+function strokeOf(el: HTMLElement): string {
   if (el.style.borderColor) return el.style.borderColor;
-  const cs = getComputedStyle(el);
-  const b = cs.borderTopColor;
-  if (b && b !== "transparent" && !/rgba\([^)]*,\s*0\)$/.test(b)) return b;
-  return cs.backgroundColor || "currentColor";
+  const b = getComputedStyle(el).borderTopColor;
+  return opaque(b) ? b : "currentColor";
+}
+// 편집실 카드는 바탕색 위에 단색 덧칠(linear-gradient(같은색, 같은색))을 한 겹 더 얹는다 — 띠에도 같은 겹을 얹어야
+// 카드와 띠 색이 같아진다(안 얹으면 띠만 진한 줄무늬로 보였다, 2026-11-16 실측).
+function flatOverlaysOf(el: HTMLElement): string[] {
+  const img = getComputedStyle(el).backgroundImage;
+  if (!img || img === "none") return [];
+  const out: string[] = [];
+  const re = /linear-gradient\((?:[^,()]+,\s*)?(rgba?\([^)]*\))\s*,\s*(rgba?\([^)]*\))\s*\)/g;
+  for (let m = re.exec(img); m; m = re.exec(img)) if (m[1] === m[2]) out.push(m[1]);
+  return out;
+}
+// 볼록 모서리 = 카드 자신의 모서리 반경(4~10px) — 띠의 꺾임이 카드 모서리와 같은 곡률로 이어진다.
+function convexOf(el: HTMLElement): number {
+  const r = parseFloat(getComputedStyle(el).borderTopLeftRadius);
+  return Number.isFinite(r) ? Math.min(10, Math.max(4, r)) : 7;
+}
+function fillOf(from: HTMLElement, to: HTMLElement): string {
+  for (const el of [from, to]) {
+    const bg = getComputedStyle(el).backgroundColor;
+    if (opaque(bg)) return bg;
+  }
+  return from.style.backgroundColor || strokeOf(from);
 }
 
-function drawCurves(root: HTMLElement) {
+type Pt = { x: number; y: number; r: number };
+// 직교 다각형의 꼭짓점을 둥글린 경로. r은 상한 — 변 길이의 절반을 넘지 않는다.
+function roundedPath(pts: Pt[]): string {
+  const n = pts.length;
+  const f = (v: number) => v.toFixed(1);
+  let d = "";
+  for (let i = 0; i < n; i += 1) {
+    const p0 = pts[(i - 1 + n) % n];
+    const p1 = pts[i];
+    const p2 = pts[(i + 1) % n];
+    const l1 = Math.hypot(p1.x - p0.x, p1.y - p0.y) || 1;
+    const l2 = Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1;
+    const r = Math.min(p1.r, l1 / 2, l2 / 2);
+    const ax = p1.x + ((p0.x - p1.x) / l1) * r;
+    const ay = p1.y + ((p0.y - p1.y) / l1) * r;
+    const bx = p1.x + ((p2.x - p1.x) / l2) * r;
+    const by = p1.y + ((p2.y - p1.y) / l2) * r;
+    d += `${i === 0 ? "M" : "L"}${f(ax)},${f(ay)} Q${f(p1.x)},${f(p1.y)} ${f(bx)},${f(by)} `;
+  }
+  return `${d}Z`;
+}
+
+type Box = { left: number; right: number; top: number; bottom: number };
+
+// 앞 카드 S(왼쪽 칸)·다음 카드 T(오른쪽 칸)의 칸 기준 사각형 → 꺾인 띠 경로(세 사각형의 합집합 윤곽).
+export function stepBandPath(
+  S: Box,
+  T: Box,
+  convex = STEP_CONVEX
+): { d: string; width: number; originX: number; originY: number } {
+  const gap = T.left - S.right;
+  const w = Math.min(STEP_MAX, Math.max(STEP_MIN, gap));
+  const mid = (S.right + T.left) / 2;
+  const xa = mid - w / 2;
+  const xb = mid + w / 2;
+  const x0 = Math.min(S.right - 3, xa);
+  const x1 = Math.max(T.left + 3, xb);
+  const top = Math.min(S.top, T.top);
+  const bottom = Math.max(S.bottom, T.bottom);
+  const raw = [
+    { x: x0, y: S.top }, { x: xa, y: S.top }, { x: xa, y: top }, { x: xb, y: top },
+    { x: xb, y: T.top }, { x: x1, y: T.top }, { x: x1, y: T.bottom }, { x: xb, y: T.bottom },
+    { x: xb, y: bottom }, { x: xa, y: bottom }, { x: xa, y: S.bottom }, { x: x0, y: S.bottom }
+  ];
+  const same = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+    Math.abs(a.x - b.x) < 0.01 && Math.abs(a.y - b.y) < 0.01;
+  const pts: { x: number; y: number }[] = [];
+  for (const p of raw) if (!pts.length || !same(pts[pts.length - 1], p)) pts.push(p);
+  if (pts.length > 1 && same(pts[0], pts[pts.length - 1])) pts.pop();
+  const crossAt = (i: number) => {
+    const p0 = pts[(i - 1 + pts.length) % pts.length];
+    const p1 = pts[i];
+    const p2 = pts[(i + 1) % pts.length];
+    return (p1.x - p0.x) * (p2.y - p1.y) - (p1.y - p0.y) * (p2.x - p1.x);
+  };
+  for (let i = 0; i < pts.length && pts.length > 3; ) {
+    if (Math.abs(crossAt(i)) < 0.01) pts.splice(i, 1);
+    else i += 1;
+  }
+  let area = 0;
+  for (let i = 0; i < pts.length; i += 1) {
+    const p = pts[i];
+    const q = pts[(i + 1) % pts.length];
+    area += p.x * q.y - q.x * p.y;
+  }
+  const rounded: Pt[] = pts.map((p, i) => {
+    // 카드 안쪽에 숨는 꼭짓점(x0·x1)은 둥글리지 않는다 — 카드가 덮는다.
+    if (Math.abs(p.x - x0) < 0.01 || Math.abs(p.x - x1) < 0.01) return { ...p, r: 0 };
+    return { ...p, r: Math.sign(crossAt(i)) === Math.sign(area) ? convex : STEP_CONCAVE };
+  });
+  return { d: roundedPath(rounded), width: w, originX: xa, originY: S.top < T.top ? S.top : S.bottom };
+}
+
+// 마운트 직후(첫 그림)엔 등장 연출을 하지 않는다 — 방금 잇거나 순서를 바꿔 '새로 생긴' 띠만 통통 자란다.
+const mountedAt = new WeakMap<HTMLElement, number>();
+const hotKey = new WeakMap<HTMLElement, string | null>();
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+// 띠는 지우고 다시 만들지 않고 제자리에서 고쳐 쓴다 — 레이아웃이 움직이는 동안(드래그 착지·패널 열림) 매 프레임
+// 다시 그려도 등장 애니메이션이 끊기거나 처음부터 다시 시작하지 않는다.
+function drawSteps(root: HTMLElement) {
+  const now = typeof performance !== "undefined" ? performance.now() : 0;
+  const settled = now - (mountedAt.get(root) ?? now) > 1200;
+  const hot = hotKey.get(root) ?? null;
   for (const svg of Array.from(root.querySelectorAll<SVGSVGElement>("svg[data-curve-svg]"))) {
     const keys = (svg.dataset.curveSvg ?? "").split(" ").filter(Boolean);
     const host = svg.parentElement;
-    let markup = "";
+    const existing = new Map<string, SVGGElement>();
+    for (const g of Array.from(svg.querySelectorAll<SVGGElement>(":scope > g[data-step]"))) {
+      existing.set(g.dataset.step ?? "", g);
+    }
+    const keep = new Set<string>();
     if (host) {
       const hostRect = host.getBoundingClientRect();
       const s = scaleOf(host);
+      const local = (r: DOMRect): Box => ({
+        left: (r.left - hostRect.left) / s,
+        right: (r.right - hostRect.left) / s,
+        top: (r.top - hostRect.top) / s,
+        bottom: (r.bottom - hostRect.top) / s
+      });
       for (const key of keys) {
         const from = root.querySelector<HTMLElement>(`[data-curve-from="${CSS.escape(key)}"]`);
         const to = root.querySelector<HTMLElement>(`[data-curve-to="${CSS.escape(key)}"]`);
         if (!from || !to) continue;
-        const a = from.getBoundingClientRect();
-        const b = to.getBoundingClientRect();
-        const x1 = (a.right - hostRect.left) / s;
-        const y1 = (a.top - hostRect.top) / s + Math.min(18, a.height / s / 2);
-        const x2 = (b.left - hostRect.left) / s;
-        const y2 = (b.top - hostRect.top + b.height / 2) / s;
-        const k = Math.max(22, (x2 - x1) * 0.9 + 14);
-        const d = `M${x1.toFixed(1)},${y1.toFixed(1)} C${(x1 + k).toFixed(1)},${y1.toFixed(1)} ${(x2 - k).toFixed(1)},${y2.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}`;
-        // 고른 묶음(편집실 .selected/.primary-selected)이면 곡선도 선택색으로 굵게 — 카드만 강조되고
-        // 선은 그대로면 무엇이 묶였는지 안 보인다(2026-11-16 소유자: "너무 희어서 잘 안 보여").
-        const picked = from.matches(".selected, .primary-selected") || to.matches(".selected, .primary-selected");
-        const color = picked ? "" : curveColorOf(from);
-        const paint = (prop: "stroke" | "fill") => (color ? ` style="${prop}:${color}"` : "");
-        const cls = picked ? " is-selected" : "";
-        markup +=
-          `<path class="chain-curve-halo${cls}" d="${d}"/>` +
-          `<path class="chain-curve-line${cls}" d="${d}"${paint("stroke")}/>` +
-          `<circle class="chain-curve-dot${cls}" r="3.2" cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}"${paint("fill")}/>` +
-          `<circle class="chain-curve-dot${cls}" r="3.2" cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}"${paint("fill")}/>`;
+        keep.add(key);
+        const { d, originX, originY } = stepBandPath(
+          local(from.getBoundingClientRect()),
+          local(to.getBoundingClientRect()),
+          convexOf(from)
+        );
+        const overlays = flatOverlaysOf(from);
+        // 고른 묶음(편집실 .selected/.primary-selected)이면 띠도 선택색 테두리로 — 무엇이 묶였는지 보이게.
+        const picked =
+          from.matches(".selected, .primary-selected") || to.matches(".selected, .primary-selected");
+        const stroke = strokeOf(from);
+        let g = existing.get(key);
+        const fresh = !g;
+        if (!g) {
+          g = document.createElementNS(SVG_NS, "g") as SVGGElement;
+          g.setAttribute("data-step", key);
+          const body = document.createElementNS(SVG_NS, "path");
+          body.setAttribute("class", "chain-step-body");
+          const sheen = document.createElementNS(SVG_NS, "path");
+          sheen.setAttribute("class", "chain-step-sheen");
+          sheen.setAttribute("pathLength", "100");
+          g.append(body, sheen);
+          svg.append(g);
+        }
+        g.classList.add("chain-step");
+        g.classList.toggle("is-selected", picked);
+        g.classList.toggle("is-hot", hot === key);
+        g.style.setProperty("--chain-color", stroke);
+        g.style.transformOrigin = `${originX.toFixed(1)}px ${originY.toFixed(1)}px`;
+        const body = g.querySelector<SVGPathElement>(".chain-step-body")!;
+        const sheen = g.querySelector<SVGPathElement>(".chain-step-sheen")!;
+        // 덧칠 겹(편집실) — 몸통 바로 위, 빛줄기 아래. 개수가 바뀌면 다시 깐다.
+        const layers = Array.from(g.querySelectorAll<SVGPathElement>(".chain-step-tint"));
+        if (layers.length !== overlays.length) {
+          layers.forEach((l) => l.remove());
+          for (let i = 0; i < overlays.length; i += 1) {
+            const l = document.createElementNS(SVG_NS, "path");
+            l.setAttribute("class", "chain-step-tint");
+            g.insertBefore(l, sheen);
+          }
+        }
+        Array.from(g.querySelectorAll<SVGPathElement>(".chain-step-tint")).forEach((l, i) => {
+          if (l.getAttribute("d") !== d) l.setAttribute("d", d);
+          l.style.fill = overlays[i];
+        });
+        if (body.getAttribute("d") !== d) body.setAttribute("d", d);
+        if (sheen.getAttribute("d") !== d) sheen.setAttribute("d", d);
+        body.style.fill = fillOf(from, to);
+        body.style.stroke = stroke;
+        // 새로 생긴 띠 — 앞 카드 쪽에서 통 자라나고, 두 카드가 살짝 튀었다 가라앉는다(한 번만). 첫 그림은 조용히.
+        if (fresh && settled) {
+          g.classList.add("is-new");
+          g.addEventListener("animationend", () => g?.classList.remove("is-new"), { once: true });
+          for (const card of [from, to]) {
+            card.classList.remove("chain-pop");
+            void card.offsetWidth;
+            card.classList.add("chain-pop");
+            window.setTimeout(() => card.classList.remove("chain-pop"), 600);
+          }
+        }
       }
     }
-    if (svg.dataset.drawn !== markup) {
-      svg.dataset.drawn = markup;
-      svg.innerHTML = markup;
-    }
+    for (const [key, g] of existing) if (!keep.has(key)) g.remove();
   }
+}
+
+// 띠와 두 카드를 한 몸으로 반응시킨다 — 어느 하나에 손을 올리면 셋이 같이 밝아지고 빛이 띠를 따라 한 번 흐른다.
+function stepKeyOf(t: EventTarget | null): string | null {
+  const el = t instanceof Element ? t : null;
+  if (!el) return null;
+  const card = el.closest<HTMLElement>("[data-curve-from], [data-curve-to]");
+  if (card) return card.dataset.curveFrom ?? card.dataset.curveTo ?? null;
+  return el.closest<SVGGElement>("g[data-step]")?.dataset.step ?? null;
+}
+function applyHot(root: HTMLElement, key: string | null) {
+  const prev = hotKey.get(root) ?? null;
+  if (prev === key) return;
+  hotKey.set(root, key);
+  const toggle = (k: string | null, on: boolean) => {
+    if (!k) return;
+    const e = CSS.escape(k);
+    root
+      .querySelectorAll(`[data-curve-from="${e}"], [data-curve-to="${e}"]`)
+      .forEach((n) => n.classList.toggle("chain-hot", on));
+    root.querySelectorAll(`g[data-step="${e}"]`).forEach((n) => n.classList.toggle("is-hot", on));
+  };
+  toggle(prev, false);
+  toggle(key, true);
 }
 
 // 이어진 일정(같은 data-chain) 칸들의 높이를 그 묶음에서 가장 큰 칸에 맞춘다.
@@ -158,7 +344,7 @@ export function useEqualChainHeights<T extends HTMLElement>(
           el.style.minHeight = `${max}px`;
         }
       }
-      drawCurves(root!);
+      drawSteps(root!);
       observe(); // 반영 끝난 뒤 다시 관찰
     }
 
@@ -197,6 +383,11 @@ export function useEqualChainHeights<T extends HTMLElement>(
     }
     scheduleRef.current = schedule;
 
+    mountedAt.set(root, typeof performance !== "undefined" ? performance.now() : 0);
+    const onOver = (e: PointerEvent) => applyHot(root, stepKeyOf(e.target));
+    const onLeave = () => applyHot(root, null);
+    root.addEventListener("pointerover", onOver);
+    root.addEventListener("pointerleave", onLeave);
     // 마운트 즉시 1차(페인트 전 가깝게) + 레이아웃 안정 후 한 번 더.
     equalize();
     schedule();
@@ -219,6 +410,8 @@ export function useEqualChainHeights<T extends HTMLElement>(
       cancelAnimationFrame(pumpRaf);
       ro?.disconnect();
       mo?.disconnect();
+      root.removeEventListener("pointerover", onOver);
+      root.removeEventListener("pointerleave", onLeave);
       root.removeEventListener("animationend", onSettle);
       root.removeEventListener("transitionend", onSettle);
       window.removeEventListener("resize", schedule);
