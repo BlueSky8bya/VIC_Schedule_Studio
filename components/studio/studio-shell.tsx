@@ -1,4 +1,6 @@
 "use client";
+
+import { flushSync } from "react-dom";
 import { scrollAgendaTarget } from "@/lib/ui/agenda-scroll";
 import { AgendaSupportContext } from "@/components/shared/agenda-support-context";
 import { createAgendaNotices, noticeIsActive } from "@/lib/ui/agenda-notices";
@@ -3454,21 +3456,38 @@ export function StudioShell({
     prevDropDayRef.current = next;
     // 놓아서 끝난 경우(끌기 끝)엔 스페이서가 바로 사라지므로 어긋날 일이 없다 — 잠깐 꺾인 띠로 바뀌는 깜빡임만 생긴다.
     if (!prev || prev === next || !dragEventId) return;
-    setClosingGapDays((s0) => new Set(s0).add(prev));
-    // 지우기 타이머는 다음 칸 이동에 취소되면 안 된다(취소되면 그 칸이 영영 꺾인 띠로 남았다) — 칸마다 따로 둔다.
+    // 그 칸의 놓을 자리가 '실제로 다 접힌 순간'에 풀어 준다(고정 시간 X) — 시간으로 맞추면 접힘(0.2초 남짓)과
+    // 다시 합쳐짐(타이머)이 어긋나, 놓을 자리는 이미 사라졌는데 일정이 떨어진 채 남는 틈이 보였다(2026-11-17 소유자).
     const timers = closingGapTimersRef.current;
     if (timers.has(prev)) window.clearTimeout(timers.get(prev));
-    timers.set(
-      prev,
-      window.setTimeout(() => {
-        timers.delete(prev);
-        setClosingGapDays((s0) => {
-          const n = new Set(s0);
-          n.delete(prev);
-          return n;
-        });
-      }, 380)
-    );
+    const release = () => {
+      if (timers.has(prev)) window.clearTimeout(timers.get(prev));
+      timers.delete(prev);
+      setClosingGapDays((s0) => {
+        if (!s0.has(prev)) return s0;
+        const n = new Set(s0);
+        n.delete(prev);
+        return n;
+      });
+    };
+    const closing = Array.from(
+      document.querySelectorAll<HTMLElement>(`.studio-month-grid [data-isodate="${prev}"] .drop-gap`)
+    ).filter((g) => !g.classList.contains("on") && g.getBoundingClientRect().height > 0.5);
+    if (closing.length === 0) return;
+    setClosingGapDays((s0) => new Set(s0).add(prev));
+    // 매 프레임 접히는 높이를 보다가 1px 아래로 내려간 그 프레임에 '그리기 전에' 바로 합친다(flushSync) —
+    // transitionend는 높이가 이미 0이 된 뒤에 오고 React 갱신도 한 프레임 밀려 0.05초 떨어진 채 보였다(실측 3프레임).
+    const watch = () => {
+      if (!timers.has(prev)) return;
+      if (closing.every((g) => !g.isConnected || g.classList.contains("on") || g.getBoundingClientRect().height < 1)) {
+        flushSync(release);
+        return;
+      }
+      requestAnimationFrame(watch);
+    };
+    requestAnimationFrame(watch);
+    // 안전망 — 전환이 안 일어나는 경우(동작 줄이기 등)에도 반드시 풀린다.
+    timers.set(prev, window.setTimeout(release, 450));
   }, [dropSlot?.day, dragEventId]);
   // 이어진 일정 잇기(2026-11-16) — 시청자 화면과 같은 판정(buildChainJoins): 앞날 마지막 = 다음날 첫 카드일 때만.
   // 카드를 끄는 동안엔 '놓으면 될 순서'로 판정한다(2026-11-17 소유자) — 놓을 자리 미리보기가 뜨는 순간 이어진 일정도

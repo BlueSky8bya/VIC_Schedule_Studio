@@ -178,13 +178,25 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 
 // 띠는 지우고 다시 만들지 않고 제자리에서 고쳐 쓴다 — 레이아웃이 움직이는 동안(드래그 착지·패널 열림) 매 프레임
 // 다시 그려도 등장 애니메이션이 끊기거나 처음부터 다시 시작하지 않는다.
-// 끝이 있는 움직임(전환·한 번짜리 애니메이션)이 지금 돌고 있는가 — 무한 반복 연출은 세지 않는다.
+// 자리·크기가 바뀌는 끝이 있는 움직임(전환·한 번짜리 애니메이션)이 지금 돌고 있는가.
+// 그림자·밝기·색처럼 모양만 바뀌는 것은 세지 않는다 — 손을 올릴 때의 그림자 전환까지 '움직임'으로 세면 그 순간
+// 이어진 카드가 제 바탕·둥근 모서리로 돌아와 띠 양옆에 둥근 밝은 자국이 생겼다(2026-11-17 소유자). 무한 반복도 안 센다.
+const GEOMETRY_PROPS = /^(transform|translate|scale|rotate|margin|padding|top|left|right|bottom|width|height|min-height|max-height|inset)/;
+function movesGeometry(a: Animation): boolean {
+  const t = (a as Animation & { transitionProperty?: string }).transitionProperty;
+  if (typeof t === "string") return GEOMETRY_PROPS.test(t);
+  const effect = a.effect as KeyframeEffect | null;
+  if (!effect || typeof effect.getKeyframes !== "function") return false;
+  return effect
+    .getKeyframes()
+    .some((k) => Object.keys(k).some((prop) => GEOMETRY_PROPS.test(prop.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`))));
+}
 function isSliding(el: Element): boolean {
   if (typeof (el as HTMLElement).getAnimations !== "function") return false;
   return (el as HTMLElement).getAnimations().some((a) => {
     if (a.playState !== "running") return false;
     const end = a.effect?.getComputedTiming().endTime;
-    return typeof end === "number" && Number.isFinite(end);
+    return typeof end === "number" && Number.isFinite(end) && movesGeometry(a);
   });
 }
 
