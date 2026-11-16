@@ -5343,7 +5343,7 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 
 /* (.memo-edit-input/-state · .memo-line-* 줄별 편집기 제거 — 참조 0) */
 
-/* (불꽃 알약 .event-popular 삭제 — 2026-08-27. 관심 단계는 카드 테두리 링 .tier-ring으로.) */
+/* (불꽃 알약 .event-popular 삭제 — 2026-08-27. 인기는 이 달 1·2·3위 왕관(.tier-crown)으로.) */
 
 /* 하트를 누를 때 떠오르는 ♥ 입자 — 화면 위 fixed 레이어, 클릭 막지 않음. */
 .heart-floaters {
@@ -5504,93 +5504,7 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   to { opacity: 1; transform: translateX(0); }
 }
 
-/* 진입 직후, 관심(인기) 단계별 부각 — 2026-09-28 재설계(소유자: 칸이 통통 튀며 띠·이어지는 일정을 끊는
-   게 구렸다). 칸의 transform·z-index는 건드리지 않는다. 칸 안에 빛 한 겹(.pop-bloom, 실제 요소)만 두고:
-     ① 안쪽 헤어라인 링이 단계 색으로 스며들었다 진다(inset box-shadow)
-     ② 가운데서 따뜻한 빛이 피었다 진다(radial)
-     ③ 높은 단계(blaze·top)는 사선 광택 한 줄이 왼쪽→오른쪽으로 한 번 지나간다(빛만 움직인다)
-   단계가 오를수록 색이 따뜻해지고(주황→금) 조금 더 오래 머문다. 슬라이드가 끝난 뒤 한 번만. */
-.pop-bloom {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  border-radius: inherit;
-  pointer-events: none;
-  overflow: hidden;
-  --pb-c: 255 150 60;
-  --pb-dur: 1.6s;
-  --pb-delay: 0.35s;
-  --pb-ring: 0.28;
-  --pb-glow: 0.16;
-  opacity: 0;
-  animation: pop-bloom var(--pb-dur) var(--ease-enter, cubic-bezier(0.05, 0.7, 0.1, 1)) var(--pb-delay) both;
-  background: radial-gradient(ellipse at 50% 42%, rgb(var(--pb-c) / var(--pb-glow)) 0%, transparent 62%);
-  box-shadow: inset 0 0 0 1.5px rgb(var(--pb-c) / var(--pb-ring));
-}
-.pop-bloom[data-pop="hot"] {
-  --pb-c: 255 120 40;
-  --pb-dur: 1.8s;
-  --pb-delay: 0.4s;
-  --pb-ring: 0.38;
-  --pb-glow: 0.2;
-}
-.pop-bloom[data-pop="blaze"] {
-  --pb-c: 255 96 32;
-  --pb-dur: 2s;
-  --pb-delay: 0.45s;
-  --pb-ring: 0.48;
-  --pb-glow: 0.24;
-}
-.pop-bloom[data-pop="top"] {
-  --pb-c: 240 176 24;
-  --pb-dur: 2.3s;
-  --pb-delay: 0.5s;
-  --pb-ring: 0.6;
-  --pb-glow: 0.28;
-}
-@keyframes pop-bloom {
-  0% { opacity: 0; }
-  30% { opacity: 1; }
-  70% { opacity: 0.85; }
-  100% { opacity: 0; }
-}
-/* 광택 — 얇은 사선 빛이 한 번 지나간다. 칸이 아니라 이 겹의 자식만 움직이므로 레이아웃·이웃 칸 무관. */
-.pop-bloom[data-pop="blaze"]::before,
-.pop-bloom[data-pop="top"]::before {
-  content: "";
-  position: absolute;
-  top: -20%;
-  bottom: -20%;
-  left: 0;
-  width: 46%;
-  background: linear-gradient(
-    105deg,
-    transparent 0%,
-    rgb(255 255 255 / 0%) 30%,
-    rgb(255 255 255 / 55%) 50%,
-    rgb(255 255 255 / 0%) 70%,
-    transparent 100%
-  );
-  transform: translateX(-120%) skewX(-8deg);
-  animation: pop-sheen 1.1s cubic-bezier(0.4, 0, 0.2, 1) calc(var(--pb-delay) + 0.35s) both;
-}
-.pop-bloom[data-pop="top"]::before {
-  background: linear-gradient(
-    105deg,
-    transparent 0%,
-    rgb(255 244 200 / 0%) 30%,
-    rgb(255 244 200 / 70%) 50%,
-    rgb(255 244 200 / 0%) 70%,
-    transparent 100%
-  );
-}
-@keyframes pop-sheen {
-  from { transform: translateX(-120%) skewX(-8deg); }
-  to { transform: translateX(340%) skewX(-8deg); }
-}
-html[data-reduce-motion] .pop-bloom {
-  display: none;
-}
+/* (삭제 2026-11-17) 진입 직후 인기 단계별 빛·광택(.pop-bloom) — 토리님 "빤질빤질 효과는 빼고 왕관만". */
 
 .public-day {
   position: relative;
@@ -5726,9 +5640,9 @@ html[data-reduce-motion] .pop-bloom {
   color: var(--ink, #23303f);
 }
 
-/* 관심 단계 = 카드 '테두리'만(2026-08-27, 불꽃 알약 대체 — 알약이 카드 바닥 한 줄(≈18px)을 먹어
-   행마다 쌓이면 달력 비율이 무너졌다). 링(.tier-ring)·halo(.tier-halo)는 카드 안 absolute라 높이 0.
-   내용이 링 위에 오도록 본문 레이어를 z-index 1로 띄운다. 스타일 사양은 아래 'v2' 블록. */
+/* 관심 표식은 높이 0(2026-08-27, 불꽃 알약 대체 — 알약이 카드 바닥 한 줄(≈18px)을 먹어
+   행마다 쌓이면 달력 비율이 무너졌다). 왕관(.tier-crown)은 카드 안 absolute라 높이 0.
+   본문 레이어는 z-index 1. 왕관 사양은 아래 '금·은·동 왕관' 블록. */
 .public-event > .event-main,
 .public-event > .event-subs,
 .public-event > .event-meta {
@@ -5739,236 +5653,47 @@ html[data-reduce-motion] .pop-bloom {
 /* 2색 카드는 자식 전부를 position:relative·z-index 1로 바꾸는 규칙(.public-event[data-mixed] >
    :not(.evt-pat))이 있어 링·👑이 흐름 안으로 들어가(링 = 카드 바닥 금색 띠, 👑 = 왼쪽 아래로 밀림 —
    사용자 리포트) 본문과 같은 층에 그려졌다. 둘 다 absolute·층을 되돌린다(특이도 0,4,0 > 0,3,0). */
-.public-event[data-mixed] > .tier-ring.tier-ring,
-.public-event[data-mixed] > .tier-halo.tier-halo {
-  position: absolute;
-  z-index: 0;
-}
 .public-event[data-mixed] > .tier-crown.tier-crown {
   position: absolute;
   z-index: 3;
 }
-/* ── 관심 단계 링 v2 (2026-08-27 재설계) ──────────────────────────────────────────────
-   v1(안 1px + 바깥 spread 1~3px + 넓은 halo)은 모바일에서 이웃 링끼리 겹치고 웹에서도 짙어 난잡했다
-   (사용자 리포트). 원칙:
-   ① 링은 카드 '안쪽'에 그린다(inset 0 + 안쪽 마스크) → 카드 밖으로 1px도 안 나가 이웃과 절대 안 겹친다.
-   ② 두께 경쟁 대신 색 사다리: 살구(관심) → 복숭아코랄(높음) → 로즈코랄(폭발) → 금(1위). 1.5px → 2px에서 멈춤.
-   ③ '빛'은 바깥 halo가 아니라 링 자체를 따라 흐르는 광택(conic 그라데이션 회전) — 폭발·1위만. 낮은
-      단계는 정적(조용함이 곧 위계).
-   ④ halo(.tier-halo, 별도 형제 — 마스크가 그림자를 잘라서)는 spread 0·저농도로 '온기'만: 겹쳐도 딱딱한
-      선이 안 생긴다. 모바일 아젠다는 halo 없음.
-   본문(.event-main…)은 z-index 1로 링 위. 링·halo는 높이 0(absolute) — 달력 비율에 영향 없음. */
-/* One uninterrupted inset rail in both themes. Border follows rounded corners
-   without changing card geometry or competing with mixed tag fill layers. */
-.tier-signal,
-.public-event[data-mixed] > .tier-signal.tier-signal {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  border-radius: inherit;
-  border-left: 4px solid var(--tier-c);
-  pointer-events: none;
-}
-/* 모바일 아젠다 — PC와 같은 문법: 카드(=관심 링, inset -3px -6px) 왼쪽 모서리가 두꺼워진다.
-   예전엔 태그 줄 옆 9px 홈에 3px 선을 따로 그었는데 "대충 그은 세로선"으로 읽혔다(2026-09-28 소유자).
-   링과 같은 기하(-3/-6, r9)에 border-left만 두껍게 → 모서리 곡선을 따라 한 덩어리로 보인다. */
-.agenda-event > .tier-signal {
-  /* 별도 요소로 그리면 곡률이 링과 안 맞는다(2026-09-28 소유자 지적) — 링 자체의 왼쪽 테두리를 두껍게
-     한다(아래 .agenda-event .tier-ring). 한 도형이라 모서리 곡선이 구조적으로 이어진다. */
-  display: none;
-}
-.tier-ring {
-  position: absolute;
-  inset: -1px; /* 카드 자체 1px 테두리까지 덮어 링이 곧 카드의 테두리가 된다 — 띄우면 카드 테두리와 두 줄(이중링)로
-                  보였다(2026-10-05 소유자). 대신 링을 굵고 진하게(아래 단계 색) 해 태그 색 위에서도 읽힌다. */
-  z-index: 0;
-  border-radius: inherit;
-  border: var(--tier-w, 2px) solid transparent;
-  /* 왼쪽만 굵게(범례 견본과 같은 모양, 2026-10-05 소유자) — 따로 그린 줄이 아니라 링 자체의 왼쪽 테두리라
-     한 도형이다(별도 줄을 겹치면 이중링으로 보였다). 모바일 아젠다(.agenda-event .tier-ring)와 같은 문법. */
-  --tier-wl: calc(var(--tier-w, 2px) + 2.5px);
-  border-left-width: var(--tier-wl);
-  pointer-events: none;
-  /* (overflow:hidden 금지 — padding-box로 잘라 border 영역의 채움까지 지워 링이 사라진다. 마스크가 곧 클립.)
-     안쪽(padding-box)을 도려낸 마스크 → 테두리 두께만 남는 링. 모서리는 둥근 형태를 따른다. */
-  -webkit-mask:
-    linear-gradient(#000 0 0) padding-box,
-    linear-gradient(#000 0 0);
-  mask:
-    linear-gradient(#000 0 0) padding-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-}
-/* 링 채움 — border-box를 정확히 덮는 ::before(밖으로 1px도 안 나가 스크롤 overflow를 안 만든다 —
-   큰 정사각형을 회전시키던 초안은 마스크로 안 보여도 scrollWidth를 키워 모바일 가로 넘침이 났다).
-   광택은 요소 회전이 아니라 conic-gradient의 시작 각(@property --tier-a)을 돌린다. 정적 단계는 단색. */
-@property --tier-a {
-  syntax: "<angle>";
-  inherits: false;
-  initial-value: 0deg;
-}
-.tier-ring::before {
-  content: "";
-  position: absolute;
-  inset: calc(-1 * var(--tier-w, 2px));
-  left: calc(-1 * var(--tier-wl, 2px)); /* 굵어진 왼쪽 테두리까지 채움이 닿게 */
-  border-radius: inherit;
-  background: var(--tier-c, transparent);
-  /* (대비선 두 겹은 '이중링'으로 복잡해 보여 뺐다 — 2026-10-05 소유자. 카드에서 띄운 간격만으로 갈라진다.) */
-}
-.tier-ring.tier-blaze::before,
-.tier-ring.tier-top::before {
-  background: conic-gradient(from var(--tier-a, 0deg), var(--tier-stops));
-  animation: tier-sweep var(--tier-dur, 3.4s) linear infinite;
-  animation-delay: var(--tier-phase, 0s);
-}
-.tier-halo {
-  position: absolute;
-  inset: -1px;
-  z-index: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  box-shadow: 0 0 var(--tier-halo, 8px) 0 var(--tier-c, transparent);
-  opacity: var(--tier-halo-lo, 0.3);
-  animation: tier-breathe var(--tier-dur-halo, 4s) ease-in-out infinite;
-  animation-delay: var(--tier-phase, 0s);
-}
-/* 단계 색 — 태그 팔레트(파스텔)와 겹치지 않게 진하고 채도 높은 한 줄기(호박 → 주황 → 진홍 → 금),
-   단계가 오를수록 링도 굵어진다(2026-10-05). 옛 값은 #f3b85c/#f28a63/#ee6b8b — 파스텔 카드에 묻혔다. */
-.tier-warm {
-  --tier-c: #f0a400;
-  --tier-w: 2.5px;
-}
-.tier-hot {
-  --tier-c: #f26b0f;
-  --tier-w: 2.5px;
-  --tier-halo: 10px;
-  --tier-halo-lo: 0.3;
-  --tier-halo-hi: 0.55;
-  --tier-dur-halo: 4.2s;
-}
-.tier-blaze {
-  --tier-c: #e3124b;
-  --tier-w: 3px;
-  --tier-stops: #e3124b, #ff5a8a 22%, #e3124b 48%, #ff5a5a 72%, #e3124b; /* 진홍 위주 — 주황이 섞이면 높은 관심과 헷갈린다 */
-  --tier-dur: 3.6s;
-  --tier-halo: 12px;
-  --tier-halo-lo: 0.35;
-  --tier-halo-hi: 0.65;
-  --tier-dur-halo: 2.8s;
-}
-.tier-top {
-  --tier-c: #d49a00;
-  --tier-w: 3px;
-  --tier-stops: #d49a00, #ffe066 18%, #b98300 40%, #ffd23f 62%, #d49a00 80%, #fff0a8 92%, #d49a00;
-  --tier-dur: 3.2s;
-  --tier-halo: 14px;
-  --tier-halo-lo: 0.4;
-  --tier-halo-hi: 0.7;
-  --tier-dur-halo: 2.6s;
-}
+/* 이 달 인기 1·2·3위 = 금·은·동 왕관(노토 👑 재채색, public/crowns) — 2026-11-17 토리님: 테두리 링·광택·
+   halo는 전부 빼고 3위까지 왕관만. 카드 오른쪽 위 모서리에 살짝 기울여 걸친다(움직임 없음).
+   absolute라 높이 0 — 달력 비율에 영향 없음. */
 .tier-crown {
   position: absolute;
   /* 달력 확대(--cal-zoom, 편집실)에 같이 커진다(2026-09-17 소유자). 시청자 포스터는 캔버스 배율이라 1. */
-  top: calc(-11px * var(--cal-zoom, 1));
-  right: calc(-6px * var(--cal-zoom, 1));
+  top: calc(-12px * var(--cal-zoom, 1));
+  right: calc(-7px * var(--cal-zoom, 1));
   z-index: 3;
-  font-size: calc(var(--calendar-text-ui) * var(--cal-zoom, 1));
-  line-height: 1;
+  width: calc(var(--calendar-text-ui) * 1.4 * var(--cal-zoom, 1));
+  height: auto;
   pointer-events: none;
-  filter: drop-shadow(0 1px 1.5px rgb(120 80 0 / 30%));
-  transform-origin: 50% 90%;
-  animation: tier-crown-bob 2.4s ease-in-out infinite;
+  user-select: none;
+  transform: rotate(12deg) scaleY(0.9); /* 노토 원본은 세로가 살짝 길다(2026-11-17 소유자) — 높이만 90% */
+  filter: drop-shadow(0 1px 1px rgb(60 40 0 / 28%));
 }
-/* 위상 분산 — 이웃 카드가 같은 박자로 숨쉬면 기계적으로 보인다. */
-.public-event:nth-child(3n + 2) .tier-ring,
-.public-event:nth-child(3n + 2) .tier-halo {
-  --tier-phase: -1.3s;
-}
-.public-event:nth-child(3n) .tier-ring,
-.public-event:nth-child(3n) .tier-halo {
-  --tier-phase: -2.6s;
-}
-@keyframes tier-breathe {
-  0%,
-  100% {
-    opacity: var(--tier-halo-lo, 0.3);
-  }
-  50% {
-    opacity: var(--tier-halo-hi, 0.5);
-  }
-}
-@keyframes tier-sweep {
-  to {
-    --tier-a: 360deg;
-  }
-}
-@keyframes tier-crown-bob {
-  0%,
-  100% {
-    transform: rotate(-7deg);
-  }
-  50% {
-    transform: rotate(7deg) translateY(-1px);
-  }
-}
-/* 동작 줄이기·내보내기 정지 프레임 — 단계는 링 색·두께(+정지된 그라데이션)로 여전히 구분된다. */
-html[data-reduce-motion] .tier-ring::before,
-html[data-reduce-motion] .tier-halo,
-html[data-reduce-motion] .tier-crown {
-  animation-duration: 1ms;
-  animation-iteration-count: 1;
-}
-html[data-reduce-motion] .tier-halo {
-  opacity: var(--tier-halo-hi, 0.5);
-}
-/* 모바일 아젠다: 행(가로 카드)을 살짝 감싸는 링 — 행 간격 7px 안에서 위아래 3px만 나가므로 이웃 링과
-   안 겹친다. halo 없음(겹침·배터리). 광택 회전·👑은 그대로. */
 .agenda-event {
   position: relative;
-}
-.agenda-event .tier-ring {
-  inset: -3px -6px;
-  border-radius: var(--r-sm);
-  /* PC 카드의 두꺼운 왼쪽 모서리와 같은 문법 — 링의 왼쪽 두께만 5px. 마스크(padding-box xor)가 안쪽을
-     도려내므로 안쪽 곡선도 브라우저가 한 타원으로 잇는다(따로 그린 요소의 r4/r7 불일치가 사라진다). */
-  border-left-width: 5px;
-}
-.agenda-event .tier-ring::before {
-  left: -5px; /* 두꺼워진 왼쪽 테두리까지 채움이 닿게 */
-}
-.agenda-event .tier-halo {
-  display: none;
 }
 .agenda-event .tier-crown {
   right: -10px;
   top: -12px;
 }
-/* 범례 견본 — 링을 작은 상자로 축약(색·두께 그대로, 광택은 정지 그라데이션). 웹 범례·모바일 도움말의
-   generic `li i`/`span i` 테두리 규칙을 이기도록 클래스를 겹쳐 특이도(0,2,0)를 올려 둔다. */
+/* 범례 견본 = 같은 왕관 그림. 웹 범례·모바일 도움말의 generic `li i`/`span i` 규칙을 이기도록
+   클래스를 겹쳐 특이도(0,2,0)를 올려 둔다. */
 .tier-swatch.tier-swatch {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  width: 26px;
-  height: 14px;
+  display: inline-block;
+  width: 18px;
+  height: 18px;
   margin: 0 3px;
-  border-radius: var(--r-xs);
-  border: var(--tier-w, 2px) solid var(--tier-c);
-  background: #fffdf6;
-  box-shadow: inset 3px 0 var(--tier-c);
-  font-size: var(--text-micro);
-  line-height: 1;
-  font-style: normal;
-}
-.tier-swatch.tier-swatch.tier-blaze,
-.tier-swatch.tier-swatch.tier-top {
-  border-color: transparent;
-  background:
-    linear-gradient(#fffdf6, #fffdf6) padding-box,
-    conic-gradient(from 0deg, var(--tier-stops)) border-box;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  object-fit: contain;
+  vertical-align: middle;
+  transform: scaleY(0.9); /* 카드 왕관과 같은 비율 */
+  filter: drop-shadow(0 1px 1px rgb(60 40 0 / 22%));
 }
 
 .public-day.outside .day-strip {
@@ -6333,10 +6058,10 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
 .public-event[data-mixed] {
   position: relative;
 }
-/* 관심 단계 표식(링·halo·👑)은 제외 — 같은 특이도의 되돌림 규칙(위 .tier-ring.tier-ring)보다 이 규칙이 뒤에 있어
+/* 관심 단계 표식(왕관)은 제외 — 같은 특이도의 되돌림 규칙(위 .tier-crown.tier-crown)보다 이 규칙이 뒤에 있어
    이겨 왔고, 링이 흐름 안으로 들어가 카드 아래 가로선으로 그려졌다(2026-10-05 소유자 리포트). */
 /* :not(목록)은 특이도가 인자 중 최댓값 하나뿐(0,1,0) — 제외 목록이 늘어도 규칙이 세지지 않아 아래 하트 규칙을 덮지 않는다. */
-.public-event[data-mixed] > :not(.evt-pat):not(.evt-hatch, .tier-ring, .tier-halo, .tier-crown, .tier-signal) {
+.public-event[data-mixed] > :not(.evt-pat):not(.evt-hatch, .tier-crown) {
   position: relative;
   z-index: 1;
 }
@@ -8596,17 +8321,25 @@ html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
   letter-spacing: 0.01em;
   white-space: nowrap;
 }
-.adt-badge.tier-warm {
-  --tier-c: #b06f00;
+.adt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
-.adt-badge.tier-hot {
-  --tier-c: #c24e05;
+.adt-badge .adt-crown {
+  width: 1.25em;
+  height: auto;
+  transform: scaleY(0.9);
+  margin-left: -2px;
 }
-.adt-badge.tier-blaze {
-  --tier-c: #c20f40;
-}
-.adt-badge.tier-top {
+.adt-badge.tier-gold {
   --tier-c: #9a6b00;
+}
+.adt-badge.tier-silver {
+  --tier-c: #5d6b7c;
+}
+.adt-badge.tier-bronze {
+  --tier-c: #9c5626;
 }
 
 html[data-reduce-motion] .agenda-detail-backdrop,

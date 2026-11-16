@@ -140,15 +140,15 @@ test("insights loading shimmer stays dark during a delayed request", async ({ pa
   } finally { release(); }
 });
 
-test("dark popularity has continuous rails and ambient entry has readable ink", async ({ page }, info) => {
+test("dark popularity shows rank crowns and ambient entry has readable ink", async ({ page }, info) => {
   await page.setViewportSize({ width: 1840, height: 1000 });
   await page.goto("/visual-fixture/poster?hearts=1");
-  for (const tier of ["warm", "hot", "blaze", "top"]) {
+  for (const tier of ["gold", "silver", "bronze"]) {
     const card = page.locator(`.public-event[data-tier=${tier}]`).first();
-    await expect(card.locator(".tier-signal i")).toHaveCount(0);
-    await expect(card.locator(".tier-signal")).toBeVisible();
+    await expect(card.locator(".tier-signal")).toHaveCount(0);
+    await expect(card.locator(`.tier-crown.tier-${tier}`)).toBeVisible();
   }
-  await capture(page, info, "popularity-four-levels");
+  await capture(page, info, "popularity-rank-crowns");
   await page.evaluate(() => localStorage.setItem("vic.ambient", "on"));
   // Viewing mode is intentionally developer-only until the ambient world ships.
   await page.goto("/visual-fixture/studio?role=developer");
@@ -203,7 +203,7 @@ for (const surface of ["developer", "owner", "viewer", "anonymous", "preview"] a
   }
 }
 
-test("popularity rail is continuous inside light and dark cards", async ({ page }, info) => {
+test("popularity crowns sit on light and dark cards", async ({ page }, info) => {
   await page.setViewportSize({ width: 1840, height: 1000 });
   for (const theme of ["dark", "light"]) {
     await page.goto("/visual-fixture/poster?hearts=1");
@@ -212,25 +212,25 @@ test("popularity rail is continuous inside light and dark cards", async ({ page 
     const cards = page.locator(".public-event[data-tier]");
     await expect(cards.first()).toBeVisible();
     for (const card of await cards.all()) {
-      const geometry = await card.evaluate(el => {
-        const rail = el.querySelector(".tier-signal")!;
-        const c = el.getBoundingClientRect(), r = rail.getBoundingClientRect(), s = getComputedStyle(rail);
-        return { height: r.height, cardHeight: c.height, left: r.left - c.left, width: parseFloat(s.borderLeftWidth), position: s.position, children: rail.childElementCount };
+      const crown = await card.evaluate(el => {
+        const img = el.querySelector<HTMLImageElement>(".tier-crown")!;
+        const c = el.getBoundingClientRect(), r = img.getBoundingClientRect();
+        return { loaded: img.complete && img.naturalWidth > 0, position: getComputedStyle(img).position, width: r.width,
+          rails: el.querySelectorAll(".tier-signal, .tier-ring").length, right: c.right - r.right, top: r.top - c.top };
       });
-      expect(geometry.position).toBe("absolute");
-      expect(geometry.children).toBe(0);
-      expect(geometry.width).toBe(4);
-      expect(geometry.height / geometry.cardHeight).toBeGreaterThan(.8);
-      expect(geometry.left).toBeGreaterThanOrEqual(0);
-      expect(geometry.left).toBeLessThan(3);
+      expect(crown.loaded).toBe(true);
+      expect(crown.position).toBe("absolute");
+      expect(crown.rails).toBe(0);
+      expect(crown.width).toBeGreaterThan(10);
+      expect(Math.abs(crown.right)).toBeLessThan(crown.width);
+      expect(Math.abs(crown.top)).toBeLessThan(crown.width);
     }
-    await page.screenshot({ path: info.outputPath(`continuous-${theme}.png`), fullPage: true });
+    await page.screenshot({ path: info.outputPath(`crowns-${theme}.png`), fullPage: true });
     await page.setViewportSize({ width: 390, height: 844 });
     const agenda = page.locator(".agenda-event[data-tier]").first();
     await expect(agenda).toBeVisible();
-    const gap = await agenda.evaluate(el => el.querySelector(".tier-signal")!.getBoundingClientRect().left - el.querySelector(".agenda-bar")!.getBoundingClientRect().right);
-    expect(gap).toBeGreaterThanOrEqual(1);
-    await page.screenshot({ path: info.outputPath(`continuous-${theme}-mobile.png`), fullPage: true });
+    await expect(agenda.locator(".tier-crown")).toBeVisible();
+    await page.screenshot({ path: info.outputPath(`crowns-${theme}-mobile.png`), fullPage: true });
     await page.setViewportSize({ width: 1840, height: 1000 });
   }
 });

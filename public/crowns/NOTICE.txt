@@ -1,0 +1,7 @@
+Noto Emoji (Google) — https://github.com/googlefonts/noto-emoji (2D/svg/emoji_u1f451.svg, crown)
+Artwork: Apache License 2.0 (see LICENSE alongside). Copyright 2013 Google LLC.
+
+gold.svg   — unmodified emoji_u1f451.svg.
+silver.svg — same artwork, metal fills recolored (#FFCA28→#C3CCD6, #FFF59D→#F3F6FA, #F19534→#8794A6).
+bronze.svg — same artwork, metal fills recolored (#FFCA28→#D88A4E, #FFF59D→#F7CFA6, #F19534→#9C5626).
+Gems and highlights are unchanged. Used for the monthly popularity top-3 crowns (lib/schedules/heart-tiers.ts).

@@ -2,12 +2,11 @@ import { expect, test } from "@playwright/test";
 import { guardCompanionQa } from "./helpers/companion-qa";
 import { settlePanelLayout } from "./helpers/panel-layout";
 
-// 관심 단계 = 카드 테두리 링(2026-08-27, 불꽃 알약 대체) 회귀 게이트.
-//  · 티어 카드마다 .tier-ring 1개, 1위엔 .tier-crown, 옛 .event-popular(불꽃 줄) 0.
-//  · 링·👑은 높이 0 — 하트가 있어도 표면 자연 높이가 하트 없을 때와 같다(달력 비율 보호).
-//  · 본문(.event-main)이 링 위 층(z-index 1 > 0) — 2색 카드(data-mixed)도 포함.
-//  · 범례(웹 2종)·모바일 아젠다 도움말에 견본 4개, 모바일 행에도 링·👑.
-test.describe("heart tier — 테두리 링", () => {
+// 인기 표시 = 이 달 하트 1·2·3위 금·은·동 왕관(2026-11-17, 테두리 링·광택 대체) 회귀 게이트.
+//  · 순위 카드마다 .tier-crown 1개(금·은·동), 옛 링(.tier-ring)·레일(.tier-signal)·진입 빛(.pop-bloom) 0.
+//  · 왕관은 높이 0 — 하트가 있어도 표면 자연 높이가 하트 없을 때와 같다(달력 비율 보호).
+//  · 범례(웹)·모바일 아젠다 도움말에 견본 3개, 모바일 행에도 왕관.
+test.describe("heart tier — 금·은·동 왕관", () => {
   test.beforeEach(async ({ page }) => {
     await page.addInitScript(() => {
       try {
@@ -18,53 +17,45 @@ test.describe("heart tier — 테두리 링", () => {
     });
   });
 
-  test("데스크탑: 링·👑 렌더, 불꽃 줄 없음, 본문이 링 위", async ({ page }) => {
+  test("데스크탑: 왕관 렌더, 링·레일·빛 없음", async ({ page }) => {
     await page.goto("/visual-fixture/poster?hearts=1");
     await page.locator("[data-export-surface]").waitFor();
     await page.waitForTimeout(600);
     const m = await page.evaluate(() => {
       const tiers = Array.from(document.querySelectorAll<HTMLElement>(".public-event[data-tier]"));
       return {
-        tiers: tiers.length,
-        rings: document.querySelectorAll(".public-event .tier-ring").length,
-        crowns: document.querySelectorAll(".public-event .tier-crown").length,
-        popular: document.querySelectorAll(".event-popular").length,
+        keys: [...new Set(tiers.map((c) => c.dataset.tier))].sort(),
+        retired: document.querySelectorAll(".tier-ring, .tier-signal, .pop-bloom, .event-popular").length,
         legend: document.querySelectorAll(".legend-tiers .tier-swatch").length,
-        layering: tiers.map((c) => {
-          const ring = c.querySelector<HTMLElement>(".tier-ring")!;
-          const crown = c.querySelector<HTMLElement>(".tier-crown");
+        cards: tiers.map((c) => {
+          const crowns = c.querySelectorAll<HTMLImageElement>(".tier-crown");
+          const crown = crowns[0];
+          const cr = crown?.getBoundingClientRect(), r = c.getBoundingClientRect();
           return {
-            mixed: c.hasAttribute("data-mixed"),
-            ringZ: getComputedStyle(ring).zIndex,
-            ringPos: getComputedStyle(ring).position,
-            // 링은 카드 박스와 일치(흐름 안으로 밀려 바닥 띠가 되면 높이 0이 아니다)
-            ringH: ring.offsetHeight,
-            cardH: c.offsetHeight,
-            crownPos: crown ? getComputedStyle(crown).position : null,
-            mainZ: getComputedStyle(c.querySelector(".event-main")!).zIndex
+            key: c.dataset.tier,
+            count: crowns.length,
+            src: crown?.getAttribute("src"),
+            loaded: Boolean(crown?.complete && crown.naturalWidth > 0),
+            pos: crown ? getComputedStyle(crown).position : null,
+            // 왕관은 카드 오른쪽 위 모서리 근처에 얹힌다(2색 카드에서 왼쪽 아래로 밀리던 회귀 방지)
+            nearTopRight: cr ? cr.right > r.right - cr.width * 1.5 && cr.top < r.top + cr.height : false
           };
         })
       };
     });
-    expect(m.tiers).toBeGreaterThan(0);
-    expect(m.rings).toBe(m.tiers);
-    expect(m.crowns).toBeGreaterThanOrEqual(1);
-    expect(m.popular).toBe(0);
-    expect(m.legend).toBe(4);
-    // 2색 카드(data-mixed)의 자식 position:relative 규칙에 링·👑이 끌려가면 안 된다(사용자 리포트:
-    // 링이 카드 바닥 금색 띠, 👑이 왼쪽 아래로 밀림).
-    expect(m.layering.some((l) => l.mixed)).toBe(true);
-    for (const l of m.layering) {
-      expect(l.ringZ).toBe("0");
-      expect(l.ringPos).toBe("absolute");
-      // inset:0 = 카드 padding box(카드 자체 1px 테두리 안쪽) → 높이 차 = 테두리 2px까지 정상
-      expect(Math.abs(l.ringH - l.cardH)).toBeLessThanOrEqual(2);
-      if (l.crownPos) expect(l.crownPos).toBe("absolute");
-      expect(l.mainZ).toBe("1");
+    expect(m.keys).toEqual(["bronze", "gold", "silver"]);
+    expect(m.retired).toBe(0);
+    expect(m.legend).toBe(3);
+    for (const c of m.cards) {
+      expect(c.count).toBe(1);
+      expect(c.src).toBe(`/crowns/${c.key}.svg`);
+      expect(c.loaded).toBe(true);
+      expect(c.pos).toBe("absolute");
+      expect(c.nearTopRight).toBe(true);
     }
   });
 
-  test("상세 팝오버 관심 단계 배지는 태그 오른쪽 메타 — 네 단계 텍스트 유지", async ({
+  test("상세 팝오버 인기 순위 배지는 태그 오른쪽 메타 — 금·은·동 텍스트", async ({
     page, context, baseURL
   }, info) => {
     const proof = await guardCompanionQa(page, context, baseURL!);
@@ -75,6 +66,11 @@ test.describe("heart tier — 테두리 링", () => {
       if (url.origin === baseURL && url.pathname === "/" && request.method() === "GET") {
         proof.syntheticReads.push("excluded-public-root-get");
         return route.fulfill({ status: 404, contentType: "text/plain", body: "Public root excluded from synthetic fixture QA." });
+      }
+      // 바닥글의 개인정보·약관 링크 미리 불러오기(2026-11-13 추가) — 정적 안내 페이지라 여기서 끊는다.
+      if (url.origin === baseURL && ["/privacy", "/terms"].includes(url.pathname) && request.method() === "GET") {
+        proof.syntheticReads.push("excluded-legal-prefetch");
+        return route.fulfill({ status: 404, contentType: "text/plain", body: "Legal pages excluded from synthetic fixture QA." });
       }
       return route.fallback();
     });
@@ -87,7 +83,7 @@ test.describe("heart tier — 테두리 링", () => {
     await settlePanelLayout(page);
     const seen: Record<string, string> = {};
     const positions = [];
-    for (const key of ["warm", "hot", "blaze", "top"]) {
+    for (const key of ["gold", "silver", "bronze"]) {
       const card = page.locator(`.public-event[data-tier="${key}"]`).first();
       await card.click();
       const badge = page.locator(".agenda-detail-sheet .agenda-detail-metadata > .adt-badge");
@@ -106,11 +102,11 @@ test.describe("heart tier — 테두리 링", () => {
       expect(tb!.width).toBeGreaterThanOrEqual(hb!.width - 1);
       expect(bb!.x + bb!.width).toBeLessThanOrEqual(hb!.x + hb!.width + 1);
       positions.push({ key, title: tb, badge: bb, heading: hb });
-      if (key === "top") await info.attach("top-tier-meta", { body: await page.locator(".agenda-detail-sheet").screenshot(), contentType: "image/png" });
+      if (key === "gold") await info.attach("top-tier-meta", { body: await page.locator(".agenda-detail-sheet").screenshot(), contentType: "image/png" });
       await page.keyboard.press("Escape");
       await page.locator(".agenda-detail-sheet").waitFor({ state: "detached" });
     }
-    expect(seen).toEqual({ warm: "관심", hot: "높은 관심", blaze: "폭발적 관심", top: "👑 최고 인기" });
+    expect(seen).toEqual({ gold: "이 달 인기 1위", silver: "이 달 인기 2위", bronze: "이 달 인기 3위" });
     // 티어 없는 카드엔 배지가 없다
     await page.locator(".public-event:not([data-tier])").first().click();
     await page.locator(".agenda-detail-sheet").waitFor();
@@ -124,7 +120,7 @@ test.describe("heart tier — 테두리 링", () => {
       syntheticReads: proof.syntheticReads, fixtureOnly: true, noRealDbReadOrWrite: true }), contentType: "application/json" });
   });
 
-  test("표면 자연 높이: 하트 유무 동일(링은 높이 0)", async ({ page }) => {
+  test("표면 자연 높이: 하트 유무 동일(왕관은 높이 0)", async ({ page }) => {
     const natural = async (url: string) => {
       await page.goto(url);
       await page.locator("[data-export-surface]").waitFor();
@@ -140,19 +136,19 @@ test.describe("heart tier — 테두리 링", () => {
 
   test.describe("모바일 아젠다", () => {
     test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-    test("행 링·👑·도움말 견본, 가로 넘침 없음", async ({ page }) => {
+    test("행 왕관·도움말 견본, 가로 넘침 없음", async ({ page }) => {
       await page.goto("/visual-fixture/poster?hearts=1");
       await page.locator(".agenda-event").first().waitFor();
       await page.waitForTimeout(600);
       const m = await page.evaluate(() => ({
-        rings: document.querySelectorAll(".agenda-event .tier-ring").length,
+        retired: document.querySelectorAll(".agenda-event :is(.tier-ring, .tier-signal)").length,
         crowns: document.querySelectorAll(".agenda-event .tier-crown").length,
         swatches: document.querySelectorAll(".agenda-tier-help .tier-swatch").length,
         overflowX: document.documentElement.scrollWidth > window.innerWidth
       }));
-      expect(m.rings).toBeGreaterThan(0);
+      expect(m.retired).toBe(0);
       expect(m.crowns).toBeGreaterThanOrEqual(1);
-      expect(m.swatches).toBe(4);
+      expect(m.swatches).toBe(3);
       expect(m.overflowX).toBe(false);
     });
   });

@@ -100,7 +100,7 @@ import {
   hypeCalm,
   hypeIntensity
 } from "@/lib/ui/hype-curve";
-import { heartTier, type HeartTier } from "@/lib/schedules/heart-tiers";
+import { heartRankMap, type HeartTier } from "@/lib/schedules/heart-tiers";
 import { debutDateLabel, debutDPlus, getDayMark } from "@/lib/calendar/holidays";
 import {
   MonthJumpToast,
@@ -248,25 +248,17 @@ const POSTER_BOTTOM_GAP = 14;
 // 관심 단계 표식(2026-08-27) — 카드 '테두리'에 얹는 링(+1위는 👑 모서리 배지). 예전 불꽃 알약은
 // 카드 바닥에 한 줄(≈18px)을 먹어 행마다 쌓이면 달력 비율을 무너뜨렸다(사용자 지적). 링·배지는
 // absolute라 높이 0 — 내용은 그대로. 단계 라벨은 role=img aria-label·title로 남긴다.
+// 이 달 인기 1·2·3위 왕관(금·은·동, 노토 👑) — 카드 오른쪽 위 모서리에 걸친다. 테두리 링·광택은 없다
+// (2026-11-17 토리님: "네모 빤질빤질 효과는 빼고 3위까지 왕관만").
 function TierMark({ tier }: { tier: HeartTier }) {
   return (
-    <>
-      {/* 링이 있는 카드엔 안쪽 왼쪽 줄(tier-signal)을 겹치지 않는다 — 링·카드 테두리·줄이 겹쳐 이중링으로
-          보였다(2026-10-05 소유자). 줄은 제목 없는 이어짐 칸(링 없음)에만 남는다. */}
-      {/* halo는 링과 형제(링의 마스크가 자기 그림자를 잘라서). 관심(warm)은 halo 없음 — 조용한 단계. */}
-      {tier.key !== "warm" ? <span aria-hidden="true" className={`tier-halo tier-${tier.key}`} /> : null}
-      <span
-        aria-label={`관심 단계: ${tier.label}`}
-        className={`tier-ring tier-${tier.key}`}
-        role="img"
-        title={tier.label}
-      />
-      {tier.key === "top" ? (
-        <span aria-hidden="true" className="tier-crown">
-          👑
-        </span>
-      ) : null}
-    </>
+    <img
+      alt={tier.label}
+      className={`tier-crown tier-${tier.key}`}
+      draggable={false}
+      src={tier.icon}
+      title={tier.label}
+    />
   );
 }
 
@@ -303,14 +295,12 @@ const POSTER_DESIGN_W = 1840;
 const POSTER_DESIGN_H = Math.round((POSTER_DESIGN_W * 9) / 16); // 1035 (16:9)
 
 // 관심 단계 순위(높을수록 인기). 한 칸의 "대표 인기 단계"를 고를 때 쓴다.
-const POP_RANK: Record<string, number> = { warm: 1, hot: 2, blaze: 3, top: 4 };
 // 범례 인기도 단계 = 필터 버튼(2026-10-05). label = 넓은 범례, short = 얇은 레일(축약형)·모바일 title.
 type StatusFilterKey = HeartTier["key"] | "tentative";
 const TIER_FILTERS: { key: HeartTier["key"]; label: string; short: string }[] = [
-  { key: "warm", label: "관심", short: "관심" },
-  { key: "hot", label: "높은 관심", short: "높은" },
-  { key: "blaze", label: "폭발적", short: "폭발" },
-  { key: "top", label: "이 달 1위", short: "1위" }
+  { key: "gold", label: "이 달 1위", short: "1위" },
+  { key: "silver", label: "이 달 2위", short: "2위" },
+  { key: "bronze", label: "이 달 3위", short: "3위" }
 ];
 
 // (P2-KST-1: nowKstHm은 lib/calendar/month.ts 단일 출처에서 import — 편집실과 동일 모양.)
@@ -385,7 +375,7 @@ function recordHeartDelta(owner: string, id: string, on: boolean) {
   saveHeartDelta(d);
 }
 
-// #3: 관심 하트 단계(불꽃 게이지) — 임계값·판정은 lib/schedules/heart-tiers의 단일 출처를 쓴다
+// #3: 이 달 인기 순위 왕관 — 기준·판정은 lib/schedules/heart-tiers의 단일 출처를 쓴다
 // (개발자 인사이트의 '배지 기준' 설명과 드리프트 없이 일치시키려고 분리).
 
 // 떡밥 카드의 "공개까지" 카운트다운. 매초 갱신, 0이 되면 onReveal()로 서버 데이터를 새로 받아
@@ -2621,15 +2611,12 @@ export function PublicPoster({
     // 아무도 모른다. 남의 하트가 revalidation으로 들어올 땐 절대 안 뜬다(이 토글 경로에서만 계산).
     if (!wasOn) {
       const cur = heartCounts[id] ?? 0;
-      const before = heartTier(cur, topEventIds.has(id), maxHeart);
-      const after = heartTier(cur + 1, cur + 1 >= maxHeart, Math.max(maxHeart, cur + 1));
-      if (after && after.key !== before?.key) {
+      void cur;
+      const before = tierById.get(id);
+      const after = heartRankMap(monthHeartPairs(id)).get(id);
+      if (after && after.rank < (before?.rank ?? 4)) {
         const title = liveEvents.find((e) => e.id === id)?.publicTitle ?? "이 일정";
-        setHeartToast(
-          after.key === "top"
-            ? `👑 당신의 하트로 "${trimTitle(title)}"이(가) 이 달 1위!`
-            : `${after.flames} 당신의 하트로 "${trimTitle(title)}"이(가) ${after.label}이 됐어요!`
-        );
+        setHeartToast(`👑 당신의 하트로 "${trimTitle(title)}"이(가) ${after.label}!`);
         hapticSuccess();
         playSfx("levelup");
         if (heartToastTimerRef.current) {
@@ -2713,30 +2700,22 @@ export function PublicPoster({
   }
   const isBookmarked = (id: string) => bookmarks.includes(id);
 
-  // 관심 단계 = "보는 달 최다 하트" 대비 비율 + 절대 하한(lib/schedules/heart-tiers 단일 출처).
-  // maxHeart는 '보는 달' 일정만의 최댓값 — 예전엔 로드된 전체 달을 통틀어 재서 "이 달 1위"가 사실은
-  // 전체 1위였다(2026-08-27 정정). 낙관적 heartCounts에서 파생되므로 내 하트 누름/취소에 즉시 반영.
-  const maxHeart = useMemo(() => {
+  // 이 달 인기 순위 왕관(금·은·동) — '보는 달' 일정만으로 센다(lib/schedules/heart-tiers 단일 출처).
+  // 낙관적 heartCounts에서 파생되므로 내 하트 누름/취소에 즉시 반영된다.
+  const monthHeartPairs = (bump?: string): [string, number][] => {
     const ym = `${view.year}-${String(view.month).padStart(2, "0")}`;
-    let max = 0;
+    const out: [string, number][] = [];
     for (const e of schedule.events) {
       if (!getEventDateKey(e).startsWith(ym)) continue;
-      const c = heartCounts[e.id] ?? 0;
-      if (c > max) max = c;
+      out.push([e.id, (heartCounts[e.id] ?? 0) + (e.id === bump ? 1 : 0)]);
     }
-    return max;
-  }, [heartCounts, schedule.events, view.year, view.month]);
-  // 이 달 최다 하트와 같은(공동 1위 포함) 일정 id들 — 이들에 👑을 붙인다. 공동 1위를 함께 왕관으로
-  // 두면 다른 일정에 하트를 눌러 동점이 돼도 기존 왕관이 사라지지 않는다(단조).
-  const topEventIds = useMemo(() => {
-    const ids = new Set<string>();
-    if (maxHeart <= 0) return ids;
-    const ym = `${view.year}-${String(view.month).padStart(2, "0")}`;
-    for (const e of schedule.events) {
-      if ((heartCounts[e.id] ?? 0) === maxHeart && getEventDateKey(e).startsWith(ym)) ids.add(e.id);
-    }
-    return ids;
-  }, [heartCounts, maxHeart, schedule.events, view.year, view.month]);
+    return out;
+  };
+  const tierById = useMemo(
+    () => heartRankMap(monthHeartPairs()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [heartCounts, schedule.events, view.year, view.month]
+  );
 
   // "내 관심"은 보고 있는 달 기준으로 따로 센다. 휴뱅(방송 안 함) 일정은 하트 대상이 아니라 제외.
   // 분모 = 이 달 휴뱅 제외 일정 수(내가 누를 수 있는 최대), 분자 = 그중 내가 ♥ 누른 수.
@@ -2862,7 +2841,7 @@ export function PublicPoster({
     const matchesBookmark = !bookmarkedOnly || isBookmarked(event.id);
     const tierKeys = statusFilters.filter((k) => k !== "tentative");
     const tier =
-      tierKeys.length > 0 ? heartTier(heartCounts[event.id] ?? 0, topEventIds.has(event.id), maxHeart) : null;
+      tierKeys.length > 0 ? (tierById.get(event.id) ?? null) : null;
     const matchesTier = tierKeys.length === 0 || (tier !== null && tierKeys.includes(tier.key));
     const matchesTentative = !statusFilters.includes("tentative") || Boolean(event.isTentative);
     return !(matchesTag && matchesBookmark && matchesTier && matchesTentative);
@@ -3029,19 +3008,6 @@ export function PublicPoster({
     const visibleDayMark = getDayMark(cell.isoDate);
     const showHeaderMark = Boolean(visibleDayMark?.name);
 
-    // 이 칸의 대표 관심 단계 — 진입 시 단계별로 칸을 부각하는 애니메이션(data-pop)에 쓴다.
-    let popTier: string | null = null;
-    if (interactive) {
-      let bestRank = 0;
-      for (const e of events) {
-        const t = heartTier(heartCounts[e.id] ?? 0, topEventIds.has(e.id), maxHeart);
-        if (t && POP_RANK[t.key] > bestRank) {
-          bestRank = POP_RANK[t.key];
-          popTier = t.key;
-        }
-      }
-    }
-
     // 이 날 다시보기(공개분)가 있으면 칸 배경 클릭 = 다시보기 팝오버. 카드·업도움 띠·버튼
     // 클릭은 각자의 동작이 우선이다(closest 가드). 포스터/미리보기(비인터랙티브)에선 없음.
     const cellVods = interactive ? vodsByDate.get(cell.isoDate) : undefined;
@@ -3052,7 +3018,6 @@ export function PublicPoster({
         }${rangeSelected.has(cellIndex) ? " cell-range-selected" : ""}${
           cellVods ? " has-vod" : ""
         }${flashDate === cell.isoDate ? " cell-flash" : ""}`}
-        data-pop={popTier ?? undefined}
         data-cell-index={cellIndex}
         data-date={cell.isoDate}
         data-act={cellVods ? "day-vod-open" : undefined}
@@ -3068,10 +3033,6 @@ export function PublicPoster({
             : undefined
         }
       >
-        {/* 진입 부각(관심 단계) — 칸 자체는 절대 안 움직인다(scale/translate는 기간 안내 띠·이어지는
-            일정을 이웃 칸과 끊어 놓았다, 2026-09-28 소유자). 대신 빛 한 겹(.pop-bloom)이 칸 위에서
-            피었다 진다. 가상요소는 today/outside가 이미 쓰므로 실제 요소. popIntro가 끝나면 DOM에서 빠진다. */}
-        {popIntro && popTier ? <span aria-hidden="true" className="pop-bloom" data-pop={popTier} /> : null}
         {/* 호버 ▶ 배지 — 가상요소를 쓰면 outside 베일·today 링(::after)과 슬롯이 충돌해
             좌상단으로 튄다(실측). 실제 요소 + hover 표시로. 비인터랙티브(포스터/캡쳐)에선
             cellVods가 없어 DOM 자체가 없다. */}
@@ -3388,7 +3349,7 @@ export function PublicPoster({
             // 스티커가 꾸미기에서 놓은 자리보다 칸 대비 위로 떠 보였다(ADR-0004 "꾸미기 == 시청자").
             // 집계(heartCount)는 서버에서 오는 같은 값이라 두 화면이 같은 배지를 그린다.
             const tier = span.showTitle
-              ? heartTier(heartCounts[event.id] ?? 0, topEventIds.has(event.id), maxHeart)
+              ? (tierById.get(event.id) ?? null)
               : null;
             const eventClass = [
               "public-event",
@@ -3550,8 +3511,7 @@ export function PublicPoster({
                   );
                 })()}
                 {/* 관심 단계 링·👑 — 마지막 자식(무늬 위, 본문 아래 z-index 0). 시작 칸에만. */}
-                {tier ? (span.showTitle ? <TierMark tier={tier} /> :
-                  <span className={`tier-signal tier-${tier.key}`} aria-hidden="true" />) : null}
+                {tier && span.showTitle ? <TierMark tier={tier} /> : null}
               </div>
             );
           })}
@@ -3728,9 +3688,7 @@ export function PublicPoster({
                     title={t.label}
                     type="button"
                   >
-                    <i aria-hidden="true" className={`tier-swatch tier-${t.key}`}>
-                      {t.key === "top" ? "👑" : null}
-                    </i>
+                    <img alt="" aria-hidden="true" className={`tier-swatch tier-${t.key}`} src={`/crowns/${t.key}.svg`} />
                   </button>
                 );
               })}
@@ -3950,7 +3908,7 @@ export function PublicPoster({
                     const bookmarked = isBookmarked(event.id);
                     const tier =
                       interactive && !support
-                        ? heartTier(heartCounts[event.id] ?? 0, topEventIds.has(event.id), maxHeart)
+                        ? (tierById.get(event.id) ?? null)
                         : null;
                     const single = support
                       ? { background: "#84b74f" }
@@ -4309,9 +4267,7 @@ export function PublicPoster({
                 onClick={() => toggleStatusFilter(t.key)}
                 type="button"
               >
-                <i aria-hidden="true" className={`tier-swatch tier-${t.key}`}>
-                  {t.key === "top" ? "👑" : null}
-                </i>
+                <img alt="" aria-hidden="true" className={`tier-swatch tier-${t.key}`} src={`/crowns/${t.key}.svg`} />
                 {compact ? t.short : t.label}
               </button>
             );
@@ -4502,7 +4458,7 @@ export function PublicPoster({
               event.teaser && event.teaserRevealAt && Date.parse(event.teaserRevealAt) > syncedNow()
             );
             const detailTier = !support && !teaserActive
-              ? heartTier(heartCounts[event.id] ?? 0, topEventIds.has(event.id), maxHeart)
+              ? (tierById.get(event.id) ?? null)
               : null;
             // 카드와 같은 연속 강도 — 위 10Hz 루프가 CSS 변수로 흘려보낸다. 여기선 '무엇을
             // 그릴지'(문구 전환)만 판단한다. 이산 단계(hs1~hs4)는 폐기.
@@ -4774,8 +4730,8 @@ export function PublicPoster({
                         </PublicDetailTags>
                       ) : null}
                       {detailTier ? (
-                        <span aria-label={`관심 단계: ${detailTier.label}`} className={`adt-badge tier-${detailTier.key}`}>
-                          {detailTier.key === "top" ? "👑 " : null}
+                        <span aria-label={detailTier.label} className={`adt-badge tier-${detailTier.key}`}>
+                          <img alt="" aria-hidden="true" className="adt-crown" src={detailTier.icon} />
                           {detailTier.label}
                         </span>
                       ) : null}

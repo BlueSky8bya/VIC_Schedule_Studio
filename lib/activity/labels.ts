@@ -220,7 +220,8 @@ const SECTION: Record<string, TargetLabel> = {
 const FONT_OPT_NAMES: Record<string, string> = Object.fromEntries(
   FONT_OPTIONS.map((f) => [f.id.replace(/\d+/g, "#"), f.label])
 );
-const TIER_OPT_NAMES: Record<string, string> = { warm: "관심", hot: "높은 관심", blaze: "폭발적", top: "이 달 1위" };
+// 금·은·동 = 지금 필터. warm~top은 2026-11-17 이전 기록을 읽기 위한 옛 이름.
+const TIER_OPT_NAMES: Record<string, string> = { gold: "1위(금)", silver: "2위(은)", bronze: "3위(동)", warm: "관심", hot: "높은 관심", blaze: "폭발적", top: "이 달 1위" };
 
 /** 버튼·컨트롤 사전. 테스트가 "코드에 없는 이름"을 잡으려고 함께 읽는다(2026-09-19). */
 export const ACT: Record<string, TargetLabel> = {

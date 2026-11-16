@@ -78,13 +78,13 @@ export default async function VisualPosterFixture({
   const avatar = sp?.avatar === "1";
   // fixed=left|right → /onair(뱅송 미리보기)와 같은 고정 scene(토글 없음)을 fixture에서 검증.
   const fixed = sp?.fixed === "left" || sp?.fixed === "right" ? sp.fixed : undefined;
-  // hearts=1 → 일정에 하트 집계를 순환 주입(6/24/40/45/0; 최다 45 기준 관심·높은·폭발·1위) — 관심 단계 링을
-  // 시청자 fixture에서 검증. 지오메트리 게이트(기본 fixture)는 무영향.
+  // hearts=1 → 실데이터 모양 하트 집계 주입: 대부분 0~6, 몇 개만 많다(45 → 1위, 40 → 2위, 24 두 개 → 동점 3위, 6 → 왕관 없음).
+  // 금·은·동 왕관(이 달 1~3위)을 시청자 fixture에서 검증. 지오메트리 게이트(기본 fixture)는 무영향.
   const hearts = sp?.hearts === "1";
   const shown = hearts
     ? {
         ...schedule,
-        events: schedule.events.map((e, i) => ({ ...e, heartCount: [6, 24, 40, 45, 0][i % 5] }))
+        events: schedule.events.map((e, i) => ({ ...e, heartCount: ({ 0: 6, 1: 24, 2: 40, 3: 45, 6: 24 } as Record<number, number>)[i] ?? 2 }))
       }
     : schedule;
   // ambient=spring|summer|autumn|winter → 계절 레이어 강제(ADR-0017 검증용). 없으면 오늘(KST) 절기.

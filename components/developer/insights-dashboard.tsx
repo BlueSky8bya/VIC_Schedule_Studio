@@ -15,14 +15,7 @@ import {
 } from "@/lib/insights/actions";
 import type { ArchivePayload } from "@/lib/insights/archive";
 import { monthProgress } from "@/lib/insights/month-progress";
-import {
-  HEART_BLAZE_MIN,
-  HEART_BLAZE_RATIO,
-  HEART_CROWN,
-  HEART_HOT_MIN,
-  HEART_HOT_RATIO,
-  HEART_MIN
-} from "@/lib/schedules/heart-tiers";
+import { HEART_MIN, HEART_RANKS } from "@/lib/schedules/heart-tiers";
 import { hapticTick } from "@/lib/ui/haptics";
 import { InsightsTabs, insightTabStep } from "@/components/shared/insights-tabs";
 import { LoadError, LoadingState } from "@/components/shared/loading-state";
@@ -447,48 +440,24 @@ export function InsightsDashboard({
                       ))}
                     </ul>
                   )}
-                  {/* 관심 단계 기준 — 시청자 포스터의 테두리 링·👑을 어떻게 받는지(기준은
-                      lib/schedules/heart-tiers 단일 출처라 포스터와 항상 일치). 2026-08-27부터
-                      '이 달 최다 대비 비율 + 절대 하한'. */}
-                  <h4 className="insight-subhead">관심 단계 받는 기준</h4>
+                  {/* 인기 왕관 기준 — 시청자 포스터의 금·은·동 왕관(lib/schedules/heart-tiers 단일 출처라 포스터와
+                      항상 일치). 2026-11-17 토리님 요청으로 테두리 링 단계 → 이 달 순위 왕관 3개로 개편. */}
+                  <h4 className="insight-subhead">인기 왕관 받는 기준</h4>
                   <ul className="badge-criteria">
-                    <li>
-                      <span className="bc-flame" style={{ color: "#f59e0b" }}>●</span>
-                      <div className="bc-body">
-                        <b>관심</b>
-                        <em>하트 {HEART_MIN}개 이상</em>
-                      </div>
-                    </li>
-                    <li>
-                      <span className="bc-flame" style={{ color: "#f97316" }}>●</span>
-                      <div className="bc-body">
-                        <b>높은 관심</b>
-                        <em>
-                          이 달 최다의 {Math.round(HEART_HOT_RATIO * 100)}% 이상 · 최소 {HEART_HOT_MIN}개
-                        </em>
-                      </div>
-                    </li>
-                    <li>
-                      <span className="bc-flame" style={{ color: "#dc2626" }}>●</span>
-                      <div className="bc-body">
-                        <b>폭발적 관심</b>
-                        <em>
-                          이 달 최다의 {Math.round(HEART_BLAZE_RATIO * 100)}% 이상 · 최소 {HEART_BLAZE_MIN}개
-                        </em>
-                      </div>
-                    </li>
-                    <li>
-                      <span className="bc-flame">👑</span>
-                      <div className="bc-body">
-                        <b>최고 인기(이 달 1위)</b>
-                        <em>이 달 최다(공동 포함) · 하트 {HEART_CROWN}개 이상</em>
-                      </div>
-                    </li>
+                    {(["gold", "silver", "bronze"] as const).map((k, i) => (
+                      <li key={k}>
+                        <img alt="" className="bc-flame" height={18} src={`/crowns/${k}.svg`} width={18} />
+                        <div className="bc-body">
+                          <b>이 달 인기 {i + 1}위</b>
+                          <em>이 달 하트 수 {i + 1}번째(동점은 같은 등수)</em>
+                        </div>
+                      </li>
+                    ))}
                   </ul>
                   <p className="insight-note">
-                    하트 {HEART_MIN}개 미만은 단계 없음. 시청자에겐 숫자 없이 테두리 링·👑·상세 배지로만
-                    보입니다. 비율 기준이라 다른 일정에 하트가 쌓여 이 달 최다가 오르면 단계가 내려갈 수
-                    있습니다(이 달의 상대 인기).
+                    하트 {HEART_MIN}개 미만은 순위에서 빠집니다. 왕관은 위에서 {HEART_RANKS}위까지만, 시청자에겐 숫자 없이
+                    카드 모서리 왕관·상세 배지로만 보입니다. 하트 수가 같은 일정은 같은 왕관을 받고, 다음 등수는 바로 다음
+                    하트 수입니다.
                   </p>
                 </>
               );
