@@ -726,7 +726,7 @@ export function getLinkedChainIds<T extends PublicScheduleEvent | StudioSchedule
 // 이을 때 쓰는 기준과 동일 → 칠(buildPaintGroups)과 모서리가 항상 일치한다. 그래야 색이 다른
 // 두 일정(예: 옛 엠바고 + 다른 태그)이 억지로 붙어 보이지 않는다. "A|B"+"B"는 이어지고(B==B),
 // "A|B"+"C"는 끊긴다. (태그를 바꿔 색이 어긋난 옛 link_next도 자동으로 끊겨 보인다.)
-function linkEdgesMatch(
+export function linkEdgesMatch(
   left: PublicScheduleEvent | StudioScheduleEvent,
   right: PublicScheduleEvent | StudioScheduleEvent
 ) {

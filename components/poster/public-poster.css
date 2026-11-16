@@ -6817,7 +6817,7 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
   border-bottom-left-radius: 0;
 }
 /* 이어진 두 카드는 그림자·들림을 끈다 — 띠 쪽으로 그림자가 지면 이음새가 생기고, 한쪽만 뜨면 어긋난다.
-   대신 손을 올리면 두 카드와 띠가 같이 밝아진다(.chain-hot / .is-hot). */
+   대신 손을 올리면 두 카드와 띠가 같이 밝아진다([data-chain-hot] / .is-hot). */
 .public-event.chain-step-from,
 .public-event.chain-step-to,
 .studio-event-pill.chain-step-from,
@@ -6840,8 +6840,8 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
 .chain-step-tint {
   pointer-events: none;
 }
-.chain-hot.chain-step-from,
-.chain-hot.chain-step-to,
+[data-chain-hot].chain-step-from,
+[data-chain-hot].chain-step-to,
 .chain-step.is-hot {
   filter: brightness(1.04) saturate(1.12);
 }
@@ -6886,7 +6886,7 @@ html[data-theme="dark"] .chain-step.is-hot .chain-step-sheen {
   35% { opacity: 1; }
   100% { transform: scaleY(1); opacity: 1; }
 }
-.chain-pop {
+[data-chain-pop] {
   animation: chain-card-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 1;
 }
 @keyframes chain-card-pop {
@@ -6894,21 +6894,57 @@ html[data-theme="dark"] .chain-step.is-hot .chain-step-sheen {
   40% { transform: scale(1.035); }
   100% { transform: scale(1); }
 }
-/* 편집실에서 고른 묶음 — 띠 테두리도 카드 선택 점선과 같은 선택색 점선 + 옅은 선택색 번짐. */
-.chain-step.is-selected .chain-step-body {
-  stroke: var(--selection-border, #2f7fe0) !important;
-  stroke-width: 2.2px;
-  stroke-dasharray: 5 3.5;
-  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--selection-border, #2f7fe0) 35%, transparent));
+/* 고른 묶음을 한 덩어리로 두르는 테두리(카드 위 층). 카드마다 두르던 링은 이어진 조각에선 끈다 —
+   카드 링과 띠 테두리가 따로 놀며 점선·실선이 겹치고 끊겼다(2026-11-16 소유자). */
+.chain-rings {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 11;
+}
+.chain-ring {
+  fill: none;
+  stroke-linejoin: round;
+  animation: chain-ring-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.chain-ring.is-dash {
+  stroke: var(--selection-border, #2f7fe0);
+  stroke-width: 2.5px;
+  stroke-dasharray: 6 4;
+}
+.chain-ring.is-solid {
+  stroke: var(--studio-action, #4b86c9);
+  stroke-width: 2px;
+}
+@keyframes chain-ring-in {
+  from { opacity: 0; transform: scale(0.985); }
+  to { opacity: 1; transform: scale(1); }
+}
+.studio-event-pill.primary-selected.chain-step-from::after,
+.studio-event-pill.primary-selected.chain-step-to::after {
+  display: none;
+}
+.public-event.detail-current.chain-step-from,
+.public-event.detail-current.chain-step-to {
+  outline: none;
+}
+html[data-reduce-motion] .chain-ring {
+  animation: none;
 }
 html[data-reduce-motion] .chain-step.is-new,
-html[data-reduce-motion] .chain-pop,
+html[data-reduce-motion] [data-chain-pop],
 html[data-reduce-motion] .chain-step.is-hot .chain-step-sheen {
   animation: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .chain-step.is-new,
-  .chain-pop,
+  [data-chain-pop],
   .chain-step.is-hot .chain-step-sheen {
     animation: none;
   }

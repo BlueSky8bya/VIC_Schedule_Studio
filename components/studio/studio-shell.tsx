@@ -114,6 +114,7 @@ import {
   buildCalendarMonth,
   buildChainJoins,
   buildChainKeys,
+  linkEdgesMatch,
   buildLinkChain,
   buildPaintGroups,
   classifyDay,
@@ -719,7 +720,7 @@ export function StudioShell({
 
   // 이음새 '칼로 긋기': 손잡이를 눌러 threshold 이상 그으면 그 연결(earlier.linkNext)만 끊는다.
   // 단순 클릭(움직임 없음)은 아무 일도 안 한다 → 제목 편집 중 실수 끊김 방지.
-  function performSeamCut(rawEarlierId: string) {
+  function performSeamCut(rawEarlierId: string, quiet = false) {
     if (!canEdit) return;
     // 제스처 핸들러(옛 렌더 클로저)에서 불린다 — 배열은 ref, id는 canonId(temp↔실제 동일시).
     const earlierId = canonId(rawEarlierId);
@@ -735,9 +736,11 @@ export function StudioShell({
       prev.map((e) => (canonId(e.id) === earlierId ? { ...e, linkNext: undefined } : e))
     );
     setActionError(null);
-    hapticTick();
-    playSfx("unlink");
-    flashToast("싹둑 — 연결을 끊었어요");
+    if (!quiet) {
+      hapticTick();
+      playSfx("unlink");
+      flashToast("싹둑 — 연결을 끊었어요");
+    }
     setCutFlashId(earlierId);
     setCutFlashNextId(prevNext);
     if (cutFlashTimer.current) window.clearTimeout(cutFlashTimer.current);
@@ -4294,6 +4297,18 @@ export function StudioShell({
     for (const p of plans) {
       enqueueMovePersist({ id: p.id, sourceDate: p.from, targetDate: p.to, orderedIds: p.orderedIds });
     }
+    unlinkBrokenAfter(
+      live.map((ev) => {
+        const c = canonId(ev.id);
+        let next = ev;
+        if (memberSet.has(c)) {
+          next = { ...next, startsAt: next.startsAt.replace(/^\d{4}-\d{2}-\d{2}/, addDaysIso(getEventDateKey(ev), delta)) };
+        }
+        const pos = orderPos.get(c);
+        return pos !== undefined ? { ...next, sortOrder: pos } : next;
+      }),
+      plans.flatMap((p) => [p.from, p.to])
+    );
   }
 
   function onPillPointerDown(e: ReactPointerEvent<HTMLDivElement>, event: StudioScheduleEvent) {
@@ -4417,6 +4432,7 @@ export function StudioShell({
         return linkMap.has(c) ? { ...e, linkNext: linkMap.get(c) } : e;
       });
     setEvents(applyLinks);
+    arrangeChainOrder(chain, applyLinks(live));
     setActionError(null);
     hapticTick();
     flashToast("이어붙였어요");
@@ -4812,6 +4828,77 @@ export function StudioShell({
     playSfx("drop");
     // 서버 저장은 직렬 큐로 — 빠른 연속 이동도 순서대로 저장돼 마지막 위치가 서버 최종값이 된다.
     enqueueMovePersist({ id, sourceDate, targetDate, orderedIds });
+    unlinkBrokenAfter(
+      live.map((ev) => {
+        const evc = canonId(ev.id);
+        let next = ev;
+        if (evc === cid && targetDate !== sourceDate) {
+          next = { ...next, startsAt: next.startsAt.replace(/^\d{4}-\d{2}-\d{2}/, targetDate) };
+        }
+        const pos = orderPos.get(evc);
+        return pos !== undefined ? { ...next, sortOrder: pos } : next;
+      }),
+      [sourceDate, targetDate]
+    );
+  }
+
+  // (2026-11-16 소유자) 화면 = 데이터 — 순서를 바꿔 이어진 일정이 더는 '앞날 마지막 = 다음날 첫 카드'가 아니면
+  // 저장된 이어짐(link_next)도 푼다. 눈으로는 끊겼는데 묶음 끌기·선택이 여전히 한 덩어리로 움직이던 문제.
+  // 색(대표 태그)이 달라 원래 안 이어 그리던 쌍·떡밥·여러 날 한 장은 건드리지 않는다.
+  function unlinkBrokenAfter(nextEvents: StudioScheduleEvent[], dates: string[]) {
+    const days = new Set<string>();
+    for (const d of dates) {
+      days.add(d);
+      days.add(addDaysIso(d, -1));
+    }
+    const dayList = (iso: string) => getEventsForDate(nextEvents, iso).filter((e) => !e.isSupport);
+    const broken: string[] = [];
+    for (const d of days) {
+      const a = dayList(d);
+      const nextDay = addDaysIso(d, 1);
+      const b = dayList(nextDay);
+      for (const e of a) {
+        if (!e.linkNext || getEventDateKey(e) !== d || (e.endDateKey && e.endDateKey > d)) continue;
+        const n = nextEvents.find((x) => canonId(x.id) === canonId(e.linkNext!));
+        if (!n || getEventDateKey(n) !== nextDay || (n.endDateKey && n.endDateKey > nextDay)) continue;
+        if (!linkEdgesMatch(e, n) || teaserStillHidden(e) || teaserStillHidden(n)) continue;
+        const joined = a[a.length - 1] === e && b[0] === n;
+        if (!joined) broken.push(e.id);
+      }
+    }
+    for (const eid of broken) performSeamCut(eid, true);
+    if (broken.length > 0) flashToast("순서가 바뀌어 이어진 일정을 풀었어요");
+  }
+
+  // (2026-11-16 소유자) '잇기'로 묶으면 순서도 맞춘다 — 첫 조각은 그날 맨 아래, 이어 받는 조각은 그날 맨 위.
+  // 그래야 묶자마자 화면에서도 이어진다(앞날 마지막 = 다음날 첫 카드 규칙).
+  function arrangeChainOrder(chainIds: string[], base: StudioScheduleEvent[]) {
+    const members = chainIds
+      .map((cid) => base.find((x) => canonId(x.id) === canonId(cid)))
+      .filter((x): x is StudioScheduleEvent => Boolean(x));
+    const plans: { id: string; date: string; orderedIds: string[] }[] = [];
+    members.forEach((m, i) => {
+      const date = getEventDateKey(m);
+      const day = getEventsForDate(base, date).filter((x) => !x.isSupport || x.id === m.id);
+      const others = day.filter((x) => canonId(x.id) !== canonId(m.id)).map((x) => x.id);
+      const orderedIds = i === 0 ? [...others, m.id] : [m.id, ...others];
+      const current = getEventsForDate(base, date).map((x) => x.id);
+      const allIds = [...orderedIds, ...current.filter((x) => !orderedIds.includes(x))];
+      if (allIds.join() !== current.join()) plans.push({ id: m.id, date, orderedIds: allIds });
+    });
+    if (plans.length === 0) return;
+    const orderPos = new Map<string, number>();
+    for (const p of plans) p.orderedIds.forEach((eid, i) => orderPos.set(canonId(eid), i));
+    flipArmedRef.current = true;
+    setEvents((prev) =>
+      prev.map((ev) => {
+        const pos = orderPos.get(canonId(ev.id));
+        return pos !== undefined ? { ...ev, sortOrder: pos } : ev;
+      })
+    );
+    for (const p of plans) {
+      enqueueMovePersist({ id: p.id, sourceDate: p.date, targetDate: p.date, orderedIds: p.orderedIds });
+    }
   }
 
   // showPanel=false면 오른쪽 편집/상세 패널을 열지 않고 form만 채운다(업 도움 시트처럼 팝업만

@@ -53,5 +53,11 @@ export function ChainCurveLayer({
     if (right?.kind === "curve") keys.push(chainCurveKey(e.id, right.otherId));
   }
   if (keys.length === 0) return null;
-  return <svg aria-hidden="true" className="chain-curves" data-curve-svg={keys.join(" ")} />;
+  // 뒤 층(카드 밑 — 띠 몸통) + 앞 층(카드 위 — 고른 묶음을 한 덩어리로 두르는 테두리)
+  return (
+    <>
+      <svg aria-hidden="true" className="chain-curves" data-curve-svg={keys.join(" ")} />
+      <svg aria-hidden="true" className="chain-rings" data-curve-ring="" />
+    </>
+  );
 }

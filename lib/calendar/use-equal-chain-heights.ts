@@ -12,10 +12,12 @@ function scaleOf(el: HTMLElement): number {
 // 꺾인 띠 이음(buildChainJoins의 curve 판정 — 2026-11-16 소유자 C안) — 앞날 카드(data-curve-from)의 오른쪽 변과
 // 다음날 카드(data-curve-to)의 왼쪽 변을, 칸 사이 틈에서 위/아래로 꺾여 오르내리는 '카드와 같은 몸통'으로 잇는다.
 // 선이 아니라 띠라서 카드와 같은 채움·테두리색이고, 카드 뒤(z 1)에 깔려 맞닿는 변은 카드가 덮는다.
-// 굵기 = 칸 사이 틈을 10~14px로 묶은 값 — 좁아도 10px 아래로 가늘어지지 않고, 넓어도 14px 위로 답답해지지 않는다.
-// 모서리는 볼록 7px·오목 5px로 둥글려 꺾임이 부드럽다. svg는 앞 카드 칸 안(칸 기준 좌표).
-const STEP_MIN = 10;
-const STEP_MAX = 14;
+// 굵기 = 칸 사이 틈에서 양옆 여백 2px씩을 뺀 값을 7~12px로 묶는다 — 옆 일정과 딱 붙어 보이지 않고(2026-11-16 소유자
+// "너무 딱 달라붙어"), 좁아도 7px 아래로 가늘어지지 않는다. 모서리는 카드 반경과 같은 볼록·5px 오목.
+// svg는 앞 카드 칸 안(칸 기준 좌표).
+const STEP_MIN = 7;
+const STEP_MAX = 12;
+const STEP_CLEAR = 2;
 const STEP_CONVEX = 7;
 const STEP_CONCAVE = 5;
 
@@ -42,7 +44,13 @@ function flatOverlaysOf(el: HTMLElement): string[] {
 // 볼록 모서리 = 카드 자신의 모서리 반경(4~10px) — 띠의 꺾임이 카드 모서리와 같은 곡률로 이어진다.
 function convexOf(el: HTMLElement): number {
   const r = parseFloat(getComputedStyle(el).borderTopLeftRadius);
-  return Number.isFinite(r) ? Math.min(10, Math.max(4, r)) : 7;
+  return Number.isFinite(r) ? Math.min(10, Math.max(4, r)) : STEP_CONVEX;
+}
+// 띠 테두리 두께 = 카드 테두리 두께. 경로를 그 절반만큼 안으로 들여 그려야 카드 테두리와 같은 줄에 선다
+// (가운데 정렬 획이 반 픽셀 밖으로 삐져 카드와 띠가 만나는 곳에 단차가 보였다, 2026-11-16 소유자).
+function borderWidthOf(el: HTMLElement): number {
+  const w = parseFloat(getComputedStyle(el).borderTopWidth);
+  return Number.isFinite(w) && w > 0 ? w : 1;
 }
 function fillOf(from: HTMLElement, to: HTMLElement): string {
   for (const el of [from, to]) {
@@ -56,7 +64,7 @@ type Pt = { x: number; y: number; r: number };
 // 직교 다각형의 꼭짓점을 둥글린 경로. r은 상한 — 변 길이의 절반을 넘지 않는다.
 function roundedPath(pts: Pt[]): string {
   const n = pts.length;
-  const f = (v: number) => v.toFixed(1);
+  const f = (v: number) => v.toFixed(2);
   let d = "";
   for (let i = 0; i < n; i += 1) {
     const p0 = pts[(i - 1 + n) % n];
@@ -75,20 +83,14 @@ function roundedPath(pts: Pt[]): string {
 }
 
 type Box = { left: number; right: number; top: number; bottom: number };
+type Span = { top: number; bottom: number };
 
-// 앞 카드 S(왼쪽 칸)·다음 카드 T(오른쪽 칸)의 칸 기준 사각형 → 꺾인 띠 경로(세 사각형의 합집합 윤곽).
-export function stepBandPath(
-  S: Box,
-  T: Box,
-  convex = STEP_CONVEX
-): { d: string; width: number; originX: number; originY: number } {
-  const gap = T.left - S.right;
-  const w = Math.min(STEP_MAX, Math.max(STEP_MIN, gap));
-  const mid = (S.right + T.left) / 2;
-  const xa = mid - w / 2;
-  const xb = mid + w / 2;
-  const x0 = Math.min(S.right - 3, xa);
-  const x1 = Math.max(T.left + 3, xb);
+// 왼쪽 몸(x0~xa, 세로 S) + 기둥(xa~xb, 세로 전체) + 오른쪽 몸(xb~x1, 세로 T)의 합집합 윤곽.
+// hidden(x) = 그 꼭짓점이 카드 밑에 숨으면 둥글리지 않는다.
+function stepOutline(
+  x0: number, xa: number, xb: number, x1: number, S: Span, T: Span,
+  convex: number, concave: number, hidden: (x: number) => boolean
+): string {
   const top = Math.min(S.top, T.top);
   const bottom = Math.max(S.bottom, T.bottom);
   const raw = [
@@ -118,11 +120,44 @@ export function stepBandPath(
     area += p.x * q.y - q.x * p.y;
   }
   const rounded: Pt[] = pts.map((p, i) => {
-    // 카드 안쪽에 숨는 꼭짓점(x0·x1)은 둥글리지 않는다 — 카드가 덮는다.
-    if (Math.abs(p.x - x0) < 0.01 || Math.abs(p.x - x1) < 0.01) return { ...p, r: 0 };
-    return { ...p, r: Math.sign(crossAt(i)) === Math.sign(area) ? convex : STEP_CONCAVE };
+    if (hidden(p.x)) return { ...p, r: 0 };
+    return { ...p, r: Math.sign(crossAt(i)) === Math.sign(area) ? convex : concave };
   });
-  return { d: roundedPath(rounded), width: w, originX: xa, originY: S.top < T.top ? S.top : S.bottom };
+  return roundedPath(rounded);
+}
+
+// 앞 카드 S(왼쪽 칸)·다음 카드 T(오른쪽 칸)의 칸 기준 사각형 → 꺾인 띠 경로. sw = 테두리 두께(경로를 sw/2 들인다).
+export function stepBandPath(
+  S: Box,
+  T: Box,
+  convex = STEP_CONVEX,
+  sw = 1
+): { d: string; width: number; originX: number; originY: number; xa: number; xb: number } {
+  const gap = T.left - S.right;
+  const w = Math.min(STEP_MAX, Math.max(STEP_MIN, gap - STEP_CLEAR * 2));
+  const mid = (S.right + T.left) / 2;
+  const xa = mid - w / 2;
+  const xb = mid + w / 2;
+  const x0 = Math.min(S.right - 3, xa);
+  const x1 = Math.max(T.left + 3, xb);
+  const h = sw / 2;
+  const Sy = { top: S.top + h, bottom: S.bottom - h };
+  const Ty = { top: T.top + h, bottom: T.bottom - h };
+  const d = stepOutline(x0, xa + h, xb - h, x1, Sy, Ty, Math.max(2, convex - h), STEP_CONCAVE, (x) =>
+    Math.abs(x - x0) < 0.01 || Math.abs(x - x1) < 0.01
+  );
+  return { d, width: w, originX: xa, originY: S.top < T.top ? S.top : S.bottom, xa, xb };
+}
+
+// 고른 묶음을 한 덩어리로 감싸는 테두리 — 앞 카드 + 띠 + 다음 카드 바깥을 e만큼 띄워 한 줄로 두른다.
+// 카드마다 따로 두르던 점선/실선 링(띠 위에서 끊기고 겹치던 것)을 대신한다.
+export function stepRingPath(S: Box, T: Box, xa: number, xb: number, e: number, convex = STEP_CONVEX): string {
+  return stepOutline(
+    S.left - e, xa - e, xb + e, T.right + e,
+    { top: S.top - e, bottom: S.bottom + e },
+    { top: T.top - e, bottom: T.bottom + e },
+    convex + e, Math.max(2, STEP_CONCAVE - e), () => false
+  );
 }
 
 // 마운트 직후(첫 그림)엔 등장 연출을 하지 않는다 — 방금 잇거나 순서를 바꿔 '새로 생긴' 띠만 통통 자란다.
@@ -145,6 +180,8 @@ function drawSteps(root: HTMLElement) {
       existing.set(g.dataset.step ?? "", g);
     }
     const keep = new Set<string>();
+    const rings = new Map<string, string>();
+    const ringKinds = new Map<string, string>();
     if (host) {
       const hostRect = host.getBoundingClientRect();
       const s = scaleOf(host);
@@ -159,12 +196,22 @@ function drawSteps(root: HTMLElement) {
         const to = root.querySelector<HTMLElement>(`[data-curve-to="${CSS.escape(key)}"]`);
         if (!from || !to) continue;
         keep.add(key);
-        const { d, originX, originY } = stepBandPath(
-          local(from.getBoundingClientRect()),
-          local(to.getBoundingClientRect()),
-          convexOf(from)
-        );
+        const SB = local(from.getBoundingClientRect());
+        const TB = local(to.getBoundingClientRect());
+        const convex = convexOf(from);
+        const sw = borderWidthOf(from);
+        const { d, originX, originY, xa, xb } = stepBandPath(SB, TB, convex, sw);
         const overlays = flatOverlaysOf(from);
+        // 한 덩어리 테두리 — 편집실에서 편집 중으로 고른 조각(점선) 또는 시청자 화면에서 상세를 연 조각(실선).
+        const ringKind = from.matches(".primary-selected") || to.matches(".primary-selected")
+          ? "dash"
+          : from.matches(".detail-current") || to.matches(".detail-current")
+            ? "solid"
+            : null;
+        if (ringKind) {
+          rings.set(key, stepRingPath(SB, TB, xa, xb, ringKind === "dash" ? 1.75 : 3, convex));
+          ringKinds.set(key, ringKind);
+        }
         // 고른 묶음(편집실 .selected/.primary-selected)이면 띠도 선택색 테두리로 — 무엇이 묶였는지 보이게.
         const picked =
           from.matches(".selected, .primary-selected") || to.matches(".selected, .primary-selected");
@@ -211,16 +258,36 @@ function drawSteps(root: HTMLElement) {
         if (fresh && settled) {
           g.classList.add("is-new");
           g.addEventListener("animationend", () => g?.classList.remove("is-new"), { once: true });
+          // 카드 쪽 표시는 클래스가 아니라 data 속성 — React가 다시 그리며 className을 덮어써도 남는다.
           for (const card of [from, to]) {
-            card.classList.remove("chain-pop");
+            card.removeAttribute("data-chain-pop");
             void card.offsetWidth;
-            card.classList.add("chain-pop");
-            window.setTimeout(() => card.classList.remove("chain-pop"), 600);
+            card.setAttribute("data-chain-pop", "");
+            window.setTimeout(() => card.removeAttribute("data-chain-pop"), 600);
           }
         }
       }
     }
     for (const [key, g] of existing) if (!keep.has(key)) g.remove();
+    // 앞쪽 층(카드 위)의 한 덩어리 테두리
+    const front = host?.querySelector<SVGSVGElement>(":scope > svg[data-curve-ring]");
+    if (front) {
+      const old = new Map<string, SVGPathElement>();
+      for (const el of Array.from(front.querySelectorAll<SVGPathElement>(":scope > path[data-ring]"))) {
+        old.set(el.dataset.ring ?? "", el);
+      }
+      for (const [key, d] of rings) {
+        let el = old.get(key);
+        if (!el) {
+          el = document.createElementNS(SVG_NS, "path") as SVGPathElement;
+          el.setAttribute("data-ring", key);
+          front.append(el);
+        }
+        el.setAttribute("class", `chain-ring is-${ringKinds.get(key)}`);
+        if (el.getAttribute("d") !== d) el.setAttribute("d", d);
+      }
+      for (const [key, el] of old) if (!rings.has(key)) el.remove();
+    }
   }
 }
 
@@ -241,7 +308,7 @@ function applyHot(root: HTMLElement, key: string | null) {
     const e = CSS.escape(k);
     root
       .querySelectorAll(`[data-curve-from="${e}"], [data-curve-to="${e}"]`)
-      .forEach((n) => n.classList.toggle("chain-hot", on));
+      .forEach((n) => n.toggleAttribute("data-chain-hot", on));
     root.querySelectorAll(`g[data-step="${e}"]`).forEach((n) => n.classList.toggle("is-hot", on));
   };
   toggle(prev, false);
@@ -291,7 +358,7 @@ export function useEqualChainHeights<T extends HTMLElement>(
         characterData: true, // 제목·항목 글자 변경
         attributes: true,
         // style(=우리 minHeight·폭)은 제외(self-trigger 방지)
-        attributeFilter: ["class", "data-chain", "data-band-head", "data-curve-from", "data-curve-to"]
+        attributeFilter: ["class", "data-chain", "data-band-head", "data-curve-from", "data-curve-to", "data-chain-hot"]
       });
     }
 
