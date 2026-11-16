@@ -6855,26 +6855,38 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
   cursor: pointer;
   transition: stroke 0.2s ease;
 }
-/* 빛 한 줄기 — 손을 올린 순간 띠 가장자리를 따라 한 번 스친다(유리 위 반사광). */
-.chain-step-sheen {
-  fill: none;
-  stroke: rgb(255 255 255 / 0);
-  stroke-width: 2.4px;
-  stroke-linecap: round;
-  stroke-dasharray: 16 84;
-  stroke-dashoffset: 100;
+/* 테두리 한 바퀴 빛 — 일정에 손을 올린 순간 바깥 테두리를 빛 한 줄기가 한 바퀴 돈다(유리 위 반사광).
+   이어진 일정은 앞 카드·띠·다음 카드를 합친 외곽을, 일반 일정은 카드 테두리를. 층은 hook이 잠깐 만들었다 지운다. */
+.card-sheen-layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  overflow: visible;
   pointer-events: none;
+  z-index: 12;
 }
-.chain-step.is-hot .chain-step-sheen {
-  stroke: rgb(255 255 255 / 0.8);
-  animation: chain-step-sheen 0.95s cubic-bezier(0.4, 0, 0.2, 1) 1 both;
+.card-sheen {
+  fill: none;
+  stroke: rgb(255 255 255 / 0.9);
+  stroke-width: 2.2px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 18 82;
+  stroke-dashoffset: 100;
+  filter: drop-shadow(0 0 2.5px rgb(255 255 255 / 0.85));
+  animation: card-sheen-run 1.1s cubic-bezier(0.45, 0.05, 0.25, 1) 1 both;
 }
-html[data-theme="dark"] .chain-step.is-hot .chain-step-sheen {
-  stroke: rgb(255 255 255 / 0.42);
+html[data-theme="dark"] .card-sheen {
+  stroke: rgb(255 255 255 / 0.55);
+  filter: drop-shadow(0 0 3px rgb(255 255 255 / 0.35));
 }
-@keyframes chain-step-sheen {
-  from { stroke-dashoffset: 100; }
-  to { stroke-dashoffset: -16; }
+@keyframes card-sheen-run {
+  0% { stroke-dashoffset: 100; opacity: 0; }
+  12% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
 }
 /* 새로 이어진 순간 — 띠가 앞 카드 쪽에서 통 자라나고(스프링 오버슈트), 두 카드가 살짝 튀었다 가라앉는다. */
 .chain-step.is-new {
@@ -6939,13 +6951,13 @@ html[data-reduce-motion] .chain-ring {
 }
 html[data-reduce-motion] .chain-step.is-new,
 html[data-reduce-motion] [data-chain-pop],
-html[data-reduce-motion] .chain-step.is-hot .chain-step-sheen {
+html[data-reduce-motion] .card-sheen {
   animation: none;
 }
 @media (prefers-reduced-motion: reduce) {
   .chain-step.is-new,
   [data-chain-pop],
-  .chain-step.is-hot .chain-step-sheen {
+  .card-sheen {
     animation: none;
   }
 }

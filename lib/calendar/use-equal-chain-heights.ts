@@ -223,10 +223,7 @@ function drawSteps(root: HTMLElement) {
           g.setAttribute("data-step", key);
           const body = document.createElementNS(SVG_NS, "path");
           body.setAttribute("class", "chain-step-body");
-          const sheen = document.createElementNS(SVG_NS, "path");
-          sheen.setAttribute("class", "chain-step-sheen");
-          sheen.setAttribute("pathLength", "100");
-          g.append(body, sheen);
+          g.append(body);
           svg.append(g);
         }
         g.classList.add("chain-step");
@@ -235,7 +232,6 @@ function drawSteps(root: HTMLElement) {
         g.style.setProperty("--chain-color", stroke);
         g.style.transformOrigin = `${originX.toFixed(1)}px ${originY.toFixed(1)}px`;
         const body = g.querySelector<SVGPathElement>(".chain-step-body")!;
-        const sheen = g.querySelector<SVGPathElement>(".chain-step-sheen")!;
         // 덧칠 겹(편집실) — 몸통 바로 위, 빛줄기 아래. 개수가 바뀌면 다시 깐다.
         const layers = Array.from(g.querySelectorAll<SVGPathElement>(".chain-step-tint"));
         if (layers.length !== overlays.length) {
@@ -243,7 +239,7 @@ function drawSteps(root: HTMLElement) {
           for (let i = 0; i < overlays.length; i += 1) {
             const l = document.createElementNS(SVG_NS, "path");
             l.setAttribute("class", "chain-step-tint");
-            g.insertBefore(l, sheen);
+            g.append(l);
           }
         }
         Array.from(g.querySelectorAll<SVGPathElement>(".chain-step-tint")).forEach((l, i) => {
@@ -251,7 +247,6 @@ function drawSteps(root: HTMLElement) {
           l.style.fill = overlays[i];
         });
         if (body.getAttribute("d") !== d) body.setAttribute("d", d);
-        if (sheen.getAttribute("d") !== d) sheen.setAttribute("d", d);
         body.style.fill = fillOf(from, to);
         body.style.stroke = stroke;
         // 새로 생긴 띠 — 앞 카드 쪽에서 통 자라나고, 두 카드가 살짝 튀었다 가라앉는다(한 번만). 첫 그림은 조용히.
@@ -289,6 +284,133 @@ function drawSteps(root: HTMLElement) {
       for (const [key, el] of old) if (!rings.has(key)) el.remove();
     }
   }
+}
+
+// ── 테두리 한 바퀴 빛(2026-11-16 소유자) ──
+// 일정에 손을 올리면 빛 한 줄기가 그 일정의 바깥 테두리를 한 바퀴 돈다. 이어진 일정은 앞 카드·꺾인 띠·다음 카드
+// (띠로 붙은 조각까지)를 합친 한 덩어리 외곽을 돈다 — 카드마다 따로 돌면 이어진 게 끊겨 보인다. 일반 일정은 카드 테두리.
+// 빛 층은 그 일정이 시작하는 칸 안의 임시 svg(카드 위 z 12). 도는 동안 매 프레임 위치를 다시 재서 카드가 살짝 떠도 따라간다.
+const SHEEN_MS = 1150;
+type SheenRun = { key: string; raf: number; layer: SVGSVGElement; until: number };
+const sheenRun = new WeakMap<HTMLElement, SheenRun>();
+
+type SheenTarget = { key: string; from?: HTMLElement[]; to?: HTMLElement[]; group?: HTMLElement[] };
+
+function cardAt(root: HTMLElement, t: EventTarget | null): HTMLElement | null {
+  const el = t instanceof Element ? t : null;
+  if (!el) return null;
+  const slot = el.closest<HTMLElement>(".band-slot.is-hit");
+  if (slot && root.contains(slot)) {
+    return root.querySelector<HTMLElement>(`[data-band-head="${CSS.escape(slot.dataset.bandSlot ?? "")}"]`);
+  }
+  const card = el.closest<HTMLElement>(".public-event, .studio-event-pill");
+  return card && root.contains(card) ? card : null;
+}
+function groupOf(root: HTMLElement, card: HTMLElement): HTMLElement[] {
+  const key = card.dataset.chain;
+  if (!key) return [card];
+  const all = Array.from(root.querySelectorAll<HTMLElement>(`[data-chain="${CSS.escape(key)}"]`)).filter(
+    (n) => !n.classList.contains("band-slot")
+  );
+  return all.length ? all : [card];
+}
+function sheenTargetOf(root: HTMLElement, t: EventTarget | null): SheenTarget | null {
+  const g = t instanceof Element ? t.closest<SVGGElement>("g[data-step]") : null;
+  const stepKey =
+    g?.dataset.step ??
+    (() => {
+      const c = cardAt(root, t);
+      return c?.dataset.curveFrom ?? c?.dataset.curveTo ?? null;
+    })();
+  if (stepKey) {
+    const from = root.querySelector<HTMLElement>(`[data-curve-from="${CSS.escape(stepKey)}"]`);
+    const to = root.querySelector<HTMLElement>(`[data-curve-to="${CSS.escape(stepKey)}"]`);
+    if (from && to) return { key: `s:${stepKey}`, from: groupOf(root, from), to: groupOf(root, to) };
+  }
+  const card = cardAt(root, t);
+  if (!card) return null;
+  const group = groupOf(root, card);
+  const id = card.dataset.chain ?? card.dataset.eventid ?? card.dataset.bandHead;
+  return { key: `c:${id ?? ""}:${group.length}`, group };
+}
+
+function unionBox(els: HTMLElement[], local: (r: DOMRect) => Box): Box {
+  const bs = els.map((e) => local(e.getBoundingClientRect()));
+  return {
+    left: Math.min(...bs.map((b) => b.left)),
+    right: Math.max(...bs.map((b) => b.right)),
+    top: Math.min(...bs.map((b) => b.top)),
+    bottom: Math.max(...bs.map((b) => b.bottom))
+  };
+}
+function sheenPath(target: SheenTarget, host: HTMLElement): string | null {
+  const hostRect = host.getBoundingClientRect();
+  const s = scaleOf(host);
+  const local = (r: DOMRect): Box => ({
+    left: (r.left - hostRect.left) / s,
+    right: (r.right - hostRect.left) / s,
+    top: (r.top - hostRect.top) / s,
+    bottom: (r.bottom - hostRect.top) / s
+  });
+  const lead = (target.from ?? target.group)?.[0];
+  if (!lead) return null;
+  const sw = borderWidthOf(lead);
+  const h = sw / 2;
+  const radius = parseFloat(getComputedStyle(lead).borderTopLeftRadius) || 8;
+  if (target.from && target.to) {
+    const S = unionBox(target.from, local);
+    const T = unionBox(target.to, local);
+    const convex = convexOf(lead);
+    const { xa, xb } = stepBandPath(S, T, convex, sw);
+    return stepRingPath(S, T, xa, xb, -h, convex);
+  }
+  const B = unionBox(target.group!, local);
+  const r = Math.max(2, radius - h);
+  return roundedPath([
+    { x: B.left + h, y: B.top + h, r },
+    { x: B.right - h, y: B.top + h, r },
+    { x: B.right - h, y: B.bottom - h, r },
+    { x: B.left + h, y: B.bottom - h, r }
+  ]);
+}
+function reduceMotion(): boolean {
+  if (typeof document !== "undefined" && document.documentElement.hasAttribute("data-reduce-motion")) return true;
+  return typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+function startSheen(root: HTMLElement, target: SheenTarget | null) {
+  const cur = sheenRun.get(root);
+  if (!target) return; // 손을 떼도 돌던 빛은 한 바퀴를 마저 돈다
+  if (cur && cur.key === target.key && performance.now() < cur.until) return;
+  if (cur) {
+    cancelAnimationFrame(cur.raf);
+    cur.layer.remove();
+    sheenRun.delete(root);
+  }
+  if (reduceMotion()) return;
+  const lead = (target.from ?? target.group)?.[0];
+  const host = lead?.closest<HTMLElement>("article") ?? lead?.parentElement;
+  if (!host) return;
+  const layer = document.createElementNS(SVG_NS, "svg") as SVGSVGElement;
+  layer.setAttribute("class", "card-sheen-layer");
+  layer.setAttribute("aria-hidden", "true");
+  const path = document.createElementNS(SVG_NS, "path");
+  path.setAttribute("class", "card-sheen");
+  path.setAttribute("pathLength", "100");
+  layer.append(path);
+  host.append(layer);
+  const run: SheenRun = { key: target.key, raf: 0, layer, until: performance.now() + SHEEN_MS };
+  const step = () => {
+    const d = sheenPath(target, host);
+    if (d && path.getAttribute("d") !== d) path.setAttribute("d", d);
+    if (performance.now() < run.until && layer.isConnected) {
+      run.raf = requestAnimationFrame(step);
+    } else {
+      layer.remove();
+      if (sheenRun.get(root) === run) sheenRun.delete(root);
+    }
+  };
+  step();
+  sheenRun.set(root, run);
 }
 
 // 띠와 두 카드를 한 몸으로 반응시킨다 — 어느 하나에 손을 올리면 셋이 같이 밝아지고 빛이 띠를 따라 한 번 흐른다.
@@ -451,8 +573,22 @@ export function useEqualChainHeights<T extends HTMLElement>(
     scheduleRef.current = schedule;
 
     mountedAt.set(root, typeof performance !== "undefined" ? performance.now() : 0);
-    const onOver = (e: PointerEvent) => applyHot(root, stepKeyOf(e.target));
-    const onLeave = () => applyHot(root, null);
+    // 같은 일정 안에서 손이 움직일 때마다 다시 돌지 않게 — 다른 일정(또는 빈 곳)으로 옮겼을 때만 새로 돈다.
+    let sheenKey: string | null = null;
+    const onOver = (e: PointerEvent) => {
+      applyHot(root, stepKeyOf(e.target));
+      if (e.pointerType && e.pointerType !== "mouse") return;
+      const target = sheenTargetOf(root, e.target);
+      const k = target?.key ?? null;
+      if (k !== sheenKey) {
+        sheenKey = k;
+        startSheen(root, target);
+      }
+    };
+    const onLeave = () => {
+      applyHot(root, null);
+      sheenKey = null;
+    };
     root.addEventListener("pointerover", onOver);
     root.addEventListener("pointerleave", onLeave);
     // 마운트 즉시 1차(페인트 전 가깝게) + 레이아웃 안정 후 한 번 더.
