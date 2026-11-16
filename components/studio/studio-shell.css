@@ -278,42 +278,6 @@ body::-webkit-scrollbar {
   border-radius: var(--r-pill);
   background: rgb(var(--studio-action-rgb) / 15%);
 }
-.cal-zoom-btn,
-.cal-zoom-pct {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 23px;
-  padding: 2px 9px;
-  border: 0;
-  background: transparent;
-  color: var(--studio-action-text);
-  font-size: var(--text-caption);
-  font-weight: 800;
-  cursor: pointer;
-  transition: background var(--dur-1) var(--ease);
-}
-.cal-zoom-pct {
-  min-width: 42px;
-  border-right: 1px solid rgb(var(--studio-action-rgb) / 22%);
-  border-left: 1px solid rgb(var(--studio-action-rgb) / 22%);
-  font-variant-numeric: tabular-nums;
-}
-.cal-zoom-btn:hover,
-.cal-zoom-pct:hover {
-  background: rgb(var(--studio-action-rgb) / 26%);
-}
-.cal-zoom-btn:active,
-.cal-zoom-pct:active {
-  transform: scale(var(--press-scale));
-}
-.cal-zoom-btn:disabled {
-  opacity: 0.35;
-  cursor: default;
-}
-.cal-zoom-btn:disabled:hover {
-  background: transparent;
-}
 .kbd-hints-btn:active {
   transform: scale(var(--press-scale));
 }
@@ -679,12 +643,7 @@ body::-webkit-scrollbar {
 
 /* 미리보기 중 안내 — 설명 팝오버 맨 아래 작게(트리거 강조 대신 여기로 일원화). */
 /* 역할명 옆 작은 보조 문구 "(미리보기 중입니다..)" — 제목보다 작고 흐릿하게. */
-.role-help-preview {
-  font-size: var(--text-caption);
-  font-weight: 600;
-  color: var(--studio-action-text);
-  opacity: 0.75;
-}
+
 /* 진동 켜기/끄기 — 권한 목록 아래 작은 설정 한 줄(진동 지원 기기에서만). iOS풍 스위치, 앱 톤. */
 /* 모바일(≤640)엔 계절 배경이 없다 — 계절 배경·배경 효과 줄은 숨긴다(2026-09-04 사용자: 모바일 설정 정리). */
 @media (max-width: 640px) {
@@ -844,25 +803,6 @@ html[data-showcase] .studio-shell.avatar-scene .avatar-rail {
   background: #fff7ed;
   color: #9a3412;
 }
-
-.private-warning {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid #f2c172;
-  background: #fff7ed;
-  padding: 10px 18px;
-  color: #9a3412;
-  font-weight: 600;
-  /* 잠금 해제 직후 배너가 위에서 뚝 떨어지듯 들어와 한 번 환하게 번쩍 — "방송 공유 주의" 환기.
-     순서: 드롭인 → (끝나면) 호박색 번쩍 + 테두리 글로우. 자물쇠는 톡 열리듯 팝. */
-  animation:
-    private-banner-in 0.5s var(--ease, cubic-bezier(0.34, 1.4, 0.64, 1)) 0.05s both,
-    private-banner-flash 1.1s ease 0.52s 1 both;
-}
-.private-warning svg {
-  animation: lock-pop 0.55s var(--ease, ease-out) 0.2s both;
-}
 /* 경고 패널 오른쪽 끝 "비공개 끄기"(소유자) — 엄지로 누르기 쉬운 자리에 둔 비공개 표시 끄기. */
 .private-warning-btn {
   margin-left: auto;
@@ -954,18 +894,6 @@ html[data-reduce-motion] .bottom-float-row {
   border-color: rgb(var(--studio-action-rgb) / 20%);
   background: rgb(var(--studio-action-rgb) / 8%);
 }
-.cal-zoom-float[data-idle="1"] .cal-zoom-btn {
-  width: 0;
-  min-width: 0;
-  padding: 0;
-  overflow: hidden;
-  opacity: 0;
-}
-.cal-zoom-float[data-idle="1"] .cal-zoom-pct {
-  border: 0;
-  min-width: 0;
-  padding: 2px 8px;
-}
 .cal-zoom-float[data-idle="1"]:hover,
 .cal-zoom-float[data-idle="1"]:focus-within {
   opacity: 1;
@@ -974,19 +902,6 @@ html[data-reduce-motion] .bottom-float-row {
 .cal-zoom-float[data-idle="1"]:focus-within .cal-zoom-ctl {
   border-color: rgb(var(--studio-action-rgb) / 42%);
   background: rgb(var(--studio-action-rgb) / 15%);
-}
-.cal-zoom-float[data-idle="1"]:hover .cal-zoom-btn,
-.cal-zoom-float[data-idle="1"]:focus-within .cal-zoom-btn {
-  width: auto;
-  padding: 2px 9px;
-  opacity: 1;
-}
-.cal-zoom-float[data-idle="1"]:hover .cal-zoom-pct,
-.cal-zoom-float[data-idle="1"]:focus-within .cal-zoom-pct {
-  min-width: 42px;
-  border-right: 1px solid rgb(var(--studio-action-rgb) / 22%);
-  border-left: 1px solid rgb(var(--studio-action-rgb) / 22%);
-  padding: 2px 9px;
 }
 html[data-reduce-motion] .cal-zoom-float {
   transition: none;
@@ -1363,10 +1278,7 @@ html[data-reduce-motion] .scrollpos-tag {
   color: var(--ink);
 }
 /* 일일 상세 머리줄의 자동 갱신 안내(멈춤이면 버튼으로 바뀐다) */
-.dayvisit-auto {
-  color: var(--muted);
-  font-size: var(--text-caption);
-}
+
 
 .act-visits,
 .act-items {
@@ -2946,13 +2858,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   position: relative;
 }
 /* 우측 끝 새로고침 버튼 한 줄(.insights-refresh 스타일 재사용). 내용 위 살짝. */
-.dayvisit-head {
-  position: relative;
-  z-index: 4;
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 4px;
-}
+
 /* 새로고침 중 내용 흐림 → 그래프·수치가 실제로 다시 로딩되는 티(월별 패널과 동일 처리). */
 .dayvisit-wrap[data-refreshing] .dayvisit {
   opacity: 0.4;
@@ -3091,103 +2997,15 @@ html[data-reduce-motion] .dtp-pop-x:active {
   border-radius: 3px;
 }
 /* ── 보안 패널: 잠금 암호 핵심값을 스탯 타일로(키-값 나열 대신). 웹은 크게, 모바일 3열 컴팩트. ── */
-.sec-kpis {
-  list-style: none;
-  margin: 0 0 12px;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-.sec-kpis li {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 3px;
-  padding: 10px 6px;
-  border-radius: var(--r-md);
-  background: #fff;
-  border: 1px solid var(--studio-action-tint-hi);
-  transition: transform 0.15s var(--ease, ease), box-shadow 0.15s var(--ease, ease);
-}
-.sec-kpis li:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--elev-3);
-}
-.sec-kpis b {
-  font-size: var(--text-ui);
-  font-weight: 600;
-  color: var(--ink-soft);
-  line-height: 1.15;
-  text-align: center;
-}
-.sec-kpis span {
-  font-size: var(--text-micro);
-  font-weight: 600;
-  color: var(--muted);
-}
+
 @media (min-width: 1000px) {
-  .sec-kpis li {
-    padding: 14px 8px;
-  }
-  .sec-kpis b {
-    font-size: var(--text-display);
-  }
-  .sec-kpis span {
-    font-size: var(--text-label);
-  }
 }
 /* ── 시스템 패널: 등록 이메일 목록을 역할색 점 + 행 카드로(맨 나열 대신). ── */
-.sys-emails {
-  list-style: none;
-  margin: 0 0 4px;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.sys-emails li {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 9px 12px;
-  border: 1px solid var(--studio-line);
-  border-radius: var(--r-md);
-  background: var(--studio-silver);
-  transition: background 0.12s var(--ease, ease);
-}
-.sys-emails li:hover {
-  background: var(--studio-silver);
-}
-.sys-dot {
-  flex: none;
-  width: 9px;
-  height: 9px;
-  border-radius: var(--r-pill);
-}
-.sys-email {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--text-body);
-  font-weight: 600;
-  color: var(--ink);
-}
+
 @media (min-width: 1000px) {
-  .sys-email {
-    font-size: calc(14.5px * var(--ui-text-scale, 1));
-  }
 }
 /* 커밋 해시 — 칩. 글씨체는 둘레와 같게(2026-11-13 소유자), 자리만 고르게. */
-.sys-commit {
-  font-variant-numeric: tabular-nums;
-  background: var(--studio-action-tint-hi);
-  color: var(--studio-action-text);
-  padding: 1px 8px;
-  border-radius: var(--r-xs);
-  font-size: var(--text-label);
-}
+
 @media (min-width: 1000px) {
   .vlog-chip {
     font-size: var(--text-label);
@@ -3203,75 +3021,11 @@ html[data-reduce-motion] .dtp-pop-x:active {
 /* 보안 패널: 비밀번호 변경 버튼(잠금 중에도 변경 경로). 잠금 암호 섹션 아래 폭 가득. */
 
 /* 보안 패널: 역할별 접근 자격자 카드(소유자/개발자/작업자) — 사람마다 개별 만료. */
-.access-list {
-  list-style: none;
-  margin: 10px 0 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.access-card {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 9px 11px;
-  border: 1px solid var(--studio-silver);
-  border-radius: var(--r-md);
-  background: var(--studio-silver);
-}
+
 .access-top {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-.access-email {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--text-label);
-  font-weight: 600;
-  color: var(--ink);
-}
-.access-card .rt {
-  flex: 0 0 auto;
-  font-style: normal;
-  font-size: var(--text-caption);
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: var(--r-pill);
-}
-.access-card .rt.owner {
-  background: #fdeede;
-  color: #a9760a;
-}
-.access-card .rt.developer {
-  background: var(--studio-silver);
-  color: var(--studio-action-text);
-}
-.access-card .rt.worker {
-  background: #fff3e0;
-  color: #b5651d;
-}
-.access-bottom {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-left: 2px;
-}
-.access-expiry {
-  flex: 1;
-  min-width: 0;
-  font-size: var(--text-label);
-  font-weight: 600;
-  color: #b5491d;
-}
-.access-none {
-  font-size: var(--text-label);
-  font-weight: 600;
-  color: #9aa0ab;
 }
 .access-expire {
   flex: 0 0 auto;
@@ -4361,10 +4115,6 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   background: rgb(var(--studio-action-rgb) / 12%);
   color: rgb(var(--studio-action-rgb) / 55%);
 }
-.preview-dd-caret {
-  font-size: var(--text-caption);
-  opacity: 0.7;
-}
 .preview-dd-menu {
   position: absolute;
   top: calc(100% + 6px);
@@ -4459,26 +4209,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
 }
 
 /* 2차 — 운영 도구: 기능별 색조의 옅은 틴트 칩(면 전체 + 같은 색 글자). */
-.io-tags {
-  background: var(--studio-silver); /* 보라 = 태그/분류(앱의 카테고리 색 체계와 같은 계열) */
-  border-color: var(--studio-line);
-  color: var(--studio-action-text);
-}
-.io-tags:hover:not(:disabled) {
-  background: var(--studio-action-tint-hi);
-  border-color: var(--studio-line);
-  color: var(--studio-action-text);
-}
-.io-members {
-  background: #e8f9f3; /* 틸 = 사람/신뢰(멤버) */
-  border-color: #c5ebe0;
-  color: #0b7a68;
-}
-.io-members:hover:not(:disabled) {
-  background: #dbf5ec;
-  border-color: #aee3d6;
-  color: #0a6c5c;
-}
+
 .io-insights {
   background: #ecf4ff; /* 블루 = 정보/데이터(인사이트) */
   border-color: #cfe2f8;
@@ -4493,16 +4224,7 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
 
 /* 비공개 — 주의(amber): 민감 동작이라 caution 색 코딩. 켜짐(.active)은 기존 진한
    amber 유지, 꺼짐도 옅은 amber 칩으로 '민감 토글'임을 일관되게 알린다. */
-.private-toggle.io-private:not(.active) {
-  background: #fff5e8;
-  border-color: #f1dcb8;
-  color: #a85d09;
-}
-.private-toggle.io-private:not(.active):hover {
-  background: #ffeed8;
-  border-color: #ecceA0;
-  color: #97520a;
-}
+
 
 /* 1차 — 달력 꾸미기(관리자): 가장 잦은 창작 동작 → 따뜻하고 살짝 진한 채움으로 '튀게'. */
 
@@ -6224,15 +5946,7 @@ html[data-reduce-motion] .cal-zoom-float {
     inset 0 0 0 1px rgb(255 255 255 / 55%);
 }
 /* 플로팅일 땐 손가락/시선 대상이라 한 단계 크게 — 액션바 안 버전(23px)은 그대로. */
-.cal-zoom-float .cal-zoom-btn,
-.cal-zoom-float .cal-zoom-pct {
-  min-height: 30px;
-  padding: 4px 13px;
-  font-size: var(--text-label);
-}
-.cal-zoom-float .cal-zoom-pct {
-  min-width: 52px;
-}
+
 
 /* A안 M2: 확대 중 상세 팝오버 — 방송 화면에서 읽히도록 큼직하게. 폭은 내용에 맞게(max만 제한),
    너무 홀쭉해져 제목이 갈리지 않게 min만 잡는다. */
@@ -7115,11 +6829,6 @@ html[data-reduce-motion] .editor-save-tab {
 
 /* (레거시 인라인 태그 피커 규칙 제거 — 지금은 TagPicker(.tag-picker2)만 쓴다.) */
 
-.editor-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
 
 .button {
   gap: 6px;
@@ -8189,12 +7898,6 @@ html[data-theme="dark"] .tag-cpop { --cpop-error-ink: #ffabb0; }
   display: grid;
   gap: 14px;
 }
-.members-list {
-  display: grid;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
 
 /* 넓은 모달(태그 편집) + 태그 행 가로 배치 */
 .modal-card-wide {
@@ -8373,13 +8076,8 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   min-width: 0;
 }
 /* 부연 설명(괄호·무늬 등)은 가로 여유 있는 웹에서만 — 모바일은 폭을 아껴 한 줄로. */
-.tip-web {
-  display: none;
-}
+
 @media (min-width: 1000px) {
-  .tip-web {
-    display: inline;
-  }
 }
 /* 삭제 경고 — 점선으로 살짝 구분하고 붉게(통계가 흐트러진다는 주의). */
 .tag-tip.warn {
@@ -8870,139 +8568,20 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
 }
 
 /* 매니저/작업자 권한 안내 — 긴 설명 대신 컴팩트한 비교 표(모바일은 더 작게, 줄바꿈 허용). */
-.members-perms {
-  margin: 0 0 4px;
-}
-.perm-table {
-  width: 100%;
-  border-collapse: collapse;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md, 10px);
-  overflow: hidden;
-  font-size: var(--text-body);
-}
-.perm-table th,
-.perm-table td {
-  padding: 7px 9px;
-  border-bottom: 1px solid var(--line-soft, var(--studio-silver));
-}
-.perm-table tbody tr:last-child th,
-.perm-table tbody tr:last-child td {
-  border-bottom: 0;
-}
-.perm-table thead th {
-  background: var(--accent-soft, var(--studio-silver));
-  color: var(--ink-soft);
-  font-size: var(--text-label);
-  font-weight: 600;
-  text-align: center;
-  /* '매니저'·'작업자'가 '매지/저'처럼 중간에서 끊기지 않게. */
-  white-space: nowrap;
-}
-.perm-table thead th:first-child {
-  text-align: left;
-}
+
 /* 역할 열별 색 헤더 — 관리자(초록)·개발자(파랑)·매니저(보라)·작업자(앰버)로 한눈에 구분. */
-.perm-table thead th:nth-child(2) {
-  background: #e8f9f0;
-  color: #1f8a55;
-}
-.perm-table thead th:nth-child(3) {
-  background: #e9f1fe;
-  color: #2f6fd0;
-}
-.perm-table thead th:nth-child(4) {
-  background: var(--studio-silver);
-  color: var(--studio-action-text);
-}
-.perm-table thead th:nth-child(5) {
-  background: #fff3e0;
-  color: #b5651d;
-}
-.perm-table tbody th {
-  text-align: left;
-  font-weight: 600;
-  color: var(--ink);
-  /* 긴 권한 설명은 공백에서만 줄바꿈(한국어 단어 중간 끊김 방지). */
-  word-break: keep-all;
-}
-.perm-table td {
-  width: 60px;
-  text-align: center;
-  font-weight: 600;
-}
+
 /* ✓/✕를 색 알약으로 — 초록 체크/연회색 대시. 셀 안에서 동그란 칩처럼 보이게(차가운 표 탈피). */
-.perm-table .yes,
-.perm-table .no {
-  font-size: 0; /* 원문 ✓/✕ 글자는 숨기고 ::before 마크로 대체(가운데 칩) */
-}
-.perm-table .yes::before,
-.perm-table .no::before {
-  content: "";
-  display: inline-block;
-  vertical-align: middle;
-}
-.perm-table .yes::before {
-  width: 17px;
-  height: 17px;
-  border-radius: var(--r-pill);
-  background: #2f9e62
-    /* 흰 체크 */ url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E")
-    center / 12px no-repeat;
-  box-shadow: 0 1px 3px -1px rgba(47, 158, 98, 0.6);
-}
-.perm-table .no::before {
-  width: 12px;
-  height: 3px;
-  border-radius: var(--r-pill);
-  background: var(--studio-line);
-}
-.perm-table tbody tr {
-  transition: background 0.12s var(--ease, ease);
-}
-.perm-table tbody tr:nth-child(even) {
-  background: var(--studio-silver);
-}
-.perm-table tbody tr:hover {
-  background: var(--studio-silver);
-}
+
 
 @media (max-width: 999px) {
-  .perm-table {
-    font-size: var(--text-label);
-  }
-  .perm-table th,
-  .perm-table td {
-    padding: 6px 5px;
-  }
   /* 4개 역할 칸(관리자·개발자·매니저·작업자)이 좁은 폭에 다 들어가게 — 첫 칸(설명)은 나머지 폭. */
-  .perm-table td {
-    width: 40px;
-  }
-  .perm-table th,
-  .perm-table td {
-    padding: 6px 3px;
-  }
+  
+
   
 }
 /* 매니저/작업자 관리 — 모던 카드형 (.members-hint 스타일은 위 통일 규칙 사용) */
-.members-add {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: minmax(0, 1fr);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  background: #fbfcfe;
-  padding: 14px;
-}
-.members-add input {
-  min-height: 46px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: #fff;
-  padding: 0 14px;
-  font-size: var(--text-ui);
-}
+
 .members-add-controls {
   display: flex;
   align-items: center;
@@ -9027,44 +8606,11 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
 .members-add-controls .button.primary {
   min-height: 40px;
 }
-.members-list {
-  gap: 10px;
-}
-.members-list li {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  background: #fff;
-  padding: 12px 14px;
-  transition:
-    box-shadow var(--dur-1) var(--ease),
-    transform var(--dur-1) var(--ease);
-}
-.members-list li:hover {
-  box-shadow: var(--shadow-2);
-  transform: translateY(-1px);
-}
 /* 새 멤버 행은 살짝 떠오르며 들어온다(목록 첫 표시·추가 시). */
-.member-row {
-  animation: member-row-in 0.32s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
-}
+
 /* 웹 전용 — 행 위에 마우스를 올리면 살짝 떠오르며 옅은 배경(표 행처럼 hover 피드백). 모바일은
    탭 기반이라 hover 없이 그대로. (악센트바는 행 내부 패딩을 모르는 채 넣으면 겹칠 수 있어 제외.) */
 @media (min-width: 1000px) {
-  .member-row {
-    border-radius: var(--r-md);
-    transition:
-      background 0.16s var(--ease, ease),
-      box-shadow 0.18s var(--ease, ease),
-      transform 0.16s var(--ease, ease);
-  }
-  .member-row:hover {
-    background: var(--studio-silver);
-    box-shadow: 0 8px 20px -12px rgb(70 50 110 / 32%);
-    transform: translateY(-2px);
-  }
 }
 @keyframes member-row-in {
   from {
@@ -9077,11 +8623,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   }
 }
 /* 삭제 시: 서버 확정 전까지 행이 위로 접히며 사라지는 느낌(실패하면 도로 펼쳐진다). */
-.member-row.removing {
-  overflow: hidden;
-  pointer-events: none;
-  animation: member-row-out 0.34s var(--ease, cubic-bezier(0.4, 0, 0.2, 1)) forwards;
-}
+
 @keyframes member-row-out {
   from {
     opacity: 1;
@@ -9098,16 +8640,7 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   }
 }
 /* 동기화 중 작은 점 — 이메일 옆에서 은은히 깜빡(저장 중 신호). */
-.member-sync-dot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  margin-left: 7px;
-  border-radius: var(--r-pill);
-  background: var(--accent, #fb7185);
-  vertical-align: middle;
-  animation: member-sync-pulse 1s ease-in-out infinite;
-}
+
 @keyframes member-sync-pulse {
   0%,
   100% {
@@ -9119,73 +8652,8 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
     transform: scale(1.1);
   }
 }
-.members-list li .member-avatar {
-  display: block;
-  flex: 0 0 auto;
-  width: 50px;
-  height: 50px;
-  border-radius: var(--r-pill);
-  background: linear-gradient(135deg, var(--accent), var(--green));
-  /* 이모지 글자는 자체 여백/베이스라인이 있어 grid 중앙정렬이 어긋난다.
-     line-height = 원 높이, text-align center, overflow hidden으로 정확히 가운데 맞춘다. */
-  font-size: calc(34px * var(--ui-text-scale, 1));
-  line-height: 50px;
-  text-align: center;
-  overflow: hidden;
-}
-.member-info {
-  display: grid;
-  gap: 3px;
-  min-width: 0;
-  flex: 1;
-}
-.member-info strong {
-  overflow: hidden;
-  font-size: var(--text-body);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.member-role {
-  justify-self: start;
-  padding: 2px 10px;
-  border-radius: var(--r-pill);
-  font-size: var(--text-caption);
-  font-weight: 600;
-}
-.member-role.manager {
-  background: #eef2ff;
-  color: var(--studio-action-text);
-}
-.member-role.worker {
-  background: var(--green-soft);
-  color: #2f6b25;
-}
 /* 멤버별 역할 토글 — 켜지면 색 태그, 꺼지면 옅은 점선 윤곽(추가 가능함을 암시). */
 
-.member-remove {
-  display: inline-grid;
-  flex: 0 0 auto;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  background: #fff;
-  color: var(--muted);
-  cursor: pointer;
-  transition:
-    background var(--dur-1) var(--ease),
-    color var(--dur-1) var(--ease),
-    border-color var(--dur-1) var(--ease);
-}
-.member-remove:hover:not(:disabled) {
-  background: #fee2e2;
-  border-color: #f3a3a3;
-  color: #b42318;
-}
-.member-remove:disabled {
-  opacity: 0.5;
-}
 .members-empty {
   display: grid;
   justify-items: center;
@@ -9284,10 +8752,6 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
 .m-actionrail > .m-month-btn { color:var(--violet); }
 /* 역할 바: 유동 너비 — 한 줄에 나눠 갖고 스크롤 없이 보이게(넘치면 어쩔 수 없이 줄어듦) */
 
-.studio-mobile .private-warning {
-  margin: 8px 0;
-  font-size: var(--text-body); /* 13→13.5 수렴 */
-}
 
 /* 하단 엄지존 액션레일 — 옛 '< >' 자리. 핵심 버튼을 바닥에 모아 한 손으로 누르기 쉽게.
    가운데는 통과(일정 보임), 버튼만 클릭. 버튼들은 남는 폭을 고르게 나눠 한 줄. */
@@ -10049,14 +9513,6 @@ html[data-reduce-motion] .me-fold-body {
   animation-duration: 1ms;
   animation-iteration-count: 1;
 }
-.me-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  min-height: 52px;
-  padding: 9px 0;
-}
 
 .me-row-label {
   font-size: var(--text-body); /* 13.5 */
@@ -10081,13 +9537,6 @@ html[data-reduce-motion] .me-fold-body {
   font-size: var(--text-body); /* 13.5 */
   font-weight: 600;
   color: #6f6a78;
-}
-.me-hint {
-  margin-left: 4px;
-  color: var(--muted);
-  font-size: var(--text-caption); /* 11.5→11 수렴 */
-  font-weight: 600;
-  font-style: normal;
 }
 /* 선택 슬롯 — 점 2개(최대 2개). 채워진 점 = 고른 개수. 'N/2'(페이지 혼동) 대체. */
 
@@ -10750,8 +10199,7 @@ html[data-reduce-motion] .scope-opt.on::after {
   .me-title::placeholder,
 .title-helper,
 .me-fold-summary,
-.me-fold-chev,
-.me-hint {
+.me-fold-chev {
     color: var(--muted);
   }
 
@@ -10764,18 +10212,13 @@ html[data-reduce-motion] .scope-opt.on::after {
     padding: var(--space-1) var(--space-4) var(--space-4);
   }
 
-  .me-fold-head,
-  .me-row {
+  .me-fold-head {
     min-height: calc(var(--control-hit) + var(--space-2));
     padding-block: var(--space-2);
   }
 
   .me-fold-head {
     gap: var(--space-2);
-  }
-
-  .me-row {
-    gap: var(--space-3);
   }
 
   .me-row-label,
@@ -10938,7 +10381,6 @@ html[data-reduce-motion] .m-edit-actions .button:active {
 .role-help-email,
 .role-help-summary,
 .role-help-can,
-.role-help-preview,
 .rhh-label {
   font-size: var(--text-body);
   line-height: var(--lh-body);
@@ -11258,15 +10700,12 @@ html[data-reduce-motion] .cpop-done:active {
 }
 
 .modal-backdrop-passcode .passcode-box > input,
-.modal-backdrop-passcode .passcode-input-row input,
-.modal-backdrop-passcode .passcode-input-row .button,
 .modal-backdrop-passcode .passcode-actions .button {
   min-height: 40px;
   font-size: var(--text-ui);
 }
 
-.modal-backdrop-passcode .passcode-box > input,
-.modal-backdrop-passcode .passcode-input-row input {
+.modal-backdrop-passcode .passcode-box > input {
   font-size: var(--text-input);
 }
 
@@ -11333,8 +10772,6 @@ html[data-reduce-motion] .cpop-done:active {
 
   /* 모바일은 엄지 타깃 우선 — 데스크톱 압축(40px)을 되돌려 44px 히트 유지. */
   .modal-backdrop-passcode .passcode-box > input,
-  .modal-backdrop-passcode .passcode-input-row input,
-  .modal-backdrop-passcode .passcode-input-row .button,
   .modal-backdrop-passcode .passcode-actions .button,
   .modal-backdrop-passcode .passcode-box > .button {
     min-height: var(--control-hit);
@@ -11660,7 +11097,7 @@ html[data-reduce-motion] .modal-backdrop-passcode .modal-close {
     padding-bottom: calc(var(--control-hit) + var(--space-6) + var(--safe-bottom));
   }
 
-  .tag-editor .tag-tip .tip-web,
+  
   .tag-editor-section-sub {
     display: none;
   }
@@ -11716,83 +11153,6 @@ html[data-reduce-motion] .tag-editor .tag-add-in-section:active {
   color: var(--ink);
 }
 
-.members-perms {
-  overflow: hidden;
-  border: var(--stroke-hairline) solid var(--line);
-  border-radius: var(--r-control);
-  background: var(--surface-2);
-}
-
-.members-perms summary {
-  /* min-height는 list-item(summary)을 세로 중앙 정렬해 주지 않아 글줄이 위에 붙고
-     아래만 비었다(패딩 부조화 지적) — 상하 동일 패딩으로 상자를 만든다. */
-  padding: var(--space-3) var(--space-control-x);
-  color: var(--ink-soft);
-  font-size: var(--text-body);
-  font-weight: var(--weight-semibold);
-  line-height: var(--lh-body);
-  cursor: pointer;
-}
-
-.members-perms[open] summary {
-  border-bottom: var(--stroke-hairline) solid var(--line);
-}
-
-.members-perms .perm-table {
-  width: 100%;
-  border: 0;
-  border-radius: 0;
-  background: var(--surface);
-  font-size: var(--text-label);
-}
-
-.members-perms .perm-table th,
-.members-perms .perm-table td {
-  border-color: var(--line-soft);
-  padding: var(--space-2);
-}
-
-.members-perms .perm-table thead th {
-  background: var(--surface-2);
-  color: var(--muted);
-  font-size: var(--text-label);
-  font-weight: var(--weight-semibold);
-}
-
-.members-perms .perm-table .yes::before {
-  background-color: var(--status-success);
-  box-shadow: var(--shadow-1);
-}
-
-.members-perms .perm-table .no::before {
-  background: var(--line);
-  box-shadow: none;
-}
-
-.members-add {
-  gap: var(--space-3);
-  border: var(--stroke-hairline) solid var(--line);
-  border-radius: var(--r-lg);
-  background: var(--surface-2);
-  padding: var(--space-card);
-}
-
-.members-add input {
-  min-height: var(--control-hit);
-  border: var(--stroke-hairline) solid var(--line);
-  border-radius: var(--r-control);
-  background: var(--surface);
-  color: var(--ink);
-  padding-inline: var(--space-3);
-  font-size: var(--text-input);
-}
-
-.members-add input:focus {
-  border-color: var(--selection-border);
-  outline: 0;
-  box-shadow: 0 0 0 var(--space-1) var(--selection-overlay);
-}
-
 .members-add-controls {
   gap: var(--space-2);
 }
@@ -11803,80 +11163,6 @@ html[data-reduce-motion] .tag-editor .tag-add-in-section:active {
   padding-inline: var(--space-control-x);
   font-size: var(--text-body);
   font-weight: var(--weight-semibold);
-}
-
-.members-list {
-  gap: var(--space-2);
-}
-
-.members-panel .member-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto auto;
-  gap: var(--space-3);
-  align-items: center;
-  border: var(--stroke-hairline) solid var(--line);
-  border-radius: var(--r-lg);
-  background: var(--surface);
-  padding: var(--space-3);
-  box-shadow: var(--shadow-1);
-}
-
-.members-panel .member-row.syncing {
-  border-color: var(--selection-border);
-  background: var(--selection-fill);
-}
-
-.members-panel .member-row.is-inactive {
-  border-color: var(--status-warning);
-  background: var(--status-warning-fill);
-}
-
-.members-panel .member-avatar {
-  width: calc(var(--control-hit) + var(--space-1));
-  height: calc(var(--control-hit) + var(--space-1));
-  font-size: var(--text-display);
-  line-height: calc(var(--control-hit) + var(--space-1));
-  box-shadow: var(--shadow-1);
-}
-
-.member-info {
-  gap: var(--space-1);
-}
-
-.member-info strong {
-  color: var(--ink);
-  font-size: var(--text-body);
-  font-weight: var(--weight-semibold);
-}
-
-.member-status {
-  justify-self: start;
-  border-radius: var(--r-pill);
-  background: var(--status-success-fill);
-  color: var(--status-success);
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--text-caption);
-  font-weight: var(--weight-semibold);
-}
-
-.member-row.is-inactive .member-status {
-  background: var(--status-warning-fill);
-  color: var(--status-warning);
-}
-
-.member-remove {
-  width: var(--control-hit);
-  height: var(--control-hit);
-  border: var(--stroke-hairline) solid var(--status-danger);
-  border-radius: var(--r-control);
-  background: var(--status-danger-fill);
-  color: var(--status-danger);
-}
-
-.member-remove:hover:not(:disabled) {
-  border-color: var(--status-danger);
-  background: var(--status-danger);
-  color: var(--surface);
 }
 
 .members-empty {
@@ -11915,15 +11201,6 @@ html[data-reduce-motion] .tag-editor .tag-add-in-section:active {
     padding-bottom: calc(var(--control-hit) + var(--space-6) + var(--safe-bottom));
   }
 
-  .members-perms {
-    overflow-x: auto;
-  }
-
-  .members-perms .perm-table {
-    width: max-content;
-    min-width: 100%;
-  }
-
   .members-add-controls {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -11933,43 +11210,12 @@ html[data-reduce-motion] .tag-editor .tag-add-in-section:active {
     width: 100%;
   }
 
-  .members-panel .member-row {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-  }
-
-  .members-panel .member-avatar {
-    grid-row: 1 / span 2;
-  }
-
-  .members-panel .member-remove {
-    grid-column: 3;
-    grid-row: 1;
-  }
-
-}
-
-html[data-reduce-motion] .member-row,
-html[data-reduce-motion] .member-sync-dot,
-html[data-reduce-motion] .member-remove,
-html[data-reduce-motion] .members-add .button {
-  animation-duration: 1ms;
-  animation-iteration-count: 1;
-  transition: none;
-}
-
-html[data-reduce-motion] .member-row:hover {
-  transform: none;
 }
 
 /* 축약 머리글·범례는 모바일에서만 — 웹에서는 온전한 역할명을 그대로 쓴다.
    ⚠ 이 두 기본 규칙은 아래 모바일 미디어쿼리보다 **먼저** 와야 한다. 특이도가 같아서
    뒤에 오면 모바일에서도 이 display:none이 이겨 머리글이 통째로 비어 버린다(2026-08-05 실제 버그). */
-.perm-table .perm-role-short {
-  display: none;
-}
-.perm-legend {
-  display: none;
-}
+
 
 /* 역할별 권한 표 — 모바일은 가로 스크롤 없이 한 화면에 들어와야 한다.
    실측(2026-08-05, 390px): 머리글 '관리자'가 nowrap이라 열 최소폭이 54px로 굳어
@@ -11983,104 +11229,26 @@ html[data-reduce-motion] .member-row:hover {
      범례는 표 **아래**에 가운데로 둔다(위에 좌측정렬로 두면 표 위가 왼쪽만 무거워진다 — 사용자 지적).
    · 리듬 — 머리글 → 균일한 행 → 얇은 선 → 각주 한 줄. 위아래 여백이 같다. */
 @media (max-width: 640px) {
-  .perm-table,
-  .members-perms .perm-table {
-    table-layout: fixed;
-    /* 위(12648)의 max-content를 되돌린다 — 축약 머리글이 다시 보이면 max-content가 표를 넓힌다. */
-    width: 100%;
-    min-width: 0;
-    font-size: var(--text-caption);
-  }
-
-  .perm-table th,
-  .perm-table td {
-    padding: var(--space-2) 2px;
-  }
-
-  .perm-table thead th {
-    font-size: var(--text-caption);
-  }
 
   /* 역할 4열 = 마크(칩)가 들어갈 만큼만. 나머지는 전부 권한 이름 몫. */
-  .perm-table thead th:not(:first-child),
-  .perm-table td {
-    width: 34px;
-  }
+  
 
-  .perm-table .perm-role-full {
-    display: none;
-  }
-
-  .perm-table .perm-role-short {
-    display: inline;
-  }
 
   /* 머리글 줄은 한 가지 바탕으로 잔잔하게 — 역할 구분은 셀 색이 아니라 '칩'이 한다. */
-  .perm-table thead th,
-  .members-perms .perm-table thead th {
-    background: var(--surface-2, var(--studio-silver));
-    color: var(--ink-soft, var(--ink-soft));
-    padding-top: var(--space-2);
-    padding-bottom: var(--space-2);
-  }
+  
+
 
   /* 칩 = 범례와 완전히 같은 부품(아래 .perm-legend span과 같은 값). 본문 ✓ 동그라미(17px)와
      같은 지름이라 4열이 곧은 세로줄로 읽힌다. */
-  .perm-table thead th .perm-role-short,
-  .perm-legend span {
-    display: inline-grid;
-    place-items: center;
-    width: 17px;
-    height: 17px;
-    border-radius: var(--r-xs);
-    font-size: var(--text-caption);
-    font-weight: 600;
-    line-height: 1;
-  }
-  .perm-table thead th:nth-child(2) .perm-role-short,
-  .perm-legend .pl-owner {
-    background: #e8f9f0;
-    color: #1f8a55;
-  }
-  .perm-table thead th:nth-child(3) .perm-role-short,
-  .perm-legend .pl-dev {
-    background: #e9f1fe;
-    color: #2f6fd0;
-  }
-  .perm-table thead th:nth-child(4) .perm-role-short,
-  .perm-legend .pl-manager {
-    background: var(--studio-silver);
-    color: var(--studio-action-text);
-  }
-  .perm-table thead th:nth-child(5) .perm-role-short {
-    background: #fff3e0;
-    color: #b5651d;
-  }
+  
+
 
   /* 각주 한 줄 — 표 아래, 가운데. 얇은 선으로 표와 끊고 위아래 여백을 같게 준다. */
-  .perm-legend {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 2px 10px;
-    margin: 0;
-    border-top: var(--stroke-hairline, 1px) solid var(--line-soft, var(--studio-silver));
-    padding: var(--space-2) var(--space-2) 0;
-    color: var(--ink-soft, var(--ink-soft));
-    font-size: var(--text-caption);
-    font-weight: 600;
-    letter-spacing: -0.01em;
-    text-align: center;
-  }
+  
+
   /* 칩과 이름은 한 덩어리 — 줄이 바뀌어도 짝이 갈라지지 않는다. */
-  .perm-legend .pl-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 3px;
-    font-weight: 600;
-    white-space: nowrap;
-  }
+  
+
 }
 
 /* Batch 14: occasional diagnostics and visit-record modals stay opaque. */
@@ -12123,8 +11291,7 @@ html[data-reduce-motion] .member-row:hover {
   padding: var(--space-panel);
 }
 
-.modal-card-developer .insights-head,
-.modal-card-dayVisit .dayvisit-head {
+.modal-card-developer .insights-head {
   gap: var(--space-3);
   border-bottom: var(--stroke-hairline) solid var(--line);
   padding-bottom: var(--space-3);
@@ -12946,3 +12113,11 @@ html[data-reduce-motion] .paste-preview {
 
 html[data-large-text] .tag-legend-filter { min-width: 0; white-space: normal; overflow-wrap: anywhere; }
 html[data-large-text] .tag-legend-filter > span { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }
+
+/* 저사양 단계(gfx lite·soft·off) — 늘 떠 있는 유리 조각의 뒤 흐림을 끈다(2026-11-17). 움직이는 배경 위의
+   backdrop-filter는 배경이 한 프레임 바뀔 때마다 다시 흐려져, 작은 버튼 몇 개가 그래픽카드를 계속 쓴다.
+   바탕색이 이미 거의 불투명이라 모양은 거의 같다. */
+html:is([data-gfx="lite"], [data-gfx="soft"], [data-gfx="off"]) :is(.studio-topbar) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}

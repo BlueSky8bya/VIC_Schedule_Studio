@@ -44,6 +44,12 @@ export type Sprite = { c: HTMLCanvasElement; w: number; h: number }; // w/h = �
 
 const images = new Map<string, Promise<HTMLImageElement>>();
 
+/** 캐시에서 내려놓는다 — 큰 배경판(1536×1024, 장당 ≈6MB)은 그 계절 장면이 사라지면 같이 놓아야 한다.
+ *  안 그러면 달을 넘길 때마다 지나온 계절의 판이 탭이 닫힐 때까지 남는다(2026-11-17). */
+export function forgetImage(url: string): void {
+  images.delete(url);
+}
+
 export function loadImage(url: string): Promise<HTMLImageElement> {
   let p = images.get(url);
   if (!p) {

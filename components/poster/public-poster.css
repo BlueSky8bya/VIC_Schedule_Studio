@@ -403,12 +403,6 @@
   color: #7c4d05;
   letter-spacing: -0.01em;
 }
-.agenda-debut .ad-sub {
-  margin-left: 5px;
-  font-size: var(--text-caption);
-  font-weight: 600;
-  color: #9a7b45;
-}
 /* Optional account identity stays below its action; neither shares the gear cell. */
 .agenda-email {
   grid-column: 3;
@@ -1942,13 +1936,6 @@ a.dvm-host-link:active {
   font-size: calc(10px * var(--ui-text-scale, 1));
   color: #93a8dd;
 }
-.vch-by {
-  margin-left: 4px;
-  font-style: normal;
-  font-size: var(--text-caption);
-  font-weight: 600;
-  color: #9a9aa8;
-}
 .vch-note {
   margin: 2px 4px 4px;
   font-size: var(--text-caption);
@@ -2593,18 +2580,7 @@ html[data-reduce-motion] .vch-nowbar { animation-duration: 1ms;
 }
 html[data-reduce-motion] .vch-played { transition: none; }
 /* ⑤ 항목 눈금 · 봉우리 */
-.vch-tick {
-  position: absolute;
-  top: 14px;
-  bottom: 14px;
-  width: 1px;
-  border-radius: var(--r-pill);
-  background: rgb(29 29 41 / 13%);
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.32s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.vch-strip:hover .vch-tick { opacity: 1; }
+
 /* 반응 봉우리(2026-09-18 3차, 소유자: "떠 있는 동그라미가 어수선하고 가벼워 보인다")
    → 점을 버리고 **리본 뒤에서 번지는 금빛 기둥** + 아래 레일의 작은 금색 탭. 띠에 새겨진 것처럼 읽힌다. */
 .vch-spark {
@@ -2714,26 +2690,6 @@ html[data-reduce-motion] .vch-head { transition: none; }
   transition: opacity var(--dur-1) var(--ease);
 }
 .vch-strip-only { min-height: 0; }
-.vch-seg {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  background: #d6dbe8;
-  transition: background-color var(--dur-2) var(--ease);
-}
-.vch-seg[data-i="1"] { background: #cfd6e6; }
-.vch-seg[data-i="2"] { background: #dde2ee; }
-.vch-seg:first-child { border-radius: 6px 0 0 6px; }
-.vch-seg.is-active { background: #b9c9ee; }
-.vch-strip:hover .vch-seg { filter: brightness(0.97); }
-.vch-tick {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: rgb(255 255 255 / 70%);
-  pointer-events: none;
-}
 .vch-head {
   position: absolute;
   top: -3px;
@@ -3521,26 +3477,6 @@ body.cell-range-dragging {
 .interest-toggle.active {
   background: #ffe4f1;
   border-color: #f9a8d4;
-}
-.interest-toggle .it-text {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  line-height: 1.18;
-}
-.interest-toggle .it-text strong {
-  font-size: calc(16px * var(--ui-text-scale, 1));
-  font-weight: 600;
-  color: #6b5b34;
-}
-.interest-toggle.active .it-text strong {
-  color: #be185d;
-}
-.interest-toggle .it-text em {
-  font-style: normal;
-  font-size: var(--text-caption);
-  font-weight: 600;
-  color: var(--muted, #9a8c66);
 }
 /* 모바일 아젠다 제목(✨ 빅토리 일정표 ✨)의 스파클도 동일하게 반짝/둥실.
    (.agenda-header h1 span 의 부제목용 block 스타일을 덮어쓴다.) */
@@ -4359,11 +4295,7 @@ html[data-reduce-motion] .agenda-event.just-revealed .reveal-shock {
    확정된 글자는 흰빛으로 톡 박힌다(해커 영화 디코딩 문법). */
 /* ??? 구간 — 공개 직전 카드가 보여주던 그 ???를 그대로 이어받는다(같은 자간),
    난수 색을 아직 입지 않아 '아직 안 풀린 상태'로 읽힌다. */
-.scramble-rest.scramble-qm {
-  letter-spacing: 2px;
-  color: inherit;
-  text-shadow: none;
-}
+
 .scramble-rest {
   display: inline-block;
   font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
@@ -4642,7 +4574,6 @@ html[data-reduce-motion] .detail-teaser .dt-orb {
   box-shadow:
     0 0 0 calc(var(--hy-glow, 0) * 10px) rgb(255 255 255 / 55%),
     0 6px calc(10px + var(--hy-glow, 0) * 80px) rgb(var(--teaser-rgb) / calc(35% + var(--hy-gold, 0) * 30%));
-  will-change: box-shadow;
 }
 /* 흔들림 — 진폭도 연속(0 → 1.2px). 카드 '내용'만 움직인다. */
 .public-event.teaser.hype-live .teaser-main,
@@ -5024,16 +4955,7 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
 }
 /* 여운(마지막 10초) — 초마다 한 번 퍼지는 파문. 크게 시작하지 않고 링에서 태어나
    천천히 사라진다: 요란함이 아니라 잔향이다. */
-.dt-echo {
-  position: absolute;
-  inset: -5px;
-  border-radius: var(--r-pill);
-  border: 1.5px solid rgb(255 214 122 / 85%);
-  opacity: 0;
-  pointer-events: none;
-  /* 잔향은 나가면서 감속한다 — 등장 이징(감속)이 물리적으로 맞다. */
-  animation: dt-echo-out 1.15s var(--ease-enter, cubic-bezier(0.05, 0.7, 0.1, 1)) both;
-}
+
 @keyframes dt-echo-out {
   0% {
     transform: scale(1);
@@ -5044,7 +4966,7 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
     opacity: 0;
   }
 }
-html[data-reduce-motion] .dt-echo,
+
 html[data-reduce-motion] .agenda-detail-sheet.is-hype .dt-count-ringbox::after {
   animation-duration: 1ms;
   animation-iteration-count: 1;
@@ -6761,7 +6683,7 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
 /* ── 이어진 일정 잇기(2026-11-16 소유자) — 편집실·시청자·미리보기 공용(이 파일은 편집실도 불러온다) ──
    판정은 lib/calendar/month.ts buildChainJoins: 앞날 마지막 = 다음날 첫 카드일 때만 잇는다.
    · 같은 글 띠: 머리 카드(.band-head)가 여러 칸 폭(폭은 useEqualChainHeights가 잰다), 뒤 칸은 빈 자리(.band-slot).
-   · 꺾인 띠: 칸 안 svg(.chain-curves)에 앞 카드 → 다음날 카드로 칸 사이 틈에서 꺾여 오르내리는 몸통(카드 색).
+   · 꺾인 띠: 칸 안 svg(.chain-steps)에 앞 카드 → 다음날 카드로 칸 사이 틈에서 꺾여 오르내리는 몸통(카드 색).
    · 이어 받은 카드 꼬리표(.chain-cont "이어서"/"N일부터"), 글이 같으면 한 줄(.chain-slim). */
 .band-slot {
   pointer-events: none;
@@ -6824,7 +6746,7 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
   background: currentColor;
   opacity: 0.3;
 }
-.chain-curves {
+.chain-steps {
   position: absolute;
   left: 0;
   top: 0;
@@ -7885,22 +7807,6 @@ html[data-reduce-motion] .pi-skeleton {
   background: var(--pink-soft);
 }
 
-.poster-readonly .interest-toggle .it-text strong {
-  color: var(--ink);
-  font-size: var(--text-ui);
-  letter-spacing: var(--tracking-tight);
-}
-
-.poster-readonly .interest-toggle.active .it-text strong {
-  color: var(--pink);
-}
-
-.poster-readonly .interest-toggle .it-text em {
-  color: var(--muted);
-  font-size: var(--text-caption);
-  line-height: var(--lh-body);
-}
-
 .poster-readonly .insights-open,
 .poster-readonly .viewer-actions .button {
   gap: var(--space-2);
@@ -8824,16 +8730,12 @@ html[data-reduce-motion] .agenda-detail-close:active {
   gap: 8px;
   padding-left: 10px;
 }
-.interest-toggle .it-text strong {
-  font-size: var(--text-body);
-}
 .insights-open {
   gap: 6px;
 }
 /* 압축 1단계 — 라벨 접기(아이콘·이모지·하트만), 이메일 숨김. */
 html[data-pchrome] .poster-page .lbl,
 html[data-pchrome] .viewer-preview-actions .lbl,
-html[data-pchrome] .interest-toggle .it-text,
 html[data-pchrome] .account-form .account-email {
   display: none;
 }
@@ -8885,7 +8787,7 @@ html[data-pchrome] .account-form .button[data-tip]:focus-visible::after {
    실측 차이: 11 / 13.5 / 15px · 700 / 800 / 900 · 네 가지 잉크. 셋을 하나로 못 박는다 —
    **13.5px · 800 · #5b5674**. 폭은 아래 보정 패딩으로 그대로 유지한다(소유자: 너비는 바뀌면 안 됨).
    상태 색(관심 ON = 분홍)은 그대로 둔다 — 그건 '다름'이 아니라 '상태'다. */
-.poster-page .interest-toggle .it-text strong,
+
 .poster-page .insights-open .lbl,
 .poster-page .viewer-preview-actions .button .lbl,
 .poster-page .account-form .button .lbl {
@@ -10170,12 +10072,7 @@ html[data-reduce-motion] .studio-day.cell-flash {
   }
 }
 /* 링 무대의 잔향 — 초 파문(dt-echo)과 같은 궤적, 보라→금 2겹 테두리. */
-.dt-echo.dt-hope-echo {
-  border-width: 2.5px;
-  border-color: rgb(var(--teaser-rgb) / 85%);
-  box-shadow: 0 0 0 3px rgb(255 214 122 / 45%);
-  animation-duration: 1.3s;
-}
+
 /* 라벨 팝 — key 재마운트로 등장 애니메이션이 매번 돈다. */
 .dt-hope-label {
   display: inline-flex;
@@ -10407,7 +10304,6 @@ html[data-reduce-motion] .studio-day.cell-flash {
 }
 html[data-reduce-motion] .agenda-detail-sheet.hope-cast .detail-teaser::before,
 html[data-reduce-motion] .agenda-detail-sheet.hope-cast .dt-orb,
-html[data-reduce-motion] .dt-echo.dt-hope-echo,
 html[data-reduce-motion] .dt-hope-label,
 html[data-reduce-motion] .dt-hope-star,
 html[data-reduce-motion] .dt-hope.confirmed .dt-hope-star,
@@ -10475,11 +10371,6 @@ html[data-reduce-motion] .agenda-item.teaser.hope-hit {
 .agenda-detail-sheet.is-hoped .dt-count-label {
   color: color-mix(in srgb, rgb(90 80 130 / 80%) calc((1 - var(--hy-gold, 0)) * 100%), #8a4f04);
   font-weight: 600;
-}
-.agenda-detail-sheet.is-hoped .dt-echo:not(.dt-hope-echo) {
-  border-width: 2.5px;
-  border-color: rgb(255 202 106 / 95%);
-  box-shadow: 0 0 0 4px rgb(255 214 122 / 30%);
 }
 /* 시트 — 알약 무대(60초 밖): 큰 숫자·오브가 금빛을 머금는다. */
 .agenda-detail-sheet.is-hoped .tg-num {
@@ -11212,3 +11103,11 @@ html[data-large-text] { --m-agenda-rail-w: clamp(116px, 38vw, 168px); }
 html[data-large-text] .agenda .agenda-legend .panel-section-title { white-space: normal; overflow-wrap: anywhere; word-break: normal; }
 html[data-large-text] .agenda-legend-tag { overflow-wrap: anywhere; word-break: normal; }
 html[data-large-text] .agenda-legend-tag > span { min-width: 0; max-width: 100%; white-space: normal; overflow-wrap: anywhere; text-overflow: clip; }
+
+/* 저사양 단계(gfx lite·soft·off) — 늘 떠 있는 유리 조각의 뒤 흐림을 끈다(2026-11-17). 움직이는 배경 위의
+   backdrop-filter는 배경이 한 프레임 바뀔 때마다 다시 흐려져, 작은 버튼 몇 개가 그래픽카드를 계속 쓴다.
+   바탕색이 이미 거의 불투명이라 모양은 거의 같다. */
+html:is([data-gfx="lite"], [data-gfx="soft"], [data-gfx="off"]) :is(.insights-open, .viewer-settings-open, .poster-readonly .viewer-actions .button, .soop-live-card) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}

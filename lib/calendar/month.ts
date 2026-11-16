@@ -176,7 +176,7 @@ export function getEventsForDate<T extends PublicScheduleEvent | StudioScheduleE
   // 같은 날 안의 순서 = 방송 순서(sortOrder, 편집실에서 끌어 바꾼 순서). 위→아래가 곧 시간 순이다.
   // (2026-11-16 소유자) 예전엔 이어진 일정을 무조건 맨 위로 올렸는데, 그러면 "15시 합방 → 하종와"가
   // 하종와 → 15시로 뒤집혀 읽혔다. 이제 이어진 일정도 그날 순서 그대로 두고, 이어짐은
-  // buildChainJoins가 "앞날 마지막 = 다음날 첫" 일 때만 띠/곡선으로 그린다.
+  // buildChainJoins가 "앞날 마지막 = 다음날 첫" 일 때만 띠/꺾인 띠으로 그린다.
   //
   // 성능 주의: 달력 칸마다(42칸) 매 렌더 호출되는 핫 패스 — 비교자 안에서 배열을 훑지 않는다.
   // 동률이면 원래 로드 순서 유지(안정 정렬). tests/unit/events-for-date.test.ts가 못박는다.
@@ -200,10 +200,6 @@ export function addDays(isoDate: string, days: number): string {
     String(dt.getUTCMonth() + 1).padStart(2, "0"),
     String(dt.getUTCDate()).padStart(2, "0")
   ].join("-");
-}
-
-function covers(event: PublicScheduleEvent | StudioScheduleEvent, isoDate: string) {
-  return getEventDateKey(event) <= isoDate && isoDate <= eventEndKey(event);
 }
 
 // 일정의 대표 태그(최대 2개) — 칸을 칠하는 색 순서. [0]=왼쪽 변, 마지막=오른쪽 변.
@@ -741,10 +737,10 @@ export function linkEdgesMatch(
 // 이을 때 모양:
 //  · band  — 앞날에 그 일정 하나뿐(앞에 올 게 없음) → 같은 높이라 예전처럼 평평한 변으로 붙는 띠.
 //            글이 같으면 머리 칸 하나가 여러 칸 폭으로 글을 한 번만 쓰고, 뒤 칸은 빈 자리(bandSlot).
-//  · curve — 앞날에 그 일정 앞에 다른 일정이 있어 같은 줄에 못 놓임 → 둥근 카드끼리 곡선으로 잇는다.
-//  · wrap  — 토→일(달력 줄이 바뀜) → 곡선 없이 평평한 변만 두고, 일요일 쪽에 "N일부터"를 쓴다.
-// curve/wrap에서 다음날 글이 같으면 그 카드는 "▸ 제목 이어서" 한 줄로 준다(sameContent).
-export type ChainJoinKind = "band" | "curve" | "wrap";
+//  · step  — 앞날에 그 일정 앞에 다른 일정이 있어 같은 줄에 못 놓임 → 둥근 카드끼리 꺾인 띠로 잇는다.
+//  · wrap  — 토→일(달력 줄이 바뀜) → 꺾인 띠 없이 평평한 변만 두고, 일요일 쪽에 "N일부터"를 쓴다.
+// step/wrap에서 다음날 글이 같으면 그 카드는 "▸ 제목 이어서" 한 줄로 준다(sameContent).
+export type ChainJoinKind = "band" | "step" | "wrap";
 export type ChainJoinSide = { kind: ChainJoinKind; otherId: string; sameContent: boolean };
 export type ChainJoin = {
   left?: ChainJoinSide; // 앞날에서 이어 받음
@@ -793,7 +789,7 @@ export function buildChainJoins<T extends PublicScheduleEvent | StudioScheduleEv
         ? "wrap"
         : a.length === 1 && !(forceStep && forceStep(d.isoDate, n.isoDate))
           ? "band"
-          : "curve";
+          : "step";
     get(last.id).right = { kind, otherId: first.id, sameContent };
     get(first.id).left = { kind, otherId: last.id, sameContent };
   }
@@ -802,7 +798,7 @@ export function buildChainJoins<T extends PublicScheduleEvent | StudioScheduleEv
     for (const e of lists[k]) {
       const j = joins.get(e.id);
       if (!j) continue;
-      j.flatLeft = Boolean(j.left && j.left.kind !== "curve");
+      j.flatLeft = Boolean(j.left && j.left.kind !== "step");
       if (j.left?.kind === "band") {
         const prev = get(j.left.otherId);
         j.bandKey = prev.bandKey ?? j.left.otherId;
@@ -813,7 +809,7 @@ export function buildChainJoins<T extends PublicScheduleEvent | StudioScheduleEv
   }
   for (const j of joins.values()) {
     if (j.bandHeadId || !(j.right?.kind === "band" && j.right.sameContent)) {
-      j.flatRight = Boolean(j.right && j.right.kind !== "curve");
+      j.flatRight = Boolean(j.right && j.right.kind !== "step");
       continue;
     }
     // 같은 글 띠의 머리 — 끝 칸까지 세고, 오른쪽 변은 끝 칸의 오른쪽 이음을 따른다.
@@ -826,24 +822,25 @@ export function buildChainJoins<T extends PublicScheduleEvent | StudioScheduleEv
       span += 1;
     }
     j.bandSpan = span;
-    j.flatRight = Boolean(tail.right && tail.right.kind !== "curve");
+    j.flatRight = Boolean(tail.right && tail.right.kind !== "step");
   }
   return joins;
 }
 
-// 특정 날짜 칸에서 일정이 어떻게 그려질지. 자체 멀티데이(end_date_key)와
-// 연결 그룹(link_group_id)의 이웃(앞/뒤 날) 둘 다 고려해 막대를 잇는다.
-// joins(buildChainJoins)를 주면 link_next 이음은 그 판정만 따른다(앞날 마지막 = 다음날 첫일 때만).
-export function getEventSpan<T extends PublicScheduleEvent | StudioScheduleEvent>(
-  event: T,
+// 특정 날짜 칸에서 일정이 어떻게 그려질지.
+//  · 하루짜리: 이웃 날과의 이음은 buildChainJoins 판정만 따른다(앞날 마지막 = 다음날 첫일 때만 평평한 변).
+//  · 여러 날 한 장(end_date_key): 자기 칸들끼리만 잇는다. link_next 이음은 그리지 않는다 — 앞날 마지막/다음날 첫
+//    판정을 거치지 않은 평평한 변이 무관한 옆 카드를 향하면 안 된다.
+// (2026-11-17: "link_next 이웃이면 순서와 무관하게 잇는다"던 옛 규칙 경로를 지웠다 — 두 화면 모두 joins를 넘긴다.)
+export function getEventSpan(
+  event: PublicScheduleEvent | StudioScheduleEvent,
   isoDate: string,
   weekday: number,
-  allEvents: T[],
-  joins?: Map<string, ChainJoin>
+  joins: Map<string, ChainJoin>
 ): EventSpan {
   const start = getEventDateKey(event);
   const end = eventEndKey(event);
-  if (joins && end === start) {
+  if (end === start) {
     const j = joins.get(event.id);
     const flatLeft = Boolean(j?.flatLeft);
     const flatRight = Boolean(j?.flatRight);
@@ -854,30 +851,11 @@ export function getEventSpan<T extends PublicScheduleEvent | StudioScheduleEvent
       showTitle: true
     };
   }
-  const linkedNext = event.linkNext
-    ? allEvents.find((e) => e.id === event.linkNext)
-    : undefined;
-  const linkedPrev = allEvents.find((e) => e.linkNext === event.id);
-  // joins를 쓰는 화면에선 여러 날 한 장의 link_next 이음은 그리지 않는다 — 앞날 마지막/다음날 첫 판정
-  // (buildChainJoins)을 거치지 않은 평평한 변이 무관한 옆 카드를 향하는 걸 막는다. 자기 칸들끼리는 그대로 잇는다.
-  const nextEvent =
-    !joins && linkedNext && linkEdgesMatch(event, linkedNext) ? linkedNext : undefined;
-  const prevEvent =
-    !joins && linkedPrev && linkEdgesMatch(linkedPrev, event) ? linkedPrev : undefined;
-
-  // 오른쪽 이어짐: 자체 멀티데이가 계속되거나, 끝날의 다음날을 (색이 맞는) link_next 상대가 덮을 때
-  const connectRight =
-    isoDate < end ||
-    (isoDate === end && Boolean(nextEvent) && covers(nextEvent!, addDays(isoDate, 1)));
-  const connectLeft =
-    isoDate > start ||
-    (isoDate === start && Boolean(prevEvent) && covers(prevEvent!, addDays(isoDate, -1)));
-
   return {
-    isMulti: end > start || Boolean(nextEvent) || Boolean(prevEvent),
+    isMulti: true,
     // 주 경계여도 둥글게 강제하지 않음 → 모서리가 칸 끝까지 가서 다음 줄과 잇는 느낌
-    roundLeft: !connectLeft,
-    roundRight: !connectRight,
+    roundLeft: isoDate <= start,
+    roundRight: isoDate >= end,
     showTitle: isoDate === start || weekday === 0
   };
 }

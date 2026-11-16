@@ -116,7 +116,7 @@ import { flipSpring } from "@/lib/ui/flip-motion";
 import { trackPopoverLayout } from "@/lib/ui/popover-layout";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
-import { ChainCurveLayer, chainContLabel, chainDataAttrs } from "@/lib/calendar/chain-join-view";
+import { ChainStepLayer, chainContLabel, chainDataAttrs } from "@/lib/calendar/chain-join-view";
 import {
   assignSupportLanes,
   supportDepthByCell,
@@ -141,7 +141,6 @@ import {
 import { isTaxonomyV3, legacyTagView } from "@/lib/tags/taxonomy";
 import { tagColor } from "@/lib/tags/dark-palette";
 import { createTagVisualResolver } from "@/lib/tags/tag-visual";
-import { markContentReady } from "@/lib/presence/content-ready";
 import { detectInAppBrowser } from "@/lib/auth/in-app-browser";
 import { PlainEmail } from "@/components/ui/plain-email";
 import { POSTER_AGENDA_QUERY } from "@/lib/ui/breakpoints";
@@ -777,7 +776,7 @@ export function PublicPoster({
   const chainKeys = useMemo(() => buildChainKeys(schedule.events), [schedule.events]);
   // 같은 태그 구성으로 이어진 묶음은 하나의 그라데이션으로(경계 가운데). 묶음별 날짜 범위.
   const paintGroups = useMemo(() => buildPaintGroups(schedule.events), [schedule.events]);
-  // 이어진 일정 잇기(2026-11-16): 앞날 마지막 = 다음날 첫 카드일 때만 띠/곡선/줄바뀜으로 잇는다.
+  // 이어진 일정 잇기(2026-11-16): 앞날 마지막 = 다음날 첫 카드일 때만 띠/꺾인 띠/줄바뀜으로 잇는다.
   // 편집실과 같은 판정 함수(buildChainJoins) — 칸 목록도 렌더와 같은 기준(업 도움 제외·사라진 떡밥 제외).
   const chainJoins = useMemo(
     () =>
@@ -805,10 +804,6 @@ export function PublicPoster({
     },
     [monthGridRef, rangeSelectRef]
   );
-  // 실제 달력 콘텐츠가 떴음을 방문 비콘에 알린다(로딩 스켈레톤이 아니라 진짜 화면을 봤을 때만 방문 1).
-  useEffect(() => {
-    markContentReady();
-  }, []);
   // 시청자(공개 포스터) 태그 뷰 — 단계 배포 제어. TAXONOMY_V3_ROLES에 viewer가 있으면 v3(세부·
   // modifier·신설 그룹), 없으면 레거시(세부 나누기 이전). 현재 viewer 포함 = v3.
   const viewTags = useMemo(
@@ -3380,8 +3375,8 @@ export function PublicPoster({
             const colors = eventColors(event);
             const extraColors = tagVisual.eventExtras(event);
             const { main, subs } = splitEventTitle(event.publicTitle);
-            const span = getEventSpan(event, cell.isoDate, cell.weekday, schedule.events, chainJoins);
-            // 곡선·줄바뀜으로 이어 받은 카드 — 글이 같으면 "▸ 제목 이어서" 한 줄로 준다.
+            const span = getEventSpan(event, cell.isoDate, cell.weekday, chainJoins);
+            // 꺾인 띠·줄바뀜으로 이어 받은 카드 — 글이 같으면 "▸ 제목 이어서" 한 줄로 준다.
             const cont = chainContLabel(join, cell.isoDate);
             const slim = Boolean(cont && join?.left?.sameContent);
             const bookmarked = isBookmarked(event.id);
@@ -3402,10 +3397,10 @@ export function PublicPoster({
               span.isMulti && !span.roundRight ? "no-right" : "",
               slim ? "chain-slim" : "",
               join?.bandSpan ? "band-head" : "",
-              join?.right?.kind === "curve" ? "chain-step-from" : "",
-              join?.left?.kind === "curve" ? "chain-step-to" : "",
+              join?.right?.kind === "step" ? "chain-step-from" : "",
+              join?.left?.kind === "step" ? "chain-step-to" : "",
               // 단색 카드는 칠·테두리를 꺾인 띠 도형에 맡긴다(이음새 없음). 2색 카드는 제 그라데이션을 그대로.
-              (join?.right?.kind === "curve" || join?.left?.kind === "curve") && colors.length < 2
+              (join?.right?.kind === "step" || join?.left?.kind === "step") && colors.length < 2
                 ? "chain-step-solid"
                 : "",
               isDimmedByFilter(event) ? "dimmed" : "",
@@ -3564,8 +3559,8 @@ export function PublicPoster({
               일정이 있는 날은 카드가 주인공이라 그대로 호버 ▶만. 포스터(비인터랙티브)엔 cellVods가 없어 안 그려진다. */}
           {cellVods && events.length === 0 ? <DayVodNote vods={cellVods} /> : null}
         </div>
-        {/* 곡선 이음 — 이 칸의 카드에서 다음날 카드로. 선 좌표는 useEqualChainHeights가 레이아웃마다 다시 잰다. */}
-        <ChainCurveLayer events={events} joins={chainJoins} />
+        {/* 꺾인 띠 이음 — 이 칸의 카드에서 다음날 카드로. 선 좌표는 useEqualChainHeights가 레이아웃마다 다시 잰다. */}
+        <ChainStepLayer events={events} joins={chainJoins} />
       </article>
     );
   }

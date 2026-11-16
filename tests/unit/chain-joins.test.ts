@@ -3,7 +3,7 @@ import { buildChainJoins, getEventSpan, getEventsForDate } from "@/lib/calendar/
 import type { StudioScheduleEvent } from "@/lib/domain/schedule-types";
 
 // 이어진 일정 잇기 규칙(2026-11-16 소유자): 앞날 마지막 카드 = 다음날 첫 카드일 때만 잇는다.
-// 앞날에 그 일정 하나뿐이면 띠(band), 앞에 다른 일정이 있으면 곡선(curve), 토→일이면 줄바뀜(wrap).
+// 앞날에 그 일정 하나뿐이면 띠(band), 앞에 다른 일정이 있으면 꺾인 띠(step), 토→일이면 줄바뀜(wrap).
 
 function ev(part: Partial<StudioScheduleEvent> & { id: string; day: string }): StudioScheduleEvent {
   const { day, ...rest } = part;
@@ -40,7 +40,7 @@ function joinsOf(events: StudioScheduleEvent[], start = "2026-11-08", n = 14) {
 const BODY = "하종와\n낮의와우와 밤의와우를 보자";
 
 describe("buildChainJoins", () => {
-  it("앞에 다른 일정이 있으면 곡선, 같은 글이면 다음날은 한 줄", () => {
+  it("앞에 다른 일정이 있으면 꺾인 띠, 같은 글이면 다음날은 한 줄", () => {
     const events = [
       ev({ id: "15시", day: "2026-11-09", sortOrder: 0 }),
       ev({ id: "a", day: "2026-11-09", sortOrder: 1, publicTitle: BODY, linkNext: "b" }),
@@ -48,9 +48,9 @@ describe("buildChainJoins", () => {
       ev({ id: "17시", day: "2026-11-10", sortOrder: 1 })
     ];
     const j = joinsOf(events);
-    expect(j.get("a")?.right).toEqual({ kind: "curve", otherId: "b", sameContent: true });
-    expect(j.get("b")?.left).toEqual({ kind: "curve", otherId: "a", sameContent: true });
-    // 곡선은 둥근 카드끼리 — 평평한 변 없음
+    expect(j.get("a")?.right).toEqual({ kind: "step", otherId: "b", sameContent: true });
+    expect(j.get("b")?.left).toEqual({ kind: "step", otherId: "a", sameContent: true });
+    // 꺾인 띠은 둥근 카드끼리 — 평평한 변 없음
     expect(j.get("a")?.flatRight).toBe(false);
     expect(j.get("b")?.flatLeft).toBe(false);
   });
@@ -104,7 +104,7 @@ describe("buildChainJoins", () => {
     expect(j.get("a")?.bandKey).toBe(j.get("b")?.bandKey);
   });
 
-  it("토→일은 줄바뀜 — 평평한 변만, 띠·곡선 아님", () => {
+  it("토→일은 줄바뀜 — 평평한 변만, 띠·꺾인 띠 아님", () => {
     const events = [
       ev({ id: "공지", day: "2026-11-14", sortOrder: 0 }),
       ev({ id: "a", day: "2026-11-14", sortOrder: 1, publicTitle: BODY, linkNext: "b" }),
@@ -117,7 +117,7 @@ describe("buildChainJoins", () => {
     expect(j.get("b")?.flatLeft).toBe(true);
   });
 
-  it("3일 묶음 — 첫날 앞에 다른 일정이 있으면 1→2일은 곡선, 2→3일은 띠(2일은 한 줄 머리)", () => {
+  it("3일 묶음 — 첫날 앞에 다른 일정이 있으면 1→2일은 꺾인 띠, 2→3일은 띠(2일은 한 줄 머리)", () => {
     const events = [
       ev({ id: "15시", day: "2026-11-10", sortOrder: 0 }),
       ev({ id: "a", day: "2026-11-10", sortOrder: 1, publicTitle: BODY, linkNext: "b" }),
@@ -125,8 +125,8 @@ describe("buildChainJoins", () => {
       ev({ id: "c", day: "2026-11-12", publicTitle: BODY })
     ];
     const j = joinsOf(events);
-    expect(j.get("a")?.right?.kind).toBe("curve");
-    expect(j.get("b")?.left?.kind).toBe("curve");
+    expect(j.get("a")?.right?.kind).toBe("step");
+    expect(j.get("b")?.left?.kind).toBe("step");
     expect(j.get("b")?.right?.kind).toBe("band");
     expect(j.get("b")?.bandSpan).toBe(2);
     expect(j.get("c")?.bandHeadId).toBe("b");
@@ -143,7 +143,7 @@ describe("buildChainJoins", () => {
       undefined,
       (a, b) => a === "2026-11-11" || b === "2026-11-11"
     );
-    expect(j.get("a")?.right?.kind).toBe("curve");
+    expect(j.get("a")?.right?.kind).toBe("step");
     expect(j.get("a")?.bandSpan).toBeUndefined();
   });
 
@@ -162,8 +162,8 @@ describe("buildChainJoins", () => {
       ev({ id: "b", day: "2026-11-10" })
     ];
     const j = joinsOf(events);
-    const aSpan = getEventSpan(events[1], "2026-11-09", 1, events, j);
-    expect(aSpan.isMulti).toBe(false); // 곡선 = 둥근 단독 카드
+    const aSpan = getEventSpan(events[1], "2026-11-09", 1, j);
+    expect(aSpan.isMulti).toBe(false); // 꺾인 띠 = 둥근 단독 카드
     expect(aSpan.roundRight).toBe(true);
   });
 });

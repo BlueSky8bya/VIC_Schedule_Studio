@@ -258,23 +258,6 @@ export function logActivity(
   }
 }
 
-// ── 체류형(열고 닫기) 도우미 ──
-// event.open → event.close(dur_ms)처럼 짝이 있는 이벤트를 위해 열린 시각을 들고 있는다.
-// 닫힘 신호가 유실될 수 있으므로(라우팅으로 사라짐 등) 짝이 안 맞아도 앱은 아무 영향이 없다.
-const openedAt = new Map<string, number>();
-
-export function logOpen(kind: ClientKind, target: string): void {
-  openedAt.set(`${kind}|${target}`, Date.now());
-  logActivity(kind, { target });
-}
-
-export function logClose(openKind: ClientKind, closeKind: ClientKind, target: string): void {
-  const key = `${openKind}|${target}`;
-  const started = openedAt.get(key);
-  openedAt.delete(key);
-  logActivity(closeKind, { target, durMs: started ? Date.now() - started : undefined });
-}
-
 // ── 정착 로깅(연타 압축) ──
 // 달을 12번 넘겨 3월로 갔으면 그건 행동 12개가 아니라 의도 1개("3월 보러 가자")다. 경유지를
 // 다 남기면 정작 중요한 줄(수정·잠금해제)이 반복 줄에 덮인다 — 실측에서 한 방문 52건 중

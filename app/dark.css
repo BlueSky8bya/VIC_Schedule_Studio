@@ -37,8 +37,7 @@ html[data-theme="dark"] .public-legend-vertical li,
 html[data-theme="dark"] .public-legend-vertical .legend-heart-help,
 html[data-theme="dark"] .public-legend-vertical .legend-tier-line,
 html[data-theme="dark"] .public-legend-vertical .legend-tier,
-html[data-theme="dark"] .public-legend-vertical .legend-tent-line,
-html[data-theme="dark"] .legend-hint {
+html[data-theme="dark"] .public-legend-vertical .legend-tent-line {
   color: var(--ink-soft);
 }
 html[data-theme="dark"] .legend-item:hover {
@@ -68,8 +67,7 @@ html[data-theme="dark"] .ric-dplus {
 /* 기간 안내 띠(support bar) — 하늘색 글자가 어두워 바닥에 묻혔다. */
 html[data-theme="dark"] .sb-title,
 html[data-theme="dark"] .sb-cta,
-html[data-theme="dark"] .sb-go,
-html[data-theme="dark"] .support-bar .sb-when {
+html[data-theme="dark"] .sb-go {
   color: #7fd3ea;
 }
 /* 머리줄 알약(검색·기록·로그인·설정) — 글자색이 리터럴이라 어두운 유리 위에서 묻혔다. */
@@ -264,8 +262,7 @@ html[data-theme="dark"] .ps-rail-tip {
   background: #3a352c;
   color: var(--ink);
 }
-html[data-theme="dark"] .dvm-head .dvm-date,
-html[data-theme="dark"] .dvm-date,
+
 html[data-theme="dark"] .vch-sec-name,
 html[data-theme="dark"] .vch-sec-n,
 html[data-theme="dark"] .vch-now-sec { color: var(--ink-soft); }
@@ -699,14 +696,7 @@ html[data-theme="dark"] :is(.usage-n, .act-day, .act-rep,
   .act-items > li[data-source="server"] .act-name, .act-items > li[data-fold="open"] .act-name) { color: var(--seg-on-accent-ink); }
 
 /* The art inventory's alternate table view uses the same materials as cards. */
-html[data-theme="dark"] .cx-table thead th { background: var(--surface-2); color: var(--muted); }
-html[data-theme="dark"] .cx-table tbody tr { border-color: var(--line); }
-html[data-theme="dark"] .cx-table tbody tr:hover { background: var(--night-hover); }
-html[data-theme="dark"] .cx-mgrid i { background: var(--night-hover); }
-html[data-theme="dark"] .cx-mgrid i.on { background: var(--violet); }
-html[data-theme="dark"] .cx-tier.tier-rare { color: var(--violet); }
-html[data-theme="dark"] .cx-tier.tier-epic { color: var(--amber); }
-html[data-theme="dark"] .cx-tier.tier-legend { color: var(--pink); }
+
 html[data-theme="dark"] .art-codex span { background: var(--studio-action-tint); color: var(--studio-action-text); border-color: var(--studio-action-line); }
 html[data-theme="dark"] .art-codex b { color: var(--studio-action-text); }
 

@@ -134,8 +134,7 @@ import {
   splitEventTitle
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
-import { ChainCurveLayer, chainContLabel, chainDataAttrs } from "@/lib/calendar/chain-join-view";
-import { markContentReady } from "@/lib/presence/content-ready";
+import { ChainStepLayer, chainContLabel, chainDataAttrs } from "@/lib/calendar/chain-join-view";
 import { getDayMark } from "@/lib/calendar/holidays";
 import {
   MonthJumpToast,
@@ -1415,10 +1414,6 @@ export function StudioShell({
     },
     [monthGridRef, rangeSelectRef]
   );
-  // 실제 편집실 화면이 떴음을 방문 비콘에 알린다(로딩 스켈레톤이 아닌 진짜 화면을 봤을 때만 방문 1).
-  useEffect(() => {
-    markContentReady();
-  }, []);
   // 새 일정 카드: 카드/날짜 칸 바깥을 누르면 닫는다(슬라이드 아웃). 닫기는 '제스처 시작점' 기준이라
   // 제목을 마우스로 긁다가 카드 밖에서 손을 떼도(드래그-선택) 시작점이 카드 안이면 닫지 않는다.
   // (이전엔 click의 target이 두 점의 공통 조상이라 카드 밖으로 잡혀 갑자기 닫히는 버그가 있었다.)
@@ -7020,7 +7015,8 @@ export function StudioShell({
                     const d = Math.round((e.clientX - s.x) / 8);
                     let ne = addDaysIso(s.end, d);
                     if (ne < selectedDate) ne = selectedDate;
-                    setForm((current) => ({ ...current, endDateKey: ne }));
+                    // 날이 안 바뀐 움직임은 상태를 건드리지 않는다 — 같은 값으로도 새 객체를 넣으면 편집실 전체가 다시 그려진다.
+                    setForm((current) => (current.endDateKey === ne ? current : { ...current, endDateKey: ne }));
                   }}
                   onPointerUp={() => {
                     dateScrubRef.current = null;
@@ -8343,10 +8339,9 @@ export function StudioShell({
                         event,
                         cell.isoDate,
                         cell.weekday,
-                        visibleEvents,
                         chainJoins
                       );
-                      // 곡선·줄바뀜으로 이어 받은 카드 — 글이 같으면 "▸ 제목 이어서" 한 줄.
+                      // 꺾인 띠·줄바뀜으로 이어 받은 카드 — 글이 같으면 "▸ 제목 이어서" 한 줄.
                       const cont = chainContLabel(join, cell.isoDate);
                       const slim = Boolean(cont && join?.left?.sameContent);
                       // 체인 이음변(색 일치 여부 무관) — 칠(getEventSpan)은 색이 같을 때만
@@ -8356,16 +8351,11 @@ export function StudioShell({
                       // 통째로 빗나갔다(대나무 마디 링의 진범). KST 정본 헬퍼 사용.
                       const evStartKey = getEventDateKey(event);
                       const evEndKey = event.endDateKey ?? evStartKey;
-                      // (2026-11-16) 실제로 붙어 그려지는 쪽(띠·줄바뀜)만 — 곡선·끊긴 이음은 둥근 카드라 선택 테두리도 닫는다.
-                      const joinRight =
-                        cell.isoDate === evEndKey &&
-                        Boolean(event.linkNext) &&
-                        visibleEvents.some((o) => o.id === event.linkNext) &&
-                        (evEndKey !== evStartKey || Boolean(join?.flatRight));
-                      const joinLeft =
-                        cell.isoDate === evStartKey &&
-                        visibleEvents.some((o) => o.linkNext === event.id) &&
-                        (evEndKey !== evStartKey || Boolean(join?.flatLeft));
+                      // (2026-11-16) 실제로 붙어 그려지는 쪽(띠·줄바뀜)만 — 꺾인 띠·끊긴 이음은 둥근 카드라 선택 테두리도 닫는다.
+                      // 여러 날 한 장은 link_next 이음을 그리지 않으므로(getEventSpan) 하루짜리의 평평한 변만 본다 —
+                      // 예전 식은 여러 날 일정의 끝 칸에서 둥근 변인데도 테두리를 열었고, 카드마다 전체 일정을 훑었다.
+                      const joinRight = evEndKey === evStartKey && Boolean(join?.flatRight);
+                      const joinLeft = evEndKey === evStartKey && Boolean(join?.flatLeft);
                       // 띠로 평평하게 붙은 조각도 끌 수 있다(2026-11-17 소유자: "클릭은 되는데 들려서 안 옮겨진다") —
                       // 이어진 일정은 onPillPointerDown이 spanMembersOf로 묶음 전체를 옮기므로 한 장만 떨어져 나갈 일이 없다.
                       // (예전엔 '이어진 칸 = 못 끔' 안전장치가 있어, 혼자라서 띠가 된 조각은 손잡이가 사라졌다.)
@@ -8395,10 +8385,10 @@ export function StudioShell({
                         span.isMulti && !span.roundRight ? "no-right" : "",
                         slim ? "chain-slim" : "",
                         join?.bandSpan ? "band-head" : "",
-                        join?.right?.kind === "curve" ? "chain-step-from" : "",
-                        join?.left?.kind === "curve" ? "chain-step-to" : "",
+                        join?.right?.kind === "step" ? "chain-step-from" : "",
+                        join?.left?.kind === "step" ? "chain-step-to" : "",
                         // 단색 카드는 칠·테두리를 꺾인 띠 도형에 맡긴다(시청자 화면과 같은 규칙).
-                        (join?.right?.kind === "curve" || join?.left?.kind === "curve") && colors.length < 2
+                        (join?.right?.kind === "step" || join?.left?.kind === "step") && colors.length < 2
                           ? "chain-step-solid"
                           : "",
                         joinRight ? "link-join-right" : "",
@@ -8672,8 +8662,8 @@ export function StudioShell({
                       </div>
                     ) : null}
                   </div>
-                  {/* 곡선 이음 — 시청자 화면과 같은 층(lib/calendar/chain-join-view). */}
-                  <ChainCurveLayer events={dateEvents} joins={chainJoins} />
+                  {/* 꺾인 띠 이음 — 시청자 화면과 같은 층(lib/calendar/chain-join-view). */}
+                  <ChainStepLayer events={dateEvents} joins={chainJoins} />
                 </article>
               );
               });

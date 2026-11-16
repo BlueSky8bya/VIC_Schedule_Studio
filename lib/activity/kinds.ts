@@ -186,7 +186,7 @@ const ENUMS: Record<string, readonly string[]> = {
 };
 // 진단 전용 문자열 — 코드가 정한 값만 통과한다(작업 이름·번들 파일 이름).
 const OP_RE = /^[a-z][\w.:-]{0,39}$/i;
-const SRC_RE = /^[\w.@~()\[\]-]{1,80}$/;
+const SRC_RE = /^[\w.@~()[\]-]{1,80}$/;
 /** 오류 메시지 — 일정 제목이 섞여 들어올 수 있는 유일한 자유 글이라 한글은 가린다(제목·본문은 저장 금지). */
 export function maskErrorMessage(raw: string): string {
   return raw.replace(/[ㄱ-힣]+/g, "□").replace(/\s+/g, " ").trim().slice(0, 160);

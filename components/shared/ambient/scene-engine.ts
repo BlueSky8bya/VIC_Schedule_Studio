@@ -772,6 +772,9 @@ export function mountScene(canvas: HTMLCanvasElement, factory: SceneFactory, wor
     const hiddenByCss = getComputedStyle(canvas).display === "none";
     // 숨겨졌다 다시 보이면(display none → block) 크기가 0에서 돌아온다 — 다시 잰다.
     if (!hiddenByCss && (canvas.offsetWidth !== w || canvas.offsetHeight !== h)) resize();
+    // 숨겨진 동안에는 화면 크기 비트맵(1440p에서 15~20MB)을 쥐고 있을 이유가 없다 — 1px로 줄이고,
+    // w/h를 0으로 돌려 다시 보일 때 위 줄이 크기를 되잡게 한다(2026-11-17).
+    if (hiddenByCss && canvas.width > 1) { canvas.width = canvas.height = 1; w = h = 0; }
     // 결정적 재현: 얼린 상태에선 루프를 절대 돌리지 않는다(시간은 advance()만 흐르게 한다). 정지 화면도 여기서 굽지 않는다 —
     // 속성 변화마다 dt=0 step이 끼면 rand() 소비가 타이밍에 따라 달라져 같은 URL이 다른 프레임을 낸다.
     if (frozen) {

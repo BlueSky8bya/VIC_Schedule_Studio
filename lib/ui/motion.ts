@@ -110,10 +110,7 @@ export function setEyeComfort(on: boolean): void {
 // 페인트 전 적용은 app/layout.tsx 스크립트(눈 편한 테마와 같은 줄).
 // 2026-09-04 사용자: "끄면 색감이 살짝 어두워질 뿐 뭐가 차분한지 모르겠다 — ON을 기본으로 하고 토글은 지워도 된다"
 // → 스위치 제거, **항상 ON**. 페인트-전 스크립트가 `data-studio-calm`을 무조건 붙이고(옛 vic.studioCalm 키는 세대
-// 재시딩 때 지운다), CSS(`html[data-studio-calm]`)는 그대로 — 되돌리려면 이 함수와 스크립트 조건만 살리면 된다.
-export function studioCalmEnabled(): boolean {
-  return true;
-}
+// 재시딩 때 지운다), CSS(`html[data-studio-calm]`)는 그대로 — 되돌리려면 스크립트 조건만 살리면 된다.
 
 // ── 계절 배경(2026-09-04, ADR-0017) — 물결 위의 계절 레이어(components/shared/ambient) ON/OFF ──
 // **기본 OFF(2026-09-04 소유자)** — 처음 오는 사람은 조용한 화면에서 시작하고, 켜기/흐리게/끄기 중 고른 값이
@@ -152,11 +149,3 @@ export function setAmbientMode(mode: AmbientMode): void {
   }
 }
 
-/** 켜짐/흐리게 = true, 끔 = false(옛 호출부 호환). */
-export function ambientEnabled(): boolean {
-  return ambientMode() !== "off";
-}
-
-export function setAmbient(on: boolean): void {
-  setAmbientMode(on ? "on" : "off");
-}

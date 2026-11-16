@@ -6,7 +6,6 @@ import { createSupabaseAdminClient } from "@/lib/auth/admin";
 import { ACTIVITY_RETENTION_DAYS, KIND_LABEL } from "@/lib/activity/kinds";
 import { canonRouteTarget } from "@/lib/activity/labels";
 import { chooseHostVisit } from "@/lib/activity/visit-attach";
-import { pruneActivity } from "@/lib/activity/retention";
 import { fetchAllRows } from "@/lib/db/paginate";
 
 // 행동 타임라인 조회(0062) — 개발자 전용. 한 날의 이벤트를 방문(visit_key) 단위로 묶어 돌려준다.
@@ -90,10 +89,8 @@ export async function getActivityDayAction(
     return { ok: false, error: "Supabase service role 키가 필요합니다." };
   }
 
-  // Enabled only after a restricted backup and explicit cleanup authorization.
-  // Await thenables: discarding a PostgREST builder never sends a request.
-  if (await pruneActivity(supabase) === "failed") console.warn("[privacy-retention] cleanup failed");
-
+  // (보존 정리는 DB의 매일 작업 vic-insider-stats-retention(0166) 하나가 맡는다 — 조회할 때 앱이 지우던
+  //  pruneActivity는 같은 일을 다른 기준으로 한 번 더 하던 경로라 2026-11-17에 지웠다.)
   const rows = await fetchAllRows<Row>((from, to) => {
     let q = supabase
       .from("activity_event")

@@ -116,9 +116,6 @@
   background: rgb(var(--studio-action-rgb) / 12%);
   border-color: rgb(var(--studio-action-rgb) / 32%);
 }
-.stool-members {
-  color: #0b7a68;
-}
 .stool-insights {
   color: #1f6cba;
 }
@@ -275,12 +272,6 @@ html[data-studio-calm] .stool:hover:not(:disabled) {
      시청자 화면(조화 좋다고 한 쪽)은 공용 기본값 그대로. */
   html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .gs-tide {
     background: linear-gradient(180deg, rgb(var(--gs-sea-rgb) / 7%) 0%, rgb(var(--gs-sea-rgb) / 12%) 100%);
-  }
-  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .gs-tide-swell {
-    background: radial-gradient(closest-side, rgb(var(--gs-sea-rgb) / 18%) 0%, rgb(var(--gs-sea-rgb) / 8%) 50%, rgb(var(--gs-sea-rgb) / 0%) 100%);
-  }
-  html:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .gs-tide-light {
-    background: radial-gradient(closest-side, rgb(var(--gs-sun-rgb) / 56%) 0%, rgb(var(--gs-sun-rgb) / 26%) 50%, rgb(var(--gs-sun-rgb) / 0%) 100%);
   }
   html:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .gs-tide-caustic-a {
     animation-name: gs-caustic-a, gs-caustic-breathe-a-strong;

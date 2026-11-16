@@ -9,8 +9,8 @@ function scaleOf(el: HTMLElement): number {
   return w > 0 && r > 0 ? r / w : 1;
 }
 
-// 꺾인 띠 이음(buildChainJoins의 curve 판정 — 2026-11-16 소유자 C안) — 앞날 카드(data-curve-from)의 오른쪽 변과
-// 다음날 카드(data-curve-to)의 왼쪽 변을, 칸 사이 틈에서 위/아래로 꺾여 오르내리는 '카드와 같은 몸통'으로 잇는다.
+// 꺾인 띠 이음(buildChainJoins의 step 판정 — 2026-11-16 소유자 C안) — 앞날 카드(data-step-from)의 오른쪽 변과
+// 다음날 카드(data-step-to)의 왼쪽 변을, 칸 사이 틈에서 위/아래로 꺾여 오르내리는 '카드와 같은 몸통'으로 잇는다.
 // 선이 아니라 띠라서 카드와 같은 채움·테두리색이고, 카드 뒤(z 1)에 깔려 맞닿는 변은 카드가 덮는다.
 // 굵기 = 칸 사이 틈에서 양옆 여백 2px씩을 뺀 값을 7~12px로 묶는다 — 옆 일정과 딱 붙어 보이지 않고(2026-11-16 소유자
 // "너무 딱 달라붙어"), 좁아도 7px 아래로 가늘어지지 않는다. 모서리는 카드 반경과 같은 볼록·5px 오목.
@@ -222,8 +222,8 @@ function drawSteps(root: HTMLElement) {
   // 이번에 실제로 몸통을 그린 카드 — 그 밖의 카드에 남은 '그렸다' 표시는 지운다. 예전에 꺾인 띠였던 카드에 표시가
   // 남으면, 다시 꺾인 띠가 되는 순간 몸통을 그리기도 전에 바탕부터 비워져 글자만 깜빡였다(2026-11-17 소유자).
   const paintedNow = new Set<HTMLElement>();
-  for (const svg of Array.from(root.querySelectorAll<SVGSVGElement>("svg[data-curve-svg]"))) {
-    const keys = (svg.dataset.curveSvg ?? "").split(" ").filter(Boolean);
+  for (const svg of Array.from(root.querySelectorAll<SVGSVGElement>("svg[data-step-svg]"))) {
+    const keys = (svg.dataset.stepSvg ?? "").split(" ").filter(Boolean);
     const host = svg.parentElement;
     const existing = new Map<string, SVGGElement>();
     for (const g of Array.from(svg.querySelectorAll<SVGGElement>(":scope > g[data-step]"))) {
@@ -244,8 +244,8 @@ function drawSteps(root: HTMLElement) {
         bottom: (r.bottom - hostRect.top) / s
       });
       for (const key of keys) {
-        const from = root.querySelector<HTMLElement>(`[data-curve-from="${CSS.escape(key)}"]`);
-        const to = root.querySelector<HTMLElement>(`[data-curve-to="${CSS.escape(key)}"]`);
+        const from = root.querySelector<HTMLElement>(`[data-step-from="${CSS.escape(key)}"]`);
+        const to = root.querySelector<HTMLElement>(`[data-step-to="${CSS.escape(key)}"]`);
         if (!from || !to) continue;
         keep.add(key);
         const SB = local(from.getBoundingClientRect());
@@ -349,7 +349,7 @@ function drawSteps(root: HTMLElement) {
     }
     for (const [key, g] of existing) if (!keep.has(key)) g.remove();
     // 앞쪽 층(카드 위)의 한 덩어리 테두리
-    const front = host?.querySelector<SVGSVGElement>(":scope > svg[data-curve-ring]");
+    const front = host?.querySelector<SVGSVGElement>(":scope > svg[data-step-ring]");
     if (front) {
       const old = new Map<string, SVGGElement>();
       for (const el of Array.from(front.querySelectorAll<SVGGElement>(":scope > g[data-ring]"))) {
@@ -427,11 +427,11 @@ function sheenTargetOf(root: HTMLElement, t: EventTarget | null): SheenTarget | 
     g?.dataset.step ??
     (() => {
       const c = cardAt(root, t);
-      return c?.dataset.curveFrom ?? c?.dataset.curveTo ?? null;
+      return c?.dataset.stepFrom ?? c?.dataset.stepTo ?? null;
     })();
   if (stepKey) {
-    const from = root.querySelector<HTMLElement>(`[data-curve-from="${CSS.escape(stepKey)}"]`);
-    const to = root.querySelector<HTMLElement>(`[data-curve-to="${CSS.escape(stepKey)}"]`);
+    const from = root.querySelector<HTMLElement>(`[data-step-from="${CSS.escape(stepKey)}"]`);
+    const to = root.querySelector<HTMLElement>(`[data-step-to="${CSS.escape(stepKey)}"]`);
     if (from && to) return { key: `s:${stepKey}`, from: groupOf(root, from), to: groupOf(root, to) };
   }
   const card = cardAt(root, t);
@@ -524,10 +524,22 @@ function startSheen(root: HTMLElement, target: SheenTarget | null) {
 function stepKeyOf(t: EventTarget | null): string | null {
   const el = t instanceof Element ? t : null;
   if (!el) return null;
-  const card = el.closest<HTMLElement>("[data-curve-from], [data-curve-to]");
-  if (card) return card.dataset.curveFrom ?? card.dataset.curveTo ?? null;
+  const card = el.closest<HTMLElement>("[data-step-from], [data-step-to]");
+  if (card) return card.dataset.stepFrom ?? card.dataset.stepTo ?? null;
   return el.closest<SVGGElement>("g[data-step]")?.dataset.step ?? null;
 }
+/** 크기·자리를 바꾸지 않는 변화인가 — 손 올림 표시와 광택 레이어. */
+function isDecorativeMutation(r: MutationRecord): boolean {
+  if (r.type === "attributes") {
+    if (r.attributeName === "data-chain-hot") return true;
+    return r.attributeName === "class" && r.target instanceof SVGElement;
+  }
+  if (r.type !== "childList") return false;
+  const sheen = (n: Node) => n instanceof Element && n.classList.contains("card-sheen-layer");
+  const nodes = [...r.addedNodes, ...r.removedNodes];
+  return nodes.length > 0 && nodes.every(sheen);
+}
+
 function applyHot(root: HTMLElement, key: string | null) {
   const prev = hotKey.get(root) ?? null;
   if (prev === key) return;
@@ -536,7 +548,7 @@ function applyHot(root: HTMLElement, key: string | null) {
     if (!k) return;
     const e = CSS.escape(k);
     root
-      .querySelectorAll(`[data-curve-from="${e}"], [data-curve-to="${e}"]`)
+      .querySelectorAll(`[data-step-from="${e}"], [data-step-to="${e}"]`)
       .forEach((n) => n.toggleAttribute("data-chain-hot", on));
     root.querySelectorAll(`g[data-step="${e}"]`).forEach((n) => n.classList.toggle("is-hot", on));
   };
@@ -546,7 +558,7 @@ function applyHot(root: HTMLElement, key: string | null) {
 
 // 이어진 일정(같은 data-chain) 칸들의 높이를 그 묶음에서 가장 큰 칸에 맞춘다.
 // 글자 수가 달라 높이가 다른 카드가 이어질 때 이음새가 어긋나 보이는 걸 막는다.
-// (2026-11-16) 같은 일을 하는 김에 같은 글 띠의 머리 폭(data-band-head)과 곡선 이음(data-curve-*)도
+// (2026-11-16) 같은 일을 하는 김에 같은 글 띠의 머리 폭(data-band-head)과 꺾인 띠 이음(data-step-from·to)도
 // 여기서 같이 맞춘다 — 셋 다 '레이아웃이 바뀔 때마다 다시 재야 하는' 같은 종류의 일이라 한 펌프를 쓴다.
 //
 // ── 왜 callback ref인가(구조적 보장) ──
@@ -587,7 +599,7 @@ export function useEqualChainHeights<T extends HTMLElement>(
         characterData: true, // 제목·항목 글자 변경
         attributes: true,
         // style(=우리 minHeight·폭)은 제외(self-trigger 방지)
-        attributeFilter: ["class", "data-chain", "data-band-head", "data-curve-from", "data-curve-to", "data-chain-hot"]
+        attributeFilter: ["class", "data-chain", "data-band-head", "data-step-from", "data-step-to", "data-chain-hot"]
       });
     }
 
@@ -782,7 +794,10 @@ export function useEqualChainHeights<T extends HTMLElement>(
     // 다음 프레임으로 미루면, React가 카드 모양(이음 종류)을 바꾼 그 한 장면이 옛 띠·폭으로 그려져 깜빡였다.
     mo =
       typeof MutationObserver !== "undefined"
-        ? new MutationObserver(() => {
+        ? new MutationObserver((records) => {
+            // 손 올림 표시(data-chain-hot·.is-hot)와 광택 레이어의 생성·삭제는 CSS·장식일 뿐 크기를 안 바꾼다 —
+            // 이것까지 다시 재면 카드에 마우스를 올릴 때마다 전체 맞춤이 250ms씩 매 프레임 돌았다(2026-11-17).
+            if (records.every(isDecorativeMutation)) return;
             equalize();
             schedule();
           })
@@ -791,13 +806,17 @@ export function useEqualChainHeights<T extends HTMLElement>(
     const onSettle = () => schedule();
     // 카드가 미끄러지는 동안(놓을 자리 열림·닫힘, 원래 위치 등장) 매 프레임 다시 잰다 — 시작 순간부터 끝까지.
     // 끝(transitionend)에만 재면 그 사이 띠·테두리가 옛 자리에 남아 카드와 겹치고 점선이 둘로 갈라져 보였다.
+    // 색·그림자·필터 전환(호버 강조)은 자리를 안 바꾼다 — 자리·크기를 바꾸는 전환만 펌프를 돌린다.
+    const onTransitionRun = (e: TransitionEvent) => {
+      if (GEOMETRY_PROPS.test(e.propertyName)) onMotionStart();
+    };
     const onMotionStart = () => {
       pumpUntil = Math.max(pumpUntil, (typeof performance !== "undefined" ? performance.now() : 0) + 480);
       if (!pumping) pump();
     };
     root.addEventListener("animationend", onSettle);
     root.addEventListener("transitionend", onSettle);
-    root.addEventListener("transitionrun", onMotionStart);
+    root.addEventListener("transitionrun", onTransitionRun);
     // 착지 애니메이션(FLIP)처럼 transform을 '전환 없이' 먼저 걸고 시작하는 움직임은 transitionrun이 한 박자 늦다 —
     // 시작을 알리는 이벤트(vic:layout-motion)에 바로 다시 잰다(그리기 전).
     const onLayoutMotion = () => {
@@ -815,7 +834,7 @@ export function useEqualChainHeights<T extends HTMLElement>(
       mo?.disconnect();
       root.removeEventListener("pointerover", onOver);
       root.removeEventListener("pointerleave", onLeave);
-      root.removeEventListener("transitionrun", onMotionStart);
+      root.removeEventListener("transitionrun", onTransitionRun);
       window.removeEventListener("vic:layout-motion", onLayoutMotion);
       root.removeEventListener("animationstart", onMotionStart);
       root.removeEventListener("animationend", onSettle);

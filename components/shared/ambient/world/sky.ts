@@ -183,7 +183,9 @@ export function bakeClouds(season: SeasonKey, weather: Weather, band: DayBand, w
     }
     g.globalCompositeOperation='destination-out';
     const fade=g.createLinearGradient(0,lh*.72,0,lh);fade.addColorStop(0,'rgba(0,0,0,0)');fade.addColorStop(1,'rgba(0,0,0,1)');g.fillStyle=fade;g.fillRect(0,lh*.72,lw*2,lh*.28);
-    const up=makeCanvas(Math.ceil(w*2),Math.ceil(floor));up.g.imageSmoothingEnabled=false;up.g.drawImage(c,0,0,up.c.width,up.c.height);return up.c;
+    // 1/3 해상도 판을 그대로 들고 있다가 그릴 때 키운다(보간 없이 — 픽셀 계단 유지). 예전엔 화면 두 배 폭의
+    // 전체 해상도 판 두 장(1920 폭에서 장당 ≈9MB)을 미리 구워 들고 있었다(2026-11-17).
+    fogDrawHeight.set(c,Math.ceil(floor));return c;
   };
   return {far:mk(),near:mk()};
 }
@@ -223,9 +225,17 @@ function drawSkyContent(
   const v = cloudSpeed(weather);
   for (const [layer, mul] of [[clouds.far, 0.45], [clouds.near, 1]] as const) {
     const off = -(((t * v * mul) % w) + w) % w;
-    g.drawImage(layer, off, 0, w * 2, layer.height);
+    const stretched = fogDrawHeight.get(layer);
+    if (stretched === undefined) { g.drawImage(layer, off, 0, w * 2, layer.height); continue; }
+    const smooth = g.imageSmoothingEnabled;
+    g.imageSmoothingEnabled = false;
+    g.drawImage(layer, off, 0, w * 2, stretched);
+    g.imageSmoothingEnabled = smooth;
   }
 }
+
+/** 안개 구름 판(1/3 해상도)이 그려질 높이 — 그릴 때 이 높이로 키운다. */
+const fogDrawHeight = new WeakMap<HTMLCanvasElement, number>();
 
 export const skyKey = (season: SeasonKey, weather: Weather, band: DayBand, w: number, h: number): string =>
   `${season}|${weather}|${band}|${w}x${h}|hz${horizonY(h)}|a${skyArt.version}|c${cloudArtVersion()}`;

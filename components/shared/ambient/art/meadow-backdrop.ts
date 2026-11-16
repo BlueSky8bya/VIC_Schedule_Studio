@@ -1,5 +1,5 @@
 import type { Frame } from "../scene-engine";
-import { loadImage } from "../assets";
+import { forgetImage, loadImage } from "../assets";
 import { beginLoad, endLoad } from "../loading";
 import { horizonY } from "../world/view";
 import { withSurfaceDepth } from "../world/depth-render";
@@ -213,5 +213,5 @@ export class MeadowBackdrop {
   drawFar(g: CanvasRenderingContext2D, f: Frame) { return this.draw("far", g, f); }
   drawForeground(g: CanvasRenderingContext2D, f: Frame) { if(this.pending)return true;const drawn=this.draw("frame",g,f);if(this.ready)this.garden.drawBreeze(g,f);return drawn; }
   debug() { return { garden: this.garden.debug(), season: this.season, ready: this.ready, version: this.version, bakes: this.bakes, layers: LAYERS, bytes: Object.values(this.caches).reduce((n, v) => n + v.c.width * v.c.height * 4, 0), nearDetailBytes: this.nearGround ? this.nearGround.width * this.nearGround.height * 4 : 0, maskedBytes:Object.values(this.masked).reduce((n,v)=>n+v.c.width*v.c.height*4,0), sourcePixels: 3 * 1536 * 1024 }; }
-  dispose() { this.garden.dispose(); this.disposed = true; this.detailImage?.removeAttribute("src");this.detailImage=undefined; if(this.nearGround)this.nearGround.width=this.nearGround.height=1;this.nearGround=undefined; this.images = {}; for(const v of Object.values(this.masked))v.c.width=v.c.height=1;this.masked={}; for (const v of Object.values(this.caches)) v.c.width = v.c.height = 1; this.caches = {}; }
+  dispose() { this.garden.dispose(); this.disposed = true; for (const url of meadowLayerUrls(this.season)) forgetImage(url); this.detailImage?.removeAttribute("src");this.detailImage=undefined; if(this.nearGround)this.nearGround.width=this.nearGround.height=1;this.nearGround=undefined; this.images = {}; for(const v of Object.values(this.masked))v.c.width=v.c.height=1;this.masked={}; for (const v of Object.values(this.caches)) v.c.width = v.c.height = 1; this.caches = {}; }
 }

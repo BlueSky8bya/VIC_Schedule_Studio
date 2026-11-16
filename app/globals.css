@@ -996,28 +996,7 @@ select {
 }
 
 /* 비공개 비밀번호 입력 행 (입력칸 + 확인) */
-.passcode-input-row {
-  display: flex;
-  gap: 8px;
-}
-.passcode-input-row input {
-  flex: 1;
-  /* 입력칸이 콘텐츠 기본 최소폭(min-width:auto)에 막혀 안 줄면, "확인 중…" 버튼이 모달 밖으로
-     밀려 잘린다. 0으로 풀어 입력칸이 양보하고 버튼이 항상 안에 들어오게 한다. */
-  min-width: 0;
-  min-height: 46px;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  padding: 0 14px;
-  font-size: calc(16px * var(--ui-text-scale, 1));
-}
-.passcode-input-row .button {
-  min-height: 46px;
-  padding: 0 18px;
-  /* 좁은 화면에서도 "확인"이 한 글자씩 줄바꿈되지 않게(입력칸에 눌려도 버튼 폭 유지). */
-  flex: 0 0 auto;
-  white-space: nowrap;
-}
+
 
 /* Batch 10: private unlock surface. Permission and unlock flows remain unchanged. */
 
@@ -1026,8 +1005,7 @@ select {
   gap: var(--space-3);
 }
 
-.passcode-box > input,
-.passcode-input-row input {
+.passcode-box > input {
   min-height: var(--control-hit);
   border: var(--stroke-hairline) solid var(--line);
   border-radius: var(--r-control);
@@ -1038,18 +1016,13 @@ select {
   box-shadow: inset 0 0 0 var(--stroke-hairline) transparent;
 }
 
-.passcode-box > input:focus,
-.passcode-input-row input:focus {
+.passcode-box > input:focus {
   border-color: var(--selection-border);
   outline: 0;
   box-shadow: 0 0 0 var(--space-1) var(--selection-overlay);
 }
 
-.passcode-input-row {
-  gap: var(--space-2);
-}
 
-.passcode-input-row .button,
 .passcode-actions .button,
 .passcode-box > .button {
   min-height: var(--control-hit);
@@ -1096,14 +1069,6 @@ select {
 }
 
 @media (max-width: 640px) {
-  
-
-  
-
-  .passcode-input-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
 
   .passcode-actions {
     position: sticky;
@@ -1284,7 +1249,6 @@ html[data-reduce-motion] .support-bar.sb-solo.is-clickable.is-hover .sb-go {
    - 제목 양옆 ✨, 오늘 강조 호흡/맥동, 인기 불꽃 깜빡임, 로그인 화면 둥실, 스티커 상시 효과 */
 html[data-reduce-motion] .title-spark,
 html[data-reduce-motion] .studio-poster-title span,
-html[data-reduce-motion] .flame,
 html[data-reduce-motion] .public-day.today,
 html[data-reduce-motion] .public-day.today::before,
 html[data-reduce-motion] .agenda-day.today .agenda-when strong,
