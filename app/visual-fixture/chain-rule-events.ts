@@ -61,7 +61,20 @@ export function chainRuleFixtureEvents(): PublicScheduleEvent[] {
     ev("cr-29-song", "29", "20시 노래 방송\n신청곡 받아요", 1, "tag-song"),
     ev("cr-30-wow", "30", "와우 레이드\n검은바위 나락", 0, "tag-variety-game"),
     // 7월 첫 주 — 릴동파형(2026-11-17 소유자): 일 드래프트 → 월~수 같은 글 띠(제목 한 줄) → 목·금·토 각각 → 일 폐막식
-    ...lildongpa()
+    ...lildongpa(),
+    // 7월 14~16일 — 맹든링형(2025-12 실데이터 모양): 1일차는 그날 두 번째, 2일차 다음날 혼자, 3일차는 미연결
+    { ...ev("cr-md-14a", "14", "16시 풀트 소통뱅!", 0, "tag-full-track"), startsAt: "2026-07-14T16:00:00+09:00" },
+    { ...ev("cr-md-14b", "14", "맹든링 1일차!", 1, "tag-big-server", "cr-md-15"), startsAt: "2026-07-14T20:00:00+09:00" },
+    { ...ev("cr-md-15", "15", "16시 지하감옥 트라이\n맹든링 2일차!", 0, "tag-big-server"), startsAt: "2026-07-15T16:00:00+09:00" },
+    { ...ev("cr-md-16a", "16", "16시 리캡, 별별랭킹보기!", 1, "tag-hype"), startsAt: "2026-07-16T16:00:00+09:00" },
+    { ...ev("cr-md-16b", "16", "도감작과 모험하기\n맹든링 3일차!", 2, "tag-big-server"), startsAt: "2026-07-16T20:00:00+09:00" },
+    // 7월 26~28일 — 롤 연습형(2026-01 실데이터 모양): 태그 둘(2색 카드), 같은 글 두 칸 띠 → 다른 글
+    ...["26", "27", "28"].map((d, i) => ({
+      ...ev(`cr-lol-${d}`, d, i < 2 ? "롤 연습" : "감왁대전 - 롤", 0, "tag-variety-game", i < 2 ? `cr-lol-${["27", "28"][i]}` : undefined),
+      startsAt: `2026-07-${d}T20:00:00+09:00`,
+      tagIds: ["tag-variety-game", "tag-collab"],
+      primaryTagIds: ["tag-variety-game", "tag-collab"]
+    }))
   ];
 }
 
