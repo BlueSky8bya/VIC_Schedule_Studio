@@ -464,6 +464,7 @@ export const ACT: Record<string, TargetLabel> = {
   "activity-visit-toggle": { name: "방문 펼쳐보기", area: "이용 기록" },
   "activity-expand-all": { name: "모두 펼치기", area: "이용 기록" },
   "activity-copy": { name: "타임라인 복사", area: "이용 기록" },
+  "activity-copy-recent": { name: "최근 10분 복사", area: "이용 기록" },
   "activity-open": { name: "타임라인 접기/펴기", area: "이용 기록" },
   "activity-diag": { name: "진단 로그 보기", area: "이용 기록" },
   "dayvisit-refresh-now": {

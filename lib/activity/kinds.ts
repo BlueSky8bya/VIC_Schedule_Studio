@@ -1,4 +1,4 @@
-import { registeredActivityTarget } from "@/lib/activity/labels";
+import { isCompanionActivityTarget, registeredActivityTarget } from "@/lib/activity/labels";
 
 // 행동 기록(0062)의 순수 규약 — 종류 목록, 식별 범위, meta 소독. 서버·클라 공용이고 부수효과 없다.
 // 테스트: tests/unit/activity-kinds.test.ts
@@ -6,7 +6,6 @@ import { registeredActivityTarget } from "@/lib/activity/labels";
 // ── 식별 범위(사용자 결정 2026-08-04) ──
 // 내부자만 계정 단위로 남긴다. viewer·비로그인은 account_hash를 **쓰기 시점에 null로 강제**한다
 // (읽는 쪽에서 거르는 게 아니라 애초에 저장하지 않는다 → 개인 타임라인이 구조적으로 불가능).
-// "worker"는 2026-08-27 역할 철수 — 과거 행의 판독을 위해 내부자 집합엔 남긴다.
 // "worker"는 2026-08-27 역할 철수 — 과거 행의 판독을 위해 내부자 집합엔 남긴다.
 const INTERNAL_ROLES = new Set(["owner", "manager", "worker", "developer"]);
 export function isInternalRole(role: string): boolean {
@@ -33,6 +32,10 @@ export const SERVER_KINDS = [
   "event.delete",
   "event.move",
   "event.reorder",
+  "event.restore",
+  // 이어진 일정 잇기·끊기(link_next) — 달력 모양이 바뀌는 변경인데 기록이 없어 "왜 끊겼지"를 못 쫓았다(2026-11-17).
+  "chain.link",
+  "chain.unlink",
   "sticker.add",
   "sticker.move",
   "sticker.delete",
@@ -79,7 +82,13 @@ export const CLIENT_KINDS = [
   "diag.reveal",   // 공개 요청의 결과(몇 개 물어봐서 몇 개가 실제로 공개됐나)
   "diag.visible",  // 탭 가시성 전이(실시간 '탭만 열림' 오판을 쫓기 위해)
   "diag.refresh",  // 화면 갱신 트리거(새로고침·router.refresh)
-  "diag.vod"       // 다시보기 시킹 감시 판정(숨김 보류·제자리 재시도·재시동 — '이어서 불러오는 중…' 원인 가르기)
+  "diag.vod",      // 다시보기 시킹 감시 판정(숨김 보류·제자리 재시도·재시동 — '이어서 불러오는 중…' 원인 가르기)
+  // ── 오류 추적(2026-11-17) — "이거 했는데 이상해요"를 기록만 보고 고치기 위한 층.
+  "diag.error",    // 화면에서 난 스크립트 오류(파일·줄·메시지 — 한글은 가린다)
+  "diag.savefail", // 저장 요청 실패(어느 작업이 몇 번 상태로 실패했나)
+  "diag.drag",     // 일정 끌어 놓기의 결과(어디서 어디로, 됐나·취소됐나)
+  "diag.history",  // 되돌리기·다시 실행이 실제로 무엇을 되돌렸나(종류)
+  "diag.jank"      // 화면이 길게 멈춤(긴 작업 ms)
 ] as const;
 
 export type ServerKind = (typeof SERVER_KINDS)[number];
@@ -111,6 +120,11 @@ export const KIND_LABEL: Record<string, string> = {
   "diag.visible": "진단: 탭 가시성",
   "diag.refresh": "진단: 화면 갱신",
   "diag.vod": "진단: 다시보기 시킹",
+  "diag.error": "진단: 화면 오류",
+  "diag.savefail": "진단: 저장 실패",
+  "diag.drag": "진단: 끌어 놓기",
+  "diag.history": "진단: 되돌리기 내용",
+  "diag.jank": "진단: 화면 멈춤",
   "ui.click": "누름",
   "section.enter": "창 열림",
   "section.leave": "창 닫힘",
@@ -134,6 +148,9 @@ export const KIND_LABEL: Record<string, string> = {
   "event.delete": "일정 삭제",
   "event.move": "일정 이동",
   "event.reorder": "일정 순서 변경",
+  "event.restore": "일정 되살림",
+  "chain.link": "일정 잇기",
+  "chain.unlink": "일정 잇기 끊음",
   "sticker.add": "스티커 추가",
   "sticker.move": "스티커 이동",
   "sticker.delete": "스티커 삭제",
@@ -156,15 +173,24 @@ export const KIND_LABEL: Record<string, string> = {
 // 비공개 본문 AES-256-GCM 암호화가 통째로 무의미해진다.
 // Only reviewed keys and typed values are retained; short free text is still personal data.
 type Primitive = string | number | boolean;
-const NUMBER_KEYS = new Set(["count", "tags", "created", "updated", "minutes", "hops", "asked", "got", "gone", "revealed", "stillMasked", "pastSec"]);
+const NUMBER_KEYS = new Set(["count", "tags", "created", "updated", "minutes", "hops", "asked", "got", "gone", "revealed", "stillMasked", "pastSec", "line", "col", "status", "ms"]);
 const BOOLEAN_KEYS = new Set(["on", "ok", "bookmarked", "multiday", "teaser", "support", "period", "link", "authed", "verifyOnly", "visible", "typed", "saved"]);
 const ENUMS: Record<string, readonly string[]> = {
   scope: ["public", "work", "owner_private"],
   mode: ["new", "edit"],
   how: ["esc", "outside", "cell", "collapse", "saved", "other"],
   phase: ["placeholder", "gone", "mount-sync"],
-  role: ["owner", "developer", "viewer", "anon", "unknown"]
+  role: ["owner", "developer", "viewer", "anon", "unknown"],
+  result: ["ok", "cancel", "reject", "undo", "redo"],
+  etype: ["error", "rejection"]
 };
+// 진단 전용 문자열 — 코드가 정한 값만 통과한다(작업 이름·번들 파일 이름).
+const OP_RE = /^[a-z][\w.:-]{0,39}$/i;
+const SRC_RE = /^[\w.@~()\[\]-]{1,80}$/;
+/** 오류 메시지 — 일정 제목이 섞여 들어올 수 있는 유일한 자유 글이라 한글은 가린다(제목·본문은 저장 금지). */
+export function maskErrorMessage(raw: string): string {
+  return raw.replace(/[ㄱ-힣]+/g, "□").replace(/\s+/g, " ").trim().slice(0, 160);
+}
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MONTH_RE = /^20\d{2}-(0[1-9]|1[0-2])$/;
 function isDate(value: string): boolean {
@@ -184,7 +210,10 @@ export function sanitizeMeta(raw: unknown): Record<string, Primitive> | null {
     else if (typeof value === "string") {
       if (Object.hasOwn(ENUMS, key) && ENUMS[key].includes(value)) out[key] = value;
       else if (key === "month" && MONTH_RE.test(value)) out[key] = value;
-      else if (key === "date" && isDate(value)) out[key] = value;
+      else if ((key === "date" || key === "from" || key === "to") && isDate(value)) out[key] = value;
+      else if (key === "op" && OP_RE.test(value)) out[key] = value;
+      else if (key === "src" && SRC_RE.test(value)) out[key] = value;
+      else if (key === "msg" && value.length <= 400) out[key] = maskErrorMessage(value);
       // revealAt is omitted: private schedule timing is not necessary telemetry.
     }
   }
@@ -195,8 +224,15 @@ export function sanitizeMeta(raw: unknown): Record<string, Primitive> | null {
 export function sanitizeTarget(raw: unknown): string | null {
   if (typeof raw !== "string" || raw.length > 120) return null;
   if (UUID_RE.test(raw) || MONTH_RE.test(raw) || isDate(raw)) return raw;
-  return registeredActivityTarget(raw);
+  const known = registeredActivityTarget(raw);
+  if (known) return known;
+  // 등록 안 된 버튼도 버리지 않는다(2026-11-17) — null로 지우면 타임라인에 이름 없는 "누름"만 남아
+  // 무엇을 눌렀는지 알 수 없었다. id는 소스의 정적 값(data-act·클래스 이름)이고 기록은 개발자 본인 것뿐이다.
+  // 빅타민 조작은 예외 — 등록된 것만(개수만 세는 경계 유지).
+  if (isCompanionActivityTarget(raw)) return null;
+  return STATIC_ID_RE.test(raw) && !(raw in Object.prototype) ? raw : null;
 }
+const STATIC_ID_RE = /^(auto:)?[.a-z][\w.#-]{0,59}$/i;
 
 /** Session keys contain only an opaque generated identifier, never client prose. */
 export function sanitizeVisitKey(raw: unknown): string | null {
@@ -207,7 +243,8 @@ export function sanitizeDevice(raw: unknown): string {
   return typeof raw === "string" && ["desktop", "android", "ios", "mobile"].includes(raw) ? raw : "desktop";
 }
 
-export const ACTIVITY_RETENTION_DAYS = 90;
+// 매일 정리(pg_cron vic-insider-stats-retention, 0166)와 같은 값 — 진단 3일·나머지 400일.
+export const ACTIVITY_RETENTION_DAYS = 400;
 
 // 라벨에 숫자가 들어가면(날짜·개수·금액) 항목이 값마다 갈라져 통계가 무한 증식한다
 // — 실측: 날짜 칸 aria-label 때문에 "2026-08-04화요일"류가 칸 수만큼 생겼다.

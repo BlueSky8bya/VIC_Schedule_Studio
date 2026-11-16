@@ -2,6 +2,7 @@
 // 편집 폼 모델·복사/실행취소 타입·날짜/드래프트/떡밥 헬퍼·라벨 상수·studio-write 클라이언트.
 // 컴포넌트 상태에 묶인 로직(큐·히스토리 실행기)은 여기 두지 않는다(후속 단계에서 훅으로).
 
+import { logActivity } from "@/lib/activity/client";
 import type {
   EventCategory,
   EventStatus,
@@ -130,9 +131,15 @@ export async function postStudioWrite(op: string, payload: unknown): Promise<Stu
       body: JSON.stringify({ op, payload })
     });
     const data = (await res.json().catch(() => null)) as StudioWriteResult | null;
-    if (data && typeof (data as { ok?: unknown }).ok === "boolean") return data;
+    if (data && typeof (data as { ok?: unknown }).ok === "boolean") {
+      if (!data.ok) logActivity("diag.savefail", { meta: { op, status: res.status } });
+      return data;
+    }
+    logActivity("diag.savefail", { meta: { op, status: res.status } });
     return { ok: false, error: "저장에 실패했어요." };
   } catch {
+    // status 0 = 요청이 서버에 닿지 못함(오프라인·취소)
+    logActivity("diag.savefail", { meta: { op, status: 0 } });
     return { ok: false, error: "저장에 실패했어요." };
   }
 }

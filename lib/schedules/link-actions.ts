@@ -6,6 +6,7 @@ import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { canEditSchedule } from "@/lib/permissions/roles";
 import { safeActionError } from "@/lib/utils/safe-action-error";
+import { recordActivity } from "@/lib/activity/record";
 
 export type LinkResult = { ok: true } | { ok: false; error: string };
 
@@ -37,6 +38,7 @@ export async function linkChainAction(orderedIds: string[]): Promise<LinkResult>
   if (error) {
     return { ok: false, error: safeActionError("일정 연결", error) };
   }
+  await recordActivity({ kind: "chain.link", target: orderedIds[0], meta: { count: orderedIds.length } });
 
   revalidatePath("/");
   revalidatePath("/studio");
@@ -54,6 +56,7 @@ export async function unlinkPairAction(earlierId: string): Promise<LinkResult> {
     .update({ link_next: null, updated_at: new Date().toISOString() })
     .eq("id", earlierId);
   if (error) return { ok: false, error: safeActionError("일정 연결 해제", error) };
+  await recordActivity({ kind: "chain.unlink", target: earlierId });
 
   revalidatePath("/");
   revalidatePath("/studio");

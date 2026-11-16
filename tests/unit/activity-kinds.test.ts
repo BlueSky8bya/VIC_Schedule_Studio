@@ -99,6 +99,10 @@ describe("activity storage allowlist", () => {
     expect(sanitizeTarget("/studio/calendar")).toBe("/studio/calendar");
     expect(sanitizeTarget("/replay/2026-09-21")).toBe("/replay");
     expect(sanitizeTarget("open-day-visit#secret@example.test")).toBe("open-day-visit");
+    // 등록 안 된 정적 id(data-act·클래스)는 버리지 않는다 — 타임라인의 이름 없는 "누름"을 없앤다(2026-11-17).
+    expect(sanitizeTarget("auto:.brand-new-button")).toBe("auto:.brand-new-button");
+    expect(sanitizeTarget("new-unregistered-control")).toBe("new-unregistered-control");
+    expect(sanitizeTarget("companion-unregistered-control")).toBeNull();
     for (const value of ["secret@example.test", "/studio/user@example.test", "/?token=secret", "auto:private prose", "x".repeat(500), "__proto__", "constructor", 42, " "]) expect(sanitizeTarget(value)).toBeNull();
   });
   it("sanitizes visit identifiers and devices without storing prose", () => {

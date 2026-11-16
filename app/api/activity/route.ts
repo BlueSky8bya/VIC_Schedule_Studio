@@ -31,7 +31,8 @@ export async function POST(request: Request) {
         target: typeof ev.target === "string" ? ev.target : null,
         meta: ev.meta && typeof ev.meta === "object" ? (ev.meta as Record<string, unknown>) : null,
         durMs: typeof ev.durMs === "number" ? ev.durMs : null,
-        visitKey: typeof ev.visitKey === "string" ? ev.visitKey : null
+        visitKey: typeof ev.visitKey === "string" ? ev.visitKey : null,
+        agoMs: typeof ev.ago === "number" ? ev.ago : null
       }
     ];
   });

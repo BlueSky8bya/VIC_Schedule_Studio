@@ -26,6 +26,9 @@ type Pending = {
   meta?: Record<string, unknown> | null;
   durMs?: number | null;
   visitKey?: string | null;
+  /** 일어난 시각(이 기기 시계). 보낼 때 '몇 ms 전'으로 바꿔 서버가 제 시계로 되돌린다 — 배치가 최대 15초
+   *  늦게 나가도 타임라인의 순서·초가 실제와 맞는다(예전엔 한 배치가 전부 도착 시각 하나로 찍혔다). */
+  at: number;
 };
 
 let buffer: Pending[] = [];
@@ -62,7 +65,11 @@ function currentVisitKey(): string | null {
 let enabled = false;
 export function enableActivityLogging(): void {
   enabled = true;
+  wire();
+  if (buffer.length) flush(); // 켜지기 전에 쌓인 첫 화면의 기록
 }
+// 기록이 꺼진 화면(개발자 아님)에서는 타이머도 전송도 없다. 켜지기 직전의 몇 건만 들고 있는다.
+const MAX_BEFORE_ENABLE = 30;
 
 function send(batch: Pending[], keepalive: boolean): void {
   if (batch.length === 0) return;
@@ -71,7 +78,8 @@ function send(batch: Pending[], keepalive: boolean): void {
   if (skipAnalyticsClient()) return;
   // 방문 키는 **보낼 때** 찍는다(쌓은 기록에 키가 없으면 여기서 채운다). 못 만들면(사생활 모드 등)
   // null 그대로 — 서버가 시간으로 가까운 묶음에 붙인다.
-  const stamped = batch.map((e) => (e.visitKey ? e : { ...e, visitKey: currentVisitKey() }));
+  const now = Date.now();
+  const stamped = batch.map(({ at, ...e }) => ({ ...e, visitKey: e.visitKey ?? currentVisitKey(), ago: Math.max(0, now - at) }));
   try {
     void fetch("/api/activity", {
       method: "POST",
@@ -209,7 +217,7 @@ export function logActivity(
   // Reject unknown companion controls and strip accidental item/track/learned
   // payloads before transport, in addition to the server's storage boundary.
   if (companion && !target) return;
-  wire();
+  if (enabled) wire();
   if (buffer.length >= MAX_BUFFER) buffer.shift(); // 가장 오래된 것부터 버린다
   buffer.push({
     kind,
@@ -217,8 +225,13 @@ export function logActivity(
     meta: companion ? null : opts.meta ?? null,
     durMs: !companion && typeof opts.durMs === "number" ? opts.durMs : null,
     // 기록이 꺼진 화면(개발자 아님)에서는 키를 만들지도 않는다 — 탭에 식별자를 남기지 않는다.
-    visitKey: enabled ? currentVisitKey() : null
+    visitKey: enabled ? currentVisitKey() : null,
+    at: Date.now()
   });
+  if (!enabled) {
+    if (buffer.length > MAX_BEFORE_ENABLE) buffer.shift();
+    return;
+  }
   if (firstAt === 0) firstAt = Date.now();
   // Transport control stays out of Pending/the payload and takes priority over
   // size/age batching. Leaving a page must keep the entire ordered batch alive.
@@ -287,6 +300,48 @@ export function logSettled(kind: ClientKind, key: string, target: string | null)
     });
   }, SETTLE_MS);
   settling.set(key, { kind, target, hops, timer });
+}
+
+// ── 오류·멈춤 추적(2026-11-17) ──
+// "이거 했는데 이상해요"를 기록만 보고 고치려면, 그 순간 화면에서 난 오류와 긴 멈춤이 같은 타임라인에
+// 있어야 한다. 개발자 화면에서만 켜진다(RouteBeacon). 같은 오류가 연달아 나면 한 번만, 쪽당 상한을 둔다.
+let diagWired = false;
+export function startDiagnostics(): void {
+  if (diagWired || typeof window === "undefined") return;
+  diagWired = true;
+  let errors = 0, lastSig = "", lastAt = 0;
+  const report = (etype: "error" | "rejection", message: string, file?: string, line?: number, col?: number) => {
+    const src = (file ?? "").split(/[?#]/)[0].split("/").pop() ?? "";
+    const sig = `${message}|${src}|${line ?? 0}`;
+    const now = Date.now();
+    if (errors >= 40 || (sig === lastSig && now - lastAt < 5000)) return;
+    errors += 1; lastSig = sig; lastAt = now;
+    logActivity("diag.error", { meta: { etype, msg: message.slice(0, 400), src: src.slice(0, 80), line: line ?? 0, col: col ?? 0 } });
+  };
+  window.addEventListener("error", (e) => {
+    if (!e.message) return; // 자원 로드 실패(이미지 등)는 메시지가 없다
+    report("error", e.message, e.filename, e.lineno, e.colno);
+  });
+  window.addEventListener("unhandledrejection", (e) => {
+    const reason = e.reason as { message?: unknown; stack?: unknown } | string | null | undefined;
+    const message = typeof reason === "string" ? reason : typeof reason?.message === "string" ? reason.message : "unhandled rejection";
+    // 스택의 첫 위치(파일:줄:칸)만 뽑는다.
+    const at = typeof reason === "object" && typeof reason?.stack === "string" ? /([^\s()/]+\.js)[^:\s]*:(\d+):(\d+)/.exec(reason.stack) : null;
+    report("rejection", message, at?.[1], at ? Number(at[2]) : undefined, at ? Number(at[3]) : undefined);
+  });
+  // 긴 작업(화면 멈춤) — 200ms 넘는 것만, 쪽당 30건까지.
+  try {
+    let janks = 0;
+    new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if (entry.duration < 200 || janks >= 30 || document.hidden) continue;
+        janks += 1;
+        logActivity("diag.jank", { meta: { ms: Math.round(entry.duration) } });
+      }
+    }).observe({ type: "longtask", buffered: false });
+  } catch {
+    /* longtask 미지원(사파리) — 없이 간다 */
+  }
 }
 
 /** 클릭 위임을 한 번 건다. 루트에서 1회 호출(RouteBeacon이 부른다). */

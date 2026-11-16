@@ -7,7 +7,7 @@ import { ScrollPosition } from "@/components/developer/scroll-position";
 import { getActivityDayAction, type ActivityVisit } from "@/lib/activity/query";
 import { describeTarget } from "@/lib/activity/labels";
 import { hapticTick } from "@/lib/ui/haptics";
-import { buildGist, buildStory, describeMeta } from "@/lib/activity/narrative";
+import { buildGist, buildStory, describeMeta, hhmmss } from "@/lib/activity/narrative";
 import { LoadError, LoadingState } from "@/components/shared/loading-state";
 
 // 그날 행동 타임라인(0062) — 방문(탭) 단위로 묶어 무엇을 했는지 시각순으로 보여준다.
@@ -278,7 +278,20 @@ export function ActivityTimeline({
   // 무엇을 눌렀고 화면이 무엇을 그렸는지가 다 들어 있다.
   // 진단 층은 기본 조회에서 빠져 있으므로, 복사할 때는 **그 자리에서 다시 받아** 포함시킨다
   // (사용자가 '진단' 버튼을 켜둔 상태였는지에 결과가 달라지면 안 된다).
-  const buildReport = async (v: ActivityVisit | null): Promise<string> => {
+  // 개발자용 원본 — 접지 않고 한 줄에 한 건, 초 단위. 위 '줄마다'는 사람이 읽는 요약이라 반복을 접고
+  // 분까지만 적는다. 오류를 쫓을 때는 순서·간격·원시 id가 필요하다(2026-11-17).
+  const rawLines = (items: Item[]): string[] =>
+    [...items].sort((a, b) => a.t - b.t).map((it) =>
+      [
+        hhmmss(it.t),
+        it.source === "server" ? "S" : "C",
+        it.kind,
+        it.target ?? "-",
+        it.meta ? JSON.stringify(it.meta) : "",
+        it.durMs ? `${it.durMs}ms` : ""
+      ].filter(Boolean).join(" ")
+    );
+  const buildReport = async (v: ActivityVisit | null, lastMinutes?: number): Promise<string> => {
     let items = v ? v.items : visits.flatMap((x) => x.items);
     let full = diag;
     if (!diag) {
@@ -300,9 +313,10 @@ export function ActivityTimeline({
       }
       return [
         "## 기술 정보 (문의할 때 함께)",
-        `진단 층 ${full ? "포함" : "없음(불러오기 실패)"} · 진단 보존 3일 / 일반 90일`,
+        `진단 층 ${full ? "포함" : "없음(불러오기 실패)"} · 진단 보존 3일 / 일반 400일`,
         // ⚠ 아래는 **복사를 누른 이 기기**의 정보다. 기록된 방문의 기기가 아니다(방문 기기는 머리줄).
         // 표시를 안 했더니 안드로이드 방문 리포트에 Windows UA가 찍혀 한 세션으로 읽혔다(실측).
+        // 매일 정리(pg_cron)와 같은 값 — lib/activity/kinds.ts ACTIVITY_RETENTION_DAYS.
         typeof navigator !== "undefined" ? `복사한 기기(기록된 방문의 기기 아님): ${navigator.userAgent}` : "",
         typeof window !== "undefined"
           ? `복사한 화면 ${window.innerWidth}×${window.innerHeight} · ${window.location.origin} · ${new Date().toLocaleString("ko-KR")}`
@@ -322,11 +336,26 @@ export function ActivityTimeline({
       "줄마다",
       ...visitLines(its)
     ];
+    const rawFoot = (all: Item[]): string[] => ["", "## 원본 로그 (초 단위 · S=서버 변경 C=화면)", ...rawLines(all)];
+    // 최근 N분만 — "방금 이상했어요"에 그 구간만 붙이면 된다. 기준은 그날의 마지막 기록 시각.
+    if (lastMinutes) {
+      const end = Math.max(...items.map((i) => i.t));
+      const recent = items.filter((i) => i.t >= end - lastMinutes * 60_000);
+      return [
+        `# VIC 이용 기록 · ${dateKey} 최근 ${lastMinutes}분 (${hhmmss(end - lastMinutes * 60_000)}–${hhmmss(end)})`,
+        "",
+        "흐름",
+        ...buildStory(recent).map((l) => "  " + l),
+        ...rawFoot(recent),
+        "",
+        ...techFoot(recent)
+      ].join(NL);
+    }
     const head = [`# VIC 이용 기록 리포트 · ${dateKey}${v ? "" : " (그날 전체)"}`, ""];
-    if (v) return [...head, ...visitBlock(v, items), "", ...techFoot(items)].join(NL);
+    if (v) return [...head, ...visitBlock(v, items), "", ...techFoot(items), ...rawFoot(items)].join(NL);
     // 그날 전체는 방문별로 나눠 적는다(뭉치면 어느 방문의 일인지 사라진다).
     const byVisit = visits.map((x) => visitBlock(x, x.items).join(NL));
-    return [...head, `방문 ${visits.length}건 · 항목 ${items.length}건`, "", ...byVisit.flatMap((blk) => [blk, ""]), ...techFoot(items)].join(NL);
+    return [...head, `방문 ${visits.length}건 · 항목 ${items.length}건`, "", ...byVisit.flatMap((blk) => [blk, ""]), ...techFoot(items), ...rawFoot(items)].join(NL);
   };
 
   const copy = async (text: string, key: string) => {
@@ -340,9 +369,9 @@ export function ActivityTimeline({
       setCopied(null); // 클립보드 거부(권한·비보안 컨텍스트) — 조용히 실패
     }
   };
-  const copyReport = async (v: ActivityVisit | null, key: string) => {
+  const copyReport = async (v: ActivityVisit | null, key: string, lastMinutes?: number) => {
     setCopied(`${key}:loading`);
-    await copy(await buildReport(v), key);
+    await copy(await buildReport(v, lastMinutes), key);
   };
 
   // 같은 날 여러 탭을 열면 방문이 탭 수만큼 갈라진다(visit_key = 탭). 그게 사실이지만
@@ -398,6 +427,15 @@ export function ActivityTimeline({
             type="button"
           >
             {copied === "*" ? <Check size={13} /> : <Copy size={13} />}
+          </button>
+          <button
+            className="act-tool"
+            data-act="activity-copy-recent"
+            onClick={() => copyReport(null, "*10", 10)}
+            title="마지막 기록 앞 10분만 복사 (진단·초 단위 원본 포함)"
+            type="button"
+          >
+            {copied === "*10" ? "복사됨" : "최근 10분"}
           </button>
           <button
             aria-pressed={diag}
@@ -529,7 +567,7 @@ export function ActivityTimeline({
                       >
                         {/* 접힌 줄(×N)이 시간 폭을 가지면 끝 시각도 보여준다 — 40px 칸이라
                             옆으로 붙이지 않고 아래에 작게 쌓는다. */}
-                        <span className="act-t">
+                        <span className="act-t" title={hhmmss(it.t)}>
                           {sameMinute ? "" : hhmm(it.t)}
                           {it.lastT - it.t >= 60_000 ? <i>↓{hhmm(it.lastT)}</i> : null}
                         </span>

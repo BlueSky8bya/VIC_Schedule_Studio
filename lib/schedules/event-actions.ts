@@ -298,6 +298,7 @@ export async function restoreEventAction(eventId: string): Promise<ActionResult>
   if (!data) {
     return { ok: false, error: "복구 기간(24시간)이 지났거나 이미 복구된 일정입니다." };
   }
+  await recordActivity({ kind: "event.restore", target: eventId, actor });
 
   revalidatePath("/");
   revalidatePath("/studio");

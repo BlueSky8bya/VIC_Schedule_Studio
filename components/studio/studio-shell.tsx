@@ -3723,6 +3723,7 @@ export function StudioShell({
       // Ctrl+Z 복구 스택에 적재 — 던져서 버리고, 되돌리면 같은 자리로 다시 생긴다). 새 드래그/언마운트로
       // 중간에 끊기면 삭제하지 않는다.
       dragGhostRef.current = null;
+      logActivity("diag.drag", { target: canonId(info!.id), meta: { result: "ok", op: "fling", from: info!.sourceDate } });
       launchFling(ghost!, v, canonId(info!.id));
       dragInfoRef.current = null;
       return;
@@ -3730,6 +3731,8 @@ export function StudioShell({
     dragGhostRef.current = null;
     setDragEventId(null);
     setDragChipH(0);
+    // 끌기의 결과를 남긴다 — 서버는 '바뀐 것'만 알아서, 취소됐거나 제자리에 놓은 끌기는 기록에 없었다.
+    if (info?.started) logActivity("diag.drag", { target: canonId(info.id), meta: target ? { result: "ok", op: over ? "reorder" : "move", from: info.sourceDate, to: target } : { result: "cancel", from: info.sourceDate } });
     if (info?.started && target) {
       void dropEventInto(info.id, info.sourceDate, target, over);
       // 놓은 유령을 새 자리로 빨아들이며 사라지게 한다('뿅') — 순간이동처럼 툭 끊기지 않게.
@@ -5698,6 +5701,7 @@ export function StudioShell({
       flashToast("되돌릴 작업이 없어요");
       return;
     }
+    logActivity("diag.history", { meta: { result: "undo", op: action.type } });
     const inverse = applyHistoryAction(action, "undo", companionHistoryCommit(action, "undo"));
     if (inverse) redoStackRef.current.push(inverse);
     playSfx("undo");
@@ -5712,6 +5716,7 @@ export function StudioShell({
       flashToast("다시 실행할 작업이 없어요");
       return;
     }
+    logActivity("diag.history", { meta: { result: "redo", op: action.type } });
     const inverse = applyHistoryAction(action, "redo", companionHistoryCommit(action, "redo"));
     playSfx("redo");
     if (inverse) deletedStackRef.current.push(inverse);

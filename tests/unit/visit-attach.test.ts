@@ -94,7 +94,7 @@ describe("묶기 순서 — 키 있는 행으로 뼈대를 먼저 세운다", ()
 describe("클라이언트는 보낼 때 방문 키를 다시 찍는다", () => {
   it("쌓을 때만 읽으면 로드 직후 기록이 키 없이 저장된다", () => {
     const send = CLIENT.slice(CLIENT.indexOf("function send("), CLIENT.indexOf("function flush("));
-    expect(send).toContain("e.visitKey ? e : { ...e, visitKey: currentVisitKey() }");
+    expect(send).toContain("visitKey: e.visitKey ?? currentVisitKey()");
     expect(send).toContain("JSON.stringify({ events: stamped })");
   });
 });

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
-import { enableActivityLogging, logActivity, startClickTracking } from "@/lib/activity/client";
+import { enableActivityLogging, logActivity, startClickTracking, startDiagnostics } from "@/lib/activity/client";
 
 // 어느 화면을 얼마나 봤는지(0062). 개발자에게만 깔린다(app/layout.tsx — 2026-11-13 소유자 결정).
 // (방문 세션 비콘은 같은 날 철수 — 이 비콘이 남은 유일한 화면 기록이다.)
@@ -28,6 +28,7 @@ export function RouteBeacon() {
   useEffect(() => {
     enableActivityLogging();
     startClickTracking();
+    startDiagnostics();
   }, []);
 
   useEffect(() => {

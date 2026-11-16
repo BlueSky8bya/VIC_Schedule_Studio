@@ -147,7 +147,8 @@ describe("completed companion input owns its activity event", () => {
     f.logger.logActivity("ui.click", { target: "settings-companion-tab#personality", meta: { favorite: "peach", on: true }, durMs: 9876 });
     f.logger.logActivity("ui.click", { target: `companion-unregistered-${canary}` });
     f.logger.logActivity("ui.click", { target: "open-day-visit", meta: { on: true }, durMs: 42 });
-    const events = await f.events();
+    // ago = 보내기 몇 ms 전에 일어났나(서버가 제 시계로 되돌린다) — 내용 검증에서는 뺀다.
+    const events = (await f.events()).map(({ ago, ...rest }: { ago: number }) => { expect(ago).toBeGreaterThanOrEqual(0); return rest; });
     expect(events).toEqual([
       { kind: "ui.click", target: "companion-food-spawn", meta: null, durMs: null, visitKey: null },
       { kind: "ui.click", target: "settings-companion-tab#personality", meta: null, durMs: null, visitKey: null },

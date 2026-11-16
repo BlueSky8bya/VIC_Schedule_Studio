@@ -39,6 +39,8 @@ export type ActivityInput = {
   meta?: Record<string, unknown> | null;
   durMs?: number | null;
   visitKey?: string | null;
+  /** 클라 배치 전용 — 보내기 몇 ms 전에 일어났나. 서버 시계에서 빼 occurred_at으로 쓴다(최대 2분). */
+  agoMs?: number | null;
   /** 이미 구한 actor가 있으면 넘긴다(resolveCurrentActor는 요청 단위 캐시라 없어도 싸다). */
   actor?: CurrentActor;
   /** 클라 배치(/api/activity)가 넘겨준 값. 없으면 서버 이벤트로 본다. */
@@ -89,7 +91,10 @@ async function buildRow(input: ActivityInput): Promise<Row | null> {
       !companionControl && typeof input.durMs === "number" && Number.isFinite(input.durMs)
         ? Math.max(0, Math.round(input.durMs))
         : null,
-    diag: isDiagKind(input.kind)
+    diag: isDiagKind(input.kind),
+    ...(source === "client" && typeof input.agoMs === "number" && Number.isFinite(input.agoMs) && input.agoMs > 0
+      ? { occurred_at: new Date(Date.now() - Math.min(Math.round(input.agoMs), 120_000)).toISOString() }
+      : {})
   };
 }
 
@@ -106,6 +111,7 @@ type Row = {
   meta: Record<string, unknown> | null;
   dur_ms: number | null;
   diag: boolean; // 진단 층(보존 3일) — 타임라인 기본 조회에서 빠진다
+  occurred_at?: string; // 클라 배치만 — 없으면 DB 기본값(now)
 };
 
 async function persist(rows: Row[]): Promise<void> {

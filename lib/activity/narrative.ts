@@ -46,7 +46,17 @@ const KEY: Record<string, string> = {
   to: "도착",
   side: "쪽",
   on: "켬",
-  value: "값"
+  value: "값",
+  // 진단(오류 추적) 층
+  msg: "메시지",
+  src: "파일",
+  line: "줄",
+  col: "칸",
+  status: "응답 코드",
+  ms: "멈춘 시간(ms)",
+  op: "작업",
+  result: "결과",
+  etype: "종류"
 };
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export function dateLabel(v: unknown): string {
@@ -136,6 +146,11 @@ export function kindLabel(kind: string): string {
 export function hhmm(ms: number): string {
   const d = new Date(ms + 9 * 3_600_000);
   return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+}
+/** 초까지 — 오류를 쫓을 때는 같은 분 안의 순서·간격이 필요하다. */
+export function hhmmss(ms: number): string {
+  const d = new Date(ms + 9 * 3_600_000);
+  return `${hhmm(ms)}:${String(d.getUTCSeconds()).padStart(2, "0")}`;
 }
 export function fmtDur(sec: number): string {
   if (sec < 60) return `${sec}초`;
