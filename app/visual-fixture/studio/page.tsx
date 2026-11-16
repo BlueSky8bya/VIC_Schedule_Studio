@@ -14,6 +14,7 @@ import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { CALENDAR_PREVIEW_TITLE, CALENDAR_PREVIEW_SUBTITLE } from '@/lib/ui/calendar-preview-sample';
 import { tentativeFixtureEvents } from "../tentative-events";
+import { chainRuleFixtureEvents } from "../chain-rule-events";
 import { buildPremiereFixture } from "@/lib/schedules/premiere-fixture";
 import { getTodayKst } from "@/lib/calendar/month";
 
@@ -25,7 +26,7 @@ export const dynamic = "force-dynamic";
 export default async function VisualStudioFixture({
   searchParams,
 }: {
-  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; y?: string; m?: string; biome?: string; chain?: string; tent?: string; gift?: string; premiere?: string; companionDrag?: string; supportUX?: string }>;
+  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; y?: string; m?: string; biome?: string; chain?: string; tent?: string; gift?: string; premiere?: string; companionDrag?: string; supportUX?: string; chainRule?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
@@ -144,6 +145,16 @@ export default async function VisualStudioFixture({
           : sp?.tent === "1"
             ? // tent=1 → 6/16~19에 미정·떡밥 비교 묶음 — 미정 표시 회귀 실측용(2026-10-05).
               { ...sampleStudioSchedule, events: [...sampleStudioSchedule.events, ...tentativeFixtureEvents(false)] }
+            : sp?.chainRule === "1"
+            ? // chainRule=1 → 이어진 일정 잇기 규칙 실측 묶음(2026-11-16) — 편집실·시청자 미리보기 둘 다.
+              {
+                ...sampleStudioSchedule,
+                events: [...sampleStudioSchedule.events, ...chainRuleFixtureEvents()],
+                viewerModePreview: {
+                  ...sampleStudioSchedule.viewerModePreview,
+                  events: [...sampleStudioSchedule.viewerModePreview.events, ...chainRuleFixtureEvents()]
+                }
+              }
             : sp?.gift === "1"
               ? // gift=1 → 생일 선물 미리보기 토글 켠 상태(0141) — 캡슐 뽑기 창 검증용(2026-10-06).
                 { ...sampleStudioSchedule, birthdayGiftPreview: true }

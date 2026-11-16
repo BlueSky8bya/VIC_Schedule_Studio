@@ -112,6 +112,7 @@ import {
   assignSupportLanes,
   supportDepthByCell,
   buildCalendarMonth,
+  buildChainJoins,
   buildChainKeys,
   buildLinkChain,
   buildPaintGroups,
@@ -130,6 +131,7 @@ import {
   splitEventTitle
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
+import { ChainCurveLayer, chainContLabel, chainDataAttrs } from "@/lib/calendar/chain-join-view";
 import { markContentReady } from "@/lib/presence/content-ready";
 import { getDayMark } from "@/lib/calendar/holidays";
 import {
@@ -299,6 +301,18 @@ type StudioShellProps = {
 
 
 // 최초공개 게이트의 큰 카운트다운은 시청자 팝오버와 공용(components/shared/teaser-countdown.tsx).
+
+// 포인터 아래 날짜 칸. 같은 글 띠의 머리 카드는 앞날 칸 DOM에 있으면서 옆 칸 위로 뻗으므로
+// elementFromPoint().closest()만 쓰면 옆 칸 위에서도 앞날로 잡힌다 — 실제로 점을 품은 칸을 고른다.
+function dayIsoAtPoint(x: number, y: number): string | null {
+  for (const el of document.elementsFromPoint(x, y)) {
+    const day = (el as HTMLElement).closest?.(".studio-month-grid [data-isodate]") as HTMLElement | null;
+    if (!day) continue;
+    const r = day.getBoundingClientRect();
+    if (x >= r.left && x < r.right && y >= r.top && y < r.bottom) return day.getAttribute("data-isodate");
+  }
+  return null;
+}
 
 export function StudioShell({
   actor,
@@ -1382,6 +1396,16 @@ export function StudioShell({
   // 이어진 일정 묶음 키 + 묶음 칸 높이 맞추기(글자 수 달라도 이음새 안 어긋나게).
   const chainKeys = useMemo(() => buildChainKeys(visibleEvents), [visibleEvents]);
   const paintGroups = useMemo(() => buildPaintGroups(visibleEvents), [visibleEvents]);
+  // 이어진 일정 잇기(2026-11-16) — 시청자 화면과 같은 판정(buildChainJoins): 앞날 마지막 = 다음날 첫 카드일 때만.
+  const chainJoins = useMemo(
+    () =>
+      buildChainJoins(
+        cells,
+        (iso) => getEventsForDate(liveEvents, iso).filter((e) => !e.isSupport),
+        (e) => !teaserStillHidden(e)
+      ),
+    [cells, liveEvents]
+  );
   // 이어진 칸 높이 맞추기 — callback ref라 그리드가 어떤 경로로 (재)마운트되든(미리보기 복귀·
   // 잠금 로딩·월 변경 등) 항상 새 요소에 자동 재설정된다. deps는 데이터 변화 시 보강용.
   const monthGridRef = useEqualChainHeights<HTMLDivElement>([visibleEvents, view]);
@@ -3771,9 +3795,10 @@ export function StudioShell({
       }
     }
     edPtrRef.current = { x: e.clientX, y: e.clientY, t: now };
-    const under = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
-    const dayEl = under?.closest("[data-isodate]") as HTMLElement | null;
-    const iso = dayEl?.getAttribute("data-isodate") ?? null;
+    const iso = dayIsoAtPoint(e.clientX, e.clientY);
+    const dayEl = iso
+      ? document.querySelector<HTMLElement>(`.studio-month-grid [data-isodate="${iso}"]`)
+      : null;
     if (iso !== dropDateRef.current) {
       dropDateRef.current = iso;
       setDropDate(iso);
@@ -3790,13 +3815,16 @@ export function StudioShell({
     // 포인터가 모든 카드보다 아래면 맨 끝.
     dropOverRef.current = null;
     if (dayEl) {
-      const pills = Array.from(dayEl.querySelectorAll<HTMLElement>("[data-eventid]")).filter(
-        (el) => canonId(el.getAttribute("data-eventid") ?? "") !== canonId(info.id)
-      );
+      // 띠 빈 자리(data-slot-eventid)도 그 날 조각이라 순서 판정에 넣는다.
+      const idOf = (el: HTMLElement) =>
+        el.getAttribute("data-eventid") ?? el.getAttribute("data-slot-eventid") ?? "";
+      const pills = Array.from(
+        dayEl.querySelectorAll<HTMLElement>("[data-eventid], [data-slot-eventid]")
+      ).filter((el) => canonId(idOf(el)) !== canonId(info.id));
       for (const el of pills) {
         const r = el.getBoundingClientRect();
         if (e.clientY < r.top + r.height / 2) {
-          dropOverRef.current = { id: el.getAttribute("data-eventid") ?? "", after: false };
+          dropOverRef.current = { id: idOf(el), after: false };
           break;
         }
       }
@@ -4062,8 +4090,7 @@ export function StudioShell({
       spanFollowLoop();
     }
     d.target = { x: ev.clientX - d.offX, y: ev.clientY - d.offY };
-    const under = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
-    const iso = under?.closest(".studio-month-grid [data-isodate]")?.getAttribute("data-isodate") ?? null;
+    const iso = dayIsoAtPoint(ev.clientX, ev.clientY);
     const wasOver = d.overCell;
     d.overCell = Boolean(iso);
     d.ghost?.classList.toggle("is-off", !iso); // 달력 밖 = 놓으면 취소 — 칩이 옅어져 미리 알려 준다
@@ -4204,16 +4231,24 @@ export function StudioShell({
     const plans = members.map((m) => {
       const from = getEventDateKey(m);
       const to = addDaysIso(from, delta);
-      // 도착일의 순서: 옮겨 온 것이 맨 위(이어진 것·띠는 원래 위에 선다), 나머지는 지금 순서 그대로.
+      // 도착일의 순서: 나머지는 지금 순서 그대로. 이어진 묶음은 옮긴 뒤에도 이어지게(2026-11-16 규칙:
+      // 앞날 마지막 = 다음날 첫 카드) — 앞에서 이어 받는 조각은 맨 위, 다음날로 넘기는 첫 조각은 맨 아래.
+      // 띠·여러 날 한 장(묶음 1개)은 예전처럼 맨 위.
       const others = getEventsForDate(live, to).filter(
         (x) => !memberSet.has(canonId(x.id)) && getEventDateKey(x) === to
       );
+      const takesFromPrev = members.some(
+        (x) => x.linkNext != null && canonId(x.linkNext) === canonId(m.id)
+      );
+      const atEnd = members.length > 1 && !takesFromPrev;
       return {
         id: m.id,
         from,
         to,
         fromOrderedIds: getEventsForDate(live, from).map((x) => x.id),
-        orderedIds: [m.id, ...others.map((x) => x.id)]
+        orderedIds: atEnd
+          ? [...others.map((x) => x.id), m.id]
+          : [m.id, ...others.map((x) => x.id)]
       };
     });
     const orderPos = new Map<string, number>();
@@ -4310,15 +4345,6 @@ export function StudioShell({
     window.addEventListener("pointercancel", endEventDrag, { once: true });
   }
 
-  // "끈"(이어진 일정): 멀티데이거나 link로 앞뒤가 이어진 일정. 같은 날에서 항상 위로 정렬된다.
-  function isConnectedEvent(e: StudioScheduleEvent) {
-    const c = canonId(e.id);
-    return (
-      (e.endDateKey != null && e.endDateKey > getEventDateKey(e)) ||
-      Boolean(e.linkNext) ||
-      eventsRef.current.some((o) => o.linkNext != null && canonId(o.linkNext) === c)
-    );
-  }
 
   // 드래그로 집은 카드와 '이을 수 있는' 상대들을 계산해 강조/흐림을 켠다. 이을 수 있음 =
   // buildLinkChain이 성립(둘 사이 매일 연속 + 맞닿는 변의 대표 태그 일치). 없으면 순수 이동 드래그.
@@ -4729,9 +4755,8 @@ export function StudioShell({
       const idx = dayEvents.findIndex((e) => canonId(e.id) === overId);
       if (idx >= 0) insertIdx = over.after ? idx + 1 : idx;
     }
-    // 끈(이어진/멀티데이 일정)은 항상 맨 위에 고정 — 그 위로는 못 끼운다. 끈 아래로만 배치.
-    const connectedCount = dayEvents.filter((e) => isConnectedEvent(e)).length;
-    insertIdx = Math.max(insertIdx, connectedCount);
+    // (2026-11-16) 이어진 일정도 그날 방송 순서대로 — 위로 고정하지 않는다. 앞에 끼우면 이음이 끊긴다
+    // (buildChainJoins: 앞날 마지막 = 다음날 첫 카드일 때만 잇는다).
     const orderedIds = [
       ...dayEvents.slice(0, insertIdx).map((e) => e.id),
       id,
@@ -7810,8 +7835,7 @@ export function StudioShell({
               // 빈 칸이 열린다. liIdx = 이 칸에서 놓일 인덱스(이 칸이 드롭 대상일 때만).
               let liIdx: number | null = null;
               if (dragEventId && dropSlot && dropSlot.day === cell.isoDate) {
-                // 끈(이어진 일정)은 위에 고정 — 그 아래로만 들어간다.
-                const connectedCount = dateEvents.filter((e) => isConnectedEvent(e)).length;
+                // (2026-11-16) 이어진 일정 위로도 끼울 수 있다 — 위 고정 규칙 폐지(dropEventInto와 같음).
                 let li: number;
                 if (!dropSlot.overId) {
                   li = dateEvents.length;
@@ -7819,7 +7843,7 @@ export function StudioShell({
                   const oi = dateEvents.findIndex((e) => canonId(e.id) === canonId(dropSlot.overId!));
                   li = oi < 0 ? dateEvents.length : dropSlot.after ? oi + 1 : oi;
                 }
-                liIdx = Math.max(li, connectedCount);
+                liIdx = li;
               }
               // 드래그 중이면 이 칸의 모든 후보 자리에 스페이서를 미리 깔아 둔다(아래 주석 참조).
               // 이름이 겹치지 않게 dropActive — 상단의 dragActiveRef(포인터 상태)와 별개다.
@@ -8091,6 +8115,51 @@ export function StudioShell({
                       const isEditing = isSel && editorVisible;
                       // 연결된 체인이면 체인 전체에 선택 테두리를 입힌다.
                       const inSelChain = selectedChainIds.has(event.id);
+                      const join = chainJoins.get(event.id);
+                      // 같은 글 띠의 뒤 칸 — 글은 머리 칸이 여러 칸 폭으로 한 번만 쓴다(시청자 화면과 같은 규칙).
+                      // 여기는 높이만 맞춘 빈 자리. 드롭 자리(drop-gap)는 다른 카드와 같은 문법으로 둔다.
+                      if (join?.bandHeadId) {
+                        // 편집실에선 빈 자리도 그 날 일정의 손잡이다 — 머리 카드 위에 투명하게 얹혀
+                        // 이 날 조각을 따로 고르고·열고·끌 수 있다(머리 카드가 덮어 못 누르던 문제).
+                        const slot = (
+                          <div
+                            aria-label={splitEventTitle(event.publicTitle).main}
+                            className="band-slot is-hit"
+                            data-band-slot={join.bandHeadId}
+                            data-chain={join.bandKey}
+                            data-slot-eventid={event.id}
+                            key={event.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (justDraggedRef.current) {
+                                justDraggedRef.current = false;
+                                return;
+                              }
+                              handlePillClick(event.id);
+                            }}
+                            onDoubleClick={(e) => {
+                              e.stopPropagation();
+                              const target = eventsRef.current.find((x) => canonId(x.id) === canonId(event.id));
+                              if (target) openEventEditor(target);
+                            }}
+                            onPointerDown={canEdit ? (e) => onPillPointerDown(e, event) : undefined}
+                            role="button"
+                            tabIndex={-1}
+                          />
+                        );
+                        const slotGapOn = gapOpen(eventIndex + 1);
+                        return dropActive
+                          ? [
+                              slot,
+                              <div
+                                aria-hidden="true"
+                                className={`drop-gap${slotGapOn ? " on" : ""}`}
+                                key={`gap-${event.id}`}
+                                style={{ height: slotGapOn ? dropGapH : 0 }}
+                              />
+                            ]
+                          : slot;
+                      }
                       // 아직 안 풀린 최초공개는 편집실 달력에서도 내용을 가린다(방송 화면 유출 방지).
                       const { main, subs } = splitEventTitle(
                         teaserStillHidden(event) ? "???" : event.publicTitle
@@ -8099,8 +8168,12 @@ export function StudioShell({
                         event,
                         cell.isoDate,
                         cell.weekday,
-                        visibleEvents
+                        visibleEvents,
+                        chainJoins
                       );
+                      // 곡선·줄바뀜으로 이어 받은 카드 — 글이 같으면 "▸ 제목 이어서" 한 줄.
+                      const cont = chainContLabel(join, cell.isoDate);
+                      const slim = Boolean(cont && join?.left?.sameContent);
                       // 체인 이음변(색 일치 여부 무관) — 칠(getEventSpan)은 색이 같을 때만
                       // 병합하지만, 선택·연결 후보 '하이라이트'는 체인 전체가 한 덩어리로
                       // 보여야 한다(사용자 결정). CSS가 .selected/.connect-target에서만 쓴다.
@@ -8139,6 +8212,8 @@ export function StudioShell({
                         span.isMulti ? "span" : "",
                         span.isMulti && !span.roundLeft ? "no-left" : "",
                         span.isMulti && !span.roundRight ? "no-right" : "",
+                        slim ? "chain-slim" : "",
+                        join?.bandSpan ? "band-head" : "",
                         joinRight ? "link-join-right" : "",
                         joinLeft ? "link-join-left" : "",
                         draggable ? "draggable" : "",
@@ -8190,7 +8265,7 @@ export function StudioShell({
                       const pill = (
                         <div
                           className={pillClass}
-                          data-chain={chainKeys.get(event.id)}
+                          {...chainDataAttrs(event, join, chainKeys)}
                           data-color={mixed ? undefined : colors[0]?.key}
                           data-eventid={event.id}
                           data-companion-event={event.visibilityScope === "public" && !event.isSupport && !event.teaser ? "ordinary" : undefined}
@@ -8294,7 +8369,11 @@ export function StudioShell({
                             ) : null}
                             {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다. */}
                             {span.showTitle ? (
-                              <strong>{main}</strong>
+                              <strong>
+                                {slim ? <span aria-hidden="true" className="chain-cont-arrow">▸</span> : null}
+                                {main}
+                                {cont ? <small className="chain-cont">{cont}</small> : null}
+                              </strong>
                             ) : (
                               <strong className="span-cont">{main || " "}</strong>
                             )}
@@ -8320,7 +8399,7 @@ export function StudioShell({
                               형식색 점은 '마지막 서브 줄의 오른쪽'에 함께 둔다 — 서브 텍스트와 점이
                               한 줄에 들어가면 같은 줄에 붙어(별도 줄을 안 써 높이 최소화), 안 들어가면
                               flex-wrap으로 점만 아래로 내려간다(겹침 없음). 서브가 없으면 점만 한 줄에. */}
-                          {(() => {
+                          {slim ? null : (() => {
                             const dots =
                               span.showTitle && extraColors.length > 0 ? (
                                 <span className="pill-dots" aria-hidden="true">
@@ -8406,6 +8485,8 @@ export function StudioShell({
                       </div>
                     ) : null}
                   </div>
+                  {/* 곡선 이음 — 시청자 화면과 같은 층(lib/calendar/chain-join-view). */}
+                  <ChainCurveLayer events={dateEvents} joins={chainJoins} />
                 </article>
               );
               });

@@ -116,10 +116,12 @@ import { flipSpring } from "@/lib/ui/flip-motion";
 import { trackPopoverLayout } from "@/lib/ui/popover-layout";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
+import { ChainCurveLayer, chainContLabel, chainDataAttrs } from "@/lib/calendar/chain-join-view";
 import {
   assignSupportLanes,
   supportDepthByCell,
   buildCalendarMonth,
+  buildChainJoins,
   buildChainKeys,
   buildPaintGroups,
   classifyDay,
@@ -775,6 +777,20 @@ export function PublicPoster({
   const chainKeys = useMemo(() => buildChainKeys(schedule.events), [schedule.events]);
   // 같은 태그 구성으로 이어진 묶음은 하나의 그라데이션으로(경계 가운데). 묶음별 날짜 범위.
   const paintGroups = useMemo(() => buildPaintGroups(schedule.events), [schedule.events]);
+  // 이어진 일정 잇기(2026-11-16): 앞날 마지막 = 다음날 첫 카드일 때만 띠/곡선/줄바뀜으로 잇는다.
+  // 편집실과 같은 판정 함수(buildChainJoins) — 칸 목록도 렌더와 같은 기준(업 도움 제외·사라진 떡밥 제외).
+  const chainJoins = useMemo(
+    () =>
+      buildChainJoins(
+        cells,
+        (iso) =>
+          getEventsForDate(liveEvents, iso).filter((e) => !e.isSupport && !goneTeaserIds.has(e.id)),
+        // 편집실(teaserStillHidden)과 같은 술어 — 아직 안 풀린(공개 시각이 미래) 떡밥만 잇지 않는다.
+        // 공개 번들에 편집실 모듈을 끌어오지 않으려고 같은 식을 여기 둔다.
+        (e) => !(e.teaser && e.teaserRevealAt && Date.parse(e.teaserRevealAt) > Date.now())
+      ),
+    [cells, liveEvents, goneTeaserIds]
+  );
   // 이어진 일정(link_next로 묶인 '별개' 일정들)은 같은 묶음 칸끼리 높이를 맞춰 이음새가 어긋나지
   // 않게 한다. 묶음의 '가장 큰 내용' 높이에만 맞추므로(과확장 없음) 짧은 쪽만 그만큼 채워진다.
   // callback ref라 그리드가 (재)마운트되는 어떤 경로에서도 자동 재설정된다. deps는 보강용.
@@ -3348,10 +3364,26 @@ export function PublicPoster({
               }
               // 시각 지났고 실제 제목 있음(미리보기/신선 캐시) → 일반 렌더로 흐른다.
             }
+            const join = chainJoins.get(event.id);
+            // 같은 글 띠의 뒤 칸 — 글은 머리 칸이 여러 칸 폭으로 한 번만 쓴다. 여기는 높이만 맞춘 빈 자리.
+            if (join?.bandHeadId) {
+              return (
+                <div
+                  aria-hidden="true"
+                  className="band-slot"
+                  data-band-slot={join.bandHeadId}
+                  data-chain={join.bandKey}
+                  key={event.id}
+                />
+              );
+            }
             const colors = eventColors(event);
             const extraColors = tagVisual.eventExtras(event);
             const { main, subs } = splitEventTitle(event.publicTitle);
-            const span = getEventSpan(event, cell.isoDate, cell.weekday, schedule.events);
+            const span = getEventSpan(event, cell.isoDate, cell.weekday, schedule.events, chainJoins);
+            // 곡선·줄바뀜으로 이어 받은 카드 — 글이 같으면 "▸ 제목 이어서" 한 줄로 준다.
+            const cont = chainContLabel(join, cell.isoDate);
+            const slim = Boolean(cont && join?.left?.sameContent);
             const bookmarked = isBookmarked(event.id);
             // 하트는 시작 칸(제목 보이는 칸)에서만, 로그인 시청자 상호작용 모드에서만 노출.
             const showHeart = canHeart && span.showTitle;
@@ -3368,6 +3400,8 @@ export function PublicPoster({
               span.isMulti ? "span" : "",
               span.isMulti && !span.roundLeft ? "no-left" : "",
               span.isMulti && !span.roundRight ? "no-right" : "",
+              slim ? "chain-slim" : "",
+              join?.bandSpan ? "band-head" : "",
               isDimmedByFilter(event) ? "dimmed" : "",
               // 미정 = 빗금(이어진 칸 전부 — 한 일정이 칸마다 달라 보이지 않게). 글자 칩은 없다(제목 정렬 유지).
               event.isTentative ? "tentative" : "",
@@ -3405,7 +3439,7 @@ export function PublicPoster({
               <div
                 className={`${eventClass}${openDesktopDetail ? " is-clickable" : ""}${agendaDetail?.event.id === event.id ? " detail-current" : ""}`}
                 data-eventid={event.id} /* 공개 순간 폭죽 좌표를 잡는 앵커 */
-                data-chain={chainKeys.get(event.id)}
+                {...chainDataAttrs(event, join, chainKeys)}
                 data-color={mixed ? undefined : colors[0]?.key}
                 data-mixed={mixed ? "" : undefined}
                 // 관심 단계를 카드 자체에 실어, 인기가 '불꽃 이모지 개수'가 아니라 '시각적 무게'
@@ -3441,8 +3475,10 @@ export function PublicPoster({
                   {span.showTitle ? (
                     <p>
                       {event.isTentative ? <span className="sr-only">미정 </span> : null}
+                      {slim ? <span aria-hidden="true" className="chain-cont-arrow">▸</span> : null}
                       {/* 방금 공개된 떡밥은 ?에서 글자가 확정되는 스크램블로 등장. */}
                       {justRevealed.has(rawEvent.id) ? <ScrambleText text={main} /> : main}
+                      {cont ? <small className="chain-cont">{cont}</small> : null}
                     </p>
                   ) : (
                     <p className="span-cont">{main || " "}</p>
@@ -3467,7 +3503,7 @@ export function PublicPoster({
                 {/* 형식색 점은 편집실과 똑같이 '마지막 서브 줄 오른쪽'에 함께 둔다 — 서브와 한 줄에
                     들어가면 같은 줄(별도 점 줄 없이 높이 절약), 안 들어가면 flex-wrap으로 점만 아래로.
                     서브가 없으면 아래 메타 줄에 (불꽃과 함께) 둔다. */}
-                {(() => {
+                {slim ? null : (() => {
                   const showDots = span.showTitle && extraColors.length > 0;
                   const dots = showDots ? (
                     <span className="pill-dots" aria-hidden="true">
@@ -3522,6 +3558,8 @@ export function PublicPoster({
               일정이 있는 날은 카드가 주인공이라 그대로 호버 ▶만. 포스터(비인터랙티브)엔 cellVods가 없어 안 그려진다. */}
           {cellVods && events.length === 0 ? <DayVodNote vods={cellVods} /> : null}
         </div>
+        {/* 곡선 이음 — 이 칸의 카드에서 다음날 카드로. 선 좌표는 useEqualChainHeights가 레이아웃마다 다시 잰다. */}
+        <ChainCurveLayer events={events} joins={chainJoins} />
       </article>
     );
   }

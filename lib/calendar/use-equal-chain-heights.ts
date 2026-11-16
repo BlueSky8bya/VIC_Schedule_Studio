@@ -2,8 +2,55 @@
 
 import { useCallback, useEffect, useRef } from "react";
 
+// 화면 px ÷ 레이아웃 px — 포스터 표면은 transform으로, 편집실은 CSS zoom으로 줄어 있다.
+function scaleOf(el: HTMLElement): number {
+  const w = el.offsetWidth;
+  const r = el.getBoundingClientRect().width;
+  return w > 0 && r > 0 ? r / w : 1;
+}
+
+// 곡선 이음(buildChainJoins의 curve) — 앞날 카드(data-curve-from) 오른쪽에서 다음날 카드(data-curve-to)
+// 왼쪽까지 부드러운 S자. 선은 앞 카드 칸 안의 <svg data-curve-svg>에 그린다(칸 기준 좌표, overflow visible).
+// 색은 앞 카드 테두리색(태그 색) — 이 일정의 색으로 이어진다.
+function drawCurves(root: HTMLElement) {
+  for (const svg of Array.from(root.querySelectorAll<SVGSVGElement>("svg[data-curve-svg]"))) {
+    const keys = (svg.dataset.curveSvg ?? "").split(" ").filter(Boolean);
+    const host = svg.parentElement;
+    let markup = "";
+    if (host) {
+      const hostRect = host.getBoundingClientRect();
+      const s = scaleOf(host);
+      for (const key of keys) {
+        const from = root.querySelector<HTMLElement>(`[data-curve-from="${CSS.escape(key)}"]`);
+        const to = root.querySelector<HTMLElement>(`[data-curve-to="${CSS.escape(key)}"]`);
+        if (!from || !to) continue;
+        const a = from.getBoundingClientRect();
+        const b = to.getBoundingClientRect();
+        const x1 = (a.right - hostRect.left) / s;
+        const y1 = (a.top - hostRect.top) / s + Math.min(18, a.height / s / 2);
+        const x2 = (b.left - hostRect.left) / s;
+        const y2 = (b.top - hostRect.top + b.height / 2) / s;
+        const k = Math.max(22, (x2 - x1) * 0.9 + 14);
+        const d = `M${x1.toFixed(1)},${y1.toFixed(1)} C${(x1 + k).toFixed(1)},${y1.toFixed(1)} ${(x2 - k).toFixed(1)},${y2.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}`;
+        const color = getComputedStyle(from).borderTopColor || "currentColor";
+        markup +=
+          `<path class="chain-curve-halo" d="${d}"/>` +
+          `<path class="chain-curve-line" d="${d}" style="stroke:${color}"/>` +
+          `<circle class="chain-curve-dot" r="3.2" cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}" style="fill:${color}"/>` +
+          `<circle class="chain-curve-dot" r="3.2" cx="${x2.toFixed(1)}" cy="${y2.toFixed(1)}" style="fill:${color}"/>`;
+      }
+    }
+    if (svg.dataset.drawn !== markup) {
+      svg.dataset.drawn = markup;
+      svg.innerHTML = markup;
+    }
+  }
+}
+
 // 이어진 일정(같은 data-chain) 칸들의 높이를 그 묶음에서 가장 큰 칸에 맞춘다.
 // 글자 수가 달라 높이가 다른 카드가 이어질 때 이음새가 어긋나 보이는 걸 막는다.
+// (2026-11-16) 같은 일을 하는 김에 같은 글 띠의 머리 폭(data-band-head)과 곡선 이음(data-curve-*)도
+// 여기서 같이 맞춘다 — 셋 다 '레이아웃이 바뀔 때마다 다시 재야 하는' 같은 종류의 일이라 한 펌프를 쓴다.
 //
 // ── 왜 callback ref인가(구조적 보장) ──
 // 예전엔 RefObject + useLayoutEffect(deps)였다. 그런데 편집실 그리드는 시청자 미리보기·잠금
@@ -42,7 +89,8 @@ export function useEqualChainHeights<T extends HTMLElement>(
         childList: true, // 카드 생성/삭제
         characterData: true, // 제목·항목 글자 변경
         attributes: true,
-        attributeFilter: ["class", "data-chain"] // style(=우리 minHeight)은 제외(self-trigger 방지)
+        // style(=우리 minHeight·폭)은 제외(self-trigger 방지)
+        attributeFilter: ["class", "data-chain", "data-band-head", "data-curve-from", "data-curve-to"]
       });
     }
 
@@ -51,6 +99,21 @@ export function useEqualChainHeights<T extends HTMLElement>(
         return;
       }
       mo?.disconnect(); // 측정·쓰기 동안 관찰 정지 → 우리 minHeight 변경이 자신을 트리거 못함
+      // ① 같은 글 띠의 머리 카드 폭 = 머리 칸 왼쪽 ~ 마지막 빈 자리(bandSlot) 오른쪽.
+      //    표면이 transform/zoom으로 줄어 있어도 맞도록 화면 px를 레이아웃 px로 되돌린다(scaleOf).
+      for (const head of Array.from(root!.querySelectorAll<HTMLElement>("[data-band-head]"))) {
+        const slots = root!.querySelectorAll<HTMLElement>(
+          `[data-band-slot="${CSS.escape(head.dataset.bandHead ?? "")}"]`
+        );
+        const tail = slots[slots.length - 1];
+        if (!tail) {
+          head.style.width = "";
+          continue;
+        }
+        const s = scaleOf(head);
+        const w = (tail.getBoundingClientRect().right - head.getBoundingClientRect().left) / s;
+        if (w > 0) head.style.width = `${Math.round(w * 10) / 10}px`;
+      }
       const pills = Array.from(root!.querySelectorAll<HTMLElement>("[data-chain]"));
       for (const p of pills) {
         p.style.minHeight = ""; // 먼저 초기화해 자연 높이를 잰다
@@ -80,6 +143,7 @@ export function useEqualChainHeights<T extends HTMLElement>(
           el.style.minHeight = `${max}px`;
         }
       }
+      drawCurves(root!);
       observe(); // 반영 끝난 뒤 다시 관찰
     }
 

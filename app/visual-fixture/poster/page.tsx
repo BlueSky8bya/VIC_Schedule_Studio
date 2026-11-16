@@ -5,6 +5,7 @@ import { isSeasonKey } from "@/components/shared/ambient/registry";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { buildPremiereFixture } from "@/lib/schedules/premiere-fixture";
 import { tentativeFixtureEvents } from "../tentative-events";
+import { chainRuleFixtureEvents } from "../chain-rule-events";
 import { parsePublicMonth } from "@/lib/ui/public-month-link";
 import { isCompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { CALENDAR_PREVIEW_TITLE, CALENDAR_PREVIEW_SUBTITLE } from '@/lib/ui/calendar-preview-sample';
@@ -25,7 +26,7 @@ async function fixtureHeartAction() {
 export default async function VisualPosterFixture({
   searchParams
 }: {
-  searchParams?: Promise<{ detailUX?: string; supportUX?: string; navSpan?: string; monthLink?: string; month?: string | string[]; avatar?: string; teaser?: string; fixed?: string; hearts?: string; ambient?: string; hour?: string; companionFood?: string; links?: string; plus?: string; signedIn?: string; tent?: string; premiere?: string; count?: string; gap?: string; scenario?: string; rehearsal?: string }>;
+  searchParams?: Promise<{ detailUX?: string; supportUX?: string; navSpan?: string; monthLink?: string; month?: string | string[]; avatar?: string; teaser?: string; fixed?: string; hearts?: string; ambient?: string; hour?: string; companionFood?: string; links?: string; plus?: string; signedIn?: string; tent?: string; premiere?: string; count?: string; gap?: string; scenario?: string; rehearsal?: string; chainRule?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
@@ -112,10 +113,12 @@ export default async function VisualPosterFixture({
   } : shown;
   // tent=1 → 6/16~19에 미정·떡밥 비교 묶음(가린 떡밥 stub 포함) — 미정 표시 회귀 실측용(2026-10-05).
   const withTent = sp?.tent === "1" ? { ...withLinks, events: [...withLinks.events, ...tentativeFixtureEvents(true)] } : withLinks;
-  const withNavigation = sp?.navSpan === "1" ? { ...withTent, events: [...withTent.events, {
+  const withNavigationOnly = sp?.navSpan === "1" ? { ...withTent, events: [...withTent.events, {
     id: "fixture-nav-span", startsAt: "2026-05-31T20:00:00+09:00", endDateKey: "2026-06-03", isAllDay: false, publicTitle: "전월에서 이어진 공개 일정",
     status: "scheduled" as const, visibilityScope: "public" as const, category: "stream" as const, tagIds: ["tag-big-server"], primaryTagIds: ["tag-big-server"], sortOrder: 0
   }] } : withTent;
+  // chainRule=1 → 이어진 일정 잇기 규칙(곡선·띠·줄바뀜·끊김) 실측 묶음(2026-11-16).
+  const withNavigation = sp?.chainRule === "1" ? { ...withNavigationOnly, events: [...withNavigationOnly.events, ...chainRuleFixtureEvents()] } : withNavigationOnly;
   const premiereSeconds = Number(sp?.premiere ?? sp?.teaser ?? "");
   const premiereFixture = Number.isFinite(premiereSeconds) && premiereSeconds > 0 ? {
     startedAt: Date.now(), offsets: Array.from({ length: Math.min(8, Math.max(1, Number(sp?.count) || 1)) }, (_, i) => premiereSeconds + i * (Number(sp?.gap) || 0)), scenario: sp?.scenario

@@ -465,7 +465,7 @@ ID 추가·삭제·중복 또는 소유 파일 변경 시 이 표와 해시를 �
 
 2026-10-18 소유자 추가: G-22는 새 기능/버튼의 행동 타임라인·적게 쓰인 기능 점검을 자동 완료 기준으로 삼으라는 현재 요청에서 신설했다.589행 과거 원문에서 이관한 규칙이 아니므로 원문 대응 행은 유지하고 현행 재고만 추가한다. 개인정보 제한과 자동 행동 제외는 G-07/G-20을 그대로 따른다.
 
-Rule inventory SHA-256: 5fdaf4a46699c9e646c06bd519fc295f856ed1d37edb468f1a2ffa33e6603e3a
+Rule inventory SHA-256: 8ccd71dd803f6a57b634680c014b8e04dc51be4807a05193fbae49bc21bae35f
 
 <!-- rule-migration:inventory:start -->
 | 규칙 ID | 현행 문서 |
@@ -579,4 +579,5 @@ Rule inventory SHA-256: 5fdaf4a46699c9e646c06bd519fc295f856ed1d37edb468f1a2ffa33
 | UI-42 | docs/ux/UI_RULES.md |
 | UI-43 | docs/ux/UI_RULES.md |
 | UI-44 | docs/ux/UI_RULES.md |
+| UI-45 | docs/ux/UI_RULES.md |
 <!-- rule-migration:inventory:end -->
