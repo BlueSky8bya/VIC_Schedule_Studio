@@ -3395,6 +3395,14 @@ export function StudioShell({
         if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
           el.style.transform = `translate(${dx}px, ${dy}px)`;
           el.style.transition = "none";
+          // 미끄러지는 카드는 이어진 띠(z 3) 위로 — 착지하는 동안 띠 밑으로 파고들어 뒤섞여 보이지 않게(2026-11-17 소유자).
+          el.style.zIndex = "4";
+          const land = (ev: TransitionEvent) => {
+            if (ev.target !== el || ev.propertyName !== "transform") return;
+            el.style.zIndex = "";
+            el.removeEventListener("transitionend", land);
+          };
+          el.addEventListener("transitionend", land);
           requestAnimationFrame(() => {
             el.style.transition = "transform var(--dur-3, 240ms) var(--ease, ease)";
             el.style.transform = "";
@@ -3438,7 +3446,9 @@ export function StudioShell({
   const [closingGapDays, setClosingGapDays] = useState<Set<string>>(() => new Set());
   const prevDropDayRef = useRef<string | null>(null);
   const closingGapTimersRef = useRef(new Map<string, number>());
-  useEffect(() => {
+  // useLayoutEffect — 화면을 그리기 전에 반영해야 한다. useEffect면 놓을 자리가 떠난 바로 그 장면(1~2프레임)이
+  // 접히기 전 자리에서 두 칸 폭 띠로 그려져 옆 칸을 덮었다(2026-11-17 매 프레임 실측).
+  useLayoutEffect(() => {
     const prev = prevDropDayRef.current;
     const next = dropSlot?.day ?? null;
     prevDropDayRef.current = next;

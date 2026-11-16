@@ -6986,12 +6986,12 @@ html[data-theme="dark"] .card-sheen {
   from { opacity: 0; transform: scale(0.985); }
   to { opacity: 1; transform: scale(1); }
 }
-.studio-event-pill.primary-selected.chain-step-from[data-step-painted]::after,
-.studio-event-pill.primary-selected.chain-step-to[data-step-painted]::after {
+.studio-event-pill.primary-selected.chain-step-from::after,
+.studio-event-pill.primary-selected.chain-step-to::after {
   display: none;
 }
-.public-event.detail-current.chain-step-from[data-step-painted],
-.public-event.detail-current.chain-step-to[data-step-painted] {
+.public-event.detail-current.chain-step-from,
+.public-event.detail-current.chain-step-to {
   outline: none;
 }
 html[data-reduce-motion] .chain-ring-pair {

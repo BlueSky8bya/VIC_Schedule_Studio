@@ -178,10 +178,38 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 
 // 띠는 지우고 다시 만들지 않고 제자리에서 고쳐 쓴다 — 레이아웃이 움직이는 동안(드래그 착지·패널 열림) 매 프레임
 // 다시 그려도 등장 애니메이션이 끊기거나 처음부터 다시 시작하지 않는다.
+// 끝이 있는 움직임(전환·한 번짜리 애니메이션)이 지금 돌고 있는가 — 무한 반복 연출은 세지 않는다.
+function isSliding(el: Element): boolean {
+  if (typeof (el as HTMLElement).getAnimations !== "function") return false;
+  return (el as HTMLElement).getAnimations().some((a) => {
+    if (a.playState !== "running") return false;
+    const end = a.effect?.getComputedTiming().endTime;
+    return typeof end === "number" && Number.isFinite(end);
+  });
+}
+
+// 미끄러지는 카드는 이어진 띠(머리 z 3·몸통 z 1) 위로 — 놓은 직후 카드들이 새 자리로 내려가는 동안 이미 최종 모양인
+// 띠와 겹쳐 뒤섞여 보였다(2026-11-17 소유자 "난잡하게 겹침"). 움직임이 끝나면 원래 층으로.
+function liftSliding(root: HTMLElement) {
+  for (const el of Array.from(root.querySelectorAll<HTMLElement>(".studio-event-pill, .public-event"))) {
+    const sliding = isSliding(el) && !el.hasAttribute("data-band-head");
+    if (sliding && el.dataset.lifted === undefined) {
+      el.dataset.lifted = "";
+      el.style.zIndex = "4";
+    } else if (!sliding && el.dataset.lifted !== undefined) {
+      delete el.dataset.lifted;
+      el.style.zIndex = "";
+    }
+  }
+}
+
 function drawSteps(root: HTMLElement) {
   const now = typeof performance !== "undefined" ? performance.now() : 0;
   const settled = now - (mountedAt.get(root) ?? now) > 1200;
   const hot = hotKey.get(root) ?? null;
+  // 이번에 실제로 몸통을 그린 카드 — 그 밖의 카드에 남은 '그렸다' 표시는 지운다. 예전에 꺾인 띠였던 카드에 표시가
+  // 남으면, 다시 꺾인 띠가 되는 순간 몸통을 그리기도 전에 바탕부터 비워져 글자만 깜빡였다(2026-11-17 소유자).
+  const paintedNow = new Set<HTMLElement>();
   for (const svg of Array.from(root.querySelectorAll<SVGSVGElement>("svg[data-curve-svg]"))) {
     const keys = (svg.dataset.curveSvg ?? "").split(" ").filter(Boolean);
     const host = svg.parentElement;
@@ -281,13 +309,23 @@ function drawSteps(root: HTMLElement) {
         // 그동안은 카드가 제 칠을 그대로 가지게 두고, 애니메이션이 끝나면(animationend → 다시 잼) 표시한다.
         // '칸이 따로 쌓이는가'만 본다(transform·filter가 걸린 칸) — 놓을 칸 강조처럼 색만 바뀌는 애니메이션까지 세면
         // 끄는 동안 이어진 모양이 풀려 카드 점선과 한 덩어리 점선이 이중으로 보였다(2026-11-17 소유자).
-        const moving = [from, to].some((card) => {
-          const cell = card.closest("article");
-          if (!cell) return false;
-          const cs = getComputedStyle(cell);
-          return cs.transform !== "none" || cs.filter !== "none";
-        });
+        // 카드를 끄는 동안(놓을 자리 상자가 있음)도 비우지 않는다 — 놓을 자리가 열리고 닫히며 카드가 매 프레임 미끄러지는데
+        // 몸통은 구조상 한 프레임 늦게 따라와, 비운 카드가 몸통 밖으로 5~13px 삐져 글자만 깜빡였다(2026-11-17 매 프레임 실측).
+        // 그동안 카드는 제 칠을 갖고 몸통은 그 뒤에서 이어 준다 — 늦어도 카드에 가려 안 보인다. 놓으면 다시 한 도형.
+        const dragging = Boolean(root.querySelector(".drop-gap, .dragging-src"));
+        // 놓은 직후 카드가 미끄러지는 동안(착지 transform·간격 margin 전환 등 끝이 있는 움직임)도 마찬가지.
+        const landing = isSliding(from) || isSliding(to);
+        const moving =
+          dragging ||
+          landing ||
+          [from, to].some((card) => {
+            const cell = card.closest("article");
+            if (!cell) return false;
+            const cs = getComputedStyle(cell);
+            return cs.transform !== "none" || cs.filter !== "none";
+          });
         for (const card of [from, to]) {
+          if (!moving) paintedNow.add(card);
           if (moving) card.removeAttribute("data-step-painted");
           else if (!card.hasAttribute("data-step-painted")) card.setAttribute("data-step-painted", "");
         }
@@ -339,6 +377,9 @@ function drawSteps(root: HTMLElement) {
       }
       for (const [key, el] of old) if (!rings.has(key)) el.remove();
     }
+  }
+  for (const el of Array.from(root.querySelectorAll<HTMLElement>("[data-step-painted]"))) {
+    if (!paintedNow.has(el)) el.removeAttribute("data-step-painted");
   }
 }
 
@@ -542,16 +583,8 @@ export function useEqualChainHeights<T extends HTMLElement>(
 
     // 폭 변화(두 칸 폭 띠 ↔ 한 칸 카드)를 스프링으로 — WAAPI라 매 프레임 다시 쓰는 인라인 폭보다 우선한다.
     // 첫 그림(마운트 직후)과 '동작 줄이기'에선 하지 않는다.
-    // 늘어날 때만, 넘치지 않는 감속 곡선으로 — 줄어드는 쪽은 바로(그 순간 꺾인 띠·'이어서'가 대신 나타나므로
-    // 넓은 채로 줄어드는 동안 옆 칸 카드를 덮었다, 2026-11-17 소유자 "과하게 확장되어 겹침"). 끄는 위치에 따라
-    // 띠 ↔ 꺾인 띠가 번갈아 바뀌어도 넘침이 없어 버벅여 보이지 않는다.
-    function slideWidth(el: HTMLElement, from: string, to: string) {
-      if (from === to || reduceMotion() || typeof el.animate !== "function") return;
-      if (parseFloat(to) <= parseFloat(from)) return;
-      const now = typeof performance !== "undefined" ? performance.now() : 0;
-      if (now - (mountedAt.get(root!) ?? now) < 1200) return;
-      el.animate([{ width: from }, { width: to }], { duration: 220, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" });
-    }
+    // (폭 애니메이션은 뺐다 — 늘어나는 동안 좁은 폭에 여러 단 배치가 먼저 적용돼 글자가 찌그러진 장면이 깜빡였다.
+    //  아래처럼 그리기 전에 바로 맞추므로 첫 장면부터 제 폭이다.)
 
     function equalize() {
       if (cancelled) {
@@ -574,7 +607,6 @@ export function useEqualChainHeights<T extends HTMLElement>(
         if (w > 0) {
           const target = `${Math.round(w * 10) / 10}px`;
           // 새로 띠 머리가 되면(끌기 미리보기 등) 제 칸 폭에서 띠 폭으로 부드럽게 늘어난다.
-          if (!head.hasAttribute("data-band-w")) slideWidth(head, `${head.offsetWidth}px`, target);
           head.style.width = target;
           head.setAttribute("data-band-w", "");
           // 본문 줄을 칸마다 한 단씩 — 두 칸 폭 띠의 오른쪽이 비어 한쪽으로 쏠려 보이지 않게(2026-11-17 소유자
@@ -596,15 +628,13 @@ export function useEqualChainHeights<T extends HTMLElement>(
         }
       }
       // 더는 띠 머리가 아닌 카드(끌기 미리보기·순서 변경으로 꺾인 띠가 된 경우)의 넓힌 폭을 되돌린다 — 안 그러면
-      // 두 칸 폭이 남아 옆 칸 카드 위로 겹친다. 띠 폭에서 제 칸 폭으로 부드럽게 줄어든다.
+      // 두 칸 폭이 남아 옆 칸 카드 위로 겹친다(그리기 전에 바로 되돌린다).
       for (const el of Array.from(root!.querySelectorAll<HTMLElement>("[data-band-w]:not([data-band-head])"))) {
-        const from = el.style.width;
         el.style.width = "";
         el.removeAttribute("data-band-w");
         el.style.removeProperty("--band-span");
         el.style.removeProperty("--band-rows");
         el.style.removeProperty("--band-col-gap");
-        if (from) slideWidth(el, from, `${el.offsetWidth}px`);
       }
       const pills = Array.from(root!.querySelectorAll<HTMLElement>("[data-chain]"));
       // 지난번에 맞춰 준 칸 중 더는 묶음이 아닌 것(이음이 바뀜)도 되돌린다 — 높이가 남아 빈 칸처럼 보이지 않게.
@@ -642,6 +672,7 @@ export function useEqualChainHeights<T extends HTMLElement>(
         }
       }
       drawSteps(root!);
+      liftSliding(root!);
       observe(); // 반영 끝난 뒤 다시 관찰
     }
 
@@ -707,9 +738,22 @@ export function useEqualChainHeights<T extends HTMLElement>(
       document.fonts.ready.then(() => schedule()).catch(() => {});
     }
     const ro =
-      typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => schedule()) : null;
+      typeof ResizeObserver !== "undefined"
+        ? new ResizeObserver(() => {
+            equalize();
+            schedule();
+          })
+        : null;
     ro?.observe(root);
-    mo = typeof MutationObserver !== "undefined" ? new MutationObserver(() => schedule()) : null;
+    // 바뀐 그 자리에서 바로 잰다(다음 프레임 X) — MutationObserver·ResizeObserver 콜백은 화면을 그리기 전에 돈다.
+    // 다음 프레임으로 미루면, React가 카드 모양(이음 종류)을 바꾼 그 한 장면이 옛 띠·폭으로 그려져 깜빡였다.
+    mo =
+      typeof MutationObserver !== "undefined"
+        ? new MutationObserver(() => {
+            equalize();
+            schedule();
+          })
+        : null;
     observe();
     const onSettle = () => schedule();
     // 카드가 미끄러지는 동안(놓을 자리 열림·닫힘, 원래 위치 등장) 매 프레임 다시 잰다 — 시작 순간부터 끝까지.
