@@ -3437,6 +3437,7 @@ export function StudioShell({
   // 카드를 끄는 동안엔 '놓으면 될 순서'로 판정한다(2026-11-17 소유자) — 놓을 자리 미리보기가 뜨는 순간 이어진 일정도
   // 놓은 뒤 모양(예: 두 칸 폭 띠 → 꺾인 띠)으로 바뀌어 보인다. 옛 판정 그대로면 두 칸 폭 띠가 자리만 내려가 옆 칸
   // 카드들 위로 겹쳤다. 끄는 카드는 이어진 일정이 아니다(이어진 일정은 묶음 끌기) — 끄는 카드 자신은 이음에 안 낀다.
+  // 단 끄는 동안엔 원래 자리도 비어 있지 않으니, 띠가 생기는 쪽(혼자 남는 경우)은 놓은 뒤에야 바뀐다.
   const chainJoins = useMemo(() => {
     const base = (iso: string) => getEventsForDate(liveEvents, iso).filter((e) => !e.isSupport);
     const dragged =
@@ -3444,7 +3445,10 @@ export function StudioShell({
     const listFor = !dragged
       ? base
       : (iso: string) => {
-          const l = base(iso).filter((e) => canonId(e.id) !== canonId(dragged.id));
+          // 화면과 같은 순서로 센다 — 끄는 동안 '원래 위치' 자리표시는 원래 칸에 그대로 자리를 차지하므로 빼지 않고,
+          // 놓을 칸엔 놓을 자리에 하나 더 넣는다. 원래 자리를 빼고 세면 하종와가 '혼자'로 판정돼 두 칸 폭 띠가 되는데
+          // 실제론 자리표시 아래에 있어 옆 칸 카드를 덮었다(2026-11-17 소유자).
+          const l = base(iso);
           if (iso !== dropSlot!.day) return l;
           let idx = l.length;
           if (dropSlot!.overId) {

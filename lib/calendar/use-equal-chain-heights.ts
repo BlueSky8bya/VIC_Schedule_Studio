@@ -555,6 +555,21 @@ export function useEqualChainHeights<T extends HTMLElement>(
           if (!head.hasAttribute("data-band-w")) slideWidth(head, `${head.offsetWidth}px`, target);
           head.style.width = target;
           head.setAttribute("data-band-w", "");
+          // 본문 줄을 칸마다 한 단씩 — 두 칸 폭 띠의 오른쪽이 비어 한쪽으로 쏠려 보이지 않게(2026-11-17 소유자
+          // "불균형 싫다"). 둘째 단이 옆 칸 카드들의 글자 시작선에 오도록 단 간격 = 칸 간격 + 카드 좌우 안쪽 여백.
+          const cs = getComputedStyle(head);
+          const parent = head.parentElement;
+          const ps = parent ? getComputedStyle(parent) : null;
+          const cw = parent && ps
+            ? parent.clientWidth - parseFloat(ps.paddingLeft) - parseFloat(ps.paddingRight)
+            : head.offsetWidth;
+          const pitch = (slots[0].getBoundingClientRect().left - head.getBoundingClientRect().left) / s;
+          const gap = pitch - cw + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+          const subs = head.querySelector(".event-subs, .pill-subs");
+          const span = slots.length + 1;
+          head.style.setProperty("--band-span", String(span));
+          head.style.setProperty("--band-rows", String(Math.max(1, Math.ceil((subs?.children.length ?? 1) / span))));
+          if (Number.isFinite(gap) && gap > 0) head.style.setProperty("--band-col-gap", `${gap.toFixed(1)}px`);
         }
       }
       // 더는 띠 머리가 아닌 카드(끌기 미리보기·순서 변경으로 꺾인 띠가 된 경우)의 넓힌 폭을 되돌린다 — 안 그러면
@@ -563,6 +578,9 @@ export function useEqualChainHeights<T extends HTMLElement>(
         const from = el.style.width;
         el.style.width = "";
         el.removeAttribute("data-band-w");
+        el.style.removeProperty("--band-span");
+        el.style.removeProperty("--band-rows");
+        el.style.removeProperty("--band-col-gap");
         if (from) slideWidth(el, from, `${el.offsetWidth}px`);
       }
       const pills = Array.from(root!.querySelectorAll<HTMLElement>("[data-chain]"));
