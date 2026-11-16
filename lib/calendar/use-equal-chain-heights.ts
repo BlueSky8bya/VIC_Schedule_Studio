@@ -271,6 +271,10 @@ function drawSteps(root: HTMLElement) {
         body.style.strokeWidth = `${sw}px`;
         // 카드가 흐려지는 상태(끌기 원래 자리·필터 흐림)는 몸통도 같이 흐린다.
         g.style.opacity = getComputedStyle(from).opacity;
+        // 몸통을 그렸다는 표시 — 이 뒤에야 CSS가 두 카드의 칠을 비우고 맞닿는 변을 연다(새로고침 직후 깜빡임 방지).
+        // 클래스가 아니라 data 속성이라 React가 다시 그려도 지워지지 않는다.
+        if (!from.hasAttribute("data-step-painted")) from.setAttribute("data-step-painted", "");
+        if (!to.hasAttribute("data-step-painted")) to.setAttribute("data-step-painted", "");
         // 새로 이어진 순간 — 한 덩어리가 톡 빛났다 가라앉고, 빛 한 줄기가 외곽을 한 바퀴 돈다(한 번만, 첫 그림은 조용히).
         if (fresh && settled) {
           g.classList.add("is-new");

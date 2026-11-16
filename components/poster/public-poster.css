@@ -6804,58 +6804,60 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
 }
 /* ── 꺾인 띠(2026-11-16 소유자 C안, 애플식 — 부드럽고 통통) ──
    몸통: 카드와 같은 채움·테두리. 맞닿는 변은 카드 쪽 테두리·모서리를 지워 이음새가 없다(폭은 그대로라 줄바꿈 불변). */
-.public-event.chain-step-from,
-.studio-event-pill.chain-step-from {
+.public-event.chain-step-from[data-step-painted],
+.studio-event-pill.chain-step-from[data-step-painted] {
   border-right-color: transparent !important;
   border-top-right-radius: 0;
   border-bottom-right-radius: 0;
 }
-.public-event.chain-step-to,
-.studio-event-pill.chain-step-to {
+.public-event.chain-step-to[data-step-painted],
+.studio-event-pill.chain-step-to[data-step-painted] {
   border-left-color: transparent !important;
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
 }
 /* 이어진 두 카드는 그림자·들림을 끈다 — 띠 쪽으로 그림자가 지면 이음새가 생기고, 한쪽만 뜨면 어긋난다.
    대신 손을 올리면 두 카드와 띠가 같이 밝아진다([data-chain-hot] / .is-hot). */
-.public-event.chain-step-from,
-.public-event.chain-step-to,
-.studio-event-pill.chain-step-from,
-.studio-event-pill.chain-step-to {
+.public-event.chain-step-from[data-step-painted],
+.public-event.chain-step-to[data-step-painted],
+.studio-event-pill.chain-step-from[data-step-painted],
+.studio-event-pill.chain-step-to[data-step-painted] {
   box-shadow: none;
   transition: filter 0.28s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
-.public-event.chain-step-from:hover,
-.public-event.chain-step-to:hover,
-.studio-event-pill.chain-step-from:hover,
-.studio-event-pill.chain-step-to:hover {
+.public-event.chain-step-from[data-step-painted]:hover,
+.public-event.chain-step-to[data-step-painted]:hover,
+.studio-event-pill.chain-step-from[data-step-painted]:hover,
+.studio-event-pill.chain-step-to[data-step-painted]:hover {
   transform: none;
   box-shadow: none;
 }
 /* 편집실 카드의 안쪽 하이라이트 그림자도 띠 쪽 이음새가 되므로 끈다(시청자 카드와 같은 평면). */
-.studio-month-grid .studio-event-pill.chain-step-from,
-.studio-month-grid .studio-event-pill.chain-step-to {
+.studio-month-grid .studio-event-pill.chain-step-from[data-step-painted],
+.studio-month-grid .studio-event-pill.chain-step-to[data-step-painted] {
   box-shadow: none;
 }
 .chain-step-tint {
   pointer-events: none;
 }
+/* [data-step-painted] — 띠 도형이 실제로 그려진 뒤에만 카드를 비우고 맞닿는 변을 연다. 새로고침 직후(그리기 전)엔
+   평범한 카드로 보인다 — 그 전에 비우면 바탕 없는 글자만 잠깐 떠 보였다(2026-11-17 소유자). */
 /* 한 도형 몸통 — 카드는 글·하트만 얹고 칠·테두리는 꺾인 띠 도형이 그린다(편집실 선택 바탕·덧칠 포함 전부 비움). */
-.public-event.chain-step-solid,
-.studio-event-pill.chain-step-solid {
+.public-event.chain-step-solid[data-step-painted],
+.studio-event-pill.chain-step-solid[data-step-painted] {
   background: transparent !important;
   border-color: transparent !important;
 }
 /* 이어진 카드엔 카드 단위 그림자·안쪽 광택(차분한 편집실 0 0 0 1px 헤어라인 포함)을 두지 않는다 — 한 도형 위에
    카드 모양 선이 따로 비쳐 띠와 카드 사이에 세로·가로 줄이 남았다(2026-11-16 소유자 확대 사진). */
-.public-event.chain-step-from,
-.public-event.chain-step-to,
-.studio-event-pill.chain-step-from,
-.studio-event-pill.chain-step-to {
+.public-event.chain-step-from[data-step-painted],
+.public-event.chain-step-to[data-step-painted],
+.studio-event-pill.chain-step-from[data-step-painted],
+.studio-event-pill.chain-step-to[data-step-painted] {
   box-shadow: none !important;
 }
-[data-chain-hot].chain-step-from,
-[data-chain-hot].chain-step-to,
+[data-chain-hot].chain-step-from[data-step-painted],
+[data-chain-hot].chain-step-to[data-step-painted],
 .chain-step.is-hot {
   filter: brightness(1.04) saturate(1.12);
 }
@@ -6955,12 +6957,12 @@ html[data-theme="dark"] .card-sheen {
   from { opacity: 0; transform: scale(0.985); }
   to { opacity: 1; transform: scale(1); }
 }
-.studio-event-pill.primary-selected.chain-step-from::after,
-.studio-event-pill.primary-selected.chain-step-to::after {
+.studio-event-pill.primary-selected.chain-step-from[data-step-painted]::after,
+.studio-event-pill.primary-selected.chain-step-to[data-step-painted]::after {
   display: none;
 }
-.public-event.detail-current.chain-step-from,
-.public-event.detail-current.chain-step-to {
+.public-event.detail-current.chain-step-from[data-step-painted],
+.public-event.detail-current.chain-step-to[data-step-painted] {
   outline: none;
 }
 html[data-reduce-motion] .chain-ring-pair {
