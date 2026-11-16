@@ -189,6 +189,8 @@ function drawSteps(root: HTMLElement) {
     const keep = new Set<string>();
     const rings = new Map<string, string>();
     const ringKinds = new Map<string, string>();
+    // 누른 조각 쪽(앞/다음)과 띠 가운데 x — 누른 날짜 쪽 테두리는 진하게, 이어진 다른 쪽은 옅게 가른다.
+    const ringSides = new Map<string, { picked: "from" | "to"; mid: number }>();
     if (host) {
       const hostRect = host.getBoundingClientRect();
       const s = scaleOf(host);
@@ -226,6 +228,8 @@ function drawSteps(root: HTMLElement) {
         if (ringKind) {
           rings.set(key, stepRingPath(SU, TU, xa, xb, ringKind === "dash" ? 1.75 : 3, convex));
           ringKinds.set(key, ringKind);
+          const mark = ringKind === "dash" ? ".primary-selected" : ".detail-current";
+          ringSides.set(key, { picked: from.matches(mark) ? "from" : "to", mid: (xa + xb) / 2 });
         }
         // 고른 묶음(편집실 .selected/.primary-selected)이면 띠도 선택색 테두리로 — 무엇이 묶였는지 보이게.
         const picked =
@@ -279,19 +283,34 @@ function drawSteps(root: HTMLElement) {
     // 앞쪽 층(카드 위)의 한 덩어리 테두리
     const front = host?.querySelector<SVGSVGElement>(":scope > svg[data-curve-ring]");
     if (front) {
-      const old = new Map<string, SVGPathElement>();
-      for (const el of Array.from(front.querySelectorAll<SVGPathElement>(":scope > path[data-ring]"))) {
+      const old = new Map<string, SVGGElement>();
+      for (const el of Array.from(front.querySelectorAll<SVGGElement>(":scope > g[data-ring]"))) {
         old.set(el.dataset.ring ?? "", el);
       }
       for (const [key, d] of rings) {
+        const side = ringSides.get(key)!;
         let el = old.get(key);
         if (!el) {
-          el = document.createElementNS(SVG_NS, "path") as SVGPathElement;
+          // 같은 경로 두 벌을 띠 가운데에서 잘라 그린다 — 누른 쪽(진하게)·이어진 쪽(옅게). 같은 경로라 점선 무늬가 이어진다.
+          el = document.createElementNS(SVG_NS, "g") as SVGGElement;
           el.setAttribute("data-ring", key);
+          const id = `cr${Math.random().toString(36).slice(2, 9)}`;
+          el.innerHTML =
+            `<defs><clipPath id="${id}a"><rect class="clip-l" x="-9999" y="-9999" height="29999"/></clipPath>` +
+            `<clipPath id="${id}b"><rect class="clip-r" y="-9999" width="19999" height="29999"/></clipPath></defs>` +
+            `<path class="ring-l" clip-path="url(#${id}a)"/><path class="ring-r" clip-path="url(#${id}b)"/>`;
           front.append(el);
         }
-        el.setAttribute("class", `chain-ring is-${ringKinds.get(key)}`);
-        if (el.getAttribute("d") !== d) el.setAttribute("d", d);
+        const kind = ringKinds.get(key);
+        el.setAttribute("class", `chain-ring-pair is-${kind}`);
+        el.querySelector(".clip-l")?.setAttribute("width", String(side.mid + 9999));
+        el.querySelector(".clip-r")?.setAttribute("x", String(side.mid));
+        const left = el.querySelector<SVGPathElement>(".ring-l")!;
+        const right = el.querySelector<SVGPathElement>(".ring-r")!;
+        for (const [path, isPicked] of [[left, side.picked === "from"], [right, side.picked === "to"]] as const) {
+          path.setAttribute("class", `chain-ring is-${kind}${isPicked ? "" : " is-linked"}`);
+          if (path.getAttribute("d") !== d) path.setAttribute("d", d);
+        }
       }
       for (const [key, el] of old) if (!rings.has(key)) el.remove();
     }

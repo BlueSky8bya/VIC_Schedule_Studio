@@ -6924,6 +6924,9 @@ html[data-theme="dark"] .card-sheen {
 .chain-ring {
   fill: none;
   stroke-linejoin: round;
+}
+/* 등장 연출은 두 쪽을 묶은 덩어리에 — 경로에 걸면 끝 장면의 opacity 1이 '옅은 쪽'을 덮어 둘 다 진해졌다. */
+.chain-ring-pair {
   animation: chain-ring-in 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) both;
   transform-box: fill-box;
   transform-origin: center;
@@ -6935,6 +6938,17 @@ html[data-theme="dark"] .card-sheen {
 }
 .chain-ring.is-solid {
   stroke: var(--studio-action, #4b86c9);
+  stroke-width: 2px;
+}
+/* 누르지 않은 이어진 조각 쪽 — 같은 테두리를 옅고 살짝 가늘게. 누른 날짜 쪽은 더 짙고 굵게(2026-11-17 소유자). */
+.chain-ring.is-dash:not(.is-linked) {
+  stroke-width: 3px;
+}
+.chain-ring.is-solid:not(.is-linked) {
+  stroke-width: 2.5px;
+}
+.chain-ring.is-linked {
+  opacity: 0.38;
   stroke-width: 2px;
 }
 @keyframes chain-ring-in {
@@ -6949,7 +6963,7 @@ html[data-theme="dark"] .card-sheen {
 .public-event.detail-current.chain-step-to {
   outline: none;
 }
-html[data-reduce-motion] .chain-ring {
+html[data-reduce-motion] .chain-ring-pair {
   animation: none;
 }
 html[data-reduce-motion] .chain-step.is-new,
