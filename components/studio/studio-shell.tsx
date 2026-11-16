@@ -8361,7 +8361,10 @@ export function StudioShell({
                         cell.isoDate === evStartKey &&
                         visibleEvents.some((o) => o.linkNext === event.id) &&
                         (evEndKey !== evStartKey || Boolean(join?.flatLeft));
-                      const draggable = canEdit && !span.isMulti;
+                      // 띠로 평평하게 붙은 조각도 끌 수 있다(2026-11-17 소유자: "클릭은 되는데 들려서 안 옮겨진다") —
+                      // 이어진 일정은 onPillPointerDown이 spanMembersOf로 묶음 전체를 옮기므로 한 장만 떨어져 나갈 일이 없다.
+                      // (예전엔 '이어진 칸 = 못 끔' 안전장치가 있어, 혼자라서 띠가 된 조각은 손잡이가 사라졌다.)
+                      const draggable = canEdit;
                       // 우클릭-드래그로 잇기 중: 이을 수 있는 상대는 강조(hover면 더 강하게), 나머지는 흐림.
                       const connecting = connectCandidates.size > 0;
                       const isConnTarget = connecting && connectCandidates.has(event.id);
