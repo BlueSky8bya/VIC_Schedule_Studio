@@ -3433,6 +3433,33 @@ export function StudioShell({
     overId: string | null;
     after: boolean;
   } | null>(null);
+  // 놓을 자리가 방금 떠난 칸 — 그 칸의 놓을 자리는 0.34초 동안 접히며 카드들을 아직 밀어 내리고 있다. 그동안 그 칸에
+  // 걸친 이음을 두 칸 폭 띠로 되돌리면 줄이 어긋난 띠가 옆 칸 카드를 덮는다(2026-11-17 실측) — 접힐 때까지 꺾인 띠로.
+  const [closingGapDays, setClosingGapDays] = useState<Set<string>>(() => new Set());
+  const prevDropDayRef = useRef<string | null>(null);
+  const closingGapTimersRef = useRef(new Map<string, number>());
+  useEffect(() => {
+    const prev = prevDropDayRef.current;
+    const next = dropSlot?.day ?? null;
+    prevDropDayRef.current = next;
+    // 놓아서 끝난 경우(끌기 끝)엔 스페이서가 바로 사라지므로 어긋날 일이 없다 — 잠깐 꺾인 띠로 바뀌는 깜빡임만 생긴다.
+    if (!prev || prev === next || !dragEventId) return;
+    setClosingGapDays((s0) => new Set(s0).add(prev));
+    // 지우기 타이머는 다음 칸 이동에 취소되면 안 된다(취소되면 그 칸이 영영 꺾인 띠로 남았다) — 칸마다 따로 둔다.
+    const timers = closingGapTimersRef.current;
+    if (timers.has(prev)) window.clearTimeout(timers.get(prev));
+    timers.set(
+      prev,
+      window.setTimeout(() => {
+        timers.delete(prev);
+        setClosingGapDays((s0) => {
+          const n = new Set(s0);
+          n.delete(prev);
+          return n;
+        });
+      }, 380)
+    );
+  }, [dropSlot?.day, dragEventId]);
   // 이어진 일정 잇기(2026-11-16) — 시청자 화면과 같은 판정(buildChainJoins): 앞날 마지막 = 다음날 첫 카드일 때만.
   // 카드를 끄는 동안엔 '놓으면 될 순서'로 판정한다(2026-11-17 소유자) — 놓을 자리 미리보기가 뜨는 순간 이어진 일정도
   // 놓은 뒤 모양(예: 두 칸 폭 띠 → 꺾인 띠)으로 바뀌어 보인다. 옛 판정 그대로면 두 칸 폭 띠가 자리만 내려가 옆 칸
@@ -3457,16 +3484,17 @@ export function StudioShell({
           }
           return [...l.slice(0, idx), dragged, ...l.slice(idx)];
         };
-    const touched = dragged ? new Set([dropSlot!.day, getEventDateKey(dragged)]) : null;
+    // 미리보기 = 놓은 뒤 결과 그대로(2026-11-17 소유자) — 놓아도 안 바뀌는 자리면 지금 모양 그대로 보인다.
+    // 단 놓을 자리가 접히는 중인 칸만은 접힐 때까지 꺾인 띠로(위 closingGapDays).
     return buildChainJoins(
       cells,
       listFor,
       (e) => !teaserStillHidden(e),
-      touched ? (a, b) => touched.has(a) || touched.has(b) : undefined
+      closingGapDays.size > 0 ? (a, b) => closingGapDays.has(a) || closingGapDays.has(b) : undefined
     );
     // canonId는 임시↔실제 id 대응표(ref)를 읽는 함수라 렌더마다 새로 만들어진다 — deps에 넣으면 memo가 매번 깨진다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cells, liveEvents, dragEventId, dropSlot]);
+  }, [cells, liveEvents, dragEventId, dropSlot, closingGapDays]);
   const dragGhostRef = useRef<HTMLElement | null>(null);
   const dragInfoRef = useRef<{
     id: string;
