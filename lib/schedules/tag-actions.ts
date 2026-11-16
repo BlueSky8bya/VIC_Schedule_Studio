@@ -8,6 +8,7 @@ import { resolveCurrentActor } from "@/lib/auth/actor";
 import { createSupabaseServerClient } from "@/lib/auth/server";
 import { canEditSchedule } from "@/lib/permissions/roles";
 import { safeActionError } from "@/lib/utils/safe-action-error";
+import { hasDuplicateVisibleColor } from "@/lib/tags/duplicate-colors";
 
 export type TagUpdateResult = { ok: true } | { ok: false; error: string };
 
@@ -74,21 +75,6 @@ export async function saveTagsAction(input: {
   if (tops.some((u) => !u.colorKey)) {
     return { ok: false, error: "대분류 태그에 색상을 지정하세요." };
   }
-  // 색 중복은 같은 kind끼리만 — 콘텐츠끼리/방식끼리 색이 달라야 한다(콘텐츠=카드 색, 방식=점이라
-  // 서로 다른 종류면 같은 색을 써도 헷갈리지 않는다).
-  const byKind = new Map<string, string[]>();
-  for (const u of tops) {
-    const k = u.kind === "modifier" ? "modifier" : "content";
-    const arr = byKind.get(k) ?? [];
-    arr.push(u.colorKey);
-    byKind.set(k, arr);
-  }
-  for (const arr of byKind.values()) {
-    if (new Set(arr).size !== arr.length) {
-      return { ok: false, error: "같은 종류(콘텐츠/형식) 안에서 같은 색을 두 태그에 쓸 수 없습니다." };
-    }
-  }
-
   const supabase = await createSupabaseServerClient();
   if (!supabase) {
     return { ok: false, error: "Supabase가 설정되지 않았습니다." };
@@ -101,6 +87,20 @@ export async function saveTagsAction(input: {
     .maybeSingle();
   if (!calendar) {
     return { ok: false, error: "캘린더를 찾을 수 없습니다." };
+  }
+
+  // 색 중복은 같은 kind끼리만 — 콘텐츠끼리/방식끼리 색이 달라야 한다(콘텐츠=카드 색, 방식=점이라
+  // 서로 다른 종류면 같은 색을 써도 헷갈리지 않는다).
+  // 비교는 '화면에 보이는 실제 색'으로 한다(2026-11-17 소유자): 직접 고른 색(bgHex)이 있으면 그 색, 없으면 팔레트 색.
+  // 예전엔 내부 팔레트 번호(colorKey)만 비교해서, 직접 고른 색이 전혀 다른 두 태그(휴뱅 gray · 기타 gray+#d8d0c2)가
+  // '같은 색'으로 판정돼 — 전체 저장은 모든 태그를 함께 보내므로 — 다른 탭의 색을 바꿔도 저장이 통째로 거절됐다.
+  const { data: paletteForDup } = await supabase
+    .from("color_palette")
+    .select("key, bg_color")
+    .eq("calendar_id", calendar.id);
+  const paletteBg = new Map((paletteForDup ?? []).map((p) => [p.key as string, String(p.bg_color ?? "")]));
+  if (hasDuplicateVisibleColor(tops, paletteBg)) {
+    return { ok: false, error: "같은 종류(콘텐츠/형식) 안에서 같은 색을 두 태그에 쓸 수 없습니다." };
   }
 
   // 새 태그가 있으면: 총 개수(최대 120 — 2계층 세부 포함) 확인 + 새 색 팔레트 등록.
