@@ -5697,8 +5697,9 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
      아래 여백 4px까지만 — 위 카드의 글자·하트에 닿지 않는다. 제목 자리를 따로 비우지 않는 이유: 왕관 있는
      카드만 줄바꿈이 달라지면 꾸미기/시청자 높이가 어긋난다(ADR-0004). */
   top: auto;
-  bottom: calc(100% - 5px);
-  right: -5px; /* 칸 안쪽 여백(5px) 안 — 토요일 칸에서도 달력 밖으로 잘리지 않는다 */
+  /* 2026-11-18 소유자: 오른쪽·아래로 1px씩 더(-5 → -6). */
+  bottom: calc(100% - 6px);
+  right: -6px; /* 칸 안쪽 여백(5px)을 1px 넘는다 — 토요일 칸은 캡처로 잘림 없음을 확인 */
   z-index: 3;
   width: calc(var(--calendar-text-ui) * 1.12 * var(--cal-zoom, 1)); /* 0.95 → 1.12(2026-11-17 소유자: "좀만 더 크게") */
   height: auto;
@@ -5777,15 +5778,15 @@ html[data-reduce-motion] .tier-crown.tier-crown.tier-crown {
    위 층(z 10 > 8)이라 왕관이 띠 뒤로 숨는다(2026-11-17 소유자 확인 요청) — 이 칸의 첫 카드만 왕관을 카드 안쪽으로
    내려 띠 아래로 4px만 걸치게 한다. 왕관은 pointer-events:none이라 띠 링크 누르기는 어느 쪽이든 막지 않는다. */
 .public-day:has(> .support-bar) .day-events > .public-event:first-child > .tier-crown {
-  right: 24px; /* 하트 왼쪽 — 모서리에서 내리면 하트를 덮는다 */
-  bottom: calc(100% - 13px);
+  right: 23px; /* 하트 왼쪽 — 모서리에서 내리면 하트를 덮는다 */
+  bottom: calc(100% - 14px);
 }
 .agenda-event {
   position: relative;
 }
 .agenda-event .tier-crown {
-  right: -10px;
-  top: -12px;
+  right: -11px;
+  top: -11px;
   bottom: auto;
   width: calc(var(--calendar-text-ui) * 1.4); /* 모바일 행은 넓어 예전 크기 그대로 */
 }

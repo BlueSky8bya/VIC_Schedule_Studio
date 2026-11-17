@@ -448,7 +448,7 @@ export function InsightsDashboard({
                       <li key={k}>
                         <img alt="" className="bc-flame" height={18} src={`/crowns/${k}.svg`} width={18} />
                         <div className="bc-body">
-                          <b>이 달 인기 {i + 1}위</b>
+                          <b>이 달 {i + 1}위</b>
                           <em>이 달 하트 수 {i + 1}번째(동점은 같은 등수)</em>
                         </div>
                       </li>

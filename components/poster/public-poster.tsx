@@ -298,9 +298,9 @@ const POSTER_DESIGN_H = Math.round((POSTER_DESIGN_W * 9) / 16); // 1035 (16:9)
 // 범례 인기도 단계 = 필터 버튼(2026-10-05). label = 넓은 범례, short = 얇은 레일(축약형)·모바일 title.
 type StatusFilterKey = HeartTier["key"] | "tentative";
 const TIER_FILTERS: { key: HeartTier["key"]; label: string; short: string }[] = [
-  { key: "gold", label: "이 달 인기 1위", short: "1위" },
-  { key: "silver", label: "이 달 인기 2위", short: "2위" },
-  { key: "bronze", label: "이 달 인기 3위", short: "3위" }
+  { key: "gold", label: "이 달 1위", short: "1위" },
+  { key: "silver", label: "이 달 2위", short: "2위" },
+  { key: "bronze", label: "이 달 3위", short: "3위" }
 ];
 
 // (P2-KST-1: nowKstHm은 lib/calendar/month.ts 단일 출처에서 import — 편집실과 동일 모양.)

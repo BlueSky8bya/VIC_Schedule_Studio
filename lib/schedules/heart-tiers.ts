@@ -11,14 +11,14 @@ export const HEART_RANKS = 3;
 export type HeartTier = {
   key: "gold" | "silver" | "bronze";
   rank: 1 | 2 | 3;
-  label: string; // "이 달 인기 1위"
+  label: string; // "이 달 1위"
   icon: string; // public 경로(노토 👑 금·은·동)
 };
 
 const TIERS: HeartTier[] = [
-  { key: "gold", rank: 1, label: "이 달 인기 1위", icon: "/crowns/gold.svg" },
-  { key: "silver", rank: 2, label: "이 달 인기 2위", icon: "/crowns/silver.svg" },
-  { key: "bronze", rank: 3, label: "이 달 인기 3위", icon: "/crowns/bronze.svg" }
+  { key: "gold", rank: 1, label: "이 달 1위", icon: "/crowns/gold.svg" },
+  { key: "silver", rank: 2, label: "이 달 2위", icon: "/crowns/silver.svg" },
+  { key: "bronze", rank: 3, label: "이 달 3위", icon: "/crowns/bronze.svg" }
 ];
 
 // 이 달 일정별 하트 수 → 왕관을 받는 일정만 담은 표.

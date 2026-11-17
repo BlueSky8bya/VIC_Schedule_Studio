@@ -112,7 +112,7 @@ test.describe("heart tier — 금·은·동 왕관", () => {
       await page.keyboard.press("Escape");
       await page.locator(".agenda-detail-sheet").waitFor({ state: "detached" });
     }
-    expect(seen).toEqual({ gold: "이 달 인기 1위", silver: "이 달 인기 2위", bronze: "이 달 인기 3위" });
+    expect(seen).toEqual({ gold: "이 달 1위", silver: "이 달 2위", bronze: "이 달 3위" });
     // 티어 없는 카드엔 배지가 없다
     await page.locator(".public-event:not([data-tier])").first().click();
     await page.locator(".agenda-detail-sheet").waitFor();
