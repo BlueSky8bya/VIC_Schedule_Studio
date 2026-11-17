@@ -5692,20 +5692,19 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 .tier-crown {
   position: absolute;
   /* 달력 확대(--cal-zoom, 편집실)에 같이 커진다(2026-09-17 소유자). 시청자 포스터는 캔버스 배율이라 1. */
-  /* 카드 윗변 '위'에 얹는다(2026-11-17 소유자: "제목이 길면 가리는 거 아냐?") — 카드 안으로는 4px만 들어와
-     제목 글자(윗변에서 4px 아래 시작)를 덮지 않는다. 제목 자리를 따로 비우지 않는 이유: 왕관 있는 카드만
-     줄바꿈이 달라지면 꾸미기/시청자 높이가 어긋난다(ADR-0004). */
+  /* 작게 줄여 하트 바로 위 오른쪽 모서리에 얹는다(2026-11-17 소유자: "크기 좀 줄이고 하트 바로 위 모서리에",
+     "위 카드 안 가리게"). 카드 안으로 5px(하트 그림은 윗변 5px 아래부터), 밖으로는 카드 사이 틈 + 위 카드
+     아래 여백 4px까지만 — 위 카드의 글자·하트에 닿지 않는다. 제목 자리를 따로 비우지 않는 이유: 왕관 있는
+     카드만 줄바꿈이 달라지면 꾸미기/시청자 높이가 어긋난다(ADR-0004). */
   top: auto;
-  bottom: calc(100% - 4px);
-  /* 하트(오른쪽 5px + 18px)를 가리지 않게 그 왼쪽에 앉힌다(2026-11-17 소유자: "하트는 안 가리게").
-     모서리 밖으로 걸치면 제 하트와 위 카드 하트를 덮었다. */
-  right: 26px;
+  bottom: calc(100% - 5px);
+  right: -4px;
   z-index: 3;
-  width: calc(var(--calendar-text-ui) * 1.4 * var(--cal-zoom, 1));
+  width: calc(var(--calendar-text-ui) * 0.95 * var(--cal-zoom, 1));
   height: auto;
   pointer-events: none;
   user-select: none;
-  transform: rotate(12deg) scaleY(0.9); /* 노토 원본은 세로가 살짝 길다(2026-11-17 소유자) — 높이만 90% */
+  transform: rotate(10deg) scaleY(0.9); /* 노토 원본은 세로가 살짝 길다(2026-11-17 소유자) — 높이만 90% */
   filter: drop-shadow(0 1px 1px rgb(60 40 0 / 28%));
 }
 /* 왕관 움직임에도 등급(2026-11-17 소유자: "1·2·3등이 각각 다르게, 애니메이션도 등급을") —
@@ -5778,7 +5777,8 @@ html[data-reduce-motion] .tier-crown.tier-crown.tier-crown {
    위 층(z 10 > 8)이라 왕관이 띠 뒤로 숨는다(2026-11-17 소유자 확인 요청) — 이 칸의 첫 카드만 왕관을 카드 안쪽으로
    내려 띠 아래로 4px만 걸치게 한다. 왕관은 pointer-events:none이라 띠 링크 누르기는 어느 쪽이든 막지 않는다. */
 .public-day:has(> .support-bar) .day-events > .public-event:first-child > .tier-crown {
-  bottom: calc(100% - 15px);
+  right: 24px; /* 하트 왼쪽 — 모서리에서 내리면 하트를 덮는다 */
+  bottom: calc(100% - 13px);
 }
 .agenda-event {
   position: relative;
@@ -5787,6 +5787,7 @@ html[data-reduce-motion] .tier-crown.tier-crown.tier-crown {
   right: -10px;
   top: -12px;
   bottom: auto;
+  width: calc(var(--calendar-text-ui) * 1.4); /* 모바일 행은 넓어 예전 크기 그대로 */
 }
 /* 범례 견본 = 같은 왕관 그림. 웹 범례·모바일 도움말의 generic `li i`/`span i` 규칙을 이기도록
    클래스를 겹쳐 특이도(0,2,0)를 올려 둔다. */
