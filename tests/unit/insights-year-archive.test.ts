@@ -213,7 +213,6 @@ describe("purgeArchivedYear", () => {
     expect(r.done).toBe(true);
     expect((rpcs as { args: { p_table: string; p_from: string; p_to: string } }[]).map((x) => x.args)).toEqual([
       { p_table: "activity_event", p_from: "2026-01-01", p_to: "2027-01-01", p_limit: 5000 },
-      { p_table: "visit_session", p_from: "2026-01-01", p_to: "2027-01-01", p_limit: 5000 },
       { p_table: "perf_samples", p_from: "2026-01-01", p_to: "2027-01-01", p_limit: 5000 }
     ]);
   });

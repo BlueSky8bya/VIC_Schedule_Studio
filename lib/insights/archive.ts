@@ -22,8 +22,8 @@ export const FIRST_ARCHIVE_YEAR = 2024;
 export const STATS_START_YEAR = 2026;
 // 만든 지 이만큼 지난 보관본만 원본 삭제 근거가 된다 — 지난 해를 손으로 막 만든 직후 곧바로 지워지지 않게(0164).
 export const PURGE_MIN_AGE_DAYS = 30;
-// visit_session은 2026-11-13부터 더 쌓이지 않는다(방문 기록 철수). 남은 옛 행도 같은 규칙으로 지운다.
-export const PURGE_TABLES = ["activity_event", "visit_session", "perf_samples"] as const;
+// (방문 세션 표 visit_session은 2026-11-17에 지웠다 — 0172.)
+export const PURGE_TABLES = ["activity_event", "perf_samples"] as const;
 const DAY_MS = 86_400_000;
 
 // 방문 집계(visits)는 2026-11-13 방문 기록 철수로 더 담지 않는다. 그 전에 만든 보관본에 남아 있는

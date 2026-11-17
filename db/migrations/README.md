@@ -12,6 +12,8 @@
 
 ## 목록 (번호 → 목적)
 
+**Applied 2026-11-17 KST**(소유자 승인, 되돌릴 수 없는 삭제): [0172_drop_visit_tracking_tables.sql](0172_drop_visit_tracking_tables.sql) — 방문 기록 철수 뒤 비어 있던 표 `visit_session`·`activity_daily_count`와 그 표만 쓰던 함수 셋(`get_known_account_hashes`·`bump_activity_counts`·`developer_live_presence_counts`)을 삭제. 매일 정리 `vic-insider-stats-retention`에서 visit_session 줄 제거, `purge_stats_batch` 허용 표에서 visit_session 제거(가드·권한 그대로). 적용 전 0행·의존 없음 확인, 운영 롤백 시험(2회 실행) 통과. 0170은 비어 있는 번호.
+
 **2026-11-16 방송 시간에 구독+ 포함**: [0171_broadcast_stats_vod_by_bno.sql](0171_broadcast_stats_vod_by_bno.sql) — 공개 방송 시간 통계(월별·일별)의 다시보기 폴백을 '그날 세션 있으면 VOD 전부 제외'에서 '같은 방송번호(bno) 세션이 있으면 제외'로. 구독+ 생방송은 세션이 안 생겨 같은 날 일반 방송이 있으면 빠졌다(11/15 4.56h). 반환형 그대로, 배포 순서 무관. **Applied 2026-11-16 KST**(소유자 승인) — 11/15 4.56h → 9.12h 확인.
 
 **2026-11-13 원본 통계 삭제 가드·성능 표본 7일**: [0164_stats_retention_guard.sql](0164_stats_retention_guard.sql) — `purge_stats_batch`가 DB에서도 '끝난 해 · 다음 해 2/1 이후 · 12달 보관본(연말 뒤 생성) · 모두 만든 지 30일 넘음'을 확인(아니면 예외). `perf_samples`는 7일만(즉시 1회 + 매일 03:45 KST `vic-perf-retention`). 0162·0163 번호는 다시보기 채팅 묶음(별도 브랜치)에 예약.

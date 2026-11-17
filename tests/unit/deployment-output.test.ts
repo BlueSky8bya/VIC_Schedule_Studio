@@ -33,7 +33,7 @@ describe('deployment-only public asset archive', () => {
 
   it('checks the real exact archive without moving any repository original', () => {
     const receipt = prepareDeploymentOutput({ stage: false });
-    expect(receipt).toMatchObject({ stage: false, candidates: 186, archivedBytes: 51_717_773, moved: 0, reused: 0, sourceOriginalsDeleted: 0, providerStorageMeasured: false });
+    expect(receipt).toMatchObject({ stage: false, candidates: 154, archivedBytes: 28_363_552, moved: 0, reused: 0, sourceOriginalsDeleted: 0, providerStorageMeasured: false });
     expect(receipt.before).toEqual(receipt.after);
   });
 

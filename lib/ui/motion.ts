@@ -102,15 +102,8 @@ export function setEyeComfort(on: boolean): void {
 }
 
 // ── 차분한 편집실(studio calm, 2026-09-03) ────────────────────────────────
-// 편집실 전용 테마 레이어 — 소유자가 매일 쓰는 화면을 '물·은' 톤으로 식힌다(docs/ux/
-// saju-redesign-direction.md). 콘텐츠(달력 카드·태그·의미색 8종)는 그대로 두고 **구조만**:
-// 저장·달 이동 = 물빛, 좌측 필터 패널 = 은백 카드, 달력 칸 = 반 단계 냉각, 관리 칩 = 고스트,
-// 제목 ✨ 반짝임 정지. CSS는 studio-shell.css의 `html[data-studio-calm]` 블록에만 산다 —
-// 시청자 포스터(.public-*)는 이 속성을 안 본다. 기본 ON(소유자 결정, 2026-09-03) — 'off'만 끈다.
-// 페인트 전 적용은 app/layout.tsx 스크립트(눈 편한 테마와 같은 줄).
-// 2026-09-04 사용자: "끄면 색감이 살짝 어두워질 뿐 뭐가 차분한지 모르겠다 — ON을 기본으로 하고 토글은 지워도 된다"
-// → 스위치 제거, **항상 ON**. 페인트-전 스크립트가 `data-studio-calm`을 무조건 붙이고(옛 vic.studioCalm 키는 세대
-// 재시딩 때 지운다), CSS(`html[data-studio-calm]`)는 그대로 — 되돌리려면 스크립트 조건만 살리면 된다.
+// (차분한 편집실 — 편집실 전용 물·은 톤 층은 스위치 없이 기본 모습이다. 2026-09-04 토글 제거, 2026-11-17
+//  `data-studio-calm` 속성 조건까지 걷음. 규칙은 studio-shell.css·studio-calm-layer.css의 `html:root …` 블록.)
 
 // ── 계절 배경(2026-09-04, ADR-0017) — 물결 위의 계절 레이어(components/shared/ambient) ON/OFF ──
 // **기본 OFF(2026-09-04 소유자)** — 처음 오는 사람은 조용한 화면에서 시작하고, 켜기/흐리게/끄기 중 고른 값이
