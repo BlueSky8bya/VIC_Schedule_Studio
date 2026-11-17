@@ -132,19 +132,19 @@
 }
 /* (설정 팝오버는 2026-09-04 같은 날 모달 창으로 바뀜 — .modal-card-settings, studio-shell.css.) */
 /* 차분 모드: 은백 카드 + 은회 글자, 호버에 흰 면. 단축키 펼침은 물빛 테두리. */
-html[data-studio-calm] .studio-tools {
+html:root .studio-tools {
   background: var(--studio-silver);
   border-color: var(--studio-silver-line);
 }
-html[data-studio-calm] .stool {
+html:root .stool {
   color: var(--ink-soft);
 }
-html[data-studio-calm] .stool:hover:not(:disabled) {
+html:root .stool:hover:not(:disabled) {
   background: #fff;
   border-color: #c3ccd6;
   color: var(--ink);
 }
-html[data-studio-calm] .stool-kbd.open {
+html:root .stool-kbd.open {
   background: #fff;
   border-color: var(--studio-action-line);
   color: var(--studio-action-text);
@@ -154,17 +154,17 @@ html[data-studio-calm] .stool-kbd.open {
    중앙 고정 = 어느 쪽 rail에서든 같은 거리. 확대 배율 플로팅(.cal-zoom-ctl)과 같은 유리 알약 문법. */
 /* (유리 알약의 쉼/호버 모양은 2026-09-17 components/shared/panel-place-control.css로 — 시청자와 같은 부품.
    여기엔 차분한 편집실(은백) 덮어쓰기만 남는다.) */
-html[data-studio-calm] .panel-place-ctl button.on {
+html:root .panel-place-ctl button.on {
   color: var(--studio-action-text);
 }
 /* (알약 안 헤어라인 구분선은 2026-09-17 제거 — 덮어쓸 선이 없다.) */
 
 /* ── ③ 차분 모드 상단바(북=수) — 은선 헤어라인 + 18초에 한 번 지나가는 글린트(1px 띠라 비용 0에 가깝다). */
-html[data-studio-calm] .studio-topbar {
+html:root .studio-topbar {
   border-bottom-color: var(--studio-silver-line);
 }
 @media (min-width: 641px) {
-  html[data-studio-calm]:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-topbar::after {
+  html:root:not([data-reduce-motion]):not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-topbar::after {
     content: "";
     position: absolute;
     left: 0;
@@ -201,48 +201,48 @@ html[data-studio-calm] .studio-topbar {
    다른 달 #f1e9d8 · 선 #efe6d3 · 요일 머리 #fbf7ee/#efe9dd · 카드 #fffdf6/#ece2cd · 상단바 크림 유리.
    studio-shell.css의 원조 차분 규칙보다 특이도 한 단계 위(.studio-shell). 오늘(골드)·편집 중·드롭 대상·휴식
    칸은 제 색. */
-html[data-studio-calm] .studio-shell .studio-day:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
+html:root .studio-shell .studio-day:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
   background: var(--cal-cell, #fffefb);
   border-color: var(--cal-cell-line, #efe6d3);
 }
-html[data-studio-calm] .studio-shell .studio-day.past:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
+html:root .studio-shell .studio-day.past:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
   background: var(--cal-cell, #fffefb); /* 지난 날 구분 없음 — 시청자 화면과 동일 */
 }
-html[data-studio-calm] .studio-shell .studio-day.outside {
+html:root .studio-shell .studio-day.outside {
   background: var(--cal-cell-outside, #f1e9d8);
   border-color: var(--cal-cell-line, #efe6d3);
 }
-html[data-studio-calm] .studio-shell .studio-weekdays {
+html:root .studio-shell .studio-weekdays {
   border-color: var(--cal-grid-line, #efe9dd);
   background: var(--cal-head, #fbf7ee);
   box-shadow: 0 2px 10px rgb(120 100 60 / 8%);
 }
-html[data-studio-calm] .studio-shell .studio-left-panel > section:first-of-type,
-html[data-studio-calm] .studio-shell .studio-tools {
+html:root .studio-shell .studio-left-panel > section:first-of-type,
+html:root .studio-shell .studio-tools {
   background: var(--panel-card-bg);
   border-color: var(--panel-card-line);
   box-shadow: var(--panel-card-shadow);
 }
-html[data-studio-calm] .studio-shell .studio-left-panel > section:first-of-type {
+html:root .studio-shell .studio-left-panel > section:first-of-type {
   box-shadow: var(--panel-card-shadow);
 }
-html[data-studio-calm] .studio-shell .studio-topbar {
+html:root .studio-shell .studio-topbar {
   background: rgb(var(--glass-panel) / 88%);
   border-bottom-color: #ece2cd;
 }
-html[data-studio-calm] .studio-shell .kbd-hints {
+html:root .studio-shell .kbd-hints {
   border-color: #ece2cd;
   background: rgb(var(--glass-panel) / 80%);
 }
-html[data-studio-calm] .studio-shell .event-editor-panel form,
-html[data-studio-calm] .studio-shell .event-editor-panel .event-detail-readonly,
-html[data-studio-calm] .role-help-pop {
+html:root .studio-shell .event-editor-panel form,
+html:root .studio-shell .event-editor-panel .event-detail-readonly,
+html:root .role-help-pop {
   background: #fffdf8;
 }
-html[data-studio-calm] .stool {
+html:root .stool {
   color: #6a6357;
 }
-html[data-studio-calm] .stool:hover:not(:disabled) {
+html:root .stool:hover:not(:disabled) {
   border-color: #ddd5c4;
 }
 
@@ -253,18 +253,18 @@ html[data-studio-calm] .stool:hover:not(:disabled) {
 @media (min-width: 641px) {
   /* 칸은 시청자 화면과 같은 크림이 지배(알파 74~84%) — 물결은 "햇살에 산란돼 아주 살짝" 비치는 정도.
      지난 날도 같은 크림(시청자 화면엔 지난 날 구분이 없다 — 사용자: "시청자 화면처럼"). */
-  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-day:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
+  html:root:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-day:not(.today):not(.outside):not(.editing-new):not(.drop-target):not(.rest-target) {
     background: rgb(var(--glass-cell) / 76%);
   }
   /* 다른 달 칸은 불투명 그대로 — 반투명이면 물빛이 섞여 회색 블록으로 읽혔다(시청자 화면의 따뜻한 탄색과 어긋남). */
-  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-weekdays {
+  html:root:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-weekdays {
     background: rgb(var(--glass-head) / 86%);
   }
-  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-left-panel > section:first-of-type,
-  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-tools {
+  html:root:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-left-panel > section:first-of-type,
+  html:root:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-tools {
     background: var(--panel-card-bg);
   }
-  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .kbd-hints {
+  html:root:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .kbd-hints {
     background: rgb(var(--glass-panel) / 72%);
   }
   /* 편집실 물결은 시청자 화면보다 세게(사용자: "있는지 없는지 모르겠다") — 공용 레이어의 편집실 안 인스턴스만
@@ -290,14 +290,14 @@ html[data-studio-calm] .stool:hover:not(:disabled) {
 
 /* 팝오버 — 종류 색(윗변 3px 액센트·손잡이 틴트·그립: 수정 보라·새 초록·업 도움 장미·기간 안내 하늘)은
    studio-shell.css 규칙 그대로 불변. 여기선 좌/우/아래 변만 아주 옅은 은선 + 아주 옅은 윗면 광택만. */
-html[data-studio-calm] .studio-shell .event-editor-panel form,
-html[data-studio-calm] .studio-shell .event-editor-panel .event-detail-readonly {
+html:root .studio-shell .event-editor-panel form,
+html:root .studio-shell .event-editor-panel .event-detail-readonly {
   border-inline-color: var(--gs-metal-line);
   border-bottom-color: var(--gs-metal-line);
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 55%), var(--elev-3);
 }
-html[data-studio-calm] .studio-shell .event-editor-panel .editor-grab {
+html:root .studio-shell .event-editor-panel .editor-grab {
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 45%);
 }
 /* 금(金) 스킨은 **웹 셸**의 문법이다(2026-09-05 소유자: 모바일 오늘·미리보기·태그 편집·로그아웃이
@@ -306,14 +306,14 @@ html[data-studio-calm] .studio-shell .event-editor-panel .editor-grab {
    통째로 지워지고 버튼만 주변과 다른 재질로 튄다. */
 /* Exclude the shared home launcher without raising this skin's specificity:
    card-contained controls below must retain their soft, transparent surface. */
-html[data-studio-calm] .studio-shell:not(.studio-narrow) .button:not(.primary):not(.danger):where(:not(.vc-home-launcher)) {
+html:root .studio-shell:not(.studio-narrow) .button:not(.primary):not(.danger):where(:not(.vc-home-launcher)) {
   border-color: var(--gs-metal-line);
   border-radius: var(--gs-metal-radius);
   background: var(--gs-metal-sheen);
   color: var(--gs-metal-ink);
   box-shadow: var(--gs-metal-edge);
 }
-html[data-studio-calm] .studio-shell:not(.studio-narrow) .button:not(.primary):not(.danger):where(:not(.vc-home-launcher)):hover:not(:disabled) {
+html:root .studio-shell:not(.studio-narrow) .button:not(.primary):not(.danger):where(:not(.vc-home-launcher)):hover:not(:disabled) {
   border-color: var(--gs-metal-line-strong);
   background: var(--gs-metal-sheen-hover);
   color: var(--gs-metal-ink);
@@ -322,69 +322,69 @@ html[data-studio-calm] .studio-shell:not(.studio-narrow) .button:not(.primary):n
    금(金) 문법은 홀로 서는 버튼의 것이다. 카드 안에서는 형제 칸(저장 상태·역할 배지)이 이미 테두리 없는
    조용한 칸이라, 두 버튼만 테두리·광택·그림자를 두르면 같은 카드 안에서 문법이 둘로 갈린다.
    같은 규칙을 도구 카드(.studio-tools)·계절 배경 카드·설정 목록에도 적용해 "카드 안은 조용한 칸" 하나로 통일. */
-html[data-studio-calm] .studio-shell .studio-role-tools .button:not(.primary):not(.danger),
-html[data-studio-calm] .studio-shell .studio-role-tools .preview-dd-trigger,
-html[data-studio-calm] .studio-shell .studio-tools .button:not(.primary):not(.danger),
-html[data-studio-calm] .studio-shell .viewer-ambient-ctl .button:not(.primary):not(.danger),
-html[data-studio-calm] .studio-shell .role-help-haptics .button:not(.primary):not(.danger) {
+html:root .studio-shell .studio-role-tools .button:not(.primary):not(.danger),
+html:root .studio-shell .studio-role-tools .preview-dd-trigger,
+html:root .studio-shell .studio-tools .button:not(.primary):not(.danger),
+html:root .studio-shell .viewer-ambient-ctl .button:not(.primary):not(.danger),
+html:root .studio-shell .role-help-haptics .button:not(.primary):not(.danger) {
   border-color: transparent;
   border-radius: var(--r-md);
   background: transparent;
   box-shadow: none;
 }
-html[data-studio-calm] .studio-shell .studio-role-tools .button:not(.primary):not(.danger):hover:not(:disabled),
-html[data-studio-calm] .studio-shell .studio-role-tools .preview-dd-trigger:hover:not(:disabled),
-html[data-studio-calm] .studio-shell .studio-tools .button:not(.primary):not(.danger):hover:not(:disabled),
-html[data-studio-calm] .studio-shell .viewer-ambient-ctl .button:not(.primary):not(.danger):hover:not(:disabled),
-html[data-studio-calm] .studio-shell .role-help-haptics .button:not(.primary):not(.danger):hover:not(:disabled) {
+html:root .studio-shell .studio-role-tools .button:not(.primary):not(.danger):hover:not(:disabled),
+html:root .studio-shell .studio-role-tools .preview-dd-trigger:hover:not(:disabled),
+html:root .studio-shell .studio-tools .button:not(.primary):not(.danger):hover:not(:disabled),
+html:root .studio-shell .viewer-ambient-ctl .button:not(.primary):not(.danger):hover:not(:disabled),
+html:root .studio-shell .role-help-haptics .button:not(.primary):not(.danger):hover:not(:disabled) {
   /* 호버는 형제 칸(.stool·배지)과 같은 응답 — 옅은 면 + 옅은 테두리. */
   border-color: var(--gs-metal-line);
   background: var(--gs-metal-sheen);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 55%);
 }
 /* 저장 = 금 틀 안의 물(금생수의 한 점) — 파스텔 물빛 면은 그대로, 테두리만 아주 옅은 은선. */
-html[data-studio-calm] .studio-shell .button.primary.editor-save {
+html:root .studio-shell .button.primary.editor-save {
   border-color: var(--gs-metal-line);
 }
 /* 도구 타일 — 쉼 상태는 그대로(위 ① 규칙), 호버에만 아주 은은한 금 광택. */
-html[data-studio-calm] .studio-shell .stool:hover:not(:disabled) {
+html:root .studio-shell .stool:hover:not(:disabled) {
   background: var(--gs-metal-sheen);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 55%);
 }
 /* 달 이동 — 은은한 은 단추(강한 방사 광택 대신 얇은 헤어라인 + 아주 옅은 안쪽 빛). */
-html[data-studio-calm] .studio-shell .month-nav-btn {
+html:root .studio-shell .month-nav-btn {
   border: 1px solid var(--gs-metal-line);
 }
-html[data-studio-calm] .studio-shell .month-nav-btn:hover {
+html:root .studio-shell .month-nav-btn:hover {
   border-color: var(--studio-action);
   background: rgb(var(--studio-action-rgb) / 6%);
 }
 /* 태그 칩 — 아주 옅은 윗면 광택만(태그색은 --tp-bg 그대로). */
-html[data-studio-calm] .studio-shell .tp-chip {
+html:root .studio-shell .tp-chip {
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 35%);
 }
-html[data-studio-calm] .studio-shell .studio-event-pill {
+html:root .studio-shell .studio-event-pill {
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 35%),
     0 0 0 1px rgb(38 50 66 / 4%);
 }
-html[data-studio-calm] .bottom-float-row .panel-place-ctl {
+html:root .bottom-float-row .panel-place-ctl {
   border-color: var(--gs-metal-line-strong);
 }
 /* 고른 쪽 — 은빛 헤어라인 한 줄로는 반투명 알약 위에서 어느 쪽인지 안 보였다(2026-09-05 소유자 사진).
    안쪽 테두리 + 바깥 그림자로 확실히 세운다. */
-html[data-studio-calm] .studio-shell .panel-place-ctl button.on {
+html:root .studio-shell .panel-place-ctl button.on {
   box-shadow:
     inset 0 0 0 1.5px var(--gs-metal-line-strong, #b9a9ec),
     inset 0 1px 0 rgb(255 255 255 / 65%),
     0 2px 8px rgb(91 74 134 / 20%);
 }
 /* 팝오버 안 입력 칸·옵션·태그 묶음 — 아주 옅은 은선만(면은 폼 기본 크림 그대로). */
-html[data-studio-calm] .studio-shell .event-editor-panel form textarea,
-html[data-studio-calm] .studio-shell .event-editor-panel form input:not([type="checkbox"]):not([type="radio"]),
-html[data-studio-calm] .studio-shell .event-editor-panel form select,
-html[data-studio-calm] .studio-shell .event-editor-panel .fold-head,
-html[data-studio-calm] .studio-shell .event-editor-panel .tp-group {
+html:root .studio-shell .event-editor-panel form textarea,
+html:root .studio-shell .event-editor-panel form input:not([type="checkbox"]):not([type="radio"]),
+html:root .studio-shell .event-editor-panel form select,
+html:root .studio-shell .event-editor-panel .fold-head,
+html:root .studio-shell .event-editor-panel .tp-group {
   border-color: var(--gs-metal-line);
 }
 
@@ -665,27 +665,27 @@ html[data-studio-calm] .studio-shell .event-editor-panel .tp-group {
   }
   /* 칸 여백은 여기서 확정(특이도 4 — 위 `.actor-badge.owner`·`.studio-meta-capsule .save-status`(특이도 3)와 studio-shell.css의
      .button 규칙을 이긴다). 실측(1920·zoom .9, rail 368): 여백 12면 미리보기 칸이 3px 모자라 2단계로 밀렸다 → 8. */
-  html[data-studio-calm] .studio-shell .studio-role-tools .save-status,
-  html[data-studio-calm] .studio-shell .studio-role-tools .actor-badge,
-  html[data-studio-calm] .studio-shell .studio-role-tools .io-preview,
-  html[data-studio-calm] .studio-shell .studio-role-tools .io-logout,
-  html[data-studio-calm] .studio-shell .studio-role-tools .preview-dd-trigger,
-  html[data-studio-calm] .studio-shell .studio-role-tools > .button {
+  html:root .studio-shell .studio-role-tools .save-status,
+  html:root .studio-shell .studio-role-tools .actor-badge,
+  html:root .studio-shell .studio-role-tools .io-preview,
+  html:root .studio-shell .studio-role-tools .io-logout,
+  html:root .studio-shell .studio-role-tools .preview-dd-trigger,
+  html:root .studio-shell .studio-role-tools > .button {
     padding-left: 8px;
     padding-right: 8px;
   }
-  html[data-studio-calm] .studio-shell .studio-role-tools .save-status {
+  html:root .studio-shell .studio-role-tools .save-status {
     gap: 6px;
   }
   /* 2·3단계 칸 여백 5 — 라벨이 전부 기호라 여백이 그만큼 필요 없고, 2026-09-05에 칸 글자를 12.5 → 13.5로
      키우며 "저장됨" 칸이 4px 넓어져 1366px에서 3단계로 한 칸 더 밀렸다. 그 4px를 여기서 되찾는다
      (아래 `padding: 0 6px` 규칙은 특이도가 낮아 위 8px 규칙에 늘 졌다 — 실제로 듣는 자리는 여기다). */
-  html[data-studio-calm] .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .save-status,
-  html[data-studio-calm] .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .actor-badge,
-  html[data-studio-calm] .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .io-preview,
-  html[data-studio-calm] .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .io-logout,
-  html[data-studio-calm] .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .preview-dd-trigger,
-  html[data-studio-calm] .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools > .button {
+  html:root .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .save-status,
+  html:root .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .actor-badge,
+  html:root .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .io-preview,
+  html:root .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .io-logout,
+  html:root .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools .preview-dd-trigger,
+  html:root .studio-shell:is([data-chrome="2"], [data-chrome="3"]) .studio-role-tools > .button {
     padding-left: 5px;
     padding-right: 5px;
   }
@@ -694,7 +694,7 @@ html[data-studio-calm] .studio-shell .event-editor-panel .tp-group {
     border-radius: var(--r-md);
   }
 }
-html[data-studio-calm] .studio-role-tools {
+html:root .studio-role-tools {
   background: var(--studio-silver);
   border-color: var(--studio-silver-line);
 }
@@ -808,16 +808,16 @@ html[data-studio-calm] .studio-role-tools {
 .studio-role-tools .preview-dd-trigger:active {
   transform: scale(var(--press-scale));
 }
-html[data-studio-calm] .studio-role-tools .studio-meta-capsule .save-status,
-html[data-studio-calm] .studio-role-tools .io-preview,
-html[data-studio-calm] .studio-role-tools .io-logout,
-html[data-studio-calm] .studio-role-tools .preview-dd-trigger {
+html:root .studio-role-tools .studio-meta-capsule .save-status,
+html:root .studio-role-tools .io-preview,
+html:root .studio-role-tools .io-logout,
+html:root .studio-role-tools .preview-dd-trigger {
   color: var(--ink-soft);
 }
-html[data-studio-calm] .studio-role-tools .actor-badge:hover,
-html[data-studio-calm] .studio-role-tools .io-preview:hover:not(:disabled),
-html[data-studio-calm] .studio-role-tools .io-logout:hover:not(:disabled),
-html[data-studio-calm] .studio-role-tools .preview-dd-trigger:hover:not(:disabled) {
+html:root .studio-role-tools .actor-badge:hover,
+html:root .studio-role-tools .io-preview:hover:not(:disabled),
+html:root .studio-role-tools .io-logout:hover:not(:disabled),
+html:root .studio-role-tools .preview-dd-trigger:hover:not(:disabled) {
   background: #fff;
   border-color: #c3ccd6;
 }
@@ -848,7 +848,7 @@ html[data-studio-calm] .studio-role-tools .preview-dd-trigger:hover:not(:disable
    매 프레임 재합성 — frame-jank 규칙). 글자는 옅은 흰 테(text-shadow)로 낙엽·풀 위에서도 읽힌다. 조건 밖(생동감 OFF·
    soft·계절 OFF)에선 원래 크림 유리 상단바 그대로. */
 @media (min-width: 641px) {
-  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar {
+  html:root:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar {
     background: transparent;
     border-bottom-color: transparent;
     box-shadow: none;
@@ -858,19 +858,19 @@ html[data-studio-calm] .studio-role-tools .preview-dd-trigger:hover:not(:disable
        페이지와 함께 흘러간다. */
     position: relative;
   }
-  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar::after {
+  html:root:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar::after {
     display: none;
   }
   /* 투명한 상단바는 빈 곳에서 포인터를 가로채지 않는다(2026-09-04 사용자: "옛 헤더 자리의 낙엽이 안 잡힌다") — 칸(제목·달·
      계정 카드)만 포인터를 받는다. */
-  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar {
+  html:root:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar {
     pointer-events: none;
   }
-  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar > * {
+  html:root:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar > * {
     pointer-events: auto;
   }
-  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar h1,
-  html[data-studio-calm]:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-month-label strong {
+  html:root:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-topbar h1,
+  html:root:not([data-gfx="soft"]):not([data-gfx="off"]):not([data-ambient="off"]) .studio-shell .studio-month-label strong {
     text-shadow:
       0 1px 0 rgb(255 255 255 / 80%),
       0 0 14px rgb(var(--glass-panel) / 90%);

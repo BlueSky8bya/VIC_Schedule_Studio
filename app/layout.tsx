@@ -107,7 +107,7 @@ export default function RootLayout({
               // 배경 효과 단계(lib/ui/gfx.ts v3): 사용자 우선순위(vic.gfxPref: max/lite) > 기기 판정(vic.gfx v3, 30일: lite/soft).
               // soft(소프트웨어 렌더)에서만 눈 편한 테마를 필터 대신 토큰 팔레트('lite')로.
               "var gm='full',pf=s.getItem('vic.gfxPref');if(pf==='max'){gm='full'}else if(pf==='lite'||pf==='off'){gm=pf}else{try{var r=JSON.parse(s.getItem('vic.gfx')||'null');if(r&&r.v===3&&(r.mode==='lite'||r.mode==='soft')&&Date.now()-r.at<2592000000)gm=r.mode}catch(e){}}" +
-              "if(gm!=='full')d.setAttribute('data-gfx',gm);if(s.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort',gm==='soft'?'lite':'1');d.setAttribute('data-studio-calm','1');" +
+              "if(gm!=='full')d.setAttribute('data-gfx',gm);if(s.getItem('vic.eyeComfort')!=='off')d.setAttribute('data-eye-comfort',gm==='soft'?'lite':'1');" +
               // 계절 배경(vic.ambient, ADR-0017 개정 2 · 2026-09-04 기본 OFF): 저장값이 없으면 'off'.
               // 켜기/흐리게/끄기 중 고른 값이 기기에 남아 다음 방문에 페인트 전에 복원된다.
               "var am=s.getItem('vic.ambient');if(am!=='on'&&am!=='dim')am='off';if(am!=='on')d.setAttribute('data-ambient',am)}catch(e){}" +

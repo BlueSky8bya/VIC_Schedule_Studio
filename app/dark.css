@@ -282,7 +282,7 @@ html[data-theme="dark"] .studio-shell {
   background: var(--paper);
   color: var(--ink);
 }
-html[data-theme="dark"][data-studio-calm] .studio-shell .studio-topbar {
+html[data-theme="dark"]:root .studio-shell .studio-topbar {
   background: rgb(var(--glass-head) / 88%);
   border-color: var(--line);
 }
@@ -290,7 +290,7 @@ html[data-theme="dark"] :is(.studio-weekdays span, .studio-day-head strong, .tag
   .tag-legend-clear, .studio-filter-title, .modal-head h2, .modal-close, .rhh-label,
   .role-help-title, .role-help-summary, .role-help-can, .kbd-hints, .stool,
   .studio-role-tools .button, .preview-dd-trigger) { color: var(--ink-soft); }
-html[data-theme="dark"][data-studio-calm] .stool { color: var(--ink-soft); }
+html[data-theme="dark"]:root .stool { color: var(--ink-soft); }
 html[data-theme="dark"] .studio-day .studio-day-head strong { color: var(--ink); }
 html[data-theme="dark"] :is(.studio-weekdays .sunday, .studio-day-head strong.red) { color: #ff9b94; }
 html[data-theme="dark"] :is(.studio-weekdays .saturday, .studio-day-head strong.saturday) { color: #98bdff; }
@@ -326,12 +326,12 @@ html[data-theme="dark"] :is(.modal-head, .vic-settings .modal-head) {
   background: var(--night-sheen), var(--surface);
   border-color: var(--line);
 }
-html[data-theme="dark"][data-studio-calm] .studio-shell .event-editor-panel :is(form, .event-detail-readonly) {
+html[data-theme="dark"]:root .studio-shell .event-editor-panel :is(form, .event-detail-readonly) {
   background: var(--surface);
   color: var(--ink);
   border-color: var(--night-line);
 }
-html[data-theme="dark"][data-studio-calm] .studio-shell .event-editor-panel .editor-grab {
+html[data-theme="dark"]:root .studio-shell .event-editor-panel .editor-grab {
   background: var(--gs-metal-sheen);
   border-color: var(--night-line);
   color: var(--ink-soft);
