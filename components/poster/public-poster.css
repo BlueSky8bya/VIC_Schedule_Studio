@@ -5698,9 +5698,9 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
      카드만 줄바꿈이 달라지면 꾸미기/시청자 높이가 어긋난다(ADR-0004). */
   top: auto;
   bottom: calc(100% - 5px);
-  right: -4px;
+  right: -5px; /* 칸 안쪽 여백(5px) 안 — 토요일 칸에서도 달력 밖으로 잘리지 않는다 */
   z-index: 3;
-  width: calc(var(--calendar-text-ui) * 0.95 * var(--cal-zoom, 1));
+  width: calc(var(--calendar-text-ui) * 1.12 * var(--cal-zoom, 1)); /* 0.95 → 1.12(2026-11-17 소유자: "좀만 더 크게") */
   height: auto;
   pointer-events: none;
   user-select: none;
