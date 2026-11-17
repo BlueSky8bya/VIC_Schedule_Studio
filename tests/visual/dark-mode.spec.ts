@@ -222,7 +222,7 @@ test("popularity crowns sit on light and dark cards", async ({ page }, info) => 
       expect(crown.position).toBe("absolute");
       expect(crown.rails).toBe(0);
       expect(crown.width).toBeGreaterThan(10);
-      expect(Math.abs(crown.right)).toBeLessThan(crown.width);
+      expect(Math.abs(crown.right)).toBeLessThan(crown.width * 3);
       expect(Math.abs(crown.top)).toBeLessThan(crown.width);
     }
     await page.screenshot({ path: info.outputPath(`crowns-${theme}.png`), fullPage: true });

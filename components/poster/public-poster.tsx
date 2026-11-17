@@ -298,9 +298,9 @@ const POSTER_DESIGN_H = Math.round((POSTER_DESIGN_W * 9) / 16); // 1035 (16:9)
 // 범례 인기도 단계 = 필터 버튼(2026-10-05). label = 넓은 범례, short = 얇은 레일(축약형)·모바일 title.
 type StatusFilterKey = HeartTier["key"] | "tentative";
 const TIER_FILTERS: { key: HeartTier["key"]; label: string; short: string }[] = [
-  { key: "gold", label: "이 달 1위", short: "1위" },
-  { key: "silver", label: "이 달 2위", short: "2위" },
-  { key: "bronze", label: "이 달 3위", short: "3위" }
+  { key: "gold", label: "이 달 인기 1위", short: "1위" },
+  { key: "silver", label: "이 달 인기 2위", short: "2위" },
+  { key: "bronze", label: "이 달 인기 3위", short: "3위" }
 ];
 
 // (P2-KST-1: nowKstHm은 lib/calendar/month.ts 단일 출처에서 import — 편집실과 동일 모양.)
@@ -4249,7 +4249,7 @@ export function PublicPoster({
           **모드로 가르지 않는다**: 시청자에게만 그리면 이 박스(26px)만큼 표면이 길어져,
           비율 좌표인 스티커가 꾸미기에서 놓은 자리보다 위로 떠 보였다(ADR-0004 불변식).
           설명하는 대상(🔥 관심 같은 등급 배지)은 내보낸 PNG에도 찍히므로 범례로도 맞다. */}
-      <div className="legend-heart-help">
+      <div className={`legend-heart-help${compact ? "" : " is-row"}`}>
         <p className="legend-tier-line">
           <span className="hm">♥</span> 인기도
         </p>
@@ -4265,10 +4265,11 @@ export function PublicPoster({
                 data-act="legend-tier" data-act-opt={t.key}
                 key={t.key}
                 onClick={() => toggleStatusFilter(t.key)}
+                title={t.label}
                 type="button"
               >
                 <img alt="" aria-hidden="true" className={`tier-swatch tier-${t.key}`} src={`/crowns/${t.key}.svg`} />
-                {compact ? t.short : t.label}
+                {t.short}
               </button>
             );
           })}

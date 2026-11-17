@@ -38,7 +38,12 @@ test.describe("heart tier — 금·은·동 왕관", () => {
             loaded: Boolean(crown?.complete && crown.naturalWidth > 0),
             pos: crown ? getComputedStyle(crown).position : null,
             // 왕관은 카드 오른쪽 위 모서리 근처에 얹힌다(2색 카드에서 왼쪽 아래로 밀리던 회귀 방지)
-            nearTopRight: cr ? cr.right > r.right - cr.width * 1.5 && cr.top < r.top + cr.height : false
+            nearTopRight: cr ? cr.right > r.right - cr.width * 3 && cr.top < r.top + cr.height : false,
+            // 하트를 가리지 않는다(2026-11-17 소유자) — 왕관은 하트 왼쪽에 앉는다
+            coversHeart: (() => {
+              const h = c.querySelector(".event-heart")?.getBoundingClientRect();
+              return Boolean(cr && h && cr.right > h.left + 1 && cr.left < h.right && cr.bottom > h.top && cr.top < h.bottom);
+            })()
           };
         })
       };
@@ -52,6 +57,7 @@ test.describe("heart tier — 금·은·동 왕관", () => {
       expect(c.loaded).toBe(true);
       expect(c.pos).toBe("absolute");
       expect(c.nearTopRight).toBe(true);
+      expect(c.coversHeart).toBe(false);
     }
   });
 

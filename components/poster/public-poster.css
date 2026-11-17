@@ -3846,6 +3846,35 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   margin: 0; /* 칸이 여백을 쥔다 — 칩 자체 여백이 남으면 중심선이 밀린다 */
 }
 
+/* 넓은 범례의 인기도 = 한 줄(2026-11-17 소유자: "PC에서는 1행에 다 들어가게") — '♥ 인기도 👑1위 👑2위 👑3위'.
+   왕관이 세 개뿐이라 2열 격자가 필요 없다. 얇은 레일(.is-compact)은 제 1열 규격 그대로. */
+.legend-heart-help.is-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+}
+.legend-heart-help.is-row .legend-tier-line {
+  margin: 0;
+  padding-right: 0;
+  white-space: nowrap;
+}
+.legend-heart-help.is-row .legend-tiers {
+  display: flex;
+  flex: 1 1 auto;
+  justify-content: space-between;
+  gap: 2px;
+}
+.legend-heart-help.is-row .legend-tiers .legend-tier {
+  display: inline-flex;
+  width: auto;
+  gap: 4px;
+  padding: 2px 5px;
+}
+.public-legend-vertical .legend-heart-help.is-row .legend-tiers .tier-swatch {
+  width: 18px;
+}
+
 .legend-filter-actions {
   display: grid;
   min-width: 0;
@@ -5663,8 +5692,10 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 .tier-crown {
   position: absolute;
   /* 달력 확대(--cal-zoom, 편집실)에 같이 커진다(2026-09-17 소유자). 시청자 포스터는 캔버스 배율이라 1. */
-  top: calc(-12px * var(--cal-zoom, 1));
-  right: calc(-7px * var(--cal-zoom, 1));
+  top: calc(-13px * var(--cal-zoom, 1));
+  /* 하트(오른쪽 5px + 18px)를 가리지 않게 그 왼쪽에 앉힌다(2026-11-17 소유자: "하트는 안 가리게").
+     모서리 밖으로 걸치면 제 하트와 위 카드 하트를 덮었다. */
+  right: 26px;
   z-index: 3;
   width: calc(var(--calendar-text-ui) * 1.4 * var(--cal-zoom, 1));
   height: auto;
@@ -5672,6 +5703,72 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   user-select: none;
   transform: rotate(12deg) scaleY(0.9); /* 노토 원본은 세로가 살짝 길다(2026-11-17 소유자) — 높이만 90% */
   filter: drop-shadow(0 1px 1px rgb(60 40 0 / 28%));
+}
+/* 왕관 움직임에도 등급(2026-11-17 소유자: "1·2·3등이 각각 다르게, 애니메이션도 등급을") —
+   금 = 통통 뛰며 크게 까딱(가장 눈에 띔) · 은 = 좌우로 살랑 · 동 = 느리고 작게 끄덕.
+   transform만 움직인다(레이아웃·페인트 없음). 세로 90%(scaleY .9)는 모든 프레임에 유지. */
+.tier-crown.tier-gold {
+  animation: tier-crown-gold 2.2s ease-in-out infinite;
+}
+.tier-crown.tier-silver {
+  animation: tier-crown-silver 3.2s ease-in-out infinite;
+}
+.tier-crown.tier-bronze {
+  animation: tier-crown-bronze 4.6s ease-in-out infinite;
+}
+@keyframes tier-crown-gold {
+  0%, 100% { transform: translateY(0) rotate(12deg) scale(1, 0.9); }
+  18% { transform: translateY(-3px) rotate(4deg) scale(1.1, 0.99); }
+  36% { transform: translateY(0) rotate(15deg) scale(1.04, 0.88); }
+  52% { transform: translateY(-1.5px) rotate(9deg) scale(1.05, 0.945); }
+  68% { transform: translateY(0) rotate(12deg) scale(1, 0.9); }
+}
+@keyframes tier-crown-silver {
+  0%, 100% { transform: translateY(0) rotate(7deg) scale(1, 0.9); }
+  50% { transform: translateY(-1px) rotate(17deg) scale(1, 0.9); }
+}
+@keyframes tier-crown-bronze {
+  0%, 100% { transform: rotate(10deg) scale(1, 0.9); }
+  50% { transform: rotate(14deg) scale(1, 0.9); }
+}
+/* 카드에 손을 올리면 등급만큼 화려해진다(2026-11-17 소유자: "1등에 가까울수록 더 화려하게 하이라이팅") —
+   금 = 크게 튀어 오르며 빠르게 흔들 + 금빛 겹광 · 은 = 중간 크기 살랑 + 흰빛 · 동 = 살짝 커지며 끄덕 + 옅은 빛.
+   빛(filter)은 손 올린 동안 고정값 — 움직이는 건 transform뿐. 왕관 자체는 pointer-events:none이라 카드 hover로 건다. */
+@media (hover: hover) {
+  :is(.public-event, .agenda-event):hover > .tier-crown.tier-gold {
+    animation: tier-crown-gold-hot 0.75s ease-in-out infinite;
+    filter: drop-shadow(0 0 3px #fff3b0) drop-shadow(0 0 7px rgb(255 196 0 / 85%)) drop-shadow(0 2px 2px rgb(60 40 0 / 30%));
+  }
+  :is(.public-event, .agenda-event):hover > .tier-crown.tier-silver {
+    animation: tier-crown-silver-hot 1.1s ease-in-out infinite;
+    filter: drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px rgb(170 195 225 / 80%));
+  }
+  :is(.public-event, .agenda-event):hover > .tier-crown.tier-bronze {
+    animation: tier-crown-bronze-hot 1.6s ease-in-out infinite;
+    filter: drop-shadow(0 0 4px rgb(214 140 90 / 70%));
+  }
+}
+@keyframes tier-crown-gold-hot {
+  0%, 100% { transform: translateY(-2px) rotate(12deg) scale(1.32, 1.19); }
+  25% { transform: translateY(-7px) rotate(-4deg) scale(1.42, 1.28); }
+  50% { transform: translateY(-2px) rotate(22deg) scale(1.3, 1.12); }
+  75% { transform: translateY(-5px) rotate(6deg) scale(1.38, 1.24); }
+}
+@keyframes tier-crown-silver-hot {
+  0%, 100% { transform: translateY(-1px) rotate(2deg) scale(1.2, 1.08); }
+  50% { transform: translateY(-3px) rotate(22deg) scale(1.24, 1.12); }
+}
+@keyframes tier-crown-bronze-hot {
+  0%, 100% { transform: rotate(8deg) scale(1.1, 0.99); }
+  50% { transform: translateY(-1px) rotate(16deg) scale(1.13, 1.02); }
+}
+html[data-reduce-motion] .tier-crown.tier-crown.tier-crown {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  html .tier-crown.tier-crown.tier-crown.tier-crown {
+    animation: none;
+  }
 }
 .agenda-event {
   position: relative;
