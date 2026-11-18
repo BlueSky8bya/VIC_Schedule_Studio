@@ -98,6 +98,8 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vc-food > sp
 @media (prefers-reduced-motion: reduce) { .vc-food > span > .vc-fruit { transform: none; transition: none; } }
 .vc-food[hidden] { display: none; }
 .vc-food:active { cursor: grabbing; }
+/* 밥통 위를 지나며 날아가는 밥은 클릭을 통과시킨다 — 밥통 연타가 밥에 막히지 않게(2026-11-18). */
+.vc-food[data-over-dispenser] { pointer-events: none; }
 .vc-food[data-eating] .vc-fruit > ellipse { opacity: 0; }
 html[data-reduce-motion] .vc-companion[data-heart-result="blocked"] .vc-effect { animation: none; }
 

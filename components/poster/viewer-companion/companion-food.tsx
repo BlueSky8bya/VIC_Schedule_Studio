@@ -160,6 +160,15 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     const light = lease ? 1 : companionRoomItemLight(pose, roomLight.current.room, roomLight.current.grade);
     if (cached?.light !== light) node.style.setProperty("--vc-item-room-light", String(light));
     if (cached?.transform !== next) node.style.transform = next;
+    // 밥통 연타(2026-11-18 소유자) — 막 튀어나와 밥통 위를 지나는 밥이 다음 클릭을 가로챘다. 날아가는 동안
+    // 밥통 버튼과 겹치는 순간만 클릭이 밥을 통과해 밥통에 닿는다. 다른 곳에서 떨어지는 밥 잡기는 그대로.
+    const outlet = drops.current.has(food.id) && !hidden ? document.querySelector<HTMLElement>(".vc-home .vc-dispenser") : null;
+    let pass = false;
+    if (outlet) {
+      const a = node.getBoundingClientRect(), b = outlet.getBoundingClientRect();
+      pass = a.right > b.left && a.left < b.right && a.bottom > b.top && a.top < b.bottom;
+    }
+    if (node.hasAttribute("data-over-dispenser") !== pass) node.toggleAttribute("data-over-dispenser", pass);
     const art = node.firstElementChild as HTMLElement | null;
     const local = `rotate(${pose.rotation.toFixed(3)}deg) scale(${(pose.scaleX ?? pose.scale).toFixed(4)},${(pose.scaleY ?? pose.scale).toFixed(4)})`;
     if (art && painted.current.get(art)?.transform !== local) { art.style.transform = local; painted.current.set(art, { transform: local }); }
