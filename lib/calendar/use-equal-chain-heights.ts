@@ -90,40 +90,31 @@ function roundedPath(pts: Pt[]): string {
 }
 
 type Box = { left: number; right: number; top: number; bottom: number };
-type WrapTips = { left?: number; right?: number };
-const WRAP_TIP = 7; // public-poster.css --wrap-tip와 같은 값
+// 줄바뀜(토→일)으로 이어지는 바깥 끝 — 그 변은 카드처럼 평평하게 칸 끝까지 뻗고 모서리를 둥글리지 않는다.
+type FlatEnds = { left?: boolean; right?: boolean };
 type Span = { top: number; bottom: number };
 
 // 이어진 한 줄 블록의 바깥 윤곽 — 몸(카드·띠 묶음)들이 왼→오른쪽으로 서 있고, 이웃한 몸 사이는 기둥(꺾인 띠, xa~xb)이
 // 잇는다. 몸이 하나면 둥근 사각형, 둘이면 꺾인 띠 한 쌍, 그 이상도 같은 규칙. 꺾인 띠 몸통·클릭 테두리·손 올림 빛이
 // 전부 이 한 함수를 쓴다(2026-11-18 소유자: "모양을 바꿨으면 테두리·빛도 그 모양대로, 규칙은 하나로").
-// hidden(x) = 그 꼭짓점이 카드 밑에 숨으면 둥글리지 않는다. tips = 줄바뀜 화살 모서리(◀/▶) 깊이.
+// hidden(x) = 그 꼭짓점이 카드 밑에 숨으면 둥글리지 않는다. flat = 줄바뀜으로 이어지는 끝(모서리를 둥글리지 않음).
 type Stem = { xa: number; xb: number };
 function chainOutline(
   bodies: Box[], stems: Stem[], convex: number, concave: number,
-  hidden: (x: number) => boolean, tips: WrapTips = {}
+  hidden: (x: number) => boolean, flat: FlatEnds = {}
 ): string {
   const first = bodies[0];
   const last = bodies[bodies.length - 1];
-  const tl = tips.left ?? 0;
-  const tr = tips.right ?? 0;
   const raw: { x: number; y: number; sharp?: boolean }[] = [];
   // 위쪽 변: 왼 → 오른쪽
-  raw.push(tl ? { x: first.left + tl, y: first.top, sharp: true } : { x: first.left, y: first.top });
+  raw.push({ x: first.left, y: first.top, sharp: flat.left });
   stems.forEach((st, k) => {
     const A = bodies[k];
     const B = bodies[k + 1];
     const top = Math.min(A.top, B.top);
     raw.push({ x: st.xa, y: A.top }, { x: st.xa, y: top }, { x: st.xb, y: top }, { x: st.xb, y: B.top });
   });
-  // 오른쪽 끝 — 화살 꼭짓점은 둥글리지 않는다.
-  if (tr) {
-    raw.push(
-      { x: last.right - tr, y: last.top, sharp: true },
-      { x: last.right, y: (last.top + last.bottom) / 2, sharp: true },
-      { x: last.right - tr, y: last.bottom, sharp: true }
-    );
-  } else raw.push({ x: last.right, y: last.top }, { x: last.right, y: last.bottom });
+  raw.push({ x: last.right, y: last.top, sharp: flat.right }, { x: last.right, y: last.bottom, sharp: flat.right });
   // 아래쪽 변: 오른 → 왼쪽
   for (let k = stems.length - 1; k >= 0; k -= 1) {
     const st = stems[k];
@@ -132,12 +123,7 @@ function chainOutline(
     const bottom = Math.max(A.bottom, B.bottom);
     raw.push({ x: st.xb, y: B.bottom }, { x: st.xb, y: bottom }, { x: st.xa, y: bottom }, { x: st.xa, y: A.bottom });
   }
-  if (tl) {
-    raw.push(
-      { x: first.left + tl, y: first.bottom, sharp: true },
-      { x: first.left, y: (first.top + first.bottom) / 2, sharp: true }
-    );
-  } else raw.push({ x: first.left, y: first.bottom });
+  raw.push({ x: first.left, y: first.bottom, sharp: flat.left });
   const same = (a: { x: number; y: number }, b: { x: number; y: number }) =>
     Math.abs(a.x - b.x) < 0.01 && Math.abs(a.y - b.y) < 0.01;
   const pts: { x: number; y: number; sharp?: boolean }[] = [];
@@ -168,11 +154,11 @@ function chainOutline(
 // 꺾인 띠 한 쌍(앞 몸 x0~, 기둥 xa~xb, 뒤 몸 ~x1) — chainOutline의 몸 둘짜리.
 function stepOutline(
   x0: number, xa: number, xb: number, x1: number, S: Span, T: Span,
-  convex: number, concave: number, hidden: (x: number) => boolean, tips: WrapTips = {}
+  convex: number, concave: number, hidden: (x: number) => boolean, flat: FlatEnds = {}
 ): string {
   return chainOutline(
     [{ left: x0, right: xa, ...S }, { left: xb, right: x1, ...T }],
-    [{ xa, xb }], convex, concave, hidden, tips
+    [{ xa, xb }], convex, concave, hidden, flat
   );
 }
 
@@ -203,13 +189,13 @@ export function stepBandPath(
 // 카드마다 따로 두르던 점선/실선 링(띠 위에서 끊기고 겹치던 것)을 대신한다.
 // stemE = 기둥(칸 사이 틈) 부분만 따로 띄우는 양 — 테두리가 틈 밖으로 나가면 옆 카드·'원래 위치' 상자 점선과 닿는다.
 export function stepRingPath(
-  S: Box, T: Box, xa: number, xb: number, e: number, convex = STEP_CONVEX, stemE = e, tips: WrapTips = {}
+  S: Box, T: Box, xa: number, xb: number, e: number, convex = STEP_CONVEX, stemE = e, flat: FlatEnds = {}
 ): string {
   return stepOutline(
     S.left - e, xa - stemE, xb + stemE, T.right + e,
     { top: S.top - e, bottom: S.bottom + e },
     { top: T.top - e, bottom: T.bottom + e },
-    convex + e, Math.max(2, STEP_CONCAVE - e), () => false, tips
+    convex + e, Math.max(2, STEP_CONCAVE - e), () => false, flat
   );
 }
 
@@ -299,12 +285,12 @@ function drawSteps(root: HTMLElement) {
         const TG = groupOf(root, to);
         const SU = unionBox(SG, local);
         const TU = unionBox(TG, local);
-        // 묶음 바깥 끝이 줄바뀜이면 그 끝을 화살 모서리로 — 카드 칠을 이 도형이 맡으므로 카드 clip-path만으론 안 보인다.
-        const tips: WrapTips = {
-          left: SG.some((el) => el.classList.contains("wrap-in")) ? WRAP_TIP : 0,
-          right: TG.some((el) => el.classList.contains("wrap-out")) ? WRAP_TIP : 0
+        // 묶음 바깥 끝이 줄바뀜이면 그 끝은 둥글리지 않고 평평하게 — 카드 칠을 이 도형이 맡으므로 여기서 맞춘다.
+        const flat: FlatEnds = {
+          left: SG.some((el) => el.classList.contains("wrap-in")),
+          right: TG.some((el) => el.classList.contains("wrap-out"))
         };
-        const d = stepRingPath(SU, TU, xa, xb, -sw / 2, convex, -sw / 2, tips);
+        const d = stepRingPath(SU, TU, xa, xb, -sw / 2, convex, -sw / 2, flat);
         const overlays = flatOverlaysOf(
           root.querySelector<HTMLElement>(".studio-event-pill:not(.chain-step-solid)") ?? from
         );
@@ -482,16 +468,16 @@ function blockPath(block: Block, local: (r: DOMRect) => Box, e: number, stemE = 
     .map(({ from, to }) => stepBandPath(local(from.getBoundingClientRect()), local(to.getBoundingClientRect()), convex, sw))
     .sort((a, b) => a.xa - b.xa);
   const grow = (b: Box): Box => ({ left: b.left - e, right: b.right + e, top: b.top - e, bottom: b.bottom + e });
-  const tips: WrapTips = {
-    left: block.bodies[0].some((el) => el.classList.contains("wrap-in")) ? WRAP_TIP : 0,
-    right: block.bodies[block.bodies.length - 1].some((el) => el.classList.contains("wrap-out")) ? WRAP_TIP : 0
+  const flat: FlatEnds = {
+    left: block.bodies[0].some((el) => el.classList.contains("wrap-in")),
+    right: block.bodies[block.bodies.length - 1].some((el) => el.classList.contains("wrap-out"))
   };
   // 기둥 수가 몸 사이 수와 안 맞으면(그리는 도중의 어중간한 장면) 전체를 감싼 한 상자로.
   const ok = stems.length === boxes.length - 1;
   return chainOutline(
     ok ? boxes.map(grow) : [grow(unionBox(block.cards, local))],
     ok ? stems.map((st) => ({ xa: st.xa - stemE, xb: st.xb + stemE })) : [],
-    Math.max(2, convex + e), Math.max(2, STEP_CONCAVE - e), () => false, tips
+    Math.max(2, convex + e), Math.max(2, STEP_CONCAVE - e), () => false, flat
   );
 }
 // scaleEl = 화면 배율(표면 transform/zoom)을 잴 HTML 요소 — svg 층은 offsetWidth가 없어 직접 못 잰다.
@@ -521,7 +507,7 @@ function sheenPath(root: HTMLElement, target: SheenTarget, host: HTMLElement): s
 
 // ── 고른 일정의 테두리(편집실 점선 · 시청자 실선) ──
 // 규칙 하나(2026-11-18 소유자): 이어진 일정은 줄마다 한 블록으로 바깥을 두르고, 누른 날짜 부분만 짙게.
-// 띠·꺾인 띠·화살 모서리 어느 이음이든 같은 블록 외곽(blockPath)을 쓴다. 이어지지 않은 일정은 카드 자체 링(CSS) 그대로.
+// 띠·꺾인 띠·줄바뀜 어느 이음이든 같은 블록 외곽(blockPath)을 쓴다. 이어지지 않은 일정은 카드 자체 링(CSS) 그대로.
 // 층은 달력 격자 바로 뒤 형제(svg.chain-ring-layer) 하나 — 칸 안에 두면 옆 칸 카드에 가려졌다(오른쪽 세로변 사고).
 const ringLayers = new WeakMap<HTMLElement, SVGSVGElement>();
 const PICKED = ".studio-event-pill.primary-selected, .band-slot.is-picked, .public-event.detail-current";

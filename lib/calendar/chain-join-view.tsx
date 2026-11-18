@@ -10,33 +10,26 @@ export function chainStepKey(fromId: string, toId: string) {
 }
 
 // 이어짐은 글자 없이 **모양으로만** 말한다(2026-11-18 소유자: "중복 안내 없이, 제목 자리 줄이지 말고").
-// 같은 줄 = 띠, 앞에 다른 방송 = 꺾인 띠, 토→일 줄바뀜 = 화살 모서리(토요일 오른쪽 ▶, 일요일 왼쪽 ◀).
+// 같은 줄 = 띠, 앞에 다른 방송 = 꺾인 띠, 토→일 줄바뀜 = 평평한 변이 칸 끝까지.
 // 며칠부터 며칠까지·며칠째인지는 누르면 뜨는 창의 날짜 줄이 한 번만 말한다(chainRangeOf).
-// 꺾인 띠·줄바뀜으로 받은 카드가 앞날과 글이 같으면 "▸ 제목" 한 줄로 준다.
-export function chainSlim(join: ChainJoin | undefined): boolean {
+//
+// 이어 받음 표시 규칙은 하나(2026-11-18 소유자: "여긴 왜 또 다른 규칙이냐"): **앞날에서 이어 받았는데 앞 카드와 붙어 있지
+// 않은 카드**(꺾인 띠·줄바뀜)는 제목 앞에 물결 표시(ChainContMark). 글이 같든 다르든 같다. 띠(같은 줄에 붙음)는 붙은 모양이 이미 말하므로 없다.
+export function chainCont(join: ChainJoin | undefined): boolean {
   const left = join?.left;
-  return Boolean(left && left.kind !== "band" && left.sameContent);
+  return Boolean(left && left.kind !== "band");
 }
-// 화살 모서리의 비스듬한 두 변에 카드 테두리 선을 잇는다(clip-path는 테두리를 그리지 않아 깎인 변만 선이 없었다).
-// 칠·테두리를 꺾인 띠 도형이 맡는 카드([data-step-painted].chain-step-solid)에선 CSS가 숨긴다 — 도형이 직접 그린다.
-export function WrapEdges({ join, line }: { join: ChainJoin | undefined; line?: string }) {
-  const left = join?.left?.kind === "wrap";
-  const right = join?.right?.kind === "wrap";
-  if (!left && !right) return null;
-  const style = line ? { stroke: line } : undefined;
+// 그중 앞날과 글까지 같으면 세부 줄을 되풀이하지 않고 "~ 제목" 한 줄로 줄인다.
+export function chainSlim(join: ChainJoin | undefined): boolean {
+  return chainCont(join) && Boolean(join?.left?.sameContent);
+}
+// 이어 받음 표시 — 물결(~). 2026-11-18 소유자: "▸는 이어진다는 뜻이 잘 안 담긴다, ~ 같은 느낌으로".
+// 글자 '~'는 글꼴마다 높이·굵기가 달라 직접 그린다. 색·굵기는 제목 글자를 따른다(currentColor, em 단위).
+export function ChainContMark() {
   return (
-    <>
-      {left ? (
-        <svg aria-hidden="true" className="wrap-edge is-in" preserveAspectRatio="none" style={style} viewBox="0 0 7 100">
-          <polyline points="7,0 0,50 7,100" vectorEffect="non-scaling-stroke" />
-        </svg>
-      ) : null}
-      {right ? (
-        <svg aria-hidden="true" className="wrap-edge is-out" preserveAspectRatio="none" style={style} viewBox="0 0 7 100">
-          <polyline points="0,0 7,50 0,100" vectorEffect="non-scaling-stroke" />
-        </svg>
-      ) : null}
-    </>
+    <svg aria-hidden="true" className="chain-cont-mark" viewBox="0 0 16 8">
+      <path d="M1.5 5.2C3.4 1.6 6 1.6 8 4s4.6 2.4 6.5-1.2" />
+    </svg>
   );
 }
 export function chainWrapClasses(join: ChainJoin | undefined): string {

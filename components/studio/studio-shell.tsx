@@ -134,7 +134,7 @@ import {
   splitEventTitle
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
-import { ChainStepLayer, WrapEdges, chainDataAttrs, chainSlim, chainWrapClasses } from "@/lib/calendar/chain-join-view";
+import { ChainContMark, ChainStepLayer, chainCont, chainDataAttrs, chainSlim, chainWrapClasses } from "@/lib/calendar/chain-join-view";
 import { getDayMark } from "@/lib/calendar/holidays";
 import {
   MonthJumpToast,
@@ -8373,6 +8373,7 @@ export function StudioShell({
                       );
                       // 꺾인 띠·줄바뀜으로 이어 받은 카드 — 글이 같으면 "▸ 제목" 한 줄(글자 꼬리표 없음).
                       const slim = chainSlim(join);
+                      const cont = chainCont(join);
                       // 체인 이음변(색 일치 여부 무관) — 칠(getEventSpan)은 색이 같을 때만
                       // 병합하지만, 선택·연결 후보 '하이라이트'는 체인 전체가 한 덩어리로
                       // 보여야 한다(사용자 결정). CSS가 .selected/.connect-target에서만 쓴다.
@@ -8557,7 +8558,6 @@ export function StudioShell({
                           ) : null}
                           {event.isTentative ? <span aria-hidden="true" className="evt-hatch" /> : null}
                           {copiedId && canonId(copiedId) === canonId(event.id) ? <span aria-hidden="true" className="copy-ants" /> : null}
-                          <WrapEdges join={join} line={pillStyle?.borderColor as string | undefined} />
                           <div className="pill-main">
                             {/* #8 옮긴 직후 서버 반영 전 — 작은 '동기화 중' 점(돌아감). 반영되면 사라진다. */}
                             {span.showTitle && syncingIds.includes(canonId(event.id)) ? (
@@ -8578,7 +8578,7 @@ export function StudioShell({
                             {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다. */}
                             {span.showTitle ? (
                               <strong>
-                                {slim ? <span aria-hidden="true" className="chain-cont-arrow">▸</span> : null}
+                                {cont ? <ChainContMark /> : null}
                                 {main}
                               </strong>
                             ) : (

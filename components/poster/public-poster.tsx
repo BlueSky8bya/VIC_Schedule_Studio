@@ -116,7 +116,7 @@ import { flipSpring } from "@/lib/ui/flip-motion";
 import { trackPopoverLayout } from "@/lib/ui/popover-layout";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
-import { ChainStepLayer, WrapEdges, chainDataAttrs, chainSlim, chainWrapClasses } from "@/lib/calendar/chain-join-view";
+import { ChainContMark, ChainStepLayer, chainCont, chainDataAttrs, chainSlim, chainWrapClasses } from "@/lib/calendar/chain-join-view";
 import {
   assignSupportLanes,
   supportDepthByCell,
@@ -3361,6 +3361,7 @@ export function PublicPoster({
             const span = getEventSpan(event, cell.isoDate, cell.weekday, chainJoins);
             // 꺾인 띠·줄바뀜으로 이어 받은 카드 — 글이 같으면 "▸ 제목" 한 줄로 준다(글자 꼬리표 없음).
             const slim = chainSlim(join);
+            const cont = chainCont(join);
             const bookmarked = isBookmarked(event.id);
             // 하트는 시작 칸(제목 보이는 칸)에서만, 로그인 시청자 상호작용 모드에서만 노출.
             const showHeart = canHeart && span.showTitle;
@@ -3454,16 +3455,12 @@ export function PublicPoster({
                   <span aria-hidden="true" className="reveal-shock" />
                 ) : null}
                 {event.isTentative ? <span aria-hidden="true" className="evt-hatch" /> : null}
-                <WrapEdges
-                  join={join}
-                  line={(mixStyle ?? (colors.length > 0 ? eventColorStyle(colors) : undefined))?.borderColor as string | undefined}
-                />
                 <div className="event-main">
                   {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다(이음새 어긋남 방지). */}
                   {span.showTitle ? (
                     <p>
                       {event.isTentative ? <span className="sr-only">미정 </span> : null}
-                      {slim ? <span aria-hidden="true" className="chain-cont-arrow">▸</span> : null}
+                      {cont ? <ChainContMark /> : null}
                       {/* 방금 공개된 떡밥은 ?에서 글자가 확정되는 스크램블로 등장. */}
                       {justRevealed.has(rawEvent.id) ? <ScrambleText text={main} /> : main}
                     </p>

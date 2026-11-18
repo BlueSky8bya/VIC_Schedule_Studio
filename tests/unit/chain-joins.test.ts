@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildChainJoins, chainRangeOf, getEventSpan, getEventsForDate } from "@/lib/calendar/month";
-import { chainSlim, chainWrapClasses } from "@/lib/calendar/chain-join-view";
+import { chainCont, chainSlim, chainWrapClasses } from "@/lib/calendar/chain-join-view";
 import type { StudioScheduleEvent } from "@/lib/domain/schedule-types";
 
 // 이어진 일정 잇기 규칙(2026-11-16 소유자): 앞날 마지막 카드 = 다음날 첫 카드일 때만 잇는다.
@@ -118,7 +118,7 @@ describe("buildChainJoins", () => {
     expect(j.get("b")?.flatLeft).toBe(true);
   });
 
-  it("줄바뀜은 글자 없이 화살 모서리, 범위·며칠째는 상세 창 한 줄(2026-11-18)", () => {
+  it("줄바뀜은 글자 없이 평평한 변 + 물결 표시, 범위·며칠째는 상세 창 한 줄(2026-11-18)", () => {
     // 금(20)→토(21)→일(22)
     const events = [
       ev({ id: "a", day: "2026-11-20", publicTitle: "와우 포에버\n수도원 40", linkNext: "b" }),
@@ -129,6 +129,11 @@ describe("buildChainJoins", () => {
     expect(chainWrapClasses(j.get("b"))).toBe("wrap-out");
     expect(chainWrapClasses(j.get("c"))).toBe("wrap-in");
     expect(chainWrapClasses(j.get("a"))).toBe("");
+    // 이어 받음 표시(물결)는 글이 달라도 — 앞 카드와 떨어진 카드(줄바뀜·꺾인 띠)면 붙는다. 띠로 붙은 칸은 없다.
+    expect(chainCont(j.get("c"))).toBe(true);
+    expect(chainCont(j.get("b"))).toBe(false);
+    expect(chainCont(j.get("a"))).toBe(false);
+    // 한 줄로 줄이는 것은 글까지 같을 때만
     expect(chainSlim(j.get("c"))).toBe(false);
     expect(chainRangeOf("c", events)).toEqual({ start: "2026-11-20", end: "2026-11-22", index: 3, total: 3 });
     expect(chainRangeOf("a", events)?.index).toBe(1);

@@ -757,8 +757,8 @@ export function linkEdgesMatch(
 //  · band  — 앞날에 그 일정 하나뿐(앞에 올 게 없음) → 같은 높이라 예전처럼 평평한 변으로 붙는 띠.
 //            글이 같으면 머리 칸 하나가 여러 칸 폭으로 글을 한 번만 쓰고, 뒤 칸은 빈 자리(bandSlot).
 //  · step  — 앞날에 그 일정 앞에 다른 일정이 있어 같은 줄에 못 놓임 → 둥근 카드끼리 꺾인 띠로 잇는다.
-//  · wrap  — 토→일(달력 줄이 바뀜) → 꺾인 띠 없이 양쪽 끝을 화살 모서리로(글자 꼬리표 없음, 2026-11-18).
-// step/wrap에서 다음날 글이 같으면 그 카드는 "▸ 제목" 한 줄로 준다(sameContent).
+//  · wrap  — 토→일(달력 줄이 바뀜) → 꺾인 띠 없이 평평한 변이 칸 끝까지(글자 꼬리표 없음, 2026-11-18).
+// step/wrap으로 받은 카드는 제목 앞에 물결 표시, 글까지 같으면 "~ 제목" 한 줄로 준다(sameContent).
 export type ChainJoinKind = "band" | "step" | "wrap";
 export type ChainJoinSide = { kind: ChainJoinKind; otherId: string; sameContent: boolean };
 export type ChainJoin = {
