@@ -23,7 +23,6 @@ import {
   Heart,
   LogIn,
   LogOut,
-  PencilLine,
   Pin,
   Play,
   Search,
@@ -4659,7 +4658,7 @@ export function PublicPoster({
                       const isRed = wd === 0 || Boolean(mark?.isHoliday);
                       const tone = isRed ? " red" : wd === 6 ? " saturday" : "";
                       // 미정(2026-11-18 소유자: 태그 같은 배지 말고) — 달력 카드와 같은 빗금을 날짜 밑에
-                      // 연필 형광펜처럼 긋고, 뒤에 연필로 적은 메모 한 줄. '날짜가 아직 연필 글씨'라는 은유.
+                      // 형광펜처럼 긋고, 뒤에 '확정 전' 한 마디.
                       const tent = !support && !teaserActive && Boolean(event.isTentative);
                       return (
                         <span className={`agenda-detail-date${tent ? " is-tentative" : ""}`}>
@@ -4670,10 +4669,7 @@ export function PublicPoster({
                             {end && end !== dateKey ? ` ~ ${formatShortDate(end)}` : ""}
                           </span>
                           {tent ? (
-                            <span className="adt-tent-note">
-                              <PencilLine aria-hidden="true" size={13} strokeWidth={2.2} />
-                              미정 · 바뀔 수 있어요
-                            </span>
+                            <span className="adt-tent-note">확정 전</span>
                           ) : null}
                           {mark?.name ? (
                             <em
