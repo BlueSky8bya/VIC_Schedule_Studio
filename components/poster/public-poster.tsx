@@ -4451,10 +4451,12 @@ export function PublicPoster({
                   tag,
                   bg: v.cssAccent ?? v.bg,
                   border: v.cssBorder ?? undefined,
-                  primary: event.primaryTagIds.includes(tag.id)
+                  primary: event.primaryTagIds.includes(tag.id),
+                  mod: tag.kind === "modifier"
                 }
               ];
-            });
+            // 컨텐츠 먼저, 형식(방식) 뒤 — 두 무리가 섞이지 않게(2026-11-18 소유자: 다르게 디자인).
+            }).sort((a, b) => Number(a.mod) - Number(b.mod));
             const end = event.endDateKey;
             // 아직 안 풀린 떡밥 상세 — 공개 시각 + 기대돼요만(내용 0). 액센트는 떡밥 보라.
             const teaserActive = Boolean(
@@ -4726,13 +4728,13 @@ export function PublicPoster({
                     <div className="agenda-detail-metadata">
                       {detailTags.length > 0 ? (
                         <PublicDetailTags key={event.id}>
-                          {detailTags.map(({ tag, bg, border, primary }, ti) => (
+                          {detailTags.map(({ tag, bg, border, primary, mod }, ti) => (
                             <span
-                              className={`agenda-detail-tag${primary ? " primary" : ""}${
+                              className={`agenda-detail-tag${mod ? " is-mod" : " is-content"}${primary ? " primary" : ""}${
                                 revealStagger(detailJustRevealed, main, ti).className
                               }`}
                               key={tag.id}
-                              style={revealStagger(detailJustRevealed, main, ti).style}
+                              style={{ ...revealStagger(detailJustRevealed, main, ti).style, "--tag-c": bg } as CSSProperties}
                             >
                               <i aria-hidden="true" style={{ backgroundColor: bg, borderColor: border }} />
                               <span className="agenda-detail-tag-label">{tag.displayName}</span>

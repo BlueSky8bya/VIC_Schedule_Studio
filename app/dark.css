@@ -661,6 +661,10 @@ html[data-theme="dark"] .ric-dplus { background-clip: text; -webkit-background-c
   html[data-theme="dark"] .public-day:not(.outside):hover { background: var(--night-hover); }
 }
 html[data-theme="dark"] .agenda-detail-backdrop .agenda-detail-tag { color: var(--ink-soft); background: var(--night-hover); }
+/* 컨텐츠 = 태그색으로 물든 알약, 형식 = 면 없는 글씨(public-poster.css 같은 이름 블록, 2026-11-18). */
+html[data-theme="dark"] .agenda-detail-backdrop .agenda-detail-tag.is-content { color: var(--ink); background: color-mix(in srgb, var(--tag-c, transparent) 18%, var(--night-hover)); }
+html[data-theme="dark"] .agenda-detail-backdrop .agenda-detail-tag.is-content.primary { background: color-mix(in srgb, var(--tag-c, transparent) 28%, var(--night-hover)); }
+html[data-theme="dark"] .agenda-detail-backdrop .agenda-detail-tag.is-mod { background: transparent; }
 html[data-theme="dark"] :is(.bp-kbd-head strong, .bp-kbd-row dd) { color: var(--ink-soft); }
 html[data-theme="dark"] .bp-kbd-row kbd { background: var(--night-hover); color: var(--ink); border-color: var(--night-line); }
 html[data-theme="dark"] .agenda-detail-sheet .dt-when { background: rgb(var(--teaser-rgb) / 18%); color: var(--teaser-soft); }
