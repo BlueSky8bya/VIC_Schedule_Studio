@@ -129,7 +129,7 @@ describe("buildChainJoins", () => {
     expect(chainWrapClasses(j.get("b"))).toBe("wrap-out");
     expect(chainWrapClasses(j.get("c"))).toBe("wrap-in");
     expect(chainWrapClasses(j.get("a"))).toBe("");
-    // 이어 받음 표시(물결)는 글이 달라도 — 앞 카드와 떨어진 카드(줄바뀜·꺾인 띠)면 붙는다. 띠로 붙은 칸은 없다.
+    // 이어 받음 표시(물결)는 이어진 모양이 안 보이는 줄바뀜에만 — 글이 달라도 붙는다. 띠·꺾인 띠는 모양이 말한다.
     expect(chainCont(j.get("c"))).toBe(true);
     expect(chainCont(j.get("b"))).toBe(false);
     expect(chainCont(j.get("a"))).toBe(false);
@@ -138,6 +138,18 @@ describe("buildChainJoins", () => {
     expect(chainRangeOf("c", events)).toEqual({ start: "2026-11-20", end: "2026-11-22", index: 3, total: 3 });
     expect(chainRangeOf("a", events)?.index).toBe(1);
     expect(chainRangeOf("solo", [ev({ id: "solo", day: "2026-11-20" })])).toBeNull();
+  });
+
+  it("꺾인 띠로 받은 카드는 물결 표시가 없다(선이 이미 이어 준다) — 글이 같으면 한 줄로만 줄인다", () => {
+    const events = [
+      ev({ id: "15시", day: "2026-11-09", sortOrder: 0 }),
+      ev({ id: "a", day: "2026-11-09", sortOrder: 1, publicTitle: BODY, linkNext: "b" }),
+      ev({ id: "b", day: "2026-11-10", sortOrder: 0, publicTitle: BODY })
+    ];
+    const j = joinsOf(events);
+    expect(j.get("b")?.left?.kind).toBe("step");
+    expect(chainCont(j.get("b"))).toBe(false);
+    expect(chainSlim(j.get("b"))).toBe(true);
   });
 
   it("3일 묶음 — 첫날 앞에 다른 일정이 있으면 1→2일은 꺾인 띠, 2→3일은 띠(2일은 한 줄 머리)", () => {

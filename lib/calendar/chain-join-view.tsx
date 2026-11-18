@@ -13,15 +13,17 @@ export function chainStepKey(fromId: string, toId: string) {
 // 같은 줄 = 띠, 앞에 다른 방송 = 꺾인 띠, 토→일 줄바뀜 = 평평한 변이 칸 끝까지.
 // 며칠부터 며칠까지·며칠째인지는 누르면 뜨는 창의 날짜 줄이 한 번만 말한다(chainRangeOf).
 //
-// 이어 받음 표시 규칙은 하나(2026-11-18 소유자: "여긴 왜 또 다른 규칙이냐"): **앞날에서 이어 받았는데 앞 카드와 붙어 있지
-// 않은 카드**(꺾인 띠·줄바뀜)는 제목 앞에 물결 표시(ChainContMark). 글이 같든 다르든 같다. 띠(같은 줄에 붙음)는 붙은 모양이 이미 말하므로 없다.
+// 이어 받음 표시(물결) 규칙은 하나(2026-11-18 소유자): **이어진 모양이 눈에 안 보이는 곳에만** 붙인다.
+//  · 띠(같은 줄에 붙음)·꺾인 띠(선으로 이어짐) — 모양이 이미 말하므로 표시 없음(또 붙이면 중복 안내).
+//  · 줄바뀜(토→일) — 앞 카드가 윗줄 반대쪽 끝에 있어 이어 주는 선이 없다 → 제목 앞에 물결.
+// 글이 같든 다르든 같다.
 export function chainCont(join: ChainJoin | undefined): boolean {
-  const left = join?.left;
-  return Boolean(left && left.kind !== "band");
+  return join?.left?.kind === "wrap";
 }
-// 그중 앞날과 글까지 같으면 세부 줄을 되풀이하지 않고 "~ 제목" 한 줄로 줄인다.
+// 앞 카드와 떨어져 받은 카드(꺾인 띠·줄바뀜)가 앞날과 글까지 같으면 세부 줄을 되풀이하지 않고 제목 한 줄로 줄인다.
 export function chainSlim(join: ChainJoin | undefined): boolean {
-  return chainCont(join) && Boolean(join?.left?.sameContent);
+  const left = join?.left;
+  return Boolean(left && left.kind !== "band" && left.sameContent);
 }
 // 이어 받음 표시 — 물결(~). 2026-11-18 소유자: "▸는 이어진다는 뜻이 잘 안 담긴다, ~ 같은 느낌으로".
 // 글자 '~'는 글꼴마다 높이·굵기가 달라 직접 그린다. 색·굵기는 제목 글자를 따른다(currentColor, em 단위).
