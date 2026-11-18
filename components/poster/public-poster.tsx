@@ -116,7 +116,7 @@ import { flipSpring } from "@/lib/ui/flip-motion";
 import { trackPopoverLayout } from "@/lib/ui/popover-layout";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
-import { ChainStepLayer, chainContLabel, chainDataAttrs } from "@/lib/calendar/chain-join-view";
+import { ChainStepLayer, WrapEdges, chainDataAttrs, chainSlim, chainWrapClasses } from "@/lib/calendar/chain-join-view";
 import {
   assignSupportLanes,
   supportDepthByCell,
@@ -124,6 +124,7 @@ import {
   buildChainJoins,
   buildChainKeys,
   buildPaintGroups,
+  chainRangeOf,
   classifyDay,
   eventColorStyle,
   getAdjacentMonth,
@@ -3337,9 +3338,8 @@ export function PublicPoster({
             const extraColors = tagVisual.eventExtras(event);
             const { main, subs } = splitEventTitle(event.publicTitle);
             const span = getEventSpan(event, cell.isoDate, cell.weekday, chainJoins);
-            // 꺾인 띠·줄바뀜으로 이어 받은 카드 — 글이 같으면 "▸ 제목 이어서" 한 줄로 준다.
-            const cont = chainContLabel(join, cell.isoDate);
-            const slim = Boolean(cont && join?.left?.sameContent);
+            // 꺾인 띠·줄바뀜으로 이어 받은 카드 — 글이 같으면 "▸ 제목" 한 줄로 준다(글자 꼬리표 없음).
+            const slim = chainSlim(join);
             const bookmarked = isBookmarked(event.id);
             // 하트는 시작 칸(제목 보이는 칸)에서만, 로그인 시청자 상호작용 모드에서만 노출.
             const showHeart = canHeart && span.showTitle;
@@ -3360,6 +3360,7 @@ export function PublicPoster({
               join?.bandSpan ? "band-head" : "",
               join?.right?.kind === "step" ? "chain-step-from" : "",
               join?.left?.kind === "step" ? "chain-step-to" : "",
+              chainWrapClasses(join),
               // 단색 카드는 칠·테두리를 꺾인 띠 도형에 맡긴다(이음새 없음). 2색 카드는 제 그라데이션을 그대로.
               (join?.right?.kind === "step" || join?.left?.kind === "step") && colors.length < 2
                 ? "chain-step-solid"
@@ -3432,6 +3433,10 @@ export function PublicPoster({
                   <span aria-hidden="true" className="reveal-shock" />
                 ) : null}
                 {event.isTentative ? <span aria-hidden="true" className="evt-hatch" /> : null}
+                <WrapEdges
+                  join={join}
+                  line={(mixStyle ?? (colors.length > 0 ? eventColorStyle(colors) : undefined))?.borderColor as string | undefined}
+                />
                 <div className="event-main">
                   {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다(이음새 어긋남 방지). */}
                   {span.showTitle ? (
@@ -3440,7 +3445,6 @@ export function PublicPoster({
                       {slim ? <span aria-hidden="true" className="chain-cont-arrow">▸</span> : null}
                       {/* 방금 공개된 떡밥은 ?에서 글자가 확정되는 스크램블로 등장. */}
                       {justRevealed.has(rawEvent.id) ? <ScrambleText text={main} /> : main}
-                      {cont ? <small className="chain-cont">{cont}</small> : null}
                     </p>
                   ) : (
                     <p className="span-cont">{main || " "}</p>
@@ -4660,6 +4664,8 @@ export function PublicPoster({
                       // 미정(2026-11-18 소유자: 태그 같은 배지 말고) — 달력 카드와 같은 빗금을 날짜 밑에
                       // 형광펜처럼 긋고, 뒤에 '확정 전' 한 마디.
                       const tent = !support && !teaserActive && Boolean(event.isTentative);
+                      // 이어진 일정(2026-11-18 소유자) — 달력 칸엔 글자 없이 모양만, 범위·며칠째는 여기 한 번만.
+                      const chain = support ? null : chainRangeOf(event.id, schedule.events);
                       return (
                         <span className={`agenda-detail-date${tent ? " is-tentative" : ""}`}>
                           <span className="adt-day-ink">
@@ -4668,6 +4674,11 @@ export function PublicPoster({
                             </b>
                             {end && end !== dateKey ? ` ~ ${formatShortDate(end)}` : ""}
                           </span>
+                          {chain ? (
+                            <span className="adt-chain">
+                              {formatShortDate(chain.start)} ~ {formatShortDate(chain.end)} · {chain.index}일째
+                            </span>
+                          ) : null}
                           {tent ? (
                             <span className="adt-tent-note">확정 전</span>
                           ) : null}

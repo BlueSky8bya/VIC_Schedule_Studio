@@ -6517,7 +6517,7 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
    판정은 lib/calendar/month.ts buildChainJoins: 앞날 마지막 = 다음날 첫 카드일 때만 잇는다.
    · 같은 글 띠: 머리 카드(.band-head)가 여러 칸 폭(폭은 useEqualChainHeights가 잰다), 뒤 칸은 빈 자리(.band-slot).
    · 꺾인 띠: 칸 안 svg(.chain-steps)에 앞 카드 → 다음날 카드로 칸 사이 틈에서 꺾여 오르내리는 몸통(카드 색).
-   · 이어 받은 카드 꼬리표(.chain-cont "이어서"/"N일부터"), 글이 같으면 한 줄(.chain-slim). */
+   · 토→일 줄바뀜은 화살 모서리(.wrap-out/.wrap-in), 글자 꼬리표 없음. 글이 같으면 한 줄(.chain-slim). */
 .band-slot {
   pointer-events: none;
 }
@@ -6770,12 +6770,56 @@ html[data-reduce-motion] .card-sheen {
     animation: none;
   }
 }
-.chain-cont {
-  margin-left: 0.35em;
-  font-size: 0.78em;
-  font-weight: 600;
-  opacity: 0.72;
-  white-space: nowrap;
+/* 줄바뀜(토→일) 화살 모서리 — 글자 꼬리표 대신 모양으로 "다음 줄로 이어짐"을 말한다(2026-11-18 소유자).
+   토요일 카드 오른쪽 끝(.wrap-out)은 ▶, 일요일 카드 왼쪽 끝(.wrap-in)은 ◀. 카드 밖(왕관·하트 점)은
+   잘리지 않게 다각형을 카드 바깥까지 넓히고, 이어지는 변의 두 모서리만 삼각형으로 깎는다. */
+.public-event.wrap-out,
+.studio-event-pill.wrap-out {
+  --wrap-tip: 7px;
+  clip-path: polygon(
+    -60px -60px, calc(100% + 60px) -60px, calc(100% + 60px) 0, calc(100% - var(--wrap-tip)) 0, 100% 50%,
+    calc(100% - var(--wrap-tip)) 100%, calc(100% + 60px) 100%, calc(100% + 60px) calc(100% + 60px),
+    -60px calc(100% + 60px)
+  );
+}
+.public-event.wrap-in,
+.studio-event-pill.wrap-in {
+  --wrap-tip: 7px;
+  clip-path: polygon(
+    -60px -60px, calc(100% + 60px) -60px, calc(100% + 60px) calc(100% + 60px), -60px calc(100% + 60px),
+    -60px 100%, var(--wrap-tip) 100%, 0 50%, var(--wrap-tip) 0, -60px 0
+  );
+}
+/* 깎인 두 변의 테두리 선(WrapEdges) — 절반은 clip 밖이라 2px로 그어 카드 테두리(1px)와 같은 굵기로 보이게 한다. */
+.wrap-edge {
+  position: absolute;
+  top: -1px;
+  bottom: -1px;
+  width: var(--wrap-tip, 7px);
+  height: calc(100% + 2px);
+  overflow: visible;
+  pointer-events: none;
+  fill: none;
+  stroke: rgb(0 0 0 / 10%);
+  stroke-width: 2px;
+}
+/* 이어지는 변은 테두리가 없으므로(.no-left/.no-right) 안쪽 0이 곧 카드 바깥 끝이다. */
+.wrap-edge.is-in {
+  left: 0;
+}
+.wrap-edge.is-out {
+  right: 0;
+}
+.chain-step-solid[data-step-painted] > .wrap-edge {
+  display: none;
+}
+.public-event.wrap-in.wrap-out,
+.studio-event-pill.wrap-in.wrap-out {
+  clip-path: polygon(
+    -60px -60px, calc(100% + 60px) -60px, calc(100% + 60px) 0, calc(100% - var(--wrap-tip)) 0, 100% 50%,
+    calc(100% - var(--wrap-tip)) 100%, calc(100% + 60px) 100%, calc(100% + 60px) calc(100% + 60px),
+    -60px calc(100% + 60px), -60px 100%, var(--wrap-tip) 100%, 0 50%, var(--wrap-tip) 0, -60px 0
+  );
 }
 .chain-cont-arrow {
   margin-right: 0.3em;
@@ -8543,6 +8587,13 @@ html[data-reduce-motion] .agenda-detail-close:active {
   from {
     background-size: 0% 7px;
   }
+}
+.adt-chain {
+  color: var(--muted);
+  font-size: var(--text-label);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 .adt-tent-note {
   color: var(--tentative-ink);

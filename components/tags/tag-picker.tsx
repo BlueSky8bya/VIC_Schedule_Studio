@@ -5,6 +5,11 @@ import type { BroadcastTag, ColorPaletteEntry } from "@/lib/domain/schedule-type
 import { createTagVisualResolver } from "@/lib/tags/tag-visual";
 import { hapticTick } from "@/lib/ui/haptics";
 
+// 한 칸에 두려고 글자를 줄이는 한도(원래 크기 대비). 이보다 더 줄여야 하면 두 칸을 쓴다.
+const MIN_FIT = 0.88;
+// 배분정렬 자간 상한(글자 크기 대비) — 넘게 벌리면 "시 참 의 날"처럼 낱글자로 흩어져 보인다.
+const MAX_SPREAD = 0.3;
+
 // 2계층 이벤트 태그 피커(편집실/모바일 공용). 대분류별로 묶고, 세부는 그 아래 칩으로. 검색으로
 // 많은 태그도 빠르게 찾는다. 세부 칩은 부모 대분류 색을 따라 보여 그룹이 한눈에 보인다.
 // 색은 카드에서 '대분류'로 합쳐지므로(중복 색 OK) 피커도 대분류 색으로 칠한다.
@@ -55,12 +60,48 @@ export function TagPicker({
         for (const chip of grid.querySelectorAll<HTMLElement>(":scope > .tp-chip")) {
           const name = chip.querySelector<HTMLElement>(".tp-name");
           if (!name) continue;
+          // 맞춤(글자 줄임·배분)을 풀고 원래 폭을 잰다. 같은 프레임 안이라 깜빡이지 않고, 결과가 같으면 RO도 다시 울리지 않는다.
+          name.style.removeProperty("font-size");
+          name.style.removeProperty("letter-spacing");
+          name.style.removeProperty("margin-right");
           const cs = getComputedStyle(chip), mark = getComputedStyle(chip, "::before");
           const markW = mark.content && mark.content !== "none" ? (parseFloat(mark.width) || 0) + (parseFloat(cs.columnGap) || 0) : 0;
-          const need = name.offsetWidth + markW + (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0)
+          const chrome = markW + (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0)
             + (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.borderRightWidth) || 0);
-          const wide = cols > 1 && col > 0 && need > col + 0.5;
-          if (chip.hasAttribute("data-wide") !== wide) chip.toggleAttribute("data-wide", wide);
+          const nameW = name.scrollWidth; // 말줄임으로 잘려 있어도 원래 글자 폭
+          const room1 = col - chrome - 0.5;
+          // 2026-11-18 소유자: 어중간하게 넘치는 이름이 두 칸을 차지하면 오른쪽이 텅 빈다 →
+          // ① 조금 넘치면(원래 크기의 88%까지) 그 칩 글자만 살짝 줄여 한 칸에 둔다.
+          // ② 그래도 안 되는 진짜 긴 이름만 두 칸 — 남는 폭은 한글 배분정렬(자간, 상한 0.3em)로 채우고,
+          //    그래도 남으면 가운데로 모아 양옆 여백을 같게 한다. ③ 두 칸에도 안 들어가면 한 줄 전체(+말줄임).
+          const room2 = 2 * col + gap - chrome - 0.5;
+          const fit = cols > 1 && col > 0 && nameW > room1 ? room1 / nameW : 1;
+          const wide = fit < MIN_FIT ? (nameW > room2 && cols > 2 ? "full" : "2") : null;
+          if ((chip.getAttribute("data-wide") ?? null) !== wide) {
+            if (wide) chip.setAttribute("data-wide", wide);
+            else chip.removeAttribute("data-wide");
+          }
+          let center = false;
+          if (fit < 1 && !wide) {
+            name.style.fontSize = `${(parseFloat(getComputedStyle(name).fontSize) * fit).toFixed(2)}px`;
+          } else if (wide === "2") {
+            const text = name.textContent ?? "";
+            const n = [...text].length;
+            const em = parseFloat(getComputedStyle(name).fontSize) || 14;
+            let spare = room2 - nameW;
+            // 한글 배분정렬은 한글만 — 영문·띄어쓰기가 섞인 이름은 자간을 벌리면 단어가 흩어진다.
+            if (/[가-힣]/.test(text) && !/[\sA-Za-z0-9]/.test(text) && n > 1 && spare > 0) {
+              const ls = Math.min(spare / (n - 1), em * MAX_SPREAD);
+              name.style.letterSpacing = `${ls.toFixed(2)}px`;
+              name.style.marginRight = `${(-ls).toFixed(2)}px`; // 마지막 글자 뒤 자간은 지운다
+              spare -= ls * (n - 1);
+            }
+            center = spare > 4;
+          } else if (wide === "full") {
+            // 한 줄 전체 칩도 같은 문법 — 남으면 가운데로(넘쳐서 말줄임이면 왼쪽 정렬 그대로).
+            center = cols * col + gap * (cols - 1) - chrome - nameW > 4;
+          }
+          if (chip.hasAttribute("data-center") !== center) chip.toggleAttribute("data-center", center);
         }
       }
     };

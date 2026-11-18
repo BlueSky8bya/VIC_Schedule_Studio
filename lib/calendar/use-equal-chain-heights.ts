@@ -90,24 +90,35 @@ function roundedPath(pts: Pt[]): string {
 }
 
 type Box = { left: number; right: number; top: number; bottom: number };
+type WrapTips = { left?: number; right?: number };
+const WRAP_TIP = 7; // public-poster.css --wrap-tip와 같은 값
 type Span = { top: number; bottom: number };
 
 // 왼쪽 몸(x0~xa, 세로 S) + 기둥(xa~xb, 세로 전체) + 오른쪽 몸(xb~x1, 세로 T)의 합집합 윤곽.
 // hidden(x) = 그 꼭짓점이 카드 밑에 숨으면 둥글리지 않는다.
 function stepOutline(
   x0: number, xa: number, xb: number, x1: number, S: Span, T: Span,
-  convex: number, concave: number, hidden: (x: number) => boolean
+  convex: number, concave: number, hidden: (x: number) => boolean, tips: WrapTips = {}
 ): string {
   const top = Math.min(S.top, T.top);
   const bottom = Math.max(S.bottom, T.bottom);
-  const raw = [
-    { x: x0, y: S.top }, { x: xa, y: S.top }, { x: xa, y: top }, { x: xb, y: top },
-    { x: xb, y: T.top }, { x: x1, y: T.top }, { x: x1, y: T.bottom }, { x: xb, y: T.bottom },
-    { x: xb, y: bottom }, { x: xa, y: bottom }, { x: xa, y: S.bottom }, { x: x0, y: S.bottom }
+  // 줄바뀜 화살 모서리(.wrap-in/.wrap-out, 2026-11-18) — 바깥 끝 변을 ◀/▶로 깎는다. 화살 꼭짓점은 둥글리지 않는다.
+  const tl = tips.left ?? 0;
+  const tr = tips.right ?? 0;
+  const raw: { x: number; y: number; sharp?: boolean }[] = [
+    ...(tl ? [{ x: x0 + tl, y: S.top, sharp: true }] : [{ x: x0, y: S.top }]),
+    { x: xa, y: S.top }, { x: xa, y: top }, { x: xb, y: top },
+    { x: xb, y: T.top },
+    ...(tr
+      ? [{ x: x1 - tr, y: T.top, sharp: true }, { x: x1, y: (T.top + T.bottom) / 2, sharp: true }, { x: x1 - tr, y: T.bottom, sharp: true }]
+      : [{ x: x1, y: T.top }, { x: x1, y: T.bottom }]),
+    { x: xb, y: T.bottom },
+    { x: xb, y: bottom }, { x: xa, y: bottom }, { x: xa, y: S.bottom },
+    ...(tl ? [{ x: x0 + tl, y: S.bottom, sharp: true }, { x: x0, y: (S.top + S.bottom) / 2, sharp: true }] : [{ x: x0, y: S.bottom }])
   ];
   const same = (a: { x: number; y: number }, b: { x: number; y: number }) =>
     Math.abs(a.x - b.x) < 0.01 && Math.abs(a.y - b.y) < 0.01;
-  const pts: { x: number; y: number }[] = [];
+  const pts: { x: number; y: number; sharp?: boolean }[] = [];
   for (const p of raw) if (!pts.length || !same(pts[pts.length - 1], p)) pts.push(p);
   if (pts.length > 1 && same(pts[0], pts[pts.length - 1])) pts.pop();
   const crossAt = (i: number) => {
@@ -127,7 +138,7 @@ function stepOutline(
     area += p.x * q.y - q.x * p.y;
   }
   const rounded: Pt[] = pts.map((p, i) => {
-    if (hidden(p.x)) return { ...p, r: 0 };
+    if (p.sharp || hidden(p.x)) return { ...p, r: 0 };
     return { ...p, r: Math.sign(crossAt(i)) === Math.sign(area) ? convex : concave };
   });
   return roundedPath(rounded);
@@ -160,13 +171,13 @@ export function stepBandPath(
 // 카드마다 따로 두르던 점선/실선 링(띠 위에서 끊기고 겹치던 것)을 대신한다.
 // stemE = 기둥(칸 사이 틈) 부분만 따로 띄우는 양 — 테두리가 틈 밖으로 나가면 옆 카드·'원래 위치' 상자 점선과 닿는다.
 export function stepRingPath(
-  S: Box, T: Box, xa: number, xb: number, e: number, convex = STEP_CONVEX, stemE = e
+  S: Box, T: Box, xa: number, xb: number, e: number, convex = STEP_CONVEX, stemE = e, tips: WrapTips = {}
 ): string {
   return stepOutline(
     S.left - e, xa - stemE, xb + stemE, T.right + e,
     { top: S.top - e, bottom: S.bottom + e },
     { top: T.top - e, bottom: T.bottom + e },
-    convex + e, Math.max(2, STEP_CONCAVE - e), () => false
+    convex + e, Math.max(2, STEP_CONCAVE - e), () => false, tips
   );
 }
 
@@ -256,9 +267,16 @@ function drawSteps(root: HTMLElement) {
         // (2026-11-16 소유자 "중간에 단차") 몸통 = 앞 카드(띠로 붙은 조각 포함) + 기둥 + 다음 카드 전체를 한 도형으로.
         // 두 카드는 배경·테두리를 비우고(.chain-step-solid) 이 도형이 칠·테두리를 한 번에 맡는다 — 카드와 띠가 따로
         // 칠해지며 생기던 색 경계·테두리 어긋남이 구조적으로 없다. 테두리 두께 = 카드 테두리 두께, 절반 안쪽에 선다.
-        const SU = unionBox(groupOf(root, from), local);
-        const TU = unionBox(groupOf(root, to), local);
-        const d = stepRingPath(SU, TU, xa, xb, -sw / 2, convex);
+        const SG = groupOf(root, from);
+        const TG = groupOf(root, to);
+        const SU = unionBox(SG, local);
+        const TU = unionBox(TG, local);
+        // 묶음 바깥 끝이 줄바뀜이면 그 끝을 화살 모서리로 — 카드 칠을 이 도형이 맡으므로 카드 clip-path만으론 안 보인다.
+        const tips: WrapTips = {
+          left: SG.some((el) => el.classList.contains("wrap-in")) ? WRAP_TIP : 0,
+          right: TG.some((el) => el.classList.contains("wrap-out")) ? WRAP_TIP : 0
+        };
+        const d = stepRingPath(SU, TU, xa, xb, -sw / 2, convex, -sw / 2, tips);
         const overlays = flatOverlaysOf(
           root.querySelector<HTMLElement>(".studio-event-pill:not(.chain-step-solid)") ?? from
         );
@@ -270,7 +288,7 @@ function drawSteps(root: HTMLElement) {
             : null;
         if (ringKind) {
           // 기둥 부분은 띠 안쪽으로 0.75px 들인다 — 틈(여백 2px) 안에 테두리가 머물러 옆 상자 점선과 겹치지 않는다.
-          rings.set(key, stepRingPath(SU, TU, xa, xb, ringKind === "dash" ? 1.75 : 3, convex, -0.75));
+          rings.set(key, stepRingPath(SU, TU, xa, xb, ringKind === "dash" ? 1.75 : 3, convex, -0.75, tips));
           ringKinds.set(key, ringKind);
           const mark = ringKind === "dash" ? ".primary-selected" : ".detail-current";
           ringSides.set(key, { picked: from.matches(mark) ? "from" : "to", mid: (xa + xb) / 2 });

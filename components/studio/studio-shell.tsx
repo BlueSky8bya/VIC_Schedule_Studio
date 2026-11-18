@@ -134,7 +134,7 @@ import {
   splitEventTitle
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
-import { ChainStepLayer, chainContLabel, chainDataAttrs } from "@/lib/calendar/chain-join-view";
+import { ChainStepLayer, WrapEdges, chainDataAttrs, chainSlim, chainWrapClasses } from "@/lib/calendar/chain-join-view";
 import { getDayMark } from "@/lib/calendar/holidays";
 import {
   MonthJumpToast,
@@ -8341,9 +8341,8 @@ export function StudioShell({
                         cell.weekday,
                         chainJoins
                       );
-                      // 꺾인 띠·줄바뀜으로 이어 받은 카드 — 글이 같으면 "▸ 제목 이어서" 한 줄.
-                      const cont = chainContLabel(join, cell.isoDate);
-                      const slim = Boolean(cont && join?.left?.sameContent);
+                      // 꺾인 띠·줄바뀜으로 이어 받은 카드 — 글이 같으면 "▸ 제목" 한 줄(글자 꼬리표 없음).
+                      const slim = chainSlim(join);
                       // 체인 이음변(색 일치 여부 무관) — 칠(getEventSpan)은 색이 같을 때만
                       // 병합하지만, 선택·연결 후보 '하이라이트'는 체인 전체가 한 덩어리로
                       // 보여야 한다(사용자 결정). CSS가 .selected/.connect-target에서만 쓴다.
@@ -8387,6 +8386,7 @@ export function StudioShell({
                         join?.bandSpan ? "band-head" : "",
                         join?.right?.kind === "step" ? "chain-step-from" : "",
                         join?.left?.kind === "step" ? "chain-step-to" : "",
+                        chainWrapClasses(join),
                         // 단색 카드는 칠·테두리를 꺾인 띠 도형에 맡긴다(시청자 화면과 같은 규칙).
                         (join?.right?.kind === "step" || join?.left?.kind === "step") && colors.length < 2
                           ? "chain-step-solid"
@@ -8527,6 +8527,7 @@ export function StudioShell({
                           ) : null}
                           {event.isTentative ? <span aria-hidden="true" className="evt-hatch" /> : null}
                           {copiedId && canonId(copiedId) === canonId(event.id) ? <span aria-hidden="true" className="copy-ants" /> : null}
+                          <WrapEdges join={join} line={pillStyle?.borderColor as string | undefined} />
                           <div className="pill-main">
                             {/* #8 옮긴 직후 서버 반영 전 — 작은 '동기화 중' 점(돌아감). 반영되면 사라진다. */}
                             {span.showTitle && syncingIds.includes(canonId(event.id)) ? (
@@ -8549,7 +8550,6 @@ export function StudioShell({
                               <strong>
                                 {slim ? <span aria-hidden="true" className="chain-cont-arrow">▸</span> : null}
                                 {main}
-                                {cont ? <small className="chain-cont">{cont}</small> : null}
                               </strong>
                             ) : (
                               <strong className="span-cont">{main || " "}</strong>

@@ -688,6 +688,25 @@ export function buildLinkChain<T extends PublicScheduleEvent | StudioScheduleEve
 
 // 선택된 일정이 속한 link_next 체인의 모든 id를 양방향으로 추적해 반환.
 // (단일 멀티데이 일정은 id 하나만 들어가며, 이미 모든 칸에서 동일 id로 그려진다.)
+// 이어진 일정(link_next) 전체의 날짜 범위와 이 일정이 며칠째인지 — 상세 창 날짜 줄용. 이어짐이 없으면 null.
+// 칸 모양(띠·꺾인 띠·화살)과 달리 "사이에 다른 방송이 끼었는지"는 보지 않는다 — 소유자가 이어 둔 묶음 그대로.
+export function chainRangeOf<T extends PublicScheduleEvent | StudioScheduleEvent>(
+  id: string,
+  events: T[]
+): { start: string; end: string; index: number; total: number } | null {
+  const ids = getLinkedChainIds(id, events);
+  if (ids.size < 2) return null;
+  const keys = events
+    .filter((e) => ids.has(e.id))
+    .map((e) => ({ id: e.id, s: getEventDateKey(e), e: eventEndKey(e) }))
+    .sort((a, b) => (a.s < b.s ? -1 : a.s > b.s ? 1 : 0));
+  const start = keys[0].s;
+  const end = keys.reduce((m, k) => (k.e > m ? k.e : m), keys[keys.length - 1].e);
+  const self = keys.find((k) => k.id === id);
+  if (!self) return null;
+  return { start, end, index: diffDays(start, self.s) + 1, total: diffDays(start, end) + 1 };
+}
+
 export function getLinkedChainIds<T extends PublicScheduleEvent | StudioScheduleEvent>(
   startId: string | null,
   events: T[]
@@ -738,8 +757,8 @@ export function linkEdgesMatch(
 //  · band  — 앞날에 그 일정 하나뿐(앞에 올 게 없음) → 같은 높이라 예전처럼 평평한 변으로 붙는 띠.
 //            글이 같으면 머리 칸 하나가 여러 칸 폭으로 글을 한 번만 쓰고, 뒤 칸은 빈 자리(bandSlot).
 //  · step  — 앞날에 그 일정 앞에 다른 일정이 있어 같은 줄에 못 놓임 → 둥근 카드끼리 꺾인 띠로 잇는다.
-//  · wrap  — 토→일(달력 줄이 바뀜) → 꺾인 띠 없이 평평한 변만 두고, 일요일 쪽에 "N일부터"를 쓴다.
-// step/wrap에서 다음날 글이 같으면 그 카드는 "▸ 제목 이어서" 한 줄로 준다(sameContent).
+//  · wrap  — 토→일(달력 줄이 바뀜) → 꺾인 띠 없이 양쪽 끝을 화살 모서리로(글자 꼬리표 없음, 2026-11-18).
+// step/wrap에서 다음날 글이 같으면 그 카드는 "▸ 제목" 한 줄로 준다(sameContent).
 export type ChainJoinKind = "band" | "step" | "wrap";
 export type ChainJoinSide = { kind: ChainJoinKind; otherId: string; sameContent: boolean };
 export type ChainJoin = {
@@ -750,7 +769,6 @@ export type ChainJoin = {
   bandKey?: string; // 같은 줄 띠 묶음 — 이 키끼리 높이를 맞춘다(useEqualChainHeights)
   bandSpan?: number; // 같은 글 띠의 머리: 몇 칸 폭(≥2)
   bandHeadId?: string; // 같은 글 띠의 뒤 칸(빈 자리)이면 머리 일정 id
-  startKey?: string; // 이 이어짐이 시작된 날(앞으로 이어진 칸을 끝까지 거슬러 간 첫 칸) — "N일부터" 꼬리표
 };
 
 export function buildChainJoins<T extends PublicScheduleEvent | StudioScheduleEvent>(
@@ -799,11 +817,6 @@ export function buildChainJoins<T extends PublicScheduleEvent | StudioScheduleEv
     for (const e of lists[k]) {
       const j = joins.get(e.id);
       if (!j) continue;
-      // 앞 칸이 먼저 정해져 있으므로 앞 칸의 시작일을 물려받는다(2026-11-18 소유자: 20~22 이어짐의 22일에
-      // "21일부터"가 붙어 이어짐이 21일에 시작한 것처럼 읽혔다 — 바로 앞날이 아니라 시작한 날을 쓴다).
-      j.startKey = j.left
-        ? (joins.get(j.left.otherId)?.startKey ?? addDays(cells[k].isoDate, -1))
-        : cells[k].isoDate;
       j.flatLeft = Boolean(j.left && j.left.kind !== "step");
       if (j.left?.kind === "band") {
         const prev = get(j.left.otherId);

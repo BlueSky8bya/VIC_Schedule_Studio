@@ -9,17 +9,40 @@ export function chainStepKey(fromId: string, toId: string) {
   return `${fromId}>${toId}`;
 }
 
-// 꺾인 띠·줄바뀜으로 이어 받은 카드의 작은 꼬리표. 띠(같은 줄)는 붙어 보이니 꼬리표가 없다.
-// 줄바뀜(토→일)은 앞 카드가 윗줄에 있어 "N일부터"로 이어짐이 **시작한 날**을 알려 준다(바로 앞날이 아니다 —
-// 20~22 이어짐의 22일에 "21일부터"는 21일 시작으로 읽힌다). 다른 달에서 시작했으면 달도 쓴다.
-export function chainContLabel(join: ChainJoin | undefined, isoDate: string): string | null {
+// 이어짐은 글자 없이 **모양으로만** 말한다(2026-11-18 소유자: "중복 안내 없이, 제목 자리 줄이지 말고").
+// 같은 줄 = 띠, 앞에 다른 방송 = 꺾인 띠, 토→일 줄바뀜 = 화살 모서리(토요일 오른쪽 ▶, 일요일 왼쪽 ◀).
+// 며칠부터 며칠까지·며칠째인지는 누르면 뜨는 창의 날짜 줄이 한 번만 말한다(chainRangeOf).
+// 꺾인 띠·줄바뀜으로 받은 카드가 앞날과 글이 같으면 "▸ 제목" 한 줄로 준다.
+export function chainSlim(join: ChainJoin | undefined): boolean {
   const left = join?.left;
-  if (!left || left.kind === "band") return null;
-  if (left.kind === "step") return "이어서";
-  const start = join.startKey ?? isoDate;
-  const [, sm, sd] = start.split("-").map(Number);
-  const month = Number(isoDate.split("-")[1]);
-  return sm === month ? `${sd}일부터` : `${sm}월 ${sd}일부터`;
+  return Boolean(left && left.kind !== "band" && left.sameContent);
+}
+// 화살 모서리의 비스듬한 두 변에 카드 테두리 선을 잇는다(clip-path는 테두리를 그리지 않아 깎인 변만 선이 없었다).
+// 칠·테두리를 꺾인 띠 도형이 맡는 카드([data-step-painted].chain-step-solid)에선 CSS가 숨긴다 — 도형이 직접 그린다.
+export function WrapEdges({ join, line }: { join: ChainJoin | undefined; line?: string }) {
+  const left = join?.left?.kind === "wrap";
+  const right = join?.right?.kind === "wrap";
+  if (!left && !right) return null;
+  const style = line ? { stroke: line } : undefined;
+  return (
+    <>
+      {left ? (
+        <svg aria-hidden="true" className="wrap-edge is-in" preserveAspectRatio="none" style={style} viewBox="0 0 7 100">
+          <polyline points="7,0 0,50 7,100" vectorEffect="non-scaling-stroke" />
+        </svg>
+      ) : null}
+      {right ? (
+        <svg aria-hidden="true" className="wrap-edge is-out" preserveAspectRatio="none" style={style} viewBox="0 0 7 100">
+          <polyline points="0,0 7,50 0,100" vectorEffect="non-scaling-stroke" />
+        </svg>
+      ) : null}
+    </>
+  );
+}
+export function chainWrapClasses(join: ChainJoin | undefined): string {
+  return [join?.left?.kind === "wrap" ? "wrap-in" : "", join?.right?.kind === "wrap" ? "wrap-out" : ""]
+    .filter(Boolean)
+    .join(" ");
 }
 
 // 카드에 다는 data-* — 높이 맞춤 묶음(data-chain), 같은 글 띠 머리(data-band-head), 꺾인 띠 양끝(data-step-from·to).
