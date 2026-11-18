@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildChainJoins, getEventSpan, getEventsForDate } from "@/lib/calendar/month";
+import { chainContLabel } from "@/lib/calendar/chain-join-view";
 import type { StudioScheduleEvent } from "@/lib/domain/schedule-types";
 
 // 이어진 일정 잇기 규칙(2026-11-16 소유자): 앞날 마지막 카드 = 다음날 첫 카드일 때만 잇는다.
@@ -115,6 +116,25 @@ describe("buildChainJoins", () => {
     expect(j.get("b")?.left).toEqual({ kind: "wrap", otherId: "a", sameContent: true });
     expect(j.get("a")?.flatRight).toBe(true);
     expect(j.get("b")?.flatLeft).toBe(true);
+  });
+
+  it("줄바뀜 꼬리표는 바로 앞날이 아니라 이어짐이 시작한 날(2026-11-18 20~22 사고)", () => {
+    // 금(20)→토(21)→일(22): 22일 카드에 "21일부터"가 아니라 "20일부터".
+    const events = [
+      ev({ id: "a", day: "2026-11-20", publicTitle: "와우 포에버\n수도원 40", linkNext: "b" }),
+      ev({ id: "b", day: "2026-11-21", publicTitle: "와우 포에버\n노뱅종 2일차", linkNext: "c" }),
+      ev({ id: "c", day: "2026-11-22", publicTitle: "와우 포에버\n노뱅종 3일차" })
+    ];
+    const j = joinsOf(events, "2026-11-15", 14);
+    expect(j.get("c")?.left?.kind).toBe("wrap");
+    expect(j.get("c")?.startKey).toBe("2026-11-20");
+    expect(chainContLabel(j.get("c"), "2026-11-22")).toBe("20일부터");
+    // 토요일에 시작했으면 그대로 그날
+    const k = joinsOf([ev({ id: "x", day: "2026-11-21", linkNext: "y" }), ev({ id: "y", day: "2026-11-22" })], "2026-11-15", 14);
+    expect(chainContLabel(k.get("y"), "2026-11-22")).toBe("21일부터");
+    // 다른 달에서 시작했으면 달도 쓴다
+    const m = joinsOf([ev({ id: "p", day: "2026-10-31", linkNext: "q" }), ev({ id: "q", day: "2026-11-01" })], "2026-10-25", 14);
+    expect(chainContLabel(m.get("q"), "2026-11-01")).toBe("10월 31일부터");
   });
 
   it("3일 묶음 — 첫날 앞에 다른 일정이 있으면 1→2일은 꺾인 띠, 2→3일은 띠(2일은 한 줄 머리)", () => {

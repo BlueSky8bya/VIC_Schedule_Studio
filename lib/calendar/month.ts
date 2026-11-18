@@ -750,6 +750,7 @@ export type ChainJoin = {
   bandKey?: string; // 같은 줄 띠 묶음 — 이 키끼리 높이를 맞춘다(useEqualChainHeights)
   bandSpan?: number; // 같은 글 띠의 머리: 몇 칸 폭(≥2)
   bandHeadId?: string; // 같은 글 띠의 뒤 칸(빈 자리)이면 머리 일정 id
+  startKey?: string; // 이 이어짐이 시작된 날(앞으로 이어진 칸을 끝까지 거슬러 간 첫 칸) — "N일부터" 꼬리표
 };
 
 export function buildChainJoins<T extends PublicScheduleEvent | StudioScheduleEvent>(
@@ -798,6 +799,11 @@ export function buildChainJoins<T extends PublicScheduleEvent | StudioScheduleEv
     for (const e of lists[k]) {
       const j = joins.get(e.id);
       if (!j) continue;
+      // 앞 칸이 먼저 정해져 있으므로 앞 칸의 시작일을 물려받는다(2026-11-18 소유자: 20~22 이어짐의 22일에
+      // "21일부터"가 붙어 이어짐이 21일에 시작한 것처럼 읽혔다 — 바로 앞날이 아니라 시작한 날을 쓴다).
+      j.startKey = j.left
+        ? (joins.get(j.left.otherId)?.startKey ?? addDays(cells[k].isoDate, -1))
+        : cells[k].isoDate;
       j.flatLeft = Boolean(j.left && j.left.kind !== "step");
       if (j.left?.kind === "band") {
         const prev = get(j.left.otherId);

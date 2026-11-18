@@ -10,14 +10,16 @@ export function chainStepKey(fromId: string, toId: string) {
 }
 
 // 꺾인 띠·줄바뀜으로 이어 받은 카드의 작은 꼬리표. 띠(같은 줄)는 붙어 보이니 꼬리표가 없다.
-// 줄바뀜(토→일)은 앞 카드가 윗줄에 있어 "N일부터"로 어디서 왔는지 알려 준다.
+// 줄바뀜(토→일)은 앞 카드가 윗줄에 있어 "N일부터"로 이어짐이 **시작한 날**을 알려 준다(바로 앞날이 아니다 —
+// 20~22 이어짐의 22일에 "21일부터"는 21일 시작으로 읽힌다). 다른 달에서 시작했으면 달도 쓴다.
 export function chainContLabel(join: ChainJoin | undefined, isoDate: string): string | null {
   const left = join?.left;
   if (!left || left.kind === "band") return null;
   if (left.kind === "step") return "이어서";
-  const d = new Date(`${isoDate}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() - 1);
-  return `${d.getUTCDate()}일부터`;
+  const start = join.startKey ?? isoDate;
+  const [, sm, sd] = start.split("-").map(Number);
+  const month = Number(isoDate.split("-")[1]);
+  return sm === month ? `${sd}일부터` : `${sm}월 ${sd}일부터`;
 }
 
 // 카드에 다는 data-* — 높이 맞춤 묶음(data-chain), 같은 글 띠 머리(data-band-head), 꺾인 띠 양끝(data-step-from·to).
