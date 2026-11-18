@@ -99,5 +99,5 @@ describe("pompom airborne material", () => {
       }
       expect(warpCompanionPompom(source, 192, 192, protectedY, part.bottom + 1, 96, 0)).toBe(source);
     }
-  });
+  }, 30000);
 });

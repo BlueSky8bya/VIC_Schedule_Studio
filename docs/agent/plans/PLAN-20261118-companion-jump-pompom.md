@@ -60,3 +60,5 @@
 - QA: `all-hop-final-proof.json`의 소스14개 SHA256이 실제 파일과 모두 일치했다. 전체 단위7,249PASS/1SKIP·production fixture16PASS/working 강화1PASS·최종 build/type/lint 증거는 이 소스 범위로 승계한다. 추가 독립 단위2파일9PASS. 첫 추가 실행은 전체520원화 검사에서 기본5초 timeout(8PASS/1FAIL)이었으며 `--testTimeout=120000` 재실행9PASS로 확인했다. 제품 코드·검사 기준 변경 없음, 최초 결과도 보존한다.
 
 통합 차단 지적0. 실제 기기/진짜 로그인·RLS/자연생활36은 여전히 미검증이며 이 client-only 출시에 새 권한 검증을 했다고 주장하지 않는다. 후속 문서 harness/memory·diff 검사, 최신 main fast-forward 조건, Workers Builds 새 SHA 및 운영 실제 JS/동작은 release 증거로 남긴다. QA는 기존14일/용량 정책으로 보존한다.
+
+출시 검사 후속: 전체520원화 검사의 실측5.25초가 기본5초를 넘으므로 해당 단위 한 건에만30초 제한을 명시했다. 전역 timeout/CI 정책/제품코드·검사 기준은 바꾸지 않았다. 기본 명령의 독립 재검사 결과와 후속SHA의 원격 quality/Workers Builds 결과를 같은 release 증거에 남긴다.
