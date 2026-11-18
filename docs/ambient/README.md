@@ -6,6 +6,7 @@ Start here for `components/shared/ambient/**`, ambient artwork or QA. Read the m
 
 | Task | Read | Code / evidence |
 |---|---|---|
+| Companion appearance/eyes/ears/headwear | [Current appearance contract](../agent/domain-rules/COMPANION_APPEARANCE.md) | `scripts/companion-consistency/pipeline.mjs`, `appearance-policy.json` |
 | Engine, world, camera, load or control wiring | [ENGINE_RULES](ENGINE_RULES.md) | `scene-engine.ts`, `world/*`, `scenes/*` |
 | Scene visuals | [VISUAL_DIRECTION](VISUAL_DIRECTION.md), relevant [BIOME_GRAMMAR](BIOME_GRAMMAR.md) section | Existing scene and [IMMERSION_BREAK_RULES](IMMERSION_BREAK_RULES.md) |
 | Time/weather/season | ENGINE_RULES time section and [SEASON_TIME_WEATHER_GRAMMAR](SEASON_TIME_WEATHER_GRAMMAR.md) | `world/sun.ts`, `time.ts`, `weather.ts`, `light.ts` |

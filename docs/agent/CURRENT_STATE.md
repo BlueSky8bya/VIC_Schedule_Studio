@@ -1,9 +1,9 @@
 # Current State — VIC Schedule Studio
 
-Last Updated: 2026-10-24 (KST)
+Last Updated: 2026-11-18 (KST)
 Project Version: 0.1.0
 
-Current work only. Completed plans/rounds are evidence, not instructions. Previous accumulated state is preserved byte-for-byte in [the snapshot](archive/20261017-CURRENT_STATE-before-platform-remediation.snapshot.txt); use topic records for current behavior.
+Current work only; history is evidence, not instructions. Previous state: [snapshot](archive/20261017-CURRENT_STATE-before-platform-remediation.snapshot.txt).
 
 ## Current Objective
 
@@ -23,9 +23,9 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
+| COMPANION-CONSISTENCY-20261118 | Integration pending | Commit/push authorized to codex/companion-consistency; main integration/deploy separate | [Plan](plans/PLAN-20261118-companion-consistency.md) |
 | COMPANION-ACTIVITY-145 | Local gates and three final reviews passed | Scoped commit/push then actual fullSHA/deployed viewer check | [145 plan](plans/PLAN-20261020-145-companion-activity-criteria.md) |
 | OPS-CLOUDFLARE-MOVE | In progress | Vercel paused (CPU 4h4m/4h) until 2026-12-13; moving to Cloudflare Workers Paid + victory-live.com, no further Vercel use. Code ready; account/domain/secrets steps next | [Runbook](../ops/CLOUDFLARE_MIGRATION.md) |
-| OPS-VERCEL-QUOTA | Superseded by OPS-CLOUDFLARE-MOVE | Hobby Last30Days CPU6h46m/4h, memory461.3/360GB-Hrs; same-period improvement and restriction/reset status remain | [Record](verification/FLUID_HIDE_EXTRACTION-20261017.md#배포-승인한도-설명-정정) |
 | OPS-STORAGE | Watch | Gate released;6 deleted;quota refresh unproven | [Record](verification/DEPLOYMENT_STORAGE-20261024.md) |
 | OPS-DB-QUOTA | Watch | Free/Nano confirmed; current cycle within quota, DB dashboard274.43MB/disk570.76MB of2GB. Full backup path and same-period cost effect remain | [Provider check](verification/SUPABASE_PROVIDER-20261017.md) |
 | PRIVACY-20260921 | Follow-up | Historical Git exposure, legacy realtime clients, provider/retention and real-login evidence | [Privacy audit](verification/PRIVACY-20260921.md), [checks](verification/OPEN_CHECKS.md) |
@@ -48,7 +48,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 ## Next Exact Steps
 
 0. COMPANION-ACTIVITY-145: literal companion commit→remote quality/Vercel→new anonymous deployed fullSHA/UI verification. [145 details](plans/PLAN-20261020-145-companion-activity-criteria.md).
-1. OPS-DB-QUOTA/OPS-VERCEL-QUOTA: compare post-release route/RPC/cost with the same period/denominator, recheck Hobby restrictions/reset status; define the Free-plan full-backup/recovery path and recheck unavailable compute graphs. No automatic future run was created.
+1. OPS-DB-QUOTA/OPS-CLOUDFLARE-MOVE: follow the migration runbook; compare route/RPC/cost over matching periods. Define Free-plan full backup/recovery and recheck unavailable compute graphs. Historical Vercel quota evidence stays in its topic record. No automation created.
 2. ART-PINE-PILOT: only on owner curation, remove named references and freeze fresh variants2/3 request. Preserve the old pilot/approved inputs.
 3. RULE-ART-COMPLETION: wait for pending presentation/source-policy choices; unrelated work grants no approval.
 4. VERIFY-REAL-SESSION: use synthetic canaries and real authority; fixture/service-role tests never establish genuine-login RLS.
@@ -60,4 +60,4 @@ Living AI396024fc released;25 scoped native proofs/6,840 units verified. [Eviden
 Actual lamp trace2e669e72 has16 touch paints/0receipts; matched viewer geometry342x260/full graphics/DPR0.9 fails before170 (c49c947d). Bounded physical alignment preserves strict1.25px and passes final3 native cases177e87a8,99 related units/type/lint/build. Source review accepted; actual independent/deployed result pending. No200. [Plan](plans/PLAN-20261022-lamp-live-trace.md).
 
 
-Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.
+Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). Historical checks are not current verification.

@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { boundCompanionHangingPose, createCompanionMotion, nextCompanionPaint, sampleCompanionTravel, type CompanionMotionInput, type CompanionMotionPose } from "@/lib/ui/viewer-companion/motion";
-import { boundCompanionHeldPose } from "@/lib/ui/viewer-companion/held-inertia";
+import { boundCompanionHeldPose, companionHeldMaterialContacts } from "@/lib/ui/viewer-companion/held-inertia";
 import { companionSpriteMetadata, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { COMPANION_THROW_ROW } from "@/lib/ui/viewer-companion/timing";
+import { companionMaterialStack } from "@/lib/ui/viewer-companion/material-scale";
 
 const input = (patch: Partial<CompanionMotionInput> = {}): CompanionMotionInput => ({ row: 0, phase: 0, status: "idle", x: 100, y: 500, now: 0, ...patch });
 
@@ -159,14 +160,51 @@ describe("held gravity viewport composition", () => {
   const pose: CompanionMotionPose = { row: 8, column: 7, facing: 1, bob: 0, scaleX: 1 / 1.315, scaleY: 1.315, tilt: 6.8 };
   // Independent CSS-order oracle: inner pose about the mirrored grip, facing
   // about the cell center, then outer inertia about the actual world grip.
-  const project = (p: CompanionMotionPose, point: { x: number; y: number }, origin: { x: number; y: number }, outer: { tilt: number; stretch: number }) => {
-    const gx = p.facing < 0 ? size - grip.x : grip.x, angle = p.tilt * Math.PI / 180;
-    const dx = (point.x - gx) * p.scaleX, dy = (point.y - grip.y) * p.scaleY;
+  const project = (p: CompanionMotionPose, point: { x: number; y: number }, origin: { x: number; y: number }, outer: { tilt: number; stretch: number }, contacts = { pressure: { squash: 0 }, response: { squash: 0 } }) => {
+    const [innerScale, contactScale, reactionScale, outerScale] = companionMaterialStack([p.scaleY, 1 - contacts.pressure.squash, 1 - contacts.response.squash, 1 + outer.stretch]);
+    const gx = p.facing < 0 ? size - grip.x : grip.x, angle = Number(p.tilt.toFixed(3)) * Math.PI / 180;
+    const dx = (point.x - gx) * Number(innerScale.scaleX.toFixed(4)), dy = (point.y - grip.y) * Number(innerScale.scaleY.toFixed(4));
     const ix = gx + dx * Math.cos(angle) - dy * Math.sin(angle), iy = grip.y + dx * Math.sin(angle) + dy * Math.cos(angle) + p.bob;
-    const fx = p.facing < 0 ? size - ix : ix, ex = (fx - grip.x) / (1 + outer.stretch), ey = (iy - grip.y) * (1 + outer.stretch), oa = outer.tilt * Math.PI / 180;
+    const cx = size / 2 + (ix - size / 2) * Number(contactScale.scaleX.toFixed(4)), cy = size + (iy - size) * Number(contactScale.scaleY.toFixed(4));
+    const rx = size / 2 + (cx - size / 2) * Number(reactionScale.scaleX.toFixed(4)), ry = size + (cy - size) * Number(reactionScale.scaleY.toFixed(4));
+    const fx = p.facing < 0 ? size - rx : rx, ex = (fx - grip.x) * Number(outerScale.scaleX.toFixed(4)), ey = (ry - grip.y) * Number(outerScale.scaleY.toFixed(4)), oa = Number(outer.tilt.toFixed(3)) * Math.PI / 180;
     return { x: origin.x + grip.x + ex * Math.cos(oa) - ey * Math.sin(oa), y: origin.y + grip.y + ex * Math.sin(oa) + ey * Math.cos(oa) };
   };
   const corners = (p: CompanionMotionPose, origin: { x: number; y: number }, outer: { tilt: number; stretch: number }) => [0, size].flatMap(x => [0, size].map(y => project(p, { x, y }, origin, outer)));
+
+  it("bounds the restored width after the shared strain cap at the left edge", () => {
+    const centeredGrip = { x: 46, y: 46 }, origin = { x: 2, y: 29 }, outer = { tilt: 0, stretch: 0 };
+    const viewport = { width: 480, height: 400 };
+    // Unlimited y1.315 narrowed x enough to admit this6.8° tilt. The actual
+    // capped y1.08 restores width and previously put this corner at x=-.175.
+    const bounded = boundCompanionHangingPose(pose, origin, centeredGrip, size, viewport, outer);
+    expect(bounded.tilt).toBeLessThan(pose.tilt);
+    const [material] = companionMaterialStack([bounded.scaleY]);
+    const a = Number(bounded.tilt.toFixed(3)) * Math.PI / 180;
+    for (const x of [0, size]) for (const y of [0, size]) {
+      const dx = (x - centeredGrip.x) * Number(material.scaleX.toFixed(4)), dy = (y - centeredGrip.y) * Number(material.scaleY.toFixed(4));
+      expect(origin.x + centeredGrip.x + dx * Math.cos(a) - dy * Math.sin(a)).toBeGreaterThanOrEqual(2);
+    }
+  });
+
+  it("keeps a bounded grip safe while prior contact and landing squash tails are still sampled", () => {
+    const origin = { x: 2, y: 29 }, outer = { tilt: 0, stretch: 0 };
+    const bounded = boundCompanionHangingPose(pose, origin, grip, size, viewport, outer);
+    const pressure = { squash: .13, pressure: .8, x: 0, y: 0, tilt: 0 }, response = { squash: .09, lift: 0, active: true };
+    expect(project(bounded, { x: 0, y: size }, origin, outer, { pressure, response }).x).toBeLessThan(2);
+    // Applies while held and during the same100ms grip-pivot release mixer.
+    const contacts = companionHeldMaterialContacts(pressure, response, true);
+    expect(contacts.pressure).toEqual({ ...pressure, squash: 0 });
+    expect(contacts.response).toEqual({ ...response, squash: 0 });
+    for (const x of [0, size]) for (const y of [0, size]) {
+      const point = project(bounded, { x, y }, origin, outer, contacts);
+      expect(point.x).toBeGreaterThanOrEqual(2); expect(point.x).toBeLessThanOrEqual(viewport.width - 2);
+      expect(point.y).toBeGreaterThanOrEqual(2); expect(point.y).toBeLessThanOrEqual(viewport.height - 2);
+    }
+    expect(pressure.squash).toBe(.13); expect(response.squash).toBe(.09);
+    const released = companionHeldMaterialContacts(pressure, response, false);
+    expect(released.pressure).toBe(pressure); expect(released.response).toBe(response);
+  });
 
   it("preserves the full center shape and the actual grip under asymmetric mirrored composition", () => {
     const origin = { x: 150, y: 100 }, outer = { tilt: 18, stretch: .06 };
@@ -199,7 +237,7 @@ describe("held gravity viewport composition", () => {
   });
 
   it("limits the confirmed lower-edge extension while preserving every safe reduced-motion pose unchanged", () => {
-    const origin = { x: 150, y: viewport.height - 12 - size }, outer = { tilt: 0, stretch: 0 };
+    const origin = { x: 150, y: viewport.height - 4 - size }, outer = { tilt: 0, stretch: 0 };
     expect(Math.max(...corners(pose, origin, outer).map(point => point.y))).toBeGreaterThan(viewport.height);
     const bounded = boundCompanionHangingPose(pose, origin, grip, size, viewport, outer);
     expect(bounded.scaleY).toBeLessThan(pose.scaleY); expect(bounded.scaleY).toBeGreaterThan(1);
@@ -215,7 +253,7 @@ describe("held gravity viewport composition", () => {
   });
 
   it("keeps the bounded first release frame continuous when applied throughout the existing grip mixer", () => {
-    const motion = createCompanionMotion({ loopRows: [8] }), origin = { x: 150, y: viewport.height - 12 - size }, outer = { tilt: 0, stretch: 0 };
+    const motion = createCompanionMotion({ loopRows: [8] }), origin = { x: 150, y: viewport.height - 4 - size }, outer = { tilt: 0, stretch: 0 };
     let held = motion.sample(input({ row: 8, status: "held" }));
     for (let now = 8; now <= 496; now += 8) held = motion.sample(input({ row: 8, status: "held", now }));
     const shown = boundCompanionHangingPose(held, origin, grip, size, viewport, outer);

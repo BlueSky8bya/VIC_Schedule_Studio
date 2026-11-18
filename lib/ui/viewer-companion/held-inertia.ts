@@ -1,5 +1,5 @@
 import { companionGripProfile, type CompanionGrip } from "./contact-grip";
-import { companionMaterialScale } from "./material-scale";
+import { companionMaterialStack } from "./material-scale";
 
 export type CompanionHeldPose = { tilt: number; stretch: number; active: boolean };
 type Spring = { position: number; velocity: number };
@@ -8,6 +8,18 @@ const TAIL_MS = 1500, FADE_MS = 1000;
 const clamp = (value: number, low: number, high: number) => Math.max(low, Math.min(high, value));
 const still = (): Spring => ({ position: 0, velocity: 0 });
 const quiet = (): CompanionHeldPose => ({ tilt: 0, stretch: 0, active: false });
+
+/** Grip gravity and inertia own the held material budget through the release
+ * mixer. Keep sampling the unrelated contact/landing envelopes, but do not
+ * let their squash tails redistribute that already-bounded budget. The same
+ * returned poses go to CSS and point projection; input/reward fields survive. */
+export function companionHeldMaterialContacts<P extends { squash: number }, R extends { squash: number }>(pressure: P, response: R, gripActive: boolean): { pressure: P; response: R } {
+  if (!gripActive) return { pressure, response };
+  return {
+    pressure: pressure.squash ? { ...pressure, squash: 0 } : pressure,
+    response: response.squash ? { ...response, squash: 0 } : response,
+  };
+}
 
 /** Unlike a one-shot FLIP, captured input can reverse before the previous
  * response ends. An analytic underdamped spring carries that velocity without
@@ -69,8 +81,9 @@ export function createCompanionHeldInertia() {
 export function boundCompanionHeldPose(pose: CompanionHeldPose, origin: Point, grip: Point, size: number, viewport: { width: number; height: number }): CompanionHeldPose {
   if (![pose.tilt, pose.stretch, origin.x, origin.y, grip.x, grip.y, size, viewport.width, viewport.height].every(Number.isFinite) || size <= 0 || 1 + pose.stretch <= 0) return quiet();
   const fits = (gain: number) => {
-    const angle = pose.tilt * gain * Math.PI / 180, cos = Math.cos(angle), sin = Math.sin(angle);
-    const { scaleX: sx, scaleY: sy } = companionMaterialScale(1 + pose.stretch * gain);
+    const angle = Number((pose.tilt * gain).toFixed(3)) * Math.PI / 180, cos = Math.cos(angle), sin = Math.sin(angle);
+    const [material] = companionMaterialStack([1 + pose.stretch * gain]);
+    const sx = Number(material.scaleX.toFixed(4)), sy = Number(material.scaleY.toFixed(4));
     for (const cx of [0, size]) for (const cy of [0, size]) {
       const dx = (cx - grip.x) * sx, dy = (cy - grip.y) * sy;
       const x = origin.x + grip.x + dx * cos - dy * sin, y = origin.y + grip.y + dx * sin + dy * cos;

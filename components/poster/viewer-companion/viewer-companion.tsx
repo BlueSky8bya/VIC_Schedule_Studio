@@ -73,7 +73,7 @@ import { createCompanionHousehold, type CompanionHouseholdBeat, type CompanionHo
 import { createCompanionViewportRecovery } from "@/lib/ui/viewer-companion/viewport-recovery";
 import { companionPositionPoint, resolveCompanionPosition, type CompanionPositionMemory, type CompanionPositionSnapshot } from "@/lib/ui/viewer-companion/position-memory";
 import { companionGripProfile } from "@/lib/ui/viewer-companion/contact-grip";
-import { companionMaterialScale } from "@/lib/ui/viewer-companion/material-scale";
+import { companionMaterialStack } from "@/lib/ui/viewer-companion/material-scale";
 import { COMPANION_FULL_THRESHOLD, DEFAULT_COMPANION_CARE, loadCompanionCare, saveCompanionCare, subscribeCompanionHabits, subscribeCompanionLife } from "@/lib/ui/viewer-companion/care";
 import { learnCompanionHabits, type CompanionExperience } from "@/lib/ui/viewer-companion/habits";
 import { experienceCompanionLife, type CompanionLifeExperience } from "@/lib/ui/viewer-companion/life";
@@ -101,7 +101,7 @@ import { createCompanionOverlayReturn, type CompanionReturnPoint } from "@/lib/u
 import { FLIP_MS } from "@/lib/ui/flip-motion";
 import { hasAmbientPauseOutside } from "@/lib/ui/ambient-pause";
 import { createCompanionSupportMotion } from "@/lib/ui/viewer-companion/support-motion";
-import { boundCompanionHeldPose, createCompanionHeldInertia } from "@/lib/ui/viewer-companion/held-inertia";
+import { boundCompanionHeldPose, companionHeldMaterialContacts, createCompanionHeldInertia } from "@/lib/ui/viewer-companion/held-inertia";
 import { createCompanionHeldShake } from "@/lib/ui/viewer-companion/held-shake";
 import { captureCompanionRestartSupport, companionRestartPaintPending, deferCompanionRestartSupport, companionViewportFloorAbove, companionWorldHiddenReason, firstCompanionSupportBelow, nearestVerticalCompanionSupport, recoverCompanionDropAtViewportFloor, recoverCompanionPassiveFloor, recoverCompanionVerticalSupport, resolveCompanionRestartSupport, type CompanionRestartSupport } from "@/lib/ui/viewer-companion/support-landing";
 import { boundCompanionBallisticArc, boundCompanionSineArc, companionBallisticArcIsSafe } from "@/lib/ui/viewer-companion/jump-arc";
@@ -173,6 +173,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
   const body = useRef<HTMLDivElement>(null), actor = useRef<HTMLButtonElement>(null), effect = useRef<HTMLSpanElement>(null);
   const sprite = useRef<HTMLSpanElement>(null), pose = useRef<HTMLSpanElement>(null), reaction = useRef<HTMLSpanElement>(null), facing = useRef<HTMLSpanElement>(null), shadow = useRef<HTMLSpanElement>(null);
   const expressionCanvas = useRef<HTMLCanvasElement>(null);
+  const earLayers = useRef<HTMLSpanElement>(null);
   const washTool = useRef<HTMLSpanElement>(null);
   const interactionTool = useRef<HTMLSpanElement>(null);
   const accessoryBack = useRef<HTMLSpanElement>(null), accessoryFront = useRef<HTMLSpanElement>(null), giftProp = useRef<HTMLSpanElement>(null), giftButton = useRef<HTMLButtonElement>(null);
@@ -942,7 +943,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       wardrobeLoading = import("@/lib/ui/viewer-companion/accessory").then(module => {
         if (stopped || !accessoryBack.current || !accessoryFront.current || !giftProp.current) return;
         accessoryModule = module;
-        wardrobePainter = module.createCompanionAccessoryPainter({ back: accessoryBack.current, front: accessoryFront.current, gift: giftProp.current });
+        wardrobePainter = module.createCompanionAccessoryPainter({ back: accessoryBack.current, front: accessoryFront.current, gift: giftProp.current, composite: earLayers.current ?? undefined });
         wardrobePainter.paint(paintedSelection, wardrobe.current.equipped, Boolean(wardrobe.current.pending));
         window.dispatchEvent(new Event("vic:companion-sprite"));
       }).catch(() => { wardrobeFailures++; }).finally(() => { wardrobeLoading = undefined; });
@@ -1137,14 +1138,16 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         shape.scaleY *= 1 - radioMotion.squash; shape.scaleX = 1 / shape.scaleY;
       }
       if (neutralVerticalRecovery) Object.assign(shape, { bob: 0, tilt: 0, scaleX: 1, scaleY: 1 });
-      const inertiaScale = companionMaterialScale(1 + sway.stretch);
-      style(inertiaLayer, "transform", `rotate(${sway.tilt.toFixed(3)}deg) scale(${inertiaScale.scaleX.toFixed(4)},${inertiaScale.scaleY.toFixed(4)})`);
-      const pressure = touch.sample(performance.now(), reduced || gfxMode() === "off" || neutralVerticalRecovery);
+      const { pressure, response } = companionHeldMaterialContacts(
+        touch.sample(performance.now(), reduced || gfxMode() === "off" || neutralVerticalRecovery),
+        neutralVerticalRecovery ? { lift: 0, squash: 0 } : supportMotion.sample(performance.now()),
+        heldPivot || presentationNow - releasedPivotAt < 100,
+      );
       if (!pressure.pressure && !hoverPetting && el.dataset.petting === "touch") data("petting", "ready");
-      const contactScale = companionMaterialScale(1 - pressure.squash);
+      const chew = status === "eat" && !reduced ? Math.sin(presentationNow * .024) * .012 : 0;
+      const [poseScale, contactScale, reactionScale, inertiaScale] = companionMaterialStack([shape.scaleY - chew * .8, 1 - pressure.squash, 1 - response.squash, 1 + sway.stretch]);
+      style(inertiaLayer, "transform", `rotate(${sway.tilt.toFixed(3)}deg) scale(${inertiaScale.scaleX.toFixed(4)},${inertiaScale.scaleY.toFixed(4)})`);
       style(contactLayer, "transform", `translate3d(${(pressure.x * sample.facing).toFixed(3)}px,${pressure.y.toFixed(3)}px,0) rotate(${(pressure.tilt * sample.facing).toFixed(3)}deg) scale(${contactScale.scaleX.toFixed(4)},${contactScale.scaleY.toFixed(4)})`);
-      const response = neutralVerticalRecovery ? { lift: 0, squash: 0 } : supportMotion.sample(performance.now());
-      const reactionScale = companionMaterialScale(1 - response.squash);
       style(reactionLayer, "transform", `translate3d(0,${response.lift.toFixed(3)}px,0) scale(${reactionScale.scaleX.toFixed(4)},${reactionScale.scaleY.toFixed(4)})`);
       // World travel stays smooth even when the authored pose holds. Registration
       // is measured from the opaque body, not transparent padding/shadow specks.
@@ -1190,8 +1193,6 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       if (reach) display = { ...display, x: display.x + reach.shiftX, y: display.y - reach.lift };
       const roomLight = companionRoomBodyLight(display, bedScene?.clip, roomBodyGrade);
       style(el, "--vc-body-room-light", String(roomLight));
-      const chew = status === "eat" && !reduced ? Math.sin(presentationNow * .024) * .012 : 0;
-      const poseScale = companionMaterialScale(shape.scaleY - chew * .8);
       style(poseLayer, "transform", `translate3d(0,${shape.bob.toFixed(3)}px,0) rotate(${shape.tilt.toFixed(3)}deg) scale(${poseScale.scaleX.toFixed(4)},${poseScale.scaleY.toFixed(4)})`);
       if (sample.facing !== paintedFacing) { facingLayer.style.transform = `scaleX(${sample.facing})`; el.dataset.facing = sample.facing < 0 ? "left" : "right"; paintedFacing = sample.facing; }
       // Expression alone changes art. The row8 held sampler above still owns
@@ -1279,9 +1280,13 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         cleanupReceipt: expressionCleanup, meal: expressionMeal, mishap: Boolean(runTrip || action?.toyMishap || heartResult === "removed"),
       }, presentationNow, reduced || gfxMode() === "off" || gfxMode() === "soft" || !currentDrawing || overlayActive || premiereActive || Boolean(pressed || keyboardHeld || placing || interaction || washingPose || aftertaste) || status === "sleep" || status === "held");
       expressionAnimating = Boolean(face);
-      if (face) requestSprite.current(COMPANION_EXPRESSION_REFERENCE_SRC);
-      const faceVisible = facePainter?.paint(paintedSelection, face);
-      if (face && faceVisible) data("expression", face.id); else el.removeAttribute("data-expression");
+      // Once the finite petting expression settles, retain its soft closed
+      // portrait only while the authored petting pose is owned. This is static
+      // paint, never a new animation/collection receipt or reason to keep RAF.
+      const displayFace = face ?? (status === "petted" && currentDrawing && !reduced && !["off", "soft"].includes(gfxMode()) && !overlayActive && !premiereActive ? { id: "melt" as const, progress: .5 } : null);
+      if (displayFace) requestSprite.current(COMPANION_EXPRESSION_REFERENCE_SRC);
+      const faceVisible = facePainter?.paint(paintedSelection, displayFace);
+      if (displayFace && faceVisible) data("expression", displayFace.id); else el.removeAttribute("data-expression");
       const poseMemory = poseWitness({ ...observed, visible: observed.visible && !pause && !overlayActive && !premiereActive }, presentationNow);
       if (poseMemory && recordCompanionObservedPose(poseMemory)) discover({ kind: "behavior", id: poseMemory, source: { x: display.x, y: display.y - size * .4 } });
       if (face && recordCompanionObservedExpression(observed, { ...face, painted: Boolean(faceVisible) }))
@@ -1484,7 +1489,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
       }
       el.hidden = !paintedCell;
       ensureWardrobe();
-      const giftPoint = wardrobePainter?.paint(paintedSelection, wardrobe.current.equipped, Boolean(wardrobe.current.pending), accessoryMotion?.accessory);
+      const giftPoint = wardrobePainter?.paint(paintedSelection, wardrobe.current.equipped, Boolean(wardrobe.current.pending), accessoryMotion?.accessory, faceVisible ? expressionCanvas.current ?? undefined : undefined);
+      if (wardrobePainter?.layered()) el.dataset.earLayered = "true"; else delete el.dataset.earLayered;
       if (accessoryMotion && wardrobePainter?.accessoryReady() && observed.visible && observed.decoded && observed.adoptedIndex === observed.requestedIndex && accessoryFront.current && !accessoryFront.current.hidden) accessoryWitnessed |= accessoryMotion.phase === "show" ? 2 : accessoryMotion.phase === "settle" ? 4 : 0;
       for (const [id, pending] of pendingSituations) {
         if (performance.now() > pending.expires || pending.actionAt !== undefined && pending.actionAt !== began) { pendingSituations.delete(id); continue; }
@@ -5008,6 +5014,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     <button id={actorId} className="vc-actor" ref={actor} type="button" tabIndex={overlayOpen ? -1 : 0} data-sfx="off" data-activity-manual="" aria-label="빅타민 · 쓰다듬고 옮기기" aria-describedby="vc-help" aria-keyshortcuts="Enter Space P N ArrowUp ArrowDown ArrowLeft ArrowRight Escape" onDoubleClick={event => { event.preventDefault(); event.stopPropagation(); }}>
       <span className="vc-inertia" ref={inertia} aria-hidden="true"><span className="vc-facing" ref={facing}><span className="vc-reaction" ref={reaction}><span className="vc-contact" ref={contact}><span className="vc-pose" ref={pose}>
         <span className="vc-wearable vc-wearable-back" ref={accessoryBack} hidden />
+        <span className="vc-ear-layers" ref={earLayers} hidden />
         <span className="vc-sprite" ref={sprite} />
         <canvas className="vc-expression-face" ref={expressionCanvas} hidden aria-hidden="true" />
         <span className="vc-wearable vc-wearable-front" ref={accessoryFront} hidden />

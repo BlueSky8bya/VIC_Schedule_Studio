@@ -1,3 +1,4 @@
+import { resolveCompanionAppearanceSource as activeSource } from "@/lib/ui/viewer-companion/appearance";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
@@ -8,13 +9,29 @@ import base from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
 import play from "@/lib/ui/viewer-companion/play-motion-sprite.json";
 import living from "@/lib/ui/viewer-companion/living-motion-sprite.json";
 import edition from "../fixtures/companion-eye-scale-143.json";
+import appearanceEdition from "@/lib/ui/viewer-companion/appearance-edition.json";
+import homeContactAnchors from "@/lib/ui/viewer-companion/home-contact-anchors-157.json";
+import expressionAnchors from "@/lib/ui/viewer-companion/expression-anchors-161.json";
+import expressionOverrides from "@/lib/ui/viewer-companion/expression-pose-overrides.json";
 import { companionSpriteMetadata, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
-import { companionAccessoryPlacement, companionGiftAnchor } from "@/lib/ui/viewer-companion/accessory";
+import { companionAccessoryPlacement, companionCarryAnchor, companionGiftAnchor, companionHomeContactAnchor } from "@/lib/ui/viewer-companion/accessory";
 import { COMPANION_ACCESSORY_IDS } from "@/lib/ui/viewer-companion/gifts";
 
 const root = process.cwd();
 const sha256 = (bytes: Buffer) => crypto.createHash("sha256").update(bytes).digest("hex");
 const landmarkNames = ["face", "head", "chest", "sideChest", "sideBody"] as const;
+const mappedPoint = <T extends { x: number; y: number }>(index: number, point: T) => {
+  const { scale, pivot } = appearanceEdition.frames.find(frame => frame.physicalIndex === index)!.material;
+  return { ...point, x: pivot.x + (point.x - pivot.x) * scale, y: pivot.y + (point.y - pivot.y) * scale };
+};
+const mappedLandmark = <T extends { x: number; y: number; width: number }>(index: number, point: T) => ({ ...mappedPoint(index, point),
+  width: point.width * appearanceEdition.frames.find(frame => frame.physicalIndex === index)!.material.scale });
+const mappedFace = (frame: typeof anchors.frames[number]) => {
+  const face = mappedLandmark(frame.physicalIndex, frame.face), expression = [...expressionAnchors.frames, ...expressionOverrides.frames].find(pose => pose.physicalIndex === frame.physicalIndex);
+  if (!expression) return face;
+  const [a, b] = expression.eyes.map(eye => mappedPoint(frame.physicalIndex, { x: eye.center[0], y: eye.center[1] }));
+  return { ...face, x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, roll: Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI };
+};
 
 describe("source-bound all-pose accessory anchors", () => {
   it("covers the exact520 adopted physical frames and41 logical rows without a generic missing-pose fallback", () => {
@@ -59,7 +76,7 @@ describe("source-bound all-pose accessory anchors", () => {
     for (const [index, parent] of anchors.sources.entries()) {
       const patch = edition.packets.find(p => p.atlas === index);
       if (patch) { expect(parent.src).toBe(patch.parentSrc); expect(parent.sha256).toBe(patch.parentSha256); }
-      const expected = patch ? { src: patch.src, sha256: patch.sha256, bytes: patch.bytes } : parent;
+      const expected = activeSource(patch ? { src: patch.src, sha256: patch.sha256, bytes: patch.bytes } : parent);
       expect(companionSpriteMetadata.atlases[index]).toMatchObject(expected);
       const actual = fs.readFileSync(path.join(root, "public", expected.src));
       expect(sha256(actual)).toBe(expected.sha256); expect(actual.length).toBe(expected.bytes);
@@ -95,8 +112,28 @@ describe("source-bound all-pose accessory anchors", () => {
     // A requested nuzzle can retain the real idle image while its packet
     // decodes. Its accessory must stay on that adopted idle registration.
     const retained = selectCompanionSprite(0), requested = selectCompanionSprite(513);
-    expect(companionAccessoryPlacement(retained, "sunglasses")!.x).toBe(anchors.frames[0].face.x);
+    expect(companionAccessoryPlacement(retained, "sunglasses")!.x).toBe(mappedFace(anchors.frames[0]).x);
     expect(companionAccessoryPlacement(retained, "sunglasses")!.x).not.toBe(companionAccessoryPlacement(requested, "sunglasses")!.x);
+  });
+
+  it("projects all worn-face, carry, gift and overhead anchors through the same measured uniform correction", () => {
+    expect(expressionOverrides.frames.map(frame => frame.physicalIndex)).toEqual([323, 324, 325, 331, 332, 333]);
+    expect(expressionOverrides.frames.every(frame => ![326, 327, 328, 329, 330].includes(frame.physicalIndex))).toBe(true);
+    let corrected = 0;
+    for (const frame of anchors.frames) {
+      const id = frame.physicalIndex, selected = selectCompanionSprite(id);
+      const face = mappedFace(frame), chest = mappedLandmark(id, frame.chest), head = mappedLandmark(id, frame.head);
+      const glasses = companionAccessoryPlacement(selected, "sunglasses")!;
+      expect({ x: glasses.x, y: glasses.y }).toEqual({ x: face.x, y: face.y });
+      expect(companionCarryAnchor(selected)).toEqual(chest);
+      expect(companionGiftAnchor(selected)).toEqual({ ...chest, y: chest.y + chest.width * .1,
+        width: chest.width * .43, behind: frame.orientation === "back" });
+      const contact = homeContactAnchors.frames.find(point => point.physicalIndex === id);
+      const expectedContact = contact ? { ...head, ...mappedPoint(id, { x: contact.x, y: contact.y }) } : head;
+      expect(companionHomeContactAnchor(selected, true)).toEqual(expectedContact);
+      if (appearanceEdition.frames.find(pose => pose.physicalIndex === id)!.material.scale !== 1) corrected++;
+    }
+    expect(corrected).toBeGreaterThan(200);
   });
 
   it("recomputes the same registration in check-only mode without modifying the table", () => {

@@ -9,7 +9,7 @@ const CRON_ROUTES: Record<string, string> = {
   "0 18 * * *": "/api/cron/broadcast-poll"
 };
 
-export default {
+const worker = {
   fetch: handler.fetch,
 
   async scheduled(controller: { cron: string }, env: Env, ctx: { waitUntil(p: Promise<unknown>): void }) {
@@ -23,6 +23,8 @@ export default {
     ctx.waitUntil(handler.fetch(request, env, ctx));
   }
 };
+
+export default worker;
 
 // OpenNext 캐시 재생성 큐(Durable Object)를 Worker에서 내보내야 바인딩이 잡힌다.
 export { DOQueueHandler } from "../.open-next/worker.js";

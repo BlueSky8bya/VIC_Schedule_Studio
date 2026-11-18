@@ -18,6 +18,14 @@ for (const [epoch, sheet] of [[114, vector], [115, latestVector]] as const) for 
   const [left, top, width, height] = item.bounds, scale = companionEyeViewScale(view), offset = 64 - 64 * scale;
   frames.set(`${item.id}:${view}`, { id: `${item.id}:${view}`, atlas: `accessory-${epoch}`, index: row * 4 + column, x: column * 128, y: row * 128, width: 128, height: 128, content: { x: left * scale + offset, y: top, width: width * scale, height }, src: sheet.src, atlasWidth: sheet.columns * sheet.cell, atlasHeight: sheet.frames.length * sheet.cell, ...(item.paired ? { pairedEyes: true as const } : {}), viewScale: scale });
 }
+// Closed royal crown: red velvet, gold arches, lilies, gems and a top cross.
+// Preserve the old atlas as lineage; every live/wardrobe consumer resolves here.
+for (const [column, view] of views.entries()) frames.set(`tiny-crown:${view}`, {
+  id: `tiny-crown:${view}`, atlas: "royal-crown-20261118-v2", index: column,
+  x: column * 128, y: 0, width: 128, height: 128,
+  content: { x: 4, y: 0, width: 120, height: 120 },
+  src: "/companion/collection/royal-crown-20261118-v2.svg", atlasWidth: 512, atlasHeight: 128,
+});
 export function getCompanionAccessoryArtFrame(id: string | undefined, view: CompanionAccessoryView = "front"): CompanionAccessoryArtFrame | undefined {
   if (!id) return undefined;
   const current = currentCompanionAccessory(id as CompanionAccessoryId);

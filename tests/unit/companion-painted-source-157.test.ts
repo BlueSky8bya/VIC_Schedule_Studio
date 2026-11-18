@@ -29,6 +29,7 @@ const print=(node:ts.Node)=>ts.createPrinter().printNode(ts.EmitHint.Unspecified
 const actualMaskCode=ts.transpileModule(`
 const PIXELS=192,SCALE=PIXELS/80,allowed=new Uint8Array(PIXELS*PIXELS);
 const mix=(a,b,p)=>a+(b-a)*p;
+const native=undefined,original=undefined;
 const face={gazeX:0,gazeY:0,weight:1,smile:.7,open:1,tremble:.3};
 const layout=companionFaceLayout(pose);
 const pixels={getImageData(left,top,width,height){const data=new Uint8ClampedArray(width*height*4);
@@ -37,6 +38,7 @@ const pixels={getImageData(left,top,width,height){const data=new Uint8ClampedArr
 const ${print(background)};
 const ${print(eyePatches)};
 const ${print(mouthCenter)};
+const ${print(declaration("mouthFringe")!)};
 const ${print(mouthBox)};
 const ${print(mouthFill)};
 return {allowed,eyePatches,mouthBox,mouthFill};`,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText;

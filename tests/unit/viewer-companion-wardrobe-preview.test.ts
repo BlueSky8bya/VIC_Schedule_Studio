@@ -28,7 +28,7 @@ describe("isolated discovered wardrobe gestures", () => {
 
   it("crops the native atlas cell and applies registration once outside the canvas", () => {
     for (let index = 0; index < companionSpriteMetadata.frames.length; index++) {
-      const selected = selectCompanionSprite(index), drawing = companionPreviewDrawing(selected, 1536, 384);
+      const selected = selectCompanionSprite(index), drawing = companionPreviewDrawing(selected, 1536, selected.gridRows * 192);
       expect(drawing).toMatchObject({ sourceX: selected.index % 8 * 192, sourceY: Math.floor(selected.index / 8) * 192, sourceWidth: 192, sourceHeight: 192 });
       expect(drawing.x).toBe(selected.frame.x / 80 * 100); expect(drawing.y).toBe(selected.frame.y / 80 * 100);
       expect(drawing.clip).toEqual(selected.frame.clip.map(value => value / 80 * 100));
@@ -75,7 +75,7 @@ describe("preview preparation uses the actual bounded decoder", () => {
     const attempts = new Map<string, number>(), outcomes: boolean[] = [false, true, false, true, false, false];
     vi.stubGlobal("Image", class {
       src = ""; isConnected = false;
-      async decode() { attempts.set(this.src, (attempts.get(this.src) ?? 0) + 1); if (!this.src.includes("action-00")) return; if (!outcomes.shift()) throw Error("decode failure"); }
+      async decode() { attempts.set(this.src, (attempts.get(this.src) ?? 0) + 1); if (!this.src.includes("action-00") && !this.src.includes("appearance-20261118-00")) return; if (!outcomes.shift()) throw Error("decode failure"); }
     });
     try {
       const sprites = await import("@/lib/ui/viewer-companion/sprite-quality");
@@ -106,7 +106,7 @@ describe("preview preparation uses the actual bounded decoder", () => {
 
   it("renews a failed packet after another consumer decodes it successfully", async () => {
     vi.resetModules(); let idleAttempts = 0;
-    vi.stubGlobal("Image", class { src = ""; isConnected = false; async decode() { if (this.src.includes("action-00") && ++idleAttempts <= 2) throw Error("decode failure"); } });
+    vi.stubGlobal("Image", class { src = ""; isConnected = false; async decode() { if ((this.src.includes("action-00") || this.src.includes("appearance-20261118-00")) && ++idleAttempts <= 2) throw Error("decode failure"); } });
     try {
       const sprites = await import("@/lib/ui/viewer-companion/sprite-quality");
       const { createCompanionPreviewPreparation } = await import("@/lib/ui/viewer-companion/wardrobe-preview");

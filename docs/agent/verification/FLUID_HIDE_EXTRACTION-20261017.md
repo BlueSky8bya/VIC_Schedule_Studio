@@ -25,6 +25,8 @@ Status: Deployed99ee2a76 and verified on2026-10-17. Quota follow-up remains; no 
 
 ## 배포 승인·한도 설명 정정
 
+2026-11-18 활성 인덱스 정리: `OPS-VERCEL-QUOTA`는 `OPS-CLOUDFLARE-MOVE`로 대체되어 CURRENT_STATE 활성행에서 제외했다. 과거 Last30Days CPU6h46m/4h·memory461.3/360GB-Hrs와 미확인인 같은 기간 비용 개선·제한/초기화 증거는 이 문서에 보존한다. 한도 초과가 해소됐다는 뜻이 아니다. 현재 작업 경로는 [Cloudflare 이전](../../ops/CLOUDFLARE_MIGRATION.md)이며 Vercel 추가 사용을 지시하지 않는다.
+
 2026-10-17 소유자가 이 별도 대화에서 배포를 승인했다. 배포 전 현재 main23d3a0a9와 변경 범위를 대조하고 전체 unit1,925/1,925 PASS(201파일), 최종084 build/typecheck/lint/rendered9의 동일 소스를 확인했다. 새 서버/DB·요금 설정 변경과 사용자 art/preview/.vscode는 제외한다. 별도 리뷰어는 이 side 대화의 subagent 금지로 사용하지 않았으며, 자체 코드 대조와 자동/원격 검증을 독립 리뷰어의 PASS로 표시하지 않는다.
 
 실제 Vercel UI의 Hobby 플랜·Last30Days 표시에서 CPU6h46m, Memory461.3GB-Hrs를 확인했다. 표시 구간은 `Sep16 오후10:00–Oct16 오후10:00`이며 이를 다른 기간의118회/오류0%와 같은 지표로 계산하지 않는다. 공식 [계량 규칙](https://vercel.com/docs/functions/usage-and-pricing)은 CPU를 실제 계산 시간, memory를 할당GB×요청을 처리하는 인스턴스 시간으로 정의한다. CPU는 외부 I/O 대기 중 계량을 멈추지만 memory는 계속된다. 4h/360GB-Hrs는 Hobby 포함량이며 초과는 아직 해소되지 않았다. [Hobby 정책](https://vercel.com/docs/plans/hobby)에 따르면 초과 시 기능 사용이 제한될 수 있다. 기존 누적은 최적화·재배포로 초기화되지 않는다. 유료 전환/한도 변경은 하지 않았다.

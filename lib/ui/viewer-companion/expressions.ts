@@ -55,7 +55,7 @@ export function sampleCompanionExpression(id: CompanionExpressionId, progress: n
     case "awake": eyes(E.smile, E.smile, 1 - smooth((beat - .1) / .5)); Object.assign(v, { smile: .8 * beat, open: .18 * beat, mouth: M.grin, gazeY: -1, shine: .6, brow: .45 * beat }); break;
     case "greeting": eyes(E.smile, E.round, smooth((p - .25) / .12) * (1 - smooth((p - .6) / .15))); Object.assign(v, { right: 1, smile: 1, open: .45, mouth: M.grin, gazeY: -.5, shine: .5 }); break;
     case "shy": eyes(E.soft); Object.assign(v, { gazeX: 2.3 * (1 - beat * .15), gazeY: 1.2, left: .8, right: .8, smile: .4, mouth: M.smile }); break;
-    case "melt": eyes(E.smile); Object.assign(v, { smile: 1, mouth: M.cat, gazeY: -.3, slant: .35 }); break;
+    case "melt": eyes(E.smile); Object.assign(v, { smile: .65, mouth: M.smile, gazeY: 0, slant: 0 }); break;
     case "more-pets": Object.assign(v, { gazeY: -.25 - 1.85 * smooth((p - .12) / .12), smile: .05 + .6 * smooth((p - .28) / .2), open: 0, mouth: M.smile, brow: 0, shine: .8 }); break;
     case "busy": eyes(E.flat); Object.assign(v, { left: .55, right: .7, gazeX: -1.8, smile: -.4, mouth: M.pout, brow: -.5 }); break;
     case "play-ready": Object.assign(v, { gazeX: 1.3 * wave, gazeY: -.4, smile: .9, open: .6, mouth: M.grin, shine: 1 }); break;
@@ -105,19 +105,19 @@ export function companionMealExpression(food: string): CompanionExpressionId {
 /** Finite display-only owner. Concrete event/action tokens are consumed once;
  * no timer/rAF is created and an expired sequence cannot rearm itself. */
 export function createCompanionExpressions() {
-  let active: { id: CompanionExpressionId; token: string; began: number } | undefined, previousPet = false, petStarted = 0, petEnded = 0, serial = 0, nextAt = 0;
+  let active: { id: CompanionExpressionId; token: string; began: number } | undefined, previousPet = false, petEnded = 0, serial = 0, nextAt = 0;
   let previousInside: boolean | undefined, entered = 0, mealSerial = 0, mealAt = -Infinity, cleanup = 0;
   const seen = new Map<string, number>();
   return {
     sample(c: CompanionExpressionContext, now: number, quiet = false) {
       if (!Number.isFinite(now) || quiet) { active = undefined; previousPet = c.petting; mealSerial = c.meal?.serial ?? mealSerial; cleanup = c.cleanupReceipt ?? cleanup; return null; }
-      if (c.petting && !previousPet) { petStarted = now; serial++; }
+      if (c.petting && !previousPet) serial++;
       if (!c.petting && previousPet) petEnded = now;
       previousPet = c.petting;
       if (previousInside === false && c.atHome) { entered++; } previousInside = c.atHome;
       if (active && (now - active.began >= COMPANION_EXPRESSION_MS || now < active.began)) { active = undefined; nextAt = now + 8000; }
       let id: CompanionExpressionId | undefined, token = c.token;
-      if (c.petting) { id = c.busy || ["sleepy", "homebody"].includes(c.personality) && c.energy < .35 ? "busy" : now - petStarted > 550 ? "melt" : ["affectionate", "balanced"].includes(c.personality) ? "shy" : "greeting"; token = `pet:${serial}:${id}`; }
+      if (c.petting) { id = c.busy || ["sleepy", "homebody"].includes(c.personality) && c.energy < .35 ? "busy" : "melt"; token = `pet:${serial}:${id}`; }
       else if (petEnded && now - petEnded < 1800) { id = "more-pets"; token = `pet-end:${serial}`; }
       else if (c.cleanupReceipt && c.cleanupReceipt !== cleanup) { id = "tidy-pride"; token = `cleanup:${c.cleanupReceipt}`; }
       else if (c.meal && c.meal.serial !== mealSerial) { id = companionMealExpression(c.meal.food); token = `meal:${c.meal.serial}`; }
@@ -153,7 +153,10 @@ export function createCompanionExpressions() {
         if (seen.size > 96) seen.delete(seen.keys().next().value!);
       }
       if (!active) return null;
-      return { id: active.id, progress: clamp((now - active.began) / COMPANION_EXPRESSION_MS) };
+      const progress = clamp((now - active.began) / COMPANION_EXPRESSION_MS);
+      // A real hand keeps the relaxed smile settled instead of replaying the
+      // source mouth on the exit half. The finite owner still expires normally.
+      return { id: active.id, progress: c.petting && active.id === "melt" ? Math.min(.5, progress) : progress };
     },
     clear() { active = undefined; previousPet = false; petEnded = 0; nextAt = 0; },
   };

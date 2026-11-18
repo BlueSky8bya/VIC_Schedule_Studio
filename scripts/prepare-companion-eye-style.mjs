@@ -224,7 +224,7 @@ function register(data, atlas, index) {
 
 /** Existing bounded inverse rig. All colour samples come from the new whole
  * key. The central authored face stays rigid together while ears/paper move. */
-export function bakeEyeStyleKey(key, rig, textureScale, placement = { x: 0, y: 0 }) {
+export function bakeEyeStyleKey(key, rig, textureScale, placement = { x: 0, y: 0 }, onSample) {
   const output = Buffer.alloc(cell * cell * 4), body = key.body, face = key.face;
   const visible = key.alpha ?? key.visible ?? body;
   const cx = (visible.left + visible.right) / 2, bottom = visible.bottom, cosine = Math.cos(rig.tilt), sine = Math.sin(rig.tilt);
@@ -244,6 +244,7 @@ export function bakeEyeStyleKey(key, rig, textureScale, placement = { x: 0, y: 0
     // The crop already contains the whole pose and its retained nearby marks.
     // Sampling only bodyBCR±4 here would erase authored tears/emotion marks.
     if (px < 0 || py < 0 || px >= key.width - 1 || py >= key.height - 1) continue;
+    onSample?.(x, y, px, py);
     const ix = Math.floor(px), iy = Math.floor(py), fx = px - ix, fy = py - iy;
     const offsets = [(iy * key.width + ix) * 4, (iy * key.width + ix + 1) * 4, ((iy + 1) * key.width + ix) * 4, ((iy + 1) * key.width + ix + 1) * 4], weights = [(1 - fx) * (1 - fy), fx * (1 - fy), (1 - fx) * fy, fx * fy];
     let alpha = 0; const rgb = [0, 0, 0];
@@ -264,11 +265,12 @@ async function prepareKey(key, targetWidth, targetHeight) {
   return { data, uniformScale: scale };
 }
 
-export async function prepareFamilyKey(key, registration) {
+export async function prepareFamilyKey(key, registration, onSample) {
   const scale = registration.scale;
   const resized = await sharp(key.rgba, { raw: { width: key.width, height: key.height, channels: 4 } }).resize({ width: Math.max(1, Math.floor(key.width * scale)), kernel: 'lanczos3' }).raw().toBuffer({ resolveWithObject: true });
   const body = bounds(resized.data, resized.info.width, resized.info.height), alpha = allAlphaBounds(resized.data, resized.info.width, resized.info.height);
   const left = Math.round(cell / 2 - (body.left + body.right) / 2 + registration.offset.x), top = Math.round(foot - body.bottom + registration.offset.y);
+  if (onSample) for (let y = Math.max(0, top); y < Math.min(cell, top + resized.info.height); y++) for (let x = Math.max(0, left); x < Math.min(cell, left + resized.info.width); x++) onSample(x, y, (x - left + .5) * key.width / resized.info.width - .5, (y - top + .5) * key.height / resized.info.height - .5);
   if (left + alpha.left < 5 || top + alpha.top < 5 || left + alpha.right > cell - 5 || top + alpha.bottom > cell - 5 || alpha.width > Math.floor(cell * .76) || alpha.height > Math.floor(cell * .82)) throw Error('Canonical whole-key registration exceeds its protected alpha footprint');
   // Only transparent exterior padding may be removed to fit the output cell.
   const trimmed = await sharp(resized.data, { raw: { width: resized.info.width, height: resized.info.height, channels: 4 } }).extract({ left: alpha.left, top: alpha.top, width: alpha.width, height: alpha.height }).raw().toBuffer();

@@ -1,5 +1,5 @@
 import type { CompanionSofaPoint } from "./sofa";
-import { companionMaterialScale } from "./material-scale";
+import { companionMaterialStack } from "./material-scale";
 
 type Point = CompanionSofaPoint;
 export type CompanionSofaPoseInput = {
@@ -46,7 +46,7 @@ function projectSpritePoints(input: CompanionSofaPoseInput, points: readonly Poi
   if (cell.clip.some(value => value < 0) || left + right >= 80 || top + lower >= 80) return [];
   const verticals = [shape.scaleY - chew * .8, 1 - pressure.squash, 1 - response.squash, 1 + sway.stretch];
   if (shape.scaleX <= 0 || shape.scaleY <= 0 || verticals.some(value => value <= 0)) return [];
-  const [poseScale, contactScale, reactionScale, inertiaScale] = verticals.map(companionMaterialScale).map(pair => ({ scaleX: rounded(pair.scaleX, 4), scaleY: rounded(pair.scaleY, 4) }));
+  const [poseScale, contactScale, reactionScale, inertiaScale] = companionMaterialStack(verticals).map(pair => ({ scaleX: rounded(pair.scaleX, 4), scaleY: rounded(pair.scaleY, 4) }));
   const layers: Transform[] = [
     { origin: poseOrigin, y: rounded(shape.bob, 3), tilt: rounded(shape.tilt, 3), ...poseScale },
     { origin: bottom, x: rounded(pressure.x * facing, 3), y: rounded(pressure.y, 3), tilt: rounded(pressure.tilt * facing, 3), ...contactScale },

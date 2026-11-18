@@ -1,3 +1,4 @@
+import { appearancePose } from "../fixtures/companion-appearance-geometry";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -17,9 +18,9 @@ const hash = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex")
 
 describe("printed sleep masks115", () => {
   it("carries from each adopted source-bound body point, including walking/jumping without inventing an eating mouth", () => {
-    for (const pose of anchors.frames) {
+    for (const pose of anchors.frames.map(pose=>appearancePose(pose.physicalIndex))) {
       const selected = selectCompanionSprite(pose.physicalIndex);
-      expect(companionCarryAnchor(selected), `carry ${pose.physicalIndex}`).toEqual(pose.chest);
+      expect(companionCarryAnchor(selected), `carry ${pose.physicalIndex}`).toEqual(appearancePose(pose.physicalIndex).chest);
       expect(companionCarryAnchor({ ...selected, src: "/another-body.webp" })).toBeNull();
       expect(companionCarryAnchor({ ...selected, index: selected.index + 16 })).toBeNull();
     }
@@ -27,7 +28,7 @@ describe("printed sleep masks115", () => {
     for (const index of [32, 40, 64, 80, 304]) expect(companionCarryAnchor(selectCompanionSprite(index))).not.toBeNull();
   });
   it("makes all four masks opaque over both measured eyes, including rolled and quarter poses; rear views stay behind the body", () => {
-    for (const pose of anchors.frames) for (const id of masks) {
+    for (const pose of anchors.frames.map(pose=>appearancePose(pose.physicalIndex))) for (const id of masks) {
       const placed = companionAccessoryPlacement(selectCompanionSprite(pose.physicalIndex), id)!;
       expect(placed).not.toBeNull();
       if (pose.orientation === "back") { expect(placed.layer).toBe("back"); continue; }

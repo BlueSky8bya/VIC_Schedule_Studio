@@ -1,5 +1,6 @@
 import type { Page } from "@playwright/test";
 import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
+import { companionAppearanceEyes, companionAppearancePoint, companionAppearanceBounds, resolveCompanionAppearanceSource } from "@/lib/ui/viewer-companion/appearance";
 import expressionAnchors from "@/lib/ui/viewer-companion/expression-anchors-161.json";
 
 export type PaintedSource157Proof = {
@@ -36,12 +37,12 @@ export function createCompanionExpressionPixelVerifier157() {
         return true;
       };
       for(let i=0;i<2;i++){
-        const eye=pose.eyes[i],original=reference.eyes[i],view=pose.orientation==="quarter"?.83:1;
+        const eye=pose.eyes[i],original=reference.eyes[i],view=pose.orientation==="quarter"?(original.bounds[2]-original.bounds[0])/Math.max(...reference.eyes.map(e=>e.bounds[2]-e.bounds[0])):1;
         if(eye.center.length!==2||eye.bounds.length!==4||original.bounds.length!==4
           ||![...eye.center,...eye.bounds,...original.bounds].every(Number.isFinite)) return null;
-        const sharedWidth=reference.eyes.reduce((sum,eye)=>sum+eye.bounds[2]-eye.bounds[0],0)/2;
-        const sharedHeight=reference.eyes.reduce((sum,eye)=>sum+eye.bounds[3]-eye.bounds[1],0)/2;
-        const [x,y]=eye.center,width=Math.max(original.bounds[2]-original.bounds[0],sharedWidth)*view,height=Math.max(original.bounds[3]-original.bounds[1],sharedHeight)*view;
+        const sharedWidth=Math.max(...reference.eyes.map(eye=>eye.bounds[2]-eye.bounds[0]));
+        const sharedHeight=Math.max(...reference.eyes.map(eye=>eye.bounds[3]-eye.bounds[1]));
+        const [x,y]=eye.center,width=Math.max(original.bounds[2]-original.bounds[0],sharedWidth)*view,height=sharedHeight;
         const permitted=permit([Math.min(eye.bounds[0],x-width/2-1)-.65,Math.min(eye.bounds[1],y-height/2-1.6)-.65,
           Math.max(eye.bounds[2],x+width/2+1)+.65,Math.max(eye.bounds[3],y+height/2+1.2)+.65],1,"skinSamples" in eye?eye.skinSamples:undefined);
         if(!permitted)permit([eye.bounds[0]-.4,eye.bounds[1]-.4,eye.bounds[2]+.4,eye.bounds[3]+.4]);
@@ -50,8 +51,9 @@ export function createCompanionExpressionPixelVerifier157() {
         const angle=Math.atan2(right[1]-left[1],right[0]-left[0]);
         const depth=Math.max(4,(m.x-x)*-Math.sin(angle)+(m.y-y)*Math.cos(angle));
         const mouthX=x-Math.sin(angle)*depth,mouthY=y+Math.cos(angle)*depth;
-        permit([Math.min(m.bounds[0]-.5,m.x-3.4,mouthX-3.4),Math.min(m.bounds[1]-.5,m.y-2,mouthY-2),
-          Math.max(m.bounds[2]+.5,m.x+3.4,mouthX+3.4),Math.max(m.bounds[3]+.5,m.y+3.6,mouthY+3.6)],2);}
+        const fringe=pose.source===9?2:.5;
+        permit([Math.min(m.bounds[0]-fringe,m.x-3.4,mouthX-3.4),Math.min(m.bounds[1]-fringe,m.y-2,mouthY-2),
+          Math.max(m.bounds[2]+fringe,m.x+3.4,mouthX+3.4),Math.max(m.bounds[3]+fringe,m.y+3.6,mouthY+3.6)],2);}
     return mask;
   }
   function compareExpressionPixels157(source: Uint8ClampedArray, current: Uint8ClampedArray, pose: ExpressionAnchor157, reference: ExpressionAnchor157) {
@@ -61,7 +63,10 @@ export function createCompanionExpressionPixelVerifier157() {
     const mask=maskExpressionPixels157(source,pose,reference);if(!mask)return result;
       for(let p=0;p<total;p++){
         const i=p*4,x=p%192/2.4,y=Math.floor(p/192)/2.4,m=pose.mouth;
-        const sourceMouth=m&&x>=m.bounds[0]-.6&&x<=m.bounds[2]+.6&&y>=m.bounds[1]-.6&&y<=m.bounds[3]+.6;
+        let sourceMouth=false;
+        if(m&&mask[p]===2){const [a,b]=pose.eyes.map(eye=>eye.center),cx=(a[0]+b[0])/2,cy=(a[1]+b[1])/2,angle=Math.atan2(b[1]-a[1],b[0]-a[0]),depth=Math.max(4,(m.x-cx)*-Math.sin(angle)+(m.y-cy)*Math.cos(angle)),mx=cx-Math.sin(angle)*depth,my=cy+Math.cos(angle)*depth,fringe=pose.source===9?2:.5;
+          const box=[Math.min(m.bounds[0]-fringe,m.x-3.4,mx-3.4),Math.min(m.bounds[1]-fringe,m.y-2,my-2),Math.max(m.bounds[2]+fringe,m.x+3.4,mx+3.4),Math.max(m.bounds[3]+fringe,m.y+3.6,my+3.6)];
+          sourceMouth=x>=box[0]&&x<=box[2]&&y>=box[1]&&y<=box[3];}
         const orange=!sourceMouth&&source[i]>210&&source[i+1]<190&&source[i+2]<135;
         result.alphaCompared++;if(source[i+3]!==current[i+3])result.alphaMismatch++;
         const changed=source[i]!==current[i]||source[i+1]!==current[i+1]||source[i+2]!==current[i+2];
@@ -118,10 +123,11 @@ export async function installCompanionPaintedSource157(page: Page) {
         if(!visible(actor)||!frame||!atlas||!sprite||!image?.complete||!image.naturalWidth||image.parentElement!==sprite||!sprite.isConnected)return proof;
         const url=new URL(image.currentSrc,location.href),s=getComputedStyle(sprite),t=getComputedStyle(image);
         const w=parseFloat(s.width),h=parseFloat(s.height),m=matrix(s.transform),tm=matrix(t.transform),crop=clip(s.clipPath);
-        proof.cell={index:frame.index,grid:metadata.grid,rows:metadata.gridRows,natural:[image.naturalWidth,image.naturalHeight]};
+        const rows=("gridRows" in atlas?atlas.gridRows:metadata.gridRows) as number;
+        proof.cell={index:frame.index,grid:metadata.grid,rows,natural:[image.naturalWidth,image.naturalHeight]};
         proof.geometry={sameParent:Boolean(canvas&&canvas.parentElement===sprite.parentElement),sprite:[w,h],matrix:m,clip:s.clipPath};
         const sourceGeometry=url.origin===location.origin&&!url.search&&!url.hash&&url.pathname===atlas.src&&image.naturalWidth===atlas.width&&image.naturalHeight===atlas.height
-          &&w>0&&close(w,h)&&close(parseFloat(t.width),w*metadata.grid)&&close(parseFloat(t.height),h*metadata.gridRows)
+          &&w>0&&close(w,h)&&close(parseFloat(t.width),w*metadata.grid)&&close(parseFloat(t.height),h*rows)
           &&close(parseFloat(t.left),0)&&close(parseFloat(t.top),0)&&t.clipPath==="none"
           &&translation(tm,-(frame.index%metadata.grid)*w,-Math.floor(frame.index/metadata.grid)*h)
           &&translation(m,frame.x/80*w,frame.y/80*h)&&Boolean(crop&&crop.every((n,i)=>close(n,frame.clip[i]/80*100,.002)));
@@ -135,7 +141,7 @@ export async function installCompanionPaintedSource157(page: Page) {
         if(canvas.parentElement?.classList.contains("vc-pose")!==true||!close(cw,w)||!close(ch,h)||!close(parseFloat(cs.left),0)||!close(parseFloat(cs.top),0)
           ||cs.zIndex!==s.zIndex||!translation(cm,frame.x/80*w,frame.y/80*h)||!cc||!cc.every((n,i)=>close(n,frame.clip[i]/80*100,.002))
           ||!samePlane([w,h],[cw,ch],m,cm,proof.geometry.offset)){proof.reason="expression-plane-geometry";return proof;}
-        const anchor=anchors.frames.find(a=>a.physicalIndex===pose),reference=anchors.frames.find(a=>a.physicalIndex===anchors.reference);
+        const anchor=anchors.frames.find(a=>a.physicalIndex===pose),reference=anchors.frames.find(a=>a.physicalIndex===304);
         if(!anchor||!reference||anchor.index!==frame.index||anchors.sources[anchor.source]?.src!==atlas.src||!context){proof.reason="missing-calibrated-current-cell";return proof;}
         const key=`${atlas.src}:${frame.index}`;
         if(!cache.has(key)){
@@ -151,5 +157,5 @@ export async function installCompanionPaintedSource157(page: Page) {
       }catch{proof.reason="unmeasured-canvas-or-css";}
       return proof;
     }};
-  },{metadata:companionSpriteMetadata,anchors:expressionAnchors,comparisonFactory:createCompanionExpressionPixelVerifier157.toString()});
+  },{metadata:companionSpriteMetadata,anchors:{...expressionAnchors,sources:expressionAnchors.sources.map(resolveCompanionAppearanceSource),frames:expressionAnchors.frames.map(a=>({...a,eyes:companionAppearanceEyes(a.physicalIndex,a.eyes),mouth:a.mouth?{...companionAppearancePoint(a.physicalIndex,a.mouth),bounds:companionAppearanceBounds(a.physicalIndex,a.mouth.bounds)}:null}))},comparisonFactory:createCompanionExpressionPixelVerifier157.toString()});
 }

@@ -22,17 +22,18 @@ describe("complete CSS sofa body projection", () => {
     input.shape = { bob: 2, tilt: 90, scaleX: 2, scaleY: .5 }; input.poseOrigin = { x: 0, y: 0 };
     input.pressure = { x: 3, y: 4, tilt: 0, squash: 0 }; input.response = { lift: -2, squash: 0 };
     input.facing = -1; input.sway = { tilt: 90, stretch: 0 }; input.inertiaOrigin = { x: 0, y: 0 };
-    // Hand-derived90° composition: TL registration20,7 → pose-3.5,42 →
-    // contact-6.5,46 → reaction-6.5,44 → facing86.5,44 → inertia-44,86.5.
-    closePoints(projectCompanionSofaBody(input), [{ x: 16, y: 206.5 }, { x: -74, y: 206.5 }, { x: -74, y: 226.5 }, { x: 16, y: 226.5 }]);
+    // The single large load is capped at1.08X/.9259Y (literal CSS precision).
+    // TL20,7 → pose-6.4813,23.6 → contact-9.4813,27.6 →
+    // reaction-9.4813,25.6 → facing89.4813,25.6 → inertia-25.6,89.4813.
+    closePoints(projectCompanionSofaBody(input), [{ x: 34.4, y: 209.4813 }, { x: -14.2, y: 209.4813 }, { x: -14.2, y: 246.5173 }, { x: 34.4, y: 246.5173 }]);
   });
   it("uses bottom-centred pressure/support scales followed by the physical inertia plane", () => {
-    const input = neutral(); input.pressure = { ...input.pressure, squash: .2 };
-    input.response = { lift: -4, squash: .1 }; input.sway = { ...input.sway, stretch: .1 };
+    const input = neutral(); input.pressure = { ...input.pressure, squash: .02 };
+    input.response = { lift: -4, squash: .02 }; input.sway = { ...input.sway, stretch: .02 };
     const first = projectCompanionSofaBody(input)[0];
-    // Reciprocal CSS X scales1.25/1.1111/.9091 keep the same stage order:
-    // TL contact(-10,16), reaction(-15.555,18.4), inertia(-10.5050505,12.24).
-    expect(first.x).toBeCloseTo(-10.5050505, 8); expect(first.y).toBeCloseTo(12.24, 8);
+    // Small loads retain literal reciprocal CSS scales1.0204/1.0204/.9804.
+    // TL contact(-.816,1.6), reaction(-1.6486464,-.832), then inertia.
+    expect(first.x).toBeCloseTo(-.83233293056, 8); expect(first.y).toBeCloseTo(-2.44864, 8);
   });
   it("keeps the actual ear grip fixed through left-facing held stretch and outer inertia", () => {
     const input = neutral(); input.size = 100; input.display = { x: 300, y: 400, scale: 1 };

@@ -1,4 +1,4 @@
-import { companionEyeScale143Source } from "./eye-scale-143";
+import { companionAppearanceFrame, companionAppearanceGridRows, resolveCompanionAppearanceSource } from "./appearance";
 import base from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
 import play from "@/lib/ui/viewer-companion/play-motion-sprite.json";
 import living from "@/lib/ui/viewer-companion/living-motion-sprite.json";
@@ -7,8 +7,8 @@ import living from "@/lib/ui/viewer-companion/living-motion-sprite.json";
  * registration. Every consumer uses this same global frame/atlas mapping. */
 export const companionSpriteMetadata = {
   ...base,
-  atlases: [...base.atlases, ...play.atlases, ...living.atlases].map(companionEyeScale143Source),
-  frames: [...base.frames, ...play.frames.map(frame => ({ ...frame, atlas: frame.atlas + base.atlases.length })), ...living.frames.map(frame => ({ ...frame, atlas: frame.atlas + base.atlases.length + play.atlases.length }))],
+  atlases: [...base.atlases, ...play.atlases, ...living.atlases].map(resolveCompanionAppearanceSource),
+  frames: [...base.frames, ...play.frames.map(frame => ({ ...frame, atlas: frame.atlas + base.atlases.length })), ...living.frames.map(frame => ({ ...frame, atlas: frame.atlas + base.atlases.length + play.atlases.length }))].map((frame,index)=>companionAppearanceFrame(index,frame)),
   rows: [...base.rows, ...play.rows.map(row => row.map(index => index + base.frames.length)), ...living.rows.map(row => row.map(index => index + base.frames.length + play.frames.length))],
 };
 const metadata = companionSpriteMetadata;
@@ -44,7 +44,8 @@ export function selectCompanionSprite(index: number, row = 0, column = 0): Compa
   const fallback = selectedRow?.[Math.min(selectedColumn, selectedRow.length - 1)] ?? 0;
   const physicalIndex = Number.isInteger(index) && index >= 0 && index < metadata.frames.length ? index : fallback;
   const frame = metadata.frames[physicalIndex];
-  return { atlas: "hd", index: frame.index, physicalIndex, src: metadata.atlases[frame.atlas].src, grid: metadata.grid, gridRows: metadata.gridRows, frame };
+  const src = metadata.atlases[frame.atlas].src;
+  return { atlas: "hd", index: frame.index, physicalIndex, src, grid: metadata.grid, gridRows: companionAppearanceGridRows(src) ?? metadata.gridRows, frame };
 }
 
 /** A wake clip deliberately starts with the matching clean native pose and

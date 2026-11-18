@@ -1,0 +1,210 @@
+{
+  "version": 1,
+  "note": "Measured immutable tumble sources; six visible faces omitted by the historical +/-30deg expression gate. Source eyes independently checked against decoded connected components; no face is added to the five rear cells.",
+  "frames": [
+    {
+      "physicalIndex": 323,
+      "index": 3,
+      "source": 20,
+      "orientation": "quarter",
+      "roll": 84.920211,
+      "eyes": [
+        {
+          "center": [
+            37.987205,
+            42.731299
+          ],
+          "bounds": [
+            35,
+            39.583333,
+            40.833333,
+            45.416667
+          ]
+        },
+        {
+          "center": [
+            38.939145,
+            53.440241
+          ],
+          "bounds": [
+            35.833333,
+            50,
+            42.083333,
+            56.25
+          ]
+        }
+      ],
+      "mouth": null
+    },
+    {
+      "physicalIndex": 324,
+      "index": 4,
+      "source": 20,
+      "orientation": "quarter",
+      "roll": 84.920211,
+      "eyes": [
+        {
+          "center": [
+            37.987205,
+            42.731299
+          ],
+          "bounds": [
+            35,
+            39.583333,
+            40.833333,
+            45.416667
+          ]
+        },
+        {
+          "center": [
+            38.939145,
+            53.440241
+          ],
+          "bounds": [
+            35.833333,
+            50,
+            42.083333,
+            56.25
+          ]
+        }
+      ],
+      "mouth": null
+    },
+    {
+      "physicalIndex": 325,
+      "index": 5,
+      "source": 20,
+      "orientation": "quarter",
+      "roll": 84.920211,
+      "eyes": [
+        {
+          "center": [
+            37.987205,
+            42.731299
+          ],
+          "bounds": [
+            35,
+            39.583333,
+            40.833333,
+            45.416667
+          ]
+        },
+        {
+          "center": [
+            38.939145,
+            53.440241
+          ],
+          "bounds": [
+            35.833333,
+            50,
+            42.083333,
+            56.25
+          ]
+        }
+      ],
+      "mouth": null
+    },
+    {
+      "physicalIndex": 331,
+      "index": 11,
+      "source": 20,
+      "orientation": "quarter",
+      "roll": -31.844783,
+      "eyes": [
+        {
+          "center": [
+            42.042484,
+            50.355392
+          ],
+          "bounds": [
+            39.583333,
+            47.5,
+            44.166667,
+            52.916667
+          ]
+        },
+        {
+          "center": [
+            52.394663,
+            43.925562
+          ],
+          "bounds": [
+            50,
+            41.25,
+            54.583333,
+            46.25
+          ]
+        }
+      ],
+      "mouth": null
+    },
+    {
+      "physicalIndex": 332,
+      "index": 12,
+      "source": 20,
+      "orientation": "quarter",
+      "roll": -31.844783,
+      "eyes": [
+        {
+          "center": [
+            42.042484,
+            50.355392
+          ],
+          "bounds": [
+            39.583333,
+            47.5,
+            44.166667,
+            52.916667
+          ]
+        },
+        {
+          "center": [
+            52.394663,
+            43.925562
+          ],
+          "bounds": [
+            50,
+            41.25,
+            54.583333,
+            46.25
+          ]
+        }
+      ],
+      "mouth": null
+    },
+    {
+      "physicalIndex": 333,
+      "index": 13,
+      "source": 20,
+      "orientation": "quarter",
+      "roll": -31.844783,
+      "eyes": [
+        {
+          "center": [
+            42.042484,
+            50.355392
+          ],
+          "bounds": [
+            39.583333,
+            47.5,
+            44.166667,
+            52.916667
+          ]
+        },
+        {
+          "center": [
+            52.394663,
+            43.925562
+          ],
+          "bounds": [
+            50,
+            41.25,
+            54.583333,
+            46.25
+          ]
+        }
+      ],
+      "mouth": null
+    }
+  ]
+}

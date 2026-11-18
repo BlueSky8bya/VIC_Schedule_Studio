@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useSyncExternalStore } from "react";
+import { companionMaterialStack } from "@/lib/ui/viewer-companion/material-scale";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { loadCompanionCollection, subscribeCompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { createCompanionMeadowWalk } from "@/lib/ui/viewer-companion/meadow-walk";
@@ -29,6 +30,7 @@ export function CompanionMeadowWalk({ preferences, available, reduced, night, se
 function MeadowDrawing({ preferences, reduced, night, session }: { preferences: CompanionPreferences; reduced: boolean; night: boolean; session: CompanionShowcaseSession }) {
   const host = useRef<HTMLDivElement>(null), body = useRef<HTMLButtonElement>(null), facing = useRef<HTMLSpanElement>(null), pose = useRef<HTMLSpanElement>(null), sprite = useRef<HTMLSpanElement>(null), canvas = useRef<HTMLCanvasElement>(null), shadow = useRef<HTMLSpanElement>(null);
   const back = useRef<HTMLSpanElement>(null), front = useRef<HTMLSpanElement>(null), gift = useRef<HTMLSpanElement>(null);
+  const composite = useRef<HTMLSpanElement>(null);
   const preferencesRef = useRef(preferences); preferencesRef.current = preferences;
   const reducedRef = useRef(reduced); reducedRef.current = reduced;
   const refreshRef = useRef<() => void>(() => {});
@@ -37,7 +39,7 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
     if (!element || !bodyPlane || !facingPlane || !posePlane || !spritePlane || !drawing || !shadowPlane || !back.current || !front.current || !gift.current) return;
     const context = drawing.getContext("2d");
     if (!context) return;
-    const hosts = { back: back.current, front: front.current, gift: gift.current };
+    const hosts = { back: back.current, front: front.current, gift: gift.current, composite: composite.current ?? undefined };
     const walker = createCompanionMeadowWalk(), preparation = createCompanionPreviewPreparation();
     const motion = createCompanionMotion({ clips: companionMotionClips, rowCount: companionSpriteMetadata.rows.length, loopRows: [0, 2, 20], maxFrameRate: 14 });
     let painter: ReturnType<typeof import("@/lib/ui/viewer-companion/accessory").createCompanionAccessoryPainter> | undefined;
@@ -97,7 +99,9 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
       facingPlane.style.transform = `scaleX(${sample.facing})`;
       const contact = touch.sample(now, restricted());
       const hanging = restricted() ? { tilt: 0, stretch: 0, active: false } : boundCompanionHeldPose(inertia.sample(now), { x: current.x - 46, y: current.y - 92 }, { x: 46, y: 46 }, 92, { width: innerWidth, height: innerHeight });
-      posePlane.style.transform = `translate(${contact.x.toFixed(3)}px,${(sample.bob + contact.y + (authored?.lift ?? 0)).toFixed(3)}px) rotate(${(sample.tilt + contact.tilt + hanging.tilt + (authored?.lean ?? 0)).toFixed(3)}deg) scale(${(sample.scaleX + contact.squash - hanging.stretch).toFixed(4)},${(sample.scaleY - contact.squash + hanging.stretch).toFixed(4)})`;
+      const material = companionMaterialStack([sample.scaleY * (1 - (authored?.compression ?? 0)), 1 - contact.squash, 1 + hanging.stretch]);
+      const sx = material.reduce((value, pair) => value * pair.scaleX, 1), sy = material.reduce((value, pair) => value * pair.scaleY, 1);
+      posePlane.style.transform = `translate(${contact.x.toFixed(3)}px,${(sample.bob + contact.y + (authored?.lift ?? 0)).toFixed(3)}px) rotate(${(sample.tilt + contact.tilt + hanging.tilt + (authored?.lean ?? 0)).toFixed(3)}deg) scale(${sx.toFixed(4)},${sy.toFixed(4)})`;
       painter?.paint(selection, accessory, false);
       element.dataset.row = String(decoded ? sample.row : fallbackRow); element.dataset.pose = String(selection.physicalIndex);
       element.dataset.state = status; element.dataset.purpose = reaction?.name ?? (held ? "held" : current.purpose); element.dataset.leg = String(current.leg);
@@ -217,7 +221,7 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
   return <div aria-label="초원을 산책하는 빅타민" className="vc-meadow-walk" data-night={night ? "1" : undefined} hidden ref={host} role="group">
     <span className="vc-meadow-walk-shadow" ref={shadow} aria-hidden="true" />
     <button className="vc-meadow-walk-body" ref={body} data-showcase-pet="" data-activity-manual="" type="button" aria-label="빅타민 · 쓰다듬고 옮기기" aria-describedby="vc-meadow-help"><span className="vc-meadow-walk-facing" ref={facing}><span className="vc-pose" ref={pose}>
-      <span className="vc-wearable vc-wearable-back" ref={back} /><span className="vc-sprite" ref={sprite}><canvas width="192" height="192" ref={canvas} /></span><span className="vc-wearable vc-wearable-front" ref={front} /><span className="vc-wearable vc-gift-prop" ref={gift} />
+      <span className="vc-wearable vc-wearable-back" ref={back} /><span className="vc-ear-layers" ref={composite} hidden /><span className="vc-sprite" ref={sprite}><canvas width="192" height="192" ref={canvas} /></span><span className="vc-wearable vc-wearable-front" ref={front} /><span className="vc-wearable vc-gift-prop" ref={gift} />
     </span></span></button><span className="sr-only" id="vc-meadow-help">마우스로 오가며 쓰다듬기. Enter로 쓰다듬기. Space로 집고 방향키로 옮긴 뒤 Space로 놓기. P로 놓을 곳 선택. N으로 낮잠. Escape는 집기를 놓고, 다시 누르면 감상을 나가기.</span>
   </div>;
 }

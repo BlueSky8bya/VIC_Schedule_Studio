@@ -1,3 +1,7 @@
+import { companionAppearanceFrame } from "@/lib/ui/viewer-companion/appearance";
+import { appearancePose } from "../fixtures/companion-appearance-geometry";
+import appearance from "@/lib/ui/viewer-companion/appearance-edition.json";
+import { resolveCompanionAppearanceSource as activeSource } from "@/lib/ui/viewer-companion/appearance";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import sharp from "sharp";
@@ -23,14 +27,14 @@ const neutral = (): CompanionMouthProjectionInput => ({
 describe("143 exact-source eye edition without changing the audited legacy JSON", () => {
   it("changes exactly two source entries while preserving every520 registration and41 playback rows", () => {
     const old = [...legacyBase.atlases, ...legacyPlay.atlases, ...legacyLiving.atlases];
-    expect(companionSpriteMetadata.atlases.filter((v, i) => v.src !== old[i].src).map((_, i) => i)).toHaveLength(2);
+    expect(old.map(companionEyeScale143Source).filter((v, i) => v.src !== old[i].src)).toHaveLength(2);
+    expect(companionSpriteMetadata.atlases).toEqual(old.map(activeSource));
     for (let i = 0; i < old.length; i++) {
-      const patch = companionEyeScale143Packets.find(p => p.atlas === i);
-      expect(companionSpriteMetadata.atlases[i]).toEqual(patch ? { ...old[i], src: patch.src, sha256: patch.sha256, bytes: patch.bytes } : old[i]);
+      expect(companionSpriteMetadata.atlases[i]).toEqual(activeSource(old[i]));
     }
     expect(companionSpriteMetadata.frames).toEqual([...legacyBase.frames,
       ...legacyPlay.frames.map(f => ({ ...f, atlas: f.atlas + legacyBase.atlases.length })),
-      ...legacyLiving.frames.map(f => ({ ...f, atlas: f.atlas + legacyBase.atlases.length + legacyPlay.atlases.length }))]);
+      ...legacyLiving.frames.map(f => ({ ...f, atlas: f.atlas + legacyBase.atlases.length + legacyPlay.atlases.length }))].map((f,i)=>companionAppearanceFrame(i,f)));
     expect(companionSpriteMetadata.rows).toEqual(legacyAnchors.rows);
     expect(companionSpriteMetadata.frames).toHaveLength(520);
     expect(companionSpriteMetadata.rows).toHaveLength(41);
@@ -61,19 +65,19 @@ describe("143 exact-source eye edition without changing the audited legacy JSON"
         expect(companionEyeScale143Eyes({ ...pose, atlas: 0 }, source)).toBe(pose.eyes);
       }
       const selected = selectCompanionSprite(pose.physicalIndex);
-      expect(companionCarryAnchor(selected)).toEqual(pose.chest);
+      expect(companionCarryAnchor(selected)).toEqual(appearancePose(pose.physicalIndex).chest);
       if (pose.orientation !== "back") expect(companionAccessoryPlacement(selected, "round-glasses")).not.toBeNull();
     }
     expect(changed).toEqual(expectedFrames);
   });
 
-  it("projects the unchanged actual mouths for every16 adopted happy cells and rejects a forged source", () => {
+  it("projects the current appearance mouths for every16 adopted happy cells and rejects a forged source", () => {
     for (const frame of legacyMouths.frames.filter(f => f.index >= 144)) {
       const selected = selectCompanionSprite(frame.index);
-      expect(selected.src).toBe(companionEyeScale143Packets[0].src);
+      expect(selected.src).toBe(activeSource(legacyMouths.atlases[frame.atlas]).src);
       const projected = projectCompanionMouth(selected, neutral());
-      expect(projected?.x).toBeCloseTo(frame.x / 192 * 80 + selected.frame.x, 8);
-      expect(projected?.y).toBeCloseTo(frame.y / 192 * 80 + selected.frame.y, 8);
+      expect(projected?.x).toBeCloseTo(appearance.frames.find(f=>f.physicalIndex===frame.index)!.mouth!.x + selected.frame.x, 8);
+      expect(projected?.y).toBeCloseTo(appearance.frames.find(f=>f.physicalIndex===frame.index)!.mouth!.y + selected.frame.y, 8);
       expect(projectCompanionMouth({ ...selected, src: legacyMouths.atlases[frame.atlas].src }, neutral())).toBeNull();
     }
   });

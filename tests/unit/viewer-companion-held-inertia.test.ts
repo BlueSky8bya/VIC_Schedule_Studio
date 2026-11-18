@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { boundCompanionHeldPose, createCompanionHeldInertia } from "@/lib/ui/viewer-companion/held-inertia";
+import { companionMaterialStack } from "@/lib/ui/viewer-companion/material-scale";
 
 describe("captured companion inertia", () => {
   it("lags a rightward impulse, crosses back, then becomes exactly still", () => {
@@ -62,8 +63,9 @@ describe("captured companion inertia", () => {
     for (const x of [4, 294]) for (const y of [8, 740]) for (const gx of [8, 78]) for (const tilt of [-18, 18]) {
       const grip = { x: gx, y: 20 }, origin = { x, y };
       const bound = boundCompanionHeldPose({ ...pose, tilt }, origin, grip, size, viewport);
-      const a = bound.tilt * Math.PI / 180, sy = 1 + bound.stretch, sx = 1 / sy;
-      expect(sx * sy).toBeCloseTo(1, 12);
+      const a = Number(bound.tilt.toFixed(3)) * Math.PI / 180, [material] = companionMaterialStack([1 + bound.stretch]);
+      const sx = Number(material.scaleX.toFixed(4)), sy = Number(material.scaleY.toFixed(4));
+      expect(sx * sy).toBeCloseTo(1, 3);
       for (const cx of [0, size]) for (const cy of [0, size]) {
         const dx = (cx - grip.x) * sx, dy = (cy - grip.y) * sy;
         const px = x + grip.x + dx * Math.cos(a) - dy * Math.sin(a), py = y + grip.y + dx * Math.sin(a) + dy * Math.cos(a);

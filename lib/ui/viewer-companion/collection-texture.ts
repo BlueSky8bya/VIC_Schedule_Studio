@@ -3,7 +3,7 @@ type Entry = { image?: Texture; active: boolean; ready: boolean; failed: boolean
 
 /** Only the currently equipped atlas and pending gift atlas may own a decode.
  * No queue, library preload, timer, React state or body-decoder reset. */
-export function createCompanionCollectionTextureReadiness(factory: () => Texture | undefined = () => typeof Image === "undefined" ? undefined : new Image()) {
+export function createCompanionCollectionTextureReadiness(factory: () => Texture | undefined = () => typeof Image === "undefined" ? undefined : new Image(), onReady?: () => void) {
   const entries = new Map<string, Entry>();
   const cancel = (entry: Entry) => {
     entry.active = false;
@@ -22,13 +22,14 @@ export function createCompanionCollectionTextureReadiness(factory: () => Texture
         image.onload = () => {
           if (!owned() || !image.complete || image.naturalWidth <= 0 || image.naturalHeight <= 0) return;
           void image.decode().then(() => {
-            if (owned() && image.complete && image.naturalWidth > 0 && image.naturalHeight > 0) entry.ready = true;
+            if (owned() && image.complete && image.naturalWidth > 0 && image.naturalHeight > 0) { entry.ready = true; onReady?.(); }
           }).catch(() => { if (owned()) { entry.ready = false; entry.failed = true; } });
         };
         image.src = src;
       }
     },
     ready(src: string | undefined) { return Boolean(src && entries.get(src)?.active && entries.get(src)?.ready && !entries.get(src)?.failed); },
+    image(src: string | undefined) { const entry = src && entries.get(src); return entry && entry.active && entry.ready && !entry.failed ? entry.image as HTMLImageElement : undefined; },
     clear() { for (const entry of entries.values()) cancel(entry); entries.clear(); },
   };
 }

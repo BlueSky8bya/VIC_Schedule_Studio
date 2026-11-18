@@ -1,3 +1,4 @@
+import { appearancePoint } from "../fixtures/companion-appearance-geometry";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import sharp from "sharp";
@@ -21,7 +22,7 @@ describe("wall-side curtain uses the actual handle and original body edge", () =
     expect(contacts.frames.map(frame=>frame.physicalIndex)).toEqual(companionSpriteMetadata.rows[9]);
     for(const frame of contacts.frames) for(const side of ["left","right"] as const) {
       const point=frame[side], selected=selectCompanionSprite(frame.physicalIndex);
-      expect(companionHomeContactAnchor(selected,true,side)).toMatchObject(point);
+      expect(companionHomeContactAnchor(selected,true,side)).toMatchObject(appearancePoint(frame.physicalIndex,point));
       expect(companionHomeContactAnchor({...selected,src:"/wrong-source.webp"},true,side)).toBeNull();
       const x=Math.round(point.x/80*192)+frame.index%8*192, y=Math.round(point.y/80*192)+Math.floor(frame.index/8)*192;
       for(let dy=-1;dy<=1;dy++) for(let dx=-1;dx<=1;dx++) expect(data[((y+dy)*info.width+x+dx)*4+3]).toBeGreaterThanOrEqual(250);
