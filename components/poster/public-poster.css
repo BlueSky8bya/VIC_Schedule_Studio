@@ -6779,20 +6779,30 @@ html[data-reduce-motion] .card-sheen {
    토요일 카드 오른쪽 끝(.wrap-out)은 ▶, 일요일 카드 왼쪽 끝(.wrap-in)은 ◀. 카드 밖(왕관·하트 점)은
    잘리지 않게 다각형을 카드 바깥까지 넓히고, 이어지는 변의 두 모서리만 삼각형으로 깎는다. */
 .public-event.wrap-out,
-.studio-event-pill.wrap-out {
+.studio-event-pill.wrap-out,
+.public-event.wrap-in,
+.studio-event-pill.wrap-in {
   --wrap-tip: 7px;
+  /* 카드 그림자·1px 테두리 그림자는 네모 상자를 따라 그려져, 깎아 낸 모서리 바깥에 직선 한 줄로 남았다
+     (2026-11-18 소유자) — 화살 모서리 카드는 그림자를 두지 않는다(꺾인 띠 카드와 같은 규칙). */
+  box-shadow: none !important;
+}
+/* 바깥 영역은 카드 위아래로 1px 띄워서 연다 — 딱 붙이면 배율에 따라 테두리 줄이 반 픽셀 새어 보인다. */
+.public-event.wrap-out,
+.studio-event-pill.wrap-out {
   clip-path: polygon(
-    -60px -60px, calc(100% + 60px) -60px, calc(100% + 60px) 0, calc(100% - var(--wrap-tip)) 0, 100% 50%,
-    calc(100% - var(--wrap-tip)) 100%, calc(100% + 60px) 100%, calc(100% + 60px) calc(100% + 60px),
-    -60px calc(100% + 60px)
+    -60px -60px, calc(100% + 60px) -60px, calc(100% + 60px) -1px, calc(100% - var(--wrap-tip)) -1px,
+    calc(100% - var(--wrap-tip)) 0, 100% 50%, calc(100% - var(--wrap-tip)) 100%,
+    calc(100% - var(--wrap-tip)) calc(100% + 1px), calc(100% + 60px) calc(100% + 1px),
+    calc(100% + 60px) calc(100% + 60px), -60px calc(100% + 60px)
   );
 }
 .public-event.wrap-in,
 .studio-event-pill.wrap-in {
-  --wrap-tip: 7px;
   clip-path: polygon(
     -60px -60px, calc(100% + 60px) -60px, calc(100% + 60px) calc(100% + 60px), -60px calc(100% + 60px),
-    -60px 100%, var(--wrap-tip) 100%, 0 50%, var(--wrap-tip) 0, -60px 0
+    -60px calc(100% + 1px), var(--wrap-tip) calc(100% + 1px), var(--wrap-tip) 100%, 0 50%,
+    var(--wrap-tip) 0, var(--wrap-tip) -1px, -60px -1px
   );
 }
 /* 깎인 두 변의 테두리 선(WrapEdges) — 절반은 clip 밖이라 2px로 그어 카드 테두리(1px)와 같은 굵기로 보이게 한다. */
@@ -6821,9 +6831,12 @@ html[data-reduce-motion] .card-sheen {
 .public-event.wrap-in.wrap-out,
 .studio-event-pill.wrap-in.wrap-out {
   clip-path: polygon(
-    -60px -60px, calc(100% + 60px) -60px, calc(100% + 60px) 0, calc(100% - var(--wrap-tip)) 0, 100% 50%,
-    calc(100% - var(--wrap-tip)) 100%, calc(100% + 60px) 100%, calc(100% + 60px) calc(100% + 60px),
-    -60px calc(100% + 60px), -60px 100%, var(--wrap-tip) 100%, 0 50%, var(--wrap-tip) 0, -60px 0
+    -60px -60px, calc(100% + 60px) -60px, calc(100% + 60px) -1px, calc(100% - var(--wrap-tip)) -1px,
+    calc(100% - var(--wrap-tip)) 0, 100% 50%, calc(100% - var(--wrap-tip)) 100%,
+    calc(100% - var(--wrap-tip)) calc(100% + 1px), calc(100% + 60px) calc(100% + 1px),
+    calc(100% + 60px) calc(100% + 60px), -60px calc(100% + 60px),
+    -60px calc(100% + 1px), var(--wrap-tip) calc(100% + 1px), var(--wrap-tip) 100%, 0 50%,
+    var(--wrap-tip) 0, var(--wrap-tip) -1px, -60px -1px
   );
 }
 .chain-cont-arrow {

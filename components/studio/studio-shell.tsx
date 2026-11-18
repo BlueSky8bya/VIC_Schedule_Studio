@@ -3048,8 +3048,11 @@ export function StudioShell({
     // 리더 도트의 앵커 — '일정 수정'이면 그 일정 칩의 중심(칸 첫 카드에 잘못 찍히던 문제),
     // '새 일정(날짜)'이면 칸 상단 중심. 업 도움은 칩이 없고 띠(.support-bar)가 실체이므로
     // 그 날짜 칸의 띠 조각을 정확히 찍는다. 수동 배치 중에도 항상 갱신(리더 라인용).
+    // 여러 칸 폭 띠의 뒤 칸은 카드가 아니라 그 날 조각의 손잡이(.band-slot)가 실체다 — 이걸 빼먹으면 못 찾아서
+    // 날짜를 고른 것처럼 칸 위쪽에 점이 찍혔다(2026-11-18 소유자, 9/20~25).
     const pill = selectedEventId
       ? (cell.querySelector<HTMLElement>(`.studio-event-pill[data-eventid="${selectedEventId}"]`) ??
+        cell.querySelector<HTMLElement>(`.band-slot[data-slot-eventid="${selectedEventId}"]`) ??
         cell.querySelector<HTMLElement>(`.support-bar[data-supportid="${selectedEventId}"]`) ??
         calPanelRef.current?.querySelector<HTMLElement>(
           `.studio-event-pill[data-eventid="${selectedEventId}"], .support-bar[data-supportid="${selectedEventId}"]`
@@ -3353,7 +3356,7 @@ export function StudioShell({
     const stop = trackPopoverLayout({ update: tick, elements: () => {
       const calendar = calPanelRef.current;
       const cell = calendar?.querySelector<HTMLElement>(`.studio-day[data-isodate="${selectedDate}"]`);
-      const selector = selectedEventId ? `.studio-event-pill[data-eventid="${selectedEventId}"], .support-bar[data-supportid="${selectedEventId}"]` : null;
+      const selector = selectedEventId ? `.studio-event-pill[data-eventid="${selectedEventId}"], .band-slot[data-slot-eventid="${selectedEventId}"], .support-bar[data-supportid="${selectedEventId}"]` : null;
       return [wsEl, calendar, cell, selector ? cell?.querySelector<HTMLElement>(selector) ?? calendar?.querySelector<HTMLElement>(selector) : null, editorPanelRef.current, bottomRowRef.current];
     } });
     return () => {
