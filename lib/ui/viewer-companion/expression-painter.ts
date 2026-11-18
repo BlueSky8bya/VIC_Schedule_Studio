@@ -3,6 +3,7 @@ import overrides from "./expression-pose-overrides.json";
 import policy from "./appearance-policy.json";
 import anchors from "./expression-anchors-161.json";
 import { companionFaceLayout } from "./face-layout";
+import { restoreCompanionSpiralEyes } from "./spiral-eyes";
 import { peekDecodedCompanionSprite, type CompanionSpriteSelection } from "./sprite-quality";
 import { COMPANION_EYE_SHAPE as E, COMPANION_MOUTH_SHAPE as M, sampleCompanionExpression, type CompanionExpressionId } from "./expressions";
 import { companionAppearanceEyes, companionAppearancePoint, companionAppearanceBounds, companionAppearanceFrames, resolveCompanionAppearanceSource } from "./appearance";
@@ -159,6 +160,8 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
       let painted = 0;
       for (let i = 0; i < 2; i++) {
         const { original, width, height, x, y, fill } = eyePatches[i]; if (!fill) continue;
+        // The original dizzy rings are restored atomically after mouth repair.
+        if (native === "spiral") { painted++; continue; }
         const gazeX = Math.max(-width * .28, Math.min(width * .28, face.gazeX * .9)) * face.weight;
         const gazeY = Math.max(-height * .25, Math.min(height * .25, face.gazeY * .8)) * face.weight;
         // A smiling source pose starts closed. Morph that lid into the target
@@ -169,11 +172,6 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
         const shape = i === 0 ? face.leftShape : face.rightShape, side = i === 0 ? 1 : -1;
         ctx.save(); ctx.translate(x, y); ctx.rotate(layout.angle);
         ctx.strokeStyle = "#704626"; ctx.lineCap = "round"; ctx.lineJoin = "round";
-        if (native === "spiral") {
-          ctx.lineWidth = Math.max(.65, Math.min(1.05, width * .1)); ctx.beginPath();
-          for (let step = 0; step <= 64; step++) { const t = step / 64, a = t * Math.PI * 2.6, radius = width * .44 * t; const px = Math.cos(a) * radius, py = Math.sin(a) * radius; if (!step) ctx.moveTo(px, py); else ctx.lineTo(px, py); }
-          ctx.stroke();
-        }
         if (open > .015) {
           ctx.save(); ctx.beginPath();
           // Preserve the pupil's width and texture. Eyelids move over it;
@@ -324,6 +322,7 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
         for (let k = 0; k < 3; k++) final.data[i + k] = keep ? original.data[i + k] : Math.round(mix(original.data[i + k], final.data[i + k], sourceBlend));
         final.data[i + 3] = original.data[i + 3];
       }
+      if (native === "spiral") restoreCompanionSpiralEyes(final.data, original.data, selected.physicalIndex);
       ctx.putImageData(final, 0, 0);
       canvas.style.transform = `translate3d(${selected.frame.x / 80 * 100}%,${selected.frame.y / 80 * 100}%,0)`;
       canvas.style.clipPath = `inset(${selected.frame.clip.map(n => `${n / 80 * 100}%`).join(" ")})`;
