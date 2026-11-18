@@ -5562,7 +5562,10 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
    기간 안내 띠 링크가 안 눌렸다(2026-09-28 소유자, 세 번째 지적). 카드(직계 자식)만 되살린다.
    왕관은 원래 pointer-events 없음. */
 .public-day .day-events {
-  z-index: 8;
+  /* 띠 층(--z-cal-ribbon 9 · 머리 10)보다 항상 한 칸 위 — 2026-10-27 띠를 오늘 링 위로 올리며 9/10이 되자
+     이 층(8)이 다시 띠 밑으로 내려가 왕관이 띠에 가려졌다(2026-11-18 소유자, 네 번째 지적). 숫자를 따로
+     적지 않고 띠 토큰에서 계산해, 띠 층이 또 바뀌어도 순서가 뒤집히지 않는다. */
+  z-index: calc(var(--z-cal-ribbon-head, 10) + 1);
   pointer-events: none;
 }
 .public-day .day-events > * {
@@ -5774,13 +5777,8 @@ html[data-reduce-motion] .tier-crown.tier-crown.tier-crown {
     animation: none;
   }
 }
-/* 날짜 칸 위에 안내 띠(기간 안내·응원 띠 .support-bar)가 지나가면 첫 카드 윗변 바로 위가 띠 자리다. 띠는 카드보다
-   위 층(z 10 > 8)이라 왕관이 띠 뒤로 숨는다(2026-11-17 소유자 확인 요청) — 이 칸의 첫 카드만 왕관을 카드 안쪽으로
-   내려 띠 아래로 4px만 걸치게 한다. 왕관은 pointer-events:none이라 띠 링크 누르기는 어느 쪽이든 막지 않는다. */
-.public-day:has(> .support-bar) .day-events > .public-event:first-child > .tier-crown {
-  right: 23px; /* 하트 왼쪽 — 모서리에서 내리면 하트를 덮는다 */
-  bottom: calc(100% - 14px);
-}
+/* (띠 지나는 칸의 왕관을 카드 안으로 내리던 우회 규칙은 2026-11-18 삭제 — 일정 층이 띠 위라 왕관은 늘 모서리.
+   왕관은 pointer-events:none, 일정 층도 카드 밖은 클릭 통과라 띠 '자세히 보기' 링크를 막지 않는다.) */
 .agenda-event {
   position: relative;
 }
@@ -6715,7 +6713,7 @@ html[data-theme="dark"] .card-sheen {
   height: 1px;
   overflow: visible;
   pointer-events: none;
-  z-index: 11;
+  z-index: calc(var(--z-cal-ribbon-head, 10) + 2); /* 일정 층(띠 + 1)보다 한 칸 위 */
 }
 .chain-ring {
   fill: none;
