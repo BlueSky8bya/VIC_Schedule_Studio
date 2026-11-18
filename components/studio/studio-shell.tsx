@@ -4547,22 +4547,45 @@ export function StudioShell({
   // 빨간 선이 이 존을 지나면(=두 카드의 절반/절반 경계를 훑으면) 그 연결(earlier.linkNext)을 끊는다.
   // 절반이라 존이 넓어 잘 잡히고, 중간 카드도 왼쪽 절반=앞 연결/오른쪽 절반=뒤 연결로 구분된다.
   // 주 경계(토→일)로 갈라진 경우엔 토요일 오른쪽 절반이나 일요일 왼쪽 절반 어느 쪽을 그어도 끊긴다.
+  // 그 일정의 **그 날 조각** 사각형 — 보통은 카드. 여러 칸 폭 띠는 머리 카드가 여러 날을 덮으므로 제 칸까지만
+  // 자르고, 뒤 칸 일정은 카드 대신 손잡이(.band-slot)가 조각이다. (예전엔 카드만 찾아서 여러 칸 폭 띠의 이음은
+  // 존이 아예 없거나 띠 전체의 절반으로 잡혔다.)
+  function pieceRectOf(eid: string): { left: number; right: number; top: number; bottom: number } | null {
+    const pill = findPillEl(eid);
+    const el =
+      pill ??
+      document.querySelector<HTMLElement>(`.studio-day .band-slot[data-slot-eventid="${CSS.escape(eid)}"]`);
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const cell = el.hasAttribute("data-band-head") ? el.closest<HTMLElement>("article") : null;
+    const right = cell ? Math.min(r.right, cell.getBoundingClientRect().right) : r.right;
+    return { left: r.left, right, top: r.top, bottom: r.bottom };
+  }
   function collectSeams(): { id: string; x1: number; x2: number; top: number; bottom: number }[] {
     const out: { id: string; x1: number; x2: number; top: number; bottom: number }[] = [];
     // 제스처 중(옛 렌더 클로저) 호출 — 배열은 ref, 요소는 temp/실제 id 어느 쪽이든 찾는다.
     for (const ev of eventsRef.current) {
       if (!ev.linkNext) continue;
-      const el = findPillEl(ev.id);
-      if (el) {
-        const r = el.getBoundingClientRect();
+      const r = pieceRectOf(ev.id);
+      const nr = pieceRectOf(ev.linkNext);
+      if (r) {
         // earlier 오른쪽 절반(중앙~오른쪽 변, 살짝 넘겨).
-        out.push({ id: ev.id, x1: r.left + r.width / 2, x2: r.right + 3, top: r.top - 3, bottom: r.bottom + 3 });
+        out.push({ id: ev.id, x1: (r.left + r.right) / 2, x2: r.right + 3, top: r.top - 3, bottom: r.bottom + 3 });
       }
-      const nextEl = findPillEl(ev.linkNext);
-      if (nextEl) {
-        const nr = nextEl.getBoundingClientRect();
+      if (nr) {
         // next 왼쪽 절반(왼쪽 변~중앙).
-        out.push({ id: ev.id, x1: nr.left - 3, x2: nr.left + nr.width / 2, top: nr.top - 3, bottom: nr.bottom + 3 });
+        out.push({ id: ev.id, x1: nr.left - 3, x2: (nr.left + nr.right) / 2, top: nr.top - 3, bottom: nr.bottom + 3 });
+      }
+      // 꺾인 띠(같은 줄, 높이가 다른 두 카드 사이의 기둥) — 두 카드 사이 틈을 위 카드 꼭대기부터 아래 카드 바닥까지
+      // 덮는다. 기둥은 어느 카드의 세로 범위에도 안 들어가서, 기둥을 그어도 안 끊겼다(2026-11-18 소유자).
+      if (r && nr && nr.left > r.left && nr.left - r.right < 48) {
+        out.push({
+          id: ev.id,
+          x1: r.right - 6,
+          x2: nr.left + 6,
+          top: Math.min(r.top, nr.top) - 3,
+          bottom: Math.max(r.bottom, nr.bottom) + 3
+        });
       }
     }
     return out;
@@ -4579,9 +4602,13 @@ export function StudioShell({
     const inside = (x: number, y: number) =>
       x >= z.x1 && x <= z.x2 && y >= z.top && y <= z.bottom;
     if (inside(ax, ay) || inside(bx, by)) return true;
+    // 네 변 모두 본다 — 세로 변만 보면, 좁은 존(꺾인 띠 기둥)을 위→아래로 빠르게 그을 때 두 끝점이 다 밖이라 놓쳤다.
+    // 가로 변은 x·y를 바꿔 같은 판정에 넣는다.
     return (
       segCrossesVerticalLine(ax, ay, bx, by, z.x1, z.top, z.bottom) ||
-      segCrossesVerticalLine(ax, ay, bx, by, z.x2, z.top, z.bottom)
+      segCrossesVerticalLine(ax, ay, bx, by, z.x2, z.top, z.bottom) ||
+      segCrossesVerticalLine(ay, ax, by, bx, z.top, z.x1, z.x2) ||
+      segCrossesVerticalLine(ay, ax, by, bx, z.bottom, z.x1, z.x2)
     );
   }
   function segCrossesVerticalLine(
