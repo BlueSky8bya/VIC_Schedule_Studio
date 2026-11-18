@@ -1,3 +1,5 @@
+import { companionAppearanceFrame } from "@/lib/ui/viewer-companion/appearance";
+import { resolveCompanionAppearanceSource as activeSource, companionAppearanceGridRows } from "@/lib/ui/viewer-companion/appearance";
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
@@ -37,13 +39,13 @@ describe("additional native play packets share the established HD pipeline", () 
     expect(play).toMatchObject({ cell: 192, logicalCell: 80, grid: 8, gridRows: 2, rowOffset: base.rows.length });
     expect(play.rows).toHaveLength(13); expect(play.frames).toHaveLength(208); expect(play.atlases).toHaveLength(13);
     expect(companionSpriteMetadata.rows.slice(0, base.rows.length)).toEqual(base.rows);
-    expect(companionSpriteMetadata.frames.slice(0, base.frames.length)).toEqual(base.frames);
+    expect(companionSpriteMetadata.frames.slice(0, base.frames.length)).toEqual(base.frames.map((f,i)=>companionAppearanceFrame(i,f)));
     expect([...base.atlases, ...play.atlases].map(({ src, sha256, bytes }) => ({ src, sha256, bytes }))).toEqual(anchors.sources.slice(0, base.atlases.length + play.atlases.length));
     for (let row = 20; row < 32; row++) {
       const indices = companionSpriteMetadata.rows[row]; expect(indices).toHaveLength(16);
       for (const [column, index] of indices.entries()) {
         const selected = selectCompanionSprite(index, row, column);
-        expect(selected).toMatchObject({ atlas: "hd", physicalIndex: base.frames.length + (row - 20) * 16 + column, index: column, grid: 8, gridRows: 2 });
+        expect(selected).toMatchObject({ atlas: "hd", physicalIndex: base.frames.length + (row - 20) * 16 + column, index: column, grid: 8, gridRows: companionAppearanceGridRows(selectCompanionSprite(index).src) ?? 2 });
         const parentFrame = play.frames[(row - 20) * 16 + column];
         expect(selected.frame).toEqual({ ...parentFrame, atlas: parentFrame.atlas + base.atlases.length });
       }
@@ -52,15 +54,15 @@ describe("additional native play packets share the established HD pipeline", () 
     expect(throwRow).toEqual(Array.from({ length: 16 }, (_, column) => base.frames.length + 192 + column));
     expect(play.atlases[3].src).toBe("/companion/hd/vitamin-play-03-expression-119-v1.webp");
     expect(play.atlases[12].src).toBe("/companion/hd/vitamin-play-12-expression-119-v1.webp");
-    expect(companionSpriteSources(32)).toEqual([play.atlases[12].src]);
-    for (const [column, index] of throwRow.entries()) expect(selectCompanionSprite(index, 32, column)).toMatchObject({ atlas: "hd", physicalIndex: index, index: column, grid: 8, gridRows: 2, src: play.atlases[12].src });
+    expect(companionSpriteSources(32)).toEqual([activeSource(play.atlases[12]).src]);
+    for (const [column, index] of throwRow.entries()) expect(selectCompanionSprite(index, 32, column)).toMatchObject({ atlas: "hd", physicalIndex: index, index: column, grid: 8, gridRows: companionAppearanceGridRows(selectCompanionSprite(index).src) ?? 2, src: activeSource(play.atlases[12]).src });
   });
   it("preloads the exact active play edition while preserving its thirteen parent packets", () => {
     for (let row = 20; row < 33; row++) {
       const parent = play.atlases[row - 20], sourceIndex = row - 20 + base.atlases.length;
       const patch = edition.packets.find(p => p.atlas === sourceIndex);
       if (patch) { expect(parent.src).toBe(patch.parentSrc); expect(parent.sha256).toBe(patch.parentSha256); }
-      const expected = patch?.src ?? parent.src;
+      const expected = activeSource(parent).src;
       expect(companionSpriteSources(row)).toEqual([expected]);
       for (const index of companionSpriteMetadata.rows[row]) expect(selectCompanionSprite(index).src).toBe(expected);
     }

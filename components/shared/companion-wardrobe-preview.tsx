@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { RotateCcw } from "lucide-react";
 import type { CompanionAccessoryId } from "@/lib/ui/viewer-companion/gifts";
 import { createCompanionMotion, nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
-import { companionMaterialScale } from "@/lib/ui/viewer-companion/material-scale";
+import { companionMaterialStack } from "@/lib/ui/viewer-companion/material-scale";
 import { companionMotionClips, companionSpriteMetadata, peekDecodedCompanionSprite, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { chooseCompanionPreviewBehavior, companionPreviewDrawing, companionPreviewDuration, createCompanionPreviewPreparation, sampleCompanionPreview } from "@/lib/ui/viewer-companion/wardrobe-preview";
 import "@/components/poster/viewer-companion/viewer-companion.css";
@@ -13,6 +13,7 @@ import "@/components/poster/viewer-companion/viewer-companion.css";
 export function CompanionWardrobePreview({ accessory, behaviors, enabled, interactive = true }: { accessory: CompanionAccessoryId | null; behaviors: readonly string[]; enabled: boolean; interactive?: boolean }) {
   const host = useRef<HTMLDivElement>(null), canvas = useRef<HTMLCanvasElement>(null), sprite = useRef<HTMLSpanElement>(null), pose = useRef<HTMLSpanElement>(null);
   const back = useRef<HTMLSpanElement>(null), front = useRef<HTMLSpanElement>(null), gift = useRef<HTMLSpanElement>(null);
+  const ears = useRef<HTMLSpanElement>(null);
   const [replay, setReplay] = useState(0), [quiet, setQuiet] = useState(true);
   const behaviorKey = behaviors.join("|");
   useEffect(() => {
@@ -20,7 +21,7 @@ export function CompanionWardrobePreview({ accessory, behaviors, enabled, intera
     if (!element || !drawing || !spritePlane || !posePlane || !back.current || !front.current || !gift.current) return;
     const context = drawing.getContext("2d");
     if (!context) return;
-    const hosts = { back: back.current, front: front.current, gift: gift.current };
+    const hosts = { back: back.current, front: front.current, gift: gift.current, composite: ears.current ?? undefined };
     let disposed = false;
     let paintedCell = "", paintedRegistration = "";
     let painter: ReturnType<typeof import("@/lib/ui/viewer-companion/accessory").createCompanionAccessoryPainter> | undefined;
@@ -63,7 +64,7 @@ export function CompanionWardrobePreview({ accessory, behaviors, enabled, intera
         }
       }
       const bob = shape.bob + sample.lift, tilt = shape.tilt + sample.lean;
-      const material = companionMaterialScale(shape.scaleY * (1 - sample.compression));
+      const [material] = companionMaterialStack([shape.scaleY * (1 - sample.compression)]);
       posePlane.style.transform = `translateY(${bob}px) rotate(${tilt}deg) scale(${material.scaleX},${material.scaleY})`;
       painter?.paint(selection, accessory, false);
       const row = String(shape.row), worn = painter ? accessory ?? "none" : "none";
@@ -125,7 +126,7 @@ export function CompanionWardrobePreview({ accessory, behaviors, enabled, intera
   }, [accessory, behaviorKey, enabled, replay]);
   return <div className="rhh-wardrobe-preview-wrap">
     <div aria-label="빅타민 미리보기" className="rhh-wardrobe-preview" ref={host} role="img">
-      <span aria-hidden="true" className="vc-pose" ref={pose}><span className="vc-wearable vc-wearable-back" ref={back} /><span className="vc-sprite" ref={sprite}><canvas height={192} ref={canvas} width={192} /></span><span className="vc-wearable vc-wearable-front" ref={front} /><span className="vc-wearable vc-gift-prop" ref={gift} /></span>
+      <span aria-hidden="true" className="vc-pose" ref={pose}><span className="vc-wearable vc-wearable-back" ref={back} /><span className="vc-ear-layers" ref={ears} hidden /><span className="vc-sprite" ref={sprite}><canvas height={192} ref={canvas} width={192} /></span><span className="vc-wearable vc-wearable-front" ref={front} /><span className="vc-wearable vc-gift-prop" ref={gift} /></span>
     </div>
     {!enabled && interactive && <span className="rhh-wardrobe-preview-paused">쉬는 중</span>}
     {interactive && <button aria-label="다시 보기" className="rhh-link" data-act="companion-wardrobe-preview" data-sfx="off" disabled={!enabled || quiet || !chooseCompanionPreviewBehavior(behaviors, null, () => 0)} onClick={() => setReplay(value => value + 1)} title="다시 보기" type="button"><RotateCcw aria-hidden="true" size={17} /><span className="rhh-wardrobe-replay-label">다시 보기</span></button>}

@@ -93,7 +93,7 @@ export function fitUnifiedKey114(key, requestedScale, rig) {
   return { requestedScale, scale, safetyCapped: scale < requestedScale, offset, protectedBounds: { left: predicted.left + offset.x, top: predicted.top + offset.y, right: predicted.right + offset.x, bottom: predicted.bottom + offset.y } };
 }
 
-async function extractKeys(native) {
+export async function extractKeys(native) {
   const { data, info } = await sharp(native).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   if (info.width !== 1122 || info.height !== 1402) throw Error('Unexpected original native dimensions');
   const parts = components(data, info.width, info.height), bodies = parts.filter(part => part.pixels > 3000).sort((a, b) => (a.top + a.bottom) - (b.top + b.bottom));

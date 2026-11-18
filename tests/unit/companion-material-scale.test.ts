@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { companionMaterialScale } from "@/lib/ui/viewer-companion/material-scale";
+import { companionMaterialScale, companionMaterialStack, COMPANION_MAX_MATERIAL_STRETCH } from "@/lib/ui/viewer-companion/material-scale";
 import { createCompanionMotion, type CompanionMotionInput } from "@/lib/ui/viewer-companion/motion";
 import { companionMotionClips, companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
 import { projectCompanionSpritePoint, type CompanionSofaPoseInput } from "@/lib/ui/viewer-companion/sofa-pose";
@@ -14,7 +14,6 @@ const area = (input: CompanionSofaPoseInput) => {
   if (!a || !b || !c) throw Error("Valid material basis was rejected");
   return ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)) / input.size ** 2;
 };
-const roundedPairArea = (y: number) => Number((1 / y).toFixed(4)) * Number(y.toFixed(4));
 
 describe("companion apparent material area", () => {
   it("widens compression and narrows extension with the requested vertical load and unit determinant", () => {
@@ -71,10 +70,30 @@ describe("companion apparent material area", () => {
     ];
     for (const input of cases) {
       const verticals = [input.shape.scaleY - (input.chew ?? 0) * .8, 1 - input.pressure.squash, 1 - input.response.squash, 1 + input.sway.stretch];
-      const expected = verticals.reduce((product, y) => product * roundedPairArea(y), 1);
+      const expected = companionMaterialStack(verticals).reduce((product, pair) => product * Number(pair.scaleX.toFixed(4)) * Number(pair.scaleY.toFixed(4)), 1);
       expect(area(input)).toBeCloseTo(expected, 10);
       // Four-decimal presentation pairs bound the small raster/CSS rounding.
       expect(area(input)).toBeCloseTo(1, 3);
+    }
+  });
+
+  it("preserves idle/run loads and bounds simultaneous, rotated decorative loads", () => {
+    for (const y of [.982, 1, 1.026]) {
+      const [pair] = companionMaterialStack([y]);
+      expect(pair.scaleY).toBeCloseTo(y, 12);
+    }
+    for (const verticals of [[1.315, 1, 1, 1.075], [.94, .87, .91, 1], [2, .5, 2, .5]]) {
+      const pairs = companionMaterialStack(verticals);
+      expect(pairs.reduce((sum, p) => sum + Math.abs(Math.log(p.scaleY)), 0)).toBeLessThanOrEqual(Math.log(COMPANION_MAX_MATERIAL_STRETCH) + 1e-12);
+      for (const tilt of [-85, -30, 0, 27, 90]) {
+        const input = { ...neutral(), size: 80, shape: { bob: 0, tilt, scaleX: 1 / verticals[0], scaleY: verticals[0] }, pressure: { x: 0, y: 0, tilt: -tilt * .7, squash: 1 - verticals[1] }, response: { lift: 0, squash: 1 - verticals[2] }, sway: { tilt: tilt * .4, stretch: verticals[3] - 1 } };
+        const [o, x, y] = [{ x: 0, y: 0 }, { x: 80, y: 0 }, { x: 0, y: 80 }].map(p => projectCompanionSpritePoint(input, p)!);
+        const a = (x.x - o.x) / 80, b = (x.y - o.y) / 80, c = (y.x - o.x) / 80, d = (y.y - o.y) / 80;
+        const trace = a * a + b * b + c * c + d * d, det = a * d - b * c;
+        const maximum = Math.sqrt((trace + Math.sqrt(Math.max(0, trace * trace - 4 * det * det))) / 2);
+        expect(maximum).toBeLessThanOrEqual(COMPANION_MAX_MATERIAL_STRETCH + .0005);
+        expect(Math.abs(det)).toBeCloseTo(1, 3);
+      }
     }
   });
 

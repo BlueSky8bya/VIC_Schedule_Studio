@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 // The room must be styled before its lazy companion runtime can mount.
 import "./viewer-companion/companion-home.css";
 import { SiteLegalFooter } from "@/components/legal/site-legal-footer";
@@ -254,7 +256,7 @@ const POSTER_BOTTOM_GAP = 14;
 // (2026-11-17 토리님: "네모 빤질빤질 효과는 빼고 3위까지 왕관만").
 function TierMark({ tier }: { tier: HeartTier }) {
   return (
-    <img
+    <Image unoptimized loading="eager" width={24} height={24}
       alt={tier.label}
       className={`tier-crown tier-${tier.key}`}
       draggable={false}
@@ -3721,7 +3723,7 @@ export function PublicPoster({
                     title={t.label}
                     type="button"
                   >
-                    <img alt="" aria-hidden="true" className={`tier-swatch tier-${t.key}`} src={`/crowns/${t.key}.svg`} />
+                    <Image unoptimized loading="eager" width={24} height={24} alt="" aria-hidden="true" className={`tier-swatch tier-${t.key}`} src={`/crowns/${t.key}.svg`} />
                   </button>
                 );
               })}
@@ -4304,7 +4306,7 @@ export function PublicPoster({
                 title={t.label}
                 type="button"
               >
-                <img alt="" aria-hidden="true" className={`tier-swatch tier-${t.key}`} src={`/crowns/${t.key}.svg`} />
+                <Image unoptimized loading="eager" width={24} height={24} alt="" aria-hidden="true" className={`tier-swatch tier-${t.key}`} src={`/crowns/${t.key}.svg`} />
                 {/* 넓은 범례는 상세 배지와 같은 말 '이 달 1위'(2026-11-18 소유자), 얇은 레일만 축약 */}
                 {compact ? t.short : t.label}
               </button>
@@ -4783,7 +4785,7 @@ export function PublicPoster({
                       ) : null}
                       {detailTier ? (
                         <span aria-label={detailTier.label} className={`adt-badge tier-${detailTier.key}`}>
-                          <img alt="" aria-hidden="true" className="adt-crown" src={detailTier.icon} />
+                          <Image unoptimized loading="eager" width={24} height={24} alt="" aria-hidden="true" className="adt-crown" src={detailTier.icon} />
                           {detailTier.label}
                         </span>
                       ) : null}

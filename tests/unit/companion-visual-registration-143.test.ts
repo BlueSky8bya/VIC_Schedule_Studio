@@ -1,3 +1,4 @@
+import { appearancePose } from "../fixtures/companion-appearance-geometry";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -45,12 +46,12 @@ describe("143 standing eyewear scale with actual adopted registration", () => {
     // Both actual packets differ from standing in eye span. They retain their
     // own adopted image/position/roll while the same worn object keeps its size.
     const indices = [0, 144, 159, 376, 383];
-    const eyeSpan = (index: number) => { const eyes = anchors.frames[index].eyes; return Math.hypot(eyes[1].center[0] - eyes[0].center[0], eyes[1].center[1] - eyes[0].center[1]); };
+    const eyeSpan = (index: number) => { const eyes = appearancePose(index).eyes; return Math.hypot(eyes[1].center[0] - eyes[0].center[0], eyes[1].center[1] - eyes[0].center[1]); };
     expect(eyeSpan(144)).not.toBeCloseTo(eyeSpan(0)); expect(eyeSpan(376)).not.toBeCloseTo(eyeSpan(0));
     for (const id of ["round-glasses", "wire-glasses", "browline-glasses", "heart-glasses", "square-glasses"] as const) {
       const standing = companionAccessoryPlacement(selectCompanionSprite(0), id)!;
       for (const index of indices) {
-        const pose = anchors.frames[index], placed = companionAccessoryPlacement(selectCompanionSprite(index), id)!;
+        const pose = appearancePose(index), placed = companionAccessoryPlacement(selectCompanionSprite(index), id)!;
         expect(pose.orientation).toBe("front"); expect(placed.width).toBeCloseTo(standing.width);
         expect([placed.x, placed.y, placed.rotation]).toEqual([pose.face.x, pose.face.y, pose.face.roll]);
       }
@@ -58,7 +59,7 @@ describe("143 standing eyewear scale with actual adopted registration", () => {
   });
   it("keeps source-local pivots/yaw/roll on every visible pose rather than borrowing standing anchors", () => {
     const standing = companionAccessoryPlacement(selectCompanionSprite(0), "wire-glasses")!;
-    for (const pose of anchors.frames) {
+    for (const pose of anchors.frames.map(pose=>appearancePose(pose.physicalIndex))) {
       const selected = selectCompanionSprite(pose.physicalIndex), placed = companionAccessoryPlacement(selected, "wire-glasses")!;
       if (pose.orientation === "back") continue;
       // The apex drawing retains the rise drawing's quarter-view eye plane.
@@ -72,7 +73,7 @@ describe("143 standing eyewear scale with actual adopted registration", () => {
   it("also stabilizes legacy front eyewear without changing its standing size", () => {
     for (const id of ["sunglasses", "pixel-sunglasses"] as const) {
       const standing = companionAccessoryPlacement(selectCompanionSprite(0), id)!;
-      expect(standing.width).toBeCloseTo(anchors.frames[0].face.width * (id === "sunglasses" ? 1.32 : 1.3));
+      expect(standing.width).toBeCloseTo(appearancePose(0).face.width * (id === "sunglasses" ? 1.32 : 1.3));
       for (const index of [144, 159, 376, 383]) expect(companionAccessoryPlacement(selectCompanionSprite(index), id)!.width).toBeCloseTo(standing.width);
     }
   });

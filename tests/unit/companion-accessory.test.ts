@@ -1,3 +1,4 @@
+import { appearancePose, appearancePoint } from "../fixtures/companion-appearance-geometry";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import sharp from "sharp";
@@ -77,15 +78,15 @@ describe("adopted pose wardrobe", () => {
   });
   it("covers every measured eye while keeping the approved standing lens size across expressions", async () => {
     const activeEyes = await measuredActiveEyes();
-    const measured = anchors.frames as unknown as Array<typeof anchors.frames[number] & { eyes: { center: number[]; bounds: number[] }[] }>;
+    const measured = anchors.frames.map(pose=>appearancePose(pose.physicalIndex));
     for (const pose of measured) {
       if (pose.orientation === "back") continue;
       expect(pose.eyes, `eyes ${pose.physicalIndex}`).toHaveLength(2);
-      const eyes = activeEyes.get(pose.physicalIndex) ?? pose.eyes;
+      const eyes = (activeEyes.get(pose.physicalIndex)??anchors.frames[pose.physicalIndex].eyes).map(eye=>({...eye,center:[appearancePoint(pose.physicalIndex,{x:eye.center[0],y:eye.center[1]}).x,appearancePoint(pose.physicalIndex,{x:eye.center[0],y:eye.center[1]}).y],bounds:[...Object.values(appearancePoint(pose.physicalIndex,{x:eye.bounds[0],y:eye.bounds[1]})),...Object.values(appearancePoint(pose.physicalIndex,{x:eye.bounds[2],y:eye.bounds[3]}))]}));
       const selected = selectCompanionSprite(pose.physicalIndex), eye = eyes[1];
       for (const id of ["monocle"] as const) {
         const placed = companionAccessoryPlacement(selected, id)!;
-        expect(placed.x, `${id}:${pose.physicalIndex}`).toBeCloseTo(eye.center[0]); expect(placed.y).toBeCloseTo(eye.center[1]);
+        expect(placed.x, `${id}:${pose.physicalIndex}`).toBeCloseTo(pose.eyes[1].center[0]); expect(placed.y).toBeCloseTo(pose.eyes[1].center[1]);
         const coreRadius = 22 * (placed.art.viewScale ?? 1) * placed.width / placed.art.content.width;
         for (const x of [eye.bounds[0], eye.bounds[2]]) for (const y of [eye.bounds[1], eye.bounds[3]]) expect(Math.hypot(x - placed.x, y - placed.y), `${id}:${pose.physicalIndex} lens interior`).toBeLessThan(coreRadius);
         expect(placed.layer).toBe("front");
@@ -248,11 +249,11 @@ describe("adopted pose wardrobe", () => {
   });
   it("keeps registered mouth boxes and the measured face band above all three neck props throughout their finite motions", () => {
     const calibrated = new Map(mouths.frames.map(frame => [frame.index, frame]));
-    for (const pose of anchors.frames) {
+    for (const pose of anchors.frames.map(pose=>appearancePose(pose.physicalIndex))) {
       if (pose.orientation === "back") continue;
       const selected = selectCompanionSprite(pose.physicalIndex), angle = pose.face.roll * Math.PI / 180, nx = -Math.sin(angle), ny = Math.cos(angle), depth = (x: number, y: number) => (x - pose.face.x) * nx + (y - pose.face.y) * ny;
       const mouth = calibrated.get(pose.physicalIndex), mouthSource = mouth && mouths.atlases[mouth.atlas];
-      const mouthBottom = mouth && mouthSource?.src === anchors.sources[pose.atlas].src && mouthSource.sha256 === anchors.sources[pose.atlas].sha256 ? Math.max(...[0, 2].flatMap(x => [1, 3].map(y => depth(mouth.bounds[x] / mouths.cell * 80, mouth.bounds[y] / mouths.cell * 80)))) : undefined;
+      const mouthBottom = mouth && mouthSource?.src === anchors.sources[pose.atlas].src && mouthSource.sha256 === anchors.sources[pose.atlas].sha256 ? Math.max(...[0, 2].flatMap(x => [1, 3].map(y => (()=>{const p=appearancePoint(pose.physicalIndex,{x:mouth.bounds[x]/mouths.cell*80,y:mouth.bounds[y]/mouths.cell*80});return depth(p.x,p.y);})()))) : undefined;
       for (const id of COMPANION_ACCESSORY_IDS.filter(id => ["chest-badge", "front-bow", "front-pocket"].includes(COMPANION_ACCESSORIES[currentCompanionAccessory(id)].family))) for (const age of [0, 300, 600, 900, 1200, 1500, 1800, 2100, 2600]) {
         const placed = companionAccessoryPlacement(selected, id, sampleCompanionAccessoryMotion(id, age).accessory)!, rotation = placed.rotation * Math.PI / 180, height = placed.width * placed.art.content.height / placed.art.content.width;
         const corners = [-1, 1].flatMap(sx => [-1, 1].map(sy => {

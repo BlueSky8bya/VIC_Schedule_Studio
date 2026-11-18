@@ -1,3 +1,4 @@
+import { resolveCompanionAppearanceSource as activeSource, companionAppearanceGridRows } from "@/lib/ui/viewer-companion/appearance";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import sharp from "sharp";
@@ -74,8 +75,8 @@ describe("104 additive living-pose asset integrity", () => {
       const row = 33 + index, authored = registration.frames[index], { key: authoredKey, ...frame } = authored;
       expect(authoredKey).toBe(key); expect(frame.index).toBe(index); expect(frozen104.frames[index]).toEqual({ atlas: 0, ...frame });
       expect(companionSpriteMetadata.rows[row]).toEqual([frameOffset + index]); expect(companionSpriteMetadata.frames[frameOffset + index]).toEqual({ ...living.frames[index], atlas: atlasOffset });
-      expect(companionSpriteSources(row)).toEqual([living.atlases[0].src]);
-      for (const column of [0, 7, 15]) expect(selectCompanionSprite(-1, row, column)).toMatchObject({ atlas: "hd", physicalIndex: frameOffset + index, index, src: living.atlases[0].src, grid: 8, gridRows: 2, frame: { ...living.frames[index], atlas: atlasOffset } });
+      expect(companionSpriteSources(row)).toEqual([activeSource(living.atlases[0]).src]);
+      for (const column of [0, 7, 15]) expect(selectCompanionSprite(-1, row, column)).toMatchObject({ atlas: "hd", physicalIndex: frameOffset + index, index, src: activeSource(living.atlases[0]).src, grid: 8, gridRows: companionAppearanceGridRows(activeSource(living.atlases[0]).src) ?? 2, frame: { ...living.frames[index], atlas: atlasOffset } });
     }
   });
 
@@ -113,13 +114,13 @@ describe("104 additive living-pose asset integrity", () => {
         if (pose.row < 33) continue;
         reached.add(pose.row);
         const selected = selectCompanionSprite(-1, pose.row, pose.phase * 15);
-        expect(selected.src).toBe(living.atlases[0].src); expect(selected.index).toBe(pose.row - 33);
+        expect(selected.src).toBe(activeSource(living.atlases[0]).src); expect(selected.index).toBe(pose.row - 33);
       }
     }
     // The former three still cheer keys remain byte-pinned above. Continuous
     // cheering now reuses the calibrated happy body with independent props.
     expect([...reached].sort((a, b) => a - b)).toEqual([33, 34, 35, 36, 40]);
     const quiet = sampleCompanionCozySleep(6000, 12000); expect(quiet).toMatchObject({ row: 40, dreaming: true });
-    expect(selectCompanionSprite(-1, quiet.row, 0)).toMatchObject({ src: living.atlases[0].src, index: 7 });
+    expect(selectCompanionSprite(-1, quiet.row, 0)).toMatchObject({ src: activeSource(living.atlases[0]).src, index: 7 });
   });
 });

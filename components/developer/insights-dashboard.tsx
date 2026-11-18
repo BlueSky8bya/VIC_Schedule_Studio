@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import { tagColor } from "@/lib/tags/dark-palette";
 
 import { CalendarDays, ChevronLeft, ChevronRight, Heart, LineChart } from "lucide-react";
@@ -446,7 +448,7 @@ export function InsightsDashboard({
                   <ul className="badge-criteria">
                     {(["gold", "silver", "bronze"] as const).map((k, i) => (
                       <li key={k}>
-                        <img alt="" className="bc-flame" height={18} src={`/crowns/${k}.svg`} width={18} />
+                        <Image unoptimized loading="eager" alt="" className="bc-flame" height={18} src={`/crowns/${k}.svg`} width={18} />
                         <div className="bc-body">
                           <b>이 달 {i + 1}위</b>
                           <em>이 달 하트 수 {i + 1}번째(동점은 같은 등수)</em>

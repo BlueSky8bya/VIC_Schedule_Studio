@@ -1,9 +1,9 @@
 # Current State — VIC Schedule Studio
 
-Last Updated: 2026-10-30 (KST)
+Last Updated: 2026-11-18 (KST)
 Project Version: 0.1.0
 
-Current work only. Completed plans/rounds are evidence, not instructions. Previous accumulated state is preserved byte-for-byte in [the snapshot](archive/20261017-CURRENT_STATE-before-platform-remediation.snapshot.txt); use topic records for current behavior.
+Current work only; history is evidence, not instructions. Previous state: [snapshot](archive/20261017-CURRENT_STATE-before-platform-remediation.snapshot.txt).
 
 ## Current Objective
 
@@ -11,13 +11,13 @@ P02 correction2559 verified; exact release/[checklist](plans/PLAN-20261030-pc-lo
 
 Before daily work, read primary `C:/Projects/VIC_Schedule_Studio/docs/agent/handoffs/boss-decisions.md`. Owner2026-10-29 delegates exact proposal adoption to the research-PC Telegram secretary's date/ID/채택/owner-message-number rows. Only recorded new adoptions proceed; completed/rejected decisions remain.
 
-Daily idea proposals require at least3 distinct observed candidates; fewer remains incomplete. Latest human instruction supersedes old maximum/zero-proposal completion clauses. Exclude completed/rejected/pending duplicates and preserve their exact adoption/release records in primary daily state.
+Daily ideas require at least3 observed candidates. Current user supersedes old maximum/zero clauses. Dedupe completed/rejected/pending keys; preserve adoption/release records in primary daily state.
 
 Owner2026-10-27: exclude fan timeline **administration** from future idea discovery (not viewer replay/timeline/search). Ecology generation/codex plans are retired; sky/celestial, current meadow and companion collection books remain. Original sources/frozen evidence stay intact. [Current contract](plans/PLAN-20261027-support-search-celestial.md).
 
-Daily09:00 ACTIVE: existing-function verification and project-wide idea discovery are separate required stages. Risk/weekly rotation and verified same-build continuation; no blanket200. Settings/detail navigation contract: [record](plans/PLAN-20261025-settings-and-detail-navigation.md). Daily status, exact releases, completed/rejected/pending proposal keys and carryover are authoritative in primary `.scratch-pw/site-daily/state.json`; historical plans do not create new approval gates. Preserve original failures/privacy; normal36 UNVERIFIED. [QA](plans/PLAN-20261022-focused-qa.md).
+Daily09:00 ACTIVE: separate existing-function verification/discovery; risk/weekly rotation and same-build continuation, no blanket200. [Settings/detail contract](plans/PLAN-20261025-settings-and-detail-navigation.md). Primary `.scratch-pw/site-daily/state.json` owns status/exact releases/completed-rejected-pending keys/carryover; old plans grant no authority. Preserve failures/privacy; normal36 UNVERIFIED. [QA](plans/PLAN-20261022-focused-qa.md).
 
-Current: operations follow-up remains provider quotas/recovery and real-device/privacy evidence after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Actual broadcaster-PC validation is deferred by the user.125 explicitly authorizes unnecessary Vercel deployment cleanup/optimization; unrelated cleanup, bulk DB UPDATE, paid-plan or permission changes remain unauthorized. Preserve user art/preview work, original/098/099 bytes and scoped historical audit evidence.
+Operations: quota/recovery and real-device/privacy evidence remain after [082](plans/PLAN-20261017-082-provider-and-lifecycle-validation.md). Broadcaster-PC work is owner-deferred. Historical125 covers unnecessary Vercel deployment cleanup only; unrelated cleanup, bulk DB UPDATE, paid-plan/permission changes remain unauthorized. Preserve art/preview/original098/099 and historical evidence.
 
 Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, owner-only private content, Google+passcode/session binding, KST and serial writes remain mandatory. Companion defaults ON only for PC without saved choice; explicit choices persist. Mobile companion stays excluded. Actual OBS hardware/real-session/provider evidence stays distinct from fixtures.
 
@@ -25,6 +25,7 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
+| COMPANION-CONSISTENCY-20261118 | Release in progress | Main push/deploy authorized; verify exact production SHA and companion | [Plan](plans/PLAN-20261118-companion-consistency.md) |
 | COMPANION-PANEL-REPORT-20261026 | Watch original cause | Inspect bounded local recurrence evidence on a distinct real failure; preserve original unconfirmed report | [Contract](verification/COMPANION_VISIBILITY-20261026.md) |
 | DAILY-0900 | Active | Separate risk verification/discovery; adopted work through exact release, preserve carryover | [Search focus](plans/PLAN-20261025-search-focus.md) |
 | OPS-CLOUDFLARE-MOVE | Live, cleanup pending | Live on victory-broadcast.com via Workers Builds (Vercel paused until 2026-12-13, no further use). Branch cleanup/post-cloudflare removes Vercel leftovers and private-layer code; 0159 written, not applied (owner approval after deploy check) | [Runbook](../ops/CLOUDFLARE_MIGRATION.md) |
@@ -54,9 +55,8 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 5. PRIVACY-20260921: resolve remaining visit/recurring retention policy and restricted local recovery-backup removal after its2026-10-24 window. No automatic future run is scheduled.
 ## Last Verified
 
-Living AI396024fc released;25 scoped native proofs/6,840 units verified. [Evidence](plans/PLAN-20261023-living-intent-and-motion.md). Broader cases/normal36 remain unverified.
+[Living AI](plans/PLAN-20261023-living-intent-and-motion.md):396024fc released;25 proofs/6,840 units. Normal36 unverified.
 
-Actual lamp trace2e669e72 has16 touch paints/0receipts; matched viewer geometry342x260/full graphics/DPR0.9 fails before170 (c49c947d). Bounded physical alignment preserves strict1.25px and passes final3 native cases177e87a8,99 related units/type/lint/build. Source review accepted; actual independent/deployed result pending. No200. [Plan](plans/PLAN-20261022-lamp-live-trace.md).
+[Lamp170](plans/PLAN-20261022-lamp-live-trace.md): failed trace reproduced; bounded1.25px alignment passes3 fixtures/99 units. Independent/deployed evidence pending; no200. Exact traces remain in topic record.
 
-
-Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). These scoped historical checks do not prove current changes. Completed work remains in topic files and preserved snapshot.
+Accepted behavior: [UI rules](../ux/UI_RULES.md), [077 audit](verification/COMPANION_COMPREHENSIVE_AUDIT-20261017.md), [076 broadcast pipeline](verification/COMPANION_BROADCAST_PIPELINE-20261017.md). Historical checks are not current verification.

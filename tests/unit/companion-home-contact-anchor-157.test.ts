@@ -1,3 +1,4 @@
+import { appearancePoint, appearancePose } from "../fixtures/companion-appearance-geometry";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import sharp from "sharp";
@@ -20,7 +21,7 @@ describe("157 physical source-bound overhead body contact", () => {
     expect(createHash("sha256").update(bytes).digest("hex")).toBe(contacts.source.sha256);expect(bytes.length).toBe(contacts.source.bytes);
     expect(contacts.frames.map(frame=>frame.physicalIndex)).toEqual(companionSpriteMetadata.rows[9]);
     for(const point of contacts.frames){const selected=selectCompanionSprite(point.physicalIndex),head=companionHomeContactAnchor(selected,true)!;
-      expect(head).toMatchObject({x:point.x,y:point.y});expect(head.y).toBeLessThan(companionCarryAnchor(selected)!.y);
+      expect(head).toMatchObject(appearancePoint(point.physicalIndex,{x:point.x,y:point.y}));expect(head.y).toBeLessThan(companionCarryAnchor(selected)!.y);
       expect(companionHomeContactAnchor({...selected,src:"/different-body.webp"},true)).toBeNull();
       expect(companionHomeContactAnchor({...selected,index:selected.index+16},true)).toBeNull();}
     expect(companionHomeContactAnchor({...selectCompanionSprite(0),physicalIndex:-1},true)).toBeNull();
@@ -63,7 +64,7 @@ describe("157 physical source-bound overhead body contact", () => {
   it("keeps all original carried-food/toy transport anchors unchanged and source-valid fallback poses at their measured head", () => {
     const before=JSON.stringify(anchors);
     for(const pose of anchors.frames){const selected=selectCompanionSprite(pose.physicalIndex);expect(companionHomeContactAnchor(selected,false)).toEqual(companionCarryAnchor(selected));
-      if(!contacts.frames.some(point=>point.physicalIndex===pose.physicalIndex))expect(companionHomeContactAnchor(selected,true)).toEqual(pose.head);}
+      if(!contacts.frames.some(point=>point.physicalIndex===pose.physicalIndex))expect(companionHomeContactAnchor(selected,true)).toEqual(appearancePose(pose.physicalIndex).head);}
     expect(JSON.stringify(anchors)).toBe(before);
   });
 });

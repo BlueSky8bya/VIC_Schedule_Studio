@@ -1,5 +1,5 @@
 import { companionSpriteMetadata as metadata } from "./sprite-quality";
-import { companionEyeScale143Source } from "./eye-scale-143";
+import { companionAppearanceFrames, resolveCompanionAppearanceSource } from "./appearance";
 import calibration from "./mouth-anchors.json";
 import { projectCompanionSpritePoint, type CompanionSofaPoseInput } from "./sofa-pose";
 import type { CompanionSpriteSelection } from "./sprite-quality";
@@ -25,8 +25,10 @@ export function projectCompanionMouth(selected: CompanionSpriteSelection, input:
   const frame = metadata.frames[selected.physicalIndex];
   const atlas = frame && metadata.atlases[frame.atlas];
   const legacySource = calibration.atlases[anchor.atlas];
-  const source = legacySource && companionEyeScale143Source(legacySource);
+  const source = legacySource && resolveCompanionAppearanceSource(legacySource);
   if (!atlas || !source || atlas.src !== selected.src || atlas.src !== source.src || atlas.sha256 !== source.sha256
     || selected.index !== anchor.cell || frame.index !== anchor.cell || calibration.cell <= 0) return null;
-  return projectCompanionSpritePoint({ ...input, cell: selected.frame }, { x: anchor.x / calibration.cell * 80, y: anchor.y / calibration.cell * 80 });
+  const mouth = companionAppearanceFrames.get(selected.physicalIndex)?.mouth;
+  if (!mouth) return null;
+  return projectCompanionSpritePoint({ ...input, cell: selected.frame }, mouth);
 }

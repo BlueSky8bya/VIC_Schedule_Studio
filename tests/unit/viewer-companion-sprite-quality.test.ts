@@ -1,3 +1,5 @@
+import { companionAppearanceFrame } from "@/lib/ui/viewer-companion/appearance";
+import { resolveCompanionAppearanceSource as activeSource, companionAppearanceGridRows } from "@/lib/ui/viewer-companion/appearance";
 import { describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
 import { companionMotionClips, companionSpriteMetadata, companionSpriteSources, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
@@ -57,13 +59,13 @@ describe("one high-resolution pipeline for every companion action", () => {
     };
     const eye120 = JSON.parse(readFileSync("art-src/빅타민/동행/작업회차/20261019-눈매윤곽교정120/패킹파생기록.json", "utf8")) as typeof expression119;
     expect(eye120.packets.map(packet => packet.atlas)).toEqual([0, 16, 32]);
-    for (const replacement of expression119.packets) expect(companionSpriteMetadata.atlases[replacement.atlas]).toEqual(eye120.packets.find(packet => packet.atlas === replacement.atlas)?.packet ?? replacement.packet);
+    for (const replacement of expression119.packets) expect(companionSpriteMetadata.atlases[replacement.atlas]).toEqual(activeSource(eye120.packets.find(packet => packet.atlas === replacement.atlas)?.packet ?? replacement.packet));
     for (let index = 0; index < sprites.frames.length; index++) {
       const selected = selectCompanionSprite(index);
-      expect(selected).toMatchObject({ atlas: "hd", physicalIndex: index, index: index % 16, grid: 8, gridRows: 2 });
+      expect(selected).toMatchObject({ atlas: "hd", physicalIndex: index, index: index % 16, grid: 8, gridRows: companionAppearanceGridRows(selected.src) ?? 2 });
       const atlas = Math.floor(index / 16);
       expect(sprites.atlases[atlas].src).toBe(replacements[atlas] ?? `/companion/hd/vitamin-action-${String(atlas).padStart(2, "0")}-motion-115-v1.webp`);
-      expect(selected.frame).toEqual(sprites.frames[index]);
+      expect(selected.frame).toEqual(companionAppearanceFrame(index,sprites.frames[index]));
     }
     expect(happiness131.physicalIndices).toEqual(Array.from({ length: 16 }, (_, index) => 144 + index));
     expect(eyeWeight133.parent).toEqual(happiness131.packet);
@@ -78,7 +80,7 @@ describe("one high-resolution pipeline for every companion action", () => {
       for (const [local, frame] of before.frames.entries()) {
         const physical = frameOffset + local;
         if (physical >= 144 && physical <= 159) continue;
-        expect(companionSpriteMetadata.frames[physical]).toEqual({ ...frame, atlas: frame.atlas + atlasOffset }); unchanged++;
+        expect(companionSpriteMetadata.frames[physical]).toEqual(companionAppearanceFrame(physical,{ ...frame, atlas: frame.atlas + atlasOffset })); unchanged++;
       }
       frameOffset += before.frames.length; atlasOffset += before.atlases.length;
     }
@@ -89,7 +91,7 @@ describe("one high-resolution pipeline for every companion action", () => {
     for (const [index, frame] of companionSpriteMetadata.frames.entries()) {
       const parent = historical[frame.atlas], patch = edition.packets.find(p => p.atlas === frame.atlas);
       if (patch) { expect(parent.src).toBe(patch.parentSrc); expect(parent.sha256).toBe(patch.parentSha256); }
-      expect(selectCompanionSprite(index).src).toBe(patch?.src ?? parent.src);
+      expect(selectCompanionSprite(index).src).toBe(activeSource(parent).src);
     }
   });
   it("registers actual bodies in80 logical units with protected stroke margins", () => {
@@ -118,7 +120,7 @@ describe("one high-resolution pipeline for every companion action", () => {
       expect(companionSpriteSources(row)).toHaveLength(1);
       expect(companionSpriteSources(row)).toEqual([...new Set(sprites.rows[row].map(index => selectCompanionSprite(index).src))]);
     }
-    expect(companionSpriteSources(12)).toEqual([sprites.atlases[16].src, sprites.atlases[12].src]);
+    expect(companionSpriteSources(12)).toEqual([activeSource(sprites.atlases[16]).src, activeSource(sprites.atlases[12]).src]);
     expect(sprites.atlases).toHaveLength(19);
     for (const atlas of sprites.atlases) {
       expect(atlas.width).toBe(1536); expect(atlas.height).toBe(384);
@@ -135,7 +137,7 @@ describe("one high-resolution pipeline for every companion action", () => {
     expect(companionSpriteMetadata.rows.slice(0, 20)).toEqual(sprites.rows);
     for (let row = 20; row < 32; row++) expect(companionSpriteMetadata.rows[row]).toEqual(Array.from({ length: 16 }, (_, column) => sprites.frames.length + (row - 20) * 16 + column));
     expect(companionSpriteMetadata.rows[32]).toEqual(Array.from({ length: 16 }, (_, column) => sprites.frames.length + 192 + column));
-    expect(companionSpriteSources(32)).toEqual([play.atlases[12].src]);
+    expect(companionSpriteSources(32)).toEqual([activeSource(play.atlases[12]).src]);
     for (const [index, atlas] of play.atlases.entries()) expect(atlas.src).toBe(`/companion/hd/vitamin-play-${String(index).padStart(2, "0")}-${[3, 12].includes(index) ? "expression-119" : "motion-115"}-v1.webp`);
     expect(play.atlases[12].src).toBe("/companion/hd/vitamin-play-12-expression-119-v1.webp");
   });
@@ -148,11 +150,11 @@ describe("registered living keys", () => {
     expect(living.atlases[0].src).toBe("/companion/hd/vitamin-episodes-00-eye-contour-120-v1.webp");
     for (let row = 33; row < 41; row++) {
       const index = companionSpriteMetadata.rows[row][0], selected = selectCompanionSprite(index, row, 0);
-      expect(companionSpriteSources(row)).toEqual([living.atlases[0].src]);
+      expect(companionSpriteSources(row)).toEqual([activeSource(living.atlases[0]).src]);
       expect(selected.index).toBe(row - 33);
       expect(selected.frame).toEqual({ ...living.frames[row - 33], atlas: sprites.atlases.length + play.atlases.length });
-      expect(selected.grid).toBe(8); expect(selected.gridRows).toBe(2);
-      expect(selected.src).toBe(living.atlases[0].src);
+      expect(selected.grid).toBe(8); expect(selected.gridRows).toBe(companionAppearanceGridRows(selected.src));
+      expect(selected.src).toBe(activeSource(living.atlases[0]).src);
     }
   });
 });

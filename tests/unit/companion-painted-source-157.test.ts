@@ -29,18 +29,20 @@ const print=(node:ts.Node)=>ts.createPrinter().printNode(ts.EmitHint.Unspecified
 const actualMaskCode=ts.transpileModule(`
 const PIXELS=192,SCALE=PIXELS/80,allowed=new Uint8Array(PIXELS*PIXELS);
 const mix=(a,b,p)=>a+(b-a)*p;
+const native=undefined,original=undefined,authoredState="open";
 const face={gazeX:0,gazeY:0,weight:1,smile:.7,open:1,tremble:.3};
 const layout=companionFaceLayout(pose);
-const ${print(declaration("sharedEyeWidth"))};
-const ${print(declaration("sharedEyeHeight"))};
 const pixels={getImageData(left,top,width,height){const data=new Uint8ClampedArray(width*height*4);
   for(let y=0;y<height;y++)for(let x=0;x<width;x++)data.set(source.subarray(((top+y)*PIXELS+left+x)*4,((top+y)*PIXELS+left+x)*4+4),(y*width+x)*4);
   return {data,width,height};}};
 const ${print(background)};
 const ${print(eyePatches)};
 const ${print(mouthCenter)};
+const ${print(declaration("sourceMouthX"))};
+const ${print(declaration("sourceMouthY"))};
 const ${print(declaration("targetMouthX"))};
 const ${print(declaration("targetMouthY"))};
+const ${print(declaration("mouthFringe")!)};
 const ${print(mouthBox)};
 const ${print(mouthFill)};
 return {allowed,eyePatches,mouthBox,mouthFill};`,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.None}}).outputText;
@@ -155,9 +157,18 @@ describe("157 actual current-cell canvas comparison shared verbatim with browser
     const f=fixture();f.source.set([240,170,100],f.pixel*4);f.painted=f.source.slice();f.painted[f.pixel*4]--;
     const p=compare(f.source,f.painted,pose,pose);expect(p.protectedRgbMismatch).toBe(1);expect(p.valid).toBe(false);
   });
+  it("protects the canonical mouth even where a broad blink eye corridor overlaps it",()=>{
+    const source=original(),permitted=mask(source,pose,pose,true)!,mouth=companionFaceLayout(pose);
+    const pixel=permitted.findIndex((value,p)=>{const x=p%192/2.4,y=Math.floor(p/192)/2.4;return value===1&&x>=mouth.mouthX-3.4&&x<=mouth.mouthX+3.4&&y>=mouth.mouthY-2&&y<=mouth.mouthY+3.6;});
+    expect(pixel).toBeGreaterThanOrEqual(0);source.set([118,80,48],pixel*4);
+    const painted=source.slice();painted[pixel*4]--;
+    const rejected=compare(source,painted,pose,pose,true);
+    expect(rejected.protectedRgbMismatch).toBe(1);expect(rejected.valid).toBe(false);
+  });
   it("can replace a red native mouth while preserving orange pixels in the surrounding mouth patch",()=>{
-    const source=original(),permitted=mask(source,pose,pose)!,m=pose.mouth!;
-    const inMouth=(p:number)=>{const x=p%192/2.4,y=Math.floor(p/192)/2.4;return x>=m.bounds[0]-.6&&x<=m.bounds[2]+.6&&y>=m.bounds[1]-.6&&y<=m.bounds[3]+.6;};
+    const source=original(),permitted=mask(source,pose,pose)!;
+    const actualMouth=companionFaceLayout(pose);
+    const inMouth=(p:number)=>{const x=p%192/2.4,y=Math.floor(p/192)/2.4;return x>=actualMouth.mouthX-3.4&&x<=actualMouth.mouthX+3.4&&y>=actualMouth.mouthY-2&&y<=actualMouth.mouthY+3.6;};
     const mouth=permitted.findIndex((v,p)=>v===2&&inMouth(p)),cheek=permitted.findIndex((v,p)=>v===2&&!inMouth(p));
     expect(mouth).toBeGreaterThanOrEqual(0);expect(cheek).toBeGreaterThanOrEqual(0);
     source.set([240,150,100],mouth*4);source.set([240,150,100],cheek*4);

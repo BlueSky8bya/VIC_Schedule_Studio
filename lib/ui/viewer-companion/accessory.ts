@@ -1,5 +1,9 @@
 import { companionFoldedHatSeat, companionForegroundEars } from "./accessory-ear-occlusion";
-import { companionEyeScale143Source, companionEyeScale143Eyes } from "./eye-scale-143";
+import overrides from "./expression-pose-overrides.json";
+import expressions from "./expression-anchors-161.json";
+import policy from "./appearance-policy.json";
+import { companionEyeScale143Eyes } from "./eye-scale-143";
+import { companionAppearanceEyes, companionAppearancePoint, companionAppearanceBounds, companionAppearanceLandmark, resolveCompanionAppearanceSource } from "./appearance";
 import anchors from "./accessory-anchors.json";
 import homeContactAnchors from "./home-contact-anchors-157.json";
 import curtainContactAnchors from "./curtain-contact-anchors.json";
@@ -7,16 +11,32 @@ import { companionEyeAccessorySpan, companionEyeViewScale } from "./accessory-ey
 import mouths from "./mouth-anchors.json";
 import { getCompanionCollectionArtFrame, type CompanionCollectionArtFrame } from "./collection-art";
 import type { CompanionAccessoryId } from "./gifts";
-import { companionSpriteMetadata, type CompanionSpriteSelection } from "./sprite-quality";
+import { companionSpriteMetadata, decodeCompanionSprite, peekDecodedCompanionSprite, type CompanionSpriteSelection } from "./sprite-quality";
 import { isCompanionHat, type CompanionAccessoryTransform } from "./accessory-motion";
 import { createCompanionCollectionTextureReadiness } from "./collection-texture";
+import { createCompanionEarPainter } from "./ear-painter";
 import { COMPANION_ACCESSORIES, currentCompanionAccessory } from "./accessory-catalog";
 import { companionOpenPocketArt, companionPropellerArt, getCompanionAccessoryArtFrame, type CompanionAccessoryArtFrame } from "./accessory-art";
 
 type Landmark = Readonly<{ x: number; y: number; width: number; roll: number }>;
 type Pose = Readonly<{ physicalIndex: number; atlas: number; index: number; orientation: "front" | "quarter" | "side" | "back"; face: Landmark; head: Landmark; chest: Landmark; sideChest: Landmark; sideBody: Landmark; bodyBounds: readonly number[]; eyes: readonly Readonly<{ center: readonly number[]; bounds: readonly number[] }>[] }>;
 type Placement = Readonly<{ art: CompanionAccessoryArtFrame; x: number; y: number; width: number; rotation: number; layer: "front" | "back" | "headwear"; mirror?: -1 | 1; pivot?: Readonly<{ x: number; y: number }>; clips?: Readonly<{ front: string; back: string }>; stretchY?: number; rotor?: number; rearArt?: CompanionAccessoryArtFrame }>;
-const poses = new Map<number, Pose>((anchors.frames as readonly Pose[]).map(frame => [frame.physicalIndex, { ...frame, eyes: companionEyeScale143Eyes(frame, anchors.sources[frame.atlas]) }]));
+const expressionPoses=new Map([...expressions.frames,...overrides.frames].map(pose=>[pose.physicalIndex,pose]));
+const eyeReference=expressionPoses.get(policy.eye.referencePhysicalIndex)!;
+const eyeWidth=Math.max(...eyeReference.eyes.map(eye=>eye.bounds[2]-eye.bounds[0])),eyeHeight=Math.max(...eyeReference.eyes.map(eye=>eye.bounds[3]-eye.bounds[1]));
+const poses = new Map<number, Pose>((anchors.frames as readonly Pose[]).map(frame => {
+  const expression=expressionPoses.get(frame.physicalIndex),eyes=companionAppearanceEyes(frame.physicalIndex,expression?.eyes??companionEyeScale143Eyes(frame,anchors.sources[frame.atlas]));
+  const face={...companionAppearanceLandmark(frame.physicalIndex,frame.face)};
+  if(expression){const [a,b]=eyes.map(eye=>eye.center);face.x=(a[0]+b[0])/2;face.y=(a[1]+b[1])/2;face.roll=Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;}
+  const angle=face.roll*Math.PI/180;
+  const coverage=eyes.map((eye,i)=>{if(!expression)return eye;
+    const width=frame.orientation==="quarter"?eyeReference.eyes[i].bounds[2]-eyeReference.eyes[i].bounds[0]:eyeWidth;
+    const x=(width/2+.35)*Math.abs(Math.cos(angle))+(eyeHeight/2+.65)*Math.abs(Math.sin(angle));
+    const y=(width/2+.35)*Math.abs(Math.sin(angle))+(eyeHeight/2+.65)*Math.abs(Math.cos(angle));
+    return {...eye,bounds:[Math.min(eye.bounds[0],eye.center[0]-x),Math.min(eye.bounds[1],eye.center[1]-y),Math.max(eye.bounds[2],eye.center[0]+x),Math.max(eye.bounds[3],eye.center[1]+y)]};
+  });
+  return [frame.physicalIndex,{...frame,face,head:companionAppearanceLandmark(frame.physicalIndex,frame.head),chest:companionAppearanceLandmark(frame.physicalIndex,frame.chest),sideChest:companionAppearanceLandmark(frame.physicalIndex,frame.sideChest),sideBody:companionAppearanceLandmark(frame.physicalIndex,frame.sideBody),bodyBounds:companionAppearanceBounds(frame.physicalIndex,frame.bodyBounds),eyes:coverage}];
+}));
 // Source-bound geometry is immutable. Measure the eye fit once, not during
 // each world frame or repeated wardrobe preview paint.
 const eyeFits = new Map(Array.from(poses.values()).flatMap(pose => {
@@ -30,10 +50,14 @@ const eyeFits = new Map(Array.from(poses.values()).flatMap(pose => {
 // The approved standing cell is the size reference. Every current source
 // retains its own position/roll/yaw and immutable measured coverage bounds.
 const standingEyeFit = eyeFits.get(0), standingFace = poses.get(0)?.face;
+// Native68 keeps one quarter camera through throw rise/apex (500..507).
+// Its pressed-eye classifier changes, so cover the widest actual eye once
+// without shrinking coverage or pulsing the monocle in the same flight.
+const throwEyeCoverWidth = Math.max(...Array.from({ length: 8 }, (_, i) => eyeFits.get(500 + i)?.width ?? 0));
 // The native drawings themselves can turn in either direction before their
 // common parent mirrors for travel. Measure yaw in the registered face axis,
 // not viewport x: a tumble's in-plane roll is not a change of facing.
-const poseYaw = new Map(anchors.frames.map(frame => {
+const poseYaw = new Map(Array.from(poses.values()).map(frame => {
   const angle = frame.face.roll * Math.PI / 180, [left, top, right, bottom] = frame.bodyBounds;
   const along = (frame.face.x - (left + right) / 2) * Math.cos(angle) + (frame.face.y - (top + bottom) / 2) * Math.sin(angle);
   // This source-bound tumble packet keeps the same right quarter camera.
@@ -62,7 +86,8 @@ function withMotion(placement: Placement, pose: Pose, id: CompanionAccessoryId, 
   const width = placement.width * motion.scale, rotation = placement.rotation + motion.roll;
   if (frontMounted(id) && pose.orientation !== "back") {
     const faceAngle = pose.face.roll * Math.PI / 180, nx = -Math.sin(faceAngle), ny = Math.cos(faceAngle), delta = rotation * Math.PI / 180 - faceAngle, aspect = placement.art.content.height / placement.art.content.width;
-    const safeTop = (placement.x - pose.face.x) * nx + (placement.y - pose.face.y) * ny - placement.width * aspect / 2;
+    const restDelta=(placement.rotation-pose.face.roll)*Math.PI/180;
+    const safeTop = (placement.x - pose.face.x) * nx + (placement.y - pose.face.y) * ny - Math.abs(Math.sin(restDelta))*placement.width/2 - Math.abs(Math.cos(restDelta))*placement.width*aspect/2;
     const movedTop = (x - pose.face.x) * nx + (y - pose.face.y) * ny - Math.abs(Math.sin(delta)) * width / 2 - Math.abs(Math.cos(delta)) * width * aspect / 2;
     // A flutter/ring may move the cloth below its resting band, never across
     // the same source's mouth or face. Reuse that measured resting boundary.
@@ -112,7 +137,7 @@ function headwearClip(placement: Placement, physicalIndex: number): string {
  * requested action's face or ear location. Coordinates precede registration. */
 export function companionAccessoryPlacement(selected: CompanionSpriteSelection, id: CompanionAccessoryId, motion?: CompanionAccessoryTransform): Placement | null {
   id = currentCompanionAccessory(id);
-  const pose = poses.get(selected.physicalIndex), source = pose && companionEyeScale143Source(anchors.sources[pose.atlas]);
+  const pose = poses.get(selected.physicalIndex), source = pose && resolveCompanionAppearanceSource(anchors.sources[pose.atlas]);
   const item = COMPANION_ACCESSORIES[id], spec = item && { point: familyPoint[item.family], scale: item.scale };
   if (!pose || !source || source.src !== selected.src || pose.index !== selected.index || !spec) return null;
   if (motion && (!Object.values(motion).every(Number.isFinite) || motion.scale <= 0)) return null;
@@ -147,7 +172,7 @@ export function companionAccessoryPlacement(selected: CompanionSpriteSelection, 
     if (!eye) return null;
     // This is the positive eye-axis endpoint, so its short outer chain stays
     // on that same side. Camera yaw must not mirror it back across the nose.
-    return withMotion({ art, x: eye.x, y: eye.y, width: Math.max(eye.width, (standingEyeFit?.width ?? eye.width) * companionEyeViewScale(view)), rotation: pose.face.roll, layer: "front", ...decoration, mirror: 1, pivot: { x: 64, y: 64 } }, pose, id, motion);
+    return withMotion({ art, x: eye.x, y: eye.y, width: Math.max(eye.width, selected.physicalIndex >= 500 && selected.physicalIndex <= 507 ? throwEyeCoverWidth : 0, (standingEyeFit?.width ?? eye.width) * companionEyeViewScale(view)), rotation: pose.face.roll, layer: "front", ...decoration, mirror: 1, pivot: { x: 64, y: 64 } }, pose, id, motion);
   }
   if (art.pairedEyes && pose.orientation !== "back") {
     const eye = eyeFits.get(selected.physicalIndex);
@@ -170,18 +195,20 @@ export function companionAccessoryPlacement(selected: CompanionSpriteSelection, 
     ? standingFace.width * companionEyeViewScale(view)
     : headwear ? Math.max(nativePoint.width, headwearReference * .38) : nativePoint.width;
   if (frontMounted(id) && pose.orientation !== "back") {
-    const angle = point.roll * Math.PI / 180, nx = -Math.sin(angle), ny = Math.cos(angle), depth = (x: number, y: number) => (x - pose.face.x) * nx + (y - pose.face.y) * ny;
+    const angle = pose.face.roll * Math.PI / 180, nx = -Math.sin(angle), ny = Math.cos(angle), depth = (x: number, y: number) => (x - pose.face.x) * nx + (y - pose.face.y) * ny;
     const [left, top, right, bottom] = pose.bodyBounds;
     const bodyDepth = Math.max(depth(left, top), depth(right, top), depth(left, bottom), depth(right, bottom));
-    const mouth = calibratedMouths.get(selected.physicalIndex), mouthSource = mouth && companionEyeScale143Source(mouths.atlases[mouth.atlas]);
+    const mouth = calibratedMouths.get(selected.physicalIndex), mouthSource = mouth && resolveCompanionAppearanceSource(mouths.atlases[mouth.atlas]);
     const exactMouth = mouth && mouth.cell === selected.index && mouthSource?.src === selected.src && mouthSource.sha256 === source.sha256 ? mouth : undefined;
-    const mouthBottom = exactMouth ? Math.max(...[0, 2].flatMap(x => [1, 3].map(y => depth(exactMouth.bounds[x] / mouths.cell * 80, exactMouth.bounds[y] / mouths.cell * 80)))) : 0;
+    const mouthBottom = exactMouth ? Math.max(...[0, 2].flatMap(x => [1, 3].map(y => (()=>{const p=companionAppearancePoint(selected.physicalIndex,{x:exactMouth.bounds[x]/mouths.cell*80,y:exactMouth.bounds[y]/mouths.cell*80});return depth(p.x,p.y);})()))) : 0;
     // A measured mouth wins where registered; the other authored frames keep
     // the full face band clear. Thin curled poses also shorten their clothing
     // instead of borrowing an upright neck box or hanging below their feet.
     const clearDepth = Math.max(7, pose.face.width * .3 + 1, mouthBottom + 1);
     const height = Math.min(baseWidth * spec.scale * art.content.height / art.content.width, Math.max(2, bodyDepth - clearDepth + 1.5));
-    const chestDepth = depth(point.x, point.y), centre = Math.max(chestDepth, clearDepth + height / 2);
+    const chestDepth = depth(point.x, point.y),delta=(point.roll-pose.face.roll)*Math.PI/180;
+    const width=height*art.content.width/art.content.height,reach=Math.abs(Math.sin(delta))*width/2+Math.abs(Math.cos(delta))*height/2;
+    const centre = Math.max(chestDepth, clearDepth + reach);
     const along = (point.x - pose.face.x) * Math.cos(angle) + (point.y - pose.face.y) * Math.sin(angle);
     return withMotion({ art, x: pose.face.x + nx * centre + Math.cos(angle) * along, y: pose.face.y + ny * centre + Math.sin(angle) * along, width: height * art.content.width / art.content.height, rotation: point.roll, layer: "front", ...decoration }, pose, id, motion);
   }
@@ -205,7 +232,7 @@ export function companionAccessoryAnchor(selected: CompanionSpriteSelection, id:
  * needs the existing projected viewport point. No extra scene loop or DOM
  * measurement is involved. */
 export function companionGiftAnchor(selected: CompanionSpriteSelection): { x: number; y: number; width: number; roll: number; behind: boolean } | null {
-  const pose = poses.get(selected.physicalIndex), source = pose && companionEyeScale143Source(anchors.sources[pose.atlas]);
+  const pose = poses.get(selected.physicalIndex), source = pose && resolveCompanionAppearanceSource(anchors.sources[pose.atlas]);
   if (!pose || !source || source.src !== selected.src || pose.index !== selected.index) return null;
   return { ...pose.chest, y: pose.chest.y + pose.chest.width * .1, width: pose.chest.width * .43, behind: pose.orientation === "back" };
 }
@@ -214,7 +241,7 @@ export function companionGiftAnchor(selected: CompanionSpriteSelection): { x: nu
  * including walking/jumping frames that intentionally have no eating mouth.
  * This never relaxes the separate source-calibrated eating-mouth contract. */
 export function companionCarryAnchor(selected: CompanionSpriteSelection): Landmark | null {
-  const pose = poses.get(selected.physicalIndex), source = pose && companionEyeScale143Source(anchors.sources[pose.atlas]);
+  const pose = poses.get(selected.physicalIndex), source = pose && resolveCompanionAppearanceSource(anchors.sources[pose.atlas]);
   const frame = companionSpriteMetadata.frames[selected.physicalIndex], actual = frame && companionSpriteMetadata.atlases[frame.atlas];
   if (!pose || !source || !frame || !actual || source.src !== selected.src || pose.index !== selected.index || frame.index !== selected.index
     || actual.src !== source.src || actual.sha256 !== source.sha256 || actual.bytes !== source.bytes) return null;
@@ -234,29 +261,35 @@ export function companionHomeContactAnchor(selected: CompanionSpriteSelection, o
   // anchors unchanged. The caller projects the correct side through facing.
   if (side) {
     const edge = curtainContactAnchors.frames.find(frame => frame.physicalIndex === selected.physicalIndex);
-    const frame = companionSpriteMetadata.frames[selected.physicalIndex], actual = frame && companionSpriteMetadata.atlases[frame.atlas], source = curtainContactAnchors.source;
+    const frame = companionSpriteMetadata.frames[selected.physicalIndex], actual = frame && companionSpriteMetadata.atlases[frame.atlas], source = resolveCompanionAppearanceSource(curtainContactAnchors.source);
     const point = edge?.[side];
     if (!edge || !actual || !point || edge.index !== selected.index || actual.src !== source.src || actual.sha256 !== source.sha256
       || actual.bytes !== source.bytes || ![point.x,point.y].every(Number.isFinite)) return null;
-    return { ...pose.head, x: point.x, y: point.y };
+    return { ...pose.head, ...companionAppearancePoint(selected.physicalIndex,{x:point.x,y:point.y}) };
   }
   const point = homeContactAnchors.frames.find(frame => frame.physicalIndex === selected.physicalIndex);
   if (point) {
-    const frame = companionSpriteMetadata.frames[selected.physicalIndex], actual = companionSpriteMetadata.atlases[frame.atlas], source = homeContactAnchors.source;
+    const frame = companionSpriteMetadata.frames[selected.physicalIndex], actual = companionSpriteMetadata.atlases[frame.atlas], source = resolveCompanionAppearanceSource(homeContactAnchors.source);
     if (point.index !== selected.index || actual.src !== source.src || actual.sha256 !== source.sha256 || actual.bytes !== source.bytes
       || ![point.x,point.y].every(Number.isFinite)) return null;
-    return { ...pose.head, x: point.x, y: point.y };
+    return { ...pose.head, ...companionAppearancePoint(selected.physicalIndex,{x:point.x,y:point.y}) };
   }
   return [pose.head.x,pose.head.y,pose.head.width,pose.head.roll].every(Number.isFinite) && pose.head.width > 0 ? { ...pose.head } : null;
 }
 
-type Hosts = { back: HTMLElement; front: HTMLElement; gift: HTMLElement };
+type Hosts = { back: HTMLElement; front: HTMLElement; gift: HTMLElement; composite?: HTMLElement };
+type TextureReadiness = ReturnType<typeof createCompanionCollectionTextureReadiness>;
 /** Reuse the parent's facing/pose/contact/inertia transforms and cache CSS
  * writes by their values. One small static accessory atlas is requested only
  * when an owned item is equipped; the character decoder is untouched. */
-export function createCompanionAccessoryPainter(hosts: Hosts, textures = createCompanionCollectionTextureReadiness()) {
+export function createCompanionAccessoryPainter(hosts: Hosts, suppliedTextures?: Pick<TextureReadiness, "use" | "ready" | "clear"> & Partial<Pick<TextureReadiness, "image">>) {
+  let replay = () => {};
+  let generation = 0;
+  const textures = suppliedTextures ?? createCompanionCollectionTextureReadiness(undefined, () => replay());
   let accessorySrc: string | undefined, giftSrc: string | undefined;
   let lastHeadwearClip: { frame: number; art: CompanionAccessoryArtFrame; x: number; y: number; width: number; rotation: number; mirror: Placement["mirror"]; clip: string } | undefined;
+  const compositor = hosts.composite ? createCompanionEarPainter(hosts.composite) : undefined;
+  let layered = false;
   const values = new WeakMap<HTMLElement, Map<string, string>>();
   const style = (node: HTMLElement, key: string, value: string) => {
     let cache = values.get(node); if (!cache) { cache = new Map(); values.set(node, cache); }
@@ -285,8 +318,18 @@ export function createCompanionAccessoryPainter(hosts: Hosts, textures = createC
     lastHeadwearClip = { frame, art, x, y, width, rotation, mirror, clip };
     return clip;
   };
-  return {
-    paint(selected: CompanionSpriteSelection | undefined, id: CompanionAccessoryId | null, pending: boolean, motion?: CompanionAccessoryTransform) {
+  const painter = {
+    paint(selected: CompanionSpriteSelection | undefined, id: CompanionAccessoryId | null, pending: boolean, motion?: CompanionAccessoryTransform, face?: HTMLCanvasElement) {
+      const token = ++generation;
+      replay = () => {
+        // A static canvas consumer can lose its unowned body packet from the
+        // bounded LRU while a hat is loading. Recover on that one readiness
+        // event; never revive a cleared painter or an older pose.
+        const paint = () => { if (token === generation) painter.paint(selected, id, pending, motion, face); };
+        if (selected && compositor && id && isCompanionHat(id) && !peekDecodedCompanionSprite(selected.src)) {
+          void decodeCompanionSprite(selected.src).then(paint).catch(() => {});
+        } else paint();
+      };
       const placement = selected && id ? companionAccessoryPlacement(selected, id, motion) : null;
       const gift = selected && pending ? companionGiftAnchor(selected) : null, art = gift && getCompanionCollectionArtFrame("gift", "gift-bag");
       accessorySrc = placement?.art.src; giftSrc = art?.src;
@@ -307,12 +350,16 @@ export function createCompanionAccessoryPainter(hosts: Hosts, textures = createC
           } else hide(node);
         }
       } else { hide(hosts.back); hide(hosts.front); }
+      layered = compositor?.paint(selected, placement && id && isCompanionHat(id) ? placement : null, textures.image?.(placement?.art.src), textures.image?.(placement?.rearArt?.src), selected && id && placement?.rearArt ? companionAccessoryAnchor(selected, id, "rotor", motion) : null, face) ?? false;
+      if (compositor && id && isCompanionHat(id) && !layered) { hide(hosts.back); hide(hosts.front); }
       if (gift && art && selected) { show(hosts.gift, art, gift, selected, gift.width); style(hosts.gift, "z-index", gift.behind ? "0" : "3"); }
       else hide(hosts.gift);
       return gift;
     },
     accessoryReady: () => textures.ready(accessorySrc),
+    layered: () => layered,
     giftReady: () => textures.ready(giftSrc),
-    clear() { hide(hosts.back); hide(hosts.front); hide(hosts.gift); textures.clear(); accessorySrc = giftSrc = undefined; },
+    clear() { generation++; replay = () => {}; hide(hosts.back); hide(hosts.front); hide(hosts.gift); compositor?.hide(); layered = false; textures.clear(); accessorySrc = giftSrc = undefined; },
   };
+  return painter;
 }

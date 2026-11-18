@@ -18,6 +18,7 @@
 | `lib/private-layer/**` | 패스코드 언락 · 본문 암호화 | `secret-crypto.ts` | 평문 ↔ AES-256-GCM | ADR-0002 | PRIVACY |
 | `lib/auth/**`, `lib/permissions/**` | 액터 해석 · 역할 판정 | `actor.ts`, `roles.ts` | 세션 → 역할·권한 | ADR-0003 | AUTH |
 | `lib/insights/**` | 관리자 인사이트 집계 | `actions.ts` | DB → 수치 없는 패널 데이터 | ADR-0008 | PRIVACY |
+| `lib/ui/viewer-companion/**`, `scripts/companion-consistency/**` | 빅타민 화풍·귀·모자 파생판 | `pipeline.mjs`, `appearance-policy.json` | 원본/설정 → 새 파생판 | [현재 모습 계약](domain-rules/COMPANION_APPEARANCE.md) | GENERAL |
 | `lib/ui/**`, `app/globals.css` | 디자인 토큰 · 브레이크포인트 · 햅틱 | `breakpoints.ts` | — | `docs/ux/UI_RULES.md` | GENERAL |
 | `db/migrations/**` | 스키마(수동 적용, 멱등) | 최신 번호 파일 | SQL → Supabase | `db/migrations/README.md` | DESTRUCTIVE_DATA |
 | `scripts/**` | 운영 스크립트(적용·검증·백필) | `apply-db.mjs` | CLI | `scripts/README.md` | DESTRUCTIVE_DATA |

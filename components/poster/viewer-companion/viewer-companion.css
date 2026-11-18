@@ -41,6 +41,10 @@ html .vc-companion .vc-actor, html .vc-food, html .vc-gift-open { outline: none;
 .vc-wearable-back { z-index: 0; }
 .vc-pose > .vc-sprite { z-index: 1; }
 .vc-wearable-front { z-index: 2; }
+.vc-ear-layers { display: contents; }
+.vc-character-composite { position: absolute; left: -50%; top: -50%; display: block; width: 200%; height: 200%; z-index: 2; pointer-events: none; }
+.vc-ear-layers[hidden] { display: none; }
+.vc-pose[data-layered] > :is(.vc-sprite,.vc-expression-face,.vc-wearable-back,.vc-wearable-front) { visibility: hidden; }
 .vc-gift-prop { z-index: 3; filter: drop-shadow(0 1px 1px #5c443526); }
 .vc-gift-open { position: absolute; width: 44px; height: 44px; margin: -22px 0 0 -22px; padding: 0; border: 0; background: transparent; border-radius: var(--r-md); pointer-events: auto; cursor: pointer; touch-action: manipulation; }
 .vc-gift-open[hidden] { display: none; }

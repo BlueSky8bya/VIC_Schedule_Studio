@@ -1,5 +1,5 @@
 import { companionGripProfile, type CompanionGrip } from "./contact-grip";
-import { companionMaterialScale } from "./material-scale";
+import { companionMaterialScale, companionMaterialStack } from "./material-scale";
 import { COMPANION_CLIP_TIMING, COMPANION_THROW_ROW } from "./timing";
 
 /** Pose sampling only. The renderer owns world position and its rAF cadence. */
@@ -95,13 +95,16 @@ export function boundCompanionHangingPose(
   const neutral = (): CompanionMotionPose => ({ ...pose, bob: 0, scaleX: 1, scaleY: 1, tilt: 0 });
   if (![pose.scaleX, pose.scaleY, pose.tilt, origin.x, origin.y, grip.x, grip.y, size, viewport.width, viewport.height, outer.tilt, outer.stretch].every(Number.isFinite)
     || size <= 0 || viewport.width <= 0 || viewport.height <= 0 || ![1, -1].includes(pose.facing)) return neutral();
-  const outerAngle = outer.tilt * Math.PI / 180, outerCos = Math.cos(outerAngle), outerSin = Math.sin(outerAngle);
+  const outerAngle = Number(outer.tilt.toFixed(3)) * Math.PI / 180, outerCos = Math.cos(outerAngle), outerSin = Math.sin(outerAngle);
   if (pose.scaleX <= 0 || pose.scaleY <= 0 || 1 + outer.stretch <= 0) return neutral();
-  const { scaleX: outerX, scaleY: outerY } = companionMaterialScale(1 + outer.stretch);
-  if (outerX <= 0 || outerY <= 0) return neutral();
   const fits = (gain: number) => {
-    const angle = pose.tilt * pose.facing * gain * Math.PI / 180, cos = Math.cos(angle), sin = Math.sin(angle);
-    const { scaleX: sx, scaleY: sy } = companionMaterialScale(1 + (pose.scaleY - 1) * gain);
+    const angle = Number((pose.tilt * gain).toFixed(3)) * pose.facing * Math.PI / 180, cos = Math.cos(angle), sin = Math.sin(angle);
+    // The final renderer shares one strain budget between inner gravity and
+    // outer inertia. Reducing extension restores width, so the old unlimited
+    // deformation is not a conservative bound on the actual painted corners.
+    const [innerScale, , , outerScale] = companionMaterialStack([1 + (pose.scaleY - 1) * gain, 1, 1, 1 + outer.stretch]);
+    const sx = Number(innerScale.scaleX.toFixed(4)), sy = Number(innerScale.scaleY.toFixed(4));
+    const outerX = Number(outerScale.scaleX.toFixed(4)), outerY = Number(outerScale.scaleY.toFixed(4));
     for (const cx of [0, size]) for (const cy of [0, size]) {
       const dx = (cx - grip.x) * sx, dy = (cy - grip.y) * sy;
       const ix = (dx * cos - dy * sin) * outerX, iy = (dx * sin + dy * cos) * outerY;

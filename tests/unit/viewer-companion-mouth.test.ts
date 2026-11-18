@@ -1,8 +1,11 @@
+import { appearancePoint } from "../fixtures/companion-appearance-geometry";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import sharp from "sharp";
+import sharp, { type OutputInfo } from "sharp";
 import { describe, expect, it } from "vitest";
 import metadata from "@/lib/ui/viewer-companion/hd-motion-sprite.json";
+import edition from "@/lib/ui/viewer-companion/appearance-edition.json";
+import expression from "@/lib/ui/viewer-companion/expression-anchors-161.json";
 import calibration from "@/lib/ui/viewer-companion/mouth-anchors.json";
 import { advanceCompanionMealWait, projectCompanionMouth, type CompanionMouthProjectionInput } from "@/lib/ui/viewer-companion/mouth";
 import { selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
@@ -55,18 +58,37 @@ describe("current authored eating mouth registration", () => {
         expect(registered!.x).toBeLessThan(47);
         expect(registered!.y).toBeGreaterThan(58);
         //131's actually generated open U mouth is lower than the115 closed arc.
-        expect(registered!.y).toBeLessThan(frame.index >= 144 ? 63 : 62.5);
+        expect(registered!.y).toBeLessThan(64);
       }
+    }
+  });
+
+  it("places every calibrated bite over ink in the new baked mouth", async () => {
+    const decoded=new Map<string,{data:Buffer;info:OutputInfo}>();
+    for(const record of calibration.frames){const selected=selectCompanionSprite(record.index),mouth=edition.frames.find(frame=>frame.physicalIndex===record.index)!.mouth!;
+      if(!decoded.has(selected.src))decoded.set(selected.src,await sharp(readFileSync(`public${selected.src}`)).ensureAlpha().raw().toBuffer({resolveWithObject:true}));
+      const {data,info}=decoded.get(selected.src)!;let ink=0;
+      for(let y=Math.floor((mouth.y-2)*2.4);y<=Math.ceil((mouth.y+3.6)*2.4);y++)for(let x=Math.floor((mouth.x-3.4)*2.4);x<=Math.ceil((mouth.x+3.4)*2.4);x++){
+        const at=((Math.floor(selected.index/8)*192+y)*info.width+selected.index%8*192+x)*4;
+        if(data[at+3]>200&&data[at]<180&&data[at+1]<145&&data[at+2]<120)ink++;
+      }expect(ink,`mouth ${record.index}`).toBeGreaterThan(6);
     }
   });
 
   it("follows the adopted happy drawing rather than keeping the observing pose's mouth", () => {
     const observe = projectCompanionMouth(selectCompanionSprite(16), neutral())!;
     const chew = projectCompanionMouth(selectCompanionSprite(144), neutral())!;
-    // The opaque body foot and actually adopted131 U mouth own this bite;
-    // the observing115 drawing keeps its independent source registration.
-    expect(observe.x).toBeCloseTo(42.5, 5); expect(observe.y).toBeCloseTo(60.625, 5);
-    expect(chew.x).toBeCloseTo(43.958334, 5); expect(chew.y).toBeCloseTo(62.5, 5);
+    for (const index of [16,144]) {
+      const pose=expression.frames.find(pose=>pose.physicalIndex===index)!;
+      const [a,b]=pose.eyes.map(eye=>{const p=appearancePoint(index,{x:eye.center[0],y:eye.center[1]});return [p.x,p.y];}),x=(a[0]+b[0])/2,y=(a[1]+b[1])/2,angle=Math.atan2(b[1]-a[1],b[0]-a[0]);
+      const nativeMouth=appearancePoint(index,pose.mouth!);
+      const depth=Math.max(4,(nativeMouth.x-x)*-Math.sin(angle)+(nativeMouth.y-y)*Math.cos(angle));
+      const mouth={x:x-Math.sin(angle)*depth,y:y+Math.cos(angle)*depth};
+      expect(edition.frames.find(frame=>frame.physicalIndex===index)!.mouth).toEqual(mouth);
+      const selected=selectCompanionSprite(index),projected=projectCompanionMouth(selected,neutral())!;
+      expect(projected.x).toBeCloseTo(mouth.x+selected.frame.x,8);
+      expect(projected.y).toBeCloseTo(mouth.y+selected.frame.y,8);
+    }
     expect(chew.x).not.toBe(observe.x); expect(chew.y).not.toBe(observe.y);
   });
 

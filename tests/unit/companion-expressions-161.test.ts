@@ -36,8 +36,8 @@ describe("source-bound finite facial expressions161", () => {
     expect(actor.sample({ ...base, meal }, COMPANION_EXPRESSION_MS + 2)?.id).toBe("last-bite");
     expect(actor.sample({ ...base, meal }, COMPANION_EXPRESSION_MS * 2 + 3)).toBeNull();
     expect(actor.sample({ ...base, meal }, 30000)).toBeNull();
-    expect(actor.sample({ ...base, meal, petting: true }, 30001)?.id).toBe("shy");
-    expect(actor.sample({ ...base, meal, petting: true }, 32000)?.id).toBe("melt");
+    expect(actor.sample({ ...base, meal, petting: true }, 30001)?.id).toBe("melt");
+    expect(actor.sample({ ...base, meal, petting: true }, 32000)).toBeNull();
   });
   it("consumes quiet-time receipts without replay on resume and bounds ambient repetition", () => {
     const actor = createCompanionExpressions(), meal = { serial: 1, food: "apple", full: true, last: true };

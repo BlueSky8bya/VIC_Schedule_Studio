@@ -49,6 +49,9 @@ async function openWardrobe(page: Page, surface: Surface = "viewer") {
   await profile.getByRole("tab", { name: "옷장", exact: true }).click();
   return { dialog, profile, preview: profile.locator(".rhh-wardrobe-detail").getByRole("img", { name: "빅타민 미리보기", exact: true }) };
 }
+async function expectPreviewArt(preview: import("@playwright/test").Locator) {
+  await expect.poll(()=>preview.evaluate(node=>{const canvas=node.querySelector('.vc-character-composite'),front=node.querySelector('.vc-wearable-front');return Boolean(canvas?.checkVisibility()||front?.checkVisibility());})).toBe(true);
+}
 const saved = (page: Page) => page.evaluate(key => JSON.parse(localStorage.getItem(key)!) as CompanionCollection, COMPANION_COLLECTION_KEY);
 
 for (const surface of ["viewer", "studio", "preview"] as const) test(`153 ${surface}: wardrobe opens and reopens at the worn item for immediate removal or replacement`, async ({ page }) => {
@@ -96,7 +99,7 @@ for (const surface of ["viewer", "studio"] as const) test(`114 ${surface}: every
     await selectCompanionCollectionIndex(page, profile.locator(".rhh-accessory-grid"), COMPANION_WEARABLE_IDS.indexOf(id));
     await expect(profile.locator(`[data-accessory="${id}"]`)).toHaveAttribute("data-found", "true");
     await expect(profile.locator(".rhh-wardrobe-detail-copy strong")).not.toHaveText("???");
-    await expect(preview.locator(".vc-wearable-front")).toBeVisible();
+    await expectPreviewArt(preview);
     expect((await saved(page)).gifts.equipped).toBe("sunglasses");
   }
   await expect(profile.locator('[data-accessory="star-pin"],[data-accessory="satchel"],[data-accessory="leaf-umbrella"],[data-accessory="heart-badge"],[data-accessory="lemon-badge"],[data-accessory="bandage"],[data-accessory="mushroom-hat"]')).toHaveCount(0);
@@ -119,7 +122,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
   await expect.poll(() => preview.getAttribute("data-preview-row")).toBe("30");
   await profile.locator('[data-accessory="beret"]').click();
   await expect(profile.locator(".rhh-wardrobe-detail-copy strong")).toHaveText("베레모");
-  await expect(preview.locator(".vc-wearable-front")).toBeVisible();
+  await expectPreviewArt(preview);
   // Measure the final selected style after its real finite transitions. The
   // native click intentionally starts from the previous unselected colors.
   await expect.poll(() => profile.locator('[data-accessory="beret"]').evaluate(element => element.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))).length)).toBe(0);
@@ -142,7 +145,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
   await profile.getByRole("button", { name: "다시 보기", exact: true }).click();
   await expect.poll(() => preview.getAttribute("data-preview-row")).toBe("30");
   const before = await saved(page), pictures = new Set<string>(), rows = new Set<string>();
-  for (let index = 0; index < 12; index++) { pictures.add(await preview.locator("canvas").evaluate(node => (node as HTMLCanvasElement).toDataURL())); rows.add(await preview.getAttribute("data-preview-row") ?? ""); await page.waitForTimeout(140); }
+  for (let index = 0; index < 12; index++) { pictures.add(await preview.locator(".vc-sprite canvas").evaluate(node => (node as HTMLCanvasElement).toDataURL())); rows.add(await preview.getAttribute("data-preview-row") ?? ""); await page.waitForTimeout(140); }
   expect([...rows].every(row => ["0", "30"].includes(row))).toBe(true); expect(pictures.size).toBeGreaterThan(1);
   expect(await saved(page)).toEqual(before); expect(before.gifts.equipped).toBe("sunglasses");
   await profile.getByRole("button", { name: "다시 보기", exact: true }).click();
@@ -168,7 +171,7 @@ for (const mode of ["empty", "reduced", "graphics-off", "graphics-soft", "disabl
   await page.waitForTimeout(5500);
   const before = await saved(page);
   await expect(profile.getByRole("button", { name: "다시 보기", exact: true })).toBeDisabled();
-  await expect(preview).toHaveAttribute("data-preview-row", "0"); const pixels = await preview.locator("canvas").evaluate(node => (node as HTMLCanvasElement).toDataURL()); await page.waitForTimeout(1500); expect(await preview.locator("canvas").evaluate(node => (node as HTMLCanvasElement).toDataURL())).toBe(pixels);
+  await expect(preview).toHaveAttribute("data-preview-row", "0"); const pixels = await preview.locator(".vc-sprite canvas").evaluate(node => (node as HTMLCanvasElement).toDataURL()); await page.waitForTimeout(1500); expect(await preview.locator(".vc-sprite canvas").evaluate(node => (node as HTMLCanvasElement).toDataURL())).toBe(pixels);
   if (mode === "disabled") {
     const paused = profile.locator(".rhh-wardrobe-preview-wrap > .rhh-wardrobe-preview-paused");
     await expect(paused).toBeVisible();
@@ -235,9 +238,9 @@ test("native minimized window cancels the current preview and resumes from a fre
     test.skip(true, "Environment unverified: the actual minimized window still reports document.hidden=false after removing automation's forced-focus mode. No document visibility field is patched.");
   }
   await expect.poll(() => page.evaluate(() => document.hidden)).toBe(true);
-  const paused = await preview.locator("canvas").evaluate(node => (node as HTMLCanvasElement).toDataURL());
+  const paused = await preview.locator(".vc-sprite canvas").evaluate(node => (node as HTMLCanvasElement).toDataURL());
   await page.waitForTimeout(1700);
-  expect(await preview.locator("canvas").evaluate(node => (node as HTMLCanvasElement).toDataURL())).toBe(paused);
+  expect(await preview.locator(".vc-sprite canvas").evaluate(node => (node as HTMLCanvasElement).toDataURL())).toBe(paused);
   await browser.send("Browser.setWindowBounds", { windowId, bounds: { windowState: "normal" } });
   await browser.detach(); await page.bringToFront();
   await expect.poll(() => preview.getAttribute("data-preview-row")).toBe("30");

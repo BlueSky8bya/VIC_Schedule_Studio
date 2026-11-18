@@ -24,6 +24,14 @@ for (const [column, view] of views.entries()) {
   // Keep the source yaw, registration and scale: only the drawn brim grows.
   frames.set(original.id, { ...original, index: column, x: column * 128, y: 0, src: "/companion/collection/baseball-cap-brim-v1.svg", atlasWidth: 512, atlasHeight: 128 });
 }
+// Closed royal crown: red velvet, gold arches, lilies, gems and a top cross.
+// Preserve the old atlas as lineage; every live/wardrobe consumer resolves here.
+for (const [column, view] of views.entries()) frames.set(`tiny-crown:${view}`, {
+  id: `tiny-crown:${view}`, atlas: "royal-crown-20261118-v2", index: column,
+  x: column * 128, y: 0, width: 128, height: 128,
+  content: { x: 4, y: 0, width: 120, height: 120 },
+  src: "/companion/collection/royal-crown-20261118-v2.svg", atlasWidth: 512, atlasHeight: 128,
+});
 export function getCompanionAccessoryArtFrame(id: string | undefined, view: CompanionAccessoryView = "front"): CompanionAccessoryArtFrame | undefined {
   if (!id) return undefined;
   const current = currentCompanionAccessory(id as CompanionAccessoryId);

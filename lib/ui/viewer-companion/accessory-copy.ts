@@ -6,7 +6,7 @@ const descriptions: Partial<Record<CompanionAccessoryId, string>> = {
   "pixel-sunglasses": "네모난 픽셀 렌즈에 반짝임 한 조각.", "baseball-cap": "앞챙을 푹 눌러쓴 야구 모자.",
   "party-hat": "축하하는 날의 뾰족한 고깔.", "bell-badge": "앞에 달랑 매단 동그란 방울.",
   "propeller-hat": "작은 프로펠러가 달린 모자.", "magic-pocket": "앞에 붙인 동그란 요술 주머니.",
-  "tiny-crown": "두 귀 사이에 쏙 들어가는 작은 왕관.", "round-glasses": "동그란 테가 또렷한 안경.",
+  "tiny-crown": "붉은 벨벳과 금빛 아치, 보석이 반짝이는 작은 왕관.", "round-glasses": "동그란 테가 또렷한 안경.",
   "wire-glasses": "가는 금빛 테의 동그란 안경.", "browline-glasses": "윗테가 도톰한 안경.",
   "heart-glasses": "하트 모양의 렌즈.", monocle: "한쪽 눈에만 걸친 작은 렌즈.",
   "top-hat": "반듯한 챙과 높은 모자통.", "magician-hat": "마술사가 쓰는 높은 모자.",

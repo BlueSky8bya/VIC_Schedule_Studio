@@ -1,3 +1,4 @@
+import { companionAppearanceGridRows } from "@/lib/ui/viewer-companion/appearance";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -107,7 +108,7 @@ describe("native106 paired food collection art", () => {
   it("registers every observed behavior, four accessory views and six whole book/gift cells", async () => {
     expect(Object.keys(COMPANION_COLLECTION_FRAMES["behavior-stamp"])).toEqual(COMPANION_LEGACY_BEHAVIOR_IDS.filter(id => id !== "odd-food-reaction"));
     for (const id of COMPANION_LEGACY_BEHAVIOR_IDS) expect(getCompanionCollectionArtFrame("behavior-stamp", id)?.id).toBe(id);
-    expect(getCompanionCollectionArtFrame("behavior-stamp", "odd-food-reaction")).toMatchObject({ width: 192, height: 192, atlasWidth: 1536, atlasHeight: 384 });
+    expect(getCompanionCollectionArtFrame("behavior-stamp", "odd-food-reaction")).toMatchObject({ width: 192, height: 192, atlasWidth: 1536, atlasHeight: 192 * (companionAppearanceGridRows(getCompanionCollectionArtFrame("behavior-stamp", "odd-food-reaction")!.src) ?? 2) });
     const views = ["front", "quarter", "side", "back"] as const;
     expect(COMPANION_ACCESSORY_IDS.slice(0, 6)).toEqual([...V106_ACCESSORIES]);
     expect(Object.values(COMPANION_COLLECTION_FRAMES.accessory).filter(frame => frame.atlas === "accessory").map(frame => frame.id)).toEqual(views.flatMap(view => V106_ACCESSORIES.map(id => `${id}:${view}`)));

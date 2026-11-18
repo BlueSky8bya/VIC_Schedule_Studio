@@ -1,0 +1,22 @@
+{
+  "status": "prototype-not-runtime-approved",
+  "space": "native-80-before-registration",
+  "poses": [
+    {
+      "physicalIndex": 0,
+      "index": 0,
+      "src": "/companion/hd/vitamin-action-00-eye-contour-120-v1.webp",
+      "sha256": "0ae8841d45d0aed2f1838d7bf9effb193153d64e58dd570e1ad9eaa60392d460",
+      "left": { "polygon": [[20,15],[42,15],[42,37],[38,40],[30,40],[20,30]], "hinge": [36,39], "tipAxis": [-0.3,-1], "tipDistance": 6, "tipInFront": false },
+      "right": { "polygon": [[43,14],[61,14],[61,33],[51,40],[44,40],[43,35]], "hinge": [46,39], "tipAxis": [0.2,-1], "tipDistance": 6, "tipInFront": false }
+    },
+    {
+      "physicalIndex": 432,
+      "index": 0,
+      "src": "/companion/hd/vitamin-play-08-motion-115-v1.webp",
+      "sha256": "bf6a95fe60d6ae7e107b8314c2ce372721f18780fdc5815a725cedd032bba5fe",
+      "left": { "polygon": [[10,35],[30,32],[37,35],[34,40],[29,47],[22,55],[15,59],[10,55]], "hinge": [34,37], "tipAxis": [-0.8,0.7], "tipDistance": 9, "tipInFront": true },
+      "right": { "polygon": [[47,35],[56,36],[68,45],[70,58],[66,63],[59,60],[53,52],[50,44]], "hinge": [50,39], "tipAxis": [0.7,0.8], "tipDistance": 9, "tipInFront": true }
+    }
+  ]
+}
