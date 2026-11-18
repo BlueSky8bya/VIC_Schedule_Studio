@@ -5,6 +5,7 @@ import { RotateCcw } from "lucide-react";
 import type { CompanionAccessoryId } from "@/lib/ui/viewer-companion/gifts";
 import { createCompanionMotion, nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
 import { companionMaterialStack } from "@/lib/ui/viewer-companion/material-scale";
+import { companionPompomPlayHeight, createCompanionPompomFlight } from "@/lib/ui/viewer-companion/pompom";
 import { companionMotionClips, companionSpriteMetadata, peekDecodedCompanionSprite, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { chooseCompanionPreviewBehavior, companionPreviewDrawing, companionPreviewDuration, createCompanionPreviewPreparation, sampleCompanionPreview } from "@/lib/ui/viewer-companion/wardrobe-preview";
 import "@/components/poster/viewer-companion/viewer-companion.css";
@@ -25,13 +26,16 @@ export function CompanionWardrobePreview({ accessory, behaviors, enabled, intera
     let disposed = false;
     let paintedCell = "", paintedRegistration = "";
     let painter: ReturnType<typeof import("@/lib/ui/viewer-companion/accessory").createCompanionAccessoryPainter> | undefined;
-    // An undecorated portrait needs no attachment landmarks or wardrobe atlas.
-    // A late import belongs only to this effect's still-current accessory.
-    const painterReady = accessory ? import("@/lib/ui/viewer-companion/accessory").then(module => { if (!disposed) painter = module.createCompanionAccessoryPainter(hosts); }).catch(() => {
-      // Keep the bare portrait usable if the optional attachment chunk fails.
-      // A subsequent visit can retry without a background retry/RAF loop.
-    }) : Promise.resolve();
+    let painterLoading: Promise<void> | undefined, painterFailures = 0;
+    const ensurePainter = () => {
+      if (painter || disposed || painterFailures >= 2) return Promise.resolve();
+      return painterLoading ??= import("@/lib/ui/viewer-companion/accessory").then(module => {
+        if (!disposed) painter = module.createCompanionAccessoryPainter(hosts);
+      }).catch(() => { painterFailures++; }).finally(() => { painterLoading = undefined; });
+    };
+    const painterReady = accessory ? ensurePainter() : Promise.resolve();
     const motion = createCompanionMotion({ clips: companionMotionClips, rowCount: companionSpriteMetadata.rows.length, loopRows: [0, 2, 8, 9, 11, 20], maxFrameRate: 14 });
+    const pompomFlight = createCompanionPompomFlight();
     const preparation = createCompanionPreviewPreparation();
     let raf: number | null = null, rest: ReturnType<typeof setTimeout> | null = null, generation = 0;
     let previous: ReturnType<typeof chooseCompanionPreviewBehavior> = null;
@@ -66,7 +70,12 @@ export function CompanionWardrobePreview({ accessory, behaviors, enabled, intera
       const bob = shape.bob + sample.lift, tilt = shape.tilt + sample.lean;
       const [material] = companionMaterialStack([shape.scaleY * (1 - sample.compression)]);
       posePlane.style.transform = `translateY(${bob}px) rotate(${tilt}deg) scale(${material.scaleX},${material.scaleY})`;
-      painter?.paint(selection, accessory, false);
+      const height = companionPompomPlayHeight(behavior ?? undefined, sample);
+      const pompom = pompomFlight.sample({ now, y: sample.lift, height, token: behavior ?? "idle",
+        active: Boolean(behavior && height > 0), quiet: restricted() || !enabled || !visible() });
+      if (pompom !== undefined) void ensurePainter();
+      painter?.paint(selection, accessory, false, undefined, undefined, pompom);
+      if (pompom !== undefined && painter?.layered()) element.dataset.pompom = pompom.toFixed(4); else delete element.dataset.pompom;
       const row = String(shape.row), worn = painter ? accessory ?? "none" : "none";
       if (element.dataset.previewRow !== row) element.dataset.previewRow = row;
       if (element.dataset.previewAccessory !== worn) element.dataset.previewAccessory = worn;

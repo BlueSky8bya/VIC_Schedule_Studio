@@ -1,6 +1,6 @@
 # Current State — VIC Schedule Studio
 
-Last Updated: 2026-11-18 (KST)
+Last Updated: 2026-11-19 (KST)
 Project Version: 0.1.0
 
 Current work only; history is evidence, not instructions. Previous state: [snapshot](archive/20261017-CURRENT_STATE-before-platform-remediation.snapshot.txt).

@@ -12,10 +12,11 @@ export function sampleCompanionPremiereTravel(from: CompanionReturnPoint, to: Co
   // A cramped header still bounds the full scaled cell above the viewport.
   const fold = returning ? p : sampleCompanionTravel(Math.max(0, (t - .45) / .55));
   const scale = Math.min(from.scale + (to.scale - from.scale) * fold, Math.max(0, (baseline - 4) / size));
-  const lift = returning ? Math.min(62, clearance) * Math.sin(t * Math.PI) : Math.min(82 * Math.sin(t * Math.PI), Math.max(0, baseline - size * scale - 4));
+  const lift = t <= 0 || t >= 1 ? 0 : returning ? Math.min(62, clearance) * Math.sin(t * Math.PI) : Math.min(82 * Math.sin(t * Math.PI), Math.max(0, baseline - size * scale - 4));
   return {
     x: from.x + (to.x - from.x) * p,
     y: baseline - lift,
+    lift,
     scale,
     opacity: returning ? Math.min(1, t * 5) : Math.min(1, (1 - t) * 5),
   };

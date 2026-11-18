@@ -7,6 +7,7 @@ import { loadCompanionCollection, subscribeCompanionCollection } from "@/lib/ui/
 import { createCompanionMeadowWalk } from "@/lib/ui/viewer-companion/meadow-walk";
 import { createCompanionExpressionPainter } from "@/lib/ui/viewer-companion/expression-painter";
 import { createCompanionMotion, nextCompanionPaint } from "@/lib/ui/viewer-companion/motion";
+import { companionPompomPlayHeight, createCompanionPompomFlight } from "@/lib/ui/viewer-companion/pompom";
 import { companionMotionClips, companionSpriteMetadata, peekDecodedCompanionSprite, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { companionPreviewDrawing, createCompanionPreviewPreparation } from "@/lib/ui/viewer-companion/wardrobe-preview";
 import "./companion-meadow-walk.css";
@@ -46,6 +47,7 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
     const hosts = { back: back.current, front: front.current, gift: gift.current, composite: composite.current ?? undefined };
     const walker = createCompanionMeadowWalk(), preparation = createCompanionPreviewPreparation();
     const motion = createCompanionMotion({ clips: companionMotionClips, rowCount: companionSpriteMetadata.rows.length, loopRows: [0, 2, 20], maxFrameRate: 14 });
+    const pompomFlight = createCompanionPompomFlight();
     let painter: ReturnType<typeof import("@/lib/ui/viewer-companion/accessory").createCompanionAccessoryPainter> | undefined;
     let accessory = loadCompanionCollection().gifts.equipped;
     let disposed = false, generation = 0, raf = 0, retryTimer = 0, retryCount = 0, retryRow = -1;
@@ -60,9 +62,11 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
     let reaction: { play?: CompanionPlay; row?: number; began: number; duration: number; name: string } | undefined;
     let held = false, flying = false, flightPhase = 0, hoverUntil = 0, feedbackUntil = 0, shaken = false, responseSerial = 0, dizzyAfterFlight = false;
     let heldPoint: { x: number; y: number } | undefined;
-    const ensureWardrobe = () => {
-      if (!accessory || painter) return;
-      void import("@/lib/ui/viewer-companion/accessory").then(module => { if (!disposed && !painter) { painter = module.createCompanionAccessoryPainter(hosts); refresh(); } }).catch(() => { /* An optional attachment chunk cannot disable the walk. */ });
+    let wardrobeLoading = false, wardrobeFailures = 0;
+    const ensureWardrobe = (forBody = false) => {
+      if (!accessory && !forBody || painter || wardrobeLoading || wardrobeFailures >= 2) return;
+      wardrobeLoading = true;
+      void import("@/lib/ui/viewer-companion/accessory").then(module => { if (!disposed && !painter) { painter = module.createCompanionAccessoryPainter(hosts); refresh(); } }).catch(() => { wardrobeFailures++; /* An optional attachment chunk cannot disable the walk. */ }).finally(() => { wardrobeLoading = false; });
     };
     const restricted = () => reducedRef.current || document.documentElement.hasAttribute("data-reduce-motion") || ["off", "soft"].includes(document.documentElement.dataset.gfx ?? "");
     const active = () => !disposed && !document.hidden && session.has("pet") && session.visible("pet");
@@ -116,7 +120,13 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
       const material = companionMaterialStack([sample.scaleY * (1 - (authored?.compression ?? 0)), 1 - contact.squash, 1 + hanging.stretch]);
       const sx = material.reduce((value, pair) => value * pair.scaleX, 1), sy = material.reduce((value, pair) => value * pair.scaleY, 1);
       posePlane.style.transform = `translate(${contact.x.toFixed(3)}px,${(sample.bob + contact.y + (authored?.lift ?? 0)).toFixed(3)}px) rotate(${(sample.tilt + contact.tilt + hanging.tilt + (authored?.lean ?? 0)).toFixed(3)}deg) scale(${sx.toFixed(4)},${sy.toFixed(4)})`;
-      painter?.paint(selection, accessory, false, undefined, blinkPainted ? face : undefined);
+      const hop = companionPompomPlayHeight(reaction?.play, authored);
+      const pompom = pompomFlight.sample({ now: activeTime, y: current.y + (authored?.lift ?? 0),
+        height: Math.max(0, current.groundY - current.y) + hop, token: reaction?.began ?? "world",
+        active: !held && (flying || status === "jump" || hop > 0), quiet: restricted() || !decoded || !active() });
+      ensureWardrobe(pompom !== undefined);
+      painter?.paint(selection, accessory, false, undefined, blinkPainted ? face : undefined, pompom);
+      if (pompom !== undefined && painter?.layered()) element.dataset.pompom = pompom.toFixed(4); else delete element.dataset.pompom;
       spritePlane.style.visibility = painter?.layered() ? "hidden" : "";
       posePlane.toggleAttribute("data-layered", Boolean(painter?.layered()));
       element.dataset.row = String(decoded ? drawingRow : fallbackRow); element.dataset.pose = String(selection.physicalIndex);

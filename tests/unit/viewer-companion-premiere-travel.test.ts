@@ -5,9 +5,10 @@ describe("companion premiere display travel", () => {
   const from = { x: 140, y: 400, scale: 1 }, to = { x: 600, y: 250, scale: .12 };
   it("ends precisely at the cached actual card without changing either endpoint", () => {
     const a = { ...from }, b = { ...to };
-    expect(sampleCompanionPremiereTravel(from, to, 0, 92)).toEqual({ ...from, opacity: 1 });
+    expect(sampleCompanionPremiereTravel(from, to, 0, 92)).toEqual({ ...from, lift: 0, opacity: 1 });
     const end = sampleCompanionPremiereTravel(from, to, 1, 92);
     expect(end.x).toBe(to.x); expect(end.y).toBe(to.y); expect(end.scale).toBeCloseTo(to.scale); expect(end.opacity).toBe(0);
+    expect(end.lift).toBe(0);
     expect(from).toEqual(a); expect(to).toEqual(b);
   });
   it("bounds the lift by the scaled top margin throughout a return", () => {

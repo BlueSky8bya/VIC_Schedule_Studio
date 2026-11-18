@@ -319,13 +319,13 @@ export function createCompanionAccessoryPainter(hosts: Hosts, suppliedTextures?:
     return clip;
   };
   const painter = {
-    paint(selected: CompanionSpriteSelection | undefined, id: CompanionAccessoryId | null, pending: boolean, motion?: CompanionAccessoryTransform, face?: HTMLCanvasElement) {
+    paint(selected: CompanionSpriteSelection | undefined, id: CompanionAccessoryId | null, pending: boolean, motion?: CompanionAccessoryTransform, face?: HTMLCanvasElement, pompom?: number) {
       const token = ++generation;
       replay = () => {
         // A static canvas consumer can lose its unowned body packet from the
         // bounded LRU while a hat is loading. Recover on that one readiness
         // event; never revive a cleared painter or an older pose.
-        const paint = () => { if (token === generation) painter.paint(selected, id, pending, motion, face); };
+        const paint = () => { if (token === generation) painter.paint(selected, id, pending, motion, face, pompom); };
         if (selected && compositor && id && isCompanionHat(id) && !peekDecodedCompanionSprite(selected.src)) {
           void decodeCompanionSprite(selected.src).then(paint).catch(() => {});
         } else paint();
@@ -350,7 +350,7 @@ export function createCompanionAccessoryPainter(hosts: Hosts, suppliedTextures?:
           } else hide(node);
         }
       } else { hide(hosts.back); hide(hosts.front); }
-      layered = compositor?.paint(selected, placement && id && isCompanionHat(id) ? placement : null, textures.image?.(placement?.art.src), textures.image?.(placement?.rearArt?.src), selected && id && placement?.rearArt ? companionAccessoryAnchor(selected, id, "rotor", motion) : null, face) ?? false;
+      layered = compositor?.paint(selected, placement && id && isCompanionHat(id) ? placement : null, textures.image?.(placement?.art.src), textures.image?.(placement?.rearArt?.src), selected && id && placement?.rearArt ? companionAccessoryAnchor(selected, id, "rotor", motion) : null, face, pompom) ?? false;
       if (compositor && id && isCompanionHat(id) && !layered) { hide(hosts.back); hide(hosts.front); }
       if (gift && art && selected) { show(hosts.gift, art, gift, selected, gift.width); style(hosts.gift, "z-index", gift.behind ? "0" : "3"); }
       else hide(hosts.gift);

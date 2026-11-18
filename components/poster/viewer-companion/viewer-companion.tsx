@@ -85,6 +85,7 @@ import { advanceCompanionCollection, equipCompanionAccessory, flushCompanionColl
 import { CompanionDiscoveryFlight, type CompanionDiscoveryNotice } from "./companion-discovery-flight";
 import { createCompanionHearts } from "@/lib/ui/viewer-companion/hearts";
 import { boundCompanionHangingPose, createCompanionMotion, nextCompanionPaint, sampleCompanionTravel } from "@/lib/ui/viewer-companion/motion";
+import { companionPompomPlayHeight, createCompanionPompomFlight } from "@/lib/ui/viewer-companion/pompom";
 import { companionPresenceActive, createCompanionPresence } from "@/lib/ui/viewer-companion/presence";
 import { createCompanionScenes, type CompanionSceneAction, type CompanionSceneEvent } from "@/lib/ui/viewer-companion/scenes";
 import { COMPANION_WORK_SIGNAL, validCompanionWorkSignal } from "@/lib/ui/viewer-companion/work-signals";
@@ -707,7 +708,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     const size = COMPANION_SIZE;
     const studio = page.dataset.companionSurface === "studio";
     if (premiereMemory.current.monthKey !== monthKey) premiereMemory.current = { generation: "", monthKey, joined: false, entryId: "", consumedExit: 0 };
-    let premiereActive = false, premiereAwaitingGeometry = false, premiereDisplay: (CompanionReturnPoint & { opacity: number }) | undefined;
+    let premiereActive = false, premiereAwaitingGeometry = false, premiereDisplay: (CompanionReturnPoint & { opacity: number; lift?: number }) | undefined;
     let premiereBounds: ReturnType<typeof premiereViewportBounds> | undefined;
     const readPremiereBounds = () => premiereBounds = premiereViewportBounds({ clientWidth: document.documentElement.clientWidth, clientHeight: document.documentElement.clientHeight, visualViewport: window.visualViewport });
     const boundedPremierePlatforms = (items: readonly Platform[], bounds: ReturnType<typeof premiereViewportBounds>) => items.flatMap(platform => {
@@ -834,6 +835,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     const expressions = createCompanionExpressions(), facePainter = expressionCanvas.current ? createCompanionExpressionPainter(expressionCanvas.current) : undefined;
     let expressionMeal: { serial: number; food: string; full: boolean; last: boolean } | undefined, expressionCleanup = 0, expressionAnimating = false;
     const visual = createCompanionMotion({ clips: companionMotionClips, rowCount: registration.rows.length, loopRows: [0, 2, 8, 9, 11, 20], maxFrameRate: 14 });
+    const pompomFlight = createCompanionPompomFlight();
     const supportMotion = createCompanionSupportMotion();
     const heldInertia = createCompanionHeldInertia();
     const heldShake = createCompanionHeldShake();
@@ -1549,8 +1551,26 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         style(shadow.current, "opacity", pressed?.grabbed || keyboardHeld ? "0" : String(.24 * scale));
       }
       el.hidden = !paintedCell;
-      ensureWardrobe();
-      const giftPoint = wardrobePainter?.paint(paintedSelection, wardrobe.current.equipped, Boolean(wardrobe.current.pending), accessoryMotion?.accessory, faceVisible ? expressionCanvas.current ?? undefined : undefined);
+      const airborne = status === "jump" && action?.kind === "jump" && ![3, 6].includes(row) || Boolean(playFalling);
+      const progress = sofaFlightProgress(performance.now());
+      // Throws/falls use the nearest already-measured lower contact. Ordinary
+      // routes retain their existing moving baseline; local hops use lift.
+      let ground = lerp(origin.y, action?.target.y ?? origin.y, progress);
+      if (flight || playFalling) {
+        ground = innerHeight - 12;
+        for (const platform of landingPlatforms) if (x >= platform.x && x <= platform.x + platform.width && platform.y >= y) ground = Math.min(ground, platform.y);
+      }
+      const playHop = aftertaste ? 0 : companionPompomPlayHeight(action?.play, play, playingToy?.use);
+      const musicHop = (action?.radio?.instrument ?? action?.radio?.reaction) === "bounce" ? Math.max(0, -(radioMotion?.bob ?? 0)) : 0;
+      const localHop = playHop + Math.max(0, accessoryMotion?.bodyLift ?? 0) + musicHop;
+      const heartHop = status === "heart" && action?.kind === "heart" ? Math.max(0, origin.y - y) : 0;
+      const height = Math.max(0, airborne ? ground - y : 0, localHop, heartHop, premiereDisplay?.lift ?? 0);
+      const pompom = pompomFlight.sample({ now: presentationNow, y: (premiereDisplay ? display.y : y - carrier.y) + shape.bob,
+        height, token: premiereBounce?.began ?? premiereSource?.generation ?? began,
+        active: !pressed && !keyboardHeld && !placing && (airborne || height > 0), quiet: cheerQuiet || !currentDrawing || document.hidden });
+      ensureWardrobe(pompom !== undefined);
+      const giftPoint = wardrobePainter?.paint(paintedSelection, wardrobe.current.equipped, Boolean(wardrobe.current.pending), accessoryMotion?.accessory, faceVisible ? expressionCanvas.current ?? undefined : undefined, pompom);
+      if (pompom !== undefined && wardrobePainter?.layered()) data("pompom", pompom.toFixed(4)); else el.removeAttribute("data-pompom");
       if (wardrobePainter?.layered()) el.dataset.earLayered = "true"; else delete el.dataset.earLayered;
       if (accessoryMotion && wardrobePainter?.accessoryReady() && observed.visible && observed.decoded && observed.adoptedIndex === observed.requestedIndex && accessoryFront.current && !accessoryFront.current.hidden) accessoryWitnessed |= accessoryMotion.phase === "show" ? 2 : accessoryMotion.phase === "settle" ? 4 : 0;
       for (const [id, pending] of pendingSituations) {
@@ -2511,6 +2531,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
     };
     const launch = (next: RuntimeAction, now: number) => {
       if (offerHomeLife(next, now)) return;
+      if (next.kind === "jump" && !reduced && !["off", "soft"].includes(gfxMode())) ensureWardrobe(true);
       aftertastePaintMs = aftertastePaintAt = 0;
       const heldToy = toys.current?.carried(), actualToy = heldToy && toys.current?.item(heldToy);
       const toyPerformanceOffer = next.kind === "play" && (next.toy?.kind === "play" && ["put", "toss"].includes(next.toy.effect ?? "")
