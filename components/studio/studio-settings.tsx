@@ -226,7 +226,7 @@ function CompanionRadioSettings({ companion, globalSoundOn, globalSoundVolume }:
     <div className="role-help-haptics"><RowLabel icon={<Volume2 size={15} />} tone="water">집 라디오</RowLabel><Switch dataAct="companion-radio-enabled" dataActOpt={preferences.enabled ? "off" : "on"} label="빅타민 라디오 켜기/끄기" on={preferences.enabled} onToggle={() => change({ enabled: !preferences.enabled })} /></div>
     <div className="role-help-haptics rhh-stack-sm"><RowLabel icon={<Volume1 size={15} />} tone="water">라디오 음량</RowLabel><div className="rhh-volume"><VolumeX aria-hidden="true" size={15} /><input aria-label="라디오 음량" aria-valuetext={`${preferences.volume}%`} data-act="companion-radio-volume" data-sfx="off" max={100} min={0} onChange={event => change({ volume: Number(event.currentTarget.value) })} step={5} style={{ "--vol": `${preferences.volume}%` } as CSSProperties} type="range" value={preferences.volume} /><Volume2 aria-hidden="true" size={15} /><b className="rhh-vol-num">{preferences.volume}</b></div></div>
     <div className="role-help-haptics"><RowLabel icon={<Sparkles size={15} />} tone="leaf">음악에 반응하기</RowLabel><Switch dataAct="companion-radio-react" dataActOpt={preferences.react ? "off" : "on"} label="빅타민 음악 반응 켜기/끄기" on={preferences.react} onToggle={() => change({ react: !preferences.react })} /></div>
-    <div className="rhh-radio-now"><p aria-live="polite">{pending ? "준비 중" : blockedReason ?? (snapshot?.playing && currentTrack ? currentTrack.title : playFailed ? "재생하지 못했어요" : pool.length ? "재생 대기" : "선택한 곡이 없어요.")}</p><div className="rhh-radio-actions"><button className="rhh-link" data-act="companion-radio-play" data-sfx="off" disabled={blocked || !pool.length || pending || snapshot?.playing} onClick={() => play(toggleCompanionRadio)} type="button">재생</button><button className="rhh-link" data-act="companion-radio-next" data-sfx="off" disabled={blocked || !pool.length || pending} onClick={() => play(nextCompanionRadio)} type="button">다음 곡</button><button className="rhh-link" data-act="companion-radio-stop" data-sfx="off" disabled={!snapshot?.playing && !pending} onClick={stop} type="button">정지</button></div></div>
+    <div className="rhh-radio-now"><p aria-live="polite">{pending ? "준비 중" : blockedReason ?? (snapshot?.playing && currentTrack ? currentTrack.title : playFailed ? "재생하지 못했어요" : pool.length ? "재생 대기" : "선택한 곡이 없어요.")}</p><div className="rhh-radio-actions"><button className="rhh-link" data-act="companion-radio-play" data-sfx="off" disabled={blocked || !pool.length || pending || snapshot?.playing} onClick={() => play(toggleCompanionRadio)} type="button"><span className="vmid">재생</span></button><button className="rhh-link" data-act="companion-radio-next" data-sfx="off" disabled={blocked || !pool.length || pending} onClick={() => play(nextCompanionRadio)} type="button"><span className="vmid">다음 곡</span></button><button className="rhh-link" data-act="companion-radio-stop" data-sfx="off" disabled={!snapshot?.playing && !pending} onClick={stop} type="button"><span className="vmid">정지</span></button></div></div>
     <div className="rhh-radio-attribution"><span>{currentTrack?.credit ?? "Kevin MacLeod (incompetech.com)"}</span><a data-act="companion-radio-source" href={currentTrack?.sourceUrl ?? "https://incompetech.com/music/royalty-free/music.html"} rel="noopener noreferrer" target="_blank">원본</a><a data-act="companion-radio-license" href="https://creativecommons.org/licenses/by/4.0/" rel="noopener noreferrer" target="_blank">CC BY 4.0</a><small>음량보정 · Opus</small></div>
     <details className="rhh-radio-playlist"><summary data-act="companion-radio-list" data-activity-manual="" onClick={event => logActivity("ui.click", { target: event.currentTarget.closest("details")?.open ? "companion-radio-list#close" : "companion-radio-list#open" })}>곡 고르기 <span>{selected.length}/{COMPANION_RADIO_TRACKS.length}</span></summary><ul>{COMPANION_RADIO_TRACKS.map(track => {
       const included = !preferences.excludedIds.includes(track.id);
@@ -588,7 +588,7 @@ export function StudioSettingsList({
                 title="글꼴·크기·굵기를 기본값으로"
                 type="button"
               >
-                기본
+                <span className="vmid">기본</span>
               </button>
             </div>
           </div>
@@ -706,7 +706,7 @@ export function StudioSettingsList({
                 onClick={sound.preview}
                 type="button"
               >
-                들어 보기
+                <span className="vmid">들어 보기</span>
               </button>
             </div>
           </div>
@@ -910,7 +910,7 @@ export function StudioSettingsList({
                   팬 타임라인
                 </RowLabel>
                 <Link className="rhh-link" data-act="vod-timeline-manage" href={"/studio/timelines" as Route}>
-                  관리
+                  <span className="vmid">관리</span>
                 </Link>
               </div>
             ) : null}
@@ -970,7 +970,7 @@ export function StudioSettingsList({
                   캡슐 뽑기 열어 보기
                 </RowLabel>
                 <button className="rhh-link rhh-preview" data-act="dev-gacha-open" disabled={!birthdayPreview.on} onClick={birthdayPreview.open} type="button">
-                  지금 열기
+                  <span className="vmid">지금 열기</span>
                 </button>
               </div>
             </div>
@@ -1052,7 +1052,7 @@ export function StudioSettingsList({
                 배경 아트 보드
               </RowLabel>
               <Link className="rhh-link" data-act="dev-art-board-open" href="/studio/ambient-art">
-                열기
+                <span className="vmid">열기</span>
               </Link>
             </div>
             <div className="role-help-haptics rhh-ambient rhh-dev">
@@ -1060,7 +1060,7 @@ export function StudioSettingsList({
                 은어 사전 초안
               </RowLabel>
               <Link className="rhh-link" data-act="dev-dictionary-open" href={"/studio/search-dictionary" as Route}>
-                열기
+                <span className="vmid">열기</span>
               </Link>
             </div>
             {/* 사이트 제보함(0167) — 문서 페이지의 제보 창으로 들어온 버그·일정 오류·아이디어·기타. */}
@@ -1069,7 +1069,7 @@ export function StudioSettingsList({
                 사이트 제보함
               </RowLabel>
               <Link className="rhh-link" data-act="dev-reports-open" href={"/studio/reports" as Route}>
-                열기
+                <span className="vmid">열기</span>
               </Link>
             </div>
           </div>

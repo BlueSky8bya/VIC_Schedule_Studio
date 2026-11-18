@@ -60,7 +60,7 @@ export function SecurityPanel({ onChangePasscode }: { onChangePasscode: () => vo
           </RowLabel>
           {error && !data ? (
             <button className="rhh-link" data-act="security-retry" onClick={() => setAttempt((n) => n + 1)} type="button">
-              다시 시도
+              <span className="vmid">다시 시도</span>
             </button>
           ) : (
             data ? (
@@ -83,7 +83,7 @@ export function SecurityPanel({ onChangePasscode }: { onChangePasscode: () => vo
             }}
             type="button"
           >
-            변경
+            <span className="vmid">변경</span>
           </button>
         </div>
       </div>

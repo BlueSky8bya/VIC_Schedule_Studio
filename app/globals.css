@@ -2120,7 +2120,14 @@ html[data-theme="dark"] .mn-inner {
     .tag-tip-text,
     .tp-name,
     .dvn-label,
-    .site-legal-links > a
+    .site-legal-links > a,
+    .day-strip > strong,
+    .day-strip > em.day-mark,
+    .studio-day-head > strong,
+    .studio-day-head > em.day-mark,
+    .kbd-hints kbd,
+    .dvm-keys kbd,
+    .dvm-part-counter
   ) {
     text-box: trim-both cap alphabetic;
     padding-block: calc((1lh - 1cap) / 2);

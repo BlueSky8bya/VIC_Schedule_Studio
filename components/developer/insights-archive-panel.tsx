@@ -156,12 +156,12 @@ export function InsightsArchivePanel() {
             {building ? (
               <>
                 <LoadingSpinner small />
-                {building}
+                <span className="vmid">{building}</span>
               </>
             ) : months?.length ? (
-              "다시 만들기"
+              <span className="vmid">다시 만들기</span>
             ) : (
-              "지금 만들기"
+              <span className="vmid">지금 만들기</span>
             )}
           </button>
         </div>

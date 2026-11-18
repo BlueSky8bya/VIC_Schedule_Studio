@@ -124,7 +124,7 @@ export function LegalDoc({
               <strong>빅토리~!</strong>
               <div className={styles.toriLinks}>
                 <Link className={styles.docLink} data-act="legal-tori-home" href="/" prefetch>
-                  일정표 보기
+                  <span className="vmid">일정표 보기</span>
                 </Link>
                 <DocLink brand="soop" href="https://www.sooplive.com/station/toryvac">
                   SOOP 방송국
@@ -149,19 +149,19 @@ function ContactBanner() {
         <ul className={styles.bannerChips}>
           <li>
             <Bug aria-hidden="true" size={14} />
-            고장 난 곳
+            <span className="vmid">고장 난 곳</span>
           </li>
           <li>
             <Lightbulb aria-hidden="true" size={14} />
-            있으면 좋을 기능
+            <span className="vmid">있으면 좋을 기능</span>
           </li>
           <li>
             <CalendarX aria-hidden="true" size={14} />
-            틀린 일정
+            <span className="vmid">틀린 일정</span>
           </li>
           <li>
             <ImagePlus aria-hidden="true" size={14} />
-            캡처 첨부
+            <span className="vmid">캡처 첨부</span>
           </li>
         </ul>
         <div className={styles.bannerActions}>
@@ -180,9 +180,11 @@ export function LawRef({ law = "개인정보보호법", label, article, detail }
   return (
     <a className={styles.law} href={href} rel="noreferrer" target="_blank">
       <Scale aria-hidden="true" size={13} />
-      {name}
-      {article ? ` ${article}` : ""}
-      {detail ? ` ${detail}` : ""}
+      <span className="vmid">
+        {name}
+        {article ? ` ${article}` : ""}
+        {detail ? ` ${detail}` : ""}
+      </span>
     </a>
   );
 }
@@ -210,7 +212,7 @@ export function Vendor({ brand, children }: { brand: Brand; children: ReactNode 
   return (
     <span className={styles.vendor}>
       <BrandIcon brand={brand} />
-      {children}
+      <span className="vmid">{children}</span>
     </span>
   );
 }
@@ -220,7 +222,7 @@ export function DocLink({ href, brand, children }: { href: string; brand?: Brand
   return (
     <a className={styles.docLink} href={href} rel="noreferrer" target="_blank">
       {brand ? <BrandIcon brand={brand} size={14} /> : null}
-      {children}
+      <span className="vmid">{children}</span>
       <ExternalLink aria-hidden="true" size={12} />
     </a>
   );
@@ -297,7 +299,7 @@ export function Mail() {
   return (
     <a className={styles.mail} href={`mailto:${LEGAL_CONTACT_EMAIL}`}>
       <MailIcon aria-hidden="true" size={13} />
-      {LEGAL_CONTACT_EMAIL}
+      <span className="vmid">{LEGAL_CONTACT_EMAIL}</span>
     </a>
   );
 }

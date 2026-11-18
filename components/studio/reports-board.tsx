@@ -165,7 +165,7 @@ export function ReportsBoard({
               {r.device ? (
                 <span className={styles.dim}>
                   {r.device === "mobile" ? <Smartphone size={13} /> : <Monitor size={13} />}
-                  {r.device === "mobile" ? "모바일" : "PC"}
+                  <span className="vmid">{r.device === "mobile" ? "모바일" : "PC"}</span>
                 </span>
               ) : null}
               {r.page ? <span className={styles.path}>{r.page}</span> : null}
@@ -209,7 +209,7 @@ export function ReportsBoard({
                   }}
                   type="button"
                 >
-                  <Reply size={14} /> {r.reply_email}에게 답장
+                  <Reply size={14} /> <span className="vmid">{r.reply_email}에게 답장</span>
                 </button>
               ) : (
                 <span className={styles.dim}>
@@ -293,7 +293,7 @@ export function ReportsBoard({
           <div className={styles.replyCard}>
             <header className={styles.replyHead}>
               <h2 id="reply-title">
-                <Reply size={18} /> 답장 쓰기
+                <Reply size={18} /> <span className="vmid">답장 쓰기</span>
               </h2>
               <button aria-label="닫기" className={styles.iconBtn} data-act="reports-reply-close" onClick={() => replyRef.current?.close()} type="button">
                 <X size={18} />

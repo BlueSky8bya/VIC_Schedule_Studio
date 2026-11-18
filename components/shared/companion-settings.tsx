@@ -45,18 +45,18 @@ function LearnedStateReset({ id }: { id: string }) {
     {confirming ? <>
       <p className="rhh-trait-reset-note"><strong id={`${id}-reset-question`}>배운 내용을 초기화할까요?</strong><span id={`${id}-reset-note`}>습관·취향·특성 초기화 · 도감·선물 유지</span></p>
       <div className="rhh-reset-buttons">
-        <button className="rhh-link" data-activity-manual="" onClick={dismiss} ref={cancel} type="button">취소</button>
+        <button className="rhh-link" data-activity-manual="" onClick={dismiss} ref={cancel} type="button"><span className="vmid">취소</span></button>
         <button aria-describedby={`${id}-reset-note`} aria-label="배운 습관 초기화 확정" className="rhh-link rhh-reset-confirm" data-act="companion-learning-reset" data-activity-manual="" onClick={() => {
           resetCompanionHabits(); resetCompanionTastes(); hapticTick(); playSfx("tab");
           // Opening/cancelling is preparatory UI, not a completed reset. Keep
           // the existing fixed target, one explicit completion and no metadata.
           logActivity("ui.click", { target: "companion-learning-reset" });
           setCompleted(true); dismiss();
-        }} type="button">초기화</button>
+        }} type="button"><span className="vmid">초기화</span></button>
       </div>
     </> : <>
       <p className="rhh-trait-reset-note" id={`${id}-reset-note`} role={completed ? "status" : undefined}>{completed ? "초기화했어요. 도감·선물은 유지돼요." : "습관·취향·특성 초기화 · 도감·선물 유지"}</p>
-      <button aria-describedby={`${id}-reset-note`} aria-label="배운 습관 초기화" className="rhh-link" data-act="companion-learning-reset" data-activity-manual="" onClick={() => { setCompleted(false); setConfirming(true); }} ref={opener} type="button">초기화</button>
+      <button aria-describedby={`${id}-reset-note`} aria-label="배운 습관 초기화" className="rhh-link" data-act="companion-learning-reset" data-activity-manual="" onClick={() => { setCompleted(false); setConfirming(true); }} ref={opener} type="button"><span className="vmid">초기화</span></button>
     </>}
   </div>;
 }

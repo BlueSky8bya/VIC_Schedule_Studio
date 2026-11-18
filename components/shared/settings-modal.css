@@ -278,6 +278,7 @@ html[data-reduce-motion] .vic-settings .rhh-menu { animation-duration: 1ms;
   flex: none;
   display: inline-flex;
   align-items: center;
+  justify-content: center; /* 폭이 정해진 단추(기본·들어 보기)에서 글자가 왼쪽으로 쏠리지 않게 */
   min-height: 32px;
   border: 1px solid var(--gs-metal-line-strong, #d3d1cb);
   border-radius: var(--gs-metal-radius, 10px);

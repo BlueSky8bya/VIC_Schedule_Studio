@@ -75,7 +75,8 @@ afterEach(() => { for (const effect of hooks.effects) effect.cleanup?.(); vi.uns
 it("opens at real glasses despite the immediate learned preference, without equipment or read writes", async () => {
   await render();
   expect(hooks.opened).toHaveBeenCalled(); expect(selected()).toEqual(["sunglasses"]); expect(preview()).toBe("sunglasses");
-  expect(find(element => element.props["data-act"] === "companion-accessory-equip").props.children).toContain("벗기기");
+  // 라벨은 세로 가운데 맞춤용 span.vmid 안에 있다(단추의 마지막 자식).
+  expect(((find(element => element.props["data-act"] === "companion-accessory-equip").props.children as unknown[]).at(-1) as Element).props.children).toBe("벗기기");
   emitCompanionWardrobePreference("beret"); await render();
   expect(selected()).toEqual(["sunglasses"]); expect(preview()).toBe("sunglasses");
   expect(hooks.equip).not.toHaveBeenCalled(); expect(hooks.acknowledge).not.toHaveBeenCalled();

@@ -3222,7 +3222,7 @@ export function PublicPoster({
                     popBurst(r.left + r.width / 2, r.top + r.height / 2, "cheer", celebrationFor(visibleDayMark?.name));
                   }}
                  data-act="day-mark">
-                  {visibleDayMark?.name}
+                  <span className="vmid">{visibleDayMark?.name}</span>
                 </button>
                 {inviteFor(cell.isoDate, visibleDayMark?.name) ? (
                   <span aria-hidden="true" className="mark-invite">

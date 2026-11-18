@@ -743,6 +743,13 @@ html[data-reduce-motion] .bp-kbd-close:active {
   font-weight: 600;
   white-space: nowrap;
 }
+/* 키 글자는 글자 모양 기준으로 상자 가운데에(globals.css 공통 맞춤과 같은 방식, 위아래 1px 여백 유지). */
+@supports (text-box: trim-both cap alphabetic) {
+  .bp-kbd-row kbd {
+    text-box: trim-both cap alphabetic;
+    padding-block: calc((1lh - 1cap) / 2 + 1px);
+  }
+}
 .bp-kbd-row dd {
   overflow: hidden;
   margin: 0;
