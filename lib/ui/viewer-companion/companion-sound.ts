@@ -4,6 +4,11 @@ import { getCompanionPreferences, type CompanionPreferences } from "./preference
 export const COMPANION_SOUND_MOMENTS = ["feed", "land", "eat", "pet", "lift", "dizzy", "tumble", "sleep", "play", "discover", "gift", "equip", "unequip", "cushion"] as const;
 export type CompanionSoundMoment = typeof COMPANION_SOUND_MOMENTS[number];
 export type CompanionSoundCategory = "care" | "motion" | "keepsakes";
+/** Who started the sound: "direct" = the reaction to something the user just
+ * pressed, held, dropped or opened; "auto" = the companion on its own. A caller
+ * that cannot tell says "auto" (the quieter side). Settings redesign stage 2-가
+ * only carries this mark to the gate; every sound still plays exactly as before. */
+export type CompanionSoundOrigin = "direct" | "auto";
 export const COMPANION_SOUND_CATEGORY_NAMES = { care: "돌보기", motion: "움직임", keepsakes: "발견·선물" } as const;
 type Cue = Readonly<{ category: CompanionSoundCategory; cooldown: number; notes: readonly CompanionSoundNote[] }>;
 const cues: Readonly<Record<CompanionSoundMoment, Cue>> = {
@@ -37,7 +42,7 @@ export function createCompanionSoundBudget() {
 }
 const budget = createCompanionSoundBudget();
 
-function play(moment: CompanionSoundMoment, preferences: CompanionPreferences): boolean {
+function play(moment: CompanionSoundMoment, preferences: CompanionPreferences, origin: CompanionSoundOrigin): boolean {
   if (typeof document === "undefined" || document.hidden || !cues[moment] || !preferences.sound || !preferences.enabled || preferences.soundVolume <= 0) return false;
   const cue = cues[moment], enabled = { care: preferences.soundCare, motion: preferences.soundMotion, keepsakes: preferences.soundKeepsakes }[cue.category];
   if (!enabled || cue.category === "motion" && (document.documentElement.hasAttribute("data-reduce-motion") || ["off", "soft"].includes(document.documentElement.dataset.gfx ?? ""))) return false;
@@ -50,14 +55,17 @@ function play(moment: CompanionSoundMoment, preferences: CompanionPreferences): 
   document.documentElement.dataset.companionSfxLast = moment;
   const trace = (window as Window & { __companionSfxTrace?: CompanionSoundMoment[] }).__companionSfxTrace;
   if (Array.isArray(trace)) trace.push(moment);
+  // Passive witness for tests, like the trace above: the mark that reached the gate.
+  const origins = (window as Window & { __companionSfxOrigins?: string[] }).__companionSfxOrigins;
+  if (Array.isArray(origins)) origins.push(`${moment}:${origin}`);
   return true;
 }
 
 /** Runtime callers pass their current preference ref and one actual event. */
-export function playCompanionSound(moment: CompanionSoundMoment, preferences: CompanionPreferences = getCompanionPreferences()): boolean {
-  return play(moment, preferences);
+export function playCompanionSound(moment: CompanionSoundMoment, preferences: CompanionPreferences = getCompanionPreferences(), origin: CompanionSoundOrigin = "auto"): boolean {
+  return play(moment, preferences, origin);
 }
 /** Explicit audition uses the same creature, sound and browser gates. */
 export function previewCompanionSound(category: CompanionSoundCategory, preferences: CompanionPreferences = getCompanionPreferences()): boolean {
-  return play({ care: "pet", motion: "play", keepsakes: "discover" }[category] as CompanionSoundMoment, preferences);
+  return play({ care: "pet", motion: "play", keepsakes: "discover" }[category] as CompanionSoundMoment, preferences, "direct");
 }

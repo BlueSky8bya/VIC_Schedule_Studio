@@ -200,7 +200,7 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
     const respond = (name: string, play?: CompanionPlay, row = 9, duration = 900) => {
       const stored = session.point("pet"); if (stored) walker.place(stored, { width: innerWidth, height: innerHeight });
       reaction = { name, play, row, began: activeTime, duration: play ? companionPlayDuration(play, restricted()) : duration }; refresh();
-      if (play === "dizzy") playCompanionSound("dizzy", preferencesRef.current);
+      if (play === "dizzy") playCompanionSound("dizzy", preferencesRef.current, "direct");
     };
     const affection = () => {
       if (!preferencesRef.current.petting) return;
@@ -218,7 +218,7 @@ function MeadowDrawing({ preferences, reduced, night, session }: { preferences: 
         if (bonk) { session.interact("bonk"); respond("bonked", bonk); } else affection();
       },
       onGrab: () => { reaction = undefined; dizzyAfterFlight = false; shake.reset(); inertia.reset(); },
-      onHold: (value, at) => { held = value; if (value) { reaction = undefined; shaken = false; heldPoint = session.point("pet"); if (heldPoint) shake.begin(heldPoint.x, heldPoint.y, at); playCompanionSound("lift", preferencesRef.current); } refresh(); },
+      onHold: (value, at) => { held = value; if (value) { reaction = undefined; shaken = false; heldPoint = session.point("pet"); if (heldPoint) shake.begin(heldPoint.x, heldPoint.y, at); playCompanionSound("lift", preferencesRef.current, "direct"); } refresh(); },
       onSample: (point, at) => {
         if (held && !restricted()) {
           if (heldPoint) inertia.push(point.x - heldPoint.x, point.y - heldPoint.y, at);

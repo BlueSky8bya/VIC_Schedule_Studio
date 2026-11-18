@@ -42,7 +42,7 @@ export type CompanionFoodControl = {
   scatter: (point: Point, radius: number, strength?: number) => number;
   clear: () => void;
 };
-type Props = { enabled: boolean; blocked: boolean; retainPresentation?: boolean; monthKey: string; showcaseSession?: CompanionShowcaseSession; returnFocus: () => void; onLanded?: () => void; onDiscard?: (id: string) => void };
+type Props = { enabled: boolean; blocked: boolean; retainPresentation?: boolean; monthKey: string; showcaseSession?: CompanionShowcaseSession; returnFocus: () => void; /** direct = this food was falling because the user took it out, dropped it or threw it. */ onLanded?: (direct: boolean) => void; onDiscard?: (id: string) => void };
 type Drag = { id: string; pointer: number; node: HTMLButtonElement; start: Point; point: Point; offset: Point; moved: boolean; wasFalling: boolean; startHome?: HomeAnchor; time: number; velocity: Point };
 type Hover = { id: string; bin: HTMLElement; point: Point; since: number; pinned: boolean };
 type Discard = { id: string; bin: HTMLElement; node: HTMLElement; animation?: Animation; timer: ReturnType<typeof setTimeout> };
@@ -83,6 +83,8 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
   itemAnchors.current ??= createCompanionItemAnchors();
   const anchorFor = useRef<((id: string) => CompanionGeometryAnchor | undefined) | undefined>(undefined);
   const drops = useRef(new Map<string, ReturnType<typeof createCompanionFoodGravity>>());
+  // The falls the user caused, one mark per food. Any fall started by something else clears that food's mark.
+  const directDrops = useRef(new Set<string>());
   const jostles = useRef(new Map<string, Jostle>());
   const dropFrame = useRef(0), lastDropPaint = useRef(0), suspending = useRef(false), animateDrops = useRef<() => void>(() => {});
   const painted = useRef(new WeakMap<HTMLElement, { transform: string; nibble?: string; eating?: boolean; light?: number }>());
@@ -117,6 +119,8 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
     }
   }, []);
   const update = useCallback((next: Food[]) => {
+    // A food that is gone takes its mark with it.
+    for (const id of directDrops.current) if (!next.some(food => food.id === id)) directDrops.current.delete(id);
     const ids = new Set(next.map(food => food.id));
     const retired = current.current.filter(food => !ids.has(food.id)).map(food => food.id);
     for (const [id, node] of nodes.current) if (!ids.has(id)) itemAnchors.current!.clear(node);
@@ -290,6 +294,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
       : createCompanionFoodGravity(origin, placed, performance.now(), { flutter: true, ...(landing?.dropSurface ? { contactX: point.x } : {}), ...(recoverAboveFloor ? { recoverAboveFloor: true } : {}) });
     if (gravity.duration > 0 && operating.current && !suspending.current && !document.hidden && !reduced() && graphics.current !== "off") {
       drops.current.set(food.id, gravity);
+      if (release && !carriedFrom) directDrops.current.add(food.id); else directDrops.current.delete(food.id);
       const presentation = gravity.sample(performance.now()); presentations.current.set(food.id, presentation); paint(placed, presentation);
       animateDrops.current();
     } else paint(placed);
@@ -369,7 +374,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         bound.pending = undefined; bound.viewportFloor = { x: retained.x }; bound.position = attachCompanionFood(recovered, scroll);
         const gravity = createCompanionFoodGravity(retained, recovered, performance.now(), { recoverAboveFloor: true, flutter: true });
         if (gravity.duration && operating.current && !suspending.current && !document.hidden && !reduced() && graphics.current !== "off") {
-          drops.current.set(food.id, gravity); presentations.current.set(food.id, gravity.sample(performance.now())); animateDrops.current();
+          drops.current.set(food.id, gravity); directDrops.current.delete(food.id); presentations.current.set(food.id, gravity.sample(performance.now())); animateDrops.current();
         }
         return recovered;
       }
@@ -418,7 +423,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
           // house attachments retain their existing occlusion.
           if (!unavailableIds.has(id)) visibility.current.set(id, presentation.x >= -22 && presentation.x <= viewport.width + 22 && presentation.y >= -6 && presentation.y <= viewport.height + 38);
           if (presentation.active) presentations.current.set(id, presentation);
-          else { drops.current.delete(id); presentations.current.delete(id); if (!unavailableIds.has(id) && visibility.current.get(id) !== false && operating.current && !document.hidden) landed.current?.(); }
+          else { drops.current.delete(id); presentations.current.delete(id); const direct = directDrops.current.delete(id); if (!unavailableIds.has(id) && visibility.current.get(id) !== false && operating.current && !document.hidden) landed.current?.(direct); }
           paintIds.add(id);
         }
       }
@@ -577,6 +582,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         if (!suspending.current && !document.hidden && !reduced() && graphics.current !== "off") {
           const flight = createCompanionFoodToss(food, placed, performance.now(), ejection);
           drops.current.set(food.id, flight);
+          if (autonomous) directDrops.current.delete(food.id); else directDrops.current.add(food.id);
           const pose = flight.sample(performance.now()); presentations.current.set(food.id, pose); paint(placed, pose); animateDrops.current();
         } else paint(placed);
       } else {
@@ -670,7 +676,7 @@ export const CompanionFood = forwardRef<CompanionFoodControl, Props>(function Co
         if (!toss) continue;
         cancelJostle(food.id); const placed = toss.food;
         bindLanding(food, placed, placed, sources); changed.set(food.id, placed);
-        if (animate) { const flight = createCompanionFoodToss(food, placed, now, toss); drops.current.set(food.id, flight); const pose = flight.sample(now); presentations.current.set(food.id, pose); paint(placed, pose); }
+        if (animate) { const flight = createCompanionFoodToss(food, placed, now, toss); drops.current.set(food.id, flight); directDrops.current.delete(food.id); const pose = flight.sample(now); presentations.current.set(food.id, pose); paint(placed, pose); }
         else paint(placed);
       }
       if (changed.size) { update(current.current.map(food => changed.get(food.id) ?? food)); animateDrops.current(); }

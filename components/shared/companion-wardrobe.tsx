@@ -71,7 +71,7 @@ export function CompanionWardrobe({ collection, preferences, active }: { collect
     if (!received) return;
     touched.current = true; pendingFocus.current = received; setSelectedAccessory(received); setPreviewChoice(received);
     setPageAnchor(COMPANION_WEARABLE_IDS.indexOf(received));
-    hapticSuccess(); playCompanionSound("gift", preferences); setAnnouncement(`${COMPANION_ACCESSORY_NAMES[received]} 선물을 받았어요.`);
+    hapticSuccess(); playCompanionSound("gift", preferences, "direct"); setAnnouncement(`${COMPANION_ACCESSORY_NAMES[received]} 선물을 받았어요.`);
   };
   const equip = (accessory: CompanionAccessoryId | null) => {
     if (!equipCompanionAccessory(accessory)) return;
@@ -79,7 +79,7 @@ export function CompanionWardrobe({ collection, preferences, active }: { collect
     // Removing an item clears the preview in this same update. Following the
     // old selected tile here kept showing an accessory that was already off.
     setPreviewChoice(accessory); setSelectedAccessory(accessory);
-    hapticSuccess(); playCompanionSound(accessory ? "equip" : "unequip", preferences);
+    hapticSuccess(); playCompanionSound(accessory ? "equip" : "unequip", preferences, "direct");
     setAnnouncement(accessory ? `${COMPANION_ACCESSORY_NAMES[accessory]} 장착` : "액세서리를 벗었어요.");
   };
   const selectIndex = (index: number, focus = false, inspect = false) => { const accessory = COMPANION_WEARABLE_IDS[index]; if (focus) pendingFocus.current = accessory; return select(accessory, inspect); };
