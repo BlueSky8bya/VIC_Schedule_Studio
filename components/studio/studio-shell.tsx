@@ -8295,7 +8295,7 @@ export function StudioShell({
                         const slot = (
                           <div
                             aria-label={splitEventTitle(event.publicTitle).main}
-                            className="band-slot is-hit"
+                            className={`band-slot is-hit${isSel ? " is-picked" : ""}`}
                             data-band-slot={join.bandHeadId}
                             data-chain={join.bandKey}
                             data-slot-eventid={event.id}

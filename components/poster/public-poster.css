@@ -6512,6 +6512,12 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
 .public-event .span-cont {
   color: transparent;
 }
+/* 이어진 조각은 손을 올려도 혼자 들리지 않는다(편집실과 같은 규칙) — 한 조각만 뜨면 이음새가 1px 어긋나고
+   그림자가 옆 조각 위로 진다. 손 올림 반응은 블록 외곽을 도는 빛이 맡는다. */
+.public-event.span:hover {
+  transform: none;
+  box-shadow: none;
+}
 
 /* ── 이어진 일정 잇기(2026-11-16 소유자) — 편집실·시청자·미리보기 공용(이 파일은 편집실도 불러온다) ──
    판정은 lib/calendar/month.ts buildChainJoins: 앞날 마지막 = 다음날 첫 카드일 때만 잇는다.
@@ -6703,9 +6709,9 @@ html[data-theme="dark"] .card-sheen {
   0% { filter: brightness(1.22) drop-shadow(0 0 7px var(--chain-color)); }
   100% { filter: brightness(1) drop-shadow(0 0 0 transparent); }
 }
-/* 고른 묶음을 한 덩어리로 두르는 테두리(카드 위 층). 카드마다 두르던 링은 이어진 조각에선 끈다 —
-   카드 링과 띠 테두리가 따로 놀며 점선·실선이 겹치고 끊겼다(2026-11-16 소유자). */
-.chain-rings {
+/* 고른 일정의 테두리 층 — 달력 격자 바로 뒤 형제 하나(useEqualChainHeights drawRings). 이어진 일정은 줄마다 한 블록으로
+   바깥을 두르고 누른 날짜 부분만 짙다. 칸 안에 두던 때는 옆 칸 카드가 테두리 세로변을 덮었다(2026-11-18 소유자). */
+.chain-ring-layer {
   position: absolute;
   left: 0;
   top: 0;
@@ -6713,7 +6719,7 @@ html[data-theme="dark"] .card-sheen {
   height: 1px;
   overflow: visible;
   pointer-events: none;
-  z-index: calc(var(--z-cal-ribbon-head, 10) + 2); /* 일정 층(띠 + 1)보다 한 칸 위 */
+  z-index: calc(var(--z-cal-ribbon-head, 10) + 3);
 }
 .chain-ring {
   fill: none;
@@ -6749,12 +6755,11 @@ html[data-theme="dark"] .card-sheen {
   from { opacity: 0; transform: scale(0.985); }
   to { opacity: 1; transform: scale(1); }
 }
-.studio-event-pill.primary-selected.chain-step-from::after,
-.studio-event-pill.primary-selected.chain-step-to::after {
+/* 블록 테두리가 맡은 카드([data-ring-svg])는 카드 자체 링을 끈다 — 둘이 겹치면 점선·실선이 이중으로 선다. */
+.studio-event-pill.primary-selected[data-ring-svg]::after {
   display: none;
 }
-.public-event.detail-current.chain-step-from,
-.public-event.detail-current.chain-step-to {
+.public-event.detail-current[data-ring-svg] {
   outline: none;
 }
 html[data-reduce-motion] .chain-ring-pair {

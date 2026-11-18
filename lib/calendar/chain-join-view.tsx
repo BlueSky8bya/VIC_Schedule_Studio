@@ -60,7 +60,12 @@ export function chainDataAttrs(
     "data-step-from":
       join?.right?.kind === "step" ? chainStepKey(event.id, join.right.otherId) : undefined,
     "data-step-to":
-      join?.left?.kind === "step" ? chainStepKey(join.left.otherId, event.id) : undefined
+      join?.left?.kind === "step" ? chainStepKey(join.left.otherId, event.id) : undefined,
+    // 줄바뀜(토→일)으로 이어진 짝 — 고른 일정의 테두리가 다음 줄 블록까지 따라간다(drawRings).
+    "data-wrap-to":
+      join?.right?.kind === "wrap" ? chainStepKey(event.id, join.right.otherId) : undefined,
+    "data-wrap-from":
+      join?.left?.kind === "wrap" ? chainStepKey(join.left.otherId, event.id) : undefined
   };
 }
 
@@ -78,11 +83,6 @@ export function ChainStepLayer({
     if (right?.kind === "step") keys.push(chainStepKey(e.id, right.otherId));
   }
   if (keys.length === 0) return null;
-  // 뒤 층(카드 밑 — 띠 몸통) + 앞 층(카드 위 — 고른 묶음을 한 덩어리로 두르는 테두리)
-  return (
-    <>
-      <svg aria-hidden="true" className="chain-steps" data-step-svg={keys.join(" ")} />
-      <svg aria-hidden="true" className="chain-rings" data-step-ring="" />
-    </>
-  );
+  // 카드 밑 층 — 띠 몸통. 고른 묶음의 테두리는 격자 전체 층 하나(svg.chain-ring-layer, drawRings)가 맡는다.
+  return <svg aria-hidden="true" className="chain-steps" data-step-svg={keys.join(" ")} />;
 }
