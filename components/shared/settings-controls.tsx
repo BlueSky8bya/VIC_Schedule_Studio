@@ -137,7 +137,7 @@ export function flashSettingsPlace(root: ParentNode | null | undefined, place: s
   const row = root?.querySelector<HTMLElement>(`[data-settings-place="${place}"]`);
   if (!row || row.closest("[hidden]") || row.offsetParent === null) return false;
   row.scrollIntoView({ block: "center", behavior: "instant" });
-  const control = row.matches("button,[role=switch],input,select,a[href]") ? row : row.querySelector<HTMLElement>("button:not(:disabled),[role=switch],input:not(:disabled),select,a[href]");
+  const control = row.matches("button,[role=switch],input,select,a[href]") ? row : row.querySelector<HTMLElement>('[role=radio][aria-checked="true"]:not(:disabled)') ?? row.querySelector<HTMLElement>("button:not(:disabled),[role=switch],input:not(:disabled),select,a[href]");
   // A row whose own control is locked still takes focus, so it is not lost to the page behind.
   if (control) control.focus({ preventScroll: true }); else { row.tabIndex = -1; row.focus({ preventScroll: true }); }
   window.clearTimeout(flashTimers.get(row));

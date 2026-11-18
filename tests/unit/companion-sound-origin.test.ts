@@ -5,11 +5,12 @@ import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "@/lib/
 
 const voice = vi.hoisted(() => vi.fn(() => true));
 vi.mock("@/lib/ui/sfx", () => ({ playCompanionVoice: voice, playCompanionSample: vi.fn(() => false) }));
-import { COMPANION_SOUND_MOMENTS, playCompanionSound, previewCompanionSound } from "@/lib/ui/viewer-companion/companion-sound";
+import { COMPANION_SOUND_MOMENTS, playCompanionSound, previewCompanionSoundLevel, previewCompanionSoundVolume } from "@/lib/ui/viewer-companion/companion-sound";
+import { COMPANION_SOUND_LEVELS, companionSoundLevel, companionSoundLevelPatch } from "@/lib/ui/viewer-companion/settings-levels";
 
 // Settings redesign stage 2-가: every sound carries who started it ("direct" =
 // the user's own touch and its reaction chain, "auto" = the companion alone).
-// The mark only travels in this stage: nothing may sound differently.
+// Stage 2-나: the gate reads that mark together with the one sound level.
 let now = 0;
 let html: { dataset: Record<string, string>; hasAttribute: (name: string) => boolean };
 let origins: string[];
@@ -30,9 +31,22 @@ describe("the mark reaches the gate", () => {
     expect(origins).toEqual(["land:auto", "land:direct", "land:auto"]);
   });
 
-  it("an audition from the settings screen is the user's", () => {
-    expect(previewCompanionSound("motion")).toBe(true);
-    expect(origins).toEqual(["play:direct"]);
+  it("a level is auditioned with the kind of sound it adds", () => {
+    expect(previewCompanionSoundLevel("touch")).toBe(true);
+    now += 60000; expect(previewCompanionSoundLevel("all")).toBe(true);
+    expect(origins).toEqual(["pet:direct", "play:auto"]);
+  });
+
+  it("on a device that rests its own sounds, choosing all and setting the volume are still heard", () => {
+    html.hasAttribute = name => name === "data-reduce-motion";
+    expect(previewCompanionSoundLevel("all")).toBe(true);
+    now += 60000; expect(previewCompanionSoundVolume()).toBe(true);
+    expect(origins).toEqual(["pet:direct", "pet:direct"]);
+    // Off is silent for both, as is a disabled companion.
+    now += 60000; expect(previewCompanionSoundVolume({ ...DEFAULT_COMPANION_PREFERENCES, sound: false })).toBe(false);
+    expect(previewCompanionSoundVolume({ ...DEFAULT_COMPANION_PREFERENCES, soundVolume: 0 })).toBe(false);
+    expect(previewCompanionSoundLevel("all", { ...DEFAULT_COMPANION_PREFERENCES, enabled: false })).toBe(false);
+    expect(origins).toHaveLength(2);
   });
 
   it("records nothing for a sound that did not play", () => {
@@ -41,20 +55,51 @@ describe("the mark reaches the gate", () => {
   });
 });
 
-describe("the mark changes no sound yet", () => {
-  it("plays or stays silent identically for both marks in every setting combination", () => {
-    const bools = [false, true];
+describe("the level and the mark decide together (proposal 4-2)", () => {
+  const bools = [false, true];
+  const audible = (moment: (typeof COMPANION_SOUND_MOMENTS)[number], preferences: CompanionPreferences, origin: "direct" | "auto", reduce: boolean, gfx: string) => {
+    html.hasAttribute = name => reduce && name === "data-reduce-motion"; html.dataset.gfx = gfx;
+    now += 60000; return playCompanionSound(moment, preferences, origin);
+  };
+
+  it("matches the rule for every sound, stored combination, mark and device state", () => {
     let cases = 0;
     for (const moment of COMPANION_SOUND_MOMENTS) for (const enabled of bools) for (const sound of bools) for (const soundVolume of [0, 40])
-      for (const soundCare of bools) for (const soundMotion of bools) for (const soundKeepsakes of bools) for (const reduce of bools) for (const gfx of ["full", "soft", "off"]) {
+      for (const soundCare of bools) for (const soundMotion of bools) for (const soundKeepsakes of bools) for (const reduce of bools) for (const gfx of ["full", "lite", "soft", "off"]) for (const origin of ["direct", "auto"] as const) {
         const preferences: CompanionPreferences = { ...DEFAULT_COMPANION_PREFERENCES, enabled, sound, soundVolume, soundCare, soundMotion, soundKeepsakes };
-        html.hasAttribute = name => reduce && name === "data-reduce-motion"; html.dataset.gfx = gfx;
-        now += 60000; const auto = playCompanionSound(moment, preferences, "auto");
-        now += 60000; const direct = playCompanionSound(moment, preferences, "direct");
-        expect(direct, `${moment} ${JSON.stringify(preferences)} ${reduce} ${gfx}`).toBe(auto);
+        // Written out from the design, not from the function under test.
+        const level = !sound || soundVolume === 0 || !soundCare ? "off" : soundMotion && soundKeepsakes ? "all" : "touch";
+        const resting = reduce || gfx === "soft" || gfx === "off";
+        const expected = enabled && level !== "off" && (origin === "direct" || level === "all" && !resting);
+        expect(audible(moment, preferences, origin, reduce, gfx), `${moment} ${origin} ${level} ${JSON.stringify({ enabled, reduce, gfx })}`).toBe(expected);
         cases += 1;
       }
-    expect(cases).toBe(COMPANION_SOUND_MOMENTS.length * 2 ** 7 * 3);
+    expect(cases).toBe(COMPANION_SOUND_MOMENTS.length * 2 ** 7 * 4 * 2);
+  });
+
+  it("the three levels as chosen on the screen", () => {
+    const moments = ["pet", "lift", "dizzy", "play", "sleep", "feed", "land", "discover", "gift", "equip"] as const;
+    for (const level of COMPANION_SOUND_LEVELS) for (const start of [DEFAULT_COMPANION_PREFERENCES, { ...DEFAULT_COMPANION_PREFERENCES, soundVolume: 0 }, { ...DEFAULT_COMPANION_PREFERENCES, soundCare: false, soundMotion: false }]) {
+      const preferences = { ...start, ...companionSoundLevelPatch(level, start) };
+      expect(companionSoundLevel(preferences)).toBe(level);
+      for (const moment of moments) {
+        expect(audible(moment, preferences, "direct", false, "full"), `${level} ${moment} direct`).toBe(level !== "off");
+        expect(audible(moment, preferences, "auto", false, "full"), `${level} ${moment} auto`).toBe(level === "all");
+      }
+    }
+  });
+
+  it("left alone, a device never gains a sound it did not have (proposal 5-3)", () => {
+    // Before this stage a sound needed: master, volume, its own group, and for the motion group no resting device.
+    const groups = { care: ["cushion", "feed", "land", "eat", "pet"], motion: ["lift", "dizzy", "tumble", "sleep", "play"], keepsakes: ["discover", "gift", "equip", "unequip"] } as const;
+    for (const sound of bools) for (const soundVolume of [0, 40]) for (const soundCare of bools) for (const soundMotion of bools) for (const soundKeepsakes of bools) for (const reduce of bools) for (const gfx of ["full", "soft", "off"]) {
+      const preferences: CompanionPreferences = { ...DEFAULT_COMPANION_PREFERENCES, sound, soundVolume, soundCare, soundMotion, soundKeepsakes };
+      const before = { care: soundCare, motion: soundMotion && !reduce && gfx === "full", keepsakes: soundKeepsakes };
+      for (const group of ["care", "motion", "keepsakes"] as const) for (const moment of groups[group]) {
+        const played = sound && soundVolume > 0 && before[group];
+        if (!played) expect(audible(moment, preferences, "auto", reduce, gfx), `auto ${moment} ${JSON.stringify(preferences)} ${reduce} ${gfx}`).toBe(false);
+      }
+    }
   });
 });
 

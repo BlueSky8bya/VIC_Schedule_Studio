@@ -3,12 +3,14 @@
  * Redesign stage 1 (docs/ux/companion-settings-redesign-proposal.md 3-4, 4-5):
  * the structure and every rule stay as they are; the screen only says which
  * outer setting is in the way and where it lives. Each function returns the
- * single outermost reason. Wording follows the rules that are true *today*
- * (sound groups, radio tied to the companion's own sound switch).
+ * single outermost reason. Wording follows the rules that are true *today*:
+ * the sound level (off / touch / all) decides, and the radio is still tied to
+ * the companion's own sound switch until stage 2-라.
  *
  * Pure functions. They never change a setting.
  */
 import type { CompanionPreferences } from "./preferences";
+import { companionSoundLevel } from "./settings-levels";
 import type { CompanionRadioPreferences } from "./radio-preferences";
 
 /** Site-wide settings that override companion rows, as the runtime reads them. */
@@ -28,25 +30,22 @@ const gfxWords = (gfx: string | undefined) => gfx === "off" ? "배경 효과가 
 const reduceWords = "사이트의 '생동감 있는 동작'이 꺼져 있어";
 const resting: CompanionSettingsNote = { text: "빅타민이 쉬는 중이라 아래 설정은 켜면 적용돼요", place: "companion-power" };
 
-/** One line above the companion sound rows. */
+/** One line above the companion sound rows (proposal 4-5). */
 export function companionSoundStatus(preferences: Readonly<CompanionPreferences>, site: CompanionSiteGates): CompanionSoundStatus {
   const silent = (reason: string, place?: CompanionSettingsPlace): CompanionSoundStatus => ({ state: "off", text: `지금은 소리가 안 나요 — ${reason}`, place });
   if (!site.soundOn) return silent("사이트 효과음이 꺼져 있어요", "site-sound");
   if (site.soundVolume <= 0) return silent("사이트 음량이 0이에요", "site-sound");
   if (!preferences.enabled) return silent("빅타민이 쉬는 중이에요", "companion-power");
-  if (!preferences.sound) return { state: "off", text: "빅타민 효과음을 꺼 두셨어요" };
-  if (preferences.soundVolume <= 0) return { state: "off", text: "빅타민 음량이 0이에요" };
-  const groups = [preferences.soundCare, preferences.soundMotion, preferences.soundKeepsakes], open = groups.filter(Boolean).length;
-  if (!open) return { state: "off", text: "소리 묶음을 모두 꺼 두셨어요" };
-  const motionResting = preferences.soundMotion && (site.reduceMotion || gfxResting(site.gfx));
-  if (motionResting) {
-    const reason = site.reduceMotion ? `${reduceWords}요` : `${gfxWords(site.gfx)}요`, place: CompanionSettingsPlace = site.reduceMotion ? "site-motion" : "site-gfx";
-    return open === 1 ? silent(reason, place) : { state: "partial", text: `'움직임' 소리는 쉬어요 — ${reason}`, place };
-  }
-  return open < groups.length ? { state: "partial", text: "켜 둔 묶음의 소리만 나요" } : { state: "on", text: "지금 소리가 나요" };
+  const level = companionSoundLevel(preferences);
+  // Volume 0 reads as off; say which of the two rows to look at.
+  if (level === "off") return { state: "off", text: preferences.sound && preferences.soundCare && preferences.soundVolume <= 0 ? "빅타민 음량이 0이에요" : "빅타민 소리를 꺼 두셨어요" };
+  if (level === "touch") return { state: "partial", text: "내가 만질 때만 소리가 나요" };
+  if (site.reduceMotion) return { state: "partial", text: `지금은 내가 만질 때만 소리가 나요 — ${reduceWords}요`, place: "site-motion" };
+  if (gfxResting(site.gfx)) return { state: "partial", text: `지금은 내가 만질 때만 소리가 나요 — ${gfxWords(site.gfx)}요`, place: "site-gfx" };
+  return { state: "on", text: "지금 소리가 나요" };
 }
 
-export type CompanionBlockedRow = "roam" | "jump" | "heartPrank" | "cardPrank" | "ambientPrank" | "panelPrank" | "rarePrank" | "soundMotion" | "musicReact";
+export type CompanionBlockedRow = "roam" | "jump" | "heartPrank" | "cardPrank" | "ambientPrank" | "panelPrank" | "rarePrank" | "musicReact";
 const pranks: readonly CompanionBlockedRow[] = ["heartPrank", "cardPrank", "ambientPrank", "panelPrank", "rarePrank"];
 
 /** The outer setting that keeps this row from doing anything, if any. The
@@ -54,10 +53,6 @@ const pranks: readonly CompanionBlockedRow[] = ["heartPrank", "cardPrank", "ambi
  * operable, so the note explains why switching it changes nothing yet. */
 export function companionRowBlock(row: CompanionBlockedRow, preferences: Readonly<CompanionPreferences>, site: CompanionSiteGates): CompanionSettingsNote | null {
   if (!preferences.enabled) return resting;
-  if (row === "soundMotion") {
-    if (site.reduceMotion) return { text: `${reduceWords} '움직임' 소리를 쉬어요`, place: "site-motion" };
-    return gfxResting(site.gfx) ? { text: `${gfxWords(site.gfx)} '움직임' 소리를 쉬어요`, place: "site-gfx" } : null;
-  }
   const what = row === "musicReact" ? "음악에 반응하지 않아요" : pranks.includes(row) ? "장난을 치지 않아요" : row === "jump" ? "뛰지 않아요" : "걷거나 뛰지 않아요";
   if (site.reduceMotion) return { text: `${reduceWords} ${what}`, place: "site-motion" };
   if ((row === "musicReact" || row === "rarePrank") && gfxResting(site.gfx)) return { text: `${gfxWords(site.gfx)} ${row === "rarePrank" ? "소품 묘기를 쉬어요" : what}`, place: "site-gfx" };

@@ -54,9 +54,9 @@ test("reduced motion: rows keep their value, say why once, and the link shows th
   expect(await saved(page)).toEqual(before);
   // The reason leads back to the companion's own row too.
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  // The sound tab names the same reason for the motion group only.
+  // The sound tab names the same reason: what it does by itself rests, the user's touch still sounds.
   await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "소리", exact: true }).click();
-  await expect(dialog.locator(".rhh-sound-status")).toContainText("'움직임' 소리는 쉬어요 — 사이트의 '생동감 있는 동작'이 꺼져 있어요");
+  await expect(dialog.locator(".rhh-sound-status")).toContainText("지금은 내가 만질 때만 소리가 나요 — 사이트의 '생동감 있는 동작'이 꺼져 있어요");
   await expect(dialog.locator(".rhh-sound-status")).toHaveAttribute("data-state", "partial");
 });
 
@@ -71,8 +71,8 @@ test("site sound off: status and radio lead to the site switch; the site sound t
   const site = dialog.getByRole("switch", { name: "효과음 켜기/끄기", exact: true });
   await expect(site).toBeFocused(); await expect(site).not.toBeChecked();
   await dialog.getByRole("button", { name: "빅타민 소리로", exact: true }).click();
-  const own = dialog.getByRole("switch", { name: "빅타민 효과음 켜기/끄기", exact: true });
-  await expect(own).toBeVisible(); await expect(own).toBeFocused();
+  const own = dialog.getByRole("radiogroup", { name: "빅타민 소리", exact: true }).getByRole("radio", { name: "전부", exact: true });
+  await expect(own).toBeVisible(); await expect(own).toBeFocused(); await expect(own).toBeChecked();
   expect((await saved(page)).sound).toBe("off");
 });
 
@@ -88,8 +88,8 @@ test("a blocked home radio opens its settings row with the reason instead of doi
   await expect(radio.locator(".rhh-radio-now p")).toHaveText("빅타민 소리가 꺼져 있어요");
   await expect(radio).toHaveAttribute("data-flash", "");
   await radio.getByRole("button", { name: "빅타민 소리로", exact: true }).click();
-  const own = book.getByRole("switch", { name: "빅타민 효과음 켜기/끄기", exact: true });
-  await expect(own).toBeFocused(); await expect(own).not.toBeChecked();
+  const own = book.getByRole("radiogroup", { name: "빅타민 소리", exact: true }).getByRole("radio", { name: "끔", exact: true });
+  await expect(own).toBeFocused(); await expect(own).toBeChecked();
   expect(JSON.parse((await saved(page)).companion!).sound).toBe(false);
 });
 

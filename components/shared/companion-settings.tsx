@@ -1,13 +1,14 @@
 "use client";
 
 import { ArrowDownToLine, EyeOff, Gauge, Grab, Heart, Leaf, PanelTopOpen, PartyPopper, Pointer, Sparkles, Volume1, Volume2, VolumeX } from "lucide-react";
-import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { RowLabel, SettingsNote, SettingsSegment, Switch, flashSettingsPlace } from "@/components/shared/settings-controls";
 import { COMPANION_SETTINGS_PLACE_LABELS, companionRowBlock, companionSoundStatus, type CompanionBlockedRow, type CompanionSettingsNote, type CompanionSettingsPlace, type CompanionSiteGates } from "@/lib/ui/viewer-companion/settings-status";
 import { COMPANION_PERSONALITY_NAMES, COMPANION_PERSONALITY_SUMMARIES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_PERSONALITY_LAYOUT } from "@/lib/ui/viewer-companion/personality-layout";
 import { CompanionWardrobePreview } from "./companion-wardrobe-preview";
-import { COMPANION_SOUND_CATEGORY_NAMES, previewCompanionSound } from "@/lib/ui/viewer-companion/companion-sound";
+import { previewCompanionSoundLevel, previewCompanionSoundVolume } from "@/lib/ui/viewer-companion/companion-sound";
+import { companionSoundLevel, companionSoundLevelPatch, type CompanionSoundLevel } from "@/lib/ui/viewer-companion/settings-levels";
 import { resetCompanionHabits } from "@/lib/ui/viewer-companion/care";
 import { resetCompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -128,7 +129,10 @@ export function CompanionBehaviorSettings({ preferences, onChange, site, onGoTo,
     ];
   });
   const row = (key: CompanionToggle, label: string, icon: ReactNode) => rows([[key, label, icon]]);
-  const soundStatus = companionSoundStatus(preferences, site), motionSound = block("soundMotion");
+  const soundStatus = companionSoundStatus(preferences, site), soundLevel = companionSoundLevel(preferences);
+  const chooseSoundLevel = (level: CompanionSoundLevel) => { const patch = companionSoundLevelPatch(level, preferences); onChange(patch); previewCompanionSoundLevel(level, { ...preferences, ...patch }); };
+  // Setting the volume lets the current level be heard at that volume; off stays silent.
+  const auditionVolume = (soundVolume: number) => previewCompanionSoundVolume({ ...preferences, soundVolume });
   const onKey = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
     const index = companionTabs.findIndex(item => item.key === tab);
     const next = event.key === "Home" ? 0 : event.key === "End" ? companionTabs.length - 1 : event.key === "ArrowRight" ? (index + 1) % companionTabs.length : event.key === "ArrowLeft" ? (index - 1 + companionTabs.length) % companionTabs.length : -1;
@@ -179,9 +183,12 @@ export function CompanionBehaviorSettings({ preferences, onChange, site, onGoTo,
     <div aria-labelledby={`${id}-sound`} hidden={tab !== "sound"} id={`${id}-sound-panel`} role="tabpanel" tabIndex={0}>
       <div aria-live="polite" className="rhh-sound-status-slot"><SettingsNote className="rhh-sound-status" onGoTo={place => goTo(place as CompanionSettingsPlace)} place={soundStatus.place} placeLabel={soundStatus.place && COMPANION_SETTINGS_PLACE_LABELS[soundStatus.place]} state={soundStatus.state} text={soundStatus.text} /></div>
       <div className="rhh-group-card rhh-companion-sound">
-        <div className="role-help-haptics" data-settings-place="companion-sound"><RowLabel icon={<Volume2 size={15} />} tone="water">빅타민 효과음</RowLabel><Switch dataAct="companion-sound-enabled" dataActOpt={preferences.sound ? "off" : "on"} label="빅타민 효과음 켜기/끄기" on={preferences.sound} onToggle={() => onChange({ sound: !preferences.sound })} /></div>
-        <div className="role-help-haptics rhh-stack-sm"><RowLabel icon={<Volume1 size={15} />} tone="water">빅타민 음량</RowLabel><div className="rhh-volume"><VolumeX aria-hidden="true" size={15} /><input aria-label="빅타민 음량" aria-valuetext={`${preferences.soundVolume}%`} data-act="companion-sound-volume" data-sfx="off" max={100} min={0} onChange={event => onChange({ soundVolume: Number(event.currentTarget.value) })} onKeyUp={event => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) previewCompanionSound("care", { ...preferences, soundVolume: Number(event.currentTarget.value) }); }} onPointerUp={event => previewCompanionSound("care", { ...preferences, soundVolume: Number(event.currentTarget.value) })} step={5} style={{ "--vol": `${preferences.soundVolume}%` } as CSSProperties} type="range" value={preferences.soundVolume} /><Volume2 aria-hidden="true" size={15} /><b className="rhh-vol-num">{preferences.soundVolume}</b></div></div>
-        {([{ category: "care", key: "soundCare", action: "companion-sound-care" }, { category: "motion", key: "soundMotion", action: "companion-sound-motion" }, { category: "keepsakes", key: "soundKeepsakes", action: "companion-sound-keepsakes" }] as const).map(({ category, key, action }) => <Fragment key={category}><div className={`role-help-haptics${category === "motion" && motionSound || off ? " is-blocked" : ""}`}><RowLabel icon={category === "care" ? <Heart size={15} /> : category === "motion" ? <Sparkles size={15} /> : <PartyPopper size={15} />} tone="water">{COMPANION_SOUND_CATEGORY_NAMES[category]}</RowLabel><div className="rhh-companion-sound-actions"><button aria-label={`${COMPANION_SOUND_CATEGORY_NAMES[category]} 소리 미리 듣기`} className="rhh-link" data-act="companion-sound-preview" data-act-opt={category} data-sfx="off" disabled={!site.soundOn || !preferences.enabled || !preferences.sound || !preferences[key] || preferences.soundVolume === 0} onClick={() => previewCompanionSound(category, preferences)} type="button"><Volume1 aria-hidden="true" size={16} /></button><Switch dataAct={action} dataActOpt={preferences[key] ? "off" : "on"} label={`빅타민 ${COMPANION_SOUND_CATEGORY_NAMES[category]} 소리 켜기/끄기`} on={preferences[key]} onToggle={() => onChange({ [key]: !preferences[key] })} /></div></div>{category === "motion" ? note(motionSound) : null}</Fragment>)}
+        {/* One choice instead of a master switch and three groups (redesign 2-나). Choosing a level plays what that level sounds like, once. */}
+        <div className={`role-help-haptics rhh-stack-sm rhh-companion-choice-row${off ? " is-blocked" : ""}`} data-settings-place="companion-sound">
+          <RowLabel icon={<Volume2 size={15} />} tone="water">빅타민 소리</RowLabel>
+          <SettingsSegment<CompanionSoundLevel> ariaLabel="빅타민 소리" columns={3} dataAct="companion-sound-level" onChange={chooseSoundLevel} onReselect={chooseSoundLevel} options={[{ value: "off", label: "끔" }, { value: "touch", label: "만질 때만" }, { value: "all", label: "전부" }]} value={soundLevel} />
+        </div>
+        <div className={`role-help-haptics rhh-stack-sm${off || !preferences.sound || !preferences.soundCare ? " is-blocked" : ""}`}><RowLabel icon={<Volume1 size={15} />} tone="water">빅타민 음량</RowLabel><div className="rhh-volume"><VolumeX aria-hidden="true" size={15} /><input aria-label="빅타민 음량" aria-valuetext={`${preferences.soundVolume}%`} data-act="companion-sound-volume" data-sfx="off" max={100} min={0} onChange={event => onChange({ soundVolume: Number(event.currentTarget.value) })} onKeyUp={event => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) auditionVolume(Number(event.currentTarget.value)); }} onPointerUp={event => auditionVolume(Number(event.currentTarget.value))} step={5} style={{ "--vol": `${preferences.soundVolume}%` } as CSSProperties} type="range" value={preferences.soundVolume} /><Volume2 aria-hidden="true" size={15} /><b className="rhh-vol-num">{preferences.soundVolume}</b></div></div>
       </div>
       {active && tab === "sound" && radio}
     </div>

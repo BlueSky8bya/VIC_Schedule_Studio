@@ -67,21 +67,26 @@ for (const surface of ["viewer", "studio", "preview"] as const) {
     let { dialog, nav, sound } = await openSound(page);
     await expect(nav.getByRole("tab")).toHaveText(["기본", "움직임", "장난", "교감", "소리"]);
     await beginAuditions(page);
-    const preview = sound.getByRole("button", { name: "돌보기 소리 미리 듣기", exact: true });
-    await preview.click(); await expect.poll(() => trace(page)).toEqual(["pet"]);
+    // One choice (redesign 2-나): each level is heard once as it is chosen — a stroke for "만질 때만", its own play for "전부".
+    const level = sound.getByRole("radiogroup", { name: "빅타민 소리", exact: true }), choose = (name: string) => level.getByRole("radio", { name, exact: true });
+    await expect(choose("전부")).toBeChecked();
+    await choose("만질 때만").click(); await expect(choose("만질 때만")).toBeChecked();
+    await expect.poll(() => trace(page)).toEqual(["pet"]);
+    expect(await saved(page)).toMatchObject({ sound: true, soundCare: true, soundMotion: false, soundKeepsakes: true });
     // Honor the real authored 120ms burst spacing; never advance a clock.
     await page.waitForTimeout(150);
-    await sound.getByRole("button", { name: "발견·선물 소리 미리 듣기", exact: true }).click();
-    await expect.poll(() => trace(page)).toEqual(["pet", "discover"]);
-    const master = sound.getByRole("switch", { name: "빅타민 효과음 켜기/끄기", exact: true });
-    await master.click(); await expect(master).toHaveAttribute("aria-checked", "false");
-    await expect(preview).toBeDisabled();
+    await choose("전부").click();
+    await expect.poll(() => trace(page)).toEqual(["pet", "play"]);
+    await choose("끔").click(); await expect(choose("끔")).toBeChecked();
     const volume = sound.getByRole("slider", { name: "빅타민 음량", exact: true });
     await volume.focus(); await volume.press("Home"); await volume.press("ArrowRight");
     await expect(volume).toHaveValue("5");
-    expect(await trace(page)).toEqual(["pet", "discover"]);
-    await sound.getByRole("switch", { name: "빅타민 움직임 소리 켜기/끄기", exact: true }).click();
-    expect(await saved(page)).toMatchObject({ enabled: true, sound: false, soundVolume: 5, soundCare: true, soundMotion: false, soundKeepsakes: true });
+    // Off stays silent, also while the volume is being set.
+    expect(await trace(page)).toEqual(["pet", "play"]);
+    expect(await saved(page)).toMatchObject({ enabled: true, sound: false, soundVolume: 5, soundCare: true, soundMotion: true, soundKeepsakes: true });
+    // The retired group switches and their audition buttons are gone.
+    await expect(sound.getByRole("switch")).toHaveCount(0);
+    await expect(sound.getByRole("button", { name: /미리 듣기/ })).toHaveCount(0);
     mkdirSync(".scratch-pw/companion-111/sound-settings", { recursive: true });
     await sound.screenshot({ path: `.scratch-pw/companion-111/sound-settings/audio-${surface}.png` });
     await page.screenshot({ path: `.scratch-pw/companion-111/sound-settings/viewport-audio-${surface}.png` });
@@ -94,39 +99,45 @@ for (const surface of ["viewer", "studio", "preview"] as const) {
       await sibling.evaluate(() => { const value = JSON.parse(localStorage.getItem("vic.viewerCompanion")!); value.soundVolume = 25; value.soundKeepsakes = false; localStorage.setItem("vic.viewerCompanion", JSON.stringify(value)); });
       await sibling.close(); await page.bringToFront();
       await expect(volume).toHaveValue("25");
-      await expect(sound.getByRole("switch", { name: "빅타민 발견·선물 소리 켜기/끄기", exact: true })).toHaveAttribute("aria-checked", "false");
+      // The other tab only changed stored groups; the level still reads off because its switch is off.
+      await expect(sound.getByRole("radiogroup", { name: "빅타민 소리", exact: true }).getByRole("radio", { name: "끔", exact: true })).toBeChecked();
     }
     const persisted = await saved(page);
     await page.reload(); await page.bringToFront();
     if (surface === "preview" && !await page.locator(".viewer-fullscreen").count()) await page.locator(".io-preview").click();
     ({ dialog, nav, sound } = await openSound(page));
     expect(await saved(page)).toEqual(persisted);
-    await expect(sound.getByRole("switch", { name: "빅타민 효과음 켜기/끄기", exact: true })).toHaveAttribute("aria-checked", "false");
-    await sound.getByRole("switch", { name: "빅타민 효과음 켜기/끄기", exact: true }).click();
+    await expect(sound.getByRole("radiogroup", { name: "빅타민 소리", exact: true }).getByRole("radio", { name: "끔", exact: true })).toBeChecked();
+    await sound.getByRole("radiogroup", { name: "빅타민 소리", exact: true }).getByRole("radio", { name: "전부", exact: true }).click();
     await dialog.getByRole("tab", { name: "소리", exact: true }).first().click();
     await dialog.getByRole("switch", { name: "효과음 켜기/끄기", exact: true }).click();
     await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
     await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
     await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "소리", exact: true }).click();
     await expect(dialog).toContainText("지금은 소리가 안 나요 — 사이트 효과음이 꺼져 있어요");
-    await expect(sound.getByRole("button", { name: "돌보기 소리 미리 듣기", exact: true })).toBeDisabled();
+    // With the site's sound off, choosing a level is silent: the audition passes the same gate as the real sound.
+    await page.evaluate(() => { (window as Window & { __companionSfxTrace?: string[] }).__companionSfxTrace = []; });
+    await sound.getByRole("radiogroup", { name: "빅타민 소리", exact: true }).getByRole("radio", { name: "만질 때만", exact: true }).click();
+    await page.waitForTimeout(300);
     expect(await trace(page)).toEqual([]);
     expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
   });
 }
 
-test("native reduced-motion and creature OFF never audition motion or start companion sound", async ({ page }) => {
+test("native reduced-motion and creature OFF never audition its own sounds or start companion sound", async ({ page }) => {
   const safety = await fixture(page, true);
   await page.goto("/visual-fixture/poster");
   const { dialog, sound } = await openSound(page);
   await beginAuditions(page);
-  const motion = sound.getByRole("button", { name: "움직임 소리 미리 듣기", exact: true });
-  await motion.click(); expect(await trace(page)).toEqual([]);
-  await sound.getByRole("button", { name: "돌보기 소리 미리 듣기", exact: true }).click();
+  const level = sound.getByRole("radiogroup", { name: "빅타민 소리", exact: true }), choose = (name: string) => level.getByRole("radio", { name, exact: true });
+  // Reduced motion rests what it does by itself, so "전부" has nothing to play; the user's own touch still sounds.
+  await expect(dialog.locator(".rhh-sound-status")).toContainText("지금은 내가 만질 때만 소리가 나요");
+  // "전부" on this device is heard as a stroke: its own play would be silent, the user's touch is not.
+  await choose("전부").click();
   await expect.poll(() => trace(page)).toEqual(["pet"]);
   await dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true }).click();
-  await expect(motion).toBeDisabled();
-  await expect(sound.getByRole("button", { name: "돌보기 소리 미리 듣기", exact: true })).toBeDisabled();
+  await page.waitForTimeout(2000); // past the stroke's own cooldown, so silence below is the gate and not the budget
+  await choose("만질 때만").click(); await choose("전부").click(); await page.waitForTimeout(300);
   expect(await trace(page)).toEqual(["pet"]);
   expect(await saved(page)).toMatchObject({ enabled: false, sound: true, soundVolume: 60 });
   expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);

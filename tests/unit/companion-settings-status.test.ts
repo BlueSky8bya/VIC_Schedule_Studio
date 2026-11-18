@@ -9,59 +9,54 @@ const prefs = (overrides: Partial<CompanionPreferences> = {}): CompanionPreferen
 const site = (overrides: Partial<CompanionSiteGates> = {}): CompanionSiteGates => ({ soundOn: true, soundVolume: 60, reduceMotion: false, gfx: "full", ...overrides });
 const radio = { enabled: true, volume: 35, react: true, excludedIds: [] };
 
-describe("companion sound status line", () => {
+describe("companion sound status line (proposal 4-5)", () => {
   it("names the outermost reason first", () => {
     const everythingOff = prefs({ enabled: false, sound: false, soundVolume: 0, soundCare: false, soundMotion: false, soundKeepsakes: false });
     expect(companionSoundStatus(everythingOff, site({ soundOn: false, soundVolume: 0, reduceMotion: true }))).toEqual({ state: "off", text: "지금은 소리가 안 나요 — 사이트 효과음이 꺼져 있어요", place: "site-sound" });
     expect(companionSoundStatus(everythingOff, site({ soundVolume: 0 }))).toEqual({ state: "off", text: "지금은 소리가 안 나요 — 사이트 음량이 0이에요", place: "site-sound" });
     expect(companionSoundStatus(everythingOff, site())).toEqual({ state: "off", text: "지금은 소리가 안 나요 — 빅타민이 쉬는 중이에요", place: "companion-power" });
-    expect(companionSoundStatus(prefs({ sound: false, soundVolume: 0 }), site())).toEqual({ state: "off", text: "빅타민 효과음을 꺼 두셨어요" });
-    expect(companionSoundStatus(prefs({ soundVolume: 0, soundCare: false }), site())).toEqual({ state: "off", text: "빅타민 음량이 0이에요" });
-    expect(companionSoundStatus(prefs({ soundCare: false, soundMotion: false, soundKeepsakes: false }), site({ reduceMotion: true }))).toEqual({ state: "off", text: "소리 묶음을 모두 꺼 두셨어요" });
+    expect(companionSoundStatus(prefs({ sound: false }), site({ reduceMotion: true }))).toEqual({ state: "off", text: "빅타민 소리를 꺼 두셨어요" });
+    expect(companionSoundStatus(prefs({ sound: false, soundVolume: 0 }), site())).toEqual({ state: "off", text: "빅타민 소리를 꺼 두셨어요" });
+    expect(companionSoundStatus(prefs({ soundVolume: 0 }), site())).toEqual({ state: "off", text: "빅타민 음량이 0이에요" });
+    // Raising the volume alone would not help here, so the volume is not named.
+    expect(companionSoundStatus(prefs({ soundVolume: 0, soundCare: false }), site())).toEqual({ state: "off", text: "빅타민 소리를 꺼 두셨어요" });
+    // The old care group off reads as the level off.
+    expect(companionSoundStatus(prefs({ soundCare: false }), site())).toEqual({ state: "off", text: "빅타민 소리를 꺼 두셨어요" });
   });
 
-  it("says when only the motion group is resting, and where that is set", () => {
-    expect(companionSoundStatus(prefs(), site({ reduceMotion: true, gfx: "soft" }))).toEqual({ state: "partial", text: "'움직임' 소리는 쉬어요 — 사이트의 '생동감 있는 동작'이 꺼져 있어요", place: "site-motion" });
-    expect(companionSoundStatus(prefs(), site({ gfx: "soft" }))).toEqual({ state: "partial", text: "'움직임' 소리는 쉬어요 — 이 기기는 배경 효과가 '효과 쉬기'로 맞춰져 있어요", place: "site-gfx" });
-    expect(companionSoundStatus(prefs(), site({ gfx: "off" }))).toEqual({ state: "partial", text: "'움직임' 소리는 쉬어요 — 배경 효과가 꺼져 있어요", place: "site-gfx" });
-    // Only the motion group is on and it is resting: nothing sounds at all.
-    expect(companionSoundStatus(prefs({ soundCare: false, soundKeepsakes: false }), site({ reduceMotion: true }))).toEqual({ state: "off", text: "지금은 소리가 안 나요 — 사이트의 '생동감 있는 동작'이 꺼져 있어요", place: "site-motion" });
-    // The motion group is off: reduced motion silences nothing that was on.
-    expect(companionSoundStatus(prefs({ soundMotion: false }), site({ reduceMotion: true }))).toEqual({ state: "partial", text: "켜 둔 묶음의 소리만 나요" });
-    // "가볍게" does not rest motion sounds.
+  it("says touch-only, by choice or because the device rests what it does by itself", () => {
+    expect(companionSoundStatus(prefs({ soundMotion: false }), site({ reduceMotion: true, gfx: "off" }))).toEqual({ state: "partial", text: "내가 만질 때만 소리가 나요" });
+    expect(companionSoundStatus(prefs({ soundKeepsakes: false }), site())).toEqual({ state: "partial", text: "내가 만질 때만 소리가 나요" });
+    expect(companionSoundStatus(prefs(), site({ reduceMotion: true, gfx: "soft" }))).toEqual({ state: "partial", text: "지금은 내가 만질 때만 소리가 나요 — 사이트의 '생동감 있는 동작'이 꺼져 있어요", place: "site-motion" });
+    expect(companionSoundStatus(prefs(), site({ gfx: "soft" }))).toEqual({ state: "partial", text: "지금은 내가 만질 때만 소리가 나요 — 이 기기는 배경 효과가 '효과 쉬기'로 맞춰져 있어요", place: "site-gfx" });
+    expect(companionSoundStatus(prefs(), site({ gfx: "off" }))).toEqual({ state: "partial", text: "지금은 내가 만질 때만 소리가 나요 — 배경 효과가 꺼져 있어요", place: "site-gfx" });
     expect(companionSoundStatus(prefs(), site({ gfx: "lite" }))).toEqual({ state: "on", text: "지금 소리가 나요" });
   });
 
-  it("matches the runtime gate for every sound group", () => {
-    // Same conditions as play() in companion-sound.ts, minus tab focus and rate limits.
-    const audible = (p: CompanionPreferences, s: CompanionSiteGates) => {
-      if (!s.soundOn || s.soundVolume <= 0 || !p.enabled || !p.sound || p.soundVolume <= 0) return 0;
-      const motion = p.soundMotion && !s.reduceMotion && s.gfx !== "off" && s.gfx !== "soft";
-      return Number(p.soundCare) + Number(motion) + Number(p.soundKeepsakes);
-    };
+  it("matches the real gate in every combination", async () => {
+    // on = what it does by itself sounds; partial = only the user's touch does; off = nothing does.
     const bools = [false, true];
     let cases = 0;
     for (const soundOn of bools) for (const enabled of bools) for (const sound of bools) for (const soundVolume of [0, 40]) for (const soundCare of bools) for (const soundMotion of bools) for (const soundKeepsakes of bools)
       for (const reduceMotion of bools) for (const gfx of ["full", "lite", "soft", "off"]) for (const siteVolume of [0, 60]) {
         const p = prefs({ enabled, sound, soundVolume, soundCare, soundMotion, soundKeepsakes }), s = site({ soundOn, soundVolume: siteVolume, reduceMotion, gfx });
-        const count = audible(p, s), status = companionSoundStatus(p, s);
-        expect(status.state, JSON.stringify({ p, s })).toBe(count === 0 ? "off" : count === 3 ? "on" : "partial");
+        const level = !sound || soundVolume === 0 || !soundCare ? "off" : soundMotion && soundKeepsakes ? "all" : "touch";
+        const direct = soundOn && siteVolume > 0 && enabled && level !== "off", auto = direct && level === "all" && !reduceMotion && gfx !== "soft" && gfx !== "off";
+        expect(companionSoundStatus(p, s).state, JSON.stringify({ p, s })).toBe(auto ? "on" : direct ? "partial" : "off");
         cases += 1;
       }
     expect(cases).toBe(2048);
   });
 
-  it("never claims the rules of later stages", () => {
+  it("does not claim the radio is separate yet (that is stage 2-라)", () => {
     const bools = [false, true];
-    for (const reduceMotion of bools) for (const gfx of ["full", "soft", "off"]) for (const soundMotion of bools) {
-      const text = companionSoundStatus(prefs({ soundMotion }), site({ reduceMotion, gfx })).text;
-      expect(text).not.toMatch(/혼자 내는 소리|라디오는 따로|만질 때만/);
-    }
+    for (const reduceMotion of bools) for (const gfx of ["full", "soft", "off"]) for (const soundMotion of bools) for (const sound of bools)
+      expect(companionSoundStatus(prefs({ soundMotion, sound }), site({ reduceMotion, gfx })).text).not.toMatch(/라디오는 따로|스스로 틀기/);
   });
 });
 
 describe("blocked companion rows", () => {
-  const rows: CompanionBlockedRow[] = ["roam", "jump", "heartPrank", "cardPrank", "ambientPrank", "panelPrank", "rarePrank", "soundMotion", "musicReact"];
+  const rows: CompanionBlockedRow[] = ["roam", "jump", "heartPrank", "cardPrank", "ambientPrank", "panelPrank", "rarePrank", "musicReact"];
 
   it("has no note when nothing is in the way", () => {
     for (const row of rows) expect(companionRowBlock(row, prefs(), site()), row).toBeNull();
@@ -77,7 +72,6 @@ describe("blocked companion rows", () => {
     expect(blocked("roam")).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 걷거나 뛰지 않아요", place: "site-motion" });
     expect(blocked("jump")).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 뛰지 않아요", place: "site-motion" });
     for (const row of ["heartPrank", "cardPrank", "ambientPrank", "panelPrank", "rarePrank"] as const) expect(blocked(row)).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 장난을 치지 않아요", place: "site-motion" });
-    expect(blocked("soundMotion")).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 '움직임' 소리를 쉬어요", place: "site-motion" });
     expect(blocked("musicReact")).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 음악에 반응하지 않아요", place: "site-motion" });
   });
 
@@ -85,7 +79,6 @@ describe("blocked companion rows", () => {
     const blocked = (row: CompanionBlockedRow, gfx = "soft") => companionRowBlock(row, prefs(), site({ gfx }));
     expect(blocked("rarePrank")).toEqual({ text: "이 기기는 배경 효과가 '효과 쉬기'로 맞춰져 있어 소품 묘기를 쉬어요", place: "site-gfx" });
     expect(blocked("musicReact", "off")).toEqual({ text: "배경 효과가 꺼져 있어 음악에 반응하지 않아요", place: "site-gfx" });
-    expect(blocked("soundMotion")).toEqual({ text: "이 기기는 배경 효과가 '효과 쉬기'로 맞춰져 있어 '움직임' 소리를 쉬어요", place: "site-gfx" });
     for (const row of ["roam", "jump", "heartPrank", "cardPrank", "ambientPrank", "panelPrank"] as const) expect(blocked(row), row).toBeNull();
   });
 
@@ -101,7 +94,7 @@ describe("blocked companion rows", () => {
     const bools = [false, true];
     for (const row of rows) for (const enabled of bools) for (const roam of bools) for (const reduceMotion of bools) for (const gfx of ["full", "lite", "soft", "off"]) {
       const text = companionRowBlock(row, prefs({ enabled, roam }), site({ reduceMotion, gfx }))?.text ?? "";
-      expect(text).not.toMatch(/혼자 내는 소리|라디오는 따로|만질 때만/);
+      expect(text).not.toMatch(/라디오는 따로|스스로 틀기/);
     }
   });
 
@@ -111,7 +104,6 @@ describe("blocked companion rows", () => {
     expect(blocked("jump")).toEqual({ text: "'돌아다니기'가 꺼져 있어 혼자서는 뛰지 않아요", place: "companion-roam" });
     for (const row of ["heartPrank", "cardPrank", "ambientPrank", "panelPrank", "rarePrank"] as const) expect(blocked(row)).toEqual({ text: "'돌아다니기'가 꺼져 있어 장난을 치지 않아요", place: "companion-roam" });
     expect(blocked("musicReact")).toEqual({ text: "'돌아다니기'가 꺼져 있어 음악에 반응하지 않아요", place: "companion-roam" });
-    expect(blocked("soundMotion")).toBeNull();
   });
 });
 

@@ -174,9 +174,10 @@ test("radio empty pool, dedicated OFF, zero volume and global OFF keep play cont
   await radio.getByRole("switch", { name: "빅타민 라디오 켜기/끄기", exact: true }).click();
   await expect(radio.getByRole("button", { name: "다음 곡", exact: true })).toBeDisabled();
   await radio.getByRole("switch", { name: "빅타민 라디오 켜기/끄기", exact: true }).click();
-  await dialog.getByRole("switch", { name: "빅타민 효과음 켜기/끄기", exact: true }).click();
+  const level = dialog.getByRole("radiogroup", { name: "빅타민 소리", exact: true });
+  await level.getByRole("radio", { name: "끔", exact: true }).click();
   await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeDisabled();
-  await dialog.getByRole("switch", { name: "빅타민 효과음 켜기/끄기", exact: true }).click();
+  await level.getByRole("radio", { name: "전부", exact: true }).click();
   await dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true }).click();
   await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeDisabled();
   await dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true }).click();

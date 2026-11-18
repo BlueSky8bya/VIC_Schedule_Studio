@@ -3,7 +3,7 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 
 const voice = vi.hoisted(() => vi.fn(() => true));
 vi.mock("@/lib/ui/sfx", () => ({ playCompanionVoice: voice, playCompanionSample: vi.fn(() => false) }));
-import { COMPANION_SOUND_MOMENTS, createCompanionSoundBudget, playCompanionSound, previewCompanionSound } from "@/lib/ui/viewer-companion/companion-sound";
+import { COMPANION_SOUND_MOMENTS, createCompanionSoundBudget, playCompanionSound, previewCompanionSoundLevel } from "@/lib/ui/viewer-companion/companion-sound";
 
 let now = 0;
 let html: { dataset: Record<string, string>; hasAttribute: (name: string) => boolean };
@@ -17,27 +17,29 @@ beforeEach(() => {
 afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("finite companion event sound", () => {
-  it("does no audio work while hidden, creature/sound OFF, volume zero or own category OFF", () => {
-    for (const patch of [{ enabled: false }, { sound: false }, { soundVolume: 0 }, { soundCare: false }]) expect(playCompanionSound("pet", { ...DEFAULT_COMPANION_PREFERENCES, ...patch })).toBe(false);
+  it("does no audio work while hidden, creature OFF or the sound level off (switch, volume zero or the old care group)", () => {
+    for (const patch of [{ enabled: false }, { sound: false }, { soundVolume: 0 }, { soundCare: false }]) for (const origin of ["direct", "auto"] as const) expect(playCompanionSound("pet", { ...DEFAULT_COMPANION_PREFERENCES, ...patch }, origin)).toBe(false);
     vi.stubGlobal("document", { hidden: true, documentElement: html });
     expect(playCompanionSound("gift")).toBe(false);
     expect(voice).not.toHaveBeenCalled();
     expect(html.dataset).toEqual({});
   });
-  it("never bypasses the creature or sound master for an explicit audition", () => {
-    expect(previewCompanionSound("care", { ...DEFAULT_COMPANION_PREFERENCES, enabled: false })).toBe(false);
-    expect(previewCompanionSound("keepsakes", { ...DEFAULT_COMPANION_PREFERENCES, sound: false })).toBe(false);
+  it("never bypasses the creature or the sound level for an audition", () => {
+    expect(previewCompanionSoundLevel("touch", { ...DEFAULT_COMPANION_PREFERENCES, enabled: false })).toBe(false);
+    expect(previewCompanionSoundLevel("all", { ...DEFAULT_COMPANION_PREFERENCES, sound: false })).toBe(false);
+    expect(previewCompanionSoundLevel("off")).toBe(false);
     expect(voice).not.toHaveBeenCalled();
   });
-  it("mutes motion cues under reduced motion and soft/off graphics without muting care", () => {
+  it("under reduced motion and soft/off graphics quiets only what it does by itself, whatever the sound is", () => {
     for (const mode of ["reduce", "soft", "off"]) {
-      now += 20000;
       html.hasAttribute = name => mode === "reduce" && name === "data-reduce-motion";
       html.dataset.gfx = mode === "reduce" ? "" : mode;
-      expect(playCompanionSound("tumble")).toBe(false);
-      expect(playCompanionSound("pet")).toBe(true);
+      for (const moment of ["tumble", "pet", "lift", "discover"] as const) {
+        now += 20000; expect(playCompanionSound(moment), `${mode} ${moment} auto`).toBe(false);
+        now += 20000; expect(playCompanionSound(moment, DEFAULT_COMPANION_PREFERENCES, "direct"), `${mode} ${moment} direct`).toBe(true);
+      }
     }
-    expect(voice).toHaveBeenCalledTimes(3);
+    expect(voice).toHaveBeenCalledTimes(12);
   });
   it("uses fourteen short distinct authored cues, at most three voices and no legacy category gate", () => {
     const signatures = [];
