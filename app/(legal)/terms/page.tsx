@@ -38,9 +38,9 @@ function ReplayDemo() {
       style={{ width: "min(320px, 100%)" }}
       target="_blank"
     >
+      <em className="agenda-vod-dur">13.5시간</em>
       <Play aria-hidden="true" size={13} strokeWidth={2.6} />
       <span className="agenda-vod-title">마메마메 보스잡기</span>
-      <em className="agenda-vod-dur">13시간 28분</em>
     </a>
   );
 }

@@ -29,9 +29,8 @@
   .agenda-event p {
     font-size: var(--calendar-text-ui);
   }
-  .agenda-when {
-    flex-basis: 52px;
-  }
+  /* (죽은 규칙 정리 2026-11-18: 여기 있던 .agenda-when { flex-basis: 52px }도 아래 기본 규칙의 flex 축약형
+     (0 0 40px)에 늘 져서 적용된 적이 없다 — 토큰으로 바꾸며 되살아나지 않게 지운다.) */
   .agenda-when strong {
     font-size: calc(26px * var(--ui-text-scale, 1));
   }
@@ -690,8 +689,8 @@ html[data-reduce-motion] .mb-live-dot {
   background: var(--accent-soft, #fff3d2);
 }
 .agenda-when {
-  /* [Phase 6] 날짜 칸을 살짝 키워 각 날(그룹)의 날짜가 한눈에 들어오게. */
-  flex: 0 0 40px;
+  /* [Phase 6] 날짜 칸을 살짝 키워 각 날(그룹)의 날짜가 한눈에 들어오게. 폭은 토큰 — 다시보기 칩의 길이 칸이 같은 폭을 쓴다. */
+  flex: 0 0 var(--agenda-when-w, 40px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -940,8 +939,35 @@ html[data-reduce-motion] .mb-live-dot {
   white-space: nowrap;
 }
 .agenda-vod-inline .agenda-vod-title {
-  flex: 1 1 auto; /* 제목이 남는 폭을 다 쓰고, 길이 배지는 오른쪽 끝으로 */
+  flex: 1 1 auto; /* 제목이 남는 폭을 다 쓴다 */
   text-align: left;
+}
+/* 모바일 날짜 줄의 다시보기 칩(2026-11-18 소유자) — 날짜 칸 아래까지 왼쪽으로 뻗은 한 줄.
+   길이는 날짜 밑(날짜 칸과 같은 폭·가운데)에, 그 오른쪽은 일정 카드와 같은 시작선에서 ▶ + 제목.
+   날짜 줄(.agenda-day)은 다시보기가 있을 때만 줄바꿈을 켠다 — 칩이 날짜·일정 둘 다의 아래 한 줄을 차지한다. */
+.agenda-day.has-vod {
+  flex-wrap: wrap;
+  row-gap: 7px;
+}
+.agenda-day.has-vod > .agenda-day-list {
+  flex: 1 1 0;
+}
+.agenda-day > .agenda-vod-inline {
+  /* 왼쪽으로 5px 더 내밀고 그만큼 안쪽 여백을 준다 — "20.2시간"처럼 긴 길이가 칩 왼쪽 끝에 닿지 않으면서
+     길이 칸·▶의 자리는 그대로(날짜 칸·일정 카드 시작선과 맞음). */
+  flex: 0 0 calc(100% + 5px);
+  display: flex;
+  max-width: none;
+  margin: 0 0 0 -5px;
+  padding-left: 5px;
+  gap: 5px;
+}
+.agenda-day > .agenda-vod-inline > .agenda-vod-dur {
+  /* 날짜 칸 폭 + 날짜 줄의 칸 사이 간격(10px)에서 칩 gap(5px)을 뺀 만큼 — ▶가 일정 카드 시작선에 선다. */
+  flex: 0 0 calc(var(--agenda-when-w, 40px) + 5px);
+  text-align: center;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 /* 합방 게스트 출연분(0075) — 칩 앞의 작은 각인 배지(모바일은 '합방' 두 글자, 호스트는 툴팁). 금(金) 문법: 헤어라인·작은 라운드. */
 .agenda-vod-host {

@@ -600,6 +600,16 @@ type BurstBit = {
   dur: number; // 지속(ms)
 };
 
+// 모바일 다시보기 칩의 길이 — 날짜 칸(좁은 왼쪽 칸) 밑에 들어가게 소수 한 자리 시간으로("13.5시간").
+// 한 시간 미만은 분 그대로. 정확한 "13시간 28분"은 칩 title에 남긴다(formatVodDuration).
+function compactVodHours(ms: number): string {
+  const min = Math.round(ms / 60_000);
+  if (min < 1) return "";
+  if (min < 60) return `${min}분`;
+  const h = Math.round(min / 6) / 10;
+  return `${Number.isInteger(h) ? h : h.toFixed(1)}시간`;
+}
+
 export function PublicPoster({
   initialMonth,
   initialYear,
@@ -3821,7 +3831,7 @@ export function PublicPoster({
               const days = row.kind === "gap" ? row.days : [row.group];
               return days.map(({ cell, day, mark, list }) => (
               <div
-                className={`agenda-day ${day.isToday ? "today" : ""}${flashDate === cell.isoDate ? " cell-flash" : ""}`}
+                className={`agenda-day ${day.isToday ? "today" : ""}${flashDate === cell.isoDate ? " cell-flash" : ""}${interactive && (vodsByDate.get(cell.isoDate)?.length ?? 0) > 0 ? " has-vod" : ""}`}
                 data-flip-key={cell.isoDate}
                 key={cell.isoDate}
                 ref={day.isToday ? todayRowRef : undefined}
@@ -4099,12 +4109,15 @@ export function PublicPoster({
                       </div>
                     );
                   })}
+                </div>
                   {/* 다시보기 진입로(모바일) — 날짜 줄의 인라인 칩이 유일한 통로다(일정 상세의
                       다시보기 버튼은 2026-08-31 제거). 일정 유무와 무관하게 그 날 방송이 있으면
                       항상 같은 자리(카드들 '아래')에 붙는다 — 위치 일관 + 계획(카드)이 먼저,
                       기록(다시보기)이 나중이라는 시간 위계(HCI).
                       챕터(타임라인) 접이는 모바일에서 제거(2026-09-01 사용자: 높이 최적화) —
-                      칩 탭 = 숲 플레이어 바로 이동, 챕터 목록은 PC 날짜 창 전용. */}
+                      칩 탭 = 숲 플레이어 바로 이동, 챕터 목록은 PC 날짜 창 전용.
+                      (2026-11-18 소유자) 칩은 날짜 칸 아래까지 왼쪽으로 뻗은 한 줄 — 길이는 날짜 밑(왼쪽 칸)에 짧게
+                      ("13.5시간"), 나머지 폭은 전부 제목. 예전엔 제목과 길이가 한 칸을 나눠 써 제목이 거의 안 보였다. */}
                   {interactive
                     ? (vodsByDate.get(cell.isoDate) ?? []).map((vod, vi, arr) => (
                         <a
@@ -4117,6 +4130,9 @@ export function PublicPoster({
                           target="_blank"
                           title={vod.host ? `합방 · ${vod.host} 방송국${vod.title ? ` — ${vod.title}` : ""}` : vod.access ? `${VOD_ACCESS_LABEL[vod.access]} · ${vod.title || VOD_ACCESS_HINT[vod.access]}` : vod.title || undefined}
                         >
+                          <em className="agenda-vod-dur" title={formatVodDuration(vod.durationMs) || undefined}>
+                            {compactVodHours(vod.durationMs)}
+                          </em>
                           {/* 올린 영상(구독)은 ⤒, 방송 다시보기는 ▶ — PC 칸 표시(DayVodNote)와 같은 모양 말. */}
                           {vod.access === "sub" ? (
                             <Upload aria-hidden="true" size={13} strokeWidth={2.6} />
@@ -4131,13 +4147,9 @@ export function PublicPoster({
                           <span className="agenda-vod-title">
                             {vod.title || `다시보기${arr.length > 1 ? ` ${vi + 1}` : ""}`}
                           </span>
-                          {vod.durationMs > 0 ? (
-                            <em className="agenda-vod-dur">{formatVodDuration(vod.durationMs)}</em>
-                          ) : null}
                         </a>
                       ))
                     : null}
-                </div>
               </div>
               ));
             })
