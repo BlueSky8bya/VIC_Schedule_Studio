@@ -23,6 +23,7 @@ import {
   Heart,
   LogIn,
   LogOut,
+  PencilLine,
   Pin,
   Play,
   Search,
@@ -4655,12 +4656,23 @@ export function PublicPoster({
                       const mark = getDayMark(dateKey);
                       const isRed = wd === 0 || Boolean(mark?.isHoliday);
                       const tone = isRed ? " red" : wd === 6 ? " saturday" : "";
+                      // 미정(2026-11-18 소유자: 태그 같은 배지 말고) — 달력 카드와 같은 빗금을 날짜 밑에
+                      // 연필 형광펜처럼 긋고, 뒤에 연필로 적은 메모 한 줄. '날짜가 아직 연필 글씨'라는 은유.
+                      const tent = !support && !teaserActive && Boolean(event.isTentative);
                       return (
-                        <span className="agenda-detail-date">
-                          <b className={`agenda-detail-day${tone}`}>
-                            {formatShortDate(dateKey)} ({WEEKDAYS[wd]})
-                          </b>
-                          {end && end !== dateKey ? ` ~ ${formatShortDate(end)}` : ""}
+                        <span className={`agenda-detail-date${tent ? " is-tentative" : ""}`}>
+                          <span className="adt-day-ink">
+                            <b className={`agenda-detail-day${tone}`}>
+                              {formatShortDate(dateKey)} ({WEEKDAYS[wd]})
+                            </b>
+                            {end && end !== dateKey ? ` ~ ${formatShortDate(end)}` : ""}
+                          </span>
+                          {tent ? (
+                            <span className="adt-tent-note">
+                              <PencilLine aria-hidden="true" size={13} strokeWidth={2.2} />
+                              미정 · 바뀔 수 있어요
+                            </span>
+                          ) : null}
                           {mark?.name ? (
                             <em
                               className={`agenda-mark agenda-detail-mark${mark.isHoliday ? " holiday" : ""}`}
@@ -4692,9 +4704,6 @@ export function PublicPoster({
                     <div className="agenda-detail-heading">
                       <h2 className="agenda-detail-title">
                         <span className="adt-text">
-                          {!support && event.isTentative ? (
-                            <span className="evt-tentative">미정</span>
-                          ) : null}
                           {support ? (
                             <>
                               <i aria-hidden="true" className="sb-sprout">
