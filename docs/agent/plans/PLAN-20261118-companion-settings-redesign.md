@@ -1,6 +1,6 @@
 # 빅타민 설정 화면 개편 — 시작 계약 (2026-11-18 KST)
 
-Status: **In progress — 0단계 끝. 1단계는 만들어 두었고(브랜치 `feat/companion-settings-stage0`, 올리지 않음) 소유자의 안내 글 확인을 기다린다.**
+Status: **In progress — 0·1단계 끝, 다음은 2-가.** 소유자가 2026-11-19에 1단계 안내 글을 확인했고 "계속 이어서"라고 했다.
 
 이 문서는 다른 세션이 바로 일을 시작할 수 있게 하는 입구다. 설계 내용 자체는 아래 정본에 있고, 여기에는 시작 순서·범위·멈출 때·진행 상황만 둔다.
 
@@ -92,7 +92,7 @@ Status: **In progress — 0단계 끝. 1단계는 만들어 두었고(브랜치 
 | 단계 | 상태 | 커밋·배포 | 남은 것 / 메모 |
 |---|---|---|---|
 | 0. 준비 | **끝** (2026-11-19) | 이 표를 고친 커밋 | 규칙 함수 `lib/ui/viewer-companion/settings-levels.ts`(아직 어느 화면도 쓰지 않음), 검사 `tests/unit/companion-settings-levels.test.ts`(소리 96·움직임 12·장난 32), 설정 화면 검사 `tests/visual/viewer-companion-settings.spec.ts`를 지금 화면(환경설정 쪽 → 하위 탭 5개, 기본이 처음)에 맞춤. 메모: 이 PC는 3100 포트를 다른 프로그램이 쓰고 있어 화면 검사는 임시로 다른 포트에서 돌렸다 |
-| 1. 이유 보여 주기 | **만듦, 안내 글 확인 대기** (2026-11-19) | 브랜치 커밋만, main에 올리지 않음 | 규칙 `lib/ui/viewer-companion/settings-status.ts`, 검사 `tests/unit/companion-settings-status.test.ts`·`tests/visual/companion-settings-reasons.spec.ts`. 남은 것: ① 소유자가 문구를 확인하면 main에 올림 ② 막힌 줄의 이유를 화면 낭독기가 스위치와 이어 읽게 하는 것(지금은 옆 글줄로만 있음) ③ 다른 탭에서 배경 효과를 바꾸면 새로고침 전까지 안내와 실제가 어긋날 수 있음(기존 동작) |
+| 1. 이유 보여 주기 | **끝** (2026-11-19, 소유자 문구 확인) | 이 표를 고친 커밋 | 규칙 `lib/ui/viewer-companion/settings-status.ts`, 검사 `tests/unit/companion-settings-status.test.ts`·`tests/visual/companion-settings-reasons.spec.ts`. 남은 것: ① 막힌 줄의 이유를 화면 낭독기가 스위치와 이어 읽게 하는 것(지금은 옆 글줄로만 있음) ② 다른 탭에서 배경 효과를 바꾸면 새로고침 전까지 안내와 실제가 어긋날 수 있음(기존 동작) |
 | 2-가. 직접 표시 심기 | 안 함 | – | 가장 크고 조심할 단계 |
 | 2-나. 소리 3단계 | 안 함 | – | – |
 | 2-다. 들어 보기 타일 | 안 함 | – | – |
