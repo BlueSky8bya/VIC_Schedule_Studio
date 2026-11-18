@@ -32,6 +32,30 @@ const cues: Readonly<Record<CompanionSoundMoment, Cue>> = {
   unequip: { cooldown: 350, notes: [{ f: 330, glideTo: 260, tau: .022, vol: .15 }] },
 };
 
+/** The settings part of the gate, shared by the real sound and by the screen
+ * that shows which sounds can be heard now. It knows nothing of the tab, the
+ * site's own sound switch or the rate limits. */
+export function companionSoundAllowed(preferences: Readonly<CompanionPreferences>, origin: CompanionSoundOrigin, device: Readonly<{ reduceMotion: boolean; gfx: string | undefined }>): boolean {
+  if (!preferences.enabled) return false;
+  const level = companionSoundLevel(preferences);
+  if (level === "off") return false;
+  return origin === "direct" || level === "all" && !device.reduceMotion && device.gfx !== "off" && device.gfx !== "soft";
+}
+
+export const COMPANION_SOUND_NAMES: Readonly<Record<CompanionSoundMoment, string>> = Object.freeze({
+  pet: "쓰다듬기", lift: "들어 올리기", cushion: "집으로 부르기", equip: "입히기", unequip: "벗기기",
+  feed: "밥통", land: "착지", dizzy: "어지럼", sleep: "잠들기", play: "놀이", discover: "새 발견", gift: "선물",
+  eat: "다 먹음", tumble: "넘어짐",
+});
+/** The sounds grouped by who can start them (proposal 4-3). A sound the user
+ * can start is auditioned as theirs; one only the companion makes is
+ * auditioned as its own, so the tile is heard exactly when the real one is. */
+export const COMPANION_SOUND_AUDITIONS: readonly Readonly<{ label: string; origin: CompanionSoundOrigin; moments: readonly CompanionSoundMoment[] }>[] = Object.freeze([
+  { label: "만질 때", origin: "direct", moments: ["pet", "lift", "cushion", "equip", "unequip"] },
+  { label: "만지거나 혼자", origin: "direct", moments: ["feed", "land", "dizzy", "sleep", "play", "discover", "gift"] },
+  { label: "혼자 놀 때", origin: "auto", moments: ["eat", "tumble"] },
+]);
+
 /** A bounded semantic-event budget; no tick, queue, timer or catch-up work. */
 export function createCompanionSoundBudget() {
   const last = new Map<CompanionSoundMoment, number>();
@@ -47,10 +71,9 @@ export function createCompanionSoundBudget() {
 const budget = createCompanionSoundBudget();
 
 function play(moment: CompanionSoundMoment, preferences: CompanionPreferences, origin: CompanionSoundOrigin): boolean {
-  if (typeof document === "undefined" || document.hidden || !cues[moment] || !preferences.enabled) return false;
-  const cue = cues[moment], level = companionSoundLevel(preferences);
-  if (level === "off") return false;
-  if (origin === "auto" && (level !== "all" || document.documentElement.hasAttribute("data-reduce-motion") || ["off", "soft"].includes(document.documentElement.dataset.gfx ?? ""))) return false;
+  if (typeof document === "undefined" || document.hidden || !cues[moment]) return false;
+  if (!companionSoundAllowed(preferences, origin, { reduceMotion: document.documentElement.hasAttribute("data-reduce-motion"), gfx: document.documentElement.dataset.gfx })) return false;
+  const cue = cues[moment];
   const now = performance.now();
   if (!budget.allows(moment, now)) return false;
   const sample = moment === "cushion" && playCompanionSample("/companion/audio/cushion.ogg", preferences.soundVolume);
@@ -78,6 +101,10 @@ export function previewCompanionSoundLevel(level: CompanionSoundLevel, preferenc
   if (level === "off") return false;
   // On a device that rests its own sounds, "all" still sounds when touched: let that be heard instead of silence.
   return level === "all" && play("play", preferences, "auto") || play("pet", preferences, "direct");
+}
+/** One sound, heard from its tile through the real gate and the real rate limits. */
+export function auditionCompanionSound(moment: CompanionSoundMoment, preferences: CompanionPreferences = getCompanionPreferences()): boolean {
+  return play(moment, preferences, COMPANION_SOUND_AUDITIONS.find(group => group.moments.includes(moment))?.origin ?? "auto");
 }
 /** Setting the volume is heard with a stroke, the sound every audible level
  * plays, so the slider answers on a resting device too. Off stays silent. */

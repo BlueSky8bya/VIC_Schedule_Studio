@@ -7,7 +7,7 @@ import { COMPANION_SETTINGS_PLACE_LABELS, companionRowBlock, companionSoundStatu
 import { COMPANION_PERSONALITY_NAMES, COMPANION_PERSONALITY_SUMMARIES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_PERSONALITY_LAYOUT } from "@/lib/ui/viewer-companion/personality-layout";
 import { CompanionWardrobePreview } from "./companion-wardrobe-preview";
-import { previewCompanionSoundLevel, previewCompanionSoundVolume } from "@/lib/ui/viewer-companion/companion-sound";
+import { COMPANION_SOUND_AUDITIONS, COMPANION_SOUND_NAMES, auditionCompanionSound, companionSoundAllowed, previewCompanionSoundLevel, previewCompanionSoundVolume, type CompanionSoundMoment } from "@/lib/ui/viewer-companion/companion-sound";
 import { companionSoundLevel, companionSoundLevelPatch, type CompanionSoundLevel } from "@/lib/ui/viewer-companion/settings-levels";
 import { resetCompanionHabits } from "@/lib/ui/viewer-companion/care";
 import { resetCompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
@@ -133,6 +133,9 @@ export function CompanionBehaviorSettings({ preferences, onChange, site, onGoTo,
   const chooseSoundLevel = (level: CompanionSoundLevel) => { const patch = companionSoundLevelPatch(level, preferences); onChange(patch); previewCompanionSoundLevel(level, { ...preferences, ...patch }); };
   // Setting the volume lets the current level be heard at that volume; off stays silent.
   const auditionVolume = (soundVolume: number) => previewCompanionSoundVolume({ ...preferences, soundVolume });
+  // A tile is pressable exactly when its real sound could be heard now; nothing here bypasses a setting.
+  const [auditioned, setAuditioned] = useState<CompanionSoundMoment | null>(null);
+  const siteSilent = !site.soundOn || site.soundVolume <= 0;
   const onKey = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
     const index = companionTabs.findIndex(item => item.key === tab);
     const next = event.key === "Home" ? 0 : event.key === "End" ? companionTabs.length - 1 : event.key === "ArrowRight" ? (index + 1) % companionTabs.length : event.key === "ArrowLeft" ? (index - 1 + companionTabs.length) % companionTabs.length : -1;
@@ -189,6 +192,18 @@ export function CompanionBehaviorSettings({ preferences, onChange, site, onGoTo,
           <SettingsSegment<CompanionSoundLevel> ariaLabel="빅타민 소리" columns={3} dataAct="companion-sound-level" onChange={chooseSoundLevel} onReselect={chooseSoundLevel} options={[{ value: "off", label: "끔" }, { value: "touch", label: "만질 때만" }, { value: "all", label: "전부" }]} value={soundLevel} />
         </div>
         <div className={`role-help-haptics rhh-stack-sm${off || !preferences.sound || !preferences.soundCare ? " is-blocked" : ""}`}><RowLabel icon={<Volume1 size={15} />} tone="water">빅타민 음량</RowLabel><div className="rhh-volume"><VolumeX aria-hidden="true" size={15} /><input aria-label="빅타민 음량" aria-valuetext={`${preferences.soundVolume}%`} data-act="companion-sound-volume" data-sfx="off" max={100} min={0} onChange={event => onChange({ soundVolume: Number(event.currentTarget.value) })} onKeyUp={event => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) auditionVolume(Number(event.currentTarget.value)); }} onPointerUp={event => auditionVolume(Number(event.currentTarget.value))} step={5} style={{ "--vol": `${preferences.soundVolume}%` } as CSSProperties} type="range" value={preferences.soundVolume} /><Volume2 aria-hidden="true" size={15} /><b className="rhh-vol-num">{preferences.soundVolume}</b></div></div>
+        <details className="rhh-sound-auditions">
+          <summary data-act="companion-sound-audition-fold" data-activity-manual="" onClick={event => logActivity("ui.click", { target: event.currentTarget.closest("details")?.open ? "companion-sound-audition-fold#close" : "companion-sound-audition-fold#open" })}>소리 들어 보기</summary>
+          <div className="rhh-sound-board">
+            {COMPANION_SOUND_AUDITIONS.map(group => <div className="rhh-sound-group" key={group.label}>
+              <span className="rhh-font-group-label">{group.label}</span>
+              <div className="rhh-sound-tiles">
+                {group.moments.map(moment => <button className={`rhh-sound-tile${auditioned === moment ? " playing" : ""}`} data-act="companion-sound-audition" data-act-opt={moment} data-sfx="off" disabled={siteSilent || !companionSoundAllowed(preferences, group.origin, site)} key={moment} onAnimationEnd={() => setAuditioned(current => current === moment ? null : current)} onClick={() => { if (!auditionCompanionSound(moment, preferences)) return; setAuditioned(null); requestAnimationFrame(() => setAuditioned(moment)); }} type="button"><span className="rhh-sound-label">{COMPANION_SOUND_NAMES[moment]}</span></button>)}
+              </div>
+            </div>)}
+          </div>
+          <p className="rhh-group-foot">{"같은 소리라도 내가 만져서 나면 '만질 때' 소리, 빅타민이 혼자 내면 '혼자 놀 때' 소리예요. 다른 탭을 볼 때는 쉬어요."}</p>
+        </details>
       </div>
       {active && tab === "sound" && radio}
     </div>

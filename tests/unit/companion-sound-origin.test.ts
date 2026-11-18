@@ -2,10 +2,11 @@ import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
+import { ACT } from "@/lib/activity/labels";
 
 const voice = vi.hoisted(() => vi.fn(() => true));
 vi.mock("@/lib/ui/sfx", () => ({ playCompanionVoice: voice, playCompanionSample: vi.fn(() => false) }));
-import { COMPANION_SOUND_MOMENTS, playCompanionSound, previewCompanionSoundLevel, previewCompanionSoundVolume } from "@/lib/ui/viewer-companion/companion-sound";
+import { COMPANION_SOUND_AUDITIONS, COMPANION_SOUND_MOMENTS, COMPANION_SOUND_NAMES, auditionCompanionSound, companionSoundAllowed, playCompanionSound, previewCompanionSoundLevel, previewCompanionSoundVolume } from "@/lib/ui/viewer-companion/companion-sound";
 import { COMPANION_SOUND_LEVELS, companionSoundLevel, companionSoundLevelPatch } from "@/lib/ui/viewer-companion/settings-levels";
 
 // Settings redesign stage 2-가: every sound carries who started it ("direct" =
@@ -99,6 +100,32 @@ describe("the level and the mark decide together (proposal 4-2)", () => {
         const played = sound && soundVolume > 0 && before[group];
         if (!played) expect(audible(moment, preferences, "auto", reduce, gfx), `auto ${moment} ${JSON.stringify(preferences)} ${reduce} ${gfx}`).toBe(false);
       }
+    }
+  });
+});
+
+describe("audition tiles (stage 2-다)", () => {
+  it("offer every sound once, named, in the group of who can start it", () => {
+    const all = COMPANION_SOUND_AUDITIONS.flatMap(group => group.moments);
+    expect([...all].sort()).toEqual([...COMPANION_SOUND_MOMENTS].sort());
+    expect(new Set(all).size).toBe(all.length);
+    for (const moment of COMPANION_SOUND_MOMENTS) expect(COMPANION_SOUND_NAMES[moment], moment).toBeTruthy();
+    // Only the two sounds the user can never start are auditioned as the companion's own (proposal 4-3).
+    expect(COMPANION_SOUND_AUDITIONS.filter(group => group.origin === "auto").flatMap(group => group.moments)).toEqual(["eat", "tumble"]);
+    expect((ACT["companion-sound-audition"] as { opts?: Record<string, string> }).opts).toEqual({ ...COMPANION_SOUND_NAMES });
+  });
+
+  it("a tile is heard exactly when the screen allows it, in every level and device state", () => {
+    const bools = [false, true];
+    for (const level of COMPANION_SOUND_LEVELS) for (const enabled of bools) for (const reduce of bools) for (const gfx of ["full", "lite", "soft", "off"]) for (const group of COMPANION_SOUND_AUDITIONS) for (const moment of group.moments) {
+      const preferences = { ...DEFAULT_COMPANION_PREFERENCES, ...companionSoundLevelPatch(level, DEFAULT_COMPANION_PREFERENCES), enabled };
+      html.hasAttribute = name => reduce && name === "data-reduce-motion"; html.dataset.gfx = gfx;
+      const allowed = companionSoundAllowed(preferences, group.origin, { reduceMotion: reduce, gfx });
+      // The same rule written from the design.
+      expect(allowed, `${moment} ${level} ${enabled} ${reduce} ${gfx}`).toBe(enabled && level !== "off" && (group.origin === "direct" || level === "all" && !reduce && gfx !== "soft" && gfx !== "off"));
+      now += 60000; origins.length = 0;
+      expect(auditionCompanionSound(moment, preferences)).toBe(allowed);
+      expect(origins).toEqual(allowed ? [`${moment}:${group.origin}`] : []);
     }
   });
 });

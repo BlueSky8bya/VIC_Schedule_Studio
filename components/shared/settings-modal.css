@@ -2490,3 +2490,21 @@ html[data-reduce-motion] .vic-settings [data-settings-place][data-flash] { anima
 .vic-settings .rhh-companion-radio > .rhh-note-go-only { justify-content: flex-start; padding: 6px 0 0; }
 .vic-settings .rhh-group-card > .rhh-note:first-child { padding-top: 12px; }
 .vic-settings .rhh-panes .rhh-note-path { padding-inline: 4px; }
+
+/* 빅타민 소리 들어 보기(개편 2-다) — 사이트 소리 탭의 타일을 그대로 쓴다. 접힌 채로 시작하고, 펼침은 저장하지 않는다. */
+.vic-settings .rhh-sound-auditions { border-top: 1px solid var(--companion-line, var(--line)); padding-bottom: 10px; }
+.vic-settings .rhh-sound-auditions > summary { cursor: pointer; min-height: 44px; align-content: center; color: var(--companion-ink, var(--ink)); font-size: var(--text-ui, 15px); font-weight: 600; }
+.vic-settings .rhh-sound-auditions > summary:focus-visible { outline: 2px solid var(--selection-border, #2f5f9e); outline-offset: 2px; border-radius: var(--r-sm, 8px); }
+.vic-settings .rhh-sound-auditions .rhh-sound-board { margin-top: 4px; }
+.vic-settings .rhh-sound-auditions .rhh-group-foot { padding: 8px 0 0; }
+/* 묶음 이름이 두 줄로 꺾이지 않게 칸을 넓히고, 지금 들을 수 없는 타일은 흐리게(사이트 타일은 윗줄 전체가 잠겨 따로 흐릴 일이 없었다). */
+.vic-settings .rhh-sound-auditions .rhh-sound-tile:disabled { opacity: 0.42; }
+/* 빅타민 설정의 누름 영역은 44px(사이트 타일의 36px보다 크다). */
+.vic-settings .rhh-sound-auditions .rhh-sound-tile { height: auto; min-height: 44px; }
+/* 넓을 때만 이름 칸을 넓힌다 — 좁은 상자에서는 기존 규칙대로 이름이 위로 올라가 타일이 폭을 다 쓴다. */
+@container rhh (min-width: 421px) {
+  .vic-settings .rhh-sound-auditions .rhh-sound-group { grid-template-columns: 6.6em minmax(0, 1fr); }
+  .vic-settings .rhh-sound-auditions .rhh-font-group-label { white-space: nowrap; }
+}
+/* 동작 줄이기에서는 타일의 튀는 모션이 없어 '끝남' 신호도 오지 않는다 — 번지는 테두리가 남지 않게 그리지 않는다(사이트 소리 타일도 같은 부품). */
+html[data-reduce-motion] .rhh-sound-tile.playing::after { content: none; }

@@ -690,6 +690,8 @@ export const ACT: Record<string, TargetLabel> = {
   "companion-accessory-equip": { name: "빅타민 장신구", area: "설정", opts: { on: "착용하기", off: "벗기" } },
   "companion-gift-dismiss": { name: "빅타민 선물 결과 닫기", area: "설정" },
   "companion-sound-level": { name: "빅타민 소리", area: "설정", opts: { off: "끔", touch: "만질 때만", all: "전부" } },
+  "companion-sound-audition": { name: "빅타민 소리 들어 보기", area: "설정", opts: { pet: "쓰다듬기", lift: "들어 올리기", cushion: "집으로 부르기", equip: "입히기", unequip: "벗기기", feed: "밥통", land: "착지", dizzy: "어지럼", sleep: "잠들기", play: "놀이", discover: "새 발견", gift: "선물", eat: "다 먹음", tumble: "넘어짐" } },
+  "companion-sound-audition-fold": { name: "빅타민 소리 들어 보기 묶음", area: "설정", opts: { open: "펴기", close: "접기" } },
   "companion-sound-enabled": { name: "빅타민 효과음", area: "설정", opts: { on: "켜기", off: "끄기" }, hint: "옛 기록(2026-11-19 '빅타민 소리' 3단계로 합침)", retired: true },
   "companion-sound-volume": { name: "빅타민 음량", area: "설정" },
   "companion-sound-care": { name: "빅타민 돌보기 소리", area: "설정", opts: { on: "켜기", off: "끄기" }, hint: "옛 기록(2026-11-19 '빅타민 소리' 3단계로 합침)", retired: true },
