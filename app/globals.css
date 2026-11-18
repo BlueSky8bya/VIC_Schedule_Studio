@@ -1171,6 +1171,8 @@ html[data-reduce-motion] .passcode-box .button {
 
 /* 화살표는 오른쪽 끝에 고정 — 제목이 길어도 '누를 수 있다'는 신호가 먼저 잘리면 안 된다. */
 .support-bar.sb-solo .sb-go {
+  display: inline-flex; /* 화살표는 아이콘(글자 →는 글꼴마다 높이가 달랐다) */
+  align-items: center;
   flex: none;
   margin-left: auto;
   font-size: var(--support-label-size);
@@ -2086,4 +2088,57 @@ html[data-theme="dark"] .mn-inner {
   gap: 6px;
   padding-top: 12px;
   text-align: center;
+}
+
+/* ── 세로 가운데 맞춤 — 한 가지 방법(2026-11-18 소유자: "아이콘 옆 글자 높이가 살짝 틀어져 보인다") ──
+   flex/grid의 가운데 정렬은 글자 "상자"(글줄)를 가운데 둔다. 그런데 글꼴마다 글줄 위·아래 여백이 달라
+   (맑은 고딕은 위 1.09 / 아래 0.24, 지마켓 산스는 위 0.80 / 아래 0.35) 글자 모양 자체는 가운데에서 1~2px
+   벗어난다 — 설정 '글꼴' 20종마다 벗어나는 방향도 다르다. 그래서 글자 상자를 **글자 모양(대문자 높이~기준선)**
+   으로 잘라(text-box) 그 모양이 가운데 오게 하고, 잘라낸 만큼 안쪽 여백으로 되돌려 상자 높이(= 한 줄 높이)는
+   그대로 둔다 → 버튼 크기·줄 높이는 1px도 안 변하고 글자만 옆 아이콘과 같은 높이로 온다. 어느 글꼴이든 같다.
+   안쪽 여백으로 되돌리는 이유: 말줄임(overflow: hidden) 라벨은 바깥 여백이면 한글 윗부분이 잘린다.
+   지원 안 하는 브라우저(파이어폭스 등)는 이 묶음을 통째로 건너뛰어 예전 그대로다.
+   새 "아이콘 + 글자" 줄은 글자를 <span className="vmid">로 감싸면 된다 — 줄마다 1px씩 밀어 맞추지 말 것. */
+@supports (text-box: trim-both cap alphabetic) {
+  :root :is(
+    .vmid,
+    .button > .lbl,
+    .insights-open > .lbl,
+    .mp-today-btn > span,
+    .mb-act > span,
+    .agenda-vod-title,
+    .agenda-vod-dur,
+    .vc-home-personality > span,
+    .ppc-label,
+    .save-status > em,
+    .actor-badge > strong,
+    .opt-chip-ic,
+    .opt-chip-label,
+    .editor-date-inline,
+    .fold-summary,
+    .me-fold-summary,
+    .tag-tip-text,
+    .tp-name,
+    .dvn-label,
+    .site-legal-links > a
+  ) {
+    text-box: trim-both cap alphabetic;
+    padding-block: calc((1lh - 1cap) / 2);
+  }
+}
+/* 글자만 든 칸 단추는 라벨(.vmid)을 가운데 두는 줄로. */
+.rhh-seg > button,
+.duration-chips > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+/* 바닥글 가운뎃점 — 글자 '·'는 글꼴마다 높이가 달라 1.5px 아래로 처졌다. 그린 점으로. */
+.site-legal-links > span[aria-hidden="true"] {
+  flex: none;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: currentColor;
+  font-size: 0;
 }

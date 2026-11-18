@@ -38,6 +38,7 @@ import {
   LogOut,
   Pencil,
   Pin,
+  Minus,
   Plus,
   Save,
   Search,
@@ -6640,7 +6641,7 @@ export function StudioShell({
                         data-color={v.colorKey ?? undefined}
                         style={{ backgroundColor: v.cssAccent ?? v.bg, borderColor: v.cssBorder ?? undefined }}
                       />
-                      {tag.displayName}
+                      <span className="vmid">{tag.displayName}</span>
                     </button>
                   );
                 };
@@ -6664,7 +6665,7 @@ export function StudioShell({
                     type="button"
                     data-act="agenda-legend-tag">
                     <i aria-hidden="true" className={item.swatchClass} />
-                    {item.label}
+                    <span className="vmid">{item.label}</span>
                   </button>
                 );
               })}
@@ -7002,7 +7003,7 @@ export function StudioShell({
                   onClick={() => setForm((current) => ({ ...current, endDateKey: end }))}
                   type="button"
                 >
-                  {opt.label}
+                  <span className="vmid">{opt.label}</span>
                 </button>
               );
             })}
@@ -7028,7 +7029,7 @@ export function StudioShell({
                   }}
                   type="button"
                  data-act="하루 줄이기">
-                  −
+                  <Minus aria-hidden="true" size="0.82em" strokeWidth={2.6} />
                 </button>
                 {/* 값을 좌우로 밀면(민감, 8px=1일) 종료일이 빠르게 바뀐다. 시작일 아래로는 안 내려감. */}
                 <span
@@ -7069,7 +7070,7 @@ export function StudioShell({
                   }}
                   type="button"
                  data-act="하루 늘리기">
-                  +
+                  <Plus aria-hidden="true" size="0.82em" strokeWidth={2.6} />
                 </button>
               </div>
             </div>
@@ -7096,7 +7097,7 @@ export function StudioShell({
                   }}
                   type="button"
                  data-act="하루 줄이기">
-                  −
+                  <Minus aria-hidden="true" size="0.82em" strokeWidth={2.6} />
                 </button>
                 <input
                   aria-label="업 도움 기간(일)"
@@ -7122,7 +7123,7 @@ export function StudioShell({
                   }}
                   type="button"
                  data-act="하루 늘리기">
-                  +
+                  <Plus aria-hidden="true" size="0.82em" strokeWidth={2.6} />
                 </button>
               </div>
             </div>

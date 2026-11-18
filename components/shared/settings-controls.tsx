@@ -76,7 +76,7 @@ export function SettingsSegment<T extends string | number>({
           tabIndex={index === selected ? 0 : -1}
           type="button"
         >
-          {o.label}
+          <span className="vmid">{o.label}</span>
         </button>
       ))}
     </div>

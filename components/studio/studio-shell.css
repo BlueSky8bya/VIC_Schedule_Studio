@@ -4510,6 +4510,13 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   font-size: var(--text-body);
   font-weight: 600;
 }
+/* 필터 단추 안 라벨(.vmid)은 위 '정적 안내 칩' 규칙을 받지 않는다 — 글자 상자로 두어야 세로 가운데 맞춤이 먹고,
+   글씨 크기·굵기도 단추 것을 그대로 쓴다. */
+.studio-tag-legend .tag-legend-filter > .vmid {
+  display: block;
+  font-size: inherit;
+  font-weight: inherit;
+}
 
 .studio-tag-legend i {
   width: 14px;
@@ -8103,9 +8110,10 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   line-height: 1.45;
   color: var(--ink-soft);
 }
+/* 아이콘은 첫 줄 높이만큼의 상자 안 가운데 — 아이콘 크기·글씨 크기가 바뀌어도 첫 줄과 맞는다. */
 .tag-tip svg {
   flex: none;
-  margin-top: 1.5px;
+  height: 1lh;
   color: var(--accent);
 }
 /* 아이콘 뒤 문장은 한 덩어리로 자연 줄바꿈(플렉스 아이템 조각화 방지). */
@@ -10008,12 +10016,11 @@ html[data-reduce-motion] .save-status.saving .ss-dot {
   --ac: var(--violet);
 }
 
+/* 이모지 칸 — 글자 상자를 그대로 두어야(block) 공통 세로 가운데 맞춤(globals.css)이 먹는다. */
 .opt-chip-ic {
-  display: inline-flex;
   width: var(--control-hit);
   flex: none;
-  align-items: center;
-  justify-content: center;
+  text-align: center;
 }
 
 .opt-chip:hover:not(:disabled):not(.on) {

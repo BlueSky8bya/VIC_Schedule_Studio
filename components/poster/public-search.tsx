@@ -709,7 +709,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
                     }}
                     type="button"
                   >
-                    <ChevronDown size={13} aria-hidden="true" /> {v.chapterOverflow}개 더 보기
+                    <ChevronDown size={13} aria-hidden="true" /> <span className="vmid">{v.chapterOverflow}개 더 보기</span>
                   </button>
                 ) : null}
               </div>
@@ -913,7 +913,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
                       title={t.kind === "rel" ? "같은 시리즈·짝" : `같은 방송에 ${t.coDocs}번 함께`}
                       type="button"
                     >
-                      {t.term}
+                      <span className="vmid">{t.term}</span>
                     </button>
                   ))}
                 </ChipsBox>
@@ -938,7 +938,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
                       }`}
                       type="button"
                     >
-                      {p.display}
+                      <span className="vmid">{p.display}</span>
                       {p.hapbang > 0 ? <em>{p.hapbang}</em> : null}
                       {p.hapbang === 0 && p.visits > 0 ? (
                         <MessageCircle aria-label="채팅에 놀러옴" className="ps-chip-visit" size={10} strokeWidth={2.4} />
@@ -976,7 +976,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
                           title={`최근 2주 ${t.recent}번`}
                           type="button"
                         >
-                          {t.term}
+                          <span className="vmid">{t.term}</span>
                         </button>
                       ))}
                     </ChipsBox>
@@ -997,7 +997,7 @@ function PublicSearchContent({ session, revision, slug, myHeartIds, tags, thumbO
                           }}
                           type="button"
                         >
-                          {t.displayName}
+                          <span className="vmid">{t.displayName}</span>
                         </button>
                       ))}
                     </ChipsBox>

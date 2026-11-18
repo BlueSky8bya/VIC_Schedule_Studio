@@ -20,6 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ExternalLink,
+  ArrowRight,
   Heart,
   LogIn,
   LogOut,
@@ -3138,7 +3139,7 @@ export function PublicPoster({
               {bandClickable && (!period || s.supportUrl) ? (
                 solo ? (
                   <em className="sb-go" aria-hidden="true">
-                    →
+                    <ArrowRight size="1em" strokeWidth={3} />
                   </em>
                 ) : (
                   <em className="sb-cta">{period ? "자세히 보기 →" : "도와주러 가기 →"}</em>
@@ -3670,7 +3671,7 @@ export function PublicPoster({
                       data-color={v.colorKey ?? undefined}
                       style={{ backgroundColor: v.cssAccent ?? v.bg, borderColor: v.cssBorder ?? undefined }}
                     />
-                    {tag.displayName}
+                    <span className="vmid">{tag.displayName}</span>
                   </button>
                 );
               };
@@ -3695,7 +3696,7 @@ export function PublicPoster({
                 type="button"
                data-act="agenda-legend-tag">
                 <LiquidHeart ratio={interestRatio} />
-                내 관심
+                <span className="vmid">내 관심</span>
               </button>
             ) : null}
             {/* 남는 공간에 인기 배지 단계 안내(웹과 동일, 모바일용으로 간결하게). */}
@@ -4262,7 +4263,7 @@ export function PublicPoster({
               type="button"
             >
               {swatch}
-              {tag.displayName}
+              <span className="vmid">{tag.displayName}</span>
             </button>
           );
         };
@@ -4285,7 +4286,8 @@ export function PublicPoster({
           설명하는 대상(🔥 관심 같은 등급 배지)은 내보낸 PNG에도 찍히므로 범례로도 맞다. */}
       <div className={`legend-heart-help${compact ? "" : " is-row"}`}>
         <p className="legend-tier-line">
-          <span className="hm">♥</span> 인기도
+          <Heart aria-hidden="true" className="hm" fill="currentColor" size="0.9em" strokeWidth={0} />
+          <span className="vmid">인기도</span>
         </p>
         {/* 단계마다 필터 버튼(2026-10-05 소유자) — 태그 칩과 같은 켜짐/흐림 문법. 축약형(얇은 레일)은
             짧은 라벨·1열. */}
@@ -4346,7 +4348,7 @@ export function PublicPoster({
             <i aria-hidden="true" className="legend-mine-mark">
               <LiquidHeart ratio={interestRatio} />
             </i>
-            내 관심
+            <span className="vmid">내 관심</span>
           </button>
         ) : null}
         <button
@@ -5183,7 +5185,7 @@ export function PublicPoster({
                   title="이 달 기록 — 방송 시간 · 태그 통계"
                   type="button"
                 >
-                  <span aria-hidden="true">📊</span>
+                  <span aria-hidden="true" className="vmid">📊</span>
                   {/* '이 달 기록' → '기록'(2026-09-18 소유자: 글자가 알약 끝에 붙어 답답). 뜻은 title이 보탠다. */}
                   <span className="lbl">기록</span>
                 </button>

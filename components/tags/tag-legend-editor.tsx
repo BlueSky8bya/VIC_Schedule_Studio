@@ -522,7 +522,7 @@ export function TagLegendEditor({
             data-color={v.colorKey ?? undefined}
             style={{ backgroundColor: v.cssAccent ?? v.bg, borderColor: v.cssBorder ?? undefined }}
           />
-          {tag.displayName}
+          <span className="vmid">{tag.displayName}</span>
         </button>
       );
     };
@@ -554,7 +554,7 @@ export function TagLegendEditor({
                   type="button"
                   data-act="tag-legend-filter">
                   <i aria-hidden="true" className={item.swatchClass} />
-                  {item.label}
+                  <span className="vmid">{item.label}</span>
                 </button>
               );
             })}

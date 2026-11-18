@@ -3819,6 +3819,7 @@ html[data-reduce-motion] .support-bar.is-clickable.is-hover .sb-sprout {
   color: #7a6a3e;
 }
 .legend-heart-help .hm {
+  flex: none;
   color: #f43f5e;
 }
 /* '인기도' — 카드 제목이 아니라 섹션 라벨. 패널 제목(.legend-title)과 경쟁하지 않게
@@ -8490,6 +8491,10 @@ html[data-reduce-motion] .detail-anchor-link.is-hype .detail-anchor-dot {
 .agenda-detail-title .adt-text {
   min-width: 0;
 }
+/* 제목 앞 새싹·핀(13px)은 큰 제목 글자 모양의 가운데에(띠에서 쓰던 -2px은 작은 글씨 기준이라 3px 처졌다). */
+.agenda-detail-title .adt-text .sb-sprout {
+  vertical-align: calc((1cap - 13px) / 2);
+}
 .adt-badge {
   flex: none;
   padding: var(--space-1) var(--space-2);
@@ -9712,7 +9717,8 @@ html[data-reduce-motion] .ps-row .ps-thumb img { transform: none; }
 }
 .ps-note {
   display: inline-block;
-  vertical-align: -1px;
+  /* 글줄 안 아이콘(12px)은 글자 모양(대문자 높이)의 가운데에 — 글꼴·크기가 바뀌어도 맞는다. */
+  vertical-align: calc((1cap - 12px) / 2);
   margin-right: 5px;
   color: var(--ps-accent);
 }

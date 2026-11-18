@@ -198,7 +198,7 @@ export function StackTrendChart({
                       <span className="vt-tip-row" key={c.key}>
                         <i style={{ background: tagColor(c.color) }} />
                         {/* 태그 차트는 큰 값 순 등수를 앞에 — "1. 서버", "2. 종겜"처럼 한눈에. */}
-                        {!showLegend ? `${idx + 1}. ${c.label}` : c.label}
+                        <span className="vmid">{!showLegend ? `${idx + 1}. ${c.label}` : c.label}</span>
                         {showNumbers ? <b>{hover.counts[c.key] ?? 0}</b> : null}
                       </span>
                     ))}
