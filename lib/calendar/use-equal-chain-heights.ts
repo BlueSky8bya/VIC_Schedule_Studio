@@ -484,6 +484,58 @@ function reduceMotion(): boolean {
   if (typeof document !== "undefined" && document.documentElement.hasAttribute("data-reduce-motion")) return true;
   return typeof matchMedia !== "undefined" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
+let sheenMaskSeq = 0;
+/** 흰 바탕 마스크 + 검게 칠한 왕관 그림 자리 — 그림 알파만큼 빛이 가려진다. */
+function crownMask(layer: SVGSVGElement, path: SVGPathElement): SVGGElement {
+  const id = `card-sheen-mask-${++sheenMaskSeq}`;
+  const defs = document.createElementNS(SVG_NS, "defs");
+  const ink = document.createElementNS(SVG_NS, "filter");
+  ink.setAttribute("id", `${id}-ink`);
+  const cm = document.createElementNS(SVG_NS, "feColorMatrix");
+  cm.setAttribute("type", "matrix");
+  cm.setAttribute("values", "0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0");
+  ink.append(cm);
+  const mask = document.createElementNS(SVG_NS, "mask");
+  mask.setAttribute("id", id);
+  mask.setAttribute("maskUnits", "userSpaceOnUse");
+  for (const [k, v] of [["x", "-99999"], ["y", "-99999"], ["width", "199998"], ["height", "199998"]]) mask.setAttribute(k, v);
+  const bg = document.createElementNS(SVG_NS, "rect");
+  for (const [k, v] of [["x", "-99999"], ["y", "-99999"], ["width", "199998"], ["height", "199998"], ["fill", "#fff"]]) bg.setAttribute(k, v);
+  const holes = document.createElementNS(SVG_NS, "g");
+  holes.setAttribute("filter", `url(#${id}-ink)`);
+  mask.append(bg, holes);
+  defs.append(ink, mask);
+  layer.append(defs);
+  path.setAttribute("mask", `url(#${id})`);
+  return holes;
+}
+/** 왕관마다 지금 프레임의 자리·기울기(까딱 애니메이션 포함)로 구멍 그림을 맞춘다. 좌표는 sheenPath와 같은 host 기준. */
+function placeCrownHoles(holes: SVGGElement, crowns: HTMLImageElement[], host: HTMLElement) {
+  const hostRect = host.getBoundingClientRect();
+  const s = scaleOf(host);
+  crowns.forEach((crown, i) => {
+    let img = holes.children[i] as SVGImageElement | undefined;
+    if (!img) {
+      img = document.createElementNS(SVG_NS, "image") as SVGImageElement;
+      img.setAttribute("href", crown.currentSrc || crown.src);
+      img.setAttribute("preserveAspectRatio", "none");
+      holes.append(img);
+    }
+    if (!crown.isConnected) return img.setAttribute("width", "0");
+    const r = crown.getBoundingClientRect();
+    const w = crown.offsetWidth;
+    const h = crown.offsetHeight;
+    // 회전·눌림은 중심 기준이라 겉상자 중심 = 그림 중심. 선형 부분만 옮겨 쓴다.
+    const m = new DOMMatrixReadOnly(getComputedStyle(crown).transform === "none" ? undefined : getComputedStyle(crown).transform);
+    const cx = ((r.left + r.right) / 2 - hostRect.left) / s;
+    const cy = ((r.top + r.bottom) / 2 - hostRect.top) / s;
+    img.setAttribute("x", String(-w / 2));
+    img.setAttribute("y", String(-h / 2));
+    img.setAttribute("width", String(w));
+    img.setAttribute("height", String(h));
+    img.setAttribute("transform", `translate(${cx} ${cy}) matrix(${m.a} ${m.b} ${m.c} ${m.d} 0 0)`);
+  });
+}
 function startSheen(root: HTMLElement, target: SheenTarget | null) {
   const cur = sheenRun.get(root);
   if (!target) return; // 손을 떼도 돌던 빛은 한 바퀴를 마저 돈다
@@ -503,12 +555,20 @@ function startSheen(root: HTMLElement, target: SheenTarget | null) {
   const path = document.createElementNS(SVG_NS, "path");
   path.setAttribute("class", "card-sheen");
   path.setAttribute("pathLength", "100");
+  // 왕관 아래로 지나가게(2026-11-18 소유자) — 이 층은 표면 전체 위(z 12)에 있고 왕관은 카드 쌓임 맥락 안이라
+  // 층 순서로는 못 내린다. 대신 지나가는 카드의 왕관 모양(그림 알파)을 마스크로 빛에서 도려낸다.
+  const cards = [...(target.from ?? []), ...(target.to ?? []), ...(target.group ?? [])];
+  const crowns = cards
+    .map((c) => c.querySelector<HTMLImageElement>(":scope > .tier-crown"))
+    .filter((c): c is HTMLImageElement => Boolean(c));
+  const holes = crowns.length > 0 ? crownMask(layer, path) : null;
   layer.append(path);
   host.append(layer);
   const run: SheenRun = { key: target.key, raf: 0, layer, until: performance.now() + SHEEN_MS };
   const step = () => {
     const d = sheenPath(target, host);
     if (d && path.getAttribute("d") !== d) path.setAttribute("d", d);
+    if (holes) placeCrownHoles(holes, crowns, host);
     if (performance.now() < run.until && layer.isConnected) {
       run.raf = requestAnimationFrame(step);
     } else {

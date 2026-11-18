@@ -4269,7 +4269,8 @@ export function PublicPoster({
                 type="button"
               >
                 <img alt="" aria-hidden="true" className={`tier-swatch tier-${t.key}`} src={`/crowns/${t.key}.svg`} />
-                {t.short}
+                {/* 넓은 범례는 상세 배지와 같은 말 '이 달 1위'(2026-11-18 소유자), 얇은 레일만 축약 */}
+                {compact ? t.short : t.label}
               </button>
             );
           })}
