@@ -108,7 +108,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) {
     await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
     await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
     await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "소리", exact: true }).click();
-    await expect(dialog).toContainText("전체 효과음이 꺼져 있어요.");
+    await expect(dialog).toContainText("지금은 소리가 안 나요 — 사이트 효과음이 꺼져 있어요");
     await expect(sound.getByRole("button", { name: "돌보기 소리 미리 듣기", exact: true })).toBeDisabled();
     expect(await trace(page)).toEqual([]);
     expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);

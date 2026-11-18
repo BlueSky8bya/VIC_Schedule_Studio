@@ -58,7 +58,8 @@ import { projectCompanionSofaBody, projectCompanionSpritePoint } from "@/lib/ui/
 import { canStartCompanionAccessoryMotion, COMPANION_ACCESSORY_MOTION_MS, isCompanionHat, sampleCompanionAccessoryMotion } from "@/lib/ui/viewer-companion/accessory-motion";
 import { playCompanionSound, type CompanionSoundMoment } from "@/lib/ui/viewer-companion/companion-sound";
 import { canCompanionSetRadio, getCompanionRadioSnapshot, getCompanionRadioToggleIntent, setCompanionRadioPlaying, stopCompanionRadio, subscribeCompanionRadio, toggleCompanionRadio } from "@/lib/ui/viewer-companion/radio-player";
-import { getCompanionRadioPreferences, subscribeCompanionRadioPreferences } from "@/lib/ui/viewer-companion/radio-preferences";
+import { companionRadioPool, getCompanionRadioPreferences, subscribeCompanionRadioPreferences } from "@/lib/ui/viewer-companion/radio-preferences";
+import { companionRadioBlock } from "@/lib/ui/viewer-companion/settings-status";
 import { canStartCompanionRadioReaction, companionRadioFoodPriority, COMPANION_RADIO_REACTION_MS, createCompanionRadioReactionInbox, getCompanionRadioReaction, sampleCompanionRadioReaction, type CompanionRadioReaction, type CompanionRadioMood } from "@/lib/ui/viewer-companion/radio-reaction";
 import { COMPANION_INSTRUMENT_EVENT, type CompanionInstrumentPulse } from "@/lib/ui/viewer-companion/instrument-music";
 import { createCompanionInstrumentInbox, getCompanionInstrumentReaction, sampleCompanionInstrumentReaction, type CompanionInstrumentReaction } from "@/lib/ui/viewer-companion/instrument-reaction";
@@ -137,7 +138,7 @@ import { companionInitialHomePoint } from "@/lib/ui/viewer-companion/home-entry"
 import { holdCompanionHomeReveal } from "@/lib/ui/viewer-companion/home-reveal";
 import "./viewer-companion.css";
 
-type Props = { onOpenBook: (destination?: "personality") => void; root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; preserveWorldPresentation?: boolean; workspaceBusy?: boolean; editing?: boolean; agenda: boolean; monthKey: string; context?: CompanionHomeEnvironmentContext; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; launcherHost?: HTMLElement | null; compactHost?: HTMLElement | null; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void; positionMemory?: CompanionPositionMemory; fixtureFood?: CompanionFoodKind };
+type Props = { onOpenBook: (destination?: "personality" | "radio") => void; root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; preserveWorldPresentation?: boolean; workspaceBusy?: boolean; editing?: boolean; agenda: boolean; monthKey: string; context?: CompanionHomeEnvironmentContext; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; launcherHost?: HTMLElement | null; compactHost?: HTMLElement | null; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void; positionMemory?: CompanionPositionMemory; fixtureFood?: CompanionFoodKind };
 type Control = Record<Exclude<CompanionHomeAction, "book"> | "place" | "rest" | "toys" | "toyChanged" | "toyTouched" | "toyReturned", () => void>;
 type RuntimeAction = CompanionAction & { showcaseHomecoming?: true; petResponse?: true; homeLife?: CompanionHomeLifeAction["homeLife"]; toyPerformance?: { id: string; kind: CompanionToyKind }; foodAftertaste?: CompanionFoodAftertaste; workExpression?: CompanionWorkExpressionOffer; personalityScene?: PersonalitySceneBeat; personalityJobEnd?: true; foodRefusal?: { foodId: string; kind: CompanionFoodKind }; toyMishap?: CompanionToyTripWitness; personalitySignature?: CompanionPreferences["personality"]; scene?: CompanionSceneAction["scene"]; toy?: CompanionToyAction["toy"]; toyApproach?: { element: HTMLElement; effect: "stash" | "spawn"; duration: number }; household?: CompanionHouseholdBeat; radio?: { generation: number; reaction: CompanionRadioReaction; bpm: number; instrument?: CompanionInstrumentReaction } };
 const sampleWorldMusic = (music: NonNullable<RuntimeAction["radio"]>, age: number) => music.instrument ? sampleCompanionInstrumentReaction(music.instrument, age, music.bpm) : sampleCompanionRadioReaction(music.reaction, age, music.bpm);
@@ -166,6 +167,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
   useEffect(() => { showcaseSession.clear(); }, [showcaseSession, monthKey, pathname]);
   useEffect(() => { if (!preferences.enabled) showcaseSession.forget("pet"); }, [showcaseSession, preferences.enabled]);
   const preferencesRef = useRef(preferences); preferencesRef.current = preferences;
+  const openBookRef = useRef(onOpenBook); openBookRef.current = onOpenBook;
   const environmentContext = useRef(context); environmentContext.current = context;
   const fallbackContext = () => ({ slug: "vic", year: Number(monthKey.split("-")[0]), month: Number(monthKey.split("-")[1]) });
   const [homeEnvironment, setHomeEnvironment] = useState(() => resolveCompanionHomeEnvironment(context ?? fallbackContext()));
@@ -2345,7 +2347,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences, blocked
         else startRest();
       } },
       home: () => { releaseMeadowForDirectControl(); if (hiding || pause || overlayActive || premiereActive || !document.hasFocus()) return; sceneEvent({ kind: "home-called", wallTime: Date.now() }); playCompanionSound("cushion", preferencesRef.current); recallHome(); },
-      radio: () => { if ((!pause || independentItemsAllowed()) && !overlayActive && !premiereActive && !workspaceBusyRef.current && document.hasFocus() && !document.hidden) { logActivity("ui.click", { target: getCompanionRadioToggleIntent() === "stop" ? "companion-radio-stop" : "companion-radio-play" }); void toggleCompanionRadio(); } },
+      radio: () => { if ((!pause || independentItemsAllowed()) && !overlayActive && !premiereActive && !workspaceBusyRef.current && document.hasFocus() && !document.hidden) {
+        // A press that a setting (or an empty playlist) keeps from playing opens the radio's settings row with the reason, instead of doing nothing.
+        // Same guards as a real press: nothing new happens while the home is paused, covered or busy.
+        if (getCompanionRadioToggleIntent() === "play" && (companionRadioBlock(preferencesRef.current, getCompanionRadioPreferences(), { soundOn: soundEnabled(), soundVolume: soundVolume() }) || !companionRadioPool().length)) { logActivity("ui.click", { target: "companion-radio-blocked" }); openBookRef.current("radio"); return; }
+        logActivity("ui.click", { target: getCompanionRadioToggleIntent() === "stop" ? "companion-radio-stop" : "companion-radio-play" }); void toggleCompanionRadio(); } },
       feed: () => {
         if (!manualFeedAllowed()) { pendingFeeds.cancel(); return; }
         radioInbox.clear();

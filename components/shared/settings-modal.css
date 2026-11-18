@@ -2417,3 +2417,76 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 .rhh-companion-settings .rhh-collection-book .rhh-memory-detail .rhh-collection-detail-copy > p { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
 .rhh-companion-settings .rhh-collection-book .rhh-memory-detail { grid-template-rows: minmax(0, 1fr); }
 .rhh-companion-settings .rhh-collection-book .rhh-memory-detail .rhh-collection-detail-copy { max-height: 100%; overflow: hidden; }
+
+/* 막힌 이유 한 줄(빅타민 설정 개편 1단계) — 줄은 흐리게만 하고 값·누름은 그대로 둔다(.is-locked와 다르다).
+   이유 글 옆 단추는 그 설정이 있는 곳으로 데려갈 뿐, 대신 켜지 않는다. */
+.vic-settings .is-blocked > :first-child { opacity: 0.5; }
+.vic-settings .rhh-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin: 0;
+  padding: 2px 14px 10px;
+  color: var(--muted, #7a7464);
+  font-size: var(--text-label, 12.5px);
+  line-height: 1.45;
+}
+.vic-settings .rhh-companion-settings .rhh-note { color: var(--companion-soft); }
+.vic-settings .rhh-note-text:empty { display: none; }
+.vic-settings .rhh-note-go {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 28px;
+  margin: -4px 0;
+  border: 0;
+  border-radius: var(--r-sm, 8px);
+  background: none;
+  padding: 0 6px;
+  color: var(--studio-action-text, #2f5f9e);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.vic-settings .rhh-note-go:hover { background: rgb(var(--studio-action-rgb, 47 95 158) / 10%); }
+.vic-settings .rhh-note-go:focus-visible { outline: 2px solid var(--selection-border, #2f5f9e); outline-offset: 1px; }
+.vic-settings .rhh-note-resting,
+.vic-settings .rhh-note-path { padding: 8px 14px 0; }
+/* 소리 상태 한 줄 — 지금 소리가 나는지를 카드 위에서 먼저 말한다. 점 색: 남 = 풀빛, 일부 = 호박, 안 남 = 회색. */
+.vic-settings .rhh-sound-status {
+  margin: 0 0 8px;
+  border-radius: var(--r-md, 12px);
+  background: var(--companion-paper, var(--surface-2, #f6f3ea));
+  padding: 9px 14px;
+  color: var(--companion-ink, var(--ink, #2b2b33));
+  font-size: var(--text-body, 13.5px);
+  font-weight: 600;
+}
+.vic-settings .rhh-sound-status::before {
+  content: "";
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #9aa0ab;
+}
+.vic-settings .rhh-sound-status[data-state="on"]::before { background: #3f9d6b; }
+.vic-settings .rhh-sound-status[data-state="partial"]::before { background: #d19a2a; }
+/* 가는 길로 도착한 줄 — 잠깐 테두리로 짚어 준다. 동작 줄이기에서는 깜빡임 없이 테두리만. */
+.vic-settings [data-settings-place][data-flash] {
+  border-radius: var(--r-sm, 8px);
+  outline: 2px solid var(--selection-border, #2f5f9e);
+  outline-offset: 2px;
+  animation: rhh-place-flash 1.8s var(--ease, ease) both;
+}
+@keyframes rhh-place-flash {
+  0%, 70% { outline-color: var(--selection-border, #2f5f9e); }
+  100% { outline-color: transparent; }
+}
+html[data-reduce-motion] .vic-settings [data-settings-place][data-flash] { animation: none; }
+.vic-settings .rhh-companion-radio > .rhh-note-go-only { justify-content: flex-start; padding: 6px 0 0; }
+.vic-settings .rhh-group-card > .rhh-note:first-child { padding-top: 12px; }
+.vic-settings .rhh-panes .rhh-note-path { padding-inline: 4px; }

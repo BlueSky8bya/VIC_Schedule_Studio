@@ -436,6 +436,7 @@ export function StudioShell({
   const [jumpToast, setJumpToast] = useState<{ to: YM; from: YM } | null>(null);
   const [companionBook, setCompanionBook] = useState(false);
   const [companionPersonality, setCompanionPersonality] = useState(false);
+  const [companionPlace, setCompanionPlace] = useState<"companion-radio" | null>(null);
   const jumpToastTimerRef = useRef<number | null>(null);
   const jumpTodayRef = useRef<() => void>(() => {});
   const flashTimerRef = useRef<number | null>(null);
@@ -1295,6 +1296,8 @@ export function StudioShell({
         sectionMemory={{ value: settingsTab, onChange: changeSettingsTab }}
         companionBook={companionBook}
         companionPersonality={companionPersonality}
+        companionPlace={companionPlace}
+        onLeaveCompanionBook={() => setCompanionBook(false)}
         textPx={textPx}
         onChangeTextPx={changeTextPx}
         font={{ id: fontId, change: changeFont, weight: textWeight, changeWeight: changeTextWeight }}
@@ -7707,7 +7710,7 @@ export function StudioShell({
       {companionDesktop && companionPrefs.enabled ? <ViewerCompanion onOpenBook={destination => {
         // Capture before a reused settings child's layout effect moves focus.
         if (modal === null) modalOpenerRef.current = document.activeElement as HTMLElement | null;
-        setCompanionPersonality(destination === "personality"); setCompanionBook(true); setModal("settings");
+        setCompanionPersonality(destination === "personality"); setCompanionPlace(destination === "radio" ? "companion-radio" : null); setCompanionBook(true); setModal("settings");
       }} root={shellRef} preferences={companionPrefs}
         context={{ slug: schedule.calendar.slug, year: view.year, month: view.month, season: pickAmbient(worldForce?.month ?? view.month, scenery.seasonForce).season, force: worldForce }}
         positionMemory={staffCompanionPositionMemory}

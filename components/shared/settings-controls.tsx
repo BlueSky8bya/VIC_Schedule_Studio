@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowRight } from "lucide-react";
 import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
 import { logActivity } from "@/lib/activity/client";
 
@@ -110,4 +111,37 @@ export function Switch({ on, onToggle, label, dataAct, dataActOpt }: { on: boole
       <span className="rhh-knob" aria-hidden="true" />
     </button>
   );
+}
+
+/** "Why is this not working" line under a setting: the reason and, when the
+ * setting in the way lives elsewhere, a button that takes the user there. It
+ * never changes that setting itself. */
+export function SettingsNote({ text, place, placeLabel, onGoTo, state, className = "" }: { text: string; place?: string; placeLabel?: string; onGoTo?: (place: string) => void; state?: "on" | "partial" | "off"; className?: string }) {
+  return (
+    <p className={`rhh-note${className ? ` ${className}` : ""}`} data-state={state}>
+      <span className="rhh-note-text">{text}</span>
+      {place && placeLabel && onGoTo ? (
+        <button className="rhh-note-go" data-act="settings-go" data-act-opt={place} onClick={() => onGoTo(place)} type="button">
+          <span className="vmid">{placeLabel}</span>
+          <ArrowRight aria-hidden="true" size={13} strokeWidth={2.6} />
+        </button>
+      ) : null}
+    </p>
+  );
+}
+
+const flashTimers = new WeakMap<HTMLElement, number>();
+/** Bring the row marked `data-settings-place` into view, hand it focus and
+ * mark it for a moment. Returns false while the row is not rendered yet. */
+export function flashSettingsPlace(root: ParentNode | null | undefined, place: string): boolean {
+  const row = root?.querySelector<HTMLElement>(`[data-settings-place="${place}"]`);
+  if (!row || row.closest("[hidden]") || row.offsetParent === null) return false;
+  row.scrollIntoView({ block: "center", behavior: "instant" });
+  const control = row.matches("button,[role=switch],input,select,a[href]") ? row : row.querySelector<HTMLElement>("button:not(:disabled),[role=switch],input:not(:disabled),select,a[href]");
+  // A row whose own control is locked still takes focus, so it is not lost to the page behind.
+  if (control) control.focus({ preventScroll: true }); else { row.tabIndex = -1; row.focus({ preventScroll: true }); }
+  window.clearTimeout(flashTimers.get(row));
+  row.setAttribute("data-flash", "");
+  flashTimers.set(row, window.setTimeout(() => { row.removeAttribute("data-flash"); flashTimers.delete(row); }, 1800));
+  return true;
 }

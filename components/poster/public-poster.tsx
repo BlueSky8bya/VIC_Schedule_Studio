@@ -902,6 +902,7 @@ export function PublicPoster({
   },[sheet,recordSession]);
   const [companionBook, setCompanionBook] = useState(false);
   const [companionPersonality, setCompanionPersonality] = useState(false);
+  const [companionPlace, setCompanionPlace] = useState<"companion-radio" | null>(null);
   const settingsOpenerRef = useRef<HTMLElement | null>(null);
   const settingsWasOpen = useRef(false);
   // Match the studio lifecycle: capture before the shared trap takes focus,
@@ -4399,7 +4400,7 @@ export function PublicPoster({
         // A warm child's layout effect can focus its radio before our passive
         // opener effect. Remember the real activation while it still owns focus.
         if (sheet !== "settings") settingsOpenerRef.current = document.activeElement as HTMLElement | null;
-        setCompanionPersonality(destination === "personality"); setCompanionBook(true); setSheet("settings");
+        setCompanionPersonality(destination === "personality"); setCompanionPlace(destination === "radio" ? "companion-radio" : null); setCompanionBook(true); setSheet("settings");
       }} root={posterRootRef} preferences={settingsPrefs.companionPrefs}
         context={{ slug: schedule.calendar.slug, year: view.year, month: view.month, season: pickAmbient(scenery.worldForce?.month ?? view.month, scenery.seasonForce).season, force: scenery.worldForce }}
         positionMemory={positionMemory}
@@ -4927,6 +4928,8 @@ export function PublicPoster({
                 sectionMemory={{ value: settingsPrefs.settingsTab, onChange: settingsPrefs.changeSettingsTab }}
                 companionBook={companionBook}
                 companionPersonality={companionPersonality}
+                companionPlace={companionPlace}
+                onLeaveCompanionBook={() => setCompanionBook(false)}
                 ambientMode={settingsPrefs.ambientMode}
                 textPx={settingsPrefs.textPx}
                 onChangeTextPx={settingsPrefs.changeTextPx}

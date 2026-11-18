@@ -9,10 +9,12 @@
 import "./../shared/settings-modal.css";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { RowLabel, SettingsSegment, Switch } from "@/components/shared/settings-controls";
+import { RowLabel, SettingsNote, SettingsSegment, Switch, flashSettingsPlace } from "@/components/shared/settings-controls";
+import type { CompanionPlaceRequest } from "@/components/shared/companion-settings";
+import { COMPANION_SETTINGS_PLACE_LABELS, companionRadioBlock, companionRowBlock, type CompanionSettingsPlace, type CompanionSiteGates } from "@/lib/ui/viewer-companion/settings-status";
 import type { Route } from "next";
 import { BookA, CloudSun, Eye, Gauge, Leaf, Lock, Palette, PenLine, Sparkles, SunMoon, Trash2, Vibrate, ALargeSmall, Type, Bold, Check, Volume1, Volume2, VolumeX, Wrench, PartyPopper, Heart, BellRing, EyeOff, MousePointerClick, Pointer, CircleDot, ToggleRight, ToggleLeft, PanelTopOpen, X, ChevronLeft, ChevronRight, Grab, ArrowDownToLine, Save, Link2, Unlink, Undo2, Redo2, LockOpen, CircleAlert } from "lucide-react";
-import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type RefObject } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode, type RefObject } from "react";
 import { useCalendarPreviewMetrics } from '@/components/shared/use-calendar-preview-metrics';
 import { CALENDAR_PREVIEW_TITLE, CALENDAR_PREVIEW_SUBTITLE } from '@/lib/ui/calendar-preview-sample';
 import { useFontLoading } from '@/components/shared/use-font-loading';
@@ -55,6 +57,10 @@ export type StudioSettingsProps = {
   companionBook?: boolean;
   /** Open the existing book directly at its shared personality controls. */
   companionPersonality?: boolean;
+  /** Open the book at one of its own rows (the blocked home radio shows why). */
+  companionPlace?: CompanionSettingsPlace | null;
+  /** A "go to" link inside the book leads to another settings group: the host shows the full settings. */
+  onLeaveCompanionBook?: () => void;
   canManageTimelines?: boolean;
   hapticsSupported: boolean;
   hapticsOn: boolean;
@@ -178,7 +184,8 @@ export type FontSettings = {
   changeWeight: (step: WeightStep) => void;
 };
 
-function CompanionRadioSettings({ companion, globalSoundOn, globalSoundVolume }: { companion: CompanionPreferences; globalSoundOn: boolean; globalSoundVolume: number }) {
+function CompanionRadioSettings({ companion, site, onGoTo }: { companion: CompanionPreferences; site: CompanionSiteGates; onGoTo: (place: CompanionSettingsPlace) => void }) {
+  const globalSoundOn = site.soundOn, globalSoundVolume = site.soundVolume;
   const companionAudible = companion.enabled && companion.sound && companion.soundVolume > 0;
   const globalAudible = globalSoundOn && globalSoundVolume > 0;
   const [preferences, setPreferences] = useState<CompanionRadioPreferences | null>(null);
@@ -219,14 +226,17 @@ function CompanionRadioSettings({ companion, globalSoundOn, globalSoundVolume }:
   const stop = () => { requestToken.current++; setPending(false); setPlayFailed(false); stopCompanionRadio("human"); };
   const selected = COMPANION_RADIO_TRACKS.filter(track => !preferences.excludedIds.includes(track.id));
   const pool = selected;
-  const blockedReason = !globalSoundOn ? "전체 소리가 꺼져 있어요" : globalSoundVolume === 0 ? "전체 음량이 0이에요" : !companion.enabled ? "빅타민이 꺼져 있어요" : !companion.sound ? "빅타민 소리가 꺼져 있어요" : companion.soundVolume === 0 ? "빅타민 음량이 0이에요" : !preferences.enabled ? "라디오가 꺼져 있어요" : preferences.volume === 0 ? "라디오 음량이 0이에요" : null;
+  const block = companionRadioBlock(companion, preferences, site), blockedReason = block?.text ?? null;
   const blocked = blockedReason !== null;
+  const reactBlock = companion.enabled ? companionRowBlock("musicReact", companion, site) : null;
   const currentTrack = COMPANION_RADIO_TRACKS.find(track => track.id === snapshot?.trackId);
-  return <div className="rhh-group-card rhh-companion-radio">
+  return <div className="rhh-group-card rhh-companion-radio" data-settings-place="companion-radio">
     <div className="role-help-haptics"><RowLabel icon={<Volume2 size={15} />} tone="water">집 라디오</RowLabel><Switch dataAct="companion-radio-enabled" dataActOpt={preferences.enabled ? "off" : "on"} label="빅타민 라디오 켜기/끄기" on={preferences.enabled} onToggle={() => change({ enabled: !preferences.enabled })} /></div>
     <div className="role-help-haptics rhh-stack-sm"><RowLabel icon={<Volume1 size={15} />} tone="water">라디오 음량</RowLabel><div className="rhh-volume"><VolumeX aria-hidden="true" size={15} /><input aria-label="라디오 음량" aria-valuetext={`${preferences.volume}%`} data-act="companion-radio-volume" data-sfx="off" max={100} min={0} onChange={event => change({ volume: Number(event.currentTarget.value) })} step={5} style={{ "--vol": `${preferences.volume}%` } as CSSProperties} type="range" value={preferences.volume} /><Volume2 aria-hidden="true" size={15} /><b className="rhh-vol-num">{preferences.volume}</b></div></div>
-    <div className="role-help-haptics"><RowLabel icon={<Sparkles size={15} />} tone="leaf">음악에 반응하기</RowLabel><Switch dataAct="companion-radio-react" dataActOpt={preferences.react ? "off" : "on"} label="빅타민 음악 반응 켜기/끄기" on={preferences.react} onToggle={() => change({ react: !preferences.react })} /></div>
+    <div className={`role-help-haptics${reactBlock || !companion.enabled ? " is-blocked" : ""}`}><RowLabel icon={<Sparkles size={15} />} tone="leaf">음악에 반응하기</RowLabel><Switch dataAct="companion-radio-react" dataActOpt={preferences.react ? "off" : "on"} label="빅타민 음악 반응 켜기/끄기" on={preferences.react} onToggle={() => change({ react: !preferences.react })} /></div>
+    {reactBlock ? <SettingsNote onGoTo={place => onGoTo(place as CompanionSettingsPlace)} place={reactBlock.place} placeLabel={reactBlock.place && COMPANION_SETTINGS_PLACE_LABELS[reactBlock.place]} text={reactBlock.text} /> : null}
     <div className="rhh-radio-now"><p aria-live="polite">{pending ? "준비 중" : blockedReason ?? (snapshot?.playing && currentTrack ? currentTrack.title : playFailed ? "재생하지 못했어요" : pool.length ? "재생 대기" : "선택한 곡이 없어요.")}</p><div className="rhh-radio-actions"><button className="rhh-link" data-act="companion-radio-play" data-sfx="off" disabled={blocked || !pool.length || pending || snapshot?.playing} onClick={() => play(toggleCompanionRadio)} type="button"><span className="vmid">재생</span></button><button className="rhh-link" data-act="companion-radio-next" data-sfx="off" disabled={blocked || !pool.length || pending} onClick={() => play(nextCompanionRadio)} type="button"><span className="vmid">다음 곡</span></button><button className="rhh-link" data-act="companion-radio-stop" data-sfx="off" disabled={!snapshot?.playing && !pending} onClick={stop} type="button"><span className="vmid">정지</span></button></div></div>
+    {block?.place && !pending ? <SettingsNote className="rhh-note-go-only" onGoTo={place => onGoTo(place as CompanionSettingsPlace)} place={block.place} placeLabel={COMPANION_SETTINGS_PLACE_LABELS[block.place]} text="" /> : null}
     <div className="rhh-radio-attribution"><span>{currentTrack?.credit ?? "Kevin MacLeod (incompetech.com)"}</span><a data-act="companion-radio-source" href={currentTrack?.sourceUrl ?? "https://incompetech.com/music/royalty-free/music.html"} rel="noopener noreferrer" target="_blank">원본</a><a data-act="companion-radio-license" href="https://creativecommons.org/licenses/by/4.0/" rel="noopener noreferrer" target="_blank">CC BY 4.0</a><small>음량보정 · Opus</small></div>
     <details className="rhh-radio-playlist"><summary data-act="companion-radio-list" data-activity-manual="" onClick={event => logActivity("ui.click", { target: event.currentTarget.closest("details")?.open ? "companion-radio-list#close" : "companion-radio-list#open" })}>곡 고르기 <span>{selected.length}/{COMPANION_RADIO_TRACKS.length}</span></summary><ul>{COMPANION_RADIO_TRACKS.map(track => {
       const included = !preferences.excludedIds.includes(track.id);
@@ -237,8 +247,22 @@ function CompanionRadioSettings({ companion, globalSoundOn, globalSoundVolume }:
 
 /** One shared companion experience; controls load only on its environment page. */
 const CompanionBehaviorSettings = dynamic(() => import("@/components/shared/companion-settings").then(module => module.CompanionBehaviorSettings), { loading: () => null });
-function CompanionSettings({ preferences, onChange, globalSoundOn, globalSoundVolume, active, initialPersonality = false }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; globalSoundOn: boolean; globalSoundVolume: number; active: boolean; initialPersonality?: boolean }) {
-  return <CompanionProfile active={active} preferences={preferences} initialPersonality={initialPersonality} environment={(settingsActive, personalityRequest) => <CompanionBehaviorSettings active={settingsActive} personalityRequest={personalityRequest} preferences={preferences} onChange={onChange} globalSoundOn={globalSoundOn} radio={<CompanionRadioSettings companion={preferences} globalSoundOn={globalSoundOn} globalSoundVolume={globalSoundVolume} />} />} />;
+/** The site-wide settings that override companion rows, read where the runtime reads them. */
+function useCompanionSiteGates(soundOn: boolean, soundVolume: number): CompanionSiteGates {
+  const read = () => typeof document === "undefined" ? "|" : `${document.documentElement.hasAttribute("data-reduce-motion") ? 1 : 0}|${document.documentElement.dataset.gfx ?? ""}`;
+  const [html, setHtml] = useState("0|");
+  useEffect(() => {
+    const update = () => setHtml(read());
+    update();
+    const observer = new MutationObserver(update);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-reduce-motion", "data-gfx"] });
+    return () => observer.disconnect();
+  }, []);
+  const [reduce, gfx] = html.split("|");
+  return useMemo(() => ({ soundOn, soundVolume, reduceMotion: reduce === "1", gfx: gfx || undefined }), [soundOn, soundVolume, reduce, gfx]);
+}
+function CompanionSettings({ preferences, onChange, site, onGoTo, placeRequest, active, initialPersonality = false }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; site: CompanionSiteGates; onGoTo: (place: CompanionSettingsPlace) => void; placeRequest?: CompanionPlaceRequest; active: boolean; initialPersonality?: boolean }) {
+  return <CompanionProfile active={active} preferences={preferences} initialPersonality={initialPersonality} settingsRequest={placeRequest?.n ?? 0} environment={(settingsActive, personalityRequest) => <CompanionBehaviorSettings active={settingsActive} personalityRequest={personalityRequest} preferences={preferences} onChange={onChange} site={site} onGoTo={onGoTo} placeRequest={placeRequest} radio={<CompanionRadioSettings companion={preferences} site={site} onGoTo={onGoTo} />} />} />;
 }
 
 export function StudioSettingsList({
@@ -246,6 +270,8 @@ export function StudioSettingsList({
   sectionMemory,
   companionBook = false,
   companionPersonality = false,
+  companionPlace = null,
+  onLeaveCompanionBook,
   canManageTimelines = false,
   hapticsSupported,
   hapticsOn,
@@ -298,6 +324,18 @@ export function StudioSettingsList({
   const [playingSample, setPlayingSample] = useState<SfxName | null>(null);
   const fontLoading = useFontLoading(id => { setFontPeek(null); font.change(id); });
   const fontStateId = useId();
+  // "Go to" links (stage 1): show the group that holds the setting in the way and mark its row. Nothing is switched for the user.
+  const site = useCompanionSiteGates(sound.on, sound.vol), tabsRoot = useRef<HTMLDivElement>(null);
+  const [sitePlace, setSitePlace] = useState<{ place: CompanionSettingsPlace; n: number }>({ place: "site-sound", n: 0 }), servedSitePlace = useRef(0);
+  const [companionPlaceRequest, setCompanionPlaceRequest] = useState<CompanionPlaceRequest | undefined>(companionPlace ? { place: companionPlace, n: 1 } : undefined);
+  const sitePlaceTabs: Partial<Record<CompanionSettingsPlace, TabKey>> = { "site-sound": "sound", "site-motion": "motion", "site-gfx": "bg" };
+  const goToPlace = (place: CompanionSettingsPlace) => {
+    const tab = sitePlaceTabs[place];
+    if (!tab) { if (!companionBook) setActiveTab("companion"); setCompanionPlaceRequest(current => ({ place, n: (current?.n ?? 0) + 1 })); return; }
+    // The book was opened at one of its rows; that request ends with the book.
+    if (companionBook) { onLeaveCompanionBook?.(); setCompanionPlaceRequest(undefined); }
+    setActiveTab(tab); setSitePlace(current => ({ place, n: current.n + 1 }));
+  };
   const previewId = fontPeek && fontLoading.status[fontPeek] === 'ready' ? fontPeek : font.id;
   const previewFont = FONT_STACKS[previewId] || undefined;
   // 타일 견본 글자는 자기 글꼴로 그린다 — 글꼴 묶음이 화면에 들어올 때 한꺼번에 받고(설정을 연 사람만),
@@ -428,6 +466,13 @@ export function StudioSettingsList({
     observer.observe(nav);
     return () => observer.disconnect();
   }, [current, tabSig, setActiveTab]);
+  useLayoutEffect(() => {
+    if (!sitePlace.n || servedSitePlace.current === sitePlace.n || companionBook || current !== sitePlaceTabs[sitePlace.place]) return;
+    let frame = 0, tries = 0;
+    const attempt = () => { if (flashSettingsPlace(tabsRoot.current, sitePlace.place)) servedSitePlace.current = sitePlace.n; else if (++tries < 40) frame = requestAnimationFrame(attempt); };
+    attempt();
+    return () => cancelAnimationFrame(frame);
+  }, [sitePlace, current, companionBook]); // eslint-disable-line react-hooks/exhaustive-deps
   const pane = (key: TabKey, extra = "") => ({
     className: `rhh-group${extra ? ` ${extra}` : ""}${current === key ? " is-active" : ""}`,
     id: `rhh-tab-${key}-panel`,
@@ -449,9 +494,9 @@ export function StudioSettingsList({
     logActivity("ui.click", { target: `settings-tab#${next.key}` });
     nav?.querySelector<HTMLButtonElement>(`[data-tab="${next.key}"]`)?.focus();
   };
-  if (companionBook && companionAvailable) return <div className="rhh-tabs rhh-companion-book-pages"><CompanionSettings preferences={companionPrefs} onChange={onCompanionChange} globalSoundOn={sound.on} globalSoundVolume={sound.vol} initialPersonality={companionPersonality} active /></div>;
+  if (companionBook && companionAvailable) return <div className="rhh-tabs rhh-companion-book-pages"><CompanionSettings preferences={companionPrefs} onChange={onCompanionChange} site={site} onGoTo={goToPlace} placeRequest={companionPlaceRequest} initialPersonality={companionPersonality} active /></div>;
   return (
-    <div className="rhh-tabs">
+    <div className="rhh-tabs" ref={tabsRoot}>
       <div className="rhh-tabs-grid">
       <nav aria-label="설정 묶음" aria-orientation={navVertical ? "vertical" : "horizontal"} className="rhh-nav" ref={navRef} role="tablist">
         {navPill ? (
@@ -670,7 +715,7 @@ export function StudioSettingsList({
       <section {...pane("sound")}>
         <h3 className="rhh-group-title" id="rhh-tab-sound-title">소리</h3>
         <div className="rhh-group-card">
-          <div className="role-help-haptics">
+          <div className="role-help-haptics" data-settings-place="site-sound">
             <RowLabel icon={<Volume2 size={15} />} tone="water">
               효과음
             </RowLabel>
@@ -791,6 +836,7 @@ export function StudioSettingsList({
             ? "누름·이동은 일정 고르기·집기·편집창 열고 닫기·달 넘기기·버튼 누름, 편집은 놓기·저장·잇기·끊기·삭제·되돌리기예요. 방송 중엔 송출에 섞일 수 있어요."
             : "누름·이동은 일정 열고 닫기·달 넘기기·버튼 누름, 축하는 기념일 빵빠레·최초공개 축포예요. 다시보기 소리는 플레이어에서 조절해요."}
         </p>
+        {companionAvailable ? <SettingsNote className="rhh-note-path" onGoTo={place => goToPlace(place as CompanionSettingsPlace)} place="companion-sound" placeLabel={COMPANION_SETTINGS_PLACE_LABELS["companion-sound"]} text="빅타민 소리·라디오는 빅타민 설정에서 정해요" /> : null}
       </section>
 
       <section {...pane("screen")}>
@@ -828,7 +874,7 @@ export function StudioSettingsList({
         <div className="rhh-group-card">
           {/* 생동감 있는 동작(2026-09-03 극성 반전) — ON(기본)=장식 모션·물결 켜짐, OFF=옛 '동작 줄이기'.
               저장 키(vic.reduceMotion)·html[data-reduce-motion]의 뜻은 그대로고 스위치 방향만 반대. */}
-          <div className="role-help-haptics">
+          <div className="role-help-haptics" data-settings-place="site-motion">
             <RowLabel icon={<Sparkles size={15} />} tone="water">
               생동감 있는 동작
             </RowLabel>
@@ -856,12 +902,13 @@ export function StudioSettingsList({
       {/* 계절 배경·배경 효과 — 모바일(≤640)엔 배경이 없어 묶음째 숨긴다(.rhh-web). */}
       {companionAvailable ? <section {...pane("companion")}>
         <h3 className="rhh-group-title" id="rhh-tab-companion-title">빅타민</h3>
-        <CompanionSettings active={current === "companion"} globalSoundOn={sound.on} globalSoundVolume={sound.vol} preferences={companionPrefs} onChange={onCompanionChange} />
+        <CompanionSettings active={current === "companion"} site={site} onGoTo={goToPlace} placeRequest={companionPlaceRequest} preferences={companionPrefs} onChange={onCompanionChange} />
       </section> : null}
 
       <section {...pane("bg", "rhh-web")}>
         <h3 className="rhh-group-title" id="rhh-tab-bg-title">배경</h3>
-        <div className="rhh-group-card">
+        {/* "배경 설정으로"가 닿는 곳은 묶음 전체 — 배경 효과 줄은 계절 배경이 꺼져 있으면 잠겨 있어, 그 위 줄부터 보여야 한다. */}
+        <div className="rhh-group-card" data-settings-place="site-gfx">
           {/* 세 상태가 늘 다 보이는 세그먼트 [켜기|흐리게|끄기] — 레일·아바타 자리의 묶음과 같은 컴포넌트. */}
           <div className="role-help-haptics rhh-ambient rhh-stack-sm">
             <RowLabel icon={<Leaf size={15} />} tone="leaf">

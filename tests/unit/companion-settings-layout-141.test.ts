@@ -19,7 +19,7 @@ afterEach(() => vi.unstubAllGlobals());
 describe("141 shared basic personality settings", () => {
   it("puts each real personality picture/copy between its label and nine choices", () => {
     for (const personality of COMPANION_PERSONALITIES) {
-      const tree = CompanionBehaviorSettings({ preferences: { ...DEFAULT_COMPANION_PREFERENCES, personality }, onChange: vi.fn(), globalSoundOn: false, active: true, radio: null });
+      const tree = CompanionBehaviorSettings({ preferences: { ...DEFAULT_COMPANION_PREFERENCES, personality }, onChange: vi.fn(), site: { soundOn: false, soundVolume: 60, reduceMotion: false, gfx: undefined }, onGoTo: vi.fn(), active: true, radio: null });
       const row = nodes(tree).find(element => nodes(element).some(child => child.type === RowLabel && child.props.children === "지금 성격") && String(element.props.className).includes("rhh-companion-choice-row"))!;
       const children = row.props.children as Element[];
       expect(children[0].type).toBe(RowLabel); expect(children[0].props.children).toBe("지금 성격");
@@ -32,7 +32,7 @@ describe("141 shared basic personality settings", () => {
     }
   });
   it("uses the same three columns for animal and personality choices and preserves single change/reselect callbacks", () => {
-    const change = vi.fn(), tree = CompanionBehaviorSettings({ preferences: DEFAULT_COMPANION_PREFERENCES, onChange: change, globalSoundOn: false, active: false, radio: null });
+    const change = vi.fn(), tree = CompanionBehaviorSettings({ preferences: DEFAULT_COMPANION_PREFERENCES, onChange: change, site: { soundOn: false, soundVolume: 60, reduceMotion: false, gfx: undefined }, onGoTo: vi.fn(), active: false, radio: null });
     const animal = nodes(tree).find(element => element.type === SettingsSegment && element.props.dataAct === "companion-animal")!;
     const personality = nodes(tree).find(element => element.type === SettingsSegment && element.props.dataAct === "companion-personality")!;
     expect(animal.props.columns).toBe(3); expect(personality.props.columns).toBe(3); expect(animal.props.options).toHaveLength(3);

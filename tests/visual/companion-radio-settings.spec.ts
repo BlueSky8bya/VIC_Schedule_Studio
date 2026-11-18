@@ -140,7 +140,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`${surface}
   mkdirSync(screenshotOutput, { recursive: true });
   await page.screenshot({ path: `${screenshotOutput}/radio-${surface}.png` });
   const targetAttributes = await radio.locator("[data-act]").evaluateAll(nodes => nodes.map(node => [node.getAttribute("data-act"), node.getAttribute("data-act-opt")]));
-  expect(targetAttributes.every(([key, opt]) => key?.startsWith("companion-radio-") && (!opt || ["on", "off", "open", "close", "lively", "graceful", "calm"].includes(opt)))).toBe(true);
+  // "settings-go" is the reason link (redesign stage 1): it names a fixed place, never a track or a value.
+  expect(targetAttributes.every(([key, opt]) => key === "settings-go" ? /^(site|companion)-[a-z]+$/.test(opt ?? "") : key?.startsWith("companion-radio-") && (!opt || ["on", "off", "open", "close", "lively", "graceful", "calm"].includes(opt)))).toBe(true);
   await page.reload();
   if (surface === "preview" && !await page.locator(".viewer-fullscreen").count()) await page.locator(".io-preview").click();
   ({ radio } = await openRadio(page));

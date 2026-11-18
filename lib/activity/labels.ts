@@ -728,6 +728,8 @@ export const ACT: Record<string, TargetLabel> = {
   "companion-home-open": { name: "빅타민 집 열기", area: "빅타민" },
   "companion-book-open": { name: "빅타민 수첩 열기", area: "빅타민" },
   "companion-personality-open": { name: "빅타민 성격 바로 열기", area: "빅타민" },
+  "companion-radio-blocked": { name: "빅타민 라디오가 막혀 이유 보기", area: "빅타민", hint: "집의 라디오를 눌렀지만 설정에 막혀 있거나 고른 곡이 없어 설정 창의 라디오 줄이 열린 횟수예요. 2026-11-19 전에는 이런 누름도 '라디오 재생'으로 세었어요." },
+  "settings-go": { name: "막힌 이유에서 설정으로 가기", area: "설정", opts: { "site-sound": "소리 설정", "site-motion": "움직임 설정", "site-gfx": "배경 설정", "companion-power": "빅타민 켜는 곳", "companion-roam": "돌아다니기", "companion-sound": "빅타민 소리", "companion-radio": "집 라디오" } },
   "companion-book-close": { name: "빅타민 수첩 닫기", area: "빅타민" },
   "companion-home-close": { name: "빅타민 집 닫기", area: "빅타민" },
   "companion-home-fold": { name: "빅타민 집", area: "빅타민", opts: { open: "펴기", close: "접기" } },

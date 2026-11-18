@@ -92,9 +92,10 @@ function learnedEffects(preferences: CompanionPreferences, memory: CompanionMemo
   return effects;
 }
 
-export function CompanionProfile({ preferences, active, environment, initialPersonality = false }: { preferences: CompanionPreferences; active: boolean; environment?: (active: boolean, personalityRequest: number) => ReactNode; initialPersonality?: boolean }) {
-  const [page, setPage] = useState<ProfilePage>(initialPersonality ? "settings" : "together"), [care, setCare] = useState<CompanionMemory | null>(null), [collection, setCollection] = useState<CompanionCollection | null>(null);
-  const [visited, setVisited] = useState({ discover: false, dress: false, settings: initialPersonality });
+export function CompanionProfile({ preferences, active, environment, initialPersonality = false, settingsRequest = 0 }: { preferences: CompanionPreferences; active: boolean; environment?: (active: boolean, personalityRequest: number) => ReactNode; initialPersonality?: boolean; /** Counter: each new value opens the settings page (a "go to" link or the blocked home radio). */ settingsRequest?: number }) {
+  const [page, setPage] = useState<ProfilePage>(initialPersonality || settingsRequest > 0 ? "settings" : "together"), [care, setCare] = useState<CompanionMemory | null>(null), [collection, setCollection] = useState<CompanionCollection | null>(null);
+  const [visited, setVisited] = useState({ discover: false, dress: false, settings: initialPersonality || settingsRequest > 0 });
+  const servedSettings = useRef(settingsRequest);
   const [tastes, setTastes] = useState<CompanionTastes | null>(null);
   const [personalityRequest, requestPersonality] = useState(initialPersonality ? 1 : 0);
   const id = useId(), nav = useRef<HTMLDivElement>(null), spotlight = useProfileSpotlight(active && preferences.enabled, page);
@@ -106,6 +107,11 @@ export function CompanionProfile({ preferences, active, environment, initialPers
     const offTastes = subscribeCompanionTastes(value => { setTastes(value); readCare(); });
     return () => { offHabits(); offLife(); offCollection(); offTastes(); };
   }, [active]);
+  useEffect(() => {
+    if (settingsRequest === servedSettings.current) return;
+    servedSettings.current = settingsRequest;
+    setVisited(value => value.settings ? value : { ...value, settings: true }); setPage("settings");
+  }, [settingsRequest]);
   const changePage = (next: ProfilePage) => {
     if (next !== page) playSfx("tab");
     if (next !== "together") setVisited(value => value[next] ? value : { ...value, [next]: true });

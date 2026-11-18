@@ -1,8 +1,9 @@
 "use client";
 
 import { ArrowDownToLine, EyeOff, Gauge, Grab, Heart, Leaf, PanelTopOpen, PartyPopper, Pointer, Sparkles, Volume1, Volume2, VolumeX } from "lucide-react";
-import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
-import { RowLabel, SettingsSegment, Switch } from "@/components/shared/settings-controls";
+import { Fragment, useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
+import { RowLabel, SettingsNote, SettingsSegment, Switch, flashSettingsPlace } from "@/components/shared/settings-controls";
+import { COMPANION_SETTINGS_PLACE_LABELS, companionRowBlock, companionSoundStatus, type CompanionBlockedRow, type CompanionSettingsNote, type CompanionSettingsPlace, type CompanionSiteGates } from "@/lib/ui/viewer-companion/settings-status";
 import { COMPANION_PERSONALITY_NAMES, COMPANION_PERSONALITY_SUMMARIES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_PERSONALITY_LAYOUT } from "@/lib/ui/viewer-companion/personality-layout";
 import { CompanionWardrobePreview } from "./companion-wardrobe-preview";
@@ -61,8 +62,14 @@ function LearnedStateReset({ id }: { id: string }) {
   </div>;
 }
 
-/** Shared setting controls stay editable while OFF, so a quiet preset can be prepared first. */
-export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn, active, radio, personalityRequest = 0 }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; globalSoundOn: boolean; active: boolean; radio: ReactNode; personalityRequest?: number }) {
+const placeTabs: Partial<Record<CompanionSettingsPlace, CompanionTab>> = { "companion-roam": "motion", "companion-sound": "sound", "companion-radio": "sound" };
+const blockedRows: Partial<Record<CompanionToggle, CompanionBlockedRow>> = { roam: "roam", jump: "jump", heartPrank: "heartPrank", cardPrank: "cardPrank", ambientPrank: "ambientPrank", panelPrank: "panelPrank", rarePrank: "rarePrank" };
+export type CompanionPlaceRequest = Readonly<{ place: CompanionSettingsPlace; n: number }>;
+
+/** Shared setting controls stay editable while OFF, so a quiet preset can be prepared first.
+ * A row that an outer setting keeps from working stays operable with its value;
+ * it is dimmed and says which setting is in the way (stage 1, proposal 3-4). */
+export function CompanionBehaviorSettings({ preferences, onChange, site, onGoTo, placeRequest, active, radio, personalityRequest = 0 }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; site: CompanionSiteGates; onGoTo: (place: CompanionSettingsPlace) => void; placeRequest?: CompanionPlaceRequest; active: boolean; radio: ReactNode; personalityRequest?: number }) {
   const [tab, setTab] = useState<CompanionTab>("personality");
   const id = useId();
   const personalityPreview = { performer: "cheer-rehearsal", curious: preferences.jump ? "pounce" : "bow", affectionate: preferences.petting ? "ask-petting" : "bow", sleepy: preferences.sleep ? "doze-curl" : "stretch", tidy: "groom", mischievous: preferences.jump ? "tumble" : "bow", gourmet: "bow", homebody: "paper-knead", balanced: "bow" }[preferences.personality];
@@ -79,12 +86,49 @@ export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn
     section.scrollIntoView({ block: "start", behavior: "instant" });
     selected.focus({ preventScroll: true });
   }, [active, personalityRequest, tab]);
-  const row = (key: CompanionToggle, label: string, icon: ReactNode) => (
-    <div className="role-help-haptics" key={key}>
-      <RowLabel icon={icon} tone="leaf">{label}</RowLabel>
-      <Switch dataAct={companionToggleActions[key]} dataActOpt={preferences[key] ? "off" : "on"} label={`빅타민 ${label} 켜기/끄기`} on={preferences[key]} onToggle={() => onChange({ [key]: !preferences[key] })} />
-    </div>
-  );
+  const root = useRef<HTMLDivElement>(null);
+  // A place inside this page is reached here; any other place belongs to the host.
+  const [localPlace, setLocalPlace] = useState<CompanionPlaceRequest>({ place: "companion-power", n: 0 }), servedPlace = useRef(""), tabbedPlace = useRef(""), hostPlace = useRef(placeRequest?.n ?? 0);
+  useEffect(() => { if (placeRequest && placeRequest.n !== hostPlace.current) { hostPlace.current = placeRequest.n; setLocalPlace(current => ({ place: placeRequest.place, n: current.n + 1 })); } }, [placeRequest]);
+  // A page opened straight onto a place (the blocked home radio) arrives with its request already set.
+  useEffect(() => { if (placeRequest && placeRequest.n > 0) setLocalPlace(current => current.n ? current : { place: placeRequest.place, n: 1 }); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  const goTo = (place: CompanionSettingsPlace) => { if (place.startsWith("companion-")) setLocalPlace(current => ({ place, n: current.n + 1 })); else onGoTo(place); };
+  useLayoutEffect(() => {
+    const key = `${localPlace.place}:${localPlace.n}`;
+    if (!active || !localPlace.n || servedPlace.current === key) return;
+    const wanted = placeTabs[localPlace.place];
+    if (wanted && wanted !== tab) {
+      // Switch once. If the tab differs again, the user chose another one: the request is over.
+      if (tabbedPlace.current === key) { servedPlace.current = key; return; }
+      tabbedPlace.current = key; setTab(wanted); return;
+    }
+    // The radio card mounts a moment after its tab; look again for a few frames, then give up for good.
+    let frame = 0, tries = 0;
+    const attempt = () => { if (flashSettingsPlace(root.current, localPlace.place) || ++tries >= 40) servedPlace.current = key; else frame = requestAnimationFrame(attempt); };
+    attempt();
+    return () => cancelAnimationFrame(frame);
+  }, [active, localPlace, tab]);
+  const off = !preferences.enabled;
+  const block = (key: CompanionBlockedRow) => companionRowBlock(key, preferences, site);
+  const note = (value: CompanionSettingsNote | null, key?: string) => value && !off ? <SettingsNote key={key} onGoTo={place => goTo(place as CompanionSettingsPlace)} place={value.place} placeLabel={value.place && COMPANION_SETTINGS_PLACE_LABELS[value.place]} text={value.text} /> : null;
+  // Rows that share one reason say it once, under the last of them.
+  const rows = (items: readonly (readonly [CompanionToggle, string, ReactNode])[]) => items.flatMap(([key, label, icon], index) => {
+    const blockedRow = blockedRows[key], reason = blockedRow ? block(blockedRow) : off && key !== "learnFromYou" ? { text: "" } : null, next = items[index + 1];
+    // Several rows stopped by one setting: say it once, above them, where it is seen without scrolling.
+    // A single stopped row keeps its reason right under it.
+    const same = (other: readonly [CompanionToggle, string, ReactNode] | undefined) => { const otherRow = other && blockedRows[other[0]]; return Boolean(reason?.text && otherRow && block(otherRow)?.text === reason.text); };
+    const previous = items[index - 1], leads = same(next) && !same(previous), follows = same(previous);
+    return [
+      leads ? note(reason, `${key}-lead`) : null,
+      <div className={`role-help-haptics${reason ? " is-blocked" : ""}`} data-settings-place={key === "roam" ? "companion-roam" : undefined} key={key}>
+        <RowLabel icon={icon} tone="leaf">{label}</RowLabel>
+        <Switch dataAct={companionToggleActions[key]} dataActOpt={preferences[key] ? "off" : "on"} label={`빅타민 ${label} 켜기/끄기`} on={preferences[key]} onToggle={() => onChange({ [key]: !preferences[key] })} />
+      </div>,
+      leads || follows ? null : note(reason?.text ? reason : null, `${key}-note`),
+    ];
+  });
+  const row = (key: CompanionToggle, label: string, icon: ReactNode) => rows([[key, label, icon]]);
+  const soundStatus = companionSoundStatus(preferences, site), motionSound = block("soundMotion");
   const onKey = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
     const index = companionTabs.findIndex(item => item.key === tab);
     const next = event.key === "Home" ? 0 : event.key === "End" ? companionTabs.length - 1 : event.key === "ArrowRight" ? (index + 1) % companionTabs.length : event.key === "ArrowLeft" ? (index - 1 + companionTabs.length) % companionTabs.length : -1;
@@ -96,9 +140,9 @@ export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn
     nav.current?.querySelector<HTMLButtonElement>(`[data-companion-tab="${companionTabs[next].key}"]`)?.focus();
     playSfx("tab");
   };
-  return <div className="rhh-companion-settings">
+  return <div className="rhh-companion-settings" ref={root}>
     <div className="rhh-group-card rhh-companion-master">
-      <div className="role-help-haptics">
+      <div className="role-help-haptics" data-settings-place="companion-power">
         <RowLabel icon={<Sparkles size={20} />} tone="leaf"><span className="rhh-companion-master-copy"><strong>빅타민</strong><span>{preferences.enabled ? "함께 지내는 중" : "쉬는 중"}</span></span></RowLabel>
         <Switch dataAct="companion-enabled" dataActOpt={preferences.enabled ? "off" : "on"} label="AI 빅타민 켜기/끄기" on={preferences.enabled} onToggle={() => onChange({ enabled: !preferences.enabled })} />
       </div>
@@ -107,10 +151,10 @@ export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn
       <span aria-hidden="true" className="rhh-seg-thumb" />
       {companionTabs.map(item => <button aria-controls={`${id}-${item.key}-panel`} aria-selected={tab === item.key} className={tab === item.key ? "on" : ""} data-act="settings-companion-tab" data-act-opt={item.key} data-companion-tab={item.key} id={`${id}-${item.key}`} key={item.key} onClick={() => { if (tab !== item.key) playSfx("tab"); setTab(item.key); }} onKeyDown={onKey} role="tab" tabIndex={tab === item.key ? 0 : -1} type="button"><span aria-hidden="true">{item.icon}</span>{item.label}</button>)}
     </div>
+    {off && tab !== "personality" ? <SettingsNote className="rhh-note-resting" text="빅타민이 쉬는 중이라 아래 설정은 켜면 적용돼요" /> : null}
     <div aria-labelledby={`${id}-motion`} hidden={tab !== "motion"} id={`${id}-motion-panel`} role="tabpanel" tabIndex={0}>
       <div className="rhh-group-card">
-        {row("roam", "돌아다니기", <Pointer size={15} />)}
-        {row("jump", "깡충 뛰기", <Sparkles size={15} />)}
+        {rows([["roam", "돌아다니기", <Pointer key="i" size={15} />], ["jump", "깡충 뛰기", <Sparkles key="i" size={15} />]])}
         {row("activeWhileVisible", "다른 창 작업 중에도 활동", <Pointer size={15} />)}
         {row("sleep", "자동 잠자기", <EyeOff size={15} />)}
         <div className="role-help-haptics rhh-stack-sm">
@@ -121,11 +165,8 @@ export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn
     </div>
     <div aria-labelledby={`${id}-pranks`} hidden={tab !== "pranks"} id={`${id}-pranks-panel`} role="tabpanel" tabIndex={0}>
       <div className="rhh-group-card">
-        {row("heartPrank", "하트 콩", <Heart size={15} />)}
-        {row("cardPrank", "일정 기울이기", <PanelTopOpen size={15} />)}
-        {row("ambientPrank", "숨바꼭질", <Leaf size={15} />)}
-        {row("panelPrank", "패널 자리 장난", <ArrowDownToLine size={15} />)}
-        {row("rarePrank", "희귀 소품 장난", <Sparkles size={15} />)}
+        {rows([["heartPrank", "하트 콩", <Heart key="i" size={15} />], ["cardPrank", "일정 기울이기", <PanelTopOpen key="i" size={15} />], ["ambientPrank", "숨바꼭질", <Leaf key="i" size={15} />],
+          ["panelPrank", "패널 자리 장난", <ArrowDownToLine key="i" size={15} />], ["rarePrank", "희귀 소품 장난", <Sparkles key="i" size={15} />]])}
       </div>
     </div>
     <div aria-labelledby={`${id}-affection`} hidden={tab !== "affection"} id={`${id}-affection-panel`} role="tabpanel" tabIndex={0}>
@@ -136,12 +177,12 @@ export function CompanionBehaviorSettings({ preferences, onChange, globalSoundOn
       </div>
     </div>
     <div aria-labelledby={`${id}-sound`} hidden={tab !== "sound"} id={`${id}-sound-panel`} role="tabpanel" tabIndex={0}>
+      <div aria-live="polite" className="rhh-sound-status-slot"><SettingsNote className="rhh-sound-status" onGoTo={place => goTo(place as CompanionSettingsPlace)} place={soundStatus.place} placeLabel={soundStatus.place && COMPANION_SETTINGS_PLACE_LABELS[soundStatus.place]} state={soundStatus.state} text={soundStatus.text} /></div>
       <div className="rhh-group-card rhh-companion-sound">
-        <div className="role-help-haptics"><RowLabel icon={<Volume2 size={15} />} tone="water">빅타민 효과음</RowLabel><Switch dataAct="companion-sound-enabled" dataActOpt={preferences.sound ? "off" : "on"} label="빅타민 효과음 켜기/끄기" on={preferences.sound} onToggle={() => onChange({ sound: !preferences.sound })} /></div>
+        <div className="role-help-haptics" data-settings-place="companion-sound"><RowLabel icon={<Volume2 size={15} />} tone="water">빅타민 효과음</RowLabel><Switch dataAct="companion-sound-enabled" dataActOpt={preferences.sound ? "off" : "on"} label="빅타민 효과음 켜기/끄기" on={preferences.sound} onToggle={() => onChange({ sound: !preferences.sound })} /></div>
         <div className="role-help-haptics rhh-stack-sm"><RowLabel icon={<Volume1 size={15} />} tone="water">빅타민 음량</RowLabel><div className="rhh-volume"><VolumeX aria-hidden="true" size={15} /><input aria-label="빅타민 음량" aria-valuetext={`${preferences.soundVolume}%`} data-act="companion-sound-volume" data-sfx="off" max={100} min={0} onChange={event => onChange({ soundVolume: Number(event.currentTarget.value) })} onKeyUp={event => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) previewCompanionSound("care", { ...preferences, soundVolume: Number(event.currentTarget.value) }); }} onPointerUp={event => previewCompanionSound("care", { ...preferences, soundVolume: Number(event.currentTarget.value) })} step={5} style={{ "--vol": `${preferences.soundVolume}%` } as CSSProperties} type="range" value={preferences.soundVolume} /><Volume2 aria-hidden="true" size={15} /><b className="rhh-vol-num">{preferences.soundVolume}</b></div></div>
-        {([{ category: "care", key: "soundCare", action: "companion-sound-care" }, { category: "motion", key: "soundMotion", action: "companion-sound-motion" }, { category: "keepsakes", key: "soundKeepsakes", action: "companion-sound-keepsakes" }] as const).map(({ category, key, action }) => <div className="role-help-haptics" key={category}><RowLabel icon={category === "care" ? <Heart size={15} /> : category === "motion" ? <Sparkles size={15} /> : <PartyPopper size={15} />} tone="water">{COMPANION_SOUND_CATEGORY_NAMES[category]}</RowLabel><div className="rhh-companion-sound-actions"><button aria-label={`${COMPANION_SOUND_CATEGORY_NAMES[category]} 소리 미리 듣기`} className="rhh-link" data-act="companion-sound-preview" data-act-opt={category} data-sfx="off" disabled={!globalSoundOn || !preferences.enabled || !preferences.sound || !preferences[key] || preferences.soundVolume === 0} onClick={() => previewCompanionSound(category, preferences)} type="button"><Volume1 aria-hidden="true" size={16} /></button><Switch dataAct={action} dataActOpt={preferences[key] ? "off" : "on"} label={`빅타민 ${COMPANION_SOUND_CATEGORY_NAMES[category]} 소리 켜기/끄기`} on={preferences[key]} onToggle={() => onChange({ [key]: !preferences[key] })} /></div></div>)}
+        {([{ category: "care", key: "soundCare", action: "companion-sound-care" }, { category: "motion", key: "soundMotion", action: "companion-sound-motion" }, { category: "keepsakes", key: "soundKeepsakes", action: "companion-sound-keepsakes" }] as const).map(({ category, key, action }) => <Fragment key={category}><div className={`role-help-haptics${category === "motion" && motionSound || off ? " is-blocked" : ""}`}><RowLabel icon={category === "care" ? <Heart size={15} /> : category === "motion" ? <Sparkles size={15} /> : <PartyPopper size={15} />} tone="water">{COMPANION_SOUND_CATEGORY_NAMES[category]}</RowLabel><div className="rhh-companion-sound-actions"><button aria-label={`${COMPANION_SOUND_CATEGORY_NAMES[category]} 소리 미리 듣기`} className="rhh-link" data-act="companion-sound-preview" data-act-opt={category} data-sfx="off" disabled={!site.soundOn || !preferences.enabled || !preferences.sound || !preferences[key] || preferences.soundVolume === 0} onClick={() => previewCompanionSound(category, preferences)} type="button"><Volume1 aria-hidden="true" size={16} /></button><Switch dataAct={action} dataActOpt={preferences[key] ? "off" : "on"} label={`빅타민 ${COMPANION_SOUND_CATEGORY_NAMES[category]} 소리 켜기/끄기`} on={preferences[key]} onToggle={() => onChange({ [key]: !preferences[key] })} /></div></div>{category === "motion" ? note(motionSound) : null}</Fragment>)}
       </div>
-      {!globalSoundOn && <p className="rhh-group-foot">전체 효과음이 꺼져 있어요.</p>}
       {active && tab === "sound" && radio}
     </div>
     <div aria-labelledby={`${id}-personality`} hidden={tab !== "personality"} id={`${id}-personality-panel`} role="tabpanel" tabIndex={0}>
