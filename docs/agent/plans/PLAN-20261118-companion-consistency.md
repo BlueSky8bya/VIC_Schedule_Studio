@@ -101,4 +101,15 @@
 
 최종7244PASS/1SKIP(463파일),production fixture35+장기hover6=41PASS(실패/재시도0),SQL계약5PASS. typecheck/전체lint/production build/harness449문서/diffcheck 통과. 추가 blink27픽셀검사에서 alpha·canonical입RGB변경0; broad eye corridor가 입을 지우던 회귀는 명시적 보호와 새 unit으로 막았다. 독립 role/boundary/UX/QA 검수 차단 결함 없음. full12480조합/판·eye648·readiness3도 통과했다. 실제 방송PC/진짜로그인권한/자연생활36전체 증거로 확대하지 않는다.
 
-새 증거는 release worktree `.scratch-pw/companion-release/`의 unit-passed/live-passed/long-passed JSON, build-final/typecheck-passed/lint-passed/harness-passed/sql-contracts 로그와 blink-proof PNG/JSON. 같은 화면 전후는 `.scratch-pw/companion-consistency/full/runs/20261118-running-eyes/`에 origin/main684기준으로 보존했다. 운영 전 익명뷰어도 실제JS에서684fullSHA 확인·실제키보드쓰담 확인, production-before JSON/production/before-viewer.png 보존. 운영후 확인은 main push/Workers Builds 완료 뒤 별도 시행한다.
+새 증거는 release worktree `.scratch-pw/companion-release/`의 unit-passed/live-passed/long-passed JSON, build-final/typecheck-passed/lint-passed/harness-passed/sql-contracts 로그와 blink-proof PNG/JSON. 같은 화면 전후는 `.scratch-pw/companion-consistency/full/runs/20261118-running-eyes/`에 origin/main684기준으로 보존했다. 운영 전 익명뷰어도 실제JS에서684fullSHA 확인·실제키보드쓰담 확인, production-before JSON/production/before-viewer.png 보존.
+
+### 완료 — main push·Cloudflare 운영 확인 (2026-11-18 KST)
+
+기능 커밋 `68b46f11045b65fc88db27112cef4da8d35e7446`을 main에 정상 fast-forward push했다. Cloudflare Workers Builds `611348a8-d4a7-4ec9-8a83-a5fb5f1c96c8` 성공, 운영 version `e713b9fe-6819-4863-aea6-7db012894014`에 트래픽100%를 확인했다. 운영은 [victory-broadcast.com](https://victory-broadcast.com)이며 로컬 배포·DB 변경·비밀 이동은 하지 않았다.
+
+- [원격 quality 실행44316331205](https://github.com/BlueSky8bya/VIC_Schedule_Studio/actions/runs/44316331205): 단위/SQL/harness/build/typecheck/lint 모두 성공. 퇴역 Vercel의 기존 계정 차단 status는 실패로 남아 있으며 전체 GitHub status가 모두 녹색이라는 뜻은 아니다. 실제 배포 대상은 Cloudflare다.
+- 실제 운영 JS3개에서 기능 fullSHA, HTTP200, 집 열기/옮기기/Enter 쓰담의 melt와 왕관4귀 composite 표시, pageerror0 확인. 정적 packet33개 HEAD200과 대표6개 GET의 SHA 일치. `production-after-checked.json`1PASS와 `production/after-proof.json`, PNG, `assets-proof.json`, `index.html`에 기록했다.
+- 첫 `production-after.json`은 composite 그림 준비 전 입력해 melt 관찰에 실패했다. 실패 trace를 보존하고, 제품 변경 없이 그림 준비 조건을 추가한 후 재검사에 통과했다. 운영의 모든 시도가 성공했다고 주장하지 않는다. 실기기 성능·진짜 로그인 권한·자연생활36전체 검증은 별도다.
+- 완료 항목은 CURRENT_STATE/ACTIVE_PLAN에서 제외한다. 이 후속은 문서만 변경하며 제품 코드는 위 기능 커밋과 같다. 후속 SHA의 자동 배포와 실제 JS/쓰담 확인은 로컬 인계/QA에 기록해 자기 SHA를 문서에 추가하는 반복 커밋을 만들지 않는다. docs-only quality 미실행은 새 PASS로 세지 않는다.
+- 문서 후속 검증: harness449문서/brief7962bytes, 관련 agent-memory 단위18개, diffcheck 통과. 기존 다른 활성 항목은 그대로 유지했다.
+- QA 보존 위치: 원프로젝트 `.scratch-pw/companion-release-20261118/` 아래에 release worktree의 `.scratch-pw`를 옮기고 SHA256 manifest로 전후 대조한다. 앞 브랜치 증거는 `.scratch-pw/companion-consistency-release-20261118/`에 별도 보존한다. 기존14일 정책 적용 대상이며 raw Cloudflare 응답은 ignored 로컬만 유지한다. 임시 worktree는 clean/원격 일치/junction 없음 확인 뒤 제거한다.

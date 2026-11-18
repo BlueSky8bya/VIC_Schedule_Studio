@@ -25,7 +25,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| COMPANION-CONSISTENCY-20261118 | Release in progress | Main push/deploy authorized; verify exact production SHA and companion | [Plan](plans/PLAN-20261118-companion-consistency.md) |
 | COMPANION-PANEL-REPORT-20261026 | Watch original cause | Inspect bounded local recurrence evidence on a distinct real failure; preserve original unconfirmed report | [Contract](verification/COMPANION_VISIBILITY-20261026.md) |
 | DAILY-0900 | Active | Separate risk verification/discovery; adopted work through exact release, preserve carryover | [Search focus](plans/PLAN-20261025-search-focus.md) |
 | OPS-CLOUDFLARE-MOVE | Live, cleanup pending | Live on victory-broadcast.com via Workers Builds (Vercel paused until 2026-12-13, no further use). Branch cleanup/post-cloudflare removes Vercel leftovers and private-layer code; 0159 written, not applied (owner approval after deploy check) | [Runbook](../ops/CLOUDFLARE_MIGRATION.md) |
