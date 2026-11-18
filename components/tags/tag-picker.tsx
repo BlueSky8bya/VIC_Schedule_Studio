@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, type CSSProperties } from "react";
+import { useLayoutEffect, useMemo, useRef, type CSSProperties } from "react";
 import type { BroadcastTag, ColorPaletteEntry } from "@/lib/domain/schedule-types";
 import { createTagVisualResolver } from "@/lib/tags/tag-visual";
 import { hapticTick } from "@/lib/ui/haptics";
@@ -38,6 +38,40 @@ export function TagPicker({
     };
   }, [tags]);
 
+  // 글꼴이 커져 이름이 한 칸에 안 들어가는 칩만 두 칸을 차지한다(2026-11-18 소유자: 1~2개 때문에 3열을
+  // 망가뜨리지 않게). 나머지는 그대로 한 칸이고, 빈자리는 뒤 칩이 채운다(CSS grid-auto-flow: dense).
+  // 칸 폭·이름 폭을 실측해 DOM 속성(data-wide)만 바꾼다 — 렌더를 다시 돌리지 않는다.
+  const root = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const host = root.current;
+    if (!host || typeof ResizeObserver === "undefined") return;
+    const measure = () => {
+      for (const grid of host.querySelectorAll<HTMLElement>(".tp-content, .tp-mods")) {
+        const gs = getComputedStyle(grid);
+        const cols = gs.gridTemplateColumns.split(" ").filter(Boolean).length;
+        const gap = parseFloat(gs.columnGap) || 0;
+        const inner = grid.clientWidth - (parseFloat(gs.paddingLeft) || 0) - (parseFloat(gs.paddingRight) || 0);
+        const col = (inner - gap * (cols - 1)) / Math.max(1, cols);
+        for (const chip of grid.querySelectorAll<HTMLElement>(":scope > .tp-chip")) {
+          const name = chip.querySelector<HTMLElement>(".tp-name");
+          if (!name) continue;
+          const cs = getComputedStyle(chip), mark = getComputedStyle(chip, "::before");
+          const markW = mark.content && mark.content !== "none" ? (parseFloat(mark.width) || 0) + (parseFloat(cs.columnGap) || 0) : 0;
+          const need = name.offsetWidth + markW + (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0)
+            + (parseFloat(cs.borderLeftWidth) || 0) + (parseFloat(cs.borderRightWidth) || 0);
+          const wide = cols > 1 && col > 0 && need > col + 0.5;
+          if (chip.hasAttribute("data-wide") !== wide) chip.toggleAttribute("data-wide", wide);
+        }
+      }
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(host);
+    for (const name of host.querySelectorAll(".tp-name")) ro.observe(name);
+    document.fonts?.addEventListener("loadingdone", measure);
+    return () => { ro.disconnect(); document.fonts?.removeEventListener("loadingdone", measure); };
+  }, [tags, selectedIds]);
+
   const full = selectedIds.length >= max;
   const orderOf = (id: string) => selectedIds.indexOf(id);
 
@@ -69,7 +103,7 @@ export function TagPicker({
         type="button"
        data-act="tp-chip">
         {selected ? <b className="tp-order">{orderOf(tag.id) + 1}</b> : null}
-        {tag.displayName}
+        <span className="tp-name">{tag.displayName}</span>
       </button>
     );
   };
@@ -78,7 +112,7 @@ export function TagPicker({
   // 예전엔 콘텐츠 라벨만 칸 밖에 떠 있어 비대칭이었다(2026-08-31 사용자 지적).
   // 선택 개수(n/max) 배지는 이 컴포넌트가 아니라 호출부의 '태그' 제목 옆에 붙는다.
   return (
-    <div className="tag-picker2">
+    <div className="tag-picker2" ref={root}>
       <div className="tp-group">
         <div className="tp-section-label">콘텐츠</div>
         <div className="tp-content">{contentTags.map((t) => chip(t, false))}</div>

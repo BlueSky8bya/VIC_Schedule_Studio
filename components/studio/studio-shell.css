@@ -4027,6 +4027,19 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
 .studio-workspace .event-editor-panel .tp-mods {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }
+/* 글꼴이 커져 이름이 한 칸에 안 들어가는 칩만 두 칸(TagPicker가 실측해 data-wide) — 3열은 그대로 두고,
+   생긴 빈자리는 뒤 칩이 당겨 채운다(dense). 2026-11-18 소유자: "1~2개 때문에 3열을 망가뜨리긴 싫다". */
+.tp-content,
+.tp-mods {
+  grid-auto-flow: row dense;
+}
+.tp-content > .tp-chip[data-wide],
+.tp-mods > .tp-chip[data-wide] {
+  grid-column: span 2;
+}
+.tp-name {
+  white-space: nowrap;
+}
 .studio-workspace .event-editor-panel .fold-head {
   min-height: 38px;
   padding-block: var(--space-1);
