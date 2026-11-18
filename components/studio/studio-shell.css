@@ -4069,6 +4069,17 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
   box-shadow: inset 0 0 0 1px var(--tp-border, rgb(0 0 0 / 12%));
   transition: background var(--dur-1) var(--ease), opacity var(--dur-1) var(--ease);
 }
+/* 컨텐츠 = 네모, 형식 = 동그라미(2026-11-18 소유자) — 시청자 상세 팝오버·범례와 같은 모양 규칙.
+   컨텐츠는 카드 면 색이라 네모 색칩, 형식은 카드 구석 점이라 작은 원. */
+.studio-workspace .event-editor-panel .tp-content .tp-chip::before {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+.studio-workspace .event-editor-panel .tp-mods .tp-chip::before {
+  width: 8px;
+  height: 8px;
+}
 .studio-workspace .event-editor-panel .tp-chip:hover:not(:disabled):not(.selected) {
   border-color: var(--tp-border, var(--line));
   background: color-mix(in srgb, var(--tp-bg) 24%, var(--surface));
