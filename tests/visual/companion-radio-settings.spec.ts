@@ -102,7 +102,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`${surface}
   await expect(radio.getByRole("checkbox")).toHaveCount(COMPANION_RADIO_TRACKS.length);
   await radio.getByRole("checkbox").first().uncheck();
   expect((await saved(page)).excludedIds).toEqual([COMPANION_RADIO_TRACKS[0].id]);
-  await radio.getByRole("switch", { name: "빅타민 음악 반응 켜기/끄기", exact: true }).click();
+  await radio.getByRole("switch", { name: "빅타민이 스스로 라디오 틀기 켜기/끄기", exact: true }).click();
   const volume = radio.getByRole("slider", { name: "라디오 음량", exact: true });
   await volume.focus(); await volume.press("Home"); await volume.press("ArrowRight");
   expect(await saved(page)).toMatchObject({ volume: 5, react: false });
@@ -175,8 +175,9 @@ test("radio empty pool, dedicated OFF, zero volume and global OFF keep play cont
   await expect(radio.getByRole("button", { name: "다음 곡", exact: true })).toBeDisabled();
   await radio.getByRole("switch", { name: "빅타민 라디오 켜기/끄기", exact: true }).click();
   const level = dialog.getByRole("radiogroup", { name: "빅타민 소리", exact: true });
+  // The radio is apart from the companion's own sound (redesign 2-라): its level does not lock the play button.
   await level.getByRole("radio", { name: "끔", exact: true }).click();
-  await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeDisabled();
+  await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeEnabled();
   await level.getByRole("radio", { name: "전부", exact: true }).click();
   await dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true }).click();
   await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeDisabled();

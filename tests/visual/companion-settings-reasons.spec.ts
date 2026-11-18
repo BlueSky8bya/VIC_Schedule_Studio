@@ -77,7 +77,7 @@ test("site sound off: status and radio lead to the site switch; the site sound t
 });
 
 test("a blocked home radio opens its settings row with the reason instead of doing nothing", async ({ page }) => {
-  await seed(page, {}, { sound: false });
+  await seed(page, { "vic.companionRadio.v1": JSON.stringify({ enabled: false, volume: 35, react: true, excludedIds: [] }) });
   await page.goto("/visual-fixture/poster");
   const button = page.locator(".vc-radio-button");
   await expect(button).toBeVisible();
@@ -85,12 +85,33 @@ test("a blocked home radio opens its settings row with the reason instead of doi
   const book = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
   const radio = book.locator(".rhh-companion-radio");
   await expect(radio).toBeVisible();
-  await expect(radio.locator(".rhh-radio-now p")).toHaveText("빅타민 소리가 꺼져 있어요");
+  await expect(radio.locator(".rhh-radio-now p")).toHaveText("라디오가 꺼져 있어요");
   await expect(radio).toHaveAttribute("data-flash", "");
-  await radio.getByRole("button", { name: "빅타민 소리로", exact: true }).click();
-  const own = book.getByRole("radiogroup", { name: "빅타민 소리", exact: true }).getByRole("radio", { name: "끔", exact: true });
-  await expect(own).toBeFocused(); await expect(own).toBeChecked();
-  expect(JSON.parse((await saved(page)).companion!).sound).toBe(false);
+  // The switch that is in the way is right there and took focus.
+  await expect(radio.getByRole("switch", { name: "빅타민 라디오 켜기/끄기", exact: true })).toBeFocused();
+  expect(JSON.parse((await page.evaluate(() => localStorage.getItem("vic.companionRadio.v1")))!).enabled).toBe(false);
+});
+
+test("the companion's own sound off does not block the radio: the home button plays (redesign 2-라)", async ({ page }) => {
+  await seed(page, {}, { sound: false });
+  await page.goto("/visual-fixture/poster");
+  const button = page.locator(".vc-radio-button");
+  await expect(button).toBeVisible();
+  await expect(button).toHaveAttribute("aria-label", "라디오 켜기");
+  await button.click();
+  await expect(button).toHaveAttribute("aria-label", "라디오 끄기", { timeout: 15000 });
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  // The self-start row says why the companion will not start it by itself, and where that is set.
+  await page.getByRole("button", { name: "설정", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "설정", exact: true });
+  await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
+  await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "소리", exact: true }).click();
+  const radio = dialog.locator(".rhh-companion-radio");
+  await expect(radio).toContainText("빅타민 소리가 '끔'이라 스스로 라디오를 틀지 않아요");
+  await expect(radio.getByRole("button", { name: "정지", exact: true })).toBeEnabled();
+  await radio.getByRole("button", { name: "정지", exact: true }).click();
+  await expect(button).toHaveAttribute("aria-label", "라디오 켜기");
 });
 
 test("from the book, a site reason leaves the book for the full settings", async ({ page }) => {

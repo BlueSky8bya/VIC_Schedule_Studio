@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { COMPANION_RADIO_TRACKS } from "@/lib/ui/viewer-companion/radio-catalog";
 
 const state = vi.hoisted(() => ({
-  now: 0, master: true, masterVolume: 60, companion: { enabled: true, sound: true, soundVolume: 60 }, radio: { enabled: true, volume: 35, react: true, excludedIds: [] as string[] },
+  now: 0, master: true, masterVolume: 60, companion: { enabled: true, sound: true, soundVolume: 60, soundCare: true, soundMotion: true, soundKeepsakes: true }, radio: { enabled: true, volume: 35, react: true, excludedIds: [] as string[] },
   gain: { gain: { value: 0, setTargetAtTime: vi.fn(), cancelScheduledValues: vi.fn() } }, prefs: [] as Array<() => void>, resume: vi.fn(),
 }));
 vi.mock("@/lib/ui/sfx", () => ({ soundEnabled: () => state.master, soundVolume: () => state.masterVolume, connectCompanionMedia: vi.fn(() => ({ context: Object.assign(new EventTarget(), { currentTime: 0, state: "running", resume: state.resume }), gain: state.gain })) }));
@@ -23,7 +23,7 @@ let radio: typeof import("@/lib/ui/viewer-companion/radio-player");
 let doc: EventTarget & { hidden: boolean; documentElement: { hasAttribute: () => boolean }; querySelector: () => object | null; querySelectorAll: () => object[] };
 beforeEach(async () => {
   vi.resetModules(); delayed = false; created = []; pending = []; state.now = 0; state.master = true; state.masterVolume = 60;
-  state.companion = { enabled: true, sound: true, soundVolume: 60 }; state.radio = { enabled: true, volume: 35, react: true, excludedIds: [] }; state.prefs = []; state.resume.mockReset().mockResolvedValue(undefined);
+  state.companion = { enabled: true, sound: true, soundVolume: 60, soundCare: true, soundMotion: true, soundKeepsakes: true }; state.radio = { enabled: true, volume: 35, react: true, excludedIds: [] }; state.prefs = []; state.resume.mockReset().mockResolvedValue(undefined);
   vi.spyOn(performance, "now").mockImplementation(() => state.now);
   doc = Object.assign(new EventTarget(), { hidden: false, documentElement: { hasAttribute: () => false }, querySelector: () => null, querySelectorAll: () => [] });
   vi.stubGlobal("document", doc); vi.stubGlobal("window", new EventTarget()); vi.stubGlobal("Audio", FakeAudio); vi.stubGlobal("matchMedia", () => ({ matches: false }));
@@ -39,8 +39,12 @@ describe("141 actual radio contact owns its asynchronous media request", () => {
     expect(radio.canCompanionSetRadio()).toBe(false); const manual = radio.getCompanionRadioSnapshot();
     expect(await radio.setCompanionRadioPlaying(false)).toBe(false); expect(radio.getCompanionRadioSnapshot()).toBe(manual);
     state.now = 14999; expect(await radio.setCompanionRadioPlaying(false)).toBe(false);
-    state.now = 15000; expect(radio.canCompanionSetRadio()).toBe(true); expect(await radio.setCompanionRadioPlaying(false)).toBe(true);
-    expect(radio.getCompanionRadioSnapshot().playing).toBe(false);
+    // After the lease, playback the user started is still theirs (redesign 2-ra): the companion cannot switch it off.
+    state.now = 15000; expect(radio.canCompanionSetRadio()).toBe(false); expect(await radio.setCompanionRadioPlaying(false)).toBe(false);
+    expect(radio.getCompanionRadioSnapshot()).toBe(manual);
+    // Once the user stops it, the lease runs from that stop.
+    radio.stopCompanionRadio("human"); state.now = 29999; expect(radio.canCompanionSetRadio()).toBe(false);
+    state.now = 30000; expect(radio.canCompanionSetRadio()).toBe(true);
   });
 
   it("a manual stop of a pending autonomous contact invalidates its late success and extends the lease", async () => {

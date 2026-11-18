@@ -4,8 +4,9 @@
  * the structure and every rule stay as they are; the screen only says which
  * outer setting is in the way and where it lives. Each function returns the
  * single outermost reason. Wording follows the rules that are true *today*:
- * the sound level (off / touch / all) decides, and the radio is still tied to
- * the companion's own sound switch until stage 2-라.
+ * the sound level (off / touch / all) decides the companion's sounds, the
+ * radio plays for the user whatever that level is, and the companion starts
+ * it by itself only at "all" with "빅타민이 스스로 틀기" on.
  *
  * Pure functions. They never change a setting.
  */
@@ -45,7 +46,7 @@ export function companionSoundStatus(preferences: Readonly<CompanionPreferences>
   return { state: "on", text: "지금 소리가 나요" };
 }
 
-export type CompanionBlockedRow = "roam" | "jump" | "heartPrank" | "cardPrank" | "ambientPrank" | "panelPrank" | "rarePrank" | "musicReact";
+export type CompanionBlockedRow = "roam" | "jump" | "heartPrank" | "cardPrank" | "ambientPrank" | "panelPrank" | "rarePrank" | "radioSelfStart";
 const pranks: readonly CompanionBlockedRow[] = ["heartPrank", "cardPrank", "ambientPrank", "panelPrank", "rarePrank"];
 
 /** The outer setting that keeps this row from doing anything, if any. The
@@ -53,24 +54,24 @@ const pranks: readonly CompanionBlockedRow[] = ["heartPrank", "cardPrank", "ambi
  * operable, so the note explains why switching it changes nothing yet. */
 export function companionRowBlock(row: CompanionBlockedRow, preferences: Readonly<CompanionPreferences>, site: CompanionSiteGates): CompanionSettingsNote | null {
   if (!preferences.enabled) return resting;
-  const what = row === "musicReact" ? "음악에 반응하지 않아요" : pranks.includes(row) ? "장난을 치지 않아요" : row === "jump" ? "뛰지 않아요" : "걷거나 뛰지 않아요";
+  const what = row === "radioSelfStart" ? "스스로 라디오를 틀지 않아요" : pranks.includes(row) ? "장난을 치지 않아요" : row === "jump" ? "뛰지 않아요" : "걷거나 뛰지 않아요";
   if (site.reduceMotion) return { text: `${reduceWords} ${what}`, place: "site-motion" };
-  if ((row === "musicReact" || row === "rarePrank") && gfxResting(site.gfx)) return { text: `${gfxWords(site.gfx)} ${row === "rarePrank" ? "소품 묘기를 쉬어요" : what}`, place: "site-gfx" };
+  if ((row === "radioSelfStart" || row === "rarePrank") && gfxResting(site.gfx)) return { text: `${gfxWords(site.gfx)} ${row === "rarePrank" ? "소품 묘기를 쉬어요" : what}`, place: "site-gfx" };
   // With the background effect fully off the card never tilts and the panel never moves (the "soft" level keeps both).
   if ((row === "cardPrank" || row === "panelPrank") && site.gfx === "off") return { text: `${gfxWords(site.gfx)} ${row === "cardPrank" ? "일정을 기울이지 않아요" : "패널을 옮기지 않아요"}`, place: "site-gfx" };
   // Called to the cushion it still walks and jumps home, so only what it does by itself is ruled out.
   if (row !== "roam" && !preferences.roam) return { text: `'돌아다니기'가 꺼져 있어 ${row === "jump" ? "혼자서는 뛰지 않아요" : what}`, place: "companion-roam" };
+  // Starting the radio by itself is one of its own sounds: only at the "all" level.
+  if (row === "radioSelfStart" && companionSoundLevel(preferences) !== "all") return { text: `빅타민 소리가 '${companionSoundLevel(preferences) === "off" ? "끔" : "만질 때만"}'이라 ${what}`, place: "companion-sound" };
   return null;
 }
 
 /** Why pressing play on the home radio does nothing, outermost first. The
- * wording is the one the radio card already used; only the place is new. */
+ * companion's own sound level is not a reason any more (stage 2-라). */
 export function companionRadioBlock(preferences: Readonly<CompanionPreferences>, radio: Readonly<CompanionRadioPreferences>, site: Pick<CompanionSiteGates, "soundOn" | "soundVolume">): CompanionSettingsNote | null {
   if (!site.soundOn) return { text: "전체 소리가 꺼져 있어요", place: "site-sound" };
   if (site.soundVolume <= 0) return { text: "전체 음량이 0이에요", place: "site-sound" };
   if (!preferences.enabled) return { text: "빅타민이 꺼져 있어요", place: "companion-power" };
-  if (!preferences.sound) return { text: "빅타민 소리가 꺼져 있어요", place: "companion-sound" };
-  if (preferences.soundVolume <= 0) return { text: "빅타민 음량이 0이에요", place: "companion-sound" };
   if (!radio.enabled) return { text: "라디오가 꺼져 있어요" };
   if (radio.volume <= 0) return { text: "라디오 음량이 0이에요" };
   return null;

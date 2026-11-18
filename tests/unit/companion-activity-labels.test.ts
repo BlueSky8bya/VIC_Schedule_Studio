@@ -8,7 +8,7 @@ const TOGGLES = [
   "companion-enabled", "companion-active-visible", "companion-roam", "companion-jump", "companion-sleep",
   "companion-heart-prank", "companion-card-prank", "companion-hide", "companion-panel-prank",
   "companion-drag-enabled", "companion-petting-enabled", "companion-feeding-enabled", "companion-learning-enabled",
-  "companion-radio-enabled", "companion-radio-react"
+  "companion-radio-enabled", "companion-radio-self-start"
 ] as const;
 
 describe("142 direct personality navigation activity", () => {
@@ -53,7 +53,7 @@ const COLLECTION = [
   ["companion-sound-volume", "빅타민 음량"],
   ["companion-radio-enabled#on", "빅타민 집 라디오 · 켜기"],
   ["companion-radio-volume", "빅타민 라디오 음량"],
-  ["companion-radio-react#off", "빅타민 음악 반응 · 끄기"],
+  ["companion-radio-self-start#off", "빅타민이 스스로 라디오 틀기 · 끄기"],
   ["companion-radio-mood#graceful", "빅타민 라디오 분위기 · 우아하게"],
   ["companion-radio-track-toggle", "빅타민 라디오 곡 고르기"],
   ["companion-radio-list#open", "빅타민 라디오 곡 목록 · 펴기"],
@@ -111,7 +111,7 @@ describe("빅타민 행동 기록 이름과 저장 경계", () => {
     expect(`${story} ${gist}`).not.toContain("companion-");
   });
   it("소리 3단계로 합쳐진 옛 단추는 옛 기록으로만 읽힌다", () => {
-    for (const [target, name] of [["companion-sound-enabled#on", "빅타민 효과음 · 켜기"], ["companion-sound-care#off", "빅타민 돌보기 소리 · 끄기"], ["companion-sound-motion#on", "빅타민 움직임 소리 · 켜기"], ["companion-sound-keepsakes#off", "빅타민 발견·선물 소리 · 끄기"], ["companion-sound-preview#motion", "빅타민 소리 미리 듣기 · 움직임"]] as const) {
+    for (const [target, name] of [["companion-sound-enabled#on", "빅타민 효과음 · 켜기"], ["companion-sound-care#off", "빅타민 돌보기 소리 · 끄기"], ["companion-sound-motion#on", "빅타민 움직임 소리 · 켜기"], ["companion-sound-keepsakes#off", "빅타민 발견·선물 소리 · 끄기"], ["companion-sound-preview#motion", "빅타민 소리 미리 듣기 · 움직임"], ["companion-radio-react#off", "빅타민 음악 반응 · 끄기"]] as const) {
       expect(sanitizeTarget(target)).toBe(target);
       const label = describeTarget("ui.click", target);
       expect(label.name).toBe(name); expect(label.retired).toBe(true); expect(label.unnamed).toBeUndefined();

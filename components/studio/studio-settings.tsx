@@ -186,7 +186,7 @@ export type FontSettings = {
 
 function CompanionRadioSettings({ companion, site, onGoTo }: { companion: CompanionPreferences; site: CompanionSiteGates; onGoTo: (place: CompanionSettingsPlace) => void }) {
   const globalSoundOn = site.soundOn, globalSoundVolume = site.soundVolume;
-  const companionAudible = companion.enabled && companion.sound && companion.soundVolume > 0;
+  const companionAudible = companion.enabled; // the radio no longer waits for the companion's own sound level (2-라)
   const globalAudible = globalSoundOn && globalSoundVolume > 0;
   const [preferences, setPreferences] = useState<CompanionRadioPreferences | null>(null);
   const [snapshot, setSnapshot] = useState<ReturnType<typeof getCompanionRadioSnapshot> | null>(null);
@@ -228,12 +228,12 @@ function CompanionRadioSettings({ companion, site, onGoTo }: { companion: Compan
   const pool = selected;
   const block = companionRadioBlock(companion, preferences, site), blockedReason = block?.text ?? null;
   const blocked = blockedReason !== null;
-  const reactBlock = companion.enabled ? companionRowBlock("musicReact", companion, site) : null;
+  const reactBlock = companion.enabled ? companionRowBlock("radioSelfStart", companion, site) : null;
   const currentTrack = COMPANION_RADIO_TRACKS.find(track => track.id === snapshot?.trackId);
   return <div className="rhh-group-card rhh-companion-radio" data-settings-place="companion-radio">
     <div className="role-help-haptics"><RowLabel icon={<Volume2 size={15} />} tone="water">집 라디오</RowLabel><Switch dataAct="companion-radio-enabled" dataActOpt={preferences.enabled ? "off" : "on"} label="빅타민 라디오 켜기/끄기" on={preferences.enabled} onToggle={() => change({ enabled: !preferences.enabled })} /></div>
     <div className="role-help-haptics rhh-stack-sm"><RowLabel icon={<Volume1 size={15} />} tone="water">라디오 음량</RowLabel><div className="rhh-volume"><VolumeX aria-hidden="true" size={15} /><input aria-label="라디오 음량" aria-valuetext={`${preferences.volume}%`} data-act="companion-radio-volume" data-sfx="off" max={100} min={0} onChange={event => change({ volume: Number(event.currentTarget.value) })} step={5} style={{ "--vol": `${preferences.volume}%` } as CSSProperties} type="range" value={preferences.volume} /><Volume2 aria-hidden="true" size={15} /><b className="rhh-vol-num">{preferences.volume}</b></div></div>
-    <div className={`role-help-haptics${reactBlock || !companion.enabled ? " is-blocked" : ""}`}><RowLabel icon={<Sparkles size={15} />} tone="leaf">음악에 반응하기</RowLabel><Switch dataAct="companion-radio-react" dataActOpt={preferences.react ? "off" : "on"} label="빅타민 음악 반응 켜기/끄기" on={preferences.react} onToggle={() => change({ react: !preferences.react })} /></div>
+    <div className={`role-help-haptics${reactBlock || !companion.enabled ? " is-blocked" : ""}`}><RowLabel icon={<Sparkles size={15} />} tone="leaf">빅타민이 스스로 틀기</RowLabel><Switch dataAct="companion-radio-self-start" dataActOpt={preferences.react ? "off" : "on"} label="빅타민이 스스로 라디오 틀기 켜기/끄기" on={preferences.react} onToggle={() => change({ react: !preferences.react })} /></div>
     {reactBlock ? <SettingsNote onGoTo={place => onGoTo(place as CompanionSettingsPlace)} place={reactBlock.place} placeLabel={reactBlock.place && COMPANION_SETTINGS_PLACE_LABELS[reactBlock.place]} text={reactBlock.text} /> : null}
     <div className="rhh-radio-now"><p aria-live="polite">{pending ? "준비 중" : blockedReason ?? (snapshot?.playing && currentTrack ? currentTrack.title : playFailed ? "재생하지 못했어요" : pool.length ? "재생 대기" : "선택한 곡이 없어요.")}</p><div className="rhh-radio-actions"><button className="rhh-link" data-act="companion-radio-play" data-sfx="off" disabled={blocked || !pool.length || pending || snapshot?.playing} onClick={() => play(toggleCompanionRadio)} type="button"><span className="vmid">재생</span></button><button className="rhh-link" data-act="companion-radio-next" data-sfx="off" disabled={blocked || !pool.length || pending} onClick={() => play(nextCompanionRadio)} type="button"><span className="vmid">다음 곡</span></button><button className="rhh-link" data-act="companion-radio-stop" data-sfx="off" disabled={!snapshot?.playing && !pending} onClick={stop} type="button"><span className="vmid">정지</span></button></div></div>
     {block?.place && !pending ? <SettingsNote className="rhh-note-go-only" onGoTo={place => onGoTo(place as CompanionSettingsPlace)} place={block.place} placeLabel={COMPANION_SETTINGS_PLACE_LABELS[block.place]} text="" /> : null}

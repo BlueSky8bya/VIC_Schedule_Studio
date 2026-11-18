@@ -48,15 +48,15 @@ describe("companion sound status line (proposal 4-5)", () => {
     expect(cases).toBe(2048);
   });
 
-  it("does not claim the radio is separate yet (that is stage 2-라)", () => {
+  it("no longer uses the old row name after stage 2-라", () => {
     const bools = [false, true];
     for (const reduceMotion of bools) for (const gfx of ["full", "soft", "off"]) for (const soundMotion of bools) for (const sound of bools)
-      expect(companionSoundStatus(prefs({ soundMotion, sound }), site({ reduceMotion, gfx })).text).not.toMatch(/라디오는 따로|스스로 틀기/);
+      expect(companionSoundStatus(prefs({ soundMotion, sound }), site({ reduceMotion, gfx })).text).not.toMatch(/음악에 반응/);
   });
 });
 
 describe("blocked companion rows", () => {
-  const rows: CompanionBlockedRow[] = ["roam", "jump", "heartPrank", "cardPrank", "ambientPrank", "panelPrank", "rarePrank", "musicReact"];
+  const rows: CompanionBlockedRow[] = ["roam", "jump", "heartPrank", "cardPrank", "ambientPrank", "panelPrank", "rarePrank", "radioSelfStart"];
 
   it("has no note when nothing is in the way", () => {
     for (const row of rows) expect(companionRowBlock(row, prefs(), site()), row).toBeNull();
@@ -72,13 +72,13 @@ describe("blocked companion rows", () => {
     expect(blocked("roam")).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 걷거나 뛰지 않아요", place: "site-motion" });
     expect(blocked("jump")).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 뛰지 않아요", place: "site-motion" });
     for (const row of ["heartPrank", "cardPrank", "ambientPrank", "panelPrank", "rarePrank"] as const) expect(blocked(row)).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 장난을 치지 않아요", place: "site-motion" });
-    expect(blocked("musicReact")).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 음악에 반응하지 않아요", place: "site-motion" });
+    expect(blocked("radioSelfStart")).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 스스로 라디오를 틀지 않아요", place: "site-motion" });
   });
 
   it("then the background effect, only for the rows it stops", () => {
     const blocked = (row: CompanionBlockedRow, gfx = "soft") => companionRowBlock(row, prefs(), site({ gfx }));
     expect(blocked("rarePrank")).toEqual({ text: "이 기기는 배경 효과가 '효과 쉬기'로 맞춰져 있어 소품 묘기를 쉬어요", place: "site-gfx" });
-    expect(blocked("musicReact", "off")).toEqual({ text: "배경 효과가 꺼져 있어 음악에 반응하지 않아요", place: "site-gfx" });
+    expect(blocked("radioSelfStart", "off")).toEqual({ text: "배경 효과가 꺼져 있어 스스로 라디오를 틀지 않아요", place: "site-gfx" });
     for (const row of ["roam", "jump", "heartPrank", "cardPrank", "ambientPrank", "panelPrank"] as const) expect(blocked(row), row).toBeNull();
   });
 
@@ -94,7 +94,7 @@ describe("blocked companion rows", () => {
     const bools = [false, true];
     for (const row of rows) for (const enabled of bools) for (const roam of bools) for (const reduceMotion of bools) for (const gfx of ["full", "lite", "soft", "off"]) {
       const text = companionRowBlock(row, prefs({ enabled, roam }), site({ reduceMotion, gfx }))?.text ?? "";
-      expect(text).not.toMatch(/라디오는 따로|스스로 틀기/);
+      expect(text).not.toMatch(/음악에 반응/);
     }
   });
 
@@ -103,27 +103,33 @@ describe("blocked companion rows", () => {
     expect(blocked("roam")).toBeNull();
     expect(blocked("jump")).toEqual({ text: "'돌아다니기'가 꺼져 있어 혼자서는 뛰지 않아요", place: "companion-roam" });
     for (const row of ["heartPrank", "cardPrank", "ambientPrank", "panelPrank", "rarePrank"] as const) expect(blocked(row)).toEqual({ text: "'돌아다니기'가 꺼져 있어 장난을 치지 않아요", place: "companion-roam" });
-    expect(blocked("musicReact")).toEqual({ text: "'돌아다니기'가 꺼져 있어 음악에 반응하지 않아요", place: "companion-roam" });
+    expect(blocked("radioSelfStart")).toEqual({ text: "'돌아다니기'가 꺼져 있어 스스로 라디오를 틀지 않아요", place: "companion-roam" });
+  });
+
+  it("starting the radio by itself also needs the 'all' sound level", () => {
+    const blocked = (overrides: Partial<CompanionPreferences>) => companionRowBlock("radioSelfStart", prefs(overrides), site());
+    expect(blocked({})).toBeNull();
+    expect(blocked({ soundMotion: false })).toEqual({ text: "빅타민 소리가 '만질 때만'이라 스스로 라디오를 틀지 않아요", place: "companion-sound" });
+    expect(blocked({ sound: false })).toEqual({ text: "빅타민 소리가 '끔'이라 스스로 라디오를 틀지 않아요", place: "companion-sound" });
+    // An outer reason still comes first.
+    expect(companionRowBlock("radioSelfStart", prefs({ sound: false, roam: false }), site())?.place).toBe("companion-roam");
   });
 });
 
 describe("home radio block", () => {
-  it("keeps the established wording and order, and adds where to go", () => {
+  it("names what keeps a press from playing, outermost first", () => {
     const off = prefs({ enabled: false, sound: false, soundVolume: 0 }), quietRadio = { ...radio, enabled: false, volume: 0 };
     expect(companionRadioBlock(off, quietRadio, { soundOn: false, soundVolume: 0 })).toEqual({ text: "전체 소리가 꺼져 있어요", place: "site-sound" });
     expect(companionRadioBlock(off, quietRadio, { soundOn: true, soundVolume: 0 })).toEqual({ text: "전체 음량이 0이에요", place: "site-sound" });
     expect(companionRadioBlock(off, quietRadio, { soundOn: true, soundVolume: 60 })).toEqual({ text: "빅타민이 꺼져 있어요", place: "companion-power" });
-    expect(companionRadioBlock(prefs({ sound: false, soundVolume: 0 }), quietRadio, { soundOn: true, soundVolume: 60 })).toEqual({ text: "빅타민 소리가 꺼져 있어요", place: "companion-sound" });
-    expect(companionRadioBlock(prefs({ soundVolume: 0 }), quietRadio, { soundOn: true, soundVolume: 60 })).toEqual({ text: "빅타민 음량이 0이에요", place: "companion-sound" });
     expect(companionRadioBlock(prefs(), quietRadio, { soundOn: true, soundVolume: 60 })).toEqual({ text: "라디오가 꺼져 있어요" });
     expect(companionRadioBlock(prefs(), { ...radio, volume: 0 }, { soundOn: true, soundVolume: 60 })).toEqual({ text: "라디오 음량이 0이에요" });
     expect(companionRadioBlock(prefs(), radio, { soundOn: true, soundVolume: 60 })).toBeNull();
   });
 
-  it("is still tied to the companion's own sound switch at this stage", () => {
-    // Sound groups do not block the radio; the master and volume do (radio-player.ts allowed()).
-    expect(companionRadioBlock(prefs({ soundCare: false, soundMotion: false, soundKeepsakes: false }), radio, { soundOn: true, soundVolume: 60 })).toBeNull();
-    expect(companionRadioBlock(prefs({ sound: false }), radio, { soundOn: true, soundVolume: 60 })).not.toBeNull();
+  it("is apart from the companion's own sound: any level lets the user play it (stage 2-라)", () => {
+    for (const overrides of [{ sound: false }, { soundVolume: 0 }, { soundCare: false }, { soundMotion: false }, { sound: false, soundVolume: 0, soundCare: false, soundMotion: false, soundKeepsakes: false }])
+      expect(companionRadioBlock(prefs(overrides), radio, { soundOn: true, soundVolume: 60 }), JSON.stringify(overrides)).toBeNull();
   });
 });
 
