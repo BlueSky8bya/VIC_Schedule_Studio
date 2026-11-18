@@ -6527,7 +6527,11 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
 .band-slot {
   pointer-events: none;
 }
-/* 편집실: 빈 자리가 그 날 조각의 투명 손잡이(머리 카드 위). 시청자 화면은 머리 카드가 상세를 연다. */
+/* 빈 자리가 그 날 조각의 투명 손잡이(머리 카드 위) — 편집실은 고르기·열기·끌기, 시청자 화면은 그 날 상세 열기. */
+.public-day .band-slot.is-hit {
+  pointer-events: auto;
+  cursor: pointer;
+}
 .studio-day .band-slot.is-hit {
   position: relative;
   z-index: 4;

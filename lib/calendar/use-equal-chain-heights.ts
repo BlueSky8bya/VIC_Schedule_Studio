@@ -544,7 +544,9 @@ function drawRings(root: HTMLElement) {
     }
   }
   // 혼자인 일정(이어짐 없음)은 카드 링이 맡는다.
-  const linked = blocks.length > 1 || (blocks[0]?.cards.length ?? 0) > 1;
+  // 여러 칸 폭 한 장짜리 띠(같은 글 — 카드는 머리 하나, 뒤 칸은 손잡이)도 이어진 블록이다.
+  const multiCell = (c: HTMLElement) => c.hasAttribute("data-band-head");
+  const linked = blocks.length > 1 || (blocks[0]?.cards.length ?? 0) > 1 || Boolean(blocks[0]?.cards.some(multiCell));
   const owned = new Set<HTMLElement>(linked ? blocks.flatMap((b) => b.cards) : []);
   for (const el of Array.from(root.querySelectorAll<HTMLElement>("[data-ring-svg]"))) {
     if (!owned.has(el)) el.removeAttribute("data-ring-svg");
@@ -562,7 +564,8 @@ function drawRings(root: HTMLElement) {
     root.after(layer);
     ringLayers.set(root, layer);
   }
-  const kind = pickedEl.classList.contains("detail-current") ? "solid" : "dash";
+  // 편집실 = 점선(지금 손대는 중), 시청자 화면 = 실선.
+  const kind = pickedEl.closest(".studio-day") ? "dash" : "solid";
   const e = kind === "dash" ? 1.75 : 3;
   const local = localOf(layer, root);
   const pick = local(pickedEl.getBoundingClientRect());
@@ -591,7 +594,7 @@ function drawRings(root: HTMLElement) {
     const top = g.querySelector<SVGPathElement>(".ring-pick")!;
     const hasPick = block.cards.includes(pickedCard);
     // 블록 전체가 누른 조각이면(한 장짜리) 옅은 벌은 필요 없다.
-    const whole = hasPick && block.cards.length === 1 && !pickedEl.classList.contains("band-slot");
+    const whole = hasPick && block.cards.length === 1 && !multiCell(block.cards[0]);
     all.setAttribute("class", `ring-all chain-ring is-${kind} is-linked`);
     top.setAttribute("class", `ring-pick chain-ring is-${kind}`);
     all.style.display = whole ? "none" : "";

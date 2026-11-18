@@ -3323,14 +3323,35 @@ export function PublicPoster({
             }
             const join = chainJoins.get(event.id);
             // 같은 글 띠의 뒤 칸 — 글은 머리 칸이 여러 칸 폭으로 한 번만 쓴다. 여기는 높이만 맞춘 빈 자리.
+            // 상호작용 모드에선 빈 자리가 **그 날 조각의 손잡이**다(편집실과 같은 규칙) — 누르면 그 날짜 일정의 상세가
+            // 열린다. 예전엔 이 빈 자리가 클릭만 삼켜서, 여러 칸 폭 띠는 첫 칸만 눌렸다(2026-11-18 소유자, 9/20~25).
             if (join?.bandHeadId) {
+              const picked = agendaDetail?.event.id === event.id;
               return (
                 <div
                   aria-hidden="true"
-                  className="band-slot"
+                  className={`band-slot${interactive ? " is-hit" : ""}${picked ? " is-picked" : ""}`}
                   data-band-slot={join.bandHeadId}
                   data-chain={join.bandKey}
                   key={event.id}
+                  onClick={
+                    interactive
+                      ? (e) => {
+                          hapticTick();
+                          if (closeIfSameDetail(event.id, false, cell.isoDate)) return;
+                          const el = e.currentTarget;
+                          const r = el.getBoundingClientRect();
+                          detailAnchorElRef.current = el;
+                          setDetailManual(null);
+                          setAgendaDetail({
+                            event,
+                            support: false,
+                            dateKey: cell.isoDate,
+                            anchor: { x: r.left, y: r.top, w: r.width, h: r.height }
+                          });
+                        }
+                      : undefined
+                  }
                 />
               );
             }
