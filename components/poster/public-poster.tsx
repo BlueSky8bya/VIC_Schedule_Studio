@@ -119,7 +119,7 @@ import { flipSpring } from "@/lib/ui/flip-motion";
 import { trackPopoverLayout } from "@/lib/ui/popover-layout";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
-import { ChainContMark, ChainStepLayer, chainCont, chainDataAttrs, chainSlim, chainWrapClasses } from "@/lib/calendar/chain-join-view";
+import { ChainStepLayer, chainDataAttrs, wrapFadeOf, chainSlim, chainWrapClasses } from "@/lib/calendar/chain-join-view";
 import {
   assignSupportLanes,
   supportDepthByCell,
@@ -139,6 +139,7 @@ import {
   getSpanRunRange,
   getTodayKst,
   mixedEventStyle,
+  wrapFadeStyle,
   splitEventTitle,
   type MonthCell
 } from "@/lib/calendar/month";
@@ -3378,7 +3379,6 @@ export function PublicPoster({
             const span = getEventSpan(event, cell.isoDate, cell.weekday, chainJoins);
             // 꺾인 띠·줄바뀜으로 이어 받은 카드 — 글이 같으면 "▸ 제목" 한 줄로 준다(글자 꼬리표 없음).
             const slim = chainSlim(join);
-            const cont = chainCont(join);
             const bookmarked = isBookmarked(event.id);
             // 하트는 시작 칸(제목 보이는 칸)에서만, 로그인 시청자 상호작용 모드에서만 노출.
             const showHeart = canHeart && span.showTitle;
@@ -3420,6 +3420,10 @@ export function PublicPoster({
                 ? getSpanRunRange(pg.start, pg.end, cell.isoDate, cell.weekday)
                 : null;
             const mixStyle = mixed && run ? mixedEventStyle(colors, run) : null;
+            // 토→일 줄바뀜 끝은 칠만 옅게(month.ts wrapFadeStyle — 편집실과 같은 함수).
+            const baseStyle = mixStyle ?? (colors.length > 0 ? eventColorStyle(colors) : undefined);
+            const fadeStyle = colors.length === 0 ? null : wrapFadeStyle(colors, run, wrapFadeOf(join));
+            const eventStyle = fadeStyle ? { ...baseStyle, ...fadeStyle } : baseStyle;
             // PC 시청자: 카드 클릭 = 상세 팝오버(모바일 시트와 같은 내용, 카드 옆에 앵커).
             // 하트 등 내부 컨트롤 클릭은 제외. 꾸미기/캡쳐 모드는 클릭 없음(interactive만).
             const openDesktopDetail = interactive
@@ -3449,7 +3453,7 @@ export function PublicPoster({
                 // 잡혀야 한다. 이모지는 정밀도, 무게는 스캔용.
                 data-tier={tier?.key}
                 key={event.id}
-                style={mixStyle ?? (colors.length > 0 ? eventColorStyle(colors) : undefined)}
+                style={eventStyle}
                 {...(openDesktopDetail
                   ? {
                       role: "button" as const,
@@ -3477,7 +3481,6 @@ export function PublicPoster({
                   {span.showTitle ? (
                     <p>
                       {event.isTentative ? <span className="sr-only">미정 </span> : null}
-                      {cont ? <ChainContMark /> : null}
                       {/* 방금 공개된 떡밥은 ?에서 글자가 확정되는 스크램블로 등장. */}
                       {justRevealed.has(rawEvent.id) ? <ScrambleText text={main} /> : main}
                     </p>

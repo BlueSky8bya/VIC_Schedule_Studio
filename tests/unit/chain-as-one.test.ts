@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { buildLinkChain, chainLinkAnchor, chainMembersInOrder, chainPasteRuns, drawnChainMembers } from "@/lib/calendar/month";
+import { buildLinkChain, chainLinkAnchor } from "@/lib/calendar/month";
 import { dropHistoryEntry, type UndoAction } from "@/lib/studio/editor-model";
 import type { StudioScheduleEvent } from "@/lib/domain/schedule-types";
 
-// 이어진 일정은 한 몸(2026-11-19 소유자): 묶음 어느 카드에서 끌어도 늘어나고, 복사·붙여넣기도 묶음째.
+// 이어진 일정은 한 몸(2026-11-19 소유자): 묶음 어느 카드에서 끌어도 늘어난다. (복사는 누른 카드 하나 — 묶음째 복사는 소유자가 되돌렸다.)
 
 function ev(part: Partial<StudioScheduleEvent> & { id: string; day: string }): StudioScheduleEvent {
   const { day, ...rest } = part;
@@ -62,50 +62,6 @@ describe("buildLinkChain prefers the already-linked next card", () => {
       ev({ id: "c", day: "2026-06-12" })
     ];
     expect(buildLinkChain(events[0], events[3], events)).toEqual(["a", "b2", "c"]);
-  });
-});
-
-describe("chainMembersInOrder — copy the whole chain in link order", () => {
-  it("returns head-first members with day offsets from any member", () => {
-    const events = [
-      ev({ id: "c", day: "2026-06-04" }),
-      ev({ id: "a", day: "2026-06-02", linkNext: "b" }),
-      ev({ id: "b", day: "2026-06-03", linkNext: "c" }),
-      ev({ id: "x", day: "2026-06-03" })
-    ];
-    const out = chainMembersInOrder("b", events).map((m) => [m.event.id, m.offset]);
-    expect(out).toEqual([["a", 0], ["b", 1], ["c", 2]]);
-  });
-  it("a lone event is a one-member chain", () => {
-    expect(chainMembersInOrder("x", [ev({ id: "x", day: "2026-06-03" })]).map((m) => m.offset)).toEqual([0]);
-  });
-});
-
-describe("chainPasteRuns — only links that will be drawn are stored", () => {
-  const days = (busy: boolean[]) => busy.map((b, i) => ({ busy: b, offset: i }));
-  it("keeps one run when the middle days are free", () => {
-    expect(chainPasteRuns(days([true, false, false]))).toEqual([0, 0, 0]);
-  });
-  it("head's own day never breaks (head goes to the bottom); a busy middle day breaks the next link", () => {
-    expect(chainPasteRuns(days([true, true, false]))).toEqual([0, 0, 1]);
-    expect(chainPasteRuns(days([false, false, true, false]))).toEqual([0, 0, 0, 1]);
-  });
-  it("breaks where offsets skip a day (a multi-day piece pasted as one day) and around hidden teasers", () => {
-    // 6/2~6/4 여러 날 한 장 → 6/5 일정: 시작일 offset 0·3 — 붙이면 사이 빈 날이 생겨 이음이 그려지지 않는다.
-    expect(chainPasteRuns([{ busy: false, offset: 0 }, { busy: false, offset: 3 }, { busy: false, offset: 4 }])).toEqual([0, 1, 1]);
-    expect(chainPasteRuns([{ busy: false, offset: 0 }, { busy: false, offset: 1, teaser: true }, { busy: false, offset: 2 }])).toEqual([0, 1, 2]);
-    expect(chainPasteRuns([{ busy: false, offset: 0, multi: true }, { busy: false, offset: 1 }])).toEqual([0, 1]);
-  });
-});
-
-describe("drawnChainMembers — never copies what the calendar does not draw", () => {
-  it("a public card linked to a private one copies only the public card", () => {
-    const events = [
-      ev({ id: "pub", day: "2026-06-10", linkNext: "priv" }),
-      ev({ id: "priv", day: "2026-06-11", visibilityScope: "owner_private" as StudioScheduleEvent["visibilityScope"], publicTitle: "SECRET" })
-    ];
-    expect(drawnChainMembers("pub", events).map((m) => m.event.id)).toEqual(["pub"]);
-    expect(chainMembersInOrder("pub", events).map((m) => m.event.id)).toEqual(["pub", "priv"]); // 거르지 않으면 샌다
   });
 });
 

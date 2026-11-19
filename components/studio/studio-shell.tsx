@@ -130,16 +130,15 @@ import {
   getEventSpan,
   getLinkedChainIds,
   chainLinkAnchor,
-  drawnChainMembers,
-  chainPasteRuns,
   isStudioCalendarDrawn,
   getSpanRunRange,
   getTodayKst,
   mixedEventStyle,
+  wrapFadeStyle,
   splitEventTitle
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
-import { ChainContMark, ChainStepLayer, chainCont, chainDataAttrs, chainSlim, chainWrapClasses } from "@/lib/calendar/chain-join-view";
+import { ChainStepLayer, chainDataAttrs, wrapFadeOf, chainSlim, chainWrapClasses } from "@/lib/calendar/chain-join-view";
 import { getDayMark } from "@/lib/calendar/holidays";
 import {
   MonthJumpToast,
@@ -203,7 +202,6 @@ import {
   dropHistoryEntry,
   TENTATIVE_FILTER,
   type CopiedEvent,
-  type CopiedFollower,
   type EditDraft,
   type EventForm,
   type UndoAction
@@ -823,7 +821,6 @@ export function StudioShell({
     if (viewerMode) {
       setClipboard(null);
       setCopiedId(null);
-      setCopiedChain([]);
     }
   }, [viewerMode]);
   // 창(설정·태그·인사이트·방문) 열림·닫힘 소리 — 같은 이유로 상태 전환 한 곳에서. 창끼리 바꿔 열면 '열림'만.
@@ -6047,14 +6044,6 @@ export function StudioShell({
   const [clipboard, setClipboard] = useState<CopiedEvent | null>(null);
   // 복사 원본 카드 id — 붙여넣을 때까지(또는 Esc) 원본에 움직이는 점선 테두리(엑셀·피그마 '복사 중' 관행).
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  // 이어진 묶음째 복사했으면 그 묶음 id들(잇는 순서). 개미 행렬은 낱장 카드가 아니라 묶음 모양 하나로 두른다
-  // (useEqualChainHeights가 [data-copy-shape] 카드들을 이어진 모양대로 감싼다).
-  const [copiedChain, setCopiedChain] = useState<string[]>([]);
-  const isCopiedId = (eid: string) =>
-    (copiedId !== null && canonId(copiedId) === canonId(eid)) ||
-    copiedChain.some((c) => canonId(c) === canonId(eid));
-  const copyShaped = (ev: StudioScheduleEvent) =>
-    isCopiedId(ev.id) && (copiedChain.length > 1 || Boolean(ev.endDateKey && ev.endDateKey > getEventDateKey(ev)));
   const [copyToast, setCopyToast] = useState<string | null>(null);
   // 복사·붙여넣기 연출(2026-10-06 소유자: "토스트만 뜨고 밋밋해서 복사하고 있다는 느낌이 안 든다").
   //   복사: 원본 카드가 한 번 통 튀고, 반투명 사본이 살짝 떠올라 사라진다(복제됐다) + 원본에 점선 개미 행렬.
@@ -6069,6 +6058,12 @@ export function StudioShell({
     inner.removeAttribute("data-supportid");
     inner.classList.remove("selected", "primary-selected", "is-selected", "is-editing", "copy-bump", "is-copied", "just-saved");
     inner.querySelector(".copy-ants")?.remove();
+    // 이어진 조각의 모양(평평한 변·띠 머리·꺾인 띠·줄바뀜 옅어짐)은 날아가는 사본에선 뗀다 — 사본은 한 장짜리 둥근 카드다.
+    if (inner.classList.contains("wrap-in") || inner.classList.contains("wrap-out")) {
+      inner.style.backgroundImage = "var(--card-veil, linear-gradient(transparent, transparent)), var(--wrap-base-fill), var(--wrap-base-line)";
+    }
+    inner.classList.remove("span", "no-left", "no-right", "wrap-in", "wrap-out", "link-join-left", "link-join-right", "band-head", "chain-step-from", "chain-step-to", "chain-step-solid");
+    for (const attr of ["data-step-painted", "data-band-w", "data-band-head", "data-step-from", "data-step-to", "data-wrap-to", "data-wrap-from", "data-chain", "data-ring-svg", "data-copy-shape"]) inner.removeAttribute(attr);
     Object.assign(inner.style, { margin: "0", width: "100%", height: "100%", transform: "none", position: "relative", left: "0", right: "auto", top: "0", visibility: "" });
     const ghost = document.createElement("div");
     ghost.className = `event-drag-ghost ${cls}`;
@@ -6081,6 +6076,9 @@ export function StudioShell({
   function copyEcho(id: string) {
     const el = copySourceEl(id);
     if (!el) return;
+    // 이어진 조각(띠·띠 머리·꺾인 띠·줄바뀜)은 통 튀면 이음이 벌어진다 — 개미 행렬이 그 카드 모양대로 톡 나타나는 것으로만.
+    // (같은 글 띠의 뒤 칸 일정은 카드가 없어 여기 오지 않는다 — 같은 규칙.)
+    if (el.matches(".span, .band-head, .wrap-in, .wrap-out, .chain-step-from, .chain-step-to, .link-join-left, .link-join-right")) return;
     el.classList.remove("copy-bump");
     void el.offsetWidth;
     el.classList.add("copy-bump");
@@ -6160,15 +6158,17 @@ export function StudioShell({
   function clearClipboard() {
     setClipboard(null);
     setCopiedId(null);
-    setCopiedChain([]);
   }
   function flashToast(message: string) {
     setCopyToast(message);
     window.setTimeout(() => setCopyToast(null), 1600);
   }
-  function toCopied(ev: StudioScheduleEvent): CopiedEvent {
+  function copySelectedEvent() {
+    if (!selectedEventId) return;
+    const ev = events.find((e) => e.id === selectedEventId);
+    if (!ev) return;
     const start = getEventDateKey(ev);
-    return {
+    setClipboard({
       publicTitle: ev.publicTitle,
       spanDays: ev.endDateKey ? Math.max(0, daysBetweenIso(start, ev.endDateKey)) : 0,
       isSupport: ev.isSupport ?? false,
@@ -6183,129 +6183,15 @@ export function StudioShell({
       // 아직 안 풀린 최초공개는 가림째로 복사한다(공개 시각이 지난 떡밥은 평범한 일정으로).
       teaser: teaserStillHidden(ev),
       teaserRevealAt: teaserStillHidden(ev) ? (ev.teaserRevealAt ?? "") : ""
-    };
-  }
-  function copySelectedEvent() {
-    if (!selectedEventId) return;
-    const ev = events.find((e) => e.id === selectedEventId);
-    if (!ev) return;
-    // 이어진 일정은 한 몸(2026-11-19 소유자) — 어느 조각을 골라 복사해도 묶음 전체를 복사한다(고른 표시도 묶음 전체라
-    // 보이는 것 = 복사되는 것). 붙여넣는 자리는 고른 날짜 = 묶음 머리 날짜.
-    const members = ev.isSupport ? [] : drawnChainMembers(ev.id, events);
-    if (members.length > 1) {
-      const [head, ...rest] = members;
-      setClipboard({
-        ...toCopied(head.event),
-        followers: rest.map((m) => ({ ...toCopied(m.event), offset: m.offset }))
-      });
-      setCopiedChain(members.map((m) => m.event.id));
-    } else {
-      setClipboard(toCopied(ev));
-      setCopiedChain([]);
-    }
+    });
     setCopiedId(ev.id);
     playSfx("copy");
-    // 다시 그린 뒤에 — React가 className을 덮어쓰기 전에 붙이면 지워진다. 묶음은 카드마다 통 튀면 이음이 벌어져
-    // 보이므로 개미 행렬 테두리가 묶음 모양으로 톡 나타나는 것(chain-ring-in)으로 대신한다.
-    if (members.length <= 1) requestAnimationFrame(() => copyEcho(ev.id));
+    requestAnimationFrame(() => copyEcho(ev.id)); // 다시 그린 뒤에 — React가 className을 덮어쓰기 전에 붙이면 지워진다
     // (토스트 대신 아래 '복사 중' 칩이 붙여넣을 때까지 남는다.)
   }
   function pasteCopiedEvent() {
     if (!clipboard) return;
-    const toast = `${selectedDate.slice(5).replace("-", "/")}에 붙여넣었어요`;
-    if (clipboard.followers?.length) {
-      pasteCopiedChain(clipboard, selectedDate, toast);
-      return;
-    }
-    insertEventCopy(clipboard, selectedDate, toast, copiedId);
-  }
-  // 조각마다 '놓일 날에 그려지는 다른 일정이 있나' — 그리는 목록(isStudioCalendarDrawn)만 본다(안 그린 일정은 이음 판정에도 없다).
-  function chainPasteRunsAt(targetDate: string, parts: CopiedFollower[], base: StudioScheduleEvent[]): number[] {
-    const drawn = base.filter(isStudioCalendarDrawn);
-    return chainPasteRuns(
-      parts.map((p) => ({
-        busy: getEventsForDate(drawn, addDaysIso(targetDate, p.offset)).some((e) => !e.isSupport),
-        offset: p.offset,
-        teaser: p.teaser
-      }))
-    );
-  }
-  // 이어진 묶음 붙여넣기 — 조각마다 같은 간격의 날짜에 낙관적으로 놓고, 원본처럼 이어 그려지게 순서를 맞춘 뒤
-  // (머리는 그날 맨 아래·이어 받는 조각은 맨 위 — 잇기와 같은 arrangeChainOrder), 같은 순서로 다시 잇는다.
-  // 쓰기는 전부 기존 직렬 큐(save → 순서 저장 → linkChain)로. Ctrl+Z 한 번에 묶음째 사라진다(group).
-  function pasteCopiedChain(payload: CopiedEvent, targetDate: string, toast: string) {
-    if (!canEdit) return;
-    const parts: CopiedFollower[] = [{ ...payload, offset: 0 }, ...(payload.followers ?? [])];
-    const tempIds = parts.map(() => `temp-${Math.random().toString(36).slice(2)}`);
-    // 놓일 날 사정상 끊겨 그려질 이음은 잇지 않는다(chainPasteRuns — 미리보기도 같은 판정).
-    const runs = chainPasteRunsAt(targetDate, parts, eventsRef.current);
-    const actions: UndoAction[] = [];
-    const created: StudioScheduleEvent[] = [];
-    const group: UndoAction = { type: "group", actions };
-    // 사용자에게는 묶음 하나 — 조각 하나라도 저장에 실패하면 묶음째 되돌린다(이미 저장된 형제 조각도 서버에서 지운다).
-    // 반쪽 묶음(이어짐 없는 조각 몇 장)이 남으면 화면이 복사한 모양과 달라진다.
-    let failed = false;
-    const rollbackAll = () => {
-      if (failed) return;
-      failed = true;
-      dropUndoEntry(group);
-      const mine = new Set(tempIds.map((t) => canonId(t)));
-      setEvents((prev) =>
-        prev
-          .filter((e) => !mine.has(canonId(e.id)))
-          .map((e) => (e.linkNext && mine.has(canonId(e.linkNext)) ? { ...e, linkNext: undefined } : e))
-      );
-      setActionError("묶음을 다 붙여넣지 못해 되돌렸어요.");
-      for (const t of tempIds) {
-        void enqueueWrite(async () => {
-          const realId = await resolveEventId(t);
-          if (!realId) return null; // 저장 안 된 조각 — 지울 것 없음
-          return postStudioWrite("delete", { eventId: realId });
-        });
-      }
-    };
-    parts.forEach((part, i) => {
-      const made = insertEventCopy(part, addDaysIso(targetDate, part.offset), toast, null, {
-        tempId: tempIds[i],
-        linkNext: i + 1 < parts.length && runs[i + 1] === runs[i] ? tempIds[i + 1] : undefined,
-        quiet: true,
-        onFailed: rollbackAll
-      });
-      if (made) {
-        actions.push(made.undoAction);
-        created.push(made.event);
-      }
-    });
-    if (created.length !== parts.length) return;
-    playSfx("paste");
-    pushUndo(group);
-    flashToast(toast);
-    setActionError(null);
-    arrangeChainOrder(tempIds, [...eventsRef.current, ...created]);
-    // 새 묶음이 한 덩어리로 톡 — 잇기 직후와 같은 맞물림 연출(just-linked).
-    setLinkFlashIds(new Set(tempIds));
-    if (linkFlashTimer.current) window.clearTimeout(linkFlashTimer.current);
-    linkFlashTimer.current = window.setTimeout(() => setLinkFlashIds(new Set()), 700);
-    const groups = [...new Set(runs)]
-      .map((r) => tempIds.filter((_, i) => runs[i] === r))
-      .filter((g) => g.length > 1);
-    // 이음 쓰기는 묶음(run)마다 따로 — 하나가 실패하면 그 묶음의 이어짐만 푼다(다른 묶음·카드는 그대로).
-    for (const run of groups) {
-      void (async () => {
-        const result = await enqueueWrite(async () => {
-          if (failed) return null; // 묶음째 되돌렸다 — 이을 것 없음
-          const resolved = await Promise.all(run.map(resolveEventId));
-          if (failed) return null;
-          if (resolved.some((id) => !id)) return { ok: false, error: "일정 저장이 끝나지 않아 잇지 못했어요." };
-          return postStudioWrite("linkChain", { orderedIds: resolved as string[] });
-        });
-        if (!result.ok && !failed) {
-          setActionError(result.error);
-          const mine = new Set(run.map((t) => canonId(t)));
-          setEvents((prev) => prev.map((e) => (mine.has(canonId(e.id)) ? { ...e, linkNext: undefined } : e)));
-        }
-      })();
-    }
+    insertEventCopy(clipboard, selectedDate, `${selectedDate.slice(5).replace("-", "/")}에 붙여넣었어요`, copiedId);
   }
   // (복제 버튼 제거 — Ctrl+C/V가 정식 경로. insertEventCopy는 붙여넣기 전용으로 유지.)
   // 새 일정의 자리 = 그 날 맨 아래(지금 가장 큰 순서 + 1) — 서버 save_event_atomic(0144)과 같은 규칙이라
@@ -6315,22 +6201,14 @@ export function StudioShell({
     return day.length ? Math.max(...day.map((e) => e.sortOrder)) + 1 : 0;
   }
   // 복사본 삽입 공통 경로 — Ctrl+V 붙여넣기가 쓴다(targetDate 파라미터화 유지).
-  // opts(묶음 붙여넣기용): tempId·linkNext를 미리 정해 낙관적 묶음을 한 번에 잇고, quiet면 소리·실행취소·토스트는
-  // 부른 쪽이 한 번만 낸다. 반환 = 낙관적 카드와 그 실행취소 항목.
-  function insertEventCopy(
-    payload: CopiedEvent,
-    targetDate: string,
-    toast: string,
-    sourceId: string | null = null,
-    opts: { tempId?: string; linkNext?: string; quiet?: boolean; onFailed?: () => void } = {}
-  ): { event: StudioScheduleEvent; undoAction: UndoAction } | null {
-    if (!canEdit) return null;
+  function insertEventCopy(payload: CopiedEvent, targetDate: string, toast: string, sourceId: string | null = null) {
+    if (!canEdit) return;
     const scope: EventVisibilityScope = payload.visibilityScope;
     const endDateKey =
       payload.isSupport && payload.spanDays > 0
         ? addDaysIso(targetDate, payload.spanDays)
         : undefined;
-    const tempId = opts.tempId ?? `temp-${Math.random().toString(36).slice(2)}`;
+    const tempId = `temp-${Math.random().toString(36).slice(2)}`;
     // 낙관적으로 즉시 붙여넣고, 서버엔 백그라운드 반영(새로고침 없이).
     const optimistic: StudioScheduleEvent = {
       id: tempId,
@@ -6349,27 +6227,21 @@ export function StudioShell({
       primaryTagIds: payload.primaryTagIds.slice(0, 2),
       teaser: payload.teaser || undefined,
       teaserRevealAt: payload.teaser ? payload.teaserRevealAt || undefined : undefined,
-      sortOrder: nextSortOrder(targetDate),
-      linkNext: opts.linkNext
+      sortOrder: nextSortOrder(targetDate)
     };
     // 원본 자리(화면에 보일 때만) — 사본이 여기서 출발해 새 날짜로 날아간다.
     const srcEl = sourceId ? copySourceEl(sourceId) : null;
     const srcRect = srcEl?.getBoundingClientRect() ?? null;
     const srcVisible = !!srcRect && srcRect.bottom > 0 && srcRect.top < window.innerHeight && srcRect.width > 0;
     setEvents((prev) => [...prev, optimistic]);
-    // 묶음 붙여넣기(quiet)는 조각마다 날거나 톡 커지면 이음이 벌어져 보인다 — 부른 쪽이 묶음째 맞물림(just-linked)으로 연출.
-    if (!opts.quiet) {
-      playSfx("paste");
-      flyPaste(srcVisible ? srcEl : null, srcVisible ? srcRect : null, tempId);
-    }
+    playSfx("paste");
+    flyPaste(srcVisible ? srcEl : null, srcVisible ? srcRect : null, tempId);
     // 실행취소 스택에 'remove'로 올린다 → Ctrl+Z면 방금 만든 이 카드가 사라진다.
     const undoHolder = { id: tempId };
     const undoAction: UndoAction = { type: "remove", holder: undoHolder };
-    if (!opts.quiet) {
-      pushUndo(undoAction);
-      flashToast(toast);
-      setActionError(null);
-    }
+    pushUndo(undoAction);
+    flashToast(toast);
+    setActionError(null);
     // 저장이 끝나면 실제 id(실패면 null)로 풀리는 약속 — saveEvent와 같다. 이게 없으면 '저장됨' 전에
     // 이 카드를 옮기거나(이동 큐) 편집 저장하면 resolveEventId가 곧장 null을 받아 순서 저장을 버리고
     // 서버 순서로 되돌렸다(2026-10-09 실측: 붙여넣고 바로 순서 바꾼 뒤 편집창을 연 사이 옛 자리로 롤백).
@@ -6404,28 +6276,18 @@ export function StudioShell({
       });
       if (!result.ok) {
         setActionError(result.error);
-        // target rollback — 붙여넣은 카드만 제거(다른 편집 보존). 묶음 앞 조각이 가리키던 이어짐도 같이 푼다.
-        setEvents((prev) =>
-          prev
-            .filter((e) => e.id !== tempId)
-            .map((e) => (e.linkNext === tempId ? { ...e, linkNext: undefined } : e))
-        );
+        // target rollback — 붙여넣은 카드만 제거(다른 편집 보존).
+        setEvents((prev) => prev.filter((e) => e.id !== tempId));
         dropUndoEntry(undoAction);
         resolveSave(null);
         pendingSavesRef.current.delete(tempId);
-        opts.onFailed?.();
         return;
       }
       if (result.id) {
         const realId = result.id; // 클로저 안에서 string으로 좁혀 쓰도록 const로 고정.
         undoHolder.id = realId; // 임시 id → 실제 id: 되돌릴 때 올바른 카드를 지우게.
         tempToRealRef.current.set(tempId, realId); // 붙여넣기 직후 삭제해도 서버 삭제가 실제 id로
-        // 이 카드를 가리키던 이어짐(묶음 붙여넣기의 앞 조각 linkNext)도 실제 id로 — 안 바꾸면 이음 판정이 빗나가 끊겨 보인다.
-        setEvents((prev) =>
-          prev.map((e) =>
-            e.id === tempId ? { ...e, id: realId } : e.linkNext === tempId ? { ...e, linkNext: realId } : e
-          )
-        );
+        setEvents((prev) => prev.map((e) => (e.id === tempId ? { ...e, id: realId } : e)));
         setJustSavedId((p) => (p === tempId ? realId : p));
         // 저장 전에 이 카드를 열어 둔 편집창도 실제 id로 잇는다(휴뱅·saveEvent와 같다).
         setSelectedEventId((cur) => (cur === tempId ? realId : cur));
@@ -6434,7 +6296,6 @@ export function StudioShell({
       resolveSave(result.id || null);
       pendingSavesRef.current.delete(tempId);
     });
-    return { event: optimistic, undoAction };
   }
 
   // 편집 패널 제목칸을 찾아 포커스한다(ref 우선, 없으면 DOM 조회 — ref가 아직 안 잡힌 경우 대비).
@@ -6596,66 +6457,6 @@ export function StudioShell({
   // 모바일 아젠다도 데스크톱과 동일하게 — 비공개 일정은 "비공개 일정 보기"로 직접 켜기 전까진
   // 누구에게도(개발자·소유자 포함) 보이지 않는다. 방송사고 방지: 진입/새로고침 시 항상 공개 기본.
   const mobileAgendaEvents = liveEvents;
-
-  // 붙여넣기 미리보기 조각 — 낱장이면 고른 칸 하나, 이어진 묶음이면 같은 간격의 칸마다 하나(머리 = 고른 칸).
-  // 묶음 조각은 카드처럼 칠하지 않고, useEqualChainHeights(drawCopyMarks)가 조각들을 원본과 같은 이어진 모양
-  // (띠·꺾인 띠·줄바뀜) 하나로 점선·옅은 칠로 감싼다 — 붙여넣으면 생길 모양 그대로.
-  // 붙여넣기와 같은 판정(chainPasteRunsAt) — 미리보기 모양 = 저장될 이음. 그리는 목록만 본다.
-  const pasteParts: CopiedFollower[] = clipboard ? [{ ...clipboard, offset: 0 }, ...(clipboard.followers ?? [])] : [];
-  const pasteBusy = pasteParts.map((p) =>
-    getEventsForDate(visibleEvents, addDaysIso(selectedDate, p.offset)).some((e) => !e.isSupport)
-  );
-  const pasteRuns = clipboard?.followers?.length ? chainPasteRunsAt(selectedDate, pasteParts, events) : [0];
-  const pastePieces: { date: string; part: CopiedFollower; idx: number; chain: boolean; run: number }[] =
-    clipboard && canEdit && !dragEventId && !spanDrag
-      ? [
-          { date: selectedDate, part: { ...clipboard, offset: 0 }, idx: 0, chain: Boolean(clipboard.followers?.length), run: 0 },
-          ...(clipboard.followers ?? []).map((f, i) => ({
-            date: addDaysIso(selectedDate, f.offset),
-            part: f,
-            idx: i + 1,
-            chain: true,
-            run: pasteRuns[i + 1] ?? i + 1
-          }))
-        ]
-      : [];
-  function renderPastePiece(p: (typeof pastePieces)[number]) {
-    const t = splitEventTitle(p.part.teaser ? "???" : p.part.publicTitle);
-    // 토→일 줄바뀜으로 이어질 조각은 실제 카드처럼 평평한 변이 칸 끝까지(외곽도 그 끝은 둥글리지 않는다).
-    const weekday = new Date(`${p.date}T00:00:00Z`).getUTCDay();
-    const joinsNext = pastePieces.some((q) => q.idx === p.idx + 1 && q.run === p.run);
-    const prev = pastePieces.find((q) => q.idx === p.idx - 1 && q.run === p.run);
-    const joinsPrev = Boolean(prev);
-    // 꺾인 띠·줄바뀜으로 이어 받을 조각이 앞 조각과 글까지 같으면 실제 카드처럼 제목 한 줄(chainSlim과 같은 규칙).
-    const titleOf = (x: CopiedFollower) => (x.teaser ? "???" : x.publicTitle).trim();
-    const prevWeekday = prev ? new Date(`${prev.date}T00:00:00Z`).getUTCDay() : -1;
-    if (prev && (pasteBusy[prev.idx] || prevWeekday === 6) && titleOf(prev.part) === titleOf(p.part)) t.subs = [];
-    const wrap = [
-      p.chain && joinsPrev && weekday === 0 ? "wrap-in" : "",
-      p.chain && joinsNext && weekday === 6 ? "wrap-out" : ""
-    ].filter(Boolean).join(" ");
-    return (
-      <div
-        aria-hidden="true"
-        className={`paste-preview${p.chain ? " is-chain" : ""}${wrap ? ` ${wrap}` : ""}`}
-        data-paste-piece={p.chain ? String(p.idx) : undefined}
-        data-paste-run={p.chain ? String(p.run) : undefined}
-        key={`paste-${p.date}-${p.idx}`}
-      >
-        <div className="paste-preview-head">
-          <b>{t.main}</b>
-          {p.idx === 0 ? <span className="paste-preview-key">Ctrl+V</span> : null}
-        </div>
-        {t.subs.length ? (
-          <ul className="pill-subs">
-            {t.subs.map((sub, i) => (
-              <li key={i}>{sub}</li>
-            ))}
-          </ul>
-        ) : null}
-      </div>
-    );
-  }
 
   function openMobileEdit(event: StudioScheduleEvent, originEl?: HTMLElement) {
     hapticTick(); // 카드 탭 손맛(Android만; iOS·미지원은 조용히 무시)
@@ -8554,8 +8355,6 @@ export function StudioShell({
                         활성 자리에만 DOM을 만들면 삽입 위치가 바뀔 때마다 요소가 사라졌다 새로
                         생겨 카드가 툭툭 끊겨 뛴다(사용자 지적). 미리 두고 높이만 0↔H로 바꾸면
                         열림·닫힘이 CSS 전환으로 이어진다. */}
-                    {/* 묶음 붙여넣기의 이어 받는 조각 — 실제로도 그날 맨 위에 놓인다(arrangeChainOrder). */}
-                    {pastePieces.filter((p) => p.date === cell.isoDate && p.idx > 0).map(renderPastePiece)}
                     {dropActive ? (
                       <div
                         aria-hidden="true"
@@ -8587,7 +8386,9 @@ export function StudioShell({
                         const slot = (
                           <div
                             aria-label={splitEventTitle(event.publicTitle).main}
-                            className={`band-slot is-hit${isSel ? " is-picked" : ""}`}
+                            className={`band-slot is-hit${isSel ? " is-picked" : ""}${copiedId && canonId(copiedId) === canonId(event.id) ? " is-copied" : ""}`}
+                            // 같은 글 띠의 뒤 칸 일정을 복사하면 개미 행렬은 이 날 조각만(drawCopyMarks).
+                            data-copy-shape={copiedId && canonId(copiedId) === canonId(event.id) ? "" : undefined}
                             data-band-slot={join.bandHeadId}
                             data-chain={join.bandKey}
                             data-slot-eventid={event.id}
@@ -8635,7 +8436,6 @@ export function StudioShell({
                       );
                       // 꺾인 띠·줄바뀜으로 이어 받은 카드 — 글이 같으면 "▸ 제목" 한 줄(글자 꼬리표 없음).
                       const slim = chainSlim(join);
-                      const cont = chainCont(join);
                       // 체인 이음변(색 일치 여부 무관) — 칠(getEventSpan)은 색이 같을 때만
                       // 병합하지만, 선택·연결 후보 '하이라이트'는 체인 전체가 한 덩어리로
                       // 보여야 한다(사용자 결정). CSS가 .selected/.connect-target에서만 쓴다.
@@ -8699,14 +8499,16 @@ export function StudioShell({
                         cutFlashNextId === event.id && cell.isoDate === evStartKey
                           ? "cut-recoil-next"
                           : "",
-                        [...linkFlashIds].some((x) => canonId(x) === canonId(event.id)) ? "just-linked" : "",
+                        linkFlashIds.has(event.id) ? "just-linked" : "",
                         justSavedId === event.id ? "just-saved" : "",
-                        isCopiedId(event.id) ? "is-copied" : "",
+                        copiedId && canonId(copiedId) === canonId(event.id) ? "is-copied" : "",
                         deletingIds.has(canonId(event.id)) ? "deleting" : ""
                       ]
                         .filter(Boolean)
                         .join(" ");
                       const mixed = colors.length >= 2;
+                      // 이웃과 붙어 그려지는 카드인가(복사 개미 행렬을 카드 모양대로 그릴지).
+                      const copyJoined = span.isMulti || Boolean(join?.bandSpan || join?.left || join?.right);
                       // 칠 묶음(같은 태그 구성으로 이어진 칸들) 전체 기준으로 경계를 가운데에.
                       const pg = paintGroups.get(event.id);
                       const run =
@@ -8719,8 +8521,10 @@ export function StudioShell({
                       // transform으로 형제를 밀었는데, 그러면 칸(주 행) 높이가 안 자라 맨 아래
                       // 카드가 칸 밖으로 나갔고 출발 점선('원래 위치')까지 같이 밀렸다.
                       // 지금: 보라 '원래 위치'는 제자리 고정, 민트 '놓을 자리'가 오르내린다.
-                      const pillStyle =
-                        mixStyle ?? (colors.length > 0 ? eventColorStyle(colors) : undefined);
+                      // 토→일 줄바뀜 끝은 칠만 옅게(month.ts wrapFadeStyle — 시청자 화면과 같은 함수).
+                      const baseStyle = mixStyle ?? (colors.length > 0 ? eventColorStyle(colors) : undefined);
+                      const fadeStyle = teaserHidden || colors.length === 0 ? null : wrapFadeStyle(colors, run, wrapFadeOf(join));
+                      const pillStyle = fadeStyle ? { ...baseStyle, ...fadeStyle } : baseStyle;
                       // 이 카드 '다음' 자리(맨 끝 포함)에도 스페이서를 미리 둔다 — 활성일 때만
                       // 높이가 열린다. 삽입 위치가 옮겨가도 DOM이 유지돼야 전환이 이어진다.
                       const gapAfter = gapOpen(eventIndex + 1);
@@ -8737,9 +8541,9 @@ export function StudioShell({
                           className={pillClass}
                           {...chainDataAttrs(event, join, chainKeys)}
                           data-color={mixed ? undefined : colors[0]?.key}
-                          // 복사한 것이 여러 칸(이어진 묶음·여러 날 한 장)이면 개미 행렬을 카드마다가 아니라 그 모양 하나로 —
-                          // useEqualChainHeights(drawCopyMarks)가 띠·꺾인 띠·줄바뀜 그대로 두른다.
-                          data-copy-shape={copyShaped(event) ? "" : undefined}
+                          // 이어진 카드(띠·띠 머리·꺾인 띠·줄바뀜·여러 날 한 장)를 복사하면 개미 행렬은 이 카드가 그려진 모양 그대로 —
+                          // 맞닿은 변은 평평하게 이 카드 쪽에서만(useEqualChainHeights drawCopyMarks). 이웃·기둥은 두르지 않는다.
+                          data-copy-shape={copiedId && canonId(copiedId) === canonId(event.id) && copyJoined ? "" : undefined}
                           data-eventid={event.id}
                           data-companion-event={event.visibilityScope === "public" && !event.isSupport && !event.teaser ? "ordinary" : undefined}
                           // A1: 평평한(이어진) 변 — 'L'/'R'. 이 값이 바뀌면 seam 연출(연결/끊김).
@@ -8822,7 +8626,7 @@ export function StudioShell({
                             <span className="drop-insert-line end" aria-hidden="true" />
                           ) : null}
                           {event.isTentative ? <span aria-hidden="true" className="evt-hatch" /> : null}
-                          {isCopiedId(event.id) && !copyShaped(event) ? <span aria-hidden="true" className="copy-ants" /> : null}
+                          {copiedId && canonId(copiedId) === canonId(event.id) && !copyJoined ? <span aria-hidden="true" className="copy-ants" /> : null}
                           <div className="pill-main">
                             {/* #8 옮긴 직후 서버 반영 전 — 작은 '동기화 중' 점(돌아감). 반영되면 사라진다. */}
                             {span.showTitle && syncingIds.includes(canonId(event.id)) ? (
@@ -8843,7 +8647,6 @@ export function StudioShell({
                             {/* 이어지는 칸은 제목을 투명하게 그려 시작 칸과 높이를 맞춘다. */}
                             {span.showTitle ? (
                               <strong>
-                                {cont ? <ChainContMark /> : null}
                                 {main}
                               </strong>
                             ) : (
@@ -8932,9 +8735,30 @@ export function StudioShell({
                       // 스페이서가 있으면 [카드, 자리]로 함께 반환한다(그리드 자식 2개).
                       return gapEl ? [pill, gapEl] : pill;
                     })}
-                    {/* 붙여넣을 것 그대로 — 주제목 + 부제목 줄(2026-10-10 소유자: "주제목만 보여 주는데 붙여넣으면 부제목까지
-                        붙는다 — 의도 불일치"). 자리도 실제와 같은 칸 맨 아래(nextSortOrder · 0144). 묶음의 머리 조각도 여기. */}
-                    {pastePieces.filter((p) => p.date === cell.isoDate && p.idx === 0).map(renderPastePiece)}
+                    {clipboard && canEdit && selectedDate === cell.isoDate && !dragEventId && !spanDrag ? (
+                      // 붙여넣을 것 그대로 — 주제목 + 부제목 줄(2026-10-10 소유자: "주제목만 보여 주는데 붙여넣으면 부제목까지
+                      // 붙는다 — 의도 불일치"). 자리도 실제와 같은 칸 맨 아래(nextSortOrder · 0144).
+                      <div aria-hidden="true" className="paste-preview" key={`paste-${cell.isoDate}`}>
+                        {(() => {
+                          const t = splitEventTitle(clipboard.teaser ? "???" : clipboard.publicTitle);
+                          return (
+                            <>
+                              <div className="paste-preview-head">
+                                <b>{t.main}</b>
+                                <span className="paste-preview-key">Ctrl+V</span>
+                              </div>
+                              {t.subs.length ? (
+                                <ul className="pill-subs">
+                                  {t.subs.map((sub, i) => (
+                                    <li key={i}>{sub}</li>
+                                  ))}
+                                </ul>
+                              ) : null}
+                            </>
+                          );
+                        })()}
+                      </div>
+                    ) : null}
                   </div>
                   {/* 꺾인 띠 이음 — 시청자 화면과 같은 층(lib/calendar/chain-join-view). */}
                   <ChainStepLayer events={dateEvents} joins={chainJoins} />

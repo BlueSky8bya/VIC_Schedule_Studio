@@ -5716,7 +5716,7 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
    사용자 리포트) 본문과 같은 층에 그려졌다. 둘 다 absolute·층을 되돌린다(특이도 0,4,0 > 0,3,0). */
 .public-event[data-mixed] > .tier-crown.tier-crown {
   position: absolute;
-  z-index: 3;
+  z-index: 5;
 }
 /* 이 달 인기 1·2·3위 = 금·은·동 왕관(노토 👑 재채색, public/crowns) — 2026-11-17 토리님: 테두리 링·광택·
    halo는 전부 빼고 3위까지 왕관만. 카드 오른쪽 위 모서리에 살짝 기울여 걸친다(움직임 없음).
@@ -5732,7 +5732,9 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   /* 2026-11-18 소유자: 오른쪽·아래로 1px씩 더(-5 → -6). */
   bottom: calc(100% - 6px);
   right: -6px; /* 칸 안쪽 여백(5px)을 1px 넘는다 — 토요일 칸은 캡처로 잘림 없음을 확인 */
-  z-index: 3;
+  /* 같은 날 카드들 위(2026-11-20 소유자: 손 올림·고름으로 뜬 위 카드가 왕관을 덮으면 안 된다) — 카드가 뜨는 층(띠 머리 3·
+     움직이는 카드 4)보다 위, 오늘 칸 링(8)·고른 테두리 층보다는 아래. 자리·크기는 그대로. */
+  z-index: 5;
   width: calc(var(--calendar-text-ui) * 1.12 * var(--cal-zoom, 1)); /* 0.95 → 1.12(2026-11-17 소유자: "좀만 더 크게") */
   height: auto;
   pointer-events: none;
@@ -6564,8 +6566,8 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
    판정은 lib/calendar/month.ts buildChainJoins: 앞날 마지막 = 다음날 첫 카드일 때만 잇는다.
    · 같은 글 띠: 머리 카드(.band-head)가 여러 칸 폭(폭은 useEqualChainHeights가 잰다), 뒤 칸은 빈 자리(.band-slot).
    · 꺾인 띠: 칸 안 svg(.chain-steps)에 앞 카드 → 다음날 카드로 칸 사이 틈에서 꺾여 오르내리는 몸통(카드 색).
-   · 토→일 줄바뀜은 평평한 변이 칸 끝까지(.wrap-out/.wrap-in), 글자 꼬리표 없음. 줄바뀜으로 받은 카드만 제목 앞 물결
-     (.chain-cont-mark — 선이 보이는 띠·꺾인 띠엔 없음), 떨어져 받은 카드가 글까지 같으면 한 줄(.chain-slim). */
+   · 토→일 줄바뀜은 평평한 변이 칸 끝까지(.wrap-out/.wrap-in), 글자·아이콘 없이 맞닿은 끝이 옅어지는 색으로만(아래 마스크).
+     떨어져 받은 카드가 글까지 같으면 한 줄(.chain-slim). */
 .band-slot {
   pointer-events: none;
 }
@@ -6747,6 +6749,15 @@ html[data-theme="dark"] .card-sheen {
   85% { opacity: 1; }
   100% { stroke-dashoffset: 0; opacity: 0; }
 }
+/* 토→일로 줄이 바뀌는 묶음의 빛(useEqualChainHeights startLoopSheen) — 두 줄을 한 바퀴로 돌며 이음 변은 건너뛴다. 대시 무늬는
+   조각마다 다시 시작해 줄을 못 건너므로 빛 구간을 JS가 매 프레임 잘라 그린다(같은 길이·속도·곡선·페이드). 층은 격자 뒤 형제. */
+.card-sheen.is-loop {
+  stroke-dasharray: none;
+  animation: none;
+}
+.card-sheen-layer.is-loop {
+  z-index: calc(var(--z-cal-ribbon-head, 10) + 4);
+}
 /* 새로 이어진 순간 — 한 덩어리가 톡 빛났다 가라앉는다(모양은 그대로라 글자와 어긋나지 않는다) + 외곽 빛 한 바퀴. */
 .chain-step.is-new {
   animation: chain-step-pulse 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -6821,19 +6832,9 @@ html[data-reduce-motion] .card-sheen {
     animation: none;
   }
 }
-.chain-cont-mark {
-  display: inline-block;
-  width: 1em;
-  height: 0.5em;
-  margin-right: 0.3em;
-  vertical-align: 0.12em;
-  overflow: visible;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.9;
-  stroke-linecap: round;
-  opacity: 0.6;
-}
+/* 토→일 줄바뀜 = 색으로만(2026-11-19 소유자) — 칠이 맞닿은 끝으로 옅어지는 것은 카드 자신의 인라인 배경 그라데이션이다
+   (lib/calendar/month.ts wrapFadeStyle, 편집실·시청자 공용). 마스크·덧층이 없어 제목·하트·왕관·초점 링은 그대로 진하다.
+   맞닿은 이 두 변은 고른 테두리·손 올림 빛·복사 표시도 긋지 않는다(useEqualChainHeights openOutlineParts — 같은 규칙). */
 .public-event.chain-slim,
 .studio-event-pill.chain-slim {
   padding-top: 3px;

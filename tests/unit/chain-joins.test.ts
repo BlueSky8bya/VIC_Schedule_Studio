@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildChainJoins, chainRangeOf, getEventSpan, getEventsForDate } from "@/lib/calendar/month";
-import { chainCont, chainSlim, chainWrapClasses } from "@/lib/calendar/chain-join-view";
+import { chainSlim, chainWrapClasses, wrapFadeOf } from "@/lib/calendar/chain-join-view";
 import type { StudioScheduleEvent } from "@/lib/domain/schedule-types";
 
 // 이어진 일정 잇기 규칙(2026-11-16 소유자): 앞날 마지막 카드 = 다음날 첫 카드일 때만 잇는다.
@@ -118,7 +118,7 @@ describe("buildChainJoins", () => {
     expect(j.get("b")?.flatLeft).toBe(true);
   });
 
-  it("줄바뀜은 글자 없이 평평한 변 + 물결 표시, 범위·며칠째는 상세 창 한 줄(2026-11-18)", () => {
+  it("줄바뀜은 글자·아이콘 없이 평평한 변 + 맞닿은 끝만 옅게(2026-11-19), 범위·며칠째는 상세 창 한 줄", () => {
     // 금(20)→토(21)→일(22)
     const events = [
       ev({ id: "a", day: "2026-11-20", publicTitle: "와우 포에버\n수도원 40", linkNext: "b" }),
@@ -129,10 +129,10 @@ describe("buildChainJoins", () => {
     expect(chainWrapClasses(j.get("b"))).toBe("wrap-out");
     expect(chainWrapClasses(j.get("c"))).toBe("wrap-in");
     expect(chainWrapClasses(j.get("a"))).toBe("");
-    // 이어 받음 표시(물결)는 이어진 모양이 안 보이는 줄바뀜에만 — 글이 달라도 붙는다. 띠·꺾인 띠는 모양이 말한다.
-    expect(chainCont(j.get("c"))).toBe(true);
-    expect(chainCont(j.get("b"))).toBe(false);
-    expect(chainCont(j.get("a"))).toBe(false);
+    // 옅어지는 끝은 줄바뀜으로 맞닿은 변뿐 — 토요일 조각은 오른쪽, 일요일 조각은 왼쪽. 띠·꺾인 띠는 그대로.
+    expect(wrapFadeOf(j.get("c"))).toEqual({ left: true, right: false });
+    expect(wrapFadeOf(j.get("b"))).toEqual({ left: false, right: true });
+    expect(wrapFadeOf(j.get("a"))).toEqual({ left: false, right: false });
     // 한 줄로 줄이는 것은 글까지 같을 때만
     expect(chainSlim(j.get("c"))).toBe(false);
     expect(chainRangeOf("c", events)).toEqual({ start: "2026-11-20", end: "2026-11-22", index: 3, total: 3 });
@@ -140,7 +140,7 @@ describe("buildChainJoins", () => {
     expect(chainRangeOf("solo", [ev({ id: "solo", day: "2026-11-20" })])).toBeNull();
   });
 
-  it("꺾인 띠로 받은 카드는 물결 표시가 없다(선이 이미 이어 준다) — 글이 같으면 한 줄로만 줄인다", () => {
+  it("꺾인 띠로 받은 카드는 끝이 옅어지지 않는다(선이 이미 이어 준다) — 글이 같으면 한 줄로만 줄인다", () => {
     const events = [
       ev({ id: "15시", day: "2026-11-09", sortOrder: 0 }),
       ev({ id: "a", day: "2026-11-09", sortOrder: 1, publicTitle: BODY, linkNext: "b" }),
@@ -148,7 +148,7 @@ describe("buildChainJoins", () => {
     ];
     const j = joinsOf(events);
     expect(j.get("b")?.left?.kind).toBe("step");
-    expect(chainCont(j.get("b"))).toBe(false);
+    expect(wrapFadeOf(j.get("b"))).toEqual({ left: false, right: false });
     expect(chainSlim(j.get("b"))).toBe(true);
   });
 

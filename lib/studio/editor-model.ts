@@ -45,11 +45,7 @@ export type CopiedEvent = {
   // 편집실 화면(방송 공유 중일 수 있음)에 내용이 노출된다.
   teaser: boolean;
   teaserRevealAt: string; // ISO(UTC). 빈 문자열=미설정. (저장 페이로드도 ISO를 받는다)
-  // 이어진 묶음째 복사(2026-11-19 소유자: 이어진 일정은 한 몸) — 머리 뒤 조각들. offset = 머리 날짜로부터 며칠 뒤.
-  // 붙여넣으면 같은 간격으로 놓고 같은 순서로 다시 잇는다(화면에 그린 모양 = 데이터).
-  followers?: CopiedFollower[];
 };
-export type CopiedFollower = Omit<CopiedEvent, "followers"> & { offset: number };
 
 // 통합 실행취소(Ctrl+Z): 일반 편집기처럼 '액션 단위' LIFO 스택. 각 항목이 자기 역연산을 안다.
 // - recreate: 삭제를 되돌림 → 보관한 내용으로 다시 만든다.

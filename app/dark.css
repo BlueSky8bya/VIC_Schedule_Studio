@@ -844,6 +844,8 @@ html[data-theme="dark"] .agenda-event .event-heart.on { color: #ff9cb7; }
    Dark already has warm paper/ink; keep only a faint neutral highlight on cards. */
 html[data-theme="dark"] :is(.public-event, .studio-event-pill):not([data-mixed]):not(.teaser) {
   background-image: linear-gradient(180deg, #ffffff06, #ffffff00 55%);
+  /* 토→일 줄바뀜 카드(month.ts wrapFadeStyle)가 맨 위에 얹는 같은 광택 */
+  --card-veil: linear-gradient(180deg, #ffffff06, #ffffff00 55%);
 }
 html[data-theme="dark"] .support-bar::before { background: linear-gradient(180deg, #ffffff08, transparent 60%); }
 html[data-theme="dark"] .support-bar span { text-shadow: none; }

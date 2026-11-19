@@ -561,6 +561,79 @@ export function mixedEventStyle(
   };
 }
 
+// ── 토→일 줄바뀜 = 색으로만(2026-11-19 소유자) ──
+// 토요일 조각은 오른쪽 끝으로, 일요일 조각은 왼쪽 끝에서 카드의 **칠만** 옅어진다(거울 대칭). 마스크·덧층이 아니라 카드 자신의
+// 배경 그라데이션이다 — 제목·하트·왕관·초점 링·그림자는 그대로 진하고(겹 순서·쌓임 맥락 변화 없음), 2색·사용자 색·다크 모두 같은
+// 색 값(themeColor)에서 나온다. 옅어지는 폭 13px은 평평한 변의 안쪽 여백(15~16px) 안이라 글자는 늘 제 색 위에 있다.
+// 테두리도 같은 방식(border-box 층, 2색 카드와 같은 background-clip 기법이라 둥근 모서리 유지). 편집실 '은은한 광택·눈 편한 베일'은
+// --card-veil(metal-water.css)로 맨 위에 그대로 얹는다. 무늬(미정 빗금)는 카드 위 따로 그린 층이라 옅어지지 않는다.
+export const WRAP_FADE_PX = 13;
+const WRAP_FADE_ALPHA = 22; // 끝의 남는 진하기(%) — 아예 지우면 카드가 잘려 보인다
+export type WrapFade = { left: boolean; right: boolean };
+function fadeStops(at: (p: number) => string, inner: { pos: number; color: string }[], fade: WrapFade): string {
+  const ghost = (c: string) => `color-mix(in srgb, ${c} ${WRAP_FADE_ALPHA}%, transparent)`;
+  const c0 = at(0);
+  const c1 = at(1);
+  const stops: string[] = [];
+  stops.push(fade.left ? `${ghost(c0)} 0px, ${c0} ${WRAP_FADE_PX}px` : `${c0} 0%`);
+  for (const s of inner) stops.push(`${s.color} ${(s.pos * 100).toFixed(2)}%`);
+  stops.push(fade.right ? `${c1} calc(100% - ${WRAP_FADE_PX}px), ${ghost(c1)} 100%` : `${c1} 100%`);
+  return `linear-gradient(to right, ${stops.join(", ")})`;
+}
+// 그 칸의 칠·테두리를 줄바뀜 끝이 옅어지는 배경 층으로. colors 1개 = 단색, 2개 = 2색(이어진 묶음 전체 기준 반반 — 칸 창만 잘라 그린다).
+export function wrapFadeStyle(
+  colors: ColorPaletteEntry[],
+  run: { index: number; length: number } | null,
+  fade: WrapFade
+): CSSProperties | null {
+  if (!fade.left && !fade.right) return null;
+  const [a, b] = colors;
+  if (!a) return null;
+  const darkA = readDarkTagColors(a.darkColors, a.bgColor);
+  const aBg = themeColor(a.bgColor, darkA.bgColor);
+  const aBorder = themeColor(a.borderColor, darkA.borderColor);
+  let build: (f: WrapFade) => { fill: string; line: string };
+  if (!b) {
+    build = (f) => ({ fill: fadeStops(() => aBg, [], f), line: fadeStops(() => aBorder, [], f) });
+  } else {
+    const darkB = readDarkTagColors(b.darkColors, b.bgColor);
+    const bBg = themeColor(b.bgColor, darkB.bgColor);
+    const bBorder = themeColor(b.borderColor, darkB.borderColor);
+    const len = Math.max(1, run?.length ?? 1);
+    const idx = run?.index ?? 0;
+    // 묶음 전체 그라데이션(a 0~38%, b 62~100%)을 이 칸 좌표(0~1)로 옮긴다.
+    const local = (p: number) => p * len - idx;
+    const mixAt = (x: string, y: string) => (q: number) => {
+      const p = (q + idx) / len;
+      if (p <= 0.38) return x;
+      if (p >= 0.62) return y;
+      return `color-mix(in srgb, ${y} ${(((p - 0.38) / 0.24) * 100).toFixed(1)}%, ${x})`;
+    };
+    const inner = (x: string, y: string) =>
+      [{ pos: local(0.38), color: x }, { pos: local(0.62), color: y }].filter((s) => s.pos > 0 && s.pos < 1);
+    build = (f) => ({
+      fill: fadeStops(mixAt(aBg, bBg), inner(aBg, bBg), f),
+      line: fadeStops(mixAt(aBorder, bBorder), inner(aBorder, bBorder), f)
+    });
+  }
+  const { fill, line } = build(fade);
+  const base = build({ left: false, right: false });
+  return {
+    // 옅어지지 않은 같은 칠 — 날아가는 사본(붙여넣기 비행·복사 메아리)이 한 장짜리 카드로 보이게 쓴다.
+    ...({ "--wrap-base-fill": base.fill, "--wrap-base-line": base.line } as CSSProperties),
+    backgroundColor: "transparent",
+    borderColor: "transparent",
+    // 단색 카드는 화면·테마가 얹던 광택·베일(--card-veil)을 맨 위에 그대로. 2색 카드는 원래도 인라인 그라데이션이 베일을 이겨 없다.
+    backgroundImage: b ? `${fill}, ${line}` : `var(--card-veil, linear-gradient(transparent, transparent)), ${fill}, ${line}`,
+    backgroundClip: b ? "padding-box, border-box" : "padding-box, padding-box, border-box",
+    WebkitBackgroundClip: b ? "padding-box, border-box" : "padding-box, padding-box, border-box",
+    backgroundOrigin: b ? "padding-box, border-box" : "padding-box, padding-box, border-box",
+    backgroundSize: "100% 100%",
+    backgroundPositionX: "0%",
+    backgroundRepeat: "no-repeat"
+  };
+}
+
 // 업 도움(support) 일정에 레인(끈 세로 위치)을 배정한다.
 // 시작일이 이른 것이 위(낮은 lane), 겹치는 것은 아래로. (구간 패킹)
 export function assignSupportLanes<T extends PublicScheduleEvent | StudioScheduleEvent>(
@@ -762,70 +835,10 @@ export function chainLinkAnchor<T extends PublicScheduleEvent | StudioScheduleEv
   return null;
 }
 
-// 편집실 달력이 그리는 일정 = 공개 범위만(비공개 층 UI 철수). 묶음 판정(복사·붙여넣기·우클릭 잇기)도 반드시 이 목록에서 —
-// 공개 → 비공개로 이어진 옛 link가 있어도 화면에 안 그린 일정을 복사하거나 미리보기에 제목을 띄우면 안 된다(방송 화면 유출).
+// 편집실 달력이 그리는 일정 = 공개 범위만(비공개 층 UI 철수). 묶음 판정(우클릭 잇기)도 반드시 이 목록에서 —
+// 공개 → 비공개로 이어진 옛 link가 있어도 화면에 안 그린 일정과 잇거나 묶음에 끼우지 않는다(방송 화면 유출).
 export function isStudioCalendarDrawn(event: PublicScheduleEvent | StudioScheduleEvent): boolean {
   return event.visibilityScope === "public";
-}
-
-// 이어진 묶음을 잇는 순서대로(머리 → link_next) — offset = 머리 날짜로부터 며칠 뒤. 복사·붙여넣기가 묶음째 다룰 때 쓴다.
-// 이어짐이 없으면 그 일정 하나(offset 0). 고리가 꼬였으면(머리 없음) 날짜순으로.
-export function chainMembersInOrder<T extends PublicScheduleEvent | StudioScheduleEvent>(
-  id: string | null,
-  events: T[]
-): { event: T; offset: number }[] {
-  const ids = getLinkedChainIds(id, events);
-  const members = events.filter((e) => ids.has(e.id));
-  if (members.length === 0) return [];
-  const byId = new Map(members.map((e) => [e.id, e] as const));
-  const pointed = new Set(members.map((e) => e.linkNext).filter((x): x is string => Boolean(x && byId.has(x))));
-  const ordered: T[] = [];
-  let cur = members.find((e) => !pointed.has(e.id));
-  while (cur && !ordered.includes(cur)) {
-    ordered.push(cur);
-    cur = cur.linkNext ? byId.get(cur.linkNext) : undefined;
-  }
-  const list =
-    ordered.length === members.length
-      ? ordered
-      : [...members].sort((a, b) => getEventDateKey(a).localeCompare(getEventDateKey(b)));
-  const head = getEventDateKey(list[0]);
-  return list.map((event) => ({ event, offset: diffDays(head, getEventDateKey(event)) }));
-}
-
-// 이어진 묶음을 붙여넣을 때 어디까지 다시 이을지 — 조각 i의 묶음 번호(같은 번호끼리 잇는다).
-// 붙여넣기는 머리를 그날 맨 아래, 이어 받는 조각을 그날 맨 위에 둔다(arrangeChainOrder). 이음은 '앞날 마지막 = 다음날 첫'일 때만
-// 그려지므로(buildChainJoins), 가운데 조각(i>0)이 놓일 날에 다른 일정이 있으면 그 조각은 맨 마지막이 못 돼 i→i+1은 끊겨 그려진다.
-// 화면 = 데이터(2026-11-16 소유자) — 그려지지 않을 이음은 저장하지도 않는다. 조각마다:
-//  · busy = 놓일 날에 (그려지는) 다른 일정이 있음.  · offset = 머리 날짜로부터 며칠 뒤 — 하루 건너뛰면 끊는다.
-//  · multi = 여러 날 한 장(link 이음을 그리지 않는다, getEventSpan).  · teaser = 아직 가림인 떡밥(잇지 않는다, buildChainJoins).
-export type ChainPastePiece = { busy: boolean; offset: number; multi?: boolean; teaser?: boolean };
-export function chainPasteRuns(pieces: ChainPastePiece[]): number[] {
-  const runs: number[] = [];
-  pieces.forEach((p, i) => {
-    if (i === 0) {
-      runs.push(0);
-      return;
-    }
-    const prev = pieces[i - 1];
-    const joined =
-      p.offset === prev.offset + 1 &&
-      !p.multi &&
-      !prev.multi &&
-      !p.teaser &&
-      !prev.teaser &&
-      (i - 1 === 0 || !prev.busy);
-    runs.push(runs[i - 1] + (joined ? 0 : 1));
-  });
-  return runs;
-}
-
-// 붙여넣을 묶음 조각 — 그려지는 목록(isStudioCalendarDrawn) 기준. 그려지지 않은(비공개) 일정은 묶음에 들지 않는다.
-export function drawnChainMembers<T extends PublicScheduleEvent | StudioScheduleEvent>(
-  id: string | null,
-  events: T[]
-): { event: T; offset: number }[] {
-  return chainMembersInOrder(id, events.filter(isStudioCalendarDrawn));
 }
 
 // link_next로 묶였더라도 맞닿는 변의 색(대표 태그)이 같을 때만 "이어진 것"으로 본다.

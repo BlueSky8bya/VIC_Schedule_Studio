@@ -103,18 +103,36 @@ function chainOutline(
   bodies: Box[], stems: Stem[], convex: number, concave: number,
   hidden: (x: number) => boolean, flat: FlatEnds = {}
 ): string {
+  return roundedPath(outlinePoints(bodies, stems, convex, concave, hidden, flat));
+}
+// 줄바뀜(토→일)으로 이어지는 끝의 세로변(side L/R 두 꼭짓점 사이)을 뺀 열린 외곽 조각들 — 그 변은 다음 줄과 맞닿은 이음이라
+// 고른 테두리·손 올림 빛·복사 표시가 모두 긋지 않는다(2026-11-19 소유자: 그으면 토·일이 잘려 보인다). start = 조각이 시작하는 끝.
+function chainOutlineParts(
+  bodies: Box[], stems: Stem[], convex: number, concave: number,
+  hidden: (x: number) => boolean, flat: FlatEnds = {}
+): OutlinePart[] {
+  return openOutlineParts(outlinePoints(bodies, stems, convex, concave, hidden, flat));
+}
+type SidedPt = Pt & { side?: "L" | "R" };
+function outlinePoints(
+  bodies: Box[], stems: Stem[], convex: number, concave: number,
+  hidden: (x: number) => boolean, flat: FlatEnds = {}
+): SidedPt[] {
   const first = bodies[0];
   const last = bodies[bodies.length - 1];
-  const raw: { x: number; y: number; sharp?: boolean }[] = [];
+  const raw: { x: number; y: number; sharp?: boolean; side?: "L" | "R" }[] = [];
   // 위쪽 변: 왼 → 오른쪽
-  raw.push({ x: first.left, y: first.top, sharp: flat.left });
+  raw.push({ x: first.left, y: first.top, sharp: flat.left, side: flat.left ? "L" : undefined });
   stems.forEach((st, k) => {
     const A = bodies[k];
     const B = bodies[k + 1];
     const top = Math.min(A.top, B.top);
     raw.push({ x: st.xa, y: A.top }, { x: st.xa, y: top }, { x: st.xb, y: top }, { x: st.xb, y: B.top });
   });
-  raw.push({ x: last.right, y: last.top, sharp: flat.right }, { x: last.right, y: last.bottom, sharp: flat.right });
+  raw.push(
+    { x: last.right, y: last.top, sharp: flat.right, side: flat.right ? "R" : undefined },
+    { x: last.right, y: last.bottom, sharp: flat.right, side: flat.right ? "R" : undefined }
+  );
   // 아래쪽 변: 오른 → 왼쪽
   for (let k = stems.length - 1; k >= 0; k -= 1) {
     const st = stems[k];
@@ -123,10 +141,10 @@ function chainOutline(
     const bottom = Math.max(A.bottom, B.bottom);
     raw.push({ x: st.xb, y: B.bottom }, { x: st.xb, y: bottom }, { x: st.xa, y: bottom }, { x: st.xa, y: A.bottom });
   }
-  raw.push({ x: first.left, y: first.bottom, sharp: flat.left });
+  raw.push({ x: first.left, y: first.bottom, sharp: flat.left, side: flat.left ? "L" : undefined });
   const same = (a: { x: number; y: number }, b: { x: number; y: number }) =>
     Math.abs(a.x - b.x) < 0.01 && Math.abs(a.y - b.y) < 0.01;
-  const pts: { x: number; y: number; sharp?: boolean }[] = [];
+  const pts: { x: number; y: number; sharp?: boolean; side?: "L" | "R" }[] = [];
   for (const p of raw) if (!pts.length || !same(pts[pts.length - 1], p)) pts.push(p);
   if (pts.length > 1 && same(pts[0], pts[pts.length - 1])) pts.pop();
   const crossAt = (i: number) => {
@@ -145,11 +163,45 @@ function chainOutline(
     const q = pts[(i + 1) % pts.length];
     area += p.x * q.y - q.x * p.y;
   }
-  const rounded: Pt[] = pts.map((p, i) => {
+  return pts.map((p, i) => {
     if (p.sharp || hidden(p.x)) return { ...p, r: 0 };
     return { ...p, r: Math.sign(crossAt(i)) === Math.sign(area) ? convex : concave };
   });
-  return roundedPath(rounded);
+}
+// 열린 조각: 같은 끝(side)의 두 꼭짓점을 잇는 변을 빼고, 뺀 변 다음 꼭짓점부터 다음 뺀 변까지를 한 조각으로.
+// 빼는 변이 없으면 닫힌 외곽 하나. 꼭짓점 처리는 roundedPath와 같다.
+export type OutlinePart = { d: string; start: "L" | "R" | null };
+export function openOutlineParts(pts: SidedPt[]): OutlinePart[] {
+  const n = pts.length;
+  const skip = (i: number) => Boolean(pts[i].side && pts[i].side === pts[(i + 1) % n].side);
+  if (!pts.some((_, i) => skip(i))) return [{ d: roundedPath(pts), start: null }];
+  const f = (v: number) => v.toFixed(2);
+  const corner = (i: number) => {
+    const p0 = pts[(i - 1 + n) % n];
+    const p1 = pts[i];
+    const p2 = pts[(i + 1) % n];
+    const l1 = Math.hypot(p1.x - p0.x, p1.y - p0.y) || 1;
+    const l2 = Math.hypot(p2.x - p1.x, p2.y - p1.y) || 1;
+    const r = Math.min(p1.r, l1 / 2, l2 / 2);
+    return {
+      a: { x: p1.x + ((p0.x - p1.x) / l1) * r, y: p1.y + ((p0.y - p1.y) / l1) * r },
+      b: { x: p1.x + ((p2.x - p1.x) / l2) * r, y: p1.y + ((p2.y - p1.y) / l2) * r }
+    };
+  };
+  const parts: OutlinePart[] = [];
+  for (let k = 0; k < n; k += 1) {
+    if (!skip(k)) continue;
+    let j = (k + 1) % n;
+    const s0 = corner(j);
+    let d = `M${f(s0.b.x)},${f(s0.b.y)} `;
+    for (let guard = 0; guard < n && !skip(j); guard += 1) {
+      j = (j + 1) % n;
+      const c = corner(j);
+      d += `L${f(c.a.x)},${f(c.a.y)} Q${f(pts[j].x)},${f(pts[j].y)} ${f(c.b.x)},${f(c.b.y)} `;
+    }
+    parts.push({ d: d.trim(), start: pts[(k + 1) % n].side ?? null });
+  }
+  return parts;
 }
 // 꺾인 띠 한 쌍(앞 몸 x0~, 기둥 xa~xb, 뒤 몸 ~x1) — chainOutline의 몸 둘짜리.
 function stepOutline(
@@ -220,8 +272,18 @@ function movesGeometry(a: Animation): boolean {
     .getKeyframes()
     .some((k) => Object.keys(k).some((prop) => GEOMETRY_PROPS.test(prop.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`))));
 }
+// 손을 올리면 카드가 1px 뜨는 전환(transform)은 '미끄러짐'이 아니다 — 그것까지 세면 손 올림 시작·끝마다 카드가 z 4로 잠깐
+// 올라가 아래 카드가 윗변에 걸친 왕관을 덮었다가 내려놓아 깜빡였다(2026-11-20 소유자). 실제로 자리를 옮기는 착지·FLIP만 센다.
+const SLIDE_MIN_PX = 3;
+function movedFar(el: Element): boolean {
+  const t = getComputedStyle(el).transform;
+  if (!t || t === "none") return false;
+  const m = new DOMMatrixReadOnly(t);
+  return Math.abs(m.m41) >= SLIDE_MIN_PX || Math.abs(m.m42) >= SLIDE_MIN_PX;
+}
 function isSliding(el: Element): boolean {
   if (typeof (el as HTMLElement).getAnimations !== "function") return false;
+  if (!movedFar(el)) return false;
   return (el as HTMLElement).getAnimations().some((a) => {
     if (a.playState !== "running") return false;
     const end = a.effect?.getComputedTiming().endTime;
@@ -287,8 +349,8 @@ function drawSteps(root: HTMLElement) {
         const TU = unionBox(TG, local);
         // 묶음 바깥 끝이 줄바뀜이면 그 끝은 둥글리지 않고 평평하게 — 카드 칠을 이 도형이 맡으므로 여기서 맞춘다.
         const flat: FlatEnds = {
-          left: SG.some((el) => el.classList.contains("wrap-in")),
-          right: TG.some((el) => el.classList.contains("wrap-out"))
+          left: SG.some((el) => rowBreakLeft(el)),
+          right: TG.some((el) => rowBreakRight(el))
         };
         const d = stepRingPath(SU, TU, xa, xb, -sw / 2, convex, -sw / 2, flat);
         const overlays = flatOverlaysOf(
@@ -393,13 +455,38 @@ function cardAt(root: HTMLElement, t: EventTarget | null): HTMLElement | null {
   const card = el.closest<HTMLElement>(".public-event, .studio-event-pill");
   return card && root.contains(card) ? card : null;
 }
+// 달력 칸 번호(0부터, 7칸 한 줄) — 줄·요일 판정용. 편집실·시청자 칸 모두 data-cell-index를 단다.
+function cellIndexOf(el: Element): number {
+  return Number(el.closest<HTMLElement>("[data-cell-index]")?.dataset.cellIndex ?? NaN);
+}
+// 줄이 바뀌며 다음 줄로 이어지는 끝(맞닿은 변 규칙 하나 — 고른 테두리·손 올림 빛·복사 표시가 긋지 않는다):
+// 토→일 이어진 일정(.wrap-in/.wrap-out)과, 여러 날 한 장이 주 경계에서 갈리는 조각(일요일 칸의 평평한 왼변·토요일 칸의 평평한 오른변).
+function rowBreakLeft(el: Element): boolean {
+  return el.classList.contains("wrap-in") || (el.classList.contains("no-left") && cellIndexOf(el) % 7 === 0);
+}
+function rowBreakRight(el: Element): boolean {
+  return el.classList.contains("wrap-out") || (el.classList.contains("no-right") && cellIndexOf(el) % 7 === 6);
+}
+// 같은 묶음 키의 조각 중 **같은 줄**만 — 여러 날 한 장이 주를 넘으면 줄마다 따로 블록이 되고 줄 사이는 wraps로 잇는다.
 function groupOf(root: HTMLElement, card: HTMLElement): HTMLElement[] {
   const key = card.dataset.chain;
   if (!key) return [card];
+  const row = Math.floor(cellIndexOf(card) / 7);
   const all = Array.from(root.querySelectorAll<HTMLElement>(`[data-chain="${CSS.escape(key)}"]`)).filter(
-    (n) => !n.classList.contains("band-slot")
+    (n) => !n.classList.contains("band-slot") && (Number.isNaN(row) || Math.floor(cellIndexOf(n) / 7) === row)
   );
   return all.length ? all : [card];
+}
+// 여러 날 한 장이 주 경계에서 갈린 조각의 다른 줄 짝(같은 묶음 키, 위/아래 줄) — 줄바뀜 이음(data-wrap-*)과 같은 wraps로 쓴다.
+function rowBreakPartners(root: HTMLElement, m: HTMLElement): HTMLElement[] {
+  const key = m.dataset.chain;
+  if (!key || m.classList.contains("wrap-in") || m.classList.contains("wrap-out")) return [];
+  const row = Math.floor(cellIndexOf(m) / 7);
+  const want = [rowBreakRight(m) ? row + 1 : null, rowBreakLeft(m) ? row - 1 : null].filter((r): r is number => r !== null);
+  if (!want.length) return [];
+  return Array.from(root.querySelectorAll<HTMLElement>(`[data-chain="${CSS.escape(key)}"]`)).filter(
+    (n) => n !== m && !n.classList.contains("band-slot") && want.includes(Math.floor(cellIndexOf(n) / 7))
+  );
 }
 function unionBox(els: HTMLElement[], local: (r: DOMRect) => Box): Box {
   const bs = els.map((e) => local(e.getBoundingClientRect()));
@@ -444,6 +531,7 @@ function blockOf(root: HTMLElement, card: HTMLElement): Block {
       const prev = m.dataset.wrapFrom ? one("data-wrap-to", m.dataset.wrapFrom) : null;
       if (next) wraps.push(next);
       if (prev) wraps.push(prev);
+      wraps.push(...rowBreakPartners(root, m));
     }
   }
   const byBody = new Map<string, HTMLElement[]>();
@@ -460,6 +548,16 @@ function blockOf(root: HTMLElement, card: HTMLElement): Block {
 }
 // 블록 외곽 경로. e = 카드 바깥으로 띄우는 양(음수면 안쪽), stemE = 기둥만 따로 띄우는 양.
 function blockPath(block: Block, local: (r: DOMRect) => Box, e: number, stemE = e): string {
+  return blockOutline(block, local, e, stemE, chainOutline);
+}
+// 줄바뀜 끝의 이음 변을 뺀 열린 조각들(고른 테두리·손 올림 빛 — 토→일을 한 덩어리로 읽히게).
+function blockParts(block: Block, local: (r: DOMRect) => Box, e: number, stemE = e): OutlinePart[] {
+  return blockOutline(block, local, e, stemE, chainOutlineParts);
+}
+function blockOutline<R>(
+  block: Block, local: (r: DOMRect) => Box, e: number, stemE: number,
+  draw: (bodies: Box[], stems: Stem[], convex: number, concave: number, hidden: (x: number) => boolean, flat: FlatEnds) => R
+): R {
   const lead = block.bodies[0][0];
   const convex = Math.max(...block.cards.map(convexOf));
   const sw = borderWidthOf(lead);
@@ -469,12 +567,12 @@ function blockPath(block: Block, local: (r: DOMRect) => Box, e: number, stemE = 
     .sort((a, b) => a.xa - b.xa);
   const grow = (b: Box): Box => ({ left: b.left - e, right: b.right + e, top: b.top - e, bottom: b.bottom + e });
   const flat: FlatEnds = {
-    left: block.bodies[0].some((el) => el.classList.contains("wrap-in")),
-    right: block.bodies[block.bodies.length - 1].some((el) => el.classList.contains("wrap-out"))
+    left: block.bodies[0].some((el) => rowBreakLeft(el)),
+    right: block.bodies[block.bodies.length - 1].some((el) => rowBreakRight(el))
   };
   // 기둥 수가 몸 사이 수와 안 맞으면(그리는 도중의 어중간한 장면) 전체를 감싼 한 상자로.
   const ok = stems.length === boxes.length - 1;
-  return chainOutline(
+  return draw(
     ok ? boxes.map(grow) : [grow(unionBox(block.cards, local))],
     ok ? stems.map((st) => ({ xa: st.xa - stemE, xb: st.xb + stemE })) : [],
     Math.max(2, convex + e), Math.max(2, STEP_CONCAVE - e), () => false, flat
@@ -498,7 +596,8 @@ function sheenTargetOf(root: HTMLElement, t: EventTarget | null): SheenTarget | 
     ? root.querySelector<HTMLElement>(`[data-step-from="${CSS.escape(g.dataset.step)}"]`)
     : cardAt(root, t);
   if (!card) return null;
-  return { key: `b:${blockOf(root, card).key}`, card };
+  // 줄을 넘는 묶음은 묶음 전체가 한 열쇠 — 토요일 조각에서 일요일 조각으로 손을 옮겨도 돌던 빛을 새로 시작하지 않는다.
+  return { key: `b:${runBlocksOf(root, card).map((b) => b.key).join("|")}`, card };
 }
 function sheenPath(root: HTMLElement, target: SheenTarget, host: HTMLElement): string | null {
   if (!target.card.isConnected) return null;
@@ -575,7 +674,8 @@ function drawRings(root: HTMLElement) {
       layer.append(g);
     }
     g.setAttribute("class", `chain-ring-pair is-${kind}`);
-    const d = blockPath(block, local, e, -0.75);
+    // 줄바뀜(토→일) 이음 변은 긋지 않는다 — 토요일 오른쪽 끝·일요일 왼쪽 끝이 닫히면 둘이 잘려 보였다(2026-11-19 소유자).
+    const d = blockParts(block, local, e, -0.75).map((p) => p.d).join(" ");
     const all = g.querySelector<SVGPathElement>(".ring-all")!;
     const top = g.querySelector<SVGPathElement>(".ring-pick")!;
     const hasPick = block.cards.includes(pickedCard);
@@ -608,8 +708,8 @@ export function chainTiltGroup(card: HTMLElement): ChainTiltGroup | "skip" | nul
   const block = blockOf(root, card);
   if (block.steps.length > 0 || card.hasAttribute("data-step-from") || card.hasAttribute("data-step-to")) return "skip";
   const parts = block.cards;
-  const wrapIn = parts.some((el) => el.classList.contains("wrap-in"));
-  const wrapOut = parts.some((el) => el.classList.contains("wrap-out"));
+  const wrapIn = parts.some((el) => rowBreakLeft(el));
+  const wrapOut = parts.some((el) => rowBreakRight(el));
   if (parts.length < 2 && !card.hasAttribute("data-band-head") && !wrapIn && !wrapOut) return null;
   const rects = parts.map((el) => el.getBoundingClientRect());
   const left = Math.min(...rects.map((r) => r.left));
@@ -628,85 +728,82 @@ export function chainTiltGroup(card: HTMLElement): ChainTiltGroup | "skip" | nul
   return { parts, arms, scale: Math.min(1, single / reach) };
 }
 
-// ── 복사 개미 행렬 · 붙여넣기 미리보기(2026-11-19 소유자) ──
-// 이어진 일정(띠·꺾인 띠·줄바뀜)이나 여러 날 한 장을 복사하면 카드마다 네모 점선을 두르지 않고, 화면에 그려진 이어진 모양
-// 하나로 두른다. 붙여넣기 미리보기 조각들도 같은 모양 하나로 감싼다(붙여넣으면 생길 모양 그대로). 외곽은 고른 테두리
-// (drawRings)·광택과 같은 chainOutline — 규칙 하나. 이음 판정은 화면 그대로다:
-//  · 같은 줄에서 맞닿은 조각(띠·띠 머리) = 한 몸.  · 꺾인 띠 짝(data-step-from/to) = 기둥으로 잇는다.
-//  · 붙여넣기 조각은 이어지는 날끼리(같은 줄) 기둥으로 — 붙여넣으면 그렇게 이어진다.  · 줄이 바뀌면 끊고 그 끝은 평평하게.
+// ── 복사 개미 행렬 — 이어진 카드(2026-11-19 소유자) ──
+// 복사는 누른 그 일정 하나. 개미 행렬도 **그 카드 하나**만 두른다 — 띠·꺾인 띠 안에 있어도 이웃 카드·꺾인 띠 기둥은 두르지 않는다.
+// 그 카드가 화면에 그려진 모양 그대로: 제 둥근 모서리는 둥글게(바깥으로 grow만큼 띄워 낱장 .copy-ants와 같은 자리),
+// 이웃과 맞닿은 변(띠 이음·꺾인 띠 기둥이 붙는 변·토→일 줄바뀜의 칸 끝)은 평평하게, 그 카드 쪽 안으로 inset만큼 들여 긋는다
+// — 이음을 넘어 이웃으로 번지지 않고, 띄우지도 않아 떨어져 보이지 않는다. 이어지지 않은 카드는 CSS .copy-ants 그대로.
+// wrapLeft/wrapRight = 토→일 줄바뀜으로 다음 줄과 맞닿은 끝 — 그 세로변은 고른 테두리·손 올림 빛과 같이 아예 긋지 않는다
+// (openOutlineParts — 세 표시가 같은 '맞닿은 변' 규칙을 쓴다).
+export type CardAntEdges = { joinLeft: boolean; joinRight: boolean; wrapLeft?: boolean; wrapRight?: boolean };
+export function cardAntsPath(box: Box, edges: CardAntEdges, radius: number, grow = 3, inset = 1.5): string {
+  const left = edges.joinLeft ? box.left + inset : box.left - grow;
+  const right = edges.joinRight ? box.right - inset : box.right + grow;
+  const top = box.top - grow;
+  const bottom = box.bottom + grow;
+  const r = Math.max(0, radius + grow);
+  const sl = edges.joinLeft && edges.wrapLeft ? ("L" as const) : undefined;
+  const sr = edges.joinRight && edges.wrapRight ? ("R" as const) : undefined;
+  return openOutlineParts([
+    { x: left, y: top, r: edges.joinLeft ? 0 : r, side: sl },
+    { x: right, y: top, r: edges.joinRight ? 0 : r, side: sr },
+    { x: right, y: bottom, r: edges.joinRight ? 0 : r, side: sr },
+    { x: left, y: bottom, r: edges.joinLeft ? 0 : r, side: sl }
+  ])
+    .map((p) => p.d)
+    .join(" ");
+}
 const copyLayers = new WeakMap<HTMLElement, SVGSVGElement>();
-type MarkPiece = { el: HTMLElement; box: Box; row: number };
-type MarkBody = { box: Box; els: HTMLElement[] };
-function rowOf(el: HTMLElement): number {
-  const cell = el.closest("article");
-  return Math.round((cell ?? el).getBoundingClientRect().top);
-}
-function markBlocks(pieces: MarkPiece[], joined: (a: HTMLElement, b: HTMLElement) => boolean): MarkBody[][] {
-  const sorted = [...pieces].sort((a, b) => a.row - b.row || a.box.left - b.box.left);
-  const blocks: MarkBody[][] = [];
-  let block: MarkBody[] = [];
-  let row: number | null = null;
-  for (const p of sorted) {
-    const last = block[block.length - 1];
-    if (last && p.row === row && p.box.left <= last.box.right + 3) {
-      last.box = {
-        left: Math.min(last.box.left, p.box.left),
-        right: Math.max(last.box.right, p.box.right),
-        top: Math.min(last.box.top, p.box.top),
-        bottom: Math.max(last.box.bottom, p.box.bottom)
-      };
-      last.els.push(p.el);
-      continue;
-    }
-    if (last && p.row === row && last.els.some((a) => joined(a, p.el))) {
-      block.push({ box: p.box, els: [p.el] });
-      continue;
-    }
-    if (block.length) blocks.push(block);
-    block = [{ box: p.box, els: [p.el] }];
-    row = p.row;
+const JOIN_LEFT = ["no-left", "link-join-left", "wrap-in", "chain-step-to"];
+const JOIN_RIGHT = ["no-right", "link-join-right", "wrap-out", "chain-step-from"];
+const hasAny = (el: Element, cls: string[]) => cls.some((c) => el.classList.contains(c));
+// 그 일정의 그 날 조각 — 카드(띠 머리면 제 날짜 칸까지만) 또는 같은 글 띠의 뒤 칸 손잡이(.band-slot).
+function copiedPiece(root: HTMLElement, el: HTMLElement, local: (r: DOMRect) => Box): { box: Box; edges: CardAntEdges; radius: number } | null {
+  const cellOf = (x: Element) => x.closest("article");
+  if (el.classList.contains("band-slot")) {
+    const head = root.querySelector<HTMLElement>(`[data-band-head="${CSS.escape(el.dataset.bandSlot ?? "")}"]`);
+    const cell = cellOf(el);
+    if (!head || !cell) return null;
+    const hr = local(head.getBoundingClientRect());
+    const cr = local(cell.getBoundingClientRect());
+    const slots = Array.from(root.querySelectorAll<HTMLElement>(`[data-band-slot="${CSS.escape(el.dataset.bandSlot ?? "")}"]`));
+    const last = slots[slots.length - 1] === el;
+    const joinRight = !last || hasAny(head, JOIN_RIGHT) || hr.right > cr.right + 1;
+    return {
+      box: { left: cr.left, right: joinRight ? cr.right : hr.right, top: hr.top, bottom: hr.bottom },
+      edges: { joinLeft: true, joinRight, wrapRight: last && rowBreakRight(head) },
+      radius: convexOf(head)
+    };
   }
-  if (block.length) blocks.push(block);
-  return blocks;
-}
-function markPath(block: MarkBody[], e: number): string {
-  const lead = block[0].els[0];
-  const convex = Math.max(...block.flatMap((b) => b.els.map(convexOf)));
-  const sw = borderWidthOf(lead);
-  const stems: Stem[] = [];
-  for (let k = 0; k + 1 < block.length; k += 1) {
-    const { xa, xb } = stepBandPath(block[k].box, block[k + 1].box, convex, sw);
-    stems.push({ xa: xa - e * 0.5, xb: xb + e * 0.5 });
+  const b = local(el.getBoundingClientRect());
+  let joinRight = hasAny(el, JOIN_RIGHT);
+  let clipped = false;
+  const cell = el.hasAttribute("data-band-head") ? cellOf(el) : null;
+  if (cell) {
+    const cr = local(cell.getBoundingClientRect());
+    if (b.right > cr.right + 1) {
+      b.right = cr.right;
+      joinRight = true;
+      clipped = true; // 오른쪽은 같은 띠의 다음 날 조각과 맞닿은 변(줄바뀜 끝이 아님)
+    }
   }
-  const grow = (b: Box): Box => ({ left: b.left - e, right: b.right + e, top: b.top - e, bottom: b.bottom + e });
-  const flat: FlatEnds = {
-    left: block[0].els.some((el) => el.classList.contains("wrap-in")),
-    right: block[block.length - 1].els.some((el) => el.classList.contains("wrap-out"))
+  return {
+    box: b,
+    edges: {
+      joinLeft: hasAny(el, JOIN_LEFT),
+      joinRight,
+      wrapLeft: rowBreakLeft(el),
+      wrapRight: rowBreakRight(el) && !clipped
+    },
+    radius: convexOf(el)
   };
-  return chainOutline(
-    block.map((b) => grow(b.box)),
-    stems,
-    Math.max(2, convex + e),
-    Math.max(2, STEP_CONCAVE - e),
-    () => false,
-    flat
-  );
-}
-function stepJoined(a: HTMLElement, b: HTMLElement): boolean {
-  const pair = (x: HTMLElement, y: HTMLElement) => Boolean(x.dataset.stepFrom && x.dataset.stepFrom === y.dataset.stepTo);
-  return pair(a, b) || pair(b, a);
-}
-function pasteJoined(a: HTMLElement, b: HTMLElement): boolean {
-  return (
-    a.dataset.pasteRun === b.dataset.pasteRun &&
-    Math.abs(Number(a.dataset.pastePiece) - Number(b.dataset.pastePiece)) === 1
-  );
 }
 function drawCopyMarks(root: HTMLElement) {
-  const copied = Array.from(root.querySelectorAll<HTMLElement>(".studio-event-pill.is-copied[data-copy-shape]"));
-  const paste = Array.from(root.querySelectorAll<HTMLElement>(".paste-preview[data-paste-piece]"));
+  const copied = Array.from(
+    root.querySelectorAll<HTMLElement>(".studio-event-pill.is-copied[data-copy-shape], .band-slot.is-copied[data-copy-shape]")
+  );
   let layer = copyLayers.get(root);
-  if (!copied.length && !paste.length) {
+  if (!copied.length) {
     layer?.replaceChildren();
     return;
   }
@@ -718,26 +815,40 @@ function drawCopyMarks(root: HTMLElement) {
     copyLayers.set(root, layer);
   }
   const local = localOf(layer, root);
-  const piecesOf = (els: HTMLElement[]): MarkPiece[] =>
-    els.map((el) => ({ el, box: local(el.getBoundingClientRect()), row: rowOf(el) }));
-  const want: { key: string; d: string; kind: "copy" | "paste" }[] = [];
-  markBlocks(piecesOf(copied), stepJoined).forEach((b, i) => want.push({ key: `c${i}`, d: markPath(b, 3), kind: "copy" }));
-  markBlocks(piecesOf(paste), pasteJoined).forEach((b, i) => want.push({ key: `p${i}`, d: markPath(b, 0), kind: "paste" }));
+  // 여러 날 한 장(같은 일정이 칸마다 조각)은 같은 줄의 맞닿은 조각을 한 장으로 합친다 — 그것도 '그 카드 하나'다.
+  const pieces = copied
+    .map((el) => ({ p: copiedPiece(root, el, local), row: Math.round((el.closest("article") ?? el).getBoundingClientRect().top) }))
+    .filter((x): x is { p: NonNullable<ReturnType<typeof copiedPiece>>; row: number } => Boolean(x.p))
+    .sort((a, b) => a.row - b.row || a.p.box.left - b.p.box.left);
+  const merged: { box: Box; edges: CardAntEdges; radius: number }[] = [];
+  let lastRow: number | null = null;
+  for (const { p, row } of pieces) {
+    const prev = merged[merged.length - 1];
+    if (prev && row === lastRow && p.box.left <= prev.box.right + 3) {
+      prev.box = {
+        left: prev.box.left,
+        right: Math.max(prev.box.right, p.box.right),
+        top: Math.min(prev.box.top, p.box.top),
+        bottom: Math.max(prev.box.bottom, p.box.bottom)
+      };
+      prev.edges = { ...prev.edges, joinRight: p.edges.joinRight, wrapRight: p.edges.wrapRight };
+    } else merged.push({ ...p, box: { ...p.box } });
+    lastRow = row;
+  }
+  const want = merged.map((m, i) => ({ key: `c${i}`, d: cardAntsPath(m.box, m.edges, m.radius) }));
   const old = new Map<string, SVGGElement>();
   for (const g of Array.from(layer.querySelectorAll<SVGGElement>(":scope > g[data-mark]"))) old.set(g.dataset.mark ?? "", g);
   for (const w of want) {
     let g = old.get(w.key);
     old.delete(w.key);
     if (!g) {
-      // 등장은 고른 테두리와 같은 톡(chain-ring-in) — 묶음 카드마다 통 튀면 이음이 벌어져 보여서 모양째 나타난다.
       g = document.createElementNS(SVG_NS, "g") as SVGGElement;
       g.setAttribute("data-mark", w.key);
-      g.innerHTML = `<path class="copy-mark"/>`;
+      g.setAttribute("class", "chain-ring-pair");
+      g.innerHTML = `<path class="copy-mark is-ants"/>`;
       layer.append(g);
     }
-    g.setAttribute("class", "chain-ring-pair");
     const path = g.querySelector<SVGPathElement>("path")!;
-    path.setAttribute("class", w.kind === "copy" ? "copy-mark is-ants" : "copy-mark is-paste");
     if (path.getAttribute("d") !== w.d) path.setAttribute("d", w.d);
   }
   for (const g of old.values()) g.remove();
@@ -773,9 +884,10 @@ function crownMask(layer: SVGSVGElement, path: SVGPathElement): SVGGElement {
   return holes;
 }
 /** 왕관마다 지금 프레임의 자리·기울기(까딱 애니메이션 포함)로 구멍 그림을 맞춘다. 좌표는 sheenPath와 같은 host 기준. */
-function placeCrownHoles(holes: SVGGElement, crowns: HTMLImageElement[], host: HTMLElement) {
-  const hostRect = host.getBoundingClientRect();
-  const s = scaleOf(host);
+// origin = 층 좌표의 원점(화면 px), s = 화면 배율 — 칸 안 층이면 그 칸, 격자 뒤 층이면 층 원점·격자 배율.
+function placeCrownHoles(holes: SVGGElement, crowns: HTMLImageElement[], host: HTMLElement | { left: number; top: number; s: number }) {
+  const hostRect = host instanceof HTMLElement ? host.getBoundingClientRect() : host;
+  const s = host instanceof HTMLElement ? scaleOf(host) : host.s;
   crowns.forEach((crown, i) => {
     let img = holes.children[i] as SVGImageElement | undefined;
     if (!img) {
@@ -809,6 +921,11 @@ function startSheen(root: HTMLElement, target: SheenTarget | null) {
     sheenRun.delete(root);
   }
   if (reduceMotion()) return;
+  // 토→일로 줄이 바뀌는 묶음 — 빛 한 줄기가 두 줄을 한 바퀴로 돈다(이음 변은 건너뛴다).
+  if (runBlocksOf(root, target.card).length > 1) {
+    startLoopSheen(root, target);
+    return;
+  }
   const block = blockOf(root, target.card);
   const lead = block.bodies[0][0];
   const host = lead.closest<HTMLElement>("article") ?? lead.parentElement;
@@ -829,6 +946,12 @@ function startSheen(root: HTMLElement, target: SheenTarget | null) {
   host.append(layer);
   const run: SheenRun = { key: target.key, raf: 0, layer, until: performance.now() + SHEEN_MS };
   const step = () => {
+    // 카드가 사라졌으면(다시 그림·달 이동) 바로 거두고 기록도 지운다 — 남은 기록이 같은 열쇠의 다음 빛을 막았다.
+    if (!target.card.isConnected) {
+      layer.remove();
+      if (sheenRun.get(root) === run) sheenRun.delete(root);
+      return;
+    }
     const d = sheenPath(root, target, host);
     if (d && path.getAttribute("d") !== d) path.setAttribute("d", d);
     if (holes) placeCrownHoles(holes, crowns, host);
@@ -838,6 +961,156 @@ function startSheen(root: HTMLElement, target: SheenTarget | null) {
       layer.remove();
       if (sheenRun.get(root) === run) sheenRun.delete(root);
     }
+  };
+  step();
+  sheenRun.set(root, run);
+}
+
+// ── 여러 줄에 걸친 묶음(토→일 줄바뀜)의 빛 한 바퀴(2026-11-19 소유자) ──
+// 줄마다 블록 외곽을 줄바뀜 이음 변 없이 연 조각(blockParts)으로 받아, 윗변은 위 줄 → 아래 줄 순으로 왼→오른쪽, 마지막 줄의
+// 오른쪽 끝을 돌아 아랫변은 아래 줄 → 위 줄 순으로 오른→왼쪽, 첫 줄 왼쪽 끝을 돌아 닫힌다. 이음 변(토 오른쪽·일 왼쪽)은 건너뛰어
+// 한 덩어리로 읽힌다. 대시 무늬는 조각마다 다시 시작해 줄을 못 건너므로, 빛 구간을 매 프레임 직접 잘라 그린다(같은 길이 18%·
+// 같은 속도 1.1초·같은 곡선·같은 페이드 — CSS card-sheen-run과 같은 값).
+function runBlocksOf(root: HTMLElement, card: HTMLElement): Block[] {
+  const blocks: Block[] = [];
+  const done = new Set<HTMLElement>();
+  const queue = [card];
+  while (queue.length) {
+    const c = queue.pop()!;
+    if (done.has(c)) continue;
+    const b = blockOf(root, c);
+    b.cards.forEach((m) => done.add(m));
+    blocks.push(b);
+    queue.push(...b.wraps);
+  }
+  const top = (b: Block) => Math.round((b.bodies[0][0].closest("article") ?? b.bodies[0][0]).getBoundingClientRect().top);
+  return blocks.sort((a, b) => top(a) - top(b));
+}
+// 줄 순서로 받은 블록들의 열린 조각을 한 바퀴 순서로 — 첫 줄(왼쪽 끝을 도는 조각), 가운데 줄 윗변, 마지막 줄(오른쪽 끝을 도는 조각),
+// 가운데 줄 아랫변(거꾸로). 모양이 예상과 다르면 받은 순서 그대로.
+export function loopOrder(rows: OutlinePart[][]): string[] {
+  if (rows.length < 2) return rows.flat().map((p) => p.d);
+  const first = rows[0];
+  const last = rows[rows.length - 1];
+  const middle = rows.slice(1, -1);
+  const ok =
+    first.length === 1 && first[0].start === "R" && last.length === 1 && last[0].start === "L" &&
+    middle.every((m) => m.length === 2 && m.some((p) => p.start === "L") && m.some((p) => p.start === "R"));
+  if (!ok) return rows.flat().map((p) => p.d);
+  return [
+    first[0].d,
+    ...middle.map((m) => m.find((p) => p.start === "L")!.d),
+    last[0].d,
+    ...middle.reverse().map((m) => m.find((p) => p.start === "R")!.d)
+  ];
+}
+function cubicBezier(x1: number, y1: number, x2: number, y2: number): (t: number) => number {
+  const at = (s: number, a: number, b: number) => 3 * a * s * (1 - s) ** 2 + 3 * b * s * s * (1 - s) + s ** 3;
+  return (t) => {
+    let lo = 0;
+    let hi = 1;
+    for (let i = 0; i < 24; i += 1) {
+      const mid = (lo + hi) / 2;
+      if (at(mid, x1, x2) < t) lo = mid;
+      else hi = mid;
+    }
+    return at((lo + hi) / 2, y1, y2);
+  };
+}
+const SHEEN_EASE = cubicBezier(0.45, 0.05, 0.25, 1);
+const SHEEN_RUN_MS = 1100;
+function startLoopSheen(root: HTMLElement, target: SheenTarget) {
+  const layer = document.createElementNS(SVG_NS, "svg") as SVGSVGElement;
+  layer.setAttribute("class", "card-sheen-layer is-loop");
+  layer.setAttribute("aria-hidden", "true");
+  const path = document.createElementNS(SVG_NS, "path");
+  path.setAttribute("class", "card-sheen is-loop");
+  const measure = document.createElementNS(SVG_NS, "g");
+  measure.setAttribute("visibility", "hidden");
+  const blocks = runBlocksOf(root, target.card);
+  const crowns = blocks
+    .flatMap((b) => b.cards)
+    .map((c) => c.querySelector<HTMLImageElement>(":scope > .tier-crown"))
+    .filter((c): c is HTMLImageElement => Boolean(c));
+  const holes = crowns.length > 0 ? crownMask(layer, path) : null;
+  layer.append(measure, path);
+  // 격자 바로 뒤 형제 — 줄을 넘는 빛이 다음 줄 칸에 가리지 않게(고른 테두리 층과 같은 자리).
+  root.after(layer);
+  const begin = performance.now();
+  const run: SheenRun = { key: target.key, raf: 0, layer, until: begin + SHEEN_MS };
+  const end = () => {
+    layer.remove();
+    if (sheenRun.get(root) === run) sheenRun.delete(root);
+  };
+  // 바퀴 모양은 자리·크기가 바뀔 때만 다시 잰다(geometry key) — 매 프레임은 미리 2px 간격으로 찍어 둔 점만 잘라 쓴다.
+  let geomKey = "";
+  let samples: { x: number; y: number }[][] = [];
+  let lens: number[] = [];
+  const STEP_PX = 2;
+  const measureLoop = () => {
+    const local = localOf(layer, root);
+    const blocksNow = runBlocksOf(root, target.card);
+    const key = blocksNow
+      .flatMap((b) => b.cards)
+      .map((c) => {
+        const r = local(c.getBoundingClientRect());
+        return `${r.left.toFixed(1)},${r.top.toFixed(1)},${r.right.toFixed(1)},${r.bottom.toFixed(1)}`;
+      })
+      .join("|");
+    if (key === geomKey) return;
+    geomKey = key;
+    const e = -borderWidthOf(target.card) / 2;
+    const parts = loopOrder(blocksNow.map((b) => blockParts(b, local, e)));
+    measure.replaceChildren(...parts.map(() => document.createElementNS(SVG_NS, "path")));
+    const els = Array.from(measure.children) as SVGPathElement[];
+    parts.forEach((d, i) => els[i].setAttribute("d", d));
+    lens = els.map((el) => el.getTotalLength());
+    samples = els.map((el, i) => {
+      const pts: { x: number; y: number }[] = [];
+      for (let s = 0; s < lens[i]; s += STEP_PX) {
+        const p = el.getPointAtLength(s);
+        pts.push({ x: p.x, y: p.y });
+      }
+      const p = el.getPointAtLength(lens[i]);
+      pts.push({ x: p.x, y: p.y });
+      return pts;
+    });
+  };
+  const step = () => {
+    // 카드가 사라졌으면(달 이동·다시 그림) 빛도 거두고 기록도 지운다 — 남으면 같은 열쇠의 새 빛이 막혔다.
+    if (!target.card.isConnected || !layer.isConnected) {
+      end();
+      return;
+    }
+    measureLoop();
+    const total = lens.reduce((a, b) => a + b, 0);
+    const t = Math.min(1, (performance.now() - begin) / SHEEN_RUN_MS);
+    const from = SHEEN_EASE(t) * total;
+    const span = total * 0.18;
+    let d = "";
+    // 빛 구간 [from, from+span]을 바퀴 길이로 접어 조각마다 잘라 그린다(조각 사이 = 이음 변이라 건너뛴다).
+    for (const [a0, b0] of [[from, Math.min(total, from + span)], [0, Math.max(0, from + span - total)]]) {
+      if (b0 <= a0) continue;
+      let off = 0;
+      samples.forEach((pts, i) => {
+        const a = Math.max(a0, off);
+        const b = Math.min(b0, off + lens[i]);
+        if (b > a) {
+          const i0 = Math.floor((a - off) / STEP_PX);
+          const i1 = Math.min(pts.length - 1, Math.ceil((b - off) / STEP_PX));
+          for (let k = i0; k <= i1; k += 1) d += `${k === i0 ? "M" : "L"}${pts[k].x.toFixed(2)},${pts[k].y.toFixed(2)} `;
+        }
+        off += lens[i];
+      });
+    }
+    path.setAttribute("d", d.trim());
+    path.style.opacity = String(t < 0.12 ? t / 0.12 : t > 0.85 ? Math.max(0, (1 - t) / 0.15) : 1);
+    if (holes) {
+      const o = layer.getBoundingClientRect();
+      placeCrownHoles(holes, crowns, { left: o.left, top: o.top, s: scaleOf(root) });
+    }
+    if (performance.now() < run.until && t < 1) run.raf = requestAnimationFrame(step);
+    else end();
   };
   step();
   sheenRun.set(root, run);
