@@ -4413,6 +4413,7 @@ export function PublicPoster({
         fixtureFood={fixtureCompanionFood}
         blocked={Boolean(giftCard || gachaOpen)}
         overlayOpen={Boolean(monthPick || sheet || dayVodPop || agendaDetail)}
+        overlayPlayable={Boolean(!monthPick && (sheet || dayVodPop || agendaDetail) && !(sheet === "settings" && companionBook))}
         preserveWorldPresentation={Boolean(monthPick && !(sheet || dayVodPop || agendaDetail))}
         premiereCue={companionPremiere.cue} onPremiereJoin={companionPremiere.onJoin}
         homeHost={companionHomeHost} homeVisible={Boolean(sceneOn && panel.open && !showAgenda)}

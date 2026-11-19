@@ -1,5 +1,5 @@
 /** QA model, not runtime policy. Native coverage is always reported separately. */
-export const BOOLEAN_KEYS = Object.freeze(['enabled', 'activeWhileVisible', 'roam', 'jump', 'sleep', 'heartPrank', 'cardPrank', 'ambientPrank', 'panelPrank', 'rarePrank', 'drag', 'petting', 'feeding', 'learnFromYou', 'sound', 'soundCare', 'soundMotion', 'soundKeepsakes']);
+export const BOOLEAN_KEYS = Object.freeze(['enabled', 'activeWhileVisible', 'playBehindWindows', 'roam', 'jump', 'sleep', 'heartPrank', 'cardPrank', 'ambientPrank', 'panelPrank', 'rarePrank', 'drag', 'petting', 'feeding', 'learnFromYou', 'sound', 'soundCare', 'soundMotion', 'soundKeepsakes']);
 export const PERSONALITIES = Object.freeze(['performer', 'curious', 'affectionate', 'sleepy', 'tidy', 'mischievous', 'gourmet', 'homebody', 'balanced']);
 export const ROUTINES = Object.freeze(['meal', 'wash', 'sleep', 'nap', 'outing', 'music']);
 export const MODELED_RECIPE_COUNT = 162;

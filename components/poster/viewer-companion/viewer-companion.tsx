@@ -141,7 +141,7 @@ import { companionInitialHomePoint } from "@/lib/ui/viewer-companion/home-entry"
 import { holdCompanionHomeReveal } from "@/lib/ui/viewer-companion/home-reveal";
 import "./viewer-companion.css";
 
-type Props = { onOpenBook: (destination?: "personality" | "radio") => void; root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; preserveWorldPresentation?: boolean; workspaceBusy?: boolean; editing?: boolean; agenda: boolean; monthKey: string; context?: CompanionHomeEnvironmentContext; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; launcherHost?: HTMLElement | null; compactHost?: HTMLElement | null; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void; positionMemory?: CompanionPositionMemory; fixtureFood?: CompanionFoodKind };
+type Props = { onOpenBook: (destination?: "personality" | "radio") => void; root: RefObject<HTMLElement | null>; preferences: CompanionPreferences; blocked: boolean; overlayOpen: boolean; /** Every open window is an ordinary in-site window (detail, search, records, settings), not the 빅타민 수첩 or a month picker: with "창이 떠 있어도 놀기" the creature keeps living behind it. */ overlayPlayable?: boolean; preserveWorldPresentation?: boolean; workspaceBusy?: boolean; editing?: boolean; agenda: boolean; monthKey: string; context?: CompanionHomeEnvironmentContext; reduced: boolean; homeHost: HTMLElement | null; homeVisible: boolean; launcherHost?: HTMLElement | null; compactHost?: HTMLElement | null; premiereCue?: CompanionPremiereCue | null; onPremiereJoin?: (generation: string, id: string) => void; positionMemory?: CompanionPositionMemory; fixtureFood?: CompanionFoodKind };
 type Control = Record<Exclude<CompanionHomeAction, "book"> | "place" | "rest" | "toys" | "toyChanged" | "toyTouched" | "toyReturned", () => void>;
 type RuntimeAction = CompanionAction & { /** Started by something the user just did; carried along its reaction chain, never onto the next self-chosen action. */ direct?: true; showcaseHomecoming?: true; petResponse?: true; homeLife?: CompanionHomeLifeAction["homeLife"]; toyPerformance?: { id: string; kind: CompanionToyKind }; foodAftertaste?: CompanionFoodAftertaste; workExpression?: CompanionWorkExpressionOffer; personalityScene?: PersonalitySceneBeat; personalityJobEnd?: true; foodRefusal?: { foodId: string; kind: CompanionFoodKind }; toyMishap?: CompanionToyTripWitness; personalitySignature?: CompanionPreferences["personality"]; scene?: CompanionSceneAction["scene"]; toy?: CompanionToyAction["toy"]; toyApproach?: { element: HTMLElement; effect: "stash" | "spawn"; duration: number }; household?: CompanionHouseholdBeat; radio?: { generation: number; reaction: CompanionRadioReaction; bpm: number; instrument?: CompanionInstrumentReaction } };
 const sampleWorldMusic = (music: NonNullable<RuntimeAction["radio"]>, age: number) => music.instrument ? sampleCompanionInstrumentReaction(music.instrument, age, music.bpm) : sampleCompanionRadioReaction(music.reaction, age, music.bpm);
@@ -155,10 +155,15 @@ const spriteSources = registration.rows.map((_, row) => companionSpriteSources(r
 /** One optional local creature. It senses geometry, heart occupancy and local
  * input/snack coordinates; titles and account data never enter its brain.
  * Imperative transform/frame writes never re-render the calendar on a tick. */
-export default function ViewerCompanion({ onOpenBook, root, preferences: storedPreferences, blocked, overlayOpen, preserveWorldPresentation = false, workspaceBusy = false, editing = false, agenda, monthKey, context, reduced, homeHost, homeVisible, launcherHost = null, compactHost = null, premiereCue = null, onPremiereJoin, positionMemory, fixtureFood }: Props) {
+export default function ViewerCompanion({ onOpenBook, root, preferences: storedPreferences, blocked, overlayOpen, overlayPlayable = false, preserveWorldPresentation = false, workspaceBusy = false, editing = false, agenda, monthKey, context, reduced, homeHost, homeVisible, launcherHost = null, compactHost = null, premiereCue = null, onPremiereJoin, positionMemory, fixtureFood }: Props) {
   // Act on the choices as the settings screen reads them: always free to move, one prank switch.
   const [storedMotion] = useState(companionQaStoredMotion);
   const preferences = useMemo(() => companionBehaviorPreferences(storedPreferences, storedMotion), [storedPreferences, storedMotion]);
+  // "창이 떠 있어도 놀기" (owner 2026-11-20): an ordinary in-site window then only covers
+  // the world. The creature keeps its ordinary life underneath the window and its
+  // backdrop, takes no input until it closes, and never rests just because it opened.
+  // The studio editor keeps its own working companion; hard blocks are unchanged.
+  const playBehind = Boolean(overlayOpen && overlayPlayable && preferences.enabled && preferences.playBehindWindows && !editing && !blocked);
   const [showcaseSession] = useState(createCompanionShowcaseSession);
   const [visibilityRecovery] = useState(() => createCompanionVisibilityRecovery());
   const sceneMaterial = useCompanionSceneMaterial();
@@ -249,6 +254,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
   // unchanged. Ordinary routes pass nothing and retain the weighted draw.
   const initialFixtureFood = useRef(fixtureFood);
   const overlayRef = useRef(overlayOpen);
+  // True while the open window lets the creature live behind it. overlayRef stays the
+  // real window state for every input gate; only the quiet rest reads this exception.
+  const behindRef = useRef(playBehind); behindRef.current = playBehind;
   const workspaceBusyRef = useRef(workspaceBusy);
   workspaceBusyRef.current = workspaceBusy;
   const editingRef = useRef(editing); editingRef.current = editing;
@@ -371,7 +379,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
   }, [homeHost, homeVisible, homeExpanded, suspended, overlayOpen, premiereCue?.owner]);
   // A window changes presentation, never the creature's identity or world.
   // Notify the stable imperative runtime after the dialog DOM has committed.
-  useLayoutEffect(() => { window.dispatchEvent(new Event("vic:companion-overlay")); }, [overlayOpen]);
+  useLayoutEffect(() => { window.dispatchEvent(new Event("vic:companion-overlay")); }, [overlayOpen, playBehind]);
   // A studio edit gesture gates competing input, without remounting this
   // runtime or dropping the creature's current physical support.
   useLayoutEffect(() => { window.dispatchEvent(new Event("vic:companion-workspace")); }, [workspaceBusy, editing]);
@@ -573,7 +581,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
     const workAllowed = () => editingRef.current && preferences.enabled && preferences.roam && !reduced && gfxMode() !== "off"
       && companionPresenceActive({ focused: document.hasFocus(), visible: !document.hidden, activeWhileVisible: preferences.activeWhileVisible, blocked: blocked || workspaceBusyRef.current });
     const workCanExpress=()=>workAllowed()&&workExpressions.available();
-    const visibleActive = () => companionPresenceActive({ focused: document.hasFocus(), visible: !document.hidden, activeWhileVisible: preferences.activeWhileVisible, blocked: blocked || overlayRef.current && !workAllowed() || workspaceBusyRef.current });
+    // A window the creature lives behind does not quiet it; every other window still does.
+    const quietWindow = () => overlayRef.current && !behindRef.current;
+    const visibleActive = () => companionPresenceActive({ focused: document.hasFocus(), visible: !document.hidden, activeWhileVisible: preferences.activeWhileVisible, blocked: blocked || quietWindow() && !workAllowed() || workspaceBusyRef.current });
     const presence = createCompanionPresence(visibleActive(), performance.now(), { autoSleep: preferences.sleep });
     const saved = lastPose.current;
     let restartSupport = saved?.restartSupport;
@@ -991,6 +1001,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
     let supportValidationTimer: ReturnType<typeof setTimeout> | undefined;
     let geometryReady = false, hasPlatformSnapshot = false, initialGeometryMeasured = false, homeOccluded = false;
     let overlayActive = false, overlayPerch: CompanionOverlayPerch | undefined;
+    // An open window the creature keeps living behind (see playBehind).
+    let livingBehind = false;
     let overlayDrag: { id: number; dx: number; dy: number; moved?: boolean; worldOrigin?: { x: number; y: number }; guest?: { x: number; y: number; origin: CompanionOverlayPerch; bounds?: CompanionGuestBounds; dragged: boolean } } | undefined, overlayPlacing = false;
     const isDetailGuest = () => overlayActive && Boolean(hiding?.sheet && hiding.ready || extractedFrom?.isConnected && extractedFrom === detailSheet && extractedFrom.dataset.companionDetailEvent === extractedEvent);
     const needsOverlayWorldSeed = () => overlayActive && !initialGeometryMeasured && !hiding;
@@ -1056,7 +1068,14 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
     }
     let sofaDepth: CompanionSofaDepth = "clear";
     let sofaContact: { point: CompanionSofaPoint; body: readonly CompanionSofaPoint[]; depth: CompanionSofaDepth } | undefined;
-    const effective = reduced ? { ...preferences, roam: false, jump: false, ambientPrank: false } : preferences;
+    const worldEffective: CompanionPreferences = reduced ? { ...preferences, roam: false, jump: false, ambientPrank: false } : preferences;
+    // Behind an open window it only moves, rests and plays by itself: no prank,
+    // hide, heart, panel, card or meal touches the page under the window.
+    const behindEffective: CompanionPreferences = { ...worldEffective, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, rarePrank: false, feeding: false };
+    let effective = worldEffective;
+    /** An open window (living behind it or not) owns the page under it. */
+    const windowOwnsPage = () => overlayRef.current;
+    const refreshEffective = () => { effective = windowOwnsPage() ? behindEffective : worldEffective; };
     lampDiagnostic = installLampDiagnostics(() => {
       const read=(key:string)=>{try{return localStorage.getItem(key);}catch{return null;}};
       const homes=[...document.querySelectorAll<HTMLElement>(".vc-home")];
@@ -1736,7 +1755,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       // only consecutive visible contact paints; a pause never accrues time.
       if (action?.kind === "panel" && status === "panel" && !panelImpact && action.panelSide
         && support === action.target.platformId && supportedNow() && panelTarget && paintedCurrent && drawingRow === 13
-        && preferencesRef.current.enabled && preferencesRef.current.roam && preferencesRef.current.panelPrank
+        && preferencesRef.current.enabled && preferencesRef.current.roam && preferencesRef.current.panelPrank && !overlayRef.current
         && !pause && !document.hidden && !pressed && !keyboardHeld && !placing && !returning && !pendingMonth
         && !overlayActive && !premiereActive && !workspaceBusyRef.current && !reduced && gfxMode() !== "off" && presence.phase === "active") {
         const point = paintedSelection ? projectCompanionSpritePoint({ ...projection, cell: paintedSelection.frame }, { x: 40 - paintedSelection.frame.x, y: 80 - paintedSelection.frame.y }) : null;
@@ -2203,9 +2222,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
     // Two separate questions (settings redesign 2-라). ① May it move to music it hears — dancing to the radio, bobbing to a
     // calendar instrument? That needs only that movement is allowed; neither "빅타민이 스스로 틀기" nor the sound level is asked.
     // ② May it switch the radio on by itself? That is ① plus the radio being usable, that switch, and the "all" sound level.
-    const musicAllowed = () => instrumentAudible && preferences.enabled && effective.roam && visibleActive() && !document.hidden && !pause && !overlayActive && !overlayRef.current && !workspaceBusyRef.current && !blocked && !reduced && !["off", "soft"].includes(gfxMode()) && !premiereActive && !premiereBounce && !(premiereRef.current.cue?.generation && premiereRef.current.cue.phase !== "idle") && presence.phase === "active";
+    const musicAllowed = () => instrumentAudible && preferences.enabled && effective.roam && visibleActive() && !document.hidden && !pause && !overlayActive && !quietWindow() && !workspaceBusyRef.current && !blocked && !reduced && !["off", "soft"].includes(gfxMode()) && !premiereActive && !premiereBounce && !(premiereRef.current.cue?.generation && premiereRef.current.cue.phase !== "idle") && presence.phase === "active";
     const radioAllowed = () => musicAllowed() && radioPreferences.enabled && radioPreferences.volume > 0;
-    const radioSelfStartAllowed = () => radioAllowed() && radioPreferences.react && companionSoundLevel(preferencesRef.current) === "all";
+    const radioSelfStartAllowed = () => !overlayRef.current && radioAllowed() && radioPreferences.react && companionSoundLevel(preferencesRef.current) === "all";
     const radioSpace = (foodCount: number, instrument = false) => {
       const occupied = supportById(support);
       const headroom = Math.min(y, ...platforms.filter(p => p.id !== support && p.y < y - 2 && x + size / 2 > p.x && x - size / 2 < p.x + p.width).map(p => y - p.y));
@@ -2619,6 +2638,12 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       data("homeLife", phase); advanceHomeLife(now); return true;
     };
     const launch = (next: RuntimeAction, now: number) => {
+      // Safety net behind an open window: nothing that touches the page under it starts.
+      if (overlayRef.current && livingBehind && !next.direct && (["panel", "heart", "hide", "eat"].includes(next.kind) || next.household || next.toy || next.toyApproach || next.toyPerformance || next.radio || next.foodRefusal)) {
+        if (next.personalityScene) personalityDirector.resolve(next.personalityScene, false, undefined, brain.current.activeMs);
+        if (action === next) action = null;
+        nextDecision = now + 1200; return;
+      }
       detachedFall = null;
       if (offerHomeLife(next, now)) return;
       if (next.kind === "jump" && !reduced && !["off", "soft"].includes(gfxMode())) ensureWardrobe(true);
@@ -3103,7 +3128,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         if (!action && now < homeWakeUntil) { paint(12, (1 - (homeWakeUntil - now) / 500) * 15, "wake"); schedule(); return; }
         if (!action && now >= nextDecision) advanceHomeJourney(now);
       }
-      if ((household.active() || food.current?.carried()) && (workspaceBusyRef.current || overlayActive || premiereActive || pendingMonth || returning || presence.phase !== "active" || reduced || gfxMode() === "off")) cancelHousehold();
+      if ((household.active() || food.current?.carried()) && (workspaceBusyRef.current || overlayActive || overlayRef.current || premiereActive || pendingMonth || returning || presence.phase !== "active" || reduced || gfxMode() === "off")) cancelHousehold();
       const foodGoalId = brain.current.foodGoal?.foodId;
       const liveFoods = food.current?.foods() ?? [];
       for (const [id, scattered] of scatteredFoods) {
@@ -3143,7 +3168,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         brain: brain.current, preferences: effective, action, now: brain.current.activeMs, active: presence.phase === "active", grounded: supportedNow(), held: Boolean(pressed || keyboardHeld || placing), commanded: Boolean(homeJourney === "called" || pendingHomeRecall), busy: Boolean(workspaceBusyRef.current || overlayActive || premiereActive || returning || pendingMonth || action?.foodRefusal),
       });
       if (notice && !action?.personalityScene) { if (homeJourney === "automatic") cancelHomeJourney(); cancelTravelGoal(); clearAction(); nextDecision = now; data("notice", notice); }
-      else if (action && !action.personalityScene && !action.foodRefusal && !homeJourney && !workspaceBusyRef.current && !overlayActive && !premiereActive && !returning && !pendingMonth
+      else if (action && !action.personalityScene && !action.foodRefusal && !homeJourney && !workspaceBusyRef.current && !overlayActive && !overlayRef.current && !premiereActive && !returning && !pendingMonth
         && ["idle", "look", "walk"].includes(action.kind) && (toys.current?.count() || personalityActivity.due(brain.current.activeMs))
         && !pressed && !keyboardHeld && !placing && presence.phase === "active" && supportedNow() && !reduced && gfxMode() !== "off") {
         const actualToys = toys.current?.available() ?? [];
@@ -3182,7 +3207,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       if (!action && homeLifePending && now >= nextDecision && !overlayActive && !homeJourney && presence.phase === "active") advanceHomeLife(now);
       if (!action && !homeLifePending && !overlayActive && !homeJourney && !workspaceBusyRef.current && presence.phase === "active" && geometryReady && now >= nextDecision && (!isHomeSupport(support) || supportById(support))) {
         const occupied = supportById(support);
-        const availableFood = accessibleCompanionFoods(liveFoods, [...platforms, ...landingPlatforms]);
+        const availableFood = overlayRef.current ? [] : accessibleCompanionFoods(liveFoods, [...platforms, ...landingPlatforms]);
         const explicitSupports = landingPlatforms.filter(p => p.manualOnly && (p.id === occupied?.id || availableFood.some(item => item.platformId === p.id)));
         const worldPlatforms = explicitSupports.length ? [...platforms, ...explicitSupports] : platforms;
         const source = geometryTracker?.anchor(support)?.element?.closest<HTMLElement>(".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],[data-companion-event='ordinary'][data-eventid]");
@@ -3195,7 +3220,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         const signatureFirst = preflightCompanionPersonalityActivity(personalityActivity, brain.current, world, effective, brain.current.activeMs,
           { scene: Boolean(scenes.current()), household: household.active(), toy: toyPlanner.active(), home: Boolean(homeJourney), blocked: Boolean(overlayActive || premiereActive || pendingMonth || returning) }, cueSignature);
         const householdHome: CompanionHouseholdHome = {};
-        if (!overlayActive && !premiereActive && !pendingMonth && !returning && !reduced && gfxMode() !== "off") {
+        if (!overlayActive && !overlayRef.current && !premiereActive && !pendingMonth && !returning && !reduced && gfxMode() !== "off") {
           for (const [key, selector] of [["dispenser", ".vc-home .vc-dispenser"], ["bin", ".vc-home [data-companion-trash]"]] as const) {
             const control = document.querySelector<HTMLElement>(selector), rect = control?.getBoundingClientRect();
             if (!control || control.closest("[hidden],[inert],[aria-hidden='true'],[data-panel-collapsed]") || !rect || rect.width <= 0 || rect.height <= 0 || rect.bottom < 0 || rect.top > innerHeight) continue;
@@ -3220,7 +3245,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         const box = document.querySelector<HTMLElement>(".vc-home [data-home-action='toys']"), boxRect = box?.getBoundingClientRect();
         const boxFloor = boxRect && householdPlatforms.filter(p => isHomeFloor(p.id) && !p.bodyOnly && Math.abs(p.y - boxRect.bottom) <= 140).sort((a, b) => Math.abs(platformLandingX(a, boxRect.left + boxRect.width / 2) - boxRect.left - boxRect.width / 2) - Math.abs(platformLandingX(b, boxRect.left + boxRect.width / 2) - boxRect.left - boxRect.width / 2))[0];
         const toyBox = boxRect && boxFloor && box && !box.closest("[hidden],[inert],[aria-hidden='true']") ? { x: platformLandingX(boxFloor, boxRect.left + boxRect.width / 2), y: boxFloor.y, platformId: boxFloor.id } : undefined;
-        const actualToys = toys.current?.available() ?? [];
+        const actualToys = overlayRef.current ? [] : toys.current?.available() ?? [];
         const toyPlatforms = [...householdPlatforms, ...landingPlatforms.filter(p => p.manualOnly && actualToys.some(toy => toy.platformId === p.id) && !householdPlatforms.some(existing => existing.id === p.id))];
         const settledToys = accessibleCompanionToys(actualToys, toyPlatforms);
         const toyWorld = { ...world, platforms: toyPlatforms };
@@ -3230,7 +3255,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         if (sofa) personalityHome.sofa = { x: platformLandingX(sofa, sofa.x + sofa.width / 2), y: sofa.y, platformId: sofa.id };
         const pad = toyPlatforms.find(p => p.id === "companion-home-floor-400");
         if (pad?.bodyOnly) personalityHome.pad = { x: pad.x + pad.width / 2, y: pad.y, platformId: pad.id };
-        for (const [key, selector] of [["tv", ".vc-home-tv"], ["light", ".vc-home-lamp"], ["window", ".vc-home-window"], ["radio", ".vc-radio-button"]] as const) {
+        for (const [key, selector] of (overlayRef.current ? [] : [["tv", ".vc-home-tv"], ["light", ".vc-home-lamp"], ["window", ".vc-home-window"], ["radio", ".vc-radio-button"]] as const)) {
           const element = document.querySelector<HTMLElement>(".vc-home " + selector), rect = element?.getBoundingClientRect();
           if (!element || !rect?.width || element.closest("[hidden],[inert],[data-panel-collapsed]") || element.parentElement?.closest("[aria-hidden='true']")) continue;
           const cx = rect.left + rect.width / 2;
@@ -3285,7 +3310,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
             },
             curtainPhase: curtainProjection.current.phase, lightLit: getCompanionHomeLight(), toyPlayCounts: effective.learnFromYou ? Object.fromEntries(Object.entries(toyTastes.current?.toyTastes ?? {}).map(([kind, taste]) => [kind, taste?.accepted ?? 0])) : undefined, familiarHour: (sceneMemory?.hours[Math.floor(environment.current.hour)] ?? 0) >= 3, learnedMorning: Boolean(sceneMemory?.hours.slice(7, 11).some(n => n >= 3)),
             favoriteToy: effective.learnFromYou ? summarizeCompanionToyTastes(toyTastes.current).favorite : null, toyCount: actualToyIds.length, carriedToyId: toys.current?.carried(), carriedFoodId: food.current?.carried(), deferredToyId: deferredPersonalityToy, interruptedItemId: interruptedPersonalityItem,
-            tv: getCompanionHomeTv(), canTv: canCompanionSetHomeTv(), canCurtain: canCompanionSetCurtain(), radioAllowed: radioSelfStartAllowed() && canCompanionSetRadio(), radioPlaying: radioState.playing, environment: environment.current, favoriteFood: brain.current.life?.favoriteFood,
+            tv: getCompanionHomeTv(), canTv: !overlayRef.current && canCompanionSetHomeTv(), canCurtain: !overlayRef.current && canCompanionSetCurtain(), radioAllowed: radioSelfStartAllowed() && canCompanionSetRadio(), radioPlaying: radioState.playing, environment: environment.current, favoriteFood: brain.current.life?.favoriteFood,
             music: music && { ...music, familiar: Boolean(effective.learnFromYou && music.mood && (sceneMemory?.music[music.mood] ?? 0) >= 3) },
             learnedSocial: effective.learnFromYou && Boolean(brain.current.life?.recent.some(reason => reason === "kind-touch" || reason === "reassured")), equipped: Boolean(wardrobe.current.equipped), hasExperience: effective.learnFromYou && Boolean(loadCompanionCollection().foods.length || Object.keys(toyTastes.current?.toyTastes ?? {}).length),
             yieldedItem: Boolean(yieldedPersonalityItem && brain.current.activeMs - humanToyAt < 8000), yieldedItemId: yieldedPersonalityItem, storedFoodIds: [...storedPersonalityFoods] };
@@ -3490,7 +3515,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
             canCompanionSetHomeLight() && el.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && homeContact.element.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })))) {
           homeLifeEffectApplied = true;
           const input = homeLifeInput(homeLifePending?.phase ?? "awake");
-          const allowed = input.enabled && input.active && !input.owned && homeLifePending
+          const allowed = !overlayRef.current && input.enabled && input.active && !input.owned && homeLifePending
             && homeLifePolicy.current()?.serial === lifeBeat.serial && homeContact?.kind === lifeBeat.command.kind
             && homeInteractionWitness === homeContact.serial && homeContact.element.isConnected && isHomeFloor(support);
           const previous = lifeBeat.command.kind === "light" ? getCompanionHomeLight() : getCompanionHomeTv();
@@ -3519,7 +3544,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
           let accepted = false;
           const previousControl = authoredBeat.command.kind === "tv" ? getCompanionHomeTv() : authoredBeat.command.kind === "light" ? getCompanionHomeLight() : authoredBeat.command.kind === "curtain" ? getCompanionCurtainChoice() : getCompanionRadioSnapshot().playing;
           const learningEpoch = { generation: agentActionGeneration, personality: agentActionPersonality };
-          const allowed = Boolean(homeContact && homeInteractionWitness === homeContact.serial && homeContact.element.isConnected && !workspaceBusyRef.current && !overlayActive && !pause && !document.hidden && supportedNow() && presence.phase === "active" && isHomeFloor(support));
+          const allowed = Boolean(homeContact && homeInteractionWitness === homeContact.serial && homeContact.element.isConnected && !workspaceBusyRef.current && !overlayActive && !overlayRef.current && !pause && !document.hidden && supportedNow() && presence.phase === "active" && isHomeFloor(support));
           if (allowed && authoredBeat.command.kind === "tv") accepted = setCompanionHomeTv(authoredBeat.command.state === "next" ? companionHomeTvControl(getCompanionHomeTv()).next : authoredBeat.command.state, { source: "companion" });
           if (allowed && authoredBeat.command.kind === "light") accepted = canCompanionSetHomeLight() && setCompanionHomeLight(authoredBeat.command.lit, { source: "companion" });
           if (allowed && authoredBeat.command.kind === "curtain") { accepted = setCompanionCurtainChoice(authoredBeat.command.phase, "companion"); publishHomeCurtain(status); }
@@ -3795,7 +3820,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
               // Classification only; the pivot is measured inside bump() after any running tilt is cleared.
               const tilt = node ? chainTiltGroup(node) : null;
               const calm = (el: HTMLElement) => !el.matches(".selected,.primary-selected,.dragging-src,.span-drag-src,.connect-target,.connect-hover,.connect-dim,.filter-dim,.is-editing,.is-selected");
-              if (preferences.cardPrank && node && tilt !== "skip" && calm(node) && (tilt?.parts ?? []).every(calm) && collectCompanionHideTargets(page).some(target => target.element === node)) { cardPlay.bump(node, paintedFacing, tilt ? () => { const measured = chainTiltGroup(node); return measured === "skip" ? null : measured; } : undefined); queueSituation("card-bump", [21, 24, 25], began); }
+              if (preferences.cardPrank && !overlayRef.current && node && tilt !== "skip" && calm(node) && (tilt?.parts ?? []).every(calm) && collectCompanionHideTargets(page).some(target => target.element === node)) { cardPlay.bump(node, paintedFacing, tilt ? () => { const measured = chainTiltGroup(node); return measured === "skip" ? null : measured; } : undefined); queueSituation("card-bump", [21, 24, 25], began); }
               food.current?.jostle({ x, y }, 100);
             }
           }
@@ -4285,15 +4310,36 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       }
       poseWitness.reset();
       graphicsMode = readGfxMode();
-      publishHomeCurtain(lastPoseSample.status, Boolean(document.hidden || overlayRef.current || workspaceBusyRef.current || premiereRef.current.cue?.phase && !["idle", "return", "prelude"].includes(premiereRef.current.cue.phase)));
+      publishHomeCurtain(lastPoseSample.status, Boolean(document.hidden || quietWindow() || workspaceBusyRef.current || premiereRef.current.cue?.phase && !["idle", "return", "prelude"].includes(premiereRef.current.cue.phase)));
       if (!radioAllowed()) { radioInbox.clear(); if (action?.radio && !(action.radio.instrument ? musicAllowed() : radioAllowed())) clearAction(); }
       if (!musicAllowed()) instrumentInbox.clear();
-      if (graphicsMode === "off" || blocked || document.hidden || overlayRef.current || workspaceBusyRef.current || premiereRef.current.cue?.phase && !["idle", "return", "prelude"].includes(premiereRef.current.cue.phase)) cancelEpisode();
-      if (blocked || document.hidden || overlayRef.current || premiereRef.current.cue?.phase && !["idle", "return", "prelude"].includes(premiereRef.current.cue.phase)) cardPlay.clear();
+      if (graphicsMode === "off" || blocked || document.hidden || quietWindow() || workspaceBusyRef.current || premiereRef.current.cue?.phase && !["idle", "return", "prelude"].includes(premiereRef.current.cue.phase)) cancelEpisode();
+      if (blocked || document.hidden || quietWindow() || premiereRef.current.cue?.phase && !["idle", "return", "prelude"].includes(premiereRef.current.cue.phase)) cardPlay.clear();
       if (syncPremiere()) { pendingFeeds.cancel(); return; }
       hideClock(performance.now());
       const html = document.documentElement;
-      const wantsOverlay = overlayRef.current;
+      // Living behind a window keeps the world life; a found hide-seek guest
+      // still takes its window's guest perch exactly as before.
+      // A guest the user pulled out of its sheet stays that window's guest
+      // until it closes, exactly as with the setting OFF.
+      const wantsOverlay = overlayRef.current && (!behindRef.current || Boolean(hiding?.sheet || extractedFrom));
+      const behindNow = overlayRef.current && !wantsOverlay;
+      refreshEffective();
+      if (behindNow && !livingBehind) {
+        // The window owns every input from now on: end any hold/placement first.
+        const held = Boolean(pressed || keyboardHeld || placing);
+        stopHover(); releaseHold(); releaseOverlayDrag(); placing = overlayPlacing = false; delete el.dataset.placing;
+        // Anything that would touch the page under the window (panel, cards,
+        // hearts, food, toys, the room's TV/lamp/radio) ends now; plain
+        // walking, jumping, resting and playing in place carry on.
+        const touchesPage = Boolean(action && (["panel", "heart", "hide", "eat"].includes(action.kind) || action.household || action.toy || action.toyApproach || action.toyPerformance || action.radio || action.foodRefusal || action.scene || action.personalityScene));
+        if (held || touchesPage) { clearAction(); settle({ x, y }); }
+        cancelHousehold(); toyPlanner.cancel(brain.current.activeMs); toys.current?.cancel(performance.now()); personalityDirector.cancel();
+        if (brain.current.foodGoal) brain.current = { ...brain.current, intention: undefined, foodGoal: undefined };
+        consumePlacementClick = false; placementPointer = null; clearTimeout(clickGuard);
+        pointer = pointerAnchor = undefined; pointerStableSince = 0;
+      }
+      livingBehind = behindNow;
       const livePrelude = preludeCue();
       const ordinaryPause = blocked || document.hidden || page.inert || html.hasAttribute("data-showcase") || html.hasAttribute("data-ambient-pause") && hasAmbientPauseOutside("poster-window", livePrelude ? [livePrelude.owner] : []);
       const next = ordinaryPause || showcaseSession.has("pet");
@@ -4703,7 +4749,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       // Explicit placement also owns a click on the current resident. A
       // fresh home-floor start can already cover the chosen destination;
       // that click must finish placing rather than bonk the resident.
-      if (pause || overlayActive || !placing) return;
+      if (pause || overlayActive || overlayRef.current || !placing) return;
       event.preventDefault(); event.stopPropagation(); placing = false; delete el.dataset.placing;
       // pointerdown cancellation alone does not cancel the independent click:
       // consume this placement's click before a real card/heart can receive it.
@@ -4729,7 +4775,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       if (premiereActive || premiereBounce) return;
       if (!pause && (!overlayActive || isDetailGuest()) && event.pointerType !== "touch") {
         if (!overlayActive) {
-          if (event.buttons !== 0 || isOtherControl(event.target)) pointer = pointerAnchor = undefined;
+          if (event.buttons !== 0 || overlayRef.current || isOtherControl(event.target)) pointer = pointerAnchor = undefined;
           else {
             const point = { x: event.clientX, y: event.clientY };
             if (!pointerAnchor || Math.hypot(point.x - pointerAnchor.x, point.y - pointerAnchor.y) > 12) { pointerAnchor = point; pointerStableSince = performance.now(); }
@@ -5418,8 +5464,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
   };
   const act = (kind: CompanionHomeAction) => { if (kind === "book") { onOpenBook(); return; } control.current?.[kind](); };
   const performanceActive = Boolean(premiereCue?.generation && premiereCue.phase !== "idle" && (premiereCue.phase === "return" || premiereCue.target - syncedNow() <= 166000));
-  // Only the chooser may retain paused props; hard/hidden/OFF owners win.
-  const retainPresentation = preserveWorldPresentation && !blocked && !suspended && !performanceActive && !document.hidden;
+  // Only the chooser, or a window the creature lives behind, may retain its
+  // props (shown but inert); hard/hidden/OFF owners win.
+  const retainPresentation = (preserveWorldPresentation || playBehind) && !blocked && !suspended && !performanceActive && !document.hidden;
   // The room and its foreground receive the same material object in one React
   // commit. A geometry/rAF copy must never stage the two sofa surfaces.
   const homeLighting = companionRoomLighting(homeEnvironment, homeCurtain.phase, homeLampLit) as CSSProperties;
@@ -5437,7 +5484,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         mark). The positioned empty span stays as the measured contact witness. */}
     <span className="vc-home-touch-tool" ref={interactionTool} hidden aria-hidden="true" />
     <CompanionDiscoveryFlight notice={discovery} enabled={preferences.enabled && !blocked && !overlayOpen && !performanceActive && !suspended} onComplete={finishDiscovery} />
-    <div className="vc-companion" ref={body} hidden data-sfx="off" data-size="large" data-overlay={overlayOpen ? "quiet" : undefined} data-workspace-busy={workspaceBusy ? "" : undefined}>
+    <div className="vc-companion" ref={body} hidden data-sfx="off" data-size="large" data-overlay={overlayOpen ? playBehind ? "behind" : "quiet" : undefined} data-workspace-busy={workspaceBusy ? "" : undefined}>
     <span className="vc-contact-shadow" ref={shadow} aria-hidden="true" />
     <button id={actorId} className="vc-actor" ref={actor} type="button" tabIndex={overlayOpen ? -1 : 0} data-sfx="off" data-activity-manual="" aria-label="빅타민 · 쓰다듬고 옮기기" aria-describedby="vc-help" aria-keyshortcuts="Enter Space P N ArrowUp ArrowDown ArrowLeft ArrowRight Escape" onDoubleClick={event => { event.preventDefault(); event.stopPropagation(); }}>
       <span className="vc-inertia" ref={inertia} aria-hidden="true"><span className="vc-facing" ref={facing}><span className="vc-reaction" ref={reaction}><span className="vc-contact" ref={contact}><span className="vc-pose" ref={pose}>

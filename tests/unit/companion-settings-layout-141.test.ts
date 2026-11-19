@@ -60,9 +60,9 @@ describe("141 shared basic personality settings", () => {
   it("every row says what it does, on hover and to its control, and every sound tile says when it is heard", () => {
     const all = nodes(CompanionBehaviorSettings({ preferences: DEFAULT_COMPANION_PREFERENCES, onChange: vi.fn(), site: { soundOn: true, soundVolume: 60, reduceMotion: false, gfx: undefined }, onGoTo: vi.fn(), active: true, radio: null }));
     const hints = Object.values(COMPANION_SETTING_HINTS);
-    expect(Object.keys(COMPANION_SETTING_HINTS).sort()).toEqual(["activeWhileVisible", "drag", "feeding", "panelPrank", "petting", "playful", "sleep", "speed"]);
-    expect(new Set(hints).size).toBe(8); for (const hint of hints) { expect(hint.trim()).toBeTruthy(); expect(hint.length, hint).toBeLessThanOrEqual(26); }
-    // Each of the eight rows carries its own short hint once, and its one control speaks the same words. The volume slider needs none.
+    expect(Object.keys(COMPANION_SETTING_HINTS).sort()).toEqual(["activeWhileVisible", "drag", "feeding", "panelPrank", "petting", "playBehindWindows", "playful", "sleep", "speed"]);
+    expect(new Set(hints).size).toBe(9); for (const hint of hints) { expect(hint.trim()).toBeTruthy(); expect(hint.length, hint).toBeLessThanOrEqual(26); }
+    // Each of the nine rows carries its own short hint once, and its one control speaks the same words. The volume slider needs none.
     const rows = all.filter(element => String(element.props.className).includes("role-help-haptics") && element.props["data-tip"]);
     expect(rows.map(element => element.props["data-tip"]).sort()).toEqual([...hints].sort());
     for (const row of rows) expect(nodes(row).filter(element => element.type === Switch || element.type === SettingsSegment).map(element => element.props.description)).toEqual([row.props["data-tip"]]);

@@ -12,6 +12,9 @@ export const COMPANION_PERSONALITY_SUMMARIES: Readonly<Record<CompanionPersonali
 export type CompanionPreferences = {
   enabled: boolean;
   activeWhileVisible: boolean;
+  /** Keep living behind an ordinary in-site window (schedule detail, search,
+   * records, settings) instead of resting quietly until it closes. */
+  playBehindWindows: boolean;
   roam: boolean;
   jump: boolean;
   sleep: boolean;
@@ -46,6 +49,8 @@ export const DEFAULT_COMPANION_PREFERENCES: Readonly<CompanionPreferences> = Obj
   enabled: true,
   // Owner 2026-11-20: off by default. A device that saved a choice keeps it.
   activeWhileVisible: false,
+  // Owner 2026-11-20: new, off by default. A record that lacks it reads as off.
+  playBehindWindows: false,
   roam: true,
   jump: true,
   sleep: true,
@@ -69,12 +74,14 @@ export const DEFAULT_COMPANION_PREFERENCES: Readonly<CompanionPreferences> = Obj
   personality: "curious"
 });
 
-const booleanKeys = ["enabled", "activeWhileVisible", "roam", "jump", "sleep", "heartPrank", "cardPrank", "ambientPrank", "panelPrank", "rarePrank", "drag", "petting", "feeding", "learnFromYou", "sound", "soundCare", "soundMotion", "soundKeepsakes"] as const;
+const booleanKeys = ["enabled", "activeWhileVisible", "playBehindWindows", "roam", "jump", "sleep", "heartPrank", "cardPrank", "ambientPrank", "panelPrank", "rarePrank", "drag", "petting", "feeding", "learnFromYou", "sound", "soundCare", "soundMotion", "soundKeepsakes"] as const;
 const soundKeys = ["sound", "soundVolume", "soundCare", "soundMotion", "soundKeepsakes"] as const;
 /** A live mix change never restarts the creature's movement/interaction world. */
 export function companionWorldPreferencesKey(preferences: Readonly<CompanionPreferences>): string {
   const world: Partial<CompanionPreferences> = { ...preferences };
   for (const key of soundKeys) delete world[key];
+  // Read live from a ref by the creature; switching it never restarts its world.
+  delete world.playBehindWindows;
   return JSON.stringify(world);
 }
 let volatilePreferences: CompanionPreferences | undefined;

@@ -5,7 +5,7 @@ import { buildGist, buildStory, type NarrativeItem } from "@/lib/activity/narrat
 import { COMPANION_PERSONALITY_NAMES, COMPANION_PERSONALITIES } from "@/lib/ui/viewer-companion/preferences";
 
 const TOGGLES = [
-  "companion-enabled", "companion-active-visible", "companion-sleep",
+  "companion-enabled", "companion-active-visible", "companion-play-behind-window", "companion-sleep",
   "companion-playful", "companion-panel-prank",
   "companion-drag-enabled", "companion-petting-enabled", "companion-feeding-enabled", "companion-learning-enabled",
   "companion-radio-enabled", "companion-radio-self-start"
@@ -72,8 +72,10 @@ const COLLECTION = [
 describe("빅타민 행동 기록 이름과 저장 경계", () => {
   it("활동·자동 잠자기·여덟 성격·직접 장난감 조작이 같은 현재 이름으로 읽힌다", () => {
     const examples = [
-      ["companion-active-visible#on", "빅타민 다른 프로그램 쓸 때도 놀기 · 켜기"],
-      ["companion-active-visible#off", "빅타민 다른 프로그램 쓸 때도 놀기 · 끄기"],
+      ["companion-active-visible#on", "빅타민 다른 일 할 때도 놀기 · 켜기"],
+      ["companion-active-visible#off", "빅타민 다른 일 할 때도 놀기 · 끄기"],
+      ["companion-play-behind-window#on", "빅타민 창이 떠 있어도 놀기 · 켜기"],
+      ["companion-play-behind-window#off", "빅타민 창이 떠 있어도 놀기 · 끄기"],
       ["companion-sleep#off", "빅타민 자동 잠자기 · 끄기"],
       ...COMPANION_PERSONALITIES.map(value => [`companion-personality#${value}`, `빅타민 성격 · ${COMPANION_PERSONALITY_NAMES[value]}`]),
       ["companion-home-toys", "빅타민 장난감 상자 열기"], ["companion-toy-grab", "빅타민 장난감 집기"],
