@@ -12,7 +12,7 @@ const guard = process.env.COMPANION_THROW_FACE_GUARD ?? "";
 const cold = process.env.COMPANION_THROW_FACE_COLD === "1";
 const mode = guard === "off" ? "off" : "full";
 const output = resolve(process.env.COMPANION_THROW_FACE_OUTPUT ?? ".scratch-pw/companion-throw-face", stage);
-type Sample = { at: number; state: string; phase: string; expression: string; pose: string; row: number; x: number; y: number; source: string; visible: boolean; face: boolean; spiral: boolean; eyePixels?: number[]; mouthPixels?: number[]; png?: string };
+type Sample = { at: number; state: string; phase: string; expression: string; pose: string; row: number; x: number; y: number; source: string; visible: boolean; face: boolean; spiral: boolean; overlay: string; eyePixels?: number[]; mouthPixels?: number[]; png?: string };
 type ProbeWindow = Window & { throwFaceProof?: { samples: Sample[]; stop: () => void; release: number } };
 test.use({ viewport: { width: 1920, height: 1100 }, serviceWorkers: "block", contextOptions: { reducedMotion: "no-preference" }, trace: "retain-on-failure" });
 
@@ -30,11 +30,11 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`native thr
     return request.method() === "POST" && unseen.has(request.headers()["next-action"])
       ? route.fulfill({ contentType: "text/x-component", body: '0:{"a":"$@1","f":[],"b":"fixture"}\n1:0\n' }) : route.fallback();
   });
-  await page.addInitScript(({ preferences, memory, key, epoch, mode, reduced }) => {
+  await page.addInitScript(({ preferences, memory, key, epoch, mode, reduced, playBehind }) => {
     for (const [k, v] of Object.entries({ [key]: epoch, "vic.gfxPref": mode === "off" ? "off" : "max", "vic.gfx": JSON.stringify({ mode, at: Date.now(), v: 3 }), "vic.reduceMotion": reduced ? "on" : "off", "vic.sound": "off", "vic.ambient": "off", "vic.dark": "off", "vic.premiereStage": "off", "vic_avatar_side": "left" })) localStorage.setItem(k, v);
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, animalMode: "default", roam: false, jump: false, sleep: false, petting: false, feeding: false, learnFromYou: false }));
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, playBehindWindows: playBehind, animalMode: "default", roam: false, jump: false, sleep: false, petting: false, feeding: false, learnFromYou: false }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...memory, energy: .95, hunger: .05 }));
-  }, { preferences: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, mode, reduced: guard === "reduced" });
+  }, { preferences: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, mode, reduced: guard === "reduced", playBehind: guard === "window" });
   await page.goto(surface === "viewer" ? "/visual-fixture/poster?avatar=1" : `/visual-fixture/studio?role=owner&y=2026&m=6&weather=clear${surface === "preview" ? "&viewer=1" : ""}`);
   await page.bringToFront(); await page.evaluate(() => document.fonts.ready);
   await expect.poll(() => page.evaluate(() => ({ mode: document.documentElement.dataset.gfx ?? "full", reduced: document.documentElement.hasAttribute("data-reduce-motion") }))).toEqual({ mode, reduced: guard === "reduced" });
@@ -74,7 +74,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`native thr
       if (stopped) return;
       const p = document.querySelector<HTMLElement>(".vc-companion")!, r = p.getBoundingClientRect(), texture = p.querySelector<HTMLImageElement>(".vc-texture"), face = p.querySelector<HTMLCanvasElement>(".vc-expression-face"), composite = p.querySelector<HTMLCanvasElement>(".vc-character-composite");
       const visible = Boolean(p.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && (composite?.width && composite.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) || face?.width && face.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) || texture?.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true })));
-      const sample: Sample = { at, state: p.dataset.state ?? "", phase: p.dataset.throwPhase ?? "", expression: p.dataset.expression ?? "", pose: p.dataset.pose ?? "", row: rows.findIndex(row => row.includes(Number(p.dataset.pose))), x: r.x + r.width / 2, y: r.bottom, source: texture?.complete && texture.naturalWidth ? texture.currentSrc : "", visible, face: Boolean(face && !face.hidden && face.width), spiral: p.hasAttribute("data-held-dizzy") };
+      const sample: Sample = { at, state: p.dataset.state ?? "", phase: p.dataset.throwPhase ?? "", expression: p.dataset.expression ?? "", pose: p.dataset.pose ?? "", row: rows.findIndex(row => row.includes(Number(p.dataset.pose))), x: r.x + r.width / 2, y: r.bottom, source: texture?.complete && texture.naturalWidth ? texture.currentSrc : "", visible, face: Boolean(face && !face.hidden && face.width), spiral: p.hasAttribute("data-held-dizzy"), overlay: p.dataset.overlay ?? "" };
       // User's exact pose500 regression: two old squeezed-lid ends must be
       // skin again, while the previously clipped right brow must carry ink.
       // Fixed observed source pixels, independent of the painter's mask.
@@ -94,6 +94,13 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`native thr
   await page.mouse.up(); await page.waitForTimeout(160);
   await page.screenshot({ path: resolve(output, `${surface}-flight.png`) });
   let resetAt = 0;
+  if (guard === "window") {
+    await page.locator(".public-event:visible").first().click();
+    await expect(page.getByRole("dialog", { name: "일정 상세", exact: true })).toBeVisible();
+    await expect(pet).toHaveAttribute("data-overlay", "behind");
+    await expect(actor).toHaveAttribute("tabindex", "-1");
+    await expect(actor).toHaveCSS("pointer-events", "none");
+  }
   if (guard === "escape") { await page.keyboard.press("Escape"); resetAt = await page.evaluate(() => performance.now()); }
   if (guard === "regrab") {
     const box = (await actor.boundingBox())!;
@@ -134,5 +141,10 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`native thr
     const contact = observed.samples.filter(f => f.phase === "landing");
     expect(contact.every(f => f.visible)).toBe(true);
     expect(contact.some(f => f.row === 6), "Actual contact must adopt its landing art within the existing finite beat").toBe(true);
+    if (guard === "window") {
+      const behind = painted.filter(f => f.overlay === "behind");
+      expect(behind.length).toBeGreaterThan(3);
+      expect(behind.every(f => f.expression === "relief" && f.face)).toBe(true);
+    }
   }
 });
