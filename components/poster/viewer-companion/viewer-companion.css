@@ -176,7 +176,11 @@ html[data-gfx="off"] .vc-dream i { animation: none; opacity: .7; }
 /* Ordinary windows simply cover their world. Only a found hide-seek guest
    belongs above its own detail sheet and keeps the interactive guest perch. */
 .vc-companion { transform-origin: 50% 100%; }
-.vc-companion[data-overlay="quiet"][data-detail-guest] { z-index: 98; }
+.vc-companion:is([data-overlay="quiet"], [data-overlay="behind"])[data-detail-guest] { z-index: 98; }
+/* "창이 떠 있어도 놀기": the creature keeps living at its own world layer (75),
+   under every window and its backdrop, so the backdrop dims it with the
+   calendar. Until the window closes it takes no pointer input at all. */
+.vc-companion[data-overlay="behind"]:not([data-detail-guest]) :is(.vc-actor, .vc-gift-open) { pointer-events: none; }
 /* Studio's editor is an in-flow calendar popover (normally12), while this
    shared pet/sofa pair is portalled at75/76. Promote only the active window
    above that pair; moving the pet below the room would hide its resident. */

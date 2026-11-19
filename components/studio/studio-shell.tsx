@@ -7781,6 +7781,7 @@ export function StudioShell({
         workspaceBusy={Boolean(dragEventId || spanDrag)}
         editing={companionEditing}
         overlayOpen={Boolean(monthPick || editorVisible || mobileEditId !== null || modal || searchOpen || dayVodPop || saveState === "saving")}
+        overlayPlayable={Boolean(!monthPick && (editorVisible || mobileEditId !== null || modal || searchOpen || dayVodPop || saveState === "saving") && !(modal === "settings" && companionBook))}
         preserveWorldPresentation={Boolean(monthPick && !(editorVisible || mobileEditId !== null || modal || searchOpen || dayVodPop || saveState === "saving"))}
         homeHost={companionHomeHost} homeVisible={Boolean(avatarEditor && panel.open && !isNarrow)}
         launcherHost={companionLauncherHost} compactHost={companionCompactHost}

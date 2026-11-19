@@ -30,7 +30,7 @@ function scene(personality: typeof COMPANION_PERSONALITIES[number]): CompanionRo
     environment: { date: { y: 2026, m: 10, d: 20 }, season: "autumn", band: "noon", night: false, hour: 12, weather: "clear" } };
 }
 describe("142 declared QA model and safety gates", () => {
-  it("exhausts the eighteen independent boolean normalizer patterns without claiming their full enum cross-product", () => {
+  it("exhausts the nineteen independent boolean normalizer patterns without claiming their full enum cross-product", () => {
     expect(Object.entries(DEFAULT_COMPANION_PREFERENCES).filter(([, value]) => typeof value === "boolean").map(([key]) => key).sort()).toEqual([...BOOLEAN_KEYS].sort());
     expect(PERSONALITIES).toEqual(COMPANION_PERSONALITIES);
     for (let mask = 0; mask < 2 ** BOOLEAN_KEYS.length; mask++) {
@@ -40,7 +40,7 @@ describe("142 declared QA model and safety gates", () => {
       if (normalized.size !== "large") throw Error(`Legacy size escaped normalization at ${mask}`);
       measured.booleanPatterns++;
     }
-    expect(measured.booleanPatterns).toBe(262144); expect(universe().normalizedPreferenceCrossProduct).toBe(2144600064);
+    expect(measured.booleanPatterns).toBe(524288); expect(universe().normalizedPreferenceCrossProduct).toBe(4289200128);
     expect(universe().fixedNormalizedSize).toBe("large"); expect(universe().preferenceEnums).toEqual({ personality: 9, animalMode: 3, speed: 3, soundVolume: 101 });
     expect(universe().claims.nativeExhaustive).toBe(false);
   }, 15000);

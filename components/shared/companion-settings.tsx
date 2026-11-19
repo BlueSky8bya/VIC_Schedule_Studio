@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowDownToLine, EyeOff, Gauge, Grab, Heart, Leaf, Pointer, Sparkles, Volume1, Volume2, VolumeX } from "lucide-react";
+import { ArrowDownToLine, EyeOff, Gauge, Grab, Heart, Layers, Leaf, Pointer, Sparkles, Volume1, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { RowLabel, SettingsNote, SettingsSegment, Switch, flashSettingsPlace } from "@/components/shared/settings-controls";
 import { COMPANION_SETTINGS_PLACE_LABELS, companionRowBlock, companionSiteVolumeBlock, companionSoundStatus, type CompanionBlockedRow, type CompanionSettingsNote, type CompanionSettingsPlace, type CompanionSiteGates } from "@/lib/ui/viewer-companion/settings-status";
@@ -17,7 +17,9 @@ export const COMPANION_SETTING_HINTS = Object.freeze({
   panelPrank: "옆 패널을 잠깐 반대쪽으로 옮겨요.",
   speed: "걷는 빠르기예요.",
   sleep: "가만히 두면 스스로 잠들어요.",
-  activeWhileVisible: "방송 프로그램 등을 쓰는 동안에도 계속 놀아요.",
+  // A background tab still pauses it, so only a page left visible on screen is promised.
+  activeWhileVisible: "이 화면을 띄워 두고 다른 걸 써도 놀아요.",
+  playBehindWindows: "일정·설정 창이 떠 있어도 뒤에서 놀아요.",
   drag: "마우스로 집어서 옮길 수 있어요.",
   petting: "문지르거나 톡 치면 좋아해요.",
   feeding: "집에 밥통이 생겨 밥을 줄 수 있어요.",
@@ -29,9 +31,9 @@ export const COMPANION_SOUND_LEVEL_HINTS = Object.freeze({ off: "소리를 내�
 /** Whether "더 보기" is open. Kept for this page load only: reopening the settings finds it as it was left, a reload folds it again. Nothing is stored. */
 let moreOpen = false;
 
-type CompanionToggle = "activeWhileVisible" | "sleep" | "panelPrank" | "drag" | "petting" | "feeding";
+type CompanionToggle = "activeWhileVisible" | "playBehindWindows" | "sleep" | "panelPrank" | "drag" | "petting" | "feeding";
 const companionToggleActions: Record<CompanionToggle, string> = {
-  activeWhileVisible: "companion-active-visible", sleep: "companion-sleep", panelPrank: "companion-panel-prank",
+  activeWhileVisible: "companion-active-visible", playBehindWindows: "companion-play-behind-window", sleep: "companion-sleep", panelPrank: "companion-panel-prank",
   drag: "companion-drag-enabled", petting: "companion-petting-enabled", feeding: "companion-feeding-enabled"
 };
 
@@ -139,7 +141,8 @@ export function CompanionBehaviorSettings({ preferences, onChange, site, siteVol
           <SettingsSegment ariaLabel="빅타민 걸음" dataAct="companion-speed" description={COMPANION_SETTING_HINTS.speed} onChange={speed => onChange({ speed })} options={[{ value: "relaxed", label: "느긋하게" }, { value: "normal", label: "보통" }, { value: "lively", label: "발랄하게" }]} value={preferences.speed} />
         </div>
         {row("sleep", "자동 잠자기", <EyeOff size={15} />)}
-        {row("activeWhileVisible", "다른 프로그램 쓸 때도 놀기", <Pointer size={15} />)}
+        {row("activeWhileVisible", "다른 일 할 때도 놀기", <Pointer size={15} />)}
+        {row("playBehindWindows", "창이 떠 있어도 놀기", <Layers size={15} />)}
         {row("drag", "집어 옮기기", <Grab size={15} />)}
         {row("petting", "쓰다듬기", <Heart size={15} />)}
         {row("feeding", "밥주기", <Leaf size={15} />)}
