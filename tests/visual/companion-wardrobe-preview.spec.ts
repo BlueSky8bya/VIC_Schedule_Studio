@@ -179,13 +179,10 @@ for (const mode of ["empty", "reduced", "graphics-off", "graphics-soft", "disabl
     expect(pausedRect!.y).toBeGreaterThanOrEqual(imageRect!.y + imageRect!.height);
     mkdirSync(`${regressionOutput}/wardrobe`, { recursive: true });
     await dialog.screenshot({ path: `${regressionOutput}/wardrobe/off-badge.png` });
-    await profile.getByRole("tab", { name: "환경설정", exact: true }).click();
+    // stage 3: the power switch is in the shared header above every page, so it is used from the wardrobe itself.
     await dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true }).click();
-    await profile.getByRole("tab", { name: "옷장", exact: true }).click();
     await expect.poll(() => preview.getAttribute("data-preview-row")).toBe("30");
-    await profile.getByRole("tab", { name: "환경설정", exact: true }).click();
     await dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true }).click();
-    await profile.getByRole("tab", { name: "옷장", exact: true }).click();
     await expect(preview).toHaveAttribute("data-preview-row", "0");
   }
   expect(await saved(page)).toEqual(before); expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);

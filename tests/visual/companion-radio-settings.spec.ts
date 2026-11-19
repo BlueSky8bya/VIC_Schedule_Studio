@@ -54,9 +54,12 @@ async function openRadio(page: Page) {
   await page.getByRole("button", { name: "설정", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
-  await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "소리", exact: true }).click();
-  return { dialog, radio: dialog.locator(".rhh-companion-radio") };
+  await dialog.getByRole("tab", { name: "설정", exact: true }).click();
+  const radio = dialog.locator(".rhh-companion-radio");
+  // Stage 3: volume, self-start, the track list and credits sit in a fold that starts closed on every opening.
+  await expect(radio.locator(".rhh-radio-more")).not.toHaveAttribute("open", "");
+  await radio.locator(".rhh-radio-more > summary").click();
+  return { dialog, radio };
 }
 const saved = (page: Page) => page.evaluate(key => JSON.parse(localStorage.getItem(key)!), COMPANION_RADIO_PREFERENCES_KEY);
 
@@ -98,7 +101,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`${surface}
   await assertRadioButtonGeometry(radio);
   expect(COMPANION_RADIO_TRACKS.length).toBeGreaterThanOrEqual(12);
   expect(safety.musicRequests).toEqual([]);
-  await radio.getByText("곡 고르기", { exact: false }).click();
+  await radio.locator(".rhh-radio-playlist > summary").click();
   await expect(radio.getByRole("checkbox")).toHaveCount(COMPANION_RADIO_TRACKS.length);
   await radio.getByRole("checkbox").first().uncheck();
   expect((await saved(page)).excludedIds).toEqual([COMPANION_RADIO_TRACKS[0].id]);
@@ -155,16 +158,15 @@ test("radio empty pool, dedicated OFF, zero volume and global OFF keep play cont
   await page.goto("/visual-fixture/poster");
   const { dialog, radio } = await openRadio(page);
   await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeDisabled();
-  await radio.getByText("곡 고르기", { exact: false }).click();
+  await radio.locator(".rhh-radio-playlist > summary").click();
   for (const checkbox of await radio.getByRole("checkbox").all()) await checkbox.uncheck();
   await expect(radio).toContainText("선택한 곡이 없어요.");
   await dialog.locator('[data-tab="sound"]').click();
   await dialog.getByRole("switch", { name: "효과음 켜기/끄기", exact: true }).click();
   await dialog.locator('[data-tab="companion"]').click();
-  await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
-  await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "소리", exact: true }).click();
+  await dialog.getByRole("tab", { name: "설정", exact: true }).click();
   await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeDisabled();
-  await radio.getByText("곡 고르기", { exact: false }).click();
+  await radio.locator(".rhh-radio-playlist > summary").click();
   await radio.getByRole("checkbox").first().check();
   await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeEnabled();
   const volume = radio.getByRole("slider", { name: "라디오 음량", exact: true });
@@ -186,8 +188,7 @@ test("radio empty pool, dedicated OFF, zero volume and global OFF keep play cont
   const globalVolume = dialog.getByRole("slider", { name: "효과음 음량", exact: true });
   await globalVolume.focus(); await globalVolume.press("Home");
   await dialog.locator('[data-tab="companion"]').click();
-  await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
-  await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "소리", exact: true }).click();
+  await dialog.getByRole("tab", { name: "설정", exact: true }).click();
   await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeDisabled();
   expect(safety.musicRequests).toEqual([]); expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
 });
@@ -256,7 +257,7 @@ test("every active licensed recording decodes and produces real browser samples 
   });
   await page.goto("/visual-fixture/poster");
   const { radio } = await openRadio(page);
-  await radio.getByText("곡 고르기", { exact: false }).click();
+  await radio.locator(".rhh-radio-playlist > summary").click();
   const recordings: Array<{ id: string; src: string; time: number; peak: number; context: string }> = [];
   const read = () => page.evaluate(() => {
     const { media, analyser } = (window as Window & { __allRadio?: { media: HTMLMediaElement; analyser: AnalyserNode } }).__allRadio!;

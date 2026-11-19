@@ -81,7 +81,8 @@ async function openRadio(page: Page) {
   // Companion is valid; do not require the unrelated text-size slider first.
   const dialog = page.getByRole('dialog', { name: '설정', exact: true });
   if (!await dialog.isVisible()) await openTool(page, '설정');
-  await expect(dialog).toBeVisible(); await dialog.locator('[data-tab="companion"]:visible').click(); await dialog.locator('[data-profile-page="settings"]:visible').click(); await dialog.locator('[data-companion-tab="sound"]:visible').click();
+  await expect(dialog).toBeVisible(); await dialog.locator('[data-tab="companion"]:visible').click(); await dialog.locator('[data-profile-page="settings"]:visible').click();
+  // stage 3: no sub-tabs; the radio card sits on the one "설정" page (playlist and attribution inside its fold, still in the DOM).
   const radio = dialog.locator('.rhh-companion-radio:visible'); await expect(radio).toBeVisible(); return radio;
 }
 type NativeAudio = { src: string; currentSrc: string; readyState: number; paused: boolean; currentTime: number; duration: number | null; error: number | null };

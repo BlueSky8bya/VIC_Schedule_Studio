@@ -81,10 +81,11 @@ test("explicit OFF downloads no sprite, and the shared settings turn it on and o
   await expect(master).toBeFocused();
   const month = page.locator(".poster-chrome-title:visible,.agenda-title:visible");
   const monthBefore = await month.textContent();
-  const detailTabs = settings.getByRole("tablist", { name: "빅타민 설정", exact: true });
-  await detailTabs.getByRole("tab", { name: "움직임", exact: true }).focus();
+  // stage 3: the five sub-tabs are gone; the same keyboard fact holds for the four pages (arrow keys move pages, not the month).
+  const detailTabs = settings.getByRole("tablist", { name: "빅타민 프로필", exact: true });
+  await detailTabs.getByRole("tab", { name: "도감", exact: true }).click();
   await page.keyboard.press("ArrowRight");
-  await expect(detailTabs.getByRole("tab", { name: "장난", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(detailTabs.getByRole("tab", { name: "옷장", exact: true })).toHaveAttribute("aria-selected", "true");
   await expect(month).toHaveText(monthBefore!);
   await settings.getByRole("button", { name: "닫기", exact: true }).click();
   await expect(actor(page)).toBeVisible();

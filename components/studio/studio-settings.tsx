@@ -232,20 +232,24 @@ function CompanionRadioSettings({ companion, site, onGoTo }: { companion: Compan
   const currentTrack = COMPANION_RADIO_TRACKS.find(track => track.id === snapshot?.trackId);
   return <div className="rhh-group-card rhh-companion-radio" data-settings-place="companion-radio">
     <div className="role-help-haptics"><RowLabel icon={<Volume2 size={15} />} tone="water">집 라디오</RowLabel><Switch dataAct="companion-radio-enabled" dataActOpt={preferences.enabled ? "off" : "on"} label="빅타민 라디오 켜기/끄기" on={preferences.enabled} onToggle={() => change({ enabled: !preferences.enabled })} /></div>
+    <div className="rhh-radio-now"><p aria-live="polite">{pending ? "준비 중" : blockedReason ?? (snapshot?.playing && currentTrack ? currentTrack.title : playFailed ? "재생하지 못했어요" : pool.length ? "재생 대기" : "선택한 곡이 없어요.")}</p><div className="rhh-radio-actions"><button className="rhh-link" data-act="companion-radio-play" data-sfx="off" disabled={blocked || !pool.length || pending || snapshot?.playing} onClick={() => play(toggleCompanionRadio)} type="button"><span className="vmid">재생</span></button><button className="rhh-link" data-act="companion-radio-next" data-sfx="off" disabled={blocked || !pool.length || pending} onClick={() => play(nextCompanionRadio)} type="button"><span className="vmid">다음 곡</span></button><button className="rhh-link" data-act="companion-radio-stop" data-sfx="off" disabled={!snapshot?.playing && !pending} onClick={stop} type="button"><span className="vmid">정지</span></button></div></div>
+    {block?.place && !pending ? <SettingsNote className="rhh-note-go-only" onGoTo={place => onGoTo(place as CompanionSettingsPlace)} place={block.place} placeLabel={COMPANION_SETTINGS_PLACE_LABELS[block.place]} text="" /> : null}
+    {/* The rest is set rarely (redesign stage 3). Folded on every opening: remembering it would need a new stored value. */}
+    <details className="rhh-radio-more">
+      <summary data-act="companion-radio-more" data-activity-manual="" onClick={event => logActivity("ui.click", { target: event.currentTarget.closest("details")?.open ? "companion-radio-more#close" : "companion-radio-more#open" })}>음량 · 스스로 틀기 · 곡 고르기<span>{selected.length}/{COMPANION_RADIO_TRACKS.length}</span></summary>
     <div className="role-help-haptics rhh-stack-sm"><RowLabel icon={<Volume1 size={15} />} tone="water">라디오 음량</RowLabel><div className="rhh-volume"><VolumeX aria-hidden="true" size={15} /><input aria-label="라디오 음량" aria-valuetext={`${preferences.volume}%`} data-act="companion-radio-volume" data-sfx="off" max={100} min={0} onChange={event => change({ volume: Number(event.currentTarget.value) })} step={5} style={{ "--vol": `${preferences.volume}%` } as CSSProperties} type="range" value={preferences.volume} /><Volume2 aria-hidden="true" size={15} /><b className="rhh-vol-num">{preferences.volume}</b></div></div>
     <div className={`role-help-haptics${reactBlock || !companion.enabled ? " is-blocked" : ""}`}><RowLabel icon={<Sparkles size={15} />} tone="leaf">빅타민이 스스로 틀기</RowLabel><Switch dataAct="companion-radio-self-start" dataActOpt={preferences.react ? "off" : "on"} label="빅타민이 스스로 라디오 틀기 켜기/끄기" on={preferences.react} onToggle={() => change({ react: !preferences.react })} /></div>
     {reactBlock ? <SettingsNote onGoTo={place => onGoTo(place as CompanionSettingsPlace)} place={reactBlock.place} placeLabel={reactBlock.place && COMPANION_SETTINGS_PLACE_LABELS[reactBlock.place]} text={reactBlock.text} /> : null}
-    <div className="rhh-radio-now"><p aria-live="polite">{pending ? "준비 중" : blockedReason ?? (snapshot?.playing && currentTrack ? currentTrack.title : playFailed ? "재생하지 못했어요" : pool.length ? "재생 대기" : "선택한 곡이 없어요.")}</p><div className="rhh-radio-actions"><button className="rhh-link" data-act="companion-radio-play" data-sfx="off" disabled={blocked || !pool.length || pending || snapshot?.playing} onClick={() => play(toggleCompanionRadio)} type="button"><span className="vmid">재생</span></button><button className="rhh-link" data-act="companion-radio-next" data-sfx="off" disabled={blocked || !pool.length || pending} onClick={() => play(nextCompanionRadio)} type="button"><span className="vmid">다음 곡</span></button><button className="rhh-link" data-act="companion-radio-stop" data-sfx="off" disabled={!snapshot?.playing && !pending} onClick={stop} type="button"><span className="vmid">정지</span></button></div></div>
-    {block?.place && !pending ? <SettingsNote className="rhh-note-go-only" onGoTo={place => onGoTo(place as CompanionSettingsPlace)} place={block.place} placeLabel={COMPANION_SETTINGS_PLACE_LABELS[block.place]} text="" /> : null}
-    <div className="rhh-radio-attribution"><span>{currentTrack?.credit ?? "Kevin MacLeod (incompetech.com)"}</span><a data-act="companion-radio-source" href={currentTrack?.sourceUrl ?? "https://incompetech.com/music/royalty-free/music.html"} rel="noopener noreferrer" target="_blank">원본</a><a data-act="companion-radio-license" href="https://creativecommons.org/licenses/by/4.0/" rel="noopener noreferrer" target="_blank">CC BY 4.0</a><small>음량보정 · Opus</small></div>
     <details className="rhh-radio-playlist"><summary data-act="companion-radio-list" data-activity-manual="" onClick={event => logActivity("ui.click", { target: event.currentTarget.closest("details")?.open ? "companion-radio-list#close" : "companion-radio-list#open" })}>곡 고르기 <span>{selected.length}/{COMPANION_RADIO_TRACKS.length}</span></summary><ul>{COMPANION_RADIO_TRACKS.map(track => {
       const included = !preferences.excludedIds.includes(track.id);
       return <li key={track.id}><label><input checked={included} data-act="companion-radio-track-toggle" data-sfx="off" onChange={() => change({ excludedIds: included ? [...preferences.excludedIds, track.id] : preferences.excludedIds.filter(id => id !== track.id) })} type="checkbox" /><span><strong>{track.title}</strong><span>{track.creator} · {COMPANION_RADIO_MOOD_NAMES[track.mood]}</span></span></label><button aria-label={`${track.title} 재생`} className="rhh-link" data-act="companion-radio-play" data-sfx="off" disabled={blocked || pending || !included} onClick={() => play(() => playCompanionRadioTrack(track.id))} type="button"><Volume1 aria-hidden="true" size={17} /></button></li>;
     })}</ul></details>
+    <div className="rhh-radio-attribution"><span>{currentTrack?.credit ?? "Kevin MacLeod (incompetech.com)"}</span><a data-act="companion-radio-source" href={currentTrack?.sourceUrl ?? "https://incompetech.com/music/royalty-free/music.html"} rel="noopener noreferrer" target="_blank">원본</a><a data-act="companion-radio-license" href="https://creativecommons.org/licenses/by/4.0/" rel="noopener noreferrer" target="_blank">CC BY 4.0</a><small>음량보정 · Opus</small></div>
+    </details>
   </div>;
 }
 
-/** One shared companion experience; controls load only on its environment page. */
+/** One shared companion experience; the settings page loads only when it is first shown. */
 const CompanionBehaviorSettings = dynamic(() => import("@/components/shared/companion-settings").then(module => module.CompanionBehaviorSettings), { loading: () => null });
 /** The site-wide settings that override companion rows, read where the runtime reads them. */
 function useCompanionSiteGates(soundOn: boolean, soundVolume: number): CompanionSiteGates {
@@ -261,9 +265,11 @@ function useCompanionSiteGates(soundOn: boolean, soundVolume: number): Companion
   const [reduce, gfx] = html.split("|");
   return useMemo(() => ({ soundOn, soundVolume, reduceMotion: reduce === "1", gfx: gfx || undefined }), [soundOn, soundVolume, reduce, gfx]);
 }
-function CompanionSettings({ preferences, onChange, site, onGoTo, placeRequest, active, initialPersonality = false }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; site: CompanionSiteGates; onGoTo: (place: CompanionSettingsPlace) => void; placeRequest?: CompanionPlaceRequest; active: boolean; initialPersonality?: boolean }) {
-  return <CompanionProfile active={active} preferences={preferences} initialPersonality={initialPersonality} settingsRequest={placeRequest?.n ?? 0} environment={(settingsActive, personalityRequest) => <CompanionBehaviorSettings active={settingsActive} personalityRequest={personalityRequest} preferences={preferences} onChange={onChange} site={site} onGoTo={onGoTo} placeRequest={placeRequest} radio={<CompanionRadioSettings companion={preferences} site={site} onGoTo={onGoTo} />} />} />;
+function CompanionSettings({ preferences, onChange, site, onGoTo, placeRequest, active, initialPersonality = false, startOnSettings = false }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; site: CompanionSiteGates; onGoTo: (place: CompanionSettingsPlace) => void; placeRequest?: CompanionPlaceRequest; active: boolean; initialPersonality?: boolean; startOnSettings?: boolean }) {
+  return <CompanionProfile active={active} preferences={preferences} onChange={onChange} initialPersonality={initialPersonality} startOnSettings={startOnSettings} settingsRequest={placeRequest?.n ?? 0}
+    environment={settingsActive => <CompanionBehaviorSettings active={settingsActive} preferences={preferences} onChange={onChange} site={site} onGoTo={onGoTo} placeRequest={placeRequest} radio={<CompanionRadioSettings companion={preferences} site={site} onGoTo={onGoTo} />} />} />;
 }
+
 
 export function StudioSettingsList({
   previewRoot,
@@ -902,7 +908,7 @@ export function StudioSettingsList({
       {/* 계절 배경·배경 효과 — 모바일(≤640)엔 배경이 없어 묶음째 숨긴다(.rhh-web). */}
       {companionAvailable ? <section {...pane("companion")}>
         <h3 className="rhh-group-title" id="rhh-tab-companion-title">빅타민</h3>
-        <CompanionSettings active={current === "companion"} site={site} onGoTo={goToPlace} placeRequest={companionPlaceRequest} preferences={companionPrefs} onChange={onCompanionChange} />
+        <CompanionSettings active={current === "companion"} startOnSettings site={site} onGoTo={goToPlace} placeRequest={companionPlaceRequest} preferences={companionPrefs} onChange={onCompanionChange} />
       </section> : null}
 
       <section {...pane("bg", "rhh-web")}>

@@ -31,8 +31,13 @@ async function exposed(button: Locator) {
 async function settings(page: Page, tab: "motion" | "affection" | "personality" = "personality") {
   const home = await openCompanionHome(page); await exposed(home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }));
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
-  await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
-  if (tab !== "personality") await dialog.locator(`[data-companion-tab="${tab}"]`).click();
+  // stage 3: the book opens on "함께 지내기" (character) under the shared power header. The "설정" page has no
+  // sub-tabs: the movement switches are visible directly, and the 교감 rows sit in its "더 보기" fold.
+  if (tab !== "personality") {
+    await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
+    await expect(dialog.locator('[data-act="companion-roam"]')).toBeVisible();
+    if (tab === "affection") await dialog.locator(".rhh-companion-more > summary").click();
+  }
   return dialog;
 }
 async function populate(page: Page, two = false) {

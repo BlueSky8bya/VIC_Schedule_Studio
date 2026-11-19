@@ -57,9 +57,13 @@ async function openProfile(page: Page) {
   await settings.click();
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  const profile = dialog.locator(".rhh-companion-profile");
-  await expect(profile.getByRole("region", { name: "빅타민 특성", exact: true })).toBeVisible();
-  return { dialog, profile, nav: profile.getByRole("tablist", { name: "빅타민 프로필", exact: true }) };
+  const profile = dialog.locator(".rhh-companion-profile"), nav = profile.getByRole("tablist", { name: "빅타민 프로필", exact: true });
+  // stage 3: the gear opens on "설정"; these tests start from "함께 지내기".
+  await expect(nav.getByRole("tab", { name: "설정", exact: true })).toHaveAttribute("aria-selected", "true");
+  await nav.getByRole("tab", { name: "함께 지내기", exact: true }).click();
+  // stage 3: the summary region is named by the current character, not a fixed "빅타민 특성".
+  await expect(profile.getByRole("tabpanel", { name: "함께 지내기", exact: true }).locator(".rhh-companion-summary")).toBeVisible();
+  return { dialog, profile, nav };
 }
 
 async function visitSurface(page: Page, surface: Surface) {
@@ -87,30 +91,41 @@ async function openCompanionBook(page: Page) {
   await expect(dialog).toBeVisible();
   await expect(dialog).toHaveClass(/companion-book/);
   await expect(dialog.getByRole("tablist", { name: "설정 묶음", exact: true })).toHaveCount(0);
-  await expect(dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab")).toHaveText(["함께 지내기", "도감", "옷장", "환경설정"]);
+  await expect(dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab")).toHaveText(["함께 지내기", "도감", "옷장", "설정"]);
   await expect(dialog.getByRole("button", { name: "옷장 열기", exact: true })).toBeVisible();
-  await expect(dialog.getByRole("switch")).toHaveCount(0);
+  // stage 3: the book opens on "함께 지내기" under the shared power header; that page also holds the learning switch.
+  await expect(dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "함께 지내기", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(dialog.getByRole("switch")).toHaveCount(2);
+  await expect(dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true })).toBeVisible();
   await expect(dialog.getByRole("button", { name: "닫기", exact: true })).toHaveAttribute("data-act", "companion-book-close");
   return { dialog, entry };
 }
 
+// stage 3: the "설정" page is one column of cards with no sub-tabs.
 async function openEnvironment(dialog: ReturnType<Page["getByRole"]>) {
-  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
-  await expect(dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab")).toHaveText(["기본", "움직임", "장난", "교감", "소리"]);
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
+  await expect(dialog.locator(".rhh-companion-settings.rhh-companion-cards")).toBeVisible();
+  await expect(dialog.getByRole("tablist", { name: "빅타민 설정", exact: true })).toHaveCount(0);
 }
+// Rarely changed rows (걸음 · 잠 · 다른 창 · 집어 옮기기 · 쓰다듬기 · 밥주기) sit in a fold that is closed on every opening.
+async function openMore(dialog: ReturnType<Page["getByRole"]>) {
+  const more = dialog.locator(".rhh-companion-more");
+  if (!await more.evaluate(node => (node as HTMLDetailsElement).open)) await dialog.locator(".rhh-companion-more > summary").click();
+}
+const together = (dialog: ReturnType<Page["getByRole"]>) => dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "함께 지내기", exact: true });
 
 for (const surface of ["viewer", "studio", "preview"] as const) for (const theme of ["light", "dark"] as const) {
   test(`111 book ${surface} ${theme}: native direct settings share preferences and return focus after both close paths`, async ({ page }) => {
     const safety = await installFixture(page, { theme, collection: seededCollection, enabled: true });
     await visitSurface(page, surface);
     const { dialog, entry } = await openCompanionBook(page);
-    await openEnvironment(dialog);
-    const controls = dialog.getByRole("tablist", { name: "빅타민 설정", exact: true });
+    // stage 3: look and character are on "함께 지내기" (where the book opens); 걸음 and 밥주기 are in the "설정" fold.
     await dialog.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "고양이", exact: true }).click();
     await dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name: "잠꾸러기", exact: true }).click();
-    await controls.getByRole("tab", { name: "움직임", exact: true }).click();
+    await openEnvironment(dialog);
+    await openMore(dialog);
     await dialog.getByRole("radiogroup", { name: "빅타민 걸음", exact: true }).getByRole("radio", { name: "발랄하게", exact: true }).click();
-    await controls.getByRole("tab", { name: "교감", exact: true }).click();
     const feed = dialog.getByRole("switch", { name: "빅타민 밥주기 켜기/끄기", exact: true });
     await expect(feed).toHaveAttribute("aria-checked", "false"); await feed.click();
     await expect.poll(() => page.evaluate(() => {
@@ -128,8 +143,9 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await body.hover(); await page.mouse.wheel(0, 540);
     await expect.poll(() => body.evaluate(element => element.scrollTop)).toBeGreaterThan(beforeWheel);
     await openEnvironment(dialog);
-    await controls.getByRole("tab", { name: "소리", exact: true }).click();
-    await dialog.locator(".rhh-radio-playlist summary").click();
+    // stage 3: the playlist sits inside the radio card's own fold.
+    await dialog.locator(".rhh-radio-more > summary").click();
+    await dialog.locator(".rhh-radio-playlist > summary").click();
     const playlist = dialog.locator(".rhh-radio-playlist ul"), lastTrack = playlist.getByRole("checkbox").last();
     await playlist.hover(); await page.mouse.wheel(0, 2800);
     await expect(lastTrack).toBeInViewport({ ratio: 1 });
@@ -139,19 +155,18 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await test.info().attach("book-close-focus", { body: JSON.stringify(await page.evaluate(() => ({ active: document.activeElement?.outerHTML.slice(0, 600), book: [...document.querySelectorAll<HTMLElement>('[data-act="companion-book-open"]')].map(node => ({ connected: node.isConnected, inert: Boolean(node.closest("[inert],[hidden]")), rect: node.getBoundingClientRect().toJSON() })) }))), contentType: "application/json" });
     await expect(dialog).toHaveCount(0); await expect(entry).toBeFocused();
     const reopened = await openCompanionBook(page);
-    await openEnvironment(reopened.dialog);
     await expect(reopened.dialog.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "고양이", exact: true })).toHaveAttribute("aria-checked", "true");
     await page.keyboard.press("Escape");
     await expect(reopened.dialog).toHaveCount(0); await expect(entry).toBeFocused();
     const normal = await openProfile(page);
-    await openEnvironment(normal.dialog);
     await expect(normal.dialog).not.toHaveClass(/companion-book/);
     await expect(normal.dialog.getByRole("tablist", { name: "설정 묶음", exact: true })).toBeVisible();
+    await expect(together(normal.dialog)).toHaveAttribute("aria-selected", "true");
     await expect(normal.dialog.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "고양이", exact: true })).toHaveAttribute("aria-checked", "true");
     await expect(normal.dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name: "잠꾸러기", exact: true })).toHaveAttribute("aria-checked", "true");
-    await normal.dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "움직임", exact: true }).click();
+    await openEnvironment(normal.dialog);
+    await openMore(normal.dialog);
     await expect(normal.dialog.getByRole("radiogroup", { name: "빅타민 걸음", exact: true }).getByRole("radio", { name: "발랄하게", exact: true })).toHaveAttribute("aria-checked", "true");
-    await normal.dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "교감", exact: true }).click();
     await expect(normal.dialog.getByRole("switch", { name: "빅타민 밥주기 켜기/끄기", exact: true })).toHaveAttribute("aria-checked", "true");
     expect(safety.writes).toEqual([]); expect(safety.errors).toEqual([]);
   });
@@ -249,11 +264,12 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     mkdirSync(`${regressionOutput}/collection`, { recursive: true });
     await visitSurface(page, surface);
     let { dialog, profile, nav } = await openProfile(page);
-    await expect(nav.getByRole("tab")).toHaveText(["함께 지내기", "도감", "옷장", "환경설정"]);
+    await expect(nav.getByRole("tab")).toHaveText(["함께 지내기", "도감", "옷장", "설정"]);
     await expect(profile.locator(".rhh-companion-portrait [data-preview-ready]")).toHaveCount(1);
     await expect(profile.locator(".rhh-companion-portrait [data-preview-accessory=\"sunglasses\"]")).toHaveCount(1);
     await expect(nav.locator('[tabindex="0"]')).toHaveCount(1);
-    await expect(dialog.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true })).toHaveCount(0);
+    // stage 3: look and character now sit on "함께 지내기", next to the portrait.
+    await expect(dialog.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true })).toBeVisible();
     await expect(profile.locator('[data-collection-art="behavior-stamp"],[data-collection-art="accessory"]')).toHaveCount(0);
 
     await nav.getByRole("tab", { name: "도감", exact: true }).click();
@@ -402,7 +418,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await dialog.screenshot({ path: `${regressionOutput}/collection/gifts-${surface}-${theme}.png` });
 
     const keepsakes = await readCollection(page);
-    await openEnvironment(dialog);
+    // stage 3: the learning switch and its reset are on "함께 지내기".
+    await nav.getByRole("tab", { name: "함께 지내기", exact: true }).click();
     await dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true }).click();
     await dialog.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
     expect(await readCollection(page)).toEqual(keepsakes);
@@ -412,7 +429,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await page.keyboard.press("ArrowRight");
     await expect(nav.getByRole("tab", { name: "도감", exact: true })).toBeFocused();
     await page.keyboard.press("End");
-    await expect(nav.getByRole("tab", { name: "환경설정", exact: true })).toBeFocused();
+    await expect(nav.getByRole("tab", { name: "설정", exact: true })).toBeFocused();
     await expect(nav.locator('[tabindex="0"]')).toHaveCount(1);
 
     // A real same-origin sibling produces native storage events. No event,
@@ -441,7 +458,6 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
       await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible();
     }
     ({ dialog, profile, nav } = await openProfile(page));
-    await openEnvironment(dialog);
     await expect(dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true })).toHaveAttribute("aria-checked", "false");
     await nav.getByRole("tab", { name: "옷장", exact: true }).click();
     await expect(profile.locator(`.rhh-accessory-grid [data-accessory="${persisted.gifts.equipped}"]`)).toContainText("장착 중");
@@ -489,9 +505,11 @@ test("111 lazy profile: optional collections, wardrobe and controls load only on
   await visitSurface(page, "viewer");
   const { profile, nav } = await openProfile(page);
   await expect(profile.locator(".rhh-companion-portrait [data-preview-ready]")).toHaveCount(1);
-  for (const chunk of Object.values(deferred)) expect(requests.has(chunk), chunk).toBe(false);
+  // stage 3: the gear opens on "설정", so that page's chunk is asked for at once; the other two still wait for their first visit.
+  await expect.poll(() => requests.has(deferred.settings)).toBe(true);
+  for (const chunk of [deferred.discover, deferred.dress]) expect(requests.has(chunk), chunk).toBe(false);
   const checkpoints: Record<string, string[]> = { together: [...requests].filter(path => path.endsWith(".js")) };
-  for (const [key, label] of [["discover", "도감"], ["dress", "옷장"], ["settings", "환경설정"]] as const) {
+  for (const [key, label] of [["discover", "도감"], ["dress", "옷장"], ["settings", "설정"]] as const) {
     await nav.getByRole("tab", { name: label, exact: true }).click();
     await expect.poll(() => requests.has(deferred[key])).toBe(true);
     checkpoints[key] = [...requests].filter(path => path.endsWith(".js"));

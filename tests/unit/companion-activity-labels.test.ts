@@ -20,7 +20,7 @@ describe("142 direct personality navigation activity", () => {
   });
 });
 const SETTINGS = [
-  "settings-companion-tab", ...TOGGLES, "companion-speed", "companion-animal", "companion-personality", "companion-learning-reset"
+  ...TOGGLES, "companion-speed", "companion-animal", "companion-personality", "companion-learning-reset"
 ] as const;
 const ACTIONS = [
   "companion-home-open", "companion-home-close", "companion-home-fold", "companion-home-call",
@@ -147,7 +147,7 @@ describe("빅타민 행동 기록 이름과 저장 경계", () => {
       ["settings-companion-tab#pranks", "빅타민 설정 묶음 · 장난"],
       ["settings-companion-tab#affection", "빅타민 설정 묶음 · 교감"],
       ["settings-companion-tab#personality", "빅타민 설정 묶음 · 기본"],
-      ["companion-profile-page#settings", "빅타민 프로필 보기 · 환경설정"],
+      ["companion-profile-page#settings", "빅타민 프로필 보기 · 설정"],
       ["companion-rare-prank#off", "빅타민 희귀 소품 장난 · 끄기"],
       ["companion-radio-source", "빅타민 라디오 음악 출처"],
       ["companion-radio-license", "빅타민 라디오 음악 이용 조건"],

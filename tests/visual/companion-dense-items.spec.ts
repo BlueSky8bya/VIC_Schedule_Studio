@@ -42,8 +42,9 @@ async function exposed(button: Locator) {
 async function settings(page: Page, tab: "motion" | "affection" | "personality" = "personality") {
   const home = await openCompanionHome(page); await exposed(home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }));
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
-  await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
-  if (tab !== "personality") await dialog.locator(`[data-companion-tab="${tab}"]`).click();
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
+  // stage 3: no sub-tabs. Power and roam are visible directly; feeding sits in the "더 보기" fold.
+  if (tab === "affection") await dialog.locator(".rhh-companion-more > summary").click();
   return dialog;
 }
 async function populate(page: Page, two = false) {

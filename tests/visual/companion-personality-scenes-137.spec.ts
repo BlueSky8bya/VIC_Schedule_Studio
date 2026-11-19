@@ -100,16 +100,22 @@ async function selectNative(page: Page, personality: CompanionPersonality, roam?
   const book = home.getByRole("button", { name: "빅타민 수첩 열기", exact: true });
   await expect(book).toBeVisible(); await book.click();
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true }); await expect(dialog).toBeVisible();
-  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
+  // stage 3: character lives on the book's "함께 지내기" page; roam and sleep stay on "설정" (sleep inside the fold).
+  const profilePages = dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true });
+  await profilePages.getByRole("tab", { name: "함께 지내기", exact: true }).click();
   const group = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true });
   await expect(group.getByRole("radio")).toHaveCount(9);
   const option = group.getByRole("radio", { name: COMPANION_PERSONALITY_NAMES[personality], exact: true });
   if (await option.getAttribute("aria-checked") === "true") await group.locator('[role="radio"][aria-checked="false"]').first().click();
   await option.click(); await expect(option).toHaveAttribute("aria-checked", "true");
   if (roam !== undefined || sleep !== undefined) {
-    await dialog.getByRole("tab", { name: "움직임", exact: true }).click();
+    await profilePages.getByRole("tab", { name: "설정", exact: true }).click();
     if (roam !== undefined) await dialog.locator('[data-act="companion-roam"]').setChecked(roam);
-    if (sleep !== undefined) await dialog.locator('[data-act="companion-sleep"]').setChecked(sleep);
+    if (sleep !== undefined) {
+      const more = dialog.locator(".rhh-companion-more"); await expect(more).toBeVisible();
+      if (!await more.evaluate(node => (node as HTMLDetailsElement).open)) await more.locator("> summary").click();
+      await dialog.locator('[data-act="companion-sleep"]').setChecked(sleep);
+    }
   }
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden();
   await page.mouse.move(2, 2); await startProbe(page);
@@ -439,13 +445,15 @@ test("140 sleepy responds to an actual calm recording and stops its music sequen
   const openRadio = async () => {
     await home.locator('[data-home-action="book"]').click();
     const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
-    await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
-    await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "소리", exact: true }).click();
-    return { dialog, radio: dialog.locator(".rhh-companion-radio") };
+    await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
+    // stage 3: no sub-tabs; the radio card is on the "설정" page, its volume and playlist inside the card's fold.
+    const radio = dialog.locator(".rhh-companion-radio"), more = radio.locator(".rhh-radio-more"); await expect(more).toBeVisible();
+    if (!await more.evaluate(node => (node as HTMLDetailsElement).open)) await more.locator("> summary").click();
+    return { dialog, radio };
   };
   let { dialog, radio } = await openRadio();
   const track = COMPANION_RADIO_TRACKS.find(track => track.mood === "calm")!;
-  await radio.getByText("곡 고르기", { exact: false }).click();
+  await radio.locator(".rhh-radio-playlist > summary").click();
   await radio.getByRole("button", { name: `${track.title} 재생`, exact: true }).click();
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await page.mouse.move(2, 2); await startProbe(page);
   await expect(home.locator('[data-home-action="radio"]')).toHaveAttribute("aria-pressed", "true");

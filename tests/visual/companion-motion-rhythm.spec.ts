@@ -134,7 +134,8 @@ async function openPranks(page: Page) {
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  await dialog.locator("#rhh-tab-companion-panel").getByRole("tab", { name: "장난", exact: true }).click();
+  // stage 3: no sub-tabs; the prank switches are cards on the "설정" page, which the gear opens on.
+  await dialog.locator("#rhh-tab-companion-panel").getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
   return dialog;
 }
 

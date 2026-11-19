@@ -137,7 +137,8 @@ for (const [surface, width, compact, source] of [["studio",2133,false,"owner-run
   // starts the existing living loop immediately before observing the intent.
   await house.locator('[data-home-action="personality"]').click();
   const book = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
-  await book.getByRole("tab", { name: "움직임", exact: true }).click();
+  // stage 3: the character label opens the book on "함께 지내기"; roam is a card on the single "설정" page.
+  await book.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
   await book.locator('[data-act="companion-roam"]').setChecked(true);
   await book.getByRole("button", { name: "닫기", exact: true }).click();
   // Changing motion preferences reconstructs the controller. Finish a native

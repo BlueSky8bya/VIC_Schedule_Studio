@@ -283,7 +283,8 @@ test("143 studio sofa stays aligned beside the editor and independent controls",
   // night-time lamp errand cannot masquerade as a broken seated scroll.
   await compact.locator('[data-act="companion-personality-open"]').click();
   const residentSettings=page.getByRole("dialog",{name:"빅타민 수첩",exact:true});
-  await residentSettings.getByRole("tab",{name:"움직임",exact:true}).click();
+  // stage 3: the character label opens the book on "함께 지내기"; roam is on the single "설정" page.
+  await residentSettings.getByRole("tablist",{name:"빅타민 프로필",exact:true}).getByRole("tab",{name:"설정",exact:true}).click();
   await residentSettings.locator('[data-act="companion-roam"]').setChecked(false);
   await residentSettings.getByRole("button",{name:"닫기",exact:true}).click();
   await expect(residentSettings).toBeHidden();
@@ -352,7 +353,7 @@ test("143 studio sofa stays aligned beside the editor and independent controls",
   await compact.locator('[data-act="companion-personality-open"]').click();
   const settings=page.getByRole("dialog",{name:"빅타민 수첩",exact:true});
   await settings.getByRole("radiogroup",{name:"빅타민 성격",exact:true}).getByRole("radio",{name:COMPANION_PERSONALITY_NAMES.performer,exact:true}).click();
-  await settings.getByRole("tab",{name:"움직임",exact:true}).click();await settings.locator('[data-act="companion-roam"]').setChecked(true);
+  await settings.getByRole("tablist",{name:"빅타민 프로필",exact:true}).getByRole("tab",{name:"설정",exact:true}).click();await settings.locator('[data-act="companion-roam"]').setChecked(true);
   await settings.getByRole("button",{name:"닫기",exact:true}).click();
   const workBegan=await page.evaluate(()=>performance.now());
   await day.focus();await page.keyboard.press("Enter");

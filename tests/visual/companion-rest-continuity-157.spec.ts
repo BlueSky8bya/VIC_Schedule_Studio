@@ -63,11 +63,11 @@ test.afterEach(async ({ page }, info) => {
 async function settings(page: Page, roam: boolean, sleep = true, enabled?: boolean) {
   const home = await openCompanionHome(page); await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
-  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
   if (enabled !== undefined) await dialog.locator('[data-act="companion-enabled"]').setChecked(enabled);
   if (enabled !== false) {
-    await dialog.getByRole("tab", { name: "움직임", exact: true }).click();
-    await dialog.locator('[data-act="companion-roam"]').setChecked(roam); await dialog.locator('[data-act="companion-sleep"]').setChecked(sleep);
+    // stage 3: no sub-tabs; roam is visible directly, sleep sits in the "더 보기" fold.
+    await dialog.locator('[data-act="companion-roam"]').setChecked(roam); await dialog.locator(".rhh-companion-more > summary").click(); await dialog.locator('[data-act="companion-sleep"]').setChecked(sleep);
   }
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden(); await page.mouse.move(2, 2);
 }
@@ -248,10 +248,10 @@ test("157 preview manual OFF cancels actual owned cushion rest without remote ho
   await page.getByRole("button",{name:"설정",exact:true}).click();
   const dialog=page.getByRole("dialog",{name:"설정",exact:true});
   await dialog.getByRole("tab",{name:"빅타민",exact:true}).click();
-  await dialog.getByRole("tablist",{name:"빅타민 프로필",exact:true}).getByRole("tab",{name:"환경설정",exact:true}).click();
+  await dialog.getByRole("tablist",{name:"빅타민 프로필",exact:true}).getByRole("tab",{name:"설정",exact:true}).click();
   await expect(dialog.locator('[data-act="companion-enabled"]')).not.toBeChecked();
-  await dialog.getByRole("tablist",{name:"빅타민 설정",exact:true}).getByRole("tab",{name:"움직임",exact:true}).click();
-  await dialog.locator('[data-act="companion-roam"]').setChecked(false);await dialog.locator('[data-act="companion-sleep"]').setChecked(false);
+  // stage 3: no sub-tabs; roam is visible directly, sleep sits in the "더 보기" fold.
+  await dialog.locator('[data-act="companion-roam"]').setChecked(false);await dialog.locator(".rhh-companion-more > summary").click();await dialog.locator('[data-act="companion-sleep"]').setChecked(false);
   await expect(page.locator(".vc-companion")).toHaveCount(0);
   await dialog.locator('[data-act="companion-enabled"]').setChecked(true);
   const restoredPreferences=await page.evaluate(()=>{const p=JSON.parse(localStorage.getItem("vic.viewerCompanion")??"{}");return {enabled:p.enabled,roam:p.roam,sleep:p.sleep};});

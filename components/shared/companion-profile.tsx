@@ -1,5 +1,7 @@
 "use client";
 
+import { RowLabel, Switch } from "@/components/shared/settings-controls";
+import { CompanionLearningControls, CompanionTraitControls } from "./companion-traits";
 import dynamic from "next/dynamic";
 import { BookOpen, Heart, HelpCircle, Settings2, Shirt, Sparkles } from "lucide-react";
 import { onCollectionArrowKey } from "./companion-collection-navigation";
@@ -25,7 +27,7 @@ const loading = () => null;
 const CompanionDiscovery = dynamic(() => import("./companion-discovery").then(module => module.CompanionDiscovery), { loading });
 const CompanionWardrobe = dynamic(() => import("./companion-wardrobe").then(module => module.CompanionWardrobe), { loading });
 const CompanionWardrobePreview = dynamic(() => import("./companion-wardrobe-preview").then(module => module.CompanionWardrobePreview), { loading });
-const pages = [{ key: "together", label: "함께 지내기", icon: Heart }, { key: "discover", label: "도감", icon: BookOpen }, { key: "dress", label: "옷장", icon: Shirt }, { key: "settings", label: "환경설정", icon: Settings2 }] as const;
+const pages = [{ key: "together", label: "함께 지내기", icon: Heart }, { key: "discover", label: "도감", icon: BookOpen }, { key: "dress", label: "옷장", icon: Shirt }, { key: "settings", label: "설정", icon: Settings2 }] as const;
 type ProfilePage = typeof pages[number]["key"];
 
 const recentReasons: Record<CompanionLifeReason, string> = {
@@ -92,12 +94,19 @@ function learnedEffects(preferences: CompanionPreferences, memory: CompanionMemo
   return effects;
 }
 
-export function CompanionProfile({ preferences, active, environment, initialPersonality = false, settingsRequest = 0 }: { preferences: CompanionPreferences; active: boolean; environment?: (active: boolean, personalityRequest: number) => ReactNode; initialPersonality?: boolean; /** Counter: each new value opens the settings page (a "go to" link or the blocked home radio). */ settingsRequest?: number }) {
-  const [page, setPage] = useState<ProfilePage>(initialPersonality || settingsRequest > 0 ? "settings" : "together"), [care, setCare] = useState<CompanionMemory | null>(null), [collection, setCollection] = useState<CompanionCollection | null>(null);
-  const [visited, setVisited] = useState({ discover: false, dress: false, settings: initialPersonality || settingsRequest > 0 });
+/** The companion's four pages under one shared power header (redesign stage 3).
+ * Opened from the settings gear it starts on "설정"; opened from the home's book
+ * on "함께 지내기". Look, character and learning live on "함께 지내기". */
+export function CompanionProfile({ preferences, active, environment, onChange, startOnSettings = false, initialPersonality = false, settingsRequest = 0 }: { preferences: CompanionPreferences; active: boolean; environment?: (active: boolean) => ReactNode; /** With it the shared power header and the look, character and learning controls are shown. */ onChange?: (patch: Partial<CompanionPreferences>) => void; /** The gear opens on the settings page; the book does not. */ startOnSettings?: boolean; initialPersonality?: boolean; /** Counter: each new value opens the settings page (a "go to" link or the blocked home radio). */ settingsRequest?: number }) {
+  const opensOnSettings = !initialPersonality && (startOnSettings || settingsRequest > 0);
+  const [page, setPage] = useState<ProfilePage>(opensOnSettings ? "settings" : "together"), [care, setCare] = useState<CompanionMemory | null>(null), [collection, setCollection] = useState<CompanionCollection | null>(null);
+  const [visited, setVisited] = useState({ discover: false, dress: false, settings: opensOnSettings });
   const servedSettings = useRef(settingsRequest);
   const [tastes, setTastes] = useState<CompanionTastes | null>(null);
-  const [personalityRequest, requestPersonality] = useState(initialPersonality ? 1 : 0);
+  const [personalityRequest] = useState(initialPersonality ? 1 : 0);
+  // The settings page is a deferred chunk: ask for it only once this block has really been on screen.
+  const [shown, setShown] = useState(active);
+  useEffect(() => { if (active) setShown(true); }, [active]);
   const id = useId(), nav = useRef<HTMLDivElement>(null), spotlight = useProfileSpotlight(active && preferences.enabled, page);
   useEffect(() => {
     if (!active) return;
@@ -134,7 +143,12 @@ export function CompanionProfile({ preferences, active, environment, initialPers
   const personality = COMPANION_PERSONALITY_NAMES[preferences.personality];
   return <div className="rhh-companion-settings rhh-companion-profile rhh-profile-playful rhh-companion-experience" data-paged={active && (page === "discover" || page === "dress") || undefined} onKeyDownCapture={event => { if (active && (page === "discover" || page === "dress")) onCollectionArrowKey(event); }} {...spotlight}>
     <span className="sr-only" id={`${id}-unread`}>새로 발견한 항목</span>
-    {environment && <div className="rhh-personality-shortcut-row"><span>지금 성격 · <strong>{personality}</strong></span><button type="button" className="rhh-personality-shortcut" data-act="companion-personality-open" aria-label="성격 바꾸기" onClick={() => { changePage("settings"); requestPersonality(value => value + 1); }}><Sparkles size={16} aria-hidden="true" /><span>성격 바꾸기</span></button></div>}
+    {onChange && <div className="rhh-group-card rhh-companion-master">
+      <div className="role-help-haptics" data-settings-place="companion-power">
+        <RowLabel icon={<Sparkles size={20} />} tone="leaf"><span className="rhh-companion-master-copy"><strong>빅타민</strong><span>{preferences.enabled ? "함께 지내는 중" : "쉬는 중"}</span></span></RowLabel>
+        <Switch dataAct="companion-enabled" dataActOpt={preferences.enabled ? "off" : "on"} label="AI 빅타민 켜기/끄기" on={preferences.enabled} onToggle={() => onChange({ enabled: !preferences.enabled })} />
+      </div>
+    </div>}
     <div aria-label="빅타민 프로필" className="rhh-seg rhh-profile-nav" ref={nav} role="tablist" style={{ "--n": pages.length, "--i": pages.findIndex(item => item.key === page) } as CSSProperties}>
       <span aria-hidden="true" className="rhh-seg-thumb" />
       {pages.map(item => <button aria-describedby={pageUnread(item.key) ? `${id}-unread` : undefined} data-unread={pageUnread(item.key) || undefined} aria-controls={`${id}-${item.key}-panel`} aria-selected={page === item.key} className={page === item.key ? "on" : ""} data-act="companion-profile-page" data-act-opt={item.key} data-profile-page={item.key} id={`${id}-${item.key}-tab`} key={item.key} onClick={() => changePage(item.key)} onKeyDown={onTabKey} role="tab" tabIndex={page === item.key ? 0 : -1} type="button"><item.icon aria-hidden="true" size={17} />{item.label}{pageUnread(item.key) && <span aria-hidden="true" className="rhh-collection-unread" data-unread="">!</span>}</button>)}
@@ -151,11 +165,13 @@ export function CompanionProfile({ preferences, active, environment, initialPers
         </div>
         <dl className="rhh-companion-facts"><TasteCard label="좋아하는 간식" food={foodTastes.favorite} reason={companionProfileTasteReason(tastes, "food", foodTastes.favorite, "positive", care?.life)} /><TasteCard label="싫어하는 간식" food={foodTastes.disliked} reason={companionProfileTasteReason(tastes, "food", foodTastes.disliked, "negative", care?.life)} dislike /><TasteCard label="좋아하는 장난감" toy={toyTastes.favorite} reason={companionProfileTasteReason(tastes, "toy", toyTastes.favorite, "positive", care?.life)} /><TasteCard label="싫어하는 장난감" toy={toyTastes.disliked} reason={companionProfileTasteReason(tastes, "toy", toyTastes.disliked, "negative", care?.life)} dislike /></dl>
       </section>
+      {onChange && <CompanionTraitControls active={active && page === "together"} onChange={onChange} personalityRequest={personalityRequest} preferences={preferences} />}
       <section aria-labelledby={`${id}-habits-title`} className="rhh-profile-habits"><div className="rhh-habits-heading"><h3 id={`${id}-habits-title`}>배운 습관</h3>{!preferences.learnFromYou && <span className="rhh-habit-paused">적용 중지</span>}</div>{effects.length ? <ul className="rhh-profile-learned">{effects.map(effect => <li key={effect}>{effect}</li>)}</ul> : <p className="rhh-habit-empty">아직 배운 습관이 없어요.</p>}</section>
+      {onChange && <CompanionLearningControls active={active && page === "together"} onChange={onChange} preferences={preferences} />}
       {care?.life.recent.at(-1) && <p className="rhh-trait-reason"><span>최근 경험</span><span>{recentReasons[care.life.recent.at(-1)!]}</span></p>}
     </div>
     <div aria-labelledby={`${id}-discover-tab`} hidden={page !== "discover"} id={`${id}-discover-panel`} role="tabpanel" tabIndex={0}>{visited.discover && <CompanionDiscovery active={active && page === "discover"} collection={collection} tastes={tastes} />}</div>
     <div aria-labelledby={`${id}-dress-tab`} hidden={page !== "dress"} id={`${id}-dress-panel`} role="tabpanel" tabIndex={0}>{visited.dress && <CompanionWardrobe active={active && page === "dress"} collection={collection} preferences={preferences} />}</div>
-    <div aria-labelledby={`${id}-settings-tab`} hidden={page !== "settings"} id={`${id}-settings-panel`} role="tabpanel" tabIndex={0}>{visited.settings && environment?.(active && page === "settings", personalityRequest)}</div>
+    <div aria-labelledby={`${id}-settings-tab`} hidden={page !== "settings"} id={`${id}-settings-panel`} role="tabpanel" tabIndex={0}>{visited.settings && shown && environment?.(active && page === "settings")}</div>
   </div>;
 }

@@ -54,6 +54,9 @@ async function openProfile(page: Page) {
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
   const profile = dialog.locator(".rhh-companion-profile");
+  // stage 3: the gear opens on "설정"; go to "함께 지내기" first.
+  await expect(profile.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true })).toHaveAttribute("aria-selected", "true");
+  await profile.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "함께 지내기", exact: true }).click();
   const together = profile.getByRole("tabpanel", { name: "함께 지내기", exact: true });
   await expect(together).toBeVisible();
   await expect(together.getByRole("region", { name: COMPANION_PERSONALITY_NAMES[DEFAULT_COMPANION_PREFERENCES.personality], exact: true })).toBeVisible();
@@ -86,9 +89,13 @@ async function openCompanionBook(page: Page) {
   await expect(dialog).toBeVisible();
   await expect(dialog).toHaveClass(/companion-book/);
   await expect(dialog.getByRole("tablist", { name: "설정 묶음", exact: true })).toHaveCount(0);
-  await expect(dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab")).toHaveText(["함께 지내기", "도감", "옷장", "환경설정"]);
+  await expect(dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab")).toHaveText(["함께 지내기", "도감", "옷장", "설정"]);
   await expect(dialog.getByRole("button", { name: "옷장 열기", exact: true })).toBeVisible();
-  await expect(dialog.getByRole("switch")).toHaveCount(0);
+  // stage 3: the book opens on "함께 지내기" under the shared power header; that page also holds the learning switch.
+  await expect(dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "함께 지내기", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(dialog.getByRole("switch")).toHaveCount(2);
+  await expect(dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true })).toBeVisible();
   await expect(dialog.getByRole("button", { name: "닫기", exact: true })).toHaveAttribute("data-act", "companion-book-close");
   return { dialog, entry };
 }

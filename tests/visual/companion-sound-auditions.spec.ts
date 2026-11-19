@@ -20,8 +20,7 @@ async function open(page: Page, storage: Record<string, string> = {}, companion:
   await page.getByRole("button", { name: "설정", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
-  await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "소리", exact: true }).click();
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
   const fold = dialog.locator(".rhh-sound-auditions");
   await expect(fold.locator(".rhh-sound-tile").first()).toBeHidden(); // folded until asked for
   await fold.locator("summary").click();

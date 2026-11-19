@@ -136,7 +136,7 @@ test("settings still hides food and master OFF stays authoritative after closing
   await expect(companionTab).toBeVisible(); await companionTab.click();
   const panel = page.locator("#rhh-tab-companion-panel"); await panel.waitFor();
   const settings = await sample(page, world.handles, "settings-open");
-  await panel.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
+  await panel.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
   const master = panel.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true }); await master.click(); await expect(master).not.toBeChecked();
   await page.keyboard.press("Escape"); await panel.waitFor({ state: "hidden" });
   const off = await sample(page, world.handles, "master-off");

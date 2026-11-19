@@ -172,6 +172,29 @@ export function setCompanionPreferences(patch: Partial<CompanionPreferences>): C
 
 /** Same-page consumers share the live choice. Saved manual selections and
  * ordinary settings also synchronize across documents, including reset. */
+/** Whether this document's character was picked by hand (then it survives a reload). */
+export function companionPersonalityIsManual(): boolean {
+  if (typeof window === "undefined") return false;
+  getCompanionPreferences();
+  return documentPersonalities.get(window)?.manual === true;
+}
+/** "무작위로 되돌리기": drop only the mark that the character was picked by
+ * hand. The character stays as it is for this page; the next load draws
+ * again. Every other choice is written back unchanged, and the record gains
+ * no field: the mark is simply absent, exactly as before a first pick. */
+export function releaseCompanionPersonalityChoice(): CompanionPreferences {
+  const current = getCompanionPreferences();
+  if (typeof window === "undefined") return current;
+  documentPersonalities.set(window, { personality: current.personality, manual: false });
+  volatilePreferences = current;
+  try {
+    const raw = JSON.stringify({ version: 1, ...current });
+    window.localStorage.setItem(COMPANION_PREFERENCES_KEY, raw);
+    lastReadableRaw = raw; unwritten = undefined;
+  } catch { unwritten = { raw: lastReadableRaw, owner: window }; }
+  window.dispatchEvent(new CustomEvent<CompanionPreferences>(COMPANION_PREFERENCES_EVENT, { detail: { ...current } }));
+  return { ...current };
+}
 export function subscribeCompanionPreferences(listener: (preferences: CompanionPreferences) => void): () => void {
   if (typeof window === "undefined") return () => {};
   const changed = (event: Event) => listener(withDocumentPersonality(normalizeCompanionPreferences((event as CustomEvent<unknown>).detail)));

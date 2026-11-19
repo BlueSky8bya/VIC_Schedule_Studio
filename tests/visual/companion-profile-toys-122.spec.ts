@@ -82,9 +82,10 @@ test("122 profile reads bounded prior toy/food reactions without discovering oth
   expect(legacy.toyTastes.bell).toEqual({ score: -.6, accepted: 2, declined: 6 });
   await profile.getByRole("tab", { name: "도감", exact: true }).click(); await profile.locator('[data-act="companion-collection-category"][data-act-opt="toy"]').click();
   await expect(profile.locator(".rhh-companion-toy-discovery")).toBeVisible(); expect(await page.evaluate(() => localStorage.getItem("vic.viewerCompanionTastes"))).toBe(before);
-  await profile.getByRole("tab", { name: "환경설정", exact: true }).click();
-  await profile.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "기본", exact: true }).click();
+  // stage 3: the learned-state reset sits on "함께 지내기", after the habits; it asks once before resetting.
+  await profile.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "함께 지내기", exact: true }).click();
   await profile.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
+  await profile.getByRole("button", { name: "배운 습관 초기화 확정", exact: true }).click();
   const reset = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionTastes")!));
   expect(reset.toys).toEqual(["ball", "bell"]); expect(reset.seen).toEqual([]); expect(reset.toyTastes).toEqual({}); expect(reset.foodTastes).toEqual({});
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCollection")!).foods)).toEqual(["apple", "peach"]);

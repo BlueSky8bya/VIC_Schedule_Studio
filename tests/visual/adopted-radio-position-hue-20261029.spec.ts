@@ -16,7 +16,8 @@ async function finish(page:Page,info:TestInfo,proof:Awaited<ReturnType<typeof se
 async function openRadio(page:Page){
   let b=page.getByRole('button',{name:'설정',exact:true}).filter({visible:true}).first();
   if(!await b.count()){await page.getByRole('button',{name:'패널 펼치기',exact:true}).click();b=page.getByRole('button',{name:'설정',exact:true}).filter({visible:true}).first();}await b.click();
-  const d=page.getByRole('dialog',{name:'설정',exact:true});await d.locator('[data-tab="companion"]:visible').click();await d.locator('[data-profile-page="settings"]:visible').click();await d.locator('[data-companion-tab="sound"]:visible').click();
+  const d=page.getByRole('dialog',{name:'설정',exact:true});await d.locator('[data-tab="companion"]:visible').click();await d.locator('[data-profile-page="settings"]:visible').click();
+  // stage 3: no sub-tabs; the radio card sits on the one "설정" page, under the sound card.
   return d.locator('.rhh-companion-radio:visible');
 }
 const reasons=[['master-off','전체 소리가 꺼져 있어요'],['master-zero','전체 음량이 0이에요'],['pet-off','빅타민이 꺼져 있어요'],['pet-sound-off','빅타민 소리가 꺼져 있어요'],['pet-zero','빅타민 음량이 0이에요'],['radio-off','라디오가 꺼져 있어요'],['radio-zero','라디오 음량이 0이에요'],['empty','선택한 곡이 없어요.']] as const;

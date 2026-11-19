@@ -119,9 +119,10 @@ test("121 automatic sleep OFF stays awake at low energy and settings expose eigh
   expect(states.length).toBeGreaterThan(20);
   expect(states.filter(value => value.state === "sleep" || value.living === "cozy")).toEqual([]);
   await state.room.locator("[data-home-action=book]").click(); const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
-  await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
+  // stage 3: the character choices are on "함께 지내기" (where the book opens); sleep and other-window rows sit in the "더 보기" fold of "설정".
   await expect(dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio")).toHaveCount(8);
-  await dialog.getByRole("tab", { name: "움직임", exact: true }).click();
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
+  await dialog.locator(".rhh-companion-more > summary").click();
   await expect(dialog.getByRole("switch", { name: /자동 잠자기/ })).not.toBeChecked();
   await expect(dialog.getByRole("switch", { name: /다른 창/ })).toBeChecked();
   await dialog.screenshot({ path: (mkdirSync(out, { recursive: true }), out + "/eight-personalities.png") }); await state.verify();
@@ -137,8 +138,7 @@ test("121 a learned invitation accepts a real pet and reaches its happy ending w
   await expect(pet).not.toHaveAttribute("data-state", "jump");
   await state.room.locator("[data-home-action=book]").click();
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
-  await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
-  await dialog.getByRole("tab", { name: "움직임", exact: true }).click();
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click(); // stage 3: no sub-tabs
   await dialog.getByRole("switch", { name: "빅타민 돌아다니기 켜기/끄기", exact: true }).click();
   await dialog.getByRole("button", { name: "닫기", exact: true }).click();
   const rect = (await pet.boundingBox())!;

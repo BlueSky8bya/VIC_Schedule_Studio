@@ -14,10 +14,13 @@ test.use({ viewport: { width: 1440, height: 1100 }, isMobile: false, hasTouch: f
 async function assertCompanionAppearance(dialog: Locator) {
   const profile = dialog.locator(".rhh-companion-profile");
   const nav = profile.getByRole("tablist", { name: "빅타민 프로필", exact: true });
-  await expect(nav.getByRole("tab")).toHaveText(["함께 지내기", "도감", "옷장", "환경설정"]);
+  await expect(nav.getByRole("tab")).toHaveText(["함께 지내기", "도감", "옷장", "설정"]);
   await expect(nav.getByRole("tab", { name: "함께 지내기", exact: true })).toHaveAttribute("aria-selected", "true");
   await expect(profile.getByRole("button", { name: "옷장 열기", exact: true })).toBeVisible();
-  await expect(profile.getByRole("switch")).toHaveCount(0);
+  // stage 3: the shared power header is above every page, and this page holds the learning switch.
+  await expect(profile.getByRole("switch")).toHaveCount(2);
+  await expect(profile.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true })).toBeVisible();
+  await expect(profile.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true })).toBeVisible();
   await expect.poll(() => nav.locator(".rhh-seg-thumb").evaluate(node => node.getAnimations().filter(animation => animation.playState === "running").length)).toBe(0);
   const appearance = await profile.evaluate(root => {
     const canvas = document.createElement("canvas"); canvas.width = canvas.height = 1;
@@ -56,6 +59,10 @@ async function openTraits(page: Page) {
   await settings.click();
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
+  // stage 3: the gear opens on "설정"; the traits are on "함께 지내기".
+  const pages = dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true });
+  await expect(pages.getByRole("tab", { name: "설정", exact: true })).toHaveAttribute("aria-selected", "true");
+  await pages.getByRole("tab", { name: "함께 지내기", exact: true }).click();
   await settlePanelLayout(page);
   return { dialog, traits: dialog.locator(".rhh-companion-profile") };
 }
@@ -94,7 +101,12 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await expect(traits).not.toContainText("해보기");
     await expect(dialog.locator(".rhh-trait-reason")).toHaveText("최근 경험다른 간식 맛보기");
     await expect(traits.locator(".rhh-companion-summary button")).toHaveCount(1);
-    await expect(traits.locator("input,[role=switch]")).toHaveCount(0);
+    // stage 3: this page now carries look, character and learning; its only switch is the learning one, and it has no inputs.
+    const togetherPanel = traits.getByRole("tabpanel", { name: "함께 지내기", exact: true });
+    await expect(togetherPanel.locator("input")).toHaveCount(0);
+    await expect(togetherPanel.locator("[role=switch]")).toHaveCount(1);
+    await expect(togetherPanel.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true })).toBeVisible();
+    await expect(togetherPanel.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio")).toHaveCount(9);
     const layout = await traits.evaluate(region => ({ overflow: region.scrollWidth - region.clientWidth, rows: [...region.querySelectorAll("h3,li,p,dt,dd")].filter(node => node.getBoundingClientRect().width > 0).map(node => ({ font: parseFloat(getComputedStyle(node).fontSize), overflow: node.scrollWidth - node.clientWidth })), sections: [...region.querySelectorAll(".rhh-companion-summary,.rhh-profile-habits,.rhh-trait-reason")].map(node => { const box = node.getBoundingClientRect(); return { top: box.top, bottom: box.bottom }; }), fruit: region.querySelector(".rhh-companion-portrait .rhh-wardrobe-preview")?.getBoundingClientRect().width }));
     expect(layout.overflow).toBeLessThanOrEqual(1);
     expect(layout.rows.length).toBeGreaterThan(8);
@@ -137,16 +149,14 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     }
     const rememberedEffects = await dialog.getByRole("region", { name: "배운 습관", exact: true }).locator("li").allTextContents();
     const learning = dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true });
-    await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
+    // stage 3: the learning switch and its reset sit on this same page, after the habits.
     await learning.click(); await expect(learning).toHaveAttribute("aria-checked", "false");
-    await dialog.getByRole("tab", { name: "함께 지내기", exact: true }).click();
     await expect(dialog.locator(".rhh-habit-paused")).toContainText("적용 중지");
     // OFF visibly marks these retained learned effects inactive.
     await expect(dialog.getByRole("region", { name: "배운 습관", exact: true }).locator("li")).toHaveText(rememberedEffects);
     expect((await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!))).learnFromYou).toBe(false);
-    await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
     await dialog.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
-    await dialog.getByRole("tab", { name: "함께 지내기", exact: true }).click();
+    await dialog.getByRole("button", { name: "배운 습관 초기화 확정", exact: true }).click();
     await expect(traits.locator(".rhh-companion-facts dd").first()).toHaveText("사과");
     await expect(dialog.getByRole("region", { name: "배운 습관", exact: true }).locator("li")).toHaveCount(0);
     await expect(dialog.getByRole("region", { name: "배운 습관", exact: true })).toContainText("아직 배운 습관이 없어요");
@@ -159,7 +169,6 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     }
     const reopened = await openTraits(page);
     await expect(reopened.traits.locator(".rhh-companion-facts dd").first()).toHaveText("사과");
-    await reopened.dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
     await expect(reopened.dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true })).toHaveAttribute("aria-checked", "false");
     expect(writes).toEqual([]); expect(errors).toEqual([]);
   });

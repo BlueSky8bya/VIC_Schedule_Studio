@@ -677,10 +677,11 @@ export const ACT: Record<string, TargetLabel> = {
   },
   // 빅타민 — 자동 행동이 아니라 사람이 고른 설정·직접 교감만 기록한다.
   // 이 사전은 저장 allowlist도 겸하므로 옵션은 화면의 고정 값만 등록한다.
-  "settings-companion-tab": { name: "빅타민 설정 묶음", area: "설정", opts: { motion: "움직임", pranks: "장난", affection: "교감", personality: "기본", sound: "소리" } },
+  "settings-companion-tab": { name: "빅타민 설정 묶음", area: "설정", opts: { motion: "움직임", pranks: "장난", affection: "교감", personality: "기본", sound: "소리" }, hint: "옛 기록(2026-11-19 하위 탭을 없애고 한 쪽의 카드로 바꿈)", retired: true },
+  "companion-radio-more": { name: "빅타민 라디오 더 보기", area: "설정", opts: { open: "펴기", close: "접기" } },
   // Local collection contents never enter telemetry. Only these fixed button
   // categories are counted; the strict storage branch below rejects item IDs.
-  "companion-profile-page": { name: "빅타민 프로필 보기", area: "설정", opts: { together: "함께 지내기", discover: "도감", dress: "옷장", settings: "환경설정" } },
+  "companion-profile-page": { name: "빅타민 프로필 보기", area: "설정", opts: { together: "함께 지내기", discover: "도감", dress: "옷장", settings: "설정" } },
   "companion-collection-category": { name: "빅타민 도감 종류", area: "설정", opts: { food: "냠냠 도감", toy: "장난감 도감", behavior: "추억 도감", moment: "특별한 순간" } },
   "companion-memory-filter": { name: "빅타민 추억 종류", area: "설정", opts: { all: "전체", expression: "표정", pose: "포즈", life: "생활" } },
   "companion-collection-inspect": { name: "빅타민 도감 항목 살펴보기", area: "설정", opts: { food: "냠냠 도감", toy: "장난감 도감", behavior: "표정·포즈·행동", moment: "특별한 순간" } },
@@ -732,6 +733,8 @@ export const ACT: Record<string, TargetLabel> = {
   "companion-home-open": { name: "빅타민 집 열기", area: "빅타민" },
   "companion-book-open": { name: "빅타민 수첩 열기", area: "빅타민" },
   "companion-personality-open": { name: "빅타민 성격 바로 열기", area: "빅타민" },
+  "companion-personality-random": { name: "빅타민 성격 무작위로 되돌리기", area: "설정" },
+  "companion-settings-more": { name: "빅타민 설정 더 보기", area: "설정", opts: { open: "펴기", close: "접기" } },
   "companion-radio-blocked": { name: "빅타민 라디오가 막혀 이유 보기", area: "빅타민", hint: "집의 라디오를 눌렀지만 설정에 막혀 있거나 고른 곡이 없어 설정 창의 라디오 줄이 열린 횟수예요. 2026-11-19 전에는 이런 누름도 '라디오 재생'으로 세었어요." },
   "settings-go": { name: "막힌 이유에서 설정으로 가기", area: "설정", opts: { "site-sound": "소리 설정", "site-motion": "움직임 설정", "site-gfx": "배경 설정", "companion-power": "빅타민 켜는 곳", "companion-roam": "돌아다니기", "companion-sound": "빅타민 소리", "companion-radio": "집 라디오" } },
   "companion-book-close": { name: "빅타민 수첩 닫기", area: "빅타민" },

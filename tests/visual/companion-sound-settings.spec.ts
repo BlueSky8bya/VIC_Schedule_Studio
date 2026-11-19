@@ -38,10 +38,9 @@ async function openSound(page: Page) {
   await settings.click();
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
-  const nav = dialog.getByRole("tablist", { name: "빅타민 설정", exact: true });
-  await nav.getByRole("tab", { name: "소리", exact: true }).click();
-  return { dialog, nav, sound: dialog.locator(".rhh-companion-sound") };
+  await dialog.getByRole("tab", { name: "설정", exact: true }).click();
+  // Stage 3: no sub-tabs; the sound card is on the settings page.
+  return { dialog, sound: dialog.locator(".rhh-companion-sound") };
 }
 const trace = (page: Page) => page.evaluate(() => (window as Window & { __companionSfxTrace?: string[] }).__companionSfxTrace ?? []);
 const saved = (page: Page) => page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!));
@@ -64,8 +63,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) {
     expect(JSON.parse(before.result.value)).toEqual({ sounds: [], activated: false });
     await page.bringToFront(); await settlePanelLayout(page);
     if (surface === "preview") { await page.locator(".io-preview").click(); await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible(); }
-    let { dialog, nav, sound } = await openSound(page);
-    await expect(nav.getByRole("tab")).toHaveText(["기본", "움직임", "장난", "교감", "소리"]);
+    let { dialog, sound } = await openSound(page);
+    await expect(dialog.getByRole("tablist", { name: "빅타민 설정", exact: true })).toHaveCount(0);
     await beginAuditions(page);
     // One choice (redesign 2-나): each level is heard once as it is chosen — a stroke for "만질 때만", its own play for "전부".
     const level = sound.getByRole("radiogroup", { name: "빅타민 소리", exact: true }), choose = (name: string) => level.getByRole("radio", { name, exact: true });
@@ -105,15 +104,14 @@ for (const surface of ["viewer", "studio", "preview"] as const) {
     const persisted = await saved(page);
     await page.reload(); await page.bringToFront();
     if (surface === "preview" && !await page.locator(".viewer-fullscreen").count()) await page.locator(".io-preview").click();
-    ({ dialog, nav, sound } = await openSound(page));
+    ({ dialog, sound } = await openSound(page));
     expect(await saved(page)).toEqual(persisted);
     await expect(sound.getByRole("radiogroup", { name: "빅타민 소리", exact: true }).getByRole("radio", { name: "끔", exact: true })).toBeChecked();
     await sound.getByRole("radiogroup", { name: "빅타민 소리", exact: true }).getByRole("radio", { name: "전부", exact: true }).click();
     await dialog.getByRole("tab", { name: "소리", exact: true }).first().click();
     await dialog.getByRole("switch", { name: "효과음 켜기/끄기", exact: true }).click();
     await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-    await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
-    await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "소리", exact: true }).click();
+    await dialog.getByRole("tab", { name: "설정", exact: true }).click();
     await expect(dialog).toContainText("지금은 소리가 안 나요 — 사이트 효과음이 꺼져 있어요");
     // With the site's sound off, choosing a level is silent: the audition passes the same gate as the real sound.
     await page.evaluate(() => { (window as Window & { __companionSfxTrace?: string[] }).__companionSfxTrace = []; });

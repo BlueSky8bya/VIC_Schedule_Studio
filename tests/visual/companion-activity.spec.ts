@@ -319,8 +319,9 @@ for (const surface of ["viewer", "studio"] as const) {
     await firstMoment.press("ArrowUp"); await expect(memoryGrid.locator(`[data-collection-index="${COMPANION_BEHAVIOR_IDS.length - memoryColumns}"]`)).toBeFocused();
     await memoryGrid.locator("button:focus").press("End"); await expect(memories.last()).toBeFocused();
     await memories.last().press("Home"); await expect(memories.first()).toBeFocused();
-    await panel.getByRole("tab", { name: "환경설정", exact: true }).click();
-    await panel.getByRole("tab", { name: "소리", exact: true }).click();
+    await panel.getByRole("tab", { name: "설정", exact: true }).click();
+    // stage 3: no sub-tabs; the radio card is on the one "설정" page.
+    await expect(panel.locator(".rhh-companion-radio")).toBeVisible();
     await expect(panel.locator('[data-act="companion-radio-mood"]')).toHaveCount(0);
     const close = dialog.getByRole("button", { name: "닫기", exact: true });
     await close.focus(); await close.press("Enter"); await expect(dialog).toHaveCount(0);
@@ -473,15 +474,19 @@ for (const surface of ["viewer", "studio"] as const) {
     const dialog = page.getByRole("dialog", { name: "설정", exact: true }); await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
     await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
     const panel = dialog.locator("#rhh-tab-companion-panel");
-    await panel.getByRole("tab", { name: "환경설정", exact: true }).click();
+    await panel.getByRole("tab", { name: "설정", exact: true }).click();
     const master = panel.locator('[data-act="companion-enabled"]');
     await master.click(); await expect(master).not.toBeChecked(); await master.click(); await expect(master).toBeChecked();
-    for (const [tab, id] of [["움직임", "companion-roam"], ["장난", "companion-panel-prank"], ["장난", "companion-card-prank"], ["장난", "companion-rare-prank"], ["교감", "companion-petting-enabled"]]) {
-      await panel.getByRole("tab", { name: tab, exact: true }).click();
+    // stage 3: the "설정" page is one column of cards with no sub-tabs; petting and the walk speed sit in its fold.
+    // Look, character and learning live on "함께 지내기".
+    const profilePages = panel.getByRole("tablist", { name: "빅타민 프로필", exact: true }), more = panel.locator(".rhh-companion-more");
+    const openMore = async () => { if (!await more.evaluate(node => (node as HTMLDetailsElement).open)) await more.locator("> summary").click(); };
+    await openMore();
+    for (const id of ["companion-roam", "companion-panel-prank", "companion-card-prank", "companion-rare-prank", "companion-petting-enabled"]) {
       const toggle = panel.locator(`[data-act="${id}"]`); const checked = await toggle.isChecked();
       await toggle.click(); await expect(toggle).toBeChecked({ checked: !checked }); await toggle.click(); await expect(toggle).toBeChecked({ checked });
     }
-    await panel.getByRole("tab", { name: "기본", exact: true }).click();
+    await profilePages.getByRole("tab", { name: "함께 지내기", exact: true }).click();
     await panel.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }).getByRole("radio", { name: "고양이", exact: true }).click();
     await panel.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name: "잠꾸러기", exact: true }).click();
     for (const name of ["깔끔이", "사고뭉치", "탐험둥이", "동글이"]) await panel.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name, exact: true }).click();
@@ -494,7 +499,7 @@ for (const surface of ["viewer", "studio"] as const) {
     const resetConfirm = panel.getByRole("button", { name: "배운 습관 초기화 확정", exact: true });
     if (surface === "viewer") await resetConfirm.click();
     else { await expect(panel.getByRole("button", { name: "취소", exact: true })).toBeFocused(); await page.keyboard.press("Tab"); await expect(resetConfirm).toBeFocused(); await page.keyboard.press("Enter"); }
-    await panel.getByRole("tab", { name: "움직임", exact: true }).click();
+    await profilePages.getByRole("tab", { name: "설정", exact: true }).click(); await openMore();
     await panel.getByRole("radiogroup", { name: "빅타민 걸음", exact: true }).getByRole("radio", { name: "발랄하게", exact: true }).click();
     await flush(page, [{ target: "companion-speed#lively" }]);
     for (const id of ["companion-enabled", "companion-roam", "companion-panel-prank", "companion-card-prank", "companion-rare-prank", "companion-petting-enabled", "companion-learning-enabled"]) for (const option of ["on", "off"]) expect(count(page, `${id}#${option}`), `${id}#${option}`).toBe(1);
@@ -502,7 +507,7 @@ for (const surface of ["viewer", "studio"] as const) {
     expect(targets(page).filter(target => target?.startsWith("companion-") && !target.includes("#"))).toEqual(["companion-learning-reset"]);
     //139: explicitly confirming the current random choice pins it too, with
     // one existing fixed use for each pointer/keyboard activation.
-    await panel.getByRole("tab", { name: "기본", exact: true }).click();
+    await profilePages.getByRole("tab", { name: "함께 지내기", exact: true }).click();
     const personality = panel.getByRole("radiogroup", { name: "빅타민 성격", exact: true });
     const balanced = personality.getByRole("radio", { name: "동글이", exact: true });
     await balanced.click(); await balanced.focus(); await balanced.press("Enter");
@@ -525,9 +530,10 @@ for (const surface of ["viewer", "studio"] as const) {
     await waitForOverlayEntrance(dialog);
     await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
     const panel = dialog.locator("#rhh-tab-companion-panel");
-    await panel.getByRole("tab", { name: "환경설정", exact: true }).click();
-    await panel.getByRole("tab", { name: "소리", exact: true }).click();
-    const radio = panel.locator(".rhh-companion-radio"), details = radio.locator("details"), summary = details.locator("summary");
+    await panel.getByRole("tab", { name: "설정", exact: true }).click();
+    // stage 3: no sub-tabs; the radio card's volume, playlist and attribution sit inside its own fold.
+    const radio = panel.locator(".rhh-companion-radio"); await radio.locator(".rhh-radio-more > summary").click(); await expect(radio.locator(".rhh-radio-more")).toHaveAttribute("open", "");
+    const details = radio.locator(".rhh-radio-playlist"), summary = details.locator("> summary");
     await summary.focus(); await summary.press("Enter"); await expect(details).toHaveAttribute("open", "");
     await summary.press("Enter"); await expect(details).not.toHaveAttribute("open");
     const volume = radio.getByRole("slider", { name: "라디오 음량", exact: true });
@@ -618,10 +624,10 @@ test("autonomous companion movement never records human feature use", async ({ p
   const id = await toy.getAttribute("data-toy-id"); expect(id).toBeTruthy();
   await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
-  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
+  // stage 3: the book opens on "함께 지내기", where the character is chosen; roam is a row on its "설정" page.
   const tidy = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name: "깔끔이", exact: true });
   await tidy.click(); await expect(tidy).toHaveAttribute("aria-checked", "true");
-  await dialog.getByRole("tab", { name: "움직임", exact: true }).click();
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
   await dialog.locator('[data-act="companion-roam"]').setChecked(true);
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toHaveCount(0);
   await page.mouse.move(4, 4);
@@ -759,7 +765,8 @@ for (const surface of ["viewer", "studio"] as const) test(`142 ${surface}: share
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
   for (const input of ["pointer", "Enter", "Space"]) {
     if (input === "pointer") await shortcut.click(); else { await shortcut.focus(); await shortcut.press(input); }
-    await expect(dialog.getByRole("tab", { name: "환경설정", exact: true })).toHaveAttribute("aria-selected", "true");
+    // stage 3: the home's character label opens the book on "함께 지내기", at the character controls.
+    await expect(dialog.getByRole("tab", { name: "함께 지내기", exact: true })).toHaveAttribute("aria-selected", "true");
     await expect(dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).locator('[aria-checked="true"]')).toBeFocused();
     await dialog.getByRole("button", { name: "닫기", exact: true }).click();
   }

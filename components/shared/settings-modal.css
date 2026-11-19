@@ -2508,3 +2508,29 @@ html[data-reduce-motion] .vic-settings [data-settings-place][data-flash] { anima
 }
 /* 동작 줄이기에서는 타일의 튀는 모션이 없어 '끝남' 신호도 오지 않는다 — 번지는 테두리가 남지 않게 그리지 않는다(사이트 소리 타일도 같은 부품). */
 html[data-reduce-motion] .rhh-sound-tile.playing::after { content: none; }
+
+/* 빅타민 설정 쪽 — 하위 탭 없이 카드로(개편 3단계). 전원은 네 쪽 공통 머리줄이고 스크롤해도 붙어 있다. */
+.vic-settings .rhh-companion-profile > .rhh-companion-master { position: sticky; top: 0; z-index: 4; }
+.vic-settings .rhh-companion-section { display: grid; gap: var(--space-2, 8px); }
+.vic-settings .rhh-companion-section-title { margin: 0; padding: 6px 4px 0; color: var(--companion-soft); font-size: var(--text-label, 12.5px); font-weight: 700; letter-spacing: .02em; }
+.vic-settings .rhh-companion-cards { display: grid; gap: var(--space-3, 12px); }
+/* 접는 줄(더 보기 · 라디오) — 펼침은 저장하지 않는다. */
+.vic-settings :is(.rhh-companion-more, .rhh-radio-more) > summary { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; color: var(--companion-ink, var(--ink)); font-size: var(--text-ui, 15px); font-weight: 600; }
+.vic-settings :is(.rhh-companion-more, .rhh-radio-more) > summary > span { color: var(--companion-soft); font-size: var(--text-label, 12.5px); font-weight: 600; }
+.vic-settings :is(.rhh-companion-more, .rhh-radio-more) > summary:focus-visible { outline: 2px solid var(--selection-border, #2f5f9e); outline-offset: 2px; border-radius: var(--r-sm, 8px); }
+.vic-settings .rhh-companion-more > summary { padding: 0 14px; }
+.vic-settings .rhh-radio-more { border-top: 1px solid var(--companion-line, var(--line)); }
+.vic-settings .rhh-radio-more > .rhh-radio-playlist { border-top: 0; }
+/* 성격: 무작위로 되돌리기 — 안내 글 옆 작은 단추. */
+.vic-settings .rhh-personality-random { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; }
+.vic-settings .rhh-personality-random .rhh-group-foot { flex: 1 1 14em; padding: 0; }
+.vic-settings .rhh-learning-controls { margin-top: var(--space-2, 8px); }
+
+/* 붙어 있는 전원 머리줄(약 68px) 아래로 내용이 숨지 않게 — 성격 자리로 갈 때와 키보드로 올라갈 때. */
+.vic-settings :is(.rhh-panes, .rhh-companion-book-pages):has(.rhh-companion-profile > .rhh-companion-master) { scroll-padding-top: 84px; }
+.vic-settings .rhh-companion-profile .rhh-personality-section { scroll-margin-block-start: 84px; }
+.vic-settings .rhh-learning-controls .rhh-habit-actions { padding: 0 14px 12px; }
+/* 붙은 전원 줄 위로 지나가는 내용이 비치지 않게: 스크롤 상자의 위 여백을 안쪽 첫 덩어리로 옮겨, 머리줄이 상자 맨 위에 붙게 한다. */
+.vic-settings :is(.rhh-panes, .rhh-companion-book-pages):is(:has(.rhh-companion-profile > .rhh-companion-master), :has(.rhh-companion-experience[data-paged] .rhh-companion-master)) { padding-top: 0; }
+.vic-settings .rhh-panes .rhh-group.is-active:has(.rhh-companion-profile > .rhh-companion-master),
+.vic-settings .rhh-companion-book-pages > :first-child:has(.rhh-companion-master) { padding-top: 16px; }

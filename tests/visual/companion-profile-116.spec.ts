@@ -9,7 +9,7 @@ import { settlePanelLayout } from "./helpers/panel-layout";
 
 const output = process.env.COMPANION116_UI_OUTPUT ?? ".scratch-pw/companion-116/ui/native";
 const chunkDirectory = resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "static/chunks");
-const settingsChunk = readdirSync(chunkDirectory).find(name => name.endsWith(".js") && readFileSync(join(chunkDirectory, name), "utf8").includes("rhh-companion-nav"));
+const settingsChunk = readdirSync(chunkDirectory).find(name => name.endsWith(".js") && readFileSync(join(chunkDirectory, name), "utf8").includes("rhh-companion-cards"));
 if (!settingsChunk) throw new Error("missing compiled shared companion settings chunk");
 const manifest = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
 const previewReads = new Set(Object.entries(manifest).filter(([, action]) => action.exportedName === "getPublicPreviewAction").map(([id]) => id));
@@ -42,10 +42,13 @@ async function openProfile(page: Page, entry: "book" | "settings") {
   }
   const dialog = page.getByRole("dialog", { name: entry === "book" ? "빅타민 수첩" : "설정", exact: true });
   await expect(dialog).toBeVisible();
-  const profile = dialog.locator(".rhh-companion-profile");
+  const profile = dialog.locator(".rhh-companion-profile"), nav = profile.getByRole("tablist", { name: "빅타민 프로필", exact: true });
+  // stage 3: the book opens on "함께 지내기"; the gear opens on "설정" (its chunk is asked for at once and stays held by the test's gate).
+  await expect(nav.getByRole("tab", { name: entry === "book" ? "함께 지내기" : "설정", exact: true })).toHaveAttribute("aria-selected", "true");
+  if (entry === "settings") await nav.getByRole("tab", { name: "함께 지내기", exact: true }).click();
   await expect(profile.locator(".rhh-companion-facts dd").first()).toHaveText("복숭아");
   await settlePanelLayout(page);
-  return { dialog, profile, nav: profile.getByRole("tablist", { name: "빅타민 프로필", exact: true }) };
+  return { dialog, profile, nav };
 }
 
 type Scenario = { surface: "viewer" | "studio" | "preview"; entry: "book" | "settings"; narrow: boolean; theme: "light" | "dark"; height: number; role: "owner" | "developer" };
@@ -100,7 +103,7 @@ for (const { surface, entry, narrow, theme, height, role } of scenarios) {
       return { overflow: getComputedStyle(node.parentElement!).overflow, radius: getComputedStyle(node.parentElement!).borderTopLeftRadius, navRadius: getComputedStyle(node).borderTopLeftRadius, hits: [rect.left + 5, rect.right - 5].map(x => { const hit = document.elementFromPoint(x, rect.top + 5); return { x, y: rect.top + 5, inside: !!hit && node.contains(hit), target: hit?.className }; }) };
     });
     await dialog.screenshot({ path: `${output}/${name}-together.png` });
-    const environment = nav.getByRole("tab", { name: "환경설정", exact: true });
+    const environment = nav.getByRole("tab", { name: "설정", exact: true });
     // Native pointer path on first use, while its actual compiled chunk is held.
     await environment.click();
     await expect.poll(() => chunkRequested).toBe(true);
@@ -109,20 +112,24 @@ for (const { surface, entry, narrow, theme, height, role } of scenarios) {
     await page.screenshot({ path: `${output}/${name}-loading.png` });
     const during = { profile: await profileHandle!.evaluate(node => node.isConnected), dialog: await dialogHandle!.evaluate(node => node.isConnected), nav: await navHandle!.evaluate(node => node.isConnected), profileVisible: await profile.isVisible(), dialogVisible: await dialog.isVisible(), navVisible: await nav.isVisible(), focusedPage: await page.evaluate(() => document.activeElement?.getAttribute("data-profile-page")), routeLoading: await page.getByText("일정표 불러오는 중…", { exact: true }).isVisible(), loading, documents: documents.length, navigationEvents, geometry: await geometry() };
     release();
-    await expect(profile.getByRole("tablist", { name: "빅타민 설정", exact: true })).toBeVisible();
+    // stage 3: the "설정" page is one column of cards with no sub-tabs.
+    await expect(profile.locator(".rhh-companion-settings.rhh-companion-cards")).toBeVisible();
+    await expect(profile.getByRole("tablist", { name: "빅타민 설정", exact: true })).toHaveCount(0);
     await expect(environment).toHaveAttribute("aria-selected", "true");
     await settlePanelLayout(page);
     await dialog.screenshot({ path: `${output}/${name}-environment.png` });
-    // A real native keyboard selection survives profile-page round trips.
-    const subnav = profile.getByRole("tablist", { name: "빅타민 설정", exact: true });
-    await subnav.getByRole("tab", { name: "기본", exact: true }).focus();
-    await page.keyboard.press("ArrowRight");
-    await expect(subnav.getByRole("tab", { name: "움직임", exact: true })).toBeFocused();
+    // stage 3: with the sub-tabs gone, the state that must survive a real keyboard
+    // round trip across the profile pages is the opened "더 보기" fold.
+    const more = profile.locator(".rhh-companion-more"), speed = profile.getByRole("radiogroup", { name: "빅타민 걸음", exact: true });
+    await expect(speed).toBeHidden();
+    await more.locator("summary").focus();
+    await page.keyboard.press("Enter");
+    await expect(speed).toBeVisible();
     await environment.focus(); await page.keyboard.press("Home");
     await expect(nav.getByRole("tab", { name: "함께 지내기", exact: true })).toBeFocused();
     await page.keyboard.press("End");
     await expect(environment).toBeFocused();
-    await expect(subnav.getByRole("tab", { name: "움직임", exact: true })).toHaveAttribute("aria-selected", "true");
+    await expect(speed).toBeVisible();
     const finitePages = [];
     for (const label of ["도감", "옷장"] as const) {
       await nav.getByRole("tab", { name: label, exact: true }).click();

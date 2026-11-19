@@ -178,3 +178,38 @@ describe("139 automatic document personality and persistent direct selection", (
     expect(random).toHaveBeenCalledTimes(2); expect(entries.size).toBe(0);
   });
 });
+
+// Settings redesign stage 3: "무작위로 되돌리기" drops only the mark that the character was picked by hand.
+describe("releasing a hand-picked character back to the random draw", () => {
+  it("keeps every other choice, adds no field, and lets the next page draw again", async () => {
+    const { target, entries } = documentBrowser();
+    vi.spyOn(Math, "random").mockReturnValue(.01);
+    expect(preferences.companionPersonalityIsManual()).toBe(false);
+    preferences.setCompanionPreferences({ personality: "tidy", roam: false, soundVolume: 25, animalMode: "cat" });
+    expect(preferences.companionPersonalityIsManual()).toBe(true);
+    const before = JSON.parse(entries.get(preferences.COMPANION_PREFERENCES_KEY)!);
+    expect(before.personalitySource).toBe("manual");
+    const dispatch = vi.spyOn(target, "dispatchEvent");
+    const released = preferences.releaseCompanionPersonalityChoice();
+    // This page keeps the character it is showing; nothing else changed.
+    expect(released).toMatchObject({ personality: "tidy", roam: false, soundVolume: 25, animalMode: "cat" });
+    expect(preferences.companionPersonalityIsManual()).toBe(false);
+    const after = JSON.parse(entries.get(preferences.COMPANION_PREFERENCES_KEY)!);
+    const { personalitySource, ...rest } = before; void personalitySource;
+    expect(after).toEqual(rest); expect(after.version).toBe(1);
+    expect(dispatch).toHaveBeenCalledTimes(1);
+    // A fresh page reads the same record and draws: the pin is gone.
+    vi.resetModules(); const fresh = await import("@/lib/ui/viewer-companion/preferences");
+    documentBrowser(entries); vi.spyOn(Math, "random").mockReturnValue(.99);
+    expect(fresh.getCompanionPreferences().personality).toBe(fresh.COMPANION_PERSONALITIES.at(-1));
+    expect(fresh.getCompanionPreferences()).toMatchObject({ roam: false, soundVolume: 25, animalMode: "cat" });
+    expect(fresh.companionPersonalityIsManual()).toBe(false);
+  });
+  it("is harmless when nothing was picked", () => {
+    const { entries } = documentBrowser();
+    vi.spyOn(Math, "random").mockReturnValue(.5);
+    const drawn = preferences.getCompanionPreferences().personality;
+    expect(preferences.releaseCompanionPersonalityChoice().personality).toBe(drawn);
+    expect(JSON.parse(entries.get(preferences.COMPANION_PREFERENCES_KEY)!).personalitySource).toBeUndefined();
+  });
+});

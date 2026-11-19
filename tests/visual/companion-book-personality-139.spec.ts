@@ -40,13 +40,16 @@ test.afterEach(async ({ page }, info) => {
   expect(checks.get(page)!.errors).toEqual([]); expect(checks.get(page)!.unexpected).toEqual([]);
 });
 
-async function settings(page: Page) {
+// stage 3: the character controls live on the book's "함께 지내기" page (its opening page), not on "설정".
+async function settings(page: Page, manual?: boolean) {
   const home = await openCompanionHome(page);
   await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
-  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "함께 지내기", exact: true }).click();
   const group = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }); await expect(group.getByRole("radio")).toHaveCount(9);
-  await expect(dialog.getByText("직접 고른 성격은 새로고침 후에도 유지돼요.", { exact: false })).toBeVisible();
+  // The foot says which of the two it is: hand-picked (kept across reloads) or drawn at random.
+  const foot = dialog.locator(".rhh-personality-random .rhh-group-foot"); await expect(foot).toBeVisible();
+  await expect(foot).toHaveText(manual === true ? "직접 고른 성격이라 새로고침해도 그대로예요." : manual === false ? "고르지 않았다면 새로고침마다 무작위로 정해져요." : /^(직접 고른 성격이라 새로고침해도 그대로예요\.|고르지 않았다면 새로고침마다 무작위로 정해져요\.)$/);
   return { dialog, group };
 }
 
@@ -78,7 +81,8 @@ for (const [surface, width, input] of [["viewer", 1440, "pointer"], ["studio", 1
   for (let i = 0; i < 6; i++) {
     if (i) { await page.reload(); await show(); }
     const { dialog, group } = await settings(page); random.push((await group.locator('[aria-checked="true"]').innerText()).trim());
-    if (i === 0) { await dialog.getByRole("tab", { name: "움직임", exact: true }).click(); await dialog.locator('[data-act="companion-jump"]').setChecked(false); }
+    // stage 3: no sub-tabs; the jump switch sits directly on the book's "설정" page.
+    if (i === 0) { await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click(); await dialog.locator('[data-act="companion-jump"]').setChecked(false); }
     await dialog.getByRole("button", { name: "닫기", exact: true }).click();
   }
   expect(new Set(random).size).toBeGreaterThan(1);
@@ -91,7 +95,7 @@ for (const [surface, width, input] of [["viewer", 1440, "pointer"], ["studio", 1
   await dialog.getByRole("button", { name: "닫기", exact: true }).click();
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!).personalitySource)).toBe("manual");
   const pinned: string[] = [];
-  for (let i = 0; i < 3; i++) { await page.reload(); await show(); const current = await settings(page); pinned.push((await current.group.locator('[aria-checked="true"]').innerText()).trim()); await current.dialog.getByRole("button", { name: "닫기", exact: true }).click(); }
+  for (let i = 0; i < 3; i++) { await page.reload(); await show(); const current = await settings(page, true); pinned.push((await current.group.locator('[aria-checked="true"]').innerText()).trim()); await current.dialog.getByRole("button", { name: "닫기", exact: true }).click(); }
   expect(pinned).toEqual([manual, manual, manual]); expect(Object.values(COMPANION_PERSONALITY_NAMES)).toContain(manual);
   mkdirSync(out, { recursive: true }); writeFileSync(`${out}/${surface}-${width}.json`, JSON.stringify({ geometry, random, manual, pinned, nativeOnly: true }));
 });

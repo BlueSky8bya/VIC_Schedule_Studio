@@ -160,7 +160,8 @@ for (const mobile of [false]) test.describe(mobile ? "real touch ordinary overla
     await waitForOverlayEntrance(settings);
     const companionTab = settings.getByRole("tab", { name: "빅타민", exact: true });
     if (await companionTab.isVisible()) await press(companionTab);
-    const prank = settings.getByRole("tab", { name: "장난", exact: true });
+    // stage 3: the "장난" sub-tab is gone; the prank switches sit on the "설정" page, the same focus stop inside the overlay.
+    const prank = settings.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true });
     await press(prank); await expect(prank).toHaveAttribute("aria-selected", "true");
     await prank.focus(); await sameCreature(); await expectQuietCompanionTail(page, prank);
     await expectCompanionBehindOverlay(page, settings);

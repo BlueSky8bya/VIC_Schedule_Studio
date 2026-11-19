@@ -87,11 +87,13 @@ test.afterEach(async ({ page }, info) => {
 async function selectNative(page: Page, personality: CompanionPersonality, roam: boolean, deferPointerMove = false) {
   const home = await openCompanionHome(page); await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
-  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
+  // stage 3: character lives on the book's "함께 지내기" page; roam is a row on its "설정" page (no sub-tabs).
+  const profilePages = dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true });
+  await profilePages.getByRole("tab", { name: "함께 지내기", exact: true }).click();
   const group = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }), option = group.getByRole("radio", { name: COMPANION_PERSONALITY_NAMES[personality], exact: true });
   if (await option.getAttribute("aria-checked") === "true") await group.locator('[role="radio"][aria-checked="false"]').first().click();
   await option.click(); await expect(option).toHaveAttribute("aria-checked", "true");
-  await dialog.getByRole("tab", { name: "움직임", exact: true }).click(); await dialog.locator('[data-act="companion-roam"]').setChecked(roam);
+  await profilePages.getByRole("tab", { name: "설정", exact: true }).click(); await dialog.locator('[data-act="companion-roam"]').setChecked(roam);
   if (deferPointerMove) await page.evaluate(() => { const probe=(window as ProbeWindow).agency141;if (probe) probe.entryChosenAt=performance.now(); });
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden(); if (!deferPointerMove) await page.mouse.move(2, 2);
 }
@@ -258,10 +260,9 @@ test("141 autonomous toy takeout visibly faces and touches the actual rim before
   // an OFF-policy denial is not a failed physical rim/contact performance.
   await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
-  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
-  await dialog.getByRole("tab", { name: "장난", exact: true }).click();
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
+  // stage 3: the "설정" page is one column of cards; prank and roam switches are both directly on it.
   await dialog.locator('[data-act="companion-hide"]').setChecked(true); await expect(dialog.locator('[data-act="companion-hide"]')).toBeChecked();
-  await dialog.getByRole("tab", { name: "움직임", exact: true }).click();
   await dialog.locator('[data-act="companion-roam"]').setChecked(true); await expect(dialog.locator('[data-act="companion-roam"]')).toBeChecked();
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden(); await page.mouse.move(2, 2);
   proofs.get(page)!.notes.push({ initialAmbientPrank: false, autonomousTakeoutPermissionEnabledThroughNativeControl: true, originalOffDenialEvidence: "native-4-agency" });

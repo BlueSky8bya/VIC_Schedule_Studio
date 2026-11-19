@@ -18,7 +18,8 @@ async function environment(page: Page) {
   await page.getByRole("button", { name: "설정", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  await dialog.getByRole("tab", { name: "환경설정", exact: true }).click();
+  // stage 3: the gear already opens on the "설정" page, a single column of cards with no sub-tabs.
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
   return dialog;
 }
 async function prepare(page: Page) {
@@ -50,7 +51,6 @@ async function prepare(page: Page) {
   await expect(food(page)).not.toHaveAttribute("data-falling", "");
   await room.locator('[data-home-action="close"]').click();
   const dialog = await environment(page);
-  await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "움직임", exact: true }).click();
   await dialog.getByRole("switch", { name: "빅타민 돌아다니기 켜기/끄기", exact: true }).click();
   await dialog.getByRole("button", { name: "닫기", exact: true }).click();
   // Real held time, no patched RNG/clock/AI/debug action. Release next to
@@ -78,7 +78,6 @@ for (const interruption of ["window-and-off", "drag"] as const) test(`magic pock
   const safety = await prepare(page); await absorbedBeforeCommit(page);
   if (interruption === "window-and-off") {
     const dialog = await environment(page);
-    await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "장난", exact: true }).click();
     await dialog.getByRole("switch", { name: "빅타민 희귀 소품 장난 켜기/끄기", exact: true }).click();
     await dialog.getByRole("button", { name: "닫기", exact: true }).click();
   } else {

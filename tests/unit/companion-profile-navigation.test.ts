@@ -33,6 +33,9 @@ vi.mock("@/lib/ui/sfx", async importOriginal => ({ ...await importOriginal<typeo
 type Element = ReactElement<Record<string, unknown>>;
 let tree: Element;
 let discoveryRendering = false;
+let startOnSettings = false;
+const profileChange = vi.fn();
+let withControls = false; // the shared power header and character controls appear only when the host can change preferences
 let discoveryCollection: CompanionCollection | null = null;
 async function render(active = true, preferences = DEFAULT_COMPANION_PREFERENCES, environment?: (active: boolean, personalityRequest: number) => ReactNode, initialPersonality = false) {
   vi.stubGlobal("React", await import("react"));
@@ -42,7 +45,7 @@ async function render(active = true, preferences = DEFAULT_COMPANION_PREFERENCES
     tree = CompanionDiscovery({ collection: discoveryCollection, active }) as Element;
   } else {
     const { CompanionProfile } = await import("@/components/shared/companion-profile");
-    tree = CompanionProfile({ preferences, active, environment, initialPersonality });
+    tree = CompanionProfile({ preferences, active, environment: environment as never, onChange: withControls ? profileChange : undefined, initialPersonality, startOnSettings });
   }
   return tree;
 }
@@ -76,23 +79,23 @@ beforeEach(() => {
 afterEach(() => { vi.unstubAllGlobals(); });
 
 describe("actual shared profile navigation callbacks", () => {
-  it("142 opens the same personality controls directly and requests repeat focus without changing a preference or discovery", async () => {
+  // Redesign stage 3: character lives on "함께 지내기"; the home's character label opens that page at its controls.
+  it("142 opens the character controls on the together page without changing a preference or discovery", async () => {
     const environment = vi.fn(() => null);
-    await render(true, DEFAULT_COMPANION_PREFERENCES, environment, true);
-    expect(find(node => node.props["data-profile-page"] === "settings").props["aria-selected"]).toBe(true);
-    expect(environment).toHaveBeenLastCalledWith(true, 1);
-    click(find(node => node.props["data-act"] === "companion-personality-open"));
-    await render(true, DEFAULT_COMPANION_PREFERENCES, environment, true);
-    expect(environment).toHaveBeenLastCalledWith(true, 2);
+    withControls = true; await render(true, DEFAULT_COMPANION_PREFERENCES, environment, true); withControls = false;
+    expect(find(node => node.props["data-profile-page"] === "together").props["aria-selected"]).toBe(true);
+    // The character controls are on this page, active, and asked to take focus once; the settings page is not even requested.
+    expect(find(node => "personalityRequest" in node.props).props).toMatchObject({ active: true, personalityRequest: 1 });
+    expect(environment).not.toHaveBeenCalled();
+    expect(nodes(tree).some(node => node.props["data-act"] === "companion-personality-open")).toBe(false);
     expect(harness.activity).not.toHaveBeenCalled(); expect(harness.acknowledge).not.toHaveBeenCalled();
   });
-  it("142 reaches basic settings from any book page through the shared shortcut without acknowledging unread items", async () => {
+  it("opens on settings from the gear and on together from the book", async () => {
     const environment = vi.fn(() => null);
-    await render(true, DEFAULT_COMPANION_PREFERENCES, environment);
-    click(find(node => node.props["data-profile-page"] === "discover")); await render(true, DEFAULT_COMPANION_PREFERENCES, environment);
-    click(find(node => node.props["data-act"] === "companion-personality-open")); await render(true, DEFAULT_COMPANION_PREFERENCES, environment);
+    startOnSettings = true; await render(true, DEFAULT_COMPANION_PREFERENCES, environment);
     expect(find(node => node.props["data-profile-page"] === "settings").props["aria-selected"]).toBe(true);
-    expect(environment).toHaveBeenLastCalledWith(true, 1); expect(harness.acknowledge).not.toHaveBeenCalled();
+    expect(find(node => node.props["data-profile-page"] === "settings").props.children).toContain("설정");
+    startOnSettings = false;
   });
   it("shows all eight shared personality names with a readable description of their current behavior", async () => {
     for (const personality of COMPANION_PERSONALITIES) {

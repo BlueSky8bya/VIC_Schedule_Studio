@@ -15,12 +15,12 @@ async function seed(page: Page, storage: Record<string, string>, companion: Part
     localStorage.setItem("vic.viewerCompanion", JSON.stringify(companion));
   }, { storage, companion: { version: 1, ...DEFAULT_COMPANION_PREFERENCES, ...companion } });
 }
-async function companionSettings(page: Page, subtab: string) {
+// Stage 3: the settings are one page of cards; the argument only names the card a test looks at.
+async function companionSettings(page: Page, _card: string) {
   await page.getByRole("button", { name: "설정", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
-  await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: subtab, exact: true }).click();
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
   return dialog;
 }
 const saved = (page: Page) => page.evaluate(() => ({ companion: localStorage.getItem("vic.viewerCompanion"), reduce: localStorage.getItem("vic.reduceMotion"), sound: localStorage.getItem("vic.sound") }));
@@ -39,7 +39,8 @@ test("reduced motion: rows keep their value, say why once, and the link shows th
   await seed(page, { "vic.reduceMotion": "on" });
   await page.goto("/visual-fixture/poster");
   const dialog = await companionSettings(page, "장난");
-  const notes = dialog.locator(".rhh-companion-nav ~ [role=tabpanel]:not([hidden]) .rhh-note");
+  // Five pranks stopped by one setting say it once.
+  const notes = dialog.locator(".rhh-companion-cards .rhh-note").filter({ hasText: "장난을 치지 않아요" });
   await expect(notes).toHaveCount(1);
   await expect(notes).toContainText("사이트의 '생동감 있는 동작'이 꺼져 있어 장난을 치지 않아요");
   // Stopped rows are dimmed, not disabled: the value still changes.
@@ -55,7 +56,6 @@ test("reduced motion: rows keep their value, say why once, and the link shows th
   // The reason leads back to the companion's own row too.
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
   // The sound tab names the same reason: what it does by itself rests, the user's touch still sounds.
-  await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "소리", exact: true }).click();
   await expect(dialog.locator(".rhh-sound-status")).toContainText("지금은 내가 만질 때만 소리가 나요 — 사이트의 '생동감 있는 동작'이 꺼져 있어요");
   await expect(dialog.locator(".rhh-sound-status")).toHaveAttribute("data-state", "partial");
 });
@@ -105,8 +105,7 @@ test("the companion's own sound off does not block the radio: the home button pl
   await page.getByRole("button", { name: "설정", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
-  await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "소리", exact: true }).click();
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
   const radio = dialog.locator(".rhh-companion-radio");
   await expect(radio).toContainText("빅타민 소리가 '끔'이라 스스로 라디오를 틀지 않아요");
   await expect(radio.getByRole("button", { name: "정지", exact: true })).toBeEnabled();
@@ -123,9 +122,10 @@ test("from the book, a site reason leaves the book for the full settings", async
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   const site = dialog.getByRole("switch", { name: "효과음 켜기/끄기", exact: true });
   await expect(site).toBeVisible(); await expect(site).toBeFocused(); await expect(site).not.toBeChecked();
-  // The book's radio request ended with the book: the companion tab opens where it normally does.
+  // The book's radio request ended with the book: from the full settings the companion tab opens on its settings page, and nothing is marked again.
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  await expect(dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "함께 지내기", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(dialog.locator(".rhh-companion-radio")).not.toHaveAttribute("data-flash", "");
 });
 
 test("companion resting: one note, rows dimmed and still editable", async ({ page }) => {

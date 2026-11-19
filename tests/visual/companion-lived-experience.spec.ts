@@ -198,8 +198,9 @@ async function openTraits(page: Page) {
   const expand = page.getByRole("button", { name: "패널 펼치기", exact: true }), settings = page.getByRole("button", { name: "설정", exact: true });
   if (!await settings.isVisible() && await expand.isVisible()) await expand.click();
   await settings.click(); const dialog = page.getByRole("dialog", { name: "설정", exact: true });
-  await dialog.getByRole("tab", { name: "빅타민", exact: true }).click(); await dialog.getByRole("tab", { name: "프로필", exact: true }).click();
-  return dialog.getByRole("region", { name: "빅타민 특성", exact: true });
+  // stage 3: the gear opens the companion block on "설정"; the portrait and taste facts are on "함께 지내기".
+  await dialog.getByRole("tab", { name: "빅타민", exact: true }).click(); await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "함께 지내기", exact: true }).click();
+  return dialog.locator(".rhh-companion-summary");
 }
 
 test("viewer: the complete radio corpus plays every real selected track through one shared media graph", async ({ page, context }) => {
@@ -212,10 +213,12 @@ test("viewer: the complete radio corpus plays every real selected track through 
   try {
     await setup(page, "viewer", "radio-off"); await openTraits(page);
     const dialog = page.getByRole("dialog", { name: "설정", exact: true });
-    await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "소리", exact: true }).click();
+    // stage 3: no sub-tabs; the radio card is on the "설정" page and its playlist inside the card's fold.
+    await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
     const radio = dialog.locator(".rhh-companion-radio");
     for (const mood of ["우아하게", "잔잔하게"]) await radio.getByRole("button", { name: mood, exact: true }).click();
-    await radio.getByText("곡 고르기", { exact: false }).click();
+    await radio.locator(".rhh-radio-more > summary").click();
+    await radio.locator(".rhh-radio-playlist > summary").click();
     expect(evidence.get(page)!.media).toEqual([]); expect(COMPANION_RADIO_TRACKS).toHaveLength(32);
     const played: Array<{ id: string; src: string; title: string; status: number[] }> = [];
     for (const [index, track] of COMPANION_RADIO_TRACKS.entries()) {

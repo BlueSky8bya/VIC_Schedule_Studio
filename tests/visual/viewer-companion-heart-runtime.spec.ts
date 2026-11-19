@@ -135,7 +135,8 @@ async function standOnCard(page: Page, requiredId?: string) {
   await page.getByRole("button", { name: "설정", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "설정", exact: true }); await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  await dialog.getByRole("tab", { name: "장난", exact: true }).click();
+  // stage 3: no sub-tabs; the gear opens on the "설정" page where the prank switches are visible.
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
   const enabled = dialog.getByRole("switch", { name: "빅타민 하트 콩 켜기/끄기", exact: true });
   await expect(enabled).not.toBeChecked(); await enabled.click(); await expect(enabled).toBeChecked();
   await dialog.locator(".modal-head .modal-close").click(); await expect(dialog).toBeHidden(); await page.mouse.move(4, 4);

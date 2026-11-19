@@ -76,10 +76,10 @@ async function setup(page: Page, surface: "viewer" | "studio" | "preview", feedi
 async function startRoaming(page: Page, enableAutomaticSleep = false) {
   const home = await openCompanionHome(page); await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true }); await expect(dialog).toBeVisible();
-  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
-  await dialog.getByRole("tablist", { name: "빅타민 설정", exact: true }).getByRole("tab", { name: "움직임", exact: true }).click();
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
+  // stage 3: the settings page is one column of cards; roam is visible directly, sleep sits in the "더 보기" fold.
   const roam = dialog.getByRole("switch", { name: "빅타민 돌아다니기 켜기/끄기", exact: true }); await expect(roam).toHaveAttribute("aria-checked", "false"); await roam.click(); await expect(roam).toHaveAttribute("aria-checked", "true");
-  if (enableAutomaticSleep) { const sleep = dialog.getByRole("switch", { name: "빅타민 자동 잠자기 켜기/끄기", exact: true }); await expect(sleep).toHaveAttribute("aria-checked", "false"); await sleep.click(); await expect(sleep).toHaveAttribute("aria-checked", "true"); }
+  if (enableAutomaticSleep) { await dialog.locator(".rhh-companion-more > summary").click(); const sleep = dialog.getByRole("switch", { name: "빅타민 자동 잠자기 켜기/끄기", exact: true }); await expect(sleep).toHaveAttribute("aria-checked", "false"); await sleep.click(); await expect(sleep).toHaveAttribute("aria-checked", "true"); }
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden(); await page.mouse.move(2, 2);
 }
 async function probe(page: Page) {

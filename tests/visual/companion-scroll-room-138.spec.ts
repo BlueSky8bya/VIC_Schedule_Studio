@@ -34,13 +34,15 @@ test.beforeEach(async ({ page, context, baseURL }) => {
 
 test("138 unconfigured refreshes stay random while explicit choice survives preview and reload", async ({ page }) => {
   await setup(page, "studio", true);
-  const read = async () => {
+  const read = async (manual = false) => {
     const home = await openCompanionHome(page); await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
-    await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
+    // stage 3: the character is on "함께 지내기", the page the book opens on; its note says whether the choice is kept.
+    await expect(dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "함께 지내기", exact: true })).toHaveAttribute("aria-selected", "true");
     const group = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }); await expect(group.getByRole("radio")).toHaveCount(9);
     const current = await group.locator('[aria-checked="true"]').innerText();
-    await expect(dialog.getByText("직접 고른 성격은 새로고침 후에도 유지돼요.", { exact: false })).toBeVisible();
+    await expect(dialog.locator(".rhh-personality-random .rhh-group-foot")).toHaveText(manual ? "직접 고른 성격이라 새로고침해도 그대로예요." : "고르지 않았다면 새로고침마다 무작위로 정해져요.");
+    await expect(dialog.getByRole("button", { name: "무작위로 되돌리기", exact: true })).toBeEnabled({ enabled: manual });
     await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden();
     expect(Object.values(COMPANION_PERSONALITY_NAMES)).toContain(current.trim()); return current.trim();
   };
@@ -50,11 +52,11 @@ test("138 unconfigured refreshes stay random while explicit choice survives prev
   // this bounded native smoke observes actual documents without RNG injection.
   for (let i = 0; i < 8; i++) { await page.reload(); await page.bringToFront(); await settlePanelLayout(page); refreshed.push(await read()); }
   expect(new Set(refreshed).size).toBeGreaterThan(1);
-  await chooseCompanionPersonality(page, "mischievous"); expect(await read()).toBe("사고뭉치");
+  await chooseCompanionPersonality(page, "mischievous"); expect(await read(true)).toBe("사고뭉치");
   await page.locator(".io-preview").click(); await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible(); await settlePanelLayout(page);
-  expect(await read()).toBe("사고뭉치");
+  expect(await read(true)).toBe("사고뭉치");
   const pinned: string[] = [];
-  for (let i = 0; i < 3; i++) { await page.reload(); await page.bringToFront(); await settlePanelLayout(page); pinned.push(await read()); }
+  for (let i = 0; i < 3; i++) { await page.reload(); await page.bringToFront(); await settlePanelLayout(page); pinned.push(await read(true)); }
   expect(pinned).toEqual(["사고뭉치", "사고뭉치", "사고뭉치"]);
   mkdirSync(out, { recursive: true }); writeFileSync(`${out}/random-refresh.json`, JSON.stringify({ initial, manual: "사고뭉치", sameDocumentPreview: true, refreshed, pinned, distinct: new Set(refreshed).size, nativeRngNotPatched: true }));
 });

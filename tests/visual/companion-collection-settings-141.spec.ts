@@ -70,13 +70,15 @@ async function fixture(page: Page, surface: Surface, width = 1920, quiet = false
 async function settings(page: Page) {
   const home = await openCompanionHome(page); await home.locator('[data-home-action="book"]').click();
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true }); await expect(dialog).toBeVisible();
-  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
+  // stage 3: look and character controls live on the book's "함께 지내기" page (its opening page), not on "설정".
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "함께 지내기", exact: true }).click();
   return dialog;
 }
 async function choose(page: Page, personality: CompanionPersonality, roam: boolean) {
   const dialog = await settings(page), group = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true });
   const option = group.getByRole("radio", { name: COMPANION_PERSONALITY_NAMES[personality], exact: true }); await option.click(); await expect(option).toHaveAttribute("aria-checked", "true");
-  await dialog.getByRole("tab", { name: "움직임", exact: true }).click(); await dialog.locator('[data-act="companion-roam"]').setChecked(roam);
+  // stage 3: roam is a row directly on the "설정" page; there are no sub-tabs.
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click(); await dialog.locator('[data-act="companion-roam"]').setChecked(roam);
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden(); await page.mouse.move(2, 2);
 }
 function installCollectionProbeInPage({ tasteKey, collectionKey }: { tasteKey: string; collectionKey: string }) {
@@ -156,12 +158,17 @@ for (const [surface, width] of [["studio", 1100], ["viewer", 1920], ["preview", 
   const animal = dialog.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true }), personality = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true });
   await expect(animal.getByRole("radio")).toHaveCount(3); await expect(personality.getByRole("radio")).toHaveCount(9);
   const chosen = personality.getByRole("radio", { name: COMPANION_PERSONALITY_NAMES.affectionate, exact: true }); await chosen.click(); await expect(chosen).toHaveAttribute("aria-checked", "true");
-  const card = dialog.locator('[data-personality-preview="affectionate"]'); await expect(card).toBeVisible(); await expect(card).toContainText(COMPANION_PERSONALITY_SUMMARIES.affectionate); await expect(card.locator("[data-preview-ready]")).toBeVisible();
+  // stage 3: the separate preview card is gone. The page's own portrait card shows the chosen character
+  // (name, summary, live portrait) above the controls, and the hand-picked note sits under the choices.
+  const card = dialog.locator(".rhh-companion-summary"); await expect(card).toBeVisible(); await expect(card.locator(".rhh-profile-personality")).toHaveText(COMPANION_PERSONALITY_NAMES.affectionate); await expect(card).toContainText(COMPANION_PERSONALITY_SUMMARIES.affectionate); await expect(card.locator(".rhh-companion-portrait .rhh-wardrobe-preview[data-preview-ready]")).toBeVisible();
+  await expect(dialog.locator(".rhh-personality-random .rhh-group-foot")).toHaveText("직접 고른 성격이라 새로고침해도 그대로예요.");
   const geometry = await personality.evaluate(group => {
-    const row = group.parentElement!, card = row.querySelector(".rhh-personality-preview")!, label = row.querySelector(".rhh-row-label") ?? row.firstElementChild!, animal = document.querySelector('[role="radiogroup"][aria-label="빅타민 동물 모드"]')!;
-    return { label: label.getBoundingClientRect().toJSON(), card: card.getBoundingClientRect().toJSON(), personality: group.getBoundingClientRect().toJSON(), animal: animal.getBoundingClientRect().toJSON(), personButtons: [...group.querySelectorAll('[role="radio"]')].map(node => node.getBoundingClientRect().toJSON()), animalButtons: [...animal.querySelectorAll('[role="radio"]')].map(node => node.getBoundingClientRect().toJSON()) };
+    const row = group.parentElement!, card = group.closest(".rhh-companion-profile")!.querySelector(".rhh-companion-summary")!, foot = row.querySelector(".rhh-personality-random")!, label = row.querySelector(".rhh-row-label") ?? row.firstElementChild!, animal = document.querySelector('[role="radiogroup"][aria-label="빅타민 동물 모드"]')!;
+    return { label: label.getBoundingClientRect().toJSON(), card: card.getBoundingClientRect().toJSON(), foot: foot.getBoundingClientRect().toJSON(), personality: group.getBoundingClientRect().toJSON(), animal: animal.getBoundingClientRect().toJSON(), personButtons: [...group.querySelectorAll('[role="radio"]')].map(node => node.getBoundingClientRect().toJSON()), animalButtons: [...animal.querySelectorAll('[role="radio"]')].map(node => node.getBoundingClientRect().toJSON()) };
   });
-  expect(geometry.label.bottom).toBeLessThanOrEqual(geometry.card.top + .5); expect(geometry.card.bottom).toBeLessThanOrEqual(geometry.personality.top + .5);
+  // Order down the page: portrait card, look, then character (label, choices, note).
+  expect(geometry.card.bottom).toBeLessThanOrEqual(geometry.animal.top + .5); expect(geometry.animal.bottom).toBeLessThanOrEqual(geometry.label.top + .5);
+  expect(geometry.label.bottom).toBeLessThanOrEqual(geometry.personality.top + .5); expect(geometry.personality.bottom).toBeLessThanOrEqual(geometry.foot.top + .5);
   expect(Math.abs(geometry.personality.x - geometry.animal.x)).toBeLessThan(.5); expect(Math.abs(geometry.personality.width - geometry.animal.width)).toBeLessThan(.5);
   for (let i = 0; i < 9; i++) { const r = geometry.personButtons[i]; expect(r.width).toBeGreaterThanOrEqual(44); expect(r.height).toBeGreaterThanOrEqual(44); expect(Math.abs(r.x - geometry.animalButtons[i % 3].x)).toBeLessThan(1); if (i >= 3) expect(r.top).toBeGreaterThanOrEqual(geometry.personButtons[i - 3].bottom - .5); }
   expect(geometry.personButtons[0].top).toBeCloseTo(geometry.personButtons[2].top, 0); proofs.get(page)!.notes.push({ surface, width, geometry });
@@ -179,8 +186,9 @@ for (const [surface, width] of [["viewer", 1920], ["studio", 1100], ["preview", 
     expect(Math.max(0, overlapX) * Math.max(0, overlapY), "the real header inputs must stay separate").toBeLessThan(.1);
   }
   await shortcut.click(); const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
-  await expect(dialog.getByRole("tab", { name: "환경설정", exact: true })).toHaveAttribute("aria-selected", "true");
-  await expect(dialog.getByRole("tab", { name: "기본", exact: true })).toHaveAttribute("aria-selected", "true");
+  // stage 3: the home's character label opens the book on "함께 지내기", at the character controls; no sub-tabs exist.
+  await expect(dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "함께 지내기", exact: true })).toHaveAttribute("aria-selected", "true");
+  await expect(dialog.getByRole("tablist", { name: "빅타민 설정", exact: true })).toHaveCount(0);
   const grid = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true });
   await expect(grid.locator('[aria-checked="true"]')).toBeFocused();
   await waitForOverlayEntrance(dialog);
@@ -221,7 +229,9 @@ for (const [surface, width] of [["viewer", 1920], ["studio", 1100], ["preview", 
   await page.screenshot({ path: resolve(output, test.info().title.replace(/[^a-z0-9]+/gi, "-")+"-warm-open-compass.png") });
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(shortcut).toBeFocused();
   await home.locator('[data-home-action="book"]').click(); await expect(dialog.getByRole("tab", { name: "함께 지내기", exact: true })).toHaveAttribute("aria-selected", "true");
-  await dialog.getByRole("button", { name: "성격 바꾸기", exact: true }).click(); await expect(grid.getByRole("radio", { name: "동글이", exact: true })).toBeFocused();
+  // stage 3: the in-book "성격 바꾸기" shortcut is gone; the ordinary book already shows the same character controls on this page.
+  await expect(dialog.getByRole("button", { name: "성격 바꾸기", exact: true })).toHaveCount(0);
+  await expect(grid.getByRole("radio", { name: "동글이", exact: true })).toBeVisible(); await expect(grid.getByRole("radio", { name: "동글이", exact: true })).toHaveAttribute("aria-checked", "true");
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(home.locator('[data-home-action="book"]')).toBeFocused();
   proofs.get(page)!.notes.push({ surface, viewport: page.viewportSize(), actualCompass: actual, headerButtons, oneHomeActivation: true, warmSecondOpenRestoresHomeOpener: true, manualScroll: false, ordinaryBookPreserved: true });
 });
@@ -261,9 +271,11 @@ for (const [surface, width] of [["viewer", 1920], ["studio", 2400]] as const) te
     await home.locator('[data-home-action="book"]').click();
     const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
     await waitForOverlayEntrance(dialog);
-    const button = dialog.getByRole("button", { name: "성격 바꾸기", exact: true }), rect = (await button.boundingBox())!;
+    // stage 3: the in-book "성격 바꾸기" shortcut is gone; the character choice itself is on this page and keeps the 44px target.
+    const button = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).locator('[role="radio"][aria-checked="true"]'); await button.scrollIntoViewIfNeeded();
+    const rect = (await button.boundingBox())!;
     expect(rect.width).toBeGreaterThanOrEqual(44); expect(rect.height).toBeGreaterThanOrEqual(44);
-    proofs.get(page)!.notes.push({ surface, viewport: page.viewportSize(), actualProfileShortcut: rect });
+    proofs.get(page)!.notes.push({ surface, viewport: page.viewportSize(), actualProfileCharacterChoice: rect });
     await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(home.locator('[data-home-action="book"]')).toBeFocused();
   }
 });

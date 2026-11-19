@@ -26,7 +26,7 @@ export async function chooseCompanionPersonality(page: Page, personality: Compan
   const room = await openCompanionHome(page);
   await room.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
-  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "환경설정", exact: true }).click();
+  // Stage 3: the character controls are on the page the book opens on.
   const option = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name: COMPANION_PERSONALITY_NAMES[personality], exact: true });
   await option.click(); await expect(option).toHaveAttribute("aria-checked", "true");
   await dialog.getByRole("button", { name: "닫기", exact: true }).click();
