@@ -67,7 +67,7 @@ test("touch only: the companion's own sounds cannot be auditioned; off: none can
 });
 
 test("a resting device and a silent site are not bypassed", async ({ page }) => {
-  const { fold, tile } = await open(page, { "vic.reduceMotion": "on" });
+  const { tile } = await open(page, { "vic.reduceMotion": "on" });
   // Reduced motion rests what it does by itself: those two tiles are off, the rest still sound.
   await expect(tile("다 먹음")).toBeDisabled(); await expect(tile("넘어짐")).toBeDisabled();
   await expect(tile("들어 올리기")).toBeEnabled();

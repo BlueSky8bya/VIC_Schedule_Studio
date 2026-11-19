@@ -117,7 +117,7 @@ describe("source-bound all-pose accessory anchors", () => {
   });
 
   it("projects all worn-face, carry, gift and overhead anchors through the same measured uniform correction", () => {
-    expect(expressionOverrides.frames.map(frame => frame.physicalIndex)).toEqual([323, 324, 325, 331, 332, 333]);
+    expect(expressionOverrides.frames.map(frame => frame.physicalIndex)).toEqual([323, 324, 325, 331, 332, 333, ...Array.from({ length: 16 }, (_, i) => 416 + i)]);
     expect(expressionOverrides.frames.every(frame => ![326, 327, 328, 329, 330].includes(frame.physicalIndex))).toBe(true);
     let corrected = 0;
     for (const frame of anchors.frames) {

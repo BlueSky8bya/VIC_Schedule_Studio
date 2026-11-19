@@ -18,6 +18,7 @@ async function seed(page: Page, storage: Record<string, string>, companion: Part
 }
 // Stage 3: the settings are one page of cards; the argument only names the card a test looks at.
 async function companionSettings(page: Page, _card: string) {
+  void _card; // Legacy callers still identify the card; the current settings page shows them all.
   await page.getByRole("button", { name: "설정", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();

@@ -99,7 +99,10 @@ for (let atlas = 0; atlas < metadata.atlases.length; atlas++) {
     if(visible.right-visible.left+1>policy.material.maxWidth||visible.bottom-visible.top+1>policy.material.maxHeight||visible.left<policy.material.cellMargin||visible.top<policy.material.cellMargin||visible.right>=192-policy.material.cellMargin||visible.bottom>=192-policy.material.cellMargin)throw Error('Material footprint exceeded '+physicalIndex+':'+JSON.stringify(visible));
     let measuredBodyArea=0;for(let i=0;i<count;i++)if(base.body[i]&&!base.owners[i])measuredBodyArea+=data[i*4+3]/255;
     material.measuredArea=measuredBodyArea;
-    frames.push({ physicalIndex, nativeCell: slot.nativeCell, atlas, index: frame.index, material, clip, eyeState, mouthState:specs.mouths?.[slot.nativeCell]??"smile", mouth, folded: specs.folded[slot.nativeCell] ?? [false, false], parts: partRecords });
+    // The petting replay and live melt share the owner's13A/15B comparison
+    // candidate. Other native mouth identities remain source-owned.
+    const mouthState = physicalIndex >= 144 && physicalIndex < 160 ? "cat" : specs.mouths?.[slot.nativeCell] ?? "smile";
+    frames.push({ physicalIndex, nativeCell: slot.nativeCell, atlas, index: frame.index, material, clip, eyeState, mouthState, mouth, folded: specs.folded[slot.nativeCell] ?? [false, false], parts: partRecords });
     cleanup.push({ physicalIndex, removedExportPixels: removed, keptAuthoredMarks: key.record.marks.length, protectedFacePixels: faceProtected, exactPartition: true });
   }
   const src = `/companion/hd/appearance-20261118-${String(atlas).padStart(2, '0')}.webp`;

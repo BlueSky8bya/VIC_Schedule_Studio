@@ -172,11 +172,16 @@ describe("20261118 companion appearance edition", () => {
     expect(companionAppearancePoint(-1, unchanged)).toBe(unchanged);
     expect(companionAppearanceBounds(-1, [1, 2, 3, 4])).toEqual([1, 2, 3, 4]);
     expect(edition.eyeReference).toEqual({ referencePhysicalIndex: 304, referenceSrc: edition.packets[19].parentSrc,
-      referenceSha256: edition.packets[19].parentSha256, pettingStrokeGain: 1.15, pettingArchControl: .76 });
+      referenceSha256: edition.packets[19].parentSha256, pettingStrokeGain: 1.15, pettingArchControl: .44 });
     expect(edition.eyeReference).toEqual(policy.eye);
     expect(policy.material.referenceScope).toBe("same-native-only");
     expect(policy.material.referenceSelection).toBe("first-nonrig-else-first");
-    expect(expressionOverrides.frames.map(frame => frame.physicalIndex)).toEqual([323, 324, 325, 331, 332, 333]);
+    expect(expressionOverrides.frames.map(frame => frame.physicalIndex)).toEqual([323, 324, 325, 331, 332, 333, ...Array.from({ length: 16 }, (_, i) => 416 + i)]);
+    for (const pose of expressionOverrides.frames.filter(frame => frame.physicalIndex >= 416)) {
+      expect(pose.mouth).not.toBeNull();
+      expect(pose.mouth!.bounds[0]).toBeLessThan(pose.mouth!.x);
+      expect(pose.mouth!.bounds[2]).toBeGreaterThan(pose.mouth!.x);
+    }
     for (const pose of expressionOverrides.frames) {
       const registered = registeredFrames[pose.physicalIndex];
       expect({ atlas: pose.source, index: pose.index }).toEqual({ atlas: registered.atlas, index: registered.index });

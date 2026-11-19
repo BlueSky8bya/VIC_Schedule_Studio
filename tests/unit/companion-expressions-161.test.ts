@@ -1,11 +1,21 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
-import { COMPANION_EXPRESSIONS, COMPANION_EXPRESSION_MS, companionMealExpression, createCompanionExpressions, sampleCompanionExpression, type CompanionExpressionContext } from "@/lib/ui/viewer-companion/expressions";
+import { COMPANION_EXPRESSIONS, COMPANION_EXPRESSION_MS, COMPANION_EYE_SHAPE, COMPANION_MOUTH_SHAPE, companionMealExpression, createCompanionExpressions, sampleCompanionExpression, type CompanionExpressionContext } from "@/lib/ui/viewer-companion/expressions";
 import anchors from "@/lib/ui/viewer-companion/expression-anchors-161.json";
 import physicalMouths from "@/lib/ui/viewer-companion/mouth-anchors.json";
 const base: CompanionExpressionContext = { token: "real-action:1", status: "idle", phase: 0, personality: "balanced", atHome: false, energy: .9, petting: false, busy: false, userNear: false, toyPlaying: false, toyApproach: false, lookingOut: false, reading: false, watching: false, music: false, season: 10, weather: "clear", daylight: true, outing: false };
 describe("source-bound finite facial expressions161", () => {
+  it("keeps selected13B open through its peak and15B closed with one omega mouth", () => {
+    for (const phase of [.3, .55, .8]) {
+      const greeting = sampleCompanionExpression("greeting", phase), petting = sampleCompanionExpression("melt", phase);
+      expect(greeting.leftClosure).toBe(0); expect(greeting.rightClosure).toBe(0);
+      expect(greeting.leftShape).toBe(COMPANION_EYE_SHAPE.round); expect(greeting.rightShape).toBe(COMPANION_EYE_SHAPE.round);
+      expect(greeting.open).toBeGreaterThan(0);
+      expect(petting.mouth).toBe(COMPANION_MOUTH_SHAPE.cat); expect(petting.open).toBe(0);
+      expect(petting.leftClosure).toBe(1); expect(petting.rightClosure).toBe(1);
+    }
+  });
   it("has36 distinct animated profiles, never enlarges an eye, and recovers exactly", () => {
     const signatures = new Set<string>();
     for (const [id] of COMPANION_EXPRESSIONS) {

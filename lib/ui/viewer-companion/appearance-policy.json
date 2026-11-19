@@ -5,7 +5,7 @@
     "referenceSrc": "/companion/hd/vitamin-play-00-motion-115-v1.webp",
     "referenceSha256": "977e0a047d92c6a3ba3426058805d000f6ee6c1d1ab86bfca28f50a32f42fa6e",
     "pettingStrokeGain": 1.15,
-    "pettingArchControl": 0.76
+    "pettingArchControl": 0.44
   },
   "material": {
     "referenceScope": "same-native-only",

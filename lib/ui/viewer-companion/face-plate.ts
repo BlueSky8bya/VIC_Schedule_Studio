@@ -1,6 +1,7 @@
 type Eye = { center: readonly number[]; bounds: readonly number[] };
 type Glyph = { canvas: HTMLCanvasElement; x: number; y: number };
 const glyphs = new WeakMap<HTMLImageElement, Glyph[]>();
+const backgrounds = new WeakMap<Uint8ClampedArray, Map<string, Uint8ClampedArray<ArrayBuffer>>>();
 
 /** Keep the running pupil's brown texture AND enclosed white glint, without
  * transplanting the running pose's rectangular cream background or cheek. */
@@ -54,24 +55,49 @@ export function companionEyeGlyph(image: HTMLImageElement, eyes: readonly Eye[],
   return cached[side];
 }
 
-/** Boundary-matched cream repair instead of a flat rectangular colour plate.
- * Exact old ink is replaced even at the edge; clean skin feathers over2px. */
+/** Repair only old ink and its fringe, with the actual surrounding paper as
+ * the boundary. Sampling rows from the rectangle's edges projected ink/AA
+ * into straight scanlines between the eyes. Harmonic fill has no such edges. */
 export function companionFaceBackground(source: Uint8ClampedArray, size: number, box: readonly number[], fallback: readonly number[]) {
+  const key = `${size}:${box.join(",")}:${fallback.join(",")}`;
+  let cached = backgrounds.get(source);
+  if (!cached) { cached = new Map(); backgrounds.set(source, cached); }
+  const previous = cached.get(key); if (previous) return previous;
   const [left, top, right, bottom] = box, width = right - left + 1, height = bottom - top + 1;
   const result = new Uint8ClampedArray(width * height * 4);
   const skin = (i: number) => source[i] >= 190 && source[i + 1] >= 175 && source[i + 2] >= 130;
-  const sample = (x: number, y: number) => { const at = (Math.max(0, Math.min(size - 1, y)) * size + Math.max(0, Math.min(size - 1, x))) * 4; return skin(at) ? [source[at], source[at + 1], source[at + 2]] : fallback; };
-  const corners = [sample(left - 1, top - 1), sample(right + 1, top - 1), sample(left - 1, bottom + 1), sample(right + 1, bottom + 1)];
+  // Include a fixed exterior ring. The result still owns only the admitted box.
+  const stride = width + 2, field = new Float32Array(stride * (height + 2) * 3), mask: number[] = [];
+  for (let y = top - 1; y <= bottom + 1; y++) for (let x = left - 1; x <= right + 1; x++) {
+    const sx = Math.max(0, Math.min(size - 1, x)), sy = Math.max(0, Math.min(size - 1, y));
+    const i = (sy * size + sx) * 4, to = ((y - top + 1) * stride + x - left + 1) * 3;
+    for (let c = 0; c < 3; c++) field[to + c] = skin(i) ? source[i + c] : fallback[c];
+  }
   for (let y = top; y <= bottom; y++) for (let x = left; x <= right; x++) {
-    const u = (x - left + 1) / (width + 1), v = (y - top + 1) / (height + 1), a = sample(left - 1, y), b = sample(right + 1, y), c = sample(x, top - 1), d = sample(x, bottom + 1);
     const i = (y * size + x) * 4, to = ((y - top) * width + x - left) * 4;
-    const blend = skin(i) ? Math.min(1, Math.min(x - left, right - x, y - top, bottom - y) / 2) : 1;
-    for (let channel = 0; channel < 3; channel++) {
-      const corner = corners[0][channel] * (1 - u) * (1 - v) + corners[1][channel] * u * (1 - v) + corners[2][channel] * (1 - u) * v + corners[3][channel] * u * v;
-      const background = a[channel] * (1 - u) + b[channel] * u + c[channel] * (1 - v) + d[channel] * v - corner;
-      result[to + channel] = source[i + channel] * (1 - blend) + background * blend;
+    let nearInk = !skin(i);
+    if (!nearInk) for (let dy = -2; dy <= 2 && !nearInk; dy++) for (let dx = -2; dx <= 2 && !nearInk; dx++) {
+      const xx = x + dx, yy = y + dy;
+      if (xx >= 0 && yy >= 0 && xx < size && yy < size && !skin((yy * size + xx) * 4)) nearInk = true;
     }
+    for (let c = 0; c < 3; c++) result[to + c] = source[i + c];
+    if (nearInk) mask.push((y - top + 1) * stride + x - left + 1);
     result[to + 3] = source[i + 3];
   }
-  return result;
+  for (let pass = 0; pass < 160; pass++) {
+    let change = 0;
+    for (const at of mask) for (let c = 0; c < 3; c++) {
+      const i = at * 3 + c, value = (field[i - 3] + field[i + 3] + field[i - stride * 3] + field[i + stride * 3]) / 4;
+      change = Math.max(change, Math.abs(field[i] - value)); field[i] = value;
+    }
+    if (change < .015) break;
+  }
+  for (const at of mask) {
+    const x = at % stride - 1, y = Math.floor(at / stride) - 1, to = (y * width + x) * 4;
+    for (let c = 0; c < 3; c++) result[to + c] = field[at * 3 + c];
+  }
+  // A moving expression may admit several rectangles on one source cell.
+  // Keep this bounded; the WeakMap releases all of them with that source.
+  if (cached.size >= 24) cached.clear();
+  cached.set(key, result); return result;
 }

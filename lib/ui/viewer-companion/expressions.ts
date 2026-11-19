@@ -53,9 +53,9 @@ export function sampleCompanionExpression(id: CompanionExpressionId, progress: n
     case "last-bite": eyes(E.worry); Object.assign(v, { gazeY: 1.3, smile: -.65, mouth: M.pout, brow: .8 }); break;
     case "sleepy": eyes(E.flat, E.soft); Object.assign(v, { left: .55 + .35 * beat, right: .7, leftClosure: .25 + .15 * Math.sin(p * Math.PI) ** 2, rightClosure: .24, open: .3 + .3 * Math.sin(p * Math.PI) ** 2, mouth: M.round, gazeY: .7 }); break;
     case "awake": eyes(E.smile, E.smile, 1 - smooth((beat - .1) / .5)); Object.assign(v, { smile: .8 * beat, open: .18 * beat, mouth: M.grin, gazeY: -1, shine: .6, brow: .45 * beat }); break;
-    case "greeting": eyes(E.smile, E.round, smooth((p - .25) / .12) * (1 - smooth((p - .6) / .15))); Object.assign(v, { right: 1, smile: 1, open: .45, mouth: M.grin, gazeY: -.5, shine: .5 }); break;
+    case "greeting": eyes(E.round); Object.assign(v, { left: 1, right: 1, smile: 1, open: .45, mouth: M.grin, gazeY: -.5, shine: .5 }); break;
     case "shy": eyes(E.soft); Object.assign(v, { gazeX: 2.3 * (1 - beat * .15), gazeY: 1.2, left: .8, right: .8, smile: .4, mouth: M.smile }); break;
-    case "melt": eyes(E.smile); Object.assign(v, { smile: .65, mouth: M.smile, gazeY: 0, slant: 0 }); break;
+    case "melt": eyes(E.smile); Object.assign(v, { smile: .65, mouth: M.cat, gazeY: 0, slant: 0 }); break;
     case "more-pets": Object.assign(v, { gazeY: -.25 - 1.85 * smooth((p - .12) / .12), smile: .05 + .6 * smooth((p - .28) / .2), open: 0, mouth: M.smile, brow: 0, shine: .8 }); break;
     case "busy": eyes(E.flat); Object.assign(v, { left: .55, right: .7, gazeX: -1.8, smile: -.4, mouth: M.pout, brow: -.5 }); break;
     case "play-ready": Object.assign(v, { gazeX: 1.3 * wave, gazeY: -.4, smile: .9, open: .6, mouth: M.grin, shine: 1 }); break;

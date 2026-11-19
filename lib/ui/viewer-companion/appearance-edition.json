@@ -5,15 +5,15 @@
     "referenceSrc": "/companion/hd/vitamin-play-00-motion-115-v1.webp",
     "referenceSha256": "977e0a047d92c6a3ba3426058805d000f6ee6c1d1ab86bfca28f50a32f42fa6e",
     "pettingStrokeGain": 1.15,
-    "pettingArchControl": 0.76
+    "pettingArchControl": 0.44
   },
   "packets": [
     {
       "parentSrc": "/companion/hd/vitamin-action-00-eye-contour-120-v1.webp",
       "parentSha256": "0ae8841d45d0aed2f1838d7bf9effb193153d64e58dd570e1ad9eaa60392d460",
       "src": "/companion/hd/appearance-20261118-00.webp",
-      "sha256": "eea24d304589d3ae9b0302171a0da0377e41ee3d4976fce0c942825bfd79e0ab",
-      "bytes": 794288,
+      "sha256": "bb0d8aef2f3945afce691b6d776e8d0cee9cb8f0f67f7fb0f354e642b2fce98e",
+      "bytes": 796318,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -22,8 +22,8 @@
       "parentSrc": "/companion/hd/vitamin-action-01-motion-115-v1.webp",
       "parentSha256": "a4fb475886e13f597883851aaa2990868848ccf74371c4d3c90c05f64abb1a19",
       "src": "/companion/hd/appearance-20261118-01.webp",
-      "sha256": "39438d239b4925f61574f97ae83b4cba7cc462d2604729d083b8f5a976642e3c",
-      "bytes": 783176,
+      "sha256": "0fd70e947834f64a0ae25170388eecacf2bbe1043378dbaa961a8e125931ca36",
+      "bytes": 788276,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -32,8 +32,8 @@
       "parentSrc": "/companion/hd/vitamin-action-02-motion-115-v1.webp",
       "parentSha256": "2d42987867f83ae696b06935471825addbd54fb06615302f44538a1ce6f97370",
       "src": "/companion/hd/appearance-20261118-02.webp",
-      "sha256": "0d4e4dd84e9a3d00ec56523e10517941162b25d6ff18b0be0b62f6da81eaa319",
-      "bytes": 814848,
+      "sha256": "dcdfdadb595855ed90ed28cf4352c2760c1d4061a5dca1e6384ce508691982c9",
+      "bytes": 819610,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -42,8 +42,8 @@
       "parentSrc": "/companion/hd/vitamin-action-03-motion-115-v1.webp",
       "parentSha256": "8309dc44823ca1b19743e6862b8e8b374af25e4d53198f57690dbbe8a92f2597",
       "src": "/companion/hd/appearance-20261118-03.webp",
-      "sha256": "9f09f32e25d99b570fce2eaae670eda1243b839a772ebffd3747a2c1fd23c2e8",
-      "bytes": 738938,
+      "sha256": "3501e03702a6523e3e009e8bf61749177d1b25f4c003de4afa04662e6fe1243f",
+      "bytes": 745850,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -52,8 +52,8 @@
       "parentSrc": "/companion/hd/vitamin-action-04-tuft-117-v1.webp",
       "parentSha256": "f76289f26fa772382ab1b1d638c71a9aaa6cf26eaa9a11ad681039aaad7ccc8d",
       "src": "/companion/hd/appearance-20261118-04.webp",
-      "sha256": "1fe6b1efeab762cb9ad2244adab02e68efe97ec5a2d13e10ef4814f4343536c6",
-      "bytes": 773330,
+      "sha256": "374d76df137af692aa437659fc8e7afb8cfafdeb7d50e3a4841eb89b7eed2f06",
+      "bytes": 777280,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -62,8 +62,8 @@
       "parentSrc": "/companion/hd/vitamin-action-05-motion-115-v1.webp",
       "parentSha256": "231447687ccdf4f016a52b5e73667d19764fde2429f8f2ff385b82bbfb012d12",
       "src": "/companion/hd/appearance-20261118-05.webp",
-      "sha256": "688d052576feae6e098d93aa5944b7ec34c9f886ca9ef569c9d0a8f7177b1c96",
-      "bytes": 796942,
+      "sha256": "dec60afc11a3f8b44532508758eb6fd6b99030d761d5c2970688aaec7299e180",
+      "bytes": 804524,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -72,8 +72,8 @@
       "parentSrc": "/companion/hd/vitamin-action-06-motion-115-v1.webp",
       "parentSha256": "9e5fb14d82995bbf03398f3baea1e55fb537c4c163ac7690075d3e4793e8810f",
       "src": "/companion/hd/appearance-20261118-06.webp",
-      "sha256": "66270a6e00266c1c13816a66a6b081d9619d24dcece539dc1979b109015520f6",
-      "bytes": 697544,
+      "sha256": "6c58f081892855246da645d4076ec35d38690f32421a9a7f0752683e86046b15",
+      "bytes": 688880,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -82,8 +82,8 @@
       "parentSrc": "/companion/hd/vitamin-action-07-motion-115-v1.webp",
       "parentSha256": "d4b7571deb7dfddcc8949a9f21eb0c179997b1689f4210881dbef10686955fca",
       "src": "/companion/hd/appearance-20261118-07.webp",
-      "sha256": "e3cdc1617852c9d7f30337434fd27f6ab135438eb75c980705a62b80d9d3010a",
-      "bytes": 799936,
+      "sha256": "12a5a0db8582d028137dbd88c7f6d70f32d701bfa4474af812817c390de92d57",
+      "bytes": 803936,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -92,8 +92,8 @@
       "parentSrc": "/companion/hd/vitamin-action-08-motion-115-v1.webp",
       "parentSha256": "3a63b44c1ed3e1ee3fd4da2ca19d27cadbbde352da4f3025c25bb6aacf4c56f2",
       "src": "/companion/hd/appearance-20261118-08.webp",
-      "sha256": "0cc77c54cdcfb296851628571e708e8de8b392b5f33159c2f966eb345cf4f3c5",
-      "bytes": 785608,
+      "sha256": "1476971ec8810407d1278deb1d64121ba0a7a16746d012503df03b914178e8ca",
+      "bytes": 793728,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -102,8 +102,8 @@
       "parentSrc": "/companion/hd/vitamin-action-09-eye-scale-143-v1.webp",
       "parentSha256": "14ff5ce9a8477cd6b928ed3149e2a98ba8cb67a2c7b093dffcc99d6c7990044b",
       "src": "/companion/hd/appearance-20261118-09.webp",
-      "sha256": "7108ec5359922fcddf9f96e0415076b3e81a40a6d7f66bce359f35d47a7029f7",
-      "bytes": 749530,
+      "sha256": "ac23a2a8eabac6e4f04990de2e1547f449c5aa7bd04a0a180d7d12683483a5e3",
+      "bytes": 741674,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -112,8 +112,8 @@
       "parentSrc": "/companion/hd/vitamin-action-10-motion-115-v1.webp",
       "parentSha256": "f34c90faf915f3bd1ad918ee5578947a635070af0a49ed3cd7ed0478e97c63bc",
       "src": "/companion/hd/appearance-20261118-10.webp",
-      "sha256": "d426d31507f9312bf4b3f287c9c652b9a9d83fb5dd42582e5b43daefd5d5e9cd",
-      "bytes": 768628,
+      "sha256": "09934fe30bd0b744e700a1fb6c4f6a7cfcbffff539495e94499ee19ee6e8fdd7",
+      "bytes": 761462,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -122,8 +122,8 @@
       "parentSrc": "/companion/hd/vitamin-action-11-motion-115-v1.webp",
       "parentSha256": "423d11cd938bb22c1bd57c7b57aaf00b2578b8709e49a3b00297c5ec8ff84189",
       "src": "/companion/hd/appearance-20261118-11.webp",
-      "sha256": "3616cb3a93330fa99c00b5a8a2f87ff9b2c5bb7bad2c2faa3fd911204640de57",
-      "bytes": 709138,
+      "sha256": "d23da671aefdb9b6f965c37eda030cecafd6d01c1f570232c28b0af0fa54b4c3",
+      "bytes": 705062,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -132,8 +132,8 @@
       "parentSrc": "/companion/hd/vitamin-action-12-motion-115-v1.webp",
       "parentSha256": "89342020b0f59b1942e1300193158d828fdbfcc43ec7123e602911fd13a2f79b",
       "src": "/companion/hd/appearance-20261118-12.webp",
-      "sha256": "4ff7a696cb3c2dd86430ddb4d67f56d21fa2b6d9d469a9bf9460703dc591cdb8",
-      "bytes": 805414,
+      "sha256": "db8ec379c79252e860f4a3d975dd32bc68187094ce013f10de0513f877edd8f4",
+      "bytes": 805892,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -142,8 +142,8 @@
       "parentSrc": "/companion/hd/vitamin-action-13-motion-115-v1.webp",
       "parentSha256": "d07c8f4d6e1c22f7a434687921b506cf33f61d08a29f8b033bd1dd0ad5ad55ba",
       "src": "/companion/hd/appearance-20261118-13.webp",
-      "sha256": "dac3b252276ac5553347bd401c4b722c957812146fc2ca801fd97eed20b72bbe",
-      "bytes": 807130,
+      "sha256": "33a94c3c3b46ee57d8a90d1fba328d2f2c4b311311c7ea7f7f3fd200dab3f284",
+      "bytes": 811080,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -152,8 +152,8 @@
       "parentSrc": "/companion/hd/vitamin-action-14-motion-115-v1.webp",
       "parentSha256": "69efbfb85a0e7fb157d059ef23848f8bd1c96171f75597c033ecc9dafb1f18ed",
       "src": "/companion/hd/appearance-20261118-14.webp",
-      "sha256": "8647acb564f40fb7cbbf6d8acb531e1b15a14275b1d95f22303e61f988c46638",
-      "bytes": 648972,
+      "sha256": "fdd28462ef66f936a0693603877cb8bd2b8488098e2cb0def1e7b183d6896ee8",
+      "bytes": 649822,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -162,8 +162,8 @@
       "parentSrc": "/companion/hd/vitamin-action-15-motion-115-v1.webp",
       "parentSha256": "9ef892aab49024b09c32416ac0ad48236802d0c9cba111577b0225622d186a40",
       "src": "/companion/hd/appearance-20261118-15.webp",
-      "sha256": "e2c15910afbf2a9bb6602c033c281dbfc30fba53ee69902b0bb7fa5abad0974b",
-      "bytes": 779576,
+      "sha256": "434c179309d3525f5f69feb09a227c8203d72a45889ffed1c9fcc3135e8846e3",
+      "bytes": 784436,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -172,8 +172,8 @@
       "parentSrc": "/companion/hd/vitamin-action-16-eye-contour-120-v1.webp",
       "parentSha256": "39c0f80b9b03d25d9be087f4f19fcd7c4f1088f4f4faa64da83c8a8797800747",
       "src": "/companion/hd/appearance-20261118-16.webp",
-      "sha256": "65fc962b8cbc10c39cb9d49e721d82de790222dab91cacf368e05abdfd00a3ed",
-      "bytes": 766606,
+      "sha256": "e86fae23a59756700b6b2692b13bb348051dc4cc6532442019565515fa23c290",
+      "bytes": 766680,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -182,8 +182,8 @@
       "parentSrc": "/companion/hd/vitamin-action-17-motion-115-v1.webp",
       "parentSha256": "a8f367189abdd6427cd229139d00a81200666eac57ef1c01fcb150b6ef5b0a6b",
       "src": "/companion/hd/appearance-20261118-17.webp",
-      "sha256": "597f076014772d91b8f0fc1d626808d8fbe4a42284956057fc3c7c7d8a219311",
-      "bytes": 787286,
+      "sha256": "1c38a4d1059cd008b1af1326a77b33df941843c8f92bc7c0278b2e3d71b00524",
+      "bytes": 792132,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -192,8 +192,8 @@
       "parentSrc": "/companion/hd/vitamin-action-18-motion-115-v1.webp",
       "parentSha256": "ee4d9f844b183fbe43040d35c69eef90d327cc9469b74a628ed5aaff7e4e353d",
       "src": "/companion/hd/appearance-20261118-18.webp",
-      "sha256": "c85a17c30eda501d1625a120b016d1e7173a4cd34b3346755c0694b6f59e93ee",
-      "bytes": 658236,
+      "sha256": "88b42972a3b0affe973da8013d937b37b03ec231bff6055e574912cfbfa12018",
+      "bytes": 668688,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -202,8 +202,8 @@
       "parentSrc": "/companion/hd/vitamin-play-00-motion-115-v1.webp",
       "parentSha256": "977e0a047d92c6a3ba3426058805d000f6ee6c1d1ab86bfca28f50a32f42fa6e",
       "src": "/companion/hd/appearance-20261118-19.webp",
-      "sha256": "49d043972eaa9dde3ef1b4802db3b90f1aed11c384aaac91752982efe9c11708",
-      "bytes": 644754,
+      "sha256": "ff8154cfb62866d99868425c9401c67d326f06f6e02badf2112864f54469a683",
+      "bytes": 653570,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -212,8 +212,8 @@
       "parentSrc": "/companion/hd/vitamin-play-01-motion-115-v1.webp",
       "parentSha256": "098e64532c469fcb54ffbaff48bb9bc55fcd1cd6de899d3fffe82e863323858d",
       "src": "/companion/hd/appearance-20261118-20.webp",
-      "sha256": "c4e1113c1a629079ea422f34f1b66d697bda00a143eedff564214678b91d3fd5",
-      "bytes": 468644,
+      "sha256": "e593a7c58e1c610dbfc658a45ee2d97e41f1345ba771aa40da3aacc83e8f8bd4",
+      "bytes": 475424,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -222,8 +222,8 @@
       "parentSrc": "/companion/hd/vitamin-play-02-motion-115-v1.webp",
       "parentSha256": "0de81d9b157d46ef8a5b402a4e3807141b5c1024379d47b35590588f709cfa80",
       "src": "/companion/hd/appearance-20261118-21.webp",
-      "sha256": "40d6077f735a304a50b90ffcf487428f64eccccd8dc0f0a43d6c5a8f52bff620",
-      "bytes": 167520,
+      "sha256": "03f24e9159a8bbd93e000ce5e3f47394a7f2777c63c522b8b4b6e59cb383d4be",
+      "bytes": 168104,
       "width": 1536,
       "height": 576,
       "gridRows": 3
@@ -232,8 +232,8 @@
       "parentSrc": "/companion/hd/vitamin-play-03-expression-119-v1.webp",
       "parentSha256": "da09c0c607da35f5f7802568040fc654a868d06356013258074d3b9a01766450",
       "src": "/companion/hd/appearance-20261118-22.webp",
-      "sha256": "8247f8639c1bd1b8ac6c542ed102cdbf4dd89285f8678994a074a33d4994066f",
-      "bytes": 342364,
+      "sha256": "8b558f4eb175b75e1044dc9c6be93ba77ece1b3d4f826c7a2d58ae0b78ee98fb",
+      "bytes": 338806,
       "width": 1536,
       "height": 576,
       "gridRows": 3
@@ -242,8 +242,8 @@
       "parentSrc": "/companion/hd/vitamin-play-04-eye-scale-143-v1.webp",
       "parentSha256": "a1037fa6435ea0ba4066a5d61cda4a060daeba92a1c64cfcbe9e5a136cd7e454",
       "src": "/companion/hd/appearance-20261118-23.webp",
-      "sha256": "138a62672190b7078953ad6868f8ff65f50adc4d19e89a88edb304cf8a96ac01",
-      "bytes": 211208,
+      "sha256": "36cfb277e912d95025eafd6323caa3931088f6c3ae706b8a64e2c718b1d82112",
+      "bytes": 221520,
       "width": 1536,
       "height": 576,
       "gridRows": 3
@@ -252,8 +252,8 @@
       "parentSrc": "/companion/hd/vitamin-play-05-motion-115-v1.webp",
       "parentSha256": "e92d09cae67082d1839b88d5edbd8985f9935121b440dc2cdba5082388ca4621",
       "src": "/companion/hd/appearance-20261118-24.webp",
-      "sha256": "1bc2bc84f3626aba0f1bbacaf9d0459871ee0b177e9b1e9df1b111a2d410af19",
-      "bytes": 160752,
+      "sha256": "9b5691ec6ef6f4c789986bcb6ab27b7ac054e9c73fef6c501ffffac6f59c9f12",
+      "bytes": 159408,
       "width": 1536,
       "height": 576,
       "gridRows": 3
@@ -262,8 +262,8 @@
       "parentSrc": "/companion/hd/vitamin-play-06-motion-115-v1.webp",
       "parentSha256": "a5fc6045daee6d0629c2152b509ffd4862a2fbdd6f83437f0710ab5eef2f24d9",
       "src": "/companion/hd/appearance-20261118-25.webp",
-      "sha256": "67066e02b10d996e2e64ce714d69e5bc514a71ec21804a40149e5eecd8ea5028",
-      "bytes": 276034,
+      "sha256": "d20c39a6162ab8bf2a5b42eefbc6d334d7434a75f5645b1c7685d82f07c67587",
+      "bytes": 284840,
       "width": 1536,
       "height": 576,
       "gridRows": 3
@@ -272,8 +272,8 @@
       "parentSrc": "/companion/hd/vitamin-play-07-motion-115-v1.webp",
       "parentSha256": "a9c6fde71d01a7950e2526e98402152c830cc376d41b0fc112af09bf31605d6c",
       "src": "/companion/hd/appearance-20261118-26.webp",
-      "sha256": "3d70cddce6b101417a5acda000aa2e70ce209237e119a8c369c49b4e9b447516",
-      "bytes": 143062,
+      "sha256": "617c4a52b1eeb6fa6285cc81fa7f9d4efaa63d639d064f7f5ac5634f1bf9d657",
+      "bytes": 141888,
       "width": 1536,
       "height": 576,
       "gridRows": 3
@@ -282,8 +282,8 @@
       "parentSrc": "/companion/hd/vitamin-play-08-motion-115-v1.webp",
       "parentSha256": "bf6a95fe60d6ae7e107b8314c2ce372721f18780fdc5815a725cedd032bba5fe",
       "src": "/companion/hd/appearance-20261118-27.webp",
-      "sha256": "d7c1cfee80b71bcc7a7942d1e49cd0ba23ae4eb0d000c3596164286d2ff81fdd",
-      "bytes": 135842,
+      "sha256": "093cc7e30e05729a6366de8c480f02606171521654269ba151515839c391d1f3",
+      "bytes": 137214,
       "width": 1536,
       "height": 576,
       "gridRows": 3
@@ -292,8 +292,8 @@
       "parentSrc": "/companion/hd/vitamin-play-09-motion-115-v1.webp",
       "parentSha256": "4cd30d750518e755eab9fec005aec6c03ff7a2dbfb2d4733539ae212eef5446e",
       "src": "/companion/hd/appearance-20261118-28.webp",
-      "sha256": "cfde42122b0770c6d8596a65c11decb57efcde228011ad1eda52b4b14d1349b3",
-      "bytes": 177648,
+      "sha256": "77024b92495fcdbc55a9b5efef8f4cb6d9868aa61a64838dbf3c92249dce9edc",
+      "bytes": 182426,
       "width": 1536,
       "height": 576,
       "gridRows": 3
@@ -302,8 +302,8 @@
       "parentSrc": "/companion/hd/vitamin-play-10-motion-115-v1.webp",
       "parentSha256": "470a91d49a60b7cf5b0b14a55d168bc67664fe425185ad15e02b168aab9120d6",
       "src": "/companion/hd/appearance-20261118-29.webp",
-      "sha256": "1c372cb12c3944ffb7b075354cce5d78001b7a6da1a8ecddef61735139593bfc",
-      "bytes": 162364,
+      "sha256": "09e8727d6527153905aac21770f10a1727d018467f5e492dc58f7369eff08a67",
+      "bytes": 160340,
       "width": 1536,
       "height": 576,
       "gridRows": 3
@@ -312,8 +312,8 @@
       "parentSrc": "/companion/hd/vitamin-play-11-motion-115-v1.webp",
       "parentSha256": "ea49bcfdba18d05d963c18cf8303631ce3874f68b8ff31101307041d8be7d5a5",
       "src": "/companion/hd/appearance-20261118-30.webp",
-      "sha256": "153060e401fe98d3b54d1558478df5bdff5f152be9f937e05e36c94a7f76b725",
-      "bytes": 175162,
+      "sha256": "91d8d1433c6e61cd9c2801339218fdcc47645ade322c5109875ed153771c29aa",
+      "bytes": 175746,
       "width": 1536,
       "height": 576,
       "gridRows": 3
@@ -322,8 +322,8 @@
       "parentSrc": "/companion/hd/vitamin-play-12-expression-119-v1.webp",
       "parentSha256": "67d24e1a51c3f3b0b65a33be063aea3a333ca0e1b45b8c9d3a24c7e70866fec4",
       "src": "/companion/hd/appearance-20261118-31.webp",
-      "sha256": "33c466de171a401ec5bb5d80697ad4ed4b958b1bb142abcce87ce0b3521c8800",
-      "bytes": 332676,
+      "sha256": "b734283ce46602fd90dd20dc19760a4a7130628045265a826b1a0dafdea6a5d3",
+      "bytes": 331132,
       "width": 1536,
       "height": 576,
       "gridRows": 3
@@ -332,8 +332,8 @@
       "parentSrc": "/companion/hd/vitamin-episodes-00-eye-contour-120-v1.webp",
       "parentSha256": "5ea159d3bca15819d3ef5f119397f9da3ffdb2ba715b9fb4e54d6da43eee2e58",
       "src": "/companion/hd/appearance-20261118-32.webp",
-      "sha256": "c3fc3be22cbada45722c6c21bab847c5630d75c89904e1bacd78e18bdb436882",
-      "bytes": 417436,
+      "sha256": "c43ce81e82dd8bf36513890bba5198d88f22008c88a916dcf9a6438c12cc360f",
+      "bytes": 415666,
       "width": 1536,
       "height": 576,
       "gridRows": 3
@@ -16029,7 +16029,7 @@
         9.666667
       ],
       "eyeState": "closed",
-      "mouthState": "smile",
+      "mouthState": "cat",
       "mouth": {
         "x": 44.152253732976334,
         "y": 55.83398277675851
@@ -16139,7 +16139,7 @@
         9.666667
       ],
       "eyeState": "closed",
-      "mouthState": "smile",
+      "mouthState": "cat",
       "mouth": {
         "x": 44.01665073579222,
         "y": 55.79151787132799
@@ -16249,7 +16249,7 @@
         10.083333
       ],
       "eyeState": "closed",
-      "mouthState": "smile",
+      "mouthState": "cat",
       "mouth": {
         "x": 43.93786148762327,
         "y": 56.04963244073897
@@ -16359,7 +16359,7 @@
         9.666667
       ],
       "eyeState": "closed",
-      "mouthState": "smile",
+      "mouthState": "cat",
       "mouth": {
         "x": 44.12841630210318,
         "y": 55.811795264941644
@@ -16469,7 +16469,7 @@
         9.666667
       ],
       "eyeState": "closed",
-      "mouthState": "smile",
+      "mouthState": "cat",
       "mouth": {
         "x": 44.12527637627629,
         "y": 55.74695731232895
@@ -16579,7 +16579,7 @@
         9.666667
       ],
       "eyeState": "closed",
-      "mouthState": "smile",
+      "mouthState": "cat",
       "mouth": {
         "x": 44.0966535042184,
         "y": 55.75456023584623
@@ -16689,7 +16689,7 @@
         9.666667
       ],
       "eyeState": "closed",
-      "mouthState": "smile",
+      "mouthState": "cat",
       "mouth": {
         "x": 44.22057134379688,
         "y": 55.77348749271245
@@ -16799,7 +16799,7 @@
         9.666667
       ],
       "eyeState": "closed",
-      "mouthState": "smile",
+      "mouthState": "cat",
       "mouth": {
         "x": 43.98308760675162,
         "y": 55.795164682083175
@@ -16909,7 +16909,7 @@
         9.666667
       ],
       "eyeState": "closed",
-      "mouthState": "smile",
+      "mouthState": "cat",
       "mouth": {
         "x": 43.90245674728547,
         "y": 55.99438850550407
@@ -17019,7 +17019,7 @@
         9.666667
       ],
       "eyeState": "closed",
-      "mouthState": "smile",
+      "mouthState": "cat",
       "mouth": {
         "x": 43.85992084881107,
         "y": 55.9660699366534
@@ -17129,7 +17129,7 @@
         9.666667
       ],
       "eyeState": "closed",
-      "mouthState": "smile",
+      "mouthState": "cat",
       "mouth": {
         "x": 44.40077848629875,
         "y": 56.08440837269946
@@ -17239,7 +17239,7 @@
         9.666667
       ],
       "eyeState": "closed",
-      "mouthState": "smile",
+      "mouthState": "cat",
       "mouth": {
         "x": 44.41151630905081,
         "y": 55.90106069113385
@@ -17349,7 +17349,7 @@
         9.666667
       ],
       "eyeState": "closed",
-      "mouthState": "smile",
+      "mouthState": "cat",
       "mouth": {
         "x": 44.07456737830065,
         "y": 55.911826211588
@@ -17459,7 +17459,7 @@
         9.666667
       ],
       "eyeState": "closed",
-      "mouthState": "smile",
+      "mouthState": "cat",
       "mouth": {
         "x": 44.33352830260825,
         "y": 55.92385199682946
@@ -17569,7 +17569,7 @@
         9.666667
       ],
       "eyeState": "closed",
-      "mouthState": "smile",
+      "mouthState": "cat",
       "mouth": {
         "x": 44.29950780909121,
         "y": 55.847240727034425
@@ -17679,7 +17679,7 @@
         9.666667
       ],
       "eyeState": "closed",
-      "mouthState": "smile",
+      "mouthState": "cat",
       "mouth": {
         "x": 43.939288547934865,
         "y": 55.81577092412206
@@ -45569,7 +45569,10 @@
       ],
       "eyeState": "cry",
       "mouthState": "smile",
-      "mouth": null,
+      "mouth": {
+        "x": 41.233411719037825,
+        "y": 57.05809343536493
+      },
       "folded": [
         false,
         false
@@ -45676,7 +45679,10 @@
       ],
       "eyeState": "cry",
       "mouthState": "smile",
-      "mouth": null,
+      "mouth": {
+        "x": 41.233411719037825,
+        "y": 57.05809343536493
+      },
       "folded": [
         false,
         false
@@ -45783,7 +45789,10 @@
       ],
       "eyeState": "cry",
       "mouthState": "smile",
-      "mouth": null,
+      "mouth": {
+        "x": 41.233411719037825,
+        "y": 57.05809343536493
+      },
       "folded": [
         false,
         false
@@ -45890,7 +45899,10 @@
       ],
       "eyeState": "cry",
       "mouthState": "smile",
-      "mouth": null,
+      "mouth": {
+        "x": 41.233411719037825,
+        "y": 57.05809343536493
+      },
       "folded": [
         false,
         false
@@ -45997,7 +46009,10 @@
       ],
       "eyeState": "cry",
       "mouthState": "smile",
-      "mouth": null,
+      "mouth": {
+        "x": 41.233411719037825,
+        "y": 57.05809343536493
+      },
       "folded": [
         false,
         false
@@ -46104,7 +46119,10 @@
       ],
       "eyeState": "cry",
       "mouthState": "smile",
-      "mouth": null,
+      "mouth": {
+        "x": 41.233411719037825,
+        "y": 57.05809343536493
+      },
       "folded": [
         false,
         false
@@ -46211,7 +46229,10 @@
       ],
       "eyeState": "cry",
       "mouthState": "smile",
-      "mouth": null,
+      "mouth": {
+        "x": 41.233411719037825,
+        "y": 57.05809343536493
+      },
       "folded": [
         false,
         false
@@ -46318,7 +46339,10 @@
       ],
       "eyeState": "cry",
       "mouthState": "smile",
-      "mouth": null,
+      "mouth": {
+        "x": 41.233411719037825,
+        "y": 57.05809343536493
+      },
       "folded": [
         false,
         false
@@ -46425,7 +46449,10 @@
       ],
       "eyeState": "cry",
       "mouthState": "smile",
-      "mouth": null,
+      "mouth": {
+        "x": 41.24234158531693,
+        "y": 57.041449255256786
+      },
       "folded": [
         false,
         false
@@ -46532,7 +46559,10 @@
       ],
       "eyeState": "cry",
       "mouthState": "smile",
-      "mouth": null,
+      "mouth": {
+        "x": 41.24234158531693,
+        "y": 57.041449255256786
+      },
       "folded": [
         false,
         false
@@ -46639,7 +46669,10 @@
       ],
       "eyeState": "cry",
       "mouthState": "smile",
-      "mouth": null,
+      "mouth": {
+        "x": 41.24234158531693,
+        "y": 57.041449255256786
+      },
       "folded": [
         false,
         false
@@ -46746,7 +46779,10 @@
       ],
       "eyeState": "cry",
       "mouthState": "smile",
-      "mouth": null,
+      "mouth": {
+        "x": 41.24234158531693,
+        "y": 57.041449255256786
+      },
       "folded": [
         false,
         false
@@ -46853,7 +46889,10 @@
       ],
       "eyeState": "cry",
       "mouthState": "smile",
-      "mouth": null,
+      "mouth": {
+        "x": 41.24234158531693,
+        "y": 57.041449255256786
+      },
       "folded": [
         false,
         false
@@ -46960,7 +46999,10 @@
       ],
       "eyeState": "cry",
       "mouthState": "smile",
-      "mouth": null,
+      "mouth": {
+        "x": 41.24234158531693,
+        "y": 57.041449255256786
+      },
       "folded": [
         false,
         false
@@ -47067,7 +47109,10 @@
       ],
       "eyeState": "cry",
       "mouthState": "smile",
-      "mouth": null,
+      "mouth": {
+        "x": 41.24234158531693,
+        "y": 57.041449255256786
+      },
       "folded": [
         false,
         false
@@ -47174,7 +47219,10 @@
       ],
       "eyeState": "cry",
       "mouthState": "smile",
-      "mouth": null,
+      "mouth": {
+        "x": 41.24234158531693,
+        "y": 57.041449255256786
+      },
       "folded": [
         false,
         false
