@@ -1,4 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
@@ -8,11 +10,15 @@ const pet = (page: Page) => page.locator(".vc-companion");
 const home = (page: Page) => page.getByRole("region", { name: "빅타민 집", exact: true });
 const settings = (page: Page) => page.getByRole("dialog", { name: "설정", exact: true });
 const posts = new WeakMap<Page, string[]>(), errors = new WeakMap<Page, string[]>();
+const unseenReports = new Set(Object.entries(JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>)
+  .filter(([, action]) => action.exportedName === "getUnseenReportCountAction").map(([id]) => id));
 
 test.beforeEach(async ({ page }) => {
   const attempted: string[] = [], failures: string[] = []; posts.set(page, attempted); errors.set(page, failures);
   page.on("pageerror", error => failures.push(error.message));
   await page.route("**/*", route => {
+    // The developer header's report inbox reads its badge number on mount (c30945c4, 2026-11-13): a read, answered locally with 0.
+    if (route.request().method() === "POST" && unseenReports.has(route.request().headers()["next-action"])) return route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":"fixture"}\n1:0\n` });
     if (route.request().method() === "POST") { attempted.push(new URL(route.request().url()).pathname); return route.fulfill({ status: 500, body: "" }); }
     return route.continue();
   });
@@ -76,15 +82,24 @@ test.describe("shared companion in the studio", () => {
   });
   test("developer filter and season disclosures persist across studio reload and public viewer", async ({ page }) => {
     await seed(page, true); await studio(page, "developer");
+    const toggleOf = (key: string) => page.locator(`[data-panel-section="${key}"] > .panel-section-heading .panel-section-toggle`).first();
+    const sectionOf = (key: string) => page.locator(`[data-panel-section="${key}"]`).first();
+    // With the companion on and nothing saved, both sections start folded so the house has room
+    // (e4ddc503, COMPANION_PANEL_SECTION_PREFERENCES). The person's choice is the non-default: open.
     for (const key of ["tag-filter", "season"]) {
-      const toggle = page.locator(`[data-panel-section="${key}"] > .panel-section-heading .panel-section-toggle`).first();
-      await expect(toggle).toHaveAttribute("aria-expanded", "true"); await toggle.click(); await expect(toggle).toHaveAttribute("aria-expanded", "false");
+      await expect(toggleOf(key)).toHaveAttribute("aria-expanded", "false"); await expect(sectionOf(key)).toHaveAttribute("data-panel-collapsed", "");
+      await toggleOf(key).click(); await expect(toggleOf(key)).toHaveAttribute("aria-expanded", "true");
     }
     await page.reload(); await expect(page.locator(".studio-shell")).toBeVisible();
-    for (const key of ["tag-filter", "season"]) await expect(page.locator(`[data-panel-section="${key}"]`).first()).toHaveAttribute("data-panel-collapsed", "");
+    for (const key of ["tag-filter", "season"]) { await expect(toggleOf(key)).toHaveAttribute("aria-expanded", "true"); await expect(sectionOf(key)).not.toHaveAttribute("data-panel-collapsed"); }
+    // One opened, one folded again: a mixed saved state must also survive, on both surfaces.
+    await toggleOf("season").click(); await expect(toggleOf("season")).toHaveAttribute("aria-expanded", "false");
+    await page.reload(); await expect(page.locator(".studio-shell")).toBeVisible();
+    await expect(sectionOf("tag-filter")).not.toHaveAttribute("data-panel-collapsed"); await expect(sectionOf("season")).toHaveAttribute("data-panel-collapsed", "");
     await expect(home(page)).toBeVisible(); await sharedLayout(page);
     await page.goto("/visual-fixture/poster?avatar=1"); await expect(page.locator(".poster-page")).toBeVisible();
-    for (const key of ["tag-filter", "season"]) await expect(page.locator(`[data-panel-section="${key}"]`).first()).toHaveAttribute("data-panel-collapsed", "");
+    await expect(toggleOf("tag-filter")).toHaveAttribute("aria-expanded", "true"); await expect(sectionOf("tag-filter")).not.toHaveAttribute("data-panel-collapsed");
+    await expect(sectionOf("season")).toHaveAttribute("data-panel-collapsed", "");
     await expect(pet(page)).toHaveCount(1); await sharedLayout(page);
   });
 });

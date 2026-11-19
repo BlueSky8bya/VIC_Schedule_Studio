@@ -160,13 +160,18 @@ test("radio empty pool, dedicated OFF, zero volume and global OFF keep play cont
   await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeDisabled();
   await radio.locator(".rhh-radio-playlist > summary").click();
   for (const checkbox of await radio.getByRole("checkbox").all()) await checkbox.uncheck();
-  await expect(radio).toContainText("선택한 곡이 없어요.");
+  // Redesign stage 1 (7e7a5f82): while something outside the radio blocks it, the status line names that reason first.
+  const status = radio.locator(".rhh-radio-now > p");
+  await expect(status).toHaveText("전체 소리가 꺼져 있어요");
+  await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeDisabled();
   await dialog.locator('[data-tab="sound"]').click();
   await dialog.getByRole("switch", { name: "효과음 켜기/끄기", exact: true }).click();
   await dialog.locator('[data-tab="companion"]').click();
   await dialog.getByRole("tab", { name: "설정", exact: true }).click();
+  // With the site sound back on, the empty pool is the only thing left to say.
+  await expect(status).toHaveText("선택한 곡이 없어요.");
   await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeDisabled();
-  await radio.locator(".rhh-radio-playlist > summary").click();
+  for (const fold of [".rhh-radio-more", ".rhh-radio-playlist"]) if (!await radio.locator(fold).evaluate(node => (node as HTMLDetailsElement).open)) await radio.locator(`${fold} > summary`).click();
   await radio.getByRole("checkbox").first().check();
   await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeEnabled();
   const volume = radio.getByRole("slider", { name: "라디오 음량", exact: true });

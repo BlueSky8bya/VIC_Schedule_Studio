@@ -454,18 +454,34 @@ test("140 sleepy responds to an actual calm recording and stops its music sequen
   };
   let { dialog, radio } = await openRadio();
   const track = COMPANION_RADIO_TRACKS.find(track => track.mood === "calm")!;
-  await radio.locator(".rhh-radio-playlist > summary").click();
-  await radio.getByRole("button", { name: `${track.title} 재생`, exact: true }).click();
-  await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await page.mouse.move(2, 2); await startProbe(page);
-  await expect(home.locator('[data-home-action="radio"]')).toHaveAttribute("aria-pressed", "true");
-  await expect.poll(async () => (await frames(page)).some(frame => frame.scene === "X-S-music"), { timeout: 25000, intervals: [100] }).toBe(true);
+  // A recording is offered to the director for 9s after 3s of listening
+  // (personality-director.ts "music"), and only at a free decision: the entry
+  // beat and the once-per-document D157-S introduction (534e0eb2, 2026-10-21)
+  // come first, and a scene or a trip in progress is never cut. So the person
+  // may have to start the same calm recording again; every start is the real
+  // playlist button, at most four times.
+  let responded = false, starts = 0;
+  for (; starts < 4 && !responded; starts++) {
+    const playlist = radio.locator(".rhh-radio-playlist");
+    if (!await playlist.evaluate(node => (node as HTMLDetailsElement).open)) await playlist.locator("> summary").click();
+    await radio.getByRole("button", { name: `${track.title} 재생`, exact: true }).click();
+    await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await page.mouse.move(2, 2); await startProbe(page);
+    await expect(home.locator('[data-home-action="radio"]')).toHaveAttribute("aria-pressed", "true");
+    responded = await expect.poll(async () => (await frames(page)).some(frame => frame.scene === "X-S-music"), { timeout: 13000, intervals: [100] }).toBe(true).then(() => true, () => false);
+    // A restart is allowed only when this start's probe frames show another authored owner (an entry/D157-S/other
+    // scene beat or a home-life scene). A calm recording ignored while nothing else owned the resident fails at once.
+    if (!responded) expect((await frames(page)).some(frame => Boolean(frame.scene && frame.scene !== "X-S-music") || Boolean(frame.homeLife)),
+      `calm recording start ${starts + 1} went unanswered while no other scene owned the resident`).toBe(true);
+    if (!responded) ({ dialog, radio } = await openRadio());
+  }
+  expect(responded, `the sleepy resident answers a calm recording within ${starts} real starts`).toBe(true);
   ({ dialog, radio } = await openRadio());
   const volume = radio.getByRole("slider", { name: "라디오 음량", exact: true }); await volume.focus(); await volume.press("Home");
   await expect(volume).toHaveValue("0");
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await page.mouse.move(2, 2); await startProbe(page);
   await duration(page, 4500);
   expect((await frames(page)).some(frame => frame.scene === "X-S-music" && frame.state !== "idle")).toBe(false);
-  proofs.get(page)!.notes.push({ actualUserStartedRecording: track.id, actualCalmSequence: true, nativeVolumeZeroCancelsSequence: true });
+  proofs.get(page)!.notes.push({ actualUserStartedRecording: track.id, realStarts: starts, actualCalmSequence: true, nativeVolumeZeroCancelsSequence: true });
 });
 
 for (const outside of [false, true]) test(outside
@@ -600,7 +616,13 @@ for (const outside of [false, true]) test(outside
 
 for (const personality of COMPANION_PERSONALITIES) test(`140 ${personality} native primary and secondary sequences finish with real object or room effects`, async ({ page }) => {
   test.setTimeout(950000);
-  const home = await fixture(page, "studio", { personality, roam: false, hunger: personality === "gourmet" ? .6 : .5 });
+  // Since a2e6bf26 (2026-10-20) any hunger at or above the full threshold
+  // (.35) with a dispenser starts the common meal routine, and since 534e0eb2
+  // (2026-10-21) a lying toy becomes a due S03 return two decisions later.
+  // At .5 the sleepy resident therefore spends the S10 falling-toy window on
+  // a meal and then returns the toy as S03 (2 of 2 runs). Its S10 proof needs
+  // a resident that is not hungry; the others keep the original .5.
+  const home = await fixture(page, "studio", { personality, roam: false, hunger: personality === "gourmet" ? .6 : personality === "sleepy" ? .3 : .5 });
   await placeCompanionOnHomeFloor(page);
   const kind = toys140[personality], id = kind ? await drawNativeToy(page, kind) : undefined;
   // One physical toy can finish literal T01 or a complete alternate return
@@ -640,9 +662,15 @@ for (const personality of COMPANION_PERSONALITIES) test(`140 ${personality} nati
     return { primary: done.some(recipe => recipe.major)||alternate, secondary: done.some(recipe => !recipe.major && !recipe.id.startsWith("X-")), returned: !id || await page.locator(`.vc-toy[data-toy-id="${id}"]`).count() === 0 };
   }, { timeout: Math.max(1, 115000 - (Date.now() - proofStarted)), intervals: [250] }).toEqual({ primary: true, secondary: true, returned: true });
   expect(Date.now() - proofStarted, "primary and original secondary complete within the original total115s observation budget").toBeLessThanOrEqual(115000);
+  // A free secondary (S09/S11) chosen just before the box click is finished
+  // first, so S10's approach may still be on its way when the secondary is
+  // done. It must still happen inside the same total 115s budget.
+  const s10Approach = (observed: readonly Frame[]) => observed.filter(frame => frame.scene === "S10" && frame.beat === "1" && ["walk", "jump"].includes(frame.state));
+  if (personality === "sleepy") await expect.poll(async () => { const approach = s10Approach(await frames(page)); return approach.length > 1 ? Math.max(...approach.map(frame => Math.hypot(frame.x-approach[0].x,frame.y-approach[0].y))) : 0; },
+    { timeout: Math.max(1, 115000 - (Date.now() - proofStarted)), intervals: [250] }).toBeGreaterThanOrEqual(48);
   const trace = await frames(page), done = finishedRecipes(trace, boxPoint).filter(recipe => recipe.personality === personality);
   if (personality === "sleepy") {
-    const approach = trace.filter(frame => frame.scene === "S10" && frame.beat === "1" && ["walk", "jump"].includes(frame.state));
+    const approach = s10Approach(trace);
     expect(approach.length).toBeGreaterThan(1);
     expect(Math.max(...approach.map(frame => Math.hypot(frame.x-approach[0].x,frame.y-approach[0].y))), "the new S10 context actually moved, rather than merely promising a route").toBeGreaterThanOrEqual(48);
   }
@@ -727,6 +755,9 @@ for (const surface of ["viewer", "studio"] as const) test(`137 ${surface} tidy c
   const box = (await home.locator(".vc-toy-box-opening").boundingBox())!, opening = { x: box.x + box.width / 2, y: box.y + box.height };
   await startProbe(page); await actor.focus(); await actor.press("Space"); await page.mouse.move(2, 2);
   await expect(page.locator(".vc-toy")).toHaveCount(0, { timeout: 75_000 });
+  // Pull the long trace once before the 1s receipt gate: under machine load
+  // the first transfer of ~450 frames alone could spend the whole second.
+  await frames(page);
   await expect.poll(async () => {
     const painted = await frames(page);
     return ids.every(id => { const last = painted.filter(frame => frame.toys.some(toy => toy.id === id && toy.carried)).at(-1); return last && painted.some(frame => frame.at > last.at && !frame.toys.some(toy => toy.id === id)); });
@@ -827,7 +858,7 @@ test("137 native take-outs retain the shared food8 and toy4 caps", async ({ page
   expect(await page.locator(".vc-food").count()).toBe(8); expect(await page.locator(".vc-toy").count()).toBe(4);
 });
 
-test("137 summer homebody respects native manual15s choices then connects the real sofa TV curtain and persistent light", async ({ page }) => {
+test("137 summer homebody respects native manual15s choices then connects the real sofa TV and curtain under the shared lamp policy", async ({ page }) => {
   const home = await fixture(page, "studio", { personality: "tidy", summer: true }); await placeCompanionOnHomeFloor(page);
   const lamp = home.locator(".vc-home-lamp"), tv = home.locator(".vc-home-tv"), room = home.locator(".vc-home-room");
   // Deliberately establish manual ON and OFF, even if these equal defaults.
@@ -838,8 +869,15 @@ test("137 summer homebody respects native manual15s choices then connects the re
   await duration(page, Math.max(1000, 15_000 - (postSelection - lastManual))); const protectedFrames = await frames(page);
   const protectedThrough = 15_000 - (postSelection - lastManual) - 250;
   expect(protectedFrames.filter(frame => frame.at < protectedThrough).every(frame => frame.tv === "off" && frame.lit)).toBe(true);
-  await expect.poll(async () => (await frames(page)).some(frame => frame.platform === "companion-home" && frame.tv !== "off" && frame.curtain === "closed" && !frame.lit && frame.state !== "sleep"), { timeout: 60_000, intervals: [200] }).toBe(true);
+  // The scene's light step goes through the shared home-life policy
+  // (9e8de6f7, 2026-10-21, plan 149 item 5): awake indoor life normally keeps
+  // the lamp on, and only a bounded homebody dark-TV draw (12%) turns it off.
+  // So the connected sofa/TV/curtain scene is the proof here, and the lamp,
+  // whichever it is, is a real autonomous choice made after the protection.
+  await expect.poll(async () => (await frames(page)).some(frame => frame.platform === "companion-home" && frame.tv !== "off" && frame.curtain === "closed" && frame.state !== "sleep"), { timeout: 60_000, intervals: [200] }).toBe(true);
   const trace = await frames(page); expect(trace.some(frame => frame.state === "sleep")).toBe(false);
+  const firstDark = trace.find(frame => !frame.lit);
+  if (firstDark) expect(firstDark.at, "the lamp is only switched by the resident after the manual protection").toBeGreaterThanOrEqual(protectedThrough);
   proofs.get(page)!.notes.push({ manualPriorityMs: 15_000, protectedThrough, actualSummerRoom: await room.getAttribute("data-season"), noSleepPermissionBypass: true });
 });
 
@@ -886,6 +924,9 @@ test("137 hungry gourmet uses the actual dispenser once and eats that same spawn
   proofs.get(page)!.notes.push({ initialFixtureHunger: .6, nativeSpawnedFoodId: id, firstActualRemovalAt: removed.at, sameIdObservedEatingBeforeRemoval: true, nativeFeedButtonClicks: 0 });
 });
 
+// Regression guard (fixed in 63ecc14a): since a2e6bf26 every meal at hunger >= .35 is the director's `routine-meal`,
+// and the first-food inspection (novel-food.ts, data-food-curiosity) was once applied only to a planner-chosen meal,
+// so an unknown food went straight from sniff/look to eat.
 test("140 middle-hunger real basic meal visibly inspects unknown food before eventually eating the same ID", async ({ page }) => {
   test.setTimeout(180000);
   const trials: { kind: string | null; inspected: boolean }[] = [];

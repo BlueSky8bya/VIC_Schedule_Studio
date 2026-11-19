@@ -1,4 +1,5 @@
 import type { Route } from "@playwright/test";
+import { UI_FONT_CSS } from "@/lib/ui/ui-font-css";
 
 export type ReadOnlyFontRoute = Pick<Route, "request" | "fetch" | "fulfill" | "abort">;
 
@@ -32,4 +33,20 @@ export async function fulfillReadOnlyFont(route: ReadOnlyFontRoute, approved: Re
   }
   try { await route.fulfill({ response }); }
   catch { rejected.push("approved-font-fulfill-failed"); await route.abort(); }
+}
+
+const UI_FONT_SHEETS: ReadonlySet<string> = new Set(Object.values(UI_FONT_CSS).flat().map(file => `https://cdn.jsdelivr.net/npm/${file}`));
+
+/** Since 2026-11-16 the settings font list attaches each Google font's
+ * declaration stylesheet from jsDelivr (lib/ui/ui-font-css.ts) instead of
+ * bundling it. A spec that confines requests to its own fixture origin answers
+ * exactly those declared GET stylesheets locally with an empty sheet: nothing
+ * leaves the machine, no font file is then requested, and the product sees a
+ * loaded sheet instead of retrying on its fallback host. Call it before the
+ * foreign-origin guard; `true` means the route was handled. */
+export async function fulfillDeclaredUiFontSheet(route: ReadOnlyFontRoute): Promise<boolean> {
+  const request = route.request();
+  if (request.method() !== "GET" || request.resourceType() !== "stylesheet" || !UI_FONT_SHEETS.has(request.url())) return false;
+  await route.fulfill({ status: 200, contentType: "text/css; charset=utf-8", headers: { "access-control-allow-origin": "*" }, body: "/* fixture: font declarations withheld */" });
+  return true;
 }

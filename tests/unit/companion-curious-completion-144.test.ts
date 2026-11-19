@@ -8,7 +8,7 @@ const translation=(x:number,y:number)=>[1,0,0,0,0,1,0,0,0,0,1,0,x,y,0,1];
 function measuredCell(pose:number,size=92):CuriousTextureCellMeasurement{
   const frame=companionSpriteMetadata.frames[pose],atlas=companionSpriteMetadata.atlases[frame.atlas];
   return {currentPath:atlas.src,connectedToSprite:true,naturalWidth:atlas.width,naturalHeight:atlas.height,
-    textureWidth:size*companionSpriteMetadata.grid,textureHeight:size*companionSpriteMetadata.gridRows,spriteWidth:size,spriteHeight:size,textureLeft:0,textureTop:0,
+    textureWidth:size*companionSpriteMetadata.grid,textureHeight:size*((atlas as {gridRows?:number}).gridRows??companionSpriteMetadata.gridRows),spriteWidth:size,spriteHeight:size,textureLeft:0,textureTop:0,
     textureMatrix:translation(-(frame.index%companionSpriteMetadata.grid)*size,-Math.floor(frame.index/companionSpriteMetadata.grid)*size),
     spriteMatrix:translation(frame.x/80*size,frame.y/80*size),spriteClipPath:`inset(${frame.clip.map(value=>`${value/80*100}%`).join(" ")})`,textureClipPath:"none"};
 }

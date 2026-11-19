@@ -36,7 +36,9 @@ test.beforeEach(async ({ page }) => {
     for (const [name, value] of Object.entries({ [key]: epoch, "vic.gfxPref": "max", "vic.reduceMotion": "off", "vic.ambient": "off", "vic.sound": "off", "vic.premiereStage": "off", "vic_avatar_side": "left" })) localStorage.setItem(name, value);
     localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 1, ...care }));
-    localStorage.removeItem("vic.panelSections"); localStorage.removeItem("vic_panel_collapsed");
+    // With the companion on and nothing saved, tag filter and season start folded (e4ddc503). This walk folds and
+    // unfolds them itself, so it starts from all three sections open.
+    localStorage.setItem("vic.panelSections", JSON.stringify({ version: 1, "tag-filter": true, season: true, "companion-home": true })); localStorage.removeItem("vic_panel_collapsed");
   }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH,
     preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep: true, feeding: true, heartPrank: false, ambientPrank: false, panelPrank: false },
     care: { ...DEFAULT_COMPANION_CARE, hunger: .05, energy: 1 } });
@@ -56,8 +58,9 @@ async function settleLayout(page: Page) {
 }
 async function position(item: Locator) {
   return item.evaluate(node => {
-    const value = node.closest("[hidden]") ? (node as HTMLElement).style.transform : getComputedStyle(node).transform;
-    const matrix = new DOMMatrixReadOnly(value); return { x: matrix.m41, y: matrix.m42 };
+    // A home-floor item is laid out from an anchored left/top; its transform is only the offset from that origin.
+    const hidden = Boolean(node.closest("[hidden]")), css = hidden ? (node as HTMLElement).style : getComputedStyle(node);
+    const matrix = new DOMMatrixReadOnly(css.transform); return { x: matrix.m41 + (parseFloat(css.left) || 0), y: matrix.m42 + (parseFloat(css.top) || 0) };
   });
 }
 async function floorOffset(page: Page, item: Locator) {

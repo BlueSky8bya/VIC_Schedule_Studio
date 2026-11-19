@@ -13,9 +13,11 @@ import { guardCompanionQa } from "./helpers/companion-qa";
 import { openCompanionHome } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
+import { fulfillDeclaredUiFontSheet } from "./helpers/readonly-font";
 
 const output = process.env.COMPANION_QA_OUTPUT ?? ".scratch-pw/collection-hover-20261023/native";
-const base = process.env.COMPANION_QA_NODE_ORIGIN ?? "http://127.0.0.1:3100";
+// The fixture origin is the config's baseURL unless a run names another loopback server explicitly.
+const originOverride = process.env.COMPANION_QA_NODE_ORIGIN;
 const buildDir = process.env.VISUAL_TEST_BUILD_DIR ?? ".next";
 const warm = (value: string) => { const rgb = value.match(/[\d.]+/g)?.map(Number) ?? []; return rgb[0] > rgb[2]; };
 const cool = (value: string) => { const rgb = value.match(/[\d.]+/g)?.map(Number) ?? []; return rgb[2] > rgb[0]; };
@@ -32,12 +34,15 @@ async function pointAt(page: Page, dot: Locator) {
   await expect(dot).toHaveAttribute("data-hover", "");
 }
 
-test.use({ baseURL: base, serviceWorkers: "block", isMobile: false, hasTouch: false });
+test.use({ ...(originOverride ? { baseURL: originOverride } : {}), serviceWorkers: "block", isMobile: false, hasTouch: false });
 for (const surface of ["viewer", "studio", "preview"] as const) for (const dark of [false, true]) {
   const name = `${surface}-${dark ? "dark" : "light"}`;
-  test(`collection hover ${name}: discovery color survives native hover, press, selection and keyboard paging`, async ({ page, context }, info) => {
-    test.setTimeout(100000); mkdirSync(output, { recursive: true });
+  test(`collection hover ${name}: discovery color survives native hover, press, selection and keyboard paging`, async ({ page, context, baseURL }, info) => {
+    test.setTimeout(100000); mkdirSync(output, { recursive: true }); const base = new URL(baseURL!).origin;
     const proof = await guardCompanionQa(page, context, base), observations: unknown[] = [];
+    // The settings window's font list attaches its declared jsDelivr stylesheets (2026-11-16). They are answered
+    // locally with an empty sheet before the guard's foreign-origin rejection; everything else falls through to it.
+    await context.route("https://cdn.jsdelivr.net/**", async route => { if (!await fulfillDeclaredUiFontSheet(route)) await route.fallback(); });
     let completed = false, originalError: string | undefined;
     const source = ["components/shared/settings-modal.css", "components/shared/companion-collection-pager.tsx", "tests/visual/companion-collection-hover.spec.ts"].map(path => ({ path, sha256: createHash("sha256").update(readFileSync(path)).digest("hex") }));
     await page.addInitScript(({ preferences, memory, epoch, epochKey, dark, food, toy, behavior, wardrobe }) => {

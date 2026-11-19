@@ -164,7 +164,8 @@ test("movement is not a setting: a stored 가만히 shows no row, dims nothing a
   await expect(companionPlayfulSwitch(dialog)).toBeVisible();
   await expect(dialog.getByRole("radiogroup", { name: "빅타민 움직임", exact: true })).toHaveCount(0);
   await expect(dialog.locator('[data-settings-place="companion-roam"],[data-act="companion-motion-level"],[data-act="companion-roam"],[data-act="companion-jump"],.rhh-motion-preview,.rhh-companion-section-title')).toHaveCount(0);
-  await expect(dialog.locator(".rhh-companion-cards")).not.toContainText("가만히");
+  // No movement level choice is shown (the 자동 잠자기 hint may say 가만히 두면…, so look at choices only).
+  await expect(dialog.getByRole("radio", { name: "가만히", exact: true })).toHaveCount(0);
   await expect(dialog.getByRole("button", { name: "움직임으로", exact: true })).toHaveCount(0);
   await expect(playfulRow(dialog)).not.toHaveClass(/is-blocked/);
   await expect(panelRow(dialog)).not.toHaveClass(/is-blocked/);

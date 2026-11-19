@@ -12,7 +12,7 @@ import type { CompanionToyKind } from "@/lib/ui/viewer-companion/toy-catalog";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
-import { expectCompanionMotion, setCompanionMotion } from "./helpers/companion-settings";
+import { expectCompanionMotion, keepCompanionStoredMotion, setCompanionMotion } from "./helpers/companion-settings";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 import { nativeHomeControlContactBefore, type NativeHomeControlFrame } from "./helpers/companion-home-contact-156";
@@ -59,6 +59,9 @@ test.afterEach(async ({ page }, info) => {
 
 type HouseScenario = { personality: CompanionPersonality; energy: number; sleep: boolean; hour: number; light: boolean };
 async function setup(page: Page, surface: "viewer" | "studio" | "preview", feeding = false, house?: HouseScenario) {
+  // storageState is replaced: the seeded still resident and setCompanionMotion's later "run" (storage writes) are
+  // honoured only through the QA seam since a9f6d77e.
+  await keepCompanionStoredMotion(page);
   await page.addInitScript(({ preferences, memory, feeding, foods, epoch, key, house }) => {
     for (const [name, value] of Object.entries({ [key]: epoch, "vic.gfxPref": "max", "vic.gfx": JSON.stringify({ mode: "full", at: Date.now(), v: 3 }), "vic.reduceMotion": "off", "vic.sound": "off", "vic.ambient": "off", "vic.dark": "off", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(name, value);
     localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, personality: house?.personality ?? (feeding ? "gourmet" : "mischievous"), personalitySource: "manual", roam: false, feeding, sleep: false, petting: false, learnFromYou: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, rarePrank: false, speed: "lively" }));

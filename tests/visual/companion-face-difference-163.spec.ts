@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import sharp from "sharp";
+import edition from "@/lib/ui/viewer-companion/appearance-edition.json";
 const output = process.env.COMPANION163_OUTPUT ?? ".scratch-pw/archive163-face";
 test.use({ viewport: { width: 1440, height: 1600 }, storageState: { cookies: [], origins: [] }, serviceWorkers: "block" });
 test("163 actual36 peak faces have substantial pixel differences rather than hash-only variation", async ({ page, context, baseURL }) => {
@@ -30,5 +31,15 @@ test("163 every509 eligible original face position preserves body alpha and oran
   const out = page.locator("output[data-anchor-audit]"); await expect(out).toHaveCount(1, { timeout: 150000 });
   const proof = JSON.parse(await out.textContent() ?? "{}"); mkdirSync(output, { recursive: true }); writeFileSync(resolve(output, "all-anchor-proof.json"), JSON.stringify(proof, null, 2));
   expect(proof.eligibleFrames).toBe(509); expect(proof.results).toHaveLength(1018);
-  for (const p of proof.results) { expect(p.alpha).toBe(0); expect(p.cheek).toBe(0); expect(p.outside).toBe(0); expect(p.painted).toBe(true); expect(p.changed).toBeGreaterThan(0); if (p.id === "greeting") expect(p.contrastPixels).toBeGreaterThanOrEqual(20); }
+  // 68b46f11 (2026-11-18): the 16 authored dizzy cells keep their native rings and take no expression at all.
+  const dizzy = new Set(edition.frames.filter(frame => frame.eyeState === "spiral").map(frame => frame.physicalIndex));
+  expect(dizzy.size).toBe(16); expect(proof.results.filter((p: { painted: boolean }) => !p.painted).map((p: { physicalIndex: number }) => p.physicalIndex).sort()).toEqual([...dizzy, ...dizzy].sort());
+  for (const p of proof.results) {
+    if (dizzy.has(p.physicalIndex)) continue; // nothing painted: the fixture's diff would read the previous cell's canvas
+    expect(p.alpha).toBe(0); expect(p.painted).toBe(true); expect(p.changed).toBeGreaterThan(0); if (p.id === "greeting") expect(p.contrastPixels).toBeGreaterThanOrEqual(20);
+    // The same commit gave every authored cell one canonical mouth, placed by companionFaceLayout. The fixture measures
+    // from that current layout (material-corrected anchors, the mouth at its layout position) and excludes only the
+    // source's red mouth interior that the new mouth replaces: nothing outside the face boxes and no cheek may change.
+    expect(p.outside, `cell ${p.physicalIndex} ${p.id}`).toBe(0); expect(p.cheek, `cell ${p.physicalIndex} ${p.id}`).toBe(0);
+  }
 });

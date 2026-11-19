@@ -5,6 +5,7 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { chooseCompanionPersonality, openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
+import { keepCompanionStoredMotion } from "./helpers/companion-settings";
 
 const output = process.env.COMPANION_CURTAIN_126_OUTPUT ?? ".scratch-pw/companion-126/curtains";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
@@ -20,6 +21,7 @@ test.beforeEach(async ({ page, baseURL }) => {
   const origin = new URL(baseURL!).origin; expect(["127.0.0.1", "localhost"]).toContain(new URL(origin).hostname);
   const proof: Proof = { errors: [], forbidden: [], checks: [] }; proofs.set(page, proof);
   page.on("pageerror", error => proof.errors.push(error.message));
+  await keepCompanionStoredMotion(page);
   await page.context().route("**/*", route => {
     const request = route.request(), url = new URL(request.url());
     if (!["GET", "HEAD"].includes(request.method())) { proof.forbidden.push(request.method() + " " + url.pathname); return route.abort(); }
@@ -88,22 +90,41 @@ async function observe(page: Page) {
   });
 }
 
+// Since a2e6bf26 (141 everyday agency, 2026-10-20) the curtain is a direct
+// session control (`home-curtain-control.ts`, open -> shade -> closed): its
+// choice always owns the cloth, so sunlight and a home nap no longer move it by
+// themselves. A person uses `.vc-curtain-control`; the companion only pulls
+// the real cord in an authored routine. The 126 stages, frame and finite blend
+// are unchanged and are exercised here through that real control.
+const curtainControl = (page: Page) => page.getByRole("region", { name: "빅타민 집", exact: true }).locator('[data-home-action="curtain"]');
+async function pressCurtain(page: Page) { const control = curtainControl(page); await control.focus(); await control.press("Enter"); }
+
 for (const [personality, stage] of [["curious", 1], ["sleepy", 3]] as const) test(`126 sunny awake ${personality} uses a decoded finite curtain stage over the real frame`, async ({ page }) => {
   const state = await fixture(page, personality, 12);
+  await expect(state.windowView).toHaveAttribute("data-curtain-stage", "0");
+  await pressCurtain(page);
+  await expect(state.windowView).toHaveAttribute("data-curtain", "shade");
   await expect(state.windowView).toHaveAttribute("data-curtain-stage", String(stage));
   await expect.poll(async () => (await geometry(page)).opacities).toEqual(Array.from({ length: 5 }, (_, index) => Number(index === stage)));
   const data = await geometry(page); expect(data.overlay.x).toBeLessThan(data.frame.x); expect(data.overlay.y).toBeLessThan(data.frame.y); expect(data.overlay.right).toBeGreaterThan(data.frame.right); expect(data.overlay.bottom).toBeGreaterThan(data.frame.bottom);
   await expect(state.windowView).toHaveAttribute("data-curtain-rest", "awake"); proofs.get(page)!.checks.push({ personality, stage, data });
 });
 
-for (const quiet of [false, true]) test(`126 real home nap closes all five stages and keeps the frame${quiet ? " with static quiet motion" : " through its actual wake"}`, async ({ page }) => {
+for (const quiet of [false, true]) test(`126 real home nap: the curtain control closes all five stages and keeps the frame${quiet ? " with static quiet motion" : " through its reopening"}`, async ({ page }) => {
   const state = await fixture(page, "curious", 23, quiet); await expect(state.windowView).toHaveAttribute("data-curtain-stage", "0");
   const before = await geometry(page); await observe(page); await state.actor.focus(); await state.actor.press("n"); await page.mouse.move(2, 2);
+  await expect(state.windowView).toHaveAttribute("data-curtain-rest", /^(?:settling|asleep)$/);
+  // The nap alone leaves the cloth where the session choice put it (open).
+  await expect(state.windowView).toHaveAttribute("data-curtain-stage", "0");
+  await pressCurtain(page); await expect(state.windowView).toHaveAttribute("data-curtain", "shade");
+  await pressCurtain(page); await expect(state.windowView).toHaveAttribute("data-curtain", "closed");
   await expect(state.windowView).toHaveAttribute("data-curtain-stage", "4");
   await expect.poll(async () => (await geometry(page)).opacities).toEqual([0, 0, 0, 0, 1]);
   const closed = await geometry(page); expect(closed.anchors).toEqual(before.anchors); expect(closed.frame).toEqual(before.frame); expect(closed.moving).toBe(0);
+  await expect(state.windowView).toHaveAttribute("data-curtain-rest", /^(?:settling|asleep)$/);
   if (!quiet) {
-    await expect(state.windowView).toHaveAttribute("data-curtain-stage", "0", { timeout: 16000 });
+    await pressCurtain(page);
+    await expect(state.windowView).toHaveAttribute("data-curtain-stage", "0");
     await expect.poll(async () => (await geometry(page)).opacities).toEqual([1, 0, 0, 0, 0]);
   }
   const frames = await page.evaluate(() => (window as unknown as { __curtain126: Probe }).__curtain126.frames);
@@ -113,11 +134,13 @@ for (const quiet of [false, true]) test(`126 real home nap closes all five stage
   proofs.get(page)!.checks.push({ quiet, before, closed, after: await geometry(page) });
 });
 
-test("126 a real touch reverses a partly closed curtain from its current blend", async ({ page }) => {
+test("126 a real control press reverses a partly closed curtain from its current blend", async ({ page }) => {
   const state = await fixture(page, "curious", 23, false, "rain"); await expect(state.windowView.locator(".vc-window-weather")).toHaveCount(1);
-  await observe(page); await state.actor.focus(); await state.actor.press("n");
+  await observe(page);
+  await pressCurtain(page); await expect.poll(async () => (await geometry(page)).opacities).toEqual([0, 1, 0, 0, 0]);
+  const control = curtainControl(page); await control.press("Enter");
   await expect.poll(async () => { const data = await geometry(page); return data.opacities.reduce((sum, value, index) => sum + value * index, 0); }, { intervals: [16, 24, 32] }).toBeGreaterThan(1.4);
-  await state.actor.press("Enter"); await expect(state.windowView).toHaveAttribute("data-curtain-stage", "0");
+  await control.press("Enter"); await expect(state.windowView).toHaveAttribute("data-curtain-stage", "0");
   await expect.poll(async () => (await geometry(page)).opacities).toEqual([1, 0, 0, 0, 0]);
   const reversed = await page.evaluate(() => (window as unknown as { __curtain126: Probe }).__curtain126.transitions.find(transition => transition.target === "0"));
   expect(reversed).toBeDefined(); const tracks = reversed!.tracks; expect(tracks).toHaveLength(5); expect(tracks.every(track => track.frames.length > 1)).toBe(true);

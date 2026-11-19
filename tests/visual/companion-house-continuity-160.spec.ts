@@ -7,10 +7,11 @@ import { DEFAULT_COMPANION_PREFERENCES, type CompanionPersonality } from "@/lib/
 import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { COMPANION_PERSONALITY_SCENES } from "@/lib/ui/viewer-companion/personality-scene-catalog";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
-import { expectCompanionMotion, setCompanionMotion } from "./helpers/companion-settings";
+import { expectCompanionMotion, keepCompanionStoredMotion, setCompanionMotion } from "./helpers/companion-settings";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 
 const output = process.env.COMPANION149_OBJECTS_OUTPUT ?? ".scratch-pw/companion-149/objects-native-observations";
@@ -26,6 +27,8 @@ test.setTimeout(110000);
 test.beforeEach(async ({ page, context, baseURL }) => {
   const buildRoot = process.env.VISUAL_TEST_BUILD_DIR ?? ".next", proof: Proof = { errors: [], rejected: [], build: readFileSync(resolve(buildRoot, "BUILD_ID"), "utf8").trim(), notes: [], chunks: [], pending: [] }; proofs.set(page, proof);
   const origin = new URL(baseURL!).origin;
+  // This file replaces storageState, which drops the QA key that lets the stored `roam: false` hold the pet still.
+  await keepCompanionStoredMotion(context);
   const actions = JSON.parse(readFileSync(resolve(buildRoot, "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
   const previews = new Set(Object.entries(actions).filter(([, action]) => action.exportedName === "getPublicPreviewAction").map(([id]) => id));
   page.on("pageerror", error => proof.errors.push(error.message));
@@ -141,8 +144,18 @@ for(const personality of ['performer','curious','affectionate','sleepy','tidy','
  for(const f of frames){const reaching=f.state==='play'&&f.play==='pounce'&&!!f.homeLife;if(reaching){if(!current)current={at:f.at,until:f.at,lit:f.home.light,changed:false,x:f.x,y:f.y};current.until=f.at;current.changed ||= f.home.light!==current.lit;}else if(current){attempts.push(current);current=undefined;}}
  const failures=attempts.filter(a=>!a.changed),repeated=failures.filter((a,i)=>failures.slice(Math.max(0,i-2),i+1).length===3&&a.at-failures[i-2].at<14000&&Math.abs(a.x-failures[i-2].x)<24);
  const meaningful=frames.filter(f=>f.actorDecoded&&['walk','jump'].includes(f.state));
- expect(repeated,'three unproductive lamp jumps cannot cycle at the same point').toEqual([]);expect(frames.some(f=>f.home.light),'night awake agent must actually reach and turn on the lamp').toBe(true);expect(meaningful.length).toBeGreaterThan(5);
- proofs.get(page)!.notes.push({stage:'actual-personality-continuity',personality,seconds:45,attempts,unproductiveRepeats:repeated.length,actualCalendarFrames:frames.filter(f=>!f.platform.startsWith('companion-home')&&f.actorDecoded).length});
+ expect(repeated,'three unproductive lamp jumps cannot cycle at the same point').toEqual([]);
+ // Home-life policy (home-life-policy.ts): awake inside at night needs the lamp ON; a resident on its way out needs it OFF.
+ // A character whose first scene after the greeting begins by going outside (A06, D157-P) is leaving from the start,
+ // so it never lights the dark room; every other one is awake at home first and must really reach the cord.
+ const inside=(f:Frame)=>/^companion-home/.test(f.platform),opening=frames.find(f=>f.scene&&!f.scene.startsWith('entry-'))?.scene??'';
+ const openingStep=COMPANION_PERSONALITY_SCENES.find(scene=>scene.id===opening)?.steps[0],leavesFirst=openingStep?.kind==='go'&&openingStep.target==='outside';
+ const departures=frames.filter((f,i)=>i>0&&inside(frames[i-1])&&!inside(f)&&!f.placing&&f.state!=='held');
+ expect(departures.filter(f=>f.home.light),'a resident that goes out does not leave the lamp on').toEqual([]);
+ if(leavesFirst){expect(departures.length,'the opening scene '+opening+' really leaves the house').toBeGreaterThan(0);expect(frames.filter(f=>f.at<=departures[0].at&&f.home.light),'a resident that is leaving does not light the room first').toEqual([]);}
+ else{expect(frames.some(f=>f.home.light),'night awake agent must actually reach and turn on the lamp').toBe(true);expect(frames.some(f=>!!f.homeLife&&f.state==='play'&&f.play==='pounce'),'the lamp is lit by an actual reach at the cord').toBe(true);}
+ expect(meaningful.length).toBeGreaterThan(5);
+ proofs.get(page)!.notes.push({stage:'actual-personality-continuity',personality,seconds:45,opening,leavesFirst,departures:departures.map(f=>f.at),attempts,unproductiveRepeats:repeated.length,actualCalendarFrames:frames.filter(f=>!f.platform.startsWith('companion-home')&&f.actorDecoded).length});
 });
 
 test('161 actual meal admits first bite and a consumed food expression',async({page})=>{

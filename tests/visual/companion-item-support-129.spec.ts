@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
+import { chooseCompanionPersonality, openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 
 const output = resolve(process.env.COMPANION_ITEMS_129_OUTPUT ?? ".scratch-pw/companion-129/native");
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(m => m[1]));
@@ -15,12 +15,12 @@ type ProbeWindow = Window & { items129?: { frames: Frame[]; stop: () => void } }
 const proofs = new WeakMap<Page, { writes: string[]; foreign: string[]; errors: string[]; notes: unknown[] }>();
 test.use({ headless: true, viewport: { width: 2400, height: 1100 }, serviceWorkers: "block", isMobile: false, hasTouch: false });
 test.setTimeout(120000);
-test.beforeEach(async ({ page }) => {
-  const proof = { writes: [] as string[], foreign: [] as string[], errors: [] as string[], notes: [] as unknown[] }; proofs.set(page, proof);
+test.beforeEach(async ({ page, baseURL }) => {
+  const origin = new URL(baseURL!).origin, proof = { writes: [] as string[], foreign: [] as string[], errors: [] as string[], notes: [] as unknown[] }; proofs.set(page, proof);
   page.on("pageerror", error => proof.errors.push(error.message));
   await page.context().route("**/*", route => {
     const request = route.request(), url = new URL(request.url());
-    if (url.origin !== "http://127.0.0.1:3117") {
+    if (url.origin !== origin) {
       if (request.method() === "GET" && request.resourceType() === "font" && fonts.has(url.href)) return route.continue();
       proof.foreign.push(request.method() + " " + url.origin + url.pathname); return route.abort();
     }
@@ -32,7 +32,7 @@ test.beforeEach(async ({ page }) => {
 test.afterEach(async ({ page }, info) => {
   const frames = await page.evaluate(() => { const p = (window as ProbeWindow).items129; p?.stop(); return p?.frames ?? []; }).catch(() => []);
   mkdirSync(output, { recursive: true }); const name = info.title.replace(/[^a-z0-9]+/gi, "-"), path = resolve(output, name + ".json");
-  writeFileSync(path, JSON.stringify({ build: readFileSync(resolve(".next/BUILD_ID"), "utf8").trim(), status: info.status, proof: proofs.get(page), frames, scope: "Native production-build fixture. Initial preferences/care only; read-only displayed positions. No clock, RNG, geometry or brain injection; no real DB or OBS claim." }, null, 2));
+  writeFileSync(path, JSON.stringify({ build: readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim(), status: info.status, proof: proofs.get(page), frames, scope: "Native production-build fixture. Initial preferences/care only; read-only displayed positions. No clock, RNG, geometry or brain injection; no real DB or OBS claim." }, null, 2));
   await info.attach("actual-items-129", { path, contentType: "application/json" });
   await page.screenshot({ path: resolve(output, name + ".png") }).catch(() => {});
   expect(proofs.get(page)!.writes).toEqual([]); expect(proofs.get(page)!.foreign).toEqual([]); expect(proofs.get(page)!.errors).toEqual([]);
@@ -44,6 +44,9 @@ async function ready(page: Page, tidy = false) {
   await page.goto("/visual-fixture/studio?role=owner&y=2025&m=11"); await page.bringToFront(); await page.evaluate(() => document.fonts.ready);
   await expect(page.locator(".vc-companion")).toBeVisible(); const room = await openCompanionHome(page);
   await room.evaluate(async node => Promise.all(node.getAnimations({ subtree: true }).filter(a => Number.isFinite(a.effect?.getComputedTiming().endTime)).map(a => a.finished.catch(() => {}))));
+  // A fresh document draws its own character (41e73e05, 2026-10-20); the saved "tidy" only holds once it is
+  // confirmed through the real control.
+  if (tidy) await chooseCompanionPersonality(page, "tidy");
 }
 async function probe(page: Page) {
   await page.evaluate(() => {
@@ -53,11 +56,11 @@ async function probe(page: Page) {
       if (at - previous >= 16) {
         previous = at; const bin = document.querySelector(".vc-home [data-companion-trash]")?.getBoundingClientRect(), opening = document.querySelector(".vc-toy-box-opening")?.getBoundingClientRect();
         frames.push({ at, state: (document.querySelector(".vc-companion") as HTMLElement)?.dataset.state ?? "", bin: bin ? { x: bin.left + bin.width / 2, y: bin.top + bin.height * .35 } : null, opening: opening ? { x: opening.left + opening.width / 2, y: opening.bottom } : null, items: [...document.querySelectorAll<HTMLElement>(".vc-food,.vc-toy")].map(node => {
-          const food = node.matches(".vc-food"), r = node.getBoundingClientRect(), m = new DOMMatrixReadOnly(getComputedStyle(node).transform);
-          return { id: node.dataset.food ?? node.dataset.toyId ?? "", food, x: food ? m.m41 : r.left + r.width / 2, y: food ? m.m42 : r.bottom, carried: food ? node.hasAttribute("data-carried") : node.dataset.carried === "true", discarding: node.hasAttribute("data-discarding"), platform: node.dataset.platform ?? "", hidden: node.hidden };
+          const food = node.matches(".vc-food"), r = node.getBoundingClientRect(), css = getComputedStyle(node), m = new DOMMatrixReadOnly(css.transform);
+          return { id: node.dataset.food ?? node.dataset.toyId ?? "", food, x: food ? m.m41 + (parseFloat(css.left) || 0) : r.left + r.width / 2, y: food ? m.m42 + (parseFloat(css.top) || 0) : r.bottom, carried: food ? node.hasAttribute("data-carried") : node.dataset.carried === "true", discarding: node.hasAttribute("data-discarding"), platform: node.dataset.platform ?? "", hidden: node.hidden };
         }) });
       }
-      if (frames.length < 6500) raf = requestAnimationFrame(sample);
+      if (frames.length < 11000) raf = requestAnimationFrame(sample);
     };
     (window as ProbeWindow).items129 = { frames, stop: () => { stopped = true; cancelAnimationFrame(raf); } }; raf = requestAnimationFrame(sample);
   });
@@ -74,16 +77,19 @@ test("129 empty studio column does not stop native food or toy on its invisible 
     const item = page.locator(selector).first(), rect = (await item.boundingBox())!;
     await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height / 2); await page.mouse.down(); await page.mouse.move(target.x, target.y - 1, { steps: 12 });
     await page.waitForTimeout(150); await page.mouse.move(target.x, target.y); await page.mouse.up(); await page.mouse.move(2, 2);
-    await expect(item).toHaveAttribute("data-platform", /^viewport-floor(?:-food)?(?:-\d+)?$/);
+    await expect(item).toHaveAttribute("data-platform", /^viewport-floor(?:-food|-toy)?(?:-\d+)?$/);
     await expect.poll(async () => (await item.boundingBox())!.y).toBeGreaterThan(panel.y + panel.height + 20);
   }
   proofs.get(page)!.notes.push({ actualPanel: panel, actualNativeRelease: target });
   await page.setViewportSize({ width: 1920, height: 1000 });
   await expect(page.locator(".vc-food")).toHaveAttribute("data-platform", /^viewport-floor-food(?:-\d+)?$/);
-  await expect(page.locator(".vc-toy")).toHaveAttribute("data-platform", /^viewport-floor(?:-food)?(?:-\d+)?$/);
+  await expect(page.locator(".vc-toy")).toHaveAttribute("data-platform", /^viewport-floor(?:-food|-toy)?(?:-\d+)?$/);
 });
 
 for (const width of [1920, 2400]) test(`129 tidy physically clears four foods and four toys despite the real furniture at ${width}`, async ({ page }) => {
+  // The tidy resident now spaces its chores with ordinary home life (four toys, a pause of about half a minute,
+  // then four foods: 85-90 s measured), so the old 95 s window had no margin: 120 s, plus an order/pace check below.
+  test.setTimeout(180000);
   await page.setViewportSize({ width, height: 1100 }); await ready(page, true); await placeCompanionOnHomeFloor(page);
   const actor = page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true }); await actor.focus(); await actor.press("Space");
   await expect(page.locator(".vc-companion")).toHaveAttribute("data-state", "held");
@@ -93,17 +99,27 @@ for (const width of [1920, 2400]) test(`129 tidy physically clears four foods an
     await expect(page.locator(".vc-food").last()).not.toHaveAttribute("data-falling"); await expect(page.locator(".vc-toy").last()).toHaveAttribute("data-falling", "false");
   }
   const ids = await page.locator(".vc-food,.vc-toy").evaluateAll(nodes => nodes.map(node => (node as HTMLElement).dataset.food ?? (node as HTMLElement).dataset.toyId!));
-  await probe(page); await actor.focus(); await actor.press("Space"); await page.mouse.move(2, 2);
-  await expect(page.locator(".vc-food,.vc-toy")).toHaveCount(0, { timeout: 95000 });
-  await expect.poll(async () => (await frames(page)).at(-1)?.items.length, { timeout: 1000, intervals: [16, 16, 32] }).toBe(0);
-  const trace = await frames(page);
+  await probe(page); await actor.focus(); await actor.press("Space"); const releasedAt = await page.evaluate(() => performance.now()); await page.mouse.move(2, 2);
+  await expect(page.locator(".vc-food,.vc-toy")).toHaveCount(0, { timeout: 120000 });
+  // Read only the last sample in the page: shipping the whole trace (over 10 MB) per poll outlasts this second.
+  await expect.poll(() => page.evaluate(() => (window as ProbeWindow).items129?.frames.at(-1)?.items.length), { timeout: 1000, intervals: [16, 16, 32] }).toBe(0);
+  const trace = await frames(page), cleared: { id: string; food: boolean; at: number }[] = [];
   for (const id of ids) {
     const carried = trace.filter(frame => frame.items.some(item => item.id === id && item.carried && !item.discarding));
     expect(carried.length, id + " was visibly carried before clearing").toBeGreaterThanOrEqual(2);
     const delivered = carried.filter(frame => { const item = frame.items.find(item => item.id === id)!, target = item.food ? frame.bin : frame.opening; return target && Math.hypot(item.x - target.x, item.y - target.y) < 20; }).at(-1);
     expect(delivered, id + " reaches its current real opening before removal").toBeDefined();
-    expect(trace.some(frame => frame.at > delivered!.at && !frame.items.some(item => item.id === id))).toBe(true);
+    const gone = trace.find(frame => frame.at > delivered!.at && !frame.items.some(item => item.id === id));
+    expect(gone).toBeDefined();
+    cleared.push({ id, food: delivered!.items.find(item => item.id === id)!.food, at: gone!.at });
   }
   expect(trace.some(frame => frame.state === "eat")).toBe(false);
-  proofs.get(page)!.notes.push({ actualIds: ids, noInputAfterNativeRelease: true, cleared: ids.length });
+  // Order and pace of the chores: the four toys are put away before any food goes to the bin, and the resident never
+  // idles more than 40 s between the release and the first chore or between two chores.
+  const toys = cleared.filter(item => !item.food), foods = cleared.filter(item => item.food);
+  expect(toys).toHaveLength(4); expect(foods).toHaveLength(4);
+  expect(Math.max(...toys.map(item => item.at)), "toys are cleared before foods").toBeLessThan(Math.min(...foods.map(item => item.at)));
+  const times = [releasedAt, ...cleared.map(item => item.at).sort((a, b) => a - b)], gaps = times.slice(1).map((at, index) => at - times[index]);
+  expect(Math.max(...gaps), "no pause longer than 40 s between chores").toBeLessThanOrEqual(40000);
+  proofs.get(page)!.notes.push({ actualIds: ids, noInputAfterNativeRelease: true, cleared, gaps });
 });

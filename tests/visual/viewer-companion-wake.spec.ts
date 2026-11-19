@@ -23,18 +23,20 @@ test.beforeEach(async ({ page }) => {
 test.afterEach(async ({ page }) => { expect(posts.get(page)).toEqual([]); });
 
 async function press(button: Locator, touch: boolean) { if (touch) await button.tap(); else await button.click(); }
-async function setup(page: Page, reduced = false) {
+async function setup(page: Page, reduced = false, activeWhileVisible = true) {
   await page.addInitScript(({ epoch, epochKey, preferences, care, reduced }) => {
     localStorage.setItem(epochKey, epoch); localStorage.setItem("vic.reduceMotion", reduced ? "on" : "off");
     localStorage.setItem("vic.gfxPref", "max"); localStorage.setItem("vic.sound", "off"); localStorage.setItem("vic.ambient", "off");
     localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 1, ...care }));
     localStorage.removeItem("vic.panelSections"); localStorage.removeItem("vic_panel_collapsed"); localStorage.setItem("vic_avatar_side", "left");
+    // Auto sleep stays on: with it off a parked companion only poses idle and has no
+    // wake pose at all (1f2cb9eb, 2026-10-19, presence.ts), which is what these cases watch.
     // Keep autonomous choices deterministic without disabling locomotion.
     // Ordinary windows finish the current action, then wake in that same place.
     Math.random = () => 0;
     Object.defineProperty(document, "hasFocus", { configurable: true, value: () => true });
-  }, { epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, reduced, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: true, jump: true, sleep: false, feeding: false, heartPrank: false, ambientPrank: false }, care: { ...DEFAULT_COMPANION_CARE, hunger: .05 } });
+  }, { epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, reduced, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, activeWhileVisible, roam: true, jump: true, sleep: true, feeding: false, heartPrank: false, ambientPrank: false }, care: { ...DEFAULT_COMPANION_CARE, hunger: .05 } });
   await page.goto("/visual-fixture/poster"); await page.evaluate(() => document.fonts.ready);
   await page.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))).map(animation => animation.finished)); });
   await page.waitForTimeout(180);
@@ -165,7 +167,9 @@ test("reduced motion wakes on its existing support without intermediate travel",
 });
 
 test("blur while waking rests in place and then releases geometry and DOM work", async ({ page }) => {
-  test.setTimeout(25_000); await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page);
+  // "다른 창 쓸 때도 놀기" is on by default since 1f2cb9eb (2026-10-19): a blurred but visible page keeps playing.
+  // Resting on blur is the behaviour of that setting turned off, which is what this case seeds.
+  test.setTimeout(25_000); await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page, false, false);
   await openParked(page); const target = await point(page); await startFrames(page); await close(page); await observedWake(page);
   // This tests the app's focus-event branch, not native OS blur or OBS hardware.
   await page.evaluate(() => { Object.defineProperty(document, "hasFocus", { configurable: true, value: () => false }); dispatchEvent(new FocusEvent("blur")); });

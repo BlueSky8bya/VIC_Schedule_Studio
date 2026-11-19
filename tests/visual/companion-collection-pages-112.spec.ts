@@ -9,6 +9,7 @@ import { createCompanionLife } from "@/lib/ui/viewer-companion/life";
 import { COMPANION_PERSONALITY_NAMES, DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_FOOD_BOOK_ORDER as COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/collection-book-order";
 import { COMPANION_WEARABLE_IDS } from "@/lib/ui/viewer-companion/gifts";
+import { COMPANION_MEMORY_BOOK } from "@/lib/ui/viewer-companion/memory-book-order";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { selectCompanionCollectionIndex } from "./helpers/companion-collection";
@@ -34,7 +35,7 @@ async function installFixture(page: Page, { theme = "light", collection, reduce 
     localStorage.setItem("fixture.discovery107", "seeded");
     for (const [name, value] of Object.entries({ [key]: epoch, "vic.dark": theme === "dark" ? "on" : "off", "vic.sound": "off", "vic.ambient": "off", "vic.reduceMotion": reduce ? "on" : "off", "vic.gfxPref": graphics === "soft" ? "auto" : graphics })) localStorage.setItem(name, value);
     if (graphics === "soft") localStorage.setItem("vic.gfx", JSON.stringify({ mode: "soft", at: Date.now(), v: 3 }));
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled, roam: false, jump: false, sleep: false, feeding: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false }));
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, personalitySource: "manual", enabled, roam: false, jump: false, sleep: false, feeding: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...care, hunger: .23, affection: .64, habits: { sociability: .6, playfulness: .3, confidence: .5, credit: 0, generation: 0 }, life }));
     if (collection) localStorage.setItem(collectionKey, JSON.stringify(collection));
     else localStorage.removeItem(collectionKey);
@@ -89,7 +90,9 @@ async function openCompanionBook(page: Page) {
   await expect(dialog).toBeVisible();
   await expect(dialog).toHaveClass(/companion-book/);
   await expect(dialog.getByRole("tablist", { name: "설정 묶음", exact: true })).toHaveCount(0);
-  await expect(dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab")).toHaveText(["함께 지내기", "도감", "옷장", "설정"]);
+  // A page with something new carries an aria-hidden "!" mark (b4ce7d6b): read the pages by their accessible names.
+  const pages = dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab"); await expect(pages).toHaveCount(4);
+  for (const [index, name] of ["함께 지내기", "도감", "옷장", "설정"].entries()) await expect(pages.nth(index)).toHaveAccessibleName(name);
   await expect(dialog.getByRole("button", { name: "옷장 열기", exact: true })).toBeVisible();
   // stage 3: the book opens on "함께 지내기" under the shared power header; that page also holds the learning switch.
   await expect(dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "함께 지내기", exact: true })).toHaveAttribute("aria-selected", "true");
@@ -117,16 +120,34 @@ async function sheet112(page: Page, name: string) {
     for (let element: HTMLElement | null = node as HTMLElement; element && !element.classList.contains("modal-card"); element = element.parentElement) ancestors.push({ className: element.className, overflow: element.scrollHeight - element.clientHeight, scroll: element.scrollTop });
     return { rect: rect.toJSON(), grid: grid.toJSON(), height: innerHeight, ancestors, buttons: [...node.querySelectorAll<HTMLButtonElement>("button")].map(button => ({ text: button.getAttribute("aria-label") ?? button.textContent, rect: button.getBoundingClientRect().toJSON() })), tiles: list.querySelectorAll("button").length, gridOverflow: list.scrollHeight - list.clientHeight, detailPosition: getComputedStyle(node.querySelector(".rhh-collection-detail")!).position };
   });
-  expect(geometry.rect.bottom).toBeLessThanOrEqual(geometry.height - 8);
-  expect(geometry.gridOverflow).toBeLessThanOrEqual(2); expect(geometry.detailPosition).toBe("static");
-  expect(geometry.ancestors.filter(item => item.overflow > 2)).toEqual([]);
+  // Above 700px of window height the book is one finite page: the sheet, its grid, every ancestor inside the window
+  // and every button fit, and a wheel scrolls nothing. At 700px and below the book itself scrolls and keeps one
+  // readable 184px row (2e38b029, settings-modal.css `@media (max-height: 700px)`): nothing outside the book may
+  // overflow or scroll, the book's own box still ends inside the window, and its page buttons are reached by the wheel.
+  const scrolls = geometry.height <= 700, problems: string[] = [];
+  if (geometry.rect.bottom > geometry.height - 8) problems.push(`sheet bottom ${geometry.rect.bottom} > ${geometry.height - 8}`);
+  if (geometry.gridOverflow > 2) problems.push(`grid overflows by ${geometry.gridOverflow}`);
+  for (const item of geometry.ancestors.slice(scrolls ? 1 : 0).filter(item => item.overflow > 2)) problems.push(`${item.className.split(" ").at(-1)} overflows by ${item.overflow}`);
+  for (const button of geometry.buttons) {
+    if (button.rect.width < 43.9 || button.rect.height < 43.9) problems.push(`${button.text ?? "button"} target ${button.rect.width}x${button.rect.height}`);
+    if (!scrolls && button.rect.bottom > geometry.height - 8) problems.push(`${button.text ?? "button"} bottom ${button.rect.bottom}`);
+  }
+  if (scrolls && !name.endsWith("wardrobe-short") && geometry.grid.height < 104) problems.push(`short grid row ${geometry.grid.height}`);
+  expect(geometry.detailPosition).toBe("static");
   expect(geometry.tiles).toBeGreaterThan(0); expect(geometry.tiles).toBeLessThanOrEqual(24);
   await expect(sheet.locator(".rhh-collection-stamp")).toHaveCount(0);
-  for (const button of geometry.buttons) { expect(button.rect.width, button.text ?? "button").toBeGreaterThanOrEqual(43.9); expect(button.rect.height, button.text ?? "button").toBeGreaterThanOrEqual(43.9); expect(button.rect.bottom).toBeLessThanOrEqual(geometry.height - 8); }
   const before = geometry.ancestors.map(item => item.scroll);
   await sheet.locator(".rhh-collection-grid").hover(); await page.mouse.wheel(0, 900);
-  const after = await sheet.evaluate(node => { const values: number[] = []; for (let element: HTMLElement | null = node as HTMLElement; element && !element.classList.contains("modal-card"); element = element.parentElement) values.push(element.scrollTop); return values; });
-  expect(after).toEqual(before);
+  await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  const after = await sheet.evaluate(node => {
+    const values: number[] = []; for (let element: HTMLElement | null = node as HTMLElement; element && !element.classList.contains("modal-card"); element = element.parentElement) values.push(element.scrollTop);
+    const box = node.getBoundingClientRect();
+    return { values, end: node.scrollHeight - node.clientHeight - node.scrollTop, pager: [...node.querySelectorAll<HTMLElement>(".rhh-collection-pages button")].map(button => button.getBoundingClientRect().bottom - box.bottom) };
+  });
+  if (JSON.stringify(after.values.slice(scrolls ? 1 : 0)) !== JSON.stringify(before.slice(scrolls ? 1 : 0))) problems.push(`a wheel scrolled outside the book: ${JSON.stringify(before)} -> ${JSON.stringify(after.values)}`);
+  if (scrolls && after.end > 1) problems.push(`the wheel stopped ${after.end}px short of the book's end`);
+  if (scrolls && after.pager.some(bottom => bottom > 1)) problems.push(`page buttons end ${Math.max(...after.pager)}px below the scrolled book`);
+  expect(problems, name).toEqual([]);
   mkdirSync(output112, { recursive: true }); writeFileSync(`${output112}/${name}.json`, JSON.stringify(geometry, null, 2));
   await page.getByRole("dialog").screenshot({ path: `${output112}/${name}.png` });
   return sheet;
@@ -154,22 +175,22 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
   const foodGrid = profile.locator(".rhh-food-grid"); await expect(foodGrid).toBeVisible();
   await sheet112(page, `${surface}-${theme}-food-tall`);
   await foodGrid.locator("button[tabindex='0']").focus(); await page.keyboard.press("End");
-  await expect(foodGrid.locator('[data-food-index="179"]')).toBeFocused(); await expect(profile.getByRole("button", { name: "다음 페이지", exact: true })).toBeDisabled();
+  await expect(foodGrid.locator(`[data-food-index="${COMPANION_FOOD_KINDS.length - 1}"]`)).toBeFocused(); await expect(profile.getByRole("button", { name: "다음 페이지", exact: true })).toBeDisabled();
   await page.keyboard.press("Home"); await expect(foodGrid.locator('[data-food-index="0"]')).toBeFocused();
   await selectCompanionCollectionIndex(page, foodGrid, 5);
   await expect(foodGrid.locator('[data-food-index="5"]')).toBeFocused(); await expect(profile.locator(".rhh-food-detail strong")).toHaveText("???"); await expect(foodGrid.locator('[data-food-index="5"]')).not.toHaveAttribute("data-found");
   await page.setViewportSize({ width: 1050, height: 640 });
-  //131 reserves two readable rows on the short sheet; its measured width can
-  //still fit six columns. Verify that real grid rather than112's old8 cap.
-  await expect.poll(() => foodGrid.evaluate(node => getComputedStyle(node).gridTemplateRows.trim().split(/\s+/).length)).toBe(2);
+  // A short sheet shows one complete row (886d977a: 184px rows are not squeezed in pairs any more); the measured
+  // width decides the columns (2..5). Verify that real grid, whole rows only.
+  await expect.poll(() => foodGrid.evaluate(node => getComputedStyle(node).gridTemplateRows.trim().split(/\s+/).length)).toBe(1);
   const shortColumns = await foodGrid.evaluate(node => getComputedStyle(node).gridTemplateColumns.trim().split(/\s+/).length);
-  expect(shortColumns).toBeGreaterThanOrEqual(2); expect(shortColumns).toBeLessThanOrEqual(6);
-  await expect(foodGrid.locator("button")).toHaveCount(shortColumns * 2);
+  expect(shortColumns).toBeGreaterThanOrEqual(2); expect(shortColumns).toBeLessThanOrEqual(5);
+  await expect(foodGrid.locator("button")).toHaveCount(shortColumns);
   await expect(foodGrid.locator('[data-food-index="5"]')).toHaveAttribute("aria-pressed", "true");
   await sheet112(page, `${surface}-${theme}-food-short`);
   await profile.getByRole("button", { name: /^추억 도감 / }).click();
   const memories = profile.locator(".rhh-behavior-grid"); await memories.locator("button[tabindex='0']").focus(); await page.keyboard.press("End");
-  await expect(memories.locator('[data-collection-index="23"]')).toBeFocused(); await expect(profile.getByRole("button", { name: "다음 페이지", exact: true })).toBeDisabled();
+  await expect(memories.locator(`[data-collection-index="${COMPANION_MEMORY_BOOK.length - 1}"]`)).toBeFocused(); await expect(profile.getByRole("button", { name: "다음 페이지", exact: true })).toBeDisabled();
   await sheet112(page, `${surface}-${theme}-memories-short`);
   await nav.getByRole("tab", { name: "옷장", exact: true }).click();
   const wardrobe = profile.locator(".rhh-accessory-grid"); await expect(profile.locator('.rhh-wardrobe-preview')).toHaveAttribute("data-preview-accessory", "sunglasses");
@@ -180,7 +201,9 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
   await profile.locator('.rhh-wardrobe-detail [data-act="companion-accessory-equip"]').click();
   await expect.poll(async () => (await readCollection(page)).gifts.equipped).toBeNull();
   await expect(profile.locator('.rhh-wardrobe-preview')).toHaveAttribute("data-preview-accessory", "none");
-  const after = await readCollection(page); expect(after.foods).toEqual(before.foods); expect(after.behaviors).toEqual(before.behaviors); expect(after.situations).toEqual(before.situations);
+  // The first write stores every list in catalogue order (the seed is in book order): the same discoveries, not the same spelling.
+  const after = await readCollection(page), same = (list: readonly string[]) => [...list].sort();
+  expect(same(after.foods)).toEqual(same(before.foods)); expect(same(after.behaviors)).toEqual(same(before.behaviors)); expect(same(after.situations)).toEqual(same(before.situations));
   await dialog.getByRole("button", { name: "닫기", exact: true }).click();
   const book = await openCompanionBook(page); await book.dialog.getByRole("tab", { name: "도감", exact: true }).click();
   await sheet112(page, `${surface}-${theme}-book-short`);

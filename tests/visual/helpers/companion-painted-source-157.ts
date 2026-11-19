@@ -4,12 +4,15 @@ import { companionAppearanceEyes, companionAppearancePoint, companionAppearanceB
 import expressionAnchors from "@/lib/ui/viewer-companion/expression-anchors-161.json";
 
 export type PaintedSource157Proof = {
-  version: 1; passed: boolean; mode: "atlas" | "expression" | "blink" | "unmeasured"; pose: number; source: string;
+  version: 1; passed: boolean; mode: "atlas" | "expression" | "blink" | "sleep-mouth" | "composite" | "unmeasured"; pose: number; source: string;
   reason: string; cell?: { index: number; grid: number; rows: number; natural: number[] };
   geometry?: { sameParent: boolean; sprite: number[]; canvas?: number[]; matrix: number[]; canvasMatrix?: number[];
     clip: string; canvasClip?: string; offset?: number[] };
   pixels?: { total: number; alphaCompared: number; alphaMismatch: number; protectedRgbCompared: number;
     protectedRgbMismatch: number; changedFacePixels: number; maskPixels: number; valid: boolean };
+  /** Composite mode only: alpha masks (alpha >= 128) of the registered atlas cell drawn offscreen and of the
+   * composite's registered centre 192px. coverage = overlap / atlas, precision = overlap / painted. */
+  composite?: { atlasOpaque: number; paintedOpaque: number; overlap: number; coverage: number; precision: number; hatted: boolean };
 };
 export type PaintedSource157Window = Window & { companionPaintedSource157?: { inspect(actor?: Element | null): PaintedSource157Proof } };
 
@@ -134,10 +137,48 @@ export async function installCompanionPaintedSource157(page: Page) {
           &&translation(tm,-(frame.index%metadata.grid)*w,-Math.floor(frame.index/metadata.grid)*h)
           &&translation(m,frame.x/80*w,frame.y/80*h)&&Boolean(crop&&crop.every((n,i)=>close(n,frame.clip[i]/80*100,.002)));
         if(!sourceGeometry){proof.reason="source-cell-geometry";return proof;}
+        // 68b46f11 (2026-11-18) worn hats and b91b3078 (2026-11-19) the pompom's flight response: a layered pose
+        // hides both the sprite and the face canvas and paints the same registered cell on one native-resolution
+        // composite canvas (ear-painter.ts). Without this branch every such frame, including most of a jump's
+        // flight, read as "unproved-expression-plane" and was never credited as actual movement.
+        const composite=actor?.querySelector<HTMLCanvasElement>(".vc-pose[data-layered] > .vc-ear-layers:not([hidden]) > canvas.vc-character-composite");
+        if(composite&&!visible(sprite)&&!visible(canvas)){
+          proof.mode="composite";proof.reason="unproved-composite-plane";
+          const ks=getComputedStyle(composite),kw=parseFloat(ks.width),kh=parseFloat(ks.height),km=matrix(ks.transform);
+          proof.geometry.canvas=[kw,kh];proof.geometry.canvasMatrix=km;
+          if(!visible(composite)||composite.dataset.pose!==String(pose)||composite.width!==384||composite.height!==384||!close(kw,w*2)||!close(kh,h*2)
+            ||!close(parseFloat(ks.left),-w/2)||!close(parseFloat(ks.top),-h/2)||!translation(km,frame.x/80*w,frame.y/80*h)){proof.reason="composite-plane-geometry";return proof;}
+          // The registered 80-unit cell is the centre 192px of the 384px canvas (ear-painter.ts translate(96,96)
+          // scale(2.4)). Compare its pixel content with the registered atlas cell drawn offscreen: the creature's
+          // alpha mask must cover >= 90% of the atlas cell's mask, and without a worn hat (data-body-only) the
+          // painted mask must also lie >= 90% inside it. A blank, wrong-cell or shifted plane fails.
+          if(!context){proof.reason="missing-calibrated-current-cell";return proof;}
+          const key=`${atlas.src}:${frame.index}`;
+          if(!cache.has(key)){
+            context.clearRect(0,0,192,192);const cell=image.naturalWidth/metadata.grid;
+            context.drawImage(image,frame.index%metadata.grid*cell,Math.floor(frame.index/metadata.grid)*cell,cell,cell,0,0,192,192);
+            cache.set(key,context.getImageData(0,0,192,192).data);
+            if(cache.size>24)cache.delete(cache.keys().next().value!);
+          }
+          const reference=cache.get(key)!,body=composite.getContext("2d")?.getImageData(96,96,192,192).data;
+          if(!body){proof.reason="unreadable-painted-canvas";return proof;}
+          let atlasOpaque=0,paintedOpaque=0,overlap=0;
+          for(let i=3;i<body.length;i+=4){const a=reference[i]>=128,b=body[i]>=128;if(a)atlasOpaque++;if(b)paintedOpaque++;if(a&&b)overlap++;}
+          const hatted=!composite.hasAttribute("data-body-only"),coverage=atlasOpaque?overlap/atlasOpaque:0,precision=paintedOpaque?overlap/paintedOpaque:0;
+          proof.composite={atlasOpaque,paintedOpaque,overlap,coverage,precision,hatted};
+          proof.passed=atlasOpaque>=1000&&coverage>=.9&&(hatted||precision>=.9);
+          proof.reason=proof.passed?"actual-visible-current-composite":atlasOpaque<1000||paintedOpaque<1000?"blank-composite-plane":"composite-pixel-mismatch";return proof;
+        }
         if(visible(sprite)&&visible(image)&&!visible(canvas)&&!(actor as HTMLElement).dataset.expression){proof.passed=true;proof.mode="atlas";proof.reason="actual-visible-current-atlas";return proof;}
         const blinkOnly=actor?.hasAttribute("data-blink")??false;
-        proof.mode=blinkOnly?"blink":"expression";proof.reason="unproved-expression-plane";
-        if(!canvas||!visible(canvas)||visible(sprite)||(!blinkOnly&&!(actor as HTMLElement).dataset.expression)||canvas.width!==192||canvas.height!==192||canvas.parentElement!==sprite.parentElement)return proof;
+        // cc29e224 (2026-11-20) the sleeping mouth: during deep sleep (rows 11/40, data-dreaming) the face canvas
+        // repaints only the mouth on the breath clock, with neither data-expression nor data-blink. It is checked
+        // like a full expression plane (only face-mask pixels may change) but reported as its own mode, so it
+        // never counts as an expression witness. The sprite stays visible under it (viewer-companion.css hides the
+        // sprite only for [data-expression]/[data-blink]); the canvas repaints the whole cell on top of it.
+        const sleepMouth=!blinkOnly&&!(actor as HTMLElement).dataset.expression&&(actor?.hasAttribute("data-dreaming")??false);
+        proof.mode=blinkOnly?"blink":sleepMouth?"sleep-mouth":"expression";proof.reason="unproved-expression-plane";
+        if(!canvas||!visible(canvas)||visible(sprite)&&!sleepMouth||(!blinkOnly&&!sleepMouth&&!(actor as HTMLElement).dataset.expression)||canvas.width!==192||canvas.height!==192||canvas.parentElement!==sprite.parentElement)return proof;
         const cs=getComputedStyle(canvas),cw=parseFloat(cs.width),ch=parseFloat(cs.height),cm=matrix(cs.transform),cc=clip(cs.clipPath),cr=canvas.getBoundingClientRect(),sr=sprite.getBoundingClientRect();
         proof.geometry.canvas=[cw,ch];proof.geometry.canvasMatrix=cm;proof.geometry.canvasClip=cs.clipPath;
         proof.geometry.offset=[cr.x-sr.x,cr.y-sr.y,cr.width-sr.width,cr.height-sr.height];
@@ -156,7 +197,7 @@ export async function installCompanionPaintedSource157(page: Page) {
         const actual=canvas.getContext("2d")?.getImageData(0,0,192,192).data;
         if(!actual){proof.reason="unreadable-painted-canvas";return proof;}
         proof.pixels=compareExpressionPixels157(cache.get(key)!,actual,anchor,reference,blinkOnly);
-        proof.passed=proof.pixels.valid;proof.reason=proof.passed?"exact-current-cell-with-calibrated-face-change":"painted-pixel-mismatch";
+        proof.passed=proof.pixels.valid;proof.reason=proof.passed?(sleepMouth?"exact-current-cell-with-sleep-mouth":"exact-current-cell-with-calibrated-face-change"):"painted-pixel-mismatch";
       }catch{proof.reason="unmeasured-canvas-or-css";}
       return proof;
     }};

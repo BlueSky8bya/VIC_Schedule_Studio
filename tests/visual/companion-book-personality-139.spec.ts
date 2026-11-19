@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { DEFAULT_COMPANION_PREFERENCES, COMPANION_PERSONALITY_NAMES } from "@/lib/ui/viewer-companion/preferences";
+import { COMPANION_PERSONALITY_LAYOUT } from "@/lib/ui/viewer-companion/personality-layout";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome } from "./helpers/companion-home";
@@ -17,7 +18,7 @@ test.beforeEach(async ({ page, context, baseURL }) => {
   const proof = { errors: [] as string[], unexpected: [] as string[] }; checks.set(page, proof);
   page.on("pageerror", error => proof.errors.push(error.message));
   const origin = new URL(baseURL!).origin;
-  const actions = JSON.parse(readFileSync(resolve(".next/server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
+  const actions = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
   const preview = new Set(Object.entries(actions).filter(([, action]) => action.exportedName === "getPublicPreviewAction").map(([id]) => id));
   await context.route("**/*", route => {
     const request = route.request(), url = new URL(request.url());
@@ -89,7 +90,8 @@ for (const [surface, width, input] of [["viewer", 1440, "pointer"], ["studio", 1
   }
   expect(new Set(random).size).toBeGreaterThan(1);
   const { dialog, group } = await settings(page), selected = group.locator('[aria-checked="true"]');
-  const manual = input === "Home" ? "재롱둥이" : input === "Enter" ? (random.at(-1) === "깔끔이" ? "애교쟁이" : "깔끔이") : random.at(-1)!;
+  // Home goes to the first choice of the displayed 3x3 arrangement (personality-layout.ts), not the engine order.
+  const manual = input === "Home" ? COMPANION_PERSONALITY_NAMES[COMPANION_PERSONALITY_LAYOUT[0]] : input === "Enter" ? (random.at(-1) === "깔끔이" ? "애교쟁이" : "깔끔이") : random.at(-1)!;
   if (input === "pointer") await selected.click();
   else if (input === "Home") { await selected.focus(); await selected.press("Home"); await group.getByRole("radio", { name: manual, exact: true }).press("Home"); }
   else { const target = input === "Enter" ? group.getByRole("radio", { name: manual, exact: true }) : selected; await target.focus(); await target.press(input); }

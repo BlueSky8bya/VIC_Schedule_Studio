@@ -6,7 +6,7 @@ import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { openCompanionHome } from "./helpers/companion-home";
+import { companionNodeOrigin, openCompanionHome } from "./helpers/companion-home";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
 
 type Surface = "viewer" | "studio";
@@ -83,15 +83,21 @@ async function openPersonality(page: Page) {
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
   await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  await dialog.locator("#rhh-tab-companion-panel").getByRole("tab", { name: "프로필", exact: true }).click();
+  // Look, character and learning live on the first page of the companion block (settings redesign stage 3).
+  await dialog.locator("#rhh-tab-companion-panel").getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "함께 지내기", exact: true }).click();
   await waitForOverlayEntrance(dialog);
   return dialog;
+}
+// The reset asks once before it clears anything (8b12c73e).
+async function confirmReset(dialog: Locator) {
+  await dialog.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
+  await dialog.getByRole("button", { name: "배운 습관 초기화 확정", exact: true }).click();
 }
 async function closeSettings(page: Page, dialog: Locator) {
   await dialog.locator(".modal-head .modal-close").click(); await expect(dialog).toHaveCount(0); await stableActor(page);
 }
 async function resetViaSettings(page: Page) {
-  const dialog = await openPersonality(page); await dialog.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
+  const dialog = await openPersonality(page); await confirmReset(dialog);
   await expect.poll(async () => traits((await memory(page)).habits)).toEqual(neutral);
   await closeSettings(page, dialog);
 }
@@ -113,7 +119,7 @@ async function placeOnFloor(page: Page) {
   await expect(pet(page)).toHaveAttribute("data-platform", /^viewport-floor(?:-\d+)?$/);
   return at;
 }
-async function foodPoint(item: Locator) { return item.evaluate(node => { const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: matrix.m41, y: matrix.m42 }; }); }
+const foodPoint = (item: Locator) => companionNodeOrigin(item);
 async function grabFood(page: Page, item: Locator) {
   const rect = (await item.boundingBox())!, point = await foodPoint(item), centre = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
   await page.mouse.move(centre.x, centre.y); await page.mouse.down(); return { x: centre.x - point.x, y: centre.y - point.y };
@@ -124,10 +130,10 @@ for (const surface of ["viewer", "studio"] as const) {
   test(`${surface} an earned petting habit survives reload while immediate repetitions cannot train twice`, async ({ page }) => {
     await setup(page, surface);
     const before = await memory(page, "legacy v1 before interaction");
-    if (before.version === 2) { expect(traits(before.habits)).toEqual(neutral); expect(before.habits.credit).toBe(1); expect(before.habits.generation).toBe(0); }
+    if (before.version === 3) { expect(traits(before.habits)).toEqual(neutral); expect(before.habits.credit).toBe(1); expect(before.habits.generation).toBe(0); }
     await petOnce(page);
     await expect.poll(async () => (await memory(page)).habits?.sociability, { intervals: [50], timeout: 7000 }).toBeGreaterThan(.02);
-    const first = await memory(page, "first actual petting"); expect(first.version).toBe(2);
+    const first = await memory(page, "first actual petting"); expect(first.version).toBe(3);
     expect(first.habits.sociability).toBeLessThan(.05); expect(first.habits.confidence).toBeGreaterThan(0); expect(first.habits.playfulness).toBeGreaterThan(0); expect(first.habits.credit).toBeLessThan(.08);
     // Reload immediately after the acknowledged experience, before the
     // ordinary five-second periodic care write can make a lost update pass.
@@ -152,7 +158,7 @@ for (const surface of ["viewer", "studio"] as const) {
     await expect.poll(async () => (await memory(page)).affection, { intervals: [50], timeout: 7000 }).toBeGreaterThan(.35);
     expect((await memory(page, "friendly input with learning off")).habits).toEqual(seeded);
     dialog = await openPersonality(page); const before = await memory(page, "before native reset");
-    await dialog.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
+    await confirmReset(dialog);
     await expect.poll(async () => (await memory(page)).habits).toEqual({ ...neutral, credit: 1, generation: 1 });
     expect(needs(await memory(page, "immediately after reset"))).toEqual(needs(before));
     await waitForOverlayEntrance(dialog);
@@ -175,7 +181,9 @@ test("viewer a short bonk and a successful normal drag earn different habits", a
   await page.mouse.move(from.x, from.y); await page.mouse.down(); await page.mouse.move(target.x, target.y - footOffset, { steps: 18 });
   await expect(pet(page)).toHaveAttribute("data-state", "held");
   expect(traits((await memory(page, "still held before a successful release")).habits)).toEqual(neutral);
-  await page.mouse.up(); await page.mouse.move(4, 4);
+  // A release within 80ms of the last move is a throw now (rough play, e65b7c08). This case is the gentle
+  // put-down: hold still until the pointer velocity is stale; no DOM state marks that moment.
+  await page.waitForTimeout(200); await page.mouse.up(); await page.mouse.move(4, 4);
   await expect(pet(page)).not.toHaveAttribute("data-state", "held"); await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
   await expect.poll(async () => (await memory(page)).habits.playfulness).toBeGreaterThan(.02);
   const played = await memory(page, "successful native drag release"); expect(played.habits.confidence).toBeGreaterThan(0); expect(played.habits.sociability).toBeGreaterThan(0);
@@ -191,7 +199,8 @@ test("studio food earns a habit only after actual eating rather than spawning or
   await resetViaSettings(page); await openCompanionHome(page, "keyboard");
   await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click(); await expect(foods(page)).toHaveCount(1);
   await page.waitForTimeout(350); expect(traits((await memory(page, "offered but uneaten food")).habits)).toEqual(neutral);
-  const item = foods(page).first(), offset = await grabFood(page, item);
+  // A dispensed snack falls from the feeder first; a grab during the fall does not take.
+  const item = foods(page).first(); await expect(item).not.toHaveAttribute("data-falling"); const offset = await grabFood(page, item);
   await moveFood(page, { x: foot.x + 20, y: foot.y }, offset); await page.waitForTimeout(250);
   expect(traits((await memory(page, "held source is not a completed meal")).habits)).toEqual(neutral);
   await expect(pet(page)).not.toHaveAttribute("data-state", "eat");
@@ -210,7 +219,7 @@ test("a native reset can relearn the exact same first petting after learning is 
   const first = await memory(page, "first learned triple before reset");
   const dialog = await openPersonality(page), learning = dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true });
   await learning.click(); await expect(learning).not.toBeChecked();
-  await dialog.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
+  await confirmReset(dialog);
   await expect.poll(async () => (await memory(page)).habits).toEqual({ ...neutral, credit: 1, generation: first.habits.generation + 1 });
   await learning.click(); await expect(learning).toBeChecked();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");

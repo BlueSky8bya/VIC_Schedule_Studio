@@ -31,7 +31,12 @@ const turn = (value: number) => (value + 540) % 360 - 180;
  *same actor, so scrolling the whole room cannot manufacture an arc. Real
  *post-use release, motion, stable rest and an actual idle end remain required.
  * No product callback, clock, geometry, reward or collection state is changed. */
-export function completedNativeBallUseReplay(frames: readonly NativeBallUseFrame[], toyId: string, after: number): NativeBallUseWitness | undefined {
+/* `minLateralCssPx` (default 8, the original rule): the product keeps a tossed ball inside its support
+ * (viewer-companion.tsx clamps the carried point to platform.x+16 .. platform.x+width-16), so a toss played at the
+ * edge of the home floor rises and spins but cannot travel sideways. A caller that cannot choose where the
+ * companion plays may lower only this one threshold; rise, return, spin, timing, release and rest stay required. */
+export function completedNativeBallUseReplay(frames: readonly NativeBallUseFrame[], toyId: string, after: number, options: { minLateralCssPx?: number } = {}): NativeBallUseWitness | undefined {
+  const minLateral = options.minLateralCssPx ?? 8;
   if (!toyId || !Number.isFinite(after)) return;
   type Point = { x: number; y: number };
   type Candidate = {
@@ -109,7 +114,7 @@ export function completedNativeBallUseReplay(frames: readonly NativeBallUseFrame
           const rise = points[0].y - points[peak].y, recovery = points.at(-1)!.y - points[peak].y;
           const lateral = Math.max(...points.map(point => point.x)) - Math.min(...points.map(point => point.x));
           const rotation = Math.max(...candidate.rotations) - Math.min(...candidate.rotations);
-          if (peak > 0 && peak < points.length - 1 && rise >= 12 && recovery >= 12 && lateral >= 8 && rotation >= 40) {
+          if (peak > 0 && peak < points.length - 1 && rise >= 12 && recovery >= 12 && lateral >= minLateral && rotation >= 40) {
             return { pickedAt: candidate.pickedAt, playedAt: candidate.playedAt, releasedAt: candidate.releasedAt, settledAt: candidate.settledAt, endedAt: candidate.endedAt,
               paintedMs: candidate.lastPlayedAt - candidate.playedAt, poses: candidate.poses.size, riseCssPx: rise, returnCssPx: recovery, lateralCssPx: lateral, rotationDegrees: rotation };
           }

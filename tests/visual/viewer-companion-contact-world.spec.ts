@@ -4,7 +4,8 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
-import { openCompanionHome } from "./helpers/companion-home";
+import { COMPANION_THROW_LIMITS } from "@/lib/ui/viewer-companion/throw";
+import { openCompanionHome, placeCompanionOnCalendarCard } from "./helpers/companion-home";
 import { expectCompanionBehindOverlay, expectQuietCompanionTail, waitForOverlayEntrance } from "./helpers/companion-overlay";
 
 type Point = { x: number; y: number };
@@ -101,7 +102,8 @@ async function dragFeet(page: Page, destination: Point) {
   const startFrame = await frame(page), grip = await nativeGrip(page, "body");
   await page.mouse.move(grip.x, grip.y); await page.mouse.down();
   await move(page, { x: destination.x + grip.x - startFrame.x, y: destination.y + grip.y - startFrame.y });
-  await expect(pet(page)).toHaveAttribute("data-state", "held"); await page.mouse.up();
+  // A release right after a move is a throw (throw.ts): a deliberate put-down rests past the stale-input window.
+  await expect(pet(page)).toHaveAttribute("data-state", "held"); await page.waitForTimeout(COMPANION_THROW_LIMITS.staleInputMs + 60); await page.mouse.up();
   await expect(pet(page)).not.toHaveAttribute("data-state", "held");
   await expect(pet(page)).toBeVisible();
 }
@@ -169,6 +171,9 @@ test.describe("real pointer contact and world transitions", () => {
 
   test("dragging an ordinary detail over the quiet companion preserves its world point behind the window", async ({ page }) => {
     test.setTimeout(35_000); await seed(page); await ready(page);
+    // A fresh companion starts inside its home, where an open window makes it a non-liftable resident. This case
+    // is about a creature out on the calendar, so put it on a real card first.
+    await placeCompanionOnCalendarCard(page, "viewer");
     const card = page.locator(".public-event:not(.teaser):not(.dimmed)").filter({ visible: true }).first(); await card.click();
     const detail = page.locator(".agenda-detail-sheet"); await waitForOverlayEntrance(detail); await expect(pet(page)).toBeVisible();
     const h = detail.locator(".detail-grab");
@@ -200,11 +205,16 @@ test.describe("real pointer contact and world transitions", () => {
   });
 
   test("a sleeping home resident wakes and hops off before the home exits, then uses the existing73second handoff", async ({ page }) => {
-    test.setTimeout(40_000); await seed(page, true, true); await ready(page, "/visual-fixture/poster?avatar=1&premiere=175&count=1"); await openCompanionHome(page);
+    // A home resident leaves 168 s before the premiere (viewer-companion.tsx homeDeparture). A fresh companion already
+    // lives in its home, and the cushion recall is a route of legs now (about 4.4 s), so the 7 s that ?premiere=175
+    // left were over before it lay down. 183 leaves 15 s: time to reach the cushion and be asleep when the call comes.
+    test.setTimeout(60_000); await seed(page, true, true); await ready(page, "/visual-fixture/poster?avatar=1&premiere=183&count=1"); await openCompanionHome(page);
     await home(page).getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true }).click();
-    await expect(pet(page)).toHaveAttribute("data-platform", "companion-home"); await expect(pet(page)).toHaveAttribute("data-state", "sleep");
-    await startProbe(page); await expect(pet(page)).toHaveAttribute("data-state", "wake", { timeout: 9000 });
-    await expect(pet(page)).toHaveAttribute("data-state", "jump", { timeout: 2000 }); await expect(pet(page)).not.toHaveAttribute("data-platform", "companion-home", { timeout: 2000 });
+    await expect(pet(page)).toHaveAttribute("data-platform", "companion-home", { timeout: 9000 }); await expect(pet(page)).toHaveAttribute("data-state", "sleep", { timeout: 9000 });
+    await startProbe(page); await expect(pet(page)).toHaveAttribute("data-state", "wake", { timeout: 15000 });
+    await expect(pet(page)).toHaveAttribute("data-state", "jump", { timeout: 2000 });
+    // The hop off the cushion is a measured sofa arc now (companionSofaFlightMs, about 2.3 s to the screen floor here), not the old 850 ms jump.
+    await expect(pet(page)).not.toHaveAttribute("data-platform", "companion-home", { timeout: 4000 });
     const landedAt = await page.evaluate(() => (window as ProbeWindow).contactWorldProbe!.frames.at(-1)!.at);
     await expect.poll(() => page.evaluate(at => (window as ProbeWindow).contactWorldProbe!.frames.some(f => f.at > at + 200 && ["walk", "jump"].includes(f.state ?? "") && f.stage === "prelude"), landedAt), { timeout: 6500 }).toBe(true);
     const frames = await finishProbe(page, "home-premiere-departure"), hop = frames.filter(f => f.state === "jump" && f.at <= landedAt);

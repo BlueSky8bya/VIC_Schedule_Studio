@@ -9,6 +9,7 @@ import { getCompanionAccessoryArtFrame } from "@/lib/ui/viewer-companion/accesso
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
+import { installCompanionPointReader, type CompanionPointWindow } from "./helpers/companion-point";
 import { expectCompanionBehindOverlay, waitForOverlayEntrance } from "./helpers/companion-overlay";
 
 const output = process.env.VIC_ACCESSORY_WORLD_OUTPUT ?? ".scratch-pw/companion-111/world";
@@ -29,6 +30,7 @@ async function setup(page: Page, id: CompanionAccessoryId, moving = false, feedi
     if (url.pathname.startsWith("/api/")) return route.fulfill({ status: 503, body: "fixture forbids live API reads" });
     return route.continue();
   });
+  await installCompanionPointReader(page);
   await page.addInitScript(({ id, moving, feeding, prefs, care, epoch, key, collectionKey }) => {
     for (const [name, value] of Object.entries({ [key]: epoch, "vic.dark": "off", "vic.sound": "off", "vic.ambient": "off", "vic.reduceMotion": "off", "vic.gfxPref": "max", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(name, value);
     localStorage.removeItem("vic.panelSections"); localStorage.removeItem("vic_panel_collapsed");
@@ -37,7 +39,7 @@ async function setup(page: Page, id: CompanionAccessoryId, moving = false, feedi
     localStorage.setItem(collectionKey, JSON.stringify({ version: 1, foods: [], behaviors: [], situations: [], gifts: { pending: null, unlocked: [id], equipped: id, activeMs: 0, interactionCredit: 0 } }));
   }, { id, moving, feeding, prefs: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE, epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY, collectionKey: COMPANION_COLLECTION_KEY });
   await page.goto("/visual-fixture/poster"); await page.bringToFront(); await settlePanelLayout(page);
-  expect(new URL(page.url()).origin).toBe("http://127.0.0.1:3117");
+  expect(new URL(page.url()).origin).toBe(new URL(test.info().project.use.baseURL!).origin);
   await expect(actor(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-presence", "active");
   expect(await page.evaluate(() => document.hasFocus() && !document.hidden)).toBe(true);
   mkdirSync(output, { recursive: true });
@@ -60,15 +62,36 @@ async function place(page: Page, x: number, y: number) {
   await expect(pet(page)).not.toHaveAttribute("data-state", "jump", { timeout: 7000 }); await expect(pet(page)).toBeVisible();
 }
 
+/** The shipping companion always roams (a9f6d77e) and each document draws its own character, so a placed pet walks
+ * off, or back home, within a few hundred ms. Take it in hand in the same browser task its landing is seen in:
+ * no walk can start between the measured floor contact and the hold. Returns the foot y of that contact. */
+async function placeOnFloorAndHold(page: Page, x: number, y: number) {
+  await actor(page).focus(); await actor(page).press("p"); await expect(pet(page)).toHaveAttribute("data-placing", "");
+  await page.mouse.click(x, y); await page.mouse.move(1880, 50);
+  const landed = page.evaluate(() => new Promise<{ x: number; y: number }>(resolve => {
+    const node = document.querySelector<HTMLElement>(".vc-companion")!, began = performance.now();
+    const check = () => {
+      if (/^viewport-floor/.test(node.dataset.platform ?? "") && node.dataset.state !== "jump" && !node.hasAttribute("data-placing") || performance.now() - began > 8000) {
+        const box = node.getBoundingClientRect(); resolve({ x: box.left + box.width / 2, y: box.bottom });
+      } else requestAnimationFrame(check);
+    };
+    check();
+  }));
+  const foot = await landed; await actor(page).press("Space");
+  await expect(pet(page)).toHaveAttribute("data-state", "held");
+  expect(Math.abs(foot.x - x), "the hold began where the pet was put down").toBeLessThan(24);
+  return foot;
+}
+
 async function observe(page: Page) {
   await pet(page).evaluate(node => {
     const el = node as HTMLElement, probe = { frames: [] as Frame[], timer: 0, stop: false };
     const sample = () => {
       if (probe.stop) return;
-      const m = new DOMMatrixReadOnly(el.style.transform), pose = el.querySelector<HTMLElement>(".vc-pose")!, transform = new DOMMatrixReadOnly(getComputedStyle(pose).transform), size = parseFloat(el.style.getPropertyValue("--vc-size"));
+      const m = (window as unknown as CompanionPointWindow).vcPoint(el, el.style.transform), pose = el.querySelector<HTMLElement>(".vc-pose")!, transform = new DOMMatrixReadOnly(getComputedStyle(pose).transform), size = parseFloat(el.style.getPropertyValue("--vc-size"));
       const layers = [...el.querySelectorAll<HTMLElement>(".vc-wearable-back,.vc-wearable-front")].filter(layer => !layer.hidden);
-      const snacks = [...document.querySelectorAll<HTMLElement>(".vc-food")].map(node => { const p = new DOMMatrixReadOnly(node.style.transform); return { id: node.dataset.food ?? "", x: p.m41, y: p.m42, hidden: node.hidden, falling: node.hasAttribute("data-falling") }; });
-      probe.frames.push({ at: performance.now(), state: el.dataset.state ?? "", trick: el.dataset.accessoryTrick ?? "", beat: el.dataset.accessoryBeat ?? "", pose: el.dataset.pose ?? "", platform: el.dataset.platform ?? "", play: el.dataset.play ?? "", episode: el.dataset.episode ?? "", phase: el.dataset.episodePhase ?? "", variant: el.dataset.episodeVariant ?? "", food: el.dataset.episodeFood ?? "", goal: el.dataset.foodGoal ?? "", x: m.m41 + size / 2, y: m.m42 + size, bob: transform.m42, visible: el.isConnected && !el.hidden && getComputedStyle(el).visibility !== "hidden", worn: el.dataset.pose === el.dataset.accessoryPose && layers.length > 0, fronts: layers.map(layer => getComputedStyle(layer).transform), snacks });
+      const snacks = [...document.querySelectorAll<HTMLElement>(".vc-food")].map(node => { const p = (window as unknown as CompanionPointWindow).vcPoint(node); return { id: node.dataset.food ?? "", x: p.x, y: p.y, hidden: node.hidden, falling: node.hasAttribute("data-falling") }; });
+      probe.frames.push({ at: performance.now(), state: el.dataset.state ?? "", trick: el.dataset.accessoryTrick ?? "", beat: el.dataset.accessoryBeat ?? "", pose: el.dataset.pose ?? "", platform: el.dataset.platform ?? "", play: el.dataset.play ?? "", episode: el.dataset.episode ?? "", phase: el.dataset.episodePhase ?? "", variant: el.dataset.episodeVariant ?? "", food: el.dataset.episodeFood ?? "", goal: el.dataset.foodGoal ?? "", x: m.x + size / 2, y: m.y + size, bob: transform.m42, visible: el.isConnected && !el.hidden && getComputedStyle(el).visibility !== "hidden", worn: el.dataset.pose === el.dataset.accessoryPose && layers.length > 0, fronts: layers.map(layer => getComputedStyle(layer).transform), snacks });
       probe.timer = window.setTimeout(sample, 40);
     };
     (window as ProbeWindow).accessory111 = probe; sample();
@@ -114,23 +137,8 @@ for (const id of ["scarf", "bell-pendant"] as const) test(`${id}: old earned war
   expect(gifts.unlocked).toContain(id); await finish(page, `legacy-${id}`, proof);
 });
 
-test("propeller: native safe floor starts finite hover and pickup cancels without losing its worn part", async ({ page }) => {
-  const proof = await setup(page, "propeller-hat", true); await worn(page, "propeller-hat");
-  await page.mouse.wheel(0, 650); await settlePanelLayout(page); await place(page, 740, 1082);
-  // Actual visible handling lets the authored6s readiness clock elapse. It
-  // does not inject activeMs, erase a goal, alter RNG or launch an action.
-  await actor(page).focus(); await actor(page).press("Space"); await expect(pet(page)).toHaveAttribute("data-state", "held"); await page.waitForTimeout(7500);
-  await actor(page).press("Space"); await observe(page);
-  await expect(pet(page)).toHaveAttribute("data-platform", /^viewport-floor/);
-  await expect(pet(page)).toHaveAttribute("data-accessory-trick", "propeller-hat", { timeout: 45_000 });
-  await expect.poll(() => page.evaluate(() => (window as ProbeWindow).accessory111!.frames.some(frame => frame.trick === "propeller-hat" && frame.bob < -20)), { timeout: 6000 }).toBe(true);
-  await actor(page).focus(); await actor(page).press("Space"); await expect(pet(page)).toHaveAttribute("data-state", "held"); await worn(page, "propeller-hat");
-  await actor(page).press("Space"); await expect(pet(page)).not.toHaveAttribute("data-state", "held");
-  await expect(pet(page)).not.toHaveAttribute("data-state", "jump", { timeout: 8000 }); await worn(page, "propeller-hat");
-  const frames = await finish(page, "propeller-native-hover-pickup", proof), showing = frames.filter(frame => frame.trick === "propeller-hat" && frame.beat === "show");
-  expect(showing.length).toBeGreaterThan(3); expect(showing.every(frame => frame.visible && frame.worn)).toBe(true);
-  expect(new Set(showing.flatMap(frame => frame.fronts)).size).toBeGreaterThan(4);
-});
+// "propeller: native safe floor starts finite hover within 45 s" removed: owner 2026-11-20: current behaviour kept
+// (authored personality scenes may outrank the optional worn-prop trick).
 
 test("geometry: actual font choice, text wrapping, viewport resize and scroll keep a reachable glyph-clear actor", async ({ page }) => {
   const proof = await setup(page, "bell-badge"); await worn(page, "bell-badge"); await observe(page);
@@ -171,19 +179,23 @@ test("geometry: actual font choice, text wrapping, viewport resize and scroll ke
 test("food: native whole encounter keeps the same snack after any actually selected mishap", async ({ page }, info) => {
   const proof = await setup(page, "bow", true, true); await worn(page, "bow");
   await openCompanionHome(page); await page.mouse.wheel(0, 650); await settlePanelLayout(page);
-  await place(page, 740, 1082);
-  const floorY = await pet(page).evaluate(node => new DOMMatrixReadOnly((node as HTMLElement).style.transform).m42 + node.getBoundingClientRect().width);
-  await actor(page).focus(); await actor(page).press("Space"); await expect(pet(page)).toHaveAttribute("data-state", "held");
+  const floorY = (await placeOnFloorAndHold(page, 740, 1082)).y;
   await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click(); await expect(page.locator(".vc-food")).toHaveCount(1);
-  const food = page.locator(".vc-food"), box = (await food.boundingBox())!, logical = await food.evaluate(el => { const m = new DOMMatrixReadOnly((el as HTMLElement).style.transform); return { x: m.m41, y: m.m42 }; });
+  // The snack first drops out of the feeder; a grab during that fall does not take.
+  await expect(page.locator(".vc-food")).toBeVisible(); await expect(page.locator(".vc-food")).not.toHaveAttribute("data-falling");
+  const food = page.locator(".vc-food"), box = (await food.boundingBox())!, logical = await food.evaluate(el => (window as unknown as CompanionPointWindow).vcPoint(el));
   const grip = { x: box.x + box.width / 2, y: box.y + box.height / 2 }, id = (await food.getAttribute("data-food"))!;
-  await page.mouse.move(grip.x, grip.y); await page.mouse.down(); await page.mouse.move(1050 + grip.x - logical.x, 1082 + grip.y - logical.y, { steps: 14 }); await observe(page); await page.mouse.up();
+  await page.mouse.move(grip.x, grip.y); await page.mouse.down(); await page.mouse.move(1050 + grip.x - logical.x, 1082 + grip.y - logical.y, { steps: 14 });
+  // A release within 100 ms of the last move is a throw (a44f46a2). This snack is put down: hold still past that window.
+  await page.waitForTimeout(140); await observe(page); await page.mouse.up();
   let frames: Frame[] = [];
   try {
     await expect(food).not.toHaveAttribute("data-falling"); await expect(food).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-state", "held");
     await actor(page).focus(); await actor(page).press("Space"); await page.mouse.move(1880, 50);
     await expect(food).toHaveCount(0, { timeout: 65_000 });
-    await expect.poll(() => page.evaluate(() => (window as ProbeWindow).accessory111!.frames.some(frame => frame.episode === "meal" && frame.phase === "finish")), { timeout: 7000 }).toBe(true);
+    // 140 (55e150b9): a reachable snack is a basic meal owned by the ordinary food planner ahead of the personality
+    // scenes; the 095 meal episode (notice .. finish) no longer wraps it. The encounter ends when the meal does.
+    await expect(pet(page)).not.toHaveAttribute("data-state", "eat", { timeout: 7000 });
   } finally {
     frames = await finish(page, `meal-${info.repeatEachIndex}`, proof);
     writeFileSync(`${output}/meal-${info.repeatEachIndex}-summary.json`, JSON.stringify({ nativeRngUnchanged: true, foodId: id, variant: frames.find(frame => frame.episode === "meal")?.variant, mishapObserved: frames.some(frame => frame.phase === "mishap"), mealObserved: frames.some(frame => frame.state === "eat"), finishObserved: frames.some(frame => frame.phase === "finish") }, null, 2));
@@ -192,7 +204,11 @@ test("food: native whole encounter keeps the same snack after any actually selec
   expect(falling.length).toBeGreaterThan(1); expect(falling.every(snack => !snack.hidden && snack.y >= floorY - .75 && snack.y <= 1076.75)).toBe(true);
   for (let i = 1; i < falling.length; i++) expect(falling[i].y).toBeLessThanOrEqual(falling[i - 1].y + .1);
   const mishap = frames.find(frame => frame.phase === "mishap"), firstEat = frames.find(frame => frame.state === "eat");
-  expect(firstEat).toBeDefined(); expect(frames.some(frame => ["walk", "jump"].includes(frame.state) && frame.goal === id)).toBe(true);
+  expect(firstEat).toBeDefined(); expect(frames.filter(frame => frame.state === "eat").every(frame => frame.goal === id), "the meal is this snack").toBe(true);
+  // The first-food inspection walk carries no goal attribute: read the trip from the body (it ends nearer the snack).
+  const trip = frames.filter(frame => frame.at < firstEat!.at && ["walk", "jump"].includes(frame.state));
+  expect(trip.length).toBeGreaterThan(8); expect(Math.abs(firstEat!.x - 1050)).toBeLessThan(Math.abs(trip[0].x - 1050) - 80);
+  expect(Math.abs(firstEat!.x - 1050)).toBeLessThanOrEqual(60); expect(Math.abs(firstEat!.y - floorY)).toBeLessThan(2);
   if (mishap && firstEat) {
     const recovery = frames.filter(frame => frame.at >= mishap.at && frame.at < firstEat.at);
     expect(recovery.length).toBeGreaterThan(20); expect(recovery.every(frame => frame.goal === id)).toBe(true);
@@ -204,8 +220,8 @@ test("food: native whole encounter keeps the same snack after any actually selec
 test("ordinary glasses: native roaming records return-to-rest gestures after real travel without forcing the random habit", async ({ page }) => {
   test.setTimeout(125_000);
   const proof = await setup(page, "sunglasses", true); await worn(page, "sunglasses");
-  await page.mouse.wheel(0, 650); await settlePanelLayout(page); await place(page, 740, 1082);
-  await actor(page).focus(); await actor(page).press("Space"); await expect(pet(page)).toHaveAttribute("data-state", "held"); await page.waitForTimeout(7500);
+  await page.mouse.wheel(0, 650); await settlePanelLayout(page); await placeOnFloorAndHold(page, 740, 1082);
+  await page.waitForTimeout(7500);
   await actor(page).press("Space"); await observe(page);
   await expect(pet(page)).toHaveAttribute("data-accessory-trick", "sunglasses", { timeout: 45_000 });
   // Native stochastic coverage is an observation, not a guaranteed reward.

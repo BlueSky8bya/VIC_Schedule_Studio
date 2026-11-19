@@ -71,7 +71,9 @@ for (const view of [{ name: "native390", width: 390, height: 844 }, { name: "coa
   for (const route of routes) test(`${route.name} ignores stored master ON without loading any pet and keeps the rest of settings usable`, async ({ page }) => {
     await page.goto(route.path); await expect(page.locator(route.surface)).toBeVisible(); await settle(page);
     await absent(page); const saved = await preferences(page); expect(JSON.parse(saved!).enabled).toBe(true);
-    const gear = page.locator(".agenda-header > .viewer-settings-open,.m-month-nav > .viewer-settings-open"); await gear.tap();
+    // `.viewer-settings-open` is now the shared skin of the gear, the theme toggle and the report inbox, and the
+    // studio gear sits in `.agenda-header .m-settings-slot`: the gear is the one that opens a dialog.
+    const gear = page.locator('.viewer-settings-open[aria-haspopup="dialog"]:visible'); await expect(gear).toHaveCount(1); await gear.tap();
     const modal = page.getByRole("dialog", { name: "설정", exact: true }); await expect(modal).toBeVisible();
     await expect(modal.locator('[data-tab="companion"]')).toHaveCount(0);
     await expect(modal.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true })).toHaveCount(0);

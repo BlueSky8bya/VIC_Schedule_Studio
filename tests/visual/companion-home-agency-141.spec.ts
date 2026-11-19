@@ -411,7 +411,9 @@ test("141 unlit room grades the actual resident and native outside placement res
   expect(target).toBeTruthy(); await actor(page).focus(); await actor(page).press("p"); await expect(pet(page)).toHaveAttribute("data-placing", "");
   await page.mouse.click(target!.x, target!.y); await page.mouse.move(2, 2); await expect(pet(page)).not.toHaveAttribute("data-placing");
   await expect(pet(page)).not.toHaveAttribute("data-platform", /^companion-home/);
-  await expect.poll(async () => (await latest(page))?.grade).toBe(1); await expect(pet(page).locator(".vc-inertia")).toHaveCSS("filter", "brightness(1)");
+  await expect.poll(async () => (await latest(page))?.grade).toBe(1); await expect(pet(page).locator(".vc-inertia")).toHaveCSS("filter", /^brightness\(1\)(?: (?:brightness\(1\)|url\("?#[^)]+\)))?$/);
+  // 1e34ae9f (2026-10-24): the room grade is followed by the shared scene-light
+  // filter (`--vc-scene-light-filter`, identity or the night url() outside).
   await snapshot(page, "outside-brightness-restored");
 });
 

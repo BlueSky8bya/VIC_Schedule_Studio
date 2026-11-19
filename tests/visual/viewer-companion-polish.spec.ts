@@ -3,7 +3,9 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { PANEL_SECTION_PREFERENCES_KEY } from "@/lib/ui/panel-section-preferences";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { openCompanionHome } from "./helpers/companion-home";
+import { companionAppearanceGridRows } from "@/lib/ui/viewer-companion/appearance";
+import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
+import { companionNodeOrigin, openCompanionHome, placeCompanionOnCalendarCard } from "./helpers/companion-home";
 
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
@@ -23,7 +25,7 @@ test.beforeEach(async ({ page }) => {
 });
 test.afterEach(async ({ page }) => { expect(posts.get(page)).toEqual([]); });
 
-async function setup(page: Page, options: { size?: "normal" | "large"; dark?: boolean; reduced?: boolean; gfx?: "max" | "off" } = {}) {
+async function setup(page: Page, options: { size?: "normal" | "large"; dark?: boolean; reduced?: boolean; gfx?: "max" | "off"; parkOnBlur?: boolean } = {}) {
   await page.addInitScript(({ epoch, epochKey, preferences, care, panelKey, options }) => {
     // Once per tab: subsequent full navigations must exercise saved choices,
     // rather than an init script silently resetting the disclosure under test.
@@ -34,10 +36,12 @@ async function setup(page: Page, options: { size?: "normal" | "large"; dark?: bo
       localStorage.setItem("vic.sound", "off"); localStorage.setItem("vic.ambient", "off");
       localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences }));
       localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 1, ...care }));
-      localStorage.removeItem(panelKey); localStorage.removeItem("vic_panel_collapsed"); localStorage.setItem("vic_avatar_side", "left");
+      // With the companion on and nothing saved, tag filter and season now start folded (e4ddc503). These cases were
+      // written for three open sections, so that state is saved up front; the disclosure case then folds them itself.
+      localStorage.setItem(panelKey, JSON.stringify({ version: 1, "tag-filter": true, season: true, "companion-home": true })); localStorage.removeItem("vic_panel_collapsed"); localStorage.setItem("vic_avatar_side", "left");
     }
     Math.random = () => 0;
-  }, { epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep: false, heartPrank: false, ambientPrank: false, size: options.size ?? "normal" }, care: { ...DEFAULT_COMPANION_CARE, hunger: .05 }, panelKey: PANEL_SECTION_PREFERENCES_KEY, options });
+  }, { epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep: false, heartPrank: false, ambientPrank: false, size: options.size ?? "normal", ...(options.parkOnBlur ? { activeWhileVisible: false } : {}) }, care: { ...DEFAULT_COMPANION_CARE, hunger: .05 }, panelKey: PANEL_SECTION_PREFERENCES_KEY, options });
   await page.goto("/visual-fixture/poster?avatar=1"); await page.bringToFront();
   await page.evaluate(() => document.fonts.ready);
   await page.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))).map(animation => animation.finished)); });
@@ -50,17 +54,20 @@ async function spawn(page: Page) {
   const count = await food(page).count();
   await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click();
   await expect(food(page)).toHaveCount(count + 1);
-  const item = food(page).last(); await expect(item).not.toHaveAttribute("data-selected");
+  // A dispensed snack first falls from the dispenser to the home floor; a grab during that fall does not take.
+  const item = food(page).last(); await expect(item).not.toHaveAttribute("data-selected"); await expect(item).not.toHaveAttribute("data-falling");
   return item;
 }
-const foodPoint = (item: Locator) => item.evaluate(node => { const m = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: m.m41, y: m.m42 }; });
+// On the home floor (and the companion on its sofa) the node is laid out from an anchored left/top and the transform
+// is only the offset from that origin (dccb2756 / a3e9a288); both are 0px everywhere else.
+const foodPoint = (item: Locator) => companionNodeOrigin(item);
 async function dragFoodToFeet(page: Page, item: Locator, target: { x: number; y: number }) {
   const r = (await item.boundingBox())!, foot = await foodPoint(item), from = { x: r.x + r.width / 2, y: r.y + r.height / 2 };
   await page.mouse.move(from.x, from.y); await page.mouse.down();
   await page.mouse.move(target.x + from.x - foot.x, target.y + from.y - foot.y, { steps: 8 }); await page.mouse.up();
 }
 async function world(page: Page) {
-  return pet(page).evaluate(node => { const m = new DOMMatrixReadOnly((node as HTMLElement).style.transform), size = parseFloat((node as HTMLElement).style.getPropertyValue("--vc-size")); return { x: m.m41 + size / 2, y: m.m42 + size, size }; });
+  return pet(page).evaluate(node => { const css = getComputedStyle(node), m = new DOMMatrixReadOnly((node as HTMLElement).style.transform), size = parseFloat((node as HTMLElement).style.getPropertyValue("--vc-size")); return { x: m.m41 + (parseFloat(css.left) || 0) + size / 2, y: m.m42 + (parseFloat(css.top) || 0) + size, size }; });
 }
 async function roomyRelease(page: Page) {
   return page.evaluate(selector => {
@@ -83,6 +90,14 @@ async function renderedSupport(page: Page, point: { x: number; y: number }, mark
         return { kind: "card", error: Math.abs(point.y - r.top + 3), offset: { x: point.x - r.left, y: point.y - r.top } };
       }
     }
+    // The floor of a real date cell holds food too (`date-N-floor-food`, 1f2cb9eb): its foot rests 3px above the cell bottom.
+    for (const node of document.querySelectorAll<HTMLElement>(".public-day,.agenda-day")) {
+      const r = node.getBoundingClientRect();
+      if (r.width > .5 && point.x >= r.left - 1 && point.x <= r.right + 1 && Math.abs(point.y - r.bottom + 3) < 2) {
+        if (mark) node.dataset.polishFoodAnchor = "";
+        return { kind: "day", error: Math.abs(point.y - r.bottom + 3), offset: { x: point.x - r.left, y: point.y - r.top } };
+      }
+    }
     for (const node of document.querySelectorAll<HTMLElement>(selector)) {
       const range = document.createRange(); range.selectNodeContents(node);
       for (const r of range.getClientRects()) if (r.width > .5 && point.x >= r.left - 1 && point.x <= r.right + 1 && Math.abs(point.y - r.top + 3) < 2) {
@@ -101,7 +116,7 @@ async function recordFall(page: Page, item: Locator) {
     const probe = window as Probe; probe.polishFrames = [];
     const sample = (at: number) => {
       const node = document.querySelector<HTMLElement>(`[data-food="${id}"]`);
-      if (node) { const m = new DOMMatrixReadOnly(getComputedStyle(node).transform); probe.polishFrames!.push({ at, x: m.m41, y: m.m42, falling: node.hasAttribute("data-falling") }); }
+      if (node) { const css = getComputedStyle(node), m = new DOMMatrixReadOnly(css.transform); probe.polishFrames!.push({ at, x: m.m41 + (parseFloat(css.left) || 0), y: m.m42 + (parseFloat(css.top) || 0), falling: node.hasAttribute("data-falling") }); }
       probe.polishRaf = requestAnimationFrame(sample);
     }; probe.polishRaf = requestAnimationFrame(sample);
   }, id);
@@ -123,7 +138,8 @@ test("released fruit accelerates to a real lower ledge, can be caught in flight 
   const early = (middle.y - first.y) / (middle.at - first.at), late = (last.y - middle.y) / (last.at - middle.at);
   expect(late).toBeGreaterThan(early * 1.3);
   expect(Math.max(...airborne.map(frame => Math.abs(frame.x - release.x)))).toBeLessThanOrEqual(22.1);
-  expect(await renderedSupport(page, end)).not.toBeNull();
+  const landing = await renderedSupport(page, end); expect(landing).not.toBeNull();
+  expect(await item.getAttribute("data-platform")).toMatch(landing!.kind === "day" ? /^date-\d+-floor-food/ : landing!.kind === "floor" ? /^viewport-floor-food/ : /\S/);
   console.log(JSON.stringify({ check: "food-gravity", frames: airborne.length, early, late, release, end }));
   await page.screenshot({ path: ".scratch-pw/companion-polish-gravity-landed.png" });
   await item.focus(); await item.press("Delete");
@@ -142,26 +158,34 @@ test("released fruit accelerates to a real lower ledge, can be caught in flight 
 
 test("fruit retains its real text attachment through scroll, interrupts for settings and respects reduced motion", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page);
-  await expect(actor(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-platform", /^(?:card|date)-/);
+  // A fresh companion starts inside its home (a44f46a2); this case needs it on a real calendar ledge.
+  await expect(actor(page)).toBeVisible(); await placeCompanionOnCalendarCard(page, "viewer"); await expect(pet(page)).toHaveAttribute("data-platform", /^(?:card|date)-/);
   const point = await world(page); expect(await renderedSupport(page, point, true)).not.toBeNull();
   const anchor = page.locator("[data-polish-food-anchor]"); await expect(anchor).toHaveCount(1);
   const item = await spawn(page);
   const drop = await page.locator(".public-event[data-eventid]").evaluateAll(nodes => {
     const cards = nodes.map(node => node.getBoundingClientRect()).filter(r => r.width > 90 && r.top > 200 && r.top < innerHeight - 120);
     const r = cards[0]; if (!r) throw Error("A real lower card is required for this attachment regression");
-    return { x: r.left + r.width / 2, y: r.top - 30 };
+    // Release inside the card's own date cell: 30px above the card is now above that cell's top, where the upper
+    // cell's floor (a real support) would catch the fruit before it reaches this card.
+    return { x: r.left + r.width / 2, y: r.top - 10 };
   });
   await dragFoodToFeet(page, item, drop);
   await expect(item).not.toHaveAttribute("data-selected"); await expect(item).not.toHaveAttribute("data-falling", { timeout: 1800 });
   const landed = await foodPoint(item), source = await renderedSupport(page, landed, true);
   expect(source?.kind).toBe("card");
+  // A fruit resting on a card is now laid out from a native CSS anchor (data-native-item-anchor). Its computed left/top
+  // (foodPoint) stay at their layout value while the browser applies the anchor's scroll shift after layout, so the
+  // painted position is the landed point plus the painted box's own displacement since landing.
+  const landedBox = (await item.boundingBox())!;
+  const paintedFoodPoint = async () => { const box = (await item.boundingBox())!; return { x: landed.x + box.x - landedBox.x, y: landed.y + box.y - landedBox.y }; };
   await page.evaluate(() => { document.documentElement.style.overflowY = "auto"; document.documentElement.style.scrollBehavior = "auto"; document.body.style.overflowY = "visible"; const spacer = document.createElement("div"); spacer.style.cssText = "height:1200px;pointer-events:none"; spacer.setAttribute("aria-hidden", "true"); document.body.append(spacer); scrollTo({ top: 64, behavior: "instant" }); });
-  await expect.poll(async () => { const current = await foodPoint(item), rect = (await anchor.boundingBox())!; return Math.hypot(current.x - rect.x - source!.offset.x, current.y - rect.y - source!.offset.y); }).toBeLessThan(2);
+  await expect.poll(async () => { const current = await paintedFoodPoint(), rect = (await anchor.boundingBox())!; return Math.hypot(current.x - rect.x - source!.offset.x, current.y - rect.y - source!.offset.y); }).toBeLessThan(2);
   await page.evaluate(() => scrollTo({ top: 0, behavior: "instant" }));
   // Native grabbing must wait for the same retained food attachment to return
   // from the preceding scroll; a global placement click never needed to hit
   // the fruit and concealed this stale-screen-position setup race.
-  await expect.poll(async () => { const current = await foodPoint(item), rect = (await anchor.boundingBox())!; return Math.hypot(current.x - rect.x - source!.offset.x, current.y - rect.y - source!.offset.y); }).toBeLessThan(2);
+  await expect.poll(async () => { const current = await paintedFoodPoint(), rect = (await anchor.boundingBox())!; return Math.hypot(current.x - rect.x - source!.offset.x, current.y - rect.y - source!.offset.y); }).toBeLessThan(2);
   const release = await roomyRelease(page);
   await dragFoodToFeet(page, item, release); await expect(item).toHaveAttribute("data-falling", "");
   await page.getByRole("button", { name: "설정", exact: true }).click();
@@ -179,14 +203,18 @@ test("fruit retains its real text attachment through scroll, interrupts for sett
 });
 
 test("large native keyposes and first-pass contact stay fluid, reward only real strokes and park without geometry work", async ({ page }) => {
-  test.setTimeout(35_000); await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page, { size: "large" });
+  test.setTimeout(35_000); await page.setViewportSize({ width: 1920, height: 1100 }); // "다른 창 쓸 때도 놀기" is on by default since 1f2cb9eb; the blur → parked branch below is the OFF choice.
+  await setup(page, { size: "large", parkOnBlur: true });
   await expect(actor(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-size", "large");
   await expect(pet(page)).toHaveAttribute("data-quality", "sharp", { timeout: 10000 }); await expect(pet(page)).toHaveAttribute("data-atlas", "hd");
   const sprite = page.locator(".vc-sprite"); await expect(sprite).toHaveCSS("image-rendering", "auto");
   const texture = sprite.locator(".vc-texture");
   expect(await texture.evaluate(node => (node as HTMLImageElement).currentSrc || (node as HTMLImageElement).src)).toContain("/hd/");
   const intrinsic = await texture.evaluate(async node => { const image = node as HTMLImageElement; await image.decode(); return { width: image.naturalWidth, height: image.naturalHeight }; });
-  expect(intrinsic).toEqual({ width: 1536, height: 384 });
+  // The appearance atlases (68b46f11) carry their own row count; the sheet is still grid x rows of one HD cell.
+  const sheet = new URL(await texture.evaluate(node => (node as HTMLImageElement).currentSrc || (node as HTMLImageElement).src)).pathname;
+  expect(intrinsic).toEqual({ width: companionSpriteMetadata.grid * companionSpriteMetadata.cell, height: (companionAppearanceGridRows(sheet) ?? companionSpriteMetadata.gridRows) * companionSpriteMetadata.cell });
+  expect(intrinsic.width).toBe(1536);
   const focus = page.locator('[data-panel-section-toggle="tag-filter"]'); await focus.focus();
   const before = await world(page), y = before.y - before.size * .49, left = before.x - before.size * .22, right = before.x + before.size * .22;
   const bond = page.getByRole("meter", { name: "빅타민 친밀도", exact: true }), initial = await bond.evaluate(node => (node as HTMLMeterElement).value);

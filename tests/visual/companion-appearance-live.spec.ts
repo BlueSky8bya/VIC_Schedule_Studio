@@ -30,14 +30,16 @@ test("appearance: real meadow entry and pet strokes retain the four-ear crown co
   const meadow = page.locator(".vc-meadow-walk"), body = meadow.locator(".vc-meadow-walk-body"), composite = meadow.locator(".vc-character-composite");
   await expect(meadow).toBeVisible(); await expect(composite).toBeVisible();
   await expect(composite).toHaveAttribute("data-ear-slots", "orange-root orange-tip yellow-root yellow-tip");
-  const samples: { pose: string | null; compositePose: string | null; layered: string | null; ink: number }[] = [];
+  const samples: { pose: string | null; compositePose: string | null; layered: string | null; ink: number; petting: string | null }[] = [];
   for (let index = 0; index < 36; index++) {
     const rect = (await body.boundingBox())!;
     await page.mouse.move(rect.x + rect.width * (index % 2 ? .35 : .65), rect.y + rect.height * .52, { steps: 3 }); await page.waitForTimeout(55);
-    samples.push(await meadow.evaluate(node => { const canvas = node.querySelector<HTMLCanvasElement>(".vc-character-composite")!; return { pose: node.getAttribute("data-pose"), compositePose: canvas.dataset.pose ?? null, layered: canvas.closest(".vc-pose")?.getAttribute("data-layered") ?? null, ink: canvas.getContext("2d")!.getImageData(0, 0, 384, 384).data.filter((value, index) => index % 4 === 3 && value > 0).length }; }));
+    samples.push(await meadow.evaluate(node => { const canvas = node.querySelector<HTMLCanvasElement>(".vc-character-composite")!; return { petting: node.getAttribute("data-petting"), pose: node.getAttribute("data-pose"), compositePose: canvas.dataset.pose ?? null, layered: canvas.closest(".vc-pose")?.getAttribute("data-layered") ?? null, ink: canvas.getContext("2d")!.getImageData(0, 0, 384, 384).data.filter((value, index) => index % 4 === 3 && value > 0).length }; }));
   }
   expect(samples.every(sample => sample.layered === "true" && sample.ink > 1000 && sample.pose === sample.compositePose)).toBe(true);
-  await expect(meadow).toHaveAttribute("data-petting", /hover|touch/);
+  // The strokes are read where they happen: the walking body can leave the still pointer right after the last stroke,
+  // which ends the hover (companion-meadow-walk.tsx onHoverEnd) before a later read (1 of 3 runs, 2026-11-20).
+  expect(samples.filter(sample => /hover|touch/.test(sample.petting ?? "")).length, "the strokes really pet the meadow body").toBeGreaterThanOrEqual(12); // measured 22 of 36 alone
   mkdirSync(output, { recursive: true }); await page.screenshot({ path: `${output}/crown-petting.png` });
   writeFileSync(`${output}/proof.json`, JSON.stringify({ samples, errors, rejected, scope: "Production React meadow; native entry and pointer strokes. No actor/clock/RNG/renderer mutation. Fixture does not establish broadcaster hardware performance." }, null, 2));
   expect(errors).toEqual([]); expect(rejected).toEqual([]);

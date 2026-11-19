@@ -6,6 +6,7 @@ import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
+import { installCompanionPointReader, type CompanionPointWindow } from "./helpers/companion-point";
 
 type Surface = "viewer" | "studio";
 type Point = { x: number; y: number };
@@ -17,21 +18,26 @@ const output = process.env.VIC_HOUSE115_OUTPUT ?? ".scratch-pw/companion-115/hou
 const proofs = new WeakMap<Page, { build: string; writes: string[]; errors: string[]; notes: unknown[]; scripts: string[] }>();
 const pet = (page: Page) => page.locator(".vc-companion");
 const foods = (page: Page) => page.locator(".vc-food");
-const foodPoint = (food: Locator) => food.evaluate(node => { const matrix = new DOMMatrixReadOnly((node as HTMLElement).style.transform); return { x: matrix.m41, y: matrix.m42 }; });
+// A snack at rest is CSS-anchored to its support (a3e9a288): the transform is only the offset from that origin.
+const foodPoint = (food: Locator) => food.evaluate(node => (window as unknown as CompanionPointWindow).vcPoint(node, (node as HTMLElement).style.transform));
 const distance = (a: Point, b: Point) => Math.hypot(a.x - b.x, a.y - b.y);
 
 test.use({ headless: true, viewport: { width: 1920, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
-test.setTimeout(120000);
+// The household errands (tidy, mischief, self-dispense) are taken only in the gaps between authored character scenes
+// (personality director, 1c8db000): entry scene, recipes and routines come first, so the first errand of a visit is
+// seen 1 to 4 minutes in (measured: 128 s), not inside the old 85-100 s windows. The waits below are sized for that.
+const ERRAND_WAIT = 250000;
+test.setTimeout(ERRAND_WAIT + 110000);
 test.beforeEach(async ({ page }) => {
   const proof = { build: readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim(), writes: [] as string[], errors: [] as string[], notes: [] as unknown[], scripts: [] as string[] }; proofs.set(page, proof);
-  mkdirSync(output, { recursive: true });
+  mkdirSync(output, { recursive: true }); await installCompanionPointReader(page);
   page.on("pageerror", error => proof.errors.push(error.message));
   page.on("response", response => { if (new URL(response.url()).pathname.startsWith("/_next/static/") && response.status() === 200) proof.scripts.push(new URL(response.url()).pathname); });
   await page.route("**/*", route => {
     const request = route.request(), url = new URL(request.url());
     if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) { proof.writes.push(`${request.method()} ${url.pathname}`); return route.fulfill({ status: 503, body: "fixture forbids writes" }); }
     if (url.pathname.startsWith("/api/")) return route.fulfill({ status: 503, body: "fixture forbids live API reads" });
-    if (url.origin !== "http://127.0.0.1:3117") return route.fulfill({ status: 503, body: "fixture forbids external reads" });
+    if (url.origin !== new URL(test.info().project.use.baseURL as string).origin) return route.fulfill({ status: 503, body: "fixture forbids external reads" });
     return route.continue();
   });
 });
@@ -44,9 +50,12 @@ test.afterEach(async ({ page }, info) => {
 });
 
 async function dragFood(page: Page, food: Locator, target: Point) {
+  // A dispensed snack falls out of the outlet first and a grab during that fall does not take; a release within 100 ms
+  // of the last pointer move is a throw (companion-food.tsx pointerup). This setup is a put-down: wait for both.
+  await expect(food).not.toHaveAttribute("data-falling");
   const rect = (await food.boundingBox())!, at = await foodPoint(food), grip = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
   await page.mouse.move(grip.x, grip.y); await page.mouse.down();
-  await page.mouse.move(target.x + grip.x - at.x, target.y + grip.y - at.y, { steps: 14 }); await page.mouse.up(); await page.mouse.move(1880, 80);
+  await page.mouse.move(target.x + grip.x - at.x, target.y + grip.y - at.y, { steps: 14 }); await page.waitForTimeout(140); await page.mouse.up(); await page.mouse.move(1880, 80);
   await expect(food).not.toHaveAttribute("data-falling"); await expect(food).not.toHaveAttribute("data-selected");
 }
 async function setup(page: Page, surface: Surface, personality: "tidy" | "mischievous", count: number, homeStart: false | "floor" | "seat" = false) {
@@ -54,11 +63,11 @@ async function setup(page: Page, surface: Surface, personality: "tidy" | "mischi
     for (const [name, value] of Object.entries({ [key]: epoch, "vic.dark": "off", "vic.sound": "off", "vic.ambient": "off", "vic.reduceMotion": "off", "vic.gfxPref": "max", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(name, value);
     localStorage.removeItem("vic.panelSections"); localStorage.removeItem("vic_panel_collapsed");
     localStorage.removeItem("vic.viewerCompanionCollection"); localStorage.removeItem("vic.viewerCompanionGifts");
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, personality, animalMode: "default", speed: "normal", roam: true, jump: true, sleep: false, feeding: true, learnFromYou: false, heartPrank: false, cardPrank: false, ambientPrank: personality === "mischievous", panelPrank: false, rarePrank: false }));
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, personality, personalitySource: "manual", animalMode: "default", speed: "normal", roam: true, jump: true, sleep: false, feeding: true, learnFromYou: false, heartPrank: personality === "mischievous", cardPrank: personality === "mischievous", ambientPrank: personality === "mischievous", panelPrank: false, rarePrank: personality === "mischievous" }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...care, energy: 1, hunger: .05 }));
   }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, preferences: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE, personality });
   await page.goto(surface === "viewer" ? "/visual-fixture/poster?links=1" : "/visual-fixture/studio?role=owner&companionDrag=1");
-  expect(new URL(page.url()).origin).toBe("http://127.0.0.1:3117"); await page.bringToFront(); await settlePanelLayout(page);
+  expect(new URL(page.url()).origin).toBe(new URL(test.info().project.use.baseURL as string).origin); await page.bringToFront(); await settlePanelLayout(page);
   await expect(pet(page)).toBeVisible(); await openCompanionHome(page);
   const floorY = await page.evaluate(() => {
     const bars = [...document.querySelectorAll<HTMLElement>(".agenda-monthbar")].filter(node => getComputedStyle(node).position === "fixed").map(node => node.getBoundingClientRect());
@@ -85,13 +94,9 @@ async function setup(page: Page, surface: Surface, personality: "tidy" | "mischi
     await dragFood(page, food, { x: 650 + index * 150, y: floorY - 5 });
     expect((await foodPoint(food)).y).toBeCloseTo(floorY, 1);
   }
-  // Hiding the real home disables its bin/dispenser recipient. This makes
-  // tidy exercise its real gather-and-put route rather than a trash shortcut.
-  if (personality === "tidy") {
-    const close = page.getByRole("button", { name: "빅타민 집 닫기", exact: true });
-    if (await close.isVisible()) await close.click(); else await page.locator('[data-act="companion-home-fold"]').click();
-    await settlePanelLayout(page); await expect(page.locator(".vc-home-room")).not.toBeVisible();
-  }
+  // A tidy pet takes a scattered snack to its home: into the real bin when it is full and the snack is not a favourite,
+  // onto a pantry spot of the room floor otherwise (home-pantry.ts selectCompanionHomeFoodDestination, ea8545cd). With
+  // the home hidden there is no destination and no errand starts (250 s observed), so the home stays open.
   await startProbe(page);
   if (!homeStart) { await actor.focus(); await actor.press("Space"); }
   await page.mouse.move(1880, 80);
@@ -102,7 +107,7 @@ async function startProbe(page: Page) {
   await page.evaluate(() => {
     const samples: Sample[] = [], transitions: Probe["transitions"] = []; let request = 0, last = -Infinity, stopped = false; const began = performance.now();
     const observer = new MutationObserver(records => {
-      for (const record of records) if (transitions.length < 20000 && record.target instanceof HTMLElement && record.target.matches(".vc-companion,.vc-food")) transitions.push({ at: performance.now() - began, id: record.target.dataset.food ?? "actor", attribute: record.attributeName ?? "", value: record.target.getAttribute(record.attributeName!) });
+      for (const record of records) if (transitions.length < 60000 && record.target instanceof HTMLElement && record.target.matches(".vc-companion,.vc-food")) transitions.push({ at: performance.now() - began, id: record.target.dataset.food ?? "actor", attribute: record.attributeName ?? "", value: record.target.getAttribute(record.attributeName!) });
     });
     observer.observe(document.body, { attributes: true, subtree: true, attributeFilter: ["data-household", "data-carried", "data-falling", "data-state", "data-platform"] });
     const sample = (now: number) => {
@@ -110,9 +115,9 @@ async function startProbe(page: Page) {
       if (now - last >= 1000 / 30) {
         last = now; const actor = document.querySelector<HTMLElement>(".vc-companion"), rect = actor?.getBoundingClientRect();
         samples.push({ at: now - began, household: actor?.dataset.household ?? "", state: actor?.dataset.state ?? "", platform: actor?.dataset.platform ?? "", actor: { x: rect ? rect.left + rect.width / 2 : -1, y: rect?.bottom ?? -1 }, focused: document.hasFocus(), hidden: document.hidden,
-          foods: [...document.querySelectorAll<HTMLElement>(".vc-food")].map(food => { const m = new DOMMatrixReadOnly(food.style.transform); return { id: food.dataset.food!, x: m.m41, y: m.m42, carried: food.hasAttribute("data-carried"), falling: food.hasAttribute("data-falling"), discarding: food.hasAttribute("data-discarding"), hidden: food.hidden }; }) });
+          foods: [...document.querySelectorAll<HTMLElement>(".vc-food")].map(food => { const m = (window as unknown as CompanionPointWindow).vcPoint(food, food.style.transform); return { id: food.dataset.food!, x: m.x, y: m.y, carried: food.hasAttribute("data-carried"), falling: food.hasAttribute("data-falling"), discarding: food.hasAttribute("data-discarding"), hidden: food.hidden }; }) });
       }
-      if (now - began < 115000) request = requestAnimationFrame(sample);
+      if (now - began < 350000) request = requestAnimationFrame(sample);
     };
     (window as ProbeWindow).household115 = { samples, transitions, stop: () => { stopped = true; cancelAnimationFrame(request); observer.disconnect(); } };
     request = requestAnimationFrame(sample);
@@ -120,10 +125,17 @@ async function startProbe(page: Page) {
 }
 const samples = (page: Page) => page.evaluate(() => (window as ProbeWindow).household115?.samples ?? []);
 function completeTidy(trace: Sample[]) {
-  const routes = new Map<string, { carried: Sample[]; last: Sample; fall?: Sample }>();
-  for (const sample of trace) for (const food of sample.foods) {
-    if (food.carried) { const route = routes.get(food.id); if (route) { route.carried.push(sample); route.last = sample; } else routes.set(food.id, { carried: [sample], last: sample }); }
-    else { const route = routes.get(food.id); if (!route) continue; if (food.falling) route.fall ??= sample; else if (route.fall && !food.hidden) return { id: food.id, carried: route.carried, last: route.last, fall: route.fall, landed: sample }; }
+  const routes = new Map<string, { carried: Sample[]; last: Sample; release?: Sample }>();
+  for (const sample of trace) {
+    for (const food of sample.foods) {
+      const route = routes.get(food.id);
+      if (food.carried && !route?.release) { if (route) { route.carried.push(sample); route.last = sample; } else routes.set(food.id, { carried: [sample], last: sample }); }
+      else if (route) {
+        route.release ??= sample;
+        if (!food.carried && !food.falling && !food.discarding && !food.hidden) return { id: food.id, carried: route.carried, last: route.last, release: route.release, end: "stored" as const, landed: sample };
+      }
+    }
+    for (const [id, route] of routes) if (!sample.foods.some(food => food.id === id)) return { id, carried: route.carried, last: route.last, release: route.release ?? sample, end: "binned" as const, landed: sample };
   }
 }
 function completeToss(trace: Sample[]) {
@@ -140,27 +152,40 @@ function completeToss(trace: Sample[]) {
 }
 
 for (const surface of ["viewer", "studio"] as const) {
-  test(`${surface} tidy carries a full pet's scattered snacks along a real route then drops onto the first floor`, async ({ page }) => {
+  // Tidy carries page-floor snacks home since 9e346ecc (owner call 2026-11-20): the room-floor route falls back to the
+  // cushion recall planner (home-pantry.ts findCompanionHomeItemRoute intoRoom), so a full tidy pet with its home open
+  // picks a floor snack up and bins it or stores it in the room (viewer and studio, first carry ~10-20 s).
+  test(`${surface} tidy carries a full pet's scattered snack along a real route to its home and puts it away`, async ({ page }) => {
     await setup(page, surface, "tidy", 2);
-    await expect(page.locator(".vc-food[data-carried]")).toBeVisible({ timeout: 85000 });
+    await expect(page.locator(".vc-food[data-carried]")).toBeVisible({ timeout: ERRAND_WAIT });
     await page.screenshot({ path: `${output}/${surface}-tidy-carrying.png` });
-    await expect.poll(async () => Boolean(completeTidy(await samples(page))), { timeout: 100000, intervals: [250] }).toBe(true);
+    await expect.poll(async () => Boolean(completeTidy(await samples(page))), { timeout: 60000, intervals: [250] }).toBe(true);
     const trace = await samples(page), route = completeTidy(trace)!;
     const carriedPoints = route.carried.map(sample => sample.foods.find(food => food.id === route.id)!);
     expect(Math.max(...carriedPoints.map(point => point.x)) - Math.min(...carriedPoints.map(point => point.x))).toBeGreaterThan(50);
-    const previous = route.last.foods.find(food => food.id === route.id)!, firstFall = route.fall.foods.find(food => food.id === route.id)!;
-    expect(distance(previous, firstFall), "put-down must start at the real carried drawing, not teleport to the target floor").toBeLessThan(32);
+    const previous = route.last.foods.find(food => food.id === route.id)!, released = route.release.foods.find(food => food.id === route.id);
+    if (released) expect(distance(previous, released), "the put-away must start at the real carried drawing, not teleport to its target").toBeLessThan(32);
     const clearance = route.carried.map(sample => sample.actor.y - sample.foods.find(food => food.id === route.id)!.y - 2);
     expect(Math.min(...clearance), "held art must clear the ground throughout the carrying route").toBeGreaterThan(1);
-    expect(route.landed.foods.find(food => food.id === route.id)!.y - firstFall.y, "put-down descends from the carried drawing").toBeGreaterThan(1);
-    expect(route.landed.at - route.fall.at).toBeLessThan(1700); expect(route.last.at - route.carried[0].at).toBeLessThan(35000);
+    // The carry ends inside the home, where the pet stands: in the bin (the snack is gone) or on a pantry spot of the room floor.
+    expect(route.last.platform, "the snack is carried all the way into the home").toMatch(/^companion-home-floor(?:-\d+)?$/);
+    const room = (await page.locator(".vc-home-room").boundingBox())!;
+    expect(previous.x).toBeGreaterThanOrEqual(room.x - 1); expect(previous.x).toBeLessThanOrEqual(room.x + room.width + 1);
+    if (route.end === "stored") {
+      const landed = route.landed.foods.find(food => food.id === route.id)!;
+      expect(landed.y - previous.y, "a stored snack comes down from the carried drawing").toBeGreaterThan(1);
+      expect(landed.x).toBeGreaterThanOrEqual(room.x - 1); expect(landed.x).toBeLessThanOrEqual(room.x + room.width + 1);
+    } else await expect(page.locator(`.vc-food[data-food="${route.id}"]`)).toHaveCount(0);
+    expect(route.landed.at - route.release.at).toBeLessThan(2500); expect(route.last.at - route.carried[0].at).toBeLessThan(45000);
     expect(trace.every(sample => sample.foods.length <= 8 && !sample.hidden && sample.focused)).toBe(true);
     await page.screenshot({ path: `${output}/${surface}-tidy-completed.png` });
-    proofs.get(page)!.notes.push({ actualTidy: route, minimumNominalArtGroundClearance: Math.min(...clearance), noMealRegistration: await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCollection") ?? "{}").foods ?? []) });
+    const meals = await page.evaluate(() => (JSON.parse(localStorage.getItem("vic.viewerCompanionCollection") ?? "{}").foods ?? []) as string[]);
+    expect(meals, "putting a snack away is not a meal").toEqual([]);
+    proofs.get(page)!.notes.push({ actualTidy: route, minimumNominalArtGroundClearance: Math.min(...clearance), noMealRegistration: meals });
   });
   test(`${surface} native grabbing a carried snack immediately takes ownership from autonomous tidy`, async ({ page }) => {
     await setup(page, surface, "tidy", 2);
-    const carried = page.locator(".vc-food[data-carried]"); await expect(carried).toBeVisible({ timeout: 100000 });
+    const carried = page.locator(".vc-food[data-carried]"); await expect(carried).toBeVisible({ timeout: ERRAND_WAIT });
     const id = (await carried.getAttribute("data-food"))!, item = page.locator(`.vc-food[data-food="${id}"]`);
     const rect = (await item.boundingBox())!; await page.mouse.move(rect.x + rect.width / 2, rect.y + rect.height / 2); await page.mouse.down();
     await expect(item).not.toHaveAttribute("data-carried"); await page.mouse.move(1100, 850, { steps: 18 });
@@ -169,28 +194,14 @@ for (const surface of ["viewer", "studio"] as const) {
     expect((await foodPoint(item)).x).toBeGreaterThan(1000); await expect(item).toBeVisible();
     proofs.get(page)!.notes.push({ actualNativeTakeover: id, final: await foodPoint(item) });
   });
-  test(`${surface} mischievous actual food contact produces a finite physical arc without a synthetic trigger`, async ({ page }) => {
-    await setup(page, surface, "mischievous", 1);
-    await expect.poll(async () => Boolean(completeToss(await samples(page))), { timeout: 100000, intervals: [250] }).toBe(true);
-    const trace = await samples(page), toss = completeToss(trace)!;
-    expect(trace.some(sample => sample.household === "mischief")).toBe(true);
-    expect(toss.final.at - toss.flight[0].at).toBeLessThan(1800); expect(toss.final.food.hidden).toBe(false);
-    expect(trace.every(sample => sample.foods.length <= 8 && !sample.hidden && sample.focused)).toBe(true);
-    const first = trace.find(sample => sample.at === toss.flight[0].at)!;
-    expect(Math.hypot(first.actor.x - toss.before.x, first.actor.y - toss.before.y), "scatter starts only at actual creature/food contact").toBeLessThan(100);
-    await page.screenshot({ path: `${output}/${surface}-mischief-toss-completed.png` });
-    proofs.get(page)!.notes.push({ actualToss: toss, firstContact: first, selfDispensed: trace.some(sample => sample.foods.length > 1) });
-  });
-  for (const start of ["floor", "seat"] as const) test(`${surface} mischievous ${start} resident actually reaches its home dispenser and releases a real snack before tossing it`, async ({ page }) => {
-    await setup(page, surface, "mischievous", 0, start);
-    await expect(foods(page).first()).toBeVisible({ timeout: 85000 });
-    const trace = await samples(page);
-    expect(trace.some(sample => sample.household === "mischief")).toBe(true);
-    await page.screenshot({ path: `${output}/${surface}-actual-self-dispense.png` });
-    await expect.poll(async () => Boolean(completeToss(await samples(page))), { timeout: 45000, intervals: [250] }).toBe(true);
-    const full = await samples(page), toss = completeToss(full)!;
-    expect(full.some(sample => sample.foods.length > 0)).toBe(true); expect(toss.final.food.hidden).toBe(false); expect(toss.final.at - toss.flight[0].at).toBeLessThan(1800);
-    expect(full.every(sample => sample.foods.length <= 8)).toBe(true);
-    proofs.get(page)!.notes.push({ actualSelfDispenseWithZeroInitialSnacks: true, actualToss: toss });
-  });
+  // Removed (owner 2026-11-20: current behaviour kept), both surfaces:
+  //   "<surface> mischievous actual food contact produces a finite physical arc without a synthetic trigger"
+  //   "<surface> mischievous floor|seat resident actually reaches its home dispenser and releases a real snack before tossing it"
+  // A mischief errand is taken only in a random gap between authored character scenes (viewer-companion.tsx errand gate
+  // `!authoredOffer`) and then only on a random roll (household.ts `rng() >= profile.mischiefWeight * .65`). Studio
+  // errands do start since 9e346ecc, but on this build the first mischief came at 47 s, 119 s, or not at all within
+  // 250 s: of 14 runs of these cases (2026-11-20) 6 saw no `data-household` in 250 s. No bounded wait passes
+  // reliably and the tests may not inject a trigger. The tidy errand (above) starts within seconds and keeps the
+  // household carry, route and ownership coverage; completeToss is kept for a future deterministic mischief case.
+
 }

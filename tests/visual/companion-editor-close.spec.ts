@@ -1,13 +1,16 @@
 import { expect, test, type Page } from "@playwright/test";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { placeCompanionAt } from "./helpers/companion-home";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
 
 type Sample = { at: number; hidden: boolean; same: boolean; x: number; y: number; state: string; presence: string; guest: boolean; returning: boolean };
 type ProbeWindow = Window & { editorCloseProbe: { frames: Sample[]; raf: number; started: number; node: HTMLElement } };
 const pet = (page: Page) => page.locator(".vc-companion");
+const serverActions = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
 
 test.use({ viewport: { width: 1920, height: 780 } });
 const scenarios = [
@@ -21,6 +24,8 @@ for (const { mode, input } of scenarios) {
     page.on("pageerror", error => errors.push(error.message));
     await page.route("**/*", route => {
       const request = route.request(), path = new URL(request.url()).pathname;
+      // The developer header reads its report inbox count on mount (c30945c4): a read over POST transport, answered 0.
+      if (request.method() === "POST" && serverActions[request.headers()["next-action"] ?? ""]?.exportedName === "getUnseenReportCountAction") return route.fulfill({ contentType: "text/x-component", body: '0:{"a":"$@1","f":[],"b":"fixture"}\n1:0\n' });
       if (request.method() === "POST") { posts.push(path); return route.fulfill({ status: 503, body: "fixture forbids writes" }); }
       if (request.method() === "GET" && (path === "/" || path === "/studio")) return route.fulfill({ status: 200, body: "unused fixture navigation" });
       return route.continue();
@@ -36,7 +41,9 @@ for (const { mode, input } of scenarios) {
       localStorage.setItem("vic.reduceMotion", mode === "reduced" ? "on" : "off");
       localStorage.setItem("vic.sound", "off"); localStorage.setItem("vic.ambient", "off");
       localStorage.setItem("vic.prefSplit", "1"); localStorage.setItem("vic.font.studio", "maple"); localStorage.setItem("vic.calText.studio", "18");
-      localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, roam: false, jump: false, sleep: true, feeding: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, learnFromYou: false }));
+      localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, roam: false, jump: false, sleep: true, feeding: false,
+        // "다른 창 쓸 때도 놀기" is on by default since 1f2cb9eb; this case is the quiet pet of a window without focus.
+        activeWhileVisible: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, learnFromYou: false }));
       localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 2, ...care, energy: .9, hunger: .05 }));
       localStorage.setItem("vic_avatar_side", "left"); localStorage.removeItem("vic_panel_collapsed");
     }, { prefs: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE, key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, mode });
@@ -51,11 +58,12 @@ for (const { mode, input } of scenarios) {
     await page.mouse.wheel(0, 120); await page.waitForTimeout(200);
     const target = await page.locator('.studio-event-pill[data-companion-event="ordinary"] .pill-main strong').evaluateAll(nodes => nodes.map((node, index) => {
       const range = document.createRange(); range.selectNodeContents(node); const r = range.getBoundingClientRect();
-      return { index, x: r.left + r.width / 2, y: r.top - 4, width: r.width };
+      // A fresh pet starts in its home (a44f46a2) and a manual placement lands on a card top, not on a text line.
+      return { index, x: r.left + r.width / 2, y: r.top - 4, width: r.width, top: node.closest(".studio-event-pill")!.getBoundingClientRect().top };
     }).filter(p => p.width > 25 && p.x > 100 && p.x < innerWidth - 100 && p.y > 180 && p.y < innerHeight - 40).sort((a, b) => b.y - a.y || b.x - a.x)[0]);
     expect(target).toBeDefined();
-    await actor.focus(); await actor.press("p"); await page.mouse.click(target.x, target.y); await page.mouse.move(1880, 140);
-    await expect(pet(page)).not.toHaveAttribute("data-state", "jump"); await page.waitForTimeout(350);
+    await placeCompanionAt(page, { x: target.x, y: target.top - 18 }, /^card-\d+-top(?:-\d+)?$/); await page.mouse.move(1880, 140);
+    await page.waitForTimeout(350);
     await page.locator('.studio-event-pill[data-companion-event="ordinary"] .pill-main strong').nth(target.index).dblclick();
     const editor = page.locator(".event-editor-panel.is-edit"); await expect(editor).toBeVisible(); await waitForOverlayEntrance(editor);
     await expect(pet(page)).toHaveAttribute("data-presence", "parked", { timeout: 6000 });

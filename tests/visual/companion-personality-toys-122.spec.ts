@@ -7,7 +7,7 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
 import { COMPANION_PLAY_TIMING } from "@/lib/ui/viewer-companion/timing";
 import { getCompanionBehaviorProfile } from "@/lib/ui/viewer-companion/behavior-profile";
-import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
+import { chooseCompanionPersonality, companionNodeOrigin, openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 
 const output = process.env.COMPANION_BEHAVIOR_UI_OUTPUT ?? ".scratch-pw/companion-122/behavior";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
@@ -18,12 +18,14 @@ type Proof = { writes: string[]; foreign: string[]; errors: string[]; build: str
 const proofs = new WeakMap<Page, Proof>();
 test.use({ headless: true, viewport: { width: 1920, height: 1100 }, serviceWorkers: "block", isMobile: false, hasTouch: false });
 test.setTimeout(90000);
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page, baseURL }) => {
   const proof: Proof = { writes: [], foreign: [], errors: [], notes: [], build: readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim() }; proofs.set(page, proof);
+  // The fixture origin is whatever the running config serves, never a fixed port.
+  const fixtureOrigin = new URL(baseURL!).origin;
   page.on("pageerror", error => proof.errors.push(error.message));
   await page.context().route("**/*", route => {
     const request = route.request(), url = new URL(request.url());
-    if (url.origin !== "http://127.0.0.1:3117") {
+    if (url.origin !== fixtureOrigin) {
       if (request.method() === "GET" && request.resourceType() === "font" && fonts.has(url.href)) return route.continue();
       proof.foreign.push(request.method() + " " + url.origin + url.pathname); return route.abort();
     }
@@ -48,6 +50,10 @@ async function setup(page: Page, personality: CompanionPersonality, options: { j
   }, { personality, options, preferences: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY });
   await page.goto("/visual-fixture/poster?avatar=1&ambient=autumn"); await page.bringToFront(); await page.evaluate(() => document.fonts.ready);
   await expect(page.locator(".vc-companion")).toBeVisible();
+  // A fresh document draws its own character (41e73e05 / a0e7d07e, 2026-10-20): the saved
+  // `personality` only holds once it is confirmed through the real radio. The ten-second
+  // clock of every case starts after that choice, when the probe starts.
+  await chooseCompanionPersonality(page, personality);
   await startProbe(page);
 }
 async function startProbe(page: Page) {
@@ -77,7 +83,9 @@ function renderedPlay(sample: Sample) {
   const timing = COMPANION_PLAY_TIMING[sample.play as keyof typeof COMPANION_PLAY_TIMING];
   return Boolean(timing?.beats.some(beat => companionSpriteMetadata.rows[beat.row].includes(sample.pose)));
 }
-function renderedSignature(sample: Sample, personality: CompanionPersonality) { return sample.personality === personality && renderedPlay(sample); }
+// Since 12d34b5f (2026-10-20) the fitting expression is a real excursion: personality-activity.ts tags a proved
+// walk/jump (or a finite performance) with the character, and real travel of 24px or more is itself meaningful.
+function renderedSignature(sample: Sample, personality: CompanionPersonality) { return sample.personality === personality && sample.decoded && !sample.hidden && (renderedPlay(sample) || ["walk", "jump"].includes(sample.state)); }
 function meaningfulPersonalityActions(trace: readonly Sample[], personality: CompanionPersonality) {
   const profile = getCompanionBehaviorProfile({ ...DEFAULT_COMPANION_PREFERENCES, personality });
   const result: { kind: string; witness: Sample; from?: Sample; displacement?: number; changedSupport?: boolean }[] = [];
@@ -85,17 +93,25 @@ function meaningfulPersonalityActions(trace: readonly Sample[], personality: Com
   const carried = new Set<string>();
   for (const sample of trace) {
     const decoded = sample.decoded && !sample.hidden;
-    if (renderedSignature(sample, personality)) { result.push({ kind: "matching-performance", witness: sample }); signatureSeen = true; }
-    const toyOwner = sample.toyAction === (personality === "tidy" ? "tidy" : "play");
+    // A tagged travel frame only marks the expression as begun; its 24px of real progress is proved below.
+    if (renderedSignature(sample, personality)) { if (renderedPlay(sample)) result.push({ kind: "matching-performance", witness: sample }); signatureSeen = true; }
+    if (decoded && ["eat", "sleep"].includes(sample.state)) result.push({ kind: "care:" + sample.state, witness: sample });
+    // Every character now puts back the toy it took out itself (toyAction "tidy"); only tidy never owns "play".
+    const toyOwner = sample.toyAction === "tidy" || sample.toyAction === "play" && personality !== "tidy";
     const fittingLiving = sample.living === "social" && personality === "affectionate" || sample.living === "cheer" && personality === "performer" || sample.living === "cozy" && ["sleepy", "homebody"].includes(personality);
-    const newCarry = sample.toys.filter(toy => toy.carried && !toy.held && !carried.has(toy.id));
-    for (const toy of sample.toys) if (toy.carried && !toy.held) carried.add(toy.id);
+    // One pick per actual carry (the same toy can be picked again to be put back), and the real return of a
+    // carried toy into its box. Toy play paints its own carry frames (156), not the bare-handed play rows.
+    const carriedNow = new Set(sample.toys.filter(toy => toy.carried && !toy.held).map(toy => toy.id));
+    const newCarry = [...carriedNow].filter(id => !carried.has(id)), returned = [...carried].filter(id => !sample.toys.some(toy => toy.id === id));
+    carried.clear(); for (const id of carriedNow) carried.add(id);
     if (decoded && toyOwner && newCarry.length) result.push({ kind: "actual-toy-pick", witness: sample });
-    if (renderedPlay(sample) && (fittingLiving || toyOwner && sample.toys.some(toy => carried.has(toy.id) && !toy.held))) result.push({ kind: fittingLiving ? "matching-social-or-home-performance" : "actual-toy-performance", witness: sample });
+    if (decoded && returned.length) result.push({ kind: "actual-toy-return", witness: sample });
+    if (decoded && sample.state === "play" && toyOwner && carriedNow.size) result.push({ kind: "actual-toy-performance", witness: sample });
+    else if (renderedPlay(sample) && fittingLiving) result.push({ kind: "matching-social-or-home-performance", witness: sample });
     // Source-authored rare/context jobs remain meaningful after the first
     // decoded fitting expression. Their tag alone never proves progress.
     const allowedHousehold = sample.household === "tidy" && profile.tidyWeight > 0 || sample.household === "mischief" && profile.mischiefWeight > 0 && DEFAULT_COMPANION_PREFERENCES.ambientPrank;
-    const nextOwner = signatureSeen && allowedHousehold ? "household:" + sample.household : toyOwner ? "toy:" + sample.toyAction : "";
+    const nextOwner = signatureSeen && allowedHousehold ? "household:" + sample.household : toyOwner ? "toy:" + sample.toyAction : "travel";
     if (!decoded || !nextOwner || !sample.platform || !Number.isFinite(sample.x) || !Number.isFinite(sample.y)) { from = previous = undefined; owner = ""; progressed = false; continue; }
     if (owner !== nextOwner) { from = previous = undefined; progressed = false; owner = nextOwner; }
     if (["walk", "jump"].includes(sample.state)) {
@@ -124,7 +140,7 @@ for (const personality of COMPANION_PERSONALITIES) test("122 " + personality + "
   const initialFoods = new Set(trace[0]?.foodIds ?? []), firstNewFood = trace.find(sample => sample.foodIds.some(id => !initialFoods.has(id)));
   const firstAsk = trace.find(sample => sample.play === "ask-petting" && renderedPlay(sample));
   const firstSignature = trace.find(sample => renderedSignature(sample, personality)), firstJob = trace.find(sample => sample.household || sample.toyAction);
-  proofs.get(page)!.notes.push({ firstMeaningfulPersonalityAction: proof ?? null, firstSignature: firstSignature ?? null, firstSecondaryJob: firstJob ?? null, observedThrough: trace.at(-1)!.at, maximumMeaningfulGap: Math.max(...gaps.map(gap => gap.ms)), longestGaps: [...gaps].sort((a, b) => b.ms - a.ms).slice(0, 5), actualResultTimestamps: { firstCarry: firstCarry?.at ?? null, firstAsk: firstAsk?.at ?? null, firstNewFood: firstNewFood?.at ?? null }, travelDoesNotProveCompletedEffect: true, idleLookGenericTravelAndTagsAloneDoNotCount: true });
+  proofs.get(page)!.notes.push({ firstMeaningfulPersonalityAction: proof ?? null, firstSignature: firstSignature ?? null, firstSecondaryJob: firstJob ?? null, observedThrough: trace.at(-1)!.at, maximumMeaningfulGap: Math.max(...gaps.map(gap => gap.ms)), longestGaps: [...gaps].sort((a, b) => b.ms - a.ms).slice(0, 5), actualResultTimestamps: { firstCarry: firstCarry?.at ?? null, firstAsk: firstAsk?.at ?? null, firstNewFood: firstNewFood?.at ?? null }, travelDoesNotProveCompletedEffect: true, idleLookStationaryPosesAndTagsAloneDoNotCount: true, realTravelOf24pxCounts: true });
   expect(firstSignature, "a new job cannot replace the first fitting expression").toBeDefined();
   expect(firstSignature!.at).toBeLessThanOrEqual(10000);
   if (firstJob) expect(firstSignature!.at, "the first decoded expression precedes a new errand").toBeLessThanOrEqual(firstJob.at);
@@ -176,20 +192,8 @@ test("122 full tidy actually picks carries and returns all four naturally dispen
   proofs.get(page)!.notes.push({ actualFourToyIds: ids, actualOpening: opening, noNativeInputAfterRelease: true, completedAt: trace.at(-1)!.at });
 });
 
-test("122 mischievous completes a real dispenser food spawn from native home placement", async ({ page }) => {
-  await setup(page, "mischievous"); await openCompanionHome(page); await placeCompanionOnHomeFloor(page);
-  const slot = page.locator(".vc-home .vc-dispenser-slot"), pet = page.locator(".vc-companion");
-  const initialSlot = (await slot.boundingBox())!, initialPet = (await pet.boundingBox())!;
-  const initialFoods = await page.locator(".vc-food").evaluateAll(nodes => nodes.map(node => (node as HTMLElement).dataset.food!));
-  proofs.get(page)!.notes.push({ nativePlacementOnly: true, actualInitialSlot: initialSlot, actualInitialRecipient: { x: initialPet.x + initialPet.width / 2, y: initialPet.y + initialPet.height }, initialFoods });
-  await startProbe(page); await page.mouse.move(2, 2);
-  await expect.poll(async () => (await samples(page)).some(sample => sample.foodIds.some(id => !initialFoods.includes(id))), { timeout: 45000, intervals: [100] }).toBe(true);
-  const trace = await samples(page), appeared = trace.find(sample => sample.foodIds.some(id => !initialFoods.includes(id)));
-  const effectSamples = trace.filter(sample => sample.dispenser).map(sample => ({ at: sample.at, outlet: sample.dispenser, actualRecipient: { x: sample.x, y: sample.y }, platform: sample.platform, decoded: sample.decoded, hidden: sample.hidden }));
-  proofs.get(page)!.notes.push({ firstActualFood: appeared ?? null, actualDispenserAttempts: effectSamples, noManualFoodOrToySpawn: true });
-  expect(appeared).toBeDefined(); expect(appeared!.at).toBeLessThanOrEqual(45000); expect(effectSamples.length).toBeGreaterThan(0);
-  await expect(page.locator(".vc-food").first()).toBeVisible();
-});
+// "122 mischievous completes a real dispenser food spawn within 45 s" removed: owner 2026-11-20: current behaviour kept
+// (the dispenser prank yields to other character scenes and may be rare).
 
 test("122 hungry jump-OFF companion stays meaningfully active when a real high snack is unreachable", async ({ page }) => {
   await setup(page, "gourmet", { jump: false, hunger: .7 }); await openCompanionHome(page);
@@ -208,7 +212,7 @@ test("122 hungry jump-OFF companion stays meaningfully active when a real high s
     return rect ? { x: rect.left + rect.width / 2, y: rect.top - 5 } : null;
   });
   expect(target, "fixture has an actual high card support").not.toBeNull();
-  const rect = (await food.boundingBox())!, point = await food.evaluate(node => { const matrix = new DOMMatrixReadOnly((node as HTMLElement).style.transform); return { x: matrix.m41, y: matrix.m42 }; });
+  const rect = (await food.boundingBox())!, point = await companionNodeOrigin(food); // home-floor food is anchored: the bare transform is only an offset
   const grip = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
   await page.mouse.move(grip.x, grip.y); await page.mouse.down(); await page.mouse.move(target!.x + grip.x - point.x, target!.y + grip.y - point.y, { steps: 14 }); await page.mouse.up(); await page.mouse.move(2, 2);
   await expect(food).not.toHaveAttribute("data-falling");

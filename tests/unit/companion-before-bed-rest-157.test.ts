@@ -9,7 +9,7 @@ const matrix=(x:number,y:number)=>[1,0,0,0,0,1,0,0,0,0,1,0,x,y,0,1];
 function cell(pose:number):CuriousTextureCellMeasurement {
   const frame=metadata.frames[pose],atlas=metadata.atlases[frame.atlas],size=92;
   return {currentPath:atlas.src,connectedToSprite:true,naturalWidth:atlas.width,naturalHeight:atlas.height,
-    textureWidth:size*metadata.grid,textureHeight:size*metadata.gridRows,spriteWidth:size,spriteHeight:size,textureLeft:0,textureTop:0,
+    textureWidth:size*metadata.grid,textureHeight:size*((atlas as {gridRows?:number}).gridRows??metadata.gridRows),spriteWidth:size,spriteHeight:size,textureLeft:0,textureTop:0,
     textureMatrix:matrix(-(frame.index%metadata.grid)*size,-Math.floor(frame.index/metadata.grid)*size),
     spriteMatrix:matrix(frame.x/80*size,frame.y/80*size),spriteClipPath:`inset(${frame.clip.map(value=>`${value/80*100}%`).join(" ")})`,textureClipPath:"none"};
 }

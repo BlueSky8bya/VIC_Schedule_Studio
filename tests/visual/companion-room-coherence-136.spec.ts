@@ -71,12 +71,18 @@ for (const [surface, width] of [["viewer", 1440], ["studio", 1100], ["studio", 1
       const tv = room.querySelector(".vc-home-tv-paint")!, transform = new DOMMatrix(getComputedStyle(tv).transform);
       return { presentation: node.getAttribute("data-home-presentation"), home: box(node), room: box(room), lamp: box(lamp), feeder: box(feeder), body: room.querySelector(".vc-home-tv-body")!.getAttribute("src"), planarXScale: transform.m11, planarYRotation: transform.m31, curtainGrade: getComputedStyle(room.querySelector(".vc-window-curtain-overlay")!).filter };
     });
-    expect(Math.abs((data.lamp.x + data.lamp.width / 2) - (data.feeder.x + data.feeder.width / 2))).toBeLessThan(1);
+    // The connected wood lamp (56f51964, 2026-10-21) carries its pull cord on the right of the same control, so the
+    // control sits max(12px, 3.8cqw of the room) left of the feeder's centre: the painted head stays above the feeder.
+    const lampCentre = data.lamp.x + data.lamp.width / 2, feederCentre = data.feeder.x + data.feeder.width / 2;
+    expect(Math.abs(feederCentre - lampCentre - Math.max(12, data.room.width * .038))).toBeLessThan(1);
+    expect(data.lamp.x).toBeLessThan(feederCentre); expect(data.lamp.x + data.lamp.width).toBeGreaterThan(feederCentre);
+    expect(data.lamp.y + data.lamp.height).toBeLessThanOrEqual(data.feeder.y + data.feeder.height);
     expect(data.body).toBe("/companion/home/136/tv-body.webp"); expect(data.planarXScale).toBe(1); expect(data.planarYRotation).toBe(0);
-    if (data.presentation === "compact") { expect(data.home.width / data.home.height).toBeGreaterThan(1.18); expect(data.room.width).toBeGreaterThan(390); }
+    // Compact room: 450 wide, a 74cqw picture under a 45px title row (measured 450 x 382.7 = 1.176). Still clearly wide.
+    if (data.presentation === "compact") { expect(data.home.width / data.home.height).toBeGreaterThan(1.15); expect(data.room.width).toBeGreaterThan(390); }
     for (const target of [data.lamp, data.feeder]) { expect(target.width).toBeGreaterThanOrEqual(44); expect(target.height).toBeGreaterThanOrEqual(44); }
     await placeCompanionOnHomeFloor(page);
-    await home.locator(".vc-home-tv").click(); await home.locator(".vc-home-tv-screen > img").evaluate(image => (image as HTMLImageElement).decode());
+    await home.locator(".vc-home-tv").click(); await home.locator(".vc-home-tv-screen img").evaluate(image => (image as HTMLImageElement).decode());
     await page.mouse.move(2, 2); await save(home, `${surface}-${width}-composition`, data);
   });
 
@@ -102,7 +108,11 @@ test("136 seated sofa front/back and curtains share both light states and the sa
     const bounds = (await home.locator(".vc-cushion-button").boundingBox())!;
     await page.mouse.move(bounds.x + 5, bounds.y + bounds.height / 2);
     await expect.poll(async () => { const m = await materials(); return m.frontTransform === m.backTransform; }).toBe(true);
-    const m = await materials(); expect(m.curtain).toBe(`brightness(${m.grade})`); expect(m.grade).toBe(lit ? 1 : .6);
+    const m = await materials(); expect(m.curtain).toBe(`brightness(${m.grade})`); 
+    // One shared material sample since 7dd1ac08 (lib/ui/viewer-companion/room-lighting.ts): at night with the curtain
+    // open the lamp gives .96 and the dark room .4 + .1.
+    expect(await home.locator(".vc-home-window").getAttribute("data-curtain")).toBe("open");
+    expect(m.grade).toBeCloseTo(lit ? .96 : .5, 6);
     samples.push({ lit, ...m }); await save(home, `seated-hover-${lit ? "on" : "off"}`, samples);
   }
   await expect(room).not.toHaveAttribute("data-lamp-lit");

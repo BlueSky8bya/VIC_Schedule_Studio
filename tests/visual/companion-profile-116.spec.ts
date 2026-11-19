@@ -46,7 +46,9 @@ async function openProfile(page: Page, entry: "book" | "settings") {
   // stage 3: the book opens on "함께 지내기"; the gear opens on "설정" (its chunk is asked for at once and stays held by the test's gate).
   await expect(nav.getByRole("tab", { name: entry === "book" ? "함께 지내기" : "설정", exact: true })).toHaveAttribute("aria-selected", "true");
   if (entry === "settings") await nav.getByRole("tab", { name: "함께 지내기", exact: true }).click();
-  await expect(profile.locator(".rhh-companion-facts dd").first()).toHaveText("복숭아");
+  // The taste card now carries a reason line under the name (3968a510): the name leads, the reason follows.
+  await expect(profile.locator(".rhh-companion-facts dd").first()).toHaveText(/^복숭아/);
+  await expect(profile.locator(".rhh-companion-facts dd").first().locator(".rhh-taste-reason")).not.toBeEmpty();
   await settlePanelLayout(page);
   return { dialog, profile, nav };
 }
@@ -107,8 +109,12 @@ for (const { surface, entry, narrow, theme, height, role } of scenarios) {
     // Native pointer path on first use, while its actual compiled chunk is held.
     await environment.click();
     await expect.poll(() => chunkRequested).toBe(true);
-    await expect.poll(async () => await profile.getByRole("status").isVisible() || !await profile.isVisible()).toBe(true);
-    const loading = await profile.getByRole("status").isVisible();
+    // ef7e9338 (2026-11-13, owner request): no "불러오는 중" placeholder anywhere. While the chunk is held the page
+    // is selected and its panel is simply empty; nothing else may disappear.
+    await expect(environment).toHaveAttribute("aria-selected", "true");
+    const settingsPanel = profile.locator('[role="tabpanel"]:not([hidden])');
+    await expect(settingsPanel).toHaveCount(1);
+    const loading = { status: await profile.getByRole("status").count(), panelChildren: await settingsPanel.evaluate(node => node.childElementCount), panelLabel: await settingsPanel.evaluate(node => document.getElementById(node.getAttribute("aria-labelledby") ?? "")?.getAttribute("data-profile-page")) };
     await page.screenshot({ path: `${output}/${name}-loading.png` });
     const during = { profile: await profileHandle!.evaluate(node => node.isConnected), dialog: await dialogHandle!.evaluate(node => node.isConnected), nav: await navHandle!.evaluate(node => node.isConnected), profileVisible: await profile.isVisible(), dialogVisible: await dialog.isVisible(), navVisible: await nav.isVisible(), focusedPage: await page.evaluate(() => document.activeElement?.getAttribute("data-profile-page")), routeLoading: await page.getByText("일정표 불러오는 중…", { exact: true }).isVisible(), loading, documents: documents.length, navigationEvents, geometry: await geometry() };
     release();
@@ -144,6 +150,7 @@ for (const { surface, entry, narrow, theme, height, role } of scenarios) {
       expect(bounds.sheet.top).toBeGreaterThanOrEqual(bounds.headerBottom); expect(bounds.sheet.bottom).toBeLessThanOrEqual(bounds.dialog.bottom);
       expect(bounds.sheet.left).toBeGreaterThanOrEqual(bounds.dialog.left); expect(bounds.sheet.right).toBeLessThanOrEqual(bounds.dialog.right);
       expect(bounds.tiles).toBeLessThanOrEqual(24); expect(bounds.documentScroll).toBe(initial.geometry.document.scrollY);
+      // Every page, the gear's wardrobe included, is finite: nothing between the sheet and the dialog scrolls.
       expect(bounds.ancestors.filter(node => node.overflow > 2)).toEqual([]);
       await page.mouse.move(bounds.sheet.x + bounds.sheet.width / 2, bounds.sheet.y + bounds.sheet.height / 2);
       await page.mouse.wheel(0, 600); await settlePanelLayout(page);
@@ -161,7 +168,7 @@ for (const { surface, entry, narrow, theme, height, role } of scenarios) {
     expect(after.url).toBe(initial.url); expect(after.performance).toEqual(initial.performance); expect(after.documents).toBe(initial.documents); expect(after.navigationEvents).toBe(initial.navigationEvents);
     expect([during.profile, during.dialog, during.nav, after.profile, after.dialog, after.nav]).toEqual(Array(6).fill(true));
     expect(errors).toEqual([]);
-    expect.soft(loading, "first environment visit provides a local loading state").toBe(true);
+    expect.soft(loading, "the held settings page shows an empty panel and no loading placeholder").toEqual({ status: 0, panelChildren: 0, panelLabel: "settings" });
     expect.soft([during.profileVisible, during.dialogVisible, during.navVisible], "lazy environment loading preserves the visible surrounding application").toEqual([true, true, true]);
     expect.soft(during.focusedPage).toBe("settings"); expect.soft(during.geometry).toEqual(initial.geometry);
     expect.soft(corners.hits.every(hit => hit.inside), "both visible tablist corners retain their actual hit region").toBe(true);
@@ -169,3 +176,19 @@ for (const { surface, entry, narrow, theme, height, role } of scenarios) {
     expect.soft(badge.svg).toBe(0); expect.soft(badge.art).toContain("/companion/collection/");
   });
 }
+
+// Regression guard for c3bec348 (shared power header above the pages): the gear's wardrobe sheet was 439 px tall for a
+// 449 px minimum content (443 at 1050x780), so the page arrows were cut and the sheet scrolled. Fixed in 63ecc14a.
+test("116 settings wardrobe is a finite page under the power header", async ({ page }) => {
+  await page.addInitScript(({ memory, preferences, epoch, epochKey }) => {
+    localStorage.setItem(epochKey, epoch);
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, roam: false, jump: false, sleep: false, feeding: false }));
+    localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...memory, life: { ...memory.life, favoriteFood: "peach", foodScores: { ...memory.life.foodScores, peach: .95 } } }));
+  }, { memory: DEFAULT_COMPANION_MEMORY, preferences: DEFAULT_COMPANION_PREFERENCES, epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY });
+  await page.goto("/visual-fixture/poster");
+  const { profile, nav } = await openProfile(page, "settings");
+  await nav.getByRole("tab", { name: "옷장", exact: true }).click();
+  const book = profile.locator(".rhh-collection-book:visible");
+  await expect(book).toBeVisible(); await settlePanelLayout(page);
+  expect(await book.evaluate(node => ({ overflow: node.scrollHeight - node.clientHeight, pagerCut: Math.max(0, Math.round(node.querySelector(".rhh-collection-pages")!.getBoundingClientRect().bottom - node.getBoundingClientRect().bottom)) }))).toEqual({ overflow: 0, pagerCut: 0 });
+});

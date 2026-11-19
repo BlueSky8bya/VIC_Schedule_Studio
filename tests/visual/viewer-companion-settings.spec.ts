@@ -169,10 +169,17 @@ test("the four pranks are one switch written to the existing fields, and there i
   // The renamed row in the fold keeps its stored field.
   await panel.locator(".rhh-companion-more summary").click();
   await expect(panel.getByRole("switch", { name: "빅타민 다른 창 작업 중에도 활동 켜기/끄기", exact: true })).toHaveCount(0);
-  const otherWindow = panel.getByRole("switch", { name: "빅타민 다른 창 쓸 때도 놀기 켜기/끄기", exact: true });
+  await expect(panel.getByRole("switch", { name: "빅타민 다른 프로그램 쓸 때도 놀기 켜기/끄기", exact: true })).toHaveCount(0);
+  const otherWindow = panel.getByRole("switch", { name: "빅타민 다른 일 할 때도 놀기 켜기/끄기", exact: true });
   await expect(otherWindow).toHaveAttribute("data-act", "companion-active-visible");
-  await expect(otherWindow).toBeChecked(); await otherWindow.click(); await expect(otherWindow).not.toBeChecked();
-  expect(await storedCompanion(page)).toMatchObject({ activeWhileVisible: false });
+  // Owner 2026-11-20: off by default.
+  await expect(otherWindow).not.toBeChecked(); await otherWindow.click(); await expect(otherWindow).toBeChecked();
+  expect(await storedCompanion(page)).toMatchObject({ activeWhileVisible: true });
+  // The new neighbour writes only its own field, also off by default.
+  const behindWindows = panel.getByRole("switch", { name: "빅타민 창이 떠 있어도 놀기 켜기/끄기", exact: true });
+  await expect(behindWindows).toHaveAttribute("data-act", "companion-play-behind-window");
+  await expect(behindWindows).not.toBeChecked(); await behindWindows.click(); await expect(behindWindows).toBeChecked();
+  expect(await storedCompanion(page)).toMatchObject({ activeWhileVisible: true, playBehindWindows: true });
   expect(Object.keys(await storedCompanion(page)).filter(key => /^(motion|playful)|level/i.test(key))).toEqual([]);
 });
 

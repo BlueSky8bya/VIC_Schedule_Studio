@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page } from "@playwright/test";
+import { expect, type BrowserContext, type Locator, type Page } from "@playwright/test";
 
 /** Movement is no longer a setting (2026-11-19): the shipping companion always
  * walks and jumps. Screen checks still need it standing still, so the visual
@@ -11,6 +11,16 @@ type Scope = Page | Locator;
 const pageOf = (scope: Scope): Page => "page" in scope ? scope.page() : scope;
 const stored = (scope: Scope) => pageOf(scope).evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion") ?? "{}") as { roam?: boolean; jump?: boolean });
 const levelOf = (value: { roam?: boolean; jump?: boolean }): CompanionMotionChoice => value.roam === false ? "still" : value.jump === false ? "walk" : "run";
+
+/** The visual configs seed this key through `storageState`. A spec that
+ * replaces `storageState` (`origins: []`), clears localStorage or opens its
+ * own `browser.newContext()` loses it, and its stored `roam: false` /
+ * `jump: false` then stops holding the companion still. Call this before the
+ * first `goto` in such a spec. */
+export const COMPANION_QA_STORED_MOTION_KEY = "vic.qa.companionStoredMotion";
+export async function keepCompanionStoredMotion(target: Page | BrowserContext) {
+  await target.addInitScript(key => { try { localStorage.setItem(key, "1"); } catch { /* opaque origin */ } }, COMPANION_QA_STORED_MOTION_KEY);
+}
 
 export const companionPlayfulSwitch = (scope: Scope) => scope.getByRole("switch", { name: "빅타민 장난치기 켜기/끄기", exact: true });
 

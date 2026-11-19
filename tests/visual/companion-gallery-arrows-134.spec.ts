@@ -16,13 +16,14 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
-import { fulfillReadOnlyFont } from "./helpers/readonly-font";
+import { fulfillDeclaredUiFontSheet, fulfillReadOnlyFont } from "./helpers/readonly-font";
 
 type BookKind = "food" | "toy" | "memory" | "wardrobe";
 type Click = { target: string; direction: string | null; label: string | null };
 type Activity = { kind: string; target?: string | null; meta?: unknown; durMs?: number | null };
 const output = process.env.COMPANION134_GALLERY_OUTPUT ?? ".scratch-pw/companion-134/gallery";
-const activityBase = process.env.VIC_ACTIVITY_BASE_URL ?? "http://127.0.0.2:3100";
+// The loopback alias follows whichever visual config runs this file (its baseURL port), unless the env pins one.
+let activityBase = process.env.VIC_ACTIVITY_BASE_URL ?? "http://127.0.0.2:3100";
 const receipts = new WeakMap<Page, { name: string; pending: Promise<void>[]; recordDots: (sample: unknown) => void; read: () => unknown }>();
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
 const scoped = (target: string) => /^(companion-collection-(page|inspect|category)|companion-accessory-select)(#|$)/.test(target);
@@ -188,13 +189,13 @@ async function assertDots(book: Locator, unread: number[], size: number) {
   return styles;
 }
 
-test.use({ baseURL: activityBase, serviceWorkers: "block", isMobile: false, hasTouch: false });
+test.use({ baseURL: async ({ baseURL }, use) => { if (!process.env.VIC_ACTIVITY_BASE_URL && baseURL) activityBase = baseURL.replace("//127.0.0.1", "//127.0.0.2"); await use(activityBase); }, serviceWorkers: "block", isMobile: false, hasTouch: false });
 test.afterEach(async ({ page }, info) => {
   const receipt = receipts.get(page); if (!receipt) return;
   await Promise.allSettled(receipt.pending); mkdirSync(output, { recursive: true });
   writeFileSync(`${output}/${receipt.name}.json`, JSON.stringify({ actualStatus: info.status, evidence: receipt.read() }, null, 2));
 });
-for (const [surface, width, height, dark] of [["viewer", 1050, 640, false], ["studio", 1920, 1100, true], ["preview", 1440, 900, false]] as const) test(`134 ${surface}: arrows activate displayed buttons, unread dots and single semantic activity`, async ({ page }) => {
+for (const [surface, width, height, dark] of [["viewer", 1050, 640, false], ["studio", 1920, 1100, true], ["preview", 1440, 900, false]] as const) test(`134 ${surface}: arrows activate displayed buttons, unread dots and one declared action per press`, async ({ page }) => {
   test.setTimeout(120000); mkdirSync(output, { recursive: true });
   const origin = new URL(activityBase).origin, buildDir = process.env.VISUAL_TEST_BUILD_DIR ?? ".next", build = readFileSync(resolve(buildDir, "BUILD_ID"), "utf8").trim();
   const events: Activity[] = [], clicks: Click[] = [], manual: string[] = [], errors: string[] = [], blocked: string[] = [], mutations: string[] = [], steps: unknown[] = [], dotMeasurements: unknown[] = [], chunks: { served: string; local: string }[] = [], pending: Promise<void>[] = [];
@@ -211,7 +212,7 @@ for (const [surface, width, height, dark] of [["viewer", 1050, 640, false], ["st
   await page.exposeBinding("recordGallery134Click", (_source, value: Click) => clicks.push(value));
   await page.route("**/*", async route => {
     const request = route.request(), url = new URL(request.url()), local = url.origin === origin || url.origin === origin.replace("127.0.0.2", "127.0.0.1");
-    if (!local) { if (request.resourceType() === "font") return fulfillReadOnlyFont(route, fonts, blocked); blocked.push(`${request.method()} ${url.origin}${url.pathname}`); return route.abort(); }
+    if (!local) { if (request.resourceType() === "font") return fulfillReadOnlyFont(route, fonts, blocked); if (await fulfillDeclaredUiFontSheet(route)) return; blocked.push(`${request.method()} ${url.origin}${url.pathname}`); return route.abort(); }
     if (!["GET", "HEAD"].includes(request.method())) {
       mutations.push(`${request.method()} ${url.pathname}`);
       if (url.pathname === "/api/activity") { events.push(...(request.postDataJSON() as { events: Activity[] }).events); return route.fulfill({ json: { ok: true } }); }
@@ -313,16 +314,50 @@ for (const [surface, width, height, dark] of [["viewer", 1050, 640, false], ["st
     await activate("prev", category, "disabled start consumes key without category or tile movement"); await manualPage("End");
     await activate("next", grid.locator('[aria-pressed="true"]'), "disabled end consumes key without inspection");
     expect(await page.evaluate(key => (JSON.parse(localStorage.getItem(key)!) as CompanionCollection).gifts.equipped, COMPANION_COLLECTION_KEY)).toBe(prior.gifts.equipped);
+    // Every surface, the Settings window included, keeps the full silhouette check.
     await assertCompanionSilhouettes(grid);
     await dialog.screenshot({ path: `${output}/${surface}-${kind}.png` }); steps.push({ kind, initialDots, finalDots: await assertDots(book, [], size) });
   }
-  // Let the real bounded client queue flush naturally. Every mutation has
-  // already been intercepted above; no synthetic blur or application hook.
+  // Since 5f2cc186 (2026-11-13) the client queue sends only for a really
+  // signed-in developer/owner (RouteBeacon -> enableActivityLogging). This
+  // fixture has no signed-in actor, so none of the presses above may leave the
+  // page: the declared targets are checked on the real buttons, and the
+  // intercepted /api/activity must stay silent although the queue passed its
+  // 20-press flush threshold several times (lib/activity/client.ts FLUSH_AT).
   expected = counts([...clicks.map(click => click.target), ...manual]);
-  await expect.poll(() => counts(events.filter(event => event.kind === "ui.click" && scoped(event.target ?? "")).map(event => event.target!)), { timeout: 10000 }).toEqual(expected);
-  await page.waitForTimeout(160); expect(counts(events.filter(event => event.kind === "ui.click" && scoped(event.target ?? "")).map(event => event.target!))).toEqual(expected);
-  const relevant = events.filter(event => event.kind === "ui.click" && scoped(event.target ?? "")); expect(relevant.every(event => event.meta === null && event.durMs === null)).toBe(true);
-  expect(relevant.every(event => !event.target!.includes("#") || ["prev", "next", "food", "toy", "behavior", "moment"].includes(event.target!.split("#")[1]))).toBe(true);
+  expect(clicks.length).toBeGreaterThanOrEqual(20); expect(clicks.every(click => scoped(click.target))).toBe(true);
+  expect(clicks.every(click => !click.target.includes("#") || ["prev", "next", "food", "toy", "behavior", "moment"].includes(click.target.split("#")[1]))).toBe(true);
+  await page.waitForTimeout(160);
+  expect(events, "a fixture without a signed-in developer or owner records no activity").toEqual([]);
+  expect(mutations.filter(path => path.endsWith(" /api/activity"))).toEqual([]);
   await Promise.all(pending); expect(chunks.length).toBeGreaterThan(0); expect(chunks.every(chunk => chunk.served === chunk.local)).toBe(true); expect(readFileSync(resolve(buildDir, "BUILD_ID"), "utf8").trim()).toBe(build);
   expect(errors).toEqual([]); expect(blocked).toEqual([]);
+});
+
+// Regression guard (fixed in 63ecc14a): the standard Settings window once gave the one-row book grid 114px
+// (1920x1100) / 127px (1440x900) for tiles needing 145px, so an undiscovered tile painted its shape clue 14.4-16px wide.
+for (const [surface, width, height] of [["studio", 1920, 1100], ["preview", 1440, 900]] as const) test(`134 ${surface}: undiscovered tiles keep a readable shape clue in the Settings window`, async ({ page }) => {
+  // The file-wide baseURL is the 127.0.0.2 activity alias (see test.use above); like the main case, this one serves it
+  // from the same 127.0.0.1 build and answers the declared jsDelivr font sheets locally.
+  await page.route("**/*", async route => {
+    const url = new URL(route.request().url());
+    if (await fulfillDeclaredUiFontSheet(route)) return;
+    if (url.hostname === "127.0.0.2") { url.hostname = "127.0.0.1"; return route.continue({ url: url.href }); }
+    return route.continue();
+  });
+  await page.addInitScript(({ preferences, epoch, epochKey }) => {
+    for (const [key, value] of Object.entries({ [epochKey]: epoch, "vic.sound": "off", "vic.ambient": "off", "vic.reduceMotion": "on", "vic.gfxPref": "off" })) localStorage.setItem(key, value);
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, roam: false, jump: false, sleep: false }));
+  }, { preferences: DEFAULT_COMPANION_PREFERENCES, epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY });
+  await page.setViewportSize({ width, height }); await page.goto("/visual-fixture/studio?role=owner&y=2025&m=11"); await settlePanelLayout(page);
+  if (surface === "preview") {
+    await page.locator(".io-preview").click(); await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible();
+    if (await page.locator(".viewer-fullscreen .panel-scrim").isVisible()) { await page.getByRole("button", { name: "패널 접기", exact: true }).click(); await settlePanelLayout(page); }
+    if (!await page.getByRole("button", { name: "설정", exact: true }).isVisible()) await page.getByRole("button", { name: "패널 펼치기", exact: true }).click();
+  }
+  await page.getByRole("button", { name: "설정", exact: true }).click();
+  const dialog = page.getByRole("dialog", { name: "설정", exact: true }); await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
+  await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
+  await dialog.locator(".rhh-companion-profile").getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "도감", exact: true }).click();
+  await assertCompanionSilhouettes(dialog.locator(".rhh-companion-discovery ul"));
 });

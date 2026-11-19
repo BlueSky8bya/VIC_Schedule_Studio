@@ -10,6 +10,9 @@ import { settlePanelLayout } from "./helpers/panel-layout";
 
 const copyOutput = process.env.COMPANION_COPY_REGRESSION_OUTPUT ?? ".scratch-pw/companion-114/copy";
 test.use({ viewport: { width: 1440, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
+// The look line under the name ("빅타민 모드 · 기본 모습", 592458e6) is a footnote set in the caption token
+// (--text-caption, 11px); every other reading row keeps the 13.5px body size.
+const CAPTION_ROWS = ".rhh-profile-appearance", CAPTION_PX = 11;
 
 async function assertCompanionAppearance(dialog: Locator) {
   const profile = dialog.locator(".rhh-companion-profile");
@@ -96,7 +99,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     const { dialog, traits } = await openTraits(page);
     await assertCompanionAppearance(dialog);
     await expect(traits.locator(".rhh-companion-portrait .rhh-wardrobe-preview-paused")).toHaveCount(0);
-    await expect(traits.locator(".rhh-companion-facts dd").first()).toHaveText("복숭아");
+    await expect(traits.locator(".rhh-companion-facts dd").first()).toHaveText(/^복숭아/);
     await expect(traits.locator(".rhh-profile-action-grid,.rhh-profile-action,.rhh-profile-try,.rhh-profile-motion-note,.rhh-trait-note")).toHaveCount(0);
     await expect(traits).not.toContainText("해보기");
     await expect(dialog.locator(".rhh-trait-reason")).toHaveText("최근 경험다른 간식 맛보기");
@@ -107,10 +110,11 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await expect(togetherPanel.locator("[role=switch]")).toHaveCount(1);
     await expect(togetherPanel.getByRole("radiogroup", { name: "빅타민 동물 모드", exact: true })).toBeVisible();
     await expect(togetherPanel.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio")).toHaveCount(9);
-    const layout = await traits.evaluate(region => ({ overflow: region.scrollWidth - region.clientWidth, rows: [...region.querySelectorAll("h3,li,p,dt,dd")].filter(node => node.getBoundingClientRect().width > 0).map(node => ({ font: parseFloat(getComputedStyle(node).fontSize), overflow: node.scrollWidth - node.clientWidth })), sections: [...region.querySelectorAll(".rhh-companion-summary,.rhh-profile-habits,.rhh-trait-reason")].map(node => { const box = node.getBoundingClientRect(); return { top: box.top, bottom: box.bottom }; }), fruit: region.querySelector(".rhh-companion-portrait .rhh-wardrobe-preview")?.getBoundingClientRect().width }));
+    const layout = await traits.evaluate((region, CAPTION_ROWS) => ({ overflow: region.scrollWidth - region.clientWidth, rows: [...region.querySelectorAll("h3,li,p,dt,dd")].filter(node => node.getBoundingClientRect().width > 0).map(node => ({ font: parseFloat(getComputedStyle(node).fontSize), caption: node.matches(CAPTION_ROWS), overflow: node.scrollWidth - node.clientWidth })), sections: [...region.querySelectorAll(".rhh-companion-summary,.rhh-profile-habits,.rhh-trait-reason")].map(node => { const box = node.getBoundingClientRect(); return { top: box.top, bottom: box.bottom }; }), fruit: region.querySelector(".rhh-companion-portrait .rhh-wardrobe-preview")?.getBoundingClientRect().width }), CAPTION_ROWS);
     expect(layout.overflow).toBeLessThanOrEqual(1);
     expect(layout.rows.length).toBeGreaterThan(8);
-    for (const row of layout.rows) { expect(row.font).toBeGreaterThanOrEqual(13.5); expect(row.overflow).toBeLessThanOrEqual(1); }
+    expect(layout.rows.filter(row => row.caption)).toHaveLength(1);
+    for (const row of layout.rows) { expect(row.font).toBeGreaterThanOrEqual(row.caption ? CAPTION_PX : 13.5); expect(row.overflow).toBeLessThanOrEqual(1); }
     expect(layout.sections).toHaveLength(3);
     for (let index = 1; index < layout.sections.length; index++) expect(layout.sections[index].top).toBeGreaterThanOrEqual(layout.sections[index - 1].bottom);
     expect(layout.fruit).toBeGreaterThanOrEqual(132);
@@ -131,7 +135,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
         localStorage.setItem("vic.viewerCompanionCare", JSON.stringify(memory));
       });
       await sibling.close(); await page.bringToFront();
-      await expect(traits.locator(".rhh-companion-facts dd").first()).toHaveText("딸기");
+      await expect(traits.locator(".rhh-companion-facts dd").first()).toHaveText(/^딸기/);
       await expect(dialog.getByRole("region", { name: "배운 습관", exact: true }).locator("li")).toHaveText(["마우스에서 조금 떨어져 걸어요.", "재롱을 덜 부려요.", "조금 더 오래 두리번거려요."]);
       await expect(dialog.locator(".rhh-trait-reason")).toHaveText("최근 경험새 간식 맛보기");
       // Real desktop resize exercises the shared responsive layout, keeping
@@ -139,10 +143,10 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
       await page.setViewportSize({ width: 1050, height: 900 });
       await settlePanelLayout(page);
       await expect(dialog.getByRole("tab", { name: "함께 지내기", exact: true })).toBeVisible();
-      const narrow = await profile.evaluate(element => ({ overflow: element.scrollWidth - element.clientWidth, rows: [...element.querySelectorAll("h3,h4,li,strong,p,dt,dd")].filter(node => node.getBoundingClientRect().width > 0).map(node => ({ overflow: node.scrollWidth - node.clientWidth, font: parseFloat(getComputedStyle(node).fontSize) })) }));
+      const narrow = await profile.evaluate((element, CAPTION_ROWS) => ({ overflow: element.scrollWidth - element.clientWidth, rows: [...element.querySelectorAll("h3,h4,li,strong,p,dt,dd")].filter(node => node.getBoundingClientRect().width > 0).map(node => ({ overflow: node.scrollWidth - node.clientWidth, caption: node.matches(CAPTION_ROWS), font: parseFloat(getComputedStyle(node).fontSize) })) }), CAPTION_ROWS);
       expect(narrow.overflow).toBeLessThanOrEqual(1);
       expect(narrow.rows.length).toBeGreaterThan(8);
-      for (const row of narrow.rows) { expect(row.overflow).toBeLessThanOrEqual(1); expect(row.font).toBeGreaterThanOrEqual(13.5); }
+      for (const row of narrow.rows) { expect(row.overflow).toBeLessThanOrEqual(1); expect(row.font).toBeGreaterThanOrEqual(row.caption ? CAPTION_PX : 13.5); }
       await profile.screenshot({ path: `${copyOutput}/traits/narrow-desktop.png` });
       await page.setViewportSize({ width: 1440, height: 1100 });
       await settlePanelLayout(page);
@@ -157,7 +161,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     expect((await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!))).learnFromYou).toBe(false);
     await dialog.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
     await dialog.getByRole("button", { name: "배운 습관 초기화 확정", exact: true }).click();
-    await expect(traits.locator(".rhh-companion-facts dd").first()).toHaveText("사과");
+    await expect(traits.locator(".rhh-companion-facts dd").first()).toHaveText(/^사과/);
     await expect(dialog.getByRole("region", { name: "배운 습관", exact: true }).locator("li")).toHaveCount(0);
     await expect(dialog.getByRole("region", { name: "배운 습관", exact: true })).toContainText("아직 배운 습관이 없어요");
     const saved = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!));
@@ -168,7 +172,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
       await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible();
     }
     const reopened = await openTraits(page);
-    await expect(reopened.traits.locator(".rhh-companion-facts dd").first()).toHaveText("사과");
+    await expect(reopened.traits.locator(".rhh-companion-facts dd").first()).toHaveText(/^사과/);
     await expect(reopened.dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true })).toHaveAttribute("aria-checked", "false");
     expect(writes).toEqual([]); expect(errors).toEqual([]);
   });

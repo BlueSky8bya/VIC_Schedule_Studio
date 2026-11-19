@@ -5,8 +5,14 @@ import { expect, type Locator, type Page } from "@playwright/test";
  * or application clock is stopped or replaced. */
 export async function waitForOverlayEntrance(dialog: Locator) {
   await dialog.evaluate(async node => {
+    // An animation on an element with no box never settles its `finished`
+    // promise: the rows inside the folded "더 보기" <details> (content-visibility:
+    // hidden) of the companion settings page reach playState "finished" while the
+    // promise stays pending, which hung this wait until the test timeout. Nothing
+    // unrendered can be part of a visible entrance, so it is not waited for.
+    const rendered = (animation: Animation) => { const target = (animation.effect as KeyframeEffect | null)?.target; return !target || target.checkVisibility(); };
     await Promise.allSettled(node.getAnimations({ subtree: true })
-      .filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime)))
+      .filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime)) && rendered(animation))
       .map(animation => animation.finished));
     await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
   });

@@ -5,6 +5,7 @@ import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { companionSpriteSources, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
+import { COMPANION_THROW_LIMITS } from "@/lib/ui/viewer-companion/throw";
 
 type Surface = "viewer" | "studio";
 type Mode = "full" | "lite";
@@ -38,7 +39,9 @@ test.afterEach(async ({ page }, info) => {
   expect(evidence.get(page)).toEqual({ mutations: [], errors: [] });
 });
 
-async function setup(page: Page, surface: Surface, mode: Mode) {
+// sleep: since 1f2cb9eb a companion with automatic sleep off parks awake (idle, no dreaming), so the test that
+// observes the parked dream and its wake keeps automatic sleep on; the others keep it off.
+async function setup(page: Page, surface: Surface, mode: Mode, sleep = false) {
   await page.addInitScript(({ key, epoch, preferences, care, mode }) => {
     localStorage.setItem(key, epoch);
     for (const [name, value] of Object.entries({ "vic.reduceMotion": "off", "vic.gfxPref": mode === "full" ? "max" : "lite", "vic.sound": "off", "vic.ambient": "off", "vic.premiereStage": "off", "vic_avatar_side": "left" })) localStorage.setItem(name, value);
@@ -48,7 +51,7 @@ async function setup(page: Page, surface: Surface, mode: Mode) {
     // Pick the authored idle while the user owns this interaction. This does
     // not replace time, pose sampling, native pointer input or geometry.
     Math.random = () => 0;
-  }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, mode, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep: false, feeding: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false }, care: { ...DEFAULT_COMPANION_CARE, energy: 1, hunger: .05 } });
+  }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, mode, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep, feeding: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false }, care: { ...DEFAULT_COMPANION_CARE, energy: 1, hunger: .05 } });
   await page.goto(surface === "viewer" ? "/visual-fixture/poster?avatar=1" : "/visual-fixture/studio?role=owner&y=2026&m=6");
   await page.bringToFront(); await page.evaluate(() => document.fonts.ready);
   await page.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))).map(animation => animation.finished)); });
@@ -59,7 +62,7 @@ async function setup(page: Page, surface: Surface, mode: Mode) {
   // Initial calendar reflow can invalidate its first text ledge and start a
   // real finite landing. Do not aim a native grip at that moving old position.
   await expect.poll(async () => {
-    const current = await pet(page).evaluate(node => { const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform), el = node as HTMLElement; return { x: matrix.m41 + 46, y: matrix.m42 + 92, support: el.dataset.platform ?? "", idle: !el.hidden && el.dataset.presence === "active" && !el.hasAttribute("data-returning") && ["idle", "look", "sniff"].includes(el.dataset.state ?? "") }; });
+    const current = await pet(page).evaluate(node => { const matrix = (css => new DOMMatrix().translateSelf(parseFloat(css.left) || 0, parseFloat(css.top) || 0).multiplySelf(new DOMMatrixReadOnly(css.transform)))(getComputedStyle(node)), el = node as HTMLElement; return { x: matrix.m41 + 46, y: matrix.m42 + 92, support: el.dataset.platform ?? "", idle: !el.hidden && el.dataset.presence === "active" && !el.hasAttribute("data-returning") && ["idle", "look", "sniff"].includes(el.dataset.state ?? "") }; });
     stable = current.idle && current.support && previous?.support === current.support && Math.hypot(current.x - previous.x, current.y - previous.y) < .05 ? stable + 1 : 0;
     previous = current; return stable;
   }, { intervals: [80], timeout: 5000 }).toBeGreaterThanOrEqual(2);
@@ -95,7 +98,7 @@ async function beginFrames(page: Page) {
     document.addEventListener("gotpointercapture", witness.capture, true);
     const began = performance.now();
     const sample = (now: number) => {
-      const el = node as HTMLElement, rect = node.getBoundingClientRect(), css = getComputedStyle(node), texture = node.querySelector<HTMLImageElement>(".vc-texture"), matrix = new DOMMatrixReadOnly(css.transform);
+      const el = node as HTMLElement, rect = node.getBoundingClientRect(), css = getComputedStyle(node), texture = node.querySelector<HTMLImageElement>(".vc-texture"), matrix = new DOMMatrix().translateSelf(parseFloat(css.left) || 0, parseFloat(css.top) || 0).multiplySelf(new DOMMatrixReadOnly(css.transform));
       witness.frames.push({ at: now - began, x: matrix.m41 + 46, y: matrix.m42 + 92, width: rect.width, height: rect.height, visible: !el.hidden && css.display !== "none" && css.visibility !== "hidden" && Number(css.opacity || 1) > .05, decoded: Boolean(texture?.complete && texture.naturalWidth > 0), state: el.dataset.state ?? "", platform: el.dataset.platform ?? "", pose: Number(el.dataset.pose), source: texture?.currentSrc || texture?.src || "" });
       witness.raf = requestAnimationFrame(sample);
     };
@@ -129,7 +132,7 @@ async function expectLanding(page: Page) {
 async function nativeGrip(page: Page) {
   const box = (await actor(page).boundingBox())!, point = { x: box.x + box.width / 2, y: box.y + box.height * .30 };
   expect(await page.evaluate(point => Boolean(document.elementFromPoint(point.x, point.y)?.closest(".vc-actor")), point)).toBe(true);
-  const world = await pet(page).evaluate(node => { const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: matrix.m41 + 46, y: matrix.m42 + 92 }; });
+  const world = await pet(page).evaluate(node => { const matrix = (css => new DOMMatrix().translateSelf(parseFloat(css.left) || 0, parseFloat(css.top) || 0).multiplySelf(new DOMMatrixReadOnly(css.transform)))(getComputedStyle(node)); return { x: matrix.m41 + 46, y: matrix.m42 + 92 }; });
   await page.mouse.move(point.x, point.y); await page.mouse.down();
   return { point, offset: { x: point.x - world.x, y: point.y - world.y } };
 }
@@ -172,7 +175,7 @@ async function expectBottomLanding(page: Page, target: { x: number; floorY: numb
   await expect(pet(page)).toBeVisible();
   await expect(pet(page)).toHaveAttribute("data-platform", /^viewport-floor(?:-\d+)?$/);
   await expect(pet(page)).not.toHaveAttribute("data-state", "held"); await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
-  await expect.poll(() => pet(page).evaluate((node, target) => { const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform); return Math.hypot(matrix.m41 + 46 - target.x, matrix.m42 + 92 - target.floorY); }, target)).toBeLessThan(2);
+  await expect.poll(() => pet(page).evaluate((node, target) => { const matrix = (css => new DOMMatrix().translateSelf(parseFloat(css.left) || 0, parseFloat(css.top) || 0).multiplySelf(new DOMMatrixReadOnly(css.transform)))(getComputedStyle(node)); return Math.hypot(matrix.m41 + 46 - target.x, matrix.m42 + 92 - target.floorY); }, target)).toBeLessThan(2);
 }
 
 for (const surface of ["viewer", "studio"] as const) for (const mode of ["full", "lite"] as const) {
@@ -183,7 +186,7 @@ for (const surface of ["viewer", "studio"] as const) for (const mode of ["full",
     await beginFrames(page); await nativeGrip(page);
     await page.mouse.move(target.x, target.y, { steps: 12 });
     await expect(pet(page)).toHaveAttribute("data-state", "held");
-    await expect.poll(() => pet(page).evaluate((node, x) => Math.abs(new DOMMatrixReadOnly(getComputedStyle(node).transform).m41 + 46 - x), target.x)).toBeLessThan(2);
+    await expect.poll(() => pet(page).evaluate((node, x) => Math.abs((css => new DOMMatrix().translateSelf(parseFloat(css.left) || 0, parseFloat(css.top) || 0).multiplySelf(new DOMMatrixReadOnly(css.transform)))(getComputedStyle(node)).m41 + 46 - x), target.x)).toBeLessThan(2);
     await checkpoint(page, `${surface}-${mode}-bottom-held`);
     const releasedAt = await page.evaluate(() => (window as WitnessWindow).companionAuditInput!.frames.length);
     await page.mouse.up(); await page.mouse.move(4, 4);
@@ -237,7 +240,7 @@ for (const surface of ["viewer", "studio"] as const) for (const mode of ["full",
       await page.mouse.move(destination.x + grip.offset.x, destination.y + grip.offset.y);
       await page.mouse.up(); await page.mouse.move(4, 4);
       await expectLanding(page);
-      const final = await pet(page).evaluate(node => new DOMMatrixReadOnly(getComputedStyle(node).transform).m41 + 46);
+      const final = await pet(page).evaluate(node => (css => new DOMMatrix().translateSelf(parseFloat(css.left) || 0, parseFloat(css.top) || 0).multiplySelf(new DOMMatrixReadOnly(css.transform)))(getComputedStyle(node)).m41 + 46);
       expect(Math.abs(final - destination.x)).toBeLessThan(2);
       await checkpoint(page, `${surface}-${mode}-cold-release`);
       const proof = await finishFrames(page, `${surface}-${mode}-cold-release`);
@@ -247,7 +250,7 @@ for (const surface of ["viewer", "studio"] as const) for (const mode of ["full",
 
   test(`${surface} ${mode}: placement Escape and lifted settings preserve keyboard and immediate pointer control`, async ({ page }) => {
     test.setTimeout(30000);
-    await setup(page, surface, mode); const destination = await chooseCard(page, surface);
+    await setup(page, surface, mode, true); const destination = await chooseCard(page, surface);
     await actor(page).focus(); await actor(page).press("p"); await page.mouse.click(destination.x, destination.y); await expectLanding(page);
     await beginFrames(page);
     await actor(page).focus(); await actor(page).press("p"); await expect(pet(page)).toHaveAttribute("data-placing", "");
@@ -263,7 +266,12 @@ for (const surface of ["viewer", "studio"] as const) for (const mode of ["full",
     // Grab as soon as the native sheet is gone, during its ordinary wake. A
     // pending keyboard lift must not swallow this new pointer capture.
     const grip = await nativeGrip(page);
-    await page.mouse.move(destination.x + grip.offset.x, destination.y + grip.offset.y - 28);
+    // Release in the gap right above the card. 28px higher is above the bottom edge of the day cell in the row
+    // above, which has been a deliberate landing (date-N-floor) since 1f2cb9eb and would catch the drop first.
+    await page.mouse.move(destination.x + grip.offset.x, destination.y + grip.offset.y);
+    // A release within 80ms of a long move is a throw now (throw.ts staleInputMs). This test is about a carried
+    // drop, so the hand rests past that window before letting go.
+    await page.waitForTimeout(COMPANION_THROW_LIMITS.staleInputMs + 40);
     await page.mouse.up(); await page.mouse.move(4, 4);
     await expectLanding(page); await expect(pet(page)).not.toHaveAttribute("data-placing");
     await expect(actor(page)).toBeFocused();

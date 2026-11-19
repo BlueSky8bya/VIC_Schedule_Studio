@@ -3,6 +3,8 @@ import { writeFile } from "node:fs/promises";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
+import { placeCompanionOnCalendarCard } from "./helpers/companion-home";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
 
 const pet = (page: Page) => page.locator(".vc-companion");
@@ -17,7 +19,8 @@ test.beforeEach(async ({ page }) => {
   await page.route("**/api/soop-live**", route => route.fulfill({ json: { live: false } }));
 });
 test.afterEach(async ({ page }) => { expect(posts.get(page)).toEqual([]); });
-async function setup(page: Page, enabled = true, reduced = false) {
+// `sleep` is the 자동 잠자기 preference: only a pet that may sleep dreams while a window parks it (1f2cb9eb).
+async function setup(page: Page, enabled = true, reduced = false, sleep = false) {
   await page.addInitScript(({ epoch, epochKey, prefs, care, reduced }) => {
     localStorage.setItem(epochKey, epoch); localStorage.setItem("vic.reduceMotion", reduced ? "on" : "off");
     localStorage.setItem("vic.gfxPref", "max"); localStorage.setItem("vic.sound", "off"); localStorage.setItem("vic.ambient", "off");
@@ -26,10 +29,15 @@ async function setup(page: Page, enabled = true, reduced = false) {
     localStorage.removeItem("vic.panelSections"); localStorage.removeItem("vic_panel_collapsed"); localStorage.setItem("vic_avatar_side", "left");
     Math.random = () => 0;
     Object.defineProperty(document, "hasFocus", { configurable: true, value: () => true });
-  }, { epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, reduced, prefs: { ...DEFAULT_COMPANION_PREFERENCES, enabled, size: "small", roam: false, jump: false, sleep: false, heartPrank: false, ambientPrank: false }, care: { ...DEFAULT_COMPANION_CARE, hunger: .05 } });
+  }, { epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, reduced, prefs: { ...DEFAULT_COMPANION_PREFERENCES, enabled, size: "small", roam: false, jump: false, sleep, heartPrank: false, ambientPrank: false }, care: { ...DEFAULT_COMPANION_CARE, hunger: .05 } });
   await page.goto("/visual-fixture/poster?avatar=1"); await page.evaluate(() => document.fonts.ready);
   await page.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(a => a.playState === "running" && Number.isFinite(Number(a.effect?.getComputedTiming().endTime))).map(a => a.finished)); });
-  if (enabled) { await expect(pet(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-atlas", "hd"); }
+  if (enabled) {
+    await expect(pet(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-atlas", "hd");
+    // A fresh pet begins on its sofa (a44f46a2), half behind the sofa front. These cases are about the whole exposed
+    // body on the calendar, where the pet used to start: put it there with the real keyboard placement.
+    await placeCompanionOnCalendarCard(page, "viewer");
+  }
 }
 async function point(page: Page) {
   return pet(page).evaluate(node => { const r = node.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.bottom, width: r.width, platform: (node as HTMLElement).dataset.platform }; });
@@ -72,14 +80,16 @@ test("OFF requests no sprite; legacy size becomes the single92 default and the s
   expect((await point(page)).width).toBeLessThanOrEqual(92); // narrow windows may temporarily scale the display perch
   await expect(dialog.getByRole("radiogroup", { name: "빅타민 크기", exact: true })).toHaveCount(0);
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!).size)).toBe("large");
-  expect(images.every(src => src.includes("/hd/"))).toBe(true);
+  // The room is drawn from its own art folder; every character sprite still comes from the HD set.
+  const sprites = images.filter(src => !src.includes("/companion/home/"));
+  expect(sprites.length).toBeGreaterThan(0); expect(sprites.every(src => src.includes("/hd/"))).toBe(true);
 });
 
 // PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.
 for (const mobile of [false]) test.describe(mobile ? "touch sleeping lift" : "desktop sleeping lift", () => {
   test.use({ viewport: mobile ? { width: 390, height: 844 } : { width: 1920, height: 1100 }, hasTouch: mobile, isMobile: mobile });
   test("an exposed sleeper accepts a native world move while its detail and Z cues stay intact with no parked writes", async ({ page }) => {
-    test.setTimeout(35000); await setup(page); await placeExposedSleeper(page); const world = await point(page);
+    test.setTimeout(35000); await setup(page, true, false, true); await placeExposedSleeper(page); const world = await point(page);
     await page.locator(".public-event:visible").first().click();
     const dialog = page.getByRole("dialog", { name: "일정 상세", exact: true }); await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
     await expect(pet(page)).toHaveAttribute("data-presence", "parked", { timeout: 10000 }); await page.waitForTimeout(650);
@@ -125,7 +135,7 @@ for (const area of [
   { name: "right-margin", height: .42, offset: .60, stroke: 5 },
 ]) test(`a gentle ${area.name} round trip has immediate contact, a happy HD pose and pink hearts`, async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page);
-  const p = await point(page); expect(p.width).toBe(92);
+  const p = await point(page); expect(p.width).toBeCloseTo(92, 3); // a fractional card x leaves float32 noise in the box width
   const y = p.y - 92 * area.height, x = p.x + 92 * area.offset;
   await page.mouse.move(x - area.stroke, y); await page.mouse.move(x + area.stroke, y, { steps: 6 });
   await expect(pet(page)).toHaveAttribute("data-petting", /^(ready|touch|hover)$/); await expect(pet(page).locator(".vc-petting-hand")).toHaveCount(0);
@@ -167,7 +177,7 @@ test("leaving the drag button for another control cannot award affection or cons
 });
 
 test("a sleeping double-click keeps position before native drag lands on the first lower real card without closing the detail", async ({ page }) => {
-  await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page); await placeExposedSleeper(page);
+  await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page, true, false, true); await placeExposedSleeper(page);
   await page.locator(".public-event:visible").first().click();
   const dialog = page.getByRole("dialog", { name: "일정 상세", exact: true }); await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
   await expect(pet(page)).toHaveAttribute("data-presence", "parked", { timeout: 10000 }); await page.waitForTimeout(600);
@@ -181,8 +191,10 @@ test("a sleeping double-click keeps position before native drag lands on the fir
     const pane = sheet.getBoundingClientRect();
     const cards = [...document.querySelectorAll<HTMLElement>(".public-event:not(.teaser):not(.dimmed):not(.is-support)")].map(node => ({ node, r: node.getBoundingClientRect() })).filter(({ r }) => r.width > 100 && r.height > 0);
     for (const { node, r } of cards) {
-      const x = r.left + r.width / 2, y = r.top - 40;
-      if (y < 240 || r.top > innerHeight - 120 || x > pane.left - 60 && x < pane.right + 60 || x < 50 || x > innerWidth - 50) continue;
+      // The bottom edge of the day cell above is a real support now (date-N-floor, 3px above the cell line): a
+      // release above that line rests there. Release inside the card's own cell, as high as that cell allows.
+      const cell = node.closest(".public-day")?.getBoundingClientRect(), x = r.left + r.width / 2, y = Math.max(r.top - 40, (cell?.top ?? r.top) + 2);
+      if (r.top - y < 16 || y < 240 || r.top > innerHeight - 120 || x > pane.left - 60 && x < pane.right + 60 || x < 50 || x > innerWidth - 50) continue;
       const first = cards.filter(card => x >= card.r.left && x <= card.r.right && card.r.top - 3 >= y).sort((a, b) => a.r.top - b.r.top)[0];
       if (first?.node === node && !document.elementFromPoint(x, y)?.closest("button,a,input,select,textarea,[role='button']")) return { id: node.dataset.eventid!, x, y, plane: r.top - 3 };
     }
@@ -239,7 +251,7 @@ test("repeated distinct pickups show the sulky HD action briefly, then friendly 
   await expect.poll(async () => Number(await pet(page).getAttribute("data-pose"))).toBeGreaterThanOrEqual(288);
   // More than three actual action packets evict idle. Returning to it must
   // perform a fresh real decode, not trust an immortal ready boolean.
-  expect(await page.evaluate(() => (window as unknown as Window & { companionDecodes: string[] }).companionDecodes.filter(src => src.endsWith("victamin-action-00-big-eyes-v1-body-outline-v1.webp")).length)).toBeGreaterThanOrEqual(2);
+  expect(await page.evaluate(idle => (window as unknown as Window & { companionDecodes: string[] }).companionDecodes.filter(src => src.endsWith(idle)).length, selectCompanionSprite(0).src)).toBeGreaterThanOrEqual(2);
   await page.screenshot({ path: ".scratch-pw/companion-052-sulky.png" });
   // PLAN-068 assigns short clicks to bonking. Native keyboard affection is
   // still friendly input and must supersede the sulky pose immediately.

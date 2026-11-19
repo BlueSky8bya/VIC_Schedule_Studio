@@ -5,12 +5,14 @@ import { DEFAULT_COMPANION_PREFERENCES, COMPANION_PERSONALITY_NAMES, COMPANION_P
 import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_COLLECTION_KEY } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_TASTES_KEY } from "@/lib/ui/viewer-companion/toy-tastes";
+import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
+import { safeCompanionSurfaces } from "@/lib/ui/viewer-companion/geometry";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
-import { setCompanionRoam } from "./helpers/companion-settings";
+import { keepCompanionStoredMotion, setCompanionRoam } from "./helpers/companion-settings";
 import { COMPANION_PERSONALITY_LAYOUT } from "@/lib/ui/viewer-companion/personality-layout";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 import { completedNativeBallUseReplay } from "./helpers/companion-ball-use-replay";
@@ -30,6 +32,8 @@ test.setTimeout(110000);
 test.beforeEach(async ({ page, context, baseURL }) => {
   const proof = { errors: [] as string[], rejected: [] as string[], notes: [] as unknown[], previewReads: 0 }; proofs.set(page, proof);
   const origin = new URL(baseURL!).origin;
+  // This spec replaces storageState, which drops the QA key that keeps a stored roam:false standing still.
+  await keepCompanionStoredMotion(page);
   const actions = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
   const preview = new Set(Object.entries(actions).filter(([, entry]) => entry.exportedName === "getPublicPreviewAction").map(([id]) => id));
   page.on("pageerror", error => proof.errors.push(error.message));
@@ -94,7 +98,9 @@ function installCollectionProbeInPage({ tasteKey, collectionKey }: { tasteKey: s
         last = now; const tastes = json(tasteKey), collection = json(collectionKey), pet = document.querySelector<HTMLElement>(".vc-companion"), texture = pet?.querySelector<HTMLImageElement>(".vc-sprite>.vc-texture");
         const petRect = pet?.getBoundingClientRect(), visible = Boolean(pet && !document.hidden && !pet.hidden && petRect!.width > 0 && getComputedStyle(pet).visibility !== "hidden" && Number(getComputedStyle(pet).opacity) > 0 && !pet.closest("[hidden],[inert],[aria-hidden='true']"));
         const decoded = visible && Boolean(texture?.complete && texture.naturalWidth && texture.getBoundingClientRect().width > 0);
-        samples.push({ at: now - began, state: pet?.dataset.state ?? "", row: Number(pet?.dataset.row ?? -1), pose: Number(pet?.dataset.pose ?? -1), decoded, toyAction: pet?.dataset.toyAction ?? "", actor: { x: petRect ? petRect.left + petRect.width / 2 : Number.NaN, y: petRect?.bottom ?? Number.NaN }, toys: [...document.querySelectorAll<HTMLElement>(".vc-toy")].map(node => { const r = node.getBoundingClientRect(), matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform); const image = node.querySelector<HTMLImageElement>("img"), picture = image?.getBoundingClientRect();
+        samples.push({ at: now - began, state: pet?.dataset.state ?? "", row: Number(pet?.dataset.row ?? -1), pose: Number(pet?.dataset.pose ?? -1), decoded, toyAction: pet?.dataset.toyAction ?? "", actor: { x: petRect ? petRect.left + petRect.width / 2 : Number.NaN, y: petRect?.bottom ?? Number.NaN }, toys: [...document.querySelectorAll<HTMLElement>(".vc-toy")].map(node => { const r = node.getBoundingClientRect(); const image = node.querySelector<HTMLImageElement>("img"), picture = image?.getBoundingClientRect();
+          // Since 60f208a3 a toy's spin is painted on its art (.vc-toy-art, --vc-toy-art-rotation); the button only travels.
+          const art = node.querySelector<HTMLElement>(".vc-toy-art") ?? image, matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform).multiply(new DOMMatrixReadOnly(art ? getComputedStyle(art).transform : undefined));
           const visible = !document.hidden && !node.closest("[hidden],[inert],[aria-hidden='true']") && node.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && Number(getComputedStyle(node).opacity) > .05
             && Boolean(image?.checkVisibility({ checkOpacity: true, checkVisibilityCSS: true }) && Number(getComputedStyle(image).opacity) > .05 && picture?.width && picture.height)
             && r.width > 0 && r.height > 0 && r.right > 0 && r.bottom > 0 && r.left < innerWidth && r.top < innerHeight;
@@ -139,19 +145,15 @@ async function keyboardFocus(page: Page, target: Locator) {
       }
     };
     for (const sheet of [...document.styleSheets].slice(0, 64)) try { visit(sheet.cssRules); } catch { /* Font/external stylesheet is not the control's rule. */ }
-    return { keyboardTarget: element.className, focusVisible: node.matches(":focus-visible"), outlineStyle: style.outlineStyle, outlineWidth: style.outlineWidth, outlineColor: style.outlineColor, scale, paintedOutlineWidth: parseFloat(style.outlineWidth) * scale, authoredFocusRules: rules };
+    return { keyboardTarget: element.className, focusVisible: node.matches(":focus-visible"), outlineStyle: style.outlineStyle, outlineWidth: style.outlineWidth, outlineColor: style.outlineColor, boxShadow: style.boxShadow, scale, paintedOutlineWidth: parseFloat(style.outlineWidth) * scale, authoredFocusRules: rules };
   });
   proofs.get(page)!.notes.push(keyboard);
-  expect(keyboard.outlineStyle).not.toBe("none");
-  // A var()-containing shorthand intentionally leaves its CSSOM longhands
-  // empty until computed. Keep the original outline declaration as evidence.
-  expect(keyboard.authoredFocusRules.some(rule => rule.width === "2px" || /(?:^|\s)2px(?:\s|$)/.test(rule.outline))).toBe(true);
-  expect(keyboard.scale).toBeGreaterThan(0);
-  // Chromium may quantize an authored2px outline to one painted pixel in
-  // a .9 studio shell (computed1/.9px). Preserve both the actual stylesheet
-  // contract above and a visibly painted pixel, rather than comparing that
-  // zoom-adjusted computed width against the unzoomed declaration.
-  expect(keyboard.paintedOutlineWidth).toBeGreaterThanOrEqual(.99);
+  // 2026-10-24 owner rule (dd0f45f7, UI_RULES "빅타민 물체 포커스 정정"): food, toys, furniture and the house controls
+  // draw no outer focus ring for the keyboard either. This supersedes the 2px keyboard ring this test used to
+  // require. What stays: the control really takes keyboard focus (asserted above) and paints no ring or halo.
+  expect(keyboard.focusVisible).toBe(true);
+  expect(keyboard.outlineStyle === "none" || parseFloat(keyboard.outlineWidth) === 0, JSON.stringify(keyboard)).toBe(true);
+  expect(keyboard.boxShadow).toBe("none");
 }
 
 for (const [surface, width] of [["studio", 1100], ["viewer", 1920], ["preview", 1920]] as const) test(`141 ${surface} ${width} settings order and shared three-column widths follow actual personality selection`, async ({ page }) => {
@@ -282,7 +284,7 @@ for (const [surface, width] of [["viewer", 1920], ["studio", 2400]] as const) te
   }
 });
 
-test("141 food toy and furniture pointer hover has no circular outline while keyboard focus remains visible", async ({ page }) => {
+test("141 food toy and furniture draw no circular outline for pointer hover or keyboard focus, and keyboard focus stays real", async ({ page }) => {
   const home = await fixture(page, "studio"); await choose(page, "tidy", false);
   await home.locator('[data-home-action="feed"]').focus(); await page.keyboard.press("Enter");
   await home.locator('[data-home-action="toys"]').focus(); await page.keyboard.press("Enter");
@@ -302,6 +304,40 @@ test("141 food toy and furniture pointer hover has no circular outline while key
   await toy.hover(); expect(await toy.locator("img").evaluate(node => getComputedStyle(node).transform)).not.toBe("none");
 });
 
+/** Carry the one resting toy by pointer to the centre of the widest measured home-floor span and set it down.
+ * Spans come from the product's own safeCompanionSurfaces over the painted room controls and text, measured the
+ * same way as helpers/companion-numbered-floor-157.ts. Only a pointer drag is used; no product state is touched. */
+async function setBallInOpenFloorSpan(page: Page, home: Locator, phase: string) {
+  const measured = await home.evaluate((house, inset) => {
+    const visible = (node: Element) => { const r = node.getBoundingClientRect(), css = getComputedStyle(node); return r.width > 0 && r.height > 0 && css.visibility !== "hidden" && css.display !== "none" && !node.closest('[hidden],[inert],[aria-hidden="true"]'); };
+    const rect = (r: DOMRect) => ({ left: r.left, right: r.right, top: r.top, bottom: r.bottom });
+    const floor = house.querySelector(".vc-home-floor")!.getBoundingClientRect(), pet = document.querySelector(".vc-companion")!.getBoundingClientRect();
+    const obstacles = [...house.querySelectorAll("button,a[href],input,select,textarea,[role='button']")]
+      .filter(node => visible(node) && !node.closest(".vc-companion,.vc-cushion-button,.vc-toys,.vc-toy,[data-home-decoration-control]")).map(node => rect(node.getBoundingClientRect()));
+    const walker = document.createTreeWalker(house, NodeFilter.SHOW_TEXT); let text: Node | null;
+    while ((text = walker.nextNode())) {
+      if (!text.textContent?.trim() || !text.parentElement || !visible(text.parentElement)) continue;
+      const range = document.createRange(); range.selectNodeContents(text);
+      for (const r of range.getClientRects()) if (r.width > 0 && r.height > 0) obstacles.push(rect(r));
+    }
+    return { floor: { x: floor.left, y: floor.bottom - inset, width: floor.width }, size: pet.width, obstacles, viewport: { width: innerWidth, height: innerHeight } };
+  }, COMPANION_HOME_FLOOR_INSET);
+  const spans = safeCompanionSurfaces(measured.floor, measured.obstacles, measured.size, measured.viewport, { width: measured.size * .76, height: measured.size * .76 });
+  const span = [...spans].sort((a, b) => b.width - a.width)[0];
+  expect(span, "an actual safe floor span exists").toBeTruthy();
+  // The toss clamp leaves span.width - 32 px of sideways room; the original rule needs at least 8 px of it each way.
+  expect(span.width, "the widest floor span leaves room for an unclamped toss").toBeGreaterThan(32 + 2 * 24);
+  const ball = page.locator(".vc-toy"), r = (await ball.boundingBox())!, target = { x: span.x + span.width / 2, y: span.y - 24 };
+  await page.mouse.move(r.x + r.width / 2, r.y + r.height - 6); await page.mouse.down(); await expect(ball).toHaveAttribute("data-held", "true");
+  // The last pointer step sets the release velocity; end with a 1px step so the ball is set down, not flung.
+  await page.mouse.move(target.x, target.y, { steps: 10 }); await page.evaluate(() => new Promise(done => requestAnimationFrame(() => requestAnimationFrame(done))));
+  await page.mouse.move(target.x, target.y + 1); await page.mouse.up(); await page.mouse.move(2, 2);
+  await expect(ball).toHaveAttribute("data-held", "false"); await expect(ball).toHaveAttribute("data-falling", "false", { timeout: 6000 });
+  const rest = (await ball.boundingBox())!, restX = rest.x + rest.width / 2;
+  proofs.get(page)!.notes.push({ ballSetInOpenFloorSpan: { phase, span, spans, restX } });
+  expect(Math.abs(restX - target.x), "the set-down ball rests in the open middle of that span").toBeLessThanOrEqual(span.width / 2 - 16 - 24);
+}
+
 test("141 a native spawned toy stays unknown until visible completed play and earns one book flight", async ({ page }) => {
   // Preparation draws are finite and separate from the unchanged75s first
   // discovery and65s actual replay windows below. This is not a rarity guarantee.
@@ -318,28 +354,46 @@ test("141 a native spawned toy stays unknown until visible completed play and ea
     await page.mouse.move(r.x + r.width / 2, r.y + r.height - 6); await page.mouse.down(); await expect(toy).toHaveAttribute("data-held","true"); await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2, { steps: 8 }); await expect(home.locator('[data-home-action="toys"]')).toHaveAttribute("data-toy-over", ""); await page.mouse.up(); await expect(toy).toHaveCount(0);
   }
   proofs.get(page)!.notes.push({ actualWeightedPreparationDraws:actualDraws,maximumDraws:320,targetKind:"ball",randomOrRarityOverride:false,firstDiscoveryTimeoutMs:75000,sameIdReplayTimeoutMs:65000 });
-  expect(id,"bounded actual weighted draws must produce the target; absence is a preserved setup failure, never forced").not.toBe(""); await startProbe(page); await choose(page, "mischievous", true);
-  await expect.poll(async () => (await observation(page)).flights.some(f => f.kind === "toy" && f.id === "ball"), { timeout: 75000, intervals: [100] }).toBe(true);
+  expect(id,"bounded actual weighted draws must produce the target; absence is a preserved setup failure, never forced").not.toBe("");
+  // The product keeps a tossed ball inside its support (viewer-companion.tsx clamps the carried point to
+  // platform.x+16 .. platform.x+width-16), so a toss played at a span edge has no sideways travel. The drawn ball
+  // lands beside the toy box near such an edge, and each toss carries it on towards one. Before the first play and
+  // again before the replay, carry it by pointer to the centre of the widest measured floor span, so both plays
+  // happen where the full original toss (including >= 8 px sideways travel) can be painted.
+  await setBallInOpenFloorSpan(page, home, "before-first-play");
+  expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key) ?? "{}").toys ?? [], COMPANION_TASTES_KEY)).toEqual([]);
+  await startProbe(page); await choose(page, "mischievous", true);
+  const discoveryStarted = Date.now();
+  // The first completed play commits the ball to the collection; then wait for that same ball to come to rest.
+  await expect.poll(async () => (await observation(page)).samples.some(frame => frame.knownToys.includes("ball")), { timeout: 75000, intervals: [100] }).toBe(true);
+  const resting = page.locator(`.vc-toy[data-toy-id="${id}"]`);
+  await expect.poll(async () => resting.evaluate(node => { const n = node as HTMLElement; return n.dataset.carried !== "true" && n.dataset.held !== "true" && n.dataset.falling !== "true"; }), { timeout: 10000, intervals: [50] }).toBe(true);
+  await setBallInOpenFloorSpan(page, home, "before-replay");
+  const replayAfter = (await observation(page)).samples.at(-1)!.at;
+  await expect.poll(async () => (await observation(page)).flights.some(f => f.kind === "toy" && f.id === "ball"), { timeout: Math.max(1000, 75000 - (Date.now() - discoveryStarted)), intervals: [100] }).toBe(true);
   const first = await observation(page), flight = first.flights.find(f => f.kind === "toy" && f.id === "ball")!;
   expect(flight.known).toBe(true); expect(flight.decoded).toBe(true); expect(flight.duration).toBe(1500); expect(flight.book).not.toBeNull();
   const prior = first.samples.filter(frame => frame.at <= flight.at); expect(prior.some(frame => frame.decoded && frame.toys.some(toy => toy.id === id && toy.carried && !toy.held))).toBe(true);
   expect(first.samples.some(frame => frame.knownToys.includes("ball"))).toBe(true);
   const firstKnown = first.samples.find(frame => frame.knownToys.includes("ball"));
   expect(firstKnown).toBeDefined();
-  const replayAfter = firstKnown!.at;
-  expect(replayAfter).toBeLessThanOrEqual(flight.at);
-  expect(first.samples.some(frame => frame.at < replayAfter && frame.decoded && !frame.knownToys.includes("ball")
+  // The replay boundary is the pointer set-down after the first commit; it cannot precede that commit.
+  expect(firstKnown!.at).toBeLessThanOrEqual(replayAfter);
+  expect(firstKnown!.at).toBeLessThanOrEqual(flight.at);
+  expect(first.samples.some(frame => frame.at < firstKnown!.at && frame.decoded && !frame.knownToys.includes("ball")
     && frame.toys.some(toy => toy.id === id && toy.carried && !toy.held))).toBe(true);
+  // The ball was set in the open middle of a floor span above, so the original >= 8 px sideways minimum applies.
+  const edgeToss = { minLateralCssPx: 8 };
   // Observe a NEW pickup and the current149 full ball throw/catch, then its
   // real release/flight/rest. The legacy1100ms pounce observer remains intact
   // in its own helper/tests; it cannot certify this different2600ms use.
   // The collection commit follows the first completed play. Its visual notice
   // can wait behind other discoveries and begin AFTER the next real pickup.
   // Keep that queued animation's assertions separate from the replay boundary.
-  await expect.poll(async () => Boolean(completedNativeBallUseReplay((await observation(page)).samples, id, replayAfter)),
+  await expect.poll(async () => Boolean(completedNativeBallUseReplay((await observation(page)).samples, id, replayAfter, edgeToss)),
     { timeout: 65000, intervals: [100] }).toBe(true);
-  proofs.get(page)!.notes.push({ samePhysicalToyReplay: completedNativeBallUseReplay((await observation(page)).samples, id, replayAfter),
-    firstCollectionCommitAt: replayAfter, visualDiscoveryFlightAt: flight.at, replayBoundary: "first-completed-play-collection-commit",
+  proofs.get(page)!.notes.push({ samePhysicalToyReplay: completedNativeBallUseReplay((await observation(page)).samples, id, replayAfter, edgeToss),
+    firstCollectionCommitAt: firstKnown!.at, openSpanSetDownAt: replayAfter, visualDiscoveryFlightAt: flight.at, replayBoundary: "open-span-set-down-after-first-completed-play-collection-commit",
     expectedPlaybackMs: 2600, expectedUse: "ball-toss", expectedPlaybackRows: [1, 9], replayObserver: "156-current149", sameIdFlightCount: (await observation(page)).flights.filter(f => f.kind === "toy" && f.id === "ball").length });
   expect((await observation(page)).flights.filter(f => f.kind === "toy" && f.id === "ball")).toHaveLength(1);
 });

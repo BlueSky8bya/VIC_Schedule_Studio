@@ -28,12 +28,13 @@ const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰
 
 test.use({ headless: true, viewport: { width: 1920, height: 1100 }, serviceWorkers: "block", isMobile: false, hasTouch: false });
 test.setTimeout(80000);
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page, baseURL }) => {
+  const origin = new URL(baseURL!).origin; // the config's fixture server, not a port fixed in the spec
   const proof: Proof = { writes: [], foreign: [], errors: [], blockedAPIs: [], build: build(), notes: [] }; proofs.set(page, proof);
   page.on("pageerror", error => proof.errors.push(error.message));
   await page.context().route("**/*", route => {
     const request = route.request(), url = new URL(request.url());
-    if (url.origin !== "http://127.0.0.1:3117") {
+    if (url.origin !== origin) {
       if (request.method() === "GET" && request.resourceType() === "font" && fonts.has(url.href)) return route.continue();
       proof.foreign.push(request.method() + " " + url.origin + url.pathname); return route.abort();
     }
@@ -55,7 +56,7 @@ test.afterEach(async ({ page }, info) => {
 
 async function fixture(page: Page, options: { studio?: boolean; roam?: boolean } = {}) {
   await page.addInitScript(({ preferences, memory, options, epoch, epochKey }) => {
-    for (const [key, value] of Object.entries({ [epochKey]: epoch, "vic.viewerCompanion": JSON.stringify({ version: 1, ...preferences, enabled: true, activeWhileVisible: true, personality: "tidy", roam: options.roam ?? false, sleep: false, sound: false, learnFromYou: false }), "vic.viewerCompanionCare": JSON.stringify({ version: 3, ...memory, energy: .9, hunger: .05 }), "vic.gfx": JSON.stringify({ mode: "full", at: Date.now(), v: 3 }), "vic.gfxPref": "max", "vic.reduceMotion": "off", "vic.sound": "off", "vic.ambient": "off", "vic.dark": "off", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(key, value);
+    for (const [key, value] of Object.entries({ [epochKey]: epoch, "vic.viewerCompanion": JSON.stringify({ version: 1, ...preferences, enabled: true, activeWhileVisible: true, personality: "tidy", personalitySource: "manual", roam: options.roam ?? false, sleep: false, sound: false, learnFromYou: false }), "vic.viewerCompanionCare": JSON.stringify({ version: 3, ...memory, energy: .9, hunger: .05 }), "vic.gfx": JSON.stringify({ mode: "full", at: Date.now(), v: 3 }), "vic.gfxPref": "max", "vic.reduceMotion": "off", "vic.sound": "off", "vic.ambient": "off", "vic.dark": "off", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(key, value);
   }, { preferences: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, options, epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY });
   await page.goto(options.studio ? "/visual-fixture/studio?role=owner&y=2025&m=11" : "/visual-fixture/poster?avatar=1&ambient=autumn");
   await page.bringToFront(); await page.evaluate(() => document.fonts.ready);
@@ -80,7 +81,8 @@ async function probe(page: Page) {
     const rect = (node: Element): Rect => { const r = node.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height }; };
     const box = (selector: string) => { const node = document.querySelector(selector); return node ? rect(node) : null; };
     const objects = (selector: string): ObjectSample[] => [...document.querySelectorAll<HTMLElement>(selector)].map(node => {
-      const r = rect(node), food = node.classList.contains("vc-food"), matrix = food ? new DOMMatrixReadOnly(getComputedStyle(node).transform) : null;
+      // Food on the home floor is laid out from an anchored left/top; its foot is that origin plus the transform.
+      const r = rect(node), food = node.classList.contains("vc-food"), matrix = food ? (css => new DOMMatrix().translateSelf(parseFloat(css.left) || 0, parseFloat(css.top) || 0).multiplySelf(new DOMMatrixReadOnly(css.transform)))(getComputedStyle(node)) : null;
       return { id: node.dataset.food ?? node.dataset.toyId ?? "", rect: r, point: matrix ? { x: matrix.m41, y: matrix.m42 } : { x: r.x + r.width / 2, y: r.y + r.height }, hidden: node.hidden || Boolean(node.closest("[hidden]")), platform: node.dataset.platform ?? "", carried: node.dataset.carried === "true", held: node.dataset.held === "true", falling: food ? node.hasAttribute("data-falling") : node.dataset.falling === "true", discarding: node.hasAttribute("data-discarding") };
     });
     const sample = (at: number) => {
@@ -119,7 +121,7 @@ async function toyOnFloor(page: Page) {
 async function floorContact(page: Page, object: Locator, kind: "food" | "toy") {
   await stable(object); await expect(object).toBeVisible();
   await expect.poll(async () => {
-    const point = await object.evaluate((node, kind) => { const r = node.getBoundingClientRect(), m = new DOMMatrixReadOnly(getComputedStyle(node).transform); return kind === "food" ? m.m42 : r.bottom; }, kind);
+    const point = await object.evaluate((node, kind) => { const r = node.getBoundingClientRect(), css = getComputedStyle(node), m = new DOMMatrixReadOnly(css.transform); return kind === "food" ? m.m42 + (parseFloat(css.top) || 0) : r.bottom; }, kind);
     const floor = (await home(page).locator(".vc-home-floor").boundingBox())!;
     return Math.abs(point - (floor.y + floor.height - COMPANION_HOME_FLOOR_INSET));
   }, { message: kind + " remains attached to the actual home floor", timeout: 5000 }).toBeLessThan(2);

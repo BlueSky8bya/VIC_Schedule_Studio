@@ -93,7 +93,8 @@ for (const [surface, width, dark] of [["viewer", 1440, false], ["studio", 1920, 
   const state = await fixture(page, { surface, dark }), bounds = await snapshot(page, state, `layout-${surface}-${width}`);
   //136 replaced126's152px/200px room with the approved wider proportional
   // interior. Verify that visual contract rather than the retired constants.
-  expect(bounds.window.width / bounds.room.width).toBeGreaterThanOrEqual(.5);
+  // dccb2756 refined the window to 90% of its 52cqw wall span (46.8% of the room).
+  expect(bounds.window.width / bounds.room.width).toBeGreaterThanOrEqual(.45);
   expect(bounds.window.width / bounds.room.width).toBeLessThanOrEqual(.6);
   expect(bounds.window.width).toBeGreaterThan(96 * bounds.scale);
   expect(bounds.shelf.x - bounds.window.x - bounds.window.width).toBeGreaterThanOrEqual(6);
@@ -144,7 +145,9 @@ test("123 six shared weather states retain their scene and keep clouds behind it
     await expect(state.window.locator(".vc-window-landscape")).toHaveAttribute("src", "/companion/home/141/window-autumn-day.webp");
     if (overlay[weather]) await expect(state.window.locator(".vc-window-weather")).toHaveAttribute("src", overlay[weather]!);
     else await expect(state.window.locator(".vc-window-weather")).toHaveCount(0);
-    expect(await state.window.evaluate(node => node.getAnimations({ subtree: true }).length)).toBe(0);
+    await state.window.evaluate(node => Promise.all(node.getAnimations({ subtree: true }).filter(animation => (animation as CSSAnimation).animationName === "vc-home-reveal").map(animation => animation.finished)));
+    // 4bd73c85: the staged house reveal leaves one finished (0s in quiet modes) entrance; nothing may keep running.
+    expect(await state.window.evaluate(node => node.getAnimations({ subtree: true }).filter(animation => !((animation as CSSAnimation).animationName === "vc-home-reveal" && animation.playState === "finished")).map(animation => [(animation as CSSAnimation).animationName ?? (animation as CSSTransition).transitionProperty ?? animation.id, (animation.effect as KeyframeEffect | null)?.target?.className, animation.playState, String(animation.effect?.getTiming().iterations)]))).toEqual([]);
     await snapshot(page, state, `weather-${weather}`);
   }
 });
@@ -154,6 +157,7 @@ for (const quiet of ["reduced", "off"] as const) test(`123 static night and weat
   await expect(state.window.locator(".vc-window-landscape")).toHaveAttribute("src", "/companion/home/141/window-winter-night.webp");
   await expect(state.window.locator(".vc-window-weather")).toHaveAttribute("src", overlay.wind!);
   await expect(state.window.locator(".vc-window-landscape")).toHaveCSS("filter", "none");
-  expect(await state.window.evaluate(node => node.getAnimations({ subtree: true }).length)).toBe(0);
+  // 4bd73c85: the staged house reveal leaves one finished (0s in quiet modes) entrance; nothing may keep running.
+    expect(await state.window.evaluate(node => node.getAnimations({ subtree: true }).filter(animation => !((animation as CSSAnimation).animationName === "vc-home-reveal" && animation.playState === "finished")).map(animation => [(animation as CSSAnimation).animationName ?? (animation as CSSTransition).transitionProperty ?? animation.id, (animation.effect as KeyframeEffect | null)?.target?.className, animation.playState, String(animation.effect?.getTiming().iterations)]))).toEqual([]);
   await snapshot(page, state, `night-${quiet}`);
 });

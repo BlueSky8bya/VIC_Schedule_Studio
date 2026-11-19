@@ -1,4 +1,4 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
 import { COMPANION_PERSONALITY_NAMES, type CompanionPersonality } from "@/lib/ui/viewer-companion/preferences";
 import { companionFloorPlacementSamplePasses157, type CompanionFloorPlacementSample157 } from "./companion-floor-placement-157";
@@ -31,6 +31,69 @@ export async function chooseCompanionPersonality(page: Page, personality: Compan
   await option.click(); await expect(option).toHaveAttribute("aria-checked", "true");
   await dialog.getByRole("button", { name: "닫기", exact: true }).click();
   await expect(dialog).toBeHidden(); await page.mouse.move(2, 2);
+}
+
+/** Viewport position of a fixed companion node (`.vc-companion`, `.vc-food`,
+ * `.vc-toy`, `.vc-bed-foreground`) from its transform, as older specs read it
+ * with `new DOMMatrixReadOnly(getComputedStyle(node).transform)`. Since
+ * 2026-10-20/25 a node on the sofa (`data-native-sofa`) or on the home floor
+ * (`data-native-item-anchor`) is laid out from an anchored `left` / `top`, and
+ * its transform is only the offset from that origin, so the bare matrix is off
+ * by the room's position (hundreds of px). Adding the computed `left` / `top`
+ * (both `0px` everywhere else) gives the same top-left in every state.
+ * Inside a `page.evaluate` sampler use the same two terms inline:
+ * `matrix.m41 + (parseFloat(css.left) || 0)`, `matrix.m42 + (parseFloat(css.top) || 0)`. */
+export async function companionNodeOrigin(node: Locator) {
+  return node.evaluate(element => {
+    const css = getComputedStyle(element), matrix = new DOMMatrixReadOnly(css.transform);
+    return { x: matrix.m41 + (parseFloat(css.left) || 0), y: matrix.m42 + (parseFloat(css.top) || 0) };
+  });
+}
+
+type CalendarSurface = "viewer" | "studio";
+const CALENDAR_CARDS: Record<CalendarSurface, string> = {
+  viewer: ".public-event[data-eventid]:not(.teaser):not(.is-support),.agenda-event[data-eventid]:not(.teaser),.agenda-item[data-eventid]:not(.teaser)",
+  studio: "[data-companion-event='ordinary'][data-eventid]",
+};
+
+/** The explicit keyboard placement (`p`, then one real click). `point` is the
+ * foot: its centre x and a y a little above the support it should land on. */
+export async function placeCompanionAt(page: Page, point: { x: number; y: number }, platform?: RegExp) {
+  const pet = page.locator(".vc-companion"), actor = pet.locator(".vc-actor");
+  await actor.focus(); await actor.press("p"); await expect(pet).toHaveAttribute("data-placing", "");
+  await page.mouse.click(point.x, point.y); await page.mouse.move(2, 2);
+  await expect(pet).not.toHaveAttribute("data-placing"); await expect(pet).not.toHaveAttribute("data-state", "jump", { timeout: 8000 });
+  if (platform) await expect(pet).toHaveAttribute("data-platform", platform);
+}
+
+/** A fresh companion now begins inside its home (sofa or home floor, since
+ * 2026-10-19), not on a calendar ledge. A spec that needs the old calendar
+ * start puts it on the first real ordinary card whose top has room for the
+ * whole body and no control under it. Returns that card and the foot point. */
+export async function placeCompanionOnCalendarCard(page: Page, surface: CalendarSurface = "viewer") {
+  const selector = CALENDAR_CARDS[surface];
+  const target = await page.evaluate(selector => {
+    const pet = document.querySelector(".vc-companion")!.getBoundingClientRect(), size = pet.width || 92, half = size * .38 + 4, height = size * .76 + 4;
+    const shown = (node: Element) => { const r = node.getBoundingClientRect(), css = getComputedStyle(node); return r.width > 0 && r.height > 0 && css.visibility === "visible" && css.display !== "none"; };
+    const controls = [...document.querySelectorAll("button,a[href],input,select,textarea,[role=button],.vc-home,.vc-home-launcher")]
+      .filter(node => shown(node) && !node.matches(`${selector},.public-day,.agenda-day,.studio-day`) && !node.closest(".vc-companion")).map(node => node.getBoundingClientRect());
+    const cards = [...document.querySelectorAll<HTMLElement>(selector)].filter(shown);
+    for (const node of cards) {
+      const rect = node.getBoundingClientRect();
+      if (rect.width < size || rect.top < size + 60 || rect.top > innerHeight - 120) continue;
+      for (const fraction of [.5, .25, .75]) {
+        const x = rect.left + rect.width * fraction, y = rect.top - 18;
+        if (x < size || x > innerWidth - size) continue;
+        if (controls.some(control => control.left < x + half && control.right > x - half && control.top < rect.top && control.bottom > rect.top - height)) continue;
+        if (document.elementFromPoint(x, rect.top + Math.min(4, rect.height / 2))?.closest(selector) !== node) continue;
+        return { x, y, top: rect.top, eventId: node.dataset.eventid ?? "" };
+      }
+    }
+    return null;
+  }, selector);
+  expect(target, "the fixture must show an ordinary card with a body-clear top").not.toBeNull();
+  await placeCompanionAt(page, target!, /^card-\d+-top(?:-\d+)?$/);
+  return target!;
 }
 
 /** Sofa/meal tests need a nearby real resident, not a random calendar start.

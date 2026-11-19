@@ -64,10 +64,11 @@ async function actualCard(page: Page, surface: Surface) {
     for (const node of root.querySelectorAll<HTMLElement>(selector)) {
       if (!shown(node)) continue;
       const r = node.getBoundingClientRect(), y = r.top - 3;
-      if (r.width < 110 || y < 120 || r.bottom > innerHeight - 60 || y < seat.top - 200 || y > seat.top + 240) continue;
+      // The room is 340x323 now (e4f56c8f and later): the nearest real cards start right of it and up to about 300px above the seat.
+      if (r.width < 110 || y < 120 || r.bottom > innerHeight - 60 || y < seat.top - 340 || y > seat.top + 240) continue;
       for (const fraction of [.5, .75, .25]) {
         const x = r.left + r.width * fraction, dx = Math.abs(x - (bed.left + bed.width / 2)), half = 92 * .76 / 2 + 3, height = 92 * .76 + 3;
-        if (dx < 80 || dx > 400 || x < 50 || x > innerWidth - 50) continue;
+        if (dx < 80 || dx > 620 || x < 50 || x > innerWidth - 50) continue;
         if (x - half < home.right && x + half > home.left && y > home.top && y - height < home.bottom) continue;
         if (controls.some(control => control.left < x + half && control.right > x - half && control.top < y + 3 && control.bottom > y - height)) continue;
         if (document.elementFromPoint(x, r.top + 2)?.closest(selector) !== node) continue;
@@ -139,14 +140,20 @@ function assertMeasuredSofaEntry(samples: readonly Frame[]) {
 async function assertSeated(page: Page) {
   await expect(pet(page)).toHaveAttribute("data-platform", "companion-home", { timeout: 25000 });
   await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
-  await expect.poll(() => pet(page).evaluate(node => Math.abs(node.getBoundingClientRect().bottom - document.querySelector(".vc-home-cushion")!.getBoundingClientRect().top))).toBeLessThan(2);
+  // Arriving on the cushion is not yet staying there: a resident that means to nap may get up once to see to the lamp
+  // (home-life policy, 9e8de6f7 / 534e0eb2: floor walk, a pounce at the cord, back onto the sofa, about 4 s) before it
+  // settles. Wait for the seat it finally keeps instead of the first 5 s after the first arrival.
+  await expect.poll(() => pet(page).evaluate(node => {
+    const el = node as HTMLElement;
+    return el.dataset.platform === "companion-home" && !["jump", "walk", "play"].includes(el.dataset.state ?? "") ? Math.abs(el.getBoundingClientRect().bottom - document.querySelector(".vc-home-cushion")!.getBoundingClientRect().top) : Infinity;
+  }), { timeout: 20000 }).toBeLessThan(2);
   await expect.poll(() => page.evaluate(() => {
     const front = document.querySelector<HTMLElement>(".vc-bed-foreground")!, bed = document.querySelector(".vc-home .vc-plush-bed")!.getBoundingClientRect(), f = front.getBoundingClientRect();
     return !front.hidden ? Math.max(Math.abs(f.left - bed.left), Math.abs(f.top - bed.top), Math.abs(f.width - bed.width), Math.abs(f.height - bed.height)) : Infinity;
   })).toBeLessThan(1.5);
 }
 for (const surface of ["viewer", "studio"] as const) for (const reflow of [false, true]) test(`${surface} native sofa recall${reflow ? " survives rail reflow during its route" : " uses a lateral arc and measured sofa entry"}`, async ({ page }) => {
-  test.setTimeout(55000);
+  test.setTimeout(70000);
   await page.goto(surface === "studio" ? "/visual-fixture/studio?role=owner" : "/visual-fixture/poster?avatar=1");
   await page.bringToFront(); await expect(actor(page)).toBeVisible(); await openCompanionHome(page); await settled(page); await page.waitForTimeout(180);
   const target = await actualCard(page, surface); record.get(page)!.target = target;

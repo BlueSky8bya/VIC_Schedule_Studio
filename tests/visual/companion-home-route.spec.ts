@@ -3,6 +3,8 @@ import { writeFileSync } from "node:fs";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { chooseCompanionPersonality } from "./helpers/companion-home";
+import { installCompanionPointReader, type CompanionPointWindow } from "./helpers/companion-point";
 
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
@@ -19,6 +21,7 @@ test.beforeEach(async ({ page }, info) => {
     return route.continue();
   });
   await page.route("**/api/soop-live**", route => route.fulfill({ json: { live: false } }));
+  await installCompanionPointReader(page);
   await page.addInitScript(({ prefs, care, key, epoch, automatic }) => {
     localStorage.setItem(key, epoch); localStorage.setItem("vic.gfxPref", "max");
     localStorage.setItem("vic.sound", "off"); localStorage.setItem("vic.ambient", "off"); localStorage.setItem("vic.reduceMotion", "off");
@@ -35,18 +38,22 @@ async function ready(page: Page, url: string) {
   await expect(actor(page)).toBeVisible();
   await page.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(a => a.playState === "running" && Number.isFinite(Number(a.effect?.getComputedTiming().endTime))).map(a => a.finished)); });
 }
-async function dropAtFloor(page: Page) {
+async function dropAtFloor(page: Page, platform = /^viewport-floor/) {
   await actor(page).focus(); await actor(page).press("p");
   await expect(pet(page)).toHaveAttribute("data-placing", "");
   const view = page.viewportSize()!;
   await page.mouse.click(Math.min(850, view.width - 150), view.height - 50); await page.mouse.move(view.width - 100, view.height - 200);
-  await expect(pet(page)).toHaveAttribute("data-platform", /^viewport-floor/);
+  await expect(pet(page)).toHaveAttribute("data-platform", platform);
   await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
 }
 
 test("an active companion recovers from an empty month's isolated bottom without a recall click", async ({ page }) => {
   test.setTimeout(80000);
   await ready(page, "/visual-fixture/studio?role=owner&y=2025&m=11");
+  // 1f2cb9eb (2026-10-19): the automatic recovery from a low floor belongs to
+  // the homebody character only (with sleep on, not hungry, no authored scene
+  // running). Choose it through the real radio; a fresh document draws its own.
+  await chooseCompanionPersonality(page, "homebody");
   await dropAtFloor(page);
   // Fixture-only unavailable arrows isolate the reported empty-floor case.
   // Otherwise the ordinary planner successfully climbs a real arrow first,
@@ -79,7 +86,9 @@ test("a right-side compact room stays reachable in a short viewport", async ({ p
   await ready(page, "/visual-fixture/poster");
   const launcher = page.getByRole("button", { name: "빅타민 집 열기", exact: true });
   if (await launcher.isVisible()) await launcher.click();
-  await dropAtFloor(page);
+  // At 1366x900 the poster's day cells reach below the release point; their
+  // bottom edge is a deliberate manual landing (date-N-floor, 1f2cb9eb).
+  await dropAtFloor(page, /^(?:viewport-floor|date-\d+-floor$)/);
   await page.getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true }).click();
   await expect(pet(page)).toHaveAttribute("data-platform", "companion-home", { timeout: 45000 });
   await expect(pet(page)).toHaveAttribute("data-state", "sleep");
@@ -171,8 +180,9 @@ for (const surface of ["viewer", "studio"] as const) {
       const until = performance.now() + 40000;
       const sample = () => {
         const node = document.querySelector<HTMLElement>(".vc-companion")!;
-        const m = new DOMMatrixReadOnly(getComputedStyle(node).transform);
-        samples.push({ at: performance.now(), platform: node.dataset.platform, state: node.dataset.state, journey: node.dataset.journey, x: m.m41 + 46, y: m.m42 + 92, steps: document.querySelectorAll("[data-home-step],.vc-home-route").length });
+        // Anchored on the sofa / home floor the transform is only the offset from the anchor (section 2).
+        const m = (window as unknown as CompanionPointWindow).vcPoint(node);
+        samples.push({ at: performance.now(), platform: node.dataset.platform, state: node.dataset.state, journey: node.dataset.journey, x: m.x + 46, y: m.y + 92, steps: document.querySelectorAll("[data-home-step],.vc-home-route").length });
         if (performance.now() < until && node.dataset.platform !== "companion-home") requestAnimationFrame(sample);
       }; requestAnimationFrame(sample);
     });
@@ -202,14 +212,21 @@ for (const surface of ["viewer", "studio"] as const) {
     await page.getByRole("button", { name: "설정", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "설정", exact: true });
     await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-    await dialog.getByRole("tab", { name: "프로필", exact: true }).click();
-    await expect(dialog.getByText("쓰다듬기와 곁에 있기", { exact: true })).toBeVisible();
-    await expect(dialog.getByText("장난치고 탐험하기", { exact: true })).toBeVisible();
-    await expect(dialog.getByText("낯선 곳도 씩씩하게", { exact: true })).toBeVisible();
+    // c3bec348: learning lives on the "함께 지내기" page (was the "프로필" sub-tab).
+    await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "함께 지내기", exact: true }).click();
+    // cd765105: the profile lists what the learned habits change, not the habit names.
+    // The seeded sociability .6 / playfulness .3 / confidence .5 move all three directions.
+    const habits = dialog.locator(".rhh-profile-habits");
+    await expect(habits.locator(".rhh-profile-learned li")).toHaveText(["마우스에 더 바짝 다가와요.", "재롱을 더 자주 부려요.", "잠깐 두리번거려요."]);
+    // 8b12c73e: the reset asks first.
     await dialog.getByRole("button", { name: "배운 습관 초기화", exact: true }).click();
-    await expect(dialog.getByText(/아직 뚜렷한 습관은 없어요/)).toBeVisible();
+    await dialog.getByRole("button", { name: "배운 습관 초기화 확정", exact: true }).click();
+    await expect(habits.locator(".rhh-habit-empty")).toHaveText("아직 배운 습관이 없어요.");
+    await expect(habits.locator(".rhh-profile-learned")).toHaveCount(0);
     await page.screenshot({ path: `.scratch-pw/companion-084-${surface}-habits.png` });
-    await dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true }).click();
-    await expect(dialog.getByText(/배우기 끔 · 습관은 보관, 행동은 고른 성격대로/)).toBeVisible();
+    const learning = dialog.getByRole("switch", { name: "빅타민 함께 지내며 배우기 켜기/끄기", exact: true });
+    await expect(habits.locator(".rhh-habit-paused")).toHaveCount(0);
+    await learning.click(); await expect(learning).toHaveAttribute("aria-checked", "false");
+    await expect(habits.locator(".rhh-habit-paused")).toHaveText("적용 중지");
   });
 }

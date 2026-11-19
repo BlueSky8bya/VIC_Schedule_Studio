@@ -8,6 +8,7 @@ import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome } from "./helpers/companion-home";
+import { keepCompanionStoredMotion } from "./helpers/companion-settings";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 
@@ -95,6 +96,9 @@ test.afterEach(async ({ page }, info) => {
 
 async function setup(page: Page, surface: "viewer" | "studio" | "preview", width: number, mode: "full" | "soft" | "off") {
   await page.setViewportSize({ width, height: 780 });
+  // storageState is replaced: the seeded still resident (roam:false) needs the QA seam since a9f6d77e, or it walks
+  // over and takes the floor snack/toy this test measures.
+  await keepCompanionStoredMotion(page);
   await page.addInitScript(({ defaults, memory, epoch, epochKey, mode }) => {
     for (const [key, value] of Object.entries({ [epochKey]: epoch, "vic.gfxPref": mode === "full" ? "max" : mode === "soft" ? "auto" : "off", "vic.gfx": JSON.stringify({ mode, v: 3, at: Date.now() }), "vic.dark": "off", "vic.sound": "off", "vic.ambient": "off", "vic.reduceMotion": "off", "vic_avatar_side": "left", "vic.premiereStage": "off", "vic.viewerCompanion": JSON.stringify({ version: 1, ...defaults, enabled: true, roam: false, sleep: false, sound: false, feeding: true, learnFromYou: false, ambientPrank: false }), "vic.viewerCompanionCare": JSON.stringify({ version: 3, ...memory, energy: .9, hunger: .05 }) })) localStorage.setItem(key, value);
   }, { defaults: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, mode });

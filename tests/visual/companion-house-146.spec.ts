@@ -7,6 +7,7 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
+import { keepCompanionStoredMotion } from "./helpers/companion-settings";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 
 const out = process.env.COMPANION146_HOME_OUTPUT ?? ".scratch-pw/companion-146/house";
@@ -48,6 +49,9 @@ test.afterEach(async ({ page }, info) => {
 });
 
 async function setup(page: Page, surface: "viewer" | "studio" | "preview", dark: boolean, compact = false) {
+  // Movement is not a setting since a9f6d77e; this file replaces storageState, so the seeded roam:false (a seated
+  // resident through the scroll) is honoured only through the QA seam, or the pet hops off the sofa mid-sample.
+  await keepCompanionStoredMotion(page);
   await page.addInitScript(({ defaults, epoch, epochKey, dark }) => {
     for (const [key, value] of Object.entries({ [epochKey]: epoch, "vic.gfxPref": "max", "vic.gfx": JSON.stringify({ mode: "full", v: 3, at: Date.now() }), "vic.dark": dark ? "on" : "off", "vic.sound": "off", "vic.ambient": "off", "vic.reduceMotion": "off", "vic_avatar_side": "left", "vic.premiereStage": "off", "vic.viewerCompanion": JSON.stringify({ version: 1, ...defaults, enabled: true, roam: false, sleep: false, sound: false }) })) localStorage.setItem(key, value);
   }, { defaults: DEFAULT_COMPANION_PREFERENCES, epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, dark });

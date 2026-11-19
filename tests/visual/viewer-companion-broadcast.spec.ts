@@ -1,8 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
-import { DEFAULT_COMPANION_PREFERENCES, COMPANION_PREFERENCES_KEY } from "@/lib/ui/viewer-companion/preferences";
+import { COMPANION_PERSONALITIES, DEFAULT_COMPANION_PREFERENCES, COMPANION_PREFERENCES_KEY } from "@/lib/ui/viewer-companion/preferences";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { openCompanionHome } from "./helpers/companion-home";
+import { companionNodeOrigin, openCompanionHome } from "./helpers/companion-home";
 
 type Surface = "viewer" | "studio";
 type PreferenceWitness = { reads: number; mounts: { afterPreferenceRead: boolean }[] };
@@ -93,7 +93,10 @@ for (const surface of ["viewer", "studio"] as const) {
     await expect(master).toBeChecked(); await master.click(); await expect(master).not.toBeChecked();
     await expect(pet(page)).toHaveCount(0);
     const saved = await page.evaluate(key => JSON.parse(localStorage.getItem(key)!), COMPANION_PREFERENCES_KEY);
-    expect(saved).toEqual({ version: 1, ...DEFAULT_COMPANION_PREFERENCES, enabled: false });
+    // A fresh document draws its own character (41e73e05 / a0e7d07e, 2026-10-20) and the master OFF keeps every
+    // detailed choice, so the saved personality is that drawn one: any registered character, everything else default.
+    expect(COMPANION_PERSONALITIES).toContain(saved.personality);
+    expect(saved).toEqual({ version: 1, ...DEFAULT_COMPANION_PREFERENCES, enabled: false, personality: saved.personality });
     proof.get(page)!.assets.length = 0;
     await page.reload(); await expectColdOff(page, "native-off-reload");
     expect(await page.evaluate(key => JSON.parse(localStorage.getItem(key)!), COMPANION_PREFERENCES_KEY)).toEqual(saved);
@@ -117,8 +120,11 @@ for (const surface of ["viewer", "studio"] as const) {
     await page.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))).map(animation => animation.finished)); });
     await home.getByRole("button", { name: "밥 꺼내기", exact: true }).click();
     const snack = page.locator(".vc-food"); await expect(snack).toHaveCount(1);
+    // A dispensed snack falls out of the dispenser first; a grab during that fall does not take.
+    await expect(snack).not.toHaveAttribute("data-falling");
     const room = (await home.locator(".vc-home-room").boundingBox())!, food = (await snack.boundingBox())!;
-    const origin = await snack.evaluate(node => { const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: matrix.m41, y: matrix.m42 }; });
+    // Home-floor food is laid out from an anchored left/top; its transform is only the offset from that origin.
+    const origin = await companionNodeOrigin(snack);
     const start = { x: food.x + food.width / 2, y: food.y + food.height / 2 }, target = { x: room.x + room.width * .35, y: room.y + 20 };
     await page.mouse.move(start.x, start.y); await page.mouse.down();
     await page.mouse.move(target.x + start.x - origin.x, target.y + start.y - origin.y, { steps: 14 });
@@ -126,7 +132,7 @@ for (const surface of ["viewer", "studio"] as const) {
       const probe: FoodProbe = { reads: [], fallingSeen: false, positions: [], original: Storage.prototype.getItem, observer: new MutationObserver(() => { probe.fallingSeen ||= node.hasAttribute("data-falling"); }), raf: 0 };
       probe.observer.observe(node, { attributes: true, attributeFilter: ["data-falling"] });
       Storage.prototype.getItem = function (key: string) { if (this === window.localStorage && (key === "vic.gfx" || key === "vic.gfxPref")) probe.reads.push(key); return probe.original.call(this, key); };
-      const sample = () => { if (node.hasAttribute("data-falling")) { probe.fallingSeen = true; const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform); probe.positions.push(matrix.m42); } probe.raf = requestAnimationFrame(sample); };
+      const sample = () => { if (node.hasAttribute("data-falling")) { probe.fallingSeen = true; const css = getComputedStyle(node); probe.positions.push(new DOMMatrixReadOnly(css.transform).m42 + (parseFloat(css.top) || 0)); } probe.raf = requestAnimationFrame(sample); };
       (window as FoodProbeWindow).companionBroadcastFood = probe; probe.raf = requestAnimationFrame(sample);
     });
     let result: FoodProof | undefined;
@@ -134,12 +140,12 @@ for (const surface of ["viewer", "studio"] as const) {
       await page.mouse.up(); await page.mouse.move(4, 4);
       await expect.poll(() => page.evaluate(() => (window as FoodProbeWindow).companionBroadcastFood!.fallingSeen)).toBe(true);
       await expect(snack).not.toHaveAttribute("data-falling", { timeout: 5000 });
-      const before = { room: (await home.locator(".vc-home-room").boundingBox())!, food: await snack.evaluate(node => new DOMMatrixReadOnly(getComputedStyle(node).transform).m42) };
+      const before = { room: (await home.locator(".vc-home-room").boundingBox())!, food: (await companionNodeOrigin(snack)).y };
       await page.locator('[data-panel-section-toggle="tag-filter"]:visible').first().click();
       await expect.poll(async () => Math.abs((await home.locator(".vc-home-room").boundingBox())!.y - before.room.y)).toBeGreaterThan(10);
       await page.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))).map(animation => animation.finished)); });
       await expect.poll(async () => {
-        const roomNow = (await home.locator(".vc-home-room").boundingBox())!, foodNow = await snack.evaluate(node => new DOMMatrixReadOnly(getComputedStyle(node).transform).m42);
+        const roomNow = (await home.locator(".vc-home-room").boundingBox())!, foodNow = (await companionNodeOrigin(snack)).y;
         return Math.abs((foodNow - before.food) - (roomNow.y - before.room.y));
       }).toBeLessThan(2);
     } finally {

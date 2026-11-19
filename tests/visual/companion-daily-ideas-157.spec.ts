@@ -8,7 +8,7 @@ import { DEFAULT_COMPANION_PREFERENCES, type CompanionPersonality } from "@/lib/
 import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_PERSONALITY_SCENES } from "@/lib/ui/viewer-companion/personality-scene-catalog";
 import { chooseCompanionPersonality, openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
-import { setCompanionRoam } from "./helpers/companion-settings";
+import { keepCompanionStoredMotion, setCompanionRoam } from "./helpers/companion-settings";
 import { guardCompanionQa, startCompanionQaProbe, type DailyProof, type QaObservation } from "./helpers/companion-qa";
 import { completedDailyIdeas157, type Daily157Prelude } from "./helpers/companion-daily-ideas-157";
 import { settlePanelLayout } from "./helpers/panel-layout";
@@ -94,6 +94,8 @@ async function roam(page: Page) {
 
 for (const setup of setups) test(`157 ${setup.id} ${setup.surface} actual situational effect finishes and continues with next activity`, async ({ page, context, baseURL }) => {
   const proof = await guardCompanionQa(page, context, baseURL!);
+  // This file replaces storageState, which drops the QA key that lets the stored `roam: false` hold the pet still during setup.
+  await keepCompanionStoredMotion(context);
   const frozenPath = process.env.COMPANION156_SOURCE_FREEZE; if (!frozenPath) throw Error("New frozen source binding is required");
   const bytes = readFileSync(resolve(frozenPath)), freeze = JSON.parse(bytes.toString()) as { contentDigest: string; sourceFiles: { path: string; sha256: string }[] };
   const paths = ["lib/ui/viewer-companion/personality-scene-catalog.ts", "lib/ui/viewer-companion/personality-director.ts", "lib/ui/viewer-companion/personality-activity.ts", "lib/ui/viewer-companion/safe-room-floor.ts", "tests/visual/companion-daily-ideas-157.spec.ts", "tests/visual/helpers/companion-daily-ideas-157.ts",
@@ -141,10 +143,17 @@ for (const setup of setups) test(`157 ${setup.id} ${setup.surface} actual situat
           && Math.hypot(frame.x-last[0].x,frame.y-last[0].y) < 1)
         && last[2].at-last[0].at >= 70;
     }, { timeout: 15_000, intervals: [40] }).toBe(true);
-    const actor = page.locator(".vc-companion"), r = (await actor.boundingBox())!;
-    const left = r.x + r.width * .28, right = r.x + r.width * .72, y = r.y + r.height * .51;
-    for (const x of [left, right, left, right]) await page.mouse.move(x, y, { steps: 4 });
-    await expect(actor).toHaveAttribute("data-petting", "hover"); record.initial.petted = true;
+    // The shipping companion always roams (a9f6d77e): the next authored beat (a pounce, a hop) can start between
+    // the stillness check and the stroke, and a stroke on a body that moves away is not a stroke. Repeat the same
+    // real out-and-back on the body where it is now until the product reads it as petting.
+    const actor = page.locator(".vc-companion");
+    await expect.poll(async () => {
+      const r = (await actor.boundingBox())!;
+      const left = r.x + r.width * .28, right = r.x + r.width * .72, y = r.y + r.height * .51;
+      for (const x of [left, right, left, right]) await page.mouse.move(x, y, { steps: 4 });
+      return actor.getAttribute("data-petting");
+    }, { timeout: 15_000, intervals: [250] }).toBe("hover");
+    record.initial.petted = true;
     await page.mouse.move(2, 2);
   }
   await expect.poll(async () => completedDailyIdeas157(await samples(page), setup.id, record.initial).length, { timeout: 95_000, intervals: [300] }).toBe(1);

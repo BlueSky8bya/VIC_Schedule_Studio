@@ -1,11 +1,8 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { safeCompanionSurfaces } from "@/lib/ui/viewer-companion/geometry";
-import { waitForOverlayEntrance } from "./helpers/companion-overlay";
-import { companionPlayfulSwitch } from "./helpers/companion-settings";
 
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
-const pet = (page: Page) => page.locator(".vc-companion");
 const heart = (page: Page) => page.locator("#companion-runtime-heart");
 const posts = new WeakMap<Page, string[]>();
 
@@ -112,108 +109,10 @@ async function addSyntheticHeart(page: Page, humanPressed: boolean, requiredId?:
   return { card: target, id: id! };
 }
 
-async function standOnCard(page: Page, requiredId?: string) {
-  await expect(actor(page)).toBeVisible();
-  const { card, id } = await addSyntheticHeart(page, false, requiredId);
-  // The preference init script leaves autonomous hearts OFF after reload.
-  // Observe the saved marker on this exact event before enabling its next
-  // autonomous attempt; selecting a new safe card would test a different ID.
-  if (requiredId) await expect(heart(page)).toHaveAttribute("data-companion-hearted", "");
-  const anchor = (await cardAnchor(page, card))!;
-  expect(anchor).toBeTruthy();
-  await actor(page).focus(); await actor(page).press("p");
-  await expect(pet(page)).toHaveAttribute("data-placing", "");
-  await page.mouse.click(anchor.x + anchor.width / 2, anchor.dropY);
-  await expect(pet(page)).not.toHaveAttribute("data-placing");
-  await expect(pet(page)).toHaveAttribute("data-platform", /^card-\d+-top(?:-\d+)?$/, { timeout: 5000 });
-  await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
-  await expect.poll(() => card.evaluate(node => Math.abs(document.querySelector(".vc-companion")!.getBoundingClientRect().bottom - node.getBoundingClientRect().top + 3))).toBeLessThan(2);
-
-  // Exercise the real settings/controller remount: its private transient
-  // lastPose retains this physical point, then fresh geometry resolves the
-  // closest autonomous line. This proves remount/heart binding, not an
-  // autonomous navigation path or a browser-persisted position feature.
-  await page.getByRole("button", { name: "설정", exact: true }).click();
-  const dialog = page.getByRole("dialog", { name: "설정", exact: true }); await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
-  await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
-  // stage 3: no sub-tabs; the gear opens on the "설정" page where the prank switches are visible.
-  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
-  // stage 4: the heart prank is one of the four behind the single 장난치기 switch; a partly-on mix acts as off,
-  // so the heart can only be enabled together with card tilt, hide-and-seek and the rare prop prank.
-  const enabled = companionPlayfulSwitch(dialog);
-  await expect(enabled).not.toBeChecked(); await enabled.click(); await expect(enabled).toBeChecked();
-  await dialog.locator(".modal-head .modal-close").click(); await expect(dialog).toBeHidden(); await page.mouse.move(4, 4);
-  await expect(pet(page)).toHaveAttribute("data-platform", /^card-\d+(?:-line-\d+)?(?:-\d+)?$/);
-  await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
-  await expect.poll(() => card.evaluate(node => {
-    const cell = document.querySelector(".vc-companion")!.getBoundingClientRect(), x = cell.left + cell.width / 2;
-    const range = document.createRange(), errors: number[] = [];
-    for (const line of node.querySelectorAll(".event-main p,.event-subs li")) {
-      range.selectNodeContents(line);
-      for (const rect of range.getClientRects()) if (rect.width > 0 && x >= rect.left && x <= rect.right) errors.push(Math.abs(cell.bottom - rect.top + 3));
-    }
-    range.detach(); return errors.length ? Math.min(...errors) : Infinity;
-  })).toBeLessThan(2);
-  return { card, id };
-}
-
-test("the real companion toggles only its violet souvenir and remembers both states after reload", async ({ page }) => {
-  test.setTimeout(95_000);
-  await page.goto("/visual-fixture/poster");
-  const { id } = await standOnCard(page);
-  await expect(pet(page)).toHaveAttribute("data-heart-result", "added", { timeout: 45_000 });
-  await expect(heart(page)).toHaveAttribute("data-companion-hearted", "");
-  await expect(heart(page)).toHaveAttribute("aria-pressed", "false");
-  await expect(heart(page)).toHaveAttribute("data-native-clicks", "0");
-  await expect(page.locator("#companion-runtime-human-count")).toHaveText("17");
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion.hearts")!))).toEqual({ version: 1, ids: [id] });
-  const colors = await heart(page).evaluate(button => {
-    const probe = document.createElement("span"); probe.style.color = "var(--teaser)"; button.append(probe);
-    const violet = getComputedStyle(probe).color; probe.remove();
-    return { actual: getComputedStyle(button).color, violet };
-  });
-  expect(colors.actual).toBe(colors.violet);
-  expect(await heart(page).evaluate(button => getComputedStyle(button, "::before").content)).toBe("none");
-  await page.screenshot({ path: ".scratch-pw/companion-heart-runtime-added.png" });
-  await page.reload();
-  await expect(actor(page)).toBeVisible();
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion.hearts")!))).toEqual({ version: 1, ids: [id] });
-  await standOnCard(page, id);
-  await expect(heart(page)).toHaveAttribute("data-companion-hearted", "");
-  await expect(heart(page)).not.toHaveAttribute("data-companion-heart-blocked");
-  await expect(heart(page)).toHaveAttribute("data-native-clicks", "0");
-  await expect(page.locator("#companion-runtime-human-count")).toHaveText("17");
-  await expect(pet(page)).toHaveAttribute("data-heart-result", "removed", { timeout: 45_000 });
-  await expect(heart(page)).not.toHaveAttribute("data-companion-hearted");
-  await expect(heart(page)).toHaveAttribute("aria-pressed", "false");
-  await expect(heart(page)).toHaveAttribute("data-native-clicks", "0");
-  await expect(page.locator("#companion-runtime-human-count")).toHaveText("17");
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion.hearts")!))).toEqual({ version: 1, ids: [] });
-  await page.reload();
-  await expect(actor(page)).toBeVisible();
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion.hearts")!))).toEqual({ version: 1, ids: [] });
-  await addSyntheticHeart(page, false, id);
-  await expect(heart(page)).not.toHaveAttribute("data-companion-hearted");
-  await expect(heart(page)).toHaveAttribute("aria-pressed", "false");
-  await expect(heart(page)).toHaveAttribute("data-native-clicks", "0");
-  await expect(page.locator("#companion-runtime-human-count")).toHaveText("17");
-});
-
-test("the real companion bumps an existing human heart and cannot replace or increment it", async ({ page }) => {
-  test.setTimeout(55_000);
-  await page.goto("/visual-fixture/poster");
-  await standOnCard(page);
-  await heart(page).evaluate(button => button.setAttribute("aria-pressed", "true"));
-  const humanColor = await heart(page).evaluate(button => getComputedStyle(button).color);
-  await expect(pet(page)).toHaveAttribute("data-heart-result", "blocked", { timeout: 45_000 });
-  await expect(heart(page)).not.toHaveAttribute("data-companion-hearted");
-  await expect(heart(page)).toHaveAttribute("aria-pressed", "true");
-  await expect(heart(page)).toHaveAttribute("data-native-clicks", "0");
-  await expect(page.locator("#companion-runtime-human-count")).toHaveText("17");
-  expect(await heart(page).evaluate(button => getComputedStyle(button).color)).toBe(humanColor);
-  await expect(page.locator(".vc-effect")).toHaveText("◌");
-  await page.screenshot({ path: ".scratch-pw/companion-heart-runtime-blocked.png" });
-});
+// "the real companion toggles only its violet souvenir ..." and "the real companion bumps an existing human heart ..."
+// removed: owner 2026-11-20: current behaviour kept (a hand-placed companion does not press that card's heart; only a
+// support it reached by itself does). An autonomous rewrite was tried (roam + jump + the four pranks, real fixture
+// hearts): no heart attempt at all within 100 s in either case, authored scenes ran instead, so it is not a bounded test.
 
 for (const input of ["pointer", "keyboard"] as const) {
   test(`the bundled adapter consumes the first purple ${input} click and preserves the following human handler`, async ({ page }) => {

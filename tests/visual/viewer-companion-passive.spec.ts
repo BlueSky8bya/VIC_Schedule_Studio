@@ -3,7 +3,7 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { COMPANION_TIMING as T } from "@/lib/ui/viewer-companion/timing";
-import { chooseCompanionCare } from "./helpers/companion-home";
+import { chooseCompanionCare, companionNodeOrigin } from "./helpers/companion-home";
 import { expectQuietCompanionVisible } from "./helpers/companion-overlay";
 
 const pet = (page: Page) => page.locator(".vc-companion");
@@ -28,10 +28,12 @@ async function setup(page: Page, options: { feeding?: boolean; reduced?: boolean
     localStorage.setItem("vic.sound", "off"); localStorage.setItem("vic.ambient", "off"); localStorage.setItem("vic.gfxPref", "max");
     localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 1, ...care }));
+    // "다른 창 쓸 때도 놀기" ships on (1f2cb9eb, 2026-10-19) and keeps a blurred visible page active. Every case
+    // here is about the blur that parks, so the seed turns that one switch off.
     // An explicit focus-event branch fixture. This is not proof of native OS
     // focus/visibility throttling, and no virtual/fake animation clock is used.
     Object.defineProperty(document, "hasFocus", { configurable: true, value: () => true });
-  }, { epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep: false, feeding: options.feeding ?? false, heartPrank: false, ambientPrank: false }, care: DEFAULT_COMPANION_CARE, reduced: options.reduced ?? false });
+  }, { epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, activeWhileVisible: false, roam: false, jump: false, sleep: false, feeding: options.feeding ?? false, heartPrank: false, ambientPrank: false }, care: DEFAULT_COMPANION_CARE, reduced: options.reduced ?? false });
   await page.goto("/visual-fixture/poster");
   await expect(actor(page)).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
@@ -142,8 +144,10 @@ test("a meal already in progress completes once before passive sleep", async ({ 
   await expect(page.locator(".vc-food")).toHaveCount(1);
   const before = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!));
   const point = await pet(page).evaluate(el => { const rect = el.getBoundingClientRect(); return { x: rect.left + rect.width / 2 + 18, y: rect.bottom }; });
-  const snack = page.locator(".vc-food"), start = (await snack.boundingBox())!;
-  const foot = await snack.evaluate(node => { const m = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: m.m41, y: m.m42 }; });
+  // A dispensed snack falls for about a second and cannot be grabbed until it lands; on the home floor its
+  // position is an anchored left/top plus the transform (a3e9a288, 2026-10-25), so read both.
+  const snack = page.locator(".vc-food"); await expect(snack).not.toHaveAttribute("data-falling");
+  const start = (await snack.boundingBox())!, foot = await companionNodeOrigin(snack);
   const from = { x: start.x + start.width / 2, y: start.y + start.height / 2 };
   await page.mouse.move(from.x, from.y); await page.mouse.down();
   await page.mouse.move(point.x + from.x - foot.x, point.y + from.y - foot.y, { steps: 8 }); await page.mouse.up();
@@ -164,7 +168,9 @@ test("a meal already in progress completes once before passive sleep", async ({ 
 });
 
 test("quick refocus cancels parking while hidden tabs and ordinary overlay quieting keep their own behavior", async ({ page }) => {
-  await setup(page);
+  // A fresh creature now starts inside its house (a44f46a2, 2026-10-19). These checks are about one standing
+  // outside it, as it did when they were written; the house resident has its own case below.
+  await setup(page); await placeOnFloor(page);
   for (let i = 0; i < 5; i++) { await focus(page, false); await page.waitForTimeout(80); await focus(page, true); }
   await expect(pet(page)).toHaveAttribute("data-presence", "active");
   await page.waitForTimeout(1800);
@@ -180,12 +186,29 @@ test("quick refocus cancels parking while hidden tabs and ordinary overlay quiet
   await page.keyboard.press("Escape"); await expect(actor(page)).toBeVisible(); await expect(pet(page)).toHaveCount(1);
 });
 
-test("empty measured geometry stays hidden through passive sleep and hard resume, then recovers on a safe surface", async ({ page }) => {
+// Regression guard (fixed in 63ecc14a): with the same simulated visibility change as the case above, a creature
+// standing in its house (where every fresh one starts) once stayed hidden for good: the house came back closed and
+// the resident kept data-hidden-reason="home" until someone reopened it.
+test("a house resident is shown again after the tab was hidden and returns", async ({ page }) => {
+  await setup(page);
+  await expect(pet(page)).toHaveAttribute("data-platform", /^companion-home/);
+  await page.evaluate(() => { Object.defineProperty(document, "hidden", { configurable: true, get: () => true }); document.dispatchEvent(new Event("visibilitychange")); });
+  await expect(pet(page)).toBeHidden();
+  await page.evaluate(() => { Object.defineProperty(document, "hidden", { configurable: true, get: () => false }); document.dispatchEvent(new Event("visibilitychange")); });
+  await expect(actor(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-platform", /^companion-home/);
+});
+
+test("empty measured geometry stays hidden and idle through a blur and hard resume, then recovers on a safe surface", async ({ page }) => {
   // Compact desktop keeps the house closed, so a separate cushion cannot supply
   // a safe ledge behind this deliberately viewport-sized control obstacle.
   await page.setViewportSize({ width: 1280, height: 900 });
-  await setup(page);
-  await expect(page.locator(".vc-home-cushion")).toHaveCount(0);
+  // The fresh creature opens its house and starts inside it (a44f46a2, 2026-10-19). Put it outside and close the
+  // house through its own launcher, which restores the "no cushion to stand on" premise of this case.
+  await setup(page); await placeOnFloor(page);
+  await page.locator('.vc-home-launcher[aria-label="빅타민 집 닫기"]').click();
+  // A closed compact house keeps its room in the DOM, undisplayed: no cushion box is left to stand on.
+  await expect(page.locator(".vc-home-launcher")).toHaveAttribute("aria-expanded", "false"); await expect(page.locator(".vc-home-cushion")).toBeHidden();
+  await expect(actor(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-platform", /^viewport-floor(?:-\d+)?$/);
   await page.evaluate(() => {
     const obstacle = document.createElement("button");
     obstacle.type = "button"; obstacle.tabIndex = -1;
@@ -199,32 +222,44 @@ test("empty measured geometry stays hidden through passive sleep and hard resume
   await expect(pet(page)).toBeHidden();
   await expect(pet(page)).toHaveAttribute("data-presence", "active");
   expect(await page.evaluate(() => ({ hidden: document.hidden, inert: (document.querySelector(".poster-page") as HTMLElement).inert }))).toEqual({ hidden: false, inert: false });
-  await trace(page); await focus(page, false);
-  await expect(pet(page)).toHaveAttribute("data-presence", "parked", { timeout: 8000 });
-  await expect(pet(page)).toBeHidden();
-  const events = await page.evaluate(() => (window as ProbeWindow).passiveTrace!);
-  expect(events.some(event => event.phase === "resting")).toBe(true);
-  expect(events.some(event => event.phase === "yawning")).toBe(true);
-  expect(events.every(event => event.hidden), JSON.stringify(events)).toBe(true);
-
   await page.evaluate(() => {
     const probe = window as ProbeWindow; probe.passiveRanges = 0;
     const original = Range.prototype.getClientRects;
     Range.prototype.getClientRects = function () { probe.passiveRanges!++; return original.call(this); };
-    document.querySelector<HTMLElement>("[data-companion-empty-obstacle]")!.style.padding = "1px";
   });
-  await page.waitForTimeout(300);
+  // The one final validation of the missing support runs on its own short timer; start counting once it is over.
+  let settledReads = -1, quietSamples = 0;
+  await expect.poll(async () => {
+    const reads = await page.evaluate(() => (window as ProbeWindow).passiveRanges!);
+    quietSamples = reads === settledReads ? quietSamples + 1 : 0; settledReads = reads; return quietSamples;
+  }, { intervals: [250], timeout: 6000 }).toBeGreaterThanOrEqual(3);
+  await page.evaluate(() => { (window as ProbeWindow).passiveRanges = 0; });
+  await trace(page); await focus(page, false);
+  // f6281fd0 (2026-10-18): while no support exists nothing runs at all - no brain, frame, timer or geometry read -
+  // so the hidden creature no longer steps through resting/yawning into a parked sleep. Wait past both beats.
+  await page.waitForTimeout(T.presenceRest + T.presenceYawn + 800);
+  await expect(pet(page)).toBeHidden();
+  const events = await page.evaluate(() => (window as ProbeWindow).passiveTrace!);
+  expect(events, JSON.stringify(events)).toHaveLength(1); expect(events[0]).toMatchObject({ phase: "active", hidden: true });
   expect(await page.evaluate(() => (window as ProbeWindow).passiveRanges)).toBe(0);
+
+  // A real DOM change is what the waiting observer listens for: it may validate once, and must not start polling.
+  await page.evaluate(() => { document.querySelector<HTMLElement>("[data-companion-empty-obstacle]")!.style.padding = "1px"; });
+  await page.waitForTimeout(400);
+  const validated = await page.evaluate(() => (window as ProbeWindow).passiveRanges!);
+  await page.waitForTimeout(600);
+  expect(await page.evaluate(() => (window as ProbeWindow).passiveRanges)).toBe(validated);
   await page.evaluate(() => document.documentElement.setAttribute("data-ambient-pause", ""));
   await expect(pet(page)).toBeHidden();
   await page.evaluate(() => document.documentElement.removeAttribute("data-ambient-pause"));
-  await expect(pet(page)).toHaveAttribute("data-presence", "parked");
+  await page.waitForTimeout(300);
   await expect(pet(page)).toBeHidden();
+  const quiet = await page.evaluate(() => (window as ProbeWindow).passiveRanges!);
 
   await focus(page, true);
   await expect(pet(page)).toHaveAttribute("data-presence", "active");
   await expect(pet(page)).toBeHidden();
-  await expect.poll(() => page.evaluate(() => (window as ProbeWindow).passiveRanges!)).toBeGreaterThan(0);
+  await expect.poll(() => page.evaluate(() => (window as ProbeWindow).passiveRanges!)).toBeGreaterThan(quiet);
   expect((await page.evaluate(() => (window as ProbeWindow).passiveTrace!)).every(event => event.hidden)).toBe(true);
   await page.locator("[data-companion-empty-obstacle]").evaluate(node => node.remove());
   await expect(actor(page)).toBeVisible();

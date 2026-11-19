@@ -3,6 +3,7 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome } from "./helpers/companion-home";
+import { installCompanionPointReader, type CompanionPointWindow } from "./helpers/companion-point";
 
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
@@ -21,7 +22,7 @@ test.beforeEach(async ({ page }) => {
 test.afterEach(async ({ page }) => { expect(posts.get(page)).toEqual([]); });
 async function press(button: Locator, touch: boolean) { if (touch) await button.tap(); else await button.click(); }
 async function dragSnackToFeet(page: Page, item: Locator, destination: { x: number; y: number }, touch: boolean) {
-  const from = await item.evaluate(node => { const r = node.getBoundingClientRect(), m = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: r.left + r.width / 2, y: r.top + r.height / 2, footX: m.m41, footY: m.m42 }; });
+  const from = await item.evaluate(node => { const r = node.getBoundingClientRect(), m = (window as unknown as CompanionPointWindow).vcPoint(node); return { x: r.left + r.width / 2, y: r.top + r.height / 2, footX: m.x, footY: m.y }; });
   const to = { x: destination.x + from.x - from.footX, y: destination.y + from.y - from.footY };
   if (touch) {
     const client = await page.context().newCDPSession(page);
@@ -31,10 +32,13 @@ async function dragSnackToFeet(page: Page, item: Locator, destination: { x: numb
       await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
     } finally { await client.detach(); }
   } else {
-    await page.mouse.move(from.x, from.y); await page.mouse.down(); await page.mouse.move(to.x, to.y, { steps: 8 }); await page.mouse.up();
+    await page.mouse.move(from.x, from.y); await page.mouse.down(); await page.mouse.move(to.x, to.y, { steps: 8 });
+    // A release within 100 ms of the last move is a throw (a44f46a2). This is a put-down: hold still past that window.
+    await page.waitForTimeout(140); await page.mouse.up();
   }
 }
 async function setup(page: Page, hunger = .05) {
+  await installCompanionPointReader(page);
   await page.addInitScript(({ epoch, key, prefs, care }) => {
     localStorage.setItem(key, epoch); localStorage.setItem("vic.reduceMotion", "off");
     localStorage.setItem("vic.gfxPref", "max"); localStorage.setItem("vic.ambient", "off"); localStorage.setItem("vic.sound", "off");
@@ -57,7 +61,7 @@ async function watchFoodLanding(item: Locator) {
     // falling->rest mutation records the actual collision before mouth travel.
     const probe: LandingWindow["livingLanding"] = { point: null, observer: new MutationObserver(records => {
       if (!node.hasAttribute("data-falling") && records.some(record => record.oldValue !== null)) {
-        const m = new DOMMatrixReadOnly(getComputedStyle(node).transform); probe.point ??= { x: m.m41, y: m.m42 };
+        const m = (window as unknown as CompanionPointWindow).vcPoint(node); probe.point ??= { x: m.x, y: m.y };
       }
     }) };
     probe.observer.observe(node, { attributes: true, attributeOldValue: true, attributeFilter: ["data-falling"] });
@@ -92,6 +96,8 @@ async function dispense(page: Page, touch: boolean) {
   await openCompanionHome(page, touch ? "touch" : "pointer");
   const before = await food(page).count(); await press(house(page).getByRole("button", { name: "밥 꺼내기", exact: true }), touch);
   await expect(food(page)).toHaveCount(before + 1); await expect(food(page).last()).not.toHaveAttribute("data-selected");
+  // The snack first drops out of the feeder; a grab during that fall does not take, and it is not yet "at rest".
+  await expect(food(page).last()).toBeVisible(); await expect(food(page).last()).not.toHaveAttribute("data-falling");
   return food(page).last();
 }
 async function startNoFallWitness(page: Page) {
@@ -109,7 +115,7 @@ async function finishNoFallWitness(page: Page) {
 async function homeOffsets(page: Page) {
   return food(page).evaluateAll(nodes => {
     const slot = document.querySelector(".vc-dispenser-slot")!.getBoundingClientRect();
-    return nodes.map(node => { const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { id: (node as HTMLElement).dataset.food, x: matrix.m41 - slot.left, y: matrix.m42 - slot.top, selected: node.hasAttribute("data-selected"), hidden: (node as HTMLElement).hidden }; });
+    return nodes.map(node => { const matrix = (window as unknown as CompanionPointWindow).vcPoint(node); return { id: (node as HTMLElement).dataset.food, x: matrix.x - slot.left, y: matrix.y - slot.top, selected: node.hasAttribute("data-selected"), hidden: (node as HTMLElement).hidden }; });
   });
 }
 async function expectHomeOffsets(page: Page, expected: Awaited<ReturnType<typeof homeOffsets>>) {
@@ -179,13 +185,19 @@ test("untouched and explicitly keyboard-selected tray food follows native foldin
   await page.getByRole("button", { name: "패널을 왼쪽에 두기", exact: true }).click();
   await expect(page.locator(".avatar-left .vc-home")).toBeVisible(); await expectHomeOffsets(page, expected);
   await page.waitForTimeout(900); await finishNoFallWitness(page);
+  console.log(JSON.stringify({ check: "living-tray-PC", offsets: expected }));
+  await page.screenshot({ path: ".scratch-pw/companion-living-tray-PC.png" });
+});
+
+test("tray food at rest receives no writes", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page);
+  await dispense(page, false); await dispense(page, false); await page.waitForTimeout(900);
   const quiet = await food(page).evaluateAll(nodes => new Promise<number>(resolve => {
     let changes = 0; const observer = new MutationObserver(records => { changes += records.length; });
     nodes.forEach(node => observer.observe(node, { attributes: true, subtree: true }));
     setTimeout(() => { observer.disconnect(); resolve(changes); }, 350);
   }));
-  expect(quiet).toBe(0); console.log(JSON.stringify({ check: "living-tray-PC", offsets: expected, foodWrites350ms: quiet }));
-  await page.screenshot({ path: ".scratch-pw/companion-living-tray-PC.png" });
+  expect(quiet).toBe(0);
 });
 
 // PLAN-063: mobile companion positives are retired; mobile-companion-disabled.spec.ts covers absence and preference restoration.

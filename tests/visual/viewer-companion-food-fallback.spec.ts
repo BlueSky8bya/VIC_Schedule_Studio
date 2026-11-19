@@ -75,7 +75,8 @@ async function setup(page: Page, surface: Surface) {
     const before = await sourceSnapshot(page);
     for (const key of ["tag-filter", "season"]) {
       const toggle = page.locator(`[data-panel-section-toggle='${key}']:visible`);
-      await expect(toggle).toHaveAttribute("aria-expanded", "true"); await toggle.click();
+      // With the companion on, both sections already start folded when nothing is saved (e4ddc503, 2026-10-18).
+      if (await toggle.getAttribute("aria-expanded") === "true") await toggle.click();
       await expect(toggle).toHaveAttribute("aria-expanded", "false");
     }
     await page.waitForTimeout(180);
@@ -101,8 +102,8 @@ async function setup(page: Page, surface: Surface) {
 }
 
 /** A one-shot, read-only physical oracle. Food32 lands on card tops, the
- * house floor or the protected screen floor. Date/title ink is an obstacle,
- * never a new food support. Only rects are collected, no text or React state. */
+ * house floor, the bottom edge of a day cell or the protected screen floor.
+ * Date/title ink is an obstacle, never a new food support. Only rects are collected, no text or React state. */
 async function findUnsupportedRelease(page: Page, surface: Surface) {
   const sourceTopologies: Awaited<ReturnType<typeof sourceSnapshot>>[] = [];
   for (const height of [1000, 900, 800, 1100]) {
@@ -221,10 +222,16 @@ for (const surface of ["viewer", "studio"] as const) {
     await expect.poll(async () => (await foodPoint(item)).y - caught.y).toBeGreaterThan(2);
     await expect(item).not.toHaveAttribute("data-falling", { timeout: 1800 });
     const end = await foodPoint(item), beforeScroll = await page.evaluate(() => scrollY), documentPoint = { x: end.x, y: end.y + beforeScroll };
-    Object.assign(evidence.get(page)!, { end, documentPoint });
+    // Since 1f2cb9eb (2026-10-19) the bottom of a day cell is a food support too (date-N-floor-food), three pixels
+    // clear like a card top. Measure those rendered edges under the resting snack; the platform id is only recorded.
+    const support = await item.evaluate(node => {
+      const box = node.getBoundingClientRect(), x = box.left + box.width / 2;
+      return { platform: (node as HTMLElement).dataset.platform ?? "", dayFloors: [...document.querySelectorAll(".public-day,.agenda-day,.studio-day")].map(day => day.getBoundingClientRect()).filter(day => day.width > 0 && day.height > 0 && x >= day.left && x <= day.right).map(day => day.bottom - 3) };
+    });
+    Object.assign(evidence.get(page)!, { end, documentPoint, support });
     expect(end.y).toBeGreaterThan(target.release.y + 40);
     if (end.y <= target.viewport.height) {
-      expect(Math.abs(end.y - target.floorY)).toBeLessThan(2);
+      expect(Math.min(...[target.floorY, ...support.dayFloors].map(y => Math.abs(end.y - y)))).toBeLessThan(2);
       expect(target.obstacles.some(rect => rect.left < end.x + 22 && rect.right > end.x - 22 && rect.top < end.y + 3 && rect.bottom > end.y - 41)).toBe(false);
     } else { expect(end.y).toBeGreaterThanOrEqual(target.viewport.height + 43); await expect(item).toHaveJSProperty("hidden", true); }
     await expect(foods(page)).toHaveCount(1); await expect(item).not.toHaveAttribute("data-eating");

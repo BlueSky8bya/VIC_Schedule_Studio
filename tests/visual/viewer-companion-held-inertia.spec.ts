@@ -3,7 +3,9 @@ import { writeFile } from "node:fs/promises";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { COMPANION_MAX_MATERIAL_STRETCH } from "@/lib/ui/viewer-companion/material-scale";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
+import { placeCompanionOnCalendarCard } from "./helpers/companion-home";
 
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
@@ -36,14 +38,14 @@ test.beforeEach(async ({ page }) => {
 });
 test.afterEach(async ({ page }) => { expect(posts.get(page)).toEqual([]); });
 
-async function setup(page: Page, mode: "full" | "reduced" | "off" = "full") {
+async function setup(page: Page, mode: "full" | "reduced" | "off" = "full", sleep = false) {
   await page.addInitScript(({ epoch, key, preferences, care, mode }) => {
     localStorage.setItem(key, epoch); localStorage.setItem("vic.reduceMotion", mode === "reduced" ? "on" : "off");
     localStorage.setItem("vic.gfxPref", mode === "off" ? "off" : "max"); localStorage.setItem("vic.sound", "off"); localStorage.setItem("vic.ambient", "off");
     localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences })); localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 1, ...care }));
     localStorage.setItem("vic_avatar_side", "left"); localStorage.removeItem("vic.panelSections"); localStorage.removeItem("vic_panel_collapsed");
     Math.random = () => 0;
-  }, { epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY, mode, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep: false, feeding: false, heartPrank: false, ambientPrank: false }, care: { ...DEFAULT_COMPANION_CARE, hunger: .05 } });
+  }, { epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY, mode, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep, feeding: false, heartPrank: false, ambientPrank: false }, care: { ...DEFAULT_COMPANION_CARE, hunger: .05 } });
   await page.goto("/visual-fixture/poster?avatar=1"); await page.bringToFront(); await page.evaluate(() => document.fonts.ready);
   await page.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(a => a.playState === "running" && Number.isFinite(Number(a.effect?.getComputedTiming().endTime))).map(a => a.finished)); });
   await expect(pet(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-atlas", "hd"); await expect(pet(page)).toHaveAttribute("data-presence", "active");
@@ -54,7 +56,9 @@ async function setup(page: Page, mode: "full" | "reduced" | "off" = "full") {
 async function startProbe(page: Page) {
   await pet(page).evaluate(node => {
     const element = node as HTMLElement, button = node.querySelector<HTMLButtonElement>(".vc-actor")!, layer = node.querySelector<HTMLElement>(".vc-inertia")!;
-    const world = () => { const m = new DOMMatrixReadOnly(element.style.transform), size = parseFloat(element.style.getPropertyValue("--vc-size")); return { x: m.m41 + size / 2, y: m.m42 + size }; };
+    // At home the actor is laid out from an anchored left/top and its transform is only the offset from that origin
+    // (dccb2756 / a3e9a288); once lifted both are 0px. The grip is taken at pointerdown, so it needs the full position.
+    const world = () => { const m = new DOMMatrixReadOnly(element.style.transform), css = getComputedStyle(element), size = parseFloat(element.style.getPropertyValue("--vc-size")); return { x: m.m41 + (parseFloat(css.left) || 0) + size / 2, y: m.m42 + (parseFloat(css.top) || 0) + size }; };
     const probe: Probe = { inputVersion: 0, rafSerial: 0, stopped: false, timers: new Set(), observations: [], commits: [], frames: [], phase: "pickup", pointer: { x: 0, y: 0 }, pointerId: -1, raf: 0,
       down: event => { if (!button.contains(event.target as Node)) return; probe.inputVersion++; const p = world(); probe.pointer = { x: event.clientX, y: event.clientY }; probe.grip = { x: event.clientX - p.x, y: event.clientY - p.y }; probe.pointerId = event.pointerId; },
       move: event => { if (event.pointerId === probe.pointerId) { probe.inputVersion++; probe.pointer = { x: event.clientX, y: event.clientY }; } },
@@ -184,7 +188,11 @@ for (const mobile of [false]) test.describe(mobile ? "native touch inertia" : "p
     expect(Math.min(...rightward.map(f => f.bodyLagX))).toBeLessThan(-.2);
     const responding = rightward.filter(f => f.x > rightward[0].x + .5 && Math.abs(f.angle) > .2);
     expect(responding.length).toBeGreaterThan(3); expect(responding.every(f => f.bodyLagX < 0)).toBe(true);
-    expect(Math.max(...drive.map(f => Math.abs(f.angle)))).toBeGreaterThan(1); expect(Math.max(...drive.map(f => Math.abs(f.sy - 1)))).toBeGreaterThan(.002);
+    expect(Math.max(...drive.map(f => Math.abs(f.angle)))).toBeGreaterThan(1);
+    // The hanging pose and this inertial plane share one 8% strain budget (3eed289d, companionMaterialStack). Gravity
+    // takes most of it, so the plane keeps only a small but real stretch (about .0014 here; it was above .002).
+    const inertialStretch = Math.max(...drive.map(f => Math.abs(f.sy - 1)));
+    expect(inertialStretch).toBeGreaterThan(.0005); expect(inertialStretch).toBeLessThanOrEqual(COMPANION_MAX_MATERIAL_STRETCH - 1);
     expect(Math.max(...tail.map(f => f.angle))).toBeGreaterThan(.05); expect(Math.min(...tail.map(f => f.angle))).toBeLessThan(-.05);
     expect(Math.max(...tail.map(f => f.x)) - Math.min(...tail.map(f => f.x))).toBeLessThan(.01); expect(Math.max(...tail.map(f => f.y)) - Math.min(...tail.map(f => f.y))).toBeLessThan(.01);
     const end = tail.filter(f => f.at >= tail[0].at + 1530); expect(end.length).toBeGreaterThanOrEqual(4);
@@ -195,6 +203,9 @@ for (const mobile of [false]) test.describe(mobile ? "native touch inertia" : "p
   });
 });
 
+// Regression guard (fixed in 63ecc14a): at the top-left corner the inertial plane once came 1.73..1.78px from the
+// viewport edge for two frames, under the 2px margin boundCompanionHeldPose promises (the bound ignored the strain
+// the renderer shares with the hanging pose).
 test("captured edge travel bounds the inertial plane and the complete gravity pose, keeping every corner visible", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 }); await setup(page); await startProbe(page);
   const before = await pet(page).evaluate(node => { const r = node.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.bottom, size: r.width }; }), drag = await input(page, false);
@@ -214,8 +225,13 @@ for (const mode of ["reduced", "off"] as const) test(`real captured movement rem
   expect(frames.every(f => f.angle === 0 && f.sx === 1 && f.sy === 1)).toBe(true); await drag.end(); await expect(pet(page)).not.toHaveAttribute("data-state", "held");
 });
 
+// Regression guard (fixed in 63ecc14a): `data-dreaming` (the zzZ cue) was once removed while the sleeper was carried
+// over the open detail window, although data-state stayed "sleep"; viewer-companion-audit-input expects it too.
 test("an exposed sleeping detail-window lift remains inertially neutral and returns to zero parked mutations", async ({ page }) => {
-  test.setTimeout(25000); await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page);
+  // A parked companion only sleeps and dreams when automatic sleep is on (1f2cb9eb), so this case seeds it on. A fresh
+  // companion also starts inside its home now (a44f46a2), which a detail window covers: put it out on a real card first.
+  test.setTimeout(40000); await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page, "full", true);
+  await placeCompanionOnCalendarCard(page, "viewer");
   // PLAN-069 leaves ordinary windows above their real world. Settings has a
   // full-screen97 backdrop, so dragging at the covered actor's BCR actually
   // selects settings text. An actual distant detail exposes this quiet actor
@@ -229,7 +245,7 @@ test("an exposed sleeping detail-window lift remains inertially neutral and retu
   await cards.nth(index!).click(); const dialog = page.locator(".agenda-detail-sheet"); await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
   await expect(pet(page)).toHaveAttribute("data-presence", "parked", { timeout: 10000 }); await page.waitForTimeout(650);
   const focus = await page.evaluate(() => document.activeElement?.outerHTML), support = await pet(page).getAttribute("data-platform"), drag = await input(page, false);
-  for (const dx of [30, -30, 30]) { await drag.move({ x: drag.start.x + dx, y: drag.start.y - 30 }); expect(await pet(page).locator(".vc-inertia").evaluate(node => new DOMMatrixReadOnly(getComputedStyle(node).transform).isIdentity)).toBe(true); }
+  for (const dx of [30, -30, 30]) { await drag.move({ x: drag.start.x + dx, y: drag.start.y - 30 });  expect(await pet(page).locator(".vc-inertia").evaluate(node => new DOMMatrixReadOnly(getComputedStyle(node).transform).isIdentity)).toBe(true); }
   await expect(pet(page)).toHaveAttribute("data-dreaming", ""); await expect(pet(page)).toHaveAttribute("data-overlay-drag", ""); await expect(dialog).toBeVisible();
   expect(await page.evaluate(() => document.activeElement?.outerHTML)).toBe(focus); expect(await pet(page).getAttribute("data-platform")).toBe(support);
   await drag.end(); await page.waitForTimeout(800);

@@ -5,7 +5,7 @@ import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { chooseCompanionPersonality, openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
+import { chooseCompanionPersonality, companionNodeOrigin, openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 
 const output = resolve(process.env.COMPANION_HOUSEHOLD_131_OUTPUT ?? ".scratch-pw/companion-131/household-native");
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
@@ -96,8 +96,9 @@ async function probe(page: Page) {
           actor: { x: r ? r.left + r.width / 2 : -1, y: r?.bottom ?? -1, platform: actor?.dataset.platform ?? "", hidden: !actor || actor.hidden, decoded: Boolean(texture?.complete && texture.naturalWidth), painted: painted ? { x: painted.left + painted.width / 2, y: painted.bottom } : null },
           floor: box(document.querySelector(".vc-home .vc-home-floor")), bin: bin && { x: bin.x + bin.width / 2, y: bin.y + bin.height * .35 }, opening: opening && { x: opening.x + opening.width / 2, y: opening.y + opening.height },
           items: [...document.querySelectorAll<HTMLElement>(".vc-food,.vc-toy")].map(node => {
-            const food = node.matches(".vc-food"), rect = box(node)!, matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform), translation = node.style.transform.match(/^translate3d\(([-\d.]+)px,\s*([-\d.]+)px/);
-            return { id: node.dataset.food ?? node.dataset.toyId ?? "", kind: node.dataset.kind ?? "", food, x: food ? matrix.m41 : Number(translation?.[1] ?? NaN), y: food ? matrix.m42 : Number(translation?.[2] ?? NaN),
+            // An item on the home floor is anchor-positioned: its transform is only the offset from the computed left/top (a3e9a288).
+            const food = node.matches(".vc-food"), rect = box(node)!, css = getComputedStyle(node), left = parseFloat(css.left) || 0, top = parseFloat(css.top) || 0, matrix = new DOMMatrixReadOnly(css.transform), translation = node.style.transform.match(/^translate3d\(([-\d.]+)px,\s*([-\d.]+)px/);
+            return { id: node.dataset.food ?? node.dataset.toyId ?? "", kind: node.dataset.kind ?? "", food, x: left + (food ? matrix.m41 : Number(translation?.[1] ?? NaN)), y: top + (food ? matrix.m42 : Number(translation?.[2] ?? NaN)),
               carried: food ? node.hasAttribute("data-carried") : node.dataset.carried === "true", held: node.dataset.held === "true", falling: food ? node.hasAttribute("data-falling") : node.dataset.falling === "true", eating: node.hasAttribute("data-eating"), ...(food ? { nibble: Number(node.style.getPropertyValue("--vc-nibble")) } : {}), discarding: node.hasAttribute("data-discarding"), hidden: node.hidden, platform: node.dataset.platform ?? "", rect };
           }) });
       }
@@ -107,7 +108,7 @@ async function probe(page: Page) {
   });
 }
 const frames = (page: Page) => page.evaluate(() => (window as ProbeWindow).household131?.frames ?? []);
-const point = (node: Locator) => node.evaluate(element => { const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform); return { x: matrix.m41, y: matrix.m42 }; });
+const point = (node: Locator) => companionNodeOrigin(node);
 async function release(page: Page) {
   await actor(page).focus(); await actor(page).press("Space"); await expect(pet(page)).not.toHaveAttribute("data-state", "held"); await page.mouse.move(2390, 8);
   proofs.get(page)!.notes.push({ afterThisNativeRelease: "read-only observation only; no item/body input, local-state writes, RNG or clock changes" });
@@ -214,10 +215,15 @@ test("131 hungry sofa resident exits to the actual floor then eats and earns the
   const bed = (await home(page).locator(".vc-plush-bed").boundingBox())!, seat = (await home(page).locator(".vc-home-cushion").boundingBox())!;
   await actor(page).focus(); await actor(page).press("p"); await expect(pet(page)).toHaveAttribute("data-placing", "");
   await page.mouse.click(bed.x + bed.width / 2, seat.y - .01); await page.mouse.move(2390, 8);
-  await expect(pet(page)).not.toHaveAttribute("data-placing"); await expect(pet(page)).toHaveAttribute("data-platform", "companion-home");
-  await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
-  await expect.poll(async () => Math.abs(await pet(page).evaluate(node => node.getBoundingClientRect().bottom) - (await home(page).locator(".vc-home-cushion").boundingBox())!.y)).toBeLessThan(2);
+  await expect(pet(page)).not.toHaveAttribute("data-placing");
+  // An awake, roaming resident now leaves the seat by itself about a second after landing (home life, a44f46a2).
+  // Read the landing in one frame (support, finished jump, feet on the cushion) and hold it right there.
+  await expect.poll(() => page.evaluate(() => {
+    const body = document.querySelector<HTMLElement>(".vc-companion")!, seat = document.querySelector(".vc-home-cushion")!.getBoundingClientRect();
+    return body.dataset.platform === "companion-home" && body.dataset.state !== "jump" && Math.abs(body.getBoundingClientRect().bottom - seat.top) < 2;
+  }), { timeout: 8000, intervals: [30] }).toBe(true);
   await actor(page).focus(); await actor(page).press("Space"); await expect(pet(page)).toHaveAttribute("data-state", "held");
+  await expect(pet(page), "the hold must have caught the resident while it was still on the seat").toHaveAttribute("data-platform", "companion-home");
   const food = await snack(page, 1), id = (await food.getAttribute("data-food"))!, kind = (await food.getAttribute("data-kind"))!;
   const beforeCollection = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCollection") ?? "{}"));
   expect(beforeCollection.foods ?? [], "spawning the unknown food must not invent an earned discovery").not.toContain(kind);

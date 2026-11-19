@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { openCompanionHome } from "./helpers/companion-home";
+import { openCompanionHome, placeCompanionOnCalendarCard } from "./helpers/companion-home";
 
 const contactOutput = process.env.COMPANION_CONTACT_OUTPUT ?? ".scratch-pw";
 const pet = (page: Page) => page.locator(".vc-companion");
@@ -163,8 +163,12 @@ test("hover yields immediately to native dragging and keeps keyboard pickup", as
   await expect(pet(page)).toHaveCount(1);
 });
 
+// Manual placement lands on the supports a person can aim at: an event card's top edge, a day cell's bottom
+// edge or the page floor. Calendar text lines are roaming ledges only and never take a dropped companion.
+const supportEdges = ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid]";
+const dayEdges = ".public-day,.agenda-day";
 async function actualContact(page: Page) {
-  return page.evaluate(selector => {
+  return page.evaluate(({ selector, supportEdges, dayEdges }) => {
     const node = document.querySelector<HTMLElement>(".vc-companion")!;
     if (node.hidden) return null;
     const feet = node.getBoundingClientRect(), x = feet.left + feet.width / 2;
@@ -181,22 +185,27 @@ async function actualContact(page: Page) {
       for (const line of range.getClientRects()) if (line.width > .5 && x >= line.left - .5 && x <= line.right + .5) error = Math.min(error, Math.abs(feet.bottom - line.top + 3));
       range.detach();
     }
+    const under = (rect: DOMRect) => rect.width > 0 && rect.height > 0 && x >= rect.left - .5 && x <= rect.right + .5;
+    for (const card of document.querySelectorAll(supportEdges)) { const rect = card.getBoundingClientRect(); if (under(rect)) error = Math.min(error, Math.abs(feet.bottom - rect.top + 3)); }
+    for (const day of document.querySelectorAll(dayEdges)) { const rect = day.getBoundingClientRect(); if (under(rect)) error = Math.min(error, Math.abs(feet.bottom - rect.bottom + 3)); }
     return error;
-  }, textSurfaces);
+  }, { selector: textSurfaces, supportEdges, dayEdges });
 }
 
-test("a real text support leaving the viewport preserves x through landing or safe waiting", async ({ page }) => {
-  await setup(page); await expect(pet(page)).toHaveAttribute("data-platform", /^(?:card|date)-\d+/);
+// A fresh companion begins inside its home (a44f46a2, 2026-10-19), no longer on the calendar, and a companion
+// that does not roam cannot reach a text ledge by itself. The scrolled-away support is therefore the real card
+// it was put on with the keyboard placement.
+test("a real calendar support leaving the viewport preserves x through landing or safe waiting", async ({ page }) => {
+  await setup(page); const card = await placeCompanionOnCalendarCard(page, "viewer"); await expect(pet(page)).toHaveAttribute("data-platform", /^card-\d+-top/);
   await expect.poll(() => actualContact(page)).toBeLessThan(1.5);
-  const anchorTop = await page.evaluate(selector => {
+  const anchorBottom = await page.evaluate(({ supportEdges, eventId }) => {
     const feet = document.querySelector(".vc-companion")!.getBoundingClientRect(), x = feet.left + feet.width / 2;
-    for (const node of document.querySelectorAll<HTMLElement>(selector)) {
-      const range = document.createRange(); range.selectNodeContents(node);
-      for (const line of range.getClientRects()) if (x >= line.left && x <= line.right && Math.abs(feet.bottom - line.top + 3) < 1.5) { node.dataset.contactAnchor = ""; range.detach(); return line.top; }
-      range.detach();
+    for (const node of document.querySelectorAll<HTMLElement>(supportEdges)) {
+      const rect = node.getBoundingClientRect();
+      if (node.dataset.eventid === eventId && rect.width > 0 && x >= rect.left && x <= rect.right && Math.abs(feet.bottom - rect.top + 3) < 1.5) { node.dataset.contactAnchor = ""; return rect.bottom + scrollY; }
     }
-    throw new Error("No actual rendered text under the feet");
-  }, textSurfaces);
+    throw new Error("No actual rendered card under the feet");
+  }, { supportEdges, eventId: card.eventId });
   await page.evaluate(() => {
     document.documentElement.style.overflowY = "auto"; document.documentElement.style.scrollBehavior = "auto"; document.body.style.overflowY = "visible";
     const spacer = document.createElement("div"); spacer.setAttribute("aria-hidden", "true"); spacer.style.cssText = "height:1600px;pointer-events:none"; document.body.append(spacer);
@@ -209,7 +218,7 @@ test("a real text support leaving the viewport preserves x through landing or sa
     probe.contactRaf = requestAnimationFrame(sample);
   });
   const before = await world(page);
-  await page.evaluate(top => scrollTo({ top, behavior: "instant" }), anchorTop + 150);
+  await page.evaluate(top => scrollTo({ top, behavior: "instant" }), anchorBottom + 40);
   await expect.poll(() => page.locator("[data-contact-anchor]").evaluate(node => node.getBoundingClientRect().bottom)).toBeLessThan(0);
   await page.waitForTimeout(1300);
   const observed = await page.evaluate(() => {

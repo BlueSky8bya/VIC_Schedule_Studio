@@ -19,6 +19,7 @@ const press = async (node: Locator, touch: boolean) => { if (touch) await node.t
  * stopping at the bin and preserves the first subsequent native control tap. */
 async function discardByDrag(page: Page, item: Locator, bin: Locator, touch: boolean) {
   const initial = await foods(page).count();
+  await expect(item).not.toHaveAttribute("data-falling"); // a dispensed snack falls first; a grab during the fall does not take
   const r = (await item.boundingBox())!, b = (await bin.boundingBox())!;
   const start = { x: r.x + r.width / 2, y: r.y + r.height / 2 }, end = { x: b.x + b.width / 2, y: b.y + b.height / 2 };
   const cdp = touch ? await page.context().newCDPSession(page) : null;
@@ -27,8 +28,10 @@ async function discardByDrag(page: Page, item: Locator, bin: Locator, touch: boo
       await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...start, id: 31 }] });
       for (let step = 1; step <= 12; step++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: start.x + (end.x - start.x) * step / 12, y: start.y + (end.y - start.y) * step / 12, id: 31 }] });
     } else { await page.mouse.move(start.x, start.y); await page.mouse.down(); await page.mouse.move(end.x, end.y, { steps: 12 }); }
+    // The bin acknowledges a snack held over it with the shared object lift (`data-food-over`); the old
+    // `--vc-trash-progress` fill went away with the unified room furniture (a0c44ea7).
     await expect(bin).toHaveAttribute("data-food-over", "");
-    await expect.poll(() => bin.evaluate(node => Number((node as HTMLElement).style.getPropertyValue("--vc-trash-progress")))).toBeGreaterThan(0);
+    await expect.poll(() => bin.locator(".vc-object-paint").evaluate(node => getComputedStyle(node).getPropertyValue("--vc-object-feedback-scale").trim())).toBe("1.085");
     await expect(foods(page)).toHaveCount(initial - 1, { timeout: 2000 });
     await expect(bin).not.toHaveAttribute("data-food-over");
     if (cdp) {
@@ -87,41 +90,54 @@ for (const view of cases) test.describe(view.name, () => {
       localStorage.removeItem("vic.panelSections"); localStorage.removeItem("vic_panel_collapsed"); localStorage.setItem("vic_avatar_side", "left");
       Object.defineProperty(document, "hasFocus", { configurable: true, value: () => true });
     }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, dark: view.dark, prefs: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep: true, feeding: true, heartPrank: false, ambientPrank: false }, care: { ...DEFAULT_COMPANION_CARE, hunger: .05, energy: .9 } });
-    await page.goto("/visual-fixture/poster"); await page.evaluate(() => document.fonts.ready);
+    // A fixed daytime hour: the room material (room-lighting.ts) dims at evening/night, so the wall clock decided this grade.
+    await page.goto("/visual-fixture/poster?hour=12"); await page.evaluate(() => document.fonts.ready);
     await expect.poll(async () => await home(page).isVisible() || await page.getByRole("button", { name: "빅타민 집 열기", exact: true }).isVisible()).toBe(true);
     await openCompanionHome(page, view.touch ? "touch" : "pointer");
     await page.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(a => a.playState === "running" && Number.isFinite(Number(a.effect?.getComputedTiming().endTime))).map(a => a.finished)); });
     if (view.dark) await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
     else await expect(page.locator("html")).not.toHaveAttribute("data-theme", "dark");
     await expect(home(page)).toHaveCount(1);
-    const room = home(page).locator(".vc-home-room"); await expect(room).toHaveCSS("height", "132px");
+    const room = home(page).locator(".vc-home-room"); await expect(room).toBeVisible();
+    // The room paints in stages on first load (floor, wall, furniture, props); measure the finished room.
+    await expect(room).not.toHaveAttribute("data-home-reveal"); await expect(page.locator("html")).not.toHaveAttribute("data-companion-home-reveal");
     const metrics = await home(page).evaluate(node => {
       const rect = (selector: string) => { const element = node.querySelector<HTMLElement>(selector)!; const r = element.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, width: r.width, height: r.height, filter: getComputedStyle(element).filter }; };
       const room = rect(".vc-home-room"), button = rect(".vc-cushion-button"), cushion = rect(".vc-home-cushion");
-      return { room, window: rect(".vc-home-window"), shelf: rect(".vc-home-shelf"), pot: rect(".vc-shelf-pot"), button, cushion, floor: rect(".vc-home-floor"), feed: rect(".vc-dispenser"), slot: rect(".vc-dispenser-slot"), trash: rect(".vc-home-trash"), trashArt: rect(".vc-home-trash > svg"), viewport: { width: innerWidth, height: innerHeight } };
+      return { room, window: rect(".vc-home-window"), shelf: rect(".vc-home-shelf"), button, cushion, floor: rect(".vc-home-floor"), feed: rect(".vc-dispenser"), slot: rect(".vc-dispenser-slot"), box: rect(".vc-toy-box"), trash: rect(".vc-home-trash"), trashArt: rect(".vc-home-trash > .vc-object-paint"), grade: getComputedStyle(node.querySelector(".vc-home-room")!).getPropertyValue("--vc-room-art-grade").trim(), viewport: { width: innerWidth, height: innerHeight } };
     });
-    expect(metrics.room.height).toBeCloseTo(132, 3); expect(metrics.floor.height).toBeCloseTo(36, 3); expect(metrics.floor.bottom).toBeCloseTo(metrics.room.bottom, 3);
-    expect(metrics.window.width).toBeCloseTo(64, 3); expect(metrics.window.height).toBeCloseTo(56, 3);
-    expect(metrics.window.left - metrics.room.left).toBeCloseTo(20, 3); expect(metrics.window.top - metrics.room.top).toBeCloseTo(14, 3);
-    expect(metrics.shelf.height).toBeCloseTo(55, 3); expect(metrics.shelf.top - metrics.room.top).toBeCloseTo(9, 3);
-    expect(metrics.button.height).toBeCloseTo(78, 3); expect(metrics.button.width / metrics.room.width).toBeCloseTo(.49, 3); expect(metrics.room.bottom - metrics.button.bottom).toBeCloseTo(5, 3);
-    expect(metrics.cushion.height).toBeCloseTo(2, 3); expect(metrics.cushion.width / metrics.button.width).toBeCloseTo(.62, 3);
+    // The room was rebuilt as one responsive scene (companion-home.css `.vc-home-room`): its height and every
+    // anchor follow the room's own width (`cqw`), no longer the fixed 132px strip. `unit` is one cqw.
+    const unit = metrics.room.width / 100;
+    expect(Number(metrics.grade)).toBeGreaterThan(.8); expect(Number(metrics.grade)).toBeLessThanOrEqual(1); if (!view.dark) expect(Number(metrics.grade)).toBe(1);
+    expect(metrics.room.height).toBeCloseTo(Math.max(74 * unit, 260), 1); // max(74cqw, 130px + 130px / zoom), viewer zoom 1
+    expect(metrics.floor.height).toBeCloseTo(metrics.room.height * .42, 1); expect(metrics.floor.bottom).toBeCloseTo(metrics.room.bottom, 3);
+    expect(metrics.window.width).toBeCloseTo(Math.min(52 * unit, 100 * unit - metrics.shelf.width - 28) * .9, 1);
+    expect(metrics.window.width / metrics.window.height).toBeCloseTo(38 / 23, 2);
+    expect(metrics.window.top - metrics.room.top).toBeCloseTo(metrics.room.height * 50 / 683 + 8, 1); expect(metrics.window.bottom).toBeLessThan(metrics.floor.top);
+    expect(metrics.shelf.height).toBeCloseTo(61, 1); expect(metrics.shelf.top - metrics.room.top).toBeCloseTo(48, 1); expect(metrics.room.right - metrics.shelf.right).toBeCloseTo(8, 1);
+    expect(metrics.button.height).toBeCloseTo(78, 3); expect(metrics.button.width).toBeCloseTo(Math.max(120, Math.min(39 * unit, 150)), 1);
+    expect(metrics.button.left - metrics.room.left).toBeCloseTo(5, 1); expect(metrics.room.bottom - metrics.button.bottom).toBeCloseTo(7.6 * unit, 1);
+    expect(metrics.cushion.height).toBeCloseTo(2, 3); expect(metrics.cushion.width / metrics.button.width).toBeCloseTo(.645, 3);
     // Chromium lays out percentage offsets on its1/64px grid (20.28→20.265625).
     expect(Math.abs(metrics.button.bottom - metrics.cushion.bottom - metrics.button.height * .26)).toBeLessThan(.02);
-    expect(metrics.feed.width).toBeCloseTo(48, 3); expect(metrics.feed.height).toBeCloseTo(62, 3); expect(metrics.room.right - metrics.feed.right).toBeCloseTo(61, 3);
-    // Latest owner deliberately enlarged this one target; every other room,
-    // outlet and support rectangle retains its recorded geometry.
-    expect(metrics.trash.width).toBeCloseTo(52, 3); expect(metrics.trash.height).toBeCloseTo(64, 3);
-    expect(metrics.room.right - metrics.trash.right).toBeCloseTo(5, 3); expect(metrics.trash.left - metrics.feed.right).toBeGreaterThanOrEqual(4 - .001);
-    expect(metrics.trashArt.width).toBeCloseTo(36, 3); expect(metrics.trashArt.height).toBeCloseTo(44, 3);
-    expect(metrics.slot.height).toBeCloseTo(5, 3); expect(metrics.slot.left).toBeGreaterThan(metrics.feed.left); expect(metrics.slot.right).toBeLessThan(metrics.feed.right);
-    for (const part of [metrics.window, metrics.shelf, metrics.pot, metrics.button, metrics.feed, metrics.trash]) {
-      expect(part.width).toBeGreaterThan(2); expect(part.height).toBeGreaterThan(2); expect(part.filter).toBe("none");
+    // Every furniture control keeps a real pointer target; the outlet stays inside its dispenser.
+    for (const control of [metrics.feed, metrics.box, metrics.trash]) { expect(control.width).toBeGreaterThanOrEqual(44); expect(control.height).toBeGreaterThanOrEqual(44); }
+    expect(metrics.feed.width).toBeCloseTo(metrics.feed.height, 3); expect(metrics.box.left - metrics.feed.right).toBeGreaterThanOrEqual(0); // the two storage targets never overlap
+    expect(metrics.room.right - metrics.trash.right).toBeCloseTo(2 * unit, 1); expect(metrics.room.bottom - metrics.trash.bottom).toBeCloseTo(2 * unit, 1);
+    expect(metrics.trashArt.width).toBeGreaterThan(30); expect(metrics.trashArt.width).toBeCloseTo(23 * unit, 1); // the painted bin is wider than its target and centred on it
+    expect(Math.abs((metrics.trashArt.left + metrics.trashArt.right) / 2 - (metrics.trash.left + metrics.trash.right) / 2)).toBeLessThan(1); expect(metrics.trashArt.right).toBeLessThanOrEqual(metrics.room.right + .5);
+    expect(metrics.slot.height).toBeGreaterThan(1); expect(metrics.slot.left).toBeGreaterThan(metrics.feed.left); expect(metrics.slot.right).toBeLessThan(metrics.feed.right);
+    expect(metrics.slot.top).toBeGreaterThan(metrics.feed.top); expect(metrics.slot.bottom).toBeLessThan(metrics.feed.bottom);
+    for (const part of [metrics.window, metrics.shelf, metrics.button, metrics.feed, metrics.box, metrics.trash]) {
+      // Painted furniture carries exactly the room's own light grade (1 in the light theme) and no other filter.
+      expect(part.width).toBeGreaterThan(2); expect(part.height).toBeGreaterThan(2); expect(part.filter).toMatch(/^(?:none|brightness\([0-9.]+\))$/);
+      if (part.filter !== "none") expect(Number(part.filter.slice(11, -1))).toBeCloseTo(Number(metrics.grade), 6);
       expect(part.left).toBeGreaterThanOrEqual(metrics.room.left - 1); expect(part.right).toBeLessThanOrEqual(metrics.room.right + 1);
       expect(part.top).toBeGreaterThanOrEqual(metrics.room.top - 1); expect(part.bottom).toBeLessThanOrEqual(metrics.room.bottom + 1);
     }
     const visibleRoom = (await room.boundingBox())!; expect(visibleRoom.y).toBeGreaterThanOrEqual(0); expect(visibleRoom.y + visibleRoom.height).toBeLessThanOrEqual(view.height);
-    for (const selector of [".vc-home-window", ".vc-home-shelf", ".vc-shelf-pot", ".vc-plush-bed"]) await expect(home(page).locator(selector)).toBeVisible();
+    for (const selector of [".vc-home-window", ".vc-home-shelf", ".vc-toy-box", ".vc-plush-bed"]) await expect(home(page).locator(selector)).toBeVisible();
     expect(await home(page).evaluate(node => node.getAnimations({ subtree: true }).filter(a => a.playState === "running").length)).toBe(0);
     await home(page).screenshot({ path: `.scratch-pw/companion-plush-home-${captureLabel}-${view.name}.png` });
     await writeFile(`.scratch-pw/companion-plush-home-${captureLabel}-${view.name}.json`, JSON.stringify(metrics, null, 2));

@@ -6,22 +6,24 @@ import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { companionSpriteMetadata, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { companionCarryAnchor } from "@/lib/ui/viewer-companion/accessory";
-import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
+import { chooseCompanionPersonality, openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 
 const output = resolve(".scratch-pw/companion-123/input", process.env.COMPANION_INPUT_PHASE ?? "current");
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
+const build = () => readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim();
 type Point = { x: number; y: number };
 type ProbeWindow = Window & { input123?: { stop: () => void; samples: unknown[]; measure?: () => Promise<void> } };
 type Evidence = { writes: string[]; foreign: string[]; errors: string[]; build: string; notes: unknown[] };
 const evidence = new WeakMap<Page, Evidence>();
 test.use({ headless: true, viewport: { width: 1920, height: 1100 }, serviceWorkers: "block", isMobile: false, hasTouch: false });
 test.setTimeout(70000);
-test.beforeEach(async ({ page }) => {
-  const proof: Evidence = { writes: [], foreign: [], errors: [], notes: [], build: readFileSync(resolve(".next/BUILD_ID"), "utf8").trim() }; evidence.set(page, proof);
+test.beforeEach(async ({ page, baseURL }) => {
+  const origin = new URL(baseURL!).origin; expect(new URL(origin).hostname).toBe("127.0.0.1");
+  const proof: Evidence = { writes: [], foreign: [], errors: [], notes: [], build: build() }; evidence.set(page, proof);
   page.on("pageerror", error => proof.errors.push(error.message));
   await page.context().route("**/*", route => {
     const request = route.request(), url = new URL(request.url());
-    if (url.origin !== "http://127.0.0.1:3117") {
+    if (url.origin !== origin) {
       if (request.method() === "GET" && request.resourceType() === "font" && fonts.has(url.href)) return route.continue();
       proof.foreign.push(request.method() + " " + url.origin + url.pathname); return route.abort();
     }
@@ -34,7 +36,7 @@ test.afterEach(async ({ page }, info) => {
   const samples = await page.evaluate(() => { const probe = (window as ProbeWindow).input123; probe?.stop(); return probe?.samples ?? []; }).catch(() => []);
   const proof = evidence.get(page)!, name = info.title.replace(/[^a-z0-9]+/gi, "-"); mkdirSync(output, { recursive: true });
   const path = resolve(output, name + ".json");
-  writeFileSync(path, JSON.stringify({ ...proof, samples, status: info.status, recordedAt: new Date().toISOString(), afterBuild: readFileSync(resolve(".next/BUILD_ID"), "utf8").trim(), scope: "Actual local native pointer/keyboard input and read-only current DOM observations. No RNG, clock, style, geometry or brain-state injection; initial saved preferences/care only. No production/OBS/device claim." }, null, 2));
+  writeFileSync(path, JSON.stringify({ ...proof, samples, status: info.status, recordedAt: new Date().toISOString(), afterBuild: build(), scope: "Actual local native pointer/keyboard input and read-only current DOM observations. No RNG, clock, style, geometry or brain-state injection; initial saved preferences/care only. No production/OBS/device claim." }, null, 2));
   await info.attach("native-toy-food-input", { path, contentType: "application/json" });
   await page.screenshot({ path: resolve(output, name + ".png") }).catch(() => {});
   expect(proof.writes).toEqual([]); expect(proof.foreign).toEqual([]); expect(proof.errors).toEqual([]);
@@ -125,7 +127,8 @@ test("123 native toy keyboard arrows keep the actual calendar month and heading 
   expect(after).toBe(before); expect(await identity.evaluate(node => node.isConnected && node === document.querySelector(".poster-chrome-title"))).toBe(true);
 });
 test("123 native pet carry follows the current adopted DOM pose and still reaches the actual box opening", async ({ page }) => {
-  await setup(page, true); await placeCompanionOnHomeFloor(page);
+  // A fresh document draws its own character (41e73e05): the tidy resident that puts toys away is chosen through the real control.
+  await setup(page, true); await chooseCompanionPersonality(page, "tidy"); await placeCompanionOnHomeFloor(page);
   const actor = page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true }), pet = page.locator(".vc-companion"); await actor.focus(); await actor.press("Space"); await expect(pet).toHaveAttribute("data-state", "held");
   const toy = await spawn(page, "toy"), room = page.getByRole("region", { name: "빅타민 집", exact: true });
   await expect(pet).toHaveAttribute("data-state", "held");
@@ -153,7 +156,9 @@ test("123 native pet carry follows the current adopted DOM pose and still reache
           const node = layer === ".vc-companion" ? pet : pet.querySelector<HTMLElement>(layer)!; const style = getComputedStyle(node), origin = style.transformOrigin.split(" ").map(Number.parseFloat), matrix = new DOMMatrixReadOnly(style.transform === "none" ? undefined : style.transform);
           point = new DOMPoint(point.x - origin[0], point.y - origin[1]).matrixTransform(matrix); point.x += origin[0]; point.y += origin[1];
         }
-        expected = { x: point.x, y: point.y + 8 };
+        // On the home floor the body is anchor-positioned: its own transform is the offset from the computed left/top (a3e9a288).
+        const base = getComputedStyle(pet);
+        expected = { x: point.x + (parseFloat(base.left) || 0), y: point.y + (parseFloat(base.top) || 0) + 8 };
       }
       samples.push({ at, state: pet?.dataset.state, toyAction: pet?.dataset.toyAction, pose: pet?.dataset.pose, pet: rect ? { x: rect.left + rect.width / 2, y: rect.bottom } : null, carried: toy?.dataset.carried === "true", object: object ? { x: object.left + object.width / 2, y: object.bottom } : null, expectedCurrentDOM: expected, decoded: Boolean(pet?.querySelector<HTMLImageElement>(".vc-texture")?.complete), hidden: !pet || pet.hidden || document.hidden });
       request = requestAnimationFrame(sample);

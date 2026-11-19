@@ -64,7 +64,8 @@ test.beforeEach(async ({ page, baseURL }) => {
     const synthetic = companionSyntheticRead157(method, url, Date.now());
     if (synthetic) { proof.reads.push(synthetic.path); return route.fulfill({ status: synthetic.status, json: synthetic.json }); }
     if (url.pathname.startsWith("/api/")) { proof.reads.push(`denied:${url.pathname}`); return route.fulfill({ status: 404, body: "No live reads in visibility QA" }); }
-    if (["GET", "HEAD"].includes(method) && (["/visual-fixture/poster", "/visual-fixture/studio"].includes(url.pathname)
+    // The footer links to the app's own static legal pages (5f2cc186) and Next prefetches them: local, read-only.
+    if (["GET", "HEAD"].includes(method) && (["/visual-fixture/poster", "/visual-fixture/studio", "/privacy", "/terms"].includes(url.pathname)
       || url.pathname.startsWith("/_next/static/") || asset(url.pathname)
       || url.pathname === "/_next/image" && asset(url.searchParams.get("url") ?? ""))) return route.continue();
     proof.deniedGets.push(`${method} ${url.pathname}`);
@@ -91,7 +92,8 @@ async function seed(page: Page, options: { hide?: boolean; stored?: string; deny
     for (const [name, value] of Object.entries({ [key]: epoch, "vic.gfxPref": "max", "vic.gfx": JSON.stringify({ mode: "full", at: Date.now(), v: 3 }),
       "vic.reduceMotion": "off", "vic.ambient": "off", "vic.sound": "off", "vic.premiereStage": "off", "vic_avatar_side": "left" })) localStorage.setItem(name, value);
     localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, roam: Boolean(options.hide), jump: false,
-      sleep: false, feeding: false, petting: false, heartPrank: false, cardPrank: false, panelPrank: false, rarePrank: false, ambientPrank: Boolean(options.hide), learnFromYou: false }));
+      // The four pranks are one switch (a9f6d77e): a partly-off mix plays none, so the hide case turns all four on.
+      sleep: false, feeding: false, petting: false, heartPrank: Boolean(options.hide), cardPrank: Boolean(options.hide), panelPrank: false, rarePrank: Boolean(options.hide), ambientPrank: Boolean(options.hide), learnFromYou: false }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 2, ...care, hunger: .05, energy: 1, curiosity: .9 }));
     localStorage.removeItem("vic_panel_collapsed"); localStorage.removeItem("vic.panelSections");
     if (options.stored !== undefined) localStorage.setItem(traceKey, options.stored); else localStorage.removeItem(traceKey);
@@ -171,14 +173,15 @@ function assertProjection(trace: Envelope, now = Date.now()) {
 
 /** One source mutation is an explicit synthetic fault, not a user reproduction.
  * The real P placement, geometry observer, controller and recovery stay intact. */
-async function displaceOccupiedArrow(page: Page) {
-  const right = page.locator('[data-companion-panel-side="right"]:visible').first(); await expect(right).toBeVisible();
-  const body = (await actor(page).boundingBox())!, carrier = (await pet(page).boundingBox())!, arrow = (await right.boundingBox())!;
-  const grip = { x: body.x + body.width / 2, y: body.y + body.height / 2 }, offset = carrier.y + carrier.height - grip.y;
-  await page.mouse.move(grip.x, grip.y); await page.mouse.down(); await page.mouse.move(arrow.x + arrow.width / 2, arrow.y - 4 - offset, { steps: 15 });
-  await page.waitForTimeout(190); await page.mouse.up(); await page.mouse.move(2, 2);
-  await expect(pet(page)).toHaveAttribute("data-platform", "panel-side-right");
-  await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
+/** `mode` "followed" first makes the pet's renderer follow the occupied arrow once (a real 1 px native scroll runs
+ * viewer-companion.tsx followLayout → refreshAnchors(force) → geometry.follow([support])), so the geometry scan retains
+ * that source (geometry.ts retainedIds) and carries the pet with it. Without that, a reduced-motion pet whose renderer
+ * has not followed since the landing is not carried at all and simply loses its support (the race that made the old
+ * single test accept either outcome). */
+async function displaceOccupiedArrow(page: Page, mode: "default" | "followed" = "default") {
+  const right = page.locator('[data-companion-panel-side="right"]:visible').first();
+  await landOnArrow(page);
+  if (mode === "followed") await nativeScrollNudge(page);
   const before = await right.evaluate(node => { const r = node.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height, style: (node as HTMLElement).style.cssText }; });
   const started = await page.evaluate(() => {
     const probe = (window as Window & { companionVisibilityProbe?: BrowserProbe }).companionVisibilityProbe;
@@ -196,6 +199,57 @@ async function displaceOccupiedArrow(page: Page) {
   const injected = await right.boundingBox();
   expect(injected!.x, "PRECONDITION: the actual occupied source must physically leave the viewport").toBeGreaterThan(page.viewportSize()!.width);
   return { before, injected, started, injection: "single actual occupied-arrow translateX; no world/geometry callback patch" };
+}
+
+async function landOnArrow(page: Page) {
+  const right = page.locator('[data-companion-panel-side="right"]:visible').first(); await expect(right).toBeVisible();
+  const body = (await actor(page).boundingBox())!, carrier = (await pet(page).boundingBox())!, arrow = (await right.boundingBox())!;
+  const grip = { x: body.x + body.width / 2, y: body.y + body.height / 2 }, offset = carrier.y + carrier.height - grip.y;
+  await page.mouse.move(grip.x, grip.y); await page.mouse.down(); await page.mouse.move(arrow.x + arrow.width / 2, arrow.y - 4 - offset, { steps: 15 });
+  await page.waitForTimeout(190); await page.mouse.up(); await page.mouse.move(2, 2);
+  await expect(pet(page)).toHaveAttribute("data-platform", "panel-side-right");
+  await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
+}
+
+/** A real native scroll of 1 px (and back) on a scroller that does not hold the arrow or the pet. */
+async function nativeScrollNudge(page: Page) {
+  const scrolled = await page.evaluate(async () => {
+    const arrow = document.querySelector('[data-companion-panel-side="right"]'), petNode = document.querySelector(".vc-companion");
+    const candidates = [document.scrollingElement as HTMLElement | null, ...document.querySelectorAll<HTMLElement>("*")].filter((node): node is HTMLElement => Boolean(node));
+    const scroller = candidates.find(node => {
+      if (node !== document.scrollingElement) {
+        const style = getComputedStyle(node); if (!/(auto|scroll)/.test(style.overflowY)) return false;
+        if (arrow && node.contains(arrow) || petNode && node.contains(petNode)) return false;
+      }
+      return node.scrollHeight - node.clientHeight >= 2;
+    });
+    if (!scroller) return null;
+    const target: EventTarget = scroller === document.scrollingElement ? window : scroller;
+    const once = () => new Promise<void>(done => target.addEventListener("scroll", () => done(), { once: true }));
+    const start = scroller.scrollTop, delta = start >= 1 ? -1 : 1;
+    let fired = once(); scroller.scrollTop = start + delta; await fired;
+    fired = once(); scroller.scrollTop = start; await fired;
+    return { scroller: scroller === document.scrollingElement ? "document" : scroller.className.toString().slice(0, 60), start, after: scroller.scrollTop };
+  });
+  expect(scrolled, "PRECONDITION: a native scroller must exist to make the renderer follow its support").not.toBeNull();
+  expect(scrolled!.after).toBe(scrolled!.start);
+  proofs.get(page)!.facts.scrollNudge = scrolled;
+  await expect(pet(page)).toHaveAttribute("data-platform", "panel-side-right");
+}
+
+/** The occupied arrow stops painting where it stands (visibility:hidden keeps its box, so nothing can carry the pet):
+ * the next coalesced scan alone finds the support gone. */
+async function vanishOccupiedArrow(page: Page) {
+  const right = page.locator('[data-companion-panel-side="right"]:visible').first();
+  await landOnArrow(page);
+  const started = await page.evaluate(() => {
+    const probe = (window as Window & { companionVisibilityProbe?: BrowserProbe }).companionVisibilityProbe;
+    if (!probe) throw new Error("Visibility probe must be installed before source fault injection");
+    return performance.now() - probe.started;
+  });
+  const box = await right.evaluate(node => { const source = node as HTMLElement, r = source.getBoundingClientRect(); source.style.transition = "none"; source.style.visibility = "hidden"; return { x: r.x, y: r.y, width: r.width, height: r.height }; });
+  await expect(page.locator('[data-companion-panel-side="right"]').first()).toBeHidden();
+  return { box, started, injection: "single actual occupied-arrow visibility:hidden in place; no world/geometry callback patch" };
 }
 
 async function assertRecovered(page: Page, since: number) {
@@ -320,21 +374,45 @@ test("trace storage denial preserves the companion and offers an explicit memory
   await expect(actor(page)).toBeVisible(); proofs.get(page)!.facts.memoryFallback = trace;
 });
 
-test("actual reduced motion completes one quiet measured recovery without an airborne animation", async ({ page }) => {
-  await seed(page); await open(page);
+async function reduceMotionInSettings(page: Page) {
   await page.getByRole("button", { name: "설정", exact: true }).first().click();
   const settings = page.getByRole("dialog", { name: "설정", exact: true }); await expect(settings).toBeVisible();
   await settings.getByRole("tab", { name: "움직임", exact: true }).click();
   await settings.locator('[data-act="생동감 있는 동작 켜기/끄기"]').click();
   await expect(page.locator("html")).toHaveAttribute("data-reduce-motion", "1");
   await settings.locator(".modal-head .modal-close").click(); await expect(settings).toBeHidden(); await expect(actor(page)).toBeVisible();
-  const since = Date.now(), fault = await displaceOccupiedArrow(page); proofs.get(page)!.facts.quietFault = fault;
-  const result = await assertRecovered(page, since), samples = (await frames(page)).filter(f => f.at >= fault.started);
+}
+function expectQuietSamples(samples: Frame[]) {
+  expect(samples.filter(f => f.state === "jump"), "the app's actual reduce-motion choice must suppress the finite recovery flight").toEqual([]);
+  expect(samples.every(f => f.same)).toBe(true);
+}
+
+// With motion reduced the pet has no continuous frame loop. Whether a moving support carries it off the screen depends
+// on whether its renderer has followed that support since landing (see displaceOccupiedArrow "followed"); the old single
+// test raced the two outcomes. Each path is now forced and asserted strictly on its own.
+test("actual reduced motion: a followed support carried off screen gets one quiet measured watchdog recovery", async ({ page }) => {
+  await seed(page); await open(page); await reduceMotionInSettings(page);
+  const since = Date.now(), fault = await displaceOccupiedArrow(page, "followed"); proofs.get(page)!.facts.quietFault = fault;
+  const result = await assertRecovered(page, since);
   expect(result.episode.find(r => r.stage === "recovery")?.reduced).toBe(true);
   expect(result.episode.find(r => r.stage === "recovered")?.reduced).toBe(true);
-  expect(samples.some(f => f.hidden && ["bounds", "support", "vertical"].includes(f.reason))).toBe(true);
-  expect(samples.filter(f => f.state === "jump"), "the app's actual reduce-motion choice must suppress the finite recovery flight").toEqual([]);
-  expect(samples.every(f => f.same)).toBe(true); proofs.get(page)!.facts.quietRecovery = { ...result, samples };
+  const samples = (await frames(page)).filter(f => f.at >= fault.started);
+  expect(samples.some(f => f.hidden && ["bounds", "support", "vertical"].includes(f.reason)), "the carried pet must really be withheld before the watchdog acts").toBe(true);
+  expectQuietSamples(samples); proofs.get(page)!.facts.quietRecovery = { path: "watchdog", ...result, samples };
+});
+
+test("actual reduced motion: a support lost in place falls quietly in the same column without the watchdog", async ({ page }) => {
+  await seed(page); await open(page); await reduceMotionInSettings(page);
+  const since = Date.now(), fault = await vanishOccupiedArrow(page); proofs.get(page)!.facts.quietFault = fault;
+  const standing = (await frames(page)).filter(f => f.at < fault.started).at(-1)!;
+  await expect(pet(page)).toHaveAttribute("data-platform", /^viewport-floor(?:-\d+)?$/, { timeout: 2000 }); await expect(actor(page)).toBeVisible();
+  await page.waitForTimeout(1600); // longer than the 1200 ms sustained-fault gate: no late emergency may follow
+  const episode = ((await readTrace(page))?.records ?? []).filter(r => r.at >= since);
+  expect(episode.filter(r => ["recovery", "recovered"].includes(r.stage)), "ordinary same-column recovery must win before emergency escalation").toEqual([]);
+  const samples = (await frames(page)).filter(f => f.at >= fault.started), grounded = samples.at(-1)!;
+  expect(grounded.visible).toBe(true); expect(Math.abs(grounded.x - standing.x)).toBeLessThan(1); expect(grounded.platform).toMatch(/^viewport-floor(?:-\d+)?$/);
+  expect(samples.filter(f => f.hidden), "same-column gravity never withholds the pet").toEqual([]);
+  expectQuietSamples(samples); proofs.get(page)!.facts.quietRecovery = { path: "same-column gravity", episode, standing, grounded, samples };
 });
 
 test("a real settings modal takes ownership of a pending fault and cancels emergency recovery", async ({ page }) => {

@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
@@ -24,15 +25,21 @@ for (const scenario of scenarios) {
   test(`${surface} ${animal} ${start} ${mode}${interruption ? ` ${interruption}` : ""}: ${interruption ? "a parked recall yields to explicit house closure" : "a low-energy sleepy companion completes a direct recall"}`, async ({ page }) => {
     test.setTimeout(40000);
     const posts: string[] = [], errors: string[] = [];
+    // The developer header's report inbox asks for its badge number on mount (02b4295a, 2026-11-13). That one read
+    // is answered here ("nothing unseen") and never reaches the server; every other POST is still a forbidden write.
+    const actions = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
     page.on("pageerror", error => errors.push(error.message));
     await page.route("**/*", route => {
       const request = route.request(), path = new URL(request.url()).pathname;
-      if (request.method() === "POST") { posts.push(path); return route.fulfill({ status: 503, body: "fixture forbids writes" }); }
+      if (request.method() === "POST" && actions[request.headers()["next-action"] ?? ""]?.exportedName === "getUnseenReportCountAction") return route.fulfill({ contentType: "text/x-component", body: '0:{"a":"$@1","f":[],"b":"fixture"}\n1:0\n' });
+      if (request.method() === "POST") { posts.push(`${path} ${request.headers()["next-action"] ?? ""}`.trim()); return route.fulfill({ status: 503, body: "fixture forbids writes" }); }
       if (request.method() === "GET" && (path === "/" || path === "/studio")) return route.fulfill({ status: 200, body: "unused fixture navigation" });
       return route.continue();
     });
     await page.route("**/api/soop-live**", route => route.fulfill({ json: { live: false } }));
     await page.addInitScript(({ prefs, care, key, epoch, animal, mode, sleep }) => {
+      // Model visible OS focus only. "다른 창 쓸 때도 놀기" ships on (1f2cb9eb, 2026-10-19), which keeps a blurred
+      // visible page active; these cases are about the blur that parks, so the seed turns that one switch off.
       // Model visible OS focus only. Product state, positions, clocks and
       // callbacks stay untouched; all commands below use real controls.
       const scope = window as unknown as FixtureWindow;
@@ -41,7 +48,7 @@ for (const scenario of scenarios) {
       localStorage.setItem(key, epoch); localStorage.setItem("vic.gfxPref", mode === "lite" ? "lite" : mode === "off" ? "off" : "max");
       localStorage.setItem("vic.reduceMotion", mode === "reduced" ? "on" : "off");
       localStorage.setItem("vic.sound", "off"); localStorage.setItem("vic.ambient", "off");
-      localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, animalMode: animal, personality: "sleepy", speed: "normal", sleep, roam: false, jump: false, feeding: false, heartPrank: false, ambientPrank: false, cardPrank: false, panelPrank: false, learnFromYou: false }));
+      localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, activeWhileVisible: false, animalMode: animal, personality: "sleepy", speed: "normal", sleep, roam: false, jump: false, feeding: false, heartPrank: false, ambientPrank: false, cardPrank: false, panelPrank: false, learnFromYou: false }));
       localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 2, ...care, energy: .08, hunger: .1 }));
       localStorage.setItem("vic_avatar_side", "left"); localStorage.removeItem("vic_panel_collapsed");
     }, { prefs: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE, key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, animal, mode, sleep });
@@ -52,8 +59,9 @@ for (const scenario of scenarios) {
     await actor.focus(); await actor.press("p"); await page.mouse.click(850, 1050); await page.mouse.move(1800, 900);
     await expect(pet).toHaveAttribute("data-platform", /^viewport-floor/); await expect(pet).not.toHaveAttribute("data-state", "jump");
     const identity = (await pet.elementHandle())!;
+    const focusWindow = (focused: boolean) => page.evaluate(focused => { (window as unknown as FixtureWindow).fixtureFocused = focused; window.dispatchEvent(new Event(focused ? "focus" : "blur")); }, focused);
     if (start === "parked") {
-      await page.evaluate(() => { (window as unknown as FixtureWindow).fixtureFocused = false; window.dispatchEvent(new Event("blur")); });
+      await focusWindow(false);
       await expect(pet).toHaveAttribute("data-presence", "parked", { timeout: 18000 });
     }
     const savedBefore = await page.evaluate(() => localStorage.getItem("vic.viewerCompanion"));
@@ -71,7 +79,12 @@ for (const scenario of scenarios) {
     let samples: Frame[] = [];
     try {
       const recall = page.getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true });
-      await expect(recall).toBeEnabled(); await recall.click();
+      await expect(recall).toBeEnabled();
+      // A real click on another window's page focuses that window before the click arrives, and since 1f2cb9eb
+      // (2026-10-19) the recall is ignored while the document has no focus. Model the same order: focus, then click
+      // at once, so the call still reaches a creature that has not finished waking from its parked sleep.
+      if (start === "parked") { await focusWindow(true); await expect(pet).not.toHaveAttribute("data-presence", "active"); }
+      await recall.click();
       if (mode !== "reduced") {
         await expect(pet).toHaveAttribute("data-home-journey", "");
         await expect(pet).not.toHaveAttribute("data-state", "sleep");
@@ -79,9 +92,8 @@ for (const scenario of scenarios) {
         await page.waitForTimeout(100);
         await page.screenshot({ path: `${output}/${caseId}-travelling.png` });
       }
-      if (start === "blur") {
-        await page.evaluate(() => { (window as unknown as FixtureWindow).fixtureFocused = false; window.dispatchEvent(new Event("blur")); });
-      }
+      // The user goes back to the other window while the called journey is under way.
+      if (start !== "active") await focusWindow(false);
       if (interruption === "fold") {
         // A call issued from CSS-only parked sleep must reconnect live geometry;
         // closing its actual house now supersedes the command, not its cache.

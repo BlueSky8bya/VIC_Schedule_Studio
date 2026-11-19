@@ -9,6 +9,7 @@ import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome } from "./helpers/companion-home";
+import { keepCompanionStoredMotion } from "./helpers/companion-settings";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 
@@ -26,6 +27,8 @@ test.setTimeout(90000);
 test.beforeEach(async ({ page, context, baseURL }) => {
   const proof: Proof = { errors: [], rejected: [], notes: [], build: readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim(), chunks: [], pending: [] }; proofs.set(page, proof);
   const origin = new URL(baseURL!).origin;
+  // This spec replaces storageState, so the stored roam:false of the book tests needs the QA key again.
+  await keepCompanionStoredMotion(page);
   page.on("pageerror", error => proof.errors.push(error.message));
   const actions = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
   const previews = new Set(Object.entries(actions).filter(([, action]) => action.exportedName === "getPublicPreviewAction").map(([id]) => id));
@@ -127,6 +130,8 @@ async function probe(page: Page) {
   });
 }
 const read = (page: Page) => page.evaluate(() => (window as ProbeWindow).living149?.frames ?? []);
+// The cheer packet is whatever the current appearance edition ships for row 9 (68b46f11 replaced the 143 sheet).
+const cheerSources = companionSpriteSources(9);
 const range = (values: number[]) => Math.max(...values) - Math.min(...values);
 /** Count actual separated above12px excursions, not authored progress/labels. */
 function airborneBeats(values: number[]) {
@@ -168,7 +173,7 @@ for (const [surface, mode, glasses] of [["studio", "full", false], ["viewer", "f
   await expect(page.locator('.vc-companion[data-play="cheer-rehearsal"]')).toHaveCount(0, { timeout: 10000 }); await page.waitForTimeout(350);
   const all = await read(page), cheer = all.filter(frame => frame.play === "cheer-rehearsal" && frame.state === "play" && frame.decoded && frame.visible);
   const motion = assertBodyCheer(cheer);
-  expect(cheer.every(frame => frame.row === 9 && frame.src.endsWith("/vitamin-action-09-eye-scale-143-v1.webp"))).toBe(true);
+  expect(cheer.every(frame => frame.row === 9 && cheerSources.includes(new URL(frame.src).pathname))).toBe(true);
   expect(range(cheer.map(frame => frame.x))).toBeLessThan(1); expect(range(cheer.map(frame => frame.y))).toBeLessThan(1); expect(new Set(cheer.map(frame => frame.platform)).size).toBe(1);
   expect(all.every(frame => frame.propsCount === 0)).toBe(true);
   expect(all.some(frame => frame.at > cheer.at(-1)!.at + 100 && frame.play !== "cheer-rehearsal")).toBe(true);
@@ -185,7 +190,7 @@ test("149 real book body cheer replay and manual OFF", async ({ page }) => {
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true }), tabs = dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true });
   await tabs.getByRole("tab", { name: "함께 지내기", exact: true }).click();
   let preview = dialog.getByRole("img", { name: "빅타민 미리보기", exact: true }); await expect(preview).toHaveAttribute("data-preview-ready", ""); await expect(preview.locator(".vc-wearable-front")).toBeVisible();
-  const profile = await preview.evaluate(node => { const canvas = node.querySelector("canvas")!, pixels = canvas.getContext("2d")!.getImageData(80, 115, 40, 50).data; return { row: node.getAttribute("data-preview-row"), canvasPainted: pixels.some((value, index) => index % 4 === 3 && value > 200), propsCount: node.querySelectorAll(".vc-cheer-props,[data-cheer-side]").length }; });
+  const profile = await preview.evaluate(node => { return { row: node.getAttribute("data-preview-row"), canvasPainted: [...node.querySelectorAll("canvas")].some(canvas => { if (!canvas.width || !canvas.checkVisibility({ visibilityProperty: true })) return false; const composite = canvas.classList.contains("vc-character-composite"), unit = canvas.width / (composite ? 384 : 192), shift = composite ? 96 : 0, pixels = canvas.getContext("2d")?.getImageData(Math.round((80 + shift) * unit), Math.round((115 + shift) * unit), Math.round(40 * unit), Math.round(50 * unit)).data; return Boolean(pixels?.some((value, index) => index % 4 === 3 && value > 200)); }), propsCount: node.querySelectorAll(".vc-cheer-props,[data-cheer-side]").length }; });
   expect(profile.canvasPainted).toBe(true); expect(profile.propsCount).toBe(0); await dialog.screenshot({ path: resolve(output, "book-profile-body-cheer.png") });
   await tabs.getByRole("tab", { name: "옷장", exact: true }).click(); preview = dialog.getByRole("img", { name: "빅타민 미리보기", exact: true }); await expect(preview).toHaveAttribute("data-preview-ready", "");
   const stream = await preview.evaluateHandle(node => {
@@ -221,7 +226,7 @@ test("149 known odd-food book preview only contracts recovers and stops on OFF",
     state.request = requestAnimationFrame(sample); return state;
   });
   await dialog.getByRole("button", { name: "다시 보기", exact: true }).click(); await expect(preview).toHaveAttribute("data-preview-row", "23"); await page.waitForTimeout(650);
-  const drawing = await preview.evaluate((node, expectedSources) => { const canvas = node.querySelector("canvas")!, pixels = canvas.getContext("2d")!.getImageData(50, 60, 90, 100).data; return { painted: pixels.some((value, index) => index % 4 === 3 && value > 200), row: node.getAttribute("data-preview-row"), resourceSources: performance.getEntriesByType("resource").map(entry => entry.name).filter(name => expectedSources.includes(new URL(name).pathname)) }; }, companionSpriteSources(23));
+  const drawing = await preview.evaluate((node, expectedSources) => { return { painted: [...node.querySelectorAll("canvas")].some(canvas => { if (!canvas.width || !canvas.checkVisibility({ visibilityProperty: true })) return false; const composite = canvas.classList.contains("vc-character-composite"), unit = canvas.width / (composite ? 384 : 192), shift = composite ? 96 : 0, pixels = canvas.getContext("2d")?.getImageData(Math.round((50 + shift) * unit), Math.round((60 + shift) * unit), Math.round(90 * unit), Math.round(100 * unit)).data; return Boolean(pixels?.some((value, index) => index % 4 === 3 && value > 200)); }), row: node.getAttribute("data-preview-row"), resourceSources: performance.getEntriesByType("resource").map(entry => entry.name).filter(name => expectedSources.includes(new URL(name).pathname)) }; }, companionSpriteSources(23));
   await dialog.screenshot({ path: resolve(output, "known-odd-food-preview-not-consume.png") }); await expect(preview).toHaveAttribute("data-preview-row", "0", { timeout: 4000 });
   const frames = await stream.evaluate(state => { state.stop(); return state.frames; }); await stream.dispose(); proofs.get(page)!.notes.push({ knownOddFoodVisualPreviewOnly: true, actualConsumeOrDiscoveryProved: false, initialKnownBehaviorOnly: "odd-food-reaction", frames, drawing });
   const bouts: typeof frames[] = []; let current: typeof frames = [];
@@ -237,8 +242,13 @@ test("149 known odd-food book preview only contracts recovers and stops on OFF",
 async function notebookBounds(page: Page, label: string) {
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
   const geometry = await dialog.evaluate(node => {
-    const card = node.getBoundingClientRect(), visible = (item: Element) => { const box = item.getBoundingClientRect(), css = getComputedStyle(item); return !item.closest("[hidden],[inert],[aria-hidden='true']") && box.width > 0 && box.height > 0 && css.visibility !== "hidden" && css.display !== "none"; };
-    const buttons = [...node.querySelectorAll<HTMLElement>(".rhh-companion-settings button")].filter(visible).map(item => { const box = item.getBoundingClientRect(); return { text: item.textContent?.trim(), left: box.left, right: box.right, width: box.width, height: box.height, scrollWidth: item.scrollWidth, clientWidth: item.clientWidth }; });
+    const card = node.getBoundingClientRect(), visible = (item: Element) => { const box = item.getBoundingClientRect(), css = getComputedStyle(item); return item.checkVisibility() && !item.closest("[hidden],[inert],[aria-hidden='true']") && box.width > 0 && box.height > 0 && css.visibility !== "hidden" && css.display !== "none"; };
+    const buttons = [...node.querySelectorAll<HTMLElement>(".rhh-companion-settings button")].filter(visible).map(item => { const box = item.getBoundingClientRect(), range = document.createRange();
+      // A spoken hint (c996e0e9: `.sr-only` span + aria-describedby) is clipped to 1px and paints nothing, but its
+      // nowrap text still has full-width range rects; measure every other child, as painted.
+      const ink = { left: Infinity, right: -Infinity, width: 0 };
+      for (const child of item.childNodes) { if (child instanceof Element && child.matches(".sr-only")) continue; range.selectNode(child); const r = range.getBoundingClientRect(); if (r.width > 0) { ink.left = Math.min(ink.left, r.left); ink.right = Math.max(ink.right, r.right); ink.width = ink.right - ink.left; } }
+      range.detach(); return { text: item.textContent?.trim(), inlineLink: item.classList.contains("rhh-note-go"), tooltip: item.hasAttribute("data-tip"), inkOverflow: ink.width ? Math.max(0, ink.right - box.right, box.left - ink.left) : 0, left: box.left, right: box.right, width: box.width, height: box.height, scrollWidth: item.scrollWidth, clientWidth: item.clientWidth }; });
     const counts = [...node.querySelectorAll<HTMLElement>(".rhh-collection-count")].filter(visible).map(item => { const box = item.getBoundingClientRect(); return { text: item.textContent, left: box.left, right: box.right, scrollWidth: item.scrollWidth, clientWidth: item.clientWidth }; });
     const footer = [...node.querySelectorAll<HTMLElement>(".rhh-collection-pages")].filter(visible).map(item => { const box = item.getBoundingClientRect(); return { top: box.top, bottom: box.bottom, left: box.left, right: box.right }; });
     const backgrounds = [...node.querySelectorAll(".rhh-companion-experience,.rhh-collection-book")].filter(visible).map(item => { const css = getComputedStyle(item); return { color: css.backgroundColor, image: css.backgroundImage }; });
@@ -248,7 +258,11 @@ async function notebookBounds(page: Page, label: string) {
   expect(geometry.horizontalOverflow).toBeLessThanOrEqual(2);
   expect(geometry.backgrounds.length).toBeGreaterThan(0);
   for (const background of geometry.backgrounds) { expect(background.color).toBe("rgba(0, 0, 0, 0)"); expect(background.image).toBe("none"); }
-  for (const button of geometry.buttons) { expect(button.left).toBeGreaterThanOrEqual(geometry.card.left - 1); expect(button.right).toBeLessThanOrEqual(geometry.card.right + 1); expect(button.width).toBeGreaterThanOrEqual(43.9); expect(button.height).toBeGreaterThanOrEqual(43.9); expect(button.scrollWidth - button.clientWidth).toBeLessThanOrEqual(2); }
+  for (const button of geometry.buttons) { expect(button.left).toBeGreaterThanOrEqual(geometry.card.left - 1); expect(button.right).toBeLessThanOrEqual(geometry.card.right + 1); // The "go to that setting" link inside a status note is an inline text link (7e7a5f82, authored min-height 28px), not a 44px control.
+    if (button.inlineLink) expect(button.height).toBeGreaterThanOrEqual(27.9); else { expect(button.width).toBeGreaterThanOrEqual(43.9); expect(button.height).toBeGreaterThanOrEqual(43.9); } 
+    // A [data-tip] control carries its hidden tooltip as an absolutely placed nowrap ::before, which widens scrollWidth
+    // without any visible overflow; its real contents are measured instead.
+    expect(button.inkOverflow).toBeLessThanOrEqual(2); if (!button.tooltip) expect(button.scrollWidth - button.clientWidth).toBeLessThanOrEqual(2); }
   for (const count of geometry.counts) { expect(count.left).toBeGreaterThanOrEqual(geometry.card.left + 6); expect(count.right).toBeLessThanOrEqual(geometry.card.right - 6); expect(count.scrollWidth - count.clientWidth).toBeLessThanOrEqual(1); }
   for (const footer of geometry.footer) expect(footer.bottom).toBeLessThanOrEqual(geometry.card.bottom - 6);
   await dialog.screenshot({ path: resolve(output, label + ".png") });
@@ -277,6 +291,8 @@ for (const [width, dark] of [[1920, false], [1920, true], [1120, false], [1120, 
   await dialog.locator(".rhh-accessory-grid button:not([data-found])").first().click(); await expect(dialog.locator(".rhh-wardrobe-detail-copy > strong")).toHaveText("???"); await expect(dialog.locator(".rhh-wardrobe-silhouette")).toBeVisible(); await notebookBounds(page, name + "-wardrobe-unknown");
   // stage 3: the nine characters moved to "함께 지내기" (checked above); "설정" is one column of cards.
   await tabs.getByRole("tab", { name: "설정", exact: true }).click(); await expect(dialog.locator(".rhh-companion-settings.rhh-companion-cards")).toBeVisible(); await expect(dialog.getByRole("radiogroup", { name: "빅타민 소리", exact: true }).getByRole("radio")).toHaveCount(3); await notebookBounds(page, name + "-settings");
+  // The 14 audition tiles sit in a closed fold (not rendered until opened); measure them open as well.
+  const audition = dialog.locator("details").filter({ has: page.locator("summary", { hasText: "소리 들어 보기" }) }); await audition.locator("summary").click(); await expect(audition.locator("button:visible")).toHaveCount(14); await notebookBounds(page, name + "-settings-audition");
 });
 
 for (const [surface, width] of [["viewer", 1920], ["studio", 1920], ["preview", 1920], ["viewer", 1120]] as const) test(`149 curtain cord meets actual rod ${surface} ${width}`, async ({ page }) => {
@@ -284,8 +300,10 @@ for (const [surface, width] of [["viewer", 1920], ["studio", 1920], ["preview", 
   for (let index = 0; index < 3; index++) {
     await page.mouse.move(2, 2);
     const measured = await home.evaluate(async node => {
-      const image = node.querySelector<HTMLImageElement>(".vc-window-curtain-stage")!; await image.decode(); const rod = node.querySelector<HTMLElement>(".vc-window-curtain-overlay")!.getBoundingClientRect(), cord = node.querySelector<HTMLElement>(".vc-curtain-control > span")!.getBoundingClientRect();
-      const expected = { x: rod.left + rod.width * 10 / 256, y: rod.top + rod.height * 17 / 192 }, actual = { x: cord.left + cord.width / 2, y: cord.top };
+      const image = node.querySelector<HTMLImageElement>(".vc-window-curtain-stage")!; await image.decode(); const rod = node.querySelector<HTMLElement>(".vc-window-curtain-overlay")!.getBoundingClientRect(), collar = node.querySelector<HTMLElement>(".vc-curtain-collar")!.getBoundingClientRect();
+      // The pull is now collar + rope + handle inside one paint wrapper (the wrapper's top is above the rod).
+      // The collar's ring (35/99 down its crop) is the part that hangs on the registered rod point.
+      const expected = { x: rod.left + rod.width * 10 / 256, y: rod.top + rod.height * 17 / 192 }, actual = { x: collar.left + collar.width / 2, y: collar.top + collar.height * 35 / 99 };
       return { phase: node.querySelector(".vc-home-window")?.getAttribute("data-curtain"), naturalSize: [image.naturalWidth, image.naturalHeight], rod: { left: rod.left, top: rod.top, width: rod.width, height: rod.height }, actual, expected, error: Math.hypot(actual.x - expected.x, actual.y - expected.y) };
     });
     measurements.push(measured); expect(measured.naturalSize).toEqual([256, 192]); expect(measured.error).toBeLessThanOrEqual(2);

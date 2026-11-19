@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { enterCompanionMeadow, placeCompanionOnExposedBackground } from "./helpers/companion-outdoor";
+import { keepCompanionStoredMotion } from "./helpers/companion-settings";
 
 const output = process.env.COMPANION_CONTINUITY_OUTPUT ?? ".scratch-pw/agenda-companion-detail";
 type Frame = { at: number; state?: string; row?: string; pose?: string; reaction?: string; dizzy: boolean; visible: boolean; alpha: number };
@@ -22,6 +23,8 @@ test.beforeEach(async ({ page, baseURL }) => {
 });
 
 async function setup(page: Page, surface: string, reduced = false) {
+  // The empty storageState above drops the QA key that keeps the seeded `roam: false`; restore it so the pet stays put.
+  await keepCompanionStoredMotion(page);
   await page.addInitScript(({ preferences, epoch, key, reduced }) => {
     for (const [name, value] of Object.entries({ [key]: epoch, "vic.gfxPref": "max", "vic.gfx": JSON.stringify({ mode: "full", v: 3, at: Date.now() }),
       "vic.ambient": "on", "vic.sound": "off", "vic.reduceMotion": reduced ? "on" : "off", "vic.premiereStage": "off", "vic_avatar_side": "left",
@@ -73,10 +76,14 @@ async function flingAndRelease(page: Page) {
 async function shake(page: Page) {
   const box = (await actor(page).boundingBox())!, start = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
   await page.mouse.move(start.x, start.y); await page.mouse.down(); await page.mouse.move(900, 600, { steps: 18 }); await page.waitForTimeout(190);
-  const mouse = await page.context().newCDPSession(page);
+  const mouse = await page.context().newCDPSession(page), pending: Promise<unknown>[] = [];
+  // Keep the real 45 ms stroke cadence, as flingAndRelease does: waiting for each event's protocol acknowledgement
+  // stretched the strokes past 100 ms on a busy machine, and samples more than 160 ms apart are not a shake
+  // (held-shake.ts MAX_GAP_MS), so the dizziness was sometimes already spent before the release.
   for (const direction of [1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1]) {
-    await mouse.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: 900 + direction * 80, y: 600, button: "left", buttons: 1, modifiers: 0 }); await new Promise(resolve => setTimeout(resolve, 45));
+    pending.push(mouse.send("Input.dispatchMouseEvent", { type: "mouseMoved", x: 900 + direction * 80, y: 600, button: "left", buttons: 1, modifiers: 0 })); await new Promise(resolve => setTimeout(resolve, 45));
   }
+  await Promise.all(pending);
   await page.mouse.move(820, 600);
   await mouse.detach();
 }
@@ -89,7 +96,9 @@ test.afterEach(async ({ page }, info) => {
 
 for (const surface of ["viewer", "studio"]) test(`${surface} showcase held shake and thrown landing use the existing dizzy and recovery art`, async ({ page }) => {
   test.setTimeout(45_000); await setup(page, surface); await observe(page);
-  await shake(page); await expect(pet(page)).toHaveAttribute("data-held-dizzy", ""); await expect(pet(page)).toHaveAttribute("data-row", "22");
+  // The dizziness a shake earns lasts 1 s after its last counted stroke (held-shake.ts LATCH_MS) and is spent on release.
+  // Let go inside that second: the held row 22 is proved from the frame record at the end, not by another poll here.
+  await shake(page); await expect(pet(page)).toHaveAttribute("data-held-dizzy", "");
   await page.waitForTimeout(180); await page.mouse.up(); await expect(pet(page)).toHaveAttribute("data-reaction", "dizzy");
   await expect(pet(page)).toHaveAttribute("data-row", "23"); await expect(pet(page)).toHaveAttribute("data-reaction", "none", { timeout: 4000 });
   await shake(page); await expect(pet(page)).toHaveAttribute("data-held-dizzy", "");

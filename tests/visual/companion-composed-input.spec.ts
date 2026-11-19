@@ -6,9 +6,11 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY, PREMIERE_STAGE_KEY } from "@/lib/ui/motion";
-import { describeTarget } from "@/lib/activity/labels";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
 import { openCompanionHome } from "./helpers/companion-home";
+import { keepCompanionStoredMotion } from "./helpers/companion-settings";
+import { installCompanionPointReader, type CompanionPointWindow } from "./helpers/companion-point";
+import { COMPANION_THROW_LIMITS } from "@/lib/ui/viewer-companion/throw";
 
 type Role = "owner" | "developer";
 type Surface = "studio" | "viewer";
@@ -21,10 +23,12 @@ const prefix = process.env.VIC_COMPOSED_PREFIX ?? ".scratch-pw/companion-compose
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
 const cardSelector = (surface: Surface) => surface === "studio" ? '[data-companion-event="ordinary"][data-eventid]' : '.public-event[data-eventid]:not(.teaser)';
-const targets = (page: Page, name: string) => proofs.get(page)!.events.filter(event => event.kind === "ui.click" && event.target === name);
 const at = Date.parse("2026-06-10T03:00:00Z");
+// A release within staleInputMs of the last move carries its velocity and is a throw; these are put-downs.
+const PUT_DOWN_MS = COMPANION_THROW_LIMITS.staleInputMs + 40;
 
-test.use({ baseURL: "http://127.0.0.2:3100", viewport: { width: 1920, height: 1100 }, serviceWorkers: "block", isMobile: false, hasTouch: false });
+// The loopback alias follows whichever visual config runs this file (its baseURL port); it used to be pinned to :3100.
+test.use({ baseURL: async ({ baseURL }, use) => { await use((baseURL ?? "http://127.0.0.1:3100").replace("//127.0.0.1", "//127.0.0.2")); }, viewport: { width: 1920, height: 1100 }, serviceWorkers: "block", isMobile: false, hasTouch: false });
 test.beforeEach(async ({ page }) => {
   mkdirSync(".scratch-pw", { recursive: true });
   const proof: Proof = { events: [], unknown: [], errors: [], reads: [], checkpoints: [] }; proofs.set(page, proof);
@@ -64,6 +68,8 @@ test.afterEach(async ({ page }, info) => {
 
 function readResponse(name: string | undefined, events: Event[]): unknown {
   if (name === "getPublicPreviewAction") return samplePublicScheduleData;
+  // The developer header's report inbox reads its badge number on mount (c30945c4): a read.
+  if (name === "getUnseenReportCountAction") return 0;
   const used = events.filter(event => event.kind === "ui.click" && event.target);
   if (name === "getActivityDayAction") return { ok: true, total: used.length, visits: [{ key: "synthetic-composed-visit", account: "계정 #1", role: "developer", device: "desktop", startMs: at, endMs: at + 60000, items: used.map((event, index) => ({ t: at + index * 1000, kind: event.kind, label: "누름", source: "client", target: event.target, targetLabel: null, meta: null, durMs: null })) }] };
   if (name === "getActivityUsageAction") {
@@ -77,6 +83,8 @@ function readResponse(name: string | undefined, events: Event[]): unknown {
   }
 }
 async function setup(page: Page, role: Role, autonomous = false, savedHeart = false) {
+  // The alias origin is not the config's storageState origin: the stored `roam: false` needs the QA key here too.
+  await keepCompanionStoredMotion(page); await installCompanionPointReader(page);
   await page.addInitScript(({ epoch, key, stage, preferences, care, autonomous, savedHeart }) => {
     Object.defineProperty(Navigator.prototype, "webdriver", { configurable: true, get: () => false });
     for (const [name, value] of Object.entries({ [key]: epoch, [stage]: "off", "vic.ambient": "off", "vic.sound": "off", "vic.reduceMotion": "off", "vic.gfxPref": "max", "vic_avatar_side": "left" })) localStorage.setItem(name, value);
@@ -91,19 +99,13 @@ async function setup(page: Page, role: Role, autonomous = false, savedHeart = fa
       scope.composedSeed = (Math.imul(scope.composedSeed!, 1664525) + 1013904223) >>> 0; return scope.composedSeed / 4294967296;
     };
   }, { epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY, stage: PREMIERE_STAGE_KEY, autonomous, savedHeart,
-    preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: autonomous, jump: autonomous, sleep: !autonomous, feeding: !autonomous, heartPrank: false, cardPrank: autonomous, ambientPrank: false, panelPrank: false, learnFromYou: false, speed: autonomous ? "lively" : "normal" },
+    preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: autonomous, jump: autonomous, sleep: !autonomous, feeding: !autonomous, heartPrank: autonomous, cardPrank: autonomous, ambientPrank: autonomous, rarePrank: autonomous, panelPrank: false, learnFromYou: false, speed: autonomous ? "lively" : "normal" },
     care: { ...DEFAULT_COMPANION_CARE, hunger: .05, energy: 1 } });
   await page.goto(`/visual-fixture/studio?role=${role}`); await page.bringToFront(); await settle(page); await expect(actor(page)).toBeVisible();
 }
 async function settle(page: Page) {
   await page.evaluate(async () => { await document.fonts.ready; await Promise.allSettled(document.getAnimations().filter(a => a.playState === "running" && Number.isFinite(Number(a.effect?.getComputedTiming().endTime))).map(a => a.finished)); });
   await page.waitForTimeout(180);
-}
-async function flush(page: Page, target: string, n = 1) {
-  const done = () => targets(page, target).length >= n;
-  const response = done() ? null : page.waitForResponse(res => new URL(res.url()).pathname === "/api/activity");
-  await page.evaluate(() => window.dispatchEvent(new Event("blur"))); if (response) await response;
-  await expect.poll(done).toBe(true); await page.waitForTimeout(140);
 }
 async function beginProbe(page: Page, random = false) {
   await page.evaluate(random => {
@@ -167,7 +169,7 @@ async function dragScroll(page: Page, surface: Surface) {
     for (const node of nodes) { const r = node.getBoundingClientRect(); if (r.width > 110 && r.top > 250 && r.bottom < innerHeight - 100) return { x: r.left + r.width * .6, y: r.top - 20 }; }
     return { x: innerWidth * .65, y: innerHeight - 100 };
   });
-  await page.mouse.move(point.x, point.y - offset, { steps: 14 }); await page.mouse.up(); await page.mouse.move(4, 4);
+  await page.mouse.move(point.x, point.y - offset, { steps: 14 }); await page.waitForTimeout(PUT_DOWN_MS); await page.mouse.up(); await page.mouse.move(4, 4);
   await expect(pet(page)).not.toHaveAttribute("data-state", "held"); await settle(page); await checkpoint(page, `${surface}-grab-wheel-drop`);
 }
 async function month(page: Page) {
@@ -185,13 +187,16 @@ async function panels(page: Page) {
   const home = await openCompanionHome(page, "keyboard"), recall = home.getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true });
   await home.getByRole("button", { name: "밥 꺼내기", exact: true }).click();
   const food = page.locator(".vc-food"); await expect(food).toHaveCount(1);
+  // The snack first drops out of the feeder; a grab during that fall does not take.
+  await expect(food).toBeVisible(); await expect(food).not.toHaveAttribute("data-falling");
   const start = (await food.boundingBox())!, target = await home.evaluate(node => { const floor = node.querySelector(".vc-home-floor")!.getBoundingClientRect(), bed = node.querySelector(".vc-cushion-button")!.getBoundingClientRect(); return { x: bed.left + bed.width / 2, y: floor.bottom - 3 }; });
-  await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2); await page.mouse.down(); await page.mouse.move(target.x, target.y, { steps: 16 }); await page.mouse.up(); await page.mouse.move(4, 4);
+  await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2); await page.mouse.down(); await page.mouse.move(target.x, target.y, { steps: 16 }); await page.waitForTimeout(140); await page.mouse.up(); await page.mouse.move(4, 4);
   await expect(food).not.toHaveAttribute("data-falling"); await expect(food).toHaveJSProperty("hidden", false);
-  const floorOffset = () => food.evaluate(node => { const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform), floor = document.querySelector(".vc-home-floor")!.getBoundingClientRect(); return { x: matrix.m41 - floor.left, y: matrix.m42 - floor.top, height: floor.height }; });
+  const floorOffset = () => food.evaluate(node => { const point = (window as unknown as CompanionPointWindow).vcPoint(node), floor = document.querySelector(".vc-home-floor")!.getBoundingClientRect(); return { x: point.x - floor.left, y: point.y - floor.top, height: floor.height }; });
   await expect.poll(async () => { const p = await floorOffset(); return Math.abs(p.y - p.height + COMPANION_HOME_FLOOR_INSET); }).toBeLessThan(2);
   const offset = await floorOffset();
-  await recall.focus(); await recall.press("Enter"); await expect(pet(page)).toHaveAttribute("data-platform", "companion-home"); await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
+  // The recall is a route of legs now (card top -> day edge -> home floor -> sofa): several seconds from a far support.
+  await recall.focus(); await recall.press("Enter"); await expect(pet(page)).toHaveAttribute("data-platform", "companion-home", { timeout: 25_000 }); await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
   for (const expanded of [false, true]) for (const name of ["태그 필터", "계절 배경"]) {
     const toggle = page.getByRole("button", { name, exact: true });
     if (await toggle.getAttribute("aria-expanded") !== String(expanded)) await toggle.click();
@@ -216,7 +221,10 @@ for (const role of ["owner", "developer"] as const) test(`${role} repeated reord
       if (step === "preview") { await preview(page, role); await dragScroll(page, "viewer"); await popover(page, "viewer"); await studio(page); }
     }
   }
-  await flush(page, "companion-drag", 4); expect(targets(page, "companion-drag")).toHaveLength(4);
+  // The four grabs used to be counted through /api/activity ("companion-drag" x4). Activity is recorded for a really
+  // signed-in developer/owner only since 5f2cc186 + ddf00884 (2026-11-13) and the fixture has no such actor, so that
+  // count cannot be observed here (see the note below). The grabs themselves are asserted in dragScroll.
+  expect(proofs.get(page)!.events, "an unsigned fixture records nothing").toEqual([]);
   const frames = await page.evaluate(() => (window as ProbeWindow).composedProbe!.frames);
   // Native scrollIntoView can carry a valid in-flight source offscreen.
   // Ordinary windows finish that journey instead of teleporting it. Preserve
@@ -225,37 +233,38 @@ for (const role of ["owner", "developer"] as const) test(`${role} repeated reord
   await page.screenshot({ path: `${prefix}-${role}-reordered.png` });
 });
 
-test("a real preview purple heart click clears only the saved souvenir and reaches the native activity queue and timeline", async ({ page }) => {
+// Activity is recorded for a really signed-in developer/owner only (5f2cc186 + ddf00884, 2026-11-13): RouteBeacon is
+// mounted from app/layout.tsx for `actor.isAuthenticated && isTrackedRole(actor.role)`, and the fixture has no actor, so
+// `?role=developer` records nothing. The two activity-record cases (heart-clear timeline, grab/card-restore counts) were
+// removed by the owner on 2026-11-20 instead of adding a fixture seam; the cases here assert that silence.
+async function clearPurpleHeart(page: Page) {
   await setup(page, "developer", false, true); await preview(page, "developer");
   const card = page.locator('.viewer-fullscreen .public-event[data-eventid="evt-005"]'), heart = card.locator(".event-heart");
   await card.hover(); await expect(heart).toBeVisible(); await expect(heart).toHaveAttribute("data-companion-hearted", ""); await expect(heart).toHaveAttribute("aria-pressed", "false");
   const before = await heart.textContent(); await heart.locator("svg").click();
   await expect(heart).not.toHaveAttribute("data-companion-hearted"); await expect(heart).toHaveAttribute("aria-pressed", "false"); expect(await heart.textContent()).toBe(before);
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion.hearts")!).ids)).toEqual([]);
-  await flush(page, "companion-heart-clear"); expect(targets(page, "companion-heart-clear")).toHaveLength(1); expect(targets(page, "event-heart")).toHaveLength(0);
+}
+test("a real preview purple heart click clears only the saved souvenir", async ({ page }) => {
+  await clearPurpleHeart(page);
   await page.screenshot({ path: `${prefix}-real-purple-clear.png` });
-  await studio(page);
-  await page.locator('[data-act="calendar-cell"][aria-label^="2026-06-10 "]').dblclick({ position: { x: 14, y: 20 } }); await page.locator('[data-act="open-day-visit"]').click();
-  const usage = page.locator(".vcard").filter({ has: page.locator('[data-act="usage-open"]') });
-  await expect(usage.locator(".usage-list > li").filter({ hasText: describeTarget("ui.click", "companion-heart-clear").name })).toBeVisible();
-  await page.locator('[data-act="activity-expand-all"]').click();
-  const timeline = page.locator(".vcard").filter({ has: page.locator('[data-act="activity-open"]') }); await timeline.locator(".act-lines > summary").click();
-  await expect(timeline.getByText(describeTarget("ui.click", "companion-heart-clear").name, { exact: true })).toBeVisible();
-  await page.screenshot({ path: `${prefix}-real-purple-timeline.png` });
+  await studio(page); await expect(pet(page)).toHaveCount(1);
+  expect(proofs.get(page)!.events, "an unsigned fixture records nothing").toEqual([]);
 });
 
-for (const surface of ["studio", "viewer"] as const) test(`${surface} actual natural card mischief restores through a real click and records one completed use`, async ({ page }) => {
+for (const surface of ["studio", "viewer"] as const) test(`${surface} actual natural card mischief restores through a real click`, async ({ page }) => {
   test.setTimeout(85_000); await setup(page, "developer", true); if (surface === "viewer") await preview(page, "developer");
   const card = page.locator(`${surface === "viewer" ? ".viewer-fullscreen " : ""}${cardSelector(surface)}[data-eventid="evt-005"]`).first();
   await expect(card).toBeVisible();
   const body = (await actor(page).boundingBox())!, carrier = (await pet(page).boundingBox())!, destination = (await card.boundingBox())!;
   const start = { x: body.x + body.width / 2, y: body.y + body.height * .45 }, offset = carrier.y + carrier.height - start.y;
-  await page.mouse.move(start.x, start.y); await page.mouse.down(); await page.mouse.move(destination.x + destination.width * .72, destination.y - 25 - offset, { steps: 18 }); await page.mouse.up(); await page.mouse.move(4, 4);
+  await page.mouse.move(start.x, start.y); await page.mouse.down(); await page.mouse.move(destination.x + destination.width * .72, destination.y - 18 - offset, { steps: 18 }); await page.waitForTimeout(PUT_DOWN_MS); await page.mouse.up(); await page.mouse.move(4, 4);
   await expect(pet(page)).toHaveAttribute("data-platform", /^card-.*-top/); await expect(pet(page)).not.toHaveAttribute("data-state", "jump"); await beginProbe(page, true);
   const ruffled = page.locator("[data-vc-ruffled]");
   await expect(ruffled).toHaveCount(1, { timeout: 60_000 });
   await page.screenshot({ path: `${prefix}-${surface}-natural-ruffle.png` });
   await ruffled.click(); await expect(ruffled).toHaveCount(0);
-  await flush(page, "companion-card-restore"); expect(targets(page, "companion-card-restore")).toHaveLength(1);
+  // The "one completed use" count went through /api/activity: not observable in an unsigned fixture (see the note above).
+  expect(proofs.get(page)!.events, "an unsigned fixture records nothing").toEqual([]);
   await page.screenshot({ path: `${prefix}-${surface}-native-restored.png` });
 });

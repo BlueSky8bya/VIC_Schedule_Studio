@@ -6,6 +6,7 @@ import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import playSprites from "@/lib/ui/viewer-companion/play-motion-sprite.json";
+import { resolveCompanionAppearanceSource } from "@/lib/ui/viewer-companion/appearance";
 import { PREMIERE_STAGE_KEY, SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
 import { openCompanionHome } from "./helpers/companion-home";
@@ -19,7 +20,8 @@ const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
 const prefix = process.env.COMPANION_PLAY_PREFIX ?? ".scratch-pw/companion-068-play";
 const proof = new WeakMap<Page, { blocked: string[]; errors: string[]; reads: number }>();
-const packet = (row: number) => playSprites.atlases[row - playSprites.rowOffset].src;
+// The shipped texture is the 2026-11-18 appearance edition of each authored packet (68b46f11).
+const packet = (row: number) => resolveCompanionAppearanceSource(playSprites.atlases[row - playSprites.rowOffset]).src;
 
 test.use({ viewport: { width: 1920, height: 1100 }, isMobile: false, hasTouch: false });
 test.beforeEach(async ({ page }) => {
@@ -144,8 +146,9 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} native sho
   await expect(pet(page)).toHaveAttribute("data-play-beat", "checking");
   await expect.poll(() => pet(page).locator(".vc-texture").evaluate(node => (node as HTMLImageElement).currentSrc || (node as HTMLImageElement).src)).toContain(packet(27));
   await page.screenshot({ path: `${prefix}-${surface}-tears.png` });
-  await expect(pet(page)).toHaveAttribute("data-play-beat", "recover");
-  await expect.poll(() => pet(page).locator(".vc-texture").evaluate(node => (node as HTMLImageElement).currentSrc || (node as HTMLImageElement).src)).toContain(packet(23));
+  // The recover beat lasts 280ms and the screenshot above can outlast it. Read the beat and its decoded packet
+  // in one display frame from the witness that has been recording since before the click.
+  await expect.poll(() => page.evaluate(source => (window as PlayWindow).companionPlayProbe!.frames.some(frame => frame.play === "bonk-tears" && frame.beat === "recover" && frame.atlas.endsWith(source)), packet(23))).toBe(true);
   await expect(pet(page)).not.toHaveAttribute("data-play", "bonk-tears", { timeout: 5000 });
   await expect(pet(page)).toBeVisible();
   await page.screenshot({ path: `${prefix}-${surface}-recovered.png` });
@@ -179,6 +182,8 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} native sho
 });
 
 test("viewer and studio expose all three independent behavior axes through the same native settings controls", async ({ page }) => {
+  // Two full surfaces in one case: with other suites on the machine the second one ran into the default 30s.
+  test.setTimeout(60_000);
   for (const surface of ["viewer", "studio"] as const) {
     await setup(page, surface);
     await page.evaluate(() => {
@@ -233,10 +238,13 @@ test("studio native short click during a real released fall keeps falling, lands
   await expect(pet(page)).toHaveAttribute("data-state", "jump");
   // mouse.click intentionally has no locator-stability wait: this native tap
   // is on a genuinely moving actor, not a debug action or synthetic event.
-  const during = await actor(page).boundingBox(); expect(during).not.toBeNull();
-  const down = { x: during!.x + during!.width / 2, y: during!.y + during!.height * .45 };
-  expect(await page.evaluate(point => Boolean(document.elementFromPoint(point.x, point.y)?.closest(".vc-actor")), down)).toBe(true);
-  const before = await pet(page).evaluate(node => node.getBoundingClientRect().bottom);
+  // The body keeps falling between every driver round trip, so the aim point, its hit test and the feet are read
+  // in one frame and the tap follows at once (three separate reads let a loaded machine tap empty air).
+  const { down, hit, before } = await actor(page).evaluate(node => {
+    const rect = node.getBoundingClientRect(), down = { x: rect.left + rect.width / 2, y: rect.top + rect.height * .45 };
+    return { down, hit: Boolean(document.elementFromPoint(down.x, down.y)?.closest(".vc-actor")), before: node.closest(".vc-companion")!.getBoundingClientRect().bottom };
+  });
+  expect(hit).toBe(true);
   await page.mouse.click(down.x, down.y, { delay: 50 }); await page.mouse.move(5, 5);
   await expect(pet(page)).toHaveAttribute("data-play", "bonk-tears");
   await expect(pet(page)).not.toHaveAttribute("data-state", "petted");

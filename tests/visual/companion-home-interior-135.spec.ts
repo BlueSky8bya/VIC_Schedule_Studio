@@ -90,11 +90,14 @@ async function geometry(home: Locator) {
       const hits = points.map(([x, y]) => { const hit = document.elementFromPoint(x, y); return { x, y, own: hit === node || node.contains(hit), tag: hit?.tagName, className: hit?.getAttribute("class"), action: hit?.getAttribute("data-home-action") }; });
       return { action: node.dataset.homeAction!, ...r, hits, hit: hits.every(hit => hit.own) };
     });
+    // Centre and inner side points of the opaque painted mat.
+    const padHits = [[(pad.x + pad.right) / 2, (pad.y + pad.bottom) / 2], [pad.x + (pad.right - pad.x) * .2, (pad.y + pad.bottom) / 2], [pad.right - (pad.right - pad.x) * .2, (pad.y + pad.bottom) / 2]]
+      .map(([x, y]) => document.elementFromPoint(x, y)?.closest("[data-home-action]")?.getAttribute("data-home-action") ?? "none");
     const paintStyle = getComputedStyle(room.querySelector(".vc-home-tv-paint")!);
     const transform = new DOMMatrix().translate(parseFloat(paintStyle.width) / 2, 0).multiply(new DOMMatrix(paintStyle.transform));
     const body = room.querySelector(".vc-home-tv-body")!;
     return { room: box(room), cssWidth: parseFloat(getComputedStyle(room).width), cssHeight: parseFloat(getComputedStyle(room).height),
-      controls, chest, feeder, bin, pad, expectedPad, tvAngle: Math.atan2(transform.m31, transform.m11) * 180 / Math.PI,
+      controls, padHits, chest, feeder, bin, pad, expectedPad, tvAngle: Math.atan2(transform.m31, transform.m11) * 180 / Math.PI,
       tv: box(room.querySelector(".vc-home-tv")!), sofa: box(room.querySelector(".vc-cushion-button")!), bodySrc: body.getAttribute("src"),
       floor: box(room.querySelector(".vc-home-floor")!), seat: box(room.querySelector(".vc-home-cushion")!),
       floorLightOpacity: getComputedStyle(room, "::before").opacity,
@@ -114,14 +117,24 @@ for (const [surface, width, night, reduced] of [["viewer", 1440, false, false], 
     await page.setViewportSize({ width, height: 1100 });
     const home = await fixture(page, surface, night, reduced), data = await geometry(home);
     await save(home, `${surface}-${width}-${surface === "viewer" ? "current-kst" : night ? "night" : "day"}`, data);
-    expect(data.controls).toHaveLength(8);
+    // a2e6bf26 made the curtain cord a control, 7dd1ac08 the shower mat ("wash").
+    expect(data.controls.map(control => control.action).sort()).toEqual(["book", "clearFood", "curtain", "feed", "home", "light", "radio", "toys", "tv", "wash"]);
+    // 7dd1ac08: the mat sits in the gap between chest and bin (the midpoint rule below)
+    // and gets a forgiving 44px hit box; only its upper/lower margin may tuck under
+    // those two neighbours. Its side edges and its whole painted mat stay its own.
+    const matNeighbours = new Set(["toys", "clearFood"]);
     for (const control of data.controls) {
       expect(control.width, control.action).toBeGreaterThanOrEqual(44);
       expect(control.height, control.action).toBeGreaterThanOrEqual(44);
-      expect(control.hit, control.action).toBe(true);
+      if (control.action === "wash") {
+        expect(control.hits.slice(0, 2).every(hit => hit.own), "wash side edges").toBe(true);
+        expect(control.hits.slice(2).every(hit => hit.own || matNeighbours.has(hit.action ?? "")), "wash top/bottom margin").toBe(true);
+      } else expect(control.hit, control.action).toBe(true);
     }
+    expect(data.padHits.every(hit => hit === "wash"), `painted mat hits: ${data.padHits.join(",")}`).toBe(true);
     for (let a = 0; a < data.controls.length; a++) for (let b = a + 1; b < data.controls.length; b++) {
       const x = data.controls[a], y = data.controls[b];
+      if ((x.action === "wash" && matNeighbours.has(y.action)) || (y.action === "wash" && matNeighbours.has(x.action))) continue;
       expect(Math.max(0, Math.min(x.right, y.right) - Math.max(x.x, y.x)) * Math.max(0, Math.min(x.bottom, y.bottom) - Math.max(x.y, y.y)), `${x.action}/${y.action} overlap`).toBeLessThan(.5);
     }
     expect(data.tv.x + data.tv.width / 2).toBeGreaterThan(data.sofa.x + data.sofa.width / 2);
@@ -146,11 +159,12 @@ for (const [surface, width, night, reduced] of [["viewer", 1440, false, false], 
 test("135 native TV cycle and lamp keep one body, registration and quiet feedback", async ({ page }) => {
   const home = await fixture(page, "studio", true, true), room = home.locator(".vc-home-room"), tv = home.locator(".vc-home-tv"), lamp = home.locator(".vc-home-lamp");
   const initial = await geometry(home);
-  for (const [index, state] of ["nature", "music", "cooking", "toys", "moon", "off"].entries()) {
+  // e4f56c8f/9e8de6f7: the first channel is Tori's broadcast ("music" is its legacy alias).
+  for (const [index, state] of ["tori", "nature", "cooking", "toys", "moon", "off"].entries()) {
     if (index % 2 === 0) await tv.click(); else { await tv.focus(); await tv.press(index === 3 ? "Space" : "Enter"); }
     await expect(room).toHaveAttribute("data-tv", state);
     await expect(home.locator(".vc-home-tv-body")).toHaveAttribute("src", initial.bodySrc!);
-    if (state !== "off") await home.locator(".vc-home-tv-screen > img").evaluate(image => (image as HTMLImageElement).decode());
+    if (state !== "off") await home.locator(".vc-home-tv-screen .vc-tv-picture > img").evaluate(image => (image as HTMLImageElement).decode());
     const current = await geometry(home);
     expect(current.tv).toEqual(initial.tv); expect(current.opening).toEqual(initial.opening); expect(current.outlet).toEqual(initial.outlet); expect(current.seat).toEqual(initial.seat);
   }
@@ -169,11 +183,26 @@ test("135 real daytime nap and wake remove and restore the floor sunlight with t
   await placeCompanionOnHomeFloor(page);
   const actor = page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
   await actor.focus(); await actor.press("n");
-  await expect(home.locator(".vc-home-window")).toHaveAttribute("data-curtain", "closed");
+  const pet = page.locator(".vc-companion"), curtainWindow = home.locator(".vc-home-window"), cord = home.locator('[data-home-action="curtain"]');
+  await expect(pet).toHaveAttribute("data-dreaming", "", { timeout: 10000 });
+  // a2e6bf26 / 137 contacts: the curtain is a physical session choice. Only a
+  // cord pull (human) or the companion's own authored curtain beat moves it; a
+  // nap no longer draws it by itself (unit: companion-personality-contacts-137,
+  // asleep + intent "open" stays open). A real nap leaves the sun on the floor.
+  await expect(curtainWindow).toHaveAttribute("data-curtain", "open");
+  expect(Number((await geometry(home)).floorLightOpacity)).toBeGreaterThan(0);
+  // The human draws it for the sleeper (open -> shade -> closed): the floor
+  // sunlight goes with the cloth and the nap is not disturbed.
+  await cord.click(); await expect(curtainWindow).toHaveAttribute("data-curtain", "shade");
+  await cord.click(); await expect(curtainWindow).toHaveAttribute("data-curtain", "closed");
   await expect.poll(async () => (await geometry(home)).floorLightOpacity).toBe("0");
+  await expect(pet).toHaveAttribute("data-dreaming", "");
+  await page.mouse.move(2, 2);
   await save(home, "day-curtain-closed", await geometry(home));
-  await actor.press("Enter");
-  await expect(home.locator(".vc-home-window")).not.toHaveAttribute("data-curtain", "closed");
+  await actor.focus(); await actor.press("Enter");
+  await expect(pet).not.toHaveAttribute("data-dreaming");
+  await cord.click(); await expect(curtainWindow).toHaveAttribute("data-curtain", "open");
   await expect.poll(async () => Number((await geometry(home)).floorLightOpacity)).toBeGreaterThan(0);
+  await page.mouse.move(2, 2);
   await save(home, "day-curtain-awake", await geometry(home));
 });

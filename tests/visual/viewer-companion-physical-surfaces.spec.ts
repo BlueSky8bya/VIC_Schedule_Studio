@@ -5,6 +5,7 @@ import { findPlatformRoute, type Platform } from "@/lib/ui/viewer-companion/brai
 import { safeCompanionSurfaces, unoccludedCompanionRects } from "@/lib/ui/viewer-companion/geometry";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome } from "./helpers/companion-home";
+import { installCompanionPointReader, type CompanionPointWindow } from "./helpers/companion-point";
 
 type Point = { x: number; y: number };
 type FallPoint = Point & { falling: boolean };
@@ -13,13 +14,17 @@ const house = (page: Page) => page.getByRole("region", { name: "빅타민 집", 
 const food = (page: Page) => page.locator(".vc-food");
 const observations = new WeakMap<Page, { posts: string[]; errors: string[] }>();
 const position = (item: Locator) => item.evaluate(node => {
-  const m = new DOMMatrixReadOnly(node.closest("[hidden]") ? (node as HTMLElement).style.transform : getComputedStyle(node).transform);
-  return { x: m.m41, y: m.m42 };
+  // Anchored rests (home floor, date floor, panel floor) keep only an offset in the transform: read the viewport point.
+  const m = (window as unknown as CompanionPointWindow).vcPoint(node, node.closest("[hidden]") ? (node as HTMLElement).style.transform : undefined);
+  return { x: m.x, y: m.y };
 });
 async function press(item: Locator, touch: boolean) { if (touch) await item.tap(); else await item.click(); }
 async function drag(page: Page, item: Locator, release: Point, touch: boolean, grabX = 0) {
   const rect = (await item.boundingBox())!, from = { x: rect.x + rect.width / 2 + grabX, y: rect.y + rect.height / 2 };
-  if (!touch) { await page.mouse.move(from.x, from.y); await page.mouse.down(); await page.mouse.move(release.x, release.y, { steps: 12 }); await page.mouse.up(); return; }
+  if (!touch) { await page.mouse.move(from.x, from.y); await page.mouse.down(); await page.mouse.move(release.x, release.y, { steps: 12 });
+    // A release within 100 ms of the last move carries its velocity and is a throw (a44f46a2). These are put-downs:
+    // hold still past that window. There is no DOM condition for "velocity went stale".
+    await page.waitForTimeout(140); await page.mouse.up(); return; }
   const cdp = await page.context().newCDPSession(page);
   try {
     await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...from, id: 31 }] });
@@ -39,6 +44,12 @@ async function setup(page: Page, touch: boolean, links = false, avatar = false) 
   await page.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(a => a.playState === "running" && Number.isFinite(Number(a.effect?.getComputedTiming().endTime))).map(a => a.finished)); });
   await page.waitForTimeout(180);
 }
+/** A dispensed snack first drops out of the feeder (`data-falling`, about a second); a grab during that fall does not take. */
+async function dispense(page: Page, touch: boolean) {
+  await press(house(page).getByRole("button", { name: "밥 꺼내기", exact: true }), touch); await expect(food(page)).toHaveCount(1);
+  const item = food(page).first(); await expect(item).toBeVisible(); await expect(item).not.toHaveAttribute("data-falling");
+  return item;
+}
 async function floorError(page: Page, item: Locator) {
   const p = await position(item), rect = (await house(page).locator(".vc-home-floor").boundingBox())!;
   return { x: p.x - rect.x, y: p.y - rect.y, planeError: Math.abs(p.y - rect.y - rect.height + 6) };
@@ -50,6 +61,7 @@ test.beforeEach(async ({ page }) => {
   page.on("pageerror", error => observed.errors.push(error.message));
   await page.route("**/*", route => route.request().method() === "POST" ? (observed.posts.push(route.request().url()), route.fulfill({ status: 500, body: "" })) : route.continue());
   await page.route("**/api/soop-live**", route => route.request().method() === "GET" ? route.fulfill({ json: { live: false } }) : route.fallback());
+  await installCompanionPointReader(page);
   await page.addInitScript(({ key, epoch, preferences, care }) => {
     localStorage.setItem(key, epoch);
     for (const [name, value] of Object.entries({ "vic.reduceMotion": "off", "vic.gfxPref": "max", "vic.ambient": "off", "vic.sound": "off", "vic_avatar_side": "left" })) localStorage.setItem(name, value);
@@ -66,8 +78,7 @@ for (const touch of [false]) test.describe(touch ? "native390 physical floor" : 
   test.use({ viewport: touch ? { width: 390, height: 844 } : { width: 1920, height: 1100 }, hasTouch: touch, isMobile: touch });
   test("a genuine release above the room falls onto its floor and retains that home through topology", async ({ page }) => {
     await setup(page, touch);
-    await press(house(page).getByRole("button", { name: "밥 꺼내기", exact: true }), touch); await expect(food(page)).toHaveCount(1);
-    const item = food(page).first(), id = await item.getAttribute("data-food");
+    const item = await dispense(page, touch), id = await item.getAttribute("data-food");
     const target = await house(page).evaluate(node => {
       const floor = node.querySelector(".vc-home-floor")!.getBoundingClientRect(), bed = node.querySelector(".vc-cushion-button")!.getBoundingClientRect(), feed = node.querySelector(".vc-dispenser")!.getBoundingClientRect();
       const footX = feed.left - 26, release = { x: footX + 12, y: floor.top - 24 };
@@ -80,7 +91,7 @@ for (const touch of [false]) test.describe(touch ? "native390 physical floor" : 
     await item.evaluate(node => {
       (window as unknown as FallWindow).surfaceFall = new Promise(resolve => node.addEventListener("pointerup", () => {
         const points: FallPoint[] = [], began = performance.now();
-        const tick = () => { const m = new DOMMatrixReadOnly(getComputedStyle(node).transform); points.push({ x: m.m41, y: m.m42, falling: node.hasAttribute("data-falling") }); if (performance.now() - began < 2000 && (node.hasAttribute("data-falling") || points.length < 2)) requestAnimationFrame(tick); else resolve(points); };
+        const tick = () => { const m = (window as unknown as CompanionPointWindow).vcPoint(node); points.push({ x: m.x, y: m.y, falling: node.hasAttribute("data-falling") }); if (performance.now() - began < 2000 && (node.hasAttribute("data-falling") || points.length < 2)) requestAnimationFrame(tick); else resolve(points); };
         requestAnimationFrame(tick);
       }, { once: true, capture: true }));
     });
@@ -102,8 +113,9 @@ for (const touch of [false]) test.describe(touch ? "native390 physical floor" : 
     else { await page.getByRole("button", { name: "패널을 오른쪽에 두기", exact: true }).click(); await expect(page.locator(".avatar-right .vc-home")).toBeVisible(); }
     await expect.poll(async () => { const current = await floorError(page, item); return Math.hypot(current.x - original.x, current.y - original.y); }).toBeLessThan(2);
     expect(await item.getAttribute("data-food")).toBe(id);
-    const overlaps = await item.evaluate(node => { const a = node.getBoundingClientRect(); return [...document.querySelectorAll(".vc-home button:not(.vc-cushion-button)")].filter(control => { const b = control.getBoundingClientRect(); return b.width > 0 && b.height > 0 && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top; }).length; });
-    expect(overlaps).toBe(0);
+    const overlaps = await item.evaluate(node => { const a = node.getBoundingClientRect(); // Furniture you can also press (TV, lamp, curtain, shower pad) is scenery a snack may rest in front of (a8683a3d, homeControlRects).
+      return [...document.querySelectorAll(".vc-home button:not(.vc-cushion-button):not([data-home-decoration-control])")].filter(control => { const b = control.getBoundingClientRect(); return b.width > 0 && b.height > 0 && a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top; }).map(control => control.getAttribute("aria-label") ?? control.className); });
+    expect(overlaps).toEqual([]);
     await page.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(a => a.playState === "running" && Number.isFinite(Number(a.effect?.getComputedTiming().endTime))).map(a => a.finished)); });
     await expect.poll(async () => { const current = await floorError(page, item); return Math.hypot(current.x - original.x, current.y - original.y); }).toBeLessThan(2);
     await page.screenshot({ path: `.scratch-pw/companion-physical-floor-${touch ? 390 : 1920}.png` });
@@ -209,17 +221,16 @@ test("121 food on a real blank date floor retains its fraction through panel FLI
     return null;
   });
   expect(target, "use a real empty date, never a fabricated plane").not.toBeNull();
-  await house(page).getByRole("button", { name: "밥 꺼내기", exact: true }).click();
-  const item = food(page).first(); await expect(item).toBeVisible(); const id = await item.getAttribute("data-food");
+  const item = await dispense(page, false), id = await item.getAttribute("data-food");
   await drag(page, item, target!, false); await expect(item).not.toHaveAttribute("data-falling");
-  const error = () => item.evaluate(node => { const r = document.querySelector("[data-companion-121-day]")!.getBoundingClientRect(), m = new DOMMatrixReadOnly(getComputedStyle(node).transform); return Math.abs(m.m42 - r.bottom + 3); });
+  const error = () => item.evaluate(node => { const r = document.querySelector("[data-companion-121-day]")!.getBoundingClientRect(), m = (window as unknown as CompanionPointWindow).vcPoint(node); return Math.abs(m.y - r.bottom + 3); });
   await expect.poll(error).toBeLessThan(2);
-  const fraction = await item.evaluate(node => { const r = document.querySelector("[data-companion-121-day]")!.getBoundingClientRect(), m = new DOMMatrixReadOnly(getComputedStyle(node).transform); return (m.m41 - r.left) / r.width; });
+  const fraction = await item.evaluate(node => { const r = document.querySelector("[data-companion-121-day]")!.getBoundingClientRect(), m = (window as unknown as CompanionPointWindow).vcPoint(node); return (m.x - r.left) / r.width; });
   const probe = item.evaluate((node, u) => new Promise<{ error: number; hidden: boolean; x: number }[]>(resolve => {
     const frames: { error: number; hidden: boolean; x: number }[] = [], start = performance.now();
     const sample = () => requestAnimationFrame(() => setTimeout(() => {
-      const r = document.querySelector("[data-companion-121-day]")!.getBoundingClientRect(), m = new DOMMatrixReadOnly(getComputedStyle(node).transform);
-      frames.push({ error: Math.hypot(m.m41 - r.left - r.width * u, m.m42 - r.bottom + 3), hidden: (node as HTMLElement).hidden, x: r.left });
+      const r = document.querySelector("[data-companion-121-day]")!.getBoundingClientRect(), m = (window as unknown as CompanionPointWindow).vcPoint(node);
+      frames.push({ error: Math.hypot(m.x - r.left - r.width * u, m.y - r.bottom + 3), hidden: (node as HTMLElement).hidden, x: r.left });
       if (performance.now() - start < 1000) sample(); else resolve(frames);
     }, 0)); sample();
   }), fraction);
@@ -236,30 +247,32 @@ test("121 food on a real blank date floor retains its fraction through panel FLI
   await expect.poll(error).toBeLessThan(2); await expect(item).toBeVisible();
 });
 
-test("121 blank-panel pet and food keep the same real floor after native side remount", async ({ page }) => {
+// 133 (bfab6e6c, 2026-10-19) retired the 121 transparent panel floor: "a layout wrapper's bottom is not a visible
+// physical landing surface" (129 had already removed its item tier). This keeps the old scenario as the guard for
+// that decision: a pet and a snack let go over the blank panel ignore its bottom edge and rest on the real screen floor,
+// and moving the panel to the other side leaves both where they are.
+test("133 the blank panel bottom is not a floor: pet and food rest on the real screen floor through a side remount", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page, false, false, true);
   const panel = page.locator(".avatar-slot .avatar-dock-inner"), r = (await panel.boundingBox())!;
   expect(r.height).toBeGreaterThan(100); expect(r.y + r.height).toBeLessThan(1088);
   const pet = page.locator(".vc-companion"), actor = page.locator(".vc-actor");
-  await actor.focus(); await actor.press("p"); await page.mouse.click(r.x + r.width * .25, r.y + r.height - 8);
-  await expect(pet).toHaveAttribute("data-platform", /^companion-panel-floor(?:-\d+)?$/); await expect(pet).not.toHaveAttribute("data-state", "jump");
-  await house(page).getByRole("button", { name: "밥 꺼내기", exact: true }).click();
-  const item = food(page).first();
-  // The real fixed month controls raise the shared viewport food floor above
-  // this native panel's bottom. Release below that earlier contact to test
-  // the panel floor itself, rather than asking a snack to pass through it.
-  await drag(page, item, { x: r.x + r.width * .75, y: r.y + r.height - 34 }, false);
-  // The release can precede the next native presentation frame. Establish
-  // actual contact before reading the retained offset; absence of a transient
-  // data-falling attribute alone cannot prove that the snack has landed.
-  await expect.poll(() => item.evaluate(node => { const r = document.querySelector(".avatar-slot .avatar-dock-inner")!.getBoundingClientRect(), m = new DOMMatrixReadOnly(getComputedStyle(node).transform); return Math.abs(m.m42 - r.bottom + 3); })).toBeLessThan(2);
+  const feet = () => pet.evaluate(node => { const box = node.getBoundingClientRect(); return { x: box.left + box.width / 2, y: box.bottom }; });
+  await actor.focus(); await actor.press("p"); await page.mouse.click(r.x + r.width * .25, r.y + r.height - 8); await page.mouse.move(1880, 60);
+  await expect(pet).toHaveAttribute("data-platform", /^viewport-floor(?:-\d+)?$/); await expect(pet).not.toHaveAttribute("data-state", "jump");
+  const petRest = await feet();
+  // The fixed month controls raise the shared screen floor above this panel's bottom edge: the old panel plane was 3px above that edge.
+  expect(Math.abs(petRest.y - (r.y + r.height - 3)), "the pet does not stand on the panel's bottom edge").toBeGreaterThan(20); expect(Math.abs(petRest.x - (r.x + r.width * .25))).toBeLessThan(2);
+  const item = await dispense(page, false);
+  await drag(page, item, { x: r.x + r.width * .75, y: r.y + r.height - 34 }, false); await page.mouse.move(1880, 60);
   await expect(item).not.toHaveAttribute("data-falling");
-  await expect(item).toHaveAttribute("data-platform", /^companion-panel-floor-food(?:-\d+)?$/);
-  const original = await item.evaluate(node => { const r = document.querySelector(".avatar-slot .avatar-dock-inner")!.getBoundingClientRect(), m = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { u: (m.m41 - r.left) / r.width, y: m.m42 - r.bottom }; });
-  expect(original.y).toBeCloseTo(-3, 0);
+  await expect(item).toHaveAttribute("data-platform", /^viewport-floor-food(?:-\d+)?$/);
+  const foodRest = await position(item);
+  expect(Math.abs(foodRest.y - (r.y + r.height - 3)), "the snack does not rest on the panel's bottom edge").toBeGreaterThan(20); expect(Math.abs(foodRest.y - petRest.y)).toBeLessThan(2);
   await page.getByRole("button", { name: "패널을 오른쪽에 두기", exact: true }).click();
-  await expect.poll(() => item.evaluate((node, expected) => { const r = document.querySelector(".avatar-slot .avatar-dock-inner")!.getBoundingClientRect(), m = new DOMMatrixReadOnly(getComputedStyle(node).transform); return Math.hypot((m.m41 - r.left) / r.width - expected.u, m.m42 - r.bottom - expected.y); }, original)).toBeLessThan(1);
+  await expect(page.locator(".avatar-right .vc-home")).toBeVisible();
+  await page.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(a => a.playState === "running" && Number.isFinite(Number(a.effect?.getComputedTiming().endTime))).map(a => a.finished)); });
   await expect(item).toBeVisible(); await expect(pet).toBeVisible();
-  await expect(pet).toHaveAttribute("data-platform", /^companion-panel-floor(?:-\d+)?$/);
-  await expect.poll(() => pet.evaluate(node => Math.abs(node.getBoundingClientRect().bottom - document.querySelector(".avatar-slot .avatar-dock-inner")!.getBoundingClientRect().bottom + 3))).toBeLessThan(2);
+  await expect(pet).toHaveAttribute("data-platform", /^viewport-floor(?:-\d+)?$/); await expect(item).toHaveAttribute("data-platform", /^viewport-floor-food(?:-\d+)?$/);
+  await expect.poll(async () => { const now = await feet(); return Math.hypot(now.x - petRest.x, now.y - petRest.y); }).toBeLessThan(2);
+  await expect.poll(async () => { const now = await position(item); return Math.hypot(now.x - foodRest.x, now.y - foodRest.y); }).toBeLessThan(2);
 });

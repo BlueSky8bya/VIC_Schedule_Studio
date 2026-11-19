@@ -52,7 +52,8 @@ async function seed(page: Page, theme: Theme) {
     // geometry is overridden. Retain native disclosure changes on reload.
     const missingPanelChoice = localStorage.getItem("vic.panelSections") === null;
     for (const [name, value] of Object.entries({ [key]: epoch, "vic.dark": theme === "dark" ? "on" : "off", "vic.reduceMotion": "off", "vic.gfxPref": "max", "vic.ambient": "off", "vic.sound": "off", "vic.premiereStage": "off", "vic_avatar_side": "left" })) localStorage.setItem(name, value);
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, roam: false, jump: false, sleep: true, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, learnFromYou: false }));
+    // The compact heading shows the personality (성격 button): a fresh document draws its own unless chosen (b01-4 / b04).
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, roam: false, jump: false, sleep: true, personality: "curious", personalitySource: "manual", heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, learnFromYou: false }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 2, ...care, hunger: .05, energy: 1 }));
     if (missingPanelChoice) localStorage.setItem("vic.panelSections", JSON.stringify({ version: 1, "tag-filter": true, season: true, "companion-home": false }));
     localStorage.removeItem("vic_panel_collapsed");
@@ -85,8 +86,12 @@ async function material(page: Page, surface: Surface) {
     const panel = card(page, surface, key);
     await expect(panel).toHaveCount(1);
     const sample = await panel.evaluate(node => {
-      const heading = node.querySelector<HTMLElement>(".panel-section-heading")!, title = node.querySelector<HTMLElement>(".panel-section-title")!, label = title.querySelector<HTMLElement>("button > span, :scope > span")!;
-      const style = getComputedStyle(node), ink = getComputedStyle(heading), text = getComputedStyle(title), h = heading.getBoundingClientRect(), range = document.createRange();
+      const heading = node.querySelector<HTMLElement>(".panel-section-heading")!, title = node.querySelector<HTMLElement>(".panel-section-title")!, label = title.querySelector<HTMLElement>(".panel-section-label, :scope > span")!; // e4f56c8f: the toggle's first span is the empty disclosure icon
+      // e4f56c8f: heading actions (빅타민 집's 성격 button) own a separate grid column and never cover the
+      // fold, so a title is centred in its own toggle column, not across the whole heading.
+      const column = (node.querySelector<HTMLElement>(".panel-section-toggle") ?? heading).getBoundingClientRect();
+      const actionHeight = Math.max(0, ...[...node.querySelectorAll(".panel-section-heading .panel-section-actions button")].map(button => button.getBoundingClientRect().height));
+      const style = getComputedStyle(node), ink = getComputedStyle(heading), text = getComputedStyle(title), h = column, range = document.createRange();
       range.selectNodeContents(label); const glyphs = range.getBoundingClientRect(); range.detach();
       const rgb = (value: string) => {
         const numbers = value.match(/[\d.]+/g)?.map(Number) ?? [];
@@ -94,7 +99,7 @@ async function material(page: Page, surface: Surface) {
       };
       const luminance = (value: string) => rgb(value).map(channel => channel <= .04045 ? channel / 12.92 : ((channel + .055) / 1.055) ** 2.4).reduce((sum, channel, index) => sum + channel * [.2126, .7152, .0722][index], 0);
       const a = luminance(ink.color), b = luminance(style.backgroundColor);
-      return { key: node.getAttribute("data-panel-section"), background: style.backgroundColor, border: style.borderTopColor, shadow: style.boxShadow, ink: ink.color, titleAlign: text.textAlign, titleWeight: text.fontWeight, titleCenterDelta: Math.abs((glyphs.left + glyphs.right - h.left - h.right) / 2), toggleHeight: node.querySelector(".panel-section-toggle")!.getBoundingClientRect().height, contrast: (Math.max(a, b) + .05) / (Math.min(a, b) + .05) };
+      return { key: node.getAttribute("data-panel-section"), background: style.backgroundColor, border: style.borderTopColor, shadow: style.boxShadow, ink: ink.color, titleAlign: text.textAlign, titleWeight: text.fontWeight, titleCenterDelta: Math.abs((glyphs.left + glyphs.right - h.left - h.right) / 2), toggleHeight: node.querySelector(".panel-section-toggle")!.getBoundingClientRect().height, actionHeight, contrast: (Math.max(a, b) + .05) / (Math.min(a, b) + .05) };
     });
     samples.push(sample);
   }
@@ -102,7 +107,9 @@ async function material(page: Page, surface: Surface) {
   for (const item of samples) {
     expect(item.background).toBe(samples[0].background); expect(item.border).toBe(samples[0].border); expect(item.shadow).toBe(samples[0].shadow); expect(item.ink).toBe(samples[0].ink);
     expect(item.titleAlign).toBe("center"); expect(item.titleWeight).toBe("600"); expect(item.titleCenterDelta).toBeLessThan(1.25); expect(item.contrast).toBeGreaterThanOrEqual(4.5);
-    expect(item.toggleHeight, "fine-pointer rail title stays 36 physical pixels").toBeCloseTo(36, 1);
+    // e4f56c8f (2026-10-20): one 44px physical title row for every pointer (`--panel-section-hit`), was 36px fine.
+    // A heading action keeps its own object target (빅타민 집: 45px `--vc-object-min-hit`) and the row stretches to it.
+    expect(item.toggleHeight, "rail title is one 44 physical pixel row").toBeCloseTo(Math.max(44, item.actionHeight), 1);
   }
 }
 async function headerEntry(page: Page, surface: Surface) {
@@ -156,7 +163,14 @@ async function headerEntry(page: Page, surface: Surface) {
   }
 }
 async function compact(page: Page, surface: Surface, theme: Theme) {
-  await page.setViewportSize({ width: 1280, height: 720 }); await settled(page); await headerEntry(page, surface);
+  await page.setViewportSize({ width: 1280, height: 720 }); await settled(page);
+  // a44f46a2 (b01-6): a fresh resident lives inside its home, so the floating room is offered open once
+  // when the rail folds away. Close that offer with its own control before checking the folded entry.
+  if (await launcher(page).getAttribute("aria-expanded") === "true") {
+    await room(page).getByRole("button", { name: "빅타민 집 닫기", exact: true }).click();
+    await expect(launcher(page)).toHaveAttribute("aria-expanded", "false"); await page.mouse.move(2, 2); await settled(page);
+  }
+  await headerEntry(page, surface);
   // Keep visual baselines on the changed chrome, without capturing the live
   // calendar or avatar. Native assertions still cover all four surfaces.
   const snapshotPrefix = surface === "anonymous" || surface === "studio" ? `${surface}-${theme}` : null;
@@ -173,15 +187,19 @@ async function compact(page: Page, surface: Surface, theme: Theme) {
   await expect(room(page).getByRole("heading", { name: "빅타민 집", exact: true })).toBeVisible();
   await expect(launcher(page)).toHaveAttribute("aria-expanded", "true"); expect(await savedFold(page)).toEqual(before);
   const layout = await room(page).evaluate(node => {
-    const room = node.getBoundingClientRect(), inside = node.querySelector(".vc-home-room")!.getBoundingClientRect(), close = node.querySelector(".vc-home-close")!.getBoundingClientRect();
-    return { left: room.left, right: room.right, top: room.top, bottom: room.bottom, height: inside.height, closeWidth: close.width, closeHeight: close.height, width: innerWidth, viewportHeight: innerHeight };
+    const scene = node.querySelector<HTMLElement>(".vc-home-room")!, room = node.getBoundingClientRect(), inside = scene.getBoundingClientRect(), close = node.querySelector(".vc-home-close")!.getBoundingClientRect();
+    const css = getComputedStyle(scene), cssWidth = parseFloat(css.width), cssHeight = parseFloat(css.height);
+    return { left: room.left, right: room.right, top: room.top, bottom: room.bottom, height: inside.height, cssWidth, cssHeight, zoom: inside.width / cssWidth, closeWidth: close.width, closeHeight: close.height, width: innerWidth, viewportHeight: innerHeight };
   });
   proof.get(page)!.samples.push({ phase: "compact-expanded", surface, layout });
-  expect(layout.height).toBeCloseTo(132, 1); expect(layout.closeWidth).toBeGreaterThanOrEqual(43.5); expect(layout.closeHeight).toBeGreaterThanOrEqual(43.5);
+  // The complete room is one responsive scene now (f8646283 / e4f56c8f; B7-10, b08 compact room): 74cqw high,
+  // never below 130px + 130px / zoom (285px in a container under 310px), was a fixed 132px strip.
+  expect(layout.cssHeight).toBeCloseTo(Math.max(layout.cssWidth <= 310 ? 285 : .74 * layout.cssWidth, 130 + 130 / layout.zoom), 1); expect(layout.closeWidth).toBeGreaterThanOrEqual(43.5); expect(layout.closeHeight).toBeGreaterThanOrEqual(43.5);
   expect(layout.left).toBeGreaterThanOrEqual(0); expect(layout.top).toBeGreaterThanOrEqual(0); expect(layout.right).toBeLessThanOrEqual(layout.width); expect(layout.bottom).toBeLessThanOrEqual(layout.viewportHeight);
   if (snapshotPrefix) await expect(room(page).locator(".panel-section-heading")).toHaveScreenshot(`${snapshotPrefix}-compact-heading.png`);
   await close.click(); await expect(room(page)).toHaveCount(0); await expect(launcher(page)).toBeFocused(); await headerEntry(page, surface);
-  await nativeActivate(launcher(page)); await expect(close).toBeFocused(); await page.keyboard.press("Escape");
+  // Keyboard close: Enter on the room's own close control. Escape has its own case below.
+  await nativeActivate(launcher(page)); await expect(close).toBeFocused(); await close.press("Enter");
   await expect(room(page)).toHaveCount(0); await expect(launcher(page)).toBeFocused(); expect(await savedFold(page)).toEqual(before);
 }
 
@@ -210,6 +228,17 @@ for (const surface of ["anonymous", "signed-in", "studio", "preview"] as const) 
     expect((await savedFold(page))?.["companion-home"]).toBe(false);
   });
 }
+
+// Regression guard (fixed in 63ecc14a): the house is portalled into `homeCarrier` (886d977a), and a keydown inside
+// the room once never reached the `.vc-compact-home` Escape handler.
+test("anonymous light: Escape closes the compact room and returns focus to the header launcher", async ({ page }) => {
+  await seed(page, "light"); await enter(page, "anonymous");
+  await page.setViewportSize({ width: 1280, height: 720 }); await settled(page);
+  if (await launcher(page).getAttribute("aria-expanded") !== "true") await nativeActivate(launcher(page));
+  const close = room(page).getByRole("button", { name: "빅타민 집 닫기", exact: true });
+  await close.focus(); await expect(close).toBeFocused(); await page.keyboard.press("Escape");
+  await expect(room(page)).toHaveCount(0); await expect(launcher(page)).toBeFocused();
+});
 
 test.describe("wide touch panel title targets", () => {
   test.use({ hasTouch: true, isMobile: false });

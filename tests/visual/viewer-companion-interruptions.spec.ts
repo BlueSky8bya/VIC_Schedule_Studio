@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
+import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
 import { chooseCompanionCare } from "./helpers/companion-home";
 import { expectQuietCompanionVisible } from "./helpers/companion-overlay";
 
@@ -22,7 +23,7 @@ const floorY = (page: Page) => page.evaluate(() => {
 });
 // Measure rendered line tops and the cushion rather than the retired card-box
 // tops. Text content and the brain's anonymous platform ids are never read.
-const supportDistance = (page: Page) => pet(page).evaluate(element => {
+const supportDistance = (page: Page) => pet(page).evaluate((element, homeFloorInset) => {
   const box = element.getBoundingClientRect(), x = box.left + box.width / 2, y = box.bottom;
   let floor = innerHeight - 18;
   for (const bar of document.querySelectorAll<HTMLElement>(".agenda-monthbar")) {
@@ -38,8 +39,16 @@ const supportDistance = (page: Page) => pet(page).evaluate(element => {
   }
   range.detach();
   for (const cushion of document.querySelectorAll<HTMLElement>(".vc-home-cushion")) { const rect = cushion.getBoundingClientRect(); if (rect.width > 0 && rect.height > 0) supports.push({ left: rect.left, right: rect.right, y: rect.top }); }
+  // Deliberate landings the product also measures (lib/ui/viewer-companion/geometry.ts): a card's top edge and
+  // a day cell's bottom edge, both with the same 3px clearance. A released hold may settle on either.
+  for (const card of document.querySelectorAll<HTMLElement>(".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid]")) { const rect = card.getBoundingClientRect(); if (rect.width > 0 && rect.height > 0) supports.push({ left: rect.left, right: rect.right, y: rect.top - 3 }); }
+  for (const day of document.querySelectorAll<HTMLElement>(".public-day,.agenda-day")) { const rect = day.getBoundingClientRect(); if (rect.width > 0 && rect.height > 0) supports.push({ left: rect.left, right: rect.right, y: rect.bottom - 3 }); }
+  // A fresh companion starts inside its home (2026-10-19): the room floor line and the bath mat's stance
+  // (72% down the painted mat, lib/ui/viewer-companion/home-interaction.ts) are real supports too.
+  for (const node of [document.querySelector<HTMLElement>(".vc-home-wash-stance") ?? document.querySelector<HTMLElement>(".vc-home-wash-pad")]) { const rect = node?.getBoundingClientRect(); if (rect && rect.width > 0 && rect.height > 0) supports.push({ left: rect.left, right: rect.right, y: rect.top + rect.height * .72 }); }
+  for (const plane of document.querySelectorAll<HTMLElement>(".vc-home-floor")) { const rect = plane.getBoundingClientRect(); if (rect.width > 0 && rect.height > 0) supports.push({ left: rect.left, right: rect.right, y: rect.bottom - homeFloorInset }); }
   return Math.min(...supports.filter(support => x >= support.left - 1 && x <= support.right + 1).map(support => Math.abs(support.y - y)));
-});
+}, COMPANION_HOME_FLOOR_INSET);
 
 test.beforeEach(async ({ page }) => {
   const posts: string[] = []; requests.set(page, posts);
@@ -148,6 +157,8 @@ test("pausing a dragged snack releases capture and returns it to the floor", asy
   // actual button centre; its44px hit box is centred16px above the foot anchor.
   const snackFoot = () => snack.evaluate(node => { const rect = node.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 + 16 }; });
   await expect(snack).toHaveCount(1);
+  // A dispensed snack falls out of the feeder first; a grab during that fall does not take.
+  await expect(snack).not.toHaveAttribute("data-falling");
   await expect(home(page).getByRole("button", { name: "밥 꺼내기", exact: true })).toBeFocused();
   await expect(snack).not.toHaveAttribute("data-selected");
   await snack.evaluate(node => node.addEventListener("pointerdown", event => { (node as HTMLElement).dataset.capturePointer = String((event as PointerEvent).pointerId); }));

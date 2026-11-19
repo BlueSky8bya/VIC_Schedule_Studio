@@ -5,7 +5,7 @@ import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { MAX_COMPANION_FOOD } from "@/lib/ui/viewer-companion/food-capacity";
 import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
 import { PREMIERE_STAGE_KEY, SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { openCompanionHome } from "./helpers/companion-home";
+import { companionNodeOrigin, openCompanionHome } from "./helpers/companion-home";
 
 type Point = { x: number; y: number };
 type CarryFrame = { at: number; queuedAt: number; readAt: number; rafSerialAtQueue: number; latestSerial: number; sourceAtRAF: number; source: number; scrollAtRAF: number; scrollAtRead: number; foot: number; error: number; platform: string; hidden: boolean; state: string };
@@ -226,7 +226,9 @@ test("native background full/lite/full choices retain pickup, sofa return and re
   await page.screenshot({ path: `${artifactPrefix}-native-gfx.png` });
 });
 
-const foodPoint = (item: Locator) => item.evaluate(node => { const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: matrix.m41, y: matrix.m42 }; });
+// On the home floor and the dispenser tray a snack is laid out from an anchored left/top and its transform is only
+// the offset from that origin (a3e9a288, 2026-10-25). Every position below adds the two; both are 0px elsewhere.
+const foodPoint = (item: Locator) => companionNodeOrigin(item);
 async function dragFood(page: Page, item: Locator, pointer: Point) {
   const rect = (await item.boundingBox())!, start = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
   await page.mouse.move(start.x, start.y); await page.mouse.down(); await page.mouse.move(pointer.x, pointer.y, { steps: 8 }); await page.mouse.up();
@@ -237,17 +239,20 @@ test("eight native snacks keep their tray attachments while a falling snack foll
   for (let count = 1; count <= MAX_COMPANION_FOOD; count++) { await feed.click(); await expect(food(page)).toHaveCount(count); }
   const ids = await food(page).evaluateAll(nodes => nodes.map(node => (node as HTMLElement).dataset.food!));
   await feed.click(); await expect(food(page)).toHaveCount(MAX_COMPANION_FOOD);
-  const offsets = await food(page).evaluateAll(nodes => {
+  // A dispensed snack now drops out of the dispenser first (about a second). Its place in the house is only
+  // meaningful once it rests, so measure the offsets after every fall has ended.
+  await expect(page.locator(".vc-food[data-falling]")).toHaveCount(0);
+  const offsets =await food(page).evaluateAll(nodes => {
     const tray = document.querySelector(".vc-home .vc-dispenser-slot")!.getBoundingClientRect();
-    return nodes.slice(0, -1).map(node => { const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { id: (node as HTMLElement).dataset.food!, x: matrix.m41 - tray.left, y: matrix.m42 - tray.top }; });
+    return nodes.slice(0, -1).map(node => { const css = getComputedStyle(node), matrix = new DOMMatrixReadOnly(css.transform), x = matrix.m41 + (parseFloat(css.left) || 0), y = matrix.m42 + (parseFloat(css.top) || 0); return { id: (node as HTMLElement).dataset.food!, x: x - tray.left, y: y - tray.top }; });
   });
   await page.evaluate(offsets => {
     const witness = { frames: [] as FoodFrame[], raf: 0, began: performance.now() };
     const sample = (now: number) => {
       const tray = document.querySelector(".vc-home .vc-dispenser-slot")!.getBoundingClientRect(), floor = document.querySelector(".vc-home .vc-home-floor")!.getBoundingClientRect();
       for (const node of document.querySelectorAll<HTMLElement>(".vc-food")) {
-        const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform), offset = offsets.find(item => item.id === node.dataset.food);
-        witness.frames.push({ at: now - witness.began, id: node.dataset.food!, x: matrix.m41, y: matrix.m42, floor: floor.bottom, trayError: offset ? Math.hypot(matrix.m41 - tray.left - offset.x, matrix.m42 - tray.top - offset.y) : 0, falling: node.hasAttribute("data-falling"), hidden: node.hidden });
+        const css = getComputedStyle(node), matrix = new DOMMatrixReadOnly(css.transform), x = matrix.m41 + (parseFloat(css.left) || 0), y = matrix.m42 + (parseFloat(css.top) || 0), offset = offsets.find(item => item.id === node.dataset.food);
+        witness.frames.push({ at: now - witness.began, id: node.dataset.food!, x, y, floor: floor.bottom, trayError: offset ? Math.hypot(x - tray.left - offset.x, y - tray.top - offset.y) : 0, falling: node.hasAttribute("data-falling"), hidden: node.hidden });
       }
       witness.raf = requestAnimationFrame(sample);
     };

@@ -10,6 +10,7 @@ import { COMPANION_FOOD_NAMES, type CompanionFoodKind } from "@/lib/ui/viewer-co
 import { COMPANION_FOOD_BOOK_ORDER as COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/collection-book-order";
 import { openCompanionHome } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
+import { installCompanionPointReader, type CompanionPointWindow } from "./helpers/companion-point";
 
 type Surface = "viewer" | "studio";
 type ReceiptWindow = Window & { food112Receipt?: { observer: MutationObserver; steps: Array<{ state: string; curiosity: string; at: number }> } };
@@ -17,13 +18,14 @@ type RenderProbeWindow = Window & { food112RenderProbe?: { frames: unknown[]; mu
 const output = process.env.VIC_FOOD112_OUTPUT ?? ".scratch-pw/companion-112/food/native";
 const renderProbe = process.env.VIC_FOOD112_PROBE === "1";
 const food = (page: Page) => page.locator(".vc-food");
-const point = (item: Locator) => item.evaluate(node => { const m = new DOMMatrixReadOnly((node as HTMLElement).style.transform); return { x: m.m41, y: m.m42, hidden: (node as HTMLElement).hidden }; });
+// A snack at rest is CSS-anchored to its support (a3e9a288): the transform is only the offset from that origin.
+const point = (item: Locator) => item.evaluate(node => ({ ...(window as unknown as CompanionPointWindow).vcPoint(node, (node as HTMLElement).style.transform), hidden: (node as HTMLElement).hidden }));
 const proofs = new WeakMap<Page, { build: string; writes: string[]; errors: string[]; samples: unknown[] }>();
 test.use({ headless: true, viewport: { width: 1920, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
 test.setTimeout(45000);
 test.beforeEach(async ({ page }) => {
   const proof = { build: readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim(), writes: [] as string[], errors: [] as string[], samples: [] as unknown[] }; proofs.set(page, proof);
-  page.on("pageerror", error => proof.errors.push(error.message));
+  page.on("pageerror", error => proof.errors.push(error.message)); await installCompanionPointReader(page);
   await page.route("**/*", route => {
     const request = route.request(), url = new URL(request.url());
     if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) { proof.writes.push(`${request.method()} ${url.pathname}`); return route.fulfill({ status: 503, body: "fixture forbids writes" }); }
@@ -45,7 +47,7 @@ async function snapshot(page: Page) {
     const floorBars = [...document.querySelectorAll<HTMLElement>(".agenda-monthbar")].filter(node => getComputedStyle(node).position === "fixed").map(node => { const r = node.getBoundingClientRect(); return { top: r.top, bottom: r.bottom }; });
     const floorY = Math.min(innerHeight - 18, ...floorBars.filter(r => r.top >= innerHeight * .65 && r.bottom <= innerHeight + 1).map(r => r.top - 8));
     const bands = [...document.querySelectorAll<HTMLElement>(".support-bar[data-supportid],.agenda-event[data-supportid],[data-companion-band='public']")].map(node => { const r = node.getBoundingClientRect(); return { left: r.left, top: r.top, right: r.right, bottom: r.bottom, attributes: [...node.attributes].map(a => [a.name, a.value]) }; });
-    const snacks = [...document.querySelectorAll<HTMLElement>(".vc-food")].map(node => { const m = new DOMMatrixReadOnly(node.style.transform); return { x: m.m41, y: m.m42, hidden: node.hidden, falling: node.hasAttribute("data-falling") }; });
+    const snacks = [...document.querySelectorAll<HTMLElement>(".vc-food")].map(node => { const m = (window as unknown as CompanionPointWindow).vcPoint(node, node.style.transform); return { x: m.x, y: m.y, hidden: node.hidden, falling: node.hasAttribute("data-falling") }; });
     return { width: innerWidth, height: innerHeight, scroll: scrollY, maxScroll: document.documentElement.scrollHeight - innerHeight, floorY, bands, snacks, focused: document.hasFocus(), hidden: document.hidden };
   }); proofs.get(page)!.samples.push(shot); return shot;
 }
@@ -58,7 +60,7 @@ async function setup(page: Page, surface: Surface, { hungry = false, spawn = tru
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...care, energy: 1, hunger: hungry ? .55 : .05 }));
   }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, prefs: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE, hungry, collectionKey: COMPANION_COLLECTION_KEY });
   await page.goto(surface === "viewer" ? "/visual-fixture/poster?links=1" : "/visual-fixture/studio?role=owner&companionDrag=1"); await page.bringToFront(); await settlePanelLayout(page);
-  expect(new URL(page.url()).origin).toBe("http://127.0.0.1:3117"); await expect(page.locator(".vc-companion")).toBeVisible(); await openCompanionHome(page);
+  expect(new URL(page.url()).origin).toBe(new URL(test.info().project.use.baseURL as string).origin); await expect(page.locator(".vc-companion")).toBeVisible(); await openCompanionHome(page);
   const calendar = page.locator(surface === "viewer" ? ".public-calendar-area" : ".studio-calendar-panel").first();
   // Actual existing zoom gesture exposes scrolling; no spacer, pose/RNG patch
   // or fake geometry is inserted into the document.
@@ -69,8 +71,11 @@ async function setup(page: Page, surface: Surface, { hungry = false, spawn = tru
   const measured = await snapshot(page); expect(measured.maxScroll).toBeGreaterThan(200); expect(measured.focused && !measured.hidden).toBe(true);
 }
 async function drag(page: Page, x: number, y: number) {
-  const item = food(page), rect = (await item.boundingBox())!, at = await point(item), grip = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
-  await page.mouse.move(grip.x, grip.y); await page.mouse.down(); await page.mouse.move(x + grip.x - at.x, y + grip.y - at.y, { steps: 14 }); await page.mouse.up(); await page.mouse.move(1880, 50);
+  // A dispensed snack falls out of the outlet first and a grab during that fall does not take; a release within 100 ms
+  // of the last pointer move is a throw (companion-food.tsx pointerup). This is a put-down: wait for both.
+  const item = food(page); await expect(item).not.toHaveAttribute("data-falling");
+  const rect = (await item.boundingBox())!, at = await point(item), grip = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+  await page.mouse.move(grip.x, grip.y); await page.mouse.down(); await page.mouse.move(x + grip.x - at.x, y + grip.y - at.y, { steps: 14 }); await page.waitForTimeout(140); await page.mouse.up(); await page.mouse.move(1880, 50);
   await expect(item).not.toHaveAttribute("data-falling");
 }
 async function startReceiptRenderProbe(page: Page) {
@@ -86,7 +91,7 @@ async function startReceiptRenderProbe(page: Page) {
     const observer = new MutationObserver(records => {
       for (const record of records) {
         const target = record.target instanceof Element ? record.target : record.target.parentElement;
-        if (!target?.closest(".vc-companion,.vc-first-taste") && ![...record.addedNodes, ...record.removedNodes].some(node => node instanceof Element && (node.matches(".vc-companion,.vc-first-taste") || node.querySelector(".vc-companion,.vc-first-taste")))) continue;
+        if (!target?.closest(".vc-companion,.vc-discovery-flight[data-discovery-kind='food']") && ![...record.addedNodes, ...record.removedNodes].some(node => node instanceof Element && (node.matches(".vc-companion,.vc-discovery-flight[data-discovery-kind='food']") || node.querySelector(".vc-companion,.vc-discovery-flight[data-discovery-kind='food']")))) continue;
         mutations.push({ at: performance.now() - started, target: identity(record.target), added: [...record.addedNodes].map(node => ({ id: identity(node), type: node.nodeName, className: node instanceof Element ? node.getAttribute("class") : null })), removed: [...record.removedNodes].map(node => ({ id: identity(node), type: node.nodeName, className: node instanceof Element ? node.getAttribute("class") : null })) });
       }
     });
@@ -96,9 +101,9 @@ async function startReceiptRenderProbe(page: Page) {
     const tick = (now: number) => {
       if (stopped) return;
       if (now - last >= 1000 / 30) {
-        last = now; const body = document.querySelector<HTMLElement>(".vc-companion"), stamp = document.querySelector(".vc-first-taste");
+        last = now; const body = document.querySelector<HTMLElement>(".vc-companion"), stamp = document.querySelector(".vc-discovery-flight[data-discovery-kind='food']");
         if (stamp && firstTaste < 0) firstTaste = now;
-        const captured = { at: now - started, sinceFirstTaste: firstTaste < 0 ? null : now - firstTaste, state: body?.dataset.state, pose: body?.dataset.pose, atlas: body?.dataset.atlas, facing: body?.dataset.facing, row: body?.style.getPropertyValue("--vc-row"), focused: document.hasFocus(), hidden: document.hidden, layers: Object.fromEntries([".vc-companion", ".vc-actor", ".vc-inertia", ".vc-facing", ".vc-reaction", ".vc-contact", ".vc-pose", ".vc-sprite", ".vc-texture", ".vc-first-taste"].map(selector => [selector, describe(document.querySelector(selector))])) };
+        const captured = { at: now - started, sinceFirstTaste: firstTaste < 0 ? null : now - firstTaste, state: body?.dataset.state, pose: body?.dataset.pose, atlas: body?.dataset.atlas, facing: body?.dataset.facing, row: body?.style.getPropertyValue("--vc-row"), focused: document.hasFocus(), hidden: document.hidden, layers: Object.fromEntries([".vc-companion", ".vc-actor", ".vc-inertia", ".vc-facing", ".vc-reaction", ".vc-contact", ".vc-pose", ".vc-sprite", ".vc-texture", ".vc-discovery-flight[data-discovery-kind='food']"].map(selector => [selector, describe(document.querySelector(selector))])) };
         if (body?.dataset.state === "eat" && !meal) { meal = true; frames.push(...prelude); prelude.length = 0; }
         if (meal || firstTaste >= 0) frames.push(captured); else { prelude.push(captured); if (prelude.length > 90) prelude.shift(); }
         if (firstTaste >= 0 && now - firstTaste >= 3000) { probe.done = true; probe.stop(); return; }
@@ -128,7 +133,7 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} actual fir
   await expect(actor).toBeVisible(); await actor.focus(); await expect(actor).toBeFocused(); await actor.press("p"); await expect(pet).toHaveAttribute("data-placing", ""); await page.mouse.click(740, floor.floorY); await page.mouse.move(1880, 50);
   await expect(pet).not.toHaveAttribute("data-state", "jump"); await actor.focus(); await actor.press("Space"); await expect(pet).toHaveAttribute("data-state", "held");
   await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click(); await expect(food(page)).toBeVisible(); const kind = await food(page).getAttribute("data-kind") as CompanionFoodKind;
-  expect(COMPANION_FOOD_KINDS).toContain(kind); await expect(page.locator(".vc-first-taste")).toHaveCount(0);
+  expect(COMPANION_FOOD_KINDS).toContain(kind); await expect(page.locator(".vc-discovery-flight[data-discovery-kind='food']")).toHaveCount(0);
   await drag(page, 1100, floor.floorY - 5);
   await pet.evaluate(node => {
     const el = node as HTMLElement, steps: Array<{ state: string; curiosity: string; at: number }> = [], began = performance.now();
@@ -138,7 +143,8 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} actual fir
   if (renderProbe) await startReceiptRenderProbe(page);
   await actor.focus(); await actor.press("Space"); await page.mouse.move(1880, 50);
   await expect(food(page)).toHaveCount(0, { timeout: 85000 });
-  const stamp = page.locator(".vc-first-taste"); await expect(stamp).toBeVisible(); await expect(stamp.locator('[data-collection-art="food-stamp"]')).toHaveAttribute("data-collection-art-id", kind);
+  // The first-taste stamp is the shared discovery souvenir now (a2e6bf26): the same food stamp, flying to the notebook for 1.5 s.
+  const stamp = page.locator(".vc-discovery-flight[data-discovery-kind='food']"); await expect(stamp).toBeVisible(); await expect(stamp.locator('[data-collection-art="food-stamp"]')).toHaveAttribute("data-collection-art-id", kind);
   // An element screenshot waits for a stable box and could outlive this
   // intentionally moving1500ms receipt. Capture the actual page frame.
   await page.screenshot({ path: `${output}/${surface}-actual-first-taste.png` }); await expect(stamp).toHaveCount(0, { timeout: 3000 });
@@ -164,7 +170,8 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} actual fir
   await expect(recent).toHaveCount(1); await expect(recent).toHaveAttribute("data-food-index", String(COMPANION_FOOD_KINDS.indexOf(kind))); await expect(recent).toHaveAttribute("aria-pressed", "true");
   await expect(dialog.locator(".rhh-food-detail[data-recent] strong")).toHaveText(COMPANION_FOOD_NAMES[kind]);
   await expect(recent.locator('[data-collection-art="food-stamp"]')).toHaveCount(0);
-  await expect(dialog.locator('.rhh-food-detail [data-collection-art="food"]')).toHaveAttribute("data-collection-art-id", kind);
+  // The grid tile keeps the plain picture; the detail of a tasted food shows its watercolor stamp (aafcb773).
+  await expect(dialog.locator('.rhh-food-detail [data-collection-art="food-stamp"]')).toHaveAttribute("data-collection-art-id", kind);
   await expect(dialog.locator(".rhh-food-detail .rhh-collection-recent")).toHaveText("방금 맛봤어요");
   proofs.get(page)!.samples.push({ actualConsumedKind: kind, index: COMPANION_FOOD_KINDS.indexOf(kind), reload: false, nativeRngUnchanged: true });
 });

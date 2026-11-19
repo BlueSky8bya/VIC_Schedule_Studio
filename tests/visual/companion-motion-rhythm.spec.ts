@@ -7,6 +7,8 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { COMPANION_THROW_LIMITS } from "@/lib/ui/viewer-companion/throw";
+import playSprites from "@/lib/ui/viewer-companion/play-motion-sprite.json";
+import { resolveCompanionAppearanceSource } from "@/lib/ui/viewer-companion/appearance";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { companionPlayfulSwitch, setCompanionPlayful } from "./helpers/companion-settings";
@@ -19,6 +21,9 @@ const prefix = process.env.COMPANION_RHYTHM_PREFIX ?? ".scratch-pw/companion-071
 const companion = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => companion(page).locator(".vc-actor");
 const ordinaryCardSelector = ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],[data-companion-event='ordinary'][data-eventid]";
+// The tears "checking" beat paints play row 27 (timing.ts bonk-tears). Its shipped texture is the 2026-11-18
+// appearance edition of that row's authored packet (68b46f11), not the older named `victamin-play-27-...` file.
+const tearsPacket = resolveCompanionAppearanceSource(playSprites.atlases[27 - playSprites.rowOffset]).src;
 const evidence = new WeakMap<Page, { writes: string[]; errors: string[] }>();
 
 test.use({ viewport: { width: 1920, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
@@ -184,7 +189,7 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} short tap 
   // Pointer release paints contact synchronously; the next renderer frame
   // publishes its semantic beat. A pre-tick empty label is not a missing pose.
   expect(new Set(reaction.map(frame => frame.beat).filter(Boolean))).toEqual(new Set(["impact", "checking", "recover"]));
-  expect(reaction.some(frame => frame.beat === "checking" && frame.image.includes("victamin-play-27-ear-v2-big-eyes-v1-body-outline-v1.webp"))).toBe(true);
+  expect(reaction.some(frame => frame.beat === "checking" && frame.image.endsWith(tearsPacket))).toBe(true);
   await actor(page).click({ delay: 55 }); await page.mouse.move(5, 5);
   await expect(companion(page)).toHaveAttribute("data-play", "bonk-tears");
   const box = (await actor(page).boundingBox())!, start = { x: box.x + box.width / 2, y: box.y + box.height * .45 };
@@ -205,7 +210,10 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} prank swit
   // stage 4: card tilt is one of the four pranks behind the single 장난치기 switch. The seed is a legacy mix
   // (heart and hide-seek off, card tilt on), which reads as OFF and is stored untouched until the switch is used.
   const toggle = companionPlayfulSwitch(dialog), panel = dialog.getByRole("switch", { name: "빅타민 패널 자리 옮기기 켜기/끄기", exact: true });
-  const before = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!));
+  // A fresh document draws its own personality and the first save writes that draw (41e73e05 / a0e7d07e,
+  // b06): personality is the one field a prank save may change, so it is left out of the comparison.
+  const { personality: _seededPersonality, ...before } = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!));
+  void _seededPersonality;
   expect(before).toMatchObject({ cardPrank: true, heartPrank: false, ambientPrank: false, panelPrank: false });
   await expect(toggle).not.toBeChecked(); await expect(panel).not.toBeChecked();
   await toggle.click(); await expect(toggle).toBeChecked(); await expect(panel).not.toBeChecked();
@@ -223,7 +231,7 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} prank swit
 });
 
 for (const surface of ["viewer", "studio"] as const) for (const cardPrank of [true, false]) test(`${surface} actual natural movement contact performs its finite reaction with card tilt ${cardPrank ? "ON and click restoration" : "OFF"}`, async ({ page }) => {
-  test.setTimeout(50000);
+  test.setTimeout(150000);
   await setup(page, surface, true);
   // stage 4: card tilt follows the single 장난치기 switch, and a partly-off mix acts as off. The seed keeps
   // cardPrank on with heart/hide-seek off, so ON is chosen natively (all four pranks) and OFF is that seed as it reads.
@@ -252,7 +260,10 @@ for (const surface of ["viewer", "studio"] as const) for (const cardPrank of [tr
   await expect.poll(() => page.evaluate(() => {
     const frames = (window as MotionWindow).motionRhythmProbe!.frames;
     return frames.some((frame, index) => frame.ordinaryEventId && ["bump", "slip", "tumble"].includes(frame.play) && ["walk", "jump"].includes(frames[index - 1]?.state));
-  }), { timeout: 35000, intervals: [50] }).toBe(true);
+  // Authored personality scenes (entry, C/D recipes) outrank utility movement while roaming and carry the
+  // pet home and back (b04); a natural card arrival comes between them, measured at 14 s (viewer) and 63 s
+  // (studio) with this seed. Give the real sequence 110 s instead of the old 35 s.
+  }), { timeout: 110000, intervals: [50] }).toBe(true);
   await expect(companion(page)).toHaveAttribute("data-play", /bump|slip|tumble/);
   const contact = await page.evaluate(() => {
     const frames = (window as MotionWindow).motionRhythmProbe!.frames;

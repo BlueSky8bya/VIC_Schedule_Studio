@@ -5,7 +5,7 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome } from "./helpers/companion-home";
 
 type Point = { x: number; y: number };
-type PursuitWindow = Window & { pursuitWitness: { x: number; state: string; mood: string; at: number }[] };
+type PursuitWindow = Window & { pursuitWitness: { x: number; state: string; mood: string; goal: string; at: number }[] };
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
 const food = (page: Page) => page.locator(".vc-food");
@@ -13,7 +13,9 @@ const point = (item: Locator) => item.evaluate(node => {
   // Food transforms locate its foot directly; the companion carrier locates
   // the top-left of its92px cell. Measure the latter's real centre/bottom.
   if (node.matches(".vc-companion")) { const r = node.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.bottom }; }
-  const m = new DOMMatrixReadOnly((node as HTMLElement).style.transform); return { x: m.m41, y: m.m42 };
+  // On the home floor the food is laid out from an anchored left/top and the
+  // transform is only the offset from it (0px everywhere else): add both.
+  const css = getComputedStyle(node), m = new DOMMatrixReadOnly(css.transform); return { x: m.m41 + (parseFloat(css.left) || 0), y: m.m42 + (parseFloat(css.top) || 0) };
 });
 
 test.use({ viewport: { width: 1920, height: 1100 } });
@@ -75,8 +77,11 @@ async function moveFood(page: Page, target: Point, offset: Point) {
   await page.mouse.move(target.x + offset.x, target.y + offset.y, { steps: 12 });
 }
 
-test("a hungry companion pursues a distant real snack in finite walks, yields while it is held, then resumes the same meal", async ({ page, context }) => {
-  test.setTimeout(35000);
+// Contract changes since this was written: a measured clear floor is one walk, not a chain of 180px restarts
+// (e65b7c08, 2026-10-17); that walk is no longer cut short when its snack is picked up (58f20001, 2026-10-18); and
+// the authored beat already playing finishes before the owned meal walk starts (55e150b9, 2026-10-20).
+test("a hungry companion pursues a distant real snack in one walk, leaves it alone while it is held, then eats the same meal", async ({ page, context }) => {
+  test.setTimeout(75000);
   const posts: string[] = [], errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   await context.route("**/*", route => route.request().method() === "POST" ? (posts.push(route.request().url()), route.fulfill({ status: 500, body: "" })) : route.continue());
@@ -104,39 +109,58 @@ test("a hungry companion pursues a distant real snack in finite walks, yields wh
   await expect.poll(async () => Math.hypot((await point(pet(page))).x - start.x, (await point(pet(page))).y - start.y)).toBeLessThan(2);
   const feed = page.getByRole("button", { name: "밥 꺼내기", exact: true }); await feed.click();
   const item = food(page).last(); await expect(food(page)).toHaveCount(1); const id = await item.getAttribute("data-food");
+  // A dispensed snack falls out of the dispenser first; a grab during that fall does not take.
+  await expect(item).not.toHaveAttribute("data-falling");
   const grip = await grabFood(page, item); await moveFood(page, target, grip.offset); await page.mouse.up();
   await expect(item).not.toHaveAttribute("data-falling");
   await expect.poll(async () => Math.hypot((await point(item)).x - target.x, (await point(item)).y - target.y)).toBeLessThan(2);
-  await expect(pet(page)).toHaveAttribute("data-state", "walk", { timeout: 5000 });
+  // Observe public renderer metadata and actual coordinates, never private brain state.
+  await page.evaluate(() => {
+    const node = document.querySelector<HTMLElement>(".vc-companion")!, samples: PursuitWindow["pursuitWitness"] = []; (window as unknown as PursuitWindow).pursuitWitness = samples;
+    const began = performance.now();
+    const sample = (now: number) => { const r = node.getBoundingClientRect(); samples.push({ x: r.left + r.width / 2, state: node.dataset.state ?? "", mood: node.dataset.mood ?? "", goal: node.dataset.foodGoal ?? "", at: now - began }); if (now - began < 70000 && samples.length < 6000) requestAnimationFrame(sample); };
+    requestAnimationFrame(sample);
+  });
+  const witness = () => page.evaluate(() => (window as unknown as PursuitWindow).pursuitWitness);
+  await expect(pet(page)).toHaveAttribute("data-state", "walk", { timeout: 12000 }); await expect(pet(page)).toHaveAttribute("data-food-goal", id!);
   await expect.poll(async () => (await point(pet(page))).x - start.x).toBeGreaterThan(25);
 
   // Native re-grabbing makes this same source temporarily unavailable. It is
   // not deleted, earns no meal credit, and produces no disappointment event.
+  // The walk under way ends by itself at the remembered spot.
   const held = await grabFood(page, item); await moveFood(page, { x: target.x + 8, y: target.y - 8 }, held.offset);
-  await expect(pet(page)).not.toHaveAttribute("data-state", "walk");
+  await expect(pet(page)).not.toHaveAttribute("data-state", "walk", { timeout: 8000 });
   const yielded = await point(pet(page)); await page.waitForTimeout(1100);
   expect(Math.hypot((await point(pet(page))).x - yielded.x, (await point(pet(page))).y - yielded.y)).toBeLessThan(2);
   await expect(food(page)).toHaveCount(1); await expect(pet(page)).not.toHaveAttribute("data-state", "eat");
   await expect(pet(page)).not.toHaveAttribute("data-mood", /disappointed|sulky/);
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!).hunger as number)).toBeGreaterThan(.75);
+  expect((await witness()).some(sample => sample.state === "eat" || /disappointed|sulky/.test(sample.mood))).toBe(false);
+  // Let go exactly on the floor line. (Before 63ecc14a the snack then dropped through to the day cell edge 31px
+  // below, where the companion never reached it.)
   await moveFood(page, target, held.offset); await page.mouse.up();
   expect(id).not.toBeNull(); await expect(item).toHaveAttribute("data-food", id!);
   await expect(item).not.toHaveAttribute("data-falling");
+  // It is back on the same floor. The waiting companion stands within its mouth radius, so the meal may already have
+  // begun by this read (the snack marked eating, or lifted toward the mouth); otherwise the snack rests on the floor
+  // line within that radius (the companion may nudge it aside).
+  await expect(item).toHaveAttribute("data-platform", /^viewport-floor-food(?:-\d+)?$/);
+  const returned = await point(item), eatBegun = await item.evaluate(node => node.hasAttribute("data-eating")) || await pet(page).getAttribute("data-state") === "eat" || returned.y < target.y - 2;
+  if (!eatBegun) { expect(Math.abs(returned.y - target.y)).toBeLessThan(2); expect(Math.abs(returned.x - target.x)).toBeLessThanOrEqual(36); }
+  else expect(returned.y).toBeLessThan(target.y + 2);
 
-  // Observe public renderer metadata and actual coordinates, never private
-  // brain state. More than180px remaining requires multiple finite actions.
-  await page.evaluate(() => {
-    const node = document.querySelector<HTMLElement>(".vc-companion")!, samples: PursuitWindow["pursuitWitness"] = []; (window as unknown as PursuitWindow).pursuitWitness = samples;
-    const began = performance.now();
-    const sample = (now: number) => { const m = new DOMMatrixReadOnly(node.style.transform); samples.push({ x: m.m41, state: node.dataset.state ?? "", mood: node.dataset.mood ?? "", at: now - began }); if (now - began < 10000 && node.dataset.state !== "eat") requestAnimationFrame(sample); };
-    requestAnimationFrame(sample);
-  });
+  // The authored beat already playing finishes first (55e150b9); the precondition is the owned-meal beat for this
+  // same snack (its goal written again). From there the original 10 s window holds for the meal.
+  if (!eatBegun) await expect(pet(page)).toHaveAttribute("data-food-goal", id!, { timeout: 20000 });
   await expect(pet(page)).toHaveAttribute("data-state", "eat", { timeout: 10000 });
   const arrived = await point(pet(page)); expect(Math.abs(arrived.x - target.x)).toBeLessThanOrEqual(36); expect(Math.abs(arrived.y - target.y)).toBeLessThan(2);
-  const samples = await page.evaluate(() => (window as unknown as PursuitWindow).pursuitWitness);
-  expect(samples.filter(sample => sample.state === "walk").length).toBeGreaterThan(20);
-  expect(samples.at(-1)!.x - samples[0].x).toBeGreaterThan(180);
-  for (let i = 1; i < samples.length; i++) expect(samples[i].x).toBeGreaterThanOrEqual(samples[i - 1].x - .1);
+  const samples = await witness(), meal = samples.findIndex(sample => sample.state === "eat"), trip = samples.slice(0, meal);
+  const walked = trip.filter(sample => sample.state === "walk" && sample.goal === id);
+  expect(walked.length).toBeGreaterThan(20);
+  // One owned walk covers the whole clear floor: no pause, turn-back or second start inside it.
+  expect(walked.at(-1)!.x - walked[0].x).toBeGreaterThan(180);
+  expect(walked.at(-1)!.at - walked[0].at).toBeLessThan(walked.length * 1000 / 30 + 400);
+  for (let i = 1; i < trip.length; i++) expect(trip[i].x).toBeGreaterThanOrEqual(trip[i - 1].x - .1);
   await page.screenshot({ path: ".scratch-pw/companion-food-pursuit.png" });
   await expect(food(page)).toHaveCount(0, { timeout: 6000 });
   expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!).hunger as number)).toBeLessThan(.5);

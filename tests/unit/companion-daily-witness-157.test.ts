@@ -8,7 +8,7 @@ function sample(at:number,beat:string,state:string,row:number,column:number,x:nu
   return {at,x,y:600,visible:true,decoded:true,enabled:true,roam:true,eligible:true,owned:false,blocked:false,personality:"curious",state,scene,serial,beat,pose,frame:pose,play:"",foodAftertaste:"",platform:x>=120?"date-public":"companion-home-floor-2",sourceClipMeasured:true,
     curiousCompletion:{version:2,source:true,body:{x:x-46,y:508,width:92,height:92},day:null,
       guards:{preferencesObserved:true,jumpAllowed:true,foodGoalAbsent:true,feedIntentAbsent:true,episodeInactive:true,handsFree:true},
-      cell:{currentPath:atlas.src,connectedToSprite:true,naturalWidth:atlas.width,naturalHeight:atlas.height,textureWidth:size*metadata.grid,textureHeight:size*metadata.gridRows,spriteWidth:size,spriteHeight:size,textureLeft:0,textureTop:0,
+      cell:{currentPath:atlas.src,connectedToSprite:true,naturalWidth:atlas.width,naturalHeight:atlas.height,textureWidth:size*metadata.grid,textureHeight:size*((atlas as {gridRows?:number}).gridRows??metadata.gridRows),spriteWidth:size,spriteHeight:size,textureLeft:0,textureTop:0,
         textureMatrix:translation(-(frame.index%metadata.grid)*size,-Math.floor(frame.index/metadata.grid)*size),spriteMatrix:translation(frame.x/80*size,frame.y/80*size),spriteClipPath:`inset(${frame.clip.map(value=>`${value/80*100}%`).join(" ")})`,textureClipPath:"none"}}};
 }
 function complete(){

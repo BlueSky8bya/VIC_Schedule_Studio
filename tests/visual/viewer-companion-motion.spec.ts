@@ -21,7 +21,7 @@ test.beforeEach(async ({ page }) => {
 });
 test.afterEach(async ({ page }) => { expect(posts.get(page)).toEqual([]); });
 
-async function setup(page: Page, graphics: "max" | "lite" = "max", sentinel = false) {
+async function setup(page: Page, graphics: "max" | "lite" = "max", sentinel = false, animalMode: "dog" | "default" = "dog") {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.addInitScript(({ graphics, preferences, care }) => {
     localStorage.setItem("vic.settingsEpoch", "2026-09-04");
@@ -32,8 +32,9 @@ async function setup(page: Page, graphics: "max" | "lite" = "max", sentinel = fa
     localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 1, ...care }));
     Math.random = () => .9999;
-  }, { graphics, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, animalMode: "dog", roam: true, jump: false, sleep: false, heartPrank: false, ambientPrank: false, feeding: false, speed: "lively" }, care: { ...DEFAULT_COMPANION_CARE, hunger: .1 } });
-  await page.goto("/visual-fixture/poster");
+  }, { graphics, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, animalMode, roam: true, jump: false, sleep: false, heartPrank: false, ambientPrank: false, feeding: false, speed: "lively" }, care: { ...DEFAULT_COMPANION_CARE, hunger: .1 } });
+  // A fixed daytime hour: unpinned, the fixture follows the real clock and this gait check failed when run at night.
+  await page.goto("/visual-fixture/poster?hour=12");
   await expect(actor(page)).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
   if (sentinel) await page.locator(".public-event[data-eventid]:visible").first().evaluate(card => {
@@ -110,23 +111,46 @@ async function walkOnFloor(page: Page, startX: number, pointerX: number) {
   await page.mouse.click(floor.x!, floor.y);
   await expect(pet(page)).toHaveAttribute("data-platform", /^viewport-floor(?:-\d+)?$/);
   await page.mouse.move(pointerX, floor.y);
-  await expect(pet(page)).toHaveAttribute("data-state", "walk", { timeout: 5000 });
+  // A dog greets the pointer first: a few walk frames (up to about 5px), a 1.5s play bow, then the run to it
+  // (4b4dc01f). The walk under test is the one that keeps travelling: half a second of unbroken walk that is
+  // still moving, read per display frame in the page.
+  const travelling = await pet(page).evaluate(node => new Promise<boolean>(resolve => {
+    const body = node as HTMLElement, began = performance.now(); let since = 0, from = 0;
+    const tick = (now: number) => {
+      const x = body.getBoundingClientRect().left;
+      if (body.dataset.state !== "walk") since = 0; else if (!since) { since = now; from = x; }
+      if (since && now - since >= 500 && Math.abs(x - from) > 1) resolve(true); else if (now - began > 12_000) resolve(false); else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }));
+  expect(travelling, "the companion must settle into one continuous walk toward the pointer").toBe(true);
 }
 
-async function sampleFrames(page: Page, duration = 1000): Promise<Frame[]> {
-  return page.evaluate(({ duration, rowCount }) => new Promise(resolve => {
+/** With `walkRow`, wait (up to 12 s) for a walk on that gait row and record only that one unbroken walk, ending at its
+ * last frame or after `duration`; resolves [] if no such walk starts. */
+async function sampleFrames(page: Page, duration = 1000, walkRow?: number): Promise<Frame[]> {
+  return page.evaluate(({ duration, rowCount, walkRow }) => new Promise(resolve => {
     const element = document.querySelector<HTMLElement>(".vc-companion")!;
     const facing = element.querySelector<HTMLElement>(".vc-facing")!;
-    const result: Frame[] = [], start = performance.now();
+    const result: Frame[] = [], began = performance.now(); let start = walkRow === null ? began : -1;
     const sample = (now: number) => {
       const matrix = new DOMMatrixReadOnly(element.style.transform);
       const mirror = new DOMMatrixReadOnly(getComputedStyle(facing).transform);
-      result.push({ t: now - start, x: matrix.m41, y: matrix.m42, state: element.dataset.state ?? "", facing: element.dataset.facing ?? "", mirror: mirror.a, row: Math.round(parseFloat(element.style.getPropertyValue("--vc-row")) * (rowCount - 1) / 100), column: Math.round(parseFloat(element.style.getPropertyValue("--vc-column")) * .15), pose: Number(element.dataset.pose) });
+      const frame = { t: 0, x: matrix.m41, y: matrix.m42, state: element.dataset.state ?? "", facing: element.dataset.facing ?? "", mirror: mirror.a, row: Math.round(parseFloat(element.style.getPropertyValue("--vc-row")) * (rowCount - 1) / 100), column: Math.round(parseFloat(element.style.getPropertyValue("--vc-column")) * .15), pose: Number(element.dataset.pose) };
+      if (walkRow !== null) {
+        const onWalk = frame.state === "walk" && frame.row === walkRow;
+        // The walk's onset frame still carries the previous clip's data-pose (the dog case never samples an onset):
+        // recording starts on the walk's second frame.
+        if (start < 0) { if (!onWalk) { if (now - began > 12_000) resolve(result); else requestAnimationFrame(sample); return; } start = 0; requestAnimationFrame(sample); return; }
+        if (start === 0) { if (!onWalk) { start = -1; requestAnimationFrame(sample); return; } start = now; }
+        else if (!onWalk) { resolve(result); return; }
+      }
+      frame.t = now - start; result.push(frame);
       if (now - start >= duration) resolve(result);
       else requestAnimationFrame(sample);
     };
     requestAnimationFrame(sample);
-  }), { duration, rowCount: registration.rows.length });
+  }), { duration, rowCount: registration.rows.length, walkRow: walkRow ?? null });
 }
 
 async function geometry(page: Page) {
@@ -184,31 +208,43 @@ test("left and right travel face their movement while controls stay unmirrored",
   await writeFile(".scratch-pw/companion-motion-directions.json", JSON.stringify({ right, left, rightGeometry, leftGeometry }, null, 2));
 });
 
-for (const graphics of ["max", "lite"] as const) {
-  test(`${graphics} renders smooth position independently from the16-frame authored gait`, async ({ page }) => {
-    await setup(page, graphics);
+for (const graphics of ["max", "lite"] as const) for (const animal of ["dog", "default"] as const) {
+  test(`${graphics} renders smooth position independently from the16-frame authored gait${animal === "default" ? " (default animal)" : ""}`, async ({ page }) => {
+    await setup(page, graphics, false, animal);
     // Full hit-target avoidance leaves a shorter left floor interval than the
     // old text-only geometry. Its whole continuous walk still exceeds1s.
     await walkOnFloor(page, 60, 1300);
-    const frames = await sampleFrames(page);
+    // The run to the pointer eases in over its first second: watch long enough to see it travel. The default animal
+    // does not chase the pointer (living.ts promptSocial is dog/affectionate only): after a short scoot and a shake it
+    // roams on the 16-cell amble, so its case records exactly that one row-2 walk.
+    const frames = await sampleFrames(page, 2500, animal === "default" ? 2 : undefined);
     expect(frames.length).toBeGreaterThan(15);
     const steps = frames.slice(1).map((frame, index) => ({ dx: Math.abs(frame.x - frames[index].x), dt: frame.t - frames[index].t, changedColumn: frame.column !== frames[index].column }));
     const changedPosition = steps.filter(step => step.dx > .01).length;
     const changedColumn = steps.filter(step => step.changedColumn).length;
     const fraction = changedPosition / steps.length;
     const observedPositionRate = changedPosition / ((frames.at(-1)!.t - frames[0].t) / 1000);
-    await writeFile(`.scratch-pw/companion-motion-${graphics}.json`, JSON.stringify({ displayCallbacks: frames.length, changedPosition, changedColumn, fraction, observedPositionRate, frames }, null, 2));
+    await writeFile(`.scratch-pw/companion-motion-${graphics}${animal === "default" ? "-default" : ""}.json`, JSON.stringify({ displayCallbacks: frames.length, changedPosition, changedColumn, fraction, observedPositionRate, frames }, null, 2));
     // A fraction of this browser's own display callbacks, not an absolute60fps
     // promise for every device or a result manufactured with a fake clock.
     expect(fraction).toBeGreaterThan(graphics === "max" ? .7 : .35);
     // Lite's policy is a30Hz upper budget. This is a cap check against the
     // measured duration, not an assumption about the display's refresh rate.
     if (graphics === "lite") expect(observedPositionRate).toBeLessThanOrEqual(34);
-    const gait = registration.rows[2];
-    expect(gait).toHaveLength(16);
-    expect(frames.every(frame => frame.state === "walk" && frame.row === 2 && frame.column >= 0 && frame.column < gait.length && frame.pose === gait[frame.column])).toBe(true);
-    expect(new Set(frames.map(frame => frame.column)).size).toBeGreaterThanOrEqual(6);
-    expect(changedColumn).toBeGreaterThanOrEqual(5);
+    // Two authored travelling clips (ceaefc3a, 2026-10-16): the 16-cell amble on row 2 (80px stride) and the
+    // two-key scoot on row 20 (54px stride). A dog's approach to the pointer is the scoot (living.ts, 4b4dc01f);
+    // the default animal keeps the amble. Either way the cell is owned by distance travelled, never by the display frame.
+    const row = frames[0].row, gait = registration.rows[row], travelled = Math.abs(frames.at(-1)!.x - frames[0].x);
+    expect(row).toBe(animal === "dog" ? 20 : 2); expect(gait).toHaveLength(16);
+    expect(frames.every(frame => frame.state === "walk" && frame.row === row && frame.column >= 0 && frame.column < gait.length && frame.pose === gait[frame.column])).toBe(true);
+    const cells = new Set(frames.map(frame => frame.column));
+    if (row === 2) { expect(cells.size).toBeGreaterThanOrEqual(6); expect(changedColumn).toBeGreaterThanOrEqual(5); }
+    else {
+      // Scoot: its two keys alternate once per half stride (27px), within one cell of the distance actually covered.
+      expect([...cells].sort()).toEqual([0, 1]);
+      expect(changedColumn).toBeGreaterThanOrEqual(2);
+      expect(Math.abs(changedColumn - travelled / 27)).toBeLessThanOrEqual(1.5);
+    }
     expect(changedColumn).toBeLessThanOrEqual(Math.ceil((frames.at(-1)!.t - frames[0].t) / 1000 * 14) + 1);
     expect(changedColumn).toBeLessThan(changedPosition * .65);
     expect(frames.some(frame => Math.abs(frame.x - Math.round(frame.x)) > .01)).toBe(true);

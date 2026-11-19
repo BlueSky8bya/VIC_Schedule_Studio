@@ -11,7 +11,7 @@ import { openCompanionHome } from "./helpers/companion-home";
 
 type Surface = "viewer" | "studio";
 type Point = { x: number; y: number };
-type Frame = Point & { at: number; state: string; attention: string; intent: string; facing: string; foods: string[]; mood: string; pose: string; source: string; spriteTransform: string; spriteClip: string };
+type Frame = Point & { at: number; owner: string; state: string; attention: string; intent: string; facing: string; foods: string[]; mood: string; pose: string; source: string; spriteTransform: string; spriteClip: string };
 type TextureSnapshot = { at: number; attention: string; state: string; pose: string; source: string; pet: { x: number; y: number; width: number; height: number }; chain: { name: string; display: string; visibility: string; opacity: string; transform: string; clip: string; overflow: string; texture: string; position: string; size: string; box: { x: number; y: number; width: number; height: number } }[]; resources: { name: string; responseEnd: number; transferSize: number; decodedBodySize: number }[] };
 type TextureCapture = { label: string; before: TextureSnapshot; after: TextureSnapshot; warmPixels: number; image: string };
 type Witness = { frames: Frame[]; raf: number; stopped: boolean; captures: TextureCapture[] };
@@ -115,7 +115,9 @@ async function corridor(page: Page) {
 
 const point = (item: Locator) => item.evaluate(node => {
   if (node.matches(".vc-companion")) { const rect = node.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.bottom }; }
-  const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: matrix.m41, y: matrix.m42 };
+  // On the home floor the food is laid out from an anchored left/top and the
+  // transform is only the offset from it (0px everywhere else): add both.
+  const css = getComputedStyle(node), matrix = new DOMMatrixReadOnly(css.transform); return { x: matrix.m41 + (parseFloat(css.left) || 0), y: matrix.m42 + (parseFloat(css.top) || 0) };
 });
 async function place(page: Page, at: Point) {
   await actor(page).focus(); await actor(page).press("p"); await expect(pet(page)).toHaveAttribute("data-placing", "");
@@ -141,7 +143,9 @@ async function grabFood(page: Page, item: Locator) {
 async function moveFood(page: Page, at: Point, offset: Point) { await page.mouse.move(at.x + offset.x, at.y + offset.y, { steps: 12 }); }
 async function offer(page: Page, at: Point) {
   await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click(); await expect(foods(page)).toHaveCount(1);
-  const item = foods(page).first(), offset = await grabFood(page, item);
+  // A dispensed snack falls out of the dispenser first; a grab during that fall does not take.
+  const item = foods(page).first(); await expect(item).not.toHaveAttribute("data-falling");
+  const offset = await grabFood(page, item);
   await moveFood(page, at, offset); await page.mouse.up(); await page.mouse.move(4, 4);
   // Return immediately after the native release. Waiting for assertions here
   // would consume the short inspection that the caller must actually see.
@@ -154,8 +158,8 @@ async function observe(page: Page) {
       if (witness.stopped) return;
       const rect = node.getBoundingClientRect();
       const texture = sprite.querySelector<HTMLImageElement>(".vc-texture");
-      witness.frames.push({ at: performance.now(), x: rect.left + rect.width / 2, y: rect.bottom, state: node.dataset.state ?? "", attention: node.dataset.attention ?? "", intent: node.dataset.intent ?? "", facing: node.dataset.facing ?? "", mood: node.dataset.mood ?? "", foods: [...document.querySelectorAll<HTMLElement>(".vc-food")].map(food => food.dataset.food!), pose: node.dataset.pose ?? "", source: texture?.currentSrc || texture?.src || "", spriteTransform: sprite.style.transform, spriteClip: sprite.style.clipPath });
-      if (witness.frames.length < 1800) witness.raf = requestAnimationFrame(sample);
+      witness.frames.push({ at: performance.now(), x: rect.left + rect.width / 2, y: rect.bottom, owner: [node.dataset.lifePurpose ?? "", node.dataset.personalityScene ?? "", node.dataset.personalityCommand ?? "", node.dataset.play ?? "", node.dataset.foodGoal ?? "", node.dataset.episode ?? ""].join("/"), state: node.dataset.state ?? "", attention: node.dataset.attention ?? "", intent: node.dataset.intent ?? "", facing: node.dataset.facing ?? "", mood: node.dataset.mood ?? "", foods: [...document.querySelectorAll<HTMLElement>(".vc-food")].map(food => food.dataset.food!), pose: node.dataset.pose ?? "", source: texture?.currentSrc || texture?.src || "", spriteTransform: sprite.style.transform, spriteClip: sprite.style.clipPath });
+      if (witness.frames.length < 4200) witness.raf = requestAnimationFrame(sample);
     };
     (window as ObservationWindow).companionDeliberationWitness = witness; witness.raf = requestAnimationFrame(sample);
   });
@@ -193,40 +197,65 @@ async function captureTexture(page: Page, label: string) {
   expect(warmPixels, "the native screenshot must contain the actual orange mascot texture, not only its shadow").toBeGreaterThan(20);
 }
 
+// An offered meal is an owned priority since 55e150b9 (2026-10-20): it is launched without the "inspect" look that
+// b15eeb24 put in front of every new goal, after the authored beat already playing has finished, and a measured
+// clear floor is one walk instead of a chain of 180px restarts (e65b7c08, 2026-10-17). The "reconsider" look for a
+// goal that is really lost remains and is still asserted below.
+const owned = (id: string | null) => (sample: Frame) => sample.state === "walk" && sample.owner.split("/")[4] === id;
+async function pursuing(page: Page, id: string | null) {
+  await expect.poll(async () => (await frames(page)).some(owned(id)), { message: "the offered snack becomes the owned walking goal", timeout: 12000, intervals: [50] }).toBe(true);
+}
 for (const surface of ["viewer", "studio"] as const) {
-  test(`${surface} inspects one offered snack then pursues that same real meal`, async ({ page }) => {
-    test.setTimeout(30000); await setup(page, surface); const { start, target } = await startOnFloor(page);
+  test(`${surface} pursues one offered snack as an owned meal and eats that same real food`, async ({ page }) => {
+    test.setTimeout(60000); await setup(page, surface); const { start, target } = await startOnFloor(page);
     await observe(page); const item = await offer(page, target), id = await item.getAttribute("data-food");
-    await expect.poll(() => pet(page).getAttribute("data-attention"), { intervals: [16], timeout: 5000 }).toBe("inspect");
-    await expect(pet(page)).toHaveAttribute("data-intent", "feed");
-    await captureTexture(page, `${surface}-inspect`);
+    await pursuing(page, id);
     await expect(pet(page)).toHaveAttribute("data-facing", "right");
-    await expect(pet(page)).toHaveAttribute("data-state", "walk", { timeout: 2500 });
+    // Precondition met above (the owned walk to this snack has begun); from there the original 12 s window holds.
     await expect(pet(page)).toHaveAttribute("data-state", "eat", { timeout: 12000 });
+    await captureTexture(page, `${surface}-meal`);
     const arrived = await point(pet(page)); expect(Math.abs(arrived.x - target.x)).toBeLessThanOrEqual(36); expect(Math.abs(arrived.y - target.y)).toBeLessThan(2);
-    const observed = await frames(page), inspection = observed.filter(sample => sample.attention === "inspect");
-    expect(entries(observed, "inspect")).toHaveLength(1); expect(inspection.length).toBeGreaterThan(5);
-    expect(inspection.every(sample => sample.state === "look" && sample.intent === "feed" && sample.foods.length === 1 && sample.foods[0] === id)).toBe(true);
-    expect(Math.max(...inspection.map(sample => Math.hypot(sample.x - start.x, sample.y - start.y)))).toBeLessThan(2);
-    expect(observed.findIndex(sample => sample.attention === "inspect")).toBeLessThan(observed.findIndex(sample => sample.state === "walk"));
-    expect(entries(observed, "reconsider")).toHaveLength(0);
+    const observed = await frames(page), firstWalk = observed.findIndex(owned(id)), firstMeal = observed.findIndex(sample => sample.state === "eat");
+    expect(firstWalk).toBeGreaterThan(0); expect(firstMeal).toBeGreaterThan(firstWalk);
+    // It finishes what it was doing where it stood, then goes: no step before the owned walk and no other trip.
+    expect(Math.max(...observed.slice(0, firstWalk).map(sample => Math.hypot(sample.x - start.x, sample.y - start.y)))).toBeLessThan(2);
+    const travel = observed.slice(firstWalk, firstMeal);
+    expect(travel.some(sample => sample.state === "jump")).toBe(false);
+    expect(travel.every(sample => sample.foods.length === 1 && sample.foods[0] === id)).toBe(true);
+    for (let index = 1; index < travel.length; index++) expect(travel[index].x).toBeGreaterThanOrEqual(travel[index - 1].x - .1);
+    expect(entries(observed, "inspect")).toHaveLength(0); expect(entries(observed, "reconsider")).toHaveLength(0);
     await page.screenshot({ path: `${prefix}-${surface}-meal.png` });
     await expect(foods(page)).toHaveCount(0, { timeout: 6000 });
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!).hunger as number)).toBeLessThan(.5);
     if (surface === "viewer") expect(await page.locator("[data-export-surface]").evaluate(node => getComputedStyle(node).width)).toBe("1840px");
   });
 
-  test(`${surface} holds preserve the food goal while actual deletion causes one finite reconsideration`, async ({ page }) => {
-    test.setTimeout(30000); await setup(page, surface); const { target } = await startOnFloor(page);
+  test(`${surface} holds preserve the food goal without a meal, a reconsideration or sulking`, async ({ page }) => {
+    test.setTimeout(60000); await setup(page, surface); const { target } = await startOnFloor(page);
     await observe(page); const item = await offer(page, target), id = await item.getAttribute("data-food");
-    await expect(pet(page)).toHaveAttribute("data-state", "walk", { timeout: 5000 });
+    await pursuing(page, id);
     const offset = await grabFood(page, item); await moveFood(page, { x: target.x, y: target.y - 12 }, offset);
-    await expect(pet(page)).not.toHaveAttribute("data-state", "walk"); await page.waitForTimeout(1000);
+    // The one walk already under way ends by itself (58f20001, 2026-10-18: a walk is no longer cut short when
+    // its snack is picked up); a held snack is neither eaten nor mourned.
+    await expect(pet(page)).not.toHaveAttribute("data-state", "walk", { timeout: 8000 }); await page.waitForTimeout(1000);
     await expect(item).toHaveAttribute("data-food", id!); await expect(pet(page)).not.toHaveAttribute("data-mood", /disappointed|sulky/);
-    expect(entries(await frames(page), "reconsider")).toHaveLength(0);
+    const held = await frames(page);
+    expect(entries(held, "reconsider")).toHaveLength(0); expect(held.some(sample => sample.state === "eat")).toBe(false);
+    expect(held.every(sample => !/disappointed|sulky/.test(sample.mood) && sample.foods.length <= 1)).toBe(true);
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!).hunger as number)).toBeGreaterThan(.75);
-    await moveFood(page, target, offset); await page.mouse.up(); await page.mouse.move(4, 4);
-    await expect(pet(page)).toHaveAttribute("data-state", "walk", { timeout: 5000 });
+    // Given back, it is the same snack and still nobody ate or mourned it. (Eating it after a hold is the
+    // subject of viewer-companion-food-pursuit.spec.ts.)
+    await moveFood(page, { x: target.x, y: target.y - 8 }, offset); await page.mouse.up(); await page.mouse.move(4, 4);
+    await expect(item).not.toHaveAttribute("data-falling"); await expect(item).toHaveAttribute("data-food", id!);
+    await expect(pet(page)).not.toHaveAttribute("data-mood", /disappointed|sulky/); expect(entries(await frames(page), "reconsider")).toHaveLength(0);
+  });
+
+  // Regression guard (fixed in 63ecc14a): since 58f20001 a snack deleted mid-walk recorded "food-lost" on every
+  // frame (sulky within 20 ms) and the companion walked on to the empty spot without its one reconsider look.
+  test(`${surface} actual deletion causes one finite reconsideration`, async ({ page }) => {
+    test.setTimeout(60000); await setup(page, surface); const { target } = await startOnFloor(page);
+    await observe(page); const item = await offer(page, target), id = await item.getAttribute("data-food");
+    await pursuing(page, id); await expect(pet(page)).toHaveAttribute("data-state", "walk");
     // The real supported keyboard deletion is distinct from temporarily
     // holding the same local source. No DOM removal or brain state injection.
     await item.focus(); await item.press("Delete"); await expect(foods(page)).toHaveCount(0);
@@ -242,10 +271,10 @@ for (const surface of ["viewer", "studio"] as const) {
   });
 }
 
-test("viewer native pickup immediately interrupts an inspection without consuming its snack", async ({ page }) => {
-  await setup(page, "viewer"); const { target } = await startOnFloor(page);
-  await observe(page); await offer(page, target);
-  await expect.poll(() => pet(page).getAttribute("data-attention"), { intervals: [16], timeout: 5000 }).toBe("inspect");
+test("viewer native pickup immediately interrupts a pursuit without consuming its snack", async ({ page }) => {
+  test.setTimeout(45000); await setup(page, "viewer"); const { target } = await startOnFloor(page);
+  await observe(page); const item = await offer(page, target), id = await item.getAttribute("data-food");
+  await pursuing(page, id);
   const rect = (await actor(page).boundingBox())!, from = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
   await page.mouse.move(from.x, from.y); await page.mouse.down(); await page.mouse.move(from.x + 24, from.y - 24, { steps: 3 });
   await expect(pet(page)).toHaveAttribute("data-state", "held", { timeout: 400 });
@@ -253,7 +282,8 @@ test("viewer native pickup immediately interrupts an inspection without consumin
   await expect(pet(page)).toHaveAttribute("data-state", "held"); await expect(foods(page)).toHaveCount(1);
   await page.screenshot({ path: `${prefix}-viewer-interrupted.png` });
   await page.mouse.up(); await page.mouse.move(4, 4);
-  expect((await frames(page)).some(sample => sample.state === "held" && sample.attention === "")).toBe(true);
+  const observed = await frames(page);
+  expect(observed.some(sample => sample.state === "held" && sample.attention === "")).toBe(true); expect(observed.some(sample => sample.state === "eat")).toBe(false);
 });
 
 test("studio reduced motion skips attention movement and only eats a nearby offered snack", async ({ page }) => {

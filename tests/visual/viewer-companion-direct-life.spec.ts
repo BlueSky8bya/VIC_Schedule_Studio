@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { openCompanionHome } from "./helpers/companion-home";
+import { openCompanionHome, placeCompanionOnCalendarCard } from "./helpers/companion-home";
 
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
@@ -33,7 +33,8 @@ async function setup(page: Page, options: { mobile?: boolean; home?: boolean; re
     Math.random = () => 0; // An idle local brain leaves the support oracle stationary.
     // Explicit focus-event fixture, not a claim about native OS/OBS throttling.
     Object.defineProperty(document, "hasFocus", { configurable: true, value: () => true });
-  }, { epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep: options.home ?? false, feeding: false, heartPrank: false, ambientPrank: false }, care: DEFAULT_COMPANION_CARE, reduced: options.reduced ?? false });
+    // "다른 창 쓸 때도 놀기" ships on (1f2cb9eb) and would keep a blurred page active; the parked case needs it off.
+  }, { epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, activeWhileVisible: false, roam: false, jump: false, sleep: options.home ?? false, feeding: false, heartPrank: false, ambientPrank: false }, care: DEFAULT_COMPANION_CARE, reduced: options.reduced ?? false });
   await page.goto(`/visual-fixture/poster${options.home ? "?avatar=1" : ""}`);
   await expect(actor(page)).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
@@ -72,30 +73,44 @@ async function stopRecord(page: Page) {
   });
 }
 
-/** Independent text oracle: find the actual rendered line under the feet.
- * The anonymous product platform id is only a witness, never the oracle. */
+const cardEdges = ".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid]", dayFloors = ".public-day,.agenda-day";
+
+/** Independent oracle: find the actual rendered calendar edge under the feet.
+ * The anonymous product platform id is only a witness, never the oracle.
+ * A fresh creature now starts inside its house (a44f46a2, 2026-10-19), so it
+ * is first stood on the calendar with the keyboard placement. A placed
+ * creature lands on the rendered card edge (card-N-top, 8cdfeb63), three
+ * pixels clear like every text line, so that edge is the measured support. */
 async function markTextSupport(page: Page) {
+  const card = await placeCompanionOnCalendarCard(page, "viewer");
   await expect(pet(page)).toHaveAttribute("data-platform", /^(?:card|date)-\d+/);
-  await expect.poll(() => page.evaluate(selector => {
+  await expect.poll(() => page.evaluate(({ text, cards, eventId }) => {
     const feet = document.querySelector(".vc-companion")!.getBoundingClientRect(), x = feet.left + feet.width / 2;
     const matches: { node: HTMLElement; error: number }[] = [];
-    for (const node of document.querySelectorAll<HTMLElement>(selector)) {
+    for (const node of document.querySelectorAll<HTMLElement>(text)) {
       const range = document.createRange(); range.selectNodeContents(node);
       for (const line of range.getClientRects()) if (line.width > .5 && line.height > .5 && x >= line.left - .5 && x <= line.right + .5) matches.push({ node, error: Math.abs(feet.bottom - line.top + 3) });
       range.detach();
     }
+    for (const node of document.querySelectorAll<HTMLElement>(cards)) {
+      const edge = node.getBoundingClientRect();
+      if (node.dataset.eventid === eventId && edge.width > .5 && x >= edge.left - .5 && x <= edge.right + .5) matches.push({ node, error: Math.abs(feet.bottom - edge.top + 3) });
+    }
     const nearest = matches.sort((a, b) => a.error - b.error)[0];
     if (nearest && nearest.error < 1.5) nearest.node.dataset.directAnchor = "";
     return nearest?.error ?? Infinity;
-  }, textSurfaces)).toBeLessThan(1.5);
+  }, { text: textSurfaces, cards: cardEdges, eventId: card.eventId })).toBeLessThan(1.5);
   return page.evaluate(() => {
     const feet = document.querySelector(".vc-companion")!.getBoundingClientRect(), anchor = document.querySelector("[data-direct-anchor]")!.getBoundingClientRect();
     return { offset: feet.bottom - anchor.top, documentTop: anchor.top + scrollY, width: anchor.width };
   });
 }
 
+/** Every calendar support keeps the feet three pixels clear of a rendered
+ * edge: a text line, a card's top edge, or the bottom of a day cell
+ * (date-N-floor, 1f2cb9eb). The viewport floor keeps its own inset. */
 async function expectActualContact(page: Page) {
-  await expect.poll(() => page.evaluate(selector => {
+  await expect.poll(() => page.evaluate(({ text, cards, days }) => {
     const feet = document.querySelector(".vc-companion")!.getBoundingClientRect(), x = feet.left + feet.width / 2;
     let floor = innerHeight - 18;
     for (const bar of document.querySelectorAll<HTMLElement>(".agenda-monthbar")) {
@@ -103,13 +118,17 @@ async function expectActualContact(page: Page) {
       if (getComputedStyle(bar).position === "fixed" && rect.width > 0 && rect.top >= innerHeight * .65 && rect.bottom <= innerHeight + 1) floor = Math.min(floor, rect.top - 8);
     }
     let error = Math.abs(feet.bottom - floor);
-    for (const node of document.querySelectorAll<HTMLElement>(selector)) {
+    for (const node of document.querySelectorAll<HTMLElement>(text)) {
       const range = document.createRange(); range.selectNodeContents(node);
       for (const line of range.getClientRects()) if (line.width > .5 && line.height > .5 && x >= line.left - .5 && x <= line.right + .5) error = Math.min(error, Math.abs(feet.bottom - line.top + 3));
       range.detach();
     }
+    for (const [selector, side] of [[cards, "top"], [days, "bottom"]] as const) for (const node of document.querySelectorAll<HTMLElement>(selector)) {
+      const edge = node.getBoundingClientRect();
+      if (edge.width > .5 && edge.height > .5 && x >= edge.left - .5 && x <= edge.right + .5) error = Math.min(error, Math.abs(feet.bottom - edge[side] + 3));
+    }
     return error;
-  }, textSurfaces)).toBeLessThan(1.5);
+  }, { text: textSurfaces, cards: cardEdges, days: dayFloors })).toBeLessThan(1.5);
 }
 
 async function enableNativeScroll(page: Page) {

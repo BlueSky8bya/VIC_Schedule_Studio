@@ -40,6 +40,8 @@ export async function guardCompanionQa(page: Page, context: BrowserContext, base
   const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
   const manifest = JSON.parse(readFileSync(resolve(directory, "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
   const preview = new Set(Object.entries(manifest).filter(([, item]) => item.exportedName === "getPublicPreviewAction").map(([id]) => id));
+  // The developer header's report inbox asks for its badge number on mount (02b4295a, 2026-11-13): a read, not a write.
+  const unseenReports = new Set(Object.entries(manifest).filter(([, item]) => item.exportedName === "getUnseenReportCountAction").map(([id]) => id));
   page.on("pageerror", error => proof.errors.push(error.message));
   page.on("response", response => {
     const url = new URL(response.url()); if (url.origin !== origin.origin || response.status() !== 200 || !/^\/_next\/static\/chunks\/.+\.js$/.test(url.pathname)) return;
@@ -59,6 +61,10 @@ export async function guardCompanionQa(page: Page, context: BrowserContext, base
       // This exact read is fulfilled locally, never executed on the server.
       return route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":"fixture"}\n1:${JSON.stringify(samplePublicScheduleData)}\n` });
     }
+    if (request.method() === "POST" && url.pathname === "/visual-fixture/studio" && unseenReports.has(request.headers()["next-action"])) {
+      // Fulfilled locally like the preview read: nothing unseen, never executed on the server.
+      return route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":"fixture"}\n1:0\n` });
+    }
     if (!["GET", "HEAD"].includes(request.method())) { proof.mutations.push(`${request.method()} ${url.pathname}`); return route.abort(); }
     const synthetic = companionSyntheticRead157(request.method(), url, Date.now());
     if (synthetic) {
@@ -71,7 +77,14 @@ export async function guardCompanionQa(page: Page, context: BrowserContext, base
     const asset = (value: string) => { try { const file = resolve(publicRoot, "." + decodeURIComponent(value)); return file.startsWith(publicRoot + sep) && statSync(file, { throwIfNoEntry: false })?.isFile(); } catch { return false; } };
     if (url.pathname === "/_next/image" && asset(url.searchParams.get("url") ?? "")) return route.continue();
     if (asset(url.pathname)) return route.continue();
-    proof.rejected.push(`${request.method()} unapproved-local-path`); return route.abort();
+    // The public footer's two legal links (2026-11-13) prefetch their static pages as soon as the poster mounts.
+    // Exactly these read-only same-origin RSC prefetches pass; a document navigation to them is still rejected.
+    if (request.method() === "GET" && ["/privacy", "/terms"].includes(url.pathname) && request.resourceType() === "fetch" && [...url.searchParams.keys()].join() === "_rsc" && !url.hash) return route.continue();
+    // The developer studio's report-inbox Link (report-inbox-button.tsx, 02b4295a) prefetches /studio/reports once it is
+    // on screen. That route is not part of the fixture: the RSC prefetch alone is aborted unexecuted and not counted
+    // as an unexpected path; a document navigation to it is still rejected below.
+    if (request.method() === "GET" && url.pathname === "/studio/reports" && request.resourceType() === "fetch" && [...url.searchParams.keys()].join() === "_rsc" && !url.hash) return route.abort();
+    proof.rejected.push(`${request.method()} unapproved-local-path ${url.pathname}`); return route.abort();
   });
   return proof;
 }

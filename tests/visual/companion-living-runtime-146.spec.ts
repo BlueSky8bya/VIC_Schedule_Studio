@@ -7,7 +7,7 @@ import {DEFAULT_COMPANION_MEMORY} from "@/lib/ui/viewer-companion/care";
 import {COMPANION_PERSONALITY_SCENES} from "@/lib/ui/viewer-companion/personality-scene-catalog";
 import {chooseCompanionPersonality,openCompanionHome,placeCompanionOnHomeFloor} from "./helpers/companion-home";
 import {settlePanelLayout} from "./helpers/panel-layout";
-import {setCompanionRoam} from "./helpers/companion-settings";
+import {keepCompanionStoredMotion,setCompanionRoam} from "./helpers/companion-settings";
 import {guardCompanionQa,startCompanionQaProbe,type DailyProof,type QaObservation} from "./helpers/companion-qa";
 
 const output=resolve(process.env.COMPANION146_OUTPUT??".scratch-pw/companion-146/runtime");
@@ -15,7 +15,8 @@ const proofByPage=new WeakMap<Page,DailyProof>();
 type ProbeWindow=Window&{companionDaily142?:{frames:QaObservation[];stop:()=>void}};
 test.use({viewport:{width:1920,height:1100},serviceWorkers:"block",storageState:{cookies:[],origins:[]}});
 test.setTimeout(135000);
-test.beforeEach(async({page,context,baseURL})=>{proofByPage.set(page,await guardCompanionQa(page,context,baseURL!));});
+// storageState is replaced here, so the stored roam:false seed needs the QA key (a9f6d77e).
+test.beforeEach(async({page,context,baseURL})=>{proofByPage.set(page,await guardCompanionQa(page,context,baseURL!));await keepCompanionStoredMotion(page);});
 test.afterEach(async({page},info)=>{
  const frames=await samples(page,true).catch(()=>[]),proof=proofByPage.get(page)!;await Promise.allSettled(proof.pending);
  mkdirSync(output,{recursive:true});const file=resolve(output,`${info.title.replace(/[^a-z0-9]+/gi,"-")}-${Date.now()}.json`);

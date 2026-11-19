@@ -36,7 +36,7 @@ test("all 14 sounds have a tile; each is heard as the user's or as the companion
   // One flat grid, no group names; only the two sounds the companion makes by itself carry the dot.
   await expect(fold.locator(".rhh-sound-board > .rhh-sound-tile")).toHaveCount(14);
   await expect(fold.locator(".rhh-sound-group, .rhh-font-group-label")).toHaveCount(0);
-  await expect(fold.locator(".rhh-sound-tile[data-own]")).toHaveText(["다 먹음", "넘어짐"]);
+  await expect(fold.locator(".rhh-sound-tile[data-own] .rhh-sound-label")).toHaveText(["다 먹음", "넘어짐"]);
   await expect(fold.locator(".rhh-group-foot")).toHaveText("점이 있는 소리는 빅타민이 혼자 내는 소리라, 빅타민 소리가 '전부'일 때만 나요.");
   // Each tile says when it is heard: spoken, and shown above it on hover.
   for (const button of await fold.getByRole("button").all()) await expect(button).toHaveAccessibleDescription((await button.getAttribute("data-tip")) ?? "");

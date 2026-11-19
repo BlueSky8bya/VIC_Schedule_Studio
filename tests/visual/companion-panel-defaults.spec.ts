@@ -21,7 +21,7 @@ test.beforeEach(async ({ page }) => {
   });
 });
 test.afterEach(async ({ page }, info) => {
-  const build = readFileSync(resolve(".next/BUILD_ID"), "utf8").trim(), folder = `.scratch-pw/companion-100/${build}`;
+  const build = readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim(), folder = `.scratch-pw/companion-100/${build}`;
   mkdirSync(folder, { recursive: true });
   const name = info.title.replace(/[^a-z0-9]+/gi, "-");
   writeFileSync(`${folder}/${name}.json`, JSON.stringify({ build, status: info.status, ...proof.get(page) }, null, 2));
@@ -34,7 +34,7 @@ async function seed(page: Page, enabled: boolean) {
     if (sessionStorage.getItem("companion-100-default-seed")) return;
     sessionStorage.setItem("companion-100-default-seed", "1");
     for (const [name, value] of Object.entries({ [key]: epoch, "vic.dark": "off", "vic.gfxPref": "max", "vic.ambient": "off", "vic.sound": "off", "vic.reduceMotion": "off", "vic.premiereStage": "off", "vic_avatar_side": "left" })) localStorage.setItem(name, value);
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled, roam: false, jump: false, feeding: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false }));
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled, personality: "tidy", personalitySource: "manual", roam: false, jump: false, feeding: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false }));
     localStorage.removeItem("vic.panelSections"); localStorage.removeItem("vic_panel_collapsed");
   }, { enabled, preferences: DEFAULT_COMPANION_PREFERENCES, key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH });
 }
@@ -59,7 +59,10 @@ for (const surface of ["viewer", "studio"] as const) {
     });
     // Static default chrome only. Creature behavior is measured by the other
     // native witnesses; its moving body is not a panel-layout baseline.
-    await expect(await page.screenshot({ clip, animations: "disabled", style: ".vc-companion,.vc-food-layer,.vc-bed-foreground{visibility:hidden!important}" })).toMatchSnapshot(`${surface}-companion-default-panels.png`);
+    // The room picture follows the real KST hour, season and weather, so it is
+    // masked: the baseline is the three section frames, their headings and the
+    // room box. The character is a saved manual choice, so its label is fixed.
+    await expect(await page.screenshot({ clip, animations: "disabled", mask: [page.locator(".vc-home-room:visible")], style: ".vc-companion,.vc-food-layer,.vc-bed-foreground{visibility:hidden!important}" })).toMatchSnapshot(`${surface}-companion-default-panels.png`);
     await panel(page, "tag-filter").getByRole("button", { name: "태그 필터", exact: true }).click();
     await disclosure(page, "tag-filter", true); await disclosure(page, "season", false);
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.panelSections")!))).toEqual({ version: 1, "tag-filter": true });

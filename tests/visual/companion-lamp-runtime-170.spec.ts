@@ -7,7 +7,8 @@ import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
-import { setCompanionRoam } from "./helpers/companion-settings";
+import { keepCompanionStoredMotion, setCompanionRoam } from "./helpers/companion-settings";
+import { companionAppearancePoint, resolveCompanionAppearanceSource } from "@/lib/ui/viewer-companion/appearance";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 import contactAnchors from "@/lib/ui/viewer-companion/home-contact-anchors-157.json";
@@ -18,15 +19,20 @@ const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAl
 type Surface = "viewer" | "studio" | "preview";
 type Proof = { rejected: string[]; errors: string[]; notes: unknown[] };
 const proofs = new Map<Page, Proof>();
+// B6-1: the 2026-11-18 appearance edition repaints every pose; register the 157 head/ear
+// landmarks on the shipped packet exactly as the product does (as companion-house-reach-164).
+const calibration = { ...contactAnchors, source: resolveCompanionAppearanceSource(contactAnchors.source), frames: contactAnchors.frames.map(frame => ({ ...frame, ...companionAppearancePoint(frame.physicalIndex, { x: frame.x, y: frame.y }) })) };
+const buildDir = process.env.VISUAL_TEST_BUILD_DIR ?? ".next";
 type ReachWindow = Window & { reach164?: { frames: ReachFrame[]; stop: () => void } };
 type ReachFrame = { at: number; x: number; y: number; state: string; support: string; life: string; command: string; reaching: string; lit: boolean; touching: boolean; knob: { x: number; y: number }; room: { width: number; height: number }; transform: string; physical?: { distance: number; edgeDistance: number; point: { x: number; y: number }; source: string; pose: number; ceilingClearance: number } };
 test.use({ storageState: { cookies: [], origins: [] }, serviceWorkers: "block", deviceScaleFactor: .9 });
 test.setTimeout(70000);
 test.beforeEach(async ({ page, context, baseURL }) => {
   const proof: Proof = { rejected: [], errors: [], notes: [] }; proofs.set(page, proof);
+  await keepCompanionStoredMotion(context); // storageState is replaced: keep the stored roam:false seed honoured (a9f6d77e)
   page.on("pageerror", error => proof.errors.push(error.message));
   const origin = new URL(baseURL!).origin;
-  const manifest = JSON.parse(readFileSync(resolve(".next/server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
+  const manifest = JSON.parse(readFileSync(resolve(buildDir, "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
   const previews = new Set(Object.entries(manifest).filter(([, v]) => v.exportedName === "getPublicPreviewAction").map(([id]) => id));
   await context.route("**/*", route => {
     const req = route.request(), url = new URL(req.url());
@@ -44,7 +50,7 @@ test.afterEach(async ({ page }, info) => {
   const proof = proofs.get(page)!;
   const frames = await page.evaluate(() => { const p = (window as ReachWindow).reach164; p?.stop(); return p?.frames ?? []; }).catch(() => []);
   const name = info.title.replace(/[^a-z0-9]+/gi, "-"); mkdirSync(output, { recursive: true });
-  writeFileSync(resolve(output, name + ".json"), JSON.stringify({ status: info.status, ...proof, frames, buildId: readFileSync(".next/BUILD_ID", "utf8").trim(), scope: "Production-build fixtures; synthetic preferences/care only; native inputs, measured geometry, real time/RNG/physics. No DB/login." }, null, 2));
+  writeFileSync(resolve(output, name + ".json"), JSON.stringify({ status: info.status, ...proof, frames, buildId: readFileSync(resolve(buildDir, "BUILD_ID"), "utf8").trim(), scope: "Production-build fixtures; synthetic preferences/care only; native inputs, measured geometry, real time/RNG/physics. No DB/login." }, null, 2));
   await page.screenshot({ path: resolve(output, name + ".png") }).catch(() => {});
   expect(proof.errors).toEqual([]); expect(proof.rejected).toEqual([]); proofs.delete(page);
 });
@@ -118,7 +124,7 @@ async function observe(page: Page) {
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick); (window as ReachWindow).reach164 = { frames, stop() { cancelAnimationFrame(raf); } };
-  }, contactAnchors);
+  }, calibration);
 }
 for (const [surface, width, compact, source] of [["studio",2133,false,"owner-runtime-full"],["viewer",2133,false,"owner-runtime-full"]] as readonly [Surface,number,boolean,string][]) test(`170 ${surface} ${width} ${compact ? "compact" : "panel"} ${source} lamp off physically returns to sleep`, async ({ page }) => {
   await page.setViewportSize({ width, height: 1050 });

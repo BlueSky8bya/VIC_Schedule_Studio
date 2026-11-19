@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { chooseCompanionCare } from "./helpers/companion-home";
+import { chooseCompanionCare, placeCompanionOnCalendarCard } from "./helpers/companion-home";
 import { expectQuietCompanionVisible } from "./helpers/companion-overlay";
 
 const requests = new WeakMap<Page, { posts: string[]; atlas: number }>();
@@ -91,6 +91,9 @@ test("explicit OFF downloads no sprite, and the shared settings turn it on and o
   await settings.getByRole("button", { name: "닫기", exact: true }).click();
   await expect(actor(page)).toBeVisible();
   await expect.poll(() => requests.get(page)!.atlas).toBeGreaterThan(0);
+  // A fresh companion starts inside its home (a44f46a2), where an open window makes it a non-liftable resident
+  // (viewer-companion.css [data-home-window]). The liftable case is a companion out on the calendar.
+  await placeCompanionOnCalendarCard(page, "viewer");
   await page.getByRole("button", { name: "설정", exact: true }).click();
   await expectQuietCompanionVisible(page);
   await settings.getByRole("tab", { name: "빅타민", exact: true }).click();
@@ -175,7 +178,14 @@ test("keyboard alternatives offer non-dragging placement, plus a finite nap", as
   // This fixture intentionally has no server heart action, hence no heart
   // buttons. A local native-button sentinel checks placement click ownership;
   // this does not claim coverage of production voting or authentication.
-  await page.locator(".public-event:visible").first().evaluate(card => {
+  // The open home covers the first calendar columns at this width (a44f46a2: a fresh companion lives in its home).
+  // Put the sentinel on the first card whose corner is really exposed, and outside the creature itself.
+  const exposed = await page.locator(".public-event:visible").evaluateAll(cards => cards.findIndex(card => {
+    const r = card.getBoundingClientRect(), x = r.right - 16, y = r.top + 16, body = document.querySelector(".vc-companion")!.getBoundingClientRect();
+    return r.width > 60 && y > 0 && y < innerHeight && card.contains(document.elementFromPoint(x, y)) && (x < body.left - 30 || x > body.right + 30 || y < body.top - 30 || y > body.bottom + 30);
+  }));
+  expect(exposed, "the fixture shows a card with an exposed corner").toBeGreaterThanOrEqual(0);
+  await page.locator(".public-event:visible").nth(exposed).evaluate(card => {
     const button = document.createElement("button");
     button.type = "button"; button.className = "event-heart"; button.id = "companion-placement-sentinel";
     button.setAttribute("aria-label", "Placement guard sentinel");
@@ -221,6 +231,8 @@ test("keyboard alternatives offer non-dragging placement, plus a finite nap", as
 
 test("a settings overlay keeps the companion visible and closing resumes interaction", async ({ page }) => {
   await stationaryFixture(page);
+  // Out on the calendar: a home resident is deliberately not liftable while a window is open.
+  await placeCompanionOnCalendarCard(page, "viewer");
   await page.getByRole("button", { name: "설정", exact: true }).click();
   await expect(page.getByRole("dialog", { name: "설정", exact: true })).toBeVisible();
   await expectQuietCompanionVisible(page);
@@ -229,6 +241,9 @@ test("a settings overlay keeps the companion visible and closing resumes interac
   await expect(pet(page)).toBeInViewport({ ratio: .99999 });
   // A held keypose is intentional, so clip-column churn no longer proves
   // liveness. Verify the resumed creature accepts a real direct interaction.
+  // It parks asleep behind the window (auto sleep is on) and wakes when the window closes; a hand that arrives
+  // during that wake-up and then holds still is not a stroke yet, so wait for the creature to be up.
+  await expect(pet(page)).toHaveAttribute("data-presence", "active", { timeout: 10000 });
   await stroke(page);
 });
 
@@ -281,6 +296,8 @@ test("the premiere owns the stage while the optional roaming pet stays outside t
 
 test("document visibility and showcase locks pause and resume the same local creature", async ({ page }) => {
   await stationaryFixture(page);
+  // The creature this case was written for stands on the calendar; a fresh one now starts inside its home.
+  await placeCompanionOnCalendarCard(page, "viewer");
   const before = await position(page);
   const support = await pet(page).getAttribute("data-platform");
   // This checks the app's visibility-event branch, not real device throttling.

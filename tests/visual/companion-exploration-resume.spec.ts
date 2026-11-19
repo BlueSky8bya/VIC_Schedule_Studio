@@ -6,12 +6,16 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { chooseCompanionPersonality, openCompanionHome } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { guardCompanionQa, startCompanionQaProbe, finishCompanionQa, type DailyProof, type QaObservation } from "./helpers/companion-qa";
-import { companionInterestInspection, matchCompanionExplorationWitness, type ExplorationInputAttempt } from "./helpers/companion-exploration-witness";
+import { companionInterestInspection, matchCompanionExplorationResume, type ExplorationInputAttempt } from "./helpers/companion-exploration-witness";
 
 test.use({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 1, serviceWorkers: "block",
   storageState: { cookies: [], origins: [] }, trace: companionTraceMode(), video: { mode: "on", size: { width: 1440, height: 1100 } } });
-test.setTimeout(205_000);
+test.setTimeout(300_000); // up to three native attempts, ninety observed seconds, then a 10 MB evidence write-out, trace and video
 
+// The director borrows the inspection at a decision boundary (personality-director.ts, curious-interest): often the
+// start of the next `go` beat, whose first painted frame is then the resumed one. matchCompanionExplorationResume
+// accepts the strict mid-travel witness or that boundary case; both need painted travel before, the finite painted
+// inspection of that same toy, and the same exploration really travelling on afterwards.
 test("living exploration viewer: a real newly placed toy is inspected before the same exploration resumes", async ({ page, context, baseURL }, info) => {
   let proof: DailyProof | undefined, completed = false, originalError: string | undefined;
   const attempts: ExplorationInputAttempt[] = [];
@@ -34,7 +38,7 @@ test("living exploration viewer: a real newly placed toy is inspected before the
     for (let attempt = 0; attempt < 3 && !detourObserved; attempt++) {
       // A preceding input can become interesting during the next opportunity.
       // Preserve that real event instead of attributing it to the latest toy.
-      if (attempts.length && matchCompanionExplorationWitness(await readFrames(), attempts)) { detourObserved = true; break; }
+      if (attempts.length && matchCompanionExplorationResume(await readFrames(), attempts)) { detourObserved = true; break; }
       const previous = await page.locator(".vc-toy").evaluateAll(nodes => nodes.map(node => node.getAttribute("data-toy-id")));
       await home.getByRole("button", { name: "장난감 상자 열기", exact: true }).click();
       const toyId = await page.locator(".vc-toy").evaluateAll((nodes, old) => nodes.map(node => node.getAttribute("data-toy-id")).find(id => id && !old.includes(id)), previous);
@@ -84,11 +88,11 @@ test("living exploration viewer: a real newly placed toy is inspected before the
         await info.attach(`original-unobserved-interest-${attempt}`, { body: String(error), contentType: "text/plain" });
         return false;
       });
-      detourObserved = observed || Boolean(matchCompanionExplorationWitness(await readFrames(), attempts));
+      detourObserved = observed || Boolean(matchCompanionExplorationResume(await readFrames(), attempts));
     }
     expect(detourObserved, "A new-interest detour must actually occur; native input alone is insufficient").toBe(true);
     await expect.poll(() => page.evaluate(() => performance.now()).then(at => at-began), { timeout: 95000, intervals: [500] }).toBeGreaterThanOrEqual(90000);
-    const frames = await readFrames(), witness = matchCompanionExplorationWitness(frames, attempts);
+    const frames = await readFrames(), witness = matchCompanionExplorationResume(frames, attempts);
     expect(witness, "The introduced physical toy must interrupt an actual exploration and resume that same owner/serial/beat with rendered motion").toBeTruthy();
     const expected = witness!;
     const inspect = frames.filter(frame => companionInterestInspection(frame, expected.toyId, expected.interestSerial));

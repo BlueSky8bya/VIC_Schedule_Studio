@@ -6,8 +6,18 @@ import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { openCompanionHome } from "./helpers/companion-home";
+import { openCompanionHome, companionNodeOrigin } from "./helpers/companion-home";
 import mouthCalibration from "@/lib/ui/viewer-companion/mouth-anchors.json";
+import { companionAppearanceFrames } from "@/lib/ui/viewer-companion/appearance";
+import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
+
+// The 2026-11-18 appearance edition repainted every pose into new packets and registered each pose's mouth again
+// (appearance-edition.json, 80-unit cell; the observing row moved about 2.5px). The independent landmark is that
+// registered mouth of the art on screen, for the same calibrated poses; the old 192-cell points belong to the old art.
+const mouthLandmarks = { cell: 80, frames: mouthCalibration.frames.flatMap(frame => { const mouth = companionAppearanceFrames.get(frame.index)?.mouth; return mouth ? [{ index: frame.index, x: mouth.x, y: mouth.y }] : []; }) };
+// The packets a pose is painted from are named by the edition, so they are read from the registered metadata.
+const packetOf = (pose: number) => companionSpriteMetadata.atlases[companionSpriteMetadata.frames[pose].atlas].src;
+const happyPacket = packetOf(144), observingPacket = packetOf(16);
 
 type Surface = "viewer" | "studio";
 type Sample = { at: number; scale: number; x: number; y: number; mouthX: number; mouthY: number; error: number; row: number; facing: string; eating: boolean; visible: boolean; decoded: boolean; hunger: number };
@@ -79,8 +89,10 @@ async function placePet(page: Page, x: number) {
   await expect(pet(page)).toHaveAttribute("data-platform", /^viewport-floor(?:-\d+)?$/);
 }
 
-async function foodFoot(item: Locator) { return item.evaluate(node => { const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: matrix.m41, y: matrix.m42 }; }); }
+async function foodFoot(item: Locator) { return companionNodeOrigin(item); }
 async function offerFood(page: Page, item: Locator) {
+  // A dispensed snack falls out of the dispenser first; a grab during that fall does not take.
+  await expect(item).not.toHaveAttribute("data-falling");
   const from = (await item.boundingBox())!, foot = await foodFoot(item), target = await pet(page).evaluate(node => { const rect = node.getBoundingClientRect(); return { x: rect.left + rect.width / 2 + 20, y: rect.bottom }; });
   const centre = { x: from.x + from.width / 2, y: from.y + from.height / 2 };
   await page.mouse.move(centre.x, centre.y); await page.mouse.down();
@@ -122,7 +134,7 @@ async function observe(page: Page, item: Locator) {
       witness.raf = requestAnimationFrame(sample);
     };
     (window as MealWindow).companionMouthWitness = witness; witness.raf = requestAnimationFrame(sample);
-  }, mouthCalibration);
+  }, mouthLandmarks);
 }
 
 async function captureMeal(page: Page, path: string) {
@@ -170,7 +182,7 @@ for (const surface of ["viewer", "studio"] as const) for (const facing of ["left
 
 test("an unavailable happy packet eats at the actually adopted observing mouth", async ({ page }) => {
   const requests: string[] = [];
-  await page.route(/\/companion\/hd\/victamin-action-09-[^/]+\.webp$/, route => {
+  await page.route(url => url.pathname === happyPacket, route => {
     requests.push(new URL(route.request().url()).pathname);
     return route.fulfill({ status: 503, body: "fixture happy packet failure" });
   });
@@ -198,7 +210,7 @@ test("an unavailable happy packet eats at the actually adopted observing mouth",
 
 test("failed mouth packets keep the offered food and never credit an invisible meal", async ({ page }) => {
   const requests: string[] = [];
-  await page.route(/\/companion\/hd\/victamin-action-(01|09)-[^/]+\.webp$/, route => {
+  await page.route(url => [observingPacket, happyPacket].includes(url.pathname), route => {
     requests.push(new URL(route.request().url()).pathname);
     return route.fulfill({ status: 503, body: "fixture mouth packet failure" });
   });
@@ -212,7 +224,7 @@ test("failed mouth packets keep the offered food and never credit an invisible m
   await expect(foods(page)).toHaveCount(1); await expect(pet(page)).toBeVisible();
   const result = await page.evaluate(() => ({ removed: (window as MealWindow).companionMouthWitness!.removed, care: JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!) as { hunger: number; affection: number } }));
   expect(result.removed).toBe(0); expect(result.care.hunger).toBeGreaterThan(.79); expect(result.care.affection).toBeLessThan(.39);
-  expect(requests.some(path => path.includes("action-01"))).toBe(true); expect(requests.some(path => path.includes("action-09"))).toBe(true);
+  expect(requests).toContain(observingPacket); expect(requests).toContain(happyPacket);
   expect(requests.length, "existing finite decode retry budget remains bounded").toBeLessThanOrEqual(4);
   await page.screenshot({ path: `${prefix}-failed-packets.png` });
 });

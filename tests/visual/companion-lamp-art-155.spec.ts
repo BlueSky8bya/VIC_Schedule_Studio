@@ -8,6 +8,7 @@ import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome } from "./helpers/companion-home";
+import { keepCompanionStoredMotion } from "./helpers/companion-settings";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 
@@ -19,6 +20,8 @@ test.setTimeout(45000);
 test.beforeEach(async ({ page, context, baseURL }) => {
   const proof = { errors: [] as string[], unexpected: [] as string[], notes: [] as unknown[] }; proofs.set(page, proof);
   page.on("pageerror", error => proof.errors.push(error.message));
+  // The empty storageState above drops the QA key that keeps the seeded `roam: false`; without it the pet walks up and pulls the cord itself.
+  await keepCompanionStoredMotion(context);
   const origin = new URL(baseURL!).origin;
   const actions = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
   const previews = new Set(Object.entries(actions).filter(([, action]) => action.exportedName === "getPublicPreviewAction").map(([id]) => id));
@@ -32,7 +35,7 @@ test.beforeEach(async ({ page, context, baseURL }) => {
   });
 });
 
-test.afterEach(async({page},info)=>{const proof=proofs.get(page)!;mkdirSync(out,{recursive:true});const name=info.title.replace(/[^a-z0-9]+/gi,'-');writeFileSync(resolve(out,name+'.json'),JSON.stringify({case:info.title,status:info.status,buildId:readFileSync(resolve('.next/BUILD_ID'),'utf8').trim(),...proof},null,2));await page.screenshot({path:resolve(out,name+'.png')}).catch(()=>{});expect(proof.errors).toEqual([]);expect(proof.unexpected).toEqual([]);});
+test.afterEach(async({page},info)=>{const proof=proofs.get(page)!;mkdirSync(out,{recursive:true});const name=info.title.replace(/[^a-z0-9]+/gi,'-');writeFileSync(resolve(out,name+'.json'),JSON.stringify({case:info.title,status:info.status,buildId:readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR??'.next','BUILD_ID'),'utf8').trim(),...proof},null,2));await page.screenshot({path:resolve(out,name+'.png')}).catch(()=>{});expect(proof.errors).toEqual([]);expect(proof.unexpected).toEqual([]);});
 async function setup(page: Page, surface: "viewer" | "studio" | "preview", width: number, mode: "full" | "soft" | "off", dark = false) {
   await page.setViewportSize({ width, height: 780 });
   await page.addInitScript(({ defaults, memory, epoch, epochKey, mode, dark }) => {
@@ -156,7 +159,8 @@ for (const [surface, mode, compact, dark] of [
     const idle = await feedback156(page); expect(idle.opacity).toBe(0);
     const handle = before.knob; await page.mouse.move((handle.left + handle.right) / 2, (handle.top + handle.bottom) / 2);
     await expect.poll(async () => (await feedback156(page)).opacity).toBe(1);
-    await expect.poll(async () => (await feedback156(page)).height - idle.height).toBeCloseTo(mode === "full" ? 1.5 * idle.visualScale : 0, 1);
+    // d10e2ca0: soft graphics removes the tug's transition, not the tug; only graphics off (or the app's motion toggle) holds it still.
+    await expect.poll(async () => (await feedback156(page)).height - idle.height).toBeCloseTo(mode === "off" ? 0 : 1.5 * idle.visualScale, 1);
     const hover = await feedback156(page); expect(hover.hoveredCord).toBe(true); expect(hover.head).toBe(idle.head);
     const highlighted = await recordPaint155(page, name + "-hover");
     const plain = await sharp(ordinary).removeAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -178,18 +182,40 @@ for (const [surface, mode, compact, dark] of [
     await expect(lamp).toHaveAttribute("aria-pressed", String(!lit)); await lamp.focus(); await lamp.press("Enter"); await expect(lamp).toHaveAttribute("aria-pressed", String(lit));
   }
   if (surface === "viewer" && mode === "full" && !compact && !dark) {
-    await page.mouse.click(1, 1); await page.mouse.move(1, 1); await page.emulateMedia({ reducedMotion: "reduce" });
-    const quiet = await feedback156(page), handle = (await lampSample155(page)).knob;
-    await page.mouse.move((handle.left + handle.right) / 2, (handle.top + handle.bottom) / 2);
+    // The keyboard toggle above left the focus tug on; wait until the cord is back at rest before measuring it.
+    await page.mouse.click(1, 1); await page.mouse.move(1, 1);
+    await expect.poll(async () => (await feedback156(page)).opacity).toBe(0);
+    let rest = (await feedback156(page)).height;
+    await expect.poll(async () => { const previous = rest; rest = (await feedback156(page)).height; return rest === previous; }).toBe(true);
+    const handle = (await lampSample155(page)).knob, hoverCord = () => page.mouse.move((handle.left + handle.right) / 2, (handle.top + handle.bottom) / 2);
+    // d10e2ca0: the app's motion toggle owns the policy. An OS-only preference must not take the acknowledgement away.
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    const system = await feedback156(page); expect(system.height).toBe(rest);
+    await hoverCord();
+    await expect.poll(async () => (await feedback156(page)).height - rest).toBeCloseTo(1.5 * system.visualScale, 1);
+    await expect.poll(async () => (await feedback156(page)).opacity).toBe(1);
+    const systemHover = await feedback156(page);
+    await page.mouse.move(1, 1); await page.emulateMedia({ reducedMotion: "no-preference" });
+    await expect.poll(async () => (await feedback156(page)).height).toBe(rest);
+    // The app toggle (lib/ui/motion.ts setReduceMotion writes this attribute) holds the cord still and drops the transition.
+    await page.evaluate(() => document.documentElement.setAttribute("data-reduce-motion", "1"));
+    const quiet = await feedback156(page); expect(quiet.height).toBe(rest);
+    await hoverCord();
     const quietHover = await feedback156(page); expect(quietHover.height).toBe(quiet.height); expect(quietHover.opacity).toBe(1); expect(quietHover.transition).toBe("0s");
     await page.mouse.down(); expect((await feedback156(page)).height).toBe(quiet.height); await page.mouse.up();
-    proofs.get(page)!.notes.push({ stage: "system-reduced-motion156", quiet, quietHover });
-    await page.emulateMedia({ reducedMotion: "no-preference" });
+    proofs.get(page)!.notes.push({ stage: "system-reduced-motion156", rest, system, systemHover, quiet, quietHover });
+    await page.evaluate(() => document.documentElement.removeAttribute("data-reduce-motion"));
   }
   const saved = (await lamp.getAttribute("aria-pressed"))!; await curtain.click(); await expect(lamp).toHaveAttribute("aria-pressed", saved);
   const radio = home.locator("[data-home-action=radio]");
   const hit = await radio.evaluate(node => { const r = node.getBoundingClientRect(); return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest("button")?.getAttribute("data-home-action"); });
-  expect(hit).toBe("radio"); await radio.click(); await expect(radio).toHaveAttribute("aria-pressed", "false"); await expect(lamp).toHaveAttribute("aria-pressed", saved);
+  expect(hit).toBe("radio"); await radio.click();
+  // 7e7a5f82: with the site sound off the radio cannot play; the press opens the notebook on the radio row that says why.
+  const reason = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
+  await expect(reason.locator(".rhh-companion-radio")).toBeVisible();
+  await reason.getByRole("button", { name: "닫기", exact: true }).click(); await expect(reason).toBeHidden(); await settlePanelLayout(page);
+  if (compact && !await home.isVisible()) home = await openCompanionHome(page);
+  await expect(radio).toHaveAttribute("aria-pressed", "false"); await expect(lamp).toHaveAttribute("aria-pressed", saved);
   await widerCord158(page, [surface, mode, compact ? "compact" : "panel", dark ? "dark" : "light"].join("-"));
 });
 

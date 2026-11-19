@@ -6,6 +6,7 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
 import { companionSpriteMetadata as registration } from "@/lib/ui/viewer-companion/sprite-quality";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
+import { keepCompanionStoredMotion } from "./helpers/companion-settings";
 
 const output = resolve(process.env.COMPANION_CARE_131_OUTPUT ?? ".scratch-pw/companion-131/care");
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
@@ -20,7 +21,10 @@ type Probe = { frames: Frame[]; inputs: Input[]; phase: string; initial: { prefe
 type ProbeWindow = Window & { care131?: Probe };
 const proofs = new WeakMap<Page, { writes: string[]; foreign: string[]; errors: string[]; notes: unknown[] }>();
 
-test.use({ headless: true, viewport: { width: 1920, height: 1100 }, serviceWorkers: "block", isMobile: false, hasTouch: false, storageState: { cookies: [], origins: [] }, video: { mode: "on", size: { width: 1920, height: 1100 } } });
+// The focus case needs a browser whose windows really lose focus. Playwright's default headless shell reports
+// document.hasFocus() === true on every page even with focus emulation off; the full Chromium ("new headless",
+// still no window on screen) follows the front page, so this file asks for that build.
+test.use({ channel: "chromium", headless: true, viewport: { width: 1920, height: 1100 }, serviceWorkers: "block", isMobile: false, hasTouch: false, storageState: { cookies: [], origins: [] }, video: { mode: "on", size: { width: 1920, height: 1100 } } });
 test.setTimeout(65000);
 test.beforeEach(async ({ page }, info) => {
   const proof = { writes: [] as string[], foreign: [] as string[], errors: [] as string[], notes: [] as unknown[] }; proofs.set(page, proof);
@@ -49,6 +53,8 @@ test.afterEach(async ({ page }, info) => {
 });
 
 async function prepare(page: Page, fresh = false) {
+  // This file replaces storageState, which drops the key that lets the stored roam:false hold the creature still.
+  if (!fresh) await keepCompanionStoredMotion(page);
   await page.addInitScript(({ epoch, epochKey, preferences, fresh, rows }) => {
     const initial = { preferences: localStorage.getItem("vic.viewerCompanion"), care: localStorage.getItem("vic.viewerCompanionCare"), tastes: localStorage.getItem("vic.viewerCompanionTastes"), collection: localStorage.getItem("vic.viewerCompanionCollection") };
     // A fresh browser context supplies no prior companion state. The refresh
@@ -70,13 +76,17 @@ async function prepare(page: Page, fresh = false) {
     const sample = (at: number) => {
       if (stopped) return;
       if (at - last >= 32) {
-        last = at; const node = document.querySelector<HTMLElement>(".vc-companion"), r = rect(node), matrix = node ? new DOMMatrixReadOnly(getComputedStyle(node).transform) : null;
+        last = at; const node = document.querySelector<HTMLElement>(".vc-companion"), r = rect(node);
+        // On the sofa or the home floor a node is laid out from an anchored left/top and its transform is only the
+        // offset from that origin (dccb2756 / a3e9a288, 2026-10-20/25); both are 0px anywhere else.
+        const origin = (target: Element) => { const css = getComputedStyle(target), value = new DOMMatrixReadOnly(css.transform); return { m41: value.m41 + (parseFloat(css.left) || 0), m42: value.m42 + (parseFloat(css.top) || 0) }; };
+        const matrix = node ? origin(node) : null;
         if (node && !firstActor) firstActor = node;
         const size = node ? parseFloat(node.style.getPropertyValue("--vc-size")) || 92 : 92;
         frames.push({ at, phase: probe.phase, focused: document.hasFocus(), hidden: document.hidden || !node || node.hidden || !r?.width || !r.height, down, same: !node || node === firstActor,
           actor: node && matrix ? { x: matrix.m41 + size / 2, y: matrix.m42 + size, state: node.dataset.state ?? "", platform: node.dataset.platform ?? "", row: Math.round(parseFloat(node.style.getPropertyValue("--vc-row")) / 100 * (rows - 1)), pose: Number(node.dataset.pose), petting: node.dataset.petting ?? "", textures: [...node.querySelectorAll<HTMLImageElement>(".vc-sprite > .vc-texture")].map(image => ({ src: image.currentSrc || image.src, complete: image.complete && image.naturalWidth > 0 })) } : null,
           seat: rect(document.querySelector(".vc-home-cushion")), floor: rect(document.querySelector(".vc-home-floor")), badge: rect(document.querySelector(".studio-build-copy")),
-          items: [...document.querySelectorAll<HTMLElement>(".vc-food,.vc-toy")].map(item => { const food = item.matches(".vc-food"), box = rect(item)!, transform = new DOMMatrixReadOnly(getComputedStyle(item).transform), art = food ? item.firstElementChild : item.querySelector("img"), local = art ? new DOMMatrixReadOnly(getComputedStyle(art).transform) : new DOMMatrixReadOnly(); return { id: item.dataset.food ?? item.dataset.toyId ?? "", food, x: food ? transform.m41 : box.x + box.width / 2, y: food ? transform.m42 : box.bottom, rect: box, platform: item.dataset.platform ?? "", held: food ? item.hasAttribute("data-selected") : item.dataset.held === "true", carried: food ? item.hasAttribute("data-carried") : item.dataset.carried === "true", falling: food ? item.hasAttribute("data-falling") : item.dataset.falling === "true", hidden: item.hidden || box.width <= 0 || box.height <= 0, angle: Math.atan2(local.b, local.a) * 180 / Math.PI }; }),
+          items: [...document.querySelectorAll<HTMLElement>(".vc-food,.vc-toy")].map(item => { const food = item.matches(".vc-food"), box = rect(item)!, transform = origin(item), art = food ? item.firstElementChild : item.querySelector("img"), local = art ? new DOMMatrixReadOnly(getComputedStyle(art).transform) : new DOMMatrixReadOnly(); return { id: item.dataset.food ?? item.dataset.toyId ?? "", food, x: food ? transform.m41 : box.x + box.width / 2, y: food ? transform.m42 : box.bottom, rect: box, platform: item.dataset.platform ?? "", held: food ? item.hasAttribute("data-selected") : item.dataset.held === "true", carried: food ? item.hasAttribute("data-carried") : item.dataset.carried === "true", falling: food ? item.hasAttribute("data-falling") : item.dataset.falling === "true", hidden: item.hidden || box.width <= 0 || box.height <= 0, angle: Math.atan2(local.b, local.a) * 180 / Math.PI }; }),
         });
       }
       if (frames.length < 2400) request = requestAnimationFrame(sample);
@@ -107,6 +117,8 @@ async function strokes(page: Page, count = 84) {
   const point = await pet(page).evaluate(node => { const rect = node.getBoundingClientRect(); return { x: rect.x + rect.width / 2, y: rect.bottom - rect.width * .45 }; });
   for (let index = 0; index < count; index++) { await page.mouse.move(point.x + Math.sin(index * Math.PI / 8) * 14, point.y); await page.waitForTimeout(32); }
 }
+// A toy rests on the screen floor measured for its own 44px footprint (viewport-floor-toy, 512c683a, 2026-10-25).
+const toyFloor = /^viewport-floor(?:-food|-toy)?(?:-\d+)?$/;
 const visibleActor = (trace: Frame[]) => trace.filter(frame => !frame.hidden && frame.actor);
 function verifyFirstHome(frame: Frame) {
   const point = frame.actor!; expect(point.platform).toMatch(/^companion-home(?:-floor(?:-\d+)?)?$/);
@@ -164,10 +176,10 @@ test("131 a native toy released below the real studio badge stays present and re
   expect(beforeResize.some(frame => frame.items.some(item => item.id === id && item.platform === "" && item.falling))).toBe(true);
   expect(beforeResize.every(frame => frame.items.some(item => item.id === id && !item.hidden))).toBe(true);
   const last = beforeResize.at(-1)!.items.find(item => item.id === id)!;
-  if (last.platform) { expect(last.platform).toMatch(/^viewport-floor(?:-food)?(?:-\d+)?$/); expect(last.rect.right <= actualBadge.x || last.rect.x >= actualBadge.x + actualBadge.width || last.rect.bottom <= actualBadge.y || last.rect.y >= actualBadge.y + actualBadge.height).toBe(true); }
+  if (last.platform) { expect(last.platform).toMatch(toyFloor); expect(last.rect.right <= actualBadge.x || last.rect.x >= actualBadge.x + actualBadge.width || last.rect.bottom <= actualBadge.y || last.rect.y >= actualBadge.y + actualBadge.height).toBe(true); }
   proofs.get(page)!.notes.push({ actualBadge, actualRelease: release, retainedAfterOldTwoSecondLimit: last, pendingWithoutInventedFloor: last.platform === "" });
   await phase(page, "native-width-resize"); await page.setViewportSize({ width: 1920, height: 1100 });
-  await expect(toy).toHaveAttribute("data-platform", /^viewport-floor(?:-food)?(?:-\d+)?$/, { timeout: 6000 }); await expect(toy).toHaveAttribute("data-falling", "false"); await expect(toy).toHaveAttribute("data-toy-id", id!); await expect(toy).toBeVisible();
+  await expect(toy).toHaveAttribute("data-platform", toyFloor, { timeout: 6000 }); await expect(toy).toHaveAttribute("data-falling", "false"); await expect(toy).toHaveAttribute("data-toy-id", id!); await expect(toy).toBeVisible();
   const settled = (await toy.boundingBox())!, currentBadge = (await badge.boundingBox())!;
   expect(settled.width).toBeCloseTo(44, 2); expect(settled.height).toBeCloseTo(44, 2);
   expect(settled.x + settled.width <= currentBadge.x || settled.x >= currentBadge.x + currentBadge.width || settled.y + settled.height <= currentBadge.y || settled.y >= currentBadge.y + currentBadge.height).toBe(true);
@@ -181,7 +193,10 @@ test("131 actual food release follows a native parabola and a later stationary d
   const start = { x: panel.x + panel.width * .5, y: Math.max(panel.y + 90, floor.y + floor.height + 110) }; expect(start.y).toBeLessThan(page.viewportSize()!.height - 180);
   const begin = (await food.boundingBox())!; await page.mouse.move(begin.x + begin.width / 2, begin.y + begin.height / 2); await page.mouse.down(); await page.mouse.move(start.x, start.y, { steps: 14 }); await page.waitForTimeout(160);
   await phase(page, "native-food-throw");
-  for (let step = 1; step <= 7; step++) { await page.mouse.move(start.x + step * 6, start.y - step * 7); await page.waitForTimeout(16); }
+  // The same 42px right / 49px up flick in about 112ms. Each pointer position follows the real elapsed time, so a
+  // slow driver round-trip on a busy machine sends fewer points instead of a slower hand.
+  const flick = 7 * 16, flung = Date.now();
+  for (let elapsed = 0; elapsed < flick;) { await page.waitForTimeout(16); elapsed = Math.min(flick, Date.now() - flung); await page.mouse.move(start.x + elapsed / 16 * 6, start.y - elapsed / 16 * 7); }
   await page.mouse.up(); await page.mouse.move(2, 2); await expect(food).toHaveAttribute("data-falling", ""); await expect(food).not.toHaveAttribute("data-falling", { timeout: 6000 });
   const raw = await page.evaluate(id => { const probe = (window as ProbeWindow).care131!; return { inputs: probe.inputs.filter(input => input.food === id && input.type === "pointerup"), frames: probe.frames }; }, id);
   const released = raw.inputs.at(-1)!; expect(released.trusted).toBe(true);

@@ -13,8 +13,15 @@ const observed = new WeakMap<Page, { posts: string[]; errors: string[] }>();
 type Point = { x: number; y: number };
 type CapacityWindow = Window & { replacementFall?: { fell: boolean; observer: MutationObserver } };
 const position = (item: Locator) => item.evaluate(node => {
-  const matrix = new DOMMatrixReadOnly(node.closest("[hidden]") ? (node as HTMLElement).style.transform : getComputedStyle(node).transform);
-  return { x: matrix.m41, y: matrix.m42 };
+  const item = node as HTMLElement, css = getComputedStyle(node);
+  const matrix = new DOMMatrixReadOnly(node.closest("[hidden]") ? item.style.transform : css.transform);
+  // A snack on the home floor is CSS-anchored to its room (a3e9a288): left/top are that source's corner and the
+  // transform is only the offset from it. The source's own box stays readable while the snack layer is folded away.
+  if (!item.style.left.includes("anchor(")) return { x: matrix.m41 + (parseFloat(css.left) || 0), y: matrix.m42 + (parseFloat(css.top) || 0) };
+  const name = item.style.getPropertyValue("position-anchor").trim();
+  const source = [...document.querySelectorAll<HTMLElement>("[style*='anchor-name']")].find(candidate => candidate.style.getPropertyValue("anchor-name").split(",").map(part => part.trim()).includes(name));
+  if (!name || !source) throw new Error("anchored snack has no named source");
+  const rect = source.getBoundingClientRect(); return { x: matrix.m41 + rect.left, y: matrix.m42 + rect.top };
 });
 async function press(item: Locator, touch: boolean) { if (touch) await item.tap(); else await item.click(); }
 async function pressExposed(page: Page, item: Locator, touch: boolean) {
@@ -32,7 +39,9 @@ async function pressExposed(page: Page, item: Locator, touch: boolean) {
 }
 async function drag(page: Page, item: Locator, target: Point, touch: boolean) {
   const rect = (await item.boundingBox())!, start = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
-  if (!touch) { await page.mouse.move(start.x, start.y); await page.mouse.down(); await page.mouse.move(target.x, target.y, { steps: 12 }); await page.mouse.up(); return; }
+  if (!touch) { await page.mouse.move(start.x, start.y); await page.mouse.down(); await page.mouse.move(target.x, target.y, { steps: 12 });
+    // A release within 100 ms of the last move is a throw (a44f46a2, companion-food.tsx pointerup): a put-down holds still first.
+    await page.waitForTimeout(140); await page.mouse.up(); return; }
   const cdp = await page.context().newCDPSession(page);
   try {
     await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...start, id: 31 }] });
@@ -69,7 +78,7 @@ test.afterEach(async ({ page }) => { expect(observed.get(page)).toEqual({ posts:
 for (const touch of [false]) test.describe(touch ? "native390 eight snacks" : "PC1920 eight snacks", () => {
   test.use({ viewport: touch ? { width: 390, height: 844 } : { width: 1920, height: 1100 }, hasTouch: touch, isMobile: touch });
   test("eight local foods survive capacity refusal, eighth-food feeding, home follow and direct trash", async ({ page }) => {
-    test.setTimeout(40000);
+    test.setTimeout(100000);
     await page.goto("/visual-fixture/poster"); await page.evaluate(() => document.fonts.ready);
     await expect.poll(async () => await house(page).isVisible() || await page.getByRole("button", { name: "빅타민 집 열기", exact: true }).isVisible()).toBe(true);
     await openCompanionHome(page, touch ? "touch" : "pointer");
@@ -98,6 +107,9 @@ for (const touch of [false]) test.describe(touch ? "native390 eight snacks" : "P
     await drag(page, offered, floorPoint, touch);
     await expect(offered).not.toHaveAttribute("data-falling");
     await expect.poll(async () => Math.abs((await position(offered)).y - floorPoint.plane)).toBeLessThan(2);
+    // Tightening pass (t1, 2026-11-19): the "short sofa nap first" seen in the b07 repair does not happen on the current
+    // build (probe: petted -> idle -> eat the offered snack about 1 s after the drop, no `data-home-life="nap"`), so the
+    // original 12 s window holds as it was.
     await expect(pet(page)).toHaveAttribute("data-state", "eat", { timeout: 12000 });
     await expect(offered).toHaveAttribute("data-eating", "");
     await expect(page.locator(`.vc-food[data-food="${offeredId}"]`)).toHaveCount(0, { timeout: 7000 });

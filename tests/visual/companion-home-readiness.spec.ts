@@ -13,7 +13,7 @@ type Rect = { x: number; y: number; width: number; height: number };
 type RoomSample = {
   at: number; reason: string; room: Rect; window: Rect; shelf: Rect; roomHeight: string;
   roomPosition: string; windowPosition: string; shelfPosition: string; background: string;
-  skyFill: string; bedStop: string; ribFill: string; stemFill: string; warnings: string[];
+  skyFill: string; bedStop: string; ribFill: string; stemFill: string; wallPainted: boolean; curtainStyled: boolean; warnings: string[];
 };
 type InputSample = { type: string; trusted: boolean; key: string; at: number };
 type ForegroundArm = { at: number; hidden: boolean; hovered: boolean; localTarget: string; portalTarget: string; localScale: number; room: Rect; button: Rect; bed: Rect; cushion: Rect };
@@ -87,25 +87,40 @@ async function installProbe(page: Page, name: string, dark: boolean, mode: Mode,
       probe.sampleForeground(reason);
       for (const house of document.querySelectorAll<HTMLElement>(".vc-home")) {
         if (!visible(house)) continue;
-        const room = house.querySelector<HTMLElement>(".vc-home-room"), windowArt = house.querySelector<SVGSVGElement>(".vc-home-window"), shelf = house.querySelector<SVGSVGElement>(".vc-home-shelf");
-        if (!room || !windowArt || !shelf || !visible(room)) continue;
-        const roomStyle = getComputedStyle(room), windowStyle = getComputedStyle(windowArt), shelfStyle = getComputedStyle(shelf);
+        // The room was rebuilt (e4f56c8f, 2026-10-20 and later): the window and
+        // the shelf are positioned boxes around pictures, not two inline SVGs.
+        const room = house.querySelector<HTMLElement>(".vc-home-room"), windowArt = house.querySelector<HTMLElement>(".vc-home-window"), shelf = house.querySelector<HTMLElement>(".vc-home-shelf");
+        const landscape = house.querySelector<HTMLElement>(".vc-window-landscape"), shelfArt = house.querySelector<SVGSVGElement>(".vc-home-shelf-art");
+        if (!room || !windowArt || !shelf || !landscape || !shelfArt || !visible(room)) continue;
+        const roomStyle = getComputedStyle(room), windowStyle = getComputedStyle(windowArt), shelfStyle = getComputedStyle(shelf), landscapeStyle = getComputedStyle(landscape);
         const fill = (selector: string, property = "fill") => { const node = house.querySelector(selector); return node ? getComputedStyle(node).getPropertyValue(property) : "missing"; };
-        const sample: RoomSample = { at: performance.now(), reason, room: rect(room), window: rect(windowArt), shelf: rect(shelf), roomHeight: roomStyle.height, roomPosition: roomStyle.position, windowPosition: windowStyle.position, shelfPosition: shelfStyle.position, background: roomStyle.backgroundImage, skyFill: fill(".vc-window-sky"), bedStop: fill(".vc-plush-bed stop", "stop-color"), ribFill: fill(".vc-bed-back-ribs"), stemFill: fill(".vc-shelf-stem"), warnings: [] };
+        const sample: RoomSample = { at: performance.now(), reason, room: rect(room), window: rect(windowArt), shelf: rect(shelf), roomHeight: roomStyle.height, roomPosition: roomStyle.position, windowPosition: windowStyle.position, shelfPosition: shelfStyle.position, background: roomStyle.backgroundImage, skyFill: `${landscapeStyle.position} ${landscapeStyle.objectFit}`, bedStop: fill(".vc-plush-bed stop", "stop-color"), ribFill: fill(".vc-bed-back-ribs"), stemFill: fill(".vc-shelf-bracket", "stroke"), wallPainted: !/opacity\(0\)/.test(windowStyle.filter) && !/opacity\(0\)/.test(shelfStyle.filter), curtainStyled: getComputedStyle(house.querySelector(".vc-window-curtain-overlay") ?? windowArt).position === "absolute", warnings: [] };
         const warn = (valid: boolean, detail: string) => { if (!valid) sample.warnings.push(detail); };
-        warn(Math.abs(parseFloat(roomStyle.height) - 132) < .1, "room height is not132px");
+        // companion-home.css: the room is max(74cqw, 130px + 130px / zoom) tall
+        // (285px floor in the narrow layout), the window is a 38:23 box whose top
+        // is the wall seam (height * 50 / 683 + 8px), the shelf hangs 8px from the
+        // right wall and its board picture is 55px tall.
+        // The curtain rules were a separate small stylesheet (companion-home-window.css)
+        // applied 30..390ms after the room mounted; since 63ecc14a they live in the room
+        // sheet, and the case at the end of this file guards that a late curtain sheet
+        // never paints an unstyled window. These cases judge the window box from the
+        // frame its curtain is styled. `wallPainted` records the rest.
+        const wall = sample.curtainStyled;
+        const zoom = Number.parseFloat(roomStyle.getPropertyValue("--shell-zoom")) || 1, roomHeight = parseFloat(roomStyle.height), windowWidth = parseFloat(windowStyle.width), windowHeight = parseFloat(windowStyle.height);
+        warn(roomHeight >= 130 + 130 / zoom - .1 && roomHeight >= parseFloat(roomStyle.width) * .7 - .1 && roomStyle.overflowX === "hidden", "room height is not the styled scene height");
         warn(roomStyle.position === "relative" && windowStyle.position === "absolute" && shelfStyle.position === "absolute", "room object positioning is unstyled");
-        warn(Math.abs(parseFloat(windowStyle.width) - 64) < .1 && Math.abs(parseFloat(windowStyle.height) - 56) < .1, "window is not64x56px");
-        warn(Math.abs(parseFloat(windowStyle.left) - 20) < .1 && Math.abs(parseFloat(windowStyle.top) - 14) < .1, "window anchor changed");
-        warn(Math.abs(parseFloat(shelfStyle.height) - 55) < .1 && Math.abs(parseFloat(shelfStyle.top) - 9) < .1, "shelf size or anchor changed");
+        warn(!wall || windowWidth > 60 && windowHeight > 36 && Math.abs(windowWidth / windowHeight - 38 / 23) < .02, "window is not the38:23 box");
+        warn(parseFloat(windowStyle.left) > 0 && Math.abs(parseFloat(windowStyle.top) - (roomHeight * 50 / 683 + 8)) < .2, "window anchor changed");
+        warn(Math.abs(parseFloat(shelfStyle.right) - 8) < .1 && Math.abs(parseFloat(shelfStyle.height) - parseFloat(shelfStyle.top)) < 13.1 && Math.abs(parseFloat(getComputedStyle(shelfArt).height) - 55) < .1 && getComputedStyle(shelfArt).position === "absolute", "shelf size or anchor changed");
         // Studio CSS zoom is real. Compare both resolved CSS dimensions and
         // their common screen scale instead of assuming every surface is1:1.
-        const scale = sample.room.height / 132;
-        warn(scale > .7 && scale < 1.1 && Math.abs(sample.window.width / scale - 64) < .2 && Math.abs(sample.window.height / scale - 56) < .2 && Math.abs(sample.shelf.height / scale - 55) < .2, "visible SVG bounds are not the styled room geometry");
-        warn(sample.background !== "none", "room background is missing");
-        warn(sample.skyFill !== "missing" && sample.skyFill !== "none" && !black(sample.skyFill), "window has default black fill");
+        const scale = sample.room.height / roomHeight;
+        warn(scale > .7 && scale < 1.1 && Math.abs(sample.window.width / scale - windowWidth) < .2 && (!wall || Math.abs(sample.window.height / scale - windowHeight) < .2) && Math.abs(sample.shelf.height / scale - parseFloat(shelfStyle.height)) < .2, "visible bounds are not the styled room geometry");
+        warn(sample.window.x >= sample.room.x && sample.window.x + sample.window.width <= sample.shelf.x + .5 && sample.shelf.x + sample.shelf.width <= sample.room.x + sample.room.width, "window and shelf do not share the wall");
+        warn(sample.background.includes("/companion/home/136/room-neutral.webp"), "room background is missing");
+        warn(sample.skyFill === "absolute cover", "window picture is not fitted to its glass");
         warn(sample.bedStop !== "missing" && !black(sample.bedStop), "bed gradient has default black stop");
-        warn(sample.ribFill === "none" && sample.stemFill === "none", "stroke-only room art has default fill");
+        warn(sample.ribFill === "none" && sample.stemFill !== "none" && sample.stemFill !== "missing", "stroke-only room art is unstyled");
         probe.samples.push(sample);
       }
     };
@@ -124,8 +139,10 @@ async function installProbe(page: Page, name: string, dark: boolean, mode: Mode,
 async function settle(page: Page) {
   await expect(home(page)).toBeVisible(); await expect(home(page)).toHaveCount(1);
   await expect(home(page)).not.toHaveAttribute("data-panel-collapsed");
-  await expect.poll(() => home(page).locator(".vc-home-room").evaluate(room => Math.abs(parseFloat(getComputedStyle(room).height) - 132))).toBeLessThan(.01);
+  // Styled = the room is the positioned scene box, never a 132px strip any more (e4f56c8f).
+  await expect.poll(() => home(page).locator(".vc-home-room").evaluate(room => { const css = getComputedStyle(room); return css.position === "relative" && parseFloat(css.height) >= 200; })).toBe(true);
   await expect(home(page).locator(".vc-home-window")).toBeVisible();
+  await expect.poll(() => home(page).locator(".vc-home-window").evaluate(node => getComputedStyle(node).filter), { message: "the staged reveal paints the wall layer" }).not.toContain("opacity(0)");
   await page.evaluate(async () => {
     await document.fonts.ready;
     await Promise.allSettled(document.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))).map(animation => animation.finished));
@@ -267,11 +284,12 @@ async function nativeCues(page: Page, name: string, mode: Mode, states: Record<s
   await page.keyboard.press("Shift+Tab"); await expect(cushion(page)).toBeFocused();
   await settleScale(1.03);
   const focused = await remember("keyboardFocus");
-  // The authored two-pixel outline is device-pixel snapped under studio zoom.
-  // Verify an actual visible ring, retaining both CSS and screen widths.
-  expect(focused.focusVisible).toBe(true); expect(focused.outline).toBe("solid");
-  expect(focused.outlineWidth).toBeGreaterThan(0); expect(focused.outlineScreenWidth).toBeGreaterThan(0);
-  expect(focused.outlineColor).not.toBe("transparent"); expect(focused.outlineColor).not.toMatch(/^(?:rgba\(.*,\s*0(?:\.0+)?\)|.*\/\s*0(?:\.0+)?\))$/);
+  // Owner rule 2026-10-24 (dd0f45f7, UI_RULES "빅타민 물체 포커스 정정"): the
+  // physical objects of the room never draw a focus ring, also for keyboard
+  // :focus-visible. Real focus stays, and the sofa answers with the same inner
+  // picture lift as hover (the 1.03 scale settled above, a brighter welt).
+  expect(focused.focusVisible).toBe(true); expect(focused.outline).toBe("none");
+  expect(focused.shadow).toBe("none"); expect(focused.weltOpacity).toBeGreaterThan(states.idle.weltOpacity);
   expect(focused.color).not.toBe("rgba(0, 0, 0, 0)");
   await page.keyboard.down("Space");
   try {
@@ -298,8 +316,12 @@ for (const { surface, dark, mode } of cases) test(`${surface} ${dark ? "dark" : 
   mkdirSync(output, { recursive: true }); page.on("pageerror", error => errors.push(error.message));
   // HTTP routing disables the browser HTTP cache. Together with blocked service
   // workers, each genuine reload must fetch and gate the stylesheet again.
+  // The developer header reads its unseen report count on mount (c30945c4,
+  // 2026-11-13). It is a read: answer 0 here; every other POST stays a write.
+  const actions = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
   await context.route("**/*", async route => {
     const request = route.request(), path = new URL(request.url()).pathname;
+    if (request.method() === "POST" && actions[request.headers()["next-action"] ?? ""]?.exportedName === "getUnseenReportCountAction") { await route.fulfill({ contentType: "text/x-component", body: '0:{"a":"$@1","f":[],"b":"fixture"}\n1:0\n' }); return; }
     if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) { writes.push(`${request.method()} ${path}`); await route.fulfill({ status: 503, body: "fixture forbids writes" }); return; }
     if (path === "/api/soop-live") { await route.fulfill({ json: { live: false } }); return; }
     if (request.resourceType() !== "stylesheet") { await route.continue(); return; }
@@ -319,6 +341,7 @@ for (const { surface, dark, mode } of cases) test(`${surface} ${dark ? "dark" : 
     expect(gates.filter(gate => gate.navigation === "entry").length, "first navigation must really gate home CSS").toBeGreaterThan(0);
     const entryBad = entry.samples.filter(sample => sample.warnings.length > 0);
     expect(entryBad.length, `no visible initial home may be unstyled; first=${entryBad[0] ? `${entryBad[0].at.toFixed(1)}ms ${entryBad[0].warnings.join("; ")}` : "none"}`).toBe(0);
+    expect(entry.samples.some(sample => sample.wallPainted), "the entry probe saw the painted wall, not only its withheld boxes").toBe(true);
     expect(entry.seeded).toBe(true); expect(entry.theme).toBe(dark ? "dark" : "light");
     navigation = "reload"; await page.reload(); await settle(page);
     await home(page).screenshot({ path: `${output}/${name}-reload.png` });
@@ -354,4 +377,25 @@ for (const { surface, dark, mode } of cases) test(`${surface} ${dark ? "dark" : 
     writeFileSync(path, JSON.stringify({ buildId: readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim(), surface, dark, mode, stylesheetDelayMs: 1000, serviceWorkers: "block", httpCache: "disabled by routing", gates, entry, reloaded, cues, writes, errors }, null, 2));
     await info.attach("home readiness and native sofa cues", { path, contentType: "application/json" });
   }
+});
+
+// Regression guard (fixed in 63ecc14a by merging the curtain rules into the room sheet). The room sheet and the
+// 305-byte curtain sheet (companion-home-window.css, its own chunk) were applied independently and the staged reveal
+// did not wait for the second: a late curtain sheet painted the window frame from the wall seam down to the floor
+// (1066px instead of 91px). Any stylesheet carrying the curtain rules without the room rules is held back 4 s here.
+test("viewer light: a late window curtain stylesheet never paints an unstyled window", async ({ page, context }) => {
+  await context.route("**/*", async route => {
+    const request = route.request(), path = new URL(request.url()).pathname;
+    if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) { await route.fulfill({ status: 503, body: "fixture forbids writes" }); return; }
+    if (path === "/api/soop-live") { await route.fulfill({ json: { live: false } }); return; }
+    if (request.resourceType() !== "stylesheet") { await route.continue(); return; }
+    const response = await route.fetch(), css = await response.text();
+    if (css.includes(".vc-window-curtain-overlay") && !css.includes(".vc-home-room")) await new Promise<void>(resolve => setTimeout(resolve, 4000));
+    await route.fulfill({ response });
+  });
+  await installProbe(page, "late-curtain", false, "normal", false);
+  await page.goto("/visual-fixture/poster"); await settle(page);
+  await expect.poll(async () => (await readProbe(page)).samples.at(-1)?.curtainStyled, { timeout: 12000 }).toBe(true);
+  const { samples } = await readProbe(page, true), unstyled = samples.filter(sample => sample.wallPainted && !sample.curtainStyled);
+  expect(unstyled.length, `a painted wall must wait for its curtain rules; first=${unstyled[0]?.at.toFixed(1)}ms window=${unstyled[0]?.window.height}px`).toBe(0);
 });

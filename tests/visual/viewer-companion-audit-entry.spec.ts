@@ -3,6 +3,7 @@ import { writeFile } from "node:fs/promises";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { placeCompanionOnCalendarCard } from "./helpers/companion-home";
 
 type Surface = "viewer" | "studio";
 type Mode = "full" | "lite";
@@ -120,8 +121,30 @@ async function checkpoint(page: Page, surface: Surface, mode: Mode, label: strin
   const frames = (await finish(page))!; evidence.get(page)!.stages.push({ label, frames }); return frames;
 }
 
-for (const surface of ["viewer", "studio"] as const) for (const mode of ["full", "lite"] as const) test(`${surface} ${mode}: entry and native reload never duplicate a sofa foreground for a calendar creature`, async ({ page }) => {
-  test.setTimeout(60000); await page.bringToFront(); await install(page, mode);
+const nestedOwnsPaint = (frame: Frame) => frame.frontVisible && !frame.frontHidden && frame.localFrontAlpha === 0 && frame.alignment !== null && frame.alignment < 2 && Math.abs(frame.frontAlpha - frame.bedAlpha) < .03;
+const nestedEntry = (frames: Frame[]) => frames.filter(frame => frame.petVisible && frame.bedVisible && frame.coherent && ["seat", "back"].includes(frame.depth));
+
+// Open product defect found while repairing this file (2026-11-19, product not changed): on a fresh document the first
+// visible frames of a creature nested on the seat can carry data-native-sofa while its anchored left/top still compute
+// to "auto". The fixed foreground is then laid out about 7000px down (and the creature about 550px below its seat): one
+// frame on a quiet page, 100-300ms on a busy studio load, on roughly half the studio entries. The audit below records
+// those frames as `unownedNestedEntry` and keeps every other check strict; this case is the check to turn on when fixed.
+for (const surface of ["viewer", "studio"] as const) test.fixme(`${surface}: a creature nested at entry is covered by its one fixed foreground from its first visible frame`, async ({ page }) => {
+  test.setTimeout(60000); await page.bringToFront(); await install(page, "full");
+  for (const [label, path] of [["initial", pathFor(surface)], ["other", pathFor(surface === "viewer" ? "studio" : "viewer")], ["again", pathFor(surface)]] as const) {
+    await page.goto(path, { waitUntil: "domcontentloaded" });
+    const nested = nestedEntry(await checkpoint(page, surface, "full", `nested-${label}`));
+    expect(nested.length, `${label} must observe the nested resident`).toBeGreaterThan(2);
+    expect(nested.filter(frame => !nestedOwnsPaint(frame)), `${label}: a nested entry is covered by the one fixed foreground`).toEqual([]);
+  }
+});
+
+for (const surface of ["viewer", "studio"] as const) for (const mode of ["full", "lite"] as const) test(`${surface} ${mode}: entry and native reload never duplicate a sofa foreground, in the house or out on the calendar`, async ({ page }) => {
+  test.setTimeout(90000); await page.bringToFront(); await install(page, mode);
+  // The room's native entry fade lasts only a few frames; on a busy first paint the witness can meet it already opaque.
+  // Slow only the document's animations (CDP, the page's own clock untouched) for the four load phases so every phase
+  // must sample the partially transparent room; restore real speed before the calendar/resident moves below.
+  const cdp = await page.context().newCDPSession(page); await cdp.send("Animation.enable"); await cdp.send("Animation.setPlaybackRate", { playbackRate: .1 });
   const phases: { label: string; frames: Frame[] }[] = [];
   await page.goto(pathFor(surface), { waitUntil: "domcontentloaded" }); phases.push({ label: "initial", frames: await checkpoint(page, surface, mode, "initial") });
   await page.reload({ waitUntil: "domcontentloaded" }); phases.push({ label: "reload", frames: await checkpoint(page, surface, mode, "reload") });
@@ -129,6 +152,17 @@ for (const surface of ["viewer", "studio"] as const) for (const mode of ["full",
   await page.goto(pathFor(other), { waitUntil: "domcontentloaded" }); phases.push({ label: "other", frames: await checkpoint(page, surface, mode, "other") });
   await page.goBack({ waitUntil: "domcontentloaded" }); await expect(page).toHaveURL(new RegExp(surface === "viewer" ? "/visual-fixture/poster" : "/visual-fixture/studio"));
   phases.push({ label: "back", frames: await checkpoint(page, surface, mode, "back") });
+  // A document loaded while slowed keeps its slowed timeline even after the rate is restored (measured: the calendar
+  // placement then never lands), so the moves below run on one fresh native reload at real speed.
+  await cdp.send("Animation.setPlaybackRate", { playbackRate: 1 }); await cdp.detach();
+  await page.reload({ waitUntil: "domcontentloaded" }); await settled(page);
+
+  // Every document load now starts the creature inside its house (a44f46a2, 2026-10-19; a position is not carried
+  // across a load), so the calendar creature of the original audit is produced by the real keyboard placement.
+  await page.evaluate(() => (window as ProbeWindow).startSofaEntry!());
+  await placeCompanionOnCalendarCard(page, surface); await settled(page);
+  await page.screenshot({ path: `${prefix}-${surface}-${mode}-calendar.png`, animations: "allow" });
+  const calendar = (await finish(page))!; evidence.get(page)!.stages.push({ label: "calendar", frames: calendar });
 
   // A blanket foreground removal would hide the real resident. Recall it
   // through the existing cushion control and require its actual seat contact.
@@ -149,18 +183,33 @@ for (const surface of ["viewer", "studio"] as const) for (const mode of ["full",
     const frames = (await finish(page))!; residentMoves.push({ label: `resident-${side}`, frames }); evidence.get(page)!.stages.push({ label: `resident-${side}`, frames });
   }
   for (const phase of phases) {
-    expect(phase.frames.some(frame => frame.coherent && frame.entryAnimations > 0 && frame.bedAlpha > 0 && frame.bedAlpha < .999), `${phase.label} must actually sample the native partially transparent entry`).toBe(true);
+    // With the entry slowed above, every phase must look at its own fading room, or its ownership checks are vacuous.
+    expect(phase.frames.some(frame => frame.coherent && frame.entryAnimations > 0 && frame.bedAlpha > 0 && frame.bedAlpha < .999), `${phase.label} must actually sample the native partially transparent room`).toBe(true);
     const visible = phase.frames.filter(frame => frame.petVisible && frame.bedVisible && frame.coherent);
-    expect(visible.length, `${phase.label} must capture the real calendar and room`).toBeGreaterThan(2);
+    expect(visible.length, `${phase.label} must capture the real creature and room`).toBeGreaterThan(2);
     expect(visible.every(frame => frame.same && frame.petCount === 1 && frame.frontCount === 1 && frame.localFronts === 1)).toBe(true);
-    const outside = visible.filter(frame => ["clear", "front"].includes(frame.depth));
-    expect(outside.some(frame => /^(card|date)-/.test(frame.platform)), `${phase.label} must observe a naturally seeded calendar support`).toBe(true);
-    expect(outside.filter(frame => !frame.frontHidden), `${phase.label}: the inline sofa already contains its front; a distant creature needs no fixed duplicate`).toEqual([]);
+    expect(visible.filter(frame => !/^companion-home(?:-floor(?:-\d+)?)?$/.test(frame.platform)).map(frame => frame.platform), `${phase.label}: a loaded document starts its creature in the house`).toEqual([]);
+    // Exactly one front owns paint in every entry frame: the inline sofa front while the creature is in front of
+    // or clear of the sofa, the fixed foreground only while it is nested on the seat.
+    const outside = visible.filter(frame => ["clear", "front"].includes(frame.depth)), inside = visible.filter(frame => ["seat", "back"].includes(frame.depth));
+    expect(outside.length + inside.length, `${phase.label}: every visible frame reports its sofa depth`).toBe(visible.length);
+    expect(outside.filter(frame => !frame.frontHidden), `${phase.label}: the inline sofa already contains its front; a creature outside it needs no fixed duplicate`).toEqual([]);
     expect(outside.every(frame => frame.localFrontAlpha > 0)).toBe(true);
+    // Known open defect (see the fixme case above): recorded as evidence here, asserted there.
+    const unowned = inside.filter(frame => !nestedOwnsPaint(frame));
+    if (unowned.length) evidence.get(page)!.stages.push({ label: `${phase.label}-unownedNestedEntry`, frames: unowned });
+    // Once the anchor has resolved the one fixed foreground owns the nested creature for the rest of the phase.
+    const settledInside = inside.filter(frame => frame.at > (unowned.at(-1)?.at ?? -Infinity));
+    if (inside.length) expect(settledInside.length, `${phase.label}: the nested resident must end the phase under its foreground`).toBeGreaterThan(2);
   }
+  const outdoors = calendar.filter(frame => frame.coherent && frame.petVisible && frame.bedVisible && /^card-\d+-top/.test(frame.platform));
+  expect(outdoors.length, "the calendar creature positive must not be vacuous").toBeGreaterThan(2);
+  expect(outdoors.every(frame => frame.same && frame.petCount === 1 && frame.frontCount === 1 && frame.localFronts === 1 && frame.depth === "clear")).toBe(true);
+  expect(outdoors.filter(frame => !frame.frontHidden), "the inline sofa already contains its front; a distant creature needs no fixed duplicate").toEqual([]);
+  expect(outdoors.every(frame => frame.localFrontAlpha > 0)).toBe(true);
   const nested = resident.filter(frame => frame.coherent && frame.petVisible && frame.bedVisible && ["seat", "back"].includes(frame.depth));
   expect(nested.length, "the resident foreground positive must not be vacuous").toBeGreaterThan(2);
-  expect(nested.every(frame => frame.frontVisible && !frame.frontHidden && frame.localFrontAlpha === 0 && frame.alignment !== null && frame.alignment < 2 && Math.abs(frame.frontAlpha - frame.bedAlpha) < .03)).toBe(true);
+  expect(nested.every(nestedOwnsPaint)).toBe(true);
   for (const phase of residentMoves) {
     const during = phase.frames.filter(frame => frame.coherent && frame.petVisible && frame.bedVisible && ["seat", "back"].includes(frame.depth));
     const transparent = during.filter(frame => frame.entryAnimations > 0 && frame.bedAlpha > 0 && frame.bedAlpha < .999);

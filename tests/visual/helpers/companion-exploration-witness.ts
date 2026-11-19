@@ -45,3 +45,35 @@ export function matchCompanionExplorationWitness(frames: readonly ExplorationWit
       firstInspectAt: inspect[0].at, lastInspectAt: last.at, inspectFrames: inspect.length, resumedAt: resumed.at };
   }
 }
+
+/** The director borrows an inspection at a decision boundary. When that boundary is the start of a `go` beat, no
+ * frame of that beat has been painted yet: the last painted frame before the detour is still the previous beat of
+ * the same exploration (same scene and serial), and the borrowed beat first appears when it resumes. This accepts
+ * the strict mid-travel witness above, or that boundary case: the same exploration had real painted travel before,
+ * the same toy got its finite painted inspection, and that exploration then really travels on to a distinct goal. */
+export function matchCompanionExplorationResume(frames: readonly ExplorationWitnessFrame[], attempts: readonly ExplorationInputAttempt[]) {
+  const strict = matchCompanionExplorationWitness(frames, attempts);
+  if (strict) return strict;
+  for (let index = 1; index < frames.length; index++) {
+    const first = frames[index], previous = frames[index - 1];
+    if (first.scene !== "curious-interest" || previous.scene === "curious-interest" || !first.sceneItemId || !first.serial || first.command !== "toy") continue;
+    const matches = attempts.filter(attempt => attempt.toyId === first.sceneItemId && Number.isFinite(attempt.releasedAfterAt) && first.at > attempt.releasedAfterAt);
+    if (matches.length !== 1 || !publicExplorations.has(previous.scene) || !previous.serial || !previous.platform || /^companion-home/.test(previous.platform)) continue;
+    const sameExploration = (frame: ExplorationWitnessFrame) => frame.scene === previous.scene && frame.serial === previous.serial;
+    if (!frames.slice(0, index).some(frame => sameExploration(frame) && painted(frame) && (frame.walkSource || frame.jumpSource))) continue;
+    const input = matches[0], inspect = frames.slice(index).filter(frame => companionInterestInspection(frame, input.toyId, first.serial));
+    if (inspect.length <= 4) continue;
+    const last = inspect.at(-1)!;
+    // Nothing else may own the companion between the inspection and the resumed trip.
+    const next = frames.find(frame => frame.at > last.at && frame.scene !== "curious-interest");
+    if (!next || !sameExploration(next) || next.command !== "go" || !next.beat || !next.sceneGoal) continue;
+    const goal = next.sceneGoal, owner = { id: next.scene, serial: next.serial, beat: next.beat };
+    if (![goal.x, goal.y].every(Number.isFinite) || !goal.platformId || next.platform === goal.platformId && Math.hypot(next.x - goal.x, next.y - goal.y) < 24) continue;
+    const resumed = frames.find(frame => frame.at > last.at && frame.at - first.at <= 18000 && sameOwner(frame, owner) && painted(frame) && (frame.walkSource || frame.jumpSource)
+      && frame.sceneGoal?.platformId === goal.platformId && Math.abs(frame.sceneGoal.x - goal.x) < .01 && Math.abs(frame.sceneGoal.y - goal.y) < .01);
+    if (!resumed) continue;
+    return { owner, toyId: input.toyId, inputAttempt: input.attempt, ownerAtRelease: input.ownerAtRelease,
+      releasedAfterAt: input.releasedAfterAt, interestSerial: first.serial, firstInterestAt: first.at, goal,
+      firstInspectAt: inspect[0].at, lastInspectAt: last.at, inspectFrames: inspect.length, resumedAt: resumed.at };
+  }
+}

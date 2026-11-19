@@ -16,7 +16,7 @@ function authenticated(sample: SofaWorldFrame156, row: number, column = 0) {
   const source = companionSpriteMetadata.frames[sample.pose], atlas = companionSpriteMetadata.atlases[source.atlas];
   const translation = (x: number, y: number) => [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, x, y, 0, 1];
   sample.cell = { currentPath: atlas.src, connectedToSprite: true, naturalWidth: atlas.width, naturalHeight: atlas.height,
-    textureWidth: 92 * companionSpriteMetadata.grid, textureHeight: 92 * companionSpriteMetadata.gridRows, spriteWidth: 92, spriteHeight: 92,
+    textureWidth: 92 * companionSpriteMetadata.grid, textureHeight: 92 * ((atlas as { gridRows?: number }).gridRows ?? companionSpriteMetadata.gridRows), spriteWidth: 92, spriteHeight: 92,
     textureLeft: 0, textureTop: 0, textureMatrix: translation(-(source.index % companionSpriteMetadata.grid) * 92, -Math.floor(source.index / companionSpriteMetadata.grid) * 92),
     spriteMatrix: translation(source.x / 80 * 92, source.y / 80 * 92), spriteClipPath: `inset(${source.clip.map(value => `${value / 80 * 100}%`).join(" ")})`, textureClipPath: "none" };
   return sample;

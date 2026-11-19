@@ -6,12 +6,13 @@ import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { placeCompanionOnCalendarCard } from "./helpers/companion-home";
 
 type Role = "owner" | "developer";
 type Surface = "studio" | "viewer";
 type Point = { x: number; y: number };
 type Frame = { at: number; count: number; visible: boolean; surface: Surface; point: Point | null; platform: string; state: string; homeJourney: boolean; bounds: { left: number; top: number; right: number; bottom: number } | null; viewport: { width: number; height: number } };
-type ProbeWindow = Window & { companionContinuity: { frames: Frame[]; raf: number } };
+type ProbeWindow = Window & { companionContinuity: { frames: Frame[]; raf: number; clicks: { at: number; name: string }[] } };
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
 const home = (page: Page) => page.getByRole("region", { name: "빅타민 집", exact: true });
@@ -38,6 +39,8 @@ test.beforeEach(async ({ page }) => {
       snapshots.push(Date.now());
       return route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":"fixture"}\n1:${JSON.stringify(samplePublicScheduleData)}\n` });
     }
+    // The developer header reads its report inbox count whenever it mounts (c30945c4): a read over POST, answered 0.
+    if (request.method() === "POST" && manifest[request.headers()["next-action"] ?? ""]?.exportedName === "getUnseenReportCountAction") return route.fulfill({ contentType: "text/x-component", body: '0:{"a":"$@1","f":[],"b":"fixture"}\n1:0\n' });
     if (request.method() === "POST") { posts.push(new URL(request.url()).pathname); return route.fulfill({ status: 500, body: "" }); }
     return route.continue();
   });
@@ -87,7 +90,12 @@ async function point(page: Page) {
 }
 async function startProbe(page: Page) {
   await page.evaluate(() => {
-    const began = performance.now(), probe: ProbeWindow["companionContinuity"] = { frames: [], raf: 0 };
+    const began = performance.now(), probe: ProbeWindow["companionContinuity"] = { frames: [], raf: 0, clicks: [] };
+    // Real click deliveries, with the clicked button's accessible label, so a transition allowance can be tied to one.
+    document.addEventListener("click", event => {
+      const button = (event.target as Element | null)?.closest?.("button");
+      probe.clicks.push({ at: performance.now() - began, name: button?.getAttribute("aria-label") ?? button?.textContent?.trim() ?? "" });
+    }, true);
     const frame = () => {
       const nodes = document.querySelectorAll<HTMLElement>(".vc-companion"), node = nodes[0], r = node?.getBoundingClientRect();
       probe.frames.push({ at: performance.now() - began, count: nodes.length, visible: Boolean(node && !node.hidden && getComputedStyle(node).display !== "none"), surface: document.querySelector(".viewer-fullscreen") ? "viewer" : "studio", point: r ? { x: r.left + r.width / 2, y: r.bottom } : null, platform: node?.dataset.platform ?? "", state: node?.dataset.state ?? "", homeJourney: Boolean(node?.hasAttribute("data-home-journey")), bounds: r ? { left: r.left, top: r.top, right: r.right, bottom: r.bottom } : null, viewport: { width: innerWidth, height: innerHeight } });
@@ -97,9 +105,17 @@ async function startProbe(page: Page) {
   });
 }
 async function finishProbe(page: Page, label: string) {
-  const frames = await page.evaluate(() => { const p = (window as unknown as ProbeWindow).companionContinuity; cancelAnimationFrame(p.raf); return p.frames; });
+  const { frames, clicks } = await page.evaluate(() => { const p = (window as unknown as ProbeWindow).companionContinuity; cancelAnimationFrame(p.raf); return { frames: p.frames, clicks: p.clicks }; });
   expect(frames.length).toBeGreaterThan(12); expect(frames.every(frame => frame.count <= 1)).toBe(true);
-  expect(frames.filter(frame => frame.visible).every(frame => frame.bounds && frame.bounds.left >= -.1 && frame.bounds.top >= -.1 && frame.bounds.right <= frame.viewport.width + .1 && frame.bounds.bottom <= frame.viewport.height + .1)).toBe(true);
+  // A resident on the sofa is positioned from the sofa's anchor. In the frame(s) where a folding panel has removed that
+  // anchor and the pet is not yet withheld, its box is wholly above the screen: it paints nothing, so it is not a breach.
+  // That is allowed only in the first two frames after a real "패널 접기" click and only wholly above the screen
+  // (bottom <= 0: measured, the box ends exactly at y = 0, which covers no pixel row).
+  const onScreen = (frame: Frame) => Boolean(frame.bounds && frame.bounds.right > 0 && frame.bounds.bottom > 0 && frame.bounds.left < frame.viewport.width && frame.bounds.top < frame.viewport.height);
+  const foldWindow = new Set(clicks.filter(click => click.name === "패널 접기").flatMap(click => frames.filter(frame => frame.at >= click.at).slice(0, 2)));
+  const offScreen = frames.filter(frame => frame.visible && !onScreen(frame));
+  expect(offScreen.filter(frame => !(foldWindow.has(frame) && frame.bounds && frame.bounds.bottom <= 0)), "a box off the screen is only the fold's first two frames, wholly above; never a resting place").toEqual([]);
+  expect(frames.filter(frame => frame.visible && onScreen(frame) && !(frame.bounds &&frame.bounds.left >= -.1 && frame.bounds.top >= -.1 && frame.bounds.right <= frame.viewport.width + .1 && frame.bounds.bottom <= frame.viewport.height + .1)), "every painted frame stays inside the viewport").toEqual([]);
   await test.info().attach(`${artifactPrefix}-${label}-frames`, { body: JSON.stringify(frames), contentType: "application/json" });
   console.log(JSON.stringify({ check: "studio-viewer-continuity", label, frames: frames.length, duplicateFrames: frames.filter(frame => frame.count > 1).length, publicSnapshotReads: reads.get(page)?.length, posts: blocked.get(page), errors: failures.get(page) }));
   await page.screenshot({ path: `.scratch-pw/${artifactPrefix}-${label}.png` });
@@ -218,7 +234,10 @@ test("a folded home resident waits invisibly through owner preview and recovers 
 });
 
 test("a closed home keeps a genuine safe floor placement through developer preview without opening a house", async ({ page }) => {
-  await setup(page, "developer"); await page.getByRole("button", { name: "패널 접기", exact: true }).click(); await settle(page); await expect(home(page)).toHaveCount(0);
+  // A fresh pet lives in its home (a44f46a2) and a folded home hides its resident. This case is about a pet that is out
+  // on the page while the home is shut, so it leaves for a real card first.
+  await setup(page, "developer"); await placeCompanionOnCalendarCard(page, "studio");
+  await page.getByRole("button", { name: "패널 접기", exact: true }).click(); await settle(page); await expect(home(page)).toHaveCount(0);
   // Observe both untouched layouts first. A shared clear x makes preservation
   // meaningful without declaring a legitimate target-side clamp a failure.
   await enterViewer(page, "developer"); await expect(home(page)).toHaveCount(0); const viewerFloor = await clearFloor(page, "viewer");
@@ -227,7 +246,12 @@ test("a closed home keeps a genuine safe floor placement through developer previ
   await actor(page).focus(); await actor(page).press("p");
   await page.mouse.click(x!, studioFloor.y - 1); await expect(pet(page)).toHaveAttribute("data-platform", /^viewport-floor(?:-\d+)?$/); await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
   await startProbe(page); const before = await point(page);
-  await enterViewer(page, "developer"); await expect(home(page)).toHaveCount(0); await expect(pet(page)).toHaveAttribute("data-platform", /^viewport-floor(?:-\d+)?$/);
+  // In the viewer layout the last calendar row ends just above the screen floor, and a day cell's bottom edge is a
+  // real support now (date-N-floor, 3px above the cell line): the same x rests there, still at the foot of the page.
+  await enterViewer(page, "developer"); await expect(home(page)).toHaveCount(0); await expect(pet(page)).toHaveAttribute("data-platform", /^(?:viewport-floor|date-\d+-floor)(?:-\d+)?$/);
+  await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
+  const lastRowTop = await page.locator(".public-day").last().evaluate(node => node.getBoundingClientRect().top);
+  expect((await point(page)).y).toBeGreaterThan(lastRowTop);
   expect(Math.abs((await point(page)).x - before.x)).toBeLessThan(3);
   expect(reads.get(page)).toHaveLength(2);
   await enterStudio(page); await expect(home(page)).toHaveCount(0); await expect(pet(page)).toHaveAttribute("data-platform", /^viewport-floor(?:-\d+)?$/);

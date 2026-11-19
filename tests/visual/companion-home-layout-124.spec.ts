@@ -13,12 +13,13 @@ const proofs = new WeakMap<Page, { writes: string[]; foreign: string[]; errors: 
 
 test.use({ serviceWorkers: "block" });
 test.setTimeout(90000);
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page, baseURL }) => {
+  const origin = new URL(baseURL!).origin;
   const proof = { writes: [] as string[], foreign: [] as string[], errors: [] as string[] }; proofs.set(page, proof);
   page.on("pageerror", error => proof.errors.push(error.message));
   await page.context().route("**/*", route => {
     const request = route.request(), url = new URL(request.url());
-    if (url.origin !== "http://127.0.0.1:3117") {
+    if (url.origin !== origin) {
       if (request.method() === "GET" && request.resourceType() === "font" && fonts.has(url.href)) return route.continue();
       proof.foreign.push(request.method() + " " + url.origin + url.pathname); return route.abort();
     }
@@ -60,10 +61,15 @@ async function measure(page: Page) {
   return page.locator(".vc-home-room").evaluate(async room => {
     const rect = (node: Element) => { const r = node.getBoundingClientRect(); return { x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom }; };
     const box = (selector: string) => rect(room.querySelector(selector)!);
+    // Since a44f46a2 (2026-10-19) a fresh resident starts on the sofa or the home floor, in front of
+    // the furniture. The resident (and its sofa foreground) is a movable body, not a room layer:
+    // read which room element owns a point underneath it.
+    const roomHit = (x: number, y: number) => document.elementsFromPoint(x, y).find(node => !node.closest(".vc-companion,.vc-bed-foreground")) ?? null;
     const controls = [...room.querySelectorAll<HTMLButtonElement>("button[data-home-action]")].map(node => {
       const r = node.getBoundingClientRect();
       const points = [[r.x + 3, r.y + r.height / 2], [r.right - 3, r.y + r.height / 2], [r.x + r.width / 2, r.y + 3], [r.x + r.width / 2, r.bottom - 3], [r.x + r.width / 2, r.y + r.height / 2]];
-      return { action: node.dataset.homeAction!, ...rect(node), hit: points.every(([x, y]) => { const hit = document.elementFromPoint(x, y); return hit === node || node.contains(hit); }) };
+      const owns = ([x, y]: number[]) => { const hit = roomHit(x, y); return hit === node || node.contains(hit); };
+      return { action: node.dataset.homeAction!, ...rect(node), hit: points.every(owns), centerHit: owns(points[4]) };
     });
     const pictures = [...room.querySelectorAll<HTMLImageElement>(".vc-home-object-image")].map(image => {
       const canvas = document.createElement("canvas"); canvas.width = image.naturalWidth; canvas.height = image.naturalHeight;
@@ -111,7 +117,7 @@ async function measure(page: Page) {
       for (let x = 0; x < canvas.width; x++) if (rgba[(y * canvas.width + x) * 4 + 3] > 128) { left = Math.min(left, x); right = Math.max(right, x); }
       if (right < left) continue;
       for (const x of [left, (left + right) / 2, right]) {
-        const px = svgRect.x + (x + .5) / density, py = svgRect.y + (y + .5) / density, hit = document.elementFromPoint(px, py);
+        const px = svgRect.x + (x + .5) / density, py = svgRect.y + (y + .5) / density, hit = roomHit(px, py);
         opaqueHitPoints.push({ x: px, y: py, hit: hit === sofaHit || sofaHit.contains(hit) });
       }
     }
@@ -151,14 +157,18 @@ async function actualHomeCall(page: Page, name: string) {
 for (const [surface, width, dark] of [["viewer", 1100, false], ["viewer", 1440, false], ["studio", 1920, true], ["studio", 2400, false]] as const) test(`124 shorter shared room keeps visible art and real targets clear: ${surface} ${width}`, async ({ page }) => {
   await page.setViewportSize({ width, height: 1100 }); await fixture(page, surface, dark);
   const data = await measure(page); await save(page, `${surface}-${width}`, data);
-  const narrow = data.cssWidth <= 250;
-  expect(data.cssHeight).toBeCloseTo(narrow ? 226 : 200, 1);
+  // The room was rebuilt as one responsive scene (f8646283 / e4f56c8f, 2026-10-19/20; B7-10): every
+  // furniture size is a container-query share of the home's width (`cqw`), with the room 74cqw high
+  // and never shorter than 130px + 130px / zoom (285px floor below a 310px container).
+  const cqw = data.cssWidth / 100, zoom = data.scale, narrow = data.cssWidth <= 310;
+  expect(data.cssHeight).toBeCloseTo(Math.max(narrow ? 285 : 74 * cqw, 130 + 130 / zoom), 1);
   expect(data.sofa.width).toBeGreaterThanOrEqual(119.99);
   expect(data.sofa.width / data.scale).toBeLessThanOrEqual(150.05);
   expect(data.sofa.width / data.sofa.height).toBeCloseTo(1.8, 2);
   //127 moves the dispenser beside the curtain. Only the shelf reserves wall width;
   // enlarging the chest no longer squeezes the window down to a tiny square.
-  const expectedWindow = Math.min(narrow ? 126 : 152, data.cssWidth - (data.shelf.width / data.scale + (narrow ? 26 : 28)));
+  // Now: 90 % of min(52cqw, the wall left of the shelf less 28px) (companion-home.css --vc-window-width).
+  const expectedWindow = .9 * Math.min(52 * cqw, data.cssWidth - data.shelf.width / data.scale - 28);
   expect(data.window.width / data.scale).toBeCloseTo(expectedWindow, 1);
   expect(data.shelf.x - data.window.right).toBeGreaterThanOrEqual(6);
   expect(data.sofaRaster.opaqueSamples).toBeGreaterThan(1000);
@@ -172,10 +182,10 @@ for (const [surface, width, dark] of [["viewer", 1100, false], ["viewer", 1440, 
   expect(data.floor.y - data.window.bottom, "the frame and sill have wall space above the floor").toBeGreaterThan(8 * data.scale);
   const feeder = data.controls.find(control => control.action === "feed")!;
   const chest = data.controls.find(control => control.action === "toys")!;
-  expect(data.room.right - chest.right).toBeCloseTo(4 * data.scale, 1);
+  expect(data.room.right - chest.right).toBeCloseTo(4 * cqw * zoom, 1); // --vc-storage-right: 4cqw
   expect(feeder.right).toBeLessThanOrEqual(chest.x);
   expect(await page.locator(".vc-dispenser").evaluate(node => getComputedStyle(node, "::before").content)).toBe("none");
-  expect(chest.width / data.scale).toBeCloseTo(data.cssWidth >= 330 ? 124 : 98, 1);
+  expect(chest.width / data.scale).toBeCloseTo(Math.max(30 * cqw, 45 / zoom), 1); // --vc-toy-hit
   expect(data.sofa.bottom - data.seat.bottom).toBeCloseTo(20.28 * data.scale, 1);
   expect(data.seat.x).toBeGreaterThan(data.sofa.x + data.sofa.width * 31 / 180);
   expect(data.seat.right).toBeLessThan(data.sofa.x + data.sofa.width * 149 / 180);
@@ -187,8 +197,14 @@ for (const [surface, width, dark] of [["viewer", 1100, false], ["viewer", 1440, 
     expect(target.width, action).toBeGreaterThanOrEqual(44); expect(target.height, action).toBeGreaterThanOrEqual(44);
     expect(target.hit, action + " owns its center and four real edges").toBe(true);
   }
-  for (let a = 0; a < data.controls.length; a++) for (const b of data.controls.slice(a + 1)) {
-    const first = data.controls[a], overlapX = Math.min(first.right, b.right) - Math.max(first.x, b.x), overlapY = Math.min(first.bottom, b.bottom) - Math.max(first.y, b.y);
+  // The shower pad (a8683a3d) is a floor mat laid in the gap between the chest and the bin, under
+  // both (z-index 1): its 45px minimum hit reaches under their edges by design. It must still own
+  // its own centre; every other pair of room controls stays disjoint.
+  const wash = data.controls.find(control => control.action === "wash");
+  if (wash) expect(wash.centerHit, "the shower pad owns its own centre").toBe(true);
+  const disjoint = data.controls.filter(control => control.action !== "wash");
+  for (let a = 0; a < disjoint.length; a++) for (const b of disjoint.slice(a + 1)) {
+    const first = disjoint[a], overlapX = Math.min(first.right, b.right) - Math.max(first.x, b.x), overlapY = Math.min(first.bottom, b.bottom) - Math.max(first.y, b.y);
     expect(overlapX > 0 && overlapY > 0, first.action + " overlaps " + b.action).toBe(false);
   }
   //125 owner explicitly replaces equal-size props with real furniture scale.
@@ -196,7 +212,8 @@ for (const [surface, width, dark] of [["viewer", 1100, false], ["viewer", 1440, 
   const pictureFor = (action: string) => data.pictures.find(picture => picture.action === action)!;
   const visibleWidth = (action: string) => { const r = pictureFor(action).visible; return r.right - r.x; };
   const visibleHeight = (action: string) => { const r = pictureFor(action).visible; return r.bottom - r.y; };
-  for (const action of ["feed", "toys"]) expect(Math.abs(pictureFor(action).visible.bottom - data.floor.y), action + " opaque base rests on the rear floor").toBeLessThan(.25);
+  // Back-row storage stands 2.4cqw into the floor plane (--vc-furniture-lower, 41e73e05), not on its top line.
+  for (const action of ["feed", "toys"]) expect(Math.abs(pictureFor(action).visible.bottom - (data.floor.y + 2.4 * cqw * zoom)), action + " opaque base rests on the rear floor").toBeLessThan(.25);
   const storageGap = pictureFor("toys").visible.x - pictureFor("feed").visible.right;
   expect(storageGap, "visible furniture keeps breathing room").toBeGreaterThanOrEqual(12);
   expect(storageGap).toBeLessThanOrEqual(30);
@@ -209,7 +226,8 @@ for (const [surface, width, dark] of [["viewer", 1100, false], ["viewer", 1440, 
     expect(picture.fit).toBe("contain"); expect(picture.alphaPixels).toBeGreaterThan(10000);
     const hit = data.controls.find(control => control.action === picture.action)!;
     expect(picture.visible.x).toBeGreaterThanOrEqual(hit.x - .1); expect(picture.visible.right).toBeLessThanOrEqual(hit.right + .1);
-    expect(picture.visible.y).toBeGreaterThanOrEqual(hit.y - .1); expect(picture.visible.bottom).toBeLessThanOrEqual(hit.bottom + .1);
+    expect(picture.visible.y).toBeGreaterThanOrEqual(hit.y - .1);
+    expect(picture.visible.bottom).toBeLessThanOrEqual(hit.bottom + .1);
     const overlapsGlass = picture.visible.x < data.glass.right && picture.visible.right > data.glass.x && picture.visible.y < data.glass.bottom && picture.visible.bottom > data.glass.y;
     //127 explicitly allows the feeder to sit in front of the lower curtain.
     // Other furniture retains its existing landscape clearance.
@@ -223,6 +241,14 @@ for (const [surface, width, dark] of [["viewer", 1100, false], ["viewer", 1440, 
     expect((anchor.y + anchor.height / 2 - picture.content.y) / picture.content.scale).toBeCloseTo(y, 0);
   }
   await actualHomeCall(page, `${surface}-${width}`);
+});
+
+for (const [surface, width] of [["viewer", 1440], ["studio", 2400]] as const) test(`124 the painted toy chest lid stays inside its own hit: ${surface} ${width}`, async ({ page }) => {
+  // Regression guard (fixed in 63ecc14a): the chest paint is 34cqw wide (f8646283) while its hit stayed
+  // max(56px, 45px/zoom) high, so in a home wider than about 380 CSS px the lid rose above the button.
+  await page.setViewportSize({ width, height: 1100 }); await fixture(page, surface, false);
+  const data = await measure(page), chest = data.controls.find(control => control.action === "toys")!;
+  expect(data.pictures.find(picture => picture.action === "toys")!.visible.y).toBeGreaterThanOrEqual(chest.y - .1);
 });
 
 test("124 whole-object feedback preserves the resized physical openings and seat", async ({ page }) => {

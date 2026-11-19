@@ -27,7 +27,8 @@ test.beforeEach(async ({ page, context, baseURL }) => {
   const proof: Proof = { rejected: [], errors: [], notes: [] }; proofs.set(page, proof);
   page.on("pageerror", error => proof.errors.push(error.message));
   const origin = new URL(baseURL!).origin;
-  const manifest = JSON.parse(readFileSync(resolve(".next/server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
+  // The served build's own action ids (a build in another directory has different ids, and its preview POST was refused).
+  const manifest = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
   const previews = new Set(Object.entries(manifest).filter(([, v]) => v.exportedName === "getPublicPreviewAction").map(([id]) => id));
   await context.route("**/*", route => {
     const req = route.request(), url = new URL(req.url());
@@ -42,7 +43,7 @@ test.beforeEach(async ({ page, context, baseURL }) => {
   });
 });
 test.afterEach(async ({ page }) => {
-  const proof = proofs.get(page)!; save(test.info().title.replace(/[^a-z0-9]+/gi, "-"), { ...proof, buildId: readFileSync(".next/BUILD_ID", "utf8").trim(), scope: "Real production-build fixtures with synthetic care/collection and intercepted APIs; no DB/login or seeded clock/RNG/geometry." });
+  const proof = proofs.get(page)!; save(test.info().title.replace(/[^a-z0-9]+/gi, "-"), { ...proof, buildId: readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim(), scope: "Real production-build fixtures with synthetic care/collection and intercepted APIs; no DB/login or seeded clock/RNG/geometry." });
   expect(proof.errors).toEqual([]); expect(proof.rejected).toEqual([]); proofs.delete(page);
 });
 async function seed(page: Page, dark = false, foods = COMPANION_FOOD_KINDS, toys = COMPANION_TOY_KINDS, unread = false, allMemories = true) {

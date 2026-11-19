@@ -1,14 +1,17 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
-import { COMPANION_COLLECTION_KEY, COMPANION_BEHAVIOR_IDS, COMPANION_SITUATION_IDS, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
+import { COMPANION_COLLECTION_KEY, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
 import { createCompanionLife } from "@/lib/ui/viewer-companion/life";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
-import { companionFoodChance, COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/snacks";
+import { companionFoodChance, COMPANION_FOOD_KINDS, COMPANION_FOOD_RARITY, COMPANION_FOOD_RARITY_NAMES } from "@/lib/ui/viewer-companion/snacks";
+import { COMPANION_FOOD_BOOK_ORDER, COMPANION_TOY_BOOK_ORDER } from "@/lib/ui/viewer-companion/collection-book-order";
+import { COMPANION_MEMORY_BOOK, COMPANION_MEMORY_FILTERS, filterCompanionMemories } from "@/lib/ui/viewer-companion/memory-book-order";
+import { formatCompanionCollectionChance } from "@/lib/ui/viewer-companion/collection-rarity";
 import { COMPANION_FOOD_FACTS } from "@/lib/ui/viewer-companion/food-facts";
-import { COMPANION_WEARABLE_IDS } from "@/lib/ui/viewer-companion/gifts";
+import { COMPANION_ACCESSORY_NAMES, COMPANION_WEARABLE_IDS } from "@/lib/ui/viewer-companion/gifts";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { selectCompanionCollectionIndex } from "./helpers/companion-collection";
@@ -72,6 +75,15 @@ async function visitSurface(page: Page, surface: Surface) {
   if (surface === "preview") { await page.locator(".io-preview").click(); await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible(); }
 }
 
+// A page tab with something new on it carries an "!" mark (b4ce7d6b). The mark is aria-hidden, so the tabs are
+// read by their accessible names: a running companion keeps discovering poses and faces while a test is open.
+async function expectProfilePages(nav: Locator) {
+  const tabs = nav.getByRole("tab"); await expect(tabs).toHaveCount(4);
+  for (const [index, name] of ["함께 지내기", "도감", "옷장", "설정"].entries()) await expect(tabs.nth(index)).toHaveAccessibleName(name);
+}
+const foodAt = (kind: typeof COMPANION_FOOD_BOOK_ORDER[number]) => COMPANION_FOOD_BOOK_ORDER.indexOf(kind);
+const MEMORY_TOTAL = COMPANION_MEMORY_BOOK.length;
+
 const readCollection = (page: Page) => page.evaluate(key => JSON.parse(localStorage.getItem(key)!) as CompanionCollection, COMPANION_COLLECTION_KEY);
 
 async function openCompanionBook(page: Page) {
@@ -91,7 +103,7 @@ async function openCompanionBook(page: Page) {
   await expect(dialog).toBeVisible();
   await expect(dialog).toHaveClass(/companion-book/);
   await expect(dialog.getByRole("tablist", { name: "설정 묶음", exact: true })).toHaveCount(0);
-  await expect(dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab")).toHaveText(["함께 지내기", "도감", "옷장", "설정"]);
+  await expectProfilePages(dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }));
   await expect(dialog.getByRole("button", { name: "옷장 열기", exact: true })).toBeVisible();
   // stage 3: the book opens on "함께 지내기" under the shared power header; that page also holds the learning switch.
   await expect(dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "함께 지내기", exact: true })).toHaveAttribute("aria-selected", "true");
@@ -147,7 +159,13 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await dialog.locator(".rhh-radio-more > summary").click();
     await dialog.locator(".rhh-radio-playlist > summary").click();
     const playlist = dialog.locator(".rhh-radio-playlist ul"), lastTrack = playlist.getByRole("checkbox").last();
-    await playlist.hover(); await page.mouse.wheel(0, 2800);
+    // The playlist has no scroller of its own since stage 3 (c3bec348): the book page scrolls. With the site volume row
+    // (9e346ecc) the last track sits ~1800px below the fold, so keep wheeling the real page until it is in view.
+    await playlist.hover();
+    await expect.poll(async () => {
+      if (await lastTrack.evaluate(node => { const r = node.getBoundingClientRect(), page = node.closest(".rhh-companion-book-pages")!.getBoundingClientRect(); return r.top >= page.top && r.bottom <= page.bottom; })) return true;
+      await page.mouse.wheel(0, 700); return false;
+    }, { timeout: 15000, intervals: [250] }).toBe(true);
     await expect(lastTrack).toBeInViewport({ ratio: 1 });
     await lastTrack.focus(); await expect(lastTrack).toBeFocused();
     await page.screenshot({ path: `${regressionOutput}/book/${surface}-${theme}-playlist-end.png` });
@@ -212,8 +230,12 @@ test("111 book compact1050: book and radio have separate44px targets and a conta
   await page.setViewportSize({ width: 1050, height: 1000 });
   const safety = await installFixture(page, { theme: "dark", collection: seededCollection, enabled: true });
   await visitSurface(page, "studio");
-  const launcher = page.getByRole("button", { name: "빅타민 집 열기", exact: true });
-  await expect(launcher).toBeVisible(); await launcher.click(); await settlePanelLayout(page);
+  // A fresh companion lives in its home, so the compact home is offered open once (a44f46a2): the header launcher
+  // already reads "빅타민 집 닫기". Close and reopen it through that same real button.
+  const launcher = page.locator('.vc-home-launcher[data-home-action="launcher"]');
+  await expect(launcher).toHaveAccessibleName("빅타민 집 닫기"); await expect(launcher).toHaveAttribute("aria-expanded", "true");
+  await launcher.click(); await expect(launcher).toHaveAccessibleName("빅타민 집 열기"); await expect(page.getByRole("region", { name: "빅타민 집", exact: true })).toBeHidden();
+  await launcher.click(); await expect(launcher).toHaveAttribute("aria-expanded", "true"); await settlePanelLayout(page);
   const entry = page.getByRole("button", { name: "빅타민 수첩 열기", exact: true });
   const radio = page.locator(".vc-radio-button:visible");
   await expect(entry).toBeVisible(); await expect(radio).toBeVisible();
@@ -264,7 +286,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     mkdirSync(`${regressionOutput}/collection`, { recursive: true });
     await visitSurface(page, surface);
     let { dialog, profile, nav } = await openProfile(page);
-    await expect(nav.getByRole("tab")).toHaveText(["함께 지내기", "도감", "옷장", "설정"]);
+    await expectProfilePages(nav); await expect(nav.locator("[data-unread]")).toHaveCount(0);
     await expect(profile.locator(".rhh-companion-portrait [data-preview-ready]")).toHaveCount(1);
     await expect(profile.locator(".rhh-companion-portrait [data-preview-accessory=\"sunglasses\"]")).toHaveCount(1);
     await expect(nav.locator('[tabindex="0"]')).toHaveCount(1);
@@ -277,26 +299,34 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await expect.poll(() => foods.getByRole("button").count()).toBeGreaterThan(0);
     expect(await foods.getByRole("button").count()).toBeLessThanOrEqual(24);
     await expect(profile.getByRole("button", { name: `냠냠 도감 2/${COMPANION_FOOD_KINDS.length}`, exact: true })).toHaveAttribute("aria-pressed", "true");
-    await expect(foods.locator("button[data-found]")).toHaveCount(2);
+    // The book lists its foods in Korean name order (aafcb773), one measured page at a time: the two seeded foods
+    // (복숭아 · 사과) are reached by turning the real pager, not assumed to be on the first page.
+    const pageSize = await foods.getByRole("button").count();
     await expect(foods.locator('[data-collection-art="food-stamp"]')).toHaveCount(0);
-    await expect(foods.locator(".rhh-collection-rarity")).toHaveCount(2);
-    for (const tile of await foods.locator("button:not([data-found])").all()) {
-      await expect(tile).toHaveText("???");
-      await expect(tile).toHaveAttribute("aria-label", /^\?\?\? · \d+$/);
-      expect(await tile.locator(".vc-collection-art").evaluate(element => getComputedStyle(element).filter)).toContain("brightness(0)");
-    }
     await expect(profile.locator('[data-collection-art="behavior-stamp"],[data-collection-art="accessory"]')).toHaveCount(0);
     await foods.getByRole("button", { name: "??? · 3", exact: true }).click();
     await expect(profile.locator(".rhh-collection-detail")).toContainText("아직 맛보기 전");
-    await foods.getByRole("button", { name: "사과 · 맛봤어요", exact: true }).click();
+    await selectCompanionCollectionIndex(page, foods, foodAt("apple"));
+    await expect(foods.getByRole("button", { name: "사과 · 맛봤어요", exact: true })).toHaveAttribute("aria-pressed", "true");
+    const applePage = Math.floor(foodAt("apple") / pageSize), foundHere = seededCollection.foods.filter(kind => Math.floor(foodAt(kind) / pageSize) === applePage).length;
+    await expect(foods.getByRole("button")).toHaveCount(pageSize);
+    await expect(foods.locator("button[data-found]")).toHaveCount(foundHere);
+    await expect(foods.locator(".rhh-collection-rarity:not([data-empty])")).toHaveCount(foundHere);
+    for (const tile of await foods.locator("button:not([data-found])").all()) {
+      // An unknown tile reads "???"; its rarity slot is an aria-hidden blank that only keeps the row height.
+      await expect(tile.locator(":scope > span:not([class])")).toHaveText("???");
+      await expect(tile.locator(".rhh-collection-rarity")).toHaveAttribute("aria-hidden", "true");
+      await expect(tile).toHaveAttribute("aria-label", /^\?\?\? · \d+$/);
+      expect(await tile.locator(".vc-collection-art").evaluate(element => getComputedStyle(element).filter)).toContain("brightness(0)");
+    }
     await expect(profile.locator(".rhh-collection-detail")).toContainText("사과");
     await expect(profile.locator(".rhh-collection-detail")).toBeInViewport();
-    await expect(profile.locator(".rhh-collection-detail .rhh-collection-rarity")).toHaveText("흔한");
-    await expect(profile.locator(".rhh-collection-chance")).toHaveText(`기본 등장 ${(companionFoodChance("apple") * 100).toFixed(1)}%`);
+    await expect(profile.locator(".rhh-collection-detail .rhh-collection-rarity")).toHaveText(COMPANION_FOOD_RARITY_NAMES[COMPANION_FOOD_RARITY.apple]);
+    await expect(profile.locator(".rhh-collection-chance")).toHaveText(`기본 등장 ${formatCompanionCollectionChance(companionFoodChance("apple"))}`);
     await expect(profile.locator(".rhh-collection-fact")).toHaveText(COMPANION_FOOD_FACTS.apple);
     await dialog.screenshot({ path: `${regressionOutput}/collection/food-detail-${surface}-${theme}.png` });
     await page.screenshot({ path: `${regressionOutput}/collection/viewport-food-${surface}-${theme}.png` });
-    await selectCompanionCollectionIndex(page, foods, 16);
+    await selectCompanionCollectionIndex(page, foods, foodAt("blueberry"));
     await expect(profile.locator(".rhh-collection-detail .rhh-collection-rarity")).toHaveCount(0);
     await expect(profile.locator(".rhh-collection-chance")).toHaveCount(0);
     await expect(profile.locator(".rhh-collection-fact")).toHaveText("아직 맛보기 전");
@@ -304,7 +334,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     expect(companionFoodChance("blueberry")).toBeLessThan(companionFoodChance("apple"));
     const fixedTargets = await profile.locator('[data-act="companion-collection-inspect"]').evaluateAll(elements => elements.map(element => element.getAttribute("data-act-opt")));
     expect(new Set(fixedTargets)).toEqual(new Set(["food"]));
-    await foods.getByRole("button", { name: "??? · 17", exact: true }).focus();
+    await expect(foods.getByRole("button", { name: `??? · ${foodAt("blueberry") + 1}`, exact: true })).toBeFocused();
     await page.keyboard.press("End");
     const lastFood = foods.locator(`[data-food-index="${COMPANION_FOOD_KINDS.length - 1}"]`);
     await expect(lastFood).toBeFocused();
@@ -315,12 +345,17 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await page.screenshot({ path: `${regressionOutput}/collection/viewport-food-deep-${surface}-${theme}.png` });
     await page.keyboard.press("Home");
     await expect(foods.locator('[data-food-index="0"]')).toBeFocused();
-    const pageSize = await foods.getByRole("button").count();
+    await expect(foods.getByRole("button")).toHaveCount(pageSize);
     await profile.getByRole("button", { name: "다음 페이지", exact: true }).click();
     await expect(foods.locator(`[data-food-index="${pageSize}"]`)).toHaveAttribute("aria-pressed", "true");
+    // Left/Right belong to the visible page buttons everywhere in an open book (85c922c1): from a tile they turn the
+    // page and focus its first tile. Up/Down, Home and End still move between tiles.
     await foods.locator(`[data-food-index="${pageSize}"]`).focus(); await page.keyboard.press("ArrowLeft");
-    await expect(foods.locator(`[data-food-index="${pageSize - 1}"]`)).toBeFocused();
+    await expect(foods.locator('[data-food-index="0"]')).toBeFocused();
     await page.keyboard.press("ArrowRight"); await expect(foods.locator(`[data-food-index="${pageSize}"]`)).toBeFocused();
+    const columns = await foods.evaluate(list => getComputedStyle(list).gridTemplateColumns.split(/\s+/).length);
+    await page.keyboard.press("ArrowDown"); await expect(foods.locator(`[data-food-index="${pageSize + columns}"]`)).toBeFocused();
+    await page.keyboard.press("ArrowUp"); await expect(foods.locator(`[data-food-index="${pageSize}"]`)).toBeFocused();
     await expect(foods.getByRole("button")).toHaveCount(pageSize);
     await profile.getByRole("button", { name: "이전 페이지", exact: true }).click();
     await expect(foods.locator('[data-food-index="0"]')).toHaveAttribute("aria-pressed", "true");
@@ -329,12 +364,20 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await profile.getByRole("button", { name: "이전 페이지", exact: true }).focus(); await page.keyboard.press("Enter");
     await expect(foods.locator('[data-food-index="0"]')).toBeFocused();
 
-    await profile.getByRole("button", { name: "추억 도감 3/24", exact: true }).click();
+    // Three books now: 냠냠 · 장난감 (592458e6) · 추억. The memory book grew faces, poses and daily life, with a kind filter (ac32d7b2).
+    const books = profile.getByRole("group", { name: "도감 종류", exact: true });
+    await expect(books.getByRole("button")).toHaveCount(3);
+    await expect(books.getByRole("button", { name: `장난감 도감 0/${COMPANION_TOY_BOOK_ORDER.length}`, exact: true })).toHaveAttribute("aria-pressed", "false");
+    await profile.getByRole("button", { name: `추억 도감 3/${MEMORY_TOTAL}`, exact: true }).click();
+    const kinds = profile.getByRole("group", { name: "추억 종류", exact: true });
+    for (const [key, name] of COMPANION_MEMORY_FILTERS) {
+      const view = filterCompanionMemories(key), found = view.filter(memory => ((memory.kind === "moment" ? seededCollection.situations : seededCollection.behaviors) as readonly string[]).includes(memory.id)).length;
+      await expect(kinds.getByRole("button", { name: `${name} ${found}/${view.length}`, exact: true })).toHaveAttribute("aria-pressed", String(key === "all"));
+    }
     const behaviors = profile.locator(".rhh-behavior-grid");
     const memoryTargets = new Set(await behaviors.locator('[data-act="companion-collection-inspect"]').evaluateAll(elements => elements.map(element => element.getAttribute("data-act-opt"))));
     expect(await behaviors.getByRole("button").count()).toBeLessThanOrEqual(24);
     await expect(profile.getByRole("button", { name: "특별한 순간", exact: true })).toHaveCount(0);
-    await expect(profile.getByRole("group", { name: "도감 종류", exact: true }).getByRole("button")).toHaveCount(2);
     expect(await behaviors.locator('[data-collection-art="behavior-stamp"]').count()).toBeGreaterThan(0);
     await expect(profile.locator('[data-collection-art="food"]')).toHaveCount(0);
     await selectCompanionCollectionIndex(page, behaviors, 8);
@@ -342,18 +385,21 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await expect(profile.locator(".rhh-collection-detail")).toContainText("아직 발견하지 못했어요");
     await page.keyboard.press("Home");
     await expect(behaviors.getByRole("button", { name: "쓰담해 줘 · 만났어요", exact: true })).toBeFocused();
+    const memoryPageSize = await behaviors.getByRole("button").count();
     await page.keyboard.press("ArrowRight");
-    await expect(behaviors.getByRole("button", { name: "??? · 2", exact: true })).toBeFocused();
+    await expect(behaviors.locator(`[data-collection-index="${memoryPageSize}"]`)).toBeFocused();
     await page.keyboard.press("End");
-    await expect(behaviors.getByRole("button", { name: "??? · 24", exact: true })).toBeFocused();
+    await expect(behaviors.getByRole("button", { name: `??? · ${MEMORY_TOTAL}`, exact: true })).toBeFocused();
     await expect(profile.locator(".rhh-collection-detail")).toBeInViewport({ ratio: 1 });
-    expect(await behaviors.getByRole("button", { name: "??? · 24", exact: true }).evaluate(node => { const r = node.getBoundingClientRect(); return node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })).toBe(true);
+    expect(await behaviors.getByRole("button", { name: `??? · ${MEMORY_TOTAL}`, exact: true }).evaluate(node => { const r = node.getBoundingClientRect(); return node.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })).toBe(true);
     await expect(behaviors.locator('[tabindex="0"]')).toHaveCount(1);
     mkdirSync(`${regressionOutput}/collection`, { recursive: true });
     await dialog.screenshot({ path: `${regressionOutput}/collection/discovery-${surface}-${theme}.png` });
     await selectCompanionCollectionIndex(page, behaviors, 12);
-    await expect(profile.locator(".rhh-collection-detail")).toHaveText("???아직 발견하지 못했어요.");
-    await selectCompanionCollectionIndex(page, behaviors, COMPANION_BEHAVIOR_IDS.length + COMPANION_SITUATION_IDS.indexOf("meal-finished"));
+    await expect(profile.locator(".rhh-collection-detail strong")).toHaveText("???");
+    await expect(profile.locator(".rhh-collection-detail p")).toHaveText("아직 발견하지 못했어요.");
+    await expect(profile.locator(".rhh-collection-detail .rhh-collection-keepsake,.rhh-collection-detail .rhh-memory-encounter-note")).toHaveCount(0);
+    await selectCompanionCollectionIndex(page, behaviors, COMPANION_MEMORY_BOOK.findIndex(memory => memory.kind === "moment" && memory.id === "meal-finished"));
     await expect(profile.locator(".rhh-collection-detail")).toContainText("싹싹 냠냠");
     await expect(profile.locator(".rhh-collection-detail")).not.toContainText("아직 발견");
     await expect(profile.locator(".rhh-collection-detail")).toBeInViewport({ ratio: 1 });
@@ -388,7 +434,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
     await expect(accessories.getByRole("button", { name: "베레모 · 장착 중", exact: true })).toBeVisible();
     expect((await readCollection(page)).gifts.equipped).toBe("beret");
     await accessories.locator('[data-accessory="sunglasses"]').click();
-    await profile.locator(".rhh-equipped-current").getByRole("button", { name: "벗기기", exact: true }).click();
+    // The current-outfit control names what it takes off.
+    await profile.locator(".rhh-equipped-current").getByRole("button", { name: `${COMPANION_ACCESSORY_NAMES.beret} 벗기기`, exact: true }).click();
     await expect(accessories.locator('[data-accessory="sunglasses"]')).toBeFocused();
     expect((await readCollection(page)).gifts.equipped).toBeNull();
     await expect(wearablePreview).toHaveAttribute("data-preview-accessory", "none");
@@ -449,7 +496,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
       await expect(accessories.getByRole("button", { name: "나비 리본 · 장착 중", exact: true })).toBeVisible();
       await nav.getByRole("tab", { name: "도감", exact: true }).click();
       await expect(profile.getByRole("button", { name: `냠냠 도감 3/${COMPANION_FOOD_KINDS.length}`, exact: true })).toBeVisible();
-      await expect(profile.getByRole("button", { name: "추억 도감 6/24", exact: true })).toBeVisible();
+      await expect(profile.getByRole("button", { name: `추억 도감 6/${MEMORY_TOTAL}`, exact: true })).toBeVisible();
     }
     const persisted = await readCollection(page);
     await page.reload(); await page.bringToFront();
@@ -467,13 +514,14 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const theme
 }
 
 test("fresh local discovery starts empty and never manufactures a pending gift", async ({ page }) => {
-  expect(COMPANION_FOOD_KINDS).toHaveLength(180);
+  expect(COMPANION_FOOD_BOOK_ORDER).toHaveLength(COMPANION_FOOD_KINDS.length); expect(new Set(COMPANION_FOOD_BOOK_ORDER).size).toBe(COMPANION_FOOD_KINDS.length);
   const safety = await installFixture(page);
   await visitSurface(page, "viewer");
   const { profile, nav } = await openProfile(page);
   await nav.getByRole("tab", { name: "도감", exact: true }).click();
   await expect(profile.getByRole("button", { name: `냠냠 도감 0/${COMPANION_FOOD_KINDS.length}`, exact: true })).toBeVisible();
-  await expect(profile.getByRole("button", { name: "추억 도감 0/24", exact: true })).toBeVisible();
+  await expect(profile.getByRole("button", { name: `장난감 도감 0/${COMPANION_TOY_BOOK_ORDER.length}`, exact: true })).toBeVisible();
+  await expect(profile.getByRole("button", { name: `추억 도감 0/${MEMORY_TOTAL}`, exact: true })).toBeVisible();
   await expect(profile.locator("button[data-found]")).toHaveCount(0);
   await expect(profile.locator(".rhh-collection-detail strong")).toHaveText("???");
   await nav.getByRole("tab", { name: "옷장", exact: true }).click();

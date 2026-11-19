@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { COMPANION_MAX_MATERIAL_STRETCH } from "@/lib/ui/viewer-companion/material-scale";
 
 async function setup(page: Page, mode: "full" | "reduced" | "off" = "full") {
   await page.route("**/*", route => route.request().method() === "POST" ? route.fulfill({ status: 500, body: "" }) : route.continue());
@@ -50,10 +51,13 @@ for (const mobile of [false]) test.describe(mobile ? "native touch held motion" 
     const samples = await observeHold(page), span = (key: "x" | "y" | "angle" | "scale" | "scaleY" | "bob") => Math.max(...samples.map(s => s[key])) - Math.min(...samples.map(s => s[key]));
     expect(samples.length).toBeGreaterThan(15); expect(samples.every(s => !s.hidden)).toBe(true);
     expect(span("x")).toBeLessThan(1); expect(span("y")).toBeLessThan(1);
-    expect(span("angle")).toBeGreaterThan(7); expect(span("scaleY")).toBeGreaterThan(.08);
+    expect(span("angle")).toBeGreaterThan(7);
     // Gravity extends below the actual grip; whole-body translation would
     // move that grip and the superseded bob/squash test allowed flattening.
-    expect(samples.every(s => s.scaleY >= 1.18 && s.scaleY <= 1.32 && s.scale < 1 && Math.abs(s.bob) < .001 && s.gripError < .1)).toBe(true);
+    // Since 3eed289d the whole decorative chain shares one strain budget (COMPANION_MAX_MATERIAL_STRETCH, 8%) and
+    // keeps its area: the old 18..32% hanging stretch is held at that cap, and the kicks show as tilt, not length.
+    expect(Math.max(...samples.map(s => s.scaleY))).toBeLessThanOrEqual(COMPANION_MAX_MATERIAL_STRETCH + .0005);
+    expect(samples.every(s => s.scaleY >= COMPANION_MAX_MATERIAL_STRETCH - .01 && s.scale < 1 && Math.abs(s.scale * s.scaleY - 1) < .002 && Math.abs(s.bob) < .001 && s.gripError < .1)).toBe(true);
     console.log(JSON.stringify({ check: "held-gravity", nativeTouch: mobile, frames: samples.length, verticalScale: [Math.min(...samples.map(s => s.scaleY)), Math.max(...samples.map(s => s.scaleY))], verticalSpan: span("scaleY"), horizontalScale: [Math.min(...samples.map(s => s.scale)), Math.max(...samples.map(s => s.scale))], maxGripError: Math.max(...samples.map(s => s.gripError)) }));
     expect(new Set(samples.map(s => s.pose)).size).toBeGreaterThanOrEqual(10);
     await expect(pet).toHaveAttribute("data-atlas", "hd");

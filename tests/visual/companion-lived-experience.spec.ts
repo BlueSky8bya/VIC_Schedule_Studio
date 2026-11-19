@@ -6,17 +6,20 @@ import { DEFAULT_COMPANION_LIFE, normalizeCompanionLife } from "@/lib/ui/viewer-
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_FOOD_KINDS, COMPANION_FOOD_NAMES, type CompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { COMPANION_COLLECTION_KEY, type CompanionCollection } from "@/lib/ui/viewer-companion/collection";
-import { type CompanionAccessoryId } from "@/lib/ui/viewer-companion/gifts";
+import { COMPANION_WEARABLE_IDS, type CompanionAccessoryId } from "@/lib/ui/viewer-companion/gifts";
 import { COMPANION_RADIO_PREFERENCES_KEY } from "@/lib/ui/viewer-companion/radio-preferences";
 import { COMPANION_RADIO_TRACKS } from "@/lib/ui/viewer-companion/radio-catalog";
 import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
+import { selectCompanionCollectionIndex } from "./helpers/companion-collection";
+import { COMPANION_FOOD_BOOK_ORDER } from "@/lib/ui/viewer-companion/collection-book-order";
+import { installCompanionPointReader, type CompanionPointWindow } from "./helpers/companion-point";
 
 type Surface = "viewer" | "studio";
 type Mode = "meal" | "social" | "cozy" | "cheer" | "nuzzle" | "accessory" | "radio-lively" | "radio-graceful" | "radio-calm" | "radio-off";
 type CheerPaint = { propsCount: number; scale: number };
-type Frame = { at: number; visibleFocusedMs: number; focused: boolean; hidden: boolean; state: string; living: string; play: string; requestedRow: number; row: number; pose: number; atlas: number; platform: string; foodGoal: string; episodeFood: string; dreaming: boolean; decoded: boolean; registered: boolean; src: string; expectedSrc: string; srcMatches: boolean; same: boolean; count: number; x: number; y: number; trick: string; beat: string; journey: string; accessoryPose: number; bodyBob: number; radio: string; radioGeneration: number; bodyTilt: number; wearable: { hidden: boolean; top: string; left: string; transform: string; background: string }; cheer: CheerPaint };
+type Frame = { at: number; authored: boolean; visibleFocusedMs: number; focused: boolean; hidden: boolean; state: string; living: string; play: string; requestedRow: number; row: number; pose: number; atlas: number; platform: string; foodGoal: string; episodeFood: string; dreaming: boolean; decoded: boolean; registered: boolean; src: string; expectedSrc: string; srcMatches: boolean; same: boolean; count: number; x: number; y: number; trick: string; beat: string; journey: string; accessoryPose: number; bodyBob: number; radio: string; radioGeneration: number; bodyTilt: number; wearable: { hidden: boolean; top: string; left: string; transform: string; background: string }; cheer: CheerPaint };
 type Input = { type: string; key: string; target: string; trusted: boolean };
 type Probe = { frames: Frame[]; inputs: Input[]; began: number; lastSample: number; lastActive: boolean; visibleFocusedMs: number; raf: number; previous: string; node: HTMLElement; input: (event: Event) => void };
 type ProbeWindow = Window & { livedExperience104?: Probe; __companionSfxTrace?: string[] };
@@ -34,8 +37,14 @@ test.beforeEach(async ({ page }) => {
   page.on("pageerror", error => proof.errors.push(error.message));
   page.on("response", response => { const path = new URL(response.url()).pathname; if (path.startsWith("/companion/audio/radio/")) proof.media.push({ path, status: response.status() }); });
   const config = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "required-server-files.json"), "utf8"));
+  await installCompanionPointReader(page);
+  // b01-2 / B5-4 (c30945c4): the developer studio header reads the unseen report
+  // count on mount (a server-action POST). It is a read: answer 0.
+  const manifest = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
+  const reportCount = new Set(Object.entries(manifest).filter(([, action]) => action.exportedName === "getUnseenReportCountAction").map(([id]) => id));
   await page.route("**/*", route => {
     const request = route.request(), path = new URL(request.url()).pathname;
+    if (request.method() === "POST" && reportCount.has(request.headers()["next-action"] ?? "")) return route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":"fixture"}\n1:0\n` });
     if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) { proof.writes.push(`${request.method()} ${path}`); return route.fulfill({ status: 503, body: "fixture forbids writes" }); }
     if (path === "/api/soop-live") return route.fulfill({ json: { live: false, build: config.config.env.APP_COMMIT } });
     if (path.startsWith("/api/")) return route.fulfill({ status: 503, body: "fixture forbids live API reads" });
@@ -70,7 +79,7 @@ async function seed(page: Page, mode: Mode, accessory?: CompanionAccessoryId) {
     : mode === "cheer" ? normalizeCompanionLife({ ...DEFAULT_COMPANION_LIFE, play: .9, curiosity: .9, social: .1, comfort: .2 })
     : mode === "accessory" ? normalizeCompanionLife({ ...DEFAULT_COMPANION_LIFE, play: .2, curiosity: .1, social: .1, comfort: .2 })
     : radio ? normalizeCompanionLife({ ...DEFAULT_COMPANION_LIFE, play: mode === "radio-calm" ? .2 : .8, curiosity: .2, social: .7, comfort: mode === "radio-calm" ? .8 : .4 }) : null;
-  await page.addInitScript(({ epoch, key, prefs, care, habits, life, mode, accessory, collectionKey, radio, radioKey }) => {
+  await page.addInitScript(({ epoch, key, prefs, care, habits, life, mode, accessory, collectionKey, radio, radioKey, tracks }) => {
     // Passive successful-cue evidence only; no AudioContext, clock or cue is replaced.
     (window as unknown as ProbeWindow).__companionSfxTrace = [];
     if (localStorage.getItem("fixture.lived104")) return;
@@ -81,17 +90,19 @@ async function seed(page: Page, mode: Mode, accessory?: CompanionAccessoryId) {
     // random favorite. No RNG, focus, clock, brain or geometry is replaced.
     // A saved dog preference gives a genuine post-meal bow to witness. The
     // ordinary episode chooses/performs it; no requested frame is supplied.
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, animalMode: mode === "meal" ? "dog" : prefs.animalMode, roam: mode !== "cozy", jump: mode === "accessory", sleep: mode === "cozy", feeding: mode === "meal" || mode === "radio-lively", petting: mode !== "cheer" && mode !== "accessory", drag: true, personality: "affectionate", speed: "relaxed", heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, learnFromYou: true }));
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, animalMode: mode === "meal" ? "dog" : prefs.animalMode, roam: mode !== "cozy", jump: mode === "accessory", sleep: mode === "cozy", feeding: mode === "meal" || mode === "radio-lively", petting: mode !== "cheer" && mode !== "accessory", drag: true, personality: "affectionate", personalitySource: "manual", speed: "relaxed", heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, learnFromYou: true }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: life ? 3 : 2, ...care, hunger: mode === "meal" ? .65 : .1, affection: mode === "nuzzle" ? .7 : .15, energy: mode === "cozy" ? .16 : .9, curiosity: mode === "cheer" ? .1 : care.curiosity, habits, ...(life ? { life } : {}) }));
     localStorage.setItem("vic.panelSections", JSON.stringify({ version: 1, "tag-filter": false, season: false, "companion-home": true }));
     if (accessory) localStorage.setItem(collectionKey, JSON.stringify({ version: 1, foods: [], behaviors: [], situations: [], gifts: { pending: null, unlocked: [accessory], equipped: null, activeMs: 0, interactionCredit: 0 } }));
     if (radio) {
       const mood = mode === "radio-off" ? "lively" : mode.slice(6);
-      localStorage.setItem(radioKey, JSON.stringify({ enabled: true, volume: 35, react: mode !== "radio-off", moods: { lively: mood === "lively", graceful: mood === "graceful", calm: mood === "calm" }, excludedIds: [] }));
+      // 42ba4050 (2026-10-18) retired the mood filters; the saved track choice
+      // (excludedIds, the playlist checkboxes) is how a person picks the music.
+      localStorage.setItem(radioKey, JSON.stringify({ enabled: true, volume: 35, react: mode !== "radio-off", excludedIds: tracks.filter(track => track.mood !== mood).map(track => track.id) }));
       localStorage.setItem(collectionKey, JSON.stringify({ version: 1, foods: [], behaviors: [], situations: [], gifts: { pending: null, unlocked: [], equipped: null, activeMs: 0, interactionCredit: 0 } }));
     }
     localStorage.removeItem("vic_panel_collapsed");
-  }, { epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY, prefs: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE, habits: DEFAULT_COMPANION_MEMORY.habits, life, mode, accessory, collectionKey: COMPANION_COLLECTION_KEY, radio, radioKey: COMPANION_RADIO_PREFERENCES_KEY });
+  }, { epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY, prefs: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE, habits: DEFAULT_COMPANION_MEMORY.habits, life, mode, accessory, collectionKey: COMPANION_COLLECTION_KEY, radio, radioKey: COMPANION_RADIO_PREFERENCES_KEY, tracks: COMPANION_RADIO_TRACKS.map(track => ({ id: track.id, mood: track.mood })) });
 }
 async function setup(page: Page, surface: Surface, mode: Mode, accessory?: CompanionAccessoryId) {
   await seed(page, mode, accessory);
@@ -126,7 +137,7 @@ async function startProbe(page: Page) {
       // registered data-pose rather than mislabelling that20ms fallback. A
       // row membership alone is insufficient: its metadata frame must point
       // to the atlas actually adopted by the live image's currentSrc.
-      const frame: Frame = { at: now - p.began, visibleFocusedMs: p.visibleFocusedMs, focused, hidden, state: el.dataset.state ?? "", living: el.dataset.living ?? "", play: el.dataset.play ?? "", requestedRow, row, pose, atlas: adopted?.atlas ?? -1, platform: el.dataset.platform ?? "", foodGoal: el.dataset.foodGoal ?? "", episodeFood: el.dataset.episodeFood ?? "", dreaming: el.hasAttribute("data-dreaming"), decoded: Boolean(image?.complete && image.naturalWidth), registered: Boolean(adopted && rows[row]?.includes(pose) && srcMatches), src, expectedSrc, srcMatches, same: el.isConnected && el === document.querySelector(".vc-companion"), count: document.querySelectorAll(".vc-companion").length, x: m.m41 + size / 2, y: m.m42 + size, trick: el.dataset.accessoryTrick ?? "", beat: el.dataset.accessoryBeat ?? "", journey: el.dataset.journey ?? "", accessoryPose: Number(el.dataset.accessoryPose ?? -1), bodyBob, radio: el.dataset.radioReaction ?? "", radioGeneration: Number(el.dataset.radioGeneration ?? 0), bodyTilt: Math.atan2(bodyMatrix.m12, bodyMatrix.m11) * 180 / Math.PI, wearable: { hidden: !wearable || wearable.hidden, top: wearable?.style.top ?? "", left: wearable?.style.left ?? "", transform: wearable?.style.transform ?? "", background: wearable?.style.backgroundImage ?? "" }, cheer };
+      const frame: Frame = { at: now - p.began, authored: el.dataset.lifePurpose === "authored" || el.hasAttribute("data-scene"), visibleFocusedMs: p.visibleFocusedMs, focused, hidden, state: el.dataset.state ?? "", living: el.dataset.living ?? "", play: el.dataset.play ?? "", requestedRow, row, pose, atlas: adopted?.atlas ?? -1, platform: el.dataset.platform ?? "", foodGoal: el.dataset.foodGoal ?? "", episodeFood: el.dataset.episodeFood ?? "", dreaming: el.hasAttribute("data-dreaming"), decoded: Boolean(image?.complete && image.naturalWidth), registered: Boolean(adopted && rows[row]?.includes(pose) && srcMatches), src, expectedSrc, srcMatches, same: el.isConnected && el === document.querySelector(".vc-companion"), count: document.querySelectorAll(".vc-companion").length, x: m.m41 + size / 2, y: m.m42 + size, trick: el.dataset.accessoryTrick ?? "", beat: el.dataset.accessoryBeat ?? "", journey: el.dataset.journey ?? "", accessoryPose: Number(el.dataset.accessoryPose ?? -1), bodyBob, radio: el.dataset.radioReaction ?? "", radioGeneration: Number(el.dataset.radioGeneration ?? 0), bodyTilt: Math.atan2(bodyMatrix.m12, bodyMatrix.m11) * 180 / Math.PI, wearable: { hidden: !wearable || wearable.hidden, top: wearable?.style.top ?? "", left: wearable?.style.left ?? "", transform: wearable?.style.transform ?? "", background: wearable?.style.backgroundImage ?? "" }, cheer };
       const signature = JSON.stringify([frame.state, frame.living, frame.play, frame.requestedRow, frame.row, frame.pose, frame.platform, frame.foodGoal, frame.dreaming, frame.decoded, frame.registered, frame.src, focused, hidden, frame.trick, frame.beat, frame.trick ? [frame.bodyBob, frame.wearable] : null, frame.radio, frame.radioGeneration, frame.radio ? [frame.bodyBob, frame.bodyTilt] : null, frame.play === "cheer-rehearsal" ? [frame.bodyBob, frame.bodyTilt, frame.cheer] : null]);
       if (signature !== p.previous) { p.frames.push(frame); p.previous = signature; }
       p.raf = requestAnimationFrame(sample);
@@ -140,6 +151,11 @@ async function waitVisibleFocused(page: Page, elapsed: number) {
   const started = await page.evaluate(() => (window as unknown as ProbeWindow).livedExperience104!.visibleFocusedMs);
   await expect.poll(() => page.evaluate(started => (window as unknown as ProbeWindow).livedExperience104!.visibleFocusedMs - started, started), { timeout: elapsed + 15000, intervals: [500] }).toBeGreaterThanOrEqual(elapsed);
 }
+// 68b46f11 (2026-11-18): every shipped pose is repainted into the appearance
+// edition, so row9 is read from the registered metadata, not the authored
+// `vitamin-action-09-eye-scale-143-v1.webp` packet name.
+const CHEER_ATLASES = new Set(companionSpriteMetadata.rows[9].map(pose => companionSpriteMetadata.atlases[companionSpriteMetadata.frames[pose].atlas].src));
+const cheerAtlas = (src: string) => [...CHEER_ATLASES].some(path => src.endsWith(path));
 function connectedCheer(observed: Frame[]): Frame[] | undefined {
   const playing = (frame: Frame) => frame.living === "cheer" && frame.play === "cheer-rehearsal" && frame.state === "play";
   const spread = (values: number[]) => Math.max(...values) - Math.min(...values);
@@ -147,7 +163,7 @@ function connectedCheer(observed: Frame[]): Frame[] | undefined {
   for (const frame of observed) {
     if (playing(frame)) { bout.push(frame); continue; }
     if (!bout.length) continue;
-    const painted = bout.filter(item => item.row === 9 && item.decoded && item.registered && item.srcMatches && item.src.endsWith("/companion/hd/vitamin-action-09-eye-scale-143-v1.webp"));
+    const painted = bout.filter(item => item.row === 9 && item.decoded && item.registered && item.srcMatches && cheerAtlas(item.src));
     let airborneBeats = 0, above = false;
     for (const item of painted) { const next = item.bodyBob < -12; if (next && !above) airborneBeats++; above = next; }
     const duration = painted.length ? painted.at(-1)!.at - painted[0].at : 0;
@@ -158,11 +174,15 @@ function connectedCheer(observed: Frame[]): Frame[] | undefined {
   }
 }
 
-async function clearFloorRay(page: Page, spread = 0, headroom = 96) {
-  return page.evaluate(({ spread, headroom }) => {
+// `dayEdges`: also keep the headroom clear of every calendar day's bottom edge above the floor. Those edges are real
+// companion supports (geometry.ts DAY_SELECTOR, `date-N-floor`), and the accessory trick measures its headroom
+// (150px for a hat, accessory-motion.ts) against supports, not against text or controls.
+async function clearFloorRay(page: Page, spread = 0, headroom = 96, dayEdges = false) {
+  return page.evaluate(({ spread, headroom, dayEdges }) => {
     const y = innerHeight - 18;
     const visible = (element: Element) => { const r = element.getBoundingClientRect(), s = getComputedStyle(element); return r.width > 0 && r.height > 0 && s.display !== "none" && s.visibility !== "hidden" && Number(s.opacity || 1) > .05; };
     const obstacles: DOMRect[] = [];
+    if (dayEdges) for (const day of document.querySelectorAll(".public-day,.agenda-day,.studio-day")) { const r = day.getBoundingClientRect(); if (visible(day) && r.bottom < y - 2) obstacles.push(r); }
     for (const element of document.querySelectorAll("button,a[href],input,select,textarea,[role='button'],.vc-home")) if (!element.closest(".vc-companion") && visible(element)) obstacles.push(element.getBoundingClientRect());
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), range = document.createRange();
     for (let text = walker.nextNode(); text; text = walker.nextNode()) {
@@ -174,10 +194,10 @@ async function clearFloorRay(page: Page, spread = 0, headroom = 96) {
     const safe = (x: number) => obstacles.every(r => x + 50 < r.left || x - 50 > r.right || y + 4 < r.top || y - headroom > r.bottom);
     for (const fraction of [.62, .72, .42, .3, .88, .12, .82, .18]) { const x = Math.round(innerWidth * fraction); if (safe(x) && safe(x + 24) && safe(x - spread) && safe(x + spread)) return { x, y }; }
     throw new Error("No real unmodified clear floor ray for native placement");
-  }, { spread, headroom });
+  }, { spread, headroom, dayEdges });
 }
-async function placeAndHold(page: Page, spread = 0, headroom = 96) {
-  const floor = await clearFloorRay(page, spread, headroom);
+async function placeAndHold(page: Page, spread = 0, headroom = 96, dayEdges = false) {
+  const floor = await clearFloorRay(page, spread, headroom, dayEdges);
   await actor(page).focus(); await actor(page).press("p"); await expect(pet(page)).toHaveAttribute("data-placing", "");
   await page.mouse.click(floor.x, floor.y); await page.mouse.move(2, 2);
   await expect(pet(page)).toHaveAttribute("data-platform", /^viewport-floor/); await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
@@ -185,13 +205,18 @@ async function placeAndHold(page: Page, spread = 0, headroom = 96) {
   // Bottom controls can raise the real shared floor above innerHeight-18.
   // Use the actually landed feet for subsequent pointer/food input, never an
   // assumed lower floor that would deliberately drop the food off screen.
-  return pet(page).evaluate(node => { const el = node as HTMLElement, m = new DOMMatrixReadOnly(el.style.transform), size = parseFloat(el.style.getPropertyValue("--vc-size")); return { x: m.m41 + size / 2, y: m.m42 + size }; });
+  return pet(page).evaluate(node => { const el = node as HTMLElement, m = (window as unknown as CompanionPointWindow).vcPoint(el, el.style.transform), size = parseFloat(el.style.getPropertyValue("--vc-size")); return { x: m.x + size / 2, y: m.y + size }; });
 }
 async function dragFoodToFeet(page: Page, food: Locator, point: { x: number; y: number }) {
-  const box = (await food.boundingBox())!, foot = await food.evaluate(node => { const m = new DOMMatrixReadOnly((node as HTMLElement).style.transform); return { x: m.m41, y: m.m42 }; });
+  // A dispensed snack falls first (DIAGNOSIS 10); on the home floor it is
+  // anchor-positioned, so its foot is the transform plus the anchor origin (2).
+  await expect(food).not.toHaveAttribute("data-falling");
+  const box = (await food.boundingBox())!, foot = await food.evaluate(node => (window as unknown as CompanionPointWindow).vcPoint(node));
   const grip = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
   await page.mouse.move(grip.x, grip.y); await page.mouse.down();
-  await page.mouse.move(point.x + grip.x - foot.x, point.y + grip.y - foot.y, { steps: 12 }); await page.mouse.up();
+  await page.mouse.move(point.x + grip.x - foot.x, point.y + grip.y - foot.y, { steps: 12 });
+  // A release within 100 ms of the last move is a throw (B02-1): put it down.
+  await page.waitForTimeout(140); await page.mouse.up();
   await expect(food).not.toHaveAttribute("data-falling");
 }
 async function openTraits(page: Page) {
@@ -216,10 +241,13 @@ test("viewer: the complete radio corpus plays every real selected track through 
     // stage 3: no sub-tabs; the radio card is on the "설정" page and its playlist inside the card's fold.
     await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
     const radio = dialog.locator(".rhh-companion-radio");
-    for (const mood of ["우아하게", "잔잔하게"]) await radio.getByRole("button", { name: mood, exact: true }).click();
     await radio.locator(".rhh-radio-more > summary").click();
     await radio.locator(".rhh-radio-playlist > summary").click();
-    expect(evidence.get(page)!.media).toEqual([]); expect(COMPANION_RADIO_TRACKS).toHaveLength(32);
+    // The mood filters are retired (42ba4050): include every track through its own playlist checkbox.
+    const unchecked = radio.locator(".rhh-radio-playlist input[type=checkbox]:not(:checked)");
+    while (await unchecked.count()) await unchecked.first().check();
+    await expect(radio.locator(".rhh-radio-playlist input[type=checkbox]:checked")).toHaveCount(COMPANION_RADIO_TRACKS.length);
+    expect(evidence.get(page)!.media).toEqual([]); expect(COMPANION_RADIO_TRACKS).toHaveLength(34); // a10bfa23 (2026-10-21) added two licensed classical tracks
     const played: Array<{ id: string; src: string; title: string; status: number[] }> = [];
     for (const [index, track] of COMPANION_RADIO_TRACKS.entries()) {
       await radio.getByRole("button", { name: `${track.title} 재생`, exact: true }).click();
@@ -234,13 +262,16 @@ test("viewer: the complete radio corpus plays every real selected track through 
       await stop.click(); await expect(stop).toBeDisabled();
       await expect(radio.locator(".rhh-radio-now > p")).toHaveText("재생 대기");
     }
-    expect(played).toHaveLength(32); expect(contexts.size).toBe(1); expect(mediaSources.size).toBe(1); expect(mediaErrors).toEqual([]);
-    evidence.get(page)!.care.push({ phase: "actual-32-track-selection-and-shared-graph", played, contextIds: [...contexts], mediaSourceIds: [...mediaSources], mediaErrors, limit: "Browser playback/graph evidence; no human listening or OBS hardware assertion." });
+    expect(played).toHaveLength(COMPANION_RADIO_TRACKS.length); expect(contexts.size).toBe(1); expect(mediaSources.size).toBe(1); expect(mediaErrors).toEqual([]);
+    evidence.get(page)!.care.push({ phase: "actual-full-catalogue-selection-and-shared-graph", played, contextIds: [...contexts], mediaSourceIds: [...mediaSources], mediaErrors, limit: "Browser playback/graph evidence; no human listening or OBS hardware assertion." });
   } finally { await inspector.detach(); }
 });
 
 for (const surface of ["viewer", "studio"] as const) {
-  for (const [mode, expected] of [["radio-lively", "bounce"], ["radio-graceful", "bored"], ["radio-calm", "calm"], ["radio-off", null]] as const) {
+  // The "radio-off" case (reactions switched off) is gone: since 9b60662f (2026-11-19) the
+  // radio switch only decides whether the companion starts the radio by itself; a
+  // played song always gets its temperament's reaction (canStartCompanionRadioReaction react: true).
+  for (const [mode, expected] of [["radio-lively", "bounce"], ["radio-graceful", "bored"], ["radio-calm", "calm"]] as const) {
     test(`${surface}: ${mode} starts only on its real home click, respects actual temperament and stops without discovery rewards`, async ({ page }) => {
       test.setTimeout(45000);
       const identity = await setup(page, surface, mode);
@@ -254,8 +285,8 @@ for (const surface of ["viewer", "studio"] as const) {
         await dragFoodToFeet(page, food, { x: floor.x + 24, y: floor.y - 70 });
         await expect.poll(async () => (await sounds(page)).slice(landingCueOffset)).toContain("land");
         await expect.poll(() => food.evaluate((node, floor) => {
-          const m = new DOMMatrixReadOnly((node as HTMLElement).style.transform);
-          return Math.abs(m.m41 - floor.x - 24) < 2 && Math.abs(m.m42 - floor.y) < 2;
+          const m = (window as unknown as CompanionPointWindow).vcPoint(node);
+          return Math.abs(m.x - floor.x - 24) < 2 && Math.abs(m.y - floor.y) < 2;
         }, floor)).toBe(true);
         expect((await memory(page)).hunger).toBeLessThan(.35);
       }
@@ -268,19 +299,29 @@ for (const surface of ["viewer", "studio"] as const) {
       await expect(radio).toHaveAttribute("aria-pressed", "false");
       await expect(page.locator(".vc-radio-notes")).toHaveCount(0);
       const hit = (await radio.boundingBox())!; expect(hit.width).toBeGreaterThanOrEqual(44); expect(hit.height).toBeGreaterThanOrEqual(44);
+      // 592458e6 / 908751bd (2026-10-19): the radio is painted furniture, a
+      // 53x40 <img> standing on the shelf board at the bottom centre of its
+      // hit target (the old 44x40 inline SVG and its fixed offsets are gone).
+      // The 53px picture is wider than the 45px hit and starts at its left edge.
       const radioGeometry = await radio.evaluate(node => {
-        const shelf = node.closest(".vc-home-shelf")!.getBoundingClientRect(), svg = node.querySelector("svg")!.getBoundingClientRect(), button = node.getBoundingClientRect();
+        const shelf = node.closest(".vc-home-shelf")!.getBoundingClientRect(), art = node.querySelector("img.vc-home-object-image")!.getBoundingClientRect(), button = node.getBoundingClientRect();
         const zoom = Number(getComputedStyle(node).getPropertyValue("--shell-zoom")) || 1;
-        return { zoom, width: button.width, height: button.height, svgWidth: svg.width, svgHeight: svg.height, buttonDx: button.x + button.width / 2 - shelf.x - 22 * zoom, buttonDy: button.y + button.height / 2 - shelf.y - 19 * zoom, svgDx: svg.x + svg.width / 2 - shelf.x - 22 * zoom, svgDy: svg.y + svg.height / 2 - shelf.y - 19 * zoom };
+        return { zoom, width: button.width, height: button.height, artWidth: art.width, artHeight: art.height, artLeft: art.left - button.left, artBottom: art.bottom - button.bottom, inShelf: [button, art].every(r => r.left >= shelf.left - .5 && r.right <= shelf.right + .5 && r.top >= shelf.top - .5 && r.bottom <= shelf.bottom + .5) };
       });
-      expect(Math.abs(radioGeometry.svgWidth - 44 * radioGeometry.zoom)).toBeLessThan(.1);
-      expect(Math.abs(radioGeometry.svgHeight - 40 * radioGeometry.zoom)).toBeLessThan(.1);
-      for (const delta of [radioGeometry.buttonDx, radioGeometry.buttonDy, radioGeometry.svgDx, radioGeometry.svgDy]) expect(Math.abs(delta)).toBeLessThan(.1);
+      expect(Math.abs(radioGeometry.artWidth - 53 * radioGeometry.zoom)).toBeLessThan(.1);
+      expect(Math.abs(radioGeometry.artHeight - 40 * radioGeometry.zoom)).toBeLessThan(.1);
+      for (const delta of [radioGeometry.artLeft, radioGeometry.artBottom]) expect(Math.abs(delta), JSON.stringify(radioGeometry)).toBeLessThan(.6);
+      expect(radioGeometry.inShelf).toBe(true);
       evidence.get(page)!.care.push({ phase: "real-radio-hit-and-preserved-art-centre", radioGeometry });
       expect(evidence.get(page)!.media).toEqual([]);
-      const before = await memory(page), discoveries = await collection(page);
-      // Saved mood filters express an ordinary user choice. The shipping
+      // A roaming resident plays authored character scenes back to back, and a
+      // music offer arriving inside one expires unanswered (8 s inbox, b04). Offer
+      // the song while the resident is between scenes, on its floor.
+      await expect.poll(() => pet(page).evaluate(node => (node as HTMLElement).dataset.lifePurpose !== "authored" && ["idle", "look"].includes((node as HTMLElement).dataset.state ?? "") && /^viewport-floor/.test((node as HTMLElement).dataset.platform ?? "")), { timeout: 30000, intervals: [50] }).toBe(true);
+      const before = await memory(page);
+      // The saved track choice is an ordinary user choice. The shipping
       // player still selects the actual song with its untouched RNG/media.
+      let offerFrom = (await frames(page)).length;
       await radio.click(); const stop = page.getByRole("button", { name: "라디오 끄기", exact: true });
       await expect(stop).toHaveAttribute("aria-pressed", "true", { timeout: 10000 });
       const notes = page.locator(".vc-radio-note"); await expect(notes).toHaveCount(3);
@@ -296,11 +337,30 @@ for (const surface of ["viewer", "studio"] as const) {
         await page.screenshot({ path: `${output}/${surface}-radio-notes-native.png`, clip: room, scale: "css", animations: "allow" });
       }
       await expect.poll(() => evidence.get(page)!.media.some(item => [200, 206].includes(item.status))).toBe(true);
-      const selected = [...new Set(evidence.get(page)!.media.map(item => item.path))]; expect(selected).toHaveLength(1);
-      const track = COMPANION_RADIO_TRACKS.find(item => item.src === selected[0]); expect(track).toBeDefined();
-      expect(track!.mood).toBe(mode === "radio-off" ? "lively" : mode.slice(6));
-      if (expected) {
+      // An authored scene that begins in the same decision still outranks the
+      // offer (personality-director, b04). Replay the real stimulus, at most twice:
+      // stop on the home radio, wait for the next pause between scenes, play again. A replay is allowed only when the
+      // probe saw an authored scene own the companion during that offer; an offer unanswered while nothing else
+      // owned it fails at once.
+      for (let replay = 0; replay < 2 && !await pet(page).evaluate((node, expected) => (node as HTMLElement).dataset.radioReaction === expected, expected).catch(() => false); replay++) {
+        const answered = await expect(pet(page)).toHaveAttribute("data-radio-reaction", expected, { timeout: 8000 }).then(() => true, () => false);
+        if (answered) break;
+        expect((await frames(page)).slice(offerFrom).some(frame => frame.authored), `radio offer ${replay + 1} went unanswered while no authored scene owned the companion`).toBe(true);
+        await stop.click(); await expect(page.getByRole("button", { name: "라디오 켜기", exact: true })).toHaveAttribute("aria-pressed", "false");
+        await expect.poll(() => pet(page).evaluate(node => (node as HTMLElement).dataset.lifePurpose !== "authored" && ["idle", "look"].includes((node as HTMLElement).dataset.state ?? "") && /^viewport-floor/.test((node as HTMLElement).dataset.platform ?? "")), { timeout: 30000, intervals: [50] }).toBe(true);
+        offerFrom = (await frames(page)).length;
+        await page.getByRole("button", { name: "라디오 켜기", exact: true }).click(); await expect(stop).toHaveAttribute("aria-pressed", "true", { timeout: 10000 });
+      }
+      const selected = [...new Set(evidence.get(page)!.media.map(item => item.path))]; expect(selected.length).toBeGreaterThanOrEqual(1);
+      const offeredTracks = selected.map(path => COMPANION_RADIO_TRACKS.find(item => item.src === path));
+      expect(offeredTracks.every(item => item?.mood === mode.slice(6))).toBe(true);
+      const track = offeredTracks.at(-1); expect(track).toBeDefined();
+      {
         await expect(pet(page)).toHaveAttribute("data-radio-reaction", expected, { timeout: 8000 });
+        // ac32d7b2 (2026-10-22): every face and pose the companion visibly shows is a
+        // collectible memory (expression:* / pose:*), the listening face included. The
+        // song itself still grants nothing else: compare from the start of the reaction.
+        const discoveries = await collection(page);
         const generation = Number(await pet(page).getAttribute("data-radio-generation")); expect(generation).toBeGreaterThan(0);
         const box = (await pet(page).boundingBox())!, viewport = page.viewportSize()!, left = Math.max(0, box.x - 30), top = Math.max(0, box.y - 30);
         mkdirSync(output, { recursive: true });
@@ -316,7 +376,7 @@ for (const surface of ["viewer", "studio"] as const) {
         expect(Math.max(...performed.map(frame => frame.x)) - Math.min(...performed.map(frame => frame.x))).toBeLessThan(1);
         expect(Math.max(...performed.map(frame => frame.y)) - Math.min(...performed.map(frame => frame.y))).toBeLessThan(1);
         expect(Math.max(...performed.map(frame => Math.abs(frame.bodyTilt)))).toBeGreaterThan(expected === "calm" ? .7 : 1.5);
-        expect(afterListening?.behaviors).toEqual(discoveries?.behaviors); expect(afterListening?.situations).toEqual(discoveries?.situations);
+        expect(afterListening?.behaviors.filter(id => !/^(?:expression|pose):/.test(id))).toEqual(discoveries?.behaviors.filter(id => !/^(?:expression|pose):/.test(id))); expect(afterListening?.situations).toEqual(discoveries?.situations);
         const after = await memory(page);
         for (const trait of ["sociability", "playfulness", "confidence"] as const) expect(after.habits[trait]).toBe(before.habits[trait]);
         expect(after.life.play).toBe(before.life.play); expect(after.life.recent).toEqual(before.life.recent);
@@ -328,10 +388,6 @@ for (const surface of ["viewer", "studio"] as const) {
           expect(Math.abs(after.life.foodScores[ignoredFood.kind] - before.life.foodScores[ignoredFood.kind])).toBeLessThan(.001);
         }
         evidence.get(page)!.care.push({ phase: "actual-radio-finite", mode, generation, track, before, after, ignoredFood, collection: afterListening });
-      } else {
-        await waitVisibleFocused(page, 6500);
-        expect((await frames(page)).some(frame => frame.radio)).toBe(false);
-        await expect(stop).toHaveAttribute("aria-pressed", "true");
       }
       if (mode === "radio-lively") {
         // Rendered-owner integration probe, distinct from a real timed
@@ -346,9 +402,13 @@ for (const surface of ["viewer", "studio"] as const) {
         await waitVisibleFocused(page, 1200);
         await expect(page.getByRole("button", { name: "라디오 켜기", exact: true })).toHaveAttribute("aria-pressed", "false");
         evidence.get(page)!.care.push({ phase: "rendered-premiere-owner-stop-and-no-replay", surface, media: [...evidence.get(page)!.media] });
+        // The player never repeats the track just played (radio-player.ts advance()); after a replay above, an earlier
+        // track may come back, so the restart is checked against the last one only.
+        const lastPath = evidence.get(page)!.media.at(-1)!.path, mediaBefore = evidence.get(page)!.media.length;
         await page.getByRole("button", { name: "라디오 켜기", exact: true }).click();
         await expect(stop).toHaveAttribute("aria-pressed", "true", { timeout: 10000 });
-        await expect.poll(() => new Set(evidence.get(page)!.media.map(item => item.path)).size).toBe(2);
+        await expect.poll(() => evidence.get(page)!.media.slice(mediaBefore).some(item => [200, 206].includes(item.status))).toBe(true);
+        expect(evidence.get(page)!.media.slice(mediaBefore).map(item => item.path)).not.toContain(lastPath);
       }
       await stop.click(); await expect(page.getByRole("button", { name: "라디오 켜기", exact: true })).toHaveAttribute("aria-pressed", "false");
       await expect(page.locator(".vc-radio-notes")).toHaveCount(0);
@@ -394,15 +454,19 @@ for (const surface of ["viewer", "studio"] as const) {
     const after = await memory(page); evidence.get(page)!.care.push({ phase: "after-meal", value: after });
     expect(after.life.seedFood).toBe(initial.life.seedFood); expect(after.hunger).toBeLessThan(before.hunger - .25);
     for (const other of Object.keys(after.life.foodScores) as CompanionFoodKind[]) if (other !== kind) expect(Math.abs(after.life.foodScores[other] - before.life.foodScores[other])).toBeLessThan(.001);
-    expect(after.life.recent).toContain(kind === before.life.favoriteFood ? "favorite-food" : "variety");
+    // 4b4dc01f (life.ts): a meal that makes the eaten food the new favourite is
+    // remembered as "discovered-taste" instead of "variety".
+    expect(after.life.recent).toContain(after.life.favoriteFood !== before.life.favoriteFood ? "discovered-taste" : kind === before.life.favoriteFood ? "favorite-food" : "variety");
     const mealFrames = (await frames(page)).filter(frame => frame.state === "eat" && (frame.foodGoal === id || frame.episodeFood === id));
     expect(mealFrames.length).toBeGreaterThan(0); const lastEatingAt = Math.max(...mealFrames.map(frame => frame.at));
-    // The actual completed meal's ordinary dog afterglow performs row29.
-    // Require the adopted decoded/source-matched frame before checking its
-    // stamp, so an intention or retained fallback cannot establish discovery.
-    await expect.poll(async () => (await frames(page)).some(frame => frame.at > lastEatingAt && frame.row === 29 && frame.state === "play" && frame.same && frame.count === 1 && frame.decoded && frame.registered && frame.focused && !frame.hidden), { timeout: 10000, intervals: [50] }).toBe(true);
-    await expect.poll(async () => (await collection(page))?.behaviors ?? [], { timeout: 6000 }).toContain("bow");
-    const discovered = (await collection(page))!; evidence.get(page)!.care.push({ phase: "actual-consume-and-visible-bow-stamps", collection: discovered, id, kind });
+    // A basic meal is no longer a meal episode with a greeting bow (55e150b9, b09),
+    // so no row29 afterglow is owed. What the dog then visibly does (faces, poses,
+    // grooming) is collected as memories (ac32d7b2); wait for the first one after
+    // the meal, painted by an adopted decoded frame, and carry it through reload.
+    expect(lastEatingAt).toBeGreaterThan(0);
+    await expect.poll(async () => (await frames(page)).some(frame => frame.at > lastEatingAt && frame.same && frame.count === 1 && frame.decoded && frame.registered && frame.focused && !frame.hidden), { timeout: 10000, intervals: [50] }).toBe(true);
+    await expect.poll(async () => ((await collection(page))?.behaviors ?? []).length, { timeout: 20000 }).toBeGreaterThan(0);
+    const discovered = (await collection(page))!; evidence.get(page)!.care.push({ phase: "actual-consume-and-visible-memory-stamps", collection: discovered, id, kind });
     const observed = await frames(page); expect(observed.some(frame => frame.state === "eat" && (frame.foodGoal === id || frame.episodeFood === id))).toBe(true);
     expect(observed.filter(frame => frame.foodGoal).every(frame => frame.foodGoal === id)).toBe(true);
     evidence.get(page)!.probe = await page.evaluate(() => { const p = (window as unknown as ProbeWindow).livedExperience104!; return { beforeReloadFrames: p.frames, beforeReloadInputs: p.inputs, beforeReloadSounds: (window as unknown as ProbeWindow).__companionSfxTrace ?? [] }; });
@@ -410,35 +474,44 @@ for (const surface of ["viewer", "studio"] as const) {
     await page.reload(); await page.bringToFront(); await expect(actor(page)).toBeVisible();
     await startProbe(page);
     const reopened = await memory(page); expect(reopened.life.seedFood).toBe(initial.life.seedFood); expect(reopened.life.foodScores[kind]).toBeGreaterThan(before.life.foodScores[kind] + .001);
-    const retained = await collection(page); expect(retained?.foods).toEqual(discovered.foods); expect(retained?.behaviors).toContain("bow");
+    const retained = await collection(page); expect(retained?.foods).toEqual(discovered.foods); expect(retained?.behaviors).toEqual(expect.arrayContaining(discovered.behaviors));
     evidence.get(page)!.care.push({ phase: "reloaded-real-discoveries", collection: retained, id, kind });
-    const traits = await openTraits(page); await expect(traits.locator(".rhh-companion-facts > div").filter({ has: page.locator("dt", { hasText: "좋아하는 간식" }) }).locator("dd")).toHaveText(COMPANION_FOOD_NAMES[reopened.life.favoriteFood]);
+    const traits = await openTraits(page); await expect(traits.locator(".rhh-companion-facts > div").filter({ has: page.locator("dt", { hasText: "좋아하는 간식" }) }).locator("dd")).toHaveText(new RegExp(`^${COMPANION_FOOD_NAMES[reopened.life.favoriteFood]}`)); // DIAGNOSIS 7: the card also holds its reason
     const dialog = page.getByRole("dialog", { name: "설정", exact: true });
     await expect(dialog.locator(".rhh-trait-reason")).toContainText(/좋아하는 간식 먹기|다른 간식 맛보기|새 간식 맛보기|새 최애 간식/);
     await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "도감", exact: true }).click();
     await expect(dialog.getByRole("button", { name: new RegExp(`^냠냠 도감.*1/${COMPANION_FOOD_KINDS.length}$`) })).toHaveAttribute("aria-pressed", "true");
+    // b03: the book shows one measured page in COMPANION_FOOD_BOOK_ORDER; turn to the eaten food.
+    await selectCompanionCollectionIndex(page, dialog.locator(".rhh-food-grid"), COMPANION_FOOD_BOOK_ORDER.indexOf(kind));
     const recordedFood = dialog.getByRole("button", { name: `${COMPANION_FOOD_NAMES[kind]} · 맛봤어요`, exact: true });
     await expect(recordedFood).toHaveAttribute("data-found", "true");
-    await expect(recordedFood.locator(`[data-collection-art="food-stamp"][data-collection-art-id="${kind}"]`)).toHaveCount(1);
+    // 7dd1ac08: the tile keeps the plain specimen; the selected detail carries the seal.
+    await expect(recordedFood.locator(`[data-collection-art="food"][data-collection-art-id="${kind}"]`)).toHaveCount(1);
+    await expect(dialog.locator(`.rhh-food-detail [data-collection-art="food-stamp"][data-collection-art-id="${kind}"]`)).toHaveCount(1);
   });
 
   // Retired neckwear remains covered by the saved-alias world fixtures;
   // current wardrobe gestures exercise the strapless body-fit badge instead.
   for (const accessory of ["pixel-sunglasses", "baseball-cap", "bell-badge"] as const) {
+    // Regression guard (fixed in 63ecc14a): the worn-prop trick's 45 s wait was once spent whenever the trick was
+    // merely eligible, although a scene earlier in the `offered` chain won, so the trick never played.
     test(`${surface}: native ${accessory} wears, performs a finite gesture and earns only its actually visible situation`, async ({ page }) => {
       test.setTimeout(105000);
       const identity = await setup(page, surface, "accessory", accessory);
       expect((await collection(page))?.situations).toEqual([]);
       await openTraits(page); const dialog = page.getByRole("dialog", { name: "설정", exact: true });
       await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "옷장", exact: true }).click();
+      // The wardrobe shows one measured page (b03): turn to the seeded item first.
+      await selectCompanionCollectionIndex(page, dialog.locator(".rhh-accessory-grid"), COMPANION_WEARABLE_IDS.indexOf(accessory));
       await dialog.locator(`[data-accessory="${accessory}"]`).click();
       await dialog.locator('[data-act="companion-accessory-equip"][data-act-opt="on"]').click();
       await expect.poll(async () => (await collection(page))?.gifts.equipped).toBe(accessory);
       await dialog.getByRole("button", { name: "닫기", exact: true }).click();
       await expect(dialog).toHaveCount(0);
       // These gestures stay on the same x. The separate cheer test reserves
-      // horizontal travel room; this vertical hop needs its real headroom.
-      const floor = await placeAndHold(page, 0, 170);
+      // horizontal travel room; this vertical hop needs its real headroom, also
+      // below the calendar's day edges (a hat trick needs 150px of them).
+      const floor = await placeAndHold(page, 0, 170, true);
       // Public native held input earns actual visible active time. The real
       // safe decision owns the action; no action/activeMs/RNG/clock is seeded.
       await waitVisibleFocused(page, 7500);
@@ -487,7 +560,13 @@ for (const surface of ["viewer", "studio"] as const) {
     await expect.poll(async () => (await memory(page)).life.recent.includes("kind-touch"), { timeout: 6000 }).toBe(true);
     const touched = await memory(page); evidence.get(page)!.care.push({ phase: "actual-petted", value: touched });
     expect(touched.affection).toBeGreaterThan(invited.affection + .04); expect(touched.life.social).toBeGreaterThan(invited.life.social);
-    const observed = await frames(page); expect(observed.some(frame => frame.living === "social" && frame.state === "walk")).toBe(true);
+    // The approach is an ordinary walk toward the pointer; only the contact
+    // itself (ask-petting, row33/34) carries data-living="social" now.
+    const observed = await frames(page), firstSocial = observed.findIndex(frame => frame.living === "social");
+    const released = observed.slice(0, firstSocial).map(frame => frame.state).lastIndexOf("held");
+    const approach = observed.slice(released + 1, firstSocial).filter(frame => frame.state === "walk" && /^viewport-floor/.test(frame.platform));
+    expect(approach.length).toBeGreaterThan(0);
+    expect(Math.abs(observed[firstSocial].x - (floor.x + 130))).toBeLessThan(Math.abs(approach[0].x - (floor.x + 130)));
     expect(observed.filter(frame => frame.living === "social").every(frame => frame.same && frame.count === 1)).toBe(true);
   });
 
@@ -561,7 +640,7 @@ for (const surface of ["viewer", "studio"] as const) {
     expect(sequence.map(frame => frame.row)).toEqual([9, 9, 9]); expect(sequence[0].visibleFocusedMs).toBeGreaterThanOrEqual(90000);
     const performed = observed.filter(frame => frame.at >= sequence[0].at && frame.at <= sequence[2].at);
     expect(performed.length).toBeGreaterThanOrEqual(3);
-    expect(performed.every(frame => frame.living === "cheer" && frame.play === "cheer-rehearsal" && frame.state === "play" && frame.row === 9 && frame.platform === sequence[0].platform && /^viewport-floor/.test(frame.platform) && frame.same && frame.count === 1 && frame.decoded && frame.registered && frame.focused && !frame.hidden && frame.src.endsWith("/companion/hd/vitamin-action-09-eye-scale-143-v1.webp"))).toBe(true);
+    expect(performed.every(frame => frame.living === "cheer" && frame.play === "cheer-rehearsal" && frame.state === "play" && frame.row === 9 && frame.platform === sequence[0].platform && /^viewport-floor/.test(frame.platform) && frame.same && frame.count === 1 && frame.decoded && frame.registered && frame.focused && !frame.hidden && cheerAtlas(frame.src))).toBe(true);
     expect(Math.max(...performed.map(frame => frame.x)) - Math.min(...performed.map(frame => frame.x))).toBeLessThan(1);
     expect(Math.max(...performed.map(frame => frame.y)) - Math.min(...performed.map(frame => frame.y))).toBeLessThan(1);
     expect(await identity.evaluate(node => node.isConnected && node === document.querySelector(".vc-companion"))).toBe(true);

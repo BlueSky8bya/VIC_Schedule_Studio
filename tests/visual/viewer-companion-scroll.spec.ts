@@ -2,12 +2,12 @@ import { expect, test, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { chooseCompanionCare, openCompanionHome } from "./helpers/companion-home";
+import { chooseCompanionCare, openCompanionHome, placeCompanionAt } from "./helpers/companion-home";
+import { installCompanionPointReader, type CompanionPointWindow } from "./helpers/companion-point";
 
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
 const posts = new WeakMap<Page, string[]>();
-const TEXT_SURFACES = ".public-day .day-strip > strong,.agenda-day .agenda-when > strong,.public-event .event-main p,.public-event .event-subs li,.agenda-event .agenda-title-text,.agenda-event .agenda-subs li,.agenda-item .agenda-title-text,.agenda-item .agenda-title,.agenda-item .agenda-subs li";
 
 type ScrollFrame = { at: number; scrollY: number; x: number; y: number; anchorY: number | null; error: number; state: string; platform: string; journey: string; presence: string; hidden: boolean };
 type ScrollProbe = Window & { companionScrollRanges?: number; companionScrollWrites?: number };
@@ -23,7 +23,7 @@ test.beforeEach(async ({ page }) => {
 
 test.afterEach(async ({ page }) => { expect(posts.get(page)).toEqual([]); });
 
-async function setup(page: Page, walking = false, allowHomeRest = false) {
+async function setup(page: Page, walking = false, allowHomeRest = false, parkOnBlur = false) {
   await page.setViewportSize({ width: 1920, height: 1100 });
   await page.addInitScript(({ epoch, epochKey, preferences, care, walking }) => {
     localStorage.setItem(epochKey, epoch); localStorage.setItem("vic.reduceMotion", "off");
@@ -33,7 +33,7 @@ async function setup(page: Page, walking = false, allowHomeRest = false) {
     Math.random = () => walking ? .9999 : 0;
     // Focus-event branch fixture, not a claim about native OS focus throttling.
     Object.defineProperty(document, "hasFocus", { configurable: true, value: () => true });
-  }, { epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: walking, animalMode: "dog", speed: "relaxed", jump: false, sleep: allowHomeRest, feeding: false, heartPrank: false, ambientPrank: false }, care: DEFAULT_COMPANION_CARE, walking });
+  }, { epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: walking, animalMode: "dog", speed: "relaxed", jump: false, sleep: allowHomeRest, activeWhileVisible: !parkOnBlur, feeding: false, heartPrank: false, ambientPrank: false }, care: DEFAULT_COMPANION_CARE, walking });
   await page.goto("/visual-fixture/poster");
   await expect(actor(page)).toBeVisible();
   await page.evaluate(() => document.fonts.ready);
@@ -54,25 +54,30 @@ async function setup(page: Page, walking = false, allowHomeRest = false) {
   await expect(pet(page)).toHaveCount(1);
 }
 
-/** Independent support oracle: match the real visible text line beneath the
- * resting feet, then retain its element and measured offset, never its text. */
-async function identifyTextSupport(page: Page) {
-  await expect(pet(page)).toHaveAttribute("data-platform", /^(?:date|card)-\d+/);
-  await expect.poll(() => page.evaluate(selector => {
-    const element = document.querySelector<HTMLElement>(".vc-companion")!, feet = element.getBoundingClientRect();
-    const x = feet.left + feet.width / 2;
-    const matches: { node: HTMLElement; error: number }[] = [];
-    for (const node of document.querySelectorAll<HTMLElement>(selector)) {
-      const range = document.createRange(); range.selectNodeContents(node);
-      for (const line of range.getClientRects()) {
-        if (x >= line.left - .5 && x <= line.right + .5 && line.width > .5 && line.height > .5) matches.push({ node, error: Math.abs(feet.bottom - line.top + 3) });
+/** A fresh companion begins inside its home now (a44f46a2), and a person can only put it on a card's top edge
+ * (text lines are autonomous-only ledges). So the calendar support under test is a real card top: the companion is
+ * placed there with the keyboard placement, and the oracle keeps that card element and the measured foot offset. */
+async function standOnCalendarCard(page: Page, band: { minTop?: number; maxTop?: number } = {}) {
+  const target = await page.evaluate(({ minTop, maxTop }) => {
+    const pet = document.querySelector(".vc-companion")!.getBoundingClientRect(), size = pet.width, half = size * .38 + 4, height = size * .76 + 4;
+    const shown = (node: Element) => { const r = node.getBoundingClientRect(), css = getComputedStyle(node); return r.width > 0 && r.height > 0 && css.visibility === "visible" && css.display !== "none"; };
+    const controls = [...document.querySelectorAll("button,a[href],input,select,textarea,[role=button],.vc-home,.vc-home-launcher")]
+      .filter(node => shown(node) && !node.matches(".public-event,.public-day") && !node.closest(".vc-companion")).map(node => node.getBoundingClientRect());
+    for (const node of document.querySelectorAll<HTMLElement>(".public-event[data-eventid]:not(.teaser):not(.is-support)")) {
+      const rect = node.getBoundingClientRect();
+      if (!shown(node) || rect.width < size || rect.top < Math.max(size + 60, minTop) || rect.top > Math.min(innerHeight - 120, maxTop)) continue;
+      for (const fraction of [.5, .25, .75]) {
+        const x = rect.left + rect.width * fraction;
+        if (controls.some(control => control.left < x + half && control.right > x - half && control.top < rect.top && control.bottom > rect.top - height)) continue;
+        if (document.elementFromPoint(x, rect.top + Math.min(4, rect.height / 2))?.closest(".public-event") !== node) continue;
+        node.dataset.companionScrollAnchor = ""; return { x, y: rect.top - 18 };
       }
-      range.detach();
     }
-    const nearest = matches.sort((a, b) => a.error - b.error)[0];
-    if (nearest && nearest.error < 2) nearest.node.dataset.companionScrollAnchor = "";
-    return nearest?.error ?? Infinity;
-  }, TEXT_SURFACES)).toBeLessThan(2);
+    return null;
+  }, { minTop: band.minTop ?? 0, maxTop: band.maxTop ?? Infinity });
+  expect(target, "the fixture must show an ordinary card with a body-clear top in the wanted band").not.toBeNull();
+  await placeCompanionAt(page, target!, /^card-\d+-top(?:-\d+)?$/);
+  await expect.poll(() => page.evaluate(() => Math.abs(document.querySelector(".vc-companion")!.getBoundingClientRect().bottom - document.querySelector("[data-companion-scroll-anchor]")!.getBoundingClientRect().top + 3))).toBeLessThan(2);
   return page.evaluate(() => {
     const rect = document.querySelector(".vc-companion")!.getBoundingClientRect();
     const anchor = document.querySelector("[data-companion-scroll-anchor]")!.getBoundingClientRect();
@@ -113,9 +118,9 @@ function expectSmoothTextContact(frames: ScrollFrame[]) {
   return { samples: frames.length, scroll: frames.at(-1)!.scrollY - frames[0].scrollY, p95FootError: errors[Math.floor(errors.length * .95)], maxFootError: errors.at(-1) };
 }
 
-test("resting text support follows native document scroll between full geometry scans", async ({ page }) => {
+test("resting calendar support follows native document scroll between full geometry scans", async ({ page }) => {
   await setup(page);
-  const support = await identifyTextSupport(page);
+  const support = await standOnCalendarCard(page);
   const frames = await scrollFrames(page, support.offset);
   const summary = expectSmoothTextContact(frames);
   expect(new Set(frames.map(frame => frame.platform))).toEqual(new Set([support.platform]));
@@ -123,7 +128,7 @@ test("resting text support follows native document scroll between full geometry 
   await expect(actor(page)).toBeVisible(); await expect(pet(page)).toHaveCount(1);
   await expect(page.locator("[data-export-surface]")).toHaveJSProperty("offsetWidth", 1840);
   await page.screenshot({ path: ".scratch-pw/companion-scroll-active.png" });
-  console.log(JSON.stringify({ check: "companion-text-scroll", ...summary, platform: support.platform }));
+  console.log(JSON.stringify({ check: "companion-calendar-scroll", ...summary, platform: support.platform }));
 });
 
 test("a floor walk keeps its action clock and fixed feet while the document scrolls", async ({ page }) => {
@@ -170,8 +175,12 @@ test("a floor walk keeps its action clock and fixed feet while the document scro
   await expect(pet(page)).toHaveAttribute("data-platform", /^viewport-floor(?:-\d+)?$/);
   await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
   await expect(pet(page)).toHaveAttribute("data-state", "walk", { timeout: 8000 });
+  // A walk's clock is set once more when the stride really starts (about 0.1s after the state appears), so the
+  // clock under test is read once the feet have moved. The whole walk lasts about 1.5s: scroll within it.
+  const walkFrom = (await pet(page).boundingBox())!.x;
+  await expect.poll(async () => (await pet(page).boundingBox())!.x - walkFrom, { intervals: [30] }).toBeGreaterThan(2);
   const journey = await pet(page).getAttribute("data-journey"); expect(journey).toBeTruthy();
-  const frames = await scrollFrames(page, null);
+  const frames = await scrollFrames(page, null, 96, 800);
   expect(frames.length).toBeGreaterThan(25);
   expect(frames.at(-1)!.scrollY - frames[0].scrollY).toBeGreaterThanOrEqual(90);
   expect(frames.every(frame => frame.state === "walk" && frame.journey === journey && !frame.hidden)).toBe(true);
@@ -183,9 +192,11 @@ test("a floor walk keeps its action clock and fixed feet while the document scro
   console.log(JSON.stringify({ check: "companion-floor-scroll", samples: frames.length, journey, travel: frames.at(-1)!.x - frames[0].x, maxFloorError: Math.max(...frames.map(frame => Math.abs(frame.y - route!.floorY))) }));
 });
 
-test("parked text support follows scrolling, then releases geometry and DOM writes again", async ({ page }) => {
-  await setup(page);
-  const support = await identifyTextSupport(page);
+test("parked calendar support follows scrolling, then releases geometry and DOM writes again", async ({ page }) => {
+  // Automatic sleep stays on here: with it off a parked companion poses awake (1f2cb9eb), and this test is about
+  // the quiet, sleeping park. "다른 창 쓸 때도 놀기" is on by default now, so it is turned off for the blur to park.
+  await setup(page, false, true, true);
+  const support = await standOnCalendarCard(page);
   await page.evaluate(() => {
     Object.defineProperty(document, "hasFocus", { configurable: true, value: () => false });
     window.dispatchEvent(new FocusEvent("blur"));
@@ -212,26 +223,72 @@ test("parked text support follows scrolling, then releases geometry and DOM writ
   console.log(JSON.stringify({ check: "companion-parked-scroll", ...summary, quietRanges: 0, quietWrites: 0 }));
 });
 
-test("a home flight keeps its journey when the departure text scrolls outside safe clipping", async ({ page }) => {
+// The recall is a route of short legs now (card top, a day edge, the home floor, the sofa: about 4.4s standing
+// still), each leg with its own clock, and a leg is anchored to the page. Since 9e346ecc (owner call 2026-11-20:
+// "no hiding") a scroll that carries the departure card out of the top no longer hides the companion: the recovery
+// fall starts from the visible edge and stops following the old support. What must hold: the leg under way is
+// untouched while it is on screen, the companion is never hidden during the recall, never drops out of its flight,
+// and the recall still ends asleep on the sofa.
+// Bounds: hidden time 0. Landing: within 10 s of the click. After the scroll the route itself is longer (measured
+// 6.7-8.5 s on 9e346ecc); the owner asked only for "no hiding", not for a landing time.
+type RecallFrame = { at: number; hidden: boolean; reason: string; platform: string; box: { left: number; top: number; right: number; bottom: number }; rect: { left: number; top: number; right: number; bottom: number } | null };
+type RecallProbe = Window & { recallFrames?: RecallFrame[]; recallStop?: boolean };
+test("a home recall whose departure card scrolls out of view is recovered and still reaches the sofa", async ({ page }) => {
+  test.setTimeout(60000);
+  await installCompanionPointReader(page);
   await setup(page, false, true);
-  const support = await identifyTextSupport(page);
-  const distance = await page.evaluate(() => document.querySelector("[data-companion-scroll-anchor]")!.getBoundingClientRect().top - 40);
+  await openCompanionHome(page);
   const destination = await page.locator(".vc-home-cushion").evaluate(node => node.getBoundingClientRect().top);
+  // The departure card must scroll out above the safe clip while the sofa stays a visible ledge below it.
+  const support = await standOnCalendarCard(page, { minTop: 445, maxTop: destination - 55 });
+  const distance = await page.evaluate(() => document.querySelector("[data-companion-scroll-anchor]")!.getBoundingClientRect().top - 40);
   expect(distance).toBeGreaterThan(400);
   expect(destination - distance, "the real destination must remain a valid visible ledge").toBeGreaterThan(90);
+  // One sample per painted frame from the click to the landing. While the node is hidden it has no layout box, so its
+  // box is read from the same inline transform and size the renderer paints with (the reader is checked against the
+  // real box on every visible frame below).
+  await page.evaluate(() => {
+    const probe = window as RecallProbe, frames: RecallFrame[] = []; probe.recallFrames = frames; probe.recallStop = false;
+    const began = performance.now();
+    const sample = (now: number) => {
+      if (probe.recallStop) return;
+      const el = document.querySelector<HTMLElement>(".vc-companion")!, size = parseFloat(el.style.getPropertyValue("--vc-size"));
+      const p = (window as unknown as CompanionPointWindow).vcPoint(el, el.style.transform), r = el.hidden ? null : el.getBoundingClientRect();
+      frames.push({ at: now - began, hidden: el.hidden, reason: el.dataset.hiddenReason ?? "", platform: el.dataset.platform ?? "",
+        box: { left: p.x, top: p.y, right: p.x + size, bottom: p.y + size }, rect: r && { left: r.left, top: r.top, right: r.right, bottom: r.bottom } });
+      requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  });
+  const clickedAt = Date.now();
   await page.getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true }).click();
   await expect(pet(page)).toHaveAttribute("data-state", "jump");
   const journey = await pet(page).getAttribute("data-journey"); expect(journey).toBeTruthy();
   // Keep observing beyond the 120ms full-scan coalescing window after the
-  // source leaves safe clipping, while the original flight is still active.
+  // source leaves safe clipping.
   const frames = await scrollFrames(page, support.offset, distance, 700, 260);
   const clipped = frames.filter(frame => frame.anchorY !== null && frame.anchorY < 84);
   expect(clipped.length).toBeGreaterThan(4);
   expect(clipped.at(-1)!.at - clipped[0].at).toBeGreaterThan(200);
-  expect(frames.every(frame => frame.state === "jump" && frame.journey === journey)).toBe(true);
-  await expect(pet(page)).toHaveAttribute("data-platform", "companion-home", { timeout: 3000 });
+  const firstLeg = frames.filter(frame => frame.journey === journey);
+  expect(firstLeg.length).toBeGreaterThan(10);
+  expect(firstLeg.every(frame => frame.state === "jump" && !frame.hidden && frame.y > 0)).toBe(true);
+  expect(frames.slice(0, firstLeg.length).every(frame => frame.journey === journey), "the leg under way is not restarted while it is on screen").toBe(true);
+  expect(frames.every(frame => frame.state === "jump" && frame.presence === "active")).toBe(true);
+  await expect(pet(page)).toHaveAttribute("data-platform", "companion-home", { timeout: Math.max(1, 10000 - (Date.now() - clickedAt)) });
+  const recall = await page.evaluate(() => { const probe = window as RecallProbe; probe.recallStop = true; return probe.recallFrames!; });
+  const landedAt = recall.find(frame => frame.platform === "companion-home")!.at, untilLanding = recall.filter(frame => frame.at <= landedAt);
+  expect(landedAt, "the recall lands on the sofa within 10 s (longer route after the scroll, 9e346ecc)").toBeLessThanOrEqual(10000);
+  const visibleFrames = untilLanding.filter(frame => frame.rect);
+  expect(visibleFrames.length).toBeGreaterThan(20);
+  expect(Math.max(...visibleFrames.map(frame => Math.max(...(["left", "top", "right", "bottom"] as const).map(side => Math.abs(frame.box[side] - frame.rect![side]))))), "the transform reader matches the painted box").toBeLessThan(2);
+  const hiddenMs = untilLanding.reduce((sum, frame, index) => sum + (index && untilLanding[index - 1].hidden ? frame.at - untilLanding[index - 1].at : 0), 0);
+  expect(hiddenMs, "total time hidden during the recall (no hiding since 9e346ecc)").toBe(0);
+  const onScreen = (b: RecallFrame["box"]) => b.right > 0 && b.left < 1920 && b.bottom > 0 && b.top < 1100;
+  expect(untilLanding.filter(frame => frame.hidden), "never hidden during the recall").toEqual([]);
+  expect(untilLanding.filter(frame => frame.hidden && onScreen(frame.box)), "never hidden while the body box is on screen").toEqual([]);
   await expect(pet(page)).toHaveAttribute("data-state", "sleep");
   await expect.poll(() => page.evaluate(() => Math.abs(document.querySelector(".vc-companion")!.getBoundingClientRect().bottom - document.querySelector(".vc-home-cushion")!.getBoundingClientRect().top))).toBeLessThan(2);
   await expect(actor(page)).toBeVisible();
-  console.log(JSON.stringify({ check: "companion-clipped-flight", departure: support.platform, journey, clippedSamples: clipped.length, clippedDuration: clipped.at(-1)!.at - clipped[0].at, landing: "companion-home" }));
+  console.log(JSON.stringify({ check: "companion-clipped-recall", departure: support.platform, journey, firstLegSamples: firstLeg.length, hiddenSamples: frames.filter(frame => frame.hidden).length, clippedSamples: clipped.length, clippedDuration: clipped.at(-1)!.at - clipped[0].at, landing: "companion-home" }));
 });

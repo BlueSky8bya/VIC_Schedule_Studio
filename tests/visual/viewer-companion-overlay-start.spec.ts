@@ -5,7 +5,7 @@ import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
-import { expectQuietCompanionTail, waitForOverlayEntrance } from "./helpers/companion-overlay";
+import { expectQuietCompanionTail, expectQuietCompanionVisible, waitForOverlayEntrance } from "./helpers/companion-overlay";
 
 const pet = (page: Page) => page.locator(".vc-companion");
 const proof = new WeakMap<Page, { writes: string[]; errors: string[] }>();
@@ -56,6 +56,7 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} Settings c
     await expect(pet(page)).toHaveAttribute("data-overlay", "quiet"); await expect(dialog).toBeVisible();
     if (startup === "cold") { await toggle.click(); await expect(pet(page)).toHaveCount(0); }
   }
+  // Both surfaces park after the restart (the viewer did not before 63ecc14a).
   await expectQuietCompanionTail(page, toggle);
   const point = () => pet(page).evaluate(node => { const rect = node.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.bottom }; });
   const before = await point(); await page.screenshot({ path: `.scratch-pw/companion-101-overlay-start-${surface}.png` });
@@ -78,12 +79,23 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} an actual 
   try {
     await toggle.click(); await expect(toggle).toBeChecked();
     await page.waitForTimeout(250); // Allow the real coalesced geometry pass.
-    await expect(pet(page)).toBeHidden(); await expect(pet(page)).toHaveAttribute("data-hidden-reason", "support");
+    // A fresh companion now enters through its home (a44f46a2). While that home cannot be measured it only waits,
+    // hidden and unplaced: there is no calendar ledge search any more, so no "support" reason is written.
+    await expect(pet(page)).toBeHidden(); await expect(pet(page)).not.toHaveAttribute("data-platform"); await expect(pet(page)).not.toHaveAttribute("data-state");
     await restore();
     await expect(pet(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-platform", /\S+/);
     await expect(pet(page)).not.toHaveAttribute("data-hidden-reason"); await expect(pet(page)).toHaveAttribute("data-atlas", "hd");
     await expect(dialog).toBeVisible(); await expect(toggle).toBeChecked(); await expect(pet(page)).toHaveCount(1);
-    await expectQuietCompanionTail(page, toggle);
+    await expectQuietCompanionVisible(page); await expect(toggle).toBeFocused();
     await page.screenshot({ path: `.scratch-pw/companion-101-overlay-empty-${surface}.png` });
   } finally { await restore(); }
+});
+
+// Regression guard (fixed in 63ecc14a): a companion switched on for the first time while Settings is open enters
+// through its home (a44f46a2); its engine was once never scheduled under the overlay, so `data-presence` was never
+// written and it stood as one frozen idle frame without the parked breathing.
+for (const surface of ["viewer", "studio"] as const) test(`${surface} a companion first started under Settings reaches its parked quiet tail`, async ({ page }) => {
+  const { dialog, toggle } = await openDisabledCompanionSettings(page, surface);
+  await toggle.click(); await expect(pet(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-overlay", "quiet"); await expect(dialog).toBeVisible();
+  await expectQuietCompanionTail(page, toggle);
 });

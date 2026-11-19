@@ -55,7 +55,7 @@ async function readActualGeometry(page: Page) {
 }
 
 test.use({ headless: true, viewport: { width: 1920, height: 1100 }, serviceWorkers: "block" });
-for (const [surface, trial] of [["viewer", 0], ["viewer", 1], ["viewer", 2], ["studio", 0]] as const) test(`${surface} native calendar zoom and viewport shrink retain an accessible companion (${trial})`, async ({ page }) => {
+for (const [surface, trial] of [["viewer", 0], ["viewer", 1], ["viewer", 2], ["studio", 0]] as const) test(`${surface} native calendar zoom and viewport shrink retain an accessible companion (${trial})`, async ({ page, baseURL }) => {
   test.setTimeout(30000); const writes: string[] = [], errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   await page.route("**/*", route => {
@@ -72,7 +72,8 @@ for (const [surface, trial] of [["viewer", 0], ["viewer", 1], ["viewer", 2], ["s
   }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, prefs: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE, collectionKey: COMPANION_COLLECTION_KEY });
   await page.goto(surface === "viewer" ? "/visual-fixture/poster?links=1" : "/visual-fixture/studio?role=owner&companionDrag=1");
   await page.bringToFront(); await settlePanelLayout(page);
-  expect(new URL(page.url()).origin).toBe("http://127.0.0.1:3117");
+  // The run must stay on the configured fixture server (the port was once hard-coded to the 115 capture server).
+  expect(new URL(page.url()).origin).toBe(new URL(baseURL!).origin);
   const pet = page.locator(".vc-companion"); await expect(pet).toBeVisible(); await openCompanionHome(page);
   await page.evaluate(() => {
     const samples: Sample[] = [], began = performance.now(); let request = 0, stopped = false, previous = "", last = -Infinity;
@@ -80,7 +81,8 @@ for (const [surface, trial] of [["viewer", 0], ["viewer", 1], ["viewer", 2], ["s
     (window as ProbeWindow).resize115Probe = probe;
     const tick = (now: number) => {
       if (stopped) return;
-      const body = document.querySelector<HTMLElement>(".vc-companion")!, matrix = new DOMMatrixReadOnly(body.style.transform), size = parseFloat(body.style.getPropertyValue("--vc-size")), img = body.querySelector<HTMLImageElement>(".vc-texture");
+      // Inside the home the body is CSS-anchored (dccb2756 / a3e9a288): its viewport origin is the computed left/top plus the transform.
+      const body = document.querySelector<HTMLElement>(".vc-companion")!, css = getComputedStyle(body), matrix = new DOMMatrix().translateSelf(parseFloat(css.left) || 0, parseFloat(css.top) || 0).multiplySelf(new DOMMatrixReadOnly(body.style.transform)), size = parseFloat(body.style.getPropertyValue("--vc-size")), img = body.querySelector<HTMLImageElement>(".vc-texture");
       const sample: Sample = { at: now - began, stage: probe.stage, width: innerWidth, height: innerHeight, hidden: body.hidden, reason: body.dataset.hiddenReason ?? "", state: body.dataset.state ?? "", support: body.dataset.platform ?? "", x: matrix.m41 + size / 2, y: matrix.m42 + size, pose: body.dataset.pose ?? "", decoded: Boolean(img?.complete && img.naturalWidth) };
       const key = JSON.stringify([sample.stage, sample.hidden, sample.reason, sample.state, sample.support, sample.pose]);
       if (key !== previous || now - last >= 80) { samples.push(sample); previous = key; last = now; }
@@ -117,7 +119,7 @@ for (const [surface, trial] of [["viewer", 0], ["viewer", 1], ["viewer", 2], ["s
   } finally {
     const samples = await page.evaluate(() => { const probe = (window as ProbeWindow).resize115Probe; probe?.stop(); return probe?.samples ?? []; });
     mkdirSync(output, { recursive: true });
-    writeFileSync(`${output}/${surface}-${trial}.json`, JSON.stringify({ buildId: readFileSync(resolve(".next/BUILD_ID"), "utf8").trim(), url: page.url(), samples, actualGeometry, writes, errors }, null, 2));
+    writeFileSync(`${output}/${surface}-${trial}.json`, JSON.stringify({ buildId: readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim(), url: page.url(), samples, actualGeometry, writes, errors }, null, 2));
     await page.screenshot({ path: `${output}/${surface}-${trial}.png` });
     expect(writes).toEqual([]); expect(errors).toEqual([]);
   }

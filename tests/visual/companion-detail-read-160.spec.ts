@@ -2,18 +2,20 @@ import { expect, test, type Page, type Locator } from "@playwright/test";
 import { readFileSync, mkdirSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
-import { COMPANION_FOOD_BOOK_ORDER as COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/collection-book-order";
+import { COMPANION_FOOD_BOOK_ORDER as COMPANION_FOOD_KINDS, COMPANION_TOY_BOOK_ORDER } from "@/lib/ui/viewer-companion/collection-book-order";
 import { COMPANION_BEHAVIOR_IDS, COMPANION_COLLECTION_KEY } from "@/lib/ui/viewer-companion/collection";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome } from "./helpers/companion-home";
+import { keepCompanionStoredMotion } from "./helpers/companion-settings";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
-import { fulfillReadOnlyFont } from "./helpers/readonly-font";
+import { fulfillDeclaredUiFontSheet, fulfillReadOnlyFont } from "./helpers/readonly-font";
 
 const output=process.env.COMPANION160_BOOK_OUTPUT??".scratch-pw/companion160-book";
 const fonts=new Set([...readFileSync(resolve("app/fonts.css"),"utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match=>match[1]));
-const toys=["practice-baseball-bat","practice-baseball-glove"];
+// The toy book opens on its first found entry in book order (aafcb773), not in seed order.
+const toys=COMPANION_TOY_BOOK_ORDER.filter(id=>id==="practice-baseball-bat"||id==="practice-baseball-glove");
 const seenToy=(page:Page)=>page.evaluate(()=>JSON.parse(localStorage.getItem("vic.viewerCompanionTastes")!).seen as string[]);
 const seenFood=(page:Page)=>page.evaluate(key=>JSON.parse(localStorage.getItem(key)!).seen?.foods??[],COMPANION_COLLECTION_KEY);
 async function boundedTiles(book:Locator){
@@ -30,9 +32,10 @@ for(const surface of ["viewer","studio","preview"] as const)for(const short of [
  await page.setViewportSize(short?{width:1440,height:760}:{width:1920,height:1100});page.on("pageerror",error=>errors.push(error.message));
  const root=process.env.VISUAL_TEST_BUILD_DIR??".next",manifest=JSON.parse(readFileSync(resolve(root,"server/server-reference-manifest.json"),"utf8")).node as Record<string,{exportedName?:string}>;
  const previews=new Set(Object.entries(manifest).filter(([,value])=>value.exportedName==="getPublicPreviewAction").map(([id])=>id));
- await context.route("**/*",route=>{
+ await context.route("**/*",async route=>{
   const req=route.request(),url=new URL(req.url());
-  if(url.origin!==origin){if(req.resourceType()==="font")return fulfillReadOnlyFont(route,fonts,rejected);rejected.push(req.method()+" "+url.pathname);return route.abort();}
+  // The settings font list links its declared jsDelivr stylesheets (197f7750): answered locally, never fetched.
+  if(url.origin!==origin){if(await fulfillDeclaredUiFontSheet(route))return;if(req.resourceType()==="font")return fulfillReadOnlyFont(route,fonts,rejected);rejected.push(req.method()+" "+url.pathname);return route.abort();}
   if(!["GET","HEAD"].includes(req.method())){
    if(["/api/activity","/api/visit","/api/presence","/api/visit-session","/api/visit-ping"].includes(url.pathname))return route.fulfill({json:{ok:true,skipped:true}});
    if(url.pathname==="/visual-fixture/studio"&&previews.has(req.headers()["next-action"]))return route.fulfill({contentType:"text/x-component",body:`0:{"a":"$@1","f":[],"b":"fixture"}\n1:${JSON.stringify(samplePublicScheduleData)}\n`});
@@ -40,6 +43,7 @@ for(const surface of ["viewer","studio","preview"] as const)for(const short of [
   }
   if(url.pathname.startsWith("/api/"))return route.fulfill({json:{live:false}});return route.continue();
  });
+ await keepCompanionStoredMotion(page);
  await page.addInitScript(({prefs,epoch,key,dark,foods,behaviors,toys,collectionKey})=>{
   for(const [k,v] of Object.entries({[key]:epoch,"vic.viewerCompanion":JSON.stringify({version:1,...prefs,enabled:true,roam:false,sleep:false,learnFromYou:false}),"vic.dark":dark?"on":"off","vic.sound":"off","vic.ambient":"off","vic.reduceMotion":"on","vic.gfxPref":"off","vic_avatar_side":"left"}))localStorage.setItem(k,v);
   localStorage.setItem("vic.viewerCompanionTastes",JSON.stringify({version:1,toys,seen:[],toyTastes:{},foodTastes:{}}));
@@ -54,9 +58,9 @@ for(const surface of ["viewer","studio","preview"] as const)for(const short of [
   await waitForOverlayEntrance(dialog);const profile=dialog.locator(".rhh-companion-profile"),nav=profile.getByRole("tablist",{name:"빅타민 프로필",exact:true});await nav.getByRole("tab",{name:"도감",exact:true}).click();
   await expect.poll(()=>seenFood(page)).toEqual([COMPANION_FOOD_KINDS[0]]);expect((await seenFood(page)).includes(COMPANION_FOOD_KINDS[1])).toBe(false);
   const foodLayout=await profile.locator('.rhh-food-grid').evaluate(node=>({gap:parseFloat(getComputedStyle(node).gap),columns:getComputedStyle(node).gridTemplateColumns.split(/\s+/).length,tiles:[...node.querySelectorAll('.rhh-collection-tile')].map(tile=>{const name=tile.querySelector(':scope > span:not(.vc-collection-art):not(.rhh-collection-rarity):not([aria-hidden])')!,tag=tile.querySelector('.rhh-collection-rarity'),art=tile.querySelector('.vc-collection-art'),r=tile.getBoundingClientRect(),n=name.getBoundingClientRect(),t=tag?.getBoundingClientRect(),a=art?.getBoundingClientRect();return{font:parseFloat(getComputedStyle(name).fontSize),tagFont:tag?parseFloat(getComputedStyle(tag).fontSize):null,width:r.width,height:r.height,artToName:a?n.top-a.bottom:null,nameToTag:t?t.top-n.bottom:null,tagBottom:t?r.bottom-t.bottom:null};})}));
+  notes.push({stage:'161-readable-food-cards',...foodLayout});mkdirSync(output,{recursive:true});await dialog.screenshot({path:resolve(output,`${surface}-${short?'short-dark':'wide-light'}-foods.png`)});
   expect(foodLayout.columns).toBeLessThanOrEqual(5);expect(foodLayout.gap).toBeGreaterThanOrEqual(11.9);
   for(const tile of foodLayout.tiles){expect(tile.font).toBeGreaterThanOrEqual(14.9);expect(tile.width).toBeGreaterThanOrEqual(100);if(tile.tagFont!==null){expect(tile.tagFont).toBeGreaterThanOrEqual(12.9);expect(tile.nameToTag).toBeGreaterThanOrEqual(7);expect(tile.tagBottom).toBeGreaterThanOrEqual(10);}if(tile.artToName!==null)expect(tile.artToName).toBeGreaterThanOrEqual(7);}
-  notes.push({stage:'161-readable-food-cards',...foodLayout});mkdirSync(output,{recursive:true});await dialog.screenshot({path:resolve(output,`${surface}-${short?'short-dark':'wide-light'}-foods.png`)});
   await profile.locator('[data-act="companion-collection-category"][data-act-opt="toy"]').click();await page.waitForTimeout(250);await nav.getByRole("tab",{name:"함께 지내기",exact:true}).click();await page.waitForTimeout(1400);expect(await seenToy(page)).toEqual([]);
   await nav.getByRole("tab",{name:"도감",exact:true}).click();
   const other=await context.newPage();await other.goto("about:blank");await other.bringToFront();

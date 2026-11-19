@@ -5,6 +5,7 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { openCompanionHome } from "./helpers/companion-home";
+import { fulfillDeclaredUiFontSheet } from "./helpers/readonly-font";
 
 const output = resolve(process.env.COMPANION_SPAWN_126_OUTPUT ?? ".scratch-pw/companion-126/spawn");
 const build = () => readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "BUILD_ID"), "utf8").trim();
@@ -22,9 +23,11 @@ test.beforeEach(async ({ page, baseURL }) => {
   const origin = project.origin;
   const guard = { writes: [] as string[], foreign: [] as string[], errors: [] as string[], blockedAPI: [] as string[] }; guards.set(page, guard);
   page.on("pageerror", error => guard.errors.push(error.message));
-  await page.context().route("**/*", route => {
+  await page.context().route("**/*", async route => {
     const request = route.request(), url = new URL(request.url());
     if (url.origin !== origin) {
+      // The settings font list links its declared jsDelivr stylesheets (197f7750); answered locally, never fetched.
+      if (await fulfillDeclaredUiFontSheet(route)) return;
       if (request.method() === "GET" && request.resourceType() === "font" && fonts.has(url.href)) return route.continue();
       guard.foreign.push(request.method() + " " + url.origin + url.pathname); return route.abort();
     }
@@ -62,8 +65,9 @@ async function ready(page: Page, studio: boolean, quiet = false) {
       if (stopped) return;
       const floor = document.querySelector(".vc-home-floor")!.getBoundingClientRect();
       frames.push({ at, floor: { x: floor.left, y: floor.top, width: floor.width, height: floor.height }, slot: centreBottom(".vc-dispenser-slot"), opening: centreBottom(".vc-toy-box-opening"), items: [...document.querySelectorAll<HTMLElement>(".vc-food,.vc-toy")].map(node => {
-        const r = node.getBoundingClientRect(), food = node.matches(".vc-food"), m = new DOMMatrixReadOnly(getComputedStyle(node).transform);
-        return { id: node.dataset.food ?? node.dataset.toyId ?? "", kind: food ? "food" as const : "toy" as const, x: food ? m.m41 : r.left + r.width / 2, y: food ? m.m42 : r.bottom, width: r.width, height: r.height, platform: node.dataset.platform ?? "", falling: food ? node.hasAttribute("data-falling") : node.dataset.falling === "true" };
+        // A snack on the home floor is anchor-positioned: its transform is the offset from the computed left/top (a3e9a288).
+        const r = node.getBoundingClientRect(), food = node.matches(".vc-food"), css = getComputedStyle(node), m = new DOMMatrixReadOnly(css.transform);
+        return { id: node.dataset.food ?? node.dataset.toyId ?? "", kind: food ? "food" as const : "toy" as const, x: food ? m.m41 + (parseFloat(css.left) || 0) : r.left + r.width / 2, y: food ? m.m42 + (parseFloat(css.top) || 0) : r.bottom, width: r.width, height: r.height, platform: node.dataset.platform ?? "", falling: food ? node.hasAttribute("data-falling") : node.dataset.falling === "true" };
       }) });
       if (frames.length < 2400) request = requestAnimationFrame(sample);
     };

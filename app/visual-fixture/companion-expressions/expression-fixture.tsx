@@ -1,10 +1,23 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { COMPANION_EXPRESSIONS, type CompanionExpressionId } from "@/lib/ui/viewer-companion/expressions";
-import { createCompanionExpressionPainter, COMPANION_EXPRESSION_REFERENCE_SRC } from "@/lib/ui/viewer-companion/expression-painter";
+import { createCompanionExpressionPainter, COMPANION_EXPRESSION_REFERENCE_INDEX, COMPANION_EXPRESSION_REFERENCE_SRC } from "@/lib/ui/viewer-companion/expression-painter";
 import { companionSpriteMetadata, decodeCompanionSprite, peekDecodedCompanionSprite, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import anchors from "@/lib/ui/viewer-companion/expression-anchors-161.json";
+import overrides from "@/lib/ui/viewer-companion/expression-pose-overrides.json";
+import { companionAppearanceBounds, companionAppearanceEyes, companionAppearanceFrames, companionAppearancePoint } from "@/lib/ui/viewer-companion/appearance";
+import { companionFaceLayout } from "@/lib/ui/viewer-companion/face-layout";
 import { ExpressionMotionAudit } from "./motion-audit";
+
+// The current face layout (68b46f11): the painter reads every anchor through the appearance material correction,
+// and an authored cell's canonical mouth sits where companionFaceLayout puts it, not at the raw October anchor.
+const currentFaces = new Map([...anchors.frames, ...overrides.frames].map(a => [a.physicalIndex, {
+  eyes: companionAppearanceEyes(a.physicalIndex, a.eyes),
+  mouth: a.mouth ? { ...companionAppearancePoint(a.physicalIndex, a.mouth), bounds: companionAppearanceBounds(a.physicalIndex, a.mouth.bounds) } : null, orientation: a.orientation }]));
+// Owner 2026-11-18: every eye is drawn at the running reference drawing's size, so the eye region is at least that
+// shared eye (plus the painter's 1 unit lid room and .65 fringe, and half a unit for pixel rounding) around the centre.
+const referenceEyes = anchors.frames.find(a => a.physicalIndex === COMPANION_EXPRESSION_REFERENCE_INDEX)!.eyes;
+const sharedEyeWidth = Math.max(...referenceEyes.map(e => e.bounds[2] - e.bounds[0])), sharedEyeHeight = Math.max(...referenceEyes.map(e => e.bounds[3] - e.bounds[1]));
 
 /** Production-compiled renderer proof only. The server gate is404 without
  * VISUAL_TEST_FIXTURE=1; this cannot command the living actor or its brain. */
@@ -48,23 +61,39 @@ export default function ExpressionFixture() {
       let first: Uint8ClampedArray | undefined;
       for (const id of ["sour", "greeting"] as const) {
         const painted = painter.paint(selected, { id, progress: .55 }), after = canvas.getContext("2d")!.getImageData(0, 0, 192, 192).data;
-        let alpha = 0, cheek = 0, outside = 0, changed = 0;
+        let alpha = 0, cheek = 0, outside = 0, changed = 0; const outsideAt: number[][] = [];
         // A deliberately broader independent face region; all body/ears and
         // source orange cheeks must stay byte-identical, including alpha253.
         // A closed native eye has tiny bounds. Its canonical open-eye box
         // still belongs to the face, so measure from calibrated centres too.
-        const boxes = [...pose.eyes.map(e => [Math.min(e.bounds[0] - 2, e.center[0] - 4.5), Math.min(e.bounds[1] - 3, e.center[1] - 5.5), Math.max(e.bounds[2] + 2, e.center[0] + 4.5), Math.max(e.bounds[3] + 3, e.center[1] + 5.5)]), ...(pose.mouth ? [[pose.mouth.x - 6, pose.mouth.y - 4, pose.mouth.x + 6, pose.mouth.y + 5]] : [])];
+        // Measured from the current face layout: material-corrected eyes, and a mouth region that covers both the
+        // source mouth bounds and the mouth's current position (companionFaceLayout for an authored cell).
+        const face = currentFaces.get(pose.physicalIndex)!, layout = companionFaceLayout(face);
+        const authored = Boolean(companionAppearanceFrames.get(pose.physicalIndex)?.eyeState);
+        const mouth = face.mouth ? { x: authored ? layout.mouthX : face.mouth.x, y: authored ? layout.mouthY : face.mouth.y, bounds: face.mouth.bounds } : null;
+        const boxes = [...face.eyes.map((e, i) => {
+            const view = face.orientation === "quarter" ? (referenceEyes[i].bounds[2] - referenceEyes[i].bounds[0]) / sharedEyeWidth : 1;
+            const halfX = Math.max(4.5, Math.max(referenceEyes[i].bounds[2] - referenceEyes[i].bounds[0], sharedEyeWidth) * view / 2 + 1 + .65 + .5);
+            const up = Math.max(5.5, sharedEyeHeight / 2 + 1.6 + .65 + .5), down = Math.max(5.5, sharedEyeHeight / 2 + 1.2 + .65 + .5);
+            return [Math.min(e.bounds[0] - 2, e.center[0] - halfX), Math.min(e.bounds[1] - 3, e.center[1] - up), Math.max(e.bounds[2] + 2, e.center[0] + halfX), Math.max(e.bounds[3] + 3, e.center[1] + down)];
+          }),
+          ...(mouth ? [[Math.min(mouth.bounds[0] - 2, mouth.x - 6), Math.min(mouth.bounds[1] - 2, mouth.y - 4), Math.max(mouth.bounds[2] + 2, mouth.x + 6), Math.max(mouth.bounds[3] + 2, mouth.y + 5)]] : [])];
+        // The source's red mouth interior is orange by RGB but belongs to the mouth it is replacing (the painter's
+        // source-mouth region). Every other orange source pixel is a cheek and must stay byte-identical.
+        const sourceMouth = (x: number, y: number) => Boolean(mouth && (authored
+          ? x >= mouth.x - 3.4 && x <= mouth.x + 3.4 && y >= mouth.y - 2 && y <= mouth.y + 3.6
+          : x >= mouth.bounds[0] - .6 && x <= mouth.bounds[2] + .6 && y >= mouth.bounds[1] - .6 && y <= mouth.bounds[3] + .6));
         for (let i = 0; i < before.length; i += 4) {
           if (before[i + 3] !== after[i + 3]) alpha++;
           if (before[i] === after[i] && before[i + 1] === after[i + 1] && before[i + 2] === after[i + 2]) continue;
           changed++; const x = i / 4 % 192 / 2.4, y = Math.floor(i / 4 / 192) / 2.4;
-          if (!boxes.some(([l, t, r, b]) => x >= l && x <= r && y >= t && y <= b)) outside++;
-          if (before[i] > 210 && before[i + 1] < 190 && before[i + 2] < 135) cheek++;
+          if (!boxes.some(([l, t, r, b]) => x >= l && x <= r && y >= t && y <= b)) { outside++; if (outsideAt.length < 6) outsideAt.push([+x.toFixed(2), +y.toFixed(2)]); }
+          if (before[i] > 210 && before[i + 1] < 190 && before[i + 2] < 135 && !sourceMouth(x, y)) cheek++;
         }
         let contrastPixels = 0;
         if (first) { for (let i = 0; i < after.length; i += 4) if (Math.abs(first[i] - after[i]) + Math.abs(first[i + 1] - after[i + 1]) + Math.abs(first[i + 2] - after[i + 2]) > 45) contrastPixels++; }
         else first = after.slice();
-        results.push({ physicalIndex: pose.physicalIndex, id, painted, alpha, cheek, outside, changed, ...(id === "greeting" ? { contrastPixels } : {}) });
+        results.push({ physicalIndex: pose.physicalIndex, id, painted, alpha, cheek, outside, changed, ...(outside ? { outsideAt, boxes } : {}), ...(id === "greeting" ? { contrastPixels } : {}) });
       }
     }
     setAudit(JSON.stringify({ registeredFrames: companionSpriteMetadata.frames.length, eligibleFrames: anchors.frames.length, results })); setAuditing(false);

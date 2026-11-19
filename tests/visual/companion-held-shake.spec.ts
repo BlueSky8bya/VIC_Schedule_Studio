@@ -1,5 +1,6 @@
 import { expect, test, type CDPSession, type Page } from "@playwright/test";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
@@ -26,6 +27,8 @@ const evidence = new WeakMap<Page, Evidence>();
 const output = process.env.VIC_HELD_SHAKE_OUTPUT ?? ".scratch-pw/095-held-shake";
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
+// The developer header reads its report badge on mount (c30945c4 / 02b4295a, 2026-11-13): a read, answered with 0.
+const unseenReports = new Set(Object.entries(JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>).filter(([, item]) => item.exportedName === "getUnseenReportCountAction").map(([id]) => id));
 
 test.use({ viewport: { width: 1920, height: 1100 } });
 test.beforeEach(async ({ page }) => {
@@ -33,6 +36,7 @@ test.beforeEach(async ({ page }) => {
   page.on("pageerror", error => proof.errors.push(error.message));
   await page.route("**/*", route => {
     const request = route.request(), path = new URL(request.url()).pathname;
+    if (request.method() === "POST" && unseenReports.has(request.headers()["next-action"] ?? "")) return route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":"fixture"}\n1:0\n` });
     if (request.method() === "POST") { proof.posts.push(path); return route.fulfill({ status: 503, body: "fixture forbids writes" }); }
     if (request.method() === "GET" && (path === "/" || path === "/studio")) return route.fulfill({ status: 200, body: "unused fixture navigation" });
     return route.continue();
@@ -244,7 +248,8 @@ for (const [surface, mode, pattern] of [["viewer", "full", "horizontal"], ["stud
     assertVisibleIdentity(frames); expect(held.length, "the moving creature must supply more than five fresh aligned display frames").toBeGreaterThan(5);
     expect(held.every(frame => frame.gripError < .2 && frame.pivotError < .25)).toBe(true);
     expect(displayedHeld.length).toBeGreaterThan(0);
-    expect(displayedHeld.every(frame => frame.row === 22 && frame.adoptedRow === 22 && companionSpriteMetadata.rows[22].includes(Number(frame.pose)) && frame.posePivotError < .1 && frame.scaleY > 1.15)).toBe(true);
+    // 3eed289d: one 8% strain budget (COMPANION_MAX_MATERIAL_STRETCH 1.08), was 1.18..1.32.
+    expect(displayedHeld.every(frame => frame.row === 22 && frame.adoptedRow === 22 && companionSpriteMetadata.rows[22].includes(Number(frame.pose)) && frame.posePivotError < .1 && frame.scaleY > 1.06 && frame.scaleY <= 1.0801)).toBe(true);
     expect(new Set(displayedHeld.map(frame => frame.facing)).size).toBe(1);
     const released = proof.events.find(event => event.type === "pointerup")!;
     expect(released).toBeDefined();
@@ -303,21 +308,39 @@ for (const mode of ["full", "reduced", "off"] as const) {
   });
 }
 
-test("viewer full: native lost pointer capture cancels an armed shake without a delayed recovery", async ({ page }) => {
+// 42563feb (2026-11-17) replaced "a lost capture cancels the shake": while the
+// button is still down, a capture the browser drops mid-grip is taken back, so
+// the hand, the armed shake and its landing survive. A real cancellation is the
+// native touchCancel case below.
+test("viewer full: a browser-dropped pointer capture mid-shake is taken back and keeps the armed shake", async ({ page }) => {
   await setup(page, "viewer", "full"); await startProbe(page); const drag = await hold(page);
-  let proof: Awaited<ReturnType<typeof finishProbe>> | undefined;
+  let proof: Awaited<ReturnType<typeof finishProbe>> | undefined, retaken: { captured: boolean; state: string; dizzy: boolean } | undefined;
   try {
     await shake(page, drag); await expect(pet(page)).toHaveAttribute("data-held-dizzy", "");
-    // Exercise the browser's actual capture cancellation. The observed native
-    // pointer id is not product state and no app handler is called directly.
+    // Exercise the browser's actual capture loss. The observed native pointer
+    // id is not product state and no app handler is called directly. One
+    // evaluate keeps this inside the shake latch (held-shake LATCH_MS 1 s).
     await actor(page).evaluate(button => { const id = (window as unknown as ProbeWindow).heldShakeProbe.pointerId; if (!(button as HTMLElement).hasPointerCapture(id)) throw new Error("native pointer capture missing"); (button as HTMLElement).releasePointerCapture(id); });
-    await page.mouse.move(1500, 600); await drag.release();
-    await expect(pet(page)).not.toHaveAttribute("data-held-dizzy"); await expect(pet(page)).not.toHaveAttribute("data-state", "jump", { timeout: 5000 }); await page.waitForTimeout(1300);
+    // Capture changes are delivered with the next pointer events: the loss on
+    // the first move, the product's recapture on the following one.
+    await drag.move(drag.centre, 4, 8);
+    retaken = await actor(page).evaluate(node => {
+      const button = node as HTMLElement, el = button.closest<HTMLElement>(".vc-companion")!, id = (window as unknown as ProbeWindow).heldShakeProbe.pointerId;
+      return { captured: button.hasPointerCapture(id), state: el.dataset.state ?? "", dizzy: el.hasAttribute("data-held-dizzy") };
+    });
+    await page.waitForTimeout(120); // Deliberate vertical release; expire the real throw-input window.
+    await drag.release(); await expect(pet(page)).toHaveAttribute("data-play", "dizzy", { timeout: 5000 });
+    await expect(pet(page)).not.toHaveAttribute("data-play", "dizzy", { timeout: 5000 });
   } finally { await drag.dispose(); proof = await finishProbe(page, "viewer-full-lost-capture"); }
   assertVisibleIdentity(proof.frames);
-  const cancel = proof.events.find(event => event.type === "lostpointercapture"); expect(cancel).toBeDefined();
-  const after = proof.frames.filter(frame => frame.at > cancel!.at + 80);
-  expect(after.length).toBeGreaterThan(15); expect(after.every(frame => !frame.dizzy && frame.play !== "dizzy" && frame.state !== "held")).toBe(true);
+  expect(retaken).toEqual({ captured: true, state: "held", dizzy: true });
+  const lost = proof.events.find(event => event.type === "lostpointercapture"), released = proof.events.find(event => event.type === "pointerup");
+  expect(lost).toBeDefined(); expect(released).toBeDefined(); expect(lost!.at).toBeLessThan(released!.at);
+  // Between the loss and the release the creature never leaves the hand.
+  const between = proof.frames.filter(frame => frame.at > lost!.at + 34 && frame.at < released!.at);
+  expect(between.length).toBeGreaterThan(3); expect(between.every(frame => frame.state === "held" && frame.captured)).toBe(true);
+  const after = proof.frames.filter(frame => frame.at > released!.at);
+  expect(after.some(frame => frame.play === "dizzy" && frame.state === "play" && !frame.captured)).toBe(true);
 });
 
 test.describe("native touch cancellation", () => {

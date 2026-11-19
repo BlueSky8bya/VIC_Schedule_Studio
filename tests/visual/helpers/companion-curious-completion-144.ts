@@ -58,7 +58,9 @@ function clipValues(value:string) {
  * Canvas/data-pose/source URI alone never authenticate the painted cell. */
 export function curiousTextureCellMatches(pose:number,cell:CuriousTextureCellMeasurement|null|undefined) {
   const frame=Number.isInteger(pose)&&pose>=0?companionSpriteMetadata.frames[pose]:undefined;
-  const atlas=frame&&companionSpriteMetadata.atlases[frame.atlas],grid=companionSpriteMetadata.grid,rows=companionSpriteMetadata.gridRows;
+  const atlas=frame&&companionSpriteMetadata.atlases[frame.atlas],grid=companionSpriteMetadata.grid;
+  // 68b46f11 (2026-11-18): an appearance atlas carries its own row count (3 or 4); the global value is the old packet's.
+  const rows=(atlas as {gridRows?:number}|undefined)?.gridRows??companionSpriteMetadata.gridRows;
   if(!frame||!atlas||!cell||cell.connectedToSprite!==true||cell.currentPath!==atlas.src
     || ![cell.naturalWidth,cell.naturalHeight,cell.textureWidth,cell.textureHeight,cell.spriteWidth,cell.spriteHeight,cell.textureLeft,cell.textureTop].every(Number.isFinite)
     || cell.spriteWidth<=0||cell.spriteHeight<=0||cell.naturalWidth!==atlas.width||cell.naturalHeight!==atlas.height

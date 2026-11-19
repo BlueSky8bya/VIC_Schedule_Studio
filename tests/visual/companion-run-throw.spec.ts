@@ -6,7 +6,7 @@ import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_FEED_ACTION_BUDGET } from "@/lib/ui/viewer-companion/planner";
 import { companionSpriteMetadata, companionSpriteSources } from "@/lib/ui/viewer-companion/sprite-quality";
-import { openCompanionHome } from "./helpers/companion-home";
+import { companionNodeOrigin, openCompanionHome } from "./helpers/companion-home";
 
 type Surface = "viewer" | "studio";
 type Mode = "full" | "lite" | "reduced" | "off";
@@ -32,12 +32,16 @@ const actor = (page: Page) => pet(page).locator(".vc-actor");
 const evidence = new WeakMap<Page, { writes: string[]; errors: string[] }>();
 
 test.use({ viewport: { width: 1920, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
+// The developer header's report inbox asks for its badge number on mount (02b4295a, 2026-11-13). That one read is
+// answered here ("nothing unseen") and never reaches the server; every other non-GET request is still a forbidden write.
+const serverActions = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
 test.beforeEach(async ({ page }) => {
   test.setTimeout(30000);
   const proof = { writes: [] as string[], errors: [] as string[] }; evidence.set(page, proof);
   page.on("pageerror", error => proof.errors.push(error.message));
   await page.route("**/*", route => {
     const request = route.request(), path = new URL(request.url()).pathname;
+    if (request.method() === "POST" && serverActions[request.headers()["next-action"] ?? ""]?.exportedName === "getUnseenReportCountAction") return route.fulfill({ contentType: "text/x-component", body: '0:{"a":"$@1","f":[],"b":"fixture"}\n1:0\n' });
     if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) { proof.writes.push(`${request.method()} ${path}`); return route.fulfill({ status: 503, body: "fixture forbids writes" }); }
     if (path === "/api/soop-live") return route.fulfill({ json: { live: false } });
     if (path === "/" || path === "/studio") return route.fulfill({ status: 200, body: "unused production navigation" });
@@ -88,7 +92,7 @@ async function startProbe(page: Page) {
       };
       const inset = layers[0].clipPath.startsWith("inset(") ? layers[0].clipPath.slice(6, -1).split(/\s+/).slice(0, 4).map(value => parseFloat(value) * (value.endsWith("%") ? size / 100 : 1)) : [0];
       const [t, rr = t, b = t, l = rr] = inset, corners = [project({ x: l, y: t }), project({ x: size - rr, y: t }), project({ x: l, y: size - b }), project({ x: size - rr, y: size - b })];
-      probe.frames.push({ at: performance.now(), marker: probe.marker, x: world.m41 + size / 2, y: world.m42 + size, state: el.dataset.state ?? "", platform: el.dataset.platform ?? "", same: el.isConnected && el === document.querySelector(".vc-companion"), visible: visible(image) && visible(el), decoded: Boolean(image?.complete && image.naturalWidth > 0), src: image?.getAttribute("src") ?? "", pose, row: rows.findIndex(row => row.includes(pose)), captured: el.querySelector<HTMLElement>(".vc-actor")!.hasPointerCapture(probe.pointerId), focused: document.hasFocus(), visibility: document.visibilityState, throwPhase: el.dataset.throwPhase ?? "", vx: el.dataset.throwVx ?? "", vy: el.dataset.throwVy ?? "", goal: el.dataset.travelGoal ?? "", targetX: el.dataset.travelTargetX ? Number(el.dataset.travelTargetX) : null, remaining: el.dataset.travelRemaining ?? "", foodGoal: el.dataset.foodGoal ?? "", episode: el.dataset.episodePhase ?? "", variant: el.dataset.episodeVariant ?? "", trip: el.dataset.trip ?? "", play: el.dataset.play ?? "", beat: el.dataset.playBeat ?? "", journey: el.dataset.journey ?? "", bounds: { left: Math.min(...corners.map(point => point.x)), right: Math.max(...corners.map(point => point.x)), top: Math.min(...corners.map(point => point.y)), bottom: Math.max(...corners.map(point => point.y)) } });
+      probe.frames.push({ at: performance.now(), marker: probe.marker, x: world.m41 + size / 2, y: world.m42 + size, state: el.dataset.state ?? "", platform: el.dataset.platform ?? "", same: el.isConnected && el === document.querySelector(".vc-companion"), visible: (visible(image) || [...el.querySelectorAll(".vc-expression-face:not([hidden]),.vc-character-composite")].some(visible)) && visible(el), decoded: Boolean(image?.complete && image.naturalWidth > 0), src: image?.getAttribute("src") ?? "", pose, row: rows.findIndex(row => row.includes(pose)), captured: el.querySelector<HTMLElement>(".vc-actor")!.hasPointerCapture(probe.pointerId), focused: document.hasFocus(), visibility: document.visibilityState, throwPhase: el.dataset.throwPhase ?? "", vx: el.dataset.throwVx ?? "", vy: el.dataset.throwVy ?? "", goal: el.dataset.travelGoal ?? "", targetX: el.dataset.travelTargetX ? Number(el.dataset.travelTargetX) : null, remaining: el.dataset.travelRemaining ?? "", foodGoal: el.dataset.foodGoal ?? "", episode: el.dataset.episodePhase ?? "", variant: el.dataset.episodeVariant ?? "", trip: el.dataset.trip ?? "", play: el.dataset.play ?? "", beat: el.dataset.playBeat ?? "", journey: el.dataset.journey ?? "", bounds: { left: Math.min(...corners.map(point => point.x)), right: Math.max(...corners.map(point => point.x)), top: Math.min(...corners.map(point => point.y)), bottom: Math.max(...corners.map(point => point.y)) } });
     };
     probe.input = event => {
       const pointer = event as PointerEvent;
@@ -148,19 +152,20 @@ async function scene(page: Page, surface: Surface, floorOnly = false) {
       return clip;
     };
     const controls = [...new Set([...root.querySelectorAll<HTMLElement>("button,a[href],input,select,textarea,[role='button']"), ...document.querySelectorAll<HTMLElement>(".vc-home,.vc-home-launcher")])].filter(node => visible(node) && !node.matches(".public-event,.agenda-event,.agenda-item,.public-day,.agenda-day,.studio-day,[data-companion-event='ordinary']") && !node.closest(".vc-companion"));
-    const obstacles = controls.map(node => node.getBoundingClientRect());
-    if (floorOnly) {
+    const obstacles = controls.map(node => node.getBoundingClientRect()), ink: DOMRect[] = [];
+    {
       const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), range = document.createRange();
-      for (let node = walker.nextNode(); node; node = walker.nextNode()) if (node.parentElement && visible(node.parentElement) && !node.parentElement.closest("script,style,svg,.sr-only,.vc-companion")) { range.selectNodeContents(node); obstacles.push(...range.getClientRects()); }
+      for (let node = walker.nextNode(); node; node = walker.nextNode()) if (node.parentElement && visible(node.parentElement) && !node.parentElement.closest("script,style,svg,.sr-only,.vc-companion")) { range.selectNodeContents(node); ink.push(...range.getClientRects()); }
       range.detach();
     }
+    if (floorOnly) obstacles.push(...ink);
     const half = size * .38 + 3, height = size * .76 + 3;
     const planes: Plane[] = [];
-    const add = (left: number, right: number, y: number, kind: string) => {
+    const add = (left: number, right: number, y: number, kind: string, blockers: DOMRect[] = obstacles) => {
       if (y < size + 3 || y > innerHeight - 12) return;
       let start: number | undefined;
       for (let x = Math.max(left, size / 2 + 4); x <= Math.min(right, innerWidth - size / 2 - 4); x++) {
-        const clear = obstacles.every(r => x + half <= r.left || x - half >= r.right || y + 3 <= r.top || y - height >= r.bottom);
+        const clear = blockers.every(r => x + half <= r.left || x - half >= r.right || y + 3 <= r.top || y - height >= r.bottom);
         if (clear && start === undefined) start = x;
         if ((!clear || x + 1 > Math.min(right, innerWidth - size / 2 - 4)) && start !== undefined) { if (x - start > 2) planes.push({ left: start, right: clear ? Math.min(right, innerWidth - size / 2 - 4) : x - 1, y, kind }); start = undefined; }
       }
@@ -170,6 +175,12 @@ async function scene(page: Page, surface: Surface, floorOnly = false) {
     add(12, innerWidth - 12, floorY, "floor");
     if (!floorOnly) for (const card of root.querySelectorAll<HTMLElement>(surface === "studio" ? "[data-companion-event='ordinary'][data-eventid]" : ".public-event[data-eventid]:not(.teaser):not(.is-support),.agenda-event[data-eventid]:not(.teaser),.agenda-item[data-eventid]:not(.teaser)")) {
       const r = card.getBoundingClientRect(), clip = clipping(card); if (visible(card) && r.width > 0 && r.height > 0 && r.top > size + 3 && r.top >= clip.top && r.top < clip.bottom) add(Math.max(r.left, clip.left), Math.min(r.right, clip.right), r.top - 3, "card");
+    }
+    // Since 1f2cb9eb (2026-10-19) the bottom edge of a day cell holds a placed, dropped or thrown creature too
+    // (date-N-floor): three pixels clear, the body kept inside the cell and off every rendered text line.
+    if (!floorOnly) for (const day of root.querySelectorAll<HTMLElement>(".public-day,.agenda-day,.studio-day")) {
+      const r = day.getBoundingClientRect(), clip = clipping(day), y = r.bottom - 3;
+      if (visible(day) && r.width > 0 && r.height > 0 && y >= clip.top && y < clip.bottom) add(Math.max(r.left, clip.left) + size * .38, Math.min(r.right, clip.right) - size * .38, y, "date", [...obstacles, ...ink]);
     }
     return { planes, size, floorY, width: innerWidth, height: innerHeight };
   }, { surface, floorOnly });
@@ -212,7 +223,7 @@ function assertVisible(proof: Proof, frames: Frame[]) {
 function assertSupport(frame: Frame, planes: Plane[]) {
   const support = planes.find(plane => Math.abs(frame.y - plane.y) < 2 && frame.x >= plane.left - 1 && frame.x <= plane.right + 1);
   expect(support, "the resting foot must be on an independently measured centre-safe support").toBeDefined();
-  expect(frame.platform).toMatch(support!.kind === "floor" ? /^viewport-floor/ : /^card-/);
+  expect(frame.platform).toMatch(support!.kind === "floor" ? /^viewport-floor/ : support!.kind === "date" ? /^date-\d+-floor/ : /^card-/);
 }
 function assertFlight(proof: Proof, planes: Plane[], direction: number, spiral = false) {
   const up = proof.inputs.filter(input => input.type === "pointerup").at(-1)!, after = proof.frames.filter(frame => frame.at >= up.at && frame.marker === "release");
@@ -308,9 +319,17 @@ test("viewer full: a genuinely shaken native fling carries its last spiral throu
     const retained = after[0].pose, spiral = after.filter(frame => frame.at < recover[0].at);
     expect(spiral.every(frame => frame.row === 22 && frame.pose === retained && frame.src.endsWith(companionSpriteSources(22)[0])), "flight, finite contact and grounded dizziness must retain the last spiral with no normal-eye flash").toBe(true);
     const closed = companionSpriteMetadata.rows[23].slice(0, 12), normal = companionSpriteMetadata.rows[23].at(-1)!;
-    expect(recover.every(frame => frame.row === 23 && (closed.includes(frame.pose) || frame.pose === normal))).toBe(true);
-    expect(new Set(recover.filter(frame => closed.includes(frame.pose)).map(frame => Math.floor(companionSpriteMetadata.rows[23].indexOf(frame.pose) / 4)))).toEqual(new Set([0, 1, 2]));
-    expect(recover.at(-1)!.pose).toBe(normal); expect(recover.every(frame => frame.src.endsWith(companionSpriteSources(23)[0]))).toBe(true);
+    // The recovery beat may open on the retained spiral for a frame or two while its own drawing is adopted; it
+    // must never show a normal eye there, and the hand-over is brief.
+    const adopted = recover.findIndex(frame => frame.row === 23); expect(adopted).toBeGreaterThanOrEqual(0);
+    expect(recover.slice(0, adopted).every(frame => frame.row === 22 && frame.pose === retained)).toBe(true); expect(recover[adopted].at - recover[0].at).toBeLessThan(100);
+    const recovering = recover.slice(adopted);
+    expect(recovering.every(frame => frame.row === 23 && (closed.includes(frame.pose) || frame.pose === normal))).toBe(true);
+    // 6dd28012 (2026-11-13): the head lean carries the shake's direction and one centred strained face is held
+    // through it (the first closed key), instead of a different closed drawing for each left/right lean.
+    expect(new Set(recovering.filter(frame => closed.includes(frame.pose)).map(frame => Math.floor(companionSpriteMetadata.rows[23].indexOf(frame.pose) / 4)))).toEqual(new Set([0]));
+    expect(recovering.filter(frame => closed.includes(frame.pose)).length).toBeGreaterThan(5);
+    expect(recover.at(-1)!.pose).toBe(normal); expect(recovering.every(frame => frame.src.endsWith(companionSpriteSources(23)[0]))).toBe(true);
     expect([...dizzy, ...recover].every(frame => Math.abs(frame.x - dizzy[0].x) < 2 && Math.abs(frame.y - dizzy[0].y) < 2 && frame.platform !== "")).toBe(true);
   });
 });
@@ -393,42 +412,77 @@ async function prepareRun(page: Page, surface: Surface, food: boolean) {
   let foodId = "";
   if (food) {
     await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click(); const item = page.locator(".vc-food"); await expect(item).toHaveCount(1);
-    const r = (await item.boundingBox())!, offset = await item.evaluate(node => { const matrix = new DOMMatrixReadOnly((node as HTMLElement).style.transform), r = node.getBoundingClientRect(); return { x: r.left + r.width / 2 - matrix.m41, y: r.top + r.height / 2 - matrix.m42 }; });
+    // A dispensed snack drops out of the dispenser first and cannot be grabbed until it rests. In the house it is laid
+    // out from an anchored left/top plus its transform (a3e9a288, 2026-10-25), so every position reads both.
+    await expect(item).not.toHaveAttribute("data-falling");
+    const r = (await item.boundingBox())!, origin = await companionNodeOrigin(item), offset = { x: r.x + r.width / 2 - origin.x, y: r.y + r.height / 2 - origin.y };
     await page.mouse.move(r.x + r.width / 2, r.y + r.height / 2); await page.mouse.down(); await page.mouse.move(target.x + offset.x, target.y + offset.y, { steps: 12 }); await page.mouse.up();
     await expect(item).not.toHaveAttribute("data-falling"); foodId = (await item.getAttribute("data-food"))!;
-    await expect.poll(() => item.evaluate((node, target) => { const m = new DOMMatrixReadOnly((node as HTMLElement).style.transform); return Math.hypot(m.m41 - target.x, m.m42 - target.y); }, target), { message: "the real dragged food must settle on the measured far floor" }).toBeLessThan(2);
+    await expect.poll(async () => { const at = await companionNodeOrigin(item); return Math.hypot(at.x - target.x, at.y - target.y); }, { message: "the real dragged food must settle on the measured far floor" }).toBeLessThan(2);
   }
   await mark(page, food ? "food-run" : "ordinary-run"); await actor(page).focus(); await actor(page).press("Space"); await page.mouse.move(1870, 200);
   return { floor, start, target, foodId };
 }
+// A meal approach runs (row 20) only inside a dash / rush-trip episode. A careful one, and the plain approach that
+// carries no episode at all, keeps the walking gait (row 2). Ordinary roaming is judged on its run (row 20).
+const approachRow = (foodId: string, variant: string) => foodId && !["dash", "rush-trip"].includes(variant) ? 2 : 20;
 function sustainedRuns(proof: Proof, marker: string, foodId = "") {
   const frames = proof.frames.filter(frame => frame.marker === marker), groups: Frame[][] = [];
   for (const frame of frames) {
     const prior = groups.at(-1), last = prior?.at(-1);
-    // A pause is a segment boundary even if the next action reuses its goal.
-    const row = foodId && frame.variant === "careful" ? 2 : 20;
-    if (frame.row !== row || frame.state !== "walk" || !frame.goal) { if (last) groups.push([]); continue; }
+    // A pause is a segment boundary even if the next action reuses its goal. The travel goal is published only while
+    // the brain holds an explore/feed intention; a long ordinary run or a plain walk to a snack can carry none.
+    const row = approachRow(foodId, frame.variant);
+    if (frame.row !== row || frame.state !== "walk") { if (last) groups.push([]); continue; }
     if (!last || last.goal !== frame.goal || frame.at - last.at > 100) groups.push([frame]); else prior!.push(frame);
   }
   return groups.filter(group => group.length && group.at(-1)!.at - group[0].at >= 2500 && Math.abs(group.at(-1)!.x - group[0].x) >= 300);
 }
-function completedRun(proof: Proof, marker: string, foodId = "") {
+/** `foodX` is the measured resting x of the real snack: the independent target of a meal approach. */
+function completedRun(proof: Proof, marker: string, foodId = "", foodX?: number) {
   const frames = proof.frames.filter(frame => frame.marker === marker);
   for (const run of sustainedRuns(proof, marker, foodId)) {
+    if (!run[0].goal) {
+      // No published goal: the witness is the uninterrupted run itself, from its first frame to the frame that
+      // ends it. A meal approach must end at the real snack.
+      const end = frames.find(frame => frame.at > run.at(-1)!.at);
+      if (end && (!foodId || foodX !== undefined && Math.abs(end.x - foodX) <= 40)) return { first: run[0], end };
+      continue;
+    }
     const first = frames.find(frame => frame.goal === run[0].goal && frame.state === "walk")!, end = frames.find(frame => frame.at > first.at && frame.goal !== first.goal);
     if (end && first.targetX !== null && Math.abs(end.x - first.targetX) <= 40) return { first, end };
   }
 }
-function assertSustainedRun(proof: Proof, marker: string, foodId = "") {
-  const witness = completedRun(proof, marker, foodId);
-  expect(witness, "one natural actual goal must complete continuous2.5s/300px locomotion; ordinary roaming must adopt row20, and an absent witness is missing coverage").toBeDefined();
+function assertSustainedRun(proof: Proof, marker: string, foodId = "", foodX?: number) {
+  const witness = completedRun(proof, marker, foodId, foodX);
+  expect(witness, "one natural actual run must complete continuous2.5s/300px locomotion; ordinary roaming must adopt row20, and an absent witness is missing coverage").toBeDefined();
   const { first, end } = witness!, frames = proof.frames.filter(frame => frame.marker === marker), whole = frames.filter(frame => frame.at >= first.at && frame.at < end.at), direction = Math.sign(end.x - first.x);
   assertVisible(proof, whole);
   expect(whole.every(frame => frame.goal === first.goal)).toBe(true);
-  if (foodId) { expect(["careful", "dash", "rush-trip"]).toContain(first.variant); expect(whole.every(frame => frame.foodGoal === foodId && frame.variant === first.variant)).toBe(true); }
+  if (!first.goal) {
+    // Without a published goal there is no target attribute or leg budget to audit. It must still be one unbroken
+    // locomotion in its gait: every frame moving, always advancing, with no missing frames, and (for a meal) ending
+    // at the real snack, which is then eaten.
+    const row = approachRow(foodId, first.variant);
+    expect(whole.every(frame => frame.state === "walk" && frame.row === row && frame.platform === first.platform && frame.variant === first.variant)).toBe(true);
+    expect(whole.at(-1)!.at - whole[0].at).toBeGreaterThanOrEqual(2500); expect(Math.abs(whole.at(-1)!.x - whole[0].x)).toBeGreaterThanOrEqual(300);
+    // As with a published goal, the first 24px (starting up) and the last 40px (arriving) are not interior.
+    const between = whole.filter(frame => Math.abs(frame.x - first.x) > 24 && Math.abs(whole.at(-1)!.x - frame.x) > 40);
+    for (let i = 0; i < between.length; i++) {
+      const later = between.find(frame => frame.at >= between[i].at + 120);
+      if (later && later.at - between[i].at <= 220) expect(direction * (later.x - between[i].x), "one run must not idle at recurring segment boundaries").toBeGreaterThan(2);
+    }
+    expect(Math.max(...whole.slice(1).map((frame, i) => frame.at - whole[i].at)), "missing native frames cannot prove continuity").toBeLessThanOrEqual(100);
+    if (foodId) {
+      expect(Math.abs(end.x - foodX!)).toBeLessThanOrEqual(40);
+      expect(frames.some(frame => frame.at >= end.at && frame.state === "eat"), "the sustained approach must end in the real meal").toBe(true);
+    }
+    return;
+  }
+  if (foodId) { expect(["", "careful", "dash", "rush-trip"]).toContain(first.variant); expect(whole.every(frame => (frame.foodGoal === foodId || Math.abs(frame.x - first.targetX!) <= 40) && frame.variant === first.variant), "the approach keeps its one snack; the finished walk may drop the marker only on arrival at that snack").toBe(true); }
   expect(whole.every(frame => frame.targetX !== null && Math.abs(frame.targetX - first.targetX!) < 1)).toBe(true);
   const interior = whole.filter(frame => Math.abs(frame.x - first.x) > 24 && Math.abs(frame.targetX! - frame.x) > 40);
-  const row = foodId && first.variant === "careful" ? 2 : 20;
+  const row = approachRow(foodId, first.variant);
   expect(interior.every(frame => frame.state === "walk" && frame.row === row), "the naturally selected approach cannot stop or restart before reaching its target; a real food contact may then react").toBe(true);
   if (foodId) expect(whole.filter(frame => frame.trip).every(frame => Math.abs(frame.x - first.targetX!) <= 40), "a natural meal trip is allowed only at the real food contact, not at a distant run segment").toBe(true);
   const budgets = whole.map(frame => Number(frame.remaining));
@@ -443,13 +497,26 @@ function assertSustainedRun(proof: Proof, marker: string, foodId = "") {
 }
 for (const food of [true, false]) test(`viewer full: ${food ? "one far real food keeps its natural sustained approach" : "ordinary roaming keeps its actual sustained row20 run"} goal`, async ({ page }) => {
   await scenario(page, food ? "viewer-food-sustained-run" : "viewer-ordinary-sustained-run", "viewer", "full", true, food, async extra => {
+    test.setTimeout(110000);
     const setup = await prepareRun(page, "viewer", food); extra.run = setup;
     const marker = food ? "food-run" : "ordinary-run";
-    // Observe the same finite real20s once. Repeatedly serializing the growing
-    // frame array would impose pauses on the very motion under observation.
-    await page.waitForTimeout(20000);
-    const proof = (await readProof(page))!, seen = Boolean(completedRun(proof, marker, setup.foodId));
+    // Which action comes next is the creature's own unseeded choice, so a fixed 20s window sometimes holds no long
+    // run at all. Keep watching, up to a bounded 80s, until one sustained locomotion has started and ended. The
+    // check runs inside the page and returns one boolean: serializing the growing frame array over and over would
+    // impose pauses on the very motion under observation.
+    await expect.poll(() => page.evaluate(({ marker, food }) => {
+      const frames = (window as unknown as ProbeWindow).runThrowProbe!.frames; let start = -1;
+      for (let i = 0; i < frames.length; i++) {
+        const frame = frames[i], moving = frame.marker === marker && frame.state === "walk" && (frame.row === 20 || food && frame.row === 2);
+        if (moving && start >= 0 && (frame.at - frames[i - 1].at > 100 || frame.row !== frames[start].row || frame.goal !== frames[start].goal)) start = i;
+        else if (moving && start < 0) start = i;
+        else if (!moving && start >= 0) { if (frames[i - 1].at - frames[start].at >= 2500 && Math.abs(frames[i - 1].x - frames[start].x) >= 300 && (!food || frame.state !== "walk")) return true; start = -1; }
+      }
+      return false;
+    }, { marker, food }), { message: "the bounded native observation must actually choose a qualifying run without RNG or reload fishing", timeout: 80000, intervals: [2000] }).toBe(true);
+    await page.waitForTimeout(food ? 2500 : 400);
+    const proof = (await readProof(page))!, seen = Boolean(completedRun(proof, marker, setup.foodId, setup.target.x));
     extra.coverageObserved = seen; expect(seen, "the bounded native observation must actually choose a qualifying run without RNG or reload fishing").toBe(true);
-    assertSustainedRun(proof, marker, setup.foodId);
+    assertSustainedRun(proof, marker, setup.foodId, setup.target.x);
   });
 });

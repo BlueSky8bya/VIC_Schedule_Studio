@@ -1,5 +1,5 @@
 import { companionTraceMode } from "./helpers/companion-evidence-policy";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -10,9 +10,10 @@ import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-qualit
 import { companionPlayDuration, COMPANION_PLAY_TIMING } from "@/lib/ui/viewer-companion/timing";
 import { COMPANION_HOME_LIGHT_KEY, parseCompanionHomeLight } from "@/lib/ui/viewer-companion/home-light";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
-import { setCompanionRoam } from "./helpers/companion-settings";
+import { keepCompanionStoredMotion, setCompanionRoam } from "./helpers/companion-settings";
 import { guardCompanionQa, type DailyProof } from "./helpers/companion-qa";
 import { settlePanelLayout } from "./helpers/panel-layout";
+import { fulfillDeclaredUiFontSheet } from "./helpers/readonly-font";
 import { curiousTextureCellMatches, type CuriousTextureCellMeasurement } from "./helpers/companion-curious-completion-144";
 import { nativeHomeControlContactBefore, type NativeHomeControlFrame } from "./helpers/companion-home-contact-156";
 import { installCompanionPaintedSource157, type PaintedSource157Proof, type PaintedSource157Window } from "./helpers/companion-painted-source-157";
@@ -43,6 +44,10 @@ test.beforeEach(async ({ page, context, baseURL }) => {
   const bytes = readFileSync(resolve(frozen)), binding = JSON.parse(bytes.toString()) as { contentDigest: string; sourceFiles: { path: string; sha256: string }[] };
   for (const path of sourcePaths) expect(binding.sourceFiles.find(row => row.path === path)?.sha256).toBe(sha(readFileSync(resolve(path))));
   records.set(page, { proof: await guardCompanionQa(page, context, baseURL!), binding: { path: resolve(frozen), sha256: sha(bytes), contentDigest: binding.contentDigest }, notes: [] });
+  // The preview case opens the standard Settings window, whose font list attaches its declared jsDelivr stylesheets
+  // (197f7750). Exactly those are answered locally with an empty sheet, ahead of the guard's foreign-origin rejection;
+  // every other request still falls through to the guard.
+  await context.route("https://cdn.jsdelivr.net/**", async route => { if (!await fulfillDeclaredUiFontSheet(route)) await route.fallback(); });
 });
 test.afterEach(async ({ page }, info) => {
   const rawFrames = await page.evaluate(() => { const probe = (window as ProbeWindow).rest157; probe?.stop(); return probe?.frames ?? []; }).catch(() => []);
@@ -61,6 +66,12 @@ test.afterEach(async ({ page }, info) => {
   expect(record.proof.chunks.length).toBeGreaterThan(0); expect(record.proof.chunks.every(chunk => chunk.served === chunk.local)).toBe(true);
 });
 
+// The "더 보기" fold keeps how it was left until the page reloads, so a second visit must not click it shut.
+async function openMore(dialog: Locator) {
+  const more = dialog.locator(".rhh-companion-more");
+  if (!await more.evaluate(node => (node as HTMLDetailsElement).open)) await more.locator("> summary").click();
+  await expect(more).toHaveAttribute("open", "");
+}
 async function settings(page: Page, roam: boolean, sleep = true, enabled?: boolean) {
   const home = await openCompanionHome(page); await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
@@ -68,11 +79,14 @@ async function settings(page: Page, roam: boolean, sleep = true, enabled?: boole
   if (enabled !== undefined) await dialog.locator('[data-act="companion-enabled"]').setChecked(enabled);
   if (enabled !== false) {
     // stage 4: roaming is the movement level (on = 뛰어다니기 from 가만히, off = 가만히); sleep sits in the "더 보기" fold.
-    await setCompanionRoam(dialog, roam); await dialog.locator(".rhh-companion-more > summary").click(); await dialog.locator('[data-act="companion-sleep"]').setChecked(sleep);
+    await setCompanionRoam(dialog, roam); await openMore(dialog); await dialog.locator('[data-act="companion-sleep"]').setChecked(sleep);
   }
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden(); await page.mouse.move(2, 2);
 }
 async function fixture(page: Page, surface: Surface, night: boolean, initialLight: boolean) {
+  // This file replaces storageState, which drops the QA key that lets the stored `roam: false` hold the pet still
+  // until settings() turns roaming on after the probe starts (a9f6d77e: the shipping pet always roams otherwise).
+  await keepCompanionStoredMotion(page);
   await page.addInitScript(({ preferences, memory, epoch, key, initialLight }) => {
     for (const [name, value] of Object.entries({ [key]: epoch, "vic.gfxPref": "max", "vic.gfx": JSON.stringify({ mode: "full", at: Date.now(), v: 3 }),
       "vic.reduceMotion": "off", "vic.sound": "off", "vic.ambient": "off", "vic.dark": "off", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(name, value);
@@ -252,7 +266,7 @@ test("157 preview manual OFF cancels actual owned cushion rest without remote ho
   await dialog.getByRole("tablist",{name:"빅타민 프로필",exact:true}).getByRole("tab",{name:"설정",exact:true}).click();
   await expect(dialog.locator('[data-act="companion-enabled"]')).not.toBeChecked();
   // stage 4: roam off is the 가만히 movement level; sleep sits in the "더 보기" fold.
-  await setCompanionRoam(dialog,false);await dialog.locator(".rhh-companion-more > summary").click();await dialog.locator('[data-act="companion-sleep"]').setChecked(false);
+  await setCompanionRoam(dialog,false);await openMore(dialog);await dialog.locator('[data-act="companion-sleep"]').setChecked(false);
   await expect(page.locator(".vc-companion")).toHaveCount(0);
   await dialog.locator('[data-act="companion-enabled"]').setChecked(true);
   const restoredPreferences=await page.evaluate(()=>{const p=JSON.parse(localStorage.getItem("vic.viewerCompanion")??"{}");return {enabled:p.enabled,roam:p.roam,sleep:p.sleep};});

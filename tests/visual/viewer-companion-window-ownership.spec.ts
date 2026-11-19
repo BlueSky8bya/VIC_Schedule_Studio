@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
@@ -16,8 +18,17 @@ for (const studio of [false, true]) test(`${studio ? "studio" : "viewer"}: nativ
   test.setTimeout(35000);
   const posts: string[] = [], errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
-  await page.route("**/*", route => route.request().method() === "POST" ? (posts.push(route.request().url()), route.fulfill({ status: 500, body: "" })) : route.continue());
+  // The developer header's report inbox reads its unseen count through a server action (c30945c4, 2026-11-13). Answer
+  // that one read with zero; every other POST is still an unexpected write.
+  const actions = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
+  await page.route("**/*", route => {
+    const request = route.request();
+    if (request.method() !== "POST") return route.continue();
+    if (actions[request.headers()["next-action"] ?? ""]?.exportedName === "getUnseenReportCountAction") return route.fulfill({ contentType: "text/x-component", body: '0:{"a":"$@1","f":[],"b":"fixture"}\n1:0\n' });
+    posts.push(request.url()); return route.fulfill({ status: 500, body: "" });
+  });
   await page.route("**/api/soop-live**", route => route.fulfill({ json: { live: false } }));
+  // Auto-sleep stays on: since 1f2cb9eb a covered pet with sleeping off only stands idle and never dreams (presence.ts).
   await page.addInitScript(({ key, epoch, preferences, care }) => {
     localStorage.setItem(key, epoch); localStorage.setItem("vic.gfxPref", "max"); localStorage.setItem("vic.sound", "off");
     localStorage.setItem("vic.ambient", "off"); localStorage.setItem("vic.reduceMotion", "off");
@@ -25,7 +36,7 @@ for (const studio of [false, true]) test(`${studio ? "studio" : "viewer"}: nativ
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 1, ...care }));
     localStorage.setItem("vic_avatar_side", "left"); localStorage.removeItem("vic_panel_collapsed");
     Object.defineProperty(document, "hasFocus", { configurable: true, value: () => true });
-  }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep: false, feeding: false, heartPrank: false, ambientPrank: false, panelPrank: false }, care: { ...DEFAULT_COMPANION_CARE, hunger: .05, energy: 1 } });
+  }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep: true, feeding: false, heartPrank: false, ambientPrank: false, panelPrank: false }, care: { ...DEFAULT_COMPANION_CARE, hunger: .05, energy: 1 } });
   await page.goto(studio ? "/visual-fixture/studio?role=developer" : "/visual-fixture/poster");
   await page.evaluate(() => document.fonts.ready); await expect(pet(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-atlas", "hd");
   await page.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(a => a.playState === "running" && Number.isFinite(Number(a.effect?.getComputedTiming().endTime))).map(a => a.finished)); });

@@ -29,12 +29,16 @@ async function showHome(page: Page) {
   await openCompanionHome(page);
   await page.waitForTimeout(180); // coalesced support measurement
 }
-async function expectSmallHome(page: Page) {
-  const box = (await house(page).boundingBox())!;
-  expect(box.height).toBeGreaterThan(150);
-  expect(box.height).toBeLessThanOrEqual(200);
-  const coarse = await page.evaluate(() => matchMedia("(pointer: coarse)").matches);
-  expect(box.height).toBeCloseTo(coarse ? 194 : 186, 0);
+// The home is an illustrated room since the 2026-10-20 rebuild (e4f56c8f and later), no longer the 186px strip:
+// companion-home.css sizes the room as max(74cqw, 130px + 130px / zoom). It must keep that picture's proportion,
+// stay inside the viewport and add only its title row above the room.
+async function expectRoomHome(page: Page) {
+  const box = (await house(page).boundingBox())!, room = (await house(page).locator(".vc-home-room").boundingBox())!;
+  expect(room.height).toBeGreaterThan(150);
+  expect(room.height).toBeGreaterThanOrEqual(room.width * .74 - 1);
+  expect(room.height).toBeLessThanOrEqual(Math.max(room.width * .74, 290) + 1);
+  expect(box.height - room.height).toBeGreaterThanOrEqual(0); expect(box.height - room.height).toBeLessThan(90);
+  expect(box.y).toBeGreaterThanOrEqual(0); expect(box.y + box.height).toBeLessThanOrEqual(page.viewportSize()!.height);
   return box.height;
 }
 async function point(page: Page) {
@@ -49,13 +53,16 @@ async function expectImmediateAffection(page: Page) {
     return { state: (node as HTMLElement).dataset.state, display: style.display, visibility: style.visibility, color: style.color, glyphs: [...hearts.querySelectorAll("i")].map(heart => heart.textContent) };
   })).toEqual({ state: "petted", display: "block", visibility: "visible", color: "rgb(237, 133, 154)", glyphs: ["♥", "♥", "♥"] });
 }
-async function expectIconRoom(page: Page, compact: boolean) {
-  await expectSmallHome(page);
+// The rebuilt room (2026-10-19..21) is furnished: beside the title and the character shortcut, every painted
+// object is its own labelled native button. No menu, no extra unnamed control.
+const PANEL_ROOM_ACTIONS = ["fold", "personality", "curtain", "book", "radio", "light", "wash", "home", "toys", "tv", "feed", "clearFood"];
+async function expectIconRoom(page: Page) {
+  await expectRoomHome(page);
   await expect(house(page).getByRole("heading", { name: "빅타민 집", exact: true })).toBeVisible();
   await expect(house(page).getByRole("button", { name: "빅타민 집", exact: true })).toHaveAttribute("aria-expanded", "true");
   await expect(house(page).getByRole("menu")).toHaveCount(0);
   await expect(house(page).getByRole("menuitem")).toHaveCount(0);
-  await expect(house(page).getByRole("button")).toHaveCount(compact ? 5 : 4);
+  expect((await house(page).getByRole("button").evaluateAll(nodes => nodes.map(node => node.getAttribute("data-home-action")))).sort()).toEqual([...PANEL_ROOM_ACTIONS].sort());
   for (const button of await house(page).getByRole("button").all()) {
     const bounds = (await button.boundingBox())!;
     const title = await button.getAttribute("data-panel-section-toggle");
@@ -70,7 +77,7 @@ async function expectIconRoom(page: Page, compact: boolean) {
 test("one home follows the shared panel and keeps the same creature and care", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1100 });
   await page.goto("/visual-fixture/poster"); await expect(actor(page)).toBeVisible(); await showHome(page);
-  await expect(page.locator(".avatar-slot .vc-home")).toHaveCount(1); await expectSmallHome(page);
+  await expect(page.locator(".avatar-slot .vc-home")).toHaveCount(1); await expectRoomHome(page);
   await chooseCompanionCare(page, "쓰다듬기", "keyboard"); await expectImmediateAffection(page);
   const affection = Number(await house(page).getByRole("meter", { name: "빅타민 친밀도" }).getAttribute("value"));
   expect(affection).toBeGreaterThan(.36);
@@ -78,7 +85,7 @@ test("one home follows the shared panel and keeps the same creature and care", a
   await expect(page.locator(".avatar-right .avatar-slot .vc-home")).toHaveCount(1); await expect(pet(page)).toHaveCount(1);
   await page.setViewportSize({ width: 1280, height: 900 });
   await expect(page.getByRole("button", { name: "빅타민 집 열기", exact: true })).toBeVisible();
-  await showHome(page); await expect(page.locator(".vc-compact-home .vc-home")).toHaveCount(1); await expectSmallHome(page);
+  await showHome(page); await expect(page.locator(".vc-compact-home .vc-home")).toHaveCount(1); await expectRoomHome(page);
   expect(Number(await house(page).getByRole("meter", { name: "빅타민 친밀도" }).getAttribute("value"))).toBeGreaterThan(.36);
   await expect(page.locator("[data-export-surface] .vc-home,[data-export-surface] .vc-companion")).toHaveCount(0);
   await page.screenshot({ path: ".scratch-pw/companion-home-responsive.png" });
@@ -87,28 +94,38 @@ test("one home follows the shared panel and keeps the same creature and care", a
 test("compact desktop home stays reachable and transfers keyboard focus", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/visual-fixture/poster"); await expect(actor(page)).toBeVisible();
-  const launcher = page.getByRole("button", { name: "빅타민 집 열기", exact: true });
-  await launcher.focus(); await launcher.press("Enter"); await expect(house(page)).toBeVisible();
+  // A fresh companion starts inside its home (2026-10-19), so the compact room is already open and the same
+  // launcher reads "닫기". Close it from the keyboard first; the reachability flow then starts from the launcher.
+  const launcher = page.locator(".vc-home-launcher");
+  await expect(house(page)).toBeVisible(); await expect(launcher).toHaveAccessibleName("빅타민 집 닫기");
+  await launcher.focus(); await launcher.press("Enter"); await expect(house(page)).toBeHidden();
+  await expect(launcher).toHaveAccessibleName("빅타민 집 열기"); await expect(launcher).toBeFocused();
+  await launcher.press("Enter"); await expect(house(page)).toBeVisible();
   const close = house(page).getByRole("button", { name: "빅타민 집 닫기", exact: true });
   await expect(house(page)).toHaveAttribute("data-home-presentation", "compact");
   await expect(house(page).locator("[data-panel-section-toggle]")).toHaveCount(0);
   await expect(close).toBeFocused();
   const box = (await house(page).boundingBox())!; expect(box.y).toBeGreaterThanOrEqual(10); expect(box.y + box.height).toBeLessThan(900);
-  await expectSmallHome(page);
+  await expectRoomHome(page);
   await chooseCompanionCare(page, "옮길 곳 고르기", "keyboard");
   await expect(actor(page)).toBeFocused(); await expect(pet(page)).toHaveAttribute("data-placing", "");
   await page.keyboard.press("Escape"); await expect(pet(page)).not.toHaveAttribute("data-placing");
   await showHome(page); await close.click(); await expect(launcher).toBeFocused();
 });
 
-test("the desktop icon room offers three direct controls, bounded random food and keyboard cleanup", async ({ page }) => {
+test("the desktop icon room offers its direct object controls, bounded random food and keyboard cleanup", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1100 });
   await page.goto("/visual-fixture/poster"); await expect(actor(page)).toBeVisible(); await showHome(page);
-  await page.evaluate(() => document.fonts.ready); await expectIconRoom(page, false);
+  await page.evaluate(() => document.fonts.ready); await expectIconRoom(page);
   await page.evaluate(async () => {
     await Promise.allSettled(document.getAnimations().filter(animation => animation.playState === "running" && Number.isFinite(Number(animation.effect?.getComputedTiming().endTime))).map(animation => animation.finished));
   });
   const cushion = house(page).getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true });
+  // The detached front rim is only painted while the resident is in the sofa; otherwise the room's own local
+  // front shows. A fresh resident may start on the floor, so seat it through the native control first.
+  await cushion.focus(); await cushion.press("Enter"); await page.mouse.move(2, 2);
+  await expect(pet(page)).toHaveAttribute("data-platform", "companion-home", { timeout: 20000 }); await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
+  await expect(page.locator(".vc-bed-foreground")).toBeVisible();
   const cushionGeometry = () => cushion.evaluate(button => {
     const anchor = button.querySelector<HTMLElement>(".vc-home-cushion")!, fabric = button.querySelector(".vc-plush-bed")!;
     const rect = anchor.getBoundingClientRect(), bed = fabric.getBoundingClientRect();
@@ -119,7 +136,8 @@ test("the desktop icon room offers three direct controls, bounded random food an
       frontVisible: !foreground.hidden && frontStyle.display !== "none", frontDepth: foreground.dataset.depth, depth, frontZ: Number(frontStyle.zIndex) };
   });
   const anchorBefore = await cushionGeometry(), cushionBox = (await cushion.boundingBox())!;
-  await page.mouse.move(cushionBox.x + cushionBox.width / 2, cushionBox.y + cushionBox.height / 2); await page.mouse.down();
+  await page.mouse.move(cushionBox.x + 5, cushionBox.y + cushionBox.height / 2); await page.mouse.down();
+  expect(await cushion.evaluate(button => button.matches(":active")), "the press must be on the sofa itself").toBe(true);
   const anchorPressed = await cushionGeometry();
   // The fixed rim and the local back/seat are one physical sofa. Scaling only
   // the back on press used to separate those layers; the accepted shared
@@ -134,9 +152,9 @@ test("the desktop icon room offers three direct controls, bounded random food an
   }
   // Release outside the button: this test checks native press feedback without
   // starting the separate, already-covered recall journey.
-  await page.mouse.move(cushionBox.x + cushionBox.width / 2, cushionBox.y - 8); await page.mouse.up();
+  await page.mouse.move(cushionBox.x + 5, cushionBox.y - 8); await page.mouse.up();
   const month = page.locator("h1.poster-chrome-title:visible,h1.agenda-title:visible"), before = await month.textContent();
-  const height = await expectSmallHome(page), kinds: string[] = [];
+  const height = await expectRoomHome(page), kinds: string[] = [];
   const feed = house(page).getByRole("button", { name: "밥 꺼내기", exact: true });
   for (let count = 1; count <= MAX_COMPANION_FOOD; count++) {
     // Each real click dispenses stationary food without arming a global
@@ -155,7 +173,7 @@ test("the desktop icon room offers three direct controls, bounded random food an
   await page.keyboard.press("Escape"); // Test whole-room keyboard cleanup separately from selected-food discard.
   const bin = house(page).getByRole("button", { name: "음식 버리기", exact: true });
   await bin.focus(); await bin.press("Enter"); await expect(page.locator(".vc-food")).toHaveCount(0);
-  expect(Math.abs((await expectSmallHome(page)) - height)).toBeLessThan(.5);
+  expect(Math.abs((await expectRoomHome(page)) - height)).toBeLessThan(.5);
   await expect(month).toHaveText(before!);
   await chooseCompanionCare(page, "쓰다듬기", "keyboard"); await expect(actor(page)).toBeFocused();
   await expect(pet(page)).toHaveAttribute("data-state", "petted"); await expect(month).toHaveText(before!);

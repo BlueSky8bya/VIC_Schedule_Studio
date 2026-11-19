@@ -10,6 +10,7 @@ import { COMPANION_BEHAVIOR_IDS } from "@/lib/ui/viewer-companion/collection";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
+import { keepCompanionStoredMotion } from "./helpers/companion-settings";
 import { guardCompanionQa, type DailyProof } from "./helpers/companion-qa";
 import { installCompanionPaintedSource157, type PaintedSource157Proof, type PaintedSource157Window } from "./helpers/companion-painted-source-157";
 
@@ -21,6 +22,7 @@ const save = (name: string, value: unknown) => { mkdirSync(output, { recursive: 
 test.use({ storageState: { cookies: [], origins: [] }, serviceWorkers: "block", viewport: { width: 1440, height: 1000 } });
 test.setTimeout(90000);
 test.beforeEach(async ({ page, context, baseURL }) => {
+  await keepCompanionStoredMotion(context); // storageState is replaced: keep the stored motion seed honoured (a9f6d77e)
   const proof = await guardCompanionQa(page, context, baseURL!); proofs.set(page, { ...proof, notes: [] });
 });
 test.afterEach(async ({ page }, info) => {
@@ -35,10 +37,14 @@ test.afterEach(async ({ page }, info) => {
   expect(proof.errors).toEqual([]); expect(proof.rejected).toEqual([]); expect(proof.mutations).toEqual([]); expect(proof.liveReads).toEqual([]);
   expect(proof.chunks.length).toBeGreaterThan(0); expect(proof.chunks.every(chunk=>chunk.served===chunk.local)).toBe(true); proofs.delete(page);
 });
+// Movement is not a setting since a9f6d77e (2026-11-19): the shipping companion always roams, so these
+// cases seed roam ON. With the QA-only stored `roam: false` the shower pad request never starts a wash
+// (0 of 10 cases in 25-30 s, b14) although personality-director.ts startManualWash says an explicit
+// request may run with roaming off; reported as a QA-mode question, not reachable for a viewer.
 async function seed(page: Page, dark = false) {
   await page.addInitScript(({ prefs, memory, epoch, key, dark, foods, behaviors }) => {
     for (const [k, v] of Object.entries({ [key]: epoch, "vic.gfxPref": "max", "vic.gfx": JSON.stringify({ mode: "full", at: Date.now(), v: 3 }), "vic.reduceMotion": "off", "vic.dark": dark ? "on" : "off", "vic.sound": "off", "vic.ambient": "off", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(k, v);
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, personality: "balanced", personalitySource: "manual", roam: false, feeding: true, sleep: false, petting: false, learnFromYou: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, rarePrank: false }));
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, personality: "balanced", personalitySource: "manual", roam: true, feeding: true, sleep: false, petting: false, learnFromYou: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, rarePrank: false }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...memory, energy: .95, hunger: .05 }));
     localStorage.setItem("vic.companionHomeLight.v1", JSON.stringify({ version: 1, lit: false }));
     localStorage.setItem("vic.viewerCompanionTastes", JSON.stringify({ version: 1, toys: ["practice-baseball-bat", "practice-baseball-glove"], seen: [], toyTastes: {}, foodTastes: {} }));

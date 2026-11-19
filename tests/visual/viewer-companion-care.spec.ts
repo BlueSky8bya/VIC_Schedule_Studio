@@ -2,7 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE, type CompanionCare } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { chooseCompanionCare } from "./helpers/companion-home";
+import { chooseCompanionCare, companionNodeOrigin } from "./helpers/companion-home";
 import { COMPANION_FOOD_NAMES, isCompanionFoodKind } from "@/lib/ui/viewer-companion/snacks";
 import { MAX_COMPANION_FOOD } from "@/lib/ui/viewer-companion/food-capacity";
 
@@ -36,7 +36,8 @@ async function centre(locator: Locator) {
   return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
 }
 async function dragFoodToFeet(page: Page, item: Locator, point: { x: number; y: number }) {
-  const from = await centre(item), foot = await item.evaluate(node => { const m = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: m.m41, y: m.m42 }; });
+  // Food on the home floor is laid out from an anchored left/top, so its foot is that origin plus the transform.
+  const from = await centre(item), foot = await companionNodeOrigin(item);
   await page.mouse.move(from.x, from.y); await page.mouse.down();
   await page.mouse.move(point.x + from.x - foot.x, point.y + from.y - foot.y, { steps: 8 }); await page.mouse.up();
 }
@@ -90,6 +91,8 @@ async function spawn(page: Page) {
   const feed = page.getByRole("button", { name: "밥 꺼내기", exact: true }); await feed.click();
   await expect(food(page)).toHaveCount(before + 1);
   const item = food(page).last();
+  // A dispensed snack falls out of the outlet first, and a grab during that fall does not take.
+  await expect(item).not.toHaveAttribute("data-falling");
   await expect(item).not.toHaveAttribute("data-selected");
   await expect(feed).toBeFocused();
   await expect(page.locator(".vc-food-hint")).toHaveCount(0);
@@ -103,9 +106,9 @@ async function placeNear(page: Page, item: Locator) {
   const before = await month(page).textContent();
   // Keyboard movement still belongs to the food rather than month shortcuts.
   await item.focus(); await item.press("Enter"); await expect(item).toHaveAttribute("data-selected", "");
-  const original = await item.evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41);
+  const original = (await companionNodeOrigin(item)).x;
   await item.press("ArrowLeft");
-  await expect.poll(() => item.evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m41)).toBeCloseTo(Math.max(24, original - 24), 1);
+  await expect.poll(async () => (await companionNodeOrigin(item)).x).toBeCloseTo(Math.max(24, original - 24), 1);
   await item.press("ArrowRight");
   const target = await pet(page).evaluate(el => { const rect = el.getBoundingClientRect(); return { x: rect.left + rect.width / 2 + 24, y: rect.bottom }; });
   await dragFoodToFeet(page, item, target);
@@ -137,7 +140,7 @@ for (const width of [1440]) {
       const care = await storedCare(page);
       expect(care.hunger).toBeGreaterThan(.18); expect(care.hunger).toBeLessThan(.28);
       expect(care.affection - beforeAffection).toBeGreaterThan(.09); expect(care.affection - beforeAffection).toBeLessThan(.105);
-      expect(care.version).toBe(2);
+      expect(care.version).toBe(3); // 4b4dc01f: care storage gained `life`
       await expect(pet(page)).toHaveAttribute("data-state", "petted");
     });
   }
@@ -174,9 +177,12 @@ test("food dragging and a long held release consume their clicks before cards un
   // Release inside the real protected world, with its16px native grip offset.
   await page.mouse.move(180, await floorY(page) - 28, { steps: 8 }); await page.mouse.up();
   await expect(item).not.toHaveAttribute("data-selected");
-  await expect.poll(() => item.evaluate(el => new DOMMatrixReadOnly(getComputedStyle(el).transform).m42)).toBe(await floorY(page));
+  await expect.poll(async () => (await companionNodeOrigin(item)).y).toBe(await floorY(page));
   await expect(item).toBeInViewport({ ratio: 1 });
-  await page.locator(".public-event:visible").first().evaluate(card => {
+  // The open house floats over the first cards now; use a card whose heart corner is really exposed.
+  const exposed = await page.locator(".public-event:visible").evaluateAll(cards => cards.findIndex(card => { const r = card.getBoundingClientRect(); return r.width > 60 && r.top > 0 && r.bottom < innerHeight && document.elementFromPoint(r.right - 16, r.top + 16)?.closest(".public-event") === card; }));
+  expect(exposed, "a card with an uncovered top-right corner").toBeGreaterThanOrEqual(0);
+  await page.locator(".public-event:visible").nth(exposed).evaluate(card => {
     // The visual fixture has no server voting prop. A native-button sentinel
     // tests click ownership without invoking or claiming real heart coverage.
     const button = document.createElement("button");
@@ -195,7 +201,7 @@ test("food dragging and a long held release consume their clicks before cards un
   await expect(page.locator(".agenda-detail-backdrop")).toHaveCount(0);
 });
 
-test("settings pause food, feeding OFF clears it, and changing month removes temporary snacks", async ({ page }) => {
+test("settings pause food, feeding OFF clears it, and changing month removes only the snacks left on the calendar", async ({ page }) => {
   await setup(page, .1);
   const item = await spawn(page); await item.press("Enter");
   await page.getByRole("button", { name: "설정", exact: true }).click();
@@ -221,11 +227,21 @@ test("settings pause food, feeding OFF clears it, and changing month removes tem
   await settings.getByRole("button", { name: "닫기", exact: true }).click();
   await expect(actor(page)).toBeVisible();
   await expect(food(page)).toHaveCount(0);
-  const next = await spawn(page); await next.press("Enter");
+  // Since 1f2cb9eb only a snack resting on a day or card of the old month is removed with it; one on the home
+  // floor (or the screen floor) belongs to a plane that is still there and stays.
+  const onCalendar = await spawn(page), calendarId = (await onCalendar.getAttribute("data-food"))!;
+  const day = (await page.locator(".public-day:visible").nth(17).boundingBox())!, grab = await centre(onCalendar);
+  await page.mouse.move(grab.x, grab.y); await page.mouse.down();
+  await page.mouse.move(day.x + day.width / 2, day.y + day.height - 30, { steps: 8 }); await page.mouse.up(); await page.mouse.move(3, 3);
+  await expect(onCalendar).not.toHaveAttribute("data-falling");
+  await expect(onCalendar).toHaveAttribute("data-platform", /^(?:date|card)-\d+/);
+  const atHome = await spawn(page), homeId = (await atHome.getAttribute("data-food"))!;
+  await expect(atHome).toHaveAttribute("data-platform", /^companion-home-floor/);
   const before = await month(page).textContent();
   await page.locator("[data-act='다음 달']").click();
   await expect(month(page)).not.toHaveText(before!);
-  await expect(food(page)).toHaveCount(0);
+  await expect(page.locator(`.vc-food[data-food="${calendarId}"]`)).toHaveCount(0);
+  await expect(food(page)).toHaveCount(1); await expect(food(page)).toHaveAttribute("data-food", homeId);
   await expect(actor(page)).toBeVisible();
 });
 

@@ -9,16 +9,17 @@ import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
-import { setCompanionRoam } from "./helpers/companion-settings";
+import { keepCompanionStoredMotion, setCompanionRoam } from "./helpers/companion-settings";
 import anchors from "@/lib/ui/viewer-companion/curtain-contact-anchors.json";
 import topAnchors from "@/lib/ui/viewer-companion/home-contact-anchors-157.json";
 import bodyAnchors from "@/lib/ui/viewer-companion/accessory-anchors.json";
+import { companionAppearanceBounds, companionAppearancePoint, resolveCompanionAppearanceSource } from "@/lib/ui/viewer-companion/appearance";
 import { installCompanionPaintedSource157, type PaintedSource157Window } from "./helpers/companion-painted-source-157";
 
 type Surface="viewer"|"studio"|"preview";
 type Rect={x:number;y:number;width:number;height:number};
 type Frame={at:number;x:number;y:number;state:string;command:string;reaching:string;support:string;phase:string;lit:boolean;touch:boolean;
-  handle:Rect;room:Rect; physical?:{point:{x:number;y:number};anchor:"top"|"left"|"right";edgeDistance:number;source:string;pose:number;body:Rect};washing:boolean};
+  handle:Rect;room:Rect;painted?:string; physical?:{point:{x:number;y:number};anchor:"top"|"left"|"right";edgeDistance:number;source:string;pose:number;body:Rect};washing:boolean};
 type ProbeWindow=Window&{curtainReach?:{frames:Frame[];stop():void}};
 type Proof={errors:string[];rejected:string[];notes:unknown[]};
 const proofs=new WeakMap<Page,Proof>();
@@ -58,6 +59,8 @@ test.afterEach(async({page},info)=>{
   expect(proof.errors).toEqual([]);expect(proof.rejected).toEqual([]);
 });
 async function seed(page:Page){
+  // This spec replaces storageState, which drops the QA key that makes the stored roam:false hold.
+  await keepCompanionStoredMotion(page);
   await page.addInitScript(({preferences,memory,epoch,key})=>{
     for(const [name,value]of Object.entries({[key]:epoch,"vic.gfxPref":"max","vic.gfx":JSON.stringify({mode:"full",at:Date.now(),v:3}),"vic.reduceMotion":"off","vic.dark":"off","vic.sound":"off","vic.ambient":"off","vic_avatar_side":"left","vic.premiereStage":"off"}))localStorage.setItem(name,value);
     localStorage.setItem("vic.viewerCompanion",JSON.stringify({version:1,...preferences,enabled:true,personality:"balanced",personalitySource:"manual",roam:false,feeding:true,sleep:true,petting:false,learnFromYou:false,heartPrank:false,cardPrank:false,ambientPrank:false,panelPrank:false,rarePrank:false}));
@@ -83,6 +86,9 @@ async function open(page:Page,surface:Surface,compact:boolean){
   const fold=home.locator('[data-home-action="fold"]');if(await fold.count()&&await fold.getAttribute("aria-expanded")==="false")await fold.click();
   await settlePanelLayout(page);return home;
 }
+// The calibrated landmarks were measured on the pre-2026-11-18 atlases. The appearance edition repaints every
+// pose in a new packet with one uniform per-pose material correction; resolve the published source and move each
+// landmark through that same offline correction (lib appearance.ts), then project it through the real DOM matrices.
 async function observe(page:Page){
   await installCompanionPaintedSource157(page);
   await page.evaluate(({calibration,topCalibration,bodyCalibration})=>{
@@ -112,12 +118,14 @@ async function observe(page:Page){
         const left=Math.min(...corners.map(point=>point.x)),topY=Math.min(...corners.map(point=>point.y)),right=Math.max(...corners.map(point=>point.x)),bottom=Math.max(...corners.map(point=>point.y));
         const physical=points.map(({anchor,point})=>({anchor,point,edgeDistance:Math.hypot(Math.max(handle.left-point.x,0,point.x-handle.right),Math.max(handle.top-point.y,0,point.y-handle.bottom)),source:source!.source,pose:source!.pose,
           body:{x:left,y:topY,width:right-left,height:bottom-topY}})).sort((a,b)=>a.edgeDistance-b.edgeDistance)[0];
-        frames.push({at:performance.now()-start,x:body.left+body.width/2,y:body.bottom,state:actor.dataset.state??"",command:actor.dataset.personalityCommand??"",reaching:actor.dataset.homeReaching??"",support:actor.dataset.platform??"",phase:document.querySelector<HTMLElement>(".vc-home-window")?.dataset.curtain??"",lit:document.querySelector('[data-home-action="light"]')?.getAttribute("aria-pressed")==="true",touch:control.hasAttribute("data-companion-touch"),handle:rect(handle),room:rect(room),physical,washing:actor.hasAttribute("data-washing")});
+        frames.push({at:performance.now()-start,x:body.left+body.width/2,y:body.bottom,state:actor.dataset.state??"",command:actor.dataset.personalityCommand??"",reaching:actor.dataset.homeReaching??"",support:actor.dataset.platform??"",phase:document.querySelector<HTMLElement>(".vc-home-window")?.dataset.curtain??"",lit:document.querySelector('[data-home-action="light"]')?.getAttribute("aria-pressed")==="true",touch:control.hasAttribute("data-companion-touch"),handle:rect(handle),room:rect(room),painted:actor.dataset.homeReaching?`${source?.mode}:${source?.reason}:${source?.source}:${actor.dataset.pose}:${Boolean(frame)}${Boolean(top)}${Boolean(bodyFrame)}`:undefined,physical,washing:actor.hasAttribute("data-washing")});
       }
       raf=requestAnimationFrame(tick);
     };
     (window as ProbeWindow).curtainReach={frames,stop(){cancelAnimationFrame(raf);}};raf=requestAnimationFrame(tick);
-  },{calibration:anchors,topCalibration:topAnchors,bodyCalibration:bodyAnchors});
+  },{calibration:{...anchors,source:resolveCompanionAppearanceSource(anchors.source),frames:anchors.frames.map(frame=>({...frame,left:companionAppearancePoint(frame.physicalIndex,frame.left),right:companionAppearancePoint(frame.physicalIndex,frame.right)}))},
+    topCalibration:{...topAnchors,source:resolveCompanionAppearanceSource(topAnchors.source),frames:topAnchors.frames.map(frame=>companionAppearancePoint(frame.physicalIndex,frame))},
+    bodyCalibration:{frames:bodyAnchors.frames.map(frame=>({physicalIndex:frame.physicalIndex,bodyBounds:companionAppearanceBounds(frame.physicalIndex,frame.bodyBounds)}))}});
 }
 for(const surface of ["viewer","studio","preview"] as const)for(const [width,compact,label]of [[1100,true,"narrow-compact"],[1494,false,"default-panel"],[2560,true,"wide-compact"]] as const){
   test(`curtain ${surface} ${label} physically reaches the painted handle before closing and continuing care`,async({page})=>{

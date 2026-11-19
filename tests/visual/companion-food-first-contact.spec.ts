@@ -5,17 +5,19 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { openCompanionHome } from "./helpers/companion-home";
+import { installCompanionPointReader, type CompanionPointWindow } from "./helpers/companion-point";
 
 type Surface = "viewer" | "studio";
 type Sample = { at: number; x: number; y: number; falling: boolean };
 type FallProbe = { released?: { x: number; y: number }; began: number; seen: boolean; done: boolean; frames: Sample[]; raf: number };
 type ProbedWindow = Window & { foodFirstContact?: FallProbe };
 const proof = new WeakMap<Page, { writes: string[]; errors: string[]; samples: unknown[] }>();
-const point = (item: Locator) => item.evaluate(node => { const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: matrix.m41, y: matrix.m42 }; });
+// A snack at rest is CSS-anchored to its support (a3e9a288): the transform is only the offset from that origin.
+const point = (item: Locator) => item.evaluate(node => (window as unknown as CompanionPointWindow).vcPoint(node));
 
 test.use({ viewport: { width: 1920, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
 test.beforeEach(async ({ page }) => {
-  proof.set(page, { writes: [], errors: [], samples: [] });
+  proof.set(page, { writes: [], errors: [], samples: [] }); await installCompanionPointReader(page);
   page.on("pageerror", error => proof.get(page)!.errors.push(error.message));
   await page.route("**/*", route => {
     const request = route.request();
@@ -75,7 +77,10 @@ async function actualCard(page: Page, surface: Surface) {
       const x = (spans[0][0] + spans[0][1]) / 2;
       if (document.elementFromPoint(x, rect.top + 2)?.closest(selector) !== node) continue;
       const precedingTops = [...root.querySelectorAll<HTMLElement>(selector)].filter(other => other !== node && shown(other)).map(other => other.getBoundingClientRect()).filter(other => x >= other.left && x <= other.right && other.top < y && other.top > y - 65).map(other => other.top - 3);
-      const releaseY = Math.max(y - 65, ...precedingTops.map(top => top + 3));
+      // The bottom edge of a day cell is a real snack support too (date-N-floor-food, 1f2cb9eb): a release above the
+      // edge of the cell over this card is caught there first. Start below every such edge in this column.
+      const precedingFloors = [...root.querySelectorAll<HTMLElement>(".public-day,.agenda-day,.studio-day")].filter(shown).map(day => day.getBoundingClientRect()).filter(day => x >= day.left && x <= day.right && day.bottom - 3 < y && day.bottom - 3 > y - 65).map(day => day.bottom - 3);
+      const releaseY = Math.max(y - 65, ...precedingTops.map(top => top + 3), ...precedingFloors.map(floor => floor + 3));
       if (y - releaseY < 8) continue;
       node.setAttribute("data-test-first-food-card", "");
       return { x, y, spans, releaseY, source: { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom } };
@@ -90,14 +95,15 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} food lands
   expect(target, "fixture needs a real first card with a visible fall and protected landing").not.toBeNull();
   const feed = page.getByRole("button", { name: "밥 꺼내기", exact: true }); await feed.click();
   const food = page.locator(".vc-food").last(); await expect(food).toBeVisible();
-  await page.waitForTimeout(180); // Finish the real home/food geometry delivery.
+  // A dispensed snack falls out of the outlet first; a grab during that fall does not take.
+  await expect(food).not.toHaveAttribute("data-falling");
   await food.evaluate(node => {
     const probe: FallProbe = { began: 0, seen: false, done: false, frames: [], raf: 0 };
-    node.addEventListener("pointerup", () => { const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform); probe.released = { x: matrix.m41, y: matrix.m42 }; probe.began = performance.now(); }, { capture: true, once: true });
+    node.addEventListener("pointerup", () => { probe.released = (window as unknown as CompanionPointWindow).vcPoint(node); probe.began = performance.now(); }, { capture: true, once: true });
     const sample = (now: number) => {
       if (probe.released) {
-        const matrix = new DOMMatrixReadOnly(getComputedStyle(node).transform), falling = node.hasAttribute("data-falling");
-        probe.frames.push({ at: now - probe.began, x: matrix.m41, y: matrix.m42, falling }); probe.seen ||= falling;
+        const shown = (window as unknown as CompanionPointWindow).vcPoint(node), falling = node.hasAttribute("data-falling");
+        probe.frames.push({ at: now - probe.began, x: shown.x, y: shown.y, falling }); probe.seen ||= falling;
         if (probe.seen && !falling) { probe.done = true; return; }
       }
       probe.raf = requestAnimationFrame(sample);
@@ -108,6 +114,9 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} food lands
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2); await page.mouse.down();
   await page.mouse.move(target!.x + offset.x, target!.releaseY + offset.y, { steps: 10 });
   await expect.poll(async () => { const shown = await point(food); return Math.hypot(shown.x - target!.x, shown.y - target!.releaseY); }).toBeLessThan(1);
+  // A release within 100 ms of the last pointer move is a throw (companion-food.tsx pointerup, a44f46a2). This case is a
+  // put-down, so the hand rests past that window; there is no DOM condition for "the velocity went stale".
+  await page.waitForTimeout(140);
   await page.mouse.up(); await page.mouse.move(2, 2);
   await expect.poll(() => page.evaluate(() => Boolean((window as ProbedWindow).foodFirstContact?.done)), { timeout: 4000 }).toBe(true);
   const motion = await page.evaluate(() => { const probe = (window as ProbedWindow).foodFirstContact!; cancelAnimationFrame(probe.raf); return { released: probe.released!, frames: probe.frames }; });

@@ -48,7 +48,9 @@ async function setup(page: Page, surface: Surface, options: { lite?: boolean; re
     for (const [k, value] of Object.entries({ [key]: epoch, [premiereKey]: "off", "vic.ambient": "off", "vic.sound": "off", "vic.reduceMotion": options.reduced ? "on" : "off", "vic.gfxPref": options.lite ? "lite" : "max", "vic_avatar_side": "left" })) localStorage.setItem(k, value);
     localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 1, ...care }));
-    localStorage.removeItem("vic.panelSections"); localStorage.removeItem("vic_panel_collapsed");
+    // With the companion on, an unsaved panel starts with the tag filter and season folded (e4ddc503). These cases fold
+    // and reopen both above the house, so start from the saved all-open panel.
+    localStorage.setItem("vic.panelSections", JSON.stringify({ version: 1, "tag-filter": true, season: true, "companion-home": true })); localStorage.removeItem("vic_panel_collapsed");
     if (options.controlledFocus) {
       // Explicit focus-branch fixture, not proof of OS focus loss. Time,
       // native disclosure input and real layout/FLIP remain unmodified.
@@ -56,7 +58,8 @@ async function setup(page: Page, surface: Surface, options: { lite?: boolean; re
       Object.defineProperty(document, "hasFocus", { configurable: true, value: () => probe.houseFlipFocused });
     }
   }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, premiereKey: PREMIERE_STAGE_KEY,
-    preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep: true, feeding: false, heartPrank: false, ambientPrank: false },
+    // "다른 창 쓸 때도 놀기" (activeWhileVisible) is on by default; the parked cases need the pet to rest when focus leaves.
+    preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep: true, feeding: false, heartPrank: false, ambientPrank: false, activeWhileVisible: !options.controlledFocus },
     care: { ...DEFAULT_COMPANION_CARE, hunger: .05, energy: 1 }, options });
   await page.goto(surface === "studio" ? "/visual-fixture/studio?role=owner" : "/visual-fixture/poster?avatar=1");
   await page.bringToFront(); await settle(page);

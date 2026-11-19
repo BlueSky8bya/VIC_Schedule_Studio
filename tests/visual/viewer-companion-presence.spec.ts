@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES, COMPANION_PREFERENCES_EVENT, COMPANION_PREFERENCES_KEY } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { placeCompanionOnCalendarCard } from "./helpers/companion-home";
 
 const pet = (page: Page) => page.locator(".vc-companion");
 const posts = new WeakMap<Page, string[]>();
@@ -103,12 +104,31 @@ async function safety(page: Page) {
       if (visible(bar) && getComputedStyle(bar).position === "fixed" && rect.width > 0 && rect.height > 0 && rect.top >= innerHeight * .65 && rect.bottom <= innerHeight + 1) floorY = Math.min(floorY, rect.top - 8);
     }
     const cushion = document.querySelector(".vc-home-cushion")?.getBoundingClientRect();
-    const supportError = platform.startsWith("viewport-floor") ? Math.abs(body.bottom - floorY) : platform === "companion-home" && cushion ? Math.abs(body.bottom - cushion.top) : Math.min(...supportErrors);
+    // A manual placement rests on the card itself (card-N-top, 3px above its top edge), not on a text line.
+    const centreX = (body.left + body.right) / 2;
+    const cardTops = [...root.querySelectorAll<HTMLElement>(".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid]")].filter(node => visible(node)).map(node => node.getBoundingClientRect())
+      .filter(rect => centreX >= rect.left - .5 && centreX <= rect.right + .5).map(rect => Math.abs(body.bottom - rect.top + 3));
+    // A day cell's bottom edge holds a pet too (date-N-floor, 3px above the cell line).
+    const cellFloors = [...root.querySelectorAll<HTMLElement>(".public-day,.agenda-day")].filter(node => visible(node)).map(node => node.getBoundingClientRect())
+      .filter(rect => centreX >= rect.left - .5 && centreX <= rect.right + .5).map(rect => Math.abs(body.bottom - rect.bottom + 3));
+    const supportError = platform.startsWith("viewport-floor") ? Math.abs(body.bottom - floorY) : platform === "companion-home" && cushion ? Math.abs(body.bottom - cushion.top)
+      : /^card-[0-9]+-top/.test(platform) ? Math.min(...cardTops) : /^date-[0-9]+-floor/.test(platform) ? Math.min(...cellFloors) : Math.min(...supportErrors);
     return { visible: true, state: element.dataset.state ?? "", platform, collisions, glyphs, controls, supportError,
       body: { left: body.left, top: body.top, right: body.right, bottom: body.bottom, width: body.width, height: body.height },
       cell: { left: cell.left, top: cell.top, width: cell.width, height: cell.height },
     };
   });
+}
+
+/** A fresh pet begins inside its home (a44f46a2), among the room's own furniture. These cases are about a pet out on
+ * the calendar, where it used to start: the real keyboard placement puts it on an ordinary card, and a compact room
+ * that opened for the new resident is shut again with its own launcher. */
+async function leaveHome(page: Page) {
+  await expect(pet(page)).toHaveAttribute("data-platform", /^companion-home/);
+  await placeCompanionOnCalendarCard(page, "viewer");
+  const close = page.locator(".vc-home-launcher[aria-expanded='true']");
+  if (await close.isVisible()) { await close.click(); await expect(page.locator(".vc-home")).toBeHidden(); }
+  await page.mouse.move(2, 2);
 }
 
 async function settled(page: Page) {
@@ -138,7 +158,7 @@ async function settled(page: Page) {
 
 test("PC stationary safety follows viewport resize and poster zoom without changing the1840 canvas", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1100 });
-  await page.goto("/visual-fixture/poster"); await page.evaluate(() => document.fonts.ready);
+  await page.goto("/visual-fixture/poster"); await page.evaluate(() => document.fonts.ready); await leaveHome(page);
   const initial = await settled(page);
   expect(await page.locator("[data-export-surface]").evaluate(node => (node as HTMLElement).offsetWidth)).toBe(1840);
   // Change only fixture CSS: actual client rectangles move under the same
@@ -166,7 +186,7 @@ test("PC stationary safety follows viewport resize and poster zoom without chang
 test("legacy small, normal and large preferences all render the single92 default safely", async ({ page }) => {
   // PLAN-063: keep preference migration coverage on a supported compact desktop.
   await page.setViewportSize({ width: 1280, height: 1000 });
-  await page.goto("/visual-fixture/poster"); await page.evaluate(() => document.fonts.ready);
+  await page.goto("/visual-fixture/poster"); await page.evaluate(() => document.fonts.ready); await leaveHome(page);
   await settled(page); // wait for preference hydration before changing settings
   const results = [];
   for (const size of ["normal", "small", "large"] as const) {
@@ -177,7 +197,7 @@ test("legacy small, normal and large preferences all render the single92 default
     }, { size, key: COMPANION_PREFERENCES_KEY, event: COMPANION_PREFERENCES_EVENT });
     const result = await settled(page);
     expect(result.cell!.width).toBeCloseTo(92, 3);
-    await expect(page.locator(".vc-home")).toHaveCount(0);
+    await expect(page.locator(".vc-home")).toBeHidden(); // a shut compact room stays mounted, hidden
     await expect(page.getByRole("button", { name: "빅타민 집 열기", exact: true })).toBeVisible();
     await page.screenshot({ path: `.scratch-pw/companion-presence-compact-desktop-${size}.png` });
     results.push({ size, ...result });
@@ -187,7 +207,7 @@ test("legacy small, normal and large preferences all render the single92 default
 
 test("reflowed calendar and an opaque compact home both retain readable text and usable controls", async ({ page }) => {
   await page.setViewportSize({ width: 1920, height: 1100 });
-  await page.goto("/visual-fixture/poster"); await page.evaluate(() => document.fonts.ready);
+  await page.goto("/visual-fixture/poster"); await page.evaluate(() => document.fonts.ready); await leaveHome(page);
   await settled(page);
   // A real font/layout change, not a fake clock or synthetic platform API.
   await page.locator(".public-event .event-main p").first().evaluate(node => {

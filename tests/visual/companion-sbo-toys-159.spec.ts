@@ -9,7 +9,7 @@ import assets from "../fixtures/companion-sbo-toys-159.json";
 import { openCompanionHome } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
-import { fulfillReadOnlyFont } from "./helpers/readonly-font";
+import { fulfillDeclaredUiFontSheet, fulfillReadOnlyFont } from "./helpers/readonly-font";
 
 const output=process.env.COMPANION159_OUTPUT ?? ".scratch-pw/companion159";
 const fonts=new Set([...readFileSync(resolve("app/fonts.css"),"utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match=>match[1]));
@@ -27,8 +27,10 @@ for(const surface of ["viewer","studio","preview"] as const)for(const dark of [f
   const url=new URL(response.url());if(url.origin!==origin||!assets.toys.some(item=>item.src===url.pathname))return;
   pending.push((async()=>{expect(response.status()).toBe(200);served.push({src:url.pathname,sha256:sha(await response.body())});})().catch(error=>{errors.push(String(error));}));
  });
- await context.route("**/*",route=>{
+ await context.route("**/*",async route=>{
   const req=route.request(),url=new URL(req.url());
+  // Since 2026-11-16 the settings font list attaches declared jsDelivr stylesheets; answer exactly those locally.
+  if(await fulfillDeclaredUiFontSheet(route))return;
   if(url.origin!==origin){if(req.resourceType()==="font")return fulfillReadOnlyFont(route,fonts,rejected);rejected.push(req.method()+" "+url.pathname);return route.abort();}
   if(!["GET","HEAD"].includes(req.method())){
    if(["/api/activity","/api/visit","/api/presence","/api/visit-session","/api/visit-ping"].includes(url.pathname))return route.fulfill({json:{ok:true,skipped:true}});
@@ -62,8 +64,11 @@ for(const surface of ["viewer","studio","preview"] as const)for(const dark of [f
     expect(step).toBeLessThan(42);const before=Number(await rail.inputValue());expect(before).toBeLessThan(Number(await rail.getAttribute("max")));
     await rail.focus();await rail.press("PageDown");await expect.poll(()=>rail.inputValue()).not.toBe(String(before));
    }
-   await tile.click();const image=tile.locator("img");await expect(image).toHaveAttribute("src",item.src);await expect.poll(()=>image.evaluate(img=>(img as HTMLImageElement).complete&&(img as HTMLImageElement).naturalWidth===192)).toBe(true);
-   await expect(book.locator(".rhh-collection-detail-title strong")).toHaveText(name);await expect(book.locator(".rhh-collection-detail img")).toHaveAttribute("src",item.src);
+   // 4edee161: catalog pictures are an SVG <image> (centred catalog placement), no longer an <img>.
+   await tile.click();const image=tile.locator("svg.vc-toy-art image");await expect(image).toHaveAttribute("href",item.src);
+   // The same URL the tile paints must decode to the 192px raster (the response hash is checked below).
+   await expect.poll(()=>image.evaluate(async node=>{const probe=new Image();probe.src=node.getAttribute("href")!;await probe.decode();return probe.naturalWidth;})).toBe(192);
+   await expect(book.locator(".rhh-collection-detail-title strong")).toHaveText(name);await expect(book.locator(".rhh-collection-detail svg.vc-toy-art image")).toHaveAttribute("href",item.src);
    const rect=await image.boundingBox();expect(rect!.width).toBeGreaterThan(25);expect(rect!.height).toBeGreaterThan(25);notes.push({id:item.id,name,src:item.src,paint:rect});
    mkdirSync(output,{recursive:true});await dialog.screenshot({path:resolve(output,`${surface}-${dark?"dark":"light"}-${item.id}.png`)});
   }

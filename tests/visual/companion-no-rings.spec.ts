@@ -5,12 +5,15 @@ import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { enterCompanionMeadow } from "./helpers/companion-outdoor";
+import { keepCompanionStoredMotion } from "./helpers/companion-settings";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 
 const fonts = new Set([...readFileSync("app/fonts.css", "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
 test.use({ storageState: { cookies: [], origins: [] }, viewport: { width: 1920, height: 1100 }, serviceWorkers: "block", video: { mode: "retain-on-failure", size: { width: 1920, height: 1080 } } });
 test.setTimeout(90000);
 test.beforeEach(async ({ page, context, baseURL }, info) => {
+  // storageState is replaced: the seeded still resident (roam/jump off) needs the QA seam since a9f6d77e.
+  await keepCompanionStoredMotion(page);
   const origin = new URL(baseURL!).origin;
   await context.route("**/*", route => {
     const request = route.request(), url = new URL(request.url());

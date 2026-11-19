@@ -55,7 +55,12 @@ export function inspectLivingContext(frames) {
     const careMeasured=Number.isFinite(frame.hunger)&&Number.isFinite(frame.energy);
     const urgent=!careMeasured || frame.hunger>=.78 || frame.energy<=.18;
     const ordinaryAwake=eligible && careMeasured && !urgent && !['sleep','eat','held','placing'].includes(frame.state) && frame.command!=='wash';
+    // Measured object care (items, carried object or house controls changing)
+    // is purposeful indoor work, e.g. tidy binning carried floor snacks; it
+    // restarts the idle-confinement window instead of counting toward it.
+    const objectProgress=!!prior && (frame.items!==prior.items||frame.carried!==prior.carried||frame.controls!==prior.controls);
     if (ordinaryAwake && privateHome && frame.outsideVisible===true && !['homebody','sleepy'].includes(frame.personality) && !direct) {
+      if(objectProgress)confined=frame.at;
       confined??=frame.at;
       if(frame.at-confined>=(frame.personality==='curious'?35000:60000))flag('awake-confined-home',frame,'An awake non-homebody remained inside through visible calendar opportunities. This candidate alone does not prove a safe route.');
     } else confined=undefined;

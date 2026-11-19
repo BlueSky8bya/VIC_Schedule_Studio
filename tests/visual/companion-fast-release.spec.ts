@@ -3,6 +3,7 @@ import { mkdir, writeFile } from "node:fs/promises";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
+import { COMPANION_THROW_LIMITS } from "@/lib/ui/viewer-companion/throw";
 
 type Mode = "full" | "lite" | "reduced" | "off";
 const prefix = process.env.COMPANION_RELEASE_ARTIFACT_PREFIX ?? ".scratch-pw/companion-fast-release";
@@ -86,6 +87,10 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} release co
   const start = { x: actor.x + actor.width / 2, y: actor.y + actor.height * .45 };
   const offsetX = start.x - (carrier.x + carrier.width / 2);
   await page.mouse.move(start.x, start.y); await page.mouse.down(); await page.mouse.move(600, 450);
+  // A release within the throw window of the last movement is a throw and flies on past the pointer
+  // (lib/ui/viewer-companion/throw.ts). This case is about a put-down, so let that movement go stale first:
+  // the only fresh sample is then the release itself, which carries no velocity.
+  await page.waitForTimeout(COMPANION_THROW_LIMITS.staleInputMs + COMPANION_THROW_LIMITS.velocityWindowMs);
   const cdp = await page.context().newCDPSession(page);
   // Native browser input with no intervening mouseMoved models a newer up
   // sample. Do not synthesize DOM events or call application callbacks.

@@ -13,7 +13,9 @@ import { COMPANION_WEARABLE_IDS } from "@/lib/ui/viewer-companion/gifts";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
+import { fulfillDeclaredUiFontSheet } from "./helpers/readonly-font";
 import { selectCompanionCollectionIndex } from "./helpers/companion-collection";
+import { companionCollectionLayout } from "@/components/shared/companion-collection-navigation";
 
 const output = process.env.COMPANION131_GALLERY_OUTPUT ?? ".scratch-pw/companion-131/gallery";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
@@ -29,7 +31,7 @@ const catalogue: CompanionCollection = {
   seen: { foods: [], behaviors: [], situations: [], accessories: [] },
 };
 async function bounds(page: Page, book: Locator, rows: number | undefined, diagnostics: { path: string; samples: unknown[] }) {
-  await expect(book).toBeVisible(); await assertCompanionSilhouettes(book);
+  await expect(book).toBeVisible(); await page.screenshot({ path: diagnostics.path.replace("-geometry.json", `-sample-${diagnostics.samples.length}.png`) }); await assertCompanionSilhouettes(book);
   const geometry = await book.evaluate(node => {
     const list = node.querySelector<HTMLElement>("ul")!, detail = node.querySelector<HTMLElement>(".rhh-collection-detail")!;
     const box = (element: Element) => { const rect = element.getBoundingClientRect(); return { x: rect.x, y: rect.y, width: rect.width, height: rect.height, right: rect.right, bottom: rect.bottom }; };
@@ -38,7 +40,7 @@ async function bounds(page: Page, book: Locator, rows: number | undefined, diagn
       ancestors.push({ className: element.className, ...box(element), xOverflow: element.scrollWidth - element.clientWidth, yOverflow: element.scrollHeight - element.clientHeight, zoom: style.zoom, transform: style.transform, display: style.display, flex: style.flex, gap: style.gap });
       if (element.classList.contains("modal-card")) break;
     }
-    return { detail: box(detail), detailOverflow: detail.scrollHeight - detail.clientHeight, detailWidthOverflow: detail.scrollWidth - detail.clientWidth, grid: box(list), rows: getComputedStyle(list).gridTemplateRows.split(/\s+/).length, gridOverflow: list.scrollHeight - list.clientHeight, gridWidthOverflow: list.scrollWidth - list.clientWidth, ancestors,
+    return { book: box(node), scrollTop: (node as HTMLElement).scrollTop, detail: box(detail), detailOverflow: detail.scrollHeight - detail.clientHeight, detailWidthOverflow: detail.scrollWidth - detail.clientWidth, grid: box(list), rows: getComputedStyle(list).gridTemplateRows.split(/\s+/).length, gridOverflow: list.scrollHeight - list.clientHeight, gridWidthOverflow: list.scrollWidth - list.clientWidth, ancestors,
       buttons: [...node.querySelectorAll<HTMLButtonElement>("button")].map(button => { const rect = box(button), style = getComputedStyle(button), hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2); return { ...rect, label: button.getAttribute("aria-label"), text: button.textContent, className: button.className, selected: button.getAttribute("aria-pressed"), cssWidth: style.width, cssHeight: style.height, minHeight: style.minHeight, zoom: style.zoom, transform: style.transform, disabled: button.disabled, hit: button === hit || button.contains(hit) }; }),
       coloredUnknownArt: [...list.querySelectorAll("button:not([data-found]) [data-collection-art],button:not([data-found]) img")].filter(art => !getComputedStyle(art).filter.startsWith("brightness(0)")).length,
       // Short sheets intentionally hide the redundant overline. Only painted
@@ -50,24 +52,35 @@ async function bounds(page: Page, book: Locator, rows: number | undefined, diagn
   // retain its measured labels and geometry even when the test stops here.
   diagnostics.samples.push(geometry);
   writeFileSync(diagnostics.path, JSON.stringify(diagnostics.samples, null, 2));
-  if (rows !== undefined) expect(geometry.rows).toBeGreaterThanOrEqual(rows);
+  // 2e38b029: readable cards are 184px rows and a short sheet pages earlier
+  // with one complete row; the grid must show exactly the measured rows.
+  if (rows !== undefined) expect(geometry.rows).toBe(Math.max(rows, companionCollectionLayout(geometry.grid.width, geometry.grid.height).rows));
   expect(geometry.gridOverflow).toBeLessThanOrEqual(2); expect(geometry.gridWidthOverflow).toBeLessThanOrEqual(2); expect(geometry.coloredUnknownArt).toBe(0);
   expect(geometry.detailOverflow).toBeLessThanOrEqual(2); expect(geometry.detailWidthOverflow).toBeLessThanOrEqual(2);
-  expect(geometry.ancestors.filter(item => item.xOverflow > 2 || item.yOverflow > 2)).toEqual([]);
+  // A short sheet (<= 700px, see the heading rule below) keeps one complete
+  // row and lets the book itself scroll under the sticky power header
+  // (c3bec348, `.rhh-collection-book { overflow-y: auto }`). Nothing else may
+  // overflow, and the book never scrolls sideways.
+  const shortSheet = page.viewportSize()!.height <= 700;
+  expect(geometry.ancestors.filter(item => item.xOverflow > 2 || (item.yOverflow > 2 && !(shortSheet && /\brhh-collection-book\b/.test(String(item.className)))))).toEqual([]);
   expect(geometry.grid.bottom).toBeLessThanOrEqual(page.viewportSize()!.height - 8);
-  for (const button of geometry.buttons) { expect(button.width).toBeGreaterThanOrEqual(43.9); expect(button.height).toBeGreaterThanOrEqual(43.9); if (!button.disabled) expect(button.hit).toBe(true); }
+  for (const button of geometry.buttons) { expect(button.width).toBeGreaterThanOrEqual(43.9); expect(button.height).toBeGreaterThanOrEqual(43.9); if (!button.disabled && !(shortSheet && (button.y < geometry.book.y || button.bottom > geometry.book.bottom))) expect(button.hit).toBe(true); }
   for (const part of geometry.parts) { expect(part.x).toBeGreaterThanOrEqual(geometry.detail.x); expect(part.right).toBeLessThanOrEqual(geometry.detail.right); expect(part.y).toBeGreaterThanOrEqual(geometry.detail.y); expect(part.bottom).toBeLessThanOrEqual(geometry.detail.bottom); }
   return geometry;
 }
 const sameSplit = (before: Awaited<ReturnType<typeof bounds>>, after: Awaited<ReturnType<typeof bounds>>) => {
-  for (const key of ["detail", "grid"] as const) for (const dimension of ["x", "y", "width", "height"] as const) expect(Math.abs(after[key][dimension] - before[key][dimension]), `${key}.${dimension} stays fixed across unknown/found selection`).toBeLessThan(.5);
+  // y is compared in the book's content coordinates: a short sheet's book may
+  // scroll to keep the selected tile in view, which is not a layout shift.
+  for (const key of ["detail", "grid"] as const) for (const dimension of ["x", "y", "width", "height"] as const) expect(Math.abs(after[key][dimension] + (dimension === "y" ? after.scrollTop : 0) - before[key][dimension] - (dimension === "y" ? before.scrollTop : 0)), `${key}.${dimension} stays fixed across unknown/found selection`).toBeLessThan(.5);
 };
 
 for (const [surface, entry, width, height, dark] of [["viewer", "book", 1050, 640, false], ["viewer", "settings", 1440, 900, true], ["studio", "book", 1920, 1100, true]] as const) test(`131 ${surface} ${entry} ${width}x${height}: unread traversal, keyboard pages and fixed gallery geometry`, async ({ page }, info) => {
   test.setTimeout(90000); const errors: string[] = [], rejected: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
-  await page.context().route("**/*", route => {
+  await page.context().route("**/*", async route => {
     const request = route.request(), url = new URL(request.url());
+    // The settings font list links its declared jsDelivr stylesheets (197f7750): answered locally, never fetched.
+    if (url.origin === "https://cdn.jsdelivr.net" && await fulfillDeclaredUiFontSheet(route)) return;
     if (request.method() === "GET" && request.resourceType() === "font" && fonts.has(url.href)) return route.continue();
     if (url.origin !== new URL(info.project.use.baseURL as string).origin || !["GET", "HEAD"].includes(request.method())) { rejected.push(`${request.method()} ${url.origin}${url.pathname}`); return route.abort(); }
     if (url.pathname.startsWith("/api/")) return route.fulfill({ status: 404, body: "No live API in fixture" });
@@ -89,6 +102,9 @@ for (const [surface, entry, width, height, dark] of [["viewer", "book", 1050, 64
     await page.getByRole("button", { name: "설정", exact: true }).click(); await page.getByRole("dialog", { name: "설정", exact: true }).getByRole("tab", { name: "빅타민", exact: true }).click();
   }
   const dialog = page.getByRole("dialog", { name: entry === "book" ? "빅타민 수첩" : "설정", exact: true }), profile = dialog.locator(".rhh-companion-profile"), nav = profile.getByRole("tablist", { name: "빅타민 프로필", exact: true });
+  // Since the 2026-11-18 settings redesign the Settings window opens the
+  // companion block on its 설정 page; the look preview lives on 함께 지내기.
+  if (entry === "settings") await nav.getByRole("tab", { name: "함께 지내기", exact: true }).click();
   await expect(profile.locator(".rhh-wardrobe-preview")).toHaveAttribute("data-preview-ready", "");
   await dialog.evaluate(async node => {
     const opening = node.getAnimations().filter(animation => Number.isFinite(Number(animation.effect?.getTiming().iterations)));
@@ -103,15 +119,18 @@ for (const [surface, entry, width, height, dark] of [["viewer", "book", 1050, 64
     await profile.locator(`[data-act="companion-collection-category"][data-act-opt="${category}"]`).click();
     const book = profile.locator(category === "toy" ? ".rhh-companion-toy-discovery" : ".rhh-companion-discovery"), grid = book.getByRole("list", { name: listName, exact: true });
     const unknown = category === "food" ? COMPANION_FOOD_KINDS.findIndex(kind => !catalogue.foods.includes(kind)) : category === "behavior" ? COMPANION_BEHAVIOR_IDS.findIndex(id => !catalogue.behaviors.includes(id)) : 1;
-    await selectCompanionCollectionIndex(page, grid, unknown); const before = await measure(book, category === "food" ? 2 : undefined);
-    await selectCompanionCollectionIndex(page, grid, known); sameSplit(before, await measure(book, category === "food" ? 2 : undefined));
+    await selectCompanionCollectionIndex(page, grid, unknown); const before = await measure(book, category === "food" ? 1 : undefined);
+    await selectCompanionCollectionIndex(page, grid, known); sameSplit(before, await measure(book, category === "food" ? 1 : undefined));
     await selectCompanionCollectionIndex(page, grid, unknown);
     const rail = book.getByRole("slider"), inspected: number[] = [];
     await expect(rail).toHaveAttribute("data-act", "companion-collection-page");
     const beforeManual = await page.evaluate(key => localStorage.getItem(key), category === "toy" ? "vic.viewerCompanionTastes" : COMPANION_COLLECTION_KEY);
     if (Number(await rail.getAttribute("max")) > 1) {
-      const hit = (await rail.boundingBox())!; expect(hit.width).toBeGreaterThanOrEqual(43.9); expect(hit.height).toBeGreaterThanOrEqual(43.9);
-      await rail.click({ position: { x: hit.width / 2, y: hit.height / 2 } }); expect(Number(await rail.inputValue())).toBeGreaterThan(1);
+      // 210d4909: the range is keyboard/screen-reader only (pointer-events:none);
+      // the 44px position box takes the pointer and picks the nearest real dot.
+      const position = book.locator(".rhh-collection-page-position"), hit = (await position.boundingBox())!; expect(hit.width).toBeGreaterThanOrEqual(43.9); expect(hit.height).toBeGreaterThanOrEqual(43.9);
+      const dots = book.locator(".rhh-collection-page-dots > span"), dot = dots.nth(Math.floor(await dots.count() / 2)), dotBox = (await dot.boundingBox())!, dotPage = Number(await dot.getAttribute("data-page"));
+      await page.mouse.click(dotBox.x + dotBox.width / 2, dotBox.y + dotBox.height / 2); await expect(rail).toHaveValue(String(dotPage + 1)); expect(dotPage + 1).toBeGreaterThan(1);
       await rail.focus(); await page.keyboard.press("End"); await expect(rail).toBeFocused();
       await expect(rail).toHaveValue((await rail.getAttribute("max"))!);
       await dialog.screenshot({ path: `${output}/${name}-${category}-directional-unread.png` });
@@ -121,12 +140,12 @@ for (const [surface, entry, width, height, dark] of [["viewer", "book", 1050, 64
       await page.keyboard.press("Home"); await expect(rail).toHaveValue("1");
     } else await expect(rail).toBeDisabled();
     expect(await page.evaluate(key => localStorage.getItem(key), category === "toy" ? "vic.viewerCompanionTastes" : COMPANION_COLLECTION_KEY)).toBe(beforeManual);
-    await selectCompanionCollectionIndex(page, grid, unknown); sameSplit(before, await measure(book, category === "food" ? 2 : undefined));
+    await selectCompanionCollectionIndex(page, grid, unknown); sameSplit(before, await measure(book, category === "food" ? 1 : undefined));
     for (let step = 0; await book.locator(".rhh-collection-page-arrow[data-unread]").count(); step++) {
       const forward = book.getByRole("button", { name: "다음 새 발견 보기", exact: true }), backward = book.getByRole("button", { name: "이전 새 발견 보기", exact: true });
       expect(step).toBeLessThan(6); await (await forward.count() ? forward : backward).click();
       const selected = grid.locator('[aria-pressed="true"]'); await expect(selected).toHaveAttribute("data-found", "true"); await expect(selected).not.toHaveAttribute("data-unread", "true");
-      inspected.push(Number(await selected.getAttribute("data-collection-index"))); sameSplit(before, await measure(book, category === "food" ? 2 : undefined));
+      inspected.push(Number(await selected.getAttribute("data-collection-index"))); sameSplit(before, await measure(book, category === "food" ? 1 : undefined));
     }
     expect(inspected.length).toBeGreaterThan(0); expect(new Set(inspected).size).toBe(inspected.length); await expect(book.locator(".rhh-collection-next-unread,.rhh-collection-unread-count,.rhh-collection-page-status,.rhh-collection-page-bar")).toHaveCount(0);
     await expect(book.locator(".rhh-collection-page-dots > span")).toHaveCount(Number(await rail.getAttribute("max")));

@@ -59,7 +59,7 @@ const matrix=(x:number,y:number)=>[1,0,0,0,0,1,0,0,0,0,1,0,x,y,0,1];
 function cell(index=0):CuriousTextureCellMeasurement {
   const f=metadata.frames[index],a=metadata.atlases[f.atlas],s=92;
   return {currentPath:a.src,connectedToSprite:true,naturalWidth:a.width,naturalHeight:a.height,
-    textureWidth:s*metadata.grid,textureHeight:s*metadata.gridRows,spriteWidth:s,spriteHeight:s,textureLeft:0,textureTop:0,
+    textureWidth:s*metadata.grid,textureHeight:s*((a as {gridRows?:number}).gridRows??metadata.gridRows),spriteWidth:s,spriteHeight:s,textureLeft:0,textureTop:0,
     textureMatrix:matrix(-(f.index%metadata.grid)*s,-Math.floor(f.index/metadata.grid)*s),spriteMatrix:matrix(f.x/80*s,f.y/80*s),
     spriteClipPath:`inset(${f.clip.map(n=>`${n/80*100}%`).join(" ")})`,textureClipPath:"none"};
 }

@@ -84,8 +84,17 @@ async function setup(page: Page, surface: Surface, options: { signedIn?: boolean
   if (surface === "preview") { await page.getByRole("button", { name: "시청자 화면 보여주기", exact: true }).click(); await expect(page.locator(".viewer-fullscreen .poster-page")).toBeVisible(); expect(evidence.get(page)?.reads).toBe(1); await settle(page); }
   await installProbe(page);
   await waitForCalendarStability(page);
+  await shutOfferedRoom(page);
   if (await launcher(page).isVisible() && !await home(page).isVisible()) await assertClosedEntry(page);
   return sample(page, "ready");
+}
+/** A fresh companion begins inside its home (a44f46a2, 2026-10-19), so the compact room is offered open once
+ * on load and the launcher already reads "빅타민 집 닫기". These cases are about a reader opening and closing
+ * it: shut the offered room with its real launcher first. Later opens are the reader's own. */
+async function shutOfferedRoom(page: Page) {
+  if (!await home(page).isVisible() || !await wrapper(page).isVisible()) return;
+  await expect(launcher(page)).toHaveAttribute("aria-expanded", "true"); await expect(launcher(page)).toHaveAccessibleName("빅타민 집 닫기");
+  await launcher(page).click(); await expect(home(page)).not.toBeVisible(); await expect(launcher(page)).toHaveAttribute("aria-expanded", "false"); await settle(page);
 }
 async function installProbe(page: Page) {
   await page.evaluate(() => {
@@ -103,7 +112,7 @@ async function installProbe(page: Page) {
       return { phase: p.phase, at: performance.now(), scrollY, viewport: { width: innerWidth, height: innerHeight }, calendar: rect(calendar), launcher: l && visible(l) ? rect(l) : null, room: h && visible(h) ? rect(h) : null,
         bed: b && visible(b) ? rect(b) : null, front: f && visible(f) ? rect(f) : null, pet: pet && visible(pet) ? rect(pet) : null,
         platform: pet?.dataset.platform ?? "", depth: pet?.dataset.sofaDepth ?? "", localClothPaint: paint, count: document.querySelectorAll(".vc-companion").length, homes: document.querySelectorAll(".vc-home").length,
-        foods: [...document.querySelectorAll<HTMLElement>(".vc-food")].map(node => { const m = new DOMMatrixReadOnly(node.style.transform); return { x: m.m41, y: m.m42, hidden: node.hidden, falling: node.hasAttribute("data-falling") }; }),
+        foods: [...document.querySelectorAll<HTMLElement>(".vc-food")].map(node => { const css = getComputedStyle(node), m = new DOMMatrixReadOnly(css.transform); /* home-floor snacks are anchor-positioned: transform = offset from left/top (a3e9a288) */ return { x: m.m41 + (parseFloat(css.left) || 0), y: m.m42 + (parseFloat(css.top) || 0), hidden: node.hidden, falling: node.hasAttribute("data-falling") }; }),
         diagnostic: pet ? { hidden: pet.hidden, reason: pet.dataset.hiddenReason ?? "", presence: pet.dataset.presence ?? "", state: pet.dataset.state ?? "", transform: pet.style.transform, atlas: pet.dataset.atlas ?? "", focused: document.hasFocus(), documentHidden: document.hidden, hiddenPoint: pet.dataset.hiddenPoint ?? "", spans: pet.dataset.hiddenSpans ?? "", lost: pet.dataset.lostSupport ?? "", seeded: pet.dataset.seeded ?? "", images: [...pet.querySelectorAll("img")].map(n => ({ src: n.getAttribute("src") ?? "", complete: n.complete, width: n.naturalWidth })) } : null };
     };
     p.input = event => { const e = event as PointerEvent; p.inputs.push({ type: e.type, trusted: e.isTrusted, key: event instanceof KeyboardEvent ? event.key : "", x: e.clientX ?? 0, y: e.clientY ?? 0, at: performance.now() }); };
@@ -178,7 +187,10 @@ async function assertCompact(page: Page, frame: Frame) {
   expect(room.left).toBeGreaterThanOrEqual(11); expect(room.right).toBeLessThanOrEqual(frame.viewport.width - 11);
   expect(room.top).toBeGreaterThanOrEqual(11); expect(room.bottom).toBeLessThanOrEqual(frame.viewport.height - 11);
   expect(frame.homes).toBe(1); expect(frame.count).toBe(1);
-  expect(room.width).toBeGreaterThanOrEqual(299); expect(room.width).toBeLessThanOrEqual(381); expect(room.height).toBeCloseTo(186, 0);
+  // The floating room is one and a half side panels wide (f8646283): 1.5 x clamp(300px, 18.75vw, 380px), never
+  // wider than the viewport less its 12px margins.
+  const expectedWidth = Math.min(Math.max(300, Math.min(frame.viewport.width * .1875, 380)) * 1.5, frame.viewport.width - 24);
+  expect(Math.abs(room.width - expectedWidth)).toBeLessThan(1);
   if (frame.launcher && frame.launcher.bottom > 0 && frame.launcher.top < frame.viewport.height) {
     const expectedX = Math.max(12, Math.min(frame.launcher.left, frame.viewport.width - 12 - room.width));
     const below = frame.launcher.bottom + 8, above = frame.launcher.top - room.height - 8;
@@ -190,12 +202,18 @@ async function assertCompact(page: Page, frame: Frame) {
   expect(await page.locator(".vc-home-shelf-slot").evaluate(node => node.getBoundingClientRect().height)).toBe(0);
   await expect(launcher(page)).toHaveAttribute("aria-expanded", "true");
   expect(await launcher(page).evaluate(node => { const id = node.getAttribute("aria-controls"), target = id ? document.getElementById(id) : null; return Boolean(target && !target.hidden && target.contains(document.querySelector(".vc-home"))); })).toBe(true);
-  const controls = await home(page).evaluate(node => ({ roomHeight: node.querySelector(".vc-home-room")!.getBoundingClientRect().height, controls: [...node.querySelectorAll<HTMLElement>("button:not([data-panel-section-toggle])")].map(button => { const r = button.getBoundingClientRect(); return { width: r.width, height: r.height }; }) }));
-  expect(controls.roomHeight).toBeCloseTo(132, 0); for (const c of controls.controls) { expect(c.width).toBeGreaterThanOrEqual(44); expect(c.height).toBeGreaterThanOrEqual(44); }
+  const controls = await home(page).evaluate(node => ({ roomHeight: node.querySelector(".vc-home-room")!.getBoundingClientRect().height, roomWidth: node.querySelector(".vc-home-room")!.getBoundingClientRect().width, controls: [...node.querySelectorAll<HTMLElement>("button:not([data-panel-section-toggle])")].map(button => { const r = button.getBoundingClientRect(); return { width: r.width, height: r.height }; }) }));
+  // The illustrated room keeps its art ratio (companion-home.css --vc-room-height: max(74cqw, 260px), e4f56c8f)
+  // under one title row; the old fixed 186px shelf with a 132px room is gone.
+  expect(Math.abs(controls.roomHeight - Math.max(controls.roomWidth * .74, 260))).toBeLessThan(1);
+  expect(room.height - controls.roomHeight).toBeGreaterThanOrEqual(44); expect(room.height - controls.roomHeight).toBeLessThanOrEqual(72);
+  for (const c of controls.controls) { expect(c.width).toBeGreaterThanOrEqual(44); expect(c.height).toBeGreaterThanOrEqual(44); }
 }
 async function close(page: Page, keyboard = false) {
   const before = await sample(page, "before-close");
-  if (keyboard) await page.keyboard.press("Escape"); else await home(page).getByRole("button", { name: "빅타민 집 닫기", exact: true }).click();
+  // Keyboard close is Enter on the room's own close control; Escape has its own case below.
+  const closer = home(page).getByRole("button", { name: "빅타민 집 닫기", exact: true });
+  if (keyboard) { await closer.focus(); await closer.press("Enter"); } else await closer.click();
   await expect(home(page)).not.toBeVisible(); await expect(launcher(page)).toBeFocused(); await settle(page); const after = await sample(page, "closed");
   expect(delta(before.calendar, after.calendar)).toBeLessThan(1); expect(Math.abs(before.scrollY - after.scrollY)).toBeLessThan(1);
   await expect(launcher(page)).toHaveAttribute("aria-expanded", "false");
@@ -209,7 +227,15 @@ test("viewer1280 anonymous opening preserves every calendar bound and scroll pos
   await page.screenshot({ path: `${prefix}/${build}/floating-open-viewer1280.png` });
   await close(page);
 });
-test("viewer1480 signed-in keyboard Enter and Escape preserve the calendar and focus", async ({ page }) => {
+// Regression guard (fixed in 63ecc14a): since the house was portalled into .vc-home-carrier (886d977a) a keydown
+// inside the room never reached the .vc-compact-home Escape handler.
+test("Escape inside the open compact room closes it and returns focus to its launcher", async ({ page }) => {
+  await setup(page, "viewer"); await open(page, true);
+  await expect(home(page).getByRole("button", { name: "빅타민 집 닫기", exact: true })).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(home(page)).not.toBeVisible(); await expect(launcher(page)).toBeFocused(); await expect(launcher(page)).toHaveAttribute("aria-expanded", "false");
+});
+test("viewer1480 signed-in keyboard Enter opens and closes while the calendar and focus stay put", async ({ page }) => {
   await page.setViewportSize({ width: 1480, height: 938 }); await setup(page, "viewer", { signedIn: true }); await open(page, true);
   await expect(home(page).getByRole("button", { name: "빅타민 집 닫기", exact: true })).toBeFocused(); await close(page, true);
 });
@@ -317,7 +343,7 @@ test("settings keeps the open compact room inert and never reopens an explicitly
 
 test("compact premiere group5 ownership withdraws the room and recovers its controls after Escape", async ({ page }) => {
   test.setTimeout(40_000); await seed(page); await page.addInitScript(() => localStorage.setItem("vic.premiereStage", "on"));
-  await page.goto("/visual-fixture/poster?premiere=172&count=1"); await page.bringToFront(); await expect(actor(page)).toBeVisible(); await settle(page); await installProbe(page); await open(page);
+  await page.goto("/visual-fixture/poster?premiere=172&count=1"); await page.bringToFront(); await expect(actor(page)).toBeVisible(); await settle(page); await installProbe(page); await shutOfferedRoom(page); await open(page);
   const identity = (await wrapper(page).elementHandle())!, preferences = await page.evaluate(() => localStorage.getItem("vic.viewerCompanion"));
   await expect(wrapper(page)).toHaveAttribute("data-pm-exit", "5");
   await expect(wrapper(page)).toHaveAttribute("inert", "", { timeout: 15_000 }); await expect(launcher(page)).toHaveAttribute("inert", "");

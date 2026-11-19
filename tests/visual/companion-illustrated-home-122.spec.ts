@@ -12,9 +12,10 @@ const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAl
 async function fixture(page: Page, options: { personality?: CompanionPreferences["personality"]; roam?: boolean; sleep?: boolean; energy?: number; hunger?: number; theme?: string; surface?: string; season?: string; animal?: CompanionPreferences["animalMode"]; sceneMemory?: CompanionSceneMemory; reduce?: boolean; graphics?: "off" | "soft"; weather?: string } = {}) {
   const posts: string[] = [], foreign: string[] = [], errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
+  const origin = new URL(test.info().project.use.baseURL!).origin;
   await page.context().route("**/*", route => {
     const request = route.request(), url = new URL(request.url());
-    if (url.origin !== "http://127.0.0.1:3117") {
+    if (url.origin !== origin) {
       if (request.method() === "GET" && request.resourceType() === "font" && fonts.has(url.href)) return route.continue();
       foreign.push(url.origin + url.pathname); return route.abort();
     }
@@ -66,12 +67,17 @@ for (const [surface, width, theme] of [["viewer", 1440, "light"], ["studio", 192
       const r = node.getBoundingClientRect();
       // Rounded corners deliberately exclude their transparent corner pixels.
       // Check the center and each actual edge rather than the cut-out corners.
-      return [[r.x + 3, r.y + r.height / 2], [r.right - 3, r.y + r.height / 2], [r.x + r.width / 2, r.y + 3], [r.x + r.width / 2, r.bottom - 3], [r.x + r.width / 2, r.y + r.height / 2]].every(([x, y]) => { const hit = document.elementFromPoint(x, y); return hit === node || node.contains(hit); });
-    }), action + ' owns every part of its native target').toBe(true);
+      // A fresh resident may start seated on the sofa (a44f46a2 fresh home
+      // entry); the living companion lies above the furniture on purpose, so
+      // only another piece of room art or chrome counts as a stolen hit.
+      return [[r.x + 3, r.y + r.height / 2], [r.right - 3, r.y + r.height / 2], [r.x + r.width / 2, r.y + 3], [r.x + r.width / 2, r.bottom - 3], [r.x + r.width / 2, r.y + r.height / 2]].flatMap(([x, y]) => { const hit = document.elementFromPoint(x, y); return hit === node || node.contains(hit) || hit?.closest('.vc-companion') ? [] : [`${Math.round(x)},${Math.round(y)} -> ${hit?.tagName}.${hit?.getAttribute("class")}`]; });
+    }), action + ' owns every part of its native target').toEqual([]);
     targets.push({ action, ...rect });
   }
   const get = (action: string) => targets.find(target => target.action === action)!;
-  expect(get('toys').x - get('feed').x - get('feed').width).toBeGreaterThanOrEqual(7);
+  // f8646283 (136 room coherence) set the storage gap to max(3px, 1.2cqw);
+  // the 122 seven-pixel gap is superseded. The targets must still never touch.
+  expect(get('toys').x - get('feed').x - get('feed').width).toBeGreaterThanOrEqual(3 - .01);
   expect(get('clearFood').y - get('toys').y - get('toys').height).toBeGreaterThanOrEqual(7);
   const glass = (await state.room.locator('.vc-window-glass').boundingBox())!;
   const sofa = (await state.room.locator('.vc-plush-bed').boundingBox())!;

@@ -13,8 +13,17 @@ const position = (item: Locator) => item.evaluate(node => {
   // Chromium computes transform:none inside the deliberately hidden food
   // layer while a dialog owns input. Its retained inline carrier is the only
   // position during that interval; visible frames still use computed style.
-  const transform = node.closest("[hidden]") ? (node as HTMLElement).style.transform : getComputedStyle(node).transform;
-  const m = new DOMMatrixReadOnly(transform); return { x: m.m41, y: m.m42 };
+  const item = node as HTMLElement, concealed = Boolean(node.closest("[hidden]")), css = getComputedStyle(node);
+  const m = new DOMMatrixReadOnly(concealed ? item.style.transform : css.transform);
+  // On the home floor the snack is CSS-anchored to its room (a3e9a288, lib/ui/viewer-companion/item-anchor.ts): left/top
+  // are that source's corner and the transform is only the offset from it. Read the named source's own box: the computed
+  // left/top do not resolve while concealed (display: none) and go stale after a scroll (the browser shifts an anchored
+  // box with its source without recalculating style).
+  if (!item.style.left.includes("anchor(")) return { x: m.m41 + (parseFloat(css.left) || 0), y: m.m42 + (parseFloat(css.top) || 0) };
+  const name = item.style.getPropertyValue("position-anchor").trim();
+  const source = [...document.querySelectorAll<HTMLElement>("[style*='anchor-name']")].find(candidate => candidate.style.getPropertyValue("anchor-name").split(",").map(part => part.trim()).includes(name));
+  if (!name || !source) throw new Error("anchored snack has no named source");
+  const rect = source.getBoundingClientRect(); return { x: m.m41 + rect.left, y: m.m42 + rect.top };
 });
 const posts = new WeakMap<Page, string[]>();
 type FoodWitnessWindow = Window & { homeFoodWitness: { fell: boolean; observer: MutationObserver } };
@@ -53,7 +62,8 @@ async function setup(page: Page, mobile: boolean) {
   await page.goto("/visual-fixture/poster"); await page.evaluate(() => document.fonts.ready);
   await waitForHomeMount(page);
   await openCompanionHome(page, mobile ? "touch" : "pointer");
-  await expect(bed(page)).toBeDisabled(); // Sleeping OFF does not disable food or its floor.
+  // b21afb8e: the cushion recall no longer depends on auto-sleep; with sleeping OFF it stays usable, like food and its floor.
+  await expect(bed(page)).toBeEnabled();
   await page.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(a => a.playState === "running" && Number.isFinite(Number(a.effect?.getComputedTiming().endTime))).map(a => a.finished)); });
   await page.waitForTimeout(180);
 }
@@ -68,13 +78,15 @@ async function expectFloor(page: Page, item: Locator) {
   await expect.poll(async () => { const p = await position(item), r = (await house(page).locator(".vc-home-floor").boundingBox())!; return Math.abs(p.y - (r.y + r.height - COMPANION_HOME_FLOOR_INSET)); }).toBeLessThan(2);
   const collisions = await item.evaluate(node => {
     const r = node.getBoundingClientRect();
-    return [...document.querySelectorAll(".vc-home button:not(.vc-cushion-button)")].filter(button => { const b = button.getBoundingClientRect(); return b.width > 0 && b.height > 0 && r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top; }).length;
+    // Same set the product protects (companion-food.tsx homeControlRects): furniture that is also a control (TV, lamp,
+    // curtain, shower pad: data-home-decoration-control, a8683a3d) stands in the room and a snack may rest in front of it.
+    return [...document.querySelectorAll(".vc-home button:not(.vc-cushion-button):not([data-home-decoration-control])")].filter(button => { const b = button.getBoundingClientRect(); return b.width > 0 && b.height > 0 && r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top; }).length;
   });
   expect(collisions, "the full44px food control must keep the outlet, bin and room controls clear").toBe(0);
 }
 async function watchGravity(item: Locator) {
   await item.evaluate(node => {
-    const read = () => { const m = new DOMMatrixReadOnly(getComputedStyle(node).transform); return { x: m.m41, y: m.m42 }; };
+    const read = () => { const css = getComputedStyle(node), m = new DOMMatrixReadOnly(css.transform); return { x: m.m41 + (parseFloat(css.left) || 0), y: m.m42 + (parseFloat(css.top) || 0) }; };
     const p: FallProbe = { released: null, onset: null, frames: [], began: 0, seen: false, done: false, raf: 0, node,
       observer: new MutationObserver(() => { if (node.hasAttribute("data-falling")) { p.onset ??= read(); p.seen = true; } }),
       release: event => { if (event instanceof KeyboardEvent && !["Enter", " "].includes(event.key)) return; p.released = read(); p.began = performance.now(); },
@@ -82,8 +94,8 @@ async function watchGravity(item: Locator) {
     p.observer.observe(node, { attributes: true, attributeFilter: ["data-falling"] });
     node.addEventListener("pointerup", p.release, true); node.addEventListener("keydown", p.release, true);
     const sample = (now: number) => {
-      if (p.released) { const falling = node.hasAttribute("data-falling"), m = new DOMMatrixReadOnly(getComputedStyle(node).transform), art = new DOMMatrixReadOnly(getComputedStyle(node.firstElementChild!).transform); p.seen ||= falling;
-        p.frames.push({ at: now - p.began, x: m.m41, y: m.m42, falling, scaleY: Math.hypot(art.c, art.d) }); if (p.seen && !falling) { p.done = true; return; }
+      if (p.released) { const falling = node.hasAttribute("data-falling"), point = read(), art = new DOMMatrixReadOnly(getComputedStyle(node.firstElementChild!).transform); p.seen ||= falling;
+        p.frames.push({ at: now - p.began, x: point.x, y: point.y, falling, scaleY: Math.hypot(art.c, art.d) }); if (p.seen && !falling) { p.done = true; return; }
       }
       p.raf = requestAnimationFrame(sample);
     };
@@ -132,6 +144,9 @@ async function dragFood(page: Page, item: Locator, target: { x: number; y: numbe
     await page.mouse.move(start.x + 12, start.y, { steps: 2 }); await page.mouse.move(target.x, target.y, { steps: 12 });
     for (let sample = 0; sample < 4; sample++) await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve())));
     await expect.poll(async () => { const p = await position(item); return Math.hypot(p.x - expectedHeld.x, p.y - expectedHeld.y); }, { message: "captured food must follow its grip instead of snapping into the sofa" }).toBeLessThan(2);
+    // A release within 100 ms of the last drag sample is a throw along that motion (companion-food.tsx pointerup); on a
+    // slow frame that sample can be the batch the poll above just saw. Hold still past that window: this is a put-down.
+    await page.waitForTimeout(140);
     await page.mouse.up();
     return;
   }
@@ -141,6 +156,7 @@ async function dragFood(page: Page, item: Locator, target: { x: number; y: numbe
     for (let step = 1; step <= 12; step++) await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: start.x + (target.x - start.x) * step / 12, y: start.y + (target.y - start.y) * step / 12, id: 1 }] });
     for (let sample = 0; sample < 4; sample++) { await page.evaluate(() => new Promise<void>(resolve => requestAnimationFrame(() => resolve()))); await cdp.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ ...target, id: 1 }] }); }
     await expect.poll(async () => { const p = await position(item); return Math.hypot(p.x - expectedHeld.x, p.y - expectedHeld.y); }, { message: "captured touch food must follow its grip instead of snapping into the sofa" }).toBeLessThan(2);
+    await page.waitForTimeout(140);
     await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
   } finally { await cdp.detach(); }
 }
@@ -183,6 +199,8 @@ for (const view of [{ mobile: false, landscape: false, width: 1920, height: 1100
     test.setTimeout(30000); await setup(page, mobile);
     await press(house(page).getByRole("button", { name: "밥 꺼내기", exact: true }), mobile);
     const item = foods(page).last(); await expect(item).not.toHaveAttribute("data-selected");
+    // A dispensed snack is ejected from the outlet and falls to the house floor (a44f46a2); "no fall" starts once it rests.
+    await expectFloor(page, item);
     await watchNoFall(item); await unchangedSelfPutDown(item, mobile); await stopNoFall(page);
     const first = await bedPoint(page);
     await watchGravity(item);
@@ -223,8 +241,11 @@ for (const view of [{ mobile: false, landscape: false, width: 1920, height: 1100
     await page.evaluate(() => { document.documentElement.style.overflowY = "auto"; const spacer = document.createElement("div"); spacer.style.height = "1400px"; spacer.setAttribute("aria-hidden", "true"); document.body.append(spacer); window.scrollTo({ top: 64, behavior: "instant" }); });
     await expectOffset(page, item, final); await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" })); await expectOffset(page, item, final);
     await page.waitForTimeout(900); await stopNoFall(page);
-    const quiet = await item.evaluate(node => new Promise<number>(resolve => { let writes = 0; const o = new MutationObserver(records => { writes += records.length; }); o.observe(node, { attributes: true, subtree: true }); setTimeout(() => { o.disconnect(); resolve(writes); }, 350); }));
-    expect(quiet).toBe(0); await expect(foods(page)).toHaveCount(1);
+    // A snack at rest is not written at all (it was re-anchored about once a second before 63ecc14a).
+    const written = await item.evaluate(node => new Promise<{ before: string; after: string; names: string[] }>(resolve => { const before = (node as HTMLElement).style.cssText, names: string[] = []; const o = new MutationObserver(records => { for (const record of records) names.push(`${record.target === node ? "" : "child "}${record.attributeName}`); }); o.observe(node, { attributes: true, subtree: true }); setTimeout(() => { o.disconnect(); resolve({ before, after: (node as HTMLElement).style.cssText, names }); }, 350); }));
+    const quiet = written.names.length;
+    expect(written.after).toBe(written.before); expect(written.names).toEqual([]);
+    await expect(foods(page)).toHaveCount(1);
     await expect(page.locator("[data-export-surface] .vc-food,[data-export-surface] .vc-companion")).toHaveCount(0);
     if (mobile) {
       await expect(page.locator(".poster-page")).toHaveClass(/poster-agenda/);
@@ -238,6 +259,8 @@ for (const view of [{ mobile: false, landscape: false, width: 1920, height: 1100
     test.setTimeout(30000); await setup(page, mobile);
     await press(house(page).getByRole("button", { name: "밥 꺼내기", exact: true }), mobile);
     const item = foods(page).last(); await expect(item).not.toHaveAttribute("data-selected");
+    // A dispensed snack is ejected from the outlet and falls to the house floor (a44f46a2); measure it once it rests there.
+    await expectFloor(page, item);
     const identity = (await item.elementHandle())!;
     const offset = async () => { const p = await position(item), r = (await page.locator(".vc-dispenser-slot").boundingBox())!; return { x: p.x - r.x, y: p.y - r.y }; };
     const initial = await offset(), errors: number[] = []; await watchNoFall(item);
@@ -275,6 +298,8 @@ test("a hungry sofa resident approaches the real house floor before eating a dro
   await actor.focus(); await actor.press("Enter"); await expect(creature).toHaveAttribute("data-state", "petted");
   await house(page).getByRole("button", { name: "밥 꺼내기", exact: true }).click();
   const item = foods(page).last(); await expect(item).not.toHaveAttribute("data-selected");
+  // The dispensed snack falls to the house floor first; a grab during that fall does not take.
+  await expect(item).not.toHaveAttribute("data-falling");
   const target = await bedPoint(page, .5, .55); await watchGravity(item); await dragFood(page, item, { x: target.x, y: target.y - 16 }, false);
   const placed = await finishGravity(page, item, "meal-1920");
   await expect(creature).toHaveAttribute("data-state", "eat", { timeout: 8000 });
@@ -284,4 +309,14 @@ test("a hungry sofa resident approaches the real house floor before eating a dro
   expect(hunger).toBeLessThan(.5); await expect(creature).toHaveAttribute("data-platform", /^companion-home-floor(?:-\d+)?$/);
   console.log(JSON.stringify({ check: "manual-home-food-meal", placed, hungerAfter: hunger }));
   await page.screenshot({ path: ".scratch-pw/companion-home-food-meal.png" });
+});
+
+// Regression guard (fixed in 63ecc14a): since the snack became CSS-anchored (2ee67911 / a3e9a288) a snack at rest on the
+// house floor was released and re-anchored about once a second (8 identical style writes, 2 anchor toggles per burst).
+test("a snack at rest on the house floor is not rewritten", async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1100 }); await setup(page, false);
+  await house(page).getByRole("button", { name: "밥 꺼내기", exact: true }).click();
+  const item = foods(page).last(); await expectFloor(page, item); await page.waitForTimeout(900);
+  const writes = await item.evaluate(node => new Promise<string[]>(resolve => { const began = performance.now(), names: string[] = []; const o = new MutationObserver(records => { for (const record of records) names.push(`${Math.round(performance.now() - began)}ms ${record.attributeName}`); }); o.observe(node, { attributes: true, subtree: true }); setTimeout(() => { o.disconnect(); resolve(names); }, 3000); }));
+  expect(writes).toEqual([]);
 });

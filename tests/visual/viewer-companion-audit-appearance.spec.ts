@@ -1,5 +1,7 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
+import { resolve } from "node:path";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
@@ -17,9 +19,16 @@ test.beforeEach(async ({ page }) => {
   const proof: Evidence = { errors: [], mutations: [], assets: [], checkpoints: [] };
   evidence.set(page, proof);
   page.on("pageerror", error => proof.errors.push(error.message));
+  const manifest = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
+  const unseenReports = new Set(Object.entries(manifest).filter(([, action]) => action.exportedName === "getUnseenReportCountAction").map(([id]) => id));
   page.on("request", request => { const path = new URL(request.url()).pathname; if (/\/(?:companion\/|premiere\/vitamin-audience\.webp)/.test(path)) proof.assets.push(path); });
   await page.route("**/*", route => {
     const request = route.request(), path = new URL(request.url()).pathname;
+    // The developer header's report inbox asks for its badge number on mount (c30945c4 / 6bd60358, 2026-11-13):
+    // a read, answered locally with "nothing unseen" and never executed on the server.
+    if (request.method() === "POST" && path === "/visual-fixture/studio" && unseenReports.has(request.headers()["next-action"])) return route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":"fixture"}
+1:0
+` });
     if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) {
       proof.mutations.push(`${request.method()} ${path}`);
       return route.fulfill({ status: 500, body: "fixture mutation blocked" });
@@ -96,6 +105,8 @@ async function contrast(node: Locator) {
   });
 }
 
+// Every text-bearing element of a companion page. A switch is a painted control without text.
+const READABLE = ".rhh-label, h3, dt, dd, p, strong, summary, button:not(.rhh-switch)";
 test.describe("desktop dark appearance", () => {
   test.use({ viewport: { width: 1920, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
   for (const surface of ["viewer", "studio"] as const) test(`${surface} dark room and every companion pane remain readable in wide and compact desktop`, async ({ page }) => {
@@ -107,7 +118,7 @@ test.describe("desktop dark appearance", () => {
     await expect(pet(page)).toHaveAttribute("data-platform", "companion-home", { timeout: 6000 });
     await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
     await expect(page.locator(".vc-bed-foreground")).toBeVisible();
-    const homeTitle = home.locator(".panel-section-toggle > span");
+    const homeTitle = home.locator(".panel-section-toggle .panel-section-label"); // the toggle also holds a disclosure glyph span (e4f56c8f)
     const titleContrast = await contrast(homeTitle); evidence.get(page)!.checkpoints.push({ label: "home-title-contrast", value: titleContrast });
     expect(titleContrast.ratio).toBeGreaterThanOrEqual(4.5);
     await snapshot(page, `${surface}-wide-room`);
@@ -115,10 +126,15 @@ test.describe("desktop dark appearance", () => {
     const settings = page.getByRole("dialog", { name: "설정", exact: true }); await waitForOverlayEntrance(settings);
     await settings.getByRole("tab", { name: "빅타민", exact: true }).click();
     const pane = settings.locator("#rhh-tab-companion-panel");
-    for (const name of ["움직임", "장난", "교감", "프로필"]) {
-      await pane.getByRole("tab", { name, exact: true }).click(); await settle(page);
-      const content = pane.getByRole("tabpanel"); await expect(content).toHaveCount(1); await expect(content).toBeVisible();
-      const labels = content.locator(".rhh-label"); expect(await labels.count()).toBeGreaterThan(0);
+    // The companion block is four pages under one power header (PLAN-20261118 settings redesign, c3bec348):
+    // 함께 지내기 / 도감 / 옷장 / 설정. Only the 설정 page is built from row labels; the other pages are read
+    // through their headings, facts, notes and item names.
+    const pages = pane.getByRole("tablist", { name: "빅타민 프로필", exact: true });
+    for (const name of ["함께 지내기", "도감", "옷장", "설정"]) {
+      await pages.getByRole("tab", { name, exact: true }).click(); await settle(page);
+      await expect(pages.getByRole("tab", { name, exact: true })).toHaveAttribute("aria-selected", "true");
+      const content = pane.locator(':scope [role="tabpanel"][aria-labelledby$="-tab"]:not([hidden])'); await expect(content).toHaveCount(1); await expect(content).toBeVisible();
+      const labels = content.locator(READABLE).filter({ visible: true }); expect(await labels.count()).toBeGreaterThan(0);
       const values = [];
       for (let index = 0; index < await labels.count(); index++) { const value = await contrast(labels.nth(index)); values.push(value); expect(value.ratio).toBeGreaterThanOrEqual(4.5); }
       evidence.get(page)!.checkpoints.push({ label: `settings-${name}-contrast`, values });
@@ -158,9 +174,11 @@ test.describe("native390 dark appearance", () => {
   for (const surface of ["viewer", "studio"] as const) test(`${surface} dark mobile keeps the left gear and right account readable without mounting any pet`, async ({ page }) => {
     await page.goto(routeFor(surface)); await settle(page);
     await expect(page.locator(".vc-companion,.vc-home,.vc-food,.vc-food-layer,.vc-compact-home,.vc-bed-foreground,.pm-fan,.pm-cast-row")).toHaveCount(0);
-    const gear = page.locator(surface === "viewer" ? ".agenda-header > .viewer-settings-open" : ".m-month-nav > .viewer-settings-open");
+    // .viewer-settings-open is now the shared skin of the settings, theme and report-inbox buttons, and the studio
+    // gear moved into .agenda-header .m-settings-slot (c30945c4 / 6bd60358, 2026-11-13): pick the settings opener.
+    const gear = page.locator('.viewer-settings-open[aria-haspopup="dialog"]:visible');
     const account = page.locator(surface === "viewer" ? ".agenda-account button" : ".m-head-logout button");
-    const month = page.locator(surface === "viewer" ? ".agenda-title .month-title-text" : ".m-month-switch .month-title-text strong");
+    const month = page.locator(".mobile-calendar-title .mobile-month-label"); // one shared mobile title on both surfaces (1c4a1b57, 2026-10-26)
     await expect(gear).toBeVisible(); await expect(account).toBeVisible(); await expect(month).toBeVisible();
     const g = (await gear.boundingBox())!, a = (await account.boundingBox())!, m = (await month.boundingBox())!;
     expect(g.width).toBeGreaterThanOrEqual(43.9); expect(g.height).toBeGreaterThanOrEqual(43.9);

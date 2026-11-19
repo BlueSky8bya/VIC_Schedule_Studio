@@ -10,7 +10,11 @@ type JourneyTrace = Window & { companionJourneyTrace: { at: number; attribute: s
 const actor = (page: Page) => page.locator(".vc-companion .vc-actor");
 const pet = (page: Page) => page.locator(".vc-companion");
 const evidence = new WeakMap<Page, { writes: string[]; errors: string[]; frames: Frame[] }>();
-test.use({ viewport: { width: 1920, height: 480 }, headless: false, isMobile: false, hasTouch: false, serviceWorkers: "block" });
+// These cases own real window activation, so they open a browser window by default. COMPANION_LIVENESS_HEADLESS=1
+// runs the two 65-second cases without a window (a headless page always reports focus); the second-window blur
+// case cannot be reproduced there and is skipped.
+const HEADLESS = process.env.COMPANION_LIVENESS_HEADLESS === "1";
+test.use({ viewport: { width: 1920, height: 480 }, headless: HEADLESS, isMobile: false, hasTouch: false, serviceWorkers: "block" });
 
 test.beforeEach(async ({ page }) => {
   test.setTimeout(95_000);
@@ -24,7 +28,9 @@ test.beforeEach(async ({ page }) => {
   });
   await page.addInitScript(({ preferences, care, key, epoch }) => {
     for (const [k, v] of Object.entries({ [key]: epoch, "vic.gfxPref": "max", "vic.reduceMotion": "off", "vic.sound": "off", "vic.ambient": "off", "vic.premiereStage": "off", "vic_avatar_side": "left" })) localStorage.setItem(k, v);
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, roam: true, jump: true, sleep: true, heartPrank: false, cardPrank: false, panelPrank: false, ambientPrank: false, learnFromYou: false }));
+    // "다른 창 쓸 때도 놀기" is on by default since 1f2cb9eb; the blur case below is about the OFF choice (a visible
+    // but unfocused window finishes, yawns and parks). The two focused cases never reach that branch.
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, activeWhileVisible: false, roam: true, jump: true, sleep: true, heartPrank: false, cardPrank: false, panelPrank: false, ambientPrank: false, learnFromYou: false }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 2, ...care, hunger: .1, energy: .85 }));
     localStorage.removeItem("vic.panelSections"); localStorage.removeItem("vic_panel_collapsed");
   }, { preferences: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE, key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH });
@@ -50,13 +56,19 @@ async function open(page: Page, surface: "viewer" | "studio") {
   const nativeFocus = await page.context().newCDPSession(page);
   await nativeFocus.send("Emulation.setFocusEmulationEnabled", { enabled: false });
   await page.goto(surface === "viewer" ? "/visual-fixture/poster" : "/visual-fixture/studio?role=owner");
-  await page.bringToFront(); await page.evaluate(() => document.fonts.ready); await expect(actor(page)).toBeVisible();
+  await page.bringToFront(); await page.evaluate(() => document.fonts.ready);
+  // A fresh companion starts inside its home (a44f46a2). In this 480px-high window the panel's home is below the
+  // fold, so it waits there unseen. Folding the panel is the real way out: the home becomes the compact floating
+  // room, which fits and is offered open once, and the companion appears in it.
+  await expect(pet(page)).toHaveCount(1); await expect(pet(page)).toBeHidden();
+  await page.getByRole("button", { name: "패널 접기", exact: true }).click();
+  await expect(page.locator('.vc-home-launcher[data-home-action="launcher"]')).toHaveAttribute("aria-expanded", "true");
+  await expect(actor(page)).toBeVisible(); await expect(pet(page)).toHaveAttribute("data-platform", /^companion-home/);
   await pet(page).evaluate(node => {
     const w = window as unknown as JourneyTrace; w.companionJourneyTrace = [];
     w.companionJourneyObserver = new MutationObserver(records => { for (const record of records) w.companionJourneyTrace.push({ at: performance.now(), attribute: record.attributeName ?? "", previous: record.oldValue, current: node.getAttribute(record.attributeName!) }); });
     w.companionJourneyObserver.observe(node, { attributes: true, attributeOldValue: true, attributeFilter: ["data-home-journey", "data-home-waiting"] });
   });
-  const launcher = page.getByRole("button", { name: "빅타민 집 열기", exact: true }); if (await launcher.isVisible()) await launcher.click();
   // Opening the actual room has a finite focus handoff. Wait before the
   // placement input, then prove that the real keyboard command was accepted.
   await page.waitForTimeout(600); await actor(page).focus(); await actor(page).press("p");
@@ -89,6 +101,7 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} native act
 });
 
 test("actual visible window blur finishes its action then sleeps with CSS breathing and wakes without relocation", async ({ page, browser }) => {
+  test.skip(HEADLESS, "a second real window is needed to blur this one; headless pages always report focus");
   await open(page, "viewer");
   // A second browser context creates a separate native window. No fake
   // hasFocus, visibility, clock, scheduler or random source is installed.

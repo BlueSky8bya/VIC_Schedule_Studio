@@ -141,6 +141,36 @@ async function finishProbe(page: Page, label: string) {
   return probe;
 }
 
+/** The home is a room now (a44f46a2, 2026-10-19): a recall is no longer one direct flight to a cushion but a
+ * committed route of real ballistic legs over actual supports, ending on the sofa. Record every frame of it. */
+async function recordRecall(page: Page, label: string) {
+  await pet(page).evaluate((element, rows) => {
+    const win = window as ProbeWindow;
+    if (win.topJumpProbe) { cancelAnimationFrame(win.topJumpProbe.raf); win.topJumpProbe.observer.disconnect(); }
+    const probe: Probe = { frames: [], contact: null, journey: "", start: null, end: null, hiddenMutation: false, done: false, raf: 0, observer: new MutationObserver(records => {
+      if (records.some(record => record.attributeName === "hidden")) probe.hiddenMutation = true;
+    }) };
+    probe.observer.observe(element, { attributes: true, attributeFilter: ["hidden"], attributeOldValue: true });
+    const began = performance.now();
+    const record = (now: number) => {
+      const box = element.getBoundingClientRect(), node = element as HTMLElement;
+      const frame: Frame = { at: now - began, x: box.left + box.width / 2, y: box.bottom, width: box.width, top: box.top, left: box.left, right: box.right, bottom: box.bottom,
+        hidden: node.hidden || getComputedStyle(node).display === "none", row: Math.round(parseFloat(node.style.getPropertyValue("--vc-row")) * (rows - 1) / 100), state: node.dataset.state ?? "", journey: node.dataset.journey ?? "", platform: node.dataset.platform ?? "" };
+      probe.frames.push(frame); probe.start ??= frame;
+      if (frame.platform === "companion-home" && frame.state !== "jump") { probe.end = frame; probe.done = true; }
+      if (probe.done || now - began > 20000) return;
+      probe.raf = requestAnimationFrame(record);
+    };
+    win.topJumpProbe = probe; probe.raf = requestAnimationFrame(record);
+  }, registration.rows.length);
+  return async () => {
+    await expect.poll(() => page.evaluate(() => Boolean((window as ProbeWindow).topJumpProbe?.done)), { message: "the recall ends resting on the home sofa", timeout: 20000, intervals: [16, 32, 50] }).toBe(true);
+    const probe = await page.evaluate(() => { const p = (window as ProbeWindow).topJumpProbe!; cancelAnimationFrame(p.raf); p.observer.disconnect(); return { frames: p.frames, start: p.start!, end: p.end!, hiddenMutation: p.hiddenMutation }; });
+    await writeFile(`.scratch-pw/companion-054-${label}-frames.json`, JSON.stringify(probe, null, 2));
+    return probe;
+  };
+}
+
 async function actualSupportError(page: Page, point: { x: number; y: number }) {
   return page.evaluate(point => {
     const selector = ".public-day .day-strip > strong,.agenda-day .agenda-when > strong,.public-event .event-main p,.public-event .event-subs li,.agenda-event .agenda-title-text,.agenda-event .agenda-subs li,.agenda-item .agenda-title-text,.agenda-item .agenda-title,.agenda-item .agenda-subs li";
@@ -150,6 +180,11 @@ async function actualSupportError(page: Page, point: { x: number; y: number }) {
     range.detach();
     for (const node of document.querySelectorAll(".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],.vc-home-cushion")) {
       const r = node.getBoundingClientRect(); if (r.width > 0 && r.height > 0) supports.push({ left: r.left, right: r.right, y: r.top - (node.matches(".vc-home-cushion") ? 0 : 3) });
+    }
+    // A painted day cell bottom edge is ordinary travel ground too (geometry.ts "date-N-floor", 1f2cb9eb then 143):
+    // the same 3px clearance above the actual rendered cell border.
+    for (const node of document.querySelectorAll(".public-day,.agenda-day")) {
+      const r = node.getBoundingClientRect(); if (r.width > 0 && r.height > 0) supports.push({ left: r.left, right: r.right, y: r.bottom - 3 });
     }
     // New structural ledges use actual band tops and header bottoms. A header
     // match must also clear every visible glyph/control at the landing x;
@@ -249,8 +284,8 @@ for (const mobile of [false]) test.describe(mobile ? "agenda top flights" : "des
     await page.screenshot({ path: `.scratch-pw/companion-054-ballistic-${mobile ? 390 : 1920}.png` });
   });
 
-  test("ceiling-height release and a real home return keep their sine paths visible", async ({ page }) => {
-    test.setTimeout(25000); await setup(page, false);
+  test("ceiling-height release and a real multi-leg home return keep their sine paths visible", async ({ page }) => {
+    test.setTimeout(45000); await setup(page, false);
     // The compact room legitimately occludes the initial viewport-floor pet.
     // Place it on the actual upper card before opening the separate home UI.
     const card = await placeOnCard(page, mobile);
@@ -260,12 +295,28 @@ for (const mobile of [false]) test.describe(mobile ? "agenda top flights" : "des
     await holdAtCeiling(page); await startProbe(page, false); await actor(page).press("Space");
     const near = await finishProbe(page, `near-${mobile ? 390 : 1920}`);
     expect(Math.abs(near.start.y - 100)).toBeLessThan(2); expect(Math.abs(near.end.y - card.y)).toBeLessThan(2);
-    await holdAtCeiling(page); await startProbe(page, false);
+    await holdAtCeiling(page); const recalled = await recordRecall(page, `home-${mobile ? 390 : 1920}`);
     const cushion = page.getByRole("button", { name: "쿠션으로 돌아가 쉬기", exact: true });
     if (mobile) await cushion.tap(); else await cushion.click();
-    const home = await finishProbe(page, `home-${mobile ? 390 : 1920}`);
+    const home = await recalled(), viewport = page.viewportSize()!;
     expect(Math.abs(home.start.y - 100)).toBeLessThan(2); expect(home.end.platform).toBe("companion-home");
-    expect(await actualSupportError(page, home.end)).toBeLessThan(2);
+    expect(home.hiddenMutation, "even a between-rAF hidden/visible flicker is a regression").toBe(false);
+    expect(home.frames.every(frame => !frame.hidden && frame.width > 91.99 && frame.width < 92.01 && frame.top >= 7.99 && frame.left >= 3.99 && frame.right <= viewport.width - 3.99 && frame.bottom <= viewport.height - 11.99)).toBe(true);
+    // Every leg is its own ballistic journey with a real rise and fall, and every landing on the way is an
+    // actual support: the calendar ones are measured independently, the room ones are the home's own floor.
+    const journeys = [...new Set(home.frames.filter(frame => frame.state === "jump" && frame.journey).map(frame => frame.journey))];
+    expect(journeys.length, "the release drop plus at least one real leg home").toBeGreaterThanOrEqual(2);
+    for (const journey of journeys) {
+      const leg = home.frames.filter(frame => frame.journey === journey);
+      expect(leg.length).toBeGreaterThan(8); expect(leg.every(frame => frame.state === "jump")).toBe(true);
+      expect(Math.max(...leg.map(frame => frame.y)) - Math.min(...leg.map(frame => frame.y))).toBeGreaterThan(10);
+      const landed = home.frames[home.frames.indexOf(leg.at(-1)!) + 1] ?? home.end;
+      if (/^companion-home/.test(landed.platform)) continue;
+      expect(await actualSupportError(page, landed), `${landed.platform} is a real support`).toBeLessThan(2);
+    }
+    const supports = home.frames.map(frame => frame.platform).filter((platform, index, all) => platform !== all[index - 1]);
+    expect(supports[0]).toBe(home.start.platform); expect(supports.at(-1)).toBe("companion-home");
+    console.log(JSON.stringify({ check: `top-jump-home-${mobile ? 390 : 1920}`, frames: home.frames.length, legs: journeys.length, supports, start: home.start, end: home.end, hiddenMutation: home.hiddenMutation }));
     await expect(pet(page)).toHaveAttribute("data-state", "sleep");
     await page.screenshot({ path: `.scratch-pw/companion-054-sine-${mobile ? 390 : 1920}.png` });
   });

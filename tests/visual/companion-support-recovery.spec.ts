@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
+import { placeCompanionOnCalendarCard } from "./helpers/companion-home";
 
 type Rect = { left: number; right: number; top: number; bottom: number; width: number; height: number };
 type Frame = { at: number; phase: string; x: number; y: number; hidden: boolean; reason: string; state: string; support: string; same: boolean; count: number; focused: boolean; documentHidden: boolean };
@@ -117,7 +118,14 @@ function ordinaryRay(x: number, g: Geometry) {
 }
 
 test("a real clipped card recovers vertically onto its next actual card top instead of disappearing", async ({ page }) => {
-  await setup(page); const first = await geometry(page); proofs.get(page)!.facts.push({ phase: "initial-real-geometry", geometry: first });
+  await setup(page);
+  // A fresh companion now starts inside its home (2026-10-19), so at this width the compact room is open over
+  // the very cards this case plans with. Walk the resident out with the real placement and close the room:
+  // from here on this is the calendar-only world the report was about.
+  await placeCompanionOnCalendarCard(page, "viewer");
+  await home(page).getByRole("button", { name: "빅타민 집 닫기", exact: true }).click(); await expect(home(page)).toBeHidden(); await page.mouse.move(2, 2); await settle(page);
+  await expect(actor(page)).toBeVisible();
+  const first = await geometry(page); proofs.get(page)!.facts.push({ phase: "initial-real-geometry", geometry: first });
   // Plan from the existing document only. Native viewport height/wheel are
   // then applied, and the physical precondition is re-proved before success.
   let plan: { eventId: string; x: number; wheel: number; height: number } | undefined;
@@ -140,7 +148,10 @@ test("a real clipped card recovers vertically onto its next actual card top inst
   expect(plan, "PRECONDITION: unchanged fixture needs a same-column card ray with no ordinary text/floor ledge; absence is a coverage failure, not a product PASS").toBeDefined();
   await page.setViewportSize({ width: 1480, height: plan!.height }); await settle(page);
   const card = page.locator(`.public-event[data-eventid="${plan!.eventId}"]`), source = (await card.boundingBox())!;
-  await actor(page).focus(); await actor(page).press("p"); await page.mouse.click(plan!.x, source.y - 10);
+  await actor(page).focus(); await actor(page).press("p"); await expect(pet(page)).toHaveAttribute("data-placing", ""); await page.mouse.click(plan!.x, source.y - 10);
+  // The resident already stands on another card top, so the platform pattern is true before this jump starts.
+  // Wait for the feet themselves to arrive on the planned card.
+  await expect.poll(async () => Math.abs((await mark(page, "placing-on-real-card")).y - source.y + 3), { timeout: 8000 }).toBeLessThan(2);
   await expect(pet(page)).toHaveAttribute("data-platform", /^card-\d+-top(?:-\d+)?$/); await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
   const placed = await mark(page, "placed-on-real-card"); expect(Math.abs(placed.y - source.y + 3)).toBeLessThan(2);
   await mark(page, "native-scroll-recovery"); await page.mouse.move(1000, plan!.height - 100); await page.mouse.wheel(0, plan!.wheel);

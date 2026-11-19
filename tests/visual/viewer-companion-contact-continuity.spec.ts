@@ -3,6 +3,7 @@ import { writeFile } from "node:fs/promises";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { companionSpriteSources } from "@/lib/ui/viewer-companion/sprite-quality";
+import { COMPANION_MAX_MATERIAL_STRETCH } from "@/lib/ui/viewer-companion/material-scale";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome } from "./helpers/companion-home";
 import { placeCompanionForContactRetention } from "./helpers/companion-contact-floor";
@@ -28,12 +29,14 @@ test.beforeEach(async ({ page }) => {
 });
 test.afterEach(async ({ page }) => { expect(posts.get(page)).toEqual([]); });
 
-async function setup(page: Page, reduced = false, mobile = false): Promise<Body> {
+async function setup(page: Page, reduced = false, mobile = false, restWhenUnfocused = false): Promise<Body> {
   await page.addInitScript(({ key, epoch, preferences, care, reduced }) => {
     localStorage.setItem(key, epoch); localStorage.setItem("vic.reduceMotion", reduced ? "on" : "off"); localStorage.setItem("vic.gfxPref", "max"); localStorage.setItem("vic.sound", "off"); localStorage.setItem("vic.ambient", "off");
     localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences })); localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 1, ...care }));
     localStorage.setItem("vic_avatar_side", "left"); localStorage.removeItem("vic.panelSections"); localStorage.removeItem("vic_panel_collapsed"); Math.random = () => 0;
-  }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, reduced, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep: false, feeding: false, heartPrank: false, ambientPrank: false }, care: { ...DEFAULT_COMPANION_CARE, hunger: .05 } });
+  }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, reduced, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep: false, feeding: false, heartPrank: false, ambientPrank: false,
+    // "다른 창 쓸 때도 놀기" is on by default (1f2cb9eb); the wake case needs a pet that rests when focus leaves.
+    activeWhileVisible: !restWhenUnfocused }, care: { ...DEFAULT_COMPANION_CARE, hunger: .05 } });
   if (!mobile) await page.setViewportSize({ width: 1920, height: 1400 });
   await page.goto("/visual-fixture/poster?avatar=1"); await page.bringToFront(); await expect(pet(page)).toBeVisible();
   // Desktop hover assertions read the room's live care meter. Mobile pickup
@@ -146,7 +149,9 @@ for (const mobile of [false]) test.describe(mobile ? "touch hanging tension" : "
       expect(await decoded!.evaluate(node => ({ same: node === document.querySelector(".vc-companion .vc-texture"), decoded: (node as HTMLImageElement).complete && (node as HTMLImageElement).naturalWidth > 0, connected: node.isConnected }))).toEqual({ same: true, decoded: true, connected: true });
       expect(new Set(settled.map(frame => frame.textureCell).filter(Boolean)).size).toBeGreaterThan(1);
       if (!mobile) expect(heldRequests).toBe(1);
-      expect(settled.length).toBeGreaterThan(12); expect(settled.every(f => f.poseY >= 1.18 && f.poseY <= 1.32 && f.poseX < 1 && Math.abs(f.bob) < .001 && f.originError < .1 && f.lowerBodyY > .2)).toBe(true);
+      // 3eed289d: the hanging stretch is bounded by one strain budget (1.08, material-scale.ts) and conserves the
+      // drawing's area, so the body is as much narrower as it is longer. It used to stretch 1.18-1.32 with a free width.
+      expect(settled.length).toBeGreaterThan(12); expect(settled.every(f => f.poseY >= 1.05 && f.poseY <= COMPANION_MAX_MATERIAL_STRETCH + .001 && f.poseX < 1 && Math.abs(f.poseX * f.poseY - 1) < .005 && Math.abs(f.bob) < .001 && f.originError < .1 && f.lowerBodyY > .2)).toBe(true);
       expect(new Set(settled.map(f => f.facing)).size).toBe(1); expect(Math.max(...settled.map(f => f.x)) - Math.min(...settled.map(f => f.x))).toBeLessThan(.05); expect(Math.max(...settled.map(f => f.y)) - Math.min(...settled.map(f => f.y))).toBeLessThan(.05);
       await page.screenshot({ path: `${contactOutput}/companion-058-contact-held-${mobile ? "touch" : "cold"}.png` });
     } finally { unblock(); if (client) { await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] }); await client.detach(); } else await page.mouse.up(); }
@@ -175,7 +180,7 @@ for (const mobile of [false]) test.describe(mobile ? "controlled-focus touch pic
     // input explicitly, with genuine elapsed time and native pointer capture.
     // This is not an assertion about operating-system focus delivery.
     await page.addInitScript(() => { (window as FocusFixtureWindow).companionFixtureFocused = true; Object.defineProperty(document, "hasFocus", { configurable: true, value: () => (window as FocusFixtureWindow).companionFixtureFocused }); });
-    await setup(page, false, mobile);
+    await setup(page, false, mobile, true);
     await page.evaluate(() => { (window as FocusFixtureWindow).companionFixtureFocused = false; window.dispatchEvent(new Event("blur")); });
     await page.waitForTimeout(1800); await expect(pet(page)).toHaveAttribute("data-presence", "parked", { timeout: 3000 });
     await page.evaluate(() => { (window as FocusFixtureWindow).companionFixtureFocused = true; window.dispatchEvent(new Event("focus")); });

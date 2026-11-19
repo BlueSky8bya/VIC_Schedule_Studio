@@ -4,13 +4,15 @@ import { resolve } from "node:path";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_COLLECTION_KEY, COMPANION_BEHAVIOR_IDS } from "@/lib/ui/viewer-companion/collection";
+import { COMPANION_MEMORY_BOOK } from "@/lib/ui/viewer-companion/memory-book-order";
 import { COMPANION_SITUATION_IDS } from "@/lib/ui/viewer-companion/moments";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_FOOD_BOOK_ORDER as COMPANION_FOOD_KINDS } from "@/lib/ui/viewer-companion/collection-book-order";
 import { COMPANION_WEARABLE_IDS } from "@/lib/ui/viewer-companion/gifts";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { CAL_ZOOM_STEPS } from "@/lib/ui/calendar-zoom";
-import { openCompanionHome } from "./helpers/companion-home";
+import { companionNodeOrigin, openCompanionHome } from "./helpers/companion-home";
+import { setCompanionMotion } from "./helpers/companion-settings";
 import { settlePanelLayout } from "./helpers/panel-layout";
 
 type Surface = "viewer" | "studio" | "preview";
@@ -48,7 +50,7 @@ async function fixture(page: Page, context: BrowserContext, surface: Surface, me
     if (localStorage.getItem("fixture.unread113")) return;
     localStorage.setItem("fixture.unread113", "seeded");
     for (const [name, value] of Object.entries({ [key]: epoch, "vic.dark": dark ? "on" : "off", "vic.sound": "off", "vic.ambient": "off", "vic.reduceMotion": meal ? "off" : "on", "vic.gfxPref": "max", "vic.premiereStage": "off" })) localStorage.setItem(name, value);
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, roam: meal, jump: meal, sleep: false, feeding: meal, petting: false, learnFromYou: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, rarePrank: false }));
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, roam: false, jump: meal, sleep: false, feeding: meal, petting: false, learnFromYou: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, rarePrank: false }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...care, hunger: meal ? .55 : .05, affection: .6, energy: 1 }));
     localStorage.setItem(collectionKey, JSON.stringify(initial));
   }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, preferences: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE, collectionKey: COMPANION_COLLECTION_KEY, initial, dark: surface === "studio", meal });
@@ -161,7 +163,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`113 ${surf
   await counts(page, six, "settings open and tab switch never acknowledge");
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); dialog = await book(page);
   await dialog.getByRole("tab", { name: "도감", exact: true }).click();
-  const foodLast = dialog.locator('[data-food-index="179"]'); await turnUntil(dialog, foodLast, "다음 페이지");
+  const foodLast = dialog.locator(`[data-food-index="${COMPANION_FOOD_KINDS.length - 1}"]`); await turnUntil(dialog, foodLast, "다음 페이지");
   await foodLast.focus(); await counts(page, six, "page navigation and focus never acknowledge");
   await page.setViewportSize({ width: 1100, height: 640 }); await settlePanelLayout(page); await counts(page, six, "responsive automatic page adjustment never acknowledges");
   await page.setViewportSize({ width: 1440, height: 900 }); await settlePanelLayout(page); await turnUntil(dialog, foodLast, "다음 페이지");
@@ -178,7 +180,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`113 ${surf
   await dialog.getByRole("button", { name: /^추억 도감 / }).click();
   const behavior = dialog.locator('[data-collection-index="1"]'); await expect(behavior).toHaveAttribute("data-unread", /.+/); await behavior.click();
   await counts(page, { foods: 0, memories: 1, accessories: 2, total: 3 }, "behavior pointer leaves situation unread");
-  const moment = dialog.locator(`[data-collection-index="${COMPANION_BEHAVIOR_IDS.length}"]`); await turnUntil(dialog, moment, "다음 페이지");
+  const moment = dialog.locator(`[data-collection-index="${COMPANION_MEMORY_BOOK.findIndex(memory => memory.kind === "moment" && memory.id === COMPANION_SITUATION_IDS[0])}"]`); await turnUntil(dialog, moment, "다음 페이지");
   await moment.focus(); await expect(moment).toHaveAttribute("data-unread", /.+/); await moment.press("Space");
   await counts(page, { foods: 0, memories: 0, accessories: 2, total: 2 }, "situation keyboard acknowledges");
   await dialog.getByRole("tab", { name: "옷장", exact: true }).click();
@@ -232,11 +234,14 @@ test("113 actual meal: recent-food automatic selection leaves unread in book and
   await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click();
   const food = page.locator(".vc-food"); await expect(food).toHaveCount(1);
   const kind = (await food.getAttribute("data-kind"))!, index = COMPANION_FOOD_KINDS.indexOf(kind as typeof COMPANION_FOOD_KINDS[number]); expect(index).toBeGreaterThanOrEqual(0);
-  const grip = (await food.boundingBox())!, at = await food.evaluate(node => { const m = new DOMMatrixReadOnly((node as HTMLElement).style.transform); return { x: m.m41, y: m.m42 }; });
+  const grip = (await food.boundingBox())!, at = await companionNodeOrigin(food); // a snack on the home floor is anchored: its transform alone is not its position
   await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2); await page.mouse.down();
   await page.mouse.move(1100 + grip.x + grip.width / 2 - at.x, floor - 5 + grip.y + grip.height / 2 - at.y, { steps: 14 }); await page.mouse.up(); await page.mouse.move(1880, 50);
   await expect(food).not.toHaveAttribute("data-falling");
-  await actor.focus(); await actor.press("Space"); await page.mouse.move(1880, 50);
+  // A hungry roaming resident fetches its own snack from the dispenser (household.ts, hunger >= .35), which raced the
+  // one served here. It stands still until this snack is down and it is put down, then gets its real walk back.
+  await actor.focus(); await actor.press("Space"); await expect(pet).not.toHaveAttribute("data-state", "held"); await page.mouse.move(1880, 50);
+  await setCompanionMotion(page, "run");
   await expect(food).toHaveCount(0, { timeout: 85000 });
   const consumed = await read(page); expect(consumed.foods).toContain(kind); expect(unread(consumed).foods).toBe(1);
   proofs.get(page)!.phases.push({ label: "actual native food consumed; no RNG/clock/pose injection", kind, state: consumed });

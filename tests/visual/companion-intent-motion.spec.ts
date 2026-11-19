@@ -14,7 +14,9 @@ test.use({ viewport: { width: 1440, height: 1100 }, deviceScaleFactor: 1,
   serviceWorkers: "block", storageState: { cookies: [], origins: [] },
   isMobile: false, hasTouch: false, trace: companionTraceMode(),
   video: { mode: "on", size: { width: 1440, height: 1100 } } });
-test.setTimeout(145_000);
+// Ninety observed seconds plus start-up and the evidence write-out (about 10 MB of frames, a trace and a video per
+// case) took 170-180 s per case on a machine shared with other suites; 145 s then expired inside the write-out.
+test.setTimeout(260_000);
 
 for (const surface of ["viewer", "studio", "preview"] as const) {
   for (const personality of ["curious", "gourmet"] as const) {

@@ -13,9 +13,9 @@ import { COMPANION_COLLECTION_KEY } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_PLAY_TIMING } from "@/lib/ui/viewer-companion/timing";
 import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
-import { setCompanionRoam } from "./helpers/companion-settings";
+import { setCompanionMotion, setCompanionRoam } from "./helpers/companion-settings";
 import { settlePanelLayout } from "./helpers/panel-layout";
-import { fulfillReadOnlyFont } from "./helpers/readonly-font";
+import { fulfillDeclaredUiFontSheet, fulfillReadOnlyFont } from "./helpers/readonly-font";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { COMPANION_TV_SCREEN_CLIP, COMPANION_TV_SCREEN_TRANSFORM } from "@/lib/ui/viewer-companion/home-tv-art";
 import { enableCompanion143Diagnostics, readCompanion143Diagnostics } from "./helpers/companion-qa";
@@ -64,6 +64,8 @@ test.beforeEach(async ({ page, context, baseURL }, info) => {
   await context.route("**/*", async route => {
     const request = route.request(), url = new URL(request.url());
     if (request.resourceType() === "font" && url.origin !== origin) return fulfillReadOnlyFont(route, fonts, proof.rejected);
+    // The Settings font list links its declaration sheets from jsDelivr (197f7750): answered locally, nothing leaves.
+    if (await fulfillDeclaredUiFontSheet(route)) return;
     if(url.origin===origin && request.method()==="POST" && url.pathname==="/visual-fixture/studio" && previews.has(request.headers()["next-action"]))return route.fulfill({contentType:"text/x-component",body:`0:{"a":"$@1","f":[],"b":"fixture"}\n1:${JSON.stringify(samplePublicScheduleData)}\n`});
     if (url.origin !== origin || !["GET", "HEAD"].includes(request.method())) { proof.rejected.push(`${request.method()} ${url.origin}${url.pathname}`); return route.abort(); }
     if (url.pathname.startsWith("/api/")) return route.fulfill({ status: 404, body: "No live APIs in native fixture" });
@@ -143,7 +145,11 @@ for(const personality of COMPANION_PERSONALITIES)test(`143 ${personality} actual
     expect(observed.image).toContain(placement.art.src);
     await page.screenshot({path:resolve(output,`143-${personality}-glasses-${label}.png`)});
   };
-  await inspectGlasses("standing");await startProbe(page);await button.focus();await button.press("Enter");
+  await inspectGlasses("standing");await startProbe(page);
+  // The seed stands still for the fitting above, and a still pet does not jump: its pounce would become the no-jump
+  // sniff (petting.ts). The shipping pet always moves, so the one jumping answer is asked for with movement back on.
+  if(personality==="mischievous")await setCompanionMotion(page,"run");
+  await button.focus();await button.press("Enter");
   await expect(actor).toHaveAttribute("data-state","petted");
   await expect.poll(()=>actor.evaluate((node,{poses,sources})=>{
     const pose=Number((node as HTMLElement).dataset.pose),texture=node.querySelector<HTMLImageElement>(".vc-texture");

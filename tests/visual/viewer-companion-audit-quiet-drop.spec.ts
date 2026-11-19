@@ -54,7 +54,7 @@ async function setup(page: Page, surface: Surface, mode: Mode) {
     localStorage.removeItem("vic.panelSections"); localStorage.removeItem("vic_panel_collapsed");
     Math.random = () => 0;
   }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, mode,
-    preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep: false, feeding: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false },
+    preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep: true, feeding: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false },
     care: { ...DEFAULT_COMPANION_CARE, energy: 1, hunger: .05 } });
   await page.goto(surface === "viewer" ? "/visual-fixture/poster?avatar=1" : "/visual-fixture/studio?role=owner&y=2026&m=6");
   await page.bringToFront(); await page.evaluate(() => document.fonts.ready);
@@ -107,16 +107,21 @@ async function exposedGrip(page: Page) {
 async function landingTarget(page: Page, surface: Surface, dialog: Locator, excludeId?: string): Promise<Target> {
   const target = await dialog.evaluate((sheet, { selector, excludeId }) => {
     const pane = sheet.getBoundingClientRect(), nodes = [...document.querySelectorAll<HTMLElement>(selector)], size = 92;
-    const physical = [...document.querySelectorAll<HTMLElement>(`${selector},.support-bar[data-supportid],[data-companion-band="public"][data-supportid]`)].map(node => ({ node, r: node.getBoundingClientRect() })).filter(item => item.r.width > 0 && item.r.height > 0);
+    const physical = [...document.querySelectorAll<HTMLElement>(`${selector},.support-bar[data-supportid],[data-companion-band="public"][data-supportid]`)].map(node => ({ node, r: node.getBoundingClientRect() })).filter(item => item.r.width > 0 && item.r.height > 0).map(item => ({ ...item, plane: item.r.top - 3 }));
+    // A day cell's bottom edge is a drop support too (date-N-floor, 3px above the edge): a release that starts
+    // in the cell above a card is caught there first, so it counts among the physical supports below a release.
+    physical.push(...[...document.querySelectorAll<HTMLElement>(".public-day,.agenda-day,.studio-day")].map(node => ({ node, r: node.getBoundingClientRect() })).filter(item => item.r.width > 0 && item.r.height > 0).map(item => ({ ...item, plane: item.r.bottom - 3 })));
     const controls = [...document.querySelectorAll<HTMLElement>("button,a[href],input,select,textarea,[role=button],.vc-home,.vc-compact-home")].filter(node => !node.matches(selector) && !node.matches(".public-day,.agenda-day,.studio-day") && !node.closest(".vc-companion")).map(node => node.getBoundingClientRect()).filter(r => r.width > 0 && r.height > 0);
     for (const node of nodes) {
-      const r = node.getBoundingClientRect(), plane = r.top - 3, y = plane - 44;
+      const r = node.getBoundingClientRect(), plane = r.top - 3;
+      // Release from the highest of three heights that is still inside this card's own day cell.
+      for (const drop of [44, 24, 12]) { const y = plane - drop;
       if (!r.width || !r.height || node.dataset.eventid === excludeId || y < size + 150 || plane > innerHeight - 150) continue;
       for (const fraction of [.5, .75, .25]) {
         const x = r.left + r.width * fraction, half = size * .38 + 4, top = y - size * .76 - 4;
         if (x < 60 || x > innerWidth - 60 || x + half > pane.left && x - half < pane.right) continue;
         if (controls.some(control => control.left < x + half && control.right > x - half && control.top < plane + 1 && control.bottom > top)) continue;
-        const first = physical.filter(other => x >= other.r.left && x <= other.r.right && other.r.top - 3 >= y - .5).sort((a, b) => a.r.top - b.r.top)[0];
+        const first = physical.filter(other => x >= other.r.left && x <= other.r.right && other.plane >= y - .5).sort((a, b) => a.plane - b.plane)[0];
         const hit = document.elementFromPoint(x, y), nativeControl = hit?.closest("button,a,input,select,textarea"), roleControl = hit?.closest("[role=button]");
         // A structural day is the calendar canvas, not a nested edit/vote
         // control. Retain the actual ancestry so the older runtime's broad
@@ -125,7 +130,7 @@ async function landingTarget(page: Page, surface: Surface, dialog: Locator, excl
         const hitChain: Target["hitChain"] = [];
         for (let current: Element | null = hit; current && hitChain.length < 8; current = current.parentElement) hitChain.push({ tag: current.tagName, className: current.getAttribute("class") ?? "", role: current.getAttribute("role"), act: current.getAttribute("data-act") });
         return { eventId: node.dataset.eventid!, x, y, plane, hitChain };
-      }
+      } }
     }
     return null;
   }, { selector: cards(surface), excludeId });
@@ -154,7 +159,7 @@ async function finishWitness(page: Page) {
 async function installGeometryAttribution(page: Page) {
   // Use this build's real lazy-entry files. A stale hardcoded chunk hash could
   // silently classify every companion call as external and make zero vacuous.
-  const manifest = JSON.parse(await readFile(resolve(".next/react-loadable-manifest.json"), "utf8")) as Record<string, { files: string[] }>;
+  const manifest = JSON.parse(await readFile(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "react-loadable-manifest.json"), "utf8")) as Record<string, { files: string[] }>;
   const entries = Object.entries(manifest).filter(([key]) => / -> (?:\.\/viewer-companion\/viewer-companion|@\/components\/poster\/viewer-companion\/viewer-companion)$/.test(key.replaceAll("\\", "/")));
   const chunks = [...new Set(entries.flatMap(([, value]) => value.files.filter(file => file.endsWith(".js")).map(file => `/_next/${file}`)))];
   expect(entries.length, "the actual production companion lazy entries must exist").toBeGreaterThan(0);

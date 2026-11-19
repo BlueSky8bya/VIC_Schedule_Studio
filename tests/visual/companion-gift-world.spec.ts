@@ -151,13 +151,17 @@ test("premiere blocks native pointer and keyboard gift access, then ordinary con
   // only at the later focused phase. Verify the conductor's real phase.
   await expect(page.locator(".pm-stage")).toHaveClass(/\bpm-phase-prelude\b/);
   gift = page.getByRole("button", { name: "빅타민이 가져온 선물 열기", exact: true });
-  await expect(gift).toBeVisible(); await expect(gift).toBeDisabled(); await expect(gift).toHaveAttribute("tabindex", "-1");
-  const box = (await gift.boundingBox())!, viewport = page.viewportSize()!;
-  expect(box.x).toBeGreaterThanOrEqual(0); expect(box.x + box.width).toBeLessThanOrEqual(viewport.width);
-  expect(box.y).toBeGreaterThanOrEqual(0); expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
-  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-  await actor(page).focus(); await page.keyboard.press("Tab");
-  await expect(gift).not.toBeFocused();
+  // A load always starts the resident inside its home (a44f46a2, b05), and the
+  // premiere stage moves the panel home off screen and makes it inert. The
+  // resident (and the gift it carries) is withheld for the whole prelude, so
+  // neither pointer nor keyboard can reach the gift: not rendered, not focusable.
+  await expect(creature(page)).toHaveAttribute("data-premiere-companion", "prelude");
+  await expect(creature(page)).toBeHidden(); await expect(gift).toHaveCount(0);
+  for (let step = 0; step < 6; step++) {
+    await page.keyboard.press("Tab");
+    expect(await page.evaluate(() => Boolean(document.activeElement?.closest(".vc-companion")))).toBe(false);
+  }
+  await expect(gift).toHaveCount(0);
   await expect(page.getByRole("complementary", { name: "받은 선물", exact: true })).toHaveCount(0);
   expect((await readCollection(page)).gifts).toEqual(before);
   await page.screenshot({ path: `${output}/premiere-gift-blocked.png`, scale: "css" });

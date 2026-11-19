@@ -5,7 +5,7 @@ import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { createCompanionLife } from "@/lib/ui/viewer-companion/life";
 import { COMPANION_ACCESSORY_MOTION_MS } from "@/lib/ui/viewer-companion/accessory-motion";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
-import { openCompanionHome } from "./helpers/companion-home";
+import { openCompanionHome, placeCompanionAt } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { expectCompanionMotion, setCompanionMotion, setCompanionPlayful } from "./helpers/companion-settings";
 
@@ -15,6 +15,12 @@ const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
 const food = (page: Page) => page.locator(".vc-food");
 const output = process.env.VIC_POCKET_OUTPUT ?? ".scratch-pw/companion-111/pocket-native";
+// FIXME(2026-11-19), suspected product defect, all three tests: the trick no longer starts when the long hold
+// ends beside the snack. Measured on the current build it starts 46.3-60.0s after the release (six runs), by which
+// time the companion has walked off and the pocket makes a new snack instead of taking the original one in, so the
+// exchange cannot be staged. Reading viewer-companion.tsx: an authored character scene or story outranks the prop
+// trick in the same decision, yet the trick's 45s wait (accessoryReadyAt) is spent anyway. The setup below is
+// already brought to the current product (snack fall, fresh start inside the home, hand-picked character).
 async function environment(page: Page) {
   await page.getByRole("button", { name: "설정", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "설정", exact: true });
@@ -34,7 +40,7 @@ async function prepare(page: Page) {
   });
   await page.addInitScript(({ prefs, care, life, epochKey, epoch }) => {
     localStorage.setItem(epochKey, epoch); localStorage.setItem("vic.sound", "off"); localStorage.setItem("vic.ambient", "off"); localStorage.setItem("vic.gfxPref", "max"); localStorage.setItem("vic.reduceMotion", "off");
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, roam: false, jump: false, sleep: false, feeding: true, petting: false, rarePrank: true, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false }));
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, personalitySource: "manual", enabled: true, roam: false, jump: false, sleep: false, feeding: true, petting: false, rarePrank: true, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...care, hunger: .05, energy: .98, life }));
     localStorage.setItem("vic.viewerCompanionCollection", JSON.stringify({ version: 1, foods: [], behaviors: [], situations: [], gifts: { pending: null, unlocked: ["magic-pocket"], equipped: "magic-pocket", activeMs: 0, interactionCredit: 0 } }));
   }, { prefs: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE, life: createCompanionLife(() => 0), epochKey: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH });
@@ -44,12 +50,17 @@ async function prepare(page: Page) {
   await room.getByRole("button", { name: "밥 꺼내기", exact: true }).click();
   await expect(food(page)).toHaveCount(1);
   const original = { id: (await food(page).getAttribute("data-food"))!, kind: (await food(page).getAttribute("data-kind"))! };
+  // A dispensed snack falls out of the outlet first; a grab during that fall does not take.
+  await expect(food(page)).not.toHaveAttribute("data-falling");
   const from = (await food(page).boundingBox())!;
   // A tall real viewport keeps the ordinary world floor visible and clear
   // of card text supports; the exact same authored gravity/colliders run.
   const drop = { x: 1010, y: 1650 };
   await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2); await page.mouse.down(); await page.mouse.move(drop.x, drop.y, { steps: 12 }); await page.mouse.up(); await page.mouse.move(3, 3);
   await expect(food(page)).not.toHaveAttribute("data-falling", "");
+  // A fresh companion starts inside its home now and would be put away with it. It is set on the same world
+  // floor first, well away from the snack; the long hold below is still what brings it there.
+  await placeCompanionAt(page, { x: 700, y: drop.y - 40 }, /^viewport-floor(?:-\d+)?$/);
   await room.locator('[data-home-action="close"]').click();
   const dialog = await environment(page);
   // stage 4: the seed keeps only the rare prop prank on, a mix that now acts as off, so the pranks are turned on
@@ -64,6 +75,7 @@ async function prepare(page: Page) {
   mkdirSync(output, { recursive: true }); writeFileSync(`${output}/setup-${test.info().testId}.json`, JSON.stringify({ original, body, snack }, null, 2));
   await page.mouse.move(body.x + body.width / 2, body.y + body.height / 2); await page.mouse.down(); await page.mouse.move(snack.x + snack.width / 2 - 32, snack.y + snack.height / 2 - body.height / 2 - 24, { steps: 8 });
   await page.waitForTimeout(6500); await page.mouse.up(); await page.mouse.move(3, 3);
+  await expect(pet(page)).toHaveAttribute("data-accessory-trick", "magic-pocket", { timeout: 30_000 });
   await expect(pet(page)).toHaveAttribute("data-accessory-trick", "magic-pocket", { timeout: 30_000 });
   const before = await read(page);
   return { writes, errors, original, before };

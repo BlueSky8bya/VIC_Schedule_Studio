@@ -6,6 +6,7 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { chooseCompanionPersonality, openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
+import { keepCompanionStoredMotion } from "./helpers/companion-settings";
 
 const out = process.env.COMPANION138_OUTPUT ?? ".scratch-pw/companion-138/native";
 const baseline = process.env.COMPANION138_BASELINE === "1";
@@ -20,7 +21,7 @@ test.beforeEach(async ({ page, context, baseURL }) => {
   const p = { errors: [] as string[], unexpected: [] as string[] }; proof.set(page, p);
   page.on("pageerror", e => p.errors.push(e.message));
   const origin = new URL(baseURL!).origin;
-  const actions = JSON.parse(readFileSync(resolve(".next/server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
+  const actions = JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>;
   const previewIds = new Set(Object.entries(actions).filter(([, a]) => a.exportedName === "getPublicPreviewAction").map(([id]) => id));
   await context.route("**/*", route => {
     const req = route.request(), u = new URL(req.url());
@@ -69,6 +70,8 @@ test.afterEach(async ({ page }, info) => {
 });
 
 async function setup(page: Page, surface: "viewer" | "studio" | "preview", dark: boolean) {
+  // storageState is replaced above, so the config's stored-motion key is gone: without it `roam: false` no longer holds.
+  await keepCompanionStoredMotion(page);
   await page.addInitScript(({ defaults, epoch, epochKey, dark }) => {
     for (const [key, value] of Object.entries({ [epochKey]: epoch, "vic.gfxPref": "max", "vic.gfx": JSON.stringify({ mode: "full", v: 3, at: Date.now() }), "vic.dark": dark ? "on" : "off", "vic.sound": "off", "vic.ambient": "off", "vic.reduceMotion": "off", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(key, value);
     if (!localStorage.getItem("vic.viewerCompanion")) localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...defaults, enabled: true, roam: false, activeWhileVisible: true, sleep: false, sound: false }));
@@ -109,15 +112,24 @@ for (const surface of ["viewer", "studio", "preview"] as const) for (const dark 
       const b = bed.getBoundingClientRect(), f = front.getBoundingClientRect(), a = actor.getBoundingClientRect(), s = seat.getBoundingClientRect();
       frames.push({ phase, scroll: scroller?.scrollTop ?? scrollY, front: !front.hidden && f.width > 0, dx: f.x - b.x, dy: f.y - b.y, actorDx: a.x + a.width / 2 - (s.x + s.width / 2), actorDy: a.bottom - s.top, support: actor.dataset.platform ?? "", visible: !actor.hidden });
     };
-    const scroll = (event: Event) => { scroller = event.target instanceof Element ? event.target : null; sample("scroll"); }; const frame = () => { if (!stopped) { sample("frame"); id = requestAnimationFrame(frame); } };
+    // The seated actor and the sofa foreground are CSS anchor-positioned (dccb2756). The browser takes its anchor
+    // scroll snapshot in the rendering update, after scroll events and rAF callbacks have run, so a read inside those
+    // callbacks still sees the previous frame's snapshot (one wheel delta behind the in-flow seat). "scroll" and
+    // "frame" samples stay in the JSON as raw evidence; "painted" is read in a task right after that same rendering
+    // update, which is the layout the frame was painted from, and is the one held to the 2px contract.
+    const timers = new Set<ReturnType<typeof setTimeout>>();
+    const scroll = (event: Event) => { scroller = event.target instanceof Element ? event.target : null; sample("scroll"); };
+    const frame = () => { if (stopped) return; sample("frame"); const timer = setTimeout(() => { timers.delete(timer); if (!stopped) sample("painted"); }, 0); timers.add(timer); id = requestAnimationFrame(frame); };
     window.addEventListener("scroll", scroll, { passive: true, capture: true }); id = requestAnimationFrame(frame);
-    (window as ProbeWindow).scroll138 = { frames, stop() { stopped = true; cancelAnimationFrame(id); window.removeEventListener("scroll", scroll, true); } };
+    (window as ProbeWindow).scroll138 = { frames, stop() { stopped = true; cancelAnimationFrame(id); for (const timer of timers) clearTimeout(timer); timers.clear(); window.removeEventListener("scroll", scroll, true); } };
   });
   for (const delta of [170, 260, -160, 420, -450, 500, -700]) { await page.mouse.wheel(0, delta); await page.waitForTimeout(70); }
   await page.waitForTimeout(350);
   const frames = await page.evaluate(() => (window as ProbeWindow).scroll138!.frames);
   expect(new Set(frames.map(f => Math.round(f.scroll))).size).toBeGreaterThan(2);
-  const visible = frames.filter(f => f.front && f.visible && f.support === "companion-home"); expect(visible.length).toBeGreaterThan(3);
+  const seated = frames.filter(f => f.front && f.visible && f.support === "companion-home"); expect(seated.length).toBeGreaterThan(3);
+  const visible = seated.filter(f => f.phase === "painted"); expect(visible.length).toBeGreaterThan(20);
+  expect(new Set(visible.map(f => Math.round(f.scroll))).size, "painted samples must span the real scroll range").toBeGreaterThan(2);
   if (!baseline) {
     expect(Math.max(...visible.map(f => Math.abs(f.dx)))).toBeLessThan(2);
     expect(Math.max(...visible.map(f => Math.abs(f.dy)))).toBeLessThan(2);

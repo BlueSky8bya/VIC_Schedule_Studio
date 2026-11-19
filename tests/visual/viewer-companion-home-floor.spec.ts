@@ -4,6 +4,7 @@ import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome } from "./helpers/companion-home";
+import { installCompanionPointReader, type CompanionPointWindow } from "./helpers/companion-point";
 
 type Point = { x: number; y: number };
 type FloorWitnessWindow = Window & { floorFoodWitness: { fell: boolean; observer: MutationObserver }; floorMealWitness: { jumped: boolean; floor: boolean; observer: MutationObserver } };
@@ -15,13 +16,14 @@ const feed = (page: Page) => house(page).getByRole("button", { name: "밥 꺼내
 const fold = (page: Page) => house(page).getByRole("button", { name: "빅타민 집", exact: true });
 const position = (item: Locator) => item.evaluate(node => {
   const value = node.closest("[hidden]") ? (node as HTMLElement).style.transform : getComputedStyle(node).transform;
-  const m = new DOMMatrixReadOnly(value); return { x: m.m41, y: m.m42 };
+  // At rest on the house floor the snack is CSS-anchored to its room (a3e9a288): the transform is the offset from it.
+  return (window as unknown as CompanionPointWindow).vcPoint(node, value);
 });
 const observations = new WeakMap<Page, { posts: string[]; errors: string[] }>();
 
 test.use({ video: "on" });
 test.beforeEach(async ({ page }) => {
-  const observed = { posts: [] as string[], errors: [] as string[] }; observations.set(page, observed);
+  const observed = { posts: [] as string[], errors: [] as string[] }; observations.set(page, observed); await installCompanionPointReader(page);
   page.on("pageerror", error => observed.errors.push(error.message));
   await page.route("**/*", route => route.request().method() === "POST" ? (observed.posts.push(route.request().url()), route.fulfill({ status: 500, body: "" })) : route.continue());
   await page.route("**/api/soop-live**", route => route.request().method() === "GET" ? route.fulfill({ json: { live: false } }) : route.fallback());
@@ -51,7 +53,8 @@ async function setup(page: Page, touch: boolean, hungry = false) {
 }
 async function dispense(page: Page, touch: boolean) {
   const count = await food(page).count(); await press(feed(page), touch); await expect(food(page)).toHaveCount(count + 1);
-  const item = food(page).last(); await expect(item).not.toHaveAttribute("data-selected"); await expect(feed(page)).toBeFocused(); return item;
+  // A dispensed snack falls out of the outlet first; a grab during that fall does not take.
+  const item = food(page).last(); await expect(item).not.toHaveAttribute("data-selected"); await expect(feed(page)).toBeFocused(); await expect(item).not.toHaveAttribute("data-falling"); return item;
 }
 async function frontPoint(page: Page, nearDispenser = false) {
   return house(page).evaluate((node, near) => {
@@ -63,7 +66,7 @@ async function frontPoint(page: Page, nearDispenser = false) {
 }
 async function drag(page: Page, item: Locator, destination: Point, touch: boolean) {
   const r = (await item.boundingBox())!, start = { x: r.x + r.width / 2, y: r.y + r.height / 2 };
-  if (!touch) { await page.mouse.move(start.x, start.y); await page.mouse.down(); await page.mouse.move(destination.x, destination.y, { steps: 12 }); await page.mouse.up(); return; }
+  if (!touch) { await page.mouse.move(start.x, start.y); await page.mouse.down(); await page.mouse.move(destination.x, destination.y, { steps: 12 }); await page.waitForTimeout(140); await page.mouse.up(); return; } // rest past the 100 ms throw window (companion-food.tsx pointerup): a put-down, not a throw
   const cdp = await page.context().newCDPSession(page);
   try {
     await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ ...start, id: 31 }] });
@@ -90,7 +93,7 @@ async function expectFloor(page: Page, item: Locator, offset?: Point) {
   if (offset) await expect.poll(async () => { const current = await floorOffset(page, item); return Math.hypot(current.x - offset.x, current.y - offset.y); }).toBeLessThan(2);
   const overlap = await item.evaluate(node => {
     const r = node.getBoundingClientRect();
-    return [...document.querySelectorAll(".vc-home button:not(.vc-cushion-button)")].filter(button => { const b = button.getBoundingClientRect(); return b.width > 0 && b.height > 0 && r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top; }).length;
+    return [...document.querySelectorAll(".vc-home button:not(.vc-cushion-button):not([data-home-decoration-control])")].filter(button => { const b = button.getBoundingClientRect(); return b.width > 0 && b.height > 0 && r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top; }).length;
   });
   expect(overlap).toBe(0);
 }

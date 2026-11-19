@@ -6,6 +6,7 @@ import { DEFAULT_COMPANION_CARE, type CompanionCare } from "@/lib/ui/viewer-comp
 import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-quality";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome } from "./helpers/companion-home";
+import { installCompanionPointReader, type CompanionPointWindow } from "./helpers/companion-point";
 
 type Surface = "viewer" | "studio";
 type Mode = "meal" | "resume" | "refocus";
@@ -23,21 +24,27 @@ type Probe = Observation & { node: HTMLElement; foodNodes: Map<string, HTMLEleme
 type ProbeWindow = Window & { contextEpisodeProbe: Probe };
 type Memory = CompanionCare & { habits?: Record<string, number> };
 const output = ".scratch-pw/095-context-episodes";
+const PUT_DOWN_MS = 140;
+const unseenReports = new Set(Object.entries(JSON.parse(readFileSync(resolve(process.env.VISUAL_TEST_BUILD_DIR ?? ".next", "server/server-reference-manifest.json"), "utf8")).node as Record<string, { exportedName?: string }>)
+  .filter(([, action]) => action.exportedName === "getUnseenReportCountAction").map(([id]) => id));
 const pet = (page: Page) => page.locator(".vc-companion");
 const actor = (page: Page) => pet(page).locator(".vc-actor");
-const foodPoint = (item: Locator) => item.evaluate(node => { const m = new DOMMatrixReadOnly((node as HTMLElement).style.transform); return { x: m.m41, y: m.m42 }; });
+// A snack at rest is laid out from an anchored origin; its transform alone is no longer the viewport point (section 2).
+const foodPoint = (item: Locator) => item.evaluate(node => (window as unknown as CompanionPointWindow).vcPoint(node));
 const memory = (page: Page) => page.evaluate(() => ({ preferences: localStorage.getItem("vic.viewerCompanion"), care: JSON.parse(localStorage.getItem("vic.viewerCompanionCare")!) as Memory }));
 const mark = (page: Page, marker: string) => page.evaluate(marker => { (window as unknown as ProbeWindow).contextEpisodeProbe.marker = marker; }, marker);
 
 async function setup(page: Page, surface: Surface, realFocus = false) {
-  await page.addInitScript(({ epoch, key, preferences, care }) => {
+  await installCompanionPointReader(page);
+  await page.addInitScript(({ epoch, key, preferences, care, realFocus }) => {
     // Only established device preferences/care are seeded. This witness never
     // replaces randomness, clocks, focus, product state, actions or DOM content.
     for (const [name, value] of Object.entries({ [key]: epoch, "vic.gfxPref": "max", "vic.reduceMotion": "off", "vic.ambient": "off", "vic.sound": "off", "vic.premiereStage": "off", "vic_avatar_side": "left" })) localStorage.setItem(name, value);
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, animalMode: "default", personality: "curious", speed: "lively", roam: true, jump: true, feeding: true, sleep: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, learnFromYou: false }));
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, animalMode: "default", personality: "curious", personalitySource: "manual", speed: "lively", roam: true, jump: true, // "다른 창 쓸 때도 놀기" is on by default (1f2cb9eb): only with it off does a real blur park the pet.
+      ...(realFocus ? { activeWhileVisible: false } : {}), feeding: true, sleep: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, learnFromYou: false }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 2, ...care, energy: .9, hunger: .55 }));
     localStorage.removeItem("vic.panelSections"); localStorage.removeItem("vic_panel_collapsed");
-  }, { epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY, preferences: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE });
+  }, { epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY, preferences: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE, realFocus });
   await page.goto(surface === "viewer" ? "/visual-fixture/poster" : "/visual-fixture/studio?role=developer&y=2025&m=11");
   // Playwright enables browser focus emulation even in headed Chromium. Only
   // the real-focus cases remove that override; no fake event, product handler,
@@ -121,14 +128,14 @@ async function startProbe(page: Page) {
       if (probe.stopped) return;
       probe.timer = window.setTimeout(() => {
         if (probe.stopped) return;
-        const at = performance.now() - probe.began, m = new DOMMatrixReadOnly(el.style.transform), size = parseFloat(el.style.getPropertyValue("--vc-size")), texture = el.querySelector<HTMLImageElement>(".vc-texture"), sprite = el.querySelector<HTMLElement>(".vc-sprite")!, spriteBox = sprite.getBoundingClientRect();
+        const at = performance.now() - probe.began, m = (window as unknown as CompanionPointWindow).vcPoint(el, el.style.transform), size = parseFloat(el.style.getPropertyValue("--vc-size")), texture = el.querySelector<HTMLImageElement>(".vc-texture"), sprite = el.querySelector<HTMLElement>(".vc-sprite")!, spriteBox = sprite.getBoundingClientRect();
         const mouthX = spriteBox.left + spriteBox.width * (el.dataset.facing === "left" ? 1 - 111 / 192 : 111 / 192), mouthY = spriteBox.top + spriteBox.height * 131 / 192;
         const foods = [...document.querySelectorAll<HTMLElement>(".vc-food")].map(food => {
-          const id = food.dataset.food ?? "", matrix = new DOMMatrixReadOnly(food.style.transform), art = food.firstElementChild as HTMLElement, box = art.getBoundingClientRect(), artMatrix = new DOMMatrixReadOnly(getComputedStyle(art).transform);
+          const id = food.dataset.food ?? "", matrix = (window as unknown as CompanionPointWindow).vcPoint(food), art = food.firstElementChild as HTMLElement, box = art.getBoundingClientRect(), artMatrix = new DOMMatrixReadOnly(getComputedStyle(art).transform);
           if (!probe.foodNodes.has(id)) probe.foodNodes.set(id, food);
-          return { id, same: probe.foodNodes.get(id) === food, x: matrix.m41, y: matrix.m42, falling: food.hasAttribute("data-falling"), eating: food.hasAttribute("data-eating"), selected: food.hasAttribute("data-selected"), jostling: food.hasAttribute("data-jostling"), scale: Math.hypot(artMatrix.a, artMatrix.b), mouthError: Math.hypot(box.left + box.width / 2 - mouthX, box.top + box.height / 2 - mouthY) };
+          return { id, same: probe.foodNodes.get(id) === food, x: matrix.x, y: matrix.y, falling: food.hasAttribute("data-falling"), eating: food.hasAttribute("data-eating"), selected: food.hasAttribute("data-selected"), jostling: food.hasAttribute("data-jostling"), scale: Math.hypot(artMatrix.a, artMatrix.b), mouthError: Math.hypot(box.left + box.width / 2 - mouthX, box.top + box.height / 2 - mouthY) };
         });
-        const style = getComputedStyle(el), frame: Frame = { at, marker: probe.marker, episode: el.dataset.episode ?? "", phase: el.dataset.episodePhase ?? "", variant: el.dataset.episodeVariant ?? "", foodGoal: el.dataset.foodGoal ?? "", episodeFood: el.dataset.episodeFood ?? "", intent: el.dataset.intent ?? "", attention: el.dataset.attention ?? "", state: el.dataset.state ?? "", play: el.dataset.play ?? "", beat: el.dataset.playBeat ?? "", trip: el.dataset.trip ?? "", runUp: el.dataset.runUp ?? "", journey: el.dataset.journey ?? "", platform: el.dataset.platform ?? "", pose: Number(el.dataset.pose), row: Math.round(parseFloat(el.style.getPropertyValue("--vc-row")) * (rowCount - 1) / 100), same: el.isConnected && el === document.querySelector(".vc-companion"), visible: !el.hidden && style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) > .05, decoded: Boolean(texture?.complete && texture.naturalWidth > 0), atlas: el.dataset.atlas ?? "", x: m.m41 + size / 2, y: m.m42 + size, foods };
+        const style = getComputedStyle(el), frame: Frame = { at, marker: probe.marker, episode: el.dataset.episode ?? "", phase: el.dataset.episodePhase ?? "", variant: el.dataset.episodeVariant ?? "", foodGoal: el.dataset.foodGoal ?? "", episodeFood: el.dataset.episodeFood ?? "", intent: el.dataset.intent ?? "", attention: el.dataset.attention ?? "", state: el.dataset.state ?? "", play: el.dataset.play ?? "", beat: el.dataset.playBeat ?? "", trip: el.dataset.trip ?? "", runUp: el.dataset.runUp ?? "", journey: el.dataset.journey ?? "", platform: el.dataset.platform ?? "", pose: Number(el.dataset.pose), row: Math.round(parseFloat(el.style.getPropertyValue("--vc-row")) * (rowCount - 1) / 100), same: el.isConnected && el === document.querySelector(".vc-companion"), visible: !el.hidden && style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) > .05, decoded: Boolean(texture?.complete && texture.naturalWidth > 0), atlas: el.dataset.atlas ?? "", x: m.x + size / 2, y: m.y + size, foods };
         probe.frames.push(frame);
         if (frame.state === "eat" && probe.previousState !== "eat") probe.mealEntries++;
         if (frame.episode === "meal" && frame.phase === "finish" && !probe.finishAt) probe.finishAt = at;
@@ -147,12 +154,16 @@ async function startProbe(page: Page) {
 async function prepareFood(page: Page, floor: Floor) {
   await actor(page).focus(); await actor(page).press("p"); await page.mouse.click(floor.x, floor.y);
   await expect(pet(page)).toHaveAttribute("data-platform", /^viewport-floor/); await expect(pet(page)).not.toHaveAttribute("data-state", "jump");
-  await expect.poll(() => pet(page).evaluate((el, point) => { const m = new DOMMatrixReadOnly((el as HTMLElement).style.transform), size = parseFloat((el as HTMLElement).style.getPropertyValue("--vc-size")); return Math.hypot(m.m41 + size / 2 - point.x, m.m42 + size - point.y); }, floor)).toBeLessThan(2);
+  await expect.poll(() => pet(page).evaluate((el, point) => { const m = (window as unknown as CompanionPointWindow).vcPoint(el, (el as HTMLElement).style.transform), size = parseFloat((el as HTMLElement).style.getPropertyValue("--vc-size")); return Math.hypot(m.x + size / 2 - point.x, m.y + size - point.y); }, floor)).toBeLessThan(2);
   await actor(page).focus(); await actor(page).press("Space"); await expect(pet(page)).toHaveAttribute("data-state", "held");
   await page.getByRole("button", { name: "밥 꺼내기", exact: true }).click(); await expect(page.locator(".vc-food")).toHaveCount(1);
+  // The snack first drops out of the feeder (about a second); a grab during that fall does not take.
+  await expect(page.locator(".vc-food")).toBeVisible(); await expect(page.locator(".vc-food")).not.toHaveAttribute("data-falling");
   const item = page.locator(".vc-food"), rect = (await item.boundingBox())!, point = await foodPoint(item), grip = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
   await page.mouse.move(grip.x, grip.y); await page.mouse.down();
-  await page.mouse.move(floor.foodX + grip.x - point.x, floor.y + grip.y - point.y, { steps: 12 }); await page.mouse.up();
+  await page.mouse.move(floor.foodX + grip.x - point.x, floor.y + grip.y - point.y, { steps: 12 });
+  // A release within 100 ms of the last move is a throw (a44f46a2): hold still past that window to put it down.
+  await page.waitForTimeout(PUT_DOWN_MS); await page.mouse.up();
   await expect(item).not.toHaveAttribute("data-falling");
   await expect.poll(async () => { const point = await foodPoint(item); return Math.hypot(point.x - floor.foodX, point.y - floor.y); }).toBeLessThan(1);
   await expect(pet(page)).toHaveAttribute("data-state", "held");
@@ -162,8 +173,16 @@ async function prepareFood(page: Page, floor: Floor) {
   return { id, before };
 }
 
+/** The pet has really set off for the snack: at least two travelling frames after the release, each nearer to it. */
+async function expectApproaching(page: Page, floor: Floor) {
+  await expect.poll(() => page.evaluate(({ from, to }) => {
+    const travel = (window as unknown as ProbeWindow).contextEpisodeProbe.frames.filter(frame => frame.marker === "observe-initial" && ["walk", "jump"].includes(frame.state));
+    return travel.filter(frame => Math.abs(frame.x - to) < Math.abs(from - to) - 12).length;
+  }, { from: floor.x, to: floor.foodX }), { timeout: 15000, intervals: [20] }).toBeGreaterThanOrEqual(2);
+}
+
 async function interruptFood(page: Page, floor: Floor, id: string) {
-  await expect(pet(page)).toHaveAttribute("data-episode-phase", "approach", { timeout: 15000 });
+  await expectApproaching(page, floor);
   const item = page.locator(`.vc-food[data-food="${id}"]`), rect = (await item.boundingBox())!, point = await foodPoint(item), grip = { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
   await page.mouse.move(grip.x, grip.y); await page.mouse.down(); await mark(page, "held-food");
   await expect(pet(page)).not.toHaveAttribute("data-episode", "meal");
@@ -172,16 +191,15 @@ async function interruptFood(page: Page, floor: Floor, id: string) {
   await expect(item).toHaveAttribute("data-food", id); await expect(page.locator(".vc-food")).toHaveCount(1);
   await mark(page, "moving-food");
   await page.mouse.move(floor.movedX + grip.x - point.x, floor.y + grip.y - point.y, { steps: 12 });
-  await mark(page, "release-food"); await page.mouse.up(); await page.mouse.move(1800, 650);
+  await page.waitForTimeout(PUT_DOWN_MS); await mark(page, "release-food"); await page.mouse.up(); await page.mouse.move(1800, 650);
   await expect(item).not.toHaveAttribute("data-falling");
   await expect.poll(async () => { const point = await foodPoint(item); return Math.hypot(point.x - floor.movedX, point.y - floor.y); }).toBeLessThan(1);
   await mark(page, "observe-resumed");
 }
 
-async function interruptFocus(page: Page): Promise<FocusTransfer> {
-  await expect(pet(page)).toHaveAttribute("data-episode-phase", "approach", { timeout: 15000 });
-  await expect.poll(() => page.evaluate(() => (window as unknown as ProbeWindow).contextEpisodeProbe.frames.filter(frame => frame.marker === "observe-initial" && frame.phase === "approach" && frame.state === "walk").length), { intervals: [20] }).toBeGreaterThanOrEqual(2);
-  const before = await pet(page).evaluate(node => { const el = node as HTMLElement, probe = (window as unknown as ProbeWindow).contextEpisodeProbe, m = new DOMMatrixReadOnly(el.style.transform), size = parseFloat(el.style.getPropertyValue("--vc-size")); return { at: performance.now() - probe.began, x: m.m41 + size / 2, y: m.m42 + size, state: el.dataset.state ?? "", hasFocus: document.hasFocus() }; });
+async function interruptFocus(page: Page, floor: Floor): Promise<FocusTransfer> {
+  await expectApproaching(page, floor);
+    const before = await pet(page).evaluate(node => { const el = node as HTMLElement, probe = (window as unknown as ProbeWindow).contextEpisodeProbe, m = (window as unknown as CompanionPointWindow).vcPoint(el, el.style.transform), size = parseFloat(el.style.getPropertyValue("--vc-size")); return { at: performance.now() - probe.began, x: m.x + size / 2, y: m.y + size, state: el.dataset.state ?? "", hasFocus: document.hasFocus() }; });
   await mark(page, "blur-pending");
   const other = await page.context().newPage();
   try {
@@ -190,81 +208,82 @@ async function interruptFocus(page: Page): Promise<FocusTransfer> {
     await other.waitForTimeout(100);
     await mark(page, "observe-refocused"); await page.bringToFront();
     await expect.poll(() => page.evaluate(() => document.hasFocus()), { intervals: [10] }).toBe(true);
-    const returned = await pet(page).evaluate(node => { const el = node as HTMLElement, probe = (window as unknown as ProbeWindow).contextEpisodeProbe, m = new DOMMatrixReadOnly(el.style.transform), size = parseFloat(el.style.getPropertyValue("--vc-size")); return { at: performance.now() - probe.began, x: m.m41 + size / 2, y: m.m42 + size, state: el.dataset.state ?? "", hasFocus: document.hasFocus(), foodGoal: el.dataset.foodGoal ?? "", episode: el.dataset.episode ?? "", phase: el.dataset.episodePhase ?? "", variant: el.dataset.episodeVariant ?? "", episodeFood: el.dataset.episodeFood ?? "", runUp: el.dataset.runUp ?? "" }; });
+    const returned = await pet(page).evaluate(node => { const el = node as HTMLElement, probe = (window as unknown as ProbeWindow).contextEpisodeProbe, m = (window as unknown as CompanionPointWindow).vcPoint(el, el.style.transform), size = parseFloat(el.style.getPropertyValue("--vc-size")); return { at: performance.now() - probe.began, x: m.x + size / 2, y: m.y + size, state: el.dataset.state ?? "", hasFocus: document.hasFocus(), foodGoal: el.dataset.foodGoal ?? "", episode: el.dataset.episode ?? "", phase: el.dataset.episodePhase ?? "", variant: el.dataset.episodeVariant ?? "", episodeFood: el.dataset.episodeFood ?? "", runUp: el.dataset.runUp ?? "" }; });
     return { before, returned };
   } finally {
     await page.bringToFront(); await other.close();
   }
 }
 
+/** Frames in which the pet is on its way: travelling, and nearer to the snack than when the leg began. A basic meal
+ * no longer carries `data-episode`, and its first-food inspection walk carries no `data-food-goal`, so the route is
+ * read from the body itself. */
+function approachFrames(route: readonly Frame[], targetX: number, until: number) {
+  const travel = route.filter(frame => frame.at < until && ["walk", "jump"].includes(frame.state));
+  return travel.filter((frame, index) => index > 0 && Math.abs(frame.x - targetX) < Math.abs(travel[0].x - targetX) - 1);
+}
+
 function verify(observation: Observation, floor: Floor, id: string, mode: Mode, before: Awaited<ReturnType<typeof memory>>, after: Awaited<ReturnType<typeof memory>>, focusTransfer?: FocusTransfer) {
   const resumed = mode === "resume", refocused = mode === "refocus", interrupted = resumed || refocused;
   const frames = observation.frames.filter(frame => frame.marker !== "setup"), rows = companionSpriteMetadata.rows;
-  const initial = frames.filter(frame => frame.marker === "observe-initial" && frame.episode === "meal");
-  const prefix = ["notice", "greet", "approach"].map(phase => initial.findIndex(frame => frame.phase === phase));
-  expect(prefix.every(index => index >= 0) && prefix[0] < prefix[1] && prefix[1] < prefix[2], "one actual notice→greet→approach sequence precedes the meal or its cancellation").toBe(true);
-  expect(initial.some(frame => frame.phase === "notice" && frame.state === "look" && frame.attention === "inspect" && frame.intent === "feed" && rows[1].includes(frame.pose))).toBe(true);
-  const variant = initial.find(frame => frame.phase === "notice")!.variant;
-  expect(["careful", "dash", "bound", "rush-trip", "bound-slip"]).toContain(variant);
-  expect(new Set(initial.map(frame => frame.variant))).toEqual(new Set([variant]));
-  expect(initial.some(frame => frame.phase === "greet" && rows[variant === "careful" ? 1 : 31].includes(frame.pose))).toBe(true);
-  const finish = frames.filter(frame => frame.episode === "meal" && frame.phase === "finish");
-  expect(finish.length).toBeGreaterThan(3); expect(finish.every(frame => frame.foodGoal === "")).toBe(true);
-  expect(finish.some(frame => frame.state === "shake" && rows[17].includes(frame.pose)), "the default species completes its actual post-meal body shake").toBe(true);
-  expect(observation.finishCompletedAt).toBeGreaterThan(observation.finishAt);
+  // 140 (55e150b9, 2026-10-20): a reachable snack is a basic meal that the ordinary food planner owns ahead of the
+  // personality scenes. Why the 095 notice -> greet -> approach -> mishap wrapper cannot be asserted here:
+  // - planCompanionEpisode has one caller, getAction (lib/ui/viewer-companion/brain.ts:400), and it opens a new meal
+  //   encounter only from getAction's own walk/jump foodAction (lib/ui/viewer-companion/episodes.ts:91-97).
+  // - The renderer asks getAction last (components/poster/viewer-companion/viewer-companion.tsx:3291,
+  //   `priorityMeal ?? foodSupply ?? authored ?? ... ?? getAction(...)`). For a snack on an ordinary floor,
+  //   priorityMeal = getCompanionPersonalityMeal (viewer-companion.tsx:3257-3260) = getFoodAction
+  //   (lib/ui/viewer-companion/personality-jobs.ts:20-25), the same walk/jump, so getAction is never reached.
+  // - priorityMeal is withheld only for an owned job, a carried item, an entry-* scene, director.plansMeal(),
+  //   authoredReserved with hunger < .78, manual washing, roam off or an unanimated world; in each of those an
+  //   authored/household/toy offer sits ahead of getAction in the same chain, so the wrapper can start only on a
+  //   transient frame where that owner returns nothing. No fixture setup forces that frame.
+  // - The afterglow (episodes.ts:75, "ate" -> finish) IS reached, because brain.ts:292 makes a {meal, ate} episode on
+  //   every consume; but the next decision races other owners (evidence: resume ended `meal/finish shake`, meal ended
+  //   with a scene `play bow` and the episode cleared), so it cannot be asserted strictly either.
+  // Listed as a product cleanup item in .scratch-fix/DIAGNOSIS.md ("Added by worker t1"). Nothing here waits for
+  // `data-episode="meal"`. What remains is the encounter itself: one trip to that snack, one meal at its mouth, one reward.
+  expect(frames.filter(frame => frame.episode === "meal" && frame.foodGoal !== id && frame.foodGoal !== ""), "a meal scene, if one plays, belongs to this snack").toEqual([]);
   const meals = frames.filter(frame => frame.state === "eat"), firstMeal = meals[0];
   expect(firstMeal).toBeDefined(); expect(observation.mealEntries).toBe(1);
   expect(meals.every(frame => frame.foodGoal === id)).toBe(true);
   expect(observation.removed.map(item => item.id)).toEqual([id]);
-  expect(observation.removed[0].at).toBeGreaterThan(firstMeal.at); expect(finish[0].at).toBeGreaterThanOrEqual(observation.removed[0].at - 40);
+  expect(observation.removed[0].at).toBeGreaterThan(firstMeal.at);
+  const targetX = resumed ? floor.movedX : floor.foodX;
   const route = resumed ? frames.filter(frame => ["release-food", "observe-resumed"].includes(frame.marker)) : refocused ? frames.filter(frame => frame.marker === "observe-refocused") : frames;
-  const approach = route.filter(frame => frame.foodGoal === id && ["walk", "jump"].includes(frame.state));
+  const approach = approachFrames(route, targetX, firstMeal.at);
   expect(approach.length).toBeGreaterThan(8);
   expect(approach.some(frame => [2, 4, 5, 20].some(row => rows[row].includes(frame.pose)))).toBe(true);
-  expect(Math.abs(firstMeal.x - approach[0].x)).toBeGreaterThan(80);
-  expect(Math.abs(firstMeal.x - (resumed ? floor.movedX : floor.foodX))).toBeLessThanOrEqual(38);
+  if (!refocused) expect(Math.abs(firstMeal.x - route.find(frame => ["walk", "jump"].includes(frame.state))!.x)).toBeGreaterThan(80);
+  expect(Math.abs(firstMeal.x - targetX)).toBeLessThanOrEqual(38);
   expect(Math.abs(firstMeal.y - floor.y)).toBeLessThan(2);
+  // Between the release and the first bite the pet does not turn to something unrelated.
+  const toMeal = route.filter(frame => frame.at < firstMeal.at);
+  expect(toMeal.filter(frame => ["sleep", "heart", "hide", "panel"].includes(frame.state))).toEqual([]);
   if (interrupted) {
     if (resumed) {
       const held = frames.filter(frame => frame.marker === "held-food"), lastHeldAt = held.at(-1)!.at;
       expect(held.length).toBeGreaterThan(8);
       expect(held.filter(frame => frame.at >= lastHeldAt - 350).every(frame => frame.episode !== "meal" && frame.foodGoal === "" && frame.episodeFood === "" && frame.state !== "eat" && frame.foods.length === 1 && !frame.foods[0].eating)).toBe(true);
     }
-    expect(route.filter(frame => frame.at < firstMeal.at && frame.episode === "meal")).toEqual([]);
-    expect(route.filter(frame => frame.state === "eat").every(frame => frame.episode === "")).toBe(true);
-    expect(approach.every(frame => frame.episode === "")).toBe(true);
     if (refocused) {
       expect(focusTransfer).toBeDefined();
       const transfer = focusTransfer!, direction = Math.sign(floor.foodX - floor.x);
       expect(transfer.before.hasFocus && transfer.returned.hasFocus).toBe(true);
-      expect(transfer.before.state).toBe("walk"); expect(transfer.returned.state, "focus returns before the current finite walk ends").toBe("walk");
+      expect(transfer.before.state).toBe("walk");
       expect((transfer.returned.x - floor.x) * direction).toBeGreaterThanOrEqual(-2);
-      expect((transfer.returned.x - floor.x) * direction).toBeLessThan(175);
+      expect((transfer.returned.x - floor.x) * direction).toBeLessThan(Math.abs(floor.foodX - floor.x) + 2);
       expect(Math.abs(transfer.returned.y - floor.y)).toBeLessThan(2);
-      expect({ episode: transfer.returned.episode, phase: transfer.returned.phase, variant: transfer.returned.variant, episodeFood: transfer.returned.episodeFood }).toEqual({ episode: "", phase: "", variant: "", episodeFood: "" });
-      expect(transfer.returned.foodGoal, "the current finite food leg keeps its identity after the scene is cancelled").toBe(id);
       expect(transfer.returned.runUp).toBe("");
       const blur = observation.focusEvents.find(event => event.type === "blur" && !event.hasFocus && event.at >= transfer.before.at), focused = observation.focusEvents.find(event => event.type === "focus" && event.hasFocus && event.at > (blur?.at ?? Infinity));
       expect(blur).toBeDefined(); expect(focused).toBeDefined(); expect(blur!.trusted && focused!.trusted).toBe(true);
       expect(focused!.at - blur!.at).toBeGreaterThanOrEqual(100);
-      const beforeMeal = route.filter(frame => frame.at < firstMeal.at);
-      expect(beforeMeal.every(frame => frame.phase === "" && frame.episodeFood === "" && frame.runUp === "" && !["celebrate", "tumble", "slip-tumble", "bump", "slip"].includes(frame.play)), "returning focus cannot revive the cancelled greeting, accident or planned running hop").toBe(true);
+      // While the window was away the pet was parked: it did not travel or eat, and the same snack is still there.
+      const away = frames.filter(frame => frame.at > blur!.at + 60 && frame.at < focused!.at);
+      expect(away.every(frame => frame.state !== "eat" && frame.foods.length === 1 && frame.foods[0].id === id && !frame.foods[0].eating)).toBe(true);
+      if (away.length > 1) expect(Math.abs(away.at(-1)!.x - away[0].x)).toBeLessThan(2);
+      expect(toMeal.every(frame => !["celebrate", "tumble", "slip-tumble", "bump", "slip"].includes(frame.play)), "returning focus cannot start an accident or a planned running hop").toBe(true);
       expect(firstMeal.at - transfer.returned.at).toBeLessThan(45000);
-    }
-  } else {
-    const mealAt = initial.findIndex(frame => frame.phase === "meal"), finishAt = initial.findIndex(frame => frame.phase === "finish");
-    expect(mealAt).toBeGreaterThan(prefix[2]); expect(finishAt).toBeGreaterThan(mealAt);
-    expect(initial.every(frame => frame.episodeFood === id)).toBe(true);
-    const mishap = initial.filter(frame => frame.phase === "mishap"), journeys = new Set(mishap.map(frame => frame.journey).filter(Boolean));
-    expect(journeys.size, "at most one actual accident occurs in the encounter").toBeLessThanOrEqual(1);
-    if (mishap.length) {
-      const returning = frames.filter(frame => frame.at >= mishap[0].at && frame.at < firstMeal.at);
-      expect(returning.every(frame => frame.foodGoal === id), "recovery must remember the same actual snack until eating").toBe(true);
-      expect(returning.every(frame => !["sleep", "heart", "hide", "panel"].includes(frame.state)), "recovery cannot turn into unrelated sleep or play before the meal").toBe(true);
-      expect(returning.filter(frame => ["walk", "jump"].includes(frame.state)).every(frame => frame.episodeFood === id), "all return travel must belong to that same food encounter").toBe(true);
-      const rolling = mishap.some(frame => ["tumble", "slip-tumble"].includes(frame.play));
-      for (const row of rolling ? [21, 22, 23, 26] : [22, 23, 25, 26]) expect(mishap.some(frame => rows[row].includes(frame.pose)), `observed accident must actually display HD row${row}`).toBe(true);
-      if (mishap.some(frame => frame.play === "slip-tumble")) expect(mishap.some(frame => rows[24].includes(frame.pose))).toBe(true);
     }
   }
   const chewing = meals.flatMap(frame => frame.foods.filter(food => food.eating && food.scale >= .1 && food.scale <= .8).map(food => ({ frame, food })));
@@ -281,7 +300,8 @@ function verify(observation: Observation, floor: Floor, id: string, mode: Mode, 
       const settled = !["moving-food", "release-food"].includes(frame.marker), target = ["observe-resumed"].includes(frame.marker) ? floor.movedX : floor.foodX;
       if (settled && !food.eating && (food.falling || Math.hypot(food.x - target, food.y - floor.y) >= 1)) { foodViolations++; firstInvalid ??= { at: frame.at, problem: "settled food coordinates/state", food, target }; }
     }
-    if (frame.episode === "meal" && (frame.x < floor.left - 2 || frame.x > floor.right + 2 || frame.y > floor.y + 2 || frame.y < 100)) { geometryViolations++; firstInvalid ??= { at: frame.at, problem: "actual floor corridor", frame }; }
+    // The whole trip to the snack and the meal stay on the one real floor it was put on.
+    if (frame.at <= observation.removed[0].at && route.includes(frame) && (frame.x < floor.left - 2 || frame.x > floor.right + 2 || frame.y > floor.y + 2 || frame.y < 100)) { geometryViolations++; firstInvalid ??= { at: frame.at, problem: "actual floor corridor", frame }; }
   }
   expect({ actorViolations, foodViolations, geometryViolations }, `first invalid frame: ${JSON.stringify(firstInvalid ?? null)}`).toEqual({ actorViolations: 0, foodViolations: 0, geometryViolations: 0 });
   expect(observation.inputs.length).toBeGreaterThan(15); expect(observation.inputs.every(input => input.trusted)).toBe(true);
@@ -300,12 +320,20 @@ function verify(observation: Observation, floor: Floor, id: string, mode: Mode, 
 // Real OS/tab activation uses headed Chromium. Headed mode alone does not undo
 // Playwright's default focus emulation; the two refocus setups remove it above.
 // Keep the real desktop pointer outside this window while preserving native focus.
-test.use({ headless: false, launchOptions: { args: ["--disable-features=CalculateNativeWinOcclusion", "--disable-backgrounding-occluded-windows", "--disable-renderer-backgrounding", "--disable-background-timer-throttling", "--window-position=-2400,-1400"] }, viewport: { width: 1920, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
-for (const surface of ["viewer", "studio"] as const) for (const mode of ["meal", "resume", "refocus"] as const) test(`${surface}: native meal ${mode === "resume" ? "cancels for held food and resumes its same ID" : mode === "refocus" ? "cancels on real blur and returns before the current walk ends" : "connects notice, greeting, approach, meal and finish"}`, async ({ page }, info) => {
+// COMPANION_CONTEXT_HEADLESS=1 runs without a window (machines where a test window must not appear or take focus).
+test.use({ headless: process.env.COMPANION_CONTEXT_HEADLESS === "1", launchOptions: { args: ["--disable-features=CalculateNativeWinOcclusion", "--disable-backgrounding-occluded-windows", "--disable-renderer-backgrounding", "--disable-background-timer-throttling", "--window-position=-2400,-1400"] }, viewport: { width: 1920, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
+for (const surface of ["viewer", "studio"] as const) for (const mode of ["meal", "resume", "refocus"] as const) test(`${surface}: native meal ${mode === "resume" ? "stops for held food and resumes its same ID" : mode === "refocus" ? "parks on real blur and returns to the same snack" : "connects approach, one meal and one reward"}`, async ({ page }, info) => {
+  // A real blur needs a real window: headless pages always report focus, even with focus emulation off. The refocus
+  // assertions were rewritten for the current product (blur parks the pet only with "다른 창 쓸 때도 놀기" off) but have
+  // never been run, and a visible test window is not allowed on the owner's machines.
+  test.fixme(mode === "refocus", "needs a headed run; unverified rewrite");
   test.setTimeout(100000);
   const writes: string[] = [], errors: string[] = [], resumed = mode === "resume", name = `${surface}-${mode}`;
   page.on("pageerror", error => errors.push(error.message));
-  await page.route("**/*", route => { const request = route.request(), path = new URL(request.url()).pathname; if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) { writes.push(`${request.method()} ${path}`); return route.fulfill({ status: 503, body: "fixture forbids writes" }); } return route.continue(); });
+  await page.route("**/*", route => { const request = route.request(), path = new URL(request.url()).pathname;
+    // The developer header's report inbox reads its badge number on mount (c30945c4): a read, answered locally with 0.
+    if (request.method() === "POST" && unseenReports.has(request.headers()["next-action"])) return route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":"fixture"}\n1:0\n` });
+    if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) { writes.push(`${request.method()} ${path}`); return route.fulfill({ status: 503, body: "fixture forbids writes" }); } return route.continue(); });
   await page.route("**/api/soop-live**", route => route.fulfill({ json: { live: false } }));
   const focusSession = await setup(page, surface, mode === "refocus"); await startProbe(page); mkdirSync(output, { recursive: true });
   let floor: Floor | undefined, id = "", before: Awaited<ReturnType<typeof memory>> | undefined, after: Awaited<ReturnType<typeof memory>> | undefined, observation: Observation | undefined, focusTransfer: FocusTransfer | undefined;
@@ -313,10 +341,11 @@ for (const surface of ["viewer", "studio"] as const) for (const mode of ["meal",
     floor = await readFloor(page, surface); ({ id, before } = await prepareFood(page, floor));
     const deadline = Date.now() + 60000;
     if (resumed) await interruptFood(page, floor, id);
-    else if (mode === "refocus") focusTransfer = await interruptFocus(page);
+    else if (mode === "refocus") focusTransfer = await interruptFocus(page, floor);
     await expect.poll(() => page.evaluate(() => (window as unknown as ProbeWindow).contextEpisodeProbe.mouthSeen), { timeout: Math.max(1000, deadline - Date.now()), intervals: [50], message: "the single actual food reaches a real meal within the finite observation budget" }).toBe(true);
     await page.screenshot({ path: `${output}/${name}-meal.png` });
-    await expect.poll(() => page.evaluate(() => (window as unknown as ProbeWindow).contextEpisodeProbe.finishCompletedAt > 0), { timeout: Math.max(1000, deadline - Date.now()), intervals: [50], message: "successful actual consumption reaches and completes its finite finish" }).toBe(true);
+    await expect.poll(() => page.evaluate(() => (window as unknown as ProbeWindow).contextEpisodeProbe.removed.length), { timeout: Math.max(1000, deadline - Date.now()), intervals: [50], message: "the meal ends with that one snack consumed" }).toBe(1);
+    await expect(pet(page)).not.toHaveAttribute("data-state", "eat", { timeout: Math.max(1000, deadline - Date.now()) });
     await mark(page, "finish-tail"); await page.waitForTimeout(1200);
   } finally {
     after = await memory(page);

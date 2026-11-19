@@ -3,6 +3,7 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { DEFAULT_COMPANION_CARE } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { expectCompanionBehindOverlay, expectQuietCompanionTail, expectQuietCompanionVisible, waitForOverlayEntrance } from "./helpers/companion-overlay";
+import { placeCompanionOnCalendarCard } from "./helpers/companion-home";
 
 const posts = new WeakMap<Page, string[]>();
 const pet = (page: Page) => page.locator(".vc-companion");
@@ -64,6 +65,10 @@ for (const mobile of [false]) test.describe(mobile ? "real touch ordinary overla
       await page.waitForTimeout(220); // native landing's final coalesced safe-span clipping
       await expect(page.getByRole("dialog", { name: "일정 상세", exact: true })).toHaveCount(0);
     }
+    // A fresh companion now starts inside its home (a44f46a2), and a home resident is deliberately not liftable while a
+    // window is open (viewer-companion.css [data-home-window]). This case is about a pet out on the calendar, which
+    // stays liftable behind an ordinary window: put it there with the real keyboard placement.
+    if (!mobile) { await placeCompanionOnCalendarCard(page, "viewer"); await page.waitForTimeout(220); /* landing's final coalesced safe-span clipping */ }
     const identity = (await pet(page).elementHandle())!;
     const originalPlatform = await pet(page).getAttribute("data-platform");
     const originalFeet = await pet(page).evaluate(node => { const rect = node.getBoundingClientRect(); return { x: rect.left + rect.width / 2, y: rect.bottom }; });

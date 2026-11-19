@@ -76,6 +76,10 @@ async function parkCompanionAwayFromFood(page: Page) {
   await expect.poll(async () => { const rect = (await companion.boundingBox())!; return rect.x + rect.width / 2; }).toBeGreaterThan(room.x + room.width + 80);
   return { chosenRealCardPoint: point, actual: await companion.boundingBox() };
 }
+// The QA guard admits only approved local paths. The app's service worker refreshes its offline snapshot with a
+// background `fetch("/")` (public/sw.js), which the guard rejects as an unapproved path; like every other spec behind
+// this guard, these run without the worker.
+test.use({ serviceWorkers: "block" });
 type DenseFrame = { at: number; data: Record<string, string>; x: number; y: number; objects: Array<{ type: string; data: Record<string, string>; x: number; y: number; width: number; height: number; hidden: boolean }>; box: { x: number; y: number } | null };
 type DenseWindow = Window & { denseItemsProbe?: { stop(): void; read(): string } };
 async function observeObjects(page: Page) {

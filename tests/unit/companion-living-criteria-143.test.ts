@@ -23,6 +23,12 @@ describe("143 living context uses observed place and actual contact",()=>{
     const frames=sequence(60).map(f=>f.at===30000?{...f,platform:"date-1",state:"walk",walkSource:true,x:180}:f);
     expect(inspectLivingContext(frames).findings).toEqual([]);
   });
+  it("measured indoor object care restarts the window (tidy binning snacks), labels alone do not",()=>{
+    const working=sequence(90).map(f=>({...f,items:String(8-Math.floor(f.at/20000))}));
+    expect(inspectLivingContext(working).findings).toEqual([]);
+    const idle=sequence(90).map(f=>({...f,items:"8",beat:String(f.at)}));
+    expect(inspectLivingContext(idle).findings.map(f=>f.rule)).toContain("awake-confined-home");
+  });
   it("flags voluntary house cheering but allows an actual recent pet",()=>{
     const cheer=frame(1200,{play:"cheer-rehearsal",state:"play",playPaint:"matching"});
     expect(inspectLivingContext([cheer]).findings.map(f=>f.rule)).toContain("voluntary-audience-inside-home");
