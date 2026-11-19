@@ -132,7 +132,8 @@ export default async function VisualPosterFixture({
       ambientWorldForce={hour === undefined ? undefined : { hour, weather: "clear" }}
       fixtureCompanionFood={isCompanionFoodKind(sp?.companionFood) ? sp.companionFood : undefined}
       anonymous={sp?.signedIn !== "1"}
-      toggleHeartAction={cozy ? fixtureHeartAction : undefined}
+      // chainRule도 하트를 단다 — 토요일 줄바뀜 조각의 왕관·하트 자리(격자 끝에 잘리지 않는지) 실측(2026-11-20).
+      toggleHeartAction={cozy || sp?.chainRule === "1" ? fixtureHeartAction : undefined}
       accountSwitch={sp?.signedIn !== undefined || sp?.monthLink === "1"}
       syncMonthUrl={sp?.monthLink === "1"}
       avatarFixed={fixed}
