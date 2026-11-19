@@ -67,3 +67,11 @@ source pose500의 원래 빨간 입에는 가운데17픽셀 core와 각각1픽�
 ## 출시 승인
 
 2026-11-20 현재 채팅에서 사용자가 교정 전후를 본 뒤 직접 `배포해`라고 승인했다. 이 던지기·눈 잔상·입 주변 점 교정본의 커밋/push/Cloudflare Workers Builds 출시와 실제 배포 확인을 진행한다. 이전 후보 대기 기록은 당시 상태로 보존하며, 이 승인이 현재 상태를 대체한다. 원프로젝트의 dirty main과 다른 작업은 건드리지 않는다. 최신 원격 main을 정상 통합한 같은 worktree에서 필요한 검사를 마친 뒤 force 없이 push하고 운영 확인 결과는 별도 Hub 출시 기록에 남긴다.
+
+## 운영 첫 로드 후속 교정
+
+교정78ab3505와 원격06b35bc3을 정상 통합한0f3bd5c8은 로컬 build/typecheck/lint·178unit·harness·실제3+5·독립 통합 검수 후 main에 push했다. Workers build327ca22c 성공, Worker7a9664d2 100%를 확인했다. 운영에서도 build0f3bd5c와 승인 눈/입 픽셀 및 공개 패킷3개 SHA가 일치했다. 그러나 첫 운영 probe는 FAIL 보존한다: composite가 얼굴을 포함할 때 숨겨진 expression-face plane 자체의 visibility를 요구한 관측 오류와 별개로, 최초 reference 로딩 동안7개 비행 관측에서 표정이 없었고, 실제180ms 착지 구간 전체에 landing packet이 늦어 이전 몸체가 남았다. 이전 로컬 검사의 위치 선택→정지 대기는 착지 패킷을 이미 데운 상태여서 이 cold 경로를 확인하지 못했다.
+
+이 지연까지 마무리하고 출시한다. painter가 이미 추출한 두 작은 eye glyph canvas와 cell 크기만 자신의 수명 동안 보존하고 원본 reference Image는 붙들지 않는다. 직접 잡고 있는 동안 기존 decoder로 reference를 준비하며, 실제 비행 몸체가 채택된 뒤 기존 세 번째 image 슬롯으로 landing 패킷을 미리 읽는다. 이미지3개/동시decode2, 원화·눈/입/alpha·마스크·물리·별도 루프 없음은 유지한다. 나선/soft는 기존 선읽기 경로다. 실제 cold 입력과 reference Image 제거 후에도 같은 RGBA를 그리는 별도 painter 검증을 추가한다. 최초 FAIL은 `release/production-first-fail-0f3bd5c8/`에 보존하고, 수정한 observer/후속 제품의 실행을 새 결과로 구분한다. 이 설명은0f3 운영 결과를 전부 PASS로 승격하지 않는다.
+
+수정본은 승인80PNG의 RGBA exact 동일, reference 공급 제거 뒤 hide로 강제 새 raster를 그려도 mismatch0/추가 reference read0이다. 기존 strict986/986·수면90 그대로, build/typecheck/lint/harness와15파일195unit PASS. 첫 실행은 warm3+cold3 및 guard 중10PASS/1FAIL이며, 동시 isolated browser rig가 실행되던 재잡기에서 실제 비행0으로 실패했다. 시간·판정을 바꾸지 않은 단독 재실행1PASS를 별도로 보존한다. 동시 입력/창 초점 영향은 추론으로 한정하며 첫 실패는 유지한다. 비작성 독립 검수는 새 코드/메모리·승인 RGBA·399chunk/새11case 근거와 이 구분을 확인해 지적0을 기록했다. 모든 네트워크 속도에서80ms를 보장한다는 뜻은 아니다. 운영 수정본의 새 cold 검증은 출시 후 별도로 확인한다.

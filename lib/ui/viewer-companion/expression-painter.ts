@@ -64,6 +64,17 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
   const inkCanvas = document.createElement("canvas"); inkCanvas.width = inkCanvas.height = PIXELS;
   const ink = inkCanvas.getContext("2d", { willReadFrequently: true });
   let lastCell = "", lastDraw = "", original: ImageData | undefined;
+  // Keep only the two already-extracted tiny glyph canvases for this painter.
+  // The reference Image stays in the existing three-node decoder budget and
+  // may be evicted for landing art without dropping a live face.
+  let eyeGlyphs: { glyphs: ReturnType<typeof companionEyeGlyph>[]; cell: number } | undefined;
+  const prepareEyes = (supplied?: HTMLImageElement) => {
+    if (eyeGlyphs) return true;
+    const image = supplied ?? readImage(COMPANION_EXPRESSION_REFERENCE_SRC);
+    if (!image?.naturalWidth) return false;
+    eyeGlyphs = { glyphs: reference.eyes.map((_, side) => companionEyeGlyph(image, reference.eyes, side, 8, reference.index)), cell: image.naturalWidth / 8 };
+    return true;
+  };
   const allowed = new Uint8Array(PIXELS * PIXELS);
   const hide = () => { canvas.hidden = true; lastDraw = ""; };
   const background = (box: number[], feature: 1 | 2 = 1, skinSamples?: readonly Point[], nativePlate = false) => {
@@ -97,14 +108,16 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
   };
   return {
     hide,
+    prepareEyes,
     paint(selected: CompanionSpriteSelection | undefined, expression: { id: CompanionExpressionId; progress: number } | null, blinkOrOptions: number | { native?: string; referenceImage?: HTMLImageElement; sleepMouth?: number; throwFace?: boolean } = 0) {
       const options = typeof blinkOrOptions === "number" ? undefined : blinkOrOptions;
       const blink = typeof blinkOrOptions === "number" ? blinkOrOptions : 0;
       const native = options?.native, blinkOnly = !expression && !native;
       const mouthOnly = native === "closed" && options?.sleepMouth !== undefined;
       if (!ctx || !pixels || !ink || !selected || !expression && !native && blink < .005) { hide(); return false; }
-      const pose = poses.get(selected.physicalIndex), image = readImage(selected.src), eyeImage = blinkOnly || mouthOnly ? image : native && options?.referenceImage ? options.referenceImage : readImage(COMPANION_EXPRESSION_REFERENCE_SRC);
-      if (!pose || pose.index !== selected.index || (sources[pose.source].src !== selected.src && (!native || anchors.sources[pose.source].src !== selected.src)) || !image || !eyeImage) { hide(); return false; }
+      const pose = poses.get(selected.physicalIndex), image = readImage(selected.src);
+      if (!pose || pose.index !== selected.index || (sources[pose.source].src !== selected.src && (!native || anchors.sources[pose.source].src !== selected.src)) || !image
+        || !blinkOnly && !mouthOnly && !prepareEyes(native ? options?.referenceImage : undefined)) { hide(); return false; }
       const authoredFrame = companionAppearanceFrames.get(selected.physicalIndex);
       const authoredState = authoredFrame?.eyeState;
       // These immutable throw/contact cells were baked with the shared squeeze
@@ -217,7 +230,7 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
         // instead of crossfading the old smile bitmap behind a new pupil.
         const nativeClosure = !native && authoredState === (i === 0 ? "wink-orange" : "wink-yellow") ? 1 : sourceClosure;
         const closure = blinkOnly ? blink : mix(nativeClosure, i === 0 ? face.leftClosure : face.rightClosure, face.weight);
-        const open = mix(1, i === 0 ? face.left : face.right, face.weight) * (1 - closure), referenceCell = eyeImage.naturalWidth / 8;
+        const open = mix(1, i === 0 ? face.left : face.right, face.weight) * (1 - closure), referenceCell = eyeGlyphs?.cell ?? 0;
         const shape = i === 0 ? face.leftShape : face.rightShape, side = i === 0 ? 1 : -1;
         ink.save(); ink.translate(x, y); ink.rotate(layout.angle);
         ink.strokeStyle = "#704626"; ink.lineCap = "round"; ink.lineJoin = "round";
@@ -253,7 +266,7 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
               (width + .6) * cell / 80, (height + 1.3) * cell / 80,
               -width / 2 - .3 + gazeX, -height / 2 - .65 + gazeY, width + .6, height + 1.3);
           } else {
-          const glyph=companionEyeGlyph(eyeImage,reference.eyes,i,8,reference.index);
+          const glyph=eyeGlyphs!.glyphs[i];
           ink.drawImage(glyph.canvas, (original.bounds[0] - .3) / 80 * referenceCell-glyph.x, (original.bounds[1] - .65) / 80 * referenceCell-glyph.y, (original.bounds[2] - original.bounds[0] + .6) / 80 * referenceCell, (original.bounds[3] - original.bounds[1] + 1.3) / 80 * referenceCell, -width / 2 - padX + gazeX, -height / 2 - padY + gazeY, width + padX * 2, height + padY * 2);
           }
           if (face.shine > 0) { ink.fillStyle = `rgba(255,253,235,${face.shine * face.weight * .9})`; ink.beginPath(); ink.ellipse(-width * .12 + gazeX, -height * .17 + gazeY, width * .12, height * .16, -.3, 0, Math.PI * 2); ink.fill(); }

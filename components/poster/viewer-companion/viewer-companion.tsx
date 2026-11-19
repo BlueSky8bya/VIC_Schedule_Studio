@@ -1392,7 +1392,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       const canBlink = !displayFace && currentDrawing && status === "idle" && drawingRow === 0 && !cheerQuiet && !overlayActive && !premiereActive && !pressure.pressure;
       const blink = canBlink ? visual.blink() : 0;
       expressionAnimating = Boolean(face || canBlink && visual.blinkImminent());
-      if (displayFace || blink) requestSprite.current(COMPANION_EXPRESSION_REFERENCE_SRC);
+      const preparingThrowFace = status === "held" && Boolean(pressed?.grabbed || keyboardHeld) && !reduced && gfxMode() === "full" && !overlayActive && !premiereActive;
+      if ((displayFace || preparingThrowFace) && !facePainter?.prepareEyes() || blink) requestSprite.current(COMPANION_EXPRESSION_REFERENCE_SRC);
       // Sample the already running CSS breath on this actor's paint clock.
       // Parked/hidden actors acquire no timer; quiet modes use the baked mouth.
       const sleepBreath = currentDrawing && !displayFace && !pause && !stopped && !document.hidden && presence.phase !== "parked"
@@ -1402,6 +1403,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         ? poseLayer.getAnimations().find(animation => (animation as CSSAnimation).animationName === "vc-sleep-breath") : undefined;
       const sleepMouth = typeof sleepBreath?.currentTime === "number" ? sampleCompanionSleepMouth(sleepBreath.currentTime) : undefined;
       const faceVisible = facePainter?.paint(paintedSelection, displayFace, throwFace ? { throwFace: true } : sleepMouth === undefined ? blink : { native: "closed", sleepMouth });
+      // The adopted airborne body owns its node now. Its extracted eye glyphs
+      // no longer need the reference Image, leaving the third existing slot
+      // for cold landing art before contact, even on a first production throw.
+      if (throwFace && flight && currentDrawing && facePainter?.prepareEyes()) spriteSources[6].forEach(src => requestSprite.current(src));
       el.toggleAttribute("data-blink", Boolean(blink && faceVisible));
       if (displayFace && faceVisible) data("expression", displayFace.id); else el.removeAttribute("data-expression");
       const poseMemory = poseWitness({ ...observed, visible: observed.visible && !pause && !overlayActive && !premiereActive }, presentationNow);
@@ -3676,11 +3681,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
             data("throwPhase", phase); data("throwVx", flight.vx.toFixed(3)); data("throwVy", flight.vy.toFixed(3));
             row = COMPANION_THROW_ROW;
             frame = phase === "launch" ? 0 : phase === "rise" ? 4 : phase === "apex" ? 8 : 12 + clamp(flight.vy / 950, 0, 1) * 3;
-            // A live surprised face needs the immutable eye reference beside
-            // its body in the same3-image cache. Speculative landing art can
-            // evict that reference on shared surfaces. Request it at actual
-            // contact instead; the existing adoption path retains the body.
-            // Earned spirals and quiet soft mode do not need that reference.
+            // Quiet/native spirals keep their existing fall prefetch. Ordinary
+            // throws prefetch after their decoded body/eye glyphs are adopted
+            // in paint(), so the reference Image cannot contend with landing.
             if (phase === "fall" && (shakenReleasePending || gfxMode() === "soft")) spriteSources[6].forEach(src => requestSprite.current(src));
             if (result.contact) {
               // The actual swept contact owns this one landing. No planned

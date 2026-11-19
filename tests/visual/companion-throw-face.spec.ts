@@ -9,13 +9,14 @@ import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-qualit
 
 const stage = process.env.COMPANION_THROW_FACE_STAGE ?? "after";
 const guard = process.env.COMPANION_THROW_FACE_GUARD ?? "";
+const cold = process.env.COMPANION_THROW_FACE_COLD === "1";
 const mode = guard === "off" ? "off" : "full";
 const output = resolve(process.env.COMPANION_THROW_FACE_OUTPUT ?? ".scratch-pw/companion-throw-face", stage);
 type Sample = { at: number; state: string; phase: string; expression: string; pose: string; row: number; x: number; y: number; source: string; visible: boolean; face: boolean; spiral: boolean; eyePixels?: number[]; mouthPixels?: number[]; png?: string };
 type ProbeWindow = Window & { throwFaceProof?: { samples: Sample[]; stop: () => void; release: number } };
 test.use({ viewport: { width: 1920, height: 1100 }, serviceWorkers: "block", contextOptions: { reducedMotion: "no-preference" }, trace: "retain-on-failure" });
 
-for (const surface of ["viewer", "studio", "preview"] as const) test(`native throw face ${surface}${guard ? ` [${guard}]` : ""}: surprised airborne and relieved only on actual landing`, async ({ page, context, baseURL }) => {
+for (const surface of ["viewer", "studio", "preview"] as const) test(`native throw face ${surface}${guard ? ` [${guard}]` : ""}${cold ? " [cold]" : ""}: surprised airborne and relieved only on actual landing`, async ({ page, context, baseURL }) => {
   mkdirSync(output, { recursive: true });
   const proof = await guardCompanionQa(page, context, baseURL!);
   // A known studio notification read is fulfilled locally, never executed.
@@ -42,9 +43,15 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`native thr
   await expect(pet).toHaveAttribute("data-placing", "");
   await page.mouse.click(670, 1080); await page.mouse.move(2, 2);
   await expect(pet).not.toHaveAttribute("data-placing", "");
-  await expect(pet).toHaveAttribute("data-platform", /^viewport-floor/);
-  // Sniff is the same settled, stationary support pose, not an active throw.
-  await expect.poll(() => pet.getAttribute("data-state")).toMatch(/^(idle|look|sniff)$/);
+  if (cold) {
+    // Catch the placement descent before it warms landing art, matching the
+    // first production throw. Native input owns cancellation; no app hook.
+    await page.waitForTimeout(180);
+  } else {
+    await expect(pet).toHaveAttribute("data-platform", /^viewport-floor/);
+    // Sniff is the same settled, stationary support pose, not an active throw.
+    await expect.poll(() => pet.getAttribute("data-state")).toMatch(/^(idle|look|sniff)$/);
+  }
   const body = (await actor.boundingBox())!, start = { x: body.x + body.width / 2, y: body.y + body.height * .4 }, centre = { x: 670, y: 610 };
   await page.mouse.move(start.x, start.y); await page.mouse.down();
   await page.mouse.move(start.x + 10, start.y - 4); await expect(pet).toHaveAttribute("data-state", "held");
