@@ -90,6 +90,13 @@ export function sampleCompanionExpression(id: CompanionExpressionId, progress: n
   return v;
 }
 
+/** A real inertial throw owns the startled half of the existing relief face.
+ * The source smile returns only through the already-owned contact beat. No
+ * independent sequence, collection completion, timer or physics state. */
+export function sampleCompanionThrowExpression(stage: "airborne" | "landing", progress = 0) {
+  return { id: "relief" as const, progress: stage === "airborne" ? .2 : .2 + .8 * smooth(progress) };
+}
+
 export type CompanionExpressionContext = Readonly<{
   token: string; status: string; play?: string; pose?: number; phase: number; personality: CompanionPersonality; atHome: boolean; energy: number;
   food?: string; foodRefused?: boolean; petting: boolean; busy: boolean; userNear: boolean; toyPlaying: boolean; toyApproach: boolean;

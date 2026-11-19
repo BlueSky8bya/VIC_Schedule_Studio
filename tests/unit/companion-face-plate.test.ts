@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { companionFaceBackground } from "@/lib/ui/viewer-companion/face-plate";
+import { companionFaceBackground, repairCompanionMouthParticles } from "@/lib/ui/viewer-companion/face-plate";
 
 describe("boundary-matched face background",()=>{
   it("removes dark ink and its white glint while preserving the underlying skin gradient and alpha",()=>{
@@ -21,5 +21,39 @@ describe("boundary-matched face background",()=>{
     const before=source.slice(),result=companionFaceBackground(source,size,[4,4,15,15],[241,226,194]);
     for(let y=4;y<=15;y++)for(let x=4;x<=15;x++)if(x===4||x===15||y===4||y===15)expect([...result.slice(((y-4)*12+x-4)*4,((y-4)*12+x-4)*4+4)]).toEqual([...source.slice((y*size+x)*4,(y*size+x)*4+4)]);
     expect(source).toEqual(before);
+  });
+});
+
+describe("measured source mouth particles", () => {
+  const fixture = () => {
+    const size = 20, source = new Uint8ClampedArray(size * size * 4);
+    for (let pixel = 0; pixel < size * size; pixel++) source.set([250, 235, 205, 253], pixel * 4);
+    for (let y = 9; y <= 11; y++) for (let x = 9; x <= 11; x++) source.set([220, 110, 75, 253], (y * size + x) * 4);
+    for (const [x, y] of [[7, 9], [8, 7]]) source.set([236, 135, 114, 253], (y * size + x) * 4);
+    return { size, source, target: source.slice(), eye: new Uint8ClampedArray(source.length), box: [5, 5, 14, 14] };
+  };
+  it("cleans isolated fragments while keeping the main mouth, source and all outside pixels exact", () => {
+    const { size, source, target, eye, box } = fixture(), before = source.slice();
+    const repaired = repairCompanionMouthParticles(target, source, size, box, eye);
+    expect(repaired).toContain(7 + 9 * size); expect(repaired).toContain(8 + 7 * size);
+    expect(target[(7 + 9 * size) * 4 + 1]).toBeGreaterThan(220);
+    for (let pixel = 0; pixel < size * size; pixel++) {
+      expect(target[pixel * 4 + 3]).toBe(source[pixel * 4 + 3]);
+      if (!repaired.includes(pixel)) expect(target.slice(pixel * 4, pixel * 4 + 4)).toEqual(source.slice(pixel * 4, pixel * 4 + 4));
+    }
+    for (let y = 9; y <= 11; y++) for (let x = 9; x <= 11; x++) expect(target.slice((y * size + x) * 4, (y * size + x) * 4 + 4)).toEqual(source.slice((y * size + x) * 4, (y * size + x) * 4 + 4));
+    expect(source).toEqual(before);
+  });
+  it("preserves every approved eye pixel and rejects a translucent source fringe", () => {
+    const { size, source, target, eye, box } = fixture(), protectedEye = 7 + 9 * size, translucent = 8 + 7 * size;
+    eye[protectedEye * 4 + 3] = 1; source[translucent * 4 + 3] = target[translucent * 4 + 3] = 244;
+    repairCompanionMouthParticles(target, source, size, box, eye);
+    for (const pixel of [protectedEye, translucent]) expect(target.slice(pixel * 4, pixel * 4 + 4)).toEqual(source.slice(pixel * 4, pixel * 4 + 4));
+  });
+  it("fails closed when the measured ROI contains several substantial marks", () => {
+    const { size, source, target, eye, box } = fixture();
+    for (let x = 6; x <= 8; x++) source.set([220, 110, 75, 253], (7 * size + x) * 4);
+    target.set(source);
+    expect(repairCompanionMouthParticles(target, source, size, box, eye)).toEqual([]); expect(target).toEqual(source);
   });
 });

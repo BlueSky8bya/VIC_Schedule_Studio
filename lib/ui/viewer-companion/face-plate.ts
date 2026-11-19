@@ -101,3 +101,44 @@ export function companionFaceBackground(source: Uint8ClampedArray, size: number,
   if (cached.size >= 24) cached.clear();
   cached.set(key, result); return result;
 }
+
+/** Remove only tiny, disconnected red mouth fragments inside a measured
+ * same-source mouth ROI. The main mouth and every already-painted eye pixel
+ * remain exact. This never grants a rectangular skin/cheek repair mask. */
+export function repairCompanionMouthParticles(target: Uint8ClampedArray, source: Uint8ClampedArray, size: number, box: readonly number[], eyeInk: Uint8ClampedArray) {
+  const [left, top, right, bottom] = box, width = right - left + 1;
+  const core = new Set<number>(), groups: number[][] = [];
+  for (let y = top; y <= bottom; y++) for (let x = left; x <= right; x++) {
+    const pixel = y * size + x, i = pixel * 4;
+    if (source[i + 3] >= 245 && source[i] >= 145 && source[i] > source[i + 1] * 1.2 && source[i + 1] < 190 && source[i + 2] < 170) core.add(pixel);
+  }
+  while (core.size) {
+    const seed = core.values().next().value!, group = [seed]; core.delete(seed);
+    for (let at = 0; at < group.length; at++) {
+      const pixel = group[at], x = pixel % size, y = Math.floor(pixel / size);
+      for (const [xx, yy] of [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]) {
+        const next = yy * size + xx;
+        if (xx >= left && xx <= right && yy >= top && yy <= bottom && core.delete(next)) group.push(next);
+      }
+    }
+    groups.push(group);
+  }
+  groups.sort((a, b) => b.length - a.length);
+  if (groups.length < 2 || groups.length > 3 || groups[0].length < 4 || groups.slice(1).some(group => group.length > 2)) return [];
+  const main = groups[0], dots = groups.slice(1).flat();
+  const distance = (pixel: number, points: number[]) => Math.min(...points.map(point => Math.hypot(pixel % size - point % size, Math.floor(pixel / size) - Math.floor(point / size))));
+  const corners = [[left, top], [right, top], [left, bottom], [right, bottom]].map(([x, y]) => (y * size + x) * 4);
+  if (corners.some(i => source[i + 3] < 245 || source[i] < 220 || source[i + 1] < 200 || source[i + 2] < 150)) return [];
+  const fallback = [0, 1, 2].map(channel => corners.reduce((sum, i) => sum + source[i + channel], 0) / corners.length);
+  const background = companionFaceBackground(source, size, box, fallback), repaired: number[] = [];
+  for (let y = top; y <= bottom; y++) for (let x = left; x <= right; x++) {
+    const pixel = y * size + x, i = pixel * 4;
+    // A one-raster-pixel fringe belongs to the nearest component. Ties belong
+    // to the central mouth, so erasing a dot cannot nibble its outline.
+    if (source[i + 3] < 245 || eyeInk[i + 3] || distance(pixel, dots) > Math.SQRT2 || distance(pixel, dots) >= distance(pixel, main)) continue;
+    const from = ((y - top) * width + x - left) * 4;
+    for (let channel = 0; channel < 3; channel++) target[i + channel] = background[from + channel];
+    target[i + 3] = source[i + 3]; repaired.push(pixel);
+  }
+  return repaired;
+}

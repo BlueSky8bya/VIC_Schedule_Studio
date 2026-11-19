@@ -3,7 +3,7 @@
 import { createCompanionPoseWitness } from "@/lib/ui/viewer-companion/memory-witness";
 import { recordCompanionObservedExpression, recordCompanionObservedPose, recordCompanionCompletedActivity } from "@/lib/ui/viewer-companion/collection";
 import { companionActivityMemory } from "@/lib/ui/viewer-companion/memory-catalog";
-import { createCompanionExpressions } from "@/lib/ui/viewer-companion/expressions";
+import { createCompanionExpressions, sampleCompanionThrowExpression } from "@/lib/ui/viewer-companion/expressions";
 import { createCompanionExpressionPainter, COMPANION_EXPRESSION_REFERENCE_SRC, sampleCompanionSleepMouth } from "@/lib/ui/viewer-companion/expression-painter";
 
 import { companionWorkExpressionsFor, companionWorkExpressionPose, type CompanionWorkExpressionOffer } from "@/lib/ui/viewer-companion/work-expression";
@@ -1367,6 +1367,12 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       const expressionToy = action?.toyPerformance?.kind;
       const privateRoom = support.startsWith("companion-home"), command = action?.personalityScene?.command;
       const lookingOut = privateRoom && status === "look" && (action?.scene?.id === 31 || command?.kind === "watch" && getCompanionHomeTv() === "off");
+      const expressionQuiet = reduced || gfxMode() === "off" || gfxMode() === "soft" || !currentDrawing || overlayActive || premiereActive
+        || Boolean(pressed || keyboardHeld || placing || interaction || washingPose || aftertaste) || status === "sleep" || status === "held";
+      // Only the user's real ballistic flight/contact owns this startled face.
+      // An earned native spiral remains above it; ordinary jumps do not use it.
+      const throwFace = !expressionQuiet && carriedColumn === undefined && action?.kind === "jump" && (flight || travel === -6)
+        ? sampleCompanionThrowExpression(flight ? "airborne" : "landing", clamp((performance.now() - began) / Math.max(1, total), 0, 1)) : null;
       const face = expressions.sample({
         token: `${began}:${status}:${action?.play ?? ""}`, status, play: action?.play, pose: drawingRow, phase: clamp((performance.now() - began) / Math.max(1, total), 0, 1),
         personality: effective.personality, atHome: privateRoom, energy: brain.current.energy, food: expressionFood?.kind,
@@ -1378,11 +1384,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         lookingOut, music: Boolean(action?.radio), season: Number(monthKey.split("-")[1]), weather: environment.current.weather, daylight: !environment.current.night,
         outing: action?.personalityScene?.id === "routine-outing" || !privateRoom && status === "walk" && effective.personality === "curious",
         cleanupReceipt: expressionCleanup, meal: expressionMeal, mishap: Boolean(runTrip || action?.toyMishap || heartResult === "removed"),
-      }, presentationNow, reduced || gfxMode() === "off" || gfxMode() === "soft" || !currentDrawing || overlayActive || premiereActive || Boolean(pressed || keyboardHeld || placing || interaction || washingPose || aftertaste) || status === "sleep" || status === "held");
+      }, presentationNow, expressionQuiet || Boolean(throwFace) || carriedColumn !== undefined);
       // Once the finite petting expression settles, retain its soft closed
       // portrait only while the authored petting pose is owned. This is static
       // paint, never a new animation/collection receipt or reason to keep RAF.
-      const displayFace = face ?? (status === "petted" && currentDrawing && !reduced && !["off", "soft"].includes(gfxMode()) && !overlayActive && !premiereActive ? { id: "melt" as const, progress: .5 } : null);
+      const displayFace = throwFace ?? face ?? (status === "petted" && currentDrawing && !reduced && !["off", "soft"].includes(gfxMode()) && !overlayActive && !premiereActive ? { id: "melt" as const, progress: .5 } : null);
       const canBlink = !displayFace && currentDrawing && status === "idle" && drawingRow === 0 && !cheerQuiet && !overlayActive && !premiereActive && !pressure.pressure;
       const blink = canBlink ? visual.blink() : 0;
       expressionAnimating = Boolean(face || canBlink && visual.blinkImminent());
@@ -1395,7 +1401,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         && (drawingRow === 11 || drawingRow === 40) && el.hasAttribute("data-dreaming")
         ? poseLayer.getAnimations().find(animation => (animation as CSSAnimation).animationName === "vc-sleep-breath") : undefined;
       const sleepMouth = typeof sleepBreath?.currentTime === "number" ? sampleCompanionSleepMouth(sleepBreath.currentTime) : undefined;
-      const faceVisible = facePainter?.paint(paintedSelection, displayFace, sleepMouth === undefined ? blink : { native: "closed", sleepMouth });
+      const faceVisible = facePainter?.paint(paintedSelection, displayFace, throwFace ? { throwFace: true } : sleepMouth === undefined ? blink : { native: "closed", sleepMouth });
       el.toggleAttribute("data-blink", Boolean(blink && faceVisible));
       if (displayFace && faceVisible) data("expression", displayFace.id); else el.removeAttribute("data-expression");
       const poseMemory = poseWitness({ ...observed, visible: observed.visible && !pause && !overlayActive && !premiereActive }, presentationNow);
@@ -3670,7 +3676,12 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
             data("throwPhase", phase); data("throwVx", flight.vx.toFixed(3)); data("throwVy", flight.vy.toFixed(3));
             row = COMPANION_THROW_ROW;
             frame = phase === "launch" ? 0 : phase === "rise" ? 4 : phase === "apex" ? 8 : 12 + clamp(flight.vy / 950, 0, 1) * 3;
-            if (phase === "fall") spriteSources[6].forEach(src => requestSprite.current(src));
+            // A live surprised face needs the immutable eye reference beside
+            // its body in the same3-image cache. Speculative landing art can
+            // evict that reference on shared surfaces. Request it at actual
+            // contact instead; the existing adoption path retains the body.
+            // Earned spirals and quiet soft mode do not need that reference.
+            if (phase === "fall" && (shakenReleasePending || gfxMode() === "soft")) spriteSources[6].forEach(src => requestSprite.current(src));
             if (result.contact) {
               // The actual swept contact owns this one landing. No planned
               // target, endpoint clamp or geometry reflow can pre-land it.
@@ -4638,7 +4649,17 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       else if (event.key.toLowerCase() === "p" && preferences.drag && !event.repeat) control.current?.place();
       else if (event.key.toLowerCase() === "n" && preferences.sleep && !event.repeat) { control.current?.rest(); logActivity("ui.click", { target: "companion-rest" }); }
       else if (event.key === " " && preferences.drag) { event.preventDefault(); if (!keyboardHeld) beginManualTransfer(); cancelHomeJourney(); awaitingAtX = false; pendingMonth = false; if (!keyboardHeld && action?.accessory) y -= sampleCompanionAccessoryMotion(action.accessory, performance.now() - began).bodyLift; if (!keyboardHeld && action?.radio) y += sampleWorldMusic(action.radio, performance.now() - began).bob; clearAction(); supportMotion.reset(); keyboardHeld = !keyboardHeld; if (keyboardHeld) playCompanionSound("lift", preferencesRef.current, "direct"); else { settle({ x, y }); markDirect(); if (keyboardMoved) transferred(); } keyboardMoved = false; }
-      else if (event.key === "Escape") { event.preventDefault(); const moved = keyboardHeld && keyboardMoved, letGo = keyboardHeld || placing; pendingMonth = false; keyboardHeld = false; keyboardMoved = false; placing = false; delete el.dataset.placing; settle({ x, y }); if (letGo) markDirect(); if (moved) transferred(); }
+      else if (event.key === "Escape") {
+        event.preventDefault();
+        const moved = keyboardHeld && keyboardMoved, letGo = keyboardHeld || placing;
+        const wasThrow = action?.kind === "jump" && Boolean(flight || travel === -6);
+        pendingMonth = false; keyboardHeld = false; keyboardMoved = false; placing = false; delete el.dataset.placing;
+        settle({ x, y });
+        // Cancellation owns the visible face on this input too. Do not leave
+        // the old throw composite until the next rate-limited motion paint.
+        if (wasThrow && action?.kind === "jump") paint(5, 0, "jump");
+        if (letGo) markDirect(); if (moved) transferred();
+      }
       else if (keyboardHeld && event.key.startsWith("Arrow")) { event.preventDefault(); const previous = { x, y }; x = clamp(x + (event.key === "ArrowLeft" ? -24 : event.key === "ArrowRight" ? 24 : 0), size / 2 + 4, innerWidth - size / 2 - 4); y = clamp(y + (event.key === "ArrowUp" ? -24 : event.key === "ArrowDown" ? 24 : 0), size + 8, innerHeight - 12); keyboardMoved ||= x !== previous.x || y !== previous.y; }
       if (owns) { cancelAnimationFrame(raf); clearTimeout(timer); lastTick = lastNeeds = lastPaint = performance.now(); schedule(); }
     };
