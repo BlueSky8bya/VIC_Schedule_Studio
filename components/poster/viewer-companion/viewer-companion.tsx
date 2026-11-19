@@ -4,7 +4,7 @@ import { createCompanionPoseWitness } from "@/lib/ui/viewer-companion/memory-wit
 import { recordCompanionObservedExpression, recordCompanionObservedPose, recordCompanionCompletedActivity } from "@/lib/ui/viewer-companion/collection";
 import { companionActivityMemory } from "@/lib/ui/viewer-companion/memory-catalog";
 import { createCompanionExpressions } from "@/lib/ui/viewer-companion/expressions";
-import { createCompanionExpressionPainter, COMPANION_EXPRESSION_REFERENCE_SRC } from "@/lib/ui/viewer-companion/expression-painter";
+import { createCompanionExpressionPainter, COMPANION_EXPRESSION_REFERENCE_SRC, sampleCompanionSleepMouth } from "@/lib/ui/viewer-companion/expression-painter";
 
 import { companionWorkExpressionsFor, companionWorkExpressionPose, type CompanionWorkExpressionOffer } from "@/lib/ui/viewer-companion/work-expression";
 
@@ -1223,7 +1223,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         shape.bob += radioMotion.bob; shape.tilt += radioMotion.tilt;
         shape.scaleY *= 1 - radioMotion.squash; shape.scaleX = 1 / shape.scaleY;
       }
-      if (neutralVerticalRecovery) Object.assign(shape, { bob: 0, tilt: 0, scaleX: 1, scaleY: 1 });
+      // Cord contacts paint the happy reaching row, not the bow/pounce body.
+      // Its real measured reach owns the hop; do not squash this different
+      // drawing with the underlying gesture's anticipation/lean as well.
+      const cordContact = homeContact?.element.isConnected && (homeContact.kind === "curtain" || homeContact.kind === "light") && isHomeFloor(support) && supportedNow();
+      if (neutralVerticalRecovery || cordContact) Object.assign(shape, { bob: 0, tilt: 0, scaleX: 1, scaleY: 1 });
       // Close only the authored <=4px arrow clearance during this finite toe
       // press. A moved/unrelated ledge cannot pull a remote body into contact.
       const panelTarget = action?.kind === "panel" && status === "panel" && support === action.target.platformId && supportedNow()
@@ -1381,7 +1385,15 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       const blink = canBlink ? visual.blink() : 0;
       expressionAnimating = Boolean(face || canBlink && visual.blinkImminent());
       if (displayFace || blink) requestSprite.current(COMPANION_EXPRESSION_REFERENCE_SRC);
-      const faceVisible = facePainter?.paint(paintedSelection, displayFace, blink);
+      // Sample the already running CSS breath on this actor's paint clock.
+      // Parked/hidden actors acquire no timer; quiet modes use the baked mouth.
+      const sleepBreath = currentDrawing && !displayFace && !pause && !stopped && !document.hidden && presence.phase !== "parked"
+        && !reduced && !["off", "soft"].includes(gfxMode())
+        && !document.documentElement.hasAttribute("data-reduce-motion") && !overlayActive && !premiereActive
+        && (drawingRow === 11 || drawingRow === 40) && el.hasAttribute("data-dreaming")
+        ? poseLayer.getAnimations().find(animation => (animation as CSSAnimation).animationName === "vc-sleep-breath") : undefined;
+      const sleepMouth = typeof sleepBreath?.currentTime === "number" ? sampleCompanionSleepMouth(sleepBreath.currentTime) : undefined;
+      const faceVisible = facePainter?.paint(paintedSelection, displayFace, sleepMouth === undefined ? blink : { native: "closed", sleepMouth });
       el.toggleAttribute("data-blink", Boolean(blink && faceVisible));
       if (displayFace && faceVisible) data("expression", displayFace.id); else el.removeAttribute("data-expression");
       const poseMemory = poseWitness({ ...observed, visible: observed.visible && !pause && !overlayActive && !premiereActive }, presentationNow);
@@ -1596,14 +1608,19 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         ground = innerHeight - 12;
         for (const platform of landingPlatforms) if (x >= platform.x && x <= platform.x + platform.width && platform.y >= y) ground = Math.min(ground, platform.y);
       }
-      const playHop = aftertaste ? 0 : companionPompomPlayHeight(action?.play, play, playingToy?.use);
+      const reachHop = cord ? Math.max(0, reach?.lift ?? 0) : 0;
+      const playHop = aftertaste || cord ? 0 : companionPompomPlayHeight(action?.play, play, playingToy?.use);
       const musicHop = (action?.radio?.instrument ?? action?.radio?.reaction) === "bounce" ? Math.max(0, -(radioMotion?.bob ?? 0)) : 0;
-      const localHop = playHop + Math.max(0, accessoryMotion?.bodyLift ?? 0) + musicHop;
+      const localHop = reachHop + playHop + Math.max(0, accessoryMotion?.bodyLift ?? 0) + musicHop;
       const heartHop = status === "heart" && action?.kind === "heart" ? Math.max(0, origin.y - y) : 0;
       const height = Math.max(0, airborne ? ground - y : 0, localHop, heartHop, premiereDisplay?.lift ?? 0);
-      const pompom = pompomFlight.sample({ now: presentationNow, y: (premiereDisplay ? display.y : y - carrier.y) + shape.bob,
+      const pompomResponse = pompomFlight.sample({ now: presentationNow, y: (premiereDisplay ? display.y : y - carrier.y - reachHop) + shape.bob,
         height, token: premiereBounce?.began ?? premiereSource?.generation ?? began,
         active: !pressed && !keyboardHeld && !placing && (airborne || height > 0), quiet: cheerQuiet || !currentDrawing || document.hidden });
+      // A small reach may lengthen gently on ascent, but never spread the
+      // reaching silhouette sideways on descent. Other jumps retain their
+      // existing profile, and the same protected-face warp preserves area.
+      const pompom = cord && pompomResponse !== undefined ? clamp(pompomResponse, -.06, 0) : pompomResponse;
       ensureWardrobe(pompom !== undefined);
       const giftPoint = wardrobePainter?.paint(paintedSelection, wardrobe.current.equipped, Boolean(wardrobe.current.pending), accessoryMotion?.accessory, faceVisible ? expressionCanvas.current ?? undefined : undefined, pompom);
       if (pompom !== undefined && wardrobePainter?.layered()) data("pompom", pompom.toFixed(4)); else el.removeAttribute("data-pompom");

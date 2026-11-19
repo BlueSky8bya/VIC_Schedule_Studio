@@ -24,12 +24,12 @@ const background=painterNodes.find((node):node is ts.VariableDeclaration=>ts.isV
 const declaration=(name:string)=>painterNodes.find((node):node is ts.VariableDeclaration=>ts.isVariableDeclaration(node)&&node.name.getText(painterAst)===name)!;
 const eyePatches=declaration("eyePatches"),mouthCenter=declaration("m"),mouthBox=declaration("mouthBox"),mouthFill=declaration("mouthFill");
 if(!background||!eyePatches||!mouthCenter||!mouthBox||!mouthFill||!eyePatches.initializer||!ts.isCallExpression(eyePatches.initializer)
-  ||eyePatches.initializer.expression.getText(painterAst)!=="pose.eyes.map")throw Error("Actual163 painter mask declarations are missing");
+  ||eyePatches.initializer.expression.getText(painterAst)!=="(mouthOnly ? [] : pose.eyes).map")throw Error("Actual163 painter mask declarations are missing");
 const print=(node:ts.Node)=>ts.createPrinter().printNode(ts.EmitHint.Unspecified,node,painterAst);
 const actualMaskCode=ts.transpileModule(`
 const PIXELS=192,SCALE=PIXELS/80,allowed=new Uint8Array(PIXELS*PIXELS);
 const mix=(a,b,p)=>a+(b-a)*p;
-const native=undefined,original=undefined,authoredState="open";
+const native=undefined,original=undefined,authoredState="open",mouthOnly=false;
 const face={gazeX:0,gazeY:0,weight:1,smile:.7,open:1,tremble:.3};
 const layout=companionFaceLayout(pose);
 const pixels={getImageData(left,top,width,height){const data=new Uint8ClampedArray(width*height*4);

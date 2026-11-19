@@ -122,8 +122,8 @@
       "parentSrc": "/companion/hd/vitamin-action-11-motion-115-v1.webp",
       "parentSha256": "423d11cd938bb22c1bd57c7b57aaf00b2578b8709e49a3b00297c5ec8ff84189",
       "src": "/companion/hd/appearance-20261118-11.webp",
-      "sha256": "d23da671aefdb9b6f965c37eda030cecafd6d01c1f570232c28b0af0fa54b4c3",
-      "bytes": 705062,
+      "sha256": "cb9d56cdc478cffed047ee14ebf355c241a9fb6bd5ff498bc778e77693247dec",
+      "bytes": 700622,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -172,8 +172,8 @@
       "parentSrc": "/companion/hd/vitamin-action-16-eye-contour-120-v1.webp",
       "parentSha256": "39c0f80b9b03d25d9be087f4f19fcd7c4f1088f4f4faa64da83c8a8797800747",
       "src": "/companion/hd/appearance-20261118-16.webp",
-      "sha256": "e86fae23a59756700b6b2692b13bb348051dc4cc6532442019565515fa23c290",
-      "bytes": 766680,
+      "sha256": "d0a890416794d079ccfa6fd2bdf19acdd240c1bd19224a806c76733dc1b04ab4",
+      "bytes": 766188,
       "width": 1536,
       "height": 768,
       "gridRows": 4
@@ -332,8 +332,8 @@
       "parentSrc": "/companion/hd/vitamin-episodes-00-eye-contour-120-v1.webp",
       "parentSha256": "5ea159d3bca15819d3ef5f119397f9da3ffdb2ba715b9fb4e54d6da43eee2e58",
       "src": "/companion/hd/appearance-20261118-32.webp",
-      "sha256": "c43ce81e82dd8bf36513890bba5198d88f22008c88a916dcf9a6438c12cc360f",
-      "bytes": 415666,
+      "sha256": "ec78677c814515c9dd0d2ee08a200acb340fe012770128e0d81c7e1bcfedee47",
+      "bytes": 415386,
       "width": 1536,
       "height": 576,
       "gridRows": 3

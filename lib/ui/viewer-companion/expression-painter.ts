@@ -42,6 +42,14 @@ export function companionEyeStroke(height: number, petting = false) {
 const PIXELS = 192, SCALE = PIXELS / 80;
 const mix = (a: number, b: number, p: number) => a + (b - a) * p;
 
+/** Follow the existing 4.8s CSS breath; linger closed between quiet exhales. */
+export function sampleCompanionSleepMouth(elapsedMs: number) {
+  if (!Number.isFinite(elapsedMs) || elapsedMs < 0) return 0;
+  const phase = elapsedMs % 4800 / 4800;
+  const amount = Math.max(0, Math.min(1, phase < .44 ? (phase - .12) / .32 : (.82 - phase) / .38));
+  return amount * amount * (3 - 2 * amount);
+}
+
 /** A live code-native face rig, under the unchanged accessory layer and in
  * the exact registered sprite plane. Body/ears/cheeks/source pixels and all
  * transforms remain owned by the existing renderer. Only opaque eye/mouth
@@ -86,16 +94,19 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
   };
   return {
     hide,
-    paint(selected: CompanionSpriteSelection | undefined, expression: { id: CompanionExpressionId; progress: number } | null, blinkOrOptions: number | { native?: string; referenceImage?: HTMLImageElement } = 0) {
+    paint(selected: CompanionSpriteSelection | undefined, expression: { id: CompanionExpressionId; progress: number } | null, blinkOrOptions: number | { native?: string; referenceImage?: HTMLImageElement; sleepMouth?: number } = 0) {
       const options = typeof blinkOrOptions === "number" ? undefined : blinkOrOptions;
       const blink = typeof blinkOrOptions === "number" ? blinkOrOptions : 0;
       const native = options?.native, blinkOnly = !expression && !native;
+      const mouthOnly = native === "closed" && options?.sleepMouth !== undefined;
       if (!ctx || !pixels || !ink || !selected || !expression && !native && blink < .005) { hide(); return false; }
-      const pose = poses.get(selected.physicalIndex), image = readImage(selected.src), eyeImage = blinkOnly ? image : native && options?.referenceImage ? options.referenceImage : readImage(COMPANION_EXPRESSION_REFERENCE_SRC);
+      const pose = poses.get(selected.physicalIndex), image = readImage(selected.src), eyeImage = blinkOnly || mouthOnly ? image : native && options?.referenceImage ? options.referenceImage : readImage(COMPANION_EXPRESSION_REFERENCE_SRC);
       if (!pose || pose.index !== selected.index || (sources[pose.source].src !== selected.src && (!native || anchors.sources[pose.source].src !== selected.src)) || !image || !eyeImage) { hide(); return false; }
       const authoredFrame = companionAppearanceFrames.get(selected.physicalIndex);
       const authoredState = authoredFrame?.eyeState;
       const sleeping = Boolean(native && [11, 78].includes(authoredFrame?.nativeCell ?? -1));
+      if (mouthOnly && (!sleeping || !Number.isFinite(options?.sleepMouth))) { hide(); return false; }
+      const sleepMouth = mouthOnly ? Math.round(Math.max(0, Math.min(1, options!.sleepMouth!)) * 64) / 64 : 0;
       const sourceCat=companionAppearanceFrames.get(selected.physicalIndex)?.mouthState==="cat";
       if (!native && authoredState === "spiral") { hide(); return false; }
       const sourceClosure = native ? 0 : authoredState ? ["closed", "sad-closed", "squeeze", "cry"].includes(authoredState) ? 1 : 0 : sourceEyeStates.get(selected.physicalIndex);
@@ -106,7 +117,8 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
         if (closed || squeeze || native === "wink-orange") { face.leftShape = squeeze ? E.squeeze : E.smile; face.leftClosure = 1; }
         if (closed || squeeze || native === "wink-yellow") { face.rightShape = squeeze ? E.squeeze : E.smile; face.rightClosure = 1; }
         if (native === "spiral") { face.left = face.right = 0; }
-        if (sleeping) { face.leftShape = face.rightShape = E.squeeze; face.leftClosure = face.rightClosure = 1; face.mouth = M.round; face.open = .18; face.smile = 0; }
+        if (sleeping) { face.leftShape = face.rightShape = E.squeeze; face.leftClosure = face.rightClosure = 1; face.mouth = M.smile; face.open = 0; face.smile = .24; }
+        if (mouthOnly) { face.mouthRound = sleepMouth; face.open = .18 * sleepMouth; face.smile = .24 * (1 - sleepMouth); }
         if (native === "cry") { face.mouth = M.pout; face.open = 0; face.smile = -.4; }
       }
       // Row9 is the authored petting smile, including static wardrobe/meadow
@@ -115,7 +127,7 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
       const pettingArch = native ? Number(pose.source === 9) : mix(Number(pose.source === 9), Number(expression?.id === "melt"), face.weight);
       const layout = companionFaceLayout(pose);
       if (face.weight < .005 && !blinkOnly) { hide(); return false; }
-      const key = `${selected.src}:${selected.index}`, draw = blinkOnly ? `${key}:blink:${Math.round(blink * 64)}` : `${key}:${native ?? expression!.id}:${native ? 0 : Math.floor(expression!.progress * 240)}`;
+      const key = `${selected.src}:${selected.index}`, draw = blinkOnly ? `${key}:blink:${Math.round(blink * 64)}` : `${key}:${native ?? expression!.id}:${mouthOnly ? sleepMouth : native ? 0 : Math.floor(expression!.progress * 240)}`;
       if (draw === lastDraw && !canvas.hidden) return true;
       const cell = image.naturalWidth / selected.grid, ox = selected.index % selected.grid * cell, oy = Math.floor(selected.index / selected.grid) * cell;
       if (key !== lastCell) { pixels.clearRect(0, 0, PIXELS, PIXELS); pixels.drawImage(image, ox, oy, cell, cell, 0, 0, PIXELS, PIXELS); original = pixels.getImageData(0, 0, PIXELS, PIXELS); lastCell = key; }
@@ -123,7 +135,7 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
       allowed.fill(0); pixels.putImageData(original, 0, 0); ctx.putImageData(original, 0, 0); ctx.save(); ctx.scale(SCALE, SCALE);
       // Clear every valid face patch before drawing any feature. Clearing
       // a large authored mouth after the eyes used to erase the new eyelids.
-      const eyePatches = pose.eyes.map((eye, i) => {
+      const eyePatches = (mouthOnly ? [] : pose.eyes).map((eye, i) => {
         const original = reference.eyes[i];
         const sharedWidth = Math.max(...reference.eyes.map(eye => eye.bounds[2] - eye.bounds[0]));
         const sharedHeight = Math.max(...reference.eyes.map(eye => eye.bounds[3] - eye.bounds[1]));
@@ -145,7 +157,7 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
       // A paired expression is admitted atomically. A folded ear/transparent
       // margin can reject just one patch; painting its partner alone creates
       // an unintended wink and can flicker as the authored cell changes.
-      if (eyePatches.length !== 2 || eyePatches.some(patch => !patch.fill)) {
+      if (!mouthOnly && (eyePatches.length !== 2 || eyePatches.some(patch => !patch.fill))) {
         ctx.restore(); hide(); return false;
       }
       const m = blinkOnly ? null : pose.mouth;
@@ -158,8 +170,10 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
       // mouth throughout the finite morph. It is independently reproducible
       // from the public pose, without requiring a hidden animation phase.
       const mouthFringe = native || pose.source === 9 ? 2 : .5;
-      const mouthBox = m ? [Math.min(m.bounds[0] - mouthFringe, sourceMouthX - 3.4, targetMouthX - 3.4), Math.min(m.bounds[1] - mouthFringe, sourceMouthY - 2, targetMouthY - 2), Math.max(m.bounds[2] + mouthFringe, sourceMouthX + 3.4, targetMouthX + 3.4), Math.max(m.bounds[3] + mouthFringe, sourceMouthY + 3.6, targetMouthY + 3.6)] : undefined;
+      const mouthBox = m ? mouthOnly ? [targetMouthX - 3.4, targetMouthY - 2, targetMouthX + 3.4, targetMouthY + 3.6]
+        : [Math.min(m.bounds[0] - mouthFringe, sourceMouthX - 3.4, targetMouthX - 3.4), Math.min(m.bounds[1] - mouthFringe, sourceMouthY - 2, targetMouthY - 2), Math.max(m.bounds[2] + mouthFringe, sourceMouthX + 3.4, targetMouthX + 3.4), Math.max(m.bounds[3] + mouthFringe, sourceMouthY + 3.6, targetMouthY + 3.6)] : undefined;
       const mouthFill = mouthBox ? background(mouthBox, 2, undefined, Boolean(native || authoredState)) : undefined;
+      if (mouthOnly && !mouthFill) { ctx.restore(); hide(); return false; }
       // Repair the union once. Separate patches restored pixels from the
       // uncleaned source at overlaps: a mouth rectangle could bring back a
       // clipped fragment of the eyelid that the eye repair had just removed.
@@ -167,12 +181,12 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
       const patches = [...eyePatches, ...(mouthBox && mouthFill ? [{ box: mouthBox, fill: mouthFill }] : [])];
       const left = Math.round(Math.min(...patches.map(p => p.box[0])) * SCALE), top = Math.round(Math.min(...patches.map(p => p.box[1])) * SCALE);
       const right = Math.round(Math.max(...patches.map(p => p.box[2])) * SCALE), bottom = Math.round(Math.max(...patches.map(p => p.box[3])) * SCALE);
-      const fallback = eyePatches[0].fill!.match(/\d+/g)!.map(Number);
+      const fallback = (mouthOnly ? mouthFill! : eyePatches[0].fill!).match(/\d+/g)!.map(Number);
       const data = companionFaceBackground(original.data, PIXELS, [left, top, right, bottom], fallback);
       ctx.putImageData(new ImageData(data, right - left + 1, bottom - top + 1), left, top);
       ink.clearRect(0, 0, PIXELS, PIXELS); ink.save(); ink.scale(SCALE, SCALE);
-      let painted = 0;
-      for (let i = 0; i < 2; i++) {
+      let painted = mouthOnly ? 1 : 0;
+      for (let i = 0; i < eyePatches.length; i++) {
         const { original, width, height, x, y, fill } = eyePatches[i]; if (!fill) continue;
         // The original dizzy rings are restored atomically after mouth repair.
         if (native === "spiral") { painted++; continue; }
@@ -232,8 +246,12 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
           ink.lineWidth = companionEyeStroke(height, native ? pose.source === 9 : expression?.id === "melt"); ink.beginPath();
           const nativeSqueeze = !native && ["squeeze", "cry", "sad-closed"].includes(authoredState ?? "") ? 1 : 0;
           const squeeze = blinkOnly ? .64 : mix(nativeSqueeze, shape === E.squeeze ? 1 : 0, face.weight);
-          ink.moveTo(-width * .49, mix(height * .08, -height * .14, squeeze));
-          ink.quadraticCurveTo(0, mix(-height * mix(.36, policy.eye.pettingArchControl, pettingArch), height * .5, squeeze), width * .49, mix(height * .08, -height * .14, squeeze));
+          // Sleeping lids relax into a shallow lower arc. Keep the deeper
+          // squeeze/cry and the approved petting arch on their own paths.
+          const lidHalfWidth = width * (sleeping ? .46 : .49);
+          const lidEnd = sleeping ? height * .01 : mix(height * .08, -height * .14, squeeze);
+          ink.moveTo(-lidHalfWidth, lidEnd);
+          ink.quadraticCurveTo(0, sleeping ? height * .16 : mix(-height * mix(.36, policy.eye.pettingArchControl, pettingArch), height * .5, squeeze), lidHalfWidth, lidEnd);
           ink.stroke(); ink.globalAlpha = 1;
         }
         if (face.brow) { ink.globalAlpha = face.weight; ink.lineWidth = .65; const lift = Math.abs(face.brow), by = -height / 2 - .8; ink.beginPath(); ink.moveTo(-width * .38, by + side * face.brow * .7); ink.quadraticCurveTo(0, by - lift * .75, width * .38, by - side * face.brow * .7); ink.stroke(); ink.globalAlpha = 1; }
@@ -353,6 +371,11 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
       }
       if (native === "cry") restoreCompanionTearInk(final.data, original.data);
       compositeCompanionFaceInk(final.data, original.data, ink.getImageData(0, 0, PIXELS, PIXELS).data, sourceBlend);
+      // The owner approved these baked eyes. Even overlapping repair corridors
+      // must leave every non-mouth byte exactly as it was in that source.
+      if (mouthOnly) for (let i = 0; i < allowed.length; i++) {
+        if (allowed[i] !== 2) final.data.set(original.data.subarray(i * 4, i * 4 + 4), i * 4);
+      }
       if (native === "spiral") restoreCompanionSpiralEyes(final.data, original.data, selected.physicalIndex);
       ctx.putImageData(final, 0, 0);
       canvas.style.transform = `translate3d(${selected.frame.x / 80 * 100}%,${selected.frame.y / 80 * 100}%,0)`;
