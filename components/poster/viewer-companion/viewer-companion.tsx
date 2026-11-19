@@ -4803,7 +4803,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         const target = (card ? nearestPlatform(card.point, cardSupports) ?? firstCompanionSupportBelow(card.point, landingPlatforms) : undefined)
           ?? nearestVerticalCompanionSupport({ x, y }, platforms) ?? nearestPlatform({ x, y }, platforms);
         clearAction(); afterPetLanding = restAfterLanding = false; pendingMonth = false; awaitingAtX = target ? false : "vertical";
-        if (target) { x = platformLandingX(target, card?.point.x ?? x); y = target.y; support = target.id; }
+        // A measured landing seeds the world, as the showcase homecoming does. A
+        // premiere that took the creature before its first home entry must not
+        // leave that entry pending: schedule() and paint() would withhold the
+        // bounce while this geometry path returns early for it, forever.
+        if (target) { x = platformLandingX(target, card?.point.x ?? x); y = target.y; support = target.id; worldSeeded = true; freshHomePending = false; initialHome.current.entered = true; }
         else support = "";
         premierePerch = undefined; premiereSource = undefined; forceNeutralPose = true;
         presence.focus(visibleActive(), now, true); data("presence", presence.phase); el.removeAttribute("data-dreaming");
