@@ -1,6 +1,6 @@
 # Current State — VIC Schedule Studio
 
-Last Updated: 2026-11-19 (KST)
+Last Updated: 2026-11-20 (KST)
 Project Version: 0.1.0
 
 Current work only; history is evidence, not instructions. Previous state: [snapshot](archive/20261017-CURRENT_STATE-before-platform-remediation.snapshot.txt).
@@ -25,7 +25,6 @@ Shared viewer/studio/preview implementation, public DTO/DB-time teaser gate, own
 
 | ID | Status | Next | Record |
 |---|---|---|---|
-| THROW | Release | Verify deployed | [Plan](plans/PLAN-20261120-companion-throw-face.md) |
 | COMPANION-PANEL-REPORT-20261026 | Watch original cause | Inspect bounded local recurrence evidence on a distinct real failure; preserve original unconfirmed report | [Contract](verification/COMPANION_VISIBILITY-20261026.md) |
 | COMPANION-SETTINGS-REDESIGN | All stages 0-5 released (2026-11-19) | None. Known notes are in the contract progress table | [Contract](plans/PLAN-20261118-companion-settings-redesign.md) |
 | DAILY-0900 | Active | Separate risk verification/discovery; adopted work through exact release, preserve carryover | [Search focus](plans/PLAN-20261025-search-focus.md) |

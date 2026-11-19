@@ -79,3 +79,11 @@ source pose500의 원래 빨간 입에는 가운데17픽셀 core와 각각1픽�
 ## 후속 통합 출시 검증
 
 cold 수정d12ebda5와 원격4cc48e31의 창 뒤 놀기 설정을 정상 통합한1491df28에서 build/typecheck/lint/harness exit0, direct Node Vitest `--maxWorkers 1`로17파일224개 PASS다. 실제 native 입력을 단독·순차 실행한 warm3+cold-first3+guards6은12PASS/0FAIL이며 실제 일정 상세 창을 열어 behind 상태·tabindex/pointer 차단·공중 놀람 지속까지 확인했다. 독립 검수 `release/1491-integration-review.json`은 지적0, 실제399chunk 일치와 소스/QA SHA를 기록한다. 앞선 병렬 unit timeout·native 입력 누락·설정 창 외부 font 거절 실패는 별도 보존하고 이 새 결과로 덮지 않는다. 승인80PNG RGBA exact와 기존3Image/2decode 제한은 유지한다. QA spec의 실제 창 guard와 이 기록만 후속 커밋하며, 운영 cold 확인은 정상 push 후 정확한 출시 SHA로 별도 수행한다.
+
+## 운영 후속 확인 — 완료
+
+GitHub quality44592490519는1129747f의13단계 모두 SUCCESS다. 완료 문서 정리 뒤 harness458문서/brief8093byte exit0도 확인했다. 아래 운영 검증과 동일한 제품 소스이며 후속 문서 커밋은 Markdown만 바꾼다.
+
+2026-11-20 KST, QA 기록1129747f15549d6a3470e12f522b5478eace7608을 main에 정상 push했다. Workers Builds26c1cd70 성공, Worker6ba178fa-d631-45e9-bf58-c3100157b725가 deployment3f59c50a에서100% 적용됐다. 운영 console의 정확한 build1129747을 확인한 새 익명 context에서 실제 pointer로 첫 던지기를 수행했다. 실제 비행 몸체 첫 채택은 release229.6ms 뒤이며, 채택된43개 공중 관측 모두 가시성·놀람이 유지됐다. 실제 landing11관측의 첫 그림 채택 지연0ms, pose500의25관측에서 승인 눈G=[235,227,70]·입G=[236,237,83]이 일치했다. 공개31/06/reference 패킷 모두 HTTP200·로컬SHA exact, page error0이다. 모든 API는 브라우저에서 stub하고 쓰기1시도를 차단해 실제쓰기0이며 운영 soop-live GET은 실행하지 않았다. 관측 기준은 실제 비행 몸체 채택 이후이며 네트워크 지연0을 주장하지 않는다.
+
+정본은 Hub `out/vic/20261120-contact-sleep-01a1f30e/throw-face-release.json`과 `evidence/final-01a1f526/`에 보존한다. 첫0f3bd5c8의 cold 실패와 이전 병렬 timeout·입력 실패는 유지한다. 전후 보고의 승인 그림은 그대로이며 후속 cache 수정80PNG RGBA exact다. 원본 contact-sleep raw3파일은 Hub에 복사하지 않고 사용자 제한 경로에 해시 대조 보존한다. 이 결과는 실제 기기·진짜 로그인/RLS·자연생활36 인증이 아니다. 후속 문서 전용 커밋이 새 Worker를 만들면 같은 제품 소스라는 근거와 그 실제 출시 확인을 Hub에 별도로 기록한다.
