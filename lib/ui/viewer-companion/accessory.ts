@@ -7,7 +7,7 @@ import { companionAppearanceEyes, companionAppearancePoint, companionAppearanceB
 import anchors from "./accessory-anchors.json";
 import homeContactAnchors from "./home-contact-anchors-157.json";
 import curtainContactAnchors from "./curtain-contact-anchors.json";
-import { companionEyeAccessorySpan, companionEyeViewScale } from "./accessory-eye-fit";
+import { companionEyeAccessorySpan, companionEyeFaceBounds, companionEyeViewScale } from "./accessory-eye-fit";
 import mouths from "./mouth-anchors.json";
 import { getCompanionCollectionArtFrame, type CompanionCollectionArtFrame } from "./collection-art";
 import type { CompanionAccessoryId } from "./gifts";
@@ -19,7 +19,7 @@ import { COMPANION_ACCESSORIES, currentCompanionAccessory } from "./accessory-ca
 import { companionOpenPocketArt, companionPropellerArt, getCompanionAccessoryArtFrame, type CompanionAccessoryArtFrame } from "./accessory-art";
 
 type Landmark = Readonly<{ x: number; y: number; width: number; roll: number }>;
-type Pose = Readonly<{ physicalIndex: number; atlas: number; index: number; orientation: "front" | "quarter" | "side" | "back"; face: Landmark; head: Landmark; chest: Landmark; sideChest: Landmark; sideBody: Landmark; bodyBounds: readonly number[]; eyes: readonly Readonly<{ center: readonly number[]; bounds: readonly number[] }>[] }>;
+type Pose = Readonly<{ physicalIndex: number; atlas: number; index: number; orientation: "front" | "quarter" | "side" | "back"; face: Landmark; head: Landmark; chest: Landmark; sideChest: Landmark; sideBody: Landmark; bodyBounds: readonly number[]; eyes: readonly Readonly<{ center: readonly number[]; bounds: readonly number[]; measured?: readonly number[]; drawn?: readonly number[] }>[] }>;
 type Placement = Readonly<{ art: CompanionAccessoryArtFrame; x: number; y: number; width: number; rotation: number; layer: "front" | "back" | "headwear"; mirror?: -1 | 1; pivot?: Readonly<{ x: number; y: number }>; clips?: Readonly<{ front: string; back: string }>; stretchY?: number; rotor?: number; rearArt?: CompanionAccessoryArtFrame }>;
 const expressionPoses=new Map([...expressions.frames,...overrides.frames].map(pose=>[pose.physicalIndex,pose]));
 const eyeReference=expressionPoses.get(policy.eye.referencePhysicalIndex)!;
@@ -31,9 +31,12 @@ const poses = new Map<number, Pose>((anchors.frames as readonly Pose[]).map(fram
   const angle=face.roll*Math.PI/180;
   const coverage=eyes.map((eye,i)=>{if(!expression)return eye;
     const width=frame.orientation==="quarter"?eyeReference.eyes[i].bounds[2]-eyeReference.eyes[i].bounds[0]:eyeWidth;
-    const x=(width/2+.35)*Math.abs(Math.cos(angle))+(eyeHeight/2+.65)*Math.abs(Math.sin(angle));
-    const y=(width/2+.35)*Math.abs(Math.sin(angle))+(eyeHeight/2+.65)*Math.abs(Math.cos(angle));
-    return {...eye,bounds:[Math.min(eye.bounds[0],eye.center[0]-x),Math.min(eye.bounds[1],eye.center[1]-y),Math.max(eye.bounds[2],eye.center[0]+x),Math.max(eye.bounds[3],eye.center[1]+y)]};
+    const drawn=[width/2+.35,eyeHeight/2+.65] as const;
+    const x=drawn[0]*Math.abs(Math.cos(angle))+drawn[1]*Math.abs(Math.sin(angle));
+    const y=drawn[0]*Math.abs(Math.sin(angle))+drawn[1]*Math.abs(Math.cos(angle));
+    // `bounds` is the image-axis envelope (contact/clearance); worn eye fits
+    // read the face-axis drawing plus the measured pixel box instead.
+    return {...eye,measured:eye.bounds,drawn,bounds:[Math.min(eye.bounds[0],eye.center[0]-x),Math.min(eye.bounds[1],eye.center[1]-y),Math.max(eye.bounds[2],eye.center[0]+x),Math.max(eye.bounds[3],eye.center[1]+y)]};
   });
   return [frame.physicalIndex,{...frame,face,head:companionAppearanceLandmark(frame.physicalIndex,frame.head),chest:companionAppearanceLandmark(frame.physicalIndex,frame.chest),sideChest:companionAppearanceLandmark(frame.physicalIndex,frame.sideChest),sideBody:companionAppearanceLandmark(frame.physicalIndex,frame.sideBody),bodyBounds:companionAppearanceBounds(frame.physicalIndex,frame.bodyBounds),eyes:coverage}];
 }));
@@ -42,10 +45,14 @@ const poses = new Map<number, Pose>((anchors.frames as readonly Pose[]).map(fram
 const eyeFits = new Map(Array.from(poses.values()).flatMap(pose => {
   const eyes = pose.eyes;
   if (!eyes || eyes.length !== 2 || !eyes.every(eye => [...eye.center, ...eye.bounds].every(Number.isFinite))) return [];
-  const eye = eyes[1], radius = Math.max(...[0, 2].flatMap(x => [1, 3].map(y => Math.hypot(eye.bounds[x] - eye.center[0], eye.bounds[y] - eye.center[1]))));
-  const angle = pose.face.roll * Math.PI / 180, c = Math.cos(angle), s = Math.sin(angle);
-  const corners = eyes.flatMap(eye => [0, 2].flatMap(x => [1, 3].map(y => ({ x: eye.bounds[x] - pose.face.x, y: eye.bounds[y] - pose.face.y }))));
-  return [[pose.physicalIndex, { x: eye.center[0], y: eye.center[1], width: Math.max(4.5, radius * 72 / 22 * 1.08), span: Math.hypot(eyes[1].center[0] - eyes[0].center[0], eyes[1].center[1] - eyes[0].center[1]), pairU: Math.max(...corners.map(point => Math.abs(point.x * c + point.y * s))), pairV: Math.max(...corners.map(point => Math.abs(-point.x * s + point.y * c))) }] as const];
+  // Measure in the face's own axis, the plane the worn mask/monocle rotates
+  // into. An already rotated image-axis envelope would count the roll twice.
+  const boxes = eyes.map(eye => companionEyeFaceBounds({ center: eye.center, bounds: eye.measured ?? eye.bounds, drawn: eye.drawn }, pose.face));
+  // A round lens is rotation-free: the farthest measured pixel corner or the
+  // drawing's own corner, never the corner of a box around a rotated box.
+  const eye = eyes[1], measured = eye.measured ?? eye.bounds;
+  const radius = Math.max(eye.drawn ? Math.hypot(eye.drawn[0], eye.drawn[1]) : 0, ...[0, 2].flatMap(x => [1, 3].map(y => Math.hypot(measured[x] - eye.center[0], measured[y] - eye.center[1]))));
+  return [[pose.physicalIndex, { x: eye.center[0], y: eye.center[1], width: Math.max(4.5, radius * 72 / 22 * 1.08), span: Math.hypot(eyes[1].center[0] - eyes[0].center[0], eyes[1].center[1] - eyes[0].center[1]), pairU: Math.max(...boxes.flatMap(box => [Math.abs(box[0]), Math.abs(box[2])])), pairV: Math.max(...boxes.flatMap(box => [Math.abs(box[1]), Math.abs(box[3])])) }] as const];
 }));
 // The approved standing cell is the size reference. Every current source
 // retains its own position/roll/yaw and immutable measured coverage bounds.
