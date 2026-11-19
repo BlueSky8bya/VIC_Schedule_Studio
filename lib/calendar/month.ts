@@ -572,18 +572,17 @@ export function mixedEventStyle(
 // 연속성 원리 — docs/ux/UI_RULES.md UI-45 근거). 곡선은 글자 쪽은 오래 진하게 버티고 끝에서 빨리 빠지는 ease-in(직선은 한가운데서
 // 이미 반쯤 비어 짧게 보였다). 폭은 평평한 변 여백(시청자 15px·편집실 16px) − 1px = 14px — 글자 밑 칠은 늘 100%라 대비(WCAG AA)는 그대로.
 export const WRAP_FADE_PX = 14;
-// 위아래 테두리 선은 글자 밑이 아니라 더 길게(3배) 녹는다 — 틀이 줄 끝 쪽으로 '열려' 흘러 나가는 것이 이어짐의 주된 신호다
-// (다크에서는 칠과 바탕 차이가 작아 테두리 선이 모양을 말한다). 칠은 글자 대비 때문에 여백 안 14px까지만.
-export const WRAP_LINE_FADE_PX = 42;
 // 맞닿은 끝(0)에서 안쪽으로 [폭 비율, 남는 진하기 %] — 1(폭 끝)이 100%(제 색).
+// 2026-11-20 밤 소유자 "더 끊어져 보이고 위아래로 좁아 보인다": 끝을 0%까지 녹이면 몸통이 잘려 보이고, 위아래 선까지 녹이면
+// 끝이 가늘어 보였다. 그래서 칠은 끝에서도 절반 넘게 남기고(55%), 위아래 선은 녹이지 않고 끝까지 그대로 잇는다(높이 유지).
 const WRAP_FADE_CURVE: [number, number][] = [
-  [0, 0],
-  [3 / 14, 8],
-  [6 / 14, 26],
-  [9 / 14, 52],
-  [12 / 14, 82]
+  [0, 55],
+  [4 / 14, 66],
+  [8 / 14, 80],
+  [12 / 14, 94]
 ];
 export type WrapFade = { left: boolean; right: boolean };
+const NO_FADE: WrapFade = { left: false, right: false };
 function fadeStops(at: (p: number) => string, inner: { pos: number; color: string }[], fade: WrapFade, len = WRAP_FADE_PX): string {
   const ghost = (c: string, a: number) => `color-mix(in srgb, ${c} ${a}%, transparent)`;
   const px = (f: number) => Math.round(f * len * 10) / 10;
@@ -615,7 +614,7 @@ export function wrapFadeStyle(
   const aBorder = themeColor(a.borderColor, darkA.borderColor);
   let build: (f: WrapFade) => { fill: string; line: string };
   if (!b) {
-    build = (f) => ({ fill: fadeStops(() => aBg, [], f), line: fadeStops(() => aBorder, [], f, WRAP_LINE_FADE_PX) });
+    build = (f) => ({ fill: fadeStops(() => aBg, [], f), line: fadeStops(() => aBorder, [], NO_FADE) });
   } else {
     const darkB = readDarkTagColors(b.darkColors, b.bgColor);
     const bBg = themeColor(b.bgColor, darkB.bgColor);
@@ -634,7 +633,7 @@ export function wrapFadeStyle(
       [{ pos: local(0.38), color: x }, { pos: local(0.62), color: y }].filter((s) => s.pos > 0 && s.pos < 1);
     build = (f) => ({
       fill: fadeStops(mixAt(aBg, bBg), inner(aBg, bBg), f),
-      line: fadeStops(mixAt(aBorder, bBorder), inner(aBorder, bBorder), f, WRAP_LINE_FADE_PX)
+      line: fadeStops(mixAt(aBorder, bBorder), inner(aBorder, bBorder), NO_FADE)
     });
   }
   const { fill, line } = build(fade);
