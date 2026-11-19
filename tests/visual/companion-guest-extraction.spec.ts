@@ -37,7 +37,7 @@ test("a hidden studio guest gives a varied card cue and grows continuously under
     // placement, editor entrance and every pointer action use real browser time.
     let draw = 0; Math.random = () => (++draw % 3 ? 0 : .999999);
   }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH,
-    preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: true, jump: false, sleep: false, feeding: false, heartPrank: false, ambientPrank: true },
+    preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: true, jump: false, sleep: false, feeding: false, heartPrank: true, cardPrank: true, ambientPrank: true, rarePrank: true },
     care: { ...DEFAULT_COMPANION_CARE, hunger: .05, energy: 1, curiosity: .9 } });
   await page.goto("/visual-fixture/studio?role=owner"); await page.bringToFront();
   await page.evaluate(() => document.fonts.ready); await expect(actor(page)).toBeVisible();

@@ -1,23 +1,20 @@
 "use client";
 
-import { ArrowDownToLine, EyeOff, Gauge, Grab, Heart, Leaf, PanelTopOpen, Pointer, Sparkles, Volume1, Volume2, VolumeX } from "lucide-react";
+import { ArrowDownToLine, EyeOff, Footprints, Gauge, Grab, Heart, Leaf, Pointer, Sparkles, Volume1, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { RowLabel, SettingsNote, SettingsSegment, Switch, flashSettingsPlace } from "@/components/shared/settings-controls";
 import { COMPANION_SETTINGS_PLACE_LABELS, companionRowBlock, companionSoundStatus, type CompanionBlockedRow, type CompanionSettingsNote, type CompanionSettingsPlace, type CompanionSiteGates } from "@/lib/ui/viewer-companion/settings-status";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_SOUND_AUDITIONS, COMPANION_SOUND_NAMES, auditionCompanionSound, companionSoundAllowed, previewCompanionSoundLevel, previewCompanionSoundVolume, type CompanionSoundMoment } from "@/lib/ui/viewer-companion/companion-sound";
-import { companionSoundLevel, companionSoundLevelPatch, type CompanionSoundLevel } from "@/lib/ui/viewer-companion/settings-levels";
+import { companionMotionLevel, companionMotionLevelPatch, companionPlayful, companionPlayfulPatch, companionSoundLevel, companionSoundLevelPatch, type CompanionMotionLevel, type CompanionSoundLevel } from "@/lib/ui/viewer-companion/settings-levels";
 import { logActivity } from "@/lib/activity/client";
 
-type CompanionToggle = "activeWhileVisible" | "roam" | "jump" | "sleep" | "heartPrank" | "cardPrank" | "ambientPrank" | "panelPrank" | "rarePrank" | "drag" | "petting" | "feeding";
+type CompanionToggle = "activeWhileVisible" | "sleep" | "panelPrank" | "drag" | "petting" | "feeding";
 const companionToggleActions: Record<CompanionToggle, string> = {
-  activeWhileVisible: "companion-active-visible",
-  roam: "companion-roam", jump: "companion-jump", sleep: "companion-sleep",
-  heartPrank: "companion-heart-prank", cardPrank: "companion-card-prank", ambientPrank: "companion-hide", panelPrank: "companion-panel-prank", rarePrank: "companion-rare-prank",
+  activeWhileVisible: "companion-active-visible", sleep: "companion-sleep", panelPrank: "companion-panel-prank",
   drag: "companion-drag-enabled", petting: "companion-petting-enabled", feeding: "companion-feeding-enabled"
 };
 
-const blockedRows: Partial<Record<CompanionToggle, CompanionBlockedRow>> = { roam: "roam", jump: "jump", heartPrank: "heartPrank", cardPrank: "cardPrank", ambientPrank: "ambientPrank", panelPrank: "panelPrank", rarePrank: "rarePrank" };
 export type CompanionPlaceRequest = Readonly<{ place: CompanionSettingsPlace; n: number }>;
 
 /** Shared setting controls stay editable while OFF, so a quiet preset can be prepared first.
@@ -44,24 +41,22 @@ export function CompanionBehaviorSettings({ preferences, onChange, site, onGoTo,
   }, [active, localPlace]);
   const off = !preferences.enabled;
   const block = (key: CompanionBlockedRow) => companionRowBlock(key, preferences, site);
-  const note = (value: CompanionSettingsNote | null, key?: string) => value && !off ? <SettingsNote key={key} onGoTo={place => goTo(place as CompanionSettingsPlace)} place={value.place} placeLabel={value.place && COMPANION_SETTINGS_PLACE_LABELS[value.place]} text={value.text} /> : null;
-  // Rows that share one reason say it once, under the last of them.
-  const rows = (items: readonly (readonly [CompanionToggle, string, ReactNode])[]) => items.flatMap(([key, label, icon], index) => {
-    const blockedRow = blockedRows[key], reason = blockedRow ? block(blockedRow) : off ? { text: "" } : null, next = items[index + 1];
-    // Several rows stopped by one setting: say it once, above them, where it is seen without scrolling.
-    // A single stopped row keeps its reason right under it.
-    const same = (other: readonly [CompanionToggle, string, ReactNode] | undefined) => { const otherRow = other && blockedRows[other[0]]; return Boolean(reason?.text && otherRow && block(otherRow)?.text === reason.text); };
-    const previous = items[index - 1], leads = same(next) && !same(previous), follows = same(previous);
-    return [
-      leads ? note(reason, `${key}-lead`) : null,
-      <div className={`role-help-haptics${reason ? " is-blocked" : ""}`} data-settings-place={key === "roam" ? "companion-roam" : undefined} key={key}>
+  const note = (value: CompanionSettingsNote | null) => value && !off ? <SettingsNote onGoTo={place => goTo(place as CompanionSettingsPlace)} place={value.place} placeLabel={value.place && COMPANION_SETTINGS_PLACE_LABELS[value.place]} text={value.text} /> : null;
+  // A stopped row is dimmed and says why right under it; a row an outer setting only partly rests keeps its look.
+  const stopped = (reason: CompanionSettingsNote | null) => off || Boolean(reason && !reason.partial);
+  const row = (key: CompanionToggle, label: string, icon: ReactNode, blockedRow?: CompanionBlockedRow) => {
+    const reason = blockedRow ? block(blockedRow) : null;
+    return <>
+      <div className={`role-help-haptics${stopped(reason) ? " is-blocked" : ""}`}>
         <RowLabel icon={icon} tone="leaf">{label}</RowLabel>
         <Switch dataAct={companionToggleActions[key]} dataActOpt={preferences[key] ? "off" : "on"} label={`빅타민 ${label} 켜기/끄기`} on={preferences[key]} onToggle={() => onChange({ [key]: !preferences[key] })} />
-      </div>,
-      leads || follows ? null : note(reason?.text ? reason : null, `${key}-note`),
-    ];
-  });
-  const row = (key: CompanionToggle, label: string, icon: ReactNode) => rows([[key, label, icon]]);
+      </div>
+      {note(reason)}
+    </>;
+  };
+  // Movement is one choice of three and the four pranks one switch (stage 4); both are read from and written to the existing fields.
+  const motionLevel = companionMotionLevel(preferences), playful = companionPlayful(preferences);
+  const motionBlock = block("motion"), playfulBlock = block("playful");
   const soundStatus = companionSoundStatus(preferences, site), soundLevel = companionSoundLevel(preferences);
   const chooseSoundLevel = (level: CompanionSoundLevel) => { const patch = companionSoundLevelPatch(level, preferences); onChange(patch); previewCompanionSoundLevel(level, { ...preferences, ...patch }); };
   // Setting the volume lets the current level be heard at that volume; off stays silent.
@@ -99,11 +94,19 @@ export function CompanionBehaviorSettings({ preferences, onChange, site, onGoTo,
     <section aria-labelledby={`${id}-motion-title`} className="rhh-companion-section">
       <h3 className="rhh-companion-section-title" id={`${id}-motion-title`}>움직임과 장난</h3>
       <div className="rhh-group-card">
-        {rows([["roam", "돌아다니기", <Pointer key="i" size={15} />], ["jump", "깡충 뛰기", <Sparkles key="i" size={15} />]])}
+        <div className={`role-help-haptics rhh-stack-sm rhh-companion-choice-row${stopped(motionBlock) ? " is-blocked" : ""}`} data-settings-place="companion-roam">
+          <RowLabel icon={<Footprints size={15} />} tone="leaf">움직임</RowLabel>
+          <SettingsSegment<CompanionMotionLevel> ariaLabel="빅타민 움직임" columns={3} dataAct="companion-motion-level" onChange={level => onChange(companionMotionLevelPatch(level))} options={[{ value: "still", label: "가만히" }, { value: "walk", label: "걷기만" }, { value: "run", label: "뛰어다니기" }]} value={motionLevel} />
+        </div>
+        {note(motionBlock)}
       </div>
       <div className="rhh-group-card">
-        {rows([["heartPrank", "하트 콩", <Heart key="i" size={15} />], ["cardPrank", "일정 기울이기", <PanelTopOpen key="i" size={15} />], ["ambientPrank", "숨바꼭질", <Leaf key="i" size={15} />],
-          ["panelPrank", "패널 자리 장난", <ArrowDownToLine key="i" size={15} />], ["rarePrank", "희귀 소품 장난", <Sparkles key="i" size={15} />]])}
+        <div className={`role-help-haptics${stopped(playfulBlock) ? " is-blocked" : ""}`}>
+          <RowLabel icon={<Sparkles size={15} />} tone="leaf">장난치기</RowLabel>
+          <Switch dataAct="companion-playful" dataActOpt={playful ? "off" : "on"} label="빅타민 장난치기 켜기/끄기" on={playful} onToggle={() => onChange(companionPlayfulPatch(!playful))} />
+        </div>
+        {note(playfulBlock)}
+        {row("panelPrank", "패널 자리 옮기기", <ArrowDownToLine size={15} />, "panelPrank")}
       </div>
     </section>
     {/* Rarely changed, each still its own choice. Folded on every opening: remembering it would need a new stored value. */}
@@ -115,7 +118,7 @@ export function CompanionBehaviorSettings({ preferences, onChange, site, onGoTo,
           <SettingsSegment ariaLabel="빅타민 걸음" dataAct="companion-speed" onChange={speed => onChange({ speed })} options={[{ value: "relaxed", label: "느긋하게" }, { value: "normal", label: "보통" }, { value: "lively", label: "발랄하게" }]} value={preferences.speed} />
         </div>
         {row("sleep", "자동 잠자기", <EyeOff size={15} />)}
-        {row("activeWhileVisible", "다른 창 작업 중에도 활동", <Pointer size={15} />)}
+        {row("activeWhileVisible", "다른 창 쓸 때도 놀기", <Pointer size={15} />)}
         {row("drag", "집어 옮기기", <Grab size={15} />)}
         {row("petting", "쓰다듬기", <Heart size={15} />)}
         {row("feeding", "밥주기", <Leaf size={15} />)}

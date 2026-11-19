@@ -2,6 +2,7 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { safeCompanionSurfaces } from "@/lib/ui/viewer-companion/geometry";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
+import { companionPlayfulSwitch } from "./helpers/companion-settings";
 
 const actor = (page: Page) => page.getByRole("button", { name: "빅타민 · 쓰다듬고 옮기기", exact: true });
 const pet = (page: Page) => page.locator(".vc-companion");
@@ -137,7 +138,9 @@ async function standOnCard(page: Page, requiredId?: string) {
   await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
   // stage 3: no sub-tabs; the gear opens on the "설정" page where the prank switches are visible.
   await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
-  const enabled = dialog.getByRole("switch", { name: "빅타민 하트 콩 켜기/끄기", exact: true });
+  // stage 4: the heart prank is one of the four behind the single 장난치기 switch; a partly-on mix acts as off,
+  // so the heart can only be enabled together with card tilt, hide-and-seek and the rare prop prank.
+  const enabled = companionPlayfulSwitch(dialog);
   await expect(enabled).not.toBeChecked(); await enabled.click(); await expect(enabled).toBeChecked();
   await dialog.locator(".modal-head .modal-close").click(); await expect(dialog).toBeHidden(); await page.mouse.move(4, 4);
   await expect(pet(page)).toHaveAttribute("data-platform", /^card-\d+(?:-line-\d+)?(?:-\d+)?$/);

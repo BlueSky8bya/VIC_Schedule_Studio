@@ -6,6 +6,7 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
+import { expectCompanionMotion, setCompanionMotion } from "./helpers/companion-settings";
 
 const out = process.env.COMPANION139_OUTPUT ?? ".scratch-pw/companion-139/native";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(m => m[1]));
@@ -81,8 +82,9 @@ for (const [surface, width, input] of [["viewer", 1440, "pointer"], ["studio", 1
   for (let i = 0; i < 6; i++) {
     if (i) { await page.reload(); await show(); }
     const { dialog, group } = await settings(page); random.push((await group.locator('[aria-checked="true"]').innerText()).trim());
-    // stage 3: no sub-tabs; the jump switch sits directly on the book's "설정" page.
-    if (i === 0) { await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click(); await dialog.locator('[data-act="companion-jump"]').setChecked(false); }
+    // stage 4: jump is part of the movement level on the book's "설정" page. The seed stands still with jump on;
+    // 걷기만 writes jump off and 가만히 puts roam back, which is the stored result the old jump switch left.
+    if (i === 0) { await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click(); await expectCompanionMotion(dialog, "still"); await setCompanionMotion(dialog, "walk"); await setCompanionMotion(dialog, "still"); }
     await dialog.getByRole("button", { name: "닫기", exact: true }).click();
   }
   expect(new Set(random).size).toBeGreaterThan(1);

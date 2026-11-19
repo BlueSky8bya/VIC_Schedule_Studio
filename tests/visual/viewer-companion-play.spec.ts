@@ -192,14 +192,16 @@ test("viewer and studio expose all three independent behavior axes through the s
     const dialog = page.getByRole("dialog", { name: "설정", exact: true }); await expect(dialog).toBeVisible(); await waitForOverlayEntrance(dialog);
     await dialog.getByRole("tab", { name: "빅타민", exact: true }).click();
     const panel = dialog.locator("#rhh-tab-companion-panel");
-    await panel.getByRole("tab", { name: "프로필", exact: true }).click();
+    // stage 3: look and character are on "함께 지내기"; the walk speed is in the folded "더 보기" on "설정".
+    const profilePages = panel.getByRole("tablist", { name: "빅타민 프로필", exact: true });
+    await profilePages.getByRole("tab", { name: "함께 지내기", exact: true }).click();
     const groups = [
       { name: "빅타민 동물 모드", key: "animalMode", options: [["고양이", "cat"], ["강아지", "dog"], ["빅타민", "default"]] },
       { name: "빅타민 성격", key: "personality", options: [["잠꾸러기", "sleepy"], ["애교쟁이", "affectionate"], ["호기심", "curious"]] },
       { name: "빅타민 걸음", key: "speed", options: [["느긋하게", "relaxed"], ["발랄하게", "lively"], ["보통", "normal"]] },
     ];
     for (const group of groups) {
-      if (group.key === "speed") await panel.getByRole("tab", { name: "움직임", exact: true }).click();
+      if (group.key === "speed") { await profilePages.getByRole("tab", { name: "설정", exact: true }).click(); await panel.locator(".rhh-companion-more > summary").click(); }
       const controls = panel.getByRole("radiogroup", { name: group.name, exact: true });
       for (const [label, value] of group.options) {
         const radio = controls.getByRole("radio", { name: label, exact: true }); await radio.click(); await expect(radio).toBeChecked();

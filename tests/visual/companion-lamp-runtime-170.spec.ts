@@ -7,6 +7,7 @@ import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
+import { setCompanionRoam } from "./helpers/companion-settings";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 import contactAnchors from "@/lib/ui/viewer-companion/home-contact-anchors-157.json";
@@ -139,7 +140,7 @@ for (const [surface, width, compact, source] of [["studio",2133,false,"owner-run
   const book = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
   // stage 3: the character label opens the book on "함께 지내기"; roam is a card on the single "설정" page.
   await book.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
-  await book.locator('[data-act="companion-roam"]').setChecked(true);
+  await setCompanionRoam(book, true); // stage 4: the movement level; a still seed with jump on becomes 뛰어다니기
   await book.getByRole("button", { name: "닫기", exact: true }).click();
   // Changing motion preferences reconstructs the controller. Finish a native
   // placement on its freshly measured support before issuing the sleep key.

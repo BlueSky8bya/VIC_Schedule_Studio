@@ -6,6 +6,7 @@ import {DEFAULT_COMPANION_MEMORY} from '@/lib/ui/viewer-companion/care';
 import {SETTINGS_EPOCH,SETTINGS_EPOCH_KEY} from '@/lib/ui/motion';
 import {openCompanionHome,placeCompanionOnHomeFloor} from './helpers/companion-home';
 import {settlePanelLayout} from './helpers/panel-layout';
+import {setCompanionRoam} from './helpers/companion-settings';
 import {fulfillReadOnlyFont} from './helpers/readonly-font';
 
 test.use({storageState:{cookies:[],origins:[]},serviceWorkers:'block'});
@@ -38,7 +39,9 @@ for(const surface of ['viewer','studio']as const)test(surface==='viewer'?'168 op
   const house=await openCompanionHome(page);
   const fold=house.locator('[data-home-action="fold"]');if(await fold.count()&&await fold.getAttribute('aria-expanded')==='false')await fold.click();
   await house.locator('[data-home-action="personality"]').click();
-  const book=page.getByRole('dialog',{name:'빅타민 수첩',exact:true});await book.getByRole('tab',{name:'움직임',exact:true}).click();await book.locator('[data-act="companion-roam"]').setChecked(true);await book.getByRole('button',{name:'닫기',exact:true}).click();
+  const book=page.getByRole('dialog',{name:'빅타민 수첩',exact:true});
+  // stage 3/4: no sub-tabs; the book opens on "함께 지내기" and roaming is the movement level on its "설정" page.
+  await book.getByRole('tablist',{name:'빅타민 프로필',exact:true}).getByRole('tab',{name:'설정',exact:true}).click();await setCompanionRoam(book,true);await book.getByRole('button',{name:'닫기',exact:true}).click();
   await placeCompanionOnHomeFloor(page);
   const before=await page.evaluate(()=>localStorage.getItem('vic.viewerCompanion'));
   await expect(panel).toHaveCount(1);expect(await page.evaluate(()=>getComputedStyle(document.body).fontFamily)).toContain('VIC Maplestory');

@@ -7,6 +7,7 @@ import { COMPANION_ACCESSORY_MOTION_MS } from "@/lib/ui/viewer-companion/accesso
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { openCompanionHome } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
+import { expectCompanionMotion, setCompanionMotion, setCompanionPlayful } from "./helpers/companion-settings";
 
 test.use({ viewport: { width: 1440, height: 1800 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
 test.setTimeout(90_000);
@@ -51,7 +52,10 @@ async function prepare(page: Page) {
   await expect(food(page)).not.toHaveAttribute("data-falling", "");
   await room.locator('[data-home-action="close"]').click();
   const dialog = await environment(page);
-  await dialog.getByRole("switch", { name: "빅타민 돌아다니기 켜기/끄기", exact: true }).click();
+  // stage 4: the seed keeps only the rare prop prank on, a mix that now acts as off, so the pranks are turned on
+  // through the one 장난치기 switch (panel prank stays off). Roaming is the movement level; jump stays off (걷기만).
+  await setCompanionPlayful(dialog, true);
+  await expectCompanionMotion(dialog, "still"); await setCompanionMotion(dialog, "walk");
   await dialog.getByRole("button", { name: "닫기", exact: true }).click();
   // Real held time, no patched RNG/clock/AI/debug action. Release next to
   // the snack only after the equipped prop's ordinary readiness interval.
@@ -78,7 +82,7 @@ for (const interruption of ["window-and-off", "drag"] as const) test(`magic pock
   const safety = await prepare(page); await absorbedBeforeCommit(page);
   if (interruption === "window-and-off") {
     const dialog = await environment(page);
-    await dialog.getByRole("switch", { name: "빅타민 희귀 소품 장난 켜기/끄기", exact: true }).click();
+    await setCompanionPlayful(dialog, false); // stage 4: the rare prop prank is switched off with the one 장난치기 switch
     await dialog.getByRole("button", { name: "닫기", exact: true }).click();
   } else {
     const box = (await actor(page).boundingBox())!;

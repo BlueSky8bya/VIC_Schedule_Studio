@@ -13,6 +13,7 @@ import { PREMIERE_STAGE_KEY, SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui
 import { describeTarget } from "@/lib/activity/labels";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
+import { expectCompanionMotion, setCompanionMotion } from "./helpers/companion-settings";
 import { selectCompanionCollectionIndex } from "./helpers/companion-collection";
 import { abortUnknownFixtureOrigin, fulfillReadOnlyFont } from "./helpers/readonly-font";
 
@@ -27,7 +28,8 @@ const targets = (page: Page) => capture.get(page)!.events.filter(event => event.
 const count = (page: Page, target: string) => targets(page).filter(value => value === target).length;
 const new109Targets = ["companion-radio-list#open", "companion-radio-list#close", "companion-radio-volume", "companion-collection-page#prev", "companion-collection-page#next", "companion-collection-inspect#food", "companion-profile-page#discover", "companion-throw"];
 const new110Targets = ["companion-book-open", "companion-book-close", "companion-collection-inspect#behavior", "companion-collection-inspect#moment"];
-const new111Targets = ["companion-profile-page#settings", "companion-rare-prank#on", "companion-rare-prank#off", "companion-radio-source", "companion-radio-license"];
+// Settings stage 4: the rare-prank switch is a retired label (old records only); its live successor is the one 장난치기 switch.
+const new111Targets = ["companion-profile-page#settings", "companion-playful#on", "companion-playful#off", "companion-radio-source", "companion-radio-license"];
 const new115Targets = ["companion-personality#tidy", "companion-personality#mischievous"];
 const new137Targets = ["companion-personality#curious", "companion-personality#balanced"];
 const new135Targets = ["companion-home-tv#on", "companion-home-tv#off", "companion-home-tv#next", "companion-home-light#on", "companion-home-light#off"];
@@ -242,7 +244,7 @@ async function flush(page: Page, expected: { target: string; n?: number }[] = [{
  * event or companion DOM/state mutation is injected. */
 async function hideInRealCard(page: Page, surface: Surface) {
   await page.clock.install();
-  await setup(page, surface, true, undefined, { roam: true, jump: false, sleep: false, feeding: false, cardPrank: false, heartPrank: false, ambientPrank: true, panelPrank: false, learnFromYou: false });
+  await setup(page, surface, true, undefined, { roam: true, jump: false, sleep: false, feeding: false, cardPrank: true, heartPrank: true, ambientPrank: true, rarePrank: true, panelPrank: false, learnFromYou: false });
   await page.mouse.move(4, 4);
   await page.waitForTimeout(200);
   await page.clock.pauseAt(await page.evaluate(() => Date.now() + 100));
@@ -482,8 +484,10 @@ for (const surface of ["viewer", "studio"] as const) {
     const profilePages = panel.getByRole("tablist", { name: "빅타민 프로필", exact: true }), more = panel.locator(".rhh-companion-more");
     const openMore = async () => { if (!await more.evaluate(node => (node as HTMLDetailsElement).open)) await more.locator("> summary").click(); };
     await openMore();
-    for (const id of ["companion-roam", "companion-panel-prank", "companion-card-prank", "companion-rare-prank", "companion-petting-enabled"]) {
-      const toggle = panel.locator(`[data-act="${id}"]`); const checked = await toggle.isChecked();
+    // stage 4: movement is one three-way choice and the four pranks one switch.
+    await expectCompanionMotion(panel, "still"); await setCompanionMotion(panel, "walk"); await setCompanionMotion(panel, "still");
+    for (const id of ["companion-playful", "companion-panel-prank", "companion-petting-enabled"]) {
+      const toggle = panel.locator(`[role="switch"][data-act="${id}"]`); const checked = await toggle.isChecked();
       await toggle.click(); await expect(toggle).toBeChecked({ checked: !checked }); await toggle.click(); await expect(toggle).toBeChecked({ checked });
     }
     await profilePages.getByRole("tab", { name: "함께 지내기", exact: true }).click();
@@ -502,7 +506,10 @@ for (const surface of ["viewer", "studio"] as const) {
     await profilePages.getByRole("tab", { name: "설정", exact: true }).click(); await openMore();
     await panel.getByRole("radiogroup", { name: "빅타민 걸음", exact: true }).getByRole("radio", { name: "발랄하게", exact: true }).click();
     await flush(page, [{ target: "companion-speed#lively" }]);
-    for (const id of ["companion-enabled", "companion-roam", "companion-panel-prank", "companion-card-prank", "companion-rare-prank", "companion-petting-enabled", "companion-learning-enabled"]) for (const option of ["on", "off"]) expect(count(page, `${id}#${option}`), `${id}#${option}`).toBe(1);
+    for (const id of ["companion-enabled", "companion-playful", "companion-panel-prank", "companion-petting-enabled", "companion-learning-enabled"]) for (const option of ["on", "off"]) expect(count(page, `${id}#${option}`), `${id}#${option}`).toBe(1);
+    for (const target of ["companion-motion-level#walk", "companion-motion-level#still"]) expect(count(page, target), target).toBe(1);
+    expect(count(page, "companion-motion-level#run")).toBe(0);
+    expect(targets(page).filter(target => /^companion-(roam|jump|heart-prank|card-prank|hide|rare-prank)#/.test(target ?? ""))).toEqual([]);
     for (const target of ["settings-tab#companion", "companion-animal#cat", "companion-personality#sleepy", ...new115Targets, ...new137Targets, "companion-speed#lively", "companion-learning-reset"]) expect(count(page, target), target).toBe(1);
     expect(targets(page).filter(target => target?.startsWith("companion-") && !target.includes("#"))).toEqual(["companion-learning-reset"]);
     //139: explicitly confirming the current random choice pins it too, with
@@ -628,10 +635,11 @@ test("autonomous companion movement never records human feature use", async ({ p
   const tidy = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).getByRole("radio", { name: "깔끔이", exact: true });
   await tidy.click(); await expect(tidy).toHaveAttribute("aria-checked", "true");
   await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
-  await dialog.locator('[data-act="companion-roam"]').setChecked(true);
+  // stage 4: the seed is roam off / jump off, which reads 가만히; 걷기만 turns roaming on and leaves jump off as before.
+  await expectCompanionMotion(dialog, "still"); await setCompanionMotion(dialog, "walk");
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toHaveCount(0);
   await page.mouse.move(4, 4);
-  await flush(page, [{ target: "companion-home-toys" }, { target: "companion-personality#tidy" }, { target: "companion-roam#on" }, { target: "companion-book-close" }]);
+  await flush(page, [{ target: "companion-home-toys" }, { target: "companion-personality#tidy" }, { target: "companion-motion-level#walk" }, { target: "companion-book-close" }]);
   const baseline = capture.get(page)!.events.length;
   const actualToy = page.locator(`.vc-toy[data-toy-id="${id}"]`);
   await expect.poll(async () => {

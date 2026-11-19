@@ -13,6 +13,7 @@ import { COMPANION_COLLECTION_KEY } from "@/lib/ui/viewer-companion/collection";
 import { COMPANION_PLAY_TIMING } from "@/lib/ui/viewer-companion/timing";
 import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
+import { setCompanionRoam } from "./helpers/companion-settings";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
@@ -285,7 +286,7 @@ test("143 studio sofa stays aligned beside the editor and independent controls",
   const residentSettings=page.getByRole("dialog",{name:"빅타민 수첩",exact:true});
   // stage 3: the character label opens the book on "함께 지내기"; roam is on the single "설정" page.
   await residentSettings.getByRole("tablist",{name:"빅타민 프로필",exact:true}).getByRole("tab",{name:"설정",exact:true}).click();
-  await residentSettings.locator('[data-act="companion-roam"]').setChecked(false);
+  await setCompanionRoam(residentSettings,false); // stage 4: roam off = 가만히
   await residentSettings.getByRole("button",{name:"닫기",exact:true}).click();
   await expect(residentSettings).toBeHidden();
   await placeCompanionOnHomeFloor(page);await compact.locator(".vc-cushion-button").focus();await page.keyboard.press("Enter");
@@ -353,7 +354,7 @@ test("143 studio sofa stays aligned beside the editor and independent controls",
   await compact.locator('[data-act="companion-personality-open"]').click();
   const settings=page.getByRole("dialog",{name:"빅타민 수첩",exact:true});
   await settings.getByRole("radiogroup",{name:"빅타민 성격",exact:true}).getByRole("radio",{name:COMPANION_PERSONALITY_NAMES.performer,exact:true}).click();
-  await settings.getByRole("tablist",{name:"빅타민 프로필",exact:true}).getByRole("tab",{name:"설정",exact:true}).click();await settings.locator('[data-act="companion-roam"]').setChecked(true);
+  await settings.getByRole("tablist",{name:"빅타민 프로필",exact:true}).getByRole("tab",{name:"설정",exact:true}).click();await setCompanionRoam(settings,true); // stage 4: roam on = a moving level (가만히 becomes 뛰어다니기)
   await settings.getByRole("button",{name:"닫기",exact:true}).click();
   const workBegan=await page.evaluate(()=>performance.now());
   await day.focus();await page.keyboard.press("Enter");

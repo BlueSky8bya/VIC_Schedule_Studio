@@ -32,7 +32,7 @@ async function setup(page: Page, id: CompanionAccessoryId, moving = false, feedi
   await page.addInitScript(({ id, moving, feeding, prefs, care, epoch, key, collectionKey }) => {
     for (const [name, value] of Object.entries({ [key]: epoch, "vic.dark": "off", "vic.sound": "off", "vic.ambient": "off", "vic.reduceMotion": "off", "vic.gfxPref": "max", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(name, value);
     localStorage.removeItem("vic.panelSections"); localStorage.removeItem("vic_panel_collapsed");
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, roam: moving, jump: moving, sleep: !moving, feeding, learnFromYou: false, heartPrank: false, cardPrank: false, ambientPrank: false, panelPrank: false, rarePrank: true, speed: "lively" }));
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...prefs, enabled: true, roam: moving, jump: moving, sleep: !moving, feeding, learnFromYou: false, heartPrank: true, cardPrank: true, ambientPrank: true, panelPrank: false, rarePrank: true, speed: "lively" }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...care, energy: .95, affection: .5, hunger: feeding ? .55 : .1 }));
     localStorage.setItem(collectionKey, JSON.stringify({ version: 1, foods: [], behaviors: [], situations: [], gifts: { pending: null, unlocked: [id], equipped: id, activeMs: 0, interactionCredit: 0 } }));
   }, { id, moving, feeding, prefs: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_CARE, epoch: SETTINGS_EPOCH, key: SETTINGS_EPOCH_KEY, collectionKey: COMPANION_COLLECTION_KEY });

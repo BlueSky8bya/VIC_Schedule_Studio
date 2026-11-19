@@ -7,6 +7,7 @@ import { MAX_COMPANION_FOOD } from "@/lib/ui/viewer-companion/food-capacity";
 import { MAX_COMPANION_TOYS } from "@/lib/ui/viewer-companion/toys";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { chooseCompanionPersonality, openCompanionHome } from "./helpers/companion-home";
+import { companionMotionGroup, expectCompanionMotion, setCompanionMotion } from "./helpers/companion-settings";
 import { finishCompanionQa, guardCompanionQa, startCompanionQaProbe, type DailyProof } from "./helpers/companion-qa";
 import { settlePanelLayout } from "./helpers/panel-layout";
 
@@ -35,7 +36,7 @@ async function settings(page: Page, tab: "motion" | "affection" | "personality" 
   // sub-tabs: the movement switches are visible directly, and the 교감 rows sit in its "더 보기" fold.
   if (tab !== "personality") {
     await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
-    await expect(dialog.locator('[data-act="companion-roam"]')).toBeVisible();
+    await expect(companionMotionGroup(dialog)).toBeVisible(); // stage 4: the movement level replaces the roam switch
     if (tab === "affection") await dialog.locator(".rhh-companion-more > summary").click();
   }
   return dialog;
@@ -118,13 +119,13 @@ for (const scenario of scenarios) test(`${scenario.id}: real capacity and contin
     await page.goto("/visual-fixture/poster?avatar=1"); await page.bringToFront(); await settlePanelLayout(page); await page.evaluate(() => document.fonts.ready);
     await chooseCompanionPersonality(page, scenario.personality);
     if (scenario.gap) { const dialog = await settings(page), master = dialog.locator('[data-act="companion-enabled"]'); await master.click(); await expect(master).not.toBeChecked(); await page.waitForTimeout(60000); await master.click(); await expect(master).toBeChecked(); await dialog.getByRole("button", { name: "닫기", exact: true }).click(); }
-    const beforePopulation = await settings(page, "motion"); await expect(beforePopulation.locator('[data-act="companion-roam"]')).not.toBeChecked();
+    const beforePopulation = await settings(page, "motion"); await expectCompanionMotion(beforePopulation, "still");
     notes.push({ stage: "actual-population-preferences", preferences: await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("vic.viewerCompanion")!); return { enabled: p.enabled, roam: p.roam, feeding: p.feeding, personality: p.personality }; }) });
     await beforePopulation.getByRole("button", { name: "닫기", exact: true }).click();
     notes.push({ stage: "native-park-away-before-population", ...(await parkCompanionAwayFromFood(page)) });
     const ids = await populate(page, scenario.two); notes.push({ stage: "actual-initial-capacity", ids });
     if (scenario.moved) notes.push({ stage: "actual-native-food-placement", moves: await moveFoods(page, ids.foods) });
-    const dialog = await settings(page, "motion"); await dialog.locator('[data-act="companion-roam"]').click(); await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await page.mouse.move(2, 2);
+    const dialog = await settings(page, "motion"); await setCompanionMotion(dialog, "run"); await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await page.mouse.move(2, 2);
     const began = Date.now();
     await observeObjects(page); await startCompanionQaProbe(page, { captureMs: 190000 });
     expect(Date.now() - began, "native intervention finishes within the observation window").toBeLessThan(scenario.seconds * 1000);

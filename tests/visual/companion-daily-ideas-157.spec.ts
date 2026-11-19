@@ -8,6 +8,7 @@ import { DEFAULT_COMPANION_PREFERENCES, type CompanionPersonality } from "@/lib/
 import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { COMPANION_PERSONALITY_SCENES } from "@/lib/ui/viewer-companion/personality-scene-catalog";
 import { chooseCompanionPersonality, openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
+import { setCompanionRoam } from "./helpers/companion-settings";
 import { guardCompanionQa, startCompanionQaProbe, type DailyProof, type QaObservation } from "./helpers/companion-qa";
 import { completedDailyIdeas157, type Daily157Prelude } from "./helpers/companion-daily-ideas-157";
 import { settlePanelLayout } from "./helpers/panel-layout";
@@ -87,7 +88,7 @@ async function roam(page: Page) {
   const home = await openCompanionHome(page); await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
   await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
-  await dialog.locator('[data-act="companion-roam"]').setChecked(true); // stage 3: no sub-tabs, roam is visible on the settings page
+  await setCompanionRoam(dialog, true); // stage 4: roaming is the movement level on the settings page (a still seed becomes 뛰어다니기)
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden(); await page.mouse.move(2, 2);
 }
 

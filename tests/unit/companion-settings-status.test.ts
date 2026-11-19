@@ -56,7 +56,8 @@ describe("companion sound status line (proposal 4-5)", () => {
 });
 
 describe("blocked companion rows", () => {
-  const rows: CompanionBlockedRow[] = ["roam", "jump", "heartPrank", "cardPrank", "ambientPrank", "panelPrank", "rarePrank", "radioSelfStart"];
+  // Stage 4: movement is one level and the four pranks one switch, so the reasons are per shown row.
+  const rows: CompanionBlockedRow[] = ["motion", "playful", "panelPrank", "radioSelfStart"];
 
   it("has no note when nothing is in the way", () => {
     for (const row of rows) expect(companionRowBlock(row, prefs(), site()), row).toBeNull();
@@ -69,41 +70,44 @@ describe("blocked companion rows", () => {
 
   it("then the site's motion switch, for every row it stops", () => {
     const blocked = (row: CompanionBlockedRow) => companionRowBlock(row, prefs({ roam: false }), site({ reduceMotion: true, gfx: "soft" }));
-    expect(blocked("roam")).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 걷거나 뛰지 않아요", place: "site-motion" });
-    expect(blocked("jump")).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 뛰지 않아요", place: "site-motion" });
-    for (const row of ["heartPrank", "cardPrank", "ambientPrank", "panelPrank", "rarePrank"] as const) expect(blocked(row)).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 장난을 치지 않아요", place: "site-motion" });
+    expect(blocked("motion")).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 걷거나 뛰지 않아요", place: "site-motion" });
+    expect(blocked("playful")).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 장난을 치지 않아요", place: "site-motion" });
+    expect(blocked("panelPrank")).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 패널을 옮기지 않아요", place: "site-motion" });
     expect(blocked("radioSelfStart")).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 스스로 라디오를 틀지 않아요", place: "site-motion" });
   });
 
-  it("then the background effect, only for the rows it stops", () => {
+  it("then the background effect: it stops self-start and the panel move, and only partly rests the pranks", () => {
     const blocked = (row: CompanionBlockedRow, gfx = "soft") => companionRowBlock(row, prefs(), site({ gfx }));
-    expect(blocked("rarePrank")).toEqual({ text: "이 기기는 배경 효과가 '효과 쉬기'로 맞춰져 있어 소품 묘기를 쉬어요", place: "site-gfx" });
     expect(blocked("radioSelfStart", "off")).toEqual({ text: "배경 효과가 꺼져 있어 스스로 라디오를 틀지 않아요", place: "site-gfx" });
-    for (const row of ["roam", "jump", "heartPrank", "cardPrank", "ambientPrank", "panelPrank"] as const) expect(blocked(row), row).toBeNull();
+    expect(blocked("panelPrank", "off")).toEqual({ text: "배경 효과가 꺼져 있어 패널을 옮기지 않아요", place: "site-gfx" });
+    expect(blocked("panelPrank")).toBeNull();
+    // The pranks go on except the ones the effect rests: said, but the row is not dimmed.
+    expect(blocked("playful")).toEqual({ text: "이 기기는 배경 효과가 '효과 쉬기'로 맞춰져 있어 소품 묘기를 쉬어요", place: "site-gfx", partial: true });
+    expect(blocked("playful", "off")).toEqual({ text: "배경 효과가 꺼져 있어 소품 묘기와 일정 기울이기를 쉬어요", place: "site-gfx", partial: true });
+    for (const gfx of ["soft", "off"]) expect(blocked("motion", gfx), gfx).toBeNull();
+    // With the pranks off (any one of the four stored off) there is nothing left to rest: no note.
+    for (const gfx of ["soft", "off"]) for (const key of ["heartPrank", "cardPrank", "ambientPrank", "rarePrank"] as const) expect(companionRowBlock("playful", prefs({ [key]: false }), site({ gfx })), `${gfx}/${key}`).toBeNull();
   });
 
-  it("with the background effect fully off, also the card tilt and the panel move", () => {
-    const blocked = (row: CompanionBlockedRow) => companionRowBlock(row, prefs(), site({ gfx: "off" }));
-    expect(blocked("cardPrank")).toEqual({ text: "배경 효과가 꺼져 있어 일정을 기울이지 않아요", place: "site-gfx" });
-    expect(blocked("panelPrank")).toEqual({ text: "배경 효과가 꺼져 있어 패널을 옮기지 않아요", place: "site-gfx" });
-    expect(blocked("rarePrank")).toEqual({ text: "배경 효과가 꺼져 있어 소품 묘기를 쉬어요", place: "site-gfx" });
-    for (const row of ["roam", "jump", "heartPrank", "ambientPrank"] as const) expect(blocked(row), row).toBeNull();
-  });
-
-  it("never claims the rules of later stages", () => {
+  it("never claims the rules of earlier stages", () => {
     const bools = [false, true];
-    for (const row of rows) for (const enabled of bools) for (const roam of bools) for (const reduceMotion of bools) for (const gfx of ["full", "lite", "soft", "off"]) {
-      const text = companionRowBlock(row, prefs({ enabled, roam }), site({ reduceMotion, gfx }))?.text ?? "";
-      expect(text).not.toMatch(/음악에 반응/);
+    for (const row of rows) for (const enabled of bools) for (const roam of bools) for (const jump of bools) for (const reduceMotion of bools) for (const gfx of ["full", "lite", "soft", "off"]) {
+      const text = companionRowBlock(row, prefs({ enabled, roam, jump }), site({ reduceMotion, gfx }))?.text ?? "";
+      expect(text).not.toMatch(/음악에 반응|돌아다니기|깡충/);
     }
   });
 
-  it("then roaming, for what roaming carries", () => {
-    const blocked = (row: CompanionBlockedRow) => companionRowBlock(row, prefs({ roam: false }), site());
-    expect(blocked("roam")).toBeNull();
-    expect(blocked("jump")).toEqual({ text: "'돌아다니기'가 꺼져 있어 혼자서는 뛰지 않아요", place: "companion-roam" });
-    for (const row of ["heartPrank", "cardPrank", "ambientPrank", "panelPrank", "rarePrank"] as const) expect(blocked(row)).toEqual({ text: "'돌아다니기'가 꺼져 있어 장난을 치지 않아요", place: "companion-roam" });
-    expect(blocked("radioSelfStart")).toEqual({ text: "'돌아다니기'가 꺼져 있어 스스로 라디오를 틀지 않아요", place: "companion-roam" });
+  it("then standing still, for what movement carries", () => {
+    // Both stored mixes that read as "가만히" say the same.
+    for (const jump of [false, true]) {
+      const blocked = (row: CompanionBlockedRow) => companionRowBlock(row, prefs({ roam: false, jump }), site());
+      expect(blocked("motion")).toBeNull();
+      expect(blocked("playful")).toEqual({ text: "움직임이 '가만히'라 장난을 치지 않아요", place: "companion-roam" });
+      expect(blocked("panelPrank")).toEqual({ text: "움직임이 '가만히'라 패널을 옮기지 않아요", place: "companion-roam" });
+      expect(blocked("radioSelfStart")).toEqual({ text: "움직임이 '가만히'라 스스로 라디오를 틀지 않아요", place: "companion-roam" });
+    }
+    // Standing still comes before the partial background note.
+    expect(companionRowBlock("playful", prefs({ roam: false }), site({ gfx: "soft" }))?.partial).toBeUndefined();
   });
 
   it("starting the radio by itself also needs the 'all' sound level", () => {

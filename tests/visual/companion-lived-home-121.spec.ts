@@ -6,6 +6,7 @@ import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { COMPANION_SCENE_MEMORY_KEY, newCompanionSceneMemory, type CompanionSceneMemory } from "@/lib/ui/viewer-companion/scene-memory";
 import { openCompanionHome } from "./helpers/companion-home";
+import { expectCompanionMotion, setCompanionMotion } from "./helpers/companion-settings";
 
 const out = ".scratch-pw/companion-121/rendered";
 const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAll(/url\("(https:\/\/[^"\s]+\.woff2?)"\)/g)].map(match => match[1]));
@@ -139,7 +140,7 @@ test("121 a learned invitation accepts a real pet and reaches its happy ending w
   await state.room.locator("[data-home-action=book]").click();
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
   await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click(); // stage 3: no sub-tabs
-  await dialog.getByRole("switch", { name: "빅타민 돌아다니기 켜기/끄기", exact: true }).click();
+  await expectCompanionMotion(dialog, "still"); await setCompanionMotion(dialog, "run"); // stage 4: roaming on = the movement level (jump stays on as seeded)
   await dialog.getByRole("button", { name: "닫기", exact: true }).click();
   const rect = (await pet.boundingBox())!;
   await page.mouse.move(rect.x + rect.width / 2 + 100, rect.y - 30);

@@ -9,6 +9,7 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { COMPANION_THROW_LIMITS } from "@/lib/ui/viewer-companion/throw";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
+import { companionPlayfulSwitch, setCompanionPlayful } from "./helpers/companion-settings";
 
 type Surface = "viewer" | "studio";
 type Frame = { at: number; visible: boolean; same: boolean; state: string; play: string; beat: string; row: string; image: string; platform: string; x: number; foot: number; ruffled: number; ordinaryEventId: string | null; ordinaryRect: { left: number; top: number; right: number; bottom: number } | null };
@@ -198,31 +199,39 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} short tap 
   expect(frames.filter(frame => !frame.visible || !frame.same)).toEqual([]);
 });
 
-for (const surface of ["viewer", "studio"] as const) test(`${surface} card tilt switch is independent and persists a native OFF choice after reload`, async ({ page }) => {
+for (const surface of ["viewer", "studio"] as const) test(`${surface} prank switch (card tilt included) is independent of the panel row and persists a native OFF choice after reload`, async ({ page }) => {
   await setup(page, surface);
   let dialog = await openPranks(page);
-  const toggle = dialog.getByRole("switch", { name: "빅타민 일정 기울이기 켜기/끄기", exact: true });
+  // stage 4: card tilt is one of the four pranks behind the single 장난치기 switch. The seed is a legacy mix
+  // (heart and hide-seek off, card tilt on), which reads as OFF and is stored untouched until the switch is used.
+  const toggle = companionPlayfulSwitch(dialog), panel = dialog.getByRole("switch", { name: "빅타민 패널 자리 옮기기 켜기/끄기", exact: true });
   const before = await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!));
-  await expect(toggle).toBeChecked(); await toggle.click(); await expect(toggle).not.toBeChecked();
-  for (const name of ["하트 콩", "숨바꼭질", "패널 자리 장난"]) {
-    const control = dialog.getByRole("switch", { name: `빅타민 ${name} 켜기/끄기`, exact: true });
-    await expect(control).not.toBeChecked();
-  }
+  expect(before).toMatchObject({ cardPrank: true, heartPrank: false, ambientPrank: false, panelPrank: false });
+  await expect(toggle).not.toBeChecked(); await expect(panel).not.toBeChecked();
+  await toggle.click(); await expect(toggle).toBeChecked(); await expect(panel).not.toBeChecked();
+  const allOn = { heartPrank: true, cardPrank: true, ambientPrank: true, rarePrank: true }, allOff = { heartPrank: false, cardPrank: false, ambientPrank: false, rarePrank: false };
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!).heartPrank)).toBe(true);
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!))).toEqual({ ...before, ...allOn });
+  await toggle.click(); await expect(toggle).not.toBeChecked(); await expect(panel).not.toBeChecked();
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!).cardPrank)).toBe(false);
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!))).toEqual({ ...before, cardPrank: false });
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!))).toEqual({ ...before, ...allOff });
   await page.screenshot({ path: `${prefix}-${surface}-card-prank-off.png` });
   await page.reload(); await page.bringToFront();
   dialog = await openPranks(page);
-  await expect(dialog.getByRole("switch", { name: "빅타민 일정 기울이기 켜기/끄기", exact: true })).not.toBeChecked();
+  await expect(companionPlayfulSwitch(dialog)).not.toBeChecked();
   await expect(dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true })).toBeChecked();
 });
 
 for (const surface of ["viewer", "studio"] as const) for (const cardPrank of [true, false]) test(`${surface} actual natural movement contact performs its finite reaction with card tilt ${cardPrank ? "ON and click restoration" : "OFF"}`, async ({ page }) => {
   test.setTimeout(50000);
   await setup(page, surface, true);
-  if (!cardPrank) {
+  // stage 4: card tilt follows the single 장난치기 switch, and a partly-off mix acts as off. The seed keeps
+  // cardPrank on with heart/hide-seek off, so ON is chosen natively (all four pranks) and OFF is that seed as it reads.
+  {
     const dialog = await openPranks(page);
-    await dialog.getByRole("switch", { name: "빅타민 일정 기울이기 켜기/끄기", exact: true }).click();
+    await expect(companionPlayfulSwitch(dialog)).not.toBeChecked();
+    if (cardPrank) await setCompanionPlayful(dialog, true);
+    else expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!).cardPrank)).toBe(true);
     await dialog.getByRole("button", { name: "닫기", exact: true }).click();
     await expect(dialog).toHaveCount(0);
   }

@@ -6,7 +6,10 @@
  * control is *read* from existing fields and *written* as a patch of existing
  * fields only. Mixed legacy combinations read as the quieter / calmer level.
  *
- * Pure functions only. Nothing here is wired to a screen or to behavior yet.
+ * Pure functions only. The sound level has been live since stage 2-나; the
+ * movement level and the single prank switch since stage 4, where the runtime
+ * acts on `companionBehaviorPreferences` so that two stored mixes that read as
+ * the same choice also behave the same.
  */
 import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "./preferences";
 
@@ -54,4 +57,15 @@ export function companionPlayful(preferences: Readonly<PlayfulFields>): boolean 
 
 export function companionPlayfulPatch(on: boolean): PlayfulFields {
   return { heartPrank: on, cardPrank: on, ambientPrank: on, rarePrank: on };
+}
+
+/** The choices the companion acts on (stage 4). The screen shows a movement
+ * level and one prank switch, so behaviour follows the same reading: a jump
+ * left on under "still" does nothing, and a partly-off prank mix is off as a
+ * whole. Only ever calmer than the stored mix, never livelier. Stored values
+ * are not touched; an unchanged mix is returned as the same object. */
+export function companionBehaviorPreferences<T extends MotionFields & PlayfulFields>(preferences: T): T {
+  const jump = preferences.roam && preferences.jump, playful = companionPlayful(preferences);
+  if (jump === preferences.jump && preferences.heartPrank === playful && preferences.cardPrank === playful && preferences.ambientPrank === playful && preferences.rarePrank === playful) return preferences;
+  return { ...preferences, jump, ...companionPlayfulPatch(playful) };
 }

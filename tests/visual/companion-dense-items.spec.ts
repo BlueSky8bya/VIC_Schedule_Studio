@@ -9,6 +9,7 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { chooseCompanionPersonality, openCompanionHome } from "./helpers/companion-home";
 import { finishCompanionQa, guardCompanionQa, startCompanionQaProbe, type DailyProof } from "./helpers/companion-qa";
 import { settlePanelLayout } from "./helpers/panel-layout";
+import { expectCompanionMotion, setCompanionMotion } from "./helpers/companion-settings";
 
 type Operation = "hold-food" | "remove-food" | "move-actor" | "feeding-off" | "roam-off" | "master-off";
 type Scenario = { id: string; personality: CompanionPersonality; hunger: number; seconds: 90 | 180 | 300; gap?: true; two?: true; operation?: Operation };
@@ -113,14 +114,18 @@ async function intervene(page: Page, operation: Operation) {
     await expect(page.locator(".vc-companion")).not.toHaveAttribute("data-state", "held"); await page.mouse.move(2, 2); return { operation };
   }
   const dialog = await settings(page, operation === "feeding-off" ? "affection" : "motion");
-  const toggle = dialog.locator(`[data-act="${operation === "feeding-off" ? "companion-feeding-enabled" : operation === "roam-off" ? "companion-roam" : "companion-enabled"}"]`);
-  await toggle.click(); await expect(toggle).not.toBeChecked();
-  if (operation === "master-off") { await expect(page.locator(".vc-companion,.vc-food,.vc-toy")).toHaveCount(0); }
-  await page.waitForTimeout(3000); await toggle.click(); await expect(toggle).toBeChecked();
-  if (operation === "master-off") { const roam = dialog.locator('[data-act="companion-roam"]'); await roam.click(); await expect(roam).not.toBeChecked(); }
+  // stage 4: roaming is the movement level (off = 가만히, on = 뛰어다니기 since the seed keeps jump on).
+  if (operation === "roam-off") { await setCompanionMotion(dialog, "still"); await page.waitForTimeout(3000); await setCompanionMotion(dialog, "run"); }
+  else {
+    const toggle = dialog.locator(`[data-act="${operation === "feeding-off" ? "companion-feeding-enabled" : "companion-enabled"}"]`);
+    await toggle.click(); await expect(toggle).not.toBeChecked();
+    if (operation === "master-off") { await expect(page.locator(".vc-companion,.vc-food,.vc-toy")).toHaveCount(0); }
+    await page.waitForTimeout(3000); await toggle.click(); await expect(toggle).toBeChecked();
+  }
+  if (operation === "master-off") await setCompanionMotion(dialog, "still");
   await dialog.getByRole("button", { name: "닫기", exact: true }).click();
   if (operation === "master-off") {
-    const ids = await populate(page); const motion = await settings(page, "motion"); await motion.locator('[data-act="companion-roam"]').click();
+    const ids = await populate(page); const motion = await settings(page, "motion"); await setCompanionMotion(motion, "run");
     await motion.getByRole("button", { name: "닫기", exact: true }).click(); await page.mouse.move(2, 2); return { operation, repopulated: ids };
   }
   await page.mouse.move(2, 2); return { operation };
@@ -140,12 +145,12 @@ for (const scenario of scenarios) test(`${scenario.id}: real capacity and contin
     await page.goto("/visual-fixture/poster?avatar=1"); await page.bringToFront(); await settlePanelLayout(page); await page.evaluate(() => document.fonts.ready);
     await chooseCompanionPersonality(page, scenario.personality);
     if (scenario.gap) { const dialog = await settings(page), master = dialog.locator('[data-act="companion-enabled"]'); await master.click(); await expect(master).not.toBeChecked(); await page.waitForTimeout(60000); await master.click(); await expect(master).toBeChecked(); await dialog.getByRole("button", { name: "닫기", exact: true }).click(); }
-    const beforePopulation = await settings(page, "motion"); await expect(beforePopulation.locator('[data-act="companion-roam"]')).not.toBeChecked();
+    const beforePopulation = await settings(page, "motion"); await expectCompanionMotion(beforePopulation, "still");
     notes.push({ stage: "actual-population-preferences", preferences: await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("vic.viewerCompanion")!); return { enabled: p.enabled, roam: p.roam, feeding: p.feeding, personality: p.personality }; }) });
     await beforePopulation.getByRole("button", { name: "닫기", exact: true }).click();
     notes.push({ stage: "native-park-away-before-population", ...(await parkCompanionAwayFromFood(page)) });
     const ids = await populate(page, scenario.two); notes.push({ stage: "actual-initial-capacity", ids });
-    const dialog = await settings(page, "motion"); await dialog.locator('[data-act="companion-roam"]').click(); await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await page.mouse.move(2, 2);
+    const dialog = await settings(page, "motion"); await setCompanionMotion(dialog, "run"); await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await page.mouse.move(2, 2);
     const began = Date.now();
     await observeObjects(page); await startCompanionQaProbe(page, { captureMs: scenario.seconds === 300 ? 310000 : scenario.seconds === 180 ? 190000 : 100000 });
     if (scenario.operation) notes.push(await intervene(page, scenario.operation));

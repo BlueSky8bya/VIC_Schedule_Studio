@@ -10,6 +10,7 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
+import { expectCompanionMotion, setCompanionMotion } from "./helpers/companion-settings";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 
 const output = process.env.COMPANION149_OBJECTS_OUTPUT ?? ".scratch-pw/companion-149/objects-native-observations";
@@ -73,8 +74,8 @@ async function startRoaming(page: Page, enableAutomaticSleep = false) {
   const home = await openCompanionHome(page); await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true }); await expect(dialog).toBeVisible();
   await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
-  // stage 3: the settings page is one column of cards; roam is visible directly, sleep sits in the "더 보기" fold.
-  const roam = dialog.getByRole("switch", { name: "빅타민 돌아다니기 켜기/끄기", exact: true }); await expect(roam).toHaveAttribute("aria-checked", "false"); await roam.click(); await expect(roam).toHaveAttribute("aria-checked", "true");
+  // stage 4: roaming is the movement level on the settings page (still seed with jump on -> 뛰어다니기); sleep sits in the "더 보기" fold.
+  await expectCompanionMotion(dialog, "still"); await setCompanionMotion(dialog, "run");
   if (enableAutomaticSleep) { await dialog.locator(".rhh-companion-more > summary").click(); const sleep = dialog.getByRole("switch", { name: "빅타민 자동 잠자기 켜기/끄기", exact: true }); await expect(sleep).toHaveAttribute("aria-checked", "false"); await sleep.click(); await expect(sleep).toHaveAttribute("aria-checked", "true"); }
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden(); await page.mouse.move(2, 2);
 }

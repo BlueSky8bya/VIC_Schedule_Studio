@@ -7,6 +7,7 @@ import {DEFAULT_COMPANION_MEMORY} from "@/lib/ui/viewer-companion/care";
 import {COMPANION_PERSONALITY_SCENES} from "@/lib/ui/viewer-companion/personality-scene-catalog";
 import {chooseCompanionPersonality,openCompanionHome,placeCompanionOnHomeFloor} from "./helpers/companion-home";
 import {settlePanelLayout} from "./helpers/panel-layout";
+import {setCompanionRoam} from "./helpers/companion-settings";
 import {guardCompanionQa,startCompanionQaProbe,type DailyProof,type QaObservation} from "./helpers/companion-qa";
 
 const output=resolve(process.env.COMPANION146_OUTPUT??".scratch-pw/companion-146/runtime");
@@ -29,7 +30,7 @@ async function fixture(page:Page,personality:CompanionPersonality,surface:"viewe
  await page.addInitScript(({defaults,memory,epoch,key,hunger})=>{
   const values={[key]:epoch,"vic.gfxPref":"max","vic.gfx":JSON.stringify({mode:"full",at:Date.now(),v:3}),"vic.reduceMotion":"off","vic.sound":"off","vic.ambient":"off","vic.dark":"on","vic_avatar_side":"left","vic.premiereStage":"off"};
   for(const[k,v]of Object.entries(values))localStorage.setItem(k,v);
-  localStorage.setItem("vic.viewerCompanion",JSON.stringify({version:1,...defaults,enabled:true,roam:false,sleep:true,sound:false,learnFromYou:false,activeWhileVisible:true,heartPrank:false,cardPrank:false,panelPrank:false,rarePrank:false}));
+  localStorage.setItem("vic.viewerCompanion",JSON.stringify({version:1,...defaults,enabled:true,roam:false,sleep:true,sound:false,learnFromYou:false,activeWhileVisible:true,heartPrank:true,cardPrank:true,ambientPrank:true,panelPrank:false,rarePrank:true}));
   localStorage.setItem("vic.viewerCompanionCare",JSON.stringify({version:3,...memory,energy:.95,hunger}));
  },{defaults:DEFAULT_COMPANION_PREFERENCES,memory:DEFAULT_COMPANION_MEMORY,epoch:SETTINGS_EPOCH,key:SETTINGS_EPOCH_KEY,hunger});
  await page.goto(surface==="viewer"?"/visual-fixture/poster?avatar=1":"/visual-fixture/studio?role=owner&y=2026&m=10&hour=12&weather=clear");
@@ -41,7 +42,7 @@ async function roam(page:Page) {
  const home=await openCompanionHome(page);await home.getByRole("button",{name:"빅타민 수첩 열기",exact:true}).click();
  const dialog=page.getByRole("dialog",{name:"빅타민 수첩",exact:true});
  await dialog.getByRole("tablist",{name:"빅타민 프로필",exact:true}).getByRole("tab",{name:"설정",exact:true}).click();
- /* stage 3: no sub-tabs, roam is visible on the settings page */await dialog.locator('[data-act="companion-roam"]').setChecked(true);
+ /* stage 4: roaming is the movement level on the settings page (still seed, jump on -> 뛰어다니기) */await setCompanionRoam(dialog,true);
  await dialog.getByRole("button",{name:"닫기",exact:true}).click();await page.mouse.move(2,2);
 }
 for(const surface of ["viewer","studio","preview"] as const)test(`146 ${surface} tidy carries all four same physical toys into the box before leisure`,async({page})=>{

@@ -12,6 +12,7 @@ import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
+import { expectCompanionMotion, setCompanionPlayful, setCompanionRoam } from "./helpers/companion-settings";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 import { measuredWashGeometryDeliveries, type WashGeometryOperation } from "./helpers/wash-geometry-observation";
 
@@ -93,7 +94,8 @@ async function selectNative(page: Page, personality: CompanionPersonality, roam:
   const group = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }), option = group.getByRole("radio", { name: COMPANION_PERSONALITY_NAMES[personality], exact: true });
   if (await option.getAttribute("aria-checked") === "true") await group.locator('[role="radio"][aria-checked="false"]').first().click();
   await option.click(); await expect(option).toHaveAttribute("aria-checked", "true");
-  await profilePages.getByRole("tab", { name: "설정", exact: true }).click(); await dialog.locator('[data-act="companion-roam"]').setChecked(roam);
+  // stage 4: roaming is the movement level (on = 뛰어다니기, the seed keeps jump on; off = 가만히).
+  await profilePages.getByRole("tab", { name: "설정", exact: true }).click(); await setCompanionRoam(dialog, roam);
   if (deferPointerMove) await page.evaluate(() => { const probe=(window as ProbeWindow).agency141;if (probe) probe.entryChosenAt=performance.now(); });
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden(); if (!deferPointerMove) await page.mouse.move(2, 2);
 }
@@ -261,9 +263,11 @@ test("141 autonomous toy takeout visibly faces and touches the actual rim before
   await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
   await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
-  // stage 3: the "설정" page is one column of cards; prank and roam switches are both directly on it.
-  await dialog.locator('[data-act="companion-hide"]').setChecked(true); await expect(dialog.locator('[data-act="companion-hide"]')).toBeChecked();
-  await dialog.locator('[data-act="companion-roam"]').setChecked(true); await expect(dialog.locator('[data-act="companion-roam"]')).toBeChecked();
+  // stage 4: the four pranks are one 장난치기 switch (a partly-on mix acts as off, so ambientPrank alone can no
+  // longer be made from the screen) and roaming is the movement level; the panel prank stays OFF as seeded.
+  await setCompanionPlayful(dialog, true);
+  expect(await page.evaluate(() => { const p = JSON.parse(localStorage.getItem("vic.viewerCompanion")!); return [p.ambientPrank, p.heartPrank, p.cardPrank, p.rarePrank, p.panelPrank]; })).toEqual([true, true, true, true, false]);
+  await setCompanionRoam(dialog, true); await expectCompanionMotion(dialog, "run");
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden(); await page.mouse.move(2, 2);
   proofs.get(page)!.notes.push({ initialAmbientPrank: false, autonomousTakeoutPermissionEnabledThroughNativeControl: true, originalOffDenialEvidence: "native-4-agency" });
   const began = await now(page);

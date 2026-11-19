@@ -11,6 +11,7 @@ import { COMPANION_PERSONALITY_SCENES } from "@/lib/ui/viewer-companion/personal
 import type { CompanionToyKind } from "@/lib/ui/viewer-companion/toy-catalog";
 import { COMPANION_RADIO_TRACKS } from "@/lib/ui/viewer-companion/radio-catalog";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
+import { setCompanionRoam } from "./helpers/companion-settings";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 import { COMPANION_HOME_FLOOR_INSET } from "@/lib/ui/viewer-companion/food";
@@ -82,7 +83,7 @@ test.afterEach(async ({ page }, info) => {
 async function fixture(page: Page, surface: Surface, options: { personality?: CompanionPersonality; animalMode?: CompanionPreferences["animalMode"]; summer?: boolean; roam?: boolean; reduced?: boolean; gfxOff?: boolean; hunger?: number; sound?: boolean; energy?: number; sleep?: boolean; learnFromYou?: boolean } = {}) {
   await page.addInitScript(({ preferences, memory, epoch, epochKey, options }) => {
     for (const [key, value] of Object.entries({ [epochKey]: epoch, "vic.gfxPref": options.gfxOff ? "off" : "max", "vic.gfx": JSON.stringify({ mode: options.gfxOff ? "off" : "full", at: Date.now(), v: 3 }), "vic.sound": options.sound ? "on" : "off", "vic.soundVol": "45", "vic.ambient": "off", "vic.reduceMotion": options.reduced ? "on" : "off", "vic.dark": "off", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(key, value);
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, activeWhileVisible: true, personality: options.personality ?? "balanced", animalMode: options.animalMode ?? preferences.animalMode, roam: options.personality ? false : options.roam ?? true, sleep: options.sleep ?? false, feeding: true, sound: options.sound ?? false, learnFromYou: options.learnFromYou ?? false, heartPrank: false, cardPrank: false, panelPrank: false, rarePrank: false }));
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, activeWhileVisible: true, personality: options.personality ?? "balanced", animalMode: options.animalMode ?? preferences.animalMode, roam: options.personality ? false : options.roam ?? true, sleep: options.sleep ?? false, feeding: true, sound: options.sound ?? false, learnFromYou: options.learnFromYou ?? false, heartPrank: true, cardPrank: true, ambientPrank: true, panelPrank: false, rarePrank: true }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...memory, energy: options.energy ?? .9, hunger: options.hunger ?? .05 }));
   }, { preferences: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, options });
   await page.goto(surface === "viewer" ? "/visual-fixture/poster?avatar=1" : `/visual-fixture/studio?role=owner&y=2025&m=${options.summer ? 7 : 10}&hour=${options.summer ? 12 : 21}&weather=clear`);
@@ -110,7 +111,7 @@ async function selectNative(page: Page, personality: CompanionPersonality, roam?
   await option.click(); await expect(option).toHaveAttribute("aria-checked", "true");
   if (roam !== undefined || sleep !== undefined) {
     await profilePages.getByRole("tab", { name: "설정", exact: true }).click();
-    if (roam !== undefined) await dialog.locator('[data-act="companion-roam"]').setChecked(roam);
+    if (roam !== undefined) await setCompanionRoam(dialog, roam); // stage 4: the movement level (on = 뛰어다니기 from 가만히, off = 가만히)
     if (sleep !== undefined) {
       const more = dialog.locator(".rhh-companion-more"); await expect(more).toBeVisible();
       if (!await more.evaluate(node => (node as HTMLDetailsElement).open)) await more.locator("> summary").click();

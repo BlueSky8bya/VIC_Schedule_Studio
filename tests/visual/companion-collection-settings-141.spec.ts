@@ -10,6 +10,7 @@ import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { waitForOverlayEntrance } from "./helpers/companion-overlay";
+import { setCompanionRoam } from "./helpers/companion-settings";
 import { COMPANION_PERSONALITY_LAYOUT } from "@/lib/ui/viewer-companion/personality-layout";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
 import { completedNativeBallUseReplay } from "./helpers/companion-ball-use-replay";
@@ -57,7 +58,7 @@ async function fixture(page: Page, surface: Surface, width = 1920, quiet = false
   await page.setViewportSize({ width, height: 1100 });
   await page.addInitScript(({ preferences, memory, epoch, epochKey, quiet }) => {
     for (const [key, value] of Object.entries({ [epochKey]: epoch, "vic.gfxPref": quiet ? "off" : "max", "vic.gfx": JSON.stringify({ mode: quiet ? "off" : "full", at: Date.now(), v: 3 }), "vic.sound": "off", "vic.ambient": "off", "vic.reduceMotion": quiet ? "on" : "off", "vic.dark": "off", "vic_avatar_side": "left", "vic.premiereStage": "off" })) localStorage.setItem(key, value);
-    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, activeWhileVisible: true, roam: false, sleep: false, feeding: true, sound: false, learnFromYou: true, heartPrank: false, cardPrank: false, panelPrank: false, rarePrank: false }));
+    localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences, enabled: true, activeWhileVisible: true, roam: false, sleep: false, feeding: true, sound: false, learnFromYou: true, heartPrank: true, cardPrank: true, ambientPrank: true, panelPrank: false, rarePrank: true }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 3, ...memory, energy: .95, hunger: .05 }));
     // Deliberately no taste, collection, first-discovery or runtime state seed.
   }, { preferences: DEFAULT_COMPANION_PREFERENCES, memory: DEFAULT_COMPANION_MEMORY, epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, quiet });
@@ -77,8 +78,8 @@ async function settings(page: Page) {
 async function choose(page: Page, personality: CompanionPersonality, roam: boolean) {
   const dialog = await settings(page), group = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true });
   const option = group.getByRole("radio", { name: COMPANION_PERSONALITY_NAMES[personality], exact: true }); await option.click(); await expect(option).toHaveAttribute("aria-checked", "true");
-  // stage 3: roam is a row directly on the "설정" page; there are no sub-tabs.
-  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click(); await dialog.locator('[data-act="companion-roam"]').setChecked(roam);
+  // stage 4: roaming is the movement level on the "설정" page (on = 뛰어다니기, as the seed keeps jump on; off = 가만히).
+  await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click(); await setCompanionRoam(dialog, roam);
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden(); await page.mouse.move(2, 2);
 }
 function installCollectionProbeInPage({ tasteKey, collectionKey }: { tasteKey: string; collectionKey: string }) {

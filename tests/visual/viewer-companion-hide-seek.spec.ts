@@ -48,7 +48,7 @@ async function setup(page: Page, mobile: boolean, gfx: "max" | "off" = "max") {
     // A deterministic three-step RNG stream exercises the low-probability
     // eligibility/weighted draw. The real brain still owns every decision.
     let seed = 0; Math.random = () => (++seed % 3 ? 0 : .999999);
-  }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, gfx, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: true, jump: false, sleep: false, feeding: false, heartPrank: false, ambientPrank: true }, care: { ...DEFAULT_COMPANION_CARE, hunger: .05, energy: 1, curiosity: .9 } });
+  }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, gfx, preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: true, jump: false, sleep: false, feeding: false, heartPrank: true, cardPrank: true, ambientPrank: true, rarePrank: true }, care: { ...DEFAULT_COMPANION_CARE, hunger: .05, energy: 1, curiosity: .9 } });
   await page.goto("/visual-fixture/poster?avatar=1"); await page.bringToFront();
   await page.evaluate(() => document.fonts.ready);
   await page.evaluate(async () => { await Promise.allSettled(document.getAnimations().filter(a => a.playState === "running" && Number.isFinite(Number(a.effect?.getComputedTiming().endTime))).map(a => a.finished)); });

@@ -9,6 +9,7 @@ import { samplePublicScheduleData } from "@/lib/schedules/sample-public-data";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { fulfillReadOnlyFont } from "./helpers/readonly-font";
+import { setCompanionRoam } from "./helpers/companion-settings";
 import anchors from "@/lib/ui/viewer-companion/curtain-contact-anchors.json";
 import topAnchors from "@/lib/ui/viewer-companion/home-contact-anchors-157.json";
 import bodyAnchors from "@/lib/ui/viewer-companion/accessory-anchors.json";
@@ -123,7 +124,8 @@ for(const surface of ["viewer","studio","preview"] as const)for(const [width,com
     await page.setViewportSize({width,height:1100});await seed(page);const home=await open(page,surface,compact),actor=page.locator(".vc-companion");
     await expect(home.locator(".vc-home-window")).toHaveAttribute("data-curtain","open");await observe(page);
     await home.locator('[data-home-action="personality"]').click();const book=page.getByRole("dialog",{name:"빅타민 수첩",exact:true});
-    await book.getByRole("tab",{name:"움직임",exact:true}).click();await book.locator('[data-act="companion-roam"]').setChecked(true);await book.getByRole("button",{name:"닫기",exact:true}).click();
+    // stage 3/4: no sub-tabs; roaming is the movement level on the book's "설정" page (the book opens on "함께 지내기").
+    await book.getByRole("tablist",{name:"빅타민 프로필",exact:true}).getByRole("tab",{name:"설정",exact:true}).click();await setCompanionRoam(book,true);await book.getByRole("button",{name:"닫기",exact:true}).click();
     await placeCompanionOnHomeFloor(page);await page.mouse.move(2,2);
     proofs.get(page)!.notes.push({stage:"actual-layout",surface,label,room:await home.locator(".vc-home-room").boundingBox(),handle:await home.locator(".vc-curtain-handle").boundingBox()});
     await expect(home.locator(".vc-home-window")).toHaveAttribute("data-curtain","closed",{timeout:35000});

@@ -10,6 +10,7 @@ import { companionSpriteMetadata } from "@/lib/ui/viewer-companion/sprite-qualit
 import { companionPlayDuration, COMPANION_PLAY_TIMING } from "@/lib/ui/viewer-companion/timing";
 import { COMPANION_HOME_LIGHT_KEY, parseCompanionHomeLight } from "@/lib/ui/viewer-companion/home-light";
 import { openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
+import { setCompanionRoam } from "./helpers/companion-settings";
 import { guardCompanionQa, type DailyProof } from "./helpers/companion-qa";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { curiousTextureCellMatches, type CuriousTextureCellMeasurement } from "./helpers/companion-curious-completion-144";
@@ -66,8 +67,8 @@ async function settings(page: Page, roam: boolean, sleep = true, enabled?: boole
   await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
   if (enabled !== undefined) await dialog.locator('[data-act="companion-enabled"]').setChecked(enabled);
   if (enabled !== false) {
-    // stage 3: no sub-tabs; roam is visible directly, sleep sits in the "더 보기" fold.
-    await dialog.locator('[data-act="companion-roam"]').setChecked(roam); await dialog.locator(".rhh-companion-more > summary").click(); await dialog.locator('[data-act="companion-sleep"]').setChecked(sleep);
+    // stage 4: roaming is the movement level (on = 뛰어다니기 from 가만히, off = 가만히); sleep sits in the "더 보기" fold.
+    await setCompanionRoam(dialog, roam); await dialog.locator(".rhh-companion-more > summary").click(); await dialog.locator('[data-act="companion-sleep"]').setChecked(sleep);
   }
   await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden(); await page.mouse.move(2, 2);
 }
@@ -250,8 +251,8 @@ test("157 preview manual OFF cancels actual owned cushion rest without remote ho
   await dialog.getByRole("tab",{name:"빅타민",exact:true}).click();
   await dialog.getByRole("tablist",{name:"빅타민 프로필",exact:true}).getByRole("tab",{name:"설정",exact:true}).click();
   await expect(dialog.locator('[data-act="companion-enabled"]')).not.toBeChecked();
-  // stage 3: no sub-tabs; roam is visible directly, sleep sits in the "더 보기" fold.
-  await dialog.locator('[data-act="companion-roam"]').setChecked(false);await dialog.locator(".rhh-companion-more > summary").click();await dialog.locator('[data-act="companion-sleep"]').setChecked(false);
+  // stage 4: roam off is the 가만히 movement level; sleep sits in the "더 보기" fold.
+  await setCompanionRoam(dialog,false);await dialog.locator(".rhh-companion-more > summary").click();await dialog.locator('[data-act="companion-sleep"]').setChecked(false);
   await expect(page.locator(".vc-companion")).toHaveCount(0);
   await dialog.locator('[data-act="companion-enabled"]').setChecked(true);
   const restoredPreferences=await page.evaluate(()=>{const p=JSON.parse(localStorage.getItem("vic.viewerCompanion")??"{}");return {enabled:p.enabled,roam:p.roam,sleep:p.sleep};});

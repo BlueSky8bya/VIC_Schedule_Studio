@@ -8,6 +8,7 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { DEFAULT_COMPANION_MEMORY } from "@/lib/ui/viewer-companion/care";
 import { companionSpriteMetadata, companionSpriteSources } from "@/lib/ui/viewer-companion/sprite-quality";
 import { chooseCompanionPersonality, openCompanionHome, placeCompanionOnHomeFloor } from "./helpers/companion-home";
+import { setCompanionRoam } from "./helpers/companion-settings";
 import { guardCompanionQa, startCompanionQaProbe, type QaObservation } from "./helpers/companion-qa";
 import { settlePanelLayout } from "./helpers/panel-layout";
 import { curiousTextureCellMatches } from "./helpers/companion-curious-completion-144";
@@ -75,7 +76,7 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`156 ${surf
       // The initial notebook preview must not warm bow before observation.
       // Performer previews a different immutable packet; its real radio is
       // still selected below and the first-bow cold assertion stays strict.
-      "vic.viewerCompanion": JSON.stringify({ version: 1, ...preferences, personality: "performer", personalitySource: "manual", enabled: true, roam: false, sleep: false, learnFromYou: false, heartPrank: false, cardPrank: false, panelPrank: false, rarePrank: false }),
+      "vic.viewerCompanion": JSON.stringify({ version: 1, ...preferences, personality: "performer", personalitySource: "manual", enabled: true, roam: false, sleep: false, learnFromYou: false, heartPrank: true, cardPrank: true, ambientPrank: true, panelPrank: false, rarePrank: true }),
       "vic.viewerCompanionCare": JSON.stringify({ version: 3, ...care, hunger: .05, energy: .95 }) })) localStorage.setItem(key, value);
   }, { epoch: SETTINGS_EPOCH, epochKey: SETTINGS_EPOCH_KEY, preferences: DEFAULT_COMPANION_PREFERENCES, care: DEFAULT_COMPANION_MEMORY });
   let completed = false;
@@ -91,8 +92,8 @@ for (const surface of ["viewer", "studio", "preview"] as const) test(`156 ${surf
     await home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }).click();
     const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
     await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
-    // stage 3: no sub-tabs, roam is visible on the settings page.
-    await dialog.locator('[data-act="companion-roam"]').setChecked(true);
+    // stage 4: roaming is the movement level on the settings page (still seed, jump on -> 뛰어다니기).
+    await setCompanionRoam(dialog, true);
     await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(dialog).toBeHidden(); await page.mouse.move(2, 2);
     await expect.poll(async () => {
       const observed = await frames(page), bow = firstBow(observed);
