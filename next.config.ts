@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 import { resolveBuildCommit } from "./scripts/build-commit";
 
 const nextConfig: NextConfig = {
+  // A second dev server (screen captures) can run beside a production build by pointing at its own folder.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   typedRoutes: true,
   // 빌드(=배포) 시각/커밋을 클라이언트에서도 쓰게 빌드 때 박는다(인사이트 배포 시각, 액션바 버전 표시).
   env: {

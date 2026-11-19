@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { expectQuietCompanionVisible } from "./helpers/companion-overlay";
-import { companionMotionGroup, companionMotionRadio, companionPlayfulSwitch, expectCompanionMotion, setCompanionMotion, setCompanionPlayful } from "./helpers/companion-settings";
+import { companionPlayfulSwitch, setCompanionPlayful } from "./helpers/companion-settings";
 
 // Settings redesign stage 3: the companion block has four pages under one shared
 // power header. The settings gear opens on "설정", a single page of cards with no
@@ -31,14 +31,13 @@ test("dedicated companion settings preserve detailed choices across master OFF a
   await expect(panel.getByRole("tablist", { name: "빅타민 설정", exact: true })).toHaveCount(0);
   const master = panel.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true });
   await expect(master).not.toBeChecked();
-  // Stage 4: jumping off is the 걷기만 level, and the heart prank is part of the one 장난치기 switch.
-  await expectCompanionMotion(panel, "run");
-  await setCompanionMotion(panel, "walk");
+  // Stage 4: the heart prank is part of the one 장난치기 switch.
   await expect(companionPlayfulSwitch(panel)).toBeChecked();
   await setCompanionPlayful(panel, false);
-  expect(await storedCompanion(page)).toMatchObject({ enabled: false, roam: true, jump: false, heartPrank: false, cardPrank: false, ambientPrank: false, rarePrank: false, panelPrank: true });
-  // Rarely changed rows are folded away until asked for.
+  expect(await storedCompanion(page)).toMatchObject({ enabled: false, heartPrank: false, cardPrank: false, ambientPrank: false, rarePrank: false, panelPrank: true });
+  // Rarely changed rows are folded away until asked for; the fold line is only its name.
   const more = panel.locator(".rhh-companion-more");
+  await expect(more.locator("summary")).toHaveText("더 보기");
   await expect(panel.getByRole("radio", { name: "느긋하게", exact: true })).toBeHidden();
   await more.locator("summary").click();
   await panel.getByRole("radio", { name: "느긋하게", exact: true }).click();
@@ -61,10 +60,9 @@ test("dedicated companion settings preserve detailed choices across master OFF a
   await page.reload();
   panel = await openCompanionSettings(page);
   await expect(panel.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true })).not.toBeChecked();
-  await expectCompanionMotion(panel, "walk");
   await expect(companionPlayfulSwitch(panel)).not.toBeChecked();
   await expect(panel.getByRole("switch", { name: "빅타민 패널 자리 옮기기 켜기/끄기", exact: true })).toBeChecked();
-  // The fold is not remembered: it starts closed again, with the choices inside kept.
+  // The fold is not kept across a reload: it starts closed again, with the choices inside kept.
   await expect(panel.getByRole("radio", { name: "느긋하게", exact: true })).toBeHidden();
   await panel.locator(".rhh-companion-more summary").click();
   await expect(panel.getByRole("radio", { name: "느긋하게", exact: true })).toBeChecked();
@@ -100,6 +98,28 @@ test("the four pages share one keyboard stop and the power header, and nothing n
   await expect(page.locator(".public-calendar-header h1")).toHaveText(monthBefore!);
 });
 
+test("더 보기 stays as it was left until the page is reloaded, and nothing is stored for it", async ({ page }) => {
+  await page.goto("/visual-fixture/poster");
+  let panel = await openCompanionSettings(page);
+  const keys = () => page.evaluate(() => Object.keys(localStorage).concat(Object.keys(sessionStorage)).sort());
+  const before = await keys();
+  await expect(panel.locator(".rhh-companion-more")).not.toHaveAttribute("open", "");
+  await panel.locator(".rhh-companion-more summary").click();
+  await expect(panel.getByRole("radio", { name: "느긋하게", exact: true })).toBeVisible();
+  // Closing the settings and opening them again finds it open.
+  await page.getByRole("dialog", { name: "설정", exact: true }).getByRole("button", { name: "닫기", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "설정", exact: true })).toHaveCount(0);
+  panel = await openCompanionSettings(page);
+  await expect(panel.locator(".rhh-companion-more")).toHaveAttribute("open", "");
+  await expect(panel.getByRole("radio", { name: "느긋하게", exact: true })).toBeVisible();
+  expect(await keys()).toEqual(before);
+  // A reload folds it again.
+  await page.reload();
+  panel = await openCompanionSettings(page);
+  await expect(panel.locator(".rhh-companion-more")).not.toHaveAttribute("open", "");
+  await expect(panel.getByRole("radio", { name: "느긋하게", exact: true })).toBeHidden();
+});
+
 test("the character can be returned to the random draw without touching other choices", async ({ page }) => {
   await page.addInitScript(() => {
     if (!localStorage.getItem("fixture.random")) { localStorage.setItem("fixture.random", "1"); localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, enabled: false, roam: false, soundVolume: 25 })); }
@@ -119,38 +139,19 @@ test("the character can be returned to the random draw without touching other ch
   expect(after.personalitySource).toBeUndefined();
 });
 
-// Settings redesign stage 4: fewer rows, the same stored fields.
-test("movement is one three-way choice and the four pranks one switch, both written to the existing fields", async ({ page }) => {
+// Settings redesign stage 4: fewer rows, the same stored fields. Movement is not a row at all (2026-11-19).
+test("the four pranks are one switch written to the existing fields, and there is no movement row", async ({ page }) => {
   await page.addInitScript(() => {
     if (!localStorage.getItem("fixture.stage4")) { localStorage.setItem("fixture.stage4", "1"); localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, enabled: false })); }
   });
   await page.goto("/visual-fixture/poster");
   const panel = await openCompanionSettings(page);
-  // The retired rows are gone; their choices live in the two new controls.
-  await expect(panel.locator('[data-act="companion-roam"],[data-act="companion-jump"],[data-act="companion-heart-prank"],[data-act="companion-card-prank"],[data-act="companion-hide"],[data-act="companion-rare-prank"]')).toHaveCount(0);
+  // The retired rows are gone; the prank choices live in the one switch.
+  await expect(panel.locator('[data-act="companion-motion-level"],[data-act="companion-roam"],[data-act="companion-jump"],[data-act="companion-heart-prank"],[data-act="companion-card-prank"],[data-act="companion-hide"],[data-act="companion-rare-prank"]')).toHaveCount(0);
+  await expect(panel.getByRole("radiogroup", { name: "빅타민 움직임", exact: true })).toHaveCount(0);
   for (const name of ["돌아다니기", "깡충 뛰기", "하트 콩", "일정 기울이기", "숨바꼭질", "희귀 소품 장난", "패널 자리 장난"]) await expect(panel.getByRole("switch", { name: `빅타민 ${name} 켜기/끄기`, exact: true })).toHaveCount(0);
-  const motion = companionMotionGroup(panel);
-  await expect(motion).toHaveAttribute("data-act", "companion-motion-level");
-  await expect(motion.getByRole("radio")).toHaveText(["가만히", "걷기만", "뛰어다니기"]);
-  await expectCompanionMotion(panel, "run");
-  // 걷기만: roam on, jump off. 가만히 writes only roam, so the jump choice under it is kept.
-  await setCompanionMotion(panel, "walk");
-  expect(await storedCompanion(page)).toMatchObject({ roam: true, jump: false });
-  await setCompanionMotion(panel, "still");
-  expect(await storedCompanion(page)).toMatchObject({ roam: false, jump: false });
-  await setCompanionMotion(panel, "run");
-  expect(await storedCompanion(page)).toMatchObject({ roam: true, jump: true });
-  await setCompanionMotion(panel, "still");
-  expect(await storedCompanion(page)).toMatchObject({ roam: false, jump: true });
-  // The group is one keyboard stop; an arrow moves the choice with the focus.
-  await expect(motion.locator('[tabindex="0"]')).toHaveCount(1);
-  await companionMotionRadio(panel, "still").focus();
-  await page.keyboard.press("ArrowRight");
-  await expect(companionMotionRadio(panel, "walk")).toBeFocused(); await expectCompanionMotion(panel, "walk");
-  expect(await storedCompanion(page)).toMatchObject({ roam: true, jump: false });
-  await setCompanionMotion(panel, "run");
-  // 장난치기 writes all four prank fields; 패널 자리 옮기기 stays its own choice.
-  // (The dimmed row, its reason and the link to the movement row are in companion-settings-reasons.spec.ts.)
+  // 장난치기 writes all four prank fields; 패널 자리 옮기기 keeps its own value under it.
+  // (Its dimmed look and reason while the pranks are off are in companion-settings-reasons.spec.ts.)
   const playful = companionPlayfulSwitch(panel);
   await expect(playful).toHaveAttribute("data-act", "companion-playful");
   await expect(playful).toBeChecked();
@@ -179,8 +180,7 @@ test("a legacy prank mix shows 장난치기 off and stays stored as it was until
   const panel = await openCompanionSettings(page);
   const playful = companionPlayfulSwitch(panel);
   await expect(playful).not.toBeChecked();
-  // A jump left on with roam off reads as 가만히.
-  await expectCompanionMotion(panel, "still");
+  // The movement fields an older screen left are kept as they are; no row shows or rewrites them.
   const legacy = { heartPrank: false, cardPrank: true, ambientPrank: true, rarePrank: true, roam: false, jump: true };
   expect(await storedCompanion(page)).toMatchObject(legacy);
   // Using another row keeps the mix.

@@ -1,8 +1,9 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 
-// Settings redesign stage 5: choosing a movement level or a character lets the
-// small companion beside the choice move that way. It is a local drawing only:
-// nothing is stored and the real companion is not touched.
+// Settings redesign stage 5: choosing a character lets the small companion
+// beside the choice move that way. It is a local drawing only: nothing is
+// stored and the real companion is not touched. (The movement preview went with
+// the movement setting, 2026-11-19.)
 test.use({ viewport: { width: 1440, height: 1000 }, isMobile: false, hasTouch: false });
 
 async function open(page: Page, storage: Record<string, string> = {}, companion: Record<string, unknown> = {}) {
@@ -28,31 +29,11 @@ async function rows(host: Locator, ms: number) {
 }
 const stored = (page: Page) => page.evaluate(() => localStorage.getItem("vic.viewerCompanion"));
 
-test("the movement preview stands, walks, or walks and jumps with the chosen level", async ({ page }) => {
+test("the settings page has no movement choice and no movement preview", async ({ page }) => {
   const dialog = await open(page);
-  const box = dialog.locator(".rhh-motion-preview"), level = (name: string) => dialog.getByRole("radiogroup", { name: "빅타민 움직임", exact: true }).getByRole("radio", { name, exact: true });
-  await box.scrollIntoViewIfNeeded();
-  await expect(box).toHaveAttribute("data-motion-preview", "run");
-  await expect(box.locator(".rhh-wardrobe-preview")).toHaveAttribute("data-preview-ready", "");
-  // Walking: the walk row, and never a jump.
-  await level("걷기만").click();
-  await expect(box).toHaveAttribute("data-motion-preview", "walk");
-  await expect(box).toContainText("걸어서 돌아다녀요");
-  await expect.poll(async () => (await rows(box, 600)).includes("2"), { timeout: 8000 }).toBe(true);
-  expect((await rows(box, 4000)).filter(row => !["0", "2"].includes(row))).toEqual([]);
-  // Running: both the walk and the jump are seen.
-  await level("뛰어다니기").click();
-  await expect(box).toContainText("걷다가 뛰어오르기도 해요");
-  const run = new Set<string>();
-  await expect.poll(async () => { for (const row of await rows(box, 800)) run.add(row); return run.has("2") && run.has("31"); }, { timeout: 20000 }).toBe(true);
-  // Standing still: it only rests.
-  await level("가만히").click();
-  await expect(box).toContainText("제자리에 가만히 있어요");
-  // A clip in flight is cut at once; from then on only the resting row is drawn.
-  await expect.poll(async () => (await rows(box, 300)).join(), { timeout: 8000 }).toBe("0");
-  expect(await rows(box, 3500)).toEqual(["0"]);
-  // The preview writes nothing of its own: only the level the user chose is stored.
-  expect(JSON.parse((await stored(page))!)).toMatchObject({ roam: false, jump: true });
+  await expect(dialog.getByRole("switch", { name: "빅타민 장난치기 켜기/끄기", exact: true })).toBeVisible();
+  await expect(dialog.getByRole("radiogroup", { name: "빅타민 움직임", exact: true })).toHaveCount(0);
+  await expect(dialog.locator('.rhh-motion-preview, [data-motion-preview], [data-settings-place="companion-roam"]')).toHaveCount(0);
 });
 
 test("the character preview replays the chosen character's move and stores only the choice", async ({ page }) => {
@@ -83,15 +64,4 @@ test("the character preview replays the chosen character's move and stores only 
   await pages.getByRole("tab", { name: "도감", exact: true }).click();
   await pages.getByRole("tab", { name: "함께 지내기", exact: true }).click();
   await expect(box).toHaveCount(0);
-});
-
-test("a resting device, a resting companion and a stopped row show the preview at rest", async ({ page }) => {
-  // The site's motion switch is off: the row says so and the preview does not move.
-  const dialog = await open(page, { "vic.reduceMotion": "on" });
-  const box = dialog.locator(".rhh-motion-preview");
-  await box.scrollIntoViewIfNeeded();
-  await expect(box.locator(".rhh-wardrobe-preview")).toHaveAttribute("data-preview-ready", "");
-  expect(await rows(box, 3500)).toEqual(["0"]);
-  await dialog.getByRole("radiogroup", { name: "빅타민 움직임", exact: true }).getByRole("radio", { name: "걷기만", exact: true }).click();
-  expect(await rows(box, 3500)).toEqual(["0"]);
 });

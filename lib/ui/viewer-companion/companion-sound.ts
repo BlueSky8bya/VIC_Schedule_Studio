@@ -47,6 +47,12 @@ export const COMPANION_SOUND_NAMES: Readonly<Record<CompanionSoundMoment, string
   feed: "밥통", land: "착지", dizzy: "어지럼", sleep: "잠들기", play: "놀이", discover: "새 발견", gift: "선물",
   eat: "다 먹음", tumble: "넘어짐",
 });
+/** When each sound is heard, for the hover hint on its audition tile. */
+export const COMPANION_SOUND_HINTS: Readonly<Record<CompanionSoundMoment, string>> = Object.freeze({
+  pet: "쓰다듬을 때", lift: "집어 들 때", cushion: "쿠션을 눌러 집으로 부를 때", equip: "옷이나 소품을 입힐 때", unequip: "옷이나 소품을 벗길 때",
+  feed: "밥통에서 음식이 나올 때", land: "뛰거나 떨어져 바닥에 닿을 때", dizzy: "흔들려서 어지러울 때", sleep: "잠들 때", play: "장난감으로 놀 때", discover: "새로운 것을 알게 됐을 때", gift: "선물 상자가 열릴 때",
+  eat: "혼자 밥을 다 먹었을 때", tumble: "혼자 놀다 넘어졌을 때",
+});
 /** The sounds grouped by who can start them (proposal 4-3). A sound the user
  * can start is auditioned as theirs; one only the companion makes is
  * auditioned as its own, so the tile is heard exactly when the real one is. */

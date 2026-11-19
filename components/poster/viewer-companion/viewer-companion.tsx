@@ -40,7 +40,7 @@ import { canCompanionSetCurtain, getCompanionCurtainChoice, setCompanionCurtainC
 import { companionCurtainControlStance, companionHomeCordPoint, companionHomeCordTouches, companionHomeOpeningContact, companionHomeResidentFloor, companionRoomBodyLight, COMPANION_WASH_SUPPORT, nearestCompanionHomeCordAnchor, sampleCompanionHomeReach, type CompanionHomeCordAnchor } from "@/lib/ui/viewer-companion/home-interaction";
 import { COMPANION_THROW_LIMITS, createCompanionThrow, createCompanionThrowVelocity, stepCompanionThrow, type CompanionThrowState, type CompanionThrowVelocity } from "@/lib/ui/viewer-companion/throw";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
-import { companionBehaviorPreferences } from "@/lib/ui/viewer-companion/settings-levels";
+import { companionBehaviorPreferences, companionQaStoredMotion } from "@/lib/ui/viewer-companion/settings-levels";
 import { companionWorldPreferencesKey } from "@/lib/ui/viewer-companion/preferences";
 import { createCompanionGeometryIdentity, isCompanionPanelFloor, observeCompanionPlatforms, type CompanionGeometrySubscription } from "@/lib/ui/viewer-companion/geometry";
 import { companionLayoutMotionMs, companionSupportPointDelta, type CompanionAnchorFrame } from "@/lib/ui/viewer-companion/element-anchor";
@@ -155,8 +155,9 @@ const spriteSources = registration.rows.map((_, row) => companionSpriteSources(r
  * input/snack coordinates; titles and account data never enter its brain.
  * Imperative transform/frame writes never re-render the calendar on a tick. */
 export default function ViewerCompanion({ onOpenBook, root, preferences: storedPreferences, blocked, overlayOpen, preserveWorldPresentation = false, workspaceBusy = false, editing = false, agenda, monthKey, context, reduced, homeHost, homeVisible, launcherHost = null, compactHost = null, premiereCue = null, onPremiereJoin, positionMemory, fixtureFood }: Props) {
-  // Settings stage 4: act on the movement level and the single prank switch as the screen reads them.
-  const preferences = useMemo(() => companionBehaviorPreferences(storedPreferences), [storedPreferences]);
+  // Act on the choices as the settings screen reads them: always free to move, one prank switch.
+  const [storedMotion] = useState(companionQaStoredMotion);
+  const preferences = useMemo(() => companionBehaviorPreferences(storedPreferences, storedMotion), [storedPreferences, storedMotion]);
   const [showcaseSession] = useState(createCompanionShowcaseSession);
   const [visibilityRecovery] = useState(() => createCompanionVisibilityRecovery());
   const sceneMaterial = useCompanionSceneMaterial();

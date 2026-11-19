@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
-import { companionMotionGroup, companionMotionRadio, companionPlayfulSwitch, expectCompanionMotion, setCompanionMotion } from "./helpers/companion-settings";
+import { companionPlayfulSwitch } from "./helpers/companion-settings";
 
 // Settings redesign stage 1: the screen says which outer setting is in the way
 // and leads there. No rule changes; a link never switches the other setting.
@@ -26,8 +26,7 @@ async function companionSettings(page: Page, _card: string) {
 }
 const saved = (page: Page) => page.evaluate(() => ({ companion: localStorage.getItem("vic.viewerCompanion"), reduce: localStorage.getItem("vic.reduceMotion"), sound: localStorage.getItem("vic.sound") }));
 const savedCompanion = async (page: Page) => JSON.parse((await saved(page)).companion!) as Partial<CompanionPreferences>;
-// Stage 4 rows: one movement choice (the place other rows lead back to) and one prank switch.
-const motionRow = (dialog: Locator) => dialog.locator('[data-settings-place="companion-roam"]');
+// One prank switch with the panel row under it. Movement is not a setting (2026-11-19).
 // `has` is looked up inside each row, so the inner locator starts from the page, not from the dialog.
 const playfulRow = (dialog: Locator) => dialog.locator(".role-help-haptics").filter({ has: companionPlayfulSwitch(dialog.page()) });
 const panelRow = (dialog: Locator) => dialog.locator(".role-help-haptics").filter({ has: dialog.page().getByRole("switch", { name: "빅타민 패널 자리 옮기기 켜기/끄기", exact: true }) });
@@ -40,6 +39,12 @@ test("sound status says it sounds when nothing is in the way", async ({ page }) 
   const status = dialog.locator(".rhh-sound-status");
   await expect(status).toHaveText("지금 소리가 나요");
   await expect(status).toHaveAttribute("data-state", "on");
+  // It sits in the sound row itself, right of the row's name.
+  const row = dialog.locator('.rhh-companion-sound-row[data-settings-place="companion-sound"]');
+  await expect(row.locator(".rhh-sound-status-slot .rhh-sound-status")).toHaveCount(1);
+  const name = (await row.locator(".rhh-label").first().boundingBox())!, at = (await status.boundingBox())!;
+  expect(at.x).toBeGreaterThanOrEqual(name.x + name.width);
+  expect(Math.abs(at.y + at.height / 2 - (name.y + name.height / 2))).toBeLessThan(name.height);
   await expect(dialog.locator(".rhh-note:visible")).toHaveCount(1);
 });
 
@@ -51,14 +56,12 @@ test("reduced motion: rows keep their value, say why once, and the link shows th
   const notes = dialog.locator(".rhh-companion-cards .rhh-note").filter({ hasText: "장난을 치지 않아요" });
   await expect(notes).toHaveCount(1);
   await expect(notes).toContainText("사이트의 '생동감 있는 동작'이 꺼져 있어 장난을 치지 않아요");
-  await expect(dialog.locator(".rhh-companion-cards .rhh-note").filter({ hasText: "사이트의 '생동감 있는 동작'이 꺼져 있어 걷거나 뛰지 않아요" })).toHaveCount(1);
   await expect(dialog.locator(".rhh-companion-cards .rhh-note").filter({ hasText: "사이트의 '생동감 있는 동작'이 꺼져 있어 패널을 옮기지 않아요" })).toHaveCount(1);
   // Stopped rows are dimmed, not disabled: the value still changes.
   const playful = companionPlayfulSwitch(dialog);
-  await expect(playfulRow(dialog)).toHaveClass(/is-blocked/); await expect(motionRow(dialog)).toHaveClass(/is-blocked/);
+  await expect(playfulRow(dialog)).toHaveClass(/is-blocked/); await expect(panelRow(dialog)).toHaveClass(/is-blocked/);
   await expect(playful).toBeChecked(); await expect(playful).toBeEnabled();
   await playful.click(); await expect(playful).not.toBeChecked(); await playful.click(); await expect(playful).toBeChecked();
-  await setCompanionMotion(dialog, "walk"); await setCompanionMotion(dialog, "run");
   const before = await saved(page);
   await notes.getByRole("button", { name: "움직임 설정으로", exact: true }).click();
   const target = dialog.getByRole("switch", { name: "생동감 있는 동작 켜기/끄기", exact: true });
@@ -143,38 +146,34 @@ test("from the book, a site reason leaves the book for the full settings", async
 test("companion resting: one note, rows dimmed and still editable", async ({ page }) => {
   await seed(page, {}, { enabled: false });
   await page.goto("/visual-fixture/poster");
-  const dialog = await companionSettings(page, "움직임");
+  const dialog = await companionSettings(page, "장난");
   await expect(dialog.locator(".rhh-note-resting")).toHaveText("빅타민이 쉬는 중이라 아래 설정은 켜면 적용돼요");
-  await expect(motionRow(dialog)).toHaveClass(/is-blocked/); await expect(playfulRow(dialog)).toHaveClass(/is-blocked/);
-  await expectCompanionMotion(dialog, "run");
-  await setCompanionMotion(dialog, "still");
-  expect(await savedCompanion(page)).toMatchObject({ enabled: false, roam: false });
+  await expect(playfulRow(dialog)).toHaveClass(/is-blocked/); await expect(panelRow(dialog)).toHaveClass(/is-blocked/);
+  const playful = companionPlayfulSwitch(dialog);
+  await playful.click(); await expect(playful).not.toBeChecked();
+  expect(await savedCompanion(page)).toMatchObject({ enabled: false, heartPrank: false, panelPrank: true });
   // Resting is said once at the top; the rows under it add no reason of their own.
-  await expect(cardNote(dialog, "움직임이 '가만히'라")).toHaveCount(0);
+  await expect(cardNote(dialog, "패널을 옮기지 않아요")).toHaveCount(0);
 });
 
-test("movement is one choice of three written to the existing roam and jump fields", async ({ page }) => {
-  await seed(page, {});
+test("movement is not a setting: a stored 가만히 shows no row, dims nothing and gives no reason", async ({ page }) => {
+  await seed(page, { "vic.gfxPref": "max" }, { roam: false, jump: false });
   await page.goto("/visual-fixture/poster");
-  const dialog = await companionSettings(page, "움직임");
-  await expect(companionMotionGroup(dialog).getByRole("radio")).toHaveText(["가만히", "걷기만", "뛰어다니기"]);
-  await expect(dialog.locator('[data-act="companion-roam"],[data-act="companion-jump"]')).toHaveCount(0);
-  await expectCompanionMotion(dialog, "run");
-  await setCompanionMotion(dialog, "walk");
-  expect(await savedCompanion(page)).toMatchObject({ roam: true, jump: false });
-  // 가만히 writes only roam: the earlier jump choice is kept for an older screen.
-  await setCompanionMotion(dialog, "still");
+  const dialog = await companionSettings(page, "장난");
+  await expect(companionPlayfulSwitch(dialog)).toBeVisible();
+  await expect(dialog.getByRole("radiogroup", { name: "빅타민 움직임", exact: true })).toHaveCount(0);
+  await expect(dialog.locator('[data-settings-place="companion-roam"],[data-act="companion-motion-level"],[data-act="companion-roam"],[data-act="companion-jump"],.rhh-motion-preview,.rhh-companion-section-title')).toHaveCount(0);
+  await expect(dialog.locator(".rhh-companion-cards")).not.toContainText("가만히");
+  await expect(dialog.getByRole("button", { name: "움직임으로", exact: true })).toHaveCount(0);
+  await expect(playfulRow(dialog)).not.toHaveClass(/is-blocked/);
+  await expect(panelRow(dialog)).not.toHaveClass(/is-blocked/);
+  // The sections are named for assistive tech only.
+  expect(await dialog.locator("section.rhh-companion-section").evaluateAll(nodes => nodes.map(node => node.getAttribute("aria-label")))).toEqual(["소리", "장난"]);
+  // The stored fields are left as they were.
   expect(await savedCompanion(page)).toMatchObject({ roam: false, jump: false });
-  await setCompanionMotion(dialog, "run");
-  expect(await savedCompanion(page)).toMatchObject({ roam: true, jump: true });
-  await setCompanionMotion(dialog, "still");
-  expect(await savedCompanion(page)).toMatchObject({ roam: false, jump: true });
-  // A jump left on under 가만히 still reads as 가만히, and no new field is stored.
-  await expect(companionMotionRadio(dialog, "run")).toHaveAttribute("aria-checked", "false");
-  expect(Object.keys(await savedCompanion(page)).filter(key => /^(motion|playful)|level/i.test(key))).toEqual([]);
 });
 
-test("장난치기 writes the four prank fields at once and leaves the panel row alone", async ({ page }) => {
+test("장난치기 writes the four prank fields at once; the panel row keeps its value and rests under it", async ({ page }) => {
   await seed(page, {});
   await page.goto("/visual-fixture/poster");
   const dialog = await companionSettings(page, "장난");
@@ -184,46 +183,45 @@ test("장난치기 writes the four prank fields at once and leaves the panel row
   await expect(panel).toHaveAttribute("data-act", "companion-panel-prank");
   await expect(playful).toBeChecked(); await expect(panel).toBeChecked();
   await expect(playfulRow(dialog)).not.toHaveClass(/is-blocked/);
+  // The panel row is a sub-row of the switch: no reason while the pranks are on.
+  const off = cardNote(dialog, "'장난치기'가 꺼져 있어 패널을 옮기지 않아요");
+  await expect(panelRow(dialog)).toHaveClass(/rhh-sub-row/);
+  await expect(panelRow(dialog)).not.toHaveClass(/is-blocked/); await expect(off).toHaveCount(0);
   await playful.click(); await expect(playful).not.toBeChecked();
   expect(await savedCompanion(page)).toMatchObject({ heartPrank: false, cardPrank: false, ambientPrank: false, rarePrank: false, panelPrank: true });
-  await expect(panel).toBeChecked();
+  // With the pranks off it keeps its value, is dimmed and says why; the reason needs no link (the switch is right above).
+  await expect(panel).toBeChecked(); await expect(panel).toBeEnabled();
+  await expect(panelRow(dialog)).toHaveClass(/is-blocked/);
+  await expect(off).toHaveCount(1); await expect(off.getByRole("button")).toHaveCount(0);
+  await expect(playfulRow(dialog)).not.toHaveClass(/is-blocked/);
   // The panel row is its own choice in both directions.
   await panel.click(); await expect(panel).not.toBeChecked();
   expect(await savedCompanion(page)).toMatchObject({ heartPrank: false, cardPrank: false, ambientPrank: false, rarePrank: false, panelPrank: false });
   await playful.click(); await expect(playful).toBeChecked();
   expect(await savedCompanion(page)).toMatchObject({ heartPrank: true, cardPrank: true, ambientPrank: true, rarePrank: true, panelPrank: false });
   await expect(panel).not.toBeChecked();
+  await expect(panelRow(dialog)).not.toHaveClass(/is-blocked/); await expect(off).toHaveCount(0);
 });
 
-test("가만히: 장난치기 is dimmed, says why, and its link shows the movement row without changing it", async ({ page }) => {
-  await seed(page, { "vic.gfxPref": "max" }, { roam: false });
+test("a row says what it does on hover, and its control carries the same words", async ({ page }) => {
+  await seed(page, {});
   await page.goto("/visual-fixture/poster");
   const dialog = await companionSettings(page, "장난");
-  await expectCompanionMotion(dialog, "still");
-  await expect(motionRow(dialog)).not.toHaveClass(/is-blocked/);
-  await expect(playfulRow(dialog)).toHaveClass(/is-blocked/);
-  await expect(panelRow(dialog)).toHaveClass(/is-blocked/);
-  const note = cardNote(dialog, "움직임이 '가만히'라 장난을 치지 않아요");
-  await expect(note).toHaveCount(1);
-  await expect(cardNote(dialog, "움직임이 '가만히'라 패널을 옮기지 않아요")).toHaveCount(1);
-  await expect(dialog.locator(".rhh-companion-radio")).toContainText("움직임이 '가만히'라 스스로 라디오를 틀지 않아요");
-  // Dimmed, not disabled: the value still changes and is kept for later.
-  const playful = companionPlayfulSwitch(dialog);
-  await expect(playful).toBeChecked(); await expect(playful).toBeEnabled();
-  await playful.click(); await expect(playful).not.toBeChecked(); await playful.click(); await expect(playful).toBeChecked();
-  const before = await saved(page);
-  await expect(motionRow(dialog)).not.toHaveAttribute("data-flash", "");
-  await note.getByRole("button", { name: "움직임으로", exact: true }).click();
-  await expect(motionRow(dialog)).toHaveAttribute("data-flash", "");
-  await expect(motionRow(dialog)).toBeInViewport();
-  await expect(companionMotionRadio(dialog, "still")).toBeFocused();
-  await expectCompanionMotion(dialog, "still");
-  expect(await saved(page)).toEqual(before);
-  // Moving again lifts the reason from every row it stopped.
-  await setCompanionMotion(dialog, "walk");
-  await expect(cardNote(dialog, "움직임이 '가만히'라")).toHaveCount(0);
-  await expect(playfulRow(dialog)).not.toHaveClass(/is-blocked/);
-  await expect(panelRow(dialog)).not.toHaveClass(/is-blocked/);
+  const row = playfulRow(dialog), shown = () => row.evaluate(node => getComputedStyle(node, "::before").opacity);
+  const hint = await row.getAttribute("data-tip");
+  expect(hint).toContain("일정과 하트 수는 바뀌지 않아요");
+  await expect(companionPlayfulSwitch(dialog)).toHaveAttribute("aria-description", hint!);
+  expect(await row.evaluate(node => getComputedStyle(node, "::before").content)).toContain("일정과 하트 수는 바뀌지 않아요");
+  await page.mouse.move(2, 2);
+  await expect.poll(shown).toBe("0");
+  await row.hover();
+  await expect.poll(shown).toBe("1");
+  // Keyboard focus on the control shows it too.
+  await page.mouse.move(2, 2);
+  await expect.poll(shown).toBe("0");
+  await companionPlayfulSwitch(dialog).focus(); await page.keyboard.press("Shift+Tab"); await page.keyboard.press("Tab");
+  await expect(companionPlayfulSwitch(dialog)).toBeFocused();
+  await expect.poll(shown).toBe("1");
 });
 
 test("background effect off: 장난치기 says what rests but is not dimmed; the panel row is", async ({ page }) => {
@@ -235,7 +233,6 @@ test("background effect off: 장난치기 says what rests but is not dimmed; the
   await expect(note).toHaveCount(1);
   await expect(note.getByRole("button", { name: "배경 설정으로", exact: true })).toBeVisible();
   await expect(playfulRow(dialog)).not.toHaveClass(/is-blocked/);
-  await expect(motionRow(dialog)).not.toHaveClass(/is-blocked/);
   await expect(cardNote(dialog, "배경 효과가 꺼져 있어 패널을 옮기지 않아요")).toHaveCount(1);
   await expect(panelRow(dialog)).toHaveClass(/is-blocked/);
 });
@@ -249,9 +246,11 @@ test("a legacy prank mix reads as 장난치기 off and is stored untouched until
   const mix = { heartPrank: false, cardPrank: true, ambientPrank: true, rarePrank: true, panelPrank: true };
   expect(await savedCompanion(page)).toMatchObject(mix);
   // Another row on the page does not rewrite the mix.
-  await setCompanionMotion(dialog, "walk");
-  expect(await savedCompanion(page)).toMatchObject({ ...mix, roam: true, jump: false });
+  await dialog.getByRole("radiogroup", { name: "빅타민 소리", exact: true }).getByRole("radio", { name: "만질 때만", exact: true }).click();
+  expect(await savedCompanion(page)).toMatchObject(mix);
   await expect(playful).not.toBeChecked();
+  // The panel prank follows the switch as it reads: off as a whole, so the panel row rests.
+  await expect(panelRow(dialog)).toHaveClass(/is-blocked/);
   await playful.click(); await expect(playful).toBeChecked();
   expect(await savedCompanion(page)).toMatchObject({ heartPrank: true, cardPrank: true, ambientPrank: true, rarePrank: true, panelPrank: true });
   await playful.click(); await expect(playful).not.toBeChecked();

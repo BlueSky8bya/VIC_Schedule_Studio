@@ -1,19 +1,30 @@
 "use client";
 
-import { ArrowDownToLine, EyeOff, Footprints, Gauge, Grab, Heart, Leaf, Pointer, Sparkles, Volume1, Volume2, VolumeX } from "lucide-react";
-import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { ArrowDownToLine, EyeOff, Gauge, Grab, Heart, Leaf, Pointer, Sparkles, Volume1, Volume2, VolumeX } from "lucide-react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { RowLabel, SettingsNote, SettingsSegment, Switch, flashSettingsPlace } from "@/components/shared/settings-controls";
 import { COMPANION_SETTINGS_PLACE_LABELS, companionRowBlock, companionSoundStatus, type CompanionBlockedRow, type CompanionSettingsNote, type CompanionSettingsPlace, type CompanionSiteGates } from "@/lib/ui/viewer-companion/settings-status";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
-import { COMPANION_SOUND_AUDITIONS, COMPANION_SOUND_NAMES, auditionCompanionSound, companionSoundAllowed, previewCompanionSoundLevel, previewCompanionSoundVolume, type CompanionSoundMoment } from "@/lib/ui/viewer-companion/companion-sound";
-import { companionMotionLevel, companionMotionLevelPatch, companionPlayful, companionPlayfulPatch, companionSoundLevel, companionSoundLevelPatch, type CompanionMotionLevel, type CompanionSoundLevel } from "@/lib/ui/viewer-companion/settings-levels";
+import { COMPANION_SOUND_AUDITIONS, COMPANION_SOUND_HINTS, COMPANION_SOUND_NAMES, auditionCompanionSound, companionSoundAllowed, previewCompanionSoundLevel, previewCompanionSoundVolume, type CompanionSoundMoment } from "@/lib/ui/viewer-companion/companion-sound";
+import { companionPlayful, companionPlayfulPatch, companionSoundLevel, companionSoundLevelPatch, type CompanionSoundLevel } from "@/lib/ui/viewer-companion/settings-levels";
 import { logActivity } from "@/lib/activity/client";
-import { CompanionWardrobePreview } from "./companion-wardrobe-preview";
-import { COMPANION_PREVIEW_WALK } from "@/lib/ui/viewer-companion/wardrobe-preview";
 
-/** What the small preview does for each movement level (redesign stage 5). */
-export const COMPANION_MOTION_PREVIEWS: Readonly<Record<CompanionMotionLevel, readonly string[]>> = Object.freeze({ still: [], walk: [COMPANION_PREVIEW_WALK], run: [COMPANION_PREVIEW_WALK, "pounce"] });
-const motionPreviewNotes: Readonly<Record<CompanionMotionLevel, string>> = Object.freeze({ still: "제자리에 가만히 있어요. 부르면 집으로 와요.", walk: "걸어서 돌아다녀요. 뛰어오르지는 않아요.", run: "걷다가 뛰어오르기도 해요." });
+/** What each row does, in one or two short sentences. Shown when the row is
+ * hovered or its control has keyboard focus, and given to the control as its
+ * spoken description. */
+export const COMPANION_SETTING_HINTS = Object.freeze({
+  sound: "'만질 때만'은 내가 쓰다듬거나 집을 때만 소리가 나요. '전부'는 빅타민이 혼자 놀다 내는 소리까지 나요.",
+  playful: "가끔 일정 카드 뒤에 숨고, 하트 옆에 보라 하트를 놓고, 장난감을 꺼내 어지르거나 소품 묘기를 부려요. 일정과 하트 수는 바뀌지 않아요.",
+  panelPrank: "장난의 하나예요. 옆 패널을 7초쯤 반대쪽으로 옮겼다가 돌려놔요. 화면이 움직이는 게 싫으면 이것만 꺼 두세요.",
+  speed: "걷는 빠르기예요. 쉬는 길이와 뛰는 높이도 함께 바뀌어요.",
+  sleep: "가만히 두면 스스로 졸거나 낮잠을 자요. 끄면 자지 않아요.",
+  activeWhileVisible: "이 화면을 띄워 둔 채 다른 창에서 일할 때도 계속 놀아요. 끄면 이 창을 쓸 때만 놀아요.",
+  drag: "마우스로 집어서 다른 곳에 놓을 수 있어요. 실수로 집히는 게 싫으면 꺼 두세요.",
+  petting: "빅타민 위에서 문지르거나 톡 치면 좋아해요.",
+  feeding: "집에 밥통과 쓰레기통이 생겨 음식을 줄 수 있어요. 끄면 스스로 먹지도 않아요.",
+} as const);
+/** Whether "더 보기" is open. Kept for this page load only: reopening the settings finds it as it was left, a reload folds it again. Nothing is stored. */
+let moreOpen = false;
 
 type CompanionToggle = "activeWhileVisible" | "sleep" | "panelPrank" | "drag" | "petting" | "feeding";
 const companionToggleActions: Record<CompanionToggle, string> = {
@@ -27,7 +38,6 @@ export type CompanionPlaceRequest = Readonly<{ place: CompanionSettingsPlace; n:
  * A row that an outer setting keeps from working stays operable with its value;
  * it is dimmed and says which setting is in the way (stage 1, proposal 3-4). */
 export function CompanionBehaviorSettings({ preferences, onChange, site, onGoTo, placeRequest, active, radio }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; site: CompanionSiteGates; onGoTo: (place: CompanionSettingsPlace) => void; placeRequest?: CompanionPlaceRequest; active: boolean; radio: ReactNode }) {
-  const id = useId();
   const root = useRef<HTMLDivElement>(null);
   // A place inside this page is reached here; any other place belongs to the host.
   const [localPlace, setLocalPlace] = useState<CompanionPlaceRequest>({ place: "companion-power", n: 0 }), servedPlace = useRef(""), hostPlace = useRef(placeRequest?.n ?? 0);
@@ -50,19 +60,19 @@ export function CompanionBehaviorSettings({ preferences, onChange, site, onGoTo,
   const note = (value: CompanionSettingsNote | null) => value && !off ? <SettingsNote onGoTo={place => goTo(place as CompanionSettingsPlace)} place={value.place} placeLabel={value.place && COMPANION_SETTINGS_PLACE_LABELS[value.place]} text={value.text} /> : null;
   // A stopped row is dimmed and says why right under it; a row an outer setting only partly rests keeps its look.
   const stopped = (reason: CompanionSettingsNote | null) => off || Boolean(reason && !reason.partial);
-  const row = (key: CompanionToggle, label: string, icon: ReactNode, blockedRow?: CompanionBlockedRow) => {
+  const row = (key: CompanionToggle, label: string, icon: ReactNode, blockedRow?: CompanionBlockedRow, className = "") => {
     const reason = blockedRow ? block(blockedRow) : null;
     return <>
-      <div className={`role-help-haptics${stopped(reason) ? " is-blocked" : ""}`}>
+      <div className={`role-help-haptics${className}${stopped(reason) ? " is-blocked" : ""}`} data-tip={COMPANION_SETTING_HINTS[key]}>
         <RowLabel icon={icon} tone="leaf">{label}</RowLabel>
-        <Switch dataAct={companionToggleActions[key]} dataActOpt={preferences[key] ? "off" : "on"} label={`빅타민 ${label} 켜기/끄기`} on={preferences[key]} onToggle={() => onChange({ [key]: !preferences[key] })} />
+        <Switch dataAct={companionToggleActions[key]} dataActOpt={preferences[key] ? "off" : "on"} description={COMPANION_SETTING_HINTS[key]} label={`빅타민 ${label} 켜기/끄기`} on={preferences[key]} onToggle={() => onChange({ [key]: !preferences[key] })} />
       </div>
       {note(reason)}
     </>;
   };
-  // Movement is one choice of three and the four pranks one switch (stage 4); both are read from and written to the existing fields.
-  const motionLevel = companionMotionLevel(preferences), playful = companionPlayful(preferences);
-  const motionBlock = block("motion"), playfulBlock = block("playful");
+  // The four pranks are one switch, read from and written to the existing fields. Movement is not a setting: it is always free.
+  const playful = companionPlayful(preferences), playfulBlock = block("playful");
+  const [more, setMore] = useState(moreOpen);
   const soundStatus = companionSoundStatus(preferences, site), soundLevel = companionSoundLevel(preferences);
   const chooseSoundLevel = (level: CompanionSoundLevel) => { const patch = companionSoundLevelPatch(level, preferences); onChange(patch); previewCompanionSoundLevel(level, { ...preferences, ...patch }); };
   // Setting the volume lets the current level be heard at that volume; off stays silent.
@@ -72,60 +82,45 @@ export function CompanionBehaviorSettings({ preferences, onChange, site, onGoTo,
   const siteSilent = !site.soundOn || site.soundVolume <= 0;
   return <div className="rhh-companion-settings rhh-companion-cards" ref={root}>
     {off ? <SettingsNote className="rhh-note-resting" text="빅타민이 쉬는 중이라 아래 설정은 켜면 적용돼요" /> : null}
-    <section aria-labelledby={`${id}-sound-title`} className="rhh-companion-section">
-      <h3 className="rhh-companion-section-title" id={`${id}-sound-title`}>소리</h3>
-      <div aria-live="polite" className="rhh-sound-status-slot"><SettingsNote className="rhh-sound-status" onGoTo={place => goTo(place as CompanionSettingsPlace)} place={soundStatus.place} placeLabel={soundStatus.place && COMPANION_SETTINGS_PLACE_LABELS[soundStatus.place]} state={soundStatus.state} text={soundStatus.text} /></div>
+    <section aria-label="소리" className="rhh-companion-section">
       <div className="rhh-group-card rhh-companion-sound">
-        {/* One choice instead of a master switch and three groups (redesign 2-나). Choosing a level plays what that level sounds like, once. */}
-        <div className={`role-help-haptics rhh-stack-sm rhh-companion-choice-row${off ? " is-blocked" : ""}`} data-settings-place="companion-sound">
+        {/* One choice instead of a master switch and three groups (redesign 2-나). Choosing a level plays what that level sounds like, once.
+            Whether a sound can be heard right now is said on the same line, to the right of the name. */}
+        <div className={`role-help-haptics rhh-companion-choice-row rhh-companion-sound-row${off ? " is-blocked" : ""}`} data-settings-place="companion-sound" data-tip={COMPANION_SETTING_HINTS.sound}>
           <RowLabel icon={<Volume2 size={15} />} tone="water">빅타민 소리</RowLabel>
-          <SettingsSegment<CompanionSoundLevel> ariaLabel="빅타민 소리" columns={3} dataAct="companion-sound-level" onChange={chooseSoundLevel} onReselect={chooseSoundLevel} options={[{ value: "off", label: "끔" }, { value: "touch", label: "만질 때만" }, { value: "all", label: "전부" }]} value={soundLevel} />
+          <div aria-live="polite" className="rhh-sound-status-slot"><SettingsNote className="rhh-sound-status" onGoTo={place => goTo(place as CompanionSettingsPlace)} place={soundStatus.place} placeLabel={soundStatus.place && COMPANION_SETTINGS_PLACE_LABELS[soundStatus.place]} state={soundStatus.state} text={soundStatus.text} /></div>
+          <SettingsSegment<CompanionSoundLevel> ariaLabel="빅타민 소리" columns={3} dataAct="companion-sound-level" description={COMPANION_SETTING_HINTS.sound} onChange={chooseSoundLevel} onReselect={chooseSoundLevel} options={[{ value: "off", label: "끔" }, { value: "touch", label: "만질 때만" }, { value: "all", label: "전부" }]} value={soundLevel} />
         </div>
         <div className={`role-help-haptics rhh-stack-sm${off || !preferences.sound || !preferences.soundCare ? " is-blocked" : ""}`}><RowLabel icon={<Volume1 size={15} />} tone="water">빅타민 음량</RowLabel><div className="rhh-volume"><VolumeX aria-hidden="true" size={15} /><input aria-label="빅타민 음량" aria-valuetext={`${preferences.soundVolume}%`} data-act="companion-sound-volume" data-sfx="off" max={100} min={0} onChange={event => onChange({ soundVolume: Number(event.currentTarget.value) })} onKeyUp={event => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) auditionVolume(Number(event.currentTarget.value)); }} onPointerUp={event => auditionVolume(Number(event.currentTarget.value))} step={5} style={{ "--vol": `${preferences.soundVolume}%` } as CSSProperties} type="range" value={preferences.soundVolume} /><Volume2 aria-hidden="true" size={15} /><b className="rhh-vol-num">{preferences.soundVolume}</b></div></div>
         <details className="rhh-sound-auditions">
           <summary data-act="companion-sound-audition-fold" data-activity-manual="" onClick={event => logActivity("ui.click", { target: event.currentTarget.closest("details")?.open ? "companion-sound-audition-fold#close" : "companion-sound-audition-fold#open" })}>소리 들어 보기</summary>
+          {/* One even grid. A sound only the companion makes by itself carries a dot: it is heard at "전부" only. */}
           <div className="rhh-sound-board">
-            {COMPANION_SOUND_AUDITIONS.map(group => <div className="rhh-sound-group" key={group.label}>
-              <span className="rhh-font-group-label">{group.label}</span>
-              <div className="rhh-sound-tiles">
-                {group.moments.map(moment => <button className={`rhh-sound-tile${auditioned === moment ? " playing" : ""}`} data-act="companion-sound-audition" data-act-opt={moment} data-sfx="off" disabled={siteSilent || !companionSoundAllowed(preferences, group.origin, site)} key={moment} onAnimationEnd={() => setAuditioned(current => current === moment ? null : current)} onClick={() => { if (!auditionCompanionSound(moment, preferences)) return; setAuditioned(null); requestAnimationFrame(() => setAuditioned(moment)); }} type="button"><span className="rhh-sound-label">{COMPANION_SOUND_NAMES[moment]}</span></button>)}
-              </div>
-            </div>)}
+            {COMPANION_SOUND_AUDITIONS.flatMap(group => group.moments.map(moment => <button aria-description={COMPANION_SOUND_HINTS[moment]} className={`rhh-sound-tile${auditioned === moment ? " playing" : ""}`} data-act="companion-sound-audition" data-act-opt={moment} data-own={group.origin === "auto" ? "" : undefined} data-sfx="off" data-tip={COMPANION_SOUND_HINTS[moment]} disabled={siteSilent || !companionSoundAllowed(preferences, group.origin, site)} key={moment} onAnimationEnd={() => setAuditioned(current => current === moment ? null : current)} onClick={() => { if (!auditionCompanionSound(moment, preferences)) return; setAuditioned(null); requestAnimationFrame(() => setAuditioned(moment)); }} type="button"><span className="rhh-sound-label">{COMPANION_SOUND_NAMES[moment]}</span></button>))}
           </div>
-          <p className="rhh-group-foot">{"같은 소리라도 내가 만져서 나면 '만질 때' 소리, 빅타민이 혼자 내면 '혼자 놀 때' 소리예요. 다른 탭을 볼 때는 쉬어요."}</p>
+          <p className="rhh-group-foot"><i aria-hidden="true" className="rhh-sound-own-dot" />{"점이 있는 소리는 빅타민이 혼자 내는 소리라, 빅타민 소리가 '전부'일 때만 나요."}</p>
         </details>
       </div>
       {active && radio}
     </section>
-    <section aria-labelledby={`${id}-motion-title`} className="rhh-companion-section">
-      <h3 className="rhh-companion-section-title" id={`${id}-motion-title`}>움직임과 장난</h3>
+    <section aria-label="장난" className="rhh-companion-section">
       <div className="rhh-group-card">
-        <div className={`role-help-haptics rhh-stack-sm rhh-companion-choice-row${stopped(motionBlock) ? " is-blocked" : ""}`} data-settings-place="companion-roam">
-          <RowLabel icon={<Footprints size={15} />} tone="leaf">움직임</RowLabel>
-          <div className="rhh-motion-preview" data-motion-preview={motionLevel}>
-            <div aria-hidden="true" className="rhh-motion-preview-art">{active && <CompanionWardrobePreview accessory={null} behaviors={COMPANION_MOTION_PREVIEWS[motionLevel]} enabled={preferences.enabled && !motionBlock} interactive={false} />}</div>
-            <p>{motionPreviewNotes[motionLevel]}</p>
-          </div>
-          <SettingsSegment<CompanionMotionLevel> ariaLabel="빅타민 움직임" columns={3} dataAct="companion-motion-level" onChange={level => onChange(companionMotionLevelPatch(level))} options={[{ value: "still", label: "가만히" }, { value: "walk", label: "걷기만" }, { value: "run", label: "뛰어다니기" }]} value={motionLevel} />
-        </div>
-        {note(motionBlock)}
-      </div>
-      <div className="rhh-group-card">
-        <div className={`role-help-haptics${stopped(playfulBlock) ? " is-blocked" : ""}`}>
+        <div className={`role-help-haptics${stopped(playfulBlock) ? " is-blocked" : ""}`} data-tip={COMPANION_SETTING_HINTS.playful}>
           <RowLabel icon={<Sparkles size={15} />} tone="leaf">장난치기</RowLabel>
-          <Switch dataAct="companion-playful" dataActOpt={playful ? "off" : "on"} label="빅타민 장난치기 켜기/끄기" on={playful} onToggle={() => onChange(companionPlayfulPatch(!playful))} />
+          <Switch dataAct="companion-playful" dataActOpt={playful ? "off" : "on"} description={COMPANION_SETTING_HINTS.playful} label="빅타민 장난치기 켜기/끄기" on={playful} onToggle={() => onChange(companionPlayfulPatch(!playful))} />
         </div>
         {note(playfulBlock)}
-        {row("panelPrank", "패널 자리 옮기기", <ArrowDownToLine size={15} />, "panelPrank")}
+        {/* One of the pranks, kept as its own choice under the switch: it is the only prank that moves the screen. */}
+        {row("panelPrank", "패널 자리 옮기기", <ArrowDownToLine size={15} />, "panelPrank", " rhh-sub-row")}
       </div>
     </section>
-    {/* Rarely changed, each still its own choice. Folded on every opening: remembering it would need a new stored value. */}
-    <details className="rhh-companion-more">
-      <summary data-act="companion-settings-more" data-activity-manual="" onClick={event => logActivity("ui.click", { target: event.currentTarget.closest("details")?.open ? "companion-settings-more#close" : "companion-settings-more#open" })}>더 보기 <span>걸음 · 잠 · 다른 창 · 집어 옮기기 · 쓰다듬기 · 밥주기</span></summary>
+    {/* Rarely changed, each still its own choice. How it was left is remembered until the page is reloaded; nothing is stored. */}
+    <details className="rhh-companion-more" onToggle={event => { moreOpen = event.currentTarget.open; setMore(moreOpen); }} open={more}>
+      <summary data-act="companion-settings-more" data-activity-manual="" onClick={event => logActivity("ui.click", { target: event.currentTarget.closest("details")?.open ? "companion-settings-more#close" : "companion-settings-more#open" })}>더 보기</summary>
       <div className="rhh-group-card">
-        <div className={`role-help-haptics rhh-stack-sm${off ? " is-blocked" : ""}`}>
+        <div className={`role-help-haptics rhh-stack-sm${off ? " is-blocked" : ""}`} data-tip={COMPANION_SETTING_HINTS.speed}>
           <RowLabel icon={<Gauge size={15} />} tone="leaf">걸음</RowLabel>
-          <SettingsSegment ariaLabel="빅타민 걸음" dataAct="companion-speed" onChange={speed => onChange({ speed })} options={[{ value: "relaxed", label: "느긋하게" }, { value: "normal", label: "보통" }, { value: "lively", label: "발랄하게" }]} value={preferences.speed} />
+          <SettingsSegment ariaLabel="빅타민 걸음" dataAct="companion-speed" description={COMPANION_SETTING_HINTS.speed} onChange={speed => onChange({ speed })} options={[{ value: "relaxed", label: "느긋하게" }, { value: "normal", label: "보통" }, { value: "lively", label: "발랄하게" }]} value={preferences.speed} />
         </div>
         {row("sleep", "자동 잠자기", <EyeOff size={15} />)}
         {row("activeWhileVisible", "다른 창 쓸 때도 놀기", <Pointer size={15} />)}

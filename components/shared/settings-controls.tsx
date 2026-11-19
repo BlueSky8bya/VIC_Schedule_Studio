@@ -12,7 +12,8 @@ export function SettingsSegment<T extends string | number>({
   onReselect,
   ariaLabel,
   dataAct,
-  columns
+  columns,
+  description
 }: {
   value: T;
   /** opt = 기록용 값 이름(숫자 값은 자릿수가 접혀 #로 뭉치므로 이름을 따로 준다). */
@@ -24,6 +25,8 @@ export function SettingsSegment<T extends string | number>({
   dataAct: string;
   /** A bounded multi-row choice keeps the same control and moving thumb. */
   columns?: number;
+  /** Spoken explanation; the same words as the row's hover hint. */
+  description?: string;
 }) {
   const columnCount = Math.max(1, Math.min(options.length, Number.isFinite(columns) ? Math.floor(columns!) : options.length));
   const rows = Math.max(1, Math.ceil(options.length / columnCount)), selected = Math.max(0, options.findIndex(option => option.value === value));
@@ -44,6 +47,7 @@ export function SettingsSegment<T extends string | number>({
   };
   return (
     <div
+      aria-description={description}
       aria-label={ariaLabel}
       className="rhh-seg"
       data-act={dataAct}
@@ -96,10 +100,11 @@ export function RowLabel({ icon, tone, children }: { icon: ReactNode; tone: "wat
   );
 }
 
-export function Switch({ on, onToggle, label, dataAct, dataActOpt }: { on: boolean; onToggle: () => void; label: string; dataAct: string; dataActOpt?: string }) {
+export function Switch({ on, onToggle, label, dataAct, dataActOpt, description }: { on: boolean; onToggle: () => void; label: string; dataAct: string; dataActOpt?: string; description?: string }) {
   return (
     <button
       aria-checked={on}
+      aria-description={description}
       aria-label={label}
       className={`rhh-switch ${on ? "on" : ""}`}
       data-act={dataAct}

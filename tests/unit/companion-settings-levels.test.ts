@@ -1,15 +1,16 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { companionPettingResponse } from "@/lib/ui/viewer-companion/petting";
 import { COMPANION_PERSONALITIES, DEFAULT_COMPANION_PREFERENCES, normalizeCompanionPreferences, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import {
-  COMPANION_MOTION_LEVELS, COMPANION_SOUND_LEVELS, companionBehaviorPreferences, companionMotionLevel, companionMotionLevelPatch, companionPlayful, companionPlayfulPatch,
-  companionSoundLevel, companionSoundLevelPatch, type CompanionMotionLevel, type CompanionSoundLevel,
+  COMPANION_SOUND_LEVELS, companionBehaviorPreferences, companionPlayful, companionPlayfulPatch, companionQaStoredMotion,
+  companionSoundLevel, companionSoundLevelPatch, type CompanionSoundLevel,
 } from "@/lib/ui/viewer-companion/settings-levels";
 
 // Redesign stage 0 (docs/ux/companion-settings-redesign-proposal.md 5-1): the
-// read/write rules as pure functions. Sound is live since stage 2-나, movement and pranks since stage 4.
+// read/write rules as pure functions. Sound is live since stage 2-나, pranks since stage 4.
+// Movement stopped being a setting on 2026-11-19 (owner): the companion always walks and jumps.
 const bools = [false, true] as const;
 const known = new Set(Object.keys(DEFAULT_COMPANION_PREFERENCES));
 const apply = (base: CompanionPreferences, patch: Partial<CompanionPreferences>) => normalizeCompanionPreferences({ ...base, ...patch }, base);
@@ -69,28 +70,6 @@ describe("companion sound level", () => {
   });
 });
 
-describe("companion motion level", () => {
-  it("reads the 4 legacy states", () => {
-    expect(motionStates.map(state => [state.roam, state.jump, companionMotionLevel(state)])).toEqual([
-      [false, false, "still"], [false, true, "still"], [true, false, "walk"], [true, true, "run"],
-    ]);
-  });
-
-  it("reads back the chosen level from every state (12 cases)", () => {
-    let cases = 0;
-    for (const state of motionStates) for (const level of COMPANION_MOTION_LEVELS) {
-      expect(companionMotionLevel(apply(state, companionMotionLevelPatch(level)))).toBe(level);
-      cases += 1;
-    }
-    expect(cases).toBe(12);
-  });
-
-  it("writes exactly the documented fields", () => {
-    const patches: Record<CompanionMotionLevel, unknown> = { still: companionMotionLevelPatch("still"), walk: companionMotionLevelPatch("walk"), run: companionMotionLevelPatch("run") };
-    expect(patches).toEqual({ still: { roam: false }, walk: { roam: true, jump: false }, run: { roam: true, jump: true } });
-  });
-});
-
 describe("companion playful switch", () => {
   it("is on only when all four pranks are on (16 states)", () => {
     expect(playfulStates).toHaveLength(16);
@@ -115,13 +94,24 @@ describe("companion playful switch", () => {
 
 // Stage 4: the runtime acts on the same reading as the screen, so mixes that show as one choice behave as one.
 describe("companion behaviour follows the shown choice", () => {
-  it("movement: the 4 stored mixes act as 3 levels, and every chosen level acts as itself (12 cases)", () => {
-    const acts = (state: CompanionPreferences) => { const { roam, jump } = companionBehaviorPreferences(state); return { roam, jump }; };
-    const byLevel: Record<CompanionMotionLevel, { roam: boolean; jump: boolean }> = { still: { roam: false, jump: false }, walk: { roam: true, jump: false }, run: { roam: true, jump: true } };
-    for (const state of motionStates) {
-      expect(acts(state), `${state.roam}/${state.jump}`).toEqual(byLevel[companionMotionLevel(state)]);
-      for (const level of COMPANION_MOTION_LEVELS) expect(acts(apply(state, companionMotionLevelPatch(level))), `${state.roam}/${state.jump} -> ${level}`).toEqual(byLevel[level]);
-    }
+  const moves = (state: CompanionPreferences, storedMotion?: boolean) => { const { roam, jump } = companionBehaviorPreferences(state, storedMotion); return [roam, jump]; };
+  it("movement: always free, whichever of the 4 mixes an older screen stored", () => {
+    expect(motionStates).toHaveLength(4);
+    for (const state of motionStates) expect(moves(state), `${state.roam}/${state.jump}`).toEqual([true, true]);
+  });
+  it("movement: only the screen checks' flag keeps the stored reading", () => {
+    expect(motionStates.map(state => moves(state, true))).toEqual([[false, false], [false, false], [true, false], [true, true]]);
+    for (const state of motionStates) expect(moves(state, false)).toEqual([true, true]);
+  });
+  it("the flag is one fixed local key that is read, never written", () => {
+    const seen: string[] = [], fake = (value: string | null) => ({ localStorage: { getItem: (key: string) => { seen.push(key); return value; } } });
+    expect(companionQaStoredMotion()).toBe(false); // no window here
+    try {
+      vi.stubGlobal("window", fake("1")); expect(companionQaStoredMotion()).toBe(true);
+      for (const other of [null, "0", "true"]) { vi.stubGlobal("window", fake(other)); expect(companionQaStoredMotion(), String(other)).toBe(false); }
+      vi.stubGlobal("window", { get localStorage(): never { throw new Error("blocked"); } }); expect(companionQaStoredMotion()).toBe(false);
+    } finally { vi.unstubAllGlobals(); }
+    expect(new Set(seen)).toEqual(new Set(["vic.qa.companionStoredMotion"]));
   });
   it("pranks: the 16 stored mixes act as on or off as a whole, and every chosen value acts as itself (32 cases)", () => {
     const acts = (state: CompanionPreferences) => { const { heartPrank, cardPrank, ambientPrank, rarePrank } = companionBehaviorPreferences(state); return [heartPrank, cardPrank, ambientPrank, rarePrank]; };
@@ -131,23 +121,32 @@ describe("companion behaviour follows the shown choice", () => {
       for (const next of bools) expect(acts(apply(state, companionPlayfulPatch(next)))).toEqual([next, next, next, next]);
     }
   });
-  it("is only ever calmer than the stored mix, and leaves everything else alone", () => {
-    const keys = ["jump", "heartPrank", "cardPrank", "ambientPrank", "rarePrank"] as const;
-    for (const motion of motionStates) for (const playful of playfulStates) for (const panelPrank of bools) {
+  it("the panel move is one of the pranks: it acts only while the prank switch is on (32 cases)", () => {
+    for (const state of playfulStates) for (const panelPrank of bools)
+      expect(companionBehaviorPreferences({ ...state, panelPrank }).panelPrank, JSON.stringify(state)).toBe(panelPrank && companionPlayful(state));
+  });
+  it("pranks are only ever calmer than the stored mix, and everything else is left alone", () => {
+    const pranks = ["heartPrank", "cardPrank", "ambientPrank", "rarePrank", "panelPrank"] as const;
+    for (const motion of motionStates) for (const playful of playfulStates) for (const panelPrank of bools) for (const storedMotion of bools) {
       const state = stored({ roam: motion.roam, jump: motion.jump, heartPrank: playful.heartPrank, cardPrank: playful.cardPrank, ambientPrank: playful.ambientPrank, rarePrank: playful.rarePrank, panelPrank, soundVolume: 25, speed: "relaxed" });
-      const acted = companionBehaviorPreferences(state);
-      for (const key of keys) expect(!state[key] && acted[key], key).toBe(false);
-      const rest = (value: CompanionPreferences) => { const copy: Partial<CompanionPreferences> = { ...value }; for (const key of keys) delete copy[key]; return copy; };
+      const acted = companionBehaviorPreferences(state, storedMotion);
+      for (const key of pranks) expect(!state[key] && acted[key], key).toBe(false);
+      const rest = (value: CompanionPreferences) => { const copy: Partial<CompanionPreferences> = { ...value }; for (const key of [...pranks, "roam", "jump"] as const) delete copy[key]; return copy; };
       expect(rest(acted)).toEqual(rest(state));
     }
   });
   it("returns the same object when nothing differs and never changes the stored one", () => {
     const whole = stored({});
     expect(companionBehaviorPreferences(whole)).toBe(whole);
+    expect(companionBehaviorPreferences(whole, true)).toBe(whole);
+    const calm = stored({ ...companionPlayfulPatch(false), panelPrank: false });
+    expect(companionBehaviorPreferences(calm)).toBe(calm);
+    const still = stored({ roam: false, jump: false });
+    expect(companionBehaviorPreferences(still, true)).toBe(still);
     const mixed = Object.freeze(stored({ roam: false, jump: true, heartPrank: false }));
     const acted = companionBehaviorPreferences(mixed);
-    expect(acted).not.toBe(mixed); expect(mixed.jump).toBe(true); expect(mixed.cardPrank).toBe(true);
-    expect(acted).toMatchObject({ roam: false, jump: false, heartPrank: false, cardPrank: false, ambientPrank: false, rarePrank: false });
+    expect(acted).not.toBe(mixed); expect(mixed).toMatchObject({ roam: false, cardPrank: true, panelPrank: true });
+    expect(acted).toMatchObject({ roam: true, jump: true, heartPrank: false, cardPrank: false, ambientPrank: false, rarePrank: false, panelPrank: false });
   });
 });
 
@@ -156,28 +155,27 @@ describe("the companion acts on the read choices", () => {
   const source = readFileSync(resolve(process.cwd(), "components/poster/viewer-companion/viewer-companion.tsx"), "utf8");
   it("takes the stored choices in one place and never reads them again", () => {
     expect(source.match(/storedPreferences/g)).toHaveLength(3); // the prop, and the two in the one useMemo
-    expect(source).toContain("const preferences = useMemo(() => companionBehaviorPreferences(storedPreferences), [storedPreferences]);");
+    expect(source).toContain("const [storedMotion] = useState(companionQaStoredMotion);");
+    expect(source).toContain("const preferences = useMemo(() => companionBehaviorPreferences(storedPreferences, storedMotion), [storedPreferences, storedMotion]);");
   });
-  it("a real consumer answers the same for mixes that show as the same choice", () => {
-    // Petting is a direct interaction that reads `jump`: under "가만히" a jump left on must not change the answer.
+  it("a real consumer answers the same whatever movement an older screen stored", () => {
+    // Petting is a direct interaction that reads `jump`.
     for (const personality of COMPANION_PERSONALITIES) for (const petting of bools) {
-      const answer = (jump: boolean) => companionPettingResponse(personality, companionBehaviorPreferences(stored({ roam: false, jump, personality, petting })));
-      expect(answer(true), personality).toEqual(answer(false));
+      const answer = (roam: boolean, jump: boolean) => companionPettingResponse(personality, companionBehaviorPreferences(stored({ roam, jump, personality, petting })));
+      for (const state of motionStates) expect(answer(state.roam, state.jump), personality).toEqual(answer(true, true));
     }
   });
-  it("the settings page writes through the same patch functions and marks the movement row as its place", () => {
+  it("the settings page writes the prank switch through its patch and has no movement control", () => {
     const page = readFileSync(resolve(process.cwd(), "components/shared/companion-settings.tsx"), "utf8");
-    expect(page).toContain("onChange(companionMotionLevelPatch(level))");
     expect(page).toContain("onChange(companionPlayfulPatch(!playful))");
-    expect(page).toMatch(/data-settings-place="companion-roam">\s*<RowLabel[^\n]{0,80}>움직임<\/RowLabel>/);
-    for (const gone of ["companion-roam", "companion-jump", "companion-heart-prank", "companion-card-prank", "companion-hide", "companion-rare-prank"]) expect(page, gone).not.toContain(`dataAct="${gone}`);
+    for (const gone of ["companion-motion-level", "companion-roam", "companion-jump", "companion-heart-prank", "companion-card-prank", "companion-hide", "companion-rare-prank"]) expect(page, gone).not.toContain(gone);
+    expect(page).not.toMatch(/MotionLevel|MOTION_PREVIEWS|rhh-motion-preview|걷기만|뛰어다니기|\b(?:roam|jump)\b/);
   });
 });
 
 describe("no new stored value", () => {
   const patches: Partial<CompanionPreferences>[] = [
     ...COMPANION_SOUND_LEVELS.flatMap(level => [companionSoundLevelPatch(level, stored({})), companionSoundLevelPatch(level, stored({ soundVolume: 0 }))]),
-    ...COMPANION_MOTION_LEVELS.map(companionMotionLevelPatch),
     ...bools.map(companionPlayfulPatch),
   ];
 
@@ -196,7 +194,6 @@ describe("no new stored value", () => {
     const base = stored({ enabled: false, sleep: false, drag: false, speed: "relaxed", animalMode: "cat", personality: "tidy", panelPrank: false, learnFromYou: false });
     const groups: [Partial<CompanionPreferences>, (keyof CompanionPreferences)[]][] = [
       [companionSoundLevelPatch("all", stored({ soundVolume: 0 })), ["sound", "soundVolume", "soundCare", "soundMotion", "soundKeepsakes"]],
-      [companionMotionLevelPatch("run"), ["roam", "jump"]],
       [companionPlayfulPatch(false), ["heartPrank", "cardPrank", "ambientPrank", "rarePrank"]],
     ];
     for (const [patch, own] of groups) {

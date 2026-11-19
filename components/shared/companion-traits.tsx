@@ -20,7 +20,7 @@ const CompanionWardrobePreview = dynamic(() => import("./companion-wardrobe-prev
  * choices as the companion acts on them, so a preview never shows what it would not do. */
 export function companionPersonalityPreview(preferences: Readonly<CompanionPreferences>): string {
   const acts = companionBehaviorPreferences(preferences);
-  return { performer: "cheer-rehearsal", curious: acts.jump ? "pounce" : "bow", affectionate: acts.petting ? "ask-petting" : "bow", sleepy: acts.sleep ? "doze-curl" : "stretch", tidy: "groom", mischievous: acts.jump ? "tumble" : "bow", gourmet: "bow", homebody: "paper-knead", balanced: "bow" }[acts.personality];
+  return { performer: "cheer-rehearsal", curious: "pounce", affectionate: acts.petting ? "ask-petting" : "bow", sleepy: acts.sleep ? "doze-curl" : "stretch", tidy: "groom", mischievous: "tumble", gourmet: "bow", homebody: "paper-knead", balanced: "bow" }[acts.personality];
 }
 
 // Look, character and learning: the controls that sit on the "함께 지내기" page

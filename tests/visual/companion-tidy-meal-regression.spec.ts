@@ -7,7 +7,7 @@ import { MAX_COMPANION_FOOD } from "@/lib/ui/viewer-companion/food-capacity";
 import { MAX_COMPANION_TOYS } from "@/lib/ui/viewer-companion/toys";
 import { SETTINGS_EPOCH, SETTINGS_EPOCH_KEY } from "@/lib/ui/motion";
 import { chooseCompanionPersonality, openCompanionHome } from "./helpers/companion-home";
-import { companionMotionGroup, expectCompanionMotion, setCompanionMotion } from "./helpers/companion-settings";
+import { companionPlayfulSwitch, expectCompanionMotion, setCompanionMotion } from "./helpers/companion-settings";
 import { finishCompanionQa, guardCompanionQa, startCompanionQaProbe, type DailyProof } from "./helpers/companion-qa";
 import { settlePanelLayout } from "./helpers/panel-layout";
 
@@ -33,10 +33,10 @@ async function settings(page: Page, tab: "motion" | "affection" | "personality" 
   const home = await openCompanionHome(page); await exposed(home.getByRole("button", { name: "빅타민 수첩 열기", exact: true }));
   const dialog = page.getByRole("dialog", { name: "빅타민 수첩", exact: true });
   // stage 3: the book opens on "함께 지내기" (character) under the shared power header. The "설정" page has no
-  // sub-tabs: the movement switches are visible directly, and the 교감 rows sit in its "더 보기" fold.
+  // sub-tabs. Movement is not a setting (2026-11-19): the helpers write the stored fields. The 교감 rows sit in its "더 보기" fold.
   if (tab !== "personality") {
     await dialog.getByRole("tablist", { name: "빅타민 프로필", exact: true }).getByRole("tab", { name: "설정", exact: true }).click();
-    await expect(companionMotionGroup(dialog)).toBeVisible(); // stage 4: the movement level replaces the roam switch
+    await expect(companionPlayfulSwitch(dialog)).toBeVisible(); // the settings page is up; movement is no longer a row on it
     if (tab === "affection") await dialog.locator(".rhh-companion-more > summary").click();
   }
   return dialog;

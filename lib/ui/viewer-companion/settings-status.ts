@@ -11,17 +11,17 @@
  * Pure functions. They never change a setting.
  */
 import type { CompanionPreferences } from "./preferences";
-import { companionMotionLevel, companionPlayful, companionSoundLevel } from "./settings-levels";
+import { companionPlayful, companionSoundLevel } from "./settings-levels";
 import type { CompanionRadioPreferences } from "./radio-preferences";
 
 /** Site-wide settings that override companion rows, as the runtime reads them. */
 export type CompanionSiteGates = Readonly<{ soundOn: boolean; soundVolume: number; reduceMotion: boolean; gfx: string | undefined }>;
 /** Where the setting that is in the way lives. */
-export const COMPANION_SETTINGS_PLACES = ["site-sound", "site-motion", "site-gfx", "companion-power", "companion-roam", "companion-sound", "companion-radio"] as const;
+export const COMPANION_SETTINGS_PLACES = ["site-sound", "site-motion", "site-gfx", "companion-power", "companion-sound", "companion-radio"] as const;
 export type CompanionSettingsPlace = typeof COMPANION_SETTINGS_PLACES[number];
 export const COMPANION_SETTINGS_PLACE_LABELS: Readonly<Record<CompanionSettingsPlace, string>> = Object.freeze({
   "site-sound": "소리 설정으로", "site-motion": "움직임 설정으로", "site-gfx": "배경 설정으로",
-  "companion-power": "빅타민 켜는 곳으로", "companion-roam": "움직임으로", "companion-sound": "빅타민 소리로", "companion-radio": "집 라디오로",
+  "companion-power": "빅타민 켜는 곳으로", "companion-sound": "빅타민 소리로", "companion-radio": "집 라디오로",
 });
 /** `partial`: the row still does most of what it says; the note is shown without dimming it. */
 export type CompanionSettingsNote = Readonly<{ text: string; place?: CompanionSettingsPlace; partial?: true }>;
@@ -47,21 +47,21 @@ export function companionSoundStatus(preferences: Readonly<CompanionPreferences>
   return { state: "on", text: "지금 소리가 나요" };
 }
 
-/** Rows an outer setting can stop (stage 4: movement is one level, the four pranks one switch). */
-export type CompanionBlockedRow = "motion" | "playful" | "panelPrank" | "radioSelfStart";
+/** Rows an outer setting can stop. */
+export type CompanionBlockedRow = "playful" | "panelPrank" | "radioSelfStart";
 
 /** The outer setting that keeps this row from doing anything, if any. The
  * row's own value is not considered: a blocked row keeps its value and stays
  * operable, so the note explains why switching it changes nothing yet. */
 export function companionRowBlock(row: CompanionBlockedRow, preferences: Readonly<CompanionPreferences>, site: CompanionSiteGates): CompanionSettingsNote | null {
   if (!preferences.enabled) return resting;
-  const what = row === "radioSelfStart" ? "스스로 라디오를 틀지 않아요" : row === "motion" ? "걷거나 뛰지 않아요" : row === "panelPrank" ? "패널을 옮기지 않아요" : "장난을 치지 않아요";
+  const what = row === "radioSelfStart" ? "스스로 라디오를 틀지 않아요" : row === "panelPrank" ? "패널을 옮기지 않아요" : "장난을 치지 않아요";
   if (site.reduceMotion) return { text: `${reduceWords} ${what}`, place: "site-motion" };
   if (row === "radioSelfStart" && gfxResting(site.gfx)) return { text: `${gfxWords(site.gfx)} ${what}`, place: "site-gfx" };
   // With the background effect fully off the panel never moves (the "soft" level keeps it).
   if (row === "panelPrank" && site.gfx === "off") return { text: `${gfxWords(site.gfx)} ${what}`, place: "site-gfx" };
-  // Standing still it plays no prank and starts no radio. Called to the cushion it still comes home.
-  if (row !== "motion" && companionMotionLevel(preferences) === "still") return { text: `움직임이 '가만히'라 ${what}`, place: "companion-roam" };
+  // Moving the panel is one of the pranks: with the prank switch off it rests too. The switch is the row right above.
+  if (row === "panelPrank" && !companionPlayful(preferences)) return { text: `'장난치기'가 꺼져 있어 ${what}` };
   // The background effect rests only part of the pranks: the row keeps working, so it is not dimmed.
   // Said only while the pranks are on; with the switch off there is nothing left to rest.
   if (row === "playful" && companionPlayful(preferences) && gfxResting(site.gfx)) return { text: `${gfxWords(site.gfx)} ${site.gfx === "off" ? "소품 묘기와 일정 기울이기를 쉬어요" : "소품 묘기를 쉬어요"}`, place: "site-gfx", partial: true };

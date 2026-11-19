@@ -2512,7 +2512,6 @@ html[data-reduce-motion] .rhh-sound-tile.playing::after { content: none; }
 /* 빅타민 설정 쪽 — 하위 탭 없이 카드로(개편 3단계). 전원은 네 쪽 공통 머리줄이고 스크롤해도 붙어 있다. */
 .vic-settings .rhh-companion-profile > .rhh-companion-master { position: sticky; top: 0; z-index: 4; }
 .vic-settings .rhh-companion-section { display: grid; gap: var(--space-2, 8px); }
-.vic-settings .rhh-companion-section-title { margin: 0; padding: 6px 4px 0; color: var(--companion-soft); font-size: var(--text-label, 12.5px); font-weight: 700; letter-spacing: .02em; }
 .vic-settings .rhh-companion-cards { display: grid; gap: var(--space-3, 12px); }
 /* 접는 줄(더 보기 · 라디오) — 펼침은 저장하지 않는다. */
 .vic-settings :is(.rhh-companion-more, .rhh-radio-more) > summary { display: flex; align-items: center; gap: 8px; min-height: 44px; cursor: pointer; color: var(--companion-ink, var(--ink)); font-size: var(--text-ui, 15px); font-weight: 600; }
@@ -2535,9 +2534,74 @@ html[data-reduce-motion] .rhh-sound-tile.playing::after { content: none; }
 .vic-settings .rhh-panes .rhh-group.is-active:has(.rhh-companion-profile > .rhh-companion-master),
 .vic-settings .rhh-companion-book-pages > :first-child:has(.rhh-companion-master) { padding-top: 16px; }
 
-/* 미리 보기(개편 5단계) — 움직임을 고르면 옆의 작은 빅타민이 그 모습으로 움직인다. 성격 미리보기와 같은 그림·같은 틀. */
-.vic-settings .rhh-motion-preview { display: grid; grid-template-columns: 84px minmax(0, 1fr); align-items: center; gap: var(--space-3); min-width: 0; border: 1px solid var(--companion-line); padding: var(--space-2); border-radius: var(--r-lg); background: var(--companion-peach); }
-.vic-settings .rhh-motion-preview-art { grid-column: 1; height: 76px; }
-.vic-settings .rhh-motion-preview .rhh-wardrobe-preview-wrap { height: 76px; min-height: 0; }
-.vic-settings .rhh-motion-preview .rhh-wardrobe-preview { width: 100%; height: 100%; min-height: 0; }
-.vic-settings .rhh-motion-preview > p { grid-column: 2; margin: 0; color: var(--companion-soft); font-size: var(--text-body, 13.5px); line-height: 1.55; overflow-wrap: anywhere; }
+/* 빅타민 설정 압축(2026-11-19 소유자) — 구역 제목 없이 카드만, 줄 높이는 누름 영역 44px에 맞춘다. */
+.vic-settings .rhh-companion-cards { gap: var(--space-2, 8px); }
+.vic-settings .rhh-companion-cards .rhh-group-card .role-help-haptics { min-height: 44px; padding: 6px 0; }
+/* 소리 줄: 이름 옆 오른쪽에 '지금 소리가 나는지', 그 아래 세 칸 선택. */
+.vic-settings .rhh-companion-settings .rhh-companion-sound-row { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 6px var(--space-3, 12px); padding-block: 8px; }
+.vic-settings .rhh-companion-sound-row > .rhh-seg { grid-column: 1 / -1; }
+.vic-settings .rhh-companion-sound-row > .rhh-sound-status-slot { min-width: 0; justify-self: end; }
+.vic-settings .rhh-companion-sound-row .rhh-sound-status { justify-content: flex-end; margin: 0; background: none; padding: 0; text-align: right; font-size: var(--text-label, 12.5px); }
+/* 들어 보기 판: 열네 소리를 일곱 칸 두 줄로 고르게. 빅타민이 혼자 내는 소리는 점으로 표시한다. */
+.vic-settings .rhh-sound-auditions { padding-bottom: 8px; }
+.vic-settings .rhh-sound-auditions .rhh-sound-board { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: 0; }
+.vic-settings .rhh-sound-auditions .rhh-sound-tile { padding: 0 4px; }
+.vic-settings .rhh-sound-auditions .rhh-sound-label { overflow: visible; white-space: normal; word-break: keep-all; line-height: 1.25; }
+.vic-settings .rhh-sound-own-dot,
+.vic-settings .rhh-sound-auditions .rhh-sound-tile[data-own] .rhh-sound-label::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 5px; border-radius: 50%; background: #d19a2a; vertical-align: middle; }
+.vic-settings .rhh-sound-auditions .rhh-group-foot { padding: 6px 0 0; font-size: var(--text-label, 12.5px); }
+/* 장난의 하나인 줄은 한 칸 들여, '장난치기'에 딸린 것임을 보인다. */
+.vic-settings .rhh-companion-settings .rhh-group-card .rhh-sub-row { padding-left: 20px; }
+.vic-settings .rhh-companion-settings .rhh-group-card .rhh-sub-row + .rhh-note { padding-left: 34px; }
+/* 호버 설명 — 편집실 도구 타일(.stool[data-tip])과 같은 어두운 알약. 줄에 마우스를 올리거나 그 안의 조작이 키보드 포커스를 받으면 뜬다. */
+.vic-settings .rhh-companion-settings [data-tip] { position: relative; }
+.vic-settings .rhh-companion-settings [data-tip]::before {
+  /* 빈 대체 글: 그림으로만 보이고 버튼·줄의 이름에는 섞이지 않는다(읽어 주는 글은 aria-description이 맡는다). */
+  content: attr(data-tip);
+  content: attr(data-tip) / "";
+  position: absolute;
+  left: 0;
+  bottom: calc(100% - 2px);
+  z-index: 30;
+  width: max-content;
+  max-width: min(30em, 100%);
+  border-radius: var(--r-md, 12px);
+  background: rgb(32 28 46 / 94%);
+  padding: 7px 11px;
+  color: #fff;
+  font-size: var(--text-label, 12.5px);
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: left;
+  white-space: normal;
+  word-break: keep-all;
+  box-shadow: var(--elev-3);
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity 0.16s var(--ease), transform 0.16s var(--ease);
+}
+.vic-settings .rhh-companion-settings [data-tip]:has(:focus-visible)::before,
+.vic-settings .rhh-companion-settings [data-tip]:focus-visible::before { opacity: 1; transform: none; transition-delay: 0.35s; }
+/* 마우스가 있을 때만 호버로 띄운다 — 터치에서는 누른 뒤 설명이 붙어 남아 윗줄을 가린다. */
+@media (hover: hover) {
+  .vic-settings .rhh-companion-settings [data-tip]:hover::before { opacity: 1; transform: none; transition-delay: 0.35s; }
+  .vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]:hover::before { transform: translate(-50%, 0); }
+  .vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]:is(:nth-child(7n + 1), :nth-child(7n)):hover::before { transform: none; }
+}
+/* 타일의 설명은 타일 가운데 위에, 한 줄로. */
+.vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]::before { left: 50%; bottom: calc(100% + 6px); max-width: none; border-radius: var(--r-pill, 999px); padding: 5px 10px; white-space: nowrap; transform: translate(-50%, 4px); }
+.vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]:focus-visible::before { transform: translate(-50%, 0); }
+/* 양 끝 칸의 설명은 판 안쪽으로 붙인다 — 가운데 정렬이면 바깥 상자에 잘린다. */
+.vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]:nth-child(7n + 1)::before { left: 0; transform: translateY(4px); }
+.vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]:nth-child(7n)::before { left: auto; right: 0; transform: translateY(4px); }
+.vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]:is(:nth-child(7n + 1), :nth-child(7n)):focus-visible::before { transform: none; }
+/* 좁은 상자에서는 네 칸으로(세 글자 이름이 칸을 넘지 않게). 설명은 읽어 주는 글로만 남긴다. */
+@container rhh (max-width: 520px) {
+  .vic-settings .rhh-sound-auditions .rhh-sound-board { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]::before { content: none; }
+}
+.vic-settings .rhh-sound-auditions .rhh-sound-tile:disabled { opacity: 1; }
+.vic-settings .rhh-sound-auditions .rhh-sound-tile:disabled > .rhh-sound-label { opacity: 0.42; }
+html[data-reduce-motion] .vic-settings .rhh-companion-settings [data-tip]::before { transition: none; }
+html[data-theme="dark"] .vic-settings .rhh-companion-settings [data-tip]::before { background: rgb(240 233 216 / 96%); color: #26221a; }

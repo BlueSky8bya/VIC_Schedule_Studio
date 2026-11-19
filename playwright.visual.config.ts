@@ -41,7 +41,10 @@ export default defineConfig({
             // Chromium은 WebGL이 SwiftShader라 v3 판정이 즉시 'soft'(배경 OFF + 토큰 팔레트)로 떨어져 스냅샷이
             // 실제 GPU 기기와 달라진다.
             { name: "vic.gfx", value: JSON.stringify({ mode: "full", at: Date.now(), v: 3 }) },
-            { name: "vic.gfxPref", value: "max" }
+            { name: "vic.gfxPref", value: "max" },
+            // Movement is not a setting any more: the companion ignores a stored `roam: false`. Screen checks still
+            // need it standing still, so this key (read only by companionQaStoredMotion) keeps the stored reading.
+            { name: "vic.qa.companionStoredMotion", value: "1" }
           ]
         }
       ]

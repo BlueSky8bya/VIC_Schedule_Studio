@@ -6,17 +6,15 @@
  * control is *read* from existing fields and *written* as a patch of existing
  * fields only. Mixed legacy combinations read as the quieter / calmer level.
  *
- * Pure functions only. The sound level has been live since stage 2-나; the
- * movement level and the single prank switch since stage 4, where the runtime
- * acts on `companionBehaviorPreferences` so that two stored mixes that read as
- * the same choice also behave the same.
+ * Pure functions only. The sound level has been live since stage 2-나 and the
+ * single prank switch since stage 4. Movement is no longer a setting
+ * (2026-11-19 owner): the companion always walks and jumps freely, and the
+ * stored `roam` / `jump` fields are kept only so older screens still load.
  */
 import { DEFAULT_COMPANION_PREFERENCES, type CompanionPreferences } from "./preferences";
 
 export const COMPANION_SOUND_LEVELS = ["off", "touch", "all"] as const;
 export type CompanionSoundLevel = typeof COMPANION_SOUND_LEVELS[number];
-export const COMPANION_MOTION_LEVELS = ["still", "walk", "run"] as const;
-export type CompanionMotionLevel = typeof COMPANION_MOTION_LEVELS[number];
 
 type SoundFields = Pick<CompanionPreferences, "sound" | "soundVolume" | "soundCare" | "soundMotion" | "soundKeepsakes">;
 type MotionFields = Pick<CompanionPreferences, "roam" | "jump">;
@@ -39,18 +37,8 @@ export function companionSoundLevelPatch(level: CompanionSoundLevel, preferences
   return patch;
 }
 
-export function companionMotionLevel(preferences: Readonly<MotionFields>): CompanionMotionLevel {
-  if (!preferences.roam) return "still";
-  return preferences.jump ? "run" : "walk";
-}
-
-/** Still writes only `roam`, keeping the earlier jump choice for an older screen. */
-export function companionMotionLevelPatch(level: CompanionMotionLevel): Partial<MotionFields> {
-  if (level === "still") return { roam: false };
-  return { roam: true, jump: level === "run" };
-}
-
-/** One switch for the four pranks. The panel-seat prank stays its own row. */
+/** One switch for the four pranks. Moving the panel is one more prank with its
+ * own row under it: it only happens while this switch is on. */
 export function companionPlayful(preferences: Readonly<PlayfulFields>): boolean {
   return preferences.heartPrank && preferences.cardPrank && preferences.ambientPrank && preferences.rarePrank;
 }
@@ -59,13 +47,21 @@ export function companionPlayfulPatch(on: boolean): PlayfulFields {
   return { heartPrank: on, cardPrank: on, ambientPrank: on, rarePrank: on };
 }
 
-/** The choices the companion acts on (stage 4). The screen shows a movement
- * level and one prank switch, so behaviour follows the same reading: a jump
- * left on under "still" does nothing, and a partly-off prank mix is off as a
- * whole. Only ever calmer than the stored mix, never livelier. Stored values
- * are not touched; an unchanged mix is returned as the same object. */
-export function companionBehaviorPreferences<T extends MotionFields & PlayfulFields>(preferences: T): T {
-  const jump = preferences.roam && preferences.jump, playful = companionPlayful(preferences);
-  if (jump === preferences.jump && preferences.heartPrank === playful && preferences.cardPrank === playful && preferences.ambientPrank === playful && preferences.rarePrank === playful) return preferences;
-  return { ...preferences, jump, ...companionPlayfulPatch(playful) };
+/** Screen checks keep the companion standing still with a stored `roam: false`.
+ * No setting writes this key; only the visual test config seeds it. */
+export function companionQaStoredMotion(): boolean {
+  try { return typeof window !== "undefined" && window.localStorage.getItem("vic.qa.companionStoredMotion") === "1"; } catch { return false; }
+}
+
+/** The choices the companion acts on. It always roams and jumps: a `roam` or
+ * `jump` left off by an older screen is ignored, since no control could turn
+ * it back on (`storedMotion` is the screen-check exception above). A
+ * partly-off prank mix is off as a whole, and the panel prank follows the
+ * prank switch. Stored values are not touched; an unchanged mix is returned
+ * as the same object. */
+export function companionBehaviorPreferences<T extends MotionFields & PlayfulFields & Pick<CompanionPreferences, "panelPrank">>(preferences: T, storedMotion = false): T {
+  const roam = storedMotion ? preferences.roam : true, jump = storedMotion ? roam && preferences.jump : true;
+  const playful = companionPlayful(preferences), panelPrank = playful && preferences.panelPrank;
+  if (roam === preferences.roam && jump === preferences.jump && panelPrank === preferences.panelPrank && preferences.heartPrank === playful && preferences.cardPrank === playful && preferences.ambientPrank === playful && preferences.rarePrank === playful) return preferences;
+  return { ...preferences, roam, jump, panelPrank, ...companionPlayfulPatch(playful) };
 }

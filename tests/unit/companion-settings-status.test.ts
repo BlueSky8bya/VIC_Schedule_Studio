@@ -56,8 +56,8 @@ describe("companion sound status line (proposal 4-5)", () => {
 });
 
 describe("blocked companion rows", () => {
-  // Stage 4: movement is one level and the four pranks one switch, so the reasons are per shown row.
-  const rows: CompanionBlockedRow[] = ["motion", "playful", "panelPrank", "radioSelfStart"];
+  // The four pranks are one switch, so the reasons are per shown row. Movement is no longer a setting (2026-11-19).
+  const rows: CompanionBlockedRow[] = ["playful", "panelPrank", "radioSelfStart"];
 
   it("has no note when nothing is in the way", () => {
     for (const row of rows) expect(companionRowBlock(row, prefs(), site()), row).toBeNull();
@@ -70,7 +70,6 @@ describe("blocked companion rows", () => {
 
   it("then the site's motion switch, for every row it stops", () => {
     const blocked = (row: CompanionBlockedRow) => companionRowBlock(row, prefs({ roam: false }), site({ reduceMotion: true, gfx: "soft" }));
-    expect(blocked("motion")).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 걷거나 뛰지 않아요", place: "site-motion" });
     expect(blocked("playful")).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 장난을 치지 않아요", place: "site-motion" });
     expect(blocked("panelPrank")).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 패널을 옮기지 않아요", place: "site-motion" });
     expect(blocked("radioSelfStart")).toEqual({ text: "사이트의 '생동감 있는 동작'이 꺼져 있어 스스로 라디오를 틀지 않아요", place: "site-motion" });
@@ -84,7 +83,6 @@ describe("blocked companion rows", () => {
     // The pranks go on except the ones the effect rests: said, but the row is not dimmed.
     expect(blocked("playful")).toEqual({ text: "이 기기는 배경 효과가 '효과 쉬기'로 맞춰져 있어 소품 묘기를 쉬어요", place: "site-gfx", partial: true });
     expect(blocked("playful", "off")).toEqual({ text: "배경 효과가 꺼져 있어 소품 묘기와 일정 기울이기를 쉬어요", place: "site-gfx", partial: true });
-    for (const gfx of ["soft", "off"]) expect(blocked("motion", gfx), gfx).toBeNull();
     // With the pranks off (any one of the four stored off) there is nothing left to rest: no note.
     for (const gfx of ["soft", "off"]) for (const key of ["heartPrank", "cardPrank", "ambientPrank", "rarePrank"] as const) expect(companionRowBlock("playful", prefs({ [key]: false }), site({ gfx })), `${gfx}/${key}`).toBeNull();
   });
@@ -92,22 +90,23 @@ describe("blocked companion rows", () => {
   it("never claims the rules of earlier stages", () => {
     const bools = [false, true];
     for (const row of rows) for (const enabled of bools) for (const roam of bools) for (const jump of bools) for (const reduceMotion of bools) for (const gfx of ["full", "lite", "soft", "off"]) {
-      const text = companionRowBlock(row, prefs({ enabled, roam, jump }), site({ reduceMotion, gfx }))?.text ?? "";
-      expect(text).not.toMatch(/음악에 반응|돌아다니기|깡충/);
+      const note = companionRowBlock(row, prefs({ enabled, roam, jump }), site({ reduceMotion, gfx }));
+      expect(note?.text ?? "").not.toMatch(/음악에 반응|돌아다니기|깡충|가만히/);
+      // A stored roam / jump left off by an older screen is no reason any more: it says what the default mix says.
+      expect(note, `${row}/${roam}/${jump}`).toEqual(companionRowBlock(row, prefs({ enabled }), site({ reduceMotion, gfx })));
     }
   });
 
-  it("then standing still, for what movement carries", () => {
-    // Both stored mixes that read as "가만히" say the same.
-    for (const jump of [false, true]) {
-      const blocked = (row: CompanionBlockedRow) => companionRowBlock(row, prefs({ roam: false, jump }), site());
-      expect(blocked("motion")).toBeNull();
-      expect(blocked("playful")).toEqual({ text: "움직임이 '가만히'라 장난을 치지 않아요", place: "companion-roam" });
-      expect(blocked("panelPrank")).toEqual({ text: "움직임이 '가만히'라 패널을 옮기지 않아요", place: "companion-roam" });
-      expect(blocked("radioSelfStart")).toEqual({ text: "움직임이 '가만히'라 스스로 라디오를 틀지 않아요", place: "companion-roam" });
-    }
-    // Standing still comes before the partial background note.
-    expect(companionRowBlock("playful", prefs({ roam: false }), site({ gfx: "soft" }))?.partial).toBeUndefined();
+  it("then the prank switch, for the panel move under it", () => {
+    const note = { text: "'장난치기'가 꺼져 있어 패널을 옮기지 않아요" }; // no place: the switch is the row right above
+    for (const key of ["heartPrank", "cardPrank", "ambientPrank", "rarePrank"] as const) for (const panelPrank of [false, true]) expect(companionRowBlock("panelPrank", prefs({ [key]: false, panelPrank }), site({ gfx: "soft" })), key).toEqual(note);
+    expect(companionRowBlock("panelPrank", prefs({ panelPrank: false }), site())).toBeNull();
+    // The outer reasons still come first.
+    expect(companionRowBlock("panelPrank", prefs({ heartPrank: false }), site({ reduceMotion: true }))?.place).toBe("site-motion");
+    expect(companionRowBlock("panelPrank", prefs({ heartPrank: false }), site({ gfx: "off" }))?.place).toBe("site-gfx");
+    // The switch off stops nothing else.
+    expect(companionRowBlock("radioSelfStart", prefs({ heartPrank: false }), site())).toBeNull();
+    expect(companionRowBlock("playful", prefs({ heartPrank: false }), site())).toBeNull();
   });
 
   it("starting the radio by itself also needs the 'all' sound level", () => {
@@ -116,7 +115,7 @@ describe("blocked companion rows", () => {
     expect(blocked({ soundMotion: false })).toEqual({ text: "빅타민 소리가 '만질 때만'이라 스스로 라디오를 틀지 않아요", place: "companion-sound" });
     expect(blocked({ sound: false })).toEqual({ text: "빅타민 소리가 '끔'이라 스스로 라디오를 틀지 않아요", place: "companion-sound" });
     // An outer reason still comes first.
-    expect(companionRowBlock("radioSelfStart", prefs({ sound: false, roam: false }), site())?.place).toBe("companion-roam");
+    expect(companionRowBlock("radioSelfStart", prefs({ sound: false }), site({ gfx: "soft" }))?.place).toBe("site-gfx");
   });
 });
 
@@ -141,7 +140,10 @@ describe("go-to places", () => {
   it("have a button label and a registered activity name each", () => {
     const options = (ACT["settings-go"] as { opts?: Record<string, string> }).opts ?? {};
     for (const place of COMPANION_SETTINGS_PLACES) { expect(COMPANION_SETTINGS_PLACE_LABELS[place], place).toBeTruthy(); expect(options[place], place).toBeTruthy(); }
-    expect(Object.keys(options).sort()).toEqual([...COMPANION_SETTINGS_PLACES].sort());
+    // The movement row is gone (2026-11-19); its name stays in the dictionary only so older records still read.
+    expect(Object.keys(options).sort()).toEqual([...COMPANION_SETTINGS_PLACES, "companion-roam"].sort());
+    expect(options["companion-roam"]).toContain("옛 기록");
+    expect(ACT["companion-motion-level"]).toMatchObject({ retired: true });
     expect(ACT["companion-radio-blocked"]).toMatchObject({ area: "빅타민" });
   });
 });

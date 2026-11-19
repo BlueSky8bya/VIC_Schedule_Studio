@@ -33,7 +33,18 @@ async function open(page: Page, storage: Record<string, string> = {}, companion:
 test("all 14 sounds have a tile; each is heard as the user's or as the companion's own", async ({ page }) => {
   const { fold, tile } = await open(page);
   await expect(fold.getByRole("button")).toHaveCount(14);
-  await expect(fold.locator(".rhh-font-group-label")).toHaveText(["만질 때", "만지거나 혼자", "혼자 놀 때"]);
+  // One flat grid, no group names; only the two sounds the companion makes by itself carry the dot.
+  await expect(fold.locator(".rhh-sound-board > .rhh-sound-tile")).toHaveCount(14);
+  await expect(fold.locator(".rhh-sound-group, .rhh-font-group-label")).toHaveCount(0);
+  await expect(fold.locator(".rhh-sound-tile[data-own]")).toHaveText(["다 먹음", "넘어짐"]);
+  await expect(fold.locator(".rhh-group-foot")).toHaveText("점이 있는 소리는 빅타민이 혼자 내는 소리라, 빅타민 소리가 '전부'일 때만 나요.");
+  // Each tile says when it is heard: spoken, and shown above it on hover.
+  for (const button of await fold.getByRole("button").all()) expect(await button.getAttribute("aria-description")).toBe(await button.getAttribute("data-tip"));
+  await expect(tile("쓰다듬기")).toHaveAttribute("data-tip", "쓰다듬을 때");
+  const shown = () => tile("쓰다듬기").evaluate(node => getComputedStyle(node, "::before").opacity);
+  expect(await shown()).toBe("0");
+  await tile("쓰다듬기").hover();
+  await expect.poll(shown).toBe("1");
   await tile("쓰다듬기").click();
   await expect.poll(() => sounds(page)).toContain("pet:direct");
   await page.waitForTimeout(200); // the authored 120ms spacing between any two sounds

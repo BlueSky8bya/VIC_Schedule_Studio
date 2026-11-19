@@ -31,3 +31,6 @@ playwright-report/
 .open-next/
 .wrangler/
 .dev.vars*
+
+# second dev server for screen captures
+.next-cap/

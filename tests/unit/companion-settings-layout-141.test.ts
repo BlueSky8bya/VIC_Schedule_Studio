@@ -1,6 +1,7 @@
 import type { ReactElement, ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SettingsSegment, RowLabel } from "@/components/shared/settings-controls";
+import { SettingsSegment, RowLabel, Switch } from "@/components/shared/settings-controls";
+import { COMPANION_SOUND_HINTS, COMPANION_SOUND_MOMENTS } from "@/lib/ui/viewer-companion/companion-sound";
 import { COMPANION_PERSONALITIES, DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_PERSONALITY_LAYOUT } from "@/lib/ui/viewer-companion/personality-layout";
 import { chooseCompanionPreviewBehavior } from "@/lib/ui/viewer-companion/wardrobe-preview";
@@ -11,13 +12,13 @@ type Element = ReactElement<Record<string, unknown>>;
 let CompanionBehaviorSettings: typeof import("@/components/shared/companion-settings")["CompanionBehaviorSettings"];
 let CompanionTraitControls: typeof import("@/components/shared/companion-traits")["CompanionTraitControls"];
 let companionPersonalityPreview: typeof import("@/components/shared/companion-traits")["companionPersonalityPreview"];
-let COMPANION_MOTION_PREVIEWS: typeof import("@/components/shared/companion-settings")["COMPANION_MOTION_PREVIEWS"];
+let COMPANION_SETTING_HINTS: typeof import("@/components/shared/companion-settings")["COMPANION_SETTING_HINTS"];
 function nodes(value: ReactNode): Element[] {
   if (Array.isArray(value)) return value.flatMap(nodes);
   if (!value || typeof value !== "object" || !("props" in value)) return [];
   const element = value as Element; return [element, ...nodes(element.props.children as ReactNode)];
 }
-beforeEach(async () => { vi.stubGlobal("React", await import("react")); ({ CompanionBehaviorSettings, COMPANION_MOTION_PREVIEWS } = await import("@/components/shared/companion-settings")); ({ CompanionTraitControls, companionPersonalityPreview } = await import("@/components/shared/companion-traits")); });
+beforeEach(async () => { vi.stubGlobal("React", await import("react")); ({ CompanionBehaviorSettings, COMPANION_SETTING_HINTS } = await import("@/components/shared/companion-settings")); ({ CompanionTraitControls, companionPersonalityPreview } = await import("@/components/shared/companion-traits")); });
 afterEach(() => vi.unstubAllGlobals());
 
 describe("141 shared basic personality settings", () => {
@@ -45,25 +46,45 @@ describe("141 shared basic personality settings", () => {
   it("previews only what the character would really do with the current choices", () => {
     const preview = (overrides: Partial<typeof DEFAULT_COMPANION_PREFERENCES>) => companionPersonalityPreview({ ...DEFAULT_COMPANION_PREFERENCES, ...overrides });
     expect(preview({ personality: "curious" })).toBe("pounce");
-    expect(preview({ personality: "curious", jump: false })).toBe("bow");
-    // Standing still, a jump left on is not shown either: the preview follows the same reading as the companion.
-    expect(preview({ personality: "curious", roam: false, jump: true })).toBe("bow");
-    expect(preview({ personality: "mischievous", roam: false, jump: true })).toBe("bow");
+    // Movement is always free, so a roam or jump left off by an older screen changes nothing: the preview follows the same reading as the companion.
+    for (const roam of [false, true]) for (const jump of [false, true]) {
+      expect(preview({ personality: "curious", roam, jump })).toBe("pounce");
+      expect(preview({ personality: "mischievous", roam, jump })).toBe("tumble");
+    }
     expect(preview({ personality: "sleepy", sleep: false })).toBe("stretch");
     expect(preview({ personality: "affectionate", petting: false })).toBe("bow");
     for (const personality of COMPANION_PERSONALITIES) expect(chooseCompanionPreviewBehavior([preview({ personality })]), personality).not.toBeNull();
   });
-  it("the movement row previews standing, walking, and walking with jumps; nothing moves while the row is stopped", () => {
-    expect(COMPANION_MOTION_PREVIEWS).toEqual({ still: [], walk: ["preview-walk"], run: ["preview-walk", "pounce"] });
-    const site = { soundOn: true, soundVolume: 60, reduceMotion: false, gfx: undefined };
-    const box = (preferences: typeof DEFAULT_COMPANION_PREFERENCES, gates = site) => { const tree = CompanionBehaviorSettings({ preferences, onChange: vi.fn(), site: gates, onGoTo: vi.fn(), active: true, radio: null }); const host = nodes(tree).find(element => element.props.className === "rhh-motion-preview")!; return { level: host.props["data-motion-preview"], preview: nodes(host).find(element => element.props.behaviors)! }; };
-    for (const [roam, jump, level] of [[false, false, "still"], [false, true, "still"], [true, false, "walk"], [true, true, "run"]] as const) {
-      const { level: shown, preview } = box({ ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam, jump });
-      expect(shown).toBe(level); expect(preview.key).toBeNull(); // the drawing stays mounted; only what it plays changes
-      expect(preview.props).toMatchObject({ behaviors: COMPANION_MOTION_PREVIEWS[level], enabled: true, interactive: false, accessory: null });
+  it("every row says what it does, on hover and to its control, and every sound tile says when it is heard", () => {
+    const all = nodes(CompanionBehaviorSettings({ preferences: DEFAULT_COMPANION_PREFERENCES, onChange: vi.fn(), site: { soundOn: true, soundVolume: 60, reduceMotion: false, gfx: undefined }, onGoTo: vi.fn(), active: true, radio: null }));
+    const hints = Object.values(COMPANION_SETTING_HINTS);
+    expect(Object.keys(COMPANION_SETTING_HINTS).sort()).toEqual(["activeWhileVisible", "drag", "feeding", "panelPrank", "petting", "playful", "sleep", "sound", "speed"]);
+    expect(new Set(hints).size).toBe(9); for (const hint of hints) expect(hint.trim()).toBeTruthy();
+    // Each of the nine rows carries its own hint once, and its one control speaks the same words. The volume slider needs none.
+    const rows = all.filter(element => String(element.props.className).includes("role-help-haptics") && element.props["data-tip"]);
+    expect(rows.map(element => element.props["data-tip"]).sort()).toEqual([...hints].sort());
+    for (const row of rows) expect(nodes(row).filter(element => element.type === Switch || element.type === SettingsSegment).map(element => element.props.description)).toEqual([row.props["data-tip"]]);
+    // One flat grid: all fourteen sounds, no group labels; the dot marks the two only the companion makes.
+    const board = all.find(element => element.props.className === "rhh-sound-board")!, tiles = board.props.children as Element[];
+    expect(tiles.map(tile => tile.props["data-act-opt"]).sort()).toEqual([...COMPANION_SOUND_MOMENTS].sort());
+    for (const tile of tiles) {
+      const moment = tile.props["data-act-opt"] as typeof COMPANION_SOUND_MOMENTS[number];
+      expect(tile.type).toBe("button"); expect(COMPANION_SOUND_HINTS[moment].trim(), moment).toBeTruthy();
+      expect([tile.props["data-tip"], tile.props["aria-description"]], moment).toEqual([COMPANION_SOUND_HINTS[moment], COMPANION_SOUND_HINTS[moment]]);
     }
-    expect(box({ ...DEFAULT_COMPANION_PREFERENCES, enabled: false }).preview.props.enabled).toBe(false);
-    expect(box({ ...DEFAULT_COMPANION_PREFERENCES, enabled: true }, { ...site, reduceMotion: true }).preview.props.enabled).toBe(false);
+    expect(tiles.filter(tile => tile.props["data-own"] === "").map(tile => tile.props["data-act-opt"])).toEqual(["eat", "tumble"]);
+    expect(Object.keys(COMPANION_SOUND_HINTS).sort()).toEqual([...COMPANION_SOUND_MOMENTS].sort());
+  });
+  it("has no section titles: the two sections are named for assistive tech, and the sound status sits in the sound row", () => {
+    const all = nodes(CompanionBehaviorSettings({ preferences: DEFAULT_COMPANION_PREFERENCES, onChange: vi.fn(), site: { soundOn: true, soundVolume: 60, reduceMotion: false, gfx: undefined }, onGoTo: vi.fn(), active: true, radio: null }));
+    expect(all.filter(element => element.type === "section").map(element => element.props["aria-label"])).toEqual(["소리", "장난"]);
+    expect(all.some(element => element.type === "h3" || String(element.props.className).includes("rhh-companion-section-title"))).toBe(false);
+    const soundRow = all.find(element => element.props["data-settings-place"] === "companion-sound")!;
+    expect(nodes(soundRow).some(element => element.props.className === "rhh-sound-status-slot" && element.props["aria-live"] === "polite")).toBe(true);
+    // "더 보기" is only its name, and starts folded on a fresh page load.
+    const more = all.find(element => element.props.className === "rhh-companion-more")!;
+    expect(more.props.open).toBe(false);
+    expect(nodes(more).find(element => element.type === "summary")!.props.children).toBe("더 보기");
   });
   it("uses the same three columns for animal and personality choices and preserves single change/reselect callbacks", () => {
     const change = vi.fn(), shown = vi.fn(), tree = CompanionTraitControls({ preferences: DEFAULT_COMPANION_PREFERENCES, onChange: change, active: false, onPreview: shown });
@@ -80,6 +101,7 @@ describe("141 shared basic personality settings", () => {
   it("the settings page has no sub-tabs and no character controls any more", () => {
     const tree = CompanionBehaviorSettings({ preferences: DEFAULT_COMPANION_PREFERENCES, onChange: vi.fn(), site: { soundOn: true, soundVolume: 60, reduceMotion: false, gfx: undefined }, onGoTo: vi.fn(), active: true, radio: null });
     expect(nodes(tree).filter(element => element.props.role === "tablist" || element.props.role === "tab" || element.props.role === "tabpanel")).toEqual([]);
-    expect(nodes(tree).filter(element => element.type === SettingsSegment).map(element => element.props.dataAct)).toEqual(["companion-sound-level", "companion-motion-level", "companion-speed"]);
+    expect(nodes(tree).filter(element => element.type === SettingsSegment).map(element => element.props.dataAct)).toEqual(["companion-sound-level", "companion-speed"]);
+    expect(nodes(tree).some(element => element.props["data-settings-place"] === "companion-roam" || element.props["data-motion-preview"] !== undefined)).toBe(false);
   });
 });
