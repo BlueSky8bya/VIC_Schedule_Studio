@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import { COMPANION_LEGACY_BEHAVIOR_IDS } from "@/lib/ui/viewer-companion/collection";
+import { COMPANION_BEHAVIOR_IDS, COMPANION_LEGACY_BEHAVIOR_IDS } from "@/lib/ui/viewer-companion/collection";
 import { companionSpriteMetadata, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
-import { chooseCompanionPreviewBehavior, companionPreviewDrawing, companionPreviewDuration, sampleCompanionPreview } from "@/lib/ui/viewer-companion/wardrobe-preview";
+import { COMPANION_PREVIEW_WALK, chooseCompanionPreviewBehavior, companionPreviewDrawing, companionPreviewDuration, companionPreviewTravel, sampleCompanionPreview } from "@/lib/ui/viewer-companion/wardrobe-preview";
 
 describe("isolated discovered wardrobe gestures", () => {
   it("never chooses an unknown gesture and avoids immediate repeats when possible", () => {
@@ -10,6 +10,24 @@ describe("isolated discovered wardrobe gestures", () => {
     expect(chooseCompanionPreviewBehavior(["groom", "groom"], "groom", () => .9)).toBe("groom");
     expect(chooseCompanionPreviewBehavior(["groom", "bow", "unseen"], "groom", () => .999)).toBe("bow");
     expect(chooseCompanionPreviewBehavior(["groom", "bow"], null, () => Number.NaN)).toBe("groom");
+  });
+
+  // Settings stage 5: the movement preview walks in place. It is not a discovered behaviour.
+  it("offers a walk in place to the settings preview only", () => {
+    expect(COMPANION_PREVIEW_WALK).toBe("preview-walk");
+    expect((COMPANION_BEHAVIOR_IDS as readonly string[]).includes(COMPANION_PREVIEW_WALK)).toBe(false);
+    expect(chooseCompanionPreviewBehavior([COMPANION_PREVIEW_WALK])).toBe(COMPANION_PREVIEW_WALK);
+    expect(chooseCompanionPreviewBehavior([COMPANION_PREVIEW_WALK, "pounce"], COMPANION_PREVIEW_WALK, () => 0)).toBe("pounce");
+    const duration = companionPreviewDuration(COMPANION_PREVIEW_WALK);
+    expect(duration).toBeGreaterThan(0); expect(duration).toBeLessThanOrEqual(2800);
+    expect(sampleCompanionPreview(COMPANION_PREVIEW_WALK, duration / 2)).toMatchObject({ row: 2, lift: 0, beat: "play" });
+    expect(sampleCompanionPreview(COMPANION_PREVIEW_WALK, duration).row).toBe(0);
+    // The stride only ever grows while walking and is zero for everything else.
+    expect(companionPreviewTravel(COMPANION_PREVIEW_WALK, 0)).toBe(0);
+    expect(companionPreviewTravel(COMPANION_PREVIEW_WALK, 900)).toBeGreaterThan(companionPreviewTravel(COMPANION_PREVIEW_WALK, 300));
+    expect(companionPreviewTravel(COMPANION_PREVIEW_WALK, 1e9)).toBe(companionPreviewTravel(COMPANION_PREVIEW_WALK, duration));
+    for (const other of ["pounce", "bow", null] as const) expect(companionPreviewTravel(other, 900)).toBe(0);
+    expect(companionPreviewTravel(COMPANION_PREVIEW_WALK, Number.NaN)).toBe(0);
   });
 
   it("samples only each discovered row even when its world sequence contains other gestures", () => {

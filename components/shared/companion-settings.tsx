@@ -8,6 +8,12 @@ import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences
 import { COMPANION_SOUND_AUDITIONS, COMPANION_SOUND_NAMES, auditionCompanionSound, companionSoundAllowed, previewCompanionSoundLevel, previewCompanionSoundVolume, type CompanionSoundMoment } from "@/lib/ui/viewer-companion/companion-sound";
 import { companionMotionLevel, companionMotionLevelPatch, companionPlayful, companionPlayfulPatch, companionSoundLevel, companionSoundLevelPatch, type CompanionMotionLevel, type CompanionSoundLevel } from "@/lib/ui/viewer-companion/settings-levels";
 import { logActivity } from "@/lib/activity/client";
+import { CompanionWardrobePreview } from "./companion-wardrobe-preview";
+import { COMPANION_PREVIEW_WALK } from "@/lib/ui/viewer-companion/wardrobe-preview";
+
+/** What the small preview does for each movement level (redesign stage 5). */
+export const COMPANION_MOTION_PREVIEWS: Readonly<Record<CompanionMotionLevel, readonly string[]>> = Object.freeze({ still: [], walk: [COMPANION_PREVIEW_WALK], run: [COMPANION_PREVIEW_WALK, "pounce"] });
+const motionPreviewNotes: Readonly<Record<CompanionMotionLevel, string>> = Object.freeze({ still: "제자리에 가만히 있어요. 부르면 집으로 와요.", walk: "걸어서 돌아다녀요. 뛰어오르지는 않아요.", run: "걷다가 뛰어오르기도 해요." });
 
 type CompanionToggle = "activeWhileVisible" | "sleep" | "panelPrank" | "drag" | "petting" | "feeding";
 const companionToggleActions: Record<CompanionToggle, string> = {
@@ -96,6 +102,10 @@ export function CompanionBehaviorSettings({ preferences, onChange, site, onGoTo,
       <div className="rhh-group-card">
         <div className={`role-help-haptics rhh-stack-sm rhh-companion-choice-row${stopped(motionBlock) ? " is-blocked" : ""}`} data-settings-place="companion-roam">
           <RowLabel icon={<Footprints size={15} />} tone="leaf">움직임</RowLabel>
+          <div className="rhh-motion-preview" data-motion-preview={motionLevel}>
+            <div aria-hidden="true" className="rhh-motion-preview-art">{active && <CompanionWardrobePreview accessory={null} behaviors={COMPANION_MOTION_PREVIEWS[motionLevel]} enabled={preferences.enabled && !motionBlock} interactive={false} />}</div>
+            <p>{motionPreviewNotes[motionLevel]}</p>
+          </div>
           <SettingsSegment<CompanionMotionLevel> ariaLabel="빅타민 움직임" columns={3} dataAct="companion-motion-level" onChange={level => onChange(companionMotionLevelPatch(level))} options={[{ value: "still", label: "가만히" }, { value: "walk", label: "걷기만" }, { value: "run", label: "뛰어다니기" }]} value={motionLevel} />
         </div>
         {note(motionBlock)}

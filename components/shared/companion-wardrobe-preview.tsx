@@ -7,7 +7,7 @@ import { createCompanionMotion, nextCompanionPaint } from "@/lib/ui/viewer-compa
 import { companionMaterialStack } from "@/lib/ui/viewer-companion/material-scale";
 import { companionPompomPlayHeight, createCompanionPompomFlight } from "@/lib/ui/viewer-companion/pompom";
 import { companionMotionClips, companionSpriteMetadata, peekDecodedCompanionSprite, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
-import { chooseCompanionPreviewBehavior, companionPreviewDrawing, companionPreviewDuration, createCompanionPreviewPreparation, sampleCompanionPreview } from "@/lib/ui/viewer-companion/wardrobe-preview";
+import { chooseCompanionPreviewBehavior, companionPreviewDrawing, companionPreviewDuration, companionPreviewTravel, createCompanionPreviewPreparation, sampleCompanionPreview } from "@/lib/ui/viewer-companion/wardrobe-preview";
 import "@/components/poster/viewer-companion/viewer-companion.css";
 
 /** A local drawing only: no actor, world, care, discovery or gift operations. */
@@ -38,14 +38,17 @@ export function CompanionWardrobePreview({ accessory, behaviors, enabled, intera
     const pompomFlight = createCompanionPompomFlight();
     const preparation = createCompanionPreviewPreparation();
     let raf: number | null = null, rest: ReturnType<typeof setTimeout> | null = null, generation = 0;
+    // The walk-in-place preview feeds a stride distance that only ever grows, so the pose after it never reads a step back.
+    let strideBase = 0, stride = 0, restRetries = 0;
     let previous: ReturnType<typeof chooseCompanionPreviewBehavior> = null;
     const restricted = () => document.documentElement.hasAttribute("data-reduce-motion") || ["off", "soft"].includes(document.documentElement.dataset.gfx ?? "");
     const visible = () => !disposed && !document.hidden && element.isConnected;
     const animated = () => enabled && !restricted();
     const cancel = () => { generation++; if (raf !== null) cancelAnimationFrame(raf); if (rest !== null) clearTimeout(rest); raf = null; rest = null; };
     const paint = (behavior: ReturnType<typeof chooseCompanionPreviewBehavior>, elapsed: number, now: number) => {
-      const sample = sampleCompanionPreview(behavior, elapsed);
-      const shape = motion.sample({ row: sample.row, phase: sample.phase, status: behavior ? "play" : "idle", x: 0, y: 0, now, reduced: !behavior });
+      const sample = sampleCompanionPreview(behavior, elapsed), travel = companionPreviewTravel(behavior, elapsed);
+      if (travel > 0) stride = strideBase + travel; else strideBase = stride;
+      const shape = motion.sample({ row: sample.row, phase: sample.phase, status: behavior ? "play" : "idle", x: stride, y: 0, now, reduced: !behavior });
       const selection = selectCompanionSprite(companionSpriteMetadata.rows[shape.row][shape.column], shape.row, shape.column);
       // Read and draw synchronously. Never keep a decoded Image reference,
       // change its source, move its live DOM owner or touch the shared LRU.
@@ -123,7 +126,12 @@ export function CompanionWardrobePreview({ accessory, behaviors, enabled, intera
       cancel(); setQuiet(!animated());
       if (!visible()) { painter?.clear(); return; }
       const token = generation;
-      if (!await prepare(0, token)) return;
+      if (!await prepare(0, token)) {
+        // Another drawing can hold the shared sprite slots for a moment. Look again a few times, never in a loop.
+        if (visible() && token === generation && restRetries++ < 5) rest = setTimeout(() => { rest = null; void refresh(); }, 1200);
+        return;
+      }
+      restRetries = 0;
       paint(null, 0, performance.now());
       if (animated()) void cycle(token);
     };

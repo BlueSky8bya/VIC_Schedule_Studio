@@ -1,15 +1,27 @@
 "use client";
 
 import { Heart, Sparkles } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { RowLabel, SettingsSegment, Switch } from "@/components/shared/settings-controls";
-import { COMPANION_PERSONALITY_NAMES, companionPersonalityIsManual, releaseCompanionPersonalityChoice, subscribeCompanionPreferences, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
+import { COMPANION_PERSONALITY_NAMES, COMPANION_PERSONALITY_SUMMARIES, companionPersonalityIsManual, releaseCompanionPersonalityChoice, subscribeCompanionPreferences, type CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_PERSONALITY_LAYOUT } from "@/lib/ui/viewer-companion/personality-layout";
 import { resetCompanionHabits } from "@/lib/ui/viewer-companion/care";
 import { resetCompanionTastes } from "@/lib/ui/viewer-companion/toy-tastes";
 import { hapticTick } from "@/lib/ui/haptics";
 import { playSfx } from "@/lib/ui/sfx";
 import { logActivity } from "@/lib/activity/client";
+import { companionBehaviorPreferences } from "@/lib/ui/viewer-companion/settings-levels";
+
+// The same local drawing the portrait uses; it loads with that portrait, never with the settings page.
+const CompanionWardrobePreview = dynamic(() => import("./companion-wardrobe-preview").then(module => module.CompanionWardrobePreview), { loading: () => null });
+
+/** The move that shows a character at a glance (redesign stage 5). It follows the
+ * choices as the companion acts on them, so a preview never shows what it would not do. */
+export function companionPersonalityPreview(preferences: Readonly<CompanionPreferences>): string {
+  const acts = companionBehaviorPreferences(preferences);
+  return { performer: "cheer-rehearsal", curious: acts.jump ? "pounce" : "bow", affectionate: acts.petting ? "ask-petting" : "bow", sleepy: acts.sleep ? "doze-curl" : "stretch", tidy: "groom", mischievous: acts.jump ? "tumble" : "bow", gourmet: "bow", homebody: "paper-knead", balanced: "bow" }[acts.personality];
+}
 
 // Look, character and learning: the controls that sit on the "함께 지내기" page
 // (settings redesign stage 3). A small module of its own, so that page does not
@@ -48,7 +60,7 @@ function LearnedStateReset({ id }: { id: string }) {
 }
 
 /** Who the companion is: look and character. Lives on the "함께 지내기" page next to its portrait (redesign stage 3). */
-export function CompanionTraitControls({ preferences, onChange, active, personalityRequest = 0 }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; active: boolean; personalityRequest?: number }) {
+export function CompanionTraitControls({ preferences, onChange, active, personalityRequest = 0, previewing = false, onPreview }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; active: boolean; personalityRequest?: number; /** A character was just chosen here: show its move. The host rests its own portrait meanwhile. */ previewing?: boolean; onPreview?: () => void }) {
   const section = useRef<HTMLDivElement>(null), focusedRequest = useRef(0);
   const [manual, setManual] = useState(false);
   // Read where it is stored, and again whenever any tab changes the record.
@@ -69,7 +81,12 @@ export function CompanionTraitControls({ preferences, onChange, active, personal
     </div>
     <div className="role-help-haptics rhh-stack-sm rhh-companion-choice-row rhh-personality-section" ref={section}>
       <RowLabel icon={<Sparkles size={15} />} tone="leaf">성격</RowLabel>
-      <SettingsSegment ariaLabel="빅타민 성격" columns={3} dataAct="companion-personality" onChange={personality => { onChange({ personality }); setManual(true); }} onReselect={personality => { onChange({ personality }); setManual(true); }} options={COMPANION_PERSONALITY_LAYOUT.map(value => ({ value, label: COMPANION_PERSONALITY_NAMES[value] }))} value={preferences.personality} />
+      <SettingsSegment ariaLabel="빅타민 성격" columns={3} dataAct="companion-personality" onChange={personality => { onChange({ personality }); setManual(true); onPreview?.(); }} onReselect={personality => { onChange({ personality }); setManual(true); onPreview?.(); }} options={COMPANION_PERSONALITY_LAYOUT.map(value => ({ value, label: COMPANION_PERSONALITY_NAMES[value] }))} value={preferences.personality} />
+      {/* Choosing a character shows its own move here (stage 5). It appears below the choices, so nothing under the pointer moves. */}
+      {active && previewing ? <div className="rhh-personality-preview" data-personality-preview={preferences.personality}>
+        <CompanionWardrobePreview key={preferences.personality} accessory={null} behaviors={[companionPersonalityPreview(preferences)]} enabled={preferences.enabled} interactive={false} />
+        <div><strong>{COMPANION_PERSONALITY_NAMES[preferences.personality]}</strong><p>{COMPANION_PERSONALITY_SUMMARIES[preferences.personality]}</p></div>
+      </div> : null}
       <div className="rhh-personality-random">
         <p aria-live="polite" className="rhh-group-foot">{manual ? "직접 고른 성격이라 새로고침해도 그대로예요." : "고르지 않았다면 새로고침마다 무작위로 정해져요."}</p>
         <button className="rhh-link" data-act="companion-personality-random" disabled={!manual} onClick={() => { releaseCompanionPersonalityChoice(); setManual(false); /* the button now goes off: hand focus to the character that stays */ section.current?.querySelector<HTMLButtonElement>('[role="radio"][aria-checked="true"]')?.focus({ preventScroll: true }); }} type="button"><span className="vmid">무작위로 되돌리기</span></button>

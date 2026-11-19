@@ -106,6 +106,10 @@ export function CompanionProfile({ preferences, active, environment, onChange, s
   const [personalityRequest] = useState(initialPersonality ? 1 : 0);
   // The settings page is a deferred chunk: ask for it only once this block has really been on screen.
   const [shown, setShown] = useState(active);
+  // A character chosen on this page is shown by the small preview beside the choice; the portrait rests until the page is left,
+  // so only one drawing moves at a time and they do not take each other's sprites.
+  const [characterPreview, setCharacterPreview] = useState(false);
+  useEffect(() => { if (!active || page !== "together") setCharacterPreview(false); }, [active, page]);
   useEffect(() => { if (active) setShown(true); }, [active]);
   const id = useId(), nav = useRef<HTMLDivElement>(null), spotlight = useProfileSpotlight(active && preferences.enabled, page);
   useEffect(() => {
@@ -156,7 +160,7 @@ export function CompanionProfile({ preferences, active, environment, onChange, s
     <div aria-labelledby={`${id}-together-tab`} hidden={page !== "together"} id={`${id}-together-panel`} role="tabpanel" tabIndex={0}>
       <section aria-labelledby={`${id}-traits-title`} className="rhh-trait-card rhh-companion-summary">
         <button aria-label="옷장 열기" className="rhh-companion-portrait" data-act="companion-profile-page" data-act-opt="dress" data-sfx="off" onClick={() => changePage("dress")} type="button">
-          {active && page === "together" && <CompanionWardrobePreview accessory={collection?.gifts.equipped ?? null} behaviors={collection?.behaviors ?? []} enabled={preferences.enabled} interactive={false} />}
+          {active && page === "together" && <CompanionWardrobePreview accessory={collection?.gifts.equipped ?? null} behaviors={collection?.behaviors ?? []} enabled={preferences.enabled && !characterPreview} interactive={false} />}
           {foodTastes.favorite && <span aria-label={favoriteFoodLabel} className="rhh-companion-interest" role="img" title={favoriteFoodLabel}><span aria-hidden="true" className="vc-collection-art" style={foodStyle(foodTastes.favorite)} /></span>}
           <span className="rhh-companion-portrait-link"><Shirt aria-hidden="true" size={16} />옷장</span>
         </button>
@@ -165,7 +169,7 @@ export function CompanionProfile({ preferences, active, environment, onChange, s
         </div>
         <dl className="rhh-companion-facts"><TasteCard label="좋아하는 간식" food={foodTastes.favorite} reason={companionProfileTasteReason(tastes, "food", foodTastes.favorite, "positive", care?.life)} /><TasteCard label="싫어하는 간식" food={foodTastes.disliked} reason={companionProfileTasteReason(tastes, "food", foodTastes.disliked, "negative", care?.life)} dislike /><TasteCard label="좋아하는 장난감" toy={toyTastes.favorite} reason={companionProfileTasteReason(tastes, "toy", toyTastes.favorite, "positive", care?.life)} /><TasteCard label="싫어하는 장난감" toy={toyTastes.disliked} reason={companionProfileTasteReason(tastes, "toy", toyTastes.disliked, "negative", care?.life)} dislike /></dl>
       </section>
-      {onChange && <CompanionTraitControls active={active && page === "together"} onChange={onChange} personalityRequest={personalityRequest} preferences={preferences} />}
+      {onChange && <CompanionTraitControls active={active && page === "together"} onChange={onChange} onPreview={() => setCharacterPreview(true)} personalityRequest={personalityRequest} preferences={preferences} previewing={characterPreview} />}
       <section aria-labelledby={`${id}-habits-title`} className="rhh-profile-habits"><div className="rhh-habits-heading"><h3 id={`${id}-habits-title`}>배운 습관</h3>{!preferences.learnFromYou && <span className="rhh-habit-paused">적용 중지</span>}</div>{effects.length ? <ul className="rhh-profile-learned">{effects.map(effect => <li key={effect}>{effect}</li>)}</ul> : <p className="rhh-habit-empty">아직 배운 습관이 없어요.</p>}</section>
       {onChange && <CompanionLearningControls active={active && page === "together"} onChange={onChange} preferences={preferences} />}
       {care?.life.recent.at(-1) && <p className="rhh-trait-reason"><span>최근 경험</span><span>{recentReasons[care.life.recent.at(-1)!]}</span></p>}

@@ -6,6 +6,16 @@ import { COMPANION_CLIP_TIMING, COMPANION_PLAY_TIMING } from "./timing";
 import { companionFoodAftertasteDuration, sampleCompanionFoodAftertaste } from "./food-aftertaste";
 
 type PreviewClip = Readonly<{ row: number; play?: CompanionPlay; aftertaste?: true }>;
+/** Shown by the settings preview only (redesign stage 5): a short walk in place.
+ * Not a discovered behaviour, so it never enters the collection. */
+export const COMPANION_PREVIEW_WALK = "preview-walk";
+export type CompanionPreviewId = CompanionBehaviorId | typeof COMPANION_PREVIEW_WALK;
+const WALK_PREVIEW_MS = 1800;
+/** Stride distance the preview feeds the shared motion sampler, so the walk
+ * cycle advances as it does on the calendar without moving the drawing. */
+export function companionPreviewTravel(id: CompanionPreviewId | null, elapsed: number): number {
+  return id === COMPANION_PREVIEW_WALK && Number.isFinite(elapsed) && elapsed > 0 ? Math.min(elapsed, WALK_PREVIEW_MS) * .06 : 0;
+}
 /** A discovered gesture exposes only its own row, never the other gestures
  * that happen to share its authored world sequence or texture packet. */
 const clips: Readonly<Partial<Record<CompanionBehaviorId, PreviewClip>>> = Object.freeze({
@@ -45,23 +55,25 @@ export function createCompanionPreviewPreparation() {
   };
 }
 
-export function chooseCompanionPreviewBehavior(found: readonly string[], previous: CompanionBehaviorId | null = null, random: () => number = Math.random): CompanionBehaviorId | null {
-  const pool = [...new Set(found)].filter((id): id is CompanionBehaviorId => Object.hasOwn(clips, id));
+export function chooseCompanionPreviewBehavior(found: readonly string[], previous: CompanionPreviewId | null = null, random: () => number = Math.random): CompanionPreviewId | null {
+  const pool = [...new Set(found)].filter((id): id is CompanionPreviewId => id === COMPANION_PREVIEW_WALK || Object.hasOwn(clips, id));
   const choices = pool.length > 1 ? pool.filter(id => id !== previous) : pool;
   if (!choices.length) return null;
   const value = random(), unit = Number.isFinite(value) ? Math.max(0, Math.min(.999999, value)) : 0;
   return choices[Math.floor(unit * choices.length)];
 }
 
-export function companionPreviewDuration(id: CompanionBehaviorId): number {
+export function companionPreviewDuration(id: CompanionPreviewId): number {
+  if (id === COMPANION_PREVIEW_WALK) return WALK_PREVIEW_MS;
   const clip = clips[id];
   if (!clip) return 0;
   if (clip.aftertaste) return companionFoodAftertasteDuration("retch");
   return clip.play ? COMPANION_PLAY_TIMING[clip.play].beats.find(beat => beat.row === clip.row)!.duration : COMPANION_CLIP_TIMING.find(timing => timing.row === clip.row)!.duration!;
 }
 
-export function sampleCompanionPreview(id: CompanionBehaviorId | null, elapsed: number): CompanionPlayPose {
+export function sampleCompanionPreview(id: CompanionPreviewId | null, elapsed: number): CompanionPlayPose {
   if (!id || !Number.isFinite(elapsed) || elapsed < 0 || elapsed >= companionPreviewDuration(id)) return neutral();
+  if (id === COMPANION_PREVIEW_WALK) return { ...neutral(), row: 2, phase: elapsed / WALK_PREVIEW_MS, beat: "play" };
   const clip = clips[id];
   if (!clip) return neutral();
   if (clip.aftertaste) return { ...sampleCompanionFoodAftertaste("retch", elapsed / companionPreviewDuration(id)), row: clip.row, beat: "play" };
