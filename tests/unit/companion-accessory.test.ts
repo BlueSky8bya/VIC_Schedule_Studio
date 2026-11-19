@@ -88,7 +88,9 @@ describe("adopted pose wardrobe", () => {
         const placed = companionAccessoryPlacement(selected, id)!;
         expect(placed.x, `${id}:${pose.physicalIndex}`).toBeCloseTo(pose.eyes[1].center[0]); expect(placed.y).toBeCloseTo(pose.eyes[1].center[1]);
         const coreRadius = 22 * (placed.art.viewScale ?? 1) * placed.width / placed.art.content.width;
-        for (const x of [eye.bounds[0], eye.bounds[2]]) for (const y of [eye.bounds[1], eye.bounds[3]]) expect(Math.hypot(x - placed.x, y - placed.y), `${id}:${pose.physicalIndex} lens interior`).toBeLessThan(coreRadius);
+        // Owner 2026-11-19: the monocle keeps its standing size on the dizzy
+        // spiral rows (336..351); the larger spiral may peek out at the edge.
+        if (pose.physicalIndex < 336 || pose.physicalIndex > 351) for (const x of [eye.bounds[0], eye.bounds[2]]) for (const y of [eye.bounds[1], eye.bounds[3]]) expect(Math.hypot(x - placed.x, y - placed.y), `${id}:${pose.physicalIndex} lens interior`).toBeLessThan(coreRadius);
         expect(placed.layer).toBe("front");
       }
       for (const id of ["round-glasses", "wire-glasses", "browline-glasses", "heart-glasses", "square-glasses"] as const) {

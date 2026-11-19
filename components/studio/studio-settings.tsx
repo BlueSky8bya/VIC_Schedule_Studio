@@ -9,7 +9,7 @@
 import "./../shared/settings-modal.css";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { RowLabel, SettingsNote, SettingsSegment, Switch, flashSettingsPlace } from "@/components/shared/settings-controls";
+import { RowLabel, SettingsNote, SettingsSegment, SiteVolumeSlider, Switch, flashSettingsPlace } from "@/components/shared/settings-controls";
 import type { CompanionPlaceRequest } from "@/components/shared/companion-settings";
 import { COMPANION_SETTINGS_PLACE_LABELS, companionRadioBlock, companionRowBlock, type CompanionSettingsPlace, type CompanionSiteGates } from "@/lib/ui/viewer-companion/settings-status";
 import type { Route } from "next";
@@ -265,9 +265,9 @@ function useCompanionSiteGates(soundOn: boolean, soundVolume: number): Companion
   const [reduce, gfx] = html.split("|");
   return useMemo(() => ({ soundOn, soundVolume, reduceMotion: reduce === "1", gfx: gfx || undefined }), [soundOn, soundVolume, reduce, gfx]);
 }
-function CompanionSettings({ preferences, onChange, site, onGoTo, placeRequest, active, initialPersonality = false, startOnSettings = false }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; site: CompanionSiteGates; onGoTo: (place: CompanionSettingsPlace) => void; placeRequest?: CompanionPlaceRequest; active: boolean; initialPersonality?: boolean; startOnSettings?: boolean }) {
+function CompanionSettings({ preferences, onChange, site, siteVolume, onGoTo, placeRequest, active, initialPersonality = false, startOnSettings = false }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; site: CompanionSiteGates; siteVolume: ReactNode; onGoTo: (place: CompanionSettingsPlace) => void; placeRequest?: CompanionPlaceRequest; active: boolean; initialPersonality?: boolean; startOnSettings?: boolean }) {
   return <CompanionProfile active={active} preferences={preferences} onChange={onChange} initialPersonality={initialPersonality} startOnSettings={startOnSettings} settingsRequest={placeRequest?.n ?? 0}
-    environment={settingsActive => <CompanionBehaviorSettings active={settingsActive} preferences={preferences} onChange={onChange} site={site} onGoTo={onGoTo} placeRequest={placeRequest} radio={<CompanionRadioSettings companion={preferences} site={site} onGoTo={onGoTo} />} />} />;
+    environment={settingsActive => <CompanionBehaviorSettings active={settingsActive} preferences={preferences} onChange={onChange} site={site} siteVolume={siteVolume} onGoTo={onGoTo} placeRequest={placeRequest} radio={<CompanionRadioSettings companion={preferences} site={site} onGoTo={onGoTo} />} />} />;
 }
 
 
@@ -332,6 +332,8 @@ export function StudioSettingsList({
   const fontStateId = useId();
   // "Go to" links (stage 1): show the group that holds the setting in the way and mark its row. Nothing is switched for the user.
   const site = useCompanionSiteGates(sound.on, sound.vol), tabsRoot = useRef<HTMLDivElement>(null);
+  // The same site volume control as the 소리 tab, shown again on the 빅타민 sound card (owner 2026-11-19).
+  const siteVolume = <SiteVolumeSlider value={sound.vol} onChange={sound.changeVol} />;
   const [sitePlace, setSitePlace] = useState<{ place: CompanionSettingsPlace; n: number }>({ place: "site-sound", n: 0 }), servedSitePlace = useRef(0);
   const [companionPlaceRequest, setCompanionPlaceRequest] = useState<CompanionPlaceRequest | undefined>(companionPlace ? { place: companionPlace, n: 1 } : undefined);
   const sitePlaceTabs: Partial<Record<CompanionSettingsPlace, TabKey>> = { "site-sound": "sound", "site-motion": "motion", "site-gfx": "bg" };
@@ -500,7 +502,7 @@ export function StudioSettingsList({
     logActivity("ui.click", { target: `settings-tab#${next.key}` });
     nav?.querySelector<HTMLButtonElement>(`[data-tab="${next.key}"]`)?.focus();
   };
-  if (companionBook && companionAvailable) return <div className="rhh-tabs rhh-companion-book-pages"><CompanionSettings preferences={companionPrefs} onChange={onCompanionChange} site={site} onGoTo={goToPlace} placeRequest={companionPlaceRequest} initialPersonality={companionPersonality} active /></div>;
+  if (companionBook && companionAvailable) return <div className="rhh-tabs rhh-companion-book-pages"><CompanionSettings siteVolume={siteVolume} preferences={companionPrefs} onChange={onCompanionChange} site={site} onGoTo={goToPlace} placeRequest={companionPlaceRequest} initialPersonality={companionPersonality} active /></div>;
   return (
     <div className="rhh-tabs" ref={tabsRoot}>
       <div className="rhh-tabs-grid">
@@ -729,27 +731,9 @@ export function StudioSettingsList({
           </div>
           <div className={`role-help-haptics rhh-stack-sm${sound.on ? "" : " is-locked"}`}>
             <RowLabel icon={<Volume1 size={15} />} tone="water">
-              음량
+              전체 음량
             </RowLabel>
-            <div className="rhh-volume">
-              <VolumeX aria-hidden="true" className="rhh-vol-ico" size={15} />
-              <input
-                aria-label="효과음 음량"
-                aria-valuetext={`${sound.vol}%`}
-                data-act="sound-volume"
-                disabled={!sound.on}
-                max={100}
-                min={0}
-                onChange={(e) => sound.changeVol(Number(e.currentTarget.value))}
-                onKeyUp={(e) => sound.changeVol(Number(e.currentTarget.value), true)}
-                onPointerUp={(e) => sound.changeVol(Number(e.currentTarget.value), true)}
-                step={5}
-                style={{ "--vol": `${sound.vol}%` } as CSSProperties}
-                type="range"
-                value={sound.vol}
-              />
-              <Volume2 aria-hidden="true" className="rhh-vol-ico" size={15} />
-              <b className="rhh-vol-num">{sound.vol}</b>
+            <SiteVolumeSlider value={sound.vol} onChange={sound.changeVol}>
               <button
                 className="rhh-link rhh-preview"
                 data-act="sound-preview"
@@ -759,7 +743,7 @@ export function StudioSettingsList({
               >
                 <span className="vmid">들어 보기</span>
               </button>
-            </div>
+            </SiteVolumeSlider>
           </div>
           <div className={`role-help-haptics rhh-stack-sm${sound.on ? "" : " is-locked"}`}>
             <RowLabel icon={<MousePointerClick size={15} />} tone="water">
@@ -908,7 +892,7 @@ export function StudioSettingsList({
       {/* 계절 배경·배경 효과 — 모바일(≤640)엔 배경이 없어 묶음째 숨긴다(.rhh-web). */}
       {companionAvailable ? <section {...pane("companion")}>
         <h3 className="rhh-group-title" id="rhh-tab-companion-title">빅타민</h3>
-        <CompanionSettings active={current === "companion"} startOnSettings site={site} onGoTo={goToPlace} placeRequest={companionPlaceRequest} preferences={companionPrefs} onChange={onCompanionChange} />
+        <CompanionSettings siteVolume={siteVolume} active={current === "companion"} startOnSettings site={site} onGoTo={goToPlace} placeRequest={companionPlaceRequest} preferences={companionPrefs} onChange={onCompanionChange} />
       </section> : null}
 
       <section {...pane("bg", "rhh-web")}>

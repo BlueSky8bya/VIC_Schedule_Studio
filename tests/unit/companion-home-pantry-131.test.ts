@@ -4,7 +4,8 @@ import { DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/prefere
 import { DEFAULT_COMPANION_LIFE } from "@/lib/ui/viewer-companion/life";
 import { createCompanionScenes, type CompanionSceneAction, type CompanionSceneInput } from "@/lib/ui/viewer-companion/scenes";
 import { newCompanionSceneMemory } from "@/lib/ui/viewer-companion/scene-memory";
-import { selectCompanionHomePantryPoint } from "@/lib/ui/viewer-companion/home-pantry";
+import { findCompanionHomeItemRoute, selectCompanionHomePantryPoint } from "@/lib/ui/viewer-companion/home-pantry";
+import { findPlatformRoute } from "@/lib/ui/viewer-companion/brain";
 
 const calendar: Platform = { id: "calendar", kind: "floor", x: 0, y: 600, width: 250 };
 const room: Platform = { id: "companion-home-floor", kind: "floor", manualOnly: true, x: 300, y: 600, width: 280 };
@@ -97,5 +98,30 @@ describe("shared actual pantry policy for ordinary cleanup and authored scenes",
     expect(changedEffects[0].point.platformId).toBe(room.id);
     const absent = scenario(19); absent.input.pantry = undefined; absent.input.bin = { x: 70, y: calendar.y, platformId: calendar.id };
     expect(drain(absent).some(action => action.scene.effect?.kind === "pick")).toBe(false);
+  });
+});
+
+describe("a tidy errand carries a page-floor snack into the room along the recall's route (owner 2026-11-19)", () => {
+  // Measured 1920x1100 viewer geometry: page floor, the left calendar column's day edges and the panel room floor.
+  const page: Platform = { id: "viewport-floor", kind: "floor", x: 50, y: 1030, width: 1820 };
+  const days: Platform[] = [
+    { id: "date-43-floor", kind: "floor", x: 417, y: 1061, width: 147 }, { id: "date-36-floor", kind: "floor", x: 434, y: 905, width: 129 },
+    { id: "date-29-floor", kind: "floor", x: 444, y: 750, width: 119 }, { id: "date-22-floor", kind: "floor", x: 444, y: 588, width: 119 },
+  ];
+  const home: Platform = { id: "companion-home-floor", kind: "floor", manualOnly: true, x: 50, y: 620, width: 197 };
+  const platforms = [page, ...days, home], snack = { x: 650, y: page.y, platformId: page.id }, bin = { x: 234.6, y: home.y, platformId: home.id };
+  it("finds the room from the page floor where the short item search found none", () => {
+    expect(findPlatformRoute(snack, bin, platforms.map(p => p.id === home.id ? { ...p, manualOnly: false } : p), true, home.id)).toBeNull();
+    // Only the tidy carry asks for the room route; every other caller keeps the short search.
+    expect(findCompanionHomeItemRoute(snack, bin, platforms, true)).toBeNull();
+    const route = findCompanionHomeItemRoute(snack, bin, platforms, true, true)!;
+    expect(route.length).toBeGreaterThan(0);
+    expect(route.at(-1)!.target).toMatchObject({ platformId: home.id });
+    expect(Math.abs(route.at(-1)!.target.x - bin.x)).toBeLessThan(1);
+    // Every leg stands on a measured ledge; nothing outside these supports.
+    expect(route.every(step => platforms.some(p => p.id === step.target.platformId && Math.abs(p.y - step.target.y) < 1))).toBe(true);
+  });
+  it("still has no way in without jumping", () => {
+    expect(findCompanionHomeItemRoute(snack, bin, platforms, false, true)).toBeNull();
   });
 });

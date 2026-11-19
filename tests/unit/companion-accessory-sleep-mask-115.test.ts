@@ -33,6 +33,9 @@ describe("printed sleep masks115", () => {
       expect(placed).not.toBeNull();
       if (pose.orientation === "back") { expect(placed.layer).toBe("back"); continue; }
       expect(pose.eyes).toHaveLength(2); expect(placed.layer).toBe("front");
+      // Owner 2026-11-19: on the dizzy spiral rows (336..351) the mask keeps its
+      // standing size and the larger spirals may peek out at its edges.
+      if (pose.physicalIndex >= 336 && pose.physicalIndex <= 351) continue;
       const angle = placed.rotation * Math.PI / 180, scale = placed.width / placed.art.content.width;
       for (const eye of pose.eyes) for (const x of [eye.bounds[0], eye.bounds[2]]) for (const y of [eye.bounds[1], eye.bounds[3]]) {
         const dx = x - placed.x, dy = y - placed.y;

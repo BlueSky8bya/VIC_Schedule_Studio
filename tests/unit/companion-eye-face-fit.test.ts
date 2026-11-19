@@ -33,15 +33,16 @@ describe("worn eye fit is measured in the face axis once", () => {
     }
   });
   it("keeps every face-visible gesture frame within the eye drawings' real growth", () => {
-    // Only the dizzy spiral eyes (row 22, cells 0..15) are drawn larger than
-    // the standing eyes; every other frame stays near the standing size.
+    // The dizzy spiral eyes (row 22, cells 0..15) are drawn larger than the
+    // standing eyes, but a worn cover keeps its standing size there (owner
+    // 2026-11-19: spirals may peek out); every other frame stays near it too.
     const rest = { mask: companionAccessoryPlacement(selectCompanionSprite(0), "sleep-mask-smile")!.width, monocle: companionAccessoryPlacement(selectCompanionSprite(0), "monocle")!.width };
     companionSpriteMetadata.rows.forEach((row, r) => row.forEach((physical, column) => {
       const selected = selectCompanionSprite(physical, r, column), spiral = physical >= 336 && physical <= 351;
       for (const [id, base] of [["sleep-mask-smile", rest.mask], ["monocle", rest.monocle]] as const) {
         const placed = companionAccessoryPlacement(selected, id);
         if (!placed || placed.layer === "back") continue;
-        expect(placed.width / base, `${id}:${physical}`).toBeLessThan(spiral ? 1.4 : 1.15);
+        expect(placed.width / base, `${id}:${physical}`).toBeLessThan(spiral ? 1.06 : 1.15);
       }
     }));
   });

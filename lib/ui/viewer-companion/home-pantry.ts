@@ -1,16 +1,22 @@
 import { findPlatformRoute, platformLandingX, type CompanionBrain, type CompanionFood, type Platform } from "./brain";
 import { COMPANION_FULL_THRESHOLD } from "./care";
 import { MAX_COMPANION_FOOD } from "./food-capacity";
+import { shortestCompanionHomeRoute } from "./home-route";
 import { rankCompanionItemLandings, type CompanionItemPoint } from "./item-landing";
 import type { CompanionPreferences } from "./preferences";
 
 export type CompanionHomeItemPoint = { x: number; y: number; platformId?: string };
-type PantryInput = { pantry?: CompanionHomeItemPoint; platforms: readonly Platform[]; visibleFoods: readonly CompanionFood[]; occupied?: readonly CompanionItemPoint[]; allowJump: boolean };
+type PantryInput = { pantry?: CompanionHomeItemPoint; platforms: readonly Platform[]; visibleFoods: readonly CompanionFood[]; occupied?: readonly CompanionItemPoint[]; allowJump: boolean;
+  /** The tidy carry only: the room may be reached by the cushion recall's route. */
+  intoRoom?: boolean };
 const isRoomFloor = (p: Platform) => !p.bodyOnly && p.kind === "floor" && p.manualOnly === true && /^companion-home-floor(?:-\d+)?$/.test(p.id);
 
 /** A measured room span excludes complete controls at the body tier. Only
  * this deliberate item errand traverses it; other manual tops stay terminal. */
-export function findCompanionHomeItemRoute(origin: CompanionHomeItemPoint, target: CompanionHomeItemPoint, platforms: readonly Platform[], allowJump: boolean) {
+/** `intoRoom` (the tidy carry only) lets an item carried into the room take
+ * the cushion recall's route when the short search finds none. Every other
+ * caller keeps the short search. */
+export function findCompanionHomeItemRoute(origin: CompanionHomeItemPoint, target: CompanionHomeItemPoint, platforms: readonly Platform[], allowJump: boolean, intoRoom = false) {
   const targetFloor = platforms.find(p => p.id === target.platformId);
   if (!targetFloor || targetFloor.bodyOnly || ![target.x, target.y, targetFloor.x, targetFloor.y, targetFloor.width].every(Number.isFinite)
     || targetFloor.width <= 0 || ["control", "hide"].includes(targetFloor.kind) || target.x < targetFloor.x || target.x > targetFloor.x + targetFloor.width || Math.abs(target.y - targetFloor.y) > 2) return null;
@@ -21,7 +27,12 @@ export function findCompanionHomeItemRoute(origin: CompanionHomeItemPoint, targe
     return Math.abs(origin.x - target.x) > 1 ? [{ kind: "walk" as const, target: { ...target, platformId: plane.id } }] : [];
   }
   const traversable = platforms.map(p => isRoomFloor(p) ? { ...p, manualOnly: false } : p);
-  return findPlatformRoute(origin, target, traversable, allowJump, target.platformId);
+  const route = findPlatformRoute(origin, target, traversable, allowJump, target.platformId);
+  if (route || !intoRoom || !isRoomFloor(targetFloor)) return route;
+  // Into the room the errand takes the same measured route as the cushion
+  // recall (owner 2026-11-19): from the page floor the short item search finds
+  // no way up, so a tidy pet never carried a floor snack home.
+  return shortestCompanionHomeRoute(origin, target, platforms, allowJump) ?? (allowJump ? shortestCompanionHomeRoute(origin, target, platforms, true, true) : null);
 }
 
 /** Existing eight food/four toy footprints share one44px packing policy.
@@ -36,7 +47,7 @@ export function selectCompanionHomePantryPoint(input: PantryInput, from: Compani
   for (const candidate of rankCompanionItemLandings([{ id: support.id, x: left, y: support.y, width: right - left }], pantry.x, occupied)) {
     if (candidate.overlap > 0) continue;
     const point = { x: candidate.x, y: candidate.y, platformId: support.id };
-    if (findCompanionHomeItemRoute(from, point, input.platforms, input.allowJump)) return point;
+    if (findCompanionHomeItemRoute(from, point, input.platforms, input.allowJump, input.intoRoom)) return point;
   }
 }
 
@@ -45,7 +56,7 @@ export function selectCompanionHomePantryPoint(input: PantryInput, from: Compani
 export function selectCompanionHomeFoodDestination(input: PantryInput & { bin?: CompanionHomeItemPoint; brain: CompanionBrain; preferences: CompanionPreferences }, from: CompanionHomeItemPoint, food: Pick<CompanionFood, "id" | "kind">) {
   const favorite = input.brain.life?.favoriteFood === food.kind || input.preferences.learnFromYou !== false && (input.brain.life?.foodScores[food.kind] ?? 0) >= .7;
   const bin = input.bin, support = input.platforms.find(p => p.id === bin?.platformId);
-  if (input.brain.hunger < COMPANION_FULL_THRESHOLD && !favorite && bin && support && isRoomFloor(support) && findCompanionHomeItemRoute(from, bin, input.platforms, input.allowJump)) return { destination: bin, discard: true };
+  if (input.brain.hunger < COMPANION_FULL_THRESHOLD && !favorite && bin && support && isRoomFloor(support) && findCompanionHomeItemRoute(from, bin, input.platforms, input.allowJump, input.intoRoom)) return { destination: bin, discard: true };
   const pantry = selectCompanionHomePantryPoint(input, from, food);
   return pantry ? { destination: pantry, discard: false } : undefined;
 }

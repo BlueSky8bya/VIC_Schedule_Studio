@@ -645,6 +645,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
     let sofaTravelActive = false;
     let petResponse: ReturnType<typeof companionPettingResponse> = [], petResponseUntil = 0;
     let sofaFlightShape: CompanionSofaTravelShape | undefined, ballisticCoefficient: number | null = null;
+    // The one recovery fall that has left its support (its own action object, never a flag that outlives it).
+    let detachedFall: RuntimeAction | null = null;
     let jumpRecoveryContext: Pick<CompanionAction, "foodId" | "intention" | "episode"> | undefined;
     const jumpAnticipation = () => action?.runUp ? 0 : (action?.jumpHeight ?? 140) > 140 ? 320 : COMPANION_TIMING.jumpAnticipation;
     let placementPointer: number | null = null;
@@ -1525,7 +1527,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         // Transport sits on the registered upper front of the body. The
         // 32px snack foot is8px below that point, leaving real floor clearance.
         if (carryPoint && carriedFood) {
-          let point = { x: carryPoint.x, y: carryPoint.y + 8 };
+          // A jump's crouch and landing squash lower the registered point; the
+          // carried snack still stays above the floor the feet stand on.
+          let point = { x: carryPoint.x, y: Math.min(carryPoint.y + 8, display.y - 5) };
           if (isFoodDisposal(action) && foodDisposalAim) point = sampleCompanionFoodDisposal(point, foodDisposalAim.point, (performance.now() - began) / total);
           food.current?.carry(carriedFood, point, isFoodDisposal(action) ? recordFoodDisposalPaint : undefined);
         }
@@ -1842,7 +1846,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       }
       if (pressed || keyboardHeld || placing || flight) { supportMotion.reset(now); if (hasPlatformSnapshot) toys.current?.sync([...platforms, ...landingPlatforms], { width: innerWidth, height: innerHeight }, now, toySmallFloors, toyAnchor); return bedMoved || returnMoved; }
       const shift = (id: string | undefined, point: { x: number; y: number }) => shifts.get(id ?? "")?.(point) ?? { x: 0, y: 0 };
-      const from = shift(support, action ? origin : { x, y }), to = shift(action?.target.platformId ?? support, action ? action.target : { x, y });
+      // A fall that recovered an unsafe airborne arc has left its old support:
+      // its origin stays where the body was, so a scroll that keeps carrying
+      // the departure ledge away cannot carry the visible body out with it.
+      const from = action && action === detachedFall ? { x: 0, y: 0 } : shift(support, action ? origin : { x, y }), to = shift(action?.target.platformId ?? support, action ? action.target : { x, y });
       if (homeContact) { const moved = shift(support, homeContact.point); homeContact.point.x += moved.x; homeContact.point.y += moved.y; }
       let px = 0, py = 0;
       if (action) {
@@ -1973,7 +1980,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       for (const key of ["data-episode", "data-episode-phase", "data-episode-variant", "data-episode-food"]) el.removeAttribute(key);
     };
     const cancelHousehold = () => { household.cancel(); const carried = food.current?.carried(); if (carried) food.current?.releaseCarry(carried); if (action?.household) action = { ...action, household: undefined }; el.removeAttribute("data-household"); };
-    const clearAction = (preserveEpisode = false, preserveHousehold = false, preserveScene = false, preserveHomeLife = false) => { if (!preserveHomeLife) cancelHomeLife(); witnessedCheerHops = 0; aftertastePaintAt = aftertastePaintMs = 0; el.removeAttribute("data-food-aftertaste"); activityArrival=undefined; el.dataset.lifePurpose="ordinary"; if (!preserveScene && action?.personalityScene?.id.startsWith("entry-") && !personalityDirector.entryReady()) personalityDirector.cancel(); clearHomeContact(); sleepPaintAt = 0; watchPaintMs = watchPaintAt = 0; if (washTool.current) washTool.current.hidden = true; el.removeAttribute("data-washing"); if (!preserveScene) { scenes.cancel(); toyPlanner.cancel(brain.current.activeMs); toys.current?.cancel(performance.now()); } if (!preserveHousehold) cancelHousehold(); el.removeAttribute("data-food-curiosity"); clearThrow(); sofaTravelActive = false; sofaFlightShape = undefined; ballisticCoefficient = null; el.removeAttribute("data-sofa-flight"); if (!preserveEpisode) { jumpRecoveryContext = undefined; brain.current = { ...brain.current, episode: undefined }; el.removeAttribute("data-episode"); el.removeAttribute("data-episode-phase"); el.removeAttribute("data-episode-variant"); el.removeAttribute("data-episode-food"); el.removeAttribute("data-food-goal"); } else if (brain.current.episode) data("episodePhase", brain.current.episode.phase); if (homeDeparture?.flying) homeDeparture = undefined; action = null; toyReturnAim = undefined; toyReturnPainted = undefined; foodDisposalAim = undefined; foodDisposalPainted = undefined; heldShake.reset(); shakenReleasePending = undefined; shakenGroundColumn = undefined; runTrip = runHop = undefined; runUpCurve = false; el.removeAttribute("data-trip"); el.removeAttribute("data-run-up"); el.removeAttribute("data-held-dizzy"); food.current?.nibble(); heartResult = null; sleeping = false; playImpact = playFalling = panelImpact = false; panelContact = undefined; el.removeAttribute("data-attention"); el.removeAttribute("data-intent"); el.removeAttribute("data-play"); el.removeAttribute("data-play-beat"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); paintedStyles.delete(effect.current); } };
+    const clearAction = (preserveEpisode = false, preserveHousehold = false, preserveScene = false, preserveHomeLife = false) => { detachedFall = null; if (!preserveHomeLife) cancelHomeLife(); witnessedCheerHops = 0; aftertastePaintAt = aftertastePaintMs = 0; el.removeAttribute("data-food-aftertaste"); activityArrival=undefined; el.dataset.lifePurpose="ordinary"; if (!preserveScene && action?.personalityScene?.id.startsWith("entry-") && !personalityDirector.entryReady()) personalityDirector.cancel(); clearHomeContact(); sleepPaintAt = 0; watchPaintMs = watchPaintAt = 0; if (washTool.current) washTool.current.hidden = true; el.removeAttribute("data-washing"); if (!preserveScene) { scenes.cancel(); toyPlanner.cancel(brain.current.activeMs); toys.current?.cancel(performance.now()); } if (!preserveHousehold) cancelHousehold(); el.removeAttribute("data-food-curiosity"); clearThrow(); sofaTravelActive = false; sofaFlightShape = undefined; ballisticCoefficient = null; el.removeAttribute("data-sofa-flight"); if (!preserveEpisode) { jumpRecoveryContext = undefined; brain.current = { ...brain.current, episode: undefined }; el.removeAttribute("data-episode"); el.removeAttribute("data-episode-phase"); el.removeAttribute("data-episode-variant"); el.removeAttribute("data-episode-food"); el.removeAttribute("data-food-goal"); } else if (brain.current.episode) data("episodePhase", brain.current.episode.phase); if (homeDeparture?.flying) homeDeparture = undefined; action = null; toyReturnAim = undefined; toyReturnPainted = undefined; foodDisposalAim = undefined; foodDisposalPainted = undefined; heldShake.reset(); shakenReleasePending = undefined; shakenGroundColumn = undefined; runTrip = runHop = undefined; runUpCurve = false; el.removeAttribute("data-trip"); el.removeAttribute("data-run-up"); el.removeAttribute("data-held-dizzy"); food.current?.nibble(); heartResult = null; sleeping = false; playImpact = playFalling = panelImpact = false; panelContact = undefined; el.removeAttribute("data-attention"); el.removeAttribute("data-intent"); el.removeAttribute("data-play"); el.removeAttribute("data-play-beat"); el.removeAttribute("data-heart-result"); el.removeAttribute("data-dreaming"); el.removeAttribute("data-grab-ready"); if (effect.current) { effect.current.getAnimations().forEach(animation => animation.cancel()); effect.current.textContent = ""; effect.current.removeAttribute("style"); paintedStyles.delete(effect.current); } };
     const clearForPetting = () => {
       cancelManualWash();
       petResponse = [];
@@ -2034,7 +2041,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         ...(interrupted.foodId ? { foodId: interrupted.foodId } : {}),
         ...(interrupted.intention ? { intention: { ...interrupted.intention } } : {}),
         ...(interrupted.episode ? { episode: { ...interrupted.episode } } : {}) } : undefined;
+      // Re-aim from the visible top edge at most: a scroll-carried arc is never
+      // hidden for bounds while it falls to the first support below.
+      y = Math.max(y, size + 8);
       settle({ x, y });
+      detachedFall = action;
       nextDecision = now + 300;
     };
     const waitForSupport = () => {
@@ -2597,6 +2608,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       data("homeLife", phase); advanceHomeLife(now); return true;
     };
     const launch = (next: RuntimeAction, now: number) => {
+      detachedFall = null;
       if (offerHomeLife(next, now)) return;
       if (next.kind === "jump" && !reduced && !["off", "soft"].includes(gfxMode())) ensureWardrobe(true);
       aftertastePaintMs = aftertastePaintAt = 0;

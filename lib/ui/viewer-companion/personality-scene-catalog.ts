@@ -28,6 +28,8 @@ export type PersonalitySceneRecipe = {
   propShow?: true;
   /** Initial selection scope only; a bound same-ID goal survives movement. */
   toyScope?: "outside"; foodScope?: "outside";
+  /** An event scene that is answered before a due toy return (owner 2026-11-19: sleepy S10 before S03). */
+  beforeDueReturn?: true;
 };
 
 const p = (pose: Extract<SceneBeat, { kind: "pose" }>["pose"], audience=false): SceneBeat => ({ kind: "pose", pose, ...(audience?{audience:true as const}:{}) });
@@ -119,7 +121,7 @@ export const COMPANION_PERSONALITY_SCENES: readonly PersonalitySceneRecipe[] = O
   { id: "S07", label: "물고기 인형 감상", personality: "sleepy", major: false, triggers: ["toy"], steps: [t("inspect", ["plush-fish"]), w(900), t("return", ["plush-fish"])] },
   { id: "S08", label: "쓰담 뒤 하품", personality: "sleepy", major: false, triggers: ["pet"], steps: [p("doze-curl"), p("stretch")] },
   { id: "S09", label: "쉬다가 자세 바꾸기", personality: "sleepy", major: false, triggers: ["free"], steps: [p("cozy-nest"), p("stretch"), p("groom")] },
-  { id: "S10", label: "떨어진 물건에 눈 뜨기", personality: "sleepy", major: false, triggers: ["toy", "toy-settled"], steps: [p("stretch"), t("inspect"), p("bow")] },
+  { id: "S10", label: "떨어진 물건에 눈 뜨기", personality: "sleepy", major: false, triggers: ["toy", "toy-settled"], beforeDueReturn: true, steps: [p("stretch"), t("inspect"), p("bow")] },
   { id: "S11", label: "깨어 있는 귀 반응", personality: "sleepy", major: false, triggers: ["free"], steps: [p("doze-curl"), p("stretch"), p("bow")] },
   { id: "S12", label: "작업 틈 스트레칭", personality: "sleepy", major: false, triggers: ["work"], steps: [p("stretch"), p("groom")] },
   // T01 계기: 실제 장난감이 흩어져 있고 급한 허기가 없으며 상자까지 현재 경로가 성립한다.

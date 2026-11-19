@@ -2136,9 +2136,13 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
 .rhh-collection-detail-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; color: var(--companion-soft); font-size: var(--text-caption); }
 .rhh-collection-detail-meta .rhh-collection-recent, .rhh-collection-keepsake { display: inline-flex; align-items: center; gap: 4px; width: fit-content; margin: 0; border-radius: var(--r-pill); background: var(--companion-mint); padding: 4px 8px; color: var(--companion-ink); font-size: var(--text-caption); }
 .rhh-collection-keepsake { background: var(--companion-lilac); }
-.rhh-companion-settings .rhh-collection-book .rhh-gift-arrival { flex-wrap: nowrap; gap: 8px; padding: 6px 10px; }
-.rhh-companion-settings .rhh-collection-book .rhh-gift-arrival > .vc-collection-art { width: 38px; height: 38px; }
-.rhh-companion-settings .rhh-collection-book .rhh-gift-arrival > strong { min-width: 0; font-size: var(--text-body); }
+/* A pending gift is one compact pill on the heading line (owner 2026-11-19): its own row made the
+   wardrobe page about 58px too tall. The heading's 44px hit height already holds the open button. */
+.rhh-companion-settings .rhh-collection-book .rhh-collection-heading > .rhh-gift-arrival { display: flex; flex: 0 1 auto; flex-wrap: nowrap; align-items: center; gap: 6px; min-width: 0; margin: 0 0 0 auto; border-radius: var(--r-pill); padding: 0 2px 0 8px; }
+.rhh-companion-settings .rhh-collection-book .rhh-gift-arrival > .vc-collection-art { width: 28px; height: 28px; }
+.rhh-companion-settings .rhh-collection-book .rhh-gift-arrival > strong { flex: 0 1 auto; min-width: 0; overflow: hidden; font-size: var(--text-caption); text-overflow: ellipsis; white-space: nowrap; }
+.rhh-companion-settings .rhh-collection-book .rhh-gift-arrival > .rhh-link { flex: none; }
+.rhh-companion-experience .rhh-collection-heading > .rhh-gift-arrival + .rhh-collection-count { margin-left: 0; }
 .rhh-companion-settings .rhh-collection-book .rhh-equipped-current { display: flex; align-items: center; justify-content: flex-end; gap: 8px; font-size: var(--text-caption); }
 /*135: a warm field guide, with a single large specimen and quiet silhouettes.
   Unknown names/stories stay hidden; selection never changes the fixed split. */
@@ -2206,11 +2210,10 @@ html[data-reduce-motion] .rhh-collection-page-dots > span { transition: none; }
 @media (max-height: 700px) {
   .rhh-companion-experience > [role="tabpanel"] { --companion-preview-size: 148px; }
   .rhh-companion-settings .rhh-collection-book { gap: 5px; }
-  .rhh-companion-settings .rhh-collection-book .rhh-collection-heading { display: none; }
+  .rhh-companion-settings .rhh-collection-book .rhh-collection-heading:not(:has(> .rhh-gift-arrival)) { display: none; }
   .rhh-companion-settings .rhh-collection-book .rhh-wardrobe-detail { min-height: 182px; gap: 12px; padding: 8px 12px; }
   .rhh-companion-settings .rhh-collection-book .rhh-wardrobe-detail-copy { gap: 6px; }
   .rhh-companion-settings .rhh-collection-book .rhh-wardrobe-kind { display: none; }
-  .rhh-companion-settings .rhh-collection-book .rhh-gift-arrival { padding-block: 0; }
   .rhh-companion-settings .rhh-collection-book .rhh-collection-gallery-detail { grid-template-columns: 96px minmax(0, 1fr); height: 116px; min-height: 116px; gap: 10px; padding: 8px 10px; }
   .rhh-collection-art-stage > :is(.vc-collection-art, .rhh-memory-silhouette), .rhh-companion-settings .rhh-collection-book .rhh-toy-detail .rhh-collection-art-stage > .vc-toy-art { width: 96px; height: 96px; }
   .rhh-collection-overline { display: none; }

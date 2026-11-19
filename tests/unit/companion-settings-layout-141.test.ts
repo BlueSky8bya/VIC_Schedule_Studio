@@ -1,6 +1,7 @@
-import type { ReactElement, ReactNode } from "react";
+import { createElement, type ReactElement, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { SettingsSegment, RowLabel, Switch } from "@/components/shared/settings-controls";
+import { SettingsSegment, RowLabel, SiteVolumeSlider, Switch } from "@/components/shared/settings-controls";
+import { companionSiteVolumeBlock } from "@/lib/ui/viewer-companion/settings-status";
 import { COMPANION_SOUND_HINTS, COMPANION_SOUND_MOMENTS } from "@/lib/ui/viewer-companion/companion-sound";
 import { COMPANION_PERSONALITIES, DEFAULT_COMPANION_PREFERENCES } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_PERSONALITY_LAYOUT } from "@/lib/ui/viewer-companion/personality-layout";
@@ -117,5 +118,38 @@ describe("141 shared basic personality settings", () => {
     expect(nodes(tree).filter(element => element.props.role === "tablist" || element.props.role === "tab" || element.props.role === "tabpanel")).toEqual([]);
     expect(nodes(tree).filter(element => element.type === SettingsSegment).map(element => element.props.dataAct)).toEqual(["companion-sound-level", "companion-speed"]);
     expect(nodes(tree).some(element => element.props["data-settings-place"] === "companion-roam" || element.props["data-motion-preview"] !== undefined)).toBe(false);
+  });
+});
+
+describe("site volume on the companion sound card (owner 2026-11-19)", () => {
+  const card = (soundOn: boolean, value = 40, change = vi.fn()) => nodes(CompanionBehaviorSettings({ preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true }, onChange: vi.fn(),
+    site: { soundOn, soundVolume: value, reduceMotion: false, gfx: undefined }, onGoTo: vi.fn(), active: true, radio: null,
+    siteVolume: createElement(SiteVolumeSlider, { value, onChange: change }) }));
+  it("sits directly above 빅타민 음량 and is the one shared slider, with its own one-line hint", () => {
+    const rows = card(true).filter(element => String(element.props.className).includes("role-help-haptics"));
+    const labels = rows.map(row => nodes(row.props.children as ReactNode).find(element => element.type === RowLabel)?.props.children);
+    expect(labels.indexOf("전체 음량") + 1).toBe(labels.indexOf("빅타민 음량"));
+    const row = rows[labels.indexOf("전체 음량")];
+    expect(String(row.props["data-tip"]).length).toBeLessThanOrEqual(32);
+    expect(nodes(row.props.children as ReactNode).filter(element => element.type === SiteVolumeSlider)).toHaveLength(1);
+  });
+  it("moves the same stored value from either place: both render the same slider with the same handler", () => {
+    const change = vi.fn(), slider = SiteVolumeSlider({ value: 35, onChange: change });
+    const input = nodes(slider).find(element => element.type === "input")!;
+    expect(input.props).toMatchObject({ "data-act": "sound-volume", "aria-label": "전체 음량", value: 35 });
+    expect(input.props.disabled).toBeUndefined();
+    (input.props.onChange as (event: unknown) => void)({ currentTarget: { value: "60" } });
+    (input.props.onPointerUp as (event: unknown) => void)({ currentTarget: { value: "60" } });
+    // Only a slider key finishes the change (and plays the level); Tab/Shift do not.
+    for (const key of ["Tab", "Shift", "ArrowRight", "PageUp"]) (input.props.onKeyUp as (event: unknown) => void)({ key, currentTarget: { value: "60" } });
+    expect(change.mock.calls).toEqual([[60], [60, true], [60, true], [60, true]]);
+    expect(nodes(slider).find(element => element.props.className === "rhh-vol-num")?.props.children).toBe(35);
+  });
+  it("is dimmed with the site sound reason while the site sound is off", () => {
+    expect(companionSiteVolumeBlock({ soundOn: true })).toBeNull();
+    const rows = card(false).filter(element => String(element.props.className).includes("role-help-haptics"));
+    const row = rows.find(element => element.props["data-tip"] && nodes(element.props.children as ReactNode).some(child => child.type === SiteVolumeSlider))!;
+    expect(String(row.props.className)).toContain("is-blocked");
+    expect(card(false).some(element => element.props.text === "사이트 효과음이 꺼져 있어요" && element.props.place === "site-sound")).toBe(true);
   });
 });

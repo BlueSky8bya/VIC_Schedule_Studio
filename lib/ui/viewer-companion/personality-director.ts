@@ -1210,7 +1210,7 @@ export function createCompanionPersonalityDirector(recipes: readonly Personality
         const returns = choices.filter(recipe => recipe.steps.some(step => step.kind === "toy" && step.mode === "return" && !step.optional));
         for (const id of waitingReturns.keys()) if (!returns.some(recipe => recipe.id === id)) waitingReturns.delete(id);
         for (const recipe of returns) if (!waitingReturns.has(recipe.id)) waitingReturns.set(recipe.id, cursor);
-        const dueReturn = !event.some(recipe => recipe.triggers.includes("pet"))
+        const dueReturn = !event.some(recipe => recipe.triggers.includes("pet") || recipe.beforeDueReturn)
           ? returns.find(recipe => cursor - waitingReturns.get(recipe.id)! >= 2) : undefined;
         const group = cleanupFollowup ? [cleanupFollowup] : introduction ? [introduction] : mealFollowup && choices.includes(mealFollowup) ? [mealFollowup] : dueReturn ? [dueReturn] : event.length ? event : major.length && cursor % 4 !== 3 ? major : choices;
         // Prefer a whole currently executable goal within this same priority

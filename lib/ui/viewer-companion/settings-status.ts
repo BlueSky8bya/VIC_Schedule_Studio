@@ -47,6 +47,11 @@ export function companionSoundStatus(preferences: Readonly<CompanionPreferences>
   return { state: "on", text: "지금 소리가 나요" };
 }
 
+/** The site volume row on the companion sound card: the site sound switch keeps it from doing anything. */
+export function companionSiteVolumeBlock(site: Pick<CompanionSiteGates, "soundOn">): CompanionSettingsNote | null {
+  return site.soundOn ? null : { text: "사이트 효과음이 꺼져 있어요", place: "site-sound" };
+}
+
 /** Rows an outer setting can stop. */
 export type CompanionBlockedRow = "playful" | "panelPrank" | "radioSelfStart";
 

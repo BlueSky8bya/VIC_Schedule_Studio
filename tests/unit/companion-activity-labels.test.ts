@@ -72,8 +72,8 @@ const COLLECTION = [
 describe("빅타민 행동 기록 이름과 저장 경계", () => {
   it("활동·자동 잠자기·여덟 성격·직접 장난감 조작이 같은 현재 이름으로 읽힌다", () => {
     const examples = [
-      ["companion-active-visible#on", "빅타민 다른 창 쓸 때도 놀기 · 켜기"],
-      ["companion-active-visible#off", "빅타민 다른 창 쓸 때도 놀기 · 끄기"],
+      ["companion-active-visible#on", "빅타민 다른 프로그램 쓸 때도 놀기 · 켜기"],
+      ["companion-active-visible#off", "빅타민 다른 프로그램 쓸 때도 놀기 · 끄기"],
       ["companion-sleep#off", "빅타민 자동 잠자기 · 끄기"],
       ...COMPANION_PERSONALITIES.map(value => [`companion-personality#${value}`, `빅타민 성격 · ${COMPANION_PERSONALITY_NAMES[value]}`]),
       ["companion-home-toys", "빅타민 장난감 상자 열기"], ["companion-toy-grab", "빅타민 장난감 집기"],

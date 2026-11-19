@@ -185,7 +185,7 @@ test("radio empty pool, dedicated OFF, zero volume and global OFF keep play cont
   await expect(radio.getByRole("button", { name: "재생", exact: true })).toBeDisabled();
   await dialog.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true }).click();
   await dialog.locator('[data-tab="sound"]').click();
-  const globalVolume = dialog.getByRole("slider", { name: "효과음 음량", exact: true });
+  const globalVolume = dialog.getByRole("slider", { name: "전체 음량", exact: true });
   await globalVolume.focus(); await globalVolume.press("Home");
   await dialog.locator('[data-tab="companion"]').click();
   await dialog.getByRole("tab", { name: "설정", exact: true }).click();

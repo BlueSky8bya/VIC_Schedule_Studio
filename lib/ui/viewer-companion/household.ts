@@ -19,7 +19,9 @@ export function createCompanionHousehold(rng: () => number = Math.random) {
   let job: Job | undefined, serial = 0, retryAt = 0, lastNow = 0, cooldownMs = 35000;
   const handled = new Map<string, number>();
   const finish = (now: number) => { job = undefined; retryAt = now + cooldownMs; };
-  const route = (input: Input, target: Point) => findCompanionHomeItemRoute(input.world, target, input.world.platforms, input.preferences.jump);
+  // Only tidying carries into the room by the recall's route; a prank or
+  // self-feed trip to the dispenser keeps the short item search.
+  const route = (input: Input, target: Point, intoRoom = false) => findCompanionHomeItemRoute(input.world, target, input.world.platforms, input.preferences.jump, intoRoom);
   const pointFor = (food: CompanionFood, platforms: readonly Platform[]): Point | undefined => {
     const support = platforms.find(p => p.id === food.platformId);
     return support && { x: platformLandingX(support, food.x), y: support.y, platformId: support.id };
@@ -29,7 +31,7 @@ export function createCompanionHousehold(rng: () => number = Math.random) {
   const visibleFoods = (input: Input) => (input.visibleFoods ?? input.world.foods ?? []).slice(0, MAX_COMPANION_FOOD);
   const destinationFor = (input: Input, from: Point, food: Pick<CompanionFood, "id" | "kind">) => selectCompanionHomeFoodDestination({
     ...input.home, platforms: input.world.platforms, visibleFoods: visibleFoods(input), occupied: input.occupied,
-    allowJump: input.preferences.jump, brain: input.brain, preferences: input.preferences,
+    allowJump: input.preferences.jump, brain: input.brain, preferences: input.preferences, intoRoom: true,
   }, from, food);
   const eligible = ({ brain, world, preferences, intent }: Input) => preferences.enabled && preferences.roam && preferences.feeding && world.animated
     && !world.paused && brain.energy > (intent ? .08 : .3) && (intent === "feed" ? brain.hunger >= .35 : brain.hunger < (intent ? .8 : .65)) && !brain.foodGoal && !brain.episode
@@ -47,7 +49,7 @@ export function createCompanionHousehold(rng: () => number = Math.random) {
     if (foods.length >= (input.preferences.personality === "tidy" || input.intent === "tidy" ? 1 : 2) && (input.intent === "tidy" || rng() < profile.tidyWeight * .8)) {
       const candidates = ordered.flatMap(food => {
         const source = pointFor(food, input.world.platforms);
-        return source && route(input, source) ? [{ food, source }] : [];
+        return source && route(input, source, true) ? [{ food, source }] : [];
       });
       for (const { food, source } of candidates) {
         const destination = destinationFor(input, source, food);
@@ -99,7 +101,7 @@ export function createCompanionHousehold(rng: () => number = Math.random) {
     if (active.stage === "seek") target = food && pointFor(food, input.world.platforms);
     else target = active.destination;
     if (!target || active.stage === "deliver" && input.carried !== active.foodId) { finish(input.now); return; }
-    const steps = route(input, target);
+    const steps = route(input, target, active.kind === "tidy");
     if (!steps) { finish(input.now); return; }
     const step = steps[0];
     if (step) {

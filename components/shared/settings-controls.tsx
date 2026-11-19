@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Volume2, VolumeX } from "lucide-react";
 import { useId, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { logActivity } from "@/lib/activity/client";
 
@@ -159,4 +159,25 @@ export function flashSettingsPlace(root: ParentNode | null | undefined, place: s
   row.setAttribute("data-flash", "");
   flashTimers.set(row, window.setTimeout(() => { row.removeAttribute("data-flash"); flashTimers.delete(row); }, 1800));
   return true;
+}
+
+/** Keys that finish a slider change (same as the companion volume): only then is the new level heard. */
+const SLIDER_COMMIT_KEYS = new Set(["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End", "PageUp", "PageDown"]);
+
+/** The one site-wide volume slider, "전체 음량" (설정 › 소리 and the 빅타민 sound
+ * card, owner 2026-11-19). Both places pass the same stored value and change
+ * handler, so moving either one moves the other. It scales every site sound
+ * (effects, radio, companion). With the site sound off it stays operable with
+ * its value; the row around it is dimmed and says why. `children` follow the
+ * number (소리 탭's 들어 보기). */
+export function SiteVolumeSlider({ value, onChange, children }: { value: number; onChange: (value: number, commit?: boolean) => void; children?: ReactNode }) {
+  return <div className="rhh-volume">
+    <VolumeX aria-hidden="true" className="rhh-vol-ico" size={15} />
+    <input aria-label="전체 음량" aria-valuetext={`${value}%`} data-act="sound-volume" max={100} min={0}
+      onChange={event => onChange(Number(event.currentTarget.value))} onKeyUp={event => { if (SLIDER_COMMIT_KEYS.has(event.key)) onChange(Number(event.currentTarget.value), true); }}
+      onPointerUp={event => onChange(Number(event.currentTarget.value), true)} step={5} style={{ "--vol": `${value}%` } as CSSProperties} type="range" value={value} />
+    <Volume2 aria-hidden="true" className="rhh-vol-ico" size={15} />
+    <b className="rhh-vol-num">{value}</b>
+    {children}
+  </div>;
 }

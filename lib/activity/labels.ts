@@ -713,7 +713,7 @@ export const ACT: Record<string, TargetLabel> = {
   "companion-radio-license": { name: "빅타민 라디오 음악 이용 조건", area: "설정" },
   "companion-wardrobe-preview": { name: "빅타민 장신구 미리보기", area: "설정" },
   "companion-enabled": { name: "AI 빅타민", area: "설정", opts: { on: "켜기", off: "끄기" } },
-  "companion-active-visible": { name: "빅타민 다른 창 쓸 때도 놀기", area: "설정", opts: { on: "켜기", off: "끄기" } },
+  "companion-active-visible": { name: "빅타민 다른 프로그램 쓸 때도 놀기", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-motion-level": { name: "빅타민 움직임", area: "설정", opts: { still: "가만히", walk: "걷기만", run: "뛰어다니기" }, hint: "옛 기록(2026-11-19 움직임 설정을 없앰. 이제 늘 자유롭게 걷고 뛰어요)", retired: true },
   "companion-playful": { name: "빅타민 장난치기", area: "설정", opts: { on: "켜기", off: "끄기" } },
   "companion-roam": { name: "빅타민 돌아다니기", area: "설정", opts: { on: "켜기", off: "끄기" }, hint: "옛 기록(2026-11-19 움직임 설정을 없앰. 이제 늘 자유롭게 걷고 뛰어요)", retired: true },
@@ -777,7 +777,7 @@ export const ACT: Record<string, TargetLabel> = {
   },
   "theme-mode-select": { name: "화면 모드", area: "설정", opts: { light: "밝게", dark: "어둡게", system: "자동" } },
   "sound-toggle": { name: "효과음", area: "설정" },
-  "sound-volume": { name: "효과음 음량", area: "설정" },
+  "sound-volume": { name: "전체 음량", area: "설정" },
   "sound-preview": { name: "효과음 들어보기", area: "설정", hint: "음량 옆 미리듣기" },
   "sound-sample": {
     name: "소리 모아 듣기",

@@ -95,7 +95,7 @@ test("actual calendar instrument onsets drive the shared creature reaction and c
   await other.getByRole("button", { name: "설정", exact: true }).click();
   const dialog = other.getByRole("dialog", { name: "설정", exact: true });
   await dialog.getByRole("tab", { name: "소리", exact: true }).click();
-  const volume = dialog.getByRole("slider", { name: "효과음 음량", exact: true });
+  const volume = dialog.getByRole("slider", { name: "전체 음량", exact: true });
   await volume.focus(); await volume.press("Home");
   await expect(volume).toHaveValue("0");
   await other.close(); await page.bringToFront();

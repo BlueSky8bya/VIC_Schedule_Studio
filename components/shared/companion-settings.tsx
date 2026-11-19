@@ -3,7 +3,7 @@
 import { ArrowDownToLine, EyeOff, Gauge, Grab, Heart, Leaf, Pointer, Sparkles, Volume1, Volume2, VolumeX } from "lucide-react";
 import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { RowLabel, SettingsNote, SettingsSegment, Switch, flashSettingsPlace } from "@/components/shared/settings-controls";
-import { COMPANION_SETTINGS_PLACE_LABELS, companionRowBlock, companionSoundStatus, type CompanionBlockedRow, type CompanionSettingsNote, type CompanionSettingsPlace, type CompanionSiteGates } from "@/lib/ui/viewer-companion/settings-status";
+import { COMPANION_SETTINGS_PLACE_LABELS, companionRowBlock, companionSiteVolumeBlock, companionSoundStatus, type CompanionBlockedRow, type CompanionSettingsNote, type CompanionSettingsPlace, type CompanionSiteGates } from "@/lib/ui/viewer-companion/settings-status";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
 import { COMPANION_SOUND_AUDITIONS, COMPANION_SOUND_HINTS, COMPANION_SOUND_NAMES, auditionCompanionSound, companionSoundAllowed, previewCompanionSoundLevel, previewCompanionSoundVolume, type CompanionSoundMoment } from "@/lib/ui/viewer-companion/companion-sound";
 import { companionPlayful, companionPlayfulPatch, companionSoundLevel, companionSoundLevelPatch, type CompanionSoundLevel } from "@/lib/ui/viewer-companion/settings-levels";
@@ -17,11 +17,13 @@ export const COMPANION_SETTING_HINTS = Object.freeze({
   panelPrank: "옆 패널을 잠깐 반대쪽으로 옮겨요.",
   speed: "걷는 빠르기예요.",
   sleep: "가만히 두면 스스로 잠들어요.",
-  activeWhileVisible: "다른 프로그램을 쓰는 동안에도 계속 놀아요.",
+  activeWhileVisible: "방송 프로그램 등을 쓰는 동안에도 계속 놀아요.",
   drag: "마우스로 집어서 옮길 수 있어요.",
   petting: "문지르거나 톡 치면 좋아해요.",
   feeding: "집에 밥통이 생겨 밥을 줄 수 있어요.",
 } as const);
+/** The site volume row on the sound card: the same slider as 설정 › 소리. */
+export const SITE_VOLUME_HINT = "사이트 전체 소리 크기예요. 소리 탭과 같은 값이에요.";
 /** The sound level explains each choice by itself. */
 export const COMPANION_SOUND_LEVEL_HINTS = Object.freeze({ off: "소리를 내지 않아요.", touch: "쓰다듬거나 집을 때만 소리가 나요.", all: "혼자 놀다 내는 소리까지 나요." } as const);
 /** Whether "더 보기" is open. Kept for this page load only: reopening the settings finds it as it was left, a reload folds it again. Nothing is stored. */
@@ -38,7 +40,7 @@ export type CompanionPlaceRequest = Readonly<{ place: CompanionSettingsPlace; n:
 /** Shared setting controls stay editable while OFF, so a quiet preset can be prepared first.
  * A row that an outer setting keeps from working stays operable with its value;
  * it is dimmed and says which setting is in the way (stage 1, proposal 3-4). */
-export function CompanionBehaviorSettings({ preferences, onChange, site, onGoTo, placeRequest, active, radio }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; site: CompanionSiteGates; onGoTo: (place: CompanionSettingsPlace) => void; placeRequest?: CompanionPlaceRequest; active: boolean; radio: ReactNode }) {
+export function CompanionBehaviorSettings({ preferences, onChange, site, siteVolume, onGoTo, placeRequest, active, radio }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; site: CompanionSiteGates; siteVolume?: ReactNode; onGoTo: (place: CompanionSettingsPlace) => void; placeRequest?: CompanionPlaceRequest; active: boolean; radio: ReactNode }) {
   const soundHintId = useId();
   const root = useRef<HTMLDivElement>(null);
   // A place inside this page is reached here; any other place belongs to the host.
@@ -82,6 +84,7 @@ export function CompanionBehaviorSettings({ preferences, onChange, site, onGoTo,
   // A tile is pressable exactly when its real sound could be heard now; nothing here bypasses a setting.
   const [auditioned, setAuditioned] = useState<CompanionSoundMoment | null>(null);
   const siteSilent = !site.soundOn || site.soundVolume <= 0;
+  const siteVolumeBlock = companionSiteVolumeBlock(site);
   return <div className="rhh-companion-settings rhh-companion-cards" ref={root}>
     {off ? <SettingsNote className="rhh-note-resting" text="빅타민이 쉬는 중이라 아래 설정은 켜면 적용돼요" /> : null}
     <section aria-label="소리" className="rhh-companion-section">
@@ -93,6 +96,11 @@ export function CompanionBehaviorSettings({ preferences, onChange, site, onGoTo,
           <div aria-live="polite" className="rhh-sound-status-slot"><SettingsNote className="rhh-sound-status" onGoTo={place => goTo(place as CompanionSettingsPlace)} place={soundStatus.place} placeLabel={soundStatus.place && COMPANION_SETTINGS_PLACE_LABELS[soundStatus.place]} state={soundStatus.state} text={soundStatus.text} /></div>
           <SettingsSegment<CompanionSoundLevel> ariaLabel="빅타민 소리" columns={3} dataAct="companion-sound-level" onChange={chooseSoundLevel} onReselect={chooseSoundLevel} options={[{ value: "off", label: "끔", tip: COMPANION_SOUND_LEVEL_HINTS.off }, { value: "touch", label: "만질 때만", tip: COMPANION_SOUND_LEVEL_HINTS.touch }, { value: "all", label: "전부", tip: COMPANION_SOUND_LEVEL_HINTS.all }]} value={soundLevel} />
         </div>
+        {/* The site's own volume, the same control and value as 설정 › 소리 (owner 2026-11-19). The status line above reads it live. */}
+        {siteVolume ? <>
+          <div className={`role-help-haptics rhh-stack-sm${siteVolumeBlock ? " is-blocked" : ""}`} data-tip={SITE_VOLUME_HINT}><RowLabel icon={<Volume2 size={15} />} tone="water">전체 음량</RowLabel>{siteVolume}</div>
+          {siteVolumeBlock ? <SettingsNote onGoTo={place => goTo(place as CompanionSettingsPlace)} place={siteVolumeBlock.place} placeLabel={siteVolumeBlock.place && COMPANION_SETTINGS_PLACE_LABELS[siteVolumeBlock.place]} text={siteVolumeBlock.text} /> : null}
+        </> : null}
         <div className={`role-help-haptics rhh-stack-sm${off || !preferences.sound || !preferences.soundCare ? " is-blocked" : ""}`}><RowLabel icon={<Volume1 size={15} />} tone="water">빅타민 음량</RowLabel><div className="rhh-volume"><VolumeX aria-hidden="true" size={15} /><input aria-label="빅타민 음량" aria-valuetext={`${preferences.soundVolume}%`} data-act="companion-sound-volume" data-sfx="off" max={100} min={0} onChange={event => onChange({ soundVolume: Number(event.currentTarget.value) })} onKeyUp={event => { if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Home", "End"].includes(event.key)) auditionVolume(Number(event.currentTarget.value)); }} onPointerUp={event => auditionVolume(Number(event.currentTarget.value))} step={5} style={{ "--vol": `${preferences.soundVolume}%` } as CSSProperties} type="range" value={preferences.soundVolume} /><Volume2 aria-hidden="true" size={15} /><b className="rhh-vol-num">{preferences.soundVolume}</b></div></div>
         <details className="rhh-sound-auditions">
           <summary data-act="companion-sound-audition-fold" data-activity-manual="" onClick={event => logActivity("ui.click", { target: event.currentTarget.closest("details")?.open ? "companion-sound-audition-fold#close" : "companion-sound-audition-fold#open" })}>소리 들어 보기</summary>
@@ -131,7 +139,7 @@ export function CompanionBehaviorSettings({ preferences, onChange, site, onGoTo,
           <SettingsSegment ariaLabel="빅타민 걸음" dataAct="companion-speed" description={COMPANION_SETTING_HINTS.speed} onChange={speed => onChange({ speed })} options={[{ value: "relaxed", label: "느긋하게" }, { value: "normal", label: "보통" }, { value: "lively", label: "발랄하게" }]} value={preferences.speed} />
         </div>
         {row("sleep", "자동 잠자기", <EyeOff size={15} />)}
-        {row("activeWhileVisible", "다른 창 쓸 때도 놀기", <Pointer size={15} />)}
+        {row("activeWhileVisible", "다른 프로그램 쓸 때도 놀기", <Pointer size={15} />)}
         {row("drag", "집어 옮기기", <Grab size={15} />)}
         {row("petting", "쓰다듬기", <Heart size={15} />)}
         {row("feeding", "밥주기", <Leaf size={15} />)}

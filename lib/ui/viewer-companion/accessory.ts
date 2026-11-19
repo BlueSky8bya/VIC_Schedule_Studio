@@ -3,7 +3,7 @@ import overrides from "./expression-pose-overrides.json";
 import expressions from "./expression-anchors-161.json";
 import policy from "./appearance-policy.json";
 import { companionEyeScale143Eyes } from "./eye-scale-143";
-import { companionAppearanceEyes, companionAppearancePoint, companionAppearanceBounds, companionAppearanceLandmark, resolveCompanionAppearanceSource } from "./appearance";
+import { companionAppearanceEyes, companionAppearanceFrames, companionAppearancePoint, companionAppearanceBounds, companionAppearanceLandmark, resolveCompanionAppearanceSource } from "./appearance";
 import anchors from "./accessory-anchors.json";
 import homeContactAnchors from "./home-contact-anchors-157.json";
 import curtainContactAnchors from "./curtain-contact-anchors.json";
@@ -60,6 +60,14 @@ const standingEyeFit = eyeFits.get(0), standingFace = poses.get(0)?.face;
 // Native68 keeps one quarter camera through throw rise/apex (500..507).
 // Its pressed-eye classifier changes, so cover the widest actual eye once
 // without shrinking coverage or pulsing the monocle in the same flight.
+// Dizzy spiral eyes (row 22) are drawn larger than the standing eyes. A worn
+// mask/monocle keeps its standing size there (owner 2026-11-19): the spirals
+// may peek out at the edges rather than the cover growing ~1.27x for the beat.
+const wornEyeFit = (physicalIndex: number) => {
+  const eye = eyeFits.get(physicalIndex);
+  return eye && standingEyeFit && companionAppearanceFrames.get(physicalIndex)?.eyeState === "spiral"
+    ? { ...eye, width: standingEyeFit.width, pairU: standingEyeFit.pairU, pairV: standingEyeFit.pairV } : eye;
+};
 const throwEyeCoverWidth = Math.max(...Array.from({ length: 8 }, (_, i) => eyeFits.get(500 + i)?.width ?? 0));
 // The native drawings themselves can turn in either direction before their
 // common parent mirrors for travel. Measure yaw in the registered face axis,
@@ -162,7 +170,7 @@ export function companionAccessoryPlacement(selected: CompanionSpriteSelection, 
   const mirror: -1 | 1 = quarter && poseYaw.get(selected.physicalIndex) !== sourceYaw(art) ? -1 : 1;
   const decoration = { mirror, ...(id === "sunglasses" && quarter ? { pivot: { x: 49, y: 68 }, clips: glassesClips } : id === "satchel" ? { clips: bagClips } : id === "propeller-hat" ? { rearArt: companionPropellerArt(view), rotor: 0 } : {}) };
   if (item.family === "eye-mask" && pose.orientation !== "back") {
-    const eye = eyeFits.get(selected.physicalIndex);
+    const eye = wornEyeFit(selected.physicalIndex);
     if (!eye) return null;
     // A common opaque panel contains both actual eye boxes in the measured
     // face axis. The printed artwork moves with that same single mask plane.
@@ -175,7 +183,7 @@ export function companionAccessoryPlacement(selected: CompanionSpriteSelection, 
     // The source-local right eye is measured from these exact adopted pixels,
     // including rolled/closed/teary eyes. A centred opaque core covers its
     // whole AABB diagonal, rather than fitting a badge between the two eyes.
-    const eye = eyeFits.get(selected.physicalIndex);
+    const eye = wornEyeFit(selected.physicalIndex);
     if (!eye) return null;
     // This is the positive eye-axis endpoint, so its short outer chain stays
     // on that same side. Camera yaw must not mirror it back across the nose.

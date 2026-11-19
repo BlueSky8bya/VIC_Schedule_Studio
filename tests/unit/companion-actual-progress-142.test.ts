@@ -295,6 +295,28 @@ describe("142 real progress, finite rest and mandatory meal admission",()=>{
     const needed=createCompanionPersonalityDirector([source("S03"),source("S05")]);enter(needed,low);expect(needed.next(low)?.meta.id).toBe("S03");
     const high=scene();high.toys=[realToy];const sole=createCompanionPersonalityDirector([source("S03"),source("S05")]);enter(sole,high);expect(sole.next(high)?.meta.id).toBe("S03");
   });
+
+  it.each([true,false])("answers a freshly dropped item (S10) before a due S03 return (owner 2026-11-19), flag=%s",flag=>{
+    // Decisions taken by a stroke age the lying toy's S03 into a due return
+    // (without the flag it beats every event); the toy that then settles must
+    // first wake the sleeper (S10), not the chore.
+    const s10=flag?source("S10"):{...source("S10"),beforeDueReturn:undefined};
+    const input=scene();input.brain.energy=.4;input.toys=[realToy];
+    const cue:PersonalitySceneRecipe={id:"X-test-undo",label:"test cue",personality:"sleepy",major:false,triggers:["undo"],steps:[{kind:"pose",pose:"stretch"}]};
+    const director=createCompanionPersonalityDirector([source("S03"),source("S08"),cue,s10]);enter(director,input);
+    for(const [event,id] of [["pet","S08"],["undo","X-test-undo"]] as const){
+      director.event(event,input.now);
+      while(!director.completed().includes(id)){
+        let proposal=director.next(input);
+        for(let wait=0;!proposal&&wait<20;wait++){input.now+=500;proposal=director.next(input);}
+        expect(proposal?.meta.id).toBe(id);input.now+=proposal!.action!.duration;director.complete(proposal!.meta);
+      }
+    }
+    director.event("toy-settled",input.now);
+    let proposal=director.next(input);
+    for(let wait=0;!proposal&&wait<20;wait++){input.now+=500;proposal=director.next(input);}
+    expect(proposal?.meta.id).toBe(flag?"S10":"S03");
+  });
 });
 
 
