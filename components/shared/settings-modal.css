@@ -2395,6 +2395,22 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .rhh-companio
   .rhh-companion-settings .rhh-collection-book:has(> .rhh-memory-filters) .rhh-collection-gallery-detail { height: 116px; min-height: 116px; }
   .rhh-companion-settings .rhh-collection-book .rhh-behavior-grid .rhh-collection-tile > .vc-collection-art { width: 60px; height: 60px; }
 }
+/* A finite page is as short as its sheet, not as its viewport: the settings
+   window keeps one height (min(740px, 96dvh)) on every tall screen, and the
+   shared power header plus the page tabs sit above the sheet, so that sheet
+   (about 439px) is shorter than its book on every screen taller than 800px.
+   The measured sheet height picks a tighter rhythm (gaps, pager inset, tile
+   padding). The readable specimens stay as they are: the 104px detail stage,
+   the 2-line names and the rarity tag. One rule set for every surface. */
+.vic-settings .rhh-companion-experience[data-paged] > [role="tabpanel"]:not([hidden]) { container: companion-page / size; }
+@container companion-page (max-height: 460px) {
+  .rhh-companion-settings .rhh-collection-book { gap: 10px; }
+  .rhh-companion-settings .rhh-collection-book .rhh-collection-pages { padding-top: 4px; }
+  .rhh-companion-settings .rhh-collection-book .rhh-food-grid .rhh-collection-tile { gap: 10px; padding-block: 10px; }
+  .rhh-companion-settings .rhh-collection-book .rhh-food-grid .rhh-collection-tile > :is(.vc-collection-art, .rhh-collection-unknown) { width: min(64px, 80cqw, max(16px, calc(100cqh - 2.7em - 42px))); height: min(64px, 80cqw, max(16px, calc(100cqh - 2.7em - 42px))); }
+  .rhh-companion-settings .rhh-collection-book:has(> .rhh-memory-filters) .rhh-collection-switch > button { flex-direction: row; flex-wrap: wrap; align-content: center; column-gap: 5px; padding: 3px 5px; }
+  .rhh-companion-settings .rhh-collection-book .rhh-wardrobe-detail { padding-block: 5px; }
+}
 @media (max-height: 767px) {
   .rhh-companion-settings .rhh-collection-book .rhh-wardrobe-kind { display: none; }
   .rhh-companion-settings .rhh-collection-book .rhh-wardrobe-preview,

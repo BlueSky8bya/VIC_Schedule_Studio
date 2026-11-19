@@ -11,6 +11,14 @@ type Point = { x: number; y: number };
 type Input = { action: CompanionAction; from: Point; platform?: Platform; foods: readonly CompanionFood[]; toys?: readonly CompanionRunToy[]; energy: number; cooldownReady: boolean };
 const unit = (n: number) => Math.max(0, Math.min(1, Number.isFinite(n) ? n : 1));
 const home = (p: Platform) => p.id.startsWith("companion-home");
+const VIEWPORT_FLOOR = /^viewport-floor(?:-\d+)?$/, VIEWPORT_TOY_FLOOR = /^viewport-floor-toy(?:-\d+)?$/;
+/** A toy rests on the toy tier of the page floor (`viewport-floor-toy`, its
+ * larger footprint) while the creature runs on `viewport-floor`. Both name the
+ * same measured screen floor; every other support must match exactly. */
+export function companionToyOnSupport(toyPlatformId: string | undefined, supportId: string): boolean {
+  if (!toyPlatformId) return false;
+  return toyPlatformId === supportId || VIEWPORT_TOY_FLOOR.test(toyPlatformId) && VIEWPORT_FLOOR.test(supportId);
+}
 
 /** One bounded decision for one real autonomous run. No frame probability,
  * hidden stone, food mutation, route graph or independent timer lives here. */
@@ -34,7 +42,7 @@ export function planCompanionRomp(input: Input, prefs: CompanionPreferences, rng
     const inPath = (point: Point) => [point.x, point.y].every(Number.isFinite) && Math.abs(point.y - p.y) <= 4
       && (point.x - from.x) * direction >= 34 && (action.target.x - point.x) * direction >= 12 && point.x >= p.x + 12 && point.x <= p.x + p.width - 12;
     const obstacles = [...input.foods.slice(0, 8).filter(inPath).map(food => ({ ...food, cause: "food" as const })),
-      ...(input.toys ?? []).slice(0, 4).filter(toy => !toy.held && !toy.carried && !toy.hidden && toy.platformId === p.id && inPath(toy)).map(toy => ({ ...toy, cause: "toy" as const }))];
+      ...(input.toys ?? []).slice(0, 4).filter(toy => !toy.held && !toy.carried && !toy.hidden && companionToyOnSupport(toy.platformId, p.id) && inPath(toy)).map(toy => ({ ...toy, cause: "toy" as const }))];
     const obstacle = obstacles.sort((a, b) => (a.x - b.x) * direction)[0];
     if (obstacle && unit(rng()) < Math.min(1, profile.accidentChance * 6)) return trip(obstacle.x - direction * 10, obstacle.cause, obstacle.id);
     if (unit(rng()) < profile.accidentChance) return trip(from.x + direction * distance * (.35 + unit(rng()) * .3), "stumble");
@@ -82,7 +90,7 @@ export function companionRunTripContact(trip: CompanionRunTrip, from: Point, tar
   if (!p || p.manualOnly || home(p) || Math.abs(from.y - p.y) > 2 || Math.abs(target.y - p.y) > 2) return null;
   const direction = target.x < from.x ? -1 : 1;
   const food = trip.foodId ? foods.find(food => food.id === trip.foodId && Math.abs(food.y - p.y) <= 4) : undefined;
-  const toy = trip.toyId ? toys.slice(0, 4).find(toy => toy.id === trip.toyId && !toy.held && !toy.carried && !toy.hidden && toy.platformId === p.id && Math.abs(toy.y - p.y) <= 4) : undefined;
+  const toy = trip.toyId ? toys.slice(0, 4).find(toy => toy.id === trip.toyId && !toy.held && !toy.carried && !toy.hidden && companionToyOnSupport(toy.platformId, p.id) && Math.abs(toy.y - p.y) <= 4) : undefined;
   if (trip.foodId && !food) return null;
   if (trip.toyId && !toy) return null;
   const obstacle = toy ?? food;
@@ -97,7 +105,7 @@ export function companionToyTripExperience(witness: CompanionToyTripWitness, toy
 }): CompanionToyKind | undefined {
   if (!input.observed || !input.completed || !input.active || !input.learn || input.platformId !== witness.platformId
     || !Number.isSafeInteger(witness.generation) || witness.generation < 0 || input.generation !== witness.generation) return;
-  const toy = toys.slice(0, 4).find(toy => toy.id === witness.toyId && toy.kind === witness.kind && toy.platformId === witness.platformId && !toy.held && !toy.carried && !toy.hidden);
+  const toy = toys.slice(0, 4).find(toy => toy.id === witness.toyId && toy.kind === witness.kind && companionToyOnSupport(toy.platformId, witness.platformId) && !toy.held && !toy.carried && !toy.hidden);
   if (toy && [toy.x, toy.y, input.point.x, input.point.y].every(Number.isFinite) && Math.hypot(toy.x - input.point.x, toy.y - input.point.y) <= 48) return toy.kind;
 }
 

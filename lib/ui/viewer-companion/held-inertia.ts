@@ -75,19 +75,28 @@ export function createCompanionHeldInertia() {
   };
 }
 
+/** The renderer shares one strain budget between this plane and the hanging
+ * pose (companionMaterialStack), so the painted plane keeps the full tilt but
+ * only part of its own stretch: anywhere from none to all of it. */
+export const COMPANION_HELD_STRAIN_SHARES = [1, .75, .5, .25, 0] as const;
+
 /** Rotation/scale around the actual grip keeps its world point fixed. Reduce
  * only this decorative response near edges; never move the captured body or
- * change its support. Four numeric corners need no layout read. */
+ * change its support. Four numeric corners need no layout read. The bound
+ * holds for every share of the stretch the shared budget may leave it. */
 export function boundCompanionHeldPose(pose: CompanionHeldPose, origin: Point, grip: Point, size: number, viewport: { width: number; height: number }): CompanionHeldPose {
   if (![pose.tilt, pose.stretch, origin.x, origin.y, grip.x, grip.y, size, viewport.width, viewport.height].every(Number.isFinite) || size <= 0 || 1 + pose.stretch <= 0) return quiet();
   const fits = (gain: number) => {
     const angle = Number((pose.tilt * gain).toFixed(3)) * Math.PI / 180, cos = Math.cos(angle), sin = Math.sin(angle);
     const [material] = companionMaterialStack([1 + pose.stretch * gain]);
-    const sx = Number(material.scaleX.toFixed(4)), sy = Number(material.scaleY.toFixed(4));
-    for (const cx of [0, size]) for (const cy of [0, size]) {
-      const dx = (cx - grip.x) * sx, dy = (cy - grip.y) * sy;
-      const x = origin.x + grip.x + dx * cos - dy * sin, y = origin.y + grip.y + dx * sin + dy * cos;
-      if (x < 2 || x > viewport.width - 2 || y < 2 || y > viewport.height - 2) return false;
+    for (const share of COMPANION_HELD_STRAIN_SHARES) {
+      const scaleY = material.scaleY ** share;
+      const sx = Number((1 / scaleY).toFixed(4)), sy = Number(scaleY.toFixed(4));
+      for (const cx of [0, size]) for (const cy of [0, size]) {
+        const dx = (cx - grip.x) * sx, dy = (cy - grip.y) * sy;
+        const x = origin.x + grip.x + dx * cos - dy * sin, y = origin.y + grip.y + dx * sin + dy * cos;
+        if (x < 2 || x > viewport.width - 2 || y < 2 || y > viewport.height - 2) return false;
+      }
     }
     return true;
   };

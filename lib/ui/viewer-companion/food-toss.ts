@@ -1,5 +1,5 @@
 import { platformLandingX, type CompanionFood, type Platform } from "./brain";
-import { isCompanionFoodBedSupport, isCompanionHomeFloorFoodSupport, isCompanionViewportFloorFoodSupport, type CompanionFoodDropSupport } from "./food";
+import { companionFoodSupportCatches, isCompanionFoodBedSupport, isCompanionHomeFloorFoodSupport, isCompanionViewportFloorFoodSupport, type CompanionFoodDropSupport } from "./food";
 import { compareCompanionItemLandings, rankCompanionItemLandings, type CompanionItemPoint } from "./item-landing";
 
 type Point = Readonly<{ x: number; y: number }>;
@@ -84,6 +84,13 @@ export function planCompanionFoodThrow(food: CompanionFood, velocity: Point, sup
   const gravity = COMPANION_FOOD_TOSS_GRAVITY;
   const vy = clamp(velocity.y, -Math.min(220, Math.sqrt(2 * gravity * (food.y - 8))), 140);
   const height = vy < 0 ? vy * vy / (2 * gravity) : 0;
+  // Let go on a support line without lifting it, the snack already touches
+  // that support: its first contact is at time zero, which the parabola test
+  // below cannot see, so it would fall through to the next lower edge (a day
+  // cell below the screen floor that the companion cannot reach). Ordinary
+  // gravity placement keeps it on the line it was released on; both use the
+  // same support test (companionFoodSupportCatches).
+  if (vy >= 0 && supports.slice(0, 200).some(support => companionFoodSupportCatches(support, food) && Math.abs(support.y - food.y) <= .5)) return;
   const horizon = (-vy + Math.sqrt(vy * vy + 2 * gravity * Math.max(0, viewport.height - food.y))) / gravity;
   if (!Number.isFinite(horizon) || horizon <= 0) return;
   const vx = clamp(clamp(velocity.x, -260, 260), (24 - food.x) / horizon, (viewport.width - 24 - food.x) / horizon);

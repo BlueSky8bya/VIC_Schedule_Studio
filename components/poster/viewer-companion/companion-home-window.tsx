@@ -7,7 +7,6 @@ import type { CompanionHomeEnvironment } from "@/lib/ui/viewer-companion/home-en
 import type { CompanionHomeCurtain } from "@/lib/ui/viewer-companion/home-curtain";
 import { resolveCompanionWindowScene } from "@/lib/ui/viewer-companion/home-window-scene";
 import { COMPANION_CURTAIN_STAGES, companionCurtainStage, createCompanionCurtainTransition } from "@/lib/ui/viewer-companion/home-curtain-transition";
-import "./companion-home-window.css";
 
 export function HomeWindow({ environment, curtain, inactive }: { environment?: CompanionHomeEnvironment; curtain: CompanionHomeCurtain; inactive?: boolean }) {
   const scene = resolveCompanionWindowScene(environment), stage = companionCurtainStage(curtain);

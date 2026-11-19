@@ -261,6 +261,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
   const requestSprite = useRef<(src: string) => void>(() => {});
   overlayRef.current = overlayOpen;
   const [homeExpanded, setHomeExpanded] = useState(false), [suspended, setSuspended] = useState(true);
+  const homeExpandedRef = useRef(homeExpanded); homeExpandedRef.current = homeExpanded;
   const [care, setCare] = useState({ ...DEFAULT_COMPANION_CARE }), [announcement, setAnnouncement] = useState("");
   const [homeCurtain, setHomeCurtain] = useState(INITIAL_COMPANION_HOME_CURTAIN);
   const homeLampLit = useSyncExternalStore(subscribeCompanionHomeLight, getCompanionHomeLight, getServerCompanionHomeLight);
@@ -346,6 +347,21 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
     else if (!destination) homeCarrier.remove();
   }, [ready, homeCarrier, homeHost, homeVisible, homeExpanded, compactActive, suspended, blocked]);
   useLayoutEffect(() => () => { homeCarrier?.remove(); }, [homeCarrier]);
+  // The room is portalled into the carrier, so a React handler on the floating
+  // wrapper never sees its keys. Listen on the real DOM wrapper instead; a room
+  // control that handles Escape itself stops it before it gets here.
+  const closeCompactHome = homeShelf.close;
+  useEffect(() => {
+    const holder = compactHome.current;
+    if (!compactActive || !homeExpanded || !holder) return;
+    const escape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault(); event.stopPropagation();
+      logActivity("ui.click", { target: "companion-home-close" }); closeCompactHome();
+    };
+    holder.addEventListener("keydown", escape);
+    return () => holder.removeEventListener("keydown", escape);
+  }, [compactActive, compactHost, homeExpanded, closeCompactHome]);
   useLayoutEffect(() => {
     window.dispatchEvent(new Event("vic:companion-home"));
     if (!overlayOpen && !suspended && homeFocus.current && document.activeElement === document.body) {
@@ -605,6 +621,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
     let raf = 0, timer: ReturnType<typeof setTimeout> | undefined, lastPaint = 0, lastTick = performance.now(), lastNeeds = lastTick, lastCare = lastTick, stopped = false, sleeping = false;
     let inputPaintQueued = false, interactionUntil = 0;
     let pause = true, started = false, nextDecision = 0, needsLanding = false, afterPetLanding = false, restAfterLanding = false;
+    // A hard pause (hidden tab, showcase, ambient pause) folds the floating room.
+    // A resident that was inside the open room gets that room back on resume,
+    // or it would stay withheld behind a closed room it never left.
+    let reopenHomeAfterPause = false;
+    let recordedFoodLoss: string | undefined;
     let activityArrival: { action: RuntimeAction; from: { x:number;y:number;platformId?:string } } | undefined;
     let action: RuntimeAction | null = null, began = 0, origin = { x, y }, travel = 0, total = 0, petUntil = 0, placing = false, keyboardHeld = false, keyboardMoved = false, consumePlacementClick = false;
     let manualWashSource: HTMLElement | undefined, manualWashPending = false, manualWashUntil = 0;
@@ -3056,7 +3077,12 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       const seenFood = liveFoods.find(item => item.id === (action?.foodId ?? foodGoalId));
       if (seenFood) lastFoodPoint = { id: seenFood.id, x: seenFood.x, y: seenFood.y };
       const lostGoalId = food.current && [foodGoalId, action?.foodId].find(id => id && !food.current!.contains(id));
-      if (lostGoalId) brain.current = recordCompanionEvent(brain.current, "food-lost");
+      // One removed snack is one loss: the walk toward it still names it on
+      // every frame until it stops, which must not repeat the appraisal.
+      if (lostGoalId && lostGoalId !== recordedFoodLoss) { recordedFoodLoss = lostGoalId; brain.current = recordCompanionEvent(brain.current, "food-lost"); }
+      // A grounded walk toward a deleted snack stops where it is, so its one
+      // finite recheck below starts now instead of after the walk to an empty spot.
+      if (lostGoalId && action?.kind === "walk" && action.foodId === lostGoalId && supportedNow() && !pressed && !keyboardHeld && !placing) clearAction();
       const interruptedFood = action?.foodId && !liveFoods.some(item => item.id === action!.foodId);
       if (interruptedFood && action && !["walk", "jump", "play"].includes(action.kind)) {
         // A folded/clipped/held snack still exists. Suspend its visual action
@@ -3098,7 +3124,9 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       }
       // One finite response to an actual acknowledged touch. Urgent care or
       // another accepted task wins; queued expressions never earn a reward.
-      if (petResponse.length && (now >= petResponseUntil || !effective.petting || reduced || gfxMode() !== "full" || workspaceBusyRef.current || overlayActive || homeJourney || brain.current.hunger >= .78 || brain.current.energy <= .18)) petResponse = [];
+      // A scene that owns the petting (the learned invitation, scene 10, kept alive by
+      // clearForPetting) performs its own answer; the generic response would end it.
+      if (petResponse.length && (scenes.current() || now >= petResponseUntil || !effective.petting || reduced || gfxMode() !== "full" || workspaceBusyRef.current || overlayActive || homeJourney || brain.current.hunger >= .78 || brain.current.energy <= .18)) petResponse = [];
       if (petResponse.length && !action && now >= petUntil && now >= nextDecision && presence.phase === "active" && supportedNow() && !household.active() && !toyPlanner.active() && !food.current?.carried() && !toys.current?.carried()) {
         const [pose, ...remaining] = petResponse; petResponse = remaining;
         const target = { x, y, platformId: support };
@@ -3288,7 +3316,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
           ? scenes.next({ brain: brain.current, world: householdWorld, preferences: effective, now: brain.current.activeMs, pantry: householdHome.pantry, bin: householdHome.bin, visibleFoods: liveFoods, occupied: toys.current?.occupied(), knownFoods: loadCompanionCollection().foods, knownBehaviors: loadCompanionCollection().behaviors, owned: loadCompanionCollection().gifts.unlocked, equipped, radio: radioState, environment: environment.current, home: supportById("companion-home") ? { x: platformLandingX(supportById("companion-home")!, supportById("companion-home")!.x + supportById("companion-home")!.width / 2), y: supportById("companion-home")!.y, platformId: "companion-home" } : undefined, toyCount: toys.current?.count() ?? 0, carriedFoodId: food.current?.carried() }) : undefined;
         const validStory = story?.accessory && !accessorySpace(story.accessory) ? undefined : story;
         if (story && !validStory) scenes.cancel();
-        const offered: RuntimeAction = priorityMeal ?? foodSupply ?? authored ?? errand ?? toyErrand ?? publicLifeOffer ?? refusal ?? validStory ?? musical ?? signature ?? (safeTrick ? { kind: "look", accessory: equipped!, target: { x, y, platformId: support }, duration: COMPANION_ACCESSORY_MOTION_MS } : getAction(brain.current, world, effective, now));
+        const trickOffer: RuntimeAction | undefined = safeTrick ? { kind: "look", accessory: equipped!, target: { x, y, platformId: support }, duration: COMPANION_ACCESSORY_MOTION_MS } : undefined;
+        const offered: RuntimeAction = priorityMeal ?? foodSupply ?? authored ?? errand ?? toyErrand ?? publicLifeOffer ?? refusal ?? validStory ?? musical ?? signature ?? trickOffer ?? getAction(brain.current, world, effective, now);
         const progressed: RuntimeAction = boundCompanionStationaryProgress(offered, brain.current, householdWorld, effective, brain.current.activeMs,
           personalityDirector.progressDeadline(), boundary => personalityActivity.choose(brain.current, householdWorld, effective, brain.current.activeMs, boundary),
           Boolean(priorityMeal || foodSupply || authored || errand || toyErrand || publicLifeOffer || refusal || validStory || musical || signature || safeTrick
@@ -3307,17 +3336,27 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
           const instrumentRow = musical.radio.instrument === "tease" ? 28 : musical.radio.instrument === "encourage" ? 29 : undefined;
           (instrumentRow === undefined ? rows : [instrumentRow]).forEach(row => spriteSources[row].forEach(src => requestSprite.current(src)));
         }
-        if (safeTrick && !errand) { accessoryReadyAt = brain.current.activeMs + 45000; queueCue("play"); (isCompanionHat(equipped!) ? [3, 4] : [9]).forEach(row => spriteSources[row].forEach(src => requestSprite.current(src))); }
+        // The trick's wait is spent only when the trick is what actually starts;
+        // an outranking scene, meal or errand leaves it ready for the next decision.
+        if (trickOffer && chosen === trickOffer) { accessoryReadyAt = brain.current.activeMs + 45000; queueCue("play"); (isCompanionHat(equipped!) ? [3, 4] : [9]).forEach(row => spriteSources[row].forEach(src => requestSprite.current(src))); }
         const chosenFood = availableFood.find(item => item.id === chosen.foodId);
         if (chosenFood) lastFoodPoint = { id: chosenFood.id, x: chosenFood.x, y: chosenFood.y };
         const consumedFoods = chosenFood ? loadCompanionCollection().foods : [];
-        const curiousMeal = !errand && !toyErrand && !validStory && !musical && !safeTrick && !reduced && gfxMode() !== "off"
+        // A ready trick that lost this decision stays ready (its wait is spent
+        // only when it starts), so it must not also block the first-taste
+        // inspection of the meal that did win. Only the trick itself is exempt;
+        // consider() changes nothing but an "eat" action for that same food.
+        const curiousMeal = !errand && !toyErrand && !validStory && !musical && chosen !== trickOffer && !reduced && gfxMode() !== "off"
           ? foodCuriosity.consider(chosen, chosenFood, Boolean(chosenFood && consumedFoods.includes(chosenFood.kind)), brain.current.hunger, effective, consumedFoods) : chosen;
         const curiousIntent = curiousMeal.foodCuriosity === "tease" && pointer ? { ...curiousMeal, direction: pointer.x < x ? -1 as const : 1 as const, attention: { kind: "social" as const, point: { ...pointer } } } : curiousMeal;
         // A nonurgent meal inherited from the ordinary planner keeps its
         // bounded first-food inspection. Urgent care/authored jobs still own
         // their existing actions, and no encounter is silently consumed.
-        const ownedIntent = yieldedMeal ? curiousIntent : chosen;
+        // The common routine meal (hunger .35..78, a2e6bf26) is that same
+        // nonurgent meal served by the director: its eat beat keeps the
+        // first-food inspection too, or an unknown food is never inspected.
+        const routineMeal = chosen.kind === "eat" && chosen.personalityScene?.id === "routine-meal";
+        const ownedIntent = yieldedMeal || routineMeal ? curiousIntent : chosen;
         launch(priorityMeal || foodSupply || authored || errand || toyErrand || publicLifeOffer || refusal || validStory || musical || safeTrick || signature ? ownedIntent : deliberateCompanionAction(brain.current, world, effective, curiousIntent, !reduced && gfxMode() !== "off"), now);
         if (hiding) { paint(14, 0, "hide"); schedule(); return; }
       }
@@ -4316,8 +4355,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       if (pause) { if (isDetailGuest()) cancelGuestInput(); else releaseOverlayDrag(); }
       if (pause) { overlayPlacing = false; delete el.dataset.placing; }
       cancelAnimationFrame(raf); clearTimeout(timer); lastTick = performance.now(); lastNeeds = lastTick; lastPaint = lastTick;
-      if (pause) { clearTimeout(preludeTimer); preludeDeadline = 0; homeDeparture = undefined; returning = undefined; el.removeAttribute("data-returning"); pickupScale = 1; perchAnimation?.cancel(); disconnectOverlay(); cancelAnimationFrame(overlayRaf); overlayRaf = 0; stopHover(); needsLanding = needsLanding || action?.kind === "jump" || playFalling || Boolean(pressed) || keyboardHeld || afterPetLanding; afterPetLanding = false; restAfterLanding = false; supportMotion.reset(); style(reactionLayer, "transform", "translate3d(0,0px,0) scale(1,1)"); persistCare(true); clearAction(); clearTimeout(parkedLayoutTimer); offGeometry?.(); offGeometry = undefined; geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(followRaf); followRaf = 0; geometryReady = false; hearts.pause(true); releaseHold(); placing = false; delete el.dataset.placing; setHomeExpanded(false); }
-      else { presence.focus((!overlayActive || workCanExpress()) && (homeJourney === "called" || visibleActive()), lastTick, !overlayActive && homeJourney === "called"); if (overlayActive) { if (workAllowed()) connectGeometry(); else updateOverlayPerch(); } else connectGeometry(); hearts.pause(overlayActive || presence.phase === "parked"); if (needsLanding) { needsLanding = false; settle({ x, y }); } nextDecision = performance.now() + 600; if (presence.phase !== "parked") schedule(); armPrelude(); }
+      if (pause) { clearTimeout(preludeTimer); preludeDeadline = 0; homeDeparture = undefined; returning = undefined; el.removeAttribute("data-returning"); pickupScale = 1; perchAnimation?.cancel(); disconnectOverlay(); cancelAnimationFrame(overlayRaf); overlayRaf = 0; stopHover(); needsLanding = needsLanding || action?.kind === "jump" || playFalling || Boolean(pressed) || keyboardHeld || afterPetLanding; afterPetLanding = false; restAfterLanding = false; supportMotion.reset(); style(reactionLayer, "transform", "translate3d(0,0px,0) scale(1,1)"); persistCare(true); clearAction(); clearTimeout(parkedLayoutTimer); offGeometry?.(); offGeometry = undefined; geometryTracker = undefined; anchorSeen.clear(); cancelAnimationFrame(followRaf); followRaf = 0; geometryReady = false; hearts.pause(true); releaseHold(); placing = false; delete el.dataset.placing; reopenHomeAfterPause = homeExpandedRef.current && isHomeSupport(support); setHomeExpanded(false); }
+      else { if (reopenHomeAfterPause && isHomeSupport(support)) setHomeExpanded(true); reopenHomeAfterPause = false; presence.focus((!overlayActive || workCanExpress()) && (homeJourney === "called" || visibleActive()), lastTick, !overlayActive && homeJourney === "called"); if (overlayActive) { if (workAllowed()) connectGeometry(); else updateOverlayPerch(); } else connectGeometry(); hearts.pause(overlayActive || presence.phase === "parked"); if (needsLanding) { needsLanding = false; settle({ x, y }); } nextDecision = performance.now() + 600; if (presence.phase !== "parked") schedule(); armPrelude(); }
       } finally { observeVisibility(); }
     };
     const focusChanged = () => {
@@ -4373,7 +4412,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         // An exposed sleeper remains directly movable, without stealing
         // modal focus. Release commits its actual new world point.
         const shown = displayedPoint(); perchAnimation?.cancel();
+        // Carrying a sleeper does not wake it: keep its zzZ cue through the lift.
+        const dreaming = el.hasAttribute("data-dreaming");
         clearAction(); cancelTravelGoal();
+        if (dreaming && preferences.sleep) el.dataset.dreaming = "";
         x = shown.x; y = shown.y;
         overlayPerch = { ...shown, overlap: overlayPerch?.overlap ?? false };
         overlayDrag = { id: event.pointerId, dx: event.clientX - shown.x, dy: event.clientY - shown.y, worldOrigin: { x, y } };
@@ -5022,7 +5064,10 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       // nor an empty visibility snapshot completes the initial world seed.
       initialGeometryMeasured ||= !pendingPosition.current && !pendingMonth && Boolean(supportById(support));
       observeVisibility(true);
-      if (wasFreshHomePending && !freshHomePending && !stopped && !pause && !overlayActive && !premiereActive && !hiding) {
+      // A first entry under an open window also needs its clock: the tick that
+      // sync scheduled returned while the entry was pending. The ordinary
+      // window rules then take it to its quiet parked tail.
+      if (wasFreshHomePending && !freshHomePending && !stopped && !pause && !premiereActive && !hiding) {
         lastTick = lastNeeds = lastCare = lastPaint = performance.now(); nextDecision = lastTick + 1100;
         paint(presence.pose.row, 0, presence.pose.status); cancelAnimationFrame(raf); clearTimeout(timer); schedule();
       }
@@ -5326,8 +5371,8 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
     <CompanionMeadowWalk preferences={preferences} available={!blocked && !overlayOpen && !performanceActive && !agenda} reduced={reduced} night={homeEnvironment.night} session={showcaseSession} />
     {/* This portal already owns body. Keep the floating room before its fixed
         resident so native CSS anchors also work when the short house scrolls. */}
-    {compactActive && compactHost ? <div id={`${actorId}-home`} className="vc-compact-home" ref={compactHome} hidden={!homeExpanded} data-companion-home-owner={premiereCue?.owner} data-pm-exit="5" inert={overlayOpen || performanceActive ? true : undefined} aria-hidden={overlayOpen || performanceActive ? true : undefined} data-sfx="off" onKeyDown={event => { if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); if (homeExpanded) logActivity("ui.click", { target: "companion-home-close" }); closeHome(); } }}>
-      {/* The stable room carrier is moved here by the layout handoff. */}
+    {compactActive && compactHost ? <div id={`${actorId}-home`} className="vc-compact-home" ref={compactHome} hidden={!homeExpanded} data-companion-home-owner={premiereCue?.owner} data-pm-exit="5" inert={overlayOpen || performanceActive ? true : undefined} aria-hidden={overlayOpen || performanceActive ? true : undefined} data-sfx="off">
+      {/* The stable room carrier is moved here by the layout handoff. Escape is a native listener (above). */}
     </div> : null}
     <span className="vc-wash-tool" ref={washTool} hidden aria-hidden="true"><svg width="24" height="38" viewBox="0 0 24 38" focusable="false"><path d="M6 12h5l2 20q-3 6-7 0Z" fill="#e6a052" stroke="#78522e" strokeWidth="1.5" /><path d="M4 3q4-3 9 0v10H4Z" fill="#fff5df" stroke="#78522e" strokeWidth="1.5" /><path d="M6 4v7m3-7v7m3-7v7" stroke="#76a79a" strokeWidth="1.4" /><g fill="#fffdf6" stroke="#b1cbd1" strokeWidth=".8"><circle cx="15" cy="8" r="3" /><circle cx="19" cy="4" r="2" /><circle cx="19" cy="11" r="2" /></g><path d="m20 17 1 2 2 1-2 1-1 2-1-2-2-1 2-1Z" fill="#f8db89" /></svg></span>
     {/* Contact marker only — no ink. The three wobbling rays drawn here read as a loading spinner on

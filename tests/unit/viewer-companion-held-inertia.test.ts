@@ -74,4 +74,24 @@ describe("captured companion inertia", () => {
       }
     }
   });
+  it("keeps the corners inside for any share of the stretch the shared strain budget leaves the plane", () => {
+    // The hanging pose can take nearly the whole 8% budget, so the painted plane
+    // keeps the full tilt with almost none of its own stretch (wider than bounded).
+    const pose = { tilt: -18, stretch: .085, active: true }, viewport = { width: 1440, height: 1000 }, size = 92, grip = { x: 46, y: 20 };
+    let reduced = 0;
+    for (const x of [2, 3, 4, 6]) for (const y of [2, 4, 8]) {
+      const bound = boundCompanionHeldPose(pose, { x, y }, grip, size, viewport);
+      if (Math.abs(bound.tilt) < Math.abs(pose.tilt)) reduced++;
+      const a = Number(bound.tilt.toFixed(3)) * Math.PI / 180, [material] = companionMaterialStack([1 + bound.stretch]);
+      for (const share of [1, .6, .3, .01, 0]) {
+        const sy = material.scaleY ** share, sx = 1 / sy;
+        for (const cx of [0, size]) for (const cy of [0, size]) {
+          const dx = (cx - grip.x) * sx, dy = (cy - grip.y) * sy;
+          const px = x + grip.x + dx * Math.cos(a) - dy * Math.sin(a), py = y + grip.y + dx * Math.sin(a) + dy * Math.cos(a);
+          expect(px).toBeGreaterThanOrEqual(1.999); expect(py).toBeGreaterThanOrEqual(1.999);
+        }
+      }
+    }
+    expect(reduced).toBeGreaterThan(0);
+  });
 });

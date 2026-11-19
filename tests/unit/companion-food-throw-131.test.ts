@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { planCompanionFoodThrow } from "@/lib/ui/viewer-companion/food-toss";
 import { createCompanionFoodGravity, createCompanionFoodToss } from "@/lib/ui/viewer-companion/food-gravity";
-import type { CompanionFoodDropSupport } from "@/lib/ui/viewer-companion/food";
+import { placeCompanionFood, type CompanionFoodDropSupport } from "@/lib/ui/viewer-companion/food";
 
 const viewport = { width: 1000, height: 800 };
 const food = { id: "actual-food", kind: "bread" as const, x: 300, y: 300 };
@@ -27,6 +27,26 @@ describe("131 native food release physics", () => {
       expect(Math.sign(flight.sample(100).x - food.x)).toBe(Math.sign(velocity.x));
       expect(flight.sample(flight.duration)).toMatchObject({ x: plan.food.x, y: floor.y, active: false });
     }
+  });
+  it("leaves a snack let go on its support line to ordinary placement instead of falling through to a lower edge", () => {
+    const below: CompanionFoodDropSupport = { id: "date-37-floor-food", kind: "floor", x: 24, y: 790 - 30, width: 952 };
+    const line = { ...floor, y: 730 }, onLine = { ...food, x: 500, y: 730 };
+    for (const velocity of [{ x: -200, y: 0 }, { x: -180, y: 120 }, { x: 150, y: 60 }]) {
+      expect(planCompanionFoodThrow(onLine, velocity, [line, below], viewport)).toBeUndefined();
+      expect(planCompanionFoodThrow({ ...onLine, y: 730.4 }, velocity, [line, below], viewport)).toBeUndefined();
+    }
+    // An upward flick from the line still flies and comes back down onto it.
+    expect(planCompanionFoodThrow(onLine, { x: 150, y: -200 }, [line, below], viewport)!.food.platformId).toBe(line.id);
+    // Off the support's span, or clearly above it, it is an ordinary throw.
+    expect(planCompanionFoodThrow({ ...onLine, y: 700 }, { x: 150, y: 60 }, [line, below], viewport)!.food.platformId).toBe(line.id);
+    // Same support test as placement: a body-only stance or the sofa bed at that height never holds the
+    // snack, and a card holds it across its whole drop surface, not only its safe centre span.
+    expect(planCompanionFoodThrow(onLine, { x: -200, y: 0 }, [{ ...line, id: "companion-home-bed-food" }, below], viewport)!.food.platformId).toBe(below.id);
+    expect(planCompanionFoodThrow(onLine, { x: -200, y: 0 }, [{ ...line, bodyOnly: true }, below], viewport)!.food.platformId).toBe(below.id);
+    const card: CompanionFoodDropSupport = { id: "card-3-food-top", kind: "card", x: 520, y: 730, width: 60, dropSurface: { x: 480, width: 140 } };
+    expect(planCompanionFoodThrow(onLine, { x: -200, y: 0 }, [card, below], viewport)).toBeUndefined();
+    expect(placeCompanionFood(onLine, onLine, [card, below]).platformId).toBe(card.id);
+    expect(planCompanionFoodThrow({ ...onLine, x: 470 }, { x: -200, y: 0 }, [card, below], viewport)!.food.platformId).toBe(below.id);
   });
   it("clamps extreme native velocity and ceiling/wall crossings while retaining a real target", () => {
     for (const x of [24, 25, 975, 976]) for (const y of [8, 48, 300]) for (const direction of [-1, 1]) {

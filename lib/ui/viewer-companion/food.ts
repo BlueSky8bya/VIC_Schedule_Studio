@@ -169,15 +169,24 @@ export function companionTrashProgress(elapsedMs: number): number {
  * its safe centre span. Select the first crossed card, then its nearest safe
  * centre on that same card. This never attracts a ray outside its real bounds
  * to another column, and a completely covered card still has no safe recipient. */
+/** Whether a released snack at this x is over a support that placement may
+ * use: a real food support (never a body-only stance or the sofa bed), a card
+ * catching across its whole drop surface. Height is the caller's own test.
+ * Placement and the throw planner share it, so both agree on "on the line". */
+export function companionFoodSupportCatches(support: CompanionFoodDropSupport, point: Point): boolean {
+  if (support.bodyOnly || !support.id || isCompanionFoodBedSupport(support.id)) return false;
+  const end = support.x + support.width, surface = support.kind === "card" ? support.dropSurface : undefined;
+  const bounds = surface && [surface.x, surface.width, surface.x + surface.width].every(Number.isFinite)
+    && surface.width > 0 && support.x >= surface.x - .5 && end <= surface.x + surface.width + .5 ? surface : support;
+  return [support.x, support.y, support.width, end, bounds.x, bounds.width, bounds.x + bounds.width, point.x, point.y].every(Number.isFinite)
+    && support.width > 0 && bounds.width > 0 && point.x >= bounds.x && point.x <= bounds.x + bounds.width;
+}
+
 function firstFoodSupportBelow(point: Point, platforms: readonly CompanionFoodDropSupport[]): CompanionFoodDropSupport | undefined {
   let first: CompanionFoodDropSupport | undefined, distance = Infinity;
   for (const support of platforms) {
-    if (support.bodyOnly) continue;
-    const end = support.x + support.width, surface = support.kind === "card" ? support.dropSurface : undefined;
-    const bounds = surface && [surface.x, surface.width, surface.x + surface.width].every(Number.isFinite)
-      && surface.width > 0 && support.x >= surface.x - .5 && end <= surface.x + surface.width + .5 ? surface : support;
-    if (!support.id || ![support.x, support.y, support.width, end, bounds.x, bounds.width, bounds.x + bounds.width].every(Number.isFinite)
-      || support.width <= 0 || bounds.width <= 0 || support.y < point.y - .5 || point.x < bounds.x || point.x > bounds.x + bounds.width) continue;
+    if (!companionFoodSupportCatches(support, point) || support.y < point.y - .5) continue;
+    const end = support.x + support.width;
     const delta = Math.max(support.x - point.x, point.x - end, 0);
     if (!first || support.y < first.y || support.y === first.y && (support.kind !== "floor" && first.kind === "floor"
       || (support.kind === "floor") === (first.kind === "floor") && (delta < distance || delta === distance && support.id < first.id))) {

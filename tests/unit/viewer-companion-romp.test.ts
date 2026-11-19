@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { companionRunTripContact, companionToyTripExperience, planCompanionRomp, sampleCompanionRunUp, validCompanionRunHop, type CompanionRunToy } from "@/lib/ui/viewer-companion/romp";
+import { companionRunTripContact, companionToyOnSupport, companionToyTripExperience, planCompanionRomp, sampleCompanionRunUp, validCompanionRunHop, type CompanionRunToy } from "@/lib/ui/viewer-companion/romp";
 import { DEFAULT_COMPANION_PREFERENCES as prefs } from "@/lib/ui/viewer-companion/preferences";
 import { commitAction, createBrain, type CompanionAction, type Platform } from "@/lib/ui/viewer-companion/brain";
 import { createCompanionToys } from "@/lib/ui/viewer-companion/toys";
@@ -56,6 +56,22 @@ describe("one bounded romp on an actual run", () => {
     const nearest = planCompanionRomp({ ...input, foods: [{ ...snack, x: 460 }], toys: [toy] }, prefs, () => .5);
     expect(nearest.trip).toMatchObject({ cause: "toy", toyId: "toy" });
     expect(planCompanionRomp({ ...input, foods: [{ ...snack, x: 400 }], toys: [toy] }, prefs, () => .5).trip).toMatchObject({ cause: "food", foodId: snack.id });
+  });
+  it("trips on a toy resting on the page floor's toy tier while the creature runs on the page floor", () => {
+    const page: Platform = { ...floor, id: "viewport-floor" };
+    const run = { ...input, platform: page, action: { ...action, target: { ...action.target, platformId: page.id } } };
+    const toy: CompanionRunToy = { id: "toy", kind: "ball", x: 430, y: 800, platformId: "viewport-floor-toy", held: false, carried: false };
+    const plan = planCompanionRomp({ ...run, toys: [toy] }, prefs, () => .5);
+    expect(plan.trip).toMatchObject({ cause: "toy", toyId: "toy", x: 420 });
+    expect(companionRunTripContact(plan.trip!, run.from, run.action.target, page, [], [toy])).toBe(420);
+    expect(companionRunTripContact(plan.trip!, run.from, run.action.target, page, [], [{ ...toy, platformId: "viewport-floor-toy-1" }])).toBe(420);
+    const witness = { toyId: toy.id, kind: toy.kind, platformId: page.id, generation: 0 };
+    expect(companionToyTripExperience(witness, [toy], { point: { x: 420, y: 800 }, platformId: page.id, generation: 0, observed: true, completed: true, active: true, learn: true })).toBe("ball");
+    // The toy tier pairs only with the page floor, and still at the same height.
+    expect(companionToyOnSupport("viewport-floor-toy", "card-3-top")).toBe(false);
+    expect(companionToyOnSupport("viewport-floor-food", "viewport-floor")).toBe(false);
+    expect(companionToyOnSupport(undefined, "viewport-floor")).toBe(false);
+    expect(planCompanionRomp({ ...run, toys: [{ ...toy, y: 760 }] }, { ...prefs, jump: false }, () => .5).trip).toBeUndefined();
   });
   it("teaches a toy trip only after a witnessed completed nearby reaction, never a requested or cancelled clip", () => {
     const toy: CompanionRunToy = { id: "toy", kind: "ball", x: 430, y: 800, platformId: floor.id, held: false, carried: false };
