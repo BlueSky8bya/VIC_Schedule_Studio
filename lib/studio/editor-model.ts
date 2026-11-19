@@ -99,6 +99,16 @@ export function addDaysIso(iso: string, days: number): string {
   ].join("-");
 }
 
+// 묶음(이어진 일정·여러 날 한 장) 끌기의 기준 날짜 — **잡은 그 날**(2026-11-20 소유자: 20~22를 22일에서 잡아 23일에 놓으면
+// 21~23이어야 한다. 예전엔 늘 첫날 기준이라 23~25가 됐다). 누른 칸이 묶음 범위 밖이면(테두리 걸침) 가까운 끝으로 붙인다.
+// 이동 폭 = 놓은 날 − 이 날, 묶음 전체에 같은 폭.
+export function spanDragAnchor(pressIso: string | null, start: string, end: string): string {
+  if (!pressIso) return start;
+  if (pressIso < start) return start;
+  if (pressIso > end) return end;
+  return pressIso;
+}
+
 // 시작~종료 포함 일수(같은 날=1).
 export function spanDays(start: string, end: string): number {
   const [sy, sm, sd] = start.split("-").map(Number);
