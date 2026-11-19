@@ -1,6 +1,6 @@
 # 볼·수면·끊긴 얼굴 교정 — 2026-11-19
 
-현재 상태: 잔상 교정과 사용자 최종 선택13B·15B 적용 완료. 선택반영의83단위/5production-fixture/typecheck/lint/build/document 검사 통과. 후속 직접 요청으로 커밋/push/배포가 승인돼 최신 main 통합·출시 검증 중이다. 최신결정·증거는 마지막 ‘출시 승인’ 절이다. 이전 후보/실패/승인은 당시 범위로 보존한다.
+현재 상태: 잔상 교정과 사용자 최종 선택13B·15B 적용, 최신 main 통합과 최종 로컬 출시 검증 완료. 직접 요청으로 커밋/main push/배포 승인됨. 최신결정·증거는 마지막 ‘출시 승인’ 절이며 실제 배포 결과와 영구 전후 보고는 Hub `out/vic/20261119-companion-faces-01a1f21d`에 보존한다. 이전 후보/실패/승인은 당시 범위로 보존한다.
 
 사용자 현재 요청: 볼 붉은 장식보다 눈을 위에 합성, 첨부 수면 아이콘처럼 감은 처진 눈+작은o입, 검수41울음/43윙크의 끊긴 입·눈물 수정.13반김/15쓰담은 여러 아이콘을 조사해 대안만 제안한다. 이전 쓰담 승인(.76)은 대안 선택 전 유지하며 공통 레이어 교정만 적용한다. 커밋/push/배포는 이번 요청에 포함하지 않는다.
 
@@ -84,3 +84,11 @@ material-source의 raw114 반환 미사용은 확인했으나 이를 전체 RGB 
 G21 독립 코드 검수 완료:공유painter/잉크합성/harmonic복원/WeakMap상한/alpha·양눈입장/역할·서버·KST경계/관련회귀를 검토했고 구체적 결함 없음. 승인소스4SHA/33파생패킷 SHA·bytes 일치를 독립 확인했다. 작성자가 수행한83단위/5fixture 로그를 검토했으며 검수자 직접 재실행·실기기 성능·main 통합후 검증은 별개다. 새다섯역할 아트검수를 추가하거나 승인얼굴을 재설계한 것이 아니다.
 
 출시는 기존 Cloudflare Workers Builds의 GitHub 연결만 이용한다. 로컬cf:deploy/비밀복사/운영DB 변경은 하지 않는다. 실제release commit과 공개사이트 build SHA/33그림 SHA/클라이언트표정을 대조하고 결과를 로컬 출시 증거에 남긴 뒤,미커밋0을 확인해 이worktree를 같은세션에서 제거한다. 실제기기/로그인RLS/자연생활36의 기존 미확인을 출시성공으로 확대하지 않는다.
+
+통합 커밋a240f745는main6c61f679위로충돌없이rebase됐다. 통합전체469파일7,323PASS/1SKIP·build/typecheck·fixture5는통과했으나,main에서온aria-description4경고로엄격lint가실패했다. 설명문구/모양/활동target은유지하고useId+sr-only+aria-describedby로정리했다. 독립검수가발견한버튼이름오염은radio/소리타일의명시적aria-label로고쳤고재검수No issues다. 후속소스는아직미커밋이며푸시전최종검증/커밋이남았다.
+
+접근성수정의 `build-a11y-final.log`/`lint-a11y-final.log` exit0,관련단위10PASS,`settings-after-result.json`의실제이름·설명검사1PASS다.25제어의종류/target/X/너비/높이는같고,펼침직후Y차이는최대.58px였다. `settings-before/after.png`는팝업의포인터밖흐림/스크롤클립과전환시점이달라픽셀동일성을인증하지못한다. 이를유효한전후완료그림으로전달하지않고실패·측정한계를보존한다. 얼굴자체의승인전후그림/18장일치/520alpha증거는그대로유효하다.
+
+최종 인계 후 검증: `unit-first-fail.log`는 React 밖에서 직접 호출하던 기존 세그먼트 구조검사9건의 useId 실패와 병행 부하 시간초과2건을 보존한다. 구조검사에만 useId 대역을 추가해 기존 키보드/포커스/활동 단언을 유지했고, 실패3파일16건은 기본5초 제한 그대로 분리 재검사해 통과했다. 최종 전체 `unit-final.log`는469파일 중466파일/7,320PASS/1SKIP, 부하 시간초과3건이다. 같은 최종 소스의 `unit-final-retry.log`에서 해당3파일255건 모두 worker1/기본제한으로 통과했다. 두 결과를 합쳐469파일/7,323건을 확인했으며 단일 전체실행 무실패라고 부르지 않는다. 시간제한·검증조건·제품코드를 시간초과 회피 목적으로 바꾸지 않았다.
+
+`typecheck-final.log`/`lint-final.log` exit0. 제품 소스 변경 뒤의 `build-a11y-final.log` exit0을 유지하며 이후 수정은 위 테스트 대역과 기록뿐이다. `live-final.json`은 compiled36×3포즈×3진행과 viewer/studio/preview Enter쓰담·N수면519의5PASS, `settings-a11y-final.json`은 실제 짧은 이름/연결 설명1PASS다. API/쓰기/외부fetch 격리와 G22 고정 target·활동 소유권을 보존했고 서버 종료/3198 LISTEN0을 확인했다. 최종 기록의 harness를 커밋 전에 다시 확인한다. 출시 확인은 GitHub 연결 Cloudflare 배포100%, 실제사이트 빌드커밋·33자산해시·실제입력을 기준으로 하며 실제기기/로그인RLS/자연생활36은 별도 미확인이다.

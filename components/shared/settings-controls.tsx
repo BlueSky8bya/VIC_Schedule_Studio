@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowRight } from "lucide-react";
-import type { CSSProperties, KeyboardEvent, ReactNode } from "react";
+import { useId, type CSSProperties, type KeyboardEvent, type ReactNode } from "react";
 import { logActivity } from "@/lib/activity/client";
 
 /** 늘 모든 상태가 보이는 세그먼트(라디오) — 셀렉트는 무엇을 고를 수 있는지 안 보인다(2026-09-04 소유자). */
@@ -29,6 +29,7 @@ export function SettingsSegment<T extends string | number>({
   /** Spoken explanation; the same words as the row's hover hint. */
   description?: string;
 }) {
+  const hintId = useId();
   const columnCount = Math.max(1, Math.min(options.length, Number.isFinite(columns) ? Math.floor(columns!) : options.length));
   const rows = Math.max(1, Math.ceil(options.length / columnCount)), selected = Math.max(0, options.findIndex(option => option.value === value));
   const onKey = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
@@ -48,7 +49,7 @@ export function SettingsSegment<T extends string | number>({
   };
   return (
     <div
-      aria-description={description}
+      aria-describedby={description ? `${hintId}-group` : undefined}
       aria-label={ariaLabel}
       className="rhh-seg"
       data-act={dataAct}
@@ -63,12 +64,14 @@ export function SettingsSegment<T extends string | number>({
         } as CSSProperties
       }
     >
+      {description ? <span className="sr-only" id={`${hintId}-group`}>{description}</span> : null}
       {/* 흰 손잡이 하나가 고른 칸으로 미끄러진다(iOS 세그먼트) — 칸마다 배경을 켜고 끄면 '깜빡'이 된다. */}
       <span aria-hidden="true" className="rhh-seg-thumb" />
       {options.map((o, index) => (
         <button
           aria-checked={o.value === value}
-          aria-description={o.tip}
+          aria-label={o.label}
+          aria-describedby={o.tip ? `${hintId}-option-${index}` : undefined}
           className={o.value === value ? "on" : ""}
           // 칸마다 id — 없으면 고른 칸은 auto:.on, 나머지는 '클래스 없는 버튼'으로 뭉쳐 무엇을 골랐는지 안 남았다(2026-10-10).
           data-act={dataAct}
@@ -85,6 +88,7 @@ export function SettingsSegment<T extends string | number>({
           type="button"
         >
           <span className="vmid">{o.label}</span>
+          {o.tip ? <span className="sr-only" id={`${hintId}-option-${index}`}>{o.tip}</span> : null}
         </button>
       ))}
     </div>
@@ -104,10 +108,11 @@ export function RowLabel({ icon, tone, children }: { icon: ReactNode; tone: "wat
 }
 
 export function Switch({ on, onToggle, label, dataAct, dataActOpt, description, disabled }: { on: boolean; onToggle: () => void; label: string; dataAct: string; dataActOpt?: string; description?: string; disabled?: boolean }) {
+  const hintId = useId();
   return (
     <button
       aria-checked={on}
-      aria-description={description}
+      aria-describedby={description ? hintId : undefined}
       aria-label={label}
       className={`rhh-switch ${on ? "on" : ""}`}
       data-act={dataAct}
@@ -118,6 +123,7 @@ export function Switch({ on, onToggle, label, dataAct, dataActOpt, description, 
       type="button"
     >
       <span className="rhh-knob" aria-hidden="true" />
+      {description ? <span className="sr-only" id={hintId}>{description}</span> : null}
     </button>
   );
 }

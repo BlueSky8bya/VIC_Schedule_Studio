@@ -81,7 +81,10 @@ describe("141 shared basic personality settings", () => {
     for (const tile of tiles) {
       const moment = tile.props["data-act-opt"] as typeof COMPANION_SOUND_MOMENTS[number];
       expect(tile.type).toBe("button"); expect(COMPANION_SOUND_HINTS[moment].trim(), moment).toBeTruthy();
-      expect([tile.props["data-tip"], tile.props["aria-description"]], moment).toEqual([COMPANION_SOUND_HINTS[moment], COMPANION_SOUND_HINTS[moment]]);
+      expect(tile.props["data-tip"], moment).toBe(COMPANION_SOUND_HINTS[moment]);
+      const hint = nodes(tile).find(child => child.props.id === tile.props["aria-describedby"]);
+      expect(hint?.props.children, moment).toBe(COMPANION_SOUND_HINTS[moment]);
+      expect(hint?.props.className, moment).toBe("sr-only");
     }
     expect(tiles.filter(tile => tile.props["data-own"] === "").map(tile => tile.props["data-act-opt"])).toEqual(["eat", "tumble"]);
     expect(Object.keys(COMPANION_SOUND_HINTS).sort()).toEqual([...COMPANION_SOUND_MOMENTS].sort());

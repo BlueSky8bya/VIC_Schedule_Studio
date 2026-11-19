@@ -4,6 +4,9 @@ import { SettingsSegment } from "@/components/shared/settings-controls";
 
 const activity = vi.hoisted(() => vi.fn());
 vi.mock("@/lib/activity/client", () => ({ logActivity: activity }));
+// This structure/handler audit calls the component directly; rendered fixtures
+// separately verify React's real IDs and accessible descriptions.
+vi.mock("react", async original => ({ ...await original<typeof import("react")>(), useId: () => "settings-segment" }));
 type Element = ReactElement<Record<string, unknown>>;
 const options = ["curious", "affectionate", "sleepy", "tidy", "mischievous", "gourmet", "performer", "homebody"].map(value => ({ value, label: value }));
 const controls = (element: Element) => (element.props.children as unknown[]).flat().filter(child => child && typeof child === "object" && "props" in child && (child as Element).props.role === "radio") as Element[];

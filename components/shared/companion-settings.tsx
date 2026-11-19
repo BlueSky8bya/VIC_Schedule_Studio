@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowDownToLine, EyeOff, Gauge, Grab, Heart, Leaf, Pointer, Sparkles, Volume1, Volume2, VolumeX } from "lucide-react";
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { RowLabel, SettingsNote, SettingsSegment, Switch, flashSettingsPlace } from "@/components/shared/settings-controls";
 import { COMPANION_SETTINGS_PLACE_LABELS, companionRowBlock, companionSoundStatus, type CompanionBlockedRow, type CompanionSettingsNote, type CompanionSettingsPlace, type CompanionSiteGates } from "@/lib/ui/viewer-companion/settings-status";
 import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences";
@@ -39,6 +39,7 @@ export type CompanionPlaceRequest = Readonly<{ place: CompanionSettingsPlace; n:
  * A row that an outer setting keeps from working stays operable with its value;
  * it is dimmed and says which setting is in the way (stage 1, proposal 3-4). */
 export function CompanionBehaviorSettings({ preferences, onChange, site, onGoTo, placeRequest, active, radio }: { preferences: CompanionPreferences; onChange: (patch: Partial<CompanionPreferences>) => void; site: CompanionSiteGates; onGoTo: (place: CompanionSettingsPlace) => void; placeRequest?: CompanionPlaceRequest; active: boolean; radio: ReactNode }) {
+  const soundHintId = useId();
   const root = useRef<HTMLDivElement>(null);
   // A place inside this page is reached here; any other place belongs to the host.
   const [localPlace, setLocalPlace] = useState<CompanionPlaceRequest>({ place: "companion-power", n: 0 }), servedPlace = useRef(""), hostPlace = useRef(placeRequest?.n ?? 0);
@@ -97,7 +98,7 @@ export function CompanionBehaviorSettings({ preferences, onChange, site, onGoTo,
           <summary data-act="companion-sound-audition-fold" data-activity-manual="" onClick={event => logActivity("ui.click", { target: event.currentTarget.closest("details")?.open ? "companion-sound-audition-fold#close" : "companion-sound-audition-fold#open" })}>소리 들어 보기</summary>
           {/* One even grid. A sound only the companion makes by itself carries a dot: it is heard at "전부" only. */}
           <div className="rhh-sound-board">
-            {COMPANION_SOUND_AUDITIONS.flatMap(group => group.moments.map(moment => <button aria-description={COMPANION_SOUND_HINTS[moment]} className={`rhh-sound-tile${auditioned === moment ? " playing" : ""}`} data-act="companion-sound-audition" data-act-opt={moment} data-own={group.origin === "auto" ? "" : undefined} data-sfx="off" data-tip={COMPANION_SOUND_HINTS[moment]} disabled={siteSilent || !companionSoundAllowed(preferences, group.origin, site)} key={moment} onAnimationEnd={() => setAuditioned(current => current === moment ? null : current)} onClick={() => { if (!auditionCompanionSound(moment, preferences)) return; setAuditioned(null); requestAnimationFrame(() => setAuditioned(moment)); }} type="button"><span className="rhh-sound-label">{COMPANION_SOUND_NAMES[moment]}</span></button>))}
+            {COMPANION_SOUND_AUDITIONS.flatMap(group => group.moments.map(moment => <button aria-label={COMPANION_SOUND_NAMES[moment]} aria-describedby={`${soundHintId}-${moment}`} className={`rhh-sound-tile${auditioned === moment ? " playing" : ""}`} data-act="companion-sound-audition" data-act-opt={moment} data-own={group.origin === "auto" ? "" : undefined} data-sfx="off" data-tip={COMPANION_SOUND_HINTS[moment]} disabled={siteSilent || !companionSoundAllowed(preferences, group.origin, site)} key={moment} onAnimationEnd={() => setAuditioned(current => current === moment ? null : current)} onClick={() => { if (!auditionCompanionSound(moment, preferences)) return; setAuditioned(null); requestAnimationFrame(() => setAuditioned(moment)); }} type="button"><span className="rhh-sound-label">{COMPANION_SOUND_NAMES[moment]}</span><span className="sr-only" id={`${soundHintId}-${moment}`}>{COMPANION_SOUND_HINTS[moment]}</span></button>))}
           </div>
           <p className="rhh-group-foot"><i aria-hidden="true" className="rhh-sound-own-dot" />{"점이 있는 소리는 빅타민이 혼자 내는 소리라, 빅타민 소리가 '전부'일 때만 나요."}</p>
         </details>

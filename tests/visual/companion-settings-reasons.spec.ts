@@ -212,7 +212,7 @@ test("a row says what it does on hover, and its control carries the same words",
   const row = playfulRow(dialog), shown = () => row.evaluate(node => getComputedStyle(node, "::before").opacity);
   const hint = await row.getAttribute("data-tip");
   expect(hint).toContain("장난감을 어질러요");
-  await expect(companionPlayfulSwitch(dialog)).toHaveAttribute("aria-description", hint!);
+  await expect(companionPlayfulSwitch(dialog)).toHaveAccessibleDescription(hint!);
   expect(await row.evaluate(node => getComputedStyle(node, "::before").content)).toContain("장난감을 어질러요");
   await page.mouse.move(2, 2);
   await expect.poll(shown).toBe("0");

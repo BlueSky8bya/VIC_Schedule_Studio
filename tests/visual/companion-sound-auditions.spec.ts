@@ -39,7 +39,7 @@ test("all 14 sounds have a tile; each is heard as the user's or as the companion
   await expect(fold.locator(".rhh-sound-tile[data-own]")).toHaveText(["다 먹음", "넘어짐"]);
   await expect(fold.locator(".rhh-group-foot")).toHaveText("점이 있는 소리는 빅타민이 혼자 내는 소리라, 빅타민 소리가 '전부'일 때만 나요.");
   // Each tile says when it is heard: spoken, and shown above it on hover.
-  for (const button of await fold.getByRole("button").all()) expect(await button.getAttribute("aria-description")).toBe(await button.getAttribute("data-tip"));
+  for (const button of await fold.getByRole("button").all()) await expect(button).toHaveAccessibleDescription((await button.getAttribute("data-tip")) ?? "");
   await expect(tile("쓰다듬기")).toHaveAttribute("data-tip", "쓰다듬을 때");
   const shown = () => tile("쓰다듬기").evaluate(node => getComputedStyle(node, "::before").opacity);
   expect(await shown()).toBe("0");
