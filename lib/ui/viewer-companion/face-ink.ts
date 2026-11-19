@@ -9,6 +9,19 @@ export function compositeCompanionFaceInk(target: Uint8ClampedArray, source: Uin
   }
 }
 
+/** Final admission after every repair/ink pass. A union repair rectangle and
+ * antialiased ink may span gaps between valid patches; those gaps, protected
+ * cheeks and blink-mouth pixels must remain the exact source RGBA. */
+export function admitCompanionFacePixels(target: Uint8ClampedArray, source: Uint8ClampedArray, allowed: Uint8Array, mouthOnly = false) {
+  for (let pixel = 0; pixel < allowed.length; pixel++) {
+    const i = pixel * 4;
+    if (!allowed[pixel] || mouthOnly && allowed[pixel] !== 2) {
+      for (let channel = 0; channel < 3; channel++) target[i + channel] = source[i + channel];
+    }
+    target[i + 3] = source[i + 3];
+  }
+}
+
 /** Same-source tear colour, not a new drawing or copied skin. Eye-background
  * repair can cross the upper part of the native tear and must not erase it. */
 export function restoreCompanionTearInk(target: Uint8ClampedArray, source: Uint8ClampedArray) {

@@ -1,8 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { compositeCompanionFaceInk, restoreCompanionTearInk } from "@/lib/ui/viewer-companion/face-ink";
+import { admitCompanionFacePixels, compositeCompanionFaceInk, restoreCompanionTearInk } from "@/lib/ui/viewer-companion/face-ink";
 import { companionFaceBackground } from "@/lib/ui/viewer-companion/face-plate";
 
 describe("facial ink above cheeks", () => {
+  it("restores union gaps and fringe ink outside the final validated patches", () => {
+    const source = new Uint8ClampedArray([240, 220, 180, 253, 241, 221, 181, 254, 242, 222, 182, 253, 243, 223, 183, 128]);
+    const target = new Uint8ClampedArray([90, 60, 30, 255, 91, 61, 31, 255, 92, 62, 32, 255, 93, 63, 33, 255]);
+    admitCompanionFacePixels(target, source, new Uint8Array([1, 0, 2, 0]));
+    expect([...target]).toEqual([90, 60, 30, 253, 241, 221, 181, 254, 92, 62, 32, 253, 243, 223, 183, 128]);
+  });
+  it("keeps approved eyes exact when only the sleeping mouth is admitted", () => {
+    const source = new Uint8ClampedArray([112, 70, 38, 253, 240, 220, 180, 253]);
+    const target = new Uint8ClampedArray([100, 60, 20, 255, 124, 82, 56, 255]);
+    admitCompanionFacePixels(target, source, new Uint8Array([1, 2]), true);
+    expect([...target]).toEqual([112, 70, 38, 253, 124, 82, 56, 253]);
+  });
+  it("cannot repaint a protected cheek after ink and does not blend admitted ink twice", () => {
+    const source = new Uint8ClampedArray([240, 150, 100, 253, 241, 221, 181, 253]);
+    const target = new Uint8ClampedArray([245, 225, 185, 253, 246, 226, 186, 253]);
+    compositeCompanionFaceInk(target, source, new Uint8ClampedArray([100, 60, 20, 128, 112, 70, 38, 128]), .6);
+    const admitted = target.slice(4);
+    admitCompanionFacePixels(target, source, new Uint8Array([0, 1]));
+    expect([...target.slice(0, 4)]).toEqual([...source.slice(0, 4)]);
+    expect(target.slice(4)).toEqual(admitted);
+  });
   it("keeps opaque eyes continuous over an orange cheek and preserves the source alpha", () => {
     const source = new Uint8ClampedArray([240, 150, 100, 253, 240, 150, 100, 253]);
     const target = source.slice();

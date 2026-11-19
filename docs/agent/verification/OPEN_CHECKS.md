@@ -4,6 +4,14 @@ Updated: 2026-10-19
 
 This file keeps unresolved evidence gaps out of startup history. A prior PASS applies to its tested revision and scope only. Recheck before closing; do not infer current production state from old notes.
 
+## COMPANION-FACE-ADMISSION — 수면 source plane 관측 한계
+
+[최종 표정 합성 교정](../plans/PLAN-20261120-face-admission.md)의 production fixture와 실제 포즈 strict 검증은 별도 근거다. 최신 QA 의존성의 studio 생활 관측에서 승인 수면519의25프레임은 `unproved-expression-plane`으로 미인증이었다. 이 프레임을 source 픽셀 통과로 합산하지 않는다. 승인 수면 입90샘플 PNG 바이트 동일·alpha/눈/입 밖 변화0 근거는 그 샘플 범위에만 적용된다. 일반 생활 관측기의 native mouth-only plane 인증 범위는 후속 QA 과제이며, 이 미인증만으로 새 제품 결함이나 원화 변경을 추정하지 않는다.
+
+원본 TV 검사의 고정40/80초 입력은 실제 장난감 반납을 보장하지 않아 studio에서 C04 미실행으로 실패했다. 그 실패는 보존한다. 실제 바깥 발판에 놓은 같은 장난감의 이동·반납을 먼저 확인하는 별도 보강 검증은 원본 검사의 통과나 자연생활36 전체 인증을 뜻하지 않는다. 실제기기·로그인RLS·자연생활36의 기존 미확인도 유지한다.
+
+달력5317f3c0 통합 후 첫 실물은3PASS/2FAIL(얼굴2·studio TV 통과, viewer/preview C04 미실행 실패)이다. 첫 소개의 마지막 stretch를 장난감 입력이 끊어 미완료 소개가 반납 뒤 TV 기회를 소비한 것을 독립 확인했다. 소개 종료·후속 상태를 먼저 관측한 별도 viewer/preview 검사는 각1PASS이며 원실패를 대체하지 않는다. 선택한 최종 표면의 source 관측은 viewer3402/3402, studio3655/3682, preview3154/3315다. studio의519 27프레임과 preview의267 125프레임은 `unproved-expression-plane`, preview237/238/239/271의36프레임은 `missing-current-source`로 미인증이다. 이161/27프레임을 픽셀 통과나 전체 생활 인증으로 합산하지 않는다. 실제 C04 시청·C01 집바닥 반납 구간은 별도로 decoded/sourceClipMeasured를 확인했다.
+
 ## PLATFORM-080 — 배포 후 운영·비용·외부 증거
 
 [079 감사](PLATFORM_AUDIT-20261017.md)는 읽기 전용 기준 기록이다. 이후 소유자 승인으로 코드·의존성·0151을 수정했다. 현재 구현과 검증 범위는 [080 적용 기록](PLATFORM_REMEDIATION-20261017.md), [backend](BROADCAST_WORK_BOUNDS-20261017.md), [client](PLATFORM_CLIENT-20261017.md)를 따른다.

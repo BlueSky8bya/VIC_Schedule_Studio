@@ -29,7 +29,7 @@ const print=(node:ts.Node)=>ts.createPrinter().printNode(ts.EmitHint.Unspecified
 const actualMaskCode=ts.transpileModule(`
 const PIXELS=192,SCALE=PIXELS/80,allowed=new Uint8Array(PIXELS*PIXELS);
 const mix=(a,b,p)=>a+(b-a)*p;
-const native=undefined,original=undefined,authoredState="open",mouthOnly=false;
+const native=undefined,original={data:source},authoredState="open",mouthOnly=false;
 const face={gazeX:0,gazeY:0,weight:1,smile:.7,open:1,tremble:.3};
 const layout=companionFaceLayout(pose);
 const pixels={getImageData(left,top,width,height){const data=new Uint8ClampedArray(width*height*4);
@@ -64,6 +64,17 @@ function cell(index=0):CuriousTextureCellMeasurement {
     spriteClipPath:`inset(${f.clip.map(n=>`${n/80*100}%`).join(" ")})`,textureClipPath:"none"};
 }
 describe("157 actual current-cell canvas comparison shared verbatim with browser",()=>{
+  it("rejects a live eye patch with two valid corners even when its surrounding ring is cream",()=>{
+    const current=anchors.frames.find(p=>p.physicalIndex===144)!,source=original();
+    const primary=actualPainterPatches(source,current,pose).eyePatches[0].box;
+    const [left,,right,bottom]=primary.map(n=>Math.round(n*192/80));
+    source.set([252,135,47,253],(bottom*192+left)*4);
+    source.set([118,80,47,253],(bottom*192+right)*4);
+    const actual=actualPainterPatches(source,current,pose);
+    expect(actual.eyePatches[0].box).not.toEqual(primary);
+    expect(actual.eyePatches[0].fill).toBeTruthy();
+    expect(mask(source,current,pose)).toEqual(actual.allowed);
+  });
   it("admits the measured pose156 eye from cream samples while retaining the opaque-source guard",()=>{
     const current=anchors.frames.find(p=>p.physicalIndex===156)!,source=original();
     const primary=actualPainterPatches(source,current,pose).eyePatches[1].box;

@@ -4,7 +4,7 @@ import policy from "./appearance-policy.json";
 import anchors from "./expression-anchors-161.json";
 import { companionFaceLayout } from "./face-layout";
 import { restoreCompanionSpiralEyes } from "./spiral-eyes";
-import { compositeCompanionFaceInk, restoreCompanionTearInk } from "./face-ink";
+import { admitCompanionFacePixels, compositeCompanionFaceInk, restoreCompanionTearInk } from "./face-ink";
 import { peekDecodedCompanionSprite, type CompanionSpriteSelection } from "./sprite-quality";
 import { COMPANION_EYE_SHAPE as E, COMPANION_MOUTH_SHAPE as M, sampleCompanionExpression, type CompanionExpressionId } from "./expressions";
 import { companionAppearanceEyes, companionAppearancePoint, companionAppearanceBounds, companionAppearanceFrames, resolveCompanionAppearanceSource } from "./appearance";
@@ -145,13 +145,12 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
         const [x, y] = eye.center;
         const fringe = native ? 1.4 : .65;
         let box = [Math.min(eye.bounds[0], x - maskWidth / 2 - 1) - fringe, Math.min(eye.bounds[1], y - maskHeight / 2 - 1.6) - fringe, Math.max(eye.bounds[2], x + maskWidth / 2 + 1) + fringe, Math.max(eye.bounds[3], y + maskHeight / 2 + 1.2) + fringe];
-        // The baked eyelid can be larger than its historical landmark. On a
-        // canonical cell use its opaque cream ring too, just as during baking;
-        // otherwise an orange corner rejects the primary patch and the tiny
-        // historical fallback leaves the new arch behind the moving pupil.
-        let fill = background(box, 1, eye.skinSamples, Boolean(native || authoredState));
+        // Native baking can recover cream from the surrounding ring. Live
+        // expressions use the validated patch's own samples, including its
+        // bounded eye fallback; baking cannot grant extra runtime admission.
+        let fill = background(box, 1, eye.skinSamples, Boolean(native));
         // Drooping ears keep their original contour and colour.
-        if (!fill) { box = [eye.bounds[0] - .4, eye.bounds[1] - .4, eye.bounds[2] + .4, eye.bounds[3] + .4]; fill = background(box, 1, undefined, Boolean(native || authoredState)); }
+        if (!fill) { box = [eye.bounds[0] - .4, eye.bounds[1] - .4, eye.bounds[2] + .4, eye.bounds[3] + .4]; fill = background(box, 1, undefined, Boolean(native)); }
         return { original, width, height, x, y, box, fill };
       });
       // A paired expression is admitted atomically. A folded ear/transparent
@@ -172,7 +171,7 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
       const mouthFringe = native || pose.source === 9 ? 2 : .5;
       const mouthBox = m ? mouthOnly ? [targetMouthX - 3.4, targetMouthY - 2, targetMouthX + 3.4, targetMouthY + 3.6]
         : [Math.min(m.bounds[0] - mouthFringe, sourceMouthX - 3.4, targetMouthX - 3.4), Math.min(m.bounds[1] - mouthFringe, sourceMouthY - 2, targetMouthY - 2), Math.max(m.bounds[2] + mouthFringe, sourceMouthX + 3.4, targetMouthX + 3.4), Math.max(m.bounds[3] + mouthFringe, sourceMouthY + 3.6, targetMouthY + 3.6)] : undefined;
-      const mouthFill = mouthBox ? background(mouthBox, 2, undefined, Boolean(native || authoredState)) : undefined;
+      const mouthFill = mouthBox ? background(mouthBox, 2, undefined, Boolean(native)) : undefined;
       if (mouthOnly && !mouthFill) { ctx.restore(); hide(); return false; }
       // Repair the union once. Separate patches restored pixels from the
       // uncleaned source at overlaps: a mouth rectangle could bring back a
@@ -366,17 +365,17 @@ export function createCompanionExpressionPainter(canvas: HTMLCanvasElement, read
           : x >= Math.min(m.bounds[0] - .6, layout.x - 3.4) && x <= Math.max(m.bounds[2] + .6, layout.x + 3.4) && y >= Math.min(m.bounds[1] - .6, layout.y - .5) && y <= m.bounds[3] + 1.2);
         const blinkMouth = blinkOnly && pose.mouth && x >= layout.mouthX - 3.4 && x <= layout.mouthX + 3.4 && y >= layout.mouthY - 2 && y <= layout.mouthY + 3.6;
         const keep = blinkMouth || !allowed[i / 4] || !sourceMouth && original.data[i] > 210 && original.data[i + 1] < 190 && original.data[i + 2] < 135;
+        // Carry the same protected-pixel decision through the later ink pass.
+        if (keep) allowed[i / 4] = 0;
         for (let k = 0; k < 3; k++) final.data[i + k] = keep ? original.data[i + k] : Math.round(mix(original.data[i + k], final.data[i + k], sourceBlend));
         final.data[i + 3] = original.data[i + 3];
       }
       if (native === "cry") restoreCompanionTearInk(final.data, original.data);
       compositeCompanionFaceInk(final.data, original.data, ink.getImageData(0, 0, PIXELS, PIXELS).data, sourceBlend);
-      // The owner approved these baked eyes. Even overlapping repair corridors
-      // must leave every non-mouth byte exactly as it was in that source.
-      if (mouthOnly) for (let i = 0; i < allowed.length; i++) {
-        if (allowed[i] !== 2) final.data.set(original.data.subarray(i * 4, i * 4 + 4), i * 4);
-      }
       if (native === "spiral") restoreCompanionSpiralEyes(final.data, original.data, selected.physicalIndex);
+      // Ink cannot reopen a rejected patch or the gap between two patches.
+      // Sleep-mouth mode also preserves the owner's approved baked eyes.
+      admitCompanionFacePixels(final.data, original.data, allowed, mouthOnly);
       ctx.putImageData(final, 0, 0);
       canvas.style.transform = `translate3d(${selected.frame.x / 80 * 100}%,${selected.frame.y / 80 * 100}%,0)`;
       canvas.style.clipPath = `inset(${selected.frame.clip.map(n => `${n / 80 * 100}%`).join(" ")})`;
