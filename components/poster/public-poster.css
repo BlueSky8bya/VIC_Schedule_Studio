@@ -6835,6 +6835,18 @@ html[data-reduce-motion] .card-sheen {
 /* 토→일 줄바뀜 = 색으로만(2026-11-19 소유자) — 칠이 맞닿은 끝으로 옅어지는 것은 카드 자신의 인라인 배경 그라데이션이다
    (lib/calendar/month.ts wrapFadeStyle, 편집실·시청자 공용). 마스크·덧층이 없어 제목·하트·왕관·초점 링은 그대로 진하다.
    맞닿은 이 두 변은 고른 테두리·손 올림 빛·복사 표시도 긋지 않는다(useEqualChainHeights openOutlineParts — 같은 규칙). */
+/* 줄 오른쪽 끝(토요일)에서 열린 변이 칸 끝까지 가는 조각(토→일 .wrap-out, 주를 넘는 여러 날 한 장의 토요일 칸)은 카드 오른변이
+   달력 격자의 오른쪽 끝(.public-month-grid overflow:hidden — 둥근 모서리 자르기)과 같아, 밖으로 6px 걸치는 왕관이 잘렸다
+   (2026-11-20 소유자). 열린 쪽 음수 마진(-7px)만큼만 왕관·하트를 안으로 — 칸 기준으로는 다른 토요일 카드와 같은 자리다.
+   카드 모양·열린 변·옅어짐은 그대로(이어진 한 띠로 읽힘). 띠 머리(.band-head)는 왕관이 제 머리 칸에 있어 제외. */
+.public-event.wrap-out:not(.band-head) > .tier-crown,
+.public-day:nth-child(7n) .public-event.span.no-right:not(.band-head) > .tier-crown {
+  right: 1px; /* -6px + 7px */
+}
+.public-event.wrap-out .event-heart,
+.public-day:nth-child(7n) .public-event.span.no-right .event-heart {
+  right: 12px; /* 5px + 7px */
+}
 .public-event.chain-slim,
 .studio-event-pill.chain-slim {
   padding-top: 3px;

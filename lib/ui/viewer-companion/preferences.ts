@@ -44,7 +44,8 @@ export const COMPANION_PREFERENCES_KEY = "vic.viewerCompanion";
 export const COMPANION_PREFERENCES_EVENT = "vic:viewer-companion";
 export const DEFAULT_COMPANION_PREFERENCES: Readonly<CompanionPreferences> = Object.freeze({
   enabled: true,
-  activeWhileVisible: true,
+  // Owner 2026-11-20: off by default. A device that saved a choice keeps it.
+  activeWhileVisible: false,
   roam: true,
   jump: true,
   sleep: true,

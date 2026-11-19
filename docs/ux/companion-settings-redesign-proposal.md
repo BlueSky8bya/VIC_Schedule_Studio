@@ -779,7 +779,7 @@ C의 다른 길:
 | 화면 이름 | 저장 기록 › 필드 | 기본값 |
 |---|---|---|
 | 빅타민 전원 | `vic.viewerCompanion` › `enabled` | true |
-| 다른 창 작업 중에도 활동 | › `activeWhileVisible` | true |
+| 다른 창 작업 중에도 활동 | › `activeWhileVisible` | false (2026-11-20 소유자: 기본 끔) |
 | 돌아다니기 / 깡충 뛰기 / 자동 잠자기 | › `roam` / `jump` / `sleep` | true |
 | 하트 콩 / 일정 기울이기 / 숨바꼭질 / 패널 자리 장난 / 희귀 소품 장난 | › `heartPrank` / `cardPrank` / `ambientPrank` / `panelPrank` / `rarePrank` | true |
 | 집어 옮기기 / 쓰다듬기 / 밥주기 | › `drag` / `petting` / `feeding` | true |

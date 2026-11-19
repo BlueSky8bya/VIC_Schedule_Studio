@@ -564,20 +564,40 @@ export function mixedEventStyle(
 // ── 토→일 줄바뀜 = 색으로만(2026-11-19 소유자) ──
 // 토요일 조각은 오른쪽 끝으로, 일요일 조각은 왼쪽 끝에서 카드의 **칠만** 옅어진다(거울 대칭). 마스크·덧층이 아니라 카드 자신의
 // 배경 그라데이션이다 — 제목·하트·왕관·초점 링·그림자는 그대로 진하고(겹 순서·쌓임 맥락 변화 없음), 2색·사용자 색·다크 모두 같은
-// 색 값(themeColor)에서 나온다. 옅어지는 폭 13px은 평평한 변의 안쪽 여백(15~16px) 안이라 글자는 늘 제 색 위에 있다.
+// 색 값(themeColor)에서 나온다. 옅어지는 폭 14px은 평평한 변의 안쪽 여백(15~16px) 안이라 글자는 늘 제 색 위에 있다.
 // 테두리도 같은 방식(border-box 층, 2색 카드와 같은 background-clip 기법이라 둥근 모서리 유지). 편집실 '은은한 광택·눈 편한 베일'은
 // --card-veil(metal-water.css)로 맨 위에 그대로 얹는다. 무늬(미정 빗금)는 카드 위 따로 그린 층이라 옅어지지 않는다.
-export const WRAP_FADE_PX = 13;
-const WRAP_FADE_ALPHA = 22; // 끝의 남는 진하기(%) — 아예 지우면 카드가 잘려 보인다
+// 2026-11-20 소유자 "이어진 느낌이 약하다"(특히 시청자 다크) → 끝을 22%에 남기던 것을 **칸 바탕까지 완전히** 녹인다(0%).
+// 끝에 칠이 남으면 '부드러운 끝을 가진 닫힌 카드'로 읽히고, 바탕으로 사라져야 '줄 너머로 계속된다'로 읽힌다(스크롤 끝 흐림·
+// 연속성 원리 — docs/ux/UI_RULES.md UI-45 근거). 곡선은 글자 쪽은 오래 진하게 버티고 끝에서 빨리 빠지는 ease-in(직선은 한가운데서
+// 이미 반쯤 비어 짧게 보였다). 폭은 평평한 변 여백(시청자 15px·편집실 16px) − 1px = 14px — 글자 밑 칠은 늘 100%라 대비(WCAG AA)는 그대로.
+export const WRAP_FADE_PX = 14;
+// 맞닿은 끝(0)에서 안쪽으로 [폭 비율, 남는 진하기 %] — 1(폭 끝)이 100%(제 색).
+// 2026-11-20 밤 소유자 "더 끊어져 보이고 위아래로 좁아 보인다": 끝을 0%까지 녹이면 몸통이 잘려 보이고, 위아래 선까지 녹이면
+// 끝이 가늘어 보였다. 그래서 칠은 끝에서도 절반 넘게 남기고(55%), 위아래 선은 녹이지 않고 끝까지 그대로 잇는다(높이 유지).
+const WRAP_FADE_CURVE: [number, number][] = [
+  [0, 55],
+  [4 / 14, 66],
+  [8 / 14, 80],
+  [12 / 14, 94]
+];
 export type WrapFade = { left: boolean; right: boolean };
-function fadeStops(at: (p: number) => string, inner: { pos: number; color: string }[], fade: WrapFade): string {
-  const ghost = (c: string) => `color-mix(in srgb, ${c} ${WRAP_FADE_ALPHA}%, transparent)`;
+const NO_FADE: WrapFade = { left: false, right: false };
+function fadeStops(at: (p: number) => string, inner: { pos: number; color: string }[], fade: WrapFade, len = WRAP_FADE_PX): string {
+  const ghost = (c: string, a: number) => `color-mix(in srgb, ${c} ${a}%, transparent)`;
+  const px = (f: number) => Math.round(f * len * 10) / 10;
   const c0 = at(0);
   const c1 = at(1);
   const stops: string[] = [];
-  stops.push(fade.left ? `${ghost(c0)} 0px, ${c0} ${WRAP_FADE_PX}px` : `${c0} 0%`);
+  if (fade.left) {
+    for (const [f, a] of WRAP_FADE_CURVE) stops.push(`${ghost(c0, a)} ${px(f)}px`);
+    stops.push(`${c0} ${len}px`);
+  } else stops.push(`${c0} 0%`);
   for (const s of inner) stops.push(`${s.color} ${(s.pos * 100).toFixed(2)}%`);
-  stops.push(fade.right ? `${c1} calc(100% - ${WRAP_FADE_PX}px), ${ghost(c1)} 100%` : `${c1} 100%`);
+  if (fade.right) {
+    stops.push(`${c1} calc(100% - ${len}px)`);
+    for (const [f, a] of [...WRAP_FADE_CURVE].reverse()) stops.push(`${ghost(c1, a)} ${f === 0 ? "100%" : `calc(100% - ${px(f)}px)`}`);
+  } else stops.push(`${c1} 100%`);
   return `linear-gradient(to right, ${stops.join(", ")})`;
 }
 // 그 칸의 칠·테두리를 줄바뀜 끝이 옅어지는 배경 층으로. colors 1개 = 단색, 2개 = 2색(이어진 묶음 전체 기준 반반 — 칸 창만 잘라 그린다).
@@ -594,7 +614,7 @@ export function wrapFadeStyle(
   const aBorder = themeColor(a.borderColor, darkA.borderColor);
   let build: (f: WrapFade) => { fill: string; line: string };
   if (!b) {
-    build = (f) => ({ fill: fadeStops(() => aBg, [], f), line: fadeStops(() => aBorder, [], f) });
+    build = (f) => ({ fill: fadeStops(() => aBg, [], f), line: fadeStops(() => aBorder, [], NO_FADE) });
   } else {
     const darkB = readDarkTagColors(b.darkColors, b.bgColor);
     const bBg = themeColor(b.bgColor, darkB.bgColor);
@@ -613,7 +633,7 @@ export function wrapFadeStyle(
       [{ pos: local(0.38), color: x }, { pos: local(0.62), color: y }].filter((s) => s.pos > 0 && s.pos < 1);
     build = (f) => ({
       fill: fadeStops(mixAt(aBg, bBg), inner(aBg, bBg), f),
-      line: fadeStops(mixAt(aBorder, bBorder), inner(aBorder, bBorder), f)
+      line: fadeStops(mixAt(aBorder, bBorder), inner(aBorder, bBorder), NO_FADE)
     });
   }
   const { fill, line } = build(fade);

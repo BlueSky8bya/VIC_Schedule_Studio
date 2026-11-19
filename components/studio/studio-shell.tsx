@@ -181,6 +181,7 @@ import type { CompanionPositionMemory } from "@/lib/ui/viewer-companion/position
 import {
   createEmptyForm,
   daysBetweenIso,
+  spanDragAnchor,
   addDaysIso,
   spanDays,
   formatSupportEnd,
@@ -4040,8 +4041,13 @@ export function StudioShell({
     if ((e.target as HTMLElement).closest("button, a")) return;
     const node = e.currentTarget as HTMLElement;
     const range = spanRangeOf(ids);
-    // 기준 = 시작일 — 놓은 칸이 곧 새 시작일(잡은 칸과 무관).
-    const anchor = range.start;
+    // 기준 = 잡은 그 날(spanDragAnchor) — 잡은 날이 손 아래에 남는다: 놓은 날 − 잡은 날만큼 묶음 전체가 옮겨진다.
+    // 여러 칸 폭 띠 머리는 카드 하나가 여러 날을 덮으므로 카드의 칸이 아니라 '누른 자리의 칸'을 본다.
+    const anchor = spanDragAnchor(
+      dayIsoAtPoint(e.clientX, e.clientY) ?? node.closest("[data-isodate]")?.getAttribute("data-isodate") ?? null,
+      range.start,
+      range.end
+    );
     if (!node.closest("[data-isodate]") || !range.start) return;
     // 칸의 범위 선택(시트식 드래그)까지 같이 시작되지 않게 — 띠는 칸 위에 얹혀 있어 신호가 칸으로 올라간다.
     e.stopPropagation();
