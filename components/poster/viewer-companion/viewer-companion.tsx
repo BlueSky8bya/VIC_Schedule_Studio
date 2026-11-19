@@ -122,6 +122,7 @@ import { COMPANION_HOME_FLOOR_INSET, isCompanionHomeFloorFoodSupport } from "@/l
 import { acquireDecodedCompanionSprite, canDecodeCompanionSprite, companionMotionClips, companionSpriteMetadata as registration, companionSpriteSources, decodeCompanionSprite, isCompanionSpriteDecoded, peekDecodedCompanionSprite, selectCompanionSprite } from "@/lib/ui/viewer-companion/sprite-quality";
 import { companionNextPlayRow, companionTapReaction, sampleCompanionCozySleep, sampleCompanionPlay } from "@/lib/ui/viewer-companion/play";
 import { COMPANION_CARD_PLAY_EVENT, createCompanionCardPlay } from "@/lib/ui/viewer-companion/card-play";
+import { chainTiltGroup } from "@/lib/calendar/use-equal-chain-heights";
 import { companionPanelFootMatches, requestCompanionPanelSide } from "@/lib/ui/viewer-companion/panel-play";
 import { gfxMode as readGfxMode } from "@/lib/ui/gfx";
 import { hapticSuccess } from "@/lib/ui/haptics";
@@ -3708,7 +3709,11 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
             playImpact = true; mishapUntil = now + 6500;
             if (!workspaceBusyRef.current && !reduced && gfxMode() !== "off" && !isHomeSupport(support)) {
               const node = geometryTracker?.anchor(support)?.element?.closest<HTMLElement>(".public-event[data-eventid],.agenda-event[data-eventid],.agenda-item[data-eventid],[data-companion-event='ordinary'][data-eventid]");
-              if (preferences.cardPrank && node && !node.matches(".selected,.primary-selected,.dragging-src,.span-drag-src,.connect-target,.connect-hover,.connect-dim,.filter-dim,.is-editing,.is-selected") && collectCompanionHideTargets(page).some(target => target.element === node)) { cardPlay.bump(node, paintedFacing); queueSituation("card-bump", [21, 24, 25], began); }
+              // Linked runs tilt as one rigid piece (or not at all across a bent band) so a single day never sticks out.
+              // Classification only; the pivot is measured inside bump() after any running tilt is cleared.
+              const tilt = node ? chainTiltGroup(node) : null;
+              const calm = (el: HTMLElement) => !el.matches(".selected,.primary-selected,.dragging-src,.span-drag-src,.connect-target,.connect-hover,.connect-dim,.filter-dim,.is-editing,.is-selected");
+              if (preferences.cardPrank && node && tilt !== "skip" && calm(node) && (tilt?.parts ?? []).every(calm) && collectCompanionHideTargets(page).some(target => target.element === node)) { cardPlay.bump(node, paintedFacing, tilt ? () => { const measured = chainTiltGroup(node); return measured === "skip" ? null : measured; } : undefined); queueSituation("card-bump", [21, 24, 25], began); }
               food.current?.jostle({ x, y }, 100);
             }
           }

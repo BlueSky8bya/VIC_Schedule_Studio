@@ -671,12 +671,14 @@ export function buildLinkChain<T extends PublicScheduleEvent | StudioScheduleEve
     const nextDay = addDays(eventEndKey(cur), 1);
     const want = rightEdgeTag(cur); // 이 일정의 오른쪽 변 색
     const curKey = repTagIds(cur).join(","); // 대표 태그 구성(동일 구성도 연결 허용)
-    const next = allEvents.find(
-      (e) =>
-        e.id !== cur.id &&
-        getEventDateKey(e) === nextDay &&
-        ((want && leftEdgeTag(e) === want) || repTagIds(e).join(",") === curKey)
-    );
+    const fits = (e: T) =>
+      e.id !== cur.id &&
+      getEventDateKey(e) === nextDay &&
+      ((want && leftEdgeTag(e) === want) || repTagIds(e).join(",") === curKey);
+    // 이미 이어 둔 다음 카드가 조건에 맞으면 그것부터 — 같은 날 같은 색 일정이 둘이어도 기존 묶음을 갈아 끼우지 않는다
+    // (이어진 묶음의 머리·가운데에서 끌어 늘릴 때 중간 고리가 다른 카드로 바뀌던 위험, 2026-11-19).
+    const linked = cur.linkNext ? allEvents.find((e) => e.id === cur.linkNext) : undefined;
+    const next = linked && fits(linked) ? linked : allEvents.find(fits);
     if (!next) {
       return null; // 연속이 끊기거나 맞닿는 색·구성이 다름
     }
@@ -734,6 +736,96 @@ export function getLinkedChainIds<T extends PublicScheduleEvent | StudioSchedule
     cur = next && !ids.has(next) ? next : undefined;
   }
   return ids;
+}
+
+// 우클릭 잇기의 출발 카드(2026-11-19 소유자: "이어진 일정은 한 몸") — 이어진 묶음 어느 카드에서 출발하든
+// 묶음 뒤 날짜로 끌면 묶음 **끝** 카드에서, 앞 날짜로 끌면 묶음 **머리** 카드에서 잇는다(가운데에서 끌어도 끝에서 늘어난다).
+// 묶음 날짜 범위 안(묶음 카드 자신, 그 날들의 다른 일정)은 이을 상대가 아니다 → null.
+// 그 안의 다른 일정과 잇게 두면 기존 고리가 그 일정으로 갈아 끼워져 묶음이 둘로 갈라진다.
+export function chainLinkAnchor<T extends PublicScheduleEvent | StudioScheduleEvent>(
+  sourceId: string,
+  targetId: string,
+  events: T[]
+): string | null {
+  const ids = getLinkedChainIds(sourceId, events);
+  const target = events.find((e) => e.id === targetId);
+  if (!ids.size || !target || ids.has(targetId)) return null;
+  const members = events.filter((e) => ids.has(e.id));
+  let head = members[0];
+  let tail = members[0];
+  for (const m of members) {
+    if (getEventDateKey(m) < getEventDateKey(head)) head = m;
+    if (eventEndKey(m) > eventEndKey(tail)) tail = m;
+  }
+  if (getEventDateKey(target) > eventEndKey(tail)) return tail.id;
+  if (eventEndKey(target) < getEventDateKey(head)) return head.id;
+  return null;
+}
+
+// 편집실 달력이 그리는 일정 = 공개 범위만(비공개 층 UI 철수). 묶음 판정(복사·붙여넣기·우클릭 잇기)도 반드시 이 목록에서 —
+// 공개 → 비공개로 이어진 옛 link가 있어도 화면에 안 그린 일정을 복사하거나 미리보기에 제목을 띄우면 안 된다(방송 화면 유출).
+export function isStudioCalendarDrawn(event: PublicScheduleEvent | StudioScheduleEvent): boolean {
+  return event.visibilityScope === "public";
+}
+
+// 이어진 묶음을 잇는 순서대로(머리 → link_next) — offset = 머리 날짜로부터 며칠 뒤. 복사·붙여넣기가 묶음째 다룰 때 쓴다.
+// 이어짐이 없으면 그 일정 하나(offset 0). 고리가 꼬였으면(머리 없음) 날짜순으로.
+export function chainMembersInOrder<T extends PublicScheduleEvent | StudioScheduleEvent>(
+  id: string | null,
+  events: T[]
+): { event: T; offset: number }[] {
+  const ids = getLinkedChainIds(id, events);
+  const members = events.filter((e) => ids.has(e.id));
+  if (members.length === 0) return [];
+  const byId = new Map(members.map((e) => [e.id, e] as const));
+  const pointed = new Set(members.map((e) => e.linkNext).filter((x): x is string => Boolean(x && byId.has(x))));
+  const ordered: T[] = [];
+  let cur = members.find((e) => !pointed.has(e.id));
+  while (cur && !ordered.includes(cur)) {
+    ordered.push(cur);
+    cur = cur.linkNext ? byId.get(cur.linkNext) : undefined;
+  }
+  const list =
+    ordered.length === members.length
+      ? ordered
+      : [...members].sort((a, b) => getEventDateKey(a).localeCompare(getEventDateKey(b)));
+  const head = getEventDateKey(list[0]);
+  return list.map((event) => ({ event, offset: diffDays(head, getEventDateKey(event)) }));
+}
+
+// 이어진 묶음을 붙여넣을 때 어디까지 다시 이을지 — 조각 i의 묶음 번호(같은 번호끼리 잇는다).
+// 붙여넣기는 머리를 그날 맨 아래, 이어 받는 조각을 그날 맨 위에 둔다(arrangeChainOrder). 이음은 '앞날 마지막 = 다음날 첫'일 때만
+// 그려지므로(buildChainJoins), 가운데 조각(i>0)이 놓일 날에 다른 일정이 있으면 그 조각은 맨 마지막이 못 돼 i→i+1은 끊겨 그려진다.
+// 화면 = 데이터(2026-11-16 소유자) — 그려지지 않을 이음은 저장하지도 않는다. 조각마다:
+//  · busy = 놓일 날에 (그려지는) 다른 일정이 있음.  · offset = 머리 날짜로부터 며칠 뒤 — 하루 건너뛰면 끊는다.
+//  · multi = 여러 날 한 장(link 이음을 그리지 않는다, getEventSpan).  · teaser = 아직 가림인 떡밥(잇지 않는다, buildChainJoins).
+export type ChainPastePiece = { busy: boolean; offset: number; multi?: boolean; teaser?: boolean };
+export function chainPasteRuns(pieces: ChainPastePiece[]): number[] {
+  const runs: number[] = [];
+  pieces.forEach((p, i) => {
+    if (i === 0) {
+      runs.push(0);
+      return;
+    }
+    const prev = pieces[i - 1];
+    const joined =
+      p.offset === prev.offset + 1 &&
+      !p.multi &&
+      !prev.multi &&
+      !p.teaser &&
+      !prev.teaser &&
+      (i - 1 === 0 || !prev.busy);
+    runs.push(runs[i - 1] + (joined ? 0 : 1));
+  });
+  return runs;
+}
+
+// 붙여넣을 묶음 조각 — 그려지는 목록(isStudioCalendarDrawn) 기준. 그려지지 않은(비공개) 일정은 묶음에 들지 않는다.
+export function drawnChainMembers<T extends PublicScheduleEvent | StudioScheduleEvent>(
+  id: string | null,
+  events: T[]
+): { event: T; offset: number }[] {
+  return chainMembersInOrder(id, events.filter(isStudioCalendarDrawn));
 }
 
 // link_next로 묶였더라도 맞닿는 변의 색(대표 태그)이 같을 때만 "이어진 것"으로 본다.

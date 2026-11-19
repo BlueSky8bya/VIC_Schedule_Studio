@@ -49,13 +49,17 @@ export function chainRuleFixtureEvents(): PublicScheduleEvent[] {
     ev("cr-18-wow", "18", "와우 레이드\n2일차 - 화산 심장부", 0, "tag-variety-game"),
     ev("cr-18-song", "18", "20시 노래 방송\n신청곡 받아요", 1, "tag-song"),
 
-    ev("cr-23-hjw", "23", HJW, 0, "tag-full-track", "cr-24-hjw"),
-    ev("cr-24-hjw", "24", HJW, 0, "tag-full-track"),
+    // 하트(왕관) — 같은 글 띠의 머리·뒤 칸 일정이 각자 제 날짜 모서리에 왕관을 다는지 실측(2026-11-19). 이 달 1·2위.
+    { ...ev("cr-23-hjw", "23", HJW, 0, "tag-full-track", "cr-24-hjw"), heartCount: 90 },
+    { ...ev("cr-24-hjw", "24", HJW, 0, "tag-full-track"), heartCount: 80 },
     ev("cr-24-collab", "24", "17시 여교멤 합방\n더빙게임", 1, "tag-collab"),
 
     ev("cr-27-notice", "27", "13시 공지 방송", 0, "tag-hype"),
     ev("cr-27-run", "27", "주말 마라톤\n24시간 연속 방송", 1, "tag-big-server", "cr-28-run"),
     ev("cr-28-run", "28", "주말 마라톤\n24시간 연속 방송", 0, "tag-big-server"),
+
+    // 6/11~6/14 — 아직 안 이은 같은 태그 4일(우클릭 끌어 잇기 → 이어진 묶음 어느 카드에서든 다음 날로 늘리기 실측, 2026-11-19).
+    ...["11", "12", "13", "14"].map((d, i) => ev(`cr-ext-${d}`, d, `탐험 합숙 ${i + 1}일차`, 0, "tag-calm")),
 
     ev("cr-29-wow", "29", "와우 레이드\n검은바위 나락", 0, "tag-variety-game", "cr-30-wow"),
     ev("cr-29-song", "29", "20시 노래 방송\n신청곡 받아요", 1, "tag-song"),

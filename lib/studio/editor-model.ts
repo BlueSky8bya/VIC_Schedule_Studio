@@ -45,7 +45,11 @@ export type CopiedEvent = {
   // 편집실 화면(방송 공유 중일 수 있음)에 내용이 노출된다.
   teaser: boolean;
   teaserRevealAt: string; // ISO(UTC). 빈 문자열=미설정. (저장 페이로드도 ISO를 받는다)
+  // 이어진 묶음째 복사(2026-11-19 소유자: 이어진 일정은 한 몸) — 머리 뒤 조각들. offset = 머리 날짜로부터 며칠 뒤.
+  // 붙여넣으면 같은 간격으로 놓고 같은 순서로 다시 잇는다(화면에 그린 모양 = 데이터).
+  followers?: CopiedFollower[];
 };
+export type CopiedFollower = Omit<CopiedEvent, "followers"> & { offset: number };
 
 // 통합 실행취소(Ctrl+Z): 일반 편집기처럼 '액션 단위' LIFO 스택. 각 항목이 자기 역연산을 안다.
 // - recreate: 삭제를 되돌림 → 보관한 내용으로 다시 만든다.
@@ -65,6 +69,20 @@ export type UndoAction =
     }
   // group: 한 번의 손동작이 여러 카드를 옮긴 것(띠·이어진 일정 묶음 드래그) — Ctrl+Z 한 번에 전부 되돌린다.
   | { type: "group"; actions: UndoAction[] };
+
+// 실행취소 스택에서 '그 항목'을 뺀다 — 묶음(group) 안에 든 항목도 찾아 그 묶음에서 빼고(묶음 객체는 그대로 둬 다른 곳의 참조가
+// 살아 있다), 빈 묶음은 스택에서 지운다. 맨 위(pop)가 아니라 항목을 찾아 빼는 이유는 그 사이 다른 작업이 쌓였을 수 있어서.
+export function dropHistoryEntry(stack: UndoAction[], target: UndoAction): UndoAction[] {
+  const idx = stack.lastIndexOf(target);
+  if (idx >= 0) return [...stack.slice(0, idx), ...stack.slice(idx + 1)];
+  for (const a of stack) {
+    if (a.type !== "group") continue;
+    const before = a.actions.length;
+    a.actions = dropHistoryEntry(a.actions, target);
+    if (a.actions.length !== before) return a.actions.length ? stack : stack.filter((x) => x !== a);
+  }
+  return stack;
+}
 
 // 두 YYYY-MM-DD 사이의 일수 차이(later - earlier).
 export function daysBetweenIso(start: string, end: string): number {

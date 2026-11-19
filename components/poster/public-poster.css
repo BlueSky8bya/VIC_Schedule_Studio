@@ -5740,6 +5740,15 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
   transform: rotate(10deg) scaleY(0.9); /* 노토 원본은 세로가 살짝 길다(2026-11-17 소유자) — 높이만 90% */
   filter: drop-shadow(0 1px 1px rgb(60 40 0 / 28%));
 }
+/* 이어진 같은 글 띠(2026-11-19) — 왕관은 일정(그날 방송)마다라 띠 끝이 아니라 그 날 칸 모서리에. 머리 카드는 여러 칸
+   폭이라 right -6px이면 마지막 날 모서리로 갔다 → 머리 칸 폭(--band-cell-w, useEqualChainHeights)만큼 안으로.
+   뒤 칸 일정의 왕관은 그 날 빈 자리(.band-slot)가 단다 — 예전엔 아예 안 그려졌다. */
+.band-head[data-band-w] > .tier-crown {
+  right: calc(100% - var(--band-cell-w, 100%) - 6px);
+}
+.public-day .band-slot {
+  position: relative;
+}
 /* 왕관 움직임에도 등급(2026-11-17 소유자: "1·2·3등이 각각 다르게, 애니메이션도 등급을") —
    금 = 통통 뛰며 크게 까딱(가장 눈에 띔) · 은 = 좌우로 살랑 · 동 = 느리고 작게 끄덕.
    transform만 움직인다(레이아웃·페인트 없음). 세로 90%(scaleY .9)는 모든 프레임에 유지. */

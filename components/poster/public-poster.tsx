@@ -3366,7 +3366,10 @@ export function PublicPoster({
                         }
                       : undefined
                   }
-                />
+                >
+                  {/* 이 날 일정의 왕관 — 띠 머리가 글을 대신 쓰지만 인기(하트)는 날마다다(2026-11-19). */}
+                  {tierById.get(event.id) ? <TierMark tier={tierById.get(event.id)!} /> : null}
+                </div>
               );
             }
             const colors = eventColors(event);
