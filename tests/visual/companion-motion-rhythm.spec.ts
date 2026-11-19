@@ -211,10 +211,10 @@ for (const surface of ["viewer", "studio"] as const) test(`${surface} prank swit
   await toggle.click(); await expect(toggle).toBeChecked(); await expect(panel).not.toBeChecked();
   const allOn = { heartPrank: true, cardPrank: true, ambientPrank: true, rarePrank: true }, allOff = { heartPrank: false, cardPrank: false, ambientPrank: false, rarePrank: false };
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!).heartPrank)).toBe(true);
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!))).toEqual({ ...before, ...allOn });
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!))).toMatchObject({ ...before, ...allOn }); // a save writes every known field, so compare the ones the seed had
   await toggle.click(); await expect(toggle).not.toBeChecked(); await expect(panel).not.toBeChecked();
   await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!).cardPrank)).toBe(false);
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!))).toEqual({ ...before, ...allOff });
+  expect(await page.evaluate(() => JSON.parse(localStorage.getItem("vic.viewerCompanion")!))).toMatchObject({ ...before, ...allOff });
   await page.screenshot({ path: `${prefix}-${surface}-card-prank-off.png` });
   await page.reload(); await page.bringToFront();
   dialog = await openPranks(page);

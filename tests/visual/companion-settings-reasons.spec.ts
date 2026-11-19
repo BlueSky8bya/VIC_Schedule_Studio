@@ -28,8 +28,9 @@ const saved = (page: Page) => page.evaluate(() => ({ companion: localStorage.get
 const savedCompanion = async (page: Page) => JSON.parse((await saved(page)).companion!) as Partial<CompanionPreferences>;
 // Stage 4 rows: one movement choice (the place other rows lead back to) and one prank switch.
 const motionRow = (dialog: Locator) => dialog.locator('[data-settings-place="companion-roam"]');
-const playfulRow = (dialog: Locator) => dialog.locator(".role-help-haptics").filter({ has: companionPlayfulSwitch(dialog) });
-const panelRow = (dialog: Locator) => dialog.locator(".role-help-haptics").filter({ has: dialog.getByRole("switch", { name: "빅타민 패널 자리 옮기기 켜기/끄기", exact: true }) });
+// `has` is looked up inside each row, so the inner locator starts from the page, not from the dialog.
+const playfulRow = (dialog: Locator) => dialog.locator(".role-help-haptics").filter({ has: companionPlayfulSwitch(dialog.page()) });
+const panelRow = (dialog: Locator) => dialog.locator(".role-help-haptics").filter({ has: dialog.page().getByRole("switch", { name: "빅타민 패널 자리 옮기기 켜기/끄기", exact: true }) });
 const cardNote = (dialog: Locator, text: string) => dialog.locator(".rhh-companion-cards .rhh-note").filter({ hasText: text });
 
 test("sound status says it sounds when nothing is in the way", async ({ page }) => {

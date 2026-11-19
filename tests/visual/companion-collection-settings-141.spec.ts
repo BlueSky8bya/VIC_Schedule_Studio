@@ -274,7 +274,8 @@ for (const [surface, width] of [["viewer", 1920], ["studio", 2400]] as const) te
     await waitForOverlayEntrance(dialog);
     // stage 3: the in-book "성격 바꾸기" shortcut is gone; the character choice itself is on this page and keeps the 44px target.
     const button = dialog.getByRole("radiogroup", { name: "빅타민 성격", exact: true }).locator('[role="radio"][aria-checked="true"]'); await button.scrollIntoViewIfNeeded();
-    const rect = (await button.boundingBox())!;
+    // The studio scales its whole surface, so the target is measured in layout pixels, not in the scaled box.
+    const rect = await button.evaluate(node => ({ width: (node as HTMLElement).offsetWidth, height: (node as HTMLElement).offsetHeight }));
     expect(rect.width).toBeGreaterThanOrEqual(44); expect(rect.height).toBeGreaterThanOrEqual(44);
     proofs.get(page)!.notes.push({ surface, viewport: page.viewportSize(), actualProfileCharacterChoice: rect });
     await dialog.getByRole("button", { name: "닫기", exact: true }).click(); await expect(home.locator('[data-home-action="book"]')).toBeFocused();

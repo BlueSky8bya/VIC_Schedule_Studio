@@ -197,7 +197,7 @@ test("viewer and studio expose all three independent behavior axes through the s
     await profilePages.getByRole("tab", { name: "함께 지내기", exact: true }).click();
     const groups = [
       { name: "빅타민 동물 모드", key: "animalMode", options: [["고양이", "cat"], ["강아지", "dog"], ["빅타민", "default"]] },
-      { name: "빅타민 성격", key: "personality", options: [["잠꾸러기", "sleepy"], ["애교쟁이", "affectionate"], ["호기심", "curious"]] },
+      { name: "빅타민 성격", key: "personality", options: [["잠꾸러기", "sleepy"], ["애교쟁이", "affectionate"], ["탐험둥이", "curious"]] },
       { name: "빅타민 걸음", key: "speed", options: [["느긋하게", "relaxed"], ["발랄하게", "lively"], ["보통", "normal"]] },
     ];
     for (const group of groups) {
