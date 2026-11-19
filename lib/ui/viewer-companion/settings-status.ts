@@ -60,8 +60,6 @@ export function companionRowBlock(row: CompanionBlockedRow, preferences: Readonl
   if (row === "radioSelfStart" && gfxResting(site.gfx)) return { text: `${gfxWords(site.gfx)} ${what}`, place: "site-gfx" };
   // With the background effect fully off the panel never moves (the "soft" level keeps it).
   if (row === "panelPrank" && site.gfx === "off") return { text: `${gfxWords(site.gfx)} ${what}`, place: "site-gfx" };
-  // Moving the panel is one of the pranks: with the prank switch off it rests too. The switch is the row right above.
-  if (row === "panelPrank" && !companionPlayful(preferences)) return { text: `'장난치기'가 꺼져 있어 ${what}` };
   // The background effect rests only part of the pranks: the row keeps working, so it is not dimmed.
   // Said only while the pranks are on; with the switch off there is nothing left to rest.
   if (row === "playful" && companionPlayful(preferences) && gfxResting(site.gfx)) return { text: `${gfxWords(site.gfx)} ${site.gfx === "off" ? "소품 묘기와 일정 기울이기를 쉬어요" : "소품 묘기를 쉬어요"}`, place: "site-gfx", partial: true };

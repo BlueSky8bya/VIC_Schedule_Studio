@@ -2553,6 +2553,7 @@ html[data-reduce-motion] .rhh-sound-tile.playing::after { content: none; }
 /* 장난의 하나인 줄은 한 칸 들여, '장난치기'에 딸린 것임을 보인다. */
 .vic-settings .rhh-companion-settings .rhh-group-card .rhh-sub-row { padding-left: 20px; }
 .vic-settings .rhh-companion-settings .rhh-group-card .rhh-sub-row + .rhh-note { padding-left: 34px; }
+.vic-settings .rhh-companion-settings .rhh-switch:disabled { opacity: 0.5; cursor: default; }
 /* 호버 설명 — 편집실 도구 타일(.stool[data-tip])과 같은 어두운 알약. 줄에 마우스를 올리거나 그 안의 조작이 키보드 포커스를 받으면 뜬다. */
 .vic-settings .rhh-companion-settings [data-tip] { position: relative; }
 .vic-settings .rhh-companion-settings [data-tip]::before {
@@ -2560,18 +2561,18 @@ html[data-reduce-motion] .rhh-sound-tile.playing::after { content: none; }
   content: attr(data-tip);
   content: attr(data-tip) / "";
   position: absolute;
-  left: 0;
-  bottom: calc(100% - 2px);
+  left: 40px;
+  bottom: calc(100% - 9px);
   z-index: 30;
   width: max-content;
-  max-width: min(30em, 100%);
-  border-radius: var(--r-md, 12px);
-  background: rgb(32 28 46 / 94%);
-  padding: 7px 11px;
+  max-width: min(24em, 100%);
+  border-radius: var(--r-pill, 999px);
+  background: rgb(32 28 46 / 88%);
+  padding: 4px 10px;
   color: #fff;
-  font-size: var(--text-label, 12.5px);
-  font-weight: 600;
-  line-height: 1.5;
+  font-size: var(--text-caption, 11.5px);
+  font-weight: 500;
+  line-height: 1.4;
   text-align: left;
   white-space: normal;
   word-break: keep-all;
@@ -2605,3 +2606,7 @@ html[data-reduce-motion] .rhh-sound-tile.playing::after { content: none; }
 .vic-settings .rhh-sound-auditions .rhh-sound-tile:disabled > .rhh-sound-label { opacity: 0.42; }
 html[data-reduce-motion] .vic-settings .rhh-companion-settings [data-tip]::before { transition: none; }
 html[data-theme="dark"] .vic-settings .rhh-companion-settings [data-tip]::before { background: rgb(240 233 216 / 96%); color: #26221a; }
+/* 세 칸 선택의 설명은 칸마다 따로, 그 칸 가운데 위에. */
+.vic-settings .rhh-companion-settings .rhh-seg [data-tip]::before { left: 50%; bottom: calc(100% + 6px); max-width: none; white-space: nowrap; transform: translate(-50%, 4px); }
+.vic-settings .rhh-companion-settings .rhh-seg [data-tip]:focus-visible::before { transform: translate(-50%, 0); }
+@media (hover: hover) { .vic-settings .rhh-companion-settings .rhh-seg [data-tip]:hover::before { transform: translate(-50%, 0); } }

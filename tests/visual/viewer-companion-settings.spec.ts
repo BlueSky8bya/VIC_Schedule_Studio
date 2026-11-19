@@ -61,7 +61,9 @@ test("dedicated companion settings preserve detailed choices across master OFF a
   panel = await openCompanionSettings(page);
   await expect(panel.getByRole("switch", { name: "AI 빅타민 켜기/끄기", exact: true })).not.toBeChecked();
   await expect(companionPlayfulSwitch(panel)).not.toBeChecked();
-  await expect(panel.getByRole("switch", { name: "빅타민 패널 자리 옮기기 켜기/끄기", exact: true })).toBeChecked();
+  // With the pranks off the panel row shows off and is locked; its stored choice is kept.
+  await expect(panel.getByRole("switch", { name: "빅타민 패널 자리 옮기기 켜기/끄기", exact: true })).toBeDisabled();
+  expect(await storedCompanion(page)).toMatchObject({ panelPrank: true });
   // The fold is not kept across a reload: it starts closed again, with the choices inside kept.
   await expect(panel.getByRole("radio", { name: "느긋하게", exact: true })).toBeHidden();
   await panel.locator(".rhh-companion-more summary").click();
@@ -159,8 +161,10 @@ test("the four pranks are one switch written to the existing fields, and there i
   expect(await storedCompanion(page)).toMatchObject({ heartPrank: false, cardPrank: false, ambientPrank: false, rarePrank: false, panelPrank: true });
   const panelSeat = panel.getByRole("switch", { name: "빅타민 패널 자리 옮기기 켜기/끄기", exact: true });
   await expect(panelSeat).toHaveAttribute("data-act", "companion-panel-prank");
+  // Locked and shown off while the pranks are off; switched off by hand afterwards, it is its own stored choice.
+  await expect(panelSeat).toBeDisabled(); await expect(panelSeat).not.toBeChecked();
+  await setCompanionPlayful(panel, true); await expect(panelSeat).toBeChecked();
   await panelSeat.click(); await expect(panelSeat).not.toBeChecked();
-  await setCompanionPlayful(panel, true);
   expect(await storedCompanion(page)).toMatchObject({ heartPrank: true, cardPrank: true, ambientPrank: true, rarePrank: true, panelPrank: false });
   // The renamed row in the fold keeps its stored field.
   await panel.locator(".rhh-companion-more summary").click();

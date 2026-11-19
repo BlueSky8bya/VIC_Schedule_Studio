@@ -33,4 +33,4 @@ playwright-report/
 .dev.vars*
 
 # second dev server for screen captures
-.next-cap/
+.next-cap*/

@@ -183,24 +183,25 @@ test("장난치기 writes the four prank fields at once; the panel row keeps its
   await expect(panel).toHaveAttribute("data-act", "companion-panel-prank");
   await expect(playful).toBeChecked(); await expect(panel).toBeChecked();
   await expect(playfulRow(dialog)).not.toHaveClass(/is-blocked/);
-  // The panel row is a sub-row of the switch: no reason while the pranks are on.
-  const off = cardNote(dialog, "'장난치기'가 꺼져 있어 패널을 옮기지 않아요");
+  // The panel row is a sub-row of the switch and follows it on the screen.
   await expect(panelRow(dialog)).toHaveClass(/rhh-sub-row/);
-  await expect(panelRow(dialog)).not.toHaveClass(/is-blocked/); await expect(off).toHaveCount(0);
+  await expect(panelRow(dialog)).not.toHaveClass(/is-blocked/);
   await playful.click(); await expect(playful).not.toBeChecked();
+  // Pranks off: the panel switch shows off and is locked, with no extra note. The stored choice is kept.
   expect(await savedCompanion(page)).toMatchObject({ heartPrank: false, cardPrank: false, ambientPrank: false, rarePrank: false, panelPrank: true });
-  // With the pranks off it keeps its value, is dimmed and says why; the reason needs no link (the switch is right above).
-  await expect(panel).toBeChecked(); await expect(panel).toBeEnabled();
+  await expect(panel).not.toBeChecked(); await expect(panel).toBeDisabled();
   await expect(panelRow(dialog)).toHaveClass(/is-blocked/);
-  await expect(off).toHaveCount(1); await expect(off.getByRole("button")).toHaveCount(0);
+  await expect(cardNote(dialog, "장난치기")).toHaveCount(0);
   await expect(playfulRow(dialog)).not.toHaveClass(/is-blocked/);
-  // The panel row is its own choice in both directions.
-  await panel.click(); await expect(panel).not.toBeChecked();
-  expect(await savedCompanion(page)).toMatchObject({ heartPrank: false, cardPrank: false, ambientPrank: false, rarePrank: false, panelPrank: false });
+  // Pranks back on: the panel switch returns as it was left (on).
   await playful.click(); await expect(playful).toBeChecked();
+  await expect(panel).toBeChecked(); await expect(panel).toBeEnabled();
+  await expect(panelRow(dialog)).not.toHaveClass(/is-blocked/);
+  // Switched off by hand, it stays off through an off-and-on of the pranks.
+  await panel.click(); await expect(panel).not.toBeChecked();
+  await playful.click(); await expect(panel).toBeDisabled(); await playful.click();
+  await expect(playful).toBeChecked(); await expect(panel).toBeEnabled(); await expect(panel).not.toBeChecked();
   expect(await savedCompanion(page)).toMatchObject({ heartPrank: true, cardPrank: true, ambientPrank: true, rarePrank: true, panelPrank: false });
-  await expect(panel).not.toBeChecked();
-  await expect(panelRow(dialog)).not.toHaveClass(/is-blocked/); await expect(off).toHaveCount(0);
 });
 
 test("a row says what it does on hover, and its control carries the same words", async ({ page }) => {
@@ -209,9 +210,9 @@ test("a row says what it does on hover, and its control carries the same words",
   const dialog = await companionSettings(page, "장난");
   const row = playfulRow(dialog), shown = () => row.evaluate(node => getComputedStyle(node, "::before").opacity);
   const hint = await row.getAttribute("data-tip");
-  expect(hint).toContain("일정과 하트 수는 바뀌지 않아요");
+  expect(hint).toContain("장난감을 어질러요");
   await expect(companionPlayfulSwitch(dialog)).toHaveAttribute("aria-description", hint!);
-  expect(await row.evaluate(node => getComputedStyle(node, "::before").content)).toContain("일정과 하트 수는 바뀌지 않아요");
+  expect(await row.evaluate(node => getComputedStyle(node, "::before").content)).toContain("장난감을 어질러요");
   await page.mouse.move(2, 2);
   await expect.poll(shown).toBe("0");
   await row.hover();

@@ -17,7 +17,8 @@ export function SettingsSegment<T extends string | number>({
 }: {
   value: T;
   /** opt = 기록용 값 이름(숫자 값은 자릿수가 접혀 #로 뭉치므로 이름을 따로 준다). */
-  options: { value: T; label: string; opt?: string }[];
+  /** tip = a short hover hint for that choice (also its spoken description). */
+  options: { value: T; label: string; opt?: string; tip?: string }[];
   onChange: (v: T) => void;
   /** Some choices distinguish an explicit confirmation from an automatic value. */
   onReselect?: (v: T) => void;
@@ -67,10 +68,12 @@ export function SettingsSegment<T extends string | number>({
       {options.map((o, index) => (
         <button
           aria-checked={o.value === value}
+          aria-description={o.tip}
           className={o.value === value ? "on" : ""}
           // 칸마다 id — 없으면 고른 칸은 auto:.on, 나머지는 '클래스 없는 버튼'으로 뭉쳐 무엇을 골랐는지 안 남았다(2026-10-10).
           data-act={dataAct}
           data-act-opt={o.opt ?? String(o.value)}
+          data-tip={o.tip}
           key={String(o.value)}
           onClick={() => {
             if (o.value !== value) onChange(o.value);
@@ -100,7 +103,7 @@ export function RowLabel({ icon, tone, children }: { icon: ReactNode; tone: "wat
   );
 }
 
-export function Switch({ on, onToggle, label, dataAct, dataActOpt, description }: { on: boolean; onToggle: () => void; label: string; dataAct: string; dataActOpt?: string; description?: string }) {
+export function Switch({ on, onToggle, label, dataAct, dataActOpt, description, disabled }: { on: boolean; onToggle: () => void; label: string; dataAct: string; dataActOpt?: string; description?: string; disabled?: boolean }) {
   return (
     <button
       aria-checked={on}
@@ -109,6 +112,7 @@ export function Switch({ on, onToggle, label, dataAct, dataActOpt, description }
       className={`rhh-switch ${on ? "on" : ""}`}
       data-act={dataAct}
       data-act-opt={dataActOpt}
+      disabled={disabled}
       onClick={onToggle}
       role="switch"
       type="button"

@@ -13,12 +13,13 @@ let CompanionBehaviorSettings: typeof import("@/components/shared/companion-sett
 let CompanionTraitControls: typeof import("@/components/shared/companion-traits")["CompanionTraitControls"];
 let companionPersonalityPreview: typeof import("@/components/shared/companion-traits")["companionPersonalityPreview"];
 let COMPANION_SETTING_HINTS: typeof import("@/components/shared/companion-settings")["COMPANION_SETTING_HINTS"];
+let COMPANION_SOUND_LEVEL_HINTS: typeof import("@/components/shared/companion-settings")["COMPANION_SOUND_LEVEL_HINTS"];
 function nodes(value: ReactNode): Element[] {
   if (Array.isArray(value)) return value.flatMap(nodes);
   if (!value || typeof value !== "object" || !("props" in value)) return [];
   const element = value as Element; return [element, ...nodes(element.props.children as ReactNode)];
 }
-beforeEach(async () => { vi.stubGlobal("React", await import("react")); ({ CompanionBehaviorSettings, COMPANION_SETTING_HINTS } = await import("@/components/shared/companion-settings")); ({ CompanionTraitControls, companionPersonalityPreview } = await import("@/components/shared/companion-traits")); });
+beforeEach(async () => { vi.stubGlobal("React", await import("react")); ({ CompanionBehaviorSettings, COMPANION_SETTING_HINTS, COMPANION_SOUND_LEVEL_HINTS } = await import("@/components/shared/companion-settings")); ({ CompanionTraitControls, companionPersonalityPreview } = await import("@/components/shared/companion-traits")); });
 afterEach(() => vi.unstubAllGlobals());
 
 describe("141 shared basic personality settings", () => {
@@ -58,12 +59,22 @@ describe("141 shared basic personality settings", () => {
   it("every row says what it does, on hover and to its control, and every sound tile says when it is heard", () => {
     const all = nodes(CompanionBehaviorSettings({ preferences: DEFAULT_COMPANION_PREFERENCES, onChange: vi.fn(), site: { soundOn: true, soundVolume: 60, reduceMotion: false, gfx: undefined }, onGoTo: vi.fn(), active: true, radio: null }));
     const hints = Object.values(COMPANION_SETTING_HINTS);
-    expect(Object.keys(COMPANION_SETTING_HINTS).sort()).toEqual(["activeWhileVisible", "drag", "feeding", "panelPrank", "petting", "playful", "sleep", "sound", "speed"]);
-    expect(new Set(hints).size).toBe(9); for (const hint of hints) expect(hint.trim()).toBeTruthy();
-    // Each of the nine rows carries its own hint once, and its one control speaks the same words. The volume slider needs none.
+    expect(Object.keys(COMPANION_SETTING_HINTS).sort()).toEqual(["activeWhileVisible", "drag", "feeding", "panelPrank", "petting", "playful", "sleep", "speed"]);
+    expect(new Set(hints).size).toBe(8); for (const hint of hints) { expect(hint.trim()).toBeTruthy(); expect(hint.length, hint).toBeLessThanOrEqual(26); }
+    // Each of the eight rows carries its own short hint once, and its one control speaks the same words. The volume slider needs none.
     const rows = all.filter(element => String(element.props.className).includes("role-help-haptics") && element.props["data-tip"]);
     expect(rows.map(element => element.props["data-tip"]).sort()).toEqual([...hints].sort());
     for (const row of rows) expect(nodes(row).filter(element => element.type === Switch || element.type === SettingsSegment).map(element => element.props.description)).toEqual([row.props["data-tip"]]);
+    // The sound level explains each choice on that choice, not on the row.
+    const level = all.find(element => element.type === SettingsSegment && element.props.dataAct === "companion-sound-level")!;
+    expect((level.props.options as { value: string; tip: string }[]).map(option => [option.value, option.tip])).toEqual(Object.entries(COMPANION_SOUND_LEVEL_HINTS));
+    expect(level.props.description).toBeUndefined();
+    // The panel row follows the prank switch on the screen: off and locked while it is off, back to the stored choice with it.
+    const panel = (overrides: Partial<typeof DEFAULT_COMPANION_PREFERENCES>) => { const onChange = vi.fn(), found = nodes(CompanionBehaviorSettings({ preferences: { ...DEFAULT_COMPANION_PREFERENCES, ...overrides }, onChange, site: { soundOn: true, soundVolume: 60, reduceMotion: false, gfx: undefined }, onGoTo: vi.fn(), active: true, radio: null })).find(element => element.type === Switch && element.props.dataAct === "companion-panel-prank")!; return { on: found.props.on, disabled: Boolean(found.props.disabled) }; };
+    expect(panel({})).toEqual({ on: true, disabled: false });
+    expect(panel({ panelPrank: false })).toEqual({ on: false, disabled: false });
+    expect(panel({ heartPrank: false })).toEqual({ on: false, disabled: true });
+    expect(panel({ heartPrank: false, panelPrank: false })).toEqual({ on: false, disabled: true });
     // One flat grid: all fourteen sounds, no group labels; the dot marks the two only the companion makes.
     const board = all.find(element => element.props.className === "rhh-sound-board")!, tiles = board.props.children as Element[];
     expect(tiles.map(tile => tile.props["data-act-opt"]).sort()).toEqual([...COMPANION_SOUND_MOMENTS].sort());

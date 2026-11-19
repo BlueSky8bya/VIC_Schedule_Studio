@@ -97,14 +97,11 @@ describe("blocked companion rows", () => {
     }
   });
 
-  it("then the prank switch, for the panel move under it", () => {
-    const note = { text: "'장난치기'가 꺼져 있어 패널을 옮기지 않아요" }; // no place: the switch is the row right above
-    for (const key of ["heartPrank", "cardPrank", "ambientPrank", "rarePrank"] as const) for (const panelPrank of [false, true]) expect(companionRowBlock("panelPrank", prefs({ [key]: false, panelPrank }), site({ gfx: "soft" })), key).toEqual(note);
-    expect(companionRowBlock("panelPrank", prefs({ panelPrank: false }), site())).toBeNull();
-    // The outer reasons still come first.
+  it("the prank switch off adds no note: the panel row under it shows off instead", () => {
+    for (const key of ["heartPrank", "cardPrank", "ambientPrank", "rarePrank"] as const) for (const panelPrank of [false, true]) expect(companionRowBlock("panelPrank", prefs({ [key]: false, panelPrank }), site({ gfx: "soft" })), key).toBeNull();
+    // The outer reasons are unchanged.
     expect(companionRowBlock("panelPrank", prefs({ heartPrank: false }), site({ reduceMotion: true }))?.place).toBe("site-motion");
     expect(companionRowBlock("panelPrank", prefs({ heartPrank: false }), site({ gfx: "off" }))?.place).toBe("site-gfx");
-    // The switch off stops nothing else.
     expect(companionRowBlock("radioSelfStart", prefs({ heartPrank: false }), site())).toBeNull();
     expect(companionRowBlock("playful", prefs({ heartPrank: false }), site())).toBeNull();
   });
