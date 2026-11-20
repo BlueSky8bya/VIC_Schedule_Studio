@@ -49,19 +49,24 @@ test("all 18 sounds have a tile that switches that sound alone", async ({ page }
   expect(await shown()).toBe("0");
   await tile("쓰다듬기").hover();
   await expect.poll(shown).toBe("1");
-  // Off: silent, drawn as an empty tile with its name struck through.
+  // Off: silent, and its small switch slides off like every other switch here (no strike-through).
+  const knob = () => tile("점프 착지").locator(".rhh-sound-switch > i").evaluate(node => getComputedStyle(node).transform);
+  expect(await knob()).not.toBe("none");
   await tile("점프 착지").click();
   await expect(tile("점프 착지")).toHaveAttribute("aria-pressed", "false");
   await expect(tile("점프 착지")).toHaveClass(/\bis-muted\b/);
-  expect(await tile("점프 착지").locator(".rhh-sound-label").evaluate(node => getComputedStyle(node).textDecorationLine)).toBe("line-through");
+  await expect.poll(knob).toBe("none");
+  expect(await tile("점프 착지").locator(".rhh-sound-label").evaluate(node => getComputedStyle(node).textDecorationLine)).toBe("none");
   await page.waitForTimeout(200);
   expect(await sounds(page)).toEqual([]);
   // Its split siblings keep their own choice.
   await expect(tile("밥 떨어짐")).toHaveAttribute("aria-pressed", "true");
   await expect(tile("모자 얹힘")).toHaveAttribute("aria-pressed", "true");
-  // On again: heard once.
+  // On again: the switch sound at once, the sound itself a beat later, heard once.
+  await page.evaluate(() => { document.documentElement.removeAttribute("data-sfx-last"); });
   await tile("점프 착지").click();
   await expect(tile("점프 착지")).toHaveAttribute("aria-pressed", "true");
+  expect(await sounds(page)).toEqual([]);
   await expect.poll(() => sounds(page)).toEqual(["land:direct"]);
   await page.waitForTimeout(200);
   await tile("다 먹음").click(); await tile("다 먹음").click();
@@ -94,6 +99,7 @@ test("touch only: the companion's own sounds are dimmed but still switchable; of
   await page.evaluate(() => { (window as Window & { __companionSfxOrigins?: string[] }).__companionSfxOrigins = []; });
   await tile("넘어짐").click(); await tile("넘어짐").click(); // off, then on: the level still keeps it quiet
   await expect(tile("넘어짐")).toHaveAttribute("aria-pressed", "true");
+  await page.waitForTimeout(800); // past the beat the sound waits after the switch sound
   expect(await sounds(page)).toEqual([]);
   await level("끔").click();
   for (const button of await fold.getByRole("button").all()) { await expect(button).toHaveClass(quiet); await expect(button).toBeEnabled(); }

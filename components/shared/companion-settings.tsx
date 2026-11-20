@@ -8,6 +8,7 @@ import type { CompanionPreferences } from "@/lib/ui/viewer-companion/preferences
 import { COMPANION_SOUND_AUDITIONS, COMPANION_SOUND_HINTS, COMPANION_SOUND_NAMES, auditionCompanionSound, companionSoundAllowed, companionSoundMuted, companionSoundMutedPatch, previewCompanionSoundLevel, previewCompanionSoundVolume, type CompanionSoundMoment } from "@/lib/ui/viewer-companion/companion-sound";
 import { companionPlayful, companionPlayfulPatch, companionSoundLevel, companionSoundLevelPatch, type CompanionSoundLevel } from "@/lib/ui/viewer-companion/settings-levels";
 import { logActivity } from "@/lib/activity/client";
+import { playSfx } from "@/lib/ui/sfx";
 
 /** What each row does, in a few words. Shown when the row is hovered or its
  * control has keyboard focus, and given to the control as its spoken
@@ -28,6 +29,8 @@ export const COMPANION_SETTING_HINTS = Object.freeze({
 export const SITE_VOLUME_HINT = "사이트 전체 소리 크기예요. 소리 탭과 같은 값이에요.";
 /** The sound level explains each choice by itself. */
 export const COMPANION_SOUND_LEVEL_HINTS = Object.freeze({ off: "소리를 내지 않아요.", touch: "쓰다듬거나 집을 때만 소리가 나요.", all: "혼자 놀다 내는 소리까지 나요." } as const);
+/** The pause between a tile's switch sound and the companion sound it turns on. */
+export const COMPANION_SOUND_AUDITION_GAP_MS = 450;
 /** Whether "더 보기" is open. Kept for this page load only: reopening the settings finds it as it was left, a reload folds it again. Nothing is stored. */
 let moreOpen = false;
 
@@ -85,6 +88,10 @@ export function CompanionBehaviorSettings({ preferences, onChange, site, siteVol
   const auditionVolume = (soundVolume: number) => previewCompanionSoundVolume({ ...preferences, soundVolume });
   // A tile is its sound's own switch. Its preview passes the real gate; nothing here bypasses a setting.
   const [auditioned, setAuditioned] = useState<CompanionSoundMoment | null>(null);
+  // Pressing a tile answers at once with the same short on/off sound as every switch here; the companion's own
+  // sound waits a beat, so the two are heard apart (owner 2026-11-20: they ran together and the sound was not recognised).
+  const auditionTimer = useRef(0);
+  useEffect(() => () => window.clearTimeout(auditionTimer.current), []);
   const siteSilent = !site.soundOn || site.soundVolume <= 0;
   const siteVolumeBlock = companionSiteVolumeBlock(site);
   return <div className="rhh-companion-settings rhh-companion-cards" ref={root}>
@@ -108,16 +115,20 @@ export function CompanionBehaviorSettings({ preferences, onChange, site, siteVol
           <summary data-act="companion-sound-audition-fold" data-activity-manual="" onClick={event => logActivity("ui.click", { target: event.currentTarget.closest("details")?.open ? "companion-sound-audition-fold#close" : "companion-sound-audition-fold#open" })}>소리 하나씩 켜고 끄기</summary>
           {/* One even grid. A sound only the companion makes by itself carries a dot: it is heard at "전부" only.
               Each tile is that sound's own switch (owner 2026-11-20): pressing turns it off, or on and lets it be heard once.
+              It carries a small switch drawn like every other switch here, so it reads as one (owner: no strike-through).
+              The switch sound comes at once and the sound itself a beat later, so the two are heard apart.
               A tile is always pressable; one the level or the site keeps quiet right now is only dimmed. */}
           <div className="rhh-sound-board">
             {COMPANION_SOUND_AUDITIONS.flatMap(group => group.moments.map(moment => {
               const muted = companionSoundMuted(preferences, moment), quiet = siteSilent || !companionSoundAllowed(preferences, group.origin, site);
               return <button aria-label={COMPANION_SOUND_NAMES[moment]} aria-describedby={`${soundHintId}-${moment}`} aria-pressed={!muted} className={`rhh-sound-tile${auditioned === moment ? " playing" : ""}${muted ? " is-muted" : ""}${quiet ? " is-quiet" : ""}`} data-act="companion-sound-audition" data-act-opt={moment} data-own={group.origin === "auto" ? "" : undefined} data-sfx="off" data-tip={COMPANION_SOUND_HINTS[moment]} key={moment} onAnimationEnd={() => setAuditioned(current => current === moment ? null : current)} onClick={() => {
-                const patch = companionSoundMutedPatch(preferences, moment, !muted);
+                const patch = companionSoundMutedPatch(preferences, moment, !muted), next = { ...preferences, ...patch };
                 onChange(patch);
-                // Turning a sound on lets it be heard once, through the real gate; turning it off is silent.
-                if (muted && auditionCompanionSound(moment, { ...preferences, ...patch })) { setAuditioned(null); requestAnimationFrame(() => setAuditioned(moment)); }
-              }} type="button"><span className="rhh-sound-label">{COMPANION_SOUND_NAMES[moment]}</span><span className="sr-only" id={`${soundHintId}-${moment}`}>{COMPANION_SOUND_HINTS[moment]}</span></button>;
+                playSfx(muted ? "toggle-on" : "toggle-off");
+                window.clearTimeout(auditionTimer.current);
+                // Turning a sound on lets it be heard once, through the real gate, after the switch sound; the tile bumps with it.
+                if (muted) auditionTimer.current = window.setTimeout(() => { if (auditionCompanionSound(moment, next)) { setAuditioned(null); requestAnimationFrame(() => setAuditioned(moment)); } }, COMPANION_SOUND_AUDITION_GAP_MS);
+              }} type="button"><span className="rhh-sound-label">{COMPANION_SOUND_NAMES[moment]}</span><span aria-hidden="true" className="rhh-sound-switch"><i /></span><span className="sr-only" id={`${soundHintId}-${moment}`}>{COMPANION_SOUND_HINTS[moment]}</span></button>;
             }))}
           </div>
           <p className="rhh-group-foot">누르면 그 소리만 꺼지고, 다시 누르면 켜지며 한 번 들려줘요.</p>
