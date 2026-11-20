@@ -2510,14 +2510,12 @@ html[data-reduce-motion] .vic-settings [data-settings-place][data-flash] { anima
 .vic-settings .rhh-group-card > .rhh-note:first-child { padding-top: 12px; }
 .vic-settings .rhh-panes .rhh-note-path { padding-inline: 4px; }
 
-/* 빅타민 소리 들어 보기(개편 2-다) — 사이트 소리 탭의 타일을 그대로 쓴다. 접힌 채로 시작하고, 펼침은 저장하지 않는다. */
+/* 빅타민 소리 하나씩 켜고 끄기(개편 2-다, 2026-11-20 스위치화) — 사이트 소리 탭의 타일을 그대로 쓴다. 접힌 채로 시작하고, 펼침은 저장하지 않는다. */
 .vic-settings .rhh-sound-auditions { border-top: 1px solid var(--companion-line, var(--line)); padding-bottom: 10px; }
 .vic-settings .rhh-sound-auditions > summary { cursor: pointer; min-height: 44px; align-content: center; color: var(--companion-ink, var(--ink)); font-size: var(--text-ui, 15px); font-weight: 600; }
 .vic-settings .rhh-sound-auditions > summary:focus-visible { outline: 2px solid var(--selection-border, #2f5f9e); outline-offset: 2px; border-radius: var(--r-sm, 8px); }
 .vic-settings .rhh-sound-auditions .rhh-sound-board { margin-top: 4px; }
 .vic-settings .rhh-sound-auditions .rhh-group-foot { padding: 8px 0 0; }
-/* 묶음 이름이 두 줄로 꺾이지 않게 칸을 넓히고, 지금 들을 수 없는 타일은 흐리게(사이트 타일은 윗줄 전체가 잠겨 따로 흐릴 일이 없었다). */
-.vic-settings .rhh-sound-auditions .rhh-sound-tile:disabled { opacity: 0.42; }
 /* 빅타민 설정의 누름 영역은 44px(사이트 타일의 36px보다 크다). */
 .vic-settings .rhh-sound-auditions .rhh-sound-tile { height: auto; min-height: 44px; }
 /* 넓을 때만 이름 칸을 넓힌다 — 좁은 상자에서는 기존 규칙대로 이름이 위로 올라가 타일이 폭을 다 쓴다. */
@@ -2561,9 +2559,14 @@ html[data-reduce-motion] .rhh-sound-tile.playing::after { content: none; }
 .vic-settings .rhh-companion-sound-row > .rhh-seg { grid-column: 1 / -1; }
 .vic-settings .rhh-companion-sound-row > .rhh-sound-status-slot { min-width: 0; justify-self: end; }
 .vic-settings .rhh-companion-sound-row .rhh-sound-status { justify-content: flex-end; margin: 0; background: none; padding: 0; text-align: right; font-size: var(--text-label, 12.5px); }
-/* 들어 보기 판: 열네 소리를 일곱 칸 두 줄로 고르게. 빅타민이 혼자 내는 소리는 점으로 표시한다. */
+/* 소리 판: 열여덟 소리를 여섯 칸 세 줄로 고르게. 빅타민이 혼자 내는 소리는 점으로 표시한다. */
 .vic-settings .rhh-sound-auditions { padding-bottom: 8px; }
-.vic-settings .rhh-sound-auditions .rhh-sound-board { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; margin-top: 0; }
+.vic-settings .rhh-sound-auditions .rhh-sound-board { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin-top: 0; }
+/* 타일 = 그 소리의 스위치(2026-11-20). 끈 소리는 '빈 칸'(점선 테두리·배경 없음·글자에 줄)으로, 지금 단계나 사이트 설정 때문에
+   안 들리는 소리는 흐리게만 — 두 뜻이 다르니 모양도 다르다. 둘 다면 둘 다 보인다. */
+.vic-settings .rhh-sound-auditions .rhh-sound-tile.is-muted { border-style: dashed; border-color: rgb(0 0 0 / 22%); background: transparent; color: var(--muted, #6b7685); }
+.vic-settings .rhh-sound-auditions .rhh-sound-tile.is-muted .rhh-sound-label { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+html[data-theme="dark"] .vic-settings .rhh-sound-auditions .rhh-sound-tile.is-muted { border-color: rgb(255 255 255 / 26%); background: transparent; color: rgb(240 233 216 / 72%); }
 .vic-settings .rhh-sound-auditions .rhh-sound-tile { padding: 0 4px; }
 .vic-settings .rhh-sound-auditions .rhh-sound-label { overflow: visible; white-space: normal; word-break: keep-all; line-height: 1.25; }
 .vic-settings .rhh-sound-own-dot,
@@ -2607,22 +2610,21 @@ html[data-reduce-motion] .rhh-sound-tile.playing::after { content: none; }
 @media (hover: hover) {
   .vic-settings .rhh-companion-settings [data-tip]:hover::before { opacity: 1; transform: none; transition-delay: 0.35s; }
   .vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]:hover::before { transform: translate(-50%, 0); }
-  .vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]:is(:nth-child(7n + 1), :nth-child(7n)):hover::before { transform: none; }
+  .vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]:is(:nth-child(6n + 1), :nth-child(6n)):hover::before { transform: none; }
 }
 /* 타일의 설명은 타일 가운데 위에, 한 줄로. */
 .vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]::before { left: 50%; bottom: calc(100% + 6px); max-width: none; border-radius: var(--r-pill, 999px); padding: 5px 10px; white-space: nowrap; transform: translate(-50%, 4px); }
 .vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]:focus-visible::before { transform: translate(-50%, 0); }
 /* 양 끝 칸의 설명은 판 안쪽으로 붙인다 — 가운데 정렬이면 바깥 상자에 잘린다. */
-.vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]:nth-child(7n + 1)::before { left: 0; transform: translateY(4px); }
-.vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]:nth-child(7n)::before { left: auto; right: 0; transform: translateY(4px); }
-.vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]:is(:nth-child(7n + 1), :nth-child(7n)):focus-visible::before { transform: none; }
+.vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]:nth-child(6n + 1)::before { left: 0; transform: translateY(4px); }
+.vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]:nth-child(6n)::before { left: auto; right: 0; transform: translateY(4px); }
+.vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]:is(:nth-child(6n + 1), :nth-child(6n)):focus-visible::before { transform: none; }
 /* 좁은 상자에서는 네 칸으로(세 글자 이름이 칸을 넘지 않게). 설명은 읽어 주는 글로만 남긴다. */
 @container rhh (max-width: 520px) {
   .vic-settings .rhh-sound-auditions .rhh-sound-board { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]::before { content: none; }
 }
-.vic-settings .rhh-sound-auditions .rhh-sound-tile:disabled { opacity: 1; }
-.vic-settings .rhh-sound-auditions .rhh-sound-tile:disabled > .rhh-sound-label { opacity: 0.42; }
+.vic-settings .rhh-sound-auditions .rhh-sound-tile.is-quiet > .rhh-sound-label { opacity: 0.42; }
 html[data-reduce-motion] .vic-settings .rhh-companion-settings [data-tip]::before { transition: none; }
 html[data-theme="dark"] .vic-settings .rhh-companion-settings [data-tip]::before { background: rgb(240 233 216 / 96%); color: #26221a; }
 /* 세 칸 선택의 설명은 칸마다 따로, 그 칸 가운데 위에. */

@@ -19,7 +19,7 @@ describe("viewer companion device preferences", () => {
   it("keeps the live world stable for sound-only changes and invalidates it for every world choice", () => {
     const base = companionWorldPreferencesKey(DEFAULT_COMPANION_PREFERENCES);
     // playBehindWindows is read live by the creature (owner 2026-11-20), like the sound mix.
-    const sound = new Set(["sound", "soundVolume", "soundCare", "soundMotion", "soundKeepsakes", "playBehindWindows"]);
+    const sound = new Set(["sound", "soundVolume", "soundCare", "soundMotion", "soundKeepsakes", "soundMuted", "playBehindWindows"]);
     for (const [key, value] of Object.entries(DEFAULT_COMPANION_PREFERENCES)) {
       const changed = { ...DEFAULT_COMPANION_PREFERENCES, [key]: typeof value === "boolean" ? !value : typeof value === "number" ? 35 : value === "normal" ? "lively" : value === "large" ? "normal" : value === "default" ? "cat" : "sleepy" };
       if (sound.has(key)) expect(companionWorldPreferencesKey(changed)).toBe(base);

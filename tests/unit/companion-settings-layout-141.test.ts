@@ -76,7 +76,7 @@ describe("141 shared basic personality settings", () => {
     expect(panel({ panelPrank: false })).toEqual({ on: false, disabled: false });
     expect(panel({ heartPrank: false })).toEqual({ on: false, disabled: true });
     expect(panel({ heartPrank: false, panelPrank: false })).toEqual({ on: false, disabled: true });
-    // One flat grid: all fourteen sounds, no group labels; the dot marks the two only the companion makes.
+    // One flat grid: all eighteen sounds, no group labels; the dot marks the two only the companion makes.
     const board = all.find(element => element.props.className === "rhh-sound-board")!, tiles = board.props.children as Element[];
     expect(tiles.map(tile => tile.props["data-act-opt"]).sort()).toEqual([...COMPANION_SOUND_MOMENTS].sort());
     for (const tile of tiles) {
@@ -87,7 +87,7 @@ describe("141 shared basic personality settings", () => {
       expect(hint?.props.children, moment).toBe(COMPANION_SOUND_HINTS[moment]);
       expect(hint?.props.className, moment).toBe("sr-only");
     }
-    expect(tiles.filter(tile => tile.props["data-own"] === "").map(tile => tile.props["data-act-opt"])).toEqual(["eat", "tumble"]);
+    expect(tiles.filter(tile => tile.props["data-own"] === "").map(tile => tile.props["data-act-opt"])).toEqual(["eat", "tumble", "trick", "scatter", "hat-land"]);
     expect(Object.keys(COMPANION_SOUND_HINTS).sort()).toEqual([...COMPANION_SOUND_MOMENTS].sort());
   });
   it("has no section titles: the two sections are named for assistive tech, and the sound status sits in the sound row", () => {

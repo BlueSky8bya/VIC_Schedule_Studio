@@ -1,4 +1,6 @@
 /** Device-local companion preferences. No account, schedule data or server calls. */
+import { normalizeCompanionSoundMuted, type CompanionSoundMoment } from "./sound-moments";
+
 export const COMPANION_PERSONALITIES = ["performer", "curious", "affectionate", "sleepy", "tidy", "mischievous", "gourmet", "homebody", "balanced"] as const;
 export type CompanionPersonality = typeof COMPANION_PERSONALITIES[number];
 export const COMPANION_PERSONALITY_NAMES: Readonly<Record<CompanionPersonality, string>> = Object.freeze({ curious: "탐험둥이", affectionate: "애교쟁이", sleepy: "잠꾸러기", tidy: "깔끔이", mischievous: "사고뭉치", gourmet: "먹보", performer: "재롱둥이", homebody: "집돌이", balanced: "동글이" });
@@ -34,6 +36,9 @@ export type CompanionPreferences = {
   soundCare: boolean;
   soundMotion: boolean;
   soundKeepsakes: boolean;
+  /** Sounds switched off one by one, under the level (owner 2026-11-20). A
+   * record that lacks it reads as none off. */
+  soundMuted: readonly CompanionSoundMoment[];
   /** Habits, motivation and gait are independent; no combination replaces the
    * character design, turns another switch on or changes device capability. */
   animalMode: "default" | "cat" | "dog";
@@ -70,6 +75,8 @@ export const DEFAULT_COMPANION_PREFERENCES: Readonly<CompanionPreferences> = Obj
   soundCare: true,
   soundMotion: true,
   soundKeepsakes: true,
+  // Owner 2026-11-20: new. Nothing is switched off until the user does it.
+  soundMuted: Object.freeze([]) as readonly CompanionSoundMoment[],
   animalMode: "default",
   speed: "normal",
   size: "large",
@@ -77,7 +84,7 @@ export const DEFAULT_COMPANION_PREFERENCES: Readonly<CompanionPreferences> = Obj
 });
 
 const booleanKeys = ["enabled", "activeWhileVisible", "playBehindWindows", "roam", "jump", "sleep", "heartPrank", "cardPrank", "ambientPrank", "panelPrank", "rarePrank", "drag", "petting", "feeding", "learnFromYou", "sound", "soundCare", "soundMotion", "soundKeepsakes"] as const;
-const soundKeys = ["sound", "soundVolume", "soundCare", "soundMotion", "soundKeepsakes"] as const;
+const soundKeys = ["sound", "soundVolume", "soundCare", "soundMotion", "soundKeepsakes", "soundMuted"] as const;
 /** A live mix change never restarts the creature's movement/interaction world. */
 export function companionWorldPreferencesKey(preferences: Readonly<CompanionPreferences>): string {
   const world: Partial<CompanionPreferences> = { ...preferences };
@@ -121,6 +128,8 @@ export function normalizeCompanionPreferences(value: unknown, base: Readonly<Com
   const source = value as Record<string, unknown>;
   for (const key of booleanKeys) if (typeof source[key] === "boolean") next[key] = source[key];
   if (typeof source.soundVolume === "number" && Number.isFinite(source.soundVolume)) next.soundVolume = Math.min(100, Math.max(0, Math.round(source.soundVolume)));
+  const muted = normalizeCompanionSoundMuted(source.soundMuted);
+  if (muted) next.soundMuted = muted;
   if (source.speed === "relaxed" || source.speed === "normal" || source.speed === "lively") next.speed = source.speed;
   if (validPersonality(source.personality)) next.personality = source.personality;
   if (source.animalMode === "default" || source.animalMode === "cat" || source.animalMode === "dog") next.animalMode = source.animalMode;

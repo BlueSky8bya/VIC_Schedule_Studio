@@ -2790,7 +2790,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       if (next.living) data("living", next.living); else el.removeAttribute("data-living");
       if (next.kind === "sleep" && next.living === "cozy") spriteSources[next.cozySettled ? 40 : 35].forEach(src => requestSprite.current(src));
       if (next.episode) { data("episode", next.episode.kind); data("episodePhase", next.episode.phase); data("episodeVariant", next.episode.variant); if (next.episode.foodId) data("episodeFood", next.episode.foodId); }
-      if (next.episode?.reunion && next.episode.phase === "notice") { petUntil = now + 950; queueCue("play"); }
+      if (next.episode?.reunion && next.episode.phase === "notice") { petUntil = now + 950; queueCue("trick"); }
       if (next.attention) spriteSources[next.attention.kind === "reconsider" ? 26 : 1].forEach(src => requestSprite.current(src));
       if (next.kind === "play" && next.play) {
         // Decode just the contact and expression packets ahead of their beat.
@@ -3403,7 +3403,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
         }
         // The trick's wait is spent only when the trick is what actually starts;
         // an outranking scene, meal or errand leaves it ready for the next decision.
-        if (trickOffer && chosen === trickOffer) { accessoryReadyAt = brain.current.activeMs + 45000; queueCue("play"); (isCompanionHat(equipped!) ? [3, 4] : [9]).forEach(row => spriteSources[row].forEach(src => requestSprite.current(src))); }
+        if (trickOffer && chosen === trickOffer) { accessoryReadyAt = brain.current.activeMs + 45000; queueCue("trick"); (isCompanionHat(equipped!) ? [3, 4] : [9]).forEach(row => spriteSources[row].forEach(src => requestSprite.current(src))); }
         const chosenFood = availableFood.find(item => item.id === chosen.foodId);
         if (chosenFood) lastFoodPoint = { id: chosenFood.id, x: chosenFood.x, y: chosenFood.y };
         const consumedFoods = chosenFood ? loadCompanionCollection().foods : [];
@@ -3650,7 +3650,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
           } else if (householdBeat.effect === "scatter") {
             const centre = householdBeat.point ?? { x, y }, before = liveFoods.filter(item => Math.hypot(item.x - centre.x, item.y - centre.y) <= 110);
             result = Boolean(food.current?.scatter(centre, 110, 1.4));
-            if (result) { queueCue("play"); for (const item of before) scatteredFoods.set(item.id, { from: { x: item.x, y: item.y }, expires: brain.current.activeMs + 10000 }); }
+            if (result) { queueCue("scatter"); for (const item of before) scatteredFoods.set(item.id, { from: { x: item.x, y: item.y }, expires: brain.current.activeMs + 10000 }); }
           }
           household.resolve(householdBeat, result, brain.current.activeMs);
           if (result && householdBeat.effect === "put") learnAgent("food-stored");
@@ -3834,7 +3834,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
           if (!effective.roam || action.accessory !== wardrobe.current.equipped || overlayActive || workspaceBusyRef.current || brain.current.foodGoal || liveFoods.length && action.accessory !== "magic-pocket" || ["magic-pocket", "propeller-hat"].includes(action.accessory) && !effective.rarePrank || !accessorySpace(action.accessory) || reduced || ["off", "soft"].includes(gfxMode())) { clearAction(); nextDecision = now + 60; paint(0, 0, "idle"); schedule(); return; }
           const trick = sampleCompanionAccessoryMotion(action.accessory, age); row = trick.row; frame = trick.frame;
           data("accessoryTrick", action.accessory); data("accessoryBeat", trick.phase);
-          if (!accessoryLanded && isCompanionHat(action.accessory) && p >= .6) { accessoryLanded = true; queueCue("land"); }
+          if (!accessoryLanded && isCompanionHat(action.accessory) && p >= .6) { accessoryLanded = true; queueCue("hat-land"); }
         } else if (action.kind === "look") { row = action.attention?.kind === "reconsider" ? 26 : 1; frame = p * 15; }
         else if (action.kind === "stretch") { row = 16; frame = p * 15; }
         else if (action.kind === "shake") { row = 17; frame = p * 15; }
@@ -5508,7 +5508,7 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       <div><strong>{COMPANION_ACCESSORY_NAMES[openedGift]} 선물!</strong><button className="button" type="button" data-sfx="off" data-act="companion-accessory-equip" data-act-opt="on" onClick={() => { if (equipCompanionAccessory(openedGift)) { hapticSuccess(); playCompanionSound("equip", preferencesRef.current, "direct"); setOpenedGift(null); actor.current?.focus({ preventScroll: true }); } }}>착용하기</button></div>
       <button className="vc-keepsake-close" type="button" aria-label="받은 선물 닫기" data-act="companion-gift-dismiss" onClick={() => { setOpenedGift(null); actor.current?.focus({ preventScroll: true }); }}><X size={17} aria-hidden="true" /></button>
     </aside>}
-    <div className="vc-bed-foreground" style={homeLighting} ref={bedForeground} hidden aria-hidden="true"><CompanionBedForeground /></div><CompanionFood ref={food} retainPresentation={retainPresentation} showcaseSession={showcaseSession} enabled={preferences.feeding} blocked={blocked || overlayOpen} monthKey={monthKey} onDiscard={id => foodDiscarded.current(id)} onLanded={direct => { playCompanionSound("land", preferencesRef.current, direct ? "direct" : "auto"); }} returnFocus={() => { if (!overlayRef.current && !body.current?.hidden) actor.current?.focus({ preventScroll: true }); }} />
+    <div className="vc-bed-foreground" style={homeLighting} ref={bedForeground} hidden aria-hidden="true"><CompanionBedForeground /></div><CompanionFood ref={food} retainPresentation={retainPresentation} showcaseSession={showcaseSession} enabled={preferences.feeding} blocked={blocked || overlayOpen} monthKey={monthKey} onDiscard={id => foodDiscarded.current(id)} onLanded={direct => { playCompanionSound("food-land", preferencesRef.current, direct ? "direct" : "auto"); }} returnFocus={() => { if (!overlayRef.current && !body.current?.hidden) actor.current?.focus({ preventScroll: true }); }} />
     <CompanionToys ref={toys} retainPresentation={retainPresentation} showcaseSession={showcaseSession} hidden={!preferences.enabled} blocked={!preferences.enabled || blocked || overlayOpen || workspaceBusy || suspended || performanceActive} onCount={setToyCount} onExperience={(kind, outcome, point) => {
       if (outcome === "played") routineEvent.current("played");
       const known = loadCompanionTastes().toys.includes(kind);

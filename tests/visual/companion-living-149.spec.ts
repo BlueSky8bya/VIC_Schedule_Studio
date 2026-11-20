@@ -292,7 +292,7 @@ for (const [width, dark] of [[1920, false], [1920, true], [1120, false], [1120, 
   // stage 3: the nine characters moved to "함께 지내기" (checked above); "설정" is one column of cards.
   await tabs.getByRole("tab", { name: "설정", exact: true }).click(); await expect(dialog.locator(".rhh-companion-settings.rhh-companion-cards")).toBeVisible(); await expect(dialog.getByRole("radiogroup", { name: "빅타민 소리", exact: true }).getByRole("radio")).toHaveCount(3); await notebookBounds(page, name + "-settings");
   // The 14 audition tiles sit in a closed fold (not rendered until opened); measure them open as well.
-  const audition = dialog.locator("details").filter({ has: page.locator("summary", { hasText: "소리 들어 보기" }) }); await audition.locator("summary").click(); await expect(audition.locator("button:visible")).toHaveCount(14); await notebookBounds(page, name + "-settings-audition");
+  const audition = dialog.locator("details").filter({ has: page.locator("summary", { hasText: "소리 하나씩 켜고 끄기" }) }); await audition.locator("summary").click(); await expect(audition.locator("button:visible")).toHaveCount(18); await notebookBounds(page, name + "-settings-audition");
 });
 
 for (const [surface, width] of [["viewer", 1920], ["studio", 1920], ["preview", 1920], ["viewer", 1120]] as const) test(`149 curtain cord meets actual rod ${surface} ${width}`, async ({ page }) => {

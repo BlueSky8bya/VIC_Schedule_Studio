@@ -110,8 +110,8 @@ describe("audition tiles (stage 2-다)", () => {
     expect([...all].sort()).toEqual([...COMPANION_SOUND_MOMENTS].sort());
     expect(new Set(all).size).toBe(all.length);
     for (const moment of COMPANION_SOUND_MOMENTS) expect(COMPANION_SOUND_NAMES[moment], moment).toBeTruthy();
-    // Only the two sounds the user can never start are auditioned as the companion's own (proposal 4-3).
-    expect(COMPANION_SOUND_AUDITIONS.filter(group => group.origin === "auto").flatMap(group => group.moments)).toEqual(["eat", "tumble"]);
+    // Only the sounds the user can never start are auditioned as the companion's own (proposal 4-3; 2026-11-20 adds the three split from play and land).
+    expect(COMPANION_SOUND_AUDITIONS.filter(group => group.origin === "auto").flatMap(group => group.moments)).toEqual(["eat", "tumble", "trick", "scatter", "hat-land"]);
     expect((ACT["companion-sound-audition"] as { opts?: Record<string, string> }).opts).toEqual({ ...COMPANION_SOUND_NAMES });
   });
 
@@ -164,7 +164,7 @@ describe("every caller states who started the sound", () => {
     expect(direct("equip")).toEqual(['"direct"']);
     expect(direct("play")).toEqual(['"direct"', '"direct"']); // toy taken out, toy put back
     // Food landing follows the food's own mark; the queued sound follows the mark it was queued with.
-    expect(direct("land")).toEqual(['direct ? "direct" : "auto"']);
+    expect(direct("food-land")).toEqual(['direct ? "direct" : "auto"']);
     expect(companion.filter(call => call.moment === "moment").map(call => call.origin)).toEqual(["soundOrigin(direct)"]);
     expect(calls(read(files[1])).map(call => `${call.moment}:${call.origin}`)).toEqual(['"dizzy":"direct"', '"lift":"direct"']);
     expect(calls(read(files[2])).map(call => call.origin)).toEqual(['"direct"', '"direct"']);
@@ -183,7 +183,7 @@ describe("every caller states who started the sound", () => {
       '"sleep", Boolean(next.direct)', '"land", Boolean(completed.direct)',
     ]);
     // The companion's own: reunion, accessory trick, toy scene, its own dispenser, scattering, hat landing, meal.
-    expect(queued.filter(args => !/direct|true/.test(args))).toEqual(['"play"', '"play"', '"play"', '"feed"', '"play"', '"land"', 'firstFood ? "discover" : "eat"']);
+    expect(queued.filter(args => !/direct|true/.test(args))).toEqual(['"trick"', '"trick"', '"play"', '"feed"', '"scatter"', '"hat-land"', 'firstFood ? "discover" : "eat"']);
   });
 
   it("starts a direct chain only from the user's own tap, stroke reply, drop or bedtime", () => {
