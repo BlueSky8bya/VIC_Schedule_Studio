@@ -2566,14 +2566,21 @@ html[data-reduce-motion] .rhh-sound-tile.playing::after { content: none; }
 /* 타일 = 그 소리의 스위치(2026-11-20). 소유자: 줄 긋기 말고 '확실히 토글 버튼처럼'. 그래서 타일마다 이 화면의 다른
    스위치와 같은 색·모양의 작은 스위치를 단다(켜짐 = 초록 길·손잡이 오른쪽, 꺼짐 = 회색 길·손잡이 왼쪽). 켜진 타일은 테두리·바탕에
    초록 기운, 꺼진 타일은 빈 바탕에 글자만 옅게. 지금 단계·사이트 설정 때문에 안 들리는 소리는 이름만 흐리게(스위치는 그대로 보임). */
-.vic-settings .rhh-sound-auditions .rhh-sound-tile { justify-content: space-between; padding: 0 8px 0 10px; text-align: left; }
-.vic-settings .rhh-sound-auditions .rhh-sound-tile[aria-pressed="true"] { border-color: rgb(83 168 112 / 45%); background: rgb(83 168 112 / 9%); }
+.vic-settings .rhh-sound-auditions .rhh-sound-tile { justify-content: stretch; gap: 0; padding: 0; cursor: default; text-align: left; }
+/* 2026-11-20 개정: 타일 = 왼쪽 스피커(듣기만) + 오른쪽 이름·스위치(켜고 끄기만). 누르는 소리와 들려주는 소리가 섞이지 않게 둘을 나눴다. */
+.vic-settings .rhh-sound-listen { display: grid; flex: none; place-items: center; align-self: stretch; width: 44px; min-height: 44px; border: 0; border-right: 1px solid rgb(0 0 0 / 8%); border-radius: 12px 0 0 12px; background: none; padding: 0; color: #2f6fb3; cursor: pointer; }
+.vic-settings .rhh-sound-listen:hover:not(:disabled) { background: rgb(47 111 179 / 10%); }
+.vic-settings .rhh-sound-listen:disabled { cursor: default; opacity: 0.35; }
+.vic-settings .rhh-sound-toggle { display: flex; flex: 1; align-items: center; justify-content: space-between; gap: 6px; align-self: stretch; min-width: 0; border: 0; border-radius: 0 12px 12px 0; background: none; padding: 0 8px 0 10px; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.vic-settings :is(.rhh-sound-listen, .rhh-sound-toggle):focus-visible { outline: 2px solid #2f6fb3; outline-offset: -2px; }
+html[data-theme="dark"] .vic-settings .rhh-sound-listen { border-right-color: rgb(255 255 255 / 10%); color: #8cc0f2; }
+.vic-settings .rhh-sound-auditions .rhh-sound-tile.is-on { border-color: rgb(83 168 112 / 45%); background: rgb(83 168 112 / 9%); }
 .vic-settings .rhh-sound-auditions .rhh-sound-tile.is-muted { border-color: rgb(0 0 0 / 10%); background: transparent; color: var(--muted, #6b7685); }
 .vic-settings .rhh-sound-switch { position: relative; flex: none; width: 28px; height: 16px; border-radius: var(--r-pill, 999px); background: rgb(0 0 0 / 18%); transition: background 0.16s var(--ease, ease); }
 .vic-settings .rhh-sound-switch > i { position: absolute; top: 2px; left: 2px; width: 12px; height: 12px; border-radius: 50%; background: #fff; box-shadow: var(--elev-1, 0 1px 2px rgb(0 0 0 / 20%)); transition: transform 0.16s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)); }
-.vic-settings .rhh-sound-tile[aria-pressed="true"] .rhh-sound-switch { background: var(--status-success, #53a870); }
-.vic-settings .rhh-sound-tile[aria-pressed="true"] .rhh-sound-switch > i { transform: translateX(12px); }
-html[data-theme="dark"] .vic-settings .rhh-sound-auditions .rhh-sound-tile[aria-pressed="true"] { border-color: rgb(83 168 112 / 50%); background: rgb(83 168 112 / 14%); }
+.vic-settings .rhh-sound-tile.is-on .rhh-sound-switch { background: var(--status-success, #53a870); }
+.vic-settings .rhh-sound-tile.is-on .rhh-sound-switch > i { transform: translateX(12px); }
+html[data-theme="dark"] .vic-settings .rhh-sound-auditions .rhh-sound-tile.is-on { border-color: rgb(83 168 112 / 50%); background: rgb(83 168 112 / 14%); }
 html[data-theme="dark"] .vic-settings .rhh-sound-auditions .rhh-sound-tile.is-muted { border-color: rgb(255 255 255 / 10%); background: transparent; color: rgb(240 233 216 / 66%); }
 html[data-theme="dark"] .vic-settings .rhh-sound-switch { background: rgb(255 255 255 / 20%); }
 html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vic-settings :is(.rhh-sound-switch, .rhh-sound-switch > i) { transition: none; }
@@ -2633,7 +2640,6 @@ html:is([data-reduce-motion], [data-gfx="off"], [data-gfx="soft"]) .vic-settings
   .vic-settings .rhh-sound-auditions .rhh-sound-board { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .vic-settings .rhh-sound-auditions .rhh-sound-tile[data-tip]::before { content: none; }
 }
-.vic-settings .rhh-sound-auditions .rhh-sound-tile.is-quiet > .rhh-sound-label { opacity: 0.42; }
 html[data-reduce-motion] .vic-settings .rhh-companion-settings [data-tip]::before { transition: none; }
 html[data-theme="dark"] .vic-settings .rhh-companion-settings [data-tip]::before { background: rgb(240 233 216 / 96%); color: #26221a; }
 /* 세 칸 선택의 설명은 칸마다 따로, 그 칸 가운데 위에. */

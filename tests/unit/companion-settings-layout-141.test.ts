@@ -76,18 +76,24 @@ describe("141 shared basic personality settings", () => {
     expect(panel({ panelPrank: false })).toEqual({ on: false, disabled: false });
     expect(panel({ heartPrank: false })).toEqual({ on: false, disabled: true });
     expect(panel({ heartPrank: false, panelPrank: false })).toEqual({ on: false, disabled: true });
-    // One flat grid: all eighteen sounds, no group labels; the dot marks the two only the companion makes.
+    // One flat grid: all eighteen sounds, no group labels; the dot marks those only the companion makes.
+    // Each tile is a speaker that only plays the sound and a switch that only turns it on or off (owner 2026-11-20).
     const board = all.find(element => element.props.className === "rhh-sound-board")!, tiles = board.props.children as Element[];
-    expect(tiles.map(tile => tile.props["data-act-opt"]).sort()).toEqual([...COMPANION_SOUND_MOMENTS].sort());
+    const part = (tile: Element, className: string) => nodes(tile).find(child => child.props.className === className)!;
+    expect(tiles.map(tile => part(tile, "rhh-sound-toggle").props["data-act-opt"]).sort()).toEqual([...COMPANION_SOUND_MOMENTS].sort());
     for (const tile of tiles) {
-      const moment = tile.props["data-act-opt"] as typeof COMPANION_SOUND_MOMENTS[number];
-      expect(tile.type).toBe("button"); expect(COMPANION_SOUND_HINTS[moment].trim(), moment).toBeTruthy();
+      const toggle = part(tile, "rhh-sound-toggle"), listen = part(tile, "rhh-sound-listen"), moment = toggle.props["data-act-opt"] as typeof COMPANION_SOUND_MOMENTS[number];
+      expect(tile.type).toBe("div"); expect(toggle.type).toBe("button"); expect(listen.type).toBe("button");
+      expect(toggle.props["data-act"]).toBe("companion-sound-toggle"); expect(listen.props["data-act"]).toBe("companion-sound-audition"); expect(listen.props["data-act-opt"]).toBe(moment);
+      expect(toggle.props["aria-pressed"], moment).toBe(true);
+      expect(listen.props["aria-label"], moment).toBe(`${toggle.props["aria-label"]} 들어 보기`);
+      expect(COMPANION_SOUND_HINTS[moment].trim(), moment).toBeTruthy();
       expect(tile.props["data-tip"], moment).toBe(COMPANION_SOUND_HINTS[moment]);
-      const hint = nodes(tile).find(child => child.props.id === tile.props["aria-describedby"]);
+      const hint = nodes(tile).find(child => child.props.id === toggle.props["aria-describedby"]);
       expect(hint?.props.children, moment).toBe(COMPANION_SOUND_HINTS[moment]);
       expect(hint?.props.className, moment).toBe("sr-only");
     }
-    expect(tiles.filter(tile => tile.props["data-own"] === "").map(tile => tile.props["data-act-opt"])).toEqual(["eat", "tumble", "trick", "scatter", "hat-land"]);
+    expect(tiles.filter(tile => tile.props["data-own"] === "").map(tile => part(tile, "rhh-sound-toggle").props["data-act-opt"])).toEqual(["eat", "tumble", "trick", "scatter", "hat-land"]);
     expect(Object.keys(COMPANION_SOUND_HINTS).sort()).toEqual([...COMPANION_SOUND_MOMENTS].sort());
   });
   it("has no section titles: the two sections are named for assistive tech, and the sound status sits in the sound row", () => {

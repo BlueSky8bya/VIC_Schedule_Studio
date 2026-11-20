@@ -113,6 +113,7 @@ describe("audition tiles (stage 2-다)", () => {
     // Only the sounds the user can never start are auditioned as the companion's own (proposal 4-3; 2026-11-20 adds the three split from play and land).
     expect(COMPANION_SOUND_AUDITIONS.filter(group => group.origin === "auto").flatMap(group => group.moments)).toEqual(["eat", "tumble", "trick", "scatter", "hat-land"]);
     expect((ACT["companion-sound-audition"] as { opts?: Record<string, string> }).opts).toEqual({ ...COMPANION_SOUND_NAMES });
+    expect((ACT["companion-sound-toggle"] as { opts?: Record<string, string> }).opts).toEqual({ ...COMPANION_SOUND_NAMES });
   });
 
   it("a tile is heard exactly when the screen allows it, in every level and device state", () => {
