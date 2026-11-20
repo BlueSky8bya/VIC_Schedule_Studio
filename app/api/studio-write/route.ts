@@ -73,6 +73,7 @@ export async function POST(request: Request) {
   }
 }
 
+// serverAt = 이 쓰기가 끝난 서버 시각. 편집실은 이보다 먼저 읽힌 일정 묶음(loadedAt)을 낡은 것으로 보고 버린다.
 function json(result: { ok: boolean }) {
-  return NextResponse.json(result, { status: result.ok ? 200 : 403 });
+  return NextResponse.json({ ...result, serverAt: Date.now() }, { status: result.ok ? 200 : 403 });
 }

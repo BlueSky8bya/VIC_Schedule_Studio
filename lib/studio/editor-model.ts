@@ -145,7 +145,15 @@ export const MAX_EVENT_TAGS = 6;
 // keepalive: true 면 페이지를 떠나거나(달 이동·창 전환·닫기·새로고침) 전송이 끝까지 보장된다
 // → "바꾸고 바로 나가면 저장 안 됨"을 구조적으로 없앤다. 결과는 기존 서버 액션과 같은 모양
 // ({ok,id} / {ok,error})이라 호출부(임시 id 교체·롤백)를 그대로 쓸 수 있다.
-export type StudioWriteResult = { ok: true; id?: string } | { ok: false; error: string };
+/** A studio snapshot whose reads began before the latest committed write
+ * cannot contain it: applying it would drop a just-created card or revert an
+ * edit (2026-11-20 owner report). Snapshots without a stamp are trusted. */
+export function isStaleStudioSnapshot(loadedAt: number | undefined, lastWriteAt: number): boolean {
+  return typeof loadedAt === "number" && lastWriteAt > 0 && loadedAt <= lastWriteAt;
+}
+
+/** serverAt: server clock (ms) after the write finished; absent on network failure. */
+export type StudioWriteResult = ({ ok: true; id?: string } | { ok: false; error: string }) & { serverAt?: number };
 export async function postStudioWrite(op: string, payload: unknown): Promise<StudioWriteResult> {
   try {
     const res = await fetch("/api/studio-write", {

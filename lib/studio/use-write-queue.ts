@@ -37,6 +37,8 @@ export function useStudioWriteQueue(
   const tempToRealRef = useRef<Map<string, string>>(new Map());
   // 전역 직렬 쓰기 체인.
   const writeChainRef = useRef<Promise<void>>(Promise.resolve());
+  // 마지막으로 성공한 쓰기가 끝난 서버 시각 — 이보다 먼저 읽힌 서버 스냅샷은 화면에 덮지 않는다.
+  const lastWriteAtRef = useRef(0);
 
   // temp id면 저장 약속을 기다려 실제 id로, 실패면 null. 실제 id는 그대로.
   async function resolveEventId(id: string | null | undefined): Promise<string | null> {
@@ -98,6 +100,7 @@ export function useStudioWriteQueue(
       .then(
         (r) => {
           savingCountRef.current = Math.max(0, savingCountRef.current - 1);
+          if (r.ok && typeof r.serverAt === "number") lastWriteAtRef.current = Math.max(lastWriteAtRef.current, r.serverAt);
           if (!r.ok) {
             batchFailedRef.current = true;
             setSaveState("failed");
@@ -154,6 +157,7 @@ export function useStudioWriteQueue(
     savingCountRef,
     editedSinceSyncRef,
     inflightWritesRef,
+    lastWriteAtRef,
     pendingSavesRef,
     tempToRealRef,
     resolveEventId,

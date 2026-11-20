@@ -248,4 +248,7 @@ export type StudioSchedule = Omit<PublicSchedule, "events"> & {
   // 생일 선물 미리보기 스위치(0141, 개발자 설정) — 편집실 전용, 공개 응답엔 없다.
   birthdayGiftPreview?: boolean;
   events: StudioScheduleEvent[];
+  /** Server clock (ms) when this snapshot's reads began. The editor ignores a
+   * snapshot read before its last committed write (it would drop or revert it). */
+  loadedAt?: number;
 };

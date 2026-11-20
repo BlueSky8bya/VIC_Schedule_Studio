@@ -34,6 +34,9 @@ export async function getStudioSchedule(
     };
   }
 
+  // 이 스냅샷을 읽기 시작한 서버 시각 — 편집실은 이보다 늦게 끝난 저장이 있으면 이 스냅샷을 버린다
+  // (저장 전에 읽은 묶음이 저장 뒤에 도착해 방금 만든 일정을 화면에서 지우던 문제, 2026-11-20).
+  const loadedAt = Date.now();
   const { year, month } = getCurrentKstYearMonth();
   // calendar 행은 slug로만 조회 — preview/actor와 서로 의존이 없어 한 배치로 병렬 처리한다.
   // (예전엔 calendar를 먼저 단독 await 해서 한 라운드트립을 더 기다렸다 → TTFB 손해. calendar.id가
@@ -117,7 +120,8 @@ export async function getStudioSchedule(
     palette: (paletteRes.data ?? []).map(mapPalette),
     // 쿼리 필터와 별개의 2차 방어 — 공개 범위가 아닌 옛 행은 응답에 싣지 않는다.
     events: eventsRes.filter((r) => r.visibility_scope === "public").map(mapStudioEvent),
-    viewerModePreview
+    viewerModePreview,
+    loadedAt
   };
 }
 

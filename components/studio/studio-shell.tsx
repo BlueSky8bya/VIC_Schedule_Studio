@@ -205,7 +205,8 @@ import {
   type CopiedEvent,
   type EditDraft,
   type EventForm,
-  type UndoAction
+  type UndoAction,
+  isStaleStudioSnapshot
 } from "@/lib/studio/editor-model";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { canRecoverSaveSnapshot, FailedSaveRecovery, type SaveRecovery } from "@/lib/studio/failed-save-recovery";
@@ -349,6 +350,7 @@ export function StudioShell({
     lastSavedKst,
     editedSinceSyncRef,
     inflightWritesRef,
+    lastWriteAtRef,
     pendingSavesRef,
     tempToRealRef,
     resolveEventId,
@@ -631,13 +633,31 @@ export function StudioShell({
     return null;
   }
   const resyncNeededRef = useRef(false); // 서버 진실 재동기화가 필요한데 아직 반영 안 됨(아래 참조)
+  // 저장 '전에' 읽힌 서버 묶음이 저장이 다 끝난 '뒤에' 도착하면, 아래 동기화가 그 낡은 묶음으로
+  // 화면을 덮어 방금 만든·붙여넣은 일정이 화면에서만 사라졌다(DB엔 있음, 새로고침하면 다시 보임 —
+  // 2026-11-20 소유자 신고 2건). 묶음이 읽힌 시각(loadedAt)이 마지막 저장 완료(serverAt)보다 이르면
+  // 버리고 새 묶음을 한 번 더 받는다. 연속으로 낡으면 세 번까지만 다시 받는다(무한 반복 방지).
+  const staleSnapshotRefreshesRef = useRef(0);
+  const snapshotIsStale = () => {
+    if (!isStaleStudioSnapshot(schedule.loadedAt, lastWriteAtRef.current)) {
+      staleSnapshotRefreshesRef.current = 0;
+      return false;
+    }
+    if (staleSnapshotRefreshesRef.current < 3) {
+      staleSnapshotRefreshesRef.current += 1;
+      router.refresh();
+    }
+    return true;
+  };
   useEffect(() => {
     // 저장·삭제·이동이 진행 중이면 서버 prop이 낙관적 화면을 덮어써 카드가 '이전 위치로
     // 순간이동'하던 문제를 막는다. 작업이 끝난 뒤(idle)의 prop 변화에서만 서버 데이터로 맞춘다.
     if (pendingRef.current || pendingPersistRef.current > 0 || inflightWritesRef.current.size > 0)
       return;
+    if (snapshotIsStale()) return;
     setEvents(schedule.events);
     resyncNeededRef.current = false; // 서버 진실이 실제로 화면에 반영됐다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schedule.events, inflightWritesRef]);
   // 이동 저장이 실패/누락됐을 때 '서버 진실로 되돌리기'는 큐가 빈 뒤에만 가능하다 — 진행 중에
   // router.refresh()를 불러도 위 가드가 그 prop을 버려서, 화면은 낙관적 순서인 채 서버는 옛
@@ -685,12 +705,17 @@ export function StudioShell({
   useEffect(() => {
     if (pendingRef.current || pendingPersistRef.current > 0 || inflightWritesRef.current.size > 0)
       return;
+    // 낡은 묶음(위 일정 동기화 참고)은 태그도 덮지 않는다 — 새 묶음은 일정 쪽이 이미 요청했다.
+    if (isStaleStudioSnapshot(schedule.loadedAt, lastWriteAtRef.current)) return;
     setTags(schedule.tags);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schedule.tags, inflightWritesRef]);
   useEffect(() => {
     if (pendingRef.current || pendingPersistRef.current > 0 || inflightWritesRef.current.size > 0)
       return;
+    if (isStaleStudioSnapshot(schedule.loadedAt, lastWriteAtRef.current)) return;
     setPalette(schedule.palette);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schedule.palette, inflightWritesRef]);
   // 색상 안내 필터 — 편집실에서도 특정 태그 색만 골라볼 수 있게(시청자 화면과 동일 동작).
   const [tagFilters, setTagFilters] = useState<string[]>([]);
