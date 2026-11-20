@@ -18,7 +18,7 @@ export const COMPANION_SETTING_HINTS = Object.freeze({
   speed: "걷는 빠르기예요.",
   sleep: "가만히 두면 스스로 잠들어요.",
   // A background tab still pauses it, so only a page left visible on screen is promised.
-  activeWhileVisible: "이 화면을 띄워 두고 다른 걸 써도 놀아요.",
+  activeWhileVisible: "일정표가 보이면, 다른 프로그램을 써도 놀아요.",
   playBehindWindows: "일정·설정 창이 떠 있어도 뒤에서 놀아요.",
   drag: "마우스로 집어서 옮길 수 있어요.",
   petting: "문지르거나 톡 치면 좋아해요.",
@@ -141,11 +141,12 @@ export function CompanionBehaviorSettings({ preferences, onChange, site, siteVol
           <SettingsSegment ariaLabel="빅타민 걸음" dataAct="companion-speed" description={COMPANION_SETTING_HINTS.speed} onChange={speed => onChange({ speed })} options={[{ value: "relaxed", label: "느긋하게" }, { value: "normal", label: "보통" }, { value: "lively", label: "발랄하게" }]} value={preferences.speed} />
         </div>
         {row("sleep", "자동 잠자기", <EyeOff size={15} />)}
-        {row("activeWhileVisible", "다른 일 할 때도 놀기", <Pointer size={15} />)}
-        {row("playBehindWindows", "창이 떠 있어도 놀기", <Layers size={15} />)}
         {row("drag", "집어 옮기기", <Grab size={15} />)}
         {row("petting", "쓰다듬기", <Heart size={15} />)}
         {row("feeding", "밥주기", <Leaf size={15} />)}
+        {/* Owner 2026-11-20: the two "keep playing when…" rows sit together at the bottom. */}
+        {row("activeWhileVisible", "다른 일 할 때도 놀기", <Pointer size={15} />)}
+        {row("playBehindWindows", "창이 떠 있어도 놀기", <Layers size={15} />)}
       </div>
     </details>
   </div>;

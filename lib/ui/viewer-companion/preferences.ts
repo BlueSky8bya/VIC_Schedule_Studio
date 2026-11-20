@@ -47,8 +47,10 @@ export const COMPANION_PREFERENCES_KEY = "vic.viewerCompanion";
 export const COMPANION_PREFERENCES_EVENT = "vic:viewer-companion";
 export const DEFAULT_COMPANION_PREFERENCES: Readonly<CompanionPreferences> = Object.freeze({
   enabled: true,
-  // Owner 2026-11-20: off by default. A device that saved a choice keeps it.
-  activeWhileVisible: false,
+  // Owner 2026-11-20 (revised): on by default — it only matters while the
+  // calendar stays visible on screen and another program has focus. A device
+  // that saved a choice keeps it.
+  activeWhileVisible: true,
   // Owner 2026-11-20: new, off by default. A record that lacks it reads as off.
   playBehindWindows: false,
   roam: true,

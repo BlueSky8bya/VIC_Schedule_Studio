@@ -139,7 +139,7 @@ for (const dark of [false, true]) for (const on of [false, true]) {
       const row = settings.locator(".rhh-companion-more .role-help-haptics").filter({ hasText: "창이 떠 있어도 놀기" });
       await expect(row).toHaveAttribute("data-tip", "일정·설정 창이 떠 있어도 뒤에서 놀아요.");
       await expect(row.getByRole("switch", { name: "빅타민 창이 떠 있어도 놀기 켜기/끄기", exact: true })).toBeChecked();
-      await expect(settings.locator(".rhh-companion-more .role-help-haptics").filter({ hasText: "다른 일 할 때도 놀기" })).toHaveAttribute("data-tip", "이 화면을 띄워 두고 다른 걸 써도 놀아요.");
+      await expect(settings.locator(".rhh-companion-more .role-help-haptics").filter({ hasText: "다른 일 할 때도 놀기" })).toHaveAttribute("data-tip", "일정표가 보이면, 다른 프로그램을 써도 놀아요.");
       await row.scrollIntoViewIfNeeded(); await row.hover(); await page.waitForTimeout(700);
       await settings.screenshot({ path: `${shots}/settings-row-${dark ? "dark" : "light"}.png` });
     }

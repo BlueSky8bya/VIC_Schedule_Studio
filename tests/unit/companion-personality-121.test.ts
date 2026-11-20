@@ -13,10 +13,10 @@ const world: CompanionWorld = { x: 100, y: 600, width: 1000, height: 700, platfo
 const brain = (): CompanionBrain => ({ ...createBrain(0, () => .5), hunger: .1, energy: .9, activeMs: 0 });
 
 describe("visible activity, automatic sleep and distinct companion personalities", () => {
-  it("old records adopt the default (off since 2026-11-20) for playing while another program is used, and every explicit personality round-trips", () => {
-    expect(normalizeCompanionPreferences({ enabled: false, sleep: false })).toMatchObject({ enabled: false, sleep: false, activeWhileVisible: false });
+  it("old records adopt the default (on, owner 2026-11-20 revised) for playing while another program is used, and every explicit personality round-trips", () => {
+    expect(normalizeCompanionPreferences({ enabled: false, sleep: false })).toMatchObject({ enabled: false, sleep: false, activeWhileVisible: true });
     expect(normalizeCompanionPreferences({ activeWhileVisible: false })).toMatchObject({ activeWhileVisible: false });
-    expect(normalizeCompanionPreferences({ activeWhileVisible: "true", personality: "private-canary" })).toMatchObject({ activeWhileVisible: false, personality: "curious" });
+    expect(normalizeCompanionPreferences({ activeWhileVisible: "false", personality: "private-canary" })).toMatchObject({ activeWhileVisible: true, personality: "curious" });
     expect(COMPANION_PERSONALITIES).toHaveLength(9);
     for (const personality of COMPANION_PERSONALITIES) expect(normalizeCompanionPreferences({ personality }).personality).toBe(personality);
   });
