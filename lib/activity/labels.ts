@@ -799,8 +799,8 @@ export const ACT: Record<string, TargetLabel> = {
   "sound-cat-alert": { name: "알림 소리", area: "설정" },
   "sound-quiet-hidden": { name: "다른 탭일 때 소리 끄기", area: "설정" },
   "fling-delete-toggle": { name: "던져서 삭제", area: "설정", hint: "편집 묶음 — 카드를 던져 지우기" },
-  "dev-birthday-preview": { name: "생일 선물 미리보기", area: "설정", hint: "개발자 묶음" },
-  "dev-gacha-open": { name: "캡슐 뽑기 열어보기", area: "설정", hint: "개발자 묶음 — 생일 선물 미리보기를 켰을 때" },
+  "dev-birthday-preview": { name: "생일 선물 미리보기", area: "설정", hint: "옛 기록(2026-11-23 생일 선물·뽑기 철거)", retired: true },
+  "dev-gacha-open": { name: "캡슐 뽑기 열어보기", area: "설정", hint: "옛 기록(2026-11-23 생일 선물·뽑기 철거)", retired: true },
 
   // 달 고르기(편집실·시청자 공용 부품)
   "month-title": { name: "달 고르기 열기", area: "시청자 화면", hint: "머리줄 '○월' 제목 — 편집실·시청자 공용" },
@@ -873,13 +873,13 @@ export const ACT: Record<string, TargetLabel> = {
   "legend-tier": { name: "인기도 필터", area: "시청자 화면", opts: TIER_OPT_NAMES },
   "agenda-tent": { name: "미정 필터(모바일)", area: "시청자 화면" },
   "legend-tent": { name: "미정 필터", area: "시청자 화면" },
-  "gift-close": { name: "생일 선물 카드 닫기", area: "시청자 화면" },
-  "gacha-coin": { name: "캡슐 뽑기: 동전 넣기", area: "시청자 화면" },
-  "gacha-turn": { name: "캡슐 뽑기: 손잡이 돌리기", area: "시청자 화면" },
-  "gacha-open": { name: "캡슐 뽑기: 캡슐 열기", area: "시청자 화면" },
-  "gacha-again": { name: "캡슐 뽑기: 한 번 더", area: "시청자 화면" },
-  "gacha-done": { name: "캡슐 뽑기: 닫기(결과 카드)", area: "시청자 화면" },
-  "gacha-close": { name: "캡슐 뽑기: 닫기(X)", area: "시청자 화면" },
+  "gift-close": { name: "생일 선물 카드 닫기", area: "시청자 화면", hint: "옛 기록(2026-11-23 생일 선물·뽑기 철거)", retired: true },
+  "gacha-coin": { name: "캡슐 뽑기: 동전 넣기", area: "시청자 화면", hint: "옛 기록(2026-11-23 생일 선물·뽑기 철거)", retired: true },
+  "gacha-turn": { name: "캡슐 뽑기: 손잡이 돌리기", area: "시청자 화면", hint: "옛 기록(2026-11-23 생일 선물·뽑기 철거)", retired: true },
+  "gacha-open": { name: "캡슐 뽑기: 캡슐 열기", area: "시청자 화면", hint: "옛 기록(2026-11-23 생일 선물·뽑기 철거)", retired: true },
+  "gacha-again": { name: "캡슐 뽑기: 한 번 더", area: "시청자 화면", hint: "옛 기록(2026-11-23 생일 선물·뽑기 철거)", retired: true },
+  "gacha-done": { name: "캡슐 뽑기: 닫기(결과 카드)", area: "시청자 화면", hint: "옛 기록(2026-11-23 생일 선물·뽑기 철거)", retired: true },
+  "gacha-close": { name: "캡슐 뽑기: 닫기(X)", area: "시청자 화면", hint: "옛 기록(2026-11-23 생일 선물·뽑기 철거)", retired: true },
 
   // 다시보기 창·챕터
   "vod-section-fold": { name: "챕터 코너 접기/펴기", area: "다시보기 창", hint: "코너 이름을 눌러 그 묶음 접기" },

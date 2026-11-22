@@ -26,7 +26,7 @@ export const dynamic = "force-dynamic";
 export default async function VisualStudioFixture({
   searchParams,
 }: {
-  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; y?: string; m?: string; biome?: string; chain?: string; tent?: string; gift?: string; premiere?: string; companionDrag?: string; supportUX?: string; chainRule?: string }>;
+  searchParams?: Promise<{ viewer?: string; role?: string; panel?: string; ambient?: string; hour?: string; weather?: string; y?: string; m?: string; biome?: string; chain?: string; tent?: string; premiere?: string; companionDrag?: string; supportUX?: string; chainRule?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
@@ -155,10 +155,7 @@ export default async function VisualStudioFixture({
                   events: [...sampleStudioSchedule.viewerModePreview.events, ...chainRuleFixtureEvents()]
                 }
               }
-            : sp?.gift === "1"
-              ? // gift=1 → 생일 선물 미리보기 토글 켠 상태(0141) — 캡슐 뽑기 창 검증용(2026-10-06).
-                { ...sampleStudioSchedule, birthdayGiftPreview: true }
-              : sampleStudioSchedule)
+            : sampleStudioSchedule)
         )
       }
       initialView={{ year: cozy?.year ?? y, month: cozy?.month ?? m }}

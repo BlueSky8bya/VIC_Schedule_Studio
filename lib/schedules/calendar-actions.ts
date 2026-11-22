@@ -15,30 +15,6 @@ const SLUG = "vic";
 
 export type CalendarActionResult = { ok: true; id: string } | { ok: false; error: string };
 
-// 생일 선물 미리보기(0141, 2026-10-06 소유자) — **개발자만** 켜고 끈다. 켜면 개발자의 편집실 시청자 미리보기에서
-// 생일 캡슐 뽑기가 (날짜 상관없이) 열린다. 관리자는 아직 대상 아님 — 나중에 열 때 studio-shell 조건에 owner를 더한다. 시청자 화면(/)과 공개 응답은 무관 → 공개 캐시 재검증 불필요.
-export async function setBirthdayGiftPreviewAction(on: boolean): Promise<CalendarActionResult> {
-  const actor = await resolveCurrentActor(SLUG);
-  if (actor.role !== "developer") {
-    return { ok: false, error: "개발자만 바꿀 수 있어요." };
-  }
-  const admin = createSupabaseAdminClient();
-  if (!admin) {
-    return { ok: false, error: "Supabase가 설정되지 않았습니다." };
-  }
-  const { data: calendar, error } = await admin
-    .from("calendars")
-    .update({ birthday_gift_preview: Boolean(on) })
-    .eq("slug", SLUG)
-    .select("id")
-    .maybeSingle();
-  if (error || !calendar) {
-    return { ok: false, error: "저장하지 못했어요." };
-  }
-  revalidatePath("/studio");
-  return { ok: true, id: String(calendar.id) };
-}
-
 export async function updatePosterThemeAction(theme: string): Promise<CalendarActionResult> {
   const actor = await resolveCurrentActor(SLUG);
   if (actor.role !== "owner") {

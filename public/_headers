@@ -17,8 +17,6 @@
   Cache-Control: public, max-age=600, stale-while-revalidate=3600
 /companion/*
   Cache-Control: public, max-age=600, stale-while-revalidate=3600
-/celebrate/*
-  Cache-Control: public, max-age=600, stale-while-revalidate=3600
 /premiere/*
   Cache-Control: public, max-age=600, stale-while-revalidate=3600
 /legal/*

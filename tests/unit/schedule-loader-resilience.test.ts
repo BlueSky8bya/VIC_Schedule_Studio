@@ -173,10 +173,10 @@ describe("studio pagination shares the same safe read mechanism", () => {
       expect(read.filters).toEqual([["is:deleted_at", null], ["eq:visibility_scope", "public"], ["eq:calendar_id", "fixture-calendar"]]);
     }
   });
-  it("does not let developer pagination expose owner_private rows", async () => {
+  it("does not let studio pagination expose owner_private rows", async () => {
     state.studioEvents = Array.from({ length: 1001 }, (_, index) => ({ ...event(index), visibility_scope: index === 1000 ? "owner_private" : "public" }));
     const { getStudioSchedule } = await import("@/lib/schedules/studio-loader");
-    const result = await getStudioSchedule("vic", { actor: { role: "developer", isAuthenticated: true, email: null } });
+    const result = await getStudioSchedule("vic");
     expect(result.events).toHaveLength(1000); expect(result.events.every(row => row.visibilityScope === "public")).toBe(true);
   });
   it("fails the studio read when a later page fails", async () => {

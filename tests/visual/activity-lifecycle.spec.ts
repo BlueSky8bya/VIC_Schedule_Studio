@@ -52,7 +52,7 @@ test.beforeAll(async () => {
     }
     if (url.pathname === "/lifecycle-destination") { res.writeHead(200, { "content-type": "text/html" }).end("<!doctype html><title>Local lifecycle destination</title><p>Local destination</p>"); return; }
     const fixture = ["/visual-fixture/poster", "/visual-fixture/studio"].includes(url.pathname);
-    const asset = ["/_next/static/", "/ambient/", "/companion/", "/premiere/", "/celebrate/"].some(prefix => url.pathname.startsWith(prefix));
+    const asset = ["/_next/static/", "/ambient/", "/companion/", "/premiere/"].some(prefix => url.pathname.startsWith(prefix));
     if (!fixture && !asset && url.pathname !== "/favicon.ico") {
       capture?.blocked.push(`${req.method} ${url.pathname}`); res.writeHead(404).end("fixture GET allowlist"); return;
     }

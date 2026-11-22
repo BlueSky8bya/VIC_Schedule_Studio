@@ -10,20 +10,9 @@ import { getCurrentKstYearMonth } from "@/lib/calendar/month";
 import { sampleStudioSchedule } from "@/lib/schedules/sample-data";
 import { getPublicSchedule } from "@/lib/schedules/public-loader";
 import { createSupabaseServerClient } from "@/lib/auth/server";
-import { createSupabaseAdminClient } from "@/lib/auth/admin";
-import { resolveCurrentActor } from "@/lib/auth/actor";
 import { readScheduleEventPages } from "@/lib/schedules/read-event-pages";
 
-// 같은 요청에서 page가 이미 구한 actor를 주입하면 loader가 중복 조회하지 않는다.
-// (없으면 기존대로 직접 조회 — 호출부 호환 유지.)
-type StudioScheduleContext = {
-  actor?: Awaited<ReturnType<typeof resolveCurrentActor>>;
-};
-
-export async function getStudioSchedule(
-  calendarSlug: string,
-  context?: StudioScheduleContext
-): Promise<StudioSchedule> {
+export async function getStudioSchedule(calendarSlug: string): Promise<StudioSchedule> {
   const supabase = await createSupabaseServerClient();
 
   // Supabase 미설정이면 샘플로 폴백 (개발/테스트 보호)
@@ -41,14 +30,13 @@ export async function getStudioSchedule(
   // calendar 행은 slug로만 조회 — preview/actor와 서로 의존이 없어 한 배치로 병렬 처리한다.
   // (예전엔 calendar를 먼저 단독 await 해서 한 라운드트립을 더 기다렸다 → TTFB 손해. calendar.id가
   //  필요한 건 그 아래 tags/palette/events 배치뿐이라 여기서 함께 병렬로 받아도 안전하다.)
-  const [calendarRes, viewerModePreview, actor] = await Promise.all([
+  const [calendarRes, viewerModePreview] = await Promise.all([
     supabase
       .from("calendars")
       .select("id, slug, display_name, title, public_memo")
       .eq("slug", calendarSlug)
       .maybeSingle(),
-    getPublicSchedule(calendarSlug),
-    context?.actor ?? resolveCurrentActor(calendarSlug)
+    getPublicSchedule(calendarSlug)
   ]);
   if (calendarRes.error) throw new Error("Studio schedule unavailable");
   const calendar = calendarRes.data;
@@ -74,8 +62,7 @@ export async function getStudioSchedule(
 
   // 일정은 모두 공개 범위다(비공개 레이어 철수, 0159). 그 밖의 행은 RLS와 아래 필터가 함께 막는다.
   // (P2-PROTO-1: support_campaigns 쿼리 제거 — UI 소비자 0의 죽은 payload.)
-  // 생일 뽑기 미리보기도 calendar.id·역할만 있으면 되므로 같은 배치에 싣는다 — 예전엔 맨 끝에 따로 await해 DB 왕복이 한 번 더 있었다.
-  const [tagsRes, paletteRes, eventsRes, birthdayGiftPreview] = await Promise.all([
+  const [tagsRes, paletteRes, eventsRes] = await Promise.all([
     supabase
       .from("broadcast_tags")
       .select("id, tag_key, display_name, color_key, bg_hex, dark_palette:dark_palette_v3, sort_order, is_default, is_active, parent_id, kind, v3_only")
@@ -97,8 +84,7 @@ export async function getStudioSchedule(
       .order("date_key")
       .order("created_at")
       .order("id")
-      .range(from, to)),
-    readBirthdayGiftPreview(actor.role, calendar.id as string)
+      .range(from, to))
   ]);
   if (tagsRes.error || paletteRes.error || !Array.isArray(tagsRes.data) || !Array.isArray(paletteRes.data)) {
     throw new Error("Studio schedule unavailable");
@@ -115,7 +101,6 @@ export async function getStudioSchedule(
       publicMemo: calendar.public_memo ?? "",
       posterTheme: viewerModePreview.calendar.posterTheme
     },
-    birthdayGiftPreview,
     tags: (tagsRes.data ?? []).map(mapTag),
     palette: (paletteRes.data ?? []).map(mapPalette),
     // 쿼리 필터와 별개의 2차 방어 — 공개 범위가 아닌 옛 행은 응답에 싣지 않는다.
@@ -232,18 +217,3 @@ function mapPalette(row: {
   };
 }
 
-
-// 생일 선물 미리보기 스위치(0141) — **service_role로 따로** 읽는다. calendars는 열 단위 SELECT 권한이라 로그인 사용자 클라이언트로
-// 새 열을 고르면 질의 전체가 permission denied로 죽고, 위 calendar가 null이 되어 편집실이 태그·일정 없이 떴다
-// (2026-10-06 사고: 태그 필터·검색 전멸). 쓰는 곳이 개발자뿐이라 개발자일 때만 읽고, 실패하면 꺼짐으로 둔다.
-async function readBirthdayGiftPreview(role: string, calendarId: string): Promise<boolean> {
-  if (role !== "developer") return false;
-  try {
-    const admin = createSupabaseAdminClient();
-    if (!admin) return false;
-    const { data } = await admin.from("calendars").select("birthday_gift_preview").eq("id", calendarId).maybeSingle();
-    return Boolean((data as { birthday_gift_preview?: boolean | null } | null)?.birthday_gift_preview);
-  } catch {
-    return false;
-  }
-}

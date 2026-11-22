@@ -25,7 +25,7 @@ export default async function StudioPage({
   // 전체(약 1MB)를 다 만들어 흘려보냈다(2026-11-14 실측: 비로그인 /studio 16초). 페이지에서도 먼저 끊는다.
   if (actor.role === "viewer") redirect("/");
   const schedule = await timed("page:/studio studioSchedule", () =>
-    getStudioSchedule("vic", { actor })
+    getStudioSchedule("vic")
   );
   const mem = parseViewCookie((await cookies()).get(VIEW_COOKIE)?.value);
   const narrow = isMobileUserAgent((await headers()).get("user-agent") ?? "");
