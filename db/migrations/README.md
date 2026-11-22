@@ -12,7 +12,7 @@
 
 ## 목록 (번호 → 목적)
 
-**작성 2026-11-23, 아직 적용 안 됨**: [0173_site_health_alerts.sql](0173_site_health_alerts.sql) — 고장 알림 메일의 DB 쪽 준비물: `site_health_snapshot()`(DB 크기·마지막 방송 감지/수집 시각·예약 작업 실패 수를 한 번에 읽는 함수, 서비스 롤만), `site_alert_state`(알림 종류별 마지막 발송 시각), pg_cron `vic-health-check`(6시간마다 `/api/cron/health`). 추가만 하고 지우는 것은 없다. 적용 전까지 앱의 고장 점검은 조용히 건너뛴다(메일 없음). 적용: `node scripts/apply-db.mjs db/migrations/0173_site_health_alerts.sql`. 설명: [무인 운영](../../docs/ops/UNATTENDED_OPERATION.md).
+**Applied 2026-11-23 KST**(개발자가 직접 실행, 시험 메일 발송 확인): [0173_site_health_alerts.sql](0173_site_health_alerts.sql) — 고장 알림 메일의 DB 쪽 준비물: `site_health_snapshot()`(DB 크기·마지막 방송 감지/수집 시각·예약 작업 실패 수를 한 번에 읽는 함수, 서비스 롤만), `site_alert_state`(알림 종류별 마지막 발송 시각), pg_cron `vic-health-check`(6시간마다 `/api/cron/health`). 추가만 하고 지우는 것은 없다. 설명: [무인 운영](../../docs/ops/UNATTENDED_OPERATION.md).
 
 **Applied 2026-11-17 KST**(소유자 승인, 되돌릴 수 없는 삭제): [0172_drop_visit_tracking_tables.sql](0172_drop_visit_tracking_tables.sql) — 방문 기록 철수 뒤 비어 있던 표 `visit_session`·`activity_daily_count`와 그 표만 쓰던 함수 셋(`get_known_account_hashes`·`bump_activity_counts`·`developer_live_presence_counts`)을 삭제. 매일 정리 `vic-insider-stats-retention`에서 visit_session 줄 제거, `purge_stats_batch` 허용 표에서 visit_session 제거(가드·권한 그대로). 적용 전 0행·의존 없음 확인, 운영 롤백 시험(2회 실행) 통과. 0170은 비어 있는 번호.
 
