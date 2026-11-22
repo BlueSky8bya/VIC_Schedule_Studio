@@ -33,3 +33,23 @@ export async function fetchAllRows<T>(
   }
   return out;
 }
+
+/**
+ * 끝까지 받되 **한 페이지라도 실패하면 전체를 실패로** 돌려준다({ data: null, error }).
+ * 캐시에 담기는 공개 묶음용 — 부분 결과가 캐시에 굳으면 뒤쪽 행(오래된 다시보기·하트 수)이
+ * 조용히 사라진다. 호출부는 매 페이지 같은 조건 + **안정된 정렬**(order)을 줘야 한다.
+ * 한 번의 조회 결과와 같은 모양이라 `Promise.all` 묶음에 그대로 넣을 수 있다.
+ */
+export async function readAllRowsStrict<T>(
+  make: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
+  hardCap: number = DEFAULT_HARD_CAP
+): Promise<{ data: T[] | null; error: unknown }> {
+  const out: T[] = [];
+  for (let from = 0; from < hardCap; from += PAGE_SIZE) {
+    const { data, error } = await make(from, from + PAGE_SIZE - 1);
+    if (error || !Array.isArray(data)) return { data: null, error: error ?? new Error("rows unavailable") };
+    out.push(...data);
+    if (data.length < PAGE_SIZE) break;
+  }
+  return { data: out, error: null };
+}

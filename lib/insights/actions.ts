@@ -7,6 +7,7 @@ import { getOwnerEmails, normalizeEmail } from "@/lib/auth/config";
 import { canEditSchedule } from "@/lib/permissions/roles";
 import { isInsightsSystem } from "@/lib/insights/system-context";
 import { kstDayKey } from "@/lib/calendar/month";
+import { readAllRowsStrict } from "@/lib/db/paginate";
 
 // 개발자 전용 "월별 인사이트" — 보고 있는 달(year/month) 기준 집계.
 // 모든 값은 합계/개수만 — 비공개·owner_private 일정의 내용은 절대 내보내지 않는다.
@@ -193,7 +194,7 @@ export async function getInsightsAction(year: number, month: number): Promise<In
         .order("date_key", { ascending: true })
         .limit(40),
       supabase.from("color_palette").select("key, bg_color, border_color").eq("calendar_id", calendarId),
-      supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId })
+      readAllRowsStrict<{ event_id: string; count: number }>((from, to) => supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }).order("event_id").range(from, to))
     ]);
 
   // 휴뱅(방송 안 함) 일정 id 집합 — 콘텐츠/방송 집계에서 제외.
@@ -564,7 +565,7 @@ export async function getTrendAction(year: number, month: number): Promise<Trend
       .gte("events.date_key", fromStart)
       .lt("events.date_key", nextMonthStart),
     supabase.from("color_palette").select("key, bg_color").eq("calendar_id", calendarId),
-    supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }),
+    readAllRowsStrict<{ event_id: string; count: number }>((from, to) => supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }).order("event_id").range(from, to)),
     supabase
       .from("broadcast_session")
       .select("start_day, started_at, last_live_at, ended_at, bno")
@@ -895,7 +896,7 @@ export async function getMemberInsightsAction(
       .order("date_key", { ascending: true })
       .limit(40),
     supabase.from("color_palette").select("key, bg_color, border_color").eq("calendar_id", calendarId),
-    supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }),
+    readAllRowsStrict<{ event_id: string; count: number }>((from, to) => supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }).order("event_id").range(from, to)),
     // 방송시간 6개월 — 관리자·매니저·작업자도 트렌드에서 볼 수 있게(공개 API엔 여전히 미노출).
     supabase
       .from("broadcast_session")

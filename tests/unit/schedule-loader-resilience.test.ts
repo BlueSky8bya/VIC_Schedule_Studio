@@ -68,8 +68,21 @@ function client() {
       query.then = (resolve: (value: unknown) => unknown, reject?: (error: unknown) => unknown) => read().then(resolve, reject);
       return query;
     },
-    rpc: async (name: string) => state.failure === name ? { data: null, error: { message: "PRIVATE_DATABASE_ERROR_CANARY" } }
-      : { data: Object.hasOwn(state.rpcData, name) ? state.rpcData[name] : [], error: null },
+    // 집계 RPC도 표 조회처럼 order/range를 붙여 나눠 받을 수 있다(하트·기대돼요 집계의 1000행 페이지).
+    rpc(name: string) {
+      let range: [number, number] | undefined;
+      const read = async () => {
+        if (state.failure === name) return { data: null, error: { message: "PRIVATE_DATABASE_ERROR_CANARY" } };
+        const data = Object.hasOwn(state.rpcData, name) ? state.rpcData[name] : [];
+        return { data: range && Array.isArray(data) ? data.slice(range[0], range[1] + 1) : data, error: null };
+      };
+      const call = {
+        order: () => call,
+        range: (from: number, to: number) => { range = [from, to]; return call; },
+        then: (resolve: (value: unknown) => unknown, reject?: (error: unknown) => unknown) => read().then(resolve, reject)
+      };
+      return call;
+    },
   };
 }
 

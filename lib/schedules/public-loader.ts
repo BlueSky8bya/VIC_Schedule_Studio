@@ -26,6 +26,7 @@ import type { TeaserRevealResult } from "@/lib/schedules/teaser-reconcile";
 import { emptyTeaserState, type TeaserStateSnapshot } from "@/lib/schedules/teaser-state";
 import { singleFlightCache } from "@/lib/schedules/teaser-state-cache";
 import { readScheduleEventPages } from "@/lib/schedules/read-event-pages";
+import { readAllRowsStrict } from "@/lib/db/paginate";
 
 const coalesceTeaserState = singleFlightCache<TeaserStateSnapshot>();
 const coalesceTeaserOrigin = singleFlightCache<TeaserStateSnapshot>();
@@ -189,7 +190,7 @@ const loadEventHeartRows = unstable_cache(
     if (!supabase) return [];
     const calendarId = await loadPublicCalendarId(calendarSlug);
     if (!calendarId) return [];
-    const { data, error } = await supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId });
+    const { data, error } = await readAllRowsStrict<{ event_id: string; count: number }>((from, to) => supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }).order("event_id").range(from, to));
     if (error || !data) throw new Error("heart counts unavailable");
     return data as { event_id: string; count: number }[];
   },
@@ -339,25 +340,27 @@ const loadPublicScheduleData = unstable_cache(
           .order("id")
           .range(from, to)),
         // A: 일정별 관심 집계(공개 안전 — user_id 비노출). 함수가 공개 일정만 집계한다.
-        supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }),
+        readAllRowsStrict<{ event_id: string; count: number }>((from, to) => supabase.rpc("get_event_heart_counts", { p_calendar_id: calendarId }).order("event_id").range(from, to)),
         // 최초공개 '기대돼요' 집계(0060) — 토큰 비노출, 공개 후에도 남아 배지가 된다.
-        supabase.rpc("get_teaser_hope_counts", { p_calendar_id: calendarId }),
-        // 다시보기 아카이브(0068) — 공개 메타만(번호·날짜·길이). 최신순 1000행 한도(PostgREST
-        // 기본 cap과 같은 값이라 잘려도 '가장 오래된 다시보기'부터 빠진다 — 안전한 방향).
+        readAllRowsStrict<{ event_id: string; count: number }>((from, to) => supabase.rpc("get_teaser_hope_counts", { p_calendar_id: calendarId }).order("event_id").range(from, to)),
+        // 다시보기 아카이브(0068) — 공개 메타만(번호·날짜·길이). 1000행씩 끝까지 받는다(2026-11-22):
+        // 예전 1000행 한도는 다시보기가 1000편을 넘는 해(2028년쯤)부터 오래된 편이 조용히 사라졌다.
         // auth_no=101(전체 공개) + 107(구독자 전용 — 2026-10-23 소유자, 0154). upload=true는 업로드 영상(0156, 숲 '구독'),
         // 107 다시보기는 숲 '구독+'. 재생 권한은 숲 플레이어가 판단한다. 그 밖(미상 0·102 등)은 제외.
-        supabase
+        readAllRowsStrict((from, to) => supabase
           .from("vod_archive")
           .select("title_no, broadcast_day, title, duration_ms, thumb, guest, host_nick, host_id, reg_date, auth_no, upload")
           .in("auth_no", [101, 107])
           .order("broadcast_day", { ascending: false })
-          .limit(1000),
+          .order("title_no", { ascending: false })
+          .range(from, to)),
         // 팬 타임라인 요약(0071) — 개수·작성자 닉만(본문은 챕터 펼칠 때 별도 라우트).
-        supabase
+        readAllRowsStrict((from, to) => supabase
           .from("vod_timeline")
           .select("title_no, entry_count, author_nick")
           .gt("entry_count", 0)
-          .limit(1000)
+          .order("title_no")
+          .range(from, to))
       ])
     );
 
