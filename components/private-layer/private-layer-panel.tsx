@@ -117,7 +117,7 @@ export function PrivateLayerPanel({
           onClick={changePasscode}
           type="button"
         >
-          {forgot ? "새 비밀번호로 저장" : "변경 저장"}
+          {forgot ? "새로 저장" : "변경 저장"}
         </button>
       </div>
     </div>
