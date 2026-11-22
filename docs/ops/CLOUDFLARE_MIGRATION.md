@@ -6,7 +6,7 @@
 
 - 어댑터: `@opennextjs/cloudflare` (`open-next.config.ts`), 진입점 `cloudflare/worker.ts`(Next 핸들러 + Cron Trigger), 설정 `wrangler.jsonc`.
 - 캐시: R2 `vic-schedule-studio-cache`(incremental), D1 `vic-schedule-studio-tags`(revalidatePath/Tag, 즉시 일관), Durable Object 큐.
-- 예약: Workers Cron `0 18 * * *` → `/api/cron/broadcast-poll`(옛 vercel.json과 같음). GitHub Actions 5분 방송 확인과 pg_cron 채팅 큐는 그대로, 주소만 새 도메인(`0158`).
+- 예약(2026-11-23 현재, 정본은 `wrangler.jsonc`·`cloudflare/worker.ts`): Workers Cron 매분 → `/api/cron/broadcast-poll`, 매시 7분 → `/api/cron/insights-archive`(보관·제보 삭제·고장 점검). GitHub Actions에는 예약이 없다(수동 실행만). pg_cron 채팅 큐는 새 도메인(`0158`, 적용 확인됨). 개발자 없이 굴리는 법: [UNATTENDED_OPERATION](UNATTENDED_OPERATION.md).
 - 비용 가늠: Vercel 30일 CPU 4h4m ≈ 1,460만 CPU-ms < Workers Paid 포함분 3,000만. 묶음 gzip 2.2MB.
 
 ## 주의
