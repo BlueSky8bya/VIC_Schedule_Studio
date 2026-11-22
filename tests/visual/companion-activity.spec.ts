@@ -50,6 +50,7 @@ const fonts = new Set([...readFileSync(resolve("app/fonts.css"), "utf8").matchAl
 // presence, visit or server action can reach the application/production DB.
 // The loopback alias follows whichever visual config runs this file (its baseURL port), unless the env pins one.
 let activityBase = process.env.VIC_ACTIVITY_BASE_URL ?? "http://127.0.0.2:3100";
+// eslint-disable-next-line react-hooks/rules-of-hooks -- Playwright fixture callback, not a React hook
 test.use({ baseURL: async ({ baseURL }, use) => { if (!process.env.VIC_ACTIVITY_BASE_URL && baseURL) activityBase = baseURL.replace("//127.0.0.1", "//127.0.0.2"); await use(activityBase); }, viewport: { width: 1920, height: 1100 }, isMobile: false, hasTouch: false, serviceWorkers: "block" });
 test.beforeEach(async ({ page }) => {
   mkdirSync(".scratch-pw", { recursive: true });

@@ -138,6 +138,7 @@ function completeTidy(trace: Sample[]) {
     for (const [id, route] of routes) if (!sample.foods.some(food => food.id === id)) return { id, carried: route.carried, last: route.last, release: route.release ?? sample, end: "binned" as const, landed: sample };
   }
 }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- kept helper, currently unused
 function completeToss(trace: Sample[]) {
   for (let index = 1; index < trace.length; index++) for (const before of trace[index - 1].foods.filter(food => !food.falling && !food.carried && !food.hidden)) {
     if (!trace[index].foods.some(food => food.id === before.id && food.falling)) continue;

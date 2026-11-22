@@ -189,6 +189,7 @@ async function assertDots(book: Locator, unread: number[], size: number) {
   return styles;
 }
 
+// eslint-disable-next-line react-hooks/rules-of-hooks -- Playwright fixture callback, not a React hook
 test.use({ baseURL: async ({ baseURL }, use) => { if (!process.env.VIC_ACTIVITY_BASE_URL && baseURL) activityBase = baseURL.replace("//127.0.0.1", "//127.0.0.2"); await use(activityBase); }, serviceWorkers: "block", isMobile: false, hasTouch: false });
 test.afterEach(async ({ page }, info) => {
   const receipt = receipts.get(page); if (!receipt) return;

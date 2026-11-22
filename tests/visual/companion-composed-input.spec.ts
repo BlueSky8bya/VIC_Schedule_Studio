@@ -28,6 +28,7 @@ const at = Date.parse("2026-06-10T03:00:00Z");
 const PUT_DOWN_MS = COMPANION_THROW_LIMITS.staleInputMs + 40;
 
 // The loopback alias follows whichever visual config runs this file (its baseURL port); it used to be pinned to :3100.
+// eslint-disable-next-line react-hooks/rules-of-hooks -- Playwright fixture callback, not a React hook
 test.use({ baseURL: async ({ baseURL }, use) => { await use((baseURL ?? "http://127.0.0.1:3100").replace("//127.0.0.1", "//127.0.0.2")); }, viewport: { width: 1920, height: 1100 }, serviceWorkers: "block", isMobile: false, hasTouch: false });
 test.beforeEach(async ({ page }) => {
   mkdirSync(".scratch-pw", { recursive: true });
