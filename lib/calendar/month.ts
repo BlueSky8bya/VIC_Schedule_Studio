@@ -656,6 +656,8 @@ export function wrapFadeStyle(
 
 // 업 도움(support) 일정에 레인(끈 세로 위치)을 배정한다.
 // 시작일이 이른 것이 위(낮은 lane), 겹치는 것은 아래로. (구간 패킹)
+// 같은 날 시작하면 긴 띠가 위 — 짧은 띠가 위에 있으면 긴 띠만 지나는 뒤 칸들이
+// 빈 윗줄까지 비워 칸 높이를 낭비한다(supportDepthByCell은 최고 레인까지 비운다).
 export function assignSupportLanes<T extends PublicScheduleEvent | StudioScheduleEvent>(
   events: T[]
 ): { lanes: Map<string, number>; count: number } {
@@ -663,7 +665,9 @@ export function assignSupportLanes<T extends PublicScheduleEvent | StudioSchedul
     .filter((e) => e.isSupport)
     .sort(
       (a, b) =>
-        getEventDateKey(a).localeCompare(getEventDateKey(b)) || a.id.localeCompare(b.id)
+        getEventDateKey(a).localeCompare(getEventDateKey(b)) ||
+        eventEndKey(b).localeCompare(eventEndKey(a)) ||
+        a.id.localeCompare(b.id)
     );
   const laneEnds: string[] = []; // laneEnds[i] = lane i의 마지막 종료일
   const lanes = new Map<string, number>();
