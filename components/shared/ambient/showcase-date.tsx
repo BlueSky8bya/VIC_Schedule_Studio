@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { getDayMark } from "@/lib/calendar/holidays";
+import { getDayMark, hasFullHolidayData } from "@/lib/calendar/holidays";
 
 /** Civil-date arithmetic only: UTC avoids applying the host machine's timezone. */
 export function shiftShowcaseDay(value: string, days: number): string {
@@ -69,6 +69,6 @@ export function ShowcaseDate({ value, onChange, onClose }: { value: string; onCh
         return <button key={date} type="button" aria-label={`${date}${mark?.isHoliday?` ${mark.name}`:''}`} data-day-tone={tone} aria-pressed={date===value} onClick={()=>onChange(date)}>{i+1}</button>;
       })}
     </div>}
-    {(year<2023||year>2027)?<p className="sc-date-coverage">이 연도는 공휴일 정보가 일부만 제공됩니다.</p>:null}
+    {!hasFullHolidayData(year)?<p className="sc-date-coverage">이 연도는 공휴일 정보가 일부만 제공됩니다.</p>:null}
   </section>;
 }

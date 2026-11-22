@@ -1,8 +1,11 @@
 // 한국 공휴일/대체공휴일/절기/기념일 표기 데이터.
-// 음력 기반 공휴일(설날·추석·부처님오신날)과 대체공휴일, 24절기는 연도마다 달라
-// 연도별로 직접 넣는다. 빨간날(공휴일)은 2023~2027년까지 채워져 있으며,
-// 선거일·임시공휴일도 포함한다. 2028년 이후는 추가 필요.
-// 24절기 표기는 아직 2026년만 채워져 있다(빨간날 아님). (정확도 검증 권장)
+// 2027년까지의 빨간날은 손으로 넣은 표(HOLIDAYS_YEARLY, 임시공휴일·선거일 포함),
+// 2028년부터는 사람이 해마다 채우지 않아도 되게 규칙으로 계산한다(2026-11-22):
+//  - 음력 명절(설날·부처님오신날·추석)과 24절기(2032~)는 calendar-tables.generated.ts(2100년까지),
+//  - 대체공휴일은 「관공서의 공휴일에 관한 규정」 규칙, 국회의원선거·지방선거는 공직선거법 날짜 규칙,
+//  - 삼복·정월대보름은 절기·설날에서 계산.
+// 정부가 그 해에만 정하는 임시공휴일과 규칙이 바뀐 뒤의 날짜는 계산으로 알 수 없다(그때만 표에 더한다).
+import { LUNAR_HOLIDAY_TABLE, SOLAR_TERM_NAMES, SOLAR_TERM_TABLE } from "./calendar-tables.generated";
 
 export type DayMark = {
   name: string; // 헤더(날짜숫자 옆) 표기 — 공휴일/절기/복날/기념일
@@ -114,18 +117,8 @@ const MARKS_FIXED: Record<string, string> = {
 // 연도별 전체 날짜로 넣는다(24절기 MARKS_YEARLY와 같은 방식). 삼계탕 먹는 복날, 시청자와 공유.
 // 2026: 월복(중복7/25~말복8/14 20일)이라 삼복더위가 길다. (초복 7/15는 그해 월드컵 4강과 겹쳐
 // 우선순위상 4강이 표시된다 — 삼복은 다른 해엔 그대로 뜬다.)
-const SAMBOK_YEARLY: Record<string, string> = {
-  "2026-07-15": "🍗 초복",
-  "2026-07-25": "🍗 중복",
-  "2026-08-14": "🍗 말복"
-};
-
-// 정월대보름(음력 1/15) — 표기만. 오곡밥·부럼. 음력이라 연도별(설날+14일).
-const DAEBOREUM_YEARLY: Record<string, string> = {
-  "2026-03-03": "🌕 정월대보름",
-  "2027-02-20": "🌕 정월대보름",
-  "2028-02-09": "🌕 정월대보름"
-};
+// → 해마다 넣지 않고 sambokMark()가 절기에서 계산한다(2026년 값 7/15·7/25·8/14와 일치 확인).
+// 정월대보름(음력 1/15, 오곡밥·부럼)도 daeboreumMark()가 설날+14일로 계산한다.
 
 // 스트리머 데뷔일(이 날부터 D+ 기록)
 const DEBUT_ISO = "2025-10-01";
@@ -411,6 +404,152 @@ const MARKS_YEARLY: Record<string, string> = {
   "2031-12-22": "동지"
 };
 
+// ── 2028년부터: 규칙 계산 ─────────────────────────────────────────────────
+const COMPUTED_FROM_YEAR = 2028;
+const DAY_MS = 86400000;
+const pad2 = (n: number) => String(n).padStart(2, "0");
+const utcOf = (isoDate: string) => {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  return Date.UTC(y, m - 1, d);
+};
+const isoOf = (ms: number) => {
+  const d = new Date(ms);
+  return `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
+};
+const dowOf = (ms: number) => new Date(ms).getUTCDay();
+
+// 그 해 설날·부처님오신날·추석(없으면 null). 2027년까지는 손 표에서, 그 뒤는 생성 표에서.
+function lunarDays(year: number): { seollal: string; buddha: string; chuseok: string } | null {
+  const row = LUNAR_HOLIDAY_TABLE[year];
+  if (row) {
+    const at = (i: number) => `${year}-${row.slice(i, i + 2)}-${row.slice(i + 2, i + 4)}`;
+    return { seollal: at(0), buddha: at(4), chuseok: at(8) };
+  }
+  const find = (name: string) => Object.keys(HOLIDAYS_YEARLY).find((k) => k.startsWith(`${year}-`) && HOLIDAYS_YEARLY[k] === name);
+  const seollal = find("설날");
+  const buddha = find("부처님오신날");
+  const chuseok = find("추석");
+  return seollal && buddha && chuseok ? { seollal, buddha, chuseok } : null;
+}
+
+// 그 해 절기 이름 → 날짜. 2031년까지는 손 표(MARKS_YEARLY), 그 뒤는 생성 표.
+const termCache = new Map<number, Map<string, string>>();
+function solarTerms(year: number): Map<string, string> {
+  const hit = termCache.get(year);
+  if (hit) return hit;
+  const out = new Map<string, string>();
+  const row = SOLAR_TERM_TABLE[year];
+  if (row) {
+    SOLAR_TERM_NAMES.forEach((name, i) => out.set(name, `${year}-${pad2(Math.floor(i / 2) + 1)}-${row.slice(i * 2, i * 2 + 2)}`));
+  } else {
+    for (const [date, name] of Object.entries(MARKS_YEARLY)) if (date.startsWith(`${year}-`)) out.set(name, date);
+  }
+  termCache.set(year, out);
+  return out;
+}
+
+function solarTermMark(isoDate: string): string | null {
+  if (MARKS_YEARLY[isoDate]) return MARKS_YEARLY[isoDate];
+  const year = Number(isoDate.slice(0, 4));
+  if (!SOLAR_TERM_TABLE[year]) return null;
+  for (const [name, date] of solarTerms(year)) if (date === isoDate) return name;
+  return null;
+}
+
+// 삼복: 초복 = 하지부터 셋째 경일(庚日), 중복 = 넷째 경일, 말복 = 입추부터 첫 경일. 경일은 10일마다 온다.
+const GYEONG_DAY_REF = Date.UTC(2026, 6, 15); // 2026-07-15 = 경일(그해 초복)
+function gyeongOnOrAfter(ms: number): number {
+  const off = (((ms - GYEONG_DAY_REF) / DAY_MS) % 10 + 10) % 10;
+  return off === 0 ? ms : ms + (10 - off) * DAY_MS;
+}
+function sambokMark(isoDate: string): string | null {
+  const md = isoDate.slice(5);
+  if (md < "07-01" || md > "08-31") return null;
+  const terms = solarTerms(Number(isoDate.slice(0, 4)));
+  const haji = terms.get("하지");
+  const ipchu = terms.get("입추");
+  if (!haji || !ipchu) return null;
+  const chobok = gyeongOnOrAfter(utcOf(haji)) + 20 * DAY_MS;
+  const ms = utcOf(isoDate);
+  if (ms === chobok) return "🍗 초복";
+  if (ms === chobok + 10 * DAY_MS) return "🍗 중복";
+  if (ms === gyeongOnOrAfter(utcOf(ipchu))) return "🍗 말복";
+  return null;
+}
+
+function daeboreumMark(isoDate: string): string | null {
+  const md = isoDate.slice(5);
+  if (md < "02-01" || md > "03-10") return null;
+  const lunar = lunarDays(Number(isoDate.slice(0, 4)));
+  return lunar && utcOf(lunar.seollal) + 14 * DAY_MS === utcOf(isoDate) ? "🌕 정월대보름" : null;
+}
+
+// 대체공휴일이 없는 양력 공휴일(규정 제3조): 신정·현충일.
+const NO_SUBSTITUTE = new Set(["01-01", "06-06"]);
+
+// 선거일(공직선거법 제34조): 기준일 이후 첫 수요일. 그날이나 앞뒤 날이 공휴일이면 그다음 주 수요일.
+function electionDay(year: number, month: number, day: number, isHoliday: (ms: number) => boolean): string {
+  let ms = Date.UTC(year, month - 1, day);
+  while (dowOf(ms) !== 3) ms += DAY_MS;
+  if (isHoliday(ms) || isHoliday(ms - DAY_MS) || isHoliday(ms + DAY_MS)) ms += 7 * DAY_MS;
+  return isoOf(ms);
+}
+
+const computedCache = new Map<number, Map<string, string>>();
+// 2028년 이후 그 해의 빨간날 전부(양력 고정 포함) — 날짜 → 이름.
+function computedHolidays(year: number): Map<string, string> {
+  const hit = computedCache.get(year);
+  if (hit) return hit;
+  const names = new Map<string, string[]>(); // 날짜 → 그날 겹친 공휴일 이름들
+  const add = (date: string, name: string) => names.set(date, [...(names.get(date) ?? []), name]);
+  const blockEnd = new Map<string, number>(); // 설·추석 연휴 날짜 → 연휴 마지막 날
+  const lunar = lunarDays(year);
+  if (lunar) {
+    for (const [center, label] of [[lunar.seollal, "설날"], [lunar.chuseok, "추석"]] as const) {
+      const c = utcOf(center);
+      for (const off of [-1, 0, 1]) {
+        const date = isoOf(c + off * DAY_MS);
+        add(date, off === 0 ? label : `${label} 연휴`);
+        blockEnd.set(date, c + DAY_MS);
+      }
+    }
+    add(lunar.buddha, "부처님오신날");
+  }
+  for (const [md, name] of Object.entries(HOLIDAYS_FIXED)) add(`${year}-${md}`, name);
+  for (const [md, info] of Object.entries(HOLIDAYS_FIXED_FROM)) if (year >= info.fromYear) add(`${year}-${md}`, info.name);
+
+  const isBase = (ms: number) => names.has(isoOf(ms));
+  const out = new Map<string, string>();
+  for (const [date, list] of names) out.set(date, list[0]);
+  // 대체공휴일: 설·추석 연휴는 일요일·다른 공휴일과 겹칠 때, 그 밖(신정·현충일 제외)은 토·일·다른 공휴일과 겹칠 때
+  // 그 공휴일(연휴) 다음의 첫 번째 비공휴일. 같은 날 겹친 것은 하루만 준다.
+  const taken = (ms: number) => dowOf(ms) === 0 || dowOf(ms) === 6 || out.has(isoOf(ms));
+  for (const date of [...names.keys()].sort()) {
+    const ms = utcOf(date);
+    const dow = dowOf(ms);
+    const overlap = (names.get(date)?.length ?? 0) > 1;
+    const end = blockEnd.get(date);
+    const trigger = end !== undefined
+      ? dow === 0 || overlap
+      : !NO_SUBSTITUTE.has(date.slice(5)) && (dow === 0 || dow === 6 || overlap);
+    if (!trigger) continue;
+    let sub = (end ?? ms) + DAY_MS;
+    while (taken(sub)) sub += DAY_MS;
+    out.set(isoOf(sub), "대체공휴일");
+  }
+  // 선거일 — 임기가 4년으로 고정된 국회의원선거(임기만료 5/29의 50일 전 = 4/9)·지방선거(6/30의 30일 전 = 5/31).
+  // 대통령선거는 임기 중 변동(궐위)이 잦아 규칙으로 두지 않는다.
+  if (year % 4 === 0) out.set(electionDay(year, 4, 9, isBase), "국회의원선거");
+  if (year % 4 === 2) out.set(electionDay(year, 5, 31, isBase), "지방선거");
+  computedCache.set(year, out);
+  return out;
+}
+
+// 이 연도의 빨간날(음력 명절·대체공휴일)을 알고 있는가 — 모르는 해는 화면이 '일부만 제공'이라고 알린다.
+export function hasFullHolidayData(year: number): boolean {
+  return year >= 2023 && (year < COMPUTED_FROM_YEAR || Boolean(LUNAR_HOLIDAY_TABLE[year]));
+}
+
 // HOLIDAYS_FIXED_FROM 공휴일이 토/일과 겹칠 때의 대체공휴일(다음 월요일)인지 검사.
 // 대체공휴일은 월요일에만 생기므로, 해당 월요일 직전의 토(2일 전)·일(1일 전)이
 // 적용 연도의 고정 공휴일이면 이 날을 대체공휴일로 본다.
@@ -439,8 +578,13 @@ function substituteFixedFromHoliday(isoDate: string): string | null {
 // 칸 본문 칩으로 따로 낸다(아래 getDayMark). 단, 월드컵 '단계표기'(개막/32강/…)는 헤더에 남긴다.
 export function getDayMark(isoDate: string): DayMark | null {
   const md = isoDate.slice(5);
+  const year = Number(isoDate.slice(0, 4));
 
   if (HOLIDAYS_YEARLY[isoDate]) return { name: HOLIDAYS_YEARLY[isoDate], isHoliday: true };
+  if (year >= COMPUTED_FROM_YEAR) {
+    const computed = computedHolidays(year).get(isoDate);
+    if (computed) return { name: computed, isHoliday: true };
+  }
   if (HOLIDAYS_FIXED[md]) return { name: HOLIDAYS_FIXED[md], isHoliday: true };
   const fixedFrom = HOLIDAYS_FIXED_FROM[md];
   if (fixedFrom && Number(isoDate.slice(0, 4)) >= fixedFrom.fromYear) {
@@ -456,9 +600,12 @@ export function getDayMark(isoDate: string): DayMark | null {
   }
   const debut = debutMark(isoDate);
   if (debut) return { name: debut, isHoliday: false };
-  if (DAEBOREUM_YEARLY[isoDate]) return { name: DAEBOREUM_YEARLY[isoDate], isHoliday: false };
-  if (SAMBOK_YEARLY[isoDate]) return { name: SAMBOK_YEARLY[isoDate], isHoliday: false };
-  if (MARKS_YEARLY[isoDate]) return { name: MARKS_YEARLY[isoDate], isHoliday: false };
+  const daeboreum = daeboreumMark(isoDate);
+  if (daeboreum) return { name: daeboreum, isHoliday: false };
+  const sambok = sambokMark(isoDate);
+  if (sambok) return { name: sambok, isHoliday: false };
+  const term = solarTermMark(isoDate);
+  if (term) return { name: term, isHoliday: false };
   if (MARKS_FIXED[md]) return { name: MARKS_FIXED[md], isHoliday: false };
   return null;
 }
