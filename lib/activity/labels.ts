@@ -566,6 +566,8 @@ export const ACT: Record<string, TargetLabel> = {
   "passcode-change-open": { name: "비밀번호 변경 열기", area: "설정", hint: "잠금해제 폼 안의 변경 버튼 — 2026-11-13 철수", retired: true },
   "passcode-change-save": { name: "비밀번호 변경 저장", area: "설정" },
   "passcode-change-cancel": { name: "비밀번호 변경 취소", area: "설정" },
+  "passcode-forgot": { name: "비밀번호를 잊었어요", area: "설정", opts: { forgot: "다시 만들기로", back: "현재 비밀번호 입력으로" } },
+  "passcode-reset-login": { name: "비밀번호 다시 만들기: 구글로 다시 로그인", area: "설정" },
   "sticker-font-weight": { name: "글자 굵기", area: "옛 화면" },
   "support-duration": { name: "업 도움 기간 고르기", area: "편집실" },
   "tag-editor-save": { name: "태그 저장", area: "태그 편집" },

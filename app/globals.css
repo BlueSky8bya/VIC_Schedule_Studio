@@ -1068,6 +1068,38 @@ select {
   line-height: var(--lh-body);
 }
 
+/* 비밀번호 다시 만들기(2026-11-23) — 안내 한 줄, '구글로 다시 로그인' 링크 단추, 조용한 전환 글자 단추. */
+.passcode-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-ui);
+  line-height: var(--lh-body);
+}
+
+.passcode-box > a.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.passcode-forgot {
+  justify-self: start;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  padding: var(--space-1) 0;
+  font-size: var(--text-ui);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.passcode-forgot:hover,
+.passcode-forgot:focus-visible {
+  color: var(--ink);
+}
+
 @media (max-width: 640px) {
 
   .passcode-actions {

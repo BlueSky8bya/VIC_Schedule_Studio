@@ -171,7 +171,7 @@ import { contentColorTagIds, swapContentColorOrder } from "@/lib/tags/swap-conte
 import { ReadonlyEventDetail } from "@/components/studio/readonly-event-detail";
 import { RoleBadge } from "@/components/studio/role-badge";
 import { useStudioWriteQueue } from "@/lib/studio/use-write-queue";
-import { setPasscodeAction } from "@/lib/private-layer/actions";
+import { resetPasscodeAction, setPasscodeAction } from "@/lib/private-layer/actions";
 import { STUDIO_AGENDA_QUERY } from "@/lib/ui/breakpoints";
 import { useCompanionDesktop } from "@/lib/ui/viewer-companion/capability";
 import type { CompanionPositionMemory } from "@/lib/ui/viewer-companion/position-memory";
@@ -434,6 +434,17 @@ export function StudioShell({
   // 비밀번호 변경 팝업은 다른 모달(인사이트 등) '위에' 따로 띄우는 독립 오버레이다 → 인사이트를 닫지 않으니
   // 취소 시 리로드 없이 그 보안 패널이 그대로 남는다.
   const [passcodeModal, setPasscodeModal] = useState<"change" | null>(null);
+  // 비밀번호 다시 만들기(2026-11-23) — 구글 다시 로그인에서 돌아온 직후(/studio?passcode=reset)면 창을 '다시 만들기'로 바로 연다.
+  // 주소의 표시는 한 번 쓰고 지운다(새로고침·뒤로 가기에 다시 열리지 않게). 서버가 역할·방금 로그인 여부를 다시 본다.
+  const [passcodeResetReturn, setPasscodeResetReturn] = useState(false);
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get("passcode") !== "reset") return;
+    url.searchParams.delete("passcode");
+    window.history.replaceState(window.history.state, "", url.pathname + url.search + url.hash);
+    setPasscodeResetReturn(true);
+    setPasscodeModal("change");
+  }, []);
   // (members 모달은 멤버 관리 철수(2026-09-04)로 제거, settings 모달은 같은 날 도구 카드 톱니에서 열린다.)
   const [searchOpen, setSearchOpen] = useState(false);
   const [flashDate, setFlashDate] = useState<string | null>(null);
@@ -1265,8 +1276,13 @@ export function StudioShell({
           <PrivateLayerPanel
             canManage={canEdit}
             isDefaultPasscode={isDefaultPasscode}
-            onDone={() => setPasscodeModal(null)}
+            onDone={() => {
+              setPasscodeModal(null);
+              setPasscodeResetReturn(false);
+            }}
+            resetPasscodeAction={resetPasscodeAction}
             setPasscodeAction={setPasscodeAction}
+            startInReset={passcodeResetReturn}
           />
         </div>
       </div>

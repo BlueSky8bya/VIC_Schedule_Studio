@@ -8,8 +8,10 @@ import { canEditSchedule } from "@/lib/permissions/roles";
 import { hashPasscode, verifyPasscode } from "@/lib/private-layer/passcode";
 import { getCurrentSupabaseUser } from "@/lib/auth/server";
 import { reservePasscodeAttempt } from "@/lib/private-layer/attempt-limit";
+import { signedInRecently } from "@/lib/private-layer/recent-login";
 
-export type PasscodeResult = { ok: true } | { ok: false; error: string };
+// needsLogin: 다시 만들기에서 '방금 다시 로그인한' 증명이 없을 때 — 화면이 구글 다시 로그인 단추를 보여 준다.
+export type PasscodeResult = { ok: true } | { ok: false; error: string; needsLogin?: boolean };
 
 const SLUG = "vic";
 
@@ -19,6 +21,17 @@ export async function setPasscodeAction(
   newPasscode: string,
   currentPasscode = ""
 ): Promise<PasscodeResult> {
+  return changePasscode(newPasscode, currentPasscode, false);
+}
+
+// 비밀번호를 잊었을 때(2026-11-23 소유자) — 현재 비밀번호 대신 **방금 구글로 다시 로그인한 것**을 증명으로 받는다
+// (lib/private-layer/recent-login.ts, 10분). 예전엔 잊으면 DB를 직접 고쳐야만 풀렸다.
+// 역할 검사·시도 제한·버전 CAS는 변경과 똑같이 탄다.
+export async function resetPasscodeAction(newPasscode: string): Promise<PasscodeResult> {
+  return changePasscode(newPasscode, "", true);
+}
+
+async function changePasscode(newPasscode: string, currentPasscode: string, viaRecentLogin: boolean): Promise<PasscodeResult> {
   const actor = await resolveCurrentActor(SLUG);
 
   if (!canEditSchedule(actor.role)) {
@@ -61,8 +74,13 @@ export async function setPasscodeAction(
     ? "시도가 너무 많아요. 10분 뒤 다시 시도해 주세요."
     : "비밀번호 확인을 사용할 수 없어요. 잠시 후 다시 시도해 주세요." };
 
-  // 기존 비밀번호가 있으면 현재 비밀번호 검증
-  if (existing && !verifyPasscode(currentPasscode, existing.passcode_hash)) {
+  if (viaRecentLogin) {
+    // 다시 만들기: 현재 비밀번호를 묻지 않는 대신, 구글 로그인이 방금 다시 끝났어야 한다.
+    if (!signedInRecently(user)) {
+      return { ok: false, needsLogin: true, error: "구글 계정으로 다시 로그인한 뒤 10분 안에 정할 수 있어요." };
+    }
+  } else if (existing && !verifyPasscode(currentPasscode, existing.passcode_hash)) {
+    // 기존 비밀번호가 있으면 현재 비밀번호 검증
     return { ok: false, error: "현재 비밀번호가 올바르지 않습니다." };
   }
 
