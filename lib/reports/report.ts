@@ -4,7 +4,8 @@ import {
   REPORT_MAX_BODY,
   REPORT_MAX_IMAGE_BYTES,
   REPORT_MAX_IMAGES,
-  REPORT_RETENTION_DAYS
+  REPORT_RETENTION_DAYS,
+  REPORT_UNHANDLED_RETENTION_DAYS
 } from "@/lib/reports/topics";
 
 // 사이트 제보 저장·정리(0167). 서버 전용 — service_role로만 쓰고 읽는다. 제보 창은 /api/report로 보낸다.
@@ -110,13 +111,15 @@ export type ReportRow = {
   seen_at: string | null;
 };
 
-/** 제보함 목록 — 캡처는 1시간짜리 서명 주소로. */
-export async function listReports(): Promise<(ReportRow & { imageUrls: string[] })[] | null> {
+/** 제보함 목록 — 캡처는 1시간짜리 서명 주소로. since를 주면 그 시각 이후에 받은 제보만(관리자용). */
+export async function listReports(since?: string): Promise<(ReportRow & { imageUrls: string[] })[] | null> {
   const db = createSupabaseAdminClient();
   if (!db) return null;
-  const { data, error } = await db
+  let query = db
     .from("site_report")
-    .select("id, created_at, topic, body, reply_email, page, device, images, done_at, replied_at, seen_at")
+    .select("id, created_at, topic, body, reply_email, page, device, images, done_at, replied_at, seen_at");
+  if (since) query = query.gte("created_at", since);
+  const { data, error } = await query
     .order("created_at", { ascending: false })
     .limit(200);
   if (error || !data) return null;
@@ -137,19 +140,23 @@ export async function setReportDone(id: string, done: boolean): Promise<boolean>
   return !error;
 }
 
-/** 아직 개발자가 보지 않은 제보 수 — 헤더 제보함 단추의 숫자. */
-export async function countUnseenReports(): Promise<number | null> {
+/** 아직 아무도 열어 보지 않은 제보 수 — 헤더 제보함 단추의 숫자. */
+export async function countUnseenReports(since?: string): Promise<number | null> {
   const db = createSupabaseAdminClient();
   if (!db) return null;
-  const { count, error } = await db.from("site_report").select("id", { count: "exact", head: true }).is("seen_at", null);
+  let query = db.from("site_report").select("id", { count: "exact", head: true }).is("seen_at", null);
+  if (since) query = query.gte("created_at", since);
+  const { count, error } = await query;
   return error ? null : count ?? 0;
 }
 
-/** 제보함을 열면 지금까지 들어온 제보를 '봄'으로. */
-export async function markReportsSeen(): Promise<void> {
+/** 제보함을 열면 (그 사람이 볼 수 있는) 지금까지 들어온 제보를 '봄'으로. */
+export async function markReportsSeen(since?: string): Promise<void> {
   const db = createSupabaseAdminClient();
   if (!db) return;
-  await db.from("site_report").update({ seen_at: new Date().toISOString() }).is("seen_at", null);
+  let query = db.from("site_report").update({ seen_at: new Date().toISOString() }).is("seen_at", null);
+  if (since) query = query.gte("created_at", since);
+  await query;
 }
 
 /** 답장 받는 주소는 화면이 보낸 값이 아니라 저장된 제보에서 읽는다. */
@@ -181,15 +188,23 @@ export async function deleteReport(id: string): Promise<boolean> {
   return !error;
 }
 
-/** 처리 완료 후 보관 기간이 지난 제보를 파일까지 지운다 — 시간별 예약 작업이 부른다. */
-export async function purgeExpiredReports(): Promise<{ deleted: number } | { error: string }> {
+/**
+ * 보관 기간이 지난 제보를 파일까지 지운다 — 시간별 예약 작업이 부른다.
+ *  - 처리 완료한 제보: 완료 후 REPORT_RETENTION_DAYS일.
+ *  - 아무도 처리하지 않은 제보: 받은 지 REPORT_UNHANDLED_RETENTION_DAYS일(운영자가 없어도 쌓이지 않게).
+ */
+export async function purgeExpiredReports(now: number = Date.now()): Promise<{ deleted: number } | { error: string }> {
   const db = createSupabaseAdminClient();
   if (!db) return { error: "no-db" };
-  const cutoff = new Date(Date.now() - REPORT_RETENTION_DAYS * 86400_000).toISOString();
-  const { data, error } = await db.from("site_report").select("id, images").lt("done_at", cutoff).limit(50);
-  if (error) return { error: error.message };
+  const doneCutoff = new Date(now - REPORT_RETENTION_DAYS * 86400_000).toISOString();
+  const unhandledCutoff = new Date(now - REPORT_UNHANDLED_RETENTION_DAYS * 86400_000).toISOString();
+  const [done, unhandled] = await Promise.all([
+    db.from("site_report").select("id, images").lt("done_at", doneCutoff).limit(50),
+    db.from("site_report").select("id, images").is("done_at", null).lt("created_at", unhandledCutoff).limit(50)
+  ]);
+  if (done.error || unhandled.error) return { error: (done.error ?? unhandled.error)!.message };
   let deleted = 0;
-  for (const r of (data ?? []) as { id: string; images: string[] }[]) {
+  for (const r of [...(done.data ?? []), ...(unhandled.data ?? [])] as { id: string; images: string[] }[]) {
     if (r.images.length) {
       const { error: rmErr } = await db.storage.from(BUCKET).remove(r.images);
       if (rmErr) continue; // 파일을 못 지웠으면 행도 남겨 다음 시간에 다시 시도

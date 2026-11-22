@@ -48,7 +48,7 @@ function ReplayDemo() {
 export default function TermsPage() {
   return (
     <LegalDoc
-      effective="2026. 11. 13."
+      effective="2026. 11. 23."
       facts={[
         { icon: <Gift size={17} />, title: "무료", text: "모든 기능을 비용 없이 이용합니다." },
         { icon: <LogIn size={17} />, title: "로그인은 선택", text: "일정은 로그인 없이 볼 수 있습니다." },
@@ -183,14 +183,14 @@ export default function TermsPage() {
           body: (
             <>
               <p>
-                문서 페이지의 &lsquo;사이트 제보&rsquo;로 버그·일정 오류·아이디어를 보낼 수 있습니다. 제보는 개발자에게만 전달되고
+                문서 페이지의 &lsquo;사이트 제보&rsquo;로 버그·일정 오류·아이디어를 보낼 수 있습니다. 제보는 방송인과 개발자에게만 전달되고
                 공개되지 않으며, 고치고 개선하는 데에만 씁니다.
               </p>
               <ul>
                 <li>캡처에 다른 사람의 개인정보나 권리를 침해하는 내용이 담기지 않게 해 주세요.</li>
                 <li>광고·도배·욕설 등 제보와 관계없는 내용은 확인 없이 지울 수 있습니다.</li>
                 <li>답장용 이메일을 적은 경우에만 답장하며, 모든 제보에 답하지 못할 수 있습니다.</li>
-                <li>보관과 삭제는 <Link href={"/privacy" as Route}>개인정보처리방침</Link>을 따릅니다(처리 완료 후 90일).</li>
+                <li>보관과 삭제는 <Link href={"/privacy" as Route}>개인정보처리방침</Link>을 따릅니다(처리 완료 후 90일, 처리 전이어도 180일).</li>
               </ul>
             </>
           )
@@ -224,7 +224,7 @@ export default function TermsPage() {
               <p>
                 이용자에게 불리한 변경은 변경 내용과 시행일을 시행 30일 전에 이 페이지에 알립니다.
               </p>
-              <LegalTable head={["시행일", "내용"]} rows={[["2026. 11. 13.", "제정"]]} />
+              <LegalTable head={["시행일", "내용"]} rows={[["2026. 11. 13.", "제정"], ["2026. 11. 23.", "사이트 제보: 이 날부터 받는 제보는 방송인도 함께 확인, 처리 전 제보도 180일 뒤 삭제"]]} />
             </>
           )
         },

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, ExternalLink, Inbox, Mail, MailCheck, Monitor, Reply, Send, Smartphone, Sparkles, Trash2, Undo2, X } from "lucide-react";
 import { deleteReportAction, sendReplyAction, setReportDoneAction, setReportRepliedAction } from "@/lib/reports/actions";
-import { REPORT_RETENTION_DAYS, REPORT_TOPICS, topicLabel } from "@/lib/reports/topics";
+import { REPORT_RETENTION_DAYS, REPORT_TOPICS, REPORT_UNHANDLED_RETENTION_DAYS, topicLabel } from "@/lib/reports/topics";
 import { LEGAL_CONTACT_EMAIL } from "@/components/legal/contact";
 import { LoadError, LoadingSpinner } from "@/components/shared/loading-state";
 import { ToriDoodle } from "@/components/shared/tori-doodle";
@@ -47,12 +47,14 @@ function defaultReply(r: Row): { subject: string; body: string } {
   };
 }
 
-// 사이트 제보함 — 개발자 전용(app/(studio)/studio/reports). 처리 완료 → 90일 뒤 자동 삭제(lib/reports/report.ts).
+// 사이트 제보함 — 관리자·개발자(app/(studio)/studio/reports). 처리 완료 → 90일 뒤, 처리 안 해도 받은 지 180일 뒤 자동 삭제
+// (lib/reports/report.ts). 답장 보내기는 개발자 문의 계정을 쓰므로 canReply(개발자)일 때만 — 관리자에겐 메일 주소 링크만.
 export function ReportsBoard({
   rows: initial,
   error,
   newIds = [],
-  mailReady = false
+  mailReady = false,
+  canReply = false
 }: {
   rows: Row[];
   error: string | null;
@@ -60,6 +62,8 @@ export function ReportsBoard({
   newIds?: string[];
   /** 서버에 Gmail 발송 비밀값이 있는가 — 없으면 Gmail 창 열기로. */
   mailReady?: boolean;
+  /** 답장 창(개발자 문의 계정으로 발송)을 쓸 수 있는가 — 개발자만. */
+  canReply?: boolean;
 }) {
   const [rows, setRows] = useState(initial);
   const [filter, setFilter] = useState<"open" | "done" | "all">("open");
@@ -111,7 +115,7 @@ export function ReportsBoard({
         <h1>
           <Inbox size={20} /> 사이트 제보함
         </h1>
-        <p>처리 완료로 표시한 제보는 {REPORT_RETENTION_DAYS}일 뒤 캡처와 함께 자동 삭제됩니다.</p>
+        <p>처리 완료로 표시한 제보는 {REPORT_RETENTION_DAYS}일 뒤, 처리하지 않은 제보도 받은 지 {REPORT_UNHANDLED_RETENTION_DAYS}일 뒤 캡처와 함께 자동 삭제됩니다.</p>
         <div className={styles.filters} role="radiogroup" aria-label="보기">
           {(
             [
@@ -199,7 +203,11 @@ export function ReportsBoard({
               </div>
             ) : null}
             <div className={styles.actions}>
-              {r.reply_email ? (
+              {r.reply_email && !canReply ? (
+                <a className={styles.btn} data-act="reports-mailto" href={`mailto:${r.reply_email}`}>
+                  <Mail size={14} /> <span className="vmid">{r.reply_email}</span>
+                </a>
+              ) : r.reply_email ? (
                 <button
                   className={`${styles.btn} ${styles.primary}`}
                   data-act="reports-reply"

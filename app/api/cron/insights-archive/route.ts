@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false }, { status: 401 });
   }
   const report = await runInsightsMaintenance();
-  // 같은 시간별 작업에서 처리 완료 후 90일이 지난 사이트 제보(0167)를 파일까지 지운다 — 개인정보처리방침의 보관 기간.
+  // 같은 시간별 작업에서 처리 완료 후 90일(처리 전이어도 받은 지 180일)이 지난 사이트 제보(0167)를 파일까지 지운다 — 개인정보처리방침의 보관 기간.
   const reports = await purgeExpiredReports();
   return NextResponse.json({ ok: true, report, reports });
 }

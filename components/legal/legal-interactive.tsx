@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Bug, CalendarX, Clock3, EyeOff, Heart, ImagePlus, Lightbulb, Mail as MailIcon, MessageCircle, Send, Settings, X } from "lucide-react";
 import { LoadingSpinner } from "@/components/shared/loading-state";
-import { REPORT_MAX_BODY, REPORT_MAX_IMAGE_BYTES, REPORT_MAX_IMAGES, REPORT_RETENTION_DAYS, REPORT_TOPICS, type ReportTopic } from "@/lib/reports/topics";
+import { REPORT_MAX_BODY, REPORT_MAX_IMAGE_BYTES, REPORT_MAX_IMAGES, REPORT_RETENTION_DAYS, REPORT_TOPICS, REPORT_UNHANDLED_RETENTION_DAYS, type ReportTopic } from "@/lib/reports/topics";
 import { setThemeMode, themeMode, type ThemeMode } from "@/lib/ui/theme";
 import { CONTACT_AVATAR } from "./contact";
 import { ToriDoodle } from "@/components/shared/tori-doodle";
@@ -428,7 +428,7 @@ export function ContactButton({ variant, initialTopic = "bug", trigger }: {
                     <Clock3 aria-hidden="true" size={14} />
                   </span>
                   <span>
-                    <b>보관</b> 처리 완료 후 {REPORT_RETENTION_DAYS}일 뒤 캡처와 함께 자동 삭제
+                    <b>보관</b> 처리 완료 후 {REPORT_RETENTION_DAYS}일 뒤(처리 전이어도 {REPORT_UNHANDLED_RETENTION_DAYS}일 뒤) 캡처와 함께 자동 삭제 · 방송인과 개발자만 봅니다
                   </span>
                 </li>
                 <li>

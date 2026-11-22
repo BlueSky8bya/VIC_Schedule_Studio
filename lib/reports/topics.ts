@@ -12,6 +12,11 @@ export const REPORT_MAX_BODY = 4000;
 export const REPORT_MAX_IMAGES = 10; // 0168과 같은 값
 export const REPORT_MAX_IMAGE_BYTES = 2 * 1024 * 1024; // 저장소 버킷 한도와 같다(0167)
 export const REPORT_RETENTION_DAYS = 90; // 처리 완료 후 보관 기간 — 개인정보처리방침에 적힌 값
+// 아무도 처리하지 않은 제보의 보관 기간(받은 날 기준) — 운영자가 자리를 비워도 제보·캡처가 끝없이 쌓이지 않게(2026-11-23 소유자).
+export const REPORT_UNHANDLED_RETENTION_DAYS = 180;
+// 관리자(방송인)가 제보함에서 볼 수 있는 제보의 시작 시각 — 약관·제보 창이 "방송인과 개발자에게 전달"로 바뀐 날(KST 자정).
+// 그 전 제보는 "개발자에게만 전달"이라는 안내를 보고 보낸 것이라 개발자만 본다.
+export const REPORT_OWNER_VISIBLE_FROM = "2026-11-22T15:00:00.000Z";
 
 export function isReportTopic(v: unknown): v is ReportTopic {
   return typeof v === "string" && REPORT_TOPICS.some((t) => t.value === v);

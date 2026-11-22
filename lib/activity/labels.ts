@@ -859,6 +859,8 @@ export const ACT: Record<string, TargetLabel> = {
   "reports-done": { name: "제보함: 처리 완료 전환", area: "편집실" },
   "reports-delete": { name: "제보함: 삭제", area: "편집실" },
   "dev-reports-open": { name: "사이트 제보함 열기", area: "편집실", hint: "설정 모달 개발자 탭 → /studio/reports(2026-11-13)" },
+  "security-reports-open": { name: "사이트 제보함 열기", area: "편집실", hint: "설정 모달 보안 탭 → /studio/reports(관리자·개발자, 2026-11-23)" },
+  "reports-mailto": { name: "제보자 메일 주소 열기", area: "제보함", hint: "관리자 화면 — 답장 창 대신 메일 주소 링크" },
   "legal-contact-send": { name: "제보 창: 보내기", area: "기타" },
   "legal-demo-replay": { name: "문서 예시: 다시보기 칩", area: "기타" },
   "legal-tori-home": { name: "문서 사이드: 일정표 보기", area: "기타" },
