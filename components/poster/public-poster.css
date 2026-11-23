@@ -7386,6 +7386,10 @@ html[data-reduce-motion] .viewer-settings-open svg { transition: none; }
   backdrop-filter: blur(3px);
   padding: 24px 16px;
   animation: pi-fade var(--dur-2) var(--ease-enter) both;
+  /* 창 위에서 굴린 휠이 뒤 달력으로 새지 않게(2026-11-23 소유자) — 배경 자체를 스크롤 상자로 두고 끝에서 넘기지 않는다.
+     목록이 끝까지 내려간 뒤에도, 창 머리처럼 스크롤이 없는 곳 위에서도 뒤 화면은 그대로다. */
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 @keyframes pi-fade {
   from {
@@ -7481,6 +7485,7 @@ html[data-reduce-motion] .pi-close:active {
      짜투리 스크롤바를 만들면 안 된다. 툴팁은 폭 안으로 clamp돼 안 잘린다. */
   overflow-x: hidden;
   padding: 16px 18px 22px;
+  overscroll-behavior: contain; /* 목록 끝에서 휠이 뒤 달력으로 넘어가지 않게 */
 }
 .pi-card {
   /* 그리드 아이템 기본 min-width:auto 해제 — 안의 긴 글이 카드를 밖으로 밀지 못하게. */
