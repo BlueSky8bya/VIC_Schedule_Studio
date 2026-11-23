@@ -4549,6 +4549,13 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
    업 도움 끈(.support-bar)도 같이 물러난다 — 카드만 흐려지고 끈이 쨍하면 안 고른 기간이 오히려
    제일 눈에 띈다(시청자 화면에서 먼저 겪고 고친 것과 같은 처방). 끈 본체 스타일은 app/globals.css
    공용이라, 흐림·전환은 편집실 달력 안(.studio-day)으로 한정한다. */
+/* 끝난 업 도움(종료일이 지난 띠) — 편집실에서만 흐리게 남긴다(시청자 화면은 숨김). 다시 잡아 옮기거나 지울 수 있게.
+   필터 흐림(.filter-dim)보다 앞에 둔다 — 둘 다 걸리면 더 흐린 필터 쪽이 이긴다. */
+.agenda-event.sb-ended,
+.studio-day .support-bar.sb-ended {
+  opacity: 0.45;
+  filter: grayscale(0.7);
+}
 .studio-event-pill.filter-dim,
 .agenda-event.filter-dim,
 .studio-day .support-bar.filter-dim {

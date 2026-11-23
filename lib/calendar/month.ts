@@ -169,9 +169,9 @@ function eventEndKey(event: PublicScheduleEvent | StudioScheduleEvent) {
   return event.endDateKey ?? getEventDateKey(event);
 }
 
-// 끝난 업 도움 — 종료일(KST)이 오늘보다 앞이면 달력 어디에도 그리지 않는다(편집실·시청자 공통, 이 함수가 한 곳).
-// 단순 기간 안내(supportKind 'period')는 정보성 기록이라 지나도 남긴다(2026-09-01).
-// 편집실은 이 판정으로 '방금 손댄 띠가 달력에서 내려갔다'는 안내도 띄운다 — 옮겼다는 말만 나오고 띠가 안 보이던 일(2026-11-23).
+// 끝난 업 도움 — 종료일(KST)이 오늘보다 앞. 시청자 화면은 그리지 않고, 편집실은 흐리게 남긴다(2026-11-23 소유자) — 판정은 이 함수 한 곳.
+// 단순 기간 안내(supportKind 'period')는 정보성 기록이라 지나도 그대로 남긴다(2026-09-01).
+// 편집실은 이 판정으로 '방금 손댄 띠가 끝난 띠가 됐다'는 안내도 띄운다.
 export function isEndedUpSupport(event: PublicScheduleEvent | StudioScheduleEvent, today: string) {
   return Boolean(event.isSupport) && event.supportKind !== "period" && eventEndKey(event) < today;
 }

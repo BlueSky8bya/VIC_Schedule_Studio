@@ -1390,15 +1390,10 @@ export function StudioShell({
     [events]
   );
   const cells = useMemo(() => buildCalendarMonth(view.year, view.month), [view]);
-  // 업 도움은 기간(종료일, KST)이 지나면 편집실에서도 자동으로 내린다 — 시청자 화면과 동일하게
-  // 끝난 업 도움은 달력 띠·줄 칸·모바일 어젠다 어디서도 그리지 않는다. 일반 일정은 그대로 두고
-  // 끝난 업 도움만 제외해, 업 도움 시각화가 한 소스에서 일관되게 사라지게 한다.
-  // 단순 기간 안내(supportKind 'period')는 예외 — 정보성 기록이라 지나도 남긴다(2026-09-01).
-  const liveEvents = useMemo(
-    () =>
-      visibleEvents.filter((e) => !isEndedUpSupport(e, today)),
-    [visibleEvents, today]
-  );
+  // 끝난 업 도움(종료일이 오늘보다 앞, isEndedUpSupport)도 편집실에서는 그린다 — 흐리게(.sb-ended).
+  // 예전엔 편집실에서도 숨겼는데, 띠를 지난 날짜로 옮기면 사라져 다시 잡을 길이 Ctrl+Z뿐이었다(2026-11-23 소유자 결정).
+  // 시청자 화면(미리보기 포함)은 그대로 숨긴다 — 그쪽은 public-poster가 같은 판정으로 뺀다.
+  const liveEvents = visibleEvents;
   // 최초공개 게이트 판정 — 편집 패널이 가리키는 일정이 '아직 안 풀린 떡밥'이고 이 세션에서
   // 비번 확인을 안 했으면 폼 대신 게이트를 띄운다. 이동/복사/드래그는 게이트와 무관하게 그대로.
   const selectedLiveEvent = selectedEventId
@@ -6177,10 +6172,10 @@ export function StudioShell({
       setCopyToast(null);
     }, ms);
   }
-  // ── 끝난 업 도움은 달력에서 내려간다는 안내(2026-11-23) ──
-  // 업 도움 띠는 종료일이 지나면 편집실·시청자 어디에도 그리지 않는다(isEndedUpSupport). 그래서 띠를 지난 날짜로
-  // 옮기거나(끌기·되돌리기·다시 실행), 지난 날짜로 저장·붙여넣으면 "옮겼어요"만 뜨고 띠는 사라졌다 — 고장처럼 보였다.
-  // 경로마다 문구를 고치지 않고 여기 한 곳에서 본다: 방금까지 보이던(또는 방금 생긴) 업 도움이 '끝난 띠'가 되면 알린다.
+  // ── 끝난 업 도움이 됐다는 안내(2026-11-23) ──
+  // 업 도움 띠는 종료일이 지나면 시청자 화면에서 내려가고 편집실에서는 흐려진다(isEndedUpSupport). 띠를 지난 날짜로
+  // 옮기거나(끌기·되돌리기·다시 실행), 지난 날짜로 저장·붙여넣으면 왜 흐려졌는지·시청자에게 보이는지 알 수 없다.
+  // 경로마다 문구를 고치지 않고 여기 한 곳에서 본다: 방금까지 살아 있던(또는 방금 생긴) 업 도움이 '끝난 띠'가 되면 알린다.
   // 처음 불러올 때와 서버에서 통째로 다시 받을 때 이미 끝나 있던 띠는 알리지 않는다(이 화면에서 손댄 것만).
   const supportSeenRef = useRef<Map<string, boolean> | null>(null);
   useEffect(() => {
@@ -6200,7 +6195,7 @@ export function StudioShell({
     supportSeenRef.current = next;
     if (dropped) {
       const end = dropped.endDateKey ?? getEventDateKey(dropped);
-      flashToast(`${formatShortDate(end)}에 끝난 업 도움이라 달력에서 내렸어요 · Ctrl+Z로 되돌리기`, 5200);
+      flashToast(`${formatShortDate(end)}에 끝난 업 도움이에요 · 편집실에만 흐리게 보이고 시청자 화면에는 안 나와요`, 5200);
     }
   }, [visibleEvents, today, canonId]);
   function copySelectedEvent() {
@@ -6655,7 +6650,7 @@ export function StudioShell({
     const filtering = tagFilters.length > 0;
     // Studio retains the original teaser flag after release. Resolve its existing
     // display gate before projecting these minimal presentation fields.
-    const mobileNotices = createAgendaNotices(liveEvents.filter(event => !isDimmedByFilter(event) && !teaserStillHidden(event)).map(event => ({
+    const mobileNotices = createAgendaNotices(liveEvents.filter(event => !isDimmedByFilter(event) && !teaserStillHidden(event) && !isEndedUpSupport(event, today)).map(event => ({
       id: event.id, startsAt: event.startsAt, endDateKey: event.endDateKey, isSupport: event.isSupport,
       publicTitle: event.publicTitle, supportKind: event.supportKind, supportUrl: event.supportUrl, teaser: false
     })), view.year, view.month);
@@ -6860,7 +6855,7 @@ export function StudioShell({
                         const sEnd = event.endDateKey ?? cell.isoDate;
                         return (
                           <div
-                            className={`agenda-event m-support${dimCls}${justSavedId === event.id ? " just-saved" : ""}${deletingIds.has(canonId(event.id)) ? " deleting" : ""}`}
+                            className={`agenda-event m-support${dimCls}${isEndedUpSupport(event, today) ? " sb-ended" : ""}${justSavedId === event.id ? " just-saved" : ""}${deletingIds.has(canonId(event.id)) ? " deleting" : ""}`}
                             key={event.id}
                           >
                             {/* 시청자 화면과 동일한 초록 세로 바(업 도움 고정색). */}
@@ -8326,7 +8321,7 @@ export function StudioShell({
                         // 여러 칸에 걸쳐 있어 한 조각만 강조하면 어디까지가 그 기간인지 안 보인다.
                         className={`support-bar${isDimmedByFilter(s) ? " filter-dim" : ""}${
                           showLabel ? " sb-head" : ""
-                        }${solo ? " sb-solo" : ""}${s.supportKind === "period" ? " sb-period" : ""}${
+                        }${isEndedUpSupport(s, today) ? " sb-ended" : ""}${solo ? " sb-solo" : ""}${s.supportKind === "period" ? " sb-period" : ""}${
                           // 고르면 테두리(클릭=고르기라 표시가 없으면 뭘 골랐는지 모른다), 편집창이
                           // 떠 있으면 같은 테두리를 그대로 — 2026-09-19.
                           selectedEventId === s.id ? (editorVisible ? " is-editing" : " is-selected") : ""
