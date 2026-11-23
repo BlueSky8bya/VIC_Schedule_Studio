@@ -133,6 +133,7 @@ import {
   getEventDateKey,
   hasSupportDateRange,
   getEventsForDate,
+  isEndedUpSupport,
   eventMatchesTagFilter,
   getEventSpan,
   getSpanRunRange,
@@ -754,12 +755,7 @@ export function PublicPoster({
   // 단순 기간 안내(supportKind 'period')는 예외 — 정보성 기록이라 지나도 남긴다(2026-09-01).
   const liveEvents = useMemo(
     () =>
-      schedule.events.filter(
-        (e) =>
-          !e.isSupport ||
-          e.supportKind === "period" ||
-          (e.endDateKey ?? getEventDateKey(e)) >= today
-      ),
+      schedule.events.filter((e) => !isEndedUpSupport(e, today)),
     [schedule.events, today]
   );
   const supportLanes = useMemo(() => assignSupportLanes(liveEvents), [liveEvents]);
