@@ -162,7 +162,8 @@ import { usePublicEventLink } from "@/lib/ui/use-public-event-link";
 import { isPublicMonth, PUBLIC_MONTH_BOUNDS } from "@/lib/ui/public-month-link";
 import { SoopLiveBeacon } from "@/components/poster/soop-live-beacon";
 import { useSoopLive } from "@/components/poster/use-soop-live";
-import { DayVodNote, DayVodWindow, formatVodDuration, VOD_ACCESS_HINT, VOD_ACCESS_LABEL, VodAccessBadge } from "@/components/poster/day-vod-window";
+import { buildDayVodWatchUrl, DayVodNote, DayVodWindow, formatVodDuration, VOD_ACCESS_HINT, VOD_ACCESS_LABEL, VodAccessBadge } from "@/components/poster/day-vod-window";
+import { groupVodsByDay, vodDayFor } from "@/lib/schedules/vod-days";
 import { createWheelStepper, normalizeWheelDelta, stepCalZoom } from "@/lib/ui/calendar-zoom";
 import { useIdleAfter } from "@/lib/ui/use-idle";
 // 포스터 CSS는 이 컴포넌트와 함께 로드(루트 레이아웃 전역 import 제거에 대응). PublicPoster가 쓰이는
@@ -967,29 +968,8 @@ export function PublicPoster({
     }
   });
   const companionPremiere = useCompanionPremiere(premiere.frame, companionDesktop && settingsPrefs.companionPrefs.enabled && !avatarFixed, premiere.close);
-  const vodsByDate = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        titleNo: number;
-        title: string;
-        durationMs: number;
-        chapters?: number;
-        timelineBy?: string;
-        thumbQuery?: string;
-        host?: string; // 합방 게스트 출연분(0075) — 호스트 닉. 칩·창에 "합방 · ○○" 배지
-        hostId?: string; // 호스트 숲 아이디 — 칩이 방송국 링크가 된다(2026-09-17)
-        access?: "sub" | "plus"; // 숲 권한 단계(일반 < 구독 < 구독+, 0154/0155) — 칩·창 색
-      }[]
-    >();
-    for (const v of schedule.vods ?? []) {
-      const list = map.get(v.dateKey);
-      if (list) list.push(v);
-      else map.set(v.dateKey, [v]);
-    }
-    for (const list of map.values()) list.sort((a, b) => a.titleNo - b.titleNo);
-    return map;
-  }, [schedule.vods]);
+  // 날짜별 다시보기 — 하루 = 오전 6시~다음날 오전 6시, 며칠 걸친 방송은 걸친 날마다(lib/schedules/vod-days, 2026-11-23).
+  const vodsByDate = useMemo(() => groupVodsByDay(schedule.vods ?? []), [schedule.vods]);
   // 날짜 칸 다시보기(PC) — 2026-09-17 페이지 승격: 실제 시청자 화면(accountSwitch)에선 /replay/<날짜> 페이지로,
   // 편집실 미리보기·fixture·/onair에선 같은 DayVodWindow를 창(모달)으로 띄운다(한 구현, 껍데기만 다름).
   // part/sec = 검색 결과에서 왔을 때 처음 보여줄 방송(1부터)·시각 — 페이지의 ?part=&t= 와 같은 뜻.
@@ -1033,7 +1013,10 @@ export function PublicPoster({
       flashTimerRef.current = window.setTimeout(() => setFlashDate(null), 1800);
     }, delay);
   };
-  const onSearchPickVod = (dateKey: string, titleNo: number, sec?: number) => {
+  const onSearchPickVod = (pickedDateKey: string, titleNo: number, sec?: number) => {
+    // 검색 결과는 저장된 시작일을 들고 온다 — 며칠 걸친 방송의 뒤 편은 그날 칸에 없을 수 있어 보이는 날로 바꾼다.
+    const picked = (schedule.vods ?? []).find((v) => v.titleNo === titleNo);
+    const dateKey = picked ? vodDayFor(picked, pickedDateKey) : pickedDateKey;
     const list = vodsByDate.get(dateKey) ?? [];
     const idx = list.findIndex((v) => v.titleNo === titleNo);
     // 달력도 그 달로(2026-09-18 소유자): 페이지(/replay)에서 돌아오면 그 달이 보이고(쿠키), 미리보기
@@ -4098,7 +4081,7 @@ export function PublicPoster({
                         <a
                           className={`agenda-link vod agenda-vod-inline${vod.access ? ` is-${vod.access}` : ""}`}
                           data-act="vod-replay"
-                          href={`https://vod.sooplive.co.kr/player/${vod.titleNo}`}
+                          href={buildDayVodWatchUrl(vod.titleNo, vod.daySec)}
                           key={vod.titleNo}
                           onClick={() => hapticTick()}
                           rel="noopener noreferrer"

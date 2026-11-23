@@ -2266,7 +2266,8 @@ export function StudioShell({
   useEffect(() => { replayRequest.current++; setReplayLoading(0); }, [replayContext]);
   // Reopening search is a new intent; its pending older replay must stay closed.
   useEffect(() => { if (searchOpen) { replayRequest.current++; setReplayLoading(0); } }, [searchOpen]);
-  const onStudioReplay = (dateKey: string, titleNo: number, sec?: number) => {
+  const onStudioReplay = (pickedDateKey: string, titleNo: number, sec?: number) => {
+    let dateKey = pickedDateKey;
     const request = ++replayRequest.current, scope = replayContext;
     const current = () => request === replayRequest.current && scope === replayContextRef.current;
     setSearchOpen(false);
@@ -2275,7 +2276,13 @@ export function StudioShell({
     void loaded.finally(() => setReplayLoading((r) => (r === request ? 0 : r))).catch(() => {});
     void loaded.then((map) => {
       if (!current()) return;
-      const vods = map.get(dateKey) ?? [];
+      // 검색 결과는 저장된 시작일을 들고 온다 — 그날 칸에 없으면(며칠 걸친 방송의 뒤 편) 보이는 날에서 찾는다.
+      let vods = map.get(dateKey) ?? [];
+      if (!vods.some((v) => v.titleNo === titleNo)) {
+        for (const [day, list] of map) {
+          if (list.some((v) => v.titleNo === titleNo)) { dateKey = day; vods = list; break; }
+        }
+      }
       const idx = vods.findIndex((v) => v.titleNo === titleNo);
       if (vods.length === 0) {
         flashToast("이 날 등록된 다시보기가 없어요");

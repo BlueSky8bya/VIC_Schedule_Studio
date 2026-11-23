@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ReplayPage } from "@/components/poster/replay-page";
 import { getPublicSchedule } from "@/lib/schedules/public-loader";
 import { timed } from "@/lib/perf/perf";
+import { groupVodsByDay } from "@/lib/schedules/vod-days";
 
 // 날짜 다시보기 페이지(2026-09-17 소유자: 창 → 페이지 승격). 공개 데이터만(public-loader) — 비로그인도 본다.
 // 껍데기만 페이지고 속(무대·부 탭·띠·챕터 레일·키보드)은 편집실 미리보기의 창과 같은 DayVodWindow 하나(G-18).
@@ -22,9 +23,8 @@ export default async function ReplayDatePage({ params, searchParams }: Props) {
   if (!DATE_RE.test(date)) notFound();
   const { part, t } = await searchParams;
   const schedule = await timed("page:/replay publicSchedule", () => getPublicSchedule("vic"));
-  const vods = (schedule.vods ?? [])
-    .filter((v) => v.dateKey === date)
-    .sort((a, b) => a.titleNo - b.titleNo);
+  // 달력 칸과 같은 날짜 규칙(오전 6시 경계, 며칠 걸친 방송은 걸친 날마다 — lib/schedules/vod-days).
+  const vods = groupVodsByDay(schedule.vods ?? []).get(date) ?? [];
   if (vods.length === 0) notFound();
   const partNo = Number(part);
   const sec = Number(t);

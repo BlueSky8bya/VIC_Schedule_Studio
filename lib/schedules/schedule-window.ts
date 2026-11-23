@@ -1,4 +1,5 @@
 import type { PublicSchedule, PublicScheduleEvent, PublicVodEntry } from "@/lib/domain/schedule-types";
+import { vodDays } from "@/lib/schedules/vod-days";
 
 // 공개 포스터 첫 화면 데이터 창(2026-11-13 소유자 "속도 개선 1"): `/` 응답이 31개월 일정 전부(≈300KB)와
 // 다시보기 전부(≈130KB)를 RSC 페이로드로 실어 보냈다(페이로드의 96%). 첫 렌더에 필요한 건 보는 달 근처뿐이라,
@@ -47,7 +48,8 @@ export function eventInWindow(event: PublicScheduleEvent, window: ScheduleWindow
 }
 
 export function vodInWindow(vod: PublicVodEntry, window: ScheduleWindow): boolean {
-  return window.ranges.some((range) => overlaps(vod.dateKey, vod.dateKey, range));
+  // 며칠 걸친 방송은 걸친 날 어느 하나라도 창 안이면 싣는다(뒤 날짜 칸에도 보이므로).
+  return vodDays(vod).some((day) => window.ranges.some((range) => overlaps(day.dateKey, day.dateKey, range)));
 }
 
 // SSR용: 창 밖을 걸러 낸 공개 일정. 걸러 낼 게 없으면 원본을 그대로 돌려준다(창 표시도 없음).

@@ -10,7 +10,7 @@ import { getDayMark } from "@/lib/calendar/holidays";
 import { hapticTick } from "@/lib/ui/haptics";
 import { logActivity } from "@/lib/activity/client";
 import { trackPopoverLayout } from "@/lib/ui/popover-layout";
-import { VodChapters, type VodChaptersApi } from "@/components/poster/vod-chapters";
+import { VodChapters, type VodChaptersApi, formatTimecode } from "@/components/poster/vod-chapters";
 import "./public-poster.css";
 import "./poster-metal-water.css";
 
@@ -51,6 +51,9 @@ export type DayVod = {
   access?: "sub" | "plus"; // 숲 권한 단계(일반 < 구독 < 구독+, 0154/0155) — 탭·머리줄 배지·칩 색
   thumbUrl?: string; // 업로드 영상 썸네일(직접 jpg) — 다시보기는 thumbQuery
   startedAt?: string; // 방송 시작 시각(ISO) — 타임라인의 '실제 시각' 표기(2026-09-18 소유자)
+  // 이 날짜 칸에서 열 때 시작할 지점(초) — 며칠 이어진 방송의 둘째 날부터(lib/schedules/vod-days, 2026-11-23).
+  // 없으면 처음부터. 플레이어 초기화·Space 재생·숲 링크가 모두 이 지점에서 출발한다.
+  daySec?: number;
 };
 
 /** Pointer/keyboard share a single fixed activity event; opening/cancelling a
@@ -353,6 +356,10 @@ export function DayVodWindow({
   const dayVodSelRef = useRef<number | null>(null);
   dayVodSelRef.current = dayVodSel;
   const dayVodResumeRef = useRef(new Map<number, number>());
+  // 방송별 '이 날 시작 지점'(daySec) — 재생 머리의 기본 자리. 옛 클로저에서도 읽게 ref로 둔다.
+  const dayStartRef = useRef(new Map<number, number>());
+  dayStartRef.current = new Map(vods.filter((v) => (v.daySec ?? 0) > 0).map((v) => [v.titleNo, v.daySec as number]));
+  const dayStartOf = (titleNo: number) => dayStartRef.current.get(titleNo) ?? 0;
   const dayVodEndedRef = useRef(new Set<number>()); // 끝남 → 다음 영상 자동 전환은 방송당 한 번
   // 단축키 안내(2번): 상시 노출 대신 ? 버튼 뒤로(자동 펼침 없음).
   const [dayVodKeysOpen, setDayVodKeysOpen] = useState(false);
@@ -405,7 +412,7 @@ export function DayVodWindow({
   const vodWatchUrl = (titleNo: number, fallback?: string) => {
     const known = dayVodTimeRef.current.get(titleNo);
     if (known === undefined && fallback) return fallback; // Keep an initial/external-only seek before the player reports time.
-    const sec = Math.floor(known ?? 0);
+    const sec = Math.floor(known ?? dayStartRef.current.get(titleNo) ?? 0);
     return buildDayVodWatchUrl(titleNo, sec);
   };
   // 재생 위치 구독(2026-09-03) — 챕터 레일이 현재 챕터를 따라가게 currentTime을 흘려준다.
@@ -424,8 +431,8 @@ export function DayVodWindow({
       dayVodTimeSubsRef.current.set(titleNo, subs);
     }
     subs.add(cb);
-    const known = dayVodTimeRef.current.get(titleNo);
-    if (known !== undefined) cb(known); // 늦게 구독해도 현재 위치부터
+    const known = dayVodTimeRef.current.get(titleNo) ?? (dayStartRef.current.get(titleNo) || undefined);
+    if (known !== undefined) cb(known); // 늦게 구독해도 현재 위치부터(재생 전이면 이 날 시작 지점)
     return () => {
       subs.delete(cb);
     };
@@ -670,7 +677,7 @@ export function DayVodWindow({
         if (dayVodAliveRef.current.has(titleNo)) return; // 굴러갔다
         const tries = (dayVodBootTryRef.current.get(titleNo) ?? 0) + 1;
         dayVodBootTryRef.current.set(titleNo, tries);
-        const sec = dayVodWantSecRef.current.get(titleNo) ?? dayVodTimeRef.current.get(titleNo) ?? 0;
+        const sec = dayVodWantSecRef.current.get(titleNo) ?? dayVodTimeRef.current.get(titleNo) ?? dayStartOf(titleNo);
         if (tries > VOD_BOOT_MAX_TRIES) {
           showDayVodNoticeRef.current("영상을 불러오지 못했어요 — ↗ 로 열어 보세요");
           dayVodStartingAtRef.current.delete(titleNo);
@@ -752,7 +759,7 @@ export function DayVodWindow({
     if (wantRaw === undefined) return;
     const want = clampVodSec(titleNo, wantRaw);
     dayVodWantSecRef.current.delete(titleNo);
-    const cur = dayVodTimeRef.current.get(titleNo) ?? 0;
+    const cur = dayVodTimeRef.current.get(titleNo) ?? dayStartOf(titleNo);
     if (Math.abs(cur - want) < 2) return; // 이미 그 자리
     const post = dayVodApisRef.current.get(
       dayVodSlotKey(titleNo, dayVodActiveRef.current.get(titleNo) ?? "a")
@@ -985,7 +992,7 @@ export function DayVodWindow({
         if (!isActive) return;
         // 주 슬롯: 초기화만(자동재생 금지 — 지정 포스터+▶ 상태. 이 ▶ 클릭은 프레임 안 제스처라
         // 어떤 브라우저에서도 소리 켠 재생이 된다).
-        post(buildDayVodPload(titleNo, 0, false));
+        post(buildDayVodPload(titleNo, dayStartOf(titleNo), false));
         dayVodLoadedRef.current.add(key);
         dayVodPosterOnlyRef.current.add(key);
       } else if (data.cmd === "PupdateMediaEvent") {
@@ -1247,7 +1254,7 @@ export function DayVodWindow({
           hapticTick();
           dayVodFocusRef.current = titleNo;
           showDayVodNotice("▶ 재생");
-          bootDayVod(titleNo, dayVodTimeRef.current.get(titleNo) ?? 0, isVodSoundAutoplayBlocked());
+          bootDayVod(titleNo, dayVodTimeRef.current.get(titleNo) ?? dayStartOf(titleNo), isVodSoundAutoplayBlocked());
           return;
         }
         // 시동 직후(자리잡기 전)·시킹 직후의 Ppause/Pplay는 플레이어를 망가뜨린다 — 무시(실측: 시작
@@ -1288,7 +1295,7 @@ export function DayVodWindow({
       // 자리잡기 전(시동 직후 0.8초)의 명령은 플레이어를 망가뜨린다 — 예전엔 키를 버려 '초반에 안 먹고 툭툭'이었다.
       // 이제는 위치만 쌓아 두고, 자리잡는 순간 flushDayVodWantSec이 PseekTo 한 번으로 보낸다(챕터 연타와 같은 길).
       if (!dayVodSettled(titleNo)) {
-        const base = dayVodWantSecRef.current.get(titleNo) ?? dayVodTimeRef.current.get(titleNo) ?? 0;
+        const base = dayVodWantSecRef.current.get(titleNo) ?? dayVodTimeRef.current.get(titleNo) ?? dayStartOf(titleNo);
         const want = Math.min(Math.max(0, base + dir * VOD_KEY_SEEK_SEC), max);
         dayVodWantSecRef.current.set(titleNo, want);
         notifyDayVodTime(titleNo, want);
@@ -1299,7 +1306,7 @@ export function DayVodWindow({
       );
       if (!post) return;
       // 기준 = 아직 내려앉지 않은 마지막 키 목표, 없으면 플레이어 위치(옛 위치는 메시지 핸들러가 걸렀다).
-      const base = dayVodKeyTargetRef.current.get(titleNo)?.sec ?? dayVodTimeRef.current.get(titleNo) ?? 0;
+      const base = dayVodKeyTargetRef.current.get(titleNo)?.sec ?? dayVodTimeRef.current.get(titleNo) ?? dayStartOf(titleNo);
       const next = Math.min(Math.max(0, base + dir * VOD_KEY_SEEK_SEC), max);
       dayVodKeyTargetRef.current.set(titleNo, { sec: next, at: now });
       notifyDayVodTime(titleNo, next); // 레일·재생 머리는 키마다 즉시 따라간다
@@ -1333,7 +1340,7 @@ export function DayVodWindow({
             const sel = list.find((v) => v.titleNo === dayVodSel) ?? list[0];
             const selIdx = sel ? list.indexOf(sel) : -1;
             const selLabel = sel ? sel.title || `다시보기${list.length > 1 ? ` ${selIdx + 1}` : ""}` : "";
-            const selPlayerUrl = sel ? buildDayVodWatchUrl(sel.titleNo) : "";
+            const selPlayerUrl = sel ? buildDayVodWatchUrl(sel.titleNo, sel.daySec) : "";
             const initialExternalSec = sel?.access && sel.titleNo === (initialSel ?? list[0]?.titleNo)
               && initialSec !== undefined && Number.isFinite(initialSec) && initialSec > 0
               ? clampVodSec(sel.titleNo, Math.floor(initialSec)) : undefined;
@@ -1568,7 +1575,11 @@ export function DayVodWindow({
                                 </span>
                               )}
                               {vod.durationMs > 0 ? (
-                                <em className="dvm-dur">{formatVodDuration(vod.durationMs)}</em>
+                                <em className="dvm-dur">
+                                  {/* 며칠 이어진 방송의 둘째 날부터 — 이 날 칸에서는 그날이 시작하는 지점부터 튼다는 것을 미리 말한다. */}
+                                  {vod.daySec ? `${formatTimecode(vod.daySec)}부터 · ` : ""}
+                                  {formatVodDuration(vod.durationMs)}
+                                </em>
                               ) : null}
                             </span>
                             {/* 구독 전용 안내 — 숲 페이지에선 로그인한 구독자가 바로 본다(임베드는 로그인 상태를 못 쓴다). */}

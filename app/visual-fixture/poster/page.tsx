@@ -26,7 +26,7 @@ async function fixtureHeartAction() {
 export default async function VisualPosterFixture({
   searchParams
 }: {
-  searchParams?: Promise<{ detailUX?: string; supportUX?: string; navSpan?: string; monthLink?: string; month?: string | string[]; avatar?: string; teaser?: string; fixed?: string; hearts?: string; ambient?: string; hour?: string; companionFood?: string; links?: string; plus?: string; signedIn?: string; tent?: string; premiere?: string; count?: string; gap?: string; scenario?: string; rehearsal?: string; chainRule?: string }>;
+  searchParams?: Promise<{ detailUX?: string; supportUX?: string; navSpan?: string; monthLink?: string; month?: string | string[]; avatar?: string; teaser?: string; fixed?: string; hearts?: string; ambient?: string; hour?: string; companionFood?: string; links?: string; plus?: string; signedIn?: string; tent?: string; premiere?: string; count?: string; gap?: string; scenario?: string; rehearsal?: string; chainRule?: string; longVod?: string }>;
 }) {
   if (process.env.VISUAL_TEST_FIXTURE !== "1") {
     notFound();
@@ -104,6 +104,12 @@ export default async function VisualPosterFixture({
     ],
     vods: [
       { titleNo: 900000001, title: "샘플 다시보기", dateKey: "2026-06-18", durationMs: 7200000 },
+      // longVod=1 → 며칠 이어진 방송의 다시보기 두 편(2026-11-20 노뱅종과 같은 모양: 9일 16:30 ~ 10일 17:03, 11일 01:50 ~ 12일 05:38,
+      // 둘 다 저장된 시작일은 9일) — 오전 6시 경계로 9·10·11일 칸에 나뉘어 보이는지 실측(2026-11-23, lib/schedules/vod-days).
+      ...(sp?.longVod === "1" ? [
+        { titleNo: 900000011, title: "와우 포에버 도태안되게 달리기", dateKey: "2026-06-09", durationMs: 88380000, startedAt: "2026-06-09T07:30:00.000Z" },
+        { titleNo: 900000012, title: "자러갈게용~ 고생해써이", dateKey: "2026-06-09", durationMs: 100080000, startedAt: "2026-06-10T16:50:00.000Z" }
+      ] : []),
       // plus=1 → 같은 날 구독 업로드(0155)·구독+ 다시보기(0154) 한 편씩 — 단계별 색 실측용(기준선 영향 없음).
       ...(sp?.plus === "1" ? [
         { titleNo: 900000002, title: "[기타] 샘플 먹는 영상!", dateKey: "2026-06-18", durationMs: 210000, access: "sub" as const },
