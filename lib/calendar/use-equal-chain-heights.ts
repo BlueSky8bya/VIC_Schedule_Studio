@@ -972,6 +972,9 @@ function placeCrownHoles(holes: SVGGElement, crowns: HTMLImageElement[], host: H
     img.setAttribute("transform", `translate(${cx} ${cy}) matrix(${m.a} ${m.b} ${m.c} ${m.d} 0 0)`);
   });
 }
+function allCrowns(root: HTMLElement): HTMLImageElement[] {
+  return Array.from(root.querySelectorAll<HTMLImageElement>("img.tier-crown"));
+}
 function startSheen(root: HTMLElement, target: SheenTarget | null) {
   const cur = sheenRun.get(root);
   if (!target) return; // 손을 떼도 돌던 빛은 한 바퀴를 마저 돈다
@@ -999,9 +1002,9 @@ function startSheen(root: HTMLElement, target: SheenTarget | null) {
   path.setAttribute("pathLength", "100");
   // 왕관 아래로 지나가게(2026-11-18 소유자) — 이 층은 표면 전체 위(z 12)에 있고 왕관은 카드 쌓임 맥락 안이라
   // 층 순서로는 못 내린다. 대신 지나가는 카드의 왕관 모양(그림 알파)을 마스크로 빛에서 도려낸다.
-  const crowns = block.cards
-    .map((c) => c.querySelector<HTMLImageElement>(":scope > .tier-crown"))
-    .filter((c): c is HTMLImageElement => Boolean(c));
+  // 달력의 왕관 전부(많아야 셋) — 제 카드 왕관만 도려내면, 아래 카드의 왕관이 이 카드 모서리에 걸쳐 있을 때 빛이 그 위를
+  // 지나갔다(2026-11-23 소유자: 빛이 왕관 앞에 보인다). 왕관은 윗변 모서리에 걸쳐 위 카드의 아랫변을 덮는다.
+  const crowns = allCrowns(root);
   const holes = crowns.length > 0 ? crownMask(layer, path) : null;
   layer.append(path);
   host.append(layer);
@@ -1089,10 +1092,7 @@ function startLoopSheen(root: HTMLElement, target: SheenTarget) {
   const measure = document.createElementNS(SVG_NS, "g");
   measure.setAttribute("visibility", "hidden");
   const blocks = runBlocksOf(root, target.card);
-  const crowns = blocks
-    .flatMap((b) => b.cards)
-    .map((c) => c.querySelector<HTMLImageElement>(":scope > .tier-crown"))
-    .filter((c): c is HTMLImageElement => Boolean(c));
+  const crowns = allCrowns(root);
   const holes = crowns.length > 0 ? crownMask(layer, path) : null;
   layer.append(measure, path);
   // 격자 바로 뒤 형제 — 줄을 넘는 빛이 다음 줄 칸에 가리지 않게(고른 테두리 층과 같은 자리).
