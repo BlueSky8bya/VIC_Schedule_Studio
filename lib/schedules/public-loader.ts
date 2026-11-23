@@ -349,7 +349,7 @@ const loadPublicScheduleData = unstable_cache(
         // 107 다시보기는 숲 '구독+'. 재생 권한은 숲 플레이어가 판단한다. 그 밖(미상 0·102 등)은 제외.
         readAllRowsStrict((from, to) => supabase
           .from("vod_archive")
-          .select("title_no, broadcast_day, title, duration_ms, thumb, guest, host_nick, host_id, reg_date, auth_no, upload")
+          .select("title_no, broadcast_day, title, duration_ms, thumb, guest, host_nick, host_id, reg_date, auth_no, upload, bno")
           .in("auth_no", [101, 107])
           .order("broadcast_day", { ascending: false })
           .order("title_no", { ascending: false })
@@ -416,7 +416,7 @@ const loadPublicScheduleData = unstable_cache(
             (t) => [Number(t.title_no), t]
           )
         );
-        return ((vodsRes.data as { title_no: number; broadcast_day: string; title: string; duration_ms: number; thumb: string; guest?: boolean; host_nick?: string; host_id?: string; reg_date?: string; auth_no?: number; upload?: boolean }[] | null) ?? [])
+        return ((vodsRes.data as { title_no: number; broadcast_day: string; title: string; duration_ms: number; thumb: string; guest?: boolean; host_nick?: string; host_id?: string; reg_date?: string; auth_no?: number; upload?: boolean; bno?: string | number | null }[] | null) ?? [])
           .map((row): PublicVodEntry => {
             const upload = row.upload === true;
             // 합방 게스트 출연분(0075)만 호스트 닉·아이디를 싣는다(둘 다 숲 공개 채널 정보). 아이디는 방송국 링크용.
@@ -447,6 +447,7 @@ const loadPublicScheduleData = unstable_cache(
                 const dur = Number(row.duration_ms) || 0;
                 return Number.isFinite(reg) && dur > 0 ? { startedAt: new Date(reg - dur).toISOString() } : {};
               })(),
+              ...(!upload && Number(row.bno) > 0 ? { broadcastNo: Number(row.bno) } : {}),
               timelineBy: tl && typeof tl.author_nick === "string" ? tl.author_nick : "",
               thumbQuery,
               ...(thumbUrl ? { thumbUrl } : {})

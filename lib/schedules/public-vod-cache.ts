@@ -11,7 +11,7 @@ const vod = z.object({
   chapters: z.number().int().nonnegative().optional(), timelineBy: z.string().optional(),
   thumbQuery: z.string().optional(), thumbUrl: z.string().optional(),
   host: z.string().optional(), hostId: z.string().optional(),
-  access: z.enum(["sub", "plus"]).optional(), startedAt: z.string().optional()
+  access: z.enum(["sub", "plus"]).optional(), startedAt: z.string().optional(), broadcastNo: z.number().int().positive().optional()
 });
 const metadata = z.object({ vods: z.array(vod) });
 

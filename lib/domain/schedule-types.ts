@@ -170,6 +170,8 @@ export type PublicVodEntry = {
   // 방송이 실제로 시작한 시각(ISO, 2026-09-18 소유자: "타임라인에 실제 시간도"). 숲 VOD 등록 시각 − 길이로 계산하는데,
   // 우리 방송 세션 기록(broadcast_session.started_at)과 분 단위까지 일치한다(실측 11/12). 공개 정보(등록 시각·길이)만 쓴다.
   startedAt?: string;
+  // 숲 방송 번호 — 한 방송이 여러 편으로 나뉘었을 때 같은 번호다(공개 정보). 걸친 날마다 모든 편을 보여 주는 데 쓴다(lib/schedules/vod-days).
+  broadcastNo?: number;
 };
 
 // 시청자 검색(0076, PLAN-20260918-023) — 공개 일정·다시보기·팬 타임라인 챕터를 한 순위로.

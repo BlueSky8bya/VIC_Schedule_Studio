@@ -54,6 +54,10 @@ export type DayVod = {
   // 이 날짜 칸에서 열 때 시작할 지점(초) — 며칠 이어진 방송의 둘째 날부터(lib/schedules/vod-days, 2026-11-23).
   // 없으면 처음부터. 플레이어 초기화·Space 재생·숲 링크가 모두 이 지점에서 출발한다.
   daySec?: number;
+  // 한 방송이 여러 편이고 며칠에 걸쳤을 때 — 이 날 먼저 열 편(그날 오전 6시에 방송 중이던 편). lib/schedules/vod-days.
+  dayFocus?: true;
+  // 이 날과 겹치지는 않지만 같은 방송의 다른 편이라 함께 보이는 편.
+  dayExtra?: true;
 };
 
 /** Pointer/keyboard share a single fixed activity event; opening/cancelling a
@@ -351,7 +355,10 @@ export function DayVodWindow({
       /* 무시 */
     }
   };
-  const initialSel = initialPart && vods[initialPart - 1] ? vods[initialPart - 1].titleNo : null;
+  // 주소·검색이 편을 정해 주지 않았으면 이 날 먼저 열 편(dayFocus)부터 — 없으면 첫 편(아래 쓰는 곳들이 vods[0]으로 받는다).
+  const initialSel = initialPart && vods[initialPart - 1]
+    ? vods[initialPart - 1].titleNo
+    : vods.find((v) => v.dayFocus)?.titleNo ?? null;
   const [dayVodSel, setDayVodSel] = useState<number | null>(initialSel);
   const dayVodSelRef = useRef<number | null>(null);
   dayVodSelRef.current = dayVodSel;

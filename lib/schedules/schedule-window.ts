@@ -1,5 +1,5 @@
 import type { PublicSchedule, PublicScheduleEvent, PublicVodEntry } from "@/lib/domain/schedule-types";
-import { vodDays } from "@/lib/schedules/vod-days";
+import { vodDays, vodShownDays } from "@/lib/schedules/vod-days";
 
 // 공개 포스터 첫 화면 데이터 창(2026-11-13 소유자 "속도 개선 1"): `/` 응답이 31개월 일정 전부(≈300KB)와
 // 다시보기 전부(≈130KB)를 RSC 페이로드로 실어 보냈다(페이로드의 96%). 첫 렌더에 필요한 건 보는 달 근처뿐이라,
@@ -47,9 +47,11 @@ export function eventInWindow(event: PublicScheduleEvent, window: ScheduleWindow
   return window.ranges.some((range) => overlaps(start, end, range));
 }
 
-export function vodInWindow(vod: PublicVodEntry, window: ScheduleWindow): boolean {
+// shown = vodShownDays(목록) — 같은 방송의 다른 편 때문에 보이는 날까지 포함한 날짜들. 없으면 그 편이 걸친 날만 본다.
+export function vodInWindow(vod: PublicVodEntry, window: ScheduleWindow, shown?: Map<number, string[]>): boolean {
   // 며칠 걸친 방송은 걸친 날 어느 하나라도 창 안이면 싣는다(뒤 날짜 칸에도 보이므로).
-  return vodDays(vod).some((day) => window.ranges.some((range) => overlaps(day.dateKey, day.dateKey, range)));
+  const days = shown?.get(vod.titleNo) ?? vodDays(vod).map((day) => day.dateKey);
+  return days.some((day) => window.ranges.some((range) => overlaps(day, day, range)));
 }
 
 // SSR용: 창 밖을 걸러 낸 공개 일정. 걸러 낼 게 없으면 원본을 그대로 돌려준다(창 표시도 없음).
@@ -58,7 +60,8 @@ export function windowPublicSchedule(schedule: PublicSchedule, ranges: Range[]):
   if (ranges.length === 0) return schedule;
   const window: ScheduleWindow = { ranges };
   const events = schedule.events.filter((event) => eventInWindow(event, window));
-  const vods = schedule.vods?.filter((vod) => vodInWindow(vod, window));
+  const shown = schedule.vods ? vodShownDays(schedule.vods) : undefined;
+  const vods = schedule.vods?.filter((vod) => vodInWindow(vod, window, shown));
   if (events.length === schedule.events.length && (vods?.length ?? 0) === (schedule.vods?.length ?? 0)) return schedule;
   return {
     calendar: schedule.calendar,
@@ -101,7 +104,11 @@ export function mergeWindowedSchedule(windowed: PublicSchedule, full: PublicSche
     events: mergeInOrder(full.events, windowed.events, (event) => event.id, (event) => eventInWindow(event, window)),
     tags: windowed.tags,
     palette: windowed.palette,
-    vods: mergeInOrder(full.vods ?? [], windowed.vods ?? [], (vod) => vod.titleNo, (vod) => vodInWindow(vod, window)),
+    vods: (() => {
+      // 같은 방송의 다른 편 때문에 보이는 날까지 센다 — 전체 목록 기준(창 쪽에만 있는 새 편은 제 날짜로).
+      const shown = vodShownDays([...(full.vods ?? []), ...(windowed.vods ?? []).filter((v) => !(full.vods ?? []).some((f) => f.titleNo === v.titleNo))]);
+      return mergeInOrder(full.vods ?? [], windowed.vods ?? [], (vod) => vod.titleNo, (vod) => vodInWindow(vod, window, shown));
+    })(),
     ...(windowed.myHeartIds ? { myHeartIds: windowed.myHeartIds } : {})
   };
 }

@@ -68,5 +68,15 @@ export function buildTimelineCandidates(comments: SourceComment[], durationSec: 
       });
     }
   }
-  return candidates.sort((a, b) => b.score - a.score || a.key.localeCompare(b.key));
+  candidates.sort((a, b) => b.score - a.score || a.key.localeCompare(b.key));
+  // A part-only timeline is better than none. "focused" exists to keep a narrow
+  // list from beating a whole-broadcast one; when no overview exists (a second
+  // replay part whose only notes cover one stretch — 2026-11-14 part 2 showed
+  // nothing), the best focused list becomes the shown one. Feedback and
+  // under-three-entry lists stay out.
+  if (!candidates.some((c) => c.eligible)) {
+    const fallback = candidates.find((c) => c.reason === "focused");
+    if (fallback) fallback.eligible = true;
+  }
+  return candidates;
 }

@@ -45,6 +45,12 @@ describe("independent fan timelines", () => {
     expect(list[0].key).toBe("root:2");
     expect(list.find((c) => c.key === "root:1")?.eligible).toBe(false);
   });
+  it("shows the best part-only timeline when no whole-broadcast one exists", () => {
+    const narrow = "0:10 시작\n0:20 중간\n0:30 끝";
+    expect(buildTimelineCandidates([root(1, narrow)], 6000)[0]).toMatchObject({ reason: "focused", eligible: true });
+    expect(buildTimelineCandidates([root(1, "플레이 피드백\n" + narrow)], 6000)[0].eligible).toBe(false);
+    expect(buildTimelineCandidates([root(1, "0:10 하나\n0:20 둘")], 6000)[0].eligible).toBe(false);
+  });
   it("retains separate roots from one author as independent templates", () => {
     const r = root(2); r.user_id = "user-1";
     expect(buildTimelineCandidates([root(1), r], 600)).toHaveLength(2);

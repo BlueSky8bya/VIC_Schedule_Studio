@@ -4077,7 +4077,7 @@ export function PublicPoster({
                       (2026-11-18 소유자) 칩은 날짜 칸 아래까지 왼쪽으로 뻗은 한 줄 — 길이는 날짜 밑(왼쪽 칸)에 짧게
                       ("13.5시간"), 나머지 폭은 전부 제목. 예전엔 제목과 길이가 한 칸을 나눠 써 제목이 거의 안 보였다. */}
                   {interactive
-                    ? (vodsByDate.get(cell.isoDate) ?? []).map((vod, vi, arr) => (
+                    ? (vodsByDate.get(cell.isoDate) ?? []).filter((vod) => !vod.dayExtra).map((vod, vi, arr) => (
                         <a
                           className={`agenda-link vod agenda-vod-inline${vod.access ? ` is-${vod.access}` : ""}`}
                           data-act="vod-replay"
