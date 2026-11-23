@@ -915,29 +915,6 @@ html[data-reduce-motion] .bottom-float-row {
 html[data-reduce-motion] .cal-zoom-float {
   transition: none;
 }
-/* 표시는 꺼졌지만 잠금해제가 살아 있는 상태 — 경고보다 낮은 톤(차분한 안내). */
-
-
-@keyframes private-banner-in {
-  0% { transform: translateY(-100%); opacity: 0; }
-  70% { transform: translateY(3px); opacity: 1; }
-  100% { transform: translateY(0); opacity: 1; }
-}
-@keyframes private-banner-flash {
-  0%, 100% { background: #fff7ed; box-shadow: none; }
-  25% {
-    background: #ffd8a0;
-    box-shadow: inset 0 0 0 2px rgb(234 88 12 / 45%), 0 6px 18px -6px rgb(234 88 12 / 55%);
-  }
-  55% { background: #fff7ed; box-shadow: none; }
-  75% { background: #ffe8c4; }
-}
-@keyframes lock-pop {
-  0% { transform: scale(0.4) rotate(-20deg); opacity: 0; }
-  55% { transform: scale(1.3) rotate(10deg); opacity: 1; }
-  78% { transform: scale(0.94) rotate(-4deg); }
-  100% { transform: scale(1) rotate(0); opacity: 1; }
-}
 
 /* ── 🛠 인사이트 대시보드 (개발자 전용, 패널 좌우 슬라이딩) ─────────────────────── */
 
@@ -2917,17 +2894,6 @@ html[data-reduce-motion] .dtp-pop-x:active {
     margin-bottom: 0;
   }
 }
-@keyframes vlive-pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.5);
-  }
-  70% {
-    box-shadow: 0 0 0 7px rgba(244, 63, 94, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(244, 63, 94, 0);
-  }
-}
 /* 방문 차트 미세 상호작용(손맛) — 막대 호버 시 밝게, 미니달력·히트맵 칸은 살짝 떠오르며 또렷이. */
 .vt-col {
   cursor: default;
@@ -3006,13 +2972,7 @@ html[data-reduce-motion] .dtp-pop-x:active {
   border-radius: 3px;
 }
 /* ── 보안 패널: 잠금 암호 핵심값을 스탯 타일로(키-값 나열 대신). 웹은 크게, 모바일 3열 컴팩트. ── */
-
-@media (min-width: 1000px) {
-}
 /* ── 시스템 패널: 등록 이메일 목록을 역할색 점 + 행 카드로(맨 나열 대신). ── */
-
-@media (min-width: 1000px) {
-}
 /* 커밋 해시 — 칩. 글씨체는 둘레와 같게(2026-11-13 소유자), 자리만 고르게. */
 
 @media (min-width: 1000px) {
@@ -5960,11 +5920,6 @@ html[data-reduce-motion] .teaser-gate-row.gate-shake,
 .pill-collapsed-row .pill-dots {
   margin-left: auto;
 }
-/* 확대 시 의미 텍스트 배지('미정' 칩)도 제목과 함께 커진다 — 본체 스타일은 public-poster.css
-   공용이라 건드리지 않고 편집실 카드 안에서만 배율(포스터엔 --cal-zoom이 없어 영향 0). */
-.studio-event-pill .evt-tentative {
-  font-size: calc(10.5px * var(--cal-zoom, 1) * var(--cal-text, 1));
-}
 /* 업도움 띠도 편집실 스코프에서만 배율 — 본체는 app/globals.css 공용(높이 근거는 그쪽 주석).
    레인 간격·top은 inline에서 calZoom을 곱하므로(스튜디오 셸) 높이·글자만 여기서 따라간다.
    17 → 22(2026-09-19): 더블클릭 표적이 너무 좁았다. 레인 간격 26과 짝(틈 4×배율). */
@@ -8145,9 +8100,6 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   min-width: 0;
 }
 /* 부연 설명(괄호·무늬 등)은 가로 여유 있는 웹에서만 — 모바일은 폭을 아껴 한 줄로. */
-
-@media (min-width: 1000px) {
-}
 /* 삭제 경고 — 점선으로 살짝 구분하고 붉게(통계가 흐트러진다는 주의). */
 .tag-tip.warn {
   margin-top: 2px;
@@ -8648,78 +8600,6 @@ html[data-reduce-motion] .viewer-preview-overlay .viewer-preview-actions { trans
   
 
   
-}
-/* 매니저/작업자 관리 — 모던 카드형 (.members-hint 스타일은 위 통일 규칙 사용) */
-
-.members-add-controls {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-/* 역할 세그먼트 토글 */
-
-/* 켤 때 통통 튀고(팝) 살짝 그림자 — "선택됐다"가 한눈에. 끌 때는 부드럽게 빠진다. */
-
-@keyframes role-pick-pop {
-  0% {
-    transform: scale(0.9);
-  }
-  55% {
-    transform: scale(1.09);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-.members-add-controls .button.primary {
-  min-height: 40px;
-}
-/* 새 멤버 행은 살짝 떠오르며 들어온다(목록 첫 표시·추가 시). */
-
-/* 웹 전용 — 행 위에 마우스를 올리면 살짝 떠오르며 옅은 배경(표 행처럼 hover 피드백). 모바일은
-   탭 기반이라 hover 없이 그대로. (악센트바는 행 내부 패딩을 모르는 채 넣으면 겹칠 수 있어 제외.) */
-@media (min-width: 1000px) {
-}
-@keyframes member-row-in {
-  from {
-    opacity: 0;
-    transform: translateY(-8px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-/* 삭제 시: 서버 확정 전까지 행이 위로 접히며 사라지는 느낌(실패하면 도로 펼쳐진다). */
-
-@keyframes member-row-out {
-  from {
-    opacity: 1;
-    max-height: 80px;
-    transform: translateX(0);
-  }
-  to {
-    opacity: 0;
-    max-height: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    margin-top: -10px;
-    transform: translateX(14px);
-  }
-}
-/* 동기화 중 작은 점 — 이메일 옆에서 은은히 깜빡(저장 중 신호). */
-
-@keyframes member-sync-pulse {
-  0%,
-  100% {
-    opacity: 0.35;
-    transform: scale(0.85);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.1);
-  }
 }
 /* 멤버별 역할 토글 — 켜지면 색 태그, 꺼지면 옅은 점선 윤곽(추가 가능함을 암시). */
 
@@ -11221,18 +11101,6 @@ html[data-reduce-motion] .tag-editor .tag-add-in-section:active {
   color: var(--ink);
 }
 
-.members-add-controls {
-  gap: var(--space-2);
-}
-
-.members-add-controls .button.primary {
-  min-height: var(--control-hit);
-  border-radius: var(--r-sm);
-  padding-inline: var(--space-control-x);
-  font-size: var(--text-body);
-  font-weight: var(--weight-semibold);
-}
-
 .members-empty {
   gap: var(--space-2);
   border: var(--stroke-hairline) dashed var(--line);
@@ -11267,15 +11135,6 @@ html[data-reduce-motion] .tag-editor .tag-add-in-section:active {
 
   .m-manage .members-panel {
     padding-bottom: calc(var(--control-hit) + var(--space-6) + var(--safe-bottom));
-  }
-
-  .members-add-controls {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .members-add-controls .button.primary {
-    width: 100%;
   }
 
 }

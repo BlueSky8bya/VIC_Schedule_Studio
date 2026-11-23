@@ -652,19 +652,14 @@ html[data-reduce-motion] .showcase-set {
 .showcase-gear {right:20px;top:20px;width:auto;min-width:112px;padding:0 14px;gap:8px;border-radius:24px;background:rgba(249,248,235,.92);color:#34493d;font-size:13px;font-weight:600;}
 .showcase-set {top:72px;right:20px;width:300px;max-height:calc(100dvh - 96px);overflow:auto;padding:18px;border-radius:var(--r-xl);background:rgba(249,248,238,.96);color:#35483e;box-shadow:var(--elev-3);backdrop-filter:blur(12px);}
 .sc-set-heading {display:flex;justify-content:space-between;align-items:center;font-size:16px;}
-.sc-set-heading button,.sc-set-reset {border:0;background:transparent;color:#536b5d;font:inherit;cursor:pointer;min-height:32px;}
+.sc-set-heading button {border:0;background:transparent;color:#536b5d;font:inherit;cursor:pointer;min-height:32px;}
 .sc-set-heading button {font-size:12px;padding:4px 8px;}
-.sc-set-location {margin:4px 0 0;font-size:var(--text-caption);color:#68776c;}
 .sc-set-now {margin:8px 0 16px;color:#536b5d;}
 .sc-set-name {color:#637267;}
 .sc-set-chip {min-height:32px;color:#536257;}
 .sc-set-chip.on {background:#d8e5ce;color:#294330;box-shadow:none;}
-.sc-set-datetime {display:grid;grid-template-columns:1.5fr 1fr;gap:8px;margin-top:16px;}
-.sc-set-datetime label {display:flex;flex-direction:column;gap:6px;font-size:12px;color:#637267;min-width:0;}
-.sc-set-datetime input {width:100%;min-width:0;box-sizing:border-box;padding:8px 6px;border:1px solid #cad4c3;border-radius:var(--r-sm);background:#fffdf5;color:#304735;font:inherit;font-size:13px;min-height:38px;}
 .sc-set-time-range {width:100%;accent-color:#64865d;margin:16px 0 0;height:26px;cursor:ew-resize;}
 .sc-set-hours {display:flex;justify-content:space-between;font-size:10px;color:#6f7c6e;}
-.sc-set-reset {font-size:var(--text-caption);text-decoration:underline;text-underline-offset:3px;display:block;margin:8px 0 4px;}
 .sc-set-more {margin-top:10px;border-top:1px solid #dce0d0;padding-top:12px;}
 .sc-set-more summary {cursor:pointer;font-size:12px;padding:6px 0;color:#4f654f;}
 .sc-set-more[open] summary {margin-bottom:12px;}
@@ -676,8 +671,6 @@ html[data-reduce-motion] .showcase-set {
 .sc-set-more[open]>.sc-set-row {margin-top:14px;}
 
 .showcase-set {gap:5px;}
-.sc-set-datetime {grid-template-columns:1fr 1fr;}
-.sc-set-datetime input {padding:8px 4px;font-size:12px;}
 
 /* Compact movable showcase palette: text stays opaque over soft glass. */
 .showcase-set {width:280px;padding:12px;gap:6px;border-radius:var(--r-lg);background:rgb(var(--glass-panel,255 253 246) / .84);backdrop-filter:blur(16px);animation:none;}

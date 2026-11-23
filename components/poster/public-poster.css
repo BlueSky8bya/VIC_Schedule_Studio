@@ -5051,19 +5051,6 @@ html[data-eye-comfort] .agenda-detail-backdrop.is-pop .agenda-detail-sheet.is-te
   --hy-beat-amp: calc(var(--hy-leader-peak, 0) * 0.9);
   animation: hype-beat-opacity var(--hy-beat-dur, 2.4s) linear var(--hy-beat-delay, 0s) infinite;
 }
-/* 여운(마지막 10초) — 초마다 한 번 퍼지는 파문. 크게 시작하지 않고 링에서 태어나
-   천천히 사라진다: 요란함이 아니라 잔향이다. */
-
-@keyframes dt-echo-out {
-  0% {
-    transform: scale(1);
-    opacity: 0.62;
-  }
-  100% {
-    transform: scale(1.34);
-    opacity: 0;
-  }
-}
 
 html[data-reduce-motion] .agenda-detail-sheet.is-hype .dt-count-ringbox::after {
   animation-duration: 1ms;
@@ -6234,25 +6221,6 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
   font-size: var(--text-caption);
   font-weight: 600;
   color: #8a7a4a;
-}
-/* '미정' 칩 — 상세 팝오버·시트·방송 패널처럼 문장으로 읽는 자리에만 쓴다(달력 카드는 빗금만, 정렬 유지).
-   가로 두 글자, 의미색 주황. 크림 면 + 짙은 주황 글자라 어떤 카드색 위에서도 읽힌다(대비 6.9:1). */
-.evt-tentative {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  margin-right: 5px;
-  padding: 1px 5px;
-  border-radius: var(--r-pill);
-  background: var(--tentative-soft);
-  box-shadow: inset 0 0 0 1px rgb(var(--tentative-rgb) / 45%);
-  color: var(--tentative-ink);
-  font-size: var(--text-micro);
-  font-weight: 900;
-  line-height: 1.35;
-  letter-spacing: 0;
-  white-space: nowrap;
-  vertical-align: 0.1em;
 }
 /* D: 2색 칸은 그라데이션(칸 배경) 위에 반쪽 무늬를 깔고, 글자는 그 위로 올린다. */
 .public-event[data-mixed] {

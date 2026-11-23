@@ -49,8 +49,7 @@ html[data-gfx="lite"] .gs-tide-caustic-b,
 html[data-gfx="lite"] .gs-tide-swell-b {
   display: none;
 }
-html[data-gfx="lite"] .gs-tide-swell-a,
-html[data-gfx="lite"] .gs-tide-light {
+html[data-gfx="lite"] .gs-tide-swell-a {
   animation: none;
 }
 /* 일시정지(lib/ui/ambient-pause.ts) — VOD 창·모달 백드롭 blur 중엔 물결 애니를 멈춘다(paused: 재시작 없이 그 자리). */
@@ -67,21 +66,6 @@ html[data-ambient-pause] .gs-tide * {
   /* 물 필름 — 반투명. 아래로 갈수록 살짝 깊다. 모래(body 아이보리)가 그대로 비친다. */
   background: linear-gradient(180deg, rgb(var(--gs-sea-rgb) / 4%) 0%, rgb(var(--gs-sea-rgb) / 8%) 100%);
 }
-.gs-tide-defs {
-  position: absolute;
-  width: 0;
-  height: 0;
-}
-/* 너울 — 아주 옅은 물빛 덩어리(깊이감). 크게, 부드럽게(radial 자체가 부드러워 blur 불필요), 느리게. */
-.gs-tide-swell,
-.gs-tide-light {
-  position: absolute;
-  border-radius: 50%;
-  will-change: transform;
-}
-.gs-tide-swell {
-  background: radial-gradient(closest-side, rgb(var(--gs-sea-rgb) / 12%) 0%, rgb(var(--gs-sea-rgb) / 5%) 50%, rgb(var(--gs-sea-rgb) / 0%) 100%);
-}
 .gs-tide-swell-a {
   left: -20%;
   top: -22%;
@@ -96,15 +80,6 @@ html[data-ambient-pause] .gs-tide * {
   height: 70%;
   animation: gs-drift-2 58s ease-in-out infinite alternate;
 }
-/* 햇살 얼룩 — 물을 지나 모래에 닿는 따뜻한 밝음. */
-.gs-tide-light {
-  left: 16%;
-  top: 6%;
-  width: 60%;
-  height: 58%;
-  background: radial-gradient(closest-side, rgb(var(--gs-sun-rgb) / 40%) 0%, rgb(var(--gs-sun-rgb) / 18%) 50%, rgb(var(--gs-sun-rgb) / 0%) 100%);
-  animation: gs-drift-3 66s ease-in-out infinite alternate;
-}
 @keyframes gs-drift-1 {
   to {
     transform: translate3d(10%, 8%, 0);
@@ -114,22 +89,6 @@ html[data-ambient-pause] .gs-tide * {
   to {
     transform: translate3d(-9%, -8%, 0);
   }
-}
-@keyframes gs-drift-3 {
-  to {
-    transform: translate3d(-8%, 9%, 0);
-  }
-}
-/* caustic — 화면보다 24% 크게 깔고(-12% 오프셋) 그 안에서 흐른다. 흐름(translate+skew)과 숨쉼(opacity)은
-   서로 다른 애니메이션이라 한 요소에 같이 건다. b는 처음부터 살짝 기울여(rotate) a와 셀이 어긋난다. */
-.gs-tide-caustic {
-  position: absolute;
-  left: -12%;
-  top: -12%;
-  width: 124%;
-  height: 124%;
-  display: block;
-  will-change: transform, opacity;
 }
 .gs-tide-caustic-a {
   animation:
