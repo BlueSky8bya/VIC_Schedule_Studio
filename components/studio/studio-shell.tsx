@@ -4057,6 +4057,7 @@ export function StudioShell({
     startY: number;
     offX: number;
     offY: number;
+    grabF: number; // 묶음 전체(첫날 왼쪽 끝 0 ~ 끝날 오른쪽 끝 1)에서 손이 잡은 자리의 비율
     node: HTMLElement;
     started: boolean;
     armed: boolean;
@@ -4136,9 +4137,17 @@ export function StudioShell({
     const rect = node.getBoundingClientRect();
     const isTouch = e.pointerType !== "mouse";
     justDraggedRef.current = false;
+    // 잡은 자리의 비율 — 손에 든 칩도 같은 비율 자리를 손이 쥔다(buildSpanGhost 뒤 onSpanMove에서 칩 폭에 곱한다).
+    // 이틀짜리 띠의 둘째 날을 잡았는데 칩은 늘 왼쪽 끝이 손에 붙어, 띠의 앞쪽을 든 것처럼 보이면서 판정은 잡은 날(뒤쪽)
+    // 기준이라 헷갈렸다(2026-11-23 소유자). 날짜로 센다 — 띠가 여러 주에 걸쳐 줄이 바뀌어도 '며칠째의 어디쯤'은 하나다.
+    const totalDays = daysBetweenIso(range.start, range.end) + 1;
+    const anchorCell = document.querySelector<HTMLElement>(`.studio-month-grid [data-isodate="${anchor}"]`)?.getBoundingClientRect();
+    const inCell = anchorCell && anchorCell.width > 0 ? Math.min(1, Math.max(0, (e.clientX - anchorCell.left) / anchorCell.width)) : 0.5;
+    const grabF = Math.min(1, Math.max(0, (daysBetweenIso(range.start, anchor) + inCell) / totalDays));
     spanRef.current = {
       ids,
       anchor,
+      grabF,
       start: range.start,
       end: range.end,
       startX: e.clientX,
@@ -4269,6 +4278,16 @@ export function StudioShell({
       const { ghost, label } = buildSpanGhost(d);
       d.ghost = ghost;
       d.label = label;
+      // 칩을 '잡은 비율' 자리로 손에 쥔다 — 칩 폭 × grabF. 들어올릴 때 커지는 중심도 그 점이라 손 밑이 안 밀린다.
+      const chipRect = ghost.firstElementChild?.getBoundingClientRect();
+      if (chipRect && chipRect.width > 0) {
+        d.offX = chipRect.width * d.grabF;
+        d.offY = chipRect.height / 2;
+        ghost.style.transformOrigin = `${d.offX}px ${d.offY}px`;
+        d.pos = { x: ev.clientX - d.offX, y: ev.clientY - d.offY };
+        ghost.style.left = `${d.pos.x}px`;
+        ghost.style.top = `${d.pos.y}px`;
+      }
       setSpanLabel(d, d.start, d.end, 0);
       document.body.style.userSelect = "none";
       document.body.classList.add("span-dragging");
