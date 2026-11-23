@@ -11,6 +11,10 @@
 export const VOD_DAY_START_HOUR = 6;
 export const VOD_DAY_MIN_OVERLAP_MS = 60 * 60 * 1000;
 
+// 이어진 방송의 뒤쪽 편으로 보는 한계 — 저장된 시작일보다 이만큼(일)까지 뒤면 실제 방송한 날로 옮긴다.
+// 그보다 더 뒤는 나중에 올린 영상(예: 2025-10-25 방송을 10-29에 올린 편)으로 보고 저장된 날 그대로 둔다.
+export const VOD_DAY_MAX_LATER = 2;
+
 const DAY_MS = 86_400_000;
 // KST(UTC+9)에서 하루 경계를 6시로 당긴 날 번호 — (t + 9h − 6h) / 하루.
 const SHIFT_MS = (9 - VOD_DAY_START_HOUR) * 3_600_000;
@@ -26,19 +30,25 @@ export function vodDays(vod: Pick<VodDaySource, "dateKey" | "durationMs" | "star
   const end = start + vod.durationMs;
   const first = Math.floor((start + SHIFT_MS) / DAY_MS);
   const last = Math.floor((end - 1 + SHIFT_MS) / DAY_MS);
-  if (last <= first) return anchor;
-  const days: VodDay[] = [];
+  const keyOf = (d: number) => new Date(d * DAY_MS).toISOString().slice(0, 10);
+  // 하루에만 걸친 편 — 평소 방송은 저장된 시작일 그대로(새벽에 시작한 방송의 칸이 하루 당겨지지 않게).
+  // 다만 이어진 방송의 뒤쪽 편(예: 11-13 14:30에 시작한 방송의 2부가 11-14 10:40~20:37)은 저장된 날이 방송 시작일(13일)이라
+  // 그대로 두면 14일 칸에 14일 방송분이 없다 — 실제 방송한 날로 옮긴다.
+  const single = (d: number): VodDay[] => {
+    const later = Math.round((Date.parse(keyOf(d)) - Date.parse(vod.dateKey)) / DAY_MS);
+    return later >= 1 && later <= VOD_DAY_MAX_LATER ? [{ dateKey: keyOf(d), sec: 0 }] : anchor;
+  };
+  if (last <= first) return single(first);
+  const days: (VodDay & { d: number })[] = [];
   for (let d = first; d <= last; d += 1) {
     const dayStart = d * DAY_MS - SHIFT_MS;
     const overlap = Math.min(end, dayStart + DAY_MS) - Math.max(start, dayStart);
     if (overlap < VOD_DAY_MIN_OVERLAP_MS) continue;
-    days.push({
-      dateKey: new Date(d * DAY_MS).toISOString().slice(0, 10),
-      sec: Math.max(0, Math.floor((dayStart - start) / 1000))
-    });
+    days.push({ d, dateKey: keyOf(d), sec: Math.max(0, Math.floor((dayStart - start) / 1000)) });
   }
-  // 하루만 남으면 평소 방송과 같다 — 시작일 그대로(새벽에 시작한 방송의 칸이 하루 당겨지지 않게).
-  return days.length > 1 ? days : anchor;
+  // 하루만 남으면 하루에만 걸친 편과 같다.
+  if (days.length === 1) return single(days[0].d);
+  return days.length > 1 ? days.map(({ dateKey, sec }) => ({ dateKey, sec })) : anchor;
 }
 
 /** 날짜별 묶음. 며칠 걸친 다시보기는 걸친 날마다 들어가고 daySec(그날 시작 지점)을 단다. 날 안에서는 방송 시작 순. */
