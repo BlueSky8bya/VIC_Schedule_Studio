@@ -39,6 +39,17 @@ export function VodAccessBadge({ access, small = false }: { access: "sub" | "plu
   );
 }
 
+/** 방송 시작 시각을 한국 시각 말로 — "11월 22일 오전 1시 50분". 시각을 모르면 null. */
+export function vodStartLabel(startedAt: string | undefined): string | null {
+  const t = startedAt ? Date.parse(startedAt) : Number.NaN;
+  if (!Number.isFinite(t)) return null;
+  const k = new Date(t + 9 * 3_600_000); // 한국 시각을 UTC 필드로 읽는다
+  const h = k.getUTCHours();
+  const m = k.getUTCMinutes();
+  const hour = `${h < 12 ? "오전" : "오후"} ${h % 12 === 0 ? 12 : h % 12}시`;
+  return `${k.getUTCMonth() + 1}월 ${k.getUTCDate()}일 ${hour}${m ? ` ${m}분` : ""}`;
+}
+
 export type DayVod = {
   titleNo: number;
   title: string;
@@ -1589,7 +1600,25 @@ export function DayVodWindow({
                                   <strong>{Number(dateKey.slice(5, 7))}월 {Number(dateKey.slice(8, 10))}일 오전 6시 방송분부터 재생</strong>
                                   <small>영상 {formatTimecode(vod.daySec)} 지점</small>
                                 </span>
-                              ) : null}
+                              ) : (() => {
+                                // 처음부터 재생되는 편 — 편이 여럿인 날에는 이 편이 언제 방송분인지 말해 준다(2026-11-23 소유자:
+                                // 21일 창에서 2부를 고르면 ▶만 보여 언제 것인지 헷갈린다). 편이 하나뿐인 평소 날은 조용히 둔다.
+                                const when = list.length > 1 ? vodStartLabel(vod.startedAt) : null;
+                                if (!when) return null;
+                                const day = `${Number(dateKey.slice(5, 7))}월 ${Number(dateKey.slice(8, 10))}일`;
+                                // 이 날과 겹치지 않는 편(같은 방송의 다른 편)은 앞뒤 관계까지 — "이 날 것이 아니다"를 분명히.
+                                const note = !vod.dayExtra
+                                  ? "처음부터 재생"
+                                  : (vod.startedAt ?? "") > `${dateKey}T21:00:00.000Z`
+                                    ? `${day} 뒤에 이어진 편`
+                                    : `${day} 전에 끝난 편`;
+                                return (
+                                  <span className="dvm-daystart is-plain">
+                                    <strong>{when} 시작한 방송분</strong>
+                                    <small>{note}</small>
+                                  </span>
+                                );
+                              })()}
                               {vod.durationMs > 0 ? (
                                 <em className="dvm-dur">{formatVodDuration(vod.durationMs)}</em>
                               ) : null}

@@ -1891,6 +1891,11 @@ html[data-reduce-motion] .dvm-notice {
   box-shadow: 0 2px 10px rgb(0 0 0 / 28%);
   pointer-events: none;
 }
+/* 처음부터 재생되는 편의 안내("언제 시작한 방송분") — 강조색 알약은 '처음부터가 아니다'를 알리는 쪽에만 쓰고, 이쪽은 차분한 어두운 알약. */
+.dvm-daystart.is-plain {
+  background: rgb(16 21 31 / 78%);
+  box-shadow: 0 2px 8px rgb(0 0 0 / 22%);
+}
 .dvm-daystart strong {
   font-size: var(--text-body, 14px);
   font-weight: 700;
