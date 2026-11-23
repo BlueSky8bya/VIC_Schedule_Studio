@@ -1091,7 +1091,6 @@ function startLoopSheen(root: HTMLElement, target: SheenTarget) {
   path.setAttribute("class", "card-sheen is-loop");
   const measure = document.createElementNS(SVG_NS, "g");
   measure.setAttribute("visibility", "hidden");
-  const blocks = runBlocksOf(root, target.card);
   const crowns = allCrowns(root);
   const holes = crowns.length > 0 ? crownMask(layer, path) : null;
   layer.append(measure, path);
