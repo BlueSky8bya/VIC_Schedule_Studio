@@ -24,7 +24,7 @@ const STEP_CONCAVE = 5;
 // 크게 둥글려 두 곡선이 계단 가운데에서 만난다(~ 모양). 상한일 뿐이고 실제 반경은 계단 높이의 절반을 넘지 않는다(roundedPath).
 const STEP_SOFT = 18;
 // 두 카드가 세로로 이만큼 겹치면 기둥 없이 경계선에서 맞닿는다(stepBandPath).
-const STEP_SEAM_MIN = 12;
+const STEP_SEAM_MIN = 6; // 12였을 때는 끄는 중 10px만 겹친 두 카드가 기둥으로 이어져 경계선과 카드 끝 사이에 틈이 보였다
 const LEVEL_EPS = 1;
 // 같은 틈을 여러 꺾인 띠가 지날 때(2026-11-23: 이어진 일정은 순서와 상관없이 잇는다 → 두 묶음이 같은 날을 지나면 생긴다)
 // 틈을 나눠 나란히 세운다 — 기둥 사이 2px, 가늘어져도 3px 아래로는 안 간다.
@@ -126,7 +126,8 @@ type Span = { top: number; bottom: number };
 // 잇는다. 몸이 하나면 둥근 사각형, 둘이면 꺾인 띠 한 쌍, 그 이상도 같은 규칙. 꺾인 띠 몸통·클릭 테두리·손 올림 빛이
 // 전부 이 한 함수를 쓴다(2026-11-18 소유자: "모양을 바꿨으면 테두리·빛도 그 모양대로, 규칙은 하나로").
 // hidden(x) = 그 꼭짓점이 카드 밑에 숨으면 둥글리지 않는다. flat = 줄바뀜으로 이어지는 끝(모서리를 둥글리지 않음).
-type Stem = { xa: number; xb: number };
+// seam = 기둥 없이 날짜 경계선에서 맞닿는 이음(stepBandPath가 정한다) — 위·아래 계단을 모두 부드럽게(STEP_SOFT) 둥글린다.
+type Stem = { xa: number; xb: number; seam?: boolean };
 function chainOutline(
   bodies: Box[], stems: Stem[], convex: number, concave: number,
   hidden: (x: number) => boolean, flat: FlatEnds = {}
@@ -142,6 +143,13 @@ function chainOutlineParts(
   return openOutlineParts(outlinePoints(bodies, stems, convex, concave, hidden, flat));
 }
 type SidedPt = Pt & { side?: "L" | "R" };
+// 맞닿는 이음의 계단선 x — aSide = 그 계단선이 앞 몸(A)의 옆변인가. xa·xb는 경계선에서 e만큼 벌린 값(안으로 들이면 뒤집힌다):
+// 가운데 m에서, 앞 몸의 변이면 +e(앞 몸 바깥 = 오른쪽), 뒤 몸의 변이면 −e(뒤 몸 바깥 = 왼쪽).
+function seamX(st: Stem, aSide: boolean): number {
+  const m = (st.xa + st.xb) / 2;
+  const e = (st.xb - st.xa) / 2;
+  return aSide ? m + e : m - e;
+}
 function outlinePoints(
   bodies: Box[], stems: Stem[], convex: number, concave: number,
   hidden: (x: number) => boolean, flat: FlatEnds = {}
@@ -162,7 +170,16 @@ function outlinePoints(
     const A = bodies[k];
     const B = bodies[k + 1];
     const top = Math.min(A.top, B.top);
-    raw.push({ x: st.xa, y: A.top }, { x: st.xa, y: top }, { x: st.xb, y: top }, { x: st.xb, y: B.top });
+    // 경계선에서 맞닿는 이음이면 윗변 계단도 부드럽게 — 띠 때문에 한 칸만 내려앉은 자리에서 ~로 내려갔다 올라온다.
+    const soft = Boolean(st.seam);
+    if (st.seam) {
+      // 맞닿는 이음의 계단선은 하나다 — 그 선은 더 튀어나온 몸의 옆변이라, 그 몸 바깥쪽(띄우는 양 e만큼)에 선다.
+      // (기둥용 xa·xb를 그대로 쓰면 안으로 들일 때 둘의 순서가 뒤집혀 선이 2px 엇갈리고 곡선이 눌렸다.)
+      const x = seamX(st, A.top < B.top);
+      raw.push({ x, y: A.top, soft }, { x, y: B.top, soft });
+      return;
+    }
+    raw.push({ x: st.xa, y: A.top, soft }, { x: st.xa, y: top, soft }, { x: st.xb, y: top, soft }, { x: st.xb, y: B.top, soft });
   });
   raw.push(
     { x: last.right, y: last.top, sharp: flat.right && !rightTopCut, side: flat.right ? "R" : undefined, cut: rightTopCut },
@@ -175,7 +192,12 @@ function outlinePoints(
     const B = bodies[k + 1];
     const bottom = Math.max(A.bottom, B.bottom);
     // 윗변이 한 줄이면 아랫변 계단은 부드럽게(STEP_SOFT) — 곧은 변 위의 점은 아래에서 걸러져 계단 두 꼭짓점만 남는다.
-    const soft = Math.abs(A.top - B.top) < LEVEL_EPS;
+    const soft = Boolean(st.seam) || Math.abs(A.top - B.top) < LEVEL_EPS;
+    if (st.seam) {
+      const x = seamX(st, A.bottom > B.bottom);
+      raw.push({ x, y: B.bottom, soft }, { x, y: A.bottom, soft });
+      continue;
+    }
     raw.push(
       { x: st.xb, y: B.bottom, soft }, { x: st.xb, y: bottom, soft },
       { x: st.xa, y: bottom, soft }, { x: st.xa, y: A.bottom, soft }
@@ -251,11 +273,11 @@ export function openOutlineParts(pts: SidedPt[]): OutlinePart[] {
 // 꺾인 띠 한 쌍(앞 몸 x0~, 기둥 xa~xb, 뒤 몸 ~x1) — chainOutline의 몸 둘짜리.
 function stepOutline(
   x0: number, xa: number, xb: number, x1: number, S: Span, T: Span,
-  convex: number, concave: number, hidden: (x: number) => boolean, flat: FlatEnds = {}
+  convex: number, concave: number, hidden: (x: number) => boolean, flat: FlatEnds = {}, seam = false
 ): string {
   return chainOutline(
     [{ left: x0, right: xa, ...S }, { left: xb, right: x1, ...T }],
-    [{ xa, xb }], convex, concave, hidden, flat
+    [{ xa, xb, seam }], convex, concave, hidden, flat
   );
 }
 
@@ -266,7 +288,7 @@ export function stepBandPath(
   convex = STEP_CONVEX,
   sw = 1,
   at?: StepLane
-): { d: string; width: number; originX: number; originY: number; xa: number; xb: number } {
+): { d: string; width: number; originX: number; originY: number; xa: number; xb: number; seam: boolean } {
   const gap = T.left - S.right;
   const mid = (S.right + T.left) / 2;
   let w = Math.min(STEP_MAX, Math.max(STEP_MIN, gap - STEP_CLEAR * 2));
@@ -279,9 +301,10 @@ export function stepBandPath(
   }
   // 두 카드가 세로로 충분히 겹치면 기둥이 필요 없다 — 틈 한가운데(날짜 경계선)에서 맞닿게 해, 위·아래 계단(~)의 중심이
   // 경계선 위에 온다. 예전엔 기둥 폭(7~12px)의 양 끝에 계단이 서서 곡선이 경계선에서 한쪽으로 치우쳐 보였다(2026-11-23 소유자).
-  // 세로로 안 겹치는 꺾인 띠(위아래로 떨어진 두 카드)는 이을 몸이 있어야 하니 기둥 그대로(경계선에 대칭). 자리를 나눈 틈도 그대로.
+  // 세로로 안 겹치는 꺾인 띠(위아래로 떨어진 두 카드)는 이을 몸이 있어야 하니 기둥 그대로(경계선에 대칭).
+  // 같은 틈을 여러 이음이 지나도(자리 나눔) 맞닿는 이음은 서로 다른 높이에서 맞닿을 뿐이라 자리를 나눌 필요가 없다.
   const overlap = Math.min(S.bottom, T.bottom) - Math.max(S.top, T.top);
-  if (!(at && at.lanes > 1) && overlap >= STEP_SEAM_MIN) {
+  if (overlap >= STEP_SEAM_MIN) {
     w = 0;
     xa = mid;
   }
@@ -291,23 +314,24 @@ export function stepBandPath(
   const h = sw / 2;
   const Sy = { top: S.top + h, bottom: S.bottom - h };
   const Ty = { top: T.top + h, bottom: T.bottom - h };
+  const seam = w === 0;
   const d = stepOutline(x0, xa + h, xb - h, x1, Sy, Ty, Math.max(2, convex - h), STEP_CONCAVE, (x) =>
-    Math.abs(x - x0) < 0.01 || Math.abs(x - x1) < 0.01
+    Math.abs(x - x0) < 0.01 || Math.abs(x - x1) < 0.01, {}, seam
   );
-  return { d, width: w, originX: xa, originY: S.top < T.top ? S.top : S.bottom, xa, xb };
+  return { d, width: w, originX: xa, originY: S.top < T.top ? S.top : S.bottom, xa, xb, seam };
 }
 
 // 고른 묶음을 한 덩어리로 감싸는 테두리 — 앞 카드 + 띠 + 다음 카드 바깥을 e만큼 띄워 한 줄로 두른다.
 // 카드마다 따로 두르던 점선/실선 링(띠 위에서 끊기고 겹치던 것)을 대신한다.
 // stemE = 기둥(칸 사이 틈) 부분만 따로 띄우는 양 — 테두리가 틈 밖으로 나가면 옆 카드·'원래 위치' 상자 점선과 닿는다.
 export function stepRingPath(
-  S: Box, T: Box, xa: number, xb: number, e: number, convex = STEP_CONVEX, stemE = e, flat: FlatEnds = {}
+  S: Box, T: Box, xa: number, xb: number, e: number, convex = STEP_CONVEX, stemE = e, flat: FlatEnds = {}, seam = false
 ): string {
   return stepOutline(
     S.left - e, xa - stemE, xb + stemE, T.right + e,
     { top: S.top - e, bottom: S.bottom + e },
     { top: T.top - e, bottom: T.bottom + e },
-    convex + e, Math.max(2, STEP_CONCAVE - e), () => false, flat
+    convex + e, Math.max(2, STEP_CONCAVE - e), () => false, flat, seam
   );
 }
 
@@ -443,7 +467,7 @@ function drawSteps(root: HTMLElement) {
         const TB = local(to.getBoundingClientRect());
         const convex = convexOf(from);
         const sw = borderWidthOf(from);
-        const { originX, originY, xa, xb } = stepBandPath(SB, TB, convex, sw, laneOf(from));
+        const { originX, originY, xa, xb, seam } = stepBandPath(SB, TB, convex, sw, laneOf(from));
         // (2026-11-16 소유자 "중간에 단차") 몸통 = 앞 카드(띠로 붙은 조각 포함) + 기둥 + 다음 카드 전체를 한 도형으로.
         // 두 카드는 배경·테두리를 비우고(.chain-step-solid) 이 도형이 칠·테두리를 한 번에 맡는다 — 카드와 띠가 따로
         // 칠해지며 생기던 색 경계·테두리 어긋남이 구조적으로 없다. 테두리 두께 = 카드 테두리 두께, 절반 안쪽에 선다.
@@ -453,7 +477,7 @@ function drawSteps(root: HTMLElement) {
         const TU = unionBox(TG, local);
         // 묶음 바깥 끝이 줄바뀜이면 그 끝은 둥글리지 않고 평평하게 — 카드 칠을 이 도형이 맡으므로 여기서 맞춘다.
         const flat: FlatEnds = flatEndsOf(SG, TG);
-        const d = stepRingPath(SU, TU, xa, xb, -sw / 2, convex, -sw / 2, flat);
+        const d = stepRingPath(SU, TU, xa, xb, -sw / 2, convex, -sw / 2, flat, seam);
         const overlays = flatOverlaysOf(
           root.querySelector<HTMLElement>(".studio-event-pill:not(.chain-step-solid)") ?? from
         );
@@ -497,7 +521,7 @@ function drawSteps(root: HTMLElement) {
         body.style.strokeWidth = `${sw}px`;
         // 카드가 흐려지는 상태(끌기 원래 자리·필터 흐림)는 몸통도 같이 흐린다.
         g.style.opacity = getComputedStyle(from).opacity;
-        if (laneOf(from)) {
+        if (laneOf(from) && !seam) {
           const h = sw / 2;
           const top = Math.min(SB.top, TB.top) + h;
           const bottom = Math.max(SB.bottom, TB.bottom) - h;
@@ -791,7 +815,7 @@ function blockOutline<R>(
   const ok = stems.length === boxes.length - 1;
   return draw(
     ok ? boxes.map(grow) : [grow(unionBox(block.cards, local))],
-    ok ? stems.map((st) => ({ xa: st.xa - stemE, xb: st.xb + stemE })) : [],
+    ok ? stems.map((st) => ({ xa: st.xa - stemE, xb: st.xb + stemE, seam: st.seam })) : [],
     Math.max(2, convex + e), Math.max(2, STEP_CONCAVE - e), () => false, flat
   );
 }
@@ -1380,6 +1404,18 @@ function isDecorativeMutation(r: MutationRecord): boolean {
   return nodes.length > 0 && nodes.every(sheen);
 }
 
+/** 이어진 카드·띠 머리·띠 빈 자리의 크기에 닿을 수 있는 변화인가 — 그 요소 자신이거나, 그 안쪽이거나, 그런 요소가 붙고 떨어졌거나. */
+const SIZED_NODES = "[data-chain], [data-band-head], [data-band-slot], [data-step-from], [data-step-to]";
+function touchesSizedCards(r: MutationRecord): boolean {
+  const el = r.target instanceof Element ? r.target : r.target.parentElement;
+  if (!el) return true;
+  if (r.type === "attributes" && r.attributeName !== "class") return true; // data-chain·data-step-* 자체가 바뀜
+  if (el.closest(SIZED_NODES)) return true;
+  if (r.type !== "childList") return false;
+  const has = (n: Node) => n instanceof Element && (n.matches(SIZED_NODES) || n.querySelector(SIZED_NODES) !== null);
+  return [...r.addedNodes, ...r.removedNodes].some(has);
+}
+
 function applyHot(root: HTMLElement, key: string | null) {
   const prev = hotKey.get(root) ?? null;
   if (prev === key) return;
@@ -1550,9 +1586,9 @@ export function useEqualChainHeights<T extends HTMLElement>(
         el.removeAttribute("data-band-sparse");
       }
       const pills = Array.from(root!.querySelectorAll<HTMLElement>("[data-chain]"));
-      const signature = pills
-        .map((p) => `${p.dataset.chain}:${p.offsetWidth}:${p.childElementCount}:${p.textContent?.length ?? 0}:${p.className}`)
-        .join("|");
+      // 폭만 본다 — 글·모양이 바뀌면 MutationObserver가 force로 부른다. (글자 수까지 넣었더니 카드마다 글 전체를 읽느라
+      // 끄는 동안 이 한 줄이 높이 맞춤 전체만큼 걸렸다, 2026-11-23 실측.)
+      const signature = pills.map((p) => `${p.dataset.chain}:${p.offsetWidth}`).join("|");
       if (!force && signature === fitSignature && root!.querySelector("[data-eq-h]:not([data-chain])") === null) {
         draw();
         return;
@@ -1616,6 +1652,7 @@ export function useEqualChainHeights<T extends HTMLElement>(
     // 커지고, 나머지는 끝나서야 따라 점프 → '15일만 튀고 6~14가 뒤늦게 따라오는' 글리치.
     // → 트리거가 오면 '다음 프레임부터 매 프레임' equalize를 돌리고, 마지막 트리거 후 잠깐(꼬리)
     //   더 돌린다. 그러면 이어진 칸들이 폭 변화 내내 같이 높이를 맞춰 한 번에 부드럽게 움직인다.
+    let rootWidth = -1;
     let pumpRaf = 0;
     let pumpUntil = 0;
     // 이 시각까지는 폭·높이도 다시 맞춘다(크기가 바뀌는 중). 그 뒤 펌프가 남아 있으면 그리기만.
@@ -1697,7 +1734,18 @@ export function useEqualChainHeights<T extends HTMLElement>(
     }
     const ro =
       typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(() => {
+        ? new ResizeObserver((entries) => {
+            // 폭이 그대로면 카드의 폭·높이는 안 바뀐다 — 높이만 바뀐 알림(끄는 동안 놓을 자리가 열리고 닫히며 달력 높이가
+            // 프레임마다 변한다)에는 폭·높이를 다시 맞추지 않고 띠·테두리만 따라 그린다. 예전엔 그 프레임마다 전부 다시 맞췄다
+            // (한 장 끌기 시간의 가장 큰 몫, 2026-11-23 실측).
+            const w = Math.round((entries[entries.length - 1]?.contentRect.width ?? 0) * 2) / 2;
+            if (w === rootWidth) {
+              draw();
+              pumpUntil = Math.max(pumpUntil, (typeof performance !== "undefined" ? performance.now() : 0) + 60);
+              if (!pumping) pump();
+              return;
+            }
+            rootWidth = w;
             equalize();
             schedule();
           })
@@ -1711,7 +1759,9 @@ export function useEqualChainHeights<T extends HTMLElement>(
             // 손 올림 표시(data-chain-hot·.is-hot)와 광택 레이어의 생성·삭제는 CSS·장식일 뿐 크기를 안 바꾼다 —
             // 이것까지 다시 재면 카드에 마우스를 올릴 때마다 전체 맞춤이 250ms씩 매 프레임 돌았다(2026-11-17).
             if (records.every(isDecorativeMutation)) return;
-            equalize();
+            // 이어진 카드·띠 머리에 닿는 변화만 강제로 다시 맞춘다. 그 밖(칸 강조 클래스, 놓을 자리, 이어지지 않은 카드)은
+            // 폭이 그대로면 띠·테두리만 다시 그린다(equalize(false)) — 끄는 동안 칸 강조가 바뀔 때마다 전부 다시 맞추지 않게.
+            equalize(records.some(touchesSizedCards));
             scheduleSettle();
           })
         : null;

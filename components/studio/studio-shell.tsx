@@ -138,7 +138,7 @@ import {
   splitEventTitle
 } from "@/lib/calendar/month";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
-import { ChainStepLayer, chainDataAttrs, wrapFadeOf, chainSlim, chainWrapClasses } from "@/lib/calendar/chain-join-view";
+import { ChainStepLayer, chainDataAttrs, chainStepOut, wrapFadeOf, chainSlim, chainWrapClasses } from "@/lib/calendar/chain-join-view";
 import { getDayMark } from "@/lib/calendar/holidays";
 import {
   MonthJumpToast,
@@ -2844,7 +2844,20 @@ export function StudioShell({
     window.addEventListener("resize", schedule);
     // 창 크기 이벤트 없이도 상단바 폭은 바뀐다(세로 스크롤바 생김/사라짐, rail 열림·닫힘 슬라이드, 웹폰트 교체) — 그때 잰 단계가
     // 그대로 굳어 "창이 넓은데도 아이콘만"이 됐다(2026-09-04 사용자). 상단바·계정 카드 자체를 지켜보며 다시 잰다.
-    const ro = new ResizeObserver(schedule);
+    // 단, 압축 단계는 폭에만 달렸다 — 높이만 바뀐 알림에는 다시 재지 않는다. 일정을 끄는 동안 놓을 자리가 열리고 닫히면
+    // 달력 높이가 프레임마다 바뀌는데, 그때마다 단계를 0부터 다시 올려 보느라 화면 배치를 여러 번 다시 계산했다(2026-11-23 실측).
+    const widths = new Map<Element, number>();
+    const ro = new ResizeObserver((entries) => {
+      let changed = false;
+      for (const entry of entries) {
+        const w = Math.round(entry.contentRect.width);
+        if (widths.get(entry.target) !== w) {
+          widths.set(entry.target, w);
+          changed = true;
+        }
+      }
+      if (changed) schedule();
+    });
     ro.observe(shell);
     const bar = shell.querySelector<HTMLElement>(".studio-topbar");
     if (bar) ro.observe(bar);
@@ -3478,6 +3491,8 @@ export function StudioShell({
   const dropOverRef = useRef<{ id: string; after: boolean } | null>(null);
   // 마지막으로 화면에 보낸 놓을 자리 — 같은 자리면 갱신을 다시 예약하지 않는다(onEventDragMove).
   const dropSlotSentRef = useRef<{ day: string; overId: string | null; after: boolean } | null>(null);
+  // 끄는 동안 칸마다 지난번에 그린 결과를 기억한다(dayCell 아래 설명) — 놓을 자리와 무관한 칸은 다시 그리지 않는다.
+  const dragCellCacheRef = useRef<{ owner: unknown; cells: Map<string, { sig: string; el: ReactNode }> } | null>(null);
   // 드롭될 위치 표시(삽입선) — 어느 날, 어느 카드 기준 위/아래인지.
   const [dropSlot, setDropSlot] = useState<{
     day: string;
@@ -3556,15 +3571,17 @@ export function StudioShell({
         };
     // 미리보기 = 놓은 뒤 결과 그대로(2026-11-17 소유자) — 놓아도 안 바뀌는 자리면 지금 모양 그대로 보인다.
     // 단 놓을 자리가 접히는 중인 칸만은 접힐 때까지 꺾인 띠로(위 closingGapDays).
+    const depthAt = new Map(cells.map((c, i) => [c.isoDate, supportCellDepth[i] ?? 0] as const));
     return buildChainJoins(
       cells,
       listFor,
       (e) => !teaserStillHidden(e),
-      closingGapDays.size > 0 ? (a, b) => closingGapDays.has(a) || closingGapDays.has(b) : undefined
+      // 끄는 중 놓을 자리가 열리는 칸 + 업 도움·기간 안내 띠 때문에 두 칸의 일정 시작 높이가 다른 틈(카드마다 제 자리에 서고 이음이 굽는다).
+      (a, b) => closingGapDays.has(a) || closingGapDays.has(b) || (depthAt.get(a) ?? 0) !== (depthAt.get(b) ?? 0)
     );
     // canonId는 임시↔실제 id 대응표(ref)를 읽는 함수라 렌더마다 새로 만들어진다 — deps에 넣으면 memo가 매번 깨진다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cells, liveEvents, dragEventId, dropSlot, closingGapDays]);
+  }, [cells, liveEvents, dragEventId, dropSlot, closingGapDays, supportCellDepth]);
   const dragGhostRef = useRef<HTMLElement | null>(null);
   const dragInfoRef = useRef<{
     id: string;
@@ -8080,7 +8097,44 @@ export function StudioShell({
                   .querySelector<HTMLElement>(`.studio-month-grid [data-isodate="${target}"]`)
                   ?.focus();
               };
-              return cells.map((cell, cellIndex) => {
+              // ── 끄는 동안의 칸 재사용(2026-11-23) ──
+              // 한 장을 끌면 놓을 자리가 바뀔 때마다 이 컴포넌트 전체가 다시 그려진다(42칸 × 일정들). 그런데 그때 실제로 달라지는
+              // 칸은 놓을 자리가 열리는 칸, 방금 떠난 칸, 이음 모양이 바뀌는 칸 몇 개뿐이다. 끄는 동안에는 칸마다 '그 칸의 모습을
+              // 정하는 값'(sig)을 만들어, 지난번과 같으면 지난번에 만든 요소를 그대로 돌려준다 — React는 같은 요소를 받으면 그 칸을
+              // 건너뛴다. 느린 화면에서 놓을 자리가 바뀔 때마다 0.06~0.15초씩 멈추던 것이 이 다시 그리기였다(실측).
+              // 끄는 동안에만 쓴다: 그동안은 손이 카드를 쥐고 있어 다른 입력(고르기·편집·복사)이 없고, 칸의 손잡이 함수들은 쓰이지
+              // 않는다. 끌기가 끝나면 dragEventId가 비면서 전부 새로 그린다. 일정 목록이 바뀌면(저장 응답 등) 기억을 버린다.
+              const cellCache = (() => {
+                if (!dragEventId) {
+                  dragCellCacheRef.current = null;
+                  return null;
+                }
+                const cur = dragCellCacheRef.current;
+                if (cur && cur.owner === liveEvents) return cur.cells;
+                const fresh = { owner: liveEvents as unknown, cells: new Map<string, { sig: string; el: ReactNode }>() };
+                dragCellCacheRef.current = fresh;
+                return fresh.cells;
+              })();
+              const dayCell = (cell: (typeof cells)[number], cellIndex: number): ReactNode => {
+                if (!cellCache) return renderDayCell(cell, cellIndex);
+                const sig = [
+                  dragEventId,
+                  dragChipH,
+                  calZoom,
+                  dropSlot && dropSlot.day === cell.isoDate ? `${dropSlot.overId ?? ""}:${dropSlot.after ? 1 : 0}` : "-",
+                  dropDate === cell.isoDate ? "target" : "",
+                  closingGapDays.has(cell.isoDate) ? "closing" : "",
+                  supportCellDepth[cellIndex] ?? 0,
+                  // 이 칸 일정들의 이음 판정 — 끄는 동안 띠 ↔ 꺾인 띠로 바뀌는 칸이 여기서 걸린다.
+                  ...getEventsForDate(liveEvents, cell.isoDate).map((e) => `${e.id}=${JSON.stringify(chainJoins.get(e.id) ?? null)}`)
+                ].join("|");
+                const hit = cellCache.get(cell.isoDate);
+                if (hit && hit.sig === sig) return hit.el;
+                const el = renderDayCell(cell, cellIndex);
+                cellCache.set(cell.isoDate, { sig, el });
+                return el;
+              };
+              const renderDayCell = (cell: (typeof cells)[number], cellIndex: number) => {
               const covering = getEventsForDate(liveEvents, cell.isoDate);
               const supportHere = covering.filter((e) => e.isSupport);
               const dateEvents = covering.filter((e) => !e.isSupport);
@@ -8455,11 +8509,11 @@ export function StudioShell({
                         span.isMulti && !span.roundRight ? "no-right" : "",
                         slim ? "chain-slim" : "",
                         join?.bandSpan ? "band-head" : "",
-                        join?.right?.kind === "step" ? "chain-step-from" : "",
+                        chainStepOut(event.id, join) ? "chain-step-from" : "",
                         join?.left?.kind === "step" ? "chain-step-to" : "",
                         chainWrapClasses(join),
                         // 단색 카드는 칠·테두리를 꺾인 띠 도형에 맡긴다(시청자 화면과 같은 규칙).
-                        (join?.right?.kind === "step" || join?.left?.kind === "step") && colors.length < 2
+                        (chainStepOut(event.id, join) || join?.left?.kind === "step") && colors.length < 2
                           ? "chain-step-solid"
                           : "",
                         joinRight ? "link-join-right" : "",
@@ -8742,7 +8796,8 @@ export function StudioShell({
                   <ChainStepLayer events={dateEvents} joins={chainJoins} />
                 </article>
               );
-              });
+              };
+              return cells.map((cell, cellIndex) => dayCell(cell, cellIndex));
             })()}
           </div>
         </section>

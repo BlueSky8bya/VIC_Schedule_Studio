@@ -35,6 +35,14 @@ export function chainWrapClasses(join: ChainJoin | undefined): string {
     .join(" ");
 }
 
+// 이 카드에서 다음 날로 나가는 꺾인 이음(step) — 제 오른쪽 이음이거나, 같은 글 띠의 머리라면 띠 끝 칸에서 나가는 이음.
+// fromId = 그 이음이 실제로 시작하는 일정(열쇠용).
+export function chainStepOut(eventId: string, join: ChainJoin | undefined): { fromId: string; side: NonNullable<ChainJoin["right"]> } | null {
+  if (join?.right?.kind === "step") return { fromId: eventId, side: join.right };
+  if (join?.tailStep) return join.tailStep;
+  return null;
+}
+
 // 카드에 다는 data-* — 높이 맞춤 묶음(data-chain), 같은 글 띠 머리(data-band-head), 꺾인 띠 양끝(data-step-from·to).
 // 자체 멀티데이 일정(end_date_key)은 예전처럼 같은 id끼리 높이를 맞춘다.
 export function chainDataAttrs(
@@ -47,13 +55,17 @@ export function chainDataAttrs(
   return {
     "data-chain": ownMulti ? chainKeys.get(event.id) : join?.bandKey,
     "data-band-head": join?.bandSpan ? event.id : undefined,
-    "data-step-from":
-      join?.right?.kind === "step" ? chainStepKey(event.id, join.right.otherId) : undefined,
+    "data-step-from": (() => {
+      const out = chainStepOut(event.id, join);
+      return out ? chainStepKey(out.fromId, out.side.otherId) : undefined;
+    })(),
     "data-step-to":
       join?.left?.kind === "step" ? chainStepKey(join.left.otherId, event.id) : undefined,
     // 같은 틈을 여러 꺾인 띠가 지날 때 이 이음의 자리("자리/전체") — 기둥을 그리는 쪽(use-equal-chain-heights)이 읽는다.
-    "data-step-lane":
-      join?.right?.kind === "step" && join.right.lanes ? `${join.right.lane}/${join.right.lanes}` : undefined,
+    "data-step-lane": (() => {
+      const side = chainStepOut(event.id, join)?.side;
+      return side?.lanes ? `${side.lane}/${side.lanes}` : undefined;
+    })(),
     // 줄바뀜(토→일)으로 이어진 짝 — 고른 일정의 테두리가 다음 줄 블록까지 따라간다(drawRings).
     "data-wrap-to":
       join?.right?.kind === "wrap" ? chainStepKey(event.id, join.right.otherId) : undefined,

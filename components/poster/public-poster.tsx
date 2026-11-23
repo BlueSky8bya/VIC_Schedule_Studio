@@ -118,7 +118,7 @@ import { flipSpring } from "@/lib/ui/flip-motion";
 import { trackPopoverLayout } from "@/lib/ui/popover-layout";
 import { useCellRangeSelect } from "@/lib/calendar/use-cell-range-select";
 import { useEqualChainHeights } from "@/lib/calendar/use-equal-chain-heights";
-import { ChainStepLayer, chainDataAttrs, wrapFadeOf, chainSlim, chainWrapClasses } from "@/lib/calendar/chain-join-view";
+import { ChainStepLayer, chainDataAttrs, chainStepOut, wrapFadeOf, chainSlim, chainWrapClasses } from "@/lib/calendar/chain-join-view";
 import {
   assignSupportLanes,
   supportDepthByCell,
@@ -777,6 +777,10 @@ export function PublicPoster({
   const paintGroups = useMemo(() => buildPaintGroups(schedule.events), [schedule.events]);
   // 이어진 일정 잇기(2026-11-23): 그날 순서와 상관없이 띠/꺾인 띠/줄바뀜으로 항상 잇는다.
   // 편집실과 같은 판정 함수(buildChainJoins) — 칸 목록도 렌더와 같은 기준(업 도움 제외·사라진 떡밥 제외).
+  const supportDepthDiffers = useMemo(() => {
+    const at = new Map(cells.map((c, i) => [c.isoDate, supportCellDepth[i] ?? 0] as const));
+    return (a: string, b: string) => (at.get(a) ?? 0) !== (at.get(b) ?? 0);
+  }, [cells, supportCellDepth]);
   const chainJoins = useMemo(
     () =>
       buildChainJoins(
@@ -785,9 +789,11 @@ export function PublicPoster({
           getEventsForDate(liveEvents, iso).filter((e) => !e.isSupport && !goneTeaserIds.has(e.id)),
         // 편집실(teaserStillHidden)과 같은 술어 — 아직 안 풀린(공개 시각이 미래) 떡밥만 잇지 않는다.
         // 공개 번들에 편집실 모듈을 끌어오지 않으려고 같은 식을 여기 둔다.
-        (e) => !(e.teaser && e.teaserRevealAt && Date.parse(e.teaserRevealAt) > Date.now())
+        (e) => !(e.teaser && e.teaserRevealAt && Date.parse(e.teaserRevealAt) > Date.now()),
+        // 업 도움·기간 안내 띠 때문에 두 칸의 일정 시작 높이가 다르면 한 장 띠로 묶지 않는다 — 카드마다 제 자리에 서고 이음이 굽는다.
+        (a, b) => supportDepthDiffers(a, b)
       ),
-    [cells, liveEvents, goneTeaserIds]
+    [cells, liveEvents, goneTeaserIds, supportDepthDiffers]
   );
   // 이어진 일정(link_next로 묶인 '별개' 일정들)은 같은 묶음 칸끼리 높이를 맞춰 이음새가 어긋나지
   // 않게 한다. 묶음의 '가장 큰 내용' 높이에만 맞추므로(과확장 없음) 짧은 쪽만 그만큼 채워진다.
@@ -3345,11 +3351,11 @@ export function PublicPoster({
               span.isMulti && !span.roundRight ? "no-right" : "",
               slim ? "chain-slim" : "",
               join?.bandSpan ? "band-head" : "",
-              join?.right?.kind === "step" ? "chain-step-from" : "",
+              chainStepOut(event.id, join) ? "chain-step-from" : "",
               join?.left?.kind === "step" ? "chain-step-to" : "",
               chainWrapClasses(join),
               // 단색 카드는 칠·테두리를 꺾인 띠 도형에 맡긴다(이음새 없음). 2색 카드는 제 그라데이션을 그대로.
-              (join?.right?.kind === "step" || join?.left?.kind === "step") && colors.length < 2
+              (chainStepOut(event.id, join) || join?.left?.kind === "step") && colors.length < 2
                 ? "chain-step-solid"
                 : "",
               isDimmedByFilter(event) ? "dimmed" : "",
