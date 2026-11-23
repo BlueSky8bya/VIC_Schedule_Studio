@@ -3,10 +3,18 @@ import { COMPANION_FOOD_KINDS, isCompanionFoodKind, type CompanionFoodKind } fro
 import { advanceCompanionGifts, COMPANION_WEARABLE_IDS, isCompanionAccessoryId, normalizeCompanionGifts, type CompanionAccessoryId, type CompanionGiftState } from "./gifts";
 import { currentCompanionAccessory, COMPANION_ACCESSORY_IDS } from "./accessory-catalog";
 import { COMPANION_NEW_MEMORIES, COMPANION_NEW_MEMORY_NAMES, COMPANION_NEW_MEMORY_HINTS, companionActivityMemory, companionNewMemory, type CompanionNewMemoryId } from "./memory-catalog";
-import { companionMemoryPainted } from "./memory-witness";
 import type { CompanionExpressionId } from "./expressions";
 import { COMPANION_SITUATION_IDS, observedCompanionSituation, type CompanionSituationId, type CompanionSituationObservation } from "./moments";
 export { COMPANION_SITUATION_IDS, COMPANION_SITUATION_NAMES, COMPANION_SITUATION_HINTS, type CompanionSituationId } from "./moments";
+
+// The "was this frame really painted" check lives with the renderer (memory-witness.ts), which reads the sprite
+// metadata and the 1.2 MB appearance manifest. This store is also imported by the first-paint bundle (settings,
+// home shelf), so it must not import that check directly: the renderer registers it when it loads. Until then no
+// expression can be observed anyway, because nothing is drawing.
+let memoryPainted: ((observation: CompanionBehaviorObservation) => boolean) | undefined;
+export function registerCompanionMemoryPainted(check: (observation: CompanionBehaviorObservation) => boolean) {
+  memoryPainted = check;
+}
 
 export const COMPANION_COLLECTION_KEY = "vic.viewerCompanionCollection";
 export const COMPANION_COLLECTION_EVENT = "vic:companion-collection";
@@ -132,7 +140,7 @@ export function createCompanionCollectionStore(storage?: CollectionStorage, cloc
       return recordMemory(observedCompanionBehavior(observation));
     },
     recordExpression(observation: CompanionBehaviorObservation, face: { id: CompanionExpressionId; progress: number; painted: boolean }) {
-      return recordMemory(face.painted && Number.isFinite(face.progress) && face.progress >= .25 && face.progress <= .85 && companionMemoryPainted(observation)
+      return recordMemory(face.painted && Number.isFinite(face.progress) && face.progress >= .25 && face.progress <= .85 && memoryPainted?.(observation)
         ? companionNewMemory(`expression:${face.id}`)?.id : undefined);
     },
     recordPose(id: CompanionNewMemoryId | undefined) {

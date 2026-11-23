@@ -63,7 +63,9 @@ import { MobileSaveFeedback } from "@/components/shared/mobile-save-feedback";
 import { CompanionHomeLauncherSlot, CompanionHomeShelfSlot } from "@/components/shared/companion-home-slots";
 import { CompanionDetailBridge } from "@/components/poster/viewer-companion/companion-detail-bridge";
 import { useAmbientPause } from "@/lib/ui/ambient-pause";
-import { StudioSettingsList, type DevWorldForce } from "@/components/studio/studio-settings";
+import type { DevWorldForce } from "@/components/studio/studio-settings";
+import "@/components/shared/settings-modal.css";
+import { preloadWhenIdle } from "@/lib/ui/idle-preload";
 import type { GfxMode } from "@/lib/ui/gfx";
 import { useSettingsPrefs } from "@/components/shared/use-settings-prefs";
 import { flingDeleteEnabled } from "@/lib/ui/edit-prefs";
@@ -259,6 +261,11 @@ const MemberInsights = dynamic(
 // 방송 판서(B안, '일정 그림판') — owner/developer가 미리보기에서 여는 방송 설명 도구. 첫 화면 묶음엔 넣지 않고,
 // 미리보기에 들어가 한가해지면 미리 받아 둔다(2026-11-14 소유자: "그림판 열 때 왜 이리 오래 걸려" — 누른 뒤에야
 // 큰 코드 묶음을 미국 엣지 너머로 받느라 1~3초). 같은 import()라 미리 받은 묶음을 그대로 쓴다.
+// 설정 창은 톱니를 눌러야 뜬다 — 그 안의 목록(글꼴·소리·빅타민 라디오·보안 등 큰 묶음)은 첫 화면 코드에서 빼고 따로 받는다.
+// 누른 뒤에야 받으면 창이 늦게 차므로, 화면이 뜨고 한가해지면 미리 받아 둔다(preloadSettingsList, 같은 import()라 그대로 쓴다).
+// 창 틀 스타일은 첫 화면에 그대로 둔다(아래 css import) — 묶음이 오기 전에 연 창이 민낯으로 보이지 않게.
+const loadSettingsList = () => import("@/components/studio/studio-settings").then((m) => m.StudioSettingsList);
+const StudioSettingsList = dynamic(loadSettingsList, { ssr: false, loading: () => <LoadingState label="설정 여는 중…" /> });
 const loadBroadcastPanel = () => import("@/components/studio/broadcast-panel");
 const BroadcastPanel = dynamic(() => loadBroadcastPanel().then((m) => m.BroadcastPanel), {
   ssr: false,
@@ -1895,6 +1902,7 @@ export function StudioShell({
   // 절대 안 잡힌다 — "어떤 도구를 얼마나 쓰나"는 여기서만 나온다. 판서가 열려 있으면 그게 우선.
   useSectionActivity(broadcastOpen ? "broadcast-panel" : modal ? `modal:${modal}` : null);
   const [broadcastSent, setBroadcastSent] = useState<string[]>([]);
+  useEffect(() => preloadWhenIdle(loadSettingsList), []); // 설정 창 코드 — 첫 화면 뒤 한가할 때 미리
   // 그림판 버튼이 보이는 순간(미리보기·PC·편집 권한) 브라우저가 한가할 때 그림판 코드를 미리 받는다 — 누르면 바로 열린다.
   const canOpenBroadcast = viewerMode && (canEdit || isDeveloper) && !isNarrow;
   useEffect(() => {

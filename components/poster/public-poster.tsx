@@ -71,7 +71,8 @@ import { reduceMotionEnabled } from "@/lib/ui/motion";
 import { useRemainSeconds } from "@/lib/ui/use-remain-seconds"; // OS reduce-motion 무시, 앱 토글만 존중
 import { trackSettle } from "@/lib/ui/settle-track";
 import { supportBarTop, supportListPad } from "@/lib/ui/support-bar";
-import { StudioSettingsList } from "@/components/studio/studio-settings";
+import "@/components/shared/settings-modal.css";
+import { preloadWhenIdle } from "@/lib/ui/idle-preload";
 import { useSettingsPrefs } from "@/components/shared/use-settings-prefs";
 import { celebrationFor, type CelebrationTheme } from "@/lib/ui/celebration";
 import { playCelebration, playCelebrationTap, playSfx } from "@/lib/ui/sfx";
@@ -81,6 +82,11 @@ import { LoadingState } from "@/components/shared/loading-state";
 // '이 달 기록' 시트 — 열 때만 로드(시청자 첫 페인트 번들에서 제외).
 // 시트 코드가 내려오는 동안엔 시트 자체가 없으므로 화면 가운데에 공용 기다림 표시를 띄운다
 // (2026-11-13 소유자: 눌렀는데 아무 반응이 없어 멈춘 줄 알았다).
+// 설정 창은 톱니를 눌러야 뜬다 — 그 안의 목록(글꼴·소리·빅타민 라디오·보안 등 큰 묶음)은 첫 화면 코드에서 빼고 따로 받는다.
+// 누른 뒤에야 받으면 창이 늦게 차므로, 화면이 뜨고 한가해지면 미리 받아 둔다(preloadSettingsList, 같은 import()라 그대로 쓴다).
+// 창 틀 스타일은 첫 화면에 그대로 둔다(아래 css import) — 묶음이 오기 전에 연 창이 민낯으로 보이지 않게.
+const loadSettingsList = () => import("@/components/studio/studio-settings").then((m) => m.StudioSettingsList);
+const StudioSettingsList = dynamic(loadSettingsList, { ssr: false, loading: () => <LoadingState label="설정 여는 중…" /> });
 const PublicInsights = dynamic(
   () => import("@/components/poster/public-insights").then((m) => m.PublicInsights),
   { ssr: false, loading: () => <LoadingState label="기록 여는 중…" variant="floating" /> }
@@ -638,6 +644,7 @@ export function PublicPoster({
   fixtureCompanionFood
 }: PublicPosterProps) {
   const posterRootRef = useRef<HTMLDivElement | null>(null);
+  useEffect(() => preloadWhenIdle(loadSettingsList), []); // 설정 창 코드 — 첫 화면 뒤 한가할 때 미리
   const premiereBlockedRef = useRef(false);
   // `/`는 첫 화면 창만 싣고 온다(schedule.window) — 나머지 달은 마운트 즉시 공개 API에서 받아 합친다.
   const sourceSchedule = useFullSchedule(firstSchedule);

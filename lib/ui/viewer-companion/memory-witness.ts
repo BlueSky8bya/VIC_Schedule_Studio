@@ -1,6 +1,6 @@
 import { companionPoseMemory } from "./memory-catalog";
 import { companionSpriteMetadata } from "./sprite-quality";
-import type { CompanionBehaviorObservation } from "./collection";
+import { registerCompanionMemoryPainted, type CompanionBehaviorObservation } from "./collection";
 
 export function companionMemoryPainted(observation: CompanionBehaviorObservation) {
   const frame = companionSpriteMetadata.frames[observation.requestedIndex];
@@ -9,6 +9,8 @@ export function companionMemoryPainted(observation: CompanionBehaviorObservation
     && observation.adoptedIndex === observation.requestedIndex && observation.adoptedSrc === observation.requestedSrc
     && companionSpriteMetadata.atlases[frame.atlas].src === observation.requestedSrc);
 }
+// The collection store asks this module whether a frame was painted, without importing it (see collection.ts).
+registerCompanionMemoryPainted(companionMemoryPainted);
 
 /** Existing active clock only. A fallback, hidden frame or long clock gap
  * breaks the witness; a single flashed transition cannot earn a pose. */
