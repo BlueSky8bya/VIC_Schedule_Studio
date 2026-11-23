@@ -109,6 +109,37 @@ export function spanDragAnchor(pressIso: string | null, start: string, end: stri
   return pressIso;
 }
 
+// 묶음 끌기에서 손에 든 칩의 '어디를 쥐는가' — 칩 왼쪽 끝에서 잰 px.
+// 칩은 제목 길이만큼만 길어서(짧으면 90px, 길어도 340px) 12일짜리 띠를 날짜 비율 그대로 옮기면 둘째 날을 잡아도 칩의 왼쪽
+// 끝을 쥔 것처럼 보인다 — 그러면 "첫날을 들었다"고 읽히는데 옮겨지는 폭은 잡은 날(둘째 날) 기준이라, 보이는 것과 놓이는 자리가
+// 어긋난다(2026-11-24 소유자). 그래서 칩을 세 구역으로 나눠 **보이는 자리가 곧 뜻**이 되게 한다:
+//   왼쪽 끝 구역   = 첫날을 잡았을 때만   → 놓는 칸이 새 시작일
+//   오른쪽 끝 구역 = 끝날을 잡았을 때만   → 놓는 칸이 새 종료일
+//   가운데 구역    = 그 사이 날들, 순서대로 → 안쪽 어딘가를 잡았다(옮겨지는 폭은 꼬리표와 달력 표시가 말한다)
+// 구역 폭은 비율이 아니라 **칩 폭에 맞춘 px**이다(소유자: 20~30% 사이에서 상황별 최적으로):
+//   끝 구역 = 칩 폭의 22%, 단 16~28px — 긴 칩에서 22%(75px)까지 '끝'이라 하면 끝으로 안 보이고, 짧은 칩에서 너무 좁으면
+//             첫날 칸 안에서 손을 옮겨도 칩이 안 따라온다. 맨 가장자리 6px은 비운다(커서가 칩 밖에 걸친 것처럼 보이지 않게).
+//   틈      = 칩 폭의 10%, 단 14~24px — 끝 구역과 가운데 구역 사이. 이만큼 떨어져야 '끝을 쥠'과 '안쪽을 쥠'이 눈으로 갈린다.
+//   가운데  = 남은 폭. 칩이 아주 짧아 남는 폭이 없으면 한가운데 한 점.
+// 옮겨지는 폭의 규칙(놓은 날 − 잡은 날, spanDragAnchor)은 그대로다 — 바뀌는 것은 칩이 손에 붙는 자리뿐이라 집는 순간 날짜가 튀지 않는다.
+// dayIndex = 잡은 날이 묶음에서 몇째 날인가(0부터), inCell = 그 칸 안에서의 가로 위치(0~1), chipWidth = 칩 폭(px).
+const clampNum = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+export const SPAN_GRAB_INSET = 6;
+export function spanGrabZones(chipWidth: number) {
+  const edge = Math.min(clampNum(chipWidth * 0.22, 16, 28), chipWidth / 2);
+  const inner = Math.min(edge + clampNum(chipWidth * 0.1, 14, 24), chipWidth / 2);
+  return { edge, inner };
+}
+export function spanGrabOffset(dayIndex: number, totalDays: number, inCell: number, chipWidth: number): number {
+  const t = clampNum(inCell, 0, 1);
+  if (totalDays <= 1) return t * chipWidth; // 하루짜리 — 잡은 그 자리
+  const { edge, inner } = spanGrabZones(chipWidth);
+  const inset = Math.min(SPAN_GRAB_INSET, edge);
+  if (dayIndex <= 0) return inset + t * (edge - inset);
+  if (dayIndex >= totalDays - 1) return chipWidth - inset - (1 - t) * (edge - inset);
+  return inner + ((dayIndex - 1 + t) / (totalDays - 2)) * (chipWidth - 2 * inner);
+}
+
 // 시작~종료 포함 일수(같은 날=1).
 export function spanDays(start: string, end: string): number {
   const [sy, sm, sd] = start.split("-").map(Number);
