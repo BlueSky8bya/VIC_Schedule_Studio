@@ -6563,7 +6563,7 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
 }
 
 /* ── 이어진 일정 잇기(2026-11-16 소유자) — 편집실·시청자·미리보기 공용(이 파일은 편집실도 불러온다) ──
-   판정은 lib/calendar/month.ts buildChainJoins: 앞날 마지막 = 다음날 첫 카드일 때만 잇는다.
+   판정은 lib/calendar/month.ts buildChainJoins: 그날 순서와 상관없이 항상 잇는다(2026-11-23).
    · 같은 글 띠: 머리 카드(.band-head)가 여러 칸 폭(폭은 useEqualChainHeights가 잰다), 뒤 칸은 빈 자리(.band-slot).
    · 꺾인 띠: 칸 안 svg(.chain-steps)에 앞 카드 → 다음날 카드로 칸 사이 틈에서 꺾여 오르내리는 몸통(카드 색).
    · 토→일 줄바뀜은 평평한 변이 칸 끝까지(.wrap-out/.wrap-in), 글자·아이콘 없이 맞닿은 끝이 옅어지는 색으로만(아래 마스크).
@@ -6704,11 +6704,18 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
 }
 [data-chain-hot].chain-step-from[data-step-painted],
 [data-chain-hot].chain-step-to[data-step-painted],
-.chain-step.is-hot {
+.chain-step.is-hot,
+.chain-step-col.is-hot {
   filter: brightness(1.04) saturate(1.12);
 }
-.chain-step {
+.chain-step,
+.chain-step-col {
   transition: filter 0.28s cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+/* 같은 틈을 두 이어진 일정이 지날 때 나란히 선 기둥(2026-11-23) — 몸통 위에 한 번 더 얹어 두 색이 다 보인다. */
+.chain-step-col {
+  stroke-linejoin: round;
+  pointer-events: none;
 }
 .chain-step-body {
   stroke-linejoin: round;

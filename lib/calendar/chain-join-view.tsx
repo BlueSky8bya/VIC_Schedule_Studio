@@ -45,6 +45,9 @@ export function chainDataAttrs(
       join?.right?.kind === "step" ? chainStepKey(event.id, join.right.otherId) : undefined,
     "data-step-to":
       join?.left?.kind === "step" ? chainStepKey(join.left.otherId, event.id) : undefined,
+    // 같은 틈을 여러 꺾인 띠가 지날 때 이 이음의 자리("자리/전체") — 기둥을 그리는 쪽(use-equal-chain-heights)이 읽는다.
+    "data-step-lane":
+      join?.right?.kind === "step" && join.right.lanes ? `${join.right.lane}/${join.right.lanes}` : undefined,
     // 줄바뀜(토→일)으로 이어진 짝 — 고른 일정의 테두리가 다음 줄 블록까지 따라간다(drawRings).
     "data-wrap-to":
       join?.right?.kind === "wrap" ? chainStepKey(event.id, join.right.otherId) : undefined,

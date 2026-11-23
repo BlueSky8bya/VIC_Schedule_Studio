@@ -7,7 +7,9 @@ import type { PublicScheduleEvent } from "@/lib/domain/schedule-types";
 //  · 6/17→6/18 띠(글 다름): 17일 와우 하나뿐 → 칸마다 제 글, 평평한 변
 //  · 6/23→6/24 띠(같은 글): 23일 하종와 하나뿐 → 두 칸 폭 한 장, 24일 17시 합방은 띠 아래
 //  · 6/27(토)→6/28(일) 줄바뀜: 곡선 없이 평평한 변이 칸 끝까지 + 일요일 제목 앞 물결 표시
-//  · 6/29→6/30 끊김: 29일 와우 뒤에 노래 방송 → 잇지 않는다
+//  · 6/29→6/30 띠(2026-11-23): 29일 와우 아래에 노래 방송이 있어도 잇는다(둘 다 맨 위 → 같은 글 두 칸 띠)
+//  · 8월 첫 주(2026-11-23 "어디에 끼워도 이어진다"): 8/3~8/6 나흘 묶음 — 3일은 다른 일정이 아래, 4일은 위, 5일은 위·아래 둘 다.
+//    8/11~8/12 두 묶음이 같은 틈을 엇갈려 지난다(자리 나눔).
 const HJW = "하종와\n낮의와우와 밤의와우를 보자\n던전 - 저습지,달라란,놈리건\n레벨업 위주!";
 
 function ev(
@@ -77,6 +79,7 @@ export function chainRuleFixtureEvents(): PublicScheduleEvent[] {
     ev("cr-29-wow", "29", "와우 레이드\n검은바위 나락", 0, "tag-variety-game", "cr-30-wow"),
     ev("cr-29-song", "29", "20시 노래 방송\n신청곡 받아요", 1, "tag-song"),
     ev("cr-30-wow", "30", "와우 레이드\n검은바위 나락", 0, "tag-variety-game"),
+    ...anywhere(),
     // 7월 첫 주 — 릴동파형(2026-11-17 소유자): 일 드래프트 → 월~수 같은 글 띠(제목 한 줄) → 목·금·토 각각 → 일 폐막식
     ...lildongpa(),
     // 7월 14~16일 — 맹든링형(2025-12 실데이터 모양): 1일차는 그날 두 번째, 2일차 다음날 혼자, 3일차는 미연결
@@ -92,6 +95,25 @@ export function chainRuleFixtureEvents(): PublicScheduleEvent[] {
       tagIds: ["tag-variety-game", "tag-collab"],
       primaryTagIds: ["tag-variety-game", "tag-collab"]
     }))
+  ];
+}
+
+function anywhere(): PublicScheduleEvent[] {
+  const at = (e: PublicScheduleEvent, day: string) => ({ ...e, startsAt: `2026-08-${day}T20:00:00+09:00` });
+  const wow = ["03", "04", "05", "06"].map((d, i, all) =>
+    at(ev(`cr-any-${d}`, d, `와우 포에버\n노뱅종 ${i + 1}일차`, 1, "tag-big-server", all[i + 1] ? `cr-any-${all[i + 1]}` : undefined), d)
+  );
+  return [
+    ...wow,
+    at(ev("cr-any-03x", "03", "Trees Hate You", 2, "tag-variety-game"), "03"),
+    at(ev("cr-any-04x", "04", "Trees Hate You", 0, "tag-variety-game"), "04"),
+    at(ev("cr-any-05x", "05", "14시 저챗", 0, "tag-calm"), "05"),
+    at(ev("cr-any-05y", "05", "22시 노래\n신청곡", 2, "tag-song"), "05"),
+    // 두 묶음이 같은 틈을 지난다 — 11일: 합방(위)·마라톤(아래), 12일: 마라톤(위)·합방(아래)
+    at(ev("cr-any-11p", "11", "합방 주간 1부", 0, "tag-collab", "cr-any-12p"), "11"),
+    at(ev("cr-any-11q", "11", "마라톤 1일차", 1, "tag-hype", "cr-any-12q"), "11"),
+    at(ev("cr-any-12q", "12", "마라톤 2일차", 0, "tag-hype"), "12"),
+    at(ev("cr-any-12p", "12", "합방 주간 2부", 1, "tag-collab"), "12")
   ];
 }
 

@@ -3,8 +3,8 @@ import { buildChainJoins, chainRangeOf, getEventSpan, getEventsForDate } from "@
 import { chainSlim, chainWrapClasses, wrapFadeOf } from "@/lib/calendar/chain-join-view";
 import type { StudioScheduleEvent } from "@/lib/domain/schedule-types";
 
-// 이어진 일정 잇기 규칙(2026-11-16 소유자): 앞날 마지막 카드 = 다음날 첫 카드일 때만 잇는다.
-// 앞날에 그 일정 하나뿐이면 띠(band), 앞에 다른 일정이 있으면 꺾인 띠(step), 토→일이면 줄바뀜(wrap).
+// 이어진 일정 잇기 규칙(2026-11-23 개정): 이웃한 날의 link_next 쌍은 그날 순서와 상관없이 항상 잇는다.
+// 둘 다 그날 맨 위면 띠(band), 한쪽이라도 아니면 꺾인 띠(step), 토→일이면 줄바뀜(wrap).
 
 function ev(part: Partial<StudioScheduleEvent> & { id: string; day: string }): StudioScheduleEvent {
   const { day, ...rest } = part;
@@ -56,7 +56,7 @@ describe("buildChainJoins", () => {
     expect(j.get("b")?.flatLeft).toBe(false);
   });
 
-  it("다음날 첫 카드가 다른 방송이면 끊긴다(순서를 바꾼 경우)", () => {
+  it("다음날 그 일정 위에 다른 방송이 있어도 꺾인 띠로 잇는다(2026-11-23)", () => {
     const events = [
       ev({ id: "15시", day: "2026-11-09", sortOrder: 0 }),
       ev({ id: "a", day: "2026-11-09", sortOrder: 1, linkNext: "b" }),
@@ -64,17 +64,55 @@ describe("buildChainJoins", () => {
       ev({ id: "b", day: "2026-11-10", sortOrder: 1 })
     ];
     const j = joinsOf(events);
-    expect(j.get("a")).toBeUndefined();
-    expect(j.get("b")).toBeUndefined();
+    expect(j.get("a")?.right?.kind).toBe("step");
+    expect(j.get("b")?.left?.kind).toBe("step");
+    expect(j.get("a")?.right?.lanes).toBeUndefined(); // 그 틈을 지나는 이음은 하나뿐
   });
 
-  it("앞날 뒤에 다른 방송이 있으면 끊긴다", () => {
+  it("앞날 그 일정 아래에 다른 방송이 있어도 잇는다 — 둘 다 맨 위면 띠", () => {
     const events = [
       ev({ id: "a", day: "2026-11-12", sortOrder: 0, linkNext: "b" }),
       ev({ id: "노래", day: "2026-11-12", sortOrder: 1 }),
       ev({ id: "b", day: "2026-11-13", sortOrder: 0 })
     ];
-    expect(joinsOf(events).size).toBe(0);
+    const j = joinsOf(events);
+    expect(j.get("a")?.right?.kind).toBe("band");
+    expect(j.get("a")?.flatRight).toBe(true);
+    expect(j.get("b")?.flatLeft).toBe(true);
+  });
+
+  it("사흘 묶음 — 다른 일정이 어느 날 위에 오든 아래에 오든 전부 이어진다", () => {
+    for (const where of ["2026-11-10", "2026-11-11", "2026-11-12"]) {
+      for (const above of [true, false]) {
+        const events = [
+          ev({ id: "a", day: "2026-11-10", sortOrder: 1, linkNext: "b" }),
+          ev({ id: "b", day: "2026-11-11", sortOrder: 1, linkNext: "c" }),
+          ev({ id: "c", day: "2026-11-12", sortOrder: 1 }),
+          ev({ id: "다른", day: where, sortOrder: above ? 0 : 2 })
+        ];
+        const j = joinsOf(events);
+        expect(j.get("a")?.right?.otherId).toBe("b");
+        expect(j.get("b")?.right?.otherId).toBe("c");
+        // 위에 끼운 날에 닿는 이음만 꺾인 띠, 나머지는 띠
+        const bent = (from: string, to: string) => above && (where === from || where === to);
+        expect(j.get("a")?.right?.kind).toBe(bent("2026-11-10", "2026-11-11") ? "step" : "band");
+        expect(j.get("b")?.right?.kind).toBe(bent("2026-11-11", "2026-11-12") ? "step" : "band");
+      }
+    }
+  });
+
+  it("같은 틈을 두 이음이 지나면 자리를 나눈다(lane) — 다음날 위로 들어가는 쪽이 왼쪽", () => {
+    const events = [
+      ev({ id: "x", day: "2026-11-10", sortOrder: 0 }),
+      ev({ id: "p", day: "2026-11-10", sortOrder: 1, linkNext: "p2" }),
+      ev({ id: "q", day: "2026-11-10", sortOrder: 2, primaryTagIds: ["t2"], linkNext: "q2" }),
+      ev({ id: "q2", day: "2026-11-11", sortOrder: 0, primaryTagIds: ["t2"] }),
+      ev({ id: "p2", day: "2026-11-11", sortOrder: 1 })
+    ];
+    const j = joinsOf(events);
+    expect(j.get("q")?.right).toMatchObject({ kind: "step", otherId: "q2", lane: 0, lanes: 2 });
+    expect(j.get("p")?.right).toMatchObject({ kind: "step", otherId: "p2", lane: 1, lanes: 2 });
+    expect(j.get("p2")?.left).toMatchObject({ lane: 1, lanes: 2 });
   });
 
   it("앞날에 그 일정 하나뿐이면 띠 — 같은 글이면 머리 칸이 여러 칸 폭, 뒤 칸은 빈 자리", () => {

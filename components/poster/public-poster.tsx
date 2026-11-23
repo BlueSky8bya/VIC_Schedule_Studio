@@ -774,7 +774,7 @@ export function PublicPoster({
   const chainKeys = useMemo(() => buildChainKeys(schedule.events), [schedule.events]);
   // 같은 태그 구성으로 이어진 묶음은 하나의 그라데이션으로(경계 가운데). 묶음별 날짜 범위.
   const paintGroups = useMemo(() => buildPaintGroups(schedule.events), [schedule.events]);
-  // 이어진 일정 잇기(2026-11-16): 앞날 마지막 = 다음날 첫 카드일 때만 띠/꺾인 띠/줄바뀜으로 잇는다.
+  // 이어진 일정 잇기(2026-11-23): 그날 순서와 상관없이 띠/꺾인 띠/줄바뀜으로 항상 잇는다.
   // 편집실과 같은 판정 함수(buildChainJoins) — 칸 목록도 렌더와 같은 기준(업 도움 제외·사라진 떡밥 제외).
   const chainJoins = useMemo(
     () =>

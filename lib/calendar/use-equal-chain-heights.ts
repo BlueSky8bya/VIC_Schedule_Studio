@@ -20,6 +20,15 @@ const STEP_MAX = 12;
 const STEP_CLEAR = 2;
 const STEP_CONVEX = 7;
 const STEP_CONCAVE = 5;
+// 같은 틈을 여러 꺾인 띠가 지날 때(2026-11-23: 이어진 일정은 순서와 상관없이 잇는다 → 두 묶음이 같은 날을 지나면 생긴다)
+// 틈을 나눠 나란히 세운다 — 기둥 사이 2px, 가늘어져도 3px 아래로는 안 간다.
+const STEP_LANE_GAP = 2;
+const STEP_LANE_MIN = 3;
+export type StepLane = { lane: number; lanes: number };
+function laneOf(from: HTMLElement): StepLane | undefined {
+  const m = /^(\d+)\/(\d+)$/.exec(from.dataset.stepLane ?? "");
+  return m && Number(m[2]) > 1 ? { lane: Number(m[1]), lanes: Number(m[2]) } : undefined;
+}
 
 // 색: 테두리 = 카드에 지정된 태그 테두리색(인라인). 편집실은 고르면 테두리를 투명으로 바꾸므로 계산값만 믿으면
 // 띠가 사라진다 — 인라인 → 계산값(투명 아님) 순. 채움 = 카드 계산 배경색(2색 카드면 다음 카드 → 테두리색).
@@ -219,13 +228,20 @@ export function stepBandPath(
   S: Box,
   T: Box,
   convex = STEP_CONVEX,
-  sw = 1
+  sw = 1,
+  at?: StepLane
 ): { d: string; width: number; originX: number; originY: number; xa: number; xb: number } {
   const gap = T.left - S.right;
-  const w = Math.min(STEP_MAX, Math.max(STEP_MIN, gap - STEP_CLEAR * 2));
   const mid = (S.right + T.left) / 2;
-  const xa = mid - w / 2;
-  const xb = mid + w / 2;
+  let w = Math.min(STEP_MAX, Math.max(STEP_MIN, gap - STEP_CLEAR * 2));
+  let xa = mid - w / 2;
+  if (at && at.lanes > 1) {
+    const room = gap - STEP_CLEAR * 2 - STEP_LANE_GAP * (at.lanes - 1);
+    w = Math.min(STEP_MAX, Math.max(STEP_LANE_MIN, room / at.lanes));
+    const total = w * at.lanes + STEP_LANE_GAP * (at.lanes - 1);
+    xa = mid - total / 2 + at.lane * (w + STEP_LANE_GAP);
+  }
+  const xb = xa + w;
   const x0 = Math.min(S.right - 3, xa);
   const x1 = Math.max(T.left + 3, xb);
   const h = sw / 2;
@@ -321,6 +337,9 @@ function drawSteps(root: HTMLElement) {
       existing.set(g.dataset.step ?? "", g);
     }
     const keep = new Set<string>();
+    // 같은 틈을 나눠 선 기둥들(data-step-lane) — 몸통들을 다 그린 뒤 맨 위에 기둥만 한 번 더 얹는다. 몸통은 카드에서 기둥까지
+    // 가로 팔을 뻗는데, 엇갈리는 두 이음은 서로의 기둥을 팔로 덮는다 — 덧그려야 두 색 기둥이 나란히 다 보인다.
+    const cols: { key: string; d: string; fill: string; stroke: string; sw: number; opacity: string; hot: boolean }[] = [];
     if (host) {
       const hostRect = host.getBoundingClientRect();
       const s = scaleOf(host);
@@ -339,7 +358,7 @@ function drawSteps(root: HTMLElement) {
         const TB = local(to.getBoundingClientRect());
         const convex = convexOf(from);
         const sw = borderWidthOf(from);
-        const { originX, originY, xa, xb } = stepBandPath(SB, TB, convex, sw);
+        const { originX, originY, xa, xb } = stepBandPath(SB, TB, convex, sw, laneOf(from));
         // (2026-11-16 소유자 "중간에 단차") 몸통 = 앞 카드(띠로 붙은 조각 포함) + 기둥 + 다음 카드 전체를 한 도형으로.
         // 두 카드는 배경·테두리를 비우고(.chain-step-solid) 이 도형이 칠·테두리를 한 번에 맡는다 — 카드와 띠가 따로
         // 칠해지며 생기던 색 경계·테두리 어긋남이 구조적으로 없다. 테두리 두께 = 카드 테두리 두께, 절반 안쪽에 선다.
@@ -396,6 +415,20 @@ function drawSteps(root: HTMLElement) {
         body.style.strokeWidth = `${sw}px`;
         // 카드가 흐려지는 상태(끌기 원래 자리·필터 흐림)는 몸통도 같이 흐린다.
         g.style.opacity = getComputedStyle(from).opacity;
+        if (laneOf(from)) {
+          const h = sw / 2;
+          const top = Math.min(SB.top, TB.top) + h;
+          const bottom = Math.max(SB.bottom, TB.bottom) - h;
+          cols.push({
+            key,
+            d: `M${(xa + h).toFixed(2)},${top.toFixed(2)} H${(xb - h).toFixed(2)} V${bottom.toFixed(2)} H${(xa + h).toFixed(2)} Z`,
+            fill: solidFillOf(from, to),
+            stroke,
+            sw,
+            opacity: g.style.opacity,
+            hot: hot === key
+          });
+        }
         // 몸통을 그렸다는 표시 — 이 뒤에야 CSS가 두 카드의 칠을 비우고 맞닿는 변을 연다(새로고침 직후 깜빡임 방지).
         // 클래스가 아니라 data 속성이라 React가 다시 그려도 지워지지 않는다.
         // 단, 칸이 아직 등장 애니메이션 중이면(새로고침 직후 차르륵) 칸마다 따로 쌓여 다음 칸 배경이 몸통을 덮는다 —
@@ -429,6 +462,34 @@ function drawSteps(root: HTMLElement) {
       }
     }
     for (const [key, g] of existing) if (!keep.has(key)) g.remove();
+    let top = svg.querySelector<SVGGElement>(":scope > g.chain-step-cols");
+    if (cols.length === 0) top?.remove();
+    else {
+      if (!top) {
+        top = document.createElementNS(SVG_NS, "g") as SVGGElement;
+        top.setAttribute("class", "chain-step-cols");
+      }
+      if (svg.lastElementChild !== top) svg.append(top);
+      const old = new Map<string, SVGPathElement>();
+      for (const p of Array.from(top.querySelectorAll<SVGPathElement>(":scope > path"))) old.set(p.dataset.col ?? "", p);
+      for (const c of cols) {
+        let p = old.get(c.key);
+        old.delete(c.key);
+        if (!p) {
+          p = document.createElementNS(SVG_NS, "path") as SVGPathElement;
+          p.setAttribute("data-col", c.key);
+          p.setAttribute("class", "chain-step-col");
+          top.append(p);
+        }
+        if (p.getAttribute("d") !== c.d) p.setAttribute("d", c.d);
+        p.style.fill = c.fill;
+        p.style.stroke = c.stroke;
+        p.style.strokeWidth = `${c.sw}px`;
+        p.style.opacity = c.opacity;
+        p.classList.toggle("is-hot", c.hot);
+      }
+      for (const p of old.values()) p.remove();
+    }
   }
   for (const el of Array.from(root.querySelectorAll<HTMLElement>("[data-step-painted]"))) {
     if (!paintedNow.has(el)) el.removeAttribute("data-step-painted");
@@ -563,7 +624,7 @@ function blockOutline<R>(
   const sw = borderWidthOf(lead);
   const boxes = block.bodies.map((b) => unionBox(b, local));
   const stems = block.steps
-    .map(({ from, to }) => stepBandPath(local(from.getBoundingClientRect()), local(to.getBoundingClientRect()), convex, sw))
+    .map(({ from, to }) => stepBandPath(local(from.getBoundingClientRect()), local(to.getBoundingClientRect()), convex, sw, laneOf(from)))
     .sort((a, b) => a.xa - b.xa);
   const grow = (b: Box): Box => ({ left: b.left - e, right: b.right + e, top: b.top - e, bottom: b.bottom + e });
   const flat: FlatEnds = {
@@ -1146,7 +1207,7 @@ function applyHot(root: HTMLElement, key: string | null) {
     root
       .querySelectorAll(`[data-step-from="${e}"], [data-step-to="${e}"]`)
       .forEach((n) => n.toggleAttribute("data-chain-hot", on));
-    root.querySelectorAll(`g[data-step="${e}"]`).forEach((n) => n.classList.toggle("is-hot", on));
+    root.querySelectorAll(`g[data-step="${e}"], path[data-col="${e}"]`).forEach((n) => n.classList.toggle("is-hot", on));
   };
   toggle(prev, false);
   toggle(key, true);
@@ -1195,7 +1256,7 @@ export function useEqualChainHeights<T extends HTMLElement>(
         characterData: true, // 제목·항목 글자 변경
         attributes: true,
         // style(=우리 minHeight·폭)은 제외(self-trigger 방지)
-        attributeFilter: ["class", "data-chain", "data-band-head", "data-step-from", "data-step-to", "data-chain-hot"]
+        attributeFilter: ["class", "data-chain", "data-band-head", "data-step-from", "data-step-to", "data-step-lane", "data-chain-hot"]
       });
     }
 

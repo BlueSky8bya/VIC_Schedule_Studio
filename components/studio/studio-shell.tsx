@@ -117,7 +117,6 @@ import {
   buildCalendarMonth,
   buildChainJoins,
   buildChainKeys,
-  linkEdgesMatch,
   buildLinkChain,
   buildPaintGroups,
   classifyDay,
@@ -3521,7 +3520,7 @@ export function StudioShell({
     // 안전망 — 전환이 안 일어나는 경우(동작 줄이기 등)에도 반드시 풀린다.
     timers.set(prev, window.setTimeout(release, 450));
   }, [dropSlot?.day, dragEventId]);
-  // 이어진 일정 잇기(2026-11-16) — 시청자 화면과 같은 판정(buildChainJoins): 앞날 마지막 = 다음날 첫 카드일 때만.
+  // 이어진 일정 잇기 — 시청자 화면과 같은 판정(buildChainJoins, 2026-11-23: 그날 순서와 상관없이 항상 잇는다).
   // 카드를 끄는 동안엔 '놓으면 될 순서'로 판정한다(2026-11-17 소유자) — 놓을 자리 미리보기가 뜨는 순간 이어진 일정도
   // 놓은 뒤 모양(예: 두 칸 폭 띠 → 꺾인 띠)으로 바뀌어 보인다. 옛 판정 그대로면 두 칸 폭 띠가 자리만 내려가 옆 칸
   // 카드들 위로 겹쳤다. 끄는 카드는 이어진 일정이 아니다(이어진 일정은 묶음 끌기) — 끄는 카드 자신은 이음에 안 낀다.
@@ -4355,24 +4354,17 @@ export function StudioShell({
     const plans = members.map((m) => {
       const from = getEventDateKey(m);
       const to = addDaysIso(from, delta);
-      // 도착일의 순서: 나머지는 지금 순서 그대로. 이어진 묶음은 옮긴 뒤에도 이어지게(2026-11-16 규칙:
-      // 앞날 마지막 = 다음날 첫 카드) — 앞에서 이어 받는 조각은 맨 위, 다음날로 넘기는 첫 조각은 맨 아래.
-      // 띠·여러 날 한 장(묶음 1개)은 예전처럼 맨 위.
+      // 도착일의 순서: 나머지는 지금 순서 그대로, 옮긴 조각은 모두 그날 맨 위 — 묶음이 같은 줄에 서서 한 띠로 이어진다
+      // (2026-11-23: 순서와 상관없이 이어지므로 첫 조각을 맨 아래로 보내던 옛 배치는 필요 없다).
       const others = getEventsForDate(live, to).filter(
         (x) => !memberSet.has(canonId(x.id)) && getEventDateKey(x) === to
       );
-      const takesFromPrev = members.some(
-        (x) => x.linkNext != null && canonId(x.linkNext) === canonId(m.id)
-      );
-      const atEnd = members.length > 1 && !takesFromPrev;
       return {
         id: m.id,
         from,
         to,
         fromOrderedIds: getEventsForDate(live, from).map((x) => x.id),
-        orderedIds: atEnd
-          ? [...others.map((x) => x.id), m.id]
-          : [m.id, ...others.map((x) => x.id)]
+        orderedIds: [m.id, ...others.map((x) => x.id)]
       };
     });
     const orderPos = new Map<string, number>();
@@ -4418,18 +4410,6 @@ export function StudioShell({
     for (const p of plans) {
       enqueueMovePersist({ id: p.id, sourceDate: p.from, targetDate: p.to, orderedIds: p.orderedIds });
     }
-    unlinkBrokenAfter(
-      live.map((ev) => {
-        const c = canonId(ev.id);
-        let next = ev;
-        if (memberSet.has(c)) {
-          next = { ...next, startsAt: next.startsAt.replace(/^\d{4}-\d{2}-\d{2}/, addDaysIso(getEventDateKey(ev), delta)) };
-        }
-        const pos = orderPos.get(c);
-        return pos !== undefined ? { ...next, sortOrder: pos } : next;
-      }),
-      plans.flatMap((p) => [p.from, p.to])
-    );
   }
 
   function onPillPointerDown(e: ReactPointerEvent<HTMLDivElement>, event: StudioScheduleEvent) {
@@ -4562,7 +4542,6 @@ export function StudioShell({
         return linkMap.has(c) ? { ...e, linkNext: linkMap.get(c) } : e;
       });
     setEvents(applyLinks);
-    arrangeChainOrder(chain, applyLinks(live));
     setActionError(null);
     hapticTick();
     flashToast("이어붙였어요");
@@ -4945,8 +4924,8 @@ export function StudioShell({
       const idx = dayEvents.findIndex((e) => canonId(e.id) === overId);
       if (idx >= 0) insertIdx = over.after ? idx + 1 : idx;
     }
-    // (2026-11-16) 이어진 일정도 그날 방송 순서대로 — 위로 고정하지 않는다. 앞에 끼우면 이음이 끊긴다
-    // (buildChainJoins: 앞날 마지막 = 다음날 첫 카드일 때만 잇는다).
+    // (2026-11-16) 이어진 일정도 그날 순서대로 — 위로 고정하지 않는다. 그 위아래 어디에 끼워도 이음은 그대로다
+    // (2026-11-23 buildChainJoins: 순서와 상관없이 잇는다 — 줄이 달라지면 꺾인 띠).
     const orderedIds = [
       ...dayEvents.slice(0, insertIdx).map((e) => e.id),
       id,
@@ -5002,78 +4981,11 @@ export function StudioShell({
     playSfx("drop");
     // 서버 저장은 직렬 큐로 — 빠른 연속 이동도 순서대로 저장돼 마지막 위치가 서버 최종값이 된다.
     enqueueMovePersist({ id, sourceDate, targetDate, orderedIds });
-    unlinkBrokenAfter(
-      live.map((ev) => {
-        const evc = canonId(ev.id);
-        let next = ev;
-        if (evc === cid && targetDate !== sourceDate) {
-          next = { ...next, startsAt: next.startsAt.replace(/^\d{4}-\d{2}-\d{2}/, targetDate) };
-        }
-        const pos = orderPos.get(evc);
-        return pos !== undefined ? { ...next, sortOrder: pos } : next;
-      }),
-      [sourceDate, targetDate]
-    );
   }
 
-  // (2026-11-16 소유자) 화면 = 데이터 — 순서를 바꿔 이어진 일정이 더는 '앞날 마지막 = 다음날 첫 카드'가 아니면
-  // 저장된 이어짐(link_next)도 푼다. 눈으로는 끊겼는데 묶음 끌기·선택이 여전히 한 덩어리로 움직이던 문제.
-  // 색(대표 태그)이 달라 원래 안 이어 그리던 쌍·떡밥·여러 날 한 장은 건드리지 않는다.
-  function unlinkBrokenAfter(nextEvents: StudioScheduleEvent[], dates: string[]) {
-    const days = new Set<string>();
-    for (const d of dates) {
-      days.add(d);
-      days.add(addDaysIso(d, -1));
-    }
-    const dayList = (iso: string) => getEventsForDate(nextEvents, iso).filter((e) => !e.isSupport);
-    const broken: string[] = [];
-    for (const d of days) {
-      const a = dayList(d);
-      const nextDay = addDaysIso(d, 1);
-      const b = dayList(nextDay);
-      for (const e of a) {
-        if (!e.linkNext || getEventDateKey(e) !== d || (e.endDateKey && e.endDateKey > d)) continue;
-        const n = nextEvents.find((x) => canonId(x.id) === canonId(e.linkNext!));
-        if (!n || getEventDateKey(n) !== nextDay || (n.endDateKey && n.endDateKey > nextDay)) continue;
-        if (!linkEdgesMatch(e, n) || teaserStillHidden(e) || teaserStillHidden(n)) continue;
-        const joined = a[a.length - 1] === e && b[0] === n;
-        if (!joined) broken.push(e.id);
-      }
-    }
-    for (const eid of broken) performSeamCut(eid, true);
-    if (broken.length > 0) flashToast("순서가 바뀌어 이어진 일정을 풀었어요");
-  }
-
-  // (2026-11-16 소유자) '잇기'로 묶으면 순서도 맞춘다 — 첫 조각은 그날 맨 아래, 이어 받는 조각은 그날 맨 위.
-  // 그래야 묶자마자 화면에서도 이어진다(앞날 마지막 = 다음날 첫 카드 규칙).
-  function arrangeChainOrder(chainIds: string[], base: StudioScheduleEvent[]) {
-    const members = chainIds
-      .map((cid) => base.find((x) => canonId(x.id) === canonId(cid)))
-      .filter((x): x is StudioScheduleEvent => Boolean(x));
-    const plans: { id: string; date: string; orderedIds: string[] }[] = [];
-    members.forEach((m, i) => {
-      const date = getEventDateKey(m);
-      const day = getEventsForDate(base, date).filter((x) => !x.isSupport || x.id === m.id);
-      const others = day.filter((x) => canonId(x.id) !== canonId(m.id)).map((x) => x.id);
-      const orderedIds = i === 0 ? [...others, m.id] : [m.id, ...others];
-      const current = getEventsForDate(base, date).map((x) => x.id);
-      const allIds = [...orderedIds, ...current.filter((x) => !orderedIds.includes(x))];
-      if (allIds.join() !== current.join()) plans.push({ id: m.id, date, orderedIds: allIds });
-    });
-    if (plans.length === 0) return;
-    const orderPos = new Map<string, number>();
-    for (const p of plans) p.orderedIds.forEach((eid, i) => orderPos.set(canonId(eid), i));
-    flipArmedRef.current = true;
-    setEvents((prev) =>
-      prev.map((ev) => {
-        const pos = orderPos.get(canonId(ev.id));
-        return pos !== undefined ? { ...ev, sortOrder: pos } : ev;
-      })
-    );
-    for (const p of plans) {
-      enqueueMovePersist({ id: p.id, sourceDate: p.date, targetDate: p.date, orderedIds: p.orderedIds });
-    }
-  }
+  // (2026-11-23) 순서를 바꿔도 이어짐은 그대로다 — 이어진 일정은 그날 순서와 상관없이 항상 이어 그린다(buildChainJoins).
+  // 예전엔 순서를 바꾸면 저장된 이어짐을 풀고(unlinkBrokenAfter), 잇는 순간 순서를 강제로 맞췄다(arrangeChainOrder).
+  // 둘 다 "앞날 마지막 = 다음날 첫 카드" 규칙을 지키려던 것이라 규칙과 함께 없앴다. 끊기는 이음을 직접 그을 때만.
 
   // showPanel=false면 오른쪽 편집/상세 패널을 열지 않고 form만 채운다(업 도움 시트처럼 팝업만
   // 띄울 때 — 패널이 같이 슬라이드 인 하는 군더더기를 없앤다).

@@ -59,12 +59,23 @@ describe("getEventSpan 이어짐(체인) 판정", () => {
     expect(getEventSpan(b, "2026-05-12", 2, joins).roundLeft).toBe(false);
   });
 
-  it("앞날에 뒤따르는 일정이 있으면(마지막이 아니면) 평평하게 잇지 않는다", () => {
+  it("앞날에 뒤따르는 일정이 있어도 둘 다 맨 위면 평평하게 잇는다(2026-11-23)", () => {
     const a = ev({ id: "a", startsAt: "2026-05-11", primaryTagIds: ["t1"], linkNext: "b", sortOrder: 0 });
     const later = ev({ id: "later", startsAt: "2026-05-11", primaryTagIds: ["t3"], sortOrder: 1 });
     const b = ev({ id: "b", startsAt: "2026-05-12", primaryTagIds: ["t1"] });
     const joins = joinsOf([a, later, b], DAYS);
 
+    expect(getEventSpan(a, "2026-05-11", 1, joins).roundRight).toBe(false);
+    expect(getEventSpan(b, "2026-05-12", 2, joins).roundLeft).toBe(false);
+  });
+
+  it("앞날 그 일정 위에 다른 일정이 있으면 둥근 카드끼리 꺾인 띠로 잇는다(평평한 변 없음)", () => {
+    const first = ev({ id: "first", startsAt: "2026-05-11", primaryTagIds: ["t3"], sortOrder: 0 });
+    const a = ev({ id: "a", startsAt: "2026-05-11", primaryTagIds: ["t1"], linkNext: "b", sortOrder: 1 });
+    const b = ev({ id: "b", startsAt: "2026-05-12", primaryTagIds: ["t1"] });
+    const joins = joinsOf([first, a, b], DAYS);
+
+    expect(joins.get("a")?.right?.kind).toBe("step");
     expect(getEventSpan(a, "2026-05-11", 1, joins).roundRight).toBe(true);
     expect(getEventSpan(b, "2026-05-12", 2, joins).roundLeft).toBe(true);
   });
