@@ -1247,8 +1247,12 @@ export default function ViewerCompanion({ onOpenBook, root, preferences: storedP
       // Cord contacts paint the happy reaching row, not the bow/pounce body.
       // Its real measured reach owns the hop; do not squash this different
       // drawing with the underlying gesture's anticipation/lean as well.
+      // Only these cord actions lift the broad happy silhouette slightly.
+      // Keep its authored ears/expression and reciprocal area; other row9
+      // uses and ordinary jump drawings retain their existing proportions.
       const cordContact = homeContact?.element.isConnected && (homeContact.kind === "curtain" || homeContact.kind === "light") && isHomeFloor(support) && supportedNow();
       if (neutralVerticalRecovery || cordContact) Object.assign(shape, { bob: 0, tilt: 0, scaleX: 1, scaleY: 1 });
+      if (cordContact) Object.assign(shape, { scaleX: 1 / 1.06, scaleY: 1.06 });
       // Close only the authored <=4px arrow clearance during this finite toe
       // press. A moved/unrelated ledge cannot pull a remote body into contact.
       const panelTarget = action?.kind === "panel" && status === "panel" && support === action.target.platformId && supportedNow()

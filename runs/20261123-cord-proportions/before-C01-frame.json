@@ -1,0 +1,41 @@
+{
+  "dataset": {
+    "sfx": "off",
+    "size": "large",
+    "lifePurpose": "authored",
+    "facing": "left",
+    "pose": "147",
+    "atlas": "hd",
+    "quality": "sharp",
+    "state": "play",
+    "platform": "companion-home-floor",
+    "journey": "11295.7",
+    "sofaDepth": "clear",
+    "presence": "active",
+    "mood": "neutral",
+    "nativeItemAnchor": "",
+    "personalityEffect": "light",
+    "personalityScene": "routine-sleep",
+    "personalitySerial": "2",
+    "personalityBeat": "1",
+    "personalityCommand": "curtain",
+    "personalityActivity": "balanced",
+    "play": "pounce",
+    "playBeat": "play",
+    "attention": "social",
+    "homeReaching": "curtain",
+    "pompom": "0.0000",
+    "earLayered": "true"
+  },
+  "box": {
+    "x": 131.86000061035156,
+    "y": 188.65087890625,
+    "width": 92,
+    "height": 92,
+    "top": 188.65087890625,
+    "right": 223.86000061035156,
+    "bottom": 280.65087890625,
+    "left": 131.86000061035156
+  },
+  "pose": "matrix(1, 0, 0, 1, 0, 0)"
+}

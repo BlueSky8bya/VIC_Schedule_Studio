@@ -1,0 +1,287 @@
+{
+  "baseCommit": "a1afaec44140844468e1f74e5ef2ef05863f0528",
+  "buildId": "oHleRJdUcXl15nGw-V0f7",
+  "sourceChange": "components/poster/viewer-companion/viewer-companion.tsx",
+  "scope": "curtain/light cordContact only; static reciprocal 1.06 correction; original sprite/expression/ears and ordinary jumps retained",
+  "typecheck": {
+    "exitCode": 0
+  },
+  "lint": {
+    "exitCode": 0
+  },
+  "build": {
+    "exitCode": 0
+  },
+  "unit": {
+    "initial": "one source-audit 5-second timeout during concurrent build/lint",
+    "retryExitCode": 0,
+    "files": 486,
+    "passed": 7434,
+    "skipped": 1,
+    "retry": "npm test -- --maxWorkers=2"
+  },
+  "rendered": [
+    {
+      "case": "curtain-viewer-default-panel-physically-reaches-the-painted-handle-before-closing-and-continuing-care",
+      "buildId": "oHleRJdUcXl15nGw-V0f7",
+      "observedFrames": 922,
+      "contactFrames": 38,
+      "errors": [],
+      "rejected": [],
+      "proof": ".scratch-pw/cord-native/curtain/curtain-viewer-default-panel-physically-reaches-the-painted-handle-before-closing-and-continuing-care.json",
+      "sha256": "98201b701920b603947331c25a45fa4d1a5a7c9225ba2d1828b44b2d9e57d2b7"
+    },
+    {
+      "case": "curtain-viewer-narrow-compact-physically-reaches-the-painted-handle-before-closing-and-continuing-care",
+      "buildId": "oHleRJdUcXl15nGw-V0f7",
+      "observedFrames": 1346,
+      "contactFrames": 39,
+      "errors": [],
+      "rejected": [],
+      "proof": ".scratch-pw/cord-native/curtain/curtain-viewer-narrow-compact-physically-reaches-the-painted-handle-before-closing-and-continuing-care.json",
+      "sha256": "3d1252a2b900f0b63e1c3545fc7b46b480f27b221b2a3caa5024106447c42cf6"
+    },
+    {
+      "case": "curtain-viewer-wide-compact-physically-reaches-the-painted-handle-before-closing-and-continuing-care",
+      "buildId": "oHleRJdUcXl15nGw-V0f7",
+      "observedFrames": 1534,
+      "contactFrames": 40,
+      "errors": [],
+      "rejected": [],
+      "proof": ".scratch-pw/cord-native/curtain/curtain-viewer-wide-compact-physically-reaches-the-painted-handle-before-closing-and-continuing-care.json",
+      "sha256": "e94736d21083142bdb2e999e3c7c8bf3978df5954be73a83eb93ed5e69f1b0a6"
+    },
+    {
+      "case": "170-viewer-2133-panel-owner-runtime-full-lamp-off-physically-returns-to-sleep",
+      "buildId": "oHleRJdUcXl15nGw-V0f7",
+      "observedFrames": 735,
+      "contactFrames": 76,
+      "errors": [],
+      "rejected": [],
+      "proof": ".scratch-pw/cord-native/lamp/170-viewer-2133-panel-owner-runtime-full-lamp-off-physically-returns-to-sleep.json",
+      "sha256": "d1c6c996e9128d4177af99924e941286937612c76fb95d124d06dc9ed7ca906b"
+    },
+    {
+      "case": "curtain-preview-default-panel-physically-reaches-the-painted-handle-before-closing-and-continuing-care",
+      "buildId": "oHleRJdUcXl15nGw-V0f7",
+      "observedFrames": 911,
+      "contactFrames": 38,
+      "errors": [],
+      "rejected": [],
+      "proof": ".scratch-pw/cord-native/curtain-retry/curtain-preview-default-panel-physically-reaches-the-painted-handle-before-closing-and-continuing-care.json",
+      "sha256": "bed8d35d8779ef6d4658f6f860a7de6ec4164e18bbfc19e8221f1c48127e0b3e"
+    },
+    {
+      "case": "curtain-preview-narrow-compact-physically-reaches-the-painted-handle-before-closing-and-continuing-care",
+      "buildId": "oHleRJdUcXl15nGw-V0f7",
+      "observedFrames": 1348,
+      "contactFrames": 39,
+      "errors": [],
+      "rejected": [],
+      "proof": ".scratch-pw/cord-native/curtain-retry/curtain-preview-narrow-compact-physically-reaches-the-painted-handle-before-closing-and-continuing-care.json",
+      "sha256": "94636aaaf1e1be2a56f061a455e35599ffd29ba12bc23febe51fd7714d9a659e"
+    },
+    {
+      "case": "curtain-preview-wide-compact-physically-reaches-the-painted-handle-before-closing-and-continuing-care",
+      "buildId": "oHleRJdUcXl15nGw-V0f7",
+      "observedFrames": 1619,
+      "contactFrames": 41,
+      "errors": [],
+      "rejected": [],
+      "proof": ".scratch-pw/cord-native/curtain-retry/curtain-preview-wide-compact-physically-reaches-the-painted-handle-before-closing-and-continuing-care.json",
+      "sha256": "5ad4da55f98baa2c804318a9999fd8940d6640275edb39aa8155031e2397aefd"
+    },
+    {
+      "case": "curtain-studio-default-panel-physically-reaches-the-painted-handle-before-closing-and-continuing-care",
+      "buildId": "oHleRJdUcXl15nGw-V0f7",
+      "observedFrames": 923,
+      "contactFrames": 38,
+      "errors": [],
+      "rejected": [],
+      "proof": ".scratch-pw/cord-native/curtain-retry/curtain-studio-default-panel-physically-reaches-the-painted-handle-before-closing-and-continuing-care.json",
+      "sha256": "e7d147a2ad9ea26c0725f6e32ec784ea14a6a3cc63ef38814c040c0e4a6151f8"
+    },
+    {
+      "case": "curtain-studio-narrow-compact-physically-reaches-the-painted-handle-before-closing-and-continuing-care",
+      "buildId": "oHleRJdUcXl15nGw-V0f7",
+      "observedFrames": 1329,
+      "contactFrames": 39,
+      "errors": [],
+      "rejected": [],
+      "proof": ".scratch-pw/cord-native/curtain-retry/curtain-studio-narrow-compact-physically-reaches-the-painted-handle-before-closing-and-continuing-care.json",
+      "sha256": "7542e74227dcbfe8543099ec700fdd22bb54104477c844b27392fc01e26cd945"
+    },
+    {
+      "case": "curtain-studio-wide-compact-physically-reaches-the-painted-handle-before-closing-and-continuing-care",
+      "buildId": "oHleRJdUcXl15nGw-V0f7",
+      "observedFrames": 1538,
+      "contactFrames": 40,
+      "errors": [],
+      "rejected": [],
+      "proof": ".scratch-pw/cord-native/curtain-retry/curtain-studio-wide-compact-physically-reaches-the-painted-handle-before-closing-and-continuing-care.json",
+      "sha256": "e2bd8846b2fbbd969b74a1dd0f64912c984bc817e309a44fa53fbe20e7e281f8"
+    },
+    {
+      "case": "170-studio-2133-panel-owner-runtime-full-lamp-off-physically-returns-to-sleep",
+      "buildId": "oHleRJdUcXl15nGw-V0f7",
+      "observedFrames": 752,
+      "contactFrames": 76,
+      "errors": [],
+      "rejected": [],
+      "proof": ".scratch-pw/cord-native/lamp-retry/170-studio-2133-panel-owner-runtime-full-lamp-off-physically-returns-to-sleep.json",
+      "sha256": "3b0e2310aaaee85f519cf531a967fea418ac6ff4eb3e2cece3a250c8f4ba4e56"
+    }
+  ],
+  "quiet": [
+    {
+      "mode": "soft",
+      "frames": 392,
+      "reaching": [
+        "light"
+      ],
+      "sleep": true,
+      "pompomFrames": 0,
+      "proof": ".scratch-pw/jump-proportions/cord-diagnostic/quiet-soft.json"
+    },
+    {
+      "mode": "off",
+      "frames": 110,
+      "reaching": [],
+      "sleep": true,
+      "pompomFrames": 0,
+      "proof": ".scratch-pw/jump-proportions/cord-diagnostic/quiet-off.json"
+    },
+    {
+      "mode": "reduced",
+      "frames": 89,
+      "reaching": [],
+      "sleep": true,
+      "pompomFrames": 0,
+      "proof": ".scratch-pw/jump-proportions/cord-diagnostic/quiet-reduced.json"
+    }
+  ],
+  "harness": {
+    "exitCode": 1,
+    "knownBaselineFailures": [
+      "Active rule IDs changed; update RULE_MIGRATION inventory and mappings",
+      "RULE_MIGRATION inventory table differs from live rule IDs"
+    ],
+    "baseline": "runs/20261123-jump-proportions/checks/harness-baseline.log"
+  },
+  "ruleMigrationUnit": {
+    "exitCode": 0
+  },
+  "nativeInitial": "7 studio/preview post-audit failures caused by unhandled header getUnseenReportCountAction; exact synthetic count0 stub, then all7 pass. Original assertions unchanged. Viewer4 PASS on same build retained.",
+  "transport": "Production Next handler in a child process, IPC plus Playwright route fulfillment; no TCP listen. Credential-free fixture, no production writes/API/DB. Only explicit read action IDs get synthetic fixture results.",
+  "review": "Independent cord_release_review agent: no issues. Source/projection, actual comparison, artifact hashes, current build and 11 native proofs, quiet3 and role/boundary/KST/G22 reviewed.",
+  "art": "No image generation, atlas/policy/registration edits",
+  "g22": "No controls, human action targets/labels, or analytics metadata added; autonomous hop excluded",
+  "capture": {
+    "viewport": [
+      1494,
+      1100
+    ],
+    "dpr": 1,
+    "theme": "light",
+    "hour": 0,
+    "freeze": "Capture-only RAF stop at stable airborne row9, pompom0; separate uninterrupted native specs verify actual contact and return."
+  },
+  "artifacts": [
+    {
+      "path": "after-C01-detail.png",
+      "sha256": "4aa0fc80e50613b8b1e0accedce3f6d9c402f9c3db1068d00f19bff5bfc65401",
+      "bytes": 138927
+    },
+    {
+      "path": "after-C01-frame.json",
+      "sha256": "1baf0b25c0b8fa346a447a8f88be8dacb2c26851cf1854829097ca02e4fbe96e",
+      "bytes": 1009
+    },
+    {
+      "path": "after-C01.png",
+      "sha256": "5ab77ee45b798d7c26765b8d16afa389d5b4487f094fefee01415126f9af0e4c",
+      "bytes": 305643
+    },
+    {
+      "path": "after-C02-detail.png",
+      "sha256": "d28005ed8262a35940f5d712cfa729b33099b3a5fcdc10f726081f301abcbb5c",
+      "bytes": 139403
+    },
+    {
+      "path": "after-C02-frame.json",
+      "sha256": "30cedb3a152d16737aa5caf64d870f5ac7329e64488f6bac3c3d5fd704dfc6c7",
+      "bytes": 863
+    },
+    {
+      "path": "after-C02.png",
+      "sha256": "fe4774a5211b3428f9ad5bf882e2b24582ea3a3b3cba5db3cd1808bc9eaf7a29",
+      "bytes": 306092
+    },
+    {
+      "path": "before-C01-detail.png",
+      "sha256": "4d3728276a3dd188ae8c67425b206d518a23029145a3c10f79316fb59097e64e",
+      "bytes": 140100
+    },
+    {
+      "path": "before-C01-frame.json",
+      "sha256": "72d5d3c9521dbf3b431568023bdb8ced02004b5b45d18383f8c1aa55b4a68bd2",
+      "bytes": 995
+    },
+    {
+      "path": "before-C01.png",
+      "sha256": "baa979882ea92358d339db968eb8d51f7a6b8a096988b907bee788ecfaef45b2",
+      "bytes": 306900
+    },
+    {
+      "path": "before-C02-detail.png",
+      "sha256": "dba216c09f6d1657f41abaea38373ad54209eed3821ef115931df53aae42622d",
+      "bytes": 139496
+    },
+    {
+      "path": "before-C02-frame.json",
+      "sha256": "6dd02393715cfb541427ad2f2eb17c4fb0fb2883915a1e231aa016a17932fbff",
+      "bytes": 862
+    },
+    {
+      "path": "before-C02.png",
+      "sha256": "f69c87be3cb860be3727e3e55cf876cb7f30e5d849847c5acb541e72e9c49fcd",
+      "bytes": 305924
+    },
+    {
+      "path": "comparison.png",
+      "sha256": "46e67eaf256ce35440885ece7203285ed49212668bf6bfd6fd5fa87a717f2009",
+      "bytes": 446912
+    },
+    {
+      "path": "index.html",
+      "sha256": "a2fb2ab5c22f17586cb5fd74f0402b1907cc3ddc64af5012ef2d25359c9e5b97",
+      "bytes": 2892
+    },
+    {
+      "path": "independent-review.md",
+      "sha256": "d9f79aa6af316e21f08e987c5328c2b85719e3c8557971691e72b7dcd6471172",
+      "bytes": 959
+    }
+  ],
+  "visualAcceptance": {
+    "dateKst": "2026-11-23",
+    "source": "current user chat",
+    "quote": "오 그렇게 하자",
+    "scope": [
+      "C01 curtain cord hop",
+      "C02 light cord hop"
+    ],
+    "verticalScale": 1.06,
+    "horizontalScale": 0.9433962264150942,
+    "comparisonSha256": "46e67eaf256ce35440885ece7203285ed49212668bf6bfd6fd5fa87a717f2009",
+    "releaseStatus": "local implementation; no commit/integration/push/deployment performed"
+  },
+  "releaseAuthorization": {
+    "dateKst": "2026-11-23",
+    "source": "current user chat",
+    "quote": "배포 해",
+    "scope": "Accepted curtain/light cord-hop correction; commit and main push through existing Cloudflare Workers Builds",
+    "receipt": "C:/Projects/context-hub/out/vic/20261123-cord-proportions-release/receipt.json",
+    "state": "pending at release commit"
+  }
+}
