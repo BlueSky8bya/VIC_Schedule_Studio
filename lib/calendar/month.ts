@@ -888,12 +888,16 @@ export function linkEdgesMatch(
 //  · band  — 두 카드가 모두 그날 맨 위(같은 줄) → 평평한 변으로 붙는 띠. 아래에 다른 일정이 있어도 된다.
 //            글이 같으면 머리 칸 하나가 여러 칸 폭으로 글을 한 번만 쓰고, 뒤 칸은 빈 자리(bandSlot).
 //  · step  — 어느 한쪽이라도 맨 위가 아니라 같은 줄에 못 놓임 → 둥근 카드끼리 칸 사이 틈에서 꺾인 띠로 잇는다.
-//            같은 틈을 두 이음이 지나면 틈을 나눠 나란히 선다(lane/lanes — 서로 덮지 않게).
-//  · wrap  — 토→일(달력 줄이 바뀜) → 꺾인 띠 없이 평평한 변이 칸 끝까지(글자 꼬리표 없음, 2026-11-18).
+//            같은 틈을 두 이음이 나란히 지나면 틈을 나눠 선다(lane/lanes). 서로 엇갈리면 하나만 꺾인 띠, 다른 하나는 그 밑으로(under).
+//  · wrap  — 토→일(달력 줄이 바뀜) → 꺾인 띠 없이 평평한 변이 칸 끝까지(글자 꼬리표 없음, 2026-11-18), 맞닿은 끝이 옅어진다.
+//            under가 붙으면 줄바뀜이 아니라 엇갈림 — 평평한 변 없이 둥근 카드의 틈 쪽 끝만 옅어진다.
 // step/wrap으로 받은 카드가 글까지 같으면 제목 한 줄로 준다(sameContent). 물결 표시는 선이 안 보이는 wrap에만.
 export type ChainJoinKind = "band" | "step" | "wrap";
 // lane/lanes = 같은 틈을 지나는 꺾인 띠가 여럿일 때 이 이음이 서는 자리(왼쪽부터 0)와 전체 수. 하나뿐이면 없다.
-export type ChainJoinSide = { kind: ChainJoinKind; otherId: string; sameContent: boolean; lane?: number; lanes?: number };
+// under = 같은 틈에서 다른 이음과 엇갈려 그 밑으로 지나가는 이음(kind는 wrap) — 카드는 제 자리·제 둥근 모양 그대로, 맞닿은 끝만 옅어진다.
+export type ChainJoinSide = {
+  kind: ChainJoinKind; otherId: string; sameContent: boolean; lane?: number; lanes?: number; under?: boolean;
+};
 export type ChainJoin = {
   left?: ChainJoinSide; // 앞날에서 이어 받음
   right?: ChainJoinSide; // 다음날로 넘김
@@ -953,9 +957,27 @@ export function buildChainJoins<T extends PublicScheduleEvent | StudioScheduleEv
       get(to.id).left = { kind, otherId: from.id, sameContent };
       if (kind === "step") steps.push({ from, to, fromIdx: i, toIdx: ti });
     }
+    // 서로 엇갈리는(위아래가 뒤바뀌는) 이음은 한 틈에서 둘 다 꺾인 띠로 그리지 않는다 — 좁은 틈에서 X자로 겹치면 어느 선이
+    // 어디로 가는지 읽히지 않는다(그래프 그리기 연구: 교차는 먼저 없애고, 못 없애면 한쪽이 밑으로 지나가는 것을 분명히,
+    // 교차각이 작을수록 읽기 어렵다 — Eppstein 외 2007 "Edges and Switches, Tunnels and Bridges", Huang·Eades·Hong 2014).
+    // 앞날에 더 위에 있는 이음만 꺾인 띠로 남기고, 그것과 엇갈리는 이음은 그 밑으로 지나가는 것으로 그린다(under):
+    // 카드는 제 자리에 둥근 그대로 두고 틈 쪽 끝만 옅어져 사라진다 — 틈에는 꺾인 띠 하나만 보인다.
+    // 고른 테두리·손 올림 빛은 줄바뀜처럼 양쪽 카드를 같이 두른다(data-wrap-*).
+    const kept: typeof steps = [];
+    for (const s of steps) {
+      const crosses = kept.some((k) => (k.fromIdx - s.fromIdx) * (k.toIdx - s.toIdx) < 0);
+      if (!crosses) {
+        kept.push(s);
+        continue;
+      }
+      Object.assign(get(s.from.id).right!, { kind: "wrap", under: true });
+      Object.assign(get(s.to.id).left!, { kind: "wrap", under: true });
+    }
+    steps.length = 0;
+    steps.push(...kept);
     // 같은 틈을 지나는 꺾인 띠가 둘 이상 — 틈을 나눠 나란히 세운다. 카드에서 기둥까지 뻗는 가로 팔이 남의 기둥을
     // 가로지르지 않는 순서로: 위로 올라가는 이음끼리는 다음날 더 위로 들어가는 쪽이 왼쪽, 아래로 내려가는 이음끼리는
-    // 앞날 더 아래에서 나오는 쪽이 왼쪽. (서로 엇갈리는 두 이음은 어느 순서든 한 번은 가로지른다 — 기둥을 맨 위에 덧그려 둘 다 보이게 한다.)
+    // 앞날 더 아래에서 나오는 쪽이 왼쪽. (엇갈리는 이음은 위에서 이미 걸러 냈다 — 여기 남은 것은 나란히 가는 이음뿐.)
     if (steps.length > 1) {
       const down = (s: { fromIdx: number; toIdx: number }) => s.toIdx > s.fromIdx;
       const order = [...steps].sort((x, y) =>
@@ -974,7 +996,7 @@ export function buildChainJoins<T extends PublicScheduleEvent | StudioScheduleEv
     for (const e of lists[k]) {
       const j = joins.get(e.id);
       if (!j) continue;
-      j.flatLeft = Boolean(j.left && j.left.kind !== "step");
+      j.flatLeft = Boolean(j.left && j.left.kind !== "step" && !j.left.under);
       if (j.left?.kind === "band") {
         const prev = get(j.left.otherId);
         j.bandKey = prev.bandKey ?? j.left.otherId;
@@ -985,7 +1007,7 @@ export function buildChainJoins<T extends PublicScheduleEvent | StudioScheduleEv
   }
   for (const j of joins.values()) {
     if (j.bandHeadId || !(j.right?.kind === "band" && j.right.sameContent)) {
-      j.flatRight = Boolean(j.right && j.right.kind !== "step");
+      j.flatRight = Boolean(j.right && j.right.kind !== "step" && !j.right.under);
       continue;
     }
     // 같은 글 띠의 머리 — 끝 칸까지 세고, 오른쪽 변은 끝 칸의 오른쪽 이음을 따른다.
@@ -998,7 +1020,7 @@ export function buildChainJoins<T extends PublicScheduleEvent | StudioScheduleEv
       span += 1;
     }
     j.bandSpan = span;
-    j.flatRight = Boolean(tail.right && tail.right.kind !== "step");
+    j.flatRight = Boolean(tail.right && tail.right.kind !== "step" && !tail.right.under);
   }
   return joins;
 }

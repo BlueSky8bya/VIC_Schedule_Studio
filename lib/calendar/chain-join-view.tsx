@@ -21,10 +21,16 @@ export function chainSlim(join: ChainJoin | undefined): boolean {
 }
 // 토→일 줄바뀜으로 맞닿은 끝 — 그 끝은 칠이 옅어진다(month.ts wrapFadeStyle, 편집실·시청자 같은 판정).
 export function wrapFadeOf(join: ChainJoin | undefined): { left: boolean; right: boolean } {
-  return { left: join?.left?.kind === "wrap", right: join?.right?.kind === "wrap" };
+  // 엇갈려 밑으로 지나가는 끝(under)은 카드 전체 끝을 CSS 마스크로 옅게 한다(.under-in/.under-out) — 여기서는 뺀다.
+  return {
+    left: join?.left?.kind === "wrap" && !join.left.under,
+    right: join?.right?.kind === "wrap" && !join.right.under
+  };
 }
 export function chainWrapClasses(join: ChainJoin | undefined): string {
-  return [join?.left?.kind === "wrap" ? "wrap-in" : "", join?.right?.kind === "wrap" ? "wrap-out" : ""]
+  const cls = (side: ChainJoin["left"], wrap: string, under: string) =>
+    side?.kind === "wrap" ? (side.under ? under : wrap) : "";
+  return [cls(join?.left, "wrap-in", "under-in"), cls(join?.right, "wrap-out", "under-out")]
     .filter(Boolean)
     .join(" ");
 }

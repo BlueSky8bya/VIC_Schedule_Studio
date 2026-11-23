@@ -101,18 +101,36 @@ describe("buildChainJoins", () => {
     }
   });
 
-  it("같은 틈을 두 이음이 지나면 자리를 나눈다(lane) — 다음날 위로 들어가는 쪽이 왼쪽", () => {
+  it("같은 틈을 두 이음이 나란히 지나면 자리를 나눈다(lane) — 다음날 위로 들어가는 쪽이 왼쪽", () => {
     const events = [
       ev({ id: "x", day: "2026-11-10", sortOrder: 0 }),
       ev({ id: "p", day: "2026-11-10", sortOrder: 1, linkNext: "p2" }),
       ev({ id: "q", day: "2026-11-10", sortOrder: 2, primaryTagIds: ["t2"], linkNext: "q2" }),
+      ev({ id: "p2", day: "2026-11-11", sortOrder: 0 }),
+      ev({ id: "q2", day: "2026-11-11", sortOrder: 1, primaryTagIds: ["t2"] })
+    ];
+    const j = joinsOf(events);
+    expect(j.get("p")?.right).toMatchObject({ kind: "step", otherId: "p2", lane: 0, lanes: 2 });
+    expect(j.get("q")?.right).toMatchObject({ kind: "step", otherId: "q2", lane: 1, lanes: 2 });
+    expect(j.get("q2")?.left).toMatchObject({ lane: 1, lanes: 2 });
+  });
+
+  it("같은 틈에서 엇갈리면 위쪽 이음만 꺾인 띠 — 다른 하나는 그 밑으로(둥근 카드, 틈 쪽 끝만 옅어짐)", () => {
+    const events = [
+      ev({ id: "p", day: "2026-11-10", sortOrder: 0, linkNext: "p2" }),
+      ev({ id: "q", day: "2026-11-10", sortOrder: 1, primaryTagIds: ["t2"], linkNext: "q2" }),
       ev({ id: "q2", day: "2026-11-11", sortOrder: 0, primaryTagIds: ["t2"] }),
       ev({ id: "p2", day: "2026-11-11", sortOrder: 1 })
     ];
     const j = joinsOf(events);
-    expect(j.get("q")?.right).toMatchObject({ kind: "step", otherId: "q2", lane: 0, lanes: 2 });
-    expect(j.get("p")?.right).toMatchObject({ kind: "step", otherId: "p2", lane: 1, lanes: 2 });
-    expect(j.get("p2")?.left).toMatchObject({ lane: 1, lanes: 2 });
+    expect(j.get("p")?.right).toMatchObject({ kind: "step", otherId: "p2" });
+    expect(j.get("p")?.right?.lanes).toBeUndefined();
+    expect(j.get("q")?.right).toMatchObject({ kind: "wrap", under: true, otherId: "q2" });
+    expect(chainWrapClasses(j.get("q"))).toBe("under-out");
+    expect(chainWrapClasses(j.get("q2"))).toBe("under-in");
+    expect(wrapFadeOf(j.get("q"))).toEqual({ left: false, right: false });
+    expect(j.get("q")?.flatRight).toBe(false);
+    expect(j.get("q2")?.flatLeft).toBe(false);
   });
 
   it("앞날에 그 일정 하나뿐이면 띠 — 같은 글이면 머리 칸이 여러 칸 폭, 뒤 칸은 빈 자리", () => {

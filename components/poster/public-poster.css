@@ -6712,7 +6712,24 @@ button.agenda-mark.celebratable:active { transform: scale(var(--press-scale)); }
 .chain-step-col {
   transition: filter 0.28s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
-/* 같은 틈을 두 이어진 일정이 지날 때 나란히 선 기둥(2026-11-23) — 몸통 위에 한 번 더 얹어 두 색이 다 보인다. */
+/* 같은 틈에서 다른 이어진 일정과 엇갈려 그 밑으로 지나가는 끝(2026-11-23, buildChainJoins under) — 틈에는 꺾인 띠 하나만 두고,
+   이쪽 카드는 제 자리에서 틈 쪽 끝만 옅어져 사라진다(글자가 시작하는 안쪽 여백 안에서만). */
+.public-event.under-out,
+.studio-event-pill.under-out {
+  -webkit-mask-image: linear-gradient(to left, transparent 0, #000 16px);
+  mask-image: linear-gradient(to left, transparent 0, #000 16px);
+}
+.public-event.under-in,
+.studio-event-pill.under-in {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 16px);
+  mask-image: linear-gradient(to right, transparent 0, #000 16px);
+}
+.public-event.under-in.under-out,
+.studio-event-pill.under-in.under-out {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 16px, #000 calc(100% - 16px), transparent 100%);
+}
+/* 같은 틈을 두 이어진 일정이 나란히 지날 때 나란히 선 기둥(2026-11-23) — 몸통 위에 한 번 더 얹어 두 색이 다 보인다. */
 .chain-step-col {
   stroke-linejoin: round;
   pointer-events: none;

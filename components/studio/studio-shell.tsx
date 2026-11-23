@@ -4764,7 +4764,8 @@ export function StudioShell({
   // 달력 밖 어디든)는 끊기(빨간 선). 끊기를 카드 위에서 시작해도 잇기로 오인되지 않게, 또 끊는
   // 선을 달력 밖에서 시작해 주 경계 이음새까지 그어 올 수 있게 한다. 실제 시작은 6px 이상 움직였을 때.
   function beginRightGesture(e: PointerEvent) {
-    if (!canEdit || e.button !== 2 || e.pointerType !== "mouse") return;
+    // 시청자 화면 미리보기에서는 잇기·끊기 선을 그리지 않는다 — 시청자에게 없는 편집 동작이다(2026-11-23 소유자).
+    if (!canEdit || viewerModeRef.current || e.button !== 2 || e.pointerType !== "mouse") return;
     // 우클릭이 카드/날짜 칸에 포커스를 옮기지 않게 — 제스처 뒤 ←/→가 (roving 포커스의)
     // 날짜 이동으로 먹혀 달 이동이 안 되던 문제(사용자 지적).
     e.preventDefault();
@@ -4811,9 +4812,9 @@ export function StudioShell({
   }
 
   // 우클릭 제스처 배선: 우클릭 눌림을 캡처로 잡고(잇기/끊기 시작), 뒤따르는 contextmenu는 '드래그
-  // 였을 때만' 막는다(단순 우클릭은 통과 → 셀의 휴뱅 메뉴 그대로). 소유자(canEdit)에서만.
+  // 였을 때만' 막는다(단순 우클릭은 통과 → 셀의 휴뱅 메뉴 그대로). 소유자(canEdit)에서만, 시청자 화면 미리보기에서는 안 건다.
   useEffect(() => {
-    if (!canEdit) return;
+    if (!canEdit || viewerMode) return;
     const onDown = (e: PointerEvent) => beginRightGesture(e);
     // 그리드 안 우클릭은 잇기/끊기 전용 → 항상 억제. 밖에서도 '드래그(끊기)였다면' 뒤따르는
     // 메뉴 1회 억제(단순 우클릭은 통과 → 밖에선 브라우저 메뉴 정상).
@@ -4833,7 +4834,7 @@ export function StudioShell({
       window.removeEventListener("contextmenu", onCtx, true);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canEdit, events, selectedEventId]);
+  }, [canEdit, viewerMode, events, selectedEventId]);
 
   // 이동(드롭) 저장을 직렬 큐로 처리 — 빠른 연속 이동도 큐 순서대로 저장돼 '마지막 위치'가 서버
   // 최종값이 된다(레이스로 옛 위치가 저장되는 문제 방지). temp id는 저장 완료까지 기다려 보낸다.
