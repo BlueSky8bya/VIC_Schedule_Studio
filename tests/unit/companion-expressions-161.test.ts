@@ -6,6 +6,20 @@ import anchors from "@/lib/ui/viewer-companion/expression-anchors-161.json";
 import physicalMouths from "@/lib/ui/viewer-companion/mouth-anchors.json";
 const base: CompanionExpressionContext = { token: "real-action:1", status: "idle", phase: 0, personality: "balanced", atHome: false, energy: .9, petting: false, busy: false, userNear: false, toyPlaying: false, toyApproach: false, lookingOut: false, reading: false, watching: false, music: false, season: 10, weather: "clear", daylight: true, outing: false };
 describe("source-bound finite facial expressions161", () => {
+  it("lets bonk tears own the hurt face after petting and suppresses incidental smiles until comfort changes the action", () => {
+    for (const petting of [false, true]) {
+      const actor = createCompanionExpressions();
+      expect(actor.sample({ ...base, petting: true }, 100)?.id).toBe("melt");
+      expect(actor.sample({ ...base, token: "bonk:1", status: "play", play: "bonk-tears", petting, userNear: true }, 300)).toBeNull();
+      expect(actor.sample({ ...base, token: "bonk:1", status: "play", play: "bonk-tears", petting, lookingOut: true }, 900)).toBeNull();
+      expect(actor.sample({ ...base, token: "bonk-recovered", petting: false }, 1400)).toBeNull();
+      expect(actor.sample({ ...base, token: "comfort", status: "petted", petting: true }, 1500)?.id).toBe("melt");
+    }
+    const actor = createCompanionExpressions();
+    expect(actor.sample({ ...base, petting: true }, 100)?.id).toBe("melt");
+    expect(actor.sample({ ...base, petting: false }, 250)?.id).toBe("melt");
+    expect(actor.sample({ ...base, status: "play", play: "bonk-tears" }, 400)).toBeNull();
+  });
   it("keeps selected13B open through its peak and15B closed with one omega mouth", () => {
     for (const phase of [.3, .55, .8]) {
       const greeting = sampleCompanionExpression("greeting", phase), petting = sampleCompanionExpression("melt", phase);

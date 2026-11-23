@@ -36,6 +36,9 @@ test.beforeEach(async ({ page }) => {
       result.reads++;
       return route.fulfill({ contentType: "text/x-component", body: `0:{"a":"$@1","f":[],"b":"fixture"}\n1:${JSON.stringify(samplePublicScheduleData)}\n` });
     }
+    if (request.method() === "POST" && pathname === "/visual-fixture/studio" && manifest[request.headers()["next-action"]]?.exportedName === "getUnseenReportCountAction") {
+      return route.fulfill({ contentType: "text/x-component", body: '0:{"a":"$@1","f":[],"b":"fixture"}\n1:0\n' });
+    }
     if (["POST", "PUT", "PATCH", "DELETE"].includes(request.method())) { result.blocked.push(`${request.method()} ${pathname}`); return route.fulfill({ status: 500, body: "" }); }
     return route.continue();
   });
@@ -53,14 +56,14 @@ test.afterEach(async ({ page }, info) => {
   expect(proof.get(page)?.blocked).toEqual([]); expect(proof.get(page)?.errors).toEqual([]);
 });
 
-async function setup(page: Page, surface: Surface) {
+async function setup(page: Page, surface: Surface, affectionate = false) {
   await page.addInitScript(({ epoch, key, premiereKey, preferences, care }) => {
     for (const [name, value] of Object.entries({ [key]: epoch, [premiereKey]: "off", "vic.ambient": "off", "vic.sound": "off", "vic.reduceMotion": "off", "vic.gfxPref": "max", "vic_avatar_side": "left" })) localStorage.setItem(name, value);
     localStorage.setItem("vic.viewerCompanion", JSON.stringify({ version: 1, ...preferences }));
     localStorage.setItem("vic.viewerCompanionCare", JSON.stringify({ version: 1, ...care }));
     localStorage.removeItem("vic.panelSections"); localStorage.removeItem("vic_panel_collapsed");
   }, { key: SETTINGS_EPOCH_KEY, epoch: SETTINGS_EPOCH, premiereKey: PREMIERE_STAGE_KEY,
-    preferences: { ...DEFAULT_COMPANION_PREFERENCES, enabled: true, roam: false, jump: false, sleep: true, feeding: false, heartPrank: false, ambientPrank: false }, care: { ...DEFAULT_COMPANION_CARE, hunger: .05, energy: 1 } });
+    preferences: { ...DEFAULT_COMPANION_PREFERENCES, ...(affectionate ? { personality: "affectionate", personalitySource: "manual", learnFromYou: false } : {}), enabled: true, roam: false, jump: false, sleep: true, feeding: false, heartPrank: false, ambientPrank: false }, care: { ...DEFAULT_COMPANION_CARE, hunger: .05, energy: 1 } });
   await page.goto(surface === "viewer" ? "/visual-fixture/poster?avatar=1" : "/visual-fixture/studio?role=owner");
   await page.bringToFront();
   await page.evaluate(async () => {
@@ -139,6 +142,32 @@ async function shortClick(page: Page) {
   await page.mouse.move(5, 5);
   await expect(pet(page)).toHaveAttribute("data-play", "bonk-tears");
 }
+
+for (const surface of ["viewer", "studio"] as const) test(`${surface} light pointer contact cannot smile over tears and an intentional stroke still comforts`, async ({ page }) => {
+  await setup(page, surface, true); await standOnRealSeat(page); await observe(page);
+  const stroke = async () => {
+    for (let i = 0; i < 18; i++) {
+      const box = (await actor(page).boundingBox())!;
+      await page.mouse.move(box.x + box.width * (i % 2 ? .35 : .65), box.y + box.height * .52, { steps: 3 });
+      await page.waitForTimeout(55);
+      if (await pet(page).getAttribute("data-expression") === "melt") break;
+    }
+    await expect(pet(page)).toHaveAttribute("data-expression", "melt");
+  };
+  await stroke(); await actor(page).click({ delay: 55 });
+  await expect(pet(page)).toHaveAttribute("data-play", "bonk-tears");
+  await expect(pet(page)).toHaveAttribute("data-play-beat", "checking");
+  const box = (await actor(page).boundingBox())!;
+  // One-way light contact creates pressure without the intentional reversal
+  // that comforts the pet and takes ownership of its authored petting pose.
+  await page.mouse.move(box.x + box.width * .64, box.y + box.height * .52, { steps: 3 });
+  await expect(pet(page)).toHaveAttribute("data-play", "bonk-tears");
+  await expect(pet(page)).not.toHaveAttribute("data-expression", /melt|more-pets/);
+  await page.mouse.move(5, 5);
+  await expect(pet(page)).not.toHaveAttribute("data-play", "bonk-tears", { timeout: 5000 });
+  await expect(pet(page)).not.toHaveAttribute("data-expression", "more-pets");
+  await stroke();
+});
 
 for (const surface of ["viewer", "studio"] as const) test(`${surface} native short clicks show tears and recover, while a real drag interrupts immediately`, async ({ page }) => {
   await setup(page, surface); await standOnRealSeat(page); await observe(page);

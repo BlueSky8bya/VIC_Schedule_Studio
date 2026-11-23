@@ -117,6 +117,11 @@ export function createCompanionExpressions() {
   const seen = new Map<string, number>();
   return {
     sample(c: CompanionExpressionContext, now: number, quiet = false) {
+      // The authored tears own the hurt face. Light pointer contact can ask
+      // for melt while the crying action is still active; that smile must
+      // not paint over the tear cell or leave a more-pets tail afterwards.
+      // Real comforting changes the action to petted and re-enters normally.
+      if (c.play === "bonk-tears") { active = undefined; previousPet = false; petEnded = 0; return null; }
       if (!Number.isFinite(now) || quiet) { active = undefined; previousPet = c.petting; mealSerial = c.meal?.serial ?? mealSerial; cleanup = c.cleanupReceipt ?? cleanup; return null; }
       if (c.petting && !previousPet) serial++;
       if (!c.petting && previousPet) petEnded = now;
