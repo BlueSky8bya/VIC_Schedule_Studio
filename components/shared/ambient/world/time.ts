@@ -16,7 +16,6 @@ import { sunDay, sunPos, type SunPos } from "./sun";
 
 export type DayBand = "dawn" | "morning" | "noon" | "dusk" | "evening" | "night";
 export const DAY_BANDS: readonly DayBand[] = ["dawn", "morning", "noon", "dusk", "evening", "night"];
-export const BAND_LABEL: Record<DayBand, string> = { dawn: "새벽", morning: "아침", noon: "점심", dusk: "노을", evening: "저녁", night: "밤" };
 
 /** 계절의 대표 날짜(날짜를 모르는 옛 호출용 — `bandOf(hour, season)`). */
 const SEASON_DAY: Record<SeasonKey, [number, number]> = { spring: [4, 15], summer: [7, 15], autumn: [10, 15], winter: [1, 15] };

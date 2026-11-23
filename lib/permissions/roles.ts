@@ -1,10 +1,5 @@
 import type { MembershipRole } from "@/lib/domain/schedule-types";
 
-// 플랫폼 개발자 / 슈퍼관리자: 전체 캘린더를 가로질러 시스템을 유지보수한다.
-export function isDeveloper(role: MembershipRole) {
-  return role === "developer";
-}
-
 // 소유자(스트리머) 또는 개발자(시스템 유지보수자)만 일정 데이터를 편집할 수 있다.
 export function canEditSchedule(role: MembershipRole) {
   return role === "owner" || role === "developer";

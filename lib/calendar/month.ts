@@ -104,11 +104,6 @@ export function classifyDay(
   };
 }
 
-export type TagColorSummary = {
-  tag: BroadcastTag;
-  color: ColorPaletteEntry;
-};
-
 export function buildCalendarMonth(year: number, month: number): MonthCell[] {
   const firstDay = new Date(Date.UTC(year, month - 1, 1));
   const lastDate = new Date(Date.UTC(year, month, 0)).getUTCDate();

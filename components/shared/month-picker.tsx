@@ -19,9 +19,6 @@ import "./month-picker.css";
 
 export type YM = { year: number; month: number };
 
-export function ymKey(ym: YM): string {
-  return `${ym.year}-${String(ym.month).padStart(2, "0")}`;
-}
 export function ymOffset(from: YM, to: YM): number {
   return (to.year - from.year) * 12 + (to.month - from.month);
 }

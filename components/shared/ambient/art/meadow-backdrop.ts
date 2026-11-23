@@ -17,7 +17,6 @@ type Layer = keyof typeof geometry;
 type Cache = { c: HTMLCanvasElement; key: string; width: number; height: number; y: number };
 const LAYERS: Layer[] = ["far", "ground", "frame"];
 export const meadowLayerUrls = (season: SeasonKey) => LAYERS.map(layer => `/ambient/art/backdrop-meadow-${season}-${layer}-v${season === "spring" ? (layer === "ground" ? 5 : 2) : 1}.png`);
-export const MEADOW_LAYER_URLS = meadowLayerUrls("spring");
 const GEOMETRIES = { spring: geometry, summer: summerGeometry, autumn: autumnGeometry, winter: winterGeometry };
 
 /** Three originals, independently composed. Measured clip spans exclude RGB

@@ -35,14 +35,6 @@ export function anchorToSurface(g:CanvasRenderingContext2D,y:number,x=0){
   const k=scope.surface.motion?.(x,y)??surfaceMotionFactor((y-scope.surface.horizon)/Math.max(1,scope.surface.height-scope.surface.horizon));
   g.translate(scope.offsets.ground.x*k-scope.current.x,scope.offsets.ground.y*k-scope.current.y);
 }
-/** Cached relief renderer owns pixels; this scope keeps objects/input aligned. */
-export function withReliefSurface(g:CanvasRenderingContext2D,motion:(x:number,y:number)=>number,draw:(off:{x:number;y:number},tier:DepthTier)=>void){
-  const scope=scopes.get(g);
-  if(!scope){draw({x:0,y:0},'still');return;}
-  scope.surface={horizon:0,height:1,motion};
-  g.save();g.translate(-scope.current.x,-scope.current.y);
-  try{draw(scope.offsets.ground,scope.tier);}finally{g.restore();}
-}
 /** Surface distance: almost fixed horizon, progressively stronger near motion. */
 export function surfaceMotionFactor(v:number){const u=Math.max(0,Math.min(1,v));return .04+.66*u*u*(3-2*u);}
 export function withSurfaceDepth(g:CanvasRenderingContext2D,v:number,draw:()=>void){
@@ -126,11 +118,6 @@ export function drawDepthGround(g: CanvasRenderingContext2D, source: HTMLCanvasE
   if (far) withDepthLayer(g, "far", draw); else draw();
 }
 export function clearDepthCache() { for (const e of cache) e.c.width = e.c.height = 1; cache.length = 0; }
-export function retainDepthOwners(owners: object[]) {
-  for (let i = cache.length - 1; i >= 0; i--) if (cache[i].owner && !owners.includes(cache[i].owner!)) {
-    const old = cache.splice(i, 1)[0]; old.c.width = old.c.height = 1;
-  }
-}
 export function depthCacheStats() { return { bakes, entries: cache.length, bytes: cache.reduce((n, e) => n + e.c.width * e.c.height * 4, 0) }; }
 
 /** P0 procedural foreground only: low edge vegetation/water marks, no standing objects. */

@@ -6,12 +6,6 @@ export type BiomeKey = "valley" | "pond" | "mountain" | "hill" | "meadow" | "for
 export type ActiveBiomeKey = "meadow";
 export type Dir = "up" | "down" | "left" | "right";
 
-// Labels describe species/art provenance, never destinations or loaders.
-export const ECOLOGICAL_REGIONS: Record<BiomeKey, string> = {
-  meadow: "초원", hill: "들판·언덕", forest: "숲", pond: "민물", valley: "계곡",
-  mountain: "산", tidal: "갯벌", sandy: "모래해안", rocky: "암석해안",
-  shallow: "얕은 바다", sea: "먼바다", deep: "깊은 바다"
-};
 
 export type BiomeDef = {
   key: ActiveBiomeKey;
