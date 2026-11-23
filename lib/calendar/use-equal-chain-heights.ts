@@ -20,6 +20,10 @@ const STEP_MAX = 12;
 const STEP_CLEAR = 2;
 const STEP_CONVEX = 7;
 const STEP_CONCAVE = 5;
+// 윗변이 한 줄로 곧은 이음(둘 다 그날 맨 위, 글 높이만 다름 — buildChainJoins level)의 아랫변 계단 — 볼록·오목을 같은 크기로
+// 크게 둥글려 두 곡선이 계단 가운데에서 만난다(~ 모양). 상한일 뿐이고 실제 반경은 계단 높이의 절반을 넘지 않는다(roundedPath).
+const STEP_SOFT = 18;
+const LEVEL_EPS = 1;
 // 같은 틈을 여러 꺾인 띠가 지날 때(2026-11-23: 이어진 일정은 순서와 상관없이 잇는다 → 두 묶음이 같은 날을 지나면 생긴다)
 // 틈을 나눠 나란히 세운다 — 기둥 사이 2px, 가늘어져도 3px 아래로는 안 간다.
 const STEP_LANE_GAP = 2;
@@ -129,7 +133,7 @@ function outlinePoints(
 ): SidedPt[] {
   const first = bodies[0];
   const last = bodies[bodies.length - 1];
-  const raw: { x: number; y: number; sharp?: boolean; side?: "L" | "R" }[] = [];
+  const raw: { x: number; y: number; sharp?: boolean; side?: "L" | "R"; soft?: boolean }[] = [];
   // 위쪽 변: 왼 → 오른쪽
   raw.push({ x: first.left, y: first.top, sharp: flat.left, side: flat.left ? "L" : undefined });
   stems.forEach((st, k) => {
@@ -148,12 +152,17 @@ function outlinePoints(
     const A = bodies[k];
     const B = bodies[k + 1];
     const bottom = Math.max(A.bottom, B.bottom);
-    raw.push({ x: st.xb, y: B.bottom }, { x: st.xb, y: bottom }, { x: st.xa, y: bottom }, { x: st.xa, y: A.bottom });
+    // 윗변이 한 줄이면 아랫변 계단은 부드럽게(STEP_SOFT) — 곧은 변 위의 점은 아래에서 걸러져 계단 두 꼭짓점만 남는다.
+    const soft = Math.abs(A.top - B.top) < LEVEL_EPS;
+    raw.push(
+      { x: st.xb, y: B.bottom, soft }, { x: st.xb, y: bottom, soft },
+      { x: st.xa, y: bottom, soft }, { x: st.xa, y: A.bottom, soft }
+    );
   }
   raw.push({ x: first.left, y: first.bottom, sharp: flat.left, side: flat.left ? "L" : undefined });
   const same = (a: { x: number; y: number }, b: { x: number; y: number }) =>
     Math.abs(a.x - b.x) < 0.01 && Math.abs(a.y - b.y) < 0.01;
-  const pts: { x: number; y: number; sharp?: boolean; side?: "L" | "R" }[] = [];
+  const pts: { x: number; y: number; sharp?: boolean; side?: "L" | "R"; soft?: boolean }[] = [];
   for (const p of raw) if (!pts.length || !same(pts[pts.length - 1], p)) pts.push(p);
   if (pts.length > 1 && same(pts[0], pts[pts.length - 1])) pts.pop();
   const crossAt = (i: number) => {
@@ -174,6 +183,7 @@ function outlinePoints(
   }
   return pts.map((p, i) => {
     if (p.sharp || hidden(p.x)) return { ...p, r: 0 };
+    if (p.soft) return { ...p, r: STEP_SOFT };
     return { ...p, r: Math.sign(crossAt(i)) === Math.sign(area) ? convex : concave };
   });
 }
@@ -291,6 +301,47 @@ function movesGeometry(a: Animation): boolean {
 // 손을 올리면 카드가 1px 뜨는 전환(transform)은 '미끄러짐'이 아니다 — 그것까지 세면 손 올림 시작·끝마다 카드가 z 4로 잠깐
 // 올라가 아래 카드가 윗변에 걸친 왕관을 덮었다가 내려놓아 깜빡였다(2026-11-20 소유자). 실제로 자리를 옮기는 착지·FLIP만 센다.
 const SLIDE_MIN_PX = 3;
+const MOVE_PROPS = /^(transform|translate|scale|rotate)$/;
+// 이어진 카드·띠 머리의 '크기'를 바꾸는 전환인가 — 폭·높이·안쪽 여백이 바뀌고, 그 요소가 그런 카드이거나 카드를 품거나 카드 안에
+// 있을 때만. 놓을 자리(.drop-gap)가 열리는 높이 전환·바깥 여백(margin)·자리(top/left) 전환은 카드를 '옮길' 뿐 크기는 그대로다.
+const SIZE_PROPS = /^(width|height|min-height|max-height|padding)/;
+const SIZED_CARDS = "[data-chain], [data-band-head]";
+function resizesCards(e: TransitionEvent): boolean {
+  if (!SIZE_PROPS.test(e.propertyName)) return false;
+  const el = e.target instanceof Element ? e.target : null;
+  if (!el) return true;
+  return el.closest(SIZED_CARDS) !== null || el.querySelector(SIZED_CARDS) !== null;
+}
+/** 방금 시작한 전환이 상자 모서리를 SLIDE_MIN_PX보다 덜 옮기는가(손 올림에 1px 뜨기·살짝 커지기). 모르면 false. */
+function isTinyMove(el: Element, prop: string): boolean {
+  try {
+    const anim = el.getAnimations().find((a) => (a as Animation & { transitionProperty?: string }).transitionProperty === prop);
+    const frames = (anim?.effect as KeyframeEffect | null)?.getKeyframes?.();
+    if (!frames || frames.length < 2) return false;
+    const box = el instanceof HTMLElement ? { w: el.offsetWidth, h: el.offsetHeight } : { w: 0, h: 0 };
+    const key = prop as "transform" | "translate" | "scale" | "rotate";
+    const a = String(frames[0][key] ?? "none");
+    const b = String(frames[frames.length - 1][key] ?? "none");
+    if (key === "rotate") return false;
+    const nums = (v: string) => (v === "none" ? [] : (v.match(/-?\d*\.?\d+/g) ?? []).map(Number));
+    if (key === "translate") {
+      const [ax = 0, ay = 0] = nums(a);
+      const [bx = 0, by = 0] = nums(b);
+      return !/%/.test(a + b) && Math.abs(bx - ax) < SLIDE_MIN_PX && Math.abs(by - ay) < SLIDE_MIN_PX;
+    }
+    if (key === "scale") {
+      const [ax = 1, ay = ax] = nums(a);
+      const [bx = 1, by = bx] = nums(b);
+      return (Math.abs(bx - ax) * box.w) / 2 < SLIDE_MIN_PX && (Math.abs(by - ay) * box.h) / 2 < SLIDE_MIN_PX;
+    }
+    const ma = new DOMMatrixReadOnly(a === "none" ? undefined : a);
+    const mb = new DOMMatrixReadOnly(b === "none" ? undefined : b);
+    const grow = Math.max(Math.abs(mb.a - ma.a) * box.w, Math.abs(mb.d - ma.d) * box.h, Math.abs(mb.b - ma.b) * box.h, Math.abs(mb.c - ma.c) * box.w) / 2;
+    return Math.abs(mb.m41 - ma.m41) < SLIDE_MIN_PX && Math.abs(mb.m42 - ma.m42) < SLIDE_MIN_PX && grow < SLIDE_MIN_PX;
+  } catch {
+    return false;
+  }
+}
 function movedFar(el: Element): boolean {
   const t = getComputedStyle(el).transform;
   if (!t || t === "none") return false;
@@ -921,6 +972,11 @@ function reduceMotion(): boolean {
 }
 let sheenMaskSeq = 0;
 /** 흰 바탕 마스크 + 검게 칠한 왕관 그림 자리 — 그림 알파만큼 빛이 가려진다. */
+// GPU 없이 그리는 화면(하드웨어 가속을 끈 브라우저 — 방송 PC에 흔하다, lib/ui/gfx.ts의 soft 판정). 빛 한 바퀴는 매 프레임
+// 마스크·필터가 낀 SVG를 다시 칠해야 해서 여기서는 내지 않는다(2026-11-23 실측: 손 올림 스크립트 시간의 절반).
+function softRender(): boolean {
+  return typeof document !== "undefined" && document.documentElement.dataset.gfx === "soft";
+}
 function crownMask(layer: SVGSVGElement, path: SVGPathElement): SVGGElement {
   const id = `card-sheen-mask-${++sheenMaskSeq}`;
   const defs = document.createElementNS(SVG_NS, "defs");
@@ -984,7 +1040,7 @@ function startSheen(root: HTMLElement, target: SheenTarget | null) {
     cur.layer.remove();
     sheenRun.delete(root);
   }
-  if (reduceMotion()) return;
+  if (reduceMotion() || softRender()) return;
   // 토→일로 줄이 바뀌는 묶음 — 빛 한 줄기가 두 줄을 한 바퀴로 돈다(이음 변은 건너뛴다).
   if (runBlocksOf(root, target.card).length > 1) {
     startLoopSheen(root, target);
@@ -1009,6 +1065,8 @@ function startSheen(root: HTMLElement, target: SheenTarget | null) {
   layer.append(path);
   host.append(layer);
   const run: SheenRun = { key: target.key, raf: 0, layer, until: performance.now() + SHEEN_MS };
+  // 카드와 칸이 제자리면 외곽선·왕관 구멍을 다시 계산하지 않는다 — 빛은 CSS가 돌리고, 여기는 카드가 움직일 때만 따라간다.
+  let placedAt = "";
   const step = () => {
     // 카드가 사라졌으면(다시 그림·달 이동) 바로 거두고 기록도 지운다 — 남은 기록이 같은 열쇠의 다음 빛을 막았다.
     if (!target.card.isConnected) {
@@ -1016,8 +1074,15 @@ function startSheen(root: HTMLElement, target: SheenTarget | null) {
       if (sheenRun.get(root) === run) sheenRun.delete(root);
       return;
     }
-    const d = sheenPath(root, target, host);
-    if (d && path.getAttribute("d") !== d) path.setAttribute("d", d);
+    const cr = target.card.getBoundingClientRect();
+    const hr = host.getBoundingClientRect();
+    const at = `${cr.left.toFixed(1)},${cr.top.toFixed(1)},${cr.width.toFixed(1)},${cr.height.toFixed(1)},${hr.left.toFixed(1)},${hr.top.toFixed(1)}`;
+    // 왕관은 까딱이는 애니메이션이 있어 구멍 자리가 매 프레임 달라질 수 있다 — 왕관이 있으면 구멍만 계속 맞춘다.
+    if (at !== placedAt) {
+      placedAt = at;
+      const d = sheenPath(root, target, host);
+      if (d && path.getAttribute("d") !== d) path.setAttribute("d", d);
+    }
     if (holes) placeCrownHoles(holes, crowns, host);
     if (performance.now() < run.until && layer.isConnected) {
       run.raf = requestAnimationFrame(step);
@@ -1083,6 +1148,8 @@ function cubicBezier(x1: number, y1: number, x2: number, y2: number): (t: number
 }
 const SHEEN_EASE = cubicBezier(0.45, 0.05, 0.25, 1);
 const SHEEN_RUN_MS = 1100;
+// 줄을 넘는 묶음의 빛 바퀴 — 마지막으로 찍어 둔 점(격자마다 하나).
+const loopSamples = new WeakMap<HTMLElement, { shape: string; samples: { x: number; y: number }[][]; lens: number[] }>();
 function startLoopSheen(root: HTMLElement, target: SheenTarget) {
   const layer = document.createElementNS(SVG_NS, "svg") as SVGSVGElement;
   layer.setAttribute("class", "card-sheen-layer is-loop");
@@ -1121,6 +1188,15 @@ function startLoopSheen(root: HTMLElement, target: SheenTarget) {
     geomKey = key;
     const e = -borderWidthOf(target.card) / 2;
     const parts = loopOrder(blocksNow.map((b) => blockParts(b, local, e)));
+    // 같은 모양이면 지난번에 찍어 둔 점을 그대로 쓴다 — 점 찍기(getPointAtLength 수천 번)는 느린 화면에서 한 번에 0.5초가
+    // 걸려, 같은 묶음에 손을 다시 올릴 때마다 멈칫했다(2026-11-23 실측).
+    const shape = parts.join("|");
+    const kept = loopSamples.get(root);
+    if (kept && kept.shape === shape) {
+      samples = kept.samples;
+      lens = kept.lens;
+      return;
+    }
     measure.replaceChildren(...parts.map(() => document.createElementNS(SVG_NS, "path")));
     const els = Array.from(measure.children) as SVGPathElement[];
     parts.forEach((d, i) => els[i].setAttribute("d", d));
@@ -1135,6 +1211,7 @@ function startLoopSheen(root: HTMLElement, target: SheenTarget) {
       pts.push({ x: p.x, y: p.y });
       return pts;
     });
+    loopSamples.set(root, { shape, samples, lens });
   };
   const step = () => {
     // 카드가 사라졌으면(달 이동·다시 그림) 빛도 거두고 기록도 지운다 — 남으면 같은 열쇠의 새 빛이 막혔다.
@@ -1191,7 +1268,9 @@ function isDecorativeMutation(r: MutationRecord): boolean {
     return r.attributeName === "class" && r.target instanceof SVGElement;
   }
   if (r.type !== "childList") return false;
-  const sheen = (n: Node) => n instanceof Element && n.classList.contains("card-sheen-layer");
+  // 묶음 끌기의 놓을 범위 꼬리표(.span-drop-caps, 칸 위에 떠 있는 절대 배치)도 장식이다.
+  if (r.target instanceof Element && r.target.closest(".span-drop-caps")) return true;
+  const sheen = (n: Node) => n instanceof Element && (n.classList.contains("card-sheen-layer") || n.classList.contains("span-drop-caps"));
   const nodes = [...r.addedNodes, ...r.removedNodes];
   return nodes.length > 0 && nodes.every(sheen);
 }
@@ -1264,69 +1343,94 @@ export function useEqualChainHeights<T extends HTMLElement>(
     // (폭 애니메이션은 뺐다 — 늘어나는 동안 좁은 폭에 여러 단 배치가 먼저 적용돼 글자가 찌그러진 장면이 깜빡였다.
     //  아래처럼 그리기 전에 바로 맞추므로 첫 장면부터 제 폭이다.)
 
-    function equalize() {
+    // force = 내용·크기가 바뀌었을 수 있다(기본). 펌프가 프레임마다 연달아 부를 때만 false — 카드 폭·내용이 지난번과 같으면
+    // 높이 맞춤(minHeight를 지웠다 다시 쓰기 = 화면 배치 두 번)을 건너뛰고 띠·테두리만 다시 그린다.
+    let fitSignature = "";
+    function equalize(force = true) {
       if (cancelled) {
         return;
       }
       mo?.disconnect(); // 측정·쓰기 동안 관찰 정지 → 우리 minHeight 변경이 자신을 트리거 못함
       // ① 같은 글 띠의 머리 카드 폭 = 머리 칸 왼쪽 ~ 마지막 빈 자리(bandSlot) 오른쪽.
       //    표면이 transform/zoom으로 줄어 있어도 맞도록 화면 px를 레이아웃 px로 되돌린다(scaleOf).
+      // 먼저 전부 재고(읽기), 그다음 한꺼번에 쓴다 — 머리마다 '쓰고 바로 재기'를 하면 띠 개수만큼 화면 배치를 다시 계산한다
+      // (끌기 미리보기 중 매 프레임, 2026-11-23 실측). 여기서 재는 값은 모두 가로 자리·안쪽 여백이라 다른 머리의 폭을
+      // 쓴 것과 무관하다(칸 폭은 격자가 정한다).
+      type HeadPlan = { head: HTMLElement; clear: true } | {
+        head: HTMLElement; clear: false; w: number; cw: number; gap: number; span: number; blocks: number; radius: number; fresh: boolean;
+      };
+      const plans: HeadPlan[] = [];
       for (const head of Array.from(root!.querySelectorAll<HTMLElement>("[data-band-head]"))) {
         const slots = root!.querySelectorAll<HTMLElement>(
           `[data-band-slot="${CSS.escape(head.dataset.bandHead ?? "")}"]`
         );
         const tail = slots[slots.length - 1];
         if (!tail) {
-          head.style.width = "";
+          plans.push({ head, clear: true });
           continue;
         }
+        // 새 머리는 표시를 먼저 단 뒤에 잰다 — 표시에 걸린 CSS(안쪽 여백 등)가 반영된 값으로.
+        const fresh = !head.hasAttribute("data-band-w");
+        if (fresh) head.setAttribute("data-band-w", "");
         const s = scaleOf(head);
+        const cs = getComputedStyle(head);
         // 뒤로 더 이어지면(평평한 오른쪽 변, 음수 마진) 그 넘침만큼 더 — 마지막 빈 자리 끝에서 멈추면 다음 칸 조각과 사이에
         // 틈이 벌어졌다(2026-11-17 소유자 '릴동파 25·26일 끊김').
-        const overhang = Math.max(0, -parseFloat(getComputedStyle(head).marginRight) || 0);
-        const w = (tail.getBoundingClientRect().right - head.getBoundingClientRect().left) / s + overhang;
-        if (w > 0) {
-          const target = `${Math.round(w * 10) / 10}px`;
-          // 새로 띠 머리가 되면(끌기 미리보기 등) 제 칸 폭에서 띠 폭으로 부드럽게 늘어난다.
-          const fresh = !head.hasAttribute("data-band-w");
-          head.style.width = target;
-          head.setAttribute("data-band-w", "");
-          // 본문 줄을 칸마다 한 단씩 — 두 칸 폭 띠의 오른쪽이 비어 한쪽으로 쏠려 보이지 않게(2026-11-17 소유자
-          // "불균형 싫다"). 둘째 단이 옆 칸 카드들의 글자 시작선에 오도록 단 간격 = 칸 간격 + 카드 좌우 안쪽 여백.
-          const cs = getComputedStyle(head);
-          const parent = head.parentElement;
-          const ps = parent ? getComputedStyle(parent) : null;
-          const cw = parent && ps
-            ? parent.clientWidth - parseFloat(ps.paddingLeft) - parseFloat(ps.paddingRight)
-            : head.offsetWidth;
-          const pitch = (slots[0].getBoundingClientRect().left - head.getBoundingClientRect().left) / s;
-          const gap = pitch - cw + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
-          const subs = head.querySelector(".event-subs, .pill-subs");
-          const span = slots.length + 1;
-          head.style.setProperty("--band-span", String(span));
+        const overhang = Math.max(0, -parseFloat(cs.marginRight) || 0);
+        const headLeft = head.getBoundingClientRect().left;
+        const w = (tail.getBoundingClientRect().right - headLeft) / s + overhang;
+        // 본문 줄을 칸마다 한 단씩 — 두 칸 폭 띠의 오른쪽이 비어 한쪽으로 쏠려 보이지 않게(2026-11-17 소유자
+        // "불균형 싫다"). 둘째 단이 옆 칸 카드들의 글자 시작선에 오도록 단 간격 = 칸 간격 + 카드 좌우 안쪽 여백.
+        const parent = head.parentElement;
+        const ps = parent ? getComputedStyle(parent) : null;
+        const cw = parent && ps
+          ? parent.clientWidth - parseFloat(ps.paddingLeft) - parseFloat(ps.paddingRight)
+          : head.offsetWidth;
+        const pitch = (slots[0].getBoundingClientRect().left - headLeft) / s;
+        const gap = pitch - cw + parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight);
+        const subs = head.querySelector(".event-subs, .pill-subs");
+        plans.push({
+          head, clear: false, w, cw, gap, span: slots.length + 1,
           // 제목도 한 칸으로 쳐서 단마다 고르게 — 예) 제목+3줄, 2칸 → 왼쪽(제목·1줄) / 오른쪽(2줄).
-          const blocks = (subs?.children.length ?? 0) + 1;
-          head.style.setProperty("--band-rows", String(Math.max(1, Math.ceil(blocks / span))));
-          // 글 덩어리가 칸 수보다 적으면(예: 제목 한 줄인데 세 칸 폭) 단으로 나누지 않고 띠 가운데에 — 왼쪽에 몰려 나머지
-          // 칸이 비어 보이지 않게(2026-11-17 소유자 '릴동파 연습').
-          head.toggleAttribute("data-band-sparse", blocks < span);
-          if (Number.isFinite(gap) && gap > 0) head.style.setProperty("--band-col-gap", `${gap.toFixed(1)}px`);
-          // 머리 칸 폭 — 머리 일정의 왕관은 띠 끝(다른 날)이 아니라 제 날짜 칸 모서리에 걸친다(2026-11-19).
-          if (Number.isFinite(cw) && cw > 0) head.style.setProperty("--band-cell-w", `${cw.toFixed(1)}px`);
-          // 새로 띠가 되는 순간 — 제 칸 폭에서 옆 칸까지 왼→오른쪽으로 쭉 펼쳐지듯 드러난다(모양은 처음부터 최종이라
-          // 글자가 찌그러지거나 다시 흐르지 않는다). 끌기 미리보기에서 꺾인 띠 ↔ 띠가 툭툭 바뀌던 것(2026-11-17 소유자).
-          const now = typeof performance !== "undefined" ? performance.now() : 0;
-          if (fresh && !reduceMotion() && now - (mountedAt.get(root!) ?? now) > 1200 && typeof head.animate === "function") {
-            const r = parseFloat(cs.borderTopLeftRadius) || 8;
-            const hide = Math.max(0, w - cw);
-            head.animate(
-              [
-                { clipPath: `inset(-4px ${hide.toFixed(1)}px -4px -4px round ${r}px)` },
-                { clipPath: `inset(-4px -4px -4px -4px round ${r}px)` }
-              ],
-              { duration: 260, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }
-            );
-          }
+          blocks: (subs?.children.length ?? 0) + 1,
+          radius: parseFloat(cs.borderTopLeftRadius) || 8,
+          // 새로 띠 머리가 되면(끌기 미리보기 등) 제 칸 폭에서 띠 폭으로 부드럽게 늘어난다.
+          fresh
+        });
+      }
+      for (const plan of plans) {
+        const head = plan.head;
+        if (plan.clear) {
+          if (head.style.width) head.style.width = "";
+          continue;
+        }
+        const { w, cw, gap, span, blocks, radius, fresh } = plan;
+        if (!(w > 0)) continue;
+        // 같은 값은 다시 쓰지 않는다 — 쓰기만 해도 배치가 '바뀐 것'으로 표시돼 다음 재기에서 통째로 다시 계산된다.
+        const put = (name: string, value: string) => {
+          if (head.style.getPropertyValue(name) !== value) head.style.setProperty(name, value);
+        };
+        put("width", `${Math.round(w * 10) / 10}px`);
+        put("--band-span", String(span));
+        put("--band-rows", String(Math.max(1, Math.ceil(blocks / span))));
+        // 글 덩어리가 칸 수보다 적으면(예: 제목 한 줄인데 세 칸 폭) 단으로 나누지 않고 띠 가운데에 — 왼쪽에 몰려 나머지
+        // 칸이 비어 보이지 않게(2026-11-17 소유자 '릴동파 연습').
+        if (head.hasAttribute("data-band-sparse") !== blocks < span) head.toggleAttribute("data-band-sparse", blocks < span);
+        if (Number.isFinite(gap) && gap > 0) put("--band-col-gap", `${gap.toFixed(1)}px`);
+        // 머리 칸 폭 — 머리 일정의 왕관은 띠 끝(다른 날)이 아니라 제 날짜 칸 모서리에 걸친다(2026-11-19).
+        if (Number.isFinite(cw) && cw > 0) put("--band-cell-w", `${cw.toFixed(1)}px`);
+        // 새로 띠가 되는 순간 — 제 칸 폭에서 옆 칸까지 왼→오른쪽으로 쭉 펼쳐지듯 드러난다(모양은 처음부터 최종이라
+        // 글자가 찌그러지거나 다시 흐르지 않는다). 끌기 미리보기에서 꺾인 띠 ↔ 띠가 툭툭 바뀌던 것(2026-11-17 소유자).
+        const now = typeof performance !== "undefined" ? performance.now() : 0;
+        if (fresh && !reduceMotion() && now - (mountedAt.get(root!) ?? now) > 1200 && typeof head.animate === "function") {
+          const hide = Math.max(0, w - cw);
+          head.animate(
+            [
+              { clipPath: `inset(-4px ${hide.toFixed(1)}px -4px -4px round ${radius}px)` },
+              { clipPath: `inset(-4px -4px -4px -4px round ${radius}px)` }
+            ],
+            { duration: 260, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)" }
+          );
         }
       }
       // 더는 띠 머리가 아닌 카드(끌기 미리보기·순서 변경으로 꺾인 띠가 된 경우)의 넓힌 폭을 되돌린다 — 안 그러면
@@ -1341,6 +1445,14 @@ export function useEqualChainHeights<T extends HTMLElement>(
         el.removeAttribute("data-band-sparse");
       }
       const pills = Array.from(root!.querySelectorAll<HTMLElement>("[data-chain]"));
+      const signature = pills
+        .map((p) => `${p.dataset.chain}:${p.offsetWidth}:${p.childElementCount}:${p.textContent?.length ?? 0}:${p.className}`)
+        .join("|");
+      if (!force && signature === fitSignature && root!.querySelector("[data-eq-h]:not([data-chain])") === null) {
+        draw();
+        return;
+      }
+      fitSignature = signature;
       // 지난번에 맞춰 준 칸 중 더는 묶음이 아닌 것(이음이 바뀜)도 되돌린다 — 높이가 남아 빈 칸처럼 보이지 않게.
       for (const p of Array.from(root!.querySelectorAll<HTMLElement>("[data-eq-h]"))) {
         p.style.minHeight = "";
@@ -1375,6 +1487,15 @@ export function useEqualChainHeights<T extends HTMLElement>(
           el.setAttribute("data-eq-h", "");
         }
       }
+      draw();
+    }
+    // 띠·테두리·복사 표시만 다시 그린다(폭·높이는 안 건드림). 카드가 transform으로 미끄러지는 동안은 이것만 매 프레임 돈다 —
+    // 폭·높이 맞춤(위)은 minHeight를 지웠다 다시 써서 매번 레이아웃을 통째로 다시 계산시키는데, 미끄러짐은 크기를 안 바꾼다.
+    function draw() {
+      if (cancelled) {
+        return;
+      }
+      mo?.disconnect();
       drawSteps(root!);
       drawRings(root!);
       drawCopyMarks(root!);
@@ -1391,6 +1512,10 @@ export function useEqualChainHeights<T extends HTMLElement>(
     //   더 돌린다. 그러면 이어진 칸들이 폭 변화 내내 같이 높이를 맞춰 한 번에 부드럽게 움직인다.
     let pumpRaf = 0;
     let pumpUntil = 0;
+    // 이 시각까지는 폭·높이도 다시 맞춘다(크기가 바뀌는 중). 그 뒤 펌프가 남아 있으면 그리기만.
+    let fitUntil = 0;
+    // 펌프가 끝나는 프레임에 폭·높이를 한 번 더 맞춘다(내용이 바뀐 뒤의 마무리).
+    let fitAtEnd = false;
     let pumping = false;
     function pump() {
       pumping = true;
@@ -1399,23 +1524,44 @@ export function useEqualChainHeights<T extends HTMLElement>(
           pumping = false;
           return;
         }
-        equalize();
+        if (typeof performance !== "undefined" && performance.now() <= fitUntil) equalize(false);
+        else draw();
         if (typeof performance !== "undefined" && performance.now() < pumpUntil) {
           pumpRaf = requestAnimationFrame(step);
         } else {
           pumping = false;
+          if (fitAtEnd) {
+            fitAtEnd = false;
+            equalize();
+          }
         }
       };
       pumpRaf = requestAnimationFrame(step);
     }
-    function schedule() {
-      // 마지막 트리거 뒤로도 ~250ms(패널 transition 0.52s를 매 프레임 덮고 꼬리 여유) 더 펌프.
-      pumpUntil = (typeof performance !== "undefined" ? performance.now() : 0) + 250;
+    // 내용이 바뀐 직후용 — 부른 쪽이 방금 한 번 맞췄다. 크기는 이미 맞았으니 꼬리 동안은 띠·테두리만 따라 그리고(카드가
+    // 미끄러져 자리를 잡는 동안), 끝에 한 번만 다시 맞춘다. 예전엔 이 0.25초도 매 프레임 폭·높이를 다시 맞춰, 끌기 미리보기가
+    // 바뀔 때마다 15프레임씩 화면 배치를 통째로 다시 계산했다(2026-11-23 실측).
+    function scheduleSettle() {
+      pumpUntil = Math.max(pumpUntil, (typeof performance !== "undefined" ? performance.now() : 0) + 250);
+      fitAtEnd = true;
       if (!pumping) {
         pump();
       }
     }
-    scheduleRef.current = schedule;
+    function schedule() {
+      // 마지막 트리거 뒤로도 ~250ms(패널 transition 0.52s를 매 프레임 덮고 꼬리 여유) 더 펌프.
+      pumpUntil = Math.max(pumpUntil, (typeof performance !== "undefined" ? performance.now() : 0) + 250);
+      fitUntil = pumpUntil;
+      if (!pumping) {
+        pump();
+      }
+    }
+    // 리렌더마다 불리는 안전망 — DOM이 바뀌었으면 MutationObserver가 이미 맞췄다. 여기서는 꼬리만(그리기 + 끝에 한 번 맞춤).
+    // 첫 두 프레임은 폭·내용이 바뀌었는지만 싸게 확인해(equalize(false)) 바뀌었으면 바로 맞춘다.
+    scheduleRef.current = () => {
+      fitUntil = Math.max(fitUntil, (typeof performance !== "undefined" ? performance.now() : 0) + 40);
+      scheduleSettle();
+    };
 
     mountedAt.set(root, typeof performance !== "undefined" ? performance.now() : 0);
     // 같은 일정 안에서 손이 움직일 때마다 다시 돌지 않게 — 다른 일정(또는 빈 곳)으로 옮겼을 때만 새로 돈다.
@@ -1460,32 +1606,73 @@ export function useEqualChainHeights<T extends HTMLElement>(
             // 이것까지 다시 재면 카드에 마우스를 올릴 때마다 전체 맞춤이 250ms씩 매 프레임 돌았다(2026-11-17).
             if (records.every(isDecorativeMutation)) return;
             equalize();
-            schedule();
+            scheduleSettle();
           })
         : null;
     observe();
-    const onSettle = () => schedule();
+    // 움직임이 끝나면 마지막으로 한 번 더 — 단, 시작 때 세지 않은 움직임(색·그림자·1px 뜨기)의 끝은 여기서도 세지 않는다.
+    // 예전엔 모든 전환·애니메이션의 끝에 전체 맞춤 펌프(0.25초)를 돌려, 날짜 칸 배경색·그림자 전환이 끝날 때마다
+    // 달력 전체를 다시 쟀다(카드 위를 한 번 훑는 동안 75번, 2026-11-23 실측).
+    const quiet = new WeakMap<EventTarget, Set<string>>();
+    const hush = (t: EventTarget | null, key: string) => {
+      if (!t) return;
+      const set = quiet.get(t) ?? new Set<string>();
+      set.add(key);
+      quiet.set(t, set);
+    };
+    const wasQuiet = (t: EventTarget | null, key: string) => (t ? (quiet.get(t)?.delete(key) ?? false) : false);
+    const settle = (resizes: boolean) => {
+      if (resizes) return schedule();
+      pumpUntil = Math.max(pumpUntil, (typeof performance !== "undefined" ? performance.now() : 0) + 60);
+      if (!pumping) pump();
+    };
+    const onTransitionEnd = (e: TransitionEvent) => {
+      if (!GEOMETRY_PROPS.test(e.propertyName) || wasQuiet(e.target, `t:${e.propertyName}`)) return;
+      settle(resizesCards(e));
+    };
+    const onAnimationEnd = (e: AnimationEvent) => {
+      if (wasQuiet(e.target, `a:${e.animationName}`)) return;
+      settle(true);
+    };
     // 카드가 미끄러지는 동안(놓을 자리 열림·닫힘, 원래 위치 등장) 매 프레임 다시 잰다 — 시작 순간부터 끝까지.
     // 끝(transitionend)에만 재면 그 사이 띠·테두리가 옛 자리에 남아 카드와 겹치고 점선이 둘로 갈라져 보였다.
     // 색·그림자·필터 전환(호버 강조)은 자리를 안 바꾼다 — 자리·크기를 바꾸는 전환만 펌프를 돌린다.
+    // 손 올림에 카드가 1px 뜨는 전환·하트 단추가 살짝 커지는 전환처럼 자리를 거의 안 옮기는 움직임은 펌프를 돌리지 않는다 —
+    // 예전엔 이것까지 세어, 카드 위로 손이 지날 때마다 0.5초씩 달력 전체를 매 프레임 다시 쟀다(GPU 없는 화면에서 28fps,
+    // 2026-11-23 실측). 자리만 옮기는 움직임(transform 계열)은 그리기만, 크기가 바뀌는 움직임은 폭·높이도 다시 맞춘다.
     const onTransitionRun = (e: TransitionEvent) => {
-      if (GEOMETRY_PROPS.test(e.propertyName)) onMotionStart();
+      if (!GEOMETRY_PROPS.test(e.propertyName)) return;
+      const moveOnly = MOVE_PROPS.test(e.propertyName);
+      if (moveOnly && e.target instanceof Element && isTinyMove(e.target, e.propertyName)) return hush(e.target, `t:${e.propertyName}`);
+      onMotionStart(resizesCards(e));
     };
-    const onMotionStart = () => {
+    const onAnimationStart = (e: AnimationEvent) => {
+      const el = e.target instanceof Element ? e.target : null;
+      const anim = el?.getAnimations().find((a) => (a as Animation & { animationName?: string }).animationName === e.animationName);
+      // 색·투명도만 바뀌는 애니메이션(반짝임·맥동)은 자리를 안 바꾼다.
+      if (anim && !movesGeometry(anim)) return hush(e.target, `a:${e.animationName}`);
+      onMotionStart(false);
+    };
+    const onMotionStart = (resizes: boolean) => {
       pumpUntil = Math.max(pumpUntil, (typeof performance !== "undefined" ? performance.now() : 0) + 480);
+      if (resizes) fitUntil = pumpUntil;
       if (!pumping) pump();
     };
-    root.addEventListener("animationend", onSettle);
-    root.addEventListener("transitionend", onSettle);
+    root.addEventListener("animationend", onAnimationEnd);
+    root.addEventListener("transitionend", onTransitionEnd);
+    root.addEventListener("transitioncancel", onTransitionEnd);
     root.addEventListener("transitionrun", onTransitionRun);
     // 착지 애니메이션(FLIP)처럼 transform을 '전환 없이' 먼저 걸고 시작하는 움직임은 transitionrun이 한 박자 늦다 —
     // 시작을 알리는 이벤트(vic:layout-motion)에 바로 다시 잰다(그리기 전).
-    const onLayoutMotion = () => {
+    // 달력 밖 요소의 움직임(동행 집 등)은 달력 자리를 안 바꾼다 — 달력 안이거나 달력을 감싼 요소일 때만.
+    const onLayoutMotion = (e: Event) => {
+      const el = (e as CustomEvent<{ element?: unknown }>).detail?.element;
+      if (el instanceof Node && !root.contains(el) && !el.contains(root)) return;
       equalize();
-      onMotionStart();
+      onMotionStart(false);
     };
     window.addEventListener("vic:layout-motion", onLayoutMotion);
-    root.addEventListener("animationstart", onMotionStart);
+    root.addEventListener("animationstart", onAnimationStart);
     window.addEventListener("resize", schedule);
 
     cleanupRef.current = () => {
@@ -1501,9 +1688,10 @@ export function useEqualChainHeights<T extends HTMLElement>(
       root.removeEventListener("pointerleave", onLeave);
       root.removeEventListener("transitionrun", onTransitionRun);
       window.removeEventListener("vic:layout-motion", onLayoutMotion);
-      root.removeEventListener("animationstart", onMotionStart);
-      root.removeEventListener("animationend", onSettle);
-      root.removeEventListener("transitionend", onSettle);
+      root.removeEventListener("animationstart", onAnimationStart);
+      root.removeEventListener("animationend", onAnimationEnd);
+      root.removeEventListener("transitionend", onTransitionEnd);
+      root.removeEventListener("transitioncancel", onTransitionEnd);
       window.removeEventListener("resize", schedule);
     };
   }, []);

@@ -2183,3 +2183,15 @@ html[data-theme="dark"] .mn-inner {
   background: currentColor;
   font-size: 0;
 }
+
+/* ── GPU 없이 그리는 화면(하드웨어 가속을 끈 브라우저 — 방송 PC에 흔하다, data-gfx="soft")에서는 뒤 비침 흐림을 쓰지 않는다 ──
+   backdrop-filter는 뒤에서 무엇이든 움직일 때마다(반짝이·동행·영상) 덮은 넓이만큼을 CPU로 다시 흐린다. 다시보기 창의 전체 화면
+   유리 딤이 이것 하나로 18fps까지 떨어졌다(2026-11-23 실측: 화면 합성에 초당 0.93초 → 창 안 영상도 같이 끊김).
+   흐림만 빼고 바탕색·딤은 그대로 둔다 — 창·단추의 모양과 자리는 같다. */
+html[data-gfx="soft"] *,
+html[data-gfx="soft"] *::before,
+html[data-gfx="soft"] *::after,
+html[data-gfx="soft"] ::backdrop {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}

@@ -3454,12 +3454,12 @@ html[data-panel-sections~="tag-filter"] .studio-shell .avatar-rail-filter:has([d
 .studio-shell.avatar-scene.avatar-left .avatar-rail-filter,
 .studio-shell.avatar-scene.avatar-left .avatar-rail .studio-tools-wrap,
 .studio-shell.avatar-scene.avatar-left .avatar-rail .slot-showcase {
-  animation: rail-card-settle-l 0.4s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)) 0.28s both;
+  animation: rail-card-settle-l 0.4s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)) 0.28s backwards;
 }
 .studio-shell.avatar-scene.avatar-right .avatar-rail-filter,
 .studio-shell.avatar-scene.avatar-right .avatar-rail .studio-tools-wrap,
 .studio-shell.avatar-scene.avatar-right .avatar-rail .slot-showcase {
-  animation: rail-card-settle-r 0.4s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)) 0.28s both;
+  animation: rail-card-settle-r 0.4s var(--spring-bouncy, cubic-bezier(0.34, 1.56, 0.64, 1)) 0.28s backwards;
 }
 /* 시차 — 위에서 아래로 아주 살짝(한 덩어리가 앉는 느낌, 셋이 따로 튀지 않게). */
 .studio-shell.avatar-scene .avatar-rail .studio-tools-wrap {
@@ -4794,11 +4794,16 @@ html[data-reduce-motion] .studio-workspace .event-editor-panel .editor-ring path
 }
 /* 달 이동 방향에 따라 좌/우로 밀려 들어온다(키 변경으로 재마운트될 때 재생). 다음 달=오른쪽에서,
    이전 달=왼쪽에서. translate 동안 가로 스크롤바가 안 생기게 부모(.studio-calendar-panel)가 클립. */
+/* 등장이 끝나면 값을 붙들지 않는다(backwards) — 붙들면 격자 전체가 늘 따로 합성된다(public-poster.css .day-vod-modal 주석).
+   contain: layout이 붙든 transform이 하던 쌓임 맥락·fixed 기준 상자를 그대로 잇는다. */
+.studio-month-grid[data-enter] {
+  contain: layout;
+}
 .studio-month-grid[data-enter="next"] {
-  animation: studio-grid-next 0.3s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+  animation: studio-grid-next 0.3s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) backwards;
 }
 .studio-month-grid[data-enter="prev"] {
-  animation: studio-grid-prev 0.3s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
+  animation: studio-grid-prev 0.3s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) backwards;
 }
 @keyframes studio-grid-next {
   from {
@@ -11748,17 +11753,18 @@ body.span-dragging * {
     opacity var(--dur-2) var(--ease),
     filter var(--dur-2) var(--ease);
 }
-.studio-day.span-drop-in {
+/* 놓을 범위는 data-속성으로 칠한다(studio-shell.tsx paintSpanDrop — React를 거치지 않는다). */
+.studio-day[data-span-in] {
   background: #effaf4 !important;
   transition: background var(--dur-2) var(--ease);
 }
-.studio-day.span-drop-start {
+.studio-day[data-span-start] {
   box-shadow: inset 4px 0 0 #2f9e64;
 }
-.studio-day.span-drop-end {
+.studio-day[data-span-end] {
   box-shadow: inset -4px 0 0 #2f9e64;
 }
-.studio-day.span-drop-start.span-drop-end {
+.studio-day[data-span-start][data-span-end] {
   box-shadow: inset 4px 0 0 #2f9e64, inset -4px 0 0 #2f9e64;
 }
 .span-drop-caps {
@@ -11924,7 +11930,7 @@ html[data-reduce-motion] .span-landed {
 html[data-reduce-motion] .span-drag-ghost {
   transition: none;
 }
-html[data-theme="dark"] .studio-day.span-drop-in {
+html[data-theme="dark"] .studio-day[data-span-in] {
   background: rgb(87 201 138 / 12%) !important;
 }
 
@@ -12204,4 +12210,18 @@ html[data-large-text] .tag-legend-filter > span { min-width: 0; max-width: 100%;
 html:is([data-gfx="lite"], [data-gfx="soft"], [data-gfx="off"]) :is(.studio-topbar) {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+}
+
+/* ── GPU 없이 그리는 화면(data-gfx="soft") — 색·그림자 전환은 즉시, 자리·모양 전환만 남긴다(public-poster.css 같은 블록 참고). */
+:where(html[data-gfx="soft"]) .studio-event-pill {
+  transition:
+    transform var(--dur-1) var(--ease),
+    border-radius var(--dur-3) var(--ease),
+    margin var(--dur-3) var(--ease);
+}
+:where(html[data-gfx="soft"]) .studio-day {
+  transition: none;
+}
+html[data-gfx="soft"] .studio-poster-title span {
+  animation-timing-function: steps(4, end);
 }

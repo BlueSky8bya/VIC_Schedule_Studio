@@ -33,7 +33,7 @@ html[data-theme="dark"] .vic-settings .companion-book .settings-modal-body { bac
   padding: 20px;
   -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
-  animation: vic-settings-fade var(--dur-2, 0.22s) var(--ease, ease) both;
+  animation: vic-settings-fade var(--dur-2, 0.22s) var(--ease, ease) backwards; /* 끝난 뒤 붙들지 않는다 — public-poster.css .day-vod-modal 주석 */
 }
 /* A live portrait changes every display frame. Keep the existing dim layer
    without re-filtering the full viewport behind each animated portrait. */
@@ -60,7 +60,8 @@ html[data-theme="dark"] .vic-settings .companion-book .settings-modal-body { bac
   padding: 0;
   overflow: hidden;
   box-shadow: var(--elev-4);
-  animation: vic-settings-pop var(--dur-spring-smooth, 0.34s) var(--spring-smooth, var(--ease, ease)) both;
+  contain: layout; /* 붙든 transform 대신 — public-poster.css .day-vod-modal 주석 */
+  animation: vic-settings-pop var(--dur-spring-smooth, 0.34s) var(--spring-smooth, var(--ease, ease)) backwards;
 }
 @keyframes vic-settings-pop {
   from { opacity: 0; transform: translateY(10px) scale(0.97); }

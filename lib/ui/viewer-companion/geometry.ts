@@ -21,6 +21,7 @@ const MAX_PLATFORMS = 200;
 // One measured room floor has independently capped body and small-item tiers.
 const MAX_HOME_FLOOR_FAMILY = MAX_PLATFORMS * 2;
 const MEASUREMENT_INTERVAL_MS = 120;
+const PAINT_ONLY_TRANSITION = /^(color|background-color|box-shadow|filter|backdrop-filter|outline-color|fill|stroke|border(-(top|right|bottom|left|block|inline)(-(start|end))?)?-color)$/;
 const CLEARANCE = 3;
 const DEFAULT_SIZE = 76;
 const FOOD_SIZE = 32;
@@ -673,7 +674,14 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
   win.visualViewport?.addEventListener("scroll", schedule, { passive: true });
   win.addEventListener("vic:companion-home", schedule);
   win.addEventListener("vic:panel-section", panelChanged);
-  root.addEventListener("transitionend", schedule);
+  // A colour, shadow or filter transition repaints a card without moving it.
+  // Rescanning every card and text range for those made each hover sweep run
+  // a full geometry scan every 120ms (measured 2026-11-23). Opacity stays: it
+  // decides visibility.
+  const transitionEnded = (event: Event) => {
+    if (!PAINT_ONLY_TRANSITION.test((event as TransitionEvent).propertyName ?? "")) schedule();
+  };
+  root.addEventListener("transitionend", transitionEnded);
   root.addEventListener("animationend", schedule);
   root.ownerDocument.fonts?.addEventListener("loadingdone", invalidateText);
   void root.ownerDocument.fonts?.ready?.then(() => invalidateText());
@@ -694,7 +702,7 @@ export function observeCompanionPlatforms(root: HTMLElement, onChange: (platform
     win.visualViewport?.removeEventListener("scroll", schedule);
     win.removeEventListener("vic:companion-home", schedule);
     win.removeEventListener("vic:panel-section", panelChanged);
-    root.removeEventListener("transitionend", schedule);
+    root.removeEventListener("transitionend", transitionEnded);
     root.removeEventListener("animationend", schedule);
     root.ownerDocument.fonts?.removeEventListener("loadingdone", invalidateText);
     observed.clear();

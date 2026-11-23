@@ -47,7 +47,7 @@ export function chainRuleFixtureEvents(): PublicScheduleEvent[] {
     ev("cr-10-hjw", "10", HJW, 0, "tag-full-track"),
     ev("cr-10-collab", "10", "17시 여교멤 합방\n더빙게임", 1, "tag-collab"),
 
-    ev("cr-17-wow", "17", "와우 레이드\n1일차 - 검은바위 나락", 0, "tag-variety-game", "cr-18-wow"),
+    ev("cr-17-wow", "17", "와우 레이드\n1일차 - 검은바위 나락\nw. 리안샬롯쵸로", 0, "tag-variety-game", "cr-18-wow"),
     ev("cr-18-wow", "18", "와우 레이드\n2일차 - 화산 심장부", 0, "tag-variety-game"),
     ev("cr-18-song", "18", "20시 노래 방송\n신청곡 받아요", 1, "tag-song"),
 

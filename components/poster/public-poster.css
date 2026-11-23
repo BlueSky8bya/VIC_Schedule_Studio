@@ -1093,7 +1093,7 @@ html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
   background: rgb(15 23 42 / 34%);
   /* 애플식 유리 딤(2026-09-02 리뉴얼) — 뒤 달력이 흐릿하게 비쳐 창이 '위에 떠 있는' 재질감. */
   backdrop-filter: blur(7px) saturate(1.15);
-  animation: agenda-detail-fade var(--dur-2) var(--ease-enter, ease-out) both;
+  animation: agenda-detail-fade var(--dur-2) var(--ease-enter, ease-out) backwards; /* 끝난 뒤 붙들지 않는다 — .day-vod-modal 주석 */
 }
 /* 재생 중엔 유리를 걷는다(2026-09-17 소유자: 소리는 정상인데 영상이 느리게 흐르거나 툭툭 끊김).
    원인: 전체 화면 backdrop-filter는 뒤 내용을 매 합성 프레임마다 다시 흐리는데, 위에서 영상이 초당 30~60번 합성을
@@ -1182,7 +1182,11 @@ html[data-reduce-motion] .public-day.has-vod:hover .day-vod-hint {
   background: #fbfbfd; /* 애플 오프화이트 — 안의 흰 카드가 살짝 떠 보인다 */
   box-shadow: 0 24px 60px rgb(20 25 60 / 28%);
   overflow: hidden;
-  animation: day-vod-in var(--dur-2) var(--ease-enter, ease-out) both;
+  /* 등장이 끝난 뒤에는 값을 붙들지 않는다(backwards) — both로 붙들면 브라우저가 이 상자를 계속 따로 합성한다. GPU 없는 화면에서
+     다시보기 창이 영상 한 장면마다 창 전체를 한 번 더 거쳐 합성 시간이 두 배였다(2026-11-23 실측). 끝 모습 = 원래 모습이라 보이는 것은 같다.
+     contain: layout은 붙든 transform이 하던 두 가지(쌓임 맥락, 안쪽 fixed 요소의 기준 상자)만 그대로 잇는다. */
+  contain: layout;
+  animation: day-vod-in var(--dur-2) var(--ease-enter, ease-out) backwards;
 }
 html[data-reduce-motion] .day-vod-backdrop,
 html[data-reduce-motion] .day-vod-modal {
@@ -3086,7 +3090,7 @@ body::-webkit-scrollbar {
 .avatar-top-cards .rail-info-card {
   justify-content: center;
   padding: 14px 18px;
-  animation: avatar-card-pop 0.45s cubic-bezier(0.22, 1.4, 0.4, 1) 0.28s both;
+  animation: avatar-card-pop 0.45s cubic-bezier(0.22, 1.4, 0.4, 1) 0.28s backwards;
 }
 /* 열이 넓어진 만큼(1920에서 332px) 글자를 한 단계 키운다 — 방송 화면에서 D+가 또렷하게. */
 .avatar-top-cards .ric-dplus {
@@ -3099,7 +3103,7 @@ body::-webkit-scrollbar {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: avatar-card-pop 0.45s cubic-bezier(0.22, 1.4, 0.4, 1) 0.36s both;
+  animation: avatar-card-pop 0.45s cubic-bezier(0.22, 1.4, 0.4, 1) 0.36s backwards;
 }
 /* 영상은 정확히 16:9 — 카드 높이가 비율에서 파생된다(캡션은 자연 높이). */
 .avatar-top-cards .soop-live-card.in-rail .slc-player {
@@ -5576,11 +5580,20 @@ html[data-reduce-motion] .agenda-item.teaser:has(.teaser-count.soon) .teaser-spa
 .poster-surface[data-enter] .public-right {
   --ps: 42px; /* 오른쪽 끝(색상 안내) — 더 많이 */
 }
-.poster-surface[data-enter="next"] .public-calendar-area,
+/* 달력 영역은 등장이 끝나면 값을 붙들지 않는다(backwards + contain: layout — .day-vod-modal 주석). 예전엔 달력 전체가 늘 따로
+   합성돼, 카드 하나에 손을 올려도 달력 넓이만큼 다시 합성했다. 오른쪽 패널은 붙든 값(opacity 1)에 기대므로 both 그대로. */
+.poster-surface[data-enter] .public-calendar-area {
+  contain: layout;
+}
+.poster-surface[data-enter="next"] .public-calendar-area {
+  animation: poster-slide-next 0.34s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) backwards;
+}
 .poster-surface[data-enter="next"] .public-right {
   animation: poster-slide-next 0.34s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
 }
-.poster-surface[data-enter="prev"] .public-calendar-area,
+.poster-surface[data-enter="prev"] .public-calendar-area {
+  animation: poster-slide-prev 0.34s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) backwards;
+}
 .poster-surface[data-enter="prev"] .public-right {
   animation: poster-slide-prev 0.34s var(--ease, cubic-bezier(0.22, 0.61, 0.36, 1)) both;
 }
@@ -7416,7 +7429,7 @@ html[data-reduce-motion] .viewer-settings-open svg { transition: none; }
   -webkit-backdrop-filter: blur(3px);
   backdrop-filter: blur(3px);
   padding: 24px 16px;
-  animation: pi-fade var(--dur-2) var(--ease-enter) both;
+  animation: pi-fade var(--dur-2) var(--ease-enter) backwards; /* 끝난 뒤 붙들지 않는다 — .day-vod-modal 주석 */
   /* 창 위에서 굴린 휠이 뒤 달력으로 새지 않게(2026-11-23 소유자) — 배경 자체를 스크롤 상자로 두고 끝에서 넘기지 않는다.
      목록이 끝까지 내려간 뒤에도, 창 머리처럼 스크롤이 없는 곳 위에서도 뒤 화면은 그대로다. */
   overflow-y: auto;
@@ -7440,8 +7453,9 @@ html[data-reduce-motion] .viewer-settings-open svg { transition: none; }
   box-shadow: var(--shadow-3);
   overflow: hidden;
   /* 등장은 스프링(살짝 넘쳤다 안착) — 유리판이 아니라 물체가 올라오는 느낌(A1). */
+  contain: layout; /* 붙든 transform 대신 — .day-vod-modal 주석 */
   animation: pi-rise var(--dur-spring-smooth, var(--dur-4)) var(--spring-smooth, var(--ease-enter))
-    both;
+    backwards;
 }
 @keyframes pi-rise {
   from {
@@ -8024,7 +8038,7 @@ html[data-reduce-motion] .pi-retry:active {
   display: flex;
   align-items: flex-end;
   background: rgb(15 23 42 / 40%);
-  animation: agenda-detail-fade var(--dur-2) var(--ease-enter) both;
+  animation: agenda-detail-fade var(--dur-2) var(--ease-enter) backwards; /* 끝난 뒤 붙들지 않는다 — .day-vod-modal 주석 */
 }
 
 .agenda-detail-sheet {
@@ -8070,8 +8084,9 @@ html[data-reduce-motion] .pi-retry:active {
   box-shadow:
     0 24px 56px rgb(80 64 32 / 18%),
     0 2px 8px rgb(80 64 32 / 7%);
+  contain: layout; /* 붙든 transform 대신 — .day-vod-modal 주석 */
   animation: detail-pop-in var(--dur-spring-smooth, 0.34s)
-    var(--spring-smooth, cubic-bezier(0.34, 1.4, 0.5, 1)) both;
+    var(--spring-smooth, cubic-bezier(0.34, 1.4, 0.5, 1)) backwards;
 }
 /* 맨 위 3px — 이 일정의 색(대표 태그 1~2색) 액센트 라인. 유일하게 색이 크게 말하는 곳. */
 .agenda-detail-backdrop.is-pop .agenda-detail-sheet::before {
@@ -10632,4 +10647,36 @@ html[data-large-text] .agenda-legend-tag > span { min-width: 0; max-width: 100%;
 html:is([data-gfx="lite"], [data-gfx="soft"], [data-gfx="off"]) :is(.insights-open, .viewer-settings-open, .poster-readonly .viewer-actions .button, .soop-live-card) {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
+}
+
+/* ── GPU 없이 그리는 화면(하드웨어 가속을 끈 브라우저 — 방송 PC에 흔하다, data-gfx="soft") ─────────────────────
+   색·그림자·밝기 '전환'은 프레임마다 카드를 다시 칠한다. GPU가 없으면 그 칠이 전부 CPU 몫이라 카드 위로 손이 지날 때마다
+   끊겼다(2026-11-23 실측: 손 훑기 28fps, 화면 합성에 초당 0.4초). 여기서는 바뀐 모습을 '즉시' 보여 주고(한 번만 칠함),
+   자리·크기가 움직이는 전환(끌어 놓기·착지)은 그대로 둔다. :where로 감싸 우선순위를 올리지 않는다 — 끌기·착지처럼
+   더 구체적인 규칙이 정한 전환은 그대로 이긴다. */
+:where(html[data-gfx="soft"]) .public-event {
+  transition: transform var(--dur-1) var(--ease);
+}
+:where(html[data-gfx="soft"]) .public-day {
+  transition: none;
+}
+:where(html[data-gfx="soft"]) :is(.chain-step, .chain-step-col) {
+  transition: none;
+}
+/* 빛 한 바퀴는 내지 않는다(use-equal-chain-heights.ts softRender) — 혹시 남은 층도 그리지 않는다. */
+html[data-gfx="soft"] .card-sheen-layer {
+  display: none;
+}
+/* 제목 옆 반짝이 — 60프레임으로 부드럽게 도는 대신 초당 몇 장면만(옛 게임기의 깜빡임처럼). 화면 합성이 매 프레임 돌지 않는다. */
+html[data-gfx="soft"] .title-spark {
+  animation-timing-function: steps(4, end);
+}
+/* 업 도움 띠의 흰 광택 — 배경 위치를 움직이는 애니메이션이라 쉬는 구간에도 매 프레임 다시 칠한다(실측: 띠 여섯 조각이
+   가만히 있는 화면에서 합성·칠에 초당 0.3초). GPU 없는 화면에서는 내지 않는다 — 손을 올렸을 때의 반응은 그대로다. */
+html[data-gfx="soft"] .support-bar.is-clickable {
+  animation: none;
+}
+/* 다시보기 창의 딤 — 흐림이 빠지는 대신 조금 더 어둡게 해 뒤 달력 글씨가 영상 옆에서 덜 읽히게 한다. */
+html[data-gfx="soft"] .day-vod-backdrop {
+  background: rgb(15 23 42 / 52%);
 }

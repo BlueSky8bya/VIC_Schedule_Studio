@@ -28,12 +28,13 @@ function joinsOf(all: StudioScheduleEvent[], days: string[]) {
 const DAYS = ["2026-05-11", "2026-05-12", "2026-05-13"]; // 월·화·수 — 주 경계 없음
 
 describe("getEventSpan 이어짐(체인) 판정", () => {
+  // 평평한 변(모서리 각짐)은 같은 글 띠일 때다 — 글이 다르면 둥근 카드끼리 한 도형으로 잇는다(아래 별도 테스트).
   it("맞닿는 변 색이 같은 link_next 쌍은 이어진다(모서리 각짐)", () => {
-    const a = ev({ id: "a", startsAt: "2026-05-11", primaryTagIds: ["t1"], linkNext: "b" });
-    const b = ev({ id: "b", startsAt: "2026-05-12", primaryTagIds: ["t1"] });
+    const a = ev({ id: "a", startsAt: "2026-05-11", primaryTagIds: ["t1"], linkNext: "b", publicTitle: "같은 글" });
+    const b = ev({ id: "b", startsAt: "2026-05-12", primaryTagIds: ["t1"], publicTitle: "같은 글" });
     const joins = joinsOf([a, b], DAYS);
 
-    expect(getEventSpan(a, "2026-05-11", 1, joins).roundRight).toBe(false); // a의 오른쪽 → b로 이어짐
+    expect(joins.get("a")?.bandSpan).toBe(2); // a가 두 칸 폭 머리 — b로 이어짐
     expect(getEventSpan(b, "2026-05-12", 2, joins).roundLeft).toBe(false); // b의 왼쪽 ← a에서 이어짐
   });
 
@@ -51,22 +52,32 @@ describe("getEventSpan 이어짐(체인) 판정", () => {
   });
 
   it('"A|B"+"B"처럼 맞닿는 변만 같으면 이어진다(부분 일치 허용)', () => {
-    const a = ev({ id: "a", startsAt: "2026-05-11", primaryTagIds: ["t1", "t2"], linkNext: "b" });
-    const b = ev({ id: "b", startsAt: "2026-05-12", primaryTagIds: ["t2"] });
+    const a = ev({ id: "a", startsAt: "2026-05-11", primaryTagIds: ["t1", "t2"], linkNext: "b", publicTitle: "같은 글" });
+    const b = ev({ id: "b", startsAt: "2026-05-12", primaryTagIds: ["t2"], publicTitle: "같은 글" });
     const joins = joinsOf([a, b], DAYS);
 
-    expect(getEventSpan(a, "2026-05-11", 1, joins).roundRight).toBe(false); // a의 오른쪽 변(t2) == b의 왼쪽 변(t2)
+    expect(joins.get("a")?.right?.otherId).toBe("b"); // a의 오른쪽 변(t2) == b의 왼쪽 변(t2)
     expect(getEventSpan(b, "2026-05-12", 2, joins).roundLeft).toBe(false);
   });
 
   it("앞날에 뒤따르는 일정이 있어도 둘 다 맨 위면 평평하게 잇는다(2026-11-23)", () => {
-    const a = ev({ id: "a", startsAt: "2026-05-11", primaryTagIds: ["t1"], linkNext: "b", sortOrder: 0 });
+    const a = ev({ id: "a", startsAt: "2026-05-11", primaryTagIds: ["t1"], linkNext: "b", sortOrder: 0, publicTitle: "같은 글" });
     const later = ev({ id: "later", startsAt: "2026-05-11", primaryTagIds: ["t3"], sortOrder: 1 });
-    const b = ev({ id: "b", startsAt: "2026-05-12", primaryTagIds: ["t1"] });
+    const b = ev({ id: "b", startsAt: "2026-05-12", primaryTagIds: ["t1"], publicTitle: "같은 글" });
     const joins = joinsOf([a, later, b], DAYS);
 
-    expect(getEventSpan(a, "2026-05-11", 1, joins).roundRight).toBe(false);
+    expect(joins.get("a")?.right?.kind).toBe("band");
     expect(getEventSpan(b, "2026-05-12", 2, joins).roundLeft).toBe(false);
+  });
+
+  it("둘 다 맨 위인데 글이 다르면 평평한 변 없이 둥근 카드끼리 잇는다(높이를 맞추지 않는 부드러운 계단, 2026-11-23)", () => {
+    const a = ev({ id: "a", startsAt: "2026-05-11", primaryTagIds: ["t1"], linkNext: "b" });
+    const b = ev({ id: "b", startsAt: "2026-05-12", primaryTagIds: ["t1"] });
+    const joins = joinsOf([a, b], DAYS);
+
+    expect(getEventSpan(a, "2026-05-11", 1, joins).roundRight).toBe(true);
+    expect(getEventSpan(b, "2026-05-12", 2, joins).roundLeft).toBe(true);
+    expect(joins.get("a")?.right).toMatchObject({ kind: "step", level: true });
   });
 
   it("앞날 그 일정 위에 다른 일정이 있으면 둥근 카드끼리 꺾인 띠로 잇는다(평평한 변 없음)", () => {

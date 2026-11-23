@@ -60,6 +60,12 @@ function createPainter() {
     for (const [node, entry] of entries) {
       if (!node.isConnected) { entry.filter?.remove(); entries.delete(node); continue; }
       if (only && node !== only) continue;
+      // 장면 빛이 꺼져 있으면(배경 효과 OFF·소프트웨어 렌더) 자리를 잴 일이 없다 — 여기서 재면 동행이 그려질 때마다
+      // (초당 14~30번) 화면 배치를 통째로 다시 계산시켰다(2026-11-23 실측).
+      if (!visible) {
+        if (node.hasAttribute("data-scene-lit")) { node.style.removeProperty("--vc-scene-light-filter"); node.removeAttribute("data-scene-lit"); }
+        continue;
+      }
       const box = node.getBoundingClientRect();
       const exposed = visible && exposedCompanionShowcaseRect(box, { width: innerWidth, height: innerHeight }, covers);
       if (!exposed) { node.style.removeProperty("--vc-scene-light-filter"); node.removeAttribute("data-scene-lit"); continue; }
@@ -84,10 +90,15 @@ function createPainter() {
   return {
     apply(node: HTMLElement | null | undefined, point: { x: number; y: number }) { if (!node) return; const old = entries.get(node); if (old) old.point = point; else entries.set(node, { point }); update(node); },
     attach() {
-      const refresh = () => { coversCache = undefined; update(); };
+      // 색·그림자·밝기 전환의 끝은 자리를 안 바꾼다 — 카드 위로 손이 지날 때마다 모든 물건의 자리를 다시 재지 않는다.
+      const paintOnly = /^(color|background-color|box-shadow|filter|backdrop-filter|outline-color|fill|stroke|border.*-color)$/;
+      const refresh = (event?: Event) => {
+        if (event?.type === "transitionend" && paintOnly.test((event as TransitionEvent).propertyName ?? "")) return;
+        coversCache = undefined; update();
+      };
       const relight = () => update();
       listeners.add(relight);
-      const observer = new MutationObserver(refresh); observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-ambient", "data-ambient-dim", "data-gfx", "data-showcase", "data-pchrome"] });
+      const observer = new MutationObserver(() => refresh()); observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-ambient", "data-ambient-dim", "data-gfx", "data-showcase", "data-pchrome"] });
       const layout = new MutationObserver(records => { if (records.some(companionShowcaseLayoutMutation)) refresh(); });
       layout.observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["class", "hidden", "open", "aria-hidden", "aria-modal"] });
       const events = ["vic:panel-section", "vic:side-panel", "vic:companion-home", "vic:companion-overlay", "vic:layout-motion", "transitionend", "animationend"];

@@ -76,6 +76,7 @@ import {
   Fragment,
   type PointerEvent as ReactPointerEvent,
   type ReactNode,
+  startTransition as renderLater,
   type TouchEvent as ReactTouchEvent,
   useCallback,
   useEffect,
@@ -3475,6 +3476,8 @@ export function StudioShell({
   const dropDateRef = useRef<string | null>(null);
   // 같은 날 안에서 어느 카드 위/아래에 떨어뜨릴지(순서 변경). null이면 맨 끝에 둠.
   const dropOverRef = useRef<{ id: string; after: boolean } | null>(null);
+  // 마지막으로 화면에 보낸 놓을 자리 — 같은 자리면 갱신을 다시 예약하지 않는다(onEventDragMove).
+  const dropSlotSentRef = useRef<{ day: string; overId: string | null; after: boolean } | null>(null);
   // 드롭될 위치 표시(삽입선) — 어느 날, 어느 카드 기준 위/아래인지.
   const [dropSlot, setDropSlot] = useState<{
     day: string;
@@ -3751,6 +3754,7 @@ export function StudioShell({
     );
     setDropDate(null);
     setDropSlot(null);
+    dropSlotSentRef.current = null;
     dropDateRef.current = null;
     dropOverRef.current = null;
     if (info?.started) justDraggedRef.current = true; // 다음 click(선택) 1회 무시
@@ -3924,9 +3928,12 @@ export function StudioShell({
     const dayEl = iso
       ? document.querySelector<HTMLElement>(`.studio-month-grid [data-isodate="${iso}"]`)
       : null;
+    // 미리보기(놓을 날·놓을 자리)는 '나중에 그려도 되는' 갱신으로 보낸다 — 편집실 전체를 다시 그리는 일이라, 급한 갱신으로
+    // 두면 손에 든 카드가 그 사이 멈췄다(GPU 없는 느린 화면에서 놓을 자리가 바뀔 때마다 0.15초, 2026-11-23 실측).
+    // 놓는 판정은 ref(dropDateRef·dropOverRef)로 하므로 화면이 한 박자 늦어도 결과는 같다.
     if (iso !== dropDateRef.current) {
       dropDateRef.current = iso;
-      setDropDate(iso);
+      renderLater(() => setDropDate(iso));
     }
     // 같은/다른 날 안에서 어느 카드 앞/뒤에 놓을지 판단(순서 변경).
     //
@@ -3958,19 +3965,21 @@ export function StudioShell({
     const nextSlot = iso
       ? { day: iso, overId: dropOverRef.current?.id ?? null, after: dropOverRef.current?.after ?? false }
       : null;
-    setDropSlot((prev) => {
-      if (prev === nextSlot) return prev;
-      if (
-        prev &&
-        nextSlot &&
-        prev.day === nextSlot.day &&
-        prev.overId === nextSlot.overId &&
-        prev.after === nextSlot.after
-      ) {
-        return prev;
-      }
-      return nextSlot;
-    });
+    // 바뀔 때만 보낸다(ref로 먼저 비교) — 같은 자리 위에서 손이 움직일 때마다 갱신을 예약하지 않게.
+    const lastSlot = dropSlotSentRef.current;
+    const sameSlot =
+      lastSlot === nextSlot ||
+      Boolean(
+        lastSlot &&
+          nextSlot &&
+          lastSlot.day === nextSlot.day &&
+          lastSlot.overId === nextSlot.overId &&
+          lastSlot.after === nextSlot.after
+      );
+    if (!sameSlot) {
+      dropSlotSentRef.current = nextSlot;
+      renderLater(() => setDropSlot(nextSlot));
+    }
     const margin = 80;
     dragScrollDir.current =
       e.clientY < margin ? -1 : e.clientY > window.innerHeight - margin ? 1 : 0;
@@ -3989,7 +3998,48 @@ export function StudioShell({
   // 임계감쇠 스프링으로 살짝 늦게 따라오며(FOLLOW), 놓으면 새 시작 칸으로 빨려 들어가(LAND) 새 조각들이
   // 왼쪽부터 차례로 통통 자리 잡는다. 취소·밖에 놓기면 원래 자리로 되돌아간다. 동작 줄이기면 전부 즉시.
   const [spanDrag, setSpanDrag] = useState<{ ids: string[] } | null>(null);
-  const [spanDrop, setSpanDrop] = useState<{ start: string; end: string } | null>(null);
+  // 놓을 범위 표시(옅은 칠 + 시작·끝 칸 꼬리표)는 state가 아니라 DOM에 직접 칠한다(2026-11-23). state로 두면 칸 하나를 넘을
+  // 때마다 편집실 전체(9천 줄)가 다시 그려져 손에 든 칩이 그 사이 멈췄다(GPU 없는 느린 화면에서 칸마다 0.15~0.2초 실측).
+  // 표시는 순전히 장식이고(놓는 판정은 d.delta) React가 관리하지 않는 data-속성·덧붙인 요소라 리렌더에 지워지지 않는다 —
+  // 띠 손 올림(lib/ui/band-hover.ts)과 같은 방식. 끝나면 spanCleanup이 지운다.
+  function paintSpanDrop(range: { start: string; end: string } | null) {
+    const grid = document.querySelector(".studio-month-grid");
+    if (!grid) return;
+    for (const cell of Array.from(grid.querySelectorAll<HTMLElement>("[data-isodate]"))) {
+      const iso = cell.dataset.isodate ?? "";
+      const isStart = range?.start === iso;
+      const isEnd = range?.end === iso;
+      cell.toggleAttribute("data-span-in", Boolean(range && iso >= range.start && iso <= range.end));
+      cell.toggleAttribute("data-span-start", isStart);
+      cell.toggleAttribute("data-span-end", isEnd);
+      const old = cell.querySelector(":scope > .span-drop-caps");
+      if (!range || (!isStart && !isEnd)) {
+        old?.remove();
+        continue;
+      }
+      // 꼬리표는 칸이 바뀔 때마다 새로 만든다 — 새로 붙는 순간 아래에서 튀어 오르는 연출(span-cap-pop)이 다시 돈다.
+      const want = `${isStart ? range.start : ""}|${isEnd && range.end !== range.start ? range.end : ""}`;
+      if (old?.getAttribute("data-caps") === want) continue;
+      old?.remove();
+      const caps = document.createElement("span");
+      caps.className = "span-drop-caps";
+      caps.setAttribute("aria-hidden", "true");
+      caps.setAttribute("data-caps", want);
+      if (isStart) {
+        const b = document.createElement("b");
+        b.className = "span-drop-cap is-start";
+        b.textContent = `${formatShortDate(range.start)} 시작`;
+        caps.append(b);
+      }
+      if (isEnd && range.end !== range.start) {
+        const b = document.createElement("b");
+        b.className = "span-drop-cap is-end";
+        b.textContent = `${formatShortDate(range.end)} 끝`;
+        caps.append(b);
+      }
+      cell.append(caps);
+    }
+  }
   const spanRef = useRef<{
     ids: string[];
     anchor: string;
@@ -4057,7 +4107,7 @@ export function StudioShell({
     document.body.style.userSelect = "";
     document.body.classList.remove("span-dragging");
     setSpanDrag(null);
-    setSpanDrop(null);
+    paintSpanDrop(null);
   }
   function onSpanPointerDown(e: ReactPointerEvent<HTMLElement>, ids: string[]) {
     if (!canEdit) return;
@@ -4225,7 +4275,7 @@ export function StudioShell({
     d.overCell = Boolean(iso);
     d.ghost?.classList.toggle("is-off", !iso); // 달력 밖 = 놓으면 취소 — 칩이 옅어져 미리 알려 준다
     if (!iso) {
-      if (wasOver) setSpanDrop(null);
+      if (wasOver) paintSpanDrop(null);
       return;
     }
     const delta = daysBetweenIso(d.anchor, iso);
@@ -4234,7 +4284,8 @@ export function StudioShell({
     const next = { start: addDaysIso(d.start, delta), end: addDaysIso(d.end, delta) };
     setSpanLabel(d, next.start, next.end, delta);
     if (delta !== 0) hapticTick(); // 칸 한 칸 넘을 때마다 톡(멈춤쇠) — Android만, iOS·데스크톱은 조용히
-    setSpanDrop(delta === 0 ? null : next);
+    // 범위 표시는 DOM에 바로 칠한다(paintSpanDrop 주석) — 놓는 판정은 d.delta(ref)로 한다.
+    paintSpanDrop(delta === 0 ? null : next);
   }
   function onSpanKey(ev: KeyboardEvent) {
     if (ev.key !== "Escape") return;
@@ -8084,10 +8135,7 @@ export function StudioShell({
                 rangeSelected.has(cellIndex) ? "cell-range-selected" : "",
                 // 검색 결과에서 온 날(2026-09-18) — 잠시 밝힘. DOM 클래스는 리렌더에 지워져 state로.
                 flashDate === cell.isoDate ? "cell-flash" : "",
-                // 묶음 드래그의 놓을 범위 — 옅은 칠 + 시작·끝 칸 꺾쇠(아래 span-drop-cap).
-                spanDrop && cell.isoDate >= spanDrop.start && cell.isoDate <= spanDrop.end ? "span-drop-in" : "",
-                spanDrop?.start === cell.isoDate ? "span-drop-start" : "",
-                spanDrop?.end === cell.isoDate ? "span-drop-end" : "",
+                // (묶음 드래그의 놓을 범위는 여기 없다 — paintSpanDrop이 data-span-in·start·end로 직접 칠한다.)
                 // 복사 중이면 고른 날짜 칸 = 붙여넣을 자리(점선 미리보기 카드가 뜬다)
                 clipboard && canEdit && selectedDate === cell.isoDate && !dragEventId && !spanDrag ? "paste-target" : ""
               ]
@@ -8255,16 +8303,6 @@ export function StudioShell({
                       </div>
                     );
                   })}
-                  {spanDrop && (spanDrop.start === cell.isoDate || spanDrop.end === cell.isoDate) ? (
-                    <span aria-hidden="true" className="span-drop-caps">
-                      {spanDrop.start === cell.isoDate ? (
-                        <b className="span-drop-cap is-start">{formatShortDate(spanDrop.start)} 시작</b>
-                      ) : null}
-                      {spanDrop.end === cell.isoDate && spanDrop.end !== spanDrop.start ? (
-                        <b className="span-drop-cap is-end">{formatShortDate(spanDrop.end)} 끝</b>
-                      ) : null}
-                    </span>
-                  ) : null}
                   <div className="studio-day-head">
                     <strong className={numClass}>{cell.dayOfMonth}</strong>
                     {visibleDayMark?.name ? (

@@ -69,15 +69,17 @@ describe("buildChainJoins", () => {
     expect(j.get("a")?.right?.lanes).toBeUndefined(); // 그 틈을 지나는 이음은 하나뿐
   });
 
-  it("앞날 그 일정 아래에 다른 방송이 있어도 잇는다 — 둘 다 맨 위면 띠", () => {
+  it("앞날 그 일정 아래에 다른 방송이 있어도 잇는다 — 둘 다 맨 위이고 글이 같으면 띠", () => {
     const events = [
-      ev({ id: "a", day: "2026-11-12", sortOrder: 0, linkNext: "b" }),
+      ev({ id: "a", day: "2026-11-12", sortOrder: 0, linkNext: "b", publicTitle: "같은 글" }),
       ev({ id: "노래", day: "2026-11-12", sortOrder: 1 }),
-      ev({ id: "b", day: "2026-11-13", sortOrder: 0 })
+      ev({ id: "b", day: "2026-11-13", sortOrder: 0, publicTitle: "같은 글" })
     ];
     const j = joinsOf(events);
     expect(j.get("a")?.right?.kind).toBe("band");
-    expect(j.get("a")?.flatRight).toBe(true);
+    // 같은 글 띠 — 머리 칸 하나가 두 칸 폭, 뒤 칸은 빈 자리.
+    expect(j.get("a")?.bandSpan).toBe(2);
+    expect(j.get("b")?.bandHeadId).toBe("a");
     expect(j.get("b")?.flatLeft).toBe(true);
   });
 
@@ -85,9 +87,9 @@ describe("buildChainJoins", () => {
     for (const where of ["2026-11-10", "2026-11-11", "2026-11-12"]) {
       for (const above of [true, false]) {
         const events = [
-          ev({ id: "a", day: "2026-11-10", sortOrder: 1, linkNext: "b" }),
-          ev({ id: "b", day: "2026-11-11", sortOrder: 1, linkNext: "c" }),
-          ev({ id: "c", day: "2026-11-12", sortOrder: 1 }),
+          ev({ id: "a", day: "2026-11-10", sortOrder: 1, linkNext: "b", publicTitle: "같은 글" }),
+          ev({ id: "b", day: "2026-11-11", sortOrder: 1, linkNext: "c", publicTitle: "같은 글" }),
+          ev({ id: "c", day: "2026-11-12", sortOrder: 1, publicTitle: "같은 글" }),
           ev({ id: "다른", day: where, sortOrder: above ? 0 : 2 })
         ];
         const j = joinsOf(events);
@@ -148,17 +150,29 @@ describe("buildChainJoins", () => {
     expect(j.get("a")?.flatRight).toBe(false); // 띠 끝(c) 뒤로 이어지는 게 없다
   });
 
-  it("띠인데 글이 다르면 칸마다 제 글을 쓰고 평평한 변으로 붙는다(예전 모양)", () => {
+  it("둘 다 맨 위인데 글이 다르면 높이를 맞추지 않고 한 도형으로 잇는다 — 아랫변이 부드러운 계단(level)", () => {
     const events = [
-      ev({ id: "a", day: "2026-11-11", publicTitle: "와우\n1일차", linkNext: "b" }),
+      ev({ id: "a", day: "2026-11-11", publicTitle: "와우\n1일차\nw. 누구", linkNext: "b" }),
       ev({ id: "b", day: "2026-11-12", publicTitle: "와우\n2일차" })
     ];
     const j = joinsOf(events);
-    expect(j.get("a")?.bandSpan).toBeUndefined();
-    expect(j.get("b")?.bandHeadId).toBeUndefined();
-    expect(j.get("a")?.flatRight).toBe(true);
-    expect(j.get("b")?.flatLeft).toBe(true);
-    expect(j.get("a")?.bandKey).toBe(j.get("b")?.bandKey);
+    expect(j.get("a")?.right).toMatchObject({ kind: "step", level: true });
+    expect(j.get("b")?.left).toMatchObject({ kind: "step", level: true });
+    // 높이 맞춤 묶음(bandKey)이 없다 — 카드마다 제 글 높이 그대로.
+    expect(j.get("a")?.bandKey).toBeUndefined();
+    expect(j.get("b")?.bandKey).toBeUndefined();
+    expect(j.get("a")?.flatRight).toBe(false);
+    expect(j.get("b")?.flatLeft).toBe(false);
+  });
+
+  it("한쪽이 맨 위가 아닌 꺾인 띠에는 level이 없다", () => {
+    const events = [
+      ev({ id: "위", day: "2026-11-11", sortOrder: 0 }),
+      ev({ id: "a", day: "2026-11-11", sortOrder: 1, publicTitle: "와우\n1일차", linkNext: "b" }),
+      ev({ id: "b", day: "2026-11-12", publicTitle: "와우\n2일차" })
+    ];
+    expect(joinsOf(events).get("a")?.right).toMatchObject({ kind: "step" });
+    expect(joinsOf(events).get("a")?.right?.level).toBeUndefined();
   });
 
   it("토→일은 줄바뀜 — 평평한 변만, 띠·꺾인 띠 아님", () => {

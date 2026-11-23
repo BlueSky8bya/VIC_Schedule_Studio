@@ -885,9 +885,12 @@ export function linkEdgesMatch(
 // (2026-11-16~22엔 "앞날 마지막 = 다음날 첫 카드"일 때만 이었다. 다른 일정을 사이에 끼우면 끊겨서, 실제 방송 순서와
 //  달리 일정표에서는 쭉 이어 두고 싶은 경우를 못 그렸다.)
 // 이을 때 모양:
-//  · band  — 두 카드가 모두 그날 맨 위(같은 줄) → 평평한 변으로 붙는 띠. 아래에 다른 일정이 있어도 된다.
-//            글이 같으면 머리 칸 하나가 여러 칸 폭으로 글을 한 번만 쓰고, 뒤 칸은 빈 자리(bandSlot).
-//  · step  — 어느 한쪽이라도 맨 위가 아니라 같은 줄에 못 놓임 → 둥근 카드끼리 칸 사이 틈에서 꺾인 띠로 잇는다.
+//  · band  — 두 카드가 모두 그날 맨 위(같은 줄)이고 **글이 같다** → 머리 칸 하나가 여러 칸 폭으로 글을 한 번만 쓰고,
+//            뒤 칸은 빈 자리(bandSlot). 아래에 다른 일정이 있어도 된다.
+//  · step  — 그 밖 전부 → 칸 사이 틈에서 한 도형으로 잇는다. 한쪽이 맨 위가 아니면 위아래로 꺾이는 꺾인 띠.
+//            둘 다 맨 위인데 글이 다르면(level) 윗변은 한 줄로 곧고, 카드마다 제 글 높이 그대로라 아랫변이 틈에서
+//            부드러운 계단(~)으로 오르내린다(2026-11-23 소유자: 줄 수가 다른 날끼리 억지로 같은 높이로 맞추지 않는다 —
+//            예전엔 이 경우도 band였고 짧은 쪽을 긴 쪽 높이로 늘려 빈 자리가 생겼다).
 //            같은 틈을 두 이음이 나란히 지나면 틈을 나눠 선다(lane/lanes). 서로 엇갈리면 하나만 꺾인 띠, 다른 하나는 그 밑으로(under).
 //  · wrap  — 토→일(달력 줄이 바뀜) → 꺾인 띠 없이 평평한 변이 칸 끝까지(글자 꼬리표 없음, 2026-11-18), 맞닿은 끝이 옅어진다.
 //            under가 붙으면 줄바뀜이 아니라 엇갈림 — 평평한 변 없이 둥근 카드의 틈 쪽 끝만 옅어진다.
@@ -895,8 +898,9 @@ export function linkEdgesMatch(
 export type ChainJoinKind = "band" | "step" | "wrap";
 // lane/lanes = 같은 틈을 지나는 꺾인 띠가 여럿일 때 이 이음이 서는 자리(왼쪽부터 0)와 전체 수. 하나뿐이면 없다.
 // under = 같은 틈에서 다른 이음과 엇갈려 그 밑으로 지나가는 이음(kind는 wrap) — 카드는 제 자리·제 둥근 모양 그대로, 맞닿은 끝만 옅어진다.
+// level = 두 카드가 모두 그날 맨 위인 step(윗변이 한 줄) — 아랫변만 틈에서 부드러운 계단으로 오르내린다.
 export type ChainJoinSide = {
-  kind: ChainJoinKind; otherId: string; sameContent: boolean; lane?: number; lanes?: number; under?: boolean;
+  kind: ChainJoinKind; otherId: string; sameContent: boolean; lane?: number; lanes?: number; under?: boolean; level?: boolean;
 };
 export type ChainJoin = {
   left?: ChainJoinSide; // 앞날에서 이어 받음
@@ -947,14 +951,16 @@ export function buildChainJoins<T extends PublicScheduleEvent | StudioScheduleEv
       if (joinable && (!joinable(from) || !joinable(to))) continue;
       taken.add(to.id);
       const sameContent = (from.publicTitle ?? "").trim() === (to.publicTitle ?? "").trim();
+      const top = i === 0 && ti === 0;
       const kind: ChainJoinKind =
         d.weekday === 6
           ? "wrap"
-          : i === 0 && ti === 0 && !(forceStep && forceStep(d.isoDate, n.isoDate))
+          : top && sameContent && !(forceStep && forceStep(d.isoDate, n.isoDate))
             ? "band"
             : "step";
-      get(from.id).right = { kind, otherId: to.id, sameContent };
-      get(to.id).left = { kind, otherId: from.id, sameContent };
+      const level = kind === "step" && top ? { level: true } : {};
+      get(from.id).right = { kind, otherId: to.id, sameContent, ...level };
+      get(to.id).left = { kind, otherId: from.id, sameContent, ...level };
       if (kind === "step") steps.push({ from, to, fromIdx: i, toIdx: ti });
     }
     // 서로 엇갈리는(위아래가 뒤바뀌는) 이음은 한 틈에서 둘 다 꺾인 띠로 그리지 않는다 — 좁은 틈에서 X자로 겹치면 어느 선이
