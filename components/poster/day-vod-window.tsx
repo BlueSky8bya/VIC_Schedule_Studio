@@ -11,6 +11,7 @@ import { hapticTick } from "@/lib/ui/haptics";
 import { logActivity } from "@/lib/activity/client";
 import { trackPopoverLayout } from "@/lib/ui/popover-layout";
 import { VodChapters, type VodChaptersApi, formatTimecode } from "@/components/poster/vod-chapters";
+import { vodDayStartLabel, vodDayStartMs } from "@/lib/schedules/vod-days";
 import "./public-poster.css";
 import "./poster-metal-water.css";
 
@@ -65,7 +66,7 @@ export type DayVod = {
   // 이 날짜 칸에서 열 때 시작할 지점(초) — 며칠 이어진 방송의 둘째 날부터(lib/schedules/vod-days, 2026-11-23).
   // 없으면 처음부터. 플레이어 초기화·Space 재생·숲 링크가 모두 이 지점에서 출발한다.
   daySec?: number;
-  // 한 방송이 여러 편이고 며칠에 걸쳤을 때 — 이 날 먼저 열 편(그날 오전 6시에 방송 중이던 편). lib/schedules/vod-days.
+  // 한 방송이 여러 편이고 며칠에 걸쳤을 때 — 이 날 먼저 열 편(그날 새로 켠 방송, 없으면 그날 가장 오래 나온 편). lib/schedules/vod-days.
   dayFocus?: true;
   // 이 날과 겹치지는 않지만 같은 방송의 다른 편이라 함께 보이는 편.
   dayExtra?: true;
@@ -1597,7 +1598,7 @@ export function DayVodWindow({
                                   ▶ 바로 아래에 날짜·시각 말로 따로 알린다. 영상 안 지점은 덧붙임. */}
                               {vod.daySec ? (
                                 <span className="dvm-daystart">
-                                  <strong>{Number(dateKey.slice(5, 7))}월 {Number(dateKey.slice(8, 10))}일 오전 6시 방송분부터 재생</strong>
+                                  <strong>{Number(dateKey.slice(5, 7))}월 {Number(dateKey.slice(8, 10))}일 일출({vodDayStartLabel(dateKey)}) 방송분부터 재생</strong>
                                   <small>영상 {formatTimecode(vod.daySec)} 지점</small>
                                 </span>
                               ) : (() => {
@@ -1609,7 +1610,7 @@ export function DayVodWindow({
                                 // 이 날과 겹치지 않는 편(같은 방송의 다른 편)은 앞뒤 관계까지 — "이 날 것이 아니다"를 분명히.
                                 const note = !vod.dayExtra
                                   ? "처음부터 재생"
-                                  : (vod.startedAt ?? "") > `${dateKey}T21:00:00.000Z`
+                                  : Date.parse(vod.startedAt ?? "") >= vodDayStartMs(dateKey)
                                     ? `${day} 뒤에 이어진 편`
                                     : `${day} 전에 끝난 편`;
                                 return (
