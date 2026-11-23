@@ -681,6 +681,11 @@ function shapeWrapEnds(root: HTMLElement) {
     if (!inn) continue;
     const o = place(out);
     const i = place(inn);
+    // 두 조각이 세로로 겹칠 때만 굽힌다(같은 줄 이음과 같은 기준 STEP_SEAM_MIN). 겹치지 않을 만큼 벌어지면 — 한쪽에만
+    // 업 도움 띠가 지나거나, 끄는 동안 놓을 자리가 열려 밀려 내려갔을 때 — 굽히지 않고 반듯한 열린 끝으로 둔다.
+    // 같은 줄이라면 꺾인 띠가 그 사이를 잇지만 토요일 끝과 일요일 시작은 화면 반대편·다른 줄이라 이을 선이 없고,
+    // 끝만 크게 굽히면 무엇에 맞춘 것인지 보이지 않아 찌그러진 모서리로만 보였다(2026-11-23 소유자와 정함).
+    if (Math.min(o.bottom, i.bottom) - Math.max(o.top, i.top) < STEP_SEAM_MIN) continue;
     const cuts = { out: { rise: 0, drop: 0 }, inn: { rise: 0, drop: 0 } };
     // 윗변: 더 위에 선 조각이 상대의 윗변 높이까지 내려온다.
     if (i.top - o.top >= WRAP_RISE_MIN) cuts.out.drop = i.top - o.top;
